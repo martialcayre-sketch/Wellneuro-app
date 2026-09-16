@@ -4,6 +4,83 @@
 
 ## Décisions actives
 
+### D-220 — La correspondance médecin entre au registre RGPD comme traitement : il existe bien un destinataire tiers, et le portail cesse de dire que le partage « arrivera »
+
+- Date : 2026-09-17
+- Statut : accepté — **mise en conformité documentaire et correction d'un texte
+  patient faux**. Aucun comportement de code ne change.
+- Domaine : registre RGPD, centre TRUST du portail patient.
+- Porte sur : ce que le dossier RGPD dit des destinataires, et ce que le patient
+  lit avant de consentir. Suit la promotion des trois arbitrages du 2026-07-22.
+
+**1. LA RUBRIQUE 6 AFFIRMAIT L'INVERSE DE CE QUI EST EN PRODUCTION.** Elle
+concluait : « aucun partage à un tiers (médecin traitant compris) sans choix
+explicite du patient ». Or l'arbitrage TRUST du 2026-07-22 pose que le choix est
+**exposé, jamais opposé** : un praticien peut consigner une lettre — et, depuis la
+lettre d'adressage, en **produire** une — pour un dossier dont le patient a refusé
+le partage. La phrase n'était pas un mensonge : elle décrivait une garde que
+personne n'avait décidé de poser, et elle la présentait comme posée.
+
+Ce qui est vrai, et qui s'écrit à sa place : **l'application n'envoie rien** — elle
+ne dispose d'aucun canal vers un médecin, et le document part par les canaux
+propres du praticien, hors de l'outil. Le garde-fou est **déontologique et
+humain**, pas technique. Le dire ainsi est la seule formulation qui survive à une
+lecture du code.
+
+**2. LA CORRESPONDANCE MÉDECIN EST UN TRAITEMENT, ET ELLE N'ÉTAIT INVENTORIÉE
+NULLE PART.** Elle entre au registre avec ses quatre termes :
+
+- **Finalité** — tracer au dossier ce qui a été transmis à un médecin, et ce qu'il
+  a répondu ; produire la lettre d'adressage quand un signal d'alerte déclaré
+  suspend la décision du praticien.
+- **Données** — un libellé libre désignant le médecin (jamais son adresse
+  e-mail : le refus du caractère `@` est une garde structurelle), le texte de
+  l'échange, deux dates, et l'ancre du document généré. Le texte porte des
+  données de santé : c'est sa fonction.
+- **Destinataire tiers** — **le médecin désigné**, hors de l'application. C'est le
+  seul destinataire de santé hors Wellneuro et ses sous-traitants, et il
+  n'apparaissait dans aucune rubrique.
+- **Durée** — **non fixée**, comme les autres données de santé du dossier. La
+  rubrique 8 le dit déjà et ne l'invente pas ici : la correspondance suit le
+  dossier (clôture ⇒ lecture seule, effacement ⇒ effacement).
+
+**La qualification juridique de ce traitement appartient au responsable** — c'est
+le même régime que celui posé pour le médecin traitant à la rubrique 5. Ce qui est
+écrit ici est le FAIT : ce qui est transmis, à qui, par quel chemin, et ce que le
+produit ne garantit pas.
+
+**3. LE PORTAIL DISAIT AU PATIENT QUE LE PARTAGE « ARRIVERA ».** Le centre TRUST
+décrivait la finalité `partage_medecin_traitant` par « le partage effectif de
+documents arrivera dans une prochaine version — votre choix est enregistré dès
+maintenant ». **C'est faux depuis le 2026-07-22**, date à laquelle le fil de
+correspondance est entré en service. Un consentement recueilli sur une description
+fausse est un consentement mal éclairé, et c'était le seul endroit du produit où le
+patient pouvait lire ce que son choix engageait. Le texte dit désormais ce qui a
+lieu : la transmission se fait par les moyens habituels du praticien, et
+**l'application elle-même n'envoie rien**.
+
+**CE QUI N'EST PAS TOUCHÉ, ET POURQUOI.** Quatre versions **publiées** du registre
+TRUST patient portent « aucun partage avec un tiers … sans un choix explicite de
+votre part », et l'effet du refus annoncé dans « Mes choix » dit « aucun document
+ne sera partagé ». Le logiciel **ne garantit ni l'un ni l'autre** : §3 de
+[[D-219]] confie la règle au praticien. Mais ce sont des documents **publiés,
+versionnés et immuables**, sur lesquels des patients ont consenti : les corriger
+demande une version neuve et un arbitrage du responsable, pas une réécriture de
+session. **Nommé ici, laissé ouvert.**
+
+**4. LA MESSAGERIE DE SANTÉ EST HORS DE PORTÉE, ET C'EST ÉCRIT UNE FOIS POUR
+TOUTES.** MSSanté et consorts reviennent à chaque cadrage du fil médecin. La
+réponse est stable et ne dépend d'aucun arbitrage à venir : l'application n'a
+aucun canal sortant vers un médecin, l'opérateur de messagerie serait un
+sous-traitant de plus à contractualiser, et l'identité du médecin — `FM-1`, option
+C — n'est pas authentifiée. Ce n'est pas un lot repoussé : c'est un **périmètre
+fermé**, qui ne se rouvre que par une décision explicite.
+
+**5. LE CADRAGE DE 2026-07-22 EST DATÉ COMME PÉRIMÉ, PAS RÉÉCRIT.** Il porte un
+bandeau qui renvoie au registre. Le dépôt a déjà ce précédent
+(`CHECKLIST_ACTIVATION_G_TRUST_04.md`) : un document historique ne se réinterprète
+pas — on dit où sa règle vit désormais.
+
 ### D-219 — Trois arbitrages du 2026-07-22 entrent au registre : identité du médecin, conservation de la correspondance, et TRUST indicateur seul
 
 - Date : 2026-09-17

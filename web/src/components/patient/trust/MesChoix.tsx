@@ -23,7 +23,13 @@ const FINALITES: {
     finalite: 'partage_medecin_traitant',
     libelle: 'Partage avec le médecin traitant',
     finaliteDetail:
-      'Permettre à votre praticien de partager avec votre médecin traitant des documents vous concernant (le partage effectif de documents arrivera dans une prochaine version — votre choix est enregistré dès maintenant).',
+      // CE TEXTE ÉTAIT FAUX, ET C'EST CELUI SUR LEQUEL LE PATIENT CONSENT
+      // ([[D-220]]). Il annonçait que le partage « arrivera dans une prochaine
+      // version » : le fil de correspondance médecin est en service depuis le
+      // 2026-07-22. Un consentement recueilli sur une description fausse est un
+      // consentement mal éclairé, et c'est le seul endroit du produit où le
+      // patient lit ce que son choix engage.
+      'Permettre à votre praticien de transmettre à votre médecin traitant des documents vous concernant. La transmission se fait par les moyens habituels de votre praticien — courrier remis ou envoyé par ses soins : l’application elle-même n’envoie rien à votre médecin.',
     donnees: 'Documents validés par votre praticien uniquement.',
     destinataire: 'Votre médecin traitant.',
     effetRefus: 'Aucun document ne sera partagé. Votre accompagnement continue normalement.',

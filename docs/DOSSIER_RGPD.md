@@ -298,10 +298,47 @@ build (`web/scripts/build.sh:33`). Aucune donnée patient ni source ; aucun
 `CHECKPOINT_DISABLE` n'est posé dans le dépôt. Mentionné pour l'exhaustivité de
 l'inventaire, pas comme sous-traitant au sens de l'article 28.
 
-Aucun autre destinataire : « votre praticien, dans le cadre de votre
-accompagnement ; personne d'autre n'y accède au sein de Wellneuro », et aucun
-partage à un tiers (médecin traitant compris) sans choix explicite du patient
-(`registre.ts`).
+**LE DESTINATAIRE TIERS QUI MANQUAIT — LE MÉDECIN DÉSIGNÉ ([[D-220]]).** Cette
+rubrique concluait : « aucun partage à un tiers (médecin traitant compris) sans
+choix explicite du patient ». La phrase décrivait une garde que **personne n'avait
+décidé de poser**, et la présentait comme posée. L'arbitrage du 2026-07-22
+([[D-219]] §3) pose que le choix `partage_medecin_traitant` est **exposé au
+praticien, jamais opposé à lui** : rien, dans le logiciel, n'empêche de consigner
+une lettre — ni, depuis [[D-218]], d'en produire une — pour un dossier dont le
+patient a refusé le partage.
+
+Ce qui est vrai, et qui s'écrit à sa place : **l'application n'envoie rien**. Elle
+n'a aucun canal vers un médecin ; le document est remis ou transmis **par les
+canaux propres du praticien**, hors de l'outil. Le garde-fou est **déontologique
+et humain**, pas technique — et c'est la seule formulation qui survive à une
+lecture du code.
+
+**La correspondance médecin comme TRAITEMENT** — elle n'était inventoriée nulle
+part, et elle est pourtant le seul chemin par lequel une donnée de santé quitte
+Wellneuro vers un tiers qui n'est ni le patient ni un sous-traitant :
+
+| Terme | Ce qui est écrit dans le code |
+|---|---|
+| **Finalité** | tracer au dossier ce qui a été transmis à un médecin et ce qu'il a répondu ; **produire la lettre d'adressage** quand un signal d'alerte déclaré suspend la décision ([[D-218]]) |
+| **Données** | un **libellé libre** désignant le médecin — jamais son adresse e-mail, le refus du caractère `@` étant une garde structurelle —, le texte de l'échange (données de santé, c'est sa fonction), deux dates, et l'ancre du document généré |
+| **Destinataire** | **le médecin désigné**, hors application, par les canaux du praticien |
+| **Durée** | **non fixée**, comme les autres données de santé du dossier (rubrique 8). La correspondance suit le dossier : clôture ⇒ lecture seule, effacement ⇒ effacement ([[D-219]] §2) |
+
+**La qualification juridique de ce traitement appartient au responsable** — même
+régime que le médecin traitant à la rubrique 5. Ce qui est écrit ici est le
+**fait** : ce qui part, à qui, par quel chemin, et ce que le produit ne garantit
+pas.
+
+> **RESTE DÛ, ET C'EST UN ARBITRAGE, PAS UN CORRECTIF.** Quatre versions publiées
+> du registre TRUST patient (`trust/contenus/registre.ts`) portent « aucun partage
+> avec un tiers (par exemple votre médecin traitant) n'a lieu sans un choix
+> explicite de votre part ». Le logiciel ne garantit pas cette phrase. Corriger un
+> document **publié et versionné**, lu par des patients qui ont consenti dessus,
+> est une décision du responsable — elle demande une version neuve, pas une
+> réécriture. **Nommé le 2026-09-17, non touché.**
+
+Au sein de Wellneuro, en revanche, la phrase tient : « votre praticien, dans le
+cadre de votre accompagnement ; personne d'autre n'y accède ».
 
 > **Attribution corrigée le 2026-08-19 (LOT-03), et dette qui en résulte.**
 > Cette rubrique et la rubrique 1 citaient `web/src/lib/trust/gouvernance.ts`
