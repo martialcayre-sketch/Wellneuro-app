@@ -92,15 +92,26 @@ la cause — `gh api repos/{owner}/{repo}/commits/<tête>/check-runs` montre
   commit vide, jamais en relançant le merge à l'aveugle, jamais en relançant le
   CI.
 
-**1.6 Ce que Copilot a poussé se relit, toujours.** Il peut avoir aligné le
+**1.6 Copilot revoit UNE FOIS, à l'ouverture — il ne relit pas vos correctifs.**
+Constaté sur la PR #1159 (2026-09-16) : revue automatique sur le premier push,
+**aucune** sur les deux suivants, y compris celui qui répondait à ses quatre
+constats. Sa propre conclusion le dit (« Get a fresh assessment by requesting
+another Copilot review »), et le `POST` REST sur `requested_reviewers` **ne
+l'enregistre pas** — la demande passe par le bouton de l'interface, donc par le
+responsable. Ne jamais compter sur un second passage pour rattraper un correctif
+écrit à la hâte : le premier verdict est le seul garanti. (Ce qui reçoit bien une
+revue neuve, c'est une **nouvelle PR** — d'où la revue de la PR de reprise du
+2026-09-16.)
+
+**1.7 Ce que Copilot a poussé se relit, toujours.** Il peut avoir aligné le
 littéral d'un banc sur le code plutôt que l'inverse. Un banc ainsi « réparé » est
 vert et **ne mesure plus rien**.
 
-**1.7 Clinique, signature de périmètre, migration : pas de correction dans la
+**1.8 Clinique, signature de périmètre, migration : pas de correction dans la
 foulée.** Un commentaire qui touche à l'un des trois remonte en **arbitrage**.
 Corriger pour obtenir un vert ferait du vert la raison du changement.
 
-**1.8 La clôture passe avant la PR.** Fragment `changelog.d/`, handoff, verdicts
+**1.9 La clôture passe avant la PR.** Fragment `changelog.d/`, handoff, verdicts
 de revue : ils s'écrivent sur la branche vivante. Ce qui s'écrit après le squash
 coûte une seconde PR (`.claude/rules/docs-changelog.md`).
 

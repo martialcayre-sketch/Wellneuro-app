@@ -74,3 +74,10 @@ condition de merge rendue circulaire, et un renvoi qui avouait son impuissance
 (« au moment de merger, le charger explicitement ») au lieu de la fermer. Les
 deux derniers ferment une troncature silencieuse sur le geste même que la règle
 rend bloquant. Aucun ne demandait d'arbitrage clinique.
+
+**Un fait constaté en passant, et écrit en §1.6 :** Copilot revoit **une fois, à
+l'ouverture**. Ni le push `174267fb` ni `d354e2be` — celui qui répondait à ses
+quatre constats — n'a reçu de revue. Sa propre conclusion le dit, et le `POST`
+REST sur `requested_reviewers` ne l'enregistre pas : la demande passe par le
+bouton de l'interface, donc par le responsable. Compter sur un second passage
+pour rattraper un correctif écrit vite serait une erreur.
