@@ -4,6 +4,146 @@
 
 ## Décisions actives
 
+### D-216 — Les douze assiettes appariées ont chacune deux sources et une seule fait règle ; l'âge redevient un déclencheur, l'enquête alimentaire ne déclenche jamais seule une ligne d'assiette, et les familles attendent un mécanisme orienté
+
+- Date : 2026-09-16
+- Statut : accepté — **arbitrages du responsable**, rendus sur les questions que
+  la réécriture des surfaces d'attestation a fait remonter.
+- Domaine : catalogue d'assiettes, Boussole alimentaire, doctrine de population.
+- Ferme : les quatre questions ouvertes de
+  `SURFACE_RELECTURE_CATALOGUE_ASSIETTES_2026-09-16.md` et la question préalable
+  de `SURFACE_RELECTURE_FAMILLES_EQUIVALENCE_2026-09-16.md`. Ne réarbitre pas
+  [[D-213]] §10 et §11 : il les met en œuvre.
+
+**POURQUOI CETTE ENTRÉE EXISTE.** [[D-213]] §10 prévoyait d'étendre le catalogue
+aux douze assiettes « organisées par indication ». La mise en œuvre a buté sur un
+fait que la décision ne pouvait pas connaître, et sur une erreur de lecture qu'il
+faut garder avec le résultat.
+
+## L'ERREUR, ET CE QU'ELLE A COÛTÉ
+
+La première surface concluait que **dix des douze assiettes n'avaient pas
+d'indication fondée**. Elle n'avait lu que les **fiches patient** `WN-SRC-0296` →
+`WN-SRC-0307` — l'intervalle que `D-213` §10 cite — sans chercher si d'autres
+sources parlaient d'assiettes. **Un intervalle cité dans une décision est un
+exemple, jamais un inventaire.**
+
+Le défaut a été trouvé par la revue automatique de la PR #1160, **après** son
+merge : sept constats, sept réels. C'est exactement la classe que [[D-214]] §1
+existe pour fermer, et la PR avait été mergée quatre minutes après son ouverture,
+avant que la revue n'ait pu être postée. **Une revue vide juste après l'ouverture
+signifie « pas encore passée », jamais « rien à dire ».**
+
+## LE FAIT QUI COMMANDE TOUT LE RESTE
+
+Chaque assiette a **deux sources**, et elles se correspondent une à une :
+`WN-SRC-0284` → `0295` sont des **protocoles** (`prescriptive: true`, vigilance
+élevée, tous curés au registre des interventions, 131 claims validés) ;
+`WN-SRC-0296` → `0307` sont les **fiches patient** de la même assiette
+(`prescriptive: false`, absentes de ce registre, 81 claims de contenu).
+
+**Une ligne cite les claims du PROTOCOLE, jamais ceux de la fiche.** Ce n'est pas
+un arbitrage : le registre l'impose, en écrivant d'une fiche qu'elle sert de
+« couche d'éducation thérapeutique, **pas comme source de règle clinique** ». Un
+claim de fiche peut être `VALIDE` et rester irrecevable comme fondement. La fiche
+garde son rôle propre — le support remis au patient.
+
+## 1. L'ÂGE REDEVIENT UN DÉCLENCHEUR
+
+Le dépôt écartait l'âge pour un motif écrit : *aucune borne d'âge n'a de
+provenance au dépôt ; poser un pivot ici serait inventer un seuil clinique*
+(`DC-19`, et `DC-43` qui l'écarte comme critère de population). **Ce motif ne
+tient plus** : `WN-CL-0286-006`, `WN-CL-0288-011` et `WN-CL-0293-009` portent des
+bornes — 50, 60, 70 ans — dans des claims prescriptifs validés. Le pivot ne
+serait plus inventé, il serait **cité**.
+
+Trois assiettes sortent de réserve. **Ce que cela engage, et qui n'est pas
+gratuit** : un type de déclencheur neuf, `Patient.dateNaissance` cesse d'être un
+fait purement administratif, et `DC-43` se revisite. Le commentaire
+d'`anamnese.ts` qui porte l'ancien motif **se corrige dans le même lot**, sans
+quoi le dépôt se contredirait lui-même.
+
+**Écarté : garder l'âge dehors.** Plus petit, et défendable — trois bornes citées
+ne convergent pas, et une gate d'âge s'applique bien au-delà des trois assiettes
+qui la motivent. Mais maintenir un refus dont le motif a disparu aurait laissé le
+dépôt refuser une provenance qu'il possède.
+
+## 2. L'ENQUÊTE ALIMENTAIRE NE DÉCLENCHE JAMAIS SEULE **UNE LIGNE D'ASSIETTE**
+
+Le dépôt déclare `Q_ALI_01` *« non validé comme instrument de mesure — les
+résultats orientent l'entretien, ils ne concluent pas »*. Elle reste admise, mais
+**en seconde condition uniquement** : une ligne d'indication d'assiette qui la
+cite exige aussi une porte propre. C'est le patron de `R2-GAS-02`, où le second
+déclencheur **paie** l'abaissement du seuil et où « l'un ne vaut jamais sans
+l'autre ».
+
+**LA PORTÉE EST CELLE DES LIGNES D'ASSIETTE, ET RIEN D'AUTRE.** `R2-ALI-01` est
+une règle **publiée** dont `Q_ALI_01` est l'unique déclencheur, et elle cite
+`WN-CL-0287-009`. Elle n'est **pas** réarbitrée ici, et elle ne contredit pas cet
+arbitrage : ce qu'elle propose sont **deux questionnaires** — le TFD SIIN et
+l'échelle de Bristol —, pas une assiette. Son propre commentaire l'écrit depuis
+`D-030` : *« L'assiette de détoxication que `WN-CL-0287-009` indique n'est PAS un
+questionnaire : elle relève de la prise en charge, et l'objectif ne la promet
+donc plus. »*
+
+C'est exactement la distinction qui fonde l'arbitrage : proposer un questionnaire
+et prescrire une assiette n'engagent pas la même chose pour le patient. Un
+instrument qui « oriente l'entretien sans conclure » peut ouvrir le premier ; il
+ne suffit pas au second.
+
+## 3. LA PSYCHOBIOTIQUE PUBLIE SA PORTE ÉTROITE
+
+`WN-CL-0291-011` — le trouble fonctionnel ou la maladie intestinale avérée — est
+servi. `-009` et `-010`, qui proposent l'assiette très régulièrement en
+consultation et pour toute la population en prévention, sont **écrits en
+brouillon** : les deux lectures sont consignées, une seule sert.
+
+**Une ligne `brouillon` reste dans le périmètre haché.** Elle est hors du
+**service**, pas hors du périmètre : la signature couvre son texte, et la
+reformuler périmera l'attestation acquise sur les lignes publiées.
+
+**CE QUE CE CHOIX IMPOSE À LA FORME, et il fallait le trancher plutôt que le
+laisser flou.** Une même assiette portant une porte publiée et une porte en
+brouillon, **le statut ne peut pas vivre sur l'entrée du catalogue** : avec un
+seul `statut` par assiette, le filtre de service exposerait les deux portes ou
+les masquerait toutes deux. Le catalogue porte donc des **lignes d'indication**
+— une assiette, une indication, ses claims, son statut — et une assiette en
+regroupe une ou plusieurs. C'est le patron de `CATALOGUE_CONDUITES_V1`, où la
+ligne est l'unité signée, pas le tableau clinique.
+
+L'entrée d'assiette garde ce qu'elle a aujourd'hui — `plateCode`, `label`, les
+empreintes — et **cesse d'être l'unité de publication**. Le filtre de service
+s'applique aux lignes ; une assiette est proposable dès qu'une de ses lignes est
+publiée.
+
+## 4. LES FAMILLES SE FERONT, LE MÉCANISME CHANGE D'ABORD
+
+Aucun claim ne fonde une substitution d'assiette. Le corpus décrit l'**inclusion**
+— `WN-CL-0290-004` pose que la sérotoninergique associe l'anti-inflammatoire —,
+l'association et la parenté de modèle : les trois sont l'inverse logique de
+l'échange. Les assiettes qui partagent une porte d'entrée sont précisément celles
+que le corpus décrit comme emboîtées.
+
+`decidePlateSubstitution` lit par ailleurs une famille comme une **clique
+complète** : déclarer trois assiettes atteste **six** substitutions, dans les deux
+sens, alors qu'un repli est presque toujours orienté. Aucune famille ne se
+déclare donc avant : un mécanisme **orienté**, une garde restreignant la
+substitution aux assiettes **prescrites**, et un chemin qui l'expose — la route
+Boussole renvoie aujourd'hui `alternatives: []` en dur.
+
+**Écarté : renoncer aux familles au profit du seul plan minimal.** Le plan
+minimal et le plan de secours restent le repli de droit commun ; la famille
+ajoutera une alternative **attestée** là où le praticien veut proposer une autre
+assiette plutôt qu'un allègement de la même.
+
+## Ce que cette entrée n'exécute pas
+
+Rien. Le champ `statut`, le filtre de service, le champ d'indication, le
+déclencheur d'âge et la revisite de `DC-43` sont des chantiers. **Signer la table
+avant le filtre exposerait les cinq brouillons comme les huit publiées** — la
+liste déroulante du praticien rend aujourd'hui toutes les entrées du catalogue,
+sans condition.
+
 ### D-215 — Le courrier biologie devient un papier signé, et le verdict d'ancrage se rend par la version portée par la ligne
 
 - Date : 2026-09-16
