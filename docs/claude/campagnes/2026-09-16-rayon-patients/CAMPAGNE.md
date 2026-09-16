@@ -1,7 +1,7 @@
 ---
 id: "2026-09-16-rayon-patients"
 titre: "Le rayon Patients — le dossier rendu au praticien"
-statut: "terminée (2026-09-17 — huit lots livrés, D-219 et D-220 ; contre-revue adverse faite AVANT la clôture, deux affirmations du cadrage réfutées. Le constat d'usage sur dossiers réels reste à faire après déploiement, D-112.)"
+statut: "terminée (2026-09-17 — huit lots livrés, D-220 et D-221 ; contre-revue adverse faite AVANT la clôture, deux affirmations du cadrage réfutées. Le constat d'usage sur dossiers réels reste à faire après déploiement, D-112.)"
 créée_le: "2026-09-16"
 mise_à_jour: "2026-09-17"
 lot_courant: "LOT-07"
@@ -157,8 +157,8 @@ colonne neuve, et il part sans attendre la porte `release-db`.
 
 ## Clôture — 2026-09-17
 
-Sept lots, sept PR sur `main`. Décisions **D-219** (architecture et dossier) et
-**D-220** (le NIR déclaré).
+Sept lots, sept PR sur `main`. Décisions **D-220** (architecture et dossier) et
+**D-221** (le NIR déclaré).
 
 ### Ce que le cadrage annonçait, et qui s'est révélé faux
 

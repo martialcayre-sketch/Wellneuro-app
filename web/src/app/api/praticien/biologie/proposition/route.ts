@@ -43,7 +43,7 @@ export type PropositionApiResponse =
       documentes: DocumenteExpose[];
       /**
        * Choix « partage médecin traitant » du patient — EXPOSÉ, jamais opposé
-       * (décision du 2026-07-22, même règle que le fil de correspondance) : le
+       * ([[D-219]] §3, arbitrage du 2026-07-22 — même règle que le fil) : le
        * courrier s'établit depuis cette surface, l'information s'y lit AVANT
        * le geste. `null` = le patient ne s'est jamais exprimé.
        */

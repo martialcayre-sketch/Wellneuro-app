@@ -4,13 +4,13 @@
 
 ## Décisions actives
 
-### D-220 — Le NIR déclaré entre au dossier, en clair, et sa clé se vérifie côté application
+### D-221 — Le NIR déclaré entre au dossier, en clair, et sa clé se vérifie côté application
 
 - Date : 2026-09-17
 - Statut : accepté — arbitrage du responsable de traitement, 2026-09-16.
 - Domaine : données patient, dossier administratif, RGPD.
 - Porte sur : la catégorie de stockage du numéro de sécurité sociale et le
-  niveau de contrôle exigé à la saisie. Prolonge [[D-219]].
+  niveau de contrôle exigé à la saisie. Prolonge [[D-220]].
 
 **1. EN CLAIR, COMME TOUTE AUTRE DONNÉE DU DOSSIER.** Ce qui protège le NIR est
 ce qui protège le reste : RLS *deny-all* sur `patients`, garde d'appartenance sur
@@ -39,7 +39,7 @@ l'écrit comme **due**, et le code ne la pose pas — [[D-064]] vaut ici.
 
 ---
 
-### D-219 — La gestion du dossier quitte l'héritage 4.0 : un rayon Patients, et un cockpit qui porte enfin son dossier
+### D-220 — La gestion du dossier quitte l'héritage 4.0 : un rayon Patients, et un cockpit qui porte enfin son dossier
 
 - Date : 2026-09-17
 - Statut : accepté — demande du responsable du 2026-09-16, captures à l'appui,
@@ -103,6 +103,65 @@ traitant du dossier au rayon Correspondance (pré-remplissage de
 est distinct.
 
 ---
+
+### D-219 — Trois arbitrages du 2026-07-22 entrent au registre : identité du médecin, conservation de la correspondance, et TRUST indicateur seul
+
+- Date : 2026-09-17
+- Statut : accepté — **promotion, pas arbitrage**. Les trois décisions ont été
+  rendues par le responsable le **2026-07-22** et n'ont jamais changé. Cette
+  entrée ne les rejuge pas : elle les sort d'un document de cadrage pour les
+  mettre là où le dépôt va les chercher.
+- Domaine : correspondance médecin, cycle de vie du dossier, centre TRUST.
+- Porte sur : la traçabilité de trois règles **appliquées en production depuis le
+  2026-07-22** sans entrée au registre. Aucun code de comportement ne change ;
+  **six** ancres de production changent de référence.
+
+**LE DÉFAUT N'ÉTAIT PAS L'ABSENCE DE DÉCISION, C'ÉTAIT SON ADRESSE.** `FM-1`,
+`FM-2` et l'arbitrage TRUST vivaient dans
+`docs/claude/campagnes/2026-07-11-fiches-conseils-contextuelles-v1/CADRAGE_FIL_MEDECIN_5_0.md`
+— un cadrage de campagne close. Quatre fichiers de production s'y adossent
+**nommément**, et le registre des décisions, lui, ne les connaissait pas. Une
+règle que le code cite et que le registre ignore est une règle qu'une relecture
+ne peut pas retrouver : elle se vérifie par archéologie, pas par index.
+
+**1. FM-1 — IDENTITÉ DU MÉDECIN : C PUIS A.** La V1 du fil est la
+**transcription par le praticien** ; aucune surface d'authentification médecin
+n'est créée. La V2 passerait au **lien signé**, en réutilisant l'infrastructure
+G4 (`portail_magic_links` : haché, expirant, usage unique, rejeu tracé). Le
+compte médecin reste l'option de dernier recours, si un besoin d'opposabilité
+apparaît. **Le déclencheur de la bascule C → A n'est pas fixé** : c'est un
+constat d'usage — le volume réel de correspondance —, jamais une échéance.
+
+**2. FM-2 — CONSERVATION ALIGNÉE SUR LE DOSSIER.** La correspondance est une
+**pièce du dossier** : clôture de suivi ⇒ lecture seule (aucune consignation
+nouvelle, dans les deux sens) ; effacement du dossier ⇒ effacement de la
+correspondance. `accepteNouvelEnvoi` est le point de décision unique, et
+`effacerDossier` efface la correspondance **nommément**, avec un banc qui échoue
+si on l'oublie.
+
+**3. TRUST — INDICATEUR SEUL, PAS DE GARDE BLOQUANTE.** L'état du choix
+`partage_medecin_traitant` est **exposé** au praticien, jamais **opposé** à lui.
+Le partage a lieu HORS application, par ses canaux : bloquer la consignation
+n'empêcherait aucun partage — cela rendrait seulement le dossier aveugle. La
+responsabilité déontologique reste au praticien, informé.
+
+**CE QUE CETTE TROISIÈME RÈGLE COÛTE, ET QUI N'ÉTAIT ÉCRIT NULLE PART.** Un
+praticien peut consigner une lettre pour un dossier dont le patient a **refusé**
+le partage avec son médecin traitant. C'est l'arbitrage rendu, et il se tient ;
+mais il a une conséquence de registre, que la rubrique 6 du `DOSSIER_RGPD`
+affirme à l'envers (« aucun partage à un tiers sans choix explicite ») et que le
+centre TRUST du portail dit au patient à l'envers aussi. **Ce n'est pas corrigé
+ici** : c'est une autre finalité — de la conformité documentaire et du texte
+patient, pas de la traçabilité de décision — et elle part dans sa propre PR.
+
+**LES SIX ANCRES DE PRODUCTION SONT RENOMMÉES DANS LA MÊME ENTRÉE** — quatre
+trouvées au cadrage, **deux de plus trouvées par la revue** : le contrat du
+rayon biologie et le panneau de proposition citaient eux aussi l'arbitrage TRUST
+par sa seule date. Promouvoir
+sans renommer aurait créé une **seconde source** : deux adresses pour une même
+règle, et rien pour dire laquelle fait foi. Le cadrage, lui, reste en place et
+porte désormais un bandeau qui renvoie ici — on ne réécrit pas un document
+historique, on dit où la règle vit maintenant.
 
 ### D-218 — La lettre d'adressage existe : le seul motif cliniquement obligatoire d'écrire à un médecin cesse d'être sans chemin
 

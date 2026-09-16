@@ -6950,8 +6950,8 @@ et vérifier le numéro `D-216`, l'autre session ayant pris `D-215`.
 
 ## 2026-09-17 — Clôture de la campagne « Le rayon Patients »
 
-Huit lots, sept PR mergées, deux décisions (**D-219** l'architecture et le
-dossier, **D-220** le NIR déclaré). La migration additive est appliquée et
+Huit lots, sept PR mergées, deux décisions (**D-220** l'architecture et le
+dossier, **D-221** le NIR déclaré). La migration additive est appliquée et
 constatée en production depuis le 2026-09-16 à 20 h 41 ; la fenêtre
 d'indisponibilité a duré huit minutes.
 

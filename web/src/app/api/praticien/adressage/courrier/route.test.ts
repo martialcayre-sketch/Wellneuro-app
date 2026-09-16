@@ -181,7 +181,7 @@ describe('gardes', () => {
   });
 
   it('dossier clos : refusé dans la route, rien n’est consigné', async () => {
-    // La correspondance est une pièce du dossier (FM-2) : le refus vit dans la
+    // La correspondance est une pièce du dossier ([[D-219]] §2) : le refus vit dans la
     // route, pas seulement dans l'écran.
     prisma.patient.findUnique.mockResolvedValue({
       actif: false,

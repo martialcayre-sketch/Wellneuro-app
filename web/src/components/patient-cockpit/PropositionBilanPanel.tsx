@@ -149,7 +149,7 @@ function FormulaireCourrier({
   disabled: boolean;
   courrier: CourrierEtabli | null;
   erreur: string | null;
-  /** Choix TRUST du patient — exposé, jamais opposé (décision du 2026-07-22). */
+  /** Choix TRUST du patient — exposé, jamais opposé ([[D-219]] §3). */
   partageMedecinTraitant: string | null;
   onEtablir: (medecinLibelle: string) => void;
 }) {

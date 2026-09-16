@@ -188,7 +188,7 @@ describe('/api/praticien/correspondance-medecin', () => {
     expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 
-  // FM-2 : la correspondance est une pièce du dossier — un dossier clos n'en
+  // [[D-219]] §2 : la correspondance est une pièce du dossier — un dossier clos n'en
   // reçoit plus, quel que soit le sens. Le chemin propre pour une réponse
   // arrivée après clôture : rouvrir, transcrire, reclôturer.
   it('refuse la consignation sur dossier clos, pour les deux sens', async () => {

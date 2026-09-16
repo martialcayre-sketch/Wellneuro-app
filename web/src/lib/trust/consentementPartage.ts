@@ -1,7 +1,7 @@
 // État du consentement « partage médecin traitant » — lecture PURE, aucune
 // dépendance Prisma.
 //
-// INDICATEUR, PAS GARDE (décision utilisateur du 2026-07-22, C3 LOT-06) : le
+// INDICATEUR, PAS GARDE ([[D-219]] §3, arbitrage du 2026-07-22, C3 LOT-06) : le
 // partage avec le médecin a lieu HORS application, par les canaux du
 // praticien. Bloquer la consignation n'empêcherait pas le partage — cela
 // rendrait seulement le dossier aveugle. L'écran affiche l'état ; la

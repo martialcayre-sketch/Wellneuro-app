@@ -1,8 +1,8 @@
 ### Clôture — le rayon Patients, huit lots (2026-09-17)
 
 La campagne « Le rayon Patients — le dossier rendu au praticien » se clôt sur
-huit lots, sept PR mergées, et deux décisions : **D-219** (la gestion du dossier
-quitte l'héritage 4.0, le cockpit porte son dossier) et **D-220** (le NIR
+huit lots, sept PR mergées, et deux décisions : **D-220** (la gestion du dossier
+quitte l'héritage 4.0, le cockpit porte son dossier) et **D-221** (le NIR
 déclaré entre au dossier, en clair, sa clé vérifiée côté application).
 
 **LE BANC QUI MANQUAIT, ET QUE LA CONTRE-REVUE A TROUVÉ.** Le plan promettait de

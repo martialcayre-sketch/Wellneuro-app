@@ -1,5 +1,13 @@
 # Cadrage — Fil de correspondance médecin (C3, recadrage 5.0)
 
+> ⚠️ **PÉRIMÉ COMME ADRESSE, PAS COMME RÉCIT — 2026-09-17.** Les trois décisions
+> que ce document a actées le 2026-07-22 — `FM-1`, `FM-2` et « TRUST : indicateur
+> seul » — vivent désormais au registre, sous **[[D-219]]**, et c'est là que le
+> code les cite. Elles n'ont pas changé : elles ont changé d'adresse. Ce document
+> reste **tel qu'il a été écrit** — il porte la délibération, les options écartées
+> et leurs motifs, qu'aucune entrée de registre ne remplace. Ne pas s'y référer
+> pour savoir ce qui fait règle aujourd'hui ; s'y référer pour savoir pourquoi.
+
 > Ouvert le 2026-07-22 sur décision de l'utilisateur, pour instruire le
 > bloqueur C3 de `.wn/state.json`. **Arbitré le même jour** — voir
 > « Décisions actées » en fin de document. Aucun code n'accompagne ce

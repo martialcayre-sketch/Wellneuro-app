@@ -21,9 +21,9 @@ d'héritage 4.0.
 
 ## Décisions prises
 
-- **D-219** — la gestion du dossier quitte l'héritage 4.0 : un rayon Patients,
+- **D-220** — la gestion du dossier quitte l'héritage 4.0 : un rayon Patients,
   et un cockpit qui porte son dossier.
-- **D-220** — le NIR déclaré entre au dossier, en clair, et sa clé se vérifie
+- **D-221** — le NIR déclaré entre au dossier, en clair, et sa clé se vérifie
   côté application.
 
 Numéros pris **au merge**, jamais réservés d'avance.
@@ -31,7 +31,7 @@ Numéros pris **au merge**, jamais réservés d'avance.
 ## Fichiers modifiés (LOT-07)
 
 - `web/src/app/api/praticien/changementEmailChaine.guard.test.ts` — **neuf**.
-- `docs/DECISIONS.md` — D-219 et D-220.
+- `docs/DECISIONS.md` — D-220 et D-221.
 - `docs/claude/campagnes/2026-09-16-rayon-patients/` — CAMPAGNE.md clos, huit
   lots marqués avec leur PR réelle.
 - `docs/checklist_tests_end_to_end.md` — la recette manuelle pointait des écrans
