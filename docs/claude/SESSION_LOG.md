@@ -6626,3 +6626,22 @@ occurrences légitimes pour zéro fabriquée.
 
 Limites dites : six synthèses ne prouvent pas un comportement, et une seule
 dimension a été mesurée.
+
+## 2026-09-16 — Clôture de session : quatre décisions, trois signatures, deux périmées
+
+**Décisions.** `D-201` la clause `DC-19` se garde par sa puce, pas par son
+vocabulaire ; `D-202` le périmètre du classement attesté, et l'attestation sait
+se périmer ; `D-203` la primauté de la plainte dominante arbitrée ; `D-204` la
+clause mesurée en production.
+
+**Écarté, et pourquoi.** Le filtre de sortie LLM — zéro occurrence à attraper sur
+six synthèses, et « 14 nuits » de l'agenda est la même chaîne que « 14 nuits » du
+seuil : il aurait censuré six cas légitimes pour zéro fabriqué. La priorité
+intrinsèque en tête — elle rendait la plainte dominante inatteignable, les quatre
+priorités étant distinctes. Le blacklistage de « sauf si » — une garde qui nomme
+ce qu'elle ne peut pas voir.
+
+**Prochaine action.** Merger #1139, verte et `CLEAN`.
+
+**Ouvert.** `analyserSortieSynthese` ne lit que la structure : assumé, pas oublié.
+Six synthèses ne prouvent pas un comportement.
