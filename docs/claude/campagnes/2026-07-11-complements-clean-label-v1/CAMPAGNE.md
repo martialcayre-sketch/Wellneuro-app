@@ -1,9 +1,9 @@
 ---
 id: "2026-07-11-complements-clean-label-v1"
 titre: "C4 — Compléments clean label (C4A/C4B)"
-statut: "en cours"
+statut: "non commencée — retournée en file d'attente le 2026-09-16 (0/5 lots, tous `à_faire` ; dernier geste au dossier le 2026-07-24, une étude de faisabilité de corpus). Elle n'a jamais été ouverte : la porter comme « en cours » deux mois durant a fait compter une campagne active de plus dans chaque état de session."
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-24"
+mise_à_jour: "2026-09-16"
 lot_courant: "LOT-00"
 ---
 

@@ -4,6 +4,7 @@ import { useEffect, useId, useRef } from 'react';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 import { dateDePassation, passationsDuCandidat } from './passationsDuCandidat';
+import { ATTESTATION_CLASSEMENT, PORTEE_ATTESTATION, attestationValide } from '@/lib/clinical/perimetreClassementV1';
 import { envoyerMesure } from '@/lib/mesure/envoyerMesure';
 
 export const TITRE_PAR_DEFAUT = 'Priorité et limites';
@@ -154,7 +155,40 @@ export function DecisionSummaryCard({
     ...(current?.limitations ?? []),
   ])];
   const limitationsRegle = toutes.filter((texte) => signees.has(texte));
-  const limitationsMoteur = toutes.filter((texte) => !signees.has(texte));
+  const duMoteur = toutes.filter((texte) => !signees.has(texte));
+
+  // CE QUE L'ATTESTATION A CHANGÉ À L'ÉCRAN, et par quel chemin.
+  //
+  // Les textes du périmètre sont RELUS ; les afficher sous « hors périmètre
+  // signé » ferait SOUS-promettre sur du relu. Mais `duMoteur` est un MÉLANGE —
+  // il porte aussi le motif de la gate de population, que personne n'a relu —
+  // et une seule étiquette sur les deux mentirait dans un sens ou dans l'autre.
+  //
+  // LE GROUPEMENT SE FAIT SUR LA PROVENANCE DÉCLARÉE PAR LE PRODUCTEUR, JAMAIS
+  // SUR LE LIBELLÉ. Une première rédaction comparait les chaînes à
+  // `LIMITATIONS_CANDIDAT` : un motif de gate portant le même libellé qu'un
+  // texte attesté s'affichait alors « relu » — un comportement que personne n'a
+  // relu héritant de la provenance attestée, sans qu'aucun sha ne bouge.
+  // Relevé en contre-expertise, et le contrat de `limitationsRegleSignee`
+  // l'interdisait DÉJÀ : « la deviner par comparaison de chaînes ferait dépendre
+  // une garde de provenance d'une égalité de ponctuation ».
+  //
+  // L'ÉCRAN LIT L'ATTESTATION, il ne recopie pas son résultat : retirée, ces
+  // textes retombent d'eux-mêmes dans le groupe non relu.
+  //
+  // LA VALIDITÉ SE DEMANDE AU PÉRIMÈTRE, ELLE NE SE DEVINE PAS SUR `relu`.
+  // Cet écran lisait le seul booléen : un `shaRelu` PÉRIMÉ — celui d'un
+  // périmètre antérieur — ou une date nulle présentaient les limitations comme
+  // relues. Relevé en contre-expertise, et le banc de cet écran en donnait
+  // lui-même la preuve : il injectait `shaRelu: 'simulé'` et attendait
+  // « relus ». `attestationValide` pose les trois questions ensemble, au même
+  // endroit que le banc de garde — deux rédactions de la même règle divergent
+  // toujours ([[DC-26]]).
+  const duPerimetre = new Set(
+    attestationValide(ATTESTATION_CLASSEMENT) ? (current?.limitationsPerimetreClassement ?? []) : [],
+  );
+  const limitationsRelues = duMoteur.filter((texte) => duPerimetre.has(texte));
+  const limitationsMoteur = duMoteur.filter((texte) => !duPerimetre.has(texte));
 
   return (
     <section aria-labelledby={idTitre}>
@@ -229,6 +263,20 @@ export function DecisionSummaryCard({
                 <p className="mt-2 text-xs font-medium text-foreground">Limitations de la règle</p>
                 <ul className="list-disc pl-5 text-muted-foreground">
                   {limitationsRegle.map(limitation => <li key={limitation}>{limitation}</li>)}
+                </ul>
+              </>
+            )}
+            {limitationsRelues.length > 0 && (
+              <>
+                {/* RELU, ET DATÉ. La date n'est pas décorative : elle dit de
+                    QUAND date la relecture, donc ce qu'elle a pu couvrir. Un
+                    « relu » sans date laisserait croire à une garantie
+                    permanente. */}
+                <p className="mt-2 text-xs font-medium text-foreground">
+                  {PORTEE_ATTESTATION.intituleEcran} <span className="font-normal text-muted-foreground">(relu le {ATTESTATION_CLASSEMENT.dateRelecture})</span>
+                </p>
+                <ul className="list-disc pl-5 text-muted-foreground">
+                  {limitationsRelues.map(limitation => <li key={limitation}>{limitation}</li>)}
                 </ul>
               </>
             )}
