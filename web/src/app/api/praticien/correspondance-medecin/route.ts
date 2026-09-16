@@ -27,7 +27,8 @@ import type { StatutChoix } from '@/lib/trust/types';
 // Le médecin n'accède à rien, l'application n'envoie rien. PRATICIEN SEUL,
 // garde d'appartenance appliquée.
 //
-// DOSSIER CLOS = CONSIGNATION REFUSÉE, POUR LES DEUX SENS (FM-2 : la
+// DOSSIER CLOS = CONSIGNATION REFUSÉE, POUR LES DEUX SENS ([[D-219]] §2, ex
+// « FM-2 » du cadrage du 2026-07-22 : la
 // correspondance est une pièce du dossier ; `accepteNouvelEnvoi` est le point
 // de décision unique — leçon #181). Le cas réel « réponse arrivée après
 // clôture » a un chemin propre : rouvrir le suivi, transcrire, reclôturer —
@@ -35,7 +36,7 @@ import type { StatutChoix } from '@/lib/trust/types';
 // clôture promet la lecture des archives.
 //
 // TRUST : l'état du consentement « partage médecin traitant » est EXPOSÉ,
-// jamais opposé (décision utilisateur du 2026-07-22) — le partage a lieu hors
+// jamais opposé ([[D-219]] §3, arbitrage du 2026-07-22) — le partage a lieu hors
 // application ; bloquer la consignation rendrait le dossier aveugle sans
 // protéger personne.
 

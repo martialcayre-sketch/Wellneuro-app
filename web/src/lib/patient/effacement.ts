@@ -146,7 +146,7 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.correspondancesPatient = (
       await tx.correspondancePatient.deleteMany({ where: par })
     ).count;
-    // La correspondance médecin est une pièce du dossier (FM-2, C3 LOT-06) :
+    // La correspondance médecin est une pièce du dossier ([[D-219]] §2, C3 LOT-06) :
     // le résidu D6 (année, prénom, trois lettres) ne couvre pas un texte
     // clinique. Elle part avec le dossier, nommément.
     supprimees.correspondancesMedecin = (
