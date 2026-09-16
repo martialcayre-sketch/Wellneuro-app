@@ -928,6 +928,45 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     );
   });
 
+  it('le brouillon de transcription survit à un aller-retour d’onglet, sans rejouer le GET', async () => {
+    // LE COMPORTEMENT QUE D-212 INTRODUIT, ET QUI N'ÉTAIT GARDÉ PAR RIEN.
+    // Constat de revue de la PR #1151, retenu : le banc voisin ne vérifiait que
+    // l'apparition du panneau au premier clic. Or c'est le DÉMONTAGE qui perdait
+    // le brouillon — une transcription de plusieurs milliers de caractères
+    // disparaissait sans un mot dès qu'on allait vérifier une synthèse.
+    //
+    // Le comptage des requêtes fait partie de l'attendu : garder le panneau
+    // monté ne doit pas se payer d'une seconde lecture du dossier, qui écrirait
+    // une ligne de plus au journal d'accès (`G-TRUST-04`).
+    const fetchMock = await rendreFiche();
+    const lecturesDuFil = () =>
+      fetchMock.mock.calls.filter(appel =>
+        String(appel[0]).startsWith('/api/praticien/correspondance-medecin?'),
+      ).length;
+
+    const onglets = screen.getByRole('tablist', { name: 'Vues de la fiche patient' });
+    fireEvent.click(within(onglets).getByRole('tab', { name: 'Correspondance' }));
+    await waitFor(() => expect(screen.getByLabelText(/Texte de l’échange/)).toBeTruthy());
+    expect(lecturesDuFil()).toBe(1);
+
+    const brouillon = 'Le médecin confirme la conduite à tenir, transcription en cours';
+    fireEvent.change(screen.getByLabelText(/Texte de l’échange/), { target: { value: brouillon } });
+
+    fireEvent.click(within(onglets).getByRole('tab', { name: 'Poste de pilotage' }));
+    await waitFor(() =>
+      expect(document.getElementById('panneau-correspondance')?.hasAttribute('hidden')).toBe(true),
+    );
+
+    fireEvent.click(within(onglets).getByRole('tab', { name: 'Correspondance' }));
+    await waitFor(() =>
+      expect(document.getElementById('panneau-correspondance')?.hasAttribute('hidden')).toBe(false),
+    );
+
+    // La saisie est intacte, et le dossier n'a été lu qu'une fois.
+    expect((screen.getByLabelText(/Texte de l’échange/) as HTMLTextAreaElement).value).toBe(brouillon);
+    expect(lecturesDuFil()).toBe(1);
+  });
+
   it('onglets in-fiche : le focus suit la sélection, Origine/Fin et le bouclage (B1)', async () => {
     await rendreFiche();
 

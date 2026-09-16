@@ -6801,3 +6801,25 @@ périmé » sur chaque lettre d'adressage.
 Questions ouvertes : `supersedes_*`, la journalisation de `/recentes`, la
 signature et le mot « confraternel », et la levée d'abstention sur preuve
 d'adressage. Deux trous de couverture se ferment par une fixture de consignation.
+
+## 2026-09-16 — Reprise de revue : la revue de Copilot avait raison quatre fois
+
+Les quatre PR de la campagne Correspondance ont été mergées sur CI vert **sans
+lire la revue**. Elle portait six constats ; quatre tiennent, dont deux défauts
+en production. Un CI n'en voit aucun.
+
+Retenus : le compteur du rail ramenait **tout l'historique** du praticien à chaque
+montage du rail (deux par page) — la déduplication descend en base ; son banc
+était **creux**, servant à un mock une liste déjà dédupliquée, donc simulant ce
+qu'il prétendait prouver — la sélection s'éprouve maintenant par contrat SQL
+contre un vrai PostgreSQL ; un espace dans le champ médecin coinçait le praticien
+(`length === 0` contre `trim()`) ; le contrat de `NavItem` et le gabarit du
+handoff étaient périmés.
+
+Réfuté : trimer aussi le compteur de caractères. `maxLength` tronque sur la
+longueur brute — l'aligner annoncerait de la marge là où le navigateur coupe.
+
+Consigne posée pour la suite : **lire la revue avant chaque merge**, la vérifier
+constat par constat, et dire lesquels sont retenus et lesquels sont réfutés.
+
+Prochaine action : **LOT-03**, verrou technique de LOT-04.

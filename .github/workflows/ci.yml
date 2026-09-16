@@ -998,6 +998,15 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/c3_correspondance_ancrage_v1_negatif.sql
 
+      # C3 compteur d'attente du rail (D-210) : la sémantique « la DERNIÈRE
+      # ligne du dossier décide » vivait en TypeScript éprouvé par un mock, qui
+      # servait une liste déjà dédupliquée — il simulait la déduplication au lieu
+      # de la prouver. Elle est descendue en SQL, et c'est ici qu'elle s'éprouve.
+      - name: C3 compteur d'attente correspondance médecin
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/c3_correspondance_attente_v1.sql
+
       # Agenda alimentaire (Q_ALI_09) : AUCUN index unique sur
       # (id_assignation, date_jour) — assertion inversée, délibérée — et ses
       # invariants de DONNÉES sont vacués sur la base CI, vide. Récit :

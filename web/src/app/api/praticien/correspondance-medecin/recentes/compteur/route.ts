@@ -70,22 +70,55 @@ export async function GET(): Promise<NextResponse<CorrespondanceCompteurApiRespo
 
   try {
     const email = emailPraticien(session) ?? '';
-    // UNE LIGNE PAR DOSSIER, la plus récente. `distinct` sur `idPatient` avec un
-    // tri décroissant sur `consigneLe` retient la première rencontrée, donc la
-    // dernière consignée. `texte` et `medecinLibelle` ne sont pas sélectionnés.
-    const dernieres = await prisma.correspondanceMedecin.findMany({
-      where: { praticienEmail: email },
-      select: { idPatient: true, sens: true, consigneLe: true },
-      orderBy: [{ idPatient: 'asc' }, { consigneLe: 'desc' }],
-      distinct: ['idPatient'],
-    });
-
     const seuil = new Date(Date.now() - DELAI_ATTENTE_JOURS * JOUR_MS);
-    const nbEnAttente = dernieres.filter(
-      ligne => ligne.sens === 'sortant' && ligne.consigneLe < seuil,
-    ).length;
 
-    return NextResponse.json({ ok: true, nbEnAttente, delaiJours: DELAI_ATTENTE_JOURS });
+    // LA DÉDUPLICATION SE FAIT EN BASE, ET SEUL UN ENTIER REMONTE.
+    //
+    // La première écriture de ce compteur ramenait TOUTES les lignes du
+    // praticien (`findMany` + `distinct`), puis triait et filtrait en Node. La
+    // requête n'était bornée par rien : elle croissait avec chaque ligne
+    // d'historique, et le rail la déclenche à chaque montage — deux instances
+    // par page. Constat de revue de la PR #1148, retenu.
+    //
+    // CE QUI CHANGE EXACTEMENT, ET CE QUI NE CHANGE PAS. La déduplication
+    // descend en base : une seule ligne traverse le réseau, et Node ne trie plus
+    // rien. **Le parcours en base, lui, reste entier** — `praticien_email` ne
+    // porte aucun index (le seul de la table est `(id_patient, consigne_le)`),
+    // donc PostgreSQL balaye toujours l'historique avant de dédupliquer. Dire
+    // que le compteur « ne lit plus tout l'historique » serait faux : il ne le
+    // CHARGE plus. Constat de revue de la PR #1157, retenu.
+    //
+    // L'index qui fermerait le parcours est une migration, donc un arbitrage
+    // distinct et jamais un effet de bord. Sur un cabinet mono-praticien la
+    // colonne ne discrimine d'ailleurs rien ; l'index devient utile au second
+    // compte, pas avant.
+    //
+    // DÉPARTAGE DÉTERMINISTE, ET CONSERVATEUR. `consigne_le` est un
+    // `TIMESTAMP(3)` : deux consignations dans la même milliseconde sont
+    // possibles, et `DISTINCT ON` choisirait alors une ligne au hasard — le
+    // badge pourrait compter le mauvais sens. Sur une égalité, l'ordre départage
+    // d'abord en faveur de ce qui n'est PAS un envoi : quand on ne peut pas
+    // savoir laquelle des deux lignes est la dernière, on n'invente pas une
+    // attente ([[DC-24]]). `id` ferme ensuite le cas de l'égalité complète.
+    //
+    // `sens` est comparé au littéral `'sortant'` : une valeur hors vocabulaire
+    // n'est donc jamais comptée. La colonne n'a aucun CHECK.
+    const [ligne] = await prisma.$queryRaw<{ nb: number }[]>`
+      SELECT count(*)::int AS nb
+      FROM (
+        SELECT DISTINCT ON (id_patient) id_patient, sens, consigne_le
+        FROM correspondances_medecin
+        WHERE praticien_email = ${email}
+        ORDER BY id_patient, consigne_le DESC, (sens = 'sortant') ASC, id DESC
+      ) AS dernieres
+      WHERE sens = 'sortant' AND consigne_le < ${seuil}
+    `;
+
+    return NextResponse.json({
+      ok: true,
+      nbEnAttente: ligne?.nb ?? 0,
+      delaiJours: DELAI_ATTENTE_JOURS,
+    });
   } catch (err) {
     console.error(
       '[correspondance recentes compteur GET]',

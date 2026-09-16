@@ -311,6 +311,13 @@ describe('CorrespondanceMedecinPanel (C3 LOT-06)', () => {
     expect(champ.value).toBe('Dr Martin, médecin traitant');
     // La reprise faite, l'offre s'efface : elle ne peut plus écraser une saisie.
     expect(screen.queryByRole('button', { name: /Reprendre/ })).toBeNull();
+
+    // UN ESPACE N'EST PAS UNE SAISIE. La validation trime ; si l'offre ne
+    // trimait pas, un espace laissé dans le champ désactiverait « Consigner »
+    // ET ferait disparaître la reprise — le praticien serait coincé, sans
+    // comprendre pourquoi. Constat de revue de la PR #1151.
+    fireEvent.change(champ, { target: { value: '   ' } });
+    expect(screen.getByRole('button', { name: /Reprendre « Dr Martin, médecin traitant »/ })).toBeTruthy();
   });
 
   it('le compteur dit la borne, et la troncature cesse d’être muette', async () => {
