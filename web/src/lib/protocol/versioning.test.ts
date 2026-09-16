@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { VERSION_SCORE_EQUILIBRE } from '@/lib/equilibre/constants';
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
-import type { DecisionCard, ProtocolAction, ProtocolReview } from '@/lib/clinical-engine/types';
+import {
+  VERSION_PROTOCOL_DRAFT_V4,
+  type DecisionCard,
+  type ProtocolAction,
+  type ProtocolPhase,
+  type ProtocolReview,
+} from '@/lib/clinical-engine/types';
 import {
   clinicalContentHash,
   deriveProtocolDraftId,
@@ -58,6 +64,34 @@ function draftAt(updatedAt: string, purpose = 'Stabiliser le matin'): ReturnType
   });
 }
 
+// Fabrique V4 : les phases n'existent QUE sur ce contrat (`D-056`), et elles
+// citent des `actionId` du protocole plutôt que d'en recopier.
+function draftAvecPhases(phases: ProtocolPhase[] | undefined): ReturnType<typeof buildProtocolDraft> {
+  return buildProtocolDraft({
+    protocolDraftId: deriveProtocolDraftId('DEC_1'),
+    decisionCard,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+    purpose: 'Stabiliser le matin',
+    followUpCriterion: 'Réveils nocturnes < 2 par nuit à J21',
+    therapeuticLoad: { level: 'light', source: 'practitioner', justification: null },
+    actions: [{ ...action, interventionStatus: 'active' }],
+    phases,
+    review: { reviewedAt: '2026-01-02T00:00:00.000Z', reviewerRole: 'practitioner', confirmation: 'content_reviewed' },
+    version: VERSION_PROTOCOL_DRAFT_V4,
+  });
+}
+
+const phaseAmorce: ProtocolPhase = {
+  phaseId: 'P1',
+  duree: '7 jours',
+  objectifs: ['Amorcer'],
+  actionIds: ['A1'],
+  mesures: ['Réveils nocturnes'],
+  prerequis: [],
+  reviewAt: '2026-01-09T00:00:00.000Z',
+};
+
 describe('deriveVersionId / deriveProtocolDraftId', () => {
   it('encode le protocolDraftId en préfixe recouvrable', () => {
     expect(deriveProtocolDraftId('DEC_1')).toBe('proto_DEC_1');
@@ -110,6 +144,45 @@ describe('isClinicalChange / clinicalContentHash', () => {
   it('considère toujours une première version comme un changement', () => {
     const a = draftAt('2026-01-02T00:00:00.000Z');
     expect(isClinicalChange(null, a)).toBe(true);
+  });
+
+  // LES PHASES SONT DU CONTENU CLINIQUE. Elles portent une durée, des objectifs,
+  // des mesures, des prérequis et une date de revue — toutes choisies par le
+  // praticien, aucune fabriquée à l'enregistrement. Les omettre de l'empreinte
+  // rendait `unchanged: true` sur une édition qui ne touche qu'elles : la route
+  // n'écrivait alors AUCUNE ligne, et la saisie était perdue en silence.
+  it('une édition qui ne touche QUE les phases est un changement clinique', () => {
+    const sans = draftAvecPhases(undefined);
+    const avec = draftAvecPhases([phaseAmorce]);
+    expect(clinicalContentHash(sans)).not.toBe(clinicalContentHash(avec));
+    expect(isClinicalChange(sans, avec)).toBe(true);
+  });
+
+  // L'AUTRE SENS COMPTE AUTANT. Une version qui retire ses phases doit s'écrire :
+  // sinon le praticien croit les avoir supprimées et la version active les garde.
+  it('retirer les phases est un changement clinique', () => {
+    const avec = draftAvecPhases([phaseAmorce]);
+    const sans = draftAvecPhases(undefined);
+    expect(isClinicalChange(avec, sans)).toBe(true);
+  });
+
+  // Une modification INTERNE à une phase compte aussi : la date de revue est une
+  // décision du praticien, pas un horodatage d'enregistrement.
+  it('déplacer la date de revue d’une phase est un changement clinique', () => {
+    const avant = draftAvecPhases([phaseAmorce]);
+    const apres = draftAvecPhases([{ ...phaseAmorce, reviewAt: '2026-01-16T00:00:00.000Z' }]);
+    expect(isClinicalChange(avant, apres)).toBe(true);
+  });
+
+  // LE GARDE-FOU DE NON-RÉGRESSION, et il vaut plus que les trois ci-dessus.
+  // Ajouter un champ à l'empreinte ferait basculer en « changement clinique »
+  // TOUS les fils déjà persistés — qui ne portent aucune phase — et fabriquerait
+  // une version en double sur la prochaine soumission de chacun. La clé absente
+  // doit donc valoir exactement l'ancienne empreinte : `canonicalize` écarte les
+  // clés `undefined`, et cette valeur épinglée le prouve plutôt que de l'espérer.
+  it('n’altère pas l’empreinte d’un protocole sans phase', () => {
+    expect(clinicalContentHash(draftAvecPhases(undefined)))
+      .toBe('05ec8a00a3948e9e713390be61fd567aedbfc9f5e1189b3dc5831874ab2ee836');
   });
 
   it('persiste la date réelle de revue, distincte de la dernière modification', () => {

@@ -4,6 +4,67 @@
 
 ## Décisions actives
 
+### D-207 — Les trois défauts n'étaient pas vivants mais ARMÉS, et `D-205` §6 se corrige : le premier se ferme, les deux autres se requalifient
+
+- Date : 2026-09-16
+- Statut : accepté — **correction d'un constat gravé le jour même**, et fermeture
+  du défaut 1 par une ligne et quatre bancs.
+- Domaine : protocole 21 jours — empreinte de contenu clinique.
+- Corrige : [[D-205]] §6, qui les nommait « défauts VIVANTS » et rangeait le
+  premier « en tête ». Les trois sont réels ; **aucun n'est atteignable
+  aujourd'hui**, et le classement qui en découlait était faux.
+
+**CE QUE LA VÉRIFICATION A TROUVÉ, et qui aurait dû l'être avant de graver.**
+
+**1. `phases` — le producteur n'existe pas.** `ProtocolPhase` est un champ du
+contrat V4 (`D-056`) dont **aucune surface de production n'écrit une seule
+instance** : la route `protocoles/versions`, unique écrivain, appelle
+`buildProtocolDraft` **sans jamais passer `phases`**, et `reviseProtocolDraft`
+se contente de reporter celles de la version existante. **Aucun lecteur non
+plus** : ni la projection patient, ni le cockpit. Le scénario « le praticien
+perd sa saisie » n'est donc pas atteignable — il le deviendra le jour où une
+surface écrira des phases. Même classe que `adviceSheetRef` (fermé à l'écriture
+par `D-200`) et `limitations` (rendu par aucun écran, dette 4).
+
+**2. `suggererDepuisLignes` — le `null` ambigu ne peut pas survenir.** La table
+signée est **une échelle sur un seul terme**, `nombreActionsFermes`, borné 0 à 3
+par `MAX_ACTIONS_PROTOCOLE_21J`, et ses trois lignes couvrent
+`(-∞,1] ∪ [2,2] ∪ [3,3]` : **ni trou ni recouvrement** sur le domaine
+atteignable, le recouvrement étant de surcroît refusé par un banc de garde
+(`chevauchementsBareme(BAREME_CHARGE_V1)` vaut `[]`). Et l'écran distingue
+lui-même en amont les deux autres causes — barème non signé, aucune action
+mesurable — avant d'appeler la fonction. **La formule « trois causes, un seul
+`null` » de `D-205` était donc doublement inexacte.** L'ambiguïté naîtra le jour
+où la table gagnera un trou, un second terme ou une ligne de plus.
+
+**3. `patientLimitations` — inerte par construction.** Les quatre appelants de
+production passent `[]`, et le champ qu'il alimente n'est rendu par aucun écran.
+Inchangé, mais il n'était pas « vivant » non plus.
+
+**LA REQUALIFICATION, ET POURQUOI ELLE NE LES DÉCLASSE PAS.** Un piège armé
+n'est pas moins dangereux qu'un défaut vivant : il est plus dangereux, parce
+qu'il ne se manifestera qu'au moment où quelqu'un ajoutera la surface qui le
+déclenche — c'est-à-dire au pire moment, sous un `tsc` vert. Le dépôt a déjà
+mesuré ce que cela coûte avec `followUpCriterion`, qui a voyagé des mois jusqu'au
+patient sans écran. Ce qui change est le CLASSEMENT, pas la valeur : on les
+ferme parce qu'ils sont bon marché maintenant, pas parce qu'ils saignent.
+
+**LE DÉFAUT 1 EST FERMÉ.** `clinicalContentHash` hache désormais `phases`.
+Quatre bancs le tiennent : une édition qui ne touche que les phases est un
+changement clinique, les retirer aussi, déplacer la date de revue d'une phase
+aussi — et surtout un **banc d'épinglage** qui fige l'empreinte d'un protocole
+sans phase à sa valeur d'avant le correctif. Ce dernier est le seul qui comptait
+vraiment : ajouter un champ à une empreinte fait basculer en « changement
+clinique » tous les fils déjà persistés et fabrique une version en double sur la
+prochaine soumission de chacun. `canonicalize` écarte les clés `undefined`, donc
+l'empreinte ne bouge pas — et la valeur épinglée le **prouve** au lieu de
+l'espérer.
+
+**CE QUI RESTE.** Les défauts 2 et 3 restent ouverts, requalifiés, en file. Le
+défaut 2 n'a **aucun correctif évident** : distinguer ses causes demande de
+choisir ce que l'écran dirait dans chacune, et cela relève d'un arbitrage, pas
+d'une ligne.
+
 ### D-206 — Le catalogue de conduites est arbitré : le tableau clinique pour unité, le régime `WN-CL-0287-009` pour signature, et un seul lot borné pour véhicule
 
 - Date : 2026-09-16

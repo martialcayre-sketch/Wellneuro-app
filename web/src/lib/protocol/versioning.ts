@@ -64,6 +64,16 @@ export function clinicalContentHash(draft: ProtocolDraft): string {
     followUpCriterion: draft.followUpCriterion,
     adviceSheetRef: draft.adviceSheetRef,
     actions: draft.actions,
+    // LES PHASES SONT DU CONTENU CLINIQUE, et les omettre était un piège armé.
+    // Une phase porte une durée, des objectifs, des mesures, des prérequis et
+    // une date de revue — toutes CHOISIES par le praticien, aucune fabriquée à
+    // l'enregistrement, contrairement aux horodatages que cette empreinte écarte
+    // délibérément. Sans elles, une édition qui ne touchait qu'elles rendait
+    // `unchanged: true` : la route n'écrivait aucune ligne, et la saisie était
+    // perdue en silence. Le champ est optionnel et `canonicalize` écarte les
+    // clés `undefined` — les fils déjà persistés, qui n'en portent aucune,
+    // gardent donc exactement leur empreinte (banc d'épinglage).
+    phases: draft.phases,
     therapeuticLoad: draft.therapeuticLoad,
     limitations: draft.limitations,
   });
