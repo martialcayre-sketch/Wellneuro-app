@@ -987,6 +987,22 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/compteur_ouverture_sources_v1_negatif.sql
 
+      # Dossier administratif patient (rayon Patients, LOT-03) : adresse, NIR,
+      # médecin traitant. Les quatre colonnes doivent rester NULLABLES — un
+      # dossier ouvert avant cette date ne remplit rien —, le NIR doit refuser
+      # les formes fausses ET accepter la Corse (`2A`/`2B`), les trois colonnes
+      # texte doivent refuser une chaîne blanche (`btrim/2`, pas `btrim/1` : une
+      # tabulation passerait), et la RLS deny-all de `patients` est re-vérifiée
+      # plutôt que supposée.
+      #
+      # Un cas est POSITIF À DESSEIN : un NIR de forme juste mais de CLÉ FAUSSE
+      # passe en base. La clé se vérifie côté application ; ce contrat interdit
+      # de croire que la base la garde. Transaction annulée.
+      - name: Dossier administratif patient negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/dossier_administratif_patient_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une
