@@ -42,6 +42,22 @@ export const MODELE_COURRIER_BIOLOGIE: ModeleDocument = {
 };
 
 /**
+ * Courrier médecin — adressage sur signal d'alerte ([[D-215]], LOT-04).
+ *
+ * MÊME FORME que le courrier biologie, et pour cause : c'est le même geste —
+ * un papier remis au médecin, non prescriptif, dont la décision appartient au
+ * lecteur. Ce qu'il transmet diffère : non pas une proposition d'explorations,
+ * mais ce que le PATIENT a déclaré et qui suspend la décision du praticien.
+ */
+export const MODELE_COURRIER_ADRESSAGE: ModeleDocument = {
+  id: 'courrier_adressage',
+  titre: 'Courrier médecin — adressage sur signal d’alerte',
+  intention:
+    'Transmettre au médecin les signaux d’alerte déclarés par le patient, pour lesquels un avis médical est à évaluer avant toute proposition.',
+  typesBlocs: ['narratif'],
+};
+
+/**
  * Document patient — proposition d'explorations biologiques (décision F du
  * cadrage CB, D-122 §1). La trace écrite de ce qui est PROPOSÉ au patient et
  * pourquoi — la demande, jamais le résultat. Le registre patient est gardé
@@ -60,6 +76,7 @@ export const MODELE_DOCUMENT_PATIENT_BIOLOGIE: ModeleDocument = {
 export const MODELES_DOCUMENTS: Readonly<Record<string, ModeleDocument>> = {
   [MODELE_SUIVI_21J.id]: MODELE_SUIVI_21J,
   [MODELE_COURRIER_BIOLOGIE.id]: MODELE_COURRIER_BIOLOGIE,
+  [MODELE_COURRIER_ADRESSAGE.id]: MODELE_COURRIER_ADRESSAGE,
   [MODELE_DOCUMENT_PATIENT_BIOLOGIE.id]: MODELE_DOCUMENT_PATIENT_BIOLOGIE,
 };
 

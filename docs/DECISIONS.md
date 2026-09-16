@@ -4,6 +4,86 @@
 
 ## Décisions actives
 
+### D-216 — La lettre d'adressage existe : le seul motif cliniquement obligatoire d'écrire à un médecin cesse d'être sans chemin
+
+- Date : 2026-09-16
+- Statut : accepté — cœur de la campagne « ouverture du rayon Correspondance ».
+  Aucun arbitrage clinique nouveau : la cotation des signaux ([[D-099]]) n'est ni
+  relue, ni retouchée, ni re-signée.
+- Domaine : sécurité clinique (signaux d'alerte d'anamnèse), correspondance
+  médecin, cockpit praticien.
+- Porte sur : le geste manquant entre un blocage et sa sortie. Prolonge [[D-073]],
+  [[D-099]] et [[D-215]]. **Aucune migration, aucun `schema.prisma`, aucune table
+  signée touchée.**
+
+**1. LE BLOCAGE ÉTAIT ÉCRIT, LA SORTIE NE L'ÉTAIT PAS.** Un signal d'alerte de
+rang `adressage` inhibe la chaîne C1 : `evaluerAbstention` passe en `required`, la
+table des priorités se tait, aucun protocole n'est diffusable. Le texte de conduite
+signé dit « avis médical à évaluer en priorité, avant toute proposition ». Et
+pourtant **aucune surface n'offrait le geste, rien ne consignait qu'il avait eu
+lieu** — la mesure de production du 2026-08-23 compte 6 dossiers sur 25 concernés.
+Le praticien lisait « décision suspendue » et devait écrire au médecin hors de
+l'outil, sans trace au dossier.
+
+**2. LE GESTE EST À L'ENDROIT DU BLOCAGE.** Le panneau se monte DANS le bloc « Ce
+qui suspend la décision », sous les constats eux-mêmes — et non trois écrans plus
+loin dans l'onglet Correspondance. Le praticien lit ce qui bloque, et la seule
+sortie que la doctrine lui laisse est là, sous ses yeux.
+
+**3. RIEN N'EST RECALCULÉ, TOUT EST RECOPIÉ.** Le générateur ne cote aucun signal,
+n'en invente aucun, ne lit aucun score. Il recopie les libellés que le PATIENT a
+déclarés et le texte de conduite du rang, tels qu'ils sont écrits dans la table
+signée. La route relit les signaux par `signauxDeclares` — **la fonction pure que
+le runtime clinique utilise déjà** : deux lectures différentes feraient diverger la
+lettre du blocage qu'elle est censée porter. Le garde clinique interdit le câblage
+d'une signature, pas la recopie d'un texte signé (`DC-01`, `DC-19`).
+
+**4. LE FILTRAGE SUIT LE PRODUCTEUR DE CONSTATS, AU CAS PRÈS.** Rang `adressage` ⇒
+retenu ; rang `vigilance` ⇒ écarté, il ne suspend rien ; **libellé inconnu de la
+cotation ⇒ retenu, et la lettre le DIT** — une marque `(†)` et une phrase qui
+énonce que ce libellé n'appartient pas à la liste signée. Un signal dont on ne sait
+pas le rang est un silence sur le rang, jamais une permission (`DC-13`, `DC-24`) ;
+le faire passer pour coté serait une affirmation que la table ne soutient pas.
+
+**5. COTATION NON SIGNÉE ⇒ AUCUNE LETTRE, ET LE REFUS EST EXPLICITE.** Verrou
+fermé, `construireSafetyFindings` ne produit aucun constat : la décision n'est pas
+suspendue, et une lettre qui annoncerait un adressage n'aurait rien derrière elle.
+Ce verrou est **l'inverse des autres tables du dépôt** — il RETIRE une inhibition
+au lieu d'éteindre un moteur —, ce que [[D-099]] avait déjà écrit et que la route
+respecte plutôt que de le contourner.
+
+**6. LA LETTRE PORTE SA PROVENANCE, ET SA PROVENANCE EST UNE DÉCLARATION.** Le
+texte dit en toutes lettres que les signaux sont **déclarés par le patient**,
+qu'ils ne proviennent d'aucune passation, n'ont fait l'objet d'aucun examen, et ne
+constituent ni un diagnostic ni une hypothèse diagnostique. Lire ces libellés sans
+cette phrase ferait passer une déclaration pour une mesure — sur un papier qui part
+chez un médecin.
+
+**7. L'ANCRAGE EST CELUI DU PATRON [[D-073]], ET C'EST CE QUI EXIGEAIT
+[[D-215]].** `ancrageSha256 = SAFETY_SIGNALS_SHA256` (le SHA **vivant**),
+`ancrageVersion = 'safety-signals-nnpp2-v1'` (littéral estampillé, jamais dérivé
+d'une métadonnée — [[D-079]]). Le littéral entre dans `SHA_ATTENDU_PAR_VERSION` :
+sans cette ligne, chaque lettre d'adressage lirait « référence inconnue » dans le
+fil, et sous le verdict en dur d'avant [[D-215]] elle aurait lu « ancrage périmé ».
+
+**8. UN DRAPEAU, ET LE FIL MÉDECIN N'EN A AUCUN.** `WN_ADRESSAGE_COURRIER`,
+fail-closed, **neuf et éteint à la livraison**. La distinction se tient : le fil
+consigne un geste déjà fait hors de l'outil, cette route-ci **produit** un document
+qui nomme des signaux d'alerte et part vers un tiers. Si la revue RGPD du
+2026-10-21 imposait une suspension, il n'existerait sinon aucun geste d'exploitation
+pour la produire.
+
+Le GET de disponibilité **ne nomme aucun dossier** — il ne dit que l'état du
+drapeau — et il ne part **que là où le geste pourrait s'afficher** : ni sur les
+dossiers sans signal, ni sur la fixture ergonomique, qui promet de ne contacter
+aucun serveur. Deux bancs du cockpit l'ont exigé.
+
+**9. CE QUE CE LOT NE FAIT PAS : lever l'abstention.** Une lettre consignée
+**TRACE** l'adressage, elle ne le vaut pas. L'écran le dit au praticien avant qu'il
+clique, et le registre le dit ici. Si l'abstention doit pouvoir se lever sur preuve
+d'adressage, c'est un arbitrage clinique distinct, qui touche la chaîne C1 — **il
+n'est pas rendu**.
+
 ### D-215 — Le courrier biologie devient un papier signé, et le verdict d'ancrage se rend par la version portée par la ligne
 
 - Date : 2026-09-16

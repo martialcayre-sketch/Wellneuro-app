@@ -21,7 +21,9 @@ export type SourceBloc =
   | 'synthese_praticien'
   | 'synthese_ia'
   /** Proposition de bilan biologique dérivée de la table d'indications signée (LOT-06). */
-  | 'biologie_proposition';
+  | 'biologie_proposition'
+  /** Signaux d'alerte DÉCLARÉS à l'anamnèse, cotés par la table signée ([[D-215]]). */
+  | 'signaux_securite_anamnese';
 
 /**
  * Régime de contenu — jamais mélangés dans un rendu diffusé :

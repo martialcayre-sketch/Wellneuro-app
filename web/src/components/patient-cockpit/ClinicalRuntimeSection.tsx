@@ -43,6 +43,11 @@ import {
 import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
 import { appliquerArbitrages } from '@/lib/biology-library/revision';
 import {
+  AdressagePanel,
+  type AdressageEtabli,
+  type AdressageState,
+} from './AdressagePanel';
+import {
   PropositionBilanPanel,
   type CourrierEtabli,
   type DocumentPatientEtabli,
@@ -363,6 +368,13 @@ export function ClinicalRuntimeSection({
   const [propositionState, setPropositionState] = useState<PropositionState>('idle');
   const [propositionError, setPropositionError] = useState<string | null>(null);
   const [courrier, setCourrier] = useState<CourrierEtabli | null>(null);
+  // Lettre d'adressage ([[D-215]]). `adressageOuvert` reste faux tant que la
+  // route n'a pas répondu `ok` : c'est LUI qui porte `WN_ADRESSAGE_COURRIER`,
+  // sans second FeatureProvider — un 503 laisse simplement le geste absent.
+  const [adressageOuvert, setAdressageOuvert] = useState(false);
+  const [adressage, setAdressage] = useState<AdressageEtabli | null>(null);
+  const [adressageErreur, setAdressageErreur] = useState<string | null>(null);
+  const [adressageState, setAdressageState] = useState<AdressageState>('idle');
   const [courrierErreur, setCourrierErreur] = useState<string | null>(null);
   const [documentPatient, setDocumentPatient] = useState<DocumentPatientEtabli | null>(null);
   // UN SEUL état de refus (raison + message + empreinte du texte refusé) : trois
@@ -733,6 +745,76 @@ export function ClinicalRuntimeSection({
       }
     },
     [idPatient, loadProposition],
+  );
+
+  // Disponibilité de la lettre d'adressage. CE GET NE NOMME AUCUN DOSSIER :
+  // il ne dit que l'état du drapeau, donc il n'écrit aucune ligne au journal
+  // d'accès. Lui passer `idPatient` ajouterait une lecture de dossier nommé à
+  // chaque chargement du cockpit, pour une lecture que personne n'a demandée.
+  const chargerAdressageOuvert = useCallback(async () => {
+    try {
+      const response = await fetch('/api/praticien/adressage/courrier');
+      const payload = (await response.json()) as { ok?: boolean };
+      setAdressageOuvert(response.ok && payload.ok === true);
+    } catch {
+      // Une panne réseau laisse le geste ABSENT, jamais offert à vide : un
+      // bouton qui échouerait au clic vaut moins que pas de bouton.
+      setAdressageOuvert(false);
+    }
+  }, []);
+
+
+  // Le dossier change : la lettre établie pour le précédent ne doit pas rester
+  // à l'écran d'un autre patient.
+  useEffect(() => {
+    setAdressage(null);
+    setAdressageErreur(null);
+  }, [idPatient]);
+
+  // Lettre d'adressage : le texte est GÉNÉRÉ ET CONSIGNÉ côté serveur ; l'écran
+  // ne fournit que le nom du destinataire et n'affiche que ce qui revient.
+  const etablirAdressage = useCallback(
+    async (medecinLibelle: string) => {
+      setAdressageState('saving');
+      setAdressageErreur(null);
+      try {
+        const response = await fetch('/api/praticien/adressage/courrier', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idPatient, medecinLibelle }),
+        });
+        const payload = (await response.json()) as {
+          ok?: boolean;
+          error?: string;
+          texte?: string;
+          html?: string;
+          ancrageSha256?: string;
+          ancrageVersion?: string;
+        };
+        setAdressageState('idle');
+        if (!response.ok || !payload.ok || !payload.texte) {
+          setAdressage(null);
+          // Le refus du serveur est affiché TEL QUEL : ses motifs — aucun
+          // signal d'adressage, cotation non signée, dossier clos — sont
+          // écrits pour être lus par le praticien.
+          setAdressageErreur(payload.error ?? 'La lettre n’a pas pu être établie.');
+          return;
+        }
+        setAdressage({
+          texte: payload.texte,
+          // Le rendu imprimable est SERVI, jamais recomposé : absent, l'écran
+          // n'offre pas d'impression et retombe sur la transcription.
+          html: payload.html ?? '',
+          ancrageSha256: payload.ancrageSha256 ?? '',
+          ancrageVersion: payload.ancrageVersion ?? '',
+        });
+      } catch {
+        setAdressageState('idle');
+        setAdressage(null);
+        setAdressageErreur('La lettre n’a pas pu être établie.');
+      }
+    },
+    [idPatient],
   );
 
   // Courrier médecin : le texte est GÉNÉRÉ ET CONSIGNÉ côté serveur ; l'écran
@@ -1467,6 +1549,17 @@ export function ClinicalRuntimeSection({
   };
 
   const review = fixture?.review ?? (runtime?.status === 'ready' ? runtime.review : null);
+
+  // IL NE PART QUE LÀ OÙ LE GESTE PEUT EXISTER, et deux bancs l'ont exigé.
+  // Inconditionnel, ce GET partait sur CHAQUE dossier — dont les 19 sur 25 qui
+  // ne portent aucun signal d'alerte — et jusque sur la fixture ergonomique,
+  // qui promet de ne contacter aucun serveur. Demander si le geste est ouvert
+  // n'a de sens que là où il s'afficherait.
+  const decisionSuspendueParSignal = (review?.safetyFindings?.length ?? 0) > 0;
+  useEffect(() => {
+    if (fixture || !decisionSuspendueParSignal) return;
+    void chargerAdressageOuvert();
+  }, [fixture, decisionSuspendueParSignal, chargerAdressageOuvert]);
   // Lus depuis la réponse serveur, jamais recalculés ici : l'objectif prioritaire
   // vit dans le snapshot (donc dans son empreinte), le statut d'abstention dans
   // la revue. Un écran qui les redériverait pourrait afficher autre chose que ce
@@ -1703,6 +1796,18 @@ export function ClinicalRuntimeSection({
               />
             ))}
           </div>
+          {/* LA SEULE SORTIE QUE LA DOCTRINE LAISSE, à l'endroit du blocage.
+              Le praticien lit ici « ce qui suspend la décision » ; c'est ici
+              que le geste d'adressage doit se trouver, et non trois écrans
+              plus loin dans l'onglet Correspondance. */}
+          {adressageOuvert && (
+            <AdressagePanel
+              lettre={adressage}
+              erreur={adressageErreur}
+              state={adressageState}
+              onEtablir={etablirAdressage}
+            />
+          )}
         </section>
       )}
 
