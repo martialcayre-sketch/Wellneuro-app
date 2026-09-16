@@ -550,12 +550,19 @@ test('la garde des migrations non approuvées porte son propre refus', () => {
   const etape = bloc.slice(debut, bloc.indexOf('Release en one-off'));
   const garde = etape.indexOf('git diff --quiet "$GITHUB_SHA" "$TETE" -- web/prisma/migrations/');
   assert.ok(garde > -1, 'la comparaison des dossiers de migrations a disparu');
-  // La tranche qui suit la comparaison, jusqu'au `fi` qui la ferme : le refus doit
-  // vivre LÀ, pas ailleurs dans l'étape.
-  const suite = etape.slice(garde, etape.indexOf('\n          fi', garde));
+  // La tranche qui suit la comparaison, jusqu'au premier `echo` après la garde :
+  // on couvre ainsi le chemin `push` (obsolète, sortie 0) ET le refus strict
+  // (workflow_dispatch, sortie 1) sans se tromper de `fi` imbriqué.
+  const suite = etape.slice(garde, etape.indexOf('\n            echo "… la tête de main', garde));
+  assert.match(
+    suite,
+    /\[ "\$\{GITHUB_EVENT_NAME:-\}" = "push" \]/,
+    'un run push dépassé par des migrations plus récentes doit être marqué obsolète',
+  );
+  assert.match(suite, /exit 0/, 'le chemin obsolète des runs push doit sortir sans échec');
   assert.match(
     suite,
     /exit 1/,
-    'une tête apportant des migrations non approuvées doit ARRÊTER le déclenchement, pas seulement le signaler',
+    'hors push (ex. workflow_dispatch), une tête apportant des migrations non approuvées doit ARRÊTER le déclenchement',
   );
 });
