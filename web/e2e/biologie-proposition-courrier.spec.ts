@@ -211,6 +211,20 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     await expect(texte).toBeVisible();
     await expect(texte).toHaveValue(/\S/);
 
+    // LE PAPIER ([[D-214]]) : le rendu du serveur est servi ET affiché. Le
+    // vérifier ici, et pas seulement au banc, est ce qui prouve la chaîne
+    // entière — génération, garde non prescriptive, transport, aperçu.
+    const apercu = panneau.getByTitle('Aperçu imprimable du courrier au médecin');
+    await expect(apercu).toBeVisible();
+    // La signature est DANS le texte consigné, donc dans les deux chemins de
+    // remise : c'est elle qui dit au médecin que l'auteur n'est pas médecin.
+    await expect(texte).toHaveValue(/Docteur en Pharmacie/);
+    await expect(
+      panneau.getByRole('button', { name: 'Imprimer le courrier' }),
+    ).toBeVisible();
+    // Le second chemin n'a pas été remplacé par le premier.
+    await expect(texte).toBeVisible();
+
     // Point 5 — une seconde consignation au MÊME destinataire est refusée.
     // Le verrou est côté écran (la campagne le nomme : deux onglets peuvent
     // encore établir deux lettres) : c'est bien le bouton qu'il faut éprouver,
@@ -231,5 +245,10 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     // Une lettre sans ancre ne dirait RIEN (DC-24) — c'est ce silence-là que
     // le verdict ne doit pas confondre avec une péremption.
     await expect(page.getByText(/ancrage concordant/).first()).toBeVisible();
+
+    // Et le libellé suit l'ORIGINE ([[D-214]] §6) : cette ligne a été GÉNÉRÉE
+    // au moment où le papier est sorti, avant toute remise — « Envoi consigné »
+    // y affirmerait un geste que personne n'a fait.
+    await expect(page.getByText(/Courrier préparé/).first()).toBeVisible();
   });
 });

@@ -751,6 +751,7 @@ export function ClinicalRuntimeSection({
           ok: boolean;
           error?: string;
           texte?: string;
+          html?: string;
           ancrageSha256?: string;
           ancrageVersion?: string;
         };
@@ -762,6 +763,10 @@ export function ClinicalRuntimeSection({
         }
         setCourrier({
           texte: payload.texte,
+          // Le rendu imprimable est SERVI, jamais recomposé : absent, l'écran
+          // n'offre pas d'impression et retombe sur la transcription, plutôt
+          // que d'imprimer une lettre qu'aucune garde n'a lue.
+          html: payload.html ?? '',
           ancrageSha256: payload.ancrageSha256 ?? '',
           ancrageVersion: payload.ancrageVersion ?? '',
         });

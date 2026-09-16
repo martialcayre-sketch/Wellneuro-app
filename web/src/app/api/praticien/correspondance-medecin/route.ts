@@ -8,6 +8,7 @@ import {
   preparerCorrespondance,
   sensExpose,
   type SensCorrespondance,
+  type VerdictAncre,
 } from '@/lib/praticien/correspondanceMedecin';
 import {
   accepteNouvelEnvoi,
@@ -50,8 +51,18 @@ const ROUTE_JOURNAL = '/api/praticien/correspondance-medecin';
  * `sans_ancrage` n'est PAS `perimee` ([[DC-24]]) : une lettre sans ancre est
  * antérieure à [[D-073]], ou n'est pas un courrier biologique. La présenter
  * comme périmée ferait porter un soupçon à tout l'historique.
+ *
+ * `reference_inconnue` n'est PAS `perimee` non plus, et pour la même raison :
+ * une ancre dont la VERSION n'est dans aucune table connue du produit n'a pas
+ * bougé — c'est le produit qui ne sait pas la lire. Dire « périmée » ferait
+ * de chaque lettre d'un écrivain non enregistré une fausse alerte.
+ *
+ * COMPOSÉ, JAMAIS RECOPIÉ : les verdicts qui attestent une ancre vivent dans
+ * le domaine, qui s'en sert pour nommer les lignes du fil. Deux listes
+ * auraient divergé — un verdict neuf ici, et l'écran cesserait silencieusement
+ * de reconnaître l'origine des lettres qui le portent.
  */
-export type VerdictAncrage = 'concordante' | 'perimee' | 'sans_ancrage';
+export type VerdictAncrage = VerdictAncre | 'sans_ancrage';
 
 export type CorrespondanceExposee = {
   id: string;
@@ -109,17 +120,35 @@ function echec(reason: string, error: string, status: number) {
 }
 
 /**
- * Version de la table d'indications à laquelle une ancre doit correspondre.
+ * ANCRAGES CONNUS — la version portée par la ligne → le SHA qu'elle doit
+ * porter. UN SEUL écrivain ancré existe aujourd'hui ; la table est le verrou
+ * du SECOND.
  *
- * COPIE ASSUMÉE du littéral écrit par `genererCourrierBiologie`
- * (`lib/biology-library/courrier.ts`, bloc `provenance`) : ce fichier est une
- * table SIGNÉE, et y ajouter un export serait une modification clinique
- * ([[DC-17]], [[DC-18]]). Deux littéraux peuvent diverger en silence — et une
- * divergence ferait dire « périmée » à des lettres concordantes. Le banc de
- * cette route épingle la copie sur la source : il génère un vrai courrier et
- * sert sa provenance telle quelle. Il rougit si l'un des deux bouge.
+ * Le verdict se rendait en dur contre la table d'indications biologiques.
+ * Une lettre ancrée sur une AUTRE table signée — la lettre d'adressage, sur
+ * les signaux de sécurité — aurait donc porté « ancrage périmé » sur chacune
+ * de ses lignes, sans qu'aucune règle clinique n'ait bougé : une fausse
+ * alerte sur toute une chaîne, produite par la seule arrivée d'un second
+ * écrivain. Le verdict se rend donc PAR la version que la ligne déclare.
+ *
+ * COPIE ASSUMÉE des littéraux écrits par les générateurs — ici
+ * `genererCourrierBiologie` (`lib/biology-library/courrier.ts`, bloc
+ * `provenance`) : ces fichiers sont des tables SIGNÉES, et y ajouter un
+ * export serait une modification clinique ([[DC-17]], [[DC-18]]). Deux
+ * littéraux peuvent diverger en silence — et une divergence ferait dire
+ * « périmée » à des lettres concordantes. Le banc de cette route épingle la
+ * copie sur la source : il génère un vrai courrier et sert sa provenance
+ * telle quelle. Il rougit si l'un des deux bouge. UN ÉCRIVAIN AJOUTÉ SANS SA
+ * LIGNE ICI ne ment pas pour autant : il rend `reference_inconnue`.
+ *
+ * Une `Map` et non un objet : la clé vient de la BASE, pas du code, et une
+ * ligne dont la version vaudrait `constructor` ou `toString` ferait rendre à
+ * un `Record` une valeur héritée du prototype — donc « périmée » au lieu de
+ * « inconnue ». `Map.get` ne connaît que ce qu'on y a mis.
  */
-const VERSION_INDICATIONS_ATTENDUE = 'indications-biologie-v1';
+const SHA_ATTENDU_PAR_VERSION: ReadonlyMap<string, string> = new Map([
+  ['indications-biologie-v1', INDICATIONS_BIOLOGIE_SHA256],
+]);
 
 /**
  * Le verdict se rend sur les DEUX termes, et chacun détecte autre chose — la
@@ -154,9 +183,12 @@ function verdictAncrage(sha: string | null, version: string | null): VerdictAncr
   // une donnée ABSENTE, jamais un défaut à afficher ([[DC-24]]) — cette garde
   // applicative est une défense en profondeur, et les deux sens sont éprouvés.
   if (!sha || !version) return 'sans_ancrage';
-  return sha === INDICATIONS_BIOLOGIE_SHA256 && version === VERSION_INDICATIONS_ATTENDUE
-    ? 'concordante'
-    : 'perimee';
+  const attendu = SHA_ATTENDU_PAR_VERSION.get(version);
+  // La version inconnue sort AVANT la comparaison : sans cette porte, toute
+  // ancre non enregistrée retomberait sur « périmée » — le faux positif que
+  // la table existe pour supprimer.
+  if (attendu === undefined) return 'reference_inconnue';
+  return sha === attendu ? 'concordante' : 'perimee';
 }
 
 function exposer(ligne: {

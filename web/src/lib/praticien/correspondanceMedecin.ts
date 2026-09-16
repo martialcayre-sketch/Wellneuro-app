@@ -62,6 +62,55 @@ export function sensExpose(valeur: unknown): SensCorrespondance | null {
   return estSens(valeur) ? valeur : null;
 }
 
+/**
+ * Une ligne ANCRÉE n'a pas été remise : elle a été GÉNÉRÉE.
+ *
+ * Les deux colonnes d'ancrage ([[D-073]]) ne se posent que par un générateur
+ * serveur — le courrier biologie aujourd'hui. Cette ligne-là est écrite au
+ * moment où le papier est produit, avant toute remise : la donner pour un
+ * « Envoi consigné » affirme un geste que personne n'a fait, et c'est le faux
+ * positif que le fil sert depuis l'ouverture du courrier biologie.
+ *
+ * L'inverse n'est pas vrai et n'est pas supposé : une ligne SANS ancre n'est
+ * pas pour autant remise à la main — elle est seulement une ligne dont
+ * l'origine ne se lit pas, et `libelleSens` la rend comme avant.
+ */
+export const LIBELLE_ORIGINE_GENEREE = 'Courrier préparé';
+
+/**
+ * Les verdicts d'ancrage qui ATTESTENT une ancre — la route compose son
+ * `VerdictAncrage` d'eux et de `sans_ancrage`, cette liste est donc la source
+ * unique et ne peut pas dériver.
+ *
+ * L'énumération est délibérée, et c'est l'inverse de `!== 'sans_ancrage'` :
+ * un verdict que le domaine ne connaît pas — absent d'une charge ancienne,
+ * futur, illisible — n'atteste RIEN. La ligne retombe alors sur son sens,
+ * c'est-à-dire sur ce qui était affiché avant, plutôt que de gagner une
+ * origine que personne n'a servie ([[DC-24]]).
+ */
+export const VERDICTS_ANCRES = ['concordante', 'perimee', 'reference_inconnue'] as const;
+export type VerdictAncre = (typeof VERDICTS_ANCRES)[number];
+
+/** `true` seulement si le verdict servi atteste une ancre. */
+export function estAncree(verdict: unknown): boolean {
+  return VERDICTS_ANCRES.some((connu) => connu === verdict);
+}
+
+/**
+ * Le libellé d'une ligne du fil : l'origine prime sur le sens quand elle se
+ * lit. L'origine se lit dans le VERDICT servi par la route — jamais dans un
+ * SHA recomparé à l'écran.
+ */
+export function libelleLigne(valeur: unknown, verdictAncrage: unknown): string {
+  // Une réponse TRANSCRITE reste une réponse transcrite, ancre ou pas : aucun
+  // générateur n'écrit `entrant` aujourd'hui, et si l'un s'y mettait, « Courrier
+  // préparé » retournerait le sens de l'échange. Le sens lu gagne.
+  if (estAncree(verdictAncrage) && sensExpose(valeur) !== 'entrant') {
+    return LIBELLE_ORIGINE_GENEREE;
+  }
+  return libelleSens(valeur);
+}
+
 /** Une lettre transcrite dépasse une note de relecture (4000) ; au-delà de
  *  8000, ce n'est plus une transcription mais une archive à tenir ailleurs. */
 export const LONGUEUR_MAX_TEXTE = 8000;

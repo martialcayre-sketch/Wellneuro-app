@@ -40,6 +40,8 @@
 // un composant client via `relanceEmail` → le recalcul d'empreinte vit dans le
 // banc, comme dans le patron trust — les hashs sont des littéraux ici.
 
+import { SIGNATURE_PRATICIEN } from './signature';
+
 export type ConformiteDonneesSante =
   | { statut: 'conforme' }
   | { statut: 'ecart'; ecart: string };
@@ -350,10 +352,7 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
       'On ne vous demandera jamais de coordonnées bancaires, de numéro de carte ni ' +
       'de mot de passe. Une question, un doute sur un message reçu : écrivez-moi à ' +
       'martialcayre@wellneuro.fr.\n\n' +
-      'Martial Cayre\n' +
-      'Docteur en Pharmacie — praticien en santé fonctionnelle\n' +
-      'Labellisé Neuro-Nutrition® (Institut SIIN)\n' +
-      'Wellneuro — wellneuro.fr',
+      SIGNATURE_PRATICIEN,
     variables: ['prenom', 'connexion'],
     // Ni instrument, ni domaine clinique, ni chiffre : « ce qui vous amène »
     // ne nomme rien du dossier. La qualité du praticien n'est pas une donnée
@@ -396,10 +395,7 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
       'On ne vous demandera jamais de coordonnées bancaires, de numéro de carte ni ' +
       'de mot de passe. Une question, un doute sur un message reçu : écrivez-moi à ' +
       'martialcayre@wellneuro.fr.\n\n' +
-      'Martial Cayre\n' +
-      'Docteur en Pharmacie — praticien en santé fonctionnelle\n' +
-      'Labellisé Neuro-Nutrition® (Institut SIIN)\n' +
-      'Wellneuro — wellneuro.fr',
+      SIGNATURE_PRATICIEN,
     variables: ['prenom', 'connexion', 'lien'],
     // Ni instrument, ni domaine clinique, ni chiffre — comme la v2 dont il
     // reprend le texte au caractère près, hors le paragraphe du lien.
@@ -444,10 +440,7 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
       'On ne vous demandera jamais de coordonnées bancaires, de numéro de carte ni ' +
       'de mot de passe. Une question, un doute sur un message reçu : écrivez-moi à ' +
       'martialcayre@wellneuro.fr.\n\n' +
-      'Martial Cayre\n' +
-      'Docteur en Pharmacie — praticien en santé fonctionnelle\n' +
-      'Labellisé Neuro-Nutrition® (Institut SIIN)\n' +
-      'Wellneuro — wellneuro.fr',
+      SIGNATURE_PRATICIEN,
     variables: ['prenom', 'connexion'],
     // Ni instrument, ni domaine clinique, ni chiffre — et surtout PAS l'énoncé
     // de l'objectif, qui reste dans l'espace.
@@ -490,10 +483,7 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
       'On ne vous demandera jamais de coordonnées bancaires, de numéro de carte ni ' +
       'de mot de passe. Une question, un doute sur un message reçu : écrivez-moi à ' +
       'martialcayre@wellneuro.fr.\n\n' +
-      'Martial Cayre\n' +
-      'Docteur en Pharmacie — praticien en santé fonctionnelle\n' +
-      'Labellisé Neuro-Nutrition® (Institut SIIN)\n' +
-      'Wellneuro — wellneuro.fr',
+      SIGNATURE_PRATICIEN,
     variables: ['prenom', 'connexion'],
     // Ni instrument, ni domaine clinique, ni chiffre — et surtout PAS l'énoncé
     // de l'objectif, qui reste dans l'espace.

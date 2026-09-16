@@ -4,6 +4,85 @@
 
 ## Décisions actives
 
+### D-214 — Le courrier biologie devient un papier signé, et le verdict d'ancrage se rend par la version portée par la ligne
+
+- Date : 2026-09-16
+- Statut : accepté — lot suivant de la campagne « ouverture du rayon
+  Correspondance ». **Deux arbitrages du responsable** : le mot du cadre médecin,
+  et la place du signataire.
+- Domaine : courrier médecin de la proposition de bilan, rendu documentaire, fil
+  de correspondance.
+- Porte sur : ce qui sort du cabinet sur papier, et sur le verdict d'ancrage qui
+  sera lu par un second écrivain. Prolonge [[D-073]] et [[D-079]]. Ne touche ni le
+  schéma, ni les gardes des routes, ni aucune table signée.
+
+**1. LE RENDU ÉTAIT CALCULÉ PUIS JETÉ.** `genererCourrierBiologie` produisait
+`html`, la route ne renvoyait que `{ texte, ancrage… }`, et aucun consommateur ne
+lisait `courrier.html`. L'écran offrait une zone de texte à recopier pour une
+lettre qui a vocation à être imprimée. Le rendu est servi, l'aperçu s'imprime au
+patron de `DocumentsPanel` (iframe `srcDoc`, `contentWindow.print()`), et **la
+zone de texte reste dessous** : la transcription à la main est un chemin de remise
+valide, pas un pis-aller. Les deux formes viennent du même rendu — celui que
+`assertRenduMedecinNonPrescriptif` a jugé. Le `html` n'est **pas** consigné : la
+base garde le texte, l'impression est un artefact de sortie.
+
+**2. LE SIGNATAIRE ENTRE DANS LE TEXTE, PAS DANS LE GABARIT D'IMPRESSION.**
+*(Arbitrage du responsable.)* Le corps allait de « Docteur, » à une date, sans
+signataire : remis à un médecin, il ne disait ni qui l'écrit, ni à quel titre — et
+« Docteur en Pharmacie » est précisément ce qui dit au lecteur que l'auteur n'est
+pas médecin. Le bloc existait, recopié dans quatre gabarits du registre signé ; il
+en sort pour un module partagé. **Aucun des quatre corps ne change** : les quatre
+empreintes inchangées du hash-lock le prouvent à chaque CI, et c'est ce qui rendait
+l'extraction préférable à une cinquième copie, qui aurait laissé la qualité du
+praticien diverger entre l'e-mail et le papier. La signature est dans le texte
+**généré** : posée dans le seul HTML, elle manquerait à la lettre transcrite et
+échapperait à la garde de vocabulaire au lieu de passer dessous.
+
+**3. « INTERPROFESSIONNEL », PLUS « CONFRATERNEL ».** *(Arbitrage du responsable.)*
+Le cadre du rendu médecin devient du papier signé par un pharmacien. Entre deux
+ordres distincts, le mot laissait lire une qualité que l'auteur n'a pas, pour un
+gain de courtoisie nul : la phrase dit déjà que ce sont des explorations à
+discuter. **Écarté : assumer l'écart par écrit** au motif que la signature lève
+l'ambiguïté — elle la lève en effet, mais le mot ne servait plus à rien une fois la
+qualité écrite en toutes lettres. Noter que ces phrases fixes sont concaténées
+**après** la garde non prescriptive, et lui échappent par construction : elles ne
+se relisent donc qu'ici.
+
+**4. L'EN-TÊTE NOMME LE PATIENT, LA LIGNE CONSIGNÉE NON.** Une lettre remise à un
+médecin sans nom de patient n'est pas exploitable. Le nom vient du dossier — sous
+une lecture déjà journalisée par la garde de la route — et entre dans le HTML
+seul. La ligne de `CorrespondanceMedecin` n'a pas à porter une identité que le
+dossier porte déjà.
+
+**5. LE VERDICT D'ANCRAGE SE REND PAR LA VERSION. C'est le verrou du second
+écrivain.** `verdictAncrage` comparait en dur à `INDICATIONS_BIOLOGIE_SHA256` et au
+littéral `'indications-biologie-v1'` : **toute lettre ancrée sur une autre table
+signée aurait porté « ancrage périmé »**, sur chacune de ses lignes, sans qu'aucune
+règle clinique n'ait bougé — une fausse alerte sur toute une chaîne, produite par la
+seule arrivée d'un second écrivain. Une table `ancrageVersion → SHA attendu` la
+remplace, littéral par littéral. La **valeur** reste le SHA vivant de la table
+visée, recalculé à l'import : un contenu de référence qui bouge périme toujours les
+lettres parties avant lui ([[D-079]] : le SHA fait foi, et l'estampille ne dérive
+d'aucune métadonnée).
+
+Une version que la table ne connaît pas rend `reference_inconnue`, **et non
+`perimee`** : l'ancre n'a pas bougé, c'est le produit qui ne sait pas la lire —
+même patron que `sans_ancrage`, qui n'est pas `perimee` ([[DC-24]]). C'est une
+`Map` et non un objet indexé : la clé vient de la BASE, et une ligne dont la
+version vaudrait `constructor` ou `toString` ferait rendre à un `Record` une valeur
+héritée du prototype, donc un « périmée » fabriqué par la structure de données
+elle-même.
+
+**6. LE LIBELLÉ DU FIL SUIT L'ORIGINE.** Une ligne ancrée a été **générée** au
+moment où le papier est sorti, avant toute remise : « Envoi consigné » y affirmait
+un geste que personne n'avait fait — un faux positif servi depuis l'ouverture du
+courrier biologie. Elle se lit « Courrier préparé ». L'origine se lit dans le
+**verdict servi**, jamais dans un SHA recomparé à l'écran ; une réponse transcrite
+garde son sens même ancrée ; et un verdict absent ou illisible n'atteste **aucune**
+ancre — la ligne retombe alors sur son sens, c'est-à-dire sur ce qui était affiché
+avant. Les verdicts qui attestent une ancre vivent dans le domaine, et le contrat
+de la route compose son type d'eux : deux listes auraient divergé en silence.
+
 ### D-213 — Treize arbitrages rendus d'un coup : la relecture cesse d'être un tampon, la frontière patient perd un champ mort, et la Boussole reçoit son programme
 
 - Date : 2026-09-16

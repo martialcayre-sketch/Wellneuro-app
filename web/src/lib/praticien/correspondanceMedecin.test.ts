@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  estAncree,
+  libelleLigne,
   libelleSens,
+  LIBELLE_ORIGINE_GENEREE,
   LIBELLE_SENS_INDETERMINE,
   LIBELLES_SENS,
   LONGUEUR_MAX_MEDECIN_LIBELLE,
   LONGUEUR_MAX_TEXTE,
   preparerCorrespondance,
   sensExpose,
+  VERDICTS_ANCRES,
 } from './correspondanceMedecin';
 
 const BASE = {
@@ -168,6 +172,53 @@ describe('libelleSens', () => {
 
   it('le libellé indéterminé reste vrai des deux sens — il ne nomme aucune direction', () => {
     expect(LIBELLE_SENS_INDETERMINE).not.toMatch(/envoi|réponse|reçu|transmis/i);
+  });
+});
+
+describe('libelleLigne — l’origine prime sur le sens quand elle se lit', () => {
+  it('une ligne ANCRÉE se dit préparée, jamais « envoyée » — sur les TROIS verdicts', () => {
+    // Les deux colonnes d'ancrage ne se posent que par un générateur serveur,
+    // au moment où le papier sort — avant toute remise. « Envoi consigné »
+    // affirmait là un geste que personne n'avait fait. Le verdict de
+    // concordance n'y change rien : c'est la PRÉSENCE de l'ancre qui dit
+    // l'origine, pas sa fraîcheur.
+    for (const verdict of VERDICTS_ANCRES) {
+      expect(libelleLigne('sortant', verdict)).toBe(LIBELLE_ORIGINE_GENEREE);
+      expect(libelleLigne('sortant', verdict)).not.toBe(LIBELLES_SENS.sortant);
+    }
+  });
+
+  it('sans ancre, rien ne change : le sens lu fait foi', () => {
+    expect(libelleLigne('sortant', 'sans_ancrage')).toBe(LIBELLES_SENS.sortant);
+    expect(libelleLigne('entrant', 'sans_ancrage')).toBe(LIBELLES_SENS.entrant);
+    for (const valeur of HORS_VOCABULAIRE) {
+      expect(libelleLigne(valeur, 'sans_ancrage')).toBe(LIBELLE_SENS_INDETERMINE);
+    }
+  });
+
+  it('un verdict ABSENT ou illisible n’atteste aucune ancre', () => {
+    // Le défaut qu'a trouvé le banc du panneau : `!== 'sans_ancrage'` faisait
+    // d'une charge sans verdict — un client ancien, une route qui oublie le
+    // champ — une ligne « préparée ». L'inconnu ne vaut pas une origine ; la
+    // ligne retombe sur ce qui était affiché avant.
+    for (const verdict of [undefined, null, '', 'concordant', 3, {}]) {
+      expect(libelleLigne('sortant', verdict)).toBe(LIBELLES_SENS.sortant);
+      expect(estAncree(verdict)).toBe(false);
+    }
+  });
+
+  it('une réponse TRANSCRITE reste transcrite, même ancrée', () => {
+    // Aucun générateur n'écrit `entrant` aujourd'hui ; si l'un s'y mettait,
+    // « Courrier préparé » retournerait le sens de l'échange sous les yeux du
+    // praticien. Le sens lu gagne.
+    expect(libelleLigne('entrant', 'concordante')).toBe(LIBELLES_SENS.entrant);
+  });
+
+  it('un sens illisible ET ancré ne devient pas une direction', () => {
+    // L'ancre dit l'ORIGINE, pas la direction : « Courrier préparé » n'affirme
+    // ni envoi ni réponse, il reste donc vrai ici.
+    expect(libelleLigne('valeur_inattendue', 'concordante')).toBe(LIBELLE_ORIGINE_GENEREE);
+    expect(LIBELLE_ORIGINE_GENEREE).not.toMatch(/envoi|réponse|reçu|transmis/i);
   });
 });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { LimiteProposition } from '@/lib/biology-library/propositionService';
 import type { LignePanelProposition, StatutPanel } from '@/lib/biology-library/statuts';
 import { STATUTS_PROPOSES } from '@/lib/biology-library/courrier';
@@ -19,9 +19,15 @@ import { STATUTS_PROPOSES } from '@/lib/biology-library/courrier';
 
 export type PropositionState = 'idle' | 'saving' | 'saved' | 'error';
 
-/** Courrier établi : le texte à transcrire, et l'ancre qui l'explique. */
+/** Courrier établi : les deux formes de la MÊME lettre, et l'ancre qui l'explique. */
 export type CourrierEtabli = {
   texte: string;
+  /**
+   * Rendu imprimable, produit par le serveur et passé par la garde non
+   * prescriptive — jamais recomposé ici : un second gabarit à l'écran
+   * imprimerait une lettre que personne n'a jugée.
+   */
+  html: string;
   ancrageSha256: string;
   ancrageVersion: string;
 };
@@ -156,6 +162,7 @@ function FormulaireCourrier({
   // destinataire — deux clics rapprochés n'écrivent qu'une ligne.
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
   const [consigneSans, setConsigneSans] = useState<string | null>(null);
+  const apercuRef = useRef<HTMLIFrameElement>(null);
   // Le verrou se lève au CHANGEMENT du résultat, jamais à sa simple présence :
   // corriger le destinataire alors qu'un courrier antérieur est affiché ne
   // doit pas déverrouiller le bouton pendant que le POST est en vol.
@@ -221,6 +228,32 @@ function FormulaireCourrier({
             Courrier consigné au dossier. Provenance : {courrier.ancrageVersion}, empreinte{' '}
             {courrier.ancrageSha256.slice(0, 12)}…
           </p>
+          {/*
+            DEUX CHEMINS DE REMISE, LE MÊME PAPIER. L'aperçu imprime le rendu
+            SERVEUR tel quel (patron de `DocumentsPanel`) ; le texte reste
+            dessous parce que la transcription à la main — dans le logiciel du
+            cabinet, dans un e-mail sécurisé — n'a jamais cessé d'être un
+            chemin valide. Le texte imprimé et le texte consigné sont le même :
+            le serveur les a produits d'un seul rendu.
+          */}
+          {courrier.html !== '' && (
+            <>
+              <iframe
+                ref={apercuRef}
+                title="Aperçu imprimable du courrier au médecin"
+                srcDoc={courrier.html}
+                sandbox="allow-same-origin allow-modals"
+                className="mt-2 h-96 w-full rounded-lg border border-border bg-surface"
+              />
+              <button
+                type="button"
+                onClick={() => apercuRef.current?.contentWindow?.print()}
+                className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground"
+              >
+                Imprimer le courrier
+              </button>
+            </>
+          )}
           <textarea
             readOnly
             value={courrier.texte}

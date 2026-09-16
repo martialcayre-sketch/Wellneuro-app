@@ -7,7 +7,7 @@ import type {
   CorrespondanceMedecinApiResponse,
 } from '@/app/api/praticien/correspondance-medecin/route';
 import {
-  libelleSens,
+  libelleLigne,
   LONGUEUR_MAX_MEDECIN_LIBELLE,
   LONGUEUR_MAX_TEXTE,
 } from '@/lib/praticien/correspondanceMedecin';
@@ -276,8 +276,14 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
         <ul className="mt-3 space-y-2">
           {correspondances.map((ligne) => (
             <li key={ligne.id} className="rounded-lg border border-border bg-surface p-3 text-base text-foreground">
+              {/*
+                LE LIBELLÉ SUIT L'ORIGINE, PAS LE SEUL SENS. Une ligne ancrée a
+                été produite par le générateur au moment où le papier est sorti :
+                « Envoi consigné » y affirmait une remise que personne n'avait
+                encore faite. L'écran ne compare rien — il lit le verdict servi.
+              */}
               <p className="text-xs font-medium text-muted-foreground">
-                {libelleSens(ligne.sens)} · {ligne.medecinLibelle}
+                {libelleLigne(ligne.sens, ligne.ancrage)} · {ligne.medecinLibelle}
               </p>
               <p className="mt-1 whitespace-pre-wrap">{ligne.texte}</p>
               {/*
@@ -297,6 +303,9 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                   lettre `sans_ancrage` ne rend RIEN : elle est antérieure à
                   D-073 ou n'est pas un courrier biologique, et un badge lui
                   ferait porter un soupçon qu'elle ne mérite pas (DC-24).
+                  `reference_inconnue` ne rend rien non plus, et pour la raison
+                  inverse : l'ancre est là, c'est le produit qui ne sait pas la
+                  juger — un défaut de code, dont le dossier n'a rien à dire.
                 */}
                 {ligne.ancrage === 'concordante' ? ' · ancrage concordant' : ''}
                 {ligne.ancrage === 'perimee' ? ' · ancrage périmé' : ''}

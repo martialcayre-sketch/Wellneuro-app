@@ -3,6 +3,7 @@ import { blocsPourDestinataire, contenuPourDestinataire } from '@/lib/documents/
 import { MODELE_COURRIER_BIOLOGIE } from '@/lib/documents/modele';
 import { renderDocumentHtml } from '@/lib/documents/rendu';
 import type { Bloc, DocumentComposite } from '@/lib/documents/types';
+import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 import { STATUTS_PROPOSES } from './statuts';
 import type { LignePanelProposition } from './statuts';
 
@@ -31,6 +32,13 @@ export type EntreeCourrierBiologie = {
   tableSha256: string;
   /** ISO 8601 — date du courrier, posée par l'appelant (jamais l'horloge ici). */
   dateCourrier: string;
+  /**
+   * Nom lisible du patient, porté par l'en-tête du RENDU seulement — jamais
+   * dans le texte consigné, qui part tel quel dans `CorrespondanceMedecin`.
+   * Une lettre qu'on remet à un médecin doit dire de qui elle parle ;
+   * absent, l'en-tête n'affiche que la date, comme aujourd'hui.
+   */
+  patientNom?: string;
   /**
    * Étage 2 actif (`isCbResultsEnabled`, posé par la ROUTE — jamais lu ici) :
    * la phrase « aucun résultat n'est conservé » devient fausse quand la
@@ -140,6 +148,12 @@ export function genererCourrierBiologie(
       : 'Aucun résultat d’analyse n’est conservé dans notre outil : le retour du '
         + 'bilan se fait directement auprès du patient et de votre cabinet.',
     `Avec mes remerciements pour votre lecture. Courrier préparé le ${dateLisible}.`,
+    // LE SIGNATAIRE FAIT PARTIE DU TEXTE, pas du gabarit d'impression : la
+    // lettre a deux chemins de remise — l'impression et la transcription à
+    // la main depuis le texte consigné — et une signature posée dans le seul
+    // HTML manquerait au second. Elle passe ainsi, comme le reste du corps,
+    // sous `assertRenduMedecinNonPrescriptif` au lieu de l'esquiver.
+    SIGNATURE_PRATICIEN,
   ];
   const texte = paragraphes.join('\n\n');
 
@@ -166,7 +180,10 @@ export function genererCourrierBiologie(
 
   let html: string;
   try {
-    html = renderDocumentHtml(document, 'medecin', { dateDocument: dateLisible });
+    html = renderDocumentHtml(document, 'medecin', {
+      dateDocument: dateLisible,
+      patientNom: entree.patientNom,
+    });
   } catch {
     // La garde du chokepoint a levé : un libellé (catalogue, objectif) porte un
     // terme prescriptif. Refus explicite plutôt qu'un rendu contourné.

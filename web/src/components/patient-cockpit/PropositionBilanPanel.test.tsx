@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LignePanelProposition } from '@/lib/biology-library/statuts';
 import { PropositionBilanPanel } from './PropositionBilanPanel';
@@ -194,7 +194,12 @@ describe('courrier médecin', () => {
         documentes={[]}
         onDeclarer={vi.fn()}
         onEtablirCourrier={onEtablirCourrier}
-        courrier={{ texte: 'Docteur, …', ancrageSha256: 'a'.repeat(64), ancrageVersion: 'indications-biologie-v1' }}
+        courrier={{
+          texte: 'Docteur, …',
+          html: '',
+          ancrageSha256: 'a'.repeat(64),
+          ancrageVersion: 'indications-biologie-v1',
+        }}
       />,
     );
     const bouton = screen.getByRole('button', { name: /Établir et consigner/i }) as HTMLButtonElement;
@@ -228,6 +233,7 @@ describe('courrier médecin', () => {
       onEtablirCourrier: vi.fn(),
       courrier: {
         texte: 'Docteur, …',
+        html: '<!doctype html><p>Docteur, …</p>',
         ancrageSha256: 'a'.repeat(64),
         ancrageVersion: 'indications-biologie-v1',
       },
@@ -237,6 +243,47 @@ describe('courrier médecin', () => {
     expect(statut).toContain('indications-biologie-v1');
     expect((screen.getByLabelText(/Texte du courrier/i) as HTMLTextAreaElement).value)
       .toBe('Docteur, …');
+  });
+
+  // ── Le papier (LOT-03) ──────────────────────────────────────────────────
+
+  it('imprime le rendu DU SERVEUR, et garde la transcription à côté', () => {
+    const html = '<!doctype html><html lang="fr"><body><p>Docteur, …</p></body></html>';
+    const { container } = rendre({
+      onEtablirCourrier: vi.fn(),
+      courrier: {
+        texte: 'Docteur, …',
+        html,
+        ancrageSha256: 'a'.repeat(64),
+        ancrageVersion: 'indications-biologie-v1',
+      },
+    });
+    // `within(container)` et jamais `querySelector` global : sans cleanup, un
+    // rendu précédent servirait son propre iframe (leçon du banc du panneau
+    // de correspondance).
+    const apercu = within(container).getByTitle(/Aperçu imprimable du courrier/i) as HTMLIFrameElement;
+    // SERVI TEL QUEL : l'écran ne recompose pas la lettre — ce qui s'imprime
+    // est exactement ce que la garde non prescriptive a jugé au serveur.
+    expect(apercu.getAttribute('srcdoc')).toBe(html);
+    expect(within(container).getByRole('button', { name: /Imprimer le courrier/i })).toBeTruthy();
+    // Le second chemin de remise n'a pas disparu.
+    expect((within(container).getByLabelText(/Texte du courrier/i) as HTMLTextAreaElement).value)
+      .toBe('Docteur, …');
+  });
+
+  it('sans rendu servi, n’offre PAS d’impression — et laisse la transcription', () => {
+    const { container } = rendre({
+      onEtablirCourrier: vi.fn(),
+      courrier: {
+        texte: 'Docteur, …',
+        html: '',
+        ancrageSha256: 'a'.repeat(64),
+        ancrageVersion: 'indications-biologie-v1',
+      },
+    });
+    expect(within(container).queryByTitle(/Aperçu imprimable du courrier/i)).toBeNull();
+    expect(within(container).queryByRole('button', { name: /Imprimer le courrier/i })).toBeNull();
+    expect(within(container).getByLabelText(/Texte du courrier/i)).toBeTruthy();
   });
 
   it('un refus serveur est affiché tel quel, jamais reformulé', () => {

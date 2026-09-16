@@ -155,12 +155,54 @@ describe('CorrespondanceMedecinPanel (C3 LOT-06)', () => {
 
     expect(screen.getByText(/ancrage concordant/)).toBeTruthy();
     expect(screen.getByText(/ancrage périmé/)).toBeTruthy();
+    // LE LIBELLÉ SUIT L'ORIGINE (LOT-03) : les deux lettres ancrées ont été
+    // GÉNÉRÉES — la ligne est écrite au moment où le papier sort, avant toute
+    // remise. « Envoi consigné » y affirmait un geste que personne n'avait
+    // fait ; la réponse transcrite, elle, garde son sens.
+    const ligneAncree = screen.getByText('Courrier biologique du jour.').closest('li');
+    expect(ligneAncree!.textContent).toContain('Courrier préparé · Dr Martin');
+    expect(ligneAncree!.textContent).not.toContain('Envoi consigné');
+    const lignePerimee = screen
+      .getByText('Courrier biologique antérieur à une re-signature.')
+      .closest('li');
+    expect(lignePerimee!.textContent).toContain('Courrier préparé');
     // AUCUN badge sur la lettre sans ancre : elle est antérieure à D-073 ou
     // n'est pas un courrier biologique. La signaler ferait porter un soupçon à
     // tout l'historique (DC-24). Vérifié sur SA ligne, pas sur la page.
     const ligneSansAncre = screen.getByText('Réponse transcrite à la main.').closest('li');
     expect(ligneSansAncre).toBeTruthy();
     expect(ligneSansAncre!.textContent).not.toContain('ancrage');
+    expect(ligneSansAncre!.textContent).toContain('Réponse transcrite · Dr Martin');
+  });
+
+  it('une ancre que le produit ne sait pas juger ne rend NI badge NI soupçon', async () => {
+    // `reference_inconnue` : l'ancre est là, c'est le verdict qui manque — un
+    // écrivain non enregistré, un défaut de code. La ligne dit son origine
+    // (elle a bien été générée) et se tait sur la fraîcheur.
+    fetchMock.mockImplementation(
+      router({
+        fil: {
+          ...FIL_VIDE,
+          correspondances: [
+            {
+              id: 'CORR_INCONNU',
+              sens: 'sortant',
+              medecinLibelle: 'Dr Martin',
+              texte: 'Lettre ancrée sur une autre table signée.',
+              idSynthese: null,
+              echangeLe: null,
+              consigneLe: '2026-09-16T09:00:00.000Z',
+              ancrage: 'reference_inconnue',
+            },
+          ],
+        },
+      }),
+    );
+    await attendreLeFil();
+
+    const ligne = screen.getByText('Lettre ancrée sur une autre table signée.').closest('li');
+    expect(ligne!.textContent).toContain('Courrier préparé');
+    expect(ligne!.textContent).not.toContain('ancrage');
   });
 
   it('consigne via le contrat exact de la route, sans jamais transmettre de date de consignation', async () => {
