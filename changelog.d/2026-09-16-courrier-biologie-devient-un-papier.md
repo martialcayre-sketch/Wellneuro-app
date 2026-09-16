@@ -50,6 +50,12 @@ L'origine se lit dans le verdict servi, jamais dans un SHA recomparé à l'écra
 un verdict absent ou illisible n'atteste **aucune** ancre — la ligne retombe alors
 sur son sens, c'est-à-dire sur ce qui était affiché avant.
 
+Posé sur la seule fiche, ce libellé rouvrait le défaut que `D-209` avait fermé :
+l'accueil rend la même ligne, et sans verdict à lire il la donnait pour un « Envoi
+consigné » pendant que la fiche la disait préparée. `/recentes` sert donc le
+verdict lui aussi — le verdict seul —, et le calcul quitte la route de la fiche
+pour un module serveur que les deux routes partagent.
+
 Vérifié par mutation : remplacer `estAncree(verdict)` par `verdict !==
 'sans_ancrage'` fait rougir le banc du verdict absent, sur cette assertion et sur
 elle seule ; vider la table d'ancrage fait rougir quatre bancs de la route, dont

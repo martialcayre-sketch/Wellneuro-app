@@ -271,6 +271,35 @@ describe('courrier médecin', () => {
       .toBe('Docteur, …');
   });
 
+  it('le bouton imprime L’APERÇU, pas la page du cockpit', () => {
+    // Sans ce banc, le câblage du clic n'est prouvé par rien : un `onClick`
+    // qui appellerait `window.print()` imprimerait la fiche patient entière —
+    // et le banc de rendu resterait vert.
+    const { container } = rendre({
+      onEtablirCourrier: vi.fn(),
+      courrier: {
+        texte: 'Docteur, …',
+        html: '<!doctype html><html lang="fr"><body><p>Docteur, …</p></body></html>',
+        ancrageSha256: 'a'.repeat(64),
+        ancrageVersion: 'indications-biologie-v1',
+      },
+    });
+    const apercu = within(container).getByTitle(
+      /Aperçu imprimable du courrier/i,
+    ) as HTMLIFrameElement;
+    const fenetre = apercu.contentWindow;
+    if (fenetre === null) throw new Error('aperçu sans fenêtre');
+    const imprimerApercu = vi.fn();
+    const imprimerPage = vi.spyOn(window, 'print').mockImplementation(() => {});
+    Object.defineProperty(fenetre, 'print', { value: imprimerApercu, configurable: true });
+
+    fireEvent.click(within(container).getByRole('button', { name: /Imprimer le courrier/i }));
+
+    expect(imprimerApercu).toHaveBeenCalledTimes(1);
+    expect(imprimerPage).not.toHaveBeenCalled();
+    imprimerPage.mockRestore();
+  });
+
   it('sans rendu servi, n’offre PAS d’impression — et laisse la transcription', () => {
     const { container } = rendre({
       onEtablirCourrier: vi.fn(),

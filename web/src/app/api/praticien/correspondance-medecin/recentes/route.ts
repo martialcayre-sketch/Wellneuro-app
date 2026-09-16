@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien } from '@/lib/praticien/appartenance';
 import { sensExpose, type SensCorrespondance } from '@/lib/praticien/correspondanceMedecin';
+import { verdictAncrage, type VerdictAncrage } from '@/lib/praticien/ancrageCorrespondance';
 
 export type LigneCorrespondanceRecente = {
   id: string;
@@ -18,6 +19,16 @@ export type LigneCorrespondanceRecente = {
   sens: SensCorrespondance | null;
   medecinLibelle: string;
   consigneLe: string;
+  /**
+   * Le verdict d'ancrage, servi POUR LA MÊME RAISON que `sens` ne se devine
+   * plus : sans lui, cet écran ne peut pas savoir qu'une lettre a été
+   * GÉNÉRÉE, et il la donne pour un envoi consigné pendant que la fiche la
+   * dit préparée. Une ligne, deux écrans, deux affirmations incompatibles —
+   * le défaut exact que [[D-209]] a fermé sur `sens`.
+   *
+   * Seul le VERDICT traverse : ni le SHA ni la version, comme sur la fiche.
+   */
+  ancrage: VerdictAncrage;
 };
 
 export type CorrespondanceRecentesApiResponse = {
@@ -74,6 +85,10 @@ export async function GET(): Promise<NextResponse<CorrespondanceRecentesApiRespo
         sens: true,
         medecinLibelle: true,
         consigneLe: true,
+        // Les deux colonnes d'ancrage, et RIEN d'autre : elles ne sortent pas
+        // d'ici — le verdict est calculé plus bas et c'est lui seul qui part.
+        ancrageSha256: true,
+        ancrageVersion: true,
       },
       orderBy: { consigneLe: 'desc' },
       take: MAX_LIGNES,
@@ -97,6 +112,7 @@ export async function GET(): Promise<NextResponse<CorrespondanceRecentesApiRespo
         sens: sensExpose(l.sens),
         medecinLibelle: l.medecinLibelle,
         consigneLe: l.consigneLe.toISOString(),
+        ancrage: verdictAncrage(l.ancrageSha256, l.ancrageVersion),
       })),
     });
   } catch (err) {

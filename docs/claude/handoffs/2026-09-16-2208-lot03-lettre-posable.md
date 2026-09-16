@@ -101,3 +101,18 @@ T2 joué deux fois — la seconde après l'ajout des deux assertions E2E. Le seu
 rouge est la **signature D-049** (`portail-dossier-deux-voix.spec.ts:128`,
 iPhone 13 / WebKit, 2 min sans requête émise), déjà consignée sur `main` et sans
 rapport avec ce diff : le portail patient n'est pas touché ici.
+
+## Revue Copilot — verdict de chaque constat
+
+Lue AVANT le merge, comme la règle posée par `D-214` l'impose. Deux constats,
+**deux retenus** :
+
+| Constat | Verdict | Traité |
+|---|---|---|
+| Le libellé d'origine n'est câblé que sur la fiche : l'accueil rend encore `libelleSens`, et `/recentes` n'expose pas le verdict — la même ligne se lit « Envoi consigné » ici et « Courrier préparé » là | **retenu** | `/recentes` sert le verdict, l'accueil lit `libelleLigne`, le calcul passe dans `lib/praticien/ancrageCorrespondance` — deux bancs neufs par surface |
+| Le câblage du bouton d'impression n'est éprouvé par rien | **retenu** | banc qui distingue `contentWindow.print()` de `window.print()` — mutant tué : imprimer la page du cockpit fait rougir |
+
+Le premier était **le défaut que `D-209` avait fermé, rouvert par l'autre bout** :
+un libellé d'origine posé sur une seule des deux surfaces recrée exactement la
+contradiction que la lecture unique du sens avait supprimée. Il n'a pas été vu
+en écrivant le lot, ni par le CI.

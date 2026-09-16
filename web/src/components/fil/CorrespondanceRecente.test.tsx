@@ -52,6 +52,29 @@ describe('CorrespondanceRecente', () => {
     expect(screen.queryByText(/douleurs thoraciques/)).toBeNull();
   });
 
+  it('une lettre GÉNÉRÉE se dit préparée ici AUSSI — jamais « Envoi consigné »', async () => {
+    // Le libellé d'origine ne vaut que s'il vaut PARTOUT : la fiche disant
+    // « Courrier préparé » et l'accueil « Envoi consigné » pour la même ligne,
+    // c'est la contradiction que D-209 avait fermée sur `sens`.
+    stubCorrespondance({
+      ok: true,
+      lignes: [{ ...LIGNE, id: 'C3', sens: 'sortant', ancrage: 'concordante' }],
+    });
+    render(<CorrespondanceRecente />);
+    expect(await screen.findByText(/Courrier préparé/)).toBeTruthy();
+    expect(screen.queryByText(/Envoi consigné/)).toBeNull();
+  });
+
+  it('une ligne sans ancre garde son sens', async () => {
+    stubCorrespondance({
+      ok: true,
+      lignes: [{ ...LIGNE, id: 'C4', sens: 'sortant', ancrage: 'sans_ancrage' }],
+    });
+    render(<CorrespondanceRecente />);
+    expect(await screen.findByText(/Envoi consigné/)).toBeTruthy();
+    expect(screen.queryByText(/Courrier préparé/)).toBeNull();
+  });
+
   it('sens indéterminé : le panneau n’affirme aucune direction', async () => {
     stubCorrespondance({ ok: true, lignes: [{ ...LIGNE, id: 'C2', sens: null }] });
     render(<CorrespondanceRecente />);

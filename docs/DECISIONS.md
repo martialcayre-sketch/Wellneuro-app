@@ -82,6 +82,19 @@ garde son sens même ancrée ; et un verdict absent ou illisible n'atteste **auc
 ancre — la ligne retombe alors sur son sens, c'est-à-dire sur ce qui était affiché
 avant. Les verdicts qui attestent une ancre vivent dans le domaine, et le contrat
 de la route compose son type d'eux : deux listes auraient divergé en silence.
+
+**ET IL VAUT SUR LES DEUX SURFACES, SINON IL NE VAUT PAS.** Posé sur la seule
+fiche, ce libellé rouvrait le défaut que [[D-209]] avait fermé : l'accueil rend la
+même ligne, et sans verdict à lire il la donnait pour un « Envoi consigné »
+pendant que la fiche la disait préparée — une ligne, deux écrans, deux
+affirmations incompatibles. `/recentes` sert donc le verdict lui aussi (le
+verdict SEUL : ni le SHA ni la version, comme sur la fiche), et le panneau de
+l'accueil lit `libelleLigne`. Le calcul quitte la route de la fiche pour
+`lib/praticien/ancrageCorrespondance` — module SERVEUR seul, parce qu'il importe
+le SHA vivant de la table d'indications, dont l'import calculerait l'empreinte
+dans le bundle du navigateur. Ce que les deux bancs de route continuent de tenir :
+chacune s'éprouve PAR SA ROUTE — un verdict juste qu'aucune route ne sert ne
+prouve rien. **Constat de revue, retenu.**
 ### D-214 — Un commentaire de revue n'est pas un check, et une migration mergée n'est pas appliquée : les deux gestes deviennent opposables
 
 - Date : 2026-09-16
