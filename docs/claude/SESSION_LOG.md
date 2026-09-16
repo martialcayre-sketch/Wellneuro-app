@@ -6548,3 +6548,21 @@ dossier réel.
 **Vérifications** : banc de cohérence d'état et audit de campagnes. Aucun code touché.
 
 **Prochaine action** : attendre le geste du responsable sur le créneau primaire.
+
+## 2026-09-16 02:30 — Huit arbitrages rendus en clôture
+
+Décidé : garder les quatre bandes du MMSE mais **cesser de les attribuer à la HAS** (aucun
+seuil touché, c'est la provenance qui est fausse) · ouvrir **les quatre** réserves qui
+n'attendent qu'une lecture de source · **acquérir la licence MHS** pour la Conners 3 ·
+vérifier la colonne calorique de `Q_ALI_03` · **réaligner ELFE** sur sa source (7 items,
+0-10, vrai scoring) · réaligner **les deux** écarts de l'agenda du sommeil · déclaration de
+droits à rédiger pour `Q_ALI_09`, signature au praticien · **ne pas rouvrir** la chasse au
+flake CI, observer les runs.
+
+Trois décisions vont contre la recommandation de l'assistant (Conners 3 et ELFE : licence
+et réalignement plutôt que retrait ; lectures : quatre plutôt que deux) — consignées telles
+quelles.
+
+**Prochaine action** : les deux lectures qui portent des chiffres affichés au praticien
+(`Q_GEO_06`, `Q_GEO_03`). Trois des huit chantiers touchent la logique clinique et exigent
+chacun une décision `D-xxx` + un fragment ; le mandat est acquis par cet arbitrage.
