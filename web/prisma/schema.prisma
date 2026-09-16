@@ -18,6 +18,24 @@ model Patient {
   praticienEmail String   @map("praticien_email")
   actif          Boolean  @default(true) @map("actif")
 
+  // Dossier administratif (2026-09-16) — quatre renseignements qui n'existaient
+  // nulle part. Tous nullables : les dossiers ouverts avant cette date les
+  // portent à NULL, et rien n'oblige à les remplir.
+  //
+  // `nir` est un NIR DÉCLARÉ, saisi par le praticien. Ce n'est PAS une INS au
+  // sens du référentiel national — aucune qualification par téléservice n'a
+  // lieu ici — et il ne sert d'identifiant à rien : l'identité du dossier reste
+  // `idPatient`, l'unicité reste portée par `email`. Sa forme est gardée en
+  // base ; sa clé de contrôle l'est côté application.
+  //
+  // Le médecin traitant est une propriété du DOSSIER, à distinguer de
+  // `CorrespondanceMedecin.medecinLibelle` — texte libre saisi par lettre, qui
+  // reste ce qu'il est.
+  adresse                     String? @map("adresse")
+  nir                         String? @map("nir")
+  medecinTraitantNom          String? @map("medecin_traitant_nom")
+  medecinTraitantCoordonnees  String? @map("medecin_traitant_coordonnees")
+
   // Clôture de suivi (IDP2) — le dossier reste, le patient garde sa LECTURE,
   // et plus aucun questionnaire ne lui est assigné ni document envoyé.
   // DISTINCT de `actif` : `actif: false` coupe l'accès au portail (voir
