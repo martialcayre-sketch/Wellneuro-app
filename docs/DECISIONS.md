@@ -4,6 +4,71 @@
 
 ## Décisions actives
 
+### D-212 — Le fil de correspondance se range sur la date de l'échange, et le geste de transcription cesse de perdre en silence
+
+- Date : 2026-09-16
+- Statut : accepté — lot suivant de la campagne « ouverture du rayon
+  Correspondance », sans arbitrage nouveau du responsable.
+- Domaine : correspondance médecin, onglet de la fiche patient.
+- Porte sur : le confort et la véracité du geste de transcription. Prolonge
+  [[D-209]] et [[D-210]]. Ne touche ni le schéma, ni les gardes de la route, ni
+  le compteur du rail.
+
+**1. LE FIL SE RANGE SUR L'ÉCHANGE, PLUS SUR LA SAISIE.** La route ordonnait sur
+`consigneLe` seul : une lettre de juin transcrite aujourd'hui remontait en tête,
+devant tout ce qui s'était réellement passé depuis. Elle se range désormais sur
+`echangeLe`, avec `consigneLe` pour repli quand la date d'échange n'est pas
+renseignée et pour départage à date égale. La base ne sachant pas trier sur un
+`COALESCE` et le fil n'étant borné par aucun `take`, l'ordre se pose dans la
+route, sur la liste complète.
+
+`consigneLe` **reste affichée dans tous les cas**, et la date d'échange passe en
+tête de la ligne meta : elle ordonne le fil, et un ordre dont la clé est
+invisible serait inexplicable à l'écran.
+
+**Le compteur du rail de [[D-210]] continue, lui, de mesurer l'attente sur
+`consigneLe`, et c'est délibéré.** `echangeLe` est saisie à la main ; `consigneLe`
+est posée par la base et ne peut pas être antidatée. Une pastille qui alerte ne
+se fonde pas sur une date que l'on peut taper de travers. L'écart entre l'ordre
+de lecture et la mesure d'attente est donc **assumé et écrit**, pas subi.
+
+**2. LE BROUILLON NE SE PERD PLUS.** La fiche démontait le panneau à chaque
+changement d'onglet alors que son conteneur porte déjà `hidden` : une
+transcription de plusieurs milliers de caractères disparaissait sans un mot dès
+qu'on allait vérifier une synthèse. L'onglet reste monté après sa première
+visite ; aucune requête n'est rejouée, le fil et les synthèses ne dépendant que
+d'`idPatient`.
+
+L'état retient **le dossier visité**, jamais un booléen : sur un changement de
+patient sans remontage, un drapeau ferait charger le fil d'un dossier dont
+l'onglet n'a jamais été ouvert — donc écrire une ligne au journal d'accès pour
+une lecture que personne n'a demandée ([[G-TRUST-04]]).
+
+**3. LA TRONCATURE ÉTAIT MUETTE, ET LE REFUS SERVEUR INATTEIGNABLE.**
+`maxLength` empêche de taper au-delà de 8 000 caractères, mais un **collage** —
+le geste normal d'une transcription — est coupé par le navigateur sans un mot,
+sous un placeholder qui promet une transcription fidèle. Le refus
+`texte_trop_long` ne gardait donc que l'API, jamais cet écran. Le compte se lit
+avant le geste, et l'atteinte de la borne se dit.
+
+**4. LE DERNIER MÉDECIN SE REPREND, IL NE SE PRÉ-REMPLIT PAS.** **Écarté : le
+pré-remplissage**, que le cadrage proposait. Un champ rempli par défaut se valide
+sans être lu, et la ligne produite est **définitive** — aucune colonne
+`supersedes_*`, ni PATCH ni DELETE : une attribution fautive tient jusqu'à
+l'effacement du dossier. Le confort de la frappe ne vaut pas ce risque ; un
+bouton le rend en laissant le geste au praticien.
+
+**5. UN ÉCHEC DE LECTURE N'EST PAS UN DOSSIER VIDE.** La section
+« Correspondance avec le patient » n'avait aucune branche d'erreur : ses trois
+conditions étant fausses, elle ne rendait **rien** sous son titre —
+indistinguable d'un dossier sans envoi. La section médecin refusait déjà ce
+raccourci ; les deux tiennent désormais le même refus ([[DC-24]]).
+
+**6. LES DATES SONT EN HEURE DE PARIS.** Elles étaient les seules du produit à
+suivre le fuseau de la machine. Le banc qui le garde choisit un instant qui
+**traverse minuit** — un instant de plein jour l'aurait rendu creux — et ne mord
+qu'en CI : la machine de développement partage le décalage de Paris.
+
 ### D-211 — Une ligne de catalogue cite trois familles de claims, et le nom du champ remplace le discriminant ; un claim qui cesse d'être VALIDE retire la ligne
 
 - Date : 2026-09-16

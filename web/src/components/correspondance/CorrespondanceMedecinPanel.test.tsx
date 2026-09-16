@@ -193,13 +193,141 @@ describe('CorrespondanceMedecinPanel (C3 LOT-06)', () => {
     expect(Object.keys(corps)).not.toContain('consigneLe');
   });
 
+  // Réécrit à dessein : ce banc n'attendait qu'UNE alerte, parce qu'une seule
+  // des deux sections refusait de rendre un échec de lecture comme un dossier
+  // vide. La section patient ne rendait alors RIEN sous son titre — ses trois
+  // conditions étant fausses —, ce qui se lit exactement comme « aucun envoi ».
+  // Les deux sections tiennent désormais le même refus, et le banc l'exige.
   it('une erreur de lecture propose « Réessayer », jamais un fil vide', async () => {
     fetchMock.mockImplementation(router({ fil: { ok: false, reason: 'exception', error: 'Erreur technique.' }, filOk: false }));
     render(<CorrespondanceMedecinPanel idPatient="PAT_SEED_03" />);
 
-    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
-    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeTruthy();
+    await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2));
+    expect(screen.getAllByRole('button', { name: 'Réessayer' })).toHaveLength(2);
     expect(screen.queryByText(/Aucune correspondance consignée/)).toBeNull();
+    expect(screen.queryByText(/Aucun envoi patient journalisé/)).toBeNull();
+  });
+
+  it('un échec de lecture ne se rend pas comme un dossier sans envoi patient', async () => {
+    fetchMock.mockImplementation(router({ fil: { ok: false, reason: 'exception', error: 'Erreur technique.' }, filOk: false }));
+    render(<CorrespondanceMedecinPanel idPatient="PAT_SEED_03" />);
+
+    // L'affirmation porte sur le DOSSIER : la dire sur une lecture en échec
+    // serait fausse (DC-24). La section le nomme au lieu de se taire.
+    await waitFor(() =>
+      expect(screen.getByText(/n’ont pas pu être lus\. Ce n’est pas un dossier sans envoi/)).toBeTruthy(),
+    );
+  });
+
+  it('la date d’échange passe devant, et la consignation ne disparaît jamais', async () => {
+    fetchMock.mockImplementation(
+      router({
+        fil: {
+          ...FIL_VIDE,
+          correspondances: [
+            {
+              id: 'CORR_1',
+              sens: 'entrant',
+              medecinLibelle: 'Dr Martin',
+              texte: 'Réponse reçue en juin, transcrite en septembre.',
+              idSynthese: null,
+              echangeLe: '2026-06-12T00:00:00.000Z',
+              consigneLe: '2026-09-16T10:00:00.000Z',
+            },
+          ],
+        },
+      }),
+    );
+    await attendreLeFil();
+
+    // La date qui ORDONNE le fil se lit en premier — sinon l'ordre est
+    // inexplicable à l'écran. Celle qui ne peut pas être antidatée reste
+    // affichée dans tous les cas.
+    expect(screen.getByText(/Échange du 12\/06\/2026 · consigné le 16\/09\/2026/)).toBeTruthy();
+  });
+
+  it('les dates sont rendues en heure de Paris, pas en heure machine', async () => {
+    fetchMock.mockImplementation(
+      router({
+        fil: {
+          ...FIL_VIDE,
+          correspondances: [
+            {
+              id: 'CORR_1',
+              sens: 'sortant',
+              medecinLibelle: 'Dr Martin',
+              texte: 'Courrier remis.',
+              idSynthese: null,
+              echangeLe: null,
+              // INSTANT QUI TRAVERSE MINUIT. 22 h 30 UTC le 16 = 00 h 30 à
+              // Paris le 17 : sans fuseau explicite, la même ligne porte deux
+              // dates selon la machine qui la lit. Un instant de plein jour
+              // aurait rendu ce banc creux — il serait resté vert sans le
+              // correctif.
+              //
+              // Il ne MORD toutefois qu'en CI : la machine de développement est
+              // sur un fuseau au même décalage que Paris, et y rend « 17/09 »
+              // dans les deux cas. C'est le CI (UTC) qui fait foi ici, comme
+              // pour les baselines visuelles.
+              consigneLe: '2026-09-16T22:30:00.000Z',
+            },
+          ],
+        },
+      }),
+    );
+    await attendreLeFil();
+
+    expect(screen.getByText(/Consigné le 17\/09\/2026/)).toBeTruthy();
+  });
+
+  it('le dernier médecin se REPREND d’un geste, il ne se pré-remplit pas', async () => {
+    fetchMock.mockImplementation(
+      router({
+        fil: {
+          ...FIL_VIDE,
+          correspondances: [
+            {
+              id: 'CORR_1',
+              sens: 'sortant',
+              medecinLibelle: 'Dr Martin, médecin traitant',
+              texte: 'Courrier remis.',
+              idSynthese: null,
+              echangeLe: null,
+              consigneLe: '2026-09-10T10:00:00.000Z',
+            },
+          ],
+        },
+      }),
+    );
+    await attendreLeFil();
+
+    const champ = screen.getByLabelText(/Médecin \(désignation libre/) as HTMLInputElement;
+    // LE CHAMP RESTE VIDE. Une ligne consignée est définitive — ni PATCH, ni
+    // DELETE, aucune colonne `supersedes_*` : une valeur posée par défaut se
+    // validerait sans être lue.
+    expect(champ.value).toBe('');
+
+    fireEvent.click(screen.getByRole('button', { name: /Reprendre « Dr Martin, médecin traitant »/ }));
+    expect(champ.value).toBe('Dr Martin, médecin traitant');
+    // La reprise faite, l'offre s'efface : elle ne peut plus écraser une saisie.
+    expect(screen.queryByRole('button', { name: /Reprendre/ })).toBeNull();
+  });
+
+  it('le compteur dit la borne, et la troncature cesse d’être muette', async () => {
+    fetchMock.mockImplementation(router());
+    await attendreLeFil();
+
+    expect(screen.getByText('0 / 8 000 caractères')).toBeTruthy();
+    expect(screen.queryByText(/Limite atteinte/)).toBeNull();
+
+    // Le geste réel d'une transcription est un COLLAGE, et le navigateur le
+    // coupe à `maxLength` sans un mot — sous un placeholder qui promet une
+    // transcription fidèle. L'écran le dit désormais.
+    fireEvent.change(screen.getByLabelText(/Texte de l’échange/), {
+      target: { value: 'x'.repeat(8000) },
+    });
+    expect(screen.getByText('8 000 / 8 000 caractères')).toBeTruthy();
+    expect(screen.getByText(/Limite atteinte/)).toBeTruthy();
   });
 
   it('affiche tel quel le message de refus de la route (le 409 fait foi)', async () => {

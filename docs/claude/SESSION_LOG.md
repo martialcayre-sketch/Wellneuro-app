@@ -6750,3 +6750,34 @@ cette adresse — aucun des vingt-neuf spécifications ne le faisait.
 
 Prochaine action : **LOT-02**, puis **LOT-03** qui verrouille **LOT-04**, la
 lettre d'adressage.
+
+## 2026-09-16 — LOT-02 : le geste de transcription tient en consultation
+
+Troisième lot de la campagne Correspondance (**D-212**), après D-209 et D-210.
+Aucune affirmation fausse à corriger cette fois : ce lot ferme **ce que le geste
+perd**. Le panneau était démonté à chaque changement d'onglet et jetait le
+brouillon sans un mot ; `maxLength` coupait un collage en silence, rendant le
+refus serveur `texte_trop_long` inatteignable depuis l'écran ; le fil se rangeait
+sur la saisie, si bien qu'une lettre de juin transcrite aujourd'hui passait
+devant septembre ; les dates étaient les seules du produit à suivre le fuseau de
+la machine ; et la section « Correspondance avec le patient » ne rendait
+strictement RIEN sur un échec de lecture — indistinguable d'un dossier vide.
+
+Écarté : **le pré-remplissage du médecin**, que le cadrage proposait. La ligne
+consignée est définitive — aucune colonne `supersedes_*`, ni PATCH ni DELETE —
+et un champ rempli par défaut se valide sans être lu. Un bouton de reprise rend
+le confort en laissant le geste au praticien.
+
+Assumé et écrit : **le fil se range sur `echangeLe`, le compteur du rail garde
+`consigneLe`**. Une alerte ne se fonde pas sur une date saisie à la main.
+
+Le banc de fuseau a d'abord été écrit **creux** — 21 h 30 UTC et 23 h 30 à Paris
+tombent le même jour civil — et corrigé sur un instant qui traverse minuit ;
+vérifié sous `TZ=UTC`, il ne mord qu'en CI. Deux mutants tués.
+
+Questions ouvertes : l'énoncé de la pastille n'est éprouvé par aucun banc
+(`SidebarRail` n'en a aucun, et le seed ne produit pas de consignation) ; la nav
+mobile vers le rayon reste sans garde. Les deux se ferment par une fixture, dans
+une PR d'une autre finalité.
+
+Prochaine action : **LOT-03**, qui verrouille **LOT-04**, la lettre d'adressage.

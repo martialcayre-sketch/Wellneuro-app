@@ -228,6 +228,26 @@ async function garder(idPatient: string, acces?: GabaritAcces): Promise<Garde> {
   return { email: email ?? '' };
 }
 
+// Le fil se lit dans la chronologie de L'ÉCHANGE, pas dans celle de la saisie :
+// une lettre de juin transcrite aujourd'hui se range en juin, à sa place. La
+// base ne sait pas trier sur `COALESCE`, et le fil n'est pas borné (aucun
+// `take`) : l'ordre se pose ici, sur la liste complète.
+//
+// `consigneLe` reste le repli quand la date d'échange n'a pas été renseignée,
+// reste le départage à date d'échange égale, et reste AFFICHÉ dans tous les
+// cas — c'est la seule des deux qui ne peut pas être antidatée. C'est aussi
+// pourquoi le compteur du rail ([[D-210]]) continue, lui, de mesurer l'attente
+// sur `consigneLe` : une pastille ne se fonde pas sur une date saisie à la main.
+function dateDeLecture(ligne: { echangeLe: Date | null; consigneLe: Date }): number {
+  return (ligne.echangeLe ?? ligne.consigneLe).getTime();
+}
+
+function ordonnerFil<T extends { echangeLe: Date | null; consigneLe: Date }>(lignes: T[]): T[] {
+  return [...lignes].sort(
+    (a, b) => dateDeLecture(b) - dateDeLecture(a) || b.consigneLe.getTime() - a.consigneLe.getTime(),
+  );
+}
+
 // GET /api/praticien/correspondance-medecin?idPatient= — le fil, du plus
 // récent au plus ancien, avec l'état du dossier et du consentement.
 export async function GET(req: Request): Promise<NextResponse<CorrespondanceMedecinApiResponse>> {
@@ -269,7 +289,7 @@ export async function GET(req: Request): Promise<NextResponse<CorrespondanceMede
 
     return NextResponse.json({
       ok: true,
-      correspondances: lignes.map(exposer),
+      correspondances: ordonnerFil(lignes).map(exposer),
       correspondancesPatient: communicationsPatient.map((ligne) => ({
         ...ligne,
         enregistreLe: ligne.enregistreLe.toISOString(),
