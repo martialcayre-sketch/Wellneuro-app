@@ -47,6 +47,16 @@ describe('verifierNir — la clé de contrôle', () => {
     expect(messageNirInvalide('forme')).not.toContain('clé de contrôle');
   });
 
+  it('le message ne dit pas « 13 chiffres » — la Corse en porte deux lettres', () => {
+    // Constat de revue du 2026-09-16 : dire « 13 chiffres » à un praticien qui
+    // a un numéro corse sous les yeux le renvoie chercher une faute qu'il n'a
+    // pas commise, ou lui fait croire que le numéro de son patient est faux.
+    for (const motif of ['forme', 'cle'] as const) {
+      expect(messageNirInvalide(motif), motif).not.toMatch(/13 chiffres/);
+    }
+    expect(messageNirInvalide('forme')).toContain('2A');
+  });
+
   it('attrape une transposition de deux chiffres voisins', () => {
     // La raison d'être de la clé : la faute la plus fréquente à la recopie.
     const juste = '295129912345664';

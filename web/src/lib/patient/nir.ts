@@ -65,7 +65,12 @@ export function verifierNir(saisie: string): VerdictNir {
 
 /** Le message rendu au praticien, qui doit dire CE QUI ne va pas. */
 export function messageNirInvalide(motif: 'forme' | 'cle'): string {
+  // « CARACTÈRES » ET NON « CHIFFRES », et ce n'est pas un détail de style : un
+  // NIR corse porte `2A` ou `2B` au rang du département. Dire « 13 chiffres »
+  // à un praticien qui a un numéro corse sous les yeux le renvoie chercher une
+  // faute qu'il n'a pas commise — ou lui fait croire que le numéro de son
+  // patient est invalide (constat de revue, 2026-09-16).
   return motif === 'forme'
-    ? 'Numéro de sécurité sociale invalide : 15 caractères attendus (13 chiffres et la clé à 2 chiffres).'
-    : 'Numéro de sécurité sociale invalide : la clé de contrôle ne correspond pas aux 13 premiers chiffres. Vérifiez la saisie.';
+    ? 'Numéro de sécurité sociale invalide : 15 caractères attendus — 13 pour le numéro (dont « 2A » ou « 2B » pour la Corse), puis la clé à 2 chiffres.'
+    : 'Numéro de sécurité sociale invalide : la clé de contrôle ne correspond pas aux 13 premiers caractères. Vérifiez la saisie.';
 }

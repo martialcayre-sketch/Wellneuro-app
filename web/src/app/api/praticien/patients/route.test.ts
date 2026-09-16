@@ -928,3 +928,79 @@ describe('PATCH — changer l’e-mail sans rendre les réponses muettes', () =>
     expect(prisma.consultation.updateMany).not.toHaveBeenCalled();
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUITE DE LA REVUE DU 2026-09-16 (PR #1166)
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('PATCH — un payload mal typé est une requête invalide, pas une panne', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: 'PAT001',
+      praticienEmail: 'p@wellneuro.fr',
+      email: 'ancien@fictif.wellneuro.fr',
+    });
+    prisma.patient.update.mockResolvedValue({});
+    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+  });
+
+  it('★ une valeur non textuelle rend 400, jamais 500', async () => {
+    // `JSON.parse` rend ce qu'on lui donne. `{ "adresse": 42 }` produisait un
+    // `42.trim is not a function` — donc une exception, donc un 500 qui dit
+    // « le serveur est en panne » alors qu'il ne l'était pas.
+    for (const corps of [
+      { idPatient: 'PAT001', adresse: 42 },
+      { idPatient: 'PAT001', nir: { valeur: '1' } },
+      { idPatient: 'PAT001', prenom: ['Sophie'] },
+      { idPatient: 123 },
+    ]) {
+      const res = await PATCH(patch(corps));
+      expect(res.status, JSON.stringify(corps)).toBe(400);
+      expect(((await res.json()) as { reason?: string }).reason).toBe('invalid_payload');
+    }
+    expect(prisma.patient.update).not.toHaveBeenCalled();
+  });
+
+  it('`null` explicite est refusé comme le reste — il n’est pas « absent »', async () => {
+    // `undefined` veut dire « ne touche pas ». `null` n'est pas `undefined` :
+    // le laisser passer aurait écrit `null.trim()`.
+    const res = await PATCH(patch({ idPatient: 'PAT001', adresse: null }));
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('PATCH — une adresse trop longue est REFUSÉE, jamais tronquée', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: 'PAT001',
+      praticienEmail: 'p@wellneuro.fr',
+    });
+    prisma.patient.update.mockResolvedValue({});
+    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+  });
+
+  it('★ tronquer fabriquerait une adresse fausse — et ces champs servent à écrire aux gens', async () => {
+    const res = await PATCH(patch({ idPatient: 'PAT001', adresse: 'a'.repeat(501) }));
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error?: string }).error).toContain('500 caractères');
+    expect(prisma.patient.update).not.toHaveBeenCalled();
+  });
+
+  it('les trois champs bornés le sont chacun à sa mesure', async () => {
+    const cas: [string, number][] = [
+      ['adresse', 500],
+      ['medecinTraitantNom', 200],
+      ['medecinTraitantCoordonnees', 500],
+    ];
+    for (const [champ, max] of cas) {
+      const trop = await PATCH(patch({ idPatient: 'PAT001', [champ]: 'x'.repeat(max + 1) }));
+      expect(trop.status, `${champ} au-delà`).toBe(400);
+      const pile = await PATCH(patch({ idPatient: 'PAT001', [champ]: 'x'.repeat(max) }));
+      expect(pile.status, `${champ} à la borne`).toBe(200);
+    }
+  });
+});

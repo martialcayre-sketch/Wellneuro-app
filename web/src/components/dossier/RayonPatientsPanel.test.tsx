@@ -749,3 +749,55 @@ describe('RayonPatientsPanel — rétablissement d’un accès révoqué', () =>
     });
   });
 });
+
+// ★ CONSTAT DE REVUE DU 2026-09-16, ET IL ÉTAIT PLUS GRAVE QU'ANNONCÉ.
+//
+// `FicheAdministrativePanel` initialise son formulaire UNE FOIS, depuis
+// `patient`. Sans `key`, ouvrir la fiche d'un second dossier pendant que celle
+// du premier est affichée réutilise le même composant React : le formulaire
+// garde les valeurs du PREMIER patient, tandis que `patient.idPatient` désigne
+// le SECOND. Enregistrer écrivait alors le nom, l'e-mail et le NIR de l'un sur
+// le dossier de l'autre — sans erreur, sans message, sans rien à relire.
+describe('RayonPatientsPanel — la fiche suit le dossier qu’on ouvre', () => {
+  it('★ ouvrir un SECOND dossier remplace les valeurs du premier', async () => {
+    stubFetch({ patients: [PATIENT, AUTRE_PATIENT] });
+    render(<RayonPatientsPanel />);
+
+    const boutons = await screen.findAllByRole('button', { name: /^modifier$/i });
+    expect(boutons.length).toBeGreaterThan(1);
+
+    fireEvent.click(boutons[0]);
+    const premier = (screen.getByLabelText(/adresse e-mail/i) as HTMLInputElement).value;
+
+    fireEvent.click((await screen.findAllByRole('button', { name: /^modifier$/i }))[1]);
+    const second = (screen.getByLabelText(/adresse e-mail/i) as HTMLInputElement).value;
+
+    expect(second).not.toBe(premier);
+  });
+
+  it('★ et ce qu’on enregistre porte l’identifiant du dossier AFFICHÉ', async () => {
+    // LE BANC QUI COMPTE. Le défaut ne se voyait pas à l'écran seulement : il
+    // ÉCRIVAIT. Ici, le corps du PATCH doit nommer le second dossier, et le
+    // champ modifié doit être celui qu'on vient de taper — pas un écart hérité
+    // du premier patient.
+    const appels = stubFetch({ patients: [PATIENT, AUTRE_PATIENT] });
+    render(<RayonPatientsPanel />);
+
+    fireEvent.click((await screen.findAllByRole('button', { name: /^modifier$/i }))[0]);
+    const boutons = await screen.findAllByRole('button', { name: /^modifier$/i });
+    fireEvent.click(boutons[1]);
+
+    fireEvent.change(screen.getByLabelText(/^téléphone$/i), { target: { value: '0611111111' } });
+    fireEvent.click(screen.getByRole('button', { name: /^enregistrer$/i }));
+
+    await waitFor(() => {
+      const envoi = appels.find(a => a.method === 'PATCH');
+      expect(envoi).toBeTruthy();
+      const corps = envoi!.body as Record<string, unknown>;
+      // Un seul champ modifié, plus l'identifiant : si le formulaire avait
+      // gardé l'état du premier dossier, tous les champs qui diffèrent entre
+      // les deux patients partiraient aussi.
+      expect(Object.keys(corps).sort()).toEqual(['idPatient', 'telephone']);
+    });
+  });
+});

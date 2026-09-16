@@ -641,6 +641,28 @@ const BORNES_DOSSIER = {
   medecinTraitantCoordonnees: 500,
 } as const;
 
+const LIBELLES_DOSSIER = {
+  adresse: 'L’adresse postale',
+  medecinTraitantNom: 'Le nom du médecin traitant',
+  medecinTraitantCoordonnees: 'Les coordonnées du médecin traitant',
+} as const;
+
+/**
+ * Sentinelle d'un payload mal typé.
+ *
+ * `JSON.parse` rend ce qu'on lui donne : un client qui envoie
+ * `{ "adresse": 42 }` produisait un `42.trim is not a function`, donc une
+ * exception, donc un **500** — là où c'est une requête invalide, et rien
+ * d'autre (constat de revue, 2026-09-16). Un 500 dit « le serveur est en
+ * panne » ; il ne l'était pas.
+ */
+const MAL_TYPE = Symbol('champ non textuel');
+
+function texteDuPayload(valeur: unknown): string | undefined | typeof MAL_TYPE {
+  if (valeur === undefined) return undefined;
+  return typeof valeur === 'string' ? valeur : MAL_TYPE;
+}
+
 export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResponse>> {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -660,8 +682,35 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
     );
   }
 
-  const idPatient = (payload.idPatient ?? '').trim();
-  const telephone = (payload.telephone ?? '').trim().slice(0, 30);
+  // TOUS LES CHAMPS TEXTE PASSENT PAR `texteDuPayload` : un client qui envoie un
+  // nombre ou un objet obtient un 400 explicite, et non plus une exception
+  // rendue en 500 (constat de revue, 2026-09-16).
+  const CHAMPS_TEXTE = [
+    'idPatient',
+    'prenom',
+    'nom',
+    'email',
+    'dateNaissance',
+    'telephone',
+    'adresse',
+    'nir',
+    'medecinTraitantNom',
+    'medecinTraitantCoordonnees',
+  ] as const;
+  const brut: Partial<Record<(typeof CHAMPS_TEXTE)[number], string>> = {};
+  for (const cle of CHAMPS_TEXTE) {
+    const valeur = texteDuPayload((payload as Record<string, unknown>)[cle]);
+    if (valeur === MAL_TYPE) {
+      return NextResponse.json(
+        { success: false, reason: 'invalid_payload', error: `Champ ${cle} invalide : texte attendu.` },
+        { status: 400 }
+      );
+    }
+    if (valeur !== undefined) brut[cle] = valeur;
+  }
+
+  const idPatient = (brut.idPatient ?? '').trim();
+  const telephone = (brut.telephone ?? '').trim().slice(0, 30);
   const actif = payload.actif;
 
   // TOUS CES CHAMPS SONT FACULTATIFS AU PAYLOAD, ET C'EST CE QUI PERMET AUX
@@ -669,13 +718,12 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
   // veut dire « efface » : le formulaire de désactivation n'envoie qu'`actif`, et
   // il ne doit pas effacer l'adresse au passage. Chaque champ est donc lu avec
   // `payload.x !== undefined` plus bas, jamais par la vérité de sa valeur.
-  const prenom = payload.prenom === undefined ? undefined : payload.prenom.trim().slice(0, 100);
-  const nom = payload.nom === undefined ? undefined : payload.nom.trim().slice(0, 100);
+  const prenom = brut.prenom === undefined ? undefined : brut.prenom.trim().slice(0, 100);
+  const nom = brut.nom === undefined ? undefined : brut.nom.trim().slice(0, 100);
   const email =
-    payload.email === undefined ? undefined : payload.email.trim().toLowerCase().slice(0, 254);
-  const dateNaissance =
-    payload.dateNaissance === undefined ? undefined : payload.dateNaissance.trim();
-  const nirSaisi = payload.nir === undefined ? undefined : payload.nir.trim();
+    brut.email === undefined ? undefined : brut.email.trim().toLowerCase().slice(0, 254);
+  const dateNaissance = brut.dateNaissance === undefined ? undefined : brut.dateNaissance.trim();
+  const nirSaisi = brut.nir === undefined ? undefined : brut.nir.trim();
 
   // PRÉNOM ET NOM NE S'EFFACENT PAS. Le modèle les porte en `String` non
   // nullable, et un dossier sans nom n'est plus un dossier : il faudrait alors
@@ -702,6 +750,30 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
       },
       { status: 400 }
     );
+  }
+
+  // TRONQUER UNE ADRESSE, C'EST FABRIQUER UNE ADRESSE FAUSSE.
+  //
+  // `POST` tronque prénom, nom et téléphone, et ce choix se défend là-bas. Ici
+  // il ne se défend plus : une adresse postale coupée à 500 caractères reste
+  // une adresse — lisible, plausible, et incomplète —, et ces champs servent à
+  // ÉCRIRE AUX GENS. On ne peut pas refuser un NIR douteux au nom de « jamais
+  // une donnée fausse » et rogner une adresse dans la même route.
+  //
+  // La borne est celle du `CHECK` de la base : refuser ici rend un message que
+  // le praticien comprend, là où la base rendrait une erreur technique.
+  for (const cle of ['adresse', 'medecinTraitantNom', 'medecinTraitantCoordonnees'] as const) {
+    const valeur = brut[cle];
+    if (valeur !== undefined && valeur.trim().length > BORNES_DOSSIER[cle]) {
+      return NextResponse.json(
+        {
+          success: false,
+          reason: 'invalid_payload',
+          error: `${LIBELLES_DOSSIER[cle]} dépasse ${BORNES_DOSSIER[cle]} caractères. Raccourcissez-la plutôt qu'elle ne soit coupée.`,
+        },
+        { status: 400 }
+      );
+    }
   }
 
   // LE NIR EST REFUSÉ SUR SA CLÉ, PAS SEULEMENT SUR SA FORME — et c'est tout
@@ -756,7 +828,11 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
     // `undefined` = « ne touche pas », `''` = « efface ». Le formulaire de
     // désactivation n'envoie qu'`actif` : sans cette distinction, enregistrer
     // une désactivation viderait l'adresse et le médecin traitant au passage.
-    const borner = (brut: string, max: number) => brut.trim().slice(0, max) || null;
+    // PLUS DE TRONCATURE : la borne est refusée plus haut, explicitement. Cette
+    // fonction ne fait plus que traduire « vide » en `null`, ce que le `CHECK`
+    // de la base exige — il refuse `''` et accepte `NULL`, et c'est la seule
+    // façon de RETIRER un renseignement saisi par erreur.
+    const videVautNull = (valeur: string) => valeur.trim() || null;
     const donneesPatient = {
       ...(prenom !== undefined && { prenom }),
       ...(nom !== undefined && { nom }),
@@ -764,17 +840,14 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
       ...(dateNaissance !== undefined && { dateNaissance: dateNaissance || null }),
       ...(payload.telephone !== undefined && { telephone: telephone || null }),
       ...(payload.adresse !== undefined && {
-        adresse: borner(payload.adresse, BORNES_DOSSIER.adresse),
+        adresse: videVautNull(payload.adresse),
       }),
       ...(nir !== undefined && { nir }),
       ...(payload.medecinTraitantNom !== undefined && {
-        medecinTraitantNom: borner(payload.medecinTraitantNom, BORNES_DOSSIER.medecinTraitantNom),
+        medecinTraitantNom: videVautNull(payload.medecinTraitantNom),
       }),
       ...(payload.medecinTraitantCoordonnees !== undefined && {
-        medecinTraitantCoordonnees: borner(
-          payload.medecinTraitantCoordonnees,
-          BORNES_DOSSIER.medecinTraitantCoordonnees,
-        ),
+        medecinTraitantCoordonnees: videVautNull(payload.medecinTraitantCoordonnees),
       }),
       ...(actif !== undefined && { actif: actif === 'OUI' }),
     };

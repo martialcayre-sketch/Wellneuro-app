@@ -716,6 +716,15 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
           les copies dénormalisées côté route. */}
       {editState && (
         <FicheAdministrativePanel
+          // `key` N'EST PAS DÉCORATIF ICI, ET SON ABSENCE CORROMPAIT DES
+          // DOSSIERS (constat de revue, 2026-09-16). Le panneau initialise son
+          // formulaire UNE FOIS, depuis `patient`. Sans `key`, ouvrir la fiche
+          // d'un second dossier pendant que celle du premier est affichée
+          // réutilise le même composant : le formulaire garde les valeurs du
+          // PREMIER patient, tandis que `patient.idPatient` désigne le SECOND.
+          // Enregistrer écrivait alors le nom, l'e-mail et le NIR de l'un sur
+          // le dossier de l'autre. Changer de clé démonte et remonte.
+          key={editState.idPatient}
           patient={editState}
           onFermer={() => setEditState(null)}
           onEnregistre={async () => {
