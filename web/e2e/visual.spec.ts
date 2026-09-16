@@ -371,9 +371,20 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
     // celui du catalogue.
     await page.getByRole('heading', { name: 'Assignations et packs' }).waitFor();
     await page.getByRole('button', { name: 'Nouvelle assignation' }).waitFor();
-    // Pas de pixel, pour la raison qui valait déjà à la capture précédente :
-    // les assignations dépendent de l'état laissé par les parcours du même run.
-    await capturer(page, testInfo, 'bibliotheque-assignations-packs', { fullPage: true, pixel: false });
+    // PAS DE PLEINE PAGE SUR MOBILE, et ce n'est pas une précaution de style :
+    // en CI, `fullPage` sur iPhone 13 a rendu « Cannot take screenshot larger
+    // than 32767 pixels on any dimension ». La Bibliothèque empile désormais
+    // catalogue, aperçu vierge, file d'envoi, assignations, packs et trois
+    // rayons — sur 390 px de large, la page dépasse ce qu'un navigateur sait
+    // capturer. Même geste que « fiche-trajectoire-onglet » juste au-dessus.
+    //
+    // Pas de pixel non plus, pour la raison qui valait déjà à la capture
+    // précédente : les assignations dépendent de l'état laissé par les
+    // parcours E2E du même run.
+    await capturer(page, testInfo, 'bibliotheque-assignations-packs', {
+      fullPage: !estMobile(testInfo),
+      pixel: false,
+    });
   });
 });
 
