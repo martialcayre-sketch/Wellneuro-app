@@ -60,6 +60,27 @@ describe('renderDocumentHtml', () => {
     expect(html.toLowerCase()).not.toContain('confratern');
   });
 
+  // LE CADRE ET LE TITRE SUIVENT LE MODÈLE ([[D-218]], constat de revue). Ils
+  // étaient en dur : la lettre d'adressage — qui ne transmet AUCUNE exploration
+  // et demande un avis médical avant toute proposition — s'imprimait sous un
+  // en-tête « explorations à discuter », chez un médecin. La garde ne le voit
+  // pas : elle juge le corps, pas ces trois phrases fixes.
+  it('rendu médecin : la lettre d’adressage n’annonce PAS des explorations', () => {
+    const document = { ...docValide(), modeleId: 'courrier_adressage' };
+    const html = renderDocumentHtml(document, 'medecin');
+    expect(html).toContain('adressage sur signal d’alerte');
+    expect(html).toContain('déclarés par le patient');
+    expect(html).not.toContain('explorations à discuter');
+    expect(html).not.toContain('éléments à discuter');
+  });
+
+  it('un modèle inconnu de la table garde le libellé historique', () => {
+    // Ajouter un modèle ne doit rien changer aux rendus existants.
+    const html = renderDocumentHtml(docValide(), 'medecin');
+    expect(html).toContain('explorations à discuter');
+    expect(html).toContain('éléments à discuter');
+  });
+
   // Banc de câblage (Socle LOT-01, carte des chemins sortants —
   // `documents/vocabulaire.ts`) : la garde est indissociable du chokepoint.
   // Retirer l'appel à `assertRenduMedecinNonPrescriptif` de `rendu.ts` rend

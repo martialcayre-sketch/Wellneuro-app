@@ -20,6 +20,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { GET, POST } from './route';
+import { SAFETY_SIGNALS_SHA256 } from '@/lib/clinical/safetySignalsV1';
 // LE GÉNÉRATEUR RÉEL, jamais une copie de sa provenance : c'est lui qui écrit
 // l'ancre consignée. Le banc de concordance ci-dessous épingle ainsi la
 // constante de version de la route sur la source qui la produit — recopier la
@@ -394,15 +395,36 @@ describe('/api/praticien/correspondance-medecin', () => {
     expect(verdict).not.toBe('perimee');
   });
 
-  it('LE VERROU DU SECOND ÉCRIVAIN : une lettre ancrée sur une AUTRE table signée ne rougit pas', async () => {
-    // La lettre d'adressage s'ancrera sur les signaux de sécurité. Sous le
-    // verdict en dur, CHACUNE de ses lignes aurait porté « ancrage périmé »
-    // sans qu'aucune règle clinique n'ait bougé — une fausse alerte sur toute
-    // la chaîne, produite par la seule arrivée d'un second écrivain.
+  it('LE SECOND ÉCRIVAIN EST JUGÉ SUR SA PROPRE TABLE', async () => {
+    // La lettre d'adressage ([[D-218]]) s'ancre sur les signaux de sécurité.
+    // Sous le verdict en dur d'avant le LOT-03, CHACUNE de ses lignes aurait
+    // porté « ancrage périmé » sans qu'aucune règle clinique n'ait bougé — une
+    // fausse alerte sur toute la chaîne d'adressage, produite par la seule
+    // arrivée d'un second écrivain. Elle est désormais comparée au SHA VIVANT
+    // de SA table, et concorde.
+    expect(
+      await ancrageServi({
+        ancrageSha256: SAFETY_SIGNALS_SHA256,
+        ancrageVersion: 'safety-signals-nnpp2-v1',
+      }),
+    ).toBe('concordante');
+    // Et « périmée » y garde son sens : la table est identifiée, son contenu a
+    // bougé depuis que la lettre est partie.
     expect(
       await ancrageServi({
         ancrageSha256: 'b'.repeat(64),
         ancrageVersion: 'safety-signals-nnpp2-v1',
+      }),
+    ).toBe('perimee');
+  });
+
+  it('LE TROISIÈME ÉCRIVAIN, lui, ne rougit pas : il est inconnu, pas périmé', async () => {
+    // Ce que la table protège maintenant : l'écrivain à venir, ajouté sans sa
+    // ligne ici. Il ne ment pas pour autant — il dit qu'on ne sait pas le lire.
+    expect(
+      await ancrageServi({
+        ancrageSha256: 'c'.repeat(64),
+        ancrageVersion: 'table-a-venir-v1',
       }),
     ).toBe('reference_inconnue');
   });

@@ -15,6 +15,29 @@ const DESTINATAIRE_TITRE: Record<Destinataire, string> = {
   praticien: 'Document de travail (praticien)',
 };
 
+/**
+ * LE CADRE ET LE TITRE SUIVENT LE MODÈLE, PLUS LE SEUL DESTINATAIRE.
+ *
+ * Ils étaient en dur, et tous les rendus médecin annonçaient donc
+ * « éléments à discuter » / « explorations à discuter ». C'est juste d'une
+ * proposition d'explorations biologiques ; c'est FAUX de la lettre
+ * d'adressage ([[D-218]]), qui ne transmet aucune exploration et demande un
+ * avis médical AVANT toute proposition. Le papier aurait porté un en-tête
+ * qui contredit son propre corps, chez un médecin, sans qu'aucune garde ne
+ * le voie : la garde juge le corps, pas ces trois phrases fixes.
+ *
+ * Un modèle absent de cette table garde le libellé historique : ajouter un
+ * modèle ne change rien aux rendus existants.
+ */
+const CADRE_MEDECIN_PAR_MODELE: Readonly<Record<string, { titre: string; cadre: string }>> = {
+  courrier_adressage: {
+    titre: 'Correspondance — adressage sur signal d’alerte',
+    cadre:
+      'Éléments déclarés par le patient, transmis pour votre appréciation '
+      + '(échange interprofessionnel).',
+  },
+};
+
 const STYLE = `
   body { font-family: Georgia, 'Times New Roman', serif; color: #1f2937; margin: 0; padding: 2rem; }
   .page { max-width: 42rem; margin: 0 auto; }
@@ -49,6 +72,10 @@ export function renderDocumentHtml(
   options: RenderDocumentOptions = {},
 ): string {
   const blocs = blocsPourDestinataire(document.blocs, destinataire);
+  const specifique = CADRE_MEDECIN_PAR_MODELE[document.modeleId];
+  const titre = destinataire === 'medecin' && specifique
+    ? specifique.titre
+    : DESTINATAIRE_TITRE[destinataire];
   const patientNomHtml = escapeHtml(options.patientNom ?? '');
   const dateHtml = escapeHtml(options.dateDocument ?? '');
 
@@ -64,7 +91,10 @@ export function renderDocumentHtml(
   // la signature du corps porte désormais la qualité en toutes lettres.
   const cadreMedecin =
     destinataire === 'medecin'
-      ? '<p class="cadre">Éléments transmis à titre d’explorations à discuter (échange interprofessionnel).</p>'
+      ? `<p class="cadre">${escapeHtml(
+          specifique?.cadre
+            ?? 'Éléments transmis à titre d’explorations à discuter (échange interprofessionnel).',
+        )}</p>`
       : '';
 
   const corps =
@@ -89,14 +119,14 @@ export function renderDocumentHtml(
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(DESTINATAIRE_TITRE[destinataire])}</title>
+<title>${escapeHtml(titre)}</title>
 <style>${STYLE}</style>
 </head>
 <body>
 <div class="page">
   <div class="header">
     <div class="brand">WELLNEURO</div>
-    <h1 class="title">${escapeHtml(DESTINATAIRE_TITRE[destinataire])}</h1>
+    <h1 class="title">${escapeHtml(titre)}</h1>
     <div class="meta">${patientNomHtml}${patientNomHtml && dateHtml ? ' · ' : ''}${dateHtml}</div>
   </div>
   ${badge}

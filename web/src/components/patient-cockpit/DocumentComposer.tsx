@@ -34,6 +34,7 @@ const SOURCE_LABELS: Record<SourceBloc, string> = {
   synthese_praticien: 'Synthèse praticien',
   synthese_ia: 'Synthèse IA',
   biologie_proposition: 'Proposition biologie',
+  signaux_securite_anamnese: 'Signaux d’alerte déclarés (anamnèse)',
 };
 
 const TYPE_LABELS: Record<TypeBloc, string> = {

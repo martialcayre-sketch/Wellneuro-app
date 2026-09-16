@@ -1,4 +1,5 @@
 import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
+import { SAFETY_SIGNALS_SHA256 } from '@/lib/clinical/safetySignalsV1';
 import type { VerdictAncre } from './correspondanceMedecin';
 
 // Verdict d'ancrage d'une lettre de correspondance médecin ([[D-073]]).
@@ -39,8 +40,8 @@ export type VerdictAncrage = VerdictAncre | 'sans_ancrage';
 
 /**
  * ANCRAGES CONNUS — la version portée par la ligne → le SHA qu'elle doit
- * porter. UN SEUL écrivain ancré existe aujourd'hui ; la table est le verrou du
- * SECOND.
+ * porter. DEUX écrivains ancrés depuis [[D-218]] : le courrier biologie et la
+ * lettre d'adressage.
  *
  * Le verdict se rendait en dur contre la table d'indications biologiques. Une
  * lettre ancrée sur une AUTRE table signée — la lettre d'adressage, sur les
@@ -70,6 +71,10 @@ export type VerdictAncrage = VerdictAncre | 'sans_ancrage';
  */
 const SHA_ATTENDU_PAR_VERSION: ReadonlyMap<string, string> = new Map([
   ['indications-biologie-v1', INDICATIONS_BIOLOGIE_SHA256],
+  // LE SECOND ÉCRIVAIN, et la raison d'être de cette table. Sans cette ligne,
+  // chaque lettre d'adressage lirait `reference_inconnue` dans le fil — et,
+  // sous le verdict en dur d'avant [[D-215]], « ancrage périmé ».
+  ['safety-signals-nnpp2-v1', SAFETY_SIGNALS_SHA256],
 ]);
 
 export function verdictAncrage(sha: string | null, version: string | null): VerdictAncrage {
