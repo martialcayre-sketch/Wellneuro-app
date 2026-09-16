@@ -61,6 +61,8 @@ beforeEach(() => {
     praticienEmail: PRATICIEN,
     actif: true,
     suiviClotureLe: null,
+    prenom: 'Sophie',
+    nom: 'Nicola',
   });
   prisma.correspondanceMedecin.create.mockResolvedValue({});
   deriverPropositionPourPatient.mockResolvedValue({
@@ -95,6 +97,39 @@ describe('câblage resultatsActifs (D-122 §2)', () => {
     expect(genererCourrierBiologie).toHaveBeenCalledWith(
       expect.objectContaining({ resultatsActifs: false }),
     );
+  });
+});
+
+// ── LE PAPIER (LOT-03) ─────────────────────────────────────────────────────
+// La lettre était rendue puis JETÉE : la route ne servait que le texte, et le
+// `html` du générateur n'avait aucun consommateur. Elle sert désormais les
+// deux formes du même rendu — sans rien changer de ce qui est consigné.
+describe('le papier — deux formes servies, une seule consignée', () => {
+  it('sert le rendu imprimable DU GÉNÉRATEUR, à côté du texte', async () => {
+    const reponse = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    const charge = await reponse.json();
+    expect(reponse.status).toBe(201);
+    expect(charge.html).toBe('<p>courrier</p>');
+    expect(charge.texte).toBe('Docteur, …');
+  });
+
+  it('le nom du dossier atteint l’en-tête du papier', async () => {
+    // Une lettre remise à un médecin sans nom de patient n'est pas
+    // exploitable. Le nom vient du DOSSIER, jamais du corps de la requête.
+    await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola', patientNom: 'Injecté' }));
+    expect(genererCourrierBiologie).toHaveBeenCalledWith(
+      expect.objectContaining({ patientNom: 'Sophie Nicola' }),
+    );
+  });
+
+  it('le HTML n’est JAMAIS consigné : la base garde le texte', async () => {
+    await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    const consigne = JSON.stringify(prisma.correspondanceMedecin.create.mock.calls[0][0]);
+    expect(consigne).toContain('Docteur, …');
+    expect(consigne).not.toContain('<p>courrier</p>');
+    // Ni le nom du patient : le dossier le porte déjà, la ligne n'a pas à le
+    // redire — et une identité de plus en base est une identité de plus.
+    expect(consigne).not.toContain('Sophie');
   });
 });
 

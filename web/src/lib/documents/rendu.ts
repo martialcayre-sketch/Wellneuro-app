@@ -56,9 +56,15 @@ export function renderDocumentHtml(
     destinataire === 'patient'
       ? '<div class="badge">Validé par votre praticien</div>'
       : '';
+  // « INTERPROFESSIONNEL », PAS « CONFRATERNEL ». Ce cadre devient du papier
+  // imprimé au LOT-03, signé « Docteur en Pharmacie » : entre deux ordres
+  // distincts, le mot « confraternel » laissait lire une qualité que
+  // l'auteur n'a pas, pour un gain de courtoisie nul — la phrase dit déjà
+  // que ce sont des explorations à discuter. Arbitrage du responsable, et
+  // la signature du corps porte désormais la qualité en toutes lettres.
   const cadreMedecin =
     destinataire === 'medecin'
-      ? '<p class="cadre">Éléments transmis à titre d’explorations à discuter (échange confraternel).</p>'
+      ? '<p class="cadre">Éléments transmis à titre d’explorations à discuter (échange interprofessionnel).</p>'
       : '';
 
   const corps =

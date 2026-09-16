@@ -375,17 +375,53 @@ describe('/api/praticien/correspondance-medecin', () => {
     );
   });
 
-  it('une version différente périme la lettre, MÊME à SHA identique', async () => {
+  it('une version inconnue de la table n’est PAS concordante — et PAS périmée', async () => {
     // CE BANC TUE LA MUTATION « comparer le seul ancrageSha256 » : sous cette
     // mutation la lettre passerait pour concordante, et une table re-signée
     // sous une version neuve deviendrait invisible.
+    //
+    // ET IL DIT LE CHANGEMENT DU LOT-03 : le verdict se rendait en dur contre
+    // la seule table biologique, donc TOUTE ancre étrangère sortait « périmée ».
+    // Une ancre que le produit ne sait pas lire n'est pas une règle qui a
+    // bougé ([[DC-24]]) : elle ne dit rien, et l'écran ne rend rien.
     const { ancrageHash } = provenanceReelle();
-    expect(
-      await ancrageServi({ ancrageSha256: ancrageHash, ancrageVersion: 'indications-biologie-v2' }),
-    ).toBe('perimee');
+    const verdict = await ancrageServi({
+      ancrageSha256: ancrageHash,
+      ancrageVersion: 'indications-biologie-v2',
+    });
+    expect(verdict).toBe('reference_inconnue');
+    expect(verdict).not.toBe('concordante');
+    expect(verdict).not.toBe('perimee');
   });
 
-  it('un SHA différent périme la lettre, à version identique', async () => {
+  it('LE VERROU DU SECOND ÉCRIVAIN : une lettre ancrée sur une AUTRE table signée ne rougit pas', async () => {
+    // La lettre d'adressage s'ancrera sur les signaux de sécurité. Sous le
+    // verdict en dur, CHACUNE de ses lignes aurait porté « ancrage périmé »
+    // sans qu'aucune règle clinique n'ait bougé — une fausse alerte sur toute
+    // la chaîne, produite par la seule arrivée d'un second écrivain.
+    expect(
+      await ancrageServi({
+        ancrageSha256: 'b'.repeat(64),
+        ancrageVersion: 'safety-signals-nnpp2-v1',
+      }),
+    ).toBe('reference_inconnue');
+  });
+
+  it('une version héritée du prototype n’est pas une version connue', async () => {
+    // La clé vient de la BASE : `constructor` ou `toString` rendraient, d'un
+    // objet nu, une valeur héritée — donc un verdict « périmée » fabriqué par
+    // la structure de données elle-même.
+    for (const version of ['constructor', 'toString', '__proto__']) {
+      expect(await ancrageServi({ ancrageSha256: 'b'.repeat(64), ancrageVersion: version })).toBe(
+        'reference_inconnue',
+      );
+    }
+  });
+
+  it('un SHA différent périme la lettre, à version CONNUE', async () => {
+    // C'est ici, et seulement ici, que « périmée » garde son sens : la table
+    // est identifiée, son SHA vivant a bougé — le contenu de référence a donc
+    // changé depuis que la lettre est partie ([[D-079]] : le SHA fait foi).
     const { version } = provenanceReelle();
     expect(await ancrageServi({ ancrageSha256: 'f'.repeat(64), ancrageVersion: version })).toBe(
       'perimee',

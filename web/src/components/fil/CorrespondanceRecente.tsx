@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { CorrespondanceRecentesApiResponse } from '@/app/api/praticien/correspondance-medecin/recentes/route';
 import { libelleTemporel } from '@/lib/fil/horodatage';
 import { PanneauRail } from '@/components/fil/PanneauRail';
-import { libelleSens } from '@/lib/praticien/correspondanceMedecin';
+import { libelleLigne } from '@/lib/praticien/correspondanceMedecin';
 
 /** Panneau « Correspondance récente » de l'aside (accueil Observatoire
  * LOT-02) : dernières consignations d'échanges médecin (C3 LOT-06). Le
@@ -75,7 +75,7 @@ export function CorrespondanceRecente() {
                 </span>
               </span>
               <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                {libelleSens(ligne.sens)} — {ligne.medecinLibelle}
+                {libelleLigne(ligne.sens, ligne.ancrage)} — {ligne.medecinLibelle}
               </span>
             </Link>
           ))}

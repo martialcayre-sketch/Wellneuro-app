@@ -50,6 +50,16 @@ describe('renderDocumentHtml', () => {
     expect(contientTermePrescriptif(html)).toBe(false);
   });
 
+  // Ce cadre devient du PAPIER au LOT-03, signé « Docteur en Pharmacie ».
+  // « Confraternel » y laissait lire une qualité que l'auteur n'a pas, pour
+  // un gain nul : la phrase dit déjà que ce sont des explorations à discuter.
+  // Le mot ne revient pas par une reformulation — ce banc le tient.
+  it('rendu médecin : l’échange est INTERPROFESSIONNEL, jamais confraternel', () => {
+    const html = renderDocumentHtml(docValide(), 'medecin');
+    expect(html).toContain('échange interprofessionnel');
+    expect(html.toLowerCase()).not.toContain('confratern');
+  });
+
   // Banc de câblage (Socle LOT-01, carte des chemins sortants —
   // `documents/vocabulaire.ts`) : la garde est indissociable du chokepoint.
   // Retirer l'appel à `assertRenduMedecinNonPrescriptif` de `rendu.ts` rend

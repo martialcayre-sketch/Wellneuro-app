@@ -29,12 +29,22 @@ import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
 // Le praticien ne fournit qu'une chose : le libellé du médecin destinataire.
 // L'auteur, la date et l'ancre viennent tous du serveur.
 //
-// Remise MANUELLE : aucun envoi. La réponse rend le texte pour transcription.
+// Remise MANUELLE : aucun envoi. La réponse rend DEUX formes du même
+// courrier — `texte` à transcrire, `html` à imprimer — toutes deux issues du
+// même rendu jugé par la garde. Le `html` n'est PAS consigné : la base garde
+// le texte, l'impression est un artefact de sortie.
 
 const ROUTE_JOURNAL = '/api/praticien/biologie/proposition/courrier';
 
 export type CourrierApiResponse =
-  | { ok: true; texte: string; ancrageSha256: string; ancrageVersion: string }
+  | {
+      ok: true;
+      texte: string;
+      /** Rendu médecin autonome et imprimable — jamais consigné, jamais reçu du client. */
+      html: string;
+      ancrageSha256: string;
+      ancrageVersion: string;
+    }
   | { ok: false; reason: string; error: string };
 
 const MESSAGES_REFUS_COURRIER: Record<string, string> = {
@@ -95,7 +105,12 @@ export async function POST(req: Request) {
     // seulement dans l'écran.
     const patient = await prisma.patient.findUnique({
       where: { idPatient },
-      select: { actif: true, suiviClotureLe: true },
+      // `prenom`/`nom` : l'en-tête du papier doit dire DE QUI il parle — une
+      // lettre remise à un médecin sans nom de patient n'est pas exploitable.
+      // Cette lecture est celle d'un dossier NOMMÉ, déjà journalisée par
+      // `garderProposition` ci-dessus ; elle ne sort pas d'ici : le nom entre
+      // dans le HTML rendu, jamais dans le texte consigné ni dans un log.
+      select: { actif: true, suiviClotureLe: true, prenom: true, nom: true },
     });
     if (!patient || !accepteNouvelEnvoi(patient)) {
       return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
@@ -117,6 +132,7 @@ export async function POST(req: Request) {
       // dirait ce qui a été relu, pas ce qui a servi.
       tableSha256: INDICATIONS_BIOLOGIE_SHA256,
       dateCourrier: maintenant,
+      patientNom: `${patient.prenom} ${patient.nom}`.trim(),
       // La phrase « aucun résultat conservé » suit l'état réel de l'étage 2.
       resultatsActifs: isCbResultsEnabled(),
     });
@@ -176,6 +192,7 @@ export async function POST(req: Request) {
       {
         ok: true,
         texte: genere.courrier.texte,
+        html: genere.courrier.html,
         ancrageSha256: provenance.ancrageHash,
         ancrageVersion: provenance.version,
       },

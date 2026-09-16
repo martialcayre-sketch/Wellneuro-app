@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
+import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 import { genererCourrierBiologie } from './courrier';
 import type { LignePanelProposition } from './statuts';
 
@@ -171,6 +172,48 @@ describe('couplage rendu ↔ consigné (revue M1, D-073)', () => {
     const bloc = resultat.courrier.document.blocs[0];
     expect(bloc.contenu.medecin).toBe(resultat.courrier.texte);
     expect(resultat.courrier.html).toContain('Socle');
+  });
+});
+
+describe('le papier — signataire et en-tête (LOT-03)', () => {
+  it('signe la lettre, et la signature part par les DEUX chemins de remise', () => {
+    // Le courrier allait du littéral « Docteur, » à une date, sans signataire :
+    // imprimé et remis à un médecin, il ne disait ni qui l'écrit ni à quel
+    // titre. Le titre est ce qui dit au lecteur que l'auteur n'est pas médecin.
+    const resultat = genererCourrierBiologie(entree([
+      ligne({ panelCode: 'PANEL_SOCLE', libelle: 'Socle' }),
+    ]));
+    if (!resultat.ok) throw new Error('refus inattendu');
+    expect(resultat.courrier.texte).toContain(SIGNATURE_PRATICIEN);
+    expect(resultat.courrier.texte.endsWith(SIGNATURE_PRATICIEN)).toBe(true);
+    // Elle est DANS le corps, pas dans le gabarit d'impression : le texte
+    // consigné — celui qu'on transcrit à la main — la porte aussi, et elle
+    // passe donc sous la garde non prescriptive du rendu.
+    expect(resultat.courrier.document.blocs[0].contenu.medecin).toBe(resultat.courrier.texte);
+    expect(resultat.courrier.html).toContain('Docteur en Pharmacie');
+  });
+
+  it('l’en-tête du rendu nomme le patient ; le texte consigné, lui, ne le nomme pas', () => {
+    // Une lettre remise à un médecin doit dire de qui elle parle. Le nom vit
+    // dans l'en-tête du RENDU : ce qui part en base reste le texte, et une
+    // identité de plus y serait une donnée que la consignation n'a pas à
+    // porter deux fois.
+    const resultat = genererCourrierBiologie({
+      ...entree([ligne({ panelCode: 'PANEL_SOCLE', libelle: 'Socle' })]),
+      patientNom: 'Sophie Nicola',
+    });
+    if (!resultat.ok) throw new Error('refus inattendu');
+    expect(resultat.courrier.html).toContain('Sophie Nicola');
+    expect(resultat.courrier.texte).not.toContain('Sophie Nicola');
+  });
+
+  it('sans nom fourni, l’en-tête n’en invente aucun', () => {
+    const resultat = genererCourrierBiologie(entree([
+      ligne({ panelCode: 'PANEL_SOCLE', libelle: 'Socle' }),
+    ]));
+    if (!resultat.ok) throw new Error('refus inattendu');
+    expect(resultat.courrier.html).toContain('2026-08-15');
+    expect(resultat.courrier.html).toContain('<div class="meta">2026-08-15</div>');
   });
 });
 

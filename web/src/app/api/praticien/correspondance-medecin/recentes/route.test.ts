@@ -20,6 +20,8 @@ const LIGNE = {
   sens: 'entrant',
   medecinLibelle: 'Dr Exemple',
   consigneLe: new Date('2026-07-15T08:00:00.000Z'),
+  ancrageSha256: null,
+  ancrageVersion: null,
 };
 
 describe('GET /api/praticien/correspondance-medecin/recentes', () => {
@@ -68,6 +70,42 @@ describe('GET /api/praticien/correspondance-medecin/recentes', () => {
     // plus de raison de lire au-delà des cinq dernières lignes.
     expect(payload.nbRecentes7j).toBeUndefined();
     expect(prisma.correspondanceMedecin.count).not.toHaveBeenCalled();
+  });
+
+  // ── L'ORIGINE SE SERT, ELLE NE SE DEVINE PAS ──────────────────────────────
+  // Sans le verdict, cet écran ne peut pas savoir qu'une lettre a été GÉNÉRÉE :
+  // il la donne pour un envoi consigné pendant que la fiche la dit préparée.
+  // Une ligne, deux écrans, deux affirmations incompatibles — le défaut exact
+  // que D-209 a fermé sur `sens`, rouvert par le libellé d'origine.
+  it('sert le VERDICT d’ancrage, jamais le SHA ni la version', async () => {
+    prisma.correspondanceMedecin.findMany.mockResolvedValue([
+      {
+        ...LIGNE,
+        sens: 'sortant',
+        ancrageSha256: 'f'.repeat(64),
+        ancrageVersion: 'indications-biologie-v1',
+      },
+    ]);
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
+    ]);
+    const res = await GET();
+    const payload = await res.json();
+    // Version connue, SHA qui ne concorde pas : périmée. Le verdict est CALCULÉ
+    // ici, pas recopié d'ailleurs.
+    expect(payload.lignes[0].ancrage).toBe('perimee');
+    const charge = JSON.stringify(payload.lignes);
+    expect(charge).not.toContain('f'.repeat(64));
+    expect(charge).not.toContain('indications-biologie-v1');
+  });
+
+  it('une ligne sans ancre le dit, et ne devient pas périmée', async () => {
+    prisma.correspondanceMedecin.findMany.mockResolvedValue([LIGNE]);
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
+    ]);
+    const payload = await (await GET()).json();
+    expect(payload.lignes[0].ancrage).toBe('sans_ancrage');
   });
 
   it('un sens hors vocabulaire est exposé `null`, JAMAIS replié sur « sortant »', async () => {
