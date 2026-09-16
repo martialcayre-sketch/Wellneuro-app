@@ -6500,3 +6500,33 @@ geste du responsable.
 
 **Question ouverte** : quel rang l'occupe — et `D-112`, mesuré trois fois de suite, pèse
 contre tout rang qui ajoute une surface.
+
+## 2026-09-16 02:00 — La clôture mergée, et 6.0-B lu sans être ouvert
+
+**Merge** : PR #1131 (`b368677a`). Le CI avait d'abord **refusé la clôture** —
+`wn-campaign-audit.mjs` est bloquant en CI et **absent de T1** (il n'entre qu'à T2),
+et il a rendu `closed_campaign_with_open_lots` sur le `LOT-01` d'IDP2 dont le statut
+disait « clos », mot que `isClosedStatus` ne connaît pas. Corrigé en alignant **le
+fichier** (« livré », comme ses deux frères), jamais en élargissant le garde. Audit
+rejoué sur le `main` fusionné : `AUDIT-EXIT=0`. La notification de tâche de fond a
+menti une seconde fois sur son code de sortie ; seul le fichier de log fait foi.
+
+**6.0-B *charge et capacité* lu, non ouvert** : dossier init-only (ni `CAMPAGNE.md`,
+ni `lots/` ; tout le contenu dans le brief). Quatre lots esquissés — budget d'effort,
+« simplifier mon protocole » par `ProtocolDraft` chaîné, mode « semaine compliquée »,
+check-in v3. Vérifié contre le dépôt : le gate d'entrée **est levé** (6.0-A livrée le
+2026-08-22) et les ancrages existent ; mais la prémisse du lot 4 a vieilli — le
+catalogue est **déjà en v2** (C4 LOT-05) —, et le lot 1 coûte un changement de contrat
+(`TherapeuticLoad.source` est le littéral `'practitioner'`).
+
+**Recommandation de l'outil, pas un arbitrage** : ne pas ouvrir de campagne ; faire
+passer **un dossier réel** dans le constructeur une fois. Les quatre lots de 6.0-B sont
+en aval du protocole diffusé, mesuré à zéro la veille. Et la relecture d'usage à deux
+semaines ne dira rien si rien n'est tenté d'ici là : on re-mesurerait l'inaction, pas
+l'outil. Si de l'ingénierie doit se faire, la seule pièce sur ce chemin est la **dette
+(1) de `D-200`** — le praticien n'a aucun aperçu de ce que son patient lira, sur aucun
+dossier réel.
+
+**Vérifications** : banc de cohérence d'état et audit de campagnes. Aucun code touché.
+
+**Prochaine action** : attendre le geste du responsable sur le créneau primaire.
