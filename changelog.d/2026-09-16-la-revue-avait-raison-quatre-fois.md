@@ -1,19 +1,35 @@
-### La revue avait raison quatre fois, et le compteur cesse de lire tout l'historique (2026-09-16)
+### La revue avait raison six fois, et le compteur cesse de charger tout l'historique (2026-09-16)
 
 Quatre PR de la campagne Correspondance ont été mergées le même jour sur CI vert,
 **sans que la revue de Copilot soit lue**. Elle portait six constats ; quatre
 tiennent après vérification, et deux d'entre eux sont des défauts dans du code
-déjà en production. Aucun n'aurait pu être vu par un CI.
+déjà en production. Aucun n'aurait pu être vu par un CI. La revue de ce correctif
+en a ajouté deux autres, retenus eux aussi — dont un qui visait la façon dont ce
+texte se décrivait lui-même.
 
-**Le compteur du rail ramenait tout l'historique du praticien.** La première
+**Le compteur du rail chargeait tout l'historique du praticien.** La première
 écriture de `D-210` remplaçait un `count` borné à sept jours par un `findMany`
 sur **toutes** les lignes, trié et dédupliqué en Node. La requête n'était bornée
 par rien : elle croissait avec chaque ligne d'historique, et le rail la déclenche
 à chaque montage — deux instances par page. La déduplication se fait désormais en
 base (`DISTINCT ON (id_patient)`), et une seule ligne traverse le réseau.
 
-La sémantique ne change pas d'un iota. Ce qui change est où elle s'exécute, et
-**comment elle se prouve**.
+**Ce que ce correctif ne fait PAS**, et que la première rédaction de ce fragment
+promettait de travers : le parcours en base reste entier. `praticien_email` ne
+porte aucun index, donc PostgreSQL balaye toujours l'historique avant de
+dédupliquer. Le compteur ne cesse pas de *lire* tout l'historique — il cesse de le
+*charger*. L'index qui fermerait le parcours est une migration, donc un arbitrage
+distinct ; sur un cabinet mono-praticien la colonne ne discrimine d'ailleurs rien.
+
+**Le départage sur égalité de date manquait.** `consigne_le` est un
+`TIMESTAMP(3)` : deux consignations de la même milliseconde sont possibles, et
+`DISTINCT ON` choisissait alors une ligne au hasard — le badge pouvait compter le
+mauvais sens. L'ordre départage désormais en faveur de ce qui **n'est pas** un
+envoi : quand on ne peut pas savoir laquelle des deux lignes est la dernière, on
+n'invente pas une attente (`DC-24`).
+
+La sémantique du compteur ne change pas d'un iota. Ce qui change est où elle
+s'exécute, et **comment elle se prouve**.
 
 **Le banc de ce compteur était creux, et c'est le plus gênant des quatre.** Il
 prétendait éprouver « la dernière ligne du dossier décide » en servant à un mock

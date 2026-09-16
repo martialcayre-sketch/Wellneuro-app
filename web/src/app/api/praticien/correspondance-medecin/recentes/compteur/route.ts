@@ -80,27 +80,36 @@ export async function GET(): Promise<NextResponse<CorrespondanceCompteurApiRespo
     // d'historique, et le rail la déclenche à chaque montage — deux instances
     // par page. Constat de revue de la PR #1148, retenu.
     //
-    // `DISTINCT ON (id_patient)` avec `ORDER BY id_patient, consigne_le DESC`
-    // retient la dernière ligne de chaque dossier ; le filtre extérieur ne garde
-    // que celles qui sont un envoi antérieur au seuil. Une seule ligne traverse
-    // le réseau.
+    // CE QUI CHANGE EXACTEMENT, ET CE QUI NE CHANGE PAS. La déduplication
+    // descend en base : une seule ligne traverse le réseau, et Node ne trie plus
+    // rien. **Le parcours en base, lui, reste entier** — `praticien_email` ne
+    // porte aucun index (le seul de la table est `(id_patient, consigne_le)`),
+    // donc PostgreSQL balaye toujours l'historique avant de dédupliquer. Dire
+    // que le compteur « ne lit plus tout l'historique » serait faux : il ne le
+    // CHARGE plus. Constat de revue de la PR #1157, retenu.
+    //
+    // L'index qui fermerait le parcours est une migration, donc un arbitrage
+    // distinct et jamais un effet de bord. Sur un cabinet mono-praticien la
+    // colonne ne discrimine d'ailleurs rien ; l'index devient utile au second
+    // compte, pas avant.
+    //
+    // DÉPARTAGE DÉTERMINISTE, ET CONSERVATEUR. `consigne_le` est un
+    // `TIMESTAMP(3)` : deux consignations dans la même milliseconde sont
+    // possibles, et `DISTINCT ON` choisirait alors une ligne au hasard — le
+    // badge pourrait compter le mauvais sens. Sur une égalité, l'ordre départage
+    // d'abord en faveur de ce qui n'est PAS un envoi : quand on ne peut pas
+    // savoir laquelle des deux lignes est la dernière, on n'invente pas une
+    // attente ([[DC-24]]). `id` ferme ensuite le cas de l'égalité complète.
     //
     // `sens` est comparé au littéral `'sortant'` : une valeur hors vocabulaire
-    // n'est donc jamais comptée — une attente ne s'invente pas sur une donnée
-    // illisible ([[DC-24]]). La colonne n'a aucun CHECK.
-    //
-    // RÉSERVE : `praticien_email` ne porte AUCUN index (le seul index de la
-    // table est `(id_patient, consigne_le)`). Le balayage reste donc séquentiel.
-    // Sur un cabinet mono-praticien la colonne ne discrimine rien et l'index ne
-    // servirait à rien ; il deviendra utile le jour d'un second compte, et c'est
-    // une migration — donc un arbitrage distinct, pas un effet de bord.
+    // n'est donc jamais comptée. La colonne n'a aucun CHECK.
     const [ligne] = await prisma.$queryRaw<{ nb: number }[]>`
       SELECT count(*)::int AS nb
       FROM (
         SELECT DISTINCT ON (id_patient) id_patient, sens, consigne_le
         FROM correspondances_medecin
         WHERE praticien_email = ${email}
-        ORDER BY id_patient, consigne_le DESC
+        ORDER BY id_patient, consigne_le DESC, (sens = 'sortant') ASC, id DESC
       ) AS dernieres
       WHERE sens = 'sortant' AND consigne_le < ${seuil}
     `;

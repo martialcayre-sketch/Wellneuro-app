@@ -77,6 +77,10 @@ describe('GET /api/praticien/correspondance-medecin/recentes/compteur', () => {
     expect(sql).toContain('DISTINCT ON (id_patient)');
     expect(sql).toContain('ORDER BY id_patient, consigne_le DESC');
     expect(sql).toContain("sens = 'sortant'");
+    // Le départage sur égalité de `consigne_le` fait partie de la sémantique,
+    // pas du confort : sans lui, `DISTINCT ON` choisit au hasard entre deux
+    // lignes de la même milliseconde, et le badge peut compter le mauvais sens.
+    expect(sql).toContain("(sens = 'sortant') ASC, id DESC");
     // Ni le texte consigné ni la désignation du médecin ne sortent de la base.
     expect(sql).not.toContain('texte');
     expect(sql).not.toContain('medecin_libelle');

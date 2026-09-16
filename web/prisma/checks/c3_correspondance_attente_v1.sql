@@ -41,7 +41,7 @@ DECLARE
       SELECT DISTINCT ON (id_patient) id_patient, sens, consigne_le
       FROM correspondances_medecin
       WHERE praticien_email = $1
-      ORDER BY id_patient, consigne_le DESC
+      ORDER BY id_patient, consigne_le DESC, (sens = 'sortant') ASC, id DESC
     ) AS dernieres
     WHERE sens = 'sortant' AND consigne_le < $2
   $q$;
@@ -104,7 +104,26 @@ BEGIN
     RAISE EXCEPTION 'ATTENTE: le compteur d’un autre praticien voit des dossiers qui ne sont pas les siens (compté %).', nb;
   END IF;
 
-  RAISE NOTICE 'ATTENTE: déduplication, seuil, sens illisible et cloisonnement praticien éprouvés contre PostgreSQL.';
+  -- ── 6. ÉGALITÉ EXACTE DE `consigne_le` : AUCUNE ATTENTE INVENTÉE ────────
+  -- `consigne_le` est un `TIMESTAMP(3)` : deux consignations de la même
+  -- milliseconde sont possibles, et `DISTINCT ON` choisirait alors au hasard.
+  -- Le départage penche du côté qui n'alerte pas : quand on ne peut pas savoir
+  -- laquelle des deux lignes est la dernière, on n'invente pas une tâche
+  -- ([[DC-24]]). Constat de revue de la PR #1157.
+  --
+  -- Sans départage, ce bloc est INDÉTERMINISTE — il passerait parfois. C'est
+  -- précisément ce qu'il refuse.
+  DELETE FROM correspondances_medecin WHERE id_patient = 'PAT_ATT_3';
+  INSERT INTO correspondances_medecin (id, id_patient, praticien_email, sens, medecin_libelle, texte, consigne_le) VALUES
+    ('att_6a', 'PAT_ATT_3', PRATICIEN, 'sortant', 'Dr Test', 'Envoi.',   CURRENT_TIMESTAMP - INTERVAL '30 days'),
+    ('att_6b', 'PAT_ATT_3', PRATICIEN, 'entrant', 'Dr Test', 'Réponse.', CURRENT_TIMESTAMP - INTERVAL '30 days');
+
+  EXECUTE compteur INTO nb USING PRATICIEN, seuil;
+  IF nb <> 1 THEN
+    RAISE EXCEPTION 'ATTENTE: sur une égalité de consigne_le, le compteur a retenu l’envoi et inventé une attente (compté % au lieu de 1 — seul PAT_ATT_2 doit compter).', nb;
+  END IF;
+
+  RAISE NOTICE 'ATTENTE: déduplication, seuil, sens illisible, égalité de date et cloisonnement praticien éprouvés contre PostgreSQL.';
 END $$;
 
 ROLLBACK;

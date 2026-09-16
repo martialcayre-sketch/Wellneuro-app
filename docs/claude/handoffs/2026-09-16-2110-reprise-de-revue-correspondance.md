@@ -28,6 +28,17 @@ tiennent après vérification, dont **deux défauts dans du code en production**
 Le dernier mérite d'être écrit : `maxLength` tronque sur la longueur **brute**.
 Trimer le compteur annoncerait de la marge là où le navigateur coupe déjà.
 
+**La revue de CE correctif en a ajouté deux, retenus tous les deux.** `DISTINCT
+ON` était indéterministe sur une égalité de `consigne_le` — un `TIMESTAMP(3)`,
+donc deux consignations de la même milliseconde sont possibles : PostgreSQL
+choisissait au hasard, et le badge pouvait compter le mauvais sens. Le départage
+penche désormais du côté qui **n'alerte pas**.
+
+Et le second visait **la façon dont ce diff se décrivait** : « le compteur cesse
+de lire tout l'historique » est faux au niveau base, faute d'index sur
+`praticien_email`. Il cesse de le *charger* ; le parcours reste entier. La phrase
+a été corrigée partout plutôt que défendue.
+
 ## Décisions prises
 
 **La sémantique du compteur descend en SQL, et sa preuve avec elle.** Un mock ne
@@ -36,11 +47,12 @@ c3_correspondance_attente_v1.sql` l'éprouve contre un vrai PostgreSQL ; le banc
 unitaire ne prétend plus qu'aux gardes et à la forme de la requête, et le dit en
 toutes lettres.
 
-**Aucun index n'est ajouté.** `praticien_email` n'en porte pas — le seul index de
-la table est `(id_patient, consigne_le)`. Sur un cabinet mono-praticien la colonne
-ne discrimine rien ; l'index deviendra utile au second compte, et c'est une
-migration, donc un arbitrage distinct. Écrit dans la route plutôt que laissé à
-découvrir.
+**Aucun index n'est ajouté**, donc le parcours en base reste entier. C'est la
+limite exacte du correctif, et elle est écrite dans la route : le compteur cesse
+de *charger* l'historique, pas de le *lire*. `praticien_email` ne porte aucun
+index ; sur un cabinet mono-praticien la colonne ne discrimine rien, et l'index
+deviendra utile au second compte — c'est une migration, donc un arbitrage
+distinct.
 
 ## Fichiers modifiés
 
