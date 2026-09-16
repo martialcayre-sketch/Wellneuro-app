@@ -6413,6 +6413,24 @@ auto. Le créneau primaire reste vide par décision jusque-là.
 **Question ouverte** : la clôture formelle de la campagne, désormais possible — la
 contre-revue qu'elle attendait est faite.
 
+## 2026-09-16 — Reflow clos, corpus rendu désignable, MMSE mesuré
+
+**#1130 mergée** (`c4464a51`) : plancher de hauteur des deux côtés de `CeQuiComptePanel`,
+saut 50 px → 0. Le banc instrumenté a **réfuté** le mécanisme proposé (l'ancrage de
+défilement compense ; le clic atteint sa cible) tout en confirmant la chronologie — **la
+cause du flake CI reste inconnue**, écrit tel quel. Options écartées : réserver par du texte
+invisible (le garde clinique a rougi, à raison) et plancher d'un seul côté (50 → 2 px,
+rejoué à l'envers).
+
+**#1132 ouverte, CI en cours** : 25 identifiants écrits, entrées à DOI/PMID de 12 à 37 sur
+65. Le recroisement PubMed a rattrapé un faux positif sur le HIT-6. Trois négatifs
+consignés, dont la Conners 3 — aucune publication n'existe. MMSE : la HAS n'écrit pas les
+quatre bandes servies ; aucune bande touchée, arbitrage nommé au registre.
+
+**Prochaine action** : lire `ci-1132.log`, merger sur `WN-CI-EXIT=0` seul.
+
+**Ouvert** : bandes MMSE, `Q_ALI_03`, ELFE, Conners 3, agenda sommeil, `Q_ALI_09` ; quatre
+réserves qui n'attendent qu'une lecture de source, dont deux portent des chiffres affichés.
 ## 2026-09-16 01:00 — Seconde contre-expertise sur #1125 : l'écran ne lisait que le booléen ([[D-202]])
 
 **Le banc administrait la preuve du trou qu'il couvrait.** `DecisionSummaryCard`
@@ -6539,3 +6557,32 @@ bas, que les quatre priorités sont distinctes — c'est ce qui rend le troisiè
 terme inatteignable, et c'est écrit dans la surface relue deux fois. J'ai quand
 même proposé une option qui supposait le contraire. La réponse est dans ce que je
 fais lire, pas seulement dans ce que je vérifie après coup.
+## 2026-09-16 02:00 — La clôture mergée, et 6.0-B lu sans être ouvert
+
+**Merge** : PR #1131 (`b368677a`). Le CI avait d'abord **refusé la clôture** —
+`wn-campaign-audit.mjs` est bloquant en CI et **absent de T1** (il n'entre qu'à T2),
+et il a rendu `closed_campaign_with_open_lots` sur le `LOT-01` d'IDP2 dont le statut
+disait « clos », mot que `isClosedStatus` ne connaît pas. Corrigé en alignant **le
+fichier** (« livré », comme ses deux frères), jamais en élargissant le garde. Audit
+rejoué sur le `main` fusionné : `AUDIT-EXIT=0`. La notification de tâche de fond a
+menti une seconde fois sur son code de sortie ; seul le fichier de log fait foi.
+
+**6.0-B *charge et capacité* lu, non ouvert** : dossier init-only (ni `CAMPAGNE.md`,
+ni `lots/` ; tout le contenu dans le brief). Quatre lots esquissés — budget d'effort,
+« simplifier mon protocole » par `ProtocolDraft` chaîné, mode « semaine compliquée »,
+check-in v3. Vérifié contre le dépôt : le gate d'entrée **est levé** (6.0-A livrée le
+2026-08-22) et les ancrages existent ; mais la prémisse du lot 4 a vieilli — le
+catalogue est **déjà en v2** (C4 LOT-05) —, et le lot 1 coûte un changement de contrat
+(`TherapeuticLoad.source` est le littéral `'practitioner'`).
+
+**Recommandation de l'outil, pas un arbitrage** : ne pas ouvrir de campagne ; faire
+passer **un dossier réel** dans le constructeur une fois. Les quatre lots de 6.0-B sont
+en aval du protocole diffusé, mesuré à zéro la veille. Et la relecture d'usage à deux
+semaines ne dira rien si rien n'est tenté d'ici là : on re-mesurerait l'inaction, pas
+l'outil. Si de l'ingénierie doit se faire, la seule pièce sur ce chemin est la **dette
+(1) de `D-200`** — le praticien n'a aucun aperçu de ce que son patient lira, sur aucun
+dossier réel.
+
+**Vérifications** : banc de cohérence d'état et audit de campagnes. Aucun code touché.
+
+**Prochaine action** : attendre le geste du responsable sur le créneau primaire.
