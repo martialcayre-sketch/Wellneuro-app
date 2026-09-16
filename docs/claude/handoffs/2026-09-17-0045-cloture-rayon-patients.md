@@ -49,14 +49,19 @@ Numéros pris **au merge**, jamais réservés d'avance.
   CI ; bancs unitaires verts.
 - `node --test scripts/wn-coherence-etat.test.mjs` — **29/29**.
 - Contre-revue adverse menée **avant** la clôture, pas après.
+- **Constat en production** par one-off détaché, comptages seuls — la ligne de
+  base est prise, et elle a établi un fait que le cadrage supposait.
 
 ## Problèmes ouverts
 
-1. **Le constat d'usage n'est pas fait.** Combien de dossiers portent une fiche
-   signalétique et une anamnèse réellement lisibles, combien portent un
-   renseignement administratif. Se lit par identifiant au conteneur (`D-125`),
-   jamais depuis le dépôt. La campagne se clôt sur ses livrables ; l'usage se
-   constate après déploiement (`D-112`).
+1. **La ligne de base EST prise ; la reprise reste due.** Lecture au conteneur du
+   2026-09-17, comptages seuls : **29 dossiers, 36 consultations, 22 fiches
+   signalétiques, 21 anamnèses** — et **0 adresse, 0 NIR, 0 médecin traitant**.
+   Les 22 et 21 établissent que le manque n'était pas théorique ; les trois zéros
+   mesurent l'instant d'avant, le code consommateur n'étant pas encore en ligne.
+   La requête est conservée telle quelle
+   (`campagnes/2026-09-16-rayon-patients/CONSTAT_LIGNE_DE_BASE.sql`) : la
+   rejouer **à l'identique** est la seule façon d'en tirer un constat (`D-112`).
 2. **`D-049` reste ouverte** — cause racine non trouvée, trois occurrences cette
    nuit sur la même spec.
 3. **Deux chantiers nommés, non ouverts** : le raccord du médecin traitant au
@@ -73,8 +78,9 @@ Numéros pris **au merge**, jamais réservés d'avance.
 appartient au responsable. Si une session reprend : lire la tête de
 `next_action`, qui porte le bilan complet.
 
-La seule chose à faire **quand le déploiement sera constaté** : la lecture
-d'usage au conteneur, en comptages seuls, par identifiant.
+La seule chose à faire **quand le déploiement sera constaté et qu'un praticien
+sera passé sur la fiche** : rejouer `CONSTAT_LIGNE_DE_BASE.sql` **à l'identique**
+et comparer aux sept nombres du 2026-09-17.
 
 ## Interdits encore actifs
 

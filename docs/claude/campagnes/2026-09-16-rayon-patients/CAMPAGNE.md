@@ -201,11 +201,39 @@ constaté depuis la base »).
    chantier est distinct.
 2. **La qualification du NIR au titre de l'article 9** — écrite comme **due** au
    dossier RGPD, elle appartient au responsable de traitement.
-3. **Le constat d'usage sur dossiers réels** — combien de dossiers portent une
-   fiche signalétique et une anamnèse réellement lisibles, et combien portent un
-   renseignement administratif. Se lit par identifiant au conteneur, jamais
-   depuis le dépôt. Non fait à la clôture : la campagne se clôt sur ses
-   livrables, l'usage se constate après déploiement ([[D-112]]).
+3. **Le constat d'usage après déploiement.** La LIGNE DE BASE, elle, est prise —
+   voir ci-dessous. Ce qui reste est de la rejouer à l'identique une fois le code
+   en ligne et le praticien passé dessus : la reformuler déplacerait la question
+   ([[D-112]]).
 4. **`D-049`** — la signature WebKit/iPhone 13 a rougi T2 trois fois de suite sur
    `portail-dossier-deux-voix`, toujours « navigation expirée, aucune requête de
    page émise », jamais en CI. Rien de neuf : la cause racine reste ouverte.
+
+### Ligne de base, lue en production le 2026-09-17
+
+One-off Scalingo détaché, **comptages seuls**, aucune donnée nominative lue :
+
+| Mesure | Valeur |
+|---|---|
+| Dossiers | 29 |
+| Consultations | 36 |
+| Consultations portant une **fiche signalétique** | **22** |
+| Consultations portant une **anamnèse** | **21** |
+| Dossiers avec une adresse | 0 |
+| Dossiers avec un NIR | 0 |
+| Dossiers avec un médecin traitant | 0 |
+
+**CE QUE CE TABLEAU ÉTABLIT, ET QUI N'ÉTAIT JUSQU'ICI QU'UNE HYPOTHÈSE DE
+CADRAGE.** Vingt-deux fiches signalétiques et vingt et une anamnèses **existent
+en production** — écrites par des patients, conservées depuis des mois — et
+**aucune surface praticien ne les lisait**. Le manque n'était pas théorique : il
+portait sur 21 dossiers sur 29.
+
+**LES TROIS ZÉROS SONT LA LIGNE DE BASE, PAS UN ÉCHEC.** Les colonnes sont en
+service depuis huit heures et le code qui les écrit n'est pas encore déployé. Ce
+zéro mesure l'instant d'avant, et il n'a de valeur que rejoué plus tard : c'est
+ce qui permettra de dire si la fiche administrative sert, ou si elle rejoint les
+trois tables dont [[D-112]] a mesuré le remplissage à zéro.
+
+**LA REQUÊTE EST CONSERVÉE TELLE QUELLE** au dossier de la campagne. La rejouer à
+l'identique est la seule façon d'en tirer un constat.

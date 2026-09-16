@@ -27,8 +27,15 @@ questionnaire se fait désormais depuis la Bibliothèque, et la phase Patient du
 cockpit entre à la checklist — avec sa règle : une lecture en échec s'y dit en
 alerte, jamais en champs vides.
 
-**CE QUI N'EST PAS MESURÉ EST DIT COMME TEL.** Combien de dossiers portent une
-fiche signalétique et une anamnèse réellement lisibles, combien portent un
-renseignement administratif : cela se lit par identifiant au conteneur, après
-déploiement. La campagne se clôt sur ses livrables verts en CI — confondre
-« livré » et « utilisé » mentirait (`D-112`).
+**LA LIGNE DE BASE EST LUE EN PRODUCTION, ET ELLE ÉTABLIT UN FAIT QUE LE CADRAGE
+SUPPOSAIT.** Comptages seuls, au conteneur, le 2026-09-17 : **29 dossiers, 36
+consultations, 22 fiches signalétiques, 21 anamnèses**. Ces renseignements
+existaient — écrits par des patients, conservés depuis des mois — et **aucune
+surface praticien ne les lisait**. Le manque portait sur 21 dossiers sur 29 ; il
+n'était pas théorique.
+
+**Et trois zéros** : aucune adresse, aucun NIR, aucun médecin traitant. Ce n'est
+pas un échec, c'est l'instant d'avant — les colonnes ont huit heures et le code
+qui les écrit n'est pas encore en ligne. La requête est conservée telle quelle :
+la rejouer **à l'identique** est la seule façon d'en tirer un constat, et la
+reformuler déplacerait la question (`D-112`).
