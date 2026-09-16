@@ -68,12 +68,31 @@ describe('avantDeCommencer — la séquence peut toujours se terminer', () => {
 });
 
 describe('avantDeCommencer — la liste et les écrans ne divergent pas', () => {
-  it('« Vos données personnelles » est dans la liste, et sa version courante l’exige', () => {
-    // La v8 (2026-09-16) déclare trois renseignements NOUVEAUX — adresse, NIR,
-    // médecin traitant. C'est le premier document de confidentialité à exiger
-    // un accusé depuis la v2 : les v3 à v7 décrivaient sans rien recueillir.
+  it('la liste est EXACTEMENT les trois documents que la séquence présente', () => {
+    // Épinglée en entier, et dans l'ordre : une assertion « contient » aurait
+    // laissé passer aussi bien une clé de trop qu'une clé manquante, et c'est
+    // exactement le genre de dérive que ce module existe pour empêcher.
+    expect([...DOCUMENTS_AVANT_DE_COMMENCER]).toEqual([
+      'cadre_accompagnement',
+      'limites_securite',
+      'donnees_confidentialite',
+    ]);
+  });
+
+  it('« Vos données personnelles » est PRÉSENTÉ sans être EXIGÉ — et c’est le mécanisme', () => {
+    // LA DISTINCTION QUE CE BANC GARDE, et elle n'est pas théorique. La clé est
+    // dans la liste (la séquence montre bien ce texte, à l'écran 3), mais sa
+    // version courante ne réclame aucun accusé — les v3 à v7 DÉCRIVAIENT sans
+    // rien recueillir de neuf. Le filtre l'écarte donc tout seul, sans qu'on
+    // ait à retirer sa clé, et la porte n'interrompt personne.
+    //
+    // Le jour où une version de ce document recueillera vraiment du neuf, elle
+    // posera `requiresAcknowledgement` et rentrera dans le périmètre exigé par
+    // le seul fait de sa publication. Voir le banc de dépendance de release
+    // ci-dessous, qui dit à quelle condition ce jour peut arriver.
     expect(DOCUMENTS_AVANT_DE_COMMENCER).toContain('donnees_confidentialite');
-    expect(documentsRequerantAccuse()).toContain('donnees_confidentialite');
+    expect(documentsRequerantAccuse()).not.toContain('donnees_confidentialite');
+    expect(documentsRequerantAccuse()).toEqual(['cadre_accompagnement', 'limites_securite']);
   });
 
   it('aucun document de la liste n’est absent des écrans de la séquence', () => {
@@ -99,6 +118,49 @@ describe('avantDeCommencer — la liste et les écrans ne divergent pas', () => 
   it('les trois clés hors séquence n’y entrent pas par mégarde', () => {
     for (const hors of ['usage_ia', 'droits_patient', 'consentement_suivi']) {
       expect(DOCUMENTS_AVANT_DE_COMMENCER).not.toContain(hors);
+    }
+  });
+});
+
+describe('avantDeCommencer — un texte n’exige rien pour des champs qui n’existent pas', () => {
+  it('« Vos données personnelles » ne peut EXIGER un accusé que si le dossier sait tenir les trois renseignements', () => {
+    // CE BANC EXISTE POUR UN CONSTAT DE REVUE DU 2026-09-16, et il vaut mieux
+    // qu'une note dans une PR — une note ne bloque personne.
+    //
+    // La v8 de ce document annonce au patient que son praticien tient désormais
+    // son adresse postale, son numéro de sécurité sociale et son médecin
+    // traitant, et lui fait franchir une porte pour le reconnaître. Publiée
+    // avant que la migration n'ajoute les colonnes (LOT-03) et que la fiche ne
+    // sache les écrire (LOT-05), cette phrase serait FAUSSE : on aurait fait
+    // accuser réception, à chaque patient, d'un traitement qui n'existe pas.
+    //
+    // Un document de confidentialité qui EXIGE un accusé engage donc ce que
+    // l'application fait réellement. Tant que la version courante n'exige rien,
+    // ce banc ne demande rien ; dès qu'une version l'exige en nommant ces
+    // renseignements, elle doit trouver les colonnes ET la route qui les écrit.
+    const courant = getDocumentCourant('donnees_confidentialite');
+    const texte = courant.sections.flatMap(s => s.paragraphes ?? []).join(' ');
+    const nommeLeDossierAdministratif =
+      texte.includes('adresse postale') && texte.includes('numéro de sécurité sociale');
+
+    if (!courant.requiresAcknowledgement || !nommeLeDossierAdministratif) return;
+
+    // BORNÉ AU BLOC `model Patient`, et ce n'est pas du zèle : cherchés dans le
+    // schéma entier, « adresse » et « nir » trouvent des commentaires et
+    // d'autres modèles, et le banc passerait au vert en n'ayant rien vérifié.
+    const schema = readFileSync(path.resolve(__dirname, '../../../prisma/schema.prisma'), 'utf8');
+    const blocPatient = /\nmodel Patient \{([\s\S]*?)\n\}/.exec(schema)?.[1] ?? '';
+    expect(blocPatient, 'modèle Patient introuvable dans schema.prisma').not.toBe('');
+    for (const colonne of ['adresse', 'nir', 'medecinTraitantNom', 'medecinTraitantCoordonnees']) {
+      expect(blocPatient, `colonne ${colonne} absente du modèle Patient`).toContain(colonne);
+    }
+
+    const patch = readFileSync(
+      path.resolve(__dirname, '../../app/api/praticien/patients/route.ts'),
+      'utf8',
+    );
+    for (const champ of ['adresse', 'nir', 'medecinTraitantNom']) {
+      expect(patch, `le praticien ne peut pas saisir ${champ}`).toContain(champ);
     }
   });
 });

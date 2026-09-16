@@ -176,8 +176,15 @@ export async function provisionnerDossierDeuxVoix(idPatient: string): Promise<{
  * Version et hash viennent du registre : un littéral cesserait de satisfaire la
  * route au premier document révisé, et les specs rougiraient sans que rien de
  * leur sujet n'ait bougé.
+ *
+ * LE HASH EST CELUI DU REGISTRE, PLUS UNE SENTINELLE (revue du 2026-09-16).
+ * Deux appelants passaient `e2e-cadre` et `e2e-reprise` — lisibles au débogage,
+ * mais la ligne produite n'était alors PAS un accusé valide : `contentHash`
+ * atteste quel texte a été présenté, et la vraie route de lecture y écrit
+ * toujours le hash du registre. Une fixture qui ment sur ce point laisse passer
+ * ce qu'elle est censée garder.
  */
-async function poserAccusesPorteTrust(idPatient: string, contentHash?: string): Promise<void> {
+async function poserAccusesPorteTrust(idPatient: string): Promise<void> {
   for (const cle of documentsRequerantAccuse()) {
     const document = getDocumentCourant(cle);
     await prisma.trustAcknowledgement.deleteMany({ where: { idPatient, documentKey: cle } });
@@ -186,7 +193,7 @@ async function poserAccusesPorteTrust(idPatient: string, contentHash?: string): 
         idPatient,
         documentKey: cle,
         documentVersion: document.version,
-        contentHash: contentHash ?? document.hash,
+        contentHash: document.hash,
         type: 'pris_connaissance',
       },
     });
@@ -318,7 +325,7 @@ export async function preparerReprisePourTest(idPatient: string): Promise<void> 
     data: { dateReponse: new Date('2025-01-01T00:00:00.000Z') },
   });
 
-  await poserAccusesPorteTrust(idPatient, 'e2e-reprise');
+  await poserAccusesPorteTrust(idPatient);
 
   await prisma.packProposition.deleteMany({ where: { idPatient } });
 }
@@ -333,7 +340,7 @@ export async function preparerReprisePourTest(idPatient: string): Promise<void> 
  * minimal, qui ne touche qu'aux accusés exigés par la porte.
  */
 export async function accuserPorteTrust(idPatient: string): Promise<void> {
-  await poserAccusesPorteTrust(idPatient, 'e2e-cadre');
+  await poserAccusesPorteTrust(idPatient);
 }
 
 /**

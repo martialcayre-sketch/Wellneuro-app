@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { associationEffetIndesirableDisponible } from '@/lib/clinical/safetyEffetIndesirableV1';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
-import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 import { avantDeCommencerRequis as calculerAvantDeCommencerRequis } from '@/lib/trust/avantDeCommencer';
 import { projeterChoixCourants } from '@/lib/trust/securite';
 
@@ -30,8 +29,11 @@ export type SignalementEtat = {
 export type TrustEtatResponse =
   | {
       ok: true;
-      /** La séquence « Avant de commencer » est requise tant que la version
-       * courante du cadre n'a pas d'accusé « pris_connaissance ». */
+      /** La séquence « Avant de commencer » est requise tant qu'UN document
+       * exigeant un accusé n'en a pas un, de type « pris_connaissance », sur sa
+       * version COURANTE. Ce n'est plus le seul cadre d'accompagnement depuis
+       * le 2026-09-16 : la liste est `documentsRequerantAccuse()`, et c'est la
+       * même que la séquence lit pour savoir quels accusés poser. */
       avantDeCommencerRequis: boolean;
       accuses: AccuseEtat[];
       choixCourants: ChoixEtat[];

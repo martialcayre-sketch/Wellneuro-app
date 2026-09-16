@@ -158,12 +158,6 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
             relue et validée par le praticien avant publication.
           </p>
           <p>
-            Votre praticien tient aussi, dans votre dossier, des renseignements administratifs
-            qu’il saisit lui-même : votre adresse postale, votre numéro de sécurité sociale, et le
-            nom et les coordonnées de votre médecin traitant. Aucun n’est obligatoire, et noter le
-            nom de votre médecin traitant ne veut pas dire lui écrire.
-          </p>
-          <p>
             Vous pouvez consulter à tout moment le détail : données utilisées, finalités,
             prestataires, durées de conservation, usage de l’IA, vos droits et vos choix.
           </p>

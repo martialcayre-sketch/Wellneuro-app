@@ -103,8 +103,9 @@ export default function QuestionnairesHubPage() {
    */
   const [lectures, setLectures] = useState<LectureAttendue[]>([]);
   // Séquence TRUST « Avant de commencer » pour les patients existants : une
-  // fois au prochain accès, tant que la version courante du cadre n'a pas
-  // d'accusé de lecture. Jamais bloquante en cas d'erreur réseau.
+  // fois au prochain accès, tant qu'un des documents exigeant un accusé n'en a
+  // pas un sur sa version courante. La règle n'est plus « le cadre » depuis le
+  // 2026-09-16 — la route la calcule, cette page ne fait que la lire. Jamais bloquante en cas d'erreur réseau.
   const [avantRequis, setAvantRequis] = useState(false);
   // Garde-fou : ignorer une réponse tardive si le composant a été démonté
   // (navigation rapide) pendant que le fetch était en vol.

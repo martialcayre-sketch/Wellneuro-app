@@ -4,12 +4,8 @@
 sur les treize documents du registre, asséré par un banc. **Aucun code ne le
 lisait.** La porte du portail ne regardait qu'une chose, écrite en dur — la
 version courante de `cadre_accompagnement`. Un document qui réclamait un accusé
-ne le réclamait qu'en paroles.
-
-Le défaut s'est vu en voulant publier la **v8** de « Vos données personnelles »,
-qui déclare trois renseignements NOUVEAUX — adresse postale, numéro de sécurité
-sociale, nom et coordonnées du médecin traitant, saisis par le praticien. Poser
-le drapeau n'aurait interrompu personne.
+ne le réclamait qu'en paroles, et `limites_securite` était exactement dans ce
+cas depuis l'origine.
 
 **LA PORTE ET LA SÉQUENCE LISENT DÉSORMAIS LA MÊME LISTE**, et c'est tout
 l'enjeu du module. Si la porte exige un accusé que la séquence n'enregistre pas,
@@ -17,8 +13,15 @@ le patient **boucle sans fin** : quatre écrans, une validation, un retour, et
 les quatre écrans à nouveau. Ce n'est pas une gêne d'affichage, c'est un portail
 inaccessible sur la surface où le patient dépose ses réponses. Deux listes
 recopiées à deux endroits produisaient exactement cela à la première
-divergence ; il n'y en a plus qu'une, et un banc éprouve la **terminaison** —
-poser les accusés que la séquence enregistre doit SUFFIRE à fermer la porte.
+divergence — et ce n'était pas une hypothèse : la séquence en posait **deux**
+quand la porte n'en regardait qu'**un**. Il n'y en a plus qu'une, et un banc
+éprouve la **terminaison** : poser les accusés que la séquence enregistre doit
+SUFFIRE à fermer la porte.
+
+**CE CÂBLAGE N'INTERROMPT PERSONNE**, et le fait se constate plutôt qu'il ne se
+suppose : la séquence pose `limites_securite` **depuis son tout premier
+commit**, si bien que tout patient l'ayant franchie possède déjà les deux
+accusés que la porte exige maintenant.
 
 **LA LISTE N'EST PAS LE REGISTRE ENTIER.** `usage_ia`, `droits_patient` et
 `consentement_suivi` en sont absents parce que la séquence **ne les présente
@@ -26,23 +29,24 @@ pas** : exiger la reconnaissance d'un texte qu'on ne montre pas demanderait au
 patient de reconnaître ce qu'il n'a pas vu. Ajouter une clé oblige à ajouter un
 écran, et un banc le dit.
 
-**L'ÉCRAN MONTRE CE QUI CHANGE.** Un accusé sur un texte qui ne dit pas ce qui
-change n'est qu'une formalité : le troisième écran nomme désormais les trois
-renseignements, dit qu'**aucun n'est obligatoire**, et dit que noter le nom d'un
-médecin traitant **ne veut pas dire lui écrire**.
+**UN DOCUMENT PRÉSENTÉ N'EST PAS UN DOCUMENT EXIGÉ.** « Vos données
+personnelles » est dans la liste — l'écran 3 le montre — mais sa version
+courante ne réclame aucun accusé, et le filtre l'écarte tout seul. C'est le
+mécanisme qui permettra de l'exiger le jour où il recueillera vraiment du neuf,
+sans toucher à la liste.
 
-**CE QUE CE LOT COÛTE, ET IL FAUT LE SAVOIR.** La séquence REMPLACE la page :
-chaque patient en cours la reverra à sa prochaine connexion — y compris celui
-qui note sa quatorzième nuit sur vingt et une. C'est la raison pour laquelle les
-v3 à v7 s'en dispensaient toutes, et un banc garde ce motif. L'exception est
-assumée ici parce que ce qui change n'est pas la description du traitement mais
-son **assiette**.
+**ET CE JOUR-LÀ, UN BANC VÉRIFIERA QUE LA PHRASE EST VRAIE.** Une version de ce
+document qui exige un accusé en annonçant l'adresse postale, le NIR et le
+médecin traitant ne peut pas être publiée tant que le modèle `Patient` ne porte
+pas ces colonnes **et** que la route praticien ne sait pas les écrire. Sans
+quoi on ferait accuser réception, à chaque patient, d'un traitement qui n'existe
+pas encore — constat de revue, transformé en garde plutôt qu'en note, parce
+qu'une note ne bloque personne.
 
 **VINGT TESTS E2E SONT TOMBÉS D'UN COUP, ET ILS AVAIENT RAISON.** Trois
 fixtures du portail posaient `cadre_accompagnement` et lui seul, parce que la
-porte ne regardait que lui. La porte a changé d'avis ; les fixtures, non — et
-dix specs se sont retrouvés devant « Avant de commencer » au lieu de l'écran
-qu'ils testaient. Elles **lisent** maintenant la même liste que la porte, au
-lieu d'en recopier la règle : le défaut corrigé en code vivait aussi dans les
-bancs qui devaient le surveiller. Leurs noms disaient « cadre » alors qu'elles
-franchissent une porte — ils le disent désormais.
+porte ne regardait que lui. Elles **lisent** maintenant la même liste que la
+porte au lieu d'en recopier la règle : le défaut corrigé en code vivait aussi
+dans les bancs qui devaient le surveiller. Elles écrivent aussi le hash du
+registre au lieu d'une sentinelle — `contentHash` atteste quel texte a été
+présenté, et une fixture qui ment là-dessus laisse passer ce qu'elle garde.
