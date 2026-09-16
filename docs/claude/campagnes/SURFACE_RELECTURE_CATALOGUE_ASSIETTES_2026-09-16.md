@@ -84,8 +84,17 @@ de `R2-GAS-02`, où un second déclencheur **paie** l'abaissement d'un seuil et 
 « l'un ne vaut jamais sans l'autre ».
 
 **Conséquence sur le tableau** : `WN-CL-0285-007`, `WN-CL-0287-009` (sa branche
-enquête), `WN-CL-0291-014` et `WN-CL-0293-012` ne fondent aucune ligne à eux
-seuls. Ils restent cités là où une porte propre existe déjà — jamais ailleurs.
+enquête), `WN-CL-0291-014` et `WN-CL-0293-012` ne fondent aucune ligne
+**d'assiette** à eux seuls. Ils restent cités là où une porte propre existe
+déjà — jamais ailleurs.
+
+**LA PORTÉE EST CELLE DES LIGNES D'ASSIETTE.** `R2-ALI-01` est une règle
+**publiée** dont `Q_ALI_01` est l'unique déclencheur, et elle cite
+`WN-CL-0287-009`. Elle n'est **pas** réarbitrée, et elle ne contredit pas cet
+arbitrage : ce qu'elle propose sont **deux questionnaires**, pas une assiette —
+son commentaire l'écrit depuis `D-030`, l'assiette de détoxication « relève de la
+prise en charge, et l'objectif ne la promet donc plus ». Proposer un
+questionnaire et prescrire une assiette n'engagent pas la même chose.
 
 **3. LA PSYCHOBIOTIQUE PUBLIE SA PORTE ÉTROITE ET GARDE LA LARGE EN BROUILLON.**
 `-011` — le trouble fonctionnel ou la maladie intestinale avérée — est servi.
@@ -140,10 +149,19 @@ cette fenêtre.
 
 ## CE QUI EST PROPOSÉ
 
-**Huit lignes publiées, cinq en brouillon** — les quatre assiettes sans
-indication retenue, plus la porte large de la psychobiotique. Le brouillon n'a de
-sens qu'avec le filtre de service décrit ci-dessus : sans lui, les treize
+**Huit lignes d'indication publiées, cinq en brouillon** — les quatre assiettes
+sans indication retenue, plus la porte large de la psychobiotique. Le brouillon
+n'a de sens qu'avec le filtre de service décrit ci-dessus : sans lui, les treize
 s'affichent et le statut ne protège rien.
+
+**LE STATUT VIT SUR LA LIGNE D'INDICATION, PAS SUR L'ASSIETTE**, et c'est la
+psychobiotique qui l'impose : elle porte une porte publiée **et** une porte en
+brouillon. Avec un seul `statut` par entrée de catalogue, le filtre exposerait
+les deux ou les masquerait toutes deux. Le catalogue porte donc des **lignes** —
+une assiette, une indication, ses claims, son statut — et une assiette en
+regroupe une ou plusieurs, exactement comme `CATALOGUE_CONDUITES_V1` fait de la
+ligne son unité signée. L'entrée d'assiette garde `plateCode`, `label` et ses
+empreintes, et **cesse d'être l'unité de publication**.
 
 **Les trois assiettes historiques sont conservées telles quelles**, sans
 indication et sans claim. Elles sont en service et ne prétendent rien.

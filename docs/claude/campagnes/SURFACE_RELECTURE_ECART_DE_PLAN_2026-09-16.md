@@ -42,8 +42,11 @@ basse », ce que la mesure ne sait pas.
 
 Ce que `D-213` §4 visait — écrit dans son propre texte — ce sont « les protocoles
 **sans repli** ». Ce n'est pas la présence d'un écart qui informe, c'est son
-**absence** : une action dont le plan minimal égale le plan idéal ne laisse au
-patient aucune marche plus basse le jour où il décroche.
+**absence** : une action dont le plan minimal reprend mot pour mot le plan idéal
+n'écrit **aucun allègement**, et le praticien l'apprend à ce moment-là plutôt
+qu'après. La mesure constate cette absence de différence **textuelle** — elle ne
+dit pas, et ne peut pas dire, ce dont le patient dispose réellement le jour où il
+décroche.
 
 Cette mesure ne demande **aucune donnée nouvelle** : elle se dérive des deux
 termes déjà mesurés.

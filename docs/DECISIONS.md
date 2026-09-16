@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-216 — Chaque assiette a deux sources et une seule fait règle ; l'âge redevient un déclencheur, l'enquête alimentaire ne déclenche jamais seule, et les familles attendent un mécanisme orienté
+### D-216 — Les douze assiettes appariées ont chacune deux sources et une seule fait règle ; l'âge redevient un déclencheur, l'enquête alimentaire ne déclenche jamais seule une ligne d'assiette, et les familles attendent un mécanisme orienté
 
 - Date : 2026-09-16
 - Statut : accepté — **arbitrages du responsable**, rendus sur les questions que
@@ -68,16 +68,28 @@ ne convergent pas, et une gate d'âge s'applique bien au-delà des trois assiett
 qui la motivent. Mais maintenir un refus dont le motif a disparu aurait laissé le
 dépôt refuser une provenance qu'il possède.
 
-## 2. L'ENQUÊTE ALIMENTAIRE NE DÉCLENCHE JAMAIS SEULE
+## 2. L'ENQUÊTE ALIMENTAIRE NE DÉCLENCHE JAMAIS SEULE **UNE LIGNE D'ASSIETTE**
 
 Le dépôt déclare `Q_ALI_01` *« non validé comme instrument de mesure — les
 résultats orientent l'entretien, ils ne concluent pas »*. Elle reste admise, mais
-**en seconde condition uniquement** : une ligne qui la cite exige aussi une porte
-propre. C'est le patron de `R2-GAS-02`, où le second déclencheur **paie**
-l'abaissement du seuil et où « l'un ne vaut jamais sans l'autre ».
+**en seconde condition uniquement** : une ligne d'indication d'assiette qui la
+cite exige aussi une porte propre. C'est le patron de `R2-GAS-02`, où le second
+déclencheur **paie** l'abaissement du seuil et où « l'un ne vaut jamais sans
+l'autre ».
 
-La table d'orientation s'en sert déjà — pour **proposer un questionnaire**.
-Prescrire une assiette n'a pas la même portée pour le patient.
+**LA PORTÉE EST CELLE DES LIGNES D'ASSIETTE, ET RIEN D'AUTRE.** `R2-ALI-01` est
+une règle **publiée** dont `Q_ALI_01` est l'unique déclencheur, et elle cite
+`WN-CL-0287-009`. Elle n'est **pas** réarbitrée ici, et elle ne contredit pas cet
+arbitrage : ce qu'elle propose sont **deux questionnaires** — le TFD SIIN et
+l'échelle de Bristol —, pas une assiette. Son propre commentaire l'écrit depuis
+`D-030` : *« L'assiette de détoxication que `WN-CL-0287-009` indique n'est PAS un
+questionnaire : elle relève de la prise en charge, et l'objectif ne la promet
+donc plus. »*
+
+C'est exactement la distinction qui fonde l'arbitrage : proposer un questionnaire
+et prescrire une assiette n'engagent pas la même chose pour le patient. Un
+instrument qui « oriente l'entretien sans conclure » peut ouvrir le premier ; il
+ne suffit pas au second.
 
 ## 3. LA PSYCHOBIOTIQUE PUBLIE SA PORTE ÉTROITE
 
@@ -89,6 +101,20 @@ brouillon** : les deux lectures sont consignées, une seule sert.
 **Une ligne `brouillon` reste dans le périmètre haché.** Elle est hors du
 **service**, pas hors du périmètre : la signature couvre son texte, et la
 reformuler périmera l'attestation acquise sur les lignes publiées.
+
+**CE QUE CE CHOIX IMPOSE À LA FORME, et il fallait le trancher plutôt que le
+laisser flou.** Une même assiette portant une porte publiée et une porte en
+brouillon, **le statut ne peut pas vivre sur l'entrée du catalogue** : avec un
+seul `statut` par assiette, le filtre de service exposerait les deux portes ou
+les masquerait toutes deux. Le catalogue porte donc des **lignes d'indication**
+— une assiette, une indication, ses claims, son statut — et une assiette en
+regroupe une ou plusieurs. C'est le patron de `CATALOGUE_CONDUITES_V1`, où la
+ligne est l'unité signée, pas le tableau clinique.
+
+L'entrée d'assiette garde ce qu'elle a aujourd'hui — `plateCode`, `label`, les
+empreintes — et **cesse d'être l'unité de publication**. Le filtre de service
+s'applique aux lignes ; une assiette est proposable dès qu'une de ses lignes est
+publiée.
 
 ## 4. LES FAMILLES SE FERONT, LE MÉCANISME CHANGE D'ABORD
 
