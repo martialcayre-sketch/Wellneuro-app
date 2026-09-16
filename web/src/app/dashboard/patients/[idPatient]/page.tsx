@@ -1,4 +1,5 @@
 import { FichePatientPanel } from '@/components/FichePatientPanel';
+import { isG4LienMagiqueEnabled } from '@/lib/portail/featureFlag';
 import { ConsignerLectureFil } from '@/components/fil/ConsignerLectureFil';
 import { typeLuAlAtterrissage, urlSansMarqueurFil } from '@/lib/fil/lectureCartes';
 import {
@@ -80,6 +81,11 @@ export default async function FichePatientPage({
             ongletInitial={ongletInitial}
             phaseDemandee={phaseDemandee}
             fixtureValidationErgo={fixtureValidationErgo}
+            // LE DRAPEAU SE LIT AU SERVEUR, comme pour le rayon. Sans lui, le
+            // menu du cockpit perdait sa neuvième action — « Lien à usage
+            // unique (24 h) » — alors que les deux surfaces sont censées offrir
+            // les mêmes gestes (constat de revue, 2026-09-17).
+            lienMagiqueActif={isG4LienMagiqueEnabled()}
           />
           {typeCarteLu && (
             <ConsignerLectureFil

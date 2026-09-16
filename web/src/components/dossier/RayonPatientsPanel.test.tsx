@@ -273,7 +273,7 @@ describe('RayonPatientsPanel — cycle de vie du dossier (LOT-01b)', () => {
     fireEvent.click((await screen.findAllByRole('button', { name: /^modifier$/i }))[0]);
 
     // L'état reste LISIBLE, il n'est plus modifiable ici.
-    expect(screen.getByText(/se change au menu de la ligne/i)).toBeTruthy();
+    expect(screen.getByText(/se change depuis « Gérer le dossier »/i)).toBeTruthy();
 
     // IL FAUT MODIFIER QUELQUE CHOSE POUR QUE LA FICHE POSTE (LOT-05) : elle
     // n'envoie que les champs qui ont changé, et ne poste rien quand rien n'a

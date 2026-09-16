@@ -122,7 +122,16 @@ export function FicheAdministrativePanel({
 }: {
   patient: PatientDossier;
   onEnregistre: () => void | Promise<void>;
-  onFermer: () => void;
+  /**
+   * Referme le panneau. FACULTATIF, et son absence change le bouton plutôt que
+   * de le laisser inerte (constat de revue, 2026-09-17) : dans le cockpit, ce
+   * panneau EST le contenu de la phase — il n'y a rien à refermer, et passer
+   * une fonction vide laissait à l'écran un bouton « Annuler » qui ne faisait
+   * rien. Sans `onFermer`, le bouton devient « Réinitialiser » et rend au
+   * formulaire les valeurs du dossier : un praticien qui a tapé par erreur doit
+   * pouvoir revenir en arrière, sur les deux surfaces.
+   */
+  onFermer?: () => void;
 }) {
   const [form, setForm] = useState<Formulaire>(() => formulaireDepuis(patient));
   const [envoi, setEnvoi] = useState(false);
@@ -212,18 +221,27 @@ export function FicheAdministrativePanel({
 
       {/* L'état du dossier ne se change PAS ici, et le rappeler évite qu'on
           l'ajoute : désactiver ferme les liens en vol — geste irréversible qui
-          passe par le dialogue du menu de ligne (`D-126`). */}
+          passe par un dialogue (`D-126`).
+
+          « DEPUIS « GÉRER LE DOSSIER » » ET NON « AU MENU DE LA LIGNE » : ce
+          panneau est monté sur DEUX surfaces depuis le LOT-06, et le cockpit
+          patient n'a pas de ligne de tableau. La phrase pointait vers quelque
+          chose qui n'existe pas là-bas ; le menu, lui, porte le même libellé
+          aux deux endroits. */}
       <p className="text-13 text-muted-foreground">
-        L’état du dossier (actif, clôturé, accès révoqué) se change au menu de la ligne, derrière une
-        confirmation.
+        L’état du dossier (actif, clôturé, accès au portail) se change depuis « Gérer le dossier »,
+        derrière une confirmation.
       </p>
 
       <div className="flex items-center gap-2 flex-wrap">
         <Button onClick={enregistrer} disabled={envoi}>
           {envoi ? 'Enregistrement…' : 'Enregistrer'}
         </Button>
-        <Button variant="outline" onClick={onFermer}>
-          Annuler
+        <Button
+          variant="outline"
+          onClick={() => (onFermer ? onFermer() : setForm(formulaireDepuis(patient)))}
+        >
+          {onFermer ? 'Annuler' : 'Réinitialiser'}
         </Button>
         {retour && (
           <span

@@ -69,6 +69,85 @@ export function PatientRow({
   const estClos = phase === 'suivi_cloture';
   const estInactif = patient.actif === 'NON';
 
+  const elements = elementsMenuDossier({ patient, onAction, lienMagiqueActif, actionAccesEnCours });
+
+  return (
+    <tr className="border-t border-border hover:bg-muted/50">
+      <td className="px-4 py-2">{`${patient.prenom} ${patient.nom}`.trim() || '—'}</td>
+      <td className="px-4 py-2">{patient.email || '—'}</td>
+      <td className="px-4 py-2">{patient.telephone || '—'}</td>
+      <td className="px-4 py-2">
+        {/* Les deux états se cumulent et ne se déduisent pas l'un de l'autre.
+            `phaseDossier` fait primer la clôture, ce qui est juste pour
+            décider d'un envoi — mais afficher le seul « Suivi clôturé » sur un
+            dossier désactivé laisserait croire que le patient consulte encore
+            ses archives, alors que le portail les lui refuse. */}
+        <span className="flex flex-wrap items-center gap-1">
+          <Badge variant={VARIANT_PHASE[phase]}>{LIBELLE_PHASE[phase]}</Badge>
+          {estClos && estInactif && <Badge variant="neutral">Inactif</Badge>}
+          {/* TROISIÈME ÉTAT, CUMULATIF AVEC LES DEUX AUTRES et jamais déduit
+              d'eux : un dossier actif, en suivi, peut avoir son accès révoqué —
+              et c'est exactement le cas que rien ne montrait. Même libellé et
+              même variante que l'encart « Nouveaux patients », pour qu'un seul
+              mot désigne le fait aux deux endroits. La différence : cette
+              pastille-ci ne s'éteint pas au 31ᵉ jour. */}
+          {patient.accesRevoque && <Badge variant="neutral">Accès révoqué</Badge>}
+        </span>
+      </td>
+      <td className="px-4 py-2">
+        <button
+          onClick={() => onEdit(patient)}
+          className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+        >
+          Modifier
+        </button>
+      </td>
+      <td className="px-4 py-2">
+        {/* UN SEUL lien par ligne (audit 2026-09-02) : deux destinations vers
+            la même fiche, différenciées par le seul onglet d'ouverture, se
+            lisaient comme deux objets. L'entrée trajectoire garde sa porte
+            dédiée (/dashboard/trajectoires) et le deep-link ?onglet= vit
+            toujours côté fiche. */}
+        <Link
+          href={`/dashboard/patients/${encodeURIComponent(patient.idPatient)}`}
+          className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+        >
+          Fiche patient
+        </Link>
+      </td>
+      <td className="px-4 py-2">
+        <MenuActions libelleDeclencheur="Gérer le dossier" elements={elements} />
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * LES NEUF ACTIONS DU DOSSIER ET LEURS RÈGLES D'ACTIVATION, ÉCRITES UNE FOIS.
+ *
+ * Extrait de `PatientRow` au LOT-06 : le cockpit patient porte désormais le
+ * même menu. Recopier ces règles là-bas aurait suffi à les faire diverger — un
+ * « Copier le lien » resté actif sur un dossier désactivé d'un côté, grisé de
+ * l'autre —, et c'est précisément le genre d'écart qu'un praticien lit comme
+ * une incohérence de l'application, pas comme un bug d'écran.
+ */
+export function elementsMenuDossier({
+  patient,
+  onAction,
+  lienMagiqueActif = false,
+  actionAccesEnCours = false,
+}: {
+  patient: PatientRowData;
+  onAction: (action: ActionDossier, patient: PatientRowData) => void;
+  lienMagiqueActif?: boolean;
+  actionAccesEnCours?: boolean;
+}): ElementMenu[] {
+  const phase = phaseDossier({
+    actif: patient.actif === 'OUI',
+    suiviClotureLe: patient.suiviClotureLe ? new Date(patient.suiviClotureLe) : null,
+  });
+  const estClos = phase === 'suivi_cloture';
+  const estInactif = patient.actif === 'NON';
   const agir = (action: ActionDossier) => () => onAction(action, patient);
 
   // Les actions d'accès restent OUVERTES sur un dossier clos, et c'est
@@ -84,7 +163,7 @@ export function PatientRow({
   // « COPIER LE LIEN » COMPRIS : il poste, lui aussi (`action: 'lien'`), et le
   // garde `!patient.actif` d'`api/praticien/token` précède l'aiguillage des
   // actions — il le refuse donc au même titre que les deux envois.
-  const elements: ElementMenu[] = [
+  return [
     { type: 'groupe', libelle: 'Accès au portail' },
     {
       type: 'action',
@@ -148,54 +227,4 @@ export function PatientRow({
       danger: true,
     },
   ];
-
-  return (
-    <tr className="border-t border-border hover:bg-muted/50">
-      <td className="px-4 py-2">{`${patient.prenom} ${patient.nom}`.trim() || '—'}</td>
-      <td className="px-4 py-2">{patient.email || '—'}</td>
-      <td className="px-4 py-2">{patient.telephone || '—'}</td>
-      <td className="px-4 py-2">
-        {/* Les deux états se cumulent et ne se déduisent pas l'un de l'autre.
-            `phaseDossier` fait primer la clôture, ce qui est juste pour
-            décider d'un envoi — mais afficher le seul « Suivi clôturé » sur un
-            dossier désactivé laisserait croire que le patient consulte encore
-            ses archives, alors que le portail les lui refuse. */}
-        <span className="flex flex-wrap items-center gap-1">
-          <Badge variant={VARIANT_PHASE[phase]}>{LIBELLE_PHASE[phase]}</Badge>
-          {estClos && estInactif && <Badge variant="neutral">Inactif</Badge>}
-          {/* TROISIÈME ÉTAT, CUMULATIF AVEC LES DEUX AUTRES et jamais déduit
-              d'eux : un dossier actif, en suivi, peut avoir son accès révoqué —
-              et c'est exactement le cas que rien ne montrait. Même libellé et
-              même variante que l'encart « Nouveaux patients », pour qu'un seul
-              mot désigne le fait aux deux endroits. La différence : cette
-              pastille-ci ne s'éteint pas au 31ᵉ jour. */}
-          {patient.accesRevoque && <Badge variant="neutral">Accès révoqué</Badge>}
-        </span>
-      </td>
-      <td className="px-4 py-2">
-        <button
-          onClick={() => onEdit(patient)}
-          className="text-xs text-muted-foreground hover:text-foreground hover:underline"
-        >
-          Modifier
-        </button>
-      </td>
-      <td className="px-4 py-2">
-        {/* UN SEUL lien par ligne (audit 2026-09-02) : deux destinations vers
-            la même fiche, différenciées par le seul onglet d'ouverture, se
-            lisaient comme deux objets. L'entrée trajectoire garde sa porte
-            dédiée (/dashboard/trajectoires) et le deep-link ?onglet= vit
-            toujours côté fiche. */}
-        <Link
-          href={`/dashboard/patients/${encodeURIComponent(patient.idPatient)}`}
-          className="text-xs text-muted-foreground hover:text-foreground hover:underline"
-        >
-          Fiche patient
-        </Link>
-      </td>
-      <td className="px-4 py-2">
-        <MenuActions libelleDeclencheur="Gérer le dossier" elements={elements} />
-      </td>
-    </tr>
-  );
 }

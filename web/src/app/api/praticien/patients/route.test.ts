@@ -1004,3 +1004,85 @@ describe('PATCH — une adresse trop longue est REFUSÉE, jamais tronquée', () 
     }
   });
 });
+
+describe('GET — `idPatient` restreint aussi la liste des dossiers (LOT-06)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findMany.mockResolvedValue([]);
+    prisma.patient.count.mockResolvedValue(0);
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.assignation.count.mockResolvedValue(0);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([]);
+  });
+
+  it('★ demander UN dossier ne descend pas la fiche de toute la patientèle', async () => {
+    // AVANT LE LOT-06, `idPatient` ne filtrait que les assignations. Le cockpit
+    // patient — qui passe ce paramètre à chacun de ses trois appels — recevait
+    // donc l'adresse postale et le NIR de TOUS les dossiers du praticien pour en
+    // afficher un seul. Le LOT-05, qui a mis ces champs au DTO, a transformé une
+    // sur-lecture anodine en exposition de données administratives.
+    await GET(get('idPatient=PAT_SEED_03'));
+    expect(prisma.patient.findMany).toHaveBeenCalledWith({
+      where: {
+        praticienEmail: { equals: 'p@wellneuro.fr', mode: 'insensitive' },
+        idPatient: 'PAT_SEED_03',
+      },
+      orderBy: [{ nom: 'asc' }, { prenom: 'asc' }],
+    });
+  });
+
+  it('sans `idPatient`, la liste complète reste servie — les sélecteurs en vivent', async () => {
+    await GET(get());
+    expect(prisma.patient.findMany).toHaveBeenCalledWith({
+      where: { praticienEmail: { equals: 'p@wellneuro.fr', mode: 'insensitive' } },
+      orderBy: [{ nom: 'asc' }, { prenom: 'asc' }],
+    });
+  });
+
+  it('la portée praticien n’est jamais desserrée par ce filtre', async () => {
+    await GET(get('idPatient=PAT_AUTRE'));
+    const where = prisma.patient.findMany.mock.calls[0][0].where;
+    expect(where.praticienEmail).toEqual({ equals: 'p@wellneuro.fr', mode: 'insensitive' });
+  });
+});
+
+describe('GET — la restriction par dossier tient sur LES DEUX branches', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findMany.mockResolvedValue([]);
+    prisma.patient.count.mockResolvedValue(0);
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.assignation.count.mockResolvedValue(0);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([]);
+  });
+
+  it('★ `page` ne contourne pas la restriction — sinon elle ne restreint rien', async () => {
+    // CONSTAT DE REVUE DU 2026-09-17. La restriction ne vivait que sur la
+    // branche non paginée : `?page=1&idPatient=X` sortait par l'autre, dont le
+    // `where` ne portait que le praticien et la recherche. Il suffisait donc
+    // d'ajouter un paramètre d'AFFICHAGE pour recevoir de nouveau la fiche de
+    // toute la patientèle, NIR compris.
+    await GET(get('page=1&pageSize=10&idPatient=PAT_SEED_03'));
+    const where = prisma.patient.findMany.mock.calls[0][0].where;
+    expect(where.idPatient).toBe('PAT_SEED_03');
+    expect(where.praticienEmail).toEqual({ equals: 'p@wellneuro.fr', mode: 'insensitive' });
+  });
+
+  it('le compte porte le MÊME where que la liste — sinon la pagination ment', async () => {
+    await GET(get('page=1&pageSize=10&idPatient=PAT_SEED_03'));
+    expect(prisma.patient.count.mock.calls[0][0].where).toEqual(
+      prisma.patient.findMany.mock.calls[0][0].where,
+    );
+  });
+
+  it('la recherche et la restriction se cumulent, l’une n’efface pas l’autre', async () => {
+    await GET(get('page=1&idPatient=PAT_SEED_03&search=nicola'));
+    const where = prisma.patient.findMany.mock.calls[0][0].where;
+    expect(where.idPatient).toBe('PAT_SEED_03');
+    expect(where.OR).toBeTruthy();
+  });
+});
