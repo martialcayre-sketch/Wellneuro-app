@@ -6781,3 +6781,23 @@ mobile vers le rayon reste sans garde. Les deux se ferment par une fixture, dans
 une PR d'une autre finalité.
 
 Prochaine action : **LOT-03**, qui verrouille **LOT-04**, la lettre d'adressage.
+
+## 2026-09-16 — Résumé de session : campagne Correspondance, trois lots
+
+Audit du rayon Correspondance, puis trois lots mergés le même jour : **D-209**
+(le sens se lit une seule fois, l'accueil cesse de citer le dossier), **D-210**
+(la page sort du différé, le badge désigne une tâche), **D-212** (le geste de
+transcription cesse de perdre en silence). Suivi publié à 14/32.
+
+Écartés, avec motif écrit : monter `PanneauRail` sur la page du rayon (dimensionné
+pour l'aside de 300 px) ; pré-remplir le médecin (la ligne consignée est
+définitive, faute de `supersedes_*`) ; allonger la liste transversale (rouvrirait
+la journalisation que D-209 §3 laisse ouverte).
+
+Prochaine action : **LOT-03**, verrou technique de LOT-04 — `verdictAncrage`
+compare en dur au SHA des indications, un second écrivain ancré lirait « ancrage
+périmé » sur chaque lettre d'adressage.
+
+Questions ouvertes : `supersedes_*`, la journalisation de `/recentes`, la
+signature et le mot « confraternel », et la levée d'abstention sur preuve
+d'adressage. Deux trous de couverture se ferment par une fixture de consignation.
