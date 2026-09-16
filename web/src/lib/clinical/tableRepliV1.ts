@@ -50,10 +50,20 @@ export { lireRepliDepuisLignes } from './tableRepliPur';
  * le terme n'a que quatre valeurs possibles, et l'échelle est contiguë et sans
  * recouvrement.
  *
- * `REPLI-01` COUVRE ZÉRO **ET** LES PROTOCOLES SANS ACTION ENGAGÉE, et son texte
- * est écrit pour rester vrai dans les deux cas. C'est la correction exacte que la
- * relecture du 2026-09-15 avait imposée à `CHARGE-01`, dont le texte proposé
- * affirmait faux à zéro action.
+ * `REPLI-01` COUVRE TROIS SITUATIONS, et son texte doit rester vrai dans les
+ * trois — c'est la correction exacte que la relecture du 2026-09-15 avait
+ * imposée à `CHARGE-01`, dont le texte proposé affirmait faux à zéro action.
+ * Ici la troisième situation est la plus traître : une action **en cours de
+ * saisie**, dont le plan idéal n'est pas encore tapé, n'entre pas dans
+ * `actionsSansRepli` (le `!== ''` l'exclut), donc le terme vaut zéro et
+ * `REPLI-01` s'affiche. Un texte disant « chaque action engagée distingue ses
+ * deux plans » AFFIRMERAIT FAUX pendant la composition, là où cette table est
+ * précisément lue. La formulation retenue ne parle que de ce que la mesure
+ * constate : aucune répétition observée.
+ *
+ *   · aucune action engagée         → vrai, rien n'est répété
+ *   · toutes distinguent leurs plans → vrai
+ *   · une action encore vide         → vrai, elle ne répète rien non plus
  */
 export const TABLE_REPLI_V1: LigneRepli[] = [
   {
@@ -61,7 +71,7 @@ export const TABLE_REPLI_V1: LigneRepli[] = [
     terme: 'actionsSansRepli',
     min: null,
     max: 0,
-    constat: 'Chaque action engagée distingue son plan minimal de son plan idéal.',
+    constat: 'Aucune action engagée ne répète son plan idéal en plan minimal.',
     statut: 'publiee',
   },
   {

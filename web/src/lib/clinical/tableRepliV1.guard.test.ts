@@ -142,6 +142,34 @@ describe('table du repli — les trois lignes proposées', () => {
     }
   });
 
+  it('REPLI-01 RESTE VRAI quand une action est encore en cours de saisie', () => {
+    // LE CAS QUE LA REVUE A TROUVÉ. Une action dont le plan idéal n'est pas
+    // encore tapé n'entre pas dans `actionsSansRepli` — donc le terme vaut zéro
+    // et REPLI-01 s'affiche, EN PLEINE COMPOSITION. Un texte affirmant que
+    // « chaque action engagée distingue ses deux plans » serait alors faux :
+    // celle-ci n'a pas encore de plan idéal du tout.
+    const mesure = mesurerProtocole([
+      action({ actionId: 'a1', idealPlan: 'Marcher 30 min', minimalPlan: 'Marcher 10 min' }),
+      action({ actionId: 'a2', idealPlan: '', minimalPlan: '' }),
+    ]);
+    expect(mesure.actionsSansRepli).toBe(0);
+
+    const lecture = lireRepliDepuisLignes(mesure, TABLE_REPLI_V1);
+    expect(lecture).toEqual({
+      statut: 'constat',
+      constat: TABLE_REPLI_V1[0].constat,
+      idLigne: 'REPLI-01',
+    });
+    // Le constat ne parle que de ce qui est MESURÉ : aucune répétition observée.
+    // Il ne prétend rien sur les actions dont le plan idéal manque encore.
+    expect(TABLE_REPLI_V1[0].constat.toLowerCase()).not.toMatch(/chaque action/);
+  });
+
+  it('le SHA exporté est bien celui de la table réelle', () => {
+    expect(TABLE_REPLI_SHA256).toBe(TABLE_REPLI_SHA256_DE(TABLE_REPLI_V1));
+    expect(TABLE_REPLI_SHA256).toMatch(/^[0-9a-f]{64}$/);
+  });
+
   it('ne porte AUCUN niveau de charge — sinon deux tables en afficheraient deux', () => {
     for (const l of TABLE_REPLI_V1) {
       expect(l).not.toHaveProperty('niveau');

@@ -23,6 +23,17 @@ import type { LigneBornee, MesureProtocole } from './baremeChargePur';
  */
 export type LigneRepli = LigneBornee & {
   /**
+   * LE TERME EST FIGÉ, ET CE N'EST PAS UNE PRÉCAUTION DE STYLE. `LigneBornee`
+   * admet les cinq clés de `MesureProtocole` — le type large est ce qui permet
+   * à `chevauchementsBareme` de servir les deux tables. Laissé tel quel ici,
+   * une ligne de repli pourrait être écrite, signée, puis servie sur
+   * `nombreActionsFermes` ou `typesDistincts`, et `lireRepliDepuisLignes`
+   * afficherait un constat de repli calculé sur un comptage d'actions. Le SHA
+   * de périmètre ne l'attraperait pas : il atteste le contenu relu, pas sa
+   * pertinence. Le littéral referme la porte au niveau du type.
+   */
+  terme: 'actionsSansRepli';
+  /**
    * Ce que le praticien lira. Écrit par lui, jamais dérivé — et il ne doit
    * affirmer que ce que la mesure établit : une différence de TEXTE entre les
    * deux plans, jamais une différence d'exigence.

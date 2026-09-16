@@ -4,6 +4,70 @@
 
 ## Décisions actives
 
+### D-217 — La table du repli se signe sur l'ABSENCE de repli, pas sur l'écart : `D-213` §4 est amendé sur son terme
+
+- Date : 2026-09-17
+- Statut : accepté — **arbitrage du responsable**, rendu en séance le 2026-09-16
+  après lecture des deux échelles proposées.
+- Domaine : protocole 21 jours, mesure de charge.
+- Amende : [[D-213]] §4, qui désignait `actionsAvecEcartDePlan` comme terme de la
+  table. Ne touche ni le barème de charge, ni sa signature, ni son contenu.
+
+**POURQUOI CETTE ENTRÉE EXISTE.** `D-213` §4 nommait le terme : « le dépôt mesure
+déjà `actionsAvecEcartDePlan` et aucune ligne publiée ne le consomme ; il devient
+une ligne signée ». La mise en œuvre a montré que ce terme ne trouve pas ce que
+la décision visait. Changer le terme change **ce que le protocole mesure** : cela
+ne se règle pas par un fragment de changelog (`DC-17`, `DC-18`).
+
+## Le terme désigné sature
+
+`mesurerProtocole` compte sous `actionsAvecEcartDePlan` les actions engagées dont
+le plan idéal est non vide **et** diffère du plan minimal. Or le contrat serveur
+exige un plan idéal non vide, et deux textes ne coïncident que si le praticien
+recopie le même mot à mot. Ce terme est donc **inférieur ou égal** à
+`nombreActionsFermes` et ne s'en écarte que rarement : une échelle bâtie dessus
+redirait ce que les trois lignes du barème lisent déjà, présentée comme une
+seconde information.
+
+## Ce que `D-213` §4 visait est le complément
+
+Sa propre formulation le dit : « précisément sur les protocoles **sans repli** ».
+Ce n'est pas la présence d'un écart qui informe, c'est son absence. Le terme
+retenu est **`actionsSansRepli`** — les actions engagées dont le plan minimal
+répète le plan idéal. Rare quand le protocole est bien composé : la table ne
+parle que lorsqu'un repli manque.
+
+**IL SE MESURE DIRECTEMENT, JAMAIS PAR SOUSTRACTION**, et le défaut serait
+invisible là où la mesure sert : `mesurerProtocole` tourne dans le **navigateur**
+pendant la composition, avant toute validation. `nombreActionsFermes −
+actionsAvecEcartDePlan` compterait une action dont le plan idéal n'est pas encore
+tapé comme une action sans repli, et l'écran l'afficherait au praticien pendant
+qu'il écrit.
+
+## Ce que la mesure établit, et ce qu'elle n'établit pas
+
+Elle compare deux chaînes après `trim()` : elle constate une absence de
+différence **TEXTUELLE**, jamais une absence d'allègement réel. Deux formulations
+du même niveau d'exigence passeraient pour un repli. **Aucun constat affiché ne
+doit dépasser cela** — un banc refuse qu'un texte de la table promette au patient
+une « marche plus basse », et le raccourci est déclaré en tête du module.
+
+La même contrainte a imposé la formulation de `REPLI-01` : une action **en cours
+de saisie** n'entre pas dans le terme, qui vaut alors zéro, et la ligne s'affiche
+en pleine composition. Un texte affirmant que « chaque action engagée distingue
+ses deux plans » y serait faux. Défaut trouvé par la revue de la PR #1168.
+
+## Ce que cette entrée n'exécute pas
+
+La table reste **non signée** : `validationExterne: false`, `shaPerimetre: null`,
+et `lignesRepliServables` rend `[]`. Les trois constats attendent la relecture du
+praticien — l'outil écrit les lignes, il ne les signe pas.
+
+**`suggererDepuisLignes`, côté barème, rend toujours un `null` unique pour trois
+causes** ([[D-213]] §5, encore ouvert). La table du repli, elle, naît avec le
+motif : elle n'a aucun appelant à casser, donc aucune raison de reproduire le
+défaut.
+
 ### D-216 — Les douze assiettes appariées ont chacune deux sources et une seule fait règle ; l'âge redevient un déclencheur, l'enquête alimentaire ne déclenche jamais seule une ligne d'assiette, et les familles attendent un mécanisme orienté
 
 - Date : 2026-09-16
