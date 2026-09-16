@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
+import { FicheAdministrativePanel } from '@/components/dossier/FicheAdministrativePanel';
 
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -64,17 +65,17 @@ function envoiReussi(envoi: CreateConsultationResponse['envoi']): boolean {
 // perdre le focus de saisie). Le déclencheur vit dans le Root Radix : le
 // focus revient dessus à la fermeture.
 
-type EditPatientState = {
-  idPatient: string;
-  telephone: string;
-  actif: 'OUI' | 'NON';
-};
+// LE DOSSIER ENTIER, ET NON PLUS TROIS CHAMPS (LOT-05). Ce type portait
+// `idPatient`, `telephone` et `actif` parce que le formulaire ne savait
+// modifier qu'un téléphone : prénom, nom, date de naissance et e-mail étaient
+// saisis à la création et ne se corrigeaient plus jamais. C'est maintenant la
+// ligne servie par la route qui est éditée, sans recopie intermédiaire.
+type EditPatientState = PatientsApiResponse['patients'][number];
 
 export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?: boolean }) {
   const [data, setData] = useState<PatientsApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [savingEdit, setSavingEdit] = useState(false);
   // Fin de parcours en attente de confirmation. Un seul dialogue pour tout le
   // tableau : dix lignes ne doivent pas produire dix dialogues dans le DOM.
   // `suite` ne concerne que le mode `retablissement` : ce dialogue-là ne porte
@@ -95,7 +96,6 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
   const [pagination, setPagination] = useState<PatientsPagination | null>(null);
   const [loadingTable, setLoadingTable] = useState(true);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
-  const [editFeedback, setEditFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [editState, setEditState] = useState<EditPatientState | null>(null);
   const [form, setForm] = useState({ prenom: '', nom: '', email: '', telephone: '', dateNaissance: '' });
   // Consultation / accès portail patient.
@@ -426,8 +426,14 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
   };
 
   const openEdit = (p: PatientRowData) => {
-    setEditState({ idPatient: p.idPatient, telephone: p.telephone, actif: p.actif === 'OUI' ? 'OUI' : 'NON' });
-    setEditFeedback(null);
+    // LA LIGNE DU TABLEAU NE PORTE PAS LE DOSSIER ENTIER. `PatientRowData` est
+    // ce qu'il faut pour AFFICHER une ligne ; la fiche administrative édite des
+    // champs que le tableau ne montre pas (adresse, NIR, médecin traitant). On
+    // retrouve donc la ligne servie par la route, qui les porte — et si elle
+    // manque, on ne devine pas : on ne propose pas l'édition.
+    const dossier = data?.patients.find(x => x.idPatient === p.idPatient);
+    if (!dossier) return;
+    setEditState(dossier);
   };
 
   // Activation / désactivation par PATCH, dans les deux sens. Il n'y a plus de
@@ -584,39 +590,6 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
     }
   };
 
-  const onSaveEdit = async () => {
-    if (!editState) return;
-    setSavingEdit(true);
-    setEditFeedback(null);
-    try {
-      // LE FORMULAIRE NE POSTE QUE LE CONTACT. `actif` en est retiré depuis
-      // `D-126` : désactiver ferme désormais les liens en vol, geste
-      // IRRÉVERSIBLE, et ce chemin-ci était le seul sans dialogue de
-      // confirmation. Un praticien venu corriger un numéro de téléphone
-      // pouvait effleurer le select et tuer le lien envoyé deux heures plus
-      // tôt, pour tout retour « Patient mis à jour. ». La règle que ce module
-      // s'écrit à lui-même vaut ici comme ailleurs : toute action qui change ce
-      // à quoi le patient a accès passe par un dialogue — celui du menu de
-      // ligne, « Désactiver le dossier ».
-      const r = await fetch('/api/praticien/patients', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idPatient: editState.idPatient, telephone: editState.telephone }),
-      });
-      const json = (await r.json()) as PatchPatientResponse;
-      if (!r.ok || !json.success) {
-        setEditFeedback({ ok: false, msg: erreurLisible(json.reason, json.error) });
-        return;
-      }
-      setEditFeedback({ ok: true, msg: 'Patient mis à jour.' });
-      await refreshPatients();
-      setTimeout(() => setEditState(null), 800);
-    } catch {
-      setEditFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
-    } finally {
-      setSavingEdit(false);
-    }
-  };
 
   if (loading) {
     return <div className="text-base text-muted-foreground">Chargement des données patients...</div>;
@@ -737,42 +710,30 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
         </span>
       </div>
 
-      {/* Édition patient inline */}
+      {/* LA FICHE ADMINISTRATIVE REMPLACE L'ÉDITION EN LIGNE (LOT-05). Elle ne
+          portait qu'un téléphone ; neuf champs se corrigent désormais, dont
+          l'e-mail — qui déplace la porte d'entrée du patient et fait réécrire
+          les copies dénormalisées côté route. */}
       {editState && (
-        <div className="bg-surface border border-accent rounded-xl p-4">
-          <h3 className="font-display text-lg font-semibold text-foreground mb-3">
-            Modifier patient <span className="font-normal text-muted-foreground">{editState.idPatient}</span>
-          </h3>
-          <div className="flex flex-wrap gap-3 items-end">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground">Téléphone</label>
-              <Input value={editState.telephone} onChange={e => setEditState(s => s ? { ...s, telephone: e.target.value } : s)} maxLength={30} placeholder="Téléphone" />
-            </div>
-            {/* L'état du dossier se change au menu de la ligne, derrière un
-                dialogue — jamais ici : ce formulaire n'avait aucune
-                confirmation et le geste est devenu irréversible (`D-126`). */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground">État du dossier</label>
-              <span className="text-sm text-foreground py-2">
-                {editState.actif === 'OUI' ? 'Actif' : 'Inactif'}
-                <span className="text-muted-foreground"> — se change au menu de la ligne</span>
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={onSaveEdit} disabled={savingEdit}>
-                {savingEdit ? 'Enregistrement...' : 'Enregistrer'}
-              </Button>
-              <Button variant="outline" onClick={() => setEditState(null)}>
-                Annuler
-              </Button>
-            </div>
-            {editFeedback && (
-              <span className={`text-sm ${editFeedback.ok ? 'text-status-success' : 'text-status-danger'}`}>
-                {editFeedback.msg}
-              </span>
-            )}
-          </div>
-        </div>
+        <FicheAdministrativePanel
+          // `key` N'EST PAS DÉCORATIF ICI, ET SON ABSENCE CORROMPAIT DES
+          // DOSSIERS (constat de revue, 2026-09-16). Le panneau initialise son
+          // formulaire UNE FOIS, depuis `patient`. Sans `key`, ouvrir la fiche
+          // d'un second dossier pendant que celle du premier est affichée
+          // réutilise le même composant : le formulaire garde les valeurs du
+          // PREMIER patient, tandis que `patient.idPatient` désigne le SECOND.
+          // Enregistrer écrivait alors le nom, l'e-mail et le NIR de l'un sur
+          // le dossier de l'autre. Changer de clé démonte et remonte.
+          key={editState.idPatient}
+          patient={editState}
+          onFermer={() => setEditState(null)}
+          onEnregistre={async () => {
+            await refreshPatients();
+            // La fiche reste OUVERTE après enregistrement : elle est le lieu de
+            // travail du dossier, pas une boîte de dialogue à faire disparaître.
+            // Son propre retour dit ce qui s'est passé.
+          }}
+        />
       )}
 
       {/* Barre recherche / tri */}

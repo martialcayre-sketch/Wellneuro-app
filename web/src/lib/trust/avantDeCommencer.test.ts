@@ -79,20 +79,23 @@ describe('avantDeCommencer — la liste et les écrans ne divergent pas', () => 
     ]);
   });
 
-  it('« Vos données personnelles » est PRÉSENTÉ sans être EXIGÉ — et c’est le mécanisme', () => {
-    // LA DISTINCTION QUE CE BANC GARDE, et elle n'est pas théorique. La clé est
-    // dans la liste (la séquence montre bien ce texte, à l'écran 3), mais sa
-    // version courante ne réclame aucun accusé — les v3 à v7 DÉCRIVAIENT sans
-    // rien recueillir de neuf. Le filtre l'écarte donc tout seul, sans qu'on
-    // ait à retirer sa clé, et la porte n'interrompt personne.
+  it('« Vos données personnelles » est désormais EXIGÉ, et le filtre est le mécanisme', () => {
+    // CE BANC A CHANGÉ DE VERDICT AU LOT-05, ET C'EST LE POINT. Au LOT-04, la
+    // clé était dans la liste sans être exigée : sa version courante (v7) ne
+    // réclamait rien, et le filtre l'écartait TOUT SEUL — sans qu'on ait eu à
+    // retirer sa clé de la liste. La v8 réclame un accusé, et elle entre dans
+    // le périmètre exigé par le seul fait de sa publication.
     //
-    // Le jour où une version de ce document recueillera vraiment du neuf, elle
-    // posera `requiresAcknowledgement` et rentrera dans le périmètre exigé par
-    // le seul fait de sa publication. Voir le banc de dépendance de release
-    // ci-dessous, qui dit à quelle condition ce jour peut arriver.
+    // C'est ce mécanisme-là qu'il faut garder : `DOCUMENTS_AVANT_DE_COMMENCER`
+    // dit ce que la séquence PRÉSENTE, jamais ce qu'elle EXIGE. Les deux se
+    // rejoignent par `requiresAcknowledgement`, version par version.
     expect(DOCUMENTS_AVANT_DE_COMMENCER).toContain('donnees_confidentialite');
-    expect(documentsRequerantAccuse()).not.toContain('donnees_confidentialite');
-    expect(documentsRequerantAccuse()).toEqual(['cadre_accompagnement', 'limites_securite']);
+    expect(getDocumentCourant('donnees_confidentialite').requiresAcknowledgement).toBe(true);
+    expect(documentsRequerantAccuse()).toEqual([
+      'cadre_accompagnement',
+      'limites_securite',
+      'donnees_confidentialite',
+    ]);
   });
 
   it('aucun document de la liste n’est absent des écrans de la séquence', () => {
