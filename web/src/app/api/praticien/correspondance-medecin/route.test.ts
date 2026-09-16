@@ -396,7 +396,7 @@ describe('/api/praticien/correspondance-medecin', () => {
   });
 
   it('LE SECOND ÉCRIVAIN EST JUGÉ SUR SA PROPRE TABLE', async () => {
-    // La lettre d'adressage ([[D-215]]) s'ancre sur les signaux de sécurité.
+    // La lettre d'adressage ([[D-217]]) s'ancre sur les signaux de sécurité.
     // Sous le verdict en dur d'avant le LOT-03, CHACUNE de ses lignes aurait
     // porté « ancrage périmé » sans qu'aucune règle clinique n'ait bougé — une
     // fausse alerte sur toute la chaîne d'adressage, produite par la seule

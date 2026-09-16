@@ -1,6 +1,6 @@
 # Handoff — 2026-09-17 — LOT-04 : la lettre d'adressage, cœur de la campagne
 
-Le geste manquant entre un blocage et sa sortie. Décision [[D-216]].
+Le geste manquant entre un blocage et sa sortie. Décision [[D-217]].
 
 ## Branche et état Git
 
@@ -20,7 +20,7 @@ vingt-cinq sont concernés (production, 2026-08-23).
 ## Décisions prises
 
 Aucun arbitrage clinique nouveau : la cotation de [[D-099]] n'est ni relue, ni
-retouchée, ni re-signée. Six choix techniques, écrits dans [[D-216]] :
+retouchée, ni re-signée. Six choix techniques, écrits dans [[D-217]] :
 
 - le geste se monte **dans** le bloc « Ce qui suspend la décision », pas dans
   l'onglet Correspondance ;

@@ -42,7 +42,7 @@ export const MODELE_COURRIER_BIOLOGIE: ModeleDocument = {
 };
 
 /**
- * Courrier médecin — adressage sur signal d'alerte ([[D-215]], LOT-04).
+ * Courrier médecin — adressage sur signal d'alerte ([[D-217]], LOT-04).
  *
  * MÊME FORME que le courrier biologie, et pour cause : c'est le même geste —
  * un papier remis au médecin, non prescriptif, dont la décision appartient au

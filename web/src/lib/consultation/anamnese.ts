@@ -213,13 +213,22 @@ export const ANAMNESE_SECTIONS: AnamneseSection[] = [
     // absent), et `lireEtatPopulation` les ramène tous deux à `inconnu`.
     //
     // CE QUE LA SECTION NE PORTE PAS, ET POURQUOI — chacun de ces trois
-    // critères est nommé par `DC-43`, et chacun manque de la provenance qui en
-    // ferait une question :
+    // critères est nommé par `DC-43` :
     //
-    //   · ÂGE (« enfant », « personne âgée ») : aucune borne d'âge n'a de
-    //     provenance au dépôt. Poser un pivot ici serait inventer un seuil
-    //     clinique (`DC-19`). `Patient.dateNaissance` reste un fait
-    //     administratif, lu par le praticien, jamais par une gate.
+    //   · ÂGE (« enfant », « personne âgée ») : la section ne le porte toujours
+    //     pas, mais SON MOTIF A CHANGÉ LE 2026-09-16 et il faut le dire plutôt
+    //     que laisser lire l'ancien. Il était « aucune borne d'âge n'a de
+    //     provenance au dépôt ; poser un pivot serait inventer un seuil
+    //     clinique (`DC-19`) ». [[D-216]] l'a levé : trois claims prescriptifs
+    //     validés portent désormais des bornes — `WN-CL-0286-006` (50 ans),
+    //     `WN-CL-0288-011` (60 ans), `WN-CL-0293-009` (50 ans, puis 70) —,
+    //     toutes sur l'indication d'une assiette. Le pivot ne serait plus
+    //     inventé, il serait CITÉ.
+    //     CE QUI RESTE VRAI AUJOURD'HUI : `Patient.dateNaissance` n'est lu par
+    //     AUCUNE gate, et l'exposer est un chantier que `D-216` ouvre sans
+    //     l'exécuter — avec la revisite de `DC-43` qu'il appelle. Tant qu'il
+    //     n'est pas fait, aucune règle ne lit l'âge, et cette section reste
+    //     telle quelle.
     //   · POLYMÉDICATION : le groupe `medicaments` donne déjà le compte exact.
     //     Ce qui manque n'est pas la donnée mais le NOMBRE à partir duquel elle
     //     qualifie une population — aucune source ne le fixe.

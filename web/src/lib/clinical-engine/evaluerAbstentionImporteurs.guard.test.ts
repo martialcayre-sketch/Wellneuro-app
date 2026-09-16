@@ -52,7 +52,7 @@ const IMPORTEURS_ATTENDUS = [
   'web/src/lib/clinical/gatePopulationV1.ts',
   'web/src/lib/clinical/gatePopulationV1.guard.test.ts',
   'web/src/lib/clinical/safetyEffetIndesirableV1.ts',
-  // MENTION NEUVE ([[D-216]], lettre d'adressage). Le générateur décrit dans
+  // MENTION NEUVE ([[D-217]], lettre d'adressage). Le générateur décrit dans
   // sa prose l'effet de ce qui l'appelle — « `evaluerAbstention` passe en
   // `required` » —, parce que c'est ce blocage-là qui fonde l'existence de la
   // lettre. Il n'appelle rien : il ne lit aucun score, ne rend aucun verdict,

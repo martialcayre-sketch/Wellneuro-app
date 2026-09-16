@@ -20,28 +20,50 @@ minimal et plan de secours sont tous obligatoires). Le plan idéal est donc
 toujours rempli, et les deux textes ne coïncident que si le praticien recopie le
 même mot à mot.
 
-**Conséquence** : `actionsAvecEcartDePlan` vaut, en pratique, le **nombre
-d'actions engagées** — c'est-à-dire exactement ce que `nombreActionsFermes`
-compte déjà, et ce que les trois lignes du barème lisent. Une table signée sur ce
-terme redirait le barème sous un autre nom, et le praticien lirait deux fois la
-même mesure présentée comme deux informations.
+**Conséquence** : `actionsAvecEcartDePlan` est **inférieur ou égal** au nombre
+d'actions engagées, et il ne s'en écarte que lorsque le praticien recopie le même
+texte dans les deux plans. Il **sature** donc vers `nombreActionsFermes` — ce que
+les trois lignes du barème lisent déjà. Une table signée sur ce terme redirait le
+barème sous un autre nom, et le praticien lirait deux fois la même mesure
+présentée comme deux informations.
 
 Ce n'est pas un argument contre la table. C'est un argument contre **ce
 terme-là**.
+
+**CE QUE LA MESURE ÉTABLIT, ET CE QU'ELLE N'ÉTABLIT PAS.** Elle compare deux
+chaînes après `trim()`. Elle constate donc une **différence de texte**, jamais
+une différence d'**exigence** : deux formulations du même niveau passeraient pour
+un repli, et un plan minimal réellement plus accessible ne se distingue pas d'une
+reformulation. Ce raccourci se déclare dans le module et dans les constats —
+aucun texte affiché ne doit affirmer que le patient « garde une marche plus
+basse », ce que la mesure ne sait pas.
 
 ## LE TERME QUI DISCRIMINE EST LE COMPLÉMENT
 
 Ce que `D-213` §4 visait — écrit dans son propre texte — ce sont « les protocoles
 **sans repli** ». Ce n'est pas la présence d'un écart qui informe, c'est son
-**absence** : une action dont le plan minimal égale le plan idéal ne laisse au
-patient aucune marche plus basse le jour où il décroche.
+**absence** : une action dont le plan minimal reprend mot pour mot le plan idéal
+n'écrit **aucun allègement**, et le praticien l'apprend à ce moment-là plutôt
+qu'après. La mesure constate cette absence de différence **textuelle** — elle ne
+dit pas, et ne peut pas dire, ce dont le patient dispose réellement le jour où il
+décroche.
 
 Cette mesure ne demande **aucune donnée nouvelle** : elle se dérive des deux
 termes déjà mesurés.
 
+Elle se mesure **directement**, et surtout pas par soustraction :
+
+```ts
+actionsSansRepli = fermes.filter(a =>
+  a.idealPlan.trim() !== '' && a.idealPlan.trim() === a.minimalPlan.trim()).length
 ```
-actionsSansRepli = nombreActionsFermes − actionsAvecEcartDePlan
-```
+
+**La soustraction `nombreActionsFermes − actionsAvecEcartDePlan` serait fausse
+là où la mesure sert.** Le contrat serveur exige un plan idéal non vide
+(`protocolDraft.ts:152`), mais `mesurerProtocole` tourne aussi dans le navigateur
+**pendant la composition**, avant toute validation : une action dont le plan
+idéal n'est pas encore tapé serait alors comptée comme une action sans repli, et
+l'écran l'afficherait au praticien pendant qu'il écrit.
 
 Elle est rare quand le protocole est bien composé, fréquente quand il ne l'est
 pas — donc elle discrimine, là où `actionsAvecEcartDePlan` sature.
@@ -81,9 +103,13 @@ Bornes **inclusives**, `null` valant « pas de borne de ce côté ».
 
 | id | terme | min | max | ce que le praticien lirait |
 | --- | --- | ---: | ---: | --- |
-| `REPLI-01` | `actionsSansRepli` | `null` | 0 | Chaque action engagée a un plan minimal distinct : le patient garde une marche plus basse les jours difficiles. |
-| `REPLI-02` | `actionsSansRepli` | 1 | 2 | Au moins une action engagée n'a pas de repli distinct : ces jours-là, le patient n'a rien à quoi se raccrocher. |
-| `REPLI-03` | `actionsSansRepli` | 3 | 3 | Aucune des trois actions n'offre de repli : le protocole se tient entièrement ou pas du tout. |
+| `REPLI-01` | `actionsSansRepli` | `null` | 0 | Chaque action engagée distingue son plan minimal de son plan idéal. |
+| `REPLI-02` | `actionsSansRepli` | 1 | 2 | Au moins une action engagée répète le même plan en idéal et en minimal : rien n'y est écrit comme allègement. |
+| `REPLI-03` | `actionsSansRepli` | 3 | 3 | Aucune des actions engagées ne distingue ses deux plans : le protocole ne propose aucun repli écrit. |
+
+**Aucun de ces trois textes n'affirme que le patient dispose d'une marche plus
+basse** — seulement que les deux plans diffèrent par leur texte. C'est tout ce
+que la mesure établit, et le module le déclare.
 
 **`REPLI-01` couvre zéro ET les protocoles sans action engagée**, et son texte est
 écrit pour être vrai dans les deux cas. C'est la correction exacte que la

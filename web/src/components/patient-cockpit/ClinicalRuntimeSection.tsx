@@ -368,7 +368,7 @@ export function ClinicalRuntimeSection({
   const [propositionState, setPropositionState] = useState<PropositionState>('idle');
   const [propositionError, setPropositionError] = useState<string | null>(null);
   const [courrier, setCourrier] = useState<CourrierEtabli | null>(null);
-  // Lettre d'adressage ([[D-215]]). `adressageOuvert` reste faux tant que la
+  // Lettre d'adressage ([[D-217]]). `adressageOuvert` reste faux tant que la
   // route n'a pas répondu `ok` : c'est LUI qui porte `WN_ADRESSAGE_COURRIER`,
   // sans second FeatureProvider — un 503 laisse simplement le geste absent.
   const [adressageOuvert, setAdressageOuvert] = useState(false);

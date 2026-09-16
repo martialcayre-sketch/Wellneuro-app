@@ -76,7 +76,7 @@ const rep = (payload: unknown, ok = true, status = 200): ReponseMock => ({
  * n'est jamais atteint.
  */
 const ROUTES_NOMMEES = [
-  // Lettre d'adressage ([[D-215]]) : son GET de disponibilité part à CHAQUE
+  // Lettre d'adressage ([[D-217]]) : son GET de disponibilité part à CHAQUE
   // montage. Non nommé, il consommait une réponse du cockpit dans la file
   // générique — le défaut exact que ce routage a fermé. Sans déclaration, un
   // cas reçoit l'échec par défaut, donc le geste reste absent.

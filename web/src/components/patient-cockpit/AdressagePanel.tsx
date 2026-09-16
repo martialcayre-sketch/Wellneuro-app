@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-// Lettre d'adressage ([[D-215]], LOT-04) — panneau présentationnel, posé DANS
+// Lettre d'adressage ([[D-217]], LOT-04) — panneau présentationnel, posé DANS
 // le bloc qui dit ce qui suspend la décision.
 //
 // LE GESTE EST À L'ENDROIT DU BLOCAGE, et ce n'est pas une préférence
