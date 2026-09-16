@@ -6668,3 +6668,16 @@ c'est précisément son contenu clinique qui est en cause.
 **Question ouverte.** Le trou jumeau reste : `severiteCroissante` et
 `sansTotalGlobal` commandent `bandePlancher`, donc une zone couleur signée, sans
 entrer dans le périmètre.
+
+## 2026-09-16 — PR #1146 : fragments de clôture ajoutés
+
+Suite au commentaire de revue, ajout des deux fragments requis par le gate
+`/wn-merge` : une entrée append-only dans `docs/claude/SESSION_LOG.md` et un
+handoff daté dans `docs/claude/handoffs/`.
+
+Aucun changement applicatif, aucune migration, aucune logique clinique touchée.
+Validation : vérification des chemins attendus et du format de titre handoff
+`# Handoff — YYYY-MM-DD — ...`.
+
+Prochaine action : relancer la revue de la PR #1146 puis le merge après
+confirmation du check `verify`.
