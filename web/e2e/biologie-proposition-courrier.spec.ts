@@ -211,7 +211,7 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     await expect(texte).toBeVisible();
     await expect(texte).toHaveValue(/\S/);
 
-    // LE PAPIER ([[D-214]]) : le rendu du serveur est servi ET affiché. Le
+    // LE PAPIER ([[D-215]]) : le rendu du serveur est servi ET affiché. Le
     // vérifier ici, et pas seulement au banc, est ce qui prouve la chaîne
     // entière — génération, garde non prescriptive, transport, aperçu.
     const apercu = panneau.getByTitle('Aperçu imprimable du courrier au médecin');
@@ -246,7 +246,7 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     // le verdict ne doit pas confondre avec une péremption.
     await expect(page.getByText(/ancrage concordant/).first()).toBeVisible();
 
-    // Et le libellé suit l'ORIGINE ([[D-214]] §6) : cette ligne a été GÉNÉRÉE
+    // Et le libellé suit l'ORIGINE ([[D-215]] §6) : cette ligne a été GÉNÉRÉE
     // au moment où le papier est sorti, avant toute remise — « Envoi consigné »
     // y affirmerait un geste que personne n'a fait.
     await expect(page.getByText(/Courrier préparé/).first()).toBeVisible();

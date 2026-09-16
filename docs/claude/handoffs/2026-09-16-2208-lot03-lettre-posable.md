@@ -3,7 +3,7 @@
 Quatrième lot de la campagne « ouverture du rayon Correspondance ». Deux choses,
 dont la seconde est le **verrou technique de LOT-04** : le courrier biologie
 devient un papier signé, et `verdictAncrage` cesse de ne connaître qu'une table.
-Décision [[D-214]].
+Décision [[D-215]].
 
 ## Branche et état Git
 
@@ -30,7 +30,7 @@ Deux arbitrages rendus par le responsable pendant le lot :
 | « échange confraternel » sur un papier signé par un pharmacien | « échange **interprofessionnel** » | assumer l'écart par écrit : la signature lève l'ambiguïté, mais le mot ne servait plus à rien une fois la qualité écrite |
 | où va le bloc de signature | dans le **texte généré** | le seul HTML : la lettre transcrite à la main partirait sans signataire, et la signature échapperait à la garde de vocabulaire |
 
-Trois choix techniques, écrits dans [[D-214]] : la signature **quitte** le
+Trois choix techniques, écrits dans [[D-215]] : la signature **quitte** le
 registre des gabarits pour un module partagé (les quatre empreintes inchangées du
 hash-lock prouvent que les quatre corps ne bougent pas) ; le verdict d'ancrage se
 rend par une table `ancrageVersion → SHA attendu`, dont la **valeur** reste le SHA
