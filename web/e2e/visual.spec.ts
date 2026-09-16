@@ -349,7 +349,10 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
     await capturer(page, testInfo, 'fiche-trajectoire-onglet', { fullPage: !estMobile(testInfo) });
   });
 
-  test('patients & assignations', async ({ page }, testInfo) => {
+  // SCINDÉ LE 2026-09-16, avec la page qu'il capturait. « Questionnaires &
+  // packs » réunissait les dossiers et les assignations ; ce sont désormais
+  // deux écrans, et une seule capture ne pouvait plus les montrer tous les deux.
+  test('rayon Patients — la liste des dossiers', async ({ page }, testInfo) => {
     await page.goto('/dashboard/patients');
     // SP-TRAJ LOT-05 : les formulaires vivent en tiroirs — l'ancrage se fait
     // sur la barre d'actions, le tableau est le premier contenu.
@@ -359,6 +362,29 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
     // même run (assignations créées pour Michel) — attrapé par la toute
     // première comparaison active en CI, hauteur 2386 vs 2546 px.
     await capturer(page, testInfo, 'dashboard-patients', { fullPage: true, pixel: false });
+  });
+
+  test('rayon assignations et packs — dans la Bibliothèque', async ({ page }, testInfo) => {
+    await page.goto('/dashboard/bibliotheque');
+    // L'ancrage se fait sur le titre du rayon et non sur `getByRole('table')` :
+    // la Bibliothèque porte plusieurs tableaux, et `.first()` y désignerait
+    // celui du catalogue.
+    await page.getByRole('heading', { name: 'Assignations et packs' }).waitFor();
+    await page.getByRole('button', { name: 'Nouvelle assignation' }).waitFor();
+    // PAS DE PLEINE PAGE SUR MOBILE, et ce n'est pas une précaution de style :
+    // en CI, `fullPage` sur iPhone 13 a rendu « Cannot take screenshot larger
+    // than 32767 pixels on any dimension ». La Bibliothèque empile désormais
+    // catalogue, aperçu vierge, file d'envoi, assignations, packs et trois
+    // rayons — sur 390 px de large, la page dépasse ce qu'un navigateur sait
+    // capturer. Même geste que « fiche-trajectoire-onglet » juste au-dessus.
+    //
+    // Pas de pixel non plus, pour la raison qui valait déjà à la capture
+    // précédente : les assignations dépendent de l'état laissé par les
+    // parcours E2E du même run.
+    await capturer(page, testInfo, 'bibliotheque-assignations-packs', {
+      fullPage: !estMobile(testInfo),
+      pixel: false,
+    });
   });
 });
 

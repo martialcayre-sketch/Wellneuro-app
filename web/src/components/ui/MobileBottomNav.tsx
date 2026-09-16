@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { LayoutDashboard, Users, Sparkles, FileText, Layers, Settings, ShieldCheck, MoreHorizontal, X, Compass, Mail, BookOpen, ClipboardCheck, CalendarDays, FlaskConical, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, ContactRound, Sparkles, FileText, Settings, ShieldCheck, MoreHorizontal, X, Compass, Mail, BookOpen, ClipboardCheck, CalendarDays, FlaskConical, type LucideIcon } from 'lucide-react';
 
 const primaryItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard },
   // Parcours 5.0 d'abord (SP-TRAJ LOT-04) : « Fiches » ouvre la porte
-  // d'entrée trajectoire ; la gestion « Questionnaires & packs » reste
-  // accessible depuis la liste et le rail desktop.
+  // d'entrée trajectoire ; la gestion des dossiers vit dans le rayon
+  // « Patients », joignable par la feuille « Plus » et par le rail desktop.
   { href: '/dashboard/trajectoires', label: 'Fiches', icon: Users },
   { href: '/dashboard/synthese', label: 'Synthèses', icon: Sparkles },
 ];
@@ -20,13 +20,14 @@ const primaryItems: { href: string; label: string; icon: LucideIcon }[] = [
 // le hamburger du rail complet est masqué à ces largeurs. La liste reprend
 // l'ordre et les libellés du rail desktop (SidebarRail) ; `/dashboard/regles`
 // reste volontairement non liée, comme partout (rayon en attente d'activation).
-// `matiere: 'exact'` = actif sur la page seule (patron SidebarRail pour la
-// liste héritage, dont les sous-pages appartiennent aux fiches).
+// `matiere: 'exact'` = actif sur la page seule (patron SidebarRail pour le
+// rayon Patients, dont les sous-pages sont les fiches et appartiennent à
+// « Fiches »).
 const plusItems: { href: string; label: string; icon: LucideIcon; matiere?: 'exact' }[] = [
+  { href: '/dashboard/patients', label: 'Patients', icon: ContactRound, matiere: 'exact' },
   { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
   { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail },
   { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen },
-  { href: '/dashboard/patients', label: 'Questionnaires & packs', icon: Layers, matiere: 'exact' },
   { href: '/dashboard/documents', label: 'Documents', icon: FileText },
   { href: '/dashboard/corpus', label: 'Atelier corpus', icon: ClipboardCheck },
   { href: '/dashboard/agenda', label: 'Agenda & consultations', icon: CalendarDays },

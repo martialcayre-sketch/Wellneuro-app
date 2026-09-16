@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
+  ContactRound,
   Sparkles,
   FileText,
   Settings,
@@ -16,7 +17,6 @@ import {
   ClipboardCheck,
   CalendarDays,
   FlaskConical,
-  Layers,
   type LucideIcon,
 } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
@@ -35,8 +35,9 @@ type NavItem = {
   icon: LucideIcon;
   tag?: string;
   badge?: 'fil' | 'correspondance';
-  /** 'exact' : actif seulement sur le chemin exact (désambiguïse
-   * Fiche-trajectoire ↔ Questionnaires & packs). */
+  /** 'exact' : actif seulement sur le chemin exact — c'est ce qui désambiguïse
+   * « Patients » (la liste, /dashboard/patients) de « Fiche-trajectoire », qui
+   * s'allume sur les fiches ouvertes sous ce même préfixe. */
   matiere?: 'exact' | 'prefixe' | 'sous-pages';
   /** Préfixes SUPPLÉMENTAIRES qui activent l'item — ex. « Fiche-trajectoire »
    * reste allumée sur les fiches (/dashboard/patients/…) alors qu'elle pointe
@@ -49,9 +50,15 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
     etiquette: 'La Spirale',
     items: [
       { href: '/dashboard', label: 'Le Fil du jour', icon: LayoutDashboard, matiere: 'exact', badge: 'fil' },
+      // LE RAYON PATIENTS — le dossier administratif, sorti de l'héritage 4.0
+      // où il cohabitait avec l'assignation de questionnaires et les packs.
+      // `matiere: 'exact'` : seule la LISTE allume cet item. Les fiches, sous
+      // ce même préfixe, allument « Fiche-trajectoire » juste en dessous —
+      // c'est la seule paire du rail qui partage un préfixe d'URL.
+      { href: '/dashboard/patients', label: 'Patients', icon: ContactRound, matiere: 'exact' },
       // Porte d'entrée trajectoire (SP-TRAJ LOT-04) : la liste orientée
       // trajectoire. L'item reste actif sur les fiches ouvertes depuis elle ;
-      // /dashboard/patients exact n'allume que « Questionnaires & packs ».
+      // /dashboard/patients exact n'allume que « Patients ».
       {
         href: '/dashboard/trajectoires',
         label: 'Fiche-trajectoire',
@@ -68,7 +75,11 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
   {
     etiquette: 'Héritage 4.0 — inchangé',
     items: [
-      { href: '/dashboard/patients', label: 'Questionnaires & packs', icon: Layers, tag: '4.0', matiere: 'sous-pages' },
+      // « Questionnaires & packs » A QUITTÉ CE GROUPE le 2026-09-16, et le
+      // rail avec lui. La page réunissait deux métiers sans rapport : la
+      // gestion des dossiers, devenue le rayon « Patients » ci-dessus, et
+      // l'assignation de questionnaires avec les packs, passée en rayon de la
+      // Bibliothèque — déjà 5.0. Il ne reste donc rien à lier ici.
       { href: '/dashboard/documents', label: 'Documents', icon: FileText, tag: '4.0' },
       { href: '/dashboard/synthese', label: 'Synthèse IA', icon: Sparkles, tag: '4.0' },
       { href: '/dashboard/corpus', label: 'Atelier corpus', icon: ClipboardCheck, tag: '4.0' },

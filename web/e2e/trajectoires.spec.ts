@@ -35,7 +35,16 @@ test.describe('Porte d’entrée Trajectoires', () => {
     ).toBe(true);
   });
 
-  test('le rail desktop pointe « Fiche-trajectoire » vers la liste, « Questionnaires & packs » vers la page héritage', async ({
+  // DEUX ITEMS DU RAIL PARTAGENT UN PRÉFIXE D'URL, et c'est ce que ce test
+  // garde. « Patients » mène à la liste des dossiers (`/dashboard/patients`) ;
+  // « Fiche-trajectoire » mène ailleurs (`/dashboard/trajectoires`) tout en
+  // s'allumant sur les FICHES, qui vivent sous le préfixe du premier.
+  //
+  // Le test citait auparavant « Questionnaires & packs », l'entrée d'héritage
+  // 4.0 qui occupait `/dashboard/patients`. Elle a quitté le rail le
+  // 2026-09-16 : ses assignations et ses packs sont un rayon de la
+  // Bibliothèque, et la gestion des dossiers est devenue « Patients ».
+  test('le rail desktop distingue « Patients » (la liste) de « Fiche-trajectoire »', async ({
     page,
     context,
   }, testInfo) => {
@@ -48,9 +57,12 @@ test.describe('Porte d’entrée Trajectoires', () => {
       'href',
       '/dashboard/trajectoires',
     );
-    await expect(rail.getByRole('link', { name: /Questionnaires & packs/ })).toHaveAttribute(
+    await expect(rail.getByRole('link', { name: 'Patients', exact: true })).toHaveAttribute(
       'href',
       '/dashboard/patients',
     );
+    // L'entrée d'héritage a bien disparu : un rail qui la garderait mènerait à
+    // une page qui ne porte plus ni assignations ni packs.
+    await expect(rail.getByRole('link', { name: /Questionnaires & packs/ })).toHaveCount(0);
   });
 });
