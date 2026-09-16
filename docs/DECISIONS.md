@@ -4,6 +4,122 @@
 
 ## Décisions actives
 
+### D-213 — Treize arbitrages rendus d'un coup : la relecture cesse d'être un tampon, la frontière patient perd un champ mort, et la Boussole reçoit son programme
+
+- Date : 2026-09-16
+- Statut : accepté — **arbitrages du responsable**, rendus sur les réserves que la
+  journée avait laissées ouvertes. Aucun changement de code dans cette entrée :
+  elle grave, elle n'exécute pas.
+- Domaine : protocole 21 jours, catalogue de conduites, Boussole alimentaire.
+- Ferme : les réserves de [[D-206]] (A4, A5), de [[D-207]] (pièges 2 et 3), de
+  [[D-208]] (le tampon serveur), les dettes 3 et 4 de [[D-200]], et les quatre
+  arbitrages B1→B4 du cadrage Boussole.
+
+**POURQUOI CETTE ENTRÉE EXISTE.** Treize questions ont été posées et tranchées en
+une séance. Les laisser dans une conversation aurait reproduit exactement ce que
+`D-205` a eu à réparer le matin même — du travail produit, jamais écrit, mort
+avec sa session.
+
+## La relecture cesse d'être un tampon
+
+**1. « Relu par le praticien » exige DEUX gestes.** Le constructeur porte déjà un
+état `reviewed`, l'affiche, et le **remet à faux à chaque frappe** — il n'est
+simplement jamais transmis, et la route tamponne
+`confirmation: 'content_reviewed'` sans condition. La coche voyagera désormais, et
+`review` vaudra `null` quand elle est fausse ; la **validation pour diffusion**
+reste le second verrou, distinct. Le cockpit affiche déjà ces deux états séparés —
+c'est le transport qui manquait, pas la conception.
+
+**Ce que cela retire au dépôt** : plus aucun raisonnement de sûreté ne peut
+s'adosser à « la relecture praticien répond de ce texte » **sans que ce soit
+vrai**. Plusieurs le faisaient.
+
+**2. `limitations` SORT du contrat patient** (dette 4 de `D-200`, et le piège n°3
+avec elle). Le champ était projeté et **signé** jusqu'à l'écran du patient,
+alimenté par personne — les quatre appelants passaient `[]` — et rendu par aucun
+écran. Même classe que `followUpCriterion`, qui a voyagé des mois sans lecteur.
+Un champ signé que personne ne lit est une promesse non tenue : il part.
+**Conséquence assumée** : le remettre plus tard changera l'empreinte de la vue
+patient.
+
+**3. Le statut d'intervention S'AFFICHE et se pose** (dette 3 de `D-200`). Le
+constructeur écrivait `interventionStatus: 'active'` en silence, là où
+`protocolDraft.ts` refuse précisément cette valeur par défaut — `DC-24`, « active
+est la valeur la plus engageante ». Deux couches du même dossier se
+contredisaient sur la même règle. Le formulaire montrera le statut et le praticien
+le choisira. **Écarté : cesser simplement de le poser** — plus petit, mais il
+laissait le praticien sans vue sur une valeur qui décide de ce que le patient lit.
+
+## Le plancher et la charge
+
+**4. L'écart idéal/minimal reçoit sa PROPRE table signée**, sur le patron du
+barème. Le dépôt mesure déjà `actionsAvecEcartDePlan` et aucune ligne publiée ne
+le consomme ; il devient une ligne **signée**, pas un avis d'outil.
+
+**ET LE BARÈME GARDE SON TERME UNIQUE, ce qui n'est pas un détail.** Une
+`LigneBaremeCharge` ne porte **qu'un seul terme**. Y ajouter une ligne sur un
+second terme ferait matcher deux lignes sur tout protocole ; dès que leurs niveaux
+divergent, `suggererDepuisLignes` rend `null` et le praticien ne lit **plus rien**
+— ni charge, ni alerte — précisément sur les protocoles sans repli. La table
+séparée tient l'intention sans armer ce piège.
+
+**5. `suggererDepuisLignes` rend un MOTIF par cause** (piège n°2 de `D-207`).
+Aucune ligne applicable, désaccord de niveau, table non signée : trois causes, un
+seul `null` aujourd'hui. Le second signifie **« votre table se contredit »**, et
+rien ne le dirait jamais. La fonction servira aussi la table du point 4 : le
+correctif n'attend donc pas un consommateur hypothétique.
+
+## Le catalogue
+
+**6. LES TROIS LIGNES SONT CONFIRMÉES.** `insomnie_depression`,
+`insomnie_anxiete`, `insomnie_jambes_sans_repos`, avec les claims désignés
+catégorie par catégorie dans
+`SURFACE_RELECTURE_CATALOGUE_CONDUITES_2026-09-16.md`. **Le geste d'attestation
+reste au responsable** : `validationExterne`, la date, et le `shaPerimetre`
+recopié à la main. L'outil écrit les lignes ; il ne les signe pas.
+
+**7. A5 — le pré-remplissage est proposé et LIBREMENT MODIFIABLE.** Patron de la
+suggestion de charge et du `TherapeuticLoad`, qui reste déclaré. **Réserve
+consignée, et elle ne se referme pas ici** : dès la première réécriture, ce qui
+atteint le patient n'est plus ce que le claim fonde, et rien ne dit que le texte a
+divergé de sa source.
+
+**8. A4 — les 514 « à ne pas faire » se TRIENT avant de se ranger.** Un lot de
+curation les classe en trois tas — exclusion de population, contre-indication de
+conduite, conseil négatif — et chaque tas rejoint son propriétaire. Le tri précède
+l'arbitrage, il ne le remplace pas.
+
+## La Boussole
+
+**9. B1 — `attachFoodCompassRef` est GARDÉ et RECIBLÉ sur l'assiette.** Le
+mécanisme est écrit, gardé par cinq assertions, appelé par personne. Plutôt que
+de le supprimer (précédent `suggererCharge`), il servira une
+`RecommendedPlateRef` : l'assiette portera l'action, pas l'aliment.
+
+**10. B2 — le catalogue d'assiettes s'étend aux DOUZE du corpus**
+(`WN-SRC-0296` → `WN-SRC-0307`). Les trois actuelles sont organisées par MOMENT du
+repas ; les douze le sont par INDICATION, et seul cet axe peut porter une action.
+`WN-CL-0287-009` — le seul précédent corpus → table signée du dépôt — fonde
+justement l'indication d'une assiette.
+
+**11. B3 — les douze reçoivent leurs FAMILLES D'ÉQUIVALENCE.** C'est
+l'affirmation la plus lourde du lot : déclarer qu'une assiette peut en remplacer
+une autre est une équivalence clinique, et le catalogue note qu'aucune n'a jamais
+été validée. Elle donne au patient qui ne peut pas suivre son assiette une
+alternative attestée plutôt qu'aucune.
+
+**12. B4 — la Boussole reste ATTEIGNABLE depuis le protocole.** De l'assiette
+prescrite vers la lecture des aliments : l'assiette prescrit, la Boussole explique
+pourquoi. C'est la séparation des rôles du cadrage, rendue visible dans le
+parcours.
+
+## Ce que cette entrée n'exécute pas
+
+Rien. Les douze points ci-dessus sont des chantiers, de tailles très inégales —
+du correctif d'une ligne (point 2) à une curation clinique de douze entrées
+(point 11). L'ordre d'exécution et leur découpe en lots restent à poser, et
+**aucun ne s'ouvre en campagne** : `D-112` pèse toujours.
+
 ### D-212 — Le fil de correspondance se range sur la date de l'échange, et le geste de transcription cesse de perdre en silence
 
 - Date : 2026-09-16
