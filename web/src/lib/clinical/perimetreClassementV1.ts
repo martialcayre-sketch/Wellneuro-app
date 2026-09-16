@@ -371,8 +371,8 @@ export function attestationValide(attestation: {
 }
 
 export const ATTESTATION_CLASSEMENT = {
-  relu: false,
-  dateRelecture: null as string | null,
+  relu: true,
+  dateRelecture: '2026-09-16' as string | null,
   /**
    * SHA du périmètre effectivement relu. LITTÉRAL FIGÉ, jamais la constante
    * calculée : la comparaison serait tautologique et la péremption invisible
@@ -386,5 +386,5 @@ export const ATTESTATION_CLASSEMENT = {
    * qui l'avait écrit. L'attestation ci-dessous est la SECONDE, posée sur le
    * contenu borné.
    */
-  shaRelu: null as string | null,
+  shaRelu: '9f17a4a658e4fca6' as string | null,
 };

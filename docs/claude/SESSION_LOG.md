@@ -6526,3 +6526,16 @@ au périmètre. Mutation jouée.
 
 Troisième péremption de signature en deux jours, toujours par le même mécanisme,
 et toujours pour la bonne raison.
+
+## 2026-09-16 02:16 — Attestation rendue sur `9f17a4a658e4fca6` ([[D-203]])
+
+Troisième relecture en deux jours, troisième signature posée **en toutes
+lettres** — jamais déduite d'un « relu ». Le classement relu n'a jamais changé ;
+ce qui s'y ajoute à chaque fois est ce que la signature dit d'elle-même : sa
+portée d'abord, puis l'arbitrage que le signataire a lui-même rendu.
+
+**Un détail qui me revient dessus** : le document de relecture disait DÉJÀ, plus
+bas, que les quatre priorités sont distinctes — c'est ce qui rend le troisième
+terme inatteignable, et c'est écrit dans la surface relue deux fois. J'ai quand
+même proposé une option qui supposait le contraire. La réponse est dans ce que je
+fais lire, pas seulement dans ce que je vérifie après coup.

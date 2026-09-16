@@ -12,8 +12,11 @@
   2026-09-16 ([[D-202]]).
 - Domaine : clinique — ordre des termes de classement des priorités candidates.
 - Empreinte : `9792c12e72db93d8` → **`9f17a4a658e4fca6`**. L'attestation de
-  [[D-202]] est donc PÉRIMÉE et retirée : inscrire l'arbitrage dans la donnée
+  [[D-202]] a donc été PÉRIMÉE et retirée : inscrire l'arbitrage dans la donnée
   hachée déplace le périmètre, et on ne complète pas après coup ce qui a été relu.
+  **Elle a été REDEMANDÉE et RENDUE le même jour** sur la nouvelle empreinte —
+  troisième relecture en deux jours, troisième fois posée en toutes lettres et
+  jamais déduite.
 - **Le moteur ne change pas d'une ligne.** Ce qui change est que le comportement
   cesse d'être un non-choix.
 
@@ -73,8 +76,8 @@ aurait été la sur-promesse que cette relecture existe pour éviter.
 
 - Conséquences : `ARBITRAGE_PRIMAUTE_PLAINTE` ajouté au périmètre haché ;
   `PORTEE_ATTESTATION.neCouvrePas` réécrit — l'arbitrage n'y figure plus, ce qui
-  reste dehors y est nommé ; `ATTESTATION_CLASSEMENT` retirée à `relu: false` et
-  redemandée sur `9f17a4a658e4fca6` ; deux bancs de liaison ajoutés, tués par
+  reste dehors y est nommé ; `ATTESTATION_CLASSEMENT` retirée, redemandée et
+  reposée sur `9f17a4a658e4fca6` ; deux bancs de liaison ajoutés, tués par
   mutation. Aucun changement du moteur, aucune migration, aucun drapeau.
 
 

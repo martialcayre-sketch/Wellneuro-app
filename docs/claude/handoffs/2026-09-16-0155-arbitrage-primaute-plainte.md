@@ -40,9 +40,13 @@ intrinsèque garde le dernier mot partout où la plainte ne dit rien.
 Le second garde un FAIT : si l'égalité devient possible, la justification de cet
 arbitrage devient fausse sans que personne n'ait touché au périmètre.
 
-## À faire
+## L'attestation, périmée puis rendue le même jour
 
-**L'attestation est périmée** (`9792c12e72db93d8` → `9f17a4a658e4fca6`) et
-remise à `relu: false`. Elle doit être redemandée au responsable sur la nouvelle
-empreinte — le contenu relu n'a pas changé, ce qui s'y ajoute est l'arbitrage
-qu'il vient de rendre.
+`9792c12e72db93d8` → `9f17a4a658e4fca6` : l'attestation de `D-202` est tombée, et
+elle a été **redemandée et rendue** sur la nouvelle empreinte. Troisième
+relecture en deux jours ; troisième fois posée en toutes lettres, jamais déduite
+d'un « relu ».
+
+Le classement relu n'a jamais changé. Ce qui s'y ajoute à chaque fois, c'est ce
+que la signature dit d'elle-même — d'abord sa portée, puis l'arbitrage que le
+signataire a lui-même rendu.
