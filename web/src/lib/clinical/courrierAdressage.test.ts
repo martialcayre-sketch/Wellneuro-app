@@ -90,6 +90,15 @@ describe('genererCourrierAdressage — ce que la lettre porte', () => {
     expect(resultat.courrier.texte).toContain('ni un diagnostic');
   });
 
+  it('le PAPIER annonce un adressage, jamais des explorations à discuter', () => {
+    // Constat de revue : le rendu médecin était en dur. L'en-tête imprimé
+    // aurait contredit le corps de la lettre, sur un document remis en main.
+    const resultat = genererCourrierAdressage(entree([ADRESSAGE]));
+    if (!resultat.ok) throw new Error('refus inattendu');
+    expect(resultat.courrier.html).toContain('adressage sur signal d’alerte');
+    expect(resultat.courrier.html).not.toContain('explorations à discuter');
+  });
+
   it('signe la lettre, et la signature part par les DEUX chemins de remise', () => {
     const resultat = genererCourrierAdressage(entree([ADRESSAGE]));
     if (!resultat.ok) throw new Error('refus inattendu');

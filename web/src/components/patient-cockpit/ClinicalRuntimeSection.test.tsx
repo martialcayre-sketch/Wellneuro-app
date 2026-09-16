@@ -76,10 +76,13 @@ const rep = (payload: unknown, ok = true, status = 200): ReponseMock => ({
  * n'est jamais atteint.
  */
 const ROUTES_NOMMEES = [
-  // Lettre d'adressage ([[D-217]]) : son GET de disponibilité part à CHAQUE
-  // montage. Non nommé, il consommait une réponse du cockpit dans la file
-  // générique — le défaut exact que ce routage a fermé. Sans déclaration, un
-  // cas reçoit l'échec par défaut, donc le geste reste absent.
+  // Lettre d'adressage ([[D-217]]) : son GET de disponibilité ne part QUE si le
+  // dossier porte un constat issu des signaux d'anamnèse — ni sur la fixture,
+  // ni sur un dossier sans signal, ni sur un dossier qui n'a que des constats
+  // d'effet indésirable (les trois cas sont éprouvés plus bas). Non nommée, la
+  // route consommait une réponse du cockpit dans la file générique — le défaut
+  // exact que ce routage a fermé. Sans déclaration, un cas reçoit l'échec par
+  // défaut, donc le geste reste absent.
   ['/api/praticien/adressage/courrier', 'adressage'],
   ['/api/praticien/biologie/proposition/document-patient', 'cbDocumentPatient'],
   ['/api/praticien/biologie/proposition/courrier', 'cbCourrier'],
@@ -845,6 +848,72 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     // ferait passer une DÉCLARATION pour une MESURE.
     fireEvent.click(within(panneau).getByText(/Voir la provenance/));
     expect(panneau.textContent).toContain('qui n’est pas une passation');
+  });
+
+  // ── LE GESTE D'ADRESSAGE ([[D-217]]) ────────────────────────────────────
+  // `review.safetyFindings` mélange DEUX producteurs — les signaux d'anamnèse
+  // et les signalements d'effet indésirable. Ils inhibent la décision de la
+  // même façon, mais la lettre ne sait écrire que les premiers : offrir le
+  // geste sur un dossier qui ne porte que des seconds, c'était offrir un
+  // bouton dont la route répond 409 (constat de revue).
+
+  async function afficherAvecConstats(findingIds: string[], routes: Record<string, unknown> = {}) {
+    const reponse = reponsePrete(
+      { status: 'required', ruleIds: ['PRIO-PON-01'], limitations: [] },
+      { domaine: 'digestion', libelle: 'Digestion', valeur: 8, bande: 'Intensité élevée', exAequo: [] },
+    );
+    (reponse as unknown as { review: { safetyFindings: unknown[] } }).review.safetyFindings =
+      findingIds.map((findingId) => ({
+        findingId,
+        kind: 'safety',
+        disposition: 'requires_practitioner_review',
+        rationale: 'Un constat suspend la décision.',
+        ruleId: 'ABST-SEC-01',
+        confidence: 'à_documenter',
+        provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
+        limitations: [],
+      }));
+    const fetchMock = fetchParRoute({
+      cockpitGet: [rep(proposalResponse)],
+      cockpitPost: [rep(reponse)],
+      ...routes,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
+    await screen.findByRole('region', { name: 'Constats de sécurité' });
+    return fetchMock;
+  }
+
+  const aDemandeAdressage = (fetchMock: ReturnType<typeof fetchParRoute>) =>
+    fetchMock.mock.calls.some(([url]) => String(url).includes('/api/praticien/adressage/courrier'));
+
+  it('un constat d’EFFET INDÉSIRABLE seul n’ouvre PAS le geste d’adressage', async () => {
+    const fetchMock = await afficherAvecConstats(['safety:effet-indesirable:EI_1'], {
+      adressage: rep({ ok: true, ouvert: true }),
+    });
+    // Même la QUESTION n'est pas posée : le geste ne peut pas aboutir ici, et
+    // demander si le drapeau est ouvert n'aurait servi qu'à offrir le bouton.
+    expect(aDemandeAdressage(fetchMock)).toBe(false);
+    expect(screen.queryByRole('button', { name: /Établir et consigner la lettre/ })).toBeNull();
+  });
+
+  it('un signal d’ANAMNÈSE ouvre le geste — quand le drapeau est posé', async () => {
+    const fetchMock = await afficherAvecConstats(['safety:anamnese:0123456789abcdef'], {
+      adressage: rep({ ok: true, ouvert: true }),
+    });
+    await waitFor(() => expect(aDemandeAdressage(fetchMock)).toBe(true));
+    expect(await screen.findByRole('button', { name: /Établir et consigner la lettre/ })).toBeTruthy();
+  });
+
+  it('drapeau fermé : le constat se lit, le geste reste absent', async () => {
+    // Le 503 de la route laisse le panneau ABSENT, jamais un bouton qui échoue.
+    const fetchMock = await afficherAvecConstats(['safety:anamnese:0123456789abcdef'], {
+      adressage: rep({ ok: false, reason: 'feature_disabled', error: 'fermé' }, false, 503),
+    });
+    await waitFor(() => expect(aDemandeAdressage(fetchMock)).toBe(true));
+    expect(screen.queryByRole('button', { name: /Établir et consigner la lettre/ })).toBeNull();
   });
 
   it('sans constat de sécurité, la section est ABSENTE — pas vide', async () => {

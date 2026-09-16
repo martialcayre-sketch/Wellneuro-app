@@ -164,6 +164,17 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
 
 ## Ce qui n'est PAS en file — des gestes, pas des campagnes
 
+- **La table des signaux de sécurité est invisible à l'audit de consommation** —
+  constat de la revue de `D-217`, **antérieur au lot** et routé par lui.
+  `SOURCES_DE_SAVOIR` (`scripts/wn-matrice-consommation.mjs`) déclare l'inventaire
+  qui construit `docs/claude/MATRICE_CONSOMMATION.md`, et il y liste les autres
+  tables cliniques signées — mais **pas** `lib/clinical/safetySignalsV1.ts`, dont
+  les conduites, le SHA et le verrou de signature sont consommés par le cockpit
+  depuis `D-099`, et désormais par la lettre d'adressage. Ses consommateurs
+  n'apparaissent donc nulle part dans l'audit. Le geste : déclarer la source, dire
+  ce qu'elle sert et sous quels drapeaux, régénérer la matrice — et vérifier au
+  passage si d'autres tables signées manquent à l'appel. Ce n'est pas une
+  campagne : c'est une déclaration d'inventaire, et elle a sa propre finalité.
 - **La première ligne du barème de charge** — `2026-09-14-protocole-assiste`,
   LOT-06. Le **mécanisme est écrit et ses dix bancs sont verts** (table signée à
   quatre termes, refus sur table vide, refus de la discordance) ; la table est

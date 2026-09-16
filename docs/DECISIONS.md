@@ -78,7 +78,37 @@ drapeau — et il ne part **que là où le geste pourrait s'afficher** : ni sur 
 dossiers sans signal, ni sur la fixture ergonomique, qui promet de ne contacter
 aucun serveur. Deux bancs du cockpit l'ont exigé.
 
-**9. CE QUE CE LOT NE FAIT PAS : lever l'abstention.** Une lettre consignée
+**9. LE PAPIER DIT CE QU'IL EST, et il a fallu la revue pour le voir.** Le rendu
+médecin portait un titre et un cadre EN DUR — « Correspondance — éléments à
+discuter », « Éléments transmis à titre d'explorations à discuter ». C'est juste
+d'une proposition d'explorations biologiques ; c'est **faux** de cette lettre-ci,
+qui ne transmet aucune exploration et demande un avis médical AVANT toute
+proposition. Le papier aurait porté, chez un médecin, un en-tête qui contredit son
+propre corps — et aucune garde ne l'aurait vu : `assertRenduMedecinNonPrescriptif`
+juge le CORPS, pas ces trois phrases fixes. Le cadre et le titre suivent désormais
+le MODÈLE ; un modèle absent de la table garde le libellé historique, si bien
+qu'ajouter un modèle ne change rien aux rendus existants.
+
+**10. L'ÉLIGIBILITÉ SE LIT SUR LA SOURCE DU CONSTAT, PAS SUR LEUR NOMBRE.**
+`review.safetyFindings` mélange DEUX producteurs : les signaux d'anamnèse
+([[D-099]]) et les signalements d'effet indésirable ([[D-101]]). Ils inhibent la
+décision de la même façon, mais la lettre ne sait écrire que les premiers — un
+dossier qui ne porte que des seconds voyait le geste offert, et la route répondait
+409. La source se lit dans le préfixe de l'identifiant, et ce préfixe vit
+désormais dans un module FEUILLE (`clinical-engine/safetyFindingSource`) que le
+producteur COMPOSE et que l'écran LIT : deux littéraux auraient dérivé en silence.
+Un identifiant inconnu rend `false` — un producteur neuf n'ouvre pas la lettre par
+accident.
+
+**11. UNE RÉPONSE PÉRIMÉE N'ÉCRIT PLUS SUR LE DOSSIER SUIVANT.** Un POST en vol
+pendant que le praticien change de patient revenait APRÈS la remise à zéro et
+déposait sur le nouveau dossier la lettre du précédent — **son nom dans l'en-tête
+imprimable, ses signaux déclarés dans le texte**. Le dossier courant est lu au
+retour de la requête, par un `ref` : un état React lu dans la closure porterait la
+valeur du rendu où l'appel est parti, c'est-à-dire l'ancienne. Constat de revue, le
+plus grave des neuf.
+
+**12. CE QUE CE LOT NE FAIT PAS : lever l'abstention.** Une lettre consignée
 **TRACE** l'adressage, elle ne le vaut pas. L'écran le dit au praticien avant qu'il
 clique, et le registre le dit ici. Si l'abstention doit pouvoir se lever sur preuve
 d'adressage, c'est un arbitrage clinique distinct, qui touche la chaîne C1 — **il

@@ -51,6 +51,17 @@ aucun serveur.
 **Ce que le lot ne fait pas : lever l'abstention.** Une lettre consignée *trace*
 l'adressage, elle ne le vaut pas — l'écran le dit au praticien avant qu'il clique.
 
+**La revue a trouvé neuf choses, et trois comptaient vraiment.** Une réponse de
+route qui revenait après un changement de dossier y déposait la lettre du patient
+précédent — nom dans l'en-tête imprimable, signaux déclarés dans le texte ; le
+dossier courant est désormais lu au retour de la requête. Le rendu médecin portait
+un titre et un cadre en dur, si bien que cette lettre s'imprimait sous « éléments à
+discuter » alors qu'elle ne transmet aucune exploration — le cadre suit maintenant
+le modèle. Et le geste était offert sur un dossier qui ne porte que des constats
+d'effet indésirable, où la route répond 409 : l'éligibilité se lit sur la SOURCE du
+constat, par un préfixe que le producteur compose et que l'écran lit, dans un seul
+module feuille.
+
 Vérifié par mutation : retirer l'entrée `safety-signals-nnpp2-v1` de la table des
 ancrages fait lire `reference_inconnue` là où le banc du fil attend `concordante` ;
 remplacer `signauxDeclares` par une liste vide fait rougir le banc qui épingle les

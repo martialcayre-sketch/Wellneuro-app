@@ -13,6 +13,10 @@ import {
   regleEffetIndesirableValidee,
 } from '@/lib/clinical/safetyEffetIndesirableV1';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
+import {
+  PREFIXE_FINDING_ANAMNESE,
+  PREFIXE_FINDING_EFFET_INDESIRABLE,
+} from './safetyFindingSource';
 import type { ClinicalRuleRef, SafetyFinding } from './types';
 
 // PRODUCTEUR DE CONSTATS DE SÉCURITÉ — [[D-099]], LOT-04.
@@ -77,7 +81,7 @@ export function signauxDeclares(anamnese: unknown): string[] {
  * signal —, et définie même sur un libellé que la table ne connaît pas.
  */
 function findingId(libelle: string): string {
-  return `safety:anamnese:${sha256(libelle).slice(0, 16)}`;
+  return `${PREFIXE_FINDING_ANAMNESE}${sha256(libelle).slice(0, 16)}`;
 }
 
 const LIMITATION_PROVENANCE =
@@ -162,7 +166,7 @@ function construireFindingsEffetIndesirable(effetsIndesirables: EffetIndesirable
 
   return {
     findings: rattaches.map(signalement => ({
-      findingId: `safety:effet-indesirable:${signalement.id}`,
+      findingId: `${PREFIXE_FINDING_EFFET_INDESIRABLE}${signalement.id}`,
       kind: 'safety' as const,
       disposition: 'requires_practitioner_review' as const,
       // FIGÉ, pour le motif exact du premier producteur : faire varier

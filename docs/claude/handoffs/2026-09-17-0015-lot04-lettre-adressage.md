@@ -92,3 +92,23 @@ Inchangés : aucun canal sortant réel, aucune pièce jointe ([[D-122]]), aucun 
 signé médecin, aucune messagerie de santé. Et surtout : **la lettre consignée trace
 l'adressage, elle ne le vaut pas**. Lever l'abstention sur preuve d'adressage reste
 un arbitrage clinique **non rendu** — il touche la chaîne C1.
+
+## Revue Copilot — verdict de chaque constat
+
+Lue AVANT le merge. **Neuf constats — trois en ligne, six supprimés. Huit retenus,
+un routé.**
+
+| Constat | Verdict | Traité |
+|---|---|---|
+| Une réponse de POST revenant après un changement de dossier dépose la lettre du patient précédent (nom, signaux) | **retenu — critique** | le dossier courant est lu au retour, par `ref` |
+| Le `catch` extérieur journalise `err.message` (texte clinique possible) | **retenu** | le NOM seul, comme le `catch` de la consignation |
+| Le geste est offert sur un dossier qui n'a que des constats d'effet indésirable (route 409) | **retenu** | éligibilité sur la SOURCE du constat, module feuille `safetyFindingSource` |
+| `renderDocumentHtml` annonce « explorations à discuter » sur une lettre qui n'en transmet aucune | **retenu** | cadre et titre suivent le MODÈLE ; un modèle inconnu garde le libellé historique |
+| La carte des chemins sortants de `vocabulaire.ts` ne nomme pas le chemin neuf | **retenu** | ligne ajoutée, avec sa garde et son banc de câblage |
+| `adressageOuvert` reste vrai quand le dossier cesse d'être éligible | **retenu** | remis à `false` dans la même branche |
+| Le commentaire du harnais décrit un GET « à CHAQUE montage », périmé | **retenu** | réécrit, et les trois cas sont maintenant éprouvés |
+| Références `D-215` là où le geste relève de sa propre décision | **retenu** | corrigé par la renumérotation en `D-217` ; `D-215` ne reste que pour l'ancrage |
+| `MATRICE_CONSOMMATION` n'a aucune ligne pour `safetySignalsV1` | **routé** | dette réelle et **antérieure** à ce lot — la table est consommée par le cockpit depuis `D-099`. Déclarer une source de savoir est une autre finalité : entrée en file d'attente |
+
+Trois mutants tués sur les correctifs : rétablir `length > 0` fait rougir le banc du
+constat d'effet indésirable ; les deux mutations d'ancrage et de signaux tiennent.

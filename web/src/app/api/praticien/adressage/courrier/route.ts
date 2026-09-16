@@ -271,9 +271,14 @@ export async function POST(req: Request) {
       { status: 201 },
     );
   } catch (err) {
+    // LE NOM, JAMAIS LE MESSAGE — même motif que le `catch` de la
+    // consignation, et la même conséquence s'il est oublié. Ce `catch`-ci
+    // attrape aussi ce que lèvent le générateur et Prisma : un message peut
+    // porter le texte de la lettre, donc les signaux déclarés du patient, et
+    // il partirait dans les logs. Le nom suffit à diagnostiquer.
     console.error(
-      '[praticien/adressage/courrier POST]',
-      err instanceof Error ? err.message : String(err),
+      '[praticien/adressage/courrier POST] erreur :',
+      err instanceof Error ? err.name : 'inconnue',
     );
     return echec('server_error', 'Erreur technique.', 500);
   }

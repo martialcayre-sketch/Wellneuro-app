@@ -42,6 +42,7 @@ import {
 } from './ArbitrageBiologiquePanel';
 import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
 import { appliquerArbitrages } from '@/lib/biology-library/revision';
+import { estFindingAnamnese } from '@/lib/clinical-engine/safetyFindingSource';
 import {
   AdressagePanel,
   type AdressageEtabli,
@@ -771,6 +772,18 @@ export function ClinicalRuntimeSection({
     setAdressageErreur(null);
   }, [idPatient]);
 
+  // LE DOSSIER COURANT, LU AU RETOUR DE LA REQUÊTE. Ce `ref` ferme une fuite
+  // de données ENTRE DOSSIERS : un POST en vol pendant que le praticien change
+  // de patient revenait APRÈS l'effet de remise à zéro ci-dessus, et déposait
+  // sur le nouveau dossier la lettre du précédent — son nom dans l'en-tête
+  // imprimable, ses signaux déclarés dans le texte. Un état React lu dans la
+  // closure ne suffirait pas : il porterait la valeur du rendu où l'appel est
+  // parti, c'est-à-dire l'ancienne.
+  const dossierCourantRef = useRef(idPatient);
+  useEffect(() => {
+    dossierCourantRef.current = idPatient;
+  }, [idPatient]);
+
   // Lettre d'adressage : le texte est GÉNÉRÉ ET CONSIGNÉ côté serveur ; l'écran
   // ne fournit que le nom du destinataire et n'affiche que ce qui revient.
   const etablirAdressage = useCallback(
@@ -791,6 +804,10 @@ export function ClinicalRuntimeSection({
           ancrageSha256?: string;
           ancrageVersion?: string;
         };
+        // Réponse PÉRIMÉE : le praticien a changé de dossier pendant le vol.
+        // Rien n'est écrit — ni la lettre, ni l'erreur, ni l'état du bouton,
+        // qui appartiennent tous au dossier qui a émis l'appel.
+        if (dossierCourantRef.current !== idPatient) return;
         setAdressageState('idle');
         if (!response.ok || !payload.ok || !payload.texte) {
           setAdressage(null);
@@ -809,6 +826,7 @@ export function ClinicalRuntimeSection({
           ancrageVersion: payload.ancrageVersion ?? '',
         });
       } catch {
+        if (dossierCourantRef.current !== idPatient) return;
         setAdressageState('idle');
         setAdressage(null);
         setAdressageErreur('La lettre n’a pas pu être établie.');
@@ -1550,14 +1568,27 @@ export function ClinicalRuntimeSection({
 
   const review = fixture?.review ?? (runtime?.status === 'ready' ? runtime.review : null);
 
-  // IL NE PART QUE LÀ OÙ LE GESTE PEUT EXISTER, et deux bancs l'ont exigé.
-  // Inconditionnel, ce GET partait sur CHAQUE dossier — dont les 19 sur 25 qui
-  // ne portent aucun signal d'alerte — et jusque sur la fixture ergonomique,
-  // qui promet de ne contacter aucun serveur. Demander si le geste est ouvert
-  // n'a de sens que là où il s'afficherait.
-  const decisionSuspendueParSignal = (review?.safetyFindings?.length ?? 0) > 0;
+  // IL NE PART QUE LÀ OÙ LE GESTE PEUT ABOUTIR, et trois constats l'ont écrit.
+  //
+  // 1. Inconditionnel, ce GET partait sur CHAQUE dossier — dont les 19 sur 25
+  //    qui ne portent aucun signal — et jusque sur la fixture ergonomique, qui
+  //    promet de ne contacter aucun serveur.
+  // 2. `safetyFindings` NE SE RÉSUME PAS AUX SIGNAUX D'ANAMNÈSE : le producteur
+  //    y ajoute les constats d'effet indésirable ([[D-101]]). Un dossier qui n'a
+  //    QUE ceux-là voyait le geste offert, et la route répondait 409 « aucun
+  //    signal d'adressage » — un bouton qui ne peut pas aboutir. L'éligibilité
+  //    se lit donc sur la SOURCE du constat, que son identifiant porte.
+  // 3. Le drapeau se remet à `false` quand le dossier cesse d'être éligible :
+  //    sans cela, naviguer d'un dossier éligible vers un autre laissait le
+  //    geste armé.
+  const decisionSuspendueParSignal = (review?.safetyFindings ?? []).some(
+    (constat) => estFindingAnamnese(constat.findingId),
+  );
   useEffect(() => {
-    if (fixture || !decisionSuspendueParSignal) return;
+    if (fixture || !decisionSuspendueParSignal) {
+      setAdressageOuvert(false);
+      return;
+    }
     void chargerAdressageOuvert();
   }, [fixture, decisionSuspendueParSignal, chargerAdressageOuvert]);
   // Lus depuis la réponse serveur, jamais recalculés ici : l'objectif prioritaire
