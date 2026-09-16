@@ -25,13 +25,20 @@ une :
 
 ```bash
 gh pr view <N> --json reviews,comments
-gh api repos/{owner}/{repo}/pulls/<N>/comments > /tmp/revue.json   # puis relire le fichier
+gh api --paginate --slurp repos/{owner}/{repo}/pulls/<N>/comments > revue.json   # puis relire le fichier
 ```
 
 Les commentaires **en ligne** — attachés à une ligne de diff — n'apparaissent
 **pas** dans `reviews` ni dans `gh pr view --comments`. Les oublier est le cas
 le plus fréquent, et le plus coûteux. Écrire la sortie dans un fichier puis la
 relire : le `--jq` avec interpolation est refusé par l'isolation de worktree.
+
+**`--paginate` n'est pas un ornement.** L'endpoint rend **30 éléments par
+page** : sans lui, une PR qui porte plus de 30 commentaires en ligne en laisse
+silencieusement dehors — et la règle rendant le verdict de *chacun* bloquant,
+la troncature ferait annoncer une couverture complète sur une liste partielle,
+exactement la classe de défaut que ce fichier existe pour fermer. `--slurp` rend
+un tableau **de pages** (`[[…],[…]]`) : l'aplatir à la lecture.
 
 **1.2 Trois verdicts, et aucun commentaire n'en sort sans.** Chacun est tranché
 **par écrit dans la PR** :

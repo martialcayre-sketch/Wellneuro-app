@@ -56,3 +56,21 @@ est oui, l'entrée s'écrit après ce merge, avec le numéro libre à ce moment-
 Ouvrir la PR `--base main`, `wn-attendre-ci` en un seul appel hors tube, **lire
 la revue Copilot et rendre un verdict par commentaire** — la première application
 de la règle qu'elle pose —, puis merger avec `--subject`.
+
+## La revue Copilot, et ses quatre verdicts (2026-09-16, PR #1159)
+
+Première application de la règle à elle-même. Quatre commentaires en ligne,
+**quatre retenus** — aucun écarté, aucun routé.
+
+| Constat | Verdict | Ce qui a changé |
+|---|---|---|
+| L'étape 5 de `/wn-merge` devenait une condition **impossible** pour une PR de migration : le constat de production ne peut aboutir qu'après `release-db`, alors que l'étape 9 exigeait « l'étape 5 satisfaite » | **Corrigé** | L'étape 5 se scinde en deux passes nommées — *avant le merge, bloquante* (revue adversariale) et *après le merge, due* (constat par conteneur). L'étape 9 ne cite plus que la première |
+| Le renvoi de `REGLES_PR_MERGE.md` **ne chargeait rien** : `/wn-merge` ne lit que ce fichier, et l'armement par chemin ne couvre pas une PR ordinaire | **Corrigé** | Un bloc `!` de plus dans le préambule de `/wn-merge` ; le renvoi dit maintenant ce qui est vrai au lieu de demander au lecteur d'aller chercher |
+| `pulls/<N>/comments` est **paginé à 30** : au-delà, la règle annoncerait « chaque commentaire a son verdict » sur une liste tronquée (§1.1 de la règle) | **Corrigé** | `--paginate --slurp`, et la note que `--slurp` rend un tableau *de pages* à aplatir |
+| Même défaut dans l'étape 6 de `/wn-merge` | **Corrigé** | Même correctif, avec la raison écrite sur place |
+
+Les deux premiers visaient du texte que **ce lot venait d'écrire** : une
+condition de merge rendue circulaire, et un renvoi qui avouait son impuissance
+(« au moment de merger, le charger explicitement ») au lieu de la fermer. Les
+deux derniers ferment une troncature silencieuse sur le geste même que la règle
+rend bloquant. Aucun ne demandait d'arbitrage clinique.

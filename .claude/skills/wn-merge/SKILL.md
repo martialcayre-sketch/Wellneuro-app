@@ -10,6 +10,7 @@ effort: medium
 ## Contexte
 
 !`cd "$(git rev-parse --show-toplevel)" && cat docs/claude/REGLES_PR_MERGE.md`
+!`cd "$(git rev-parse --show-toplevel)" && cat .claude/rules/pr-revue-et-release-db.md`
 !`git worktree list 2>/dev/null || true`
 
 Arguments : `$ARGUMENTS`
@@ -52,23 +53,34 @@ dernière session.
    l'authentification — praticien (`web/src/lib/auth.ts`, routes `api/auth`)
    **ou** portail patient (`web/src/middleware.ts`, lien magique, cookie de
    session, `patients.access_token`), ou plus largement tout chemin touchant
-   session/token : une revue adversariale indépendante — `Agent(subagent_type:
-   "wn-reviewer")`, agent épinglé Opus/high — est obligatoire
-   avant le merge si elle n'a pas déjà eu lieu, et une vérification de la base
-   de production **par conteneur** après — `scalingo --app wellneuro run -d
-   "npx prisma migrate status"`, sortie relue par `scalingo logs --filter
-   one-off-N`. (L'`execute_sql` MCP Supabase que ce skill nommait jusqu'au
-   2026-09-16 vise une base **décommissionnée** le 2026-09-01, `D-120`.) Sur une
-   migration, cette vérification ne clôt rien avant que `release-db` ait été
-   approuvée et la sentinelle `WN_RELEASE_DB_OK` constatée : merger n'applique
-   pas — `.claude/rules/pr-revue-et-release-db.md` §3. Ces deux passes
-   s'appliquent même en régime transitoire ; ne jamais les sauter sur ce
-   périmètre.
+   session/token : deux passes, **et une seule conditionne le merge**.
+
+   - **Avant le merge, bloquant** : une revue adversariale indépendante —
+     `Agent(subagent_type: "wn-reviewer")`, agent épinglé Opus/high —
+     obligatoire si elle n'a pas déjà eu lieu. C'est *elle seule* que l'étape 9
+     exige.
+   - **Après le merge, dû** : vérifier la base de production **par conteneur** —
+     `scalingo --app wellneuro run -d "npx prisma migrate status"`, sortie relue
+     par `scalingo logs --filter one-off-N`. (L'`execute_sql` MCP Supabase que
+     ce skill nommait jusqu'au 2026-09-16 vise une base **décommissionnée** le
+     2026-09-01, `D-120`.) Sur une migration, ce constat ne peut pas aboutir
+     avant que `release-db` ait été approuvée et la sentinelle
+     `WN_RELEASE_DB_OK id=<run>` constatée — **merger n'applique pas** : c'est
+     une obligation de suite, jamais une condition de merge, sinon aucune PR de
+     migration ne pourrait être mergée. Ordre complet :
+     `.claude/rules/pr-revue-et-release-db.md` §3.
+
+   Les deux s'appliquent même en régime transitoire ; ne jamais les sauter sur
+   ce périmètre.
 6. **Lire les commentaires de revue — geste distinct du CI, et bloquant.** Un
    `verify` vert ne dit rien d'eux. Deux lectures : `gh pr view <N> --json
-   reviews,comments`, **et** `gh api repos/{owner}/{repo}/pulls/<N>/comments`
-   redirigé vers un fichier puis relu — les commentaires **en ligne**
-   n'apparaissent dans aucune des deux autres vues. Chaque commentaire reçoit un
+   reviews,comments`, **et** `gh api --paginate --slurp
+   repos/{owner}/{repo}/pulls/<N>/comments` redirigé vers un fichier puis relu —
+   les commentaires **en ligne** n'apparaissent dans aucune des deux autres vues.
+   **La pagination n'est pas optionnelle** : l'endpoint rend 30 éléments par
+   défaut, et une page manquée ferait annoncer « chaque commentaire a son
+   verdict » sur une liste tronquée. `--slurp` rend un tableau **de pages** :
+   l'aplatir à la lecture. Chaque commentaire reçoit un
    verdict écrit dans la PR : **corrigé** (le commit qui le répare est nommé),
    **écarté avec motif** (sur pièces — ligne, banc, `D-xxx` ; « non pertinent »
    seul n'en est pas un), ou **routé** (`FILE_ATTENTE.md` ou dette nommée, avec
@@ -94,7 +106,9 @@ dernière session.
    revue (étape 6), verdict de clôture (étape 7) — puis la commande exacte à
    lancer.
 9. **Avec `apply`**, et seulement si l'étape 4 autorise le cycle complet, si
-   l'étape 5 est satisfaite quand elle s'applique, si tout commentaire de revue
+   la passe **avant le merge** de l'étape 5 est faite quand elle s'applique (la
+   vérification de production, elle, est due **après** et ne conditionne rien),
+   si tout commentaire de revue
    porte son verdict (étape 6) et si l'étape 7 est satisfaite :
    ```bash
    gh pr merge <N> --squash --delete-branch

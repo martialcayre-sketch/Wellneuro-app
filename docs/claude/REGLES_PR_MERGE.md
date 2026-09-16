@@ -21,8 +21,10 @@ Rien n'a été réécrit lors du déplacement : le texte ci-dessous est celui qu
 > verdicts, et aucun commentaire n'en sort sans) et **l'ordre de `release-db`**
 > (une migration mergée n'est pas une migration appliquée). Le 2026-09-16,
 > quatre PR ont été mergées sur CI vert sans lire la revue : quatre constats
-> réels y attendaient. Ce fichier est armé sur `.github/**` et `web/prisma/**` ;
-> **au moment de merger, le charger explicitement** — ce chemin-là ne l'arme pas.
+> réels y attendaient. **Ce fichier se charge tout seul au moment utile** : il
+> est armé par chemin sur `.github/**` et `web/prisma/**`, et le préambule de
+> `/wn-merge` le lit en entier, comme celui-ci — un renvoi qui demanderait au
+> lecteur d'aller le chercher ne serait pas une règle, juste un vœu.
 
 ## Attendre le CI d'une PR — un script, plus un idiome
 
