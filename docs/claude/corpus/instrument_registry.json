@@ -1,6 +1,6 @@
 {
   "version": "instrument-registry-v2",
-  "dateAudit": "2026-07-30",
+  "dateAudit": "2026-09-14",
   "commentaire": "Registre de certification des instruments du catalogue (campagne 2026-07-25-certification-corpus-questionnaires, lot 1, schéma v2 après intégration de l'audit externe et de la revue indépendante). Une entrée par clé de QUESTIONNAIRE_CATALOGUE. Axes SÉPARÉS, jamais fusionnés : - instrument.formePubliee : ce que décrit la publication d'origine (items, dimensions, bornes). N'affirme RIEN sur ce que l'application administre. - versionServie : ce que l'application administre RÉELLEMENT. `description` reste null tant que le banc de certification (lot 3) ne l'a pas établie contre le catalogue — la renseigner de mémoire ferait disparaître les divergences que la campagne cherche justement à révéler (Berlin, MFI-20, PSQI sont déjà connus divergents). `statutContenu` : verbatim | traduit | adapte | cree_localement | a_auditer. - statutBibliographique : reference_identifiee | a_completer | referentiel_interne_siin. `references.dateVerification` null = auteurs/année NON vérifiés contre la source primaire (identifiés de mémoire) ; ils ne font autorité qu'une fois le PDF source au dossier. - statutCertification (cycle de vie WellNeuro) : repere → source_obtenue → droits_verifies → contenu_verrouille → scoring_verifie → psychometrie_revue → mapping_clinique_approuve → publie ; états terminaux suspendu | remplace. Toutes les entrées démarrent à 'repere'. - cosmin : A | B | C | inconnu — qualité psychométrique publiée (à renseigner depuis measurement_evidence.json). Ne JAMAIS confondre avec les niveaux A/B/C/D WellNeuro : NIVEAU_PREUVE_PAR_SOURCE (web/src/lib/equilibre/constants.ts) reste la source unique de cet axe-là, volontairement non dupliqué ici. - droits.statut : a_verifier | libre | licence_requise | permission_obtenue | restreint. - sourceMonEquilibre : l'instrument alimente BESOIN_SOURCES (fait dérivé de constants.ts, contrôlé par le garde CI). Aucun DOI/PMID n'est renseigné sans vérification (null). Le libellé d'usage est « Validé pour l'usage WellNeuro » avec son périmètre — jamais « certifié médicalement ».",
   "instruments": [
     {
@@ -55,7 +55,7 @@
         "auteurs": "Cohen, Kamarck & Mermelstein (PSS) ; forme 10 items : Cohen & Williamson",
         "anneePublication": 1988,
         "formePubliee": "10 items, coté 1-5 servi (brut 10-50)",
-        "proprietaireDroits": null
+        "proprietaireDroits": "Sheldon Cohen (Carnegie Mellon University) ; permissions via Mapi Research Trust"
       },
       "versionServie": {
         "description": "10 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
@@ -65,13 +65,13 @@
       },
       "references": {
         "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "pmid": "6668417",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — J Health Soc Behav 1983 — A global measure of perceived stress (Cohen, Kamarck & Mermelstein). ATTENTION : ce PMID désigne l'ORIGINE du PSS, à 14 items. La forme SERVIE est le PSS-10, publié par Cohen & Williamson (1988) dans Spacapan & Oskamp (dir.), « The Social Psychology of Health », Claremont Symposium on Applied Social Psychology, Sage, Newbury Park, p. 31-67 — chapitre d'ouvrage NON indexé sur PubMed et sans DOI attribué (recherché le 2026-09-14 ; seul un numéro d'accession PsycNET, 1988-98838-002, existe, et un numéro d'accession n'est pas un identifiant pérenne de document). Aucun identifiant ne désigne donc la forme servie : celui-ci désigne sa source directe."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Mention antérieure au dossier : « usage non commercial libre (déclaré par l'auteur, à vérifier) ». Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Mention antérieure au dossier : « usage non commercial libre (déclaré par l'auteur, à vérifier) ». Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : Sheldon Cohen (Carnegie Mellon University) ; permissions via Mapi Research Trust. Copyright Sheldon Cohen ; mise à disposition sans frais pour la recherche académique à but NON LUCRATIF et l'usage éducatif ; les demandes de permission passent par ePROVIDE / Mapi Research Trust. Un usage commercial ou à but lucratif peut exiger une permission (cmu.edu/dietrich/psychology/stress-immunity-disease-lab/scales, relevé le 2026-09-15). CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -166,10 +166,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1016/0005-7967(94)00075-U",
+        "pmid": "7726811",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Behav Res Ther 1995 — The structure of negative emotional states: comparison of the Depression Anxiety Stress Scales (DASS) with the Beck Depression and Anxiety Inventories (Lovibond & Lovibond). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -208,7 +208,7 @@
         "auteurs": "Malach-Pines",
         "anneePublication": 2005,
         "formePubliee": "10 items, moyenne 1-7",
-        "proprietaireDroits": null
+        "proprietaireDroits": "non identifié — aucune source vérifiée au 2026-09-15"
       },
       "versionServie": {
         "description": "10 items en 1 section(s), moteur `bms_average`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
@@ -217,14 +217,14 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
+        "doi": "10.1037/1072-5245.12.1.78",
         "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Int J Stress Manag 2005 — The Burnout Measure, Short Version (Malach-Pines). Revue de psychologie non indexée sur PubMed : aucun PMID. PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : non identifié — aucune source vérifiée au 2026-09-15. Aucune source vérifiée au 2026-09-15 pour le titulaire du BMS-10. CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -262,10 +262,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1037/1076-8998.3.4.322",
+        "pmid": "9805280",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — J Occup Health Psychol 1998 — The Job Content Questionnaire (JCQ): an instrument for internationally comparative assessments of psychosocial job characteristics (Karasek et al.). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -313,10 +313,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.2466/pms.1999.88.1.199",
+        "pmid": "10214644",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Percept Mot Skills 1999 — The Work Addiction Risk Test: development of a tentative measure of workaholism (Robinson). ÉCART D'ANNÉE NON RÉSOLU, SIGNALÉ PLUTÔT QUE CORRIGÉ : `anneePublication` dit 1989, or l'article de DÉVELOPPEMENT de la WART est de 1999. 1989 est vraisemblablement l'ouvrage de Robinson où l'instrument paraît d'abord, mais cela n'a pas été établi. Le champ n'a pas été réécrit : trancher demande la lecture d'une source, pas une déduction. PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -349,23 +349,23 @@
         "auteurs": "Beck & Beck (forme abrégée)",
         "anneePublication": 1972,
         "formePubliee": "13 items, score 0-39",
-        "proprietaireDroits": null
+        "proprietaireDroits": "non identifié — aucune source vérifiée au 2026-09-15"
       },
       "versionServie": {
-        "description": "13 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
+        "description": "13 items en 1 section(s), moteur `sum`, score 0-39. BANDES RÉALIGNÉES SUR LA PUBLICATION LE 2026-09-15 (arbitrage praticien) — 0-4 nul ou minime, 5-7 léger, 8-15 modéré, 16-39 sévère (Beck & Beck 1972, forme abrégée). AVANT CETTE DATE ÉTAIT SERVIE LA GRILLE DU BDI À 21 ITEMS (1-10 / 11-16 / 17-20 / 21-30 / 31-40), dont le maximum est 63 : une grille validée sur un instrument, posée sur un autre. Elle SOUS-ALARMAIT — un score de 16, sévère selon la publication, s'affichait « troubles bénins de l'humeur », et il fallait 21 pour lire « dépression avérée ». Aucun arbitrage de borne n'a été nécessaire : les quatre intervalles publiés sont contigus et couvrent 0-39 sans trou. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte`).",
         "langue": "fr",
         "traductionValidee": "fr — Collet & Cottraux (à confirmer)",
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1080/00325481.1972.11713319",
+        "pmid": "4635613",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Postgrad Med 1972 — Screening depressed patients in family practice. A rapid technic. (forme abrégée 13 items)"
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès du titulaire des droits — champ `instrument.proprietaireDroits`, renseigné le 2026-09-15 pour les instruments cités par une table signée ; `null` ailleurs signifie « titulaire non identifié », jamais « aucun titulaire ». Le champ `instrument.auteurs`, que cette clause visait jusqu'au 2026-09-15, nomme les AUTEURS — et pour un instrument dont les droits ont été cédés à un éditeur, l'auteur n'est pas celui qui peut autoriser. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : non identifié — aucune source vérifiée au 2026-09-15. NON IDENTIFIÉ POUR LA FORME SERVIE, et la nuance compte. Les inventaires Beck sont distribués sous licence commerciale par Pearson, qui exige une licence pour l'administration clinique (testable.org/scale/bdi-ii-beck-depression-inventory-ii, relevé le 2026-09-15) — mais cette source porte sur le BDI-II. La forme SERVIE ici est la forme abrégée de 1972 (Beck & Beck, Postgrad Med, PMID 4635613), dont le titulaire n'a PAS été vérifié. Nommer Pearson ici serait une inférence, pas un constat. CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -403,10 +403,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1192/bjp.134.4.382",
+        "pmid": "444788",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Br J Psychiatry 1979 — A new depression scale designed to be sensitive to change (Montgomery & Åsberg). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -499,10 +499,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1136/bmj.319.7223.1467",
+        "pmid": "10582927",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — BMJ 1999 — The SCOFF questionnaire: assessment of a new screening tool for eating disorders (Morgan, Reid & Lacey). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -550,10 +550,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
+        "doi": "10.1016/S0191-8869(00)00064-7",
         "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Pers Individ Dif 2001 — The Five Factor Model and impulsivity: using a structural model of personality to understand impulsivity (Whiteside & Lynam). Revue non indexée sur PubMed : aucun PMID. PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -586,7 +586,7 @@
         "auteurs": null,
         "anneePublication": 2005,
         "formePubliee": "Document « MMT ou Mini Mental Test » diffusé par l'IEDM (Institut Européen de Diététique et Micronutrition) — PDF en ligne, https://iedm.asso.fr/wp-content/uploads/2020/01/MMT.pdf, métadonnées du fichier : titre « Questionnaire MMT », création 2005-12-12. Deux pages : dix items cotés 0/1/2, puis la grille des quatre bandes. AUCUN auteur, aucune mention de copyright, aucune référence bibliographique n'y figure.",
-        "proprietaireDroits": null
+        "proprietaireDroits": "S.I.I.N. — Scientific Institute for Intelligent Nutrition"
       },
       "versionServie": {
         "description": "10 épreuves en 1 section, moteur `sum`, cotation 0-2, score /20 dans le sens des TROUBLES. RECONSTRUIT LE 2026-07-31 depuis WN-SRC-0445 sur arbitrage praticien : ce qui était servi jusque-là était un autre instrument — dix plaintes cognitives auto-rapportées cotées 0-3 en sens inverse sur 30, sans un libellé commun avec la source (similarité item à item de 0,00 à 0,06). Items, modalités et bandes repris de la source. UN SEUL ARBITRAGE, déclaré : la source chevauche à la valeur 1 (« De 0 à 1 : Rien à signaler » puis « De 1 à 4 : Troubles fonctionnels »), et le servi attribue 1 à la bande la plus sévère — même famille que les comblements Epworth 6/15. Aucune clé `protocol` : les libellés de la source SONT la conduite, la divergence protocole_dans_interpretation disparaît au lieu d'être déclarée. PASSATION EN CONSULTATION, exigée par la première ligne de la source (« Complétez ce questionnaire avec votre patient en consultation ») et par la séquence de rappel différé des items 3/5/10 : l'instrument est `actif: false` au catalogue (route d'assignation fermée) et inscrit en PASSATION_PRATICIEN (grille affichée pour la consultation). Aucune assignation ni réponse en production au moment de la reconstruction (vérifié le 2026-07-31).",
@@ -602,7 +602,7 @@
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-25, ÉTENDUE le 2026-07-29 : les questionnaires des supports de formation du SIIN sont d'usage libre pour l'exercice du cabinet, et l'extension couvre AUSSI les instruments tiers que ces supports reproduisent. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PRÉCISION DU 2026-08-01, sur déclaration expresse du praticien-propriétaire en réponse à la réserve ouverte par #507 : l'exclusion « publication du verbatim » ne vise PAS l'affichage de la grille au praticien lui-même, en consultation, pour administrer l'instrument à son patient. Cet usage est DÉCLARÉ COUVERT. Il ne pouvait pas en aller autrement sans contradiction : la déclaration couvre expressément « l'administration aux patients du cabinet », et un test administré par un clinicien ne s'administre pas sans que ses items soient lus. Ce que « publication du verbatim » continue d'exclure, et sans changement : la rediffusion hors cabinet, la mise à disposition du texte des items à un tiers, et la cession. PORTÉE : cette précision est une déclaration du praticien, DATÉE ET TRACÉE ICI, non une pièce signée de l'ayant droit — elle engage le praticien et n'éteint aucun droit détenu par PAR, par l'IEDM ou par quiconque. La réserve nommant l'ayant droit reste entière. FONDEMENT : déclaration du praticien, non une pièce signée d'un ayant droit. RÉSERVE CONSERVÉE, et elle porte ici sur l'IDENTITÉ, pas sur les droits : l'instrument n'est rattaché à aucune publication. Ses items 1 à 5 et 10 sont de la famille MMSE — orientation, enregistrement puis double rappel de trois mots, soustractions de 7 en série — et sa propre bande 5-10 renvoie au MMSE ; ses items 6 à 9 relèvent des questionnaires de plainte mnésique. WN-SRC-0445 porte encore `rightsStatus: to_verify` au registre des sources. C'est pourquoi statutBibliographique est passé de `referentiel_interne_siin` à `a_completer` le 2026-07-31, PUIS à `reference_identifiee` le 2026-08-01 lorsque le document d'origine a été retrouvé (voir instrument.formePubliee) : conclure au référentiel interne parce qu'un support ne cite pas ses sources est un renversement de charge, et c'est la faute commise sur le VQ11 le 2026-07-30.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-25, ÉTENDUE le 2026-07-29 : les questionnaires des supports de formation du SIIN sont d'usage libre pour l'exercice du cabinet, et l'extension couvre AUSSI les instruments tiers que ces supports reproduisent. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PRÉCISION DU 2026-08-01, sur déclaration expresse du praticien-propriétaire en réponse à la réserve ouverte par #507 : l'exclusion « publication du verbatim » ne vise PAS l'affichage de la grille au praticien lui-même, en consultation, pour administrer l'instrument à son patient. Cet usage est DÉCLARÉ COUVERT. Il ne pouvait pas en aller autrement sans contradiction : la déclaration couvre expressément « l'administration aux patients du cabinet », et un test administré par un clinicien ne s'administre pas sans que ses items soient lus. Ce que « publication du verbatim » continue d'exclure, et sans changement : la rediffusion hors cabinet, la mise à disposition du texte des items à un tiers, et la cession. PORTÉE : cette précision est une déclaration du praticien, DATÉE ET TRACÉE ICI, non une pièce signée de l'ayant droit — elle engage le praticien et n'éteint aucun droit détenu par PAR, par l'IEDM ou par quiconque. La réserve nommant l'ayant droit reste entière. FONDEMENT : déclaration du praticien, non une pièce signée d'un ayant droit. RÉSERVE CONSERVÉE, et elle porte ici sur l'IDENTITÉ, pas sur les droits : l'instrument n'est rattaché à aucune publication. Ses items 1 à 5 et 10 sont de la famille MMSE — orientation, enregistrement puis double rappel de trois mots, soustractions de 7 en série — et sa propre bande 5-10 renvoie au MMSE ; ses items 6 à 9 relèvent des questionnaires de plainte mnésique. WN-SRC-0445 porte encore `rightsStatus: to_verify` au registre des sources. C'est pourquoi statutBibliographique est passé de `referentiel_interne_siin` à `a_completer` le 2026-07-31, PUIS à `reference_identifiee` le 2026-08-01 lorsque le document d'origine a été retrouvé (voir instrument.formePubliee) : conclure au référentiel interne parce qu'un support ne cite pas ses sources est un renversement de charge, et c'est la faute commise sur le VQ11 le 2026-07-30.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : S.I.I.N. — Scientific Institute for Intelligent Nutrition. Instrument du référentiel SIIN : le titulaire est le référentiel lui-même, comme pour Q_ALI_01. CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
@@ -659,10 +659,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1111/j.1360-0443.1993.tb02093.x",
+        "pmid": "8329970",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Addiction 1993 — Development of the Alcohol Use Disorders Identification Test (AUDIT): WHO Collaborative Project (Saunders et al.). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -706,8 +706,8 @@
       "references": {
         "doi": null,
         "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "dateVerification": "2026-09-16",
+        "verifiePar": "RECHERCHE OUTILLÉE DU 2026-09-16, RÉSULTAT NÉGATIF — aucun identifiant écrit. L'ECAB (Pelissolo et al., 1996) n'a été retrouvée ni sur Crossref ni sur PubMed. Crossref rend, sur « Pelissolo 1996 », un résumé de congrès d'European Neuropsychopharmacology portant sur l'usage des benzodiazépines en population médicale — ce n'est pas la validation de l'échelle, et ce DOI a été ÉCARTÉ. La revendication de conformité de cet instrument reste donc INVÉRIFIABLE en l'état, au sens de D-199 : non pas démentie, mais sans document désignable à confronter. CE QUE CETTE DATE COUVRE, ET RIEN DE PLUS : elle horodate LA RECHERCHE, non une vérification des auteurs et de l'année contre une source primaire — celle-ci n'a pas eu lieu et le champ `verifiePar` est ici le journal d'un résultat négatif. Elle est renseignée parce que le registre exige la paire date + vérificateur, une traçabilité dépareillée valant moins que pas de traçabilité du tout."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -756,10 +756,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1093/geront/20.6.649",
+        "pmid": "7203086",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Gerontologist 1980 — Relatives of the impaired elderly: correlates of feelings of burden (Zarit, Reever & Bach-Peterson). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -803,8 +803,8 @@
       "references": {
         "doi": null,
         "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "dateVerification": "2026-09-16",
+        "verifiePar": "RECHERCHE OUTILLÉE DU 2026-09-16, RÉSULTAT NÉGATIF — aucun identifiant écrit, ET LE MOTIF EST INSTRUCTIF. L'IAT à 20 items de K. Young paraît dans son ouvrage « Caught in the Net » (Wiley, 1998), qui n'a ni DOI ni PMID. L'article de 1998 que les bases proposent — CyberPsychology & Behavior, « Internet Addiction: The Emergence of a New Clinical Disorder », 10.1089/cpb.1998.1.237 — est bien de Young et bien de 1998, mais il présente le questionnaire diagnostique à 8 items, PAS l'IAT ni ses bandes. L'attacher ici aurait fabriqué une provenance exacte en apparence et fausse en fait : il a été ÉCARTÉ. Seule subsiste une fiche PsycTESTS (10.1037/t41898-000), qui identifie l'instrument sans publier son barème. CE QUE CETTE DATE COUVRE, ET RIEN DE PLUS : elle horodate LA RECHERCHE, non une vérification des auteurs et de l'année contre une source primaire — celle-ci n'a pas eu lieu et le champ `verifiePar` est ici le journal d'un résultat négatif. Elle est renseignée parce que le registre exige la paire date + vérificateur, une traçabilité dépareillée valant moins que pas de traçabilité du tout."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -837,7 +837,7 @@
         "auteurs": "Zigmond & Snaith",
         "anneePublication": 1983,
         "formePubliee": "14 items, sous-scores anxiété/dépression 0-21",
-        "proprietaireDroits": null
+        "proprietaireDroits": "GL Assessment (Royaume-Uni) ; distribution hors UK/IE par Mapi Research Trust"
       },
       "versionServie": {
         "description": "14 items en 1 section(s), moteur `had`. Aucun total global n'est rendu : les bandes 0–7 / 8–10 / 11–21 sont servies PAR SOUS-ÉCHELLE (anxiété, dépression), conformément au barème publié. Entrée de rayon active du besoin 8 de Mon Équilibre. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
@@ -846,14 +846,14 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1111/j.1600-0447.1983.tb09716.x",
+        "pmid": "6880820",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Acta Psychiatr Scand 1983 — The hospital anxiety and depression scale."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Décision du praticien-propriétaire du 2026-07-30, prise en connaissance de la réserve reproduite ci-dessous et CONTRE l'avis consigné de l'assistant : l'usage clinique de cet instrument dans WellNeuro est déclaré couvert par le praticien, qui en assume la responsabilité. PÉRIMÈTRE inchangé : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne. NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. La réserve nommant l'ayant droit reste au dossier et n'est pas levée : elle est surmontée par la présente déclaration, pas résolue. RÉSERVE CONSERVÉE — Mention antérieure au dossier : « GL Assessment (copyright déclaré, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "detail": "Décision du praticien-propriétaire du 2026-07-30, prise en connaissance de la réserve reproduite ci-dessous et CONTRE l'avis consigné de l'assistant : l'usage clinique de cet instrument dans WellNeuro est déclaré couvert par le praticien, qui en assume la responsabilité. PÉRIMÈTRE inchangé : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne. NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. La réserve nommant l'ayant droit reste au dossier et n'est pas levée : elle est surmontée par la présente déclaration, pas résolue. RÉSERVE CONSERVÉE — Mention antérieure au dossier : « GL Assessment (copyright déclaré, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : GL Assessment (Royaume-Uni) ; distribution hors UK/IE par Mapi Research Trust. « Protected worldwide by international copyright laws in all languages, all rights reserved to GL Assessment, UK » ; copyright Snaith & Zigmond 1983, 1992, 1994 ; « Do not use without permission » — permissions@gl-assessment.co.uk pour le UK/IE, Mapi Research Trust (eprovide.mapi-trust.org) ailleurs, donc pour la France (eprovide.mapi-trust.org/instruments/hospital-anxiety-and-depression-scale, relevé le 2026-09-15). CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
@@ -943,7 +943,7 @@
         "auteurs": "Buysse et al.",
         "anneePublication": 1989,
         "formePubliee": "19 items auto, 7 composantes, score 0-21",
-        "proprietaireDroits": null
+        "proprietaireDroits": "University of Pittsburgh"
       },
       "versionServie": {
         "description": "24 items en 4 section(s), moteur `psqi`. L'ADAPTATION SUR LE NOMBRE D'ITEMS EST LEVÉE le 2026-07-31 sur arbitrage praticien (« le PSQI doit servir 24 items ») : le volet « conjoint ou camarade de chambre » — question 10 et sous-questions 11a à 11e — est désormais servi, et le banc lit 24 items des deux côtés. Ces six items NE SONT PAS COTÉS, conformément à Buysse 1989 qui bâtit les 7 composantes et le total /21 sur les seules questions 1 à 9 ; le moteur est inchangé et psqiVoletPartenaire.guard.test.ts le prouve par mutation. Ils atteignent le praticien par les réponses lisibles et la synthèse — 11a et 11b (ronflement fort, pauses respiratoires observées) sont les deux signaux d'apnée que seul un tiers peut rapporter. RÉSIDU ASSUMÉ : comme Q5j, Q11e est servie sans son champ « décrivez », l'UI patient n'ayant pas de champ texte libre. Étendue prouvée par construction : 0–21 (bornesAtteignables.guard.test.ts). Contenu verrouillé le 2026-07-31 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
@@ -952,14 +952,14 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1016/0165-1781(89)90047-4",
+        "pmid": "2748771",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Psychiatry Res 1989 — The Pittsburgh Sleep Quality Index: a new instrument for psychiatric practice and research."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Mention antérieure au dossier : « © University of Pittsburgh (usage clinique libre déclaré, à vérifier) ». Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Mention antérieure au dossier : « © University of Pittsburgh (usage clinique libre déclaré, à vérifier) ». Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : University of Pittsburgh. Le PSQI est sous copyright de l'University of Pittsburgh. Reproduction sans redevance pour des usages de recherche et d'enseignement NON COMMERCIAUX ; un usage commercial ou une recherche à financement commercial passe par une licence de l'Office of Technology Management (sleep.pitt.edu/psqi, relevé le 2026-09-15). CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -1006,10 +1006,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1093/sleep/14.6.540",
+        "pmid": "1798888",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Sleep 1991 — A new method for measuring daytime sleepiness: the Epworth sleepiness scale (Johns). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -1058,10 +1058,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.7326/0003-4819-131-7-199910050-00002",
+        "pmid": "10507956",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Ann Intern Med 1999 — Using the Berlin Questionnaire to identify patients at risk for the sleep apnea syndrome (Netzer et al.). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -1101,23 +1101,23 @@
         "auteurs": "International RLS Study Group (Walters et al.)",
         "anneePublication": 2003,
         "formePubliee": "10 items, score 0-40",
-        "proprietaireDroits": null
+        "proprietaireDroits": "International RLS Study Group ; licence et distribution par Mapi Research Trust"
       },
       "versionServie": {
-        "description": "10 items en 1 section(s), moteur `sum`. IRLS servie avec ses bandes publiées ; 4 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
+        "description": "10 items en 1 section(s), moteur `sum`, score 0-40. Bandes 0 / 1-10 / 11-20 / 21-30 / 31-40 conformes aux catégories de sévérité publiées ; 4 bandes portent une conduite ajoutée par le cabinet, absente de la source. COTATION RÉALIGNÉE LE 2026-09-15 (arbitrage praticien) : L'AFFIRMATION « bandes ET COTATION conformes à la source » QUI FIGURAIT ICI ÉTAIT FAUSSE sur la cotation, et trois ancrages divergeaient de l'IRLS Investigator Version 2.1 (© IRLS Study Group 2001) — item 3, dont le 0 de la source est « aucun symptôme à soulager » et non « soulagement complet », ce qui sous-cotait d'un point tout patient soulagé par le mouvement, c'est-à-dire un critère diagnostique du SJSR ; item 7, dont la source ancre en jours par semaine (1 / 2-3 / 4-5 / 6-7) là où le servi découpait < 1 / 1-2 / 3-4 / quasi quotidien, sur-cotant 3 et 5 jours et ne laissant aucune option fidèle à « exactement 1 jour » ; item 8, dont la source dit « 8 heures OU PLUS » au niveau 4 quand le servi exigeait « > 8 heures ». Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte`).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1016/s1389-9457(02)00258-7",
+        "pmid": "14592342",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Sleep Med 2003 — Validation of the International Restless Legs Syndrome Study Group rating scale for restless legs syndrome."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : International RLS Study Group ; licence et distribution par Mapi Research Trust. Échelle développée par l'IRLSSG (association à but non lucratif), dont la licence et la distribution passent par Mapi Research Trust ; des conditions spécifiques, y compris des redevances, s'appliquent selon le profil et le contexte d'usage (mapi-trust.org/services/questionnaire-licensing, relevé le 2026-09-15). CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -1162,9 +1162,9 @@
       },
       "references": {
         "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "pmid": "1027738",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Int J Chronobiol 1976 — A self-assessment questionnaire to determine morningness-eveningness in human circadian rhythms (Horne & Östberg). Revue disparue, aucun DOI attribué. ATTENTION : Crossref propose Horne & Östberg 1977, Biol Psychol, « Individual differences in human circadian rhythms » — ce n'est PAS la publication du MEQ, et ce DOI a été écarté pour cette raison. PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -1204,7 +1204,7 @@
         "auteurs": "P. Pichot, J.-P. Brun",
         "anneePublication": 1984,
         "formePubliee": "Sous-échelle asthénie-fatigue, 8 items cotés 0-4, étendue 0-32 ; extraite du questionnaire bref d'auto-évaluation en trois sous-échelles de 8 items (dépression, asthénie, anxiété)",
-        "proprietaireDroits": null
+        "proprietaireDroits": "non identifié — aucune source vérifiée au 2026-09-15"
       },
       "versionServie": {
         "description": "8 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
@@ -1215,12 +1215,12 @@
       "references": {
         "doi": null,
         "pmid": "6524792",
-        "dateVerification": "2026-08-04",
-        "verifiePar": "LOT-07 — vérification assistée, notice ouverte le 2026-08-04 ; non contre-vérifiée par le praticien"
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Ann Med Psychol (Paris) 1984 — Questionnaire bref d’auto-évaluation des dimensions dépressive, asthénique et anxieuse. Revue française sans DOI attribué."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : non identifié — aucune source vérifiée au 2026-09-15. Aucune source vérifiée au 2026-09-15 pour le titulaire de l'échelle de Pichot. CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -1258,10 +1258,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": "2026-07-31",
-        "verifiePar": "banc certify (--recomparer) + relecture directe de la source et de sa grille de calcul (Drive)"
+        "doi": "10.1016/0022-3999(94)00125-O",
+        "pmid": "7636775",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — J Psychosom Res 1995 — The Multidimensional Fatigue Inventory (MFI) psychometric qualities of an instrument to assess fatigue (Smets et al.). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -1511,10 +1511,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1023/a:1026119331193",
+        "pmid": "14651415",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Qual Life Res 2003 — A six-item short-form survey for measuring headache impact: the HIT-6 (Kosinski et al.). PIÈGE ÉCARTÉ PAR LE CROISEMENT : la recherche rendait d'abord 10.1023/A:1026123400242, même revue et même année, mais premier auteur Bjorner — c'est l'article de CALIBRATION du HIT, pas celui qui développe le HIT-6. C'est le recroisement PubMed du DOI qui l'a révélé, pas la lecture du titre. PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -1547,7 +1547,7 @@
         "auteurs": null,
         "anneePublication": null,
         "formePubliee": null,
-        "proprietaireDroits": null
+        "proprietaireDroits": "S.I.I.N. — Scientific Institute for Intelligent Nutrition"
       },
       "versionServie": {
         "description": "11 items en une seule section, chacun coté de 0 à 4. Scoring `count_threshold` : le score est le NOMBRE d'items cotés 3 ou 4, de 0 à 11 — les deux lectures de source du banc confirment que c'est bien sur ce comptage que portent les seuils, et non sur une somme des cotations. Quatre bandes (0–1, 2–3, 4–5, 6–11), dont aucune ne porte de protocole ; la valeur 6, laissée sans bande par la source, est rattachée à « critique » par arbitrage praticien du 23/06/2026.",
@@ -1563,7 +1563,7 @@
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-25 : les questionnaires du référentiel SIIN sont libres d'usage dans le cadre de la pratique du cabinet de neuronutrition, la licence ne s'appliquant pas à l'usage par le praticien. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. Pour les instruments qui adaptent une échelle publiée par un tiers, cette déclaration porte sur l'adaptation SIIN et laisse intacts les droits de l'échelle d'origine — à traiter entrée par entrée au banc de certification.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-25 : les questionnaires du référentiel SIIN sont libres d'usage dans le cadre de la pratique du cabinet de neuronutrition, la licence ne s'appliquant pas à l'usage par le praticien. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. Pour les instruments qui adaptent une échelle publiée par un tiers, cette déclaration porte sur l'adaptation SIIN et laisse intacts les droits de l'échelle d'origine — à traiter entrée par entrée au banc de certification.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : S.I.I.N. — Scientific Institute for Intelligent Nutrition. Instrument du référentiel SIIN : le titulaire est le référentiel lui-même, comme pour Q_ALI_01. CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
@@ -1599,7 +1599,7 @@
         "auteurs": null,
         "anneePublication": 2021,
         "formePubliee": "score 0-93",
-        "proprietaireDroits": null
+        "proprietaireDroits": "S.I.I.N. — Scientific Institute for Intelligent Nutrition"
       },
       "versionServie": {
         "description": "L'application administre 31 items à 4 modalités, répartis en 5 sections, avec un scoring de type « tfd » calculant 5 sous-scores. Le balayage du moteur produit un total de 0 à 93. Aucune bande d'interprétation n'est servie.",
@@ -1615,7 +1615,7 @@
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-25 : les questionnaires du référentiel SIIN sont libres d'usage dans le cadre de la pratique du cabinet de neuronutrition, la licence ne s'appliquant pas à l'usage par le praticien. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. Pour les instruments qui adaptent une échelle publiée par un tiers, cette déclaration porte sur l'adaptation SIIN et laisse intacts les droits de l'échelle d'origine — à traiter entrée par entrée au banc de certification.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-25 : les questionnaires du référentiel SIIN sont libres d'usage dans le cadre de la pratique du cabinet de neuronutrition, la licence ne s'appliquant pas à l'usage par le praticien. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. Pour les instruments qui adaptent une échelle publiée par un tiers, cette déclaration porte sur l'adaptation SIIN et laisse intacts les droits de l'échelle d'origine — à traiter entrée par entrée au banc de certification.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : S.I.I.N. — Scientific Institute for Intelligent Nutrition. Instrument du référentiel SIIN : le titulaire est le référentiel lui-même, comme pour Q_ALI_01. CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
@@ -1644,23 +1644,23 @@
         "auteurs": "Francis, Morris & Whorwell",
         "anneePublication": 1997,
         "formePubliee": null,
-        "proprietaireDroits": null
+        "proprietaireDroits": "non identifié — aucune source vérifiée au 2026-09-15"
       },
       "versionServie": {
-        "description": "7 items en 1 section(s), moteur `francis`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
+        "description": "7 items en 1 section(s) dont 2 filtres non scorés, moteur `francis`, score 0-500. BANDES RÉALIGNÉES SUR LA PUBLICATION LE 2026-09-15 (arbitrage praticien) — Francis, Morris & Whorwell 1997 publient QUATRE catégories (rémission sous 75, léger 75-175, modéré 175-300, sévère 300-500) ; étaient servies TROIS bandes avec une frontière à 70 et, surtout, LÉGER ET MODÉRÉ FUSIONNÉS — la distinction qui porte la cible thérapeutique disparaissait. DEUX ARBITRAGES ÉPINGLÉS COMME TELS : la source écrit « lower than 75 », donc 75 rejoint la bande légère ; et ses bornes intérieures se chevauchent (75, 175, 300 appartiennent à deux catégories à la fois), chevauchement tranché vers la bande INFÉRIEURE, même sens que l'arbitrage du QDRS à 20 rendu le même jour. ANCRES AJOUTÉES À `FR_Q006` : la question demande la satisfaction, le moteur compte l'insatisfaction, et la réglette 0-100 ne portait AUCUNE ancre — un patient très satisfait glissant vers 100 marquait 100 points de sévérité sur 500. La source imprime ses ancres sur l'échelle visuelle ; le moteur inversait déjà l'identifiant hérité `FR4`, preuve que l'inversion existait et s'était perdue au renommage. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte`).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1046/j.1365-2036.1997.142318000.x",
+        "pmid": "9146781",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Aliment Pharmacol Ther 1997 — The irritable bowel severity scoring system: a simple method of monitoring irritable bowel syndrome and its progress."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : non identifié — aucune source vérifiée au 2026-09-15. Aucune source vérifiée au 2026-09-15 pour le titulaire de l'IBS-SSS. CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -1698,10 +1698,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.3109/00365529709011203",
+        "pmid": "9299672",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Scand J Gastroenterol 1997 — Stool form scale as a useful guide to intestinal transit time (Lewis & Heaton). PIÈGE ÉCARTÉ : l'appariement automatique proposait 10.2514/6.1997-3596 — un article d'aéronautique de l'AIAA — sur le seul accord « Lewis » + 1997. PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -1743,15 +1743,15 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null,
+        "doi": "10.1016/j.pain.2010.03.034",
+        "pmid": "20488620",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Pain 2010 — Development and validation of the Fibromyalgia Rapid Screening Tool (FiRST) (Perrot et al.). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06.",
         "reserveMetrologique": "RÉSERVE MÉTROLOGIQUE DU 2026-08-02 (décision h de la campagne de certification, arbitrage praticien) : l'affirmation chiffrée de performance servie pour cet instrument — « sensibilité 90,5 % pour un score ≥ 5/6 », affichée dans la description du catalogue — est ATTRIBUÉE à Perrot et al. 2010 et déclarée PROVISOIRE. Elle n'a été confrontée à aucune publication dans ce dépôt : `doi`, `pmid` et `dateVerification` sont nuls ci-dessus. Le texte servi à l'utilisateur porte la mention « non vérifiée contre la source primaire », de sorte que l'application n'affirme pas ce qu'elle n'a pas vérifié — même doctrine que le plafond posé sur Q_GEO_04. Lever cette réserve demande la publication au dossier et le renseignement de `references`."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès du titulaire des droits — champ `instrument.proprietaireDroits`, renseigné le 2026-09-15 pour les instruments cités par une table signée ; `null` ailleurs signifie « titulaire non identifié », jamais « aucun titulaire ». Le champ `instrument.auteurs`, que cette clause visait jusqu'au 2026-09-15, nomme les AUTEURS — et pour un instrument dont les droits ont été cédés à un éditeur, l'auteur n'est pas celui qui peut autoriser. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -1796,13 +1796,13 @@
       },
       "references": {
         "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "pmid": "1865419",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — J Rheumatol 1991 — The fibromyalgia impact questionnaire: development and validation (Burckhardt, Clark & Bennett). J Rheumatol de 1991 sans DOI déposé. PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès du titulaire des droits — champ `instrument.proprietaireDroits`, renseigné le 2026-09-15 pour les instruments cités par une table signée ; `null` ailleurs signifie « titulaire non identifié », jamais « aucun titulaire ». Le champ `instrument.auteurs`, que cette clause visait jusqu'au 2026-09-15, nomme les AUTEURS — et pour un instrument dont les droits ont été cédés à un éditeur, l'auteur n'est pas celui qui peut autoriser. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -1889,7 +1889,7 @@
         "auteurs": null,
         "anneePublication": null,
         "formePubliee": null,
-        "proprietaireDroits": null
+        "proprietaireDroits": "S.I.I.N. — Scientific Institute for Intelligent Nutrition"
       },
       "versionServie": {
         "description": "L'application administre 16 items binaires en 3 sections, avec un scoring de type somme et un maximum déclaré de 25. Le balayage du moteur produit un total de 0 à 25, découpé en 4 bandes d'interprétation qui portent toutes une conduite clinique. 3 dimensions sont calculées.",
@@ -1905,7 +1905,7 @@
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-25 : les questionnaires du référentiel SIIN sont libres d'usage dans le cadre de la pratique du cabinet de neuronutrition, la licence ne s'appliquant pas à l'usage par le praticien. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. Pour les instruments qui adaptent une échelle publiée par un tiers, cette déclaration porte sur l'adaptation SIIN et laisse intacts les droits de l'échelle d'origine — à traiter entrée par entrée au banc de certification.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-25 : les questionnaires du référentiel SIIN sont libres d'usage dans le cadre de la pratique du cabinet de neuronutrition, la licence ne s'appliquant pas à l'usage par le praticien. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. Pour les instruments qui adaptent une échelle publiée par un tiers, cette déclaration porte sur l'adaptation SIIN et laisse intacts les droits de l'échelle d'origine — à traiter entrée par entrée au banc de certification.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : S.I.I.N. — Scientific Institute for Intelligent Nutrition. Instrument du référentiel SIIN : le titulaire est le référentiel lui-même, comme pour Q_ALI_01. CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
@@ -1989,10 +1989,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1111/j.1360-0443.1991.tb01879.x",
+        "pmid": "1932883",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Br J Addict 1991 — The Fagerström Test for Nicotine Dependence: a revision of the Fagerström Tolerance Questionnaire (Heatherton et al.). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -2142,10 +2142,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1001/archpedi.156.4.397",
+        "pmid": "11929376",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Arch Pediatr Adolesc Med 2002 — Measuring the loss of autonomy over nicotine use in adolescents: the DANDY study (DiFranza et al.), publication où paraît la HONC. PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -2193,10 +2193,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": "2026-07-31",
-        "verifiePar": "revue adversariale du 2026-07-30 (identification), banc certify (--recomparer)"
+        "doi": "10.1016/j.rmr.2010.03.020",
+        "pmid": "20569880",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — Rev Mal Respir 2010 — Le VQ11, un questionnaire de qualité de vie spécifique à la BPCO utilisable en clinique (Ninot et al.). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -2247,10 +2247,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1016/S0022-5347(17)36966-5",
+        "pmid": "1279218",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — J Urol 1992 — The American Urological Association symptom index for benign prostatic hyperplasia (Barry et al.). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -2453,8 +2453,8 @@
       "references": {
         "doi": null,
         "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "dateVerification": "2026-09-16",
+        "verifiePar": "RECHERCHE OUTILLÉE DU 2026-09-16, RÉSULTAT NÉGATIF ET DÉCISIF. La Conners 3 (2008) est un test ÉDITÉ COMMERCIALEMENT (MHS) : PubMed ne rend aucun article de développement, et Crossref ne rend que des fiches PsycTESTS (10.1037/t04956-000 et suivantes), qui identifient l'outil sans publier son barème. IL N'Y A DONC PAS DE PUBLICATION À LAQUELLE CETTE VERSION POURRAIT ÊTRE DÉCLARÉE CONFORME — la revendication n'est pas seulement invérifiable faute d'identifiant : elle est sans objet vérifiable par cette voie. La conformité, ici, ne peut s'établir que contre le manuel de l'éditeur, sous licence. CE QUE CETTE DATE COUVRE, ET RIEN DE PLUS : elle horodate LA RECHERCHE, non une vérification des auteurs et de l'année contre une source primaire — celle-ci n'a pas eu lieu et le champ `verifiePar` est ici le journal d'un résultat négatif. Elle est renseignée parce que le registre exige la paire date + vérificateur, une traçabilité dépareillée valant moins que pas de traçabilité du tout."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -2754,7 +2754,7 @@
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi. SUSPENSION DU 2026-07-30 : motif de CONTENU (10 items servis sur 39), pas de droits.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès du titulaire des droits — champ `instrument.proprietaireDroits`, renseigné le 2026-09-15 pour les instruments cités par une table signée ; `null` ailleurs signifie « titulaire non identifié », jamais « aucun titulaire ». Le champ `instrument.auteurs`, que cette clause visait jusqu'au 2026-09-15, nomme les AUTEURS — et pour un instrument dont les droits ont été cédés à un éditeur, l'auteur n'est pas celui qui peut autoriser. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi. SUSPENSION DU 2026-07-30 : motif de CONTENU (10 items servis sur 39), pas de droits.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -2812,9 +2812,9 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "a_verifier",
-        "detail": "DROITS NON INSTRUITS. Aucun rapprochement avec un support du cabinet n'a été fait : `sourceIds` est vide en conséquence, et le barreau reste `repere`, le premier de l'échelle. Une recherche du 2026-08-03 dans `source_registry.json` (507 sources) n'a remonté aucun support de type agenda, journal ou carnet alimentaire — c'est une absence de pièce, PAS une preuve d'originalité. CE QUI N'EST DÉLIBÉRÉMENT PAS AFFIRMÉ ICI : que l'instrument serait une construction WellNeuro sans source tierce. Cette formule a été écrite le 2026-08-03 puis retirée le même jour, sur revue adversariale — elle n'avait aucune pièce derrière elle, et c'est exactement la revendication retirée de l'entrée `Q_SOM_09` le 2026-07-30, pour la même raison. Le contrat du domaine (`lib/agenda-alimentaire/types.ts`) qualifie d'ailleurs le support — un semainier alimentaire horodaté — d'« instrument courant », ce qui penche plutôt dans l'autre sens. À noter enfin que la frontière JA n'établit AUCUN statut de droits : elle interdit les quantités et les aliments identifiés, pas la reprise d'une structure ou d'une mise en page. `a_verifier` plutôt que `libre` : au barreau `repere` les deux passent le vérificateur à l'identique, mais `libre` appartient à `DROITS_DEGAGES` et pré-autoriserait la montée à `droits_verifies` sans qu'aucune source ait jamais été instruite.",
-        "dateVerification": null
+        "statut": "libre",
+        "detail": "DÉCLARATION DU PRATICIEN-PROPRIÉTAIRE DU 2026-09-16, recueillie en clôture de session sur question posée explicitement, et portant sur le texte qu'il a relu avant de la donner : « L'agenda alimentaire WellNeuro — 21 jours (Q_ALI_09) est DE MA CONCEPTION. Son format — recueil quotidien sur 21 jours, horaires et nature des prises, sans quantité ni score — n'a été repris d'aucun support tiers, d'aucun document de formation et d'aucune œuvre protégée ; je n'en ai reproduit ni la structure, ni la mise en page, ni les libellés. » PÉRIMÈTRE : administration aux patients du cabinet, recueil, restitution praticien et patient, indexation dans le corpus RAG interne (barrière D-003).\n\nPORTÉE, ET ELLE EST ÉTROITE. Cette déclaration porte sur un fait que le praticien est SEUL à détenir, et le dépôt n'a produit AUCUNE pièce qui la corrobore — la recherche du 2026-08-03 dans les 507 sources n'a rien remonté, ce qui reste une absence de pièce et non une preuve. Elle engage le praticien ; elle ne constitue pas une preuve d'originalité opposable à un tiers, et le contrat de domaine qualifiant le support d'« instrument courant » n'est pas effacé par elle.\n\nCE QU'ELLE RÉSOUT — UNE CONTRADICTION INTERNE À CETTE ENTRÉE. Deux champs affirmaient une création locale (`motifBibliographique`, et `versionServie.statutContenu` à `cree_localement`) pendant qu'un troisième, ci-dessous, REFUSAIT EXPLICITEMENT de l'affirmer. La déclaration tranche en faveur des deux premiers : ce n'est plus une formule sans pièce, c'est une déclaration datée et tracée.\n\nCE QU'ELLE NE FAIT PAS. `statutCertification` reste à `repere` — un statut de droits dégagé rend la montée POSSIBLE, il ne la prend pas. Le passage à `libre` plutôt qu'à `permission_obtenue` est le corollaire exact de la déclaration : le praticien ne déclare pas un usage couvert par un ayant droit tiers, il déclare qu'il n'y a pas d'ayant droit tiers.\n\nHISTORIQUE CONSERVÉ — il doit rester lisible, parce qu'il dit pourquoi cette entrée a attendu six semaines. Mention antérieure au dossier, en vigueur du 2026-08-03 au 2026-09-16 : « DROITS NON INSTRUITS. Aucun rapprochement avec un support du cabinet n'a été fait : `sourceIds` est vide en conséquence, et le barreau reste `repere`, le premier de l'échelle. Une recherche du 2026-08-03 dans `source_registry.json` (507 sources) n'a remonté aucun support de type agenda, journal ou carnet alimentaire — c'est une absence de pièce, PAS une preuve d'originalité. CE QUI N'EST DÉLIBÉRÉMENT PAS AFFIRMÉ ICI : que l'instrument serait une construction WellNeuro sans source tierce. Cette formule a été écrite le 2026-08-03 puis retirée le même jour, sur revue adversariale — elle n'avait aucune pièce derrière elle, et c'est exactement la revendication retirée de l'entrée `Q_SOM_09` le 2026-07-30, pour la même raison. Le contrat du domaine (`lib/agenda-alimentaire/types.ts`) qualifie d'ailleurs le support — un semainier alimentaire horodaté — d'« instrument courant », ce qui penche plutôt dans l'autre sens. À noter enfin que la frontière JA n'établit AUCUN statut de droits : elle interdit les quantités et les aliments identifiés, pas la reprise d'une structure ou d'une mise en page. `a_verifier` plutôt que `libre` : au barreau `repere` les deux passent le vérificateur à l'identique, mais `libre` appartient à `DROITS_DEGAGES` et pré-autoriserait la montée à `droits_verifies` sans qu'aucune source ait jamais été instruite. »",
+        "dateVerification": "2026-09-16"
       },
       "cosmin": "inconnu",
       "statutCertification": "repere",
@@ -2845,14 +2845,14 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1111/j.1532-5415.1986.tb05480.x",
+        "pmid": "3944402",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — J Am Geriatr Soc 1986 — Performance-oriented assessment of mobility problems in elderly patients (Tinetti). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès du titulaire des droits — champ `instrument.proprietaireDroits`, renseigné le 2026-09-15 pour les instruments cités par une table signée ; `null` ailleurs signifie « titulaire non identifié », jamais « aucun titulaire ». Le champ `instrument.auteurs`, que cette clause visait jusqu'au 2026-09-15, nomme les AUTEURS — et pour un instrument dont les droits ont été cédés à un éditeur, l'auteur n'est pas celui qui peut autoriser. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -2898,10 +2898,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1016/j.jamda.2013.05.018",
+        "pmid": "23810110",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — J Am Med Dir Assoc 2013 — SARC-F: a simple questionnaire to rapidly diagnose sarcopenia (Malmstrom & Morley). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -2939,24 +2939,24 @@
         "nomOfficiel": "Alzheimer's Questionnaire (AQ)",
         "auteurs": "Sabbagh et al.",
         "anneePublication": 2010,
-        "formePubliee": "21 items",
-        "proprietaireDroits": null
+        "formePubliee": "21 items, cotation pondérée (6 items à 2 points), score 0-27",
+        "proprietaireDroits": "non identifié — aucune source vérifiée au 2026-09-15"
       },
       "versionServie": {
-        "description": "21 items en 1 section(s), moteur `sum`. AQ de Sabbagh servi avec ses bandes publiées ; 3 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
+        "description": "21 items en 5 section(s) — les cinq domaines publiés —, moteur `sum`, cotation pondérée, score 0-27. RÉALIGNÉ SUR LA PUBLICATION LE 2026-09-15 (arbitrage praticien). AVANT CETTE DATE, ET C'EST CORRIGÉ ICI : la forme servie portait vingt-et-un items comme la source, et ce chiffre identique cachait deux inventaires différents — huit items publiés n'étaient pas servis, huit items servis n'étaient pas publiés. Le domaine Orientation de Sabbagh (3 items) manquait en entier ; cinq items comportementaux (irritabilité, dépression, anxiété, hallucinations, personnalité) avaient été ajoutés, alors que l'AQ ne comporte aucun domaine de ce genre. La pondération publiée était abandonnée au profit d'une cotation plate sur 21. DEUX AFFIRMATIONS DE CETTE NOTICE ÉTAIENT FAUSSES et sont retirées : « servi avec ses bandes publiées » — l'article de 2010 ne publie AUCUN seuil — et « bandes et cotation conformes à la source pour le reste », que le code contredisait dans son propre commentaire (« cotation 0/1 vs pondérée originale — GAP documenté »). CE QUI RESTE VRAI : les 3 bandes portent une conduite ajoutée par le cabinet, absente de la source. CE QUI RESTE `adapte` : la traduction française est fidèle au sens de chaque item publié, elle n'est pas une version française validée — aucune identité au mot près n'est affirmée. AUCUNE PASSATION PERDUE : production lue le 2026-09-15 (one-off détaché), 188 passations sur trente instruments, ZÉRO sur Q_GEO_03.",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.3233/JAD-2010-101185",
+        "pmid": "20930293",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — J Alzheimers Dis 2010 — The Alzheimer's questionnaire: a proof of concept study for a new informant-based dementia assessment. RÉALIGNEMENT DU 2026-09-15 : les vingt-et-un items publiés (table 7) et la pondération à six items doubles sont rétablis ; le DOI et le PMID désignent donc désormais la forme SERVIE, et non plus seulement une référence d’origine. RÉSERVE SUR LES BANDES, NON LEVÉE : les bornes 5 et 15 sont celles qui circulent dans la littérature de l’AQ et portent bien sur l’échelle pondérée à 27 points — c’est pourquoi elles y sont désormais posées —, mais la publication qui les ÉTABLIT n’a pas été lue. L’article de 2010 n’en publie aucune (moyennes de groupe et courbes ROC seulement), et le texte intégral de l’étude de validation (Malek-Ahmadi et al., Age Ageing 2012, PMID 22367356) n’a pas pu être atteint le 2026-09-15. Transposition décidée par arbitrage praticien du 2026-09-15, et déclarée plutôt que tue."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès du titulaire des droits — champ `instrument.proprietaireDroits`, renseigné le 2026-09-15 pour les instruments cités par une table signée ; `null` ailleurs signifie « titulaire non identifié », jamais « aucun titulaire ». Le champ `instrument.auteurs`, que cette clause visait jusqu'au 2026-09-15, nomme les AUTEURS — et pour un instrument dont les droits ont été cédés à un éditeur, l'auteur n'est pas celui qui peut autoriser. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : non identifié — aucune source vérifiée au 2026-09-15. Aucune source vérifiée au 2026-09-15 pour le titulaire de l'AQ. CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -2991,7 +2991,7 @@
         "auteurs": "Folstein, Folstein & McHugh ; version GRECO : Derouesné et al.",
         "anneePublication": 1975,
         "formePubliee": "version GRECO",
-        "proprietaireDroits": null
+        "proprietaireDroits": "Psychological Assessment Resources (PAR)"
       },
       "versionServie": {
         "description": "30 items en 6 dimensions (`dimensions`), moteur `weighted_per_axis`, total /30 dans le sens des CAPACITÉS — Orientation /10, Apprentissage /3, Attention et calcul /5, Rappel /3, Langage /8, Construction visuospatiale /1 : le découpage et les maximums de la version consensuelle GRECO. CE QUE LE BANC ÉTABLIT : 30 items lus par les deux lectures indépendantes contre 30 servis, zéro divergence critique sur le contenu. CE QU'IL N'ÉTABLIT PAS, et qui a failli être écrit à l'envers : les quatre bandes (27-30, 21-26, 10-20, 0-9) NE VIENNENT PAS de la source du cabinet. `questionnaires/gerontologie.ts` le dit deux fois en clair — « Seuils HAS 2011 utilisés (absents PDF SIIN) — GAP documenté, escalade SIIN ». Les deux lectures du banc rendent d'ailleurs une liste de seuils VIDE : l'absence de divergence `seuil_non_represente` est donc VACUEUSE, au sens exact où elle l'était pour Q_SOM_09 et Q_PED_02 — un banc qui se tait n'est pas un banc qui approuve. Ce qui est certifié ici, ce sont les ITEMS et la STRUCTURE ; les seuils sont ATTRIBUÉS à une autorité publique nommée (HAS 2011) et déclarés comme un apport EXTERNE au support — attribution que le dépôt n'a PAS vérifiée non plus, cf. la note de recul du barreau. L'escalade SIIN ouverte le 2026-07-25 pour obtenir les seuils de la source reste OUVERTE. DEUXIÈME ADAPTATION DÉCLARÉE : les quatre bandes portent chacune une CONDUITE ajoutée par le cabinet (« suivi neuropsychologique », « prise en charge spécialisée »…), retirée du prompt de synthèse par `scoresPourPrompt` — traitement identique au précédent Q_GEO_01 (Tinetti). D'où `statutContenu: adapte`. TEST ADMINISTRÉ PAR LE CLINICIEN : servi en `PASSATION_PRATICIEN`, entrée de catalogue maintenue `actif: false`, donc jamais envoyé à un patient.",
@@ -3000,14 +3000,14 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1016/0022-3956(75)90026-6",
+        "pmid": "1202204",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — J Psychiatr Res 1975 — \"Mini-mental state\". A practical method for grading the cognitive state of patients for the clinician."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Décision du praticien-propriétaire du 2026-07-30, prise en connaissance de la réserve reproduite ci-dessous et CONTRE l'avis consigné de l'assistant : l'usage clinique de cet instrument dans WellNeuro est déclaré couvert par le praticien, qui en assume la responsabilité. PÉRIMÈTRE inchangé : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne. NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PRÉCISION DU 2026-08-01, sur déclaration expresse du praticien-propriétaire en réponse à la réserve ouverte par #507 : l'exclusion « publication du verbatim » ne vise PAS l'affichage de la grille au praticien lui-même, en consultation, pour administrer l'instrument à son patient. Cet usage est DÉCLARÉ COUVERT. Il ne pouvait pas en aller autrement sans contradiction : la déclaration couvre expressément « l'administration aux patients du cabinet », et un test administré par un clinicien ne s'administre pas sans que ses items soient lus. Ce que « publication du verbatim » continue d'exclure, et sans changement : la rediffusion hors cabinet, la mise à disposition du texte des items à un tiers, et la cession. PORTÉE : cette précision est une déclaration du praticien, DATÉE ET TRACÉE ICI, non une pièce signée de l'ayant droit — elle engage le praticien et n'éteint aucun droit détenu par PAR, par l'IEDM ou par quiconque. La réserve nommant l'ayant droit reste entière. La réserve nommant l'ayant droit reste au dossier et n'est pas levée : elle est surmontée par la présente déclaration, pas résolue. RÉSERVE CONSERVÉE — Mention antérieure au dossier : « © PAR (Psychological Assessment Resources) — licence requise, à vérifier ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "detail": "Décision du praticien-propriétaire du 2026-07-30, prise en connaissance de la réserve reproduite ci-dessous et CONTRE l'avis consigné de l'assistant : l'usage clinique de cet instrument dans WellNeuro est déclaré couvert par le praticien, qui en assume la responsabilité. PÉRIMÈTRE inchangé : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne. NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PRÉCISION DU 2026-08-01, sur déclaration expresse du praticien-propriétaire en réponse à la réserve ouverte par #507 : l'exclusion « publication du verbatim » ne vise PAS l'affichage de la grille au praticien lui-même, en consultation, pour administrer l'instrument à son patient. Cet usage est DÉCLARÉ COUVERT. Il ne pouvait pas en aller autrement sans contradiction : la déclaration couvre expressément « l'administration aux patients du cabinet », et un test administré par un clinicien ne s'administre pas sans que ses items soient lus. Ce que « publication du verbatim » continue d'exclure, et sans changement : la rediffusion hors cabinet, la mise à disposition du texte des items à un tiers, et la cession. PORTÉE : cette précision est une déclaration du praticien, DATÉE ET TRACÉE ICI, non une pièce signée de l'ayant droit — elle engage le praticien et n'éteint aucun droit détenu par PAR, par l'IEDM ou par quiconque. La réserve nommant l'ayant droit reste entière. La réserve nommant l'ayant droit reste au dossier et n'est pas levée : elle est surmontée par la présente déclaration, pas résolue. RÉSERVE CONSERVÉE — Mention antérieure au dossier : « © PAR (Psychological Assessment Resources) — licence requise, à vérifier ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : Psychological Assessment Resources (PAR). Les auteurs ont conclu en 2001 un accord EXCLUSIF avec PAR, qui détient depuis les droits de publication, de licence et l'ensemble des droits de propriété intellectuelle du MMSE, dans tous les supports et toutes les langues (parinc.com/Products/Pkey/237 ; sralab.org/rehabilitation-measures/mini-mental-state-examination, relevé le 2026-09-15). Le champ `auteurs` — Folstein, Folstein & McHugh — ne désigne donc PLUS le titulaire. CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
@@ -3034,6 +3034,7 @@
         "revision": {
           "date": "2026-07-31",
           "notes": [
+            "SECOND SAUT ENFIN MESURÉ — 2026-09-16. Cette entrée disait depuis le 2026-08-01 : « rien dans le dépôt n'a vérifié que 27-30 / 21-26 / 10-20 / 0-9 est bien ce que la HAS écrit ». Le texte primaire a été lu ce jour : HAS, « Maladie d'Alzheimer et maladies apparentées : diagnostic et prise en charge », recommandation de bonne pratique, décembre 2011 (PDF officiel has-sante.fr, /upload/docs/application/pdf/2011-12/recommandation_maladie_d_alzheimer_et_maladies_apparentees_diagnostic_et_prsie_en_charge.pdf, relevé le 2026-09-16). RÉSULTAT : LA HAS N'ÉCRIT PAS CES QUATRE BANDES. Elle porte exactement trois seuils de MMSE, et dans un tout autre usage — l'indication médicamenteuse : « On peut proposer : • au stade léger (MMSE > 20) : un inhibiteur de la cholinestérase ; • au stade modéré (10 < MMSE < 20) : un inhibiteur de la cholinestérase ou un antiglutamate ; • au stade sévère (MMSE < 10) : un antiglutamate. » Quatre écarts, tous vérifiables sur la citation ci-dessus. (1) CE SONT DES STADES DE TRAITEMENT, qui présupposent un diagnostic déjà posé — pas une échelle d'interprétation de dépistage ; l'application, elle, les sert à qui passe le test. (2) LA HAS NE DÉFINIT AUCUN SEUIL DE NORMALITÉ : la bande servie « 27-30 Normal » n'a pas de source HAS, et c'est elle qui décide de ne rien signaler. (3) LE STADE LÉGER DE LA HAS EST OUVERT VERS LE HAUT (« MMSE > 20 ») : le plafond à 26 de la bande servie n'a pas de source HAS non plus. (4) LA BORNE MODÉRÉE EST STRICTE — « 10 < MMSE < 20 » : dans le texte, les valeurs 10 et 20 n'appartiennent À AUCUN stade. La bande servie « 10-20 » les referme toutes les deux. C'est une COMPLÉTION de la source, peut-être clinique­ment juste, mais c'est un arbitrage — et le code l'annonce comme « Seuils HAS 2011 ». La HAS ajoute par ailleurs deux prudences que les bandes servies ne portent pas : l'interprétation doit tenir compte de « l'âge, le niveau socioculturel, l'activité professionnelle et sociale, ainsi que l'état affectif (anxiété et dépression) et le niveau de vigilance » ; et « l'arrêt des traitements ne doit pas reposer sur les seuls critères de score au MMSE ». CE QUE CETTE MESURE FAIT ET NE FAIT PAS : elle referme la question ouverte — on sait désormais ce que la HAS écrit — et elle RENFORCE la réserve au lieu de la lever. AUCUNE BANDE N'A ÉTÉ TOUCHÉE : modifier un seuil clinique demande une demande explicite, une décision D-xxx et un fragment de changelog. Ce qui est à arbitrer est nommé : soit réaligner les bandes sur les trois stades de la HAS en assumant qu'ils ne couvrent ni la normalité ni les valeurs 10 et 20, soit conserver les quatre bandes et CESSER de les attribuer à la HAS, en les déclarant pour ce qu'elles sont — un arbitrage du cabinet, épinglé comme tel (doctrine D-199). L'escalade SIIN du 2026-07-25 reste ouverte.",
             "SURFACE DE CONSULTATION ROUVERTE le 2026-07-31, sur arbitrage praticien, et c'est un RENVERSEMENT de la décision du 2026-07-29 — pas son application. Ce jour-là, deux gestes avaient été faits ensemble : fermer la route d'assignation (`actif: false`, qui reste) et retirer la ligne `PASSATION_PRATICIEN`, laquelle portait l'aperçu de la grille donc l'usage en consultation. Le second est repris.",
             "MOTIF DU RENVERSEMENT : une asymétrie qui ne se défendait pas. Cinq instruments portant la même classe de réserve de droits sont, eux, ENVOYÉS AU PATIENT (EORTC ×2, HIT-6, HAD, Epworth), auxquels s'est ajouté le VQ11 le 2026-07-31. Afficher une grille au praticien qui porte la déclaration d'usage expose strictement moins que de l'adresser à un patient. Interdire le moins tout en autorisant le plus n'était pas une position tenable.",
             "CE QUE CE RENVERSEMENT NE FAIT PAS, et qui doit rester lisible : il ne lève AUCUN droit. Le MMSE reste © PAR, licence requise, et la réserve « © PAR, licence requise » n'est PAS levée par cette décision, et aucune des autres ne l'est non plus. [CORRECTION DU 2026-08-01 : une première rédaction ajoutait ici que le MMSE serait « le seul de cette population dont l'ayant droit vend activement la licence ». C'est FAUX — HIT-6 (© QualityMetric) et HAD (GL Assessment) portent la même mention « licence requise », et tous deux sont ENVOYÉS AU PATIENT. Le fait rectifié renforce l'argument d'asymétrie au lieu de l'affaiblir : ce n'est pas que le MMSE serait un cas à part, c'est que des instruments de même statut de droits sont déjà servis plus largement que lui.]",
@@ -3054,23 +3055,23 @@
         "auteurs": "J. E. Galvin",
         "anneePublication": 2015,
         "formePubliee": null,
-        "proprietaireDroits": null
+        "proprietaireDroits": "James E. Galvin / New York University"
       },
       "versionServie": {
-        "description": "10 items en 1 section(s), moteur `sum_decimal`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
+        "description": "10 domaines en 1 section(s), moteur `sum_decimal`, cotation 0 / 0,5 / 1 / 2 / 3, score 0-30. CINQ DIVERGENCES RELEVÉES LE 2026-09-15 SUR LE DOCUMENT OFFICIEL DE L’INSTRUMENT : deux corrigées (points de coupure ; substitution de domaine et ancrages) et trois ouvertes (sous-scores non servis ; droits ; traduction non validée). CORRIGÉ — LES POINTS DE COUPURE. Un commentaire du code affirmait que la grille avait été « relevée à l’identique » sur Galvin 2015 ; c’était faux. La source publie Normal 0-1, MCI 2-5, Mild dementia 6-12, Moderate dementia 13-20, Severe dementia 20-30. La forme servie portait une bande « démence légère à modérée » QUI N’EXISTE PAS dans la source, et ouvrait sa bande la plus sévère à 17,5 quand la source l’ouvre à 20 : un score de 18 ou 19 sortait « modérée à sévère » en rouge là où l’instrument dit « démence modérée ». Sur-classement, dans le sens alarmant, sur un outil de stadification. Aligné le 2026-09-15 avec deux arbitrages praticiens écrits dans le code : le chevauchement de la source à 20 est tranché vers MODÉRÉ (sévère à partir de 20,5), et les demi-pas que la source ne classe pas (1,5 · 5,5 · 12,5) rejoignent la bande supérieure — sans quoi aligner sur « 13-20 » ouvrait un trou à 12,5. CORRIGÉ — LA MENTION DES SOUS-SCORES. La source définit deux sous-totaux, cognitif (items 1, 2, 3, 8) et comportemental (items 4, 5, 6, 7, 9, 10), et permet de dériver un CDR sur les six premières catégories. AUCUN des deux n’est servi : l’écart est désormais déclaré au lieu d’être tu. CORRIGÉ — LA SUBSTITUTION DE DOMAINE ET LES ANCRAGES. La source publie « 9. Mood » et « 10. Attention and concentration » ; la forme servie portait Attention en 9 et DÉAMBULATION en 10 — le domaine Humeur n’était servi nulle part, et un déficit de marche pesait sur un score de sévérité COGNITIVE. Les dix domaines sont réécrits le 2026-09-15 d’après le document officiel, dans l’ordre publié. Deux d’entre eux ne faisaient pas qu’abréger : en « Toilette et hygiène » le niveau 0,5 servi correspondait au niveau 1 de la source, et en « Comportement et personnalité » le 0,5 servi portait sur l’irritabilité et l’anxiété, qui relèvent du domaine Humeur. OUVERT — LES DEUX SOUS-SCORES. La source définit un sous-total cognitif (domaines 1, 2, 3, 8) et un sous-total comportemental (4, 5, 6, 7, 9, 10), et permet de dériver un CDR sur les six premiers domaines. Aucun des deux n’est servi : `sum_decimal` ne porte pas de sous-scores, et les ajouter est un autre lot. OUVERT — LES DROITS. La politique de permission de l’ayant droit exclut nommément les œuvres dérivées, les traductions et l’incorporation dans un logiciel de dossier patient : voir `droits.detail`, réserve non levée. OUVERT — LA TRADUCTION. `statutContenu` reste `adapte` : aucune identité au mot près n’est affirmée, et `traductionValidee` reste « fr — à confirmer ». AUCUNE PASSATION AFFECTÉE : production lue le 2026-09-15 (one-off détaché), 188 passations sur trente instruments, ZÉRO sur Q_GEO_05.",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1016/j.dadm.2015.03.003",
+        "pmid": "26140284",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Alzheimers Dement (Amst) 2015 — The Quick Dementia Rating System (QDRS): a rapid dementia staging tool."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Mention antérieure au dossier : « © J. E. Galvin (usage clinique libre déclaré, à vérifier) ». Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "LECTURE DE LA SOURCE PRIMAIRE, 2026-09-15 — LA POLITIQUE DE PERMISSION DU QDRS EXCLUT NOMMÉMENT DEUX DE NOS USAGES. Le document officiel de l’instrument (Galvin / NYU, copyright 2013) accorde l’autorisation d’utiliser et de reproduire le QDRS « without modification or editing of any kind », pour le soin clinique et la recherche non commerciale, ET EXCLUT expressément : « (b) the creation of any derivative works of the QDRS, including translations thereof » et « (d) incorporation of the QDRS in an electronic medical record application software ». La forme servie par WellNeuro est une TRADUCTION FRANÇAISE (œuvre dérivée, exclusion b), MODIFIÉE (un domaine substitué, contraire à la première phrase), INCORPORÉE DANS UNE APPLICATION QUI STOCKE DES DOSSIERS PATIENTS (exclusion d). Le document prévoit le cas et donne la voie : « must obtain Dr. Galvin’s prior written permission » (galvinj@health.fau.edu). Aucune demande n’a été faite à ce jour. ARBITRAGE PRATICIEN DU 2026-09-15 : POURSUIVRE LE SERVICE, décision prise en connaissance de la clause ci-dessus, au motif que l’usage relève du soin clinique au cabinet. `droits.statut` RESTE `permission_obtenue`, et ce n’est pas une contradiction : dans ce registre l’étiquette se lit « permission TENUE POUR ACQUISE sous la déclaration du praticien du 2026-07-29 », jamais « licence obtenue ». La présomption est donc maintenue, et sa CONTESTATION est désormais versée au dossier en toutes lettres — c’est précisément ce que le champ est censé porter. CETTE RÉSERVE EST OUVERTE ET N’EST PAS LEVÉE. Elle n’emporte aucune appréciation juridique : la portée de la clause « clinical care purposes » face aux exclusions (b) et (d) est une question de conseil, non tranchée ici. La mention de reproduction exigée par la politique n’est pas affichée dans l’application : « Reprinted with permission. Copyright 2013. The Quick Dementia Rating System: A Rapid Dementia Staging Tool is a copyrighted instrument of James E. Galvin and New York University School of Medicine. All Rights Reserved. » — à poser si le service continue. [HISTORIQUE ANTÉRIEUR À CETTE LECTURE] Mention antérieure au dossier : « © J. E. Galvin (usage clinique libre déclaré, à vérifier) ». Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : James E. Galvin / New York University. Titulaire relevé le 2026-09-15 sur le document officiel fourni par le praticien, dont la clause de permission est déjà versée à cette entrée. CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -3105,7 +3106,7 @@
         "auteurs": "B. Dubois et al.",
         "anneePublication": 2002,
         "formePubliee": "rappel en 2 phases",
-        "proprietaireDroits": null
+        "proprietaireDroits": "non identifié — aucune source vérifiée au 2026-09-15"
       },
       "versionServie": {
         "description": "10 items en 2 section(s), moteur `sum_two_phases`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
@@ -3115,14 +3116,14 @@
       },
       "references": {
         "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null,
-        "reserveMetrologique": "RÉSERVE MÉTROLOGIQUE DU 2026-08-02 (décision h de la campagne de certification, arbitrage praticien) : l'affirmation chiffrée de performance servie pour cet instrument — « sensibilité 85 %, spécificité 90 % » pour le rappel différé ≤ 2/5, affichée dans la note de la bande de score — est ATTRIBUÉE à Dubois et al. 2002 et déclarée PROVISOIRE. Elle n'a été confrontée à aucune publication dans ce dépôt : `doi`, `pmid` et `dateVerification` sont nuls ci-dessus. Le texte servi à l'utilisateur porte la mention « non vérifiée contre la source primaire », de sorte que l'application n'affirme pas ce qu'elle n'a pas vérifié — même doctrine que le plafond posé sur Q_GEO_04. Lever cette réserve demande la publication au dossier et le renseignement de `references`."
+        "pmid": "12467149",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Presse Med 2002 — « Les 5 mots » : un test simple et sensible pour le diagnostic de la maladie d’Alzheimer. Revue française sans DOI attribué.",
+        "reserveMetrologique": "RÉSERVE MÉTROLOGIQUE DU 2026-08-02 (décision h de la campagne de certification, arbitrage praticien) : l'affirmation chiffrée de performance servie pour cet instrument — « sensibilité 85 %, spécificité 90 % » pour le rappel différé ≤ 2/5, affichée dans la note de la bande de score — est ATTRIBUÉE à Dubois et al. 2002 et déclarée PROVISOIRE. Elle n'a été confrontée à aucune publication dans ce dépôt. CORRECTION DU 2026-09-14 (contre-audit) : cette phrase disait « `doi`, `pmid` et `dateVerification` sont nuls ci-dessus », ce qui est devenu FAUX le jour même — `pmid` et `dateVerification` sont renseignés quelques lignes plus haut, dans cette même entrée. LA RÉSERVE N'EST PAS LEVÉE POUR AUTANT, et c'est tout l'objet de la correction : retrouver l'identifiant d'un article prouve qu'il existe et qu'il est désignable, pas que les 85 % / 90 % lui appartiennent, ni qu'ils portent sur le critère servi ici. Le texte intégral n'a pas été lu ; aucune des deux valeurs n'a été relevée dans une publication. Le texte servi à l'utilisateur porte la mention « non vérifiée contre la source primaire », de sorte que l'application n'affirme pas ce qu'elle n'a pas vérifié — même doctrine que le plafond posé sur Q_GEO_04. Lever cette réserve demande la LECTURE de la publication et le relevé des deux chiffres dans son texte — renseigner `references`, fait le 2026-09-14, n'y suffit pas."
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès du titulaire des droits — champ `instrument.proprietaireDroits`, renseigné le 2026-09-15 pour les instruments cités par une table signée ; `null` ailleurs signifie « titulaire non identifié », jamais « aucun titulaire ». Le champ `instrument.auteurs`, que cette clause visait jusqu'au 2026-09-15, nomme les AUTEURS — et pour un instrument dont les droits ont été cédés à un éditeur, l'auteur n'est pas celui qui peut autoriser. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.\n\nTITULAIRE DES DROITS RENSEIGNÉ LE 2026-09-15 (audit des instruments cités par une table signée, arbitrage praticien) : non identifié — aucune source vérifiée au 2026-09-15. Aucune source vérifiée au 2026-09-15 pour le titulaire du test des 5 mots. CE CHAMP NE CHANGE AUCUN USAGE NI AUCUN STATUT : il rend seulement DICIBLE à qui une autorisation devrait être demandée — ce que le registre ne savait pas dire. Le QDRS l'a montré le même jour : sa politique réelle venait du TITULAIRE, non des auteurs.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
@@ -3165,10 +3166,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1093/jnci/85.5.365",
+        "pmid": "8433390",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — J Natl Cancer Inst 1993 — The European Organization for Research and Treatment of Cancer QLQ-C30: a quality-of-life instrument for use in international clinical trials in oncology (Aaronson et al.). PIÈGE ÉCARTÉ : l'appariement proposait 10.1016/0959-8049(94)90535-5 — le QLQ-LC13, module POUMON, autre instrument. PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -3218,10 +3219,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1200/JCO.1996.14.10.2756",
+        "pmid": "8874337",
+        "dateVerification": "2026-09-16",
+        "verifiePar": "recherche outillée du 2026-09-16 (Crossref `query.bibliographic` puis PubMed E-utilities ; concordance premier auteur + année + revue + titre vérifiée article par article, et chaque DOI recroisé INDÉPENDAMMENT sur PubMed par `[aid]`) — NON CONTRE-VÉRIFIÉE PAR LE PRATICIEN — J Clin Oncol 1996 — The European Organization for Research and Treatment of Cancer breast cancer-specific quality-of-life questionnaire module: first results from a three-country field study (Sprangers et al.). PORTÉE DE CE QUE CET IDENTIFIANT ÉTABLIT, ET DE CE QU'IL N'ÉTABLIT PAS : il rend la revendication de conformité VÉRIFIABLE — elle désigne désormais un document que quiconque peut ouvrir. Il ne la VÉRIFIE pas : le texte intégral n'a pas été lu, et le barème servi n'a pas été confronté à la publication. Même doctrine que la réserve de Q_GEO_06."
       },
       "droits": {
         "statut": "permission_obtenue",

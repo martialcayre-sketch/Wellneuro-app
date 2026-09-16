@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getServerSession, prisma, resolveProtocoleDiffuse, reconstructProtocolDraft } = vi.hoisted(() => ({
+const { getServerSession, prisma, resolveProtocoleDiffuse, reconstructProtocolDraft, rejouerCarteDecision } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
@@ -9,6 +9,7 @@ const { getServerSession, prisma, resolveProtocoleDiffuse, reconstructProtocolDr
   },
   resolveProtocoleDiffuse: vi.fn(),
   reconstructProtocolDraft: vi.fn(),
+  rejouerCarteDecision: vi.fn(),
 }));
 
 vi.mock('next-auth', () => ({ getServerSession }));
@@ -19,6 +20,7 @@ vi.mock('@/lib/protocol/fromPrisma', () => ({
   reconstructProtocolDraft,
   ProtocolPayloadIntegrityError: class extends Error {},
 }));
+vi.mock('@/lib/clinical-engine/rejeuCarteDecision', () => ({ rejouerCarteDecision }));
 
 import { GET } from './route';
 
@@ -75,21 +77,52 @@ describe('api/praticien/ja/cycle', () => {
     expect(json.vue).toBeNull();
   });
 
-  it('rend la même vue de cycle que la route patient', async () => {
+  // « MIROIR EXACT » L'ÉTAIT DEVENU FAUX ([[D-191]]) : cette route recopiait la
+  // projection manuelle du portail — `actions[0]` comprise — au lieu de la
+  // partager. Elle passe désormais par le MÊME contrat, et ce banc le tient.
+  it('rend la même vue de cycle que la route patient — les trois actions', async () => {
+    const EMPREINTE_CARTE = 'decision-hash';
+    const ID_CARTE = 'runtime-decision-PAT_TEST-T0';
+    const ID_PRIORITE = 'priority:sommeil-fragmente';
     resolveProtocoleDiffuse.mockResolvedValue({
       protocolDraftId: 'PD_1',
       protocolDraftInputHash: 'abcdef0123456789ZZZZ',
+      decisionCardId: ID_CARTE,
+      decisionCardInputHash: EMPREINTE_CARTE,
       approvedAt: new Date('2026-07-20T08:00:00.000Z'),
+      approvedBy: 'practitioner',
+      confirmation: 'content_approved_for_diffusion',
     });
-    prisma.protocolDraft.findUnique.mockResolvedValue({ payload: {}, inputHash: 'abcdef0123456789ZZZZ' });
+    prisma.protocolDraft.findUnique.mockResolvedValue({
+      payload: {}, inputHash: 'abcdef0123456789ZZZZ', assessmentEpisodeId: 'runtime-episode-PAT_TEST-T0',
+    });
     reconstructProtocolDraft.mockReturnValue({
+      protocolDraftId: 'PD_1',
+      inputHash: 'abcdef0123456789ZZZZ',
+      decisionCardId: ID_CARTE,
+      decisionCardInputHash: EMPREINTE_CARTE,
+      selectedPriorityId: ID_PRIORITE,
+      status: 'practitioner_reviewed',
+      review: { reviewedAt: '2026-07-19T08:00:00.000Z' },
       purpose: 'Rendre l’action alimentaire praticable.',
-      actions: [{
-        type: 'alimentation',
-        title: 'Ajouter une source de protéines au petit-déjeuner',
-        minimalPlan: 'Le faire trois fois cette semaine.',
-        idealPlan: 'Chaque matin.',
-      }],
+      followUpCriterion: 'Trois matins sur sept à J21.',
+      adviceSheetRef: null,
+      actions: [
+        { actionId: 'a1', type: 'food', title: 'Ajouter une source de protéines au petit-déjeuner', minimalPlan: 'Le faire trois fois cette semaine.', idealPlan: 'INTERNE', rescuePlan: 'INTERNE', limitations: [], interventionStatus: 'active' },
+        { actionId: 'a2', type: 'chronobiology', title: 'Avancer le coucher', minimalPlan: 'Vingt minutes plus tôt.', idealPlan: 'INTERNE', rescuePlan: 'INTERNE', limitations: [], interventionStatus: 'active' },
+      ],
+    });
+    rejouerCarteDecision.mockResolvedValue({
+      ok: true,
+      selectionEcartee: false,
+      decisionCard: {
+        decisionCardId: ID_CARTE,
+        inputHash: EMPREINTE_CARTE,
+        abstention: { status: 'not_required', ruleIds: [], limitations: [] },
+        safetyFindingIds: [],
+        selectedMainPriority: { candidateId: ID_PRIORITE, selectedBy: 'practitioner', selectedAt: '2026-07-01T08:00:00.000Z', rationale: 'INTERNE' },
+        priorityCandidates: [{ candidateId: ID_PRIORITE, label: 'Sommeil fragmenté', rationale: 'INTERNE' }],
+      },
     });
 
     const res = await GET(new Request(URL_BASE));
@@ -97,7 +130,8 @@ describe('api/praticien/ja/cycle', () => {
       ok: boolean;
       vue: {
         purpose: string;
-        actionPrincipale: Record<string, unknown>;
+        priorityLabel: string;
+        actions: { type: string; title: string; minimalPlan: string; idealPlan?: string }[];
         cycleRef: string;
         debutCycle: string;
       };
@@ -106,13 +140,55 @@ describe('api/praticien/ja/cycle', () => {
     expect(res.status).toBe(200);
     expect(json.vue.cycleRef).toBe('abcdef0123456789');
     expect(json.vue.debutCycle).toBe('2026-07-20T08:00:00.000Z');
-    expect(json.vue.actionPrincipale).toEqual({
-      type: 'alimentation',
+    expect(json.vue.priorityLabel).toBe('Sommeil fragmenté');
+    expect(json.vue.actions).toHaveLength(2);
+    // UNE ACTION FERME NE PORTE AUCUN STATUT. Le contrat ne le recopie pas :
+    // « active » se lit telle quelle, sans mention — c'est l'absence de mention
+    // qui distingue une action ferme d'une action retenue.
+    expect(json.vue.actions[0]).toEqual({
+      actionId: 'a1',
+      type: 'food',
       title: 'Ajouter une source de protéines au petit-déjeuner',
       minimalPlan: 'Le faire trois fois cette semaine.',
     });
     // Le plan idéal reste interne au praticien : il ne transite pas par la vue
     // de cycle, qui est le miroir exact de ce que lit le patient.
-    expect(json.vue.actionPrincipale.idealPlan).toBeUndefined();
+    expect(JSON.stringify(json)).not.toContain('INTERNE');
+  });
+
+  // LE PRATICIEN VOIT CE QUE VOIT SON PATIENT — c'est-à-dire rien, et pour la
+  // même raison. Servir ici un protocole que le portail refuse lui ferait croire
+  // que son patient le lit.
+  //
+  // CE BANC A ÉTÉ RETOURNÉ LE 2026-09-16 ([[D-200]]). Il figeait
+  // `protocoleDiffuse: false` sur un refus, et le carnet rend ce booléen par la
+  // phrase « Aucun protocole diffusé pour ce patient » : le banc gardait donc
+  // une affirmation FAUSSE — un protocole existe, il est simplement inservable.
+  // Le contrat suit désormais celui du portail : diffusé oui, servi non.
+  it('dit « diffusé mais non servi » quand le rejeu refuse, comme la route patient', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue({
+      protocolDraftId: 'PD_1',
+      protocolDraftInputHash: 'abcdef0123456789ZZZZ',
+      decisionCardId: 'runtime-decision-PAT_TEST-T0',
+      decisionCardInputHash: 'decision-hash',
+      approvedAt: new Date('2026-07-20T08:00:00.000Z'),
+      approvedBy: 'practitioner',
+      confirmation: 'content_approved_for_diffusion',
+    });
+    prisma.protocolDraft.findUnique.mockResolvedValue({
+      payload: {}, inputHash: 'abcdef0123456789ZZZZ', assessmentEpisodeId: 'runtime-episode-PAT_TEST-T0',
+    });
+    reconstructProtocolDraft.mockReturnValue({ actions: [] });
+    rejouerCarteDecision.mockResolvedValue({ ok: false, motif: 'carte_derivee' });
+
+    const json = (await (await GET(new Request(URL_BASE))).json()) as {
+      ok: boolean; protocoleDiffuse: boolean; indisponible: boolean; vue: unknown;
+    };
+    expect(json.ok).toBe(true);
+    // Le protocole EST diffusé — nier la diffusion serait mentir au praticien.
+    expect(json.protocoleDiffuse).toBe(true);
+    expect(json.indisponible).toBe(true);
+    // Et rien n'est servi : le refus du portail vaut refus ici, à la lettre.
+    expect(json.vue).toBeNull();
   });
 });

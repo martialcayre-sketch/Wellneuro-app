@@ -34,6 +34,7 @@ import {
   type EtatRatification,
 } from '@/lib/praticien/objectifNegocie';
 import { LONGUEUR_MAX_MOTIF_ECART } from '@/lib/praticien/propositionObjectif';
+import { PRIORITE_REPRISE, REFORMULATION_REPRISE } from '@/lib/objectif/marquesProvenance';
 
 // L'objectif négocié (Alliance 6.0-A, LOT-02) — surface praticien, phase
 // « Compréhension » du poste de pilotage.
@@ -298,6 +299,24 @@ function formatDate(iso: string): string {
  * c'est le même tri que celui qui produit l'état, et deux tris concurrents sur
  * les deux mêmes tables finissent par répondre différemment.
  */
+/**
+ * Ce qui, dans cette version, reprend MOT POUR MOT la proposition — et rien
+ * d'autre. Rend une chaîne vide quand aucune marque n'est constatée : le
+ * silence est la seule réponse honnête, puisque l'absence de marque ne
+ * distingue pas « le praticien l'a écrit » de « on n'a pas su constater »
+ * (`constaterProvenance` avale ses erreurs de lecture).
+ */
+function reprisMotPourMot(ligne: {
+  reformulationSource: string | null;
+  prioriteSource: string | null;
+}): string {
+  const repris: string[] = [];
+  if (ligne.reformulationSource === REFORMULATION_REPRISE) repris.push('la reformulation');
+  if (ligne.prioriteSource === PRIORITE_REPRISE) repris.push('la priorité');
+  if (repris.length === 0) return '';
+  return ` Repris tel quel de la proposition : ${repris.join(' et ')}.`;
+}
+
 function LigneObjectif({
   ligne,
   ratification,
@@ -346,9 +365,38 @@ function LigneObjectif({
 
           AUCUN COMPTEUR, aucun taux : l'adhésion se constate, elle ne se
           compte pas. */}
+      {/* LA PHRASE N'AFFIRME QUE CE QUI EST CONSTATÉ, ET NE DÉDUIT RIEN D'UNE
+          ABSENCE — réécriture après revue, 2026-09-14.
+
+          ELLE DISAIT : « Repris d'une proposition citée — la reformulation ET
+          la priorité ci-dessus sont les vôtres », sur le seul
+          `sourcePropositionId`. Deux défauts, pas un :
+
+          · les trois marques que `constaterProvenance` pose sont INDÉPENDANTES
+            ([[D-167]] §6). Un objectif peut être repris avec une reformulation
+            qui cite le narratif IA mot pour mot, une priorité laissée telle
+            quelle, ou les deux — et la phrase attribuait tout au praticien ;
+
+          · `constaterProvenance` se termine par `catch { return {} }`. Une
+            erreur de relecture EFFACE toutes les marques. `null` couvre donc
+            deux cas indiscernables — « ses mots » et « on n'a pas su
+            constater » —, et le commentaire du schéma qui affirme l'inverse
+            est optimiste : on ne peut pas conclure à une paternité depuis une
+            absence.
+
+          D'OÙ LA FORME RETENUE : des assertions POSITIVES seulement. Ce qui est
+          constaté se dit ; ce qui ne l'est pas se tait, plutôt que de devenir
+          un compliment à l'auteur. C'est `DC-01` (un maillon faux est pire
+          qu'un maillon absent) et `DC-24` (aucun statut favorable par défaut)
+          appliqués à une phrase de six mots.
+
+          EFFET DE BORD BIENVENU : la mention de la priorité disparaît quand sa
+          marque est absente, donc aussi quand aucune priorité n'est renseignée
+          — l'écran ne dit plus « la priorité ci-dessus » sous un objectif qui
+          n'en affiche aucune. */}
       {ligne.sourcePropositionId && (
         <p className="mt-1 text-xs text-muted-foreground">
-          Repris d’une proposition citée — la reformulation et la priorité ci-dessus sont les vôtres.
+          Repris d’une proposition citée.{reprisMotPourMot(ligne)}
         </p>
       )}
       {/* LA SIGNATURE : date d'enregistrement et date de l'accord. L'état de

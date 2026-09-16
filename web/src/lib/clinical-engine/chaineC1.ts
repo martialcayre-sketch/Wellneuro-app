@@ -24,6 +24,11 @@ import type {
   PatientContext,
   QuestionnaireResponseInput,
 } from './types';
+import {
+  INVARIANTS_PRODUCTEUR,
+  LIMITATIONS_CANDIDAT,
+  MOTIF_ABSTENTION,
+} from '@/lib/clinical/perimetreClassementV1';
 
 // CONSTRUCTION DE LA CHAÎNE C1 — snapshot → revue → carte de décision.
 //
@@ -264,18 +269,31 @@ export function plainteDominanteDepuisScores(scores: ScoresLus): PlainteDominant
   return { ...dominante, exAequo: memeValeur.slice(1) };
 }
 
-const LIMITATION_PROPOSITION =
-  'Une priorité candidate est une proposition hiérarchisée soumise au praticien : elle n’est ni un diagnostic, ni une prescription.';
-const LIMITATION_CLASSEMENT =
-  'Le classement est déterministe et sert la lisibilité : il ne mesure ni la gravité, ni l’urgence.';
-const LIMITATION_OBJECTIF =
-  'L’objectif prioritaire déclaré par le patient est affiché au praticien ; il n’entre pas dans le déclenchement de cette règle.';
-const LIMITATION_ETAT_INCONNU =
-  'Aucun état de population n’a été déclaré sur ce dossier (grossesse, allaitement, pathologie rénale ou hépatique, chirurgie digestive, maladie cœliaque, exclusion alimentaire) : la gate de population n’avait rien à vérifier.';
+// LES QUATRE TEXTES VIENNENT DÉSORMAIS DU PÉRIMÈTRE RELISABLE, et non plus de
+// littéraux locaux ([[D-162]] §5, étape « périmètre »). Les recopier ici
+// laisserait la signature future porter sur un texte que rien n'exécute — la
+// duplication silencieuse que `DC-26` interdit. Le moteur lit ce que le
+// praticien relira, et réciproquement.
+const LIMITATION_PROPOSITION = LIMITATIONS_CANDIDAT.proposition.texte;
+const LIMITATION_CLASSEMENT = LIMITATIONS_CANDIDAT.classement.texte;
+const LIMITATION_OBJECTIF = LIMITATIONS_CANDIDAT.objectif.texte;
+const LIMITATION_ETAT_INCONNU = LIMITATIONS_CANDIDAT.etatInconnu.texte;
 
-/** Identifiants des deux motifs `required`, tels que la table signée les porte. */
-const MOTIF_SECURITE = 'ABST-SEC-01';
-const MOTIF_CANAL = 'ABST-CAN-01';
+/**
+ * Identifiants des deux motifs `required`, tels que la table signée les porte —
+ * et DANS L'ORDRE OÙ ILS SONT ÉVALUÉS, qui vit désormais au périmètre relisable.
+ *
+ * LIAISON PAR NOM, JAMAIS PAR POSITION. Une première rédaction déstructurait
+ * `ORDRE_EVALUATION_ABSTENTION` — donc rouvrait le finding M1 de la revue du
+ * 2026-08-16 : permuter les deux lignes aurait servi le texte SÉCURITÉ sur la
+ * branche canal, sans qu'aucun banc ne bouge. Relevé en revue, et corrigé ici.
+ *
+ * L'ordre d'évaluation, lui, est celui du `if` plus bas — sécurité d'abord. Le
+ * périmètre le DÉCLARE, et un banc exige que les deux concordent : permuter la
+ * déclaration sans déplacer le `if` fait rougir.
+ */
+const MOTIF_SECURITE = MOTIF_ABSTENTION.securite;
+const MOTIF_CANAL = MOTIF_ABSTENTION.canal;
 
 /**
  * Le motif d'abstention portant cet `id`, ou une ERREUR DE CONSTRUCTION.
@@ -531,12 +549,12 @@ function construireCandidats(input: {
       // Rang SÉQUENTIEL, jamais la priorité de la table : `buildDecisionCard`
       // exige des rangs uniques, et deux règles de même priorité intrinsèque le
       // feraient jeter.
-      rank: index + 1,
+      rank: index + INVARIANTS_PRODUCTEUR.rangSequentielDepuis,
       // `à_documenter`, la plus réservée des quatre valeurs, et toujours elle :
       // une règle déterministe ne produit aucune gradation de confiance
       // ([[D-041]]). Le champ est obligatoire au contrat C1 ; il dit ici que le
       // praticien reste celui qui documente.
-      confidence: 'à_documenter' as const,
+      confidence: INVARIANTS_PRODUCTEUR.confianceUnique,
       ruleId: declenchee.regle.id,
       rationale: `${declenchee.regle.motif} Déclencheur atteint — ${declenchee.conditions.join(' ; ')}.`,
       // Uniquement des sources RÉELLEMENT présentes au snapshot : `dernieres` est
@@ -546,6 +564,21 @@ function construireCandidats(input: {
       // Fail-safe par construction : un texte inconnu de cette liste sera rendu
       // comme HORS périmètre signé — sous-promettre plutôt que sur-promettre.
       limitationsRegleSignee: [...declenchee.regle.limitations],
+      // CE QUI VIENT DU PÉRIMÈTRE DE CLASSEMENT RELU, nommé À LA SOURCE ([[D-199]]).
+      //
+      // Le producteur SAIT lesquels des textes servis viennent du périmètre : il
+      // vient de les y lire. L'écran, lui, ne le sait pas — et le deviner par
+      // égalité de chaîne ferait dépendre une garde de provenance d'une égalité
+      // de ponctuation, ce que le contrat de `limitationsRegleSignee` interdit
+      // déjà en toutes lettres. La liste est donc construite ICI, avec les
+      // MÊMES conditions que celles qui gouvernent l'affichage plus bas : un
+      // texte conditionnel absent de `limitations` doit l'être aussi d'ici.
+      limitationsPerimetreClassement: [
+        LIMITATION_PROPOSITION,
+        LIMITATION_CLASSEMENT,
+        ...(input.priorityGoal ? [LIMITATION_OBJECTIF] : []),
+        ...(etatIntegralementInconnu(input.etatPopulation) ? [LIMITATION_ETAT_INCONNU] : []),
+      ],
       limitations: [
         ...declenchee.regle.limitations,
         LIMITATION_PROPOSITION,

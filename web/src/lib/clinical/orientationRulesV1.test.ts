@@ -2,11 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sha256 } from './corpusSyntheseV1';
 import {
   feuillesDuDeclencheur,
+  GRILLES_ORIENTATION,
   ORIENTATION_METADATA,
   ORIENTATION_RULES_SHA256,
   ORIENTATION_RULES_V1,
   type OrientationRule,
 } from './orientationRulesV1';
+import { BANDES_PSQI } from './bandesPsqi';
 import { idBaseDepuisPackId, type PackId } from '@/lib/questionnaires-functional';
 import { ANAMNESE_SECTIONS } from '@/lib/consultation/anamnese';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
@@ -36,9 +38,12 @@ describe('orientationRulesV1 — verrou v1', () => {
     // le JOUR attesté ne change pas, seule la forme rejoint le standard que le
     // verrou contrôle désormais.
     // RE-SIGNÉE le 2026-09-13 : rang du Cungi sur `R-SOM-01`, et fenêtre de
-    // fraîcheur de 365 jours sur les vingt règles. 23 claims relus en base ce
-    // jour-là — 23/23 VALIDE, prescriptif, actif, v1.0, jeu inchangé.
-    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-09-13T00:00:00.000Z');
+    // fraîcheur de 365 jours sur les vingt règles.
+    // RE-SIGNÉE le 2026-09-14 : le périmètre porte les grilles d'interprétation,
+    // les deux formes canoniques de `Q_ALI_01` et les drapeaux du plancher.
+    // 52 claims relus en base ce jour-là, les deux tables ensemble — 52/52
+    // VALIDE, actifs, v1.0, aucun supplanté.
+    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-09-14T00:00:00.000Z');
     const date = ORIENTATION_METADATA.dateValidation as string;
     expect(new Date(date).toISOString()).toBe(date);
     expect(ORIENTATION_METADATA.claimsSource.length).toBeGreaterThan(0);
@@ -46,6 +51,39 @@ describe('orientationRulesV1 — verrou v1', () => {
     // Le SHA de périmètre est un LITTÉRAL qui concorde avec le contenu vivant —
     // toute retouche d'une règle casse cette égalité et ferme le verrou seule.
     expect(ORIENTATION_METADATA.shaPerimetre).toBe(ORIENTATION_RULES_SHA256);
+  });
+
+  // LES VINGT RATTACHEMENTS AUX BESOINS SONT ÉPINGLÉS, PAS SEULEMENT COMPTÉS.
+  //
+  // Le champ a vécu vide depuis l'origine : il promettait un rattachement qui
+  // n'existait nulle part, et `orientationEngine` agrégeait toujours une liste
+  // vide. Une fois renseigné, le défaut symétrique guette — une valeur qui
+  // dérive en silence. Un banc qui compterait « vingt règles ont un needIds »
+  // resterait vert sur un rattachement changé ; celui-ci compare la CARTE.
+  //
+  // Quatorze valeurs sont dérivées de `BESOIN_SOURCES`, six viennent d'un
+  // arbitrage praticien du 2026-09-14 — la provenance est écrite règle par règle
+  // dans la table, parce qu'elles ne s'auditent pas de la même façon.
+  it('chaque règle publiée rattache son exploration à au moins un besoin', () => {
+    const carte = Object.fromEntries(
+      ORIENTATION_RULES_V1.map(regle => [regle.id, regle.needIds ?? []]),
+    );
+    expect(carte).toEqual({
+      'R2-SOM-01': [5], 'R2-SOM-02': [5], 'R2-SOM-03': [5], 'R2-SOM-04': [5],
+      'R2-SOM-05': [5], 'R2-SOM-06': [5],
+      'R2-STR-01': [9], 'R2-STR-02': [9], 'R2-STR-03': [9],
+      'R2-NEU-01': [8], 'R2-NEU-02': [8], 'R2-NEU-03': [8], 'R2-NEU-04': [8],
+      'R2-GAS-01': [4], 'R2-GAS-02': [4], 'R2-ALI-01': [4],
+      'R-SOM-01': [8, 9], 'R-STR-01': [9], 'R-STR-02': [9], 'R-GAS-01': [4],
+    });
+    // Aucune liste vide, aucun besoin hors des douze : un rattachement absent ou
+    // hors domaine se lirait comme une exploration sans objet.
+    for (const [id, besoins] of Object.entries(carte)) {
+      expect(besoins.length, `${id} sans besoin`).toBeGreaterThan(0);
+      for (const b of besoins) expect(b, `${id} : besoin ${b}`).toBeGreaterThanOrEqual(1);
+      for (const b of besoins) expect(b, `${id} : besoin ${b}`).toBeLessThanOrEqual(12);
+      expect([...besoins].sort((x, y) => x - y), `${id} non trié`).toEqual(besoins);
+    }
   });
 
   // CE QUE LA SIGNATURE COUVRE, ET CE QU'ELLE NE PEUT PAS COUVRIR.
@@ -154,15 +192,107 @@ describe('orientationRulesV1 — verrou v1', () => {
   // Anciens sha signés :
   //   · 2026-08-04 — `528004de579724f17da99d796025cdef430f4dcd498895315740ec93b750c603`
   //   · 2026-08-06 — `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`
-  const SHA_SIGNE_2026_09_13 = 'e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e';
+  // RE-SIGNÉE LE 2026-09-14, sur relecture des grilles par le praticien — et la
+  // constante change de nom avec la date, parce que son nom est une affirmation
+  // sur qui a lu quoi. Un agent y avait recopié l'empreinte du périmètre élargi
+  // le 2026-09-13 sans qu'aucune relecture ait eu lieu : le littéral ne disait
+  // plus ce que son nom promettait. Il a été rendu à la valeur attestée, puis
+  // reposé ici APRÈS la relecture. L'ordre est le fond du sujet.
+  //
+  // Anciens sha signés :
+  //   · 2026-09-13 — `e2f087d6…97e427e` (périmètre RÈGLES SEULES)
+  const SHA_SIGNE_2026_09_14 = '2a1f4840b5fb62f5049ae3ee87f7fa1f06126ba7f8bfd30dce33ecee2d95ddbd';
 
-  it('le sha publié correspond au contenu de la table', () => {
-    expect(ORIENTATION_RULES_SHA256).toBe(sha256(JSON.stringify(ORIENTATION_RULES_V1)));
+  // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
+  // d'interprétation y sont entrées. Les zones de cette table citent des
+  // COULEURS et des LIBELLÉS, jamais des nombres — hacher les seules règles
+  // laissait hors signature l'objet qui décide du point d'allumage. Forme
+  // composite `{ regles, grilles }`, reprise de `PRIORITY_RULES_SHA256`
+  // ([[D-062]]).
+  it('le sha publié correspond au contenu de la table, GRILLES COMPRISES', () => {
+    expect(ORIENTATION_RULES_SHA256).toBe(
+      sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: GRILLES_ORIENTATION })),
+    );
+  });
+
+  it('le sha reste identique avec `WN_ALI_01_SIIN57` éteint ou allumé', async () => {
+    vi.resetModules();
+    vi.stubEnv('WN_ALI_01_SIIN57', 'false');
+    const court14 = await import('./orientationRulesV1');
+    vi.resetModules();
+    vi.stubEnv('WN_ALI_01_SIIN57', 'true');
+    const siin57 = await import('./orientationRulesV1');
+    expect(court14.ORIENTATION_RULES_SHA256).toBe(siin57.ORIENTATION_RULES_SHA256);
+    expect(court14.ORIENTATION_METADATA.shaPerimetre).toBe(siin57.ORIENTATION_METADATA.shaPerimetre);
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  // CE QUE LE BANC PRÉCÉDENT NE PEUT PAS DIRE : que le périmètre pèse vraiment.
+  // Une forme composite dont le second terme serait vide, ou constant, hacherait
+  // exactement comme avant tout en ayant l'air d'avoir grandi.
+  //
+  // LA MUTATION PRÉSERVE LA STRUCTURE, et ce n'est pas un détail de style. Ces
+  // bancs remplaçaient l'entrée `Q_SOM_01` — un OBJET — par un TABLEAU nu de
+  // bandes : ils passaient sur le changement de FORME, et auraient passé à
+  // bandes strictement identiques. Contre-épreuve du contre-audit du
+  // 2026-09-14 : `Q_SOM_01: BANDES_PSQI`, aucune valeur touchée, faisait déjà
+  // bouger le sha. Muter UNE valeur dans la structure réelle est la seule forme
+  // qui prouve ce que le titre annonce ; le banc « recopié à l'identique » plus
+  // bas ferme le raisonnement dans l'autre sens.
+  const copieProfonde = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+  const shaAvec = (perimetre: unknown) =>
+    sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: perimetre }));
+
+  it('déplacer une borne de grille change le sha — le trou de 2026-09-13 est refermé', () => {
+    const mute = copieProfonde(GRILLES_ORIENTATION) as any;
+    // La borne 5/6 ramenée à 4/5 — le geste de D-180 exactement, en sens
+    // inverse. Rien d'autre ne bouge : ni la forme, ni les libellés.
+    mute.Q_SOM_01.grilleHorsCatalogue[0].max = 4;
+    mute.Q_SOM_01.grilleHorsCatalogue[1].min = 5;
+    expect(shaAvec(mute)).not.toBe(ORIENTATION_RULES_SHA256);
+  });
+
+  // ET QU'UN LIBELLÉ COMPTE AUTANT QU'UNE BORNE : les zones `interpretation`
+  // citent un libellé verbatim. Renommer une bande éteint une règle aussi
+  // sûrement que déplacer une borne.
+  it('renommer un libellé de bande change le sha', () => {
+    const mute = copieProfonde(GRILLES_ORIENTATION) as any;
+    mute.Q_SOM_01.grilleHorsCatalogue[1].label = 'Troubles du sommeil légers ';
+    expect(shaAvec(mute)).not.toBe(ORIENTATION_RULES_SHA256);
+  });
+
+  // ET LE CAS DU CONTRE-AUDIT, porté sur le sha de la table elle-même : ce que
+  // la frontière du 2026-09-13 laissait dehors. Retirer un item d'un axe change
+  // le total, donc la bande, donc la couleur qu'une règle signée lit — et cela
+  // passait sans toucher un seul sha.
+  it('retirer un item d’un axe change le sha — la seconde frontière', () => {
+    const mute = copieProfonde(GRILLES_ORIENTATION) as any;
+    mute.Q_GAS_01.scoring.subScores[0].items.pop();
+    expect(shaAvec(mute)).not.toBe(ORIENTATION_RULES_SHA256);
+  });
+
+  // ET LA COTATION DES ITEMS, dernier maillon de la chaîne `réponses → couleur` :
+  // `O_PSS_INVERSE` porte l'inversion du PSS dans ses nombres, pas dans un
+  // drapeau. Recoter une option déplace un score sans toucher une borne.
+  it('recoter une option change le sha', () => {
+    const mute = copieProfonde(GRILLES_ORIENTATION) as any;
+    mute.Q_GAS_01.options.C1_1.valeurs[3] = 5;
+    expect(shaAvec(mute)).not.toBe(ORIENTATION_RULES_SHA256);
+  });
+
+  // LA CONTRE-ÉPREUVE, sans laquelle aucune des quatre mutations ne prouve rien.
+  //
+  // Un banc de mutation n'établit son propos que si le NON-mutant passe : sans
+  // elle, « le sha a changé » reste compatible avec « le sha change à tout
+  // coup ». C'est la faute exacte que deux de ces bancs commettaient.
+  it('… et un périmètre recopié à l’identique ne le change PAS', () => {
+    expect(shaAvec(copieProfonde(GRILLES_ORIENTATION))).toBe(ORIENTATION_RULES_SHA256);
   });
 
   it('le contenu de la table est EXACTEMENT celui qui a été signé', () => {
     expect(ORIENTATION_RULES_V1.length).toBe(20);
-    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_09_13);
+    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_09_14);
   });
 
   // ── DEUX BANCS DE RÉSOLUBILITÉ, ET LE SECOND EST LE SEUL QUI ATTRAPE LE NO-OP

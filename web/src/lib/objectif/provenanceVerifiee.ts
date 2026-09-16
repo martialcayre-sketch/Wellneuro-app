@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { lireMatierePriorite } from '@/lib/objectif/matierePriorite';
 import { VERSION_CONSIGNE } from '@/lib/objectif/propositionPriorite';
+import { ENONCE_REPRIS, PRIORITE_REPRISE, REFORMULATION_REPRISE } from '@/lib/objectif/marquesProvenance';
 
 // LA PROVENANCE SE CONSTATE, ELLE NE SE DÉCLARE PAS — `D-167` §6, arbitrage du
 // 2026-09-11.
@@ -85,7 +86,7 @@ export async function constaterProvenance(
 
     // 1. L'ÉNONCÉ — cité du dépôt patient, verbatim (`D-167` §1).
     if (depot !== null && citeExactement(textes.enoncePatient, depot.texte)) {
-      constat.enonceSource = 'ce_qui_compte';
+      constat.enonceSource = ENONCE_REPRIS;
       constat.enonceSourceId = depot.idDepot;
     }
 
@@ -93,7 +94,7 @@ export async function constaterProvenance(
     //    (`D-167` §2). `synthese_ia` et non `synthese_comprehension` : ce sont
     //    deux tables, et la nature déclarée doit dire laquelle.
     if (synthese !== null && citeExactement(textes.reformulationPraticien, synthese.narratifPatient)) {
-      constat.reformulationSource = 'synthese_ia';
+      constat.reformulationSource = REFORMULATION_REPRISE;
       constat.reformulationSourceId = synthese.idSynthese;
     }
 
@@ -117,7 +118,7 @@ export async function constaterProvenance(
         select: { rang: true },
       });
       if (tirage !== null) {
-        constat.prioriteSource = 'proposition_ia';
+        constat.prioriteSource = PRIORITE_REPRISE;
         constat.prioriteSourceSyntheseId = synthese.idSynthese;
         constat.prioriteSourceDepotId = depot.idDepot;
         constat.prioritePrompt = VERSION_CONSIGNE;

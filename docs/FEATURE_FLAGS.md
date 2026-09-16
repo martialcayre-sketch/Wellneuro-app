@@ -25,7 +25,7 @@ datée **par feature**.
 | `WN_C5_ENABLED` | `true` | alimentation / CIQUAL | fermé |
 | `WN_CB_ENABLED` | `true` | rayon biologie — **étage documentaire** | fermé |
 | `WN_CB_PROPOSITION` | `true` | **proposition de bilan** servie au cockpit praticien (`GET/POST /api/praticien/biologie/proposition`) | fermé — exige AUSSI `WN_CB_ENABLED`. **POSÉE en Production le 2026-08-18** ([[D-072]]) |
-| `WN_RECHERCHE_CORPUS_ENABLED` | `true` | recherche corpus clinique (rayons cognition, douleur, intestin — `dashboard/bibliotheque`) | fermé — **POSÉE en Production (Scalingo) le 2026-08-22** ([[D-081]]) |
+| `WN_RECHERCHE_CORPUS_ENABLED` | `true` | recherche corpus clinique (**sept rayons** depuis [[D-188]] : cognition, douleur, intestin, sommeil, stress, humeur, nutrition — `dashboard/bibliotheque`) | fermé — **POSÉE en Production (Scalingo) le 2026-08-22** ([[D-081]]) |
 | `WN_EI_INTERRUPTION` | `1` | **association d'un effet indésirable à un protocole** (`DC-42`, [[D-101]]) — capture au portail, puis interruption de la préparation automatique quand la règle `SAF-EI-01` est signée | fermé — **NEUF ET ÉTEINT à la livraison**. Ne se pose qu'APRÈS que la migration `20260823210000_association_effet_indesirable_intervention` est appliquée **et constatée** ([[D-087]]) : le code lit trois colonnes que la base n'a pas encore. Deux gestes dans cet ordre — le drapeau ouvre la CAPTURE, la signature ouvre l'INTERRUPTION |
 | `WN_AGENDA_ALI` | `true` | agenda alimentaire 21 j — la **surface d'écriture** du patient au portail | fermé. Il ferme ce qui s'écrit, **pas ce qui se relit** : la route `GET /api/praticien/agenda-alimentaire` et son panneau ne sont pas gardés ([[D-027]]), et le catalogue ne se lit jamais depuis `process.env` ([[D-025]]). **ALLUMÉ en Production depuis le 2026-08-05**. **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. |
 | `WN_ALI_01_SIIN57` | `true` | **rien** — il SUBSTITUE : `Q_ALI_01` est servi en forme longue SIIN 57 items au lieu de la forme courte 14 items (`lib/questionnaires/alimentaire.ts:406`) | absent ⇒ forme courte. **Seul drapeau de FORME du dépôt** : `DRAPEAUX_DE_FORME` (`tools/corpus/certify/lib/servi.mjs:85`) le nomme, et `scoring-check` joue les deux positions. **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true` — c'est donc la forme longue qui est servie en production. |
@@ -316,18 +316,29 @@ CI ; une table signée neuve absente du tableau aussi.
 
 | Table (fichier sous `web/src/lib/`) | `validationExterne` | `dateValidation` |
 |---|---|---|
-| `clinical/orientationRulesV1.ts` | `true` | `2026-09-13T00:00:00.000Z` |
+| `clinical/orientationRulesV1.ts` | `true` | `2026-09-14T00:00:00.000Z` |
 | `clinical/contradictionsV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
 | `clinical/stopRulesV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
-| `biology-library/indicationsBiologieV1.ts` | `true` | `2026-08-17T00:00:00.000Z` |
+| `biology-library/indicationsBiologieV1.ts` | `true` | `2026-09-16T00:00:00.000Z` |
 | `clinical/corpusSyntheseV1.ts` | `true` | `2026-08-22T00:00:00.000Z` |
 | `clinical/priorityRulesV1.ts` | `true` | `2026-08-28T00:00:00.000Z` |
 | `clinical/safetySignalsV1.ts` | `true` | `2026-08-23T00:00:00.000Z` |
 | `clinical/safetyEffetIndesirableV1.ts` | `false` | `null` |
 | `clinical/gatePopulationV1.ts` | `false` | `null` |
 | `clinical/conflitsSourcesV1.ts` | `true` | `2026-08-24T00:00:00.000Z` |
+| `clinical/baremeChargeV1.ts` | `true` | `2026-09-15T00:00:00.000Z` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
+
+> **LES DEUX PREMIÈRES LIGNES ONT ÉTÉ SIGNÉES DEUX FOIS LE 2026-09-14.**
+> Une première fois le matin, sur un périmètre étendu aux grilles
+> d'interprétation ([[D-182]]) ; une seconde fois le soir, après qu'un
+> contre-audit eut démontré que ce périmètre s'arrêtait à `score → couleur` et
+> laissait `réponses → score` dehors — un item retiré d'un axe déplaçait une
+> couleur sans faire bouger un sha. Le périmètre couvre depuis le bloc `scoring`
+> entier des instruments cités et la cotation de leurs items. Les deux verrous
+> sont OUVERTS sur cette seconde signature.
+
 
 Trois lectures attentives sur ce tableau :
 
@@ -346,6 +357,16 @@ Trois lectures attentives sur ce tableau :
   POSÉ en Production depuis le 2026-08-18**, et le déploiement qui le porte est
   `dpl_A8y6TawV` (build du 2026-08-18 12:31 UTC, aliasé `app.wellneuro.fr`).
   Les trois termes sont donc vrais et la table signée n'est plus dormante.
+  **RE-SIGNÉE LE 2026-09-15** — troisième attestation, et c'est le périmètre
+  qui l'a déclenchée : aucune règle ni claim n'a bougé, mais deux des seize
+  instruments cités ont été réalignés sur leurs publications (l'AQ
+  `Q_GEO_03`, le QDRS `Q_GEO_05`) et leur cotation entre dans le périmètre
+  depuis [[D-187]]. Cinq bancs ont rougi seuls ; la table d'orientation, qui
+  ne cite ni l'un ni l'autre, n'a pas bougé.
+  **RE-SIGNÉE LE 2026-09-16** — quatrième attestation, déclenchée par une
+  campagne de confrontation des instruments à leurs publications : le BDI-13,
+  l'IRLS et le score de Francis ont été réalignés ([[D-199]]). Là encore aucune
+  règle ni claim n'a bougé, et la table d'orientation n'a pas été reposée.
 
 **POSER LA VARIABLE NE SUFFIT PAS : IL FAUT UN BUILD QUI LA PORTE.** Vercel fige
 les variables dans le déploiement. Or `web/vercel.json` porte

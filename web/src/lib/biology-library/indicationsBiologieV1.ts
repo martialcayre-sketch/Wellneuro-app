@@ -1,5 +1,6 @@
 import type { OrientationClaimRef, OrientationDeclencheur } from '@/lib/clinical/orientationRulesV1';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
+import { grillesCitees } from '@/lib/clinical/grillesSignees';
 
 // Table des indications de panels biologiques (LOT-06, D-059 §5) — patron
 // orientation (`orientationRulesV1.ts`), réutilisé à l'identique : conditions
@@ -95,7 +96,7 @@ export type RegleIndicationPanel = {
  *
  * SIX RÈGLES PORTENT UNE DISJONCTION ([[D-060]]) : atteinte dès qu'UNE branche
  * complète l'est, traçabilité limitée à cette branche, un recueil incomplet
- * n'allume jamais une branche. Les dix-sept instruments visés publient leurs
+ * n'allume jamais une branche. Les seize instruments visés publient leurs
  * comptes depuis [[D-066]] — le banc d'inertie le tient (RV-1).
  *
  * RÉPÉTITION ANNUELLE (`delaiJours: 365`, arbitrage F.1 explicite du
@@ -534,8 +535,29 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // péremption ne serait plus jamais détectée, c'est-à-dire l'exact contraire
   // de ce que [[D-063]] a construit. Un banc garde ce fichier contre cette
   // écriture (`indicationsBiologieV1.guard.test.ts`).
+  // RE-SIGNÉE LE 2026-09-14, ET C'EST LA PREMIÈRE FOIS QUE CETTE TABLE EST
+  // SIGNÉE SUR CE QUI LA FAIT DÉCLENCHER. Le périmètre porte désormais les
+  // grilles d'interprétation des seize instruments que ses zones citent, et pour
+  // chacun les deux drapeaux d'éligibilité au plancher — relus par le praticien
+  // ce jour-là. Aucune règle n'a changé : c'est le périmètre qui a grandi.
+  //
+  // CE QUI L'A RENDUE NÉCESSAIRE EST ARRIVÉ À CETTE TABLE. Le 2026-09-13, la
+  // borne 4/5 du PSQI a été portée à 5/6 dans `questions.ts`, hors de tout
+  // périmètre signé. `BIO-SOM-01` a cessé de prescrire `PANEL_SOMMEIL_1` à 5
+  // sans avoir été éditée et sans qu'un banc rougisse, tandis que la signature
+  // du 2026-08-17 continuait d'attester un contenu dont le comportement avait
+  // changé ([[D-180]]).
+  //
+  // Les 29 claims de `claimsSource` ont été relus en base de production le
+  // 2026-09-14 (lecture de 52 claims, les deux tables ensemble) : 52/52
+  // `VALIDE`, actifs, `v1.0`, aucun supplanté. Deux ne sont PAS prescriptifs —
+  // `WN-CL-0106-027` et `WN-CL-0107-012`, tous deux sur `BIO-STR-01` — et c'est
+  // écrit ici pour que la différence avec la table d'orientation, dont les 23
+  // le sont tous, ne se lise pas plus tard comme une anomalie : ils fournissent
+  // la LECTURE d'un seuil, pas une conduite, et la règle s'appuie sur cinq
+  // claims prescriptifs par ailleurs.
   validationExterne: true,
-  dateValidation: '2026-08-17T00:00:00.000Z',
+  dateValidation: '2026-09-16T00:00:00.000Z',
   // Les 29 claims distincts cités par les quinze règles — dont les deux qui
   // fondent la répétition annuelle (`0312-018`, `0389-004`) : le seul chiffre
   // paramétrique de la table est DANS le périmètre signé (revue D-069). Le
@@ -572,10 +594,108 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
     { claimId: 'WN-CL-0361-009', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0388-008', versionClaim: 'v1.0' },
   ],
-  shaPerimetre: 'a2f28c0be27051c1c93833197659f9dba19afda2a96305e8b61157ebb38acb8f',
+  // Anciens sha signés :
+  //   · 2026-08-17 — `a2f28c0be27051c1c93833197659f9dba19afda2a96305e8b61157ebb38acb8f`
+  //     (périmètre RÈGLES SEULES)
+  //   · 2026-09-14 — `3d692ff54cc61c9f4dbdb259e86daf64143c1dd19d4bc9f88695f822a83de236`
+  //     (périmètre RÈGLES + GRILLES, attesté le matin)
+  //   · 2026-09-14 — `82ef86f0b025f572dcaefa30419e8af545619b0b95001d24a1e0e63250bd0e42`
+  //     (périmètre ÉLARGI AU CALCUL, attesté le soir — [[D-187]])
+  //   · 2026-09-15 — `d2499f426e66fecd957d7f0557dfdecc1b2999eedba81200739a0783b4142049`
+  //     (AQ et QDRS réalignés — [[D-195]])
+  //
+  // SECONDE ATTESTATION DU 2026-09-14. C'est sur CETTE table que le défaut a
+  // été démontré : `BIO-DIG-01` lit la couleur globale de `Q_GAS_01`, et retirer
+  // un item de l'axe C1 faisait passer un total de 24 à 21 — donc la couleur de
+  // `warning` à `success`, donc `PANEL_DIGESTIF_1` de proposé à non proposé —
+  // sans qu'un seul sha bouge. Le périmètre couvre désormais le bloc `scoring`
+  // entier des seize instruments cités et la cotation de leurs items. Les
+  // vingt-neuf claims n'ont pas bougé depuis la relecture du matin.
+  //
+  // TROISIÈME ATTESTATION, LE 2026-09-15, ET C'EST LE PÉRIMÈTRE QUI L'A
+  // DÉCLENCHÉE. Aucune règle n'a bougé, aucun claim non plus : deux des seize
+  // instruments cités ont été réalignés sur leurs publications — l'AQ
+  // (`Q_GEO_03` : vingt-et-un items publiés, pondération à six items doubles,
+  // maximum 27, bandes 0-4 / 5-14 / 15-27) et le QDRS (`Q_GEO_05` : dix
+  // domaines dans l'ordre publié, Humeur en 9, Attention en 10, Déambulation
+  // retirée) — et cinq bancs ont rougi à la seconde où leur cotation a changé.
+  //
+  // C'EST LA DÉMONSTRATION EN VRAIE GRANDEUR DE [[D-187]]. `BIO-NEU-01` lit
+  // `Q_GEO_03` ; sous le périmètre d'avant — les grilles d'interprétation
+  // seules — un réalignement des items ET de la pondération serait passé EN
+  // SILENCE tant que les bandes n'auraient pas bougé. Symétriquement, la table
+  // d'orientation, qui ne cite ni l'un ni l'autre, n'a pas bougé d'un bit : le
+  // périmètre n'éteint que ce qui lit.
+  //
+  // Relue et attestée par le praticien le 2026-09-15, sur la surface de
+  // relecture produite AVANT la demande. La recopie de la chaîne hex est le
+  // geste de cette relecture — jamais une mise à jour de littéral.
+  //
+  // QUATRIÈME ATTESTATION, LE 2026-09-16, ET C'EST UNE CAMPAGNE QUI L'A
+  // DÉCLENCHÉE. Aucune règle n'a bougé, aucun claim non plus. Trois des seize
+  // instruments cités ont été confrontés à leur publication et réalignés :
+  // le BDI-13 (`Q_NEU_01`), dont la grille servie était celle du BDI à VINGT-ET-UN
+  // items — un score de 16, sévère selon Beck & Beck 1972, s'affichait « troubles
+  // bénins de l'humeur » ; l'IRLS (`Q_SOM_04`), dont trois ancrages divergeaient,
+  // dont celui qui sous-cotait d'un point tout patient soulagé par le mouvement,
+  // c'est-à-dire un critère diagnostique du SJSR ; et le score de Francis
+  // (`Q_GAS_02`), qui fusionnait deux catégories publiées et servait une réglette
+  // 0-100 SANS ANCRE sur une question de satisfaction que le moteur compte en
+  // insatisfaction.
+  //
+  // LE DÉFAUT A ÉTÉ TROUVÉ PAR UN CRIBLAGE, PAS PAR HASARD : le registre a été
+  // fouillé pour ses affirmations de conformité à une publication. Onze entrées,
+  // trois seulement portaient un identifiant permettant de les vérifier, et
+  // LES TROIS ÉTAIENT FAUSSES. Les huit autres restent invérifiables ([[D-199]]).
+  //
+  // UNE EMPREINTE PÉRIMÉE A ÉTÉ PROPOSÉE À L'ATTESTATION, ET LE CAS EST À
+  // GARDER. Une première chaîne (`589804e5…`) avait été relevée, PUIS une note
+  // de provenance ajoutée au bloc `scoring` du BDI — qui entre dans le périmètre,
+  // puisqu'il hache le bloc ENTIER ([[D-187]]). Mesurer avant d'avoir fini
+  // d'écrire produit un nombre qui ne décrit plus rien. Pire : la surface de
+  // relecture était elle-même TRONQUÉE — extraite par fenêtre de caractères, elle
+  // s'arrêtait avant les bandes du BDI, c'est-à-dire avant la correction la plus
+  // lourde du lot, sans le signaler. Une sélection qui se périme en silence, exactement
+  // le défaut que [[D-187]] avait fermé dans le périmètre et que l'outil a refait
+  // dans sa propre page. La surface extrait désormais chaque bloc jusqu'à sa
+  // fermeture et VÉRIFIE que onze marqueurs attendus y figurent, sinon elle échoue.
+  //
+  // Relue et attestée par le praticien le 2026-09-16, sur la surface de relecture
+  // produite AVANT la demande — le réalignement, lui, a été écrit le 2026-09-15 :
+  // la date portée ici est celle de la RELECTURE, jamais celle du code.
+  shaPerimetre: '33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19',
 };
 
-export const INDICATIONS_BIOLOGIE_SHA256 = sha256(JSON.stringify(INDICATIONS_BIOLOGIE_V1));
+/**
+ * LES GRILLES QUE CETTE TABLE LIT — seize instruments, tous cités par une
+ * zone COULEUR.
+ *
+ * Dérivé, jamais écrit à la main : la liste se recalcule depuis les zones
+ * réellement citées, si bien qu'une règle ajoutée demain fait entrer SA grille
+ * dans le périmètre sans qu'on ait à y penser.
+ */
+export const GRILLES_INDICATIONS = grillesCitees(INDICATIONS_BIOLOGIE_V1);
+
+/**
+ * LE PÉRIMÈTRE A GRANDI LE 2026-09-13 : les grilles d'interprétation y sont
+ * entrées, et le sha a donc changé sans qu'aucune règle ne bouge.
+ *
+ * CE QUI L'A MOTIVÉ EST ARRIVÉ À CETTE TABLE-CI. Le même jour, la borne 4/5 du
+ * PSQI a été portée à 5/6 sur arbitrage praticien, dans `questions.ts`, hors de
+ * tout périmètre signé. `BIO-SOM-01` — `publiee`, prescrivant
+ * `PANEL_SOMMEIL_1` — lit la zone couleur `info` sur `Q_SOM_01` : elle a cessé
+ * de prescrire à 5 **sans avoir été éditée, sans re-signature, et sans qu'un
+ * banc rougisse**. La signature du 2026-08-17 continuait d'attester un contenu
+ * dont le comportement avait changé. C'est exactement la péremption que
+ * `shaPerimetre` existe pour rendre détectable, et elle ne l'était pas.
+ *
+ * La forme composite `{ regles, grilles }` reprend celle que
+ * `PRIORITY_RULES_SHA256` porte depuis [[D-062]] pour la procédure
+ * d'abstention.
+ */
+export const INDICATIONS_BIOLOGIE_SHA256 = sha256(
+  JSON.stringify({ regles: INDICATIONS_BIOLOGIE_V1, grilles: GRILLES_INDICATIONS }),
+);
 
 /**
  * La table des indications est-elle RÉELLEMENT signée ? ([[D-063]])

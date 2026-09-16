@@ -331,6 +331,24 @@ export type DecisionPriorityCandidate = {
    * lesquels, il n'en retire aucun.
    */
   limitationsRegleSignee: string[];
+  /**
+   * CELLES DES `limitations` QUI VIENNENT DU PÉRIMÈTRE DE CLASSEMENT RELU,
+   * et elles seules — [[D-199]].
+   *
+   * MÊME RAISON QUE LE CHAMP AU-DESSUS, ET LE MÊME DÉFAUT ÉVITÉ DE JUSTESSE.
+   * Une première rédaction de l'attestation groupait ces textes À L'ÉCRAN, par
+   * égalité de chaîne avec `LIMITATIONS_CANDIDAT`. Un motif de gate portant le
+   * même libellé qu'un texte attesté s'affichait alors « relu » : un
+   * comportement que personne n'a relu héritait de la provenance attestée, sans
+   * qu'aucun sha ne bouge. C'est exactement ce que le commentaire de
+   * `limitationsRegleSignee` interdisait déjà — « la deviner par comparaison de
+   * chaînes ferait dépendre une garde de provenance d'une égalité de
+   * ponctuation ». Relevé en contre-expertise.
+   *
+   * UN SOUS-ENSEMBLE, JAMAIS UNE LISTE PARALLÈLE : les textes restent dans
+   * `limitations`. Ce champ dit lesquels, il n'en retire aucun.
+   */
+  limitationsPerimetreClassement: string[];
 };
 
 export type DecisionPrioritySelection = {

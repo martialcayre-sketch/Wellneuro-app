@@ -30,10 +30,11 @@ export const RAYON_MICRONUTRITION = 'micronutrition' as const;
 
 // Correspondance rayon → notebook (libellé exact du registre sanitaire). Le
 // rayon est une étagère clinique ; le notebook en est l'unité d'organisation.
-// « micronutrition » (C4) et « cognition »/« douleur »/« intestin » (recherche
-// corpus clinique, dashboard/bibliotheque) ont un consommateur ; les autres
-// (« biologie », « nutrition », « stress », « humeur », « sommeil ») sont
-// déclarés mais inertes tant qu'aucun écran ne les appelle.
+// « micronutrition » (C4) a son propre navigateur de catalogue ; les sept
+// rayons de RAYONS_RECHERCHE_CORPUS ci-dessous ont la recherche corpus
+// clinique (dashboard/bibliotheque). Seul « biologie » reste déclaré sans
+// consommateur de recherche — il a lui aussi son navigateur dédié depuis
+// CB-08, et sa décision de dormance porte un réexamen au 2026-10-01.
 export const RAYON_VERS_NOTEBOOK: Readonly<Record<string, string>> = {
   [RAYON_MICRONUTRITION]: '10 — Micronutrition et compléments',
   biologie: '08 — Biologie fonctionnelle',
@@ -53,7 +54,17 @@ export const RAYON_VERS_NOTEBOOK: Readonly<Record<string, string>> = {
 // N'IMPORTE LEQUEL des rayons déclarés ci-dessus — y compris micronutrition,
 // en contournant WN_C4_ENABLED. Chaque route qui expose un `rayon` en entrée
 // libre doit restreindre à SES rayons, jamais à la carte entière.
-export const RAYONS_RECHERCHE_CORPUS: ReadonlyArray<string> = ['cognition', 'douleur', 'intestin'];
+//
+// Élargie de trois à sept le 2026-09-14 (LOT-01 de la campagne « protocole
+// assisté ») : sommeil, stress, humeur et nutrition portaient une décision de
+// dormance dont le RÉEXAMEN était daté au 2026-09-01 et dépassé, et dont la
+// raison écrite disait elle-même que l'élargissement « est une décision
+// praticien ». Leurs quatre notebooks sont ingérés et validés. Ouvrir un rayon
+// met des claims SOUS LES YEUX du praticien ; cela n'en fait entrer aucun dans
+// un protocole, et ne change rien à la barrière D-003.
+export const RAYONS_RECHERCHE_CORPUS: ReadonlyArray<string> = [
+  'cognition', 'douleur', 'intestin', 'sommeil', 'stress', 'humeur', 'nutrition',
+];
 
 export type ClaimRayon = {
   claimId: string;
@@ -114,8 +125,8 @@ type LigneClaim = {
  * notebook sans source rend un résultat vide — JAMAIS un filtre ignoré.
  *
  * Le gate produit (quel flag active quel rayon — WN_C4_ENABLED pour
- * micronutrition, WN_RECHERCHE_CORPUS_ENABLED pour cognition/douleur/intestin,
- * etc.)
+ * micronutrition, WN_RECHERCHE_CORPUS_ENABLED pour les sept rayons de
+ * `RAYONS_RECHERCHE_CORPUS` depuis [[D-188]], etc.)
  * n'est PAS ici : il appartient à la couche accès de chaque route appelante
  * (`getPractitionerC4Access`, `getPractitionerRechercheCorpusAccess`…), ET à
  * une allowlist par route (ex. `RAYONS_RECHERCHE_CORPUS` ci-dessous) — ce

@@ -1,8 +1,13 @@
 'use client';
 
+import { useEffect, useId, useRef } from 'react';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 import { dateDePassation, passationsDuCandidat } from './passationsDuCandidat';
+import { ATTESTATION_CLASSEMENT, PORTEE_ATTESTATION, attestationValide } from '@/lib/clinical/perimetreClassementV1';
+import { envoyerMesure } from '@/lib/mesure/envoyerMesure';
+
+export const TITRE_PAR_DEFAUT = 'Priorité et limites';
 
 // « PRIORITÉ ET LIMITES » ET NON « DÉCISION CLINIQUE » : la carte vit DANS la
 // phase « Décision 21 j » — le titre y répétait celui de la phase sans rien
@@ -13,7 +18,12 @@ import { dateDePassation, passationsDuCandidat } from './passationsDuCandidat';
 // d'une suspension. « Limites » reprend le mot du dépliant de la carte
 // (« Voir les sources et limites »), et jamais « synthèse », qui désigne un
 // document du dossier.
-export function DecisionSummaryCard({ decisionCard, sourceRefs = [] }: {
+export function DecisionSummaryCard({
+  decisionCard,
+  sourceRefs = [],
+  titre = TITRE_PAR_DEFAUT,
+  mesurable = false,
+}: {
   decisionCard: DecisionCard | null;
   /**
    * Le relevé des passations de l'épisode, qui traduit un `responseId` en
@@ -22,12 +32,64 @@ export function DecisionSummaryCard({ decisionCard, sourceRefs = [] }: {
    * pas empêcher de lire la priorité.
    */
   sourceRefs?: readonly { responseId: string; questionnaireId: string; observedAt: string }[];
+  /**
+   * Titre de la rubrique. La carte se monte désormais DEUX fois — dans la phase
+   * « Décision 21 j », où elle est la rubrique elle-même, et à côté du
+   * constructeur de protocole, où elle RAPPELLE ce qui vient d'être décidé. Deux
+   * nœuds portant le même nom accessible casseraient le mode strict des E2E ;
+   * le dépôt a déjà tranché ce cas deux fois en faisant varier le libellé plutôt
+   * qu'en dédoublonnant les sélecteurs (`FichePatientPanel.tsx`, bandeaux de
+   * fiche). L'`id` du titre, lui, est rendu unique par `useId()`.
+   */
+  titre?: string;
+  /**
+   * Ce montage-ci entre-t-il dans le compteur de « Voir les sources et
+   * limites » ?
+   *
+   * FERMÉ PAR DÉFAUT, ET C'EST L'INVARIANT. La carte se monte DEUX fois sur une
+   * même page — la rubrique de la phase « Décision 21 j », et le rappel posé à
+   * côté du constructeur de protocole — et un troisième site d'affichage
+   * viendra. Ouvert par défaut, chaque nouveau montage gonflerait le
+   * DÉNOMINATEUR en silence et ferait baisser un taux déjà publié, sans que
+   * personne ait décidé quoi que ce soit. Compter est donc un geste explicite.
+   *
+   * IL EST FAUX EN MODE FIXTURE, et pas seulement pour satisfaire un banc : le
+   * harnais de validation ergonomique sert un contenu 100 % fictif « sans portée
+   * clinique ». Ses affichages dans le dénominateur mesureraient l'usage d'une
+   * page de démonstration.
+   */
+  mesurable?: boolean;
 }) {
+  const idTitre = useId();
+
+  // LA MESURE DE LA SURFACE D'EXPLICABILITÉ — et son dénominateur.
+  //
+  // L'AFFICHAGE PART AU MONTAGE, PAS À CHAQUE RENDU. Sans le garde de `ref`, un
+  // re-rendu — un parent qui se met à jour, une sélection praticien qui change —
+  // gonflerait le DÉNOMINATEUR et écraserait le taux vers zéro. Le mode strict
+  // de React monte deux fois en développement, ce que ce même garde absorbe.
+  //
+  // IL NE PART PAS QUAND LA CARTE S'ABSTIENT, et la condition est DANS l'effet,
+  // pas au-dessus. Le `return` anticipé sur `decisionCard === null` se trouve
+  // plus bas — les règles des hooks interdisent de placer un `useEffect` après
+  // lui —, si bien qu'un effet non gardé compterait un affichage sur une carte
+  // qui ne porte AUCUN panneau à déplier. Le dénominateur inclurait alors des
+  // rendus dont le numérateur est structurellement impossible, et le taux
+  // baisserait à mesure que des dossiers non préparés s'ouvrent.
+  const affichageCompte = useRef(false);
+  useEffect(() => {
+    if (!mesurable) return;
+    if (!decisionCard) return;
+    if (affichageCompte.current) return;
+    affichageCompte.current = true;
+    envoyerMesure('affichage');
+  }, [mesurable, decisionCard]);
+
   if (!decisionCard) {
     return (
-      <section aria-labelledby="decision-summary-title">
-        <h3 id="decision-summary-title" className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
-          Priorité et limites
+      <section aria-labelledby={idTitre}>
+        <h3 id={idTitre} className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
+          {titre}
         </h3>
         {/* Carte de décision 5.0 : liseré primaire (maquette cible). */}
         <div className="rounded-xl border border-border border-l-4 border-l-primary bg-surface p-4 shadow-card">
@@ -93,15 +155,49 @@ export function DecisionSummaryCard({ decisionCard, sourceRefs = [] }: {
     ...(current?.limitations ?? []),
   ])];
   const limitationsRegle = toutes.filter((texte) => signees.has(texte));
-  const limitationsMoteur = toutes.filter((texte) => !signees.has(texte));
+  const duMoteur = toutes.filter((texte) => !signees.has(texte));
+
+  // CE QUE L'ATTESTATION A CHANGÉ À L'ÉCRAN, et par quel chemin.
+  //
+  // Les textes du périmètre sont RELUS ; les afficher sous « hors périmètre
+  // signé » ferait SOUS-promettre sur du relu. Mais `duMoteur` est un MÉLANGE —
+  // il porte aussi le motif de la gate de population, que personne n'a relu —
+  // et une seule étiquette sur les deux mentirait dans un sens ou dans l'autre.
+  //
+  // LE GROUPEMENT SE FAIT SUR LA PROVENANCE DÉCLARÉE PAR LE PRODUCTEUR, JAMAIS
+  // SUR LE LIBELLÉ. Une première rédaction comparait les chaînes à
+  // `LIMITATIONS_CANDIDAT` : un motif de gate portant le même libellé qu'un
+  // texte attesté s'affichait alors « relu » — un comportement que personne n'a
+  // relu héritant de la provenance attestée, sans qu'aucun sha ne bouge.
+  // Relevé en contre-expertise, et le contrat de `limitationsRegleSignee`
+  // l'interdisait DÉJÀ : « la deviner par comparaison de chaînes ferait dépendre
+  // une garde de provenance d'une égalité de ponctuation ».
+  //
+  // L'ÉCRAN LIT L'ATTESTATION, il ne recopie pas son résultat : retirée, ces
+  // textes retombent d'eux-mêmes dans le groupe non relu.
+  //
+  // LA VALIDITÉ SE DEMANDE AU PÉRIMÈTRE, ELLE NE SE DEVINE PAS SUR `relu`.
+  // Cet écran lisait le seul booléen : un `shaRelu` PÉRIMÉ — celui d'un
+  // périmètre antérieur — ou une date nulle présentaient les limitations comme
+  // relues. Relevé en contre-expertise, et le banc de cet écran en donnait
+  // lui-même la preuve : il injectait `shaRelu: 'simulé'` et attendait
+  // « relus ». `attestationValide` pose les trois questions ensemble, au même
+  // endroit que le banc de garde — deux rédactions de la même règle divergent
+  // toujours ([[DC-26]]).
+  const duPerimetre = new Set(
+    attestationValide(ATTESTATION_CLASSEMENT) ? (current?.limitationsPerimetreClassement ?? []) : [],
+  );
+  const limitationsRelues = duMoteur.filter((texte) => duPerimetre.has(texte));
+  const limitationsMoteur = duMoteur.filter((texte) => !duPerimetre.has(texte));
 
   return (
-    <section aria-labelledby="decision-summary-title">
-      <h3 id="decision-summary-title" className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
-        Priorité et limites
+    <section aria-labelledby={idTitre}>
+      <h3 id={idTitre} className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
+        {titre}
       </h3>
       <TwoLevelReading
         label="Voir les sources et limites"
+        onOuverture={mesurable ? () => envoyerMesure('ouverture') : undefined}
         className="border-l-4 border-l-primary shadow-card"
         summary={(
           <div>
@@ -167,6 +263,20 @@ export function DecisionSummaryCard({ decisionCard, sourceRefs = [] }: {
                 <p className="mt-2 text-xs font-medium text-foreground">Limitations de la règle</p>
                 <ul className="list-disc pl-5 text-muted-foreground">
                   {limitationsRegle.map(limitation => <li key={limitation}>{limitation}</li>)}
+                </ul>
+              </>
+            )}
+            {limitationsRelues.length > 0 && (
+              <>
+                {/* RELU, ET DATÉ. La date n'est pas décorative : elle dit de
+                    QUAND date la relecture, donc ce qu'elle a pu couvrir. Un
+                    « relu » sans date laisserait croire à une garantie
+                    permanente. */}
+                <p className="mt-2 text-xs font-medium text-foreground">
+                  {PORTEE_ATTESTATION.intituleEcran} <span className="font-normal text-muted-foreground">(relu le {ATTESTATION_CLASSEMENT.dateRelecture})</span>
+                </p>
+                <ul className="list-disc pl-5 text-muted-foreground">
+                  {limitationsRelues.map(limitation => <li key={limitation}>{limitation}</li>)}
                 </ul>
               </>
             )}

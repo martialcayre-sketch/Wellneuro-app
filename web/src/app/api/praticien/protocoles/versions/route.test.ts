@@ -19,6 +19,10 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     // Sélection praticien d'une priorité (`D-127`) : relue par le recalcul
     // serveur, qui ne réinjecte plus la valeur soumise.
     decisionPrioritySelection: { findMany: vi.fn() },
+    // Sources citables de la raison d'être ([[D-193]]) : la tête d'objectif
+    // négocié ACTIVE, et les fins de chaîne qui décident si elle l'est.
+    objectifNegocie: { findMany: vi.fn() },
+    finObjectif: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     $transaction: vi.fn().mockResolvedValue([]),
   },
@@ -558,6 +562,102 @@ describe('POST /api/praticien/protocoles/versions', () => {
   // `refusResolutionSansArbitrage`) restait inatteignable depuis l'application.
   // Les bancs du domaine passaient, parce qu'ils fabriquaient à la main
   // l'entrée que la route ne savait pas produire.
+  // ─────────────────────────────────────────────────────────────────────────
+  // GARDE DE REGISTRE ANXIOGÈNE ([[D-189]] §4)
+  // ─────────────────────────────────────────────────────────────────────────
+  // CE CHEMIN SORTAIT SANS GARDE. `purpose` est le sous-titre de l'écran
+  // d'accueil du patient ; `title` et `minimalPlan` composent son action du
+  // jour. Le seul contrôle à l'écriture était « non vide ».
+  //
+  // BANC DE DÉBRANCHEMENT : retirer l'appel à `termeAnxiogene` dans la route
+  // fait ROUGIR le premier cas ci-dessous — la carte de `vocabulaire.ts` exige
+  // un banc qui tombe quand la garde tombe.
+  describe('registre anxiogène (`D-189` §4)', () => {
+    it('refuse un `purpose` anxiogène, nomme le terme ET le champ, et rend un jeton', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: { ...submission, purpose: 'Situation urgente à reprendre en main.' },
+      }));
+      expect(res.status).toBe(409);
+      const corps = await res.json();
+      expect(corps.reason).toBe('REGISTRE_ANXIOGENE');
+      // Le terme est rendu TEL QU'IL EST ÉCRIT, jamais la racine.
+      expect(corps.error).toContain('urgente');
+      expect(corps.error).toContain('raison d’être');
+      expect(corps.texteSha256).toMatch(/^[0-9a-f]{64}$/);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('refuse aussi sur le plan minimal d’une action, et nomme LAQUELLE', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: {
+          ...submission,
+          actions: [{ ...action, minimalPlan: 'En cas de danger, appeler le cabinet.' }],
+        },
+      }));
+      expect(res.status).toBe(409);
+      const corps = await res.json();
+      expect(corps.reason).toBe('REGISTRE_ANXIOGENE');
+      expect(corps.error).toContain('plan minimal de l’action 1');
+    });
+
+    it('laisse passer le jeton RENDU pour ce texte — la confirmation est un second geste', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const soumission = { ...submission, purpose: 'Situation urgente à reprendre en main.' };
+      const refus = await POST(postRequest({ episode, decisionCard, submission: soumission }));
+      const { texteSha256 } = await refus.json();
+
+      const accepte = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: { ...soumission, confirmerRegistre: texteSha256 },
+      }));
+      expect(accepte.status).toBe(200);
+      expect(prisma.$transaction).toHaveBeenCalled();
+    });
+
+    it('le jeton est LIÉ AU TEXTE : il ne lève rien sur un protocole modifié depuis', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const refus = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: { ...submission, purpose: 'Situation urgente à reprendre en main.' },
+      }));
+      const { texteSha256 } = await refus.json();
+
+      // Le praticien a retouché le texte entre les deux clics : une
+      // confirmation donnée une fois ne doit pas couvrir une réécriture.
+      const res = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: {
+          ...submission,
+          purpose: 'Autre situation urgente, reformulée autrement.',
+          confirmerRegistre: texteSha256,
+        },
+      }));
+      expect(res.status).toBe(409);
+      expect((await res.json()).reason).toBe('REGISTRE_ANXIOGENE');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('n’invente aucun refus sur un texte neutre', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest({ episode, decisionCard, submission }));
+      expect(res.status).toBe(200);
+    });
+  });
+
   describe('contrat de payload V4 (`D-130`)', () => {
     const actionV4: ProtocolAction = {
       ...action,
@@ -706,6 +806,74 @@ describe('GET /api/praticien/protocoles/versions', () => {
     });
     expect(prisma.protocolDraft.findMany).not.toHaveBeenCalled();
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  // ── LA CITATION, CONSTATÉE À LA LECTURE ([[D-193]]) ─────────────────────
+  //
+  // La provenance ne se persiste pas : `protocol_drafts` n'a aucune colonne pour
+  // la porter, et le serveur relit les sources à chaque lecture. La marque tombe
+  // donc au premier caractère réécrit PAR CONSTRUCTION.
+
+  function dossierCitable(purposeActif: string) {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsC1Fixture());
+    prisma.consultation.findFirst.mockResolvedValue(ANAMNESE_C1_FIXTURE);
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
+    prisma.protocolDraft.findMany.mockResolvedValue([]);
+    prisma.decisionPrioritySelection.findMany.mockResolvedValue([]);
+    prisma.objectifNegocie.findMany.mockResolvedValue([
+      { id: 'obj_v1', supersedesObjectifId: null, creeLe: new Date('2026-09-01T08:00:00.000Z'), priorite: 'Retrouver des nuits entières.', reformulationPraticien: 'Vous voulez dormir sans vous réveiller à 3 h.' },
+    ]);
+    prisma.finObjectif.findMany.mockResolvedValue([]);
+    return purposeActif;
+  }
+
+  async function lire() {
+    const req = new Request(`http://localhost/api/praticien/protocoles/versions?idPatient=PAT_1&decisionCardId=${decisionCardId}`);
+    return (await (await GET(req)).json()) as {
+      ok: boolean;
+      sourcesCitables: { marque: string; texte: string; idSource: string; libelle: string }[];
+    };
+  }
+
+  it('sert la tête d’objectif négocié ACTIVE comme source citable', async () => {
+    dossierCitable('');
+    const json = await lire();
+    expect(json.ok).toBe(true);
+    expect(json.sourcesCitables.map(source => source.marque)).toEqual([
+      'objectif_priorite',
+      'objectif_reformulation',
+    ]);
+    // Le texte est RECOPIÉ au serveur, jamais reçu du navigateur.
+    expect(json.sourcesCitables[0].texte).toBe('Retrouver des nuits entières.');
+    expect(json.sourcesCitables[0].idSource).toBe('obj_v1');
+  });
+
+  // DEUX TÊTES ACTIVES SONT UNE DISCORDANCE, et le dépôt refuse de la moyenner
+  // (`DC-30`). Citer « la plus récente » ferait disparaître en silence l'autre
+  // parole négociée.
+  it('ne cite RIEN quand deux têtes d’objectif sont actives', async () => {
+    dossierCitable('');
+    prisma.objectifNegocie.findMany.mockResolvedValue([
+      { id: 'obj_a', supersedesObjectifId: null, creeLe: new Date('2026-09-01T08:00:00.000Z'), priorite: 'A', reformulationPraticien: null },
+      { id: 'obj_b', supersedesObjectifId: null, creeLe: new Date('2026-09-02T08:00:00.000Z'), priorite: 'B', reformulationPraticien: null },
+    ]);
+    const json = await lire();
+    expect(json.sourcesCitables).toEqual([]);
+  });
+
+  // UNE COMMODITÉ N'EMPORTE PAS LE CHEMIN PRINCIPAL. Une erreur de base sur la
+  // lecture de citation ferait sinon tomber tout l'historique du protocole —
+  // le praticien perdrait sa page parce qu'un bouton « Reprendre » n'a pas pu
+  // s'afficher.
+  it('sert l’historique même quand la lecture des sources échoue', async () => {
+    dossierCitable('');
+    prisma.objectifNegocie.findMany.mockRejectedValue(new Error('base indisponible'));
+    const json = await lire();
+    expect(json.ok).toBe(true);
+    expect(json.sourcesCitables).toEqual([]);
   });
 
   it('un GET accessible journalise l’accès au gabarit littéral (G-TRUST-04)', async () => {

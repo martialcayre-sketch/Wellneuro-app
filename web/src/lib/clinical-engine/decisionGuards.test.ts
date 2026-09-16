@@ -55,7 +55,7 @@ function carteSelection(surcharges: Partial<SelectionPrioriteLisible> = {}): Sel
       candidateId: 'p1', origin: 'engine', label: 'Priorité', rank: 1, confidence: 'à_documenter',
       ruleId: 'RULE_VALIDATED', rationale: 'Banc.',
       provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
-      limitationsRegleSignee: [], limitations: [],
+      limitationsRegleSignee: [], limitationsPerimetreClassement: [], limitations: [],
     }],
     selectedMainPriority: null,
     ...surcharges,

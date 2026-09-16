@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -7,6 +8,7 @@ import { refusPreconditionsPersistance } from '@/lib/clinical-engine/preconditio
 import { lireAncresPersistees, refusAncreNonRecevable } from '@/lib/protocol/ancresPersistees';
 import { RAISON_DIVERGENCE, refusChaineC1 } from '@/lib/clinical-engine/verifierChaineC1';
 import { VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
+import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 import type {
   ConfirmedAssessmentEpisode,
   DecisionCard,
@@ -37,6 +39,11 @@ import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/app
 import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
 import { refusResolutionSansArbitrage } from '@/lib/biology-library/revision';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
+import { lireSelectionPriorite } from '@/lib/clinical-engine/selectionPrioritePrisma';
+import { resoudreRegleSignee } from '@/lib/praticien/sourceSigneeVerifiee';
+import { lireTeteObjectifCitable } from '@/lib/praticien/teteObjectifCitable';
+import { constaterProvenancePurpose, sourcesCitablesPurpose } from '@/lib/protocol/provenancePurpose';
+import { lignesBaremeServables } from '@/lib/clinical/baremeChargeV1';
 
 // Versionnement du protocole 21 jours (C2A LOT-03). Chaque enregistrement
 // explicite d'un CHANGEMENT CLINIQUE crée une ligne append-only chaînée
@@ -55,13 +62,19 @@ type Submission = {
   followUpCriterion?: string;
   actions?: ProtocolAction[];
   therapeuticLoad?: TherapeuticLoad;
-  adviceSheetRef?: string | null;
   limitations?: string[];
   /**
    * Le contrat de payload demandé ([[D-130]]). Absent ⇒ `c1-protocol-draft-v1`,
    * comportement historique. Seul `c1-protocol-draft-v4` peut être demandé.
    */
   version?: ProtocolDraft['version'];
+  /**
+   * Le jeton rendu par un refus `REGISTRE_ANXIOGENE`, renvoyé tel quel pour
+   * lever ce refus ([[D-189]] §4). Il est LIÉ AU TEXTE : un protocole modifié
+   * entre les deux clics re-refuse avec un jeton neuf. L'appelant ne le
+   * fabrique pas — il le reçoit et le rend.
+   */
+  confirmerRegistre?: string;
 };
 
 type PostBody = {
@@ -80,7 +93,7 @@ type PostResponse =
       status: string;
       supersedesDraftId: string | null;
     }
-  | { ok: false; reason: string; error: string };
+  | { ok: false; reason: string; error: string; texteSha256?: string };
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.length > 0;
@@ -382,6 +395,54 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         }
         verifiedActions.push({ ...action, foodCompassRef: expected });
       }
+      // ── GARDE DE REGISTRE ANXIOGÈNE ([[D-189]] §4) ───────────────────────
+      //
+      // CE CHEMIN SORTAIT SANS GARDE. `purpose` est servi au patient en
+      // sous-titre de son écran d'accueil, `title` et `minimalPlan` composent
+      // son action du jour — et rien ne les relisait : le seul contrôle était
+      // « non vide ». La carte de `lib/documents/vocabulaire.ts` dit d'un tel
+      // chemin qu'« il n'a pas le droit d'exister ».
+      //
+      // TOUTES LES ACTIONS, PAS LA PREMIÈRE. Le portail sert les trois depuis
+      // [[D-191]] ; la garde avait été posée d'avance sur toutes, et c'est ce
+      // qui lui a évité de devenir une dette le jour où le portail a changé.
+      //
+      // RÉGIME CONFIRMABLE ([[D-090]] : le régime suit le geste) — un praticien
+      // est devant l'écran au moment du refus, et un faux positif ne doit pas
+      // rendre un protocole légitime inenregistrable. Le jeton lie la
+      // confirmation À CE TEXTE : un protocole modifié entre les deux clics
+      // re-refuse. Préfixe de domaine plutôt qu'empreinte nue, patron du
+      // document patient biologie — deux gardes qui hacheraient le même texte
+      // deviendraient interchangeables.
+      const champsServisAuPatient: { champ: string; texte: string }[] = [
+        { champ: 'la raison d’être', texte: submission.purpose ?? '' },
+        { champ: 'le critère J21', texte: submission.followUpCriterion ?? '' },
+        ...verifiedActions.flatMap((action, index) => [
+          { champ: `l’intitulé de l’action ${index + 1}`, texte: action.title ?? '' },
+          { champ: `le plan minimal de l’action ${index + 1}`, texte: action.minimalPlan ?? '' },
+        ]),
+      ];
+      const premierTerme = champsServisAuPatient
+        .map(({ champ, texte }) => ({ champ, terme: termeAnxiogene(texte) }))
+        .find(({ terme }) => terme !== null);
+      const jetonRegistre = createHash('sha256')
+        .update(`PROTOCOLE_REGISTRE:${JSON.stringify(champsServisAuPatient.map(c => c.texte))}`, 'utf8')
+        .digest('hex');
+      if (premierTerme && submission.confirmerRegistre !== jetonRegistre) {
+        return NextResponse.json(
+          {
+            ok: false,
+            reason: 'REGISTRE_ANXIOGENE',
+            error: `${premierTerme.champ.charAt(0).toUpperCase()}${premierTerme.champ.slice(1)} `
+              + `emploie « ${premierTerme.terme} ». Ce texte est lu seul par votre patient, `
+              + 'souvent avant la consultation suivante. Reformulez-le, ou confirmez '
+              + 'l’enregistrement de ce texte-ci.',
+            texteSha256: jetonRegistre,
+          },
+          { status: 409 },
+        );
+      }
+
       const baseDraft = buildProtocolDraft({
         protocolDraftId,
         decisionCard,
@@ -389,7 +450,16 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         updatedAt: now,
         purpose: submission.purpose ?? '',
         followUpCriterion: submission.followUpCriterion ?? '',
-        adviceSheetRef: submission.adviceSheetRef ?? null,
+        // `adviceSheetRef` EST FERMÉ À L'ÉCRITURE ([[D-200]]). Le champ
+        // traverse tout le chemin patient — contrat, projection, réponse du
+        // portail — mais AUCUNE surface ne le renseigne et aucun écran patient
+        // ne le rend. Il était pourtant accepté en texte libre non validé, et
+        // la garde de registre anxiogène ne le couvre pas : un second chemin
+        // vers ce que le patient reçoit, hors de la garde posée sur le
+        // premier. Constaté par la contre-revue adverse du 2026-09-16. Le jour
+        // où une vraie fiche conseil existera, elle entrera par une décision,
+        // avec sa garde.
+        adviceSheetRef: null,
         actions: verifiedActions.map(({ foodCompassRef: _foodCompassRef, ...action }) => action),
         therapeuticLoad: submission.therapeuticLoad as TherapeuticLoad,
         limitations: submission.limitations ?? [],
@@ -581,6 +651,34 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       },
     });
 
+    // ── LES SOURCES CITABLES, ET LE CONSTAT DE PROVENANCE ([[D-193]]) ────────
+    //
+    // LA PROVENANCE SE CONSTATE À LA LECTURE, elle ne se persiste pas.
+    // `objectifs_negocies` porte la sienne dans neuf colonnes ajoutées par une
+    // migration ; `protocol_drafts` n'en a aucune, et au dépôt chaque référence
+    // ajoutée au payload a reçu son propre contrat (V2, V3, V4). Les deux voies
+    // coûtaient une migration ou une version de contrat pour une marque
+    // d'affichage. Le serveur relit donc les sources et compare — même
+    // mécanisme que la vue patient recomposée de [[D-191]].
+    //
+    // CE QUE LE SERVEUR NE LIT JAMAIS : une déclaration de provenance venue du
+    // navigateur. C'est le défaut que [[D-164]] a fermé ailleurs, et le rouvrir
+    // ici porterait plus loin — `purpose` est le sous-titre que le PATIENT lit.
+    //
+    // LA LECTURE EST BORNÉE au dossier déjà prouvé accessible quelques lignes
+    // plus haut, et elle ne sert que des textes que le praticien a lui-même
+    // écrits ou signés. Aucune route du rail n'est touchée :
+    // `objectifs/etat-phase` refuse de servir la prose, et ce refus tient.
+    const selection = await lireSelectionPriorite(idPatient, decisionCardId);
+    const regleSignee = selection
+      ? resoudreRegleSignee(selection.candidateId.replace(/^priority:/, ''))
+      : null;
+    const objectifCitable = await lireTeteObjectifCitable(idPatient);
+    const sourcesCitables = sourcesCitablesPurpose({
+      libelleAxe: regleSignee ? { texte: regleSignee.texte, idRegle: regleSignee.regle } : null,
+      objectif: objectifCitable,
+    });
+
     const active = resolveActiveVersion(rows);
 
     // Contenu de la version active (LOT-06) : ce que l'écran d'arbitrage
@@ -601,6 +699,9 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
           followUpCriterion: draftActif.followUpCriterion,
           therapeuticLoad: draftActif.therapeuticLoad,
           actions: draftActif.actions,
+          // LA MARQUE TOMBE AU PREMIER CARACTÈRE RÉÉCRIT, par construction : il
+          // n'y a rien à retirer, elle ne se pose simplement plus.
+          provenancePurpose: constaterProvenancePurpose(draftActif.purpose, sourcesCitables),
         };
       } catch {
         contenuActif = null;
@@ -610,6 +711,13 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     return NextResponse.json({
       ok: true,
       protocolDraftId: rows.length > 0 ? deriveProtocolDraftId(decisionCardId) : null,
+      sourcesCitables,
+      // LE BARÈME DE CHARGE, ET LE VERROU RESTE ICI ([[D-196]]). La suggestion
+      // s'affiche PENDANT que le praticien compose, donc dans le navigateur — qui
+      // ne peut pas importer la table signée (elle tire `crypto`). Le serveur ne
+      // sert que des lignes DÉJÀ vouchées, ou une liste vide : l'écran ne peut pas
+      // se signer un barème à lui-même, et la vérification n'est pas dupliquée.
+      baremeCharge: lignesBaremeServables(),
       active: active
         ? {
             versionId: active.id,

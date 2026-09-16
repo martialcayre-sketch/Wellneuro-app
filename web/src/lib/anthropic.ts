@@ -295,7 +295,32 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // point. La clause est posée AU-DESSUS des sections topiques à dessein — la
 // primauté que s'accorde la section « Recommandation d'exploration
 // déterministe » ne relève « aucune des interdictions posées plus haut ».
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v29';
+// v30 (mesure de production du 2026-09-14) : la FENÊTRE DE RAPPEL d'un
+// instrument ne peut plus être énoncée. Elle n'est transmise nulle part —
+// `buildUserMessage` projette `idQuestionnaire`, `titre`, `date`,
+// `passationCourante`, `scores`, `interpretation`, `miniSynthese`, jamais le
+// champ `instructions` de l'instrument, seul endroit où la période est écrite.
+// Le modèle la produisait donc de mémoire : sur 32 synthèses v29 en
+// production, une (2026-09-12) affirme « le DASS-21 mesure des états des deux
+// dernières semaines, le HAD une semaine ». Les deux sont fausses ET inversées
+// par rapport à la consigne lue par le patient — Q_STR_04 dit « la dernière
+// semaine », Q_NEU_11 « ces dernières semaines ». Une durée servie au
+// praticien comme un fait, et employée pour motiver un refus de comparaison :
+// c'est la forme exacte que `DC-19` nomme (« durées, fenêtres temporelles »),
+// et que `seuilsLitterauxMotives.guard.test.ts` ne peut pas voir, puisqu'il
+// balaie `src/lib` et non ce que le modèle écrit.
+// L'INTERDIT EST INCONDITIONNEL, ce qui le distingue du cas #408 (« une
+// interdiction dont le critère de déclenchement n'arrive pas ») : il ne dépend
+// d'aucune donnée pour s'appliquer. Transmettre la fenêtre aurait été l'autre
+// voie — écartée : `instructions` est un texte long et hors sujet pour les
+// trois quarts, et en dériver un champ propre reviendrait à ÉCRIRE une fenêtre
+// clinique sur une centaine d'instruments, chacune due à sa provenance
+// (`DC-19`), dont au moins une est indécidable — Q_GAS_01 porte « 3 derniers
+// mois » en première consultation et « 3 dernières semaines » en suivi, et
+// rien dans le prompt ne dit laquelle des deux s'applique.
+// Bump assumé et déclaré : une synthèse rédigée sous v29 a pu dater la portée
+// d'un instrument, et les deux versions ne se comparent donc pas sur ce point.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v30';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -341,6 +366,7 @@ export const SYSTEM_PROMPT_GOUVERNANCE = `Tu es un assistant d'aide à la synth�
 ## Cadre déontologique
 
 - **Ces questionnaires servent au repérage et à la préparation de la consultation. WellNeuro n'a évalué la validation psychométrique d'aucun instrument qu'il sert, et ne s'en réclame pas.** Certains sont des échelles publiées et validées par ailleurs, d'autres non : ne fonde aucune conclusion sur ce statut, ne qualifie jamais un score de mesure validée, et n'invoque ni norme ni étalonnage de population que les données transmises ne portent pas.
+- **La fenêtre de rappel d'un instrument ne t'est pas transmise.** Aucune donnée reçue ne dit sur quelle période un questionnaire INTERROGE le patient — « les sept derniers jours », « le dernier mois », « vos habitudes habituelles » : cette consigne est affichée au patient, elle ne t'arrive jamais. N'énonce donc **aucune période de rappel d'un instrument**, ni pour la décrire, ni pour motiver quoi que ce soit, et n'en déduis aucune de ce que tu croirais savoir de l'échelle : ce serait une supposition servie comme un fait. Tu peux dire que deux instruments **ne sont pas superposables** — c'est souvent juste et utile au praticien — mais sans en donner une période de rappel comme raison : « ces deux échelles n'explorent pas la même chose » se dit sans avancer sur quelle période chacune interroge. **Une durée que les données elles-mêmes portent se restitue, en revanche, normalement** : un titre qui nomme son recueil (« Agenda du sommeil — 21 nuits »), un libellé de score qui compte des jours ou des nuits, une date de passation. Celles-là te sont transmises ; la période de rappel, non. Enfin, cet interdit porte sur la période de rappel des INSTRUMENTS, et sur elle seule : une période que le patient déclare, ou que tu proposes en question d'entretien, ne relève pas de cette règle.
 - Tu ne poses pas de diagnostic médical.
 - Tu formules des hypothèses, des priorités cliniques et des questions d'entretien.
 - Tu t'appuies uniquement sur les scores et interprétations fournis ET sur le contexte anamnestique et signalétique du patient, sans rien extrapoler au-delà des données transmises.

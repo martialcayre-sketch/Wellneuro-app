@@ -7,10 +7,12 @@ import {
   INDICATIONS_BIOLOGIE_SHA256,
   signatureIndicationsValide,
   INDICATIONS_BIOLOGIE_V1,
+  GRILLES_INDICATIONS,
   type RegleIndicationPanel,
 } from './indicationsBiologieV1';
 import {
   deriverStatutsBiologie,
+  shaPerimetreBiologie,
   type EntreeStatutsBiologie,
   type PanelCatalogue,
 } from './statuts';
@@ -107,7 +109,14 @@ const DRAPEAUX_FIXTURE = {
 // booléen seul ne suffit plus à ouvrir le verrou, et c'est tout l'objet du
 // durcissement. Le SHA de périmètre est celui des règles de fixture, pas celui
 // de la table réelle : le banc éprouve la concordance, pas une valeur figée.
-const SHA_PERIMETRE_FIXTURE = sha256(JSON.stringify(REGLES_FIXTURE));
+//
+// PAR `shaPerimetreBiologie`, ET PLUS PAR RECOPIE DE LA FORMULE (2026-09-13) :
+// le périmètre a grandi — il porte désormais les grilles d'interprétation —, et
+// une fixture qui recopie `sha256(JSON.stringify(regles))` resterait cohérente
+// avec une formule périmée au lieu de rougir. Ces cas ne passent pas de
+// grilles : leur périmètre est donc celui de règles SANS grilles, et le moteur
+// en calcule exactement le même.
+const SHA_PERIMETRE_FIXTURE = shaPerimetreBiologie(REGLES_FIXTURE);
 const SIGNATURE_ABSENTE = {
   validationExterne: false,
   dateValidation: null,
@@ -137,7 +146,7 @@ function entree(surcharge: Partial<EntreeStatutsBiologie> = {}): EntreeStatutsBi
     // c'est ce qui laisse les cas de refus poser un couple incohérent.
     signature: surcharge.signature ?? {
       ...SIGNATURE_FIXTURE,
-      shaPerimetre: sha256(JSON.stringify(regles)),
+      shaPerimetre: shaPerimetreBiologie(regles, surcharge.grilles),
     },
   };
 }
@@ -391,7 +400,7 @@ describe('deriverStatutsBiologie — fail-closed (D-059 §3)', () => {
   it('un sha de périmètre étranger aux règles passées ferme le verrou', () => {
     const reglesEtrangeres = [regle({ id: 'BIO-ETR', panelCode: 'PANEL_SOCLE' })];
     // Anti-vacuité : sans cet écart, le cas ne dirait rien.
-    expect(sha256(JSON.stringify(reglesEtrangeres))).not.toBe(SHA_PERIMETRE_FIXTURE);
+    expect(shaPerimetreBiologie(reglesEtrangeres)).not.toBe(SHA_PERIMETRE_FIXTURE);
     const resultat = deriverStatutsBiologie(entree({
       regles: reglesEtrangeres,
       signature: SIGNATURE_FIXTURE,
@@ -446,17 +455,32 @@ describe('deriverStatutsBiologie — fail-closed (D-059 §3)', () => {
   // se reconnaît désormais à un résultat OK — la signature réelle passée telle
   // quelle avec la table telle quelle dérive une proposition.
   it('la table canonique retombe sur INDICATIONS_BIOLOGIE_SHA256 — concordance de sérialisation', () => {
-    expect(sha256(JSON.stringify(INDICATIONS_BIOLOGIE_V1))).toBe(INDICATIONS_BIOLOGIE_SHA256);
+    expect(shaPerimetreBiologie(INDICATIONS_BIOLOGIE_V1, GRILLES_INDICATIONS)).toBe(
+      INDICATIONS_BIOLOGIE_SHA256,
+    );
+    const signatureReelle = {
+      validationExterne: true,
+      dateValidation: DATE_REFERENCE,
+      claimsSource: CLAIM_FIXTURE,
+      shaPerimetre: INDICATIONS_BIOLOGIE_SHA256,
+    };
     const resultat = deriverStatutsBiologie(entree({
       regles: INDICATIONS_BIOLOGIE_V1,
-      signature: {
-        validationExterne: true,
-        dateValidation: DATE_REFERENCE,
-        claimsSource: CLAIM_FIXTURE,
-        shaPerimetre: INDICATIONS_BIOLOGIE_SHA256,
-      },
+      grilles: GRILLES_INDICATIONS,
+      signature: signatureReelle,
     }));
     expect(resultat.ok).toBe(true);
+
+    // LA CONTRE-ÉPREUVE, et elle vaut mieux qu'une affirmation en commentaire :
+    // le périmètre porte DEUX termes depuis le 2026-09-14, et un appelant qui ne
+    // passerait que les règles hacherait autre chose que ce qui a été signé. Le
+    // verrou doit se fermer — pas s'ouvrir sur un périmètre incomplet. C'est ce
+    // cas-ci qui a d'abord rougi quand la fixture ci-dessus omettait `grilles`.
+    const sansGrilles = deriverStatutsBiologie(entree({
+      regles: INDICATIONS_BIOLOGIE_V1,
+      signature: signatureReelle,
+    }));
+    expect(sansGrilles.ok).toBe(false);
   });
 
   it('drapeaux absents : un déclencheur drapeau n’est jamais atteint', () => {
@@ -492,7 +516,7 @@ describe('la table réelle livrée (indicationsBiologieV1)', () => {
   it('la table est peuplée et signée aux cinq termes — le moteur dérive', () => {
     expect(INDICATIONS_BIOLOGIE_V1).toHaveLength(15);
     expect(INDICATIONS_BIOLOGIE_METADATA.validationExterne).toBe(true);
-    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-08-17T00:00:00.000Z');
+    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-09-16T00:00:00.000Z');
     expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource).toHaveLength(29);
     expect(INDICATIONS_BIOLOGIE_METADATA.shaPerimetre).toBe(INDICATIONS_BIOLOGIE_SHA256);
     expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(true);

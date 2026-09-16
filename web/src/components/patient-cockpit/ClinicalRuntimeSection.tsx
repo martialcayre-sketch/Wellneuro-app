@@ -20,6 +20,7 @@ import { ConstatCriteresPanel, type ConstatState } from './ConstatCriteresPanel'
 import type { CritereConstatable } from '@/lib/supplement-library/constatsCriteres';
 import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
 import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
+import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
 import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
 import { J21DecisionPanel } from './J21DecisionPanel';
 import { MeteoAdhesionPanel } from './MeteoAdhesionPanel';
@@ -57,6 +58,9 @@ import {
 import type { LimiteProposition } from '@/lib/biology-library/propositionService';
 import type { LignePanelProposition } from '@/lib/biology-library/statuts';
 import type { ProtocolAction, TherapeuticLoad } from '@/lib/clinical-engine/types';
+import { VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
+import type { ProvenancePurpose, SourceCitablePurpose } from '@/lib/protocol/provenancePurpose';
+import type { LigneBaremeCharge } from '@/lib/clinical/baremeChargePur';
 
 // Contenu de la version active servi par le GET versions (LOT-06) : la matière
 // d'une révision après arbitrage biologique — jamais recalculée côté client.
@@ -65,12 +69,25 @@ type ContenuVersionActive = {
   followUpCriterion: string;
   therapeuticLoad: TherapeuticLoad;
   actions: ProtocolAction[];
+  /** Constatée à la lecture, jamais persistée — `null` dès qu'un caractère bouge. */
+  provenancePurpose?: ProvenancePurpose;
 };
 
 type VersionsApiResponse = {
   ok: boolean;
   active: { versionId: string; contenu?: ContenuVersionActive | null } | null;
   history: ProtocolVersionItem[];
+  /**
+   * Les deux sources que la raison d'être a le droit de citer, relues au
+   * serveur ([[D-193]]). Liste FERMÉE : ni le motif praticien de sélection, ni
+   * le `rationale` du moteur n'y entrent — ils s'affichent, ils ne se citent pas.
+   */
+  sourcesCitables?: SourceCitablePurpose[];
+  /**
+   * Les lignes du barème de charge que le serveur a vouchées ([[D-196]]). Liste
+   * vide = barème non signé : l'écran n'affiche aucune suggestion.
+   */
+  baremeCharge?: LigneBaremeCharge[];
   error?: string;
 };
 
@@ -87,6 +104,10 @@ type DiffusionApiResponse = {
   ok: boolean;
   approval: { protocolDraftInputHash: string; approvedAt: string } | null;
   stale: boolean;
+  /** Ce que le patient voit RÉELLEMENT — `null` tant que rien n'est affirmé ([[D-191]]). */
+  servieAuPatient?: boolean | null;
+  /** Ce que le patient LIRA de la version active, projeté par le contrat ([[D-200]]). */
+  apercu?: ApercuPatientServi | null;
 };
 
 type RuntimeError = 'session' | 'patient' | 'technical';
@@ -273,6 +294,30 @@ export function ClinicalRuntimeSection({
   // Vrai UNE FOIS une lecture des versions aboutie : avant, `versions === []`
   // est un état inconnu, jamais un vide affirmable (revue I1).
   const [versionsLues, setVersionsLues] = useState(false);
+  /**
+   * Le refus de registre en attente de confirmation ([[D-189]] §4), et son
+   * jeton. UNE GARDE CONFIRMABLE SANS COMMANDE D'ÉCRAN EST UNE GARDE BLOQUANTE
+   * DÉGUISÉE : celle du booklet l'était « depuis toujours », et un bilan validé
+   * le 16 août n'est jamais parti — trois tentatives, et un journal qui
+   * affichait « Échec d'envoi ». Le bouton part donc avec la garde.
+   */
+  const [confirmationRegistre, setConfirmationRegistre] = useState<
+    { message: string; jeton: string } | null
+  >(null);
+  const soumissionEnAttente = useRef<RelectureProtocoleSoumission | null>(null);
+
+  /**
+   * Rejoue la soumission refusée, en portant le jeton reçu. Le praticien
+   * confirme un TEXTE, pas un principe : c'est un second geste, distinct de
+   * « Enregistrer la version » ([[D-090]]).
+   */
+  const confirmerRegistreEtEnregistrer = async () => {
+    const enAttente = soumissionEnAttente.current;
+    const jeton = confirmationRegistre?.jeton;
+    if (!enAttente || !jeton) return;
+    setConfirmationRegistre(null);
+    await saveVersion({ ...enAttente, confirmerRegistre: jeton });
+  };
   // ENTRER dans la phase Actions ramène à la sous-vue Protocole (revue I4) :
   // les deux affordances qui promettent le protocole — « Ouvrir la phase
   // Actions » du bandeau bloqueur, « Ajuster » de J21 — font
@@ -357,6 +402,19 @@ export function ClinicalRuntimeSection({
   // Validation « pour diffusion » (C2A LOT-03 Part B).
   const [approvedAt, setApprovedAt] = useState<string | null>(null);
   const [approvalStale, setApprovalStale] = useState(false);
+  // `null` = rien n'est affirmé (pas de diffusion, ou lecture non aboutie). Un
+  // `false` par défaut ferait crier l'écran avant d'avoir lu ([[D-191]]).
+  const [servieAuPatient, setServieAuPatient] = useState<boolean | null>(null);
+  /**
+   * L'aperçu de ce que le patient LIRA de la version active ([[D-200]] dette 1).
+   * `null` = lecture non aboutie ou aucune version — l'écran ne montre alors
+   * rien plutôt qu'un aperçu vide qui passerait pour un protocole vide.
+   */
+  const [apercuPatient, setApercuPatient] = useState<ApercuPatientServi | null>(null);
+  /** Ce que la raison d'être a le droit de citer — relu au serveur ([[D-193]]). */
+  const [sourcesCitables, setSourcesCitables] = useState<SourceCitablePurpose[]>([]);
+  /** Lignes de barème vouchées par le serveur — vide tant qu'il n'est pas signé. */
+  const [baremeCharge, setBaremeCharge] = useState<LigneBaremeCharge[]>([]);
   const [diffusionState, setDiffusionState] = useState<DiffusionState>('idle');
   const [diffusionError, setDiffusionError] = useState<string | null>(null);
   // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
@@ -450,6 +508,10 @@ export function ClinicalRuntimeSection({
       if (!response.ok || !payload.ok) return;
       setApprovedAt(payload.approval?.approvedAt ?? null);
       setApprovalStale(payload.stale);
+      // `?? null` et non `?? false` : un serveur qui ne sait pas ne doit pas
+      // faire dire à l'écran « non servie ».
+      setServieAuPatient(payload.servieAuPatient ?? null);
+      setApercuPatient(payload.apercu ?? null);
     } catch {
       // L'état de diffusion est indicatif : un échec de lecture ne bloque pas.
     }
@@ -463,6 +525,10 @@ export function ClinicalRuntimeSection({
       const payload = (await response.json()) as VersionsApiResponse;
       if (!response.ok || !payload.ok) return;
       setVersions(payload.history);
+      // `?? []` et non « garder l'ancienne liste » : une lecture qui aboutit
+      // sans source dit qu'il n'y a rien à citer sur ce dossier-ci.
+      setSourcesCitables(payload.sourcesCitables ?? []);
+      setBaremeCharge(payload.baremeCharge ?? []);
       // La lecture a ABOUTI : les états vides des sous-vues Historique et
       // Diffusion ont le droit d'affirmer « aucune version » (revue I1 — un
       // `[]` en vol ou après échec est un état INCONNU, pas un vide).
@@ -1232,6 +1298,11 @@ export function ClinicalRuntimeSection({
   // d'envoi patient). Anti-écrasement via baseVersionId → 409 version_stale.
   const saveVersion = async (submission: RelectureProtocoleSoumission) => {
     if (fixture || !runtime || runtime.status !== 'ready') return;
+    // Mémorisée pour la rejouer telle quelle si le praticien confirme : la
+    // rejouer depuis l'état du formulaire laisserait passer une frappe entre
+    // les deux clics, et le jeton — lié au texte — la refuserait sans dire
+    // pourquoi.
+    soumissionEnAttente.current = submission;
     const episode = runtime.snapshot.assessmentEpisode;
     const decisionCard = runtime.decisionCard;
     setSaveState('saving');
@@ -1242,12 +1313,37 @@ export function ClinicalRuntimeSection({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ episode, decisionCard, submission, baseVersionId: activeVersionId }),
       });
-      const payload = (await response.json()) as { ok: boolean; error?: string };
+      const payload = (await response.json()) as {
+        ok: boolean; error?: string; reason?: string; texteSha256?: string;
+      };
+      // DEUX 409 DISTINCTS, ET LES CONFONDRE SERAIT UN PIÈGE. Le refus de
+      // registre ([[D-189]] §4) partage son code avec `version_stale` : sans ce
+      // branchement, un texte signalé aurait dit au praticien « rechargez
+      // l'historique », ce qui n'y change rien et ne nomme pas le terme.
+      if (response.status === 409 && payload.reason === 'REGISTRE_ANXIOGENE') {
+        setSaveState('idle');
+        setSaveError(null);
+        // LE REFUS DOIT ÊTRE ATTEIGNABLE D'OÙ QUE PARTE LE GESTE ([[D-200]]).
+        // L'alerte et son bouton « Enregistrer ce texte tel quel » vivent dans
+        // le constructeur, masqué hors de la sous-vue « protocole » ; or
+        // `reviserApresArbitrages` part de la sous-vue « biologie ». Le
+        // praticien cliquait « Appliquer les arbitrages » et il ne se passait
+        // RIEN : la garde confirmable redevenait bloquante déguisée, le défaut
+        // exact du booklet que `D-189` §4 déclarait non négociable. On ramène
+        // donc la sous-vue là où le refus se lit et se lève.
+        setSousVueActions('protocole');
+        setConfirmationRegistre({
+          message: payload.error ?? 'Ce texte emploie un terme à reformuler.',
+          jeton: payload.texteSha256 ?? '',
+        });
+        return;
+      }
       if (response.status === 409) {
         setSaveState('stale');
         await loadVersions(decisionCard.decisionCardId);
         return;
       }
+      setConfirmationRegistre(null);
       if (!response.ok || !payload.ok) {
         setSaveState('error');
         setSaveError(payload.error ?? 'Échec de l’enregistrement.');
@@ -1352,6 +1448,15 @@ export function ClinicalRuntimeSection({
       followUpCriterion: contenuActif.followUpCriterion,
       actions: appliquerArbitrages(contenuActif.actions, lies),
       therapeuticLoad: contenuActif.therapeuticLoad,
+      // LA RÉVISION DEMANDE LE MÊME CONTRAT QUE CE QU'ELLE RÉVISE. Sans ce
+      // champ, la soumission retombait en V1 ([[D-130]] : la version est
+      // explicite, jamais déduite du payload) et la route répondait
+      // 409 `version_contrat_incompatible` — une version active V4 ne se révise
+      // pas en V1. La boucle arbitrage → révision n'était donc pas seulement
+      // sans amorce : son geste de SORTIE était incompatible avec le contrat
+      // qu'il révise. Elle est atteinte par construction : `lies` n'est non
+      // vide que si des intentions existent, et une intention n'existe qu'en V4.
+      version: VERSION_PROTOCOL_DRAFT_V4,
     });
     await loadArbitrages();
   };
@@ -1615,8 +1720,21 @@ export function ClinicalRuntimeSection({
           le recoupement de toutes les versions de protocole déjà persistées
           ([[D-054]] §2). Il est dérivé avec la carte, pas ici : les deux doivent
           venir de la même origine. */}
+      {/* LE SEUL MONTAGE MESURÉ, et c'est celui-ci parce qu'il EST la rubrique
+          d'explicabilité de la phase. Le rappel posé plus bas, à côté du
+          constructeur de protocole, montre la même carte : le compter aussi
+          ferait deux affichages pour une seule consultation, donc un taux
+          d'ouverture divisé par deux sans que rien ait changé à l'écran.
+
+          `!fixture` : le harnais de validation ergonomique sert un contenu
+          fictif sans portée clinique, et il ne contacte jamais le réseau (banc
+          de `ClinicalRuntimeSection`). */}
       {affiche('decision') && (
-        <DecisionSummaryCard decisionCard={decisionCard} sourceRefs={sourceRefsEpisode} />
+        <DecisionSummaryCard
+          decisionCard={decisionCard}
+          sourceRefs={sourceRefsEpisode}
+          mesurable={!fixture}
+        />
       )}
       {/* CE QUE LA CARTE NE LIT PAS SE DIT SOUS LA CARTE. Un épisode confirmé
           est un INSTANT : les réponses arrivées après n'y entrent pas, et c'est
@@ -1765,18 +1883,56 @@ export function ClinicalRuntimeSection({
         </div>
       )}
       <div id="protocol-version-builder" hidden={!affiche('actions') || (!fixture && sousVueActions !== 'protocole')}>
+        {/* RESTITUER AVANT DE FAIRE SAISIR. Le constructeur ne lisait de
+            `decisionCard` que deux booléens — « une priorité est-elle
+            retenue ? », « la décision est-elle bloquée ? » — et le praticien
+            composait trois plans SANS avoir sous les yeux l'axe qu'il venait de
+            retenir, ses limitations ni son statut. La carte est PURE (une prop,
+            aucun état, aucun fetch) et `decisionCard` lui est déjà passé :
+            ce second montage ne duplique aucun état.
+            Le titre diffère de celui de la phase Décision — deux nœuds de même
+            nom accessible casseraient le mode strict des E2E. */}
+        {/* `phase === 'actions'` ET NON `affiche('actions')` : en mode « tout »,
+            le cockpit défile d'un bloc et la carte de la phase Décision est déjà
+            à l'écran quelques sections plus haut — la répéter n'ajoute rien et
+            dédouble ses textes. Ce rappel n'existe que parce que les phases sont
+            SÉPARÉES : il rend au praticien, devant le formulaire, ce qu'il ne
+            peut plus voir.
+            Montée conditionnelle, à la différence du constructeur qu'elle
+            surplombe : le conteneur reste MASQUÉ plutôt que démonté parce que
+            `ProtocolMiniBuilder` porte un brouillon local qu'un démontage
+            perdrait. La carte, elle, est pure — la démonter ne coûte rien. */}
+        {phase === 'actions' && (
+          <div className="mb-4">
+            <DecisionSummaryCard
+              decisionCard={decisionCard}
+              sourceRefs={sourceRefsEpisode}
+              titre="Ce que la décision a retenu"
+            />
+          </div>
+        )}
         <ProtocolMiniBuilder
           decisionCard={decisionCard}
           onReviewed={fixture ? onFixtureReviewed : undefined}
           onSaveVersion={fixture ? undefined : saveVersion}
           saveState={saveState}
           saveError={saveError}
+          confirmationRegistre={confirmationRegistre}
+          onConfirmerRegistre={confirmerRegistreEtEnregistrer}
           foodCompassSelection={foodCompassSelection}
           onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
+          sourcesCitables={fixture ? [] : sourcesCitables}
+          provenancePurpose={fixture ? null : (contenuActif?.provenancePurpose ?? null)}
+          baremeCharge={fixture ? [] : baremeCharge}
+          chargeVersionActive={fixture ? null : (contenuActif?.therapeuticLoad ?? null)}
         />
       </div>
       {affiche('actions') && (fixture || sousVueActions === 'protocole') && (
-        <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />
+        <ProtocolConsultationPanel
+          decisionCard={decisionCard}
+          protocolDraft={fixture ? protocolDraft : null}
+          apercuEnDiffusion={!fixture}
+        />
       )}
       {/* Historique et Diffusion : panneaux SANS état local (vérifié en
           revue) — le montage conditionnel ne leur perd rien. Les états vides
@@ -1804,6 +1960,8 @@ export function ClinicalRuntimeSection({
             approved={approvedAt !== null}
             stale={approvalStale}
             approvedAt={approvedAt}
+            servieAuPatient={servieAuPatient}
+            apercu={apercuPatient}
             state={diffusionState}
             error={diffusionError}
             onApprove={approveForDiffusion}

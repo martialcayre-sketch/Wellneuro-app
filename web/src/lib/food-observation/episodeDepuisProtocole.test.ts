@@ -1,18 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import {
   DUREE_EPISODE_JOURS,
+  actionAlimentaire,
   buildEpisodeDepuisProtocole,
   episodeIdDepuisCycle,
   type ProtocoleSourceEpisode,
 } from './episodeDepuisProtocole';
 
+// `food`, et non `'alimentation'` : la fixture portait jusqu'ici un type qui
+// n'existe à aucun contrat, et `type: string` l'acceptait ([[D-191]]).
+const ACTION_ALIMENTAIRE = {
+  type: 'food' as const,
+  title: 'Ajouter une source de protéines au petit-déjeuner',
+  minimalPlan: 'Le faire trois fois cette semaine.',
+};
+
 const PROTOCOLE: ProtocoleSourceEpisode = {
   purpose: 'Rendre l’action alimentaire praticable les jours chargés.',
-  actionPrincipale: {
-    type: 'alimentation',
-    title: 'Ajouter une source de protéines au petit-déjeuner',
-    minimalPlan: 'Le faire trois fois cette semaine.',
-  },
+  actions: [ACTION_ALIMENTAIRE],
   cycleRef: 'abcdef0123456789',
   debutCycle: '2026-07-20T08:00:00.000Z',
 };
@@ -40,11 +45,53 @@ describe('buildEpisodeDepuisProtocole', () => {
     expect(content.action.idealPlan).toBeUndefined();
   });
 
-  it('rend null sans action principale — rien n’est inventé', () => {
+  it('rend null sans action alimentaire — rien n’est inventé', () => {
     expect(buildEpisodeDepuisProtocole({
       idPatient: 'PAT_TEST',
-      protocole: { ...PROTOCOLE, actionPrincipale: null },
+      protocole: { ...PROTOCOLE, actions: [] },
     })).toBeNull();
+  });
+
+  // LE DÉFAUT QUE CE BANC FERME ([[D-191]]). Le carnet prenait `actions[0]`,
+  // quelle que soit sa nature. Il ne se voyait pas tant que le constructeur
+  // posait `food` en dur sur toute action neuve ; depuis que le type est un
+  // geste praticien, la première action peut être une orientation médecin — et
+  // le carnet ALIMENTAIRE l'aurait affichée comme l'essai à observer.
+  it('s’ancre sur l’action alimentaire, jamais sur la première venue', () => {
+    const episode = buildEpisodeDepuisProtocole({
+      idPatient: 'PAT_TEST',
+      protocole: {
+        ...PROTOCOLE,
+        actions: [
+          { type: 'medical_referral', title: 'Consulter votre médecin', minimalPlan: 'Prendre rendez-vous.' },
+          ACTION_ALIMENTAIRE,
+        ],
+      },
+    })!;
+
+    const content = episode.content;
+    if (content.regime !== 'essai') throw new Error('régime inattendu');
+    expect(content.action.labelPatient).toBe(ACTION_ALIMENTAIRE.title);
+  });
+
+  // Un protocole entier SANS action alimentaire n'ouvre aucun carnet : il ne
+  // faut pas y loger l'orientation médecin faute de mieux.
+  it('rend null sur un protocole sans aucune action alimentaire', () => {
+    expect(buildEpisodeDepuisProtocole({
+      idPatient: 'PAT_TEST',
+      protocole: {
+        ...PROTOCOLE,
+        actions: [
+          { type: 'medical_referral', title: 'Consulter votre médecin', minimalPlan: 'Prendre rendez-vous.' },
+          { type: 'chronobiology', title: 'Avancer le coucher', minimalPlan: 'Vingt minutes plus tôt.' },
+        ],
+      },
+    })).toBeNull();
+  });
+
+  it('élit la PREMIÈRE action alimentaire quand il y en a deux', () => {
+    const deuxieme = { ...ACTION_ALIMENTAIRE, title: 'Boire un verre d’eau au réveil' };
+    expect(actionAlimentaire([ACTION_ALIMENTAIRE, deuxieme])).toBe(ACTION_ALIMENTAIRE);
   });
 
   it('rend null sans patient et sans référence de cycle', () => {

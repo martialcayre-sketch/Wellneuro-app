@@ -2,6 +2,162 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-09-15 — LOT-06 : le barème de charge et sa première échelle ratifiée (D-196)
+
+**Décisions** : six arbitrages rendus après vérification en code de ce que la charge
+fait aujourd'hui — obligatoire et hachée, jamais servie au patient, et **relue par
+AUCUN écran** en usage normal (le seul qui l'affichait recevait `null` et sortait
+aussitôt). Retenus : quatre termes dérivés ; le barème propose et le praticien
+déclare ; la charge de la version active redevient lisible ; une échelle sur un seul
+terme sans trou ni recouvrement — devenu une garde ; silence hors barème ; et un
+niveau « excessif » en registre d'avertissement, sans ouvrir d'avance le champ de
+justification.
+
+**Échelle ratifiée** : trois bandes sur `nombreActionsFermes` — 0-1 léger, 2 modéré,
+3 chargé. **Aucune source clinique ne porte ces bornes, et la table le dit d'elle-même
+(banc textuel)** : c'est une convention d'organisation, proposée parmi trois échelles,
+relue en entier, puis ratifiée. La signature est RECOPIÉE, jamais posée par l'outil.
+`excessive` n'est atteignable par aucune ligne — un comptage ne peut pas savoir qu'un
+protocole de deux actions est excessif pour ce patient-là.
+
+**Trouvé en chemin** : la table signée ne peut pas être lue par l'écran (elle importe
+`crypto`) — partie pure séparée, verrou gardé au serveur en un point unique ; une
+garde du dépôt exige que toute table signée figure à `FEATURE_FLAGS.md` ; un de mes
+bancs ne prouvait rien (verrou exercé sur la table réelle, alors vide), constaté PAR
+MUTATION ; et `suggererCharge` serveur n'avait aucun appelant — retiré.
+
+**Vérifications** : T1 vert ; T2 9 326 bancs unitaires et 198 E2E verts, aucun rouge.
+
+**Prochaine action** : la mesure d'usage, refusée par le classifieur de sécurité de la
+session et non contournée — elle attend une sortie du mode auto ou une règle de
+permission.
+
+## 2026-09-15 — LOT-07 : bilan de la campagne « 5. Actions », et ce qui reste
+
+**Décisions** : aucune décision neuve — le lot écrit le bilan, met la file à jour et
+nomme ce qui n'a pas pu être fait. Sept lots sur huit livrés, six décisions rendues
+(`D-188` à `D-193`), zéro migration, zéro drapeau neuf, zéro identité patient.
+
+**Livré** : le bilan lot par lot au dossier du LOT-07 ; deux entrées neuves à
+`FILE_ATTENTE.md` (la première ligne de barème, et la mesure d'usage due) ; l'état de
+campagne au 2026-09-15 dans `CAMPAGNE.md` ; tête de `next_action` neuve.
+
+**Non fait, et nommé** : (1) le LOT-06 n'est pas livré — le mécanisme est écrit et
+vert, la table est vide, et rien ne part sans une ligne signée du praticien ; (2) la
+mesure d'usage sur dossiers réels au conteneur a été REFUSÉE par le classifieur de
+sécurité de la session, et n'a pas été contournée. Ce que la campagne a livré est vert
+en CI et constaté en ligne par contenance — son usage n'est pas mesuré.
+
+**Prochaine action** : la première ligne de barème du praticien, puis la mesure
+d'usage quand elle sera possible.
+
+## 2026-09-15 — LOT-04 (2/2) : la citation se constate à la lecture (D-193)
+
+**Décisions** : l'arbitrage a été REPOSÉ parce que le premier était faux — `D-189` §1
+écrivait « la provenance est portée par la version », par analogie avec
+`objectifs_negocies` dont la provenance vit dans neuf colonnes de migration ;
+`protocol_drafts` n'en a aucune. Trois voies reposées après vérification en code
+(contrat V5 — le patron du dépôt, mais une décision qui étend `D-130` pour une marque
+d'affichage ; constat à la lecture ; différer). Tranché : le **constat à la lecture**,
+le mécanisme même retenu la veille pour la vue patient.
+
+**Livré** : `provenancePurpose.ts` (pur, liste fermée, comparaison stricte au `trim`
+près) ; `teteObjectifCitable.ts` — la lecture partagée plutôt qu'une TROISIÈME copie
+de `SELECTION_OBJECTIF` ; les sources citables et la provenance constatée au GET des
+versions ; « Reprendre » au constructeur, qui ne transmet rien — c'est le texte qui
+fait foi ; le marquage « votre patient la lit », reporté du LOT-03.
+
+**Trouvé en chemin** : une commodité emportait le chemin principal — une erreur de
+base sur la lecture des sources aurait fait tomber tout l'historique du protocole
+pour un bouton « Reprendre ». Elle ne lève plus.
+
+**Écarté** : le contrat V5 (coût disproportionné pour une marque d'affichage) ; citer
+la tête la plus récente quand deux sont actives (une discordance ne se moyenne pas) ;
+citer le motif praticien de sélection ou le `rationale` du moteur — ils s'affichent,
+ils ne partent pas au patient.
+
+**Vérifications** : T1 vert ; T2 rapide 9 293 bancs unitaires et 198 E2E verts.
+Mutation vue ROUGE avant de déclarer vert, restaurée depuis une copie.
+
+**Prochaine action** : le LOT-06 attend la première ligne de barème signée du
+praticien — son mécanisme est écrit et vert sur une branche locale non poussée.
+
+**Questions ouvertes** : la mesure de production du LOT-07 a été refusée par le
+classifieur de sécurité de la session et n'a pas été contournée.
+
+## 2026-09-15 — LOT-03 (2/2) : les gardes de la carte opposées à la diffusion (D-192)
+
+**Décisions** : le contrat de vue patient refuse depuis toujours une décision sous
+abstention requise et une décision portant un constat de sécurité ; ces deux refus
+ne mordaient NULLE PART — le contrat n'avait aucun appelant avant `D-191`, et la
+route d'approbation n'a jamais construit de carte. Le producteur de constats, lui,
+est alimenté depuis `D-099`. Le refus tombe désormais sous la main du praticien, au
+moment où il atteste : servi plus tard au portail, il lui apprendrait après coup
+qu'il a validé quelque chose d'invalide, et son patient l'apprendrait en même temps
+que lui par un écran vide.
+
+**Livré** : rejeu de la carte à l'approbation par la MÊME fonction que le chemin
+patient, sur l'épisode et l'empreinte de la version approuvée ; trois refus 409
+(`abstention_requise`, `constat_securite`, `carte_non_rejouable`) ; le message part à
+l'écran sans code neuf, et un banc l'assertionne plutôt que de s'y fier.
+
+**Écarté** : recopier les constats de sécurité dans le message — l'écran de décision
+les porte déjà, et les répéter ferait de cette route une seconde restitution
+clinique, absente de la carte des chemins sortants. Seul le NOMBRE est dit.
+
+**Vérifications** : T1 vert ; T2 rapide 198 verts, aucun rouge. Deux mutations vues
+ROUGES avant de déclarer vert, restaurées depuis une copie.
+
+**Prochaine action** : LOT-04 (2/2), la citation en constat à la lecture.
+
+**Questions ouvertes** : le LOT-06 attend la première ligne de barème signée ; la
+mesure de production du LOT-07 a été refusée par le classifieur de sécurité de la
+session et n'a pas été contournée.
+
+## 2026-09-15 — LOT-03 (1/2) : la vue patient du protocole est un contrat recomposé (D-191)
+
+**Décisions** : trois questions posées au responsable APRÈS vérification du code —
+la nuit précédente avait produit deux arbitrages rendus sur prémisse fausse, et
+c'est la correction de ce défaut. Établi avant de demander : la `DecisionCard` ne
+fournit qu'UN champ à la vue patient (`priorityLabel` = `regle.libelle` du registre
+signé), ses autres apports sont des GARDES, ces gardes ne sont opposées nulle part
+(la route de diffusion ne construit aucune carte), et la dérive d'empreinte est
+bornée (snapshot borné à l'épisode, horodatage = `confirmedAt` : une passation
+nouvelle ne bouge rien). Le responsable a tranché la **recomposition à la lecture**
+— ce n'était pas la voie recommandée —, les gardes **portées à la diffusion**, et le
+**refus net + signal praticien**.
+
+**Livré** : `rejeuCarteDecision.ts` (chaîne C1 rejouée par la MÊME lecture et la MÊME
+construction que le cockpit et le vérificateur — `entreesRuntime` exportée pour
+cela) ; la garde de fraîcheur ; le contrat branché dans les deux routes, dont
+`praticien/ja/cycle` qui se déclarait « miroir exact » en recopiant le même défaut ;
+`vuePatientSurLeFil.ts`, la projection écrite en UN seul endroit ; l'écran patient
+avec ses trois actions, la phrase d'attente, le libellé d'axe et le critère J21 ; le
+refus visible des deux côtés ; le bouton « Ma fiche conseils » renommé vers ce qu'il
+fait.
+
+**Trouvé en chemin** : le carnet alimentaire s'ancrait sur `actions[0]` quel que soit
+son type — invisible tant que toute action neuve naissait `food`, dangereux depuis
+`D-189` (une orientation médecin aurait été affichée comme l'essai à observer) ; et
+la fixture de son banc posait `type: 'alimentation'`, un type qui n'existe à aucun
+contrat, accepté parce que le champ était `string`.
+
+**Écarté** : brancher le contrat sans recomposer (la voie recommandée, écartée par le
+responsable) ; persister la carte (migration, hors campagne) ; tout repli sur
+l'ancienne projection en cas de refus — servir un protocole que la garde vient
+d'écarter serait pire que le vide.
+
+**Vérifications** : T1 vert après deux gardes d'état (`active_lot`, tête de
+`next_action`) et la matrice régénérée avec `--markdown` ; 9 211 bancs unitaires
+verts ; T3 192 verts, seul rouge la signature `D-049` (WebKit iPhone 13, macOS). Deux
+mutations vues ROUGES avant de déclarer vert, restaurées depuis une copie.
+
+**Prochaine action** : PR 2 du LOT-03 — porter à la diffusion les gardes que la carte
+portait (abstention requise, constat de sécurité), opposées nulle part aujourd'hui.
+
+**Questions ouvertes** : le porteur de provenance de la citation (LOT-04 2/2) attend
+toujours l'arbitrage ; le LOT-06 attend la première ligne de barème signée.
+
 ## 2026-08-03 — LOT-02 partiel : rayons cognition/intestin branchés (PR #546)
 
 **Décisions** : NB05/07 vérifiés 100 % VALIDE en base (`execute_sql` direct, pas
@@ -5738,3 +5894,776 @@ c'est précisément son contenu clinique qui est en cause.
 **Question ouverte.** Le trou jumeau reste : `severiteCroissante` et
 `sansTotalGlobal` commandent `bandePlancher`, donc une zone couleur signée, sans
 entrer dans le périmètre.
+## 2026-09-14 — Clôture de la campagne « dossier de travail clinique » (D-183, D-184)
+
+Six lots, deux mesures de production, et deux affirmations de ma part corrigées
+après revue.
+
+**Ce qui est en ligne.** #1086 (la trace nomme ses passations), #1087 (les
+questions d'entretien reviennent au praticien), #1089 (la priorité d'un axe se
+choisit), #1092 (les passations qui fondent un candidat), #1098 / `D-183` (la
+fenêtre de rappel ne s'énonce plus, `synthese-v30`). #1100 / `D-184` ouverte.
+
+**La mesure qui a réfuté son hypothèse.** Sur 55 synthèses, sept périodes
+chiffrables, dont SIX légitimes — la requête de départ attrapait six faux
+positifs pour un vrai. Le défaut réel était d'une autre nature : une assertion
+sur la PORTÉE d'un instrument (« le DASS-21 mesure des états des deux dernières
+semaines, le HAD une semaine »), fausse ET inversée par rapport à la consigne lue
+par le patient, employée pour motiver un refus de comparaison. La conclusion
+était juste, la prémisse fabriquée. Cause : `buildUserMessage` ne projette jamais
+`instructions`, seul endroit où la période de rappel est écrite.
+
+**Le balayage `DC-19` ne trouve pas de second défaut vivant.** Neuf familles :
+les doses sont des restitutions du déclaratif patient (« traitements en cours :
+propranolol 40mg », suivi de « sans proposer d'ajustement »), les seuils des
+restitutions de `interpretation.min/max` — vérifié pièce par pièce,
+`{min:31,max:55}` rendu « seuil ≥31 » et `BANDES_PSQI {min:6}` rendu « seuil > 5 ».
+Les deux « dans les normes » sont en `v4` et `v17`, antérieurs au durcissement.
+**La règle qui s'en dégage** : ce type de défaut naît là où une propriété clinique
+existe dans le dépôt mais n'entre pas dans `buildUserMessage`. La fenêtre de
+rappel était la seule dans ce cas.
+
+**Ce que le périmètre de `DC-19` ne couvre pas, et qu'il faut cesser de croire
+couvert.** `seuilsLitterauxMotives.guard.test.ts` balaie `src/lib` : il lit le
+CODE. Une valeur née à la génération n'est dans aucun littéral. Le garde n'a pas
+failli — son périmètre ne s'étend pas là.
+
+**Deux corrections de mes propres affirmations.** (1) La première rédaction de la
+clause v30 interdisait « aucune période couverte par un instrument » : trop large,
+et démontrablement faux — `Q_SOM_09` transmet sa durée de recueil deux fois
+(`titre` « Agenda du sommeil — 21 nuits », agrégat `AGD_NB_NUITS`), si bien que la
+règle aurait censuré la seule occurrence que ma mesure classait légitime.
+(2) `D-184` corrigeait la moitié de la phrase de reprise et tenait `null` pour la
+preuve d'une réécriture : `constaterProvenance` se termine par
+`catch { return {} }`, donc `null` couvre aussi « on n'a pas su constater ». La
+phrase n'affirme désormais que ce qui est POSITIVEMENT constaté.
+
+**Collision de numéro.** `D-182` est parti à une autre session pendant
+l'ouverture de #1098 ; la décision est passée à `D-183`, avec la note, et le
+sujet de squash a dû être passé explicitement — le commit de branche annonçait
+encore l'ancien numéro.
+
+**Fenêtre ratée, et dite.** #1098 a été mergée sans `SESSION_LOG` ni handoff dans
+son diff. Le présent bloc et le fragment
+`2026-09-14-2000-cloture-campagne-dossier-clinique.md` portent donc la clôture de
+`D-183` en plus de la leur.
+
+## 2026-09-14 — Contre-audit, et le périmètre signé descendu jusqu'au calcul
+
+Le périmètre posé la veille hachait les grilles — `score → couleur` — et
+laissait `réponses → score` dehors. Un contre-audit externe l'a démontré sur la
+table biologique réelle : retirer un item de l'axe C1 du TFD fait tomber la
+couleur globale de `warning` à `success` et éteint `BIO-DIG-01`, sha inchangé.
+Le défaut de `D-180` reproduit dans sa réparation.
+
+**Corrigé en changeant de règle, pas en ajoutant des champs.** Le périmètre hache
+désormais le bloc `scoring` entier et la cotation des items. Écartée : la
+sélection de champs, qui se périme en silence quand le catalogue en gagne un —
+c'est arrivé deux fois en deux jours, et douze clés étaient dehors, dont
+`threshold` sur `Q_INF_05`.
+
+**Contre-audit : six constats, six confirmés, zéro réfuté** — deux bancs de
+mutation qui mesuraient la forme, un compte non gardé, une justification devenue
+fausse le jour même. La contre-épreuve « recopié à l'identique → sha inchangé »
+manquait partout.
+
+Deux tables re-signées après relecture praticien (seconde attestation du jour).
+546 fichiers, 9147 bancs verts.
+
+**Ouvert** : aligner QDRS et AQ sur leurs publications (arbitrage rendu, lot non
+commencé) ; trente-deux instruments à vérifier sur PubMed.
+## 2026-09-14 — `D-179` clôturé en retard, et la campagne « protocole assisté » cadrée
+
+**Décisions** : la lecture de production du 13/09 (7 épisodes T0, 1 sélection,
+0 protocole) a reclassé le goulot — il est en amont du formulaire. `D-179` l'a
+levé et est en ligne (`aa2e32f5`, constaté par contenance dans `30d16e42`). Douze
+arbitrages ont cadré la campagne suivante : trois étages (restituer, citer,
+suspendre), quatre rayons de corpus dormants à ouvrir, un barème de charge signé,
+le portail corrigé pour servir les trois actions au lieu d'une.
+
+**Écarté** : la voie générative — un modèle qui choisit type, intitulé et plans —
+sur les trois lentilles ; brancher `D-056` pour l'étage 2, faute de curation ;
+l'étage 3, la table d'interventions, hors périmètre.
+
+**Corrigé** : « six dossiers bénéficiaires » était faux — trois, les signaux de
+rang `vigilance` ne bloquant pas. Et aucun arbitrage du 11/09 sur le geste V4
+n'existe au dépôt : il se rend dans la campagne.
+
+**Prochaine action** : ouvrir `2026-09-14-protocole-assiste`.
+
+**Questions ouvertes** : la première ligne signée du barème de charge ; la
+vérification à l'écran de `D-179`, qui demande la session du praticien.
+
+## 2026-09-14 — Le périmètre du classement est posé et ancré, l'attestation reste due (D-185)
+
+`D-162` §5 exigeait un choix — signer d'abord, ou généraliser sans se réclamer
+d'une provenance certifiée. Arbitrage rendu le 2026-09-14 : **signer**, forme
+« périmètre ET ancrage d'un coup ». Ce lot est la première des deux étapes.
+
+**Ce qui restait dehors** : producteur de candidats, classement à trois termes,
+quatre textes `LIMITATION_*`, ordre des deux motifs d'abstention. Tous dans
+`chaineC1.ts`, et `priorityRulesV1.ts` déclarait la dette en toutes lettres.
+`D-182` a signé les grilles d'orientation et de biologie, pas ceci.
+
+**Ce qui distingue ce périmètre d'un document** : `chaineC1.ts` LIT ces données
+au lieu de les réécrire. Un périmètre qui serait une copie ferait porter la
+signature sur un texte que rien n'exécute (`DC-26`) — la forme de la conformité
+sans son effet. Un banc lit la source du moteur et refuse qu'un de ces textes y
+réapparaisse en dur.
+
+**Ce qui n'est PAS fait, et le banc l'exige** : `ATTESTATION_CLASSEMENT` porte
+`relu: false`. Un cas échoue si quelqu'un la remplit sans le décider — parce
+qu'un périmètre posé, haché et gardé RESSEMBLE à un périmètre signé, et que s'en
+réclamer fabriquerait la provenance que `D-162` §5 défend d'invoquer.
+
+**Ce que l'attestation coûtera, dit avant** : l'intitulé « Ajoutées par le moteur
+(hors périmètre signé) » de `DecisionSummaryCard` deviendra faux le jour venu et
+devra bouger dans le même lot, sinon l'écran sous-promet sur du relu.
+
+**Ordre de merge contraint** : `D-184` vit sur `objectif-priorite-source` (#1100).
+Cette branche prend `D-185` ; dans l'ordre inverse, `main` porterait un trou en
+`D-184`.
+
+Quatre mutations appliquées, quatre tuées — dont « attestation fabriquée » et
+« motifs d'abstention permutés ».
+
+## 2026-09-14 23:35 — Périmètre du classement : deuxième passe Codex ([[D-185]], PR #1105)
+
+**Ce que la première correction laissait passer.** La passe Codex du 2026-09-14
+avait fait remplacer un garde de SOURCE par un banc de COMPORTEMENT. La deuxième
+passe a défait ce banc à son tour : trois mutations, **toutes vertes sur 46
+cas**, toutes rejouées ici avant d'être admises.
+
+- Texte d'`etatInconnu` révisé au périmètre, ancien littéral gardé au moteur :
+  vert. Le quatrième texte n'avait aucune assertion positive — trois sur quatre
+  étaient couverts.
+- `etatInconnu.condition` déclarée « toujours » : vert, alors que le moteur la
+  conditionne. Les conditions étaient entrées dans la donnée hachée, mais
+  **aucune ne portait d'oracle**.
+- **Priorité intrinsèque INVERSÉE dans le comparateur du moteur : vert.** La
+  fixture par défaut a pour dominante `surpoids` ; le premier terme y sépare
+  déjà les deux candidates, donc le deuxième ne tranchait jamais. Rejouer le
+  comparateur dans le banc ne prouvait rien.
+
+**La cause est commune, et c'est le seul enseignement qui se transporte** : une
+assertion écrite à la main ne couvre que ce que sa rédaction a pensé à nommer.
+Le banc itère désormais SUR LA DONNÉE DÉCLARÉE et exige un oracle par entrée ;
+les scénarios sont indexés par la condition déclarée elle-même, si bien qu'une
+condition réécrite ne trouve plus sa clé. Les trois termes sont exercés un par
+un, chacun sur un dossier où lui seul départage.
+
+**Le troisième terme est déclaré inatteignable, pas simulé.** Les quatre règles
+publiées portent quatre priorités distinctes ; le fabriquer par une table forgée
+prouverait le comparateur d'une table qui n'existe pas. Le banc garde à la place
+la CONDITION de l'inatteignabilité : une cinquième règle reprenant une priorité
+déjà prise fait rougir et réclame son dossier.
+
+**Cinq mutations appliquées, cinq tuées** — les trois de Codex, plus « dernier
+domaine » au lieu de « premier » au départage des ex æquo, plus « priorité
+intrinsèque » déclarée technique.
+
+**Le périmètre n'a pas bougé d'un octet** : la correction est entièrement dans la
+preuve. `da1ba306c0551d7b` tient, et la surface d'attestation est inchangée —
+c'est ce qui permet de relire une fois pour toutes.
+
+**Ce que dit la phrase du SESSION_LOG du 2026-09-14 20:30** — « un banc lit la
+source du moteur et refuse qu'un de ces textes y réapparaisse en dur » — décrit
+le garde DÉFAIT, et est fausse depuis #1105. Elle est laissée en place, ce
+journal étant à ajout seul ; c'est cette entrée-ci qui vaut.
+## 2026-09-14 — LOT-01 : quatre rayons de corpus s'ouvrent à la lecture
+
+**Décisions** : `D-188` ouvre `RAYONS_RECHERCHE_CORPUS` de trois à sept (+ sommeil,
+stress, humeur, nutrition). Leurs verdicts `dormante` portaient un réexamen daté au
+2026-09-01, dépassé, et disaient eux-mêmes qu'élargir « est une décision
+praticien ». Mesuré au registre, sources de conduite seules : l'allowlist exposait
+60 claims validés et en retenait 986.
+
+**Écarté** : `micronutrition`, gardé par son propre drapeau — l'ajouter le
+contournerait ; `rayon:biologie`, réexamen au 2026-10-01 non échu. Et dériver le
+banc d'allowlist de la carte rayon → notebook : il valide silencieusement tout
+ajout futur, c'est le défaut bloquant trouvé en revue le 2026-08-03.
+
+**Livré en plus du cadrage** : un banc de miroir entre le sélecteur d'écran et
+l'allowlist — deux listes dans deux fichiers, et un rayon proposé mais refusé rend
+un 400 à chaque recherche.
+
+**Prochaine action** : LOT-00, la décision de frontière patient, qui gate les
+LOT-03 et LOT-04.
+
+**Questions ouvertes** : le panneau vit dans la Bibliothèque, pas dans le
+constructeur — les claims sont à portée, pas sous les yeux pendant la saisie.
+
+## 2026-09-15 — LOT-00 : la frontière patient du protocole, et une prémisse qui tombe
+
+**Décisions** : `D-189` ferme la liste des sources citables dans `purpose` à deux
+entrées — libellé d'axe signé (re-dérivé au serveur, sans désignation d'écran) et
+tête de l'objectif négocié actif. Motif praticien et rationale moteur : affichés,
+jamais cités. Aucune source pour le critère J21. La garde de registre anxiogène se
+pose avec, en refus confirmable à jeton, **et sa commande d'écran dans le même lot** —
+celle du booklet était confirmable sans qu'aucun écran ne l'envoie.
+
+**Écarté / corrigé** : le point 1 du cadrage — « brancher le contrat
+`PatientProtocolView` » — ne tient pas. Il exige une `DecisionCard` qu'aucune table
+ne persiste ; la question posée le 14 reposait sur ma prémisse fausse. Trois voies
+sont écrites au cadrage, **le LOT-03 attend l'arbitrage**. Le LOT-04 n'attend rien.
+
+**Numérotation** : `D-187` pris trois fois en une soirée. Le garde refuse toute
+lacune, donc on ne cède pas un numéro : on prend le suivant.
+
+**Prochaine action** : LOT-02, restituer — aucune décision requise.
+
+**Questions ouvertes** : la forme de la vue patient (trois voies, cadrage du 15/09).
+
+## 2026-09-15 — LOT-02 : restituer la décision, et refuser le silence
+
+**Décisions** (aucune `D-xxx` — étage minimal) : la carte de décision se monte une
+seconde fois à côté du constructeur, sous un titre distinct ; le type d'action et la
+charge n'ont plus de valeur par défaut et le refus nomme l'action fautive ; le refus
+prend son propre état, `role="alert"` et `aria-invalid`, et ne s'efface plus à la
+première frappe. Un E2E joue enfin le parcours nominal à l'écran.
+
+**Écarté** : monter la carte sur `affiche('actions')` — en mode « tout » elle est
+déjà à l'écran et ses textes se dédoublent ; désactiver l'option d'absence du
+sélecteur — c'est le refus à l'enregistrement qui garde.
+
+**Pièges** : `npx playwright test` seul ne provisionne aucune base ; Next.js pose son
+propre `role="alert"`, qui viole le mode strict d'un `getByRole` de page entière.
+
+**Prochaine action** : LOT-04 (citer), qui dépend de `D-189` et de ce lot. Le LOT-03
+attend l'arbitrage sur la forme de la vue patient.
+
+**Questions ouvertes** : le marquage « votre patient lira ceci », qui appartient au
+LOT-03 et mentirait aujourd'hui.
+
+## 2026-09-15 — LOT-05 : une action peut attendre un bilan
+
+**Décisions** : `D-190` amende `D-056` dans un seul sens — le praticien pose
+`conditionnelle_biologie` et rien d'autre. Le geste ne fait que retenir, jamais
+libérer, quand la crainte de `D-056` visait une intention naissant *active* sans
+règle. Le dépôt se contredisait (commentaire du constructeur contre en-tête du spec
+E2E) et aucun arbitrage consigné ne tranchait.
+
+**Écarté** : brancher `D-056`, avec son motif — le moteur refuse tout aujourd'hui
+(`clinical_rules` à 0 ligne, lien règle↔claim manquant) ; le brancher laisserait la
+boucle aussi indéclenchable en donnant l'illusion contraire.
+
+**Défaut corrigé au passage** : `reviserApresArbitrages` appelait `saveVersion` sans
+`version` — la soumission retombait en V1 et la route rendait `409
+version_contrat_incompatible`. La boucle n'était pas seulement sans amorce : son
+geste de sortie était incompatible avec le contrat qu'il révise.
+
+**Rétréci, et dit** : borner le geste aux lignes de la proposition de bilan n'est pas
+fait — la proposition vit dans une autre sous-vue, et le contrat ne vérifie la cible
+contre aucun catalogue. À reprendre avec `BiologyCatalogRef`.
+
+**Prochaine action** : LOT-04 (citer), le plus gros lot restant.
+
+**Questions ouvertes** : la forme de la vue patient (LOT-03), toujours en attente.
+
+## 2026-09-15 — LOT-04 (1/2) : la garde de registre du protocole
+
+**Décisions** : aucune neuve — application de `D-189` §4. Le lot se coupe en deux PR,
+et l'ordre est doctrinal : `D-160` §4 interdit la citation **sans** garde, pas
+l'inverse. La garde seule est strictement plus sûre, et elle referme une infraction
+en cours : `purpose`, le critère J21, l'intitulé et le plan minimal de chaque action
+sortaient sans qu'aucune garde ne les relise.
+
+**Trouvé en chemin** : le refus de registre partage son code 409 avec
+`version_stale` — sans branchement sur `reason`, un texte signalé aurait dit
+« rechargez l'historique ». Et la soumission doit être mémorisée avant l'envoi pour
+être rejouée telle quelle : la rejouer depuis le formulaire laisserait passer une
+frappe, que le jeton refuserait sans dire pourquoi.
+
+**Vérifié plutôt qu'affirmé** : le banc de débranchement. Garde neutralisée → trois
+bancs rouges, puis restauration depuis une copie.
+
+**Prochaine action** : PR 2 du LOT-04 — la citation (points 1 à 3 de `D-189`).
+
+**Questions ouvertes** : la forme de la vue patient (LOT-03), toujours en attente.
+
+## 2026-09-15 — La citation bute, et pour la même raison que la vue patient
+
+**Constat** : `D-189` §1 dit « la provenance est portée par la version ». Écrit par
+analogie avec `objectifs_negocies`, dont la provenance vit dans neuf colonnes ajoutées
+par migration. `protocol_drafts` n'a aucune colonne équivalente, et `ProtocolDraft`
+aucun champ d'accueil. Le précédent du dépôt : chaque référence de provenance ajoutée
+au payload a reçu son propre contrat (V2, V3, V4).
+
+**Trois voies consignées au lot** : contrat V5 (patron du dépôt, décision étendant
+`D-130`) ; constat à la lecture sans persistance (plus faible, précédent assumé sur
+`syntheses_comprehension`) ; ou différer la citation, l'étage 0 étant livré.
+
+**Ce qui n'est pas une voie** : persister sans contrat ni colonne — sans marque, on ne
+distingue pas « cité » de « réécrit », sauf à refuser la réécriture.
+
+**Deux prémisses fausses en une nuit, même défaut de méthode** : raisonner de
+l'existence d'un patron ailleurs à sa disponibilité ici.
+
+**Prochaine action** : arbitrage du responsable, sur le LOT-03 et sur le LOT-04 PR 2.
+
+**Questions ouvertes** : la forme de la vue patient ; le mécanisme de marquage de la
+citation ; la première ligne du barème de charge (LOT-06).
+
+## 2026-09-15 08:00 — Compteur de « Voir les sources et limites » : la table seule ([[D-194]])
+
+Troisième des trois suites nommées le 2026-09-14. La surface qui porte la
+provenance et les limitations devient mesurable ; **cette PR pose la table
+seule**, régime `D-087`.
+
+**Deux espèces, et c'est la décision.** Compter les seules ouvertures aurait
+produit le nombre sans dénominateur que cette campagne poursuit depuis son
+premier lot : « 40 ouvertures » ne distingue pas une surface consultée
+systématiquement d'une surface ignorée 99 fois sur 100.
+
+**Quatre absences choisies** : aucun `id_patient`, aucune identité de praticien,
+aucun instant, aucune ligne par événement. La table est structurellement
+incapable de dire « ce praticien n'ouvre jamais les limitations ». Discipline
+reprise de `portail_lectures_patient`, qui se prive de toute date pour ne pas
+devenir un journal de présence ; ici la cible serait le praticien, et un second
+registre d'accès par-dessus `journal_acces_dossiers`.
+
+**Ce que la revue interne a déjà coûté, et qui vaut d'être noté** : une mutation
+a survécu — retirer le `.catch()` d'`envoyerMesure` laissait les bancs verts,
+parce que **`vi.fn` attache ses propres `then`/`catch` au promise rendu** pour
+alimenter `mock.results`. L'outil de mesure réparait ce qu'il mesurait. Le cas
+stubbe désormais `fetch` par une fonction nue. Même leçon que la seconde passe
+Codex sur `D-185`, le même jour : un banc ne prouve que ce que sa rédaction a
+pensé à nommer.
+
+Deux bancs existants ont attrapé la première rédaction, et les deux avaient
+raison : le harnais ergonomique ne doit contacter aucun réseau, et un rejeu ne
+doit poster aucun état clinique. Le second est **resserré, pas relâché** — il
+listait « aucun POST », il liste désormais les destinations.
+
+**Renumérotée TROIS FOIS, `D-191` → `D-192` → `D-193` → `D-194` (2026-09-15).** Les deux
+numéros ont été pris au merge par d'autres sessions — `66c82f85` puis `2ef899c3`
+— puis `2c4fa0f8` — qui les ont **écrits au registre**, à la différence de l'épisode `D-182` de la
+veille où un sujet de commit annonçait un numéro sans l'inscrire, et ne réservait
+donc rien. Huitième, neuvième et dixième collisions, en une matinée, sur la même entrée.
+La campagne voisine fusionne plus vite qu'un CI ne rend : une PR lente ne gagne
+jamais la course, et ce qui la débloque est de fusionner dès le vert.
+Même leçon : un numéro ne se réserve pas, il s'acquiert à la fusion — et la
+friction est voulue.
+
+**Passe Codex — BLOQUER, trois findings fondés (2026-09-15).** La revue interne
+avait trouvé deux trous ; Codex en a trouvé trois de plus.
+
+Le plus grave est structurel : **la liste blanche de colonnes ne gardait que les
+NOMS.** Un `ALTER COLUMN jour TYPE TIMESTAMP(3)` laissait le contrat entièrement
+vert, et la garantie « aucun instant » disparaissait — alors que le message
+d'erreur du contrat nommait « un instant » parmi les interdits. Le contrôle ne
+pouvait pas voir ce qu'il prétendait interdire. Le triplet `nom:type` est
+désormais comparé ; rejoué sous PGlite sur la migration réelle, quatre mutations
+rouges.
+
+Le plus important est doctrinal : **l'absence d'identifiants n'est pas une
+anonymisation.** Un jour où un seul praticien est actif, ses ouvertures lui sont
+attribuables par croisement avec `journal_acces_dossiers`. « Structurellement
+incapable » et « aucune donnée personnelle » dépassaient ce qui était démontré et
+sont bornés partout où ils étaient écrits — décision, registre RGPD, migration.
+
+Et une promesse était simplement fausse : `CHECK (compte >= 0)` accepte `2 → 1`,
+alors que le commentaire disait « un compte ne descend pas ». La monotonie est
+tenue par la route, seul écrivain, pas par le schéma.
+
+**Ce que la journée aura montré trois fois** — sur `D-185` deux fois, ici une
+troisième : un banc ne prouve que ce que sa rédaction a pensé à nommer, et il
+faut l'attaquer pour le savoir.
+
+## 2026-09-15 20:45 — Compteur d'ouverture : le lot consommateur ([[D-194]])
+
+**Migration appliquée et CONSTATÉE avant ce lot**, régime `D-087`. Constat par
+one-off lecture seule : `COLS=compte:integer,espece:text,jour:date`, RLS active
+sans policy, trois contraintes, table vide, `_prisma_migrations` renseignée au
+2026-09-15 20:42:40 UTC. **Les types autant que les noms** — c'est ce que la
+contre-expertise Codex avait montré défaillant dans la liste blanche.
+
+**Ce que l'épisode a corrigé dans ma compréhension du dépôt, et c'est le point à
+retenir** : `WN_MIGRATIONS_PAR_RELEASE_DB=1` est posé sur la production, donc
+**le postdeploy ne migre plus**. Merger une PR de migration ne fait que la mettre
+en file ; l'unique porte d'écriture du schéma est l'approbation du workflow
+`release-db`. J'ai affirmé plusieurs fois le contraire au responsable — « merger
+EST l'écriture en production » — et c'était faux : il croyait autoriser une
+écriture, il autorisait une mise en file.
+
+**La première release a échoué, et la garde avait raison.** Le run approuvé
+portait sur `9bbcd13a` ; `067ac22a` a pris la place de l'image entre
+l'approbation et l'exécution, et la garde a refusé de migrer sous un code que
+personne n'avait approuvé. Aucune écriture. Même phénomène de course que les
+trois renumérotations de la matinée, une couche plus bas — et ici, c'est une
+garde qui l'a attrapé au lieu d'un humain.
+
+## 2026-09-15 — Le barème de charge déclaré conforme (LOT-06, D-198)
+
+L'échelle de charge écrite au LOT-06 était mergée **hors service** : `D-195`, rendue
+le même jour par une session parallèle, interdit à l'outil qui a proposé un contenu
+d'en poser seul l'empreinte. La signature a donc été retirée avant merge, puis la
+déclaration de conformité demandée séparément, sur une surface produite avant elle —
+les trois lignes et les quatre cas qu'elles couvrent.
+
+**La relecture a servi** : `CHARGE-01` couvre zéro (`min: null`), et son motif proposé
+disait « Une seule action engagée ». Corrigé en « Au plus une action engagée : la
+charge reste minimale. » Le périmètre a changé, la déclaration a été reposée sur le
+texte final ; l'ancien SHA reste écrit, marqué jamais signé.
+
+Écartés : signer sans relecture (refusé la veille), et laisser le motif mentir au cas
+zéro jugé rare. Table enrôlée le jour même au garde du SHA littéral.
+
+**Prochaine action** : la mesure d'usage au conteneur — bloquée par le classifier du
+mode auto, sur la forme de la commande et non son contenu.
+
+**Question ouverte** : la campagne « 5. Actions » reste `en_cours` avec 8/8 lots ; sa
+clôture libère le créneau primaire et demande un arbitrage sur la suivante.
+## 2026-09-15 23:10 — Le troisième invariant n'avait aucune épreuve ([[D-197]], amende [[D-185]])
+
+Le responsable a **relu sans signer**, et la contre-expertise a trouvé que
+`regleEcarteeProduitUnCandidat` appartenait au périmètre attesté sans qu'aucune
+épreuve ne le tienne. Muter à `true` puis réancrer laissait **49/50 verts**.
+
+**La correction ne touche pas au périmètre** — c'est le point de procédure : le
+fichier signé ne bouge pas d'un octet, `da1ba306c0551d7b` tient, et la relecture
+déjà faite reste valide. Corriger une preuve n'oblige pas à relire un document.
+
+L'épreuve LIT la valeur déclarée (`toBe(INVARIANTS_PRODUCTEUR....)`) au lieu de
+la recopier ; `.toBe(false)` en dur laisserait la mutation passer.
+
+**Quatrième fois en deux jours** — deux sur `D-185`, une sur `D-194`, celle-ci —
+qu'un banc ne prouve que ce que sa rédaction a pensé à nommer. Ce qui change :
+la faute est attrapée AVANT la signature clinique, pas après le merge. C'est ce
+pour quoi l'ordre « relire d'abord, signer ensuite » existe.
+
+## 2026-09-15 23:30 — Le périmètre du classement est ATTESTÉ ([[D-202]])
+
+**Attestation clinique du responsable**, demandée et donnée en toutes lettres.
+Elle n'a pas été déduite d'un « relue » : le dépôt exige qu'elle soit DÉCIDÉE, et
+la question a été posée deux fois — la première a rendu « j'ai lu, et j'ai des
+réserves », et la réserve était fondée ([[D-197]]).
+
+**Trois corrections de la PREUVE, zéro correction du CONTENU relu.** L'empreinte
+`da1ba306c0551d7b` n'a pas bougé depuis [[D-185]] : c'est ce qui a permis de
+corriger trois fois la preuve sans jamais redemander une relecture.
+
+**Le gain réel est la péremption**, vérifié par mutation : éditer le périmètre
+PUIS réancrer l'empreinte — le contournement habituel — laisse désormais
+l'attestation rouge. `shaRelu` est un littéral figé, pas la constante calculée.
+Réancrer ne suffit plus à faire taire le banc.
+
+**L'écran a bougé dans le même lot**, et la nuance trouvée ici mérite d'être
+notée : `limitationsMoteur` est un MÉLANGE — les quatre textes désormais relus et
+le motif de la gate, qui ne l'est pas. Une seule étiquette aurait menti dans un
+sens ou dans l'autre ; la liste est SCINDÉE. Et l'écran LIT l'attestation au lieu
+de recopier son résultat : retirée, les textes retombent d'eux-mêmes sous « hors
+périmètre signé ».
+
+**Ce que la signature ne couvre pas** : que la plainte dominante DOIVE primer sur
+la priorité intrinsèque de la règle. Question clinique ouverte, arbitrage séparé.
+
+**L'attestation a été RETIRÉE le même jour, par son propre mécanisme.** Une
+contre-expertise a trouvé deux défauts. Le premier : l'écran déduisait la
+provenance d'une **égalité de libellé**, si bien qu'un motif de gate homonyme
+d'une limitation attestée s'affichait « relu » — et le dépôt l'interdisait DÉJÀ
+en toutes lettres dans le contrat de `limitationsRegleSignee`. La réponse était
+écrite ; je ne l'avais pas lue. Le second : la **portée** de l'attestation vivait
+dans un commentaire, donc n'était ni opposable ni hachée.
+
+Corriger le second a fait entrer `PORTEE_ATTESTATION` dans le périmètre haché,
+déplacé l'empreinte (`da1ba306c0551d7b → 9792c12e72db93d8`) et **périmé la
+signature**. C'est la règle, et elle s'est appliquée à son auteur : on n'élargit
+pas après coup ce qui a été relu, même pour le borner.
+
+Le mécanisme est donc éprouvé sur un cas réel, pas sur une mutation — il a refusé
+la signature de celui qui l'avait écrit.
+## 2026-09-16 00:35 — La passe Codex qu'on devait à #1098, onze jours après ([[D-201]])
+
+**Dette de revue tenue, et elle a rendu.** #1098 est P0 — clinique, production
+LLM — et a été mergée le 2026-09-14 sans la passe que `POLITIQUE_REVUE.md`
+impose. Deux findings, les deux confirmés par exécution.
+
+**Le garde ne gardait pas la clause, il gardait son vocabulaire.** Trois
+mutations vertes sur 55 cas, ré-ancrage des empreintes de prompt compris : une
+exception insérée dans l'opérateur, la même posée en phrase suivante, et
+l'opérateur SEUL déplacé sous une section topique — celle-là sans qu'un seul
+caractère de son texte ne bouge, parce que le test de position ne localisait que
+le CONSTAT.
+
+**La réponse est structurelle, pas lexicale, et c'est le point.** Blacklister
+« sauf si » aurait refait le défaut payé quatre fois en deux jours : une garde qui
+NOMME ce qu'elle interdit sans pouvoir le VOIR. Le banc extrait la PUCE markdown,
+exige ses cinq composants dedans, et l'épingle par empreinte. Une empreinte de
+prompt bouge à chaque édition et se ré-ancre par routine — c'est exactement par
+là que passe une clause affaiblie de bonne foi ; celle de la puce ne bouge que si
+cet interdit-là est touché.
+
+**La consigne servie au modèle n'a pas bougé d'un caractère.** Correction du
+garde seul, donc pas de bump de version. C'est la bonne forme : le défaut était
+dans la preuve, pas dans l'interdit.
+
+**Ce qui reste ouvert est plus grave que ce qui est corrigé.** La clause est
+l'UNIQUE contrôle du contenu produit — `analyserSortieSynthese` ne lit que la
+structure. « Habituellement évalué sur deux semaines » passe le schéma, passe la
+relance, et se persiste. `DC-19` et `DC-16` sont garantis sur la consigne, pas
+sur la sortie. Mesurer demande une lecture de production ; filtrer sans mesurer
+échangerait un défaut connu contre un défaut inconnu. **Arbitrage non rendu.**
+
+**Deux pièges d'environnement, tous deux déjà connus et repayés.** Un worktree
+neuf a `src/generated/prisma/` VIDE : T1 rend 351 erreurs sur une centaine de
+fichiers qu'on n'a pas touchés, `npm run prisma:generate` d'abord. Et
+`npm run check | tail` rend le code de `tail` — T1 s'annonçait vert en étant
+rouge.
+## 2026-09-16 — La contre-revue adverse avant la clôture (LOT-08, D-200)
+
+Vingt-six affirmations de la campagne « 5. Actions » soumises à réfutation avant d'être
+gravées (patron `D-108`). **Six réfutées, trois vraies seulement bornées.** Toutes les
+réfutations portaient sur de la prose écrite par l'outil — mais quatre cachaient un défaut
+vivant en production.
+
+Le plus grave est une récidive : le refus de registre anxiogène était **invisible sur le
+chemin de révision**, l'alerte vivant dans un conteneur masqué hors de la sous-vue d'où
+part le geste. Défaut du booklet à l'identique. Corrigé, et gardé par une garde de source
+— aucun banc de composant ne traverse ce chemin.
+
+Fermés aussi : une route d'écriture sans appelant qui acceptait un protocole fabriqué par
+le client, et `adviceSheetRef`. Le carnet alimentaire cesse d'affirmer « Aucun protocole
+diffusé » sur un protocole diffusé mais inservable.
+
+Écarté sur arbitrage : le compte transitoire de la suggestion de charge (action non encore
+typée) — état qui se corrige à la frappe suivante.
+
+**Prochaine action** : la mesure d'usage au conteneur, qui attend une session hors mode
+auto. Le créneau primaire reste vide par décision jusque-là.
+
+**Question ouverte** : la clôture formelle de la campagne, désormais possible — la
+contre-revue qu'elle attendait est faite.
+
+## 2026-09-16 — Reflow clos, corpus rendu désignable, MMSE mesuré
+
+**#1130 mergée** (`c4464a51`) : plancher de hauteur des deux côtés de `CeQuiComptePanel`,
+saut 50 px → 0. Le banc instrumenté a **réfuté** le mécanisme proposé (l'ancrage de
+défilement compense ; le clic atteint sa cible) tout en confirmant la chronologie — **la
+cause du flake CI reste inconnue**, écrit tel quel. Options écartées : réserver par du texte
+invisible (le garde clinique a rougi, à raison) et plancher d'un seul côté (50 → 2 px,
+rejoué à l'envers).
+
+**#1132 ouverte, CI en cours** : 25 identifiants écrits, entrées à DOI/PMID de 12 à 37 sur
+65. Le recroisement PubMed a rattrapé un faux positif sur le HIT-6. Trois négatifs
+consignés, dont la Conners 3 — aucune publication n'existe. MMSE : la HAS n'écrit pas les
+quatre bandes servies ; aucune bande touchée, arbitrage nommé au registre.
+
+**Prochaine action** : lire `ci-1132.log`, merger sur `WN-CI-EXIT=0` seul.
+
+**Ouvert** : bandes MMSE, `Q_ALI_03`, ELFE, Conners 3, agenda sommeil, `Q_ALI_09` ; quatre
+réserves qui n'attendent qu'une lecture de source, dont deux portent des chiffres affichés.
+## 2026-09-16 01:00 — Seconde contre-expertise sur #1125 : l'écran ne lisait que le booléen ([[D-202]])
+
+**Le banc administrait la preuve du trou qu'il couvrait.** `DecisionSummaryCard`
+décidait sur `ATTESTATION_CLASSEMENT.relu` seul ; son banc injectait
+`shaRelu: 'simulé'` — une valeur qui ne peut correspondre à aucun périmètre — et
+attendait « relus ». Une attestation gardée d'un périmètre antérieur présentait
+donc les limitations comme relues, pendant que le banc de garde, lui, l'aurait
+refusée. **Deux rédactions de la même règle, une seule mordait.**
+
+Et ce n'est pas théorique : c'est exactement l'état traversé la veille au soir,
+quand la portée entrée dans la donnée hachée a périmé une attestation posée.
+
+`attestationValide` vit désormais dans le périmètre, lue par le banc comme par
+l'écran, et prend l'attestation en PARAMÈTRE — la lire depuis la portée du module
+ferait qu'un banc qui la double prouverait le contraire de ce qu'il croit prouver.
+
+**La réfutation que j'avais demandée est arrivée, et elle était juste.** J'avais
+écrit dans `D-202` un inventaire des consommateurs d'empreinte concluant
+« aucune surface n'est silencieuse », et j'avais explicitement demandé qu'on le
+casse. `GET /api/praticien/ja/cycle` rendait `protocoleDiffuse: false` sur
+`carte_derivee` : le carnet praticien efface l'épisode sans un mot.
+
+**Comment je l'avais manqué, et c'est la leçon** : l'inventaire a été fait en
+cherchant les COMPARAISONS D'EMPREINTES. `ja/cycle` n'en fait aucune — il
+consomme le REFUS du rejeu. Un balayage sur `inputHash` ne pouvait pas le voir.
+La campagne voisine l'avait trouvé le même jour par l'autre bout ([[D-200]]) ;
+la correction est entrée ici par la fusion de `main`.
+
+## 2026-09-16 01:16 — Zéro approbation de diffusion, reconstaté avant le merge
+
+`protocol_diffusion_approvals` rend **`0|0|`** en production (`one-off-8972`,
+lecture seule, un seul compte, rien de nominatif). Le seul chemin qui refuserait
+sur `carte_derivee` n'a aucun client : la dérive d'empreinte que ce lot provoque
+ne coûte rien à personne aujourd'hui.
+
+**Pourquoi refaire une lecture qui existait déjà.** La précédente ([[D-173]])
+donnait le même zéro, mais datait du 2026-09-12 — et la campagne voisine a poussé
+du protocole entre-temps. Une prémisse de quatre jours sur une table que
+quelqu'un d'autre alimente n'est pas une prémisse, c'est un souvenir.
+
+Le constat est **daté** : il vaut pour ce déploiement, pas pour le suivant.
+
+## 2026-09-16 01:25 — Le périmètre du classement est ATTESTÉ, pour de bon ([[D-202]])
+
+**« Relu » ne vaut pas signature, et la question a été reposée.** C'est la
+troisième fois de la semaine ; la première avait rendu « j'ai lu, et j'ai des
+réserves », et la réserve était fondée. Une signature clinique se DÉCIDE — aucun
+outil ne la pose à la place du responsable, et surtout pas sur une formulation
+ambiguë. Réponse explicite obtenue, signature posée sur `9792c12e72db93d8`.
+
+**Le gain a été revérifié sur la signature réelle**, pas sur une hypothèse :
+réécrire un texte du périmètre puis réancrer l'empreinte — le contournement de
+routine — fait taire l'ancre et laisse l'attestation ROUGE. À l'écran,
+`attestationValide` devient faux et les quatre textes retombent d'eux-mêmes hors
+périmètre signé.
+
+**Et cette mutation a trouvé un défaut de plus, dans un banc à moi.**
+`DecisionSummaryCard.test.tsx` branchait son cas à deux états sur le seul `relu`.
+Sous une attestation périmée, il rougissait alors que l'écran faisait exactement
+ce qu'il devait. **Un banc qui rougit pour la mauvaise raison envoie chercher le
+défaut ailleurs** — et le moment où ça arrive est précisément celui d'une
+péremption de signature, c'est-à-dire le plus mauvais. C'est la même faute que
+Codex avait relevée dans l'écran, survivant une couche plus bas, dans le
+prédicat du banc qui devait la couvrir.
+## 2026-09-16 — Clôture de « 5. Actions » : l'usage est mesuré, il est à zéro
+
+La mesure due depuis la clôture a été faite, le praticien ayant ouvert une session hors
+mode auto — le classifieur refusait la forme de la commande, pas son contenu.
+
+**Zéro version de protocole C1 en production.** L'unique ligne de `protocol_drafts` date du
+2026-07-31 et porte un contrat d'observation alimentaire. Ce qui bouge depuis le 13 :
+épisodes T0 de 7 à 8, sélections de priorité de 1 à 3 — l'entonnoir franchit la phase
+Décision et s'arrête à la phase Actions.
+
+Ce zéro mesure **un jour** de fonctionnement : c'est une ligne de base, pas un verdict. La
+requête est conservée telle quelle au LOT-07 pour être rejouée à l'identique dans deux
+semaines ; la reformuler déplacerait la question.
+
+Campagne close (neuf lots, neuf décisions), `.wn/state.json` passé à `idle`. Portefeuille
+remis d'aplomb : IDP2 close, JA suspendue avec son LOT-05 nommé en dette, C4 retournée en
+file. Cinq dettes de la contre-revue portées à la file.
+
+**Prochaine action** : aucune. Le créneau primaire est libre et son attribution est un
+geste du responsable.
+
+**Question ouverte** : quel rang l'occupe — et `D-112`, mesuré trois fois de suite, pèse
+contre tout rang qui ajoute une surface.
+
+## 2026-09-16 01:55 — L'arbitrage de la primauté, rendu deux fois ([[D-203]])
+
+**Le premier arbitrage rendu a été repris sur un fait.** « Priorité intrinsèque
+d'abord, la plainte ne départageant qu'à priorité égale » — l'option prudente.
+Vérification avant d'écrire une ligne : les quatre règles portent quatre
+priorités DISTINCTES. L'égalité ne se produit jamais, donc cette option ne
+reléguait pas la plainte dominante, elle la **supprimait** : classement fixe,
+identique pour tout patient, un terme déclaré actif et inatteignable.
+
+**J'avais décrit l'option sans vérifier son atteignabilité.** Vraie en principe,
+fausse en fait. C'est le même défaut que le troisième terme du classement porte
+déjà et que le dépôt nomme — sauf que cette fois je l'aurais créé.
+
+Remise au responsable avec le chiffre, l'option a été retirée : **statu quo sur
+le comportement, mais l'arbitrage cesse d'être ouvert.** Le moteur ne change pas
+d'une ligne ; ce qui change est que `PORTEE_ATTESTATION` ne peut plus annoncer
+une question non rendue.
+
+**Le motif du rejet est gardé comme un FAIT.** Un banc relit la table et rougit
+le jour où deux règles partagent une priorité — l'égalité rendrait la plainte
+opérante, et la justification deviendrait fausse sans que personne n'ait touché
+au périmètre. Mutation jouée.
+
+Troisième péremption de signature en deux jours, toujours par le même mécanisme,
+et toujours pour la bonne raison.
+
+## 2026-09-16 02:16 — Attestation rendue sur `9f17a4a658e4fca6` ([[D-203]])
+
+Troisième relecture en deux jours, troisième signature posée **en toutes
+lettres** — jamais déduite d'un « relu ». Le classement relu n'a jamais changé ;
+ce qui s'y ajoute à chaque fois est ce que la signature dit d'elle-même : sa
+portée d'abord, puis l'arbitrage que le signataire a lui-même rendu.
+
+**Un détail qui me revient dessus** : le document de relecture disait DÉJÀ, plus
+bas, que les quatre priorités sont distinctes — c'est ce qui rend le troisième
+terme inatteignable, et c'est écrit dans la surface relue deux fois. J'ai quand
+même proposé une option qui supposait le contraire. La réponse est dans ce que je
+fais lire, pas seulement dans ce que je vérifie après coup.
+## 2026-09-16 02:00 — La clôture mergée, et 6.0-B lu sans être ouvert
+
+**Merge** : PR #1131 (`b368677a`). Le CI avait d'abord **refusé la clôture** —
+`wn-campaign-audit.mjs` est bloquant en CI et **absent de T1** (il n'entre qu'à T2),
+et il a rendu `closed_campaign_with_open_lots` sur le `LOT-01` d'IDP2 dont le statut
+disait « clos », mot que `isClosedStatus` ne connaît pas. Corrigé en alignant **le
+fichier** (« livré », comme ses deux frères), jamais en élargissant le garde. Audit
+rejoué sur le `main` fusionné : `AUDIT-EXIT=0`. La notification de tâche de fond a
+menti une seconde fois sur son code de sortie ; seul le fichier de log fait foi.
+
+**6.0-B *charge et capacité* lu, non ouvert** : dossier init-only (ni `CAMPAGNE.md`,
+ni `lots/` ; tout le contenu dans le brief). Quatre lots esquissés — budget d'effort,
+« simplifier mon protocole » par `ProtocolDraft` chaîné, mode « semaine compliquée »,
+check-in v3. Vérifié contre le dépôt : le gate d'entrée **est levé** (6.0-A livrée le
+2026-08-22) et les ancrages existent ; mais la prémisse du lot 4 a vieilli — le
+catalogue est **déjà en v2** (C4 LOT-05) —, et le lot 1 coûte un changement de contrat
+(`TherapeuticLoad.source` est le littéral `'practitioner'`).
+
+**Recommandation de l'outil, pas un arbitrage** : ne pas ouvrir de campagne ; faire
+passer **un dossier réel** dans le constructeur une fois. Les quatre lots de 6.0-B sont
+en aval du protocole diffusé, mesuré à zéro la veille. Et la relecture d'usage à deux
+semaines ne dira rien si rien n'est tenté d'ici là : on re-mesurerait l'inaction, pas
+l'outil. Si de l'ingénierie doit se faire, la seule pièce sur ce chemin est la **dette
+(1) de `D-200`** — le praticien n'a aucun aperçu de ce que son patient lira, sur aucun
+dossier réel.
+
+**Vérifications** : banc de cohérence d'état et audit de campagnes. Aucun code touché.
+
+**Prochaine action** : attendre le geste du responsable sur le créneau primaire.
+
+## 2026-09-16 02:30 — Huit arbitrages rendus en clôture
+
+Décidé : garder les quatre bandes du MMSE mais **cesser de les attribuer à la HAS** (aucun
+seuil touché, c'est la provenance qui est fausse) · ouvrir **les quatre** réserves qui
+n'attendent qu'une lecture de source · **acquérir la licence MHS** pour la Conners 3 ·
+vérifier la colonne calorique de `Q_ALI_03` · **réaligner ELFE** sur sa source (7 items,
+0-10, vrai scoring) · réaligner **les deux** écarts de l'agenda du sommeil · déclaration de
+droits à rédiger pour `Q_ALI_09`, signature au praticien · **ne pas rouvrir** la chasse au
+flake CI, observer les runs.
+
+Trois décisions vont contre la recommandation de l'assistant (Conners 3 et ELFE : licence
+et réalignement plutôt que retrait ; lectures : quatre plutôt que deux) — consignées telles
+quelles.
+
+**Prochaine action** : les deux lectures qui portent des chiffres affichés au praticien
+(`Q_GEO_06`, `Q_GEO_03`). Trois des huit chantiers touchent la logique clinique et exigent
+chacun une décision `D-xxx` + un fragment ; le mandat est acquis par cet arbitrage.
+
+## 2026-09-16 03:00 — La clause `DC-19` mesurée, et le filtre écarté ([[D-204]])
+
+**Première fois que ce dépôt répond à un finding de contenu LLM par une mesure
+plutôt que par un interdit de plus.** Sur les six synthèses `v30` en production,
+aucune n'énonce de fenêtre de rappel d'instrument — les six formulations de durée
+relèvent des trois cas que la clause autorise. `v29` en portait une fabriquée.
+
+**Un finding évité de peu, et c'est ce que je retiens.** Deux synthèses citent
+« < 14 nuits exploitables ». Trois étapes de vérification donnaient toutes
+« le modèle a inventé un seuil » : la valeur existe en code, seul un drapeau
+binaire est transmis, `interpretation` est NULL. La quatrième — `scores_json` —
+porte la note en toutes lettres, et le filtre ne la retire pas. **S'arrêter une
+étape trop tôt aurait produit une alerte fausse sur un chiffre correct.**
+
+**Le filtre de sortie est écarté, et la mesure dit pourquoi mieux qu'un
+raisonnement** : « 14 nuits » de l'agenda et « 14 nuits » du seuil sont la même
+chaîne servie pour deux raisons différentes. Un détecteur lexical censurerait six
+occurrences légitimes pour zéro fabriquée.
+
+Limites dites : six synthèses ne prouvent pas un comportement, et une seule
+dimension a été mesurée.
+
+## 2026-09-16 — Clôture de session : quatre décisions, trois signatures, deux périmées
+
+**Décisions.** `D-201` la clause `DC-19` se garde par sa puce, pas par son
+vocabulaire ; `D-202` le périmètre du classement attesté, et l'attestation sait
+se périmer ; `D-203` la primauté de la plainte dominante arbitrée ; `D-204` la
+clause mesurée en production.
+
+**Écarté, et pourquoi.** Le filtre de sortie LLM — zéro occurrence à attraper sur
+six synthèses, et « 14 nuits » de l'agenda est la même chaîne que « 14 nuits » du
+seuil : il aurait censuré six cas légitimes pour zéro fabriqué. La priorité
+intrinsèque en tête — elle rendait la plainte dominante inatteignable, les quatre
+priorités étant distinctes. Le blacklistage de « sauf si » — une garde qui nomme
+ce qu'elle ne peut pas voir.
+
+**Prochaine action.** Merger #1139, verte et `CLEAN`.
+
+**Ouvert.** `analyserSortieSynthese` ne lit que la structure : assumé, pas oublié.
+Six synthèses ne prouvent pas un comportement.

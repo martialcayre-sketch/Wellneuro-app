@@ -1,5 +1,10 @@
 // ─── IMPORTS CATALOGUE (lot 7) ──────────────────────────────────────────────
 import type { Question, QuestionOption } from './questionnaire-types';
+// La grille du PSQI vit dans son propre module depuis le 2026-09-13 : un `const`
+// local au corps de ce calculateur était inatteignable depuis un périmètre de
+// signature, et c'est par là que deux tables signées ont changé de comportement
+// sans qu'un sha bouge ([[D-180]]). Les bornes sont inchangées.
+import { BANDES_PSQI } from './clinical/bandesPsqi';
 import { Q_ALI_01, Q_ALI_02, Q_ALI_03, Q_ALI_09, Q_CAN_01, Q_CAN_02, Q_CAR_01, Q_GAS_03, Q_GEO_03, Q_GEO_04, Q_GEO_05, Q_GEO_06, Q_MOD_01, Q_MOD_02, Q_MOD_03, Q_NEU_01, Q_NEU_02, Q_NEU_03, Q_NEU_04, Q_NEU_05, Q_NEU_06, Q_NEU_07, Q_NEU_09, Q_NEU_10, Q_NEU_11, Q_NEU_12, Q_PED_02, Q_PED_03, Q_SOM_01, Q_SOM_03, Q_SOM_04, Q_SOM_07, Q_SOM_09, Q_STR_02, Q_STR_06, Q_STR_08, Q_TAB_03, Q_TAB_04 } from './questionnaires/index';
 // ═══════════════════════════════════════════════════════════════════════════════
 // Wellneuro SIIN — Questions.gs — DÉFINITIF v4 corrigé Dev
@@ -968,10 +973,16 @@ Q_ALI_09,
 // GASTRO-ENTÉROLOGIE
 // ════════════════════════════════════════════════════════
 
-// Certifié v2 — 22/06/2026 — Conforme PDF PRO SIIN Score de Francis
-// Formule Drive : Q002 + (Q003×10) + Q005 + Q006 + Q007 = max 500
-// Seuils : <70 normal · 70-300 significatif · >300 sévère
-// ⚠️ GAP : EVA 0-100% idéale — alternative discrète 0/25/50/75/100 implémentée
+// Score de Francis (IBS-SSS). Formule : Q002 + (Q003×10) + Q005 + Q006 + Q007,
+// maximum 500 — conforme à la publication.
+//
+// SEUILS RÉALIGNÉS LE 2026-09-15 : les bornes Drive (<70 normal · 70-300
+// significatif · >300 sévère) fusionnaient deux catégories publiées. Voir le
+// détail au-dessus de `interpretation`.
+//
+// LE GAP « ÉCHELLE DISCRÈTE » ÉTAIT PÉRIMÉ et est retiré : il annonçait une
+// alternative 0/25/50/75/100, là où le code sert bien une réglette continue au
+// pas de 5. L'affirmation décrivait un état que le code avait cessé d'avoir.
 Q_GAS_02: {
   id:'Q_GAS_02', titre:'Score de Francis — Syndrome de l\'intestin irritable',
   instructions:"Répondez aux questions en vous référant à votre état actuel. Pour la fréquence des douleurs, indiquez le nombre de jours douloureux sur une période de 10 jours.",
@@ -983,17 +994,39 @@ Q_GAS_02: {
         qn('FR_Q003','Veuillez indiquer le nombre de jours au cours desquels vous souffrez sur une période de 10 jours.',0,10,1,'jours / 10'),
         qs('FR_Q004','Souffrez-vous actuellement de problème de distension abdominale, ballonnements, ventre gonflé, tendu ?',[{v:'oui',l:'Oui'},{v:'non',l:'Non'}]),
         qn('FR_Q005',"Si oui, quelle est l'importance de ces problèmes de distension abdominale ?",0,100,5,'/ 100'),
-        qn('FR_Q006','Dans quelle mesure êtes-vous satisfait(e) de la fréquence habituelle de vos selles ?',0,100,5,'/ 100'),
+        // ANCRES AJOUTÉES 2026-09-15 : la question demande la SATISFACTION,
+        // le moteur compte l'INSATISFACTION, et la réglette ne portait aucune
+        // ancre — le patient ne pouvait pas connaître le sens de son geste.
+        // Un patient très satisfait glissant vers 100 marquait 100 points de
+        // sévérité sur 500, soit un cinquième de l'instrument à contresens.
+        // La source imprime ses ancres sur l'échelle visuelle (« very happy » →
+        // « very unhappy ») ; nous ne montrions rien. Le moteur inverse pourtant
+        // l'identifiant hérité `FR4` (`100 - FR4`) : l'inversion existait, elle
+        // s'est perdue au renommage.
+        qn('FR_Q006','Dans quelle mesure êtes-vous satisfait(e) de la fréquence habituelle de vos selles ? (0 = très satisfait(e) · 100 = très insatisfait(e))',0,100,5,'/ 100'),
         qn('FR_Q007','Dans quelle mesure votre syndrome de côlon irritable affecte ou perturbe votre vie en général ?',0,100,5,'/ 100'),
       ]},
   ],
   scoring:{
     type:'francis',
     certification:{source:'drive',status:'certifie'},
+    // RÉALIGNÉ SUR LA PUBLICATION LE 2026-09-15 (arbitrage praticien).
+    // Francis, Morris & Whorwell 1997 publient QUATRE catégories : rémission
+    // sous 75, léger 75-175, modéré 175-300, sévère 300-500. Étaient servies
+    // TROIS bandes, avec une frontière à 70 et — surtout — léger et modéré
+    // FUSIONNÉS : la distinction qui porte la cible thérapeutique disparaissait.
+    //
+    // DEUX ARBITRAGES, ÉPINGLÉS COMME TELS ET NON COMME DES VALEURS PUBLIÉES :
+    // la source écrit « lower than 75 » pour la rémission, donc 75 rejoint la
+    // bande légère ; et ses trois bornes intérieures se chevauchent (75, 175,
+    // 300 appartiennent à deux catégories à la fois). Le chevauchement est
+    // tranché vers la bande INFÉRIEURE, même sens que l'arbitrage du QDRS à 20
+    // rendu le même jour — sans quoi un trou s'ouvrirait à chaque borne.
     interpretation:[
-      {min:0,   max:69,  label:'Valeurs normales',                    color:'success'},
-      {min:70,  max:300, label:"Troubles fonctionnels significatifs ; l'intensité du trouble ressenti est proportionnelle au score", color:'warning'},
-      {min:301, max:500, label:"Troubles fonctionnels d'intensité sévère",       color:'danger'},
+      {min:0,   max:74,  label:'Rémission',                          color:'success'},
+      {min:75,  max:175, label:'Syndrome de l\'intestin irritable léger',  color:'info'},
+      {min:176, max:300, label:'Syndrome de l\'intestin irritable modéré', color:'warning'},
+      {min:301, max:500, label:'Syndrome de l\'intestin irritable sévère',  color:'danger'},
     ],
     note:'FR_Q001 et FR_Q004 sont des questions filtres non scorées. FR_Q003 est multiplié par 10.'
   }
@@ -2983,41 +3016,13 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const repondus = ITEMS_COTES.filter(id => getVal(id) !== null).length;
     const missing = ITEMS_COTES.length - repondus;
     const recueilIncomplet = missing > 0;
-    // Les quatre bandes, sorties de la cascade de ternaires où elles vivaient
-    // pour prendre la forme `{min, max}` du reste du catalogue. Ce n'est pas un
-    // reformatage : `bandePlancher` a besoin des BORNES pour savoir laquelle est
-    // la plus basse — la seule qui ne fasse pas un plancher —, et une cascade ne
-    // les expose pas. Les quatre bandes et leurs coupures sont inchangées.
-    //
-    // PROVENANCE — corrigé le 2026-09-13 : ce paragraphe disait « l'échelle de
-    // Buysse 1989 ». Il revendiquait une source qui ne porte pas cette grille.
-    // Buysse et al. (Psychiatry Research 28:193-213, 1989) ne publient AUCUNE
-    // stratification de sévérité : le PSQI y est DICHOTOMIQUE — bon dormeur /
-    // mauvais dormeur, une seule frontière, « a global PSQI score greater
-    // than 5 ». Les quatre bandes ci-dessous et leurs libellés sont une
-    // construction WellNeuro. Seule la coupure 4/5 a un répondant dans la
-    // littérature, et décalé d'un point ; 10/11 et 16/17 n'en ont aucun.
-    //
-    // BORNE DÉPLACÉE 4/5 → 5/6 LE 2026-09-13, sur arbitrage praticien. Ce n'est
-    // pas un ajustement d'affichage : c'est ainsi que `R-SOM-01` cesse de
-    // s'allumer à 5. Sa zone cite des COULEURS, pas des nombres ; le seul
-    // endroit où le point d'allumage se règle est donc cette grille — et elle
-    // vit hors du périmètre signé, si bien qu'aucun sha ne bouge. La
-    // conséquence à connaître : `BIO-SOM-01` recopie la même zone couleur sur
-    // le même instrument, et suit ce déplacement sans avoir été éditée.
-    //
-    // CE QUE 5 DEVIENT, ET CE QUE PERSONNE NE PEUT DIRE À SA PLACE. Buysse ne
-    // classe PAS un total de 5 : sa feuille de cotation écrit « TOTAL < 5 »
-    // bon, « TOTAL > 5 » mauvais, et laisse la valeur exacte sans case. Le
-    // ranger en « Pas de trouble du sommeil » est donc un choix WellNeuro, au
-    // même titre que le ranger en « légers » l'était avant — l'arbitrage tranche
-    // en faveur de la spécificité, et de l'alignement sur le cut-off strict.
-    const BANDES_PSQI = [
-      {min: 0,  max: 5,  label: 'Pas de trouble du sommeil',    color: 'success'},
-      {min: 6,  max: 10, label: 'Troubles du sommeil légers',   color: 'info'},
-      {min: 11, max: 16, label: 'Troubles du sommeil modérés',  color: 'warning'},
-      {min: 17, max: 21, label: 'Troubles du sommeil sévères',  color: 'danger'},
-    ];
+    // LES QUATRE BANDES DU PSQI VIVENT DANS `clinical/bandesPsqi.ts` depuis le
+    // 2026-09-13. Elles étaient ici, en `const` local : hors d'atteinte de toute
+    // signature, alors que ce sont ELLES qui décident du point d'allumage de
+    // `R-SOM-01` et de `BIO-SOM-01`, dont les zones citent des couleurs et jamais
+    // des nombres. La provenance — Buysse ne publie aucune stratification de
+    // sévérité, les quatre bandes sont une construction WellNeuro — a suivi la
+    // grille : elle se lit là où la grille se lit.
     const interp = recueilIncomplet ? null : interpretRanges(total, BANDES_PSQI);
     // L'éligibilité se lit sur l'INSTRUMENT, ici comme dans `sum` et `tfd`, alors
     // même que la grille est écrite dans ce fichier : un `true` en dur ferait de

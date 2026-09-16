@@ -69,7 +69,39 @@ export function CeQuiComptePanel({ idPatient }: { idPatient: string }) {
       </p>
 
       {etat === 'chargement' && (
-        <p role="status" className="mt-3 text-base text-muted-foreground">
+        // LA PLACE EST RÉSERVÉE, ET PAR LE TEXTE LUI-MÊME.
+        //
+        // Ce panneau est rendu AU-DESSUS de la fiche-trajectoire et lit sa
+        // propre route : il se résout quand il veut. Sa ligne de chargement
+        // (22 caractères, une ligne) cédait la place à un paragraphe de cent
+        // caractères qui se replie sur trois ou quatre lignes en 390 px — la
+        // page gagnait une cinquantaine de pixels, et tout ce qui est en
+        // dessous glissait. Mesuré : `scrollY` passait de 1222 à 1272 ENTRE
+        // l'appui et le relâchement d'un geste visant « Retour au présent »
+        // (`e2e/lecture-datee-reflow.spec.ts`).
+        //
+        // L'ancrage de défilement du navigateur a compensé ce jour-là et le
+        // clic a atteint sa cible. RIEN NE GARANTIT QU'IL COMPENSE TOUJOURS, et
+        // un praticien qui vise du doigt pendant que la page glisse de cinquante
+        // pixels ne tape pas forcément ce qu'il voulait — sur la fiche d'un
+        // patient, un appui qui atterrit ailleurs n'est pas un désagrément.
+        //
+        // LA RÉSERVE EST UNE HAUTEUR, PAS DU TEXTE CACHÉ — et c'est une leçon.
+        // La première rédaction réservait la place en rendant le message de
+        // l'état résolu invisible : hauteur juste à toute largeur, mais le texte
+        // « Aucun dépôt à ce jour » entrait dans le DOM PENDANT le chargement.
+        // Le banc `CeQuiComptePanel` a rougi, et il avait raison : il garde que
+        // le chargement ne soit « ni absence, ni alerte ». Rendre invisible un
+        // texte ne le rend pas absent — il reste lisible à qui lit le document.
+        // 4,5 rem = trois lignes de `text-base` : ce que le message occupe en
+        // 390 px, la largeur où le saut a été mesuré. Plus large, il en occupe
+        // moins et la réserve laisse un peu de blanc — c'est le prix, et il est
+        // payé à l'intérieur de la carte.
+        //
+        // CE QUE LA RÉSERVE NE COUVRE PAS, ET C'EST DIT : l'arrivée de dépôts
+        // RÉELS agrandit le panneau au-delà. Aucune réserve ne peut la prévoir,
+        // et cette croissance-là porte de l'information.
+        <p role="status" className="mt-3 min-h-[4.75rem] text-base text-muted-foreground">
           Chargement des dépôts&hellip;
         </p>
       )}
@@ -98,7 +130,11 @@ export function CeQuiComptePanel({ idPatient }: { idPatient: string }) {
       )}
 
       {etat === 'chargee' && entrees.length === 0 && (
-        <p className="mt-3 text-base text-muted-foreground">
+        // MÊME PLANCHER QUE L'ÉTAT DE CHARGEMENT — sans quoi la réserve ne sert
+        // à rien : si seul le chargement porte la borne, la résolution ramène la
+        // hauteur à celle du texte et la page saute dans l'autre sens. Mesuré :
+        // 50 px de saut sans réserve, 2 px avec une borne posée d'un seul côté.
+        <p className="mt-3 min-h-[4.75rem] text-base text-muted-foreground">
           Aucun dépôt à ce jour. Ce silence n’est pas une réponse : il ne dit rien de l’état du patient.
         </p>
       )}

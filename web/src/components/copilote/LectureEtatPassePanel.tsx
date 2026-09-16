@@ -139,6 +139,20 @@ export function LectureEtatPassePanel({
     setErreurNote('');
   }, []);
 
+  // SORTIR SE FAIT PAR UNE SEULE FONCTION, ET C'EST STRUCTUREL.
+  // En mode piloté, le parent est SEUL propriétaire de la sélection : une
+  // sortie qui réinitialise l'état local sans le prévenir se fait défaire par
+  // l'effet de synchronisation ci-dessous, qui voit `repereInitial !==
+  // repereActif` et ROUVRE la lecture qu'on vient de fermer. Le praticien
+  // demande le présent et reste dans le passé, sur la seule surface dont le
+  // rôle est d'empêcher exactement cette confusion.
+  // Le bouton de pied l'a fait tant qu'il appelait `revenirAuPresent` seul
+  // (reproduit par banc avant correctif). Toute sortie future passe par ici.
+  const sortirAuPresent = useCallback(() => {
+    revenirAuPresent();
+    onRetourPresent?.();
+  }, [revenirAuPresent, onRetourPresent]);
+
   // Le dépôt de note ne passe PAS par le cockpit : route dédiée, instant relu
   // dans le corps. Voir `api/praticien/relecture-notes/route.ts`.
   const deposerNote = useCallback(async () => {
@@ -230,10 +244,12 @@ export function LectureEtatPassePanel({
                 sortie, explicite — jamais un état daté qui « colle ». */}
             <button
               type="button"
-              onClick={() => {
-                revenirAuPresent();
-                onRetourPresent?.();
-              }}
+              // REPÈRE DE MESURE (banc `lecture-datee-reflow`) : l'enregistreur
+              // d'événements doit pouvoir situer ce bouton à chaque phase du
+              // geste, y compris quand le contenu du dessus se résout entre
+              // l'appui et le relâchement. Aucun effet de rendu.
+              data-sortie-presente=""
+              onClick={sortirAuPresent}
               className="ml-auto flex min-h-11 shrink-0 items-center rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               Retour au présent
@@ -317,7 +333,7 @@ export function LectureEtatPassePanel({
 
           <button
             type="button"
-            onClick={revenirAuPresent}
+            onClick={sortirAuPresent}
             className="mt-3 min-h-11 rounded-lg border border-border bg-surface px-3 py-1 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Revenir au présent

@@ -1562,6 +1562,37 @@ model PortailLecturePatient {
   @@map("portail_lectures_patient")
 }
 
+/// COMBIEN DE FOIS « Voir les sources et limites » EST OUVERT — et rien d'autre.
+///
+/// DEUX ESPÈCES PARCE QU'UN COMPTE D'OUVERTURES SEUL NE VEUT RIEN DIRE : sans
+/// son dénominateur, « 40 ouvertures » ne distingue pas une surface consultée
+/// systématiquement d'une surface ignorée quatre-vingt-dix-neuf fois sur cent.
+/// `affichage` compte les montages de la carte, `ouverture` les dépliements ;
+/// le taux est leur quotient.
+///
+/// CE QUE SA FORME REND IMPOSSIBLE. Ni `idPatient`, ni identité de praticien, ni
+/// instant, ni ligne par événement : « ce praticien n'ouvre jamais les
+/// limitations » est une phrase que cette table ne peut pas produire. Même
+/// discipline que `PortailLecturePatient`, qui se prive de toute date pour ne
+/// pas devenir un journal de présence — ici la cible serait le praticien, et un
+/// second registre d'accès par-dessus `JournalAccesDossier`.
+///
+/// SEUL ENDROIT DU DÉPÔT OÙ UN `update` VAUT MIEUX QU'UN AJOUT. Ailleurs l'ajout
+/// seul protège une trace clinique contestable ; ici, empiler FABRIQUERAIT la
+/// granularité qu'on vient de refuser.
+model CompteurOuvertureSources {
+  /// Le JOUR, jamais l'instant : la granularité utile à un taux est la journée.
+  jour   DateTime @map("jour") @db.Date
+  /// 'affichage' | 'ouverture' — fermé par un CHECK en base.
+  espece String   @map("espece")
+  /// Incrémenté par `ON CONFLICT DO UPDATE`. Un CHECK en base refuse le négatif :
+  /// aucun événement conservé ne permettrait de reconstituer un décrément fautif.
+  compte Int      @default(0) @map("compte")
+
+  @@id([jour, espece])
+  @@map("compteur_ouverture_sources")
+}
+
 // Lien magique d'accès au portail patient (IDP LOT-01, gate G4).
 //
 // Remplace PROGRESSIVEMENT le jeton permanent `patients.access_token`, qui est

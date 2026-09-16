@@ -4,7 +4,15 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
+import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
+import { buildPatientProtocolView } from '@/lib/clinical-engine/patientProtocolView';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import {
+  LONGUEUR_CYCLE_REF,
+  projeterSurLeFil,
+  type VuePatientSurLeFil,
+} from '@/lib/protocol/vuePatientSurLeFil';
+import type { ProtocolDiffusionApproval } from '@/lib/clinical-engine/types';
 
 // Cycle JA diffusé, vu du praticien (lot 2, item 5). Miroir exact de ce que
 // `GET /api/portail/protocole` sert au patient, pour que les deux panneaux du
@@ -12,18 +20,21 @@ import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/app
 // divergents (`ja_${id}` d'un côté, `ja_praticien_${id}` de l'autre).
 // Lecture seule ; aucune donnée nouvelle n'est exposée au praticien, qui a déjà
 // accès au protocole complet.
+//
+// « MIROIR EXACT » L'ÉTAIT DEVENU FAUX ([[D-191]]). Cette route recopiait la
+// projection manuelle du portail — `draft.actions[0]` comprise — au lieu de la
+// partager : deux copies d'un même défaut, et rien pour les faire diverger
+// bruyamment. Elle passe désormais par le MÊME rejeu de carte, le MÊME contrat
+// `c1-patient-protocol-view-v2` et la MÊME projection. Le praticien voit donc
+// aussi le refus quand le patient ne voit rien — c'est le seul endroit du dépôt
+// où cette symétrie était promise en commentaire sans être tenue.
 
 const ROUTE_JOURNAL = '/api/praticien/ja/cycle';
-const LONGUEUR_CYCLE_REF = 16;
 
 type ErrorResponse = { ok: false; reason: string; error: string };
-type CycleVue = {
-  purpose: string;
-  actionPrincipale: { type: string; title: string; minimalPlan: string } | null;
-  cycleRef: string;
-  debutCycle: string;
-};
-type GetResponse = { ok: true; protocoleDiffuse: boolean; vue: CycleVue | null } | ErrorResponse;
+type GetResponse =
+  | { ok: true; protocoleDiffuse: boolean; vue: VuePatientSurLeFil | null }
+  | ErrorResponse;
 
 function sanitizePatientId(value: unknown): string | null {
   if (typeof value !== 'string') return null;
@@ -69,27 +80,67 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
 
     const row = await prisma.protocolDraft.findUnique({
       where: { id: diffuse.protocolDraftId },
-      select: { payload: true, inputHash: true },
+      select: { payload: true, inputHash: true, assessmentEpisodeId: true },
     });
     if (!row) {
-      return NextResponse.json({ ok: true, protocoleDiffuse: false, vue: null });
+      // Une approbation existe mais sa version a disparu : ce n'est pas une
+      // absence de diffusion, c'est une anomalie. Le praticien doit lire
+      // « diffusé, non servi », pas « aucun protocole ».
+      return NextResponse.json({ ok: true, protocoleDiffuse: true, vue: null, indisponible: true });
     }
 
     const draft = reconstructProtocolDraft(row.payload, row.inputHash);
-    const principale = draft.actions[0] ?? null;
+    const rejeu = await rejouerCarteDecision({
+      idPatient,
+      decisionCardId: diffuse.decisionCardId,
+      assessmentEpisodeId: row.assessmentEpisodeId,
+      decisionCardInputHash: diffuse.decisionCardInputHash,
+    });
+    if (!rejeu.ok) {
+      // LE PRATICIEN VOIT CE QUE LE PATIENT VOIT — c'est-à-dire rien, et pour la
+      // même raison. Servir ici un protocole que le portail refuse ferait croire
+      // au praticien que son patient le lit.
+      // UN PROTOCOLE DIFFUSÉ QU'ON NE PEUT PAS SERVIR N'EST PAS UNE ABSENCE DE
+      // PROTOCOLE ([[D-200]]). Cette route rendait `protocoleDiffuse: false`,
+      // que le carnet affiche « Aucun protocole diffusé pour ce patient » : une
+      // affirmation FAUSSE, et exactement celle qui empêche le praticien de
+      // comprendre pourquoi son patient ne voit rien. Le contrat suit désormais
+      // celui du portail, à la lettre : diffusé oui, servi non.
+      console.warn('[praticien/ja/cycle GET] protocole diffusé non servi :', rejeu.motif);
+      return NextResponse.json({ ok: true, protocoleDiffuse: true, vue: null, indisponible: true });
+    }
 
-    return NextResponse.json({
-      ok: true,
-      protocoleDiffuse: true,
-      vue: {
-        purpose: draft.purpose,
-        actionPrincipale: principale
-          ? { type: principale.type, title: principale.title, minimalPlan: principale.minimalPlan }
-          : null,
+    const approval: ProtocolDiffusionApproval = {
+      decisionCardInputHash: diffuse.decisionCardInputHash,
+      protocolDraftInputHash: diffuse.protocolDraftInputHash,
+      approvedAt: diffuse.approvedAt.toISOString(),
+      approvedBy: diffuse.approvedBy as 'practitioner',
+      confirmation: diffuse.confirmation as 'content_approved_for_diffusion',
+    };
+    let vue: VuePatientSurLeFil;
+    try {
+      vue = projeterSurLeFil({
+        vue: buildPatientProtocolView({
+          decisionCard: rejeu.decisionCard,
+          protocolDraft: draft,
+          approval,
+          patientLimitations: [],
+        }),
+        // Le carnet praticien ne rend aucune boussole : elles vivent sur la
+        // surface patient, sous le drapeau C5.
+        boussoles: [],
         cycleRef: diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF),
         debutCycle: diffuse.approvedAt.toISOString(),
-      },
-    });
+      });
+    } catch (erreur) {
+      console.warn(
+        '[praticien/ja/cycle GET] le contrat patient refuse ce protocole :',
+        erreur instanceof Error ? erreur.message : String(erreur),
+      );
+      return NextResponse.json({ ok: true, protocoleDiffuse: true, vue: null, indisponible: true });
+    }
+
+    return NextResponse.json({ ok: true, protocoleDiffuse: true, vue, indisponible: false });
   } catch (error) {
     if (error instanceof ProtocolPayloadIntegrityError) {
       return NextResponse.json(
