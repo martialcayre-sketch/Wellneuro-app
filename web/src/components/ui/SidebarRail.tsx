@@ -20,7 +20,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
-import type { CorrespondanceRecentesApiResponse } from '@/app/api/praticien/correspondance-medecin/recentes/route';
+import type { CorrespondanceCompteurApiResponse } from '@/app/api/praticien/correspondance-medecin/recentes/compteur/route';
 
 // Rail conforme à la maquette de référence « WellNeuro 5.0 — La Spirale »
 // (artifact canonique, décision propriétaire 2026-07-22) : trois groupes —
@@ -107,9 +107,11 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
         if (vivant && !d.unavailable && Array.isArray(d.cartes)) setNbCartesFil(d.cartes.length);
       })
       .catch(() => {});
-    fetch('/api/praticien/correspondance-medecin/recentes')
+    // Le COMPTEUR, pas la liste : le rail n'a jamais affiché les lignes, et les
+    // demander faisait résoudre cinq noms de patients à chaque montage.
+    fetch('/api/praticien/correspondance-medecin/recentes/compteur')
       .then(r => r.json())
-      .then((d: CorrespondanceRecentesApiResponse) => {
+      .then((d: CorrespondanceCompteurApiResponse) => {
         if (vivant && !d.unavailable) setNbCorrespondance(d.nbRecentes7j);
       })
       .catch(() => {});

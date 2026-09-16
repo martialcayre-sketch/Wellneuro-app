@@ -4,7 +4,11 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import type { GabaritAcces } from '@/lib/praticien/journalAcces';
-import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
+import {
+  preparerCorrespondance,
+  sensExpose,
+  type SensCorrespondance,
+} from '@/lib/praticien/correspondanceMedecin';
 import {
   accepteNouvelEnvoi,
   MESSAGE_DOSSIER_CLOS,
@@ -51,7 +55,8 @@ export type VerdictAncrage = 'concordante' | 'perimee' | 'sans_ancrage';
 
 export type CorrespondanceExposee = {
   id: string;
-  sens: string;
+  /** `null` si la valeur en base est hors vocabulaire — voir `sensExpose`. */
+  sens: SensCorrespondance | null;
   medecinLibelle: string;
   texte: string;
   idSynthese: string | null;
@@ -167,7 +172,7 @@ function exposer(ligne: {
 }): CorrespondanceExposee {
   return {
     id: ligne.id,
-    sens: ligne.sens,
+    sens: sensExpose(ligne.sens),
     medecinLibelle: ligne.medecinLibelle,
     texte: ligne.texte,
     // Référence souple : un id disparu est exposé tel quel, l'écran le tolère

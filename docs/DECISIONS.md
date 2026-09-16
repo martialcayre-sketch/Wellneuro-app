@@ -4,6 +4,69 @@
 
 ## Décisions actives
 
+### D-208 — Le sens d'un échange se lit une seule fois, et l'accueil cesse de citer le dossier
+
+- Date : 2026-09-16
+- Statut : accepté — **arbitrage du responsable**, rendu en session sur les deux
+  questions ouvertes du LOT-01 de la campagne « ouverture du rayon
+  Correspondance » (cadrage du 2026-09-16).
+- Domaine : correspondance médecin, surfaces transversales, minimisation.
+- Porte sur : les décisions propriétaire des 2026-07-22 (fil C3 LOT-06) et
+  2026-07-23 (aside « Correspondance récente » et badge du rail), dont elle
+  révise ce que la surface d'accueil rend. Ne touche ni le fil, ni la
+  consignation, ni le schéma.
+
+**1. UNE COLONNE NON CONTRAINTE PRODUISAIT DEUX AFFIRMATIONS CONTRAIRES.**
+`correspondances_medecin.sens` n'a aucun CHECK (migration
+`20260722170000`), et les deux lecteurs repliaient en sens **inverse** :
+`recentes/route.ts` rendait `'sortant'` pour toute valeur hors vocabulaire,
+`CorrespondanceMedecinPanel` rendait « Réponse transcrite ». La même ligne se
+lisait « envoi » à l'accueil et « réponse » sur la fiche — l'accueil
+accompagnant en outre son libellé faux d'un extrait du texte.
+
+**Le troisième repli n'en est pas un.** Départager les deux écrans revenait à
+choisir laquelle des deux affirmations fausses conserver. `libelleSens` et
+`sensExpose` vivent désormais dans `lib/praticien/correspondanceMedecin.ts`,
+seuls lecteurs du produit : les deux sens connus gardent leurs libellés, tout le
+reste rend « Échange consigné » — vrai des deux sens — et le contrat expose
+`null`. C'est `DC-24` appliqué, le patron qui empêche déjà `sans_ancrage` de se
+présenter comme `perimee`.
+
+**Écarté : le CHECK en base.** Il aurait garanti le domaine de la colonne, au
+prix d'une migration seule, d'un `release-db` approuvé et de son gate humain —
+pour une colonne dont les deux seuls écrivains applicatifs n'écrivent déjà que
+des valeurs valides (`preparerCorrespondance`, et le littéral `'sortant'` du
+courrier de biologie). Le défaut était **en lecture** ; il se corrige en
+lecture. Le CHECK reste ouvert et se posera avec une migration qui a d'autres
+motifs — la colonne `supersedes_*` qui manque au modèle, notamment.
+
+**2. L'ACCUEIL NE CITE PLUS LE DOSSIER, ET LE BADGE NE LE NOMME PLUS.** Le
+panneau « Correspondance récente » rendait 120 caractères du texte consigné — de
+la parole clinique transcrite — sur un écran ouvert toute la journée, et cette
+lecture n'était journalisée nulle part : `G-TRUST-04` journalise la lecture d'un
+dossier **nommé**, et une liste transversale n'en est pas une. Deux voies
+s'offraient : étirer la doctrine pour couvrir la surface, ou réduire la surface.
+
+**La surface a été réduite, et par sa forme plutôt que par son rendu.** La
+colonne `texte` n'est plus sélectionnée — un extrait retiré de l'écran mais
+toujours chargé resterait à un `console.log` de distance. Le panneau dit qui,
+quand, quel médecin et quel sens ; savoir de quoi l'échange parlait exige
+d'ouvrir le dossier, et **cette lecture-là est journalisée**.
+
+**Le compteur du rail a sa propre route.** `recentes/compteur` ne traverse
+aucune table d'identité. Le badge lisait `nbRecentes7j` sur `recentes`, qui sert
+cinq dossiers nommés — et le rail **jetait les lignes** : chaque montage, donc
+chaque chargement du cockpit et chaque ouverture du tiroir tablette qui en monte
+une seconde instance, résolvait cinq noms de patients pour afficher un entier.
+La réponse du compteur ne peut structurellement pas porter de donnée patient.
+
+**3. RÉSERVE NOMMÉE — ce que la décision ne fait pas.** Elle ne journalise
+toujours pas `recentes`, qui continue de servir cinq dossiers nommés sans écrire
+une ligne de `journal_acces_dossiers` : elle retire ce que cette surface disait
+de trop, pas le fait qu'elle nomme. Si le rayon s'ouvre sur une liste plus
+longue, la question se rouvre entière — et c'est le préalable écrit du lot
+suivant.
+
 ### D-207 — Les trois défauts n'étaient pas vivants mais ARMÉS, et `D-205` §6 se corrige : le premier se ferme, les deux autres se requalifient
 
 - Date : 2026-09-16

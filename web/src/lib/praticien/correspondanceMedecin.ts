@@ -21,6 +21,47 @@
 export const SENS_CORRESPONDANCE = ['sortant', 'entrant'] as const;
 export type SensCorrespondance = (typeof SENS_CORRESPONDANCE)[number];
 
+/**
+ * LE SENS SE LIT ICI, ET NULLE PART AILLEURS.
+ *
+ * La colonne `sens` n'a aucun CHECK en base (migration
+ * `20260722170000_c3_fil_correspondance_medecin_v1` : `"sens" TEXT NOT NULL`).
+ * Chacun des deux écrans s'était donc écrit son propre repli — et ils
+ * repliaient EN SENS INVERSE : l'accueil rendait « Envoi consigné » là où la
+ * fiche rendait « Réponse transcrite », pour la même ligne, sous un extrait de
+ * son texte. Une colonne non contrainte produisait deux affirmations
+ * incompatibles sur le même dossier.
+ *
+ * LE TROISIÈME REPLI N'EN EST PAS UN. Départager les deux écrans reviendrait à
+ * choisir laquelle des deux affirmations fausses garder : une valeur hors
+ * vocabulaire n'est pas un envoi, et pas davantage une réponse — elle est une
+ * donnée qu'on ne sait pas lire. Le patron du dépôt pour ce cas est écrit
+ * ([[DC-24]], et `sans_ancrage` qui n'est pas `perimee`) : on ne fait pas
+ * porter à la donnée un jugement qu'elle ne soutient pas. `libelleSens` rend
+ * donc un libellé VRAI DES DEUX SENS, et le contrat expose `null`.
+ */
+export const LIBELLES_SENS: Record<SensCorrespondance, string> = {
+  sortant: 'Envoi consigné',
+  entrant: 'Réponse transcrite',
+};
+
+/** Libellé neutre : vrai quel que soit le sens, donc sûr quand il est illisible. */
+export const LIBELLE_SENS_INDETERMINE = 'Échange consigné';
+
+/**
+ * Le seul lecteur de `sens` du produit. Prend la valeur telle qu'elle sort de
+ * la base — `string`, `null`, ou n'importe quoi — et ne rend jamais une
+ * affirmation de direction qu'elle ne porte pas.
+ */
+export function libelleSens(valeur: unknown): string {
+  return estSens(valeur) ? LIBELLES_SENS[valeur] : LIBELLE_SENS_INDETERMINE;
+}
+
+/** Normalise pour le CONTRAT : le sens lu, ou `null` s'il est hors vocabulaire. */
+export function sensExpose(valeur: unknown): SensCorrespondance | null {
+  return estSens(valeur) ? valeur : null;
+}
+
 /** Une lettre transcrite dépasse une note de relecture (4000) ; au-delà de
  *  8000, ce n'est plus une transcription mais une archive à tenir ailleurs. */
 export const LONGUEUR_MAX_TEXTE = 8000;
@@ -54,7 +95,7 @@ export type PreparationCorrespondance =
   | { ok: true; donnees: DonneesCorrespondance }
   | { ok: false; raison: RefusCorrespondance };
 
-function estSens(valeur: unknown): valeur is SensCorrespondance {
+export function estSens(valeur: unknown): valeur is SensCorrespondance {
   return (
     typeof valeur === 'string' && (SENS_CORRESPONDANCE as readonly string[]).includes(valeur)
   );

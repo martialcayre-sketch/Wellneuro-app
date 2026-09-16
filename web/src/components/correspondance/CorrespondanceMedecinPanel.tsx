@@ -6,7 +6,11 @@ import type {
   CorrespondancePatientExposee,
   CorrespondanceMedecinApiResponse,
 } from '@/app/api/praticien/correspondance-medecin/route';
-import { LONGUEUR_MAX_MEDECIN_LIBELLE, LONGUEUR_MAX_TEXTE } from '@/lib/praticien/correspondanceMedecin';
+import {
+  libelleSens,
+  LONGUEUR_MAX_MEDECIN_LIBELLE,
+  LONGUEUR_MAX_TEXTE,
+} from '@/lib/praticien/correspondanceMedecin';
 
 // Fil de correspondance médecin (C3 LOT-06, V1 = transcription praticien) —
 // surface praticien, onglet « Correspondance » de la fiche patient.
@@ -235,7 +239,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
           {correspondances.map((ligne) => (
             <li key={ligne.id} className="rounded-lg border border-border bg-surface p-3 text-base text-foreground">
               <p className="text-xs font-medium text-muted-foreground">
-                {ligne.sens === 'sortant' ? 'Envoi consigné' : 'Réponse transcrite'} · {ligne.medecinLibelle}
+                {libelleSens(ligne.sens)} · {ligne.medecinLibelle}
               </p>
               <p className="mt-1 whitespace-pre-wrap">{ligne.texte}</p>
               <p className="mt-1 text-xs text-muted-foreground">
