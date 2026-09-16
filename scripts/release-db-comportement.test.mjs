@@ -152,6 +152,9 @@ function jouer(script, { cwd, bin, env }) {
   writeFileSync(fichier, script);
   const fichierEnv = join(cwd, '..', 'github-env.txt');
   writeFileSync(fichierEnv, '');
+  const envSansGitHub = Object.fromEntries(
+    Object.entries(process.env).filter(([cle]) => !cle.startsWith('GITHUB_')),
+  );
   let code = 0;
   let sortie = '';
   try {
@@ -164,7 +167,7 @@ function jouer(script, { cwd, bin, env }) {
       // `--test-timeout` de node ne suffit pas : le corps est SYNCHRONE.
       timeout: 60_000,
       env: {
-        ...process.env,
+        ...envSansGitHub,
         PATH: `${bin}:${process.env.PATH}`,
         GITHUB_ENV: fichierEnv,
         SCALINGO_APP: 'app-jouet',
