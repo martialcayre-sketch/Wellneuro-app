@@ -6869,3 +6869,23 @@ de règle cite maintenant sa décision.
 
 Prochaine action : PR de l'entrée, revue lue et verdicts rendus, merge avec
 `--subject` — en re-vérifiant que `D-214` est toujours libre au moment du merge.
+
+## 2026-09-16 — Les deux réserves de `D-214` sont fermées, dont une par réfutation
+
+Clause ajoutée en §1.1 : **le corps de la revue se lit, pas son état**. Copilot
+peut conclure « Approval recommended », `comments generated: 0`, et loger un
+constat réel dans un bloc « Suppressed comments » de son corps de revue —
+`pulls/<N>/comments` rend `[]`. C'est arrivé sur #1161, et le constat était juste.
+
+Le « défaut de classe » du gabarit de handoff est **écarté sur pièces** :
+`/wn-handoff` liste bien les huit rubriques. Ce qui manquait est sa portée — le
+skill porte `disable-model-invocation`, donc un handoff écrit à la main n'en
+hérite pas. Les huit entrent dans `.claude/rules/docs-changelog.md`, armé sur
+`docs/**`. Aucun banc : l'outil n'était pas cassé.
+
+Option écartée : écrire un contrôle de gabarit. Il aurait traité un défaut
+d'outil inexistant, et rougi sur les handoffs historiques que le README exempte
+explicitement.
+
+Séquence terminée : règles posées (`ad6c8057`), gravées (`D-214`, `f5a06e9c`),
+réserves fermées. Aucune suite due.

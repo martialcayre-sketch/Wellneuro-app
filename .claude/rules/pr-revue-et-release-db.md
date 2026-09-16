@@ -34,6 +34,15 @@ Les commentaires **en ligne** — attachés à une ligne de diff — n'apparaiss
 le plus fréquent, et le plus coûteux. Écrire la sortie dans un fichier puis la
 relire : le `--jq` avec interpolation est refusé par l'isolation de worktree.
 
+**Le CORPS de chaque revue se lit, pas seulement son état.** Copilot peut
+conclure « Approval recommended » avec `comments generated: 0` et loger son
+constat dans un bloc « Suppressed comments » **de son propre corps de revue** :
+`pulls/<N>/comments` rend alors `[]`, et une lecture qui s'arrête au `state` de
+la revue ne voit rien. Constaté sur la PR #1161 (2026-09-16), où le constat ainsi
+logé était réel — trois rubriques manquantes au gabarit de handoff.
+`gh pr view <N> --json reviews` rend ce corps : **lire `.reviews[].body`**. Lire
+l'état d'une revue n'est pas lire la revue.
+
 **`--paginate` n'est pas un ornement.** L'endpoint rend **30 éléments par
 page** : sans lui, une PR qui porte plus de 30 commentaires en ligne en laisse
 silencieusement dehors — et la règle rendant le verdict de *chacun* bloquant,
