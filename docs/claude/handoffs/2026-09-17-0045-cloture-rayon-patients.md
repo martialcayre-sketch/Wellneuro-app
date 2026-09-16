@@ -62,8 +62,8 @@ Numéros pris **au merge**, jamais réservés d'avance.
    La requête est conservée telle quelle
    (`campagnes/2026-09-16-rayon-patients/CONSTAT_LIGNE_DE_BASE.sql`) : la
    rejouer **à l'identique** est la seule façon d'en tirer un constat (`D-112`).
-2. **`D-049` reste ouverte** — cause racine non trouvée, trois occurrences cette
-   nuit sur la même spec.
+2. **`D-049` reste ouverte** — cause racine non trouvée, **quatre** occurrences
+   cette nuit sur la même spec, dont une sur une PR purement documentaire.
 3. **Deux chantiers nommés, non ouverts** : le raccord du médecin traitant au
    rayon Correspondance ; la qualification du NIR au titre de l'article 9,
    écrite comme **due** au dossier RGPD.

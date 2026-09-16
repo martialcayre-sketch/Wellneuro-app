@@ -28,6 +28,9 @@ const { getServerSession, prisma, magasin } = vi.hoisted(() => {
   const magasin = {
     patient: { idPatient: 'PAT_SEED_01', email: 'ancienne@fictif.wellneuro.fr' },
     reponses: [] as Ligne[],
+    consultations: [] as Ligne[],
+    assignations: [] as Ligne[],
+    syntheses: [] as Ligne[],
   };
   const reecrire = (table: Ligne[]) => async (args: {
     where: { idPatient: string };
@@ -61,9 +64,19 @@ const { getServerSession, prisma, magasin } = vi.hoisted(() => {
           magasin.reponses.filter(r => r.emailPatient === args.where.emailPatient),
         ),
       },
-      consultation: { updateMany: vi.fn(async () => ({ count: 0 })) },
-      assignation: { updateMany: vi.fn(async () => ({ count: 0 })), findMany: vi.fn(), count: vi.fn() },
-      syntheseIA: { updateMany: vi.fn(async () => ({ count: 0 })) },
+      // LES TROIS AUTRES PORTEUSES ONT LEURS PROPRES LIGNES, et ce n'est pas du
+      // décor (constat de revue, 2026-09-17). Écrites en `no-op`, elles ne
+      // détectaient RIEN : supprimer l'un de leurs `updateMany` laissait ce banc
+      // vert, alors qu'il prétend tomber si une seule réécriture disparaît.
+      // Vérifié : la mutation passait. Un banc qui promet plus qu'il ne garde
+      // est pire qu'un banc absent — on cesse de chercher ailleurs.
+      consultation: { updateMany: vi.fn(reecrire(magasin.consultations)) },
+      assignation: {
+        updateMany: vi.fn(reecrire(magasin.assignations)),
+        findMany: vi.fn(),
+        count: vi.fn(),
+      },
+      syntheseIA: { updateMany: vi.fn(reecrire(magasin.syntheses)) },
       portailMagicLink: { updateMany: vi.fn(async () => ({ count: 0 })) },
       journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
       agendaAlimentaireJour: { findMany: vi.fn() },
@@ -97,6 +110,15 @@ describe('Changer l’e-mail d’un dossier — la chaîne complète', () => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: PRATICIEN } });
     magasin.patient = { idPatient: 'PAT_SEED_01', email: ANCIENNE };
+    for (const table of [
+      magasin.reponses,
+      magasin.consultations,
+      magasin.assignations,
+      magasin.syntheses,
+    ]) {
+      table.length = 0;
+      table.push({ idPatient: 'PAT_SEED_01', emailPatient: ANCIENNE });
+    }
     magasin.reponses.length = 0;
     magasin.reponses.push({
       idReponse: 'REP_AVANT',
@@ -138,6 +160,39 @@ describe('Changer l’e-mail d’un dossier — la chaîne complète', () => {
     const corps = (await apres.json()) as { reponses: { idReponse: string }[] };
     expect(corps.reponses).toHaveLength(1);
     expect(corps.reponses[0].idReponse).toBe('REP_AVANT');
+  });
+
+  it('★ LES QUATRE COPIES SUIVENT, pas seulement celle qu’on interroge', async () => {
+    // CE BANC EXISTE PARCE QUE LE PRÉCÉDENT NE SUFFISAIT PAS, et c'est une revue
+    // qui l'a montré : `GET /api/praticien/reponses` n'interroge qu'UNE des
+    // quatre tables, donc le banc de bout en bout ne pouvait attraper que
+    // celle-là. Les trois autres étaient des mocks sans lignes — supprimer leur
+    // `updateMany` laissait tout vert. Vérifié : la mutation passait.
+    //
+    // Les trois autres copies ne sont pas décoratives : `consultations` et
+    // `assignations` sont lues par e-mail ailleurs dans l'application, et
+    // `syntheses_ia` porte l'adresse d'un envoi. Une copie restée sur
+    // l'ancienne adresse est une ligne orpheline, silencieuse.
+    await PATCH(
+      new Request('http://localhost/api/praticien/patients', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient: 'PAT_SEED_01', email: NOUVELLE }),
+      }),
+    );
+
+    const tables: [string, typeof magasin.reponses][] = [
+      ['questionnaire_reponses', magasin.reponses],
+      ['consultations', magasin.consultations],
+      ['assignations', magasin.assignations],
+      ['syntheses_ia', magasin.syntheses],
+    ];
+    for (const [nom, lignes] of tables) {
+      expect(lignes.length, `${nom} : le banc doit porter au moins une ligne`).toBeGreaterThan(0);
+      for (const ligne of lignes) {
+        expect(ligne.emailPatient, `${nom} est restée sur l’ancienne adresse`).toBe(NOUVELLE);
+      }
+    }
   });
 
   it('et l’ANCIENNE adresse ne rend plus rien — la copie a bougé, elle n’a pas été dupliquée', async () => {

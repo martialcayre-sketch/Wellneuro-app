@@ -6968,5 +6968,5 @@ Prochaine action : aucune côté campagne — le créneau primaire est libre, so
 attribution appartient au responsable. Reste dû après déploiement : le constat
 d'usage au conteneur.
 
-Question ouverte : `D-049`, trois occurrences cette nuit, cause racine non
+Question ouverte : `D-049`, quatre occurrences cette nuit, cause racine non
 trouvée.

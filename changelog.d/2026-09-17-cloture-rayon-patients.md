@@ -12,8 +12,16 @@ Deux moitiés étaient gardées — les quatre réécritures d'un côté, la lec
 réponses restent lisibles » était une inférence d'une ligne, juste, mais
 qu'aucun banc ne tenait. Les deux routes partagent désormais un magasin en
 mémoire dans `changementEmailChaine.guard.test.ts` : le `PATCH` y écrit, le
-`GET` y lit, et le banc tombe si une seule réécriture disparaît — là où les deux
-autres restent verts.
+`GET` y lit.
+
+**ET SA PREMIÈRE VERSION PROMETTAIT PLUS QU'ELLE NE GARDAIT.** Elle ne portait de
+lignes que pour `questionnaire_reponses` — la seule table que la route des
+réponses interroge. Les trois autres étaient des mocks vides : supprimer leur
+réécriture laissait le banc **vert**, alors qu'il annonçait tomber si une seule
+disparaissait. Une revue l'a montré, mutation à l'appui. Chaque copie a désormais
+ses lignes et son assertion de continuité, et **les quatre mutations sont
+attrapées**. Un banc qui promet plus qu'il ne garde est pire qu'un banc absent :
+on cesse de chercher ailleurs.
 
 **DEUX AFFIRMATIONS DU CADRAGE RÉFUTÉES.** « Trois baselines visuelles vont
 rougir, et trois seulement » : exact pour le LOT-01, et juste par accident —

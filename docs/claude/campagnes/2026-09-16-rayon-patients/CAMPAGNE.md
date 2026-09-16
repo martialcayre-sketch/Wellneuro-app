@@ -157,7 +157,7 @@ colonne neuve, et il part sans attendre la porte `release-db`.
 
 ## Clôture — 2026-09-17
 
-Sept lots, sept PR sur `main`. Décisions **D-220** (architecture et dossier) et
+Huit lots, huit PR sur `main` — sept mergées et celle de clôture. Décisions **D-220** (architecture et dossier) et
 **D-221** (le NIR déclaré).
 
 ### Ce que le cadrage annonçait, et qui s'est révélé faux
@@ -205,9 +205,11 @@ constaté depuis la base »).
    voir ci-dessous. Ce qui reste est de la rejouer à l'identique une fois le code
    en ligne et le praticien passé dessus : la reformuler déplacerait la question
    ([[D-112]]).
-4. **`D-049`** — la signature WebKit/iPhone 13 a rougi T2 trois fois de suite sur
+4. **`D-049`** — la signature WebKit/iPhone 13 a rougi T2 **quatre fois de suite** sur
    `portail-dossier-deux-voix`, toujours « navigation expirée, aucune requête de
-   page émise », jamais en CI. Rien de neuf : la cause racine reste ouverte.
+   page émise », jamais en CI — dont une fois sur une PR **purement
+   documentaire**, ce qui écarte définitivement le diff comme suspect. Rien de
+   neuf sur la cause racine, qui reste ouverte.
 
 ### Ligne de base, lue en production le 2026-09-17
 
