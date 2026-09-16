@@ -6685,7 +6685,7 @@ confirmation du check `verify`.
 ## 2026-09-16 — LOT-01 du rayon Correspondance : le sens se lit une seule fois
 
 Premier lot de la campagne « ouverture du rayon Correspondance », cadrée le même
-jour par un audit du dépôt. PR #1146, décision **D-208**.
+jour par un audit du dépôt. PR #1146, décision **D-209**.
 
 `correspondances_medecin.sens` n'a aucun CHECK, et les deux écrans repliaient
 **en sens inverse** : la même ligne se lisait « envoi » à l'accueil et
@@ -6702,16 +6702,20 @@ retirer l'extrait**, sur un fait découvert en cours de lot — le rail appelait
 forme, pas de discipline de rendu.
 
 Écarté : le CHECK en base — le défaut était en lecture, il se corrige en lecture ;
-le CHECK ira avec la migration `supersedes_*`. Reste ouvert et nommé en D-208 §3 :
+le CHECK ira avec la migration `supersedes_*`. Reste ouvert et nommé en D-209 §3 :
 `/recentes` nomme toujours cinq dossiers sans écrire au journal d'accès.
 
 T1 vert (rejoué après rebase), 61 bancs dont 16 neufs, mutant tué. T2 rouge sur la
 seule signature `D-049` (WebKit, navigation sans requête émise) ; CI vert sur la
 tête réelle de la PR.
 
-Deux frictions : `D-207` pris par une autre session pendant le lot — rebase et
-renumérotation en `D-208`, sujet du commit amendé ; et la clôture écrite **après**
-l'ouverture de la PR, ce que la règle interdit — d'où les fragments poussés par
-Copilot et un second `verify`.
+Trois frictions, toutes instructives. Le numéro s'est pris au merge **deux fois**
+— `D-207` pendant l'écriture, `D-208` pendant l'attente du CI — d'où `D-209`. La
+seconde réconciliation s'est faite par **merge et non par rebase** : la branche
+était déjà poussée, et rejouer l'historique aurait exigé un force-push que
+l'autorisation exclut. Règle transférable : rebase avant le premier `push`, merge
+après. Enfin la clôture a été écrite **après** l'ouverture de la PR, ce que la
+règle interdit — d'où les fragments de rattrapage poussés par Copilot, une tête
+changée et un `verify` de plus.
 
 Prochaine action : **LOT-00**, dont ce lot est le préalable.

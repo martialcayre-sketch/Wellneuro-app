@@ -2,7 +2,7 @@
 
 Premier lot de la campagne **ouverture du rayon Correspondance**, cadrée le même jour. Il est
 le préalable de tous les autres : on n'élargit pas une exposition qu'on ne journalise pas.
-PR **#1146**, décision **D-208**.
+PR **#1146**, décision **D-209**.
 
 > Ce handoff **remplace en substance** celui de 14 h 55, qui documentait l'ajout des fragments
 > et non le lot. Le dernier handoff au tri fait foi ; il fallait qu'il parle du travail.
@@ -14,7 +14,7 @@ PR **#1146**, décision **D-208**.
 | `sens` non contraint, **deux lecteurs repliant en sens inverse** | **fermé** |
 | L'accueil récite 120 caractères de texte consigné, hors journal d'accès | **fermé** |
 | Le badge du rail fait résoudre 5 noms de patients pour afficher un entier | **fermé** |
-| `/recentes` nomme cinq dossiers sans écrire au journal d'accès | **ouvert, et nommé en D-208 §3** |
+| `/recentes` nomme cinq dossiers sans écrire au journal d'accès | **ouvert, et nommé en D-209 §3** |
 
 ## Le défaut principal, et pourquoi il ne se corrigeait pas « du bon côté »
 
@@ -64,10 +64,16 @@ Deux conséquences, plus fortes que l'énoncé de départ :
 
 ## Deux frictions rencontrées, pour mémoire
 
-**Le numéro s'est pris au merge, comme prévu.** `D-207` a été mergé par une autre session pendant
-le lot ; rebase sur `origin/main`, conflit de `DECISIONS.md` résolu en plaçant l'entrée en
-**D-208**, et **sujet du commit amendé** — le squash prend le sujet du commit, pas le titre de la
-PR.
+**Le numéro s'est pris au merge — deux fois.** `D-207` a été mergé par une autre session pendant
+l'écriture du lot, `D-208` pendant l'attente du CI. L'entrée est donc **D-209**, et le geste a dû
+être refait entièrement la seconde fois. Rien d'anormal : c'est la friction que le registre
+provoque exprès, et elle se mesure en minutes tant qu'on ne cherche pas à l'éviter.
+
+**La seconde réconciliation s'est faite par MERGE, pas par rebase**, et c'est la leçon
+transférable : la branche était déjà poussée, donc rejouer l'historique aurait exigé un
+force-push — que l'autorisation en cours exclut. Un rebase avant le premier `push`, un merge
+après : la règle tient en une ligne et évite de demander une autorisation qu'on n'aurait pas dû
+solliciter.
 
 **La clôture a été écrite après l'ouverture de la PR**, ce que la règle interdit : Copilot a dû
 pousser les fragments manquants, ce qui a changé la tête et remis le merge en `BLOCKED` le temps

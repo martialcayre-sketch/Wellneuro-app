@@ -86,6 +86,14 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   // exécutable »). Il est entré au contrat par ce banc, exactement comme prévu :
   // le fichier posé, la liste du contrat ne correspondait plus, le banc a rougi.
   'conflitsSourcesV1.ts': 'conflits_sources',
+  // Catalogue de conduites ([[D-206]], LOT-01). Entré le jour où le fichier est
+  // POSÉ, et non le jour de sa première ligne : le balayage reconnaît une table
+  // signée à son `claimsSource`, et le reconnaît MÊME VIDE — différer
+  // l'enrôlement aurait rougi au jour 1. La table ne contribue en revanche
+  // aucune paire au contrat SQL tant qu'aucune ligne ne cite de claim :
+  // `TABLE_EXIGE_PRESCRIPTIF` n'a donc rien à recevoir avant la première
+  // signature, et lui donner une entrée maintenant rougirait à l'inverse.
+  'catalogueConduitesV1.ts': 'conduites',
 };
 
 // L'EXIGENCE EST DÉCLARÉE PAR TABLE, JAMAIS DÉDUITE PAR DÉFAUT — [[D-046]].

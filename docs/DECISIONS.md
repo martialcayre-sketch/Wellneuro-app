@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-208 — Le sens d'un échange se lit une seule fois, et l'accueil cesse de citer le dossier
+### D-209 — Le sens d'un échange se lit une seule fois, et l'accueil cesse de citer le dossier
 
 - Date : 2026-09-16
 - Statut : accepté — **arbitrage du responsable**, rendu en session sur les deux
@@ -66,6 +66,87 @@ une ligne de `journal_acces_dossiers` : elle retire ce que cette surface disait
 de trop, pas le fait qu'elle nomme. Si le rayon s'ouvre sur une liste plus
 longue, la question se rouvre entière — et c'est le préalable écrit du lot
 suivant.
+
+### D-208 — Le catalogue de conduites a sa forme et son verrou ; la table est vide, et trois réfutations corrigent ce que `D-205` et `D-206` affirmaient
+
+- Date : 2026-09-16
+- Statut : accepté — **LOT-01 livré**, table VIDE et fail-closed. Aucune ligne
+  n'est signée : une signature clinique ne se pose jamais par l'outil.
+- Domaine : clinique — catalogue de conduites, protocole 21 jours.
+- Porte sur : `catalogueConduitesV1.ts`, son banc de garde,
+  `SURFACE_RELECTURE_CATALOGUE_CONDUITES_2026-09-16.md`.
+
+**CE QUI EST LIVRÉ.** La FORME d'une ligne — clé de tableau clinique, source
+désignée, `claimsIndication` **au pluriel** avec un discriminant `fonde`,
+`raccourciAssume`, statut — le verrou à six termes, le point de sortie unique
+fail-closed, et la surface de relecture qui présente au praticien **trois lignes
+candidates** sur le bloc sommeil et **huit tableaux écartés avec leur motif**.
+
+**LE VERROU A SIX TERMES, ET LE SIXIÈME A ÉTÉ TROUVÉ PAR L'EXÉCUTION.** La
+conception retenue affirmait que l'égalité exacte entre `claimsSource` et l'union
+des claims cités absorbait le « signer zéro ligne » — *« l'union de zéro ligne est
+vide, donc le verrou ferme »*. **C'est une inversion logique** : sur zéro ligne,
+∅ = ∅ est VRAI, donc le terme est SATISFAIT et une table vide « parfaitement
+signée » passerait. `lignes.length > 0` et `claimsSource.length > 0` sont rétablis
+à côté de l'égalité. Un banc falsifie chacun des six séparément.
+
+**`raccourciAssume` EST UN CHAMP, PAS UN COMMENTAIRE.** `D-206` A1 exige que ce
+que la ligne ajoute au-delà de ses claims soit « nommé sur place ». Écrit dans un
+commentaire, il se reformulerait sans rien périmer — c'est l'état actuel du régime
+`WN-CL-0287-009`, qui vit hors du sha. Dans le périmètre haché, le reformuler
+referme le verrou.
+
+**LE PÉRIMÈTRE PASSE PAR LA FORME CANONIQUE.** `JSON.stringify` respecte l'ordre
+d'insertion : déplacer `statut` au-dessus de `sourceId` périmerait l'attestation
+sans qu'un caractère de contenu clinique ait bougé. Choix déjà fait par
+`grillesSignees.ts`, avec son motif — pas une divergence. Un banc le prouve en
+réordonnant les clés.
+
+**L'ENRÔLEMENT EST DÉCOUPÉ EN TROIS, ET CHAQUE MORCEAU A SON MOMENT.**
+`FICHIER_VERS_TABLE` **dès le jour 1** — le balayage du contrat de fraîcheur
+reconnaît une table à son `claimsSource` et la reconnaît MÊME VIDE ; différer
+aurait rougi immédiatement. `TABLE_EXIGE_PRESCRIPTIF` **pas du tout** — il se
+compare aux lignes du contrat SQL, et une table vide n'en produit aucune.
+`shaPerimetreLitteral.guard.test.ts` **le jour de la première signature** — son
+`shaPerimetre` vaut `null`, la première assertion rougirait ; c'est exactement la
+séquence `D-196` puis `D-198`.
+
+**TROIS RÉFUTATIONS CORRIGENT CE QUI AVAIT ÉTÉ AFFIRMÉ.**
+
+**1. Le dépôt SAIT combien de claims sont validés par source.**
+`nnpp2_interventions_registry.json` porte, pour 95 sources, un bloc
+`claims: { valide, enAttente, prescriptifs, mesureLe: '2026-08-03' }`. Les cinq
+sources candidates du bloc sommeil sont curées `complet`, **zéro claim en
+attente**. Le motif de la table vide n'est donc pas « aucun claim n'est
+connaissable » — c'est qu'aucun claim n'est **désignable** depuis le dépôt, et que
+désigner celui qui fonde une indication est un acte clinique.
+
+**2. Une chaîne écrite au dépôt atteint DÉJÀ l'écran du patient, avec zéro clic
+praticien.** `priorityRulesV1.ts` sert un `libelle` par une table signée. La
+prémisse « la prose du dépôt n'atteint pas le patient » est fausse, et aucune
+conception ne doit s'y adosser.
+
+**3. LE PLUS GRAVE, ET IL DÉPASSE CE LOT : « relu par le praticien » est un
+tampon SERVEUR.** `protocoles/versions/route.ts` pose
+`review: { reviewedAt: now, reviewerRole: 'practitioner', confirmation:
+'content_reviewed' }` **sans aucune condition**, à chaque enregistrement. Un
+contenu pré-rempli et enregistré sans une seule frappe ressort donc « relu par le
+praticien » et franchit la garde de diffusion. **Aucun raisonnement de sûreté ne
+peut s'adosser à la relecture praticien**, et ce lot n'en adosse aucun. Le défaut
+entre en file.
+
+**CONSÉQUENCE POUR L'ARBITRAGE A3 DE `D-206`.** Le mode de défaillance du plan
+minimal est l'inverse de celui qu'on craignait : le patient ne lit jamais un plan
+minimal vide — trois gardes le refusent avant l'écran. Le chemin le moins cher
+pour satisfaire ces gardes est de **recopier le plan idéal dans le plan minimal**,
+et rien ne l'attrape. La règle de dérivation de A3 devra donc se garder de
+produire, elle aussi, une copie de l'idéal — sa décision propre le dira.
+
+**CE QUI N'EST PAS PRÉTENDU.** Le CI ne peut pas vérifier qu'un claim cité FONDE
+l'indication : il n'atteint que le format, et le registre des sources est dense de
+`WN-SRC-0001` à `WN-SRC-0507` sans aucun trou — une vérification d'existence
+n'attraperait qu'une faute de frappe hors bornes. C'est écrit dans la surface de
+relecture plutôt que masqué par un banc rassurant.
 
 ### D-207 — Les trois défauts n'étaient pas vivants mais ARMÉS, et `D-205` §6 se corrige : le premier se ferme, les deux autres se requalifient
 
