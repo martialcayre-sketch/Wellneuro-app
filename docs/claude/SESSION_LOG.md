@@ -6850,3 +6850,22 @@ collisions en deux jours cette semaine. Question ouverte pour le responsable : l
 veut-il enregistré comme décision ?
 
 Prochaine action : PR, lecture de la revue Copilot avec verdicts, merge.
+
+## 2026-09-16 — `D-214` : les deux gestes du vert absent sont gravés au registre
+
+Le responsable a tranché « oui » sur la question laissée ouverte au merge de
+`ad6c8057` : la règle posée dans la journée reçoit son entrée au registre.
+
+`D-214` grave le pourquoi (quatre PR mergées sur CI vert, six constats laissés,
+quatre réels dont deux défauts en production), l'obligation (trois verdicts,
+aucun commentaire sans l'un d'eux ; `release-db` en sept étapes constatées), et
+ce que l'entrée **ne** fait pas — ni `D-087`, ni `D-120`, ni le runbook ne sont
+réarbitrés. Elle consigne l'épreuve de la règle sur elle-même : quatre constats
+Copilot retenus, dont une étape de merge devenue circulaire et un renvoi qui
+avouait son impuissance.
+
+Aucun code neuf : tout l'exécutable est en service depuis `ad6c8057`. Le fichier
+de règle cite maintenant sa décision.
+
+Prochaine action : PR de l'entrée, revue lue et verdicts rendus, merge avec
+`--subject` — en re-vérifiant que `D-214` est toujours libre au moment du merge.
