@@ -104,6 +104,56 @@ export const DEPARTAGE_PLAINTE_EX_AEQUO = {
 };
 
 /**
+ * L'ARBITRAGE DE LA PRIMAUTÉ — rendu le 2026-09-16, après être resté ouvert.
+ *
+ * LA QUESTION. Le premier terme fait passer une règle de priorité intrinsèque 1
+ * DERRIÈRE une priorité 2 dès que le patient cote l'autre domaine plus haut.
+ * L'intensité RESSENTIE n'est pas la gravité CLINIQUE : le dépôt l'a écrit
+ * pendant deux jours comme une question ouverte, et `PORTEE_ATTESTATION`
+ * l'excluait explicitement de ce qui était signé.
+ *
+ * CE QUI A ÉTÉ ÉCARTÉ, ET POURQUOI — c'est la partie utile. Mettre la priorité
+ * intrinsèque en premier, la plainte ne départageant qu'à priorité égale,
+ * paraissait le choix prudent. **Il rendait la plainte dominante définitivement
+ * inopérante** : les quatre règles portent quatre priorités DISTINCTES (1, 2, 3,
+ * 4), donc l'égalité qui lui donnerait la parole ne se produit jamais. Le
+ * classement serait devenu un ordre fixe, identique pour tout patient, et
+ * `PRIO-DIG-01` aurait été proposée à chaque déclenchement quoi que le patient
+ * ait coté. Un terme déclaré actif mais inatteignable est une SUR-PROMESSE
+ * ([[DC-34]], [[DC-35]]) — le dépôt en porte déjà un, le troisième, et il le
+ * dit.
+ *
+ * LA RÉPONSE EST DONC LE COMPORTEMENT ACTUEL, mais elle n'est plus un
+ * non-choix : le praticien reçoit le patient là où celui-ci se plaint, en
+ * connaissance du coût. La priorité intrinsèque garde le dernier mot partout où
+ * la plainte ne dit rien — c'est-à-dire chaque fois qu'aucune règle ne porte le
+ * domaine dominant.
+ *
+ * CE QUE CET OBJET N'EST PAS : une validation de la table des priorités. Elle a
+ * sa propre signature ([[D-061]], 2026-08-15), et ses valeurs ne sont pas
+ * relues ici.
+ */
+export const ARBITRAGE_PRIMAUTE_PLAINTE = {
+  rendu: true,
+  date: '2026-09-16',
+  /**
+   * Le terme retenu en tête, NOMMÉ — et un banc exige qu'il soit celui que
+   * `TERMES_DE_CLASSEMENT` place au rang 1. Sans cette liaison, l'arbitrage
+   * serait une déclaration que rien n'oblige, c'est-à-dire le défaut exact que
+   * [[D-185]] puis [[D-197]] ont eu à corriger sur ce même module.
+   */
+  termeRetenu: 'plainte dominante',
+  ecarte: 'La priorité intrinsèque en tête, la plainte ne départageant qu’à priorité égale.',
+  /**
+   * Le motif du rejet est FACTUEL et vérifiable, pas une préférence : un banc
+   * relit la table et rougit le jour où deux règles partagent une priorité —
+   * l’égalité rendrait alors la plainte opérante, et cette justification
+   * deviendrait fausse sans que personne ne l’ait touchée.
+   */
+  motifDuRejet: 'Les quatre règles portent quatre priorités distinctes : l’égalité qui donnerait la parole à la plainte ne se produit jamais, et le terme serait déclaré actif tout en étant inatteignable.',
+} as const;
+
+/**
  * LES QUATRE TEXTES QUI PEUVENT ÊTRE SERVIS AVEC UN CANDIDAT — et leurs
  * conditions, parce que deux d'entre eux sont CONDITIONNELS.
  *
@@ -220,12 +270,15 @@ export const PORTEE_ATTESTATION = {
    */
   couvre: 'La fidélité descriptive : ces données disent ce que le moteur applique réellement.',
   /**
-   * CE QUI NE L'EST PAS, nommé pour que personne ne l'étende. Le premier terme
-   * fait passer une règle de priorité 1 DERRIÈRE une priorité 2 dès que le
-   * patient cote l'autre plus haut — or l'intensité ressentie n'est pas la
-   * gravité clinique. Cette question appelle son propre arbitrage.
+   * CE QUI NE L'EST PAS, nommé pour que personne ne l'étende.
+   *
+   * LA PRIMAUTÉ DE LA PLAINTE DOMINANTE N'EST PLUS DANS CETTE LISTE : elle a été
+   * ARBITRÉE le 2026-09-16 et vit dans `ARBITRAGE_PRIMAUTE_PLAINTE`, haché comme
+   * le reste. Ce qui suit est ce qui reste réellement dehors — et la liste est
+   * plus courte, pas vide : la rendre vide serait la sur-promesse que cette
+   * relecture existe pour éviter.
    */
-  neCouvrePas: 'La légitimité clinique du classement lui-même, et notamment la primauté de la plainte dominante sur la priorité intrinsèque de la règle : arbitrage NON rendu.',
+  neCouvrePas: 'La table des priorités elle-même, qui porte sa propre signature, et le départage de deux plaintes cotées À ÉGALITÉ, qui reste technique : arbitrage clinique NON rendu.',
   /**
    * L'INTITULÉ SERVI À L'ÉCRAN, et il est borné exprès. « Périmètre du
    * classement (relu) » se lisait comme une validation du classement ; ce qui
@@ -244,6 +297,7 @@ export const PERIMETRE_CLASSEMENT_V1 = {
   ordreEvaluationAbstention: ORDRE_EVALUATION_ABSTENTION,
   invariantsProducteur: INVARIANTS_PRODUCTEUR,
   porteeAttestation: PORTEE_ATTESTATION,
+  arbitragePrimautePlainte: ARBITRAGE_PRIMAUTE_PLAINTE,
 } as const;
 
 /**
@@ -283,7 +337,7 @@ export const PERIMETRE_CLASSEMENT_V1 = {
  * l'exécution, l'écran ne compare donc que deux chaînes — ce qui est bon marché
  * et sûr — pendant que le lien avec le contenu réel est tenu au CI.
  */
-export const EMPREINTE_PERIMETRE_ATTENDUE = '9792c12e72db93d8';
+export const EMPREINTE_PERIMETRE_ATTENDUE = '9f17a4a658e4fca6';
 
 /**
  * UNE ATTESTATION EST-ELLE VALIDE — la seule question que doit poser un
@@ -332,5 +386,5 @@ export const ATTESTATION_CLASSEMENT = {
    * qui l'avait écrit. L'attestation ci-dessous est la SECONDE, posée sur le
    * contenu borné.
    */
-  shaRelu: '9792c12e72db93d8' as string | null,
+  shaRelu: '9f17a4a658e4fca6' as string | null,
 };

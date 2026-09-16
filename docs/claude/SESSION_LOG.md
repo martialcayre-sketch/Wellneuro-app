@@ -6519,6 +6519,44 @@ geste du responsable.
 **Question ouverte** : quel rang l'occupe — et `D-112`, mesuré trois fois de suite, pèse
 contre tout rang qui ajoute une surface.
 
+## 2026-09-16 01:55 — L'arbitrage de la primauté, rendu deux fois ([[D-203]])
+
+**Le premier arbitrage rendu a été repris sur un fait.** « Priorité intrinsèque
+d'abord, la plainte ne départageant qu'à priorité égale » — l'option prudente.
+Vérification avant d'écrire une ligne : les quatre règles portent quatre
+priorités DISTINCTES. L'égalité ne se produit jamais, donc cette option ne
+reléguait pas la plainte dominante, elle la **supprimait** : classement fixe,
+identique pour tout patient, un terme déclaré actif et inatteignable.
+
+**J'avais décrit l'option sans vérifier son atteignabilité.** Vraie en principe,
+fausse en fait. C'est le même défaut que le troisième terme du classement porte
+déjà et que le dépôt nomme — sauf que cette fois je l'aurais créé.
+
+Remise au responsable avec le chiffre, l'option a été retirée : **statu quo sur
+le comportement, mais l'arbitrage cesse d'être ouvert.** Le moteur ne change pas
+d'une ligne ; ce qui change est que `PORTEE_ATTESTATION` ne peut plus annoncer
+une question non rendue.
+
+**Le motif du rejet est gardé comme un FAIT.** Un banc relit la table et rougit
+le jour où deux règles partagent une priorité — l'égalité rendrait la plainte
+opérante, et la justification deviendrait fausse sans que personne n'ait touché
+au périmètre. Mutation jouée.
+
+Troisième péremption de signature en deux jours, toujours par le même mécanisme,
+et toujours pour la bonne raison.
+
+## 2026-09-16 02:16 — Attestation rendue sur `9f17a4a658e4fca6` ([[D-203]])
+
+Troisième relecture en deux jours, troisième signature posée **en toutes
+lettres** — jamais déduite d'un « relu ». Le classement relu n'a jamais changé ;
+ce qui s'y ajoute à chaque fois est ce que la signature dit d'elle-même : sa
+portée d'abord, puis l'arbitrage que le signataire a lui-même rendu.
+
+**Un détail qui me revient dessus** : le document de relecture disait DÉJÀ, plus
+bas, que les quatre priorités sont distinctes — c'est ce qui rend le troisième
+terme inatteignable, et c'est écrit dans la surface relue deux fois. J'ai quand
+même proposé une option qui supposait le contraire. La réponse est dans ce que je
+fais lire, pas seulement dans ce que je vérifie après coup.
 ## 2026-09-16 02:00 — La clôture mergée, et 6.0-B lu sans être ouvert
 
 **Merge** : PR #1131 (`b368677a`). Le CI avait d'abord **refusé la clôture** —
