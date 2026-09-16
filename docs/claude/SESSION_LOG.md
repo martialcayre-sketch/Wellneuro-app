@@ -6920,3 +6920,30 @@ Collision de numéro au merge : `main` a pris D-214 pendant l'écriture.
 Prochaine action : **LOT-04**, la lettre d'adressage — son ancrage doit ajouter
 sa ligne dans `SHA_ATTENDU_PAR_VERSION`, sans quoi ses lettres liront
 `reference_inconnue`.
+
+## 2026-09-16 (nuit) — Les quatre surfaces d'attestation, et une revue qui rattrape une demi-lecture du corpus
+
+Quatre surfaces de relecture produites pour les attestations de `D-213` : la
+table du repli, les douze assiettes, les familles d'équivalence, la surface du
+catalogue de conduites restant inchangée.
+
+**La PR #1160 a été mergée quatre minutes après son ouverture**, avant que la
+revue n'ait pu être postée. Elle a rendu sept constats, sept réels — dont une
+indication clinique fondée sur une fiche que le registre interdit d'utiliser
+comme source de règle. Cause racine : j'avais cherché les assiettes **dans
+l'intervalle que `D-213` cite** au lieu de chercher par critère. Il existe douze
+protocoles d'assiette prescriptifs, 131 claims validés, que je n'avais pas
+ouverts. Verdict corrigé : **huit assiettes indiquées sur douze**, non deux.
+
+Quatre arbitrages rendus (`D-216`) : l'âge redevient un déclencheur, l'enquête
+alimentaire ne déclenche jamais seule une ligne d'assiette, la psychobiotique
+publie sa porte étroite, les familles attendent un mécanisme orienté.
+
+La table du repli est livrée verrou éteint, sur `actionsSansRepli` — mesuré
+directement, jamais par soustraction.
+
+Écarté : signer S3 cette nuit. Cinq chantiers d'abord, dont le filtre de service
+sans lequel un brouillon s'affiche comme une ligne publiée.
+
+Prochaine action : lire les revues de **#1167** et **#1168**, corriger, merger —
+et vérifier le numéro `D-216`, l'autre session ayant pris `D-215`.
