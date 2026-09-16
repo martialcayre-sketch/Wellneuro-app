@@ -160,7 +160,7 @@ export async function POST(req: Request) {
     }
 
     // La lettre est une pièce du dossier : le refus vit dans la route, pas
-    // seulement dans l'écran (FM-2, leçon #181).
+    // seulement dans l'écran ([[D-219]] §2, leçon #181).
     const patient = await prisma.patient.findUnique({
       where: { idPatient },
       // `prenom`/`nom` : l'en-tête du papier doit dire DE QUI il parle. Le nom
