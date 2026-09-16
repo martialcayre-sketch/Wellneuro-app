@@ -165,7 +165,7 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
 ## Ce qui n'est PAS en file — des gestes, pas des campagnes
 
 - **La table des signaux de sécurité est invisible à l'audit de consommation** —
-  constat de la revue de `D-217`, **antérieur au lot** et routé par lui.
+  constat de la revue de `D-218`, **antérieur au lot** et routé par lui.
   `SOURCES_DE_SAVOIR` (`scripts/wn-matrice-consommation.mjs`) déclare l'inventaire
   qui construit `docs/claude/MATRICE_CONSOMMATION.md`, et il y liste les autres
   tables cliniques signées — mais **pas** `lib/clinical/safetySignalsV1.ts`, dont

@@ -1,4 +1,4 @@
-// Drapeau de la lettre d'adressage ([[D-217]], LOT-04).
+// Drapeau de la lettre d'adressage ([[D-218]], LOT-04).
 //
 // POURQUOI UN DRAPEAU ICI, alors que le fil médecin n'en a aucun. Le fil
 // consigne un geste déjà fait hors de l'outil ; cette route-ci PRODUIT un

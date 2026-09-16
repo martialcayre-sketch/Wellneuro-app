@@ -9,7 +9,7 @@
 // signaux d'alerte déclarés à l'anamnèse ([[D-099]]) et les signalements d'effet
 // indésirable rattachés à un protocole ([[D-101]]). Ils inhibent la décision de
 // la même façon, mais ils n'appellent pas le même geste — la lettre d'adressage
-// ([[D-217]]) ne sait écrire que les premiers. Offrir le geste sur un dossier qui
+// ([[D-218]]) ne sait écrire que les premiers. Offrir le geste sur un dossier qui
 // ne porte que des seconds, c'était offrir un bouton dont la route répond 409.
 //
 // Le préfixe EST le contrat du producteur : il le compose ici, l'écran le lit

@@ -6,9 +6,14 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     patient: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     portailMagicLink: { updateMany: vi.fn() },
     $transaction: vi.fn(),
-    assignation: { findMany: vi.fn(), count: vi.fn() },
-    questionnaireReponse: { findMany: vi.fn() },
+    assignation: { findMany: vi.fn(), count: vi.fn(), updateMany: vi.fn() },
+    questionnaireReponse: { findMany: vi.fn(), updateMany: vi.fn() },
     agendaAlimentaireJour: { findMany: vi.fn() },
+    // Les trois autres porteuses de `email_patient`. `bookletEnvoi` n'y est
+    // PAS, et son absence est une assertion : aucune ligne de ce banc ne doit
+    // pouvoir l'écrire par mégarde.
+    consultation: { updateMany: vi.fn() },
+    syntheseIA: { updateMany: vi.fn() },
   },
 }));
 
@@ -660,5 +665,342 @@ describe('DELETE /api/praticien/patients', () => {
   it('n’existe pas : Next répond 405 en l’absence de handler', async () => {
     const handlers = await import('./route');
     expect('DELETE' in handlers).toBe(false);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOT-05 — LA FICHE ADMINISTRATIVE S'ÉCRIT
+//
+// Jusqu'ici `PATCH` n'acceptait que `telephone` et `actif` : une faute de
+// frappe sur un nom saisi à la création était DÉFINITIVE. Ce qui suit garde les
+// trois choses qui peuvent mal tourner quand on ouvre l'écriture — un NIR faux
+// qui part sur un courrier, un e-mail qui rend les réponses muettes, et un
+// formulaire qui efface ce qu'il ne touche pas.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('PATCH — le dossier administratif', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: 'PAT001',
+      praticienEmail: 'p@wellneuro.fr',
+      email: 'ancien@fictif.wellneuro.fr',
+    });
+    prisma.patient.update.mockResolvedValue({});
+    prisma.portailMagicLink.updateMany.mockResolvedValue({ count: 0 });
+    prisma.consultation.updateMany.mockResolvedValue({ count: 0 });
+    prisma.assignation.updateMany.mockResolvedValue({ count: 0 });
+    prisma.questionnaireReponse.updateMany.mockResolvedValue({ count: 0 });
+    prisma.syntheseIA.updateMany.mockResolvedValue({ count: 0 });
+    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+  });
+
+  it('accepte les champs qui n’étaient plus modifiables après la création', async () => {
+    const res = await PATCH(
+      patch({
+        idPatient: 'PAT001',
+        prenom: 'Sophie',
+        nom: 'Nicola',
+        dateNaissance: '1984-01-17',
+        telephone: '0600000000',
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(prisma.patient.update.mock.calls[0][0].data).toMatchObject({
+      prenom: 'Sophie',
+      nom: 'Nicola',
+      dateNaissance: '1984-01-17',
+      telephone: '0600000000',
+    });
+  });
+
+  it('écrit les quatre renseignements du dossier administratif', async () => {
+    await PATCH(
+      patch({
+        idPatient: 'PAT001',
+        adresse: '12 rue des Fictifs, 75000 Paris',
+        nir: '184017511600144',
+        medecinTraitantNom: 'Dr Martin',
+        medecinTraitantCoordonnees: '01 02 03 04 05',
+      }),
+    );
+    expect(prisma.patient.update.mock.calls[0][0].data).toMatchObject({
+      adresse: '12 rue des Fictifs, 75000 Paris',
+      nir: '184017511600144',
+      medecinTraitantNom: 'Dr Martin',
+      medecinTraitantCoordonnees: '01 02 03 04 05',
+    });
+  });
+
+  it('★ NE TOUCHE PAS À CE QUE LE PAYLOAD NE NOMME PAS', async () => {
+    // LE DÉFAUT QUE CE BANC EMPÊCHE. Le formulaire de désactivation n'envoie
+    // qu'`actif`. Si l'absence d'un champ était lue comme « vide », enregistrer
+    // une désactivation effacerait l'adresse, le NIR et le médecin traitant —
+    // sans un mot, et sans que personne ne pense à vérifier.
+    await PATCH(patch({ idPatient: 'PAT001', actif: 'NON' }));
+    const data = prisma.patient.update.mock.calls[0][0].data;
+    for (const champ of [
+      'prenom',
+      'nom',
+      'email',
+      'dateNaissance',
+      'telephone',
+      'adresse',
+      'nir',
+      'medecinTraitantNom',
+      'medecinTraitantCoordonnees',
+    ]) {
+      expect(data, champ).not.toHaveProperty(champ);
+    }
+  });
+
+  it('une chaîne vide EFFACE le renseignement, elle ne le bloque pas', async () => {
+    // Le `CHECK` de la base refuse `''` mais accepte `NULL` : sans cette
+    // traduction, vider un champ deviendrait une erreur technique — et retirer
+    // une adresse saisie par erreur serait impossible.
+    await PATCH(patch({ idPatient: 'PAT001', adresse: '', nir: '', medecinTraitantNom: '   ' }));
+    expect(prisma.patient.update.mock.calls[0][0].data).toMatchObject({
+      adresse: null,
+      nir: null,
+      medecinTraitantNom: null,
+    });
+  });
+
+  it('refuse de VIDER prénom ou nom — un dossier sans nom n’est plus un dossier', async () => {
+    const res = await PATCH(patch({ idPatient: 'PAT001', prenom: '  ' }));
+    expect(res.status).toBe(400);
+    expect(prisma.patient.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('PATCH — le NIR est refusé sur sa CLÉ, pas seulement sur sa forme', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: 'PAT001',
+      praticienEmail: 'p@wellneuro.fr',
+      email: 'ancien@fictif.wellneuro.fr',
+    });
+    prisma.patient.update.mockResolvedValue({});
+    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+  });
+
+  it('★ un numéro BIEN FORMÉ mais de clé fausse est refusé, et rien n’est écrit', async () => {
+    // LA BASE NE VOIT QUE LA FORME (`patients_nir_forme`). Ce numéro-ci la
+    // satisfait : quinze caractères, chiffres. Sa clé ne correspond pas aux
+    // treize premiers, et il finirait sur un courrier ou une demande de prise
+    // en charge si seule la base gardait.
+    const res = await PATCH(patch({ idPatient: 'PAT001', nir: '184017511600145' }));
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toContain('clé de contrôle');
+    expect(prisma.patient.update).not.toHaveBeenCalled();
+  });
+
+  it('dit CE QUI ne va pas : la forme et la clé ne rendent pas le même message', async () => {
+    const forme = await PATCH(patch({ idPatient: 'PAT001', nir: '1840175116' }));
+    const messageForme = ((await forme.json()) as { error?: string }).error ?? '';
+    expect(forme.status).toBe(400);
+    expect(messageForme).toContain('15 caractères');
+    expect(messageForme).not.toContain('clé de contrôle');
+  });
+
+  it('accepte le numéro tel qu’il est imprimé sur la carte, et le stocke normalisé', async () => {
+    const res = await PATCH(patch({ idPatient: 'PAT001', nir: '1 84 01 75 116 001 44' }));
+    expect(res.status).toBe(200);
+    expect(prisma.patient.update.mock.calls[0][0].data.nir).toBe('184017511600144');
+  });
+});
+
+describe('PATCH — changer l’e-mail sans rendre les réponses muettes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.update.mockResolvedValue({});
+    prisma.consultation.updateMany.mockResolvedValue({ count: 0 });
+    prisma.assignation.updateMany.mockResolvedValue({ count: 0 });
+    prisma.questionnaireReponse.updateMany.mockResolvedValue({ count: 0 });
+    prisma.syntheseIA.updateMany.mockResolvedValue({ count: 0 });
+    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+  });
+
+  // Appartenance, puis ancienne adresse, puis contrôle d'unicité : trois
+  // lectures distinctes sur le même mock, dans cet ordre.
+  function lectures(occupePar: string | null = null) {
+    prisma.patient.findUnique
+      .mockResolvedValueOnce({ idPatient: 'PAT001', praticienEmail: 'p@wellneuro.fr' })
+      .mockResolvedValueOnce({ email: 'ancien@fictif.wellneuro.fr' })
+      .mockResolvedValueOnce(occupePar ? { idPatient: occupePar } : null);
+  }
+
+  it('★ LE BANC DÉCISIF — les quatre copies sont réécrites, dans LA MÊME transaction', async () => {
+    // `GET /api/praticien/reponses` interroge `questionnaireReponse` PAR
+    // `emailPatient`. Changer l'adresse du dossier sans réécrire les copies
+    // rendrait muettes toutes les réponses déjà reçues : le praticien verrait
+    // une liste vide, et rien ne lui dirait que ses données sont là mais
+    // introuvables.
+    lectures();
+    const res = await PATCH(patch({ idPatient: 'PAT001', email: 'nouveau@fictif.wellneuro.fr' }));
+    expect(res.status).toBe(200);
+
+    for (const table of [
+      prisma.consultation,
+      prisma.assignation,
+      prisma.questionnaireReponse,
+      prisma.syntheseIA,
+    ]) {
+      expect(table.updateMany).toHaveBeenCalledWith({
+        where: { idPatient: 'PAT001' },
+        data: { emailPatient: 'nouveau@fictif.wellneuro.fr' },
+      });
+    }
+
+    // ENSEMBLE, et pas l'une après l'autre : entre deux écritures séparées, une
+    // lecture verrait le dossier sur la nouvelle adresse et ses réponses sur
+    // l'ancienne — donc une liste vide, indiscernable d'un dossier sans réponse.
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(prisma.$transaction.mock.calls[0][0]).toHaveLength(5);
+  });
+
+  it('★ le livret envoyé N’EST PAS réécrit — il atteste un envoi réellement parti', async () => {
+    // `booklet_envois.email_patient_masque` dit qu'un livret est parti à CETTE
+    // adresse-là, à cette date-là. Le réécrire falsifierait une trace : le
+    // livret est bien parti à l'ancienne adresse, et c'est ce qui s'est passé.
+    // ET CE BANC DISCRIMINE VRAIMENT : le mock n'expose pas `bookletEnvoi`, si
+    // bien qu'une écriture vers cette table tomberait sur `undefined`, serait
+    // rattrapée par le `catch` de la route, et rendrait `success: false`. Sans
+    // l'assertion de succès ci-dessous, ce test resterait vert quoi qu'il
+    // arrive — une assertion sur la forme du mock ne prouve rien du code.
+    lectures();
+    const res = await PATCH(patch({ idPatient: 'PAT001', email: 'nouveau@fictif.wellneuro.fr' }));
+    expect(((await res.json()) as { success: boolean }).success).toBe(true);
+    expect('bookletEnvoi' in prisma).toBe(false);
+  });
+
+  it('une adresse réécrite À L’IDENTIQUE ne déclenche aucune réécriture', async () => {
+    prisma.patient.findUnique
+      .mockResolvedValueOnce({ idPatient: 'PAT001', praticienEmail: 'p@wellneuro.fr' })
+      .mockResolvedValueOnce({ email: 'ancien@fictif.wellneuro.fr' });
+    const res = await PATCH(patch({ idPatient: 'PAT001', email: 'ancien@fictif.wellneuro.fr' }));
+    expect(res.status).toBe(200);
+    expect(prisma.questionnaireReponse.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('une adresse déjà prise par un AUTRE dossier rend 409, et n’écrit rien', async () => {
+    lectures('PAT002');
+    const res = await PATCH(patch({ idPatient: 'PAT001', email: 'occupe@fictif.wellneuro.fr' }));
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { reason?: string }).reason).toBe('duplicate_email');
+    expect(prisma.patient.update).not.toHaveBeenCalled();
+    expect(prisma.questionnaireReponse.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('la COURSE que le contrôle ne couvre pas rend le même 409, pas une erreur technique', async () => {
+    // Deux enregistrements simultanés vers la même adresse passent tous deux le
+    // contrôle explicite ; c'est la contrainte unique qui tranche.
+    lectures();
+    prisma.$transaction.mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }));
+    const res = await PATCH(patch({ idPatient: 'PAT001', email: 'nouveau@fictif.wellneuro.fr' }));
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { reason?: string }).reason).toBe('duplicate_email');
+  });
+
+  it('un e-mail invalide est refusé avant toute lecture de l’ancien', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: 'PAT001',
+      praticienEmail: 'p@wellneuro.fr',
+    });
+    const res = await PATCH(patch({ idPatient: 'PAT001', email: 'pas-une-adresse' }));
+    expect(res.status).toBe(400);
+    expect(prisma.patient.update).not.toHaveBeenCalled();
+  });
+
+  it('sans e-mail au payload, aucune lecture de plus et aucune réécriture', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: 'PAT001',
+      praticienEmail: 'p@wellneuro.fr',
+    });
+    await PATCH(patch({ idPatient: 'PAT001', telephone: '0600000000' }));
+    // Une seule lecture : celle de l'appartenance.
+    expect(prisma.patient.findUnique).toHaveBeenCalledOnce();
+    expect(prisma.consultation.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUITE DE LA REVUE DU 2026-09-16 (PR #1166)
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('PATCH — un payload mal typé est une requête invalide, pas une panne', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: 'PAT001',
+      praticienEmail: 'p@wellneuro.fr',
+      email: 'ancien@fictif.wellneuro.fr',
+    });
+    prisma.patient.update.mockResolvedValue({});
+    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+  });
+
+  it('★ une valeur non textuelle rend 400, jamais 500', async () => {
+    // `JSON.parse` rend ce qu'on lui donne. `{ "adresse": 42 }` produisait un
+    // `42.trim is not a function` — donc une exception, donc un 500 qui dit
+    // « le serveur est en panne » alors qu'il ne l'était pas.
+    for (const corps of [
+      { idPatient: 'PAT001', adresse: 42 },
+      { idPatient: 'PAT001', nir: { valeur: '1' } },
+      { idPatient: 'PAT001', prenom: ['Sophie'] },
+      { idPatient: 123 },
+    ]) {
+      const res = await PATCH(patch(corps));
+      expect(res.status, JSON.stringify(corps)).toBe(400);
+      expect(((await res.json()) as { reason?: string }).reason).toBe('invalid_payload');
+    }
+    expect(prisma.patient.update).not.toHaveBeenCalled();
+  });
+
+  it('`null` explicite est refusé comme le reste — il n’est pas « absent »', async () => {
+    // `undefined` veut dire « ne touche pas ». `null` n'est pas `undefined` :
+    // le laisser passer aurait écrit `null.trim()`.
+    const res = await PATCH(patch({ idPatient: 'PAT001', adresse: null }));
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('PATCH — une adresse trop longue est REFUSÉE, jamais tronquée', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: 'PAT001',
+      praticienEmail: 'p@wellneuro.fr',
+    });
+    prisma.patient.update.mockResolvedValue({});
+    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+  });
+
+  it('★ tronquer fabriquerait une adresse fausse — et ces champs servent à écrire aux gens', async () => {
+    const res = await PATCH(patch({ idPatient: 'PAT001', adresse: 'a'.repeat(501) }));
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error?: string }).error).toContain('500 caractères');
+    expect(prisma.patient.update).not.toHaveBeenCalled();
+  });
+
+  it('les trois champs bornés le sont chacun à sa mesure', async () => {
+    const cas: [string, number][] = [
+      ['adresse', 500],
+      ['medecinTraitantNom', 200],
+      ['medecinTraitantCoordonnees', 500],
+    ];
+    for (const [champ, max] of cas) {
+      const trop = await PATCH(patch({ idPatient: 'PAT001', [champ]: 'x'.repeat(max + 1) }));
+      expect(trop.status, `${champ} au-delà`).toBe(400);
+      const pile = await PATCH(patch({ idPatient: 'PAT001', [champ]: 'x'.repeat(max) }));
+      expect(pile.status, `${champ} à la borne`).toBe(200);
+    }
   });
 });

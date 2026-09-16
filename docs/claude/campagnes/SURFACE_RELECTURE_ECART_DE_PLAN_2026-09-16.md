@@ -103,7 +103,7 @@ Bornes **inclusives**, `null` valant « pas de borne de ce côté ».
 
 | id | terme | min | max | ce que le praticien lirait |
 | --- | --- | ---: | ---: | --- |
-| `REPLI-01` | `actionsSansRepli` | `null` | 0 | Chaque action engagée distingue son plan minimal de son plan idéal. |
+| `REPLI-01` | `actionsSansRepli` | `null` | 0 | Aucune action engagée ne répète son plan idéal en plan minimal. |
 | `REPLI-02` | `actionsSansRepli` | 1 | 2 | Au moins une action engagée répète le même plan en idéal et en minimal : rien n'y est écrit comme allègement. |
 | `REPLI-03` | `actionsSansRepli` | 3 | 3 | Aucune des actions engagées ne distingue ses deux plans : le protocole ne propose aucun repli écrit. |
 
@@ -111,10 +111,20 @@ Bornes **inclusives**, `null` valant « pas de borne de ce côté ».
 basse** — seulement que les deux plans diffèrent par leur texte. C'est tout ce
 que la mesure établit, et le module le déclare.
 
-**`REPLI-01` couvre zéro ET les protocoles sans action engagée**, et son texte est
-écrit pour être vrai dans les deux cas. C'est la correction exacte que la
-relecture du 2026-09-15 avait imposée à `CHARGE-01`, dont le texte proposé
-affirmait faux à zéro action.
+**`REPLI-01` couvre TROIS situations, et son texte doit rester vrai dans les
+trois.** C'est la correction exacte que la relecture du 2026-09-15 avait imposée
+à `CHARGE-01`, dont le texte proposé affirmait faux à zéro action. La troisième
+situation est la plus traître, et elle a été trouvée par une revue de code : une
+action **en cours de saisie**, dont le plan idéal n'est pas encore tapé, n'entre
+pas dans le terme — qui vaut donc zéro, et `REPLI-01` s'affiche **pendant la
+composition**. Un texte disant « chaque action engagée distingue ses deux plans »
+y affirmerait faux.
+
+| Situation | Le constat reste-t-il vrai ? |
+| --- | --- |
+| Aucune action engagée | Oui — rien n'est répété |
+| Toutes distinguent leurs deux plans | Oui |
+| Une action encore vide, en cours de saisie | Oui — elle ne répète rien non plus |
 
 L'échelle est **contiguë et sans recouvrement** — `chevauchementsBareme` refuse
 une table qui se mord, et le refus porte sur la table entière.

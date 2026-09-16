@@ -24,7 +24,7 @@ import {
   tableSignauxSecuriteSignee,
 } from '@/lib/clinical/safetySignalsV1';
 
-// Lettre d'adressage sur signal d'alerte ([[D-217]], LOT-04) — la seule raison
+// Lettre d'adressage sur signal d'alerte ([[D-218]], LOT-04) — la seule raison
 // cliniquement obligatoire d'écrire à un médecin, et elle n'avait aucun chemin.
 //
 // LE TEXTE EST GÉNÉRÉ CÔTÉ SERVEUR, JAMAIS REÇU DU CLIENT. La lettre passe par

@@ -21,7 +21,7 @@ const DESTINATAIRE_TITRE: Record<Destinataire, string> = {
  * Ils étaient en dur, et tous les rendus médecin annonçaient donc
  * « éléments à discuter » / « explorations à discuter ». C'est juste d'une
  * proposition d'explorations biologiques ; c'est FAUX de la lettre
- * d'adressage ([[D-217]]), qui ne transmet aucune exploration et demande un
+ * d'adressage ([[D-218]]), qui ne transmet aucune exploration et demande un
  * avis médical AVANT toute proposition. Le papier aurait porté un en-tête
  * qui contredit son propre corps, chez un médecin, sans qu'aucune garde ne
  * le voie : la garde juge le corps, pas ces trois phrases fixes.

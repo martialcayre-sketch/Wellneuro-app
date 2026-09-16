@@ -76,7 +76,7 @@ const rep = (payload: unknown, ok = true, status = 200): ReponseMock => ({
  * n'est jamais atteint.
  */
 const ROUTES_NOMMEES = [
-  // Lettre d'adressage ([[D-217]]) : son GET de disponibilité ne part QUE si le
+  // Lettre d'adressage ([[D-218]]) : son GET de disponibilité ne part QUE si le
   // dossier porte un constat issu des signaux d'anamnèse — ni sur la fixture,
   // ni sur un dossier sans signal, ni sur un dossier qui n'a que des constats
   // d'effet indésirable (les trois cas sont éprouvés plus bas). Non nommée, la
@@ -850,7 +850,7 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     expect(panneau.textContent).toContain('qui n’est pas une passation');
   });
 
-  // ── LE GESTE D'ADRESSAGE ([[D-217]]) ────────────────────────────────────
+  // ── LE GESTE D'ADRESSAGE ([[D-218]]) ────────────────────────────────────
   // `review.safetyFindings` mélange DEUX producteurs — les signaux d'anamnèse
   // et les signalements d'effet indésirable. Ils inhibent la décision de la
   // même façon, mais la lettre ne sait écrire que les premiers : offrir le

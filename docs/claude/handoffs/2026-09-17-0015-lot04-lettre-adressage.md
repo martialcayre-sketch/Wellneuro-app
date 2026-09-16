@@ -1,6 +1,6 @@
 # Handoff — 2026-09-17 — LOT-04 : la lettre d'adressage, cœur de la campagne
 
-Le geste manquant entre un blocage et sa sortie. Décision [[D-217]].
+Le geste manquant entre un blocage et sa sortie. Décision [[D-218]].
 
 ## Branche et état Git
 
@@ -20,7 +20,7 @@ vingt-cinq sont concernés (production, 2026-08-23).
 ## Décisions prises
 
 Aucun arbitrage clinique nouveau : la cotation de [[D-099]] n'est ni relue, ni
-retouchée, ni re-signée. Six choix techniques, écrits dans [[D-217]] :
+retouchée, ni re-signée. Six choix techniques, écrits dans [[D-218]] :
 
 - le geste se monte **dans** le bloc « Ce qui suspend la décision », pas dans
   l'onglet Correspondance ;
@@ -107,7 +107,7 @@ un routé.**
 | La carte des chemins sortants de `vocabulaire.ts` ne nomme pas le chemin neuf | **retenu** | ligne ajoutée, avec sa garde et son banc de câblage |
 | `adressageOuvert` reste vrai quand le dossier cesse d'être éligible | **retenu** | remis à `false` dans la même branche |
 | Le commentaire du harnais décrit un GET « à CHAQUE montage », périmé | **retenu** | réécrit, et les trois cas sont maintenant éprouvés |
-| Références `D-215` là où le geste relève de sa propre décision | **retenu** | corrigé par la renumérotation en `D-217` ; `D-215` ne reste que pour l'ancrage |
+| Références `D-215` là où le geste relève de sa propre décision | **retenu** | corrigé par la renumérotation en `D-218` ; `D-215` ne reste que pour l'ancrage |
 | `MATRICE_CONSOMMATION` n'a aucune ligne pour `safetySignalsV1` | **routé** | dette réelle et **antérieure** à ce lot — la table est consommée par le cockpit depuis `D-099`. Déclarer une source de savoir est une autre finalité : entrée en file d'attente |
 
 Trois mutants tués sur les correctifs : rétablir `length > 0` fait rougir le banc du

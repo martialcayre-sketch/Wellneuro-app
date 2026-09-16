@@ -28,7 +28,7 @@
 // ni par une décision. Ce n'était pas un mensonge — c'était un non-dit, et un
 // non-dit ne se relit pas.
 // | Rendu médecin (courrier biologie, aperçus) | `assertRenduMedecinNonPrescriptif` (ci-dessous) au chokepoint `documents/rendu.ts` | refus dur (lève) | `documents/rendu.test.ts` |
-// | Rendu médecin (**lettre d'adressage**, [[D-217]]) | `assertRenduMedecinNonPrescriptif` au MÊME chokepoint — le générateur n'a pas de second gabarit | refus dur (lève), remonté en 409 `terme_prescriptif` | `lib/clinical/courrierAdressage.test.ts` (« rend une lettre non prescriptive par le chokepoint médecin ») + `documents/rendu.test.ts` pour le câblage |
+// | Rendu médecin (**lettre d'adressage**, [[D-218]]) | `assertRenduMedecinNonPrescriptif` au MÊME chokepoint — le générateur n'a pas de second gabarit | refus dur (lève), remonté en 409 `terme_prescriptif` | `lib/clinical/courrierAdressage.test.ts` (« rend une lettre non prescriptive par le chokepoint médecin ») + `documents/rendu.test.ts` pour le câblage |
 // | Bilan portail (service) | `termeAnxiogene` sur narratif + note servis (`api/portail/bilan/route.ts`) | journalisant (`PORTAIL_BILAN_REGISTRE_ANXIOGENE`) | `api/portail/bilan/route.test.ts` |
 // | Synthèse de compréhension (publication) | `termeAnxiogene` sur `texte` (`api/praticien/comprehension/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`) | `api/praticien/comprehension/route.test.ts` |
 // | Synthèse de compréhension (service portail) | `termeAnxiogene` sur le texte servi (`api/portail/comprehension/route.ts`) | journalisant (`PORTAIL_COMPREHENSION_REGISTRE_ANXIOGENE`) | `api/portail/comprehension/route.test.ts` |

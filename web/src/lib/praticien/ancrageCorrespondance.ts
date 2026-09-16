@@ -40,7 +40,7 @@ export type VerdictAncrage = VerdictAncre | 'sans_ancrage';
 
 /**
  * ANCRAGES CONNUS — la version portée par la ligne → le SHA qu'elle doit
- * porter. DEUX écrivains ancrés depuis [[D-217]] : le courrier biologie et la
+ * porter. DEUX écrivains ancrés depuis [[D-218]] : le courrier biologie et la
  * lettre d'adressage.
  *
  * Le verdict se rendait en dur contre la table d'indications biologiques. Une

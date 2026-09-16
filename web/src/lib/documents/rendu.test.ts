@@ -60,7 +60,7 @@ describe('renderDocumentHtml', () => {
     expect(html.toLowerCase()).not.toContain('confratern');
   });
 
-  // LE CADRE ET LE TITRE SUIVENT LE MODÈLE ([[D-217]], constat de revue). Ils
+  // LE CADRE ET LE TITRE SUIVENT LE MODÈLE ([[D-218]], constat de revue). Ils
   // étaient en dur : la lettre d'adressage — qui ne transmet AUCUNE exploration
   // et demande un avis médical avant toute proposition — s'imprimait sous un
   // en-tête « explorations à discuter », chez un médecin. La garde ne le voit
