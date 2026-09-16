@@ -6681,3 +6681,37 @@ Validation : vérification des chemins attendus et du format de titre handoff
 
 Prochaine action : relancer la revue de la PR #1146 puis le merge après
 confirmation du check `verify`.
+
+## 2026-09-16 — LOT-01 du rayon Correspondance : le sens se lit une seule fois
+
+Premier lot de la campagne « ouverture du rayon Correspondance », cadrée le même
+jour par un audit du dépôt. PR #1146, décision **D-208**.
+
+`correspondances_medecin.sens` n'a aucun CHECK, et les deux écrans repliaient
+**en sens inverse** : la même ligne se lisait « envoi » à l'accueil et
+« réponse » sur la fiche, l'accueil accompagnant son libellé faux d'un extrait du
+texte consigné. Départager les deux revenait à choisir laquelle des deux erreurs
+garder — `libelleSens` et `sensExpose` vivent désormais dans le domaine, seuls
+lecteurs, et une valeur hors vocabulaire ne devient ni un envoi ni une réponse
+(`DC-24`).
+
+Arbitrage du responsable sur l'exposition : **séparer les consommateurs et
+retirer l'extrait**, sur un fait découvert en cours de lot — le rail appelait
+`/recentes` et jetait les lignes. La colonne `texte` n'est plus sélectionnée, et
+`recentes/compteur` ne traverse aucune table d'identité : deux garanties de
+forme, pas de discipline de rendu.
+
+Écarté : le CHECK en base — le défaut était en lecture, il se corrige en lecture ;
+le CHECK ira avec la migration `supersedes_*`. Reste ouvert et nommé en D-208 §3 :
+`/recentes` nomme toujours cinq dossiers sans écrire au journal d'accès.
+
+T1 vert (rejoué après rebase), 61 bancs dont 16 neufs, mutant tué. T2 rouge sur la
+seule signature `D-049` (WebKit, navigation sans requête émise) ; CI vert sur la
+tête réelle de la PR.
+
+Deux frictions : `D-207` pris par une autre session pendant le lot — rebase et
+renumérotation en `D-208`, sujet du commit amendé ; et la clôture écrite **après**
+l'ouverture de la PR, ce que la règle interdit — d'où les fragments poussés par
+Copilot et un second `verify`.
+
+Prochaine action : **LOT-00**, dont ce lot est le préalable.
