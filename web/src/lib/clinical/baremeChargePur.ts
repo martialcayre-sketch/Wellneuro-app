@@ -42,8 +42,50 @@ export type MesureProtocole = {
    * Nombre d'actions dont le plan idéal DIFFÈRE du plan minimal. C'est l'écart
    * que le patient vit les jours difficiles, et la seule des quatre mesures qui
    * parle de l'effort plutôt que du volume.
+   *
+   * IL SATURE, ET C'EST POURQUOI `actionsSansRepli` EXISTE. Le contrat exige un
+   * plan idéal non vide (`protocolDraft.ts`), et deux textes ne coïncident que
+   * si le praticien recopie le même mot à mot : ce terme est donc INFÉRIEUR OU
+   * ÉGAL à `nombreActionsFermes`, et s'en écarte rarement. Une échelle bâtie
+   * dessus redirait ce que le barème compte déjà ([[D-213]] §4).
    */
   actionsAvecEcartDePlan: number;
+  /**
+   * Nombre d'actions engagées dont le plan minimal RÉPÈTE le plan idéal.
+   *
+   * CE QUE CE TERME ÉTABLIT, ET CE QU'IL N'ÉTABLIT PAS. Il compare deux chaînes
+   * après `trim()` : il constate une absence d'écart TEXTUEL, jamais une
+   * absence d'allègement réel. Deux formulations du même niveau d'exigence
+   * passeraient pour un repli, et rien ici ne sait qu'un plan minimal est
+   * vraiment plus accessible. Aucun texte affiché ne doit donc affirmer que le
+   * patient « garde une marche plus basse » — la mesure ne le dit pas.
+   *
+   * IL NE SE DÉRIVE PAS PAR SOUSTRACTION de `actionsAvecEcartDePlan`, et le
+   * défaut serait invisible là où la mesure sert : `mesurerProtocole` tourne
+   * dans le NAVIGATEUR pendant la composition, avant toute validation, et une
+   * action dont le plan idéal n'est pas encore tapé serait alors comptée comme
+   * une action sans repli — affichée au praticien pendant qu'il écrit. D'où le
+   * `!== ''` explicite ci-dessous.
+   */
+  actionsSansRepli: number;
+};
+
+/**
+ * Ce qu'une ligne bornée porte pour être comparable à une autre — le strict
+ * nécessaire à la détection d'un recouvrement.
+ *
+ * POURQUOI CE TYPE EXISTE PLUTÔT QU'UNE SECONDE COPIE DE LA LOGIQUE : la table
+ * du repli ([[D-213]] §4) est bornée comme le barème, mais ne rend pas un
+ * niveau de charge. Dupliquer `chevauchementsBareme` ferait diverger deux
+ * gardes de sûreté au premier correctif ; l'élargir ne change aucun appelant,
+ * `LigneBaremeCharge` le satisfaisant déjà.
+ */
+export type LigneBornee = {
+  id: string;
+  terme: keyof MesureProtocole;
+  min: number | null;
+  max: number | null;
+  statut: 'publiee' | 'brouillon';
 };
 
 /**
@@ -80,6 +122,8 @@ export function mesurerProtocole(actions: readonly ProtocolAction[]): MesureProt
     typesDistincts: new Set(fermes.map(action => action.type)).size,
     actionsAvecEcartDePlan: fermes.filter(action =>
       action.idealPlan.trim() !== '' && action.idealPlan.trim() !== action.minimalPlan.trim()).length,
+    actionsSansRepli: fermes.filter(action =>
+      action.idealPlan.trim() !== '' && action.idealPlan.trim() === action.minimalPlan.trim()).length,
   };
 }
 
@@ -132,7 +176,7 @@ export function suggererDepuisLignes(
  * `[3, null]` et `[null, 3]` se recouvrent en 3.
  */
 export function chevauchementsBareme(
-  lignes: readonly LigneBaremeCharge[],
+  lignes: readonly LigneBornee[],
 ): { a: string; b: string; terme: keyof MesureProtocole }[] {
   const publiees = lignes.filter(ligne => ligne.statut === 'publiee');
   const conflits: { a: string; b: string; terme: keyof MesureProtocole }[] = [];

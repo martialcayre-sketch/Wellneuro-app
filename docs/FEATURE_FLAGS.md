@@ -328,6 +328,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/conflitsSourcesV1.ts` | `true` | `2026-08-24T00:00:00.000Z` |
 | `clinical/baremeChargeV1.ts` | `true` | `2026-09-15T00:00:00.000Z` |
 | `clinical/catalogueConduitesV1.ts` | `false` | `null` |
+| `clinical/tableRepliV1.ts` | `false` | `null` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
