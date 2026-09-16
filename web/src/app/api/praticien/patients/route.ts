@@ -321,8 +321,24 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
       });
     }
 
+    // `idPatient` RESTREINT AUSSI LA LISTE DES DOSSIERS, et plus seulement les
+    // assignations (LOT-06). Ce paramètre ne filtrait que les assignations : un
+    // appelant qui demandait UN dossier recevait quand même la fiche de TOUS les
+    // patients du praticien — et depuis le LOT-05 ces fiches portent l'adresse
+    // postale et le NIR. Le cockpit patient est exactement cet appelant : il
+    // téléchargeait les données administratives de toute la patientèle pour en
+    // afficher une seule.
+    //
+    // Aucun appelant ne dépendait de l'ancien comportement : les trois appels du
+    // cockpit ne lisent que `assignations`/`assignationsMeta`, le rayon Patients
+    // passe par la branche paginée sans `idPatient`, et le rayon assignations de
+    // la Bibliothèque n'envoie que `statut`. Vérifié un par un avant d'écrire.
+    const whereDossiers = {
+      ...filtrePatientsDuPraticien(email),
+      ...(idPatientDemande ? { idPatient: idPatientDemande } : {}),
+    };
     const [dbPatients, dbAssignations, totalAssignations] = await Promise.all([
-      prisma.patient.findMany({ where: filtrePatientsDuPraticien(email), orderBy: [{ nom: 'asc' }, { prenom: 'asc' }] }),
+      prisma.patient.findMany({ where: whereDossiers, orderBy: [{ nom: 'asc' }, { prenom: 'asc' }] }),
       prisma.assignation.findMany({
         where: whereAssignations,
         orderBy: { dateAssignation: 'desc' },

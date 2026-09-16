@@ -212,10 +212,16 @@ export function FicheAdministrativePanel({
 
       {/* L'état du dossier ne se change PAS ici, et le rappeler évite qu'on
           l'ajoute : désactiver ferme les liens en vol — geste irréversible qui
-          passe par le dialogue du menu de ligne (`D-126`). */}
+          passe par un dialogue (`D-126`).
+
+          « DEPUIS « GÉRER LE DOSSIER » » ET NON « AU MENU DE LA LIGNE » : ce
+          panneau est monté sur DEUX surfaces depuis le LOT-06, et le cockpit
+          patient n'a pas de ligne de tableau. La phrase pointait vers quelque
+          chose qui n'existe pas là-bas ; le menu, lui, porte le même libellé
+          aux deux endroits. */}
       <p className="text-13 text-muted-foreground">
-        L’état du dossier (actif, clôturé, accès révoqué) se change au menu de la ligne, derrière une
-        confirmation.
+        L’état du dossier (actif, clôturé, accès au portail) se change depuis « Gérer le dossier »,
+        derrière une confirmation.
       </p>
 
       <div className="flex items-center gap-2 flex-wrap">

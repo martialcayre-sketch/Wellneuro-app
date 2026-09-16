@@ -87,6 +87,11 @@ import {
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { RelectureProtocoleSoumission } from '@/components/patient-cockpit/ProtocolMiniBuilder';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
+import { FicheAdministrativePanel } from '@/components/dossier/FicheAdministrativePanel';
+import { usePatientGestesDossier } from '@/components/dossier/usePatientGestesDossier';
+import { elementsMenuDossier, type PatientRowData } from '@/components/ui/PatientRow';
+import { DossierConfirmDialog } from '@/components/ui/DossierConfirmDialog';
+import { MenuActions } from '@/components/ui/MenuActions';
 
 function getArrayField(scores: Record<string, unknown> | null, key: string): string[] {
   const value = scores?.[key];
@@ -584,6 +589,17 @@ export function FichePatientPanel({
    * afficherait une attente que personne n'attend. Elles sont donc dites à
    * part, jamais tues.
    */
+  // LE DOSSIER ADMINISTRATIF, LU PAR SA PROPRE ROUTE (LOT-06).
+  //
+  // PAS depuis `/api/praticien/equilibre`, qui ne sert que quatre champs et dont
+  // le DTO est CLINIQUE : l'élargir aurait mêlé l'adresse postale et le NIR aux
+  // données de scoring, dans une charge que d'autres surfaces lisent aussi.
+  //
+  // `null` tant que la lecture n'a pas abouti, et un état d'erreur DISTINCT de
+  // l'absence : un dossier illisible ne doit jamais se rendre comme un dossier
+  // vide — le praticien croirait que rien n'a été saisi.
+  const [dossier, setDossier] = useState<PatientsApiResponse['patients'][number] | null>(null);
+  const [etatDossier, setEtatDossier] = useState<'chargement' | 'charge' | 'erreur'>('chargement');
   const [passations, setPassations] = useState<PatientsApiResponse['assignations']>([]);
   // `tronque` EST UN ÉTAT À PART ENTIÈRE, pas une variante d'erreur : la
   // lecture a réussi, mais la route plafonne à 40 lignes et ce dossier en
@@ -911,6 +927,7 @@ export function FichePatientPanel({
    * rendrait les assignations de tout le cabinet — d'où la vérification, et
    * non la confiance.
    */
+
   const chargerPassations = useCallback(async () => {
     const generation = ++generationPassations.current;
     setEtatPassations('chargement');
@@ -931,22 +948,51 @@ export function FichePatientPanel({
       if (!filtresHonores) {
         setPassations([]);
         setEtatPassations('erreur');
+        // Le dossier vient de la MÊME réponse : si le serveur n'a pas honoré les
+        // filtres, rien de cette charge ne fait foi.
+        setDossier(null);
+        setEtatDossier('erreur');
         return;
       }
       // Second passage en défense, comme les deux lectures voisines.
       const liste = (payload.assignations ?? []).filter(a => a.idPatient === idPatient);
       setPassations(liste);
       setEtatPassations(meta.total > liste.length ? 'tronque' : 'chargees');
+
+      // LE DOSSIER VIENT DE LA MÊME RÉPONSE (LOT-06), et non d'une seconde
+      // requête : celle-ci porte déjà `?idPatient=` et rien d'autre, donc une
+      // lecture dédiée aurait émis la requête IDENTIQUE une seconde fois à
+      // chaque ouverture du cockpit.
+      //
+      // Second passage en défense, comme pour les assignations : la route
+      // restreint la liste des dossiers à `idPatient` depuis ce lot, mais un
+      // serveur antérieur l'ignorerait et rendrait toute la patientèle. On prend
+      // la ligne par son identifiant, jamais la première venue.
+      const ligne = (payload.patients ?? []).find(x => x.idPatient === idPatient) ?? null;
+      setDossier(ligne);
+      setEtatDossier(ligne ? 'charge' : 'erreur');
     } catch {
       if (generation !== generationPassations.current) return;
       setPassations([]);
       setEtatPassations('erreur');
+      setDossier(null);
+      setEtatDossier('erreur');
     }
   }, [idPatient]);
 
   useEffect(() => {
     void chargerPassations();
   }, [chargerPassations]);
+
+  // LE MÊME HOOK QUE LE RAYON PATIENTS (LOT-06), et jamais une seconde
+  // implémentation : ces neuf actions comprennent la révocation d'accès et
+  // l'effacement définitif. Deux copies auraient dérivé, et la promesse faite au
+  // praticien aurait dépendu de l'écran d'où il a cliqué.
+  //
+  // Pas de `reprendreConsultation` ici : le cockpit ne porte aucun tiroir
+  // « Nouvelle consultation », et le hook replie alors le rétablissement sur le
+  // renvoi de lien — voir son commentaire.
+  const gestesDossier = usePatientGestesDossier({ apresSucces: chargerPassations });
 
   /**
    * Les cinq refus que la route d'annulation sait rendre, en français.
@@ -1623,15 +1669,94 @@ export function FichePatientPanel({
     if (phaseActive === 'patient') {
       return (
         <div className="flex flex-col gap-4">
-          {/* La date de dernière réponse N'EST PLUS répétée ici : le bandeau
-              du cockpit la porte en permanence sur ce même onglet, et la
-              double occurrence sans contexte ajouté était une pure
-              duplication (audit 2026-09-02). L'e-mail, lui, n'est visible
-              qu'ici. */}
-          <div className="rounded-xl border border-border bg-surface p-4">
-            <p className="text-base text-foreground">{nomComplet}</p>
-            <p className="mt-1 break-all text-base text-muted-foreground">{patient.email}</p>
-          </div>
+          {/* ── LA FICHE DU DOSSIER, ET NON PLUS DEUX LIGNES ────────────────
+              Cette carte n'affichait qu'un nom et un e-mail. Tout le reste du
+              dossier — et tous les gestes qui le pilotent — vivait sur une
+              autre page, l'héritage 4.0 « Questionnaires & packs ». Le praticien
+              ouvrait le cockpit d'un patient et devait en sortir pour corriger
+              une date de naissance ou renvoyer un lien d'accès.
+
+              Une lecture en ÉCHEC ne se rend jamais comme un dossier vide : le
+              praticien conclurait que rien n'a été saisi. */}
+          {etatDossier === 'erreur' ? (
+            <div className="rounded-xl border border-border bg-surface p-4">
+              <p role="alert" className="text-base text-status-warning">
+                La fiche administrative n’a pas pu être lue. Ce n’est pas une absence : ce dossier
+                porte peut-être une adresse, un numéro de sécurité sociale et un médecin traitant.
+              </p>
+              <p className="mt-2 text-base text-foreground">{nomComplet}</p>
+              <p className="mt-1 break-all text-base text-muted-foreground">{patient.email}</p>
+            </div>
+          ) : etatDossier === 'charge' && dossier ? (
+            <>
+              <FicheAdministrativePanel
+                // Même garde que dans le rayon : le panneau initialise son
+                // formulaire une fois, et une navigation d'un dossier à l'autre
+                // sans remontage écrirait les valeurs de l'un sur l'autre.
+                key={dossier.idPatient}
+                patient={dossier}
+                onEnregistre={chargerPassations}
+                onFermer={() => {}}
+              />
+              <div className="rounded-xl border border-border bg-surface p-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Les trois états se CUMULENT et ne se déduisent pas l'un de
+                      l'autre — mêmes libellés que la ligne du rayon, pour qu'un
+                      seul mot désigne le fait aux deux endroits. */}
+                  <span className="text-base text-foreground">
+                    {dossier.actif === 'OUI' ? 'Dossier actif' : 'Dossier inactif'}
+                  </span>
+                  {dossier.suiviClotureLe && (
+                    <span className="text-base text-muted-foreground">· Suivi clôturé</span>
+                  )}
+                  {dossier.accesRevoque && (
+                    <span className="text-base text-muted-foreground">· Accès révoqué</span>
+                  )}
+                </div>
+                <MenuActions
+                  libelleDeclencheur="Gérer le dossier"
+                  elements={elementsMenuDossier({
+                    patient: dossier as PatientRowData,
+                    onAction: gestesDossier.agir,
+                    actionAccesEnCours: gestesDossier.tokenAction !== null,
+                  })}
+                />
+              </div>
+              {gestesDossier.retour && (
+                <p
+                  role={gestesDossier.retour.ok ? 'status' : 'alert'}
+                  className={`text-base ${gestesDossier.retour.ok ? 'text-status-success' : 'text-status-danger'}`}
+                >
+                  {gestesDossier.retour.msg}
+                </p>
+              )}
+              {gestesDossier.confirmation && (
+                <DossierConfirmDialog
+                  mode={gestesDossier.confirmation.mode}
+                  nomPatient={`${gestesDossier.confirmation.patient.prenom} ${gestesDossier.confirmation.patient.nom}`.trim()}
+                  accesActif={gestesDossier.confirmation.patient.actif === 'OUI'}
+                  open
+                  onOpenChange={ouvert => {
+                    if (!ouvert && !gestesDossier.cycleEnCours) {
+                      gestesDossier.fermerConfirmation();
+                      gestesDossier.setErreurConfirmation(null);
+                    }
+                  }}
+                  enCours={gestesDossier.cycleEnCours}
+                  erreur={gestesDossier.erreurConfirmation}
+                  onConfirm={gestesDossier.confirmer}
+                />
+              )}
+            </>
+          ) : (
+            <div className="rounded-xl border border-border bg-surface p-4">
+              <p role="status" className="text-base text-muted-foreground">
+                Lecture de la fiche administrative...
+              </p>
+              <p className="mt-2 text-base text-foreground">{nomComplet}</p>
+              <p className="mt-1 break-all text-base text-muted-foreground">{patient.email}</p>
+            </div>
+          )}
           {/* ── CE QUE LE PATIENT A DÉPOSÉ, DIT ICI MÊME ─────────────────────
               Le détail vit dans l'instrument « Renseignements du patient » —
               dix sections ne s'empilent pas dans une zone focale. Mais le

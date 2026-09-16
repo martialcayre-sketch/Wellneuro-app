@@ -20,6 +20,7 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { FicheAdministrativePanel } from '@/components/dossier/FicheAdministrativePanel';
+import { usePatientGestesDossier } from '@/components/dossier/usePatientGestesDossier';
 
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -76,19 +77,6 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
   const [data, setData] = useState<PatientsApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  // Fin de parcours en attente de confirmation. Un seul dialogue pour tout le
-  // tableau : dix lignes ne doivent pas produire dix dialogues dans le DOM.
-  // `suite` ne concerne que le mode `retablissement` : ce dialogue-là ne porte
-  // pas un geste à lui, il s'interpose devant un geste EN COURS. Sans ce champ,
-  // la confirmation ne saurait pas lequel des deux reprendre.
-  const [confirmation, setConfirmation] = useState<
-    { mode: ModeConfirmation; patient: PatientRowData; suite?: 'resend' | 'consultation' } | null
-  >(null);
-  const [cycleEnCours, setCycleEnCours] = useState(false);
-  // L'échec d'une action de fin de parcours se dit DANS le dialogue : Radix
-  // pose un voile et `aria-hidden` sur le reste de la page, un message affiché
-  // ailleurs serait invisible et muet pour un lecteur d'écran.
-  const [erreurConfirmation, setErreurConfirmation] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('nom');
   const [page, setPage] = useState(1);
@@ -101,8 +89,6 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
   // Consultation / accès portail patient.
   const [consultationForm, setConsultationForm] = useState({ idPatient: '', motif: '' });
   const [savingConsultation, setSavingConsultation] = useState(false);
-  const [tokenAction, setTokenAction] = useState<'resend' | 'revoke' | 'copier' | 'lien_magique' | null>(null);
-  const [consultationFeedback, setConsultationFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   // Tiroir d'action ouvert (LOT-05) — un seul à la fois.
   const [tiroirOuvert, setTiroirOuvert] = useState<'patient' | 'consultation' | null>(null);
 
@@ -174,6 +160,17 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
 
   const refreshPatients = () => Promise.all([loadData(), loadPatientsTable(page, search, sortBy)]);
 
+  // LES GESTES DU DOSSIER VIVENT DANS UN HOOK PARTAGÉ (LOT-06). Ils étaient
+  // écrits ici et nulle part ailleurs ; le cockpit patient offre désormais les
+  // mêmes neuf actions — dont la révocation d'accès et l'effacement définitif —
+  // et deux implémentations auraient dérivé. `reprendreConsultation` est la
+  // seule part qui reste propre à ce rayon : lui seul porte un tiroir
+  // « Nouvelle consultation » qu'un rétablissement d'accès peut interrompre.
+  const gestes = usePatientGestesDossier({
+    apresSucces: refreshPatients,
+    reprendreConsultation: retablirAcces => posterConsultation(retablirAcces),
+  });
+
   const onCreatePatient = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
@@ -204,8 +201,8 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
   // confirmation, sans que le praticien resaisisse quoi que ce soit.
   const posterConsultation = async (retablirAcces = false) => {
     setSavingConsultation(true);
-    setConsultationFeedback(null);
-    if (retablirAcces) setErreurConfirmation(null);
+    gestes.setRetour(null);
+    if (retablirAcces) gestes.setErreurConfirmation(null);
     try {
       const r = await fetch('/api/praticien/consultations', {
         method: 'POST',
@@ -221,8 +218,8 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
         const message = erreurLisible(json.reason, json.error);
         // Le refus se rend DANS le dialogue quand c'est lui qui a lancé
         // l'appel : derrière l'overlay, personne ne le lirait.
-        if (retablirAcces) setErreurConfirmation(message);
-        else setConsultationFeedback({ ok: false, msg: message });
+        if (retablirAcces) gestes.setErreurConfirmation(message);
+        else gestes.setRetour({ ok: false, msg: message });
         return;
       }
       // `ok: true` MAINTENU même sur envoi mort : la consultation EST créée, le
@@ -230,7 +227,7 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
       // laisserait le tiroir ouvert sur un dossier déjà créé — invitation à la
       // double soumission. C'est le TEXTE qui porte l'échec, et il dit quoi
       // faire, pour que le vert ne se lise pas comme un succès d'envoi.
-      setConsultationFeedback({
+      gestes.setRetour({
         ok: true,
         msg: libelleEnvoi(json.envoi, {
           envoye: retablirAcces
@@ -248,12 +245,12 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
       // Succès → le tiroir se ferme, la ligne de statut de la page l'annonce.
       setTiroirOuvert(null);
       if (retablirAcces) {
-        setConfirmation(null);
+        gestes.fermerConfirmation();
         await refreshPatients();
       }
     } catch {
-      if (retablirAcces) setErreurConfirmation('Erreur réseau. Réessayez.');
-      else setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+      if (retablirAcces) gestes.setErreurConfirmation('Erreur réseau. Réessayez.');
+      else gestes.setRetour({ ok: false, msg: 'Erreur réseau. Réessayez.' });
     } finally {
       setSavingConsultation(false);
     }
@@ -267,13 +264,13 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
       // celui-ci n'y passe pas. Sans cette ligne, un échec antérieur reste dans
       // la ligne de statut DERRIÈRE l'overlay Radix, et réapparaît à la
       // fermeture du dialogue comme s'il commentait le geste qu'on vient de faire.
-      setConsultationFeedback(null);
+      gestes.setRetour(null);
       // LE TIROIR SE FERME AVANT LE DIALOGUE. Deux couches Radix superposées
       // empileraient overlay, piège de focus et `aria-hidden` ; la saisie du
       // formulaire survit dans `consultationForm`, que `posterConsultation`
       // relira telle quelle.
       setTiroirOuvert(null);
-      demanderConfirmation(
+      gestes.demanderConfirmation(
         'retablissement',
         { ...cible, actif: cible.actif === 'OUI' ? 'OUI' : 'NON' },
         'consultation',
@@ -283,147 +280,10 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
     void posterConsultation();
   };
 
-  // Les quatre actions d'accès prennent désormais leur patient en paramètre :
-  // elles sont déclenchées depuis le menu d'une LIGNE, et non plus depuis le
-  // sélecteur de la carte consultation. Le garde « Sélectionnez un patient »
-  // n'a plus d'objet — une ligne désigne toujours un dossier.
-  // `retablirAcces` : ce renvoi vient d'une confirmation de rétablissement —
-  // le refus et le succès se rendent alors DANS le dialogue, pas derrière lui.
-  const onResendToken = async (idPatient: string, retablirAcces = false) => {
-    setTokenAction('resend');
-    setConsultationFeedback(null);
-    if (retablirAcces) setErreurConfirmation(null);
-    try {
-      const r = await fetch('/api/praticien/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idPatient,
-          action: 'resend',
-          ...(retablirAcces ? { retablirAcces: true } : {}),
-        }),
-      });
-      const json = (await r.json()) as TokenActionResponse;
-      if (!r.ok || !json.success) {
-        const message = erreurLisible(json.reason, json.error);
-        if (retablirAcces) setErreurConfirmation(message);
-        else setConsultationFeedback({ ok: false, msg: message });
-        return;
-      }
-      setConsultationFeedback({
-        // Ici, pas de tiroir à refermer et l'action est répétable : un envoi
-        // mort peut donc rougir franchement la ligne de statut.
-        ok: envoiReussi(json.envoi),
-        msg: libelleEnvoi(json.envoi, {
-          // Le rétablissement est un fait de plus, et il a eu lieu même si
-          // l'e-mail meurt : le dire dans les trois cas.
-          envoye: retablirAcces
-            ? 'Accès rétabli et lien renvoyé au patient.'
-            : 'Lien d’accès renvoyé au patient.',
-          echoue: retablirAcces
-            ? 'Accès rétabli, mais le lien n’est pas parti : l’envoi a échoué. Réessayez.'
-            : 'Le lien n’est pas parti : l’envoi de l’e-mail a échoué. Réessayez.',
-          nonConfigure: retablirAcces
-            ? 'Accès rétabli, mais le lien n’est pas parti : la messagerie n’est pas configurée.'
-            : 'Le lien n’est pas parti : la messagerie n’est pas configurée.',
-        }),
-      });
-      if (retablirAcces) {
-        setConfirmation(null);
-        await refreshPatients();
-      }
-    } catch {
-      if (retablirAcces) setErreurConfirmation('Erreur réseau. Réessayez.');
-      else setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
-    } finally {
-      setTokenAction(null);
-    }
-  };
-
-  // Lien magique (gate G4) — action de nature différente des autres, qui
-  // pointent la page de connexion : celui-ci expire en 24 h et ne s'ouvre qu'une
-  // fois. Le libellé le dit, pour qu'on ne le confonde pas avec « Renvoyer le lien ».
-  const onEnvoyerLienMagique = async (idPatient: string) => {
-    setTokenAction('lien_magique');
-    setConsultationFeedback(null);
-    try {
-      const r = await fetch('/api/praticien/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idPatient, action: 'lien_magique' }),
-      });
-      const json = (await r.json()) as TokenActionResponse;
-      setConsultationFeedback(
-        !r.ok || !json.success
-          ? { ok: false, msg: erreurLisible(json.reason, json.error) }
-          : {
-              ok: envoiReussi(json.envoi),
-              msg: libelleEnvoi(json.envoi, {
-                envoye: 'Lien à usage unique envoyé — valable 24 h.',
-                echoue: 'Lien à usage unique émis, mais l’e-mail n’est pas parti. Réessayez.',
-                nonConfigure: 'Lien à usage unique émis, mais aucun e-mail n’est parti : la messagerie n’est pas configurée.',
-              }),
-            }
-      );
-    } catch {
-      setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
-    } finally {
-      setTokenAction(null);
-    }
-  };
-
-  const onCopierLien = async (idPatient: string) => {
-    setTokenAction('copier');
-    setConsultationFeedback(null);
-    try {
-      const r = await fetch('/api/praticien/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idPatient, action: 'lien' }),
-      });
-      const json = (await r.json()) as TokenActionResponse;
-      if (!r.ok || !json.success || !json.lien) {
-        setConsultationFeedback({ ok: false, msg: erreurLisible(json.reason, json.error) });
-        return;
-      }
-      await navigator.clipboard.writeText(json.lien);
-      setConsultationFeedback({ ok: true, msg: 'Lien copié dans le presse-papiers.' });
-    } catch {
-      setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
-    } finally {
-      setTokenAction(null);
-    }
-  };
-
   // Appelée UNIQUEMENT derrière la confirmation (LOT-02c) : un échec part donc
   // dans `erreurConfirmation`, à l'intérieur du dialogue. Rendu ailleurs dans la
   // page, il serait derrière l'overlay Radix et sous `aria-hidden` — le défaut
   // que la revue du LOT-01b avait rattrapé sur l'effacement.
-  const onRevokeToken = async (idPatient: string) => {
-    setTokenAction('revoke');
-    setErreurConfirmation(null);
-    setConsultationFeedback(null);
-    try {
-      const r = await fetch(`/api/praticien/token?idPatient=${encodeURIComponent(idPatient)}`, {
-        method: 'DELETE',
-      });
-      const json = (await r.json()) as TokenActionResponse;
-      if (!r.ok || !json.success) {
-        setErreurConfirmation(erreurLisible(json.reason, json.error));
-        return;
-      }
-      setConsultationFeedback({
-        ok: true,
-        msg: 'Accès révoqué : lien coupé, session en cours terminée, liens à usage unique annulés.',
-      });
-      setConfirmation(null);
-      await refreshPatients();
-    } catch {
-      setErreurConfirmation('Erreur réseau. Réessayez.');
-    } finally {
-      setTokenAction(null);
-    }
-  };
 
   const openEdit = (p: PatientRowData) => {
     // LA LIGNE DU TABLEAU NE PORTE PAS LE DOSSIER ENTIER. `PatientRowData` est
@@ -434,160 +294,6 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
     const dossier = data?.patients.find(x => x.idPatient === p.idPatient);
     if (!dossier) return;
     setEditState(dossier);
-  };
-
-  // Activation / désactivation par PATCH, dans les deux sens. Il n'y a plus de
-  // route DELETE à appeler : elle ne savait que désactiver, et son nom laissait
-  // croire à une suppression — précisément le malentendu que ce lot corrige.
-  const onToggleActif = async (idPatient: string, actif: 'OUI' | 'NON') => {
-    setErreurConfirmation(null);
-    const r = await fetch('/api/praticien/patients', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idPatient, actif }),
-    });
-    const json = (await r.json()) as PatchPatientResponse;
-    if (!r.ok || !json.success) {
-      setErreurConfirmation(erreurLisible(json.reason, json.error));
-      return;
-    }
-    setConsultationFeedback({
-      ok: true,
-      msg: actif === 'OUI' ? 'Dossier réactivé.' : 'Dossier désactivé : l’accès au portail est coupé.',
-    });
-    setConfirmation(null);
-    await refreshPatients();
-  };
-
-  // Le paramètre porte la SAISIE, pas l'état du dialogue — d'où `saisie` et non
-  // `confirmation` : nommé ainsi, il masquait l'état `confirmation`, donc le
-  // dossier concerné, et le message final ne pouvait plus le consulter.
-  //
-  // Le mode est typé `CycleDeVieAction` — l'union de la ROUTE — et non
-  // `ModeConfirmation`, qui couvre aussi `desactivation`/`reactivation`. Ces
-  // deux-là passent par `PATCH` : les accepter ici les aurait laissées typées
-  // jusqu'à un 400 à l'exécution. Le dispatcher les écarte déjà, mais un garde
-  // qui ne vit que dans une branche `if` ne protège pas le prochain appelant.
-  const onCycleDeVie = async (idPatient: string, mode: CycleDeVieAction, saisie: string) => {
-    // `confirmation` est le binding de CETTE fermeture de rendu : ni
-    // `setConfirmation(null)` ni `refreshPatients()` ne le réassignent — ils
-    // programment un rendu, qui produira une autre fermeture. La valeur reste
-    // donc valide jusqu'au bout de la fonction, et l'alias ci-dessous ne fait
-    // que nommer ce fait pour le lecteur.
-    //
-    // Ce qui garantit qu'il s'agit du BON dossier est ailleurs : l'unique
-    // appelant (`onConfirmerFinDeParcours`) refuse d'entrer sans `confirmation`
-    // et exclut la réentrance par `cycleEnCours`.
-    const confirmationEnCours = confirmation;
-    const r = await fetch('/api/praticien/patients/cycle-de-vie', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        idPatient,
-        action: mode,
-        // La saisie RÉELLE de l'utilisateur, jamais une constante recopiée :
-        // si un jour l'activation du bouton régressait, le serveur refuserait
-        // encore. Une constante en dur ferait de cette régression un
-        // effacement.
-        ...(mode === 'effacement' ? { confirmation: saisie } : {}),
-      }),
-    });
-    const json = (await r.json()) as CycleDeVieResponse;
-    if (!r.ok || !json.success) {
-      setErreurConfirmation(
-        erreurLisible(
-          json.success === false ? json.reason : undefined,
-          json.success === false ? json.error : undefined,
-        ),
-      );
-      return;
-    }
-    // Le message de clôture suit la MÊME condition que le dialogue qui vient de
-    // le précéder (`accesActif`) : sur un dossier désactivé, le portail refuse
-    // déjà le lien, et le lui promettre ici serait faux. C'est ce texte-là que
-    // le praticien lit systématiquement — les deux autres ne s'affichent qu'en
-    // amont ou en cas de refus.
-    const accesOuvert = confirmationEnCours?.patient.actif === 'OUI';
-    setConsultationFeedback({
-      ok: true,
-      msg:
-        mode === 'effacement'
-          ? 'Dossier effacé définitivement. Il ne subsiste qu’une ligne anonyme.'
-          : mode === 'cloture'
-            ? accesOuvert
-              ? 'Suivi clôturé : plus aucune assignation ni aucun envoi de document de suivi. Le patient garde l’accès à ses archives, et vous pouvez lui renvoyer son lien.'
-              : 'Suivi clôturé : plus aucune assignation ni aucun envoi de document de suivi. Le dossier reste désactivé, donc sans accès au portail.'
-            : 'Suivi rouvert.',
-    });
-    setConfirmation(null);
-    await refreshPatients();
-  };
-
-  /** Exécute l'action confirmée, quelle qu'elle soit, avec un seul garde. */
-  const onConfirmerFinDeParcours = async (saisie: string) => {
-    if (!confirmation || cycleEnCours) return;
-    const { mode, patient, suite } = confirmation;
-    setCycleEnCours(true);
-    setErreurConfirmation(null);
-    try {
-      if (mode === 'desactivation') await onToggleActif(patient.idPatient, 'NON');
-      else if (mode === 'reactivation') await onToggleActif(patient.idPatient, 'OUI');
-      else if (mode === 'revocation') await onRevokeToken(patient.idPatient);
-      // Ce mode ne porte pas de geste à lui : il REPREND celui qu'il a
-      // interrompu. La branche est aussi ce qui garde le `else` final, typé
-      // `CycleDeVieAction` : sans elle, TypeScript refuse d'y laisser passer
-      // `retablissement` — et c'est voulu, la prochaine addition à
-      // `ModeConfirmation` butera ici plutôt qu'en 400 à l'exécution.
-      else if (mode === 'retablissement') {
-        await (suite === 'consultation'
-          ? posterConsultation(true)
-          : onResendToken(patient.idPatient, true));
-      }
-      else await onCycleDeVie(patient.idPatient, mode, saisie);
-    } catch {
-      setErreurConfirmation('Erreur réseau. Réessayez.');
-    } finally {
-      setCycleEnCours(false);
-    }
-  };
-
-  // Un seul point d'entrée pour le menu d'une ligne. TOUTE action qui change
-  // ce à quoi le patient a accès passe par un dialogue — y compris la
-  // désactivation, qui coupe l'accès au portail : avant ce lot elle demandait
-  // déjà deux gestes (« Supprimer » puis « Confirmer »), la renommer ne
-  // justifiait pas de lui retirer sa confirmation.
-  //
-  // La révocation y entre au LOT-02c. Elle échappait à cette règle que le code
-  // énonçait déjà : un clic, aucune question, alors qu'elle coupe désormais une
-  // session en cours et les liens à usage unique en vol.
-  const demanderConfirmation = (
-    mode: ModeConfirmation,
-    patient: PatientRowData,
-    suite?: 'resend' | 'consultation',
-  ) => {
-    setErreurConfirmation(null);
-    setConfirmation({ mode, patient, suite });
-  };
-
-  const onActionDossier = (action: ActionDossier, patient: PatientRowData) => {
-    switch (action) {
-      // SEULE ACTION DU MENU DONT LE GESTE CHANGE SELON L'ÉTAT DU DOSSIER : sur
-      // un accès révoqué, « Renvoyer le lien » le RÉTABLIRAIT — d'où le
-      // dialogue. Sur un dossier ouvert, rien de plus n'arrive, rien n'est
-      // demandé : une confirmation systématique userait la seule qui compte.
-      case 'resend':
-        return patient.accesRevoque
-          ? demanderConfirmation('retablissement', patient, 'resend')
-          : void onResendToken(patient.idPatient);
-      case 'copier': return void onCopierLien(patient.idPatient);
-      case 'lien_magique': return void onEnvoyerLienMagique(patient.idPatient);
-      case 'revoke': return demanderConfirmation('revocation', patient);
-      case 'desactiver': return demanderConfirmation('desactivation', patient);
-      case 'reactiver': return demanderConfirmation('reactivation', patient);
-      case 'cloturer': return demanderConfirmation('cloture', patient);
-      case 'rouvrir': return demanderConfirmation('reprise', patient);
-      case 'effacer': return demanderConfirmation('effacement', patient);
-    }
   };
 
 
@@ -607,21 +313,21 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
     <div className="flex flex-col gap-6">
 
       {/* Confirmation de fin de parcours — un seul dialogue pour le tableau */}
-      {confirmation && (
+      {gestes.confirmation && (
         <DossierConfirmDialog
-          mode={confirmation.mode}
-          nomPatient={`${confirmation.patient.prenom} ${confirmation.patient.nom}`.trim()}
-          accesActif={confirmation.patient.actif === 'OUI'}
+          mode={gestes.confirmation.mode}
+          nomPatient={`${gestes.confirmation.patient.prenom} ${gestes.confirmation.patient.nom}`.trim()}
+          accesActif={gestes.confirmation.patient.actif === 'OUI'}
           open
           onOpenChange={ouvert => {
-            if (!ouvert && !cycleEnCours) {
-              setConfirmation(null);
-              setErreurConfirmation(null);
+            if (!ouvert && !gestes.cycleEnCours) {
+              gestes.fermerConfirmation();
+              gestes.setErreurConfirmation(null);
             }
           }}
-          enCours={cycleEnCours}
-          erreur={erreurConfirmation}
-          onConfirm={onConfirmerFinDeParcours}
+          enCours={gestes.cycleEnCours}
+          erreur={gestes.erreurConfirmation}
+          onConfirm={gestes.confirmer}
         />
       )}
 
@@ -683,15 +389,15 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
             ))}
           </Select>
           <div className="flex flex-wrap items-center gap-3 md:col-span-2">
-            <Button type="submit" disabled={savingConsultation || tokenAction !== null}>
+            <Button type="submit" disabled={savingConsultation || gestes.tokenAction !== null}>
               {savingConsultation ? 'Envoi...' : 'Créer une consultation & envoyer le lien'}
             </Button>
             {/* Un échec se dit DANS le tiroir (Radix voile le reste de la
                 page) ; le succès ferme le tiroir et s'annonce par la ligne
                 de statut de la barre d'actions. */}
-            {consultationFeedback && !consultationFeedback.ok && (
+            {gestes.retour && !gestes.retour.ok && (
               <span role="status" className="text-sm text-status-danger">
-                {consultationFeedback.msg}
+                {gestes.retour.msg}
               </span>
             )}
           </div>
@@ -704,9 +410,9 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
         <span
           role="status"
           aria-live="polite"
-          className={`text-sm ${consultationFeedback?.ok ? 'text-status-success' : 'text-status-danger'}`}
+          className={`text-sm ${gestes.retour?.ok ? 'text-status-success' : 'text-status-danger'}`}
         >
-          {consultationFeedback?.msg ?? ''}
+          {gestes.retour?.msg ?? ''}
         </span>
       </div>
 
@@ -778,9 +484,9 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
                   key={p.idPatient}
                   patient={{ ...p, actif: p.actif === 'OUI' ? 'OUI' : 'NON' }}
                   onEdit={openEdit}
-                  onAction={onActionDossier}
+                  onAction={gestes.agir}
                   lienMagiqueActif={lienMagiqueActif}
-                  actionAccesEnCours={tokenAction !== null}
+                  actionAccesEnCours={gestes.tokenAction !== null}
                 />
               ))}
             </tbody>

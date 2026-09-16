@@ -180,7 +180,7 @@ describe('FicheAdministrativePanel — ce que l’écran DIT au praticien', () =
   it('renvoie l’état du dossier au menu de la ligne, derrière sa confirmation', () => {
     // `D-126` : désactiver ferme les liens en vol. Ce formulaire n'a aucune
     // confirmation — l'état ne doit donc jamais s'y changer.
-    expect(screen.getByText(/se change au menu de la ligne/i)).toBeTruthy();
+    expect(screen.getByText(/se change depuis « Gérer le dossier »/i)).toBeTruthy();
     expect(screen.queryByLabelText(/état du dossier/i)).toBeNull();
   });
 });
