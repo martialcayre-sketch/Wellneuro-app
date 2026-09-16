@@ -3,23 +3,26 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien } from '@/lib/praticien/appartenance';
+import { sensExpose, type SensCorrespondance } from '@/lib/praticien/correspondanceMedecin';
 
 export type LigneCorrespondanceRecente = {
   id: string;
   idPatient: string;
   patient: string;
-  sens: 'sortant' | 'entrant';
+  /**
+   * `null` quand la valeur en base est hors vocabulaire — cette route ne
+   * DEVINE plus (`sensExpose`). Elle repliait sur `'sortant'` pendant que la
+   * fiche repliait sur « Réponse transcrite » : la même ligne se lisait à
+   * l'envers d'un écran à l'autre.
+   */
+  sens: SensCorrespondance | null;
   medecinLibelle: string;
-  /** Extrait court du texte consigné — jamais le texte intégral. */
-  extrait: string;
   consigneLe: string;
 };
 
 export type CorrespondanceRecentesApiResponse = {
   ok: boolean;
   lignes: LigneCorrespondanceRecente[];
-  /** Consignations des 7 derniers jours — alimente le badge du rail. */
-  nbRecentes7j: number;
   unavailable?: boolean;
   error?: string;
 };
@@ -27,19 +30,31 @@ export type CorrespondanceRecentesApiResponse = {
 const INDISPONIBLE: Omit<CorrespondanceRecentesApiResponse, 'error'> = {
   ok: false,
   lignes: [],
-  nbRecentes7j: 0,
   unavailable: true,
 };
 
 const MAX_LIGNES = 5;
-const LONGUEUR_EXTRAIT = 120;
-const JOUR_MS = 24 * 60 * 60 * 1000;
 
 // GET /api/praticien/correspondance-medecin/recentes — dernières consignations
 // du praticien, tous patients confondus (accueil Observatoire LOT-02, panneau
-// « Correspondance récente » + badge du rail). Lecture seule ; la consignation
-// elle-même reste sur la fiche patient (C3 LOT-06). Minimisation : extrait
-// court, jamais le texte intégral.
+// « Correspondance récente »). Lecture seule ; la consignation elle-même reste
+// sur la fiche patient (C3 LOT-06).
+//
+// DEUX RETRAITS, UN MÊME MOTIF : cette route nomme des dossiers hors de tout
+// journal d'accès — la doctrine G-TRUST-04 journalise la lecture d'un dossier
+// NOMMÉ, et une liste transversale n'en est pas une, donc rien ne l'écrit.
+// Plutôt que d'étirer la doctrine pour couvrir la surface, on a réduit la
+// surface :
+//
+//   1. PLUS D'EXTRAIT. Elle récitait 120 caractères du texte consigné — de la
+//      parole clinique transcrite — sur l'écran d'accueil, ouvert toute la
+//      journée. Le panneau dit désormais qui, quand, quel médecin et quel
+//      sens ; pour savoir de quoi l'échange parlait, on ouvre le dossier, et
+//      cette lecture-là EST journalisée.
+//   2. PLUS DE COMPTEUR. `nbRecentes7j` servait le badge du rail, seul
+//      consommateur — et le rail JETAIT les lignes. Chaque montage résolvait
+//      donc cinq noms de patients pour afficher un nombre. Le compteur a sa
+//      route, `recentes/compteur`, qui ne lit aucune identité.
 export async function GET(): Promise<NextResponse<CorrespondanceRecentesApiResponse>> {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -48,25 +63,21 @@ export async function GET(): Promise<NextResponse<CorrespondanceRecentesApiRespo
 
   try {
     const email = emailPraticien(session) ?? '';
-    const seuil7j = new Date(Date.now() - 7 * JOUR_MS);
-    const [lignes, nbRecentes7j] = await Promise.all([
-      prisma.correspondanceMedecin.findMany({
-        where: { praticienEmail: email },
-        select: {
-          id: true,
-          idPatient: true,
-          sens: true,
-          medecinLibelle: true,
-          texte: true,
-          consigneLe: true,
-        },
-        orderBy: { consigneLe: 'desc' },
-        take: MAX_LIGNES,
-      }),
-      prisma.correspondanceMedecin.count({
-        where: { praticienEmail: email, consigneLe: { gte: seuil7j } },
-      }),
-    ]);
+    // `texte` n'est PAS sélectionné : la colonne ne sort plus de la base pour
+    // cette surface. Un extrait retiré du rendu mais toujours chargé resterait
+    // à un `console.log` de distance.
+    const lignes = await prisma.correspondanceMedecin.findMany({
+      where: { praticienEmail: email },
+      select: {
+        id: true,
+        idPatient: true,
+        sens: true,
+        medecinLibelle: true,
+        consigneLe: true,
+      },
+      orderBy: { consigneLe: 'desc' },
+      take: MAX_LIGNES,
+    });
 
     const noms = new Map<string, string>();
     if (lignes.length > 0) {
@@ -83,13 +94,10 @@ export async function GET(): Promise<NextResponse<CorrespondanceRecentesApiRespo
         id: l.id,
         idPatient: l.idPatient,
         patient: noms.get(l.idPatient) ?? 'Patient',
-        sens: l.sens === 'entrant' ? ('entrant' as const) : ('sortant' as const),
+        sens: sensExpose(l.sens),
         medecinLibelle: l.medecinLibelle,
-        extrait:
-          l.texte.length > LONGUEUR_EXTRAIT ? `${l.texte.slice(0, LONGUEUR_EXTRAIT)}…` : l.texte,
         consigneLe: l.consigneLe.toISOString(),
       })),
-      nbRecentes7j,
     });
   } catch (err) {
     console.error('[correspondance recentes GET]', err instanceof Error ? err.message : String(err));

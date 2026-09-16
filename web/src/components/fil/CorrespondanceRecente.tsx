@@ -5,13 +5,18 @@ import Link from 'next/link';
 import type { CorrespondanceRecentesApiResponse } from '@/app/api/praticien/correspondance-medecin/recentes/route';
 import { libelleTemporel } from '@/lib/fil/horodatage';
 import { PanneauRail } from '@/components/fil/PanneauRail';
-
-const LIBELLE_SENS = { sortant: 'Envoi consigné', entrant: 'Réponse transcrite' } as const;
+import { libelleSens } from '@/lib/praticien/correspondanceMedecin';
 
 /** Panneau « Correspondance récente » de l'aside (accueil Observatoire
  * LOT-02) : dernières consignations d'échanges médecin (C3 LOT-06). Le
  * courrier ne part jamais d'ici — la consignation vit sur la fiche patient ;
- * ce panneau est une fenêtre, pas une messagerie. */
+ * ce panneau est une fenêtre, pas une messagerie.
+ *
+ * IL NE CITE PLUS LE TEXTE CONSIGNÉ. Il en rendait 120 caractères — de la
+ * parole clinique transcrite — sur un écran d'accueil ouvert toute la journée,
+ * et cette lecture-là n'était journalisée nulle part. Ce qu'il dit suffit à
+ * décider s'il faut ouvrir le dossier ; savoir de quoi l'échange parlait exige
+ * de l'ouvrir, et cette lecture EST journalisée (G-TRUST-04). */
 export function CorrespondanceRecente() {
   const [data, setData] = useState<CorrespondanceRecentesApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +25,7 @@ export function CorrespondanceRecente() {
     fetch('/api/praticien/correspondance-medecin/recentes')
       .then(async r => (await r.json()) as CorrespondanceRecentesApiResponse)
       .then(setData)
-      .catch(() => setData({ ok: false, lignes: [], nbRecentes7j: 0, unavailable: true }))
+      .catch(() => setData({ ok: false, lignes: [], unavailable: true }))
       .finally(() => setLoading(false));
   }, []);
 
@@ -64,7 +69,7 @@ export function CorrespondanceRecente() {
                 </span>
               </span>
               <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                {LIBELLE_SENS[ligne.sens]} — {ligne.medecinLibelle} · {ligne.extrait}
+                {libelleSens(ligne.sens)} — {ligne.medecinLibelle}
               </span>
             </Link>
           ))}
