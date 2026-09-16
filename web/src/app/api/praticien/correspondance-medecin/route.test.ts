@@ -282,6 +282,67 @@ describe('/api/praticien/correspondance-medecin', () => {
     expect(json.correspondances[0].idSynthese).toBe('SYN_DISPARUE');
   });
 
+  it('le fil se range sur la date d’échange, et se replie sur la consignation', async () => {
+    // La base rend l'ordre de consignation ; c'est la ROUTE qui range le fil.
+    prisma.correspondanceMedecin.findMany.mockResolvedValue([
+      {
+        id: 'TRANSCRITE_AUJOURD_HUI',
+        sens: 'entrant',
+        medecinLibelle: 'Dr Martin',
+        texte: 'Réponse reçue en juin, transcrite aujourd’hui.',
+        idSynthese: null,
+        echangeLe: new Date('2026-06-12T00:00:00.000Z'),
+        consigneLe: new Date('2026-09-16T10:00:00.000Z'),
+      },
+      {
+        id: 'SANS_DATE_ECHANGE',
+        sens: 'sortant',
+        medecinLibelle: 'Dr Martin',
+        texte: 'Courrier remis en août, sans date d’échange renseignée.',
+        idSynthese: null,
+        echangeLe: null,
+        consigneLe: new Date('2026-08-20T10:00:00.000Z'),
+      },
+    ]);
+    const json = await (await GET(getRequest())).json();
+
+    // La ligne saisie AUJOURD'HUI descend à sa place — juin —, et celle qui n'a
+    // pas de date d'échange se range sur sa consignation, jamais au hasard.
+    expect(json.correspondances.map((l: { id: string }) => l.id)).toEqual([
+      'SANS_DATE_ECHANGE',
+      'TRANSCRITE_AUJOURD_HUI',
+    ]);
+  });
+
+  it('à date d’échange égale, la consignation départage — l’ordre ne dépend pas de la base', async () => {
+    prisma.correspondanceMedecin.findMany.mockResolvedValue([
+      {
+        id: 'PREMIERE_CONSIGNEE',
+        sens: 'sortant',
+        medecinLibelle: 'Dr Martin',
+        texte: 'Envoi.',
+        idSynthese: null,
+        echangeLe: new Date('2026-06-12T00:00:00.000Z'),
+        consigneLe: new Date('2026-06-12T09:00:00.000Z'),
+      },
+      {
+        id: 'SECONDE_CONSIGNEE',
+        sens: 'entrant',
+        medecinLibelle: 'Dr Martin',
+        texte: 'Réponse du même jour.',
+        idSynthese: null,
+        echangeLe: new Date('2026-06-12T00:00:00.000Z'),
+        consigneLe: new Date('2026-06-12T17:00:00.000Z'),
+      },
+    ]);
+    const json = await (await GET(getRequest())).json();
+
+    expect(json.correspondances.map((l: { id: string }) => l.id)).toEqual([
+      'SECONDE_CONSIGNEE',
+      'PREMIERE_CONSIGNEE',
+    ]);
+  });
+
   it('expose la chronologie patient sans corps de message ni adresse', async () => {
     prisma.correspondancePatient.findMany.mockResolvedValue([
       {

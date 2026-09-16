@@ -30,8 +30,19 @@ type Sens = 'sortant' | 'entrant';
 
 type SyntheseReferencable = { idSynthese: string; dateGeneration: string; statut: string };
 
+// FUSEAU EXPLICITE. Sans lui, la date suit celle de la machine : le serveur
+// tourne en UTC, et une consignation faite à 23 h 30 à Paris s'affichait la
+// veille. Onze fichiers du dépôt épinglent ce fuseau, dont un banc qui garde
+// contre sa disparition — ces dates étaient les seules du produit à y échapper.
+const FUSEAU_CABINET = 'Europe/Paris';
+
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('fr-FR', {
+    timeZone: FUSEAU_CABINET,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 }
 
 export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string }) {
@@ -140,6 +151,10 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
     }
   }, [idPatient, sens, medecinLibelle, texte, idSynthese, echangeLe, chargerFil]);
 
+  // Le fil arrive ordonné par le serveur, du plus récent au plus ancien : la
+  // première ligne porte le dernier médecin correspondu sur CE dossier.
+  const dernierMedecin = correspondances[0]?.medecinLibelle ?? '';
+
   return (
     <div className="flex flex-col gap-4">
     <section aria-labelledby="correspondance-patient" className="rounded-xl border border-border bg-surface p-4">
@@ -155,6 +170,29 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
         <p role="status" className="mt-3 text-base text-muted-foreground">
           Chargement du fil&hellip;
         </p>
+      )}
+
+      {/*
+        UNE LECTURE EN ÉCHEC NE SE REND PAS COMME UN DOSSIER VIDE. Cette
+        section n'avait aucune branche d'erreur : les trois conditions étant
+        fausses, elle ne rendait RIEN sous son titre — indistinguable d'un
+        dossier sans envoi. La section médecin, elle, refusait déjà ce
+        raccourci ; c'est le même refus (DC-24).
+      */}
+      {etat === 'erreur' && (
+        <div
+          role="alert"
+          className="mt-3 flex flex-col gap-3 rounded-lg border border-accent bg-status-warning/10 p-3 text-base text-status-warning"
+        >
+          <span>Les envois au patient n’ont pas pu être lus. Ce n’est pas un dossier sans envoi.</span>
+          <button
+            type="button"
+            onClick={() => void chargerFil()}
+            className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            Réessayer
+          </button>
+        </div>
       )}
 
       {etat === 'chargee' && correspondancesPatient.length === 0 && (
@@ -242,9 +280,17 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                 {libelleSens(ligne.sens)} · {ligne.medecinLibelle}
               </p>
               <p className="mt-1 whitespace-pre-wrap">{ligne.texte}</p>
+              {/*
+                LA DATE QUI ORDONNE LE FIL PASSE DEVANT. Le fil se range sur la
+                date d'échange (repli : la consignation) : si elle restait en
+                fin de ligne meta, l'ordre serait inexplicable à l'écran. La
+                date de consignation ne disparaît jamais pour autant — elle est
+                la seule des deux qui ne peut pas être antidatée.
+              */}
               <p className="mt-1 text-xs text-muted-foreground">
-                Consigné le {formatDate(ligne.consigneLe)}
-                {ligne.echangeLe ? ` · échange du ${formatDate(ligne.echangeLe)}` : ''}
+                {ligne.echangeLe
+                  ? `Échange du ${formatDate(ligne.echangeLe)} · consigné le ${formatDate(ligne.consigneLe)}`
+                  : `Consigné le ${formatDate(ligne.consigneLe)}`}
                 {ligne.idSynthese ? ' · synthèse référencée' : ''}
                 {/*
                   Le verdict vient du serveur ; l'écran ne compare rien. Une
@@ -312,6 +358,26 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                 className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               />
 
+              {/*
+                REPRISE EXPLICITE, JAMAIS PRÉ-REMPLISSAGE. Un champ rempli par
+                défaut se valide sans être lu, et la ligne produite est
+                DÉFINITIVE : la table ne porte aucune colonne `supersedes_*`, il
+                n'existe ni PATCH ni DELETE, et une attribution fautive tient
+                jusqu'à l'effacement du dossier. Le confort de la frappe ne vaut
+                pas ce risque ; un bouton le rend, en laissant le geste au
+                praticien. L'appariement reste par DOSSIER, jamais par médecin —
+                `medecinLibelle` est du texte libre.
+              */}
+              {dernierMedecin && medecinLibelle.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => setMedecinLibelle(dernierMedecin)}
+                  className="mt-1 min-h-9 rounded-lg border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                >
+                  Reprendre « {dernierMedecin} »
+                </button>
+              )}
+
               <label htmlFor="correspondance-texte" className="mt-3 block text-xs font-medium text-foreground">
                 Texte de l’échange
               </label>
@@ -328,6 +394,26 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                 }
                 className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               />
+
+              {/*
+                LA TRONCATURE ÉTAIT MUETTE. `maxLength` empêche de TAPER au-delà
+                de la borne, mais un collage — le geste normal d'une
+                transcription — est coupé par le navigateur sans un mot, sous un
+                placeholder qui promet une transcription fidèle. Le refus
+                serveur `texte_trop_long` est donc inatteignable depuis cet
+                écran : il ne garde que l'API. Le compte se lit avant le geste,
+                et l'atteinte de la borne se dit.
+              */}
+              <p className="mt-1 text-xs text-muted-foreground">
+                {texte.length.toLocaleString('fr-FR')} / {LONGUEUR_MAX_TEXTE.toLocaleString('fr-FR')}{' '}
+                caractères
+              </p>
+              {texte.length >= LONGUEUR_MAX_TEXTE && (
+                <p role="status" className="mt-1 text-xs font-medium text-status-warning">
+                  Limite atteinte : un texte collé au-delà a été coupé sans avertissement par le
+                  navigateur. Vérifiez la fin de la transcription avant de consigner.
+                </p>
+              )}
 
               <label htmlFor="correspondance-echange-le" className="mt-3 block text-xs font-medium text-foreground">
                 Date de l’échange (facultative)

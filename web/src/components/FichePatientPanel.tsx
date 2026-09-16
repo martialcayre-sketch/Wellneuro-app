@@ -625,6 +625,23 @@ export function FichePatientPanel({
       // Idem : jamais une condition.
     }
   }, [ongletActif, clefOngletMemorise]);
+  // L'ONGLET « CORRESPONDANCE » RESTE MONTÉ APRÈS SA PREMIÈRE VISITE. Il porte
+  // le seul formulaire long de la fiche — une transcription de plusieurs
+  // milliers de caractères — et le démontage à chaque changement d'onglet
+  // jetait le brouillon sans un mot. Le conteneur porte déjà `hidden` ; il
+  // suffit de cesser de démonter l'enfant. Aucune requête n'est rejouée : le
+  // fil et les synthèses sont chargés par des effets dépendant du seul
+  // `idPatient`.
+  //
+  // L'état retient LE DOSSIER visité, pas un booléen : sur un changement de
+  // patient sans remontage, un simple drapeau ferait charger le fil d'un
+  // dossier dont l'onglet n'a jamais été ouvert — donc écrire une ligne au
+  // journal d'accès pour une lecture que personne n'a demandée.
+  const [dossierCorrespondanceOuvert, setDossierCorrespondanceOuvert] = useState<string | null>(null);
+  useEffect(() => {
+    if (ongletActif === 'correspondance') setDossierCorrespondanceOuvert(idPatient);
+  }, [ongletActif, idPatient]);
+  const correspondanceMontee = dossierCorrespondanceOuvert === idPatient;
   // Phase focale. Point de départ : 'patient' — la PREMIÈRE étape annoncée
   // par le rail, jamais le milieu de la séquence (audit du cockpit
   // 2026-09-02 : s'initialiser sur 'decision' faisait s'ouvrir chaque dossier
@@ -2484,7 +2501,7 @@ export function FichePatientPanel({
         aria-labelledby="onglet-correspondance"
         hidden={ongletActif !== 'correspondance'}
       >
-        {ongletActif === 'correspondance' && <CorrespondanceMedecinPanel idPatient={idPatient} />}
+        {correspondanceMontee && <CorrespondanceMedecinPanel idPatient={idPatient} />}
       </div>
 
       {/* HAUTEUR CONTENUE, DÉFILEMENT INTERNE (audit 2026-09-02, constat
