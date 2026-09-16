@@ -97,8 +97,10 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
   const pathname = usePathname();
   // Compteur réel du Fil — même API que l'écran ; silence en cas d'échec.
   const [nbCartesFil, setNbCartesFil] = useState<number | null>(null);
-  // Compteur de correspondances récentes (7 j) — silence en cas d'échec.
+  // Dossiers où l'on a écrit au médecin et où rien n'est revenu — silence en
+  // cas d'échec. Le délai vient du serveur : l'écran le dit, il ne le fixe pas.
   const [nbCorrespondance, setNbCorrespondance] = useState<number | null>(null);
+  const [delaiAttente, setDelaiAttente] = useState<number | null>(null);
   useEffect(() => {
     let vivant = true;
     fetch('/api/praticien/fil')
@@ -112,7 +114,9 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
     fetch('/api/praticien/correspondance-medecin/recentes/compteur')
       .then(r => r.json())
       .then((d: CorrespondanceCompteurApiResponse) => {
-        if (vivant && !d.unavailable) setNbCorrespondance(d.nbRecentes7j);
+        if (!vivant || d.unavailable) return;
+        setNbCorrespondance(d.nbEnAttente);
+        setDelaiAttente(d.delaiJours);
       })
       .catch(() => {});
     return () => {
@@ -122,6 +126,20 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
 
   const compteurBadge = (badge: NavItem['badge']): number | null =>
     badge === 'fil' ? nbCartesFil : badge === 'correspondance' ? nbCorrespondance : null;
+
+  /**
+   * UN NOMBRE NU N'EST PAS UN SIGNAL. La pastille ne portait aucun énoncé : ni
+   * à l'œil, ni pour un lecteur d'écran, qui annonçait « Correspondance 2 ».
+   * Ce libellé dit ce que le chiffre compte, et le délai vient du serveur —
+   * l'écran le rapporte, il ne le fixe pas.
+   */
+  const libelleCompteur = (badge: NavItem['badge'], compteur: number): string => {
+    if (badge === 'fil') return `${compteur} carte${compteur > 1 ? 's' : ''} au Fil du jour`;
+    const dossiers = `${compteur} dossier${compteur > 1 ? 's' : ''}`;
+    return delaiAttente === null
+      ? `${dossiers} sans réponse du médecin`
+      : `${dossiers} sans réponse du médecin depuis plus de ${delaiAttente} jours`;
+  };
 
   const isActive = (item: NavItem) => {
     if (item.prefixesActifs?.some((prefixe) => pathname?.startsWith(prefixe))) return true;
@@ -189,8 +207,12 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
                 {(() => {
                   const compteur = compteurBadge(item.badge);
                   return !collapsed && compteur !== null && compteur > 0 ? (
-                    <span className="shrink-0 rounded-full bg-solar-500/[.18] px-2 py-0.5 font-mono text-2xs font-semibold text-rail-accent">
-                      {compteur}
+                    <span
+                      className="shrink-0 rounded-full bg-solar-500/[.18] px-2 py-0.5 font-mono text-2xs font-semibold text-rail-accent"
+                      title={libelleCompteur(item.badge, compteur)}
+                    >
+                      <span aria-hidden="true">{compteur}</span>
+                      <span className="sr-only">{libelleCompteur(item.badge, compteur)}</span>
                     </span>
                   ) : null;
                 })()}
