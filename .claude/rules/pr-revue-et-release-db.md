@@ -11,11 +11,12 @@ revue n'est pas un check**, et **une migration mergée n'est pas une migration
 appliquée**. Les deux se paient après coup — quand la branche est squashée, ou
 quand la base est en retard sur le code.
 
-Gouvernance générale des PR (régime de merge, codes de sortie de
-`wn-attendre-ci`, exception migration/authentification) :
-`docs/claude/REGLES_PR_MERGE.md`. Procédure complète de `release-db` :
-`docs/DEPLOIEMENT_RELEASE_DB.md`. Ce fichier ne les remplace pas ; il pose ce
-qui manquait aux deux.
+Décision qui le pose : `D-214` (2026-09-16). Gouvernance générale des PR
+(régime de merge, codes de sortie de `wn-attendre-ci`, exception
+migration/authentification) : `docs/claude/REGLES_PR_MERGE.md`. Procédure
+complète de `release-db` : `docs/DEPLOIEMENT_RELEASE_DB.md`. Ce fichier ne les
+remplace pas — il pose ce qui manquait aux deux, et ne réarbitre ni `D-087` ni
+`D-120`.
 
 ## 1. Avant de merger — les commentaires de revue
 

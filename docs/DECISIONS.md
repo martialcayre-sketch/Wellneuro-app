@@ -4,6 +4,104 @@
 
 ## Décisions actives
 
+### D-214 — Un commentaire de revue n'est pas un check, et une migration mergée n'est pas appliquée : les deux gestes deviennent opposables
+
+- Date : 2026-09-16
+- Statut : accepté — **arbitrage du responsable**. La règle est posée et en
+  service ; le seul changement exécutable est un skill, aucune logique
+  applicative n'est touchée.
+- Domaine : gouvernance des PR, écriture en base de production.
+- Porte sur : `.claude/rules/pr-revue-et-release-db.md` (neuf),
+  `.claude/skills/wn-merge/SKILL.md`, `docs/claude/REGLES_PR_MERGE.md`,
+  `CLAUDE.md`.
+- Ne réarbitre **rien** : [[D-087]] (le chemin vers la production) et
+  `docs/DEPLOIEMENT_RELEASE_DB.md` restent la source ; [[D-120]] est rappelé, pas
+  rouvert.
+
+**LE CONSTAT QUI CAUSE CETTE ENTRÉE.** Le 2026-09-16, quatre PR de la campagne
+Correspondance ont été mergées sur CI vert **sans que la revue soit lue**. Six
+constats y attendaient, **quatre réels**, dont deux défauts en production : un
+`count` borné remplacé par un `findMany` sur tout l'historique d'un praticien,
+sur un chemin monté deux fois par page ; un `length === 0` là où la validation
+fait `trim()`, un espace seul coinçant le praticien. Un banc creux et un contrat
+périmé complétaient la liste. **Aucun des quatre n'était visible au CI** — et
+deux visaient des *affirmations* (une couverture annoncée que le banc ne donnait
+pas, une portée de correctif surestimée dans un sujet de commit), classe qu'aucun
+test ne rattrape.
+
+Le même jour, l'autre moitié du sujet : l'ordre de `release-db` vivait dans un
+runbook de 366 lignes que personne ne charge au moment de merger, et deux
+documents de gouvernance envoyaient encore vérifier la production par
+l'`execute_sql` MCP Supabase — base décommissionnée le 2026-09-01 ([[D-120]])
+—, `/wn-merge` interdisant même explicitement le geste devenu correct.
+
+**CE QUI EST DÉCIDÉ.**
+
+**1. Lire les commentaires de revue est un geste distinct du CI, et bloquant.**
+Un `verify` vert et un `mergeStateStatus: CLEAN` ne disent rien d'eux. Deux
+lectures, la seconde étant celle qu'on oublie : les commentaires **en ligne**
+n'apparaissent ni dans le rollup, ni dans `reviews`, ni dans
+`gh pr view --comments` — seul `gh api --paginate --slurp …/pulls/<N>/comments`
+les rend, la pagination n'étant pas un ornement (30 par page, et une page manquée
+ferait annoncer une couverture complète sur une liste tronquée).
+
+**2. Trois verdicts, et aucun commentaire n'en sort sans** — écrits dans la PR :
+**corrigé** (le commit est nommé), **écarté avec motif** sur pièces (ligne, banc,
+`D-xxx` ; « non pertinent » seul n'en est pas un), **routé avec adresse**
+(`FILE_ATTENTE.md` ou dette de `ROADMAP_TECHNIQUE.md` ; « on verra » n'est pas un
+routage). Un commentaire sans verdict au merge disparaît : le squash efface la
+branche, et personne ne relit une PR fermée. Un constat touchant au clinique, à
+une signature de périmètre ou à une migration **remonte en arbitrage** — corriger
+pour obtenir un vert ferait du vert la raison du changement.
+
+**3. La règle est exécutable, pas seulement écrite.** C'est le point qui
+distingue cette entrée d'un vœu. Le préambule de `/wn-merge` charge le fichier en
+entier, et une **étape 6 bloquante** y est posée : sans verdict sur chaque
+commentaire, le skill ne merge pas. Un fichier armé par chemin sur `.github/**`
+et `web/prisma/**` n'aurait rien chargé sur une PR de front.
+
+**4. L'ordre de `release-db` s'écrit en sept étapes, chacune avec l'état qui la
+clôt** — jusqu'à « le code consommateur part, et seulement là ». Avec ce que
+l'ordre seul ne dit pas : entre le merge et l'approbation, **l'application est en
+panne** sur tout ce que la migration touche (Prisma sélectionne explicitement
+toutes les colonnes scalaires d'un modèle) ; d'où « approuver dans la foulée,
+à une heure creuse », et jamais « merger pour y revenir plus tard ». Les cinq
+pièges déjà payés sont nommés, y compris celui qui ne se rattrape pas seul :
+annuler le job GitHub **n'arrête pas** le one-off détaché.
+
+**5. Les deux renvois périmés sont corrigés.** `/wn-merge` et
+`REGLES_PR_MERGE.md` pointent le conteneur one-off Scalingo. Les laisser aurait
+rendu ces fichiers contradictoires avec la règle posée à côté d'eux.
+
+**L'ÉPREUVE, ET CE QU'ELLE A RENDU.** La règle a été appliquée à la PR qui la
+posait (#1159). Copilot y a laissé quatre constats, **quatre retenus** — dont
+deux visant le texte que le lot venait d'écrire :
+
+- l'étape 5 de `/wn-merge` était devenue **circulaire** : elle exigeait avant le
+  merge un constat de production qui n'aboutit qu'après l'approbation
+  `release-db`. Aucune PR de migration n'aurait plus pu être mergée. Elle se
+  scinde en deux passes nommées — avant, bloquante ; après, due ;
+- le renvoi posé dans `REGLES_PR_MERGE.md` **ne chargeait rien**, et son propre
+  texte l'avouait (« au moment de merger, le charger explicitement ») au lieu de
+  le fermer ;
+- l'appel de lecture était **tronqué à 30 commentaires**, aux deux endroits.
+
+Deux faits ont été constatés pendant l'épreuve et écrits dans la règle.
+**Copilot revoit une fois, à l'ouverture** : aucun des trois pushs suivants n'a
+été relu, et le `POST` REST sur `requested_reviewers` ne l'enregistre pas — la
+demande passe par l'interface, donc par le responsable ; compter sur un second
+passage pour rattraper un correctif écrit vite est une erreur. Et
+`wn-attendre-ci` **enchaîné à un `push` dans la même commande a rendu `0` sur la
+tête précédente** — attrapé par la ligne « comparer le `head=` du SNAPSHOT à la
+tête réelle », écrite une heure plus tôt dans ce même fichier.
+
+**CE QUE CETTE ENTRÉE N'EXÉCUTE PAS.** Elle ne dit pas si une migration doit
+être écrite — cela reste une demande explicite en conversation. Elle ne remplace
+pas la revue : un CI vert et des commentaires traités ne valent pas relecture du
+contenu clinique. Elle ne protège pas des baselines visuelles, qui vivent sur un
+autre chemin. Et elle ne rend pas Copilot obligatoire : elle rend obligatoire de
+**lire ce qu'il a écrit**, quand il a écrit.
+
 ### D-213 — Treize arbitrages rendus d'un coup : la relecture cesse d'être un tampon, la frontière patient perd un champ mort, et la Boussole reçoit son programme
 
 - Date : 2026-09-16
