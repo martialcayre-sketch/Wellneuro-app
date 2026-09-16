@@ -12,9 +12,9 @@
   entrée ne les rejuge pas : elle les sort d'un document de cadrage pour les
   mettre là où le dépôt va les chercher.
 - Domaine : correspondance médecin, cycle de vie du dossier, centre TRUST.
-- Porte sur : la traçabilité de trois règles **appliquées en production depuis
-  quatorze mois** sans entrée au registre. Aucun code de comportement ne change ;
-  quatre ancres de production changent de référence.
+- Porte sur : la traçabilité de trois règles **appliquées en production depuis le
+  2026-07-22** sans entrée au registre. Aucun code de comportement ne change ;
+  **six** ancres de production changent de référence.
 
 **LE DÉFAUT N'ÉTAIT PAS L'ABSENCE DE DÉCISION, C'ÉTAIT SON ADRESSE.** `FM-1`,
 `FM-2` et l'arbitrage TRUST vivaient dans
@@ -49,9 +49,15 @@ responsabilité déontologique reste au praticien, informé.
 praticien peut consigner une lettre pour un dossier dont le patient a **refusé**
 le partage avec son médecin traitant. C'est l'arbitrage rendu, et il se tient ;
 mais il a une conséquence de registre, que la rubrique 6 du `DOSSIER_RGPD`
-affirmait à l'envers — voir la décision qui suit.
+affirme à l'envers (« aucun partage à un tiers sans choix explicite ») et que le
+centre TRUST du portail dit au patient à l'envers aussi. **Ce n'est pas corrigé
+ici** : c'est une autre finalité — de la conformité documentaire et du texte
+patient, pas de la traçabilité de décision — et elle part dans sa propre PR.
 
-**LES QUATRE ANCRES DE PRODUCTION SONT RENOMMÉES DANS LA MÊME ENTRÉE.** Promouvoir
+**LES SIX ANCRES DE PRODUCTION SONT RENOMMÉES DANS LA MÊME ENTRÉE** — quatre
+trouvées au cadrage, **deux de plus trouvées par la revue** : le contrat du
+rayon biologie et le panneau de proposition citaient eux aussi l'arbitrage TRUST
+par sa seule date. Promouvoir
 sans renommer aurait créé une **seconde source** : deux adresses pour une même
 règle, et rien pour dire laquelle fait foi. Le cadrage, lui, reste en place et
 porte désormais un bandeau qui renvoie ici — on ne réécrit pas un document
