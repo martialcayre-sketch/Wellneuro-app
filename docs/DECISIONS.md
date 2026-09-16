@@ -4,6 +4,76 @@
 
 ## Décisions actives
 
+### D-211 — Une ligne de catalogue cite trois familles de claims, et le nom du champ remplace le discriminant ; un claim qui cesse d'être VALIDE retire la ligne
+
+- Date : 2026-09-16
+- Statut : accepté — **quatre arbitrages du responsable**, rendus sur les
+  questions posées après la lecture des claims en production. Table toujours
+  VIDE : aucune ligne n'est signée.
+- Domaine : clinique — catalogue de conduites, forme d'une ligne.
+- Porte sur : `catalogueConduitesV1.ts` et son banc, livrés par [[D-208]].
+
+**CE QUI A DÉCLENCHÉ CETTE ENTRÉE.** La lecture des claims — autorisée le
+2026-09-16, `rag_corpus_claims` en production — a montré que la forme livrée la
+veille **ne pouvait pas citer le claim le plus important**. La ligne
+`insomnie_depression` doit être signée en premier parce que sa source porte une
+règle de sécurité ; or `fonde` n'admettait que `'indication'`, et cette règle
+fonde une CONDUITE. Le premier usage réel a réfuté la forme.
+
+**1. UN CLAIM DE SÉCURITÉ S'AFFICHE, IL NE BLOQUE PAS.** La ligne se propose, et
+sa règle de sécurité se lit avec elle ; le praticien décide. **Écarté : le
+blocage** — « levée » n'a aucune définition machine ici, et la donner aurait
+demandé un prédicat, donc un second moteur de règles à côté de
+`orientationRulesV1`, que les deux juges du panel de conception avaient désigné
+comme défaut fatal. **Écarté aussi : la documentation seule**, qui aurait laissé
+la sécurité invisible à tout écran.
+
+**2. TROIS CHAMPS, ET LE NOM DU CHAMP EST LE DISCRIMINANT.**
+`claimsIndication` (au moins un), `claimsInstrument`, `claimsSecurite` — trois
+listes plates de `ClaimRef`. **`fonde` disparaît** : dès que chaque catégorie a
+son champ, l'énumération devient redondante, et un nom qui se lit vaut mieux
+qu'une valeur à maintenir.
+
+**CE QUE CELA FAIT GAGNER SUR LES CINQ TABLES EXISTANTES.** Aucune d'elles ne
+porte de discriminant : `justificationClaims` y est une liste plate, et ce que
+chaque claim fonde vit **en prose**, hors du périmètre haché — y compris le
+régime `WN-CL-0287-009`, qui peut se reformuler sans rien périmer. Ces trois
+champs ramènent le rôle DANS le sha. **Écartée : la liste plate** alignée sur
+l'existant, précisément pour cette raison.
+
+**3. LE CLAIM D'INSTRUMENT SE CITE.** Patron `WN-CL-0228-010` dans
+`orientationRulesV1.ts:510`, où l'indication et l'instrument de tête sont cités
+côte à côte. Sans lui, le déclencheur des lignes 1 et 2 — un sous-score du HAD —
+n'aurait aucun appui cité dans la table qui l'utilise.
+
+**4. UNE LIGNE DONT UN CLAIM PASSE À `REJETE` CESSE D'ÊTRE SERVIE.**
+`lignesConduitesServables` reçoit désormais, **en premier paramètre**, les clés
+`claimId@versionClaim` des claims VALIDE et actifs. Le module ne lit aucune
+base : la table est un PARAMÈTRE, doctrine de `gatePopulationV1`, pour qu'un banc
+exerce toutes les branches sans qu'aucune donnée non relue n'existe hors du test.
+Les **trois catégories** comptent — une sécurité retirée pèse autant qu'une
+indication retirée, davantage même, puisque c'est elle qui devait s'afficher.
+
+**`null` N'EST PAS `new Set()`, et les confondre est le silence que `DC-24`
+interdit.** Les deux ferment ; « je n'ai pas pu lire les statuts » n'est pas
+« aucun claim n'est valide », et l'appelant doit pouvoir dire lequel des deux au
+praticien. Un banc prouve que les deux ferment, séparément.
+
+**ÉCARTÉ SUR CE POINT** : le contrat de fraîcheur SQL comme unique détection. Il
+existe, mais une réfutation a mesuré qu'il **ne tourne pas en CI** — seule sa
+variante négative y tourne — et qu'il ne s'exécute qu'au préflight d'un
+`release-db`. La détection y serait suspendue à un geste d'exploitation étranger.
+Il reste utile, il ne suffit pas.
+
+**UN HUITIÈME TERME AU VERROU.** Une ligne sans `claimsIndication` est refusée,
+et ce terme ne se déduit pas de l'égalité des périmètres : une ligne ne citant
+qu'un claim d'instrument y passerait sans que rien ne fonde son QUAND.
+
+**CE QUI RESTE À VOUS.** Les trois lignes ont leurs claims **désignés** dans
+`SURFACE_RELECTURE_CATALOGUE_CONDUITES_2026-09-16.md` — identifiants lus en
+production, comptes du registre vérifiés exacts à l'unité (20, 29, 7). Ce que
+vous attestez n'est plus leur existence, c'est **ce que chacun fonde**.
+
 ### D-210 — Le rayon Correspondance sort du différé, et son badge désigne une tâche au lieu de refléter son lecteur
 
 - Date : 2026-09-16
