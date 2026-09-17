@@ -73,6 +73,7 @@ export type VerdictPartageMedecin =
 
 /** Raisons servies par les routes gardées — stables, lues par les bancs. */
 export const RAISON_PARTAGE_REFUSE = 'consentement_partage_refuse';
+export const RAISON_PARTAGE_RETIRE = 'consentement_partage_retire';
 export const RAISON_PARTAGE_JAMAIS_EXPRIME = 'consentement_partage_jamais_exprime';
 
 /**
@@ -86,6 +87,18 @@ export const MESSAGE_PARTAGE_REFUSE =
   'Le patient a refusé le partage avec son médecin : aucun courrier ne peut être préparé '
   + 'ni consigné depuis Wellneuro. Il peut revenir sur ce choix à tout moment depuis son '
   + 'espace, rubrique « Informations, confidentialité et droits » → « Mes choix et autorisations ».';
+
+// LE RETRAIT A SON PROPRE MESSAGE, et ce n'est pas une nuance de style. Servir
+// « le patient a refusé » à un praticien dont le patient avait ACCORDÉ puis
+// retiré lui décrit un dossier qui n'existe pas — il a peut-être une lettre
+// consignée d'il y a trois mois sous les yeux. Constat de la revue Copilot :
+// `verdictPartageMedecin` gardait les deux motifs distincts, et ce traducteur
+// les aplatissait aussitôt.
+export const MESSAGE_PARTAGE_RETIRE =
+  'Le patient a retiré son consentement au partage avec son médecin : aucun courrier ne '
+  + 'peut être préparé ni consigné depuis Wellneuro, y compris pour la suite d’un échange '
+  + 'déjà engagé. Il peut l’accorder à nouveau depuis son espace, rubrique « Informations, '
+  + 'confidentialité et droits » → « Mes choix et autorisations ».';
 
 export const MESSAGE_PARTAGE_JAMAIS_EXPRIME =
   'Le patient n’a jamais exprimé de choix sur le partage avec son médecin : tant qu’il ne '
@@ -115,7 +128,11 @@ export function verdictPartageMedecin(
 export function refusPartage(
   verdict: Extract<VerdictPartageMedecin, { bloquant: true }>,
 ): { raison: string; message: string } {
-  return verdict.motif === 'jamais_exprime'
-    ? { raison: RAISON_PARTAGE_JAMAIS_EXPRIME, message: MESSAGE_PARTAGE_JAMAIS_EXPRIME }
-    : { raison: RAISON_PARTAGE_REFUSE, message: MESSAGE_PARTAGE_REFUSE };
+  if (verdict.motif === 'jamais_exprime') {
+    return { raison: RAISON_PARTAGE_JAMAIS_EXPRIME, message: MESSAGE_PARTAGE_JAMAIS_EXPRIME };
+  }
+  if (verdict.motif === 'retire') {
+    return { raison: RAISON_PARTAGE_RETIRE, message: MESSAGE_PARTAGE_RETIRE };
+  }
+  return { raison: RAISON_PARTAGE_REFUSE, message: MESSAGE_PARTAGE_REFUSE };
 }

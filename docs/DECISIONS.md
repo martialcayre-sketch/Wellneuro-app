@@ -239,7 +239,12 @@ branchement est un lot à part, et le dire évite de croire qu'un écran a chang
 
 - Date : 2026-09-17
 - Statut : accepté — **mise en conformité documentaire et correction d'un texte
-  patient faux**. Aucun comportement de code ne change.
+  patient faux**. Aucun comportement de code ne change **au 2026-09-17 à
+  00 h 33**, date de cette entrée. ⚠️ **CETTE PHRASE NE VAUT PLUS DEPUIS
+  L'AMENDEMENT DU MÊME JOUR** (ci-dessus) : une garde d'exécution ferme désormais
+  le courrier de biologie et la consignation. Bornée plutôt que réécrite — un
+  lecteur qui n'irait pas jusqu'à l'amendement prendrait sinon la garde pour de
+  la documentation.
 - Domaine : registre RGPD, centre TRUST du portail patient.
 - Porte sur : ce que le dossier RGPD dit des destinataires, et ce que le patient
   lit avant de consentir. Suit la promotion des trois arbitrages du 2026-07-22.
@@ -476,8 +481,11 @@ est distinct.
   mettre là où le dépôt va les chercher.
 - Domaine : correspondance médecin, cycle de vie du dossier, centre TRUST.
 - Porte sur : la traçabilité de trois règles **appliquées en production depuis le
-  2026-07-22** sans entrée au registre. Aucun code de comportement ne change ;
-  **six** ancres de production changent de référence.
+  2026-07-22** sans entrée au registre. Aucun code de comportement ne change **à
+  la date de cette promotion** ; **six** ancres de production changent de
+  référence. ⚠️ **SON §3 A ÉTÉ RENVERSÉ LE JOUR MÊME** (amendement ci-dessus) :
+  TRUST n'est plus un indicateur, c'est une garde. La promotion n'a pas changé de
+  comportement ; l'amendement, si.
 
 **LE DÉFAUT N'ÉTAIT PAS L'ABSENCE DE DÉCISION, C'ÉTAIT SON ADRESSE.** `FM-1`,
 `FM-2` et l'arbitrage TRUST vivaient dans

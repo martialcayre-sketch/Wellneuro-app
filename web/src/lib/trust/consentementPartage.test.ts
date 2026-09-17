@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   RAISON_PARTAGE_JAMAIS_EXPRIME,
   RAISON_PARTAGE_REFUSE,
+  RAISON_PARTAGE_RETIRE,
   refusPartage,
   statutPartageMedecinTraitant,
   verdictPartageMedecin,
@@ -69,6 +70,20 @@ describe('la garde de partage — D-219 §3 amendé (2026-09-17)', () => {
     const refus = refusPartage({ bloquant: true, motif: 'refuse' });
     expect(refus.raison).toBe(RAISON_PARTAGE_REFUSE);
     expect(refus.message).toContain('Mes choix et autorisations');
+  });
+
+  it('★ le RETRAIT a son propre motif — le confondre avec un refus décrit un dossier qui n’existe pas', () => {
+    // CONSTAT DE LA REVUE COPILOT, RETENU. `verdictPartageMedecin` gardait les
+    // deux motifs distincts et ce traducteur les aplatissait aussitôt : un
+    // praticien dont le patient avait ACCORDÉ puis RETIRÉ lisait « le patient a
+    // refusé », avec peut-être une lettre consignée d'il y a trois mois sous les
+    // yeux.
+    const retrait = refusPartage({ bloquant: true, motif: 'retire' });
+    expect(retrait.raison).toBe(RAISON_PARTAGE_RETIRE);
+    expect(retrait.raison).not.toBe(RAISON_PARTAGE_REFUSE);
+    expect(retrait.message).toContain('a retiré son consentement');
+    expect(retrait.message).not.toContain('a refusé');
+    expect(retrait.message).toContain('Mes choix et autorisations');
   });
 
   it('le dernier événement fait foi — un retrait après un accord ferme', () => {

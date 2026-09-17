@@ -12,7 +12,10 @@ const FIL_VIDE = {
   correspondances: [],
   correspondancesPatient: [],
   accepteConsignation: true,
-  partageMedecinTraitant: null,
+  // ACCORDÉ PAR DÉFAUT DEPUIS LE 2026-09-17 : le silence ferme la consignation
+  // ([[D-219]] §3 amendé), et un défaut à `null` ferait éprouver la garde à
+  // chacun des cas ci-dessous au lieu de son propre sujet.
+  partageMedecinTraitant: 'accorde',
 };
 
 /** Route les appels comme le ferait le serveur, sans supposer leur ordre. */
@@ -409,5 +412,35 @@ describe('CorrespondanceMedecinPanel (C3 LOT-06)', () => {
     expect(screen.getByText(/Partage avec le médecin traitant : accordé/)).toBeTruthy();
     // Le formulaire reste actif : l'indicateur informe, il n'interdit pas.
     expect(screen.getByLabelText('Texte de l’échange')).toBeTruthy();
+  });
+});
+
+describe('la garde de consentement ferme la consignation — D-219 §3 amendé', () => {
+  // CONSTAT DE LA REVUE COPILOT, RETENU : la route refusait en 409 pendant que
+  // ce panneau gardait son formulaire actif et décrivait le consentement comme
+  // un simple indicateur. Le praticien saisissait un médecin, un sens, un
+  // texte — et découvrait le refus au clic.
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it.each([
+    ['refuse', /a refusé le partage/i],
+    ['retire', /a retiré son consentement/i],
+    [null, /Consentement jamais exprimé/i],
+  ])('★ statut %s : le formulaire DISPARAÎT, et l’écran donne le chemin', async (statut, phrase) => {
+    fetchMock.mockImplementation(router({ fil: { ...FIL_VIDE, partageMedecinTraitant: statut } }));
+    await attendreLeFil();
+    expect(await screen.findByText(phrase)).toBeTruthy();
+    expect(screen.getByText(/Mes choix et autorisations/i)).toBeTruthy();
+    // Le formulaire n'est pas seulement désactivé : il ne s'offre plus.
+    expect(screen.queryByLabelText(/Médecin \(désignation libre/i)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Consigner/i })).toBeNull();
+  });
+
+  it('★ accordé : le formulaire s’offre — la garde ne ferme que ce qu’elle doit', async () => {
+    fetchMock.mockImplementation(router({ fil: { ...FIL_VIDE, partageMedecinTraitant: 'accorde' } }));
+    await attendreLeFil();
+    expect(await screen.findByLabelText(/Médecin \(désignation libre/i)).toBeTruthy();
   });
 });

@@ -549,10 +549,16 @@ describe('la garde de consentement — D-219 §3 amendé (2026-09-17)', () => {
     expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 
-  it('★ RETRAIT : fermé comme le refus, et le motif reste distinct à la lecture', async () => {
+  it('★ RETRAIT : fermé comme le refus, et le motif reste distinct JUSQU’À LA RÉPONSE', async () => {
+    // « Distinct à la lecture » ne suffisait pas : le verdict gardait les deux
+    // motifs et le traducteur les aplatissait. La route rend désormais la
+    // raison propre au retrait (constat de la revue Copilot).
     prisma.trustChoiceEvent.findMany.mockResolvedValue(choix('retire'));
     const reponse = await POST(postRequest(corps()));
     expect(reponse.status).toBe(409);
+    const json = await reponse.json();
+    expect(json.reason).toBe('consentement_partage_retire');
+    expect(json.error).toContain('a retiré son consentement');
     expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 

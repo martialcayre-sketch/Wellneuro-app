@@ -683,7 +683,10 @@ function stubFetch(options: Options = {}) {
     if (url.includes('/api/praticien/protocoles/diffusion')) return ok({ ok: true, approval: null, stale: false });
     if (url.includes('/api/praticien/protocoles/checkins')) return ok({ ok: true, resume: null });
     if (url.includes('/api/praticien/correspondance-medecin')) {
-      return ok({ ok: true, correspondances: [], accepteConsignation: true, partageMedecinTraitant: null });
+      // `accorde` DEPUIS LE 2026-09-17 : le silence ferme la consignation
+      // ([[D-219]] §3 amendé), donc le formulaire de transcription ne s'offre
+      // plus. Ce cas éprouve la survie d'un BROUILLON, pas la garde.
+      return ok({ ok: true, correspondances: [], accepteConsignation: true, partageMedecinTraitant: 'accorde' });
     }
     // Objectif négocié (Alliance 6.0-A LOT-02) — dossier vierge : aucun
     // objectif posé, aucune consultation validée. C'est l'état de tous les
