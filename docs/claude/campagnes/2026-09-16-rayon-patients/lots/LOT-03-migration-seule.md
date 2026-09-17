@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Migration seule — quatre colonnes"
-statut: "à faire"
+statut: "terminé (2026-09-16, PR #1156 ; release-db appliquée et constatée à 20 h 41)"
 dépend_de: "—"
 ---
 

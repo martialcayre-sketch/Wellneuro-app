@@ -50,7 +50,9 @@ Critères de validation :
 > couvre `web/e2e/parcours-legacy-redirection.spec.ts`.
 
 - [ ] Créer un patient fictif depuis `/dashboard/patients`.
-- [ ] Assigner un questionnaire au patient fictif.
+- [ ] Assigner un questionnaire au patient fictif **depuis la Bibliothèque**
+      (`/dashboard/bibliotheque`, rayon « assignations et packs ») — l'assignation
+      a quitté la page patients le 2026-09-16.
 - [ ] Ouvrir le portail du patient (`/portail/[token]`) et sa file « Mes questionnaires ».
 - [ ] Soumettre des réponses fictives.
 - [ ] Vérifier le calcul du score sans modifier les seuils cliniques.
@@ -98,9 +100,14 @@ Critères de validation :
   lisible, logo « Wellneuro » en accent or, contraste AA vérifié (D1-3).
 - [x] `/dashboard` (métriques) : `MetricCard`/skeleton conformes au
   thème sombre, bandeau « indisponible » lisible (D1-4).
-- [x] `/dashboard/patients` : formulaires, tableau patients (`PatientRow`),
-  panneau édition, panneau résultats, tableau assignations — conformes
-  au thème sombre avec les 3 patients fictifs autorisés (D1-5).
+- [x] `/dashboard/patients` (rayon Patients) : formulaires, tableau patients
+  (`PatientRow`), **fiche administrative** (`FicheAdministrativePanel`), panneau
+  résultats — conformes au thème sombre avec les 3 patients fictifs autorisés
+  (D1-5). Le **tableau des assignations** a rejoint `/dashboard/bibliotheque`,
+  et se vérifie là-bas.
+- [ ] `/dashboard/patients/[idPatient]?phase=patient` : la fiche administrative
+  et « Gérer le dossier » s'affichent dans le cockpit — mêmes neuf gestes que
+  le rayon, et une lecture en échec s'y dit en alerte, jamais en champs vides.
 - [ ] `ScoreGauge`/`ScoreRadar`/`ScoreBarChart`/`ScoreSparkline`/
   `ScoreThreshold` (Recharts, D1-2b) : seuils cliniques jamais signalés
   par la seule couleur (icône/motif/libellé requis).

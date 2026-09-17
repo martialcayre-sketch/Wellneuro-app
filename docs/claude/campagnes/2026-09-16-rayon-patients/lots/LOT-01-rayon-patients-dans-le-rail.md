@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Le rayon Patients dans le rail"
-statut: "à faire"
+statut: "terminé (2026-09-16, PR #1152)"
 dépend_de: "—"
 ---
 

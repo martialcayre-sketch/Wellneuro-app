@@ -1,12 +1,12 @@
 ---
 id: "2026-09-16-rayon-patients"
 titre: "Le rayon Patients — le dossier rendu au praticien"
-statut: "ouverte (2026-09-16 — créneau primaire attribué par le responsable)"
+statut: "terminée (2026-09-17 — huit lots livrés, D-220 et D-221 ; contre-revue adverse faite AVANT la clôture, deux affirmations du cadrage réfutées. Le constat d'usage sur dossiers réels reste à faire après déploiement, D-112.)"
 créée_le: "2026-09-16"
-mise_à_jour: "2026-09-16"
-lot_courant: "LOT-00"
+mise_à_jour: "2026-09-17"
+lot_courant: "LOT-07"
 branche_campagne: "aucune"
-branche_lot_courant: "wn-rayon-patients-lot00-2026-09-16"
+branche_lot_courant: "wn-rayon-patients-lot07-2026-09-17"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -154,3 +154,88 @@ colonne neuve, et il part sans attendre la porte `release-db`.
   chantier est distinct et se nomme à la clôture.
 - **Tout libellé de `anamnese.ts` et `fiche.ts`** — des règles cliniques les
   apparient verbatim, et deux bancs l'exigent.
+
+## Clôture — 2026-09-17
+
+Huit lots, huit PR sur `main` — sept mergées et celle de clôture. Décisions **D-220** (architecture et dossier) et
+**D-221** (le NIR déclaré).
+
+### Ce que le cadrage annonçait, et qui s'est révélé faux
+
+- **« Trois baselines visuelles vont rougir, et trois seulement. »** Exact pour
+  le LOT-01. Les LOT-05 et LOT-06 ont remplacé une carte à deux lignes par un
+  formulaire entier dans la phase Patient, et **aucune baseline n'a bougé** : la
+  capture du cockpit n'atterrit pas sur cette phase. L'affirmation était juste
+  par accident, pas par analyse — elle n'avait pas envisagé les lots suivants.
+- **« Le LOT-04 dépend du LOT-03. »** Insuffisant. La v8 dit que le praticien
+  *saisit lui-même* ces renseignements : après la seule migration, les colonnes
+  existent mais rien ne les écrit. Elle est partie au **LOT-05**, et un banc de
+  dépendance de release tient désormais cette porte.
+
+### Ce que la campagne a découvert et qui n'était pas au cadrage
+
+- **`requiresAcknowledgement` était un champ mort** — déclaré, posé sur treize
+  documents, asséré par un banc, lu par aucun code. L'arbitrage « accusé exigé »
+  n'aurait interrompu personne.
+- **Vingt tests E2E tombés d'un coup** au câblage de la porte : trois fixtures
+  recopiaient la règle au lieu de la lire. Le défaut corrigé en code vivait dans
+  les bancs censés le surveiller.
+- **`idPatient` ne filtrait que les assignations.** Demander un dossier
+  descendait la fiche de toute la patientèle — devenu une exposition d'adresses
+  et de NIR dès le LOT-05.
+- **Le panneau d'édition n'avait pas de `key`** : ouvrir un second dossier
+  gardait le formulaire du premier, et enregistrer écrivait l'identité de l'un
+  sur le dossier de l'autre. Sans erreur, sans message.
+
+### La fenêtre d'indisponibilité, telle qu'elle s'est réellement passée
+
+Le cadrage l'annonçait « à choisir ». Elle a été prise sans arbitrage explicite :
+PR #1156 mergée à 20 h 33 le 2026-09-16, `release-db` approuvée et exécutée à
+20 h 41 — **huit minutes**, constatées par le run 35147224827 (« Schéma à jour,
+constaté depuis la base »).
+
+### Ce qui reste ouvert, et se nomme ici
+
+1. **Le raccord du médecin traitant au rayon Correspondance** — pré-remplissage
+   de `CorrespondanceMedecin.medecinLibelle`. Le champ le rend possible ; le
+   chantier est distinct.
+2. **La qualification du NIR au titre de l'article 9** — écrite comme **due** au
+   dossier RGPD, elle appartient au responsable de traitement.
+3. **Le constat d'usage après déploiement.** La LIGNE DE BASE, elle, est prise —
+   voir ci-dessous. Ce qui reste est de la rejouer à l'identique une fois le code
+   en ligne et le praticien passé dessus : la reformuler déplacerait la question
+   ([[D-112]]).
+4. **`D-049`** — la signature WebKit/iPhone 13 a rougi T2 **quatre fois de suite** sur
+   `portail-dossier-deux-voix`, toujours « navigation expirée, aucune requête de
+   page émise », jamais en CI — dont une fois sur une PR **purement
+   documentaire**, ce qui écarte définitivement le diff comme suspect. Rien de
+   neuf sur la cause racine, qui reste ouverte.
+
+### Ligne de base, lue en production le 2026-09-17
+
+One-off Scalingo détaché, **comptages seuls**, aucune donnée nominative lue :
+
+| Mesure | Valeur |
+|---|---|
+| Dossiers | 29 |
+| Consultations | 36 |
+| Consultations portant une **fiche signalétique** | **22** |
+| Consultations portant une **anamnèse** | **21** |
+| Dossiers avec une adresse | 0 |
+| Dossiers avec un NIR | 0 |
+| Dossiers avec un médecin traitant | 0 |
+
+**CE QUE CE TABLEAU ÉTABLIT, ET QUI N'ÉTAIT JUSQU'ICI QU'UNE HYPOTHÈSE DE
+CADRAGE.** Vingt-deux fiches signalétiques et vingt et une anamnèses **existent
+en production** — écrites par des patients, conservées depuis des mois — et
+**aucune surface praticien ne les lisait**. Le manque n'était pas théorique : il
+portait sur 21 dossiers sur 29.
+
+**LES TROIS ZÉROS SONT LA LIGNE DE BASE, PAS UN ÉCHEC.** Les colonnes sont en
+service depuis huit heures et le code qui les écrit n'est pas encore déployé. Ce
+zéro mesure l'instant d'avant, et il n'a de valeur que rejoué plus tard : c'est
+ce qui permettra de dire si la fiche administrative sert, ou si elle rejoint les
+trois tables dont [[D-112]] a mesuré le remplissage à zéro.
+
+**LA REQUÊTE EST CONSERVÉE TELLE QUELLE** au dossier de la campagne. La rejouer à
+l'identique est la seule façon d'en tirer un constat.
