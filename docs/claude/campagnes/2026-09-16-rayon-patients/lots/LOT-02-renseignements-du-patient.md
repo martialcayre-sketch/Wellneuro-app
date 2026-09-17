@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Fiche signalétique et anamnèse, relisibles"
-statut: "à faire"
+statut: "terminé (2026-09-16, PR #1155)"
 dépend_de: "—"
 ---
 

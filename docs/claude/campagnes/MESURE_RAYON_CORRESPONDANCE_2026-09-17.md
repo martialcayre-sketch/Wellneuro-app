@@ -1,10 +1,11 @@
 # Mesure du rayon Correspondance — protocole prêt, exécution due
 
 > **LOT-06 de la campagne « ouverture du rayon Correspondance ». Ce document est le
-> protocole, pas le résultat.** Les requêtes ci-dessous n'ont **pas** été exécutées :
-> la lecture de production depuis une session autonome a été refusée par le
-> classifieur de sécurité — le même refus que la session du 2026-09-15 a rencontré
-> sur la campagne « 5. Actions », et il n'a pas été contourné.
+> protocole, pas le résultat.** Une requête a été **lancée** en conteneur détaché ;
+> **sa sortie n'a pas pu être lue** — le classifieur de sécurité de la session
+> autonome a refusé `scalingo logs`, le même refus que la session du 2026-09-15 a
+> rencontré sur la campagne « 5. Actions », et il n'a pas été contourné. Voir
+> « État d'exécution » : la lecture tient en **une commande**.
 >
 > **Étiquetage `D-125` de tout ce qui suit : *inconnu faute de preuve*.** Aucun
 > chiffre n'est avancé ici. Ce qui est écrit est ce qu'il faut demander à la base,
@@ -73,6 +74,27 @@ group by route, methode;
 Le cadrage n'en nommait que **deux** ; [[D-218]] en a ajouté un troisième. Filtrer
 sur le premier seul **sous-compte le rayon** — c'est le piège que le cadrage avait
 nommé, et il s'est aggravé depuis.
+
+## État d'exécution — une requête a tourné, sa sortie n'a pas été lue
+
+**La requête 1 a été lancée le 2026-09-17 en one-off détaché** (`one-off-8811`,
+app `wellneuro`, région `osc-fr1`). Elle est **en lecture seule et n'agrège que des
+comptes** — aucun `texte`, aucun `medecin_libelle`, aucun identifiant en clair.
+
+**Sa sortie n'a pas été lue** : `scalingo logs --filter one-off-8811` a été
+**refusé par le classifieur de sécurité** de la session autonome, et le refus n'a
+pas été contourné. Le geste qui manque tient en une commande, à jouer depuis une
+session attelée :
+
+```bash
+scalingo --region osc-fr1 --app wellneuro logs --filter one-off-8811
+```
+
+> Les logs Scalingo ne sont pas éternels : si la fenêtre est passée, relancer la
+> requête 1 telle quelle et lire le nouveau numéro de one-off. Rien n'est perdu —
+> une lecture agrégée se rejoue.
+
+Les requêtes **2** et **3** n'ont pas été lancées.
 
 ## Comment l'exécuter, et ce qu'il ne faut pas faire
 

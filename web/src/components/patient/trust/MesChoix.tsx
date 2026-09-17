@@ -12,7 +12,7 @@ import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessa
  * côté serveur).
  */
 // EXPORTÉ POUR SON BANC, et pour lui seul. La formulation servie ici n'est
-// couverte par aucune version de document ([[D-220]] §3) : tant que ce trou
+// couverte par aucune version de document ([[D-222]] §3) : tant que ce trou
 // n'est pas fermé, un banc est la seule chose qui l'empêche de dériver.
 export const FINALITES: {
   finalite: string;
@@ -27,7 +27,7 @@ export const FINALITES: {
     libelle: 'Partage avec le médecin traitant',
     finaliteDetail:
       // CE TEXTE ÉTAIT FAUX, ET C'EST CELUI SUR LEQUEL LE PATIENT CONSENT
-      // ([[D-220]]). Il annonçait que le partage « arrivera dans une prochaine
+      // ([[D-222]]). Il annonçait que le partage « arrivera dans une prochaine
       // version » : le fil de correspondance médecin est en service depuis le
       // 2026-07-22. Un consentement recueilli sur une description fausse est un
       // consentement mal éclairé, et c'est le seul endroit du produit où le

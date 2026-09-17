@@ -1,6 +1,6 @@
 # Handoff — 2026-09-17 — LOT-05b : la correspondance entre au registre RGPD
 
-Conformité documentaire et correction d'un texte patient faux. Décision [[D-220]].
+Conformité documentaire et correction d'un texte patient faux. Décision [[D-222]].
 Clôt le LOT-05, ouvert par [[D-219]].
 
 ## Branche et état Git
@@ -36,7 +36,7 @@ avant de consentir**.
 - `docs/DOSSIER_RGPD.md` — rubrique 6 : le destinataire tiers, le traitement, et la
   réserve.
 - `web/src/components/patient/trust/MesChoix.tsx` — la finalité `partage_medecin_traitant`.
-- `docs/DECISIONS.md` — [[D-220]].
+- `docs/DECISIONS.md` — [[D-222]].
 - `docs/claude/campagnes/FILE_ATTENTE.md` — deux entrées : la messagerie fermée, et
   la réserve du registre TRUST.
 - `changelog.d/2026-09-17-correspondance-au-registre-rgpd.md`.

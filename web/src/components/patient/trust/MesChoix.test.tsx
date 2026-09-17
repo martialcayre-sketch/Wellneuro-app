@@ -6,7 +6,7 @@ import { FINALITES } from './MesChoix';
 // LA SEULE SURFACE OÙ LE PATIENT LIT CE QUE SON CHOIX ENGAGE.
 //
 // Ce banc verrouille la formulation SERVIE, et l'absence de celle qui a été
-// corrigée ([[D-220]] §3). Il existe pour une raison précise, dite par la revue
+// corrigée ([[D-222]] §3). Il existe pour une raison précise, dite par la revue
 // du 2026-09-17 : la formulation des finalités n'est couverte par AUCUNE
 // version — l'événement de choix n'enregistre que celle du document
 // `droits_patient`. Deux consentements donnés sur deux formulations

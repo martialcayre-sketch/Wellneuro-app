@@ -298,7 +298,7 @@ build (`web/scripts/build.sh:33`). Aucune donnée patient ni source ; aucun
 `CHECKPOINT_DISABLE` n'est posé dans le dépôt. Mentionné pour l'exhaustivité de
 l'inventaire, pas comme sous-traitant au sens de l'article 28.
 
-**LE DESTINATAIRE TIERS QUI MANQUAIT — LE MÉDECIN DÉSIGNÉ ([[D-220]]).** Cette
+**LE DESTINATAIRE TIERS QUI MANQUAIT — LE MÉDECIN DÉSIGNÉ ([[D-222]]).** Cette
 rubrique concluait : « aucun partage à un tiers (médecin traitant compris) sans
 choix explicite du patient ». La phrase décrivait une garde que **personne n'avait
 décidé de poser**, et la présentait comme posée. L'arbitrage du 2026-07-22
@@ -346,7 +346,7 @@ pas.
 > l'événement de choix n'enregistre que la version du document `droits_patient`,
 > si bien que deux consentements donnés sur deux formulations différentes sont
 > indiscernables au registre. **Non touché le 2026-09-17, sauf la correction d'un
-> fait faux** (voir [[D-220]] §3).
+> fait faux** (voir [[D-222]] §3).
 
 Au sein de Wellneuro, en revanche, la phrase tient : « votre praticien, dans le
 cadre de votre accompagnement ; personne d'autre n'y accède ».

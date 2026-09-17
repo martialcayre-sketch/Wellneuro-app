@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-220 — La correspondance médecin entre au registre RGPD comme traitement : il existe bien un destinataire tiers, et le portail cesse de dire que le partage « arrivera »
+### D-222 — La correspondance médecin entre au registre RGPD comme traitement : il existe bien un destinataire tiers, et le portail cesse de dire que le partage « arrivera »
 
 - Date : 2026-09-17
 - Statut : accepté — **mise en conformité documentaire et correction d'un texte
@@ -91,6 +91,105 @@ fermé**, qui ne se rouvre que par une décision explicite.
 bandeau qui renvoie au registre. Le dépôt a déjà ce précédent
 (`CHECKLIST_ACTIVATION_G_TRUST_04.md`) : un document historique ne se réinterprète
 pas — on dit où sa règle vit désormais.
+### D-221 — Le NIR déclaré entre au dossier, en clair, et sa clé se vérifie côté application
+
+- Date : 2026-09-17
+- Statut : accepté — arbitrage du responsable de traitement, 2026-09-16.
+- Domaine : données patient, dossier administratif, RGPD.
+- Porte sur : la catégorie de stockage du numéro de sécurité sociale et le
+  niveau de contrôle exigé à la saisie. Prolonge [[D-220]].
+
+**1. EN CLAIR, COMME TOUTE AUTRE DONNÉE DU DOSSIER.** Ce qui protège le NIR est
+ce qui protège le reste : RLS *deny-all* sur `patients`, garde d'appartenance sur
+chaque route praticien, journal des accès. Un masquage d'affichage n'aurait
+trompé que le praticien — il aurait lu des astérisques sur une donnée que la base
+sert en clair, et aurait cru à une protection qui n'existe pas.
+
+**2. CE QUI EST SAISI EST UN NIR *DÉCLARÉ*, JAMAIS UNE INS CERTIFIÉE.** Rien
+n'interroge le téléservice INSi, et le module ne prétend pas le faire. Il attrape
+la faute de frappe, pas l'usurpation, et son en-tête le dit.
+
+**3. LA FORME EST GARDÉE EN BASE, LA CLÉ CÔTÉ APPLICATION.** Un `CHECK` SQL ne
+sait pas calculer `97 − (n mod 97)` sur la substitution corse (`2A` → 19,
+`2B` → 18) sans devenir illisible. Surtout, un refus de base remonte en erreur
+technique, là où un refus applicatif dit **ce qui** ne va pas : mal compté les
+chiffres, ou mal recopié la clé.
+
+**4. POURQUOI VÉRIFIER LA CLÉ PLUTÔT QUE LA SEULE FORME.** Un numéro bien formé
+et faux se recopie sans que rien ne bronche, et finit sur un courrier ou une
+demande de prise en charge. C'est le seul contrôle disponible hors téléservice,
+et il coûte une division.
+
+**5. CE QUE CETTE DÉCISION NE POSE PAS.** La qualification du NIR au titre de
+l'article 9 appartient au responsable de traitement. `docs/DOSSIER_RGPD.md` §5
+l'écrit comme **due**, et le code ne la pose pas — [[D-064]] vaut ici.
+
+---
+
+### D-220 — La gestion du dossier quitte l'héritage 4.0 : un rayon Patients, et un cockpit qui porte enfin son dossier
+
+- Date : 2026-09-17
+- Statut : accepté — demande du responsable du 2026-09-16, captures à l'appui,
+  et six arbitrages rendus en séance.
+- Domaine : navigation praticien, dossier patient, cockpit, portail (document
+  de confidentialité).
+- Porte sur : l'emplacement de la gestion des dossiers et l'étendue de ce qui
+  s'y corrige. Prolonge [[D-126]] (gestes irréversibles) et [[D-087]] (ordre de
+  migration). Une migration additive, aucune table signée touchée.
+
+**1. LE CONSTAT, ET IL N'EST PAS DÉDUIT.** La phase « 1. Patient » du poste de
+pilotage affichait **deux lignes** — un nom, un e-mail. La gestion des dossiers
+vivait sur une page d'héritage 4.0, « Questionnaires & packs », où elle
+cohabitait avec l'assignation de questionnaires et les packs : deux métiers sans
+rapport sur un même écran, et le métier du dossier absent partout ailleurs.
+
+**2. CE QUI ÉTAIT DEVENU INCORRIGIBLE.** `PATCH /api/praticien/patients`
+n'acceptait que `telephone` et `actif`. Prénom, nom, date de naissance et e-mail
+étaient saisis à la création et ne se corrigeaient **plus jamais** : une faute de
+frappe sur un nom était définitive, et le seul recours était de recréer un
+dossier — donc d'en abandonner l'historique.
+
+**3. L'E-MAIL EST RECOPIÉ DANS CINQ TABLES, ET UNE ROUTE INTERROGE PAR LUI.**
+Changer l'adresse du dossier sans réécrire les copies rendrait **muettes toutes
+les réponses déjà reçues** : le praticien lirait une liste vide, et rien ne lui
+dirait que ses données sont là mais introuvables. Les quatre copies se réécrivent
+dans la même transaction que le dossier. `booklet_envois.email_patient_masque`
+**n'est pas touché** : il atteste un envoi réellement parti à cette adresse-là,
+et le réécrire falsifierait une trace.
+
+**4. UNE SEULE IMPLÉMENTATION DES GESTES IRRÉVERSIBLES.** Les neuf actions du
+dossier — dont la révocation d'accès et l'effacement définitif — sont désormais
+atteignables depuis deux surfaces. Elles vivent dans un hook unique : deux copies
+auraient dérivé, et la promesse faite au praticien aurait dépendu de l'écran d'où
+il a cliqué. Le mécanisme se vérifie — retirer la confirmation de l'effacement
+fait rougir six bancs sur les deux surfaces.
+
+**5. DEMANDER UN DOSSIER NE DESCEND PLUS TOUTE LA PATIENTÈLE.** `idPatient` ne
+filtrait que les assignations : un appelant qui demandait un dossier recevait la
+fiche de tous les patients du praticien. Anodin tant que le DTO portait un nom et
+un e-mail ; devenu une exposition d'adresses et de NIR dès que la fiche
+administrative s'est écrite. La restriction porte sur **les deux branches** de la
+route — sur une seule, il suffisait d'ajouter `page=1` pour la contourner.
+
+**6. UN ACCUSÉ QUI N'ÉTAIT RÉCLAMÉ QU'EN PAROLES.** `requiresAcknowledgement`
+était déclaré, posé sur treize documents, asséré par un banc — et lu par **aucun
+code**. La porte du portail ne regardait qu'une clé écrite en dur. Porte et
+séquence lisent désormais la même liste, et un banc éprouve la **terminaison** :
+si elles divergeaient, le patient boucherait sans fin sur quatre écrans.
+
+**7. UN TEXTE N'EXIGE RIEN POUR DES CHAMPS QUI N'EXISTENT PAS.** La v8 de « Vos
+données personnelles » annonce que le praticien tient l'adresse, le NIR et le
+médecin traitant — et lui fait franchir une porte pour le reconnaître. Publiée
+avant que la fiche ne sache les écrire, la phrase eût été fausse. Un banc refuse
+cette publication tant que les colonnes ET la route ne sont pas là ; il a tenu la
+porte fermée un lot durant, et l'a ouverte de lui-même quand c'est devenu vrai.
+
+**8. CE QUE LA CAMPAGNE N'A PAS FAIT, ET LE NOMME.** Le raccord du médecin
+traitant du dossier au rayon Correspondance (pré-remplissage de
+`CorrespondanceMedecin.medecinLibelle`) : le champ le rend possible, le chantier
+est distinct.
+
+---
 
 ### D-219 — Trois arbitrages du 2026-07-22 entrent au registre : identité du médecin, conservation de la correspondance, et TRUST indicateur seul
 

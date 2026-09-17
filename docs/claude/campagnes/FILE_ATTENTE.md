@@ -165,7 +165,7 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
 ## Ce qui n'est PAS en file — des gestes, pas des campagnes
 
 - **La messagerie de santé (MSSanté et consorts) est HORS DE PORTÉE** — écrit une
-  fois pour toutes par [[D-220]] §4, parce que la question revient à chaque cadrage
+  fois pour toutes par [[D-222]] §4, parce que la question revient à chaque cadrage
   du fil médecin. Trois raisons, stables et indépendantes d'un arbitrage à venir :
   l'application n'a **aucun canal sortant** vers un médecin ; l'opérateur de
   messagerie serait un **sous-traitant de plus** à contractualiser, sur des données
@@ -173,7 +173,7 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   option C). Ce n'est pas un lot repoussé, c'est un **périmètre fermé** — il ne se
   rouvre que par une décision explicite du responsable.
 - **Le registre TRUST patient promet une garde que le logiciel ne tient pas** —
-  nommé par [[D-220]], **non touché**. **Les huit versions publiées** de
+  nommé par [[D-222]], **non touché**. **Les huit versions publiées** de
   `donnees_confidentialite` portent « aucun partage avec un tiers … sans un choix
   explicite de votre part » (écrite quatre fois, reprise par composition dans les
   quatre autres), et l'effet du refus dit « aucun document ne sera partagé » ;
@@ -182,7 +182,7 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   consenti : les corriger demande une **version neuve** et un arbitrage du
   responsable. Le geste n'est pas technique.
 - **La formulation des finalités de « Mes choix » n'est couverte par aucune
-  version** — trou de traçabilité **antérieur**, rendu visible par [[D-220]] §3.
+  version** — trou de traçabilité **antérieur**, rendu visible par [[D-222]] §3.
   L'événement de choix n'enregistre que `getDocumentCourant('droits_patient')
   .version` ; les descriptions de finalité vivent dans `MesChoix.tsx`, hors de tout
   document versionné. Deux consentements donnés sur deux formulations différentes
