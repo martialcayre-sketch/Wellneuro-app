@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   getServerSession,
   prisma,
+  tx,
   deriverPropositionPourPatient,
   genererCourrierBiologie,
 } = vi.hoisted(() => ({
@@ -14,6 +15,11 @@ const {
     $queryRaw: vi.fn(),
     $transaction: vi.fn(),
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
+  },
+  tx: {
+    trustChoiceEvent: { findMany: vi.fn() },
+    correspondanceMedecin: { create: vi.fn() },
+    $queryRaw: vi.fn(),
   },
   deriverPropositionPourPatient: vi.fn(),
   genererCourrierBiologie: vi.fn(),
@@ -75,12 +81,13 @@ beforeEach(() => {
     { finalite: 'partage_medecin_traitant', statut: 'accorde', enregistreLe: new Date('2026-08-01T10:00:00.000Z') },
   ]);
   prisma.correspondanceMedecin.create.mockResolvedValue({});
+  tx.trustChoiceEvent.findMany.mockResolvedValue([
+    { finalite: 'partage_medecin_traitant', statut: 'accorde', enregistreLe: new Date('2026-08-01T10:00:00.000Z') },
+  ]);
+  tx.correspondanceMedecin.create.mockImplementation(prisma.correspondanceMedecin.create);
   prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
-  prisma.$transaction.mockImplementation(async (op: (tx: unknown) => unknown) => op({
-    trustChoiceEvent: { findMany: prisma.trustChoiceEvent.findMany },
-    correspondanceMedecin: { create: prisma.correspondanceMedecin.create },
-    $queryRaw: prisma.$queryRaw,
-  }));
+  tx.$queryRaw.mockImplementation(prisma.$queryRaw);
+  prisma.$transaction.mockImplementation(async (op: (transaction: typeof tx) => unknown) => op(tx));
   deriverPropositionPourPatient.mockResolvedValue({
     ok: true,
     proposition: { ok: true, lignes: [], declarationsIgnoreesHorsProposition: [] },
@@ -402,20 +409,19 @@ describe('la garde de consentement — D-219 §3 amendé (2026-09-17)', () => {
   });
 
   it('revalide le consentement dans la transaction avant consignation', async () => {
-    prisma.trustChoiceEvent.findMany
-      .mockResolvedValueOnce([
-        { finalite: 'partage_medecin_traitant', statut: 'accorde', enregistreLe: new Date('2026-08-01T10:00:00.000Z') },
-      ])
-      .mockResolvedValueOnce([
-        { finalite: 'partage_medecin_traitant', statut: 'refuse', enregistreLe: new Date('2026-09-01T10:00:00.000Z') },
-      ]);
+    prisma.trustChoiceEvent.findMany.mockResolvedValueOnce([
+      { finalite: 'partage_medecin_traitant', statut: 'accorde', enregistreLe: new Date('2026-08-01T10:00:00.000Z') },
+    ]);
+    tx.trustChoiceEvent.findMany.mockResolvedValueOnce([
+      { finalite: 'partage_medecin_traitant', statut: 'refuse', enregistreLe: new Date('2026-09-01T10:00:00.000Z') },
+    ]);
     const reponse = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
     expect(reponse.status).toBe(409);
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
-    expect(prisma.trustChoiceEvent.findMany).toHaveBeenCalledTimes(2);
+    expect(tx.trustChoiceEvent.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
-      prisma.trustChoiceEvent.findMany.mock.invocationCallOrder[1],
+      tx.trustChoiceEvent.findMany.mock.invocationCallOrder[0],
     );
     expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
