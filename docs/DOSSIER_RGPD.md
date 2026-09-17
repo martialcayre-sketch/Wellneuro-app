@@ -128,9 +128,13 @@ l'ait relu et décidé de le transmettre.
 > a été retirée — variable `env-unset` en production (conteneurs recréés à
 > 20:49:15), puis code supprimé du dépôt. **Une synthèse ne se produit plus que
 > sur demande du praticien.** Le paragraphe ci-dessous reste au dossier parce
-> qu'il décrit un traitement qui A EU LIEU, du 2026-09-12 au 2026-09-17, sur
-> **8 dossiers** (6 au premier rideau, 2 au second) : ce qui a été traité l'a
-> été, et l'effacer réécrirait l'histoire du registre. La **rubrique 5** du
+> qu'il décrit un traitement qui A EU LIEU, du 2026-09-12 au 2026-09-17, par
+> **8 générations — 6 au premier rideau sur 5 dossiers, 2 au second sur 2
+> dossiers** : ce qui a été traité l'a été, et l'effacer réécrirait l'histoire
+> du registre. (Les deux totaux de dossiers sont donnés séparément parce que
+> l'agrégat lu ne dit pas si les 2 dossiers du second rideau sont un
+> sous-ensemble des 5 : ils le sont probablement — un second rideau suppose un
+> premier — mais le déduire serait inférer au-delà de la mesure.) La **rubrique 5** du
 > registre des traitements est à mettre à jour en conséquence — la finalité
 > « l'outil en prépare une quand la matière est complète » n'a plus d'objet, et
 > seule subsiste « le praticien demande une synthèse ». Rien à notifier au

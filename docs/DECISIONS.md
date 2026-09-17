@@ -40,8 +40,12 @@ qui est un fait de code.
 
 **3. L'ORDRE DES GESTES, ET IL EST INVERSE DE CELUI D'UNE POSE.** Le drapeau a
 été **retiré de la production d'abord** — `env-unset` puis recréation des deux
-conteneurs web, constatée à **20:49:15** (heure locale ; ils tournaient depuis
-19:25:44) —, le code ensuite. C'est le sens sûr pour une extinction : le code
+conteneurs web, constatée à **18:49:15 UTC** (20:49:15 heure locale ; ils
+tournaient depuis 17:25:44 UTC) —, le code ensuite. **Les horodatages de cette
+décision sont en UTC**, comme les colonnes de la base et la sortie du CLI
+Scalingo ; seules les lignes de `scalingo logs` portent l'heure locale, et
+confondre les deux fait contrôler la mauvaise fenêtre de production (constat de
+revue, PR #1185). C'est le sens sûr pour une extinction : le code
 retiré devant un drapeau encore allumé ne changerait rien, mais un drapeau
 retiré devant du code encore présent ferme déjà la porte. L'inverse vaut pour
 une pose ([[D-174]] § effectivité).
@@ -52,8 +56,8 @@ surface publique qui distingue les deux états, contrairement à
 `WN_ADRESSAGE_COURRIER` dont la route rend `400` ouvert et `503` fermé. Le
 constat disponible est double — variable absente de `env`, conteneurs recréés —
 et il sera complété par le comportement : **aucune ligne `syntheses_ia` ne doit
-plus porter `donnees_entree->>'source' = 'auto_rideau_%'` après le 2026-09-17
-20:49:15**. La requête est au fragment de changelog.
+plus porter `donnees_entree->>'source' = 'auto_rideau_%'` après le **2026-09-17
+18:49:15 UTC**. La requête est au fragment de changelog.
 
 **5. CE QUI N'EST PAS DÉCIDÉ ICI.** Les 8 brouillons déjà produits restent au
 dossier avec leur marqueur ; rien n'est effacé ni requalifié. Et le mécanisme

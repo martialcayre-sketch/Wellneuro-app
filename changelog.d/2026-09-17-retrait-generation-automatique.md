@@ -22,8 +22,8 @@ dossiers — dont 4 rejetées**, contre 2 rejets sur 55 générations manuelles.
 dossiers est un échantillon court.
 
 **L'ordre des gestes est l'inverse de celui d'une pose.** Le drapeau a été retiré
-de la production **d'abord** — `env-unset`, conteneurs web recréés à **20:49:15**
-alors qu'ils tournaient depuis 19:25:44 —, le code ensuite. Pour une extinction
+de la production **d'abord** — `env-unset`, conteneurs web recréés à **18:49:15 UTC**
+(20:49:15 heure locale) alors qu'ils tournaient depuis 17:25:44 UTC —, le code ensuite. Pour une extinction
 c'est le sens sûr : un code retiré devant un drapeau encore allumé ne change
 rien, un drapeau retiré devant du code encore présent ferme déjà la porte.
 

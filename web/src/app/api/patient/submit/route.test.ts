@@ -11,6 +11,13 @@ const { prisma, after } = vi.hoisted(() => ({
     assignation: { findUnique: vi.fn(), update: vi.fn() },
     patient: { findUnique: vi.fn() },
     questionnaireReponse: { create: vi.fn() },
+    // `syntheseIA` N'EST PAS UN BESOIN DU HANDLER : il est là pour être
+    // OBSERVÉ. Sans cette entrée, une génération réintroduite en synchrone
+    // lèverait un `TypeError` sur un mock absent — un rouge, mais qui parle de
+    // plomberie de test et non de l'invariant violé. Avec elle, la garde
+    // ci-dessous peut affirmer qu'aucune synthèse n'est écrite, par quelque
+    // chemin que ce soit (constat de revue, PR #1185).
+    syntheseIA: { create: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
     // Resolver commun : lu seulement pour les ids CAB_ (instruments cabinet).
     cabinetInstrument: { findUnique: vi.fn() },
   },
@@ -628,16 +635,24 @@ describe('POST /api/patient/submit — aucune génération automatique', () => {
     prisma.questionnaireReponse.create.mockResolvedValue({});
   });
 
-  // ★ LA GARDE DU RETRAIT. Rebrancher une génération ici la fait rougir, quel
-  // que soit le module appelé : l'assertion ne nomme aucun déclencheur, elle
-  // constate qu'AUCUNE tâche de fond n'est planifiée. Un banc qui aurait nommé
-  // `genererSiRideauFerme` serait resté vert devant un second mécanisme.
-  it('ne planifie AUCUN travail de fond après la réponse du patient', async () => {
+  // ★ LA GARDE DU RETRAIT, ET ELLE FERME LES DEUX CHEMINS.
+  //
+  // L'assertion ne nomme aucun déclencheur : elle constate qu'aucune tâche de
+  // fond n'est planifiée, donc un banc nommant `genererSiRideauFerme` serait
+  // resté vert devant un second mécanisme.
+  //
+  // MAIS `after` SEUL NE SUFFISAIT PAS, et c'est une revue qui l'a vu (PR
+  // #1185). L'invariant annoncé par [[D-226]] est qu'une soumission ne
+  // déclenche AUCUNE production — or une génération réintroduite en SYNCHRONE,
+  // sans `after`, passait cette garde. La seconde assertion ferme ce chemin :
+  // quel que soit le mode, aucune synthèse n'est écrite sur ce parcours.
+  it('ne déclenche AUCUNE production de synthèse — ni différée, ni synchrone', async () => {
     const res = await postSubmit(requeteSoumission());
 
     expect(res.status).toBe(200);
     expect(prisma.questionnaireReponse.create).toHaveBeenCalled();
     expect(after).not.toHaveBeenCalled();
+    expect(prisma.syntheseIA.create).not.toHaveBeenCalled();
   });
 
   // La soumission reste ce qu'elle était pour le patient : sa réponse est
