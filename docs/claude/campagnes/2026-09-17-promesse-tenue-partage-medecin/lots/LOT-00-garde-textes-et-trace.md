@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "La garde, les quatre textes, et la trace de formulation"
-statut: "en cours (2026-09-17)"
+statut: "terminé (2026-09-17, PR #1181 — sept constats de revue, sept réels)"
 dépend_de: "—"
 ---
 
@@ -70,6 +70,6 @@ Constat d'une session pair, retenu.
 - [x] Bancs de la garde : cinq cas de consignation, deux de biologie, deux
       d'exception d'adressage, quatre de verdict, quatre d'écran praticien.
 - [x] Mutation éprouvée sur le banc de l'écran d'accusé.
-- [ ] Revue Copilot lue AVANT le merge, trois verdicts.
-- [ ] `release-db` approuvée, migration **constatée** par conteneur.
-- [ ] `WN_TRACE_FORMULATION_CHOIX` posé APRÈS le constat.
+- [x] Revue Copilot lue AVANT le merge — y compris son bloc « Suppressed comments », qui portait un constat réel absent de `pulls/<N>/comments`.
+- [x] `release-db` approuvée (run 35258773789, 19:09:03Z), migration **constatée** par conteneur (`one-off-8295`).
+- [x] `WN_TRACE_FORMULATION_CHOIX` posé à 19:24 UTC, APRÈS le constat ; conteneurs recréés à 19:25:44.

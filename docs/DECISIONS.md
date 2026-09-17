@@ -14934,6 +14934,61 @@ commente une synthèse, elle ne la re-valide pas.
 
 ### D-049 — Le CI fait autorité sur le palier E2E tant que le blocage navigateur local dure
 
+> **AMENDEMENT DU 2026-09-17 — LA CAUSE RACINE EST TROUVÉE, ET ELLE NE FERME PAS
+> CETTE DÉCISION.** La condition de sortie écrite plus bas est pourtant remplie à
+> la lettre — « une cause racine est identifiée ». Le responsable a tranché de
+> l'amender sans la fermer : la cause est **amont, et sans correctif**, donc le
+> segment E2E local reste exactement aussi peu fiable qu'avant.
+>
+> **CE QUE C'EST.** `microsoft/playwright#42385` — sur macOS arm64, WebKit cesse
+> d'émettre la requête d'une navigation. L'issue est **close en « not planned »**.
+>
+> **CE QUI A ÉTÉ MESURÉ ICI, hors du dépôt, en deux bras.** Un serveur HTTP de
+> trois lignes, WebKit, ni application ni base ni suite E2E :
+>
+> - **Bras témoin** — 200 `page.goto` sur **une seule page** : 200 navigations,
+>   **200 requêtes émises, ZÉRO blocage**.
+> - **Bras d'essai** — un **contexte iPhone 13 neuf à chaque tour**, comme le fait
+>   l'isolation Playwright entre deux tests : **BLOCAGE au rang 64**,
+>   **zéro requête émise**, expiration à 15 s. Puis de nouveau au rang 65.
+>
+> **LE TÉMOIN EST CE QUI DONNE SA VALEUR AU RÉSULTAT** : les deux bras tournent
+> sur la même machine, dans la même minute. Il écarte la navigation, le serveur,
+> le réseau, l'application, la base — et **la charge machine**.
+>
+> **LE COMPTEUR PORTE SUR LA CRÉATION DE CONTEXTE, PAS SUR LA NAVIGATION.**
+> L'issue amont dit « environ toutes les 65 navigations » : c'est inexact, et le
+> bras témoin le réfute. Un test = un contexte, d'où la lecture « un seul test
+> par run, jamais le même » — le rang fatidique tombe sur le test qui l'occupe.
+>
+> **CELA CORRIGE [[D-155]]**, qui attribuait la panne à la charge machine. Ce
+> qu'il observait reste vrai — trois séquences vertes ne concluent rien — mais
+> pour une autre raison : une suite qui ne franchit pas le seuil ne bloque pas.
+>
+> **UN FAIT DE PLUS, NON PRÉVU PAR L'AMONT** : passé le rang 64, même
+> `context.close()` se bloque, sans délai de garde. Dans un navigateur unique, le
+> blocage est **terminal**. Que la suite réelle n'en perde qu'un test tient au
+> recyclage des navigateurs entre travailleurs — **supposé, non vérifié**.
+>
+> **TROIS RÉSERVES, ET ELLES COMPTENT.**
+> 1. **Mesuré UNE fois.** Un blocage au rang 64 est compatible avec « environ 65 »,
+>    il n'établit pas la période. Le bras d'essai a été **arrêté à la main** après
+>    le rang 65, le blocage de fermeture empêchant d'aller plus loin.
+> 2. **Le contournement recommandé par l'amont est celui que cette décision
+>    interdit** : `retries: 1`. Il transformerait ce blocage en succès silencieux
+>    et emporterait avec lui les vrais échecs intermittents. **Il reste interdit.**
+> 3. **Cela n'explique PAS le rouge WebKit du CI** — « WebKit encountered an
+>    internal error » est une erreur rendue par le moteur, pas une attente qui
+>    s'épuise, et **aucune requête manquante n'y a été constatée**. Les confondre
+>    est ce que la note du 2026-09-07 interdit.
+>
+> **NOUVELLE CONDITION DE SORTIE** : un correctif amont, **ou** un contournement
+> qui ne masque aucun échec — par exemple recycler le contexte avant le seuil.
+> Compter des séquences propres ne referme toujours rien.
+>
+> Banc de mesure : hors dépôt, `scratchpad/d049/` (deux bras, non versionnés —
+> ils ne prouvent rien du code de ce dépôt).
+
 - Date : 2026-08-12
 - Statut : accepté (décision utilisateur du 2026-08-12)
 - Domaine : validation, gouvernance des PR
