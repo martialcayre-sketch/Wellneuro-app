@@ -7076,3 +7076,50 @@ exister — le sha atteste le contenu d'une ligne, pas l'existence de sa cible.
 **Prochaine action** : chantier 2, le champ d'indication et ses claims, lus sur
 pièce en production. **Question ouverte** : trois des huit indications dépendent
 d'un déclencheur d'âge qui n'existe pas.
+
+## 2026-09-17 — La promesse tenue, et D-049 reproduit au rang 64
+
+Huit versions publiées promettaient « aucun partage avec un tiers sans un choix
+explicite de votre part ». Le logiciel ne la tenait pas depuis le 2026-07-22.
+`D-222`, écrit dans la nuit, l'avait nommée sans la toucher.
+
+**Le responsable a pris les deux bouts** : le texte vient au logiciel **et** le
+logiciel vient au texte. Une garde ferme le courrier de biologie et la
+consignation à la main sur refus, retrait **et silence** ; la lettre d'adressage
+sur signal d'alerte en est l'exception, **nommée au patient**. Deux amendements
+en place, aucun numéro neuf. Le coût est assumé par écrit : un partage hors
+application devient invisible au dossier et au registre RGPD.
+
+**Sept constats de revue, sept réels.** Six de Copilot — dont `retire` servi
+comme un refus, et un panneau praticien qui contredisait sa propre route — et
+un d'une session pair, le plus grave : le drapeau gardait ce qui ENTRE dans
+`data`, jamais ce que Prisma REND. Deux appels nus sur dix, et c'étaient les
+deux routes PATIENT : l'espace TRUST serait tombé dans les deux sens pendant
+toute la fenêtre d'approbation.
+
+**Séquence de production, aucune étape déduite** : merge → déploiement constaté
+par contenance → `release-db` approuvé → migration **constatée par conteneur** →
+*puis seulement* `WN_TRACE_FORMULATION_CHOIX`, conteneurs recréés. La quatrième
+preuve du drapeau manque et c'est écrit : les deux routes relisent l'identité
+avant le drapeau.
+
+**`D-049` a une cause racine, reproduite hors du dépôt, avec témoin.** Bras
+témoin : 200 `goto` sur une seule page — 200 requêtes, zéro blocage. Bras
+d'essai : un contexte iPhone 13 neuf à chaque tour — **blocage au rang 64,
+zéro requête émise**, puis au 65. Le compteur porte sur la **création de
+contexte**, pas sur la navigation : l'issue amont `#42385` se trompe sur ce
+point, et `D-155` se trompait en attribuant la panne à la charge machine.
+C'est pourquoi « un seul test par run, jamais le même » — le rang fatidique
+tombe sur le test qui l'occupe.
+
+Écarté : **fermer `D-049` sur la seule identification de la cause** — arbitrage
+du responsable. Elle se fermera sur la **montée en 1.63.0**, portée par une PR
+distincte avec la régénération des huit baselines visuelles (toutes en
+`-linux.png` : rien ne compare un pixel hors Linux, le rouge n'apparaîtrait
+qu'au CI sur une PR étrangère). Le contournement `retries: 1` reste interdit.
+
+Prochaine action : l'amendement de `D-049` avec les chiffres finaux, puis la PR
+de clôture.
+
+Question ouverte : un déploiement manuel non attribué à 19:03:49 UTC, par le
+compte partagé `wellneuro`. Ce n'est pas cette session.
