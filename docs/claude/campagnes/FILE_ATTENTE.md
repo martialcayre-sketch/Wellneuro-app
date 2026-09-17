@@ -119,10 +119,15 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   la forme d'une ligne, un verrou à SIX termes, un service fail-closed, et la
   table **VIDE**. La surface de relecture
   (`SURFACE_RELECTURE_CATALOGUE_CONDUITES_2026-09-16.md`) propose **trois lignes**
-  sur le bloc sommeil et écarte **huit tableaux** avec leur motif. **Ce qui reste
-  au responsable** : désigner les `claimId` qui fondent chaque indication — le
-  dépôt sait qu'il y en a 20, 29 et 7 de validés sur les trois sources, il ne sait
-  pas lesquels.
+  sur le bloc sommeil et écarte **huit tableaux** avec leur motif.
+  **PREMIÈRE LIGNE SIGNÉE LE 2026-09-17 ([[D-224]])** — `insomnie_jambes_sans_repos`,
+  sur deux claims prescriptifs indépendants. La table n'est plus vide, et son
+  verrou est armé. **Ce qui reste** : les deux autres lignes, dont les six claims
+  d'indication et de sécurité **n'ont pas encore été lus sur pièce** — la
+  vérification du 2026-09-17 a réfuté une désignation sur trois, et rien dans la
+  chaîne (sha, registre des sources, CI) n'attrape cette classe d'erreur. Les
+  ajouter demandera une **nouvelle** attestation : le périmètre se hache en
+  entier.
 
 - **`D-113` — les cycles nommés `T0`, `T1`, `T2`** (2026-08-26, arbitrage du
   responsable). Chaque cycle s'ouvrait par un `T0` : un second cycle

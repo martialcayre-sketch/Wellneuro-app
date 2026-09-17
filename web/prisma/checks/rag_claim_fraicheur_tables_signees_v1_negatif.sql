@@ -159,7 +159,26 @@ BEGIN
     -- puisqu'un conflit peut légitimement opposer deux claims DESCRIPTIFS —
     -- l'exigence rejetterait alors une déclaration valide (`DC-14`, [[D-046]]).
     ('WN-CL-0312-018', 'v1.0', 'conflits_sources', false),
-    ('WN-CL-0387-013', 'v1.0', 'conflits_sources', false)
+    ('WN-CL-0387-013', 'v1.0', 'conflits_sources', false),
+    -- Catalogue de conduites ([[D-206]] LOT-01), PREMIÈRE SIGNATURE le
+    -- 2026-09-17 ([[D-224]]) — la table était enrôlée au balayage depuis sa
+    -- pose, et ne contribuait aucune paire tant qu'aucune ligne ne citait de
+    -- claim. Voici les deux premières.
+    --
+    -- `exige_prescriptif = false`, et l'intuition va dans l'autre sens : une
+    -- conduite prescrit PLUS fort qu'une exploration, dont la table vaut `true`.
+    -- Le motif est celui de `conflits_sources` juste au-dessus. Cette table
+    -- range ses claims en TROIS catégories, et `claimsInstrument` fonde
+    -- l'INSTRUMENT dont le déclencheur lit le score — « tel questionnaire
+    -- explore telle chose » décrit, et ne prescrit rien. Les deux claims
+    -- ci-dessous sont pourtant prescriptifs en production, et c'est sans
+    -- rapport : la colonne dit ce qu'on EXIGE. L'exiger rejetterait une
+    -- désignation valide dès la deuxième ligne — `WN-CL-0320-002`, claim
+    -- d'instrument des deux lignes encore retenues, est `prescriptif = false`
+    -- en production, relu le 2026-09-17 — ou forcerait à épingler un voisin qui
+    -- ne dit pas l'instrument (`DC-14`, [[D-046]]).
+    ('WN-CL-0320-003', 'v1.0', 'conduites', false),
+    ('WN-CL-0318-020', 'v1.0', 'conduites', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
   -- La jointure porte sur LA PAIRE. Joindre sur `claim_id` seul laisserait une
   -- table signée s'appuyer sur une version du claim qui n'est pas celle qu'elle
@@ -188,7 +207,11 @@ DECLARE
   msg text;
   cible text := 'WN-CL-0287-009';
 BEGIN
-  -- ── Décor : les 29 paires épinglées, toutes saines ────────────────────────
+  -- ── Décor : TOUTES les paires épinglées, toutes saines ────────────────────
+  -- Le décor s'alimente DEPUIS la liste ci-dessous : une paire ajoutée au
+  -- contrat entre ici toute seule, et le cas N0 la contrôle sans qu'on y pense.
+  -- Aucun nombre n'est écrit ici — le commentaire annonçait « 29 » alors qu'il
+  -- y en avait 51, et un compte que rien ne garde dérive en silence.
   -- Les identifiants sont ceux de la production, mais les lignes sont des
   -- fixtures : texte, embedding et source sont fictifs. La base du CI est
   -- éphémère et vide ; rien de réel n'est touché, et la transaction est annulée.
@@ -295,7 +318,11 @@ BEGIN
     -- puisqu'un conflit peut légitimement opposer deux claims DESCRIPTIFS —
     -- l'exigence rejetterait alors une déclaration valide (`DC-14`, [[D-046]]).
     ('WN-CL-0312-018', 'v1.0', 'conflits_sources', false),
-    ('WN-CL-0387-013', 'v1.0', 'conflits_sources', false)
+    ('WN-CL-0387-013', 'v1.0', 'conflits_sources', false),
+    -- Catalogue de conduites, première signature du 2026-09-17 ([[D-224]]).
+    -- `exige_prescriptif = false` — motif complet au bloc du prédicat ci-dessus.
+    ('WN-CL-0320-003', 'v1.0', 'conduites', false),
+    ('WN-CL-0318-020', 'v1.0', 'conduites', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif);
 -- <<< PAIRES_FIXTURES
 

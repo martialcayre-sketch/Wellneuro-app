@@ -153,6 +153,33 @@ const TABLE_EXIGE_PRESCRIPTIF: Record<string, boolean> = {
   // claims : il vient de la SIGNATURE praticien, qui assume que ces deux
   // affirmations s'opposent sur le même objet.
   conflits_sources: false,
+  // UNE LIGNE DE CONDUITE DÉSIGNE TROIS RÔLES, ET L'UN D'EUX EST DESCRIPTIF PAR
+  // CONSTRUCTION ([[D-224]]).
+  //
+  // L'arbitrage se distingue de celui de l'orientation, qui vaut `true`, et il
+  // faut le dire parce que l'intuition va dans l'autre sens : une conduite
+  // prescrit PLUS fort qu'une exploration, donc on attendrait `true`. Les deux
+  // claims signés ce jour sont d'ailleurs `prescriptif = true` en production —
+  // exiger `prescriptif` passerait aujourd'hui sans rien coûter.
+  //
+  // C'est exactement pourquoi il faut le refuser MAINTENANT, et le raisonnement
+  // est celui de `conflits_sources` juste au-dessus. Cette table range ses
+  // claims en TROIS catégories, et `claimsInstrument` fonde l'INSTRUMENT dont le
+  // déclencheur lit le score — « tel questionnaire explore telle chose ». Un
+  // claim de cette forme ne recommande aucune conduite et n'a aucune raison de
+  // le faire. Ce n'est pas une hypothèse : `WN-CL-0320-002`, le claim
+  // d'instrument des deux lignes de conduite encore retenues, est
+  // `prescriptif = false` en production, relu le 2026-09-17. Exiger `prescriptif`
+  // de toute la table rejetterait donc une désignation valide dès la deuxième
+  // ligne — ou forcerait à épingler un claim voisin qui ne dit pas l'instrument
+  // (`DC-14`).
+  //
+  // La force prescriptive d'une ligne de conduite ne vient pas de l'uniformité
+  // de ses claims : elle vient de la SIGNATURE praticien, qui assume « ce
+  // tableau, cette conduite ». Une exigence PAR CATÉGORIE serait plus juste
+  // encore — le contrat SQL porte déjà un booléen par ligne — mais ce banc
+  // impose l'uniformité par table, et lever cet invariant est un lot en soi.
+  conduites: false,
 };
 
 interface TableSignee {

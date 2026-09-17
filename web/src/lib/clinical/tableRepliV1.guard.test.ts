@@ -57,13 +57,34 @@ function TABLE_REPLI_SHA256_DE(lignes: LigneRepli[]): string {
 }
 
 describe('table du repli — le verrou', () => {
-  it('est ÉTEINTE au dépôt : aucune attestation n’a été posée', () => {
-    expect(TABLE_REPLI_METADATA.validationExterne).toBe(false);
-    expect(TABLE_REPLI_METADATA.dateValidation).toBeNull();
-    expect(TABLE_REPLI_METADATA.shaPerimetre).toBeNull();
-    expect(tableRepliSignee()).toBe(false);
-    // Le point de sortie unique se tait, et c'est tout ce que l'écran obtient.
-    expect(lignesRepliServables()).toEqual([]);
+  it('est ARMÉE au dépôt : l’attestation du 2026-09-17 est en vigueur', () => {
+    expect(TABLE_REPLI_METADATA.validationExterne).toBe(true);
+    expect(TABLE_REPLI_METADATA.dateValidation).toBe('2026-09-17T06:06:41.000Z');
+    expect(tableRepliSignee()).toBe(true);
+    // Le point de sortie unique sert les trois lignes publiées, et elles seules.
+    expect(lignesRepliServables().map(l => l.id)).toEqual(['REPLI-01', 'REPLI-02', 'REPLI-03']);
+  });
+
+  it('PERD SA SIGNATURE si un seul mot d’un constat change', () => {
+    // LE BANC QUI COMPTE VRAIMENT. Le littéral figé atteste le texte RELU ; le
+    // module le compare au périmètre recalculé. Réécrire un constat — même pour
+    // l'améliorer — fait diverger les deux et éteint la table. C'est voulu : un
+    // texte réécrit n'a pas été relu, et il demande une NOUVELLE attestation,
+    // jamais un ajustement du littéral. Ce test rougit alors, et il doit.
+    expect(TABLE_REPLI_METADATA.shaPerimetre).toBe(TABLE_REPLI_SHA256);
+
+    const reecrite = TABLE_REPLI_V1.map((l, i) =>
+      i === 0 ? { ...l, constat: `${l.constat} Précision ajoutée après coup.` } : l);
+    expect(tableRepliSignee(TABLE_REPLI_METADATA, reecrite)).toBe(false);
+    expect(lignesRepliServables(reecrite, TABLE_REPLI_METADATA)).toEqual([]);
+  });
+
+  it('N’ABSORBE PAS une quatrième ligne ajoutée après l’attestation', () => {
+    // Le défaut que [[D-063]] a fermé ailleurs : une ligne ajoutée ne doit pas
+    // entrer en service sous une signature acquise.
+    const elargie = [...TABLE_REPLI_V1, ligne({ id: 'REPLI-04', min: 4, max: null })];
+    expect(tableRepliSignee(TABLE_REPLI_METADATA, elargie)).toBe(false);
+    expect(lignesRepliServables(elargie, TABLE_REPLI_METADATA)).toEqual([]);
   });
 
   it('reconnaît une signature complète — sinon les falsifications ci-dessous ne prouveraient rien', () => {
@@ -214,9 +235,23 @@ describe('lireRepliDepuisLignes — un motif par cause', () => {
 
   it('nomme la table non servie', () => {
     expect(lireRepliDepuisLignes(mesure, [])).toEqual({ statut: 'silence', motif: 'table_non_servie' });
-    // Et c'est bien ce que rend le chemin réel aujourd'hui : verrou éteint.
-    expect(lireRepliDepuisLignes(mesure, lignesRepliServables()))
+    // Le motif reste atteignable par le chemin réel : il suffit que la signature
+    // ne tienne plus. C'est ce que voit un écran si un constat est réécrit sans
+    // nouvelle attestation — pas un vide inexplicable, une cause qui se nomme.
+    const nonSignee = { ...TABLE_REPLI_METADATA, validationExterne: false };
+    expect(lireRepliDepuisLignes(mesure, lignesRepliServables(TABLE_REPLI_V1, nonSignee)))
       .toEqual({ statut: 'silence', motif: 'table_non_servie' });
+  });
+
+  it('LE CHEMIN RÉEL REND MAINTENANT UN CONSTAT — la table est armée', () => {
+    // `mesure` porte une action dont les deux plans sont identiques : 1 action
+    // sans repli, donc REPLI-02. Ce banc vérifie la chaîne ENTIÈRE — verrou,
+    // filtre de service, lecture — sur les lignes réelles du dépôt.
+    expect(lireRepliDepuisLignes(mesure, lignesRepliServables())).toEqual({
+      statut: 'constat',
+      constat: TABLE_REPLI_V1[1].constat,
+      idLigne: 'REPLI-02',
+    });
   });
 
   it('nomme l’absence de ligne applicable', () => {
@@ -257,7 +292,17 @@ describe('table du repli — garde de source', () => {
       join(process.cwd(), 'src/lib/clinical/tableRepliV1.ts'),
       'utf8',
     );
-    const metadonnee = source.slice(source.indexOf('TABLE_REPLI_METADATA'));
-    expect(metadonnee.slice(0, 400)).not.toMatch(/shaPerimetre:\s*TABLE_REPLI_SHA256/);
+    // ANCRÉ SUR LA LIGNE, PAS SUR UNE FENÊTRE DE N CARACTÈRES. La version
+    // précédente découpait 400 caractères après la constante ; le commentaire
+    // d'attestation a repoussé `shaPerimetre` au-delà, et le test serait passé à
+    // VIDE — vert sans rien inspecter. Une garde qui peut cesser d'atteindre sa
+    // cible sans rougir est pire que pas de garde.
+    const metadonnee = source.slice(source.indexOf('export const TABLE_REPLI_METADATA'));
+    const corps = metadonnee.slice(0, metadonnee.indexOf('\n};'));
+    const ligneSha = corps.split('\n').find(l => /^\s*shaPerimetre:/.test(l));
+    expect(ligneSha).toBeDefined();
+    expect(ligneSha).not.toMatch(/shaPerimetre:\s*TABLE_REPLI_SHA256/);
+    // Et c'est bien un littéral de 64 hex qui y est figé.
+    expect(ligneSha).toMatch(/shaPerimetre:\s*'[0-9a-f]{64}'/);
   });
 });

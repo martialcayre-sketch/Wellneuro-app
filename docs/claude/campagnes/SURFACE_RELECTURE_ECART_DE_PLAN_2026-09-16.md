@@ -4,6 +4,19 @@
 Il présente au praticien ce qu'il aurait à attester, ce qui a été écarté, et
 **un fait mesuré qui change la question posée**.*
 
+> ## ÉTAT AU 2026-09-17 — ATTESTÉE
+>
+> Les trois constats ci-dessous ont été relus **mot à mot** par le responsable,
+> qui a déclaré l'échelle conforme (`D-223`). Le verrou est armé :
+> `validationExterne: true`, date ISO canonique, `shaPerimetre` figé en littéral.
+>
+> **Ces bornes n'ont toujours aucune source clinique, et c'est la ratification
+> qui fait leur provenance** — pas ce document, qui ne signe rien.
+>
+> **Aucun écran ne change pour autant.** Personne n'appelle encore
+> `lignesRepliServables` : l'attestation arme le mécanisme, elle ne le branche
+> pas. Le branchement est un lot à part.
+
 `D-213` §4 a tranché : l'écart entre plan idéal et plan minimal reçoit sa propre
 table signée, sur le patron du barème, et le barème garde son terme unique.
 L'arbitrage n'est pas rouvert ici. Ce document prépare sa **mise en œuvre**, et

@@ -28,6 +28,18 @@ const TABLES = [
   // la première assertion ci-dessous aurait rougi. Le retard d'enrôlement est
   // exactement ce que D-067 puis D-084 ont eu à rattraper deux fois.
   { fichier: 'baremeChargeV1.ts', constante: 'BAREME_CHARGE_SHA256' },
+  // Enrôlée le jour de sa première signature ([[D-223]], 2026-09-17) — livrée
+  // verrou éteint la veille, elle n'aurait pas pu l'être alors : `shaPerimetre`
+  // valait `null`. Même règle que le barème juste au-dessus, appliquée sans
+  // attendre que quelqu'un ait à la rattraper une troisième fois.
+  { fichier: 'tableRepliV1.ts', constante: 'TABLE_REPLI_SHA256' },
+  // Enrôlé le jour de sa première signature ([[D-224]], 2026-09-17), comme sa
+  // surface de relecture l'avait prévu. Sa tautologie n'aurait PAS la forme
+  // `shaPerimetre: UNE_CONSTANTE` — ce module calcule par une fonction, donc
+  // elle s'écrirait `shaPerimetre: shaPerimetreConduites(...)`. Le second test
+  // l'attrape quand même : il n'admet que le littéral hex ou la déclaration de
+  // type, et refuse tout le reste — un appel de fonction compris.
+  { fichier: 'catalogueConduitesV1.ts', constante: 'shaPerimetreConduites' },
 ] as const;
 
 describe('shaPerimetre — littéral figé dans les tables signées, jamais la constante', () => {

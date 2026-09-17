@@ -4,6 +4,110 @@
 
 ## Décisions actives
 
+### D-224 — Le catalogue de conduites reçoit sa première ligne, et la lecture de production réfute un claim d'instrument que la surface désignait à tort
+
+- Date : 2026-09-17
+- Statut : accepté — **attestation praticien**, posée en séance puis transcrite.
+- Domaine : catalogue de conduites (`catalogueConduitesV1.ts`), contrat SQL de
+  fraîcheur des claims épinglés.
+- Porte sur : la première ligne signée du catalogue, et l'exigence
+  `prescriptif` de la table. Exécute le LOT-01 de [[D-206]].
+
+**1. UNE SEULE LIGNE SUR LES TROIS PROPOSÉES.** La surface de relecture du
+2026-09-16 proposait `insomnie_depression`, `insomnie_anxiete` et
+`insomnie_jambes_sans_repos`. Le praticien a attesté **la troisième seule** —
+la mieux fondée du lot, dont la conduite tient en une action. Les deux autres
+sont retenues, pas écartées : le périmètre se hache **en entier**, donc elles
+arriveront par une NOUVELLE attestation sur un périmètre élargi. C'est le
+fonctionnement normal du verrou, pas une dette.
+
+**2. LA SURFACE DÉSIGNAIT UN CLAIM QUI NE FONDE PAS CE QU'ELLE LUI FAISAIT
+PORTER.** Les trois lignes citaient `WN-CL-0320-002` en `claimsInstrument`. Lu
+en production le 2026-09-17, ce claim fonde le **HAD** — or cette ligne se
+déclenche sur l'**IRLS** (`Q_SOM_04`). Le transcrire aurait attesté un rôle que
+le claim ne porte pas.
+
+**Rien dans la chaîne n'aurait vu l'écart** : le sha atteste le contenu relu,
+pas sa pertinence ; le registre des sources est dense sans trou, donc une
+vérification d'existence passe ; le CI n'atteint que la forme. Seule la lecture
+du texte en production le montre. **Conséquence opposable : une désignation de
+claim se vérifie sur le texte du claim, jamais sur la mémoire de qui l'a
+proposé.**
+
+**3. `claimsInstrument` EST VIDE, ET C'EST UNE DÉCLARATION.** Aucun claim du
+corpus ne fonde l'IRLS comme instrument de tête de cette ligne — vérifié claim
+par claim sur `WN-SRC-0320` et sur les quatre appuis de `BIO-SJS-01`. La
+légitimité du déclencheur ne vient pas de là : elle vient de la bande publiée de
+`Q_SOM_04`, déjà en service dans la table signée des indications de biologie.
+
+**4. DEUX CLAIMS PRESCRIPTIFS INDÉPENDANTS FONDENT L'INDICATION.**
+`WN-CL-0320-003` et `WN-CL-0318-020`, issus de deux documents distincts, fondent
+chacun l'indication ET la conduite. La lecture de production a fait apparaître
+le second, que la surface citait comme « troisième document » sans le désigner.
+
+**5. LE RACCOURCI EST NOMMÉ DANS LE PÉRIMÈTRE HACHÉ.** Les claims fondent la
+conduite sur le **syndrome constaté** ; le déclencheur lit une **bande de
+score**. Le pas de l'un à l'autre est assumé par l'outil et écrit dans
+`raccourciAssume` — donc dans le sha : le reformuler périme l'attestation, et un
+banc le prouve plutôt que de le promettre.
+
+**6. LE CONTRAT SQL N'EXIGE PAS `prescriptif` DE CETTE TABLE.** Arbitrage
+[[D-046]], et l'intuition va dans l'autre sens : une conduite prescrit plus fort
+qu'une exploration, dont la table vaut `true`. Les deux claims signés ce jour
+sont d'ailleurs prescriptifs — l'exiger passerait aujourd'hui sans rien coûter.
+
+C'est exactement pourquoi il faut le refuser maintenant, comme
+`conflits_sources` l'a été. Cette table range ses claims en **trois catégories**,
+et `claimsInstrument` fonde l'INSTRUMENT dont le déclencheur lit le score : un
+claim de cette forme décrit et ne prescrit rien. Ce n'est pas une hypothèse —
+`WN-CL-0320-002` est `prescriptif = false` en production. L'exigence rejetterait
+une désignation valide dès la deuxième ligne, ou forcerait à épingler un voisin
+qui ne dit pas l'instrument (`DC-14`).
+
+Une exigence **par catégorie** serait plus juste encore, et le contrat SQL porte
+déjà un booléen par ligne ; le banc impose aujourd'hui l'uniformité par table, et
+lever cet invariant est un lot en soi. **Écarté pour aujourd'hui, nommé ici.**
+
+**7. CE QUE CETTE SIGNATURE NE FAIT PAS.** Aucun appelant de production n'appelle
+`lignesConduitesServables` : le consommateur est le LOT-04. La ligne est
+servable, elle n'est servie à personne.
+
+### D-223 — La table du repli est attestée : ses trois constats ont été relus mot à mot, et le verrou s'arme
+
+- Date : 2026-09-17
+- Statut : accepté — **attestation praticien**, posée en séance puis transcrite.
+- Domaine : table du repli (`tableRepliV1.ts`).
+- Porte sur : la mise en service du verrou livré éteint par [[D-217]].
+
+**1. CE QUI A ÉTÉ ATTESTÉ, ET PAR QUEL GESTE.** Le responsable a relu **mot à
+mot** les trois constats `REPLI-01` à `REPLI-03` et déclaré l'échelle conforme.
+C'est cette déclaration qui atteste ; la recopie de `validationExterne`, de la
+date ISO et du `shaPerimetre` est mécanique et ne vaut que portée par elle
+([[D-195]] §1).
+
+**2. CES BORNES N'ONT AUCUNE SOURCE CLINIQUE, ET LA RATIFICATION EST LEUR SEULE
+PROVENANCE.** Rien au dépôt ne traite du repli thérapeutique, aucun claim ne le
+fonde. Ce sont une convention d'organisation. Elles n'ont pas non plus été
+calibrées sur l'observé — il n'y avait rien à calibrer : la production ne portait
+aucune action de protocole au 2026-09-16. Le module le dit en clair, et le
+lecteur qui les prendrait pour une règle sourcée se tromperait.
+
+**3. LE LITTÉRAL EST FIGÉ, ET IL DOIT ROUGIR SI UN MOT CHANGE.** `shaPerimetre`
+porte un hex recopié à la main, jamais `TABLE_REPLI_SHA256` — la comparaison
+deviendrait tautologique et toute ligne ajoutée entrerait sous une signature
+acquise ([[D-063]]). Un banc neuf vérifie qu'une reformulation de constat éteint
+la table : **un texte réécrit n'a pas été relu, et il demande une nouvelle
+attestation, jamais un ajustement du littéral.**
+
+**4. LE MODULE EST ENRÔLÉ AU BANC DU SHA LITTÉRAL LE JOUR MÊME.** [[D-067]] puis
+[[D-084]] ont eu à rattraper ce retard deux fois ; il ne se rattrape pas une
+troisième.
+
+**5. CE QUE CETTE SIGNATURE NE FAIT PAS.** Aucun composant n'appelle
+`lignesRepliServables`. La table sert désormais ses trois lignes, mais personne
+ne les demande : l'attestation **arme** le mécanisme, elle ne le branche pas. Le
+branchement est un lot à part, et le dire évite de croire qu'un écran a changé.
+
 ### D-222 — La correspondance médecin entre au registre RGPD comme traitement : il existe bien un destinataire tiers, et le portail cesse de dire que le partage « arrivera »
 
 - Date : 2026-09-17

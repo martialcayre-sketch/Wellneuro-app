@@ -2,7 +2,7 @@ import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import { chevauchementsBareme } from './baremeChargePur';
 import { lireRepliDepuisLignes, type LectureRepli, type LigneRepli } from './tableRepliPur';
 
-// LA TABLE DU REPLI — mécanisme livré, CONTENU DÛ AU PRATICIEN, verrou ÉTEINT.
+// LA TABLE DU REPLI — mécanisme livré, CONTENU ATTESTÉ le 2026-09-17, verrou ARMÉ.
 //
 // CE QU'ELLE DIT, ET C'EST TOUT CE QU'ELLE PEUT DIRE. Combien d'actions engagées
 // répètent le même texte en plan idéal et en plan minimal. Elle constate une
@@ -33,14 +33,15 @@ export type { LectureRepli, LigneRepli, MotifSilenceRepli } from './tableRepliPu
 export { lireRepliDepuisLignes } from './tableRepliPur';
 
 /**
- * LES TROIS LIGNES — PROPOSÉES, NON ATTESTÉES au 2026-09-16.
+ * LES TROIS LIGNES — ATTESTÉES PAR LE PRATICIEN le 2026-09-17.
  *
  * D'OÙ VIENNENT CES BORNES, ET IL FAUT LE DIRE PLUTÔT QUE LE LAISSER SUPPOSER.
  * Elles n'ont **aucune source clinique** : rien au dépôt ne traite du repli
  * thérapeutique, aucun claim ne le fonde, aucune littérature n'est invoquée.
- * Ce sont une **convention d'organisation**, proposée à l'écran et destinée à
- * être **ratifiée par le praticien** après relecture de l'échelle entière —
- * c'est cette ratification qui ferait leur provenance, et rien d'autre.
+ * Ce sont une **convention d'organisation**, relue mot à mot puis **ratifiée par
+ * le praticien** le 2026-09-17 ([[D-223]]) — et cette ratification EST leur
+ * provenance, la seule qu'elles auront jamais. Un lecteur qui les prendrait pour
+ * une règle sourcée se tromperait.
  *
  * ELLES NE SONT PAS CALIBRÉES SUR L'OBSERVÉ, et il n'y avait rien à calibrer :
  * la production ne portait, au 2026-09-16, **aucune action de protocole** — un
@@ -110,21 +111,35 @@ export type TableRepliMetadata = {
 };
 
 /**
- * LE VERROU EST ÉTEINT, ET IL LE RESTERA JUSQU'À L'ATTESTATION.
+ * LE VERROU EST ARMÉ — attestation du 2026-09-17 ([[D-223]]).
  *
- * Aucune signature n'a été posée : le praticien n'a pas encore relu les trois
- * constats. `lignesRepliServables` rend donc `[]`, et aucun écran n'a rien à
- * afficher. **Une signature clinique ne se pose jamais par l'outil** — la
- * surface de relecture est écrite, l'attestation revient au responsable.
+ * CE QUI A ÉTÉ ATTESTÉ, ET PAR QUEL GESTE. Le responsable a relu **mot à mot**
+ * les trois constats sur la surface de relecture
+ * (`docs/claude/campagnes/SURFACE_RELECTURE_ECART_DE_PLAN_2026-09-16.md`) et a
+ * déclaré l'échelle conforme. C'est cette déclaration qui atteste ; la recopie
+ * des trois champs ci-dessous est **mécanique et ne vaut que portée par elle**
+ * ([[D-195]] §1). **Une signature clinique ne se pose jamais par l'outil** — et
+ * elle ne l'a pas été : elle a été demandée, puis transcrite.
+ *
+ * CE QUE L'ATTESTATION NE FAIT PAS APPARAÎTRE À L'ÉCRAN. Aucun composant
+ * n'appelle encore `lignesRepliServables` — la table sert désormais ses trois
+ * lignes, mais personne ne les demande. L'attestation ARME le mécanisme, elle ne
+ * le branche pas ; le branchement est un lot à part, et le dire ici évite de
+ * croire qu'un écran a changé.
  *
  * Ce module n'a pas de champ `claimsSource`, et c'est délibéré : aucune source
  * clinique ne porte ces bornes, il n'aurait rien à y mettre, et un champ vide se
  * lirait comme un oubli. Même raison que `baremeChargeV1.ts`.
  */
 export const TABLE_REPLI_METADATA: TableRepliMetadata = {
-  validationExterne: false,
-  dateValidation: null,
-  shaPerimetre: null,
+  validationExterne: true,
+  dateValidation: '2026-09-17T06:06:41.000Z',
+  // LITTÉRAL FIGÉ, recopié à la main le jour de l'attestation — surtout pas
+  // `TABLE_REPLI_SHA256`, qui rendrait la comparaison tautologique ([[D-063]]).
+  // Changer un seul mot d'un constat fait diverger ce littéral du périmètre
+  // recalculé : la table cesse alors d'être servie, et c'est exactement ce qu'on
+  // veut — un texte réécrit demande une NOUVELLE relecture, pas un ajustement.
+  shaPerimetre: 'a42fed33d68a9475d72daa5928a1afc0416e11b4413e2d8179cbc25d5b566c3b',
 };
 
 /** Le périmètre à signer : la table ENTIÈRE, jamais une sélection de champs. */
