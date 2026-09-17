@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { LimiteProposition } from '@/lib/biology-library/propositionService';
 import type { LignePanelProposition, StatutPanel } from '@/lib/biology-library/statuts';
 import { STATUTS_PROPOSES } from '@/lib/biology-library/courrier';
+import type { StatutChoix } from '@/lib/trust/types';
 
 // Proposition de bilan biologique ([[D-071]]) — panneau présentationnel.
 //
@@ -138,7 +139,11 @@ function Limite({ limite }: { limite: LimiteProposition }) {
 // `accorde` : un patient consentant n'affichait donc RIEN — ni ce libellé, ni
 // la ligne du silence, qui ne se déclenche que sur `null`. Défaut trouvé en
 // posant la garde, corrigé ici.
-const LIBELLES_PARTAGE: Record<string, string> = {
+// TYPÉ SUR `StatutChoix`, ET C'EST CE QUI EMPÊCHE LE DÉFAUT DE SE RÉÉCRIRE. La
+// table était `Record<string, string>` : `accepte` compilait sans un mot. En
+// `Record<StatutChoix, string>`, le compilateur exige les trois clés réelles et
+// refuse l'intruse — le défaut n'aurait pas pu s'écrire.
+const LIBELLES_PARTAGE: Record<StatutChoix, string> = {
   accorde: 'Le patient a consenti au partage avec son médecin traitant.',
   refuse:
     'Le patient a refusé le partage avec son médecin traitant : le courrier ne peut être '
@@ -153,6 +158,19 @@ const LIBELLES_PARTAGE: Record<string, string> = {
 /** Le consentement autorise-t-il ce courrier-ci ? `null` (silence) ferme aussi. */
 function partageAutorise(statut: string | null): boolean {
   return statut === 'accorde';
+}
+
+/**
+ * Le statut servi est-il l'un des trois connus ?
+ *
+ * LA VALEUR VIENT DE LA BASE EN `string`, et ce n'est pas une formalité de
+ * typage : un statut inconnu — d'une version future, ou d'une écriture manuelle
+ * — indexerait la table sur `undefined` et l'écran se tairait, exactement comme
+ * il se taisait sur `accorde`. Ici, il tombe dans la branche d'alerte, qui est
+ * le défaut sûr : ne pas savoir, c'est ne pas autoriser.
+ */
+function estStatutConnu(statut: string | null): statut is StatutChoix {
+  return statut === 'accorde' || statut === 'refuse' || statut === 'retire';
 }
 
 function FormulaireCourrier({
@@ -196,15 +214,18 @@ function FormulaireCourrier({
         médecin. <strong>Aucun envoi automatique</strong> — le courrier est à transcrire
         ou à imprimer.
       </p>
-      {partageMedecinTraitant !== null && LIBELLES_PARTAGE[partageMedecinTraitant] && (
+      {estStatutConnu(partageMedecinTraitant) && (
         <p
           className={`mt-2 text-xs ${partageAutorise(partageMedecinTraitant) ? 'text-muted-foreground' : 'text-status-warning'}`}
         >
           {LIBELLES_PARTAGE[partageMedecinTraitant]}
         </p>
       )}
-      {partageMedecinTraitant === null && (
-        // LE SILENCE FERME, ET CETTE LIGNE EST LA PORTE. L'arbitrage du
+      {!estStatutConnu(partageMedecinTraitant) && (
+        // LE SILENCE FERME, ET CETTE LIGNE EST LA PORTE. Un statut INCONNU
+        // passe ici aussi, et c'est le défaut sûr : avant, il ne tombait dans
+        // AUCUNE branche et l'écran se taisait — le même silence que la clé
+        // `accepte` produisait sur le cas favorable. L'arbitrage du
         // 2026-09-17 tient en deux temps : le blocage, et le chemin pour en
         // sortir. Sans le second, le praticien lit un mur et n'a rien à faire
         // de l'information — c'est la contrepartie, elle n'est pas optionnelle.

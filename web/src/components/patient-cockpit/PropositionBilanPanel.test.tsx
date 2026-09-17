@@ -203,7 +203,38 @@ describe('courrier médecin', () => {
     // NI ce libellé, ni la ligne du silence — qui ne se déclenche que sur
     // `null`. L'écran se taisait exactement sur le cas favorable.
     rendre({ onEtablirCourrier: vi.fn(), partageMedecinTraitant: 'accorde' });
-    expect(screen.getByText(/a consenti au partage/i)).toBeTruthy();
+    const ligne = screen.getByText(/a consenti au partage/i);
+    expect(ligne).toBeTruthy();
+
+    // ET LA COULEUR, PAS SEULEMENT LE TEXTE. Corriger la seule clé de la table
+    // aurait fait réapparaître le libellé du cas FAVORABLE dans la couleur de
+    // l'alerte — le ternaire portait la même faute. Le défaut aurait changé de
+    // forme au lieu de disparaître, et serait devenu plus dur à voir qu'un
+    // écran muet.
+    expect(ligne.className).toContain('text-muted-foreground');
+    expect(ligne.className).not.toContain('text-status-warning');
+
+    // Le geste reste ouvert, lui : la garde ne ferme que ce qu'elle doit. Le
+    // destinataire doit être saisi — c'est l'autre condition du bouton, et elle
+    // n'a rien à voir avec le consentement.
+    fireEvent.change(screen.getByLabelText(/Nom du médecin destinataire/i), {
+      target: { value: 'Dr Nicola' },
+    });
+    expect(
+      (screen.getByRole('button', { name: /Établir et consigner/i }) as HTMLButtonElement).disabled,
+    ).toBe(false);
+  });
+
+  it('★ un statut INCONNU tombe du côté sûr — ne pas savoir, c’est ne pas autoriser', () => {
+    // Le statut vient de la base en `string`. Une valeur d'une version future
+    // indexait la table sur `undefined` : l'écran se taisait, exactement comme
+    // il se taisait sur `accorde`. Il tombe désormais dans la branche du
+    // silence, qui ferme.
+    rendre({ onEtablirCourrier: vi.fn(), partageMedecinTraitant: 'statut_de_demain' });
+    expect(screen.getByText(/Consentement jamais exprimé/i)).toBeTruthy();
+    expect(
+      (screen.getByRole('button', { name: /Établir et consigner/i }) as HTMLButtonElement).disabled,
+    ).toBe(true);
   });
 
   it('un courrier consigné ne se re-consigne pas sans changer de destinataire', () => {
