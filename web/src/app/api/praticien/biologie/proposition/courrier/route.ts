@@ -36,7 +36,6 @@ import { refusPartage, verdictPartageMedecin } from '@/lib/trust/consentementPar
 // le texte, l'impression est un artefact de sortie.
 
 const ROUTE_JOURNAL = '/api/praticien/biologie/proposition/courrier';
-const LOCK_NAMESPACE_TRUST_CHOIX = 76;
 
 export type CourrierApiResponse =
   | {
@@ -193,7 +192,7 @@ export async function POST(req: Request) {
     };
     try {
       const transaction = await prisma.$transaction(async (tx) => {
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(${LOCK_NAMESPACE_TRUST_CHOIX}, hashtext(${idPatient}))`;
+        await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${idPatient} FOR UPDATE`;
         const choixVerrouille = await tx.trustChoiceEvent.findMany({
           where: { idPatient, finalite: 'partage_medecin_traitant' },
           select: { finalite: true, statut: true, enregistreLe: true },
