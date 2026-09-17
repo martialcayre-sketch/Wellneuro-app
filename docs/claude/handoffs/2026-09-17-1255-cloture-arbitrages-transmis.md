@@ -107,3 +107,45 @@ no-op au mieux.
 - **La mesure de la lettre d'adressage** : zéro appel, et c'est attendu — le drapeau
   n'est posé que depuis ce matin. Le premier chiffre utile se lira après un délai
   d'usage.
+
+## Ce qui a bougé APRÈS, et pourquoi ce handoff n'est plus la dernière adresse
+
+Une heure après cette clôture, le responsable a tranché **une seconde fois, en session
+parallèle**, les points laissés ouverts ici. **C'est cette seconde série qui fait foi**
+— elle est postérieure, et deux de ses points corrigent ce qui précède. La substance,
+la décision au registre et l'amendement de [[D-219]] §3 sont écrits **dans la PR de
+cette session-là**. Ce handoff n'en garde que l'écart, pour qu'on ne reprenne pas ses
+propres lignes pour des décisions debout :
+
+- **La garde couvre la génération ET la consignation.** L'option a été choisie en
+  connaissance de son motif d'origine — « bloquer la consignation n'empêcherait pas le
+  partage, cela rendrait seulement le dossier aveugle » — présenté mot pour mot. Ce que
+  le dossier perd en visibilité est donc **assumé**, pas contourné. La phrase que
+  l'amendement doit assumer explicitement : un partage qui a lieu hors application ne
+  disparaît pas parce que le logiciel refuse de l'enregistrer — il devient invisible au
+  dossier **et au registre RGPD**, qui compte la correspondance comme traitement depuis
+  [[D-222]].
+- **Le discriminant n'est pas le destinataire, c'est la ROUTE.** L'intuition posée ici
+  était juste sur le fond et fausse sur le moyen : **aucun champ ne porte le
+  destinataire**. `medecinLibelle` est du texte libre sur tous les chemins d'écriture,
+  sans rattachement à `medecinTraitantNom`. Trois routes distinctes, en revanche,
+  existent déjà. *(Et c'est la même fracture que la friction nommée au § du geste de
+  transcription : le dossier porte le nom du médecin, le formulaire le redemande.)*
+- **La lettre d'adressage sur signal d'alerte est HORS garde** — c'est elle,
+  l'exception que la version publiée nomme. Le « sans exception » consigné plus haut se
+  lit donc **borné par cette exception-là**, et le **silence** du patient ferme le
+  courrier de biologie et la consignation, **jamais** l'adressage.
+- **La traçabilité de la formulation passe par une COLONNE dédiée**, pas par un
+  document versionné. L'option consignée ici a été **resoumise nommément** au
+  responsable avec les coûts comparés ; il a maintenu la colonne. Migration et
+  release-db, donc, et l'arbitrage rendu ici est **renversé en connaissance de cause**.
+
+**Ce qui n'a PAS bougé** : le geste de transcription reste — ni retiré, ni réécrit —
+avec ses deux frictions et ses deux voies écartées, et son cadrage demeure en file
+d'attente, hors du lot en cours. L'essai du 2026-09-15 reste un essai.
+
+**Un fait de permission, à porter au responsable et non à contourner** : le classifieur
+a refusé à la session parallèle le one-off d'agrégats sur `trust_choice_events` —
+**quatrième refus de la série**. Elle ne l'a pas contourné et a passé la commande au
+responsable. Un chemin approuvé dans une session ne s'emprunte pas pour une autre :
+ce serait obtenir par la bande une permission qui n'a pas été accordée.

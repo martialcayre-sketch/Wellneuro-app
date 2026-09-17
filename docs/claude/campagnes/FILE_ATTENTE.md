@@ -201,6 +201,21 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   publiée : elle se pose avant d'écrire, pas après. Et [[D-219]] §3 s'**amende**, ne se
   contourne pas — son motif ne vise que la **consignation**, qui ne doit pas se fermer
   sous peine de rendre le dossier aveugle sur un partage qui a eu lieu quand même.
+  **PRÉCISÉ LE MÊME JOUR, EN SESSION PARALLÈLE, ET C'EST CETTE VERSION QUI FAIT FOI.**
+  Le responsable a tranché une seconde fois, chez la session qui exécute, sur les
+  points laissés ouverts ici. Trois d'entre eux corrigent ce qui précède : la garde
+  couvre **la génération ET la consignation** — donc [[D-219]] §3 est amendée en
+  connaissance de son motif, la ligne « bloquer la consignation rend le dossier
+  aveugle » lui ayant été présentée mot pour mot ; le discriminant n'est **pas le
+  destinataire mais la ROUTE** — aucun champ ne porte le destinataire,
+  `medecinLibelle` étant du texte libre sur tous les chemins d'écriture, sans
+  rattachement à `medecinTraitantNom` ; et la lettre **d'adressage sur signal d'alerte
+  est hors garde**, c'est elle l'exception que la version publiée nomme. Le « sans
+  exception » consigné ci-dessus se lit donc **bornée par cette exception-là**, et le
+  silence du patient ferme le courrier de biologie et la consignation, **jamais**
+  l'adressage. La substance, le registre et l'amendement de [[D-219]] §3 sont écrits
+  **dans la PR de cette session-là**, pas ici : deux adresses pour une même règle est
+  précisément ce que la promotion de [[D-219]] avait coûté à réparer.
 - **La formulation des finalités de « Mes choix » n'est couverte par aucune
   version** — trou de traçabilité **antérieur**, rendu visible par [[D-222]] §3.
   L'événement de choix n'enregistre que `getDocumentCourant('droits_patient')
@@ -212,8 +227,14 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   **ARBITRÉ LE 2026-09-17 : versionner la formulation, sans champ nouveau.** Des deux
   gestes ci-dessus, le responsable a retenu le **document TRUST versionné** pour « Mes
   choix », et écarté l'**empreinte** en connaissance de son coût — elle demandait une
-  colonne sur `trust_choice_events`, donc une migration et une release-db. Exécution
-  confiée à la même session parallèle.
+  colonne sur `trust_choice_events`, donc une migration et une release-db.
+  **RENVERSÉ LE MÊME JOUR, ET EN CONNAISSANCE DE CAUSE : C'EST LA COLONNE.** La
+  session qui exécute a **resoumis** l'option ci-dessus au responsable, nommément et
+  avec les coûts comparés ; il a **maintenu la colonne dédiée sur
+  `trust_choice_events`**, donc migration et release-db. Il a tranché deux fois dans
+  le même sens, la seconde en connaissance de l'arbitrage rendu ici — c'est la
+  seconde qui fait foi, et l'entrée ci-dessus n'est gardée que pour qu'on ne la
+  reprenne pas pour une décision debout.
 - **Le geste de transcription du fil médecin ne convient pas au praticien** —
   constat d'usage du 2026-09-17, **à cadrer en lot**, et la seule suite que la mesure
   du LOT-06 appelle côté produit. Le fil est **lu 41 fois sur 11 dossiers et jamais

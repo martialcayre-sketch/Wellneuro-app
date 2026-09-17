@@ -7020,3 +7020,13 @@ l'exception publiée.
 Périmètre TRUST confié à une session parallèle, prévenue à temps : elle partait écrire
 l'inverse. Quasi-avarie sans suite : un build retardataire a failli retirer la route
 d'adressage sous un drapeau posé.
+
+**Suite, une heure plus tard.** Le responsable a tranché **une seconde fois en session
+parallèle**, et c'est cette série qui fait foi : la garde couvre **génération ET
+consignation** (D-219 §3 amendée en connaissance de son motif) ; le discriminant est
+**la route, pas le destinataire** — aucun champ ne le porte, `medecinLibelle` est du
+texte libre ; la **lettre d'adressage est hors garde**, c'est l'exception que la version
+publiée nomme ; et la traçabilité passe par une **colonne**, mon option ayant été
+resoumise nommément puis écartée. Substance et registre dans la PR de cette session-là,
+pas ici — deux adresses pour une règle est ce que la promotion de D-219 a coûté à
+réparer. Inchangé : le geste de transcription reste, cadrage en file.
