@@ -1,7 +1,7 @@
-### Le catalogue de conduites passe de une à trois lignes, et la relecture des sources entières complète six désignations (2026-09-17)
+### Le catalogue de conduites passe d’une à trois lignes, et la relecture des sources entières complète six désignations (2026-09-17)
 
 Les deux lignes que `D-224` avait retenues le matin — `insomnie_depression` et
-`insomnie_anxiete` — sont attestées (`D-226`). Le périmètre signé passe de une
+`insomnie_anxiete` — sont attestées (`D-226`). Le périmètre signé passe d’une
 ligne et deux claims à trois lignes et quatorze claims ; `dateValidation` et
 `shaPerimetre` sont remplacés, pas complétés, parce qu'un périmètre se hache en
 entier.

@@ -103,9 +103,10 @@ export function claimsDeLaLigne(ligne: LigneConduite): readonly ClaimRef[] {
  * déclenche sur l'IRLS (`Q_SOM_04`).
  *
  * Le soir : la relecture des deux lignes restantes a trouvé, pour chacune, ce
- * que la surface NE proposait PAS. Une interdiction explicite là où elle ne
- * citait que la règle de redirection (`WN-CL-0315-004`) ; une règle de sécurité
- * dont l'exception vivait dans un claim voisin non désigné (`WN-CL-0316-029`) ;
+ * que la surface NE proposait PAS. Une interdiction explicite
+ * (`WN-CL-0315-004`) là où elle ne citait que la règle de redirection
+ * (`WN-CL-0315-006`) ; une règle de sécurité dont l'interdiction était citée
+ * sans sa levée, restée dans un claim voisin non désigné (`WN-CL-0316-029`) ;
  * et, dans `WN-SRC-0318`, le claim PRESCRIPTIF qui nomme chaque tableau, comme
  * `WN-CL-0318-020` l'avait fait pour la ligne déjà signée.
  *
