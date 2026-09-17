@@ -86,13 +86,12 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   // exécutable »). Il est entré au contrat par ce banc, exactement comme prévu :
   // le fichier posé, la liste du contrat ne correspondait plus, le banc a rougi.
   'conflitsSourcesV1.ts': 'conflits_sources',
-  // Catalogue de conduites ([[D-206]], LOT-01). Entré le jour où le fichier est
+  // Catalogue de conduites ([[D-206]], LOT-01). Entré le jour où le fichier a été
   // POSÉ, et non le jour de sa première ligne : le balayage reconnaît une table
   // signée à son `claimsSource`, et le reconnaît MÊME VIDE — différer
-  // l'enrôlement aurait rougi au jour 1. La table ne contribue en revanche
-  // aucune paire au contrat SQL tant qu'aucune ligne ne cite de claim :
-  // `TABLE_EXIGE_PRESCRIPTIF` n'a donc rien à recevoir avant la première
-  // signature, et lui donner une entrée maintenant rougirait à l'inverse.
+  // l'enrôlement aurait rougi au jour 1. Il a contribué zéro paire jusqu'à la
+  // première signature ([[D-224]]), deux ensuite, quatorze depuis la seconde
+  // ([[D-226]]).
   'catalogueConduitesV1.ts': 'conduites',
   // Indications d'assiette ([[D-225]]). Entrée le jour où le fichier est POSÉ,
   // pour la raison écrite juste au-dessus : le balayage reconnaît une table
@@ -166,21 +165,23 @@ const TABLE_EXIGE_PRESCRIPTIF: Record<string, boolean> = {
   //
   // L'arbitrage se distingue de celui de l'orientation, qui vaut `true`, et il
   // faut le dire parce que l'intuition va dans l'autre sens : une conduite
-  // prescrit PLUS fort qu'une exploration, donc on attendrait `true`. Les deux
-  // claims signés ce jour sont d'ailleurs `prescriptif = true` en production —
-  // exiger `prescriptif` passerait aujourd'hui sans rien coûter.
+  // prescrit PLUS fort qu'une exploration, donc on attendrait `true`.
   //
-  // C'est exactement pourquoi il faut le refuser MAINTENANT, et le raisonnement
-  // est celui de `conflits_sources` juste au-dessus. Cette table range ses
-  // claims en TROIS catégories, et `claimsInstrument` fonde l'INSTRUMENT dont le
-  // déclencheur lit le score — « tel questionnaire explore telle chose ». Un
-  // claim de cette forme ne recommande aucune conduite et n'a aucune raison de
-  // le faire. Ce n'est pas une hypothèse : `WN-CL-0320-002`, le claim
-  // d'instrument des deux lignes de conduite encore retenues, est
-  // `prescriptif = false` en production, relu le 2026-09-17. Exiger `prescriptif`
-  // de toute la table rejetterait donc une désignation valide dès la deuxième
-  // ligne — ou forcerait à épingler un claim voisin qui ne dit pas l'instrument
-  // (`DC-14`).
+  // LE MATIN DU 2026-09-17, L'ARBITRAGE REPOSAIT SUR UNE PRÉVISION. Les deux
+  // seuls claims signés ce jour-là étaient `prescriptif = true` : exiger
+  // `prescriptif` n'aurait alors rien coûté. Le motif de refus était que
+  // `WN-CL-0320-002` — descriptif — SERAIT cité en instrument par les deux lignes
+  // encore retenues.
+  //
+  // LE SOIR, LA PRÉVISION EST DEVENUE UN CONSTAT ([[D-226]]). Les deux lignes
+  // sont signées, elles citent bien `WN-CL-0320-002` en `claimsInstrument`, et il
+  // est bien `prescriptif = false` en production — relu le même soir. Sur les
+  // quatorze paires de la table, cinq sont descriptives. Une exigence à `true`
+  // rejetterait donc AUJOURD'HUI, pour de bon, des désignations valides, ou
+  // forcerait à épingler des claims voisins qui ne disent pas l'instrument
+  // (`DC-14`). Le raisonnement est celui de `conflits_sources` juste au-dessus :
+  // cette table range ses claims en TROIS catégories, et « tel questionnaire
+  // explore telle chose » décrit sans prescrire.
   //
   // La force prescriptive d'une ligne de conduite ne vient pas de l'uniformité
   // de ses claims : elle vient de la SIGNATURE praticien, qui assume « ce

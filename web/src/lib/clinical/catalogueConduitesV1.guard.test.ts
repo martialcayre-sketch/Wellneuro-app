@@ -54,48 +54,115 @@ function signatureBanc(
 }
 
 describe('catalogue de conduites — état livré', () => {
-  it('porte UNE ligne, attestée le 2026-09-17', () => {
-    expect(CATALOGUE_CONDUITES_V1.map(l => l.cleTableau)).toEqual(['insomnie_jambes_sans_repos']);
+  it('porte TROIS lignes, attestées le 2026-09-17 en deux gestes', () => {
+    expect(CATALOGUE_CONDUITES_V1.map(l => l.cleTableau)).toEqual([
+      'insomnie_depression',
+      'insomnie_anxiete',
+      'insomnie_jambes_sans_repos',
+    ]);
     expect(CATALOGUE_CONDUITES_METADATA.validationExterne).toBe(true);
-    expect(CATALOGUE_CONDUITES_METADATA.dateValidation).toBe('2026-09-17T06:06:41.000Z');
+    // LA DATE EST CELLE DE LA SECONDE ATTESTATION, et elle REMPLACE la première.
+    // Le périmètre se hache en entier : la date du matin attestait trois lignes
+    // de moins, elle ne couvre plus rien.
+    expect(CATALOGUE_CONDUITES_METADATA.dateValidation).toBe('2026-09-17T20:26:03.000Z');
     expect(catalogueConduitesSigne(CATALOGUE_CONDUITES_METADATA)).toBe(true);
   });
 
-  it('N’ATTESTE AUCUN CLAIM D’INSTRUMENT, et c’est une déclaration', () => {
-    // LE CONSTAT QUI A FAILLI PASSER. La surface de relecture désignait
-    // `WN-CL-0320-002` en claim d'instrument. Lu en production le 2026-09-17, ce
-    // claim fonde le HAD ; cette ligne se déclenche sur l'IRLS (`Q_SOM_04`). Ni
-    // le CI ni le sha n'auraient vu l'écart — le sha atteste le contenu relu,
-    // pas sa pertinence. Ce banc fige le vide pour qu'un ajout futur soit un
-    // geste conscient.
-    const [ligne] = CATALOGUE_CONDUITES_V1;
-    expect(ligne.claimsInstrument).toEqual([]);
-    expect(ligne.claimsSecurite).toEqual([]);
-    expect(claimsDeLaLigne(ligne).map(c => c.claimId).sort())
-      .toEqual(['WN-CL-0318-020', 'WN-CL-0320-003']);
+  it('chaque ligne porte EXACTEMENT les claims attestés, catégorie par catégorie', () => {
+    // Le banc fige les trois CATÉGORIES séparément, et non l'union : c'est le
+    // nom du champ qui dit ce qu'un claim fonde, et une désignation qui glisse
+    // d'une catégorie à l'autre ne changerait pas l'union.
+    const [depression, anxiete, jambes] = CATALOGUE_CONDUITES_V1;
+
+    expect(depression.claimsIndication.map(c => c.claimId))
+      .toEqual(['WN-CL-0315-001', 'WN-CL-0315-002', 'WN-CL-0318-023']);
+    expect(depression.claimsInstrument.map(c => c.claimId)).toEqual(['WN-CL-0320-002']);
+    expect(depression.claimsSecurite.map(c => c.claimId))
+      .toEqual(['WN-CL-0315-006', 'WN-CL-0315-004']);
+
+    expect(anxiete.claimsIndication.map(c => c.claimId))
+      .toEqual(['WN-CL-0316-001', 'WN-CL-0316-002', 'WN-CL-0318-018']);
+    expect(anxiete.claimsInstrument.map(c => c.claimId)).toEqual(['WN-CL-0320-002']);
+    expect(anxiete.claimsSecurite.map(c => c.claimId))
+      .toEqual(['WN-CL-0316-016', 'WN-CL-0316-006', 'WN-CL-0316-029']);
+
+    // LE CONSTAT DU MATIN, FIGÉ. La surface désignait `WN-CL-0320-002` en claim
+    // d'instrument des TROIS lignes. Lu en production, il fonde le HAD — donc
+    // les deux lignes ci-dessus, jamais celle-ci, qui se déclenche sur l'IRLS.
+    // Les deux vides sont des déclarations, pas des trous.
+    expect(jambes.claimsInstrument).toEqual([]);
+    expect(jambes.claimsSecurite).toEqual([]);
+    expect(jambes.claimsIndication.map(c => c.claimId))
+      .toEqual(['WN-CL-0320-003', 'WN-CL-0318-020']);
   });
 
-  it('DÉCLARE son raccourci : le déclencheur lit un score, les claims disent le syndrome', () => {
-    const [ligne] = CATALOGUE_CONDUITES_V1;
-    expect(ligne.raccourciAssume).not.toBeNull();
+  it('le périmètre relu est l’UNION des claims cités — `WN-CL-0320-002` n’y figure qu’une fois', () => {
+    // Deux lignes citent le même claim d'instrument. Le verrou dédoublonne des
+    // DEUX côtés avant de comparer ; sans cela, une attestation parfaitement
+    // correcte serait refusée dès qu'un claim servirait deux lignes.
+    const cite = CATALOGUE_CONDUITES_V1.flatMap(l => claimsDeLaLigne(l).map(cleClaim));
+    expect(cite.filter(c => c.startsWith('WN-CL-0320-002'))).toHaveLength(2);
+    expect(CATALOGUE_CONDUITES_METADATA.claimsSource).toHaveLength(14);
+    expect(CATALOGUE_CONDUITES_METADATA.claimsSource.filter(c => c.claimId === 'WN-CL-0320-002'))
+      .toHaveLength(1);
+    expect(catalogueConduitesSigne(CATALOGUE_CONDUITES_METADATA)).toBe(true);
+  });
+
+  it('CHAQUE ligne DÉCLARE son raccourci : le déclencheur lit un score, les claims disent le syndrome', () => {
+    // Les trois lignes font le même pas — d'une bande d'instrument au syndrome
+    // constaté — et les trois le déclarent. La ligne dépression était proposée
+    // SANS raccourci ; l'attestation du soir l'a corrigé, par cohérence avec
+    // [[D-224]].
+    for (const ligne of CATALOGUE_CONDUITES_V1) {
+      expect(ligne.raccourciAssume).not.toBeNull();
+      // Singulier ou pluriel : la ligne anxiété en déclare DEUX. Ce qui est
+      // gardé est que le raccourci s'attribue à l'outil, pas au corpus.
+      expect(ligne.raccourciAssume).toMatch(/assumés? par l’outil/);
+    }
+    const [depression, anxiete, jambes] = CATALOGUE_CONDUITES_V1;
     // Le champ est DANS le périmètre haché : le reformuler périme l'attestation.
-    expect(ligne.raccourciAssume).toContain('IRLS');
-    expect(ligne.raccourciAssume).toContain('syndrome');
+    expect(depression.raccourciAssume).toContain('sous-score D du HAD');
+    expect(anxiete.raccourciAssume).toContain('sous-score A du HAD');
+    // Le second raccourci de la ligne anxiété, qui n'est pas celui des deux
+    // autres : un seuil que le corpus pose et qu'aucun indicateur n'expose.
+    expect(anxiete.raccourciAssume).toContain('latence');
+    expect(jambes.raccourciAssume).toContain('IRLS');
+    expect(jambes.raccourciAssume).toContain('syndrome');
   });
 
-  it('sert sa ligne quand ses DEUX claims sont valides, et se tait sinon', () => {
+  it('sert les TROIS lignes, et un claim retiré ne retire QUE la sienne', () => {
     const valides = new Set(CATALOGUE_CONDUITES_METADATA.claimsSource.map(cleClaim));
-    expect(lignesConduitesServables(valides).map(l => l.cleTableau))
-      .toEqual(['insomnie_jambes_sans_repos']);
+    expect(lignesConduitesServables(valides).map(l => l.cleTableau)).toEqual([
+      'insomnie_depression',
+      'insomnie_anxiete',
+      'insomnie_jambes_sans_repos',
+    ]);
 
-    // UN SEUL CLAIM RETIRÉ SUFFIT À LA RETIRER — les deux fondent l'indication,
-    // et le corpus qui en retire un a cessé de soutenir ce qui était attesté.
+    // LE FILTRE EST PAR LIGNE, ET CE BANC LE PROUVE. Avec une seule ligne au
+    // catalogue, « un claim retiré ⇒ liste vide » était satisfait par un filtre
+    // qui aurait tout éteint. À trois lignes, l'assertion mord : retirer un
+    // claim de la ligne dépression doit laisser les deux autres servies, et
+    // `WN-CL-0320-002` — cité par deux lignes — doit en retirer exactement deux.
     for (const claim of CATALOGUE_CONDUITES_METADATA.claimsSource) {
       const ampute = new Set([...valides].filter(c => c !== cleClaim(claim)));
-      expect(lignesConduitesServables(ampute)).toEqual([]);
+      const servies = lignesConduitesServables(ampute).map(l => l.cleTableau);
+      const attendues = CATALOGUE_CONDUITES_V1
+        .filter(l => !claimsDeLaLigne(l).some(c => cleClaim(c) === cleClaim(claim)))
+        .map(l => l.cleTableau);
+      expect(servies).toEqual(attendues);
+      expect(servies.length).toBeLessThan(3);
     }
 
-    // `null` = statuts NON LUS. Ferme aussi, mais pas pour la même raison.
+    // Le claim partagé retire DEUX lignes et en laisse UNE — l'assertion que le
+    // catalogue à une ligne ne pouvait pas porter.
+    const sansInstrument = new Set(
+      [...valides].filter(c => !c.startsWith('WN-CL-0320-002')),
+    );
+    expect(lignesConduitesServables(sansInstrument).map(l => l.cleTableau))
+      .toEqual(['insomnie_jambes_sans_repos']);
+
+    // `null` = L'ENSEMBLE N'A PAS PU ÊTRE LU. Ferme aussi, mais pas pour la même
+    // raison qu'un ensemble vide.
     expect(lignesConduitesServables(null)).toEqual([]);
     expect(lignesConduitesServables(new Set())).toEqual([]);
   });
@@ -111,6 +178,16 @@ describe('catalogue de conduites — état livré', () => {
     expect(catalogueConduitesSigne(CATALOGUE_CONDUITES_METADATA, reecrite)).toBe(false);
     const valides = new Set(CATALOGUE_CONDUITES_METADATA.claimsSource.map(cleClaim));
     expect(lignesConduitesServables(valides, CATALOGUE_CONDUITES_METADATA, reecrite)).toEqual([]);
+  });
+
+  // UNE LIGNE RETIRÉE PÉRIME L'ATTESTATION AUTANT QU'UNE LIGNE AJOUTÉE. Le sens
+  // n'est pas symétrique pour un lecteur pressé — « j'ai juste enlevé une ligne »
+  // se dit facilement — mais il l'est pour le verrou, et c'est le point.
+  it('PERD SA SIGNATURE si l’une des trois lignes est retirée', () => {
+    for (let index = 0; index < CATALOGUE_CONDUITES_V1.length; index++) {
+      const amputee = CATALOGUE_CONDUITES_V1.filter((_, i) => i !== index);
+      expect(catalogueConduitesSigne(CATALOGUE_CONDUITES_METADATA, amputee)).toBe(false);
+    }
   });
 });
 
@@ -251,11 +328,13 @@ describe('catalogue de conduites — le service est fail-closed', () => {
 
 describe('catalogue de conduites — la doctrine tenue par la source', () => {
   // Le littéral et la tautologie rendent la MÊME chaîne à l'exécution : seule
-  // une garde de source les distingue. Le fichier n'entre pas encore à
-  // `shaPerimetreLitteral.guard.test.ts` — son `shaPerimetre` vaut `null`, la
-  // première assertion de ce banc-là rougirait. Il y entrera le jour de la
-  // première signature, exactement comme `baremeChargeV1.ts` à [[D-198]] et non
-  // à [[D-196]]. En attendant, la doctrine est tenue ici.
+  // une garde de source les distingue. Le fichier est enrôlé à
+  // `shaPerimetreLitteral.guard.test.ts` depuis le jour de sa PREMIÈRE signature
+  // ([[D-224]]) — pas avant, son `shaPerimetre` valant `null` jusque-là, ce qui
+  // aurait fait rougir la première assertion de ce banc-là. Même séquence que
+  // `baremeChargeV1.ts`, enrôlé à [[D-198]] et non à [[D-196]]. Les assertions
+  // ci-dessous gardent ce que l'autre banc ne regarde pas : la mise en garde
+  // elle-même, et l'absence de constante recopiable.
   it('la mise en garde contre le sha tautologique reste écrite', () => {
     expect(SOURCE).toMatch(/SURTOUT PAS la constante recalculée/);
     expect(SOURCE).toMatch(/tautologique/);

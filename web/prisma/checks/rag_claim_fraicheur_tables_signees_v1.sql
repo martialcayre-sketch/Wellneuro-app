@@ -65,7 +65,18 @@
 -- rien ici non plus. **La relecture a RÉFUTÉ une désignation** : la surface
 -- proposait `WN-CL-0320-002` en claim d'instrument, or ce claim fonde le HAD
 -- quand la ligne signée se déclenche sur l'IRLS. Il n'entre donc pas, et le
--- champ reste vide. La liste en compte 53.
+-- champ reste vide. La liste en comptait alors 53.
+-- Les DOUZE PAIRES `conduites` ajoutées le 2026-09-17 au soir ([[D-226]]) ont
+-- été relues le même soir, sur la production (conteneur détaché, lecture
+-- seule) : toutes VALIDE, actives, non remplacées, en v1.0 ; sept
+-- `prescriptif = true`, cinq `false`, dont `WN-CL-0320-002` qui entre enfin —
+-- les deux lignes qu'il instrumente sont arrivées. **La relecture a cette fois
+-- COMPLÉTÉ des désignations au lieu d'en réfuter une** : la surface proposait
+-- six claims pour ces deux lignes, la lecture des sources ENTIÈRES en a trouvé
+-- six de plus, dont une interdiction explicite et la levée partielle d'une
+-- interdiction que désigner seule aurait tronquée. Ni le sha ni ce contrat
+-- n'atteignent cette classe d'erreur : ils gardent ce qui est épinglé, jamais
+-- ce qui manque. La liste en compte 65.
 --
 -- UN ÉCART DE JOURNAL, CONSTATÉ LE 2026-09-17 ET NON RÉÉCRIT. Les entrées
 -- ci-dessus annoncent ONZE paires `priorites` ; la liste en porte VINGT. Neuf
@@ -190,25 +201,54 @@ BEGIN
     -- l'exigence rejetterait alors une déclaration valide (`DC-14`, [[D-046]]).
     ('WN-CL-0312-018', 'v1.0', 'conflits_sources', false),
     ('WN-CL-0387-013', 'v1.0', 'conflits_sources', false),
-    -- Catalogue de conduites ([[D-206]] LOT-01), PREMIÈRE SIGNATURE le
-    -- 2026-09-17 ([[D-224]]) — la table était enrôlée au balayage depuis sa
-    -- pose, et ne contribuait aucune paire tant qu'aucune ligne ne citait de
-    -- claim. Voici les deux premières.
+    -- Catalogue de conduites ([[D-206]] LOT-01), QUATORZE paires en deux
+    -- signatures du même jour : les deux premières le 2026-09-17 au matin
+    -- ([[D-224]], ligne `insomnie_jambes_sans_repos`), les douze suivantes le
+    -- même soir ([[D-226]], lignes `insomnie_depression` et `insomnie_anxiete`).
+    -- La table était enrôlée au balayage depuis sa pose et ne contribuait aucune
+    -- paire tant qu'aucune ligne ne citait de claim.
     --
     -- `exige_prescriptif = false`, et l'intuition va dans l'autre sens : une
     -- conduite prescrit PLUS fort qu'une exploration, dont la table vaut `true`.
     -- Le motif est celui de `conflits_sources` juste au-dessus. Cette table
     -- range ses claims en TROIS catégories, et `claimsInstrument` fonde
     -- l'INSTRUMENT dont le déclencheur lit le score — « tel questionnaire
-    -- explore telle chose » décrit, et ne prescrit rien. Les deux claims
-    -- ci-dessous sont pourtant prescriptifs en production, et c'est sans
-    -- rapport : la colonne dit ce qu'on EXIGE. L'exiger rejetterait une
-    -- désignation valide dès la deuxième ligne — `WN-CL-0320-002`, claim
-    -- d'instrument des deux lignes encore retenues, est `prescriptif = false`
-    -- en production, relu le 2026-09-17 — ou forcerait à épingler un voisin qui
-    -- ne dit pas l'instrument (`DC-14`, [[D-046]]).
+    -- explore telle chose » décrit, et ne prescrit rien.
+    --
+    -- L'ARBITRAGE DU MATIN EST MAINTENANT VÉRIFIÉ, ET NON PLUS SUPPOSÉ. Il
+    -- reposait sur une prévision : `WN-CL-0320-002` serait cité en instrument
+    -- par les deux lignes encore retenues, et il est `prescriptif = false`. Les
+    -- deux lignes sont arrivées, elles le citent bien, et il est bien
+    -- `prescriptif = false` — relu en production le 2026-09-17 au soir. Une
+    -- exigence à `true` rejetterait donc aujourd'hui, pour de bon, deux
+    -- désignations valides (`DC-14`, [[D-046]]).
+    --
+    -- Les douze paires du soir ont été relues le même soir, sur la production
+    -- (conteneur détaché, lecture seule) : toutes VALIDE, actives, non
+    -- remplacées, en v1.0. Sept sont `prescriptif = true`, cinq `false` — et ce
+    -- mélange, dans une seule table, est exactement ce que l'exigence uniforme
+    -- par table ne saurait pas accommoder.
     ('WN-CL-0320-003', 'v1.0', 'conduites', false),
-    ('WN-CL-0318-020', 'v1.0', 'conduites', false)
+    ('WN-CL-0318-020', 'v1.0', 'conduites', false),
+    -- `insomnie_depression` ([[D-226]]) : deux descriptifs pour le QUAND, un
+    -- prescriptif qui nomme le tableau, l'instrument, puis DEUX règles de
+    -- sécurité dont l'interdiction explicite que la surface ne proposait pas.
+    ('WN-CL-0315-001', 'v1.0', 'conduites', false),
+    ('WN-CL-0315-002', 'v1.0', 'conduites', false),
+    ('WN-CL-0318-023', 'v1.0', 'conduites', false),
+    ('WN-CL-0320-002', 'v1.0', 'conduites', false),
+    ('WN-CL-0315-006', 'v1.0', 'conduites', false),
+    ('WN-CL-0315-004', 'v1.0', 'conduites', false),
+    -- `insomnie_anxiete` ([[D-226]]) : même composition, et TROIS règles de
+    -- sécurité — la règle d'ordre cadrée sur le tableau, l'interdiction de
+    -- prescription, et sa levée partielle. Épingler l'interdiction sans sa levée
+    -- aurait gardé une moitié de règle.
+    ('WN-CL-0316-001', 'v1.0', 'conduites', false),
+    ('WN-CL-0316-002', 'v1.0', 'conduites', false),
+    ('WN-CL-0318-018', 'v1.0', 'conduites', false),
+    ('WN-CL-0316-016', 'v1.0', 'conduites', false),
+    ('WN-CL-0316-006', 'v1.0', 'conduites', false),
+    ('WN-CL-0316-029', 'v1.0', 'conduites', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
   -- La jointure porte sur LA PAIRE. Joindre sur `claim_id` seul laisserait une
   -- table signée s'appuyer sur une version du claim qui n'est pas celle qu'elle

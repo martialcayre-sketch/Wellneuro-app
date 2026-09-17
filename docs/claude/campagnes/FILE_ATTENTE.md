@@ -353,6 +353,39 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   (contrat V4) transféré à l'entrée « producteur d'intentions » ci-dessus —,
   worktree `arbitrage-boucle-clinique`.
 
+- **« Relu par le praticien » est un tampon posé par le SERVEUR — ARBITRÉ LE
+  2026-09-17, NON EXÉCUTÉ.** La route pose `confirmation: 'content_reviewed'` à
+  chaque enregistrement, **sans aucune condition** : un contenu enregistré sans
+  une seule frappe ressort « relu par le praticien » et franchit la garde de
+  diffusion. Ce n'est pas un piège armé, c'est **en service**, et la portée
+  dépasse le protocole — plusieurs raisonnements de sûreté du dépôt s'adossent à
+  « la relecture praticien répond de ce texte ». **Réponse du responsable : un
+  geste explicite du praticien.** Le serveur cesse de poser « relu » et pose
+  « enregistré » ; un geste distinct, daté et attribué, fait passer à « relu », et
+  c'est lui que la garde de diffusion exige. Les deux voies plus faibles sont
+  écartées avec leur motif : « ouverture + délai minimal » resterait une
+  approximation sur laquelle des raisonnements de sûreté continueraient de
+  s'adosser, et « renommer sans rien ajouter » ferait perdre à la garde de
+  diffusion sa condition humaine sans dire ce qui la remplace. **Coût assumé :
+  un geste de plus dans le parcours praticien, sur chaque contenu diffusé.**
+  L'exécution est un lot à ouvrir — elle touche une route, un écran et la garde
+  de diffusion, et tout raisonnement de sûreté qui cite « relu » est à relire
+  avec elle. *(Adresse : ce lot n'a pas encore de campagne ; il précède tout lot
+  qui voudrait s'appuyer sur la relecture praticien.)*
+- **La règle G6 ne distingue pas une phrase recopiée d'une borne standard —
+  ARBITRÉ LE 2026-09-17, PRÉCISION À ÉCRIRE.** La consigne « aucun contenu
+  clinique du corpus au dépôt tant que G6 est fermée » a été mise à l'épreuve en
+  écrivant le `raccourciAssume` de la ligne `insomnie_anxiete` ([[D-226]]), qui
+  nomme la borne de latence d'endormissement que son claim pose. **Réponse du
+  responsable : le seuil est gardé** — il porte l'argument, en disant précisément
+  ce que le déclencheur ne sait pas lire, et une borne standard de définition
+  n'est pas ce que G6 protège — **et la règle doit être précisée**, parce que
+  l'imprécision se représentera à chaque ligne signée et qu'elle ne peut pas se
+  trancher au cas par cas indéfiniment. Ce qui manque est une frontière écrite
+  entre « recopier une phrase du corpus » et « nommer une borne que le corpus
+  partage avec la littérature ». *(Adresse : à écrire dans la règle G6
+  elle-même, avant la prochaine attestation qui citerait un chiffre.)*
+
 ## Écarté à cet arbitrage — et pourquoi
 
 - **Arc espace patient (E3→E2→E4)** : le dashboard E4 n'est plus un arc

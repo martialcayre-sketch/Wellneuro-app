@@ -7076,3 +7076,26 @@ exister — le sha atteste le contenu d'une ligne, pas l'existence de sa cible.
 **Prochaine action** : chantier 2, le champ d'indication et ses claims, lus sur
 pièce en production. **Question ouverte** : trois des huit indications dépendent
 d'un déclencheur d'âge qui n'existe pas.
+
+## 2026-09-17 — Les deux lignes de conduite restantes, attestées sur pièce
+
+**Décisions.** `D-226` : les lignes `insomnie_depression` et `insomnie_anxiete`
+sont attestées ; le périmètre est re-signé en entier (trois lignes, quatorze
+claims). Les six claims proposés par la surface étaient exacts — et la relecture
+des sources ENTIÈRES en a rendu **six de plus**, dont une interdiction explicite
+et la **levée partielle** d'une interdiction de prescription qui vivait deux
+claims plus loin. La ligne dépression reçoit un `raccourciAssume` que la surface
+ne prévoyait pas. Tension `0315-004` / `0315-015` : pas de conflit (cibles
+différentes).
+
+**Écartées.** Attester sur la surface seule ; désigner `WN-CL-0316-006` sans sa
+levée ; exiger `prescriptif = true` de la table (cinq des quatorze claims sont
+descriptifs).
+
+**Routés, non exécutés.** « Relu par le praticien » devient un geste explicite ;
+la règle G6 doit distinguer une phrase recopiée d'une borne standard.
+
+**Prochaine action.** La dette `N11` (cas négatif de `conflits_sources`), puis le
+chantier 2 de S3.
+
+**Question ouverte.** `D-049`.
