@@ -1,15 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, after, genererSiRideauFerme } = vi.hoisted(() => ({
+const { prisma, after } = vi.hoisted(() => ({
   // `after` EXIGE UN CONTEXTE DE REQUÊTE NEXT, que ce banc n'a pas : il appelle
   // le handler directement. Le mock EXÉCUTE la tâche au lieu de la planifier —
-  // c'est ce qui rend le branchement observable ici.
+  // c'est ce qui rendrait un travail de fond observable ici. IL EST CONSERVÉ
+  // APRÈS LE RETRAIT DU RIDEAU : c'est lui qui permet au banc ci-dessous
+  // d'affirmer qu'AUCUN travail de fond n'est planifié sur ce chemin.
   after: vi.fn((tache: () => unknown) => { void tache(); }),
-  genererSiRideauFerme: vi.fn().mockResolvedValue({ genere: false, raison: 'drapeau_eteint' }),
   prisma: {
     assignation: { findUnique: vi.fn(), update: vi.fn() },
     patient: { findUnique: vi.fn() },
     questionnaireReponse: { create: vi.fn() },
+    // `syntheseIA` N'EST PAS UN BESOIN DU HANDLER : il est là pour être
+    // OBSERVÉ. Sans cette entrée, une génération réintroduite en synchrone
+    // lèverait un `TypeError` sur un mock absent — un rouge, mais qui parle de
+    // plomberie de test et non de l'invariant violé. Avec elle, la garde
+    // ci-dessous peut affirmer qu'aucune synthèse n'est écrite, par quelque
+    // chemin que ce soit (constat de revue, PR #1185).
+    syntheseIA: { create: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
     // Resolver commun : lu seulement pour les ids CAB_ (instruments cabinet).
     cabinetInstrument: { findUnique: vi.fn() },
   },
@@ -19,7 +27,6 @@ vi.mock('next/server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/server')>()),
   after,
 }));
-vi.mock('@/lib/synthese/declencheurRideau', () => ({ genererSiRideauFerme }));
 vi.mock('@/lib/observability/logger', () => ({
   logger: { warn: vi.fn(), security: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
@@ -601,13 +608,18 @@ describe('POST /api/patient/submit — les agendas ne se soumettent pas ici', ()
   });
 });
 
-// ── LE RIDEAU, DÉCLENCHÉ APRÈS LA RÉPONSE ([[D-174]]) ──────────────────────
+// ── AUCUNE GÉNÉRATION SUR CE CHEMIN, ET C'EST LA GARDE ─────────────────────
 //
-// Le branchement est ce qui se garde ici, pas la décision de générer : celle-ci
-// a ses propres bancs (`declencheurRideau.test.ts`). Ce qui doit être vrai sur
-// CE chemin, c'est que le patient ne porte ni le délai ni l'échec d'un travail
-// qu'il n'a pas demandé.
-describe('POST /api/patient/submit — génération par rideau', () => {
+// Le rideau a été retiré le 2026-09-17 : une réponse de patient ne déclenche
+// plus aucune production de synthèse. Ce banc garde l'ABSENCE, ce qui est plus
+// difficile que de garder une présence — il faut un observateur du chemin de
+// fond, et c'est `after` qui le donne : le mock exécute ce qu'on lui planifie,
+// donc toute tâche rebranchée ici le ferait rougir.
+//
+// CE QU'IL NE GARDE PAS : que `cartesSynthesesAGenerer` invite bien à générer.
+// C'est l'autre moitié de la décision, et elle a ses propres bancs dans
+// `lib/fil/cartes.test.ts`. Les deux se lisent ensemble.
+describe('POST /api/patient/submit — aucune génération automatique', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
@@ -623,27 +635,36 @@ describe('POST /api/patient/submit — génération par rideau', () => {
     prisma.questionnaireReponse.create.mockResolvedValue({});
   });
 
-  it('planifie le déclencheur APRÈS la réponse, avec le dossier et son adresse', async () => {
-    const res = await postSubmit(requeteSoumission());
-
-    expect(res.status).toBe(200);
-    expect(after).toHaveBeenCalledTimes(1);
-    expect(genererSiRideauFerme).toHaveBeenCalledWith(
-      assignation.idPatient,
-      assignation.emailPatient,
-      expect.anything(),
-    );
-  });
-
-  // CE QUI SERAIT PERDU SINON EST LA CONFIANCE DU PATIENT dans un questionnaire
-  // qu'il vient de remplir. Ce qui est perdu ici n'est qu'un brouillon que
-  // personne n'attendait.
-  it('une planification impossible ne fait pas échouer une soumission réussie', async () => {
-    after.mockImplementationOnce(() => { throw new Error('hors contexte de requête'); });
-
+  // ★ LA GARDE DU RETRAIT, ET ELLE FERME LES DEUX CHEMINS.
+  //
+  // L'assertion ne nomme aucun déclencheur : elle constate qu'aucune tâche de
+  // fond n'est planifiée, donc un banc nommant `genererSiRideauFerme` serait
+  // resté vert devant un second mécanisme.
+  //
+  // MAIS `after` SEUL NE SUFFISAIT PAS, et c'est une revue qui l'a vu (PR
+  // #1185). L'invariant annoncé par [[D-226]] est qu'une soumission ne
+  // déclenche AUCUNE production — or une génération réintroduite en SYNCHRONE,
+  // sans `after`, passait cette garde. La seconde assertion ferme ce chemin :
+  // quel que soit le mode, aucune synthèse n'est écrite sur ce parcours.
+  it('ne déclenche AUCUNE production de synthèse — ni différée, ni synchrone', async () => {
     const res = await postSubmit(requeteSoumission());
 
     expect(res.status).toBe(200);
     expect(prisma.questionnaireReponse.create).toHaveBeenCalled();
+    expect(after).not.toHaveBeenCalled();
+    expect(prisma.syntheseIA.create).not.toHaveBeenCalled();
+  });
+
+  // La soumission reste ce qu'elle était pour le patient : sa réponse est
+  // enregistrée, son assignation close, son accusé parti. Le retrait du rideau
+  // ne devait rien lui coûter, et ce banc le constate.
+  it('enregistre la réponse et clôt l’assignation, comme avant le retrait', async () => {
+    const res = await postSubmit(requeteSoumission());
+
+    expect(res.status).toBe(200);
+    expect(prisma.questionnaireReponse.create).toHaveBeenCalled();
+    expect(prisma.assignation.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ statut: 'Complété' }) }),
+    );
   });
 });
