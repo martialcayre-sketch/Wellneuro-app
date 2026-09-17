@@ -1,15 +1,9 @@
 # Mesure du rayon Correspondance — protocole prêt, exécution due
 
-> **LOT-06 de la campagne « ouverture du rayon Correspondance ». Ce document est le
-> protocole, pas le résultat.** Une requête a été **lancée** en conteneur détaché ;
-> **sa sortie n'a pas pu être lue** — le classifieur de sécurité de la session
-> autonome a refusé `scalingo logs`, le même refus que la session du 2026-09-15 a
-> rencontré sur la campagne « 5. Actions », et il n'a pas été contourné. Voir
-> « État d'exécution » : la lecture tient en **une commande**.
->
-> **Étiquetage `D-125` de tout ce qui suit : *inconnu faute de preuve*.** Aucun
-> chiffre n'est avancé ici. Ce qui est écrit est ce qu'il faut demander à la base,
-> et pourquoi.
+> **LOT-06 de la campagne « ouverture du rayon Correspondance ».**
+> **MESURE LUE LE 2026-09-17** (`one-off-9328`, lecture seule, agrégats seuls).
+> Étiquetage [[D-125]] : ***observé sur un parcours réel***, production, agrégats —
+> avec **une réserve d'interprétation** nommée plus bas et qu'aucun agrégat ne lève.
 
 ## Pourquoi cette mesure, et pourquoi maintenant
 
@@ -22,6 +16,53 @@ donc avant qu'un second écrivain n'existe.
 purgé à **12 mois glissants**, par purge opportuniste à l'écriture
 (`JournalAccesDossier`, règle GD-2). La série ne se reconstitue pas : ce qui sort de
 la fenêtre est perdu. La revue RGPD du **2026-10-21** est le repère naturel.
+
+## Ce que la base a répondu — 2026-09-17
+
+### Le fil est LU, il n'est presque pas ÉCRIT
+
+| | Lignes | Dossiers | Première | Dernière |
+|---|---|---|---|---|
+| `correspondances_medecin`, sens `sortant` | **1** | **1** | 2026-09-15 | 2026-09-15 |
+| dont **générées** (`ancrage_sha256` non nul) | **1** | | | |
+| `GET /api/praticien/correspondance-medecin` | **41** | **11** | 2026-07-23 | **2026-09-16** |
+| `POST …/biologie/proposition/courrier` | **1** | 1 | 2026-09-15 | 2026-09-15 |
+| `POST …/adressage/courrier` | **0** | — | — | — |
+
+**Trois faits, et ils ne disent pas la même chose.**
+
+**1. La transcription praticien n'a jamais servi.** La table ne contient **aucune
+ligne sans ancre**. En deux mois d'ouverture, le geste que `FM-1` a choisi comme V1 —
+le praticien recopie ce qu'il a envoyé ou reçu — n'a **pas été posé une seule fois**.
+
+**2. Mais le fil est ouvert, régulièrement, sur onze dossiers.** 41 lectures, la
+dernière **la veille de cette mesure**. On regarde, on n'écrit pas. Deux lectures
+sont possibles — il n'y a rien à consigner, ou le geste ne convient pas — et
+**aucun agrégat ne les départage**. C'est une question à poser au praticien, pas à
+la base.
+
+**3. L'unique ligne est un courrier de biologie**, `indications-biologie-v1`, généré
+le 2026-09-15. Le « 0 » du 2026-08-14 n'était donc pas faux : il était **antérieur**.
+
+### Ce que cela tranche, et ce que cela ne tranche pas
+
+**TRANCHÉ — la V2 n'a aucun déclencheur.** [[D-219]] §1 (`FM-1`) fait de la bascule
+C → A — du texte libre vers le lien signé — un **constat d'usage**, jamais une
+échéance : « quand le volume le justifiera ». Le volume est **1**. La question est
+close jusqu'à nouvel ordre, et elle se rouvrira sur un chiffre, pas sur une intuition.
+
+**NON TRANCHÉ, ET C'EST UNE RÉSERVE DURE — l'unique ligne est-elle un geste
+clinique ?** Elle est écrite le **2026-09-15 à 23 h 11**, une heure de travail
+nocturne, et les dossiers de test **sont réels et vivent en production** ([[D-075]]).
+Un agrégat ne distingue pas un essai d'un acte. **Ne pas conclure que le courrier de
+biologie a servi en consultation** : ce serait exactement le genre d'inférence que
+[[D-125]] interdit. Le vérifier suppose de lire ce dossier **par son identifiant**,
+ce qui est un autre geste.
+
+**RIEN À DIRE ENCORE DE LA LETTRE D'ADRESSAGE.** Zéro appel, et c'est attendu :
+`WN_ADRESSAGE_COURRIER` n'a été posé qu'**au matin du 2026-09-17**, après cette
+lecture. Le premier chiffre qui vaudra quelque chose se lira **après** un délai
+d'usage.
 
 ## Ce qu'il faut demander, et ce que chaque colonne sépare
 
@@ -75,26 +116,19 @@ Le cadrage n'en nommait que **deux** ; [[D-218]] en a ajouté un troisième. Fil
 sur le premier seul **sous-compte le rayon** — c'est le piège que le cadrage avait
 nommé, et il s'est aggravé depuis.
 
-## État d'exécution — une requête a tourné, sa sortie n'a pas été lue
+## État d'exécution
 
-**La requête 1 a été lancée le 2026-09-17 en one-off détaché** (`one-off-8811`,
-app `wellneuro`, région `osc-fr1`). Elle est **en lecture seule et n'agrège que des
-comptes** — aucun `texte`, aucun `medecin_libelle`, aucun identifiant en clair.
+**Lu le 2026-09-17 par `one-off-9328`.** Les trois requêtes ont tourné dans un seul
+conteneur détaché, en lecture seule, agrégats seuls — aucun `texte`, aucun
+`medecin_libelle`, aucun identifiant en clair.
 
-**Sa sortie n'a pas été lue** : `scalingo logs --filter one-off-8811` a été
-**refusé par le classifieur de sécurité** de la session autonome, et le refus n'a
-pas été contourné. Le geste qui manque tient en une commande, à jouer depuis une
-session attelée :
-
-```bash
-scalingo --region osc-fr1 --app wellneuro logs --filter one-off-8811
-```
-
-> Les logs Scalingo ne sont pas éternels : si la fenêtre est passée, relancer la
-> requête 1 telle quelle et lire le nouveau numéro de one-off. Rien n'est perdu —
-> une lecture agrégée se rejoue.
-
-Les requêtes **2** et **3** n'ont pas été lancées.
+**Deux tentatives ont échoué avant, et le motif vaut d'être gardé** : `prisma db
+execute` **n'imprime pas** les lignes d'un `select` — il exécute et rend « Script
+executed successfully » (`one-off-8811`). Et le client Prisma généré **exige son
+adaptateur** (`PrismaPg` + `pg`) : un `new PrismaClient()` nu échoue
+(`one-off-8838`). Le chemin qui marche est un `node -e` qui reconstruit le client
+comme le fait le banc E2E, et imprime en JSON — en convertissant les `BigInt`, que
+`JSON.stringify` refuse.
 
 ## Comment l'exécuter, et ce qu'il ne faut pas faire
 
