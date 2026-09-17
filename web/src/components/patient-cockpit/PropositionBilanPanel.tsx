@@ -129,15 +129,31 @@ function Limite({ limite }: { limite: LimiteProposition }) {
   );
 }
 
+// LES TROIS LIBELLÉS ONT CHANGÉ DE NATURE LE 2026-09-17 ([[D-219]] §3 amendé).
+// Ils disaient « exposée, jamais opposée : la décision de transmettre vous
+// appartient » — c'était vrai jusqu'à ce matin, et c'est faux depuis : le refus
+// et le silence FERMENT le courrier et la consignation.
+//
+// ET LA CLÉ ÉTAIT FAUSSE. La table portait `accepte` quand le statut servi est
+// `accorde` : un patient consentant n'affichait donc RIEN — ni ce libellé, ni
+// la ligne du silence, qui ne se déclenche que sur `null`. Défaut trouvé en
+// posant la garde, corrigé ici.
 const LIBELLES_PARTAGE: Record<string, string> = {
-  accepte: 'Le patient a consenti au partage avec son médecin traitant.',
+  accorde: 'Le patient a consenti au partage avec son médecin traitant.',
   refuse:
-    'Le patient a refusé le partage avec son médecin traitant. Cette information est '
-    + 'exposée, jamais opposée : la décision de transmettre vous appartient.',
+    'Le patient a refusé le partage avec son médecin traitant : le courrier ne peut être '
+    + 'ni préparé ni consigné ici. Il peut revenir sur ce choix depuis son espace, '
+    + 'rubrique « Informations, confidentialité et droits » → « Mes choix et autorisations ».',
   retire:
-    'Le patient a retiré son consentement au partage. Cette information est exposée, '
-    + 'jamais opposée : la décision de transmettre vous appartient.',
+    'Le patient a retiré son consentement au partage : le courrier ne peut être ni préparé '
+    + 'ni consigné ici. Il peut l’accorder à nouveau depuis son espace, rubrique '
+    + '« Informations, confidentialité et droits » → « Mes choix et autorisations ».',
 };
+
+/** Le consentement autorise-t-il ce courrier-ci ? `null` (silence) ferme aussi. */
+function partageAutorise(statut: string | null): boolean {
+  return statut === 'accorde';
+}
 
 function FormulaireCourrier({
   disabled,
@@ -149,7 +165,7 @@ function FormulaireCourrier({
   disabled: boolean;
   courrier: CourrierEtabli | null;
   erreur: string | null;
-  /** Choix TRUST du patient — exposé, jamais opposé ([[D-219]] §3). */
+  /** Choix TRUST du patient — GARDE depuis le 2026-09-17 ([[D-219]] §3 amendé). */
   partageMedecinTraitant: string | null;
   onEtablir: (medecinLibelle: string) => void;
 }) {
@@ -182,14 +198,21 @@ function FormulaireCourrier({
       </p>
       {partageMedecinTraitant !== null && LIBELLES_PARTAGE[partageMedecinTraitant] && (
         <p
-          className={`mt-2 text-xs ${partageMedecinTraitant === 'accepte' ? 'text-muted-foreground' : 'text-status-warning'}`}
+          className={`mt-2 text-xs ${partageAutorise(partageMedecinTraitant) ? 'text-muted-foreground' : 'text-status-warning'}`}
         >
           {LIBELLES_PARTAGE[partageMedecinTraitant]}
         </p>
       )}
       {partageMedecinTraitant === null && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          Le patient ne s’est pas exprimé sur le partage avec son médecin traitant.
+        // LE SILENCE FERME, ET CETTE LIGNE EST LA PORTE. L'arbitrage du
+        // 2026-09-17 tient en deux temps : le blocage, et le chemin pour en
+        // sortir. Sans le second, le praticien lit un mur et n'a rien à faire
+        // de l'information — c'est la contrepartie, elle n'est pas optionnelle.
+        <p className="mt-2 text-xs text-status-warning">
+          Consentement jamais exprimé : le patient ne s’est pas prononcé sur le partage avec
+          son médecin traitant, et le courrier ne peut donc être ni préparé ni consigné ici.
+          Invitez-le à renseigner son choix depuis son espace, rubrique « Informations,
+          confidentialité et droits » → « Mes choix et autorisations ».
         </p>
       )}
       <label className="mt-2 block text-xs text-muted-foreground" htmlFor="courrier-medecin">
@@ -205,7 +228,16 @@ function FormulaireCourrier({
       />
       <button
         type="button"
-        disabled={disabled || envoiEnCours || dejaConsigne || medecin.trim() === ''}
+        // LE BOUTON SUIT LA GARDE. Laisser le formulaire actif pour finir en
+        // 409 ferait remplir un destinataire pour rien — la route reste la
+        // décision qui fait foi, l'écran ne fait que cesser de mentir.
+        disabled={
+          disabled
+          || envoiEnCours
+          || dejaConsigne
+          || medecin.trim() === ''
+          || !partageAutorise(partageMedecinTraitant)
+        }
         onClick={() => {
           setEnvoiEnCours(true);
           setConsigneSans(medecin.trim());

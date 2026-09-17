@@ -11,6 +11,7 @@ import { genererCourrierBiologie } from '@/lib/biology-library/courrier';
 import { isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
 import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
 import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
+import { refusPartage, verdictPartageMedecin } from '@/lib/trust/consentementPartage';
 
 // Courrier médecin de la proposition de bilan ([[D-073]]) — dernier appelant
 // manquant du LOT-06.
@@ -114,6 +115,23 @@ export async function POST(req: Request) {
     });
     if (!patient || !accepteNouvelEnvoi(patient)) {
       return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+    }
+
+    // LE CONSENTEMENT EST UNE GARDE DEPUIS LE 2026-09-17 ([[D-219]] §3 amendé).
+    // Ce courrier-ci est celui que la finalité vise nommément — il part au
+    // MÉDECIN TRAITANT. Le refus, le retrait ET le silence le ferment.
+    //
+    // POURQUOI AVANT LA GÉNÉRATION et non après : produire la lettre puis la
+    // jeter ferait tourner le moteur sur un dossier dont le patient a dit non,
+    // et laisserait une trace de lecture pour rien.
+    const choix = await prisma.trustChoiceEvent.findMany({
+      where: { idPatient, finalite: 'partage_medecin_traitant' },
+      select: { finalite: true, statut: true, enregistreLe: true },
+    });
+    const verdict = verdictPartageMedecin(choix);
+    if (verdict.bloquant) {
+      const refus = refusPartage(verdict);
+      return echec(refus.raison, refus.message, 409);
     }
 
     const maintenant = new Date().toISOString();

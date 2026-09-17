@@ -171,6 +171,23 @@ export async function POST(req: Request) {
       return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
     }
 
+    // AUCUNE GARDE DE CONSENTEMENT ICI, ET C'EST L'EXCEPTION, PAS UN OUBLI.
+    //
+    // Depuis le 2026-09-17, le refus — et le silence — du patient ferment le
+    // courrier de biologie et la consignation à la main ([[D-219]] §3 amendé).
+    // Cette route-ci reste ouverte, sur arbitrage explicite du responsable :
+    // fermer ici serait fermer au moment précis où un signe repéré SUSPEND la
+    // décision clinique, sur les dossiers où le besoin d'écrire est le plus
+    // fondé. C'est l'exception que `donnees_confidentialite@v9` NOMME au
+    // patient — il la lit, elle ne lui est pas cachée.
+    //
+    // DEUX RAISONS DE PLUS DE NE PAS « CORRIGER » CETTE OMISSION. La première :
+    // presque aucun patient n'a exprimé de choix, donc une garde fail-closed
+    // refermerait ce chemin le matin même de son ouverture. La seconde : la
+    // finalité `partage_medecin_traitant` vise le MÉDECIN TRAITANT, alors que
+    // l'adressage peut viser un autre médecin — lui opposer ce refus
+    // sur-appliquerait un consentement qui ne porte pas sur lui.
+    //
     // TABLE NON SIGNÉE : rien n'inhibe la décision, donc rien n'appelle un
     // adressage. Le refus est explicite — le contraire produirait une lettre
     // qui affirme un blocage que le moteur ne pose pas.

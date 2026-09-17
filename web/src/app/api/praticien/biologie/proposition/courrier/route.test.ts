@@ -9,6 +9,7 @@ const {
   getServerSession: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
+    trustChoiceEvent: { findMany: vi.fn() },
     correspondanceMedecin: { create: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
@@ -64,6 +65,13 @@ beforeEach(() => {
     prenom: 'Sophie',
     nom: 'Nicola',
   });
+  // LE CONSENTEMENT ACCORDÉ EST UNE PRÉCONDITION DEPUIS LE 2026-09-17
+  // ([[D-219]] §3 amendé). Le défaut de ce banc était « aucun choix exprimé »,
+  // qui est désormais un dossier BLOQUÉ : sans cette ligne, les vingt cas
+  // ci-dessous éprouveraient la garde au lieu de leur propre sujet.
+  prisma.trustChoiceEvent.findMany.mockResolvedValue([
+    { finalite: 'partage_medecin_traitant', statut: 'accorde', enregistreLe: new Date('2026-08-01T10:00:00.000Z') },
+  ]);
   prisma.correspondanceMedecin.create.mockResolvedValue({});
   deriverPropositionPourPatient.mockResolvedValue({
     ok: true,
@@ -357,5 +365,31 @@ describe('refus — motivés en français, jamais consignés à moitié', () => 
     const payload = await response.json();
     expect(response.status).toBe(400);
     expect(payload.reason).toBe('medecin_libelle_email');
+  });
+});
+
+describe('la garde de consentement — D-219 §3 amendé (2026-09-17)', () => {
+  it('★ REFUS : 409, et le moteur ne tourne même pas', async () => {
+    // LA GARDE EST AVANT LA GÉNÉRATION, et ce banc le prouve : produire la
+    // lettre puis la jeter ferait tourner le moteur sur un dossier dont le
+    // patient a dit non, et laisserait une trace de lecture pour rien.
+    prisma.trustChoiceEvent.findMany.mockResolvedValue([
+      { finalite: 'partage_medecin_traitant', statut: 'refuse', enregistreLe: new Date('2026-08-01T10:00:00.000Z') },
+    ]);
+    const reponse = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(reponse.status).toBe(409);
+    expect((await reponse.json()).reason).toBe('consentement_partage_refuse');
+    expect(deriverPropositionPourPatient).not.toHaveBeenCalled();
+    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+  });
+
+  it('★ SILENCE : ferme aussi, avec le chemin du recueil dans le message', async () => {
+    prisma.trustChoiceEvent.findMany.mockResolvedValue([]);
+    const reponse = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(reponse.status).toBe(409);
+    const json = await reponse.json();
+    expect(json.reason).toBe('consentement_partage_jamais_exprime');
+    expect(json.error).toContain('Mes choix et autorisations');
+    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 });

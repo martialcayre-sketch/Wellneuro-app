@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les quatorze documents attendus', () => {
+  it('expose les seize documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -39,11 +39,17 @@ describe('registre des documents TRUST', () => {
       // version de confidentialité à EXIGER un accusé depuis la v2 — les v3
       // à v7 décrivaient sans rien recueillir de neuf.
       'donnees_confidentialite@v8',
+      // `D-222` amendé — la phrase qui promettait une garde que personne
+      // n'avait posée devient exacte, et l'exception d'adressage est nommée.
+      'donnees_confidentialite@v9',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
       'droits_patient@v1',
       'consentement_suivi@v2',
+      // Même correction, dans le texte du consentement lui-même — l'occurrence
+      // que `D-222` §3 n'avait pas vue.
+      'consentement_suivi@v3',
     ]);
   });
 
@@ -56,8 +62,8 @@ describe('registre des documents TRUST', () => {
   });
 
   it('getDocumentCourant retourne la version la plus récemment publiée et getVersion retrouve une version exacte', () => {
-    expect(getDocumentCourant('consentement_suivi').version).toBe('v2');
-    expect(getVersion('consentement_suivi', 'v2')?.hash).toBe(
+    expect(getDocumentCourant('consentement_suivi').version).toBe('v3');
+    expect(getVersion('consentement_suivi', 'v3')?.hash).toBe(
       getDocumentCourant('consentement_suivi').hash,
     );
     expect(getVersion('consentement_suivi', 'v99')).toBeNull();
@@ -65,7 +71,7 @@ describe('registre des documents TRUST', () => {
   });
 
   it('la version de consentement courante est celle du document consentement_suivi', () => {
-    expect(VERSION_CONSENTEMENT_COURANTE).toBe('v2');
+    expect(VERSION_CONSENTEMENT_COURANTE).toBe('v3');
   });
 
   it("aucun document n'utilise le lexique interdit ni ne promet une surveillance", () => {
@@ -89,7 +95,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v8');
+    expect(courant.version).toBe('v9');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -174,15 +180,62 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('la v8 EXIGE un accusé, et c’est une exception motivée', () => {
-    // ELLE NE DÉCRIT PAS, ELLE RECUEILLE. Trois données nouvelles entrent au
+  it('les v8 ET v9 EXIGENT un accusé, pour deux motifs distincts', () => {
+    // LA v8 NE DÉCRIT PAS, ELLE RECUEILLE. Trois données nouvelles entrent au
     // dossier — adresse postale, numéro de sécurité sociale, médecin traitant —
     // dont un NIR. Le mur d'écran que les cinq versions précédentes refusaient
     // d'ériger se justifie quand ce qui change n'est pas la description du
     // traitement mais son ASSIETTE. Arbitrage du responsable, 2026-09-16.
-    const v8 = getVersion('donnees_confidentialite', 'v8');
-    expect(v8?.requiresAcknowledgement).toBe(true);
-    expect(getDocumentCourant('donnees_confidentialite').version).toBe('v8');
+    expect(getVersion('donnees_confidentialite', 'v8')?.requiresAcknowledgement).toBe(true);
+
+    // LA v9 NE RECUEILLE RIEN — elle corrige ce que le patient CROYAIT que son
+    // refus produisait. C'est plus engageant, pas moins : il avait lu qu'aucun
+    // partage n'aurait lieu sans son choix explicite, et c'était faux.
+    // Arbitrage du responsable, 2026-09-17.
+    expect(getVersion('donnees_confidentialite', 'v9')?.requiresAcknowledgement).toBe(true);
+    expect(getDocumentCourant('donnees_confidentialite').version).toBe('v9');
+  });
+
+  it('la v9 RETIRE la promesse que le logiciel ne tenait pas, et NOMME l’exception', () => {
+    // LE DÉFAUT QUE CE BANC FERME, et il a coûté huit versions : « Aucun
+    // partage avec un tiers (par exemple votre médecin traitant) n'a lieu sans
+    // un choix explicite de votre part » était écrit depuis la v1 et repris par
+    // composition. `D-222` §3 l'a nommé sans le toucher.
+    //
+    // UNE MUTATION QUI FERAIT ROUGIR CE BANC : réintroduire la phrase d'origine
+    // dans une v10 par copie de la v8, ou publier l'exception sans la nommer.
+    const texte = getDocumentCourant('donnees_confidentialite')
+      .sections.flatMap(s => s.paragraphes ?? [])
+      .join(' ');
+
+    expect(texte).not.toContain('Aucun partage avec un tiers');
+    expect(texte).not.toContain('Rien ne lui est adressé sans un choix explicite');
+
+    // Ce que le logiciel fait, et ce qu'il ne fait pas.
+    expect(texte).toContain('L’application n’envoie rien à un tiers');
+    expect(texte).toContain('aucun canal vers un médecin');
+    // L'exception, nommée — un texte qui la tairait re-promettrait la garde.
+    expect(texte).toContain('votre sécurité lui impose d’écrire à un médecin malgré votre refus');
+    expect(texte).toContain('Il vous en informe alors');
+  });
+
+  it('la v3 du consentement porte la MÊME correction — l’occurrence que D-222 §3 n’avait pas vue', () => {
+    // `D-222` §3 ne nommait que les huit versions de « Vos données
+    // personnelles » et l'écran « Mes choix ». Le texte du consentement portait
+    // la même promesse — et c'est le plus engageant des trois, puisque c'est
+    // celui que le patient lit AU MOMENT où il consent.
+    const texte = getDocumentCourant('consentement_suivi')
+      .sections.flatMap(s => s.paragraphes ?? [])
+      .join(' ');
+    expect(texte).not.toContain('ni partagées avec un tiers sans un choix explicite');
+    expect(texte).toContain('L’application ne les partage avec aucun tiers');
+    expect(texte).toContain('il peut s’en écarter lorsque votre sécurité l’exige');
+
+    // PAS D'ACCUSÉ PROPRE, et c'est délibéré : la séquence « Avant de
+    // commencer » ne présente pas ce document. L'accusé de la v9 couvre le
+    // fait, qui est un seul. Exiger un accusé ici ferait boucler le patient —
+    // `avantDeCommencer.ts` porte le piège en toutes lettres.
+    expect(getDocumentCourant('consentement_suivi').requiresAcknowledgement).toBe(false);
   });
 
   it('la v8 NOMME les trois renseignements, et dit qu’ils sont facultatifs', () => {

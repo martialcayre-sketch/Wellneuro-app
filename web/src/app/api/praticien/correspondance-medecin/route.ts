@@ -15,7 +15,11 @@ import {
   MESSAGE_DOSSIER_CLOS,
   RAISON_DOSSIER_CLOS,
 } from '@/lib/patient/cycleDeVie';
-import { statutPartageMedecinTraitant } from '@/lib/trust/consentementPartage';
+import {
+  refusPartage,
+  statutPartageMedecinTraitant,
+  verdictPartageMedecin,
+} from '@/lib/trust/consentementPartage';
 import type { StatutChoix } from '@/lib/trust/types';
 
 // Fil de correspondance médecin (C3 LOT-06, V1 = transcription praticien).
@@ -286,6 +290,25 @@ export async function POST(req: Request): Promise<NextResponse<CorrespondanceMed
     });
     if (!patient || !accepteNouvelEnvoi(patient)) {
       return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+    }
+
+    // LA CONSIGNATION EST GARDÉE DEPUIS LE 2026-09-17 ([[D-219]] §3 amendé),
+    // et c'est le renversement le plus lourd du lot : ce module disait
+    // exactement l'inverse — « bloquer la consignation rendrait seulement le
+    // dossier aveugle ». Le responsable a tranché en connaissant ce motif.
+    //
+    // LES DEUX SENS SONT FERMÉS, et il faut le dire. Transcrire une RÉPONSE du
+    // médecin est bloqué comme l'envoi : le consentement porte sur l'échange
+    // avec le médecin, pas sur sa direction — et une réponse consignée prouve
+    // qu'un envoi a eu lieu.
+    const choix = await prisma.trustChoiceEvent.findMany({
+      where: { idPatient, finalite: 'partage_medecin_traitant' },
+      select: { finalite: true, statut: true, enregistreLe: true },
+    });
+    const verdictPartage = verdictPartageMedecin(choix);
+    if (verdictPartage.bloquant) {
+      const refus = refusPartage(verdictPartage);
+      return echec(refus.raison, refus.message, 409);
     }
 
     const preparation = preparerCorrespondance({

@@ -11,6 +11,11 @@ const {
   prisma: {
     patient: { findUnique: vi.fn() },
     consultation: { findFirst: vi.fn() },
+    // PRÉSENT POUR PROUVER QU'IL N'EST PAS LU. La garde de consentement ferme
+    // le courrier de biologie et la consignation depuis le 2026-09-17 ; cette
+    // route en est l'exception, et une exception non éprouvée se referme au
+    // premier « oubli » qu'un relecteur croira corriger.
+    trustChoiceEvent: { findMany: vi.fn() },
     correspondanceMedecin: { create: vi.fn() },
   },
   verifierAppartenancePatient: vi.fn(),
@@ -319,5 +324,27 @@ describe('refus', () => {
     expect(journalise).toContain('PrismaClientValidationError');
     expect(journalise).not.toContain('Docteur, …');
     espion.mockRestore();
+  });
+});
+
+describe('l’EXCEPTION d’adressage — D-219 §3 amendé (2026-09-17)', () => {
+  it('★ un REFUS de partage ne ferme PAS la lettre d’adressage', async () => {
+    // FERMER ICI SERAIT FERMER AU PIRE MOMENT : un signe repéré a suspendu la
+    // décision clinique, et c'est précisément là que l'adressage sert. Le
+    // patient n'est pas trahi — `donnees_confidentialite@v9` lui NOMME cette
+    // exception.
+    prisma.trustChoiceEvent.findMany.mockResolvedValue([
+      { finalite: 'partage_medecin_traitant', statut: 'refuse', enregistreLe: new Date('2026-08-01T10:00:00.000Z') },
+    ]);
+    const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(res.status).toBe(201);
+    expect(prisma.correspondanceMedecin.create).toHaveBeenCalled();
+  });
+
+  it('★ la route ne LIT même pas le consentement — l’exception est structurelle', async () => {
+    // Une exception qui reposerait sur un `if` oublié se refermerait seule.
+    // Celle-ci tient parce que la route n'interroge jamais la table des choix.
+    await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(prisma.trustChoiceEvent.findMany).not.toHaveBeenCalled();
   });
 });

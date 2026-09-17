@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { FINALITES } from '@/lib/trust/finalitesChoix';
 import type { ChoixEtat } from '@/app/api/portail/trust/etat/route';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
@@ -11,42 +12,14 @@ import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessa
  * précoché ; l'historique reste visible et n'est jamais effacé (append-only
  * côté serveur).
  */
-// EXPORTÉ POUR SON BANC, et pour lui seul. La formulation servie ici n'est
-// couverte par aucune version de document ([[D-222]] §3) : tant que ce trou
-// n'est pas fermé, un banc est la seule chose qui l'empêche de dériver.
-export const FINALITES: {
-  finalite: string;
-  libelle: string;
-  finaliteDetail: string;
-  donnees: string;
-  destinataire: string;
-  effetRefus: string;
-}[] = [
-  {
-    finalite: 'partage_medecin_traitant',
-    libelle: 'Partage avec le médecin traitant',
-    finaliteDetail:
-      // CE TEXTE ÉTAIT FAUX, ET C'EST CELUI SUR LEQUEL LE PATIENT CONSENT
-      // ([[D-222]]). Il annonçait que le partage « arrivera dans une prochaine
-      // version » : le fil de correspondance médecin est en service depuis le
-      // 2026-07-22. Un consentement recueilli sur une description fausse est un
-      // consentement mal éclairé, et c'est le seul endroit du produit où le
-      // patient lit ce que son choix engage.
-      'Permettre à votre praticien de transmettre à votre médecin traitant des documents vous concernant. La transmission se fait par les moyens habituels de votre praticien — courrier remis ou envoyé par ses soins : l’application elle-même n’envoie rien à votre médecin.',
-    donnees: 'Documents validés par votre praticien uniquement.',
-    destinataire: 'Votre médecin traitant.',
-    effetRefus: 'Aucun document ne sera partagé. Votre accompagnement continue normalement.',
-  },
-  {
-    finalite: 'communications_non_essentielles',
-    libelle: 'Communications non essentielles',
-    finaliteDetail:
-      'Recevoir des emails non indispensables au suivi (informations générales, nouveautés de votre espace).',
-    donnees: 'Votre adresse email uniquement.',
-    destinataire: 'Vous-même.',
-    effetRefus: 'Vous ne recevez que les emails nécessaires au suivi (questionnaires, accusés, bilans).',
-  },
-];
+// LA FORMULATION A QUITTÉ CET ÉCRAN (2026-09-17). Elle vit dans
+// `lib/trust/finalitesChoix.ts`, versionnée et verrouillée par empreinte, parce
+// que la ROUTE doit enregistrer la version exactement servie ici ([[D-222]] §3
+// amendé). Une constante recopiée des deux côtés diverge à la première
+// retouche — le défaut que `gouvernance.ts` a payé.
+//
+// RÉEXPORTÉE pour son banc, qui interrogeait déjà ce module.
+export { FINALITES };
 
 const LIBELLE_STATUT: Record<string, string> = {
   accorde: 'Autorisé',

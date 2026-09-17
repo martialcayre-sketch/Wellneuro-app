@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
+import { FORMULATION_CHOIX_VERSION, traceFormulationActive } from '@/lib/trust/finalitesChoix';
 import type { FinaliteChoix, StatutChoix } from '@/lib/trust/types';
 
 export type TrustChoixResponse = { ok: true } | { ok: false; reason: string; error: string };
@@ -45,12 +46,24 @@ export async function POST(req: Request): Promise<NextResponse<TrustChoixRespons
     if (statut === 'retire' && (!precedent || precedent.statut !== 'accorde')) {
       return NextResponse.json({ ok: true });
     }
+    // DEUX VERSIONS, ET ELLES NE DISENT PAS LA MÊME CHOSE ([[D-222]] §3).
+    // `documentVersion` porte `droits_patient` — le document de référence.
+    // `formulationVersion` porte le texte RÉELLEMENT LU pour choisir, celui de
+    // « Mes choix ». Sans la seconde, deux consentements donnés sur deux
+    // formulations différentes sont indiscernables, et la correction du
+    // 2026-09-17 les aurait rendus indiscernables une fois de plus.
+    //
+    // LE DRAPEAU PROTÈGE LA COLONNE, PAS LA FONCTION. Le code se déploie avant
+    // que `release-db` ait appliqué la migration : nommer la colonne avant son
+    // existence casserait l'enregistrement du choix lui-même. Éteint, on écrit
+    // exactement ce qu'on écrivait hier.
     await prisma.trustChoiceEvent.create({
       data: {
         idPatient: patient.idPatient,
         finalite,
         statut,
         documentVersion: getDocumentCourant('droits_patient').version,
+        ...(traceFormulationActive() ? { formulationVersion: FORMULATION_CHOIX_VERSION } : {}),
         supersedesEventId: precedent?.id ?? null,
       },
     });

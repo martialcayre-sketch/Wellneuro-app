@@ -63,6 +63,29 @@ describe('AvantDeCommencer — l’écran DIT ce qui change', () => {
     expect(ecran).toContain('ne veut pas dire lui écrire');
   });
 
+  it('★ l’écran ne PROMET plus la garde absente, et NOMME l’exception', () => {
+    // CE BANC EST LE PLUS IMPORTANT DES QUATRE, et il naît d'un défaut réel.
+    // Jusqu'au 2026-09-17, cet écran affirmait « Rien ne lui est adressé sans
+    // un choix explicite de votre part » — et le bouton final faisait ACCUSER
+    // RÉCEPTION de cette phrase. Or le logiciel ne la tenait pas : un praticien
+    // pouvait produire et consigner un courrier sur un dossier en refus.
+    //
+    // LA MUTATION QUI DOIT FAIRE ROUGIR CE BANC : remettre la phrase d'origine,
+    // ou retirer l'exception pour « simplifier » l'écran. Les deux rendraient
+    // l'accusé mensonger, et aucun banc ne les voyait avant celui-ci.
+    render(<AvantDeCommencer token="t" onDone={() => {}} />);
+    jusquAuxConfirmations();
+
+    const carte = screen.getByText(/renseignements administratifs/i).closest('div')?.parentElement;
+    const texte = carte?.textContent ?? '';
+
+    expect(texte).not.toContain('Rien ne lui est adressé sans un choix explicite');
+    expect(texte).toContain('L’application n’envoie rien à un médecin');
+    expect(texte).toContain('votre choix l’engage');
+    expect(texte).toContain('impose d’écrire à un médecin pour votre sécurité');
+    expect(texte).toContain('votre praticien vous en informe alors');
+  });
+
   it('dit que ces renseignements sont saisis par le PRATICIEN, pas par le patient', () => {
     // Les glisser parmi « les informations que vous transmettez » aurait laissé
     // croire au patient qu'il les a donnés lui-même.

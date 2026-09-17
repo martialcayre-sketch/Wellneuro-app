@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { statutPartageMedecinTraitant } from './consentementPartage';
+import {
+  RAISON_PARTAGE_JAMAIS_EXPRIME,
+  RAISON_PARTAGE_REFUSE,
+  refusPartage,
+  statutPartageMedecinTraitant,
+  verdictPartageMedecin,
+} from './consentementPartage';
 
 describe('statutPartageMedecinTraitant', () => {
   it('null si le patient ne s’est jamais exprimé', () => {
@@ -34,5 +40,43 @@ describe('statutPartageMedecinTraitant', () => {
       { finalite: 'communications_non_essentielles', statut: 'accorde', enregistreLe: '2026-07-01T10:00:00Z' },
     ]);
     expect(statut).toBeNull();
+  });
+});
+
+describe('la garde de partage — D-219 §3 amendé (2026-09-17)', () => {
+  const evenement = (statut: string) => [
+    { finalite: 'partage_medecin_traitant', statut, enregistreLe: '2026-08-01T10:00:00.000Z' },
+  ];
+
+  it('★ QUATRE états, QUATRE verdicts — et le silence ferme', () => {
+    // UN SEUL CAS NE PROUVERAIT RIEN. Le renversement porte sur quatre états,
+    // et c'est le quatrième — l'absence de choix — qui est la moitié de
+    // l'arbitrage : « sans un choix explicite de votre part » se lit à la
+    // lettre, donc le silence n'est pas un accord.
+    expect(verdictPartageMedecin(evenement('accorde'))).toEqual({ bloquant: false, motif: 'accorde' });
+    expect(verdictPartageMedecin(evenement('refuse'))).toEqual({ bloquant: true, motif: 'refuse' });
+    expect(verdictPartageMedecin(evenement('retire'))).toEqual({ bloquant: true, motif: 'retire' });
+    expect(verdictPartageMedecin([])).toEqual({ bloquant: true, motif: 'jamais_exprime' });
+  });
+
+  it('★ le message de refus porte le CHEMIN, jamais le seul refus', () => {
+    // La contrepartie de l'arbitrage : un blocage sans issue est un mur. Les
+    // deux messages disent où le patient exprime son choix.
+    const silence = refusPartage({ bloquant: true, motif: 'jamais_exprime' });
+    expect(silence.raison).toBe(RAISON_PARTAGE_JAMAIS_EXPRIME);
+    expect(silence.message).toContain('Mes choix et autorisations');
+
+    const refus = refusPartage({ bloquant: true, motif: 'refuse' });
+    expect(refus.raison).toBe(RAISON_PARTAGE_REFUSE);
+    expect(refus.message).toContain('Mes choix et autorisations');
+  });
+
+  it('le dernier événement fait foi — un retrait après un accord ferme', () => {
+    expect(
+      verdictPartageMedecin([
+        { finalite: 'partage_medecin_traitant', statut: 'accorde', enregistreLe: '2026-08-01T10:00:00.000Z' },
+        { finalite: 'partage_medecin_traitant', statut: 'retire', enregistreLe: '2026-09-01T10:00:00.000Z' },
+      ]).bloquant,
+    ).toBe(true);
   });
 });

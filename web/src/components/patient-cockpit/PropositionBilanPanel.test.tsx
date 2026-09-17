@@ -35,6 +35,10 @@ function rendre(props: Partial<Parameters<typeof PropositionBilanPanel>[0]> = {}
       limites={[]}
       documentes={[]}
       onDeclarer={vi.fn()}
+      // ACCORDÉ PAR DÉFAUT DEPUIS LE 2026-09-17 : le silence ferme le geste
+      // ([[D-219]] §3 amendé). Sans cette précondition, chaque cas ci-dessous
+      // éprouverait la garde au lieu de son propre sujet.
+      partageMedecinTraitant="accorde"
       {...props}
     />,
   );
@@ -152,35 +156,69 @@ describe('courrier médecin', () => {
     expect(screen.queryByRole('button', { name: /Établir et consigner/i })).toBeNull();
   });
 
-  it('expose le refus de partage du patient — exposé, jamais opposé', () => {
+  it('★ le refus FERME le geste — ce banc disait l’inverse jusqu’au 2026-09-17', () => {
+    // CE CAS A ÉTÉ RETOURNÉ, ET C'EST VOULU. Il asserait « jamais opposée : le
+    // geste reste possible » — la doctrine de [[D-219]] §3 d'origine. Le
+    // responsable l'a amendée le 2026-09-17 : le refus ferme. Un banc qui
+    // garderait l'ancienne assertion défendrait une règle abrogée.
     const onEtablirCourrier = vi.fn();
     rendre({ onEtablirCourrier, partageMedecinTraitant: 'refuse' });
     expect(screen.getByText(/a refusé le partage/i)).toBeTruthy();
-    expect(screen.getByText(/jamais opposée/i)).toBeTruthy();
-    // Jamais opposé : le geste reste possible.
+    expect(screen.getByText(/ni préparé ni consigné/i)).toBeTruthy();
+    // LE CHEMIN DE SORTIE EST DANS L'ÉCRAN : un blocage sans issue est un mur.
+    expect(screen.getByText(/Mes choix et autorisations/i)).toBeTruthy();
+
     fireEvent.change(screen.getByLabelText(/Nom du médecin destinataire/i), {
       target: { value: 'Dr Nicola' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /Établir et consigner/i }));
-    expect(onEtablirCourrier).toHaveBeenCalled();
+    // `toBeDisabled` est un matcher jest-dom, absent de ce banc : on interroge
+    // la propriété réelle du nœud.
+    const bouton = screen.getByRole('button', { name: /Établir et consigner/i }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(true);
+    fireEvent.click(bouton);
+    expect(onEtablirCourrier).not.toHaveBeenCalled();
   });
 
-  it('patient jamais exprimé : l’écran le dit aussi', () => {
-    rendre({ onEtablirCourrier: vi.fn() });
-    expect(screen.getByText(/ne s’est pas exprimé sur le partage/i)).toBeTruthy();
+  it('★ le RETRAIT ferme aussi, et son motif reste distinct du refus', () => {
+    const onEtablirCourrier = vi.fn();
+    rendre({ onEtablirCourrier, partageMedecinTraitant: 'retire' });
+    expect(screen.getByText(/a retiré son consentement/i)).toBeTruthy();
+    expect(
+      (screen.getByRole('button', { name: /Établir et consigner/i }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+  });
+
+  it('★ SILENCE : l’écran dit « jamais exprimé », ferme le geste, ET donne le chemin', () => {
+    rendre({ onEtablirCourrier: vi.fn(), partageMedecinTraitant: null });
+    expect(screen.getByText(/Consentement jamais exprimé/i)).toBeTruthy();
+    expect(screen.getByText(/Mes choix et autorisations/i)).toBeTruthy();
+    expect(
+      (screen.getByRole('button', { name: /Établir et consigner/i }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+  });
+
+  it('★ le consentement ACCORDÉ s’affiche — la clé `accepte` ne matchait rien', () => {
+    // DÉFAUT RÉEL TROUVÉ EN POSANT LA GARDE : la table portait `accepte` quand
+    // le statut servi est `accorde`. Un patient consentant n'affichait donc
+    // NI ce libellé, ni la ligne du silence — qui ne se déclenche que sur
+    // `null`. L'écran se taisait exactement sur le cas favorable.
+    rendre({ onEtablirCourrier: vi.fn(), partageMedecinTraitant: 'accorde' });
+    expect(screen.getByText(/a consenti au partage/i)).toBeTruthy();
   });
 
   it('un courrier consigné ne se re-consigne pas sans changer de destinataire', () => {
     const onEtablirCourrier = vi.fn();
-    const { rerender } = render(
-      <PropositionBilanPanel
-        lignes={[ligne()]}
-        limites={[]}
-        documentes={[]}
-        onDeclarer={vi.fn()}
-        onEtablirCourrier={onEtablirCourrier}
-      />,
-    );
+    // Ce cas monte le composant directement (il a besoin de `rerender`) : la
+    // précondition de consentement doit donc y être posée à la main.
+    const proprietes = {
+      lignes: [ligne()],
+      limites: [],
+      documentes: [],
+      onDeclarer: vi.fn(),
+      onEtablirCourrier,
+      partageMedecinTraitant: 'accorde',
+    };
+    const { rerender } = render(<PropositionBilanPanel {...proprietes} />);
     fireEvent.change(screen.getByLabelText(/Nom du médecin destinataire/i), {
       target: { value: 'Dr Nicola' },
     });
@@ -189,11 +227,7 @@ describe('courrier médecin', () => {
     // Le résultat revient : le même clic ne doit plus rien écrire (revue M4).
     rerender(
       <PropositionBilanPanel
-        lignes={[ligne()]}
-        limites={[]}
-        documentes={[]}
-        onDeclarer={vi.fn()}
-        onEtablirCourrier={onEtablirCourrier}
+        {...proprietes}
         courrier={{
           texte: 'Docteur, …',
           html: '',
