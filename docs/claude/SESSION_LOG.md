@@ -7112,10 +7112,11 @@ point, et `D-155` se trompait en attribuant la panne à la charge machine.
 C'est pourquoi « un seul test par run, jamais le même » — le rang fatidique
 tombe sur le test qui l'occupe.
 
-Écarté : **fermer `D-049`**. Sa condition de sortie est pourtant remplie à la
-lettre. Mais la cause est amont, l'issue est close en « not planned », et le
-contournement que Playwright recommande (`retries: 1`) est exactement celui que
-`D-049` interdit. Amendée, pas fermée — arbitrage du responsable.
+Écarté : **fermer `D-049` sur la seule identification de la cause** — arbitrage
+du responsable. Elle se fermera sur la **montée en 1.63.0**, portée par une PR
+distincte avec la régénération des huit baselines visuelles (toutes en
+`-linux.png` : rien ne compare un pixel hors Linux, le rouge n'apparaîtrait
+qu'au CI sur une PR étrangère). Le contournement `retries: 1` reste interdit.
 
 Prochaine action : l'amendement de `D-049` avec les chiffres finaux, puis la PR
 de clôture.

@@ -14941,7 +14941,31 @@ commente une synthèse, elle ne la re-valide pas.
 > segment E2E local reste exactement aussi peu fiable qu'avant.
 >
 > **CE QUE C'EST.** `microsoft/playwright#42385` — sur macOS arm64, WebKit cesse
-> d'émettre la requête d'une navigation. L'issue est **close en « not planned »**.
+> d'émettre la requête d'une navigation.
+>
+> **LE CORRECTIF EXISTE, ET IL EST CONSTATÉ SUR CETTE MACHINE.** Bissection faite
+> en amont : le défaut est corrigé dans **WebKit 2352**. Nous étions sur **2311**
+> (Playwright 1.61.1) ; la 1.63.0 embarque **2359**. Même banc, même bras, deux
+> moteurs : **2311 bloque au rang 64** ; **2359 passe 250 tours sans un blocage**.
+>
+> **`D-049` AVAIT RAISON D'ÉCARTER LA MONTÉE EN 1.62.1** : elle embarque 2336,
+> encore avant le correctif. Le refus n'était pas une prudence excessive, c'était
+> la bonne version qui manquait.
+>
+> **LE DÉCLENCHEUR EST LA MISE EN VEILLE DE L'ÉCRAN**, et c'est le fait qui
+> explique le reste : « it only happens with the display asleep… that is also why
+> it only ever surfaces in long unattended runs ». Voilà pourquoi la panne frappe
+> les **runs autonomes de nuit** — et pourquoi [[D-155]] a cru y voir la charge
+> machine. Corollaire utile : un garde d'éveil couvrant l'écran devrait l'éviter
+> **indépendamment de la version**, ce qui reste à mesurer.
+>
+> ⚠️ **LA PREMIÈRE RÉDACTION DE CET AMENDEMENT DISAIT « AUCUN CORRECTIF À
+> ATTENDRE », ET C'ÉTAIT FAUX.** Elle s'appuyait sur le statut « not planned » de
+> l'issue **sans avoir lu ses commentaires** — où se trouvent la bissection, le
+> correctif et le déclencheur. Ce statut avait été posé parce qu'un mainteneur ne
+> reproduisait pas, avant qu'un tiers ne fournisse la variable manquante. **Lire
+> l'état d'une issue n'est pas lire l'issue** : c'est mot pour mot la règle déjà
+> écrite pour les revues, appliquée au mauvais objet.
 >
 > **CE QUI A ÉTÉ MESURÉ ICI, hors du dépôt, en deux bras.** Un serveur HTTP de
 > trois lignes, WebKit, ni application ni base ni suite E2E :
@@ -14956,10 +14980,15 @@ commente une synthèse, elle ne la re-valide pas.
 > sur la même machine, dans la même minute. Il écarte la navigation, le serveur,
 > le réseau, l'application, la base — et **la charge machine**.
 >
-> **LE COMPTEUR PORTE SUR LA CRÉATION DE CONTEXTE, PAS SUR LA NAVIGATION.**
-> L'issue amont dit « environ toutes les 65 navigations » : c'est inexact, et le
-> bras témoin le réfute. Un test = un contexte, d'où la lecture « un seul test
-> par run, jamais le même » — le rang fatidique tombe sur le test qui l'occupe.
+> - **Bras C, ajouté sur constat de revue** — **un seul contexte**, une **page
+>   neuve** à chaque tour : **BLOCAGE au rang 64** également.
+>
+> **LE COMPTEUR PORTE SUR LA CRÉATION DE PAGE.** Le bras B changeait **deux**
+> variables à la fois — contexte et page — et ne pouvait donc rien isoler, quel
+> qu'eût été son résultat. C'est le constat de la revue, et il était juste :
+> l'amendement affirmait la conclusion **avant** d'avoir le bras qui la porte.
+> Le bras C tranche — contexte unique, pages neuves, même blocage au même rang.
+> Un test = une page, d'où « un seul test par run, jamais le même ».
 >
 > **CELA CORRIGE [[D-155]]**, qui attribuait la panne à la charge machine. Ce
 > qu'il observait reste vrai — trois séquences vertes ne concluent rien — mais
@@ -14982,9 +15011,18 @@ commente une synthèse, elle ne la re-valide pas.
 >    s'épuise, et **aucune requête manquante n'y a été constatée**. Les confondre
 >    est ce que la note du 2026-09-07 interdit.
 >
-> **NOUVELLE CONDITION DE SORTIE** : un correctif amont, **ou** un contournement
-> qui ne masque aucun échec — par exemple recycler le contexte avant le seuil.
-> Compter des séquences propres ne referme toujours rien.
+> **LA CONDITION DE SORTIE EST REMPLIE, ET PAR UNE MESURE** : WebKit 2359 passe
+> 250 tours du bras C sans un blocage, là où 2311 bloquait au rang 64. La montée
+> est portée par une PR distincte, **avec la régénération des huit baselines
+> visuelles** — elles sont toutes en `-linux.png`, produites par le CI avec le
+> bundle de 1.61.1, et la montée change Chromium **et** WebKit. Rien ne compare
+> un pixel hors Linux : le rouge n'apparaîtrait qu'au CI, sur une PR étrangère.
+>
+> **CE QUI RESTE À `D-049` JUSQU'À CETTE MONTÉE** : rien ne change. Et une
+> réserve demeure au-delà — 2359 porte un défaut signalé le 2026-09-17, de
+> **signature différente** (`NetworkConnectionToWebProcess::didReceiveInvalidMessage`,
+> et « the retry passed »). Le confondre serait l'erreur que cette décision existe
+> pour empêcher.
 >
 > Banc de mesure : hors dépôt, `scratchpad/d049/` (deux bras, non versionnés —
 > ils ne prouvent rien du code de ce dépôt).

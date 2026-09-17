@@ -65,9 +65,16 @@ d'une session pair — et c'est ce dernier qui était le plus grave.
 
 ## Prochaine action exacte
 
-Écrire l'amendement de `D-049` avec les chiffres de l'expérience, puis la PR de
-clôture. **Ne pas fermer `D-049`** : arbitrage du responsable, la cause est
-amont et sans correctif.
+**La session est close** — campagne close, état machine basculé, handoff et
+journal écrits, ménage fait, PR de clôture #1183 ouverte. Cette rubrique
+annonçait d'écrire l'amendement `D-049` et la PR de clôture : les deux sont dans
+ce même changement. Constat de revue, corrigé.
+
+**Un seul suivi réellement ouvert** : la montée de Playwright en 1.63.0, sur sa
+branche `wn-playwright-163-d049`. Elle doit partir **avec la régénération des
+huit baselines visuelles** par le workflow `visual-baselines.yml` — elles sont
+toutes en `-linux.png` et ne se produisent pas sur un Mac. C'est cette PR qui
+fermera `D-049`, pas celle-ci.
 
 ## Interdits actifs
 
