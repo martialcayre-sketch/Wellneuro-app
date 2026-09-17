@@ -211,23 +211,13 @@ export function isEcheanceObligatoireEnabled(value = process.env.WN_ECHEANCE_OBL
   return value === 'true';
 }
 
-/**
- * Drapeau de la GÉNÉRATION AUTOMATIQUE d'une synthèse à la fermeture d'un
- * rideau de questionnaires.
- *
- * NEUVIÈME DRAPEAU NEUF ET ÉTEINT, et le seul de la série qui déclenche un
- * APPEL AU MODÈLE que personne n'a demandé. Ce n'est pas une surface qui
- * s'ouvre : c'est une machine qui se met à produire, sur des dossiers réels,
- * sans geste humain en amont. Un tel basculement se décide ; il ne se déploie
- * pas.
- *
- * CE QU'IL N'OUVRE PAS, ET C'EST L'INVARIANT : rien n'atteint le patient. Ce
- * qui est produit est un `Brouillon_IA` — la validation et l'envoi restent
- * deux gestes du praticien. L'automatisation ne franchit que la première des
- * trois portes.
- *
- * Fail-closed : seule la chaîne EXACTE « true » ouvre.
- */
-export function isSyntheseParRideauEnabled(value = process.env.WN_SYNTHESE_PAR_RIDEAU): boolean {
-  return value === 'true';
-}
+// `isSyntheseParRideauEnabled` / `WN_SYNTHESE_PAR_RIDEAU` ONT ÉTÉ RETIRÉS le
+// 2026-09-17. Le drapeau gardait la génération automatique d'un brouillon de
+// synthèse à la fermeture d'un rideau de questionnaires ; la variable a été
+// retirée de la production le même jour, puis le mécanisme du dépôt.
+//
+// Ne pas le réintroduire sans lire le motif : ce n'est pas le coût des appels
+// au modèle qui l'a fait tomber, c'est que le brouillon automatique naissait
+// AVANT la lecture du praticien et éteignait donc la carte « Synthèse à
+// générer » du Fil — l'invitation qu'il prétendait devancer. La demande passe
+// désormais par cette carte, et par elle seule.

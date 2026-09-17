@@ -4,6 +4,70 @@
 
 ## Décisions actives
 
+### D-226 — La génération automatique d'un brouillon de synthèse est retirée : elle éteignait l'invitation qu'elle prétendait devancer
+
+- Date : 2026-09-17
+- Statut : accepté — arbitrage du responsable, rendu en séance.
+- Domaine : génération de synthèse (`lib/synthese/`), soumission patient
+  (`api/patient/submit`), Fil du jour (`lib/fil/cartes.ts`).
+- **Amende [[D-174]]**, qui reste vraie de ce qu'elle décrivait : le mécanisme
+  a existé, il a produit, et ce qu'il produisait n'a jamais atteint un patient.
+
+**CE QUI EST RETIRÉ.** `lib/synthese/declencheurRideau.ts` et son banc, l'appel
+`after()` de `api/patient/submit`, `isSyntheseParRideauEnabled` et le drapeau
+`WN_SYNTHESE_PAR_RIDEAU`. Une réponse de patient ne déclenche plus aucune
+production. La demande passe désormais par la carte « Synthèse à générer » du
+Fil du jour (`cartesSynthesesAGenerer`), et par elle seule.
+
+**1. LE MOTIF N'EST PAS LE COÛT DES APPELS, C'EST UN COUPLAGE.** La carte de
+demande se tait tant qu'une synthèse existe **plus récente que la dernière
+lecture** du praticien (`cartes.ts`, filtre `derniereLecture > derniereGeneration`,
+`dernieresSyntheses` étant calculée **toutes causes confondues**). Or le
+brouillon automatique naissait à la soumission du patient, donc **avant** que le
+praticien ait lu quoi que ce soit. L'automatisme éteignait ainsi l'invitation
+qu'il était censé rendre inutile : le dossier ne portait plus de carte, et le
+brouillon attendait sans que rien ne le signale. Ce couplage n'avait été vu ni à
+l'écriture de `D-174`, ni à la pose du drapeau.
+
+**2. LA MESURE, ET CE QU'ELLE NE DIT PAS.** Lecture de production du 2026-09-17
+(conteneur one-off, agrégats seuls, [[D-125]]) : **8 générations automatiques —
+6 au premier rideau sur 5 dossiers, 2 au second sur 2 dossiers — dont 4
+rejetées**. Sur la même table, 55 générations manuelles sur 17 dossiers, dont 2
+rejetées. Soit **50 % contre 3,6 %**. Un agrégat ne dit pas POURQUOI on rejette,
+et 8 lignes sur 5 dossiers est un échantillon court : ce chiffre a motivé
+l'examen, il ne fonde pas à lui seul la décision. Ce qui la fonde est le § 1,
+qui est un fait de code.
+
+**3. L'ORDRE DES GESTES, ET IL EST INVERSE DE CELUI D'UNE POSE.** Le drapeau a
+été **retiré de la production d'abord** — `env-unset` puis recréation des deux
+conteneurs web, constatée à **20:49:15** (heure locale ; ils tournaient depuis
+19:25:44) —, le code ensuite. C'est le sens sûr pour une extinction : le code
+retiré devant un drapeau encore allumé ne changerait rien, mais un drapeau
+retiré devant du code encore présent ferme déjà la porte. L'inverse vaut pour
+une pose ([[D-174]] § effectivité).
+
+**4. AUCUNE SONDE NE CONSTATE CETTE EXTINCTION, ET IL FAUT LE DIRE.** Le drapeau
+gardait un travail de fond déclenché par une soumission patient : il n'a aucune
+surface publique qui distingue les deux états, contrairement à
+`WN_ADRESSAGE_COURRIER` dont la route rend `400` ouvert et `503` fermé. Le
+constat disponible est double — variable absente de `env`, conteneurs recréés —
+et il sera complété par le comportement : **aucune ligne `syntheses_ia` ne doit
+plus porter `donnees_entree->>'source' = 'auto_rideau_%'` après le 2026-09-17
+20:49:15**. La requête est au fragment de changelog.
+
+**5. CE QUI N'EST PAS DÉCIDÉ ICI.** Les 8 brouillons déjà produits restent au
+dossier avec leur marqueur ; rien n'est effacé ni requalifié. Et le mécanisme
+n'est pas jugé mauvais dans son principe : ce qui est tranché, c'est qu'un
+brouillon ne doit pas naître **avant** le geste de lecture qui le rendrait
+pertinent. Un déclenchement adossé à la lecture confirmée — et non à l'arrivée
+d'une réponse — serait une décision distincte, et elle n'est pas prise.
+
+**6. GARDE POSÉE.** `api/patient/submit/route.test.ts` affirme désormais
+qu'**aucune** tâche de fond n'est planifiée sur ce chemin — assertion sur
+`after`, qui ne nomme aucun module : un second mécanisme la ferait rougir aussi.
+Vérifiée par mutation le jour même (un `after()` réintroduit fait tomber ce banc
+et lui seul). Un banc qui aurait nommé `genererSiRideauFerme` serait resté vert.
+
 ### D-225 — Les indications d'assiette reçoivent leur filtre de service AVANT leur première ligne : le statut vit sur la ligne, pas sur l'assiette
 
 - Date : 2026-09-17
