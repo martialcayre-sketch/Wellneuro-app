@@ -344,11 +344,12 @@ export async function POST(req: Request): Promise<NextResponse<CorrespondanceMed
     // deux depuis son portail. Protéger une des deux routes seulement aurait
     // été arbitraire.
     //
-    // SANS VERROU, DÉLIBÉRÉMENT : l'écrivain du consentement ne prend aucun
-    // verrou et n'ouvre aucune transaction — en poser un ici ne sérialiserait
-    // rien. Ce que la relecture donne, en READ COMMITTED, c'est de voir tout
-    // retrait déjà validé, l'insertion suivant immédiatement.
+    // MÊME VERROU DE LIGNE QUE LES DEUX AUTRES ROUTES. Il ne sert que parce que
+    // `POST /api/portail/trust/choix` le prend aussi : un verrou ne retient que
+    // les parties qui le prennent. Les trois écrivains de ce périmètre le
+    // prennent désormais, et la course est fermée.
     const relecture = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${idPatient} FOR UPDATE`;
       const choixRelu = await tx.trustChoiceEvent.findMany({
         where: { idPatient, finalite: 'partage_medecin_traitant' },
         select: { finalite: true, statut: true, enregistreLe: true },

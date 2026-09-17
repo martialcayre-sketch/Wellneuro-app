@@ -5,6 +5,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
     trustChoiceEvent: { findMany: vi.fn() },
+    $queryRaw: vi.fn(),
     syntheseIA: { findUnique: vi.fn() },
     correspondanceMedecin: {
       findMany: vi.fn(),
@@ -126,9 +127,11 @@ describe('/api/praticien/correspondance-medecin', () => {
     // LA RELECTURE DU CONSENTEMENT VIT DANS UNE TRANSACTION. Le mock la
     // traverse en passant les mêmes doublures : sans cela, chaque cas
     // éprouverait l'absence de `$transaction` au lieu de son propre sujet.
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
     prisma.$transaction.mockImplementation(async (op: (tx: unknown) => unknown) => op({
       trustChoiceEvent: { findMany: prisma.trustChoiceEvent.findMany },
       correspondanceMedecin: { create: prisma.correspondanceMedecin.create },
+      $queryRaw: prisma.$queryRaw,
     }));
     prisma.correspondanceMedecin.create.mockImplementation(
       async ({ data }: { data: Record<string, unknown> }) => ({
@@ -594,9 +597,11 @@ describe('la relecture du consentement dans la transaction', () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findUnique.mockResolvedValue(PATIENT_EN_SUIVI);
     prisma.syntheseIA.findUnique.mockResolvedValue(null);
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
     prisma.$transaction.mockImplementation(async (op: (tx: unknown) => unknown) => op({
       trustChoiceEvent: { findMany: prisma.trustChoiceEvent.findMany },
       correspondanceMedecin: { create: prisma.correspondanceMedecin.create },
+      $queryRaw: prisma.$queryRaw,
     }));
     prisma.correspondanceMedecin.create.mockResolvedValue({
       id: 'CORR_1',
