@@ -51,13 +51,25 @@ C → A — du texte libre vers le lien signé — un **constat d'usage**, jamai
 échéance : « quand le volume le justifiera ». Le volume est **1**. La question est
 close jusqu'à nouvel ordre, et elle se rouvrira sur un chiffre, pas sur une intuition.
 
-**NON TRANCHÉ, ET C'EST UNE RÉSERVE DURE — l'unique ligne est-elle un geste
-clinique ?** Elle est écrite le **2026-09-15 à 23 h 11**, une heure de travail
-nocturne, et les dossiers de test **sont réels et vivent en production** ([[D-075]]).
-Un agrégat ne distingue pas un essai d'un acte. **Ne pas conclure que le courrier de
-biologie a servi en consultation** : ce serait exactement le genre d'inférence que
-[[D-125]] interdit. Le vérifier suppose de lire ce dossier **par son identifiant**,
-ce qui est un autre geste.
+**TRANCHÉ LE 2026-09-17, ET PAS PAR LA BASE — c'était un essai.** La réserve était
+réelle ; elle est levée par une **déclaration du responsable**, interrogé sur cette
+ligne précise : la consignation du **2026-09-15 à 23 h 11** est **un essai de sa
+part**, pas un acte de consultation. Aucune lecture par identifiant n'a donc été
+faite, et aucune n'est nécessaire.
+
+**CE QUE CELA DURCIT.** Le geste de courrier de biologie n'a **jamais servi en
+consultation** : le « 1 » de la table est un test, pas un usage. Les deux écrivains du
+fil affichent donc le même chiffre réel — **zéro usage clinique** — et le constat du
+LOT-06 se lit sans nuance : en deux mois d'ouverture, le rayon Correspondance est **lu
+41 fois sur 11 dossiers et n'a jamais été écrit pour un patient**.
+
+**LA RÉSERVE TELLE QU'ELLE ÉTAIT POSÉE, gardée au dossier parce que le raisonnement se
+rejouera.** Un agrégat ne distingue pas un essai d'un acte, et les dossiers de test
+**sont réels et vivent en production** ([[D-075]]) : conclure d'un compte que le
+courrier a servi en consultation aurait été exactement l'inférence que [[D-125]]
+interdit. Ce qui a tranché n'est pas la base, c'est le souvenir du praticien — et la
+prochaine mesure n'aura pas cette chance. **Marquer les essais, ou accepter de ne pas
+savoir.**
 
 **RIEN À DIRE ENCORE DE LA LETTRE D'ADRESSAGE.** Zéro appel, et c'est attendu :
 `WN_ADRESSAGE_COURRIER` n'a été posé qu'**au matin du 2026-09-17**, après cette

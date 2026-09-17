@@ -7001,3 +7001,22 @@ sur le suivant. Quatre collisions de numéro de décision en une nuit.
 Trois gestes restent au responsable : poser `WN_ADRESSAGE_COURRIER`, lire la mesure,
 et trancher les réserves de D-222 — les huit versions publiées du registre TRUST
 patient promettent une garde que le logiciel ne tient pas.
+
+## 2026-09-17 — Clôture Correspondance : six arbitrages rendus, le périmètre TRUST transmis
+
+Sept questions posées en deux tours, **six tranchées**. La promesse patient : **le
+logiciel vient à la promesse**, le refus bloque — la correction du texte à la baisse
+est écartée pour la seconde fois. Le **silence** bloque aussi (`null` = fermé), à
+condition que l'écran ouvre le chemin du recueil. La formulation des finalités se
+**versionne** ; l'empreinte est écartée, elle coûtait une colonne et une release-db.
+L'unique ligne du fil (2026-09-15, 23 h 11) était **un essai** : zéro usage clinique,
+réserve du LOT-06 levée. Le geste de transcription ne convient pas — deux frictions
+nommées (nom du médecin à ressaisir, mauvais endroit), deux voies écartées.
+
+**Non tranché, et transmis** : le **destinataire** — le courrier de biologie vise le
+médecin traitant, la lettre d'adressage un renvoi sur alerte. Il commande la phrase de
+l'exception publiée.
+
+Périmètre TRUST confié à une session parallèle, prévenue à temps : elle partait écrire
+l'inverse. Quasi-avarie sans suite : un build retardataire a failli retirer la route
+d'adressage sous un drapeau posé.

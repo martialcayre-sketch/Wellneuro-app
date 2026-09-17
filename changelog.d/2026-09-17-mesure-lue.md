@@ -18,11 +18,14 @@ départage** — c'est une question pour le praticien, pas pour la base.
 constat d'usage — « quand le volume le justifiera », jamais une échéance. Le volume
 est **1**. La question est close jusqu'à ce qu'un chiffre la rouvre.
 
-**Une réserve dure, et elle n'est pas de forme.** L'unique ligne est écrite le
-2026-09-15 **à 23 h 11**, et les dossiers de test sont réels et vivent en production
-(`D-075`). Un agrégat ne distingue pas un essai d'un acte clinique : **ne pas
-conclure que le courrier de biologie a servi en consultation**. Le vérifier suppose
-de lire ce dossier par son identifiant — un autre geste.
+**La réserve est levée le jour même, et pas par la base.** L'unique ligne est écrite
+le 2026-09-15 **à 23 h 11**, et les dossiers de test sont réels et vivent en
+production (`D-075`) : un agrégat ne distingue pas un essai d'un acte clinique.
+Interrogé sur cette ligne, le responsable a répondu que **c'était un essai de sa
+part**. Donc le geste de courrier de biologie **n'a jamais servi en consultation** :
+le « 1 » est un test, et le chiffre réel des deux écrivains est **zéro usage
+clinique**. Ce qui a tranché est un souvenir, pas une requête — la prochaine mesure
+n'aura pas cette chance, il faudra **marquer les essais**.
 
 **Rien à dire encore de la lettre d'adressage** : zéro appel, et c'est attendu — son
 drapeau n'a été posé qu'au matin du 2026-09-17, après cette lecture.
