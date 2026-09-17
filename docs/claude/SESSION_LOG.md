@@ -7002,6 +7002,28 @@ Trois gestes restent au responsable : poser `WN_ADRESSAGE_COURRIER`, lire la mes
 et trancher les réserves de D-222 — les huit versions publiées du registre TRUST
 patient promettent une garde que le logiciel ne tient pas.
 
+## 2026-09-17 — Les deux premières attestations praticien, et un claim réfuté par la production
+
+Le responsable a attesté en séance : la table du repli (`D-223`, trois constats
+relus mot à mot) et la première ligne du catalogue de conduites (`D-224`,
+`insomnie_jambes_sans_repos`). Les deux verrous, livrés éteints la veille, sont
+armés — et la transcription n'a suivi la déclaration, jamais l'inverse.
+
+**La vérification a réfuté une désignation sur trois.** La surface citait
+`WN-CL-0320-002` en claim d'instrument ; lu en production, il fonde le HAD quand
+la ligne se déclenche sur l'IRLS. Ni le sha, ni le registre des sources, ni le CI
+n'attrapent cette classe d'erreur — seule la lecture du texte du claim. La même
+lecture a fait apparaître `WN-CL-0318-020`, second appui prescriptif.
+
+**Écarté** : exiger `prescriptif` du catalogue de conduites — `claimsInstrument`
+est descriptif par construction. Écarté aussi, mais nommé : l'exigence par
+catégorie plutôt que par table.
+
+**Six constats de revue, six réels, tous corrigés avant merge.**
+
+**Prochaine action** : le chantier 1 de S3 — champ `statut` et filtre de service.
+**Question ouverte** : les six claims des deux lignes de conduite restantes
+n'ont pas encore été lus sur pièce.
 ## 2026-09-17 — Clôture Correspondance : six arbitrages rendus, le périmètre TRUST transmis
 
 Sept questions posées en deux tours, **six tranchées**. La promesse patient : **le

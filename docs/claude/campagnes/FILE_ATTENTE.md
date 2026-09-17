@@ -103,7 +103,8 @@ du travail de dépôt porté par sa décision et sa PR. Ils figurent ici pour qu
 file cesse de laisser croire que rien ne se fait en dehors d'elle.
 
 - **`D-206` — la première table du catalogue de conduites** (2026-09-16,
-  arbitrage du responsable, **non commencé**). Le catalogue n'ouvre **pas** de
+  arbitrage du responsable, **LOT-01 livré, première ligne signée le
+  2026-09-17**). Le catalogue n'ouvre **pas** de
   campagne : `D-112` pèse sur trois campagnes de suite et la dernière a été
   close à usage mesuré zéro. **Un seul lot**, une PR — la forme d'une ligne
   (clé de tableau clinique, champs, `claimId` fondant l'indication, emplacement
@@ -119,10 +120,26 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   la forme d'une ligne, un verrou à SIX termes, un service fail-closed, et la
   table **VIDE**. La surface de relecture
   (`SURFACE_RELECTURE_CATALOGUE_CONDUITES_2026-09-16.md`) propose **trois lignes**
-  sur le bloc sommeil et écarte **huit tableaux** avec leur motif. **Ce qui reste
-  au responsable** : désigner les `claimId` qui fondent chaque indication — le
-  dépôt sait qu'il y en a 20, 29 et 7 de validés sur les trois sources, il ne sait
-  pas lesquels.
+  sur le bloc sommeil et écarte **huit tableaux** avec leur motif.
+  **PREMIÈRE LIGNE SIGNÉE LE 2026-09-17 ([[D-224]])** — `insomnie_jambes_sans_repos`,
+  sur deux claims prescriptifs indépendants. La table n'est plus vide, et son
+  verrou est armé. **Ce qui reste** : les deux autres lignes, dont les six claims
+  d'indication et de sécurité **n'ont pas encore été lus sur pièce** — la
+  vérification du 2026-09-17 a réfuté une désignation sur trois, et rien dans la
+  chaîne (sha, registre des sources, CI) n'attrape cette classe d'erreur. Les
+  ajouter demandera une **nouvelle** attestation : le périmètre se hache en
+  entier.
+
+- **Dette — `conflits_sources` n'a pas de cas négatif** (constatée le
+  2026-09-17, routée depuis la revue de la PR #1178, **non commencée**). Le
+  fichier `rag_claim_fraicheur_tables_signees_v1_negatif.sql` porte `N7`, `N8`,
+  `N9` et — depuis `D-224` — `N10`, chacun prouvant qu'une table entrée au
+  contrat avec `exige_prescriptif = false` reste gardée sur les **trois autres**
+  propriétés. `conflits_sources` ([[D-103]]) est entré au contrat sans le sien :
+  ses deux paires ne sont exercées qu'à l'état SAIN, par `N0`. Un prédicat qui
+  l'exempterait de `statut`, `active` ou `superseded_at` passerait les onze cas.
+  **Correctif** : un `N11` sur le patron de `N10`, mutant `WN-CL-0312-018` ou
+  `WN-CL-0387-013`. Quelques lignes, à poser au prochain passage sur ce fichier.
 
 - **`D-113` — les cycles nommés `T0`, `T1`, `T2`** (2026-08-26, arbitrage du
   responsable). Chaque cycle s'ouvrait par un `T0` : un second cycle

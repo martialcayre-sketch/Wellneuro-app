@@ -54,17 +54,63 @@ function signatureBanc(
 }
 
 describe('catalogue de conduites — état livré', () => {
-  it('la table est VIDE, et sa métadonnée n’atteste rien', () => {
-    expect(CATALOGUE_CONDUITES_V1).toEqual([]);
-    expect(CATALOGUE_CONDUITES_METADATA.validationExterne).toBe(false);
-    expect(CATALOGUE_CONDUITES_METADATA.dateValidation).toBeNull();
-    expect(CATALOGUE_CONDUITES_METADATA.claimsSource).toEqual([]);
-    expect(CATALOGUE_CONDUITES_METADATA.shaPerimetre).toBeNull();
+  it('porte UNE ligne, attestée le 2026-09-17', () => {
+    expect(CATALOGUE_CONDUITES_V1.map(l => l.cleTableau)).toEqual(['insomnie_jambes_sans_repos']);
+    expect(CATALOGUE_CONDUITES_METADATA.validationExterne).toBe(true);
+    expect(CATALOGUE_CONDUITES_METADATA.dateValidation).toBe('2026-09-17T06:06:41.000Z');
+    expect(catalogueConduitesSigne(CATALOGUE_CONDUITES_METADATA)).toBe(true);
   });
 
-  it('rien n’est servable aujourd’hui', () => {
+  it('N’ATTESTE AUCUN CLAIM D’INSTRUMENT, et c’est une déclaration', () => {
+    // LE CONSTAT QUI A FAILLI PASSER. La surface de relecture désignait
+    // `WN-CL-0320-002` en claim d'instrument. Lu en production le 2026-09-17, ce
+    // claim fonde le HAD ; cette ligne se déclenche sur l'IRLS (`Q_SOM_04`). Ni
+    // le CI ni le sha n'auraient vu l'écart — le sha atteste le contenu relu,
+    // pas sa pertinence. Ce banc fige le vide pour qu'un ajout futur soit un
+    // geste conscient.
+    const [ligne] = CATALOGUE_CONDUITES_V1;
+    expect(ligne.claimsInstrument).toEqual([]);
+    expect(ligne.claimsSecurite).toEqual([]);
+    expect(claimsDeLaLigne(ligne).map(c => c.claimId).sort())
+      .toEqual(['WN-CL-0318-020', 'WN-CL-0320-003']);
+  });
+
+  it('DÉCLARE son raccourci : le déclencheur lit un score, les claims disent le syndrome', () => {
+    const [ligne] = CATALOGUE_CONDUITES_V1;
+    expect(ligne.raccourciAssume).not.toBeNull();
+    // Le champ est DANS le périmètre haché : le reformuler périme l'attestation.
+    expect(ligne.raccourciAssume).toContain('IRLS');
+    expect(ligne.raccourciAssume).toContain('syndrome');
+  });
+
+  it('sert sa ligne quand ses DEUX claims sont valides, et se tait sinon', () => {
+    const valides = new Set(CATALOGUE_CONDUITES_METADATA.claimsSource.map(cleClaim));
+    expect(lignesConduitesServables(valides).map(l => l.cleTableau))
+      .toEqual(['insomnie_jambes_sans_repos']);
+
+    // UN SEUL CLAIM RETIRÉ SUFFIT À LA RETIRER — les deux fondent l'indication,
+    // et le corpus qui en retire un a cessé de soutenir ce qui était attesté.
+    for (const claim of CATALOGUE_CONDUITES_METADATA.claimsSource) {
+      const ampute = new Set([...valides].filter(c => c !== cleClaim(claim)));
+      expect(lignesConduitesServables(ampute)).toEqual([]);
+    }
+
+    // `null` = statuts NON LUS. Ferme aussi, mais pas pour la même raison.
+    expect(lignesConduitesServables(null)).toEqual([]);
     expect(lignesConduitesServables(new Set())).toEqual([]);
-    expect(catalogueConduitesSigne(CATALOGUE_CONDUITES_METADATA)).toEqual(false);
+  });
+
+  it('PERD SA SIGNATURE si le raccourci est reformulé', () => {
+    // Le raccourci est dans le périmètre haché, et ce banc le prouve plutôt que
+    // de le promettre en prose — c'est tout l'intérêt d'avoir sorti ce champ du
+    // commentaire.
+    const reecrite = CATALOGUE_CONDUITES_V1.map(l => ({
+      ...l,
+      raccourciAssume: `${l.raccourciAssume} Précision ajoutée après coup.`,
+    }));
+    expect(catalogueConduitesSigne(CATALOGUE_CONDUITES_METADATA, reecrite)).toBe(false);
+    const valides = new Set(CATALOGUE_CONDUITES_METADATA.claimsSource.map(cleClaim));
+    expect(lignesConduitesServables(valides, CATALOGUE_CONDUITES_METADATA, reecrite)).toEqual([]);
   });
 });
 

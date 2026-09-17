@@ -3,6 +3,45 @@
 *Écrite le 2026-09-16, LOT-01 de `D-206`. **Ce document ne signe rien.** Il
 présente au praticien ce qu'il aurait à attester, et ce qui a été écarté.*
 
+> ## ÉTAT AU 2026-09-17 — une ligne attestée, une désignation réfutée
+>
+> **`insomnie_jambes_sans_repos` est SIGNÉE** (`D-224`). Les deux autres lignes
+> restent proposées : le périmètre se hache en entier, donc elles arriveront par
+> une **nouvelle** attestation sur un périmètre élargi.
+>
+> **La désignation `claimsInstrument = WN-CL-0320-002` était FAUSSE pour la
+> ligne 3, et elle reste JUSTE pour les lignes 1 et 2.** Lu en production le
+> 2026-09-17, ce claim fonde l'emploi du **HAD** dans le bilan d'une insomnie
+> sans cause identifiée — et il est `prescriptif = false`. Il fonde donc bien
+> l'instrument des deux premières lignes, qui se déclenchent sur les sous-scores
+> `D` et `A` du HAD. Il ne fonde rien pour la troisième, qui se déclenche sur
+> l'**IRLS** (`Q_SOM_04`). La ligne signée porte `claimsInstrument: []`, et ce
+> vide est une déclaration.
+>
+> **Ce que la vérification a fait apparaître en plus.** `WN-CL-0318-020` — le
+> « troisième document » que ce texte citait sans le désigner — est un claim
+> **prescriptif** qui fonde indépendamment la même indication et la même
+> conduite. Il est entré au périmètre signé.
+>
+> **La leçon opposable** : une désignation de claim se vérifie sur le **texte du
+> claim**, jamais sur la mémoire de qui l'a proposée. Ni le sha, ni le registre
+> des sources, ni le CI n'atteignent cette classe d'erreur — le sha atteste le
+> contenu relu, pas sa pertinence.
+>
+> **Les deux lignes restantes doivent donc être revérifiées de la même façon**
+> avant toute attestation : leurs six claims d'indication et de sécurité n'ont
+> pas encore été lus sur pièce.
+>
+> **TOUT CE QUI SUIT EST LE TEXTE DU 2026-09-16, AVANT LA SIGNATURE.** Il dit la
+> table « livrée vide » et présente les trois lignes comme des propositions à
+> confirmer — c'était vrai ce jour-là, et c'est la pièce sur laquelle le
+> responsable a attesté. Il n'est **pas** réécrit au passé : une surface de
+> relecture réécrite après coup ferait disparaître ce qui a été effectivement lu.
+> **Ce bandeau est le seul état courant**, et il l'emporte sur deux passages en
+> particulier : la table **n'est plus vide**, et la section 3 ci-dessous propose
+> encore `WN-CL-0320-002` en claim d'instrument — **cette désignation-là est
+> réfutée, elle ne se confirme pas.**
+
 La table `CATALOGUE_CONDUITES_V1` est livrée **vide**, ses verrous éteints, son
 service fail-closed. Elle le restera jusqu'à ce que les lignes ci-dessous soient
 relues, que leurs claims soient **désignés**, et que la métadonnée soit éditée.

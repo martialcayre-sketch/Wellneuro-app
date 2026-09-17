@@ -1,12 +1,14 @@
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 
-// CATALOGUE DE CONDUITES — LOT-01, table SIGNÉE, aujourd'hui VIDE ([[D-206]]).
+// CATALOGUE DE CONDUITES — LOT-01, table SIGNÉE, UNE LIGNE ([[D-206]], [[D-224]]).
 //
 // CE QUE CE MODULE EST, ET CE QU'IL N'EST PAS. Il porte la FORME d'une ligne de
-// catalogue et le verrou qui la garde. Il ne porte AUCUNE ligne : une signature
-// clinique ne se pose jamais par l'outil, et le praticien seul peut désigner les
-// claims qui fondent une indication. La surface de relecture qui lui présente
-// les lignes candidates vit dans `docs/claude/campagnes/`, hors de ce fichier.
+// catalogue et le verrou qui la garde. La ligne qu'il porte n'a pas été écrite
+// par l'outil : elle a été PROPOSÉE sur une surface de relecture
+// (`docs/claude/campagnes/SURFACE_RELECTURE_CATALOGUE_CONDUITES_2026-09-16.md`),
+// corrigée après vérification en production, puis ATTESTÉE par le praticien le
+// 2026-09-17. Une signature clinique ne se pose jamais par l'outil — celle-ci a
+// été demandée, puis transcrite.
 //
 // L'UNITÉ EST LE TABLEAU CLINIQUE ([[D-206]] A2), pas l'axe ni la plainte. Trois
 // documents du corpus traitent l'insomnie et proposent trois conduites
@@ -81,15 +83,56 @@ export function claimsDeLaLigne(ligne: LigneConduite): readonly ClaimRef[] {
 }
 
 /**
- * LA TABLE, VIDE — et le fail-closed la rend inoffensive tant qu'elle l'est.
+ * LA TABLE — UNE SEULE LIGNE, attestée le 2026-09-17 ([[D-224]]).
  *
- * Elle n'attend pas « qu'on trouve des claims » : les sources candidates du bloc
- * sommeil sont curées `complet`, sans aucun claim en attente à l'instantané du
- * 2026-08-03 du registre d'interventions. Ce qu'elle attend est la DÉSIGNATION
- * de ceux qui fondent chaque indication, et cette désignation est un geste du
- * praticien.
+ * POURQUOI UNE SEULE, ALORS QUE LA SURFACE EN PROPOSAIT TROIS. Le praticien a
+ * attesté celle-ci et retenu les deux autres. Ce n'est pas un demi-geste : le
+ * périmètre se hache EN ENTIER, donc les deux lignes retenues arriveront par une
+ * NOUVELLE attestation sur un périmètre élargi — c'est le fonctionnement normal
+ * du verrou, pas une dette.
+ *
+ * CE QUE LA RELECTURE DU 2026-09-17 A CORRIGÉ, et il faut le dire parce que
+ * l'erreur était dans la surface, pas dans le corpus. Les trois lignes
+ * proposées citaient `WN-CL-0320-002` en claim d'instrument. Lu en production ce
+ * jour-là, ce claim fonde le **HAD** — or cette ligne-ci se déclenche sur
+ * l'**IRLS** (`Q_SOM_04`). Le citer aurait attesté un rôle que le claim ne porte
+ * pas, ce que ni le CI ni le sha n'auraient jamais vu : le sha atteste le
+ * contenu relu, pas sa pertinence.
  */
-export const CATALOGUE_CONDUITES_V1: readonly LigneConduite[] = [];
+export const CATALOGUE_CONDUITES_V1: readonly LigneConduite[] = [
+  {
+    cleTableau: 'insomnie_jambes_sans_repos',
+    // LA SOURCE DÉSIGNÉE EST CELLE DU TABLEAU, pas l'union des sources citées.
+    // `WN-CL-0318-020` vient de `WN-SRC-0318` et corrobore : la provenance de
+    // chaque claim vit sur le claim, ce champ nomme le document qui porte le
+    // tableau clinique.
+    sourceId: 'WN-SRC-0320',
+    // DEUX CLAIMS PRESCRIPTIFS INDÉPENDANTS, chacun fondant l'indication ET la
+    // conduite — deux documents distincts disant la même chose. C'est l'assise
+    // la plus solide que le corpus permette aujourd'hui sur ce tableau.
+    claimsIndication: [
+      { claimId: 'WN-CL-0320-003', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0318-020', versionClaim: 'v1.0' },
+    ],
+    // VIDE, ET C'EST UNE DÉCLARATION. Aucun claim du corpus ne fonde l'IRLS
+    // comme instrument de tête de cette ligne — vérifié claim par claim sur
+    // `WN-SRC-0320` et sur les quatre appuis de `BIO-SJS-01`, le 2026-09-17. La
+    // légitimité du déclencheur ne vient pas d'ici : elle vient de la bande
+    // publiée de `Q_SOM_04`, déjà en service dans la table signée des
+    // indications de biologie.
+    claimsInstrument: [],
+    // VIDE, ET C'EST UNE DÉCLARATION AUSSI. Cette conduite ne porte aucune
+    // contre-indication ni interdiction — contrairement aux deux lignes
+    // retenues, qui en portent chacune une.
+    claimsSecurite: [],
+    raccourciAssume:
+      'Les claims fondent la conduite sur le syndrome constaté ; le déclencheur, lui, '
+      + 'lit une bande warning/danger de l’IRLS. Le passage du score au syndrome est '
+      + 'assumé par l’outil — c’est le même pas que la règle de biologie BIO-SJS-01, '
+      + 'déjà signée.',
+    statut: 'publiee',
+  },
+];
 
 export type CatalogueConduitesMetadata = {
   validationExterne: boolean;
@@ -132,22 +175,33 @@ export function shaPerimetreConduites(
 }
 
 /**
- * MÉTADONNÉE NON SIGNÉE — verrous présents et ÉTEINTS (patron des champs dormants
- * de `gatePopulationV1`, qui est le patron des CHAMPS, pas celui du fail-closed).
- * Ils existent pour que le jour de l'attestation soit une ÉDITION et non un ajout
- * de structure.
+ * MÉTADONNÉE SIGNÉE — attestation du 2026-09-17 ([[D-224]]).
  *
- * `claimsSource` VIDE est délibérément visible : le balayage du contrat de
- * fraîcheur (`claimsEpinglesFraicheur.guard.test.ts`) reconnaît une table signée
- * à ce champ, et le reconnaît MÊME VIDE. Le fichier entre donc à
- * `FICHIER_VERS_TABLE` dès aujourd'hui — mais il ne contribue AUCUNE paire au
- * contrat SQL tant qu'aucune ligne ne cite de claim, donc rien n'y est dû.
+ * LE JOUR DE L'ATTESTATION A BIEN ÉTÉ UNE ÉDITION, et c'est ce que les champs
+ * dormants visaient : aucune structure ajoutée, quatre valeurs posées. Le geste
+ * qui atteste est la déclaration du praticien en séance ; la recopie ci-dessous
+ * est mécanique et ne vaut que portée par elle ([[D-195]] §1).
+ *
+ * LES DEUX CLAIMS ENTRENT MAINTENANT AU CONTRAT SQL DE FRAÎCHEUR. Le balayage
+ * reconnaissait déjà la table à son `claimsSource` même vide ; il en tire
+ * désormais deux paires, inscrites dans
+ * `web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql` et dans son
+ * négatif. L'exigence `prescriptif` de la table y est déclarée FALSE — arbitrage
+ * de [[D-224]], motivé dans `claimsEpinglesFraicheur.guard.test.ts`.
  */
 export const CATALOGUE_CONDUITES_METADATA: CatalogueConduitesMetadata = {
-  validationExterne: false,
-  dateValidation: null,
-  claimsSource: [],
-  shaPerimetre: null,
+  validationExterne: true,
+  dateValidation: '2026-09-17T06:06:41.000Z',
+  // L'UNION EXACTE des claims que la ligne cite, ni plus ni moins — le verrou
+  // refuse la divergence dans les deux sens.
+  claimsSource: [
+    { claimId: 'WN-CL-0320-003', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0318-020', versionClaim: 'v1.0' },
+  ],
+  // LITTÉRAL FIGÉ — surtout pas `shaPerimetreConduites(...)`, qui rendrait la
+  // comparaison tautologique et ferait entrer toute ligne ajoutée plus tard sous
+  // une signature acquise ([[D-063]]).
+  shaPerimetre: '933dacb20e22a087ce7d6834878e2bc742216638abc0492a34cf49cccbb937b9',
 };
 
 function estIsoCanonique(valeur: string | null): valeur is string {
