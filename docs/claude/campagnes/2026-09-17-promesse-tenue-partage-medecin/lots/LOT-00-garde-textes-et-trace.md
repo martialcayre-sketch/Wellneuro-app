@@ -29,6 +29,31 @@ versionnée et verrouillée par empreinte), la colonne
 
 **Le registre** — amendements en place de `D-222` et de `D-219`.
 
+## L'arbitrage du découpage, et pourquoi il est écrit ici
+
+**`DEPLOIEMENT_RELEASE_DB.md` prescrit de garder la PR de migration SÉPARÉE de la
+PR fonctionnelle.** Ce lot y déroge, et la dérogation est un arbitrage du
+responsable rendu en session le 2026-09-17. La question lui a été posée en ces
+termes — « la garde change un comportement en production, les textes non » — avec
+trois variantes soumises :
+
+1. **Deux lots, textes d'abord** — les cinq textes partent seuls, la garde suit.
+2. **Deux lots, garde d'abord** — on ne publie une promesse qu'une fois tenue.
+3. **Un seul lot** — la promesse et sa garde arrivent ensemble, rien ne peut
+   diverger entre les deux.
+
+**Réponse retenue : un seul lot.**
+
+**CE QUE LA DÉROGATION EXIGE EN RETOUR**, et qui est livré : la même page pose que
+« un ADD se protège par drapeau éteint ». Le drapeau seul ne suffisait pas — il
+garde ce qui entre dans `data`, pas ce que Prisma rend —, d'où les deux `select`
+et le banc d'invariant qui les tient.
+
+**POURQUOI CE PARAGRAPHE EXISTE.** Une relecture future ouvrant
+`DEPLOIEMENT_RELEASE_DB.md` verrait une pratique non conforme sans en voir la
+raison. Un arbitrage relayé de session en session s'érode ; écrit, il tient.
+Constat d'une session pair, retenu.
+
 ## Ce qui a été trouvé sans le chercher
 
 - **La table des libellés de partage portait la clé `accepte`** quand le statut
@@ -41,7 +66,7 @@ versionnée et verrouillée par empreinte), la colonne
 ## Done
 
 - [x] T1 vert (404 bancs).
-- [ ] T2 vert.
+- [x] T2 vert — 580 fichiers de banc, 205 E2E.
 - [x] Bancs de la garde : cinq cas de consignation, deux de biologie, deux
       d'exception d'adressage, quatre de verdict, quatre d'écran praticien.
 - [x] Mutation éprouvée sur le banc de l'écran d'accusé.
