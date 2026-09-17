@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
 import {
+  anomaliesDuDeclencheur,
   INDICATIONS_ASSIETTES_METADATA,
   INDICATIONS_ASSIETTES_V1,
   indicationsAssiettesSignees,
@@ -226,6 +228,86 @@ describe('indications d’assiette — LE FILTRE DE SERVICE, raison d’être du
     const nonSignee = signatureBanc(lignes, { validationExterne: false });
     expect(lignesIndicationAssietteServables(claimsValidesDe(lignes), nonSignee, lignes))
       .toEqual([]);
+  });
+});
+
+describe('indications d’assiette — le déclencheur ne dérive pas en silence', () => {
+  // LE CONSTAT DE REVUE QUI A FONDÉ CE BLOC. Réutiliser `OrientationDeclencheur`
+  // donne le vocabulaire, PAS les gardes anti-dérive de
+  // `orientationRulesV1.test.ts` — celles-ci parcourent `ORIENTATION_RULES_V1`.
+  // Sans ce bloc, une ligne future pouvait être signée puis servie avec un
+  // questionnaire inexistant, et son déclencheur serait inerte sans rien casser.
+  const IDS = new Set(QUESTIONNAIRES_CATALOG.map(q => q.id));
+
+  it('le catalogue de questionnaires n’est pas vide — sinon tout ce bloc mentirait', () => {
+    // Anti-vacuité : sur un catalogue vide, TOUT déclencheur serait « inconnu »
+    // et le cas négatif passerait pour la mauvaise raison.
+    expect(IDS.size).toBeGreaterThan(10);
+  });
+
+  it('ATTRAPE un questionnaire inventé', () => {
+    const anomalies = anomaliesDuDeclencheur(
+      ligne({ declencheur: { type: 'zone', idQuestionnaire: 'Q_INVENTE_99', zone: { type: 'couleur', couleurs: ['danger'] } } }),
+      IDS,
+    );
+    expect(anomalies).toHaveLength(1);
+    expect(anomalies[0]).toContain('Q_INVENTE_99');
+  });
+
+  it('ATTRAPE un drapeau sans valeur — il ne serait jamais atteint', () => {
+    const anomalies = anomaliesDuDeclencheur(
+      ligne({ declencheur: { type: 'drapeau', champ: 'antecedentsDomaines', valeurs: [] } }),
+      IDS,
+    );
+    expect(anomalies).toHaveLength(1);
+    expect(anomalies[0]).toContain('antecedentsDomaines');
+  });
+
+  it('ATTRAPE une disjonction vide — une ligne morte qui se lit comme vivante', () => {
+    const anomalies = anomaliesDuDeclencheur(
+      ligne({ declencheur: { type: 'ou', declencheurs: [] } }), IDS,
+    );
+    expect(anomalies).toEqual(['ASSIETTE-IND-BANC : disjonction sans branche']);
+  });
+
+  it('DESCEND DANS LES BRANCHES d’une disjonction — sinon `ou` serait la porte de service', () => {
+    const anomalies = anomaliesDuDeclencheur(
+      ligne({
+        declencheur: {
+          type: 'ou',
+          declencheurs: [
+            { type: 'zone', idQuestionnaire: QUESTIONNAIRES_CATALOG[0].id, zone: { type: 'couleur', couleurs: ['danger'] } },
+            { type: 'comparaison', idQuestionnaire: 'Q_AUSSI_INVENTE', operateur: '>=', valeur: 3 },
+          ],
+        },
+      }),
+      IDS,
+    );
+    expect(anomalies).toEqual(['ASSIETTE-IND-BANC : questionnaire inconnu `Q_AUSSI_INVENTE`']);
+  });
+
+  it('LAISSE PASSER un déclencheur sain', () => {
+    expect(anomaliesDuDeclencheur(
+      ligne({ declencheur: { type: 'zone', idQuestionnaire: QUESTIONNAIRES_CATALOG[0].id, zone: { type: 'couleur', couleurs: ['danger'] } } }),
+      IDS,
+    )).toEqual([]);
+  });
+
+  it('AUCUNE ligne réelle ne porte d’anomalie', () => {
+    // Vide aujourd'hui — et c'est pour cela que les cas ci-dessus existent : ce
+    // balayage seul serait un banc vacué, donc un banc qui ment ([[D-012]],
+    // [[D-015]]). Le jour où une ligne arrive, il la juge.
+    expect(INDICATIONS_ASSIETTES_V1.flatMap(l => anomaliesDuDeclencheur(l, IDS))).toEqual([]);
+  });
+
+  it('LE LIBELLÉ D’ANAMNÈSE N’EST PAS GARDÉ, et le module le déclare', () => {
+    // Ce qui suit n'est pas un test de comportement mais un test de FRANCHISE :
+    // le trou existe, il est nommé sur place, et il doit le rester tant qu'il
+    // n'est pas fermé. Si quelqu'un retire la mise en garde sans écrire le
+    // validateur partagé, ce banc rougit.
+    const source = readFileSync(join(__dirname, 'indicationsAssiettesV1.ts'), 'utf8');
+    expect(source).toContain('ANAMNESE_SECTIONS');
+    expect(source).toMatch(/validateur partagé/);
   });
 });
 

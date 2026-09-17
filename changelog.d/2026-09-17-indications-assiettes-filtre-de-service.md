@@ -21,9 +21,16 @@ deux sens : le verrou **ouvre** sur une table qui contient un brouillon, et il
 
 **Le déclencheur est celui de l'orientation, pas un troisième.**
 `OrientationDeclencheur` est déjà le vocabulaire signé de deux tables et couvre
-ce que la surface demande — sous-scores, drapeaux d'anamnèse, disjonctions. En
-écrire un autre aurait créé deux grammaires de porte dont une seule est gardée
-par les bancs qui confrontent les libellés aux options réelles d'anamnèse.
+ce que la surface demande — sous-scores, drapeaux d'anamnèse, disjonctions.
+
+**Mais réutiliser le type n'hérite pas de sa garde**, et la première rédaction de
+ce lot affirmait le contraire : les bancs anti-dérive parcourent
+`ORIENTATION_RULES_V1`, pas cette table. D'où `anomaliesDuDeclencheur`, gardée en
+CI et **hors du verrou** — un catalogue de questionnaires qui bouge ne doit pas
+fermer la table d'un coup. Elle attrape un questionnaire inventé, un drapeau sans
+valeur, et une **disjonction vide** : jamais atteinte, donc une ligne signée,
+servable et morte. Ce qu'elle n'attrape pas — un libellé d'anamnèse qui dérive —
+est déclaré sur place, et le validateur partagé s'écrit avant la première ligne.
 
 **Un septième terme de verrou, propre à cette table : l'assiette doit exister.**
 Une ligne qui pointe une assiette retirée du catalogue reste parfaitement

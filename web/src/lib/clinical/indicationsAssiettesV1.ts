@@ -36,11 +36,23 @@ import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
  * LE DÉCLENCHEUR EST CELUI DE L'ORIENTATION, et ce n'est pas de l'économie de
  * code. `OrientationDeclencheur` est déjà le vocabulaire signé de deux tables —
  * les règles d'orientation et les indications de biologie. En écrire un
- * troisième aurait créé deux grammaires de porte dans le même dépôt, dont une
- * seule serait gardée par les bancs anti-dérive de `orientationRulesV1.test.ts`
- * — ceux qui confrontent les libellés de drapeau aux options réelles de
- * `ANAMNESE_SECTIONS`. Un libellé qui dérive ferait taire la règle sans rien
- * casser ; réutiliser le type, c'est hériter de cette garde.
+ * troisième aurait créé une grammaire de porte de plus dans le même dépôt.
+ *
+ * MAIS RÉUTILISER LE TYPE N'HÉRITE PAS DE SA GARDE, et il faut le dire ici parce
+ * que la première version de ce commentaire affirmait le contraire — constat de
+ * revue, vérifié et fondé. Les bancs anti-dérive qui confrontent les libellés de
+ * drapeau aux options réelles d'`ANAMNESE_SECTIONS` parcourent
+ * **`ORIENTATION_RULES_V1`**, pas cette table. Le type donne le VOCABULAIRE ; il
+ * ne donne ni la vérification des `valeurs` (des chaînes libres), ni celle des
+ * couleurs de zone.
+ *
+ * CE QUI EST GARDÉ ICI, ET CE QUI NE L'EST PAS ENCORE. Le banc de ce module
+ * vérifie que chaque feuille nomme un questionnaire du catalogue et qu'un
+ * drapeau porte au moins une valeur — assez pour attraper un identifiant
+ * inventé, pas assez pour attraper un LIBELLÉ d'anamnèse qui dérive. Ce
+ * dernier trou est **ouvert et nommé** : le validateur partagé s’écrit au
+ * chantier 2, AVANT la première ligne, parce qu'un déclencheur inerte ne casse
+ * rien — il cesse simplement de se déclencher, et personne ne le voit.
  *
  * CE QUE CE TYPE NE PERMET PAS ENCORE : une borne d'ÂGE. `D-216` a rendu l'âge
  * déclencheur, mais `Patient.dateNaissance` n'est lu par aucune porte et
@@ -175,6 +187,57 @@ export function claimsDeLIndication(
   ligne: LigneIndicationAssiette,
 ): readonly ClaimRef[] {
   return ligne.claimsIndication;
+}
+
+/**
+ * CE QUI CLOCHE DANS LE DÉCLENCHEUR D'UNE LIGNE — liste vide = rien de détecté.
+ *
+ * POURQUOI CETTE FONCTION EXISTE, ET CE QU'ELLE N'EST PAS. Réutiliser
+ * `OrientationDeclencheur` donne le vocabulaire, **pas** les gardes anti-dérive
+ * de `orientationRulesV1.test.ts` : celles-ci parcourent `ORIENTATION_RULES_V1`.
+ * Sans rien ici, une ligne pourrait être signée puis servie avec un
+ * questionnaire inventé, et son déclencheur serait **silencieusement inerte** —
+ * il ne casse rien, il cesse de se déclencher.
+ *
+ * CE QU'ELLE ATTRAPE : un identifiant de questionnaire absent du catalogue, un
+ * drapeau sans aucune valeur, une disjonction vide (jamais atteinte, donc une
+ * ligne morte qui se lirait comme vivante).
+ *
+ * CE QU'ELLE N'ATTRAPE PAS, ET C'EST DÉCLARÉ : un LIBELLÉ de drapeau qui dérive
+ * des options réelles d'`ANAMNESE_SECTIONS`. La correspondance clé typée ↔ champ
+ * d'anamnèse vit dans le banc d'orientation ; la recopier ici la ferait diverger
+ * au premier correctif. **Le validateur partagé est à écrire au chantier 2,
+ * avant la première ligne.** Le trou est nommé plutôt que masqué.
+ *
+ * ELLE NE FAIT PAS PARTIE DU VERROU, et c'est délibéré : un catalogue de
+ * questionnaires qui bouge fermerait alors toute la table d'un coup. Elle est un
+ * garde de CI, comme son équivalent d'orientation.
+ */
+export function anomaliesDuDeclencheur(
+  ligne: LigneIndicationAssiette,
+  idsQuestionnaires: ReadonlySet<string>,
+): string[] {
+  const feuilles = ligne.declencheur.type === 'ou'
+    ? ligne.declencheur.declencheurs
+    : [ligne.declencheur];
+
+  // Une disjonction vide n'est JAMAIS atteinte (`some` sur une liste vide est
+  // faux) : la ligne serait signée, servable, et morte.
+  if (feuilles.length === 0) return [`${ligne.id} : disjonction sans branche`];
+
+  const anomalies: string[] = [];
+  for (const feuille of feuilles) {
+    if (feuille.type === 'drapeau') {
+      if (feuille.valeurs.length === 0) {
+        anomalies.push(`${ligne.id} : drapeau \`${feuille.champ}\` sans aucune valeur`);
+      }
+      continue;
+    }
+    if (!idsQuestionnaires.has(feuille.idQuestionnaire)) {
+      anomalies.push(`${ligne.id} : questionnaire inconnu \`${feuille.idQuestionnaire}\``);
+    }
+  }
+  return anomalies;
 }
 
 /**

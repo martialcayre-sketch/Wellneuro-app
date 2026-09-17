@@ -37,9 +37,26 @@ hache en entier.
 `OrientationDeclencheur` est déjà le vocabulaire signé des règles d'orientation
 et des indications de biologie, et il couvre ce que la surface demande —
 sous-scores (`Q_INF_03`/`DA`), drapeaux d'anamnèse (`antecedentsDomaines`),
-disjonctions. En écrire un autre aurait créé deux grammaires de porte dans le
-même dépôt, dont **une seule** est gardée par les bancs anti-dérive qui
-confrontent les libellés de drapeau aux options réelles d'`ANAMNESE_SECTIONS`.
+disjonctions. En écrire un autre aurait créé une grammaire de porte de plus.
+
+**4 bis. MAIS RÉUTILISER LE TYPE N'HÉRITE PAS DE SA GARDE**, et la première
+rédaction de cette décision affirmait le contraire — **constat de revue, vérifié
+et fondé**. Les bancs anti-dérive qui confrontent les libellés de drapeau aux
+options réelles d'`ANAMNESE_SECTIONS` parcourent `ORIENTATION_RULES_V1`, pas
+cette table. Le type donne le vocabulaire ; il ne vérifie ni les `valeurs` d'un
+drapeau — des chaînes libres — ni l'existence d'un questionnaire.
+
+Ce lot pose donc `anomaliesDuDeclencheur`, gardée en CI et **hors du verrou** :
+un catalogue de questionnaires qui bouge ne doit pas fermer la table entière d'un
+coup. Elle attrape un questionnaire inventé, un drapeau sans valeur et une
+disjonction vide — cette dernière n'étant jamais atteinte, la ligne serait signée,
+servable et **morte**.
+
+**Ce qu'elle n'attrape pas est déclaré** : un libellé d'anamnèse qui dérive. La
+correspondance clé typée ↔ champ vit dans le banc d'orientation ; la recopier la
+ferait diverger au premier correctif. **Le validateur partagé s'écrit au
+chantier 2, avant la première ligne** — un déclencheur inerte ne casse rien, il
+cesse simplement de se déclencher, et personne ne le voit.
 
 **5. UN SEPTIÈME TERME, PROPRE À CETTE TABLE : le `plateCode` doit exister.**
 Une ligne qui pointe une assiette retirée du catalogue reste parfaitement

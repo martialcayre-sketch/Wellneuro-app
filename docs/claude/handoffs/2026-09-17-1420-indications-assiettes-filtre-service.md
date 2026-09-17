@@ -55,7 +55,14 @@ verrou à sept termes, point de sortie unique) · son banc de garde (18 tests) �
   brouillon de la table.
 - **Bancs de cohérence** : 45 tests (contrat de fraîcheur, sha littéral, état
   documenté des verrous, catalogue d'assiettes) — verts.
-- **T2 `--fast`** : voir §8.
+- **T2 `--fast`** : `T2-EXIT=1`. 577 fichiers, 9671 tests unitaires verts,
+  contrats SQL et dérive schéma↔migrations verts, build vert, **1 E2E rouge sur
+  202** — `portail-dossier-deux-voix`, iPhone 13 (WebKit), `page.goto` expiré à
+  2,0 min **sans qu'aucune requête de page soit émise**. `wn-test-worktree.sh` le
+  classe lui-même (`D-049`) et refuse de le présenter comme vert. La navigation
+  n'est jamais sortie du navigateur : ni l'application ni ce diff ne peuvent
+  l'expliquer, et ce lot n'ajoute aucune route ni aucun écran. **CI Linux vert
+  sur la tête réelle `448a4778`** — jamais observé là-bas.
 
 ## 7. Problèmes ouverts
 
