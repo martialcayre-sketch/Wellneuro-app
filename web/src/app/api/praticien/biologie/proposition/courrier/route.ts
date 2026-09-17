@@ -210,7 +210,7 @@ export async function POST(req: Request) {
       // verdict. Le verrou ordonne les deux transactions, la relecture lit ce que
       // l'ordre a produit. Retirer l'une ou l'autre rouvre la fenêtre.
       const transaction = await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${idPatient} FOR UPDATE`;
+        await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${idPatient} FOR UPDATE`;
         const choixRelu = await tx.trustChoiceEvent.findMany({
           where: { idPatient, finalite: 'partage_medecin_traitant' },
           select: { finalite: true, statut: true, enregistreLe: true },
