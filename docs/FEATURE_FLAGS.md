@@ -329,7 +329,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/gatePopulationV1.ts` | `false` | `null` |
 | `clinical/conflitsSourcesV1.ts` | `true` | `2026-08-24T00:00:00.000Z` |
 | `clinical/baremeChargeV1.ts` | `true` | `2026-09-15T00:00:00.000Z` |
-| `clinical/catalogueConduitesV1.ts` | `true` | `2026-09-17T06:06:41.000Z` |
+| `clinical/catalogueConduitesV1.ts` | `true` | `2026-09-17T20:26:03.000Z` |
 | `clinical/tableRepliV1.ts` | `true` | `2026-09-17T06:06:41.000Z` |
 | `clinical/indicationsAssiettesV1.ts` | `false` | `null` |
 

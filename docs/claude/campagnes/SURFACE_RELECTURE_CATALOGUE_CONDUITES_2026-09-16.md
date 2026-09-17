@@ -3,44 +3,69 @@
 *Écrite le 2026-09-16, LOT-01 de `D-206`. **Ce document ne signe rien.** Il
 présente au praticien ce qu'il aurait à attester, et ce qui a été écarté.*
 
-> ## ÉTAT AU 2026-09-17 — une ligne attestée, une désignation réfutée
+> ## ÉTAT AU 2026-09-17, SOIR — LES TROIS LIGNES SONT SIGNÉES
 >
-> **`insomnie_jambes_sans_repos` est SIGNÉE** (`D-224`). Les deux autres lignes
-> restent proposées : le périmètre se hache en entier, donc elles arriveront par
-> une **nouvelle** attestation sur un périmètre élargi.
+> **Les trois lignes sont attestées et le verrou est ARMÉ.** La première le
+> matin (`insomnie_jambes_sans_repos`, `D-224`), les deux autres le soir
+> (`insomnie_depression` et `insomnie_anxiete`, `D-227`), sur un périmètre
+> RE-SIGNÉ en entier : trois lignes, quatorze claims, une seule date et un seul
+> sha, qui remplacent ceux du matin.
 >
-> **La désignation `claimsInstrument = WN-CL-0320-002` était FAUSSE pour la
-> ligne 3, et elle reste JUSTE pour les lignes 1 et 2.** Lu en production le
-> 2026-09-17, ce claim fonde l'emploi du **HAD** dans le bilan d'une insomnie
-> sans cause identifiée — et il est `prescriptif = false`. Il fonde donc bien
-> l'instrument des deux premières lignes, qui se déclenchent sur les sous-scores
-> `D` et `A` du HAD. Il ne fonde rien pour la troisième, qui se déclenche sur
-> l'**IRLS** (`Q_SOM_04`). La ligne signée porte `claimsInstrument: []`, et ce
-> vide est une déclaration.
+> **CE DOCUMENT NE DÉCRIT PLUS CE QUI A ÉTÉ SIGNÉ.** Il proposait dix claims
+> pour les trois lignes ; la table en porte quatorze, et deux catégories ont
+> changé de contenu. Le module fait foi ; ce bandeau dit l'écart.
 >
-> **Ce que la vérification a fait apparaître en plus.** `WN-CL-0318-020` — le
-> « troisième document » que ce texte citait sans le désigner — est un claim
-> **prescriptif** qui fonde indépendamment la même indication et la même
-> conduite. Il est entré au périmètre signé.
+> **Ce que la vérification du matin avait RÉFUTÉ.** La section 3 ci-dessous
+> propose `WN-CL-0320-002` en claim d'instrument des trois lignes. Lu en
+> production, ce claim fonde le **HAD** : juste pour les lignes 1 et 2, qui se
+> déclenchent sur ses sous-scores `D` et `A`, faux pour la ligne 3, qui se
+> déclenche sur l'**IRLS**. La ligne 3 porte `claimsInstrument: []`, et ce vide
+> est une déclaration. Les lignes 1 et 2 le portent, elles, à juste titre.
 >
-> **La leçon opposable** : une désignation de claim se vérifie sur le **texte du
-> claim**, jamais sur la mémoire de qui l'a proposée. Ni le sha, ni le registre
-> des sources, ni le CI n'atteignent cette classe d'erreur — le sha atteste le
-> contenu relu, pas sa pertinence.
+> **Ce que la vérification du soir a COMPLÉTÉ, et c'est un constat plus difficile
+> à voir.** Les six claims proposés pour les lignes 1 et 2 sont exacts. Mais la
+> relecture des sources **entières** — et non des seuls identifiants proposés —
+> en a trouvé **six de plus** :
 >
-> **Les deux lignes restantes doivent donc être revérifiées de la même façon**
-> avant toute attestation : leurs six claims d'indication et de sécurité n'ont
-> pas encore été lus sur pièce.
+> - `WN-CL-0315-004` (ligne 1) : l'interdiction explicite, avec son risque nommé.
+>   Ce texte ne citait que `WN-CL-0315-006`, qui dit vers quoi rediriger.
+> - `WN-CL-0316-016` (ligne 2) : la règle d'ordre de prise en charge, seule
+>   cadrée exactement sur le tableau de la ligne.
+> - `WN-CL-0316-029` (ligne 2) : la **levée partielle** de l'interdiction portée
+>   par `WN-CL-0316-006`. Désigner l'interdiction sans sa levée aurait affiché
+>   une défense dont l'exception vit deux claims plus loin.
+> - `WN-CL-0318-018` et `WN-CL-0318-023` : les claims **prescriptifs** qui
+>   nomment chacun leur tableau — analogues de `WN-CL-0318-020`, qui avait
+>   renforcé la ligne 3. Les deux lignes passent d'une assise descriptive à une
+>   assise prescriptive.
+> - `WN-CL-0320-002` entre en instrument des lignes 1 et 2 (voir ci-dessus).
 >
-> **TOUT CE QUI SUIT EST LE TEXTE DU 2026-09-16, AVANT LA SIGNATURE.** Il dit la
-> table « livrée vide » et présente les trois lignes comme des propositions à
+> **La ligne 1 reçoit un `raccourciAssume` que ce document ne prévoyait pas.**
+> Elle était proposée sans. Son déclencheur lit une bande du sous-score `D` du
+> HAD quand ses claims fondent l'indication sur la dépression **constatée** :
+> c'est le pas bande → syndrome que `D-224` avait fait déclarer à la ligne 3.
+> Les trois lignes le déclarent désormais.
+>
+> **Une tension de `WN-SRC-0315` a été arbitrée, et elle ne figure pas ici.**
+> `WN-CL-0315-004` interdit de traiter le réveil précoce en tant que tel en
+> nommant les approches chrono-thérapeutiques comme risque ; `WN-CL-0315-015`
+> fait de la chronothérapie un levier majeur. **Verdict du praticien : pas de
+> conflit** — la première interdit de traiter le symptôme isolément, la seconde
+> traite la dépression. Aucune entrée au registre des conflits de sources.
+>
+> **LES DEUX LEÇONS, ET LA SECONDE EST LA PLUS COÛTEUSE.** Une désignation de
+> claim se vérifie sur le **texte du claim** (leçon du matin) — et le périmètre
+> se vérifie sur la **source entière**, parce que rien dans la chaîne ne voit ce
+> qui MANQUE (leçon du soir). Ni le sha, ni le registre des sources, ni le
+> contrat SQL de fraîcheur, ni le CI n'atteignent l'une ou l'autre : ils gardent
+> ce qui est épinglé, jamais ce qui aurait dû l'être.
+>
+> **TOUT CE QUI SUIT EST LE TEXTE DU 2026-09-16, AVANT TOUTE SIGNATURE.** Il dit
+> la table « livrée vide » et présente les trois lignes comme des propositions à
 > confirmer — c'était vrai ce jour-là, et c'est la pièce sur laquelle le
-> responsable a attesté. Il n'est **pas** réécrit au passé : une surface de
+> responsable a travaillé. Il n'est **pas** réécrit au passé : une surface de
 > relecture réécrite après coup ferait disparaître ce qui a été effectivement lu.
-> **Ce bandeau est le seul état courant**, et il l'emporte sur deux passages en
-> particulier : la table **n'est plus vide**, et la section 3 ci-dessous propose
-> encore `WN-CL-0320-002` en claim d'instrument — **cette désignation-là est
-> réfutée, elle ne se confirme pas.**
+> **Ce bandeau est le seul état courant.**
 
 La table `CATALOGUE_CONDUITES_V1` est livrée **vide**, ses verrous éteints, son
 service fail-closed. Elle le restera jusqu'à ce que les lignes ci-dessous soient

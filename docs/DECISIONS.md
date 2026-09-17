@@ -4,6 +4,110 @@
 
 ## Décisions actives
 
+### D-227 — Les deux lignes de conduite restantes sont attestées, et la relecture des sources ENTIÈRES complète six désignations que la surface ne portait pas
+
+- Date : 2026-09-17
+- Statut : accepté — table signée, verrou ARMÉ, **trois lignes publiées**.
+- Domaine : catalogue de conduites (`clinical/catalogueConduitesV1.ts`).
+- Porte sur : l'attestation de `insomnie_depression` et `insomnie_anxiete`, et
+  ce que leur vérification sur pièce a changé par rapport à ce qui était proposé.
+- Prolonge `D-224`, qui avait attesté la troisième ligne le matin du même jour et
+  posé la consigne : *une désignation de claim se vérifie sur le texte du claim,
+  jamais sur la mémoire de qui l'a proposée*.
+
+**1. LE PÉRIMÈTRE EST RE-SIGNÉ EN ENTIER, IL NE S'AJOUTE PAS.** L'attestation du
+matin couvrait une ligne et deux claims ; celle du soir couvre trois lignes et
+quatorze claims. `dateValidation` et `shaPerimetre` sont REMPLACÉS, pas
+complétés — la date du matin attestait un autre contenu. Ce n'est pas une
+reprise : c'est le fonctionnement d'un périmètre qui se hache en entier, et c'est
+exactement ce que `D-224` annonçait en retenant deux lignes plutôt qu'en les
+signant à l'aveugle.
+
+**2. LA CONSIGNE DE `D-224` A ÉTÉ APPLIQUÉE, ET ELLE A PAYÉ UNE SECONDE FOIS.**
+Les six claims proposés ont été lus en production avant toute écriture — et les
+sources `WN-SRC-0315`, `WN-SRC-0316` et `WN-SRC-0318` ont été lues ENTIÈRES, pas
+seulement aux identifiants proposés. Les six désignations initiales se sont
+révélées exactes. **Six claims de plus ont été trouvés**, que la surface ne
+proposait pas :
+
+- `WN-CL-0315-004` — l'interdiction explicite de traiter le réveil précoce en
+  tant que tel, avec son risque nommé. La surface ne citait que
+  `WN-CL-0315-006`, qui dit vers quoi rediriger. Signer sans la première aurait
+  servi la ligne sans la seule interdiction écrite de son document.
+- `WN-CL-0316-016` — la règle d'ordre de prise en charge, seule des trois règles
+  de sécurité de cette ligne à être cadrée EXACTEMENT sur son tableau.
+- `WN-CL-0316-029` — la levée partielle de l'interdiction portée par
+  `WN-CL-0316-006` (voir §3).
+- `WN-CL-0318-018` et `WN-CL-0318-023` — les claims PRESCRIPTIFS de `WN-SRC-0318`
+  qui nomment chacun leur tableau, analogues exacts de `WN-CL-0318-020` pour la
+  ligne déjà signée. Les deux lignes passent ainsi d'une assise purement
+  descriptive à une assise prescriptive, comme la troisième.
+- `WN-CL-0320-002` entre enfin en `claimsInstrument` — **là où il est juste**.
+  `D-224` l'avait écarté de la ligne IRLS ; lu en production, il fonde l'emploi
+  du HAD sur ses DEUX dimensions — donc précisément les deux lignes signées ici.
+
+**3. UNE RÈGLE DE SÉCURITÉ TRONQUÉE EST PIRE QU'ABSENTE, et c'est le constat qui
+compte.** `WN-CL-0316-006` interdit de prescrire des produits hypnotiques —
+compléments alimentaires compris — dans l'insomnie psychophysiologique.
+`WN-CL-0316-029` lève partiellement cette interdiction pour certains apports.
+Désigner le premier sans le second aurait affiché au praticien une défense dont
+l'exception vivait deux claims plus loin, **dans un outil qui prescrit des
+compléments alimentaires**. Les deux entrent ensemble.
+
+**4. LA LIGNE DÉPRESSION REÇOIT UN `raccourciAssume` QUE LA SURFACE NE PRÉVOYAIT
+PAS.** Elle était proposée avec `null`. Or son déclencheur lit une bande du
+sous-score D du HAD tandis que ses claims fondent l'indication sur la dépression
+majeure CONSTATÉE : c'est le pas bande → syndrome que `D-224` a fait déclarer à
+la ligne IRLS. `WN-CL-0320-002` fonde l'EMPLOI du HAD, jamais l'équivalence entre
+une bande et un diagnostic. Les trois lignes déclarent donc désormais ce pas. La
+ligne anxiété en déclare un SECOND, qui lui est propre : `WN-CL-0316-002` fonde
+l'indication sur une latence d'endormissement qu'aucun indicateur n'expose —
+l'agenda 21 nuits l'exclut explicitement — et le sous-score anxieux en tient lieu.
+
+**5. LA TENSION APPARENTE DE `WN-SRC-0315` EST ARBITRÉE : PAS DE CONFLIT.**
+`WN-CL-0315-004` interdit de traiter l'insomnie à réveil précoce en tant que
+telle, en nommant les approches chrono-thérapeutiques comme risque
+d'amplification ; `WN-CL-0315-015` fait de la chronothérapie un levier majeur de
+la prise en charge. **Arbitrage du praticien : les deux ne visent pas la même
+cible** — la première interdit de traiter le symptôme isolément, la seconde
+traite la dépression dont le sommeil est un symptôme. Aucune entrée n'est portée
+au registre des conflits de sources. `WN-CL-0315-020` (prudence sur les activités
+à risque pendant la privation de sommeil) n'entre pas non plus : il garde la
+conduite de chronothérapie, que cette ligne ne porte pas.
+
+**6. L'EXIGENCE `prescriptif = false` DE LA TABLE EST MAINTENANT VÉRIFIÉE, PLUS
+SUPPOSÉE.** `D-224` l'avait arbitrée sur une PRÉVISION — `WN-CL-0320-002` serait
+cité en instrument, et il est descriptif. Les deux lignes sont arrivées, elles le
+citent, et il est bien `prescriptif = false` en production. Sur les quatorze
+paires de la table, cinq sont descriptives : une exigence à `true` rejetterait
+aujourd'hui, pour de bon, des désignations valides (`DC-14`, `D-046`). L'arbitrage
+tient, et il tient désormais sur des faits.
+
+**7. UN SEUIL DU CORPUS ENTRE AU DÉPÔT, ET LA RÈGLE G6 DOIT ÊTRE PRÉCISÉE.** Le
+`raccourciAssume` de la ligne anxiété nomme la borne de latence que le claim
+pose. La consigne « aucun contenu clinique du corpus au dépôt tant que G6 est
+fermée » ne distingue pas une phrase recopiée d'une borne standard de définition,
+et cette imprécision se représentera à chaque ligne signée. **Arbitrage du
+praticien : le seuil est gardé**, parce qu'il porte l'argument — il dit
+précisément ce que le déclencheur ne sait pas lire — et la précision de G6 part
+en file d'attente. Elle ne bloque pas cette attestation.
+
+**ET G6 NE PEUT PAS ÊTRE GARDÉE PAR LE CI, par construction.** Le contrôle a été
+fait ce soir : les douze textes de claims lus en production ont été confrontés au
+diff, fragment par fragment. **Il a mordu** — un commentaire recopiait quatorze
+mots d'un claim mot pour mot, et il a été reformulé pour DÉSIGNER. Mais ce
+contrôle ne peut pas entrer au dépôt : son référentiel est exactement ce que G6
+interdit d'y écrire. Il se rejoue à la main, depuis un conteneur, à chaque
+attestation — et c'est une limite à connaître, pas un outil à promettre.
+
+**8. CE QUE CETTE DÉCISION NE PRÉTEND PAS.** La leçon de `D-224` portait sur une
+désignation FAUSSE ; celle-ci porte sur une désignation INCOMPLÈTE, et la seconde
+est moins visible que la première. Ni le sha, ni le contrat SQL de fraîcheur, ni
+le CI n'atteignent aucune des deux : ils gardent ce qui est épinglé, jamais ce
+qui manque. **La seule parade connue reste de relire la source entière, claim par
+claim.** Elle a coûté trois lectures de production ce soir, et elle a rendu six
+claims. Aucun écran ne change : le catalogue n'a toujours aucun appelant de
+production, et son consommateur est le LOT-04.
 ### D-226 — La génération automatique d'un brouillon de synthèse est retirée : elle éteignait l'invitation qu'elle prétendait devancer
 
 - Date : 2026-09-17
