@@ -15002,6 +15002,99 @@ commente une synthèse, elle ne la re-valide pas.
 
 ### D-049 — Le CI fait autorité sur le palier E2E tant que le blocage navigateur local dure
 
+> **AMENDEMENT DU 2026-09-17 — LA CAUSE RACINE EST TROUVÉE, ET ELLE NE FERME PAS
+> CETTE DÉCISION.** La condition de sortie écrite plus bas est pourtant remplie à
+> la lettre — « une cause racine est identifiée ». Le responsable a tranché de
+> l'amender sans la fermer : la cause est **amont, et sans correctif**, donc le
+> segment E2E local reste exactement aussi peu fiable qu'avant.
+>
+> **CE QUE C'EST.** `microsoft/playwright#42385` — sur macOS arm64, WebKit cesse
+> d'émettre la requête d'une navigation.
+>
+> **LE CORRECTIF EXISTE, ET IL EST CONSTATÉ SUR CETTE MACHINE.** Bissection faite
+> en amont : le défaut est corrigé dans **WebKit 2352**. Nous étions sur **2311**
+> (Playwright 1.61.1) ; la 1.63.0 embarque **2359**. Même banc, même bras, deux
+> moteurs : **2311 bloque au rang 64** ; **2359 passe 250 tours sans un blocage**.
+>
+> **`D-049` AVAIT RAISON D'ÉCARTER LA MONTÉE EN 1.62.1** : elle embarque 2336,
+> encore avant le correctif. Le refus n'était pas une prudence excessive, c'était
+> la bonne version qui manquait.
+>
+> **LE DÉCLENCHEUR EST LA MISE EN VEILLE DE L'ÉCRAN**, et c'est le fait qui
+> explique le reste : « it only happens with the display asleep… that is also why
+> it only ever surfaces in long unattended runs ». Voilà pourquoi la panne frappe
+> les **runs autonomes de nuit** — et pourquoi [[D-155]] a cru y voir la charge
+> machine. Corollaire utile : un garde d'éveil couvrant l'écran devrait l'éviter
+> **indépendamment de la version**, ce qui reste à mesurer.
+>
+> ⚠️ **LA PREMIÈRE RÉDACTION DE CET AMENDEMENT DISAIT « AUCUN CORRECTIF À
+> ATTENDRE », ET C'ÉTAIT FAUX.** Elle s'appuyait sur le statut « not planned » de
+> l'issue **sans avoir lu ses commentaires** — où se trouvent la bissection, le
+> correctif et le déclencheur. Ce statut avait été posé parce qu'un mainteneur ne
+> reproduisait pas, avant qu'un tiers ne fournisse la variable manquante. **Lire
+> l'état d'une issue n'est pas lire l'issue** : c'est mot pour mot la règle déjà
+> écrite pour les revues, appliquée au mauvais objet.
+>
+> **CE QUI A ÉTÉ MESURÉ ICI, hors du dépôt, en deux bras.** Un serveur HTTP de
+> trois lignes, WebKit, ni application ni base ni suite E2E :
+>
+> - **Bras témoin** — 200 `page.goto` sur **une seule page** : 200 navigations,
+>   **200 requêtes émises, ZÉRO blocage**.
+> - **Bras d'essai** — un **contexte iPhone 13 neuf à chaque tour**, comme le fait
+>   l'isolation Playwright entre deux tests : **BLOCAGE au rang 64**,
+>   **zéro requête émise**, expiration à 15 s. Puis de nouveau au rang 65.
+>
+> **LE TÉMOIN EST CE QUI DONNE SA VALEUR AU RÉSULTAT** : les deux bras tournent
+> sur la même machine, dans la même minute. Il écarte la navigation, le serveur,
+> le réseau, l'application, la base — et **la charge machine**.
+>
+> - **Bras C, ajouté sur constat de revue** — **un seul contexte**, une **page
+>   neuve** à chaque tour : **BLOCAGE au rang 64** également.
+>
+> **LE COMPTEUR PORTE SUR LA CRÉATION DE PAGE.** Le bras B changeait **deux**
+> variables à la fois — contexte et page — et ne pouvait donc rien isoler, quel
+> qu'eût été son résultat. C'est le constat de la revue, et il était juste :
+> l'amendement affirmait la conclusion **avant** d'avoir le bras qui la porte.
+> Le bras C tranche — contexte unique, pages neuves, même blocage au même rang.
+> Un test = une page, d'où « un seul test par run, jamais le même ».
+>
+> **CELA CORRIGE [[D-155]]**, qui attribuait la panne à la charge machine. Ce
+> qu'il observait reste vrai — trois séquences vertes ne concluent rien — mais
+> pour une autre raison : une suite qui ne franchit pas le seuil ne bloque pas.
+>
+> **UN FAIT DE PLUS, NON PRÉVU PAR L'AMONT** : passé le rang 64, même
+> `context.close()` se bloque, sans délai de garde. Dans un navigateur unique, le
+> blocage est **terminal**. Que la suite réelle n'en perde qu'un test tient au
+> recyclage des navigateurs entre travailleurs — **supposé, non vérifié**.
+>
+> **TROIS RÉSERVES, ET ELLES COMPTENT.**
+> 1. **Mesuré UNE fois.** Un blocage au rang 64 est compatible avec « environ 65 »,
+>    il n'établit pas la période. Le bras d'essai a été **arrêté à la main** après
+>    le rang 65, le blocage de fermeture empêchant d'aller plus loin.
+> 2. **Le contournement recommandé par l'amont est celui que cette décision
+>    interdit** : `retries: 1`. Il transformerait ce blocage en succès silencieux
+>    et emporterait avec lui les vrais échecs intermittents. **Il reste interdit.**
+> 3. **Cela n'explique PAS le rouge WebKit du CI** — « WebKit encountered an
+>    internal error » est une erreur rendue par le moteur, pas une attente qui
+>    s'épuise, et **aucune requête manquante n'y a été constatée**. Les confondre
+>    est ce que la note du 2026-09-07 interdit.
+>
+> **LA CONDITION DE SORTIE EST REMPLIE, ET PAR UNE MESURE** : WebKit 2359 passe
+> 250 tours du bras C sans un blocage, là où 2311 bloquait au rang 64. La montée
+> est portée par une PR distincte, **avec la régénération des huit baselines
+> visuelles** — elles sont toutes en `-linux.png`, produites par le CI avec le
+> bundle de 1.61.1, et la montée change Chromium **et** WebKit. Rien ne compare
+> un pixel hors Linux : le rouge n'apparaîtrait qu'au CI, sur une PR étrangère.
+>
+> **CE QUI RESTE À `D-049` JUSQU'À CETTE MONTÉE** : rien ne change. Et une
+> réserve demeure au-delà — 2359 porte un défaut signalé le 2026-09-17, de
+> **signature différente** (`NetworkConnectionToWebProcess::didReceiveInvalidMessage`,
+> et « the retry passed »). Le confondre serait l'erreur que cette décision existe
+> pour empêcher.
+>
+> Banc de mesure : hors dépôt, `scratchpad/d049/` (deux bras, non versionnés —
+> ils ne prouvent rien du code de ce dépôt).
+
 - Date : 2026-08-12
 - Statut : accepté (décision utilisateur du 2026-08-12)
 - Domaine : validation, gouvernance des PR

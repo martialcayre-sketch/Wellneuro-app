@@ -1,7 +1,7 @@
 ---
 id: "2026-09-17-promesse-tenue-partage-medecin"
 titre: "La promesse tenue — le refus du patient ferme le courrier"
-statut: "active (ouverte 2026-09-17 — un lot, livré dans la foulée de son cadrage)"
+statut: "terminée (2026-09-17 — un lot, livré et déployé ; migration appliquée et constatée, drapeau posé)"
 créée_le: "2026-09-17"
 mise_à_jour: "2026-09-17"
 lot_courant: "LOT-00"
@@ -56,4 +56,4 @@ part », et son bouton final faisait **accuser réception** de cette phrase.
 
 | Lot | Titre | Statut |
 |---|---|---|
-| LOT-00 | La garde, les quatre textes, et la trace de formulation | en cours |
+| LOT-00 | La garde, les quatre textes, et la trace de formulation | terminé (PR #1181) |
