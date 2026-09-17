@@ -130,6 +130,17 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   ajouter demandera une **nouvelle** attestation : le périmètre se hache en
   entier.
 
+- **Dette — `conflits_sources` n'a pas de cas négatif** (constatée le
+  2026-09-17, routée depuis la revue de la PR #1178, **non commencée**). Le
+  fichier `rag_claim_fraicheur_tables_signees_v1_negatif.sql` porte `N7`, `N8`,
+  `N9` et — depuis `D-224` — `N10`, chacun prouvant qu'une table entrée au
+  contrat avec `exige_prescriptif = false` reste gardée sur les **trois autres**
+  propriétés. `conflits_sources` ([[D-103]]) est entré au contrat sans le sien :
+  ses deux paires ne sont exercées qu'à l'état SAIN, par `N0`. Un prédicat qui
+  l'exempterait de `statut`, `active` ou `superseded_at` passerait les onze cas.
+  **Correctif** : un `N11` sur le patron de `N10`, mutant `WN-CL-0312-018` ou
+  `WN-CL-0387-013`. Quelques lignes, à poser au prochain passage sur ce fichier.
+
 - **`D-113` — les cycles nommés `T0`, `T1`, `T2`** (2026-08-26, arbitrage du
   responsable). Chaque cycle s'ouvrait par un `T0` : un second cycle
   **déplaçait l'ancre du premier** et refermait ses fenêtres de jalon par effet

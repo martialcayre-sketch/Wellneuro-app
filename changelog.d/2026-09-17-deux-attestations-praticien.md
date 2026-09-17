@@ -41,6 +41,13 @@ une hypothèse, `WN-CL-0320-002` est `prescriptif = false` en production.
 L'exigence rejetterait une désignation valide dès la deuxième ligne (`DC-14`,
 `D-046`).
 
+**Une table qui entre au contrat SQL entre aussi à son test négatif.** Les deux
+paires `conduites` n'étaient d'abord exercées que par le cas « corpus sain » :
+un prédicat qui aurait exempté `table_signee = 'conduites'` de `statut`,
+`active` et `superseded_at` serait resté vert sur les dix cas. Le cas **`N10`**
+ferme cette porte, comme `N7`, `N8` et `N9` l'avaient fait pour les trois tables
+précédentes. Constat de revue, et il portait.
+
 **Les deux modules sont enrôlés au banc du SHA littéral le jour même** : `D-067`
 puis `D-084` ont eu à rattraper ce retard deux fois, il ne se rattrape pas une
 troisième. Un banc neuf vérifie qu'une reformulation de constat **éteint** la

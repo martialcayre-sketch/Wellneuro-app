@@ -31,6 +31,16 @@ présente au praticien ce qu'il aurait à attester, et ce qui a été écarté.*
 > **Les deux lignes restantes doivent donc être revérifiées de la même façon**
 > avant toute attestation : leurs six claims d'indication et de sécurité n'ont
 > pas encore été lus sur pièce.
+>
+> **TOUT CE QUI SUIT EST LE TEXTE DU 2026-09-16, AVANT LA SIGNATURE.** Il dit la
+> table « livrée vide » et présente les trois lignes comme des propositions à
+> confirmer — c'était vrai ce jour-là, et c'est la pièce sur laquelle le
+> responsable a attesté. Il n'est **pas** réécrit au passé : une surface de
+> relecture réécrite après coup ferait disparaître ce qui a été effectivement lu.
+> **Ce bandeau est le seul état courant**, et il l'emporte sur deux passages en
+> particulier : la table **n'est plus vide**, et la section 3 ci-dessous propose
+> encore `WN-CL-0320-002` en claim d'instrument — **cette désignation-là est
+> réfutée, elle ne se confirme pas.**
 
 La table `CATALOGUE_CONDUITES_V1` est livrée **vide**, ses verrous éteints, son
 service fail-closed. Elle le restera jusqu'à ce que les lignes ci-dessous soient

@@ -3,11 +3,11 @@
 -- `rag_claim_fraicheur_tables_signees_v1.sql` vérifie que l'invariant TIENT, sur
 -- la production. Ce fichier vérifie qu'il MORD, en CI. Il n'est pas décoratif :
 -- le contrat positif ne peut PAS tourner en CI — la base y est construite vide
--- par `migrate deploy`, les 42 claims épinglés y sont tous absents et le contrat
+-- par `migrate deploy`, les claims épinglés y sont TOUS absents et le contrat
 -- y rougirait à chaque exécution. Sans ce fichier-ci, rien en CI ne dirait
 -- jamais que le prédicat fonctionne ([[D-012]], [[D-015]]).
 --
--- DIX CAS. Neuf formes de rupture doivent lever ; le dixième — joué EN
+-- ONZE CAS. Dix formes de rupture doivent lever ; le onzième — joué EN
 -- PREMIER sous le nom `N0` — est le CONTRÔLE : un corpus sain qui ne doit
 -- jamais lever, sans quoi un prédicat inconditionnellement rouge passerait tous
 -- les autres. Le jouer en premier évite aussi que les ruptures suivantes lèvent
@@ -20,8 +20,11 @@
 -- version qu'elle n'a jamais relue. C'est la raison d'être de la jointure sur
 -- la paire.
 --
--- `N7`, `N8` ET `N9` GARDENT LES AUTRES LIGNES — contradictions, règles d'arrêt
--- ([[D-053]]), puis priorités d'intervention ([[D-054]]). N1 à N6 mutent tous un claim d'ORIENTATION : sans
+-- `N7`, `N8`, `N9` ET `N10` GARDENT LES AUTRES LIGNES — contradictions, règles
+-- d'arrêt ([[D-053]]), priorités d'intervention ([[D-054]]), puis catalogue de
+-- conduites ([[D-224]], ajouté le jour où la table entre au contrat : une revue
+-- a constaté que ses deux paires n'étaient exercées qu'à l'état SAIN).
+-- N1 à N6 mutent tous un claim d'ORIENTATION : sans
 -- N7, un prédicat exemptant la table de contradictions de TOUTES les propriétés
 -- — et pas seulement de `prescriptif` — les passerait tous, et le claim de
 -- C-STR ne serait gardé par rien. Avec N5, il borne l'exemption de [[D-046]]
@@ -29,11 +32,11 @@
 -- les trois autres propriétés restent exigées des contradictions.
 --
 -- CHAQUE CAS EXIGE SON MOTIF, jamais un rejet quelconque : un prédicat remplacé
--- par un `RAISE EXCEPTION` inconditionnel passerait les huit ruptures. La
+-- par un `RAISE EXCEPTION` inconditionnel passerait les dix ruptures. La
 -- sous-chaîne distinctive de chaque cas est contrôlée.
 --
 -- UNE SEULE ÉCRITURE DU PRÉDICAT DANS CE FICHIER. Il est posé une fois dans une
--- fonction temporaire, appelée par les neuf cas. Le bloc encadré par les
+-- fonction temporaire, appelée par les onze cas. Le bloc encadré par les
 -- marqueurs `PREDICAT_FRAICHEUR_CLAIMS_EPINGLES` est repris MOT POUR MOT du
 -- contrat, et `claimsEpinglesFraicheur.guard.test.ts` refuse que les deux
 -- divergent — sans quoi ce fichier éprouverait un prédicat qui n'est plus celui
@@ -489,7 +492,34 @@ BEGIN
     RAISE EXCEPTION 'negatif N9: la ligne priorites n''est gardee par rien — %', msg;
   END IF;
 
-  RAISE NOTICE 'fraicheur des claims epingles negatif: 9 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret et onze claims de priorites non prescriptifs) laisse passer.';
+  -- ── N10 — LA LIGNE `conduites` EST GARDÉE, ELLE AUSSI ────────────────────
+  -- MÊME DÉMONSTRATION QUE N7, N8 ET N9, POUR LE CATALOGUE DE CONDUITES
+  -- ([[D-206]], première signature [[D-224]]). Ajouté le 2026-09-17, le jour où
+  -- la table entre au contrat — et la revue avait raison de le réclamer : sans
+  -- ce cas, les deux paires `conduites` n'étaient exercées que par N0, donc
+  -- uniquement à l'état SAIN. Un prédicat qui aurait exempté
+  -- `table_signee = 'conduites'` de TOUTES les propriétés — et pas seulement de
+  -- `prescriptif` — serait passé vert sur les dix cas.
+  --
+  -- Ce qu'une exemption silencieuse coûterait ici est plus cher qu'ailleurs :
+  -- une ligne de conduite PROPOSE une conduite au praticien. Elle s'appuierait
+  -- sur un claim que le corpus ne soutient plus, sans que rien ne le dise.
+  --
+  -- Le claim muté est `WN-CL-0320-003`, celui qui fonde à la fois l'indication
+  -- et la conduite de la seule ligne signée : sa disparition doit fermer.
+  a_leve := false; msg := '';
+  BEGIN
+    UPDATE public.rag_corpus_claims
+       SET statut = 'REJETE', validateur = NULL, valide_at = NULL
+     WHERE claim_id = 'WN-CL-0320-003';
+    PERFORM pg_temp.predicat_fraicheur_claims();
+  EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
+  END;
+  IF NOT a_leve OR position('WN-CL-0320-003' in msg) = 0 OR position('statut REJETE' in msg) = 0 THEN
+    RAISE EXCEPTION 'negatif N10: la ligne conduites n''est gardee par rien — %', msg;
+  END IF;
+
+  RAISE NOTICE 'fraicheur des claims epingles negatif: 10 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites et deux claims de conduites non exiges prescriptifs) laisse passer.';
 END $$;
 
 ROLLBACK;
