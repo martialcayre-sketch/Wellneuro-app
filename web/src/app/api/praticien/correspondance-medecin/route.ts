@@ -338,13 +338,37 @@ export async function POST(req: Request): Promise<NextResponse<CorrespondanceMed
       }
     }
 
-    // `consigneLe` n'est PAS transmis : la base pose le présent
-    // (@default(now())). Une consignation est structurellement inantidatable.
-    const creee = await prisma.correspondanceMedecin.create({
-      data: preparation.donnees,
-      select: SELECTION,
+    // RELECTURE DU CONSENTEMENT JUSTE AVANT L'INSERTION — même patron que la
+    // route du courrier de biologie, et pour la même raison : la garde d'entrée
+    // a lu le consentement plus haut, et le patient peut le retirer entre les
+    // deux depuis son portail. Protéger une des deux routes seulement aurait
+    // été arbitraire.
+    //
+    // SANS VERROU, DÉLIBÉRÉMENT : l'écrivain du consentement ne prend aucun
+    // verrou et n'ouvre aucune transaction — en poser un ici ne sérialiserait
+    // rien. Ce que la relecture donne, en READ COMMITTED, c'est de voir tout
+    // retrait déjà validé, l'insertion suivant immédiatement.
+    const relecture = await prisma.$transaction(async (tx) => {
+      const choixRelu = await tx.trustChoiceEvent.findMany({
+        where: { idPatient, finalite: 'partage_medecin_traitant' },
+        select: { finalite: true, statut: true, enregistreLe: true },
+      });
+      const verdictRelu = verdictPartageMedecin(choixRelu);
+      if (verdictRelu.bloquant) return { ok: false as const, refus: refusPartage(verdictRelu) };
+      // `consigneLe` n'est PAS transmis : la base pose le présent
+      // (@default(now())). Une consignation est structurellement inantidatable.
+      return {
+        ok: true as const,
+        creee: await tx.correspondanceMedecin.create({
+          data: preparation.donnees,
+          select: SELECTION,
+        }),
+      };
     });
-
+    if (!relecture.ok) {
+      return echec(relecture.refus.raison, relecture.refus.message, 409);
+    }
+    const creee = relecture.creee;
     return NextResponse.json({ ok: true, correspondance: exposer(creee) }, { status: 201 });
   } catch (err) {
     console.error(

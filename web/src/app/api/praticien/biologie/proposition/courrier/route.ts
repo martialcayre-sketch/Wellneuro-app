@@ -191,15 +191,35 @@ export async function POST(req: Request) {
       ancrageVersion: provenance.version,
     };
     try {
+      // RELECTURE DU CONSENTEMENT JUSTE AVANT L'INSERTION — constat de la revue
+      // Copilot, retenu. La première lecture a lieu AVANT la génération de la
+      // lettre ; entre les deux, le patient peut retirer son accord depuis son
+      // portail. La fenêtre est brève, mais ce qu'elle laisse passer est
+      // exactement ce que ce lot existe pour empêcher : une consignation contre
+      // un refus explicite.
+      //
+      // SON VERROU, EN REVANCHE, EST ÉCARTÉ, et le motif mérite d'être gardé.
+      // La revue a proposé d'abord `pg_advisory_xact_lock`, puis un
+      // `SELECT … FOR UPDATE` sur `patients`. AUCUN DES DEUX NE SÉRIALISE QUOI
+      // QUE CE SOIT ICI : un verrou ne retient que les parties qui le prennent,
+      // et l'écrivain du consentement — `POST /api/portail/trust/choix` — ne
+      // prend aucun verrou, n'ouvre aucune transaction, et ne touche jamais la
+      // table `patients`. Le `FOR UPDATE` aurait donc coûté une contention sur
+      // les écritures réelles du dossier pour une protection nulle.
+      //
+      // CE QUI RESTE VRAI SANS LUI : en READ COMMITTED, la relecture voit tout
+      // retrait déjà validé, et l'insertion suit immédiatement. La fenêtre passe
+      // de « toute la génération de la lettre » à quelques microsecondes. Une
+      // sérialisation réelle demanderait que la route du portail prenne le même
+      // verrou — c'est un autre lot, et il n'est pas ouvert.
       const transaction = await prisma.$transaction(async (tx) => {
-        await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${idPatient} FOR UPDATE`;
-        const choixVerrouille = await tx.trustChoiceEvent.findMany({
+        const choixRelu = await tx.trustChoiceEvent.findMany({
           where: { idPatient, finalite: 'partage_medecin_traitant' },
           select: { finalite: true, statut: true, enregistreLe: true },
         });
-        const verdictVerrouille = verdictPartageMedecin(choixVerrouille);
-        if (verdictVerrouille.bloquant) {
-          return { ok: false as const, refus: refusPartage(verdictVerrouille) };
+        const verdictRelu = verdictPartageMedecin(choixRelu);
+        if (verdictRelu.bloquant) {
+          return { ok: false as const, refus: refusPartage(verdictRelu) };
         }
         await tx.correspondanceMedecin.create({ data: correspondance });
         return { ok: true as const };
