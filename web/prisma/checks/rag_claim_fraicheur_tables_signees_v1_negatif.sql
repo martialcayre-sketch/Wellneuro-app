@@ -7,7 +7,7 @@
 -- y rougirait à chaque exécution. Sans ce fichier-ci, rien en CI ne dirait
 -- jamais que le prédicat fonctionne ([[D-012]], [[D-015]]).
 --
--- ONZE CAS. Dix formes de rupture doivent lever ; le onzième — joué EN
+-- DOUZE CAS. Onze formes de rupture doivent lever ; le douzième — joué EN
 -- PREMIER sous le nom `N0` — est le CONTRÔLE : un corpus sain qui ne doit
 -- jamais lever, sans quoi un prédicat inconditionnellement rouge passerait tous
 -- les autres. Le jouer en premier évite aussi que les ruptures suivantes lèvent
@@ -20,10 +20,15 @@
 -- version qu'elle n'a jamais relue. C'est la raison d'être de la jointure sur
 -- la paire.
 --
--- `N7`, `N8`, `N9` ET `N10` GARDENT LES AUTRES LIGNES — contradictions, règles
--- d'arrêt ([[D-053]]), priorités d'intervention ([[D-054]]), puis catalogue de
--- conduites ([[D-224]], ajouté le jour où la table entre au contrat : une revue
--- a constaté que ses deux paires n'étaient exercées qu'à l'état SAIN).
+-- `N7` À `N11` GARDENT LES AUTRES LIGNES — contradictions, règles d'arrêt
+-- ([[D-053]]), priorités d'intervention ([[D-054]]), catalogue de conduites
+-- ([[D-224]], ajouté le jour où la table entre au contrat : une revue a constaté
+-- que ses deux paires n'étaient exercées qu'à l'état SAIN), et registre des
+-- conflits de sources ([[D-103]], ajouté au lendemain : le même trou y était
+-- ouvert depuis le 2026-08-24, et c'est en écrivant `N10` qu'il s'est vu).
+-- **Chaque table signée a désormais son cas négatif**, et cette phrase est
+-- vérifiable plutôt que rassurante : la liste des tables du contrat et celle des
+-- cas `N7+` se comparent à l'œil, table par table.
 -- N1 à N6 mutent tous un claim d'ORIENTATION : sans
 -- N7, un prédicat exemptant la table de contradictions de TOUTES les propriétés
 -- — et pas seulement de `prescriptif` — les passerait tous, et le claim de
@@ -32,11 +37,11 @@
 -- les trois autres propriétés restent exigées des contradictions.
 --
 -- CHAQUE CAS EXIGE SON MOTIF, jamais un rejet quelconque : un prédicat remplacé
--- par un `RAISE EXCEPTION` inconditionnel passerait les dix ruptures. La
+-- par un `RAISE EXCEPTION` inconditionnel passerait les onze ruptures. La
 -- sous-chaîne distinctive de chaque cas est contrôlée.
 --
 -- UNE SEULE ÉCRITURE DU PRÉDICAT DANS CE FICHIER. Il est posé une fois dans une
--- fonction temporaire, appelée par les onze cas. Le bloc encadré par les
+-- fonction temporaire, appelée par les douze cas. Le bloc encadré par les
 -- marqueurs `PREDICAT_FRAICHEUR_CLAIMS_EPINGLES` est repris MOT POUR MOT du
 -- contrat, et `claimsEpinglesFraicheur.guard.test.ts` refuse que les deux
 -- divergent — sans quoi ce fichier éprouverait un prédicat qui n'est plus celui
@@ -569,7 +574,43 @@ BEGIN
     RAISE EXCEPTION 'negatif N10: la ligne conduites n''est gardee par rien — %', msg;
   END IF;
 
-  RAISE NOTICE 'fraicheur des claims epingles negatif: 10 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites et deux claims de conduites non exiges prescriptifs) laisse passer.';
+  -- ── N11 — LA LIGNE `conflits_sources` EST GARDÉE, ELLE AUSSI ─────────────
+  -- LA DERNIÈRE TABLE QUI N'ÉTAIT EXERCÉE QU'À L'ÉTAT SAIN. Le registre des
+  -- conflits de sources déclarés ([[D-103]]) est entré au contrat le
+  -- 2026-08-24 ; ses deux paires ne passaient que par `N0`. Le trou était
+  -- exactement celui que `N10` a fermé pour les conduites, et il a été trouvé en
+  -- écrivant `N10` — constaté le 2026-09-17, routé en file d'attente avec son
+  -- correctif, écrit ici le lendemain.
+  --
+  -- CE QU'UNE EXEMPTION SILENCIEUSE COÛTERAIT ICI, et ce n'est pas la même chose
+  -- qu'ailleurs : ce registre est le SEUL mécanisme par lequel le dépôt déclare
+  -- que deux claims du corpus ne disent pas la même chose (`DC-54`, `DC-55`).
+  -- Un conflit déclaré qui reposerait sur un claim que le corpus ne soutient
+  -- plus continuerait d'escalader vers le praticien, au nom d'une opposition qui
+  -- n'existe plus.
+  --
+  -- LA MUTATION EST `superseded_at`, ET C'EST DÉLIBÉRÉ. `N7`, `N8` et `N9`
+  -- mutent `active`, `N10` mute `statut` : la troisième propriété commune n'est
+  -- donc éprouvée QUE sur un claim d'orientation, par `N4`. Un prédicat qui
+  -- aurait restreint le contrôle de `superseded_at` à `table_signee =
+  -- 'orientation'` passerait les dix cas précédents. Ce cas-ci ferme cette
+  -- dernière combinaison.
+  --
+  -- Le claim muté est `WN-CL-0387-013` : le journal du contrat positif note
+  -- qu'il n'était, avant son entrée, cité que dans un COMMENTAIRE
+  -- d'`indicationsBiologieV1.ts`, donc gardé par rien. C'est celui dont la
+  -- disparition silencieuse serait passée le plus inaperçue.
+  a_leve := false; msg := '';
+  BEGIN
+    UPDATE public.rag_corpus_claims SET superseded_at = now() WHERE claim_id = 'WN-CL-0387-013';
+    PERFORM pg_temp.predicat_fraicheur_claims();
+  EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
+  END;
+  IF NOT a_leve OR position('WN-CL-0387-013' in msg) = 0 OR position('remplacé (superseded_at)' in msg) = 0 THEN
+    RAISE EXCEPTION 'negatif N11: la ligne conflits_sources n''est gardee par rien — %', msg;
+  END IF;
+
+  RAISE NOTICE 'fraicheur des claims epingles negatif: 11 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites et deux claims de conflits de sources non exiges prescriptifs) laisse passer.';
 END $$;
 
 ROLLBACK;

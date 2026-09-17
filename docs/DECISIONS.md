@@ -4,6 +4,58 @@
 
 ## Décisions actives
 
+### D-228 — La dernière table signée exercée seulement à l'état sain reçoit son cas négatif, et le contrat de fraîcheur cesse d'avoir une exemption possible
+
+- Date : 2026-09-18
+- Statut : accepté — un cas de test ajouté, aucun changement de comportement en
+  production. Le contrat positif n'est pas touché.
+- Domaine : contrat de fraîcheur des claims épinglés
+  (`web/prisma/checks/rag_claim_fraicheur_tables_signees_v1_negatif.sql`).
+- Porte sur : le cas `N11`, qui éprouve la ligne `conflits_sources`.
+- Acquitte la dette routée par `D-227` : le trou avait été trouvé en écrivant
+  `N10`, nommé avec son correctif, et laissé ouvert plutôt que corrigé dans un
+  lot dont ce n'était pas la finalité.
+
+**1. LE TROU ÉTAIT EXACTEMENT CELUI QUE `N10` A FERMÉ AILLEURS.** Le registre des
+conflits de sources est entré au contrat le 2026-08-24 (`D-103`). Ses deux paires
+n'ont jamais été exercées que par `N0`, le cas de corpus SAIN. Un prédicat qui
+aurait exempté `table_signee = 'conflits_sources'` de **toutes** les propriétés —
+et pas seulement de `prescriptif`, seule exemption que `D-046` autorise — serait
+resté vert sur les dix cas existants.
+
+**2. CE QU'UNE EXEMPTION SILENCIEUSE COÛTERAIT ICI N'EST PAS CE QU'ELLE COÛTE
+AILLEURS.** Ce registre est le seul mécanisme par lequel le dépôt déclare que deux
+claims du corpus ne disent pas la même chose (`DC-54`, `DC-55`). Un conflit
+déclaré reposant sur un claim que le corpus ne soutient plus continuerait
+d'escalader vers le praticien, **au nom d'une opposition qui n'existe plus**.
+
+**3. LA MUTATION EST `superseded_at`, ET LE CHOIX AJOUTE UNE COUVERTURE QUE LA
+SEULE TABLE NE DONNAIT PAS.** `N7`, `N8` et `N9` mutent `active` ; `N10` mute
+`statut`. La troisième propriété commune n'était donc éprouvée que sur un claim
+d'ORIENTATION, par `N4`. Un prédicat qui aurait restreint le contrôle de
+`superseded_at` à la seule table d'orientation passait les dix cas. Ce cas ferme
+cette dernière combinaison : **table non-orientation × propriété `superseded_at`**.
+
+**4. LE CLAIM MUTÉ EST CELUI QUE LE JOURNAL DÉSIGNE COMME LE PLUS EXPOSÉ.**
+`WN-CL-0387-013` n'était, avant son entrée au contrat, cité que dans un
+COMMENTAIRE d'`indicationsBiologieV1.ts` — donc gardé par rien. Le journal du
+contrat positif le note depuis le 2026-08-24. C'est celui dont la disparition
+silencieuse serait passée le plus inaperçue.
+
+**5. CE QUE CETTE DÉCISION PERMET D'AFFIRMER, ET COMMENT LE VÉRIFIER.** Chaque
+table signée du contrat a désormais son cas négatif. L'affirmation n'est pas
+rassurante mais **vérifiable** : la liste des tables du bloc de paires et celle
+des cas `N7+` se comparent table par table. Aucun banc ne tient cette
+correspondance — l'automatiser demanderait de dériver les cas SQL de la liste
+TypeScript, ce qui est un lot en soi et n'est pas fait ici. La vérification reste
+donc humaine, et cette décision est le seul endroit qui le dit.
+
+**6. CE QUE CETTE DÉCISION NE PRÉTEND PAS.** Elle n'ajoute aucune garde en
+production : le fichier négatif ne tourne qu'en CI et n'est jamais joué contre la
+base réelle — il ÉCRIT ses fixtures avant de les annuler. Elle ne change pas non
+plus l'arbitrage `exige_prescriptif = false` de `conflits_sources` (`D-103`), qui
+reste celui de sa table.
+
 ### D-227 — Les deux lignes de conduite restantes sont attestées, et la relecture des sources ENTIÈRES complète six désignations que la surface ne portait pas
 
 - Date : 2026-09-17

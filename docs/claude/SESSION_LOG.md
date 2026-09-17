@@ -7145,3 +7145,22 @@ de clôture.
 
 Question ouverte : un déploiement manuel non attribué à 19:03:49 UTC, par le
 compte partagé `wellneuro`. Ce n'est pas cette session.
+
+## 2026-09-18 — Le cas négatif de `conflits_sources`, dette de la veille acquittée
+
+**Décisions.** `D-228` : le cas `N11` entre au fichier négatif du contrat de
+fraîcheur. Le registre des conflits de sources y était depuis le 2026-08-24 sans
+jamais être exercé hors de l'état sain — trou trouvé la veille en écrivant `N10`,
+routé, acquitté ici. La mutation choisie est `superseded_at` : `N7`-`N9` mutent
+`active`, `N10` mute `statut`, et cette troisième propriété n'était éprouvée que
+sur un claim d'orientation. Chaque table signée a désormais son cas négatif.
+
+**Écartées.** Automatiser la correspondance tables ↔ cas négatifs — il faudrait
+dériver les cas SQL de la liste TypeScript, c'est un lot en soi ; la limite est
+écrite dans `D-228` §5 plutôt que passée sous silence.
+
+**Prochaine action.** Chantier 2 de S3 : le champ d'indication d'assiette et ses
+claims, lus sur pièce, source entière.
+
+**Questions ouvertes.** La ligne de `.claude/rules/` sur le piège de concurrence
+du CI attend un arbitrage — deux sessions se la partagent, aucune ne l'écrit.
