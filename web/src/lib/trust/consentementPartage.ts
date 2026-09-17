@@ -22,6 +22,15 @@
 // exprimé et donner le chemin pour le recueillir. Un blocage sans chemin de
 // sortie serait un mur ; celui-ci est une porte.
 //
+// CE QUI N'EST PAS GARDÉ PARCE QU'IL NE VA PAS À UN TIERS. Le document remis au
+// patient (`biologie/proposition/document-patient`, écrit dans
+// `documentPatientBiologie`) et le booklet patient ne passent PAS par cette
+// garde, et ne doivent pas y passer : la finalité consentie est
+// `partage_medecin_traitant`, elle porte sur la transmission à un MÉDECIN.
+// Opposer ce refus à un document que le patient reçoit lui-même reviendrait à
+// lui refuser ses propres données au nom de son propre choix. Écrit ici parce
+// que c'était tacite, et qu'un lecteur pressé aurait pu « compléter » la garde.
+//
 // CE QUE LA GARDE NE COUVRE PAS, ET C'EST DÉLIBÉRÉ : la lettre d'adressage sur
 // signal d'alerte (`/api/praticien/adressage/courrier`). Fermer là serait fermer
 // au moment précis où la décision clinique est déjà suspendue, et sur les
