@@ -94,6 +94,14 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   // `TABLE_EXIGE_PRESCRIPTIF` n'a donc rien à recevoir avant la première
   // signature, et lui donner une entrée maintenant rougirait à l'inverse.
   'catalogueConduitesV1.ts': 'conduites',
+  // Indications d'assiette ([[D-225]]). Entrée le jour où le fichier est POSÉ,
+  // pour la raison écrite juste au-dessus : le balayage reconnaît une table
+  // signée à son `claimsSource` MÊME VIDE, donc différer l'enrôlement rougirait
+  // au jour 1. Elle ne contribue aucune paire au contrat SQL tant qu'aucune
+  // ligne ne cite de claim — `TABLE_EXIGE_PRESCRIPTIF` n'a donc rien à recevoir
+  // avant la première signature, et lui donner une entrée maintenant rougirait
+  // à l'inverse.
+  'indicationsAssiettesV1.ts': 'indications_assiettes',
 };
 
 // L'EXIGENCE EST DÉCLARÉE PAR TABLE, JAMAIS DÉDUITE PAR DÉFAUT — [[D-046]].

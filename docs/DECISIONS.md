@@ -4,6 +4,79 @@
 
 ## Décisions actives
 
+### D-225 — Les indications d'assiette reçoivent leur filtre de service AVANT leur première ligne : le statut vit sur la ligne, pas sur l'assiette
+
+- Date : 2026-09-17
+- Statut : accepté — mécanisme livré, **table VIDE, verrou ÉTEINT**. Aucune
+  signature n'est posée ; aucun écran ne change.
+- Domaine : indications d'assiette (`clinical/indicationsAssiettesV1.ts`).
+- Porte sur : la forme d'une ligne d'indication et le verrou qui la garde.
+  Exécute le premier des cinq chantiers que `D-216` laissait ouverts devant
+  l'attestation du catalogue d'assiettes.
+
+**1. LE FILTRE EXISTE AVANT LA PREMIÈRE LIGNE, ET C'EST TOUT LE LOT.** La
+surface de relecture du 2026-09-16 propose **huit** indications, dont la
+psychobiotique — qui porte une porte ÉTROITE à publier et une porte LARGE à
+garder en brouillon (`D-216`). Sans champ `statut` et sans point de sortie qui
+le lise, attester ce périmètre ferait sortir le brouillon avec la publiée. Le
+mécanisme est donc livré **avant** toute ligne, et non après.
+
+**2. LE `statut` EST SUR LA LIGNE, PAS SUR L'ENTRÉE DU CATALOGUE.** L'arbitrage
+n'est pas de commodité : une même assiette peut être indiquée par deux portes
+dont l'une est mûre et l'autre non. Un statut posé sur l'assiette n'aurait aucun
+moyen de les distinguer, et forcerait à choisir entre publier la porte large ou
+retenir l'assiette entière.
+
+**3. HORS DU SERVICE N'EST PAS HORS DU PÉRIMÈTRE.** Une ligne en brouillon est
+relue, hachée et signée ; elle ne sort simplement pas. Un banc le prouve dans
+les deux sens : le verrou ouvre sur une table qui contient un brouillon, et il
+FERME si quelqu'un « nettoie » la table en le retirant. Un périmètre signé se
+hache en entier.
+
+**4. LE DÉCLENCHEUR EST CELUI DE L'ORIENTATION, PAS UN TROISIÈME.**
+`OrientationDeclencheur` est déjà le vocabulaire signé des règles d'orientation
+et des indications de biologie, et il couvre ce que la surface demande —
+sous-scores (`Q_INF_03`/`DA`), drapeaux d'anamnèse (`antecedentsDomaines`),
+disjonctions. En écrire un autre aurait créé une grammaire de porte de plus.
+
+**4 bis. MAIS RÉUTILISER LE TYPE N'HÉRITE PAS DE SA GARDE**, et la première
+rédaction de cette décision affirmait le contraire — **constat de revue, vérifié
+et fondé**. Les bancs anti-dérive qui confrontent les libellés de drapeau aux
+options réelles d'`ANAMNESE_SECTIONS` parcourent `ORIENTATION_RULES_V1`, pas
+cette table. Le type donne le vocabulaire ; il ne vérifie ni les `valeurs` d'un
+drapeau — des chaînes libres — ni l'existence d'un questionnaire.
+
+Ce lot pose donc `anomaliesDuDeclencheur`, gardée en CI et **hors du verrou** :
+un catalogue de questionnaires qui bouge ne doit pas fermer la table entière d'un
+coup. Elle attrape un questionnaire inventé, un drapeau sans valeur et une
+disjonction vide — cette dernière n'étant jamais atteinte, la ligne serait signée,
+servable et **morte**.
+
+**Ce qu'elle n'attrape pas est déclaré** : un libellé d'anamnèse qui dérive. La
+correspondance clé typée ↔ champ vit dans le banc d'orientation ; la recopier la
+ferait diverger au premier correctif. **Le validateur partagé s'écrit au
+chantier 2, avant la première ligne** — un déclencheur inerte ne casse rien, il
+cesse simplement de se déclencher, et personne ne le voit.
+
+**5. UN SEPTIÈME TERME, PROPRE À CETTE TABLE : le `plateCode` doit exister.**
+Une ligne qui pointe une assiette retirée du catalogue reste parfaitement
+hachée — le sha atteste le contenu de la ligne, pas l'existence de sa cible. Elle
+resterait signée, ne servirait rien, et se lirait comme une indication vivante
+dans le périmètre relu.
+
+**6. CE QUE CE LOT NE FAIT PAS, ET IL FAUT LE DIRE.** Il ne dit pas si un dossier
+ATTEINT un déclencheur — c'est `orientationEngine`, et le brancher est un lot à
+part. Il n'a **aucun appelant de production** : si le lot d'exposition ne vient
+pas, cette fonction se supprime, elle ne se reconduit pas. Et **trois des huit
+indications ne sont pas constructibles aujourd'hui** : elles dépendent d'une
+borne d'âge que `D-216` a rendue légitime mais qu'aucun déclencheur ne sait
+porter.
+
+**7. `shaPerimetreLitteral` N'EST PAS ENRÔLÉ AUJOURD'HUI.** Ce banc exige un
+littéral de 64 hex, or `shaPerimetre` vaut `null`. L'enrôlement se fait **le jour
+de la première signature** — comme `D-198`, `D-223` et `D-224` l'ont fait, et
+comme `D-067` puis `D-084` ont eu à le rattraper deux fois faute de l'avoir fait.
+
 ### D-224 — Le catalogue de conduites reçoit sa première ligne, et la lecture de production réfute un claim d'instrument que la surface désignait à tort
 
 - Date : 2026-09-17
