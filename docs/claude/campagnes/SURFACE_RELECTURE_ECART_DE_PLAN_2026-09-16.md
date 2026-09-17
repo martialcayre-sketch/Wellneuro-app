@@ -16,6 +16,14 @@ Il présente au praticien ce qu'il aurait à attester, ce qui a été écarté, 
 > **Aucun écran ne change pour autant.** Personne n'appelle encore
 > `lignesRepliServables` : l'attestation arme le mécanisme, elle ne le branche
 > pas. Le branchement est un lot à part.
+>
+> **TOUT CE QUI SUIT EST LE TEXTE DU 2026-09-16, AVANT LA SIGNATURE, et se lit
+> comme tel.** Il parle au futur — « ce qui doit être su **avant de signer** »,
+> « ce que l'attestation demandera » — parce que c'est le document qu'on a
+> soumis au responsable. Il n'est pas réécrit au passé : une surface de relecture
+> est la pièce sur laquelle on a attesté, et la réécrire après coup ferait
+> disparaître ce qui a été effectivement lu. **Le bandeau ci-dessus est le seul
+> état courant.**
 
 `D-213` §4 a tranché : l'écart entre plan idéal et plan minimal reçoit sa propre
 table signée, sur le patron du barème, et le barème garde son terme unique.

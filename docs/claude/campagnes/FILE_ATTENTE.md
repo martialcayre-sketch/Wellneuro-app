@@ -103,7 +103,8 @@ du travail de dépôt porté par sa décision et sa PR. Ils figurent ici pour qu
 file cesse de laisser croire que rien ne se fait en dehors d'elle.
 
 - **`D-206` — la première table du catalogue de conduites** (2026-09-16,
-  arbitrage du responsable, **non commencé**). Le catalogue n'ouvre **pas** de
+  arbitrage du responsable, **LOT-01 livré, première ligne signée le
+  2026-09-17**). Le catalogue n'ouvre **pas** de
   campagne : `D-112` pèse sur trois campagnes de suite et la dernière a été
   close à usage mesuré zéro. **Un seul lot**, une PR — la forme d'une ligne
   (clé de tableau clinique, champs, `claimId` fondant l'indication, emplacement

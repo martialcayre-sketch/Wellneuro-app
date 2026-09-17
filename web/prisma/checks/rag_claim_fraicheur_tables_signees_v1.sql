@@ -23,8 +23,9 @@
 -- pourtant — par le seul fait de ne pas porter ce nom. Fail-open, et silencieux.
 --
 -- POURQUOI CE FICHIER NE TOURNE PAS EN CI, ET CE N'EST PAS UN OUBLI. La base du
--- CI est construite par `migrate deploy` seul, donc VIDE : les 24 claims y sont
--- tous absents et ce contrat y rougirait à chaque exécution. Il n'a de sens que
+-- CI est construite par `migrate deploy` seul, donc VIDE : les claims épinglés y
+-- sont tous absents et ce contrat y rougirait à chaque exécution. (Le nombre
+-- n'est plus écrit ici : il disait « 24 » quand la liste en portait 53.) Il n'a de sens que
 -- contre un corpus réel, donc contre la PRODUCTION, en préflight de
 -- `release-db.yml`. Ce qui éprouve qu'il MORD est
 -- `rag_claim_fraicheur_tables_signees_v1_negatif.sql`, qui pose ses propres
@@ -56,7 +57,22 @@
 -- n'était pas une formalité** : `WN-CL-0387-013` n'était jusqu'ici cité que
 -- dans un COMMENTAIRE d'`indicationsBiologieV1.ts`, donc gardé par rien — s'il
 -- n'avait pas été conforme, ce préflight aurait bloqué toute release de base
--- au nom d'un registre qui ne produit rien. La liste en compte donc 42.
+-- au nom d'un registre qui ne produit rien. La liste en comptait alors 42.
+-- Les DEUX PAIRES `conduites` ajoutées le 2026-09-17 ([[D-224]]) ont été relues
+-- le même jour, sur la production (conteneur détaché, lecture seule) :
+-- `WN-CL-0320-003` et `WN-CL-0318-020`, toutes deux VALIDE, actives, non
+-- remplacées, en v1.0, et toutes deux `prescriptif = true` — ce qui ne change
+-- rien ici non plus. **La relecture a RÉFUTÉ une désignation** : la surface
+-- proposait `WN-CL-0320-002` en claim d'instrument, or ce claim fonde le HAD
+-- quand la ligne signée se déclenche sur l'IRLS. Il n'entre donc pas, et le
+-- champ reste vide. La liste en compte 53.
+--
+-- UN ÉCART DE JOURNAL, CONSTATÉ LE 2026-09-17 ET NON RÉÉCRIT. Les entrées
+-- ci-dessus annoncent ONZE paires `priorites` ; la liste en porte VINGT. Neuf
+-- ont donc été ajoutées sans entrée. Le journal n'est gardé par aucun banc — il
+-- se tient à la main, et il a lâché une fois. Constaté ici plutôt que corrigé
+-- en silence : réécrire une entrée datée serait réinterpréter ce qu'un lot passé
+-- a relu.
 --
 -- `BEGIN READ ONLY … ROLLBACK` : aucune écriture, rejouable sans risque.
 -- ERRCODE sentinelle WN001, jamais intercepté ici.
