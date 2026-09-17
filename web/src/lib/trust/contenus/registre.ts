@@ -827,6 +827,129 @@ const DONNEES_CONFIDENTIALITE_V8: VersionDocumentTrust = {
   hash: '9b8563a2a6fe507e2616ed93ac142bb31cecacf177114df44de0db934d175d9d',
 };
 
+/*
+ * v9 du 2026-09-17 — LA PHRASE QUI PROMETTAIT UNE GARDE QUE PERSONNE N'AVAIT
+ * POSÉE. « Aucun partage avec un tiers (par exemple votre médecin traitant)
+ * n'a lieu sans un choix explicite de votre part » était écrite depuis la v1
+ * et reprise par composition dans les sept versions suivantes. [[D-222]] §3
+ * l'a nommée sans la toucher : la dégrader n'appartenait pas à une session.
+ *
+ * L'ARBITRAGE DU RESPONSABLE, RENDU LE 2026-09-17, VA PLUS LOIN QUE LE TEXTE.
+ * Le logiciel vient à la promesse ET la promesse vient au logiciel : une garde
+ * ferme désormais le courrier de biologie et la consignation à la main sur un
+ * dossier qui a refusé — ou qui n'a jamais rien dit —, et la seule sortie est
+ * la lettre d'adressage sur signal d'alerte. C'est cette exception-là, et elle
+ * seule, que le patient lit ici. Un texte qui tairait l'exception promettrait
+ * à nouveau ce que le produit ne tient pas.
+ *
+ * ACCUSÉ EXIGÉ — deuxième version de confidentialité à le faire, après la v8.
+ * Le motif diffère : la v8 déclarait des données NOUVELLES, la v9 corrige ce
+ * que le patient croyait que son refus produisait. C'est plus engageant, pas
+ * moins.
+ *
+ * CET ACCUSÉ COUVRE AUSSI `consentement_suivi@v3`, et c'est un arbitrage
+ * explicite du responsable. La séquence « Avant de commencer » ne présente pas
+ * le texte du consentement : y exiger un accusé demanderait au patient de
+ * reconnaître un écran qu'il n'a pas vu (`avantDeCommencer.ts` le dit, et le
+ * piège est la boucle sans fin). Le fait corrigé étant le MÊME dans les deux
+ * documents, il est reconnu une fois, sur l'écran 3 de la séquence — dont la
+ * prose porte la correction elle aussi.
+ */
+const DONNEES_CONFIDENTIALITE_V9: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v9',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: [
+    ...DONNEES_CONFIDENTIALITE_V8.sections.map(section => {
+      if (section.titre === 'Qui peut accéder à vos données ?') {
+        return {
+          ...section,
+          // LE PREMIER PARAGRAPHE NE BOUGE PAS — il est vrai et il le reste.
+          // Le second est remplacé par DEUX : ce que l'application fait (elle
+          // n'envoie rien), puis ce que le choix engage et la seule situation
+          // qui s'en écarte. Les séparer évite la phrase-fleuve où l'exception
+          // se cache dans une subordonnée.
+          paragraphes: [
+            section.paragraphes[0],
+            'L’application n’envoie rien à un tiers : elle ne dispose d’aucun canal vers un médecin. Tout document transmis à un médecin l’est par votre praticien, par ses propres moyens, et sous sa responsabilité professionnelle.',
+            'Votre choix est enregistré et lui est présenté dans votre dossier : il l’engage. Il peut toutefois exister une situation où votre sécurité lui impose d’écrire à un médecin malgré votre refus — lorsqu’un signe repéré dans votre suivi l’exige. Il vous en informe alors.',
+          ],
+        };
+      }
+      if (section.titre === 'Quelles données sont recueillies ?') {
+        return {
+          ...section,
+          // LA PHRASE DE LA v8, ÉCRITE LA VEILLE, PORTAIT LA MÊME PROMESSE —
+          // « Rien ne lui est adressé sans un choix explicite de votre part ».
+          // Elle a été publiée le 2026-09-16, un jour après que la lettre
+          // d'adressage l'eut rendue fausse.
+          paragraphes: section.paragraphes.map(paragraphe =>
+            paragraphe.startsWith('Noter le nom de votre médecin traitant')
+              ? 'Noter le nom de votre médecin traitant ne veut pas dire lui écrire. L’application ne lui adresse rien elle-même ; ce que votre praticien choisit de lui transmettre relève de sa pratique, et « Qui peut accéder à vos données ? » dit dans quelles conditions.'
+              : paragraphe,
+          ),
+        };
+      }
+      return section;
+    }),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Ce document promettait qu’aucun partage n’avait lieu sans votre choix explicite. C’était inexact, et cette version le corrige dans les deux sens : l’application n’envoie elle-même rien à personne, et votre refus empêche désormais votre praticien de préparer un courrier pour votre médecin depuis Wellneuro. Une seule situation s’en écarte, et elle est nommée — lorsqu’un signe repéré dans votre suivi impose d’écrire à un médecin pour votre sécurité ; votre praticien vous en informe alors.',
+  publieLe: '2026-09-17',
+  requiresAcknowledgement: true,
+  hash: '7d5fe955fd7d911d02ca72e0608760d3591b3c580fb684f50a831292d38e3340',
+};
+
+/*
+ * v3 du 2026-09-17 — LE TEXTE DU CONSENTEMENT PORTAIT LA MÊME PROMESSE, et
+ * [[D-222]] §3 ne l'avait pas vue : il ne nommait que les huit versions de
+ * « Vos données personnelles » et l'écran « Mes choix ». C'est pourtant le
+ * texte le plus engageant des trois — celui que le patient lit au moment où
+ * il consent.
+ *
+ * LES CONSENTEMENTS v2 RESTENT VALIDES, et cette version ne les rouvre pas :
+ * arbitrage du responsable du 2026-09-17, même régime que celui écrit dans la
+ * v2 pour les consentements v1. Ce qui change n'est pas l'objet du
+ * consentement — le recueil et l'usage des réponses — mais l'exactitude d'une
+ * phrase sur ce que le produit garantit.
+ *
+ * PAS D'ACCUSÉ PROPRE : voir l'en-tête de `DONNEES_CONFIDENTIALITE_V9`. La
+ * séquence ne présente pas ce document, et `avantDeCommencer.ts` interdit
+ * d'exiger un accusé sur un texte non présenté — le patient boucherait.
+ */
+const CONSENTEMENT_SUIVI_V3: VersionDocumentTrust = {
+  key: 'consentement_suivi',
+  type: 'care_framework',
+  version: 'v3',
+  titre: 'Consentement au suivi Wellneuro',
+  resume:
+    'Le texte présenté au moment de votre consentement au suivi — version de référence.',
+  sections: [
+    ...CONSENTEMENT_SUIVI_V2.sections.map(section => {
+      if (section.titre === 'Ce à quoi vous consentez') {
+        return {
+          ...section,
+          paragraphes: [
+            section.paragraphes[0],
+            'Vos données sont réservées à votre praticien et aux prestataires techniques qui font fonctionner l’application. Elles ne sont jamais vendues. L’application ne les partage avec aucun tiers : si un document doit parvenir à un médecin, c’est votre praticien qui le transmet, par ses propres moyens et sous sa responsabilité. Votre choix lui est présenté et l’engage ; il peut s’en écarter lorsque votre sécurité l’exige, et il vous en informe alors.',
+          ],
+        };
+      }
+      return section;
+    }),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'La phrase « ni partagées avec un tiers sans un choix explicite de votre part » décrivait une garantie que le logiciel ne tenait pas. Elle est remplacée par ce qui a lieu : l’application ne transmet rien elle-même, c’est votre praticien qui transmet, et votre choix l’engage — sauf lorsque votre sécurité impose d’écrire à un médecin, auquel cas il vous en informe. Les consentements déjà recueillis restent valides.',
+  publieLe: '2026-09-17',
+  requiresAcknowledgement: false,
+  hash: 'd896ce38c9ec359567ef0a02aea2f348199eec695acd40792df91351f5361da8',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -839,10 +962,12 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V6,
   DONNEES_CONFIDENTIALITE_V7,
   DONNEES_CONFIDENTIALITE_V8,
+  DONNEES_CONFIDENTIALITE_V9,
   USAGE_IA_V1,
   USAGE_IA_V2,
   DROITS_PATIENT_V1,
   CONSENTEMENT_SUIVI_V2,
+  CONSENTEMENT_SUIVI_V3,
 ]);
 
 export function getDocumentCourant(key: TrustDocumentKey): VersionDocumentTrust {

@@ -183,9 +183,68 @@ branchement est un lot à part, et le dire évite de croire qu'un écran a chang
 
 ### D-222 — La correspondance médecin entre au registre RGPD comme traitement : il existe bien un destinataire tiers, et le portail cesse de dire que le partage « arrivera »
 
+> **AMENDEMENT DU 2026-09-17 — LES TROIS RÉSERVES DU §3 SONT FERMÉES, ET PAS
+> DANS LE SENS QUE CETTE ENTRÉE ENVISAGEAIT.** Elle nommait trois pièces
+> intouchées et écrivait que les toucher « n'appartient pas à une session ».
+> Le responsable a tranché le 2026-09-17, en session, après lui avoir soumis
+> chaque formulation phrase par phrase.
+>
+> **CE QUI CHANGE PAR RAPPORT À L'INTENTION D'ORIGINE.** Le §3 supposait un
+> choix binaire : dégrader la promesse, ou la laisser fausse. Le responsable a
+> pris les deux bouts — **le texte vient au logiciel ET le logiciel vient au
+> texte**. Une garde ferme désormais le courrier de biologie et la consignation
+> à la main, et la phrase publiée cesse d'être une promesse creuse tout en
+> nommant la seule exception qui subsiste.
+>
+> **1. `donnees_confidentialite@v9`, accusé exigé.** « Aucun partage avec un
+> tiers … sans un choix explicite de votre part » est retirée. À sa place : ce
+> que l'application fait (« elle n'envoie rien à un tiers, elle ne dispose
+> d'aucun canal vers un médecin »), ce que le choix engage, et l'exception
+> nommée — « il peut toutefois exister une situation où votre sécurité lui
+> impose d'écrire à un médecin malgré votre refus ; il vous en informe alors ».
+> Deuxième version de confidentialité à exiger un accusé, pour un motif
+> distinct de la v8 : celle-ci ne recueille rien, elle corrige ce que le patient
+> **croyait** que son refus produisait.
+>
+> **2. `consentement_suivi@v3` — une QUATRIÈME pièce que le §3 n'avait pas
+> vue.** La même promesse vivait dans le texte du consentement lui-même
+> (« ni vendues, ni partagées avec un tiers sans un choix explicite »), et
+> c'est le plus engageant des trois : celui que le patient lit **au moment où
+> il consent**. Les consentements v2 restent valides — arbitrage explicite, même
+> régime que celui écrit dans la v2 pour les consentements v1.
+>
+> **PAS D'ACCUSÉ PROPRE POUR LA v3, ET C'EST UN ARBITRAGE, PAS UN OUBLI.** La
+> porte du portail ne lit que trois documents, et `avantDeCommencer.ts`
+> interdit d'exiger un accusé sur un texte que la séquence ne présente pas —
+> le patient boucherait sans fin sur quatre écrans. Le fait corrigé étant le
+> même dans les deux documents, il est reconnu **une fois**, sur l'écran 3 de
+> la séquence.
+>
+> **3. L'écran d'accusé portait lui aussi la phrase fausse.** `AvantDeCommencer.
+> tsx` affirmait en dur « Rien ne lui est adressé sans un choix explicite de
+> votre part » — et son bouton faisait ACCUSER RÉCEPTION de cette phrase. Faire
+> signer un texte faux est pire que ne rien faire signer. Corrigé, et tenu par
+> un banc dont la mutation a été éprouvée.
+>
+> **4. L'effet du refus de « Mes choix » dit maintenant ce que le logiciel
+> fait.** Cette entrée refusait de le « dégrader pour le rendre exact » ; la
+> garde rend la question sans objet — il n'est plus dégradé, il est **tenu**.
+>
+> **5. Le trou de traçabilité est fermé par une colonne.** La formulation servie
+> quitte l'écran pour `lib/trust/finalitesChoix.ts`, versionnée et verrouillée
+> par empreinte ; `trust_choice_events.formulation_version` l'enregistre.
+> Nullable : les lignes antérieures n'ont pas cette trace, et la prétendre
+> serait pire que l'absence. **Colonne retenue contre la voie sans migration**,
+> qui avait été soumise au responsable avec son coût comparé.
+
 - Date : 2026-09-17
 - Statut : accepté — **mise en conformité documentaire et correction d'un texte
-  patient faux**. Aucun comportement de code ne change.
+  patient faux**. Aucun comportement de code ne change **au 2026-09-17 à
+  00 h 33**, date de cette entrée. ⚠️ **CETTE PHRASE NE VAUT PLUS DEPUIS
+  L'AMENDEMENT DU MÊME JOUR** (ci-dessus) : une garde d'exécution ferme désormais
+  le courrier de biologie et la consignation. Bornée plutôt que réécrite — un
+  lecteur qui n'irait pas jusqu'à l'amendement prendrait sinon la garde pour de
+  la documentation.
 - Domaine : registre RGPD, centre TRUST du portail patient.
 - Porte sur : ce que le dossier RGPD dit des destinataires, et ce que le patient
   lit avant de consentir. Suit la promotion des trois arbitrages du 2026-07-22.
@@ -370,15 +429,68 @@ est distinct.
 
 ### D-219 — Trois arbitrages du 2026-07-22 entrent au registre : identité du médecin, conservation de la correspondance, et TRUST indicateur seul
 
+> **AMENDEMENT DU 2026-09-17 — LE §3 EST RENVERSÉ : TRUST N'EST PLUS UN
+> INDICATEUR, C'EST UNE GARDE.** Cette entrée promouvait au registre, le
+> 2026-09-17 au matin, un arbitrage du 2026-07-22 : « le partage a lieu HORS
+> application ; bloquer la consignation n'empêcherait pas le partage, cela
+> rendrait seulement le dossier aveugle ». Le responsable l'a renversé le même
+> jour, en connaissance de ce motif — il lui a été présenté mot pour mot avant
+> qu'il ne tranche.
+>
+> **CE QUE LA GARDE FERME.** Le refus, le retrait **et le silence** ferment
+> deux chemins : la génération du courrier de biologie
+> (`/api/praticien/biologie/proposition/courrier`) et la consignation à la main
+> (`/api/praticien/correspondance-medecin`), **dans les deux sens** — transcrire
+> une réponse prouve qu'un envoi a eu lieu.
+>
+> **LE SILENCE FERME AUSSI, ET C'EST LA MOITIÉ DE L'ARBITRAGE.** « Sans un
+> choix explicite de votre part » se lit à la lettre : l'absence de choix n'est
+> pas un accord. Fail-closed, comme le reste de la maison. **Sa contrepartie
+> n'est pas optionnelle** : l'écran praticien dit « consentement jamais
+> exprimé » et donne le chemin pour le recueillir. Le blocage est une porte,
+> pas un mur.
+>
+> **CE QUE LA GARDE NE FERME PAS, ET POURQUOI.** La lettre d'adressage sur
+> signal d'alerte (`/api/praticien/adressage/courrier`) reste ouverte. Fermer
+> là serait fermer au moment précis où un signe repéré **suspend** la décision
+> clinique, et sur les dossiers où le besoin d'écrire est le plus fondé. C'est
+> l'exception que `donnees_confidentialite@v9` **nomme au patient**. Deux
+> raisons de plus : presque aucun patient n'a exprimé de choix, donc une garde
+> fail-closed y refermerait le chemin le matin même de son ouverture ; et la
+> finalité `partage_medecin_traitant` vise le **médecin traitant**, alors que
+> l'adressage peut viser un autre médecin.
+>
+> **LE DISCRIMINANT EST LA ROUTE, JAMAIS LE DESTINATAIRE.** La distinction
+> « courrier au médecin traitant » / « adressage à un autre médecin » n'a
+> **aucun champ** sur lequel s'appuyer : `medecinLibelle` est du texte libre sur
+> tous les chemins d'écriture, sans rattachement à `medecinTraitantNom`. Ce sont
+> trois routes distinctes, et c'est ce qui rend la garde implémentable.
+>
+> **CE QUE CE RENVERSEMENT COÛTE, ÉCRIT POUR QU'ON NE LE REDÉCOUVRE PAS.** Le
+> motif de 2026-07-22 n'était pas faux : un partage qui a lieu hors application
+> ne disparaît pas parce que le logiciel refuse de l'enregistrer — **il devient
+> invisible au dossier ET au registre RGPD**, qui compte la correspondance
+> comme traitement depuis [[D-222]]. Le dépôt accepte cette cécité pour que la
+> phrase lue par le patient cesse d'être une promesse que rien ne tient. Ce
+> coût est payé, pas contourné.
+
 - Date : 2026-09-17
 - Statut : accepté — **promotion, pas arbitrage**. Les trois décisions ont été
-  rendues par le responsable le **2026-07-22** et n'ont jamais changé. Cette
+  rendues par le responsable le **2026-07-22** et n'avaient jamais changé
+  **jusqu'à cette promotion**. ⚠️ **LE §3 A ÉTÉ RENVERSÉ LE JOUR MÊME** — voir
+  l'amendement en tête d'entrée. Les §1 et §2 sont intacts. Phrase bornée et non
+  réécrite : la promotion, elle, n'a bien rien arbitré. Constat d'une revue, et
+  il était dans son bloc « Suppressed comments » — pas dans ses commentaires en
+  ligne. Cette
   entrée ne les rejuge pas : elle les sort d'un document de cadrage pour les
   mettre là où le dépôt va les chercher.
 - Domaine : correspondance médecin, cycle de vie du dossier, centre TRUST.
 - Porte sur : la traçabilité de trois règles **appliquées en production depuis le
-  2026-07-22** sans entrée au registre. Aucun code de comportement ne change ;
-  **six** ancres de production changent de référence.
+  2026-07-22** sans entrée au registre. Aucun code de comportement ne change **à
+  la date de cette promotion** ; **six** ancres de production changent de
+  référence. ⚠️ **SON §3 A ÉTÉ RENVERSÉ LE JOUR MÊME** (amendement ci-dessus) :
+  TRUST n'est plus un indicateur, c'est une garde. La promotion n'a pas changé de
+  comportement ; l'amendement, si.
 
 **LE DÉFAUT N'ÉTAIT PAS L'ABSENCE DE DÉCISION, C'ÉTAIT SON ADRESSE.** `FM-1`,
 `FM-2` et l'arbitrage TRUST vivaient dans

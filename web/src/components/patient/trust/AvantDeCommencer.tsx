@@ -163,6 +163,20 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
             nom et les coordonnées de votre médecin traitant. Aucun n’est obligatoire, et noter le
             nom de votre médecin traitant ne veut pas dire lui écrire.
           </p>
+          {/*
+            CE PARAGRAPHE EST LA CONTREPARTIE DE L'ACCUSÉ DEMANDÉ PLUS LOIN.
+            Jusqu'au 2026-09-17, cet écran affirmait la promesse que le logiciel
+            ne tenait pas — et le bouton final la faisait reconnaître. Faire
+            accuser réception d'un texte faux est pire que ne rien faire signer.
+            Le fond suit `donnees_confidentialite@v9` mot pour mot ([[D-222]]
+            amendé) ; la prose est en dur ici, donc elle se vérifie par banc.
+          */}
+          <p>
+            L’application n’envoie rien à un médecin : si un document doit lui parvenir, c’est
+            votre praticien qui le transmet, et votre choix l’engage. Une seule situation s’en
+            écarte — lorsqu’un signe repéré dans votre suivi impose d’écrire à un médecin pour
+            votre sécurité ; votre praticien vous en informe alors.
+          </p>
           <p>
             Vous pouvez consulter à tout moment le détail : données utilisées, finalités,
             prestataires, durées de conservation, usage de l’IA, vos droits et vos choix.

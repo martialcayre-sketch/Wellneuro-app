@@ -239,11 +239,32 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
         seul, les échanges faits par vos canaux habituels (courrier, e-mail du cabinet).
       </p>
 
-      {etat === 'chargee' && (
+      {etat === 'chargee' && partage === 'accorde' && (
         <p className="mt-2 text-xs text-muted-foreground">
-          {partage === 'accorde'
-            ? 'Partage avec le médecin traitant : accordé par le patient.'
-            : 'Partage avec le médecin traitant : non accordé ou non exprimé — vérifiez les choix du patient.'}
+          Partage avec le médecin traitant : accordé par le patient.
+        </p>
+      )}
+
+      {/*
+        CE BLOC EST LA CONTREPARTIE DE LA GARDE, du côté de la consignation
+        ([[D-219]] §3 amendé). L'écran disait « non accordé ou non exprimé —
+        vérifiez les choix du patient » et laissait le formulaire ACTIF : le
+        praticien saisissait un médecin, un texte, cliquait, et découvrait le 409.
+        Constat de la revue Copilot, retenu — l'écran et la route se
+        contredisaient.
+
+        TROIS MOTIFS, TROIS PHRASES : confondre un retrait avec un refus décrit
+        au praticien un dossier qui n'existe pas.
+      */}
+      {etat === 'chargee' && partage !== 'accorde' && (
+        <p role="status" className="mt-2 text-xs text-status-warning">
+          {partage === 'refuse'
+            ? 'Le patient a refusé le partage avec son médecin : aucun échange ne peut être consigné ici.'
+            : partage === 'retire'
+              ? 'Le patient a retiré son consentement au partage : aucun échange ne peut être consigné ici, y compris pour la suite d’un échange déjà engagé.'
+              : 'Consentement jamais exprimé : le patient ne s’est pas prononcé sur le partage avec son médecin, et aucun échange ne peut être consigné ici.'}{' '}
+          Il peut renseigner ou modifier ce choix depuis son espace, rubrique « Informations,
+          confidentialité et droits » → « Mes choix et autorisations ».
         </p>
       )}
 
@@ -326,7 +347,21 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
             </p>
           )}
 
-          {accepteConsignation && (
+          {/*
+            LA GARDE FERME AUSSI LE FORMULAIRE, et pas seulement le bouton : il
+            demande un médecin, un sens et un texte. Laisser saisir tout cela
+            pour finir en 409 est une perte de temps praticien, et l'écran
+            mentirait sur ce qui est possible. La ROUTE reste la décision qui
+            fait foi — l'écran cesse seulement de promettre.
+          */}
+          {accepteConsignation && partage !== 'accorde' && (
+            <p role="status" className="mt-2 text-base text-muted-foreground">
+              La consignation est fermée tant que le patient n’a pas accordé le partage avec son
+              médecin. Le fil ci-dessus reste lisible.
+            </p>
+          )}
+
+          {accepteConsignation && partage === 'accorde' && (
             <>
               <fieldset className="mt-2">
                 <legend className="text-xs font-medium text-foreground">Sens de l’échange</legend>

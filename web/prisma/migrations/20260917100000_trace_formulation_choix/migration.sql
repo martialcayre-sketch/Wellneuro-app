@@ -1,0 +1,17 @@
+-- Trace de la formulation servie au patient au moment de son choix ([[D-222]] §3).
+--
+-- LE TROU QUE CETTE COLONNE FERME. `document_version` porte la version de
+-- `droits_patient` — or ce n'est pas le texte que le patient lit pour choisir :
+-- il lit les libellés de « Mes choix », qui vivaient en dur dans l'écran et
+-- n'étaient couverts par aucune version. Deux consentements donnés sur deux
+-- formulations différentes étaient indiscernables au registre.
+--
+-- ADDITIVE ET NULLABLE, DÉLIBÉRÉMENT. Les lignes antérieures au 2026-09-17
+-- n'ont pas cette trace ; leur attribuer une version par défaut prétendrait
+-- savoir ce qui a été affiché, ce que personne ne sait. `NULL` dit « inconnu »,
+-- et c'est la seule chose vraie.
+--
+-- Aucun index : cette colonne se lit avec la ligne, jamais comme critère de
+-- recherche. Aucune contrainte : une version inconnue d'une future lecture doit
+-- pouvoir être stockée, comme `ancrage_version` l'a appris ([[D-215]]).
+ALTER TABLE "trust_choice_events" ADD COLUMN "formulation_version" TEXT;

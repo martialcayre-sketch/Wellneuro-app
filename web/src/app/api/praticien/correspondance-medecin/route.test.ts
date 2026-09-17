@@ -5,12 +5,14 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
     trustChoiceEvent: { findMany: vi.fn() },
+    $queryRaw: vi.fn(),
     syntheseIA: { findUnique: vi.fn() },
     correspondanceMedecin: {
       findMany: vi.fn(),
       create: vi.fn(),
     },
     correspondancePatient: { findMany: vi.fn() },
+    $transaction: vi.fn(),
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
@@ -113,10 +115,24 @@ describe('/api/praticien/correspondance-medecin', () => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findUnique.mockResolvedValue(PATIENT_EN_SUIVI);
-    prisma.trustChoiceEvent.findMany.mockResolvedValue([]);
+    // ACCORDÉ PAR DÉFAUT DEPUIS LE 2026-09-17 : le silence est devenu une
+    // garde fermée ([[D-219]] §3 amendé), et un défaut à `[]` ferait éprouver
+    // la garde à chacun des cas ci-dessous au lieu de son propre sujet.
+    prisma.trustChoiceEvent.findMany.mockResolvedValue([
+      { finalite: 'partage_medecin_traitant', statut: 'accorde', enregistreLe: new Date('2026-08-01T10:00:00.000Z') },
+    ]);
     prisma.correspondanceMedecin.findMany.mockResolvedValue([]);
     prisma.correspondancePatient.findMany.mockResolvedValue([]);
     prisma.syntheseIA.findUnique.mockResolvedValue(null);
+    // LA RELECTURE DU CONSENTEMENT VIT DANS UNE TRANSACTION. Le mock la
+    // traverse en passant les mêmes doublures : sans cela, chaque cas
+    // éprouverait l'absence de `$transaction` au lieu de son propre sujet.
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
+    prisma.$transaction.mockImplementation(async (op: (tx: unknown) => unknown) => op({
+      trustChoiceEvent: { findMany: prisma.trustChoiceEvent.findMany },
+      correspondanceMedecin: { create: prisma.correspondanceMedecin.create },
+      $queryRaw: prisma.$queryRaw,
+    }));
     prisma.correspondanceMedecin.create.mockImplementation(
       async ({ data }: { data: Record<string, unknown> }) => ({
         id: 'CORR_1',
@@ -506,7 +522,124 @@ describe('/api/praticien/correspondance-medecin', () => {
   });
 
   it('sans choix exprimé, le consentement est null (jamais deviné)', async () => {
+    // LE DÉFAUT DU BANC EST DÉSORMAIS « ACCORDÉ » : ce cas-ci doit donc poser
+    // son propre silence, sinon il n'éprouve plus rien. Le `null` reste ce que
+    // la LECTURE rend — il ne devient jamais « refusé » par commodité, même si
+    // la GARDE d'écriture le traite comme un refus depuis le 2026-09-17.
+    prisma.trustChoiceEvent.findMany.mockResolvedValue([]);
     const json = await (await GET(getRequest())).json();
     expect(json.partageMedecinTraitant).toBeNull();
+  });
+});
+
+describe('la garde de consentement — D-219 §3 amendé (2026-09-17)', () => {
+  // CINQ CAS POUR CINQ EFFETS PROMIS, et non un seul « ça bloque ». Un banc
+  // unique sur le refus laisserait passer les trois autres états, dont le
+  // silence — qui est la moitié de l'arbitrage.
+  const choix = (statut: string) => [
+    { finalite: 'partage_medecin_traitant', statut, enregistreLe: new Date('2026-08-01T10:00:00.000Z') },
+  ];
+
+  it('★ REFUS : la consignation est refusée en 409, et rien n’est écrit', async () => {
+    prisma.trustChoiceEvent.findMany.mockResolvedValue(choix('refuse'));
+    const reponse = await POST(postRequest(corps()));
+    expect(reponse.status).toBe(409);
+    const json = await reponse.json();
+    expect(json.reason).toBe('consentement_partage_refuse');
+    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+  });
+
+  it('★ RETRAIT : fermé comme le refus, et le motif reste distinct JUSQU’À LA RÉPONSE', async () => {
+    // « Distinct à la lecture » ne suffisait pas : le verdict gardait les deux
+    // motifs et le traducteur les aplatissait. La route rend désormais la
+    // raison propre au retrait (constat de la revue Copilot).
+    prisma.trustChoiceEvent.findMany.mockResolvedValue(choix('retire'));
+    const reponse = await POST(postRequest(corps()));
+    expect(reponse.status).toBe(409);
+    const json = await reponse.json();
+    expect(json.reason).toBe('consentement_partage_retire');
+    expect(json.error).toContain('a retiré son consentement');
+    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+  });
+
+  it('★ SILENCE : jamais exprimé ferme AUSSI, et le message donne le CHEMIN', async () => {
+    // LA MOITIÉ DE L'ARBITRAGE EST ICI. « Sans un choix explicite de votre
+    // part » se lit à la lettre : l'absence de choix n'est pas un accord.
+    // Et le blocage doit être une porte — le message nomme où le patient
+    // exprime son choix, sans quoi le praticien lit un mur.
+    prisma.trustChoiceEvent.findMany.mockResolvedValue([]);
+    const reponse = await POST(postRequest(corps()));
+    expect(reponse.status).toBe(409);
+    const json = await reponse.json();
+    expect(json.reason).toBe('consentement_partage_jamais_exprime');
+    expect(json.error).toContain('n’a jamais exprimé de choix');
+    expect(json.error).toContain('Mes choix et autorisations');
+    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+  });
+
+  it('★ LES DEUX SENS sont fermés — transcrire une réponse prouve qu’un envoi a eu lieu', async () => {
+    prisma.trustChoiceEvent.findMany.mockResolvedValue(choix('refuse'));
+    const reponse = await POST(postRequest(corps({ sens: 'entrant' })));
+    expect(reponse.status).toBe(409);
+    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+  });
+
+  it('ACCORDÉ : la consignation passe — la garde ne ferme pas tout', async () => {
+    // SANS CE CAS, une garde qui refuserait TOUT passerait les quatre bancs
+    // ci-dessus. C'est le contre-poids, et il n'est pas décoratif.
+    prisma.trustChoiceEvent.findMany.mockResolvedValue(choix('accorde'));
+    expect((await POST(postRequest(corps()))).status).toBe(201);
+    expect(prisma.correspondanceMedecin.create).toHaveBeenCalled();
+  });
+});
+
+describe('la relecture du consentement dans la transaction', () => {
+  // CE BLOC EST HORS DU `describe` PRINCIPAL, donc il n'hérite PAS de son
+  // `beforeEach` : sans cette mise en place, les compteurs de mocks
+  // s'accumulent depuis les cas précédents et l'assertion « deux lectures »
+  // compte neuf appels. Le piège vaut d'être écrit — il ne se voit pas.
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue(PATIENT_EN_SUIVI);
+    prisma.syntheseIA.findUnique.mockResolvedValue(null);
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
+    prisma.$transaction.mockImplementation(async (op: (tx: unknown) => unknown) => op({
+      trustChoiceEvent: { findMany: prisma.trustChoiceEvent.findMany },
+      correspondanceMedecin: { create: prisma.correspondanceMedecin.create },
+      $queryRaw: prisma.$queryRaw,
+    }));
+    prisma.correspondanceMedecin.create.mockResolvedValue({
+      id: 'CORR_1',
+      sens: 'sortant',
+      medecinLibelle: 'Dr Martin',
+      texte: 'Document de suivi.',
+      idSynthese: null,
+      echangeLe: null,
+      consigneLe: new Date('2026-09-17T10:00:00.000Z'),
+    });
+  });
+
+  it('★ un RETRAIT en vol est arrêté juste avant l’insertion', async () => {
+    // MÊME PATRON QUE LA ROUTE DU COURRIER DE BIOLOGIE, et pour la même raison :
+    // la garde d'entrée lit le consentement, puis le patient peut le retirer
+    // depuis son portail avant que la ligne ne s'écrive. Protéger une des deux
+    // routes seulement aurait été arbitraire.
+    //
+    // LA MUTATION QUI DOIT FAIRE ROUGIR CE BANC : retirer la relecture et se
+    // contenter de la garde d'entrée.
+    prisma.trustChoiceEvent.findMany
+      .mockResolvedValueOnce([
+        { finalite: 'partage_medecin_traitant', statut: 'accorde', enregistreLe: new Date('2026-08-01T10:00:00.000Z') },
+      ])
+      .mockResolvedValueOnce([
+        { finalite: 'partage_medecin_traitant', statut: 'retire', enregistreLe: new Date('2026-09-17T10:00:00.000Z') },
+      ]);
+    const reponse = await POST(postRequest(corps()));
+    expect(reponse.status).toBe(409);
+    // DEUX lectures, pas une : la garde d'entrée puis la relecture. Une seule
+    // signifierait que la relecture a sauté.
+    expect(prisma.trustChoiceEvent.findMany).toHaveBeenCalledTimes(2);
+    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 });

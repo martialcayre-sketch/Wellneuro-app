@@ -751,6 +751,22 @@ export async function provisionnerDossierBiologie(idPatient: string): Promise<vo
 
   await nettoyerDossierBiologie(idPatient);
 
+  // ── Condition dure 0 : LE CONSENTEMENT AU PARTAGE, accordé ───────────────
+  // DEPUIS LE 2026-09-17, c'est une PRÉCONDITION du courrier ([[D-219]] §3
+  // amendé) : le refus, le retrait et le SILENCE ferment la génération. Ce
+  // dossier de fixture n'avait jamais exprimé de choix — le parcours entier
+  // tombait donc en 409, et c'est bien la garde qui l'a arrêté, pas une
+  // régression. Le poser ici rend au spec son propre sujet : ce qu'il éprouve
+  // est la chaîne du courrier, pas le consentement.
+  await prisma.trustChoiceEvent.create({
+    data: {
+      idPatient,
+      finalite: 'partage_medecin_traitant',
+      statut: 'accorde',
+      documentVersion: getDocumentCourant('droits_patient').version,
+    },
+  });
+
   await prisma.questionnaireReponse.create({
     data: {
       idReponse: `${ID_REPONSE_BIO_E2E_PREFIX}${idPatient}`,
@@ -948,6 +964,12 @@ export async function nettoyerDossierBiologie(idPatient: string): Promise<void> 
   });
   await prisma.correspondanceMedecin.deleteMany({
     where: { idPatient, medecinLibelle: MEDECIN_BIO_E2E },
+  });
+  // Le consentement posé au provisionnement. Borné à la finalité : « tous les
+  // choix du dossier » emporterait ceux qu'un autre banc aurait posés sur le
+  // même patient de fixture.
+  await prisma.trustChoiceEvent.deleteMany({
+    where: { idPatient, finalite: 'partage_medecin_traitant' },
   });
   await prisma.panelBiologieDocumente.deleteMany({
     where: { idPatient, documenteLe: DATE_BILAN_BIO_E2E },

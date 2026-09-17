@@ -11,6 +11,7 @@ import { genererCourrierBiologie } from '@/lib/biology-library/courrier';
 import { isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
 import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
 import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
+import { refusPartage, verdictPartageMedecin } from '@/lib/trust/consentementPartage';
 
 // Courrier médecin de la proposition de bilan ([[D-073]]) — dernier appelant
 // manquant du LOT-06.
@@ -116,6 +117,23 @@ export async function POST(req: Request) {
       return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
     }
 
+    // LE CONSENTEMENT EST UNE GARDE DEPUIS LE 2026-09-17 ([[D-219]] §3 amendé).
+    // Ce courrier-ci est celui que la finalité vise nommément — il part au
+    // MÉDECIN TRAITANT. Le refus, le retrait ET le silence le ferment.
+    //
+    // POURQUOI AVANT LA GÉNÉRATION et non après : produire la lettre puis la
+    // jeter ferait tourner le moteur sur un dossier dont le patient a dit non,
+    // et laisserait une trace de lecture pour rien.
+    const choix = await prisma.trustChoiceEvent.findMany({
+      where: { idPatient, finalite: 'partage_medecin_traitant' },
+      select: { finalite: true, statut: true, enregistreLe: true },
+    });
+    const verdict = verdictPartageMedecin(choix);
+    if (verdict.bloquant) {
+      const refus = refusPartage(verdict);
+      return echec(refus.raison, refus.message, 409);
+    }
+
     const maintenant = new Date().toISOString();
     const proposition = await deriverPropositionPourPatient(idPatient, maintenant);
     if (!proposition.ok) {
@@ -167,14 +185,46 @@ export async function POST(req: Request) {
       );
     }
 
+    const correspondance = {
+      ...preparation.donnees,
+      ancrageSha256: provenance.ancrageHash,
+      ancrageVersion: provenance.version,
+    };
     try {
-      await prisma.correspondanceMedecin.create({
-        data: {
-          ...preparation.donnees,
-          ancrageSha256: provenance.ancrageHash,
-          ancrageVersion: provenance.version,
-        },
+      // RELECTURE DU CONSENTEMENT JUSTE AVANT L'INSERTION — constat de la revue
+      // Copilot, retenu. La première lecture a lieu AVANT la génération de la
+      // lettre ; entre les deux, le patient peut retirer son accord depuis son
+      // portail. La fenêtre est brève, mais ce qu'elle laisse passer est
+      // exactement ce que ce lot existe pour empêcher : une consignation contre
+      // un refus explicite.
+      //
+      // LE VERROU NE VAUT QUE PARCE QUE LES DEUX CÔTÉS LE PRENNENT, et c'est
+      // l'histoire de cette ligne. Proposé seul, il ne sérialisait RIEN :
+      // l'écrivain du consentement ne prenait aucun verrou et ne touchait pas
+      // `patients`. Un verrou ne retient que les parties qui le prennent. Depuis
+      // que `POST /api/portail/trust/choix` prend le MÊME verrou de ligne, la
+      // course est réellement fermée — un retrait et une consignation ne peuvent
+      // plus s'entrelacer sur le même dossier.
+      //
+      // LA RELECTURE RESTE, ET ELLE N'EST PAS REDONDANTE : c'est elle qui REND le
+      // verdict. Le verrou ordonne les deux transactions, la relecture lit ce que
+      // l'ordre a produit. Retirer l'une ou l'autre rouvre la fenêtre.
+      const transaction = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${idPatient} FOR UPDATE`;
+        const choixRelu = await tx.trustChoiceEvent.findMany({
+          where: { idPatient, finalite: 'partage_medecin_traitant' },
+          select: { finalite: true, statut: true, enregistreLe: true },
+        });
+        const verdictRelu = verdictPartageMedecin(choixRelu);
+        if (verdictRelu.bloquant) {
+          return { ok: false as const, refus: refusPartage(verdictRelu) };
+        }
+        await tx.correspondanceMedecin.create({ data: correspondance });
+        return { ok: true as const };
       });
+      if (!transaction.ok) {
+        return echec(transaction.refus.raison, transaction.refus.message, 409);
+      }
     } catch (err) {
       // JAMAIS `err.message` ici : un `PrismaClientValidationError` rend ses
       // arguments dans son message — texte de la lettre compris — et partirait

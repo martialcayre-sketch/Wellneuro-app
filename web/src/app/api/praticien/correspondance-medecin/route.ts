@@ -15,7 +15,11 @@ import {
   MESSAGE_DOSSIER_CLOS,
   RAISON_DOSSIER_CLOS,
 } from '@/lib/patient/cycleDeVie';
-import { statutPartageMedecinTraitant } from '@/lib/trust/consentementPartage';
+import {
+  refusPartage,
+  statutPartageMedecinTraitant,
+  verdictPartageMedecin,
+} from '@/lib/trust/consentementPartage';
 import type { StatutChoix } from '@/lib/trust/types';
 
 // Fil de correspondance médecin (C3 LOT-06, V1 = transcription praticien).
@@ -288,6 +292,25 @@ export async function POST(req: Request): Promise<NextResponse<CorrespondanceMed
       return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
     }
 
+    // LA CONSIGNATION EST GARDÉE DEPUIS LE 2026-09-17 ([[D-219]] §3 amendé),
+    // et c'est le renversement le plus lourd du lot : ce module disait
+    // exactement l'inverse — « bloquer la consignation rendrait seulement le
+    // dossier aveugle ». Le responsable a tranché en connaissant ce motif.
+    //
+    // LES DEUX SENS SONT FERMÉS, et il faut le dire. Transcrire une RÉPONSE du
+    // médecin est bloqué comme l'envoi : le consentement porte sur l'échange
+    // avec le médecin, pas sur sa direction — et une réponse consignée prouve
+    // qu'un envoi a eu lieu.
+    const choix = await prisma.trustChoiceEvent.findMany({
+      where: { idPatient, finalite: 'partage_medecin_traitant' },
+      select: { finalite: true, statut: true, enregistreLe: true },
+    });
+    const verdictPartage = verdictPartageMedecin(choix);
+    if (verdictPartage.bloquant) {
+      const refus = refusPartage(verdictPartage);
+      return echec(refus.raison, refus.message, 409);
+    }
+
     const preparation = preparerCorrespondance({
       idPatient,
       praticienEmail: garde.email,
@@ -315,13 +338,38 @@ export async function POST(req: Request): Promise<NextResponse<CorrespondanceMed
       }
     }
 
-    // `consigneLe` n'est PAS transmis : la base pose le présent
-    // (@default(now())). Une consignation est structurellement inantidatable.
-    const creee = await prisma.correspondanceMedecin.create({
-      data: preparation.donnees,
-      select: SELECTION,
+    // RELECTURE DU CONSENTEMENT JUSTE AVANT L'INSERTION — même patron que la
+    // route du courrier de biologie, et pour la même raison : la garde d'entrée
+    // a lu le consentement plus haut, et le patient peut le retirer entre les
+    // deux depuis son portail. Protéger une des deux routes seulement aurait
+    // été arbitraire.
+    //
+    // MÊME VERROU DE LIGNE QUE LES DEUX AUTRES ROUTES. Il ne sert que parce que
+    // `POST /api/portail/trust/choix` le prend aussi : un verrou ne retient que
+    // les parties qui le prennent. Les trois écrivains de ce périmètre le
+    // prennent désormais, et la course est fermée.
+    const relecture = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${idPatient} FOR UPDATE`;
+      const choixRelu = await tx.trustChoiceEvent.findMany({
+        where: { idPatient, finalite: 'partage_medecin_traitant' },
+        select: { finalite: true, statut: true, enregistreLe: true },
+      });
+      const verdictRelu = verdictPartageMedecin(choixRelu);
+      if (verdictRelu.bloquant) return { ok: false as const, refus: refusPartage(verdictRelu) };
+      // `consigneLe` n'est PAS transmis : la base pose le présent
+      // (@default(now())). Une consignation est structurellement inantidatable.
+      return {
+        ok: true as const,
+        creee: await tx.correspondanceMedecin.create({
+          data: preparation.donnees,
+          select: SELECTION,
+        }),
+      };
     });
-
+    if (!relecture.ok) {
+      return echec(relecture.refus.raison, relecture.refus.message, 409);
+    }
+    const creee = relecture.creee;
     return NextResponse.json({ ok: true, correspondance: exposer(creee) }, { status: 201 });
   } catch (err) {
     console.error(

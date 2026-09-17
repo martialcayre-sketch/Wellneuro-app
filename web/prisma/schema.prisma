@@ -963,6 +963,13 @@ model TrustChoiceEvent {
   finalite          String   @map("finalite") // partage_medecin_traitant | communications_non_essentielles
   statut            String   @map("statut") // accorde | refuse | retire
   documentVersion   String   @map("document_version")
+  // La version de la FORMULATION servie au patient dans « Mes choix »
+  // ([[D-222]] §3). `documentVersion` porte la version de `droits_patient`, qui
+  // n'est PAS le texte lu au moment du choix : deux consentements donnés sur
+  // deux formulations différentes étaient indiscernables au registre.
+  // Nullable : les lignes antérieures au 2026-09-17 n'ont pas cette trace, et
+  // la prétendre serait pire que l'absence.
+  formulationVersion String? @map("formulation_version")
   supersedesEventId String?  @map("supersedes_event_id")
   acteurRole        String   @default("patient") @map("acteur_role")
   enregistreLe      DateTime @default(now()) @map("enregistre_le")

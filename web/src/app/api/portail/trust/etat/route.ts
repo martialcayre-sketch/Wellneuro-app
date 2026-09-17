@@ -73,6 +73,16 @@ export async function GET(req: Request): Promise<NextResponse<TrustEtatResponse>
       prisma.trustChoiceEvent.findMany({
         where: { idPatient: patient.idPatient },
         orderBy: { enregistreLe: 'asc' },
+        // MÊME RAISON QUE LE `create` DE `trust/choix` : un `findMany` nu
+        // sélectionne tous les scalaires, `formulation_version` comprise, et
+        // casserait la LECTURE de l'espace TRUST tant que la migration n'est pas
+        // appliquée. Les quatre champs ci-dessous sont les seuls consommés.
+        select: {
+          finalite: true,
+          statut: true,
+          enregistreLe: true,
+          documentVersion: true,
+        },
       }),
       prisma.trustAdverseEffectReport.findMany({
         where: { idPatient: patient.idPatient },
