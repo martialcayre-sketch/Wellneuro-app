@@ -67,13 +67,21 @@ posée, et qui était la prochaine action écrite dans le handoff précédent.
   claims manquants.
 - **T1 `npm run check`** : vert (404 tests, anti-secrets OK).
 - **Bancs cliniques** `src/lib/clinical/` : 702 tests, 27 fichiers, verts.
-- **T2** : voir §7 — à lancer et à rapporter tel quel.
+- **T2 `npm run test:worktree -- --fast`** : **vert en 5 min 3 s**. 581 fichiers,
+  9728 tests unitaires, 205 E2E (Chromium ET WebKit), **contrats SQL joués 31 s**
+  — ils ne sont pas dans le saut `--fast`, donc le contrat de fraîcheur modifié a
+  bien été exercé. Aucune signature `D-049` ce soir.
+- **Contrôle G6 sur le diff**, joué à la main contre les douze textes lus en
+  production : il a MORDU une fois (quatorze mots recopiés dans un commentaire),
+  puis rendu zéro fragment de six mots ou plus après reformulation.
 
 ## 7. Problèmes ouverts
 
-- **`D-049`** reste ouverte : le segment E2E WebKit/iPhone 13 peut expirer sans
-  qu'aucune requête parte. `wn-test-worktree.sh` le classe lui-même ; un T2 rouge
-  de cette signature ne vaut pas régression, et le CI Linux fait foi.
+- **`D-049` reste ouverte, mais sa cause racine est mesurée** — amendement porté
+  par une autre session le même soir (`eb24a572`, fusionné dans cette branche) :
+  le correctif est identifié (WebKit 2352) et constaté ; `D-049` ne se ferme qu'à
+  la montée. **T2 de ce lot n'a PAS rencontré la signature** — séquence rapide
+  verte en 5 min 3 s, E2E Chromium et WebKit compris.
 - **Dette `N11`** : `conflits_sources` n'a toujours pas de cas négatif au contrat
   de fraîcheur, comme `conduites` n'en avait pas avant `N10`. **C'est le lot
   suivant, décidé avec le responsable** — PR séparée, une seule finalité.
