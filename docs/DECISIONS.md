@@ -59,14 +59,25 @@ patient pouvait lire ce que son choix engageait. Le texte dit désormais ce qui 
 lieu : la transmission se fait par les moyens habituels du praticien, et
 **l'application elle-même n'envoie rien**.
 
-**CE QUI N'EST PAS TOUCHÉ, ET POURQUOI.** Quatre versions **publiées** du registre
-TRUST patient portent « aucun partage avec un tiers … sans un choix explicite de
-votre part », et l'effet du refus annoncé dans « Mes choix » dit « aucun document
-ne sera partagé ». Le logiciel **ne garantit ni l'un ni l'autre** : §3 de
-[[D-219]] confie la règle au praticien. Mais ce sont des documents **publiés,
-versionnés et immuables**, sur lesquels des patients ont consenti : les corriger
-demande une version neuve et un arbitrage du responsable, pas une réécriture de
-session. **Nommé ici, laissé ouvert.**
+**CE QUI N'EST PAS TOUCHÉ, ET LA LIGNE QUI SÉPARE.** Ce qui est corrigé ici est un
+**fait faux sur l'état du produit** : la fonctionnalité n'« arrivera » pas, elle est
+en service. Ce qui ne l'est pas est une **promesse faite au patient** — la
+dégrader, fût-ce pour la rendre exacte, change ce à quoi il a consenti, et cela
+n'appartient pas à une session. Trois pièces, toutes nommées, aucune touchée :
+
+1. **Les huit versions publiées** du document `donnees_confidentialite` portent
+   « aucun partage avec un tiers … sans un choix explicite de votre part » — la
+   phrase y est écrite quatre fois et **reprise par composition** dans les quatre
+   autres. Le logiciel ne la garantit pas.
+2. **L'effet du refus** dans « Mes choix » dit « aucun document ne sera partagé ».
+   Même écart, et c'est la phrase la plus engageante des deux.
+3. **La formulation des finalités n'est couverte par aucune version** : l'événement
+   de choix n'enregistre que `getDocumentCourant('droits_patient').version`, si
+   bien que deux consentements donnés sur deux formulations différentes sont
+   **indiscernables au registre**. Le trou est antérieur à cette décision — il
+   existait à chaque retouche passée de cet écran —, mais c'est ici qu'il se voit :
+   la correction du §3 n'est pas traçable. Un banc de composant verrouille au
+   moins la formulation servie, et l'absence de l'ancienne.
 
 **4. LA MESSAGERIE DE SANTÉ EST HORS DE PORTÉE, ET C'EST ÉCRIT UNE FOIS POUR
 TOUTES.** MSSanté et consorts reviennent à chaque cadrage du fil médecin. La

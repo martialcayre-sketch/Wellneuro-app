@@ -329,13 +329,24 @@ régime que le médecin traitant à la rubrique 5. Ce qui est écrit ici est le
 **fait** : ce qui part, à qui, par quel chemin, et ce que le produit ne garantit
 pas.
 
-> **RESTE DÛ, ET C'EST UN ARBITRAGE, PAS UN CORRECTIF.** Quatre versions publiées
-> du registre TRUST patient (`trust/contenus/registre.ts`) portent « aucun partage
-> avec un tiers (par exemple votre médecin traitant) n'a lieu sans un choix
-> explicite de votre part ». Le logiciel ne garantit pas cette phrase. Corriger un
-> document **publié et versionné**, lu par des patients qui ont consenti dessus,
-> est une décision du responsable — elle demande une version neuve, pas une
-> réécriture. **Nommé le 2026-09-17, non touché.**
+> **RESTE DÛ, ET C'EST UN ARBITRAGE, PAS UN CORRECTIF.** **Les huit versions
+> publiées** du document `donnees_confidentialite` (`trust/contenus/registre.ts`)
+> portent « aucun partage avec un tiers (par exemple votre médecin traitant) n'a
+> lieu sans un choix explicite de votre part » — la phrase y est **écrite quatre
+> fois et reprise par composition** dans les quatre autres, chaque version
+> spreadant les sections de la précédente. Le logiciel ne garantit pas cette
+> phrase. Corriger un document **publié et versionné**, lu par des patients qui
+> ont consenti dessus, est une décision du responsable — elle demande une version
+> neuve, pas une réécriture.
+>
+> **DEUX AUTRES PIÈCES DE LA MÊME RÉSERVE**, nommées le 2026-09-17 et non
+> touchées : l'**effet du refus** annoncé dans « Mes choix » dit « aucun document
+> ne sera partagé », promesse que le logiciel ne tient pas davantage — et la
+> **formulation des finalités** de cet écran n'est couverte par aucune version :
+> l'événement de choix n'enregistre que la version du document `droits_patient`,
+> si bien que deux consentements donnés sur deux formulations différentes sont
+> indiscernables au registre. **Non touché le 2026-09-17, sauf la correction d'un
+> fait faux** (voir [[D-220]] §3).
 
 Au sein de Wellneuro, en revanche, la phrase tient : « votre praticien, dans le
 cadre de votre accompagnement ; personne d'autre n'y accède ».

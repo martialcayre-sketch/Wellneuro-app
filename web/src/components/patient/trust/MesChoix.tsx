@@ -11,7 +11,10 @@ import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessa
  * précoché ; l'historique reste visible et n'est jamais effacé (append-only
  * côté serveur).
  */
-const FINALITES: {
+// EXPORTÉ POUR SON BANC, et pour lui seul. La formulation servie ici n'est
+// couverte par aucune version de document ([[D-220]] §3) : tant que ce trou
+// n'est pas fermé, un banc est la seule chose qui l'empêche de dériver.
+export const FINALITES: {
   finalite: string;
   libelle: string;
   finaliteDetail: string;

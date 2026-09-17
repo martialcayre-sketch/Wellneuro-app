@@ -49,14 +49,19 @@ prouve rien sur un parcours. Aucun banc n'épinglait l'ancien texte : le grep su
 
 ## Problèmes ouverts
 
-**Quatre versions publiées du registre TRUST patient portent la même promesse que la
-rubrique 6 portait** — « aucun partage avec un tiers … sans un choix explicite de
-votre part » — et l'effet du refus annoncé dans « Mes choix » dit « aucun document ne
-sera partagé ». Le logiciel ne garantit ni l'un ni l'autre. Ce sont des documents
-**publiés, versionnés, immuables**, sur lesquels des patients ont consenti : les
-corriger demande une **version neuve** et un arbitrage du responsable. **Nommé au
-registre et en file d'attente, non touché.** C'est la réserve la plus lourde que
-cette campagne laisse.
+**Les huit versions publiées** de `donnees_confidentialite` portent la même promesse
+que la rubrique 6 portait — « aucun partage avec un tiers … sans un choix explicite
+de votre part », écrite quatre fois et reprise par composition dans les quatre
+autres — et l'effet du refus annoncé dans « Mes choix » dit « aucun document ne sera
+partagé ». Le logiciel ne garantit ni l'un ni l'autre. **Nommé au registre et en
+file d'attente, non touché** : la ligne tenue est qu'on corrige un **fait faux sur
+l'état du produit**, on ne dégrade pas une **promesse faite au patient**.
+
+**Un trou de traçabilité se voit au passage**, et il est antérieur : la formulation
+des finalités de cet écran n'est couverte par **aucune version** — l'événement de
+choix n'enregistre que celle du document `droits_patient`. Deux consentements donnés
+sur deux formulations différentes sont indiscernables. Un banc de composant
+verrouille au moins la formulation servie ; le versionner est en file d'attente.
 
 **`.wn/state.json` n'a pas été modifié** — motif écrit au handoff de LOT-05a.
 
