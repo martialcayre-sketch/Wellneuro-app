@@ -476,7 +476,12 @@ est distinct.
 
 - Date : 2026-09-17
 - Statut : accepté — **promotion, pas arbitrage**. Les trois décisions ont été
-  rendues par le responsable le **2026-07-22** et n'ont jamais changé. Cette
+  rendues par le responsable le **2026-07-22** et n'avaient jamais changé
+  **jusqu'à cette promotion**. ⚠️ **LE §3 A ÉTÉ RENVERSÉ LE JOUR MÊME** — voir
+  l'amendement en tête d'entrée. Les §1 et §2 sont intacts. Phrase bornée et non
+  réécrite : la promotion, elle, n'a bien rien arbitré. Constat d'une revue, et
+  il était dans son bloc « Suppressed comments » — pas dans ses commentaires en
+  ligne. Cette
   entrée ne les rejuge pas : elle les sort d'un document de cadrage pour les
   mettre là où le dépôt va les chercher.
 - Domaine : correspondance médecin, cycle de vie du dossier, centre TRUST.
