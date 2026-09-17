@@ -418,9 +418,9 @@ describe('la garde de consentement — D-219 §3 amendé (2026-09-17)', () => {
     const reponse = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
     expect(reponse.status).toBe(409);
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
     expect(tx.trustChoiceEvent.findMany).toHaveBeenCalledTimes(1);
-    expect(prisma.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
       tx.trustChoiceEvent.findMany.mock.invocationCallOrder[0],
     );
     expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
