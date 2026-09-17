@@ -14940,12 +14940,15 @@ commente une synthèse, elle ne la re-valide pas.
 > même deux fois, puisque la cause est désormais corrigée *et* la correction
 > mesurée.
 >
-> ⚠️ **CE CHAPEAU DISAIT « la cause est amont, et sans correctif », À SEPT LIGNES
-> DU PARAGRAPHE QUI DIT L'INVERSE.** C'était faux, et ce n'était pas un détail de
-> rédaction : c'est la justification qui a été donnée au responsable quand il a
-> tranché « amender, ne pas fermer ». **L'arbitrage est sourcé et tient tant qu'il
-> n'est pas repris ; sa prémisse, elle, est tombée** — voir l'avertissement plus
-> bas sur le statut d'issue lu sans ses commentaires. Ce qui reste vrai sans elle,
+> ⚠️ **CE CHAPEAU A DIT, JUSQU'AU 2026-09-17 AU SOIR, « la cause est amont, et
+> sans correctif »** — dans le même bloc que le paragraphe **« LE CORRECTIF
+> EXISTE, ET IL EST CONSTATÉ SUR CETTE MACHINE »**, qui dit l'inverse. C'était
+> faux, et ce n'était pas un détail de rédaction : c'est la justification qui a
+> été donnée au responsable quand il a tranché « amender, ne pas fermer ».
+> **L'arbitrage est sourcé et tient tant qu'il n'est pas repris ; sa prémisse,
+> elle, est tombée** — voir le paragraphe **« LA PREMIÈRE RÉDACTION DE CET
+> AMENDEMENT DISAIT "AUCUN CORRECTIF À ATTENDRE" »**, qui en donne la cause : un
+> statut d'issue lu sans ses commentaires. Ce qui reste vrai sans elle,
 > et qui suffit à ne pas fermer d'office : fermer `D-049` rétablirait l'exigence
 > de **T3 local** pour les PR migration, scoring et clinique. C'est un régime de
 > validation, pas une écriture de registre, et sa reprise appartient au
