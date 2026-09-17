@@ -413,6 +413,10 @@ describe('la garde de consentement — D-219 §3 amendé (2026-09-17)', () => {
     expect(reponse.status).toBe(409);
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.trustChoiceEvent.findMany).toHaveBeenCalledTimes(2);
+    expect(prisma.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.trustChoiceEvent.findMany.mock.invocationCallOrder[1],
+    );
     expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 });
