@@ -346,6 +346,26 @@ test('la tête acceptée est reportée vers l’étape suivante, par $GITHUB_ENV
     /ATTENDU="\$\{WN_SHA_ATTENDU:-\$GITHUB_SHA\}"/,
     'la garde doit lire le SHA attendu, et retomber sur le commit approuvé — jamais plus permissive',
   );
+  assert.match(
+    garde,
+    /git fetch --quiet origin main/,
+    'la garde doit relire origin/main avant de juger les déploiements',
+  );
+  assert.match(
+    garde,
+    /MAIN_TETE=\$\(git rev-parse origin\/main\)/,
+    'la garde doit borner ses comparaisons à la ligne main constatée',
+  );
+  assert.match(
+    garde,
+    /SUCCES_MAIN=\$\(printf '%s\\n' "\$SUCCES" \| while IFS= read -r SHA; do/,
+    'la garde doit filtrer la liste des succès pour ne garder que la ligne main',
+  );
+  assert.match(
+    garde,
+    /git merge-base --is-ancestor "\$SHA" "\$MAIN_TETE"/,
+    'un SHA hors de la ligne main ne doit pas piloter la garde',
+  );
   // La comparaison elle-même doit porter sur le SHA ATTENDU. Sans ce cas, lire
   // `WN_SHA_ATTENDU` puis continuer à comparer `$GITHUB_SHA` passerait le banc.
   assert.match(
@@ -357,6 +377,16 @@ test('la tête acceptée est reportée vers l’étape suivante, par $GITHUB_ENV
     garde,
     /\[ "\$DERNIER" = "\$GITHUB_SHA" \]/,
     'la garde ne doit plus comparer le dernier déploiement au commit approuvé',
+  );
+  assert.match(
+    garde,
+    /printf '%s\\n' "\$SUCCES_MAIN" \| grep -qx "\$ATTENDU"/,
+    'la détection "dépassé" doit s’appuyer sur les succès de la ligne main',
+  );
+  assert.doesNotMatch(
+    garde,
+    /printf '%s\\n' "\$SUCCES" \| grep -qx "\$ATTENDU"/,
+    'la détection "dépassé" ne doit plus lire les succès hors main',
   );
 });
 

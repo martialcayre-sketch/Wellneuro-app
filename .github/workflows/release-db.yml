@@ -633,6 +633,12 @@ jobs:
           # le report. Si la variable manquait, la garde exigerait le commit
           # approuvé lui-même : jamais plus permissif que ce que l'humain a vu.
           ATTENDU="${WN_SHA_ATTENDU:-$GITHUB_SHA}"
+          if ! git fetch --quiet origin main; then
+            echo '❌ "git fetch origin main" a échoué : impossible de borner la garde' >&2
+            echo "   aux déploiements de la ligne main. Aucune écriture." >&2
+            exit 1
+          fi
+          MAIN_TETE=$(git rev-parse origin/main)
           if [ "$ATTENDU" != "$GITHUB_SHA" ]; then
             echo "→ La garde juge la tête déployée ($ATTENDU) ; commit approuvé :"
             echo "  $GITHUB_SHA — elle l'a dépassé sans toucher aux migrations."
@@ -640,12 +646,18 @@ jobs:
           for i in $(seq 1 40); do
             SUCCES=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" deployments 2>/dev/null \
               | grep 'success' | grep -oE '\b[0-9a-f]{40}\b' || true)
-            DERNIER=$(printf '%s\n' "$SUCCES" | head -1)
+            SUCCES_MAIN=$(printf '%s\n' "$SUCCES" | while IFS= read -r SHA; do
+              [ -n "$SHA" ] || continue
+              if git merge-base --is-ancestor "$SHA" "$MAIN_TETE" 2>/dev/null; then
+                echo "$SHA"
+              fi
+            done)
+            DERNIER=$(printf '%s\n' "$SUCCES_MAIN" | head -1)
             if [ "$DERNIER" = "$ATTENDU" ]; then
               echo "✓ $ATTENDU est le dernier déploiement réussi."
               exit 0
             fi
-            if printf '%s\n' "$SUCCES" | grep -qx "$ATTENDU"; then
+            if printf '%s\n' "$SUCCES_MAIN" | grep -qx "$ATTENDU"; then
               echo "❌ $ATTENDU est déployé, mais un déploiement PLUS RÉCENT existe" >&2
               echo "   ($DERNIER) : l'image ne correspond plus au commit approuvé." >&2
               echo "   Relancer release-db depuis le commit de tête de main." >&2
