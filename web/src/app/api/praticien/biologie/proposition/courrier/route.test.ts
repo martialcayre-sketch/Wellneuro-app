@@ -11,6 +11,8 @@ const {
     patient: { findUnique: vi.fn() },
     trustChoiceEvent: { findMany: vi.fn() },
     correspondanceMedecin: { create: vi.fn() },
+    $executeRaw: vi.fn(),
+    $transaction: vi.fn(),
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
   deriverPropositionPourPatient: vi.fn(),
@@ -73,6 +75,12 @@ beforeEach(() => {
     { finalite: 'partage_medecin_traitant', statut: 'accorde', enregistreLe: new Date('2026-08-01T10:00:00.000Z') },
   ]);
   prisma.correspondanceMedecin.create.mockResolvedValue({});
+  prisma.$executeRaw.mockResolvedValue(undefined);
+  prisma.$transaction.mockImplementation(async (op: (tx: unknown) => unknown) => op({
+    trustChoiceEvent: { findMany: prisma.trustChoiceEvent.findMany },
+    correspondanceMedecin: { create: prisma.correspondanceMedecin.create },
+    $executeRaw: prisma.$executeRaw,
+  }));
   deriverPropositionPourPatient.mockResolvedValue({
     ok: true,
     proposition: { ok: true, lignes: [], declarationsIgnoreesHorsProposition: [] },
@@ -390,6 +398,21 @@ describe('la garde de consentement — D-219 §3 amendé (2026-09-17)', () => {
     const json = await reponse.json();
     expect(json.reason).toBe('consentement_partage_jamais_exprime');
     expect(json.error).toContain('Mes choix et autorisations');
+    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+  });
+
+  it('revalide le consentement dans la transaction avant consignation', async () => {
+    prisma.trustChoiceEvent.findMany
+      .mockResolvedValueOnce([
+        { finalite: 'partage_medecin_traitant', statut: 'accorde', enregistreLe: new Date('2026-08-01T10:00:00.000Z') },
+      ])
+      .mockResolvedValueOnce([
+        { finalite: 'partage_medecin_traitant', statut: 'refuse', enregistreLe: new Date('2026-09-01T10:00:00.000Z') },
+      ]);
+    const reponse = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(reponse.status).toBe(409);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
     expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 });

@@ -36,6 +36,7 @@ import { refusPartage, verdictPartageMedecin } from '@/lib/trust/consentementPar
 // le texte, l'impression est un artefact de sortie.
 
 const ROUTE_JOURNAL = '/api/praticien/biologie/proposition/courrier';
+const LOCK_NAMESPACE_TRUST_CHOIX = 76;
 
 export type CourrierApiResponse =
   | {
@@ -185,14 +186,28 @@ export async function POST(req: Request) {
       );
     }
 
+    const correspondance = {
+      ...preparation.donnees,
+      ancrageSha256: provenance.ancrageHash,
+      ancrageVersion: provenance.version,
+    };
     try {
-      await prisma.correspondanceMedecin.create({
-        data: {
-          ...preparation.donnees,
-          ancrageSha256: provenance.ancrageHash,
-          ancrageVersion: provenance.version,
-        },
+      const transaction = await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(${LOCK_NAMESPACE_TRUST_CHOIX}, hashtext(${idPatient}))`;
+        const choixVerrouille = await tx.trustChoiceEvent.findMany({
+          where: { idPatient, finalite: 'partage_medecin_traitant' },
+          select: { finalite: true, statut: true, enregistreLe: true },
+        });
+        const verdictVerrouille = verdictPartageMedecin(choixVerrouille);
+        if (verdictVerrouille.bloquant) {
+          return { ok: false as const, refus: refusPartage(verdictVerrouille) };
+        }
+        await tx.correspondanceMedecin.create({ data: correspondance });
+        return { ok: true as const };
       });
+      if (!transaction.ok) {
+        return echec(transaction.refus.raison, transaction.refus.message, 409);
+      }
     } catch (err) {
       // JAMAIS `err.message` ici : un `PrismaClientValidationError` rend ses
       // arguments dans son message — texte de la lettre compris — et partirait
