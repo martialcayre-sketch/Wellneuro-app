@@ -7052,3 +7052,27 @@ publiée nomme ; et la traçabilité passe par une **colonne**, mon option ayant
 resoumise nommément puis écartée. Substance et registre dans la PR de cette session-là,
 pas ici — deux adresses pour une règle est ce que la promotion de D-219 a coûté à
 réparer. Inchangé : le geste de transcription reste, cadrage en file.
+
+## 2026-09-17 — Le filtre de service des indications d'assiette, avant la première ligne
+
+Premier des cinq chantiers que `D-216` laisse devant l'attestation du catalogue
+d'assiettes (`D-225`). `indicationsAssiettesV1.ts` porte la forme d'une ligne et
+un verrou à sept termes ; la table est **vide**, le verrou **éteint**.
+
+**Le statut vit sur la ligne, pas sur l'assiette** — la psychobiotique porte une
+porte à publier et une à garder en brouillon, sur la même assiette. Un statut
+posé sur l'entrée du catalogue aurait forcé à choisir entre publier la porte
+large et retenir l'assiette entière.
+
+**Hors du service n'est pas hors du périmètre** : un brouillon est relu, haché et
+signé, il ne sort pas. Le banc le prouve dans les deux sens — le verrou ouvre sur
+une table qui en contient un, et **ferme** si on le retire.
+
+**Écarté** : un troisième vocabulaire de déclencheur. `OrientationDeclencheur`
+est déjà signé par deux tables et hérite des bancs anti-dérive des libellés
+d'anamnèse. **Septième terme propre à cette table** : le `plateCode` doit
+exister — le sha atteste le contenu d'une ligne, pas l'existence de sa cible.
+
+**Prochaine action** : chantier 2, le champ d'indication et ses claims, lus sur
+pièce en production. **Question ouverte** : trois des huit indications dépendent
+d'un déclencheur d'âge qui n'existe pas.
