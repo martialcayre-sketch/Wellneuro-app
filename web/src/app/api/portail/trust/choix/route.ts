@@ -68,6 +68,18 @@ export async function POST(req: Request): Promise<NextResponse<TrustChoixRespons
           ...(traceFormulationActive() ? { formulationVersion: FORMULATION_CHOIX_VERSION } : {}),
           supersedesEventId: precedent?.id ?? null,
         },
+        // `select` OBLIGATOIRE, ET LE DRAPEAU NE SUFFISAIT PAS SANS LUI.
+        //
+        // Un `create` sans `select` fait émettre à Prisma un `INSERT … RETURNING`
+        // portant TOUS les scalaires du modèle — `formulation_version` comprise,
+        // que `data` la nomme ou non. Le drapeau garde ce qui ENTRE ; il ne
+        // gardait pas ce qui REVIENT. Entre le merge et l'application de la
+        // migration, ce POST — celui qui enregistre le choix du patient — aurait
+        // donc échoué en 42703 « column does not exist », drapeau éteint compris.
+        //
+        // Le résultat est jeté de toute façon : `{ id: true }` est le plus petit
+        // `RETURNING` qui existe. Constat de la revue, vérifié ligne à ligne.
+        select: { id: true },
       });
       return { ignore: false as const };
     });
