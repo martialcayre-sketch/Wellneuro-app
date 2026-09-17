@@ -15002,11 +15002,25 @@ commente une synthèse, elle ne la re-valide pas.
 
 ### D-049 — Le CI fait autorité sur le palier E2E tant que le blocage navigateur local dure
 
-> **AMENDEMENT DU 2026-09-17 — LA CAUSE RACINE EST TROUVÉE, ET ELLE NE FERME PAS
-> CETTE DÉCISION.** La condition de sortie écrite plus bas est pourtant remplie à
-> la lettre — « une cause racine est identifiée ». Le responsable a tranché de
-> l'amender sans la fermer : la cause est **amont, et sans correctif**, donc le
-> segment E2E local reste exactement aussi peu fiable qu'avant.
+> **AMENDEMENT DU 2026-09-17 — LA CAUSE RACINE EST TROUVÉE, LE CORRECTIF EST EN
+> LIGNE, ET CETTE DÉCISION RESTE OUVERTE.** La condition de sortie écrite plus bas
+> est remplie à la lettre — « une cause racine est identifiée » — et elle l'est
+> même deux fois, puisque la cause est désormais corrigée *et* la correction
+> mesurée.
+>
+> ⚠️ **CE CHAPEAU A DIT, JUSQU'AU 2026-09-17 AU SOIR, « la cause est amont, et
+> sans correctif »** — dans le même bloc que le paragraphe **« LE CORRECTIF
+> EXISTE, ET IL EST CONSTATÉ SUR CETTE MACHINE »**, qui dit l'inverse. C'était
+> faux, et ce n'était pas un détail de rédaction : c'est la justification qui a
+> été donnée au responsable quand il a tranché « amender, ne pas fermer ».
+> **L'arbitrage est sourcé et tient tant qu'il n'est pas repris ; sa prémisse,
+> elle, est tombée** — voir le paragraphe **« LA PREMIÈRE RÉDACTION DE CET
+> AMENDEMENT DISAIT "AUCUN CORRECTIF À ATTENDRE" »**, qui en donne la cause : un
+> statut d'issue lu sans ses commentaires. Ce qui reste vrai sans elle,
+> et qui suffit à ne pas fermer d'office : fermer `D-049` rétablirait l'exigence
+> de **T3 local** pour les PR migration, scoring et clinique. C'est un régime de
+> validation, pas une écriture de registre, et sa reprise appartient au
+> responsable.
 >
 > **CE QUE C'EST.** `microsoft/playwright#42385` — sur macOS arm64, WebKit cesse
 > d'émettre la requête d'une navigation.
@@ -15083,11 +15097,21 @@ commente une synthèse, elle ne la re-valide pas.
 > 250 tours du bras C sans un blocage, là où 2311 bloquait au rang 64. La montée
 > est portée par une PR distincte, **avec la régénération des huit baselines
 > visuelles** — elles sont toutes en `-linux.png`, produites par le CI avec le
-> bundle de 1.61.1, et la montée change Chromium **et** WebKit. Rien ne compare
-> un pixel hors Linux : le rouge n'apparaîtrait qu'au CI, sur une PR étrangère.
+> bundle de 1.61.1. Rien ne compare un pixel hors Linux : le rouge n'apparaîtrait
+> qu'au CI, sur une PR étrangère.
 >
-> **CE QUI RESTE À `D-049` JUSQU'À CETTE MONTÉE** : rien ne change. Et une
-> réserve demeure au-delà — 2359 porte un défaut signalé le 2026-09-17, de
+> **LA PRÉDICTION ÉCRITE ICI — « la montée change Chromium ET WebKit » — A ÉTÉ
+> RÉFUTÉE PAR LA MESURE.** Les huit ont bien été régénérées ; **quatre seulement
+> ont changé**, et ce sont exactement les quatre `iPhone-13` (WebKit). Les quatre
+> `Desktop-Chromium` sont revenues **octet pour octet identiques**, et c'est
+> pourquoi le commit de livraison (`bf852f59`) n'en porte que quatre. Une montée
+> de moteur ne déplace pas nécessairement un pixel : c'est à constater par le
+> diff, jamais à déduire du numéro de version.
+>
+> **LA MONTÉE EST FAITE** — mergée sur `main` le 2026-09-17 (`bf852f59`), avec
+> ses quatre baselines. **CE QUI RESTE À `D-049` MALGRÉ ELLE** : la décision ne se
+> ferme pas d'elle-même, parce que sa fermeture rétablit le T3 local (voir le
+> chapeau). Et une réserve demeure au-delà — 2359 porte un défaut signalé le 2026-09-17, de
 > **signature différente** (`NetworkConnectionToWebProcess::didReceiveInvalidMessage`,
 > et « the retry passed »). Le confondre serait l'erreur que cette décision existe
 > pour empêcher.
