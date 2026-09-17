@@ -6970,3 +6970,34 @@ d'usage au conteneur.
 
 Question ouverte : `D-049`, quatre occurrences cette nuit, cause racine non
 trouvée.
+
+## 2026-09-17 — La campagne Correspondance est livrée : LOT-04, LOT-05, LOT-06 en autonomie
+
+Quatre PR mergées dans la nuit — #1169 (**D-218**), #1171 (**D-219**), #1173
+(**D-222**), #1174 — après #1162 (D-215) en début de soirée. **La campagne est
+close : sept lots sur sept.**
+
+**LOT-04, le cœur.** La lettre d'adressage existe. Un signal d'alerte de rang
+`adressage` inhibait la chaîne sans qu'aucune surface n'offre la sortie que la
+doctrine impose ; le geste se pose désormais dans le bloc qui dit ce qui suspend la
+décision. Rien n'est recalculé — la route relit les signaux par la fonction du
+runtime, le générateur recopie libellés et conduite depuis la table signée. Drapeau
+neuf et éteint. **La lettre trace l'adressage, elle ne le vaut pas** : l'abstention
+ne se lève pas, et l'arbitrage clinique correspondant n'a pas été rendu.
+
+**LOT-05, en deux PR de finalités distinctes.** Trois arbitrages du 2026-07-22
+entrent au registre et six ancres de production changent d'adresse ; puis la
+correspondance entre au registre RGPD comme traitement, avec son destinataire tiers —
+la rubrique 6 affirmait l'inverse. Le portail cesse de dire au patient que le partage
+« arrivera ». La messagerie de santé est écrite hors de portée.
+
+**LOT-06** livre un protocole, pas un chiffre : une requête a tourné, le classifieur
+a refusé la lecture des logs, le refus n'a pas été contourné.
+
+**Les revues ont trouvé 21 constats, 19 retenus.** Le plus grave : une réponse de
+route revenant après un changement de dossier déposait la lettre du patient précédent
+sur le suivant. Quatre collisions de numéro de décision en une nuit.
+
+Trois gestes restent au responsable : poser `WN_ADRESSAGE_COURRIER`, lire la mesure,
+et trancher les réserves de D-222 — les huit versions publiées du registre TRUST
+patient promettent une garde que le logiciel ne tient pas.
