@@ -91,7 +91,7 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   // signée à son `claimsSource`, et le reconnaît MÊME VIDE — différer
   // l'enrôlement aurait rougi au jour 1. Il a contribué zéro paire jusqu'à la
   // première signature ([[D-224]]), deux ensuite, quatorze depuis la seconde
-  // ([[D-226]]).
+  // ([[D-227]]).
   'catalogueConduitesV1.ts': 'conduites',
   // Indications d'assiette ([[D-225]]). Entrée le jour où le fichier est POSÉ,
   // pour la raison écrite juste au-dessus : le balayage reconnaît une table
@@ -173,7 +173,7 @@ const TABLE_EXIGE_PRESCRIPTIF: Record<string, boolean> = {
   // `WN-CL-0320-002` — descriptif — SERAIT cité en instrument par les deux lignes
   // encore retenues.
   //
-  // LE SOIR, LA PRÉVISION EST DEVENUE UN CONSTAT ([[D-226]]). Les deux lignes
+  // LE SOIR, LA PRÉVISION EST DEVENUE UN CONSTAT ([[D-227]]). Les deux lignes
   // sont signées, elles citent bien `WN-CL-0320-002` en `claimsInstrument`, et il
   // est bien `prescriptif = false` en production — relu le même soir. Sur les
   // quatorze paires de la table, cinq sont descriptives. Une exigence à `true`

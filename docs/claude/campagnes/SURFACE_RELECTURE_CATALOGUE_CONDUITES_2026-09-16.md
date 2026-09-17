@@ -7,7 +7,7 @@ présente au praticien ce qu'il aurait à attester, et ce qui a été écarté.*
 >
 > **Les trois lignes sont attestées et le verrou est ARMÉ.** La première le
 > matin (`insomnie_jambes_sans_repos`, `D-224`), les deux autres le soir
-> (`insomnie_depression` et `insomnie_anxiete`, `D-226`), sur un périmètre
+> (`insomnie_depression` et `insomnie_anxiete`, `D-227`), sur un périmètre
 > RE-SIGNÉ en entier : trois lignes, quatorze claims, une seule date et un seul
 > sha, qui remplacent ceux du matin.
 >

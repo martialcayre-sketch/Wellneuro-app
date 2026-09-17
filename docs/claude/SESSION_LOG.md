@@ -7079,7 +7079,7 @@ d'un déclencheur d'âge qui n'existe pas.
 
 ## 2026-09-17 — Les deux lignes de conduite restantes, attestées sur pièce
 
-**Décisions.** `D-226` : les lignes `insomnie_depression` et `insomnie_anxiete`
+**Décisions.** `D-227` : les lignes `insomnie_depression` et `insomnie_anxiete`
 sont attestées ; le périmètre est re-signé en entier (trois lignes, quatorze
 claims). Les six claims proposés par la surface étaient exacts — et la relecture
 des sources ENTIÈRES en a rendu **six de plus**, dont une interdiction explicite

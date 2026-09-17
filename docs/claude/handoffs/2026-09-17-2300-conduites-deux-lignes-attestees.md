@@ -1,4 +1,4 @@
-# Handoff — 2026-09-17 — Le catalogue de conduites passe à trois lignes (D-226)
+# Handoff — 2026-09-17 — Le catalogue de conduites passe à trois lignes (D-227)
 
 ## 1. Branche et état Git
 
@@ -16,7 +16,7 @@ posée, et qui était la prochaine action écrite dans le handoff précédent.
 
 ## 3. Décisions prises
 
-- **`D-226`** — les deux lignes sont attestées, sur un périmètre RE-SIGNÉ en
+- **`D-227`** — les deux lignes sont attestées, sur un périmètre RE-SIGNÉ en
   entier : trois lignes, quatorze claims, une date et un sha qui REMPLACENT ceux
   du matin.
 - **Six claims de plus** que la surface n'en proposait, trouvés en relisant les
@@ -87,7 +87,7 @@ posée, et qui était la prochaine action écrite dans le handoff précédent.
   suivant, décidé avec le responsable** — PR séparée, une seule finalité.
 - **Deux arbitrages rendus, non exécutés** (§3) : « relu par le praticien » et la
   précision de G6. Les deux sont en file avec leur adresse.
-- **Numéro de décision** : `D-226` est pris ici, à vérifier au merge — quatre
+- **Numéro de décision** : `D-227` est pris ici, à vérifier au merge — quatre
   collisions en deux nuits avec les sessions voisines.
 
 ## 8. Prochaine action exacte

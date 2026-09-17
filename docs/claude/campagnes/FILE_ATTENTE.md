@@ -375,7 +375,7 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
 - **La règle G6 ne distingue pas une phrase recopiée d'une borne standard —
   ARBITRÉ LE 2026-09-17, PRÉCISION À ÉCRIRE.** La consigne « aucun contenu
   clinique du corpus au dépôt tant que G6 est fermée » a été mise à l'épreuve en
-  écrivant le `raccourciAssume` de la ligne `insomnie_anxiete` ([[D-226]]), qui
+  écrivant le `raccourciAssume` de la ligne `insomnie_anxiete` ([[D-227]]), qui
   nomme la borne de latence d'endormissement que son claim pose. **Réponse du
   responsable : le seuil est gardé** — il porte l'argument, en disant précisément
   ce que le déclencheur ne sait pas lire, et une borne standard de définition

@@ -66,7 +66,7 @@
 -- proposait `WN-CL-0320-002` en claim d'instrument, or ce claim fonde le HAD
 -- quand la ligne signée se déclenche sur l'IRLS. Il n'entre donc pas, et le
 -- champ reste vide. La liste en comptait alors 53.
--- Les DOUZE PAIRES `conduites` ajoutées le 2026-09-17 au soir ([[D-226]]) ont
+-- Les DOUZE PAIRES `conduites` ajoutées le 2026-09-17 au soir ([[D-227]]) ont
 -- été relues le même soir, sur la production (conteneur détaché, lecture
 -- seule) : toutes VALIDE, actives, non remplacées, en v1.0 ; sept
 -- `prescriptif = true`, cinq `false`, dont `WN-CL-0320-002` qui entre enfin —
@@ -204,7 +204,7 @@ BEGIN
     -- Catalogue de conduites ([[D-206]] LOT-01), QUATORZE paires en deux
     -- signatures du même jour : les deux premières le 2026-09-17 au matin
     -- ([[D-224]], ligne `insomnie_jambes_sans_repos`), les douze suivantes le
-    -- même soir ([[D-226]], lignes `insomnie_depression` et `insomnie_anxiete`).
+    -- même soir ([[D-227]], lignes `insomnie_depression` et `insomnie_anxiete`).
     -- La table était enrôlée au balayage depuis sa pose et ne contribuait aucune
     -- paire tant qu'aucune ligne ne citait de claim.
     --
@@ -230,7 +230,7 @@ BEGIN
     -- par table ne saurait pas accommoder.
     ('WN-CL-0320-003', 'v1.0', 'conduites', false),
     ('WN-CL-0318-020', 'v1.0', 'conduites', false),
-    -- `insomnie_depression` ([[D-226]]) : deux descriptifs pour le QUAND, un
+    -- `insomnie_depression` ([[D-227]]) : deux descriptifs pour le QUAND, un
     -- prescriptif qui nomme le tableau, l'instrument, puis DEUX règles de
     -- sécurité dont l'interdiction explicite que la surface ne proposait pas.
     ('WN-CL-0315-001', 'v1.0', 'conduites', false),
@@ -239,7 +239,7 @@ BEGIN
     ('WN-CL-0320-002', 'v1.0', 'conduites', false),
     ('WN-CL-0315-006', 'v1.0', 'conduites', false),
     ('WN-CL-0315-004', 'v1.0', 'conduites', false),
-    -- `insomnie_anxiete` ([[D-226]]) : même composition, et TROIS règles de
+    -- `insomnie_anxiete` ([[D-227]]) : même composition, et TROIS règles de
     -- sécurité — la règle d'ordre cadrée sur le tableau, l'interdiction de
     -- prescription, et sa levée partielle. Épingler l'interdiction sans sa levée
     -- aurait gardé une moitié de règle.

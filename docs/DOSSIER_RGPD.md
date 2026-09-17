@@ -124,6 +124,24 @@ l'ait relu et décidé de le transmettre.
 **Volume borné par construction** : deux générations par dossier au maximum
 (marqueur `donneesEntree.source`), et un brouillon rejeté ne se régénère pas.
 
+> **CE TRAITEMENT A CESSÉ LE 2026-09-17 ([[D-226]]).** La génération automatique
+> a été retirée — variable `env-unset` en production (conteneurs recréés à
+> 20:49:15), puis code supprimé du dépôt. **Une synthèse ne se produit plus que
+> sur demande du praticien.** Le paragraphe ci-dessous reste au dossier parce
+> qu'il décrit un traitement qui A EU LIEU, du 2026-09-12 au 2026-09-17, par
+> **8 générations — 6 au premier rideau sur 5 dossiers, 2 au second sur 2
+> dossiers** : ce qui a été traité l'a été, et l'effacer réécrirait l'histoire
+> du registre. (Les deux totaux de dossiers sont donnés séparément parce que
+> l'agrégat lu ne dit pas si les 2 dossiers du second rideau sont un
+> sous-ensemble des 5 : ils le sont probablement — un second rideau suppose un
+> premier — mais le déduire serait inférer au-delà de la mesure.) La **rubrique 5** du
+> registre des traitements est à mettre à jour en conséquence — la finalité
+> « l'outil en prépare une quand la matière est complète » n'a plus d'objet, et
+> seule subsiste « le praticien demande une synthèse ». Rien à notifier au
+> patient : le retrait **réduit** le traitement, ne l'étend pas, et
+> `DONNEES_CONFIDENTIALITE_V7` reste vrai au mot près (voir plus bas — la phrase
+> qu'il porte ne promettait aucun déclenchement automatique).
+
 **LA CONDITION A ÉTÉ TENUE, ET DANS LE BON ORDRE.** Ce paragraphe a été rédigé
 **avant** toute pose, soumis au responsable, puis **validé par lui le 2026-09-12**.
 `WN_SYNTHESE_PAR_RIDEAU` a été posé **après** cette validation, à **18:08:24 UTC**

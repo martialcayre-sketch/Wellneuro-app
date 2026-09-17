@@ -1,7 +1,7 @@
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 
 // CATALOGUE DE CONDUITES — LOT-01, table SIGNÉE, TROIS LIGNES ([[D-206]],
-// [[D-224]], [[D-226]]).
+// [[D-224]], [[D-227]]).
 //
 // CE QUE CE MODULE EST, ET CE QU'IL N'EST PAS. Il porte la FORME d'une ligne de
 // catalogue et le verrou qui la garde. Les lignes qu'il porte n'ont pas été
@@ -86,7 +86,7 @@ export function claimsDeLaLigne(ligne: LigneConduite): readonly ClaimRef[] {
 
 /**
  * LA TABLE — TROIS LIGNES, attestées le 2026-09-17 en DEUX gestes ([[D-224]]
- * puis [[D-226]]).
+ * puis [[D-227]]).
  *
  * POURQUOI DEUX GESTES ET NON UN. Le praticien a d'abord attesté la seule ligne
  * dont tous les claims avaient été lus sur pièce, et retenu les deux autres. Ce
@@ -273,7 +273,7 @@ export function shaPerimetreConduites(
 }
 
 /**
- * MÉTADONNÉE SIGNÉE — SECONDE attestation du 2026-09-17 ([[D-226]]), qui
+ * MÉTADONNÉE SIGNÉE — SECONDE attestation du 2026-09-17 ([[D-227]]), qui
  * REMPLACE celle du matin ([[D-224]]) au lieu de s'y ajouter.
  *
  * C'EST LE FONCTIONNEMENT DU VERROU, PAS UNE REPRISE. Le périmètre se hache en

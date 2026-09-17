@@ -1,4 +1,4 @@
-import { NextResponse, after } from 'next/server';
+import { NextResponse } from 'next/server';
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { computeScoreFromDef } from '@/lib/questions';
@@ -41,7 +41,6 @@ type SubmitPayload = {
 };
 
 // POST /api/patient/submit
-import { genererSiRideauFerme } from '@/lib/synthese/declencheurRideau';
 export async function POST(req: Request): Promise<NextResponse> {
   const requestContext = createRequestContext(req);
   let payload: SubmitPayload;
@@ -329,42 +328,22 @@ export async function POST(req: Request): Promise<NextResponse> {
       data: { statut: 'Complété', statutReponses: 'verrouille', dateDerniereModification: now },
     });
 
-    // UN RIDEAU VIENT PEUT-ÊTRE DE SE FERMER.
+    // AUCUNE SYNTHÈSE N'EST PRODUITE ICI, ET C'EST UNE DÉCISION.
     //
-    // APRÈS LA RÉPONSE, JAMAIS PENDANT (`after`, Next 15) : une génération dure
-    // des dizaines de secondes, et la faire attendre au patient qui vient de
-    // valider son questionnaire transformerait un service rendu en écran bloqué.
-    // Le patient n'a rien demandé de ce travail et n'a pas à en porter le délai.
+    // Une réponse de patient ne déclenchait rien jusqu'au 2026-09-12 ; elle a
+    // déclenché une génération automatique pendant cinq jours, et ne déclenche
+    // plus rien depuis. Ce qui invite à générer est la carte « Synthèse à
+    // générer » du Fil du jour (`lib/fil/cartes.ts`, `cartesSynthesesAGenerer`),
+    // ancrée sur la LECTURE CONFIRMÉE du praticien — un geste humain, pas
+    // l'arrivée d'une donnée.
     //
-    // ICI, ET NON DANS UNE HORLOGE : le seul instant où la matière peut devenir
-    // complète est celui où une réponse arrive. Un balayage périodique
-    // repasserait sur des dossiers que rien n'a changés, et demanderait un
-    // conteneur que le `Procfile` n'a pas.
-    //
-    // LE DÉCLENCHEUR NE LÈVE JAMAIS et ne remonte rien : la soumission du
-    // patient a réussi, et son parcours ne doit pas porter l'échec d'un travail
-    // qui n'est pas le sien. Drapeau éteint ⇒ il rend immédiatement.
-    //
-    // LA PLANIFICATION ELLE-MÊME EST BEST-EFFORT. `after` exige un contexte de
-    // requête Next : hors de lui — un appelant qui invoque ce handler
-    // directement, un runtime qui ne le fournit pas — il lève. Laisser cette
-    // levée remonter ferait rendre 500 à un patient dont la réponse EST
-    // enregistrée. Ce qui est perdu alors est un brouillon que personne
-    // n'attendait ; ce qui serait perdu sinon est la confiance du patient dans
-    // un questionnaire qu'il vient de remplir.
-    try {
-      after(async () => {
-        await genererSiRideauFerme(idPatient, emailPatient, requestContext);
-      });
-    } catch (planErr) {
-      logger.warn({
-        event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_EXCEPTION,
-        domain: 'QUESTIONNAIRE',
-        message: 'Génération par rideau non planifiée (contexte de requête absent)',
-        context: finalizeLogContext(requestContext, { retryable: false }),
-        error: planErr,
-      });
-    }
+    // NE PAS REBRANCHER ICI SANS RELIRE CE QUI SUIT. La carte de demande se
+    // tait tant qu'une synthèse existe plus récente que la dernière lecture
+    // (`cartes.ts`, filtre `derniereLecture > derniereGeneration`). Or un
+    // brouillon produit à la soumission naît AVANT que le praticien ait lu :
+    // l'automatisme éteignait donc l'invitation qu'il était censé devancer.
+    // C'est ce couplage, et non le coût des appels, qui a fait retirer le
+    // mécanisme.
 
     // Accusé de réception email best-effort. La promesse est attendue pour que
     // le runtime serverless ne coupe ni l'envoi ni sa trace après la réponse.
