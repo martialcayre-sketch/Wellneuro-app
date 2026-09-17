@@ -186,6 +186,41 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   documents **publiés, versionnés et immuables**, sur lesquels des patients ont
   consenti : les corriger demande une **version neuve** et un arbitrage du
   responsable. Le geste n'est pas technique.
+  **ARBITRÉ LE 2026-09-17, ET L'EXÉCUTION CONFIÉE À UNE AUTRE SESSION.** Trois voies
+  ont été soumises au responsable : le logiciel vient à la promesse (une garde
+  bloque), la promesse vient au logiciel (une version neuve nomme l'exception), ou
+  rien. Réponse — **« Le refus bloque, sans exception »** : c'est le logiciel qui
+  vient à la promesse, et la voie « corriger le texte à la baisse » est écartée pour
+  la seconde fois (elle l'avait déjà été en revue du LOT-05b). **Une seconde garde est
+  tranchée dans la foulée** : le **silence** du patient bloque aussi — `null`, jamais
+  exprimé, vaut fermé, lecture littérale de « sans un choix explicite » — **à la
+  condition, qui fait partie de l'arbitrage, que l'écran praticien dise « consentement
+  jamais exprimé » et donne le chemin pour le recueillir**. Le blocage doit être une
+  porte, pas un mur, et le dimensionnement est brutal : presque aucun patient n'est
+  allé au centre TRUST. **CE QUI RESTE OUVERT, ET N'A PAS ÉTÉ TRANCHÉ ICI : le
+  destinataire.** Le courrier de biologie va au **médecin traitant**, soit la finalité
+  exacte du consentement ; la lettre d'adressage est un **renvoi sur signal d'alerte**,
+  potentiellement vers un autre médecin — lui opposer un refus qui ne porte que sur le
+  médecin traitant sur-appliquerait le consentement, sur les dossiers précisément où
+  la décision est déjà suspendue. Cette question commande la phrase même de l'exception
+  publiée : elle se pose avant d'écrire, pas après. Et [[D-219]] §3 s'**amende**, ne se
+  contourne pas — son motif ne vise que la **consignation**, qui ne doit pas se fermer
+  sous peine de rendre le dossier aveugle sur un partage qui a eu lieu quand même.
+  **PRÉCISÉ LE MÊME JOUR, EN SESSION PARALLÈLE, ET C'EST CETTE VERSION QUI FAIT FOI.**
+  Le responsable a tranché une seconde fois, chez la session qui exécute, sur les
+  points laissés ouverts ici. Trois d'entre eux corrigent ce qui précède : la garde
+  couvre **la génération ET la consignation** — donc [[D-219]] §3 est amendée en
+  connaissance de son motif, la ligne « bloquer la consignation rend le dossier
+  aveugle » lui ayant été présentée mot pour mot ; le discriminant n'est **pas le
+  destinataire mais la ROUTE** — aucun champ ne porte le destinataire,
+  `medecinLibelle` étant du texte libre sur tous les chemins d'écriture, sans
+  rattachement à `medecinTraitantNom` ; et la lettre **d'adressage sur signal d'alerte
+  est hors garde**, c'est elle l'exception que la version publiée nomme. Le « sans
+  exception » consigné ci-dessus se lit donc **bornée par cette exception-là**, et le
+  silence du patient ferme le courrier de biologie et la consignation, **jamais**
+  l'adressage. La substance, le registre et l'amendement de [[D-219]] §3 sont écrits
+  **dans la PR de cette session-là**, pas ici : deux adresses pour une même règle est
+  précisément ce que la promotion de [[D-219]] avait coûté à réparer.
 - **La formulation des finalités de « Mes choix » n'est couverte par aucune
   version** — trou de traçabilité **antérieur**, rendu visible par [[D-222]] §3.
   L'événement de choix n'enregistre que `getDocumentCourant('droits_patient')
@@ -194,6 +229,34 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   sont donc **indiscernables au registre**, et aucune ne se prouve. Le geste :
   verser ces formulations dans un document versionné, ou leur donner une empreinte
   propre enregistrée avec le choix.
+  **ARBITRÉ LE 2026-09-17 : versionner la formulation, sans champ nouveau.** Des deux
+  gestes ci-dessus, le responsable a retenu le **document TRUST versionné** pour « Mes
+  choix », et écarté l'**empreinte** en connaissance de son coût — elle demandait une
+  colonne sur `trust_choice_events`, donc une migration et une release-db.
+  **RENVERSÉ LE MÊME JOUR, ET EN CONNAISSANCE DE CAUSE : C'EST LA COLONNE.** La
+  session qui exécute a **resoumis** l'option ci-dessus au responsable, nommément et
+  avec les coûts comparés ; il a **maintenu la colonne dédiée sur
+  `trust_choice_events`**, donc migration et release-db. Il a tranché deux fois dans
+  le même sens, la seconde en connaissance de l'arbitrage rendu ici — c'est la
+  seconde qui fait foi, et l'entrée ci-dessus n'est gardée que pour qu'on ne la
+  reprenne pas pour une décision debout.
+- **Le geste de transcription du fil médecin ne convient pas au praticien** —
+  constat d'usage du 2026-09-17, **à cadrer en lot**, et la seule suite que la mesure
+  du LOT-06 appelle côté produit. Le fil est **lu 41 fois sur 11 dossiers et jamais
+  écrit à la main** en deux mois ; interrogé sur ce silence, le responsable a répondu
+  que **le geste ne lui convient pas**, et a nommé **deux frictions, et deux
+  seulement** : le **nom du médecin est à ressaisir** — `CorrespondanceMedecinPanel`
+  demande un libellé libre à chaque ligne quand le dossier porte déjà
+  `medecinTraitantNom` et `medecinTraitantCoordonnees` — et **ce n'est pas au bon
+  endroit**, le geste vivant dans un onglet de fiche patient qu'il faut aller chercher
+  après coup, là où il faudrait une porte **au moment de l'acte**. **Deux voies ont été
+  explicitement écartées**, et elles bornent le lot : raccourcir la saisie (« retaper
+  la lettre en entier » n'est *pas* ce qui coince — le champ de 8 000 caractères
+  reste), et remplacer la transcription par des générateurs (« c'est à l'outil de
+  produire la lettre » est écarté). Donc **le geste reste : on ne le retire pas, on ne
+  le réécrit pas** — on le pré-remplit et on lui ouvre une porte. [[D-219]] §1 est
+  intacte : la V1 demeure la transcription praticien, et la V2 (lien signé) n'a
+  toujours aucun déclencheur, le volume mesuré étant de 1.
 - **La table des signaux de sécurité est invisible à l'audit de consommation** —
   constat de la revue de `D-218`, **antérieur au lot** et routé par lui.
   `SOURCES_DE_SAVOIR` (`scripts/wn-matrice-consommation.mjs`) déclare l'inventaire
