@@ -263,17 +263,24 @@ export function catalogueConduitesSigne(
  * `claimsValides` EST UN PARAMÈTRE, ET C'EST LA DOCTRINE DU DÉPÔT — patron de
  * `gatePopulationV1`, dont la table de curation est un paramètre pour qu'un banc
  * exerce toutes les branches sans qu'aucune donnée non relue n'existe hors du
- * test. Ce module ne lit aucune base : l'appelant fournit les clés
- * `claimId@versionClaim` des claims **VALIDE et actifs**, et porte le coût de la
- * lecture.
+ * test. Ce module ne lit aucune base : l'appelant fournit l'ensemble des claims
+ * **VALIDE et actifs**, et porte le coût de la lecture.
+ *
+ * LES CLÉS SE CONSTRUISENT PAR `cleClaim`, JAMAIS À LA MAIN. Cette prose
+ * annonçait un séparateur `@` depuis la pose du module, là où `cleClaim` en pose
+ * un tout autre — un appelant qui l'aurait suivie
+ * aurait construit des clés qui ne correspondent JAMAIS, et reçu zéro ligne **en
+ * silence** (constat de revue du 2026-09-17, sur le module voisin qui avait
+ * hérité de la même phrase). Le format n'est plus réécrit : on désigne la
+ * fonction.
  *
  * UNE LIGNE DONT UN CLAIM N'EST PLUS VALIDE CESSE D'ÊTRE SERVIE (arbitrage du
  * 2026-09-16). Les trois catégories comptent : une sécurité retirée pèse autant
  * qu'une indication retirée — davantage même, puisque c'est elle qui devait
  * s'afficher.
  *
- * `null` = STATUTS NON LUS, et ce n'est pas `new Set()`. Les deux ferment, mais
- * pas pour la même raison : « je n'ai pas pu lire » n'est pas « aucun claim n'est
+ * `null` = L'ENSEMBLE N'A PAS PU ÊTRE LU, et ce n'est pas `new Set()`. Les deux
+ * ferment, mais pas pour la même raison : « je n'ai pas pu lire » n'est pas « aucun claim n'est
  * valide ». L'appelant doit pouvoir le dire au praticien ; confondre les deux est
  * le silence que `DC-24` interdit.
  *

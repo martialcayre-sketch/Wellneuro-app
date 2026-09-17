@@ -291,13 +291,21 @@ export function indicationsAssiettesSignees(
  *
  * `claimsValides` EST UN PARAMÈTRE — doctrine du dépôt, patron
  * `gatePopulationV1` et `catalogueConduitesV1`. Ce module ne lit aucune base :
- * l'appelant fournit les clés `claimId@versionClaim` des claims VALIDE et
- * actifs, et porte le coût de la lecture.
+ * l'appelant fournit l'ensemble des claims VALIDE et actifs, et porte le coût de
+ * la lecture.
  *
- * `null` = STATUTS NON LUS, et ce n'est pas `new Set()`. Les deux ferment, pour
- * deux raisons différentes : « je n'ai pas pu lire » n'est pas « aucun claim
- * n'est valide ». L'appelant doit pouvoir le dire au praticien — confondre les
- * deux est le silence que `DC-24` interdit.
+ * LES CLÉS SE CONSTRUISENT PAR `cleClaim`, JAMAIS À LA MAIN — et le format n'est
+ * pas réécrit ici. La version précédente de ce commentaire annonçait un
+ * séparateur `@` là où `cleClaim` en pose un tout autre (constat de revue,
+ * vérifié). Un appelant qui aurait suivi la prose aurait
+ * construit des clés qui ne correspondent JAMAIS, et reçu zéro ligne **en
+ * silence** — fail-closed, mais pour une raison introuvable. Une prose qui
+ * recopie un format diverge ; celle-ci désigne la fonction.
+ *
+ * `null` = L'ENSEMBLE N'A PAS PU ÊTRE LU, et ce n'est pas `new Set()`. Les deux
+ * ferment, pour deux raisons différentes : « je n'ai pas pu lire » n'est pas
+ * « aucun claim n'est valide ». L'appelant doit pouvoir le dire au praticien —
+ * confondre les deux est le silence que `DC-24` interdit.
  *
  * AUCUN APPELANT DE PRODUCTION, et c'est dit plutôt que masqué. Le dépôt a déjà
  * SUPPRIMÉ une fonction de ce profil (`suggererCharge` serveur). La différence

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
 import {
@@ -308,6 +308,28 @@ describe('indications d’assiette — le déclencheur ne dérive pas en silence
     const source = readFileSync(join(__dirname, 'indicationsAssiettesV1.ts'), 'utf8');
     expect(source).toContain('ANAMNESE_SECTIONS');
     expect(source).toMatch(/validateur partagé/);
+  });
+});
+
+describe('indications d’assiette — la prose ne réécrit pas le format de clé', () => {
+  // LE CONSTAT DE REVUE QUI A FONDÉ CE BLOC. Les deux modules annonçaient des
+  // clés à séparateur `@` quand `cleClaim` en produit d'une autre forme. Un
+  // appelant suivant la prose aurait construit des clés qui ne correspondent
+  // JAMAIS et reçu zéro ligne — fail-closed, mais pour une raison introuvable.
+  // Le silence que `DC-24` interdit, produit par un commentaire.
+  it('`cleClaim` produit bien `claimId::versionClaim`', () => {
+    expect(cleClaim({ claimId: 'WN-CL-0000-001', versionClaim: 'v1.0' }))
+      .toBe('WN-CL-0000-001::v1.0');
+  });
+
+  it('AUCUN module clinique ne réécrit le format à la main', () => {
+    const fichiers = readdirSync(__dirname)
+      .filter(f => f.endsWith('.ts') && !f.endsWith('.test.ts') && !f.endsWith('.d.ts'));
+    expect(fichiers.length).toBeGreaterThan(5);
+    const fautifs = fichiers.filter(f =>
+      /claimId@versionClaim/.test(readFileSync(join(__dirname, f), 'utf8')));
+    expect(fautifs, 'la prose désigne `cleClaim`, elle ne recopie pas son format')
+      .toEqual([]);
   });
 });
 
