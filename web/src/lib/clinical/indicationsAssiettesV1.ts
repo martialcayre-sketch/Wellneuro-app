@@ -108,17 +108,18 @@ export type LigneIndicationAssiette = {
  * cinq claims de plus ont été trouvés, et quatre constats corrigent la colonne
  * des déclencheurs, qui n'avait jamais été confrontée au dépôt.
  *
- * CE QU'ELLE ATTEND EST LE CATALOGUE, ET C'EST UN FAIT, PAS UN AVIS. **Aucune
- * des douze assiettes n'a de `plateCode` au catalogue C5B**, qui n'en porte que
- * trois. Une ligne écrite avant ce lot serait relue, hachée, attestée — et
- * refusée par le septième terme du verrou, pour toujours. Le lot qui les crée
- * porte aussi ce qui protège la liste d'observation du praticien : celle-ci rend
- * TOUTES les entrées du catalogue, et le filtre de ce module filtre des
- * **lignes**, jamais le catalogue.
+ * ELLE N'ATTEND PLUS LE CATALOGUE NON PLUS : il porte les douze assiettes depuis
+ * le 2026-09-18 ([[D-230]]), et le septième terme du verrou est donc
+ * satisfaisable. Le même lot a donné au catalogue ses **points de service** —
+ * `assiettesParMomentDeRepas`, `assiettesParIndication` — parce que la liste
+ * d'observation du praticien le rendait ENTIER : le filtre de ce module-ci porte
+ * sur des **lignes**, il n'a jamais protégé le catalogue.
  *
- * Restent ensuite le déclencheur d'âge — trois indications le citent, mais deux
- * d'entre elles ont désormais une autre porte — et le régime alimentaire comme
- * drapeau d'anamnèse, sans lequel la méthylation n'en a aucune.
+ * CE QU'ELLE ATTEND ENCORE, ET C'EST TOUT CE QUI RESTE : que les PORTES
+ * existent. Le déclencheur d'âge — trois indications le citent, mais deux
+ * d'entre elles ont désormais une autre porte ([[D-229]] §4) — et le régime
+ * alimentaire comme drapeau d'anamnèse, sans lequel la méthylation n'en a
+ * aucune. Puis l'attestation elle-même, qui ne se pose jamais par l'outil.
  */
 export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [];
 

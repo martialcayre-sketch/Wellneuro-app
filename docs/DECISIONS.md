@@ -4,6 +4,101 @@
 
 ## Décisions actives
 
+### D-230 — Le catalogue d'assiettes passe de trois à quinze entrées sur DEUX axes, et l'arbitrage « ne pas les fondre » cesse d'être une phrase pour devenir un point de service
+
+- Date : 2026-09-18
+- Statut : accepté — **arbitrage du responsable rendu le même jour** (`D-229` §6).
+  Le catalogue est étendu, **aucune ligne d'indication n'est écrite**, aucune
+  signature posée. **Ce que le praticien voit ne change pas.**
+- Domaine : catalogue d'assiettes C5B (`food-compass/plates.ts`), liste
+  d'observation alimentaire (`PractitionerFoodObservationPanel`).
+- Porte sur : le lot que `D-229` §6 a routé, et qui débloque le reste de S3.
+  Prolonge [[D-213]] §10 et [[D-216]] ; ne réarbitre ni l'un ni l'autre.
+
+**1. LE BLOCAGE QUE CE LOT LÈVE.** `C5B_RECOMMENDED_PLATES` portait **trois**
+entrées — les repères de moment de repas de `JA5-03` — et **aucune des douze
+assiettes du corpus**. Le septième terme du verrou des indications d'assiette
+(`D-225` §5) exige que le `plateCode` d'une ligne existe au catalogue : toute
+ligne écrite avant ce lot aurait été relue, hachée, attestée, puis refusée **pour
+toujours**, sans que rien ne le dise au signataire.
+
+**2. LES DEUX GESTES SONT DANS LE MÊME DIFF, ET C'EST TOUT L'ARBITRAGE.**
+`PractitionerFoodObservationPanel` rendait le catalogue **entier**, sans
+condition. Douze entrées ajoutées seules auraient fait passer la liste du
+praticien de trois à quinze options, en production, dès le déploiement — et
+mêlé deux axes que la surface de relecture avait **écarté de fondre** dès le
+2026-09-16, au motif que les trois repères se départagent par le moment du repas
+et les douze par l'indication. **Cet arbitrage n'était porté par aucun
+mécanisme** : le catalogue était une liste plate à consommateur unique.
+
+**3. L'AXE VIT SUR L'ENTRÉE, ET LE FILTRE EST UN POINT DE SORTIE.** `axe`
+(`moment_repas` | `indication`) entre sur l'entrée, et le catalogue reçoit deux
+points de service — `assiettesParMomentDeRepas`, `assiettesParIndication`. Le
+champ seul ne suffisait pas : il se contourne par oubli, il suffit d'un second
+écran qui mappe la constante. **Écarté : filtrer au seul point de rendu** — le
+prochain consommateur aurait réintroduit le défaut, et c'est exactement le patron
+de `lignesIndicationAssietteServables` (`D-225`) qui répond.
+
+**3 bis. MAIS UN POINT DE SERVICE NE GARDE QU'UN ÉCRAN, ET CE LOT AVAIT OUVERT
+UNE BRÈCHE — constat de revue, vérifié et fondé.** Filtrer la liste déroulante
+laissait passer deux chemins : un brouillon `sessionStorage` rouvert plus tard, et
+un POST forgé. Tous deux traversent `assertCurrentRecommendedPlateRef`, qui
+vérifie l'appartenance au catalogue et **rien d'autre**. Tant que le catalogue
+portait trois entrées, cette porte VALAIT partition ; en le portant à quinze, ce
+lot l'a **élargie** — une assiette d'indication pouvait rejoindre un épisode
+d'observation, ce que la partition prétendait justement empêcher.
+
+La garde est donc au **domaine** : `assertRefAssietteDObservation` ajoute le terme
+d'axe à la vérification de fraîcheur, `validateContent` l'appelle, et l'écran
+réutilise le **même** prédicat pour relire son brouillon. L'ordre des termes
+compte — une référence caduque doit se dire caduque, pas « du mauvais axe ». Un
+banc de régression le tient à l'étage de l'épisode, et il a été **muté** :
+remettre l'ancienne garde le fait rougir seul.
+
+**4. `sourceProtocole` REND L'AXE VÉRIFIABLE AU LIEU DE DÉCLARATIF.** Sans lui,
+`axe` serait une étiquette que rien ne contrôle, qu'un futur éditeur pourrait
+retourner sans qu'un banc ne bouge. Avec lui, le banc confronte les deux au
+**registre des sources du dépôt** : une assiette d'`indication` doit nommer un
+protocole `prescriptive: true` — donc une fiche patient (`WN-SRC-0296` → `0307`)
+serait refusée, ce que `D-216` impose —, une assiette de `moment_repas` ne doit
+en nommer aucun. C'est une **désignation**, pas une recopie : G6 reste fermée, et
+la composition de l'assiette reste écrite par le praticien.
+
+**5. LE POINT DÉLICAT : `catalogVersion` NE CHANGE PAS, ET `contentHash` NON
+PLUS.** `assertCurrentRecommendedPlateRef` refuse toute référence dont
+`catalogVersion`, `contentHash` ou `refHash` a bougé. Deux décisions en
+découlent, et elles sont la raison pour laquelle ce lot ne casse aucun dossier :
+
+- **`catalogVersion` reste `c5b-plate-catalog-v1`.** Le catalogue s'AJOUTE, il ne
+  se réécrit pas — la seule forme d'extension qui n'exige pas de migrer les
+  références déjà consignées.
+- **`axe` et `sourceProtocole` sont EXCLUS de `contentHash`**, qui reste sur ses
+  quatre champs d'origine. Les y faire entrer aurait périmé d'un coup **toutes
+  les références posées en production** sur les trois repères. Et ces deux champs
+  ne disent pas ce que l'assiette EST : ils disent quelle liste a le droit de la
+  proposer, et d'où elle vient. Ils sont scellés par `C5B_PLATE_CATALOG_HASH`,
+  qui porte l'entrée entière et qui, lui, a bougé — l'extension n'est pas
+  silencieuse.
+
+**6. CE QUE LES BANCS TIENNENT, ET DANS QUEL ORDRE D'IMPORTANCE.** D'abord
+qu'**aucune référence déjà posée ne devient caduque** : les six empreintes des
+trois repères sont **recopiées en littéral**, jamais recalculées — un recalcul
+suivrait la dérive qu'il est censé attraper (`D-063`, même piège). Ensuite que
+les deux points de service **partitionnent** le catalogue, terme d'exhaustivité
+compris : un troisième axe ajouté plus tard sortirait des deux listes, et le banc
+le dit. Enfin le câblage : la liste du praticien est **comptée**, option par
+option. Ce dernier banc a été **muté** — remettre le catalogue entier le fait
+rougir seul, les autres cas du fichier choisissant une assiette présente dans les
+deux listes.
+
+**7. CE QUE CE LOT NE FAIT PAS.** Il n'écrit **aucune ligne d'indication** : la
+table reste vide, son verrou éteint. `assiettesParIndication` **n'a aucun
+appelant** — son consommateur est le lot d'exposition ; si ce lot ne vient pas,
+elle se supprime, elle ne se reconduit pas. Il ne touche ni le schéma, ni aucune
+table signée, ni aucun drapeau. Et il ne referme pas les deux dettes que `D-229`
+a routées : le déclencheur d'âge et le régime alimentaire comme drapeau
+d'anamnèse.
+
 ### D-229 — Le validateur de dérive des libellés d'anamnèse devient partagé, et la lecture des douze sources déplace le blocage de S3 du chantier d'âge vers le catalogue d'assiettes
 
 - Date : 2026-09-18
