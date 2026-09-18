@@ -68,7 +68,9 @@ panne locale :
 - **Un rouge WebKit du CI ne se relance jamais.** Elle venait de `D-155` comme
   amendement à `D-049` ; laissée là, elle serait devenue orpheline d'une décision
   close. Elle est **redomiciliée telle quelle** dans
-  `.claude/rules/tests-validation.md`, armé sur `web/e2e/**` et `**/*.test.ts`.
+  `.claude/rules/tests-validation.md`, armé par chemin sur cinq motifs :
+  `web/e2e/**`, `**/*.test.ts`, `**/*.test.tsx`, `web/playwright.config.*` et
+  `scripts/wn-test-worktree.sh`.
   Son motif est intact : le rouge WebKit du CI est d'une **autre nature** que la
   panne locale — « WebKit encountered an internal error » est une erreur rendue
   par le moteur, pas une attente qui s'épuise, et aucune requête manquante n'y a
