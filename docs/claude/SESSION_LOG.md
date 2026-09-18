@@ -7259,3 +7259,42 @@ avec la correction du commentaire d'`anamnese.ts` dans le même lot.
 
 **Question ouverte.** `assiettesParIndication` n'a aucun appelant : elle se
 supprime si le lot d'exposition ne vient pas.
+
+## 2026-09-19 — D-049 est close, et la clôture déplace plus que le registre
+
+**Décisions.** `D-231` : `D-049` est close sur arbitrage du responsable. Le CI ne
+tient plus lieu de palier E2E — **T3 local est de nouveau exigé en entier** pour
+les PR migration/scoring/clinique. L'arbitrage renverse celui du 2026-09-17
+(« amender, ne pas fermer »), et le fait nouveau est double : la justification
+d'alors reposait sur une prémisse tombée le soir même, et deux séquences T3
+réelles ont été jouées depuis — vertes, 101 contextes iPhone 13 chacune.
+
+**Trois choix de forme, et ils comptent.** Un numéro neuf plutôt qu'un amendement
+en place, parce qu'un renversement doit se trouver en lisant le registre par la
+fin. Le corps de `D-049` conservé tel quel — une décision close porte
+l'instruction de sa panne et ne se réinterprète pas. Et la règle du rouge WebKit
+du CI **redomiciliée** dans `.claude/rules/tests-validation.md` : posée par
+`D-155` comme amendement à `D-049`, elle serait devenue orpheline d'une décision
+close, alors qu'elle ne dépend pas de la panne locale.
+
+**Le classificateur mentait, et personne ne l'avait vu.**
+`scripts/wn-diagnostic-e2e.mjs` annonçait « sous charge machine soutenue » — la
+prémisse que la cause racine a réfutée — et « aucun correctif de notre côté n'est
+identifié », faux depuis que 1.63.0 est en service. Un opérateur y aurait lu
+« rien à faire » là où la bonne lecture est l'inverse : nous tournons sur le
+moteur corrigé, donc un blocage de cette signature est un **fait neuf**, qui
+s'instruit. Corrigé ; ses 14 bancs restent verts.
+
+**Écartées.** Réécrire le corps de `D-049` pour le mettre au passé. Fermer sans
+toucher au classificateur — la décision serait close et l'outil aurait continué à
+dire le contraire. Et présenter les deux séquences T3 comme la preuve : elles
+n'ont pas exercé le déclencheur (écran allumé, quatre minutes), la
+discrimination des deux moteurs venant du banc hors dépôt.
+
+**Prochaine action.** Lire la revue aux trois emplacements, merger avec
+`--subject` portant `D-231`. Puis les deux points RGPD de `D-222` §2.
+
+**Questions ouvertes.** Le défaut de WebKit 2359 (`didReceiveInvalidMessage`),
+non observé mais réel en amont. La séquence écran en veille, proposée et non
+demandée. Le rouge WebKit **du CI**, dont le mécanisme reste inconnu — sa règle
+survit, son explication non. Et PR #1189, prête, tenue.
