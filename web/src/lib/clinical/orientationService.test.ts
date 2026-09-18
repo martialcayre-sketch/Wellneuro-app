@@ -7,6 +7,9 @@ const { prisma, mockMeta, mockRegles, mockArretMeta, mockArretRegles, mockContra
     pack: { findMany: vi.fn() },
     consultation: { findFirst: vi.fn() },
     ecartementProposition: { findMany: vi.fn() },
+    // Lu depuis [[D-231]], pour la seule `dateNaissance` : l'âge cesse d'être un
+    // fait purement administratif et devient lisible par une porte.
+    patient: { findUnique: vi.fn() },
   },
   mockMeta: {
     version: 'orientation-nnpp2-v1',
@@ -35,7 +38,13 @@ const { prisma, mockMeta, mockRegles, mockArretMeta, mockArretRegles, mockContra
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
-vi.mock('@/lib/clinical/orientationRulesV1', () => ({
+// `estFeuilleInstrument` VIENT DU MODULE RÉEL, jamais d'un stub ([[D-231]]) :
+// le moteur s'en sert pour distinguer une feuille d'instrument d'une borne
+// d'âge ou d'un drapeau. Une version fabriquée ici ferait diverger le banc du
+// comportement réel au premier ajout de variante — exactement le défaut que ce
+// prédicat existe pour fermer.
+vi.mock('@/lib/clinical/orientationRulesV1', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./orientationRulesV1')>()),
   ORIENTATION_METADATA: mockMeta,
   ORIENTATION_RULES_V1: mockRegles,
   ORIENTATION_RULES_SHA256: 'sha-test',
@@ -69,6 +78,7 @@ function lecturesVides() {
   prisma.pack.findMany.mockResolvedValue([]);
   prisma.consultation.findFirst.mockResolvedValue(null);
   prisma.ecartementProposition.findMany.mockResolvedValue([]);
+  prisma.patient.findUnique.mockResolvedValue(null);
 }
 
 beforeEach(() => {
@@ -77,6 +87,9 @@ beforeEach(() => {
   // `lecturesVides` — plusieurs cas amorcent les autres mocks à la main, et un
   // `findMany` non amorcé rend `undefined`, ce qui casserait sur `.map`.
   prisma.ecartementProposition.findMany.mockResolvedValue([]);
+  // Même motif pour le patient : `null` par défaut, c'est-à-dire ÂGE INCONNU.
+  // Un dossier sans date de naissance n'atteint aucune borne d'âge ([[D-231]]).
+  prisma.patient.findUnique.mockResolvedValue(null);
   mockMeta.validationExterne = false;
   mockMeta.dateValidation = null;
   mockMeta.claimsSource = [];

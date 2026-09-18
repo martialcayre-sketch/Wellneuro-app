@@ -1153,6 +1153,63 @@ describe('extinction — la garde de complétude lit l\'axe visé, avec la réso
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// BORNE D'ÂGE ([[D-231]]). Le type que [[D-216]] a rendu légitime. Ces cas
+// tiennent les trois propriétés qui décident : le sens des deux opérateurs, le
+// fail-closed sur âge inconnu, et le fait qu'une borne d'âge ne met AUCUN
+// instrument à l'appui — elle n'en vise pas.
+describe('evaluerDeclencheur — borne d\'âge (D-231)', () => {
+  const vide = new Map<string, ReponseOrientation>();
+  const borne = (operateur: '>=' | '>', valeur: number): OrientationDeclencheur =>
+    ({ type: 'age', operateur, valeur });
+
+  it('`>=` s\'allume SUR la borne, `>` seulement au-delà', () => {
+    // La différence tient en un an, et c'est exactement ce que les claims
+    // distinguent : « dès 50 ans » n'est pas « au-delà de 50 ans ».
+    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, 50)).not.toBeNull();
+    expect(evaluerDeclencheur(borne('>', 50), vide, undefined, 50)).toBeNull();
+    expect(evaluerDeclencheur(borne('>', 50), vide, undefined, 51)).not.toBeNull();
+    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, 49)).toBeNull();
+  });
+
+  // LE CŒUR FAIL-CLOSED. Un âge inconnu n'est pas « zéro an » : il ne dit rien,
+  // et rien ne s'allume. Les trois formes de l'ignorance donnent le même verdict
+  // — paramètre absent, `undefined`, `null` (`DC-24`).
+  it('un âge INCONNU n\'atteint aucune borne, sous ses trois formes', () => {
+    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined)).toBeNull();
+    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, undefined)).toBeNull();
+    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, null)).toBeNull();
+    // Contre-épreuve : la MÊME borne s'allume dès qu'un âge est fourni. Sans
+    // elle, ce banc passerait sur un déclencheur qui ne s'allume jamais.
+    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, 50)).not.toBeNull();
+  });
+
+  it('ne met AUCUN instrument à l\'appui, et le motif nomme l\'âge', () => {
+    const atteint = evaluerDeclencheur(borne('>=', 60), vide, undefined, 61);
+    expect(atteint?.instruments).toEqual([]);
+    expect(atteint?.motif).toContain('61');
+    expect(atteint?.motif).toContain('60');
+  });
+
+  // SOUS UN `ou`, la garde de complétude ne doit PAS s'appliquer à une borne
+  // d'âge : elle n'a pas de porteur à interroger. Si elle s'y appliquait, la
+  // branche serait sautée et la borne deviendrait inatteignable en disjonction.
+  it('s\'allume sous un `ou`, où aucun instrument n\'est recueilli', () => {
+    const ouAge: OrientationDeclencheur = {
+      type: 'ou',
+      declencheurs: [
+        { type: 'zone', idQuestionnaire: 'Q_ABSENT', zone: { type: 'plage', min: 0, max: 1 } },
+        { type: 'age', operateur: '>=', valeur: 70 },
+      ],
+    };
+    const atteint = evaluerDeclencheur(ouAge, vide, undefined, 71);
+    expect(atteint).not.toBeNull();
+    expect(atteint?.instruments).toEqual([]);
+    // Et la même disjonction reste fermée sur un âge sous la borne.
+    expect(evaluerDeclencheur(ouAge, vide, undefined, 69)).toBeNull();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Disjonction ([[D-060]]). Les bancs listés par la décision, un par défaut
 // qu'ils ferment : la sémantique fail-closed du recueil incomplet est ce que la
 // revue doit pouvoir tenir — chaque banc rougit seul si on la relâche.

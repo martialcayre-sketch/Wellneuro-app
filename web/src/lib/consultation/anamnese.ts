@@ -224,11 +224,16 @@ export const ANAMNESE_SECTIONS: AnamneseSection[] = [
     //     `WN-CL-0288-011` (60 ans), `WN-CL-0293-009` (50 ans, puis 70) —,
     //     toutes sur l'indication d'une assiette. Le pivot ne serait plus
     //     inventé, il serait CITÉ.
-    //     CE QUI RESTE VRAI AUJOURD'HUI : `Patient.dateNaissance` n'est lu par
-    //     AUCUNE gate, et l'exposer est un chantier que `D-216` ouvre sans
-    //     l'exécuter — avec la revisite de `DC-43` qu'il appelle. Tant qu'il
-    //     n'est pas fait, aucune règle ne lit l'âge, et cette section reste
-    //     telle quelle.
+    //     FAIT DEPUIS LE 2026-09-19 ([[D-231]]) : `Patient.dateNaissance` EST
+    //     désormais lue — par `ageAnnees` (`lib/patient/age.ts`), le seul
+    //     endroit qui la lit —, `OrientationDeclencheurFeuille` porte une
+    //     variante `age`, et `orientationService` fournit l'âge au moteur.
+    //     CETTE SECTION RESTE POURTANT TELLE QUELLE, et ce n'est pas un oubli :
+    //     l'âge n'y entre pas comme QUESTION. Il ne se déclare pas, il se
+    //     calcule depuis une donnée que le dossier porte déjà — le demander au
+    //     patient créerait deux vérités pour un même fait, ce que cette section
+    //     refuse juste en dessous pour l'allergie. La revisite de `DC-43` est
+    //     écrite dans la constitution, au même lot.
     //   · POLYMÉDICATION : le groupe `medicaments` donne déjà le compte exact.
     //     Ce qui manque n'est pas la donnée mais le NOMBRE à partir duquel elle
     //     qualifie une population — aucune source ne le fixe.

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sha256 } from './corpusSyntheseV1';
 import {
+  estFeuilleInstrument,
   feuillesDuDeclencheur,
   GRILLES_ORIENTATION,
   ORIENTATION_METADATA,
@@ -439,6 +440,14 @@ describe('orientationRulesV1 — verrou v1', () => {
         }
         continue;
       }
+      // UNE BORNE D'ÂGE NE SE FABRIQUE PAS EN SCÉNARIO ([[D-231]]) : ce
+      // constructeur produit des RÉPONSES d'instrument, et l'âge n'en est pas
+      // une. Aucune règle d'orientation n'en porte — le banc qui suit ce bloc
+      // l'exige —, donc cette branche n'est jamais prise aujourd'hui. Elle
+      // existe pour que `tsc` cesse de deviner, et pour que le jour où une
+      // règle en porte une, le scénario dise franchement qu'il ne sait pas la
+      // satisfaire plutôt que de rendre un dossier qui n'atteint rien.
+      if (!estFeuilleInstrument(feuille)) continue;
       const porteur = porteurPour(feuille.idQuestionnaire);
       // Ce que le déclencheur exige de la mesure, traduit en score servi. Aucun
       // compte d'items n'est publié : la garde de complétude ne lit alors rien
@@ -529,6 +538,27 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
   // un accent — ferait taire la règle sans rien casser. Ici, elle casse le CI.
   it("chaque valeur de drapeau existe verbatim dans ANAMNESE_SECTIONS", () => {
     expect(valeursDeDrapeauInconnues(ORIENTATION_RULES_V1)).toEqual([]);
+  });
+
+  // AUCUNE RÈGLE D'ORIENTATION NE PORTE DE BORNE D'ÂGE ([[D-231]]), et ce banc
+  // existe pour que la variante ne devienne pas inerte dans la mauvaise table.
+  //
+  // Le type a été livré pour les INDICATIONS D'ASSIETTE, dont trois claims
+  // prescriptifs citent 50, 60 et 70 ans. Aucun claim de CETTE table n'en porte,
+  // et une borne écrite ici serait donc un seuil inventé (`DC-19`) — exactement
+  // ce que [[D-216]] a pris soin de ne pas rouvrir en rendant l'âge légitime.
+  //
+  // CE QU'IL FAUDRA VÉRIFIER LE JOUR OÙ IL EN FAUDRA UNE, et le dire ici vaut
+  // mieux que le découvrir : le moteur n'évalue une borne que si l'appelant lui
+  // fournit `ageAnnees`. `orientationService` le fait depuis [[D-231]] ; un
+  // autre appelant qui ne le ferait pas rendrait la règle silencieusement
+  // inatteignable.
+  it("aucune règle d'orientation ne porte de borne d'âge", () => {
+    const avecAge = ORIENTATION_RULES_V1
+      .filter(regle => regle.declencheurs.flatMap(feuillesDuDeclencheur)
+        .some(feuille => feuille.type === 'age'))
+      .map(regle => regle.id);
+    expect(avecAge).toEqual([]);
   });
 
   // Arbitrage praticien du 2026-08-03 : un signal d'alerte appelle un
@@ -626,7 +656,7 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
   it('chaque questionnaire cité existe au catalogue et est administrable', () => {
     const cites = new Set<string>();
     for (const { declencheur } of declencheurs) {
-      if (declencheur.type !== 'drapeau') cites.add(declencheur.idQuestionnaire);
+      if (estFeuilleInstrument(declencheur)) cites.add(declencheur.idQuestionnaire);
     }
     for (const regle of ORIENTATION_RULES_V1) {
       for (const suggestion of regle.suggestions) {

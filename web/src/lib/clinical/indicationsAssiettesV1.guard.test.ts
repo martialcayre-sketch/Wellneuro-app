@@ -326,6 +326,32 @@ describe('indications d’assiette — le déclencheur ne dérive pas en silence
     )).toEqual([]);
   });
 
+  // LA BORNE D'ÂGE ([[D-231]]). Le type garde l'opérateur, jamais le nombre :
+  // `0` rendrait la ligne servable pour tout le monde, et une borne
+  // fractionnaire ne serait jamais atteinte — un âge révolu est toujours entier.
+  it('ATTRAPE une borne d’âge implausible', () => {
+    for (const valeur of [0, -5, 4.5, 200]) {
+      const anomalies = anomaliesDuDeclencheur(
+        ligne({ declencheur: { type: 'age', operateur: '>=', valeur } }),
+        IDS,
+      );
+      expect(anomalies, `borne ${valeur}`).toHaveLength(1);
+      expect(anomalies[0]).toContain('âge');
+    }
+  });
+
+  it('LAISSE PASSER les trois bornes que les claims citent', () => {
+    // 50, 60 et 70 — `WN-CL-0286-006`, `WN-CL-0288-011`, `WN-CL-0293-009`.
+    // Qu'un claim les porte est ce qu'aucun banc ne peut dire : seule la
+    // relecture le voit. Ce cas vérifie la seule chose vérifiable — la forme.
+    for (const valeur of [50, 60, 70]) {
+      expect(anomaliesDuDeclencheur(
+        ligne({ declencheur: { type: 'age', operateur: '>=', valeur } }),
+        IDS,
+      ), `borne ${valeur}`).toEqual([]);
+    }
+  });
+
   it('ATTRAPE un signal d’alerte — il appelle un adressage, pas une assiette', () => {
     // Arbitrage praticien du 2026-08-03, appliqué à la table qui hérite du
     // vocabulaire. Plus grave ici qu'à l'orientation : une assiette PRESCRIT là

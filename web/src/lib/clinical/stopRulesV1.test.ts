@@ -8,7 +8,7 @@ import {
   STOP_RULES_V1,
   type StopRule,
 } from './stopRulesV1';
-import { feuillesDuDeclencheur, ORIENTATION_RULES_V1 } from './orientationRulesV1';
+import { estFeuilleInstrument, feuillesDuDeclencheur, ORIENTATION_RULES_V1 } from './orientationRulesV1';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
@@ -123,7 +123,7 @@ describe('stopRulesV1 — ce que la table éteint existe vraiment', () => {
       const lus = new Set(
         arret.declencheurs
           .flatMap(feuillesDuDeclencheur)
-          .filter(declencheur => declencheur.type !== 'drapeau')
+          .filter(estFeuilleInstrument)
           .map(declencheur => (declencheur as { idQuestionnaire: string }).idQuestionnaire),
       );
       // La famille d'instruments spécifiques que cette règle d'arrêt prétend
@@ -133,7 +133,7 @@ describe('stopRulesV1 — ce que la table éteint existe vraiment', () => {
         const regle = parId.get(regleId);
         if (!regle) continue;
         for (const declencheur of regle.declencheurs.flatMap(feuillesDuDeclencheur)) {
-          if (declencheur.type === 'drapeau') continue;
+          if (!estFeuilleInstrument(declencheur)) continue;
           const qid = declencheur.idQuestionnaire;
           if (!familles.has(qid.slice(0, 6))) continue;
           verifiees += 1;
@@ -155,14 +155,14 @@ describe('stopRulesV1 — ce que la table éteint existe vraiment', () => {
       STOP_RULES_V1.flatMap(arret =>
         arret.declencheurs
           .flatMap(feuillesDuDeclencheur)
-          .filter(declencheur => declencheur.type !== 'drapeau')
+          .filter(estFeuilleInstrument)
           .map(declencheur => (declencheur as { idQuestionnaire: string }).idQuestionnaire),
       ),
     );
     const surMesureNonLue = ORIENTATION_RULES_V1.filter(regle =>
       regle.declencheurs.flatMap(feuillesDuDeclencheur).some(
         declencheur =>
-          declencheur.type !== 'drapeau'
+          estFeuilleInstrument(declencheur)
           && declencheur.idQuestionnaire.startsWith('Q_STR_')
           && !lusPartout.has(declencheur.idQuestionnaire),
       ),
