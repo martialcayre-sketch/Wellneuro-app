@@ -42,7 +42,12 @@ aucune réfutation cette fois, à la différence de `D-224`. Les trois refus se
 confirment mot pour mot, `WN-SRC-0295` compris, qui porte bien quatorze claims de
 contenu et pas une indication.
 
-**4. CINQ CLAIMS DE PLUS, ET DEUX CHANGENT UN VERDICT.** `WN-CL-0288-012` déclare
+**4. SIX CLAIMS DE PLUS, EN CINQ CONSTATS, ET DEUX CHANGENT UN VERDICT.**
+Le décompte est celui des CLAIMS neufs — `WN-CL-0288-012`, `-0288-014`,
+`-0291-013`, `-0285-002`, `-0285-010`, `-0285-012` —, non celui des constats qui
+les portent : `-0288-013`, `-0289-004` et `-0293-011` figuraient déjà à la
+surface, et ce qui est neuf est ce qu'ils FONDENT, pas leur présence. Constat de
+revue, vérifié par énumération. `WN-CL-0288-012` déclare
 la sarcopénie indication majeure de l'assiette protéinée : le dépôt porte le
 SARC-F (`Q_GEO_02`), coté et actif, donc cette assiette **cesse d'être suspendue
 au seul déclencheur d'âge**. **Trois** des 131 claims nomment un questionnaire —
@@ -121,7 +126,7 @@ signature, comme `D-198`, `D-223` et `D-224` l'ont fait. Elle ne touche ni le
 schéma, ni aucune table signée, ni aucun écran. Et elle ne ferme pas la classe
 d'erreur que `D-227` §8 nomme : le validateur partagé garde le **câblage** d'une
 porte, jamais ce qu'un claim **fonde**. Cela ne se vérifie qu'en lisant le texte
-du claim en production, source entière — c'est ce qui a rendu cinq claims et
+du claim en production, source entière — c'est ce qui a rendu six claims et
 quatre constats ici.
 
 ### D-228 — La dernière table signée exercée seulement à l'état sain reçoit son cas négatif, et le contrat de fraîcheur cesse d'avoir une exemption possible

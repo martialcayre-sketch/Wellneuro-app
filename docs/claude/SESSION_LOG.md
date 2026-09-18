@@ -7175,7 +7175,8 @@ l'arbitrage du 2026-08-03 à la table qui hérite du vocabulaire, pas règle neu
 
 **Les 131 claims des douze protocoles lus en production, sources entières.** Les
 vingt-six désignations de la surface sont **exactes** — aucune réfutation, à la
-différence de `D-224`. Cinq claims de plus, dont deux changent un verdict : la
+différence de `D-224`. Six claims de plus, en cinq constats, dont deux changent
+un verdict : la
 sarcopénie ouvre à la protéinée une porte que l'âge ne commande pas, et trois
 claims des 131 seulement nomment un questionnaire — dont celui qui rend
 l'anti-inflammatoire constructible.

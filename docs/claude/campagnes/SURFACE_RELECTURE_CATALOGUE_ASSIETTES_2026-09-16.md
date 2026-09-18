@@ -96,7 +96,8 @@ chacune l'est pour un motif nommé.
 `D-227` a montré que la classe d'erreur dangereuse n'est plus la désignation
 FAUSSE mais la désignation **incomplète** : ni le sha, ni le contrat SQL, ni le
 CI ne voient ce qui manque à un périmètre relu. Les douze sources ont donc été
-lues entières. Cinq compléments, chacun avec sa conséquence.
+lues entières. **Cinq constats, six claims neufs** — le décompte porte sur les
+claims, non sur les paragraphes qui les portent.
 
 **1. `WN-CL-0288-012` — LA SARCOPÉNIE, ET ELLE OUVRE UNE PORTE QUE L'ÂGE NE
 COMMANDE PAS.** Ce claim déclare la sarcopénie indication majeure de l'assiette
