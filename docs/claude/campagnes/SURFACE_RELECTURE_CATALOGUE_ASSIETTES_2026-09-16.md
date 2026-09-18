@@ -202,7 +202,17 @@ doit être déclarée en `raccourciAssume` plutôt que supposée.
 > `raccourciAssume` de la ligne portera le pas de sens, qu'aucune garde
 > automatique n'atteint.
 
-## LE MUR DU `plateCode` — aucune des douze n'existe au catalogue
+## LE MUR DU `plateCode` — LEVÉ LE 2026-09-18 ([[D-230]])
+
+> **CE MUR EST TOMBÉ.** Le catalogue C5B porte désormais **quinze** entrées : les
+> trois repères de moment de repas, inchangés, et les **douze assiettes du
+> corpus**, chacune adossée à son protocole. Le septième terme du verrou peut
+> donc être satisfait, et les lignes d'indication sont écrivables dès que leurs
+> portes le sont. **Ce que le praticien voit n'a pas changé** : la liste
+> d'observation passe par un point de service qui ne rend que les trois repères,
+> et un banc la compte option par option. Aucune référence d'assiette déjà
+> consignée n'est devenue caduque. Ce qui suit reste écrit parce qu'il dit
+> pourquoi le lot a eu la forme qu'il a.
 
 Le septième terme du verrou (`D-225` §5) exige que le `plateCode` d'une ligne
 existe au catalogue C5B. Or `C5B_RECOMMENDED_PLATES` porte **trois** entrées, les
@@ -378,13 +388,14 @@ jour, et elle a GRANDI au 2026-09-18 :
 | --- | --- | --- |
 | 1 | Le champ `statut` sur la ligne, et le filtre de service | **fait** — `D-225` |
 | 2 | Le validateur partagé de dérive des libellés d'anamnèse | **fait** — chantier 2 |
-| 3 | Les **douze entrées au catalogue C5B**, et ce qui protège la liste d'observation du praticien | **à faire — bloque tout le reste** |
+| 3 | Les **douze entrées au catalogue C5B**, et ce qui protège la liste d'observation du praticien | **fait** — `D-230` |
 | 4 | Le champ d'indication et ses claims, c'est-à-dire les lignes | à faire, après 3 |
 | 5 | Le déclencheur d'âge et la revisite de `DC-43` | à faire — trois assiettes |
 | 6 | Le régime alimentaire comme drapeau d'anamnèse | à faire — la méthylation en dépend AUSSI |
 | 7 | Le mécanisme orienté des familles d'équivalence | à faire |
 
-Les deux lignes **3** et **6** ne figuraient pas dans la version du 2026-09-16 :
+La ligne **3** est tombée le 2026-09-18 ; la **6** reste ouverte. Ni l'une ni
+l'autre ne figurait dans la version du 2026-09-16 :
 elles sont apparues en confrontant au dépôt la colonne « déclencheur
 disponible », qui n'avait jamais été lue sur pièce. Signer une table que rien ne
 filtre exposerait les brouillons comme les publiées ; signer des lignes dont

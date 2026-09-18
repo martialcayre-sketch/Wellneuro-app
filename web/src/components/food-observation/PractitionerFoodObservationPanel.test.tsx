@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PractitionerFoodObservationPanel } from './PractitionerFoodObservationPanel';
 
@@ -111,6 +111,27 @@ describe('PractitionerFoodObservationPanel', () => {
 
     expect(screen.getByTestId('ja-praticien-review-summary').textContent).toMatch(/Accepté/i);
     expect(screen.getByTestId('ja-praticien-review-summary').textContent).toMatch(/soir léger/i);
+  });
+
+  // LE BANC DE CÂBLAGE DE [[D-230]], et il est le seul à mordre ici. Le catalogue
+  // C5B porte QUINZE entrées depuis l'extension aux douze assiettes du corpus ;
+  // cette liste sert l'OBSERVATION et ne doit rendre que les trois repères de
+  // moment de repas. Les autres cas de ce fichier choisissent `ASSIETTE_SOIR_LEGER`,
+  // qui est dans les deux listes : ils resteraient verts si le panneau reprenait
+  // le catalogue entier. Celui-ci compte.
+  it('la liste d’assiettes ne propose QUE les trois repères de moment de repas', () => {
+    const { container } = render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    const select = within(container).getByTestId('ja-praticien-assiette') as HTMLSelectElement;
+    const libelles = Array.from(select.options).map(o => o.textContent);
+    // Le vide en tête + les trois repères, et rien d'autre.
+    expect(libelles).toEqual([
+      'Aucune assiette proposée',
+      'Assiette recommandée — Petit-déjeuner simple',
+      'Assiette recommandée — Déjeuner extérieur',
+      'Assiette recommandée — Soir léger',
+    ]);
+    // Contre-épreuve : aucune assiette d'indication n'a fui dans la liste.
+    expect(libelles.join(' ')).not.toMatch(/dopaminergique|psychobiotique|méthylation/i);
   });
 
   it('permet explicitement de ne proposer aucune assiette', () => {

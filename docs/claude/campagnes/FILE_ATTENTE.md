@@ -132,7 +132,10 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
 
 - **Le catalogue C5B doit recevoir les douze assiettes, ET ce qui protège la
   liste d'observation du praticien** (routé le 2026-09-18, **arbitrage du
-  responsable**, [[D-229]] §6, **non commencé — bloque tout le reste de S3**).
+  responsable**, [[D-229]] §6 — **LIVRÉ le jour même par [[D-230]]** : quinze
+  entrées sur deux axes, deux points de service, et un banc qui compte la liste
+  du praticien option par option. Ce qui suit dit pourquoi le lot a eu cette
+  forme).
   `C5B_RECOMMENDED_PLATES` porte **trois** entrées, les trois repères de moment
   de repas ; **aucune des douze assiettes n'y a de `plateCode`**. Une ligne
   d'indication écrite avant ce lot serait relue, hachée, attestée — et refusée

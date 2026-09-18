@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
-  C5B_RECOMMENDED_PLATES,
+  C5B_PLATE_CATALOG_VERSION,
+  assiettesParMomentDeRepas,
   getCurrentRecommendedPlateRef,
   getRecommendedPlate,
 } from '@/lib/food-compass/plates';
@@ -923,13 +924,22 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
             onChange={(e) => onAssietteChange(e.target.value)}
           >
             <option value="">Aucune assiette proposée</option>
-            {C5B_RECOMMENDED_PLATES.map((assiette) => (
+            {/*
+              LE POINT DE SERVICE, PAS LE CATALOGUE ([[D-230]]). Cette liste
+              rendait `C5B_RECOMMENDED_PLATES` en entier ; depuis que le
+              catalogue porte aussi les douze assiettes du corpus, le rendre
+              entier mêlerait ici deux axes — le moment du repas et
+              l'indication — et ferait croire aux trois repères une provenance
+              qu'ils n'ont pas. C'est une surface d'OBSERVATION : elle repère ce
+              qui a été mangé, elle ne prescrit pas.
+            */}
+            {assiettesParMomentDeRepas().map((assiette) => (
               <option key={assiette.plateCode} value={assiette.plateCode}>{assiette.label}</option>
             ))}
           </select>
         </label>
         <p className="text-xs text-muted-foreground">
-          Catalogue {C5B_RECOMMENDED_PLATES[0].catalogVersion}. Aucune famille clinique de substitution
+          Catalogue {C5B_PLATE_CATALOG_VERSION}. Aucune famille clinique de substitution
           n’est validée dans cette version : ne rien proposer reste le choix par défaut.
         </p>
 
