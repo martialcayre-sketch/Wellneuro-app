@@ -63,7 +63,11 @@ assertions : une réintroduction différée (`after()`) et une écriture synchro
 (`prisma.syntheseIA.create`) la font rougir chacune. Revue Copilot lue avant le
 merge ; elle a trouvé quatre constats réels, dont une garde insuffisante.
 
-Sur cette branche de doc : **T1 pas encore lancé.** C'est la prochaine action.
+Sur cette branche de doc : T1 vert — `npm run check` **depuis `web/`**, `T1-EXIT=0`
+lu dans le fichier et non dans la notification, qui a annoncé « exit code 0 » sur
+une attente CI rendant 2. 404 bancs, 0 échec. Pas de T2 : aucun code touché.
+`origin/main` (D-229) fusionné avant le vert — le journal s'écrit par le bas, et
+deux entrées y ont été ajoutées le même jour.
 
 ## Problèmes ouverts
 
@@ -97,13 +101,13 @@ choix de structure.
 
 ## Prochaine action exacte
 
-1. `npm run check` depuis la racine du worktree, sortie redirigée puis relue.
-2. Commit, push, PR `--base main`, attendre le CI, **lire la revue Copilot**,
-   merger en squash avec `--subject` explicite.
-3. Ensuite seulement : lot H de l'audit — retirer `selectedPatient` des
-   dépendances de l'effet de continuité de l'écran Synthèse. ~5 lignes plus un
-   banc ; bug déterministe à 100 % sur les trois portes d'entrée qui posent le
-   paramètre.
+**Lot H de l'audit.** Retirer `selectedPatient` des dépendances de l'effet de
+continuité de l'écran Synthèse, ou le remplacer par un drapeau « déjà appliqué ».
+~5 lignes plus un banc ; bug déterministe à 100 % sur les trois portes d'entrée
+qui posent le paramètre, et les six actions cliniques de l'écran prennent leur
+identifiant dans la liste que le verrou peut désynchroniser.
+
+Rien d'autre n'est en cours : la clôture de la séance est cette PR.
 
 ## Interdits actifs
 
