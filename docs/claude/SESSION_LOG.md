@@ -7165,6 +7165,26 @@ claims, lus sur pièce, source entière.
 **Questions ouvertes.** La ligne de `.claude/rules/` sur le piège de concurrence
 du CI attend un arbitrage — deux sessions se la partagent, aucune ne l'écrit.
 
+## 2026-09-18 — La génération automatique retirée, et la chaîne documentaire auditée
+
+**Décisions.** `D-226` : le brouillon de synthèse ne naît plus à la réception
+d'un questionnaire. Le motif n'est pas le coût — la carte « Synthèse à générer »
+se tait dès qu'une synthèse est plus récente que la dernière lecture, et le
+brouillon naissait avant toute lecture : il éteignait l'invitation qu'il
+prétendait devancer. Audit documentaire : 28 constats, 21 tenus après
+contre-épreuve ; le central — l'écran Documents affiche un rendu C3 et envoie le
+booklet.
+
+**Écartées.** Adosser le déclenchement à la lecture confirmée : distincte, non
+prise, et elle suppose une file de relecture. Requalifier les huit brouillons
+produits : rien n'est effacé.
+
+**Prochaine action.** Lot H — le verrou du sélecteur de patient, ~5 lignes, bug
+déterministe.
+
+**Questions ouvertes.** Rubrique 5 du registre des traitements, hors dépôt.
+Constat comportemental après la prochaine réponse. Le plan des dix lots ne vit
+dans aucun fichier.
 ## 2026-09-18 — Le validateur partagé, et les douze sources lues en entier
 
 **Décisions.** `D-229`, trois arbitrages du responsable. Le validateur de dérive
