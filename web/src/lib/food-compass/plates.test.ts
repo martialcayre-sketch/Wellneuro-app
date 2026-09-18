@@ -10,11 +10,27 @@ import {
 } from './plates';
 
 describe('catalogue d’assiettes C5B', () => {
-  it('possède et scelle les trois repères historiques JA', () => {
+  it('possède et scelle les quinze entrées — trois repères, puis douze indications', () => {
+    // L'ORDRE EST PART DU CONTRAT : les trois repères historiques restent en
+    // TÊTE, et les douze du corpus suivent dans l'ordre de leurs protocoles
+    // ([[D-230]]). Déplacer une entrée changerait `C5B_PLATE_CATALOG_HASH`, qui
+    // hache la liste ORDONNÉE — sans qu'aucun contenu clinique ne bouge.
     expect(C5B_RECOMMENDED_PLATES.map(plate => plate.plateCode)).toEqual([
       'ASSIETTE_PETIT_DEJEUNER_SIMPLE',
       'ASSIETTE_DEJEUNER_EXTERIEUR',
       'ASSIETTE_SOIR_LEGER',
+      'ASSIETTE_VEGETALE',
+      'ASSIETTE_EPARGNE_DIGESTIVE',
+      'ASSIETTE_METHYLATION',
+      'ASSIETTE_DETOXICATION',
+      'ASSIETTE_PROTEINEE',
+      'ASSIETTE_DOPAMINERGIQUE',
+      'ASSIETTE_SEROTONINERGIQUE',
+      'ASSIETTE_PSYCHOBIOTIQUE',
+      'ASSIETTE_ANTIOXYDANTE',
+      'ASSIETTE_ANTI_INFLAMMATOIRE',
+      'ASSIETTE_OMEGA_3',
+      'ASSIETTE_CHRONOBIOLOGIQUE',
     ]);
     for (const plate of C5B_RECOMMENDED_PLATES) {
       const contentHash = canonicalSha256({

@@ -4,6 +4,226 @@
 
 ## Décisions actives
 
+### D-230 — Le catalogue d'assiettes passe de trois à quinze entrées sur DEUX axes, et l'arbitrage « ne pas les fondre » cesse d'être une phrase pour devenir un point de service
+
+- Date : 2026-09-18
+- Statut : accepté — **arbitrage du responsable rendu le même jour** (`D-229` §6).
+  Le catalogue est étendu, **aucune ligne d'indication n'est écrite**, aucune
+  signature posée. **Ce que le praticien voit ne change pas.**
+- Domaine : catalogue d'assiettes C5B (`food-compass/plates.ts`), liste
+  d'observation alimentaire (`PractitionerFoodObservationPanel`).
+- Porte sur : le lot que `D-229` §6 a routé, et qui débloque le reste de S3.
+  Prolonge [[D-213]] §10 et [[D-216]] ; ne réarbitre ni l'un ni l'autre.
+
+**1. LE BLOCAGE QUE CE LOT LÈVE.** `C5B_RECOMMENDED_PLATES` portait **trois**
+entrées — les repères de moment de repas de `JA5-03` — et **aucune des douze
+assiettes du corpus**. Le septième terme du verrou des indications d'assiette
+(`D-225` §5) exige que le `plateCode` d'une ligne existe au catalogue : toute
+ligne écrite avant ce lot aurait été relue, hachée, attestée, puis refusée **pour
+toujours**, sans que rien ne le dise au signataire.
+
+**2. LES DEUX GESTES SONT DANS LE MÊME DIFF, ET C'EST TOUT L'ARBITRAGE.**
+`PractitionerFoodObservationPanel` rendait le catalogue **entier**, sans
+condition. Douze entrées ajoutées seules auraient fait passer la liste du
+praticien de trois à quinze options, en production, dès le déploiement — et
+mêlé deux axes que la surface de relecture avait **écarté de fondre** dès le
+2026-09-16, au motif que les trois repères se départagent par le moment du repas
+et les douze par l'indication. **Cet arbitrage n'était porté par aucun
+mécanisme** : le catalogue était une liste plate à consommateur unique.
+
+**3. L'AXE VIT SUR L'ENTRÉE, ET LE FILTRE EST UN POINT DE SORTIE.** `axe`
+(`moment_repas` | `indication`) entre sur l'entrée, et le catalogue reçoit deux
+points de service — `assiettesParMomentDeRepas`, `assiettesParIndication`. Le
+champ seul ne suffisait pas : il se contourne par oubli, il suffit d'un second
+écran qui mappe la constante. **Écarté : filtrer au seul point de rendu** — le
+prochain consommateur aurait réintroduit le défaut, et c'est exactement le patron
+de `lignesIndicationAssietteServables` (`D-225`) qui répond.
+
+**3 bis. MAIS UN POINT DE SERVICE NE GARDE QU'UN ÉCRAN, ET CE LOT AVAIT OUVERT
+UNE BRÈCHE — constat de revue, vérifié et fondé.** Filtrer la liste déroulante
+laissait passer deux chemins : un brouillon `sessionStorage` rouvert plus tard, et
+un POST forgé. Tous deux traversent `assertCurrentRecommendedPlateRef`, qui
+vérifie l'appartenance au catalogue et **rien d'autre**. Tant que le catalogue
+portait trois entrées, cette porte VALAIT partition ; en le portant à quinze, ce
+lot l'a **élargie** — une assiette d'indication pouvait rejoindre un épisode
+d'observation, ce que la partition prétendait justement empêcher.
+
+La garde est donc au **domaine** : `assertRefAssietteDObservation` ajoute le terme
+d'axe à la vérification de fraîcheur, `validateContent` l'appelle, et l'écran
+réutilise le **même** prédicat pour relire son brouillon. L'ordre des termes
+compte — une référence caduque doit se dire caduque, pas « du mauvais axe ». Un
+banc de régression le tient à l'étage de l'épisode, et il a été **muté** :
+remettre l'ancienne garde le fait rougir seul.
+
+**4. `sourceProtocole` REND L'AXE VÉRIFIABLE AU LIEU DE DÉCLARATIF.** Sans lui,
+`axe` serait une étiquette que rien ne contrôle, qu'un futur éditeur pourrait
+retourner sans qu'un banc ne bouge. Avec lui, le banc confronte les deux au
+**registre des sources du dépôt** : une assiette d'`indication` doit nommer un
+protocole `prescriptive: true` — donc une fiche patient (`WN-SRC-0296` → `0307`)
+serait refusée, ce que `D-216` impose —, une assiette de `moment_repas` ne doit
+en nommer aucun. C'est une **désignation**, pas une recopie : G6 reste fermée, et
+la composition de l'assiette reste écrite par le praticien.
+
+**5. LE POINT DÉLICAT : `catalogVersion` NE CHANGE PAS, ET `contentHash` NON
+PLUS.** `assertCurrentRecommendedPlateRef` refuse toute référence dont
+`catalogVersion`, `contentHash` ou `refHash` a bougé. Deux décisions en
+découlent, et elles sont la raison pour laquelle ce lot ne casse aucun dossier :
+
+- **`catalogVersion` reste `c5b-plate-catalog-v1`.** Le catalogue s'AJOUTE, il ne
+  se réécrit pas — la seule forme d'extension qui n'exige pas de migrer les
+  références déjà consignées.
+- **`axe` et `sourceProtocole` sont EXCLUS de `contentHash`**, qui reste sur ses
+  quatre champs d'origine. Les y faire entrer aurait périmé d'un coup **toutes
+  les références posées en production** sur les trois repères. Et ces deux champs
+  ne disent pas ce que l'assiette EST : ils disent quelle liste a le droit de la
+  proposer, et d'où elle vient. Ils sont scellés par `C5B_PLATE_CATALOG_HASH`,
+  qui porte l'entrée entière et qui, lui, a bougé — l'extension n'est pas
+  silencieuse.
+
+**6. CE QUE LES BANCS TIENNENT, ET DANS QUEL ORDRE D'IMPORTANCE.** D'abord
+qu'**aucune référence déjà posée ne devient caduque** : les six empreintes des
+trois repères sont **recopiées en littéral**, jamais recalculées — un recalcul
+suivrait la dérive qu'il est censé attraper (`D-063`, même piège). Ensuite que
+les deux points de service **partitionnent** le catalogue, terme d'exhaustivité
+compris : un troisième axe ajouté plus tard sortirait des deux listes, et le banc
+le dit. Enfin le câblage : la liste du praticien est **comptée**, option par
+option. Ce dernier banc a été **muté** — remettre le catalogue entier le fait
+rougir seul, les autres cas du fichier choisissant une assiette présente dans les
+deux listes.
+
+**7. CE QUE CE LOT NE FAIT PAS.** Il n'écrit **aucune ligne d'indication** : la
+table reste vide, son verrou éteint. `assiettesParIndication` **n'a aucun
+appelant** — son consommateur est le lot d'exposition ; si ce lot ne vient pas,
+elle se supprime, elle ne se reconduit pas. Il ne touche ni le schéma, ni aucune
+table signée, ni aucun drapeau. Et il ne referme pas les deux dettes que `D-229`
+a routées : le déclencheur d'âge et le régime alimentaire comme drapeau
+d'anamnèse.
+
+### D-229 — Le validateur de dérive des libellés d'anamnèse devient partagé, et la lecture des douze sources déplace le blocage de S3 du chantier d'âge vers le catalogue d'assiettes
+
+- Date : 2026-09-18
+- Statut : accepté — **trois arbitrages du responsable**. Un validateur livré,
+  aucune ligne écrite, **table toujours VIDE et verrou ÉTEINT**. Aucun écran ne
+  change.
+- Domaine : indications d'assiette (`clinical/indicationsAssiettesV1.ts`),
+  vocabulaire de porte partagé (`clinical/declencheursAnamnese.ts`).
+- Porte sur : le chantier 2 des cinq que `D-216` laisse devant l'attestation du
+  catalogue d'assiettes. Prolonge `D-225`, dont il acquitte la dette nommée, et
+  applique la consigne de `D-227` — lire chaque claim sur pièce, **source
+  entière**.
+
+**1. LA DETTE DE `D-225` §4 bis EST ACQUITTÉE, ET ELLE L'EST AVANT LA PREMIÈRE
+LIGNE.** Réutiliser `OrientationDeclencheur` donnait le vocabulaire et n'héritait
+d'aucune garde : les bancs anti-dérive qui confrontent les libellés de drapeau
+aux options réelles d'`ANAMNESE_SECTIONS` ne parcouraient que
+`ORIENTATION_RULES_V1`. `declencheursAnamnese.ts` porte désormais la
+correspondance clé typée ↔ champ, la lecture des options et les deux gardes,
+**une seule fois pour les deux tables**. Un libellé dérivé d'un caractère ne
+casse rien : il fait taire la porte, et personne ne le voit — c'est pour cela que
+le validateur précède les lignes plutôt que de les suivre.
+
+**2. L'INTERDIT `signauxAlerte` SUIT LE MÊME CHEMIN, ET CE N'EST PAS UNE RÈGLE
+NEUVE.** C'est l'arbitrage praticien du 2026-08-03 appliqué à la table qui hérite
+du vocabulaire : un signal d'alerte appelle un **adressage**, pas une
+exploration — et encore moins une assiette, puisqu'une assiette PRESCRIT là qu'un
+questionnaire propose. Aucune ligne n'existe pour l'enfreindre ; la garde est
+posée avant qu'il y en ait une.
+
+**3. LES 131 CLAIMS DES DOUZE PROTOCOLES ONT ÉTÉ LUS EN PRODUCTION, SOURCES
+ENTIÈRES** (one-off détaché, lecture seule, 2026-09-18) : tous `VALIDE`, actifs,
+non remplacés, en `v1.0`. **Les vingt-six désignations de la surface sont exactes** — 24 en colonne
+« Claims d'indication », 2 pour les brouillons de la psychobiotique —
+aucune réfutation cette fois, à la différence de `D-224`. Les trois refus se
+confirment mot pour mot, `WN-SRC-0295` compris, qui porte bien quatorze claims de
+contenu et pas une indication.
+
+**4. SIX CLAIMS DE PLUS, EN CINQ CONSTATS, ET DEUX CHANGENT UN VERDICT.**
+Le décompte est celui des CLAIMS neufs — `WN-CL-0288-012`, `-0288-014`,
+`-0291-013`, `-0285-002`, `-0285-010`, `-0285-012` —, non celui des constats qui
+les portent : `-0288-013`, `-0289-004` et `-0293-011` figuraient déjà à la
+surface, et ce qui est neuf est ce qu'ils FONDENT, pas leur présence. Constat de
+revue, vérifié par énumération. `WN-CL-0288-012` déclare
+la sarcopénie indication majeure de l'assiette protéinée : le dépôt porte le
+SARC-F (`Q_GEO_02`), coté et actif, donc cette assiette **cesse d'être suspendue
+au seul déclencheur d'âge**. **Trois** des 131 claims nomment un questionnaire —
+`WN-CL-0287-009`, `WN-CL-0289-004` et `WN-CL-0293-011` —, et c'est ce dernier,
+non `-009` qui porte l'âge, qui rend l'anti-inflammatoire constructible ; il est
+le seul des trois à nommer les questionnaires fonctionnels au pluriel, sans en
+désigner un. Les trois autres sont des compléments de
+sécurité, même classe que `D-227` §3 : `WN-CL-0288-013` porte son exception et ne
+se désigne pas sans `WN-CL-0288-014` ; `WN-CL-0291-013` est plus large que la
+porte publiée et appartient au brouillon ; `WN-CL-0285-002`, `-010` et `-012`
+bornent une assiette d'éviction dont `-001` ne dit que le principe.
+
+**5. LA COLONNE « DÉCLENCHEUR DISPONIBLE » N'AVAIT JAMAIS ÉTÉ LUE SUR PIÈCE, ET
+ELLE SE TROMPE QUATRE FOIS.** Aucun de ces constats ne réfute un claim : tous
+réfutent une **disponibilité annoncée**, ce que ni le sha, ni le contrat de
+fraîcheur, ni le CI n'atteignent.
+
+- `etat_alimentation` **n'est pas un drapeau** — le champ existe à l'anamnèse
+  avec ses options de régime, mais `DrapeauxAnamnese` ne le porte pas, et
+  `champ` est typé `keyof DrapeauxAnamnese` : un déclencheur dessus ne compile
+  pas. La méthylation n'attend donc pas un chantier, elle en attend **deux**.
+- `R2-GAS-01` et `R2-GAS-02` **ne lisent pas** `Q_GAS_01` : ils se déclenchent sur
+  `Q_MOD_03`/`digestion` et le **proposent**. La seule règle qui le lit est
+  `R-GAS-01`, au second tour — donc trois lignes réputées larges ne s'ouvriraient
+  que chez un patient déjà passé au second tour.
+- Aucun claim de `WN-SRC-0290` ne fonde une porte par score (voir §7).
+- `WN-CL-0289-004` lit son échelle à l'envers de la grille du dépôt (voir §8).
+
+**6. LE MUR DU `plateCode` : AUCUNE DES DOUZE ASSIETTES N'EXISTE AU CATALOGUE
+C5B, ET LE RESPONSABLE ARBITRE UN LOT PROPRE.** `C5B_RECOMMENDED_PLATES` porte
+trois entrées, les trois repères de moment de repas. Une ligne écrite aujourd'hui
+serait relue, hachée, attestée — et refusée par le septième terme du verrou
+(`D-225` §5), pour toujours, sans que rien ne le dise au signataire.
+
+Et l'extension n'est pas neutre : `PractitionerFoodObservationPanel` rend
+**toutes** les entrées du catalogue sans condition, et le filtre livré au
+chantier 1 filtre des **lignes**, pas le catalogue. Douze codes ajoutés font
+passer la liste du praticien de trois à quinze entrées, en production — soit
+exactement le mélange des deux axes que la surface a écarté par écrit, à
+l'endroit précis où le praticien les voit. **L'arbitrage écrit n'était porté par
+aucun mécanisme**, le catalogue étant une liste plate à consommateur unique.
+
+**Arbitrage : un lot propre**, portant les deux gestes ensemble — les douze
+entrées **et** ce qui protège la liste d'observation. **Écarté : écrire les
+lignes en laissant le verrou les refuser** — le septième terme cesserait de
+distinguer l'assiette RETIRÉE, qui est le danger qu'il garde, de l'assiette pas
+encore créée, qui serait devenue l'état normal. **Écarté : étendre sans filtre.**
+
+**7. LA SÉROTONINERGIQUE CHANGE DE PORTE.** Les quinze claims de `WN-SRC-0290`
+fondent l'indication sur des ÉTATS et sur des tableaux à niveau de preuve élevé ;
+**aucun ne nomme un questionnaire**, à la différence de `WN-CL-0289-004` pour la
+dopaminergique. Le déclencheur `Q_INF_03`/`SE` que la surface proposait n'était
+fondé par rien de sa source — le garder aurait inventé la porte (`DC-01`).
+**Arbitrage : la porte devient `Q_GAS_01`**, fondée par `WN-CL-0290-005`, qui
+nomme les états d'origine intestinale et le transit. La conséquence est assumée
+et écrite : `Q_GAS_01` est un instrument de second tour, donc une indication
+réputée large se déclenchera rarement. **Écarté** : retirer la ligne ; la garder
+en brouillon sur une porte que rien ne fonde.
+
+**8. LA DOPAMINERGIQUE S'ÉLARGIT À SON SECOND AXE, ET LA CONDITION A ÉTÉ
+VÉRIFIÉE AVANT D'ÊTRE ÉCRITE.** `WN-CL-0289-004` indique l'assiette sur un score
+**faible**, quand la grille certifiée de `Q_INF_03` va dans l'autre sens — `0-9`
+peu perturbé, `10-19` perturbations probables. **Arbitrage : la lecture « fonction
+basse » est retenue**, et le pas se déclare en `raccourciAssume` plutôt que de se
+supposer. **Et la porte s'élargit** : le claim nomme l'axe dopaminergique **ou**
+noradrénergique, là où la surface n'avait retenu que `DA` sans dire pourquoi —
+l'arbitrage pris par omission que `R2-NEU-04` a déjà eu à réparer une fois.
+Vérifié sur pièce avant d'écrire : `Q_INF_03` expose bien un sous-score `NA`
+(/40), et son interprétation est déclarée en `subscale: '*'` — littéralement la
+**même** grille sur les deux axes, pas une grille voisine.
+
+**9. CE QUE CETTE DÉCISION NE PRÉTEND PAS.** Elle n'écrit **aucune ligne** : la
+table reste vide, le verrou éteint, `TABLE_EXIGE_PRESCRIPTIF` sans entrée et
+`shaPerimetreLitteral` non enrôlé — tous trois se règlent le jour de la première
+signature, comme `D-198`, `D-223` et `D-224` l'ont fait. Elle ne touche ni le
+schéma, ni aucune table signée, ni aucun écran. Et elle ne ferme pas la classe
+d'erreur que `D-227` §8 nomme : le validateur partagé garde le **câblage** d'une
+porte, jamais ce qu'un claim **fonde**. Cela ne se vérifie qu'en lisant le texte
+du claim en production, source entière — c'est ce qui a rendu six claims et
+quatre constats ici.
+
 ### D-228 — La dernière table signée exercée seulement à l'état sain reçoit son cas négatif, et le contrat de fraîcheur cesse d'avoir une exemption possible
 
 - Date : 2026-09-18

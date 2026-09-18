@@ -7215,3 +7215,97 @@ attendre des séquences T3 réelles sur WebKit 2359), et les deux points RGPD de
 `D-222` §2 (qualification juridique du traitement « correspondance médecin » ;
 information des patients déjà consentants, que l'accusé de la v9 n'atteint qu'à
 leur prochaine visite au portail).
+## 2026-09-18 — La génération automatique retirée, et la chaîne documentaire auditée
+
+**Décisions.** `D-226` : le brouillon de synthèse ne naît plus à la réception
+d'un questionnaire. Le motif n'est pas le coût — la carte « Synthèse à générer »
+se tait dès qu'une synthèse est plus récente que la dernière lecture, et le
+brouillon naissait avant toute lecture : il éteignait l'invitation qu'il
+prétendait devancer. Audit documentaire : 28 constats, 21 tenus après
+contre-épreuve ; le central — l'écran Documents affiche un rendu C3 et envoie le
+booklet.
+
+**Écartées.** Adosser le déclenchement à la lecture confirmée : distincte, non
+prise, et elle suppose une file de relecture. Requalifier les huit brouillons
+produits : rien n'est effacé.
+
+**Prochaine action.** Lot H — le verrou du sélecteur de patient, ~5 lignes, bug
+déterministe.
+
+**Questions ouvertes.** Rubrique 5 du registre des traitements, hors dépôt.
+Constat comportemental après la prochaine réponse. Le plan des dix lots ne vit
+dans aucun fichier.
+## 2026-09-18 — Le validateur partagé, et les douze sources lues en entier
+
+**Décisions.** `D-229`, trois arbitrages du responsable. Le validateur de dérive
+des libellés d'anamnèse devient **partagé** (`declencheursAnamnese.ts`) : la
+dette que `D-225` §4 bis avait nommée est acquittée **avant la première ligne**,
+comme elle l'exigeait. L'interdit du signal d'alerte suit — application de
+l'arbitrage du 2026-08-03 à la table qui hérite du vocabulaire, pas règle neuve.
+
+**Les 131 claims des douze protocoles lus en production, sources entières.** Les
+vingt-six désignations de la surface sont **exactes** — aucune réfutation, à la
+différence de `D-224`. Six claims de plus, en cinq constats, dont deux changent
+un verdict : la
+sarcopénie ouvre à la protéinée une porte que l'âge ne commande pas, et trois
+claims des 131 seulement nomment un questionnaire — dont celui qui rend
+l'anti-inflammatoire constructible.
+
+**Ce qui ne tenait pas était la colonne voisine**, celle du déclencheur, jamais
+lue sur pièce : le régime alimentaire n'est pas un drapeau, deux règles réputées
+lire le questionnaire digestif le **proposent**, aucun claim de la source
+sérotoninergique ne fonde une porte par score, et un claim lit son échelle à
+l'envers de la grille certifiée.
+
+**Aucune ligne n'est écrite, et c'est l'arbitrage principal.** Aucune des douze
+assiettes n'a de `plateCode` ; les ajouter ferait passer la liste d'observation
+du praticien de trois à quinze options — le mélange d'axes que la surface avait
+écarté par écrit, sans qu'aucun mécanisme le porte. Le catalogue part en lot
+propre, portant les douze entrées **et** leur filtre dans le même diff.
+
+Écarté : écrire les lignes en laissant le verrou les refuser — le septième terme
+cesserait de distinguer l'assiette retirée, le danger qu'il garde, de l'assiette
+pas encore créée. Écarté aussi : étendre le catalogue sans filtre.
+
+Le contrôle G6 a mordu deux fois sur le diff, deux fragments reformulés pour
+désigner.
+
+**Prochaine action.** Le lot catalogue C5B — il débloque tout le reste de S3.
+
+**Questions ouvertes.** Le piège de concurrence du CI attend toujours son
+arbitrage. Le numéro `D-229` est à vérifier au merge.
+
+## 2026-09-18 (suite) — Le catalogue C5B passe à quinze entrées sur deux axes
+
+**Décision.** `D-230`, exécutant l'arbitrage rendu le matin même (`D-229` §6).
+Le mur du `plateCode` est tombé : le catalogue portait trois entrées et aucune
+des douze assiettes du corpus, donc aucune ligne d'indication ne pouvait être
+signée. Les douze entrent, adossées une à une à leur protocole.
+
+**Les deux gestes sont dans le même diff, et c'était l'arbitrage.** La liste
+d'observation du praticien rendait le catalogue ENTIER : douze entrées ajoutées
+seules l'auraient fait passer de trois à quinze options en production, mêlant
+deux axes que la surface avait écarté de fondre dès le 2026-09-16 — et cet
+arbitrage n'était porté par **aucun mécanisme**.
+
+L'axe vit sur l'entrée, et le filtre est un **point de sortie** : un champ seul
+se contourne par oubli, il suffit d'un second écran qui mappe la constante.
+Écarté : filtrer au seul point de rendu. Un second champ désigne le protocole,
+ce qui rend l'axe **vérifiable** — le banc le confronte au registre des sources
+et refuserait une assiette adossée à une fiche patient.
+
+**Aucune référence déjà consignée ne devient caduque**, et c'est le point
+délicat : `catalogVersion` ne bouge pas, et les deux champs neufs sont **hors**
+du `contentHash`. Les y mettre aurait périmé d'un coup toutes les références
+posées en production. L'empreinte du catalogue entier, elle, change — l'extension
+n'est pas silencieuse.
+
+Le banc de câblage a été muté : remettre le catalogue entier dans la liste du
+praticien le fait rougir **seul**, les autres cas choisissant une assiette
+présente dans les deux listes.
+
+**Prochaine action.** Le chantier 3 — déclencheur d'âge et revisite de `DC-43`,
+avec la correction du commentaire d'`anamnese.ts` dans le même lot.
+
+**Question ouverte.** `assiettesParIndication` n'a aucun appelant : elle se
+supprime si le lot d'exposition ne vient pas.

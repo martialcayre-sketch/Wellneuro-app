@@ -130,8 +130,44 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   ajouter demandera une **nouvelle** attestation : le périmètre se hache en
   entier.
 
+- **Le catalogue C5B et ce qui protège la liste d'observation du praticien** —
+  routé le 2026-09-18 ([[D-229]] §6, arbitrage du responsable), **LIVRÉ le jour
+  même** par [[D-230]]. **Rien à rouvrir ici** ; ce qui suit est l'historique du
+  motif, au passé.
+  Le catalogue portait **trois** entrées et aucune des douze assiettes n'y avait
+  de `plateCode` : toute ligne d'indication écrite avant ce lot aurait été relue,
+  hachée, attestée — puis refusée par le septième terme du verrou ([[D-225]] §5),
+  pour toujours, sans que rien ne le dise au signataire.
+  **Les deux gestes devaient aller ensemble, et c'était le cœur de l'arbitrage.**
+  `PractitionerFoodObservationPanel` rendait **toutes** les entrées du catalogue
+  sans condition, et le filtre du chantier 1 filtre des **lignes**, pas le
+  catalogue : douze codes ajoutés seuls auraient fait passer la liste du praticien
+  de trois à quinze options, en production. La surface avait écarté par écrit de
+  mélanger les deux axes, et **rien dans le code ne portait cet arbitrage**.
+  **Ce que le lot a effectivement livré** : `axe` et `sourceProtocole` sur
+  l'entrée, deux points de service, une garde d'axe au **domaine** — la liste
+  déroulante ne protégeait que l'écran, un brouillon `sessionStorage` ou un POST
+  forgé la contournaient (constat de revue). `catalogVersion` n'a **pas** changé
+  et les `contentHash` non plus : aucune référence d'assiette déjà consignée n'est
+  devenue caduque. Seul `C5B_PLATE_CATALOG_HASH` a bougé, et
+  `/api/praticien/boussole` le publie.
+
+- **Dette — le régime alimentaire n'est pas un drapeau d'anamnèse** (constatée
+  le 2026-09-18, [[D-229]] §5, **non commencée**). `etat_alimentation` existe
+  dans `ANAMNESE_SECTIONS` avec ses options végétarienne et végétalienne/végane,
+  mais `DrapeauxAnamnese` ne le porte pas : `extraireDrapeauxAnamnese` ne le
+  produit jamais et `OrientationDeclencheur.champ`, typé
+  `keyof DrapeauxAnamnese`, ne compile pas dessus. **Conséquence** : la ligne
+  d'assiette de méthylation n'attend pas le déclencheur d'âge du chantier 3, elle
+  attend **deux** chantiers — et la surface annonçait ce déclencheur comme
+  disponible. Le correctif est une clé de plus et sa ligne dans
+  `CHAMP_ANAMNESE` ; le banc partagé
+  (`declencheursAnamnese.test.ts`) exige déjà qu'aucune clé ne manque **ni
+  n'excède**, donc il rougira tant que les deux ne sont pas faits ensemble.
+
 - **Dette — `conflits_sources` n'a pas de cas négatif** (constatée le
-  2026-09-17, routée depuis la revue de la PR #1178, **non commencée**). Le
+  2026-09-17, routée depuis la revue de la PR #1178, **ACQUITTÉE le 2026-09-18
+  par [[D-228]]** — `N11` mute `superseded_at` sur `WN-CL-0387-013`). Le
   fichier `rag_claim_fraicheur_tables_signees_v1_negatif.sql` porte `N7`, `N8`,
   `N9` et — depuis `D-224` — `N10`, chacun prouvant qu'une table entrée au
   contrat avec `exige_prescriptif = false` reste gardée sur les **trois autres**

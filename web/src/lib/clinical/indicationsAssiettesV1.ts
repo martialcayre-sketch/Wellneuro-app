@@ -1,10 +1,11 @@
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { getRecommendedPlate } from '@/lib/food-compass/plates';
 import type { OrientationDeclencheur } from './orientationRulesV1';
+import { entreesSurSignauxAlerte, valeursDeDrapeauInconnues } from './declencheursAnamnese';
 import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
 
 // INDICATIONS D'ASSIETTE — la FORME d'une ligne et le verrou qui la garde.
-// Table livrée VIDE, verrou ÉTEINT ([[D-213]] §10, [[D-216]], [[D-225]]).
+// Table VIDE, verrou ÉTEINT ([[D-213]] §10, [[D-216]], [[D-225]], [[D-229]]).
 //
 // CE QUE CE LOT FERME, ET C'EST SA SEULE RAISON D'ÊTRE. La surface de relecture
 // du 2026-09-16 propose HUIT indications d'assiette, dont l'une — la
@@ -38,21 +39,18 @@ import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
  * les règles d'orientation et les indications de biologie. En écrire un
  * troisième aurait créé une grammaire de porte de plus dans le même dépôt.
  *
- * MAIS RÉUTILISER LE TYPE N'HÉRITE PAS DE SA GARDE, et il faut le dire ici parce
- * que la première version de ce commentaire affirmait le contraire — constat de
- * revue, vérifié et fondé. Les bancs anti-dérive qui confrontent les libellés de
- * drapeau aux options réelles d'`ANAMNESE_SECTIONS` parcourent
- * **`ORIENTATION_RULES_V1`**, pas cette table. Le type donne le VOCABULAIRE ; il
- * ne donne ni la vérification des `valeurs` (des chaînes libres), ni celle des
- * couleurs de zone.
+ * RÉUTILISER LE TYPE N'A PAS HÉRITÉ DE SA GARDE, et c'est ce que le chantier 2
+ * a réparé. Les bancs anti-dérive qui confrontent les libellés de drapeau aux
+ * options réelles d'`ANAMNESE_SECTIONS` ne parcouraient que
+ * **`ORIENTATION_RULES_V1`** : le type donnait le VOCABULAIRE, jamais la
+ * vérification des `valeurs` (des chaînes libres) ni celle des couleurs de zone.
+ * `declencheursAnamnese.ts` porte désormais cette garde une seule fois, pour les
+ * deux tables — `D-225` §4 bis l'exigeait **avant la première ligne**.
  *
- * CE QUI EST GARDÉ ICI, ET CE QUI NE L'EST PAS ENCORE. Le banc de ce module
- * vérifie que chaque feuille nomme un questionnaire du catalogue et qu'un
- * drapeau porte au moins une valeur — assez pour attraper un identifiant
- * inventé, pas assez pour attraper un LIBELLÉ d'anamnèse qui dérive. Ce
- * dernier trou est **ouvert et nommé** : le validateur partagé s’écrit au
- * chantier 2, AVANT la première ligne, parce qu'un déclencheur inerte ne casse
- * rien — il cesse simplement de se déclencher, et personne ne le voit.
+ * CE QUI RESTE HORS DE PORTÉE DE TOUTE GARDE AUTOMATIQUE : la COULEUR d'une
+ * zone, et surtout ce qu'un claim FONDE. Le CI n'atteint que la forme ; qu'un
+ * claim cité dise bien ce que la ligne lui fait dire ne se vérifie qu'en lisant
+ * son texte en production, source entière ([[D-224]], [[D-227]]).
  *
  * CE QUE CE TYPE NE PERMET PAS ENCORE : une borne d'ÂGE. `D-216` a rendu l'âge
  * déclencheur, mais `Patient.dateNaissance` n'est lu par aucune porte et
@@ -104,13 +102,24 @@ export type LigneIndicationAssiette = {
 /**
  * LA TABLE, VIDE — et le fail-closed la rend inoffensive tant qu'elle l'est.
  *
- * Elle n'attend pas qu'on trouve des claims : la surface de relecture
- * (`SURFACE_RELECTURE_CATALOGUE_ASSIETTES_2026-09-16.md`) en désigne déjà, et
- * les douze protocoles prescriptifs portent 131 claims validés. Ce qu'elle
- * attend est l'ATTESTATION, et deux chantiers avant elle : le champ d'indication
- * confronté claim par claim au texte lu en production ([[D-224]] a montré qu'une
- * désignation sur trois pouvait être fausse), et le déclencheur d'âge dont trois
- * des huit indications dépendent.
+ * ELLE N'ATTEND PLUS LA LECTURE DES CLAIMS : elle est faite. Les 131 claims des
+ * douze protocoles ont été lus en production, **sources entières**, le
+ * 2026-09-18 ([[D-229]]) — les vingt désignations de la surface sont exactes,
+ * cinq claims de plus ont été trouvés, et quatre constats corrigent la colonne
+ * des déclencheurs, qui n'avait jamais été confrontée au dépôt.
+ *
+ * ELLE N'ATTEND PLUS LE CATALOGUE NON PLUS : il porte les douze assiettes depuis
+ * le 2026-09-18 ([[D-230]]), et le septième terme du verrou est donc
+ * satisfaisable. Le même lot a donné au catalogue ses **points de service** —
+ * `assiettesParMomentDeRepas`, `assiettesParIndication` — parce que la liste
+ * d'observation du praticien le rendait ENTIER : le filtre de ce module-ci porte
+ * sur des **lignes**, il n'a jamais protégé le catalogue.
+ *
+ * CE QU'ELLE ATTEND ENCORE, ET C'EST TOUT CE QUI RESTE : que les PORTES
+ * existent. Le déclencheur d'âge — trois indications le citent, mais deux
+ * d'entre elles ont désormais une autre porte ([[D-229]] §4) — et le régime
+ * alimentaire comme drapeau d'anamnèse, sans lequel la méthylation n'en a
+ * aucune. Puis l'attestation elle-même, qui ne se pose jamais par l'outil.
  */
 export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [];
 
@@ -203,11 +212,19 @@ export function claimsDeLIndication(
  * drapeau sans aucune valeur, une disjonction vide (jamais atteinte, donc une
  * ligne morte qui se lirait comme vivante).
  *
- * CE QU'ELLE N'ATTRAPE PAS, ET C'EST DÉCLARÉ : un LIBELLÉ de drapeau qui dérive
- * des options réelles d'`ANAMNESE_SECTIONS`. La correspondance clé typée ↔ champ
- * d'anamnèse vit dans le banc d'orientation ; la recopier ici la ferait diverger
- * au premier correctif. **Le validateur partagé est à écrire au chantier 2,
- * avant la première ligne.** Le trou est nommé plutôt que masqué.
+ * ET, DEPUIS LE CHANTIER 2, LE LIBELLÉ D'ANAMNÈSE QUI DÉRIVE. `D-225` avait
+ * déclaré ce trou plutôt que de le masquer : la correspondance clé typée ↔ champ
+ * vivait dans le banc d'orientation, et la recopier ici l'aurait fait diverger au
+ * premier correctif. Elle vit désormais dans `declencheursAnamnese.ts`, que les
+ * DEUX tables appellent — c'est le validateur partagé que `D-225` §4 bis exigeait
+ * **avant la première ligne**, et non après.
+ *
+ * L'INTERDIT `signauxAlerte` SUIT LE MÊME CHEMIN, et ce n'est pas une règle
+ * neuve : c'est l'arbitrage praticien du 2026-08-03 appliqué à la table qui
+ * hérite du vocabulaire. Un signal d'alerte appelle un ADRESSAGE ; y répondre par
+ * une assiette le ferait passer pour une chose que l'outil traite — plus grave
+ * ici qu'à l'orientation, puisqu'une assiette PRESCRIT là qu'un questionnaire
+ * propose.
  *
  * ELLE NE FAIT PAS PARTIE DU VERROU, et c'est délibéré : un catalogue de
  * questionnaires qui bouge fermerait alors toute la table d'un coup. Elle est un
@@ -237,6 +254,16 @@ export function anomaliesDuDeclencheur(
       anomalies.push(`${ligne.id} : questionnaire inconnu \`${feuille.idQuestionnaire}\``);
     }
   }
+
+  // LE VALIDATEUR PARTAGÉ, APPELÉ SUR LA LIGNE ENTIÈRE — il ré-aplatit la
+  // disjonction lui-même. Le `drapeau sans valeur` ci-dessus reste ici parce
+  // qu'il ne dit rien d'un LIBELLÉ : une liste vide n'a pas de valeur à
+  // confronter, et `valeursDeDrapeauInconnues` ne rendrait rien.
+  const entree = [{ id: ligne.id, declencheurs: [ligne.declencheur] }];
+  anomalies.push(...valeursDeDrapeauInconnues(entree));
+  anomalies.push(...entreesSurSignauxAlerte(entree)
+    .map(id => `${id} : s'appuie sur un signal d'alerte — il appelle un adressage, pas une assiette`));
+
   return anomalies;
 }
 

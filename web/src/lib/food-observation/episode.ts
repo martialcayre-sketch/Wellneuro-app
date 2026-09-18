@@ -11,7 +11,7 @@ import type {
   RegimeContent,
 } from './types';
 import { localDate, nonEmpty } from './validation';
-import { assertCurrentRecommendedPlateRef } from '@/lib/food-compass/plates';
+import { assertRefAssietteDObservation } from '@/lib/food-compass/plates';
 
 /**
  * Budget d'attention (amendement terrain n° 3) : 2 à 7 traces/semaine,
@@ -52,7 +52,12 @@ function validateContent(content: RegimeContent): RegimeContent {
     }
     nonEmpty(content.action.simplePlan, 'action.simplePlan');
     if (content.action.recommendedPlateRef !== undefined) {
-      content.action.recommendedPlateRef = assertCurrentRecommendedPlateRef(
+      // L'AXE EST GARDÉ ICI, PAS SEULEMENT À L'ÉCRAN ([[D-230]], constat de
+      // revue). Cette fonction est la porte que traversent aussi bien un
+      // brouillon `sessionStorage` rouvert qu'un POST forgé : filtrer la liste
+      // déroulante n'en protégeait aucun. Une assiette d'INDICATION n'a rien à
+      // faire sur un épisode d'observation — elle prescrit, l'épisode constate.
+      content.action.recommendedPlateRef = assertRefAssietteDObservation(
         content.action.recommendedPlateRef,
       );
     }
