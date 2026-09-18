@@ -4,6 +4,39 @@
 **Ce document ne signe rien.** Il présente au praticien ce qu'il aurait à
 attester, et ce qui a été écarté.*
 
+> ## ÉTAT AU 2026-09-18 — les douze sources lues en entier, et la colonne « déclencheur disponible » qui ne tient pas
+>
+> Chantier 2 de S3. Les **131 claims** des douze protocoles ont été lus en
+> production (one-off détaché, lecture seule, 2026-09-18) — **sources entières**,
+> pas aux seuls identifiants proposés, comme `D-227` l'a imposé. Tous sont
+> `VALIDE`, `active`, non remplacés, en `v1.0`.
+>
+> **Les vingt-six désignations de claim du tableau ci-dessous sont EXACTES** —
+> 24 en colonne « Claims d'indication », 2 pour les brouillons de la
+> psychobiotique. Aucune
+> n'est réfutée : chaque claim cité dit bien ce que la ligne « Claims
+> d'indication » lui fait dire, et les trois refus (`0284`, `0294`, `0295`) sont
+> confirmés mot pour mot — `WN-SRC-0295` porte bien quatorze claims de contenu et
+> aucune indication, et les claims d'indication de `WN-SRC-0294` sont bien tous
+> `prescriptif = false`.
+>
+> **CE QUI NE TIENT PAS EST LA COLONNE VOISINE**, celle du déclencheur, et elle
+> n'a jamais été lue sur pièce — quatre constats, détaillés plus bas :
+> `etat_alimentation` n'est pas un drapeau ; `R2-GAS-01`/`R2-GAS-02` ne LISENT pas
+> `Q_GAS_01` ; aucun claim de `WN-SRC-0290` ne fonde une porte par score ; et
+> `WN-CL-0289-004` lit son échelle dans le sens inverse de la grille du dépôt.
+>
+> **ET UN BLOCAGE STRUCTUREL, ANTÉRIEUR À TOUS LES AUTRES** : aucune des douze
+> assiettes n'a de `plateCode` au catalogue C5B. Voir « LE MUR DU `plateCode` ».
+>
+> **TROIS ARBITRAGES RENDUS LE 2026-09-18, ET AUCUNE LIGNE N'EST ÉCRITE CE
+> JOUR.** Le responsable a tranché : le catalogue C5B fait l'objet d'un **lot
+> propre** — douze entrées ET ce qui protège la liste d'observation du praticien
+> —, et la table des indications reste **vide** jusque-là. La sérotoninergique
+> change de porte ; la dopaminergique s'élargit à son second axe. Les deux
+> nouvelles portes sont écrites au tableau ci-dessous, prêtes pour le lot qui
+> pourra les recevoir.
+>
 > **CE DOCUMENT CORRIGE UNE VERSION FAUTIVE, ET IL FAUT LE DIRE.** La première
 > rédaction concluait que **dix des douze assiettes n'avaient pas d'indication
 > fondée**. C'était faux. Elle n'avait lu que les **fiches patient**
@@ -42,14 +75,14 @@ dépôt sait déjà lire (`D-003` — pas de champ, pas de règle) ?
 
 | Assiette | Protocole | Claims d'indication | Déclencheur disponible | Verdict |
 | --- | --- | --- | --- | --- |
-| **Dopaminergique** | `0289` | `-004` (score bas à l'échelle fonctionnelle dopaminergique), `-003` (syndromes d'insuffisance dopaminergique) | **`Q_INF_03`, sous-score `DA`** — pack de base, bandes publiées, déjà lu par la table d'orientation | **publiée — la mieux placée** |
-| **Sérotoninergique** | `0290` | `-005` (états inflammatoires d'origine intestinale, troubles du transit), `-006` (niveau de preuve élevé), `-007` (marqueurs biologiques) | **`Q_INF_03`, sous-score `SE`** — idem | **publiée** |
+| **Dopaminergique** | `0289` | `-004` (score bas à l'échelle fonctionnelle dopaminergique), `-003` (syndromes d'insuffisance dopaminergique) | **`Q_INF_03`, `DA` OU `NA`** (arbitrage 2026-09-18) — pack de base, même grille `*` sur les deux axes, déjà lue par `R2-NEU-03`/`-04` | **publiée — la mieux placée** |
+| **Sérotoninergique** | `0290` | `-005` (états inflammatoires d'origine intestinale, troubles du transit), `-006` (niveau de preuve élevé), `-007` (marqueurs biologiques) | **`Q_GAS_01`** (arbitrage 2026-09-18, corrige `Q_INF_03`/`SE`) — second tour | **publiée** |
 | **Épargne digestive** | `0285` | `-005` (tout patient ayant un trouble fonctionnel intestinal), `-006`, `-001` (intolérances, durée bornée) | `Q_GAS_01` (second tour) **et** `intolerances_alimentaires`, énuméré à l'anamnèse | **publiée** |
-| **Détoxication** | `0287` | `-009` (score TFI élevé), `-008` (populations exposées), `-007` (cure préventive) | `Q_GAS_01` — **déjà lu** par `R2-GAS-01`/`R2-GAS-02` | **publiée** |
+| **Détoxication** | `0287` | `-009` (score TFI élevé), `-008` (populations exposées), `-007` (cure préventive) | `Q_GAS_01` — lu par `R-GAS-01`, **second tour** (corrigé 2026-09-18 : `R2-GAS-01`/`R2-GAS-02` le PROPOSENT, ils ne le lisent pas) | **publiée** |
 | **Psychobiotique** | `0291` | `-011` (tout patient ayant un trouble fonctionnel ou une maladie intestinale) | `Q_GAS_01` | **publiée** sur la porte étroite ; `-009`/`-010` en **brouillon** |
-| **Anti-inflammatoire** | `0293` | `-011` (troubles des neurotransmetteurs sérotoninergiques et/ou dopaminergiques), `-009` (dès 50 ans, plus fréquemment au-delà de 70) | `Q_INF_03` (`DA`, `SE`) ; **âge** | **publiée** |
-| **Méthylation** | `0286` | `-006` (végétaliens, végans, végétariens ; plus de 50 ans), `-005` (niveau de preuve élevé) | régime **végétalien/végan**, énuméré à l'anamnèse ; **âge** | **publiée** |
-| **Protéinée** | `0288` | `-013` (pathologies où la synthèse dopaminergique est impliquée), `-011` et `-001` (au-delà de 60 ans) | `Q_INF_03` `DA` ; **âge** | **publiée** |
+| **Anti-inflammatoire** | `0293` | `-011` (atteinte des deux voies monoaminergiques, ET l'entrée par score de questionnaire fonctionnel), `-009` (dès 50 ans, plus fréquemment au-delà de 70) | `Q_INF_03` — fondé par `-011`, l'un des trois claims des 131 à nommer un questionnaire ; **âge** pour `-009` | **publiée** |
+| **Méthylation** | `0286` | `-006` (végétaliens, végans, végétariens ; plus de 50 ans), `-005` (niveau de preuve élevé) | **AUCUN** (corrigé 2026-09-18) : `etat_alimentation` existe à l'anamnèse mais n'est pas un drapeau, donc hors de portée d'un déclencheur ; **âge** également absent | **publiée** |
+| **Protéinée** | `0288` | `-013` (les tableaux engageant la voie dopaminergique, hors exception parkinsonienne), `-011` et `-001` (au-delà de 60 ans) | `Q_INF_03` `DA` ; **âge** — et `Q_GEO_02` (SARC-F), porte sans âge ouverte par `-012`, trouvée le 2026-09-18 | **publiée** |
 | **Antioxydante** | `0292` | `-004` (maladie évolutive chronique ou inflammatoire de bas grade), `-003` (neurodégénératif) | `antecedentsDomaines` — couvre partiellement | réserve |
 | **Oméga 3** | `0294` | `-002`, `-003` — **déclarés NON prescriptifs** | — | refusée |
 | **Végétale** | `0284` | aucune ; `-006` nuance l'assiette chez le côlon irritable | — | refusée |
@@ -57,6 +90,154 @@ dépôt sait déjà lire (`D-003` — pas de champ, pas de règle) ?
 
 **Huit publiées, une en réserve, trois refusées.** Les écarter est le travail ;
 chacune l'est pour un motif nommé.
+
+## CE QUE LA LECTURE DES SOURCES ENTIÈRES A AJOUTÉ — 2026-09-18
+
+`D-227` a montré que la classe d'erreur dangereuse n'est plus la désignation
+FAUSSE mais la désignation **incomplète** : ni le sha, ni le contrat SQL, ni le
+CI ne voient ce qui manque à un périmètre relu. Les douze sources ont donc été
+lues entières. **Cinq constats, six claims neufs** — le décompte porte sur les
+claims, non sur les paragraphes qui les portent.
+
+**1. `WN-CL-0288-012` — LA SARCOPÉNIE, ET ELLE OUVRE UNE PORTE QUE L'ÂGE NE
+COMMANDE PAS.** Ce claim déclare la sarcopénie indication majeure de l'assiette
+protéinée. Il n'était pas proposé. Sa conséquence est pratique : le dépôt porte
+le **SARC-F** (`Q_GEO_02`), instrument coté, au catalogue et actif. La protéinée
+cesse donc d'être suspendue au seul déclencheur d'âge du chantier 3. **Une
+réserve va avec** : `prescriptif = false` — la table n'exige pas le prescriptif
+(`D-046`), mais il faut le savoir avant de signer.
+
+**2. `WN-CL-0288-013` NE SE DÉSIGNE PAS SEUL.** Il porte l'indication de la
+protéinée **et son exception**, qui vise le parkinsonien sous L-dopa. Et
+`WN-CL-0288-014` prolonge cette exception en disant que la répartition y change.
+Même classe que `WN-CL-0316-006` / `-029` en `D-227` §3 : une règle de sécurité
+tronquée est pire qu'absente. **Les deux entrent ensemble ou aucun.**
+
+**3. `WN-CL-0291-013` EST PLUS LARGE QUE LA PORTE PUBLIÉE, et c'est pour cela
+qu'il compte.** Il indique la psychobiotique dès qu'existe un trouble
+fonctionnel, **que l'intestin soit ou non en cause** — donc au-delà de
+`WN-CL-0291-011`, qui exige l'atteinte intestinale. Le désigner sur la ligne
+publiée l'élargirait en silence : il appartient au **brouillon**, avec `-009` et
+`-010`.
+
+**4. `WN-CL-0285-002`, `-010` ET `-012` BORNENT L'ÉPARGNE DIGESTIVE.** La surface
+citait `-001` pour « durée bornée » ; `-001` dit une période déterminée sans la
+chiffrer. C'est `-002` qui porte la borne, `-010` qui impose de compenser
+au-delà, et `-012` qui refuse l'éviction durable. Une assiette d'éviction servie
+sans ses bornes est le cas où **désigner l'indication sans ses gardes** produit
+exactement ce que `D-227` §3 décrit.
+
+**5. `WN-CL-0293-011` FONDE UNE ENTRÉE PAR SCORE, ET LA SURFACE NE LE CITAIT
+QUE POUR SON CONTENU.** Lu entier, il fonde en outre explicitement l'entrée par
+**score** de questionnaire fonctionnel : c'est lui, et non `-009` qui porte
+l'âge, qui rend l'anti-inflammatoire constructible aujourd'hui.
+
+**Trois claims des 131 nomment un questionnaire**, et pas un de plus :
+`WN-CL-0287-009` (le questionnaire des troubles fonctionnels intestinaux),
+`WN-CL-0289-004` (le questionnaire fonctionnel des neurotransmetteurs) et
+`-011`, seul des trois à les nommer au pluriel sans en désigner un. C'est cette
+rareté qui donne son poids au constat C ci-dessous : les quinze claims de la
+sérotoninergique n'en nomment aucun.
+
+## LES QUATRE CONSTATS SUR LA COLONNE « DÉCLENCHEUR DISPONIBLE »
+
+Cette colonne n'avait jamais été confrontée au dépôt. Aucun des quatre ne réfute
+un claim : tous réfutent une **disponibilité annoncée**.
+
+**A. `etat_alimentation` N'EST PAS UN DRAPEAU — la méthylation n'est pas bloquée
+par l'âge seul.** Le champ existe bien dans `ANAMNESE_SECTIONS`, avec ses options
+végétarienne et végétalienne/végane. Mais `DrapeauxAnamnese` porte **dix** clés
+et celle-ci n'en fait pas partie : `extraireDrapeauxAnamnese` ne la produit
+jamais, et `OrientationDeclencheur.champ` est typé `keyof DrapeauxAnamnese` — un
+déclencheur sur ce champ **ne compile pas**. `WN-CL-0286-006` reste donc
+inaccessible par ses deux bouts, le régime comme l'âge. La ligne d'assiette de
+méthylation n'est pas « en attente du chantier 3 » : elle attend **deux**
+chantiers.
+
+**B. `R2-GAS-01` ET `R2-GAS-02` NE LISENT PAS `Q_GAS_01` — ILS LE PROPOSENT.**
+Les deux se déclenchent sur `Q_MOD_03`, sous-score `digestion`, et **suggèrent**
+le TFD SIIN. La seule règle qui LIT `Q_GAS_01` est `R-GAS-01`, au **second
+tour**. La conséquence porte sur trois lignes — épargne digestive, détoxication,
+psychobiotique : leur porte ne s'ouvrirait que chez un patient déjà passé au
+second tour, jamais sur le pack de base. Ce n'est pas un défaut, c'est un fait à
+connaître avant de signer : une indication qu'on croit large se révélerait rare.
+
+**C. AUCUN CLAIM DE `WN-SRC-0290` NE FONDE UNE PORTE PAR SCORE.** L'asymétrie est
+nette avec la dopaminergique : `WN-CL-0289-004` nomme expressément le
+questionnaire fonctionnel des neurotransmetteurs ; les quinze claims de la
+sérotoninergique n'en nomment aucun. Ils fondent l'indication sur des **états** —
+inflammatoire d'origine intestinale, transit, dysbiose, stress chronique — et sur
+des tableaux à niveau de preuve élevé. Le déclencheur `Q_INF_03`/`SE` que la
+surface proposait **n'est fondé par rien de sa source**. Le garder serait
+inventer la porte, ce que `DC-01` interdit.
+
+> **ARBITRAGE DU RESPONSABLE, 2026-09-18 : la porte devient `Q_GAS_01`**, fondée
+> par `WN-CL-0290-005` — qui nomme les états d'origine intestinale et le
+> transit, ce que le TFD SIIN mesure. La ligne reste **publiée**, avec sa
+> conséquence assumée et écrite : `Q_GAS_01` n'est lu qu'au **second tour**
+> (`R-GAS-01`), donc une indication réputée large se déclenchera rarement.
+> **Écarté** : retirer la ligne, et la garder en brouillon sur une porte que rien
+> ne fonde.
+
+**D. `WN-CL-0289-004` LIT SON ÉCHELLE À L'ENVERS DE LA GRILLE DU DÉPÔT.** Le
+claim indique l'assiette dopaminergique sur un score **faible**. La grille
+certifiée de `Q_INF_03` va dans l'autre sens : `0-9` peu perturbé, `10-19`
+perturbations probables, `20-40` fortement perturbé — c'est ce que lisent
+`R2-NEU-03` et `R2-NEU-04` avec `>= 10`. Les deux se concilient si « score
+faible » désigne une **fonction** basse et non un score bas d'instrument, ce que
+le reste de `WN-SRC-0289` rend très probable. Mais c'est une **lecture**, et elle
+doit être déclarée en `raccourciAssume` plutôt que supposée.
+
+> **ARBITRAGE DU RESPONSABLE, 2026-09-18 : la lecture est retenue, ET la porte
+> s'élargit au second axe.** Le claim nomme l'axe dopaminergique **ou**
+> noradrénergique ; la surface n'avait retenu que `DA`, sans dire pourquoi —
+> l'arbitrage pris par omission que `R2-NEU-04` a déjà eu à réparer une fois. La
+> ligne lira donc une disjonction `DA` **ou** `NA`, à la même bande d'entrée
+> `>= 10`.
+>
+> **La condition posée à l'arbitrage a été vérifiée avant d'être écrite** :
+> `Q_INF_03` expose bien un sous-score `NA` (Noradrénaline, /40), et son
+> interprétation est déclarée en `subscale: '*'` — c'est donc littéralement la
+> **même grille** sur `NA` que sur `DA`, pas une grille voisine. Le
+> `raccourciAssume` de la ligne portera le pas de sens, qu'aucune garde
+> automatique n'atteint.
+
+## LE MUR DU `plateCode` — aucune des douze n'existe au catalogue
+
+Le septième terme du verrou (`D-225` §5) exige que le `plateCode` d'une ligne
+existe au catalogue C5B. Or `C5B_RECOMMENDED_PLATES` porte **trois** entrées, les
+trois repères de moment de repas. **Aucune des douze assiettes n'y a de code.**
+Une ligne écrite aujourd'hui serait donc relue, hachée, attestée — et le verrou
+la refuserait, pour toujours, sans que rien ne le dise au signataire.
+
+**Et l'ajout n'est pas neutre, parce que ce catalogue a un consommateur.**
+`PractitionerFoodObservationPanel` rend **toutes** ses entrées dans sa liste
+déroulante, sans condition. Le filtre livré au chantier 1
+(`lignesIndicationAssietteServables`) filtre des **lignes** ; il ne protège pas
+cette liste, qui lit le catalogue. Douze codes ajoutés font donc passer la liste
+du praticien de trois à quinze entrées, en production, immédiatement.
+
+**Ce qui rend l'arbitrage nécessaire plutôt que mécanique** : ce document a déjà
+écarté de **fondre les trois historiques dans les douze**, au motif que les unes
+se départagent par le moment du repas et les autres par l'indication, et que les
+mélanger ferait croire à une provenance qu'elles n'ont pas. Or le catalogue est
+une liste **plate**, avec un seul consommateur qui la rend entière : l'arbitrage
+est écrit, et rien dans le code ne le porte. Les ajouter au même tableau, c'est
+exactement le mélange écarté — à l'endroit précis où le praticien les voit.
+
+S'y ajoutent, pour mémoire : `catalogVersion`, le `contentHash` de chaque entrée
+et `C5B_PLATE_CATALOG_HASH` se périment à l'extension, et `/api/praticien/boussole`
+publie ce dernier.
+
+> **ARBITRAGE DU RESPONSABLE, 2026-09-18 : un lot propre, et la table reste vide
+> jusque-là.** Le catalogue C5B ne s'étend pas au passage d'un chantier dont ce
+> n'est pas la finalité. Le lot à venir porte les **deux** gestes ensemble — les
+> douze entrées **et** ce qui protège la liste d'observation : un axe sur
+> l'entrée, ou un filtre au point de rendu. **Écarté** : écrire les lignes dès
+> maintenant en laissant le verrou les refuser — le septième terme cesserait de
+> distinguer l'assiette RETIRÉE, qui est le danger qu'il garde, de l'assiette pas
+> encore créée, qui serait devenue l'état normal. **Écarté aussi** : étendre sans
+> filtre, qui met le mélange des deux axes sous les yeux du praticien.
 
 ## LES QUATRE ARBITRAGES QUI ONT FIXÉ CE TABLEAU — 2026-09-16
 
@@ -190,11 +371,25 @@ attestant lui-même :
 6. La déclaration de conformité se rend **en séance, après lecture** ; la recopie
    du SHA est mécanique et ne vaut que portée par elle (`D-195` §1).
 
-**Ce qui doit être livré AVANT que cette signature ait un sens** : le champ
-`statut`, le filtre de service, le champ d'indication et ses claims, et — pour
-les trois assiettes qui en dépendent — le déclencheur d'âge et la revisite de
-`DC-43`. Signer une table que rien ne filtre exposerait les cinq brouillons
-comme les huit publiées.
+**Ce qui doit être livré AVANT que cette signature ait un sens** — liste tenue à
+jour, et elle a GRANDI au 2026-09-18 :
+
+| # | À livrer | État |
+| --- | --- | --- |
+| 1 | Le champ `statut` sur la ligne, et le filtre de service | **fait** — `D-225` |
+| 2 | Le validateur partagé de dérive des libellés d'anamnèse | **fait** — chantier 2 |
+| 3 | Les **douze entrées au catalogue C5B**, et ce qui protège la liste d'observation du praticien | **à faire — bloque tout le reste** |
+| 4 | Le champ d'indication et ses claims, c'est-à-dire les lignes | à faire, après 3 |
+| 5 | Le déclencheur d'âge et la revisite de `DC-43` | à faire — trois assiettes |
+| 6 | Le régime alimentaire comme drapeau d'anamnèse | à faire — la méthylation en dépend AUSSI |
+| 7 | Le mécanisme orienté des familles d'équivalence | à faire |
+
+Les deux lignes **3** et **6** ne figuraient pas dans la version du 2026-09-16 :
+elles sont apparues en confrontant au dépôt la colonne « déclencheur
+disponible », qui n'avait jamais été lue sur pièce. Signer une table que rien ne
+filtre exposerait les brouillons comme les publiées ; signer des lignes dont
+aucune assiette n'existe au catalogue produirait un périmètre attesté que le
+verrou refuse.
 
 ## CE QUE CE LOT NE PRÉTEND PAS
 

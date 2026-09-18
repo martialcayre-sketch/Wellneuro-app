@@ -7164,3 +7164,43 @@ claims, lus sur pièce, source entière.
 
 **Questions ouvertes.** La ligne de `.claude/rules/` sur le piège de concurrence
 du CI attend un arbitrage — deux sessions se la partagent, aucune ne l'écrit.
+
+## 2026-09-18 — Le validateur partagé, et les douze sources lues en entier
+
+**Décisions.** `D-229`, trois arbitrages du responsable. Le validateur de dérive
+des libellés d'anamnèse devient **partagé** (`declencheursAnamnese.ts`) : la
+dette que `D-225` §4 bis avait nommée est acquittée **avant la première ligne**,
+comme elle l'exigeait. L'interdit du signal d'alerte suit — application de
+l'arbitrage du 2026-08-03 à la table qui hérite du vocabulaire, pas règle neuve.
+
+**Les 131 claims des douze protocoles lus en production, sources entières.** Les
+vingt-six désignations de la surface sont **exactes** — aucune réfutation, à la
+différence de `D-224`. Six claims de plus, en cinq constats, dont deux changent
+un verdict : la
+sarcopénie ouvre à la protéinée une porte que l'âge ne commande pas, et trois
+claims des 131 seulement nomment un questionnaire — dont celui qui rend
+l'anti-inflammatoire constructible.
+
+**Ce qui ne tenait pas était la colonne voisine**, celle du déclencheur, jamais
+lue sur pièce : le régime alimentaire n'est pas un drapeau, deux règles réputées
+lire le questionnaire digestif le **proposent**, aucun claim de la source
+sérotoninergique ne fonde une porte par score, et un claim lit son échelle à
+l'envers de la grille certifiée.
+
+**Aucune ligne n'est écrite, et c'est l'arbitrage principal.** Aucune des douze
+assiettes n'a de `plateCode` ; les ajouter ferait passer la liste d'observation
+du praticien de trois à quinze options — le mélange d'axes que la surface avait
+écarté par écrit, sans qu'aucun mécanisme le porte. Le catalogue part en lot
+propre, portant les douze entrées **et** leur filtre dans le même diff.
+
+Écarté : écrire les lignes en laissant le verrou les refuser — le septième terme
+cesserait de distinguer l'assiette retirée, le danger qu'il garde, de l'assiette
+pas encore créée. Écarté aussi : étendre le catalogue sans filtre.
+
+Le contrôle G6 a mordu deux fois sur le diff, deux fragments reformulés pour
+désigner.
+
+**Prochaine action.** Le lot catalogue C5B — il débloque tout le reste de S3.
+
+**Questions ouvertes.** Le piège de concurrence du CI attend toujours son
+arbitrage. Le numéro `D-229` est à vérifier au merge.
