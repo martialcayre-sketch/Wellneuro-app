@@ -300,14 +300,66 @@ describe('indications d’assiette — le déclencheur ne dérive pas en silence
     expect(INDICATIONS_ASSIETTES_V1.flatMap(l => anomaliesDuDeclencheur(l, IDS))).toEqual([]);
   });
 
-  it('LE LIBELLÉ D’ANAMNÈSE N’EST PAS GARDÉ, et le module le déclare', () => {
-    // Ce qui suit n'est pas un test de comportement mais un test de FRANCHISE :
-    // le trou existe, il est nommé sur place, et il doit le rester tant qu'il
-    // n'est pas fermé. Si quelqu'un retire la mise en garde sans écrire le
-    // validateur partagé, ce banc rougit.
-    const source = readFileSync(join(__dirname, 'indicationsAssiettesV1.ts'), 'utf8');
-    expect(source).toContain('ANAMNESE_SECTIONS');
-    expect(source).toMatch(/validateur partagé/);
+  // LE TROU QUE `D-225` AVAIT DÉCLARÉ EST FERMÉ — chantier 2 de S3. Ce bloc
+  // portait jusqu'ici un test de FRANCHISE (« la mise en garde est-elle encore
+  // écrite ? ») faute de garde réelle. Il porte maintenant le comportement :
+  // `anomaliesDuDeclencheur` appelle `declencheursAnamnese.ts`, le validateur
+  // partagé avec `ORIENTATION_RULES_V1`.
+  //
+  // CES CAS NE FONT PAS DOUBLON AVEC `declencheursAnamnese.test.ts`. Celui-là
+  // éprouve le CORPS de la garde ; ceux-ci éprouvent son CÂBLAGE ici — une
+  // assertion sur la fonction partagée seule n'aurait prouvé que son `return`,
+  // jamais que cette table l'appelle.
+  it('ATTRAPE un libellé d’anamnèse qui dérive — le déclencheur serait inerte', () => {
+    const anomalies = anomaliesDuDeclencheur(
+      ligne({ declencheur: { type: 'drapeau', champ: 'intolerancesAlimentaires', valeurs: ['Gluten '] } }),
+      IDS,
+    );
+    expect(anomalies).toHaveLength(1);
+    expect(anomalies[0]).toContain('intolerances_alimentaires');
+  });
+
+  it('LAISSE PASSER le même libellé écrit verbatim', () => {
+    expect(anomaliesDuDeclencheur(
+      ligne({ declencheur: { type: 'drapeau', champ: 'intolerancesAlimentaires', valeurs: ['Gluten'] } }),
+      IDS,
+    )).toEqual([]);
+  });
+
+  it('ATTRAPE un signal d’alerte — il appelle un adressage, pas une assiette', () => {
+    // Arbitrage praticien du 2026-08-03, appliqué à la table qui hérite du
+    // vocabulaire. Plus grave ici qu'à l'orientation : une assiette PRESCRIT là
+    // qu'un questionnaire propose.
+    const anomalies = anomaliesDuDeclencheur(
+      ligne({
+        declencheur: {
+          type: 'drapeau',
+          champ: 'signauxAlerte',
+          valeurs: ['Idées noires ou suicidaires'],
+        },
+      }),
+      IDS,
+    );
+    expect(anomalies).toHaveLength(1);
+    expect(anomalies[0]).toContain('adressage');
+  });
+
+  it('DESCEND DANS LES BRANCHES pour les deux gardes partagées', () => {
+    const anomalies = anomaliesDuDeclencheur(
+      ligne({
+        declencheur: {
+          type: 'ou',
+          declencheurs: [
+            { type: 'drapeau', champ: 'signauxAlerte', valeurs: ['Idées noires ou suicidaires'] },
+            { type: 'drapeau', champ: 'attentes', valeurs: ['Libellé qui n’existe pas'] },
+          ],
+        },
+      }),
+      IDS,
+    );
+    expect(anomalies).toHaveLength(2);
+    expect(anomalies.join(' ')).toContain('attentes');
+    expect(anomalies.join(' ')).toContain('adressage');
   });
 });
 
