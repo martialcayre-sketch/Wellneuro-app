@@ -17,8 +17,11 @@ Rien n'a été réécrit lors du déplacement : le texte ci-dessous est celui qu
 > **À lire avec ce document : `.claude/rules/pr-revue-et-release-db.md`.** Il
 > porte ce qui manque ici et ne se voit pas au vert — **les commentaires de
 > revue** (les lire est un geste distinct du CI ; les commentaires *en ligne*
-> n'apparaissent ni dans `reviews` ni dans `gh pr view --comments` ; trois
-> verdicts, et aucun commentaire n'en sort sans) et **l'ordre de `release-db`**
+> n'apparaissent ni dans `reviews` ni dans `gh pr view --comments` ; **un constat
+> peut n'être nulle part ailleurs que dans le *corps* de la revue**, bloc
+> « Suppressed comments », `pulls/<N>/comments` rendant alors `[]` — lire
+> `.reviews[].body` ; trois verdicts, et aucun commentaire n'en sort sans) et
+> **l'ordre de `release-db`**
 > (une migration mergée n'est pas une migration appliquée). Le 2026-09-16,
 > quatre PR ont été mergées sur CI vert sans lire la revue : quatre constats
 > réels y attendaient. **Ce fichier se charge tout seul au moment utile** : il
@@ -65,6 +68,20 @@ branches `campaign/**`, que `ci.yml` déclenchait sur `push` *et* sur
 reste.) Un run **annulé** — `CANCELLED`, la trace normale d'un run supplanté
 depuis le bloc `concurrency` de `ci.yml` — n'est ni vert ni un échec : le script
 attend le run du commit de tête, puis sort en `2`.
+
+**Ne jamais relancer un run qui n'est pas celui de la tête.** Hors `main`,
+`ci.yml` range tous les runs d'une branche dans un **même groupe de
+concurrence**, `cancel-in-progress` compris
+([`.github/workflows/ci.yml:21-23`](../../.github/workflows/ci.yml)) — la
+condition `github.ref == 'refs/heads/main'` n'ajoute `run_id` au groupe que sur
+`main`, si bien que toute branche de PR n'a qu'un seul groupe pour toute sa vie.
+Relancer un run périmé — pour lever un flake, pour revoir un log — **annule
+celui du commit de tête**, c'est-à-dire précisément celui qui garde le merge :
+la PR se retrouve sans run vert, `wn-attendre-ci` sort en `2`, et l'attente
+recommence à zéro. Ce qui se relance est le run **de la tête**, jamais un run
+plus ancien ; et un bras témoin se lance **avant** de pousser la suite, pas
+après. Constaté le 2026-09-17. Le pendant, plus strict, existe déjà pour les
+rouges WebKit du CI : ceux-là ne se relancent jamais du tout (`D-155`).
 
 Gabarit de corps de PR et check-list complète : le skill `/wn-pr` (invocation
 manuelle ; ces idiomes valent pour **toute** ouverture de PR, `/wn-pr` invoqué ou non). <!-- mention-seule: wn-pr -->
