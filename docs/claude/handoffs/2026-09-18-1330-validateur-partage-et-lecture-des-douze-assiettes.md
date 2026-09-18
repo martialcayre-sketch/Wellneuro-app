@@ -37,8 +37,9 @@ depuis la surface. Et, avant toute ligne, le **validateur partagé** que `D-225`
 
 - **Ferme** : la dette nommée de `D-225` §4 bis. Les deux tables qui partagent
   `OrientationDeclencheur` partagent désormais ses gardes.
-- **Ferme** : la lecture sur pièce des douze protocoles. Les vingt désignations
-  de la surface sont **exactes** ; cinq claims de plus ont été trouvés ; quatre
+- **Ferme** : la lecture sur pièce des douze protocoles. Les vingt-six désignations
+  de la surface sont **exactes** (24 en colonne « Claims d'indication », 2 pour
+  les brouillons de la psychobiotique) ; cinq claims de plus ont été trouvés ; quatre
   constats corrigent la colonne « déclencheur disponible », qui n'avait jamais
   été confrontée au dépôt.
 - **N'atteint pas** : la table des indications, toujours **VIDE**, verrou
@@ -100,7 +101,7 @@ dettes routées, une acquittée) · `docs/claude/SESSION_LOG.md`.
 - **Le régime alimentaire n'est pas un drapeau** — seconde dette routée. La
   méthylation attend **deux** chantiers, pas un ; la surface l'annonçait
   disponible.
-- **Trois lignes se déclencheraient au second tour seulement** (épargne
+- **Quatre lignes se déclencheraient au second tour seulement** (épargne
   digestive, détoxication, psychobiotique, et maintenant la sérotoninergique) :
   `Q_GAS_01` n'est pas dans le pack de base. Fait à connaître avant de signer,
   pas un défaut.
@@ -123,7 +124,7 @@ dettes routées, une acquittée) · `docs/claude/SESSION_LOG.md`.
    Puis merger avec `--subject` portant le bon `D-NNN`.
 2. Ensuite, **le lot catalogue** : les douze entrées C5B **et** ce qui protège la
    liste d'observation, dans le même diff. C'est lui qui débloque S3.
-3. Puis seulement le chantier 4 (déclencheur d'âge et revisite de `DC-43`), la
+3. Puis seulement le chantier 3 (déclencheur d'âge et revisite de `DC-43`), la
    dette du drapeau de régime, et les lignes elles-mêmes.
 
 ## 9. Interdits encore actifs

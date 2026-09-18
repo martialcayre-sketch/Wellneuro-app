@@ -15,7 +15,7 @@ mais l'arbitrage du 2026-08-03 appliqué à la table qui hérite du vocabulaire 
 une assiette prescrit là qu'un questionnaire propose.
 
 **Les 131 claims des douze protocoles d'assiette ont été lus en production,
-sources entières.** Les vingt désignations proposées sont exactes, aucune n'est
+sources entières.** Les vingt-six désignations proposées sont exactes, aucune n'est
 réfutée. Cinq claims de plus ont été trouvés, dont deux changent un verdict : la
 sarcopénie ouvre à l'assiette protéinée une porte que l'âge ne commande pas, et
 trois claims des 131 seulement nomment un questionnaire — et c'est l'un d'eux,

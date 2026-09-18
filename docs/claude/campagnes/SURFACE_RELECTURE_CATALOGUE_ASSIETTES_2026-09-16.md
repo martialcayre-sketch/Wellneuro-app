@@ -11,7 +11,9 @@ attester, et ce qui a été écarté.*
 > pas aux seuls identifiants proposés, comme `D-227` l'a imposé. Tous sont
 > `VALIDE`, `active`, non remplacés, en `v1.0`.
 >
-> **Les vingt désignations de claim du tableau ci-dessous sont EXACTES.** Aucune
+> **Les vingt-six désignations de claim du tableau ci-dessous sont EXACTES** —
+> 24 en colonne « Claims d'indication », 2 pour les brouillons de la
+> psychobiotique. Aucune
 > n'est réfutée : chaque claim cité dit bien ce que la ligne « Claims
 > d'indication » lui fait dire, et les trois refus (`0284`, `0294`, `0295`) sont
 > confirmés mot pour mot — `WN-SRC-0295` porte bien quatorze claims de contenu et

@@ -36,7 +36,8 @@ posée avant qu'il y en ait une.
 
 **3. LES 131 CLAIMS DES DOUZE PROTOCOLES ONT ÉTÉ LUS EN PRODUCTION, SOURCES
 ENTIÈRES** (one-off détaché, lecture seule, 2026-09-18) : tous `VALIDE`, actifs,
-non remplacés, en `v1.0`. **Les vingt désignations de la surface sont exactes** —
+non remplacés, en `v1.0`. **Les vingt-six désignations de la surface sont exactes** — 24 en colonne
+« Claims d'indication », 2 pour les brouillons de la psychobiotique —
 aucune réfutation cette fois, à la différence de `D-224`. Les trois refus se
 confirment mot pour mot, `WN-SRC-0295` compris, qui porte bien quatorze claims de
 contenu et pas une indication.
