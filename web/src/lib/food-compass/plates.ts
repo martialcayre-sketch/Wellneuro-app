@@ -378,6 +378,39 @@ export function assiettesParIndication(): readonly C5bRecommendedPlate[] {
   return C5B_RECOMMENDED_PLATES.filter(plate => plate.axe === 'indication');
 }
 
+/**
+ * CETTE ASSIETTE PEUT-ELLE S'ATTACHER À UNE OBSERVATION ALIMENTAIRE ?
+ *
+ * POURQUOI CE PRÉDICAT EXISTE — constat de revue, vérifié et fondé. Filtrer la
+ * liste déroulante ne protégeait que l'ÉCRAN. Deux chemins la contournent : un
+ * brouillon `sessionStorage` rouvert plus tard, et un POST forgé — tous deux
+ * passent par `assertCurrentRecommendedPlateRef`, qui vérifie l'appartenance au
+ * catalogue et **rien d'autre**. Tant que le catalogue portait trois entrées,
+ * cette porte valait partition ; en le portant à quinze, ce lot l'a ÉLARGIE, et
+ * une assiette d'indication pouvait rejoindre un épisode d'observation.
+ *
+ * La garde est donc au DOMAINE, et l'écran la réutilise — l'inverse aurait
+ * laissé la seule surface honnête garder ce que la route laisse passer.
+ */
+export function estAssietteDObservation(plateCode: string): boolean {
+  return getRecommendedPlate(plateCode)?.axe === 'moment_repas';
+}
+
+/**
+ * La référence d'assiette d'une observation alimentaire — courante ET du bon axe.
+ *
+ * Elle ne remplace pas `assertCurrentRecommendedPlateRef` : elle l'appelle, puis
+ * ajoute le terme d'axe. L'ordre compte — une référence caduque doit se dire
+ * caduque, pas « du mauvais axe ».
+ */
+export function assertRefAssietteDObservation(value: unknown): RecommendedPlateRef {
+  const ref = assertCurrentRecommendedPlateRef(value);
+  if (!estAssietteDObservation(ref.plateCode)) {
+    throw new TypeError('Une assiette d’indication ne s’attache pas à une observation alimentaire.');
+  }
+  return ref;
+}
+
 export function getCurrentRecommendedPlateRef(plateCode: string): RecommendedPlateRef {
   const plate = getRecommendedPlate(plateCode);
   if (!plate) throw new TypeError('Référence d’assiette inconnue.');

@@ -5,8 +5,12 @@ import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import {
   C5B_PLATE_CATALOG_HASH,
   C5B_RECOMMENDED_PLATES,
+  assertCurrentRecommendedPlateRef,
+  assertRefAssietteDObservation,
   assiettesParIndication,
   assiettesParMomentDeRepas,
+  estAssietteDObservation,
+  getCurrentRecommendedPlateRef,
 } from './plates';
 
 // BANC DE GARDE DU CATALOGUE C5B ÉTENDU ([[D-230]]).
@@ -161,9 +165,28 @@ describe('catalogue C5B — les douze assiettes face au registre des sources', (
     expect(sourceRecevable(null)).toBe(false);
   });
 
-  it('les douze couvrent `WN-SRC-0284` → `0295`, une fois chacune', () => {
-    const sources = assiettesParIndication().map(p => p.sourceProtocole).sort();
-    expect(sources).toEqual(Array.from({ length: 12 }, (_, i) => `WN-SRC-${String(284 + i).padStart(4, '0')}`));
+  // L'APPARIEMENT EST ÉPINGLÉ PAIRE PAR PAIRE, PAS COMME UN ENSEMBLE — constat
+  // de revue, vérifié et fondé. La version précédente comparait les douze
+  // identifiants TRIÉS : intervertir `sourceProtocole` entre deux assiettes
+  // l'aurait laissée verte, tout en attribuant à chacune le protocole de
+  // l'autre. Or c'est précisément cette provenance qui rend l'axe vérifiable
+  // ([[D-230]] §4) — un banc qui ne voit pas l'échange ne garde rien.
+  it('chaque assiette est appariée à SON protocole, nommément', () => {
+    const paires = assiettesParIndication().map(p => [p.plateCode, p.sourceProtocole]);
+    expect(paires).toEqual([
+      ['ASSIETTE_VEGETALE', 'WN-SRC-0284'],
+      ['ASSIETTE_EPARGNE_DIGESTIVE', 'WN-SRC-0285'],
+      ['ASSIETTE_METHYLATION', 'WN-SRC-0286'],
+      ['ASSIETTE_DETOXICATION', 'WN-SRC-0287'],
+      ['ASSIETTE_PROTEINEE', 'WN-SRC-0288'],
+      ['ASSIETTE_DOPAMINERGIQUE', 'WN-SRC-0289'],
+      ['ASSIETTE_SEROTONINERGIQUE', 'WN-SRC-0290'],
+      ['ASSIETTE_PSYCHOBIOTIQUE', 'WN-SRC-0291'],
+      ['ASSIETTE_ANTIOXYDANTE', 'WN-SRC-0292'],
+      ['ASSIETTE_ANTI_INFLAMMATOIRE', 'WN-SRC-0293'],
+      ['ASSIETTE_OMEGA_3', 'WN-SRC-0294'],
+      ['ASSIETTE_CHRONOBIOLOGIQUE', 'WN-SRC-0295'],
+    ]);
   });
 
   it('aucun `plateCode` en double dans le catalogue entier', () => {
@@ -175,5 +198,40 @@ describe('catalogue C5B — les douze assiettes face au registre des sources', (
     for (const plate of C5B_RECOMMENDED_PLATES) {
       expect(plate.substitutionFamily, `${plate.plateCode} déclare une famille`).toBeNull();
     }
+  });
+});
+
+// LA BRÈCHE QUE CE LOT A OUVERTE, ET QU'IL REFERME — constat de revue, vérifié
+// et fondé.
+//
+// Tant que le catalogue portait TROIS entrées, `assertCurrentRecommendedPlateRef`
+// valait partition : il n'existait rien d'autre à attacher à une observation. En
+// le portant à quinze, ce lot a ÉLARGI cette porte — et le filtre de la liste
+// déroulante ne protège que l'écran. Deux chemins la contournent : un brouillon
+// `sessionStorage` rouvert plus tard, et un POST forgé.
+describe('catalogue C5B — l’axe est gardé au DOMAINE, pas seulement à l’écran', () => {
+  it('`estAssietteDObservation` distingue les deux axes, et ignore l’inconnu', () => {
+    expect(estAssietteDObservation('ASSIETTE_SOIR_LEGER')).toBe(true);
+    expect(estAssietteDObservation('ASSIETTE_DOPAMINERGIQUE')).toBe(false);
+    expect(estAssietteDObservation('ASSIETTE_QUI_N_EXISTE_PAS')).toBe(false);
+  });
+
+  it('REFUSE une référence d’assiette d’indication sur une observation', () => {
+    const indication = getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE');
+    // La référence est parfaitement COURANTE — c'est bien l'axe, et lui seul,
+    // qui la refuse. Sans ce terme, elle passerait.
+    expect(assertCurrentRecommendedPlateRef(indication)).toEqual(indication);
+    expect(() => assertRefAssietteDObservation(indication)).toThrow(/observation alimentaire/);
+  });
+
+  it('LAISSE PASSER un repère de moment de repas', () => {
+    const observation = getCurrentRecommendedPlateRef('ASSIETTE_SOIR_LEGER');
+    expect(assertRefAssietteDObservation(observation)).toEqual(observation);
+  });
+
+  it('une référence CADUQUE se dit caduque, pas « du mauvais axe » — l’ordre des termes compte', () => {
+    const observation = getCurrentRecommendedPlateRef('ASSIETTE_SOIR_LEGER');
+    expect(() => assertRefAssietteDObservation({ ...observation, catalogVersion: 'catalog-v0' }))
+      .toThrow(/caduque/);
   });
 });

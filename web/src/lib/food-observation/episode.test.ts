@@ -109,6 +109,25 @@ describe('createEpisode', () => {
     }
   });
 
+  // LE BANC DE CÂBLAGE DE [[D-230]], et c'est ici qu'il doit vivre. Le catalogue
+  // C5B porte QUINZE entrées depuis l'extension aux douze assiettes du corpus, et
+  // `assertCurrentRecommendedPlateRef` les accepte toutes : filtrer la liste
+  // déroulante du praticien ne protégeait que l'écran. Cette fonction-ci est la
+  // porte que traversent aussi bien un brouillon `sessionStorage` rouvert qu'un
+  // POST forgé. Une assiette d'INDICATION prescrit ; un épisode d'observation
+  // constate. Les deux ne s'attachent pas.
+  it('REFUSE une assiette d’indication sur un épisode d’observation', () => {
+    const indication = getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE');
+    expect(() => createEpisode({
+      episodeId: 'ep-v2-axe', patientId: 'patient-sophie-nicola',
+      startDate: '2026-07-20', endDate: '2026-08-10',
+      content: {
+        ...essaiContent,
+        action: { ...essaiContent.action, recommendedPlateRef: indication },
+      },
+    })).toThrow(/observation alimentaire/);
+  });
+
   it('refuse une référence d’assiette inconnue ou caduque', () => {
     const current = getCurrentRecommendedPlateRef('ASSIETTE_SOIR_LEGER');
     expect(() => createEpisode({

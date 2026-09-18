@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   C5B_PLATE_CATALOG_VERSION,
   assiettesParMomentDeRepas,
+  estAssietteDObservation,
   getCurrentRecommendedPlateRef,
   getRecommendedPlate,
 } from '@/lib/food-compass/plates';
@@ -138,8 +139,13 @@ function readDraft(idPatient: string): PractitionerFoodObservationDraft | null {
     const parsed = JSON.parse(raw) as Partial<PractitionerFoodObservationDraft>;
     if (!Array.isArray(parsed.traces)) return null;
     const decisionMode = parsed.decisionMode === 'modifier' ? 'modifier' : 'accepter';
+    // LA MÊME GARDE QUE LE DOMAINE ([[D-230]], constat de revue). Ce brouillon
+    // survit dans `sessionStorage` : rouvert après un changement de catalogue,
+    // il pouvait rapporter un code d'assiette d'INDICATION que la liste
+    // déroulante ne propose pas. `estAssietteDObservation` est la fonction que
+    // `assertRefAssietteDObservation` applique côté serveur — pas une copie.
     const assietteCode = typeof parsed.assietteCode === 'string'
-      && (parsed.assietteCode === '' || getRecommendedPlate(parsed.assietteCode))
+      && (parsed.assietteCode === '' || estAssietteDObservation(parsed.assietteCode))
       ? parsed.assietteCode
       : '';
     const decisionNote = typeof parsed.decisionNote === 'string'

@@ -39,6 +39,22 @@ champ seul ne suffisait pas : il se contourne par oubli, il suffit d'un second
 prochain consommateur aurait réintroduit le défaut, et c'est exactement le patron
 de `lignesIndicationAssietteServables` (`D-225`) qui répond.
 
+**3 bis. MAIS UN POINT DE SERVICE NE GARDE QU'UN ÉCRAN, ET CE LOT AVAIT OUVERT
+UNE BRÈCHE — constat de revue, vérifié et fondé.** Filtrer la liste déroulante
+laissait passer deux chemins : un brouillon `sessionStorage` rouvert plus tard, et
+un POST forgé. Tous deux traversent `assertCurrentRecommendedPlateRef`, qui
+vérifie l'appartenance au catalogue et **rien d'autre**. Tant que le catalogue
+portait trois entrées, cette porte VALAIT partition ; en le portant à quinze, ce
+lot l'a **élargie** — une assiette d'indication pouvait rejoindre un épisode
+d'observation, ce que la partition prétendait justement empêcher.
+
+La garde est donc au **domaine** : `assertRefAssietteDObservation` ajoute le terme
+d'axe à la vérification de fraîcheur, `validateContent` l'appelle, et l'écran
+réutilise le **même** prédicat pour relire son brouillon. L'ordre des termes
+compte — une référence caduque doit se dire caduque, pas « du mauvais axe ». Un
+banc de régression le tient à l'étage de l'épisode, et il a été **muté** :
+remettre l'ancienne garde le fait rougir seul.
+
 **4. `sourceProtocole` REND L'AXE VÉRIFIABLE AU LIEU DE DÉCLARATIF.** Sans lui,
 `axe` serait une étiquette que rien ne contrôle, qu'un futur éditeur pourrait
 retourner sans qu'un banc ne bouge. Avec lui, le banc confronte les deux au

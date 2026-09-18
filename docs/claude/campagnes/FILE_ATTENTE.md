@@ -130,29 +130,27 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   ajouter demandera une **nouvelle** attestation : le périmètre se hache en
   entier.
 
-- **Le catalogue C5B doit recevoir les douze assiettes, ET ce qui protège la
-  liste d'observation du praticien** (routé le 2026-09-18, **arbitrage du
-  responsable**, [[D-229]] §6 — **LIVRÉ le jour même par [[D-230]]** : quinze
-  entrées sur deux axes, deux points de service, et un banc qui compte la liste
-  du praticien option par option. Ce qui suit dit pourquoi le lot a eu cette
-  forme).
-  `C5B_RECOMMENDED_PLATES` porte **trois** entrées, les trois repères de moment
-  de repas ; **aucune des douze assiettes n'y a de `plateCode`**. Une ligne
-  d'indication écrite avant ce lot serait relue, hachée, attestée — et refusée
-  par le septième terme du verrou ([[D-225]] §5), pour toujours, sans que rien ne
-  le dise au signataire.
-  **Les deux gestes vont ensemble, et c'est le cœur de l'arbitrage.**
-  `PractitionerFoodObservationPanel` rend **toutes** les entrées du catalogue
-  sans condition, et le filtre livré au chantier 1 filtre des **lignes**, pas le
-  catalogue : douze codes ajoutés font passer la liste du praticien de trois à
-  quinze options, en production. Or la surface a écarté par écrit de mélanger les
-  deux axes — moment du repas d'un côté, indication de l'autre — et **rien dans
-  le code ne portait cet arbitrage**, le catalogue étant une liste plate à
-  consommateur unique. Le lot livre donc l'axe sur l'entrée (ou le filtre au
-  point de rendu) **dans le même diff** que les douze entrées.
-  À prévoir avec : `catalogVersion`, le `contentHash` de chaque entrée et
-  `C5B_PLATE_CATALOG_HASH` se périment tous, et `/api/praticien/boussole` publie
-  ce dernier.
+- **Le catalogue C5B et ce qui protège la liste d'observation du praticien** —
+  routé le 2026-09-18 ([[D-229]] §6, arbitrage du responsable), **LIVRÉ le jour
+  même** par [[D-230]]. **Rien à rouvrir ici** ; ce qui suit est l'historique du
+  motif, au passé.
+  Le catalogue portait **trois** entrées et aucune des douze assiettes n'y avait
+  de `plateCode` : toute ligne d'indication écrite avant ce lot aurait été relue,
+  hachée, attestée — puis refusée par le septième terme du verrou ([[D-225]] §5),
+  pour toujours, sans que rien ne le dise au signataire.
+  **Les deux gestes devaient aller ensemble, et c'était le cœur de l'arbitrage.**
+  `PractitionerFoodObservationPanel` rendait **toutes** les entrées du catalogue
+  sans condition, et le filtre du chantier 1 filtre des **lignes**, pas le
+  catalogue : douze codes ajoutés seuls auraient fait passer la liste du praticien
+  de trois à quinze options, en production. La surface avait écarté par écrit de
+  mélanger les deux axes, et **rien dans le code ne portait cet arbitrage**.
+  **Ce que le lot a effectivement livré** : `axe` et `sourceProtocole` sur
+  l'entrée, deux points de service, une garde d'axe au **domaine** — la liste
+  déroulante ne protégeait que l'écran, un brouillon `sessionStorage` ou un POST
+  forgé la contournaient (constat de revue). `catalogVersion` n'a **pas** changé
+  et les `contentHash` non plus : aucune référence d'assiette déjà consignée n'est
+  devenue caduque. Seul `C5B_PLATE_CATALOG_HASH` a bougé, et
+  `/api/praticien/boussole` le publie.
 
 - **Dette — le régime alimentaire n'est pas un drapeau d'anamnèse** (constatée
   le 2026-09-18, [[D-229]] §5, **non commencée**). `etat_alimentation` existe

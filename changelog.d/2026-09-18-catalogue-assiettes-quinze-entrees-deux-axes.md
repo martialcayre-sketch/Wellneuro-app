@@ -20,6 +20,14 @@ qui fonde chaque assiette, ce qui rend l'axe **vérifiable** plutôt que
 déclaratif : le banc confronte les deux au registre des sources du dépôt, et
 refuserait une assiette d'indication adossée à une fiche patient.
 
+**Et un point de service ne garde qu'un écran.** Un brouillon de session rouvert
+plus tard, ou une requête forgée, contournaient la liste déroulante : tous deux
+passent par la vérification de fraîcheur d'une référence, qui contrôle
+l'appartenance au catalogue et rien d'autre. Tant que le catalogue portait trois
+entrées, cette porte valait partition ; en le portant à quinze, l'extension
+l'avait élargie. La garde d'axe est donc posée au **domaine**, et l'écran
+réutilise le même prédicat pour relire son brouillon.
+
 **Aucune référence d'assiette déjà consignée ne devient caduque.** La version du
 catalogue ne change pas et les quatre champs qui composent l'empreinte d'une
 entrée non plus : le catalogue s'ajoute, il ne se réécrit pas. Les deux champs
