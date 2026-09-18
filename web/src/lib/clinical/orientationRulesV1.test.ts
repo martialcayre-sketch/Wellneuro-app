@@ -9,10 +9,10 @@ import {
   type OrientationRule,
 } from './orientationRulesV1';
 import { BANDES_PSQI } from './bandesPsqi';
+import { entreesSurSignauxAlerte, valeursDeDrapeauInconnues } from './declencheursAnamnese';
 import { idBaseDepuisPackId, type PackId } from '@/lib/questionnaires-functional';
-import { ANAMNESE_SECTIONS } from '@/lib/consultation/anamnese';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
-import { extraireDrapeauxAnamnese, type DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
+import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { IDS_ASSIGNABLES, estAdministrableParLaRoute } from '@/lib/bibliotheque';
 import { MOTIFS_PASSATION_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
 import { calculateScore } from '@/lib/questions';
@@ -518,85 +518,12 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
       feuillesDuDeclencheur(declencheur).map(feuille => ({ regleId: regle.id, declencheur: feuille }))),
   );
 
-  function optionsDuChamp(champId: string): readonly string[] {
-    for (const section of ANAMNESE_SECTIONS) {
-      const champ = section.champs?.find(c => c.id === champId);
-      if (champ?.options) return champ.options;
-    }
-    return [];
-  }
-
-  // Les clés typées de `DrapeauxAnamnese` ne portent pas le nom du champ
-  // d'anamnèse : la correspondance est faite par `extraireDrapeauxAnamnese`.
-  // Recopiée ici, elle dériverait en silence — d'où le banc qui suit, qui la
-  // confronte à l'extraction réelle plutôt que de la croire sur parole.
-  const CHAMP_ANAMNESE: Record<string, string> = {
-    signauxAlerte: 'signaux_alerte',
-    antecedentsDomaines: 'antecedents_domaines',
-    facteursDeclenchants: 'facteurs_declenchants',
-    attentes: 'attentes',
-    automedication: 'automedication',
-    intolerancesAlimentaires: 'intolerances_alimentaires',
-    symptomesFonctionnels: 'symptomes_fonctionnels',
-    debut: 'debut',
-    evolution: 'evolution',
-    variationPoids: 'variation_poids',
-  };
-
-  // La correspondance clé typée ↔ champ d'anamnèse, vérifiée contre
-  // l'extraction RÉELLE et non recopiée : on injecte la première option du
-  // champ et on exige de la retrouver sous la clé attendue. Si
-  // `extraireDrapeauxAnamnese` change de mapping, la garde du dessous
-  // chercherait dans le mauvais champ et resterait verte — celle-ci rougit.
-  it('CHAMP_ANAMNESE décrit bien ce que extraireDrapeauxAnamnese fait', () => {
-    const drapeauxVides = extraireDrapeauxAnamnese({});
-    // Aucune clé oubliée : un onzième drapeau forcerait la mise à jour.
-    expect(Object.keys(CHAMP_ANAMNESE).sort()).toEqual(Object.keys(drapeauxVides).sort());
-    for (const [cle, champId] of Object.entries(CHAMP_ANAMNESE)) {
-      const options = optionsDuChamp(champId);
-      expect(options.length, `aucune option pour ${champId}`).toBeGreaterThan(0);
-      // Un champ liste se stocke en tableau, un champ radio en valeur seule :
-      // injecter la mauvaise forme ferait échouer la garde sur sa propre
-      // fixture au lieu du mapping. La forme se lit sur l'extraction vide.
-      const estListe = Array.isArray(drapeauxVides[cle as keyof DrapeauxAnamnese]);
-      const extrait = extraireDrapeauxAnamnese({ [champId]: estListe ? [options[0]] : options[0] });
-      const valeur = extrait[cle as keyof typeof extrait];
-      const obtenues = Array.isArray(valeur) ? valeur : valeur === null ? [] : [valeur];
-      expect(obtenues, `${cle} ne lit pas ${champId}`).toContain(options[0]);
-    }
-  });
-
-  /** Les valeurs de drapeau introuvables dans `ANAMNESE_SECTIONS` — feuilles comprises. */
-  function valeursDeDrapeauInconnues(regles: readonly OrientationRule[]): string[] {
-    const inconnues: string[] = [];
-    for (const regle of regles) {
-      for (const declencheur of regle.declencheurs.flatMap(feuillesDuDeclencheur)) {
-        if (declencheur.type !== 'drapeau') continue;
-        const champId = CHAMP_ANAMNESE[declencheur.champ];
-        if (!champId) {
-          inconnues.push(`${regle.id} : champ non mappé — ${declencheur.champ}`);
-          continue;
-        }
-        const options = optionsDuChamp(champId);
-        if (options.length === 0) {
-          inconnues.push(`${regle.id} : aucune option lue pour ${champId}`);
-          continue;
-        }
-        for (const valeur of declencheur.valeurs) {
-          if (!options.includes(valeur)) inconnues.push(`${regle.id} → ${champId} : « ${valeur} »`);
-        }
-      }
-    }
-    return inconnues;
-  }
-
-  /** Les règles qui s'appuient sur `signauxAlerte`, à la racine ou sous un `ou`. */
-  function reglesSurSignauxAlerte(regles: readonly OrientationRule[]): string[] {
-    return regles
-      .filter(regle => regle.declencheurs.flatMap(feuillesDuDeclencheur)
-        .some(d => d.type === 'drapeau' && d.champ === 'signauxAlerte'))
-      .map(regle => regle.id);
-  }
+  // LES DEUX GARDES VIENNENT DE `declencheursAnamnese.ts` DEPUIS LE CHANTIER 2
+  // DE S3 ([[D-225]] §4 bis). Elles vivaient ici, recopiées, et ne parcouraient
+  // que `ORIENTATION_RULES_V1` : la table des indications d'assiette, qui
+  // réutilise le MÊME vocabulaire de porte, n'en héritait pas. Le banc de la
+  // correspondance clé ↔ champ a suivi, dans `declencheursAnamnese.test.ts`.
+  // Ce qui reste ici est ce qui est propre à l'orientation : la table réelle.
 
   // LA garde du lot. Un libellé retouché dans `anamnese.ts` — une apostrophe,
   // un accent — ferait taire la règle sans rien casser. Ici, elle casse le CI.
@@ -611,7 +538,7 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
   // reste à écrire (lot dédié) ; d'ici là, ce banc empêche qu'une règle
   // s'engouffre dans le trou.
   it("aucune règle ne s'appuie sur signauxAlerte", () => {
-    expect(reglesSurSignauxAlerte(ORIENTATION_RULES_V1)).toEqual([]);
+    expect(entreesSurSignauxAlerte(ORIENTATION_RULES_V1)).toEqual([]);
   });
 
   // CONTRE-ÉPREUVE DES DEUX GARDES CI-DESSUS, SOUS DISJONCTION ([[D-060]] §5).
@@ -634,12 +561,12 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
       }],
     };
     // L'interdit d'adressage mord sous la branche, comme à la racine.
-    expect(reglesSurSignauxAlerte([fautive])).toEqual(['R-FABRIQUEE']);
+    expect(entreesSurSignauxAlerte([fautive])).toEqual(['R-FABRIQUEE']);
     // Et un libellé dérivé y est vu, alors qu'il aurait fait taire la règle.
     expect(valeursDeDrapeauInconnues([fautive])).not.toEqual([]);
     // Contre-épreuve de la contre-épreuve : la même règle SANS `ou` et sans
     // faute passe — sinon ces deux gardes rougiraient sur n'importe quoi.
-    expect(reglesSurSignauxAlerte([ORIENTATION_RULES_V1[0]])).toEqual([]);
+    expect(entreesSurSignauxAlerte([ORIENTATION_RULES_V1[0]])).toEqual([]);
   });
 
   // ARBITRAGE DU 2026-08-06 (LOT-02, D-030), épinglé ici pour qu'il ne se
