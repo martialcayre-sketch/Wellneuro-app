@@ -7198,6 +7198,17 @@ drapeau, dont le redémarrage est le quatrième geste. Le compte étant partagé
 Scalingo ne dira jamais *qui* ; *quoi* est établi, et c'était le point qui
 vieillissait mal.
 
+**La règle a payé sur sa propre PR.** Copilot a conclu « 🟢 Approval
+recommended » avec zéro commentaire en ligne, et a logé **deux constats** dans le
+bloc « Suppressed comments » de son corps de revue — l'emplacement exact que
+cette PR apprend à lire. Les deux étaient réels. Le premier : la conséquence de
+la relance était énoncée comme systématique, alors que `cancel-in-progress`
+n'annule qu'un run encore en attente ou en cours. Le second, plus instructif :
+la justification du choix de fichier, au §3 du handoff, s'appuyait sur **la
+prémisse fausse que ce lot corrige trois sections plus haut** — corriger un
+paragraphe ne corrige pas le raisonnement qui s'y adossait ailleurs. Les deux
+sont corrigés dans la PR.
+
 **Prochaine action.** Les deux arbitrages restants du responsable : `D-049`
 (fermer, ce qui rétablit le T3 local sur les PR migration/scoring/clinique, ou
 attendre des séquences T3 réelles sur WebKit 2359), et les deux points RGPD de

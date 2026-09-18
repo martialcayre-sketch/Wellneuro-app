@@ -32,9 +32,17 @@ règles vont dans `docs/claude/REGLES_PR_MERGE.md`, et **pas** dans
   (`.claude/rules/pr-revue-et-release-db.md` §1.1). Recopier le détail aurait créé
   une seconde source à maintenir.
 - La règle de concurrence appartient à la section « Attendre le CI », que ce
-  fichier porte. La déposer dans `.claude/rules/pr-revue-et-release-db.md` — armé
-  sur `.github/**` — l'aurait rendue invisible au geste qu'elle vise : relancer un
-  run pendant un merge ne touche aucun fichier.
+  fichier porte déjà avec la table des codes de sortie et le paragraphe sur le
+  run `CANCELLED` qu'elle prolonge. La déposer ailleurs scinderait en deux la
+  doctrine de l'attente du CI.
+  > **Corrigé après revue.** La première rédaction justifiait ce choix en
+  > affirmant qu'une règle placée dans `.claude/rules/pr-revue-et-release-db.md`
+  > serait « invisible au geste qu'elle vise ». **C'est faux, et c'est la
+  > prémisse même que ce lot corrige ailleurs** : `/wn-merge` fait `cat` de ce
+  > fichier sans condition de chemin, donc une règle qui y serait posée resterait
+  > visible pendant un merge. Constat de la revue Copilot sur cette PR. Corriger
+  > un paragraphe ne suffit pas à corriger le raisonnement qui s'appuyait dessus
+  > trois sections plus loin.
 
 ## 4. Ce que ce lot ferme, et ce qu'il n'atteint pas
 
@@ -70,6 +78,31 @@ Toutes en local, sur la branche, avant l'ouverture de la PR :
 
 `changelog-collate.mjs` **n'a pas été lancé** : sans argument il replie puis
 supprime les fragments, et n'a pas de mode `--check`.
+
+**La revue Copilot, aux trois emplacements — et la règle a payé sur sa propre
+PR.** `reviews` en portait trois, `pulls/1189/comments` rendait **zéro**
+commentaire en ligne, et les deux constats étaient dans le bloc « Suppressed
+comments » du **corps** de revue, sous un « 🟢 Approval recommended ». Une
+lecture qui se serait arrêtée au `state` — ou au seul endpoint des commentaires
+en ligne — n'aurait rien vu. **Les deux constats étaient réels, les deux sont
+corrigés** :
+
+1. *La conséquence était énoncée comme systématique.* `cancel-in-progress`
+   n'annule qu'un run **encore en attente ou en cours** ; un run conclu ne
+   s'annule pas. La condition est désormais écrite, avec la raison pour laquelle
+   elle ne protège pas.
+2. *La justification du choix de fichier reposait sur la prémisse que ce lot
+   corrige.* Voir l'encadré du §3.
+
+**Copilot a aussi POUSSÉ son propre correctif du premier constat** (`2c63a7a0`,
+« borner l'annulation au run de tête encore actif »), pendant que le mien
+s'écrivait. Les deux histoires ont divergé et le `push` a été refusé — pas une
+anomalie, le cas nominal quand le bot corrige lui-même. Résolu par **rebase**
+sur son commit, jamais par force-push : le conflit portait sur la même phrase, et
+la version retenue est la plus complète — celle qui garde la condition **et** la
+raison pour laquelle elle ne protège pas. Effet de bord à surveiller au merge :
+la tête de PR est passée par un commit de bot, ce qui peut geler le run en
+`action_required` ; le commit non-bot posé au-dessus le rouvre.
 
 ## 7. Problèmes ouverts
 

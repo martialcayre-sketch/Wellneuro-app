@@ -69,20 +69,22 @@ reste.) Un run **annulé** — `CANCELLED`, la trace normale d'un run supplanté
 depuis le bloc `concurrency` de `ci.yml` — n'est ni vert ni un échec : le script
 attend le run du commit de tête, puis sort en `2`.
 
-**Ne jamais relancer un run qui n'est pas celui de la tête.** Hors `main`,
-`ci.yml` range tous les runs d'une branche dans un **même groupe de
-concurrence**, `cancel-in-progress` compris
+**Ne jamais relancer un run qui n'est pas celui de la tête, tant que celui de la
+tête n'a pas conclu.** Hors `main`, `ci.yml` range tous les runs d'une branche
+dans un **même groupe de concurrence**, `cancel-in-progress` compris
 ([`.github/workflows/ci.yml:21-23`](../../.github/workflows/ci.yml)) — la
 condition `github.ref == 'refs/heads/main'` n'ajoute `run_id` au groupe que sur
 `main`, si bien que toute branche de PR n'a qu'un seul groupe pour toute sa vie.
-Relancer un run périmé — pour lever un flake, pour revoir un log — **annule
-celui du commit de tête s'il est encore en cours ou en attente**, c'est-à-dire
-précisément celui qui garde le merge : la PR se retrouve sans run vert,
-`wn-attendre-ci` sort en `2`, et l'attente
-recommence à zéro. Ce qui se relance est le run **de la tête**, jamais un run
-plus ancien ; et un bras témoin se lance **avant** de pousser la suite, pas
-après. Constaté le 2026-09-17. Le pendant, plus strict, existe déjà pour les
-rouges WebKit du CI : ceux-là ne se relancent jamais du tout (`D-155`).
+Relancer un run périmé — pour lever un flake, pour revoir un log — y fait entrer
+un run neuf, qui **annule celui du commit de tête s'il est encore en attente ou
+en cours** : la PR se retrouve alors sans run vert, `wn-attendre-ci` sort en
+`2`, et l'attente recommence à zéro. **La condition est réelle et ne protège
+pas** — un run déjà conclu ne peut plus être annulé, mais la fenêtre où le run
+de tête est encore en cours est exactement celle où l'on est tenté de relancer
+autre chose pour occuper l'attente. Ce qui se relance est le run **de la tête**,
+jamais un run plus ancien ; et un bras témoin se lance **avant** de pousser la
+suite, pas après. Constaté le 2026-09-17. Le pendant, plus strict, existe déjà
+pour les rouges WebKit du CI : ceux-là ne se relancent jamais du tout (`D-155`).
 
 Gabarit de corps de PR et check-list complète : le skill `/wn-pr` (invocation
 manuelle ; ces idiomes valent pour **toute** ouverture de PR, `/wn-pr` invoqué ou non). <!-- mention-seule: wn-pr -->

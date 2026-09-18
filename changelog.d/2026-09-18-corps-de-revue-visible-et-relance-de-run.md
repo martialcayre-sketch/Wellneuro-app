@@ -16,16 +16,20 @@ alors que le constat est dans le **corps** de la revue, bloc « Suppressed
 comments ». Le résumé nomme désormais les trois emplacements, `.reviews[].body`
 compris.
 
-**Relancer un run qui n'est pas celui de la tête annule celui qui garde le
+**Relancer un run qui n'est pas celui de la tête peut annuler celui qui garde le
 merge.** Hors `main`, `ci.yml` range tous les runs d'une branche dans un seul
 groupe de concurrence avec `cancel-in-progress` (lignes 21-23) : la condition
 `github.ref == 'refs/heads/main'` n'ajoute `run_id` au groupe que sur `main`,
-donc une branche de PR n'en a qu'un pour toute sa vie. Relancer un run périmé —
-pour lever un flake, pour revoir un log — évince silencieusement le run du commit
-de tête ; la PR n'a plus de vert, `wn-attendre-ci` sort en `2`, et l'attente
-recommence. Constaté le 2026-09-17. La section « Attendre le CI » décrivait déjà
-le run `CANCELLED` comme une conséquence à subir ; elle dit maintenant le geste
-qui la provoque, et que le bras témoin se lance **avant** de pousser la suite.
+donc une branche de PR n'en a qu'un pour toute sa vie. Relancer un run périmé y
+fait entrer un run neuf, qui évince celui du commit de tête **s'il est encore en
+attente ou en cours** ; la PR n'a plus de vert, `wn-attendre-ci` sort en `2`, et
+l'attente recommence. La condition a été relevée en revue et elle est exacte —
+un run déjà conclu ne s'annule pas —, mais elle ne protège de rien : la fenêtre
+où le run de tête est encore en cours est exactement celle où l'on est tenté de
+relancer autre chose pour occuper l'attente. Constaté le 2026-09-17. La section
+« Attendre le CI » décrivait déjà le run `CANCELLED` comme une conséquence à
+subir ; elle dit maintenant le geste qui la provoque, sous quelle condition, et
+que le bras témoin se lance **avant** de pousser la suite.
 
 Aucun banc ajouté : ces deux règles portent sur un geste d'opérateur, pas sur du
 code. Le pendant plus strict des rouges WebKit du CI, qui ne se relancent jamais
