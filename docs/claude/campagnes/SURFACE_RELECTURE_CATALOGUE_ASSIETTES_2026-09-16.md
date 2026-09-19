@@ -4,6 +4,71 @@
 **Ce document ne signe rien.** Il présente au praticien ce qu'il aurait à
 attester, et ce qui a été écarté.*
 
+> ## ÉTAT AU 2026-09-19 (suite) — LES LIGNES SONT ÉCRITES. Ce qui reste devant vous est la relecture, puis l'attestation.
+>
+> **DIX LIGNES sont au dépôt ([[D-235]]) — sept publiées, trois en brouillon — et
+> AUCUNE n'est servie.** Les deux faits tiennent ensemble par le fail-closed :
+> `validationExterne` vaut `false`, `shaPerimetre` vaut `null`, et le point de
+> service rend `[]`. Écrire les lignes est un geste d'outil ; les **attester**
+> n'en est pas un.
+>
+> **LA RELECTURE SUR PIÈCE A RÉFUTÉ CE DOCUMENT SUR QUATRE POINTS**, et c'est sa
+> raison d'être. Les neuf protocoles portant une ligne ont été relus en
+> production, **sources entières**, le 2026-09-19 — 103 claims, texte intégral.
+>
+> 1. **`WN-CL-0293-011` n'est PAS une conjonction.** Le tableau ci-dessous le lit
+>    comme « atteinte des **deux** voies monoaminergiques ». Le claim écrit
+>    « sérotoninergiques **et/ou** dopaminergiques », et sur les axes `SE` et
+>    `DA` — **non** `DA` et `NA`. Un arbitrage avait été rendu sur cette prémisse
+>    (passer le champ de déclencheur au pluriel pour permettre un ET) : il a été
+>    **revisité et écarté**, aucune des dix lignes ne demandant de conjonction.
+> 2. **Le MFI-20 (`Q_SOM_07`), quatrième entrée du même claim, n'a pas de
+>    barème.** Actif au catalogue, mais sa source déclare qu'il n'existe **pas**
+>    de score global — cinq sous-scores séparés, aucune bande. Cette porte
+>    exigerait d'inventer le seuil que la source refuse (`DC-19`).
+> 3. **La porte LARGE de la psychobiotique n'existe pas — CINQUIÈME CONSTAT.**
+>    `WN-CL-0291-013` indique l'assiette AU-DELÀ de l'atteinte intestinale
+>    ; `-009` et `-010` la posent sans condition de terrain. Or aucun champ du
+>    dépôt ne lit un trouble fonctionnel général : `symptomes_fonctionnels` ne
+>    porte **qu'une** option, la déglutition. Elle n'a donc **aucune ligne, pas
+>    même en brouillon** — une ligne sans porte s'ouvrirait sur tout le monde.
+>    Même famille que le constat A : une disponibilité annoncée qui ne tient pas.
+> 4. **Trois claims proposés ici fondent une porte AUTRE que celle de leur
+>    ligne** — `WN-CL-0290-007` (marqueurs biologiques), `WN-CL-0287-007` (cure
+>    préventive saisonnière), `WN-CL-0288-001` (l'apport protéique du sujet âgé).
+>    **Arbitrage du responsable : une ligne ne cite que les claims qui fondent SA
+>    porte.** Ils restent nommés ici, avec leur motif — ils ne sont pas au
+>    périmètre.
+>
+> **CE QUE VOUS AUREZ À ATTESTER, MIS À JOUR :**
+>
+> | Ligne | Porte écrite | Claims | Statut |
+> | --- | --- | --- | --- |
+> | Dopaminergique | `Q_INF_03` `DA` **ou** `NA` ≥ 10 | `0289-004` | publiée |
+> | Anti-inflammatoire | `Q_INF_03` `SE` **ou** `DA` ≥ 10, **ou** `Q_GAS_01` | `0293-011` | publiée |
+> | Protéinée | `Q_INF_03` `DA` ≥ 10, **ou** âge > 60, **ou** SARC-F `danger` | `0288-011`, `-012`, `-013` + **sécurité** `-013`, `-014` | publiée |
+> | Sérotoninergique | `Q_GAS_01` | `0290-005` | publiée |
+> | Épargne digestive | `Q_GAS_01` **ou** intolérances déclarées | `0285-001`, `-005`, `-006` + **sécurité** `-002`, `-010`, `-012` | publiée |
+> | Détoxication | `Q_GAS_01` | `0287-008`, `-009` | publiée |
+> | Psychobiotique | `Q_GAS_01` | `0291-011` | publiée |
+> | Anti-inflammatoire **préventive** | âge ≥ 50 | `0293-009` | **brouillon** |
+> | Méthylation | régime végétarien/végétalien **ou** âge > 50 | `0286-006` | **brouillon** |
+> | Antioxydante | antécédent neurologique | `0292-003` | **brouillon** |
+>
+> **TROIS ASSIETTES NE REÇOIVENT AUCUNE LIGNE** — végétale, oméga 3,
+> chronobiologique : aucun claim n'y fonde d'indication. Une ligne sans claim
+> n'est pas une indication.
+>
+> **DEUX RÉSERVES À CONNAÎTRE AVANT DE SIGNER, et elles ne sont pas de forme.**
+> `WN-CL-0288-012` et `-014` sont `prescriptif = false` — la table ne l'exige pas
+> (`D-046`), mais il faut le savoir. Et **l'exception parkinsonienne de la
+> protéinée est DÉSIGNÉE, pas APPLIQUÉE** : aucun champ du dépôt ne lit un
+> traitement en cours, la ligne le déclare, et c'est le praticien qui retient.
+>
+> **LES BLOCS DATÉS CI-DESSOUS NE SONT PAS RÉÉCRITS**, y compris le tableau
+> « LES DOUZE, UNE PAR UNE » que les quatre réfutations ci-dessus corrigent.
+> Ils disent l'état d'un jour, et ce qu'on avait compris ce jour-là.
+
 > ## ÉTAT AU 2026-09-19 — ce qui bloquait l'attestation est levé ; TROIS des cinq chantiers restent
 >
 > **CE BLOC CORRIGE UN DÉCOMPTE FAUX, et il faut le dire.** Sa première rédaction
@@ -442,7 +507,7 @@ jour, et elle a GRANDI au 2026-09-18 :
 | 1 | Le champ `statut` sur la ligne, et le filtre de service | **fait** — `D-225` |
 | 2 | Le validateur partagé de dérive des libellés d'anamnèse | **fait** — chantier 2 |
 | 3 | Les **douze entrées au catalogue C5B**, et ce qui protège la liste d'observation du praticien | **fait** — `D-230` |
-| 4 | Le champ d'indication et ses claims, c'est-à-dire les lignes | à faire, après 3 |
+| 4 | Le champ d'indication et ses claims, c'est-à-dire les lignes | **fait** — `D-235`, dix lignes écrites et NON attestées |
 | 5 | Le déclencheur d'âge et la revisite de `DC-43` | **fait** — `D-231` |
 | 6 | Le régime alimentaire comme porte | **fait** — `D-232`, en lisant l'`EtatPopulation` et NON un drapeau |
 | 7 | Le mécanisme orienté des familles d'équivalence | à faire |
@@ -450,11 +515,15 @@ jour, et elle a GRANDI au 2026-09-18 :
 Les lignes **3** et **6** sont tombées, la première le 2026-09-18, la seconde le
 2026-09-19. Ni l'une ni l'autre ne figurait dans la version du 2026-09-16 : elles
 sont apparues en confrontant au dépôt la colonne « déclencheur disponible », qui
-n'avait jamais été lue sur pièce. **Il ne reste donc que les lignes 4 et 7** — et
-la 4 est l'écriture des lignes elles-mêmes, c'est-à-dire du clinique. Signer une table que rien ne
-filtre exposerait les brouillons comme les publiées ; signer des lignes dont
-aucune assiette n'existe au catalogue produirait un périmètre attesté que le
-verrou refuse.
+n'avait jamais été lue sur pièce. **La ligne 4 est tombée le 2026-09-19**
+(`D-235`) : les dix lignes sont écrites, gardées, et non attestées.
+
+**IL NE RESTE DONC QUE LA LIGNE 7**, le mécanisme orienté des familles — et elle
+**ne bloque pas** la signature, `D-216` §4 refusant toute famille avant ce
+mécanisme. Signer une table que rien ne filtre exposerait les brouillons comme
+les publiées ; signer des lignes dont aucune assiette n'existe au catalogue
+produirait un périmètre attesté que le verrou refuse. Ni l'un ni l'autre n'est
+le cas aujourd'hui.
 
 ## CE QUE CE LOT NE PRÉTEND PAS
 

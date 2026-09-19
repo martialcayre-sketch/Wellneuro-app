@@ -7552,3 +7552,25 @@ vers un patient ne se décide pas ici.
 **Questions ouvertes.** La qualification de la voie d'exception (conseil,
 2026-10-21). Le geste d'information des deux patients (responsable, à fixer).
 Et l'invariant « le discriminant est la route » n'est tenu par aucun banc.
+
+## 2026-09-19 (suite) — Les dix lignes d'indication d'assiette, et ce que la relecture a réfuté
+
+**Chantier 2 de `D-216` livré (`D-235`)** : dix lignes — sept publiées, trois en
+brouillon — et **aucune servie**, la table restant non attestée.
+
+**La relecture des sources entières a réfuté la surface sur quatre points**, et
+c'est le résultat principal. `WN-CL-0293-011` ne fonde **pas** une conjonction :
+il écrit « et/ou », sur les axes `SE` et `DA`. **Un arbitrage du responsable
+reposait sur cette prémisse** — passer le champ de déclencheur au pluriel — et a
+été **revisité et écarté** en séance. S'y ajoutent le MFI-20 sans barème, la
+porte large de la psychobiotique sans aucun champ pour la lire (cinquième constat
+de la famille), et trois claims fondant une porte autre que celle de leur ligne.
+
+**Écarté** : publier la méthylation, dont le claim dit « plus susceptibles de
+nécessiter » ; garder le pluriel « au cas où ».
+
+**Prochaine action** : la relecture puis l'attestation — elles n'appartiennent
+pas à l'outil. Chantiers 4 et 5 ouverts, sans bloquer la signature.
+
+**Question ouverte** : onze n-grammes du corpus **antérieurs à ce lot** subsistent
+au registre et à la surface — G6 est franchie ailleurs que dans ce diff.

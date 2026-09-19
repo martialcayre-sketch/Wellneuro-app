@@ -4,6 +4,107 @@
 
 ## Décisions actives
 
+### D-235 — La table des indications d'assiette reçoit ses DIX lignes, et la relecture sur pièce réfute la surface sur quatre points — dont la conjonction que personne ne demandait
+
+- Date : 2026-09-19
+- Statut : accepté — **arbitrages du responsable**, rendus en session le
+  2026-09-19 (cinq au total, dont deux RÉVISÉS en cours de lot sur constat de
+  relecture). **La table n'est PAS attestée** : `validationExterne` reste
+  `false`, `shaPerimetre` reste `null`, rien ne sort.
+- Domaine : table clinique signée (`clinical/indicationsAssiettesV1.ts`) et son
+  banc de garde.
+- Porte sur : le **chantier 2** de [[D-216]] — écrire les lignes d'indication.
+
+**1. CE QUE LE LOT LIVRE, ET CE QU'IL NE LIVRE PAS.** Dix lignes : **sept
+publiées, trois en brouillon**. Aucune n'est servie, et les deux faits tiennent
+ensemble par le fail-closed. Écrire les lignes est un geste d'outil ; les
+ATTESTER n'en est pas un ([[D-195]]).
+
+**2. LA RELECTURE SUR PIÈCE A RÉFUTÉ LA SURFACE SUR QUATRE POINTS**, et c'est sa
+raison d'être. Les neuf protocoles portant une ligne ont été relus en production,
+sources entières, le 2026-09-19 — 103 claims, texte intégral.
+
+- **`WN-CL-0293-011` n'est PAS une conjonction.** La surface lisait « atteinte
+  des DEUX voies monoaminergiques » ; le claim écrit « sérotoninergiques **et/ou**
+  dopaminergiques », et sur les axes `SE` et `DA`, **non** `DA` et `NA`.
+  **Conséquence directe : l'arbitrage n° 1 du responsable — passer `declencheur`
+  au pluriel pour permettre un ET — a été REVISITÉ et ÉCARTÉ sur ce constat.**
+  Aucune des dix lignes ne demande de conjonction. Le champ reste singulier, et
+  le dépôt ne gagne pas une capacité que rien n'emploie.
+- **Le MFI-20 (`Q_SOM_07`), quatrième entrée du même claim, n'a pas de barème.**
+  Il est actif au catalogue, mais sa source déclare qu'il n'existe pas de score
+  global — cinq sous-scores séparés, aucune bande. Poser une porte dessus
+  exigerait d'inventer le seuil que la source refuse ([[DC-19]]).
+- **La porte LARGE de la psychobiotique n'existe pas.** `WN-CL-0291-013` indique
+  l'assiette AU-DELÀ de l'atteinte intestinale ; aucun champ ne lit un
+  trouble fonctionnel général — `symptomes_fonctionnels` ne porte qu'une option,
+  la déglutition. Elle n'a donc **aucune ligne, pas même en brouillon** : une
+  ligne sans porte s'ouvrirait sur tout le monde. C'est un **cinquième constat**
+  de la même famille que les quatre du 2026-09-18 — une disponibilité annoncée
+  qui ne tient pas devant le dépôt.
+- **Trois claims proposés fondent une porte AUTRE que celle de leur ligne** —
+  `WN-CL-0290-007` (marqueurs biologiques), `WN-CL-0287-007` (cure préventive
+  saisonnière), `WN-CL-0288-001` (l'apport protéique du sujet âgé). **Arbitrage
+  du responsable : une ligne ne cite que les claims qui fondent SA porte**,
+  patron du catalogue de conduites. Les écartés restent nommés à la surface.
+
+**3. LE CHAMP `claimsSecurite` ENTRE SUR LA LIGNE** — arbitrage du responsable,
+et sa prémisse a tenu à la relecture. `WN-CL-0288-013` porte l'indication de
+l'assiette protéinée **et** son exception parkinsonienne sous L-dopa ;
+`WN-CL-0288-014` la prolonge. Noyée dans `claimsIndication`, cette exception ne
+se distinguerait plus de ce qui fonde l'indication. Le champ suit le patron de
+`catalogueConduitesV1` : l'union des **deux** catégories fait le périmètre signé,
+et un claim de sécurité retiré du corpus retire sa ligne du service — une
+sécurité retirée pèse autant qu'une indication retirée.
+
+**4. CE QUE LE CHAMP NE FAIT PAS, ET LA LIGNE LE DIT.** Désigner une
+contre-indication n'est pas l'exécuter : aucun champ du dépôt ne lit un
+traitement en cours. La protéinée le déclare en toutes lettres dans son
+`raccourciAssume` — elle propose au praticien, qui connaît le traitement de son
+patient ; elle ne retient pas à sa place.
+
+**5. TROIS LIGNES EN BROUILLON, TROIS MOTIFS NOMMÉS.** Une ligne brouillon est
+**dans le périmètre haché** et **hors du service** — relue et attestée, jamais
+servie.
+
+- **L'anti-inflammatoire préventive** (`WN-CL-0293-009`, « dès l'âge de 50 ans »)
+  est une SECONDE ligne sur la même assiette, patron de la psychobiotique.
+  Fondue dans le `ou` de la ligne publiée, cette borne l'aurait ouverte à tout
+  patient de 50 ans et plus, sans aucun score.
+- **La méthylation** : `WN-CL-0286-006` dit que ces populations sont « plus
+  susceptibles de NÉCESSITER » l'assiette — une susceptibilité, là où les sept
+  lignes publiées reposent sur un « est indiquée ».
+- **L'antioxydante** : `WN-CL-0292-003` nomme des tableaux neurodégénératifs
+  précis, le drapeau d'antécédents ne porte qu'un domaine large qui range la
+  migraine au même endroit. Il n'y manque pas une donnée mais une **granularité**.
+
+**6. UNE PORTE SE DÉSIGNE PAR SA BANDE PUBLIÉE, JAMAIS PAR SA BORNE RECOPIÉE.**
+`Q_GAS_01` et `Q_GEO_02` s'écrivent en `zone`/`couleur` sur le patron de
+`R-GAS-01` : le jour où un cut-off bouge au catalogue, la ligne SUIT au lieu de
+diverger — c'est ce que [[D-180]] a coûté. Seul `Q_INF_03` s'écrit en
+`comparaison`, parce qu'il n'émet aucune interprétation globale. **Les trois
+bornes d'âge portent l'opérateur de leur claim**, et ils diffèrent : `> 60`,
+`> 50`, `>= 50`.
+
+**7. UN TROU DE BANC FERMÉ AU PASSAGE.** La fixture du banc de garde portait un
+`as LigneIndicationAssiette` : ajouter `claimsSecurite` au type n'a fait rougir
+ni `tsc` ni le banc sur une fixture qui ne le portait pas. Le cast est retiré —
+même classe de défaut qu'un `Record<string, string>` qui éteint le contrôle de
+clés.
+
+**8. CE QUE LE LOT NE TOUCHE PAS, ET C'EST MESURÉ.** `TABLE_EXIGE_PRESCRIPTIF`,
+les paires du contrat SQL de fraîcheur et l'enrôlement dans
+`shaPerimetreLitteral.guard.test.ts` restent **intacts** : le balayage reconnaît
+une table signée à son `claimsSource` — vide — et non à ses lignes. Y toucher
+avant la signature ferait rougir à l'inverse. Deux réserves à connaître avant de
+signer : `WN-CL-0288-012` et `-014` sont `prescriptif = false`.
+
+**9. CE QUE CELA LAISSE DEVANT L'ATTESTATION.** Le chantier 2 est **fait** au
+sens de l'outil : les lignes existent, elles sont gardées, elles ne servent pas.
+Ce qui reste est la **relecture puis l'attestation** — et, hors du chemin de
+signature, les chantiers 4 (mécanisme orienté des familles) et 5 (barème), qui
+ne la bloquent pas.
+
 ### D-234 — La réserve de [[D-222]] §2 est soldée pour ce qu'elle réclamait : ce qui reste tient en deux items tracés, la voie d'exception et deux patients
 
 - Date : 2026-09-19

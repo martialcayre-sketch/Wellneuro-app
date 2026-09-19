@@ -102,6 +102,32 @@ Ni des campagnes (pas de dossier, pas de lots), ni des gestes du responsable :
 du travail de dépôt porté par sa décision et sa PR. Ils figurent ici pour que la
 file cesse de laisser croire que rien ne se fait en dehors d'elle.
 
+- **Le chantier 2 de [[D-216]] — les lignes d'indication d'assiette** (livré le
+  2026-09-19 par [[D-235]]). **DIX lignes**, sept publiées et trois en brouillon,
+  **aucune servie** : `validationExterne` reste `false`, `shaPerimetre` reste
+  `null`. Écrire les lignes est un geste d'outil ; les **attester** n'en est pas
+  un, et c'est ce qui reste devant le responsable.
+  **La relecture des sources entières a réfuté la surface sur QUATRE points**,
+  et c'est ce que la consigne cherchait. Le plus lourd : `WN-CL-0293-011` ne
+  fonde **pas** une conjonction — il écrit « sérotoninergiques et/ou
+  dopaminergiques », sur les axes `SE` et `DA` et non `DA` et `NA`. **Un
+  arbitrage avait été rendu sur cette prémisse** (passer le champ de déclencheur
+  au pluriel pour permettre un ET) : il a été **revisité et écarté** en séance,
+  aucune des dix lignes ne demandant de conjonction. S'y ajoutent le MFI-20, qui
+  n'a **pas de barème** et ne peut donc pas porter de porte ; la porte large de la
+  psychobiotique, qui n'a **aucun champ** pour la lire et n'a donc aucune ligne ;
+  et trois claims proposés qui fondent une porte **autre** que celle de leur
+  ligne — arbitrage : une ligne ne cite que les claims qui fondent **sa** porte.
+  **Ce que le lot a ajouté au type** : `claimsSecurite` sur la ligne, patron du
+  catalogue de conduites, parce que `WN-CL-0288-013` porte l'indication de la
+  protéinée **et** son exception parkinsonienne. L'union des deux catégories fait
+  le périmètre, et un claim de sécurité retiré retire sa ligne du service.
+  **Deux réserves consignées pour l'attestation** : `WN-CL-0288-012` et `-014`
+  sont `prescriptif = false` ; et l'exception parkinsonienne est **désignée, pas
+  appliquée** — aucun champ ne lit un traitement en cours, la ligne le déclare.
+  **Ce qui reste du chantier 2** : rien côté outil. La relecture, puis
+  l'attestation.
+
 - **`D-206` — la première table du catalogue de conduites** (2026-09-16,
   arbitrage du responsable, **LOT-01 livré, première ligne signée le
   2026-09-17**). Le catalogue n'ouvre **pas** de

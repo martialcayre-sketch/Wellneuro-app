@@ -6,6 +6,7 @@ import {
   anomaliesDuDeclencheur,
   INDICATIONS_ASSIETTES_METADATA,
   INDICATIONS_ASSIETTES_V1,
+  claimsDeLaLigne,
   indicationsAssiettesSignees,
   lignesIndicationAssietteServables,
   shaPerimetreIndicationsAssiettes,
@@ -13,7 +14,7 @@ import {
   type LigneIndicationAssiette,
 } from './indicationsAssiettesV1';
 import { cleClaim } from './catalogueConduitesV1';
-import { C5B_RECOMMENDED_PLATES } from '@/lib/food-compass/plates';
+import { assiettesParIndication, C5B_RECOMMENDED_PLATES } from '@/lib/food-compass/plates';
 
 // Banc de garde des indications d'assiette ([[D-225]]).
 //
@@ -23,18 +24,31 @@ import { C5B_RECOMMENDED_PLATES } from '@/lib/food-compass/plates';
 // donc falsifié SÉPARÉMENT : un verrou dont on ne falsifie que l'ensemble ne
 // prouve pas que chacun de ses termes mord.
 
-const ASSIETTE = C5B_RECOMMENDED_PLATES[0].plateCode;
+// LA PREMIÈRE ENTRÉE DU CATALOGUE EST UN REPÈRE D'OBSERVATION — le
+// petit-déjeuner simple, axe `moment_repas`. La fixture pointait donc une
+// assiette que le verrou doit REFUSER depuis le constat de revue de la PR
+// #1202 : elle prend maintenant une assiette d'indication, et l'observation
+// sert de contre-épreuve.
+const ASSIETTE = assiettesParIndication()[0].plateCode;
+const ASSIETTE_OBSERVATION = C5B_RECOMMENDED_PLATES[0].plateCode;
 
+// PAS DE `as LigneIndicationAssiette` ICI, ET C'EST UN CORRECTIF. Le cast
+// éteignait le contrôle de champs : quand `claimsSecurite` est entré au type
+// ([[D-235]]), ni `tsc` ni ce banc n'ont rougi d'une fixture qui ne le portait
+// pas. Un objet littéral typé par son annotation de retour fait rougir
+// l'oubli — même leçon qu'un `Record<string, string>` qui éteint le contrôle
+// de clés.
 function ligne(surcharges: Partial<LigneIndicationAssiette> = {}): LigneIndicationAssiette {
   return {
     id: 'ASSIETTE-IND-BANC',
     plateCode: ASSIETTE,
     declencheur: { type: 'zone', idQuestionnaire: 'Q_BANC_01', zone: { type: 'couleur', couleurs: ['danger'] } },
     claimsIndication: [{ claimId: 'WN-CL-9999-001', versionClaim: 'v1.0' }],
+    claimsSecurite: [],
     raccourciAssume: null,
     statut: 'publiee',
     ...surcharges,
-  } as LigneIndicationAssiette;
+  };
 }
 
 /** Une signature VALIDE sur les lignes passées — le point de départ des falsifications. */
@@ -42,8 +56,11 @@ function signatureBanc(
   lignes: readonly LigneIndicationAssiette[],
   surcharges: Partial<IndicationsAssiettesMetadata> = {},
 ): IndicationsAssiettesMetadata {
+  // LES DEUX CATÉGORIES, comme `claimsDeLaLigne` — sans quoi toute ligne
+  // portant un claim de sécurité ferait échouer l'égalité ensembliste du verrou
+  // et ce banc mesurerait un faux.
   const claimsSource = [...new Map(
-    lignes.flatMap(l => l.claimsIndication).map(c => [cleClaim(c), c]),
+    lignes.flatMap(l => [...l.claimsIndication, ...l.claimsSecurite]).map(c => [cleClaim(c), c]),
   ).values()];
   const base: IndicationsAssiettesMetadata = {
     validationExterne: true,
@@ -62,21 +79,167 @@ function signatureBanc(
 }
 
 const claimsValidesDe = (lignes: readonly LigneIndicationAssiette[]) =>
-  new Set(lignes.flatMap(l => l.claimsIndication).map(cleClaim));
+  new Set(lignes.flatMap(l => [...l.claimsIndication, ...l.claimsSecurite]).map(cleClaim));
 
 describe('indications d’assiette — état livré', () => {
-  it('la table est VIDE, et sa métadonnée n’atteste rien', () => {
-    expect(INDICATIONS_ASSIETTES_V1).toEqual([]);
+  it('DIX LIGNES, dans cet ordre — et la métadonnée n’atteste toujours rien', () => {
+    expect(INDICATIONS_ASSIETTES_V1.map(l => l.id)).toEqual([
+      'ASSIETTE-IND-DOPAMINERGIQUE',
+      'ASSIETTE-IND-ANTI-INFLAMMATOIRE',
+      'ASSIETTE-IND-PROTEINEE',
+      'ASSIETTE-IND-SEROTONINERGIQUE',
+      'ASSIETTE-IND-EPARGNE-DIGESTIVE',
+      'ASSIETTE-IND-DETOXICATION',
+      'ASSIETTE-IND-PSYCHOBIOTIQUE',
+      'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE',
+      'ASSIETTE-IND-METHYLATION',
+      'ASSIETTE-IND-ANTIOXYDANTE',
+    ]);
+    // LA TABLE EST ÉCRITE, ELLE N'EST PAS ATTESTÉE. Les deux tiennent ensemble
+    // par le fail-closed, et c'est tout l'objet de [[D-235]].
     expect(INDICATIONS_ASSIETTES_METADATA.validationExterne).toBe(false);
     expect(INDICATIONS_ASSIETTES_METADATA.dateValidation).toBeNull();
     expect(INDICATIONS_ASSIETTES_METADATA.claimsSource).toEqual([]);
     expect(INDICATIONS_ASSIETTES_METADATA.shaPerimetre).toBeNull();
   });
 
+  it('SEPT publiées, TROIS en brouillon — comptées, jamais annoncées', () => {
+    const parStatut = (statut: LigneIndicationAssiette['statut']) =>
+      INDICATIONS_ASSIETTES_V1.filter(l => l.statut === statut).map(l => l.id);
+    expect(parStatut('publiee')).toHaveLength(7);
+    expect(parStatut('brouillon')).toEqual([
+      'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE',
+      'ASSIETTE-IND-METHYLATION',
+      'ASSIETTE-IND-ANTIOXYDANTE',
+    ]);
+  });
+
+  it('chaque ligne fige ses claims CATÉGORIE PAR CATÉGORIE, et les vides sont assertés', () => {
+    const parLigne = Object.fromEntries(INDICATIONS_ASSIETTES_V1.map(l => [
+      l.id,
+      { ind: l.claimsIndication.map(cleClaim), sec: l.claimsSecurite.map(cleClaim) },
+    ]));
+    expect(parLigne).toEqual({
+      'ASSIETTE-IND-DOPAMINERGIQUE': { ind: ['WN-CL-0289-004::v1.0'], sec: [] },
+      'ASSIETTE-IND-ANTI-INFLAMMATOIRE': { ind: ['WN-CL-0293-011::v1.0'], sec: [] },
+      'ASSIETTE-IND-PROTEINEE': {
+        ind: ['WN-CL-0288-011::v1.0', 'WN-CL-0288-012::v1.0', 'WN-CL-0288-013::v1.0'],
+        sec: ['WN-CL-0288-013::v1.0', 'WN-CL-0288-014::v1.0'],
+      },
+      'ASSIETTE-IND-SEROTONINERGIQUE': { ind: ['WN-CL-0290-005::v1.0'], sec: [] },
+      'ASSIETTE-IND-EPARGNE-DIGESTIVE': {
+        ind: ['WN-CL-0285-001::v1.0', 'WN-CL-0285-005::v1.0', 'WN-CL-0285-006::v1.0'],
+        sec: ['WN-CL-0285-002::v1.0', 'WN-CL-0285-010::v1.0', 'WN-CL-0285-012::v1.0'],
+      },
+      'ASSIETTE-IND-DETOXICATION': {
+        ind: ['WN-CL-0287-008::v1.0', 'WN-CL-0287-009::v1.0'], sec: [],
+      },
+      'ASSIETTE-IND-PSYCHOBIOTIQUE': { ind: ['WN-CL-0291-011::v1.0'], sec: [] },
+      'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE': { ind: ['WN-CL-0293-009::v1.0'], sec: [] },
+      'ASSIETTE-IND-METHYLATION': { ind: ['WN-CL-0286-006::v1.0'], sec: [] },
+      'ASSIETTE-IND-ANTIOXYDANTE': { ind: ['WN-CL-0292-003::v1.0'], sec: [] },
+    });
+  });
+
+  it('chaque `plateCode` existe au catalogue ET porte l’axe `indication`', () => {
+    // LE VERROU NE VÉRIFIE QUE L'EXISTENCE — il accepterait donc une assiette de
+    // MOMENT DE REPAS, celles de la liste d'observation du praticien. Ce cas
+    // ferme l'écart : une ligne d'indication ne pointe jamais un repère
+    // d'observation ([[D-230]]).
+    const parIndication = new Set(assiettesParIndication().map(a => a.plateCode));
+    expect(parIndication.size).toBe(12);
+    for (const ligneReelle of INDICATIONS_ASSIETTES_V1) {
+      expect(parIndication.has(ligneReelle.plateCode)).toBe(true);
+    }
+    // Neuf assiettes reçoivent une ligne ; l'anti-inflammatoire en reçoit deux.
+    expect(new Set(INDICATIONS_ASSIETTES_V1.map(l => l.plateCode)).size).toBe(9);
+  });
+
+  it('chaque ligne DÉCLARE son raccourci — aucune ne se tait sur ce qu’elle assume', () => {
+    for (const ligneReelle of INDICATIONS_ASSIETTES_V1) {
+      expect(ligneReelle.raccourciAssume, ligneReelle.id).not.toBeNull();
+      expect(ligneReelle.raccourciAssume!.length, ligneReelle.id).toBeGreaterThan(80);
+    }
+    // Un fragment DISTINCTIF par ligne : sans lui, dix raccourcis identiques
+    // passeraient le cas ci-dessus.
+    const fragments: Record<string, string> = {
+      'ASSIETTE-IND-DOPAMINERGIQUE': 'score FAIBLE',
+      'ASSIETTE-IND-ANTI-INFLAMMATOIRE': 'dysfonctionnels',
+      'ASSIETTE-IND-PROTEINEE': 'parkinsonienne sous L-dopa',
+      'ASSIETTE-IND-SEROTONINERGIQUE': 'second tour',
+      'ASSIETTE-IND-EPARGNE-DIGESTIVE': 'PLUS ÉTROITE',
+      'ASSIETTE-IND-DETOXICATION': 'bande B',
+      'ASSIETTE-IND-PSYCHOBIOTIQUE': 'intestinale constatée',
+      'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE': 'classe d’âge',
+      'ASSIETTE-IND-METHYLATION': 'susceptibilité',
+      'ASSIETTE-IND-ANTIOXYDANTE': 'L’élargissement est réel',
+    };
+    for (const ligneReelle of INDICATIONS_ASSIETTES_V1) {
+      expect(ligneReelle.raccourciAssume, ligneReelle.id).toContain(fragments[ligneReelle.id]);
+    }
+  });
+
+  it('LES TROIS BORNES D’ÂGE PORTENT L’OPÉRATEUR DE LEUR CLAIM, et ils diffèrent', () => {
+    // « plus de 50 ans » et « plus de 60 ans » s'écrivent `>` ; « dès l'âge de
+    // 50 ans » s'écrit `>=`. Confondre les deux servirait une classe d'âge de
+    // plus, sans qu'aucun autre banc ne le voie.
+    const bornes = INDICATIONS_ASSIETTES_V1.flatMap(l => {
+      const feuilles = l.declencheur.type === 'ou' ? l.declencheur.declencheurs : [l.declencheur];
+      return feuilles
+        .filter(f => f.type === 'age')
+        .map(f => `${l.id}|${(f as { operateur: string; valeur: number }).operateur}${(f as { valeur: number }).valeur}`);
+    });
+    expect(bornes).toEqual([
+      'ASSIETTE-IND-PROTEINEE|>60',
+      'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE|>=50',
+      'ASSIETTE-IND-METHYLATION|>50',
+    ]);
+  });
+
   it('rien n’est servable aujourd’hui, par aucun chemin', () => {
     expect(lignesIndicationAssietteServables(new Set())).toEqual([]);
     expect(lignesIndicationAssietteServables(null)).toEqual([]);
     expect(indicationsAssiettesSignees()).toBe(false);
+    // ET MÊME AVEC TOUS LES CLAIMS RÉPUTÉS VALIDES : c'est la signature qui
+    // manque, pas le corpus.
+    expect(lignesIndicationAssietteServables(claimsValidesDe(INDICATIONS_ASSIETTES_V1))).toEqual([]);
+  });
+
+  it('SIGNÉE PAR LE BANC : les sept publiées sortent, les trois brouillons restent dedans', () => {
+    // La signature est CALCULÉE ici, jamais lue dans la métadonnée réelle — sans
+    // quoi ce cas attendrait une attestation qui n'existe pas.
+    const lignes = INDICATIONS_ASSIETTES_V1;
+    const servies = lignesIndicationAssietteServables(
+      claimsValidesDe(lignes), signatureBanc(lignes), lignes,
+    );
+    expect(servies.map(l => l.id)).toEqual(
+      lignes.filter(l => l.statut === 'publiee').map(l => l.id),
+    );
+    expect(servies).toHaveLength(7);
+  });
+
+  it('L’UNION DÉDOUBLONNE — `WN-CL-0288-013` fonde l’indication ET porte sa réserve', () => {
+    const proteinee = INDICATIONS_ASSIETTES_V1.find(l => l.id === 'ASSIETTE-IND-PROTEINEE')!;
+    expect(proteinee.claimsIndication.map(cleClaim)).toContain('WN-CL-0288-013::v1.0');
+    expect(proteinee.claimsSecurite.map(cleClaim)).toContain('WN-CL-0288-013::v1.0');
+    const cites = claimsDeLaLigne(proteinee).map(cleClaim);
+    expect(cites).toHaveLength(5);
+    expect(new Set(cites).size).toBe(4);
+    // Le périmètre signé, lui, ne le compte qu'une fois — et le verrou ouvre.
+    const lignes = [proteinee];
+    expect(indicationsAssiettesSignees(signatureBanc(lignes), lignes)).toBe(true);
+    expect(signatureBanc(lignes).claimsSource).toHaveLength(4);
+  });
+
+  it('UN CLAIM DE SÉCURITÉ retiré du corpus retire SA ligne du service', () => {
+    // Une sécurité retirée pèse autant qu'une indication retirée — davantage
+    // même, puisque c'est elle qui devait retenir.
+    const lignes = INDICATIONS_ASSIETTES_V1;
+    const valides = new Set(claimsValidesDe(lignes));
+    valides.delete('WN-CL-0285-012::v1.0');
+    const servies = lignesIndicationAssietteServables(valides, signatureBanc(lignes), lignes);
+    expect(servies.map(l => l.id)).not.toContain('ASSIETTE-IND-EPARGNE-DIGESTIVE');
+    expect(servies).toHaveLength(6);
   });
 });
 
@@ -153,6 +316,19 @@ describe('indications d’assiette — les termes du verrou, falsifiés un par u
     expect(signature.shaPerimetre)
       .toBe(shaPerimetreIndicationsAssiettes(lignes, signature.claimsSource));
     expect(indicationsAssiettesSignees(signature, lignes)).toBe(false);
+  });
+
+  it('7 bis. UNE ASSIETTE D’OBSERVATION ferme la table — l’existence ne suffit pas', () => {
+    // Le catalogue porte deux axes : une ligne d'indication pointant un repère de
+    // moment de repas serait signée, puis SERVIE, en franchissant la séparation
+    // observation/prescription. Constat de revue, PR #1202.
+    expect(C5B_RECOMMENDED_PLATES.find(a => a.plateCode === ASSIETTE_OBSERVATION)?.axe)
+      .toBe('moment_repas');
+    const lignes = [ligne({ plateCode: ASSIETTE_OBSERVATION })];
+    expect(indicationsAssiettesSignees(signatureBanc(lignes), lignes)).toBe(false);
+    expect(lignesIndicationAssietteServables(
+      claimsValidesDe(lignes), signatureBanc(lignes), lignes,
+    )).toEqual([]);
   });
 
   it('UNE LIGNE AJOUTÉE APRÈS COUP n’entre pas sous la signature acquise', () => {
