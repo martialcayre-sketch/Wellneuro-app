@@ -95,6 +95,23 @@ export const SOURCES_DE_SAVOIR = [
     decisionProduite: 'Orientation clinique proposée au praticien à partir des scores.',
   },
   {
+    id: 'indications-assiettes',
+    libelle: 'Table d’indications d’assiette (11 lignes signées, 7 servables)',
+    module: 'web/src/lib/clinical/indicationsAssiettesV1.ts',
+    symboles: ['INDICATIONS_ASSIETTES_V1', 'INDICATIONS_ASSIETTES_METADATA'],
+    // MÊME FORME QUE SES DEUX VOISINES, ET MÊME RAISON DE LA DÉCLARER : la
+    // garde est `indicationsAssiettesService.ts`, qui porte le ET
+    // `WN_ASSIETTES_INDIQUEES` + `indicationsAssiettesSignees()`. Une garde
+    // nommée hors convention ne se devine pas.
+    //
+    // ELLE ENTRE ICI LE JOUR OÙ ELLE ATTEINT UN ÉCRAN ([[D-237]]), pas le jour
+    // où elle a été signée — c'est la question que cette matrice pose : quel
+    // savoir SORT, vers qui, sous quelle garde. Signée depuis [[D-236]], elle
+    // n'avait aucune surface : elle n'aurait rendu qu'une ligne vide.
+    modulesGardes: ['web/src/lib/clinical/indicationsAssiettesService.ts'],
+    decisionProduite: 'Assiettes indiquées pour un dossier, servies en lecture au cockpit praticien — et ce que le dossier n’a pas permis d’évaluer.',
+  },
+  {
     id: 'contradictions-nnpp2',
     libelle: 'Table de contradictions NNPP2 (règles signées)',
     module: 'web/src/lib/clinical/contradictionsV1.ts',

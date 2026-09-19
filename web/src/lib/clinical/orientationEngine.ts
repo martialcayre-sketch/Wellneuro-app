@@ -914,6 +914,238 @@ export function evaluerDeclencheur(
   return motif === null ? null : { motif, instruments: instrumentsDeFeuille(declencheur) };
 }
 
+/**
+ * CE QUI MANQUE POUR QUE LA PORTE SOIT REGARDÉE — jamais « ce qui est faux ».
+ *
+ * POURQUOI CE VOCABULAIRE EXISTE ([[D-237]]). `evaluerDeclencheur` rend `null`
+ * pour DEUX raisons que rien ne distinguait : la donnée a été lue et elle
+ * n'atteint pas la porte, ou **la donnée n'existe pas**. Sur l'orientation la
+ * confusion était sans conséquence — une cible non proposée se repropose au
+ * prochain questionnaire. Sur une INDICATION servie au praticien, elle en a
+ * une : une carte vide se lit « aucune assiette n'est indiquée pour ce
+ * patient », qui est un constat CLINIQUE, là où la vérité est qu'on n'a pas
+ * regardé. C'est exactement `DC-24` — l'absence d'information ne vaut jamais
+ * mesure normale.
+ *
+ * CE QUE CETTE FONCTION NE FAIT PAS, et c'est la garde : elle n'évalue rien.
+ * Elle ne dit jamais qu'une porte est atteinte, ni qu'elle ne l'est pas. Son
+ * appelant l'interroge SEULEMENT après qu'`evaluerDeclencheur` a rendu `null`,
+ * et elle répond alors « voici ce que je n'ai pas pu lire », ou rien.
+ *
+ * UNE SEULE BRANCHE LACUNAIRE SUFFIT À RENDRE UNE DISJONCTION NON ÉVALUÉE, et
+ * ce choix coûte du bruit — il est fait les yeux ouverts. Une disjonction dont
+ * une branche est lue et fausse, l'autre illisible, n'est PAS une disjonction
+ * fausse : la branche manquante aurait pu l'ouvrir. Dire « non indiquée » là
+ * serait affirmer sur le patient ce que seule la donnée absente pourrait
+ * trancher. Le coût est qu'une ligne à trois branches paraîtra souvent non
+ * évaluée tant que le recueil est partiel ; le bénéfice est qu'elle NOMME
+ * alors ce qu'il faudrait recueillir.
+ */
+export type LacuneDeclencheur =
+  /** Aucune passation de cet instrument au dossier. */
+  | { type: 'instrument_non_passe'; idQuestionnaire: string; sousScore?: string }
+  /**
+   * Passation présente, score absent. Ce sont les cinq motifs de mise à `null`
+   * de `scoresRecalculesPourRaisonnement` — instrument hors catalogue, écarté
+   * du raisonnement, déclaré non interprétable, sans réponses brutes, ou non
+   * administrable. La passation existe, elle ne fonde pas de mesure.
+   */
+  | { type: 'instrument_non_cotable'; idQuestionnaire: string; sousScore?: string }
+  /**
+   * Recueil incomplet SUR UNE BRANCHE DE DISJONCTION — le moteur refuse déjà
+   * ces branches (`comptesDuPorteurVise`), et ce terme ne fait que le dire.
+   * `manquants` est TOUJOURS strictement positif : le cas « zéro manquant » ne
+   * produit pas cette lacune, il n'en produit aucune. `total` est `null` quand
+   * le porteur ne publie pas de dénominateur — un compte sans dénominateur se
+   * dit sans dénominateur.
+   */
+  | { type: 'recueil_incomplet'; idQuestionnaire: string; sousScore?: string; manquants: number; total: number | null }
+  /**
+   * COMPLÉTUDE ILLISIBLE — et ce n'est PAS « zéro item manquant ».
+   *
+   * CONSTAT DE REVUE, ET LE DÉFAUT ÉTAIT EXACTEMENT CELUI QUE CE VOCABULAIRE
+   * EXISTE POUR FERMER. `comptesDuPorteurVise` rend `null` quand le porteur ne
+   * publie NI `repondus`/`items` NI `missing` — `comptesDuRecueil` le documente :
+   * « on ne fabrique pas une complétude qu'on ne sait pas lire, et on n'annonce
+   * pas un compte qu'on n'a pas ». Une première rédaction repliait pourtant ce
+   * `null` sur `manquants: 0`, et l'écran annonçait au praticien
+   * « recueil incomplet : 0 item(s) manquant(s) » — un NOMBRE INVENTÉ sur une
+   * mesure inconnue, dans la carte même dont tout le propos est de ne jamais
+   * présenter une absence comme un fait.
+   *
+   * Le moteur refuse la branche dans les DEUX cas ; les deux refus n'ont pas la
+   * même cause, et c'est toute la doctrine de ce fichier.
+   */
+  | { type: 'completude_illisible'; idQuestionnaire: string; sousScore?: string }
+  /** Mesure illisible pour l'axe visé : ni valeur, ni interprétation, ni plancher. */
+  | { type: 'mesure_indisponible'; idQuestionnaire: string; sousScore?: string }
+  /** Aucune anamnèse portée au dossier — et non « le patient n'a rien coché ». */
+  | { type: 'anamnese_absente'; champ: string }
+  /** Date de naissance absente ou illisible — jamais « âge 0 ». */
+  | { type: 'age_inconnu' }
+  /** Alimentation non déclarée, ou déclarée `inconnu` — les deux sont une absence. */
+  | { type: 'alimentation_non_declaree' };
+
+/**
+ * La lacune d'UNE feuille, ou `null` si elle a tout ce qu'il lui faut.
+ *
+ * `brancheDeDisjonction` N'EST PAS UN CONFORT : le moteur n'applique la garde
+ * de complétude QU'AUX branches d'un `ou` — une feuille seule peut s'allumer
+ * sur un plancher garanti, précisément parce qu'un plancher n'est servi que sur
+ * recueil incomplet. Poser la même exigence des deux côtés ferait déclarer
+ * « non évaluée » une ligne que le moteur sait pourtant trancher.
+ */
+/**
+ * CE QUE LA ZONE CONSULTE EST-IL PUBLIÉ ? — le miroir exact de
+ * `evaluerZoneMesuree`, et il doit le rester.
+ *
+ * `plage` lit le NOMBRE ; `interpretation` lit le `label` ; `couleur` lit la
+ * `color`. Un porteur qui rend un total sans bande laisse donc une zone
+ * `couleur` indécidable, bien que `valeur` soit là — et c'est précisément ce
+ * que la rédaction précédente confondait.
+ *
+ * LE PLANCHER N'ENTRE PAS ICI : il ne rend pas une zone décidable, il en
+ * GARANTIT une, et cette garantie est tranchée par `evaluerZone` en amont.
+ */
+function zoneDecidable(
+  zone: OrientationZone,
+  valeur: number | null,
+  interpretation: InterpretationLue,
+): boolean {
+  if (zone.type === 'plage') return valeur !== null;
+  const bande = interpretation && typeof interpretation === 'object' ? interpretation : null;
+  if (zone.type === 'interpretation') return typeof bande?.label === 'string';
+  return typeof bande?.color === 'string';
+}
+
+function lacuneDeFeuille(
+  feuille: OrientationDeclencheurFeuille,
+  dernieres: Map<string, ReponseOrientation>,
+  drapeaux: DrapeauxAnamnese | undefined,
+  dossier: ContexteDossier | undefined,
+  brancheDeDisjonction: boolean,
+): LacuneDeclencheur | null {
+  if (feuille.type === 'drapeau') {
+    // Des drapeaux PRÉSENTS mais sans la valeur cherchée ne sont pas une
+    // lacune : le patient a déclaré, et il n'a pas déclaré cela.
+    return drapeaux ? null : { type: 'anamnese_absente', champ: feuille.champ };
+  }
+  if (feuille.type === 'age') {
+    return typeof dossier?.ageAnnees === 'number' ? null : { type: 'age_inconnu' };
+  }
+  if (feuille.type === 'exclusionAlimentaire') {
+    const declaree = dossier?.etatPopulation?.alimentation;
+    // `inconnu` EST une absence, et le moteur le traite déjà ainsi : c'est la
+    // valeur que `lireEtatPopulation` rend quand rien ne correspond.
+    return declaree && declaree !== 'inconnu' ? null : { type: 'alimentation_non_declaree' };
+  }
+
+  const axe = feuille.sousScore ? { sousScore: feuille.sousScore } : {};
+  const reponse = dernieres.get(feuille.idQuestionnaire);
+  if (!reponse) {
+    return { type: 'instrument_non_passe', idQuestionnaire: feuille.idQuestionnaire, ...axe };
+  }
+  if (!reponse.scores || typeof reponse.scores !== 'object') {
+    return { type: 'instrument_non_cotable', idQuestionnaire: feuille.idQuestionnaire, ...axe };
+  }
+  if (brancheDeDisjonction) {
+    const comptes = comptesDuPorteurVise(reponse.scores, feuille.sousScore);
+    // DEUX REFUS, DEUX CAUSES — le moteur écarte la branche dans les deux cas,
+    // et les confondre fabriquerait un nombre. Voir `completude_illisible`.
+    if (comptes === null) {
+      return { type: 'completude_illisible', idQuestionnaire: feuille.idQuestionnaire, ...axe };
+    }
+    if (comptes.manquants > 0) {
+      return {
+        type: 'recueil_incomplet',
+        idQuestionnaire: feuille.idQuestionnaire,
+        ...axe,
+        manquants: comptes.manquants,
+        total: comptes.total,
+      };
+    }
+  }
+
+  const { valeur, interpretation, plancher } = extraireCible(reponse.scores, feuille.sousScore);
+  // UNE COMPARAISON N'A BESOIN QUE DU NOMBRE, et une interprétation seule ne
+  // lui sert à rien : le moteur rend `null` dès que `valeur` est `null`, sans
+  // jamais regarder la bande. Exiger ici la même chose que pour une zone
+  // ferait passer pour évaluable une comparaison que le moteur ne peut pas
+  // faire.
+  if (feuille.type === 'comparaison') {
+    return valeur === null
+      ? { type: 'mesure_indisponible', idQuestionnaire: feuille.idQuestionnaire, ...axe }
+      : null;
+  }
+  // UNE ZONE NE LIT PAS UN NOMBRE, ELLE LIT CE QUE SA FORME DEMANDE — constat de
+  // revue, et le défaut était celui que tout ce vocabulaire existe pour fermer.
+  //
+  // La rédaction précédente tenait la mesure pour lisible dès que l'UN des trois
+  // — valeur, interprétation, plancher — existait. Deux cas passaient alors pour
+  // « lus et tranchés » alors que le moteur n'avait rien pu décider :
+  //
+  // 1. UNE FEUILLE SEULE SUR UN PLANCHER INSUFFISANT. Recueil partiel, plancher
+  //    servi, mais la bande garantie n'atteint pas la zone : `evaluerZone` rend
+  //    `null`, et le plancher non nul suffisait à taire la lacune. La ligne
+  //    partait en `nonIndiquees` — « évaluée, non retenue » —, quand la vérité
+  //    est qu'il manque des items. ATTEIGNABLE AUJOURD'HUI : les trois portes
+  //    `Q_GAS_01` de la table signée sont des feuilles seules, et un TFD
+  //    partiellement rempli est un état courant.
+  // 2. UNE BANDE QUE LE PORTEUR NE PUBLIE PAS. Recueil complet, total présent,
+  //    mais aucune `interpretation` : une zone `couleur` ou `interpretation` n'a
+  //    rien à lire, alors que `valeur` non nulle taisait la lacune. Non
+  //    atteignable sur les porteurs de la table — leurs bandes couvrent toute
+  //    l'échelle —, la garde est écrite pour le jour où une bande change.
+  //
+  // CE QUE LA CONDITION DIT MAINTENANT : la zone est DÉCIDABLE si le porteur
+  // publie ce que cette zone-là consulte — un nombre pour `plage`, un `label`
+  // pour `interpretation`, une `color` pour `couleur`. Décidable et non
+  // atteinte, c'est un VRAI négatif, et aucune lacune ne doit paraître ; sinon,
+  // la cause se nomme par les comptes du recueil.
+  if (zoneDecidable(feuille.zone, valeur, interpretation)) return null;
+  // LE PLANCHER N'A PAS BESOIN D'ÊTRE RETESTÉ ICI : s'il garantissait la zone,
+  // `evaluerDeclencheur` n'aurait pas rendu `null` et cette fonction ne serait
+  // pas appelée sur cette feuille (contrat de `lacunesDuDeclencheur`).
+  const comptesZone = comptesDuPorteurVise(reponse.scores, feuille.sousScore);
+  if (comptesZone === null) {
+    return { type: 'completude_illisible', idQuestionnaire: feuille.idQuestionnaire, ...axe };
+  }
+  if (comptesZone.manquants > 0) {
+    return {
+      type: 'recueil_incomplet',
+      idQuestionnaire: feuille.idQuestionnaire,
+      ...axe,
+      manquants: comptesZone.manquants,
+      total: comptesZone.total,
+    };
+  }
+  return { type: 'mesure_indisponible', idQuestionnaire: feuille.idQuestionnaire, ...axe };
+}
+
+/**
+ * CE QUI MANQUE POUR ÉVALUER CE DÉCLENCHEUR — vide = rien ne manque, donc le
+ * `null` d'`evaluerDeclencheur` est un VRAI négatif, lu et tranché.
+ *
+ * À N'INTERROGER QU'APRÈS `evaluerDeclencheur`, et son appelant en répond : sur
+ * une porte ATTEINTE, cette fonction rendrait des lacunes de branches non
+ * décisives, et les servir laisserait croire qu'il manque quelque chose à une
+ * indication qui tient.
+ */
+export function lacunesDuDeclencheur(
+  declencheur: OrientationDeclencheur,
+  dernieres: Map<string, ReponseOrientation>,
+  drapeaux: DrapeauxAnamnese | undefined,
+  dossier?: ContexteDossier,
+): readonly LacuneDeclencheur[] {
+  if (declencheur.type === 'ou') {
+    return declencheur.declencheurs
+      .map(branche => lacuneDeFeuille(branche, dernieres, drapeaux, dossier, true))
+      .filter((lacune): lacune is LacuneDeclencheur => lacune !== null);
+  }
+  const lacune = lacuneDeFeuille(declencheur, dernieres, drapeaux, dossier, false);
+  return lacune === null ? [] : [lacune];
+}
+
 function cleCible(cible: CibleExploration): string {
   return cible.type === 'questionnaire' ? `q:${cible.questionnaireId}` : `p:${cible.packId}`;
 }

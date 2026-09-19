@@ -43,10 +43,19 @@ attester, et ce qui a été écarté.*
 > **Végétale et chronobiologique restent écartées**, relues le même jour : six et
 > quatorze claims, tous de contenu, aucune indication.
 >
-> **CE QUI RESTE DEVANT.** Aucun moteur ne consomme cette table — elle est signée
-> et servable, son lot d'exposition reste à faire. Le **chantier de la porte
-> biologique** s'ouvre maintenant, et il périmera cette attestation : un
+> **CE QUI RESTE DEVANT.** ~~Aucun moteur ne consomme cette table — elle est
+> signée et servable, son lot d'exposition reste à faire.~~ **FAIT LE MÊME JOUR
+> ([[D-237]])** : un service, une route praticien et une carte au cockpit, dans
+> la sous-vue Protocole. Les sept lignes publiées atteignent l'écran — **quand le
+> drapeau `WN_ASSIETTES_INDIQUEES` sera posé**, ce qui est un geste du cabinet et
+> non du lot : il est livré ÉTEINT, la table étant déjà signée. Le **chantier de
+> la porte biologique** s'ouvre maintenant, et il périmera cette attestation : un
 > périmètre signé se hache en entier.
+>
+> **ET LA CARTE DIT AUSSI CE QU'ELLE N'A PAS PU REGARDER.** C'est l'arbitrage le
+> plus lourd du lot d'exposition : une carte vide se lirait « aucune assiette
+> n'est indiquée pour ce patient », un constat clinique, là où la vérité est le
+> plus souvent qu'un instrument n'a pas été passé (`DC-24`).
 
 > ## ÉTAT AU 2026-09-19 (suite) — LES LIGNES SONT ÉCRITES. Ce qui reste devant vous est la relecture, puis l'attestation.
 >

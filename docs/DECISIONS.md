@@ -4,6 +4,204 @@
 
 ## Décisions actives
 
+### D-237 — La table des indications d'assiette ATTEINT le praticien : un service, une route, une carte — et un vocabulaire pour dire ce qu'on n'a PAS pu regarder
+
+- Date : 2026-09-19
+- Statut : accepté — **quatre arbitrages du responsable rendus en séance**
+  (périmètre du lot, drapeau, emplacement, traitement du silence).
+- Domaine : exposition d'une table clinique signée
+  (`clinical/indicationsAssiettesService.ts`, `api/praticien/assiettes-indiquees`,
+  `patient-cockpit/AssiettesIndiqueesPanel.tsx`), moteur de déclencheur partagé.
+- Porte sur : le chemin table signée → écran, et sur la distinction entre « rien
+  n'est indiqué » et « rien n'a été regardé ».
+
+**1. CE QUE LE LOT FERME.** `INDICATIONS_ASSIETTES_V1` était **signée depuis
+[[D-236]] et n'atteignait personne**. Deux fonctions portaient par écrit leur
+propre condamnation : `lignesIndicationAssietteServables` (« si le lot
+d'exposition ne vient pas, cette fonction se supprime ») et
+`assiettesParIndication` (même réserve, [[D-230]]). Le lot est venu ; les deux
+réserves sont levées, et **rappelées plutôt qu'effacées** — elles sont la raison
+pour laquelle ces fonctions n'ont pas été des commodités spéculatives.
+
+**2. LE DRAPEAU EST NEUF ET ÉTEINT, ET IL EST LA SEULE CHOSE ENTRE LA TABLE ET
+L'ÉCRAN.** La différence avec les drapeaux neufs habituels n'est pas de degré :
+d'ordinaire, un verrou clinique encore fermé retient déjà la surface, et le
+drapeau est un second tour de clé. Ici **la signature est OUVERTE depuis le
+2026-09-19**, si bien que sans `WN_ASSIETTES_INDIQUEES` les sept lignes publiées
+seraient arrivées à l'écran **au prochain déploiement de production** — une mise
+en service par accident de calendrier, sur des dossiers réels.
+`assiettesIndiqueesActives()` reste un ET avec la signature : re-signer la table
+rouvre la question.
+
+*(Aucun rang n'est revendiqué dans la série des drapeaux « neufs et éteints » :
+`docs/FEATURE_FLAGS.md` en numérote neuf et en porte au moins deux de plus sans
+numéro, de sorte qu'un compte écrit ici serait faux.)*
+
+**3. LE VOCABULAIRE DE LA LACUNE — `lacunesDuDeclencheur`, et c'est le cœur
+clinique du lot.** `evaluerDeclencheur` rendait `null` pour **deux** raisons que
+rien ne distinguait : la donnée a été lue et n'atteint pas la porte, ou **la
+donnée n'existe pas**. Sur l'orientation la confusion était sans conséquence —
+une cible non proposée se repropose. Sur une INDICATION servie, elle en a une :
+**une carte vide se lit « aucune assiette n'est indiquée pour ce patient »**,
+qui est un constat clinique, là où la vérité est qu'un instrument n'a pas été
+passé. C'est `DC-24`, et c'est le motif du quatrième arbitrage — *nommer ce qui
+manque*.
+
+Huit formes, toutes des faits sur le DOSSIER : instrument non passé, passé mais
+non coté, recueil incomplet, **complétude illisible**, mesure indisponible,
+anamnèse absente, âge inconnu, régime non déclaré. **Aucune n'affirme rien du
+patient**, et un cas de banc le garde.
+
+**LA HUITIÈME EST ENTRÉE SUR CONSTAT DE REVUE, et c'est la faute même que ce
+vocabulaire existe pour fermer.** `comptesDuPorteurVise` rend `null` quand le
+porteur ne publie AUCUN compte — `comptesDuRecueil` le documente : « on ne
+fabrique pas une complétude qu'on ne sait pas lire ». La première rédaction
+repliait pourtant ce `null` sur `manquants: 0`, et la carte annonçait « recueil
+incomplet : 0 item(s) manquant(s) » : un **nombre inventé** sur une mesure
+inconnue, dans l'écran dont tout le propos est de ne jamais présenter une absence
+comme un fait (`DC-19`, `DC-24`). Le moteur refuse la branche dans les deux cas ;
+les deux refus n'ont pas la même cause.
+
+**LE COÛT EST ASSUMÉ ET DIT** : une seule branche lacunaire suffit à rendre une
+disjonction « non évaluée ». Une ligne à trois branches paraîtra donc souvent
+non évaluée tant que le recueil est partiel. L'inverse — déclarer « non
+indiquée » une disjonction dont une branche est illisible — affirmerait sur le
+patient ce que seule la donnée absente pourrait trancher.
+
+**4. LA FONCTION VIT DANS LE MOTEUR, PAS DANS LE SERVICE.** La doctrine de
+complétude (`comptesDuPorteurVise`, `extraireCible`) y est déjà, et le chapeau
+d'`orientationService` dit pourquoi : **un fail-closed dupliqué est un
+fail-closed qu'on oublie de corriger dans l'une des deux copies.** Même motif
+pour `scoresRecalculesPourRaisonnement`, importé et non refait — deux
+consommateurs cliniques du même score qui ne lisent pas la même chose est un
+défaut que le dépôt a déjà payé ([[D-231]] et la campagne du 2026-08-04).
+
+**UNE ASYMÉTRIE DU MOTEUR EST RESPECTÉE PLUTÔT QUE LISSÉE** : la garde de
+complétude ne s'applique qu'aux branches d'un `ou` — une feuille seule peut
+s'allumer sur un plancher garanti, qui n'est précisément servi que sur recueil
+incomplet. `lacuneDeFeuille` prend donc un paramètre pour le dire. Poser la même
+exigence des deux côtés aurait déclaré « non évaluée » une ligne que le moteur
+sait trancher.
+
+**5. LE SERVICE PASSE PAR LE POINT DE SORTIE DU CATALOGUE, jamais par
+`getRecommendedPlate`.** La recherche brute trouve aussi les trois repères
+d'**observation** ; `assiettesParIndication()` refait la partition au point de
+service. Une ligne d'indication qui pointerait une assiette d'observation — ce
+que le verrou refuse, mais qu'un appelant passant ses propres lignes
+contournerait — ne sortirait pas.
+
+**6. LA ROUTE CONSULTE LE VERROU AVANT L'APPARTENANCE**, et l'ordre n'est pas
+esthétique : `verifierAppartenancePatient` **journalise** l'accès au dossier.
+Verrou fermé, la route répond sans avoir touché au patient — elle ne consigne
+donc pas une lecture qui n'a pas eu lieu. Un cas de banc l'exige, et il rougit
+quand on retire le test précoce.
+
+**7. AUCUNE ÉCRITURE AU DOSSIER CLINIQUE, AUCUN GESTE.** Pas de POST ; la carte ne porte **aucun
+bouton, aucun formulaire, aucun champ**, et un cas de banc le vérifie. Que
+l'assiette devienne une **unité d'action** est le LOT-02 du cadrage du
+2026-09-16, suspendu aux arbitrages B1 et B2 : poser le geste ici les aurait
+tranchés en passant.
+
+**8. UNE JOINTURE TENUE POUR LA PREMIÈRE FOIS.** `cleClaim` existe **deux fois**
+— `catalogueConduitesV1` pour les tables signées, `rag/claims/validite` pour le
+corpus. Les deux rendent `id::version`, mais **aucun banc ne les confrontait** :
+si l'un dérivait, le filtre ne reconnaîtrait aucune clé et le service rendrait
+zéro ligne **en silence**, fail-closed pour une raison introuvable. Mesuré :
+faire diverger l'un des deux rougit **huit** cas.
+
+**9. UNE PROSE PÉRIMÉE CORRIGÉE — SEPTIÈME OCCURRENCE DU MÊME DÉFAUT.** Le
+chapeau d'`indicationsAssiettesV1.ts` disait encore « Verrou ÉTEINT »,
+« `validationExterne` vaut `false` », « rend `[]` quoi qu'il arrive » et « Trois
+des dix lignes ». [[D-236]] avait corrigé **six** blocs sur constat de revue ;
+celui-ci a survécu **parce qu'il est en commentaire de ligne et non en bloc
+JSDoc** — la correction visait les seconds, et un balayage par forme de
+commentaire ne voit pas l'autre forme. Le fait est écrit dans le fichier plutôt
+que corrigé en silence.
+
+**10. UN CHAMP D'ANAMNÈSE N'EST PAS NOMMÉ À L'ÉCRAN, ET C'EST UN ARBITRAGE, PAS
+UN OUBLI.** La lacune porte la clé du moteur — `intolerancesAlimentaires` —, un
+identifiant interne qu'afficher violerait « UI en français ». Le libellé lisible
+existe (`ANAMNESE_SECTIONS`), mais l'atteindre demande `CHAMP_ANAMNESE`, qui vit
+dans `declencheursAnamnese` → `orientationRulesV1` → `corpusSyntheseV1` →
+**`createHash` de `'crypto'`**. Un import de VALEUR depuis un composant client
+tirerait donc au navigateur **crypto-browserify ET la table de règles entière**,
+retenue par le `sha256(...)` de portée module, dans un fichier `/_next/static/…`
+qui n'est derrière aucune authentification. **Rectification de revue sur la
+BARRIÈRE, et elle compte pour la suite** : une première rédaction annonçait
+`node:crypto` et une casse au BUILD. Les deux sont faux — le spécifieur est
+`'crypto'` nu, que Next résout vers son polyfill sans broncher, et c'est un banc
+unitaire qui tient la frontière (`bundleClient.guard.test.ts`, en **T1**), pas
+le compilateur. Trois issues écartées :
+recopier la correspondance (un troisième jeu de noms qui dérive), la faire
+voyager dans la réponse HTTP (élargir un contrat pour un mot), déplacer
+`CHAMP_ANAMNESE` (refactor d'un module clinique partagé, non demandé). **La carte
+dit donc le fait sans le champ** — « aucune anamnèse au dossier » —, ce qui reste
+vrai et actionnable : c'est l'anamnèse ENTIÈRE qui manque, pas une case. Un cas
+de banc garde qu'aucun identifiant en camelCase n'atteint l'écran.
+
+**11. UNE LIGNE PUBLIÉE QUE LE CORPUS RETIRE EST COMPTÉE — `retireesFauteDeClaim`.**
+CONSTAT DE REVUE ADVERSARIALE, et c'est la faute même que ce lot combat.
+`lignesIndicationAssietteServables` retire une ligne publiée dès qu'UN de ses
+claims cesse d'être valide au corpus — un geste de curation suffit, et le
+praticien en dispose par `POST /api/praticien/corpus/claims/decision`. Les trois
+sorts du résultat ne comptaient que les lignes SERVABLES, et `corpusLu` valait
+`true` : la fermeture était **indiscernable d'un vide**. La carte annonçait
+alors « les 4 indications en service ont été évaluées ; aucune n'est retenue »
+sous le sha du périmètre signé **entier**, quand trois des sept lignes publiées
+n'avaient pas été regardées. Un quatrième compte entre au résultat, la carte le
+nomme, et l'invariant du banc passe des sept lignes **servables** aux sept
+lignes **publiées** : plus aucune ne disparaît sans être dans un compte. Zéro
+quand le corpus est illisible — `corpusLu` porte déjà cette raison-là.
+
+**12. LA PROSE DE RELECTURE NE TRAVERSE PLUS — `raccourciAssume` sort du
+service.** CONSTAT DE REVUE ADVERSARIALE. Le champ était servi tel quel et la
+carte affichait « Raccourci assumé : … » au praticien. Ce texte n'est pas écrit
+pour lui : il est écrit pour la relecture de signature, et il en porte les mots
+— `claimsSecurite`, `insomnie_depression`, `Q_INF_03`, `D-224`. Il paraissait
+sur la ligne la plus atteignable de la table (la protéinée, dont une borne d'âge
+ouvre seule), donc dès le premier dossier de plus de 60 ans. Aucun banc ne le
+voyait : la fixture du panneau posait `raccourciAssume: null`. **Pourquoi on ne
+le reformule pas** : le champ est DANS le périmètre haché — le réécrire périme
+l'attestation de [[D-236]]. Un libellé écrit POUR L'ÉCRAN est un champ neuf,
+donc une re-signature, et ce lot n'en pose aucune. **Ce qui manque est donc
+nommé** : la réserve assumée — dont l'exception parkinsonienne de la protéinée,
+désignée mais non exécutable — ne se lit pas à la carte. Son texte vit dans la
+table signée, **au dépôt**, et non sur une surface praticien : vérifié, la
+surface de relecture NOMME le champ sans le recopier. De cette réserve, l'écran
+ne porte que les claims que la carte désigne, ceux de `claimsSecurite` compris.
+
+**13. UNE ZONE NE LIT PAS UN NOMBRE, ELLE LIT CE QUE SA FORME DEMANDE.** CONSTAT
+DE LA SECONDE REVUE. `lacuneDeFeuille` tenait la mesure pour lisible dès qu'un
+des trois champs existait — valeur, interprétation, plancher. Une **feuille
+seule sur un plancher insuffisant** (recueil partiel, fermeture qui déborde la
+zone) partait donc en « évaluée, non retenue », alors que le moteur n'avait rien
+pu décider et que des items manquaient. **C'est atteignable aujourd'hui** : les
+trois portes `Q_GAS_01` de la table sont des feuilles seules. Le second état,
+symétrique, est un total publié sans bande — rien à lire pour une zone
+`couleur`. `zoneDecidable` devient le miroir exact d'`evaluerZoneMesuree`, et
+l'indécidable se nomme par les comptes du recueil. Un cas de banc garde
+l'inverse — une bande publiée qui ne matche pas reste un **vrai négatif**, et
+sur-signaler serait l'autre faute.
+
+**14. L'ÉTAT DE LA CARTE EST DATÉ DU DOSSIER QUI L'A PRODUIT.** CONSTAT DE LA
+TROISIÈME REVUE. Le jeton de course écarte une réponse en retard ; il ne dit
+rien du rendu qui suit un changement de `idPatient` — React rend avec la
+nouvelle prop et l'ANCIEN état, l'effet ne vidant celui-ci qu'après le commit.
+**Le temps d'une image, les indications du patient précédent se peignaient sous
+l'en-tête du nouveau.** Remède DANS le composant et non par une `key` au point
+de montage : la `key` corrigerait le seul appelant d'aujourd'hui, un état daté
+ne s'oublie pas. **Aucun banc unitaire ne voit cette image** — `act()` fait
+tourner l'effet avant qu'elle soit observable —, et c'est écrit dans le
+composant plutôt que faussement gardé ; ce qui est éprouvé est le contrat
+voisin. La mutation a par ailleurs montré que le jeton ne garde plus qu'un seul
+cas, le RETOUR sur le même dossier, qu'aucun banc ne couvrait.
+
+**CE QUE LE LOT NE FAIT PAS.** Il n'ouvre **aucune porte biologique** — le
+chantier 6 reste devant et périmera l'attestation. Il ne change **aucune ligne,
+aucun claim, aucun `shaPerimetre`** : le périmètre signé du 2026-09-19 est
+intact. Et il ne pose **pas** le drapeau : c'est un geste d'exploitation du
+cabinet, pas le verdict d'un lot.
+
 ### D-236 — La table des indications d'assiette est ATTESTÉE : onze lignes, vingt claims, et la vraie porte de quatre d'entre elles est biologique — ce que le dépôt ne sait pas encore lire
 
 - Date : 2026-09-19

@@ -5,19 +5,29 @@ import { entreesSurSignauxAlerte, valeursDeDrapeauInconnues } from './declencheu
 import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
 
 // INDICATIONS D'ASSIETTE — la FORME d'une ligne, le verrou qui la garde, et
-// ONZE LIGNES depuis le 2026-09-19. Verrou ÉTEINT ([[D-213]] §10, [[D-216]],
-// [[D-225]], [[D-229]], [[D-230]], [[D-231]], [[D-232]], [[D-235]]).
+// ONZE LIGNES depuis le 2026-09-19. Verrou OUVERT ([[D-213]] §10, [[D-216]],
+// [[D-225]], [[D-229]], [[D-230]], [[D-231]], [[D-232]], [[D-235]], [[D-236]],
+// [[D-237]]).
 //
-// LA TABLE N'EST PLUS VIDE, ET ELLE NE SERT TOUJOURS RIEN. Les deux tiennent
-// ensemble par le fail-closed : `validationExterne` vaut `false`, `shaPerimetre`
-// vaut `null`, et `lignesIndicationAssietteServables` rend `[]` quoi qu'il
-// arrive. Écrire les lignes est un geste d'outil ; les ATTESTER n'en est pas un.
+// CE CHAPEAU A DIT LE CONTRAIRE DE L'ÉTAT PENDANT DEUX LOTS, et le dire ici
+// vaut mieux que le corriger en silence. [[D-236]] a signé la table et mis à
+// jour SIX blocs de prose ; celui-ci a survécu parce qu'il est en `//` et non
+// en `/** */` — la correction visait les seconds. C'est l'angle mort « un
+// statut changé à un seul endroit », à sa septième occurrence sur ce fichier.
 //
-// POURQUOI LE STATUT EXISTAIT AVANT LA PREMIÈRE LIGNE ([[D-225]]). Trois des dix
-// lignes sont en brouillon. Sans champ `statut` et sans filtre de service, elles
-// s'afficheraient exactement comme les sept publiées : le jour de l'attestation,
-// le responsable signerait un périmètre dont une partie ne devait pas sortir.
-// **Le filtre existe donc AVANT la première ligne, et pas après.**
+// LA TABLE EST SIGNÉE, ET SERVIE DEPUIS [[D-237]]. `validationExterne` vaut
+// `true`, `shaPerimetre` porte un littéral de 64 hex, et
+// `lignesIndicationAssietteServables` rend les SEPT lignes publiées dès lors
+// que leurs claims sont valides au corpus. Écrire les lignes est un geste
+// d'outil ; les ATTESTER n'en est pas un — la signature a été transcrite sur
+// déclaration.
+//
+// POURQUOI LE STATUT EXISTAIT AVANT LA PREMIÈRE LIGNE ([[D-225]]). Quatre des
+// onze lignes sont en brouillon. Sans champ `statut` et sans filtre de service,
+// elles s'afficheraient exactement comme les sept publiées : le jour de
+// l'attestation, le responsable aurait signé un périmètre dont une partie ne
+// devait pas sortir. **Le filtre existait donc AVANT la première ligne, et pas
+// après.**
 //
 // LE `statut` EST SUR LA LIGNE, PAS SUR L'ASSIETTE, et l'arbitrage est celui de
 // la psychobiotique. Une même assiette peut être indiquée par deux portes dont
@@ -25,11 +35,14 @@ import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
 // n'aurait aucun moyen de les distinguer, et forcerait à choisir entre publier
 // la porte large ou retenir l'assiette entière.
 //
-// CE QUE CE MODULE NE FAIT PAS. Il ne dit pas si un dossier ATTEINT un
-// déclencheur — c'est le travail de `orientationEngine`, et le brancher est un
-// lot à part. Il dit quelles lignes un écran a le droit de recevoir. La
-// distinction n'est pas théorique : un chemin d'exposition livré avant son
-// filtre est exactement ce que ce lot existe pour ne pas faire.
+// CE QUE CE MODULE NE FAIT PAS, ET NE FAIT TOUJOURS PAS. Il ne dit pas si un
+// dossier ATTEINT un déclencheur — c'est le travail d'`orientationEngine`, et
+// le brancher a été un lot à part ([[D-237]],
+// `indicationsAssiettesService.ts`). Il dit quelles lignes un écran a le droit
+// de recevoir. La distinction n'est pas théorique : un chemin d'exposition
+// livré avant son filtre est exactement ce que [[D-225]] existait pour ne pas
+// faire — et l'ordre a tenu, le filtre de 2026-09-17 ayant précédé son
+// consommateur de deux jours.
 //
 // UNE LIGNE DÉSIGNE, ELLE NE RECOPIE PAS. Gate G6 fermée : une ligne porte des
 // identifiants de claim, jamais une phrase du corpus.
@@ -852,11 +865,13 @@ export function indicationsAssiettesSignees(
  * « aucun claim n'est valide ». L'appelant doit pouvoir le dire au praticien —
  * confondre les deux est le silence que `DC-24` interdit.
  *
- * AUCUN APPELANT DE PRODUCTION, et c'est dit plutôt que masqué. Le dépôt a déjà
- * SUPPRIMÉ une fonction de ce profil (`suggererCharge` serveur). La différence
- * est bornée et vérifiable : celle-ci est le seul chemin de service prévu, elle
- * est exercée par son banc de garde, et son consommateur est le lot d'exposition.
- * Si ce lot ne vient pas, cette fonction se supprime — elle ne se reconduit pas.
+ * SON APPELANT DE PRODUCTION EXISTE DEPUIS [[D-237]] :
+ * `indicationsAssiettesService.ts`, lui-même appelé par
+ * `GET /api/praticien/assiettes-indiquees` et rendu au cockpit. Cette fonction
+ * a vécu deux jours sans consommateur, sous une réserve écrite ici même — « si
+ * le lot d'exposition ne vient pas, elle se supprime ». Le lot est venu ; la
+ * réserve est levée, et elle est rappelée plutôt qu'effacée, parce qu'elle est
+ * la raison pour laquelle cette fonction n'a pas été une commodité spéculative.
  */
 export function lignesIndicationAssietteServables(
   claimsValides: ReadonlySet<string> | null,

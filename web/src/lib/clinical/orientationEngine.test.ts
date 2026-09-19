@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { ContradictionFinding } from './contradictionFinding';
-import { evaluerDeclencheur, evaluerOrientation, type ReponseOrientation } from './orientationEngine';
+import {
+  evaluerDeclencheur,
+  evaluerOrientation,
+  lacunesDuDeclencheur,
+  type ReponseOrientation,
+} from './orientationEngine';
 import type { OrientationDeclencheur, OrientationDeclencheurFeuille, OrientationRule } from './orientationRulesV1';
 import type { EtatPopulation } from '@/lib/consultation/etatPopulation';
 import type { StopRule } from './stopRulesV1';
@@ -1432,5 +1437,188 @@ describe('evaluerDeclencheur — disjonction (D-060)', () => {
       reglesArret: [arretOu],
     });
     expect(muette[0].extinction ?? null).toBeNull();
+  });
+});
+
+// ── `lacunesDuDeclencheur` — CE QUI MANQUE, ET JAMAIS CE QUI EST FAUX ────────
+//
+// POURQUOI CE BLOC EXISTE ([[D-237]]). La fonction est née exercée SEULEMENT à
+// travers `indicationsAssiettesService`, c'est-à-dire à travers un service qui
+// recalcule les scores et ne peut donc pas fabriquer librement un porteur. Or
+// c'est ici que vivent ses cas limites — et l'un d'eux, la complétude illisible,
+// a produit un NOMBRE INVENTÉ avant d'être relevé en revue. Une fonction de
+// moteur partagé se garde dans le banc du moteur.
+describe('lacunesDuDeclencheur — ce qui manque, jamais ce qui est faux', () => {
+  const porteurSansComptes: ReponseOrientation = {
+    idQuestionnaire: 'Q_STR_02',
+    dateReponse: '2026-09-01T00:00:00.000Z',
+    // Une interprétation, une valeur, ET AUCUN COMPTE — ni `repondus`/`items`,
+    // ni `missing`. C'est la forme que `comptesDuRecueil` refuse de lire.
+    scores: { total: 30, interpretation: { label: 'élevé', color: 'danger' } },
+  };
+  const feuilleZone: OrientationDeclencheurFeuille = {
+    type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'plage', min: 27, max: 50 },
+  };
+
+  function dernieres(...lignes: ReponseOrientation[]) {
+    return new Map(lignes.map(l => [l.idQuestionnaire, l]));
+  }
+
+  it('COMPLÉTUDE ILLISIBLE ≠ ZÉRO MANQUANT — constat de revue, et le défaut était réel', () => {
+    // Sur une BRANCHE DE DISJONCTION, le moteur exige des comptes lisibles.
+    // Quand le porteur n'en publie aucun, la lacune doit dire qu'on ne SAIT
+    // PAS. Une première rédaction repliait ce cas sur `manquants: 0`, et
+    // l'écran annonçait « recueil incomplet : 0 item(s) manquant(s) » — un
+    // nombre fabriqué sur une mesure inconnue.
+    const ou: OrientationDeclencheur = { type: 'ou', declencheurs: [feuilleZone] };
+    const lacunes = lacunesDuDeclencheur(ou, dernieres(porteurSansComptes), undefined, {});
+    expect(lacunes).toHaveLength(1);
+    expect(lacunes[0].type).toBe('completude_illisible');
+    expect(JSON.stringify(lacunes[0])).not.toMatch(/"manquants"/);
+  });
+
+  it('un recueil VRAIMENT incomplet porte son compte, et son dénominateur quand il existe', () => {
+    const partiel: ReponseOrientation = {
+      ...porteurSansComptes,
+      scores: { total: 30, repondus: 7, items: 10 },
+    };
+    const ou: OrientationDeclencheur = { type: 'ou', declencheurs: [feuilleZone] };
+    const lacunes = lacunesDuDeclencheur(ou, dernieres(partiel), undefined, {});
+    expect(lacunes[0]).toMatchObject({ type: 'recueil_incomplet', manquants: 3, total: 10 });
+  });
+
+  it('UNE FEUILLE SEULE N’EXIGE PAS LA COMPLÉTUDE — l’asymétrie du moteur est respectée', () => {
+    // `evaluerDeclencheur` n'applique `comptesDuPorteurVise` qu'aux branches
+    // d'un `ou` : une feuille seule peut s'allumer sur un plancher garanti, qui
+    // n'est servi QUE sur recueil incomplet. Exiger la complétude des deux
+    // côtés déclarerait « non évaluée » une ligne que le moteur sait trancher.
+    const seule = lacunesDuDeclencheur(feuilleZone, dernieres(porteurSansComptes), undefined, {});
+    expect(seule).toEqual([]);
+    // Et le moteur, lui, tranche bien cette feuille :
+    expect(evaluerDeclencheur(feuilleZone, dernieres(porteurSansComptes), undefined, {})).not.toBeNull();
+  });
+
+  it('rien ne manque quand tout est là — le `null` du moteur est alors un VRAI négatif', () => {
+    const horsPlage: ReponseOrientation = {
+      ...porteurSansComptes,
+      scores: { total: 5, repondus: 10, items: 10, interpretation: { label: 'bas', color: 'success' } },
+    };
+    const ou: OrientationDeclencheur = { type: 'ou', declencheurs: [feuilleZone] };
+    expect(evaluerDeclencheur(ou, dernieres(horsPlage), undefined, {})).toBeNull();
+    expect(lacunesDuDeclencheur(ou, dernieres(horsPlage), undefined, {})).toEqual([]);
+  });
+
+  // ── CE QUE LA ZONE CONSULTE, ET RIEN D'AUTRE — constat de revue ───────────
+  //
+  // Trois cas, et le premier est atteignable aujourd'hui sur la table signée :
+  // ses trois portes `Q_GAS_01` sont des feuilles SEULES, et un TFD à moitié
+  // rempli est un état courant. La rédaction précédente tenait la mesure pour
+  // lisible dès qu'UN des trois champs existait — le plancher suffisait donc à
+  // taire la lacune, et la ligne partait en « évaluée, non retenue ».
+  const feuilleCouleur: OrientationDeclencheurFeuille = {
+    type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['danger'] },
+  };
+
+  it('FEUILLE SEULE, PLANCHER INSUFFISANT : c’est un recueil incomplet, pas un négatif', () => {
+    const partiel: ReponseOrientation = {
+      idQuestionnaire: 'Q_STR_02',
+      dateReponse: '2026-09-01T00:00:00.000Z',
+      // Recueil à trous, plancher SERVI mais dont la fermeture déborde la zone
+      // visée : `warning` est possible, la zone ne lit que `danger`. Le moteur
+      // ne peut donc rien garantir — et quatre items répondus sur dix disent
+      // pourquoi.
+      scores: {
+        total: 12,
+        repondus: 4,
+        items: 10,
+        bandePlancher: {
+          garanti: true,
+          color: 'warning',
+          label: 'modéré',
+          couleursPossibles: ['warning', 'danger'],
+        },
+      },
+    };
+    expect(evaluerDeclencheur(feuilleCouleur, dernieres(partiel), undefined, {})).toBeNull();
+    const lacunes = lacunesDuDeclencheur(feuilleCouleur, dernieres(partiel), undefined, {});
+    expect(lacunes[0]).toMatchObject({ type: 'recueil_incomplet', manquants: 6, total: 10 });
+  });
+
+  it('UNE BANDE QUE LE PORTEUR NE PUBLIE PAS rend la zone indécidable, total ou non', () => {
+    // Recueil COMPLET, total présent — mais aucune `interpretation` : une zone
+    // `couleur` n'a rien à lire. Un nombre n'est pas une bande.
+    const sansBande: ReponseOrientation = {
+      idQuestionnaire: 'Q_STR_02',
+      dateReponse: '2026-09-01T00:00:00.000Z',
+      scores: { total: 30, repondus: 10, items: 10 },
+    };
+    expect(evaluerDeclencheur(feuilleCouleur, dernieres(sansBande), undefined, {})).toBeNull();
+    const lacunes = lacunesDuDeclencheur(feuilleCouleur, dernieres(sansBande), undefined, {});
+    expect(lacunes[0]).toMatchObject({ type: 'mesure_indisponible', idQuestionnaire: 'Q_STR_02' });
+  });
+
+  it('UNE BANDE PUBLIÉE QUI NE MATCHE PAS est un VRAI négatif — aucune lacune', () => {
+    // Le garde-fou du garde-fou : sur-signaler serait l'autre faute. Ici le
+    // porteur a tout dit, la bande existe, elle n'est pas dans la zone. La
+    // ligne a été LUE et tranchée.
+    const bandeFavorable: ReponseOrientation = {
+      idQuestionnaire: 'Q_STR_02',
+      dateReponse: '2026-09-01T00:00:00.000Z',
+      scores: { total: 5, repondus: 10, items: 10, interpretation: { label: 'bas', color: 'success' } },
+    };
+    expect(evaluerDeclencheur(feuilleCouleur, dernieres(bandeFavorable), undefined, {})).toBeNull();
+    expect(lacunesDuDeclencheur(feuilleCouleur, dernieres(bandeFavorable), undefined, {})).toEqual([]);
+  });
+
+  it('un instrument JAMAIS PASSÉ se distingue d’un instrument passé et non coté', () => {
+    const absent = lacunesDuDeclencheur(feuilleZone, new Map(), undefined, {});
+    expect(absent[0]).toMatchObject({ type: 'instrument_non_passe', idQuestionnaire: 'Q_STR_02' });
+
+    const nonCotable = lacunesDuDeclencheur(
+      feuilleZone,
+      dernieres({ ...porteurSansComptes, scores: null }),
+      undefined,
+      {},
+    );
+    // Les deux ferment, pour deux raisons différentes — c'est toute la doctrine
+    // de ce vocabulaire, et les confondre reviendrait à dire au praticien
+    // « passez cet instrument » alors qu'il l'a fait passer.
+    expect(nonCotable[0]).toMatchObject({ type: 'instrument_non_cotable' });
+  });
+
+  it('une porte d’ÂGE, de RÉGIME ou de DRAPEAU nomme son absence, et ne la confond pas', () => {
+    const age = lacunesDuDeclencheur({ type: 'age', operateur: '>', valeur: 60 }, new Map(), undefined, {});
+    expect(age[0]).toEqual({ type: 'age_inconnu' });
+
+    const regime = lacunesDuDeclencheur(
+      { type: 'exclusionAlimentaire', valeurs: ['vegetarienne'] },
+      new Map(),
+      undefined,
+      { etatPopulation: { alimentation: 'inconnu' } as EtatPopulation },
+    );
+    // `inconnu` EST une absence — le moteur le traite déjà ainsi.
+    expect(regime[0]).toEqual({ type: 'alimentation_non_declaree' });
+
+    const drapeauAbsent = lacunesDuDeclencheur(
+      { type: 'drapeau', champ: 'intolerancesAlimentaires', valeurs: ['Gluten'] },
+      new Map(),
+      undefined,
+      {},
+    );
+    expect(drapeauAbsent[0]).toMatchObject({ type: 'anamnese_absente', champ: 'intolerancesAlimentaires' });
+
+    // ANAMNÈSE PRÉSENTE SANS LA VALEUR : ce n'est PAS une lacune. Le patient a
+    // déclaré, et il n'a pas déclaré cela.
+    const drapeauPresent = lacunesDuDeclencheur(
+      { type: 'drapeau', champ: 'intolerancesAlimentaires', valeurs: ['Gluten'] },
+      new Map(),
+      {
+        signauxAlerte: [], antecedentsDomaines: [], facteursDeclenchants: [], attentes: [],
+        automedication: [], intolerancesAlimentaires: [], symptomesFonctionnels: [],
+        debut: null, evolution: null, variationPoids: null,
+      },
+      {},
+    );
+    expect(drapeauPresent).toEqual([]);
   });
 });

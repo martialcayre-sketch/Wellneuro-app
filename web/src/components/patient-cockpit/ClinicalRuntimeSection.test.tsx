@@ -84,6 +84,14 @@ const ROUTES_NOMMEES = [
   // exact que ce routage a fermé. Sans déclaration, un cas reçoit l'échec par
   // défaut, donc le geste reste absent.
   ['/api/praticien/adressage/courrier', 'adressage'],
+  // Assiettes indiquées ([[D-237]]) — MÊME DÉFAUT QUE CI-DESSUS, RETROUVÉ À
+  // L'IDENTIQUE au montage du panneau : non nommée, la route consommait une
+  // réponse du cockpit dans la file générique, et VINGT-SEPT cas tombaient sur
+  // « Erreur technique lors de la préparation du cockpit clinique » — un
+  // panneau neuf qui lit, et une section entière qui échoue. Son défaut rend le
+  // verrou FERMÉ, donc le panneau se rend `null` : les cas qui ne parlent pas
+  // d'assiettes indiquées voient exactement l'écran qu'ils voyaient avant.
+  ['/api/praticien/assiettes-indiquees', 'assiettesIndiquees'],
   ['/api/praticien/biologie/proposition/document-patient', 'cbDocumentPatient'],
   ['/api/praticien/biologie/proposition/courrier', 'cbCourrier'],
   ['/api/praticien/biologie/proposition', 'cbProposition'],
@@ -131,6 +139,10 @@ type CleRoute = RouteNommee | `${RouteNommee}Get` | `${RouteNommee}Post`;
 const DEFAUTS: Partial<Record<RouteNommee, unknown>> = {
   propositions: { ok: true, propositions: [], disposees: [], caduques: [] },
   trajectoire: { ok: true, trajectoire: null },
+  // Verrou FERMÉ par défaut, et c'est l'état réel de la production au jour de
+  // la livraison : `WN_ASSIETTES_INDIQUEES` est neuf et éteint. Un cas qui
+  // voudra voir la carte déclarera sa propre réponse.
+  assiettesIndiquees: { ok: true, actif: false, message: 'Indications d’assiette non activées.' },
 };
 
 const ECHEC_ROUTE_NON_DECLAREE = () => rep({}, false, 500);
@@ -596,6 +608,30 @@ describe('ClinicalRuntimeSection', () => {
     });
   });
 
+  it('EN PHASE DÉCISION, les assiettes indiquées ne sont PAS lues — aucun accès au dossier', async () => {
+    // CONSTAT DE REVUE, ET LE CAS QUI L'AURAIT ATTRAPÉ. Le panneau était monté
+    // sous un `hidden`, qui MASQUE sans démonter : son `useEffect` partait donc
+    // dès le montage de la section, quelle que soit la phase. Une fois le
+    // drapeau ouvert, `GET /api/praticien/assiettes-indiquees` vérifie
+    // l'appartenance et JOURNALISE une lecture de dossier clinique — le journal
+    // d'accès aurait porté une lecture que le praticien n'a jamais demandée.
+    const fetchMock = fetchParRoute({ cockpitGet: [rep(readyAvecCandidats())] });
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={null}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        phase="decision"
+      />,
+    );
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(0));
+    expect(
+      fetchMock.mock.calls.map(a => String(a[0])).some(u => u.includes('/assiettes-indiquees')),
+    ).toBe(false);
+  });
+
   it('recharge automatiquement une proposition périmée et redemande confirmation', async () => {
     const stale: CockpitRuntimeApiResponse = { status: 'unavailable', reason: 'proposal_stale', error: 'Périmée.' };
     const refreshed = { ...proposalResponse, proposalHash: 'hash-refreshed' } satisfies CockpitRuntimeApiResponse;
@@ -611,8 +647,12 @@ describe('ClinicalRuntimeSection', () => {
 
     expect(await screen.findByText(/proposition a été rechargée/)).toBeTruthy();
     expect((screen.getByRole('button', { name: 'Confirmer l’épisode T0' }) as HTMLButtonElement).disabled).toBe(false);
-    // Trajectoire + GET initial + POST périmé + GET rechargé.
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    // Trajectoire + GET initial + POST périmé + GET rechargé + assiettes
+    // indiquées ([[D-237]]). LE COMPTE EST UNE ÉNUMÉRATION, pas un nombre : le
+    // corriger sans dire ce qui s'ajoute laisserait passer, la fois suivante,
+    // un appel que personne n'a voulu. La lecture des assiettes part UNE FOIS,
+    // au montage, et ne se rejoue pas sur un rechargement de proposition.
+    expect(fetchMock).toHaveBeenCalledTimes(5);
   });
 
   it.each([

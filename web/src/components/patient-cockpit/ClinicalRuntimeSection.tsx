@@ -34,6 +34,7 @@ import { Button } from '@/components/ui/Button';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 import { PractitionerFoodCompassObservatory } from './PractitionerFoodCompassObservatory';
+import { AssiettesIndiqueesPanel } from './AssiettesIndiqueesPanel';
 import { useC5Enabled } from './C5FeatureProvider';
 import { useCbEnabled, useCbResultsEnabled } from './CbFeatureProvider';
 import {
@@ -2022,6 +2023,40 @@ export function ClinicalRuntimeSection({
             onInsert={setFoodCompassSelection}
           />
         </div>
+      )}
+      {/* ASSIETTES INDIQUÉES ([[D-237]]) — à côté de l'observatoire, et pour le
+          motif du cadrage du 2026-09-16 : l'assiette est l'unité de
+          PRESCRIPTION, l'aliment en est le contenu. C'est ici que le praticien
+          décide, donc ici que la lecture doit être.
+
+          PAS DE `c5Enabled`, ET C'EST DÉLIBÉRÉ. Cette carte a son propre
+          verrou — `WN_ASSIETTES_INDIQUEES` ET la signature de la table —, posé
+          côté route pour qu'aucun chemin client ne puisse le contourner.
+          L'adosser en plus au drapeau du rayon alimentation ajouterait une
+          seconde condition invisible, dont l'extinction se lirait comme une
+          panne de celle-ci. Verrou fermé, le panneau se rend `null` lui-même.
+
+          PAS DE `readyDecisionCardId` NON PLUS : la carte ne s'attache à aucune
+          carte de décision — elle ne propose aucun geste.
+
+          MONTAGE CONDITIONNEL, ET NON `hidden` — CONSTAT DE REVUE, VÉRIFIÉ.
+          `hidden` ne démonte pas : le panneau voisin le dit lui-même, et c'est
+          VOULU pour lui (le démonter rejouerait son chargement et perdrait
+          l'aliment sélectionné). Ici c'était une faute. Le `useEffect` de cette
+          carte serait parti dès le montage de la SECTION — donc en phase
+          Décision, et dans les sous-vues Historique, Diffusion, Biologie. Une
+          fois le drapeau ouvert, la route vérifie l'appartenance et
+          **JOURNALISE une lecture de dossier clinique** : le journal d'accès
+          aurait porté une lecture que le praticien n'a jamais demandée, avant
+          même qu'il ouvre Protocole. C'est l'inverse exact de ce que le verrou
+          précoce de la route existe pour garantir.
+
+          RIEN À PRÉSERVER EN DÉMONTANT, et c'est ce qui rend le remède gratuit :
+          cette carte n'a aucun état de saisie — elle relit sur `idPatient`, et
+          son seul coût au remontage est le GET qu'on vient précisément
+          d'éviter. */}
+      {!fixture && affiche('actions') && sousVueActions === 'protocole' && (
+        <AssiettesIndiqueesPanel idPatient={idPatient} />
       )}
       <div id="protocol-version-builder" hidden={!affiche('actions') || (!fixture && sousVueActions !== 'protocole')}>
         {/* RESTITUER AVANT DE FAIRE SAISIR. Le constructeur ne lisait de
