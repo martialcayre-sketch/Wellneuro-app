@@ -7516,3 +7516,39 @@ fait descendre Scalingo avant toute détection, vérifié avant d'écrire.
 
 **Questions ouvertes.** Les 113 blobs CRLF. La garde de clôture de `/wn-merge`,
 qu'aucun contrôle CI n'exécute.
+
+## 2026-09-19 — La réserve RGPD de la correspondance est soldée, et une question rétrécit
+
+**Décisions.** `D-234` : le dossier RGPD décrivait encore l'état du matin du
+2026-09-17 ; il est remis à jour, et ce qui reste dû devient **deux lignes du
+récapitulatif de la rubrique 14**, avec porteur et échéance, au lieu d'une
+réserve en prose.
+
+**Le fait central n'était écrit nulle part : il y a deux voies.** Trois routes
+écrivent dans `correspondances_medecin` ; deux sont fail-closed sur refus,
+retrait et silence, la troisième — la lettre d'adressage sur signal d'alerte —
+n'a aucune garde, délibérément. La voie ordinaire repose sur le choix du patient,
+tenu ; la voie d'exception transmet **malgré un refus**. Les deux ne peuvent pas
+reposer sur la même justification, et la seconde n'en a aucune d'écrite.
+
+**Écartée, et c'est la décision de méthode du lot :** présenter au responsable un
+choix de bases légales candidates. La rubrique 3 interdit d'écrire un article du
+RGPD dans ce dossier — « ni 6.1.a, ni 9.2.h, ni aucun autre » — tant qu'un
+conseil qualifié ne l'a pas posé, et la rubrique 14 attribue la base légale à
+**Conseil qualifié**, pas au responsable. J'avais annoncé l'inverse au
+responsable la veille ; la lecture du dossier l'a corrigé avant l'écriture.
+
+**Les chiffres retournent la seconde question.** 29 dossiers, **0
+`trust_choice_events` toutes finalités**, 2 correspondances sur 1 dossier,
+accusés v8 → 3 / v9 → 2, **v8 sans v9 → 2**. Donc : les deux routes gardées sont
+fermées pour les 29 dossiers depuis le 2026-09-17 (fail-closed sur le silence,
+et personne ne s'est prononcé) — ce n'était pas mesuré ; et « informer les
+patients déjà consentants » porte sur **deux personnes**, pas sur un mécanisme.
+
+**Prochaine action.** Lire la revue aux trois emplacements, merger avec
+`--subject`. Puis le geste du responsable sur les deux patients — ce qui part
+vers un patient ne se décide pas ici.
+
+**Questions ouvertes.** La qualification de la voie d'exception (conseil,
+2026-10-21). Le geste d'information des deux patients (responsable, à fixer).
+Et l'invariant « le discriminant est la route » n'est tenu par aucun banc.

@@ -4,6 +4,72 @@
 
 ## Décisions actives
 
+### D-234 — La réserve de [[D-222]] §2 est soldée pour ce qu'elle réclamait : ce qui reste tient en deux items tracés, la voie d'exception et deux patients
+
+- Date : 2026-09-19
+- Statut : accepté — **arbitrage du responsable**, rendu en session le
+  2026-09-19 (« terminer RGPD »). Ce lot exécute cet arbitrage ; il **ne pose
+  aucune qualification juridique**, qui n'est ni de son ressort ni du sien.
+- Domaine : RGPD, correspondance médecin, registre des traitements
+- Amende : `docs/DOSSIER_RGPD.md` rubriques 6 et 14. N'amende ni [[D-222]] ni
+  [[D-219]], déjà amendés en place le 2026-09-17.
+
+**1. CE QUI EST TRANCHÉ.** La réserve écrite au dossier RGPD décrivait l'état du
+**matin** du 2026-09-17 — « le logiciel ne garantit pas cette phrase », « non
+touché ». Les deux bouts ont été pris le soir même, et le dossier ne le disait
+pas. Il le dit maintenant, et ce qui reste dû cesse d'être une réserve en prose
+pour devenir **deux lignes du récapitulatif de la rubrique 14**, avec porteur et
+échéance, comme les dix-huit autres.
+
+**2. LE FAIT CENTRAL, QUI N'ÉTAIT ÉCRIT NULLE PART : IL Y A DEUX VOIES.** Trois
+routes écrivent dans `correspondances_medecin`. Deux appellent
+`verdictPartageMedecin` — fail-closed sur **refus, retrait ET silence** ; la
+troisième, `api/praticien/adressage/courrier`, n'a **aucune garde**, et c'est
+délibéré : fermer là fermerait au moment où un signal d'alerte suspend déjà la
+décision clinique. Conséquence, et c'est la question ouverte : **la voie
+ordinaire repose sur le choix du patient, désormais techniquement tenu ; la voie
+d'exception transmet malgré un refus.** Les deux ne peuvent pas reposer sur la
+même justification, et la seconde n'en a aucune d'écrite.
+
+**Le discriminant est LA ROUTE, jamais le destinataire** — `medecinLibelle` est
+du texte libre sur tous les chemins. L'étendue de l'exception tient donc à la
+discipline de routage : une quatrième route qui n'appellerait pas la garde en
+hériterait **en silence**. Aucun banc ne tient cet invariant ; il est nommé ici
+plutôt que supposé.
+
+**3. AUCUN ARTICLE DU RGPD N'EST ÉCRIT, ET C'EST LA RÈGLE DU DOSSIER.** La
+rubrique 3 l'interdit en toutes lettres — « ni 6.1.a, ni 9.2.h, ni aucun autre »
+— tant qu'un conseil qualifié ne l'a pas posé, et la rubrique 14 attribue la base
+légale à **Conseil qualifié**, pas au responsable. La session a donc écarté de
+présenter au responsable un choix de bases candidates : ç'aurait été lui demander
+l'acte que le dossier réserve à un conseil. La qualification de la voie
+d'exception entre au récapitulatif avec ce porteur-là et l'échéance commune du
+**2026-10-21**.
+
+**4. LES CHIFFRES DE PRODUCTION, ET CE QU'ILS RETOURNENT.** Mesurés le
+2026-09-19 en agrégats, sans identifiant : 29 dossiers ; **0
+`trust_choice_events`, toutes finalités confondues** ; 2 lignes de
+correspondance sur 1 dossier ; accusés `donnees_confidentialite` v8 → 3, v9 → 2 ;
+**v8 sans v9 → 2**.
+
+- **Personne ne s'est jamais prononcé.** La garde étant fail-closed sur le
+  silence, les deux routes gardées sont **fermées pour les 29 dossiers** depuis le
+  2026-09-17. Ce n'était pas mesuré. Le coût réel est faible — 2 lignes sur 1
+  dossier depuis la mise en service — et la contrepartie existe sur les **deux**
+  écrans (« Consentement jamais exprimé », avec le chemin, tenu par des bancs).
+- **La question « informer les patients déjà consentants » n'a pas la taille
+  qu'on lui prêtait.** Elle visait un mécanisme ; elle porte sur **deux
+  personnes**, que leur praticien connaît. Ce qui part vers un patient reste un
+  geste du responsable : l'item est tracé, non exécuté.
+
+**5. CE QUE CE LOT NE FAIT PAS.** Aucune ligne de code, aucun schéma, aucune
+migration, aucun drapeau, aucun message à un patient. Il ne rouvre ni [[D-222]]
+ni [[D-219]]. Il ne qualifie rien. Il ne referme pas non plus les deux pièces
+résiduelles de la réserve d'origine — l'**effet du refus** annoncé dans « Mes
+choix », plus absolu que la garde puisque la voie d'exception lui échappe, et la
+**formulation des finalités** couverte par aucune version. La seconde est **sans
+portée mesurable** : la table est vide.
+
 ### D-233 — [[D-049]] est close : la cause racine est corrigée et mesurée, T3 local redevient exigé en entier, et la règle du rouge WebKit du CI est redomiciliée
 
 - Date : 2026-09-19
