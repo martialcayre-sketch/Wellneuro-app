@@ -33,7 +33,12 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 // Table de règles contrôlable par test : le verrou réel (table vide, non
 // validée) est épinglé par orientationRulesV1.test.ts — ici on teste la
 // logique de la route des deux côtés du double verrou.
-vi.mock('@/lib/clinical/orientationRulesV1', () => ({
+// `estFeuilleInstrument` VIENT DU MODULE RÉEL, jamais d'un stub ([[D-231]]) :
+// le moteur s'en sert pour distinguer une feuille d'instrument d'une borne
+// d'âge ou d'un drapeau, et une version fabriquée ici ferait diverger le banc
+// du comportement réel au premier ajout de variante.
+vi.mock('@/lib/clinical/orientationRulesV1', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/clinical/orientationRulesV1')>()),
   ORIENTATION_METADATA: mockMeta,
   ORIENTATION_RULES_V1: mockRegles,
   ORIENTATION_RULES_SHA256: 'sha-test',

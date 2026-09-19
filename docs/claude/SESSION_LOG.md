@@ -7259,3 +7259,39 @@ avec la correction du commentaire d'`anamnese.ts` dans le même lot.
 
 **Question ouverte.** `assiettesParIndication` n'a aucun appelant : elle se
 supprime si le lot d'exposition ne vient pas.
+
+## 2026-09-19 — La borne d'âge devient un déclencheur
+
+**Décision.** `D-231`, sur arbitrage du responsable : câblage complet plutôt que
+la forme seule. Le chantier 3 de S3 est fermé. Le dépôt écartait l'âge parce
+qu'aucune borne n'avait de provenance ; trois claims prescriptifs en portent —
+50, 60, 70 ans —, donc le pivot est **cité**, plus inventé.
+
+**Deux opérateurs, pas cinq.** `>=` et `>` seulement : `<` aurait offert une
+borne pédiatrique qu'aucune source ne fonde. Le type refuse ce que la doctrine ne
+peut pas justifier, au lieu de compter sur la revue.
+
+**Le moteur ne calcule aucun âge et ne lit aucune horloge** — il reçoit un nombre
+tranché, comme son instant de référence, qui est désormais hissé en un seul point
+pour que fraîcheur et âge ne puissent pas tomber de part et d'autre de minuit. Un
+seul module en DÉDUIT un âge clinique — la colonne était déjà lue ailleurs, pour
+le résidu d'effacement —, et il la refuse dès qu'elle n'est pas une date
+calendaire **réelle** : `2026-02-31` passe le format et se replierait en silence.
+
+**Le vrai correctif n'est pas la variante, c'est ce qu'elle a révélé.** Huit
+fichiers raisonnaient « pas un drapeau, donc un instrument » — vrai seulement tant
+que la famille comptait trois variantes. `tsc` l'a dit partout en même temps.
+`estFeuilleInstrument` remplace la déduction par une affirmation, et la garde de
+complétude cesse de s'appliquer à une feuille qui n'a aucun porteur — sans quoi la
+borne aurait été inatteignable sous un `ou`.
+
+**Corrigé avant d'écrire** : la dette du régime alimentaire routée la veille
+annonçait « une clé de plus dans `CHAMP_ANAMNESE` ». Faux — `etat_alimentation`
+est déjà lu par `lireEtatPopulation`. Arbitrage rendu : lire l'`EtatPopulation`,
+pas en faire un drapeau. `DC-43` revisitée dans le même lot, comme `D-216`
+l'exigeait.
+
+**Prochaine action.** Le régime alimentaire — dernier chantier avant les lignes.
+
+**Question ouverte.** Aucune règle ne porte de borne d'âge ; le jour où il en
+faudra une, vérifier que son appelant fournit bien l'âge.

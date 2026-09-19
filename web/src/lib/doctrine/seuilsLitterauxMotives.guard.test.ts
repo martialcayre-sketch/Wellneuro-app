@@ -253,6 +253,21 @@ const EXEMPTIONS: Record<string, string> = {
   'src/lib/instruments.ts\ttitre.length > 120': 'longueur de titre (caractères), contrainte de saisie',
   'src/lib/instruments.ts\ttexte.length < 3': 'longueur de libellé (caractères), contrainte de saisie',
   'src/lib/instruments.ts\ttexte.length > 300': 'longueur de libellé (caractères), contrainte de saisie',
+
+  // — Bornes de plausibilité sur l'ÂGE ([[D-231]]), et la distinction est
+  //   exactement celle que `DC-20` demande. Elles ne QUALIFIENT aucune
+  //   population : hors plage, `ageAnnees` rend `null`, et un `null` n'atteint
+  //   aucun déclencheur — donc aucune conclusion clinique n'en dérive
+  //   (`DC-24`). Elles refusent une date que le format seul laisse passer, au
+  //   même titre que les bornes de taille et de poids ci-dessus.
+  //
+  //   LES SEULS SEUILS CLINIQUES D'ÂGE DU DÉPÔT SONT AILLEURS, et ils ne sont
+  //   pas des littéraux de comparaison : ce sont les `valeur` des bornes
+  //   écrites dans une table de règles, qui doivent être portées par un claim
+  //   (50, 60, 70 — `WN-CL-0286-006`, `WN-CL-0288-011`, `WN-CL-0293-009`).
+  //   Aucun banc ne peut vérifier cela : seule la relecture le voit.
+  'src/lib/patient/age.ts\tage <= 130': 'borne de plausibilité (années) ; hors plage ⇒ null, aucun déclencheur atteint',
+  'src/lib/clinical/indicationsAssiettesV1.ts\tfeuille.valeur > 130': 'borne de plausibilité d’une borne d’âge écrite en table ; signale une anomalie de forme, n’interprète rien',
   'src/lib/instruments.ts\toptions.length > 8': 'nombre d’options d’un item ; contrainte d’ergonomie de saisie, aucune cotation n’en dépend',
   'src/lib/biology-library/gardeProposition.ts\tidPatient.length > 64': 'longueur maximale d’un identifiant, garde d’entrée',
   'src/lib/biology-library/gardeResultats.ts\tidPatient.length > 64': 'longueur maximale d’un identifiant, garde d’entrée (jumelle de gardeProposition)',

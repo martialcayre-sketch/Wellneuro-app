@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { computeScoreFromDef } from '@/lib/questions';
 import { Q_ALI_01_COURT_14, Q_ALI_01_SIIN_57 } from '@/lib/questionnaires/alimentaire';
-import { feuillesDuDeclencheur, ORIENTATION_RULES_V1, type OrientationRule } from '@/lib/clinical/orientationRulesV1';
+import { estFeuilleInstrument, feuillesDuDeclencheur, ORIENTATION_RULES_V1, type OrientationRule } from '@/lib/clinical/orientationRulesV1';
 
 // LA GARDE SUR LAQUELLE [[D-051]] S'APPUIE, ENFIN ÉPROUVÉE.
 //
@@ -78,7 +78,7 @@ describe('Q_ALI_01 — une forme relue contre l’autre définition ne produit a
     for (const regle of regles) {
       if (regle.statut !== 'publiee') continue;
       for (const declencheur of regle.declencheurs.flatMap(feuillesDuDeclencheur)) {
-        if (declencheur.type === 'drapeau' || declencheur.idQuestionnaire !== 'Q_ALI_01') continue;
+        if (!estFeuilleInstrument(declencheur) || declencheur.idQuestionnaire !== 'Q_ALI_01') continue;
         const forme = 'zone' in declencheur ? declencheur.zone?.type : null;
         if (forme !== 'interpretation') {
           fautes.push(`${regle.id} déclenche sur ${forme ?? declencheur.type}, pas sur l'interprétation`);
@@ -96,7 +96,7 @@ describe('Q_ALI_01 — une forme relue contre l’autre définition ne produit a
     const ciblantAli01 = ORIENTATION_RULES_V1.filter(
       regle => regle.statut === 'publiee'
         && regle.declencheurs.flatMap(feuillesDuDeclencheur)
-          .some(d => d.type !== 'drapeau' && d.idQuestionnaire === 'Q_ALI_01'),
+          .some(d => estFeuilleInstrument(d) && d.idQuestionnaire === 'Q_ALI_01'),
     );
     // S'il n'y en a plus aucune, ce banc ne garde plus rien : on le dit.
     expect(ciblantAli01.length).toBeGreaterThan(0);

@@ -5,7 +5,8 @@ import { entreesSurSignauxAlerte, valeursDeDrapeauInconnues } from './declencheu
 import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
 
 // INDICATIONS D'ASSIETTE — la FORME d'une ligne et le verrou qui la garde.
-// Table VIDE, verrou ÉTEINT ([[D-213]] §10, [[D-216]], [[D-225]], [[D-229]]).
+// Table VIDE, verrou ÉTEINT ([[D-213]] §10, [[D-216]], [[D-225]], [[D-229]],
+// [[D-230]], [[D-231]]).
 //
 // CE QUE CE LOT FERME, ET C'EST SA SEULE RAISON D'ÊTRE. La surface de relecture
 // du 2026-09-16 propose HUIT indications d'assiette, dont l'une — la
@@ -52,11 +53,16 @@ import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
  * claim cité dise bien ce que la ligne lui fait dire ne se vérifie qu'en lisant
  * son texte en production, source entière ([[D-224]], [[D-227]]).
  *
- * CE QUE CE TYPE NE PERMET PAS ENCORE : une borne d'ÂGE. `D-216` a rendu l'âge
- * déclencheur, mais `Patient.dateNaissance` n'est lu par aucune porte et
- * `OrientationDeclencheur` n'a pas de forme pour lui. Trois des huit
- * indications proposées en dépendent : elles ne sont pas constructibles
- * aujourd'hui, et c'est dit ici plutôt que découvert à l'attestation.
+ * LA BORNE D'ÂGE EXISTE DEPUIS LE 2026-09-19 ([[D-231]]). `OrientationDeclencheur`
+ * porte une variante `age`, `Patient.dateNaissance` est lue par `ageAnnees`, et
+ * le moteur reçoit l'âge du dossier. Deux opérateurs seulement — `>=` et `>` —,
+ * les deux formes que les claims emploient ; une borne pédiatrique n'aurait
+ * aucune source.
+ *
+ * CE QUE LE TYPE NE VÉRIFIE TOUJOURS PAS, et aucun banc ne le peut : qu'un CLAIM
+ * porte la borne écrite. 50, 60 et 70 sont cités par `WN-CL-0286-006`,
+ * `WN-CL-0288-011` et `WN-CL-0293-009` ; un autre nombre serait un seuil inventé
+ * (`DC-19`), et seule la relecture le verrait.
  */
 export type LigneIndicationAssiette = {
   /** Identité de la ligne, stable dans le périmètre signé. */
@@ -104,9 +110,10 @@ export type LigneIndicationAssiette = {
  *
  * ELLE N'ATTEND PLUS LA LECTURE DES CLAIMS : elle est faite. Les 131 claims des
  * douze protocoles ont été lus en production, **sources entières**, le
- * 2026-09-18 ([[D-229]]) — les vingt désignations de la surface sont exactes,
- * cinq claims de plus ont été trouvés, et quatre constats corrigent la colonne
- * des déclencheurs, qui n'avait jamais été confrontée au dépôt.
+ * 2026-09-18 ([[D-229]]) — les vingt-six désignations de la surface sont
+ * exactes, SIX claims de plus ont été trouvés en cinq constats, et quatre
+ * constats corrigent la colonne des déclencheurs, qui n'avait jamais été
+ * confrontée au dépôt.
  *
  * ELLE N'ATTEND PLUS LE CATALOGUE NON PLUS : il porte les douze assiettes depuis
  * le 2026-09-18 ([[D-230]]), et le septième terme du verrou est donc
@@ -115,11 +122,11 @@ export type LigneIndicationAssiette = {
  * d'observation du praticien le rendait ENTIER : le filtre de ce module-ci porte
  * sur des **lignes**, il n'a jamais protégé le catalogue.
  *
- * CE QU'ELLE ATTEND ENCORE, ET C'EST TOUT CE QUI RESTE : que les PORTES
- * existent. Le déclencheur d'âge — trois indications le citent, mais deux
- * d'entre elles ont désormais une autre porte ([[D-229]] §4) — et le régime
- * alimentaire comme drapeau d'anamnèse, sans lequel la méthylation n'en a
- * aucune. Puis l'attestation elle-même, qui ne se pose jamais par l'outil.
+ * CE QU'ELLE ATTEND ENCORE. Le déclencheur d'âge est livré ([[D-231]]), et le
+ * catalogue porte les douze assiettes ([[D-230]]) : la seule porte manquante est
+ * celle du RÉGIME alimentaire, dont la méthylation dépend — son champ existe à
+ * l'anamnèse mais n'est lisible que par la gate de population, jamais par un
+ * déclencheur. Puis l'attestation elle-même, qui ne se pose jamais par l'outil.
  */
 export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [];
 
@@ -247,6 +254,21 @@ export function anomaliesDuDeclencheur(
     if (feuille.type === 'drapeau') {
       if (feuille.valeurs.length === 0) {
         anomalies.push(`${ligne.id} : drapeau \`${feuille.champ}\` sans aucune valeur`);
+      }
+      continue;
+    }
+    // UNE BORNE D'ÂGE DOIT ÊTRE UN ENTIER PLAUSIBLE ([[D-231]]). Le type garde
+    // l'opérateur, jamais le nombre : `valeur: 0` rendrait la ligne servable
+    // pour tout le monde, et `valeur: 4.5` comparerait un âge révolu — toujours
+    // entier — à une borne qu'aucun patient n'atteint exactement.
+    //
+    // CE QU'AUCUN BANC NE PEUT DIRE, et il faut l'écrire plutôt que le laisser
+    // croire : qu'un CLAIM porte cette borne. 50, 60 et 70 sont cités par
+    // `WN-CL-0286-006`, `WN-CL-0288-011` et `WN-CL-0293-009` ; un autre nombre
+    // serait un seuil inventé (`DC-19`), et seule la relecture le verrait.
+    if (feuille.type === 'age') {
+      if (!Number.isInteger(feuille.valeur) || feuille.valeur <= 0 || feuille.valeur > 130) {
+        anomalies.push(`${ligne.id} : borne d'âge implausible \`${feuille.valeur}\``);
       }
       continue;
     }

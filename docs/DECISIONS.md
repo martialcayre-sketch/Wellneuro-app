@@ -4,6 +4,105 @@
 
 ## Décisions actives
 
+### D-231 — La borne d'âge devient un déclencheur : `Patient.dateNaissance` cesse d'être un fait administratif, `DC-43` est revisitée, et huit fichiers cessent de déduire un instrument d'une absence de drapeau
+
+- Date : 2026-09-19
+- Statut : accepté — **arbitrage du responsable sur le mécanisme** (câblage
+  complet, plutôt que la forme seule). Exécute `D-216` §1, qui posait le
+  principe sans le mécanisme. **Aucune règle ne porte de borne d'âge** : le
+  vocabulaire l'accepte, la table des indications d'assiette est toujours VIDE.
+- Domaine : vocabulaire de porte (`clinical/orientationRulesV1.ts`), moteur
+  partagé (`clinical/orientationEngine.ts`), lecture du dossier
+  (`patient/age.ts`, `clinical/orientationService.ts`), doctrine (`DC-43`).
+- Porte sur : le chantier 3 des cinq que `D-216` laisse devant l'attestation du
+  catalogue d'assiettes.
+
+**1. LE MOTIF DU REFUS AVAIT DISPARU, ET C'EST CE QUI AUTORISE CE LOT.** Le
+dépôt écartait l'âge pour une raison écrite : *aucune borne d'âge n'a de
+provenance ; poser un pivot serait inventer un seuil clinique* (`DC-19`). Trois
+claims **prescriptifs validés** en portent — `WN-CL-0286-006` (50 ans),
+`WN-CL-0288-011` (60 ans), `WN-CL-0293-009` (50 puis 70 ans). **Le pivot n'est
+plus inventé, il est cité.** `DC-19` tient entier pour autant : une borne écrite
+sans claim qui la porte reste un seuil inventé, et **aucun banc ne peut le
+dire** — seule la relecture le voit. Le type ne dispense de rien.
+
+**2. DEUX OPÉRATEURS, ET PAS CINQ.** `>=` et `>` expriment « dès tel âge » et
+« au-delà de tel âge », les deux seules formes que les claims emploient. Ouvrir
+`<` et `<=` aurait offert une borne **pédiatrique** qu'aucune source ne fonde —
+`DC-43` nomme pourtant l'enfant parmi les populations. **Le type refuse donc ce
+que la doctrine ne peut pas encore justifier**, plutôt que de compter sur la
+revue pour l'attraper. `DC-43` continue de nommer un critère qu'elle ne couvre
+pas, et c'est délibéré.
+
+**3. LE MOTEUR NE CALCULE AUCUN ÂGE, ET NE LIT AUCUNE HORLOGE.** Il reçoit un
+nombre déjà tranché, comme il reçoit `maintenantMs` plutôt que d'appeler
+`Date.now()`. `ageAnnees` (`lib/patient/age.ts`) est **le seul endroit qui en
+déduit un âge clinique** — il n'est pas le seul à lire la colonne, et la première
+rédaction de ce paragraphe l'affirmait à tort (constat de revue, vérifié) :
+`anneeDeNaissance` (`patient/cycleDeVie.ts`) la lit déjà pour le résidu
+d'effacement. C'est d'ailleurs ce que §4 explique, et un banc épingle leurs
+divergences. `orientationService` hisse un instant unique pour tout
+le calcul : deux `Date.now()` seraient deux instants, et il suffit d'un passage
+de minuit entre les deux pour qu'un dossier soit évalué avec une fraîcheur
+d'hier et un âge d'aujourd'hui.
+
+**4. LA LECTURE DE L'ÂGE EST STRICTE LÀ OÙ LE PARSEUR EXISTANT EST PERMISSIF, et
+le doublon se justifie plutôt qu'il ne se subit.** `anneeDeNaissance`
+(`patient/cycleDeVie.ts`) extrait une année **plausible** d'une chaîne de format
+non garanti — il sert le résidu d'effacement, où une année approchée vaut mieux
+que rien. Ici elle ne vaut rien : une soustraction de millésimes se trompe d'un
+an sur tout patient qui n'a pas encore eu son anniversaire, **à la frontière même
+où la borne décide**. `ageAnnees` exige donc une date calendaire complète ET
+RÉELLE — `2026-02-31` passe l'expression régulière et `Date.UTC` la replierait
+sur le 3 mars sans se plaindre —, refuse une naissance postérieure à la référence
+plutôt que de rendre un âge négatif, et refuse un âge hors plausibilité humaine.
+Tout le reste rend `null`.
+
+**5. ÂGE INCONNU = DÉCLENCHEUR NON ATTEINT, jamais « âge 0 ».** Un appelant qui
+ne sait pas ne dit pas zéro : il ne dit rien. Même discipline que les drapeaux
+absents (`DC-24`), et le banc l'éprouve sous ses trois formes — paramètre absent,
+`undefined`, `null` — avec la contre-épreuve qui prouve que la même borne
+s'allume dès qu'un âge est fourni.
+
+**6. LE VRAI CORRECTIF DE CE LOT N'EST PAS LA VARIANTE, C'EST CE QU'ELLE A
+RÉVÉLÉ.** Huit fichiers raisonnaient « ce n'est pas un drapeau, **donc** c'est un
+instrument » : ils écrivaient `if (feuille.type === 'drapeau') continue;` puis
+lisaient `feuille.idQuestionnaire`. Ce raisonnement n'était vrai que parce que la
+famille comptait trois variantes dont une seule sans instrument. L'arrivée de la
+borne d'âge l'a rendu faux **partout en même temps** — et `tsc` l'a dit, fichier
+par fichier, plutôt que de laisser passer un `undefined`.
+
+`estFeuilleInstrument` remplace la déduction par une **affirmation** : une
+feuille d'instrument se reconnaît à ce qu'elle est, jamais à ce qu'elle n'est
+pas. La quatrième variante ne rouvrira pas les huit fichiers. **Conséquence sur
+la garde de complétude, et elle n'est pas cosmétique** : une borne d'âge n'a pas
+de porteur à interroger. Si la garde s'y appliquait, la branche serait sautée
+sous un `ou` et la borne deviendrait **inatteignable en disjonction** — un banc
+le tient.
+
+**7. LES DEUX MOCKS ÉLARGIS PAR `importOriginal`, JAMAIS PAR UN STUB.** Deux
+bancs mockent la table de règles ; `estFeuilleInstrument` y vient désormais du
+module **réel**. Une version fabriquée dans le mock aurait fait diverger le banc
+du comportement réel au premier ajout de variante — exactement le défaut que ce
+prédicat existe pour fermer.
+
+**8. L'ÂGE N'ENTRE PAS DANS LA SECTION « ÉTAT ACTUEL » DE L'ANAMNÈSE.** Il ne se
+déclare pas, il se calcule depuis une donnée que le dossier porte déjà — le
+demander au patient créerait **deux vérités pour un même fait**, ce que cette
+section refuse déjà pour l'allergie. L'âge est donc lisible par un DÉCLENCHEUR
+sans devenir un état de population au sens de `lireEtatPopulation` : la gate de
+population est **inchangée**, et `DC-43` garde sa moitié tenue comme sa moitié
+sans sujet.
+
+**9. CE QUE CE LOT NE FAIT PAS.** Aucune règle d'orientation ne porte de borne
+d'âge — un banc l'exige, et le dit : le jour où il en faudra une, il faudra
+vérifier que son appelant fournit bien `ageAnnees`, faute de quoi la règle serait
+**silencieusement inatteignable**. La table des indications d'assiette reste
+VIDE, son verrou ÉTEINT. Aucune migration, aucun drapeau, aucun écran. Et **la
+porte du RÉGIME alimentaire reste fermée** : la méthylation en dépend, son champ
+existe à l'anamnèse mais n'est lisible que par la gate de population — cet
+arbitrage est rendu, son lot ne l'est pas.
+
 ### D-230 — Le catalogue d'assiettes passe de trois à quinze entrées sur DEUX axes, et l'arbitrage « ne pas les fondre » cesse d'être une phrase pour devenir un point de service
 
 - Date : 2026-09-18

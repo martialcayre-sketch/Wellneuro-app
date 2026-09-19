@@ -1,5 +1,6 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
+import { estFeuilleInstrument } from './orientationRulesV1';
 import type {
   OrientationDeclencheur,
   OrientationDeclencheurFeuille,
@@ -182,6 +183,26 @@ export type EntreeOrientation = {
    * pas une exploration faute de savoir quel jour on est.
    */
   maintenantMs?: number;
+  /**
+   * Âge du patient en années RÉVOLUES — `undefined` ou `null` = inconnu.
+   *
+   * LE MOTEUR NE CALCULE AUCUN ÂGE, et ne lit aucune date de naissance. Il
+   * reçoit un nombre déjà tranché, comme il reçoit `maintenantMs` plutôt que
+   * d'appeler `Date.now()` : un âge dépend de l'instant où on le demande, et
+   * un moteur qui choisirait cet instant cesserait d'être rejouable.
+   * `ageAnnees` (`lib/patient/age.ts`) est le seul endroit qui en DÉDUIT UN ÂGE
+   * CLINIQUE, et il rend `null` sur toute date illisible, inexistante ou
+   * aberrante. Il n'est pas le seul à lire la colonne : `anneeDeNaissance`
+   * (`patient/cycleDeVie.ts`) en tire une année pour le résidu d'effacement, et
+   * le fait volontairement de façon PERMISSIVE — les deux répondent à deux
+   * questions, et `age.test.ts` épingle les cas où elles divergent.
+   *
+   * ABSENT = AUCUNE BORNE D'ÂGE ATTEINTE ([[D-231]]). Un appelant qui ne sait
+   * pas ne dit pas « zéro an » : il ne dit rien, et un déclencheur d'âge ne
+   * s'allume pas. C'est la même discipline que `drapeaux` — on ne déduit rien
+   * d'une absence (`DC-24`).
+   */
+  ageAnnees?: number | null;
   /** Composition réelle des packs (qids) quand elle est connue ; un pack à
    *  composition inconnue n'est jamais marqué `dejaAssigne`. */
   compositionPacks?: Partial<Record<PackId, string[]>>;
@@ -711,9 +732,16 @@ export type DeclencheurAtteint = {
   instruments: Array<{ idQuestionnaire: string; sousScore?: string }>;
 };
 
-/** Les instruments qu'une feuille atteinte met à l'appui. */
+/**
+ * Les instruments qu'une feuille atteinte met à l'appui.
+ *
+ * `estFeuilleInstrument` PLUTÔT QUE « pas un drapeau » ([[D-231]]) : une feuille
+ * sans instrument n'en cite aucun, et il y en a désormais deux sortes — le
+ * drapeau d'anamnèse et la borne d'âge. Déduire l'instrument de l'absence de
+ * drapeau aurait rendu `idQuestionnaire: undefined` sur une borne d'âge.
+ */
 function instrumentsDeFeuille(feuille: OrientationDeclencheurFeuille): DeclencheurAtteint['instruments'] {
-  if (feuille.type === 'drapeau') return [];
+  if (!estFeuilleInstrument(feuille)) return [];
   return [{
     idQuestionnaire: feuille.idQuestionnaire,
     ...(feuille.sousScore ? { sousScore: feuille.sousScore } : {}),
@@ -731,7 +759,8 @@ function instrumentsDeFeuille(feuille: OrientationDeclencheurFeuille): Declenche
 function evaluerFeuille(
   declencheur: OrientationDeclencheurFeuille,
   dernieres: Map<string, ReponseOrientation>,
-  drapeaux: DrapeauxAnamnese | undefined
+  drapeaux: DrapeauxAnamnese | undefined,
+  age?: number | null,
 ): string | null {
   if (declencheur.type === 'drapeau') {
     // Pas d'anamnèse fournie : le déclencheur n'est pas atteint. On ne déduit
@@ -743,6 +772,18 @@ function evaluerFeuille(
     const atteintes = declencheur.valeurs.filter(valeur => presentes.has(valeur));
     if (atteintes.length === 0) return null;
     return `anamnèse — ${declencheur.champ} : ${atteintes.map(v => `« ${v} »`).join(', ')}`;
+  }
+
+  if (declencheur.type === 'age') {
+    // ÂGE INCONNU = NON ATTEINT, et jamais « âge 0 ». `ageAnnees` rend `null` sur
+    // toute date illisible, inexistante ou aberrante, et l'appelant qui ne
+    // fournit rien dit qu'il ne sait pas — pas que le patient vient de naître.
+    // Même discipline que les drapeaux absents ci-dessus (`DC-24`).
+    if (typeof age !== 'number') return null;
+    const atteint = declencheur.operateur === '>='
+      ? age >= declencheur.valeur
+      : age > declencheur.valeur;
+    return atteint ? `âge ${age} ans ${declencheur.operateur} ${declencheur.valeur}` : null;
   }
 
   const reponse = dernieres.get(declencheur.idQuestionnaire);
@@ -791,21 +832,36 @@ function evaluerFeuille(
 export function evaluerDeclencheur(
   declencheur: OrientationDeclencheur,
   dernieres: Map<string, ReponseOrientation>,
-  drapeaux: DrapeauxAnamnese | undefined
+  drapeaux: DrapeauxAnamnese | undefined,
+  /**
+   * Années RÉVOLUES, calculées par l'appelant — `undefined` ou `null` = inconnu,
+   * et un âge inconnu n'atteint aucune borne ([[D-231]]).
+   *
+   * QUATRIÈME PARAMÈTRE PLUTÔT QU'UN OBJET DE CONTEXTE, et le choix se dit : les
+   * quatre moteurs qui appellent cette fonction n'ont pas tous un patient sous la
+   * main. Un paramètre optionnel leur laisse ne rien passer — ce qui FERME la
+   * borne au lieu de l'ouvrir — là où un objet obligatoire les aurait forcés à
+   * fabriquer un contexte vide, c'est-à-dire à affirmer une ignorance qu'ils
+   * n'ont pas à affirmer.
+   */
+  age?: number | null,
 ): DeclencheurAtteint | null {
   if (declencheur.type === 'ou') {
     for (const branche of declencheur.declencheurs) {
-      if (branche.type !== 'drapeau') {
+      // LA COMPLÉTUDE NE SE DEMANDE QU'À UN INSTRUMENT ([[D-231]]) : une borne
+      // d'âge n'a pas de porteur à interroger, pas plus qu'un drapeau. Sa
+      // « complétude » est sa simple présence, et `evaluerFeuille` la tranche.
+      if (estFeuilleInstrument(branche)) {
         const porteur = dernieres.get(branche.idQuestionnaire)?.scores;
         const comptes = comptesDuPorteurVise(porteur, branche.sousScore);
         if (comptes === null || comptes.manquants > 0) continue;
       }
-      const motif = evaluerFeuille(branche, dernieres, drapeaux);
+      const motif = evaluerFeuille(branche, dernieres, drapeaux, age);
       if (motif !== null) return { motif, instruments: instrumentsDeFeuille(branche) };
     }
     return null;
   }
-  const motif = evaluerFeuille(declencheur, dernieres, drapeaux);
+  const motif = evaluerFeuille(declencheur, dernieres, drapeaux, age);
   return motif === null ? null : { motif, instruments: instrumentsDeFeuille(declencheur) };
 }
 
@@ -962,7 +1018,7 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
     const conditions: string[] = [];
     let tousAtteints = true;
     for (const declencheur of regle.declencheurs) {
-      const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux);
+      const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux, entree.ageAnnees);
       if (!condition) {
         tousAtteints = false;
         break;
@@ -1228,7 +1284,7 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
       // seulement si la règle mord. La reposer ici sur la forme statique de la
       // règle exigerait la complétude de TOUTES les branches, ce qui
       // transformerait le OU en ET.
-      if (declencheur.type !== 'drapeau' && declencheur.type !== 'ou') {
+      if (declencheur.type !== 'ou' && estFeuilleInstrument(declencheur)) {
         const porteur = dernieres.get(declencheur.idQuestionnaire)?.scores;
         const comptes = comptesDuPorteurVise(porteur, declencheur.sousScore);
         if (comptes === null || comptes.manquants > 0) {
@@ -1236,7 +1292,7 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
           break;
         }
       }
-      const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux);
+      const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux, entree.ageAnnees);
       if (!condition) {
         tousAtteints = false;
         break;

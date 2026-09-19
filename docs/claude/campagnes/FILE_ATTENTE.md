@@ -160,10 +160,20 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   `keyof DrapeauxAnamnese`, ne compile pas dessus. **Conséquence** : la ligne
   d'assiette de méthylation n'attend pas le déclencheur d'âge du chantier 3, elle
   attend **deux** chantiers — et la surface annonçait ce déclencheur comme
-  disponible. Le correctif est une clé de plus et sa ligne dans
-  `CHAMP_ANAMNESE` ; le banc partagé
-  (`declencheursAnamnese.test.ts`) exige déjà qu'aucune clé ne manque **ni
-  n'excède**, donc il rougira tant que les deux ne sont pas faits ensemble.
+  disponible.
+  **LE CORRECTIF ANNONCÉ ICI LE 2026-09-18 ÉTAIT FAUX, et il faut le dire.** Il
+  disait « une clé de plus et sa ligne dans `CHAMP_ANAMNESE` ». Il reposait sur
+  une prémisse non vérifiée : que `etat_alimentation` n'était lu par personne.
+  **Il l'est** — par `lireEtatPopulation` (`consultation/etatPopulation.ts`), qui
+  le normalise en `ExclusionAlimentaire` et alimente la gate de population
+  (`gatePopulationV1`, `DC-43`).
+  **Ce que cela change** : le champ vit dans la section « État actuel », déclarée
+  porter « les états de population, et RIEN D'AUTRE » ([[D-101]]). Aucune des dix
+  clés de `DrapeauxAnamnese` n'en vient : les deux lecteurs sont aujourd'hui
+  proprement séparés, et en faire un drapeau serait le **premier** franchissement
+  de cette ligne — donc un arbitrage, pas un correctif. L'alternative est un type
+  de déclencheur qui lit l'`EtatPopulation`, au même coût que celui de l'âge.
+  **Arbitrage requis avant d'écrire.**
 
 - **Dette — `conflits_sources` n'a pas de cas négatif** (constatée le
   2026-09-17, routée depuis la revue de la PR #1178, **ACQUITTÉE le 2026-09-18
