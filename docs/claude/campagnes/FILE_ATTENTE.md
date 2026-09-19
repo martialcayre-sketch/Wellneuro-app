@@ -102,6 +102,31 @@ Ni des campagnes (pas de dossier, pas de lots), ni des gestes du responsable :
 du travail de dépôt porté par sa décision et sa PR. Ils figurent ici pour que la
 file cesse de laisser croire que rien ne se fait en dehors d'elle.
 
+- **LE LOT D'EXPOSITION DES INDICATIONS D'ASSIETTE** (livré le 2026-09-19 par
+  [[D-237]]). La table signée **atteint le praticien** : un service de lecture,
+  `GET /api/praticien/assiettes-indiquees`, et une carte au cockpit dans la
+  sous-vue Protocole. Les deux fonctions qui portaient par écrit leur propre
+  condamnation — `lignesIndicationAssietteServables` et `assiettesParIndication`,
+  « si le lot d'exposition ne vient pas, elle se supprime » — ont leur appelant.
+  **RIEN N'EST ENCORE À L'ÉCRAN** : `WN_ASSIETTES_INDIQUEES` est livré **éteint**,
+  et il est **la seule chose entre la table et l'écran** : d'ordinaire un drapeau
+  neuf double un verrou clinique encore fermé, alors qu'ici la signature est
+  **déjà ouverte** — sans lui, les sept lignes publiées seraient arrivées au
+  prochain déploiement, sur des dossiers réels, par accident de calendrier. **Le geste de
+  pose appartient au cabinet.**
+  **L'ARBITRAGE LE PLUS LOURD N'EST PAS LE CHEMIN, C'EST LE SILENCE** : la carte
+  nomme ce qu'elle n'a **pas pu regarder**. Le moteur rendait `null` pour deux
+  raisons indiscernables — donnée lue et porte non atteinte, ou donnée absente —
+  et une carte vide se serait lue « aucune assiette n'est indiquée pour ce
+  patient », un constat clinique là où la vérité est qu'un instrument n'a pas été
+  passé (`DC-24`). Sept formes de lacune entrent au moteur partagé.
+  **AUCUNE ÉCRITURE, AUCUN GESTE** : pas de POST, pas un bouton. Que l'assiette
+  devienne une unité d'action reste le LOT-02 du cadrage du 2026-09-16, suspendu
+  aux arbitrages B1 et B2.
+  **Réserve reportée, non corrigée** : `catalogueConduitesV1` (signée le
+  2026-09-17) n'a toujours **aucun consommateur** et **n'est pas** à la matrice
+  de consommation. Même profil que celle-ci la veille.
+
 - **Le chantier 6 — LA PORTE BIOLOGIQUE D'UNE INDICATION D'ASSIETTE** (ouvert le
   2026-09-19 par [[D-236]], **arbitrage du responsable** : après l'attestation,
   pas avant). **Sept des douze assiettes ont un claim qui fonde une porte

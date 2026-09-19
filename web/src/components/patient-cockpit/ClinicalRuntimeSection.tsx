@@ -34,6 +34,7 @@ import { Button } from '@/components/ui/Button';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 import { PractitionerFoodCompassObservatory } from './PractitionerFoodCompassObservatory';
+import { AssiettesIndiqueesPanel } from './AssiettesIndiqueesPanel';
 import { useC5Enabled } from './C5FeatureProvider';
 import { useCbEnabled, useCbResultsEnabled } from './CbFeatureProvider';
 import {
@@ -2021,6 +2022,25 @@ export function ClinicalRuntimeSection({
             decisionCardId={readyDecisionCardId}
             onInsert={setFoodCompassSelection}
           />
+        </div>
+      )}
+      {/* ASSIETTES INDIQUÉES ([[D-237]]) — à côté de l'observatoire, et pour le
+          motif du cadrage du 2026-09-16 : l'assiette est l'unité de
+          PRESCRIPTION, l'aliment en est le contenu. C'est ici que le praticien
+          décide, donc ici que la lecture doit être.
+
+          PAS DE `c5Enabled`, ET C'EST DÉLIBÉRÉ. Cette carte a son propre
+          verrou — `WN_ASSIETTES_INDIQUEES` ET la signature de la table —, posé
+          côté route pour qu'aucun chemin client ne puisse le contourner.
+          L'adosser en plus au drapeau du rayon alimentation ajouterait une
+          seconde condition invisible, dont l'extinction se lirait comme une
+          panne de celle-ci. Verrou fermé, le panneau se rend `null` lui-même.
+
+          PAS DE `readyDecisionCardId` NON PLUS : la carte ne s'attache à aucune
+          carte de décision — elle ne propose aucun geste. */}
+      {!fixture && (
+        <div hidden={!affiche('actions') || sousVueActions !== 'protocole'}>
+          <AssiettesIndiqueesPanel idPatient={idPatient} />
         </div>
       )}
       <div id="protocol-version-builder" hidden={!affiche('actions') || (!fixture && sousVueActions !== 'protocole')}>

@@ -365,10 +365,16 @@ export function getRecommendedPlate(plateCode: string): C5bRecommendedPlate | nu
  * change donc rien à ce que le praticien voit**.
  *
  * `assiettesParIndication` SERT LA PRESCRIPTION — pour qui cette assiette est
- * indiquée. Elle rend les douze du corpus. **Elle n'a aucun appelant
- * aujourd'hui**, et c'est dit plutôt que masqué : son consommateur est le lot
- * d'exposition des lignes d'indication. Si ce lot ne vient pas, elle se
- * supprime — elle ne se reconduit pas.
+ * indiquée. Elle rend les douze du corpus. **Son appelant existe depuis
+ * [[D-237]]** : `indicationsAssiettesService.ts`, qui en fait sa table de
+ * correspondance `plateCode` → libellé avant de servir le cockpit. Elle a vécu
+ * un jour sans consommateur, sous la réserve écrite ici même — « si le lot
+ * d'exposition ne vient pas, elle se supprime ». Le lot est venu.
+ *
+ * ET LE SERVICE PASSE PAR ELLE PLUTÔT QUE PAR `getRecommendedPlate`, ce qui
+ * n'est pas indifférent : la recherche brute trouverait aussi les trois repères
+ * d'OBSERVATION. Refaire la partition au point de service ferme le chemin
+ * qu'une ligne d'indication mal formée emprunterait si elle échappait au verrou.
  */
 export function assiettesParMomentDeRepas(): readonly C5bRecommendedPlate[] {
   return C5B_RECOMMENDED_PLATES.filter(plate => plate.axe === 'moment_repas');
