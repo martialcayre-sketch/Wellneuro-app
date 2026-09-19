@@ -570,6 +570,72 @@ describe('evaluerOrientationPourPatient — le score est RECALCULÉ, jamais relu
     expect(resultat.recommandations).toEqual([]);
   });
 
+  // LE CÂBLAGE ANAMNÈSE → ÉTAT DE POPULATION → MOTEUR ([[D-232]]), écrit AVANT
+  // que la revue ne le demande : la revue de `D-231` a montré qu'un lot peut
+  // éprouver ses pièces à fond et laisser la jointure nue.
+  //
+  // La règle se déclenche sur une EXCLUSION ALIMENTAIRE SEULE : elle s'allume
+  // sans aucune mesure, ce qui isole le fil.
+  it('l’anamnèse atteint RÉELLEMENT une règle de régime, de la base au moteur', async () => {
+    mockRegles.length = 0;
+    mockRegles.push({
+      id: 'R-TEST-REGIME',
+      statut: 'publiee',
+      declencheurs: [{ type: 'exclusionAlimentaire', valeurs: ['vegetalienne'] }],
+      suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1, objectif: 'Explorer le sommeil.' }],
+      justificationClaims: [{ claimId: 'WN-CL-0000-004', versionClaim: 'v1.0' }],
+      niveau: 'socle',
+    });
+    signerLaTable();
+    lecturesVides();
+    // Le LIBELLÉ exact de l'énuméré d'anamnèse : `lireEtatPopulation` ne
+    // reconnaît que lui, et c'est aussi ce que ce banc vérifie au passage.
+    prisma.consultation.findFirst.mockResolvedValue({
+      anamnese: { etat_alimentation: 'Végétalienne / végane (aucun produit animal)' },
+    });
+
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].motifs.map(m => m.regleId)).toEqual(['R-TEST-REGIME']);
+    expect(resultat.recommandations[0].motifs[0].conditions.join(' ')).toContain('vegetalienne');
+  });
+
+  // CONTRE-ÉPREUVE, sans laquelle le cas précédent ne prouve rien : une règle
+  // qui s'allumerait toujours le passerait aussi.
+  it('un régime NON déclaré n’allume pas la règle de régime', async () => {
+    mockRegles.length = 0;
+    mockRegles.push({
+      id: 'R-TEST-REGIME',
+      statut: 'publiee',
+      declencheurs: [{ type: 'exclusionAlimentaire', valeurs: ['vegetalienne'] }],
+      suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1, objectif: 'Explorer le sommeil.' }],
+      justificationClaims: [{ claimId: 'WN-CL-0000-004', versionClaim: 'v1.0' }],
+      niveau: 'socle',
+    });
+    signerLaTable();
+    lecturesVides();
+
+    // a) Aucune anamnèse du tout : rien n'est passé au moteur.
+    let resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('table inactive');
+    expect(resultat.recommandations).toEqual([]);
+
+    // b) Une anamnèse SANS le champ : `inconnu`, et `inconnu` n'atteint rien.
+    prisma.consultation.findFirst.mockResolvedValue({ anamnese: { motif_principal: 'Sommeil' } });
+    resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('table inactive');
+    expect(resultat.recommandations).toEqual([]);
+
+    // c) Un régime déclaré, mais AUTRE que celui que la ligne cite.
+    prisma.consultation.findFirst.mockResolvedValue({
+      anamnese: { etat_alimentation: 'Aucune exclusion particulière' },
+    });
+    resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('table inactive');
+    expect(resultat.recommandations).toEqual([]);
+  });
+
   it('une passation NON INTERPRÉTABLE ne fonde aucun déclencheur', () => {
     // Ce point ne pouvait pas se poser tant qu'on relayait un instantané : il
     // se pose dès qu'on FABRIQUE un score. Le registre dit de `Q_SOM_07` que

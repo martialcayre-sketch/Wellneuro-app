@@ -1,6 +1,7 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import { estFeuilleInstrument } from './orientationRulesV1';
+import type { EtatPopulation } from '@/lib/consultation/etatPopulation';
 import type {
   OrientationDeclencheur,
   OrientationDeclencheurFeuille,
@@ -203,6 +204,15 @@ export type EntreeOrientation = {
    * d'une absence (`DC-24`).
    */
   ageAnnees?: number | null;
+  /**
+   * État de population DÉCLARÉ, ou absent ([[D-232]]).
+   *
+   * MÊME DISCIPLINE QUE `drapeaux`, et pour la même raison : un objet aux sept
+   * critères `inconnu` AFFIRMERAIT que rien n'est déclaré, là qu'une absence dit
+   * seulement qu'on n'a pas lu. `orientationService` ne passe donc RIEN quand il
+   * n'y a ni consultation ni anamnèse.
+   */
+  etatPopulation?: EtatPopulation;
   /** Composition réelle des packs (qids) quand elle est connue ; un pack à
    *  composition inconnue n'est jamais marqué `dejaAssigne`. */
   compositionPacks?: Partial<Record<PackId, string[]>>;
@@ -749,6 +759,40 @@ function instrumentsDeFeuille(feuille: OrientationDeclencheurFeuille): Declenche
 }
 
 /**
+ * CE QUE LE MOTEUR SAIT DU DOSSIER, au-delà des instruments et des drapeaux.
+ *
+ * L'OBJET REMPLACE LE PARAMÈTRE POSITIONNEL DE [[D-231]], et le motif de ce
+ * dernier est intact — il visait l'OPTIONALITÉ, pas la position. Un appelant qui
+ * ne sait rien ne passe rien, ce qui FERME les portes correspondantes au lieu de
+ * les ouvrir ; un contexte obligatoire l'aurait forcé à fabriquer un objet vide,
+ * c'est-à-dire à affirmer une ignorance qu'il n'a pas à affirmer. Ce que le
+ * positionnel ne supportait pas est le NOMBRE : à deux champs il devenait
+ * illisible, à trois il aurait été fautif. Le changement est fait maintenant
+ * plutôt qu'à la troisième porte.
+ *
+ * CHAQUE CHAMP ABSENT FERME SA PORTE, et aucun n'en ouvre une autre : un
+ * dossier sans âge connu atteint quand même une porte d'exclusion alimentaire,
+ * et réciproquement.
+ */
+export type ContexteDossier = {
+  /**
+   * Âge en années RÉVOLUES, calculé par l'appelant — `undefined` ou `null` =
+   * inconnu, et un âge inconnu n'atteint aucune borne ([[D-231]]).
+   */
+  ageAnnees?: number | null;
+  /**
+   * État de population DÉCLARÉ, tel que `lireEtatPopulation` le produit —
+   * absent = non lu ([[D-232]]).
+   *
+   * Le moteur ne lit aucune anamnèse : il reçoit l'objet déjà normalisé, comme
+   * il reçoit les drapeaux. Et il n'en lit aujourd'hui qu'un seul critère,
+   * l'exclusion alimentaire — les six autres sont des critères d'EXCLUSION que
+   * le vocabulaire de porte refuse d'employer comme indication.
+   */
+  etatPopulation?: EtatPopulation;
+};
+
+/**
  * Description lisible de la feuille atteinte, ou null si elle ne matche pas.
  *
  * C'est le corps historique d'`evaluerDeclencheur`, inchangé : les gardes qui
@@ -760,7 +804,7 @@ function evaluerFeuille(
   declencheur: OrientationDeclencheurFeuille,
   dernieres: Map<string, ReponseOrientation>,
   drapeaux: DrapeauxAnamnese | undefined,
-  age?: number | null,
+  dossier?: ContexteDossier,
 ): string | null {
   if (declencheur.type === 'drapeau') {
     // Pas d'anamnèse fournie : le déclencheur n'est pas atteint. On ne déduit
@@ -779,11 +823,23 @@ function evaluerFeuille(
     // toute date illisible, inexistante ou aberrante, et l'appelant qui ne
     // fournit rien dit qu'il ne sait pas — pas que le patient vient de naître.
     // Même discipline que les drapeaux absents ci-dessus (`DC-24`).
+    const age = dossier?.ageAnnees;
     if (typeof age !== 'number') return null;
     const atteint = declencheur.operateur === '>='
       ? age >= declencheur.valeur
       : age > declencheur.valeur;
     return atteint ? `âge ${age} ans ${declencheur.operateur} ${declencheur.valeur}` : null;
+  }
+
+  if (declencheur.type === 'exclusionAlimentaire') {
+    // ÉTAT NON LU = NON ATTEINT. Et `inconnu` non plus n'atteint rien : il est
+    // la valeur que `lireEtatPopulation` rend quand le patient n'a pas répondu
+    // ou qu'aucune option ne correspond. S'allumer dessus serait lire une
+    // absence comme une déclaration (`DC-24`).
+    const declaree = dossier?.etatPopulation?.alimentation;
+    if (!declaree || declaree === 'inconnu') return null;
+    if (!declencheur.valeurs.includes(declaree)) return null;
+    return `alimentation déclarée — ${declaree}`;
   }
 
   const reponse = dernieres.get(declencheur.idQuestionnaire);
@@ -834,17 +890,10 @@ export function evaluerDeclencheur(
   dernieres: Map<string, ReponseOrientation>,
   drapeaux: DrapeauxAnamnese | undefined,
   /**
-   * Années RÉVOLUES, calculées par l'appelant — `undefined` ou `null` = inconnu,
-   * et un âge inconnu n'atteint aucune borne ([[D-231]]).
-   *
-   * QUATRIÈME PARAMÈTRE PLUTÔT QU'UN OBJET DE CONTEXTE, et le choix se dit : les
-   * quatre moteurs qui appellent cette fonction n'ont pas tous un patient sous la
-   * main. Un paramètre optionnel leur laisse ne rien passer — ce qui FERME la
-   * borne au lieu de l'ouvrir — là où un objet obligatoire les aurait forcés à
-   * fabriquer un contexte vide, c'est-à-dire à affirmer une ignorance qu'ils
-   * n'ont pas à affirmer.
+   * Ce que l'appelant sait du dossier — absent = il ne sait rien, et chaque
+   * porte correspondante reste fermée. Voir `ContexteDossier`.
    */
-  age?: number | null,
+  dossier?: ContexteDossier,
 ): DeclencheurAtteint | null {
   if (declencheur.type === 'ou') {
     for (const branche of declencheur.declencheurs) {
@@ -856,12 +905,12 @@ export function evaluerDeclencheur(
         const comptes = comptesDuPorteurVise(porteur, branche.sousScore);
         if (comptes === null || comptes.manquants > 0) continue;
       }
-      const motif = evaluerFeuille(branche, dernieres, drapeaux, age);
+      const motif = evaluerFeuille(branche, dernieres, drapeaux, dossier);
       if (motif !== null) return { motif, instruments: instrumentsDeFeuille(branche) };
     }
     return null;
   }
-  const motif = evaluerFeuille(declencheur, dernieres, drapeaux, age);
+  const motif = evaluerFeuille(declencheur, dernieres, drapeaux, dossier);
   return motif === null ? null : { motif, instruments: instrumentsDeFeuille(declencheur) };
 }
 
@@ -1018,7 +1067,10 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
     const conditions: string[] = [];
     let tousAtteints = true;
     for (const declencheur of regle.declencheurs) {
-      const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux, entree.ageAnnees);
+      const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux, {
+        ageAnnees: entree.ageAnnees,
+        etatPopulation: entree.etatPopulation,
+      });
       if (!condition) {
         tousAtteints = false;
         break;
@@ -1292,7 +1344,10 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
           break;
         }
       }
-      const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux, entree.ageAnnees);
+      const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux, {
+        ageAnnees: entree.ageAnnees,
+        etatPopulation: entree.etatPopulation,
+      });
       if (!condition) {
         tousAtteints = false;
         break;

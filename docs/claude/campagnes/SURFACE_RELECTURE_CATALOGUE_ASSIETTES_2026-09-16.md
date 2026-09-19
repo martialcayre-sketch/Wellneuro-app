@@ -390,8 +390,8 @@ jour, et elle a GRANDI au 2026-09-18 :
 | 2 | Le validateur partagé de dérive des libellés d'anamnèse | **fait** — chantier 2 |
 | 3 | Les **douze entrées au catalogue C5B**, et ce qui protège la liste d'observation du praticien | **fait** — `D-230` |
 | 4 | Le champ d'indication et ses claims, c'est-à-dire les lignes | à faire, après 3 |
-| 5 | Le déclencheur d'âge et la revisite de `DC-43` | à faire — trois assiettes |
-| 6 | Le régime alimentaire comme drapeau d'anamnèse | à faire — la méthylation en dépend AUSSI |
+| 5 | Le déclencheur d'âge et la revisite de `DC-43` | **fait** — `D-231` |
+| 6 | Le régime alimentaire comme porte | **fait** — `D-232`, en lisant l'`EtatPopulation` et NON un drapeau |
 | 7 | Le mécanisme orienté des familles d'équivalence | à faire |
 
 La ligne **3** est tombée le 2026-09-18 ; la **6** reste ouverte. Ni l'une ni

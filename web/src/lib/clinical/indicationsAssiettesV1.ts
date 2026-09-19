@@ -6,7 +6,7 @@ import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
 
 // INDICATIONS D'ASSIETTE — la FORME d'une ligne et le verrou qui la garde.
 // Table VIDE, verrou ÉTEINT ([[D-213]] §10, [[D-216]], [[D-225]], [[D-229]],
-// [[D-230]], [[D-231]]).
+// [[D-230]], [[D-231]], [[D-232]]).
 //
 // CE QUE CE LOT FERME, ET C'EST SA SEULE RAISON D'ÊTRE. La surface de relecture
 // du 2026-09-16 propose HUIT indications d'assiette, dont l'une — la
@@ -122,11 +122,12 @@ export type LigneIndicationAssiette = {
  * d'observation du praticien le rendait ENTIER : le filtre de ce module-ci porte
  * sur des **lignes**, il n'a jamais protégé le catalogue.
  *
- * CE QU'ELLE ATTEND ENCORE. Le déclencheur d'âge est livré ([[D-231]]), et le
- * catalogue porte les douze assiettes ([[D-230]]) : la seule porte manquante est
- * celle du RÉGIME alimentaire, dont la méthylation dépend — son champ existe à
- * l'anamnèse mais n'est lisible que par la gate de population, jamais par un
- * déclencheur. Puis l'attestation elle-même, qui ne se pose jamais par l'outil.
+ * CE QU'ELLE ATTEND ENCORE N'EST PLUS MÉCANIQUE. Les cinq chantiers de
+ * [[D-216]] sont clos : statut et filtre de service ([[D-225]]), validateur
+ * partagé et lecture des claims ([[D-229]]), catalogue ([[D-230]]), borne d'âge
+ * ([[D-231]]), exclusion alimentaire ([[D-232]]). Ce qui reste est CLINIQUE —
+ * écrire les lignes, puis les faire attester. Une signature ne se pose jamais
+ * par l'outil.
  */
 export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [];
 
@@ -269,6 +270,19 @@ export function anomaliesDuDeclencheur(
     if (feuille.type === 'age') {
       if (!Number.isInteger(feuille.valeur) || feuille.valeur <= 0 || feuille.valeur > 130) {
         anomalies.push(`${ligne.id} : borne d'âge implausible \`${feuille.valeur}\``);
+      }
+      continue;
+    }
+    // UNE EXCLUSION ALIMENTAIRE SANS VALEUR N'EST JAMAIS ATTEINTE, et une qui
+    // cite `inconnu` s'allumerait sur l'IGNORANCE du patient ([[D-232]]) —
+    // c'est-à-dire sur le contraire d'une déclaration. Les deux sont des lignes
+    // mortes ou trompeuses, et aucune ne se voit à la relecture du texte.
+    if (feuille.type === 'exclusionAlimentaire') {
+      if (feuille.valeurs.length === 0) {
+        anomalies.push(`${ligne.id} : exclusion alimentaire sans aucune valeur`);
+      }
+      if (feuille.valeurs.includes('inconnu')) {
+        anomalies.push(`${ligne.id} : exclusion alimentaire citant \`inconnu\``);
       }
       continue;
     }

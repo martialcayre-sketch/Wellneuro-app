@@ -1,4 +1,5 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
+import type { ExclusionAlimentaire } from '@/lib/consultation/etatPopulation';
 import type { FunctionalCategoryId, PackId } from '@/lib/questionnaires-functional';
 import { sha256 } from './corpusSyntheseV1';
 import { grillesCitees } from './grillesSignees';
@@ -143,6 +144,37 @@ export type OrientationDeclencheurFeuille =
       operateur: '>=' | '>';
       /** Années révolues. Doit être portée par un claim — le type ne le vérifie pas. */
       valeur: number;
+    }
+  // EXCLUSION ALIMENTAIRE DÉCLARÉE — [[D-232]]. Elle lit
+  // `EtatPopulation.alimentation`, produit par `lireEtatPopulation`, et NON un
+  // drapeau d'anamnèse.
+  //
+  // POURQUOI PAS UN DRAPEAU, ET C'EST L'ARBITRAGE DU LOT. `etat_alimentation`
+  // existe bien dans `ANAMNESE_SECTIONS`, et en faire une onzième clé de
+  // `DrapeauxAnamnese` aurait été le chemin le plus court. Mais ce champ vit
+  // dans la section « État actuel », déclarée porter « les états de population,
+  // et RIEN D'AUTRE » ([[D-101]]) — aucune des dix clés de `DrapeauxAnamnese`
+  // n'en vient. Le champ a DÉJÀ un lecteur, `lireEtatPopulation`, qui le
+  // normalise en énuméré à cinq valeurs ; un second lecteur rendant le libellé
+  // verbatim aurait créé deux vérités pour un même fait, et deux disciplines de
+  // l'inconnu là où la section n'en veut qu'une.
+  //
+  // UN SEUL CRITÈRE, ET PAS LES SEPT. `EtatPopulation` porte aussi grossesse,
+  // allaitement, pathologies rénale et hépatique, chirurgie digestive et maladie
+  // cœliaque. Aucun claim ne les fonde comme INDICATION — et ils sont, par
+  // construction, des critères d'EXCLUSION (`DC-43`) : en faire des portes
+  // d'indication retournerait leur sens. Une grossesse qui INDIQUERAIT une
+  // conduite au lieu d'en écarter serait exactement l'erreur que la gate de
+  // population existe pour empêcher. Le type refuse donc ce que la doctrine
+  // n'autorise pas, comme la borne d'âge refuse `<`.
+  //
+  // `inconnu` N'ATTEINT RIEN. Il est une valeur de l'énuméré, donc écrivable
+  // dans `valeurs` — mais une ligne qui le citerait s'allumerait sur l'ignorance
+  // du patient. Le garde de forme le refuse, et le dit.
+  | {
+      type: 'exclusionAlimentaire';
+      /** Au moins une, jamais `inconnu`. Doit être portée par un claim. */
+      valeurs: ExclusionAlimentaire[];
     };
 
 // Disjonction ([[D-060]]) : atteinte si AU MOINS UNE branche complète l'est.

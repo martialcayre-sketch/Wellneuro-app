@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ContradictionFinding } from './contradictionFinding';
 import { evaluerDeclencheur, evaluerOrientation, type ReponseOrientation } from './orientationEngine';
 import type { OrientationDeclencheur, OrientationDeclencheurFeuille, OrientationRule } from './orientationRulesV1';
+import type { EtatPopulation } from '@/lib/consultation/etatPopulation';
 import type { StopRule } from './stopRulesV1';
 
 const CLAIM = { claimId: 'WN-CL-0001-001', versionClaim: 'v1' };
@@ -1165,26 +1166,30 @@ describe('evaluerDeclencheur — borne d\'âge (D-231)', () => {
   it('`>=` s\'allume SUR la borne, `>` seulement au-delà', () => {
     // La différence tient en un an, et c'est exactement ce que les claims
     // distinguent : « dès 50 ans » n'est pas « au-delà de 50 ans ».
-    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, 50)).not.toBeNull();
-    expect(evaluerDeclencheur(borne('>', 50), vide, undefined, 50)).toBeNull();
-    expect(evaluerDeclencheur(borne('>', 50), vide, undefined, 51)).not.toBeNull();
-    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, 49)).toBeNull();
+    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, { ageAnnees: 50 })).not.toBeNull();
+    expect(evaluerDeclencheur(borne('>', 50), vide, undefined, { ageAnnees: 50 })).toBeNull();
+    expect(evaluerDeclencheur(borne('>', 50), vide, undefined, { ageAnnees: 51 })).not.toBeNull();
+    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, { ageAnnees: 49 })).toBeNull();
   });
 
   // LE CŒUR FAIL-CLOSED. Un âge inconnu n'est pas « zéro an » : il ne dit rien,
   // et rien ne s'allume. Les trois formes de l'ignorance donnent le même verdict
   // — paramètre absent, `undefined`, `null` (`DC-24`).
-  it('un âge INCONNU n\'atteint aucune borne, sous ses trois formes', () => {
+  it('un âge INCONNU n\'atteint aucune borne, sous ses QUATRE formes', () => {
+    // Contexte absent, contexte sans le champ, `undefined`, `null` — quatre
+    // façons de ne pas savoir, un seul verdict ([[D-232]] a ajouté la seconde
+    // en remplaçant le paramètre positionnel par un objet).
     expect(evaluerDeclencheur(borne('>=', 50), vide, undefined)).toBeNull();
-    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, undefined)).toBeNull();
-    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, null)).toBeNull();
+    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, {})).toBeNull();
+    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, { ageAnnees: undefined })).toBeNull();
+    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, { ageAnnees: null })).toBeNull();
     // Contre-épreuve : la MÊME borne s'allume dès qu'un âge est fourni. Sans
     // elle, ce banc passerait sur un déclencheur qui ne s'allume jamais.
-    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, 50)).not.toBeNull();
+    expect(evaluerDeclencheur(borne('>=', 50), vide, undefined, { ageAnnees: 50 })).not.toBeNull();
   });
 
   it('ne met AUCUN instrument à l\'appui, et le motif nomme l\'âge', () => {
-    const atteint = evaluerDeclencheur(borne('>=', 60), vide, undefined, 61);
+    const atteint = evaluerDeclencheur(borne('>=', 60), vide, undefined, { ageAnnees: 61 });
     expect(atteint?.instruments).toEqual([]);
     expect(atteint?.motif).toContain('61');
     expect(atteint?.motif).toContain('60');
@@ -1201,11 +1206,68 @@ describe('evaluerDeclencheur — borne d\'âge (D-231)', () => {
         { type: 'age', operateur: '>=', valeur: 70 },
       ],
     };
-    const atteint = evaluerDeclencheur(ouAge, vide, undefined, 71);
+    const atteint = evaluerDeclencheur(ouAge, vide, undefined, { ageAnnees: 71 });
     expect(atteint).not.toBeNull();
     expect(atteint?.instruments).toEqual([]);
     // Et la même disjonction reste fermée sur un âge sous la borne.
-    expect(evaluerDeclencheur(ouAge, vide, undefined, 69)).toBeNull();
+    expect(evaluerDeclencheur(ouAge, vide, undefined, { ageAnnees: 69 })).toBeNull();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXCLUSION ALIMENTAIRE DÉCLARÉE ([[D-232]]). Elle lit `EtatPopulation`, produit
+// par `lireEtatPopulation`, et NON un drapeau d'anamnèse — le champ garde ainsi
+// un seul lecteur et une seule normalisation.
+describe('evaluerDeclencheur — exclusion alimentaire déclarée (D-232)', () => {
+  const vide = new Map<string, ReponseOrientation>();
+  const porte: OrientationDeclencheur = {
+    type: 'exclusionAlimentaire',
+    valeurs: ['vegetarienne', 'vegetalienne'],
+  };
+  const etat = (alimentation: EtatPopulation['alimentation']): EtatPopulation => ({
+    grossesse: 'inconnu', allaitement: 'inconnu', pathologieRenale: 'inconnu',
+    pathologieHepatique: 'inconnu', chirurgieDigestive: 'inconnu',
+    maladieCoeliaque: 'inconnu', alimentation,
+  });
+
+  it('s\'allume sur une valeur citée, et sur elle seule', () => {
+    expect(evaluerDeclencheur(porte, vide, undefined, { etatPopulation: etat('vegetalienne') }))
+      .not.toBeNull();
+    expect(evaluerDeclencheur(porte, vide, undefined, { etatPopulation: etat('vegetarienne') }))
+      .not.toBeNull();
+    // Déclarée, mais pas celle que la ligne cite.
+    expect(evaluerDeclencheur(porte, vide, undefined, { etatPopulation: etat('aucune_exclusion') }))
+      .toBeNull();
+    expect(evaluerDeclencheur(porte, vide, undefined, { etatPopulation: etat('autre_exclusion') }))
+      .toBeNull();
+  });
+
+  // LE CŒUR `DC-24`. `inconnu` est la valeur que rend `lireEtatPopulation` quand
+  // le patient n'a pas répondu OU qu'aucune option ne correspond. S'allumer
+  // dessus serait lire une absence comme une déclaration.
+  it('`inconnu` et l\'état NON LU n\'atteignent rien', () => {
+    expect(evaluerDeclencheur(porte, vide, undefined, { etatPopulation: etat('inconnu') })).toBeNull();
+    expect(evaluerDeclencheur(porte, vide, undefined, {})).toBeNull();
+    expect(evaluerDeclencheur(porte, vide, undefined)).toBeNull();
+    // Contre-épreuve : la MÊME porte s'allume dès qu'un état est déclaré. Sans
+    // elle, ce banc passerait sur une porte qui ne s'allume jamais.
+    expect(evaluerDeclencheur(porte, vide, undefined, { etatPopulation: etat('vegetalienne') }))
+      .not.toBeNull();
+  });
+
+  it('ne met AUCUN instrument à l\'appui, et le motif nomme la déclaration', () => {
+    const atteint = evaluerDeclencheur(porte, vide, undefined, { etatPopulation: etat('vegetalienne') });
+    expect(atteint?.instruments).toEqual([]);
+    expect(atteint?.motif).toContain('vegetalienne');
+  });
+
+  // LES DEUX PORTES DU CONTEXTE SONT INDÉPENDANTES : un dossier sans âge connu
+  // atteint quand même une porte alimentaire, et réciproquement. Sans ce cas, un
+  // contexte mal câblé qui exigerait les deux passerait inaperçu.
+  it('un âge inconnu n\'empêche pas une porte alimentaire', () => {
+    expect(evaluerDeclencheur(porte, vide, undefined, {
+      ageAnnees: null, etatPopulation: etat('vegetalienne'),
+    })).not.toBeNull();
   });
 });
 

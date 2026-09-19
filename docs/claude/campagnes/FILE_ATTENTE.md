@@ -153,7 +153,9 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   `/api/praticien/boussole` le publie.
 
 - **Dette — le régime alimentaire n'est pas un drapeau d'anamnèse** (constatée
-  le 2026-09-18, [[D-229]] §5, **non commencée**). `etat_alimentation` existe
+  le 2026-09-18, [[D-229]] §5 — **ACQUITTÉE le 2026-09-19 par [[D-232]]**, et
+  **pas** par le correctif annoncé ici : la porte lit l'`EtatPopulation`, le
+  champ garde un seul lecteur, et `DrapeauxAnamnese` n'a pas bougé). `etat_alimentation` existe
   dans `ANAMNESE_SECTIONS` avec ses options végétarienne et végétalienne/végane,
   mais `DrapeauxAnamnese` ne le porte pas : `extraireDrapeauxAnamnese` ne le
   produit jamais et `OrientationDeclencheur.champ`, typé
