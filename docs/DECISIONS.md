@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-231 — [[D-049]] est close : la cause racine est corrigée et mesurée, T3 local redevient exigé en entier, et la règle du rouge WebKit du CI est redomiciliée
+### D-233 — [[D-049]] est close : la cause racine est corrigée et mesurée, T3 local redevient exigé en entier, et la règle du rouge WebKit du CI est redomiciliée
 
 - Date : 2026-09-19
 - Statut : accepté — **arbitrage du responsable**, rendu en session le
@@ -15476,7 +15476,7 @@ commente une synthèse, elle ne la re-valide pas.
 
 ### D-049 — Le CI fait autorité sur le palier E2E tant que le blocage navigateur local dure
 
-> # ⛔ CLOSE LE 2026-09-19 — VOIR [[D-231]]
+> # ⛔ CLOSE LE 2026-09-19 — VOIR [[D-233]]
 >
 > **Cette décision n'a plus d'effet.** Le régime qu'elle instituait — le CI
 > tenant lieu de palier E2E pour les PR migration/scoring/clinique — est levé :
@@ -15492,7 +15492,7 @@ commente une synthèse, elle ne la re-valide pas.
 > **2359**) ; et **deux séquences T3 complètes vertes** le 2026-09-18, 3 min 53 s
 > et 3 min 57 s, **101 contextes iPhone 13 chacune** sans un blocage. Le détail
 > du raisonnement, les réserves qui survivent et ce que la clôture déplace :
-> [[D-231]].
+> [[D-233]].
 >
 > **CE QUI RESTE VRAI SANS ELLE, ET NE MEURT PAS AVEC ELLE** — `retries` reste
 > interdit à Playwright, et **un rouge WebKit du CI ne se relance jamais**. Cette
@@ -15506,7 +15506,7 @@ commente une synthèse, elle ne la re-valide pas.
 
 > ⚠️ **AMENDEMENT DU 2026-09-17 — SA CONCLUSION EST PÉRIMÉE PAR LA CLÔTURE
 > CI-DESSUS** ; ses constats de fait, eux, restent exacts et fondent
-> [[D-231]]. Lire « CETTE DÉCISION RESTE OUVERTE » comme l'état du 2026-09-17,
+> [[D-233]]. Lire « CETTE DÉCISION RESTE OUVERTE » comme l'état du 2026-09-17,
 > pas comme l'état courant.
 
 > **AMENDEMENT DU 2026-09-17 — LA CAUSE RACINE EST TROUVÉE, LE CORRECTIF EST EN
@@ -15627,7 +15627,7 @@ commente une synthèse, elle ne la re-valide pas.
 > ils ne prouvent rien du code de ce dépôt).
 
 - Date : 2026-08-12
-- Statut : **CLOSE le 2026-09-19** ([[D-231]]) — acceptée le 2026-08-12
+- Statut : **CLOSE le 2026-09-19** ([[D-233]]) — acceptée le 2026-08-12
   (décision utilisateur), amendée le 2026-09-08 ([[D-155]]) et le 2026-09-17,
   close sur sa propre condition de sortie. N'a plus d'effet sur le régime de
   validation.

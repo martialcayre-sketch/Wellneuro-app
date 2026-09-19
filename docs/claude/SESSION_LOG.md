@@ -7262,7 +7262,7 @@ supprime si le lot d'exposition ne vient pas.
 
 ## 2026-09-19 — D-049 est close, et la clôture déplace plus que le registre
 
-**Décisions.** `D-231` : `D-049` est close sur arbitrage du responsable. Le CI ne
+**Décisions.** `D-233` : `D-049` est close sur arbitrage du responsable. Le CI ne
 tient plus lieu de palier E2E — **T3 local est de nouveau exigé en entier** pour
 les PR migration/scoring/clinique. L'arbitrage renverse celui du 2026-09-17
 (« amender, ne pas fermer »), et le fait nouveau est double : la justification
@@ -7292,7 +7292,7 @@ n'ont pas exercé le déclencheur (écran allumé, quatre minutes), la
 discrimination des deux moteurs venant du banc hors dépôt.
 
 **Prochaine action.** Lire la revue aux trois emplacements, merger avec
-`--subject` portant `D-231`. Puis les deux points RGPD de `D-222` §2.
+`--subject` portant `D-233`. Puis les deux points RGPD de `D-222` §2.
 
 **Questions ouvertes.** Le défaut de WebKit 2359 (`didReceiveInvalidMessage`),
 non observé mais réel en amont. La séquence écran en veille, proposée et non

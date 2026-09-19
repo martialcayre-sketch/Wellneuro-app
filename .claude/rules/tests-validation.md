@@ -23,7 +23,7 @@ paths:
   mémoire du serveur — un `--fast` rouge se lisait alors comme une régression.
   L'écart entre les deux paliers est désormais le lint, l'anti-secrets, l'audit
   de campagnes et la certification scoring, pas le build.
-- **T3 local est exigé EN ENTIER, segment E2E compris** (`D-231`, 2026-09-19).
+- **T3 local est exigé EN ENTIER, segment E2E compris** (`D-233`, 2026-09-19).
   La dérogation qui renvoyait ce segment au CI — `D-049`, du 2026-08-12 au
   2026-09-19 — est **close** : la cause du blocage WebKit local est identifiée
   (2311 bloquait au rang 64 de **création de contexte**, sur mise en veille de
@@ -31,7 +31,7 @@ paths:
   1.63.0, WebKit 2359). Deux séquences T3 complètes vertes le 2026-09-18, 101
   contextes iPhone 13 chacune.
 - **Un rouge WebKit du CI ne se relance JAMAIS.** Règle posée par `D-155`,
-  redomiciliée ici par `D-231` pour ne pas rester accrochée à une décision
+  redomiciliée ici par `D-233` pour ne pas rester accrochée à une décision
   close. Elle ne dépend pas de la panne locale et lui survit : « WebKit
   encountered an internal error » est une erreur **rendue par le moteur**, pas
   une attente qui s'épuise, et aucune requête manquante n'y a jamais été
@@ -41,7 +41,7 @@ paths:
   transforme un blocage en succès silencieux et emporte avec lui les vrais
   échecs intermittents. C'est le contournement que l'amont recommande pour le
   défaut de WebKit 2359 (`didReceiveInvalidMessage`, « the retry passed ») et
-  que ce dépôt refuse — voir `D-231` §5 : ce défaut-là, s'il paraît, est un fait
+  que ce dépôt refuse — voir `D-233` §5 : ce défaut-là, s'il paraît, est un fait
   **neuf**, pas le retour de `D-049`.
 - **Un blocage de la signature `D-049` est désormais un fait NEUF.**
   `scripts/wn-diagnostic-e2e.mjs` le classe toujours (navigation expirée, aucune

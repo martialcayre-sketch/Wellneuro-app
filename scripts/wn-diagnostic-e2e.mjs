@@ -253,7 +253,7 @@ process.stderr.write(
     'WebKit 2311 se bloquait au rang ~64 de CRÉATION DE CONTEXTE (pas de\n' +
     "navigation), sur mise en veille de l'écran. Corrigée en amont dans WebKit\n" +
     '2352, et en service ici depuis Playwright 1.63.0 (WebKit 2359), qui a passé\n' +
-    "250 tours du banc sans un blocage. D-049 est CLOSE (D-231).\n\n" +
+    "250 tours du banc sans un blocage. D-049 est CLOSE (D-233).\n\n" +
     "CE QUE CELA VEUT DIRE POUR VOUS : ne classez plus ce rouge, INSTRUISEZ-LE.\n" +
     'Nous tournons sur le moteur corrigé — ceci est soit une régression amont,\n' +
     "soit un défaut distinct (2359 en porte un, de signature différente :\n" +
