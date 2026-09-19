@@ -82,7 +82,7 @@ const claimsValidesDe = (lignes: readonly LigneIndicationAssiette[]) =>
   new Set(lignes.flatMap(l => [...l.claimsIndication, ...l.claimsSecurite]).map(cleClaim));
 
 describe('indications d’assiette — état livré', () => {
-  it('DIX LIGNES, dans cet ordre — et la métadonnée n’atteste toujours rien', () => {
+  it('ONZE LIGNES, dans cet ordre — et la métadonnée ATTESTE', () => {
     expect(INDICATIONS_ASSIETTES_V1.map(l => l.id)).toEqual([
       'ASSIETTE-IND-DOPAMINERGIQUE',
       'ASSIETTE-IND-ANTI-INFLAMMATOIRE',
@@ -94,16 +94,28 @@ describe('indications d’assiette — état livré', () => {
       'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE',
       'ASSIETTE-IND-METHYLATION',
       'ASSIETTE-IND-ANTIOXYDANTE',
+      'ASSIETTE-IND-OMEGA-3',
     ]);
-    // LA TABLE EST ÉCRITE, ELLE N'EST PAS ATTESTÉE. Les deux tiennent ensemble
-    // par le fail-closed, et c'est tout l'objet de [[D-235]].
-    expect(INDICATIONS_ASSIETTES_METADATA.validationExterne).toBe(false);
-    expect(INDICATIONS_ASSIETTES_METADATA.dateValidation).toBeNull();
-    expect(INDICATIONS_ASSIETTES_METADATA.claimsSource).toEqual([]);
-    expect(INDICATIONS_ASSIETTES_METADATA.shaPerimetre).toBeNull();
+    // PREMIÈRE SIGNATURE, 2026-09-19 ([[D-236]]). La date et le sha sont figés
+    // ICI en littéraux, jamais recalculés : un banc qui recalculerait le sha
+    // rendrait la comparaison tautologique et laisserait passer toute ligne
+    // ajoutée après coup sous la signature acquise ([[D-063]]).
+    expect(INDICATIONS_ASSIETTES_METADATA.validationExterne).toBe(true);
+    expect(INDICATIONS_ASSIETTES_METADATA.dateValidation).toBe('2026-09-19T18:27:15.000Z');
+    expect(INDICATIONS_ASSIETTES_METADATA.shaPerimetre)
+      .toBe('92f02da47b335adc7f16443c1e74e298ee144ecec4746f60dc6ac34c6b49b35c');
+    // VINGT CLAIMS POUR VINGT-ET-UNE DÉSIGNATIONS : `WN-CL-0288-013` fonde
+    // l'indication de la protéinée ET porte son exception, et l'union le
+    // dédoublonne.
+    expect(INDICATIONS_ASSIETTES_METADATA.claimsSource).toHaveLength(20);
+    expect(INDICATIONS_ASSIETTES_METADATA.claimsSource.map(cleClaim))
+      .toEqual([...INDICATIONS_ASSIETTES_METADATA.claimsSource.map(cleClaim)].sort());
+    // ET LE VERROU OUVRE RÉELLEMENT — sans ce terme, les sept cas ci-dessus
+    // pourraient tous passer sur une signature que le verrou refuse.
+    expect(indicationsAssiettesSignees()).toBe(true);
   });
 
-  it('SEPT publiées, TROIS en brouillon — comptées, jamais annoncées', () => {
+  it('SEPT publiées, QUATRE en brouillon — comptées, jamais annoncées', () => {
     const parStatut = (statut: LigneIndicationAssiette['statut']) =>
       INDICATIONS_ASSIETTES_V1.filter(l => l.statut === statut).map(l => l.id);
     expect(parStatut('publiee')).toHaveLength(7);
@@ -111,6 +123,7 @@ describe('indications d’assiette — état livré', () => {
       'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE',
       'ASSIETTE-IND-METHYLATION',
       'ASSIETTE-IND-ANTIOXYDANTE',
+      'ASSIETTE-IND-OMEGA-3',
     ]);
   });
 
@@ -138,6 +151,7 @@ describe('indications d’assiette — état livré', () => {
       'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE': { ind: ['WN-CL-0293-009::v1.0'], sec: [] },
       'ASSIETTE-IND-METHYLATION': { ind: ['WN-CL-0286-006::v1.0'], sec: [] },
       'ASSIETTE-IND-ANTIOXYDANTE': { ind: ['WN-CL-0292-003::v1.0'], sec: [] },
+      'ASSIETTE-IND-OMEGA-3': { ind: ['WN-CL-0294-002::v1.0'], sec: [] },
     });
   });
 
@@ -151,8 +165,10 @@ describe('indications d’assiette — état livré', () => {
     for (const ligneReelle of INDICATIONS_ASSIETTES_V1) {
       expect(parIndication.has(ligneReelle.plateCode)).toBe(true);
     }
-    // Neuf assiettes reçoivent une ligne ; l'anti-inflammatoire en reçoit deux.
-    expect(new Set(INDICATIONS_ASSIETTES_V1.map(l => l.plateCode)).size).toBe(9);
+    // Dix assiettes reçoivent une ligne ; l'anti-inflammatoire en reçoit deux.
+    // Les DEUX qui n'en reçoivent aucune sont la végétale et la chronobiologique
+    // — relues sur pièce le 2026-09-19, aucun claim n'y fonde d'indication.
+    expect(new Set(INDICATIONS_ASSIETTES_V1.map(l => l.plateCode)).size).toBe(10);
   });
 
   it('chaque ligne DÉCLARE son raccourci — aucune ne se tait sur ce qu’elle assume', () => {
@@ -160,7 +176,7 @@ describe('indications d’assiette — état livré', () => {
       expect(ligneReelle.raccourciAssume, ligneReelle.id).not.toBeNull();
       expect(ligneReelle.raccourciAssume!.length, ligneReelle.id).toBeGreaterThan(80);
     }
-    // Un fragment DISTINCTIF par ligne : sans lui, dix raccourcis identiques
+    // Un fragment DISTINCTIF par ligne : sans lui, onze raccourcis identiques
     // passeraient le cas ci-dessus.
     const fragments: Record<string, string> = {
       'ASSIETTE-IND-DOPAMINERGIQUE': 'score FAIBLE',
@@ -173,6 +189,7 @@ describe('indications d’assiette — état livré', () => {
       'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE': 'classe d’âge',
       'ASSIETTE-IND-METHYLATION': 'susceptibilité',
       'ASSIETTE-IND-ANTIOXYDANTE': 'L’élargissement est réel',
+      'ASSIETTE-IND-OMEGA-3': 'neuf tableaux cliniques',
     };
     for (const ligneReelle of INDICATIONS_ASSIETTES_V1) {
       expect(ligneReelle.raccourciAssume, ligneReelle.id).toContain(fragments[ligneReelle.id]);
@@ -196,18 +213,58 @@ describe('indications d’assiette — état livré', () => {
     ]);
   });
 
-  it('rien n’est servable aujourd’hui, par aucun chemin', () => {
-    expect(lignesIndicationAssietteServables(new Set())).toEqual([]);
-    expect(lignesIndicationAssietteServables(null)).toEqual([]);
-    expect(indicationsAssiettesSignees()).toBe(false);
-    // ET MÊME AVEC TOUS LES CLAIMS RÉPUTÉS VALIDES : c'est la signature qui
-    // manque, pas le corpus.
-    expect(lignesIndicationAssietteServables(claimsValidesDe(INDICATIONS_ASSIETTES_V1))).toEqual([]);
+  it('LES QUATRE BROUILLONS DÉCLARENT que leur vraie porte est biologique', () => {
+    // Arbitrage du responsable, 2026-09-19 : ces assiettes se proposent sur le
+    // RÉSULTAT biologique, et la porte écrite n'en est qu'un proxy d'anamnèse.
+    // Le motif doit vivre sur CHAQUE ligne, pas seulement dans le chapeau : un
+    // statut changé à un seul endroit est le défaut que la revue a relevé quatre
+    // fois cette semaine.
+    const brouillons = INDICATIONS_ASSIETTES_V1.filter(l => l.statut === 'brouillon');
+    expect(brouillons).toHaveLength(4);
+    for (const b of brouillons) {
+      expect(b.raccourciAssume, b.id).toMatch(/biologique|marqueur|homocystéine/);
+    }
   });
 
-  it('SIGNÉE PAR LE BANC : les sept publiées sortent, les trois brouillons restent dedans', () => {
-    // La signature est CALCULÉE ici, jamais lue dans la métadonnée réelle — sans
-    // quoi ce cas attendrait une attestation qui n'existe pas.
+  it('LES SEPT PUBLIÉES SORTENT, les quatre brouillons restent dedans', () => {
+    // Sur la signature RÉELLE, cette fois — pas celle du banc.
+    const servies = lignesIndicationAssietteServables(
+      claimsValidesDe(INDICATIONS_ASSIETTES_V1),
+    );
+    expect(servies.map(l => l.id)).toEqual(
+      INDICATIONS_ASSIETTES_V1.filter(l => l.statut === 'publiee').map(l => l.id),
+    );
+    expect(servies).toHaveLength(7);
+  });
+
+  it('LE FAIL-CLOSED TIENT MALGRÉ LA SIGNATURE — deux fermetures, deux motifs', () => {
+    // `null` = l'ensemble des claims valides N'A PAS PU ÊTRE LU ; `Set()` =
+    // aucun claim n'est valide. Les deux ferment, et ce ne sont pas les mêmes
+    // faits — confondre les deux est le silence que `DC-24` interdit.
+    expect(lignesIndicationAssietteServables(null)).toEqual([]);
+    expect(lignesIndicationAssietteServables(new Set())).toEqual([]);
+  });
+
+  it('UN CLAIM QUI CESSE D’ÊTRE VALIDE retire SA ligne, et elle seule', () => {
+    // Boucle sur les VINGT claims du périmètre : en retirer un ne doit retirer
+    // que les lignes qui le citent. Un balayage global ne dirait pas lesquelles.
+    for (const claim of INDICATIONS_ASSIETTES_METADATA.claimsSource) {
+      const valides = new Set(claimsValidesDe(INDICATIONS_ASSIETTES_V1));
+      valides.delete(cleClaim(claim));
+      const servies = lignesIndicationAssietteServables(valides);
+      const attendues = INDICATIONS_ASSIETTES_V1.filter(
+        l => l.statut === 'publiee'
+          && !claimsDeLaLigne(l).some(c => cleClaim(c) === cleClaim(claim)),
+      );
+      expect(servies.map(l => l.id), cleClaim(claim)).toEqual(attendues.map(l => l.id));
+    }
+  });
+
+  it('SIGNÉE PAR LE BANC : les publiées sortent, les brouillons restent dedans', () => {
+    // La signature est CALCULÉE ici, et non lue dans la métadonnée réelle : ce
+    // cas doit continuer de mordre si l'attestation change ou disparaît. Aucun
+    // décompte n'est écrit dans le titre — un nombre figé là dérive en silence
+    // dès qu'une ligne entre, ce que l'ajout de la onzième vient de prouver.
     const lignes = INDICATIONS_ASSIETTES_V1;
     const servies = lignesIndicationAssietteServables(
       claimsValidesDe(lignes), signatureBanc(lignes), lignes,

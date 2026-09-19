@@ -215,7 +215,33 @@ BEGIN
     ('WN-CL-0318-018', 'v1.0', 'conduites', false),
     ('WN-CL-0316-016', 'v1.0', 'conduites', false),
     ('WN-CL-0316-006', 'v1.0', 'conduites', false),
-    ('WN-CL-0316-029', 'v1.0', 'conduites', false)
+    ('WN-CL-0316-029', 'v1.0', 'conduites', false),
+    -- INDICATIONS D'ASSIETTE ([[D-236]], première signature, 2026-09-19) — onze
+    -- lignes, vingt claims, `exige_prescriptif` à `false` pour le motif écrit
+    -- dans `TABLE_EXIGE_PRESCRIPTIF`. Les quatre lignes en BROUILLON sont
+    -- épinglées comme les sept publiées : elles sont dans le périmètre haché,
+    -- donc dans ce que la signature couvre. Hors du service n'est pas hors du
+    -- périmètre.
+    ('WN-CL-0285-001', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-002', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-005', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-006', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-010', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-012', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0286-006', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0287-008', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0287-009', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0288-011', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0288-012', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0288-013', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0288-014', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0289-004', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0290-005', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0291-011', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0292-003', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0293-009', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0293-011', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0294-002', 'v1.0', 'indications_assiettes', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
   -- La jointure porte sur LA PAIRE. Joindre sur `claim_id` seul laisserait une
   -- table signée s'appuyer sur une version du claim qui n'est pas celle qu'elle
@@ -265,13 +291,13 @@ BEGIN
   -- — prouve donc, à lui seul, que l'exemption de [[D-046]] fonctionne. Le cas
   -- N7 prouve qu'elle est BORNÉE à cette table.
   SELECT
-    '__fraicheur_' || e.claim_id,
+    '__fraicheur_' || e.claim_id || '_' || e.version_claim,
     e.claim_id,
     'WN-SRC-0000',
     e.version_claim,
     'Fixture de contrat — fraîcheur des claims épinglés.',
     md5(e.claim_id) || md5(e.version_claim),
-    'déclaré', e.exige_prescriptif, 'VALIDE', 'contrat', now(), true,
+    'déclaré', bool_or(e.exige_prescriptif), 'VALIDE', 'contrat', now(), true,
     '{"fixture": "fraicheur"}'::jsonb,
     'contrat', 1536, ('[' || repeat('0,', 1535) || '0]')::extensions.vector
   FROM (VALUES
@@ -380,8 +406,50 @@ BEGIN
     ('WN-CL-0318-018', 'v1.0', 'conduites', false),
     ('WN-CL-0316-016', 'v1.0', 'conduites', false),
     ('WN-CL-0316-006', 'v1.0', 'conduites', false),
-    ('WN-CL-0316-029', 'v1.0', 'conduites', false)
-  ) AS e(claim_id, version_claim, table_signee, exige_prescriptif);
+    ('WN-CL-0316-029', 'v1.0', 'conduites', false),
+    -- INDICATIONS D'ASSIETTE ([[D-236]], première signature, 2026-09-19) — onze
+    -- lignes, vingt claims, `exige_prescriptif` à `false`. Les quatre lignes en
+    -- BROUILLON sont épinglées comme les sept publiées : hors du service n'est
+    -- pas hors du périmètre.
+    ('WN-CL-0285-001', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-002', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-005', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-006', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-010', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-012', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0286-006', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0287-008', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0287-009', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0288-011', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0288-012', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0288-013', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0288-014', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0289-004', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0290-005', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0291-011', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0292-003', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0293-009', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0293-011', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0294-002', 'v1.0', 'indications_assiettes', false)
+  ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
+  -- UN CLAIM ÉPINGLÉ PAR DEUX TABLES NE FAIT QU'UNE LIGNE DE DÉCOR. Le décor
+  -- n'avait jamais eu à le faire avant [[D-236]] — `WN-CL-0287-009` est le
+  -- premier claim cité à la fois par la table d'orientation et par celle des
+  -- indications d'assiette, et l'insertion levait un `P2002` sur la clé primaire.
+  --
+  -- LA CLÉ DE FIXTURE PORTE LA PAIRE, PAS LE SEUL CLAIM — constat de revue. Le
+  -- regroupement ci-dessous se fait sur `(claim_id, version_claim)`, et un `id`
+  -- bâti sur le seul `claim_id` rouvrirait exactement le même `P2002` le jour où
+  -- deux tables signées épingleraient deux VERSIONS d'un même claim. Ce jour-là
+  -- est prévu par le contrat lui-même : il joint sur la paire, précisément pour
+  -- qu'une table ne s'appuie pas sur une version qu'elle n'a pas relue.
+  --
+  -- `bool_or` EST LE BON AGRÉGAT, ET PAS UN CHOIX DE COMMODITÉ : un claim
+  -- épinglé par une table qui EXIGE le prescriptif doit être prescriptif dans le
+  -- décor, sans quoi le cas N0 — « un corpus sain ne lève pas » — rougirait à
+  -- tort. Prendre `false` parce qu'une seconde table ne l'exige pas inverserait
+  -- la démonstration.
+  GROUP BY e.claim_id, e.version_claim;
 -- <<< PAIRES_FIXTURES
 
   -- ── N0 — CONTRÔLE : un corpus SAIN ne lève pas ────────────────────────────

@@ -5,7 +5,7 @@ import { entreesSurSignauxAlerte, valeursDeDrapeauInconnues } from './declencheu
 import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
 
 // INDICATIONS D'ASSIETTE — la FORME d'une ligne, le verrou qui la garde, et
-// DIX LIGNES depuis le 2026-09-19. Verrou ÉTEINT ([[D-213]] §10, [[D-216]],
+// ONZE LIGNES depuis le 2026-09-19. Verrou ÉTEINT ([[D-213]] §10, [[D-216]],
 // [[D-225]], [[D-229]], [[D-230]], [[D-231]], [[D-232]], [[D-235]]).
 //
 // LA TABLE N'EST PLUS VIDE, ET ELLE NE SERT TOUJOURS RIEN. Les deux tiennent
@@ -126,13 +126,17 @@ export type LigneIndicationAssiette = {
 };
 
 /**
- * LA TABLE — DIX LIGNES, et le verrou reste ÉTEINT.
+ * LA TABLE — ONZE LIGNES, ET LE VERROU EST OUVERT DEPUIS LE 2026-09-19.
  *
- * ELLE N'EST PLUS VIDE DEPUIS LE 2026-09-19 ([[D-235]]) : c'est le chantier 2
- * de [[D-216]]. Sept lignes publiées, trois en brouillon, aucune servie — la
- * métadonnée n'atteste rien, `shaPerimetre` vaut `null`, et
- * `lignesIndicationAssietteServables` rend `[]`. **Écrire les lignes et les
- * attester sont deux gestes, et le second n'appartient pas à l'outil.**
+ * Écrite par [[D-235]] (chantier 2 de [[D-216]]), **attestée par [[D-236]]** le
+ * même jour. Sept lignes publiées — **servables**, c'est-à-dire éligibles au
+ * service —, quatre en brouillon : relues et hachées au même titre, jamais
+ * servies. **Écrire les lignes et les attester sont deux gestes**, et le second
+ * n'appartient pas à l'outil : il a été transcrit sur déclaration.
+ *
+ * SERVABLE N'EST PAS SERVI, et la nuance n'est pas de forme :
+ * `lignesIndicationAssietteServables` n'a **aucun appelant de production**. Le
+ * lot d'exposition reste devant.
  *
  * CHAQUE CLAIM A ÉTÉ RELU EN PRODUCTION, SOURCE ENTIÈRE, LE 2026-09-19 — les
  * neuf protocoles qui portent une ligne, claim par claim, texte intégral. Ce
@@ -418,6 +422,27 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
     statut: 'publiee',
   },
   // ── BROUILLONS — relus, hachés, JAMAIS servis ──────────────────────────────
+  //
+  // LES QUATRE ONT LE MÊME MOTIF, et ce n'est pas celui que la première
+  // rédaction leur donnait. Arbitrage du responsable du 2026-09-19 (seconde
+  // séance) : **ces assiettes se proposent sur le RÉSULTAT BIOLOGIQUE**, et la
+  // porte écrite ici — âge, régime, antécédent — n'en est qu'un proxy
+  // d'anamnèse. Le corpus fonde la porte biologique de chacune ; le dépôt ne
+  // sait pas la lire.
+  //
+  // CE QUI MANQUE EST UN MÉCANISME, PAS UN CLAIM. `OrientationDeclencheur` n'a
+  // aucune variante biologique, et `biology-library/resultats.ts` VALIDE la
+  // forme d'un résultat en refusant explicitement toute borne de valeur — son
+  // seul consommateur est la route de sauvegarde. Rien n'interprète un résultat.
+  // C'est un chantier à part entière : variante de déclencheur, lecteur de
+  // résultat, plages fonctionnelles, et la relecture des bornes de chaque
+  // source. Il s'ouvre APRÈS l'attestation, et il la périmera — un périmètre
+  // signé se hache en entier.
+  //
+  // LES CLAIMS BIOLOGIQUES NE SONT PAS CITÉS PAR CES LIGNES, et c'est la règle
+  // du lot : une ligne ne cite que les claims qui fondent SA porte. Ils sont
+  // nommés dans la surface de relecture, ils entreront au périmètre le jour où
+  // une ligne les lira.
   {
     id: 'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE',
     plateCode: 'ASSIETTE_ANTI_INFLAMMATOIRE',
@@ -433,8 +458,12 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
     claimsSecurite: [],
     raccourciAssume:
       'Aucun pas de sens n’est assumé ici : le claim porte la borne, la ligne la '
-      + 'cite. Ce qui est assumé est le STATUT — une porte d’âge seule s’ouvre sur '
-      + 'toute une classe d’âge, et le brouillon la consigne sans la servir.',
+      + 'cite. Ce qui est assumé est le STATUT, et son motif est double. Une porte '
+      + 'd’âge seule s’ouvrirait sur toute une classe d’âge ; et surtout la VRAIE '
+      + 'porte de cette assiette est biologique — WN-CL-0293-013 nomme une CRP '
+      + 'ultrasensible élevée, un ratio kynurénine/tryptophane élevé, un rapport '
+      + 'AA/EPA élevé et un déséquilibre des adipokines. Le dépôt ne sait lire '
+      + 'aucun de ces marqueurs. L’âge est un proxy d’anamnèse, pas la porte.',
     statut: 'brouillon',
   },
   {
@@ -460,10 +489,12 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
     raccourciAssume:
       'Le claim dit que ces populations sont « plus susceptibles de NÉCESSITER » '
       + 'l’assiette — une susceptibilité de population, là où les sept lignes '
-      + 'publiées reposent sur un « est indiquée ». Transformer cette '
-      + 'susceptibilité en indication servie serait un pas que l’outil ne peut pas '
-      + 'assumer seul : arbitrage du responsable, 2026-09-19, la ligne reste en '
-      + 'brouillon jusqu’à ce que la relecture tranche.',
+      + 'publiées reposent sur un « est indiquée ». Et la VRAIE porte est '
+      + 'biologique : WN-CL-0282-007, prescriptif, désigne l’homocystéine comme '
+      + 'le marqueur qui oriente vers cette assiette, et WN-CL-0043-014 en porte '
+      + 'la borne. WN-CL-0330-027 relie même les deux — '
+      + 'le modèle végétarien strict élève l’homocystéine. Le régime et l’âge sont '
+      + 'des proxys d’anamnèse ; le dépôt ne sait pas lire le marqueur.',
     statut: 'brouillon',
   },
   {
@@ -483,8 +514,46 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
     raccourciAssume:
       'Le claim nomme des tableaux neurodégénératifs précis ; la ligne lit un '
       + 'domaine d’antécédents qui les contient ET contient bien autre chose. '
-      + 'L’élargissement est réel, il est assumé par l’outil, et c’est exactement '
-      + 'pourquoi la ligne reste en brouillon.',
+      + 'L’élargissement est réel et il est assumé par l’outil. S’y ajoute le '
+      + 'motif commun aux quatre brouillons : la vraie porte est biologique — '
+      + 'WN-CL-0292-005 nomme des marqueurs de stress oxydant associés à une CRP '
+      + 'ultrasensible élevée, que rien ici ne sait lire.',
+    statut: 'brouillon',
+  },
+  {
+    id: 'ASSIETTE-IND-OMEGA-3',
+    plateCode: 'ASSIETTE_OMEGA_3',
+    // ONZIÈME LIGNE, OUVERTE PAR LA RELECTURE DU 2026-09-19. `WN-SRC-0294` avait
+    // été écartée sur le motif « claims non prescriptifs ». Ce motif ne tient
+    // plus : l'arbitrage du responsable a déclaré `TABLE_EXIGE_PRESCRIPTIF` à
+    // `false` pour cette table, et le prescriptif n'est donc plus disqualifiant.
+    //
+    // LA PORTE ÉCRITE EST UN PROXY, ET LE CLAIM BIOLOGIQUE EST LE VRAI.
+    // `WN-CL-0294-002` énumère neuf tableaux cliniques — dépression et ses
+    // formes, trouble affectif saisonnier, troubles psychotiques, déclin
+    // cognitif, épilepsie, migraines, douleurs chroniques, déficit de
+    // l'attention. Trois domaines d'antécédents les recouvrent PARTIELLEMENT, et
+    // contiennent bien autre chose. `WN-CL-0294-004` porte la porte réelle, avec
+    // ses bornes citées — statut des acides gras érythrocytaires, index oméga 3,
+    // ratio AA/EPA — et le dépôt ne sait lire aucune des trois.
+    declencheur: {
+      type: 'drapeau',
+      champ: 'antecedentsDomaines',
+      valeurs: [
+        'Neurologique (migraine, TDAH…)',
+        'Psychiatrique (anxiété, dépression, burn-out)',
+        'Douleurs chroniques / fibromyalgie',
+      ],
+    },
+    claimsIndication: [{ claimId: 'WN-CL-0294-002', versionClaim: 'v1.0' }],
+    claimsSecurite: [],
+    raccourciAssume:
+      'Le claim énumère neuf tableaux cliniques ; la ligne lit trois domaines '
+      + 'd’antécédents qui les recouvrent partiellement et débordent largement. '
+      + 'C’est le plus grand écart de granularité de la table, plus large que '
+      + 'celui de l’antioxydante, et il est assumé par l’outil. La vraie porte '
+      + 'est biologique — WN-CL-0294-004 cite un index oméga 3 et un ratio '
+      + 'AA/EPA — et rien ne sait la lire. D’où le brouillon.',
     statut: 'brouillon',
   },
 ];
@@ -523,29 +592,65 @@ export function shaPerimetreIndicationsAssiettes(
 }
 
 /**
- * MÉTADONNÉE NON SIGNÉE — verrous présents et ÉTEINTS.
+ * MÉTADONNÉE SIGNÉE — verrous présents et OUVERTS depuis [[D-236]].
  *
- * Ils existent pour que le jour de l'attestation soit une ÉDITION et non un
- * ajout de structure. **Une signature clinique ne se pose jamais par l'outil.**
+ * Les quatre termes ont été posés le jour de l'attestation, par ÉDITION et non
+ * par ajout de structure : c'est précisément pourquoi ils existaient éteints
+ * depuis [[D-225]]. **Une signature clinique ne se pose jamais par l'outil** —
+ * celle-ci a été transcrite sur la déclaration du responsable, rendue en séance
+ * après lecture claim par claim.
  *
- * `claimsSource` VIDE est délibérément visible : le balayage du contrat de
- * fraîcheur (`claimsEpinglesFraicheur.guard.test.ts`) reconnaît une table signée
- * à ce champ, et le reconnaît MÊME VIDE. Le fichier entre donc à
- * `FICHIER_VERS_TABLE` dès aujourd'hui — mais il ne contribue AUCUNE paire au
- * contrat SQL tant qu'aucune ligne ne cite de claim, donc `TABLE_EXIGE_PRESCRIPTIF`
- * n'a rien à recevoir avant la première signature, et lui donner une entrée
- * maintenant rougirait à l'inverse.
+ * LES TROIS ENRÔLEMENTS ONT ÉTÉ FAITS DANS LE MÊME GESTE, ni avant ni après.
+ * `TABLE_EXIGE_PRESCRIPTIF` a reçu `indications_assiettes: false` avec son pavé
+ * d'arbitrage ; les vingt paires sont entrées au contrat SQL de fraîcheur **et à
+ * son fichier négatif** ; `shaPerimetreLitteral.guard.test.ts` a enrôlé ce
+ * fichier. Avant, le banc du sha littéral rougissait sur un `null` ; après, le
+ * contrat aurait divergé du dépôt.
  *
- * `shaPerimetreLitteral.guard.test.ts` N'EST PAS ENROLÉ AUJOURD'HUI, et c'est
- * volontaire : ce banc exige un littéral de 64 hex, or `shaPerimetre` vaut
- * `null`. L'enrôlement se fait LE JOUR de la première signature, comme
- * [[D-198]], [[D-223]] et [[D-224]] l'ont fait pour les trois tables précédentes.
+ * RE-SIGNER REMPLACE, ça ne s'ajoute pas. Toute ligne retouchée, tout
+ * `raccourciAssume` reformulé, tout claim ajouté périme cette attestation — le
+ * périmètre se hache en entier. Le chantier de la porte biologique le fera, et
+ * c'est voulu.
  */
 export const INDICATIONS_ASSIETTES_METADATA: IndicationsAssiettesMetadata = {
-  validationExterne: false,
-  dateValidation: null,
-  claimsSource: [],
-  shaPerimetre: null,
+  validationExterne: true,
+  // DÉCLARATION RENDUE EN SÉANCE, APRÈS LECTURE — [[D-195]] §1. Les sept lignes
+  // publiées ont été confirmées CLAIM PAR CLAIM : ce qui est attesté n'est pas
+  // que le claim existe, mais qu'il fonde la porte écrite en face de lui. Les
+  // quatre brouillons sont relus et hachés au même titre — hors du SERVICE,
+  // jamais hors du PÉRIMÈTRE.
+  dateValidation: '2026-09-19T18:27:15.000Z',
+  // L'UNION DES DEUX CATÉGORIES, dédoublonnée et triée. `WN-CL-0288-013` est le
+  // seul claim cité deux fois — il fonde l'indication de l'assiette protéinée ET
+  // porte son exception parkinsonienne —, et il n'apparaît ici qu'une fois :
+  // vingt claims pour vingt-et-une désignations.
+  claimsSource: [
+    { claimId: 'WN-CL-0285-001', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0285-002', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0285-005', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0285-006', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0285-010', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0285-012', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0286-006', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0287-008', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0288-011', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0288-012', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0288-013', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0288-014', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0289-004', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0290-005', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0291-011', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0292-003', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0293-009', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0293-011', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0294-002', versionClaim: 'v1.0' },
+  ],
+  // LITTÉRAL FIGÉ — surtout pas `shaPerimetreIndicationsAssiettes(...)`, qui
+  // rendrait la comparaison tautologique et ferait entrer toute ligne ajoutée
+  // plus tard sous une signature acquise ([[D-063]]). Calculé une fois sur le
+  // périmètre relu, puis RECOPIÉ ici.
+  shaPerimetre: '92f02da47b335adc7f16443c1e74e298ee144ecec4746f60dc6ac34c6b49b35c',
 };
 
 function estIsoCanonique(valeur: string | null): valeur is string {

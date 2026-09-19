@@ -4,6 +4,50 @@
 **Ce document ne signe rien.** Il présente au praticien ce qu'il aurait à
 attester, et ce qui a été écarté.*
 
+> ## ÉTAT AU 2026-09-19 (fin) — LA TABLE EST ATTESTÉE. Ce document a rempli son office.
+>
+> **SIGNÉE LE 2026-09-19 à 18:27:15 UTC ([[D-236]])** — onze lignes, vingt claims,
+> `shaPerimetre` en littéral. **Sept lignes sont servables ; quatre restent en
+> brouillon**, hachées et attestées, jamais servies. La déclaration a été rendue
+> en séance, après lecture, et ce qui a été confirmé n'est pas que les claims
+> existent : c'est que **chacun fonde la porte écrite en face de lui**.
+>
+> **CE DOCUMENT NE SE RELIT PLUS COMME UNE PROPOSITION.** Il a servi à préparer
+> une signature, elle est posée. Les blocs datés ci-dessous restent l'historique
+> de ce qui a été compris, jour après jour — et trois d'entre eux ont été
+> réfutés par la relecture sur pièce.
+>
+> **CE QUE L'ATTESTATION A RÉVÉLÉ, ET QUI EST LE PLUS IMPORTANT.** Interrogé sur
+> les brouillons, le responsable a répondu que **ces assiettes se proposent en
+> fonction du RÉSULTAT BIOLOGIQUE**. Vérifié : **sept des douze assiettes ont un
+> claim fondant une porte biologique**, et la détoxication en a un qui déclare
+> qu'il n'en existe pas (`WN-CL-0287-010`) — une absence documentée. Mais
+> **aucune porte biologique n'est écrivable** : le vocabulaire de déclencheur n'a
+> pas de variante, et la validation d'un résultat refuse explicitement toute
+> borne. Les quatre brouillons déclarent donc que leur porte écrite est un
+> **proxy d'anamnèse**.
+>
+> **UNE ERREUR DE CE DOCUMENT, ET DE L'OUTIL, EST CORRIGÉE ICI.** Il a été
+> affirmé deux fois que l'assiette de méthylation n'avait aucun claim biologique.
+> **C'était faux** — vrai de son protocole `WN-SRC-0286`, faux du corpus. Le
+> responsable l'a réfuté sur sa connaissance clinique ; la recherche a rendu
+> **66 claims**, dont `WN-CL-0282-007`, **prescriptif**, qui désigne
+> l'homocystéine comme le marqueur orientant vers cette assiette, et
+> `WN-CL-0043-014` qui en porte la borne. `WN-CL-0125-035` et `WN-CL-0340-004`
+> font de même pour les folates érythrocytaires. **Chercher un claim dans la
+> seule source du sujet est une erreur de méthode.**
+>
+> **UNE ONZIÈME LIGNE EST ENTRÉE** — l'assiette oméga 3, en brouillon, relue sur
+> pièce à la demande du responsable. Son refus reposait sur « claims non
+> prescriptifs », motif tombé avec l'arbitrage `TABLE_EXIGE_PRESCRIPTIF = false`.
+> **Végétale et chronobiologique restent écartées**, relues le même jour : six et
+> quatorze claims, tous de contenu, aucune indication.
+>
+> **CE QUI RESTE DEVANT.** Aucun moteur ne consomme cette table — elle est signée
+> et servable, son lot d'exposition reste à faire. Le **chantier de la porte
+> biologique** s'ouvre maintenant, et il périmera cette attestation : un
+> périmètre signé se hache en entier.
+
 > ## ÉTAT AU 2026-09-19 (suite) — LES LIGNES SONT ÉCRITES. Ce qui reste devant vous est la relecture, puis l'attestation.
 >
 > **DIX LIGNES sont au dépôt ([[D-235]]) — sept publiées, trois en brouillon — et

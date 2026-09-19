@@ -189,6 +189,23 @@ const TABLE_EXIGE_PRESCRIPTIF: Record<string, boolean> = {
   // encore — le contrat SQL porte déjà un booléen par ligne — mais ce banc
   // impose l'uniformité par table, et lever cet invariant est un lot en soi.
   conduites: false,
+  // UNE INDICATION D'ASSIETTE N'EXIGE PAS LE PRESCRIPTIF — arbitrage du
+  // responsable, 2026-09-19 ([[D-236]]), et il ne va pas de soi : une table qui
+  // fait proposer une assiette au praticien RESSEMBLE à une table prescriptive.
+  //
+  // Ce qui tranche est le contenu réel du périmètre. Deux des vingt claims sont
+  // `prescriptif = false` et aucun des deux n'est accessoire : `WN-CL-0288-012`
+  // FONDE une porte — la sarcopénie, déclarée indication majeure de l'assiette
+  // protéinée —, et `WN-CL-0288-014` porte une SÉCURITÉ, le prolongement de
+  // l'exception parkinsonienne. Exiger le prescriptif de toute la table
+  // rejetterait donc une désignation valide et, pire, amputerait une règle de
+  // sécurité de sa moitié — exactement ce que [[D-227]] §3 interdit.
+  //
+  // Le motif de fond est celui de la table d'arrêt ([[D-053]]) : la prescription
+  // ne vient pas des claims, elle vient de la SIGNATURE praticien, qui assume
+  // qu'une porte lue indique une assiette. Exiger d'une source qu'elle dise plus
+  // que ce qu'elle dit est une autre façon d'inventer.
+  indications_assiettes: false,
 };
 
 interface TableSignee {
