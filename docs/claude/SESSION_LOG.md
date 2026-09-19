@@ -7295,3 +7295,40 @@ l'exigeait.
 
 **Question ouverte.** Aucune règle ne porte de borne d'âge ; le jour où il en
 faudra une, vérifier que son appelant fournit bien l'âge.
+
+## 2026-09-19 — Le régime alimentaire devient une porte, et S3 n'a plus de chantier mécanique
+
+**Décision.** `D-232`, sur arbitrage du responsable : la porte lit
+l'`EtatPopulation`, elle ne fait pas du champ un drapeau. Le dernier des cinq
+chantiers de `D-216` est clos.
+
+**Le point de départ est une erreur à moi.** La dette routée la veille annonçait
+« une clé de plus dans `CHAMP_ANAMNESE` » — prémisse non vérifiée :
+`etat_alimentation` est déjà lu par `lireEtatPopulation`. Corrigée au registre
+avant d'écrire une ligne de code.
+
+**L'arbitrage est doctrinal.** Le champ vit dans la section réservée aux états de
+population (`D-101`) ; en faire une onzième clé de `DrapeauxAnamnese` lui aurait
+donné deux lecteurs de formes différentes — libellé verbatim d'un côté, énuméré
+normalisé de l'autre — et deux disciplines de l'inconnu là où la section n'en
+veut qu'une.
+
+**Un seul critère des sept.** Les six autres sont par construction des critères
+d'EXCLUSION : en faire des portes d'indication retournerait leur sens. Une
+grossesse qui indiquerait au lieu d'écarter est l'erreur exacte que la gate
+existe pour empêcher. Et `inconnu` n'allume rien — le garde de forme refuse même
+qu'on l'écrive, parce que cette faute ne se voit pas à la relecture.
+
+**Le contexte du moteur devient un objet.** À deux portes, le paramètre
+positionnel posé la veille devenait illisible ; à trois il aurait été fautif. Le
+motif qui l'avait fait choisir — ne rien passer FERME la porte — est intact.
+
+**Le câblage est gardé dès l'écriture**, avec trois contre-épreuves et une
+mutation. C'est la leçon de la revue de `D-231`, où les pièces étaient éprouvées
+et la jointure nue.
+
+**Prochaine action.** Les lignes d'indication elles-mêmes : la table est prête,
+le catalogue est prêt, les portes sont prêtes. Ce qui reste est clinique.
+
+**Question ouverte.** Aucune règle ne porte cette porte ; le jour venu, vérifier
+que l'appelant fournit bien l'état de population.

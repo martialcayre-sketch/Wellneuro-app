@@ -4,6 +4,79 @@
 
 ## Décisions actives
 
+### D-232 — Le régime alimentaire devient une porte en lisant l'ÉTAT DE POPULATION, jamais un drapeau : le champ garde un seul lecteur, et le contexte de dossier remplace le paramètre positionnel
+
+- Date : 2026-09-19
+- Statut : accepté — **arbitrage du responsable** : lire l'`EtatPopulation`
+  plutôt que faire du champ un drapeau. Dernier des cinq chantiers que `D-216`
+  laissait devant l'attestation. **Aucune règle ne porte cette porte.**
+- Domaine : vocabulaire de porte (`clinical/orientationRulesV1.ts`), moteur
+  partagé (`clinical/orientationEngine.ts`), service d'orientation.
+- Porte sur : la dette que `D-229` §5 avait routée — et dont le correctif annoncé
+  était **faux**.
+
+**1. LE CORRECTIF ROUTÉ LA VEILLE ÉTAIT FAUX, ET C'EST LE POINT DE DÉPART.**
+`D-229` §5 annonçait « une clé de plus et sa ligne dans `CHAMP_ANAMNESE` ». Il
+reposait sur une prémisse non vérifiée : que `etat_alimentation` n'était lu par
+personne. **Il l'est** — par `lireEtatPopulation`, qui le normalise en
+`ExclusionAlimentaire` pour la gate de population (`DC-43`). La dette a été
+corrigée au registre **avant** d'écrire une ligne de code.
+
+**2. PAS UN DRAPEAU, ET L'ARBITRAGE EST DOCTRINAL.** Le champ vit dans la section
+« État actuel », déclarée porter *les états de population, et RIEN D'AUTRE*
+(`D-101`) ; aucune des dix clés de `DrapeauxAnamnese` n'en vient. En faire une
+onzième aurait été le **premier franchissement** de cette ligne, et aurait donné
+au champ **deux lecteurs de formes différentes** — libellé verbatim d'un côté,
+énuméré normalisé de l'autre — donc deux disciplines de l'inconnu là où la
+section n'en veut qu'une. **Écarté** : le chemin court. **Écarté aussi** :
+renoncer et laisser la méthylation en réserve.
+
+**3. UN SEUL CRITÈRE, ET PAS LES SEPT.** `EtatPopulation` porte aussi grossesse,
+allaitement, pathologies rénale et hépatique, chirurgie digestive et maladie
+cœliaque. Aucun claim ne les fonde comme INDICATION, et ils sont **par
+construction des critères d'EXCLUSION** : en faire des portes d'indication
+**retournerait leur sens**. Une grossesse qui indiquerait une conduite au lieu
+d'en écarter est exactement l'erreur que la gate de population existe pour
+empêcher. Le type refuse donc ce que la doctrine n'autorise pas — même discipline
+que la borne d'âge refusant `<`.
+
+**4. `inconnu` N'ATTEINT RIEN, ET LE GARDE DE FORME LE REFUSE À L'ÉCRITURE.**
+`inconnu` est une valeur de l'énuméré, donc écrivable dans `valeurs` — et une
+ligne qui la citerait s'allumerait sur l'**ignorance** du patient, c'est-à-dire
+sur le contraire d'une déclaration (`DC-24`). Le moteur ne s'allume jamais
+dessus ; `anomaliesDuDeclencheur` refuse en plus qu'on l'écrive, parce que cette
+faute ne se voit pas à la relecture du texte d'une ligne.
+
+**5. LE CONTEXTE DE DOSSIER REMPLACE LE PARAMÈTRE POSITIONNEL DE `D-231`, et le
+motif de celui-ci est intact.** `D-231` §3 justifiait un quatrième paramètre
+optionnel par l'**optionalité** — un appelant qui ne sait rien ne passe rien, ce
+qui FERME la porte au lieu de l'ouvrir. Un objet optionnel satisfait exactement le
+même besoin. Ce que le positionnel ne supportait pas est le **nombre** : à deux
+champs il devient illisible, à trois il serait fautif. Le changement est fait
+**maintenant plutôt qu'à la troisième porte**, et `ContexteDossier` porte
+désormais l'âge et l'état de population. **Chaque champ absent ferme sa porte, et
+aucun n'en ouvre une autre** — un banc l'éprouve.
+
+**6. LE CÂBLAGE EST GARDÉ, ET IL L'A ÉTÉ AVANT QU'ON LE DEMANDE.** La revue de
+`D-231` avait montré qu'un lot peut éprouver ses pièces à fond et laisser la
+**jointure** nue : `ageAnnees` pur, moteur pur, rien entre les deux. Ce lot écrit
+donc d'emblée le banc anamnèse → `lireEtatPopulation` → moteur, avec trois
+contre-épreuves — aucune anamnèse, anamnèse sans le champ, régime autre que celui
+cité — et il a été **muté** : retirer `etatPopulation` de l'appel fait rougir le
+cas de câblage, seul.
+
+**7. CE QUE CE LOT NE FAIT PAS.** **Aucune règle d'orientation ne porte cette
+porte** — un banc l'exige, comme pour la borne d'âge. La table des indications
+d'assiette reste **VIDE**, verrou **ÉTEINT**. La gate de population est
+**inchangée** : elle lit le même objet, pour écarter, et ce lot n'y touche pas.
+Aucune migration, aucun drapeau, aucun écran.
+
+**8. CE QUE CELA LAISSE DEVANT LES LIGNES.** Plus rien de mécanique. Les cinq
+chantiers de `D-216` sont clos : statut et filtre de service (`D-225`),
+validateur partagé et lecture des claims (`D-229`), catalogue (`D-230`), borne
+d'âge (`D-231`), régime (ici). Ce qui reste est **clinique** : écrire les lignes,
+et les faire attester — une signature ne se pose jamais par l'outil.
+
 ### D-231 — La borne d'âge devient un déclencheur : `Patient.dateNaissance` cesse d'être un fait administratif, `DC-43` est revisitée, et huit fichiers cessent de déduire un instrument d'une absence de drapeau
 
 - Date : 2026-09-19

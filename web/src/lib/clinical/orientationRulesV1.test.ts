@@ -561,6 +561,18 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
     expect(avecAge).toEqual([]);
   });
 
+  // AUCUNE RÈGLE D'ORIENTATION NE PORTE D'EXCLUSION ALIMENTAIRE ([[D-232]]),
+  // même motif que la borne d'âge : le type a été livré pour les INDICATIONS
+  // D'ASSIETTE, dont `WN-CL-0286-006` nomme les régimes végétarien et
+  // végétalien. Aucun claim de CETTE table n'en porte.
+  it("aucune règle d'orientation ne porte d'exclusion alimentaire", () => {
+    const avecRegime = ORIENTATION_RULES_V1
+      .filter(regle => regle.declencheurs.flatMap(feuillesDuDeclencheur)
+        .some(feuille => feuille.type === 'exclusionAlimentaire'))
+      .map(regle => regle.id);
+    expect(avecRegime).toEqual([]);
+  });
+
   // Arbitrage praticien du 2026-08-03 : un signal d'alerte appelle un
   // adressage, pas une exploration — et cette table ne sait produire qu'une
   // cible. Y répondre par un questionnaire ferait passer le signal pour une

@@ -352,6 +352,32 @@ describe('indications d’assiette — le déclencheur ne dérive pas en silence
     }
   });
 
+  // L'EXCLUSION ALIMENTAIRE ([[D-232]]). Deux formes mortes ou trompeuses, et
+  // aucune ne se voit à la relecture du texte de la ligne.
+  it('ATTRAPE une exclusion alimentaire sans valeur, ou citant `inconnu`', () => {
+    const sansValeur = anomaliesDuDeclencheur(
+      ligne({ declencheur: { type: 'exclusionAlimentaire', valeurs: [] } }), IDS,
+    );
+    expect(sansValeur).toHaveLength(1);
+    expect(sansValeur[0]).toContain('sans aucune valeur');
+
+    // `inconnu` est la valeur de l'IGNORANCE : une ligne qui la cite s'allumerait
+    // sur un patient qui n'a pas répondu.
+    const surInconnu = anomaliesDuDeclencheur(
+      ligne({ declencheur: { type: 'exclusionAlimentaire', valeurs: ['vegetalienne', 'inconnu'] } }),
+      IDS,
+    );
+    expect(surInconnu).toHaveLength(1);
+    expect(surInconnu[0]).toContain('inconnu');
+  });
+
+  it('LAISSE PASSER les deux régimes que `WN-CL-0286-006` nomme', () => {
+    expect(anomaliesDuDeclencheur(
+      ligne({ declencheur: { type: 'exclusionAlimentaire', valeurs: ['vegetarienne', 'vegetalienne'] } }),
+      IDS,
+    )).toEqual([]);
+  });
+
   it('ATTRAPE un signal d’alerte — il appelle un adressage, pas une assiette', () => {
     // Arbitrage praticien du 2026-08-03, appliqué à la table qui hérite du
     // vocabulaire. Plus grave ici qu'à l'orientation : une assiette PRESCRIT là

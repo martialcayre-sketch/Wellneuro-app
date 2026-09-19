@@ -10,6 +10,7 @@ import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinic
 import { STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1 } from '@/lib/clinical/stopRulesV1';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
+import { lireEtatPopulation } from '@/lib/consultation/etatPopulation';
 import { ageAnnees } from '@/lib/patient/age';
 import { idBaseDepuisPackId, packIdDepuisIdBase, type PackId } from '@/lib/questionnaires-functional';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
@@ -528,6 +529,14 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     // Un patient introuvable, une date absente ou illisible donnent le même
     // `null`, et un `null` n'atteint aucune borne d'âge ([[D-231]]).
     ageAnnees: ageAnnees(patient?.dateNaissance, maintenantMs),
+    // MÊME DISCIPLINE QUE `drapeaux`, SUR LA MÊME ANAMNÈSE ([[D-232]]). Sans
+    // consultation porteuse, on ne passe RIEN — `lireEtatPopulation(null)`
+    // rendrait un objet aux sept critères `inconnu`, ce qui AFFIRMERAIT que
+    // rien n'est déclaré là qu'une absence dit seulement qu'on n'a pas lu. Le
+    // moteur distingue les deux, et c'est `DC-24` à la source.
+    etatPopulation: consultation?.anamnese == null
+      ? undefined
+      : lireEtatPopulation(consultation.anamnese),
   });
 
   // Fail-closed explicite : sans composition de pack, on n'affirme aucune
