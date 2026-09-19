@@ -4,18 +4,20 @@ import type { OrientationDeclencheur } from './orientationRulesV1';
 import { entreesSurSignauxAlerte, valeursDeDrapeauInconnues } from './declencheursAnamnese';
 import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
 
-// INDICATIONS D'ASSIETTE — la FORME d'une ligne et le verrou qui la garde.
-// Table VIDE, verrou ÉTEINT ([[D-213]] §10, [[D-216]], [[D-225]], [[D-229]],
-// [[D-230]], [[D-231]], [[D-232]]).
+// INDICATIONS D'ASSIETTE — la FORME d'une ligne, le verrou qui la garde, et
+// DIX LIGNES depuis le 2026-09-19. Verrou ÉTEINT ([[D-213]] §10, [[D-216]],
+// [[D-225]], [[D-229]], [[D-230]], [[D-231]], [[D-232]], [[D-235]]).
 //
-// CE QUE CE LOT FERME, ET C'EST SA SEULE RAISON D'ÊTRE. La surface de relecture
-// du 2026-09-16 propose HUIT indications d'assiette, dont l'une — la
-// psychobiotique — porte une porte ÉTROITE à publier et une porte LARGE à
-// garder en brouillon ([[D-216]]). Sans champ `statut` et sans filtre de
-// service, une ligne en brouillon s'afficherait exactement comme une ligne
-// publiée : le jour de l'attestation, le responsable signerait un périmètre
-// dont une partie ne devait pas sortir. **Le filtre existe donc AVANT la
-// première ligne, et pas après.**
+// LA TABLE N'EST PLUS VIDE, ET ELLE NE SERT TOUJOURS RIEN. Les deux tiennent
+// ensemble par le fail-closed : `validationExterne` vaut `false`, `shaPerimetre`
+// vaut `null`, et `lignesIndicationAssietteServables` rend `[]` quoi qu'il
+// arrive. Écrire les lignes est un geste d'outil ; les ATTESTER n'en est pas un.
+//
+// POURQUOI LE STATUT EXISTAIT AVANT LA PREMIÈRE LIGNE ([[D-225]]). Trois des dix
+// lignes sont en brouillon. Sans champ `statut` et sans filtre de service, elles
+// s'afficheraient exactement comme les sept publiées : le jour de l'attestation,
+// le responsable signerait un périmètre dont une partie ne devait pas sortir.
+// **Le filtre existe donc AVANT la première ligne, et pas après.**
 //
 // LE `statut` EST SUR LA LIGNE, PAS SUR L'ASSIETTE, et l'arbitrage est celui de
 // la psychobiotique. Une même assiette peut être indiquée par deux portes dont
@@ -89,6 +91,24 @@ export type LigneIndicationAssiette = {
    */
   claimsIndication: readonly ClaimRef[];
   /**
+   * CE QUE LA LIGNE RETIENT — contre-indications et exceptions. **Au moins zéro**,
+   * et le vide est une DÉCLARATION, pas un oubli : il dit que la source ne porte
+   * aucune réserve sur cette porte.
+   *
+   * MÊME PATRON QUE `catalogueConduitesV1`, et pour le motif que la lecture des
+   * sources a écrit elle-même ([[D-227]] §3) : une règle de sécurité TRONQUÉE est
+   * pire qu'absente. `WN-CL-0288-013` porte l'indication de l'assiette protéinée
+   * ET son exception parkinsonienne ; noyée dans `claimsIndication`, cette
+   * exception ne se distinguerait plus de ce qui fonde l'indication, et aucun
+   * banc ne pourrait la garder à part.
+   *
+   * CE QUE LE CHAMP NE FAIT PAS : l'appliquer. Désigner une contre-indication
+   * n'est pas l'exécuter — aucun champ du dépôt ne lit un traitement en cours.
+   * Une ligne dont l'exception n'est pas exécutable doit le DIRE dans son
+   * `raccourciAssume`.
+   */
+  claimsSecurite: readonly ClaimRef[];
+  /**
    * CE QUE LA LIGNE AJOUTE AU-DELÀ DE SES CLAIMS — `null` si elle n'ajoute
    * rien. Le champ est DANS le périmètre haché : le reformuler périme
    * l'attestation. Même patron que `catalogueConduitesV1`, et pour la même
@@ -106,36 +126,358 @@ export type LigneIndicationAssiette = {
 };
 
 /**
- * LA TABLE, VIDE — et le fail-closed la rend inoffensive tant qu'elle l'est.
+ * LA TABLE — DIX LIGNES, et le verrou reste ÉTEINT.
  *
- * ELLE N'ATTEND PLUS LA LECTURE DES CLAIMS : elle est faite. Les 131 claims des
- * douze protocoles ont été lus en production, **sources entières**, le
- * 2026-09-18 ([[D-229]]) — les vingt-six désignations de la surface sont
- * exactes, SIX claims de plus ont été trouvés en cinq constats, et quatre
- * constats corrigent la colonne des déclencheurs, qui n'avait jamais été
- * confrontée au dépôt.
+ * ELLE N'EST PLUS VIDE DEPUIS LE 2026-09-19 ([[D-235]]) : c'est le chantier 2
+ * de [[D-216]]. Sept lignes publiées, trois en brouillon, aucune servie — la
+ * métadonnée n'atteste rien, `shaPerimetre` vaut `null`, et
+ * `lignesIndicationAssietteServables` rend `[]`. **Écrire les lignes et les
+ * attester sont deux gestes, et le second n'appartient pas à l'outil.**
  *
- * ELLE N'ATTEND PLUS LE CATALOGUE NON PLUS : il porte les douze assiettes depuis
- * le 2026-09-18 ([[D-230]]), et le septième terme du verrou est donc
- * satisfaisable. Le même lot a donné au catalogue ses **points de service** —
- * `assiettesParMomentDeRepas`, `assiettesParIndication` — parce que la liste
- * d'observation du praticien le rendait ENTIER : le filtre de ce module-ci porte
- * sur des **lignes**, il n'a jamais protégé le catalogue.
+ * CHAQUE CLAIM A ÉTÉ RELU EN PRODUCTION, SOURCE ENTIÈRE, LE 2026-09-19 — les
+ * neuf protocoles qui portent une ligne, claim par claim, texte intégral. Ce
+ * n'est pas une vérification d'existence : [[D-227]] a montré que la désignation
+ * INCOMPLÈTE passe toutes les gardes, exactement comme la désignation fausse.
  *
- * CE QU'ELLE ATTEND ENCORE N'EST PLUS MÉCANIQUE — et la formulation précédente
- * de ce paragraphe, « les cinq chantiers sont clos », était FAUSSE (corrigée le
- * 2026-09-19, constat de revue). Ce qui est clos est tout ce qui BLOQUAIT
- * mécaniquement l'attestation : statut et filtre de service ([[D-225]]),
- * validateur partagé et lecture des claims sur pièce ([[D-229]]), catalogue
- * ([[D-230]]), borne d'âge ([[D-231]]), exclusion alimentaire ([[D-232]]).
+ * ET LA RELECTURE A RÉFUTÉ LA SURFACE SUR QUATRE POINTS, ce qui est sa raison
+ * d'être :
  *
- * TROIS DES CINQ CHANTIERS RESTENT, et deux d'entre eux ne bloquent pas la
- * signature : écrire les lignes EST le chantier 2 ; le mécanisme orienté des
- * familles (4) et le barème (5) n'ont pas commencé. Remplir cette table est donc
- * un geste CLINIQUE — relire chaque claim sur pièce, puis faire attester. Une
- * signature ne se pose jamais par l'outil.
+ * 1. `WN-CL-0293-011` n'est PAS une conjonction. La surface lisait « atteinte
+ *    des DEUX voies monoaminergiques » ; le claim écrit « sérotoninergiques
+ *    et/ou dopaminergiques », et sur les axes `SE` et `DA`, non `DA` et `NA`.
+ *    Une conjonction aurait été plus ÉTROITE que ce que le claim fonde.
+ * 2. Le MFI-20 (`Q_SOM_07`), quatrième entrée du même claim, est actif au
+ *    catalogue mais sa source déclare qu'il n'existe PAS de barème — cinq
+ *    sous-scores séparés, aucun score global, aucune bande. Cette porte
+ *    exigerait d'inventer le seuil que la source refuse ([[DC-19]]).
+ * 3. La porte LARGE de la psychobiotique n'existe pas. `WN-CL-0291-013` étend
+ *    l'indication AU-DELÀ de l'atteinte intestinale, et `-009`/`-010` la posent
+ *    sans condition de terrain : aucun champ du dépôt ne lit un trouble
+ *    fonctionnel général — `symptomes_fonctionnels` ne porte qu'une option, la
+ *    déglutition.
+ *    Lui poser une porte serait l'inventer. Elle n'a donc AUCUNE ligne, pas même
+ *    en brouillon : une ligne sans porte s'ouvre sur tout le monde.
+ * 4. Trois claims que la surface proposait fondent une porte AUTRE que celle de
+ *    leur ligne — `WN-CL-0290-007` (marqueurs biologiques), `WN-CL-0287-007`
+ *    (cure préventive saisonnière), `WN-CL-0288-001` (l'apport protéique du
+ *    sujet âgé). Arbitrage du responsable : **une ligne ne cite que les claims
+ *    qui fondent SA porte**, patron du catalogue de conduites. Les écartés
+ *    restent nommés dans la surface de relecture, avec leur motif.
+ *
+ * CE QUI NE REÇOIT AUCUNE LIGNE, ET POURQUOI. L'assiette végétale
+ * (`WN-SRC-0284`), l'oméga 3 (`0294`) et la chronobiologique (`0295`) : aucun
+ * claim n'y fonde d'indication. Une ligne sans claim n'est pas une indication,
+ * et le verrou la refuserait. Le refus vit dans la surface, avec son motif.
+ *
+ * TROIS BORNES D'ÂGE, TROIS OPÉRATEURS DIFFÉRENTS, et l'écart est dans les
+ * claims : « plus de 50 ans » (`WN-CL-0286-006`) et « plus de 60 ans »
+ * (`WN-CL-0288-011`) s'écrivent `>`, « dès l'âge de 50 ans » (`WN-CL-0293-009`)
+ * s'écrit `>=`. Aucun de ces nombres n'est posé ici : ils sont CITÉS.
+ *
+ * UNE PORTE SE DÉSIGNE PAR SA BANDE PUBLIÉE, JAMAIS PAR SA BORNE RECOPIÉE.
+ * `Q_GAS_01` et `Q_GEO_02` s'écrivent en `zone`/`couleur`, sur le patron de
+ * `R-GAS-01` : le jour où le praticien déplace un cut-off au catalogue, la ligne
+ * SUIT au lieu de diverger — c'est ce que [[D-180]] a coûté. Seul `Q_INF_03`
+ * s'écrit en `comparaison`, parce qu'il n'émet AUCUNE interprétation globale :
+ * une zone sans `sousScore` y serait morte.
+ *
+ * `Q_GAS_01` N'EST PAS AU PACK DE BASE, et cinq lignes en dépendent. La seule
+ * règle qui le LIT est `R-GAS-01`, au second tour ; `R2-GAS-01` et `R2-GAS-02`
+ * le PROPOSENT. Ces portes ne s'ouvriront donc que chez un patient déjà passé au
+ * second tour. Ce n'est pas un défaut, c'est un fait à connaître avant de
+ * signer : une indication qu'on croit large se révélera rare.
  */
-export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [];
+export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
+  // ── PORTES DE SCORE FONCTIONNEL DES NEUROTRANSMETTEURS ──────────────────────
+  {
+    id: 'ASSIETTE-IND-DOPAMINERGIQUE',
+    plateCode: 'ASSIETTE_DOPAMINERGIQUE',
+    // LE CLAIM NOMME LUI-MÊME LES DEUX AXES — dopaminergique OU noradrénergique.
+    // La disjonction n'élargit donc rien, elle recopie le claim. `-004` est l'un
+    // des TROIS claims des 131 à nommer un questionnaire.
+    //
+    // LA BANDE EST CELLE DE LA GRILLE CERTIFIÉE de `Q_INF_03` — 0-9 peu perturbé,
+    // 10-19 perturbations probables, 20-40 fortement perturbé — déclarée en
+    // `subscale: '*'`, donc littéralement la MÊME sur `NA` que sur `DA`. Entrer
+    // dans la première bande défavorable est exactement ce que lisent
+    // `R2-NEU-03` et `R2-NEU-04`.
+    declencheur: {
+      type: 'ou',
+      declencheurs: [
+        { type: 'comparaison', idQuestionnaire: 'Q_INF_03', sousScore: 'DA', operateur: '>=', valeur: 10 },
+        { type: 'comparaison', idQuestionnaire: 'Q_INF_03', sousScore: 'NA', operateur: '>=', valeur: 10 },
+      ],
+    },
+    claimsIndication: [{ claimId: 'WN-CL-0289-004', versionClaim: 'v1.0' }],
+    // VIDE, ET C'EST UNE DÉCLARATION : `WN-SRC-0289` ne porte aucune exception
+    // ni contre-indication à cette assiette — vérifié sur les six claims.
+    claimsSecurite: [],
+    raccourciAssume:
+      'Le claim indique l’assiette sur un score FAIBLE aux axes dopaminergique ou '
+      + 'noradrénergique ; la grille certifiée de Q_INF_03 va dans l’autre sens, où '
+      + 'un score HAUT dit la perturbation. Les deux se concilient si « score '
+      + 'faible » désigne une FONCTION basse et non un score bas d’instrument, ce '
+      + 'que le reste de WN-SRC-0289 rend très probable. C’est une lecture, et elle '
+      + 'est assumée par l’outil.',
+    statut: 'publiee',
+  },
+  {
+    id: 'ASSIETTE-IND-ANTI-INFLAMMATOIRE',
+    plateCode: 'ASSIETTE_ANTI_INFLAMMATOIRE',
+    // QUATRE ENTRÉES AU CLAIM, TROIS ÉCRITES. `WN-CL-0293-011` lie par « et/ou »
+    // les neurotransmetteurs sérotoninergiques et dopaminergiques, l'humeur
+    // dépressive chronique, les scores dysfonctionnels d'origine digestive ou
+    // intestinale, et la fatigue multidimensionnelle. L'humeur dépressive n'a
+    // aucun champ ; le MFI n'a pas de barème (voir le chapeau de la table).
+    declencheur: {
+      type: 'ou',
+      declencheurs: [
+        { type: 'comparaison', idQuestionnaire: 'Q_INF_03', sousScore: 'SE', operateur: '>=', valeur: 10 },
+        { type: 'comparaison', idQuestionnaire: 'Q_INF_03', sousScore: 'DA', operateur: '>=', valeur: 10 },
+        { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
+      ],
+    },
+    claimsIndication: [{ claimId: 'WN-CL-0293-011', versionClaim: 'v1.0' }],
+    claimsSecurite: [],
+    raccourciAssume:
+      'Le claim nomme des TROUBLES des neurotransmetteurs et des SCORES '
+      + 'dysfonctionnels d’origine digestive ; la ligne lit les bandes défavorables '
+      + 'de Q_INF_03 et de Q_GAS_01. Le passage de la bande au trouble est assumé '
+      + 'par l’outil — c’est le même pas que celui des lignes de conduites déjà '
+      + 'signées en D-224.',
+    statut: 'publiee',
+  },
+  {
+    id: 'ASSIETTE-IND-PROTEINEE',
+    plateCode: 'ASSIETTE_PROTEINEE',
+    // TROIS PORTES, TROIS CLAIMS, CHACUNE FONDÉE SÉPARÉMENT. `-013` : les tableaux
+    // qui engagent la voie dopaminergique. `-011` : une borne à soixante ans
+    // révolus, donc `>` et non `>=`. `-012` : la sarcopénie, déclarée indication
+    // MAJEURE — et le dépôt porte le SARC-F (`Q_GEO_02`), dont la grille
+    // certifiée n'a que deux bandes ; la zone `danger` DÉSIGNE la seconde sans
+    // recopier son cut-off.
+    //
+    // DEUX RÉSERVES À CONNAÎTRE AVANT DE SIGNER, et aucune n'est de forme :
+    // `WN-CL-0288-012` et `-014` sont `prescriptif = false`. La table n'exige pas
+    // le prescriptif ([[D-046]]), et `indications_assiettes` n'entrera au contrat
+    // SQL qu'au jour de la signature — mais il faut le savoir, pas le découvrir.
+    declencheur: {
+      type: 'ou',
+      declencheurs: [
+        { type: 'comparaison', idQuestionnaire: 'Q_INF_03', sousScore: 'DA', operateur: '>=', valeur: 10 },
+        { type: 'age', operateur: '>', valeur: 60 },
+        { type: 'zone', idQuestionnaire: 'Q_GEO_02', zone: { type: 'couleur', couleurs: ['danger'] } },
+      ],
+    },
+    claimsIndication: [
+      { claimId: 'WN-CL-0288-011', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0288-012', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0288-013', versionClaim: 'v1.0' },
+    ],
+    // L'EXCEPTION VIT DANS LE CLAIM QUI PORTE L'INDICATION, et c'est la ligne qui
+    // fonde ce champ. `-013` excepte le parkinsonien sous L-dopa ; `-014`
+    // prolonge, en déclarant que l'apport protéique s'y répartit autrement selon
+    // le stade et le traitement. **Les deux entrent ensemble ou aucun**
+    // ([[D-227]] §3). `-013` est donc cité DANS LES DEUX catégories : il fonde
+    // l'indication et porte sa réserve, et l'union les dédoublonne.
+    claimsSecurite: [
+      { claimId: 'WN-CL-0288-013', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0288-014', versionClaim: 'v1.0' },
+    ],
+    raccourciAssume:
+      'Deux pas sont assumés par l’outil. Le premier : le claim fonde l’indication '
+      + 'sur les tableaux qui engagent la voie dopaminergique, là où la ligne lit '
+      + 'une bande de l’axe DA de Q_INF_03 — le passage du score au tableau est le '
+      + 'même que celui d’insomnie_depression, signé en D-224. Le second, et il est '
+      + 'plus lourd : l’exception parkinsonienne sous L-dopa est '
+      + 'DÉSIGNÉE en claimsSecurite mais AUCUN champ du dépôt ne lit un traitement '
+      + 'en cours, donc rien ne l’applique. La ligne propose au praticien, qui '
+      + 'connaît le traitement de son patient ; elle ne retient pas à sa place.',
+    statut: 'publiee',
+  },
+  // ── PORTES DU TFD SIIN (`Q_GAS_01`) — SECOND TOUR ──────────────────────────
+  {
+    id: 'ASSIETTE-IND-SEROTONINERGIQUE',
+    plateCode: 'ASSIETTE_SEROTONINERGIQUE',
+    // LA PORTE A ÉTÉ CORRIGÉE PAR ARBITRAGE LE 2026-09-18, et le motif tient à la
+    // lecture : AUCUN des quinze claims de `WN-SRC-0290` ne fonde une porte par
+    // score de questionnaire fonctionnel. La surface proposait `Q_INF_03`/`SE` —
+    // rien ne le fondait, et le garder aurait été inventer la porte. `-005` fonde
+    // l'indication sur des ÉTATS dont l'origine est intestinale, et sur le
+    // transit — c'est-à-dire sur ce que le TFD SIIN mesure.
+    declencheur: {
+      type: 'zone',
+      idQuestionnaire: 'Q_GAS_01',
+      zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] },
+    },
+    claimsIndication: [{ claimId: 'WN-CL-0290-005', versionClaim: 'v1.0' }],
+    claimsSecurite: [],
+    raccourciAssume:
+      'Le claim fonde l’indication sur des ÉTATS — inflammatoires d’origine '
+      + 'intestinale, troubles du transit, dysbioses — là où la ligne lit une bande '
+      + 'défavorable du TFD SIIN. Le passage de la bande à l’état est assumé par '
+      + 'l’outil. Conséquence assumée aussi : Q_GAS_01 n’est lu qu’au second tour '
+      + 'par R-GAS-01, donc cette indication, réputée large, se déclenchera rarement.',
+    statut: 'publiee',
+  },
+  {
+    id: 'ASSIETTE-IND-EPARGNE-DIGESTIVE',
+    plateCode: 'ASSIETTE_EPARGNE_DIGESTIVE',
+    // DEUX PORTES INDÉPENDANTES, chacune fondée seule — d'où la disjonction et
+    // non une conjonction. `-005` ne restreint AUCUNE population : le trouble
+    // intestinal de nature fonctionnelle suffit, et `-006` le redit à l'échelle
+    // digestive. `-001` fonde l'autre porte sur l'intolérance déjà installée.
+    declencheur: {
+      type: 'ou',
+      declencheurs: [
+        { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
+        { type: 'drapeau', champ: 'intolerancesAlimentaires', valeurs: ['Gluten', 'Histamine', 'Lactose'] },
+      ],
+    },
+    claimsIndication: [
+      { claimId: 'WN-CL-0285-001', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0285-005', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0285-006', versionClaim: 'v1.0' },
+    ],
+    // LES BORNES DE L'ÉVICTION, ET ELLES NE SONT PAS FACULTATIVES. `-002` borne
+    // la période, `-010` impose de compenser les manques au-delà, `-012` refuse
+    // l'éviction durable hors maladie cœliaque et allergies. Une assiette
+    // d'éviction servie sans ses bornes est exactement le cas que [[D-227]] §3
+    // décrit : désigner l'indication sans ses gardes.
+    claimsSecurite: [
+      { claimId: 'WN-CL-0285-002', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0285-010', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0285-012', versionClaim: 'v1.0' },
+    ],
+    raccourciAssume:
+      'Le claim fonde la seconde porte sur les « intolérances alimentaires » sans '
+      + 'les énumérer ; le drapeau d’anamnèse n’en porte que trois — gluten, '
+      + 'histamine, lactose. La ligne est donc PLUS ÉTROITE que le claim, jamais '
+      + 'plus large, et ce rétrécissement est assumé par l’outil. Les bornes de '
+      + 'durée et de compensation sont désignées, non appliquées : elles concernent '
+      + 'le contenu que le praticien écrit, pas la porte.',
+    statut: 'publiee',
+  },
+  {
+    id: 'ASSIETTE-IND-DETOXICATION',
+    plateCode: 'ASSIETTE_DETOXICATION',
+    // `-009` NOMME LE QUESTIONNAIRE — c'est l'un des trois claims des 131 à le
+    // faire. Sa seconde branche, celle qui passe par l'enquête alimentaire, n'est
+    // PAS écrite : l'arbitrage du 2026-09-16 interdit à `Q_ALI_01` de déclencher
+    // seule, et le dépôt la déclare non validée comme instrument de mesure.
+    // `-008` corrobore par la voie intestinale, fonctionnelle et inflammatoire.
+    declencheur: {
+      type: 'zone',
+      idQuestionnaire: 'Q_GAS_01',
+      zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] },
+    },
+    claimsIndication: [
+      { claimId: 'WN-CL-0287-008', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
+    ],
+    claimsSecurite: [],
+    raccourciAssume:
+      'Le claim dit « score élevé » au questionnaire des troubles fonctionnels '
+      + 'intestinaux sans nommer de bande ; la ligne lit warning, danger et dark, '
+      + 'c’est-à-dire tout ce qui n’est pas la bande rassurante. Ouvrir dès la '
+      + 'bande B est plus large que « élevé » pris au sens strict, et c’est '
+      + 'WN-CL-0287-008 qui le paie : il fonde l’indication sur l’existence de '
+      + 'troubles fonctionnels intestinaux, que la bande B nomme. Le pas est assumé '
+      + 'par l’outil.',
+    statut: 'publiee',
+  },
+  {
+    id: 'ASSIETTE-IND-PSYCHOBIOTIQUE',
+    plateCode: 'ASSIETTE_PSYCHOBIOTIQUE',
+    // LA PORTE ÉTROITE, ET ELLE EST SEULE. `-011` EXIGE l'atteinte intestinale —
+    // fonctionnelle ou constituée —, et c'est ce qui la distingue de la porte
+    // large. Celle-ci — `-009`, `-010`, `-013` — n'a aucune ligne : aucun champ ne
+    // lit un trouble fonctionnel général (voir le chapeau de la table).
+    declencheur: {
+      type: 'zone',
+      idQuestionnaire: 'Q_GAS_01',
+      zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] },
+    },
+    claimsIndication: [{ claimId: 'WN-CL-0291-011', versionClaim: 'v1.0' }],
+    claimsSecurite: [],
+    raccourciAssume:
+      'Le claim exige une atteinte intestinale constatée, fonctionnelle ou '
+      + 'constituée ; la ligne lit une bande défavorable du TFD SIIN. Le '
+      + 'passage de la bande au trouble est assumé par l’outil, comme pour la '
+      + 'sérotoninergique et la détoxication.',
+    statut: 'publiee',
+  },
+  // ── BROUILLONS — relus, hachés, JAMAIS servis ──────────────────────────────
+  {
+    id: 'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE',
+    plateCode: 'ASSIETTE_ANTI_INFLAMMATOIRE',
+    // LA SECONDE LIGNE DE LA MÊME ASSIETTE, et c'est le patron de la
+    // psychobiotique appliqué : porte étroite publiée, porte large consignée.
+    // `WN-CL-0293-009` ouvre une entrée de PRÉVENTION à cinquante ans révolus, et
+    // la resserre au-delà de soixante-dix.
+    // Fondue dans le `ou` de la ligne publiée, cette borne l'aurait ouverte à
+    // TOUT patient de 50 ans et plus, sans aucun score — un élargissement
+    // silencieux. Arbitrage du responsable, 2026-09-19 : brouillon.
+    declencheur: { type: 'age', operateur: '>=', valeur: 50 },
+    claimsIndication: [{ claimId: 'WN-CL-0293-009', versionClaim: 'v1.0' }],
+    claimsSecurite: [],
+    raccourciAssume:
+      'Aucun pas de sens n’est assumé ici : le claim porte la borne, la ligne la '
+      + 'cite. Ce qui est assumé est le STATUT — une porte d’âge seule s’ouvre sur '
+      + 'toute une classe d’âge, et le brouillon la consigne sans la servir.',
+    statut: 'brouillon',
+  },
+  {
+    id: 'ASSIETTE-IND-METHYLATION',
+    plateCode: 'ASSIETTE_METHYLATION',
+    // LES DEUX BOUTS SONT ACCESSIBLES DEPUIS LE 2026-09-19 — le régime par
+    // [[D-232]], qui lit l'`EtatPopulation` et n'a PAS fait du champ un drapeau ;
+    // l'âge par [[D-231]]. `WN-CL-0286-006` nomme quatre populations, liées par
+    // « et » au sens d'une ÉNUMÉRATION : chacune est plus susceptible, aucune
+    // n'exige les autres. D'où la disjonction. « Plus de 50 ans » s'écrit `>`.
+    //
+    // `vegetalienne` COUVRE VÉGANE : l'option d'anamnèse est libellée
+    // « Végétalienne / végane (aucun produit animal) ».
+    declencheur: {
+      type: 'ou',
+      declencheurs: [
+        { type: 'exclusionAlimentaire', valeurs: ['vegetarienne', 'vegetalienne'] },
+        { type: 'age', operateur: '>', valeur: 50 },
+      ],
+    },
+    claimsIndication: [{ claimId: 'WN-CL-0286-006', versionClaim: 'v1.0' }],
+    claimsSecurite: [],
+    raccourciAssume:
+      'Le claim dit que ces populations sont « plus susceptibles de NÉCESSITER » '
+      + 'l’assiette — une susceptibilité de population, là où les sept lignes '
+      + 'publiées reposent sur un « est indiquée ». Transformer cette '
+      + 'susceptibilité en indication servie serait un pas que l’outil ne peut pas '
+      + 'assumer seul : arbitrage du responsable, 2026-09-19, la ligne reste en '
+      + 'brouillon jusqu’à ce que la relecture tranche.',
+    statut: 'brouillon',
+  },
+  {
+    id: 'ASSIETTE-IND-ANTIOXYDANTE',
+    plateCode: 'ASSIETTE_ANTIOXYDANTE',
+    // LA RÉSERVE EST UNE AFFAIRE DE GRANULARITÉ, PAS DE DONNÉE MANQUANTE.
+    // `WN-CL-0292-003` désigne NOMMÉMENT une série de tableaux neurodégénératifs
+    // et démentiels ; le drapeau d'anamnèse ne porte qu'un domaine large, qui
+    // range la migraine et le TDAH au même endroit. Adosser l'indication à ce
+    // domaine l'élargirait franchement.
+    // Arbitrage du responsable, 2026-09-19 : la ligne est écrite, relue et
+    // hachée, jamais servie — le jour où un champ plus fin existera, elle
+    // changera de statut sans se réinventer.
+    declencheur: { type: 'drapeau', champ: 'antecedentsDomaines', valeurs: ['Neurologique (migraine, TDAH…)'] },
+    claimsIndication: [{ claimId: 'WN-CL-0292-003', versionClaim: 'v1.0' }],
+    claimsSecurite: [],
+    raccourciAssume:
+      'Le claim nomme des tableaux neurodégénératifs précis ; la ligne lit un '
+      + 'domaine d’antécédents qui les contient ET contient bien autre chose. '
+      + 'L’élargissement est réel, il est assumé par l’outil, et c’est exactement '
+      + 'pourquoi la ligne reste en brouillon.',
+    statut: 'brouillon',
+  },
+];
 
 export type IndicationsAssiettesMetadata = {
   validationExterne: boolean;
@@ -205,11 +547,19 @@ function estIsoCanonique(valeur: string | null): valeur is string {
   return date.toISOString() === valeur;
 }
 
-/** Les claims d'une ligne. Une seule catégorie ici, contrairement aux conduites. */
-export function claimsDeLIndication(
+/**
+ * LES CLAIMS D'UNE LIGNE — les DEUX catégories, et jamais l'une seule.
+ *
+ * Calque exact de `claimsDeLaLigne` des conduites, avec son motif : une sécurité
+ * retirée du corpus pèse autant qu'une indication retirée — davantage même,
+ * puisque c'est elle qui devait retenir. Le périmètre signé, l'égalité
+ * ensembliste du verrou et le filtre de service lisent donc tous les trois cette
+ * union, jamais `claimsIndication` seul.
+ */
+export function claimsDeLaLigne(
   ligne: LigneIndicationAssiette,
 ): readonly ClaimRef[] {
-  return ligne.claimsIndication;
+  return [...ligne.claimsIndication, ...ligne.claimsSecurite];
 }
 
 /**
@@ -338,7 +688,7 @@ export function indicationsAssiettesSignees(
   if (lignes.some(ligne => ligne.claimsIndication.length === 0)) return false;
 
   const declares = [...new Set(signature.claimsSource.map(cleClaim))].sort();
-  const cites = [...new Set(lignes.flatMap(l => claimsDeLIndication(l).map(cleClaim)))].sort();
+  const cites = [...new Set(lignes.flatMap(l => claimsDeLaLigne(l).map(cleClaim)))].sort();
   if (declares.length !== cites.length) return false;
   if (declares.some((claim, index) => claim !== cites[index])) return false;
 
@@ -392,6 +742,6 @@ export function lignesIndicationAssietteServables(
   return lignes.filter(
     ligne =>
       ligne.statut === 'publiee'
-      && claimsDeLIndication(ligne).every(claim => claimsValides.has(cleClaim(claim))),
+      && claimsDeLaLigne(ligne).every(claim => claimsValides.has(cleClaim(claim))),
   );
 }
