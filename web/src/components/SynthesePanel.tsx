@@ -85,15 +85,30 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   const [notes, setNotes] = useState('');
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
+  // UNE RÉPONSE PÉRIMÉE N'ÉCRASE PAS LE DOSSIER COURANT. Deux lectures peuvent
+  // être en vol : celle du dossier qu'on quitte et celle du dossier choisi. Si
+  // la première se résout APRÈS la seconde, le sélecteur affiche un dossier et
+  // la liste montre les synthèses d'un autre — et les actions de l'écran, qui
+  // prennent leur identifiant dans la sélection, portent alors sur un dossier
+  // dont on ne lit pas les synthèses. Chaque lecture prend un numéro ; seule la
+  // dernière écrit. Même patron que `chargerTrajectoire` dans
+  // `FichePatientPanel`, et pour la même raison.
+  const generationSyntheses = useRef(0);
+
   const loadSyntheses = useCallback(async (idPatient: string) => {
+    const generation = ++generationSyntheses.current;
     if (!idPatient) { setSyntheses([]); return; }
     setLoading(true);
     try {
       const r = await fetch(`/api/praticien/synthese?idPatient=${encodeURIComponent(idPatient)}`);
       const d = await r.json() as { syntheses: SyntheseRecord[] };
+      if (generation !== generationSyntheses.current) return;
       setSyntheses(d.syntheses ?? []);
-    } catch { setSyntheses([]); }
-    finally { setLoading(false); }
+    } catch {
+      if (generation !== generationSyntheses.current) return;
+      setSyntheses([]);
+    }
+    finally { if (generation === generationSyntheses.current) setLoading(false); }
   }, []);
 
   useEffect(() => {
