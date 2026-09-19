@@ -7391,3 +7391,22 @@ se dit. Le handoff de `D-232` est **annoté**, pas réécrit.
 **Ce que j'en retiens** : j'ai annoncé une clôture plus large que la réalité, et
 je l'ai répétée au responsable. La revue ne l'a pas vue non plus — elle n'a vu
 que l'arithmétique. C'est en la vérifiant que le fond est apparu.
+
+## 2026-09-19 — Le drapeau qui n'avait pas fermé, le verrou du sélecteur, et le plan mis au dépôt
+
+**Décisions.** Le constat promis par `D-226` ne rend pas `0` : une génération a
+eu lieu à 20:39:52 UTC le 2026-09-17, après le geste. C'est le retrait du CODE
+qui a fermé la porte. `D-226` est amendée ; réserve : variable absente et
+conteneurs recréés ne constatent pas un effet. Lot H : le dossier de l'URL
+s'applique une fois, une course préexistante fermée au passage. Le plan en dix
+lots entre au dépôt en cadrage, sans campagne.
+
+**Écartées.** Chercher la cause de la non-propagation avant d'écrire : le CLI
+n'expose aucun historique. Renormaliser les 113 blobs CRLF au passage :
+opération de dépôt, pas un correctif.
+
+**Prochaine action.** Le `package.json` racine qui réexpédie vers `web/`.
+
+**Questions ouvertes.** Trois synthèses validées jamais envoyées — motif du lot
+G. La garde de clôture de `/wn-merge` vit dans un skill que `gh pr merge`
+contourne : trois PR mergées sans elle.

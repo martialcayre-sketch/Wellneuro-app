@@ -42,8 +42,10 @@ composition.
 
 ## Ce que la contre-épreuve a RÉFUTÉ, et qu'il ne faut pas rouvrir
 
-- **« Il n'existe aucun chemin vers le médecin » — réfuté.** C'est un périmètre
-  délibérément fermé ([[D-222]]), pas un défaut.
+- **Le chemin vers le médecin n'existe effectivement pas** — ce qui est réfuté,
+  c'est de le compter comme un DÉFAUT. Le périmètre est fermé délibérément
+  ([[D-222]]). Ne pas lire cette ligne comme « un chemin existe » : il n'y en a
+  pas, et il n'est pas prévu qu'il y en ait.
 - **« L'écran Documents promet un envoi au médecin » — réfuté.** Il annonce une
   impression, trois fois.
 - **« L'e-mail patient et Mon bilan sont à fusionner » — réfuté.** Ils sont déjà
