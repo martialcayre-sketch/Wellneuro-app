@@ -7165,6 +7165,56 @@ claims, lus sur pièce, source entière.
 **Questions ouvertes.** La ligne de `.claude/rules/` sur le piège de concurrence
 du CI attend un arbitrage — deux sessions se la partagent, aucune ne l'écrit.
 
+## 2026-09-18 — Les deux lignes en suspens sont posées, et le déploiement manuel est attribué
+
+**Décisions.** Aucune au registre : deux règles d'opérateur, pas de code, même
+forme que le 2026-09-16. Le responsable a arbitré les deux lignes que deux
+sessions se partageaient sans les écrire.
+
+**Le troisième emplacement d'un constat de revue entre au résumé.** La prémisse
+qui traînait — « la ligne de `.claude/rules/` §1.1 est invisible d'une session
+voisine, à cause de son `paths:` » — est **fausse** : `/wn-merge` fait
+`cat .claude/rules/pr-revue-et-release-db.md` à son préambule (`SKILL.md:13`),
+quels que soient les fichiers de la PR. Le trou réel est plus étroit : le bloc
+« à lire avec ce document » de `REGLES_PR_MERGE.md` ne nommait que les
+commentaires **en ligne**, si bien qu'un lecteur du seul résumé conclut « aucun
+constat » sur un `pulls/<N>/comments` vide alors que le constat est dans le corps
+de la revue. Les trois emplacements y sont maintenant nommés.
+
+**Relancer un vieux run devient une faute nommée.** Hors `main`, un seul groupe
+de concurrence par branche (`ci.yml:21-23`) : relancer un run périmé évince celui
+du commit de tête, le seul qui garde le merge. La section « Attendre le CI »
+décrivait le `CANCELLED` comme une conséquence à subir ; elle nomme désormais le
+geste qui la provoque.
+
+**Le déploiement manuel du 2026-09-17 à 19:03:49 UTC est attribué.** Compte
+partagé `wellneuro`, déploiement `f8c7f6c2`, ref `c6a38203` — soit **exactement
+le ref que le déploiement automatique a rejoué 5 min plus tard** (`2fed8d1c`,
+19:09:05). Aucun code non revu n'est donc parti : le geste manuel n'ajoutait rien
+au contenu de `main`. Ce qu'il pouvait porter est un changement
+d'environnement — et `WN_ADRESSAGE_COURRIER=true` est en service, la campagne
+Correspondance ayant été close ce jour-là. C'est la signature de la pose d'un
+drapeau, dont le redémarrage est le quatrième geste. Le compte étant partagé,
+Scalingo ne dira jamais *qui* ; *quoi* est établi, et c'était le point qui
+vieillissait mal.
+
+**La règle a payé sur sa propre PR.** Copilot a conclu « 🟢 Approval
+recommended » avec zéro commentaire en ligne, et a logé **deux constats** dans le
+bloc « Suppressed comments » de son corps de revue — l'emplacement exact que
+cette PR apprend à lire. Les deux étaient réels. Le premier : la conséquence de
+la relance était énoncée comme systématique, alors que `cancel-in-progress`
+n'annule qu'un run encore en attente ou en cours. Le second, plus instructif :
+la justification du choix de fichier, au §3 du handoff, s'appuyait sur **la
+prémisse fausse que ce lot corrige trois sections plus haut** — corriger un
+paragraphe ne corrige pas le raisonnement qui s'y adossait ailleurs. Les deux
+sont corrigés dans la PR.
+
+**Prochaine action.** Les deux arbitrages restants du responsable : `D-049`
+(fermer, ce qui rétablit le T3 local sur les PR migration/scoring/clinique, ou
+attendre des séquences T3 réelles sur WebKit 2359), et les deux points RGPD de
+`D-222` §2 (qualification juridique du traitement « correspondance médecin » ;
+information des patients déjà consentants, que l'accusé de la v9 n'atteint qu'à
+leur prochaine visite au portail).
 ## 2026-09-18 — La génération automatique retirée, et la chaîne documentaire auditée
 
 **Décisions.** `D-226` : le brouillon de synthèse ne naît plus à la réception
