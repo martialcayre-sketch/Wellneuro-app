@@ -59,12 +59,13 @@ Neuf protocoles relus en production, texte intégral, le 2026-09-19 — 103 clai
 
 ## 6. Fichiers modifiés
 
-**Neufs** — le fragment `changelog.d/` du jour · ce handoff.
+**HUIT fichiers en tout. Deux CRÉÉS** — le fragment `changelog.d/` du jour ·
+ce handoff.
 
-**Modifiés** — `indicationsAssiettesV1.ts` (champ `claimsSecurite`,
+**Six MODIFIÉS** — `indicationsAssiettesV1.ts` (champ `claimsSecurite`,
 `claimsDeLaLigne`, verrou et service sur les deux catégories, **dix lignes**) ·
 son banc de garde · `docs/DECISIONS.md` · la surface de relecture ·
-`FILE_ATTENTE.md`.
+`FILE_ATTENTE.md` · `docs/claude/SESSION_LOG.md`.
 
 **NON touchés, et c'est mesuré** : `TABLE_EXIGE_PRESCRIPTIF`, les paires du
 contrat SQL de fraîcheur, l'enrôlement dans `shaPerimetreLitteral.guard.test.ts`.

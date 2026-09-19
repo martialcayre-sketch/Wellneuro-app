@@ -24,7 +24,13 @@ import { assiettesParIndication, C5B_RECOMMENDED_PLATES } from '@/lib/food-compa
 // donc falsifié SÉPARÉMENT : un verrou dont on ne falsifie que l'ensemble ne
 // prouve pas que chacun de ses termes mord.
 
-const ASSIETTE = C5B_RECOMMENDED_PLATES[0].plateCode;
+// LA PREMIÈRE ENTRÉE DU CATALOGUE EST UN REPÈRE D'OBSERVATION — le
+// petit-déjeuner simple, axe `moment_repas`. La fixture pointait donc une
+// assiette que le verrou doit REFUSER depuis le constat de revue de la PR
+// #1202 : elle prend maintenant une assiette d'indication, et l'observation
+// sert de contre-épreuve.
+const ASSIETTE = assiettesParIndication()[0].plateCode;
+const ASSIETTE_OBSERVATION = C5B_RECOMMENDED_PLATES[0].plateCode;
 
 // PAS DE `as LigneIndicationAssiette` ICI, ET C'EST UN CORRECTIF. Le cast
 // éteignait le contrôle de champs : quand `claimsSecurite` est entré au type
@@ -310,6 +316,19 @@ describe('indications d’assiette — les termes du verrou, falsifiés un par u
     expect(signature.shaPerimetre)
       .toBe(shaPerimetreIndicationsAssiettes(lignes, signature.claimsSource));
     expect(indicationsAssiettesSignees(signature, lignes)).toBe(false);
+  });
+
+  it('7 bis. UNE ASSIETTE D’OBSERVATION ferme la table — l’existence ne suffit pas', () => {
+    // Le catalogue porte deux axes : une ligne d'indication pointant un repère de
+    // moment de repas serait signée, puis SERVIE, en franchissant la séparation
+    // observation/prescription. Constat de revue, PR #1202.
+    expect(C5B_RECOMMENDED_PLATES.find(a => a.plateCode === ASSIETTE_OBSERVATION)?.axe)
+      .toBe('moment_repas');
+    const lignes = [ligne({ plateCode: ASSIETTE_OBSERVATION })];
+    expect(indicationsAssiettesSignees(signatureBanc(lignes), lignes)).toBe(false);
+    expect(lignesIndicationAssietteServables(
+      claimsValidesDe(lignes), signatureBanc(lignes), lignes,
+    )).toEqual([]);
   });
 
   it('UNE LIGNE AJOUTÉE APRÈS COUP n’entre pas sous la signature acquise', () => {

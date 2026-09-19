@@ -181,6 +181,15 @@ export type LigneIndicationAssiette = {
  * s'écrit en `comparaison`, parce qu'il n'émet AUCUNE interprétation globale :
  * une zone sans `sousScore` y serait morte.
  *
+ * ET LE PATRON S'ARRÊTE À CE QUE L'INSTRUMENT PUBLIE — constat de revue,
+ * vérifié sur pièce. `R-GAS-01` et `BIO-DIG-01` citent `dark` sur `Q_GAS_01` ;
+ * or la grille certifiée de cet instrument ne porte que `success`, `warning` et
+ * `danger`. `dark` existe bien dans le dépôt — six bandes, sur d'autres
+ * instruments — mais **jamais ici**, donc la branche serait morte. Les cinq
+ * portes `Q_GAS_01` de cette table ne citent que les DEUX bandes défavorables
+ * réellement publiées. L'asymétrie avec les deux tables voisines est VOLONTAIRE
+ * et se lit ici : elles sont antérieures, et leur `dark` est inerte, pas faux.
+ *
  * `Q_GAS_01` N'EST PAS AU PACK DE BASE, et cinq lignes en dépendent. La seule
  * règle qui le LIT est `R-GAS-01`, au second tour ; `R2-GAS-01` et `R2-GAS-02`
  * le PROPOSENT. Ces portes ne s'ouvriront donc que chez un patient déjà passé au
@@ -234,7 +243,7 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
       declencheurs: [
         { type: 'comparaison', idQuestionnaire: 'Q_INF_03', sousScore: 'SE', operateur: '>=', valeur: 10 },
         { type: 'comparaison', idQuestionnaire: 'Q_INF_03', sousScore: 'DA', operateur: '>=', valeur: 10 },
-        { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
+        { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['warning', 'danger'] } },
       ],
     },
     claimsIndication: [{ claimId: 'WN-CL-0293-011', versionClaim: 'v1.0' }],
@@ -308,7 +317,7 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
     declencheur: {
       type: 'zone',
       idQuestionnaire: 'Q_GAS_01',
-      zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] },
+      zone: { type: 'couleur', couleurs: ['warning', 'danger'] },
     },
     claimsIndication: [{ claimId: 'WN-CL-0290-005', versionClaim: 'v1.0' }],
     claimsSecurite: [],
@@ -330,7 +339,7 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
     declencheur: {
       type: 'ou',
       declencheurs: [
-        { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
+        { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['warning', 'danger'] } },
         { type: 'drapeau', champ: 'intolerancesAlimentaires', valeurs: ['Gluten', 'Histamine', 'Lactose'] },
       ],
     },
@@ -369,7 +378,7 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
     declencheur: {
       type: 'zone',
       idQuestionnaire: 'Q_GAS_01',
-      zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] },
+      zone: { type: 'couleur', couleurs: ['warning', 'danger'] },
     },
     claimsIndication: [
       { claimId: 'WN-CL-0287-008', versionClaim: 'v1.0' },
@@ -378,8 +387,9 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
     claimsSecurite: [],
     raccourciAssume:
       'Le claim dit « score élevé » au questionnaire des troubles fonctionnels '
-      + 'intestinaux sans nommer de bande ; la ligne lit warning, danger et dark, '
-      + 'c’est-à-dire tout ce qui n’est pas la bande rassurante. Ouvrir dès la '
+      + 'intestinaux sans nommer de bande ; la ligne lit les DEUX bandes '
+      + 'défavorables que cet instrument publie, c’est-à-dire tout ce qui n’est pas '
+      + 'la bande rassurante. Ouvrir dès la '
       + 'bande B est plus large que « élevé » pris au sens strict, et c’est '
       + 'WN-CL-0287-008 qui le paie : il fonde l’indication sur l’existence de '
       + 'troubles fonctionnels intestinaux, que la bande B nomme. Le pas est assumé '
@@ -396,7 +406,7 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
     declencheur: {
       type: 'zone',
       idQuestionnaire: 'Q_GAS_01',
-      zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] },
+      zone: { type: 'couleur', couleurs: ['warning', 'danger'] },
     },
     claimsIndication: [{ claimId: 'WN-CL-0291-011', versionClaim: 'v1.0' }],
     claimsSecurite: [],
@@ -669,7 +679,11 @@ export function anomaliesDuDeclencheur(
  * écrit ici.
  *
  * LE TERME PROPRE À CETTE TABLE est le dernier : **chaque `plateCode` doit
- * exister au catalogue C5B**. Une ligne qui pointe une assiette disparue reste
+ * exister au catalogue C5B ET porter l'axe `indication`**. L'existence seule ne
+ * suffit pas : le catalogue porte aussi les trois repères d'OBSERVATION du
+ * praticien ([[D-230]]), et une ligne d'indication qui en pointerait un
+ * franchirait la séparation observation/prescription — signée, puis servie.
+ * Constat de revue. Une ligne qui pointe une assiette disparue reste
  * signée et ne sert rien ; pire, elle se lirait comme une indication vivante
  * dans le périmètre relu. Le sha ne l'attrape pas — il atteste le contenu de la
  * ligne, pas l'existence de sa cible.
@@ -697,7 +711,14 @@ export function indicationsAssiettesSignees(
     return false;
   }
 
-  return lignes.every(ligne => getRecommendedPlate(ligne.plateCode) !== null);
+  return lignes.every(ligne => {
+    const assiette = getRecommendedPlate(ligne.plateCode);
+    // L'EXISTENCE NE SUFFIT PAS, ET C'EST UN CONSTAT DE REVUE. Le banc ne
+    // pouvait pas y suppléer : il n'éprouvait que les constantes du jour, là où
+    // le verrou garde TOUTE table qu'on lui passe — y compris une ligne ajoutée
+    // après l'attestation.
+    return assiette !== null && assiette.axe === 'indication';
+  });
 }
 
 /**
