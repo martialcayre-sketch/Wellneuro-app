@@ -225,8 +225,10 @@ export const ANAMNESE_SECTIONS: AnamneseSection[] = [
     //     toutes sur l'indication d'une assiette. Le pivot ne serait plus
     //     inventé, il serait CITÉ.
     //     FAIT DEPUIS LE 2026-09-19 ([[D-231]]) : `Patient.dateNaissance` EST
-    //     désormais lue — par `ageAnnees` (`lib/patient/age.ts`), le seul
-    //     endroit qui la lit —, `OrientationDeclencheurFeuille` porte une
+    //     désormais lue à des fins CLINIQUES — par `ageAnnees`
+    //     (`lib/patient/age.ts`), seul endroit qui en DÉDUISE UN ÂGE ;
+    //     `anneeDeNaissance` la lisait déjà, mais pour le résidu d'effacement
+    //     et de façon permissive. `OrientationDeclencheurFeuille` porte une
     //     variante `age`, et `orientationService` fournit l'âge au moteur.
     //     CETTE SECTION RESTE POURTANT TELLE QUELLE, et ce n'est pas un oubli :
     //     l'âge n'y entre pas comme QUESTION. Il ne se déclare pas, il se

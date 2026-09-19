@@ -22,7 +22,8 @@ sans quoi le dépôt se contredirait.
   `<` et `<=` auraient offert une borne **pédiatrique** qu'aucune source ne
   fonde. Le type refuse ce que la doctrine ne peut pas justifier.
 - **Le moteur ne calcule aucun âge** : il reçoit un nombre tranché, comme il
-  reçoit son instant de référence. Un seul module lit `dateNaissance`.
+  reçoit son instant de référence. Un seul module en DÉDUIT un âge clinique —
+  la colonne était déjà lue par `anneeDeNaissance`, de façon permissive.
 - **`estFeuilleInstrument`** remplace la déduction « pas un drapeau, donc un
   instrument » par une affirmation — c'est le vrai correctif du lot.
 

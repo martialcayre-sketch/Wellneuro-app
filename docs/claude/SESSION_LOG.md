@@ -7274,7 +7274,8 @@ peut pas justifier, au lieu de compter sur la revue.
 **Le moteur ne calcule aucun âge et ne lit aucune horloge** — il reçoit un nombre
 tranché, comme son instant de référence, qui est désormais hissé en un seul point
 pour que fraîcheur et âge ne puissent pas tomber de part et d'autre de minuit. Un
-seul module lit `dateNaissance`, et il la refuse dès qu'elle n'est pas une date
+seul module en DÉDUIT un âge clinique — la colonne était déjà lue ailleurs, pour
+le résidu d'effacement —, et il la refuse dès qu'elle n'est pas une date
 calendaire **réelle** : `2026-02-31` passe le format et se replierait en silence.
 
 **Le vrai correctif n'est pas la variante, c'est ce qu'elle a révélé.** Huit

@@ -485,6 +485,91 @@ describe('evaluerOrientationPourPatient — le score est RECALCULÉ, jamais relu
     });
   });
 
+  // LE CÂBLAGE BASE → MOTEUR ([[D-231]]), et ce banc manquait — constat de revue,
+  // vérifié et fondé. `ageAnnees` était éprouvé pur, le moteur était éprouvé pur,
+  // et RIEN ne vérifiait le fil entre les deux : une régression qui oublierait de
+  // passer `ageAnnees` à `evaluerOrientation`, ou qui sélectionnerait le mauvais
+  // champ Prisma, serait restée verte. C'est exactement la classe d'erreur que ce
+  // lot a fermée ailleurs — « pas un drapeau, donc un instrument » — et elle
+  // s'était reformée ici.
+  //
+  // La règle se déclenche sur un ÂGE SEUL : elle s'allume donc sans aucune
+  // mesure, ce qui isole le fil qu'on veut voir.
+  it('la date de naissance atteint RÉELLEMENT une règle d’âge, de la base au moteur', async () => {
+    mockRegles.length = 0;
+    mockRegles.push({
+      id: 'R-TEST-AGE',
+      statut: 'publiee',
+      declencheurs: [{ type: 'age', operateur: '>=', valeur: 60 }],
+      suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1, objectif: 'Explorer le sommeil.' }],
+      justificationClaims: [{ claimId: 'WN-CL-0000-003', versionClaim: 'v1.0' }],
+      niveau: 'socle',
+    });
+    signerLaTable();
+    lecturesVides();
+    // Né il y a bien plus de 60 ans : la borne est franchie quelle que soit la
+    // date du jour où ce banc tourne — il ne doit pas changer de verdict avec
+    // le calendrier.
+    prisma.patient.findUnique.mockResolvedValue({ dateNaissance: '1940-01-01' });
+
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].motifs.map(m => m.regleId)).toEqual(['R-TEST-AGE']);
+    // Le MOTIF nomme l'âge : c'est ce que le praticien lira, et c'est aussi la
+    // preuve que la borne — et non autre chose — a décidé.
+    expect(resultat.recommandations[0].motifs[0].conditions.join(' ')).toContain('âge');
+
+    // LE `select` EST VÉRIFIÉ, et pas seulement le résultat : un mauvais champ
+    // rendrait `undefined` et la règle ne s'allumerait plus, mais un mock trop
+    // complaisant masquerait l'erreur. On lit l'argument réel.
+    const argument = prisma.patient.findUnique.mock.calls[0][0];
+    expect(argument.select).toEqual({ dateNaissance: true });
+    expect(argument.where).toEqual({ idPatient: 'PAT-1' });
+  });
+
+  // CONTRE-ÉPREUVE DU BANC CI-DESSUS, et elle est ce qui le rend concluant :
+  // sans elle, une règle qui s'allumerait TOUJOURS passerait le cas précédent.
+  it('une date de naissance ILLISIBLE n’allume pas la règle d’âge', async () => {
+    mockRegles.length = 0;
+    mockRegles.push({
+      id: 'R-TEST-AGE',
+      statut: 'publiee',
+      declencheurs: [{ type: 'age', operateur: '>=', valeur: 60 }],
+      suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1, objectif: 'Explorer le sommeil.' }],
+      justificationClaims: [{ claimId: 'WN-CL-0000-003', versionClaim: 'v1.0' }],
+      niveau: 'socle',
+    });
+    signerLaTable();
+    lecturesVides();
+    // « né en 1940 » : `anneeDeNaissance` en tirerait une année, `ageAnnees`
+    // refuse — et c'est le refus qui doit remonter jusqu'ici.
+    prisma.patient.findUnique.mockResolvedValue({ dateNaissance: 'né en 1940' });
+
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+    expect(resultat.recommandations).toEqual([]);
+  });
+
+  it('un patient INTROUVABLE n’allume aucune borne d’âge', async () => {
+    mockRegles.length = 0;
+    mockRegles.push({
+      id: 'R-TEST-AGE',
+      statut: 'publiee',
+      declencheurs: [{ type: 'age', operateur: '>=', valeur: 60 }],
+      suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1, objectif: 'Explorer le sommeil.' }],
+      justificationClaims: [{ claimId: 'WN-CL-0000-003', versionClaim: 'v1.0' }],
+      niveau: 'socle',
+    });
+    signerLaTable();
+    lecturesVides();
+    prisma.patient.findUnique.mockResolvedValue(null);
+
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+    expect(resultat.recommandations).toEqual([]);
+  });
+
   it('une passation NON INTERPRÉTABLE ne fonde aucun déclencheur', () => {
     // Ce point ne pouvait pas se poser tant qu'on relayait un instantané : il
     // se pose dès qu'on FABRIQUE un score. Le registre dit de `Q_SOM_07` que

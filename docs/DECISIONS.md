@@ -36,8 +36,12 @@ pas, et c'est délibéré.
 
 **3. LE MOTEUR NE CALCULE AUCUN ÂGE, ET NE LIT AUCUNE HORLOGE.** Il reçoit un
 nombre déjà tranché, comme il reçoit `maintenantMs` plutôt que d'appeler
-`Date.now()`. `ageAnnees` (`lib/patient/age.ts`) est **le seul endroit** qui lit
-`Patient.dateNaissance`. `orientationService` hisse un instant unique pour tout
+`Date.now()`. `ageAnnees` (`lib/patient/age.ts`) est **le seul endroit qui en
+déduit un âge clinique** — il n'est pas le seul à lire la colonne, et la première
+rédaction de ce paragraphe l'affirmait à tort (constat de revue, vérifié) :
+`anneeDeNaissance` (`patient/cycleDeVie.ts`) la lit déjà pour le résidu
+d'effacement. C'est d'ailleurs ce que §4 explique, et un banc épingle leurs
+divergences. `orientationService` hisse un instant unique pour tout
 le calcul : deux `Date.now()` seraient deux instants, et il suffit d'un passage
 de minuit entre les deux pour qu'un dossier soit évalué avec une fraîcheur
 d'hier et un âge d'aujourd'hui.

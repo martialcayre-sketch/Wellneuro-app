@@ -12,9 +12,10 @@ pédiatrique qu'aucune source ne fonde — le type refuse ce que la doctrine ne 
 pas encore justifier, plutôt que de compter sur la revue.
 
 **Le moteur ne calcule aucun âge et ne lit aucune horloge** : il reçoit un nombre
-déjà tranché, comme il reçoit déjà son instant de référence. Un seul module lit
-la date de naissance, et il la refuse dès qu'elle n'est pas une date calendaire
-complète et réelle — une date bien formée mais inexistante serait silencieusement
+déjà tranché, comme il reçoit déjà son instant de référence. Un seul module en
+déduit un âge clinique — la colonne était déjà lue ailleurs, pour le résidu
+d'effacement et de façon permissive —, et il refuse la date dès qu'elle n'est pas
+calendaire, complète et réelle — une date bien formée mais inexistante serait silencieusement
 repliée sur le mois suivant. Un âge inconnu n'atteint aucune borne : il ne dit
 rien, il ne dit pas zéro.
 

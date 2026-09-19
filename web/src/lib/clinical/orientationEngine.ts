@@ -190,9 +190,12 @@ export type EntreeOrientation = {
    * reçoit un nombre déjà tranché, comme il reçoit `maintenantMs` plutôt que
    * d'appeler `Date.now()` : un âge dépend de l'instant où on le demande, et
    * un moteur qui choisirait cet instant cesserait d'être rejouable.
-   * `ageAnnees` (`lib/patient/age.ts`) est le seul endroit qui lit
-   * `Patient.dateNaissance`, et il rend `null` sur toute date illisible,
-   * inexistante ou aberrante.
+   * `ageAnnees` (`lib/patient/age.ts`) est le seul endroit qui en DÉDUIT UN ÂGE
+   * CLINIQUE, et il rend `null` sur toute date illisible, inexistante ou
+   * aberrante. Il n'est pas le seul à lire la colonne : `anneeDeNaissance`
+   * (`patient/cycleDeVie.ts`) en tire une année pour le résidu d'effacement, et
+   * le fait volontairement de façon PERMISSIVE — les deux répondent à deux
+   * questions, et `age.test.ts` épingle les cas où elles divergent.
    *
    * ABSENT = AUCUNE BORNE D'ÂGE ATTEINTE ([[D-231]]). Un appelant qui ne sait
    * pas ne dit pas « zéro an » : il ne dit rien, et un déclencheur d'âge ne
