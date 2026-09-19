@@ -248,7 +248,33 @@ BEGIN
     ('WN-CL-0318-018', 'v1.0', 'conduites', false),
     ('WN-CL-0316-016', 'v1.0', 'conduites', false),
     ('WN-CL-0316-006', 'v1.0', 'conduites', false),
-    ('WN-CL-0316-029', 'v1.0', 'conduites', false)
+    ('WN-CL-0316-029', 'v1.0', 'conduites', false),
+    -- INDICATIONS D'ASSIETTE ([[D-236]], première signature, 2026-09-19) — onze
+    -- lignes, vingt claims, `exige_prescriptif` à `false` pour le motif écrit
+    -- dans `TABLE_EXIGE_PRESCRIPTIF`. Les quatre lignes en BROUILLON sont
+    -- épinglées comme les sept publiées : elles sont dans le périmètre haché,
+    -- donc dans ce que la signature couvre. Hors du service n'est pas hors du
+    -- périmètre.
+    ('WN-CL-0285-001', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-002', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-005', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-006', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-010', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0285-012', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0286-006', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0287-008', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0287-009', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0288-011', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0288-012', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0288-013', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0288-014', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0289-004', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0290-005', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0291-011', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0292-003', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0293-009', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0293-011', 'v1.0', 'indications_assiettes', false),
+    ('WN-CL-0294-002', 'v1.0', 'indications_assiettes', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
   -- La jointure porte sur LA PAIRE. Joindre sur `claim_id` seul laisserait une
   -- table signée s'appuyer sur une version du claim qui n'est pas celle qu'elle

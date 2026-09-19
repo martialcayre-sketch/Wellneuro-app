@@ -40,6 +40,12 @@ const TABLES = [
   // l'attrape quand même : il n'admet que le littéral hex ou la déclaration de
   // type, et refuse tout le reste — un appel de fonction compris.
   { fichier: 'catalogueConduitesV1.ts', constante: 'shaPerimetreConduites' },
+  // Enrôlé le jour de sa première signature ([[D-236]], 2026-09-19), comme sa
+  // surface de relecture l'avait prévu et comme [[D-198]], [[D-223]] et
+  // [[D-224]] l'ont fait avant elle. Sa tautologie s'écrirait
+  // `shaPerimetre: shaPerimetreIndicationsAssiettes(...)` — une fonction, non
+  // une constante recopiable : c'est la forme que le cas 2 refuse.
+  { fichier: 'indicationsAssiettesV1.ts', constante: 'shaPerimetreIndicationsAssiettes' },
 ] as const;
 
 describe('shaPerimetre — littéral figé dans les tables signées, jamais la constante', () => {

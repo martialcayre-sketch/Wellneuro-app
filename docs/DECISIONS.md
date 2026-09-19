@@ -4,6 +4,91 @@
 
 ## Décisions actives
 
+### D-236 — La table des indications d'assiette est ATTESTÉE : onze lignes, vingt claims, et la vraie porte de quatre d'entre elles est biologique — ce que le dépôt ne sait pas encore lire
+
+- Date : 2026-09-19
+- Statut : accepté — **déclaration du responsable rendue en séance, après
+  lecture** ([[D-195]] §1). Les sept lignes publiées ont été confirmées **claim
+  par claim** : ce qui est attesté n'est pas que le claim existe, mais qu'il
+  **fonde la porte écrite en face de lui**.
+- Domaine : table clinique signée (`clinical/indicationsAssiettesV1.ts`), contrat
+  SQL de fraîcheur, bancs de garde partagés.
+- Porte sur : la **première signature** de la table, et sur quatre arbitrages
+  rendus dans la même séance.
+
+**1. CE QUI EST SIGNÉ.** `validationExterne: true`, `dateValidation`
+`2026-09-19T18:27:15.000Z`, **vingt claims** pour **vingt-et-une désignations**
+— `WN-CL-0288-013` est le seul cité deux fois, il fonde l'indication de
+l'assiette protéinée ET porte son exception parkinsonienne. `shaPerimetre` est un
+**littéral de 64 hex**, calculé une fois sur le périmètre relu puis recopié ;
+jamais l'appel de fonction, qui rendrait la comparaison tautologique ([[D-063]]).
+**Sept lignes sortent au service, quatre restent en brouillon** — hachées et
+attestées, jamais servies.
+
+**2. LES QUATRE BROUILLONS ONT UN MOTIF COMMUN, ET CE N'EST PAS CELUI QUE LE LOT
+PRÉCÉDENT LEUR DONNAIT.** Arbitrage du responsable : **ces assiettes se proposent
+sur le RÉSULTAT BIOLOGIQUE.** La porte écrite — âge, régime, antécédent — n'en
+est qu'un **proxy d'anamnèse**. Le corpus fonde la porte biologique de chacune ;
+le dépôt ne sait pas la lire.
+
+**3. LE CONSTAT QUI COMMANDE LA SUITE : SEPT DES DOUZE ASSIETTES ONT UN CLAIM
+BIOLOGIQUE.** Épargne digestive, dopaminergique, sérotoninergique,
+psychobiotique, antioxydante, anti-inflammatoire, oméga 3. La détoxication a même
+un claim qui déclare qu'**il n'en existe pas** (`WN-CL-0287-010`) — une absence
+documentée, ce qui est un fait et non un silence.
+
+**ET LA MÉTHYLATION A CORRIGÉ L'OUTIL.** Ce lot a d'abord affirmé, deux fois,
+qu'elle n'avait **aucun** claim biologique. **C'était faux** : vrai de son seul
+protocole `WN-SRC-0286`, faux du corpus. Le responsable l'a réfuté sur sa
+connaissance clinique — folates érythrocytaires, B12, homocystéine —, et la
+recherche en production a rendu **66 claims**, dont `WN-CL-0282-007`
+(**prescriptif**), qui désigne l'homocystéine comme le marqueur orientant vers
+cette assiette, et `WN-CL-0043-014`, qui en porte la borne. **Chercher un claim
+dans la seule source du sujet est une erreur de méthode** : le corpus range la
+biologie ailleurs que dans le protocole d'assiette.
+
+**4. CE QUI MANQUE EST UN MÉCANISME, PAS UN CLAIM.** `OrientationDeclencheur` n'a
+aucune variante biologique, et `biology-library/resultats.ts` **valide la forme**
+d'un résultat en refusant explicitement toute borne de valeur — son unique
+consommateur est la route de sauvegarde. **Rien n'interprète un résultat.** Le
+chantier — variante de déclencheur, lecteur de résultat, plages fonctionnelles,
+relecture des bornes de sept sources — s'ouvre **après** cette attestation, qu'il
+périmera : un périmètre signé se hache en entier, et c'est voulu.
+
+**5. UNE ONZIÈME LIGNE : L'ASSIETTE OMÉGA 3, en brouillon.** Son refus reposait
+sur « claims non prescriptifs » — motif que le §6 fait tomber. Relue sur pièce à
+la demande du responsable, `WN-SRC-0294` fonde deux portes : neuf tableaux
+cliniques (`-002`) et une porte biologique chiffrée (`-004` — index oméga 3,
+ratio AA/EPA). La ligne écrit la première, sur trois domaines d'antécédents qui
+la recouvrent partiellement : **c'est le plus grand écart de granularité de la
+table**, et il est déclaré.
+
+**6. `TABLE_EXIGE_PRESCRIPTIF` VAUT `false` POUR CETTE TABLE**, et l'arbitrage ne
+va pas de soi : une table qui fait proposer une assiette RESSEMBLE à une table
+prescriptive. Ce qui tranche est le contenu du périmètre — `WN-CL-0288-012`
+**fonde une porte** (la sarcopénie) et `WN-CL-0288-014` porte une **sécurité**,
+et les deux sont `prescriptif = false`. Exiger le prescriptif rejetterait une
+désignation valide et amputerait une règle de sécurité de sa moitié. Même motif
+de fond que la table d'arrêt ([[D-053]]) : la prescription vient de la SIGNATURE,
+pas des claims.
+
+**7. ÉCARTÉ : `WN-CL-0330-027` AU PÉRIMÈTRE.** Il établit régime végétarien strict
+→ homocystéine → trouble de la méthylation. La ligne dit régime → **assiette** de
+méthylation : le dernier pas manque, et l'ajouter serait une chaîne d'inférence,
+pas une désignation (`DC-01`, `DC-27`). Il est nommé à la surface et entrera au
+périmètre le jour où une ligne biologique le lira.
+
+**8. LES TROIS ENRÔLEMENTS DU JOUR DE SIGNATURE, faits en un seul geste** —
+`TABLE_EXIGE_PRESCRIPTIF`, les vingt paires du contrat SQL de fraîcheur **et de
+son fichier négatif** (deux listes, gardées identiques par deux cas distincts),
+et `shaPerimetreLitteral.guard.test.ts`. Ni avant ni après : avant, le banc du
+sha littéral rougit sur un `null` ; après, le contrat diverge du dépôt.
+
+**9. CE QUE L'ATTESTATION NE FAIT PAS.** Aucune règle d'orientation ne porte ces
+portes : la table est signée et servable, **aucun moteur ne la consomme encore**.
+Le lot d'exposition reste devant. Et les chantiers 4 (familles d'équivalence) et
+5 (barème) restent ouverts.
+
 ### D-235 — La table des indications d'assiette reçoit ses DIX lignes, et la relecture sur pièce réfute la surface sur quatre points — dont la conjonction que personne ne demandait
 
 - Date : 2026-09-19

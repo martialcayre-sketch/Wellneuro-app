@@ -102,6 +102,31 @@ Ni des campagnes (pas de dossier, pas de lots), ni des gestes du responsable :
 du travail de dépôt porté par sa décision et sa PR. Ils figurent ici pour que la
 file cesse de laisser croire que rien ne se fait en dehors d'elle.
 
+- **Le chantier 6 — LA PORTE BIOLOGIQUE D'UNE INDICATION D'ASSIETTE** (ouvert le
+  2026-09-19 par [[D-236]], **arbitrage du responsable** : après l'attestation,
+  pas avant). **Sept des douze assiettes ont un claim qui fonde une porte
+  biologique** — épargne digestive, dopaminergique, sérotoninergique,
+  psychobiotique, antioxydante, anti-inflammatoire, oméga 3 — et la méthylation
+  l'a par d'autres sources (`WN-CL-0282-007`, prescriptif). La détoxication a un
+  claim déclarant qu'il n'existe **pas** de marqueur spécifique : une absence
+  documentée, à respecter comme telle.
+  **CE QUI MANQUE EST UN MÉCANISME, PAS UN CLAIM.** `OrientationDeclencheur` n'a
+  aucune variante biologique ; `biology-library/resultats.ts` VALIDE la forme
+  d'un résultat en refusant explicitement toute borne de valeur, et son seul
+  consommateur est la route de sauvegarde. **Rien n'interprète un résultat.**
+  **Quatre pièces, dans cet ordre** : une variante de déclencheur ; un lecteur
+  qui rende un résultat comparable ; les plages fonctionnelles
+  (`biology_functional_ranges` existe au schéma) ; et la **relecture des bornes
+  de chaque source**, qui sont toutes citées par des claims — CRP ultrasensible
+  au-delà de 2 mg/l, ratio AA/EPA au-delà de 1,2, index oméga 3 sous 8 %,
+  homocystéine au-delà de 8 à 10 µmol/l.
+  **CE QU'IL COÛTE, ET IL FAUT LE SAVOIR** : il **périmera l'attestation du
+  2026-09-19**, puisqu'un périmètre signé se hache en entier. C'est voulu, et
+  c'est la raison pour laquelle le responsable a choisi de signer AVANT.
+  **Réserve** : `WN-CL-0330-027` — le régime végétarien strict élève
+  l'homocystéine — entrera au périmètre ce jour-là, pas avant : il fonde un
+  mécanisme, pas une indication.
+
 - **Le chantier 2 de [[D-216]] — les lignes d'indication d'assiette** (livré le
   2026-09-19 par [[D-235]]). **DIX lignes**, sept publiées et trois en brouillon,
   **aucune servie** : `validationExterne` reste `false`, `shaPerimetre` reste

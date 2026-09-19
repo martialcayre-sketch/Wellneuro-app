@@ -7574,3 +7574,27 @@ pas à l'outil. Chantiers 4 et 5 ouverts, sans bloquer la signature.
 
 **Question ouverte** : onze n-grammes du corpus **antérieurs à ce lot** subsistent
 au registre et à la surface — G6 est franchie ailleurs que dans ce diff.
+
+## 2026-09-19 (fin) — L'attestation des indications d'assiette, et la porte biologique qu'elle révèle
+
+**Table SIGNÉE (`D-236`)** : onze lignes, vingt claims, sept servables, quatre en
+brouillon. Déclaration rendue en séance après lecture, claim par claim.
+
+**Le fait qui a changé le lot n'était pas prévu.** Interrogé sur les brouillons,
+le responsable a répondu que ces assiettes se proposent **sur le résultat
+biologique**. Vérifié : **sept des douze assiettes** ont un claim qui le fonde —
+mais **aucune porte biologique n'est écrivable**, le vocabulaire de déclencheur
+n'ayant pas de variante et la validation d'un résultat refusant toute borne.
+
+**Et l'outil s'est trompé** : il a affirmé deux fois que la méthylation n'avait
+aucun claim biologique. Vrai de son protocole, **faux du corpus** — 66 claims,
+dont un prescriptif. Leçon : chercher un claim dans la seule source du sujet est
+une erreur de méthode.
+
+**Écarté** : `WN-CL-0330-027` au périmètre (mécanisme, pas indication) ;
+`TABLE_EXIGE_PRESCRIPTIF` à `true`, qui aurait amputé une sécurité de sa moitié.
+
+**T3 a mordu, et c'était juste** : la doc des verrous doit dire l'état réel.
+
+**Prochaine action** : le chantier 6, la porte biologique — il périmera cette
+attestation, et c'est voulu.
