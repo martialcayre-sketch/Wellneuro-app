@@ -1,0 +1,12 @@
+{
+  "name": "wellneuro-racine",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Réexpéditeur de scripts. Le projet vit dans web/ ; ce fichier n'a aucune dépendance et ne doit jamais en recevoir.",
+  "_pourquoi": "Les paliers de validation ne sont définis que dans web/package.json. Lancés depuis la racine du dépôt, ils rendaient 254 avec « missing script » — et une tâche de fond a rapporté ce 254 comme « exit code 0 ». La règle « T2 se lance depuis web/ » était écrite depuis des semaines et a mordu trois fois en deux jours, dont une à l'intérieur même du handoff qui la décrivait. Ce fichier la rend exécutable.",
+  "_interdit": "NE JAMAIS lancer `npm install` ici. Un package-lock.json à la racine ferait inférer à Next.js une racine de traçage autre que web/. Ce fichier ne déclare aucune dépendance, et `scripts/racine-reexpedition.test.mjs` refuse qu'il en reçoive. Le `--` final de chaque script n'est pas décoratif : sans lui, `npm run X -- --fast` devient `npm --prefix web run X --fast` et npm AVALE le drapeau au lieu de le transmettre — la séquence complète tourne à la place de la rapide, et le journal est le seul endroit où cela se voit.",
+  "scripts": {
+    "check": "npm --prefix web run check --",
+    "test:worktree": "npm --prefix web run test:worktree --"
+  }
+}
