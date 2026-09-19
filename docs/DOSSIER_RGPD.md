@@ -345,29 +345,71 @@ Wellneuro vers un tiers qui n'est ni le patient ni un sous-traitant :
 | **Destinataire** | **le médecin désigné**, hors application, par les canaux du praticien |
 | **Durée** | **non fixée**, comme les autres données de santé du dossier (rubrique 8). La correspondance suit le dossier : clôture ⇒ lecture seule, effacement ⇒ effacement ([[D-219]] §2) |
 
-**La qualification juridique de ce traitement appartient au responsable** — même
-régime que le médecin traitant à la rubrique 5. Ce qui est écrit ici est le
-**fait** : ce qui part, à qui, par quel chemin, et ce que le produit ne garantit
-pas.
+**DEUX VOIES DEPUIS LE 2026-09-17, ET UNE SEULE EST GARDÉE — c'est le fait
+central de ce traitement.** Trois routes écrivent dans `correspondances_medecin`.
+Deux appellent `verdictPartageMedecin` ; la troisième, non, et c'est délibéré :
 
-> **RESTE DÛ, ET C'EST UN ARBITRAGE, PAS UN CORRECTIF.** **Les huit versions
-> publiées** du document `donnees_confidentialite` (`trust/contenus/registre.ts`)
-> portent « aucun partage avec un tiers (par exemple votre médecin traitant) n'a
-> lieu sans un choix explicite de votre part » — la phrase y est **écrite quatre
-> fois et reprise par composition** dans les quatre autres, chaque version
-> spreadant les sections de la précédente. Le logiciel ne garantit pas cette
-> phrase. Corriger un document **publié et versionné**, lu par des patients qui
-> ont consenti dessus, est une décision du responsable — elle demande une version
-> neuve, pas une réécriture.
+| Route | Garde de consentement | Effet d'un refus |
+|---|---|---|
+| `api/praticien/biologie/proposition/courrier` | **oui** (relue dans la transaction) | le courrier ne se prépare pas |
+| `api/praticien/correspondance-medecin` (consignation à la main) | **oui** | l'échange ne se consigne pas |
+| `api/praticien/adressage/courrier` (signal d'alerte) | **AUCUNE** | **la lettre part quand même** |
+
+La garde est *fail-closed sur trois états* : refus, retrait **et silence**. Et
+**le discriminant est LA ROUTE, jamais le destinataire** — `medecinLibelle` est
+du texte libre sur tous les chemins d'écriture. L'étendue de l'exception tient
+donc à la discipline de routage : une quatrième route qui n'appellerait pas la
+garde en hériterait **en silence**.
+
+**CE QUI SE DÉDUIT DE CE TABLEAU, ET QUI EST LA QUESTION OUVERTE** : la voie
+ordinaire repose sur le choix explicite du patient, et ce choix est désormais
+**techniquement tenu**. La voie d'exception, elle, transmet une donnée de santé à
+un tiers **malgré un refus exprimé**. Ces deux voies ne peuvent pas reposer sur
+la même justification, et la seconde n'en a aucune d'écrite.
+
+**AUCUN ARTICLE DU RGPD N'EST ÉCRIT ICI**, conformément à la rubrique 3 : la
+qualification revient à un **conseil qualifié**, pas au responsable ni à une
+session. Ce qui est écrit est le **fait** — ce qui part, à qui, par quel chemin,
+sous quelle garde, et ce que le produit ne garantit pas. Les deux items entrent
+au récapitulatif de la rubrique 14 avec leur porteur.
+
+**MESURE DE PRODUCTION AU 2026-09-19** (agrégats, aucun identifiant) :
+
+| Grandeur | Valeur |
+|---|---|
+| Dossiers | 29 |
+| `trust_choice_events`, **toutes finalités** | **0** |
+| Lignes de `correspondances_medecin` | 2, sur **1** dossier |
+| Accusés `donnees_confidentialite` v8 / v9 | 3 / 2 |
+| Ayant accusé v8 **sans** v9 | **2** |
+
+**Deux conséquences que ces chiffres établissent, et qui n'étaient pas
+mesurées.** D'abord, **aucun patient ne s'est jamais prononcé** : la garde étant
+fail-closed sur le silence, les deux routes gardées sont **fermées pour les 29
+dossiers** depuis le 2026-09-17. Le coût réel est faible — la table ne porte que
+2 lignes sur 1 dossier — et la contrepartie existe sur les deux écrans
+(« Consentement jamais exprimé », avec le chemin pour le recueillir, tenu par des
+bancs). Ensuite, la population qui a lu la promesse inexacte **sans avoir vu sa
+correction** est de **deux personnes** : ce n'est pas un mécanisme d'information
+à construire, c'est deux patients que leur praticien connaît.
+
+> **CE QUI A ÉTÉ ACQUITTÉ LE 2026-09-17, ET CE BLOC LE DISAIT ENCORE DÛ.** La
+> réserve écrite ici tenait que « le logiciel ne garantit pas cette phrase » et
+> que rien n'avait été touché. **Les deux bouts ont été pris depuis** ([[D-222]]
+> et [[D-219]] §3 amendés en place) : le texte est venu au logiciel — `v9` de
+> `donnees_confidentialite`, **avec accusé de réception exigé**, qui corrige la
+> promesse dans les deux sens et **nomme l'exception au patient** — et le
+> logiciel est venu au texte, par la garde ci-dessus. Le coût est assumé par
+> écrit : un partage hors application devient invisible au dossier et au registre.
 >
-> **DEUX AUTRES PIÈCES DE LA MÊME RÉSERVE**, nommées le 2026-09-17 et non
-> touchées : l'**effet du refus** annoncé dans « Mes choix » dit « aucun document
-> ne sera partagé », promesse que le logiciel ne tient pas davantage — et la
-> **formulation des finalités** de cet écran n'est couverte par aucune version :
-> l'événement de choix n'enregistre que la version du document `droits_patient`,
-> si bien que deux consentements donnés sur deux formulations différentes sont
-> indiscernables au registre. **Non touché le 2026-09-17, sauf la correction d'un
-> fait faux** (voir [[D-222]] §3).
+> **CE QUI RESTE DE LA RÉSERVE D'ORIGINE**, et rien de plus : l'**effet du
+> refus** annoncé dans « Mes choix » (« aucun document ne sera partagé ») reste
+> plus absolu que la garde, puisque la voie d'exception lui échappe ; et la
+> **formulation des finalités** de cet écran n'est couverte par aucune version —
+> l'événement de choix n'enregistre que la version de `droits_patient`, si bien
+> que deux consentements donnés sur deux formulations différentes restent
+> indiscernables au registre. Ce second point est **sans portée mesurable à ce
+> jour** : la table est vide.
 
 Au sein de Wellneuro, en revanche, la phrase tient : « votre praticien, dans le
 cadre de votre accompagnement ; personne d'autre n'y accède ».
@@ -858,6 +900,7 @@ elle.
 | 6 | Sous-traitants | ~~Périmètre HDS de la région `osc-fr1` non confirmé~~ — **répondu par écrit le 2026-08-11** : couvert, activités 5 et 6 incluses | Responsable | fermé | ici, rubrique 6 |
 | 6 | Sous-traitants | ~~Fournisseur SMTP réel non identifié~~ — **identifié le 2026-08-22 : Google Workspace** (rubrique 6, TROU 2 — SPF/MX/DKIM du domaine + expéditeur du code) ; **restent dus** : localisation du traitement et couverture DPA | Responsable | 2026-10-21 | ici, rubrique 6 |
 | 6 | Sous-traitants | ~~Sentry non déclaré au patient~~ — **déclaré le 2026-09-07** dans `donnees_confidentialite@v5` (`D-141`), résidence UE rendue invariante par `sentryRegion.ts` ; **reste dû : le DPA Sentry** | Responsable | 2026-10-21 (DPA seul) | `contenus/registre.ts`, rubrique 6 |
+| 6 | Destinataires | **Correspondance médecin — la voie d'EXCEPTION n'a aucune justification écrite.** Le traitement est inventorié depuis `D-222` et ses quatre termes sont posés ; ce qui manque est la qualification de la seule route non gardée, `api/praticien/adressage/courrier`, qui transmet une donnée de santé à un tiers **malgré un refus exprimé** — les deux autres routes sont fail-closed sur refus, retrait et silence. Les deux voies ne peuvent pas reposer sur la même justification. **Aucun article du RGPD n'est écrit dans ce dossier** (rubrique 3) : l'acte revient au conseil, pas au responsable ni à une session | Conseil qualifié | 2026-10-21 | ici, rubrique 6 |
 | 7 | Transferts | Mécanisme invoqué (CCT/DPA) | Conseil qualifié | 2026-10-21 | ici, rubrique 7 |
 | 8 | Conservation | Durées des données de santé | Responsable + conseil | 2026-10-21 | ici, rubrique 8 puis `gouvernance.ts` |
 | 9 | Droits | Délai, vérification d'identité, circuit interne | Responsable | 2026-10-21 | ici, rubrique 9 |
@@ -867,6 +910,7 @@ elle.
 | 11 | Information | ~~Information sur l'écart HDS non consignée~~ — **partiellement consignée le 2026-08-19** (forme orale et contenu, sur déclaration du responsable, rubrique 11). **Reste dû** : renouvellement après `D-078`, qui change la nature de l'écart — brouillon de support prêt, publication = geste TRUST distinct | Responsable | ~~**avant la bascule Scalingo** (c'est elle qui ouvre la fenêtre de moindre couverture, `D-078` §3)~~ — **échéance dépassée le 2026-08-22** : la bascule des données a eu lieu (03:24 CEST, rubrique 12) **sans** que le renouvellement soit publié. Relevé le jour même, pas découvert après coup ; à rattraper **au plus tôt**, en tout état de cause avant le 2026-10-21 | ici, rubrique 11 |
 | 11 | Information | **Date de délivrance non établie** et **modalité de retrait non consignée** — deux des quatre composantes du trou d'origine ; la période déclarée (« en continu depuis la souscription HDS ») ne fournit pas de point de départ tenu pour établi par le dépôt | Responsable | 2026-10-21 | ici, rubrique 11 |
 | 11 | Information | **Aucune trace écrite par participant** de l'information sur l'écart HDS — aucun acquittement individuel ne la porte ; périmètre des personnes couvertes non établi | Responsable | 2026-10-21 | ici, rubrique 11 |
+| 11 | Information | **Deux patients ont accusé `donnees_confidentialite@v8` sans avoir vu `v9`**, qui corrige la promesse inexacte sur le partage. L'accusé de `v9` étant exigé **au portail**, il ne les atteindra qu'à leur prochaine visite — or la production dit qu'on y entre le jour même ou jamais. Deux personnes, mesurées le 2026-09-19 : ce n'est pas un mécanisme à construire mais un geste à décider. Ce qui part vers un patient reste un geste du responsable | Responsable | **à fixer** — au plus tôt, en tout état de cause avant le 2026-10-21 | ici, rubrique 11 |
 | 13 | AIPD | Absente | Conseil qualifié | 2026-10-21 | document dédié |
 
 L'échéance par défaut est le **2026-10-21**, date de revue de la dérogation :
