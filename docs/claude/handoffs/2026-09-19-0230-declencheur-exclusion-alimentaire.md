@@ -1,5 +1,13 @@
 # Handoff — 2026-09-19 — Le régime alimentaire devient une porte (D-232)
 
+> **CORRECTION POSÉE LE 2026-09-19, sans réécrire ce qui suit.** Ce handoff dit
+> deux fois que ce lot est « le dernier des cinq chantiers » et qu'il « ferme les
+> cinq chantiers de `D-216` ». **C'est faux** : la porte du régime ne portait
+> aucun numéro de chantier, et **trois des cinq restent** — écrire les lignes (2),
+> les familles (4), le barème (5). Ce qui est vrai : plus aucun prérequis
+> MÉCANIQUE ne bloque l'attestation. Décompte corrigé au registre (`D-232`, en
+> tête) et dans la surface de relecture.
+
 ## 1. Branche et état Git
 
 - Branche `wn-declencheur-etat-population-2026-09-19`, partie de `origin/main` à

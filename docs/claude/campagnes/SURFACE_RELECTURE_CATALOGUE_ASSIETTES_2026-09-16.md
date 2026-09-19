@@ -4,19 +4,35 @@
 **Ce document ne signe rien.** Il présente au praticien ce qu'il aurait à
 attester, et ce qui a été écarté.*
 
-> ## ÉTAT AU 2026-09-19 — les cinq chantiers sont clos, il ne reste que du clinique
+> ## ÉTAT AU 2026-09-19 — ce qui bloquait l'attestation est levé ; TROIS des cinq chantiers restent
 >
-> **Ce document n'attend plus rien de mécanique.** Les cinq chantiers que
-> `D-216` posait devant l'attestation sont livrés : le champ `statut` et le
-> filtre de service (`D-225`), le validateur partagé de dérive des libellés et la
-> lecture des 131 claims sur pièce (`D-229`), les douze entrées au catalogue C5B
-> avec ce qui protège la liste d'observation (`D-230`), la borne d'âge
-> (`D-231`), et la porte du régime alimentaire (`D-232`).
+> **CE BLOC CORRIGE UN DÉCOMPTE FAUX, et il faut le dire.** Sa première rédaction
+> annonçait « les cinq chantiers sont clos ». **C'était faux**, et l'erreur vient
+> d'avoir confondu DEUX listes : les **cinq chantiers** que le handoff du
+> 2026-09-17 numérote, et les **prérequis de l'attestation** que le tableau plus
+> bas tient. Constat de revue sur la PR de réconciliation, vérifié sur pièce.
 >
-> **CE QUI RESTE EST CLINIQUE, ET UNE PART N'APPARTIENT PAS À L'OUTIL** : écrire
-> les lignes d'indication — en relisant chaque claim sur pièce, source entière,
-> comme `D-227` l'impose —, puis les faire **attester**. Une signature clinique
-> ne se pose jamais par l'outil.
+> **LES CINQ CHANTIERS, ET LEUR ÉTAT RÉEL :**
+>
+> | # | Chantier | État |
+> | --- | --- | --- |
+> | 1 | Le champ `statut` et le filtre de service | **fait** — `D-225` |
+> | 2 | Le champ d'indication et ses claims, **c'est-à-dire les lignes** | **PAS FAIT** — `D-229` en a fait la LECTURE et le validateur partagé, pas les lignes |
+> | 3 | Le déclencheur d'âge et la revisite de `DC-43` | **fait** — `D-231` |
+> | 4 | Le mécanisme **orienté** des familles d'équivalence | **PAS FAIT** |
+> | 5 | `suggererDepuisLignes` et son motif, côté barème | **PAS FAIT** |
+>
+> **DEUX PRÉREQUIS ONT ÉTÉ DÉCOUVERTS EN ROUTE, hors de ces cinq** : les douze
+> entrées au catalogue C5B avec ce qui protège la liste d'observation (`D-230`),
+> et la porte du régime alimentaire (`D-232`). Ils ne portent pas de numéro de
+> chantier, et c'est en les comptant comme tels que le décompte a dérapé.
+>
+> **CE QUI EST VRAI, ET QUI EST CE QUI COMPTE** : **plus aucun prérequis
+> MÉCANIQUE ne bloque l'attestation**. Écrire les lignes est le chantier 2
+> lui-même — du clinique, à relire claim par claim sur pièce (`D-227`), puis à
+> faire **attester**. Les chantiers 4 et 5 restent devant S3 **sans bloquer la
+> signature** : `D-216` §4 refuse toute famille avant un mécanisme orienté, et le
+> barème est côté consommateur.
 >
 > **La table reste VIDE et son verrou ÉTEINT** ; `TABLE_EXIGE_PRESCRIPTIF` n'a
 > toujours pas d'entrée et `shaPerimetreLitteral` n'est pas enrôlé — les deux se

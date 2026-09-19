@@ -122,12 +122,18 @@ export type LigneIndicationAssiette = {
  * d'observation du praticien le rendait ENTIER : le filtre de ce module-ci porte
  * sur des **lignes**, il n'a jamais protégé le catalogue.
  *
- * CE QU'ELLE ATTEND ENCORE N'EST PLUS MÉCANIQUE. Les cinq chantiers de
- * [[D-216]] sont clos : statut et filtre de service ([[D-225]]), validateur
- * partagé et lecture des claims ([[D-229]]), catalogue ([[D-230]]), borne d'âge
- * ([[D-231]]), exclusion alimentaire ([[D-232]]). Ce qui reste est CLINIQUE —
- * écrire les lignes, puis les faire attester. Une signature ne se pose jamais
- * par l'outil.
+ * CE QU'ELLE ATTEND ENCORE N'EST PLUS MÉCANIQUE — et la formulation précédente
+ * de ce paragraphe, « les cinq chantiers sont clos », était FAUSSE (corrigée le
+ * 2026-09-19, constat de revue). Ce qui est clos est tout ce qui BLOQUAIT
+ * mécaniquement l'attestation : statut et filtre de service ([[D-225]]),
+ * validateur partagé et lecture des claims sur pièce ([[D-229]]), catalogue
+ * ([[D-230]]), borne d'âge ([[D-231]]), exclusion alimentaire ([[D-232]]).
+ *
+ * TROIS DES CINQ CHANTIERS RESTENT, et deux d'entre eux ne bloquent pas la
+ * signature : écrire les lignes EST le chantier 2 ; le mécanisme orienté des
+ * familles (4) et le barème (5) n'ont pas commencé. Remplir cette table est donc
+ * un geste CLINIQUE — relire chaque claim sur pièce, puis faire attester. Une
+ * signature ne se pose jamais par l'outil.
  */
 export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [];
 

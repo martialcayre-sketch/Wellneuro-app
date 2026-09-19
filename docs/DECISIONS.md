@@ -8,8 +8,16 @@
 
 - Date : 2026-09-19
 - Statut : accepté — **arbitrage du responsable** : lire l'`EtatPopulation`
-  plutôt que faire du champ un drapeau. Dernier des cinq chantiers que `D-216`
-  laissait devant l'attestation. **Aucune règle ne porte cette porte.**
+  plutôt que faire du champ un drapeau. **Aucune règle ne porte cette porte.**
+- **DÉCOMPTE CORRIGÉ LE 2026-09-19** : cette entrée annonçait « dernier des cinq
+  chantiers que `D-216` laissait devant l'attestation ». **C'était faux.** La
+  porte du régime ne portait **aucun numéro de chantier** — c'est un prérequis
+  DÉCOUVERT en route, comme le catalogue C5B (`D-230`). Des cinq chantiers que le
+  handoff du 2026-09-17 numérote, **trois restent** : écrire les lignes (2), le
+  mécanisme orienté des familles (4), le barème (5). L'erreur vient d'avoir
+  confondu deux listes — les chantiers numérotés et les prérequis de
+  l'attestation. Ce qui est vrai : **plus aucun prérequis mécanique ne bloque la
+  signature.** Constat de revue, vérifié sur pièce.
 - Domaine : vocabulaire de porte (`clinical/orientationRulesV1.ts`), moteur
   partagé (`clinical/orientationEngine.ts`), service d'orientation.
 - Porte sur : la dette que `D-229` §5 avait routée — et dont le correctif annoncé
@@ -71,11 +79,15 @@ d'assiette reste **VIDE**, verrou **ÉTEINT**. La gate de population est
 **inchangée** : elle lit le même objet, pour écarter, et ce lot n'y touche pas.
 Aucune migration, aucun drapeau, aucun écran.
 
-**8. CE QUE CELA LAISSE DEVANT LES LIGNES.** Plus rien de mécanique. Les cinq
-chantiers de `D-216` sont clos : statut et filtre de service (`D-225`),
-validateur partagé et lecture des claims (`D-229`), catalogue (`D-230`), borne
-d'âge (`D-231`), régime (ici). Ce qui reste est **clinique** : écrire les lignes,
-et les faire attester — une signature ne se pose jamais par l'outil.
+**8. CE QUE CELA LAISSE DEVANT LES LIGNES** — *§ corrigé le 2026-09-19, voir le
+décompte en tête.* **Plus aucun prérequis MÉCANIQUE ne bloque l'attestation** :
+statut et filtre de service (`D-225`), validateur partagé et lecture des claims
+sur pièce (`D-229`), catalogue (`D-230`), borne d'âge (`D-231`), régime (ici).
+**Mais trois des cinq chantiers restent** — écrire les lignes est le chantier 2
+lui-même, et les chantiers 4 (familles) et 5 (barème) n'ont pas commencé ; ni
+l'un ni l'autre ne bloque la signature. Ce qui reste devant les lignes est donc
+**clinique** : les écrire, et les faire attester — une signature ne se pose
+jamais par l'outil.
 
 ### D-231 — La borne d'âge devient un déclencheur : `Patient.dateNaissance` cesse d'être un fait administratif, `DC-43` est revisitée, et huit fichiers cessent de déduire un instrument d'une absence de drapeau
 

@@ -22,10 +22,12 @@ et **aucune route, aucun composant ne l'appelle**. Seul son propre test le
 lance. Le drapeau `WN_C5_ENABLED` commande par ailleurs son refus d'entrée.
 
 **L'assiette, elle, a déjà son catalogue.** `C5B_RECOMMENDED_PLATES`
-(`food-compass/plates.ts`) porte trois assiettes — petit-déjeuner simple,
-déjeuner extérieur, soir léger — avec version de catalogue, `contentHash` par
-entrée, hachage de catalogue et contrat de référence
-(`c5-recommended-plate-ref-v1`). Son commentaire pose déjà la doctrine :
+(`food-compass/plates.ts`) portait **au cadrage** trois assiettes —
+petit-déjeuner simple, déjeuner extérieur, soir léger — avec version de
+catalogue, `contentHash` par entrée, hachage de catalogue et contrat de référence
+(`c5-recommended-plate-ref-v1`). **Il en porte QUINZE depuis [[D-230]]**, sur un
+second axe : les douze assiettes du corpus, adossées à leurs protocoles. Le reste
+du paragraphe vaut inchangé, et la doctrine citée ci-dessous n'a pas bougé. Son commentaire pose déjà la doctrine :
 *« Le contenu précis de l'assiette reste une décision manuelle du praticien ;
 aucune composition n'est inventée ici. »*
 
