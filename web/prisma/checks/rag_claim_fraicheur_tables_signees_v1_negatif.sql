@@ -291,7 +291,7 @@ BEGIN
   -- — prouve donc, à lui seul, que l'exemption de [[D-046]] fonctionne. Le cas
   -- N7 prouve qu'elle est BORNÉE à cette table.
   SELECT
-    '__fraicheur_' || e.claim_id,
+    '__fraicheur_' || e.claim_id || '_' || e.version_claim,
     e.claim_id,
     'WN-SRC-0000',
     e.version_claim,
@@ -432,11 +432,17 @@ BEGIN
     ('WN-CL-0293-011', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0294-002', 'v1.0', 'indications_assiettes', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
-  -- UN CLAIM ÉPINGLÉ PAR DEUX TABLES NE FAIT QU'UNE LIGNE DE DÉCOR, et l'id de
-  -- la fixture le dit : il est bâti sur le seul `claim_id`. Le décor n'a jamais
-  -- eu à le faire avant [[D-236]] — `WN-CL-0287-009` est le premier claim cité
-  -- à la fois par la table d'orientation et par celle des indications
-  -- d'assiette, et l'insertion levait un `P2002` sur la clé primaire.
+  -- UN CLAIM ÉPINGLÉ PAR DEUX TABLES NE FAIT QU'UNE LIGNE DE DÉCOR. Le décor
+  -- n'avait jamais eu à le faire avant [[D-236]] — `WN-CL-0287-009` est le
+  -- premier claim cité à la fois par la table d'orientation et par celle des
+  -- indications d'assiette, et l'insertion levait un `P2002` sur la clé primaire.
+  --
+  -- LA CLÉ DE FIXTURE PORTE LA PAIRE, PAS LE SEUL CLAIM — constat de revue. Le
+  -- regroupement ci-dessous se fait sur `(claim_id, version_claim)`, et un `id`
+  -- bâti sur le seul `claim_id` rouvrirait exactement le même `P2002` le jour où
+  -- deux tables signées épingleraient deux VERSIONS d'un même claim. Ce jour-là
+  -- est prévu par le contrat lui-même : il joint sur la paire, précisément pour
+  -- qu'une table ne s'appuie pas sur une version qu'elle n'a pas relue.
   --
   -- `bool_or` EST LE BON AGRÉGAT, ET PAS UN CHOIX DE COMMODITÉ : un claim
   -- épinglé par une table qui EXIGE le prescriptif doit être prescriptif dans le

@@ -1,8 +1,10 @@
 ### La table des indications d'assiette est attestée, et la relecture révèle que quatre de ses lignes attendent la biologie (2026-09-19)
 
-**Onze lignes, vingt claims, une signature.** Sept lignes sortent désormais au
-service du praticien ; quatre restent en brouillon — hachées et attestées comme
-les autres, jamais servies. La déclaration a été rendue en séance, après lecture,
+**Onze lignes, vingt claims, une signature.** Sept lignes deviennent
+**servables** — éligibles au service, le verrou les laissant passer ; quatre
+restent en brouillon, hachées et attestées comme les autres. Servable n'est pas
+servi : **aucun moteur ne consomme encore cette table**, et son lot d'exposition
+reste à faire. La déclaration a été rendue en séance, après lecture,
 et ce qui a été confirmé n'est pas que les claims existent : c'est que **chacun
 fonde la porte écrite en face de lui**.
 

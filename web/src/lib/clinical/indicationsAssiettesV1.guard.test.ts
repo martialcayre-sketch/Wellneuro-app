@@ -176,7 +176,7 @@ describe('indications d’assiette — état livré', () => {
       expect(ligneReelle.raccourciAssume, ligneReelle.id).not.toBeNull();
       expect(ligneReelle.raccourciAssume!.length, ligneReelle.id).toBeGreaterThan(80);
     }
-    // Un fragment DISTINCTIF par ligne : sans lui, dix raccourcis identiques
+    // Un fragment DISTINCTIF par ligne : sans lui, onze raccourcis identiques
     // passeraient le cas ci-dessus.
     const fragments: Record<string, string> = {
       'ASSIETTE-IND-DOPAMINERGIQUE': 'score FAIBLE',
@@ -260,9 +260,11 @@ describe('indications d’assiette — état livré', () => {
     }
   });
 
-  it('SIGNÉE PAR LE BANC : les sept publiées sortent, les trois brouillons restent dedans', () => {
-    // La signature est CALCULÉE ici, jamais lue dans la métadonnée réelle — sans
-    // quoi ce cas attendrait une attestation qui n'existe pas.
+  it('SIGNÉE PAR LE BANC : les publiées sortent, les brouillons restent dedans', () => {
+    // La signature est CALCULÉE ici, et non lue dans la métadonnée réelle : ce
+    // cas doit continuer de mordre si l'attestation change ou disparaît. Aucun
+    // décompte n'est écrit dans le titre — un nombre figé là dérive en silence
+    // dès qu'une ligne entre, ce que l'ajout de la onzième vient de prouver.
     const lignes = INDICATIONS_ASSIETTES_V1;
     const servies = lignesIndicationAssietteServables(
       claimsValidesDe(lignes), signatureBanc(lignes), lignes,

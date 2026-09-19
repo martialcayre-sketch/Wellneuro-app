@@ -126,13 +126,17 @@ export type LigneIndicationAssiette = {
 };
 
 /**
- * LA TABLE — ONZE LIGNES, et le verrou reste ÉTEINT.
+ * LA TABLE — ONZE LIGNES, ET LE VERROU EST OUVERT DEPUIS LE 2026-09-19.
  *
- * ELLE N'EST PLUS VIDE DEPUIS LE 2026-09-19 ([[D-235]]) : c'est le chantier 2
- * de [[D-216]]. Sept lignes publiées, quatre en brouillon, aucune servie — la
- * métadonnée n'atteste rien, `shaPerimetre` vaut `null`, et
- * `lignesIndicationAssietteServables` rend `[]`. **Écrire les lignes et les
- * attester sont deux gestes, et le second n'appartient pas à l'outil.**
+ * Écrite par [[D-235]] (chantier 2 de [[D-216]]), **attestée par [[D-236]]** le
+ * même jour. Sept lignes publiées — **servables**, c'est-à-dire éligibles au
+ * service —, quatre en brouillon : relues et hachées au même titre, jamais
+ * servies. **Écrire les lignes et les attester sont deux gestes**, et le second
+ * n'appartient pas à l'outil : il a été transcrit sur déclaration.
+ *
+ * SERVABLE N'EST PAS SERVI, et la nuance n'est pas de forme :
+ * `lignesIndicationAssietteServables` n'a **aucun appelant de production**. Le
+ * lot d'exposition reste devant.
  *
  * CHAQUE CLAIM A ÉTÉ RELU EN PRODUCTION, SOURCE ENTIÈRE, LE 2026-09-19 — les
  * neuf protocoles qui portent une ligne, claim par claim, texte intégral. Ce
@@ -588,23 +592,25 @@ export function shaPerimetreIndicationsAssiettes(
 }
 
 /**
- * MÉTADONNÉE NON SIGNÉE — verrous présents et ÉTEINTS.
+ * MÉTADONNÉE SIGNÉE — verrous présents et OUVERTS depuis [[D-236]].
  *
- * Ils existent pour que le jour de l'attestation soit une ÉDITION et non un
- * ajout de structure. **Une signature clinique ne se pose jamais par l'outil.**
+ * Les quatre termes ont été posés le jour de l'attestation, par ÉDITION et non
+ * par ajout de structure : c'est précisément pourquoi ils existaient éteints
+ * depuis [[D-225]]. **Une signature clinique ne se pose jamais par l'outil** —
+ * celle-ci a été transcrite sur la déclaration du responsable, rendue en séance
+ * après lecture claim par claim.
  *
- * `claimsSource` VIDE est délibérément visible : le balayage du contrat de
- * fraîcheur (`claimsEpinglesFraicheur.guard.test.ts`) reconnaît une table signée
- * à ce champ, et le reconnaît MÊME VIDE. Le fichier entre donc à
- * `FICHIER_VERS_TABLE` dès aujourd'hui — mais il ne contribue AUCUNE paire au
- * contrat SQL tant qu'aucune ligne ne cite de claim, donc `TABLE_EXIGE_PRESCRIPTIF`
- * n'a rien à recevoir avant la première signature, et lui donner une entrée
- * maintenant rougirait à l'inverse.
+ * LES TROIS ENRÔLEMENTS ONT ÉTÉ FAITS DANS LE MÊME GESTE, ni avant ni après.
+ * `TABLE_EXIGE_PRESCRIPTIF` a reçu `indications_assiettes: false` avec son pavé
+ * d'arbitrage ; les vingt paires sont entrées au contrat SQL de fraîcheur **et à
+ * son fichier négatif** ; `shaPerimetreLitteral.guard.test.ts` a enrôlé ce
+ * fichier. Avant, le banc du sha littéral rougissait sur un `null` ; après, le
+ * contrat aurait divergé du dépôt.
  *
- * `shaPerimetreLitteral.guard.test.ts` N'EST PAS ENROLÉ AUJOURD'HUI, et c'est
- * volontaire : ce banc exige un littéral de 64 hex, or `shaPerimetre` vaut
- * `null`. L'enrôlement se fait LE JOUR de la première signature, comme
- * [[D-198]], [[D-223]] et [[D-224]] l'ont fait pour les trois tables précédentes.
+ * RE-SIGNER REMPLACE, ça ne s'ajoute pas. Toute ligne retouchée, tout
+ * `raccourciAssume` reformulé, tout claim ajouté périme cette attestation — le
+ * périmètre se hache en entier. Le chantier de la porte biologique le fera, et
+ * c'est voulu.
  */
 export const INDICATIONS_ASSIETTES_METADATA: IndicationsAssiettesMetadata = {
   validationExterne: true,

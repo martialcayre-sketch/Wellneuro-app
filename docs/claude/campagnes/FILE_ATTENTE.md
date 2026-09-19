@@ -128,10 +128,14 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   mécanisme, pas une indication.
 
 - **Le chantier 2 de [[D-216]] — les lignes d'indication d'assiette** (livré le
-  2026-09-19 par [[D-235]]). **DIX lignes**, sept publiées et trois en brouillon,
-  **aucune servie** : `validationExterne` reste `false`, `shaPerimetre` reste
-  `null`. Écrire les lignes est un geste d'outil ; les **attester** n'en est pas
-  un, et c'est ce qui reste devant le responsable.
+  2026-09-19 par [[D-235]]).
+  **⚠️ ÉTAT DÉPASSÉ LE JOUR MÊME — la table est ATTESTÉE depuis [[D-236]]** :
+  onze lignes (une onzième est entrée), sept **servables**, quatre en brouillon,
+  `validationExterne: true` et un `shaPerimetre` littéral. Ce qui suit décrit
+  l'état à la livraison du chantier 2, avant la signature, et se lit au passé.
+  **DIX lignes**, sept publiées et trois en brouillon,
+  **aucune servie** : `validationExterne` valait `false`, `shaPerimetre` `null`.
+  Écrire les lignes est un geste d'outil ; les **attester** n'en est pas un.
   **La relecture des sources entières a réfuté la surface sur QUATRE points**,
   et c'est ce que la consigne cherchait. Le plus lourd : `WN-CL-0293-011` ne
   fonde **pas** une conjonction — il écrit « sérotoninergiques et/ou
@@ -150,8 +154,8 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   **Deux réserves consignées pour l'attestation** : `WN-CL-0288-012` et `-014`
   sont `prescriptif = false` ; et l'exception parkinsonienne est **désignée, pas
   appliquée** — aucun champ ne lit un traitement en cours, la ligne le déclare.
-  **Ce qui reste du chantier 2** : rien côté outil. La relecture, puis
-  l'attestation.
+  **Ce qui restait du chantier 2** — la relecture puis l'attestation — **a été
+  fait le même jour** ([[D-236]]).
 
 - **`D-206` — la première table du catalogue de conduites** (2026-09-16,
   arbitrage du responsable, **LOT-01 livré, première ligne signée le
