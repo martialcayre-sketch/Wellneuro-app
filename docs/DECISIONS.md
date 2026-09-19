@@ -4,6 +4,104 @@
 
 ## Décisions actives
 
+### D-233 — [[D-049]] est close : la cause racine est corrigée et mesurée, T3 local redevient exigé en entier, et la règle du rouge WebKit du CI est redomiciliée
+
+- Date : 2026-09-19
+- Statut : accepté — **arbitrage du responsable**, rendu en session le
+  2026-09-19. Il renverse celui du 2026-09-17 (« amender, ne pas fermer »), et
+  ce renversement est le fait nouveau : la justification donnée ce jour-là
+  reposait sur une prémisse tombée le soir même — « aucun correctif à
+  attendre » —, et deux séquences T3 réelles ont été jouées depuis.
+- Domaine : validation, gouvernance des PR, outillage E2E
+- Amende : [[D-049]], **close** ; [[D-155]], dont la règle du rouge WebKit du CI
+  est redomiciliée sans être modifiée.
+
+**1. CE QUI EST TRANCHÉ.** `D-049` est close. Le régime qu'elle instituait — le
+CI tenant lieu de palier E2E pour les PR migration/scoring/clinique — est levé :
+**T3 local (`npm run test:worktree`) est de nouveau exigé en entier**, segment
+E2E compris, pour ces PR. `CLAUDE.md` revient à l'identique, comme la condition
+de sortie de `D-049` le prévoyait ; c'est
+`.claude/rules/tests-validation.md` qui portait la dérogation, et c'est lui qui
+la perd.
+
+**2. LA CONDITION DE SORTIE EST REMPLIE, ET PAR LE CHEMIN QUE `D-155` AVAIT
+IMPOSÉ.** `D-155` avait neutralisé la première branche — compter des séquences
+propres mesure une absence d'observation, pas une résolution — et laissé
+**« une cause racine est identifiée »** comme seule porte. Elle l'est :
+
+- **La cause**, reproduite hors du dépôt avec bras témoin. Bras témoin : 200
+  `goto` sur une seule page, 200 requêtes, zéro blocage. Bras d'essai : un
+  contexte iPhone 13 neuf à chaque tour, **blocage au rang 64, zéro requête
+  émise**, puis au 65. Le compteur porte sur la **création de contexte**, pas sur
+  la navigation — l'issue amont `microsoft/playwright#42385` se trompe sur ce
+  point, et `D-155` se trompait en attribuant la panne à la charge machine. Le
+  déclencheur est la **mise en veille de l'écran**, ce qui explique pourquoi la
+  panne frappait les runs autonomes de nuit.
+- **Le correctif**, amont : **WebKit 2352**. Nous étions sur 2311.
+- **La montée**, mergée : `bf852f59`, Playwright 1.61.1 → 1.63.0, WebKit
+  **2359**. Même banc, même bras, deux moteurs : 2311 bloque au rang 64, **2359
+  passe 250 tours sans un blocage**.
+
+**3. CE QUE LA CLÔTURE AJOUTE, ET QUI N'ÉTAIT PAS ACQUIS LE 2026-09-17.** La
+discrimination des deux moteurs était faite sur le banc ; ce qui manquait était
+la tenue de la montée dans la **suite réelle**, celle dont T3 redevient la
+barrière. **Deux séquences T3 complètes, le 2026-09-18** : vertes en 3 min 53 s
+et 3 min 57 s, 205 tests passés et 3 sautés chacune, **101 tests iPhone 13 —
+donc ~101 créations de contexte — par séquence**, sans un blocage. Aucune
+occurrence de la signature de `D-049` (navigation expirée, aucune requête
+émise), ni d'« internal error », ni de la signature du défaut signalé sur 2359.
+
+**CE QUE CES DEUX SÉQUENCES NE FONT PAS, ET IL FAUT LE DIRE** : elles n'ont pas
+exercé le déclencheur. Quatre minutes, écran allumé. Elles établissent que la
+montée ne dégrade rien ; **la discrimination des deux moteurs vient du banc**
+(§2), pas d'elles. Les confondre ferait croire la preuve plus large qu'elle
+n'est.
+
+**4. CE QUI SURVIT À LA CLÔTURE.** Deux règles, et elles ne dépendent pas de la
+panne locale :
+
+- **`retries` reste interdit à Playwright.** Un réessai transformerait un blocage
+  en succès silencieux et emporterait avec lui les vrais échecs intermittents.
+  C'est le contournement que l'amont recommande et que ce dépôt refuse — y
+  compris pour le défaut de 2359 ci-dessous, dont l'amont dit « the retry
+  passed ».
+- **Un rouge WebKit du CI ne se relance jamais.** Elle venait de `D-155` comme
+  amendement à `D-049` ; laissée là, elle serait devenue orpheline d'une décision
+  close. Elle est **redomiciliée telle quelle** dans
+  `.claude/rules/tests-validation.md`, armé par chemin sur cinq motifs :
+  `web/e2e/**`, `**/*.test.ts`, `**/*.test.tsx`, `web/playwright.config.*` et
+  `scripts/wn-test-worktree.sh`.
+  Son motif est intact : le rouge WebKit du CI est d'une **autre nature** que la
+  panne locale — « WebKit encountered an internal error » est une erreur rendue
+  par le moteur, pas une attente qui s'épuise, et aucune requête manquante n'y a
+  jamais été constatée. `D-049` ne l'a jamais expliqué, et sa clôture ne
+  l'explique pas davantage.
+
+**5. LA RÉSERVE QUI SURVIT, ÉCRITE POUR QU'ON NE LA REDÉCOUVRE PAS.** WebKit 2359
+porte un défaut signalé le 2026-09-17, de **signature différente**
+(`NetworkConnectionToWebProcess::didReceiveInvalidMessage`, et « the retry
+passed »). Il n'a pas été observé sur les deux séquences. S'il se manifeste, ce
+n'est **pas** `D-049` qui revient : c'est un défaut neuf, qui s'instruit, et que
+`retries` ne doit pas masquer. Classer un échec « c'est `D-049` » avant de
+l'avoir instruit est l'erreur que cette décision, close, existait déjà pour
+empêcher.
+
+**6. LE CLASSIFICATEUR D'ÉCHEC EST CORRIGÉ, PARCE QU'IL MENTAIT DÉSORMAIS.**
+`scripts/wn-diagnostic-e2e.mjs` disait deux choses devenues fausses : que la
+signature s'observe « en queue de suite et **sous charge machine soutenue** »
+(c'est la prémisse que la cause racine a réfutée), et qu'**« aucun correctif de
+notre côté n'est identifié »** (il l'est, et il est en service). Un opérateur
+rencontrant ce blocage aujourd'hui aurait lu « rien à faire » alors que la bonne
+lecture est l'inverse : **nous tournons déjà sur le moteur corrigé, donc un
+blocage de cette signature est un fait NEUF**. Le message le dit maintenant.
+
+**7. CE QUE CE LOT NE FAIT PAS.** Il ne touche aucune ligne de code applicatif,
+aucun schéma, aucune migration, aucun drapeau. Il ne rejuge pas `D-087` ni
+`D-120`. Il ne supprime pas `wn-diagnostic-e2e.mjs` : la signature reste utile à
+reconnaître, c'est sa conclusion qui change. Et il ne réécrit pas le corps de
+`D-049` — une décision close porte l'instruction de sa panne et ne se
+réinterprète pas.
+
 ### D-232 — Le régime alimentaire devient une porte en lisant l'ÉTAT DE POPULATION, jamais un drapeau : le champ garde un seul lecteur, et le contexte de dossier remplace le paramètre positionnel
 
 - Date : 2026-09-19
@@ -15625,6 +15723,39 @@ commente une synthèse, elle ne la re-valide pas.
 
 ### D-049 — Le CI fait autorité sur le palier E2E tant que le blocage navigateur local dure
 
+> # ⛔ CLOSE LE 2026-09-19 — VOIR [[D-233]]
+>
+> **Cette décision n'a plus d'effet.** Le régime qu'elle instituait — le CI
+> tenant lieu de palier E2E pour les PR migration/scoring/clinique — est levé :
+> **T3 local est de nouveau exigé en entier**, segment E2E compris. Arbitrage du
+> responsable du 2026-09-19, sur la condition de sortie que cette décision avait
+> elle-même nommée et que [[D-155]] avait resserrée à « une cause racine est
+> identifiée ».
+>
+> Ce qui l'a remplie, dans l'ordre : la cause racine reproduite hors du dépôt
+> avec bras témoin (WebKit 2311 bloque au rang **64 de création de contexte**,
+> déclencheur = mise en veille de l'écran) ; son correctif amont (**WebKit
+> 2352**) ; la montée mergée sur `main` (`bf852f59`, Playwright 1.63.0 → WebKit
+> **2359**) ; et **deux séquences T3 complètes vertes** le 2026-09-18, 3 min 53 s
+> et 3 min 57 s, **101 contextes iPhone 13 chacune** sans un blocage. Le détail
+> du raisonnement, les réserves qui survivent et ce que la clôture déplace :
+> [[D-233]].
+>
+> **CE QUI RESTE VRAI SANS ELLE, ET NE MEURT PAS AVEC ELLE** — `retries` reste
+> interdit à Playwright, et **un rouge WebKit du CI ne se relance jamais**. Cette
+> seconde règle venait de [[D-155]] comme amendement à `D-049` ; elle ne dépend
+> pas de la panne locale et a été **redomiciliée** dans
+> `.claude/rules/tests-validation.md` pour ne pas rester accrochée à une décision
+> close.
+>
+> Le texte ci-dessous est conservé **tel quel**, sans réécriture : il porte
+> l'instruction de la panne, et une décision close ne se réinterprète pas.
+
+> ⚠️ **AMENDEMENT DU 2026-09-17 — SA CONCLUSION EST PÉRIMÉE PAR LA CLÔTURE
+> CI-DESSUS** ; ses constats de fait, eux, restent exacts et fondent
+> [[D-233]]. Lire « CETTE DÉCISION RESTE OUVERTE » comme l'état du 2026-09-17,
+> pas comme l'état courant.
+
 > **AMENDEMENT DU 2026-09-17 — LA CAUSE RACINE EST TROUVÉE, LE CORRECTIF EST EN
 > LIGNE, ET CETTE DÉCISION RESTE OUVERTE.** La condition de sortie écrite plus bas
 > est remplie à la lettre — « une cause racine est identifiée » — et elle l'est
@@ -15743,7 +15874,10 @@ commente une synthèse, elle ne la re-valide pas.
 > ils ne prouvent rien du code de ce dépôt).
 
 - Date : 2026-08-12
-- Statut : accepté (décision utilisateur du 2026-08-12)
+- Statut : **CLOSE le 2026-09-19** ([[D-233]]) — acceptée le 2026-08-12
+  (décision utilisateur), amendée le 2026-09-08 ([[D-155]]) et le 2026-09-17,
+  close sur sa propre condition de sortie. N'a plus d'effet sur le régime de
+  validation.
 - Domaine : validation, gouvernance des PR
 - Contexte : depuis le 2026-08-11, la séquence complète locale
   (`npm run test:worktree`) échoue à répétition sur **un seul test par run,

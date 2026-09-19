@@ -248,8 +248,17 @@ process.stderr.write(
     "La navigation n'est jamais sortie du navigateur : le serveur n'a pas été\n" +
     "sollicité, donc ni l'application, ni Prisma, ni PostgreSQL, ni le diff en\n" +
     'cours ne peuvent expliquer cet échec. Signature connue sur macOS, projet\n' +
-    'iPhone 13 (WebKit), en queue de suite et sous charge machine soutenue ;\n' +
-    "jamais observée en CI. Aucun correctif de notre côté n'est identifié.\n\n" +
+    'iPhone 13 (WebKit) ; jamais observée en CI.\n\n' +
+    "ET C'EST DÉSORMAIS UN FAIT NEUF. La cause a été trouvée le 2026-09-17 :\n" +
+    'WebKit 2311 se bloquait au rang ~64 de CRÉATION DE CONTEXTE (pas de\n' +
+    "navigation), sur mise en veille de l'écran. Corrigée en amont dans WebKit\n" +
+    '2352, et en service ici depuis Playwright 1.63.0 (WebKit 2359), qui a passé\n' +
+    "250 tours du banc sans un blocage. D-049 est CLOSE (D-233).\n\n" +
+    "CE QUE CELA VEUT DIRE POUR VOUS : ne classez plus ce rouge, INSTRUISEZ-LE.\n" +
+    'Nous tournons sur le moteur corrigé — ceci est soit une régression amont,\n' +
+    "soit un défaut distinct (2359 en porte un, de signature différente :\n" +
+    "didReceiveInvalidMessage). Vérifiez la version du moteur avant tout.\n" +
+    "Et `retries` reste interdit : il changerait ce blocage en vert silencieux.\n\n" +
     "CE QUE CELA NE DIT PAS : que la séquence est verte. Elle est rouge, et le\n" +
     "code de sortie le reste. Cela dit seulement que le rouge ne parle pas du\n" +
     'code en cours de modification.\n' +
