@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PenLine, Sparkles, Trash2 } from 'lucide-react';
 import { readEventStream } from '@/lib/sse/readEventStream';
 import type { PatientsPgApiResponse } from '@/app/api/praticien/patients-pg/route';
@@ -103,9 +103,25 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       .catch(() => {});
   }, []);
 
+  // LE DOSSIER DE L'URL S'APPLIQUE UNE FOIS, PAS À CHAQUE CHANGEMENT DE
+  // SÉLECTION. `selectedPatient` a été dans les dépendances ET dans la garde de
+  // cet effet : choisir un AUTRE patient relançait donc l'effet, la garde ne
+  // renvoyait plus tôt puisque la sélection différait de l'URL, et la sélection
+  // revenait de force au dossier de l'URL. Verrou déterministe à 100 %, sur les
+  // trois portes d'entrée qui posent `?idPatient=` — et les actions cliniques de
+  // cet écran prennent leur identifiant dans la sélection que le verrou
+  // désynchronisait.
+  //
+  // La référence retient l'identifiant DÉJÀ APPLIQUÉ, et non un simple booléen :
+  // si l'URL change pour un autre dossier — navigation d'une carte du Fil à une
+  // autre sans démontage —, l'effet doit s'appliquer de nouveau. Un booléen
+  // l'aurait interdit.
+  const dossierUrlApplique = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!initialPatientId || selectedPatient === initialPatientId) return;
+    if (!initialPatientId || dossierUrlApplique.current === initialPatientId) return;
     if (!patients.some(p => p.idPatient === initialPatientId)) return;
+    dossierUrlApplique.current = initialPatientId;
     setSelectedPatient(initialPatientId);
     setSelectedSynthese(null);
     setManualDraft(null);
@@ -115,7 +131,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     setBookletInfo(null);
     setFeedback(null);
     void loadSyntheses(initialPatientId);
-  }, [initialPatientId, loadSyntheses, patients, selectedPatient]);
+  }, [initialPatientId, loadSyntheses, patients]);
 
   const onSelectPatient = (id: string) => {
     setSelectedPatient(id);
