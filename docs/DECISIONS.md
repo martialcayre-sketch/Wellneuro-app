@@ -25,8 +25,10 @@ pour devenir **deux lignes du récapitulatif de la rubrique 14**, avec porteur e
 routes écrivent dans `correspondances_medecin`. Deux appellent
 `verdictPartageMedecin` — fail-closed sur **refus, retrait ET silence** ; la
 troisième, `api/praticien/adressage/courrier`, n'a **aucune garde**, et c'est
-délibéré : fermer là fermerait au moment où un signal d'alerte suspend déjà la
-décision clinique. Conséquence, et c'est la question ouverte : **la voie
+délibéré : **fermer là serait fermer au moment précis où la décision clinique est
+déjà suspendue**, et sur les dossiers où un signe a été repéré — c'est la
+formulation du module lui-même (`consentementPartage.ts`), reprise sans la
+dégrader. Conséquence, et c'est la question ouverte : **la voie
 ordinaire repose sur le choix du patient, désormais techniquement tenu ; la voie
 d'exception transmet malgré un refus.** Les deux ne peuvent pas reposer sur la
 même justification, et la seconde n'en a aucune d'écrite.
