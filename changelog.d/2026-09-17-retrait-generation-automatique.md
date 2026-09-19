@@ -15,17 +15,19 @@ prétendait rendre inutile : le dossier ne portait plus de carte, et le brouillo
 attendait sans que rien ne le signale.
 
 **La mesure a motivé l'examen, elle ne fonde pas la décision.** Lecture de
-production du jour (conteneur one-off, agrégats seuls, [[D-125]]) : **8
-générations automatiques — 6 au premier rideau sur 5 dossiers, 2 au second sur 2
-dossiers — dont 4 rejetées**, contre 2 rejets sur 55 générations manuelles. Soit
-50 % contre 3,6 %. Un agrégat ne dit pas pourquoi on rejette, et 8 lignes sur 5
-dossiers est un échantillon court.
+production corrigée le 2026-09-19 (conteneur one-off, agrégats seuls, [[D-125]]) :
+**9 générations automatiques sur 5 dossiers — 6 au premier rideau, 3 au second —
+dont 4 rejetées**, contre 6 rejets sur 60 générations manuelles. Soit **44 %
+contre 10 %**, là où la lecture de la veille annonçait « 8 » et « 50 % contre
+3,6 % ». Un agrégat ne dit pas pourquoi on rejette, et un écart qui se déplace
+ainsi en deux jours dit surtout que l'échantillon est court.
 
 **L'ordre des gestes est l'inverse de celui d'une pose.** Le drapeau a été retiré
 de la production **d'abord** — `env-unset`, conteneurs web recréés à **18:49:15 UTC**
 (20:49:15 heure locale) alors qu'ils tournaient depuis 17:25:44 UTC —, le code ensuite. Pour une extinction
-c'est le sens sûr : un code retiré devant un drapeau encore allumé ne change
-rien, un drapeau retiré devant du code encore présent ferme déjà la porte.
+c'est en principe le sens sûr : un code retiré devant un drapeau encore allumé
+ne change rien, tandis qu'un drapeau retiré devrait déjà fermer la porte.
+**Sauf qu'ici il ne l'a pas fermée** — voir plus bas.
 
 **Aucune sonde ne constate cette extinction, et il faut le dire.** Le drapeau
 gardait un travail de fond sans surface publique — contrairement à
@@ -34,14 +36,41 @@ constat disponible est la variable absente de `env` plus la recréation des
 conteneurs. Le constat comportemental se lit ainsi, après la prochaine réponse de
 questionnaire :
 
+**Le seuil de cette requête a changé, et c'est le cœur de l'affaire.** Celui du
+geste de drapeau — `2026-09-17 18:49:15 UTC` — rend désormais **1** et le rendra
+toujours : c'est la ligne de 20:39:52 qui prouve l'échec du geste. Le seuil
+utile est celui du **retrait du code**, déployé à 22:08:04 UTC et terminé
+4 min 37 s plus tard.
+
 ```sql
+-- Constat d'ÉCHEC du geste de drapeau : rend 1, définitivement.
 SELECT count(*) FROM syntheses_ia
 WHERE donnees_entree->>'source' LIKE 'auto_rideau_%'
   AND date_generation > timestamp '2026-09-17 18:49:15';  -- UTC
+
+-- Constat du RETRAIT DU CODE : doit rendre 0, et n'a pas encore de témoin.
+SELECT count(*) FROM syntheses_ia
+WHERE donnees_entree->>'source' LIKE 'auto_rideau_%'
+  AND date_generation > timestamp '2026-09-17 22:13:00';  -- UTC, fin du déploiement
 ```
 
-Attendu : `0`. Les 8 brouillons déjà produits restent au dossier avec leur
+Attendu : `0`. Les 9 brouillons déjà produits restent au dossier avec leur
 marqueur — rien n'est effacé ni requalifié.
+
+**LE CONSTAT A ÉTÉ FAIT LE 2026-09-19, ET IL NE REND PAS `0`.** Une génération
+`auto_rideau_second` a eu lieu le 2026-09-17 à **20:39:52 UTC**, soit 1 h 50
+après la recréation des conteneurs. La garde du drapeau était pourtant
+fail-closed et posée en première ligne : le conteneur qui a servi cette requête
+avait donc encore la variable. **Ce qui a réellement fermé la porte est le
+retrait du code, déployé à 22:08:04 UTC.** La cause de la non-propagation n'est
+pas établie, et le CLI n'expose aucun historique des changements de variables.
+
+Le constat comportemental, lui, n'a toujours aucun témoin : six réponses de
+questionnaire sont arrivées le 2026-09-17 entre 20:23:32 et 20:38:09 UTC, et
+aucune depuis. « Zéro génération » s'explique par zéro réponse.
+
+Enfin, l'inventaire demandé montre **trois synthèses automatiques validées que
+personne n'a envoyées** — invisibles faute de liste inter-patients.
 
 **Ce qui n'est pas tranché.** Le mécanisme n'est pas jugé mauvais dans son
 principe. Ce qui est décidé, c'est qu'un brouillon ne doit pas naître **avant**

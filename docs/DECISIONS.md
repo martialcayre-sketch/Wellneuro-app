@@ -584,7 +584,8 @@ rejetées**. Sur la même table, 55 générations manuelles sur 17 dossiers, don
 rejetées. Soit **50 % contre 3,6 %**. Un agrégat ne dit pas POURQUOI on rejette,
 et 8 lignes sur 5 dossiers est un échantillon court : ce chiffre a motivé
 l'examen, il ne fonde pas à lui seul la décision. Ce qui la fonde est le § 1,
-qui est un fait de code.
+qui est un fait de code. **CE DÉCOMPTE EST PÉRIMÉ** : l'amendement du
+2026-09-19 en rend neuf et déplace la comparaison à 44 % contre 10 %.
 
 **3. L'ORDRE DES GESTES, ET IL EST INVERSE DE CELUI D'UNE POSE.** Le drapeau a
 été **retiré de la production d'abord** — `env-unset` puis recréation des deux
@@ -596,7 +597,9 @@ confondre les deux fait contrôler la mauvaise fenêtre de production (constat d
 revue, PR #1185). C'est le sens sûr pour une extinction : le code
 retiré devant un drapeau encore allumé ne changerait rien, mais un drapeau
 retiré devant du code encore présent ferme déjà la porte. L'inverse vaut pour
-une pose ([[D-174]] § effectivité).
+une pose ([[D-174]] § effectivité). **CETTE DERNIÈRE AFFIRMATION EST FAUSSE POUR
+CET ÉPISODE** : une génération a eu lieu 1 h 50 APRÈS la recréation décrite ici —
+amendement du 2026-09-19.
 
 **4. AUCUNE SONDE NE CONSTATE CETTE EXTINCTION, ET IL FAUT LE DIRE.** Le drapeau
 gardait un travail de fond déclenché par une soumission patient : il n'a aucune
@@ -605,9 +608,12 @@ surface publique qui distingue les deux états, contrairement à
 constat disponible est double — variable absente de `env`, conteneurs recréés —
 et il sera complété par le comportement : **aucune ligne `syntheses_ia` ne doit
 plus porter `donnees_entree->>'source' = 'auto_rideau_%'` après le **2026-09-17
-18:49:15 UTC**. La requête est au fragment de changelog.
+18:49:15 UTC**. La requête est au fragment de changelog. **CE CONSTAT N'A JAMAIS
+EU LIEU** : une ligne a été produite à 20:39:52 UTC le même jour, et aucune
+réponse de patient n'est arrivée depuis le retrait du code — amendement du
+2026-09-19.
 
-**5. CE QUI N'EST PAS DÉCIDÉ ICI.** Les 8 brouillons déjà produits restent au
+**5. CE QUI N'EST PAS DÉCIDÉ ICI.** Les 9 brouillons déjà produits restent au
 dossier avec leur marqueur ; rien n'est effacé ni requalifié. Et le mécanisme
 n'est pas jugé mauvais dans son principe : ce qui est tranché, c'est qu'un
 brouillon ne doit pas naître **avant** le geste de lecture qui le rendrait
@@ -619,6 +625,63 @@ qu'**aucune** tâche de fond n'est planifiée sur ce chemin — assertion sur
 `after`, qui ne nomme aucun module : un second mécanisme la ferait rougir aussi.
 Vérifiée par mutation le jour même (un `after()` réintroduit fait tomber ce banc
 et lui seul). Un banc qui aurait nommé `genererSiRideauFerme` serait resté vert.
+
+**AMENDEMENT DU 2026-09-19 — LE DRAPEAU N'A PAS FERMÉ LA PORTE ; LE CODE L'A
+FERMÉE.** Une génération portant `auto_rideau_second` a eu lieu le **2026-09-17 à
+20:39:52 UTC**, soit **1 h 50 après** la recréation de conteneurs décrite au § 3.
+Ce qui a réellement arrêté la génération est le retrait du code, déployé le même
+jour à **22:08:04 UTC**.
+
+**Le fuseau a été tranché avant de conclure**, l'erreur inverse ayant été commise
+deux jours plus tôt. La session PostgreSQL rend `TimeZone = UTC` et `now()` a
+répondu `2026-09-18 23:36:47` quand l'horloge murale marquait 23:36:42 UTC ; la
+table des déploiements est en UTC elle aussi, `cf3a345a` ayant été mergée à
+18:48:00 UTC et déployée à 18:49:21. Aucune lecture en heure locale ne résorbe
+l'écart : le geste précède la génération dans les deux fuseaux.
+
+**LA CAUSE N'EST PAS ÉTABLIE, ET CE VIDE EST LE CONSTAT.** La garde était
+`value === 'true'` — fail-closed —, posée en PREMIÈRE ligne du déclencheur et
+commune aux deux rideaux : à 20:39:52 UTC, le conteneur qui a servi la requête
+avait donc encore `WN_SYNTHESE_PAR_RIDEAU='true'`. Soit le geste n'a pas propagé,
+soit l'horodatage relevé au § 3 ne décrit pas le geste qu'on croit. La variable
+est absente de `env` aujourd'hui, et le CLI n'expose aucun historique des
+changements de variables : départager demanderait une trace dont nous ne
+disposons pas. **La réserve qui en découle vaut pour tout drapeau : la variable
+absente et les conteneurs recréés ne CONSTATENT pas l'effet, ils le rendent
+plausible.** Ce que le § 4 disait de l'absence de sonde était donc plus grave que
+ce qu'il laissait entendre.
+
+**LE CONSTAT COMPORTEMENTAL N'A TOUJOURS AUCUN TÉMOIN.** Six réponses de
+questionnaire sont arrivées le 2026-09-17 entre 20:23:32 et 20:38:09 UTC, et
+**aucune depuis**. Le code est parti à 22:08:04. « Zéro génération depuis »
+s'explique donc par zéro réponse, pas par le retrait : la requête du fragment de
+changelog reste juste dans sa forme, mais **son seuil a dû changer** : celui du
+geste de drapeau (`18:49:15 UTC`) rend maintenant 1 et le rendra toujours, la
+ligne de 20:39:52 étant derrière lui. Le seuil qui constate le retrait du code
+est `2026-09-17 22:13:00 UTC` — fin du déploiement, 22:08:04 plus 4 min 37 s. Le
+fragment porte les deux requêtes, l'une pour l'échec du geste, l'autre pour le
+constat qui attend encore une soumission de patient.
+
+**CHIFFRES CORRIGÉS** (lecture du 2026-09-18, conteneur one-off, agrégats seuls) :
+**9 générations automatiques sur 5 dossiers** — 6 au premier rideau sur 5
+dossiers, 3 au second sur 3 dossiers. La mesure tranche cette fois ce que le § 2
+laissait ouvert : le total de dossiers distincts étant 5, ceux du second rideau
+SONT un sous-ensemble de ceux du premier. États : 4 `Rejetee`, 4
+`Validee_Praticien`, 1 `Brouillon_IA`. Les générations manuelles sont passées à
+**60 dont 6 rejetées**. La comparaison n'est donc plus « 50 % contre 3,6 » mais
+**44 % contre 10 %** — et ce déplacement en deux jours illustre mieux que tout la
+réserve du § 2 : l'échantillon était court, il l'est encore.
+
+**TROIS SYNTHÈSES AUTOMATIQUES VALIDÉES N'ONT JAMAIS ÉTÉ ENVOYÉES.** Elles sont
+au dossier, validées, sans booklet expédié, et aucun écran ne les montre — le Fil
+tronque à cinq par type et il n'existe aucune liste inter-patients. C'est le
+motif concret du lot G de l'audit de la chaîne documentaire, qui cesse d'être
+théorique. Leur sort n'est pas tranché ici.
+
+**CE QUI N'EST PAS RÉÉCRIT.** Le fragment de handoff du 2026-09-18 porte encore
+le raisonnement du § 3 : c'est un instantané daté, et la convention de
+`docs/claude/handoffs/` veut qu'on ne réécrive pas un fragment posé. L'autorité
+est ici.
 
 ### D-225 — Les indications d'assiette reçoivent leur filtre de service AVANT leur première ligne : le statut vit sur la ligne, pas sur l'assiette
 
