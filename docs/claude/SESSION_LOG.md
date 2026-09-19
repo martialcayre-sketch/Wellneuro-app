@@ -7410,3 +7410,21 @@ opération de dépôt, pas un correctif.
 **Questions ouvertes.** Trois synthèses validées jamais envoyées — motif du lot
 G. La garde de clôture de `/wn-merge` vit dans un skill que `gh pr merge`
 contourne : trois PR mergées sans elle.
+
+## 2026-09-19 — Les paliers se lancent depuis la racine, et le réexpéditeur mentait déjà
+
+**Décisions.** Un `package.json` racine réexpédie `check` et `test:worktree` vers
+`web/`. Le motif n'est pas le confort : lancés depuis la racine ils rendaient 254,
+et une tâche de fond a rapporté ce 254 comme « exit code 0 ». Un banc garde que
+la racine ne déclare aucune dépendance — un lockfile y ferait changer la racine
+de traçage de Next.js — et que chaque script est **exactement** la réexpédition,
+`--` final compris : sans ce séparateur, `-- --fast` était avalé par npm et la
+séquence complète tournait à la place de la rapide. Seul le libellé du journal le trahissait.
+
+**Écartées.** Renoncer au fichier par crainte du déploiement : `PROJECT_DIR=web`
+fait descendre Scalingo avant toute détection, vérifié avant d'écrire.
+
+**Prochaine action.** Lots A, B, C du cadrage de la chaîne documentaire.
+
+**Questions ouvertes.** Les 113 blobs CRLF. La garde de clôture de `/wn-merge`,
+qu'aucun contrôle CI n'exécute.
