@@ -154,28 +154,23 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
 
 - **Dette — le régime alimentaire n'est pas un drapeau d'anamnèse** (constatée
   le 2026-09-18, [[D-229]] §5 — **ACQUITTÉE le 2026-09-19 par [[D-232]]**, et
-  **pas** par le correctif annoncé ici : la porte lit l'`EtatPopulation`, le
-  champ garde un seul lecteur, et `DrapeauxAnamnese` n'a pas bougé). `etat_alimentation` existe
-  dans `ANAMNESE_SECTIONS` avec ses options végétarienne et végétalienne/végane,
-  mais `DrapeauxAnamnese` ne le porte pas : `extraireDrapeauxAnamnese` ne le
-  produit jamais et `OrientationDeclencheur.champ`, typé
-  `keyof DrapeauxAnamnese`, ne compile pas dessus. **Conséquence** : la ligne
-  d'assiette de méthylation n'attend pas le déclencheur d'âge du chantier 3, elle
-  attend **deux** chantiers — et la surface annonçait ce déclencheur comme
-  disponible.
-  **LE CORRECTIF ANNONCÉ ICI LE 2026-09-18 ÉTAIT FAUX, et il faut le dire.** Il
-  disait « une clé de plus et sa ligne dans `CHAMP_ANAMNESE` ». Il reposait sur
-  une prémisse non vérifiée : que `etat_alimentation` n'était lu par personne.
-  **Il l'est** — par `lireEtatPopulation` (`consultation/etatPopulation.ts`), qui
-  le normalise en `ExclusionAlimentaire` et alimente la gate de population
-  (`gatePopulationV1`, `DC-43`).
-  **Ce que cela change** : le champ vit dans la section « État actuel », déclarée
-  porter « les états de population, et RIEN D'AUTRE » ([[D-101]]). Aucune des dix
-  clés de `DrapeauxAnamnese` n'en vient : les deux lecteurs sont aujourd'hui
-  proprement séparés, et en faire un drapeau serait le **premier** franchissement
-  de cette ligne — donc un arbitrage, pas un correctif. L'alternative est un type
-  de déclencheur qui lit l'`EtatPopulation`, au même coût que celui de l'âge.
-  **Arbitrage requis avant d'écrire.**
+  **pas** par le correctif annoncé ici). **Rien à rouvrir** ; ce qui suit est
+  l'historique du motif, au passé.
+  `etat_alimentation` existait dans `ANAMNESE_SECTIONS` avec ses options
+  végétarienne et végétalienne/végane, mais `DrapeauxAnamnese` ne le portait pas :
+  un déclencheur sur ce champ ne compilait même pas, et la méthylation attendait
+  donc **deux** chantiers là où la surface n'en annonçait qu'un.
+  **LE CORRECTIF ANNONCÉ ICI LE 2026-09-18 ÉTAIT FAUX, et il faut le garder
+  écrit.** Il disait « une clé de plus et sa ligne dans `CHAMP_ANAMNESE` », sur
+  une prémisse non vérifiée : que `etat_alimentation` n'était lu par personne. Il
+  l'était — par `lireEtatPopulation`, qui le normalise pour la gate de population
+  (`DC-43`).
+  **Ce que l'arbitrage a retenu** : le champ vit dans la section « État actuel »,
+  déclarée porter « les états de population, et RIEN D'AUTRE » ([[D-101]]), et
+  aucune des dix clés de `DrapeauxAnamnese` n'en vient. En faire un drapeau aurait
+  été le premier franchissement de cette ligne, et lui aurait donné deux lecteurs
+  de formes différentes. La porte livrée lit donc l'`EtatPopulation` —
+  `DrapeauxAnamnese` n'a pas bougé, et le champ garde un seul lecteur.
 
 - **Dette — `conflits_sources` n'a pas de cas négatif** (constatée le
   2026-09-17, routée depuis la revue de la PR #1178, **ACQUITTÉE le 2026-09-18

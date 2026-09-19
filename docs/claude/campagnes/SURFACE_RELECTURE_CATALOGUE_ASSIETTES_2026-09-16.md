@@ -394,10 +394,11 @@ jour, et elle a GRANDI au 2026-09-18 :
 | 6 | Le régime alimentaire comme porte | **fait** — `D-232`, en lisant l'`EtatPopulation` et NON un drapeau |
 | 7 | Le mécanisme orienté des familles d'équivalence | à faire |
 
-La ligne **3** est tombée le 2026-09-18 ; la **6** reste ouverte. Ni l'une ni
-l'autre ne figurait dans la version du 2026-09-16 :
-elles sont apparues en confrontant au dépôt la colonne « déclencheur
-disponible », qui n'avait jamais été lue sur pièce. Signer une table que rien ne
+Les lignes **3** et **6** sont tombées, la première le 2026-09-18, la seconde le
+2026-09-19. Ni l'une ni l'autre ne figurait dans la version du 2026-09-16 : elles
+sont apparues en confrontant au dépôt la colonne « déclencheur disponible », qui
+n'avait jamais été lue sur pièce. **Il ne reste donc que les lignes 4 et 7** — et
+la 4 est l'écriture des lignes elles-mêmes, c'est-à-dire du clinique. Signer une table que rien ne
 filtre exposerait les brouillons comme les publiées ; signer des lignes dont
 aucune assiette n'existe au catalogue produirait un périmètre attesté que le
 verrou refuse.
