@@ -7332,3 +7332,33 @@ le catalogue est prêt, les portes sont prêtes. Ce qui reste est clinique.
 
 **Question ouverte.** Aucune règle ne porte cette porte ; le jour venu, vérifier
 que l'appelant fournit bien l'état de population.
+
+## 2026-09-19 — Réconciliation documentaire de la campagne assiettes
+
+**Aucune décision.** Un lot de réconciliation ne réarbitre rien — il rend les
+documents fidèles à ce qui s'est passé, au sens que `FILE_ATTENTE.md` donne
+lui-même au mot.
+
+**Cinq affirmations vivantes étaient devenues fausses** après les quatre lots de
+la nuit : le catalogue à trois entrées (quinze depuis `D-230`), la méthylation
+« en attente de deux chantiers » (les deux sont livrés), et l'arbitrage B2 du
+cadrage Boussole, resté posé comme une question. Tranché — et le catalogue s'est
+étendu aux **protocoles**, jamais aux fiches patient que le registre déclare
+irrecevables comme source de règle.
+
+**Deux principes appliqués, et le second est celui que la revue m'a appris cette
+semaine.** Un bloc DATÉ ne se réécrit pas : il dit l'état d'un jour, un bloc neuf
+le supplante. Ce qui se lit comme une affirmation COURANTE est mis au passé,
+jamais supprimé — le motif d'alors reste utile.
+
+Quatre branches locales dont la PR est mergée ont été supprimées, vérifiées par
+l'état de la PR et non par l'ascendance, que le squash rend menteuse.
+
+**Deux écarts NON corrigés, et c'est délibéré.** `validation.last_checked_at` a
+onze jours : les `checks` qu'il décrit sont ceux d'un T3 COMPLET, et cette
+session n'a joué que des T2 `--fast` — avancer la date affirmerait une fraîcheur
+qu'on n'a pas. Et la branche par défaut locale est `behind 16` : `wn-cycle` dit
+que réconcilier un historique est un arbitrage humain.
+
+**Prochaine action.** Le travail clinique : écrire les lignes d'indication,
+claim par claim, sur pièce.

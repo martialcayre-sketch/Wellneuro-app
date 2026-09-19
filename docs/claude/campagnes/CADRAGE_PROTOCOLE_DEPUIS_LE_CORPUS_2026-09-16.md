@@ -92,7 +92,7 @@ de son résultat.
 | Lot | Objet | Décision requise | Dépend de |
 | --- | --- | --- | --- |
 | **LOT-01** | **Le seul lot ouvert.** La forme d'une ligne — clé de tableau clinique, champs, `claimId` fondant l'indication, emplacement du raccourci assumé — **et** une première table sur `sommeil` ou `humeur`. Une PR. La normalisation des tableaux cliniques se fait ici, avant de dimensionner. | non — `D-206` a tranché | — |
-| LOT-02 | **Le pointeur, jamais le contenu.** Une ligne désigne une source et un libellé de conduite ; le texte clinique reste hors dépôt. **Le patron existe déjà** : `C5B_RECOMMENDED_PLATES` (`plates.ts`) porte un catalogue de trois assiettes avec version, `contentHash` par entrée et hachage de catalogue, sous la mention « aucune composition n'est inventée ici ». | non | LOT-01 |
+| LOT-02 | **Le pointeur, jamais le contenu.** Une ligne désigne une source et un libellé de conduite ; le texte clinique reste hors dépôt. **Le patron existe déjà** : `C5B_RECOMMENDED_PLATES` (`plates.ts`) porte un catalogue d'assiettes avec version, `contentHash` par entrée et hachage de catalogue, sous la mention « aucune composition n'est inventée ici ». Trois entrées au cadrage, **quinze depuis [[D-230]]** — l'extension n'a périmé aucune référence consignée, `catalogVersion` et les empreintes d'entrée n'ayant pas bougé. | non | LOT-01 |
 | LOT-03 | **La règle de dérivation du plan minimal**, sous les trois conditions de `D-206`. | **oui — `D-xxx` propre** | LOT-01 |
 | LOT-04 | **Le pré-remplissage au constructeur** : le praticien voit d'où vient chaque proposition et peut la refuser. | **oui — A5** | LOT-01 |
 | LOT-05 | **Les 514 « à ne pas faire »** reçoivent un propriétaire. | **oui — A4** | LOT-01 |

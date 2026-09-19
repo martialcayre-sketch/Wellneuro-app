@@ -4,6 +4,30 @@
 **Ce document ne signe rien.** Il présente au praticien ce qu'il aurait à
 attester, et ce qui a été écarté.*
 
+> ## ÉTAT AU 2026-09-19 — les cinq chantiers sont clos, il ne reste que du clinique
+>
+> **Ce document n'attend plus rien de mécanique.** Les cinq chantiers que
+> `D-216` posait devant l'attestation sont livrés : le champ `statut` et le
+> filtre de service (`D-225`), le validateur partagé de dérive des libellés et la
+> lecture des 131 claims sur pièce (`D-229`), les douze entrées au catalogue C5B
+> avec ce qui protège la liste d'observation (`D-230`), la borne d'âge
+> (`D-231`), et la porte du régime alimentaire (`D-232`).
+>
+> **CE QUI RESTE EST CLINIQUE, ET UNE PART N'APPARTIENT PAS À L'OUTIL** : écrire
+> les lignes d'indication — en relisant chaque claim sur pièce, source entière,
+> comme `D-227` l'impose —, puis les faire **attester**. Une signature clinique
+> ne se pose jamais par l'outil.
+>
+> **La table reste VIDE et son verrou ÉTEINT** ; `TABLE_EXIGE_PRESCRIPTIF` n'a
+> toujours pas d'entrée et `shaPerimetreLitteral` n'est pas enrôlé — les deux se
+> règlent le JOUR de la première signature, comme `D-198`, `D-223` et `D-224`
+> l'ont fait.
+>
+> **LES BLOCS DATÉS CI-DESSOUS NE SONT PAS RÉÉCRITS.** Ils disent l'état d'un
+> jour, et ce qu'on a compris ce jour-là ; les relire au présent serait
+> réinterpréter ce qu'un lot passé a relu. Ce bloc-ci les supplante, et le
+> tableau des prérequis, lui, est tenu à jour.
+
 > ## ÉTAT AU 2026-09-18 — les douze sources lues en entier, et la colonne « déclencheur disponible » qui ne tient pas
 >
 > Chantier 2 de S3. Les **131 claims** des douze protocoles ont été lus en
@@ -151,8 +175,14 @@ et celle-ci n'en fait pas partie : `extraireDrapeauxAnamnese` ne la produit
 jamais, et `OrientationDeclencheur.champ` est typé `keyof DrapeauxAnamnese` — un
 déclencheur sur ce champ **ne compile pas**. `WN-CL-0286-006` reste donc
 inaccessible par ses deux bouts, le régime comme l'âge. La ligne d'assiette de
-méthylation n'est pas « en attente du chantier 3 » : elle attend **deux**
-chantiers.
+méthylation n'était pas « en attente du chantier 3 » : elle en attendait **deux**.
+
+> **RÉSOLU LE 2026-09-19.** Les deux sont livrés — la borne d'âge par `D-231`,
+> la porte du régime par `D-232`, qui lit l'`EtatPopulation` et **ne fait pas**
+> du champ un drapeau. `WN-CL-0286-006` est donc accessible par ses deux bouts.
+> Le correctif que ce constat laissait entendre — une clé de plus dans
+> `DrapeauxAnamnese` — a été **écarté** : il aurait donné au champ deux lecteurs
+> de formes différentes.
 
 **B. `R2-GAS-01` ET `R2-GAS-02` NE LISENT PAS `Q_GAS_01` — ILS LE PROPOSENT.**
 Les deux se déclenchent sur `Q_MOD_03`, sous-score `digestion`, et **suggèrent**
@@ -215,8 +245,9 @@ doit être déclarée en `raccourciAssume` plutôt que supposée.
 > pourquoi le lot a eu la forme qu'il a.
 
 Le septième terme du verrou (`D-225` §5) exige que le `plateCode` d'une ligne
-existe au catalogue C5B. Or `C5B_RECOMMENDED_PLATES` porte **trois** entrées, les
-trois repères de moment de repas. **Aucune des douze assiettes n'y a de code.**
+existe au catalogue C5B. Or `C5B_RECOMMENDED_PLATES` ne portait alors que
+**trois** entrées, les repères de moment de repas. **Aucune des douze assiettes
+n'y avait de code.**
 Une ligne écrite aujourd'hui serait donc relue, hachée, attestée — et le verrou
 la refuserait, pour toujours, sans que rien ne le dise au signataire.
 
@@ -314,11 +345,17 @@ claim fonde. Il n'y manque pas une donnée mais une **granularité**.
 
 ## LE FAIT TECHNIQUE QUI COMMANDE LA FORME
 
-**Le catalogue actuel ne porte aucun contenu d'assiette et aucun statut.**
-`C5B_RECOMMENDED_PLATES` tient trois entrées — `plateCode`, `label`,
-`substitutionFamily` à `null`, des empreintes. Rien d'autre. Les trois sont
-organisées par **moment du repas** et n'ont **aucune source** : ce sont des
-repères repris de `JA5-03`.
+> **ÉTAT AU 2026-09-19** : ce qui suit décrit le catalogue **avant** `D-230`.
+> Il porte désormais **quinze** entrées sur **deux axes** — les trois repères de
+> moment de repas, inchangés, et les douze assiettes du corpus, chacune adossée à
+> son protocole —, plus deux points de service qui l'empêchent d'être rendu en
+> entier. Le paragraphe reste écrit parce qu'il dit pourquoi la forme est celle-là.
+
+**Le catalogue d'alors ne portait aucun contenu d'assiette et aucun statut.**
+`C5B_RECOMMENDED_PLATES` tenait trois entrées — `plateCode`, `label`,
+`substitutionFamily` à `null`, des empreintes. Rien d'autre. Les trois étaient
+organisées par **moment du repas** et n'avaient **aucune source** : des repères
+repris de `JA5-03`.
 
 **Et il n'existe aucun filtre de service.** `PractitionerFoodObservationPanel`
 rend **toutes** les entrées de `C5B_RECOMMENDED_PLATES` dans sa liste

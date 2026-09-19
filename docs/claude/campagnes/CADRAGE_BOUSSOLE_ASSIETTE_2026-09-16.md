@@ -82,7 +82,7 @@ pourquoi.** C'est la part de la proposition initiale que ce cadrage refuse.
 | # | Arbitrage | Bloque |
 | --- | --- | --- |
 | B1 | **`attachFoodCompassRef` : retiré, ou conservé éteint ?** Il est mort de bout en bout. Le retirer ferme une porte ; le garder maintient du code non appelé que `tsc` protège sans que rien ne l'exerce. | LOT-01 |
-| B2 | **Les trois assiettes du catalogue C5B suffisent-elles**, ou le catalogue s'étend-il aux douze fiches d'assiette du corpus (`WN-SRC-0296` → `WN-SRC-0307`) ? Rappel : un périmètre signé se hache en entier — étendre périme. | LOT-02 |
+| B2 | ~~**Les trois assiettes du catalogue C5B suffisent-elles**, ou le catalogue s'étend-il aux douze fiches d'assiette du corpus (`WN-SRC-0296` → `WN-SRC-0307`) ?~~ **TRANCHÉ le 2026-09-18 ([[D-230]])** : le catalogue s'étend aux douze — mais aux **PROTOCOLES** (`WN-SRC-0284` → `0295`), jamais aux fiches, que `D-216` déclare irrecevables comme source de règle. Quinze entrées sur deux axes, et `C5B_PLATE_CATALOG_HASH` a changé sans qu'aucune référence déjà consignée ne devienne caduque. | LOT-02 |
 | B3 | **La `substitutionFamily` reste-t-elle `null` ?** Sans famille d'équivalence validée, une assiette ne se remplace pas : le patient qui ne peut pas la suivre n'a pas d'alternative. C'est le plan de secours, sous un autre nom. | LOT-03 |
 | B4 | **La Boussole patient reste-t-elle atteignable** depuis le protocole, ou devient-elle une surface séparée de l'alimentation ? | LOT-04 |
 
