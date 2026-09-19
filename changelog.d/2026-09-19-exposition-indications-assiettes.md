@@ -80,5 +80,15 @@ casse au build là où c'est un banc unitaire qui tient la frontière ; et une
 **recopie manquée** de « rien ne s'écrit », corrigée en quatre endroits et
 survivante dans ce fragment même.
 
+**Et une seconde revue a mordu sur le correctif lui-même** : la lacune d’une
+porte de zone ne reflétait pas ce que le moteur consulte vraiment. Une feuille
+seule servie par un **plancher insuffisant** — recueil partiel, garantie qui
+déborde la zone — passait pour « évaluée, non retenue » là où des items
+manquaient, et c’est atteignable sur les trois portes du TFD de la table. La
+lacune lit désormais ce que la zone lit : un nombre pour une plage, un libellé
+ou une couleur pour une bande ; le reste se nomme par les comptes du recueil.
+Un cas garde l’inverse — une bande publiée qui ne matche pas reste un **vrai
+négatif**, et sur-signaler serait l’autre faute.
+
 Aucune porte biologique n’est ouverte, aucune ligne ni aucun claim n’est touché,
 et le périmètre signé reste intact.

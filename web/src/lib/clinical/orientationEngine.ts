@@ -995,6 +995,29 @@ export type LacuneDeclencheur =
  * recueil incomplet. Poser la même exigence des deux côtés ferait déclarer
  * « non évaluée » une ligne que le moteur sait pourtant trancher.
  */
+/**
+ * CE QUE LA ZONE CONSULTE EST-IL PUBLIÉ ? — le miroir exact de
+ * `evaluerZoneMesuree`, et il doit le rester.
+ *
+ * `plage` lit le NOMBRE ; `interpretation` lit le `label` ; `couleur` lit la
+ * `color`. Un porteur qui rend un total sans bande laisse donc une zone
+ * `couleur` indécidable, bien que `valeur` soit là — et c'est précisément ce
+ * que la rédaction précédente confondait.
+ *
+ * LE PLANCHER N'ENTRE PAS ICI : il ne rend pas une zone décidable, il en
+ * GARANTIT une, et cette garantie est tranchée par `evaluerZone` en amont.
+ */
+function zoneDecidable(
+  zone: OrientationZone,
+  valeur: number | null,
+  interpretation: InterpretationLue,
+): boolean {
+  if (zone.type === 'plage') return valeur !== null;
+  const bande = interpretation && typeof interpretation === 'object' ? interpretation : null;
+  if (zone.type === 'interpretation') return typeof bande?.label === 'string';
+  return typeof bande?.color === 'string';
+}
+
 function lacuneDeFeuille(
   feuille: OrientationDeclencheurFeuille,
   dernieres: Map<string, ReponseOrientation>,
@@ -1054,9 +1077,49 @@ function lacuneDeFeuille(
       ? { type: 'mesure_indisponible', idQuestionnaire: feuille.idQuestionnaire, ...axe }
       : null;
   }
-  return valeur === null && interpretation == null && plancher === null
-    ? { type: 'mesure_indisponible', idQuestionnaire: feuille.idQuestionnaire, ...axe }
-    : null;
+  // UNE ZONE NE LIT PAS UN NOMBRE, ELLE LIT CE QUE SA FORME DEMANDE — constat de
+  // revue, et le défaut était celui que tout ce vocabulaire existe pour fermer.
+  //
+  // La rédaction précédente tenait la mesure pour lisible dès que l'UN des trois
+  // — valeur, interprétation, plancher — existait. Deux cas passaient alors pour
+  // « lus et tranchés » alors que le moteur n'avait rien pu décider :
+  //
+  // 1. UNE FEUILLE SEULE SUR UN PLANCHER INSUFFISANT. Recueil partiel, plancher
+  //    servi, mais la bande garantie n'atteint pas la zone : `evaluerZone` rend
+  //    `null`, et le plancher non nul suffisait à taire la lacune. La ligne
+  //    partait en `nonIndiquees` — « évaluée, non retenue » —, quand la vérité
+  //    est qu'il manque des items. ATTEIGNABLE AUJOURD'HUI : les trois portes
+  //    `Q_GAS_01` de la table signée sont des feuilles seules, et un TFD
+  //    partiellement rempli est un état courant.
+  // 2. UNE BANDE QUE LE PORTEUR NE PUBLIE PAS. Recueil complet, total présent,
+  //    mais aucune `interpretation` : une zone `couleur` ou `interpretation` n'a
+  //    rien à lire, alors que `valeur` non nulle taisait la lacune. Non
+  //    atteignable sur les porteurs de la table — leurs bandes couvrent toute
+  //    l'échelle —, la garde est écrite pour le jour où une bande change.
+  //
+  // CE QUE LA CONDITION DIT MAINTENANT : la zone est DÉCIDABLE si le porteur
+  // publie ce que cette zone-là consulte — un nombre pour `plage`, un `label`
+  // pour `interpretation`, une `color` pour `couleur`. Décidable et non
+  // atteinte, c'est un VRAI négatif, et aucune lacune ne doit paraître ; sinon,
+  // la cause se nomme par les comptes du recueil.
+  if (zoneDecidable(feuille.zone, valeur, interpretation)) return null;
+  // LE PLANCHER N'A PAS BESOIN D'ÊTRE RETESTÉ ICI : s'il garantissait la zone,
+  // `evaluerDeclencheur` n'aurait pas rendu `null` et cette fonction ne serait
+  // pas appelée sur cette feuille (contrat de `lacunesDuDeclencheur`).
+  const comptesZone = comptesDuPorteurVise(reponse.scores, feuille.sousScore);
+  if (comptesZone === null) {
+    return { type: 'completude_illisible', idQuestionnaire: feuille.idQuestionnaire, ...axe };
+  }
+  if (comptesZone.manquants > 0) {
+    return {
+      type: 'recueil_incomplet',
+      idQuestionnaire: feuille.idQuestionnaire,
+      ...axe,
+      manquants: comptesZone.manquants,
+      total: comptesZone.total,
+    };
+  }
+  return { type: 'mesure_indisponible', idQuestionnaire: feuille.idQuestionnaire, ...axe };
 }
 
 /**

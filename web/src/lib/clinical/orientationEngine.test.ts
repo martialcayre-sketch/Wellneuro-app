@@ -1508,6 +1508,68 @@ describe('lacunesDuDeclencheur — ce qui manque, jamais ce qui est faux', () =>
     expect(lacunesDuDeclencheur(ou, dernieres(horsPlage), undefined, {})).toEqual([]);
   });
 
+  // ── CE QUE LA ZONE CONSULTE, ET RIEN D'AUTRE — constat de revue ───────────
+  //
+  // Trois cas, et le premier est atteignable aujourd'hui sur la table signée :
+  // ses trois portes `Q_GAS_01` sont des feuilles SEULES, et un TFD à moitié
+  // rempli est un état courant. La rédaction précédente tenait la mesure pour
+  // lisible dès qu'UN des trois champs existait — le plancher suffisait donc à
+  // taire la lacune, et la ligne partait en « évaluée, non retenue ».
+  const feuilleCouleur: OrientationDeclencheurFeuille = {
+    type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['danger'] },
+  };
+
+  it('FEUILLE SEULE, PLANCHER INSUFFISANT : c’est un recueil incomplet, pas un négatif', () => {
+    const partiel: ReponseOrientation = {
+      idQuestionnaire: 'Q_STR_02',
+      dateReponse: '2026-09-01T00:00:00.000Z',
+      // Recueil à trous, plancher SERVI mais dont la fermeture déborde la zone
+      // visée : `warning` est possible, la zone ne lit que `danger`. Le moteur
+      // ne peut donc rien garantir — et quatre items répondus sur dix disent
+      // pourquoi.
+      scores: {
+        total: 12,
+        repondus: 4,
+        items: 10,
+        bandePlancher: {
+          garanti: true,
+          color: 'warning',
+          label: 'modéré',
+          couleursPossibles: ['warning', 'danger'],
+        },
+      },
+    };
+    expect(evaluerDeclencheur(feuilleCouleur, dernieres(partiel), undefined, {})).toBeNull();
+    const lacunes = lacunesDuDeclencheur(feuilleCouleur, dernieres(partiel), undefined, {});
+    expect(lacunes[0]).toMatchObject({ type: 'recueil_incomplet', manquants: 6, total: 10 });
+  });
+
+  it('UNE BANDE QUE LE PORTEUR NE PUBLIE PAS rend la zone indécidable, total ou non', () => {
+    // Recueil COMPLET, total présent — mais aucune `interpretation` : une zone
+    // `couleur` n'a rien à lire. Un nombre n'est pas une bande.
+    const sansBande: ReponseOrientation = {
+      idQuestionnaire: 'Q_STR_02',
+      dateReponse: '2026-09-01T00:00:00.000Z',
+      scores: { total: 30, repondus: 10, items: 10 },
+    };
+    expect(evaluerDeclencheur(feuilleCouleur, dernieres(sansBande), undefined, {})).toBeNull();
+    const lacunes = lacunesDuDeclencheur(feuilleCouleur, dernieres(sansBande), undefined, {});
+    expect(lacunes[0]).toMatchObject({ type: 'mesure_indisponible', idQuestionnaire: 'Q_STR_02' });
+  });
+
+  it('UNE BANDE PUBLIÉE QUI NE MATCHE PAS est un VRAI négatif — aucune lacune', () => {
+    // Le garde-fou du garde-fou : sur-signaler serait l'autre faute. Ici le
+    // porteur a tout dit, la bande existe, elle n'est pas dans la zone. La
+    // ligne a été LUE et tranchée.
+    const bandeFavorable: ReponseOrientation = {
+      idQuestionnaire: 'Q_STR_02',
+      dateReponse: '2026-09-01T00:00:00.000Z',
+      scores: { total: 5, repondus: 10, items: 10, interpretation: { label: 'bas', color: 'success' } },
+    };
+    expect(evaluerDeclencheur(feuilleCouleur, dernieres(bandeFavorable), undefined, {})).toBeNull();
+    expect(lacunesDuDeclencheur(feuilleCouleur, dernieres(bandeFavorable), undefined, {})).toEqual([]);
+  });
+
   it('un instrument JAMAIS PASSÉ se distingue d’un instrument passé et non coté', () => {
     const absent = lacunesDuDeclencheur(feuilleZone, new Map(), undefined, {});
     expect(absent[0]).toMatchObject({ type: 'instrument_non_passe', idQuestionnaire: 'Q_STR_02' });

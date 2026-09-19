@@ -75,9 +75,16 @@ disjonction « non évaluée ». Une ligne à trois portes paraîtra donc souven
 
 ## 6. Fichiers
 
-**DIX-NEUF EN TOUT — HUIT NEUFS, ONZE MODIFIÉS**, énumérés depuis
-`git status`, jamais de mémoire : une première rédaction annonçait « sept neufs,
-huit modifiés », le même écart qu'au lot précédent.
+**VINGT EN TOUT — HUIT NEUFS, DOUZE MODIFIÉS**, énumérés depuis
+`git diff --name-status origin/main...HEAD`, jamais de mémoire.
+
+**ET CE COMPTE A ÉTÉ FAUX DEUX FOIS DE SUITE, ce qui dit quelque chose du
+procédé.** Première rédaction : « sept neufs, huit modifiés » — le même écart
+qu'au lot précédent. Deuxième : « huit neufs, onze modifiés », corrigée depuis
+`git status`… qui ne montrait que les fichiers encore non committés. Le douzième
+modifié — `orientationEngine.test.ts` — était déjà au commit, donc invisible à
+cette lecture-là. Relevé par Copilot. **La bonne source est le diff CONTRE LA
+BASE, jamais l'état de l'arbre de travail.**
 
 **HUIT NEUFS** — `indicationsAssiettesService.ts` + son banc (**26 cas**) ·
 `api/praticien/assiettes-indiquees/route.ts` + son banc (**12 cas**) ·
@@ -85,9 +92,10 @@ huit modifiés », le même écart qu'au lot précédent.
 correctifs de revue · `changelog.d/…-exposition-indications-assiettes.md` ·
 ce handoff.
 
-**ONZE MODIFIÉS** — `orientationEngine.ts` (le vocabulaire de lacune, +145
-lignes, **aucun chemin existant touché**) · `indicationsAssiettesV1.ts` (prose
-périmée, §8) · `plates.ts` (la réserve d'`assiettesParIndication` est levée) ·
+**DOUZE MODIFIÉS** — `orientationEngine.ts` (le vocabulaire de lacune,
+**aucun chemin existant touché**) **et son banc** (les cas directs de
+`lacunesDuDeclencheur`) · `indicationsAssiettesV1.ts` (prose périmée, §8) ·
+`plates.ts` (la réserve d'`assiettesParIndication` est levée) ·
 `ClinicalRuntimeSection.tsx` (montage) **et son banc** (routage du `fetch`) ·
 `scripts/wn-matrice-consommation.mjs` **et** `MATRICE_CONSOMMATION.md` ·
 `docs/FEATURE_FLAGS.md` · `docs/DECISIONS.md` · la surface de relecture ·
@@ -260,6 +268,40 @@ Trente-six agents, six dimensions, quinze constats éprouvés : **sept survivent
 été corrigé en quatre endroits ; **le fragment de changelog avait survécu**.
 C'est le défaut nommé par [[corriger-balayer-chapeau-et-copies]] : le paragraphe
 corrigé ne suffit pas, il faut balayer les recopies.
+
+## 8 quinquies. La SECONDE revue Copilot — celle du correctif, et elle mord aussi
+
+La première revue portait sur le commit d'avant ; elle ne se relance pas toute
+seule et son aperçu l'écrit (« Get a fresh assessment by requesting another
+Copilot review »). Demandée, elle a rendu **trois constats de plus**, dont un
+qui change le moteur.
+
+1. **UNE ZONE NE LIT PAS UN NOMBRE — `lacuneDeFeuille` ne reflétait pas les
+   préconditions réelles d'`evaluerZone`.** La condition finale tenait la mesure
+   pour lisible dès qu'UN des trois champs existait (valeur, interprétation,
+   plancher). Deux états passaient donc pour « lus et tranchés » quand le moteur
+   n'avait rien pu décider :
+   - **feuille SEULE sur un plancher INSUFFISANT** — recueil partiel, plancher
+     servi, fermeture qui déborde la zone visée : `evaluerZone` rend `null` et
+     le plancher non nul taisait la lacune. La ligne partait en `nonIndiquees`.
+     **ATTEIGNABLE AUJOURD'HUI** : les trois portes `Q_GAS_01` de la table
+     signée sont des feuilles seules, et un TFD à moitié rempli est courant ;
+   - **bande non publiée sur recueil complet** — un total sans `interpretation`
+     ne dit rien à une zone `couleur`. Non atteignable sur les porteurs de la
+     table (leurs bandes couvrent l'échelle) ; la garde est écrite pour le jour
+     où une bande change.
+   Corrigé par `zoneDecidable`, miroir exact d'`evaluerZoneMesuree` : `plage`
+   lit le nombre, `interpretation` lit le `label`, `couleur` lit la `color`.
+   Indécidable ⇒ la cause se nomme par les comptes du recueil
+   (`recueil_incomplet` / `completude_illisible` / `mesure_indisponible`).
+   Trois cas directs, dont **celui du vrai négatif** — sur-signaler serait
+   l'autre faute. Mutation : restaurer l'ancienne condition rougit les deux
+   premiers, et eux seuls.
+2. **LE COMPTE DE FICHIERS ÉTAIT FAUX — pour la deuxième fois.** Voir le § 6 :
+   la source doit être le diff contre la base, pas l'état de l'arbre.
+3. **LE CORPS DE LA PR ANNONÇAIT ENCORE « sept formes »** quand l'union en porte
+   huit. Corrigé sur la PR : un enregistrement de revue qui décrit un contrat
+   périmé est un enregistrement faux.
 
 ## 9. Problèmes ouverts
 

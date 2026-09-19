@@ -170,6 +170,19 @@ table signée, **au dépôt**, et non sur une surface praticien : vérifié, la
 surface de relecture NOMME le champ sans le recopier. De cette réserve, l'écran
 ne porte que les claims que la carte désigne, ceux de `claimsSecurite` compris.
 
+**13. UNE ZONE NE LIT PAS UN NOMBRE, ELLE LIT CE QUE SA FORME DEMANDE.** CONSTAT
+DE LA SECONDE REVUE. `lacuneDeFeuille` tenait la mesure pour lisible dès qu'un
+des trois champs existait — valeur, interprétation, plancher. Une **feuille
+seule sur un plancher insuffisant** (recueil partiel, fermeture qui déborde la
+zone) partait donc en « évaluée, non retenue », alors que le moteur n'avait rien
+pu décider et que des items manquaient. **C'est atteignable aujourd'hui** : les
+trois portes `Q_GAS_01` de la table sont des feuilles seules. Le second état,
+symétrique, est un total publié sans bande — rien à lire pour une zone
+`couleur`. `zoneDecidable` devient le miroir exact d'`evaluerZoneMesuree`, et
+l'indécidable se nomme par les comptes du recueil. Un cas de banc garde
+l'inverse — une bande publiée qui ne matche pas reste un **vrai négatif**, et
+sur-signaler serait l'autre faute.
+
 **CE QUE LE LOT NE FAIT PAS.** Il n'ouvre **aucune porte biologique** — le
 chantier 6 reste devant et périmera l'attestation. Il ne change **aucune ligne,
 aucun claim, aucun `shaPerimetre`** : le périmètre signé du 2026-09-19 est
