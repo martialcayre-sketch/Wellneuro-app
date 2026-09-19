@@ -96,8 +96,28 @@ export function libelleLacune(lacune: LacuneDeclencheur): string {
 }
 
 export function AssiettesIndiqueesPanel({ idPatient }: { idPatient: string }) {
-  const [payload, setPayload] = useState<AssiettesIndiqueesApiResponse | null>(null);
-  const [erreur, setErreur] = useState<string | null>(null);
+  // CHAQUE ÉTAT PORTE LE DOSSIER QUI L'A PRODUIT — constat de revue, et le
+  // jeton seul n'y suffisait pas.
+  //
+  // LE DÉFAUT. `jeton` écarte une réponse EN RETARD ; il ne dit rien du rendu
+  // qui suit un changement de `idPatient`. React rend d'abord avec la nouvelle
+  // prop et l'ANCIEN état — l'effet qui le vide ne tourne qu'après le commit.
+  // Le temps d'une image, les indications du patient précédent se peignaient
+  // donc sous l'en-tête du nouveau. Bref, mais c'est une donnée clinique servie
+  // sous le mauvais dossier.
+  //
+  // LE REMÈDE EST DANS LE COMPOSANT, ET NON UNE `key` AU POINT DE MONTAGE :
+  // une `key={idPatient}` corrigerait le seul appelant d'aujourd'hui, et le
+  // prochain appelant la réinventerait ou l'oublierait. Un état daté ne
+  // s'oublie pas.
+  //
+  // AUCUN BANC UNITAIRE NE VOIT CETTE IMAGE, et il faut le dire plutôt que
+  // laisser croire à une garde : `act()` fait tourner l'effet avant que le
+  // rendu intermédiaire soit observable, si bien que le défaut et son correctif
+  // rendent le même DOM au banc. Ce qui est éprouvé ci-dessous est le contrat
+  // voisin — après bascule, c'est le contenu du NOUVEAU dossier qui paraît.
+  const [payload, setPayload] = useState<{ pour: string; corps: AssiettesIndiqueesApiResponse } | null>(null);
+  const [erreur, setErreur] = useState<{ pour: string; message: string } | null>(null);
   const [chargement, setChargement] = useState(true);
   // Un jeton par dossier : la réponse d'un dossier précédent ne doit jamais
   // s'afficher sous un autre patient. Même garde que l'observatoire.
@@ -117,13 +137,13 @@ export function AssiettesIndiqueesPanel({ idPatient }: { idPatient: string }) {
         const corps = (await reponse.json()) as AssiettesIndiqueesApiResponse;
         if (jeton.current !== courant) return;
         if (!corps.ok) {
-          setErreur(corps.error);
+          setErreur({ pour: idPatient, message: corps.error });
           return;
         }
-        setPayload(corps);
+        setPayload({ pour: idPatient, corps });
       } catch {
         if (jeton.current === courant) {
-          setErreur("Lecture impossible des indications d'assiette.");
+          setErreur({ pour: idPatient, message: "Lecture impossible des indications d'assiette." });
         }
       } finally {
         if (jeton.current === courant) setChargement(false);
@@ -131,10 +151,14 @@ export function AssiettesIndiqueesPanel({ idPatient }: { idPatient: string }) {
     })();
   }, [idPatient]);
 
+  // CE QUI EST RENDU EST CE QUI VIENT DE CE DOSSIER-CI, et rien d'autre.
+  const lecture = payload !== null && payload.pour === idPatient ? payload.corps : null;
+  const messageErreur = erreur !== null && erreur.pour === idPatient ? erreur.message : null;
+
   // VERROU FERMÉ : la carte disparaît entièrement. Elle n'a rien à dire au
   // praticien d'une fonctionnalité que le cabinet n'a pas ouverte, et un
   // encart « non activé » sur chaque dossier serait un bruit permanent.
-  if (payload?.ok && payload.actif === false) return null;
+  if (lecture?.ok && lecture.actif === false) return null;
 
   // RIEN NE PARAÎT AVANT LA RÉPONSE, et ce n'est pas de l'esthétique. Le
   // drapeau est livré ÉTEINT : tant qu'il n'est pas posé, TOUS les dossiers
@@ -144,7 +168,10 @@ export function AssiettesIndiqueesPanel({ idPatient }: { idPatient: string }) {
   // lit comme un défaut, pas comme un chargement. Le prix est qu'aucun
   // indicateur d'attente n'est rendu ; c'est le bon prix pour une lecture
   // secondaire, et l'erreur, elle, reste dite.
-  if (chargement) return null;
+  // `chargement` EST EN RETARD D'UN RENDU lui aussi : au premier rendu qui suit
+  // une bascule de dossier, il vaut encore `false`. La seconde clause tient ce
+  // cas — rien de ce dossier n'est encore arrivé, donc rien ne paraît.
+  if (chargement || (lecture === null && messageErreur === null)) return null;
 
   return (
     <section
@@ -160,14 +187,16 @@ export function AssiettesIndiqueesPanel({ idPatient }: { idPatient: string }) {
           transmise : la décision reste la vôtre.
         </p>
 
-        {erreur && <p role="alert" className="mt-4 text-sm text-status-danger">{erreur}</p>}
+        {messageErreur && (
+          <p role="alert" className="mt-4 text-sm text-status-danger">{messageErreur}</p>
+        )}
 
-        {payload?.ok && payload.actif === true && (
+        {lecture?.ok && lecture.actif === true && (
           <>
             {/* LE CORPUS N'A PAS PU ÊTRE LU — et ce n'est pas « aucune assiette
                 n'est indiquée ». Les deux ferment, pour deux raisons
                 différentes, et le praticien doit pouvoir les distinguer. */}
-            {!payload.corpusLu && (
+            {!lecture.corpusLu && (
               <p role="alert" className="mt-4 text-sm text-status-danger">
                 Le corpus n’a pas pu être interrogé : aucune indication n’est servie pour ce dossier.
               </p>
@@ -179,25 +208,25 @@ export function AssiettesIndiqueesPanel({ idPatient }: { idPatient: string }) {
                 reste signée, la carte rétrécit, et sans cette phrase le
                 praticien lirait un constat portant sur la table entière.
                 Constat de revue ; `DC-24` est la règle qui l'exige. */}
-            {payload.corpusLu && payload.retireesFauteDeClaim > 0 && (
+            {lecture.corpusLu && lecture.retireesFauteDeClaim > 0 && (
               <p role="alert" className="mt-4 text-sm text-status-warning">
-                {payload.retireesFauteDeClaim} indication(s) publiée(s) ne sont pas servies : un de
+                {lecture.retireesFauteDeClaim} indication(s) publiée(s) ne sont pas servies : un de
                 leurs claims n’est plus valide au corpus. Elles n’ont pas été regardées sur ce
                 dossier.
               </p>
             )}
 
-            {payload.corpusLu && payload.indiquees.length === 0 && payload.nonEvaluees.length === 0 && (
+            {lecture.corpusLu && lecture.indiquees.length === 0 && lecture.nonEvaluees.length === 0 && (
               <p className="mt-4 text-sm text-muted-foreground">
-                {payload.nonIndiquees === 0
+                {lecture.nonIndiquees === 0
                   ? 'Aucune ligne d’indication n’est en service.'
-                  : `Les ${payload.nonIndiquees} indications en service ont été évaluées ; aucune n’est retenue sur ce dossier.`}
+                  : `Les ${lecture.nonIndiquees} indications en service ont été évaluées ; aucune n’est retenue sur ce dossier.`}
               </p>
             )}
 
-            {payload.indiquees.length > 0 && (
+            {lecture.indiquees.length > 0 && (
               <ul className="mt-4 grid gap-3">
-                {payload.indiquees.map(assiette => (
+                {lecture.indiquees.map(assiette => (
                   <li
                     key={assiette.ligneId}
                     className="rounded-lg border border-border bg-background p-3"
@@ -213,11 +242,11 @@ export function AssiettesIndiqueesPanel({ idPatient }: { idPatient: string }) {
               </ul>
             )}
 
-            {payload.nonEvaluees.length > 0 && (
+            {lecture.nonEvaluees.length > 0 && (
               <div className="mt-4">
                 <h4 className="text-sm font-medium text-foreground">Non évaluées — ce qui manque</h4>
                 <ul className="mt-2 grid gap-2">
-                  {payload.nonEvaluees.map(assiette => (
+                  {lecture.nonEvaluees.map(assiette => (
                     <li key={assiette.ligneId} className="text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">{assiette.libelle}</span>
                       {' — '}
@@ -228,16 +257,16 @@ export function AssiettesIndiqueesPanel({ idPatient }: { idPatient: string }) {
               </div>
             )}
 
-            {payload.corpusLu
-              && payload.nonIndiquees > 0
-              && (payload.indiquees.length > 0 || payload.nonEvaluees.length > 0) && (
+            {lecture.corpusLu
+              && lecture.nonIndiquees > 0
+              && (lecture.indiquees.length > 0 || lecture.nonEvaluees.length > 0) && (
               <p className="mt-3 text-xs text-muted-foreground">
-                {payload.nonIndiquees} autre(s) indication(s) évaluée(s), non retenue(s) sur ce dossier.
+                {lecture.nonIndiquees} autre(s) indication(s) évaluée(s), non retenue(s) sur ce dossier.
               </p>
             )}
 
             <p className="mt-3 text-xs text-muted-foreground">
-              Périmètre signé : {payload.shaPerimetre.slice(0, 12)}…
+              Périmètre signé : {lecture.shaPerimetre.slice(0, 12)}…
             </p>
           </>
         )}

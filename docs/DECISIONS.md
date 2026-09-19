@@ -183,6 +183,19 @@ l'indécidable se nomme par les comptes du recueil. Un cas de banc garde
 l'inverse — une bande publiée qui ne matche pas reste un **vrai négatif**, et
 sur-signaler serait l'autre faute.
 
+**14. L'ÉTAT DE LA CARTE EST DATÉ DU DOSSIER QUI L'A PRODUIT.** CONSTAT DE LA
+TROISIÈME REVUE. Le jeton de course écarte une réponse en retard ; il ne dit
+rien du rendu qui suit un changement de `idPatient` — React rend avec la
+nouvelle prop et l'ANCIEN état, l'effet ne vidant celui-ci qu'après le commit.
+**Le temps d'une image, les indications du patient précédent se peignaient sous
+l'en-tête du nouveau.** Remède DANS le composant et non par une `key` au point
+de montage : la `key` corrigerait le seul appelant d'aujourd'hui, un état daté
+ne s'oublie pas. **Aucun banc unitaire ne voit cette image** — `act()` fait
+tourner l'effet avant qu'elle soit observable —, et c'est écrit dans le
+composant plutôt que faussement gardé ; ce qui est éprouvé est le contrat
+voisin. La mutation a par ailleurs montré que le jeton ne garde plus qu'un seul
+cas, le RETOUR sur le même dossier, qu'aucun banc ne couvrait.
+
 **CE QUE LE LOT NE FAIT PAS.** Il n'ouvre **aucune porte biologique** — le
 chantier 6 reste devant et périmera l'attestation. Il ne change **aucune ligne,
 aucun claim, aucun `shaPerimetre`** : le périmètre signé du 2026-09-19 est

@@ -154,6 +154,37 @@ describe('AssiettesIndiqueesPanel', () => {
     expect(container.textContent).not.toMatch(/ne sont pas servies/);
   });
 
+  it('REVENIR AU MÊME DOSSIER : la réponse de la PREMIÈRE requête ne remonte pas', async () => {
+    // LE SEUL CAS OÙ LE JETON DÉCIDE ENCORE, et il a fallu le chercher : l'état
+    // daté du dossier écarte tout ce qui vient d'un AUTRE patient, si bien que
+    // retirer le jeton ne rougissait aucun cas. Ici les deux réponses portent le
+    // MÊME `idPatient` — A, B, puis A de nouveau — et seule la plus récente doit
+    // paraître. Sans jeton, la réponse de la requête périmée écrase la bonne.
+    let resoudrePremier: ((r: Response) => void) | null = null;
+    const fetchMock = vi.fn()
+      .mockImplementationOnce(() => new Promise<Response>(r => { resoudrePremier = r; }))
+      .mockResolvedValueOnce(reponse(actif({ nonIndiquees: 7 })))
+      .mockResolvedValue(reponse(actif({
+        indiquees: [{
+          ...INDIQUEE,
+          ligneId: 'ASSIETTE-IND-DETOXICATION',
+          plateCode: 'ASSIETTE_DETOXICATION',
+          libelle: 'Assiette détoxication',
+        }],
+      })));
+    vi.stubGlobal('fetch', fetchMock);
+    const { container, rerender } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
+    rerender(<AssiettesIndiqueesPanel idPatient="PAT002" />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    rerender(<AssiettesIndiqueesPanel idPatient="PAT001" />);
+    await waitFor(() => expect(within(container).getByText('Assiette détoxication')).not.toBeNull());
+    // La toute première requête répond enfin — trois requêtes plus tard.
+    resoudrePremier!(reponse(actif({ indiquees: [INDIQUEE] })));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect(container.textContent).not.toMatch(/Assiette protéinée/);
+    expect(container.textContent).toMatch(/Assiette détoxication/);
+  });
+
   it('erreur de route : le message est rendu en alerte, sans détail technique', async () => {
     vi.stubGlobal(
       'fetch',
@@ -165,13 +196,50 @@ describe('AssiettesIndiqueesPanel', () => {
   });
 
   it('changer de dossier relance la lecture et n’affiche pas la réponse du précédent', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(reponse(actif({ indiquees: [INDIQUEE] })));
+    // CE QUE CE CAS ÉPROUVE, ET CE QU'IL N'ÉPROUVE PAS. Il tient le contrat
+    // observable : après bascule, c'est le contenu du NOUVEAU dossier qui
+    // paraît, jamais celui du précédent. Il ne tient PAS l'image intermédiaire
+    // d'un changement de prop — `act()` fait tourner l'effet avant qu'elle soit
+    // observable, si bien que le défaut et son correctif rendent le même DOM
+    // ici. C'est l'état DATÉ du dossier, dans le composant, qui la ferme ;
+    // dit dans le composant plutôt que faussement gardé ici.
+    const DEUXIEME = {
+      ...INDIQUEE,
+      ligneId: 'ASSIETTE-IND-DETOXICATION',
+      plateCode: 'ASSIETTE_DETOXICATION',
+      libelle: 'Assiette détoxication',
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(reponse(actif({ indiquees: [INDIQUEE] })))
+      .mockResolvedValue(reponse(actif({ indiquees: [DEUXIEME] })));
     vi.stubGlobal('fetch', fetchMock);
-    const { rerender } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const { container, rerender } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
+    await waitFor(() => expect(within(container).getByText('Assiette protéinée')).not.toBeNull());
     rerender(<AssiettesIndiqueesPanel idPatient="PAT002" />);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(fetchMock.mock.calls[1][0]).toContain('PAT002');
+    await waitFor(() => expect(within(container).getByText('Assiette détoxication')).not.toBeNull());
+    // Et surtout : l'assiette du dossier PRÉCÉDENT a disparu.
+    expect(container.textContent).not.toMatch(/Assiette protéinée/);
+  });
+
+  it('une réponse EN RETARD d’un autre dossier n’atteint jamais l’écran', async () => {
+    // Le jeton, éprouvé pour ce qu'il fait vraiment : écarter une réponse qui
+    // arrive APRÈS la bascule. La première requête ne se résout qu'une fois le
+    // second dossier affiché.
+    let resoudrePremier: ((r: Response) => void) | null = null;
+    const fetchMock = vi.fn()
+      .mockImplementationOnce(() => new Promise<Response>(r => { resoudrePremier = r; }))
+      .mockResolvedValue(reponse(actif({ nonIndiquees: 7 })));
+    vi.stubGlobal('fetch', fetchMock);
+    const { container, rerender } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
+    rerender(<AssiettesIndiqueesPanel idPatient="PAT002" />);
+    await waitFor(() =>
+      expect(container.textContent).toMatch(/Les 7 indications en service ont été évaluées/),
+    );
+    resoudrePremier!(reponse(actif({ indiquees: [INDIQUEE] })));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(container.textContent).not.toMatch(/Assiette protéinée/);
   });
 
   it('aucun bouton, aucun formulaire — la carte ne propose AUCUN geste', async () => {

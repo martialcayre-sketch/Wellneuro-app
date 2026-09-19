@@ -119,8 +119,11 @@ ce handoff.
   disait ce que le lot fait (orientation 8 → 9 surfaces indirectes). Régénéré.
   **La table d'indications d'assiette y est entrée** — elle n'y figurait pas, et
   sa place est le jour où elle atteint un écran, pas le jour de sa signature.
-- **DIX MUTATIONS, DIX ROUGES CIBLÉS** — sauvegarde par `cp`, jamais la
-  restauration par l'index, et application vérifiée avant de conclure :
+- **DOUZE MUTATIONS, DOUZE ROUGES CIBLÉS** — sauvegarde par `cp`, jamais la
+  restauration par l'index, et application vérifiée avant de conclure. Ce total
+  a été écrit faux une fois (« dix ») et relevé par Copilot : un compte qui
+  vient d'un résumé, pas de la liste, dérive dès que la liste s'allonge.
+  Les voici, et le total est celui de cette liste :
   1. faire diverger l'un des deux `cleClaim` ⇒ **8 cas rouges**, dont celui qui
      existe pour ça ;
   2. une anamnèse absente cessant d'être une lacune ⇒ **1 cas**, le bon ;
@@ -132,7 +135,14 @@ ce handoff.
   7. figer `retireesFauteDeClaim` à zéro ⇒ **3 cas**, dont celui de la route ;
   8. retirer le `new Set` du dédoublonnage ⇒ **1 cas** ;
   9. resservir `raccourciAssume` ⇒ **1 cas** ;
-  10. taire la phrase du retrait à la carte ⇒ **1 cas**.
+  10. taire la phrase du retrait à la carte ⇒ **1 cas** ;
+  11. restaurer l'ancienne condition de lacune de zone ⇒ **2 cas**, les deux
+      neufs (second tour Copilot) ;
+  12. retirer le jeton de course du panneau ⇒ **1 cas**, et il a fallu
+      l'ÉCRIRE : l'état daté du dossier rend le jeton inutile partout sauf au
+      retour sur le MÊME dossier. La première mutation ne rougissait rien, ce
+      qui disait non pas que le jeton est mort, mais que le banc ne couvrait
+      pas le seul cas où il décide (troisième tour Copilot).
 
 ## 8. Ce que le lot a trouvé au passage
 
@@ -302,6 +312,34 @@ qui change le moteur.
 3. **LE CORPS DE LA PR ANNONÇAIT ENCORE « sept formes »** quand l'union en porte
    huit. Corrigé sur la PR : un enregistrement de revue qui décrit un contrat
    périmé est un enregistrement faux.
+
+## 8 sexies. La TROISIÈME revue Copilot — une donnée clinique sous le mauvais dossier
+
+1. **L'ÉTAT DU PANNEAU N'ÉTAIT PAS DATÉ DU DOSSIER, et le jeton n'y suffisait
+   pas.** Le jeton écarte une réponse EN RETARD ; il ne dit rien du rendu qui
+   suit un changement de `idPatient`. React rend d'abord avec la nouvelle prop
+   et l'ANCIEN état — l'effet qui le vide ne tourne qu'après le commit. **Le
+   temps d'une image, les indications du patient précédent se peignaient sous
+   l'en-tête du nouveau.** Bref, mais c'est une donnée clinique servie sous le
+   mauvais dossier. Corrigé DANS le composant (`{ pour, corps }`, rendu filtré
+   sur `pour === idPatient`) plutôt que par une `key` au point de montage : la
+   `key` corrigerait le seul appelant d'aujourd'hui, un état daté ne s'oublie
+   pas. `chargement` étant en retard du même rendu, la garde de non-affichage
+   couvre aussi « rien de CE dossier n'est encore arrivé ».
+   **AUCUN BANC UNITAIRE NE VOIT CETTE IMAGE**, et c'est dit dans le composant
+   plutôt que faussement gardé : `act()` fait tourner l'effet avant que le rendu
+   intermédiaire soit observable, si bien que le défaut et son correctif rendent
+   le même DOM au banc. Ce qui est éprouvé est le contrat voisin — après
+   bascule, c'est le contenu du NOUVEAU dossier qui paraît, et la réponse en
+   retard d'un autre dossier n'atteint jamais l'écran.
+   **ET LA MUTATION A APPRIS QUELQUE CHOSE** : retirer le jeton ne rougissait
+   RIEN, l'état daté écartant déjà tout ce qui vient d'un autre patient. Le
+   jeton n'est pas mort pour autant — il décide encore au RETOUR sur le même
+   dossier (A → B → A), où les deux réponses portent le même `idPatient` et où
+   seule la plus récente doit paraître. Ce cas manquait ; il est écrit, et la
+   mutation le rougit.
+2. **LE COMPTE DE MUTATIONS ÉTAIT FAUX** — « dix » quand la liste en portait
+   onze. Voir le § 7 : le total se lit sur la liste, jamais sur un résumé.
 
 ## 9. Problèmes ouverts
 

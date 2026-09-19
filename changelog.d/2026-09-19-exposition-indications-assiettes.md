@@ -90,5 +90,14 @@ ou une couleur pour une bande ; le reste se nomme par les comptes du recueil.
 Un cas garde l’inverse — une bande publiée qui ne matche pas reste un **vrai
 négatif**, et sur-signaler serait l’autre faute.
 
+**Et une troisième revue a trouvé pire, sur la carte cette fois** : son état
+n’était pas daté du dossier. Le jeton de course écarte une réponse en retard,
+mais pas le rendu qui suit un changement de patient — React peint d’abord la
+nouvelle prop avec l’ancien état. **Le temps d’une image, les indications du
+dossier précédent paraissaient sous l’en-tête du suivant.** L’état porte
+désormais le dossier qui l’a produit, et rien ne s’affiche tant que la réponse
+de CE dossier n’est pas là. Aucun banc unitaire ne voit cette image — c’est dit
+dans le composant plutôt que faussement gardé.
+
 Aucune porte biologique n’est ouverte, aucune ligne ni aucun claim n’est touché,
 et le périmètre signé reste intact.
