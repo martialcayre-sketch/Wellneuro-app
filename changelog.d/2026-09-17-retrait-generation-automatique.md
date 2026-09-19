@@ -36,10 +36,22 @@ constat disponible est la variable absente de `env` plus la recréation des
 conteneurs. Le constat comportemental se lit ainsi, après la prochaine réponse de
 questionnaire :
 
+**Le seuil de cette requête a changé, et c'est le cœur de l'affaire.** Celui du
+geste de drapeau — `2026-09-17 18:49:15 UTC` — rend désormais **1** et le rendra
+toujours : c'est la ligne de 20:39:52 qui prouve l'échec du geste. Le seuil
+utile est celui du **retrait du code**, déployé à 22:08:04 UTC et terminé
+4 min 37 s plus tard.
+
 ```sql
+-- Constat d'ÉCHEC du geste de drapeau : rend 1, définitivement.
 SELECT count(*) FROM syntheses_ia
 WHERE donnees_entree->>'source' LIKE 'auto_rideau_%'
   AND date_generation > timestamp '2026-09-17 18:49:15';  -- UTC
+
+-- Constat du RETRAIT DU CODE : doit rendre 0, et n'a pas encore de témoin.
+SELECT count(*) FROM syntheses_ia
+WHERE donnees_entree->>'source' LIKE 'auto_rideau_%'
+  AND date_generation > timestamp '2026-09-17 22:13:00';  -- UTC, fin du déploiement
 ```
 
 Attendu : `0`. Les 9 brouillons déjà produits restent au dossier avec leur

@@ -655,8 +655,12 @@ ce qu'il laissait entendre.
 questionnaire sont arrivées le 2026-09-17 entre 20:23:32 et 20:38:09 UTC, et
 **aucune depuis**. Le code est parti à 22:08:04. « Zéro génération depuis »
 s'explique donc par zéro réponse, pas par le retrait : la requête du fragment de
-changelog reste juste, elle attend une soumission de patient pour prouver quoi
-que ce soit.
+changelog reste juste dans sa forme, mais **son seuil a dû changer** : celui du
+geste de drapeau (`18:49:15 UTC`) rend maintenant 1 et le rendra toujours, la
+ligne de 20:39:52 étant derrière lui. Le seuil qui constate le retrait du code
+est `2026-09-17 22:13:00 UTC` — fin du déploiement, 22:08:04 plus 4 min 37 s. Le
+fragment porte les deux requêtes, l'une pour l'échec du geste, l'autre pour le
+constat qui attend encore une soumission de patient.
 
 **CHIFFRES CORRIGÉS** (lecture du 2026-09-18, conteneur one-off, agrégats seuls) :
 **9 générations automatiques sur 5 dossiers** — 6 au premier rideau sur 5
