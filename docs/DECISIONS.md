@@ -102,6 +102,190 @@ reconnaître, c'est sa conclusion qui change. Et il ne réécrit pas le corps de
 `D-049` — une décision close porte l'instruction de sa panne et ne se
 réinterprète pas.
 
+### D-232 — Le régime alimentaire devient une porte en lisant l'ÉTAT DE POPULATION, jamais un drapeau : le champ garde un seul lecteur, et le contexte de dossier remplace le paramètre positionnel
+
+- Date : 2026-09-19
+- Statut : accepté — **arbitrage du responsable** : lire l'`EtatPopulation`
+  plutôt que faire du champ un drapeau. **Aucune règle ne porte cette porte.**
+- **DÉCOMPTE CORRIGÉ LE 2026-09-19** : cette entrée annonçait « dernier des cinq
+  chantiers que `D-216` laissait devant l'attestation ». **C'était faux.** La
+  porte du régime ne portait **aucun numéro de chantier** — c'est un prérequis
+  DÉCOUVERT en route, comme le catalogue C5B (`D-230`). Des cinq chantiers que le
+  handoff du 2026-09-17 numérote, **trois restent** : écrire les lignes (2), le
+  mécanisme orienté des familles (4), le barème (5). L'erreur vient d'avoir
+  confondu deux listes — les chantiers numérotés et les prérequis de
+  l'attestation. Ce qui est vrai : **plus aucun prérequis mécanique ne bloque la
+  signature.** Constat de revue, vérifié sur pièce.
+- Domaine : vocabulaire de porte (`clinical/orientationRulesV1.ts`), moteur
+  partagé (`clinical/orientationEngine.ts`), service d'orientation.
+- Porte sur : la dette que `D-229` §5 avait routée — et dont le correctif annoncé
+  était **faux**.
+
+**1. LE CORRECTIF ROUTÉ LA VEILLE ÉTAIT FAUX, ET C'EST LE POINT DE DÉPART.**
+`D-229` §5 annonçait « une clé de plus et sa ligne dans `CHAMP_ANAMNESE` ». Il
+reposait sur une prémisse non vérifiée : que `etat_alimentation` n'était lu par
+personne. **Il l'est** — par `lireEtatPopulation`, qui le normalise en
+`ExclusionAlimentaire` pour la gate de population (`DC-43`). La dette a été
+corrigée au registre **avant** d'écrire une ligne de code.
+
+**2. PAS UN DRAPEAU, ET L'ARBITRAGE EST DOCTRINAL.** Le champ vit dans la section
+« État actuel », déclarée porter *les états de population, et RIEN D'AUTRE*
+(`D-101`) ; aucune des dix clés de `DrapeauxAnamnese` n'en vient. En faire une
+onzième aurait été le **premier franchissement** de cette ligne, et aurait donné
+au champ **deux lecteurs de formes différentes** — libellé verbatim d'un côté,
+énuméré normalisé de l'autre — donc deux disciplines de l'inconnu là où la
+section n'en veut qu'une. **Écarté** : le chemin court. **Écarté aussi** :
+renoncer et laisser la méthylation en réserve.
+
+**3. UN SEUL CRITÈRE, ET PAS LES SEPT.** `EtatPopulation` porte aussi grossesse,
+allaitement, pathologies rénale et hépatique, chirurgie digestive et maladie
+cœliaque. Aucun claim ne les fonde comme INDICATION, et ils sont **par
+construction des critères d'EXCLUSION** : en faire des portes d'indication
+**retournerait leur sens**. Une grossesse qui indiquerait une conduite au lieu
+d'en écarter est exactement l'erreur que la gate de population existe pour
+empêcher. Le type refuse donc ce que la doctrine n'autorise pas — même discipline
+que la borne d'âge refusant `<`.
+
+**4. `inconnu` N'ATTEINT RIEN, ET LE GARDE DE FORME LE REFUSE À L'ÉCRITURE.**
+`inconnu` est une valeur de l'énuméré, donc écrivable dans `valeurs` — et une
+ligne qui la citerait s'allumerait sur l'**ignorance** du patient, c'est-à-dire
+sur le contraire d'une déclaration (`DC-24`). Le moteur ne s'allume jamais
+dessus ; `anomaliesDuDeclencheur` refuse en plus qu'on l'écrive, parce que cette
+faute ne se voit pas à la relecture du texte d'une ligne.
+
+**5. LE CONTEXTE DE DOSSIER REMPLACE LE PARAMÈTRE POSITIONNEL DE `D-231`, et le
+motif de celui-ci est intact.** `D-231` §3 justifiait un quatrième paramètre
+optionnel par l'**optionalité** — un appelant qui ne sait rien ne passe rien, ce
+qui FERME la porte au lieu de l'ouvrir. Un objet optionnel satisfait exactement le
+même besoin. Ce que le positionnel ne supportait pas est le **nombre** : à deux
+champs il devient illisible, à trois il serait fautif. Le changement est fait
+**maintenant plutôt qu'à la troisième porte**, et `ContexteDossier` porte
+désormais l'âge et l'état de population. **Chaque champ absent ferme sa porte, et
+aucun n'en ouvre une autre** — un banc l'éprouve.
+
+**6. LE CÂBLAGE EST GARDÉ, ET IL L'A ÉTÉ AVANT QU'ON LE DEMANDE.** La revue de
+`D-231` avait montré qu'un lot peut éprouver ses pièces à fond et laisser la
+**jointure** nue : `ageAnnees` pur, moteur pur, rien entre les deux. Ce lot écrit
+donc d'emblée le banc anamnèse → `lireEtatPopulation` → moteur, avec trois
+contre-épreuves — aucune anamnèse, anamnèse sans le champ, régime autre que celui
+cité — et il a été **muté** : retirer `etatPopulation` de l'appel fait rougir le
+cas de câblage, seul.
+
+**7. CE QUE CE LOT NE FAIT PAS.** **Aucune règle d'orientation ne porte cette
+porte** — un banc l'exige, comme pour la borne d'âge. La table des indications
+d'assiette reste **VIDE**, verrou **ÉTEINT**. La gate de population est
+**inchangée** : elle lit le même objet, pour écarter, et ce lot n'y touche pas.
+Aucune migration, aucun drapeau, aucun écran.
+
+**8. CE QUE CELA LAISSE DEVANT LES LIGNES** — *§ corrigé le 2026-09-19, voir le
+décompte en tête.* **Plus aucun prérequis MÉCANIQUE ne bloque l'attestation** :
+statut et filtre de service (`D-225`), validateur partagé et lecture des claims
+sur pièce (`D-229`), catalogue (`D-230`), borne d'âge (`D-231`), régime (ici).
+**Mais trois des cinq chantiers restent** — écrire les lignes est le chantier 2
+lui-même, et les chantiers 4 (familles) et 5 (barème) n'ont pas commencé ; ni
+l'un ni l'autre ne bloque la signature. Ce qui reste devant les lignes est donc
+**clinique** : les écrire, et les faire attester — une signature ne se pose
+jamais par l'outil.
+
+### D-231 — La borne d'âge devient un déclencheur : `Patient.dateNaissance` cesse d'être un fait administratif, `DC-43` est revisitée, et huit fichiers cessent de déduire un instrument d'une absence de drapeau
+
+- Date : 2026-09-19
+- Statut : accepté — **arbitrage du responsable sur le mécanisme** (câblage
+  complet, plutôt que la forme seule). Exécute `D-216` §1, qui posait le
+  principe sans le mécanisme. **Aucune règle ne porte de borne d'âge** : le
+  vocabulaire l'accepte, la table des indications d'assiette est toujours VIDE.
+- Domaine : vocabulaire de porte (`clinical/orientationRulesV1.ts`), moteur
+  partagé (`clinical/orientationEngine.ts`), lecture du dossier
+  (`patient/age.ts`, `clinical/orientationService.ts`), doctrine (`DC-43`).
+- Porte sur : le chantier 3 des cinq que `D-216` laisse devant l'attestation du
+  catalogue d'assiettes.
+
+**1. LE MOTIF DU REFUS AVAIT DISPARU, ET C'EST CE QUI AUTORISE CE LOT.** Le
+dépôt écartait l'âge pour une raison écrite : *aucune borne d'âge n'a de
+provenance ; poser un pivot serait inventer un seuil clinique* (`DC-19`). Trois
+claims **prescriptifs validés** en portent — `WN-CL-0286-006` (50 ans),
+`WN-CL-0288-011` (60 ans), `WN-CL-0293-009` (50 puis 70 ans). **Le pivot n'est
+plus inventé, il est cité.** `DC-19` tient entier pour autant : une borne écrite
+sans claim qui la porte reste un seuil inventé, et **aucun banc ne peut le
+dire** — seule la relecture le voit. Le type ne dispense de rien.
+
+**2. DEUX OPÉRATEURS, ET PAS CINQ.** `>=` et `>` expriment « dès tel âge » et
+« au-delà de tel âge », les deux seules formes que les claims emploient. Ouvrir
+`<` et `<=` aurait offert une borne **pédiatrique** qu'aucune source ne fonde —
+`DC-43` nomme pourtant l'enfant parmi les populations. **Le type refuse donc ce
+que la doctrine ne peut pas encore justifier**, plutôt que de compter sur la
+revue pour l'attraper. `DC-43` continue de nommer un critère qu'elle ne couvre
+pas, et c'est délibéré.
+
+**3. LE MOTEUR NE CALCULE AUCUN ÂGE, ET NE LIT AUCUNE HORLOGE.** Il reçoit un
+nombre déjà tranché, comme il reçoit `maintenantMs` plutôt que d'appeler
+`Date.now()`. `ageAnnees` (`lib/patient/age.ts`) est **le seul endroit qui en
+déduit un âge clinique** — il n'est pas le seul à lire la colonne, et la première
+rédaction de ce paragraphe l'affirmait à tort (constat de revue, vérifié) :
+`anneeDeNaissance` (`patient/cycleDeVie.ts`) la lit déjà pour le résidu
+d'effacement. C'est d'ailleurs ce que §4 explique, et un banc épingle leurs
+divergences. `orientationService` hisse un instant unique pour tout
+le calcul : deux `Date.now()` seraient deux instants, et il suffit d'un passage
+de minuit entre les deux pour qu'un dossier soit évalué avec une fraîcheur
+d'hier et un âge d'aujourd'hui.
+
+**4. LA LECTURE DE L'ÂGE EST STRICTE LÀ OÙ LE PARSEUR EXISTANT EST PERMISSIF, et
+le doublon se justifie plutôt qu'il ne se subit.** `anneeDeNaissance`
+(`patient/cycleDeVie.ts`) extrait une année **plausible** d'une chaîne de format
+non garanti — il sert le résidu d'effacement, où une année approchée vaut mieux
+que rien. Ici elle ne vaut rien : une soustraction de millésimes se trompe d'un
+an sur tout patient qui n'a pas encore eu son anniversaire, **à la frontière même
+où la borne décide**. `ageAnnees` exige donc une date calendaire complète ET
+RÉELLE — `2026-02-31` passe l'expression régulière et `Date.UTC` la replierait
+sur le 3 mars sans se plaindre —, refuse une naissance postérieure à la référence
+plutôt que de rendre un âge négatif, et refuse un âge hors plausibilité humaine.
+Tout le reste rend `null`.
+
+**5. ÂGE INCONNU = DÉCLENCHEUR NON ATTEINT, jamais « âge 0 ».** Un appelant qui
+ne sait pas ne dit pas zéro : il ne dit rien. Même discipline que les drapeaux
+absents (`DC-24`), et le banc l'éprouve sous ses trois formes — paramètre absent,
+`undefined`, `null` — avec la contre-épreuve qui prouve que la même borne
+s'allume dès qu'un âge est fourni.
+
+**6. LE VRAI CORRECTIF DE CE LOT N'EST PAS LA VARIANTE, C'EST CE QU'ELLE A
+RÉVÉLÉ.** Huit fichiers raisonnaient « ce n'est pas un drapeau, **donc** c'est un
+instrument » : ils écrivaient `if (feuille.type === 'drapeau') continue;` puis
+lisaient `feuille.idQuestionnaire`. Ce raisonnement n'était vrai que parce que la
+famille comptait trois variantes dont une seule sans instrument. L'arrivée de la
+borne d'âge l'a rendu faux **partout en même temps** — et `tsc` l'a dit, fichier
+par fichier, plutôt que de laisser passer un `undefined`.
+
+`estFeuilleInstrument` remplace la déduction par une **affirmation** : une
+feuille d'instrument se reconnaît à ce qu'elle est, jamais à ce qu'elle n'est
+pas. La quatrième variante ne rouvrira pas les huit fichiers. **Conséquence sur
+la garde de complétude, et elle n'est pas cosmétique** : une borne d'âge n'a pas
+de porteur à interroger. Si la garde s'y appliquait, la branche serait sautée
+sous un `ou` et la borne deviendrait **inatteignable en disjonction** — un banc
+le tient.
+
+**7. LES DEUX MOCKS ÉLARGIS PAR `importOriginal`, JAMAIS PAR UN STUB.** Deux
+bancs mockent la table de règles ; `estFeuilleInstrument` y vient désormais du
+module **réel**. Une version fabriquée dans le mock aurait fait diverger le banc
+du comportement réel au premier ajout de variante — exactement le défaut que ce
+prédicat existe pour fermer.
+
+**8. L'ÂGE N'ENTRE PAS DANS LA SECTION « ÉTAT ACTUEL » DE L'ANAMNÈSE.** Il ne se
+déclare pas, il se calcule depuis une donnée que le dossier porte déjà — le
+demander au patient créerait **deux vérités pour un même fait**, ce que cette
+section refuse déjà pour l'allergie. L'âge est donc lisible par un DÉCLENCHEUR
+sans devenir un état de population au sens de `lireEtatPopulation` : la gate de
+population est **inchangée**, et `DC-43` garde sa moitié tenue comme sa moitié
+sans sujet.
+
+**9. CE QUE CE LOT NE FAIT PAS.** Aucune règle d'orientation ne porte de borne
+d'âge — un banc l'exige, et le dit : le jour où il en faudra une, il faudra
+vérifier que son appelant fournit bien `ageAnnees`, faute de quoi la règle serait
+**silencieusement inatteignable**. La table des indications d'assiette reste
+VIDE, son verrou ÉTEINT. Aucune migration, aucun drapeau, aucun écran. Et **la
+porte du RÉGIME alimentaire reste fermée** : la méthylation en dépend, son champ
+existe à l'anamnèse mais n'est lisible que par la gate de population — cet
+arbitrage est rendu, son lot ne l'est pas.
+
 ### D-230 — Le catalogue d'assiettes passe de trois à quinze entrées sur DEUX axes, et l'arbitrage « ne pas les fondre » cesse d'être une phrase pour devenir un point de service
 
 - Date : 2026-09-18
@@ -510,7 +694,8 @@ rejetées**. Sur la même table, 55 générations manuelles sur 17 dossiers, don
 rejetées. Soit **50 % contre 3,6 %**. Un agrégat ne dit pas POURQUOI on rejette,
 et 8 lignes sur 5 dossiers est un échantillon court : ce chiffre a motivé
 l'examen, il ne fonde pas à lui seul la décision. Ce qui la fonde est le § 1,
-qui est un fait de code.
+qui est un fait de code. **CE DÉCOMPTE EST PÉRIMÉ** : l'amendement du
+2026-09-19 en rend neuf et déplace la comparaison à 44 % contre 10 %.
 
 **3. L'ORDRE DES GESTES, ET IL EST INVERSE DE CELUI D'UNE POSE.** Le drapeau a
 été **retiré de la production d'abord** — `env-unset` puis recréation des deux
@@ -522,7 +707,9 @@ confondre les deux fait contrôler la mauvaise fenêtre de production (constat d
 revue, PR #1185). C'est le sens sûr pour une extinction : le code
 retiré devant un drapeau encore allumé ne changerait rien, mais un drapeau
 retiré devant du code encore présent ferme déjà la porte. L'inverse vaut pour
-une pose ([[D-174]] § effectivité).
+une pose ([[D-174]] § effectivité). **CETTE DERNIÈRE AFFIRMATION EST FAUSSE POUR
+CET ÉPISODE** : une génération a eu lieu 1 h 50 APRÈS la recréation décrite ici —
+amendement du 2026-09-19.
 
 **4. AUCUNE SONDE NE CONSTATE CETTE EXTINCTION, ET IL FAUT LE DIRE.** Le drapeau
 gardait un travail de fond déclenché par une soumission patient : il n'a aucune
@@ -531,9 +718,12 @@ surface publique qui distingue les deux états, contrairement à
 constat disponible est double — variable absente de `env`, conteneurs recréés —
 et il sera complété par le comportement : **aucune ligne `syntheses_ia` ne doit
 plus porter `donnees_entree->>'source' = 'auto_rideau_%'` après le **2026-09-17
-18:49:15 UTC**. La requête est au fragment de changelog.
+18:49:15 UTC**. La requête est au fragment de changelog. **CE CONSTAT N'A JAMAIS
+EU LIEU** : une ligne a été produite à 20:39:52 UTC le même jour, et aucune
+réponse de patient n'est arrivée depuis le retrait du code — amendement du
+2026-09-19.
 
-**5. CE QUI N'EST PAS DÉCIDÉ ICI.** Les 8 brouillons déjà produits restent au
+**5. CE QUI N'EST PAS DÉCIDÉ ICI.** Les 9 brouillons déjà produits restent au
 dossier avec leur marqueur ; rien n'est effacé ni requalifié. Et le mécanisme
 n'est pas jugé mauvais dans son principe : ce qui est tranché, c'est qu'un
 brouillon ne doit pas naître **avant** le geste de lecture qui le rendrait
@@ -545,6 +735,63 @@ qu'**aucune** tâche de fond n'est planifiée sur ce chemin — assertion sur
 `after`, qui ne nomme aucun module : un second mécanisme la ferait rougir aussi.
 Vérifiée par mutation le jour même (un `after()` réintroduit fait tomber ce banc
 et lui seul). Un banc qui aurait nommé `genererSiRideauFerme` serait resté vert.
+
+**AMENDEMENT DU 2026-09-19 — LE DRAPEAU N'A PAS FERMÉ LA PORTE ; LE CODE L'A
+FERMÉE.** Une génération portant `auto_rideau_second` a eu lieu le **2026-09-17 à
+20:39:52 UTC**, soit **1 h 50 après** la recréation de conteneurs décrite au § 3.
+Ce qui a réellement arrêté la génération est le retrait du code, déployé le même
+jour à **22:08:04 UTC**.
+
+**Le fuseau a été tranché avant de conclure**, l'erreur inverse ayant été commise
+deux jours plus tôt. La session PostgreSQL rend `TimeZone = UTC` et `now()` a
+répondu `2026-09-18 23:36:47` quand l'horloge murale marquait 23:36:42 UTC ; la
+table des déploiements est en UTC elle aussi, `cf3a345a` ayant été mergée à
+18:48:00 UTC et déployée à 18:49:21. Aucune lecture en heure locale ne résorbe
+l'écart : le geste précède la génération dans les deux fuseaux.
+
+**LA CAUSE N'EST PAS ÉTABLIE, ET CE VIDE EST LE CONSTAT.** La garde était
+`value === 'true'` — fail-closed —, posée en PREMIÈRE ligne du déclencheur et
+commune aux deux rideaux : à 20:39:52 UTC, le conteneur qui a servi la requête
+avait donc encore `WN_SYNTHESE_PAR_RIDEAU='true'`. Soit le geste n'a pas propagé,
+soit l'horodatage relevé au § 3 ne décrit pas le geste qu'on croit. La variable
+est absente de `env` aujourd'hui, et le CLI n'expose aucun historique des
+changements de variables : départager demanderait une trace dont nous ne
+disposons pas. **La réserve qui en découle vaut pour tout drapeau : la variable
+absente et les conteneurs recréés ne CONSTATENT pas l'effet, ils le rendent
+plausible.** Ce que le § 4 disait de l'absence de sonde était donc plus grave que
+ce qu'il laissait entendre.
+
+**LE CONSTAT COMPORTEMENTAL N'A TOUJOURS AUCUN TÉMOIN.** Six réponses de
+questionnaire sont arrivées le 2026-09-17 entre 20:23:32 et 20:38:09 UTC, et
+**aucune depuis**. Le code est parti à 22:08:04. « Zéro génération depuis »
+s'explique donc par zéro réponse, pas par le retrait : la requête du fragment de
+changelog reste juste dans sa forme, mais **son seuil a dû changer** : celui du
+geste de drapeau (`18:49:15 UTC`) rend maintenant 1 et le rendra toujours, la
+ligne de 20:39:52 étant derrière lui. Le seuil qui constate le retrait du code
+est `2026-09-17 22:13:00 UTC` — fin du déploiement, 22:08:04 plus 4 min 37 s. Le
+fragment porte les deux requêtes, l'une pour l'échec du geste, l'autre pour le
+constat qui attend encore une soumission de patient.
+
+**CHIFFRES CORRIGÉS** (lecture du 2026-09-18, conteneur one-off, agrégats seuls) :
+**9 générations automatiques sur 5 dossiers** — 6 au premier rideau sur 5
+dossiers, 3 au second sur 3 dossiers. La mesure tranche cette fois ce que le § 2
+laissait ouvert : le total de dossiers distincts étant 5, ceux du second rideau
+SONT un sous-ensemble de ceux du premier. États : 4 `Rejetee`, 4
+`Validee_Praticien`, 1 `Brouillon_IA`. Les générations manuelles sont passées à
+**60 dont 6 rejetées**. La comparaison n'est donc plus « 50 % contre 3,6 » mais
+**44 % contre 10 %** — et ce déplacement en deux jours illustre mieux que tout la
+réserve du § 2 : l'échantillon était court, il l'est encore.
+
+**TROIS SYNTHÈSES AUTOMATIQUES VALIDÉES N'ONT JAMAIS ÉTÉ ENVOYÉES.** Elles sont
+au dossier, validées, sans booklet expédié, et aucun écran ne les montre — le Fil
+tronque à cinq par type et il n'existe aucune liste inter-patients. C'est le
+motif concret du lot G de l'audit de la chaîne documentaire, qui cesse d'être
+théorique. Leur sort n'est pas tranché ici.
+
+**CE QUI N'EST PAS RÉÉCRIT.** Le fragment de handoff du 2026-09-18 porte encore
+le raisonnement du § 3 : c'est un instantané daté, et la convention de
+`docs/claude/handoffs/` veut qu'on ne réécrive pas un fragment posé. L'autorité
+est ici.
 
 ### D-225 — Les indications d'assiette reçoivent leur filtre de service AVANT leur première ligne : le statut vit sur la ligne, pas sur l'assiette
 

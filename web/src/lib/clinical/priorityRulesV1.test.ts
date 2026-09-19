@@ -21,7 +21,7 @@ import {
   type PriorityRule,
 } from './priorityRulesV1';
 import { evaluerAbstention } from '@/lib/clinical-engine/chaineC1';
-import { feuillesDuDeclencheur } from './orientationRulesV1';
+import { estFeuilleInstrument, feuillesDuDeclencheur } from './orientationRulesV1';
 import type { ReponseOrientation } from './orientationEngine';
 import { RIDEAU_T0 } from '@/lib/clinical-engine/preconditionsT0';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
@@ -183,7 +183,7 @@ describe('priorityRulesV1 — ce que les règles lisent existe vraiment', () => 
     for (const regle of PRIORITY_RULES_V1) {
       // Par FEUILLES : l'exigence vaut pour chaque branche d'un `ou` ([[D-060]] §5).
       for (const declencheur of regle.declencheurs.flatMap(feuillesDuDeclencheur)) {
-        if (declencheur.type === 'drapeau') continue;
+        if (!estFeuilleInstrument(declencheur)) continue;
         expect(declencheur.idQuestionnaire).toBe(CANAL_PLAINTE);
         expect(declencheur.sousScore, `${regle.id} ne cite aucun domaine`).toBeDefined();
         cites += 1;

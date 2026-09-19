@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
-import { feuillesDuDeclencheur } from '@/lib/clinical/orientationRulesV1';
+import { estFeuilleInstrument, feuillesDuDeclencheur } from '@/lib/clinical/orientationRulesV1';
 import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 import { INDICATIONS_BIOLOGIE_V1 } from './indicationsBiologieV1';
 
@@ -101,7 +101,7 @@ describe('indications biologie — garde de forme de la table réelle (RV-2)', (
     const cites = new Set<string>();
     for (const regle of publiees) {
       for (const feuille of feuillesDe(regle)) {
-        if (feuille.type !== 'drapeau') cites.add(feuille.idQuestionnaire);
+        if (estFeuilleInstrument(feuille)) cites.add(feuille.idQuestionnaire);
       }
     }
     expect(cites.size).toBe(17);
@@ -127,7 +127,7 @@ describe('indications biologie — garde de forme de la table réelle (RV-2)', (
     // en silence un patient à 19 (trou de la grille publiée). Ce banc épingle
     // la borne — la recalibrer rouvre un arbitrage clinique.
     const humeur = publiees.find(r => r.id === 'BIO-HUM-01');
-    const madrs = feuillesDe(humeur!).find(f => f.type !== 'drapeau' && f.idQuestionnaire === 'Q_NEU_02');
+    const madrs = feuillesDe(humeur!).find(f => estFeuilleInstrument(f) && f.idQuestionnaire === 'Q_NEU_02');
     expect(madrs).toMatchObject({ type: 'comparaison', operateur: '>=', valeur: 8 });
   });
 });
@@ -141,7 +141,7 @@ describe('indications biologie — aucune branche inerte (RV-1)', () => {
     let verifies = 0;
     for (const regle of publiees) {
       for (const feuille of feuillesDe(regle)) {
-        if (feuille.type === 'drapeau') continue;
+        if (!estFeuilleInstrument(feuille)) continue;
         const scores: any = calculateScore(feuille.idQuestionnaire, saturee(feuille.idQuestionnaire));
         const porteur = feuille.sousScore
           ? (scores?.subScores ?? []).find((s: any) => s?.id === feuille.sousScore || s?.label === feuille.sousScore)

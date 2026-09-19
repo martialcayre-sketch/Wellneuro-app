@@ -126,15 +126,18 @@ l'ait relu et décidé de le transmettre.
 
 > **CE TRAITEMENT A CESSÉ LE 2026-09-17 ([[D-226]]).** La génération automatique
 > a été retirée — variable `env-unset` en production (conteneurs recréés à
-> 20:49:15), puis code supprimé du dépôt. **Une synthèse ne se produit plus que
+> 18:49:15 UTC, soit 20:49:15 heure locale), puis code supprimé du dépôt et
+> déployé à **22:08:04 UTC**. C'est ce second geste qui a effectivement arrêté
+> le traitement : une génération a encore eu lieu à 20:39:52 UTC, drapeau
+> pourtant retiré (amendement du 2026-09-19 à [[D-226]]). **Une synthèse ne se produit plus que
 > sur demande du praticien.** Le paragraphe ci-dessous reste au dossier parce
 > qu'il décrit un traitement qui A EU LIEU, du 2026-09-12 au 2026-09-17, par
-> **8 générations — 6 au premier rideau sur 5 dossiers, 2 au second sur 2
-> dossiers** : ce qui a été traité l'a été, et l'effacer réécrirait l'histoire
-> du registre. (Les deux totaux de dossiers sont donnés séparément parce que
-> l'agrégat lu ne dit pas si les 2 dossiers du second rideau sont un
-> sous-ensemble des 5 : ils le sont probablement — un second rideau suppose un
-> premier — mais le déduire serait inférer au-delà de la mesure.) La **rubrique 5** du
+> **9 générations sur 5 dossiers — 6 au premier rideau sur 5 dossiers, 3 au
+> second sur 3 dossiers** : ce qui a été traité l'a été, et l'effacer réécrirait l'histoire
+> du registre. (La lecture du 2026-09-18 tranche ce que celle de la veille laissait
+> ouvert : le total de dossiers distincts touchés est de **5**, donc les
+> dossiers du second rideau sont bien un sous-ensemble de ceux du premier. Ce
+> n'est plus une inférence, c'est une mesure.) La **rubrique 5** du
 > registre des traitements est à mettre à jour en conséquence — la finalité
 > « l'outil en prépare une quand la matière est complète » n'a plus d'objet, et
 > seule subsiste « le praticien demande une synthèse ». Rien à notifier au

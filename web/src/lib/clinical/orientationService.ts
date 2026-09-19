@@ -10,6 +10,8 @@ import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinic
 import { STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1 } from '@/lib/clinical/stopRulesV1';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
+import { lireEtatPopulation } from '@/lib/consultation/etatPopulation';
+import { ageAnnees } from '@/lib/patient/age';
 import { idBaseDepuisPackId, packIdDepuisIdBase, type PackId } from '@/lib/questionnaires-functional';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
 import { STATUTS_ASSIGNATION_TERMINAL } from '@/lib/assignations/dedup';
@@ -323,7 +325,14 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
   // aval de ce test, jamais en amont.
   if (!orientationActive()) return resultatInactif();
 
-  const [reponses, assignations, packs, consultation, ecartements] = await Promise.all([
+  // UN SEUL INSTANT POUR TOUT LE CALCUL ([[D-231]]). L'horloge servait déjà la
+  // fenêtre de fraîcheur ; elle sert maintenant aussi l'âge. Deux appels à
+  // `Date.now()` seraient deux instants — infime, mais il suffit d'un passage
+  // de minuit entre les deux pour qu'un dossier soit évalué avec une fraîcheur
+  // d'hier et un âge d'aujourd'hui. Le moteur ne lit toujours aucune horloge.
+  const maintenantMs = Date.now();
+
+  const [reponses, assignations, packs, consultation, ecartements, patient] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { idPatient },
       select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
@@ -379,6 +388,16 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
         faitLe: true,
         supersedesEcartementId: true,
       },
+    }),
+    // LA DATE DE NAISSANCE, ET RIEN D'AUTRE DU PATIENT ([[D-231]]). Le `select`
+    // est volontairement d'un seul champ : ce module est en LECTURE SEULE sur le
+    // dossier et n'a aucune raison de rapporter une identité. Elle cesse ici
+    // d'être un fait purement administratif — [[D-216]] l'annonçait — et devient
+    // lisible par une porte, à travers `ageAnnees` qui la refuse si elle n'est
+    // pas une date calendaire complète.
+    prisma.patient.findUnique({
+      where: { idPatient },
+      select: { dateNaissance: true },
     }),
   ]);
 
@@ -505,7 +524,19 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     // moteur ne lit aucune date courante : il reste pur, rejouable et testable
     // sur une date fixe, et la fenêtre de fraîcheur n'introduit pas un comportement
     // qui dépendrait du jour où le banc tourne.
-    maintenantMs: Date.now(),
+    maintenantMs,
+    // Années révolues à `maintenantMs`, ou `null` — jamais une valeur devinée.
+    // Un patient introuvable, une date absente ou illisible donnent le même
+    // `null`, et un `null` n'atteint aucune borne d'âge ([[D-231]]).
+    ageAnnees: ageAnnees(patient?.dateNaissance, maintenantMs),
+    // MÊME DISCIPLINE QUE `drapeaux`, SUR LA MÊME ANAMNÈSE ([[D-232]]). Sans
+    // consultation porteuse, on ne passe RIEN — `lireEtatPopulation(null)`
+    // rendrait un objet aux sept critères `inconnu`, ce qui AFFIRMERAIT que
+    // rien n'est déclaré là qu'une absence dit seulement qu'on n'a pas lu. Le
+    // moteur distingue les deux, et c'est `DC-24` à la source.
+    etatPopulation: consultation?.anamnese == null
+      ? undefined
+      : lireEtatPopulation(consultation.anamnese),
   });
 
   // Fail-closed explicite : sans composition de pack, on n'affirme aucune

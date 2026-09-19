@@ -1,4 +1,5 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
+import type { ExclusionAlimentaire } from '@/lib/consultation/etatPopulation';
 import type { FunctionalCategoryId, PackId } from '@/lib/questionnaires-functional';
 import { sha256 } from './corpusSyntheseV1';
 import { grillesCitees } from './grillesSignees';
@@ -114,6 +115,66 @@ export type OrientationDeclencheurFeuille =
       type: 'drapeau';
       champ: keyof DrapeauxAnamnese;
       valeurs: string[];
+    }
+  // BORNE D'ÂGE — le type que [[D-216]] a rendu légitime et que [[D-231]]
+  // livre. Il lit `EntreeOrientation.ageAnnees`, années RÉVOLUES calculées par
+  // l'appelant depuis `Patient.dateNaissance` ; le moteur ne calcule aucun âge
+  // et ne lit aucune horloge.
+  //
+  // POURQUOI L'ÂGE EST REDEVENU LICITE, et le motif compte autant que la règle.
+  // Le dépôt l'écartait parce qu'« aucune borne d'âge n'a de provenance ; poser
+  // un pivot serait inventer un seuil clinique » (`DC-19`). Ce motif a disparu :
+  // `WN-CL-0286-006`, `WN-CL-0288-011` et `WN-CL-0293-009` portent des bornes —
+  // 50, 60, 70 ans — dans des claims PRESCRIPTIFS validés. Le pivot n'est plus
+  // inventé, il est CITÉ. Une borne écrite ici sans claim qui la porte
+  // resterait, elle, un seuil inventé : le type ne dispense de rien.
+  //
+  // DEUX OPÉRATEURS, ET PAS CINQ. `>=` et `>` expriment « dès tel âge » et
+  // « au-delà de tel âge », les deux seules formes que les claims emploient.
+  // Ouvrir `<` et `<=` aurait offert une borne PÉDIATRIQUE qu'aucune source ne
+  // fonde — `DC-43` nomme l'enfant parmi les populations, et le corpus n'en
+  // porte aucun seuil. Le type refuse donc ce que la doctrine ne peut pas
+  // encore justifier, plutôt que de compter sur la revue pour l'attraper.
+  //
+  // ÂGE INCONNU = DÉCLENCHEUR NON ATTEINT, jamais « âge 0 ». `ageAnnees` rend
+  // `null` sur toute date illisible, inexistante ou aberrante, et le moteur ne
+  // déduit rien d'une absence (`DC-24`).
+  | {
+      type: 'age';
+      operateur: '>=' | '>';
+      /** Années révolues. Doit être portée par un claim — le type ne le vérifie pas. */
+      valeur: number;
+    }
+  // EXCLUSION ALIMENTAIRE DÉCLARÉE — [[D-232]]. Elle lit
+  // `EtatPopulation.alimentation`, produit par `lireEtatPopulation`, et NON un
+  // drapeau d'anamnèse.
+  //
+  // POURQUOI PAS UN DRAPEAU, ET C'EST L'ARBITRAGE DU LOT. `etat_alimentation`
+  // existe bien dans `ANAMNESE_SECTIONS`, et en faire une onzième clé de
+  // `DrapeauxAnamnese` aurait été le chemin le plus court. Mais ce champ vit
+  // dans la section « État actuel », déclarée porter « les états de population,
+  // et RIEN D'AUTRE » ([[D-101]]) — aucune des dix clés de `DrapeauxAnamnese`
+  // n'en vient. Le champ a DÉJÀ un lecteur, `lireEtatPopulation`, qui le
+  // normalise en énuméré à cinq valeurs ; un second lecteur rendant le libellé
+  // verbatim aurait créé deux vérités pour un même fait, et deux disciplines de
+  // l'inconnu là où la section n'en veut qu'une.
+  //
+  // UN SEUL CRITÈRE, ET PAS LES SEPT. `EtatPopulation` porte aussi grossesse,
+  // allaitement, pathologies rénale et hépatique, chirurgie digestive et maladie
+  // cœliaque. Aucun claim ne les fonde comme INDICATION — et ils sont, par
+  // construction, des critères d'EXCLUSION (`DC-43`) : en faire des portes
+  // d'indication retournerait leur sens. Une grossesse qui INDIQUERAIT une
+  // conduite au lieu d'en écarter serait exactement l'erreur que la gate de
+  // population existe pour empêcher. Le type refuse donc ce que la doctrine
+  // n'autorise pas, comme la borne d'âge refuse `<`.
+  //
+  // `inconnu` N'ATTEINT RIEN. Il est une valeur de l'énuméré, donc écrivable
+  // dans `valeurs` — mais une ligne qui le citerait s'allumerait sur l'ignorance
+  // du patient. Le garde de forme le refuse, et le dit.
+  | {
+      type: 'exclusionAlimentaire';
+      /** Au moins une, jamais `inconnu`. Doit être portée par un claim. */
+      valeurs: ExclusionAlimentaire[];
     };
 
 // Disjonction ([[D-060]]) : atteinte si AU MOINS UNE branche complète l'est.
@@ -139,6 +200,31 @@ export type OrientationDeclencheur =
       type: 'ou';
       declencheurs: OrientationDeclencheurFeuille[];
     };
+
+/**
+ * Les feuilles qui visent un INSTRUMENT — les seules qui portent
+ * `idQuestionnaire` et `sousScore`.
+ *
+ * POURQUOI CE PRÉDICAT EXISTE, et c'est le vrai correctif de [[D-231]]. Huit
+ * fichiers raisonnaient « ce n'est pas un drapeau, donc c'est un instrument » :
+ * ils écrivaient `if (feuille.type === 'drapeau') continue;` puis lisaient
+ * `feuille.idQuestionnaire`. Ce raisonnement n'était vrai que parce que la
+ * famille comptait trois variantes dont une seule sans instrument. L'arrivée de
+ * la borne d'âge l'a rendu faux partout **en même temps** — et `tsc` l'a dit,
+ * fichier par fichier, plutôt que de laisser passer un `undefined`.
+ *
+ * Le prédicat remplace la déduction par une AFFIRMATION : une feuille
+ * d'instrument se reconnaît à ce qu'elle est, jamais à ce qu'elle n'est pas. La
+ * quatrième variante qui viendra ne rouvrira donc pas les huit fichiers.
+ */
+export type OrientationDeclencheurInstrument =
+  Extract<OrientationDeclencheurFeuille, { idQuestionnaire: string }>;
+
+export function estFeuilleInstrument(
+  feuille: OrientationDeclencheurFeuille,
+): feuille is OrientationDeclencheurInstrument {
+  return feuille.type === 'zone' || feuille.type === 'comparaison';
+}
 
 /**
  * Les feuilles d'un déclencheur : lui-même, ou les branches de sa disjonction.

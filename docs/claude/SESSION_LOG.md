@@ -7298,3 +7298,171 @@ discrimination des deux moteurs venant du banc hors dépôt.
 non observé mais réel en amont. La séquence écran en veille, proposée et non
 demandée. Le rouge WebKit **du CI**, dont le mécanisme reste inconnu — sa règle
 survit, son explication non. Et PR #1189, prête, tenue.
+## 2026-09-19 — La borne d'âge devient un déclencheur
+
+**Décision.** `D-231`, sur arbitrage du responsable : câblage complet plutôt que
+la forme seule. Le chantier 3 de S3 est fermé. Le dépôt écartait l'âge parce
+qu'aucune borne n'avait de provenance ; trois claims prescriptifs en portent —
+50, 60, 70 ans —, donc le pivot est **cité**, plus inventé.
+
+**Deux opérateurs, pas cinq.** `>=` et `>` seulement : `<` aurait offert une
+borne pédiatrique qu'aucune source ne fonde. Le type refuse ce que la doctrine ne
+peut pas justifier, au lieu de compter sur la revue.
+
+**Le moteur ne calcule aucun âge et ne lit aucune horloge** — il reçoit un nombre
+tranché, comme son instant de référence, qui est désormais hissé en un seul point
+pour que fraîcheur et âge ne puissent pas tomber de part et d'autre de minuit. Un
+seul module en DÉDUIT un âge clinique — la colonne était déjà lue ailleurs, pour
+le résidu d'effacement —, et il la refuse dès qu'elle n'est pas une date
+calendaire **réelle** : `2026-02-31` passe le format et se replierait en silence.
+
+**Le vrai correctif n'est pas la variante, c'est ce qu'elle a révélé.** Huit
+fichiers raisonnaient « pas un drapeau, donc un instrument » — vrai seulement tant
+que la famille comptait trois variantes. `tsc` l'a dit partout en même temps.
+`estFeuilleInstrument` remplace la déduction par une affirmation, et la garde de
+complétude cesse de s'appliquer à une feuille qui n'a aucun porteur — sans quoi la
+borne aurait été inatteignable sous un `ou`.
+
+**Corrigé avant d'écrire** : la dette du régime alimentaire routée la veille
+annonçait « une clé de plus dans `CHAMP_ANAMNESE` ». Faux — `etat_alimentation`
+est déjà lu par `lireEtatPopulation`. Arbitrage rendu : lire l'`EtatPopulation`,
+pas en faire un drapeau. `DC-43` revisitée dans le même lot, comme `D-216`
+l'exigeait.
+
+**Prochaine action.** Le régime alimentaire — dernier chantier avant les lignes.
+
+**Question ouverte.** Aucune règle ne porte de borne d'âge ; le jour où il en
+faudra une, vérifier que son appelant fournit bien l'âge.
+
+## 2026-09-19 — Le régime alimentaire devient une porte, et S3 n'a plus de chantier mécanique
+
+**Décision.** `D-232`, sur arbitrage du responsable : la porte lit
+l'`EtatPopulation`, elle ne fait pas du champ un drapeau. Le dernier des cinq
+chantiers de `D-216` est clos.
+
+**Le point de départ est une erreur à moi.** La dette routée la veille annonçait
+« une clé de plus dans `CHAMP_ANAMNESE` » — prémisse non vérifiée :
+`etat_alimentation` est déjà lu par `lireEtatPopulation`. Corrigée au registre
+avant d'écrire une ligne de code.
+
+**L'arbitrage est doctrinal.** Le champ vit dans la section réservée aux états de
+population (`D-101`) ; en faire une onzième clé de `DrapeauxAnamnese` lui aurait
+donné deux lecteurs de formes différentes — libellé verbatim d'un côté, énuméré
+normalisé de l'autre — et deux disciplines de l'inconnu là où la section n'en
+veut qu'une.
+
+**Un seul critère des sept.** Les six autres sont par construction des critères
+d'EXCLUSION : en faire des portes d'indication retournerait leur sens. Une
+grossesse qui indiquerait au lieu d'écarter est l'erreur exacte que la gate
+existe pour empêcher. Et `inconnu` n'allume rien — le garde de forme refuse même
+qu'on l'écrive, parce que cette faute ne se voit pas à la relecture.
+
+**Le contexte du moteur devient un objet.** À deux portes, le paramètre
+positionnel posé la veille devenait illisible ; à trois il aurait été fautif. Le
+motif qui l'avait fait choisir — ne rien passer FERME la porte — est intact.
+
+**Le câblage est gardé dès l'écriture**, avec trois contre-épreuves et une
+mutation. C'est la leçon de la revue de `D-231`, où les pièces étaient éprouvées
+et la jointure nue.
+
+**Prochaine action.** Les lignes d'indication elles-mêmes : la table est prête,
+le catalogue est prêt, les portes sont prêtes. Ce qui reste est clinique.
+
+**Question ouverte.** Aucune règle ne porte cette porte ; le jour venu, vérifier
+que l'appelant fournit bien l'état de population.
+
+## 2026-09-19 — Réconciliation documentaire de la campagne assiettes
+
+**Aucune décision.** Un lot de réconciliation ne réarbitre rien — il rend les
+documents fidèles à ce qui s'est passé, au sens que `FILE_ATTENTE.md` donne
+lui-même au mot.
+
+**Cinq affirmations vivantes étaient devenues fausses** après les quatre lots de
+la nuit : le catalogue à trois entrées (quinze depuis `D-230`), la méthylation
+« en attente de deux chantiers » (les deux sont livrés), et l'arbitrage B2 du
+cadrage Boussole, resté posé comme une question. Tranché — et le catalogue s'est
+étendu aux **protocoles**, jamais aux fiches patient que le registre déclare
+irrecevables comme source de règle.
+
+**Deux principes appliqués, et le second est celui que la revue m'a appris cette
+semaine.** Un bloc DATÉ ne se réécrit pas : il dit l'état d'un jour, un bloc neuf
+le supplante. Ce qui se lit comme une affirmation COURANTE est mis au passé,
+jamais supprimé — le motif d'alors reste utile.
+
+Quatre branches locales dont la PR est mergée ont été supprimées, vérifiées par
+l'état de la PR et non par l'ascendance, que le squash rend menteuse.
+
+**Deux écarts NON corrigés, et c'est délibéré.** `validation.last_checked_at` a
+onze jours : les `checks` qu'il décrit sont ceux d'un T3 COMPLET, et cette
+session n'a joué que des T2 `--fast` — avancer la date affirmerait une fraîcheur
+qu'on n'a pas. Et la branche par défaut locale est `behind 16` : `wn-cycle` dit
+que réconcilier un historique est un arbitrage humain.
+
+**Prochaine action.** Le travail clinique : écrire les lignes d'indication,
+claim par claim, sur pièce.
+
+## 2026-09-19 (suite) — Un décompte faux, trouvé par la revue de la réconciliation
+
+**La revue de la PR de réconciliation a tiré un fil que je n'avais pas vu.** Elle
+relevait une arithmétique — « quatre lots » pour cinq chantiers. En vérifiant,
+l'erreur était plus grave : j'annonçais depuis la veille que **les cinq chantiers
+de `D-216` étaient clos**. C'est faux.
+
+**Deux listes ont été confondues.** Les **cinq chantiers** que le handoff du
+2026-09-17 numérote — statut+filtre, les lignes, l'âge, les familles, le barème —
+et les **prérequis de l'attestation**, que la surface tient dans un tableau et
+que j'ai étendu en route. Le catalogue C5B (`D-230`) et la porte du régime
+(`D-232`) sont des prérequis **découverts**, sans numéro de chantier : les
+compter comme tels a fait dériver le décompte.
+
+**L'état réel : trois des cinq chantiers restent** — écrire les lignes
+(chantier 2, dont `D-229` n'a fait que la lecture), le mécanisme orienté des
+familles (4), le barème (5). Ce qui est vrai, et qui compte : **plus aucun
+prérequis mécanique ne bloque la signature**, et les chantiers 4 et 5 ne la
+bloquent pas non plus.
+
+**Corrigé partout, avec la raison** — registre (`D-232`, en tête), module,
+surface, fragment —, selon le précédent du dépôt sur la prémisse fausse de
+`D-049` : une entrée datée ne se réinterprète pas, mais un FAIT faux se répare et
+se dit. Le handoff de `D-232` est **annoté**, pas réécrit.
+
+**Ce que j'en retiens** : j'ai annoncé une clôture plus large que la réalité, et
+je l'ai répétée au responsable. La revue ne l'a pas vue non plus — elle n'a vu
+que l'arithmétique. C'est en la vérifiant que le fond est apparu.
+
+## 2026-09-19 — Le drapeau qui n'avait pas fermé, le verrou du sélecteur, et le plan mis au dépôt
+
+**Décisions.** Le constat promis par `D-226` ne rend pas `0` : une génération a
+eu lieu à 20:39:52 UTC le 2026-09-17, après le geste. C'est le retrait du CODE
+qui a fermé la porte. `D-226` est amendée ; réserve : variable absente et
+conteneurs recréés ne constatent pas un effet. Lot H : le dossier de l'URL
+s'applique une fois, une course préexistante fermée au passage. Le plan en dix
+lots entre au dépôt en cadrage, sans campagne.
+
+**Écartées.** Chercher la cause de la non-propagation avant d'écrire : le CLI
+n'expose aucun historique. Renormaliser les 113 blobs CRLF au passage :
+opération de dépôt, pas un correctif.
+
+**Prochaine action.** Le `package.json` racine qui réexpédie vers `web/`.
+
+**Questions ouvertes.** Trois synthèses validées jamais envoyées — motif du lot
+G. La garde de clôture de `/wn-merge` vit dans un skill que `gh pr merge`
+contourne : trois PR mergées sans elle.
+
+## 2026-09-19 — Les paliers se lancent depuis la racine, et le réexpéditeur mentait déjà
+
+**Décisions.** Un `package.json` racine réexpédie `check` et `test:worktree` vers
+`web/`. Le motif n'est pas le confort : lancés depuis la racine ils rendaient 254,
+et une tâche de fond a rapporté ce 254 comme « exit code 0 ». Un banc garde que
+la racine ne déclare aucune dépendance — un lockfile y ferait changer la racine
+de traçage de Next.js — et que chaque script est **exactement** la réexpédition,
+`--` final compris : sans ce séparateur, `-- --fast` était avalé par npm et la
+séquence complète tournait à la place de la rapide. Seul le libellé du journal le trahissait.
+
+**Écartées.** Renoncer au fichier par crainte du déploiement : `PROJECT_DIR=web`
+fait descendre Scalingo avant toute détection, vérifié avant d'écrire.
+
+**Prochaine action.** Lots A, B, C du cadrage de la chaîne documentaire.
+
+**Questions ouvertes.** Les 113 blobs CRLF. La garde de clôture de `/wn-merge`,
+qu'aucun contrôle CI n'exécute.

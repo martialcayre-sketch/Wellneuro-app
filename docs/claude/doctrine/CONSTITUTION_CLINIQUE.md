@@ -719,10 +719,43 @@ chaque candidat porte le motif « **exclusions non curées** » servi au pratici
 (`DC-35`). La curation reste due, avec un véhicule qui la lise.*
 
 ***Trois critères de la règle sont volontairement absents de la section**, et
-le dire vaut mieux que les laisser croire couverts : l'ÂGE (aucune borne n'a de
-provenance — un pivot serait un seuil inventé, `DC-19`), la POLYMÉDICATION (le
-compte existe, le nombre qui qualifie n'a aucune source), l'ALLERGIE /
-INTOLÉRANCE (déjà déclarée par `intolerances_alimentaires` et `allergies`).*
+le dire vaut mieux que les laisser croire couverts : l'ÂGE (voir la revisite
+ci-dessous), la POLYMÉDICATION (le compte existe, le nombre qui qualifie n'a
+aucune source), l'ALLERGIE / INTOLÉRANCE (déjà déclarée par
+`intolerances_alimentaires` et `allergies`).*
+
+***REVISITE DE L'ÂGE — 2026-09-19 ([[D-231]]), appelée par [[D-216]] §1.** Le
+motif du refus a disparu, et il faut le dire précisément plutôt que d'assouplir
+la règle. Il était : « aucune borne d'âge n'a de provenance au dépôt ; poser un
+pivot serait inventer un seuil clinique » (`DC-19`). Trois claims PRESCRIPTIFS
+validés en portent désormais — `WN-CL-0286-006` (50 ans), `WN-CL-0288-011`
+(60 ans), `WN-CL-0293-009` (50 puis 70 ans) —, tous sur l'indication d'une
+assiette. **Le pivot n'est plus inventé, il est cité.***
+
+***Ce que la revisite change, et ce qu'elle ne change pas.** `DC-19` tient
+entier : une borne écrite sans claim qui la porte reste un seuil inventé, et
+aucun banc ne peut le dire — seule la relecture le voit. Ce qui change est le
+MÉCANISME : `OrientationDeclencheurFeuille` porte une variante `age`,
+`Patient.dateNaissance` est lue par `ageAnnees` (`lib/patient/age.ts`), et
+`orientationService` fournit l'âge au moteur. Deux opérateurs seulement, `>=` et
+`>` — les deux formes que les claims emploient. **La borne PÉDIATRIQUE que
+`DC-43` nomme reste hors d'atteinte** : le type refuse `<` et `<=`, parce
+qu'aucune source ne fonde un seuil d'enfance. La règle continue donc de nommer un
+critère qu'elle ne couvre pas, et c'est délibéré.*
+
+***L'âge n'entre PAS dans la section « État actuel », et ce n'est pas un
+oubli.** Il ne se déclare pas, il se calcule depuis une donnée que le dossier
+porte déjà. Le demander au patient créerait deux vérités pour un même fait —
+exactement ce que la section refuse pour l'allergie. Conséquence : l'âge est
+lisible par un DÉCLENCHEUR sans être un état de population au sens de
+`lireEtatPopulation`, et la gate de population reste inchangée. `DC-43` garde
+donc sa moitié tenue (la PLACE du filtre) et sa moitié sans sujet (les exclusions
+non curées) : cette revisite ne touche ni l'une ni l'autre.*
+
+***Ce qu'aucune borne d'âge ne fait aujourd'hui.** Aucune règle d'orientation
+n'en porte — un banc l'exige —, et la table des indications d'assiette est
+toujours VIDE. Le mécanisme existe avant son usage, comme le filtre de service
+des assiettes avant leur première ligne.*
 
 ***Arbitrage nommé, non rendu** : ce que fait la gate sur un état INCONNU pour
 un critère exclu. Le module parle plutôt qu'il n'inhibe — écarter sur inconnu
