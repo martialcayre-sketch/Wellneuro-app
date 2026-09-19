@@ -23,6 +23,7 @@ function actif(over: Record<string, unknown> = {}) {
     indiquees: [],
     nonEvaluees: [],
     nonIndiquees: 0,
+    retireesFauteDeClaim: 0,
     corpusLu: true,
     ...over,
   };
@@ -35,7 +36,6 @@ const INDIQUEE = {
   sourceProtocole: 'WN-SRC-0288',
   motif: 'âge 76 ans > 60',
   instruments: [],
-  raccourciAssume: null,
   claims: ['WN-CL-0288-011::v1.0', 'WN-CL-0288-013::v1.0'],
 };
 
@@ -128,6 +128,32 @@ describe('AssiettesIndiqueesPanel', () => {
     );
   });
 
+  it('des lignes PUBLIÉES retirées par le corpus sont NOMMÉES — jamais fondues dans le vide', async () => {
+    // LE DÉFAUT QUE CE CAS FERME (constat de revue). Un claim qui cesse d'être
+    // valide retire SA ligne du service. Sans ce terme, la carte annonçait
+    // « les 4 indications en service ont été évaluées ; aucune n'est retenue »
+    // sous le sha du périmètre signé ENTIER — un constat portant sur la table
+    // alors que trois lignes publiées n'avaient pas été regardées.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(reponse(actif({ nonIndiquees: 4, retireesFauteDeClaim: 3 }))),
+    );
+    const { container } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
+    const ui = within(container);
+    await waitFor(() => expect(ui.getByRole('alert')).not.toBeNull());
+    expect(ui.getByRole('alert').textContent).toMatch(/3 indication\(s\) publiée\(s\) ne sont pas servies/);
+    expect(ui.getByRole('alert').textContent).toMatch(/n’ont pas été regardées/);
+  });
+
+  it('aucune ligne retirée : la phrase ne paraît pas — pas d’alerte permanente', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(actif({ nonIndiquees: 7 }))));
+    const { container } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
+    await waitFor(() =>
+      expect(container.textContent).toMatch(/Les 7 indications en service ont été évaluées/),
+    );
+    expect(container.textContent).not.toMatch(/ne sont pas servies/);
+  });
+
   it('erreur de route : le message est rendu en alerte, sans détail technique', async () => {
     vi.stubGlobal(
       'fetch',
@@ -207,6 +233,38 @@ describe('libelleLacune — aucune phrase n’affirme quoi que ce soit DU PATIEN
     });
     expect(avec).toMatch(/sur 12/);
     expect(sans).not.toMatch(/ sur /);
+  });
+
+  it('une COMPLÉTUDE ILLISIBLE ne s’annonce jamais comme « 0 item manquant »', () => {
+    // CONSTAT DE REVUE. `comptesDuPorteurVise` rend `null` quand le porteur ne
+    // publie aucun compte : une première rédaction repliait ce `null` sur
+    // `manquants: 0`, et l'écran annonçait « recueil incomplet : 0 item(s)
+    // manquant(s) » — un NOMBRE INVENTÉ sur une mesure inconnue, dans la carte
+    // même dont tout le propos est de ne jamais présenter une absence comme un
+    // fait.
+    const texte = libelleLacune({ type: 'completude_illisible', idQuestionnaire: 'Q_GAS_01' });
+    expect(texte).toMatch(/illisible/);
+    expect(texte).not.toMatch(/\b0 item/);
+    expect(texte).not.toMatch(/manquant/);
+  });
+
+  it('les HUIT formes ont un libellé — l’exhaustivité du switch est tenue par le type', () => {
+    // Le `switch` n'a pas de `default` : une variante ajoutée au type sans
+    // libellé ferait rougir `tsc`, pas ce cas. Celui-ci garde l'autre moitié —
+    // qu'aucune des huit ne rende une chaîne vide.
+    const toutes = [
+      libelleLacune({ type: 'instrument_non_passe', idQuestionnaire: 'Q_GAS_01' }),
+      libelleLacune({ type: 'instrument_non_cotable', idQuestionnaire: 'Q_GAS_01' }),
+      libelleLacune({ type: 'recueil_incomplet', idQuestionnaire: 'Q_GAS_01', manquants: 1, total: 8 }),
+      libelleLacune({ type: 'completude_illisible', idQuestionnaire: 'Q_GAS_01' }),
+      libelleLacune({ type: 'mesure_indisponible', idQuestionnaire: 'Q_GAS_01' }),
+      libelleLacune({ type: 'anamnese_absente', champ: 'intolerancesAlimentaires' }),
+      libelleLacune({ type: 'age_inconnu' }),
+      libelleLacune({ type: 'alimentation_non_declaree' }),
+    ];
+    expect(toutes).toHaveLength(8);
+    expect(toutes.every(t => t.trim().length > 0)).toBe(true);
+    expect(new Set(toutes).size).toBe(8);
   });
 
   it('les sept formes ont un libellé, et aucune ne parle du patient', () => {

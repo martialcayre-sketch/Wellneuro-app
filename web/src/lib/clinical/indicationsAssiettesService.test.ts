@@ -58,6 +58,48 @@ function dossierVide() {
   prisma.patient.findUnique.mockResolvedValue(null);
 }
 
+/**
+ * UNE PASSATION RÉELLE DE `Q_INF_03` — 40 items cotés, recueil COMPLET.
+ *
+ * POURQUOI ELLE ENTRE ICI, ET CE QU'ELLE FERME (constat de revue). Le chapeau
+ * de ce banc annonçait contrôler « passations, anamnèse, date de naissance » ;
+ * aucun cas n'en fournissait une seule. `dossierVide()` rendait `[]` au
+ * `beforeEach`, et rien ne le redéfinissait — si bien que tout le chemin
+ * `scoresRecalculesPourRaisonnement` → `derniereReponseParQuestionnaire` →
+ * porte d'instrument n'était JAMAIS exécuté avec de la donnée, alors que cinq
+ * des sept lignes publiées dépendent d'un instrument.
+ *
+ * LE SCORE STOCKÉ EST VOLONTAIREMENT FAUX — `DA` à 0 quand les réponses brutes
+ * valent 10. C'est le mutant qui décide : un service qui lirait `scoresJson`
+ * tel quel au lieu de recalculer garderait la porte fermée, et ce cas rougit.
+ * Un score stocké est un instantané de la doctrine qui avait cours à la
+ * soumission — c'est exactement la divergence que [[D-237]] §4 refuse.
+ */
+function reponsesBrutesQInf03(valeur: number): Record<string, number> {
+  const brutes: Record<string, number> = {};
+  for (const prefixe of ['D', 'N', 'S', 'ME']) {
+    for (let index = 1; index <= 10; index += 1) brutes[`${prefixe}${index}`] = valeur;
+  }
+  return brutes;
+}
+
+function passationQInf03(over: Record<string, unknown> = {}) {
+  return {
+    idReponse: 'REP-QINF03',
+    idQuestionnaire: 'Q_INF_03',
+    dateReponse: new Date('2026-09-18T09:00:00.000Z'),
+    scoresJson: {
+      rawAnswers: reponsesBrutesQInf03(1),
+      subScores: [
+        { id: 'DA', label: 'Dopamine', total: 0, scaled: 0, max: 40, repondus: 10, items: 10 },
+      ],
+      total: 0,
+    },
+    statutValidite: 'VALID',
+    ...over,
+  };
+}
+
 const ENV_ORIGINE = process.env.WN_ASSIETTES_INDIQUEES;
 
 beforeEach(() => {
@@ -137,6 +179,26 @@ describe('le corpus — deux fermetures, deux raisons, jamais confondues', () =>
     const vues = [...resultat.indiquees, ...resultat.nonEvaluees].map(a => a.ligneId);
     expect(vues).not.toContain('ASSIETTE-IND-SEROTONINERGIQUE');
     expect(vues).toContain('ASSIETTE-IND-DETOXICATION');
+    // ET LA LIGNE RETIRÉE EST COMPTÉE — sans quoi elle disparaissait sans
+    // qu'aucun terme du résultat ne la mentionne, `corpusLu` restant VRAI.
+    expect(resultat.retireesFauteDeClaim).toBe(1);
+  });
+
+  it('corpus ILLISIBLE : aucun retrait n’est compté — la raison est déjà dite', async () => {
+    // Zéro, et ce n'est pas un repli : aucune ligne n'est servable, et
+    // `corpusLu` porte la cause. Compter là un retrait par claim nommerait une
+    // seconde cause qui n'a pas eu lieu.
+    mockCorpus.claimsValidesAuCorpus.mockRejectedValue(new Error('connexion perdue'));
+    const resultat = await evaluerAssiettesPourPatient('PAT001');
+    if (!resultat.actif) throw new Error('le verrou devait être ouvert');
+    expect(resultat.corpusLu).toBe(false);
+    expect(resultat.retireesFauteDeClaim).toBe(0);
+  });
+
+  it('corpus lu et complet : aucun retrait — la phrase ne paraîtra pas sans motif', async () => {
+    const resultat = await evaluerAssiettesPourPatient('PAT001');
+    if (!resultat.actif) throw new Error('le verrou devait être ouvert');
+    expect(resultat.retireesFauteDeClaim).toBe(0);
   });
 });
 
@@ -201,6 +263,40 @@ describe('les portes réelles s’ouvrent — sur le dossier, pas sur une fixtur
     expect(proteinee?.sourceProtocole).toBe('WN-SRC-0288');
   });
 
+  it('une PASSATION ouvre la porte d’instrument — et le score est RECALCULÉ, jamais relu', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([passationQInf03()]);
+    const resultat = await evaluerAssiettesPourPatient('PAT001');
+    if (!resultat.actif) throw new Error('le verrou devait être ouvert');
+    const dopa = resultat.indiquees.find(a => a.ligneId === 'ASSIETTE-IND-DOPAMINERGIQUE');
+    expect(dopa).toBeDefined();
+    // `score 10` et non `score 0` : le stocké disait 0, les réponses brutes
+    // valent 10. C'est le recalcul qui décide — la mutation qui rend
+    // `scoresJson` tel quel referme la porte et rougit ici.
+    expect(dopa?.motif).toContain('score 10');
+    expect(dopa?.instruments).toEqual([{ idQuestionnaire: 'Q_INF_03', sousScore: 'DA' }]);
+  });
+
+  it('une passation INVALIDÉE n’ouvre rien — et la lacune dit « non cotable », pas « non passé »', async () => {
+    // Le praticien a invalidé le recueil : le score cesse d'être lisible pour
+    // le raisonnement, mais la passation a bien eu lieu. Confondre les deux
+    // ferait dire au praticien qu'il n'a pas passé un instrument qu'il a passé.
+    const drapeauOrigine = process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    process.env.WN_ENABLE_VALIDITE_PASSATIONS = '1';
+    try {
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        passationQInf03({ statutValidite: 'INVALID' }),
+      ]);
+      const resultat = await evaluerAssiettesPourPatient('PAT001');
+      if (!resultat.actif) throw new Error('le verrou devait être ouvert');
+      expect(resultat.indiquees.map(a => a.ligneId)).not.toContain('ASSIETTE-IND-DOPAMINERGIQUE');
+      const dopa = resultat.nonEvaluees.find(a => a.ligneId === 'ASSIETTE-IND-DOPAMINERGIQUE');
+      expect(dopa?.lacunes.map(l => l.type)).toEqual(['instrument_non_cotable', 'instrument_non_cotable']);
+    } finally {
+      if (drapeauOrigine === undefined) delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+      else process.env.WN_ENABLE_VALIDITE_PASSATIONS = drapeauOrigine;
+    }
+  });
+
   it('une date de naissance absente n’ouvre AUCUNE borne d’âge — jamais « âge 0 »', async () => {
     prisma.patient.findUnique.mockResolvedValue({ dateNaissance: null });
     const resultat = await evaluerAssiettesPourPatient('PAT001');
@@ -221,6 +317,41 @@ describe('les portes réelles s’ouvrent — sur le dossier, pas sur une fixtur
     // sécurité —, dédoublonnée et triée. Jamais un verbatim.
     expect(epargne?.claims).toEqual([...(epargne?.claims ?? [])].sort());
     expect(epargne?.claims.every(c => /^WN-CL-\d{4}-\d{3}::/.test(c))).toBe(true);
+  });
+
+  it('le claim cité DEUX FOIS ne paraît qu’une — dédoublonnage de l’union', async () => {
+    // `WN-CL-0288-013` est le seul claim de la table cité deux fois : il fonde
+    // l'indication de la protéinée ET porte sa réserve parkinsonienne, donc il
+    // est dans `claimsIndication` ET dans `claimsSecurite`. Aucune assertion du
+    // dépôt ne le regardait — les deux qui touchaient `.claims` portaient sur
+    // l'épargne digestive, dont les six claims sont tous distincts. Retirer le
+    // `new Set` laissait donc tout vert, et la carte affichait l'identifiant
+    // deux fois sur un dossier réel.
+    prisma.patient.findUnique.mockResolvedValue({ dateNaissance: '1950-03-12' });
+    const resultat = await evaluerAssiettesPourPatient('PAT001');
+    if (!resultat.actif) throw new Error('le verrou devait être ouvert');
+    const proteinee = resultat.indiquees.find(a => a.ligneId === 'ASSIETTE-IND-PROTEINEE');
+    const doublon = proteinee?.claims.filter(c => c.startsWith('WN-CL-0288-013::')) ?? [];
+    expect(doublon).toHaveLength(1);
+    expect(new Set(proteinee?.claims).size).toBe(proteinee?.claims.length);
+  });
+
+  it('AUCUNE prose de relecture ne traverse — `raccourciAssume` ne sort pas du dépôt', async () => {
+    // CONSTAT DE REVUE. Le champ existe sur la ligne, il est dans le périmètre
+    // haché, et il était servi tel quel : la carte affichait au praticien un
+    // texte écrit pour la relecture de signature, avec ses identifiants de code
+    // (`claimsSecurite`, `insomnie_depression`, `Q_INF_03`, `D-224`). Le
+    // reformuler périmerait l'attestation ; il ne voyage donc pas.
+    prisma.patient.findUnique.mockResolvedValue({ dateNaissance: '1950-03-12' });
+    const resultat = await evaluerAssiettesPourPatient('PAT001');
+    if (!resultat.actif) throw new Error('le verrou devait être ouvert');
+    const proteinee = resultat.indiquees.find(a => a.ligneId === 'ASSIETTE-IND-PROTEINEE');
+    expect(proteinee).toBeDefined();
+    // La ligne PORTE bien un raccourci — sans quoi ce cas serait vide de sens.
+    const ligne = INDICATIONS_ASSIETTES_V1.find(l => l.id === 'ASSIETTE-IND-PROTEINEE');
+    expect(ligne?.raccourciAssume?.length ?? 0).toBeGreaterThan(80);
+    expect(Object.keys(proteinee ?? {})).not.toContain('raccourciAssume');
+    expect(JSON.stringify(proteinee)).not.toContain('claimsSecurite');
   });
 
   it('une ligne ATTEINTE ne porte aucune lacune — le contrat de `lacunesDuDeclencheur`', async () => {
@@ -283,5 +414,30 @@ describe('ce qu’on n’a PAS pu regarder — `DC-24`, et c’est le motif du l
     // Aucune ligne servable ne disparaît en silence : une ligne est indiquée,
     // non évaluée, ou lue et non retenue — il n'y a pas de quatrième sort.
     expect(resultat.indiquees.length + resultat.nonEvaluees.length + resultat.nonIndiquees).toBe(7);
+  });
+
+  it('les QUATRE comptes couvrent les sept lignes PUBLIÉES, retrait par claim compris', async () => {
+    // L'INVARIANT ÉLARGI, ET C'EST LE CONSTAT DE REVUE. Le cas précédent
+    // compte les lignes SERVABLES : il reste vert pendant que la table rétrécit.
+    // Ici le dénominateur est le nombre de lignes PUBLIÉES — une ligne retirée
+    // par le corpus doit se retrouver dans un compte, jamais nulle part.
+    const toutes = toutesLesClesDuCorpus();
+    for (const claim of [
+      { claimId: 'WN-CL-0290-005', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0287-008', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0291-011', versionClaim: 'v1.0' },
+    ]) {
+      toutes.delete(cleClaimCorpus(claim));
+    }
+    mockCorpus.claimsValidesAuCorpus.mockResolvedValue(toutes);
+    const resultat = await evaluerAssiettesPourPatient('PAT001');
+    if (!resultat.actif) throw new Error('le verrou devait être ouvert');
+    expect(resultat.retireesFauteDeClaim).toBe(3);
+    expect(
+      resultat.indiquees.length
+      + resultat.nonEvaluees.length
+      + resultat.nonIndiquees
+      + resultat.retireesFauteDeClaim,
+    ).toBe(7);
   });
 });

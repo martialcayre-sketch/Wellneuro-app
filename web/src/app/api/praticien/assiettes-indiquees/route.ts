@@ -18,9 +18,18 @@ import {
 // n'existe qu'à un seul endroit — et parce qu'un `route.ts` Next ne peut pas
 // exporter de valeur.
 //
-// AUCUNE ÉCRITURE, ET AUCUN GESTE PROPOSÉ. Pas de POST : rien ne s'assigne,
-// rien ne s'attache à un protocole, rien ne part vers un patient. Ce que le
-// praticien fait de l'assiette indiquée reste sa décision, hors de ce chemin.
+// AUCUNE ÉCRITURE AU DOSSIER CLINIQUE, ET AUCUN GESTE PROPOSÉ. Pas de POST :
+// rien ne s'assigne, rien ne s'attache à un protocole, rien ne part vers un
+// patient. Ce que le praticien fait de l'assiette indiquée reste sa décision,
+// hors de ce chemin.
+//
+// UNE ÉCRITURE EXISTE POURTANT, ET LA TAIRE SERAIT LE DÉFAUT — constat de revue.
+// `verifierAppartenancePatient` ÉCRIT : une ligne au journal d'accès, plus une
+// purge opportuniste au-delà de la rétention. C'est le journal G-TRUST-04,
+// voulu, et identique à celui de toute lecture praticien. Mais « lecture seule »
+// désigne le DOSSIER CLINIQUE, jamais la trace d'audit — et c'est exactement
+// pourquoi le verrou est consulté AVANT l'appartenance : verrou fermé, aucune
+// ligne n'est écrite pour une lecture qui n'a pas eu lieu.
 
 const ROUTE_JOURNAL = '/api/praticien/assiettes-indiquees';
 
@@ -44,6 +53,13 @@ export type AssiettesIndiqueesApiResponse =
        */
       nonEvaluees: AssietteNonEvaluee[];
       nonIndiquees: number;
+      /**
+       * Lignes PUBLIÉES que le filtre de claims a retirées du service — `0`
+       * quand le corpus est illisible, sa raison étant portée par `corpusLu`.
+       * Sans ce terme, une table qui rétrécit se lisait comme un dossier qui ne
+       * déclenche rien (`DC-24`) — constat de revue.
+       */
+      retireesFauteDeClaim: number;
       corpusLu: boolean;
     }
   | {
@@ -109,6 +125,7 @@ export async function GET(req: Request): Promise<NextResponse<AssiettesIndiquees
       indiquees: [...resultat.indiquees],
       nonEvaluees: [...resultat.nonEvaluees],
       nonIndiquees: resultat.nonIndiquees,
+      retireesFauteDeClaim: resultat.retireesFauteDeClaim,
       corpusLu: resultat.corpusLu,
     });
   } catch (err) {

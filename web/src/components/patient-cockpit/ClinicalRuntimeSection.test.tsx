@@ -608,6 +608,30 @@ describe('ClinicalRuntimeSection', () => {
     });
   });
 
+  it('EN PHASE DÉCISION, les assiettes indiquées ne sont PAS lues — aucun accès au dossier', async () => {
+    // CONSTAT DE REVUE, ET LE CAS QUI L'AURAIT ATTRAPÉ. Le panneau était monté
+    // sous un `hidden`, qui MASQUE sans démonter : son `useEffect` partait donc
+    // dès le montage de la section, quelle que soit la phase. Une fois le
+    // drapeau ouvert, `GET /api/praticien/assiettes-indiquees` vérifie
+    // l'appartenance et JOURNALISE une lecture de dossier clinique — le journal
+    // d'accès aurait porté une lecture que le praticien n'a jamais demandée.
+    const fetchMock = fetchParRoute({ cockpitGet: [rep(readyAvecCandidats())] });
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={null}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        phase="decision"
+      />,
+    );
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(0));
+    expect(
+      fetchMock.mock.calls.map(a => String(a[0])).some(u => u.includes('/assiettes-indiquees')),
+    ).toBe(false);
+  });
+
   it('recharge automatiquement une proposition périmée et redemande confirmation', async () => {
     const stale: CockpitRuntimeApiResponse = { status: 'unavailable', reason: 'proposal_stale', error: 'Périmée.' };
     const refreshed = { ...proposalResponse, proposalHash: 'hash-refreshed' } satisfies CockpitRuntimeApiResponse;

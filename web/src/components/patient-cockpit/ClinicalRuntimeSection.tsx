@@ -2037,11 +2037,26 @@ export function ClinicalRuntimeSection({
           panne de celle-ci. Verrou fermé, le panneau se rend `null` lui-même.
 
           PAS DE `readyDecisionCardId` NON PLUS : la carte ne s'attache à aucune
-          carte de décision — elle ne propose aucun geste. */}
-      {!fixture && (
-        <div hidden={!affiche('actions') || sousVueActions !== 'protocole'}>
-          <AssiettesIndiqueesPanel idPatient={idPatient} />
-        </div>
+          carte de décision — elle ne propose aucun geste.
+
+          MONTAGE CONDITIONNEL, ET NON `hidden` — CONSTAT DE REVUE, VÉRIFIÉ.
+          `hidden` ne démonte pas : le panneau voisin le dit lui-même, et c'est
+          VOULU pour lui (le démonter rejouerait son chargement et perdrait
+          l'aliment sélectionné). Ici c'était une faute. Le `useEffect` de cette
+          carte serait parti dès le montage de la SECTION — donc en phase
+          Décision, et dans les sous-vues Historique, Diffusion, Biologie. Une
+          fois le drapeau ouvert, la route vérifie l'appartenance et
+          **JOURNALISE une lecture de dossier clinique** : le journal d'accès
+          aurait porté une lecture que le praticien n'a jamais demandée, avant
+          même qu'il ouvre Protocole. C'est l'inverse exact de ce que le verrou
+          précoce de la route existe pour garantir.
+
+          RIEN À PRÉSERVER EN DÉMONTANT, et c'est ce qui rend le remède gratuit :
+          cette carte n'a aucun état de saisie — elle relit sur `idPatient`, et
+          son seul coût au remontage est le GET qu'on vient précisément
+          d'éviter. */}
+      {!fixture && affiche('actions') && sousVueActions === 'protocole' && (
+        <AssiettesIndiqueesPanel idPatient={idPatient} />
       )}
       <div id="protocol-version-builder" hidden={!affiche('actions') || (!fixture && sousVueActions !== 'protocole')}>
         {/* RESTITUER AVANT DE FAIRE SAISIR. Le constructeur ne lisait de

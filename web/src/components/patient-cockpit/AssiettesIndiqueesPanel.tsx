@@ -39,9 +39,22 @@ function axeSuffixe(sousScore?: string): string {
 // Le libellé lisible existe (`ANAMNESE_SECTIONS`), mais l'atteindre demande la
 // table de correspondance `CHAMP_ANAMNESE`, qui vit dans `declencheursAnamnese`
 // — lequel importe `orientationRulesV1`, qui importe `corpusSyntheseV1`, qui
-// importe `createHash` de `crypto`. **Un import de VALEUR depuis ce composant
-// client ferait donc entrer `node:crypto` au paquet du navigateur**, et un banc
-// unitaire ne le verrait pas : c'est au BUILD que ça casse.
+// importe `createHash` de `'crypto'`. **Un import de VALEUR depuis ce composant
+// client tirerait donc au paquet du navigateur crypto-browserify ET la table de
+// règles entière**, retenue par le `sha256(...)` de portée module — dans un
+// fichier `/_next/static/…` qui n'est derrière aucune authentification.
+//
+// CE QUI L'AURAIT VU, ET CE QUI NE L'AURAIT PAS VU — dit exactement, parce
+// qu'une première rédaction s'est trompée sur les trois (constat de revue).
+// **Pas le build** : le spécifieur est `'crypto'` nu, que Next résout vers son
+// polyfill sans broncher — c'est la forme préfixée `node:crypto` qui casse, et
+// c'est une autre chaîne. **Mais un banc unitaire, oui** :
+// `bundleClient.guard.test.ts` balaie tout fichier `'use client'` à la
+// recherche d'un import de VALEUR depuis `@/lib/clinical/`, et
+// `declencheursAnamnese` n'est pas un module feuille. L'import aurait rougi en
+// T1. Le coût réel n'est donc pas une erreur de build : c'est le poids du chunk
+// et le référentiel clinique servi au navigateur — et la barrière est un banc,
+// pas le compilateur.
 //
 // Trois issues, toutes écartées ici : recopier la correspondance (un troisième
 // jeu de noms qui dérive), la faire voyager dans la réponse (élargir le contrat
@@ -67,6 +80,10 @@ export function libelleLacune(lacune: LacuneDeclencheur): string {
       return lacune.total === null
         ? `${libelleInstrument(lacune.idQuestionnaire)} — recueil incomplet : ${lacune.manquants} item(s) manquant(s)${axeSuffixe(lacune.sousScore)}`
         : `${libelleInstrument(lacune.idQuestionnaire)} — recueil incomplet : ${lacune.manquants} item(s) manquant(s) sur ${lacune.total}${axeSuffixe(lacune.sousScore)}`;
+    // COMPLÉTUDE ILLISIBLE — et surtout pas « 0 item manquant ». Le praticien
+    // doit lire qu'on ne SAIT PAS, pas un nombre qu'on aurait fabriqué.
+    case 'completude_illisible':
+      return `${libelleInstrument(lacune.idQuestionnaire)} — complétude du recueil illisible${axeSuffixe(lacune.sousScore)}`;
     case 'mesure_indisponible':
       return `${libelleInstrument(lacune.idQuestionnaire)} — mesure indisponible${axeSuffixe(lacune.sousScore)}`;
     case 'anamnese_absente':
@@ -156,6 +173,20 @@ export function AssiettesIndiqueesPanel({ idPatient }: { idPatient: string }) {
               </p>
             )}
 
+            {/* DES LIGNES PUBLIÉES N'ONT PAS ÉTÉ REGARDÉES — et ce n'est ni
+                « aucune assiette indiquée », ni un corpus illisible. Un claim
+                qui cesse d'être valide retire SA ligne du service : la table
+                reste signée, la carte rétrécit, et sans cette phrase le
+                praticien lirait un constat portant sur la table entière.
+                Constat de revue ; `DC-24` est la règle qui l'exige. */}
+            {payload.corpusLu && payload.retireesFauteDeClaim > 0 && (
+              <p role="alert" className="mt-4 text-sm text-status-warning">
+                {payload.retireesFauteDeClaim} indication(s) publiée(s) ne sont pas servies : un de
+                leurs claims n’est plus valide au corpus. Elles n’ont pas été regardées sur ce
+                dossier.
+              </p>
+            )}
+
             {payload.corpusLu && payload.indiquees.length === 0 && payload.nonEvaluees.length === 0 && (
               <p className="mt-4 text-sm text-muted-foreground">
                 {payload.nonIndiquees === 0
@@ -173,11 +204,6 @@ export function AssiettesIndiqueesPanel({ idPatient }: { idPatient: string }) {
                   >
                     <p className="text-sm font-semibold text-foreground">{assiette.libelle}</p>
                     <p className="mt-1 text-xs text-muted-foreground">Ce qui l’indique : {assiette.motif}</p>
-                    {assiette.raccourciAssume && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Raccourci assumé : {assiette.raccourciAssume}
-                      </p>
-                    )}
                     <p className="mt-1 text-xs text-muted-foreground">
                       {assiette.sourceProtocole ? `${assiette.sourceProtocole} · ` : ''}
                       {assiette.claims.join(' · ')}

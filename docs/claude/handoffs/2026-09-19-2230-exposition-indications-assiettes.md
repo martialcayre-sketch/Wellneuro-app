@@ -42,9 +42,10 @@ l'arbitrage du responsable — **nommer ce qui manque**.
 D'où `lacunesDuDeclencheur`, **dans le moteur partagé et non dans le service** :
 la doctrine de complétude y vit déjà, et le chapeau d'`orientationService` dit
 pourquoi — *un fail-closed dupliqué est un fail-closed qu'on oublie de corriger
-dans l'une des deux copies*. Sept formes, toutes des faits sur le **dossier** :
-instrument non passé, passé mais non coté, recueil incomplet, mesure
-indisponible, anamnèse absente, âge inconnu, régime non déclaré.
+dans l'une des deux copies*. **Huit** formes, toutes des faits sur le **dossier** :
+instrument non passé, passé mais non coté, recueil incomplet, **complétude
+illisible**, mesure indisponible, anamnèse absente, âge inconnu, régime non
+déclaré — la huitième entrée **sur constat de revue** (§ 8 ter).
 
 **Une asymétrie du moteur est respectée plutôt que lissée** : la garde de
 complétude ne vaut que pour les branches d'un `ou` — une feuille seule peut
@@ -78,10 +79,10 @@ disjonction « non évaluée ». Une ligne à trois portes paraîtra donc souven
 `git status`, jamais de mémoire : une première rédaction annonçait « sept neufs,
 huit modifiés », le même écart qu'au lot précédent.
 
-**HUIT NEUFS** — `indicationsAssiettesService.ts` + son banc (**19 cas**) ·
-`api/praticien/assiettes-indiquees/route.ts` + son banc (**11 cas**) ·
-`AssiettesIndiqueesPanel.tsx` + son banc (**15 cas**) — **45 au total**, relus
-après les correctifs de relecture · `changelog.d/…-exposition-indications-assiettes.md` ·
+**HUIT NEUFS** — `indicationsAssiettesService.ts` + son banc (**26 cas**) ·
+`api/praticien/assiettes-indiquees/route.ts` + son banc (**12 cas**) ·
+`AssiettesIndiqueesPanel.tsx` + son banc (**19 cas**) — **57 au total** après les
+correctifs de revue · `changelog.d/…-exposition-indications-assiettes.md` ·
 ce handoff.
 
 **ONZE MODIFIÉS** — `orientationEngine.ts` (le vocabulaire de lacune, +145
@@ -110,12 +111,20 @@ périmée, §8) · `plates.ts` (la réserve d'`assiettesParIndication` est levé
   disait ce que le lot fait (orientation 8 → 9 surfaces indirectes). Régénéré.
   **La table d'indications d'assiette y est entrée** — elle n'y figurait pas, et
   sa place est le jour où elle atteint un écran, pas le jour de sa signature.
-- **TROIS MUTATIONS, TROIS ROUGES CIBLÉS** — sauvegarde par `cp`, jamais
-  `git checkout --`, et application vérifiée avant de conclure :
+- **DIX MUTATIONS, DIX ROUGES CIBLÉS** — sauvegarde par `cp`, jamais la
+  restauration par l'index, et application vérifiée avant de conclure :
   1. faire diverger l'un des deux `cleClaim` ⇒ **8 cas rouges**, dont celui qui
      existe pour ça ;
   2. une anamnèse absente cessant d'être une lacune ⇒ **1 cas**, le bon ;
-  3. retirer le verrou précoce de la route ⇒ **1 cas**, celui du journal d'accès.
+  3. retirer le verrou précoce de la route ⇒ **1 cas**, celui du journal d'accès ;
+  4. remettre le `hidden` au montage de la carte ⇒ **1 cas** (Copilot) ;
+  5. restaurer `manquants ?? 0` sur complétude illisible ⇒ **1 cas** (Copilot) ;
+  6. rendre `scoresJson` au lieu de le recalculer ⇒ **2 cas**, les deux neufs,
+     et **zéro avant ce lot de revue** ;
+  7. figer `retireesFauteDeClaim` à zéro ⇒ **3 cas**, dont celui de la route ;
+  8. retirer le `new Set` du dédoublonnage ⇒ **1 cas** ;
+  9. resservir `raccourciAssume` ⇒ **1 cas** ;
+  10. taire la phrase du retrait à la carte ⇒ **1 cas**.
 
 ## 8. Ce que le lot a trouvé au passage
 
@@ -152,6 +161,105 @@ périmée, §8) · `plates.ts` (la réserve d'`assiettesParIndication` est levé
    panneau ne peut pas importer ce module (il tire Prisma) et écrivait son
    propre texte. Deux orthographes du même message, dont une morte. Retiré.
 3. **L'import qui tirait `crypto`** (ci-dessus).
+
+## 8 ter. La revue Copilot — DEUX constats, TOUS DEUX RÉELS et corrigés
+
+Lue aux **trois** emplacements : `pulls/1204/comments` (2), `.reviews[].body`
+(l'aperçu, « Findings: 2 »), et **aucun** bloc « Suppressed comments ».
+
+1. **`hidden` NE DÉMONTE PAS — et le journal d'accès l'aurait payé.** Le panneau
+   était monté sous un `hidden`, comme son voisin l'observatoire. Pour
+   l'observatoire c'est VOULU (le démonter perdrait l'aliment sélectionné) ;
+   ici c'était une faute. Le `useEffect` partait dès le montage de la
+   **section** — donc en phase Décision et dans les sous-vues Historique,
+   Diffusion, Biologie. Drapeau ouvert, la route vérifie l'appartenance et
+   **journalise une lecture de dossier clinique** que le praticien n'a jamais
+   demandée. C'est l'inverse exact de ce que le verrou précoce de la route
+   garantit, et ma propre prose le promettait. **Montage conditionnel**, et un
+   cas neuf l'exige — vérifié par mutation : remettre le `hidden` le fait rougir.
+2. **`manquants: comptes?.manquants ?? 0` FABRIQUAIT UN FAIT.**
+   `comptesDuPorteurVise` rend `null` quand la complétude est **illisible** ;
+   le repli annonçait « recueil incomplet : 0 item(s) manquant(s) ». Un nombre
+   inventé, dans la carte dont tout le propos est de ne jamais présenter une
+   absence comme un fait. **Huitième forme de lacune**,
+   `completude_illisible` — vérifié par mutation.
+
+**ET LA FONCTION N'AVAIT AUCUN BANC DIRECT.** `lacunesDuDeclencheur` n'était
+exercée qu'à travers le service, qui recalcule les scores et ne peut donc pas
+fabriquer librement un porteur sans comptes — c'est précisément pourquoi ce cas
+limite est passé. Six cas directs sont entrés dans
+`orientationEngine.test.ts`, où la fonction vit.
+
+## 8 quater. La revue adversariale — SEPT constats retenus, six corrigés, un rapporté
+
+Trente-six agents, six dimensions, quinze constats éprouvés : **sept survivent
+à la réfutation**, huit tombent. Six sont corrigés ici ; le septième est
+**préexistant à ce lot** et reste ouvert, nommé au dossier de campagne.
+
+1. **UNE LIGNE PUBLIÉE QUE LE CORPUS RETIRE DISPARAISSAIT SANS AUCUN COMPTE.**
+   `lignesIndicationAssietteServables` écarte une ligne dès qu'UN de ses claims
+   cesse d'être valide — cinq prédicats, tous mutables par la curation, et la
+   route `POST /api/praticien/corpus/claims/decision` suffit. Les trois sorts ne
+   comptaient que les lignes SERVABLES et `corpusLu` valait `true` : la carte
+   disait « les 4 indications en service ont été évaluées ; aucune n'est
+   retenue » sous le sha du périmètre **entier**, quand trois des sept lignes
+   publiées n'avaient pas été regardées. C'est `DC-24`, et c'est exactement la
+   faute que ce lot existe pour empêcher. Un quatrième compte entre
+   (`retireesFauteDeClaim`), la carte le nomme, et l'invariant du banc passe des
+   lignes **servables** aux lignes **publiées**.
+2. **`raccourciAssume` SORTAIT TEL QUEL À L'ÉCRAN.** Prose écrite pour la
+   relecture de signature, avec ses mots à elle — `claimsSecurite`,
+   `insomnie_depression`, `Q_INF_03`, `D-224`. Elle paraissait sur la ligne **la
+   plus atteignable de la table** (la protéinée, qu'une borne d'âge ouvre
+   seule), donc dès le premier dossier de plus de 60 ans, sur la carte même dont
+   le chapeau explique qu'elle renonce à nommer un champ d'anamnèse pour ne pas
+   afficher un identifiant interne. **Aucun banc ne le voyait** : la fixture du
+   panneau posait `raccourciAssume: null`. Le champ ne traverse plus. **Il ne se
+   reformule pas** : il est DANS le périmètre haché, le réécrire périmerait
+   l'attestation — un libellé d'écran est un champ neuf, donc une re-signature.
+3. **LE BANC DU SERVICE ANNONÇAIT DES PASSATIONS, ET N'EN FOURNISSAIT AUCUNE.**
+   `dossierVide()` rendait `[]` au `beforeEach` et rien ne le redéfinissait :
+   tout le chemin `scoresRecalculesPourRaisonnement` → porte d'instrument
+   n'était jamais joué avec de la donnée, alors que cinq des sept lignes en
+   dépendent. Le recalcul — invariant que le § 4 présente comme le cœur du lot —
+   n'était éprouvé par rien. Deux cas entrent, avec un score stocké
+   volontairement faux : la mutation qui rend `scoresJson` tel quel les fait
+   rougir tous les deux, et eux seuls.
+4. **LE DÉDOUBLONNAGE DES CLAIMS N'ÉTAIT GARDÉ PAR RIEN** — et la mutation
+   dormait dans l'arbre de travail. `WN-CL-0288-013` est le seul claim cité
+   deux fois (indication ET sécurité, sur la protéinée) ; les deux seules
+   assertions qui touchaient `.claims` portaient sur l'épargne digestive, dont
+   les six claims sont distincts. **Un agent de revue avait appliqué la mutation
+   pour la démontrer et ne l'avait pas défaite** : elle a été trouvée en
+   comparant l'arbre au commit poussé, pas par un banc. Restaurée, puis gardée
+   par un cas dont la mutation a été vue rougir.
+5. **UN COMMENTAIRE FAUX SUR SA PROPRE BARRIÈRE.** Le pavé qui justifie de ne
+   pas nommer le champ d'anamnèse à l'écran annonçait que l'import ferait entrer
+   `node:crypto` et **casserait au BUILD**, qu'aucun banc unitaire ne le verrait.
+   Les trois affirmations sont fausses : le spécifieur est `'crypto'` nu, que
+   Next résout vers son polyfill sans broncher ; le chapeau de
+   `bundleClient.guard.test.ts` écrit lui-même que « ni tsc, ni le lint, ni les
+   bancs, ni le build » ne voient la chose ; et c'est précisément ce banc — donc
+   **T1** — qui aurait rougi, `declencheursAnamnese` n'étant pas un module
+   feuille. Le coût réel est le poids du chunk et le référentiel servi au
+   navigateur. Corrigé au fichier et au registre : une session future qui lirait
+   l'ancienne version en conclurait qu'un build vert prouve l'hygiène du paquet.
+6. **RÉSERVE PRÉEXISTANTE, RAPPORTÉE ET NON CORRIGÉE.** Le garde
+   `bundleClient.guard.test.ts` ne lit que les spécifieurs `@/lib/clinical/…`.
+   La chaîne `PropositionBilanPanel` (`'use client'`) →
+   `biology-library/courrier` → `biology-library/statuts` → `orientationEngine`
+   + `corpusSyntheseV1` **le traverse par un module voisin** : crypto-browserify
+   et `ORIENTATION_RULES_V1`, retenue par un `sha256(...)` de portée module,
+   partent au chunk client du cockpit — depuis le 2026-08-18, et donc
+   aujourd'hui en production. Vérifiée lien par lien. Conséquence pour ce lot :
+   les 145 lignes neuves d'`orientationEngine.ts` partent au navigateur par ce
+   trou. Élargir le garde le fera rougir immédiatement — c'est un lot, pas une
+   ligne, et il ne se pose pas dans un diff qui expose une table clinique.
+
+**ET UNE RECOPIE MANQUÉE, RETROUVÉE PAR LA REVUE.** « Rien ne s'écrit » avait
+été corrigé en quatre endroits ; **le fragment de changelog avait survécu**.
+C'est le défaut nommé par [[corriger-balayer-chapeau-et-copies]] : le paragraphe
+corrigé ne suffit pas, il faut balayer les recopies.
 
 ## 9. Problèmes ouverts
 
@@ -190,8 +298,11 @@ périmée, §8) · `plates.ts` (la réserve d'`assiettesParIndication` est levé
    commentaire sans l'un d'eux.
 4. Merge `--squash` **avec `--subject`** — sans lui, le journal Git annoncerait
    le sujet du commit de tête.
-5. **Ne pas poser le drapeau.** C'est un geste du responsable, dans l'ordre du
-   § 9.
+5. **Poser le drapeau — autorisé par le responsable le 2026-09-19**
+   (« pose le drapeau quand il le faut »), et « quand il le faut » veut dire
+   APRÈS le merge et APRÈS avoir constaté le code en ligne. Ordre du § 9 :
+   contenance (`merge-base --is-ancestor`), `env-set`, **conteneurs recréés**,
+   puis **sonde de comportement** — jamais `env`.
 
 ## 11. Interdits encore actifs
 

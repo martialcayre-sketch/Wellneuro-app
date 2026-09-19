@@ -47,10 +47,20 @@ qui est un constat clinique, là où la vérité est qu'un instrument n'a pas é
 passé. C'est `DC-24`, et c'est le motif du quatrième arbitrage — *nommer ce qui
 manque*.
 
-Sept formes, toutes des faits sur le DOSSIER : instrument non passé, passé mais
-non coté, recueil incomplet, mesure indisponible, anamnèse absente, âge inconnu,
-régime non déclaré. **Aucune n'affirme rien du patient**, et un cas de banc le
-garde.
+Huit formes, toutes des faits sur le DOSSIER : instrument non passé, passé mais
+non coté, recueil incomplet, **complétude illisible**, mesure indisponible,
+anamnèse absente, âge inconnu, régime non déclaré. **Aucune n'affirme rien du
+patient**, et un cas de banc le garde.
+
+**LA HUITIÈME EST ENTRÉE SUR CONSTAT DE REVUE, et c'est la faute même que ce
+vocabulaire existe pour fermer.** `comptesDuPorteurVise` rend `null` quand le
+porteur ne publie AUCUN compte — `comptesDuRecueil` le documente : « on ne
+fabrique pas une complétude qu'on ne sait pas lire ». La première rédaction
+repliait pourtant ce `null` sur `manquants: 0`, et la carte annonçait « recueil
+incomplet : 0 item(s) manquant(s) » : un **nombre inventé** sur une mesure
+inconnue, dans l'écran dont tout le propos est de ne jamais présenter une absence
+comme un fait (`DC-19`, `DC-24`). Le moteur refuse la branche dans les deux cas ;
+les deux refus n'ont pas la même cause.
 
 **LE COÛT EST ASSUMÉ ET DIT** : une seule branche lacunaire suffit à rendre une
 disjonction « non évaluée ». Une ligne à trois branches paraîtra donc souvent
@@ -86,7 +96,7 @@ Verrou fermé, la route répond sans avoir touché au patient — elle ne consig
 donc pas une lecture qui n'a pas eu lieu. Un cas de banc l'exige, et il rougit
 quand on retire le test précoce.
 
-**7. AUCUNE ÉCRITURE, AUCUN GESTE.** Pas de POST ; la carte ne porte **aucun
+**7. AUCUNE ÉCRITURE AU DOSSIER CLINIQUE, AUCUN GESTE.** Pas de POST ; la carte ne porte **aucun
 bouton, aucun formulaire, aucun champ**, et un cas de banc le vérifie. Que
 l'assiette devienne une **unité d'action** est le LOT-02 du cadrage du
 2026-09-16, suspendu aux arbitrages B1 et B2 : poser le geste ici les aurait
@@ -113,15 +123,52 @@ UN OUBLI.** La lacune porte la clé du moteur — `intolerancesAlimentaires` —
 identifiant interne qu'afficher violerait « UI en français ». Le libellé lisible
 existe (`ANAMNESE_SECTIONS`), mais l'atteindre demande `CHAMP_ANAMNESE`, qui vit
 dans `declencheursAnamnese` → `orientationRulesV1` → `corpusSyntheseV1` →
-**`createHash` de `crypto`**. Un import de VALEUR depuis un composant client
-ferait donc entrer **`node:crypto` au paquet du navigateur** — le défaut
-qu'aucun banc unitaire ne voit et qui casse au BUILD. Trois issues écartées :
+**`createHash` de `'crypto'`**. Un import de VALEUR depuis un composant client
+tirerait donc au navigateur **crypto-browserify ET la table de règles entière**,
+retenue par le `sha256(...)` de portée module, dans un fichier `/_next/static/…`
+qui n'est derrière aucune authentification. **Rectification de revue sur la
+BARRIÈRE, et elle compte pour la suite** : une première rédaction annonçait
+`node:crypto` et une casse au BUILD. Les deux sont faux — le spécifieur est
+`'crypto'` nu, que Next résout vers son polyfill sans broncher, et c'est un banc
+unitaire qui tient la frontière (`bundleClient.guard.test.ts`, en **T1**), pas
+le compilateur. Trois issues écartées :
 recopier la correspondance (un troisième jeu de noms qui dérive), la faire
 voyager dans la réponse HTTP (élargir un contrat pour un mot), déplacer
 `CHAMP_ANAMNESE` (refactor d'un module clinique partagé, non demandé). **La carte
 dit donc le fait sans le champ** — « aucune anamnèse au dossier » —, ce qui reste
 vrai et actionnable : c'est l'anamnèse ENTIÈRE qui manque, pas une case. Un cas
 de banc garde qu'aucun identifiant en camelCase n'atteint l'écran.
+
+**11. UNE LIGNE PUBLIÉE QUE LE CORPUS RETIRE EST COMPTÉE — `retireesFauteDeClaim`.**
+CONSTAT DE REVUE ADVERSARIALE, et c'est la faute même que ce lot combat.
+`lignesIndicationAssietteServables` retire une ligne publiée dès qu'UN de ses
+claims cesse d'être valide au corpus — un geste de curation suffit, et le
+praticien en dispose par `POST /api/praticien/corpus/claims/decision`. Les trois
+sorts du résultat ne comptaient que les lignes SERVABLES, et `corpusLu` valait
+`true` : la fermeture était **indiscernable d'un vide**. La carte annonçait
+alors « les 4 indications en service ont été évaluées ; aucune n'est retenue »
+sous le sha du périmètre signé **entier**, quand trois des sept lignes publiées
+n'avaient pas été regardées. Un quatrième compte entre au résultat, la carte le
+nomme, et l'invariant du banc passe des sept lignes **servables** aux sept
+lignes **publiées** : plus aucune ne disparaît sans être dans un compte. Zéro
+quand le corpus est illisible — `corpusLu` porte déjà cette raison-là.
+
+**12. LA PROSE DE RELECTURE NE TRAVERSE PLUS — `raccourciAssume` sort du
+service.** CONSTAT DE REVUE ADVERSARIALE. Le champ était servi tel quel et la
+carte affichait « Raccourci assumé : … » au praticien. Ce texte n'est pas écrit
+pour lui : il est écrit pour la relecture de signature, et il en porte les mots
+— `claimsSecurite`, `insomnie_depression`, `Q_INF_03`, `D-224`. Il paraissait
+sur la ligne la plus atteignable de la table (la protéinée, dont une borne d'âge
+ouvre seule), donc dès le premier dossier de plus de 60 ans. Aucun banc ne le
+voyait : la fixture du panneau posait `raccourciAssume: null`. **Pourquoi on ne
+le reformule pas** : le champ est DANS le périmètre haché — le réécrire périme
+l'attestation de [[D-236]]. Un libellé écrit POUR L'ÉCRAN est un champ neuf,
+donc une re-signature, et ce lot n'en pose aucune. **Ce qui manque est donc
+nommé** : la réserve assumée — dont l'exception parkinsonienne de la protéinée,
+désignée mais non exécutable — ne se lit pas à la carte. Son texte vit dans la
+table signée, **au dépôt**, et non sur une surface praticien : vérifié, la
+surface de relecture NOMME le champ sans le recopier. De cette réserve, l'écran
+ne porte que les claims que la carte désigne, ceux de `claimsSecurite` compris.
 
 **CE QUE LE LOT NE FAIT PAS.** Il n'ouvre **aucune porte biologique** — le
 chantier 6 reste devant et périmera l'attestation. Il ne change **aucune ligne,

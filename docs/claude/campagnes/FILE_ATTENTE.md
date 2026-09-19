@@ -119,13 +119,48 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   raisons indiscernables — donnée lue et porte non atteinte, ou donnée absente —
   et une carte vide se serait lue « aucune assiette n'est indiquée pour ce
   patient », un constat clinique là où la vérité est qu'un instrument n'a pas été
-  passé (`DC-24`). Sept formes de lacune entrent au moteur partagé.
-  **AUCUNE ÉCRITURE, AUCUN GESTE** : pas de POST, pas un bouton. Que l'assiette
+  passé (`DC-24`). **Huit** formes de lacune entrent au moteur partagé — dont
+  `completude_illisible`, ajoutée **sur constat de revue** : un repli sur
+  « 0 item manquant » annonçait au praticien un NOMBRE INVENTÉ là où la
+  complétude est inconnue.
+  **AUCUNE ÉCRITURE AU DOSSIER CLINIQUE, AUCUN GESTE** : pas de POST, pas un
+  bouton — la seule écriture du chemin est la ligne du **journal d'accès**, celle
+  que toute lecture praticien produit déjà. Que l'assiette
   devienne une unité d'action reste le LOT-02 du cadrage du 2026-09-16, suspendu
   aux arbitrages B1 et B2.
+  **SEPT CONSTATS DE REVUE ADVERSARIALE ONT TENU LA RÉFUTATION — six corrigés
+  avant la pose, un rapporté (plus bas).** (1) Une ligne
+  publiée que le corpus **retire** — un claim désactivé suffit, et le praticien
+  en dispose par la route de décision — disparaissait **sans aucun compte** : la
+  carte disait « les N indications en service ont été évaluées » sous le sha du
+  périmètre **entier**. Un quatrième compte entre (`retireesFauteDeClaim`), la
+  carte le nomme, et l'invariant du banc passe des lignes **servables** aux
+  lignes **publiées**. (2) `raccourciAssume` — **prose de relecture de
+  signature**, avec ses identifiants de code — était **servi à l'écran**, sur la
+  ligne la plus atteignable de la table ; il ne traverse plus. Le reformuler
+  périmerait l'attestation : un libellé écrit pour l'écran est une
+  **re-signature**, donc un lot à part. (3) Le banc du service **annonçait
+  contrôler des passations sans en fournir aucune** — le recalcul du score
+  n'était éprouvé par rien. (4) Le **dédoublonnage des claims** n'était gardé par
+  aucune assertion, et la mutation qui le prouve **dormait dans l'arbre de
+  travail**, laissée par un agent de revue — trouvée en comparant l'arbre au
+  commit poussé, pas par un banc. (5) Un **commentaire faux sur sa propre
+  barrière** : il annonçait une casse au BUILD là où c'est un banc unitaire (T1)
+  qui tient la frontière du paquet client. (6) Une **recopie manquée** de
+  « rien ne s'écrit », corrigée en quatre endroits et survivante au fragment de
+  changelog.
   **Réserve reportée, non corrigée** : `catalogueConduitesV1` (signée le
   2026-09-17) n'a toujours **aucun consommateur** et **n'est pas** à la matrice
   de consommation. Même profil que celle-ci la veille.
+  **RÉSERVE NEUVE, PRÉEXISTANTE À CE LOT ET NON CORRIGÉE ICI** : le garde
+  `bundleClient.guard.test.ts` ne lit que les spécifieurs `@/lib/clinical/…`, et
+  la chaîne `PropositionBilanPanel` (`'use client'`) → `biology-library/courrier`
+  → `biology-library/statuts` → `orientationEngine` + `corpusSyntheseV1` **le
+  traverse par un module voisin**. Vérifiée lien par lien, elle est en place
+  depuis le 2026-08-18 : crypto-browserify et `ORIENTATION_RULES_V1`, retenue par
+  un `sha256(...)` de portée module, partent aujourd'hui au chunk client du
+  cockpit. Élargir le garde le fera rougir immédiatement — c'est un lot, pas une
+  ligne, et il ne se pose pas dans un diff qui expose une table clinique.
 
 - **Le chantier 6 — LA PORTE BIOLOGIQUE D'UNE INDICATION D'ASSIETTE** (ouvert le
   2026-09-19 par [[D-236]], **arbitrage du responsable** : après l'attestation,

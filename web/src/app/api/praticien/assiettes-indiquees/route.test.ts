@@ -128,6 +128,20 @@ describe('GET /api/praticien/assiettes-indiquees', () => {
     expect(payload.corpusLu).toBe(true);
   });
 
+  it('le compte des lignes RETIRÉES traverse la route — l’énumération est explicite', async () => {
+    // LA ROUTE ÉNUMÈRE SES CHAMPS un à un, et c'est voulu : rien du service ne
+    // part au navigateur sans avoir été nommé ici. Le prix est qu'un terme neuf
+    // peut rester à quai sans que rien ne rougisse — la carte lirait alors
+    // `undefined` et se tairait sur ce qu'elle n'a pas regardé. Ce cas tient la
+    // jointure.
+    vi.stubEnv('WN_ASSIETTES_INDIQUEES', 'true');
+    const toutes = toutesLesCles();
+    toutes.delete(cleClaim({ claimId: 'WN-CL-0290-005', versionClaim: 'v1.0' }));
+    mockCorpus.claimsValidesAuCorpus.mockResolvedValue(toutes);
+    const payload = await (await GET(requete())).json();
+    expect(payload.retireesFauteDeClaim).toBe(1);
+  });
+
   it('une lecture de dossier qui jette : 500, et aucun détail technique ne sort', async () => {
     vi.stubEnv('WN_ASSIETTES_INDIQUEES', 'true');
     prisma.questionnaireReponse.findMany.mockRejectedValue(new Error('colonne inconnue xyz'));

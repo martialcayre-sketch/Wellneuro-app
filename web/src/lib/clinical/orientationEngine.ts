@@ -954,10 +954,29 @@ export type LacuneDeclencheur =
   /**
    * Recueil incomplet SUR UNE BRANCHE DE DISJONCTION — le moteur refuse déjà
    * ces branches (`comptesDuPorteurVise`), et ce terme ne fait que le dire.
-   * `total` est `null` quand le porteur ne publie pas de dénominateur : un
-   * compte sans dénominateur se dit sans dénominateur.
+   * `manquants` est TOUJOURS strictement positif : le cas « zéro manquant » ne
+   * produit pas cette lacune, il n'en produit aucune. `total` est `null` quand
+   * le porteur ne publie pas de dénominateur — un compte sans dénominateur se
+   * dit sans dénominateur.
    */
   | { type: 'recueil_incomplet'; idQuestionnaire: string; sousScore?: string; manquants: number; total: number | null }
+  /**
+   * COMPLÉTUDE ILLISIBLE — et ce n'est PAS « zéro item manquant ».
+   *
+   * CONSTAT DE REVUE, ET LE DÉFAUT ÉTAIT EXACTEMENT CELUI QUE CE VOCABULAIRE
+   * EXISTE POUR FERMER. `comptesDuPorteurVise` rend `null` quand le porteur ne
+   * publie NI `repondus`/`items` NI `missing` — `comptesDuRecueil` le documente :
+   * « on ne fabrique pas une complétude qu'on ne sait pas lire, et on n'annonce
+   * pas un compte qu'on n'a pas ». Une première rédaction repliait pourtant ce
+   * `null` sur `manquants: 0`, et l'écran annonçait au praticien
+   * « recueil incomplet : 0 item(s) manquant(s) » — un NOMBRE INVENTÉ sur une
+   * mesure inconnue, dans la carte même dont tout le propos est de ne jamais
+   * présenter une absence comme un fait.
+   *
+   * Le moteur refuse la branche dans les DEUX cas ; les deux refus n'ont pas la
+   * même cause, et c'est toute la doctrine de ce fichier.
+   */
+  | { type: 'completude_illisible'; idQuestionnaire: string; sousScore?: string }
   /** Mesure illisible pour l'axe visé : ni valeur, ni interprétation, ni plancher. */
   | { type: 'mesure_indisponible'; idQuestionnaire: string; sousScore?: string }
   /** Aucune anamnèse portée au dossier — et non « le patient n'a rien coché ». */
@@ -1008,13 +1027,18 @@ function lacuneDeFeuille(
   }
   if (brancheDeDisjonction) {
     const comptes = comptesDuPorteurVise(reponse.scores, feuille.sousScore);
-    if (comptes === null || comptes.manquants > 0) {
+    // DEUX REFUS, DEUX CAUSES — le moteur écarte la branche dans les deux cas,
+    // et les confondre fabriquerait un nombre. Voir `completude_illisible`.
+    if (comptes === null) {
+      return { type: 'completude_illisible', idQuestionnaire: feuille.idQuestionnaire, ...axe };
+    }
+    if (comptes.manquants > 0) {
       return {
         type: 'recueil_incomplet',
         idQuestionnaire: feuille.idQuestionnaire,
         ...axe,
-        manquants: comptes?.manquants ?? 0,
-        total: comptes?.total ?? null,
+        manquants: comptes.manquants,
+        total: comptes.total,
       };
     }
   }

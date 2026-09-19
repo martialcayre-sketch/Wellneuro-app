@@ -83,11 +83,30 @@ export type AssietteIndiquee = {
   motif: string;
   /** Instruments à l'appui — vide pour une porte d'anamnèse, d'âge ou de régime. */
   instruments: DeclencheurAtteint['instruments'];
-  /** Ce que la ligne assume au-delà de ses claims, ou `null`. */
-  raccourciAssume: string | null;
   /** Identifiants de claim, dédoublonnés et triés. Indication ET sécurité. */
   claims: readonly string[];
 };
+
+// `raccourciAssume` NE TRAVERSE PAS, ET C'EST UN CONSTAT DE REVUE CORRIGÉ.
+//
+// Le champ existe sur la ligne, il est dans le périmètre haché, et une première
+// rédaction le servait tel quel — la carte affichait « Raccourci assumé : … »
+// au praticien. Ce texte n'est pas écrit pour lui : il est écrit pour la
+// RELECTURE DE SIGNATURE, et il en porte les mots — `claimsSecurite`,
+// `insomnie_depression`, `Q_INF_03`, `D-224`. Le rendre violait « UI en
+// français » sur la carte même dont le chapeau explique qu'elle renonce à
+// nommer un champ d'anamnèse pour ne pas afficher un identifiant interne. Et
+// aucun banc ne le voyait : la fixture du panneau posait `raccourciAssume: null`.
+//
+// POURQUOI ON NE LE REFORMULE PAS ICI, et c'est la raison qui ferme le sujet
+// pour ce lot : le champ est DANS le périmètre signé. Le reformuler périme
+// l'attestation de [[D-236]]. Un libellé écrit POUR L'ÉCRAN est un champ neuf,
+// donc une re-signature — le lot qui la portera est nommé au dossier de
+// campagne. CE QUI MANQUE EST DONC DIT, PAS CONTOURNÉ : le texte du raccourci
+// vit dans la table signée, au dépôt, et non sur une surface praticien
+// (vérifié — la surface de relecture NOMME le champ, elle ne le recopie pas).
+// De la réserve, l'écran ne porte que les claims que la carte désigne, ceux de
+// `claimsSecurite` compris.
 
 /**
  * UNE ASSIETTE QU'ON N'A PAS PU REGARDER — et la carte doit le dire.
@@ -126,6 +145,27 @@ export type ResultatAssiettes = {
    * « rien n'a été regardé », sans étaler des refus qui n'apprennent rien.
    */
   nonIndiquees: number;
+  /**
+   * COMBIEN DE LIGNES PUBLIÉES LE FILTRE DE CLAIMS A RETIRÉES — et pourquoi ce
+   * nombre ne pouvait pas manquer. CONSTAT DE REVUE.
+   *
+   * `lignesIndicationAssietteServables` retire une ligne publiée dès qu'UN de
+   * ses claims cesse d'être valide au corpus — désactivé, remis en attente de
+   * validation, sorti du compartiment actif. C'est le bon fail-closed : aucune
+   * indication non fondée n'atteint l'écran. Mais sans ce terme, la fermeture
+   * était INDISCERNABLE d'un vide : les trois sorts ne comptent que les lignes
+   * SERVABLES, et `corpusLu` valait `true` — il rassurait au lieu de nuancer.
+   * La carte annonçait alors « les N indications en service ont été évaluées »
+   * sous le sha du périmètre signé ENTIER, alors que plusieurs lignes publiées
+   * n'avaient pas été regardées. `DC-24`, et c'est la faute exacte que ce lot
+   * existe pour empêcher.
+   *
+   * `0` QUAND LE CORPUS EST ILLISIBLE, et ce n'est pas un repli : dans ce cas
+   * AUCUNE ligne n'est servable, et la raison est déjà portée par `corpusLu`.
+   * Compter là un retrait par claim nommerait une seconde cause qui n'a pas eu
+   * lieu — la faute que `completude_illisible` a fermée côté moteur.
+   */
+  retireesFauteDeClaim: number;
   /**
    * Le corpus a-t-il pu être interrogé ? `false` ⇒ `indiquees` et
    * `nonEvaluees` sont VIDES pour cette raison-là, et pas parce que le dossier
@@ -223,6 +263,13 @@ export async function evaluerAssiettesPourPatient(
 
   const servables = lignesIndicationAssietteServables(claimsValides);
   const shaPerimetre = INDICATIONS_ASSIETTES_METADATA.shaPerimetre ?? '';
+  // COMBIEN DE LIGNES PUBLIÉES LE CORPUS A RETIRÉES — voir `retireesFauteDeClaim`.
+  // Compté ICI, par différence, et non dans le filtre : le filtre rend ce qu'il
+  // sert, et lui faire rendre aussi ce qu'il écarte changerait un contrat que
+  // trois appelants partagent. Corpus illisible ⇒ `0` : aucune ligne n'est
+  // servable, et `corpusLu` porte déjà la raison.
+  const publiees = INDICATIONS_ASSIETTES_V1.filter(ligne => ligne.statut === 'publiee').length;
+  const retireesFauteDeClaim = claimsValides === null ? 0 : publiees - servables.length;
 
   // AUCUNE LIGNE SERVABLE ⇒ AUCUNE LECTURE DE DOSSIER. Ni scores, ni anamnèse,
   // ni date de naissance : il n'y aurait rien à évaluer avec. Un dossier qu'on
@@ -234,6 +281,7 @@ export async function evaluerAssiettesPourPatient(
       indiquees: [],
       nonEvaluees: [],
       nonIndiquees: 0,
+      retireesFauteDeClaim,
       corpusLu: claimsValides !== null,
     };
   }
@@ -329,7 +377,6 @@ export async function evaluerAssiettesPourPatient(
         sourceProtocole: assiette.sourceProtocole,
         motif: atteint.motif,
         instruments: atteint.instruments,
-        raccourciAssume: ligne.raccourciAssume,
         claims: [...new Set(claimsDeLaLigne(ligne).map(cleClaim))].sort(),
       });
       continue;
@@ -357,6 +404,7 @@ export async function evaluerAssiettesPourPatient(
     indiquees,
     nonEvaluees,
     nonIndiquees,
+    retireesFauteDeClaim,
     corpusLu: claimsValides !== null,
   };
 }
