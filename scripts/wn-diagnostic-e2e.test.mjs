@@ -233,6 +233,33 @@ describe('wn-diagnostic-e2e — ce qu’il nomme', () => {
     match(err, /DIAGNOSTIC : 2 échec\(s\)/);
     match(err, /deux-iPhone-13/);
   });
+
+  // LE MESSAGE EST UNE INSTRUCTION, PAS UN ORNEMENT — et rien ne le gardait.
+  //
+  // Ce que le classificateur DIT à celui qui instruit un rouge décide de ce
+  // qu'il va chercher. Le message a porté deux affirmations fausses jusqu'au
+  // 2026-09-19 (« sous charge machine soutenue », « aucun correctif de notre
+  // côté n'est identifié ») puis un mécanisme faux jusqu'au 2026-09-20
+  // (« création de CONTEXTE »), et les 14 cas restaient verts dans les trois
+  // états : ils vérifiaient le diagnostic générique et le nom du test, jamais
+  // ce que le message enseigne.
+  //
+  // Le compteur est la création de PAGE : le bras C de la PR #1184 tient un
+  // contexte unique avec une page neuve et bloque au même rang 64, ce qui
+  // exclut le contexte. Ce cas garde les deux moitiés — l'affirmation et
+  // l'exclusion —, parce qu'une régression qui ne garderait que la première
+  // pourrait taire la seconde et laisser croire au mauvais compteur.
+  it('★ le message enseigne le BON compteur : la page, et le contexte exclu', () => {
+    const racine = dossierNeuf();
+    poserEchec(racine, 'cockpit-iPhone-13', { reseau: '', erreur: TIMEOUT_GOTO });
+
+    const { err } = lancerCapture(racine);
+    match(err, /CRÉATION DE PAGE/);
+    match(err, /contexte unique bloque au même rang/);
+    match(err, /Un test = une page/);
+    // Et l'inverse ne doit pas revenir par une régression de rédaction.
+    strictEqual(/CRÉATION DE CONTEXTE/.test(err), false);
+  });
 });
 
 describe('wn-diagnostic-e2e — il se tait plutôt que de deviner', () => {
