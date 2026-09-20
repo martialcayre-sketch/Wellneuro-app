@@ -1,4 +1,4 @@
-### D-049 a une cause racine : WebKit se bloque au 64ᵉ contexte, pas à la 65ᵉ navigation (2026-09-17)
+### D-049 a une cause racine : WebKit se bloque à la 64ᵉ PAGE, pas à la 65ᵉ navigation ni au 64ᵉ contexte (2026-09-17)
 
 Ouverte depuis le 2026-08-12, la panne était étiquetée « cause dans le processus
 navigateur, hors de ce dépôt, non identifiée ». Elle est identifiée, mesurée, et

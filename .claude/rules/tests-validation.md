@@ -26,10 +26,12 @@ paths:
 - **T3 local est exigé EN ENTIER, segment E2E compris** (`D-233`, 2026-09-19).
   La dérogation qui renvoyait ce segment au CI — `D-049`, du 2026-08-12 au
   2026-09-19 — est **close** : la cause du blocage WebKit local est identifiée
-  (2311 bloquait au rang 64 de **création de contexte**, sur mise en veille de
-  l'écran), corrigée en amont (WebKit 2352) et en service ici (Playwright
-  1.63.0, WebKit 2359). Deux séquences T3 complètes vertes le 2026-09-18, 101
-  contextes iPhone 13 chacune.
+  (2311 bloquait au rang 64 de **création de PAGE** — un bras à contexte unique
+  et page neuve bloque au même rang, ce qui exclut le contexte —, sur mise en
+  veille de l'écran), corrigée en amont (WebKit 2352) et en service ici
+  (Playwright 1.63.0, WebKit 2359). Deux séquences T3 complètes vertes le
+  2026-09-18, 101 pages iPhone 13 chacune. **Un test = une page**, d'où la
+  signature « un seul test par run, jamais le même ».
 - **Un rouge WebKit du CI ne se relance JAMAIS.** Règle posée par `D-155`,
   redomiciliée ici par `D-233` pour ne pas rester accrochée à une décision
   close. Elle ne dépend pas de la panne locale et lui survit : « WebKit

@@ -458,6 +458,28 @@ portée mesurable** : la table est vide.
 
 ### D-233 — [[D-049]] est close : la cause racine est corrigée et mesurée, T3 local redevient exigé en entier, et la règle du rouge WebKit du CI est redomiciliée
 
+> ⚠️ **CORRIGÉE LE 2026-09-20 — LE MÉCANISME ÉTAIT FAUX, LA CLÔTURE NE L'EST
+> PAS.** Cette décision a consigné « blocage au rang 64 de **création de
+> contexte** ». C'est faux : le **bras C** de la PR #1184 tient un contexte
+> **unique** avec une page **neuve** et bloque **au même rang 64**, ce qui
+> exclut le contexte comme compteur. Le compteur porte sur la **création de
+> PAGE** — un test = une page, d'où « un seul test par run, jamais le même ».
+>
+> **CE QUI N'EST PAS TOUCHÉ** : la condition de sortie reste remplie, le
+> correctif fonctionne, les trois séquences T3 sont vertes. `D-049` reste
+> close. Seul le mécanisme consigné change — et il change parce qu'une
+> décision close se lit longtemps, et enseignerait sinon le mauvais compteur.
+>
+> **LA CAUSE DE L'ERREUR, ET ELLE N'EST PAS FLATTEUSE.** L'amendement du
+> 2026-09-17 à [[D-049]] écrit **déjà** « LE COMPTEUR PORTE SUR LA CRÉATION DE
+> PAGE », et le fragment `changelog.d/2026-09-17-cause-racine-d049.md` porte la
+> table à trois bras qui le démontre. Mais **le TITRE de ce fragment** disait
+> « au 64ᵉ contexte » — rédaction antérieure au bras C, restée en place quand
+> le corps a été corrigé. C'est ce titre qui a été repris ici, sans ouvrir la
+> table deux lignes plus bas. Un en-tête n'est pas une source ; la mesure l'est.
+> Le titre du fragment est corrigé dans le même lot. Constat de `developer-03`,
+> vérifié sur le corps de #1184 avant d'être retenu.
+
 - Date : 2026-09-19
 - Statut : accepté — **arbitrage du responsable**, rendu en session le
   2026-09-19. Il renverse celui du 2026-09-17 (« amender, ne pas fermer »), et
@@ -484,8 +506,10 @@ propres mesure une absence d'observation, pas une résolution — et laissé
 - **La cause**, reproduite hors du dépôt avec bras témoin. Bras témoin : 200
   `goto` sur une seule page, 200 requêtes, zéro blocage. Bras d'essai : un
   contexte iPhone 13 neuf à chaque tour, **blocage au rang 64, zéro requête
-  émise**, puis au 65. Le compteur porte sur la **création de contexte**, pas sur
-  la navigation — l'issue amont `microsoft/playwright#42385` se trompe sur ce
+  émise**, puis au 65. Un **bras C**, ajouté sur constat de revue, tient un
+  **contexte unique** avec une **page neuve** à chaque tour et bloque **au même
+  rang 64** : le compteur porte donc sur la **création de PAGE**, pas sur le
+  contexte ni sur la navigation — l'issue amont `microsoft/playwright#42385` se trompe sur ce
   point, et `D-155` se trompait en attribuant la panne à la charge machine. Le
   déclencheur est la **mise en veille de l'écran**, ce qui explique pourquoi la
   panne frappait les runs autonomes de nuit.
@@ -499,7 +523,7 @@ discrimination des deux moteurs était faite sur le banc ; ce qui manquait étai
 la tenue de la montée dans la **suite réelle**, celle dont T3 redevient la
 barrière. **Deux séquences T3 complètes, le 2026-09-18** : vertes en 3 min 53 s
 et 3 min 57 s, 205 tests passés et 3 sautés chacune, **101 tests iPhone 13 —
-donc ~101 créations de contexte — par séquence**, sans un blocage. Aucune
+donc ~101 créations de PAGE — par séquence**, sans un blocage. Aucune
 occurrence de la signature de `D-049` (navigation expirée, aucune requête
 émise), ni d'« internal error », ni de la signature du défaut signalé sur 2359.
 
@@ -16185,11 +16209,11 @@ commente une synthèse, elle ne la re-valide pas.
 > identifiée ».
 >
 > Ce qui l'a remplie, dans l'ordre : la cause racine reproduite hors du dépôt
-> avec bras témoin (WebKit 2311 bloque au rang **64 de création de contexte**,
+> avec bras témoin (WebKit 2311 bloque au rang **64 de création de PAGE**,
 > déclencheur = mise en veille de l'écran) ; son correctif amont (**WebKit
 > 2352**) ; la montée mergée sur `main` (`bf852f59`, Playwright 1.63.0 → WebKit
 > **2359**) ; et **deux séquences T3 complètes vertes** le 2026-09-18, 3 min 53 s
-> et 3 min 57 s, **101 contextes iPhone 13 chacune** sans un blocage. Le détail
+> et 3 min 57 s, **101 pages iPhone 13 chacune** sans un blocage. Le détail
 > du raisonnement, les réserves qui survivent et ce que la clôture déplace :
 > [[D-233]].
 >
