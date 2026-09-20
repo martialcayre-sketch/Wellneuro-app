@@ -21,7 +21,10 @@ et qui se sonde donc de l'extérieur. Le seul témoin ici est la ligne que
 `verifierAppartenancePatient` écrit au journal d'accès quand un praticien ouvre
 la sous-vue Protocole.
 
-**Et ce témoin n'a pas pu se produire.** Relevé le 2026-09-20 à 11:18 UTC :
+**Et ce témoin n'a pas pu se produire.** Relevé le 2026-09-20 à 11:18 UTC, par
+conteneur détaché — l'ancre est l'horodatage et la requête, **pas l'identifiant
+du one-off** : Scalingo les réattribue, et `one-off-746` a rendu ce jour-là deux
+conteneurs distincts sous un même filtre de logs, l'un du 2026-09-11.
 `journal_acces_dossiers` porte 4 450 lignes, **zéro** pour
 `/api/praticien/assiettes-indiquees` — mais le **dernier geste praticien du
 journal entier date du 2026-09-19 à 11:21**, soit AVANT la pose. L'absence ne dit

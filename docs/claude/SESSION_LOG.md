@@ -7601,46 +7601,19 @@ attestation, et c'est voulu.
 
 ## 2026-09-20 — Reprise du lot D-237 : le drapeau est posé, sa consignation manquait
 
-**Reprise demandée par le responsable.** Le lot des indications d'assiette
-(`D-237`) appartenait à une session voisine. Avant tout geste, les quatre
-sessions vivantes ont été interrogées — le risque réel étant que deux sessions
-posent le même drapeau. `developer-e5` l'a revendiqué, **avait déjà posé le
-drapeau** à 08:11 UTC, et m'a laissé la main sans rien écrire.
+**Décision.** Consigner `WN_ASSIETTES_INDIQUEES` : **POSÉ le 2026-09-20 à
+08:11 UTC, NON CONSTATÉ**. Lot repris d'une voisine sur demande du responsable ;
+les quatre sessions interrogées avant tout geste, deux poses simultanées étant
+le risque réel. Aucun geste de production ici.
 
-**Ma lecture d'état était fausse sur un point, pour une raison à retenir.** Le
-handoff de `D-237` §9 dit « LE DRAPEAU N'EST PAS POSÉ » — et il a raison **à
-l'heure où il a été écrit** : il a été mergé AVANT la pose. J'en avais conclu un
-état courant. **Un handoff dit l'état à l'heure où il est écrit, pas à l'heure
-où on le lit** ; ce qui constate l'état courant est la production.
+**Ma lecture était fausse** : le §9 du handoff dit « pas posé », et il a raison
+**à l'heure où il fut écrit**, mergé avant la pose. Un handoff dit l'état de son
+heure.
 
-**Le verdict, vérifié par ma propre sonde et non repris du pair** : POSÉ, NON
-CONSTATÉ. Et la raison est plus précise que « pas encore vérifié » — la route
-teste la session AVANT le verrou (401 dans les deux états), donc aucune sonde
-anonyme ne distingue ; le seul témoin est la ligne du journal d'accès. Or
-`journal_acces_dossiers` porte 4 450 lignes et **le dernier geste praticien date
-du 2026-09-19 à 11:21**, avant la pose : personne n'a ouvert de dossier depuis.
-**Une sonde sans témoin ne prouve rien** — avertissement de `developer-8e`,
-fondé sur l'amendement de `D-226` où variable relue + conteneurs recréés avaient
-été pris pour un constat, démenti 1 h 50 plus tard.
+**Écartée.** Chercher une sonde non authentifiée : la route teste la session
+avant le verrou, 401 dans les deux états. Le seul témoin est le journal d'accès,
+dont le dernier geste **précède** la pose. Une sonde sans témoin ne prouve rien.
 
-**Écartée.** Chercher une sonde non authentifiée : l'ordre des gardes de la route
-la rend impossible, et la chercher aurait produit un faux constat.
+**Prochaine action.** Corriger `D-233` : le compteur est la page.
 
-**Trouvé au passage.** Le `release-db` de cette nuit a tourné **à vide** (« No
-pending migrations to apply ») : ce lot ne portait aucune migration, il n'y a
-rien à en tirer. Et le § 6 du handoff mergé annonce 57 cas de banc pour 59 réels
-— quatrième compte faux du lot, tous de la même forme : un total recopié d'un
-résumé au lieu d'être recalculé depuis la source.
-
-**Prochaine action.** Corriger `D-233` : le registre consigne « rang 64 de
-création de **contexte** » alors que le bras C de la PR #1184 — contexte unique,
-page neuve, blocage au rang 64 — **exclut le contexte comme compteur**. Le
-compteur porte sur la création de **page**, et le corps de #1184 le dit en toutes
-lettres. Signalé par `developer-03`, vérifié sur pièce. Onze occurrences dans
-cinq fichiers.
-
-**Questions ouvertes.** Le témoin du drapeau, qui viendra du premier praticien
-ouvrant la sous-vue Protocole. `Q_GAS_01` au socle : doctrine contre composition
-réelle de `prisma.pack.qids`, ni l'une ni l'autre relue en production, et cinq
-des sept lignes en dépendent. Et la réserve préexistante du garde de paquet
-client, qui reste un lot.
+**Ouvert.** Le témoin. `Q_GAS_01` au socle.
