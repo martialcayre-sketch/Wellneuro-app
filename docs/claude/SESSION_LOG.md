@@ -7601,36 +7601,19 @@ attestation, et c'est voulu.
 
 ## 2026-09-20 — Le compteur de la panne WebKit est la PAGE, pas le contexte
 
-**Correction, sans numéro neuf** — même forme que `#1187`, qui avait déjà corrigé
-une prémisse fausse de `D-049` survivant à trois endroits. `D-233` consignait
-« rang 64 de création de **contexte** » ; le **bras C** de la PR #1184 tient un
-contexte unique avec une page neuve et bloque au **même rang 64**, ce qui exclut
-le contexte. Le compteur porte sur la **création de page**.
+**Décision.** Correction sans numéro neuf, comme `#1187`. `D-233` consignait
+« rang 64 de création de **contexte** » ; le bras C de #1184 — contexte unique,
+page neuve — bloque au **même rang**, ce qui exclut le contexte. Le compteur
+porte sur la **création de page**. La clôture n'est pas rouverte : seul le
+mécanisme consigné change, et une décision close se lit longtemps.
 
-**La clôture n'est pas rouverte** : condition de sortie remplie, correctif
-fonctionnel, trois séquences T3 vertes. Seul le mécanisme consigné change — une
-décision close se lit longtemps.
+**La cause.** L'amendement du 2026-09-17 dit **déjà** « création de PAGE » ;
+c'est le **titre** de son fragment qui disait « contexte ». J'ai lu le titre,
+pas la table en dessous.
 
-**La cause, et c'est la leçon.** L'amendement du 2026-09-17 écrit **déjà** « LE
-COMPTEUR PORTE SUR LA CRÉATION DE PAGE », et le fragment du même jour porte la
-table qui le démontre. Mais **le TITRE de ce fragment** disait « 64ᵉ contexte » —
-rédaction antérieure au bras C, restée en place quand le corps a été corrigé.
-C'est le titre que j'ai repris, sans ouvrir la table deux lignes plus bas. **Un
-en-tête n'est pas une source.** Troisième fois en trois jours qu'un constat de
-revue porte sur quelque chose affirmé sans avoir ouvert le fichier qui le définit.
+**Écartées.** Réécrire le bras B (sa description est exacte ; c'est la conclusion
+qui était fausse). Rétro-écrire le `SESSION_LOG`, append-only.
 
-**Balayé, et le balayage a compté** : titre du fragment 2026-09-17, `D-233` §2 et
-§3, chapeau de clôture de `D-049`, `tests-validation.md`, fragment du 2026-09-19,
-et le message de `wn-diagnostic-e2e.mjs` — le plus coûteux, puisqu'il s'adresse à
-quelqu'un en train d'instruire un rouge.
+**Prochaine action.** Merger #1205 puis #1206, `--subject`.
 
-**Écartées.** Réécrire la description du bras B (elle est exacte : ce bras
-changeait bien le contexte ; c'est la conclusion qui était fausse). Rétro-écrire
-le `SESSION_LOG`, append-only.
-
-**Prochaine action.** Merger #1205 (consignation du drapeau) puis celle-ci, avec
-`--subject`, en résolvant le conflit d'append du `SESSION_LOG`.
-
-**Questions ouvertes.** Le témoin du drapeau des assiettes, toujours à venir.
-`Q_GAS_01` au socle, à trancher sur la production. La réserve du garde de paquet
-client, qui reste un lot.
+**Ouvert.** Le témoin du drapeau. `Q_GAS_01` au socle.
