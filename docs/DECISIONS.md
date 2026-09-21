@@ -486,8 +486,27 @@ carte affichait « Raccourci assumé : … » au praticien. Ce texte n'est pas �
 pour lui : il est écrit pour la relecture de signature, et il en porte les mots
 — `claimsSecurite`, `insomnie_depression`, `Q_INF_03`, `D-224`. Il paraissait
 sur la ligne la plus atteignable de la table (la protéinée, dont une borne d'âge
-ouvre seule), donc dès le premier dossier de plus de 60 ans. Aucun banc ne le
-voyait : la fixture du panneau posait `raccourciAssume: null`. **Pourquoi on ne
+ouvre seule). Aucun banc ne le
+voyait : la fixture du panneau posait `raccourciAssume: null`.
+>
+> ⚠️ **CORRECTION DATÉE DU 2026-09-21 — L'AMPLEUR ÉTAIT SUPPOSÉE, PAS MESURÉE.**
+> Ce paragraphe disait « **donc dès le premier dossier de plus de 60 ans** ». La
+> production dit autre chose : sur **29 dossiers**, **UN SEUL** est né avant 1966,
+> et **15 n'ont aucune date de naissance** — la borne d'âge produit donc bien plus
+> souvent une lacune `age_inconnu` qu'une ouverture. Mesuré par conteneur détaché
+> le 2026-09-21 (agrégats, aucune identité ; le plus ancien dossier est né en
+> 1962).
+>
+> **CE QUI RESTE ENTIER** : le constat lui-même. La prose de relecture sortait
+> bien à l'écran, le champ ne devait pas traverser, et le correctif tient. La
+> ligne protéinée reste atteignable — mais **par la branche `Q_INF_03`**, que
+> `Q_GAS_01` mis à part le seul pack ACTIF de la base porte, et que 18 des 29
+> dossiers ont passée (chiffre rapporté par la session d'origine, non relu ici).
+>
+> **CE QUI EST CORRIGÉ EST LA MÉTHODE** : une atteignabilité de principe avait été
+> écrite comme un fait de production. C'est la faute que ce dépôt punit le plus
+> souvent — et elle est ici avouée par la session qui l'a commise, pas découverte
+> contre elle. **Pourquoi on ne
 le reformule pas** : le champ est DANS le périmètre haché — le réécrire périme
 l'attestation de [[D-236]]. Un libellé écrit POUR L'ÉCRAN est un champ neuf,
 donc une re-signature, et ce lot n'en pose aucune. **Ce qui manque est donc
