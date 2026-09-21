@@ -3,7 +3,6 @@ import {
   VERSION_PROTOCOL_DRAFT_V2,
   type ProtocolDraft,
 } from '@/lib/clinical-engine/types';
-import type { FoodCompassActionRef } from './types';
 import { assertFoodCompassActionRef, assertProtocolDraftC5Structure } from './refValidation';
 import { recomputeDraftInputHash } from '@/lib/protocol/fromPrisma';
 
@@ -15,49 +14,29 @@ function canonicalIso(value: string): string {
   return value;
 }
 
-export function attachFoodCompassRef(input: {
-  protocolDraft: ProtocolDraft;
-  actionId: string;
-  actionRef: FoodCompassActionRef;
-  updatedAt: string;
-  c5Enabled: boolean;
-}): ProtocolDraft {
-  if (!input.c5Enabled) throw new TypeError('C5 est désactivée.');
-  if (recomputeDraftInputHash(input.protocolDraft) !== input.protocolDraft.inputHash) {
-    throw new TypeError('Empreinte du protocole source incohérente.');
-  }
-  assertProtocolDraftC5Structure(input.protocolDraft);
-  assertFoodCompassActionRef(input.actionRef, {
-    protocolDraftId: input.protocolDraft.protocolDraftId,
-    selectedPriorityId: input.protocolDraft.selectedPriorityId,
-  });
-  if (input.actionRef.sourceProtocolInputHash !== input.protocolDraft.inputHash
-    || input.actionRef.sourceProtocolDraftId !== input.protocolDraft.protocolDraftId) {
-    throw new TypeError('La référence C5 ne correspond pas à la version source du protocole.');
-  }
-  canonicalIso(input.updatedAt);
-  if (input.updatedAt <= input.protocolDraft.updatedAt) {
-    throw new TypeError('La version C5 doit être postérieure au protocole courant.');
-  }
-  let matched = false;
-  const actions = input.protocolDraft.actions.map(action => {
-    if (action.actionId !== input.actionId) return action;
-    matched = true;
-    if (action.type !== 'food') throw new TypeError('Une référence C5 ne peut viser qu’une action alimentaire.');
-    return { ...action, foodCompassRef: { ...input.actionRef } };
-  });
-  if (!matched) throw new TypeError('Action protocole introuvable.');
-  const withoutHash = {
-    ...input.protocolDraft,
-    updatedAt: input.updatedAt,
-    version: VERSION_PROTOCOL_DRAFT_V2,
-    status: 'draft' as const,
-    actions,
-    review: null,
-  };
-  const { protocolDraftId: _protocolDraftId, inputHash: _inputHash, ...hashInput } = withoutHash;
-  return { ...withoutHash, inputHash: canonicalSha256(hashInput) };
-}
+// `attachFoodCompassRef` A ÉTÉ RETIRÉE — arbitrage B1 du cadrage du 2026-09-16,
+// rendu le 2026-09-21 ([[D-239]]).
+//
+// ELLE N'ÉTAIT PAS SEULEMENT MORTE, ELLE ÉTAIT UNE SECONDE FAÇON DE FAIRE. Le
+// cadrage la décrivait comme « morte de bout en bout », ce qui est vrai de la
+// FONCTION — aucun appelant hors son propre banc — mais faux du champ qu'elle
+// posait : `foodCompassRef` est vivant, écrit au geste praticien par
+// `ProtocolMiniBuilder` et lu par la voie patient (`api/portail/protocole`).
+//
+// CE QUI LA REND SUPPRIMABLE SANS PERTE : la voie vivante garde PLUS FORT.
+// `api/praticien/protocoles/versions` exige un protocole source actif, refuse
+// si C5 est éteinte, appelle `assertFoodCompassActionRef` contre le brouillon
+// actif — puis **RE-DÉRIVE** la référence depuis les données officielles et
+// compare son `refHash`. Elle ne valide pas ce qu'on lui soumet : elle le
+// recalcule. La fonction retirée, elle, validait une référence soumise ; elle
+// était le maillon faible d'un invariant tenu deux fois.
+//
+// ET LE BANC LE PLUS FOURNI COUVRAIT LE CHEMIN MORT. `foodCompass.test.ts` lui
+// consacrait un cas entier, quand le constructeur VIVANT
+// (`buildFoodCompassProtocolV2FromSource`, appelé en `versions/route.ts:472`)
+// est éprouvé ailleurs, par `patientReference.test.ts`. Les assertions qui
+// visaient ses gardes propres sont parties avec elle ; celles qui s'en
+// servaient comme FIXTURE ont gardé leur objet.
 
 export function reviewFoodCompassProtocolV2(input: {
   protocolDraft: ProtocolDraft;
