@@ -469,6 +469,36 @@ export function ClinicalRuntimeSection({
     foodLabel: string;
     actionRef: FoodCompassActionRef;
   } | null>(null);
+  /**
+   * L'ASSIETTE RETENUE VIT ICI, PAS DANS LA CARTE ([[D-240]]).
+   *
+   * La carte des indications est DÉMONTÉE dès la sortie de la sous-vue
+   * « protocole » — c'est un correctif assumé, qui évite de journaliser une
+   * lecture de dossier que le praticien n'a pas demandée. Un choix gardé
+   * là-dedans se perdrait à chaque aller-retour vers Biologie ou Diffusion.
+   *
+   * ELLE PORTE LE DOSSIER QUI L'A PRODUITE — constat de revue, et il visait un
+   * défaut GRAVE que la première rédaction avait introduit. La sélection
+   * Boussole voisine est remise à zéro par un effet (`readyDecisionCardId`,
+   * `activeVersionId`) ; celle-ci ne l'était PAR RIEN. Le cockpit étant réutilisé
+   * d'un dossier à l'autre, l'assiette retenue pour le patient A restait dans le
+   * bandeau du patient B — insérable, puis **enregistrable dans son protocole**.
+   * Ce n'est pas une image fugace : c'est une indication clinique d'un dossier
+   * écrite dans un autre.
+   *
+   * DEUX REMÈDES, ET ILS NE COUVRENT PAS LA MÊME CHOSE. L'effet ci-dessous vide
+   * la sélection au changement de contexte — c'est lui qu'un banc peut prouver.
+   * L'état DATÉ, lui, tient le rendu intermédiaire : React rend d'abord avec la
+   * nouvelle prop et l'ANCIEN état, et l'effet ne tourne qu'après le commit.
+   * **Aucun banc unitaire ne voit cette image** — `act()` fait tourner l'effet
+   * avant qu'elle soit observable —, et il faut le dire plutôt que laisser
+   * croire à une garde. C'est mot pour mot la leçon de [[D-237]] sur la carte
+   * elle-même.
+   */
+  const [assietteSelection, setAssietteSelection] = useState<{
+    pour: string;
+    choix: { plateCode: string; libelle: string };
+  } | null>(null);
 
   const loadTrajectoire = useCallback(async () => {
     // Un échec de lecture ne bloque pas le cockpit, mais il est SIGNALÉ, et la
@@ -1245,6 +1275,37 @@ export function ClinicalRuntimeSection({
   useEffect(() => {
     setFoodCompassSelection(null);
   }, [readyDecisionCardId, activeVersionId]);
+
+  // LE DOSSIER, ET RIEN QUE LUI — et la première rédaction s'y était trompée
+  // dans l'autre sens (constat de revue).
+  //
+  // ELLE NOMMAIT AUSSI `readyDecisionCardId` ET `activeVersionId`, par symétrie
+  // avec la sélection Boussole voisine. **Les deux sont renseignés de façon
+  // ASYNCHRONE** : `activeVersionId` part de `null` et ne reçoit sa valeur
+  // qu'au retour de `loadVersions`, `readyDecisionCardId` qu'au retour du
+  // cockpit — et la carte des assiettes, elle, n'est gardée par NI L'UN NI
+  // L'AUTRE : elle est cliquable avant. Un praticien qui retenait une assiette
+  // pendant que ces GET volaient encore voyait donc son choix **effacé en
+  // silence**, sans message et sans cause visible.
+  //
+  // CE QUE LA RÉDUCTION NE PERD PAS. Le seul tort qu'une sélection persistante
+  // peut faire est de traverser vers un AUTRE DOSSIER — c'est le défaut que le
+  // premier constat de revue visait. Une carte de décision neuve ou une version
+  // enregistrée ne rendent pas l'assiette moins indiquée POUR CE PATIENT ; et
+  // l'insertion, elle, vide la sélection par `onClearAssietteSelection`.
+  //
+  // UN EFFET À PART, et non une dépendance ajoutée au précédent : y glisser
+  // `idPatient` changerait aussi le comportement de la sélection Boussole, qui
+  // n'est pas le sujet de ce lot — et qui porte le même défaut d'asynchronie,
+  // nommé au handoff, non corrigé ici.
+  useEffect(() => {
+    setAssietteSelection(null);
+  }, [idPatient]);
+
+  // CE QUI DESCEND AU CONSTRUCTEUR VIENT DE CE DOSSIER-CI, ET DE RIEN D'AUTRE.
+  const assietteRetenue = assietteSelection !== null && assietteSelection.pour === idPatient
+    ? assietteSelection.choix
+    : null;
 
   // Remontée de l'état observable (rail des phases). Dépendances primitives
   // uniquement : aucune boucle de rendu. `reevaluationMesuree` ne fait que lire
@@ -2056,7 +2117,10 @@ export function ClinicalRuntimeSection({
           son seul coût au remontage est le GET qu'on vient précisément
           d'éviter. */}
       {!fixture && affiche('actions') && sousVueActions === 'protocole' && (
-        <AssiettesIndiqueesPanel idPatient={idPatient} />
+        <AssiettesIndiqueesPanel
+          idPatient={idPatient}
+          onRetenirAssiette={choix => setAssietteSelection({ pour: idPatient, choix })}
+        />
       )}
       <div id="protocol-version-builder" hidden={!affiche('actions') || (!fixture && sousVueActions !== 'protocole')}>
         {/* RESTITUER AVANT DE FAIRE SAISIR. Le constructeur ne lisait de
@@ -2097,6 +2161,8 @@ export function ClinicalRuntimeSection({
           onConfirmerRegistre={confirmerRegistreEtEnregistrer}
           foodCompassSelection={foodCompassSelection}
           onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
+          assietteSelection={assietteRetenue}
+          onClearAssietteSelection={() => setAssietteSelection(null)}
           sourcesCitables={fixture ? [] : sourcesCitables}
           provenancePurpose={fixture ? null : (contenuActif?.provenancePurpose ?? null)}
           baremeCharge={fixture ? [] : baremeCharge}

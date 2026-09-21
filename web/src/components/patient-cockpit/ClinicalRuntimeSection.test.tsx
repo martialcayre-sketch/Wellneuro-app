@@ -632,6 +632,62 @@ describe('ClinicalRuntimeSection', () => {
     ).toBe(false);
   });
 
+  it('L’ASSIETTE RETENUE NE SUIT PAS LE PRATICIEN D’UN DOSSIER À L’AUTRE', async () => {
+    // CONSTAT DE REVUE, ET IL VISAIT LE PIRE DE CE LOT. La sélection Boussole
+    // voisine est vidée par un effet ; celle-ci ne l'était PAR RIEN. Le cockpit
+    // étant réutilisé d'un dossier au suivant, l'assiette retenue pour le
+    // patient A restait dans le bandeau du patient B — insérable, puis
+    // ENREGISTRABLE DANS SON PROTOCOLE. Une indication clinique d'un dossier
+    // écrite dans un autre.
+    //
+    // CE QUE CE CAS GARDE EXACTEMENT, ET IL FAUT LE DIRE : la PROPRIÉTÉ, pas
+    // l'un des deux mécanismes. Le correctif en porte deux — l'effet de remise
+    // à zéro et l'état DATÉ du dossier — et chacun suffit seul : mesure faite,
+    // muter l'un OU l'autre laisse ce cas VERT, il ne rougit qu'en mutant les
+    // DEUX. C'est donc « la sélection ne survit pas au changement de dossier »
+    // qui est tenu ici. Le rendu intermédiaire, lui, n'est vu par aucun banc —
+    // `act()` fait tourner l'effet avant qu'il soit observable ([[D-237]]).
+    const assiettes = (indiquees: unknown[]) => rep({
+      ok: true, actif: true, shaPerimetre: 'a'.repeat(64),
+      indiquees, nonEvaluees: [], nonIndiquees: 0, retireesFauteDeClaim: 0, corpusLu: true,
+    });
+    const ligne = {
+      ligneId: 'ASSIETTE-IND-PROTEINEE', plateCode: 'ASSIETTE_PROTEINEE',
+      libelle: 'Assiette protéinée', sourceProtocole: 'WN-SRC-0288',
+      motif: 'âge 76 ans > 60', instruments: [], claims: ['WN-CL-0288-011::v1.0'],
+    };
+    const fetchMock = fetchParRoute({
+      // Quatre réponses de chaque côté : la section relit au montage ET à la
+      // bascule de dossier, et une file épuisée fait tomber le constructeur
+      // dans sa branche dégradée — où le bandeau n'existe pas, ce qui rendrait
+      // ce cas VACANT. Constaté au DOM, pas supposé.
+      cockpitGet: Array.from({ length: 4 }, () => rep(readyAvecCandidats())),
+      assiettesIndiquees: [assiettes([ligne]), assiettes([]), assiettes([]), assiettes([])],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const proprietes = {
+      fixture: null, protocolDraft: null, onFixtureReviewed: vi.fn(), phase: 'actions' as const,
+    };
+    const { rerender } = render(<ClinicalRuntimeSection idPatient="PAT_TEST" {...proprietes} />);
+
+    await screen.findByText('Assiette protéinée');
+    fireEvent.click(screen.getByRole('button', {
+      name: 'Retenir « Assiette protéinée » pour le protocole',
+    }));
+    // Le bandeau du constructeur porte bien le choix — le geste fonctionne.
+    await screen.findByText(/Assiette indiquée retenue : Assiette protéinée/);
+
+    rerender(<ClinicalRuntimeSection idPatient="PAT_AUTRE" {...proprietes} />);
+    // TÉMOIN D'ANTI-VACUITÉ, ET IL A DÉJÀ SERVI. Sans lui, ce cas passait pour
+    // la mauvaise raison : la file de réponses épuisée faisait échouer la
+    // relecture du cockpit, le constructeur tombait dans sa branche
+    // « Protocole indisponible » — et le bandeau était absent quoi qu'il
+    // arrive. Constaté au DOM. Le compteur d'actions n'existe que dans la
+    // branche VIVANTE du constructeur.
+    await screen.findByText('Actions (0/3)');
+    expect(screen.queryByText(/Assiette indiquée retenue/)).toBeNull();
+  });
+
   it('recharge automatiquement une proposition périmée et redemande confirmation', async () => {
     const stale: CockpitRuntimeApiResponse = { status: 'unavailable', reason: 'proposal_stale', error: 'Périmée.' };
     const refreshed = { ...proposalResponse, proposalHash: 'hash-refreshed' } satisfies CockpitRuntimeApiResponse;

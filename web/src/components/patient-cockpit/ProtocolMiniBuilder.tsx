@@ -13,6 +13,11 @@ import type {
   TherapeuticLoad,
 } from '@/lib/clinical-engine/types';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
+// Import de VALEUR depuis `plates.ts`, qui n'importe lui-même qu'un TYPE :
+// le catalogue d'assiettes suit sans traîner `node:crypto` au paquet client.
+// Le barrel `@/lib/food-compass` le ferait, lui — il ré-exporte `contextual`.
+// Précédent mesuré : `PractitionerFoodObservationPanel` importe déjà ce module.
+import { estAssietteDIndication, getCurrentRecommendedPlateRef } from '@/lib/food-compass/plates';
 import {
   mesurerProtocole,
   suggererDepuisLignes,
@@ -111,6 +116,8 @@ export function ProtocolMiniBuilder({
   onConfirmerRegistre,
   foodCompassSelection = null,
   onClearFoodCompassSelection,
+  assietteSelection = null,
+  onClearAssietteSelection,
   sourcesCitables = [],
   provenancePurpose = null,
   baremeCharge = [],
@@ -137,6 +144,13 @@ export function ProtocolMiniBuilder({
   onConfirmerRegistre?: () => void;
   foodCompassSelection?: { foodLabel: string; actionRef: FoodCompassActionRef } | null;
   onClearFoodCompassSelection?: () => void;
+  /**
+   * L'assiette retenue sur la carte des indications ([[D-240]]). Même forme que
+   * la sélection Boussole, et pour la même raison : la carte est démontée dès
+   * que le praticien quitte la sous-vue, le choix doit donc vivre au-dessus.
+   */
+  assietteSelection?: { plateCode: string; libelle: string } | null;
+  onClearAssietteSelection?: () => void;
   /**
    * Les deux sources que la raison d'être a le droit de citer ([[D-193]]),
    * relues au serveur. Liste FERMÉE : ni le motif praticien de sélection, ni le
@@ -246,9 +260,58 @@ export function ProtocolMiniBuilder({
     onClearFoodCompassSelection?.();
   };
 
+  // L'ASSIETTE DEVIENT UNE ACTION — et l'écran REJOUE la garde du domaine.
+  //
+  // `estAssietteDIndication` est la même fonction que celle qu'appelle
+  // `assertRefAssietteDIndication` au serveur. La rejouer ici n'est pas une
+  // seconde vérité : c'est le seul moyen de DIRE le refus en français au lieu
+  // de le laisser remonter en exception d'enregistrement. Le serveur, lui,
+  // re-dérive la référence et ne croit rien de ce que cet écran envoie.
+  //
+  // CE CAS NE DEVRAIT PAS SURVENIR, et c'est pourquoi il est dit plutôt que tu :
+  // le service ne compose sa liste qu'à partir d'`assiettesParIndication()`. Un
+  // refus ici signifierait que la carte a servi une assiette d'un autre axe —
+  // un défaut de la chaîne, pas une erreur du praticien.
+  const insertAssietteAction = () => {
+    if (!assietteSelection || actions.length >= MAX_ACTIONS_PROTOCOLE_21J) return;
+    if (!estAssietteDIndication(assietteSelection.plateCode)) {
+      setMessage('Cette assiette n’est pas une assiette d’indication : elle ne peut pas porter une action.');
+      return;
+    }
+    markDirty();
+    setActions(previous => [...previous, {
+      ...emptyAction(`action-${nextActionId}`),
+      type: 'food',
+      title: assietteSelection.libelle,
+      recommendedPlateRef: getCurrentRecommendedPlateRef(assietteSelection.plateCode),
+    }]);
+    setNextActionId(value => value + 1);
+    setMessage('Assiette ajoutée au brouillon — complétez les trois plans puis enregistrez manuellement.');
+    onClearAssietteSelection?.();
+  };
+
+  // CHANGER LE TYPE D'UNE ACTION QUI PORTE UNE ASSIETTE — le second mur de la
+  // même famille que la demande de contrat, et il se ferme ici plutôt qu'à
+  // l'enregistrement.
+  //
+  // Laisser la référence sur une action devenue `chronobiology` la ferait
+  // refuser au serveur (« exige une action alimentaire ») : un refus technique,
+  // deux clics après le geste que l'écran venait de proposer. La retirer en
+  // SILENCE serait pire — le praticien perdrait le lien à la table signée sans
+  // l'apprendre. Elle est donc retirée ET dite.
   const updateAction = (actionId: string, patch: Partial<BrouillonAction>) => {
     markDirty();
-    setActions(previous => previous.map(action => action.actionId === actionId ? { ...action, ...patch } : action));
+    setActions(previous => previous.map((action, index) => {
+      if (action.actionId !== actionId) return action;
+      const fusionnee = { ...action, ...patch };
+      if (fusionnee.recommendedPlateRef !== undefined && fusionnee.type !== 'food') {
+        setMessage(`L’assiette a été retirée de l’action ${index + 1} : une référence d’assiette `
+          + 'n’existe que sur une action alimentaire.');
+        const { recommendedPlateRef: _retiree, ...sansAssiette } = fusionnee;
+        return sansAssiette;
+      }
+      return fusionnee;
+    }));
   };
 
   const removeAction = (actionId: string) => {
@@ -307,6 +370,17 @@ export function ProtocolMiniBuilder({
     }
     setErreur(null);
     const suspendues = actions.some(action => action.interventionStatus === 'conditionnelle_biologie');
+    // UNE ASSIETTE EXIGE V4, ET LA DEMANDE DOIT SUIVRE — sans quoi le geste
+    // butait sur un mur. Le contrat n'était demandé que sur SUSPENSION ; une
+    // assiette posée sur un protocole sans action suspendue serait partie en V1,
+    // et le moteur l'aurait refusée (« exige un payload protocole V4
+    // explicite »). Le praticien aurait lu un refus technique sur un geste que
+    // l'écran venait de lui proposer.
+    // Le contrat reste DEMANDÉ et non déduit au serveur ([[D-130]]) : c'est
+    // l'écran qui demande, sur ce qu'il porte, exactement comme il le fait déjà
+    // pour une suspension.
+    const porteUneAssiette = actions.some(action => action.recommendedPlateRef !== undefined);
+    const contratV4 = suspendues || porteUneAssiette;
     return {
       purpose,
       followUpCriterion,
@@ -316,7 +390,7 @@ export function ProtocolMiniBuilder({
       // en V1 — demander V4 partout ferait basculer des protocoles que rien
       // n'oblige à changer de contrat, et V4 exige alors un statut sur CHAQUE
       // action.
-      ...(suspendues ? { version: VERSION_PROTOCOL_DRAFT_V4 } : {}),
+      ...(contratV4 ? { version: VERSION_PROTOCOL_DRAFT_V4 } : {}),
       // Le filtre de type ci-dessus a établi que plus aucune action ne porte
       // `''` : la conversion est constatée, pas supposée. En V4, toute action
       // non suspendue porte `active` — le contrat l'exige sur chacune, et ne
@@ -324,7 +398,7 @@ export function ProtocolMiniBuilder({
       actions: actions.map(action => ({
         ...action,
         type: action.type as ProtocolActionType,
-        ...(suspendues && action.interventionStatus === undefined ? { interventionStatus: 'active' as const } : {}),
+        ...(contratV4 && action.interventionStatus === undefined ? { interventionStatus: 'active' as const } : {}),
       })),
       therapeuticLoad: { level: loadLevel, source: 'practitioner', justification: loadJustification.trim() || null },
     };
@@ -406,6 +480,17 @@ export function ProtocolMiniBuilder({
             <span className="text-sm font-medium text-foreground">Actions ({actions.length}/{MAX_ACTIONS_PROTOCOLE_21J})</span>
             <button type="button" onClick={addAction} disabled={actions.length >= MAX_ACTIONS_PROTOCOLE_21J} className="min-h-11 rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50">Ajouter une action</button>
           </div>
+          {assietteSelection && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted p-2 text-sm">
+              <span>Assiette indiquée retenue : {assietteSelection.libelle}</span>
+              <button type="button" onClick={insertAssietteAction} disabled={actions.length >= MAX_ACTIONS_PROTOCOLE_21J} className="min-h-11 rounded-lg border border-foreground px-3 py-2 disabled:opacity-50">
+                Insérer manuellement
+              </button>
+              <button type="button" onClick={onClearAssietteSelection} className="min-h-11 px-2 py-2 text-muted-foreground underline">
+                Écarter cette sélection
+              </button>
+            </div>
+          )}
           {foodCompassSelection && (
             <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted p-2 text-sm">
               <span>Sélection Boussole prête : {foodCompassSelection.foodLabel}</span>

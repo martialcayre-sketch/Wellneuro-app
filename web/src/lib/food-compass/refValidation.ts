@@ -11,6 +11,7 @@ import {
   C5_AXIS_CODE,
   C5_DATASET_VERSION,
   C5_MAPPING_VERSION,
+  C5_RECOMMENDED_PLATE_REF_VERSION,
   C5_SCORE_VERSION,
   type FoodCompassActionRef,
 } from './types';
@@ -84,5 +85,59 @@ export function assertProtocolDraftC5Structure(draft: ProtocolDraft): void {
       protocolDraftId: draft.protocolDraftId,
       selectedPriorityId: draft.selectedPriorityId,
     });
+  });
+}
+
+/**
+ * LA RELECTURE D'UNE ASSIETTE PERSISTÉE — et ce qu'elle refuse de vérifier
+ * compte autant que ce qu'elle vérifie ([[D-240]]).
+ *
+ * ELLE VÉRIFIE LE CONTRAT, LE TYPE D'ACTION ET LA STRUCTURE : payload V4,
+ * action `food`, contrat de référence exact et quatre champs non vides. C'est la
+ * défense en profondeur de `reconstructProtocolDraft` — aucun code ne revalidait
+ * un payload en lecture avant qu'elle existe.
+ *
+ * ELLE NE VÉRIFIE NI LA FRAÎCHEUR NI L'AXE, ET C'EST DÉLIBÉRÉ. Les deux se
+ * vérifient à l'ÉCRITURE, où `assertRefAssietteDIndication` re-dérive la
+ * référence du catalogue. Les refaire ici lierait la lisibilité d'un protocole
+ * DÉJÀ DIFFUSÉ à l'état courant du catalogue : le jour où une entrée change de
+ * libellé, son `contentHash` bouge — et l'écran du patient s'éteindrait pour
+ * une raison qui ne le concerne pas. C'est exactement le raisonnement que
+ * `plates.ts` tient déjà pour exclure `axe` et `sourceProtocole` du
+ * `contentHash` : ces champs ne disent pas ce que l'assiette EST.
+ *
+ * LA VERSION, ELLE, NE BOUGE JAMAIS APRÈS LA PERSISTANCE — constat de revue, et
+ * ma première rédaction l'avait omise en étendant l'asymétrie à ce qui ne la
+ * justifiait pas. Le catalogue est EXTÉRIEUR au payload et peut dériver ; la
+ * version est DANS le payload et dans son empreinte. La contrôler ne peut donc
+ * éteindre aucun protocole légitime, et son absence laissait un payload V1, V2
+ * ou V3 forgé porter une assiette que l'écriture refuse — exactement ce que les
+ * gardes voisines (C5, compléments) ferment sur leur propre contrat.
+ *
+ * LE MIROIR EST DONC ASYMÉTRIQUE SUR UN SEUL AXE : conservateur sur ce que le
+ * catalogue peut faire bouger, strict sur tout ce que le payload fige. Une
+ * observation alimentaire, elle, se relit par `assertRefAssietteDObservation` —
+ * parce qu'un épisode se rejoue, là où un protocole diffusé est un engagement
+ * déjà pris.
+ */
+export function assertProtocolDraftPlateStructure(draft: ProtocolDraft): void {
+  if (!Array.isArray(draft.actions)) return;
+  draft.actions.forEach(action => {
+    const ref = action.recommendedPlateRef;
+    if (ref === undefined) return;
+    if (draft.version !== VERSION_PROTOCOL_DRAFT_V4) {
+      throw new TypeError('Une référence d’assiette exige un payload protocole V4 explicite.');
+    }
+    if (action.type !== 'food') {
+      throw new TypeError('Une référence d’assiette exige une action alimentaire.');
+    }
+    if (ref === null || typeof ref !== 'object'
+      || ref.contractVersion !== C5_RECOMMENDED_PLATE_REF_VERSION
+      || typeof ref.plateCode !== 'string' || ref.plateCode.trim() === ''
+      || typeof ref.catalogVersion !== 'string' || ref.catalogVersion.trim() === ''
+      || typeof ref.contentHash !== 'string' || ref.contentHash.trim() === ''
+      || typeof ref.refHash !== 'string' || ref.refHash.trim() === '') {
+      throw new TypeError('Référence d’assiette de protocole invalide.');
+    }
   });
 }

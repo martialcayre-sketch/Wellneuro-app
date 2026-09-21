@@ -1,4 +1,5 @@
 import { canonicalSha256 } from './canonical';
+import { assertRefAssietteDIndication } from '../food-compass/plates';
 import {
   MAX_ACTIONS_PROTOCOLE_21J,
   VERSION_PROTOCOL_DRAFT,
@@ -124,6 +125,43 @@ function normalizeInterventionStatus(
   return { interventionStatus: status };
 }
 
+// L'ASSIETTE POSÉE SUR UNE ACTION — trois termes, et aucun n'est décoratif
+// ([[D-240]]).
+//
+// **LE CONTRAT.** V4 explicite, comme `foodCompassRef` exige V2 et
+// `supplementCatalogRef` V3. La version ne se déduit jamais d'un champ présent :
+// c'est la doctrine de ce module, et la déduire laisserait le client choisir son
+// contrat par omission.
+//
+// **LE TYPE D'ACTION.** `food` seule. Le précédent est `supplementCatalogRef`,
+// réservé à `supplement_exploration` — une référence typée se lie à un type
+// d'action, faute de quoi elle devient un champ libre que n'importe quelle
+// action transporte. Une assiette est un repas : `advice_sheet` aurait ouvert
+// la fiche conseil, que [[D-200]] §2 a précisément FERMÉE à l'écriture et dont
+// aucun écran patient ne rend le contenu. Le cadrage écrivait « `advice_sheet`
+// ou `food` » ; c'est `food`, et l'autre branche reste fermée jusqu'à ce qu'une
+// fiche conseil existe pour de bon.
+//
+// **L'AXE, ET C'EST LUI QUI RECALCULE.** `assertRefAssietteDIndication` ne
+// valide pas la référence soumise : elle la RE-DÉRIVE du catalogue et rend la
+// copie officielle. Un `contentHash` réécrit, un `catalogVersion` périmé, un
+// repère de moment de repas — les trois sortent ici. C'est la leçon de
+// [[D-239]] appliquée d'emblée : entre valider ce qu'on reçoit et recalculer ce
+// qu'on sait, seul le second ne se laisse pas soumettre.
+function normalizePlateRef(
+  action: ProtocolAction,
+  version: ProtocolDraft['version'],
+): Pick<ProtocolAction, 'recommendedPlateRef'> {
+  if (action.recommendedPlateRef === undefined) return {};
+  if (version !== VERSION_PROTOCOL_DRAFT_V4) {
+    throw new TypeError('Une référence d’assiette exige un payload protocole V4 explicite.');
+  }
+  if (action.type !== 'food') {
+    throw new TypeError('Une référence d’assiette exige une action alimentaire.');
+  }
+  return { recommendedPlateRef: assertRefAssietteDIndication(action.recommendedPlateRef) };
+}
+
 function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['version']): ProtocolAction[] {
   if (actions.length > MAX_ACTIONS_PROTOCOLE_21J) {
     throw new TypeError('Un protocole 21 jours ne peut contenir que trois actions maximum.');
@@ -154,6 +192,7 @@ function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['ver
       rescuePlan: nonEmpty(action.rescuePlan, 'plan de secours'),
       limitations: uniqueSorted(action.limitations),
       ...normalizeInterventionStatus(action, version),
+      ...normalizePlateRef(action, version),
     };
   });
 }

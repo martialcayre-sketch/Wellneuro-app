@@ -81,19 +81,28 @@ pourquoi.** C'est la part de la proposition initiale que ce cadrage refuse.
 
 ## Les arbitrages
 
+> **LES QUATRE SONT TRANCHÉS, ET CE TABLEAU A LAISSÉ CROIRE LE CONTRAIRE PENDANT CINQ JOURS.**
+> [[D-213]], écrite le même jour que ce cadrage, ferme explicitement « les quatre arbitrages
+> B1→B4 ». B1 et B2 ont reçu ensuite leur décision de mise en œuvre ([[D-239]], [[D-230]]) et
+> ont été barrés ici ; B3 et B4 ne l'ont pas été, faute de lot pour les porter — si bien que
+> deux lignes non barrées se lisaient « à décider » quand elles disaient « à faire ».
+> Corrigé le 2026-09-21 ([[D-240]]) : une décision rendue ne se relit jamais dans le document
+> qui posait la question.
+
+
 | # | Arbitrage | Bloque |
 | --- | --- | --- |
 | B1 | ~~**`attachFoodCompassRef` : retiré, ou conservé éteint ?** Il est mort de bout en bout.~~ **TRANCHÉ le 2026-09-21 ([[D-239]]) : RETIRÉ** — et la prémisse était inexacte. La FONCTION était morte ; le CHAMP qu'elle posait (`foodCompassRef`) est vivant, écrit par `ProtocolMiniBuilder` et lu par la voie patient. Ce qui la rendait supprimable n'est donc pas l'abandon de la référence d'aliment, mais le fait qu'`api/praticien/protocoles/versions` **re-dérive** la référence au lieu de la valider : la fonction retirée était la copie FAIBLE d'un invariant tenu deux fois. | LOT-01 |
 | B2 | ~~**Les trois assiettes du catalogue C5B suffisent-elles**, ou le catalogue s'étend-il aux douze fiches d'assiette du corpus (`WN-SRC-0296` → `WN-SRC-0307`) ?~~ **TRANCHÉ le 2026-09-18 ([[D-230]])** : le catalogue s'étend aux douze — mais aux **PROTOCOLES** (`WN-SRC-0284` → `0295`), jamais aux fiches, que `D-216` déclare irrecevables comme source de règle. Quinze entrées sur deux axes, et `C5B_PLATE_CATALOG_HASH` a changé sans qu'aucune référence déjà consignée ne devienne caduque. | LOT-02 |
-| B3 | **La `substitutionFamily` reste-t-elle `null` ?** Sans famille d'équivalence validée, une assiette ne se remplace pas : le patient qui ne peut pas la suivre n'a pas d'alternative. C'est le plan de secours, sous un autre nom. | LOT-03 |
-| B4 | **La Boussole patient reste-t-elle atteignable** depuis le protocole, ou devient-elle une surface séparée de l'alimentation ? | LOT-04 |
+| B3 | ~~**La `substitutionFamily` reste-t-elle `null` ?**~~ **DÉJÀ TRANCHÉ le 2026-09-16 — et ce tableau était périmé dès sa publication.** [[D-213]] déclare en en-tête fermer « les quatre arbitrages B1→B4 » et rend B3 au §11 : « les douze reçoivent leurs familles d'équivalence ». [[D-216]] §4 l'a précisé le même jour : **les familles se feront, le mécanisme change d'abord** — trois préalables, dont un que [[D-240]] vient de fournir (« assiette prescrite » a désormais un sens), et un quatrième qu'il révèle : `decidePlateSubstitution` ne regarde pas l'`axe`. Ce n'est pas un arbitrage à rendre, c'est un chantier à ouvrir. | LOT-03 |
+| B4 | ~~**La Boussole patient reste-t-elle atteignable** depuis le protocole ?~~ **DÉJÀ TRANCHÉ le 2026-09-16 ([[D-213]] §12) : elle le RESTE** — « l'assiette prescrit, la Boussole explique pourquoi ». Ce qui manquait n'était pas la décision mais le point de départ : le chemin ALIMENT → Boussole sert en production, le chemin ASSIETTE PRESCRITE → aliment n'avait aucune origine. [[D-240]] la crée. Reste le vrai verrou de LOT-04, nommé là : **les contrats V2 et V4 sont mutuellement exclusifs**, et `resolvePatientFoodCompassView` exige V2. | LOT-04 |
 
 ## Les lots
 
 | Lot | Objet | Décision requise | Dépend de |
 | --- | --- | --- | --- |
 | LOT-01 | Trancher le sort de la référence d'aliment sur l'action. | **oui — B1** | — |
-| LOT-02 | L'assiette devient une unité d'action : `advice_sheet` ou `food` reçoit une `RecommendedPlateRef`. | **oui — B2** | LOT-01 |
+| LOT-02 | ~~L'assiette devient une unité d'action : `advice_sheet` ou `food` reçoit une `RecommendedPlateRef`.~~ **LIVRÉ le 2026-09-21 ([[D-240]])** — `food` SEULE : `adviceSheetRef` est fermé à l'écriture depuis [[D-200]] §2. Contrat V4, axe d'indication seul, référence re-dérivée du catalogue. | **oui — B2** | LOT-01 |
 | LOT-03 | Les familles d'équivalence, donc le secours d'une assiette. | **oui — B3** | LOT-02 |
 | LOT-04 | Le chemin patient : de l'assiette prescrite à la lecture de l'aliment. | **oui — B4** | LOT-02 |
 

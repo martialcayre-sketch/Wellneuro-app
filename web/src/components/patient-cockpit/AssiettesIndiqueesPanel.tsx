@@ -5,14 +5,28 @@ import type { AssiettesIndiqueesApiResponse } from '@/app/api/praticien/assiette
 import type { LacuneDeclencheur } from '@/lib/clinical/orientationEngine';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 
-// LES ASSIETTES INDIQUÉES — carte de LECTURE, posée dans la section qui
-// construit le protocole ([[D-237]]).
+// LES ASSIETTES INDIQUÉES — carte de LECTURE qui ARME UN GESTE, et n'en exécute
+// aucun ([[D-237]], puis [[D-240]]).
 //
-// AUCUN GESTE. Pas de bouton, pas de formulaire, rien à attacher : la carte
-// montre ce que la table signée indique pour ce dossier, et ce qu'elle n'a pas
-// pu regarder. Que l'assiette devienne une unité d'action est un lot à part,
-// cadré le 2026-09-16 et suspendu à deux arbitrages ouverts — poser le geste ici
-// aurait tranché ces arbitrages sans les poser.
+// CE QUI A CHANGÉ, ET CE QUI N'A PAS CHANGÉ. [[D-237]] s'interdisait tout geste
+// tant que le cadrage du 2026-09-16 faisait lire ses arbitrages comme ouverts ;
+// leur direction était rendue depuis le même jour ([[D-213]]), et le responsable
+// a formulé le manque depuis l'écran au premier dossier servi. La carte propose
+// donc désormais UNE action, et une seule : retenir une assiette indiquée pour
+// le constructeur de protocole.
+//
+// ELLE N'ÉCRIT TOUJOURS RIEN. Pas de POST, pas de formulaire, pas de champ de
+// saisie — sa route n'exporte que `GET`, et un banc l'épingle. Le bouton ne fait
+// que REMONTER un choix au parent : c'est le parent qui le garde, et le
+// constructeur qui, sur un second geste explicite, en fait une action. Trois
+// gestes séparent donc l'assiette affichée du protocole enregistré, et aucun
+// n'est automatique.
+//
+// POURQUOI LE CHOIX NE VIT PAS ICI. Ce panneau est DÉMONTÉ dès que le praticien
+// quitte la sous-vue « protocole » — délibérément, pour ne pas journaliser une
+// lecture de dossier qu'il n'a pas demandée. Un choix gardé ici se perdrait à
+// chaque aller-retour. Il monte donc au parent, exactement comme la sélection
+// de l'observatoire Boussole, qui a la même contrainte pour la raison inverse.
 //
 // ELLE NE MONTRE JAMAIS UN VIDE NU. Une carte qui n'afficherait que les portes
 // atteintes se lirait, vide, « aucune assiette n'est indiquée pour ce
@@ -95,7 +109,23 @@ export function libelleLacune(lacune: LacuneDeclencheur): string {
   }
 }
 
-export function AssiettesIndiqueesPanel({ idPatient }: { idPatient: string }) {
+/** Ce que la carte remonte au parent : l'assiette retenue, rien de plus. */
+export type AssietteRetenue = { plateCode: string; libelle: string };
+
+export function AssiettesIndiqueesPanel({
+  idPatient,
+  onRetenirAssiette,
+}: {
+  idPatient: string;
+  /**
+   * SANS CETTE PROP, LA CARTE RESTE CE QU'ELLE ÉTAIT : aucun bouton, aucun
+   * geste. Elle est optionnelle parce qu'une carte de lecture doit rester
+   * montable ailleurs sans traîner un geste dont le point de montage n'a que
+   * faire — et les deux branches sont épinglées par le banc, faute de quoi
+   * l'absence de bouton passerait pour un état et non pour un contrat.
+   */
+  onRetenirAssiette?: (choix: AssietteRetenue) => void;
+}) {
   // CHAQUE ÉTAT PORTE LE DOSSIER QUI L'A PRODUIT — constat de revue, et le
   // jeton seul n'y suffisait pas.
   //
@@ -237,6 +267,29 @@ export function AssiettesIndiqueesPanel({ idPatient }: { idPatient: string }) {
                       {assiette.sourceProtocole ? `${assiette.sourceProtocole} · ` : ''}
                       {assiette.claims.join(' · ')}
                     </p>
+                    {/* LE GESTE EST SUR LA LIGNE INDIQUÉE, ET NULLE PART
+                        AILLEURS. Les assiettes NON ÉVALUÉES n'en reçoivent
+                        aucun : une porte qu'on n'a pas pu regarder n'indique
+                        rien, et lui offrir le même bouton ferait de « on ne
+                        sait pas » un « c'est indiqué » (`DC-24`). */}
+                    {onRetenirAssiette && (
+                      <button
+                        type="button"
+                        // LE NOM ACCESSIBLE NOMME L'ASSIETTE, le texte visible
+                        // reste court. Sans cela, une carte qui porte trois
+                        // indications rend trois boutons de nom IDENTIQUE : à la
+                        // synthèse vocale, le praticien entendrait trois fois la
+                        // même chose sans savoir laquelle il retient.
+                        aria-label={`Retenir « ${assiette.libelle} » pour le protocole`}
+                        onClick={() => onRetenirAssiette({
+                          plateCode: assiette.plateCode,
+                          libelle: assiette.libelle,
+                        })}
+                        className="mt-2 min-h-11 rounded-lg border border-foreground px-3 py-2 text-xs font-medium"
+                      >
+                        Retenir pour le protocole
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
