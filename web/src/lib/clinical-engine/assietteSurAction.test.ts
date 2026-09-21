@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildPatientProtocolView } from './patientProtocolView';
 import { buildProtocolDraft } from './protocolDraft';
@@ -310,5 +312,32 @@ describe('Le patient ne reçoit PAS la référence d’assiette', () => {
     // et il reste relu par la garde de registre anxiogène côté route. Ce lot ne
     // sert donc au patient RIEN de neuf : le chemin patient est [[LOT-04]].
     expect(serialisee).toContain('Assiette dopaminergique');
+  });
+});
+
+describe('La remise à zéro de la sélection ne dépend QUE du dossier', () => {
+  it('ni `activeVersionId` ni `readyDecisionCardId` ne reviennent dans ses dépendances', () => {
+    // GARDE DE SOURCE, ET ELLE DIT POURQUOI ELLE N'EST PAS UN BANC DE RENDU.
+    //
+    // Le défaut qu'elle ferme est une COURSE : `activeVersionId` part de `null`
+    // et ne reçoit sa valeur qu'au retour de `loadVersions` ; la carte des
+    // assiettes, elle, est cliquable avant. Un praticien qui retenait une
+    // assiette pendant ce vol voyait son choix effacé EN SILENCE. Rejouer cette
+    // fenêtre demanderait de différer une réponse au milieu d'un montage de
+    // section — le harnais ne l'offre pas, et un banc qui prétendrait le faire
+    // serait plus faible qu'honnête.
+    //
+    // CE QUI EST TENU ICI EST DONC LA FORME : la clé de remise à zéro reste le
+    // DOSSIER, et rien d'autre. C'est exactement ce qu'une « restauration de
+    // symétrie » avec la sélection Boussole voisine ferait retomber — celle-ci
+    // porte le même défaut, nommé et non corrigé par ce lot.
+    const source = readFileSync(
+      join(process.cwd(), 'src/components/patient-cockpit/ClinicalRuntimeSection.tsx'),
+      'utf8',
+    );
+    const effet = /setAssietteSelection\(null\);\s*\}, \[([^\]]*)\]\);/.exec(source);
+    expect(effet, 'l’effet de remise à zéro de l’assiette n’a pas été retrouvé').not.toBeNull();
+    const dependances = effet![1].split(',').map(terme => terme.trim()).filter(Boolean);
+    expect(dependances).toEqual(['idPatient']);
   });
 });

@@ -61,6 +61,14 @@ tomber le constructeur dans sa branche dégradée. Un témoin d'anti-vacuité l'
 rendu discriminant ; ce qu'il garde est la propriété, pas l'un des deux
 mécanismes, et c'est écrit tel quel.
 
+**Et une seconde revue a trouvé une course qui effaçait le geste en silence.**
+La remise à zéro corrigée ci-dessus nommait aussi la carte de décision et la
+version active — toutes deux servies de façon ASYNCHRONE, quand la carte des
+assiettes, elle, est cliquable avant leur retour. Retenir une assiette pendant
+ce vol effaçait le choix, sans message : la garde censée protéger le geste le
+perdait. Réduite au seul dossier, ce qui ne perd rien. La sélection Boussole
+voisine porte le même défaut — nommé, hors périmètre.
+
 **Ce que ce lot coûte à B3, et il faut l'écrire.** Jusqu'ici, remplir une famille
 d'équivalence sur les douze assiettes d'indication ne périmait rien : aucune de
 leurs références n'était persistable, le seul porteur en base étant l'épisode

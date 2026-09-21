@@ -61,7 +61,7 @@ ne re-tranche donc rien : il corrige la forme du tableau et exécute `D-213` §1
   détour C5 (la route démonte la référence avant `buildProtocolDraft` et la
   réinjecte après) : c'est ce détour qui a fabriqué le maillon faible de `D-239`.
 
-## 6. Fichiers — dix-sept : quatorze modifiés, trois créés
+## 6. Fichiers — dix-neuf : seize modifiés, trois créés
 
 **Domaine et moteur (5)**
 - `web/src/lib/food-compass/plates.ts` — `estAssietteDIndication`,
@@ -81,29 +81,46 @@ ne re-tranche donc rien : il corrige la forme du tableau et exécute `D-213` §1
 - `web/src/components/patient-cockpit/ProtocolMiniBuilder.tsx` —
   `insertAssietteAction`, le bandeau, et **la demande de contrat V4**.
 
-**Bancs (3)**
-- `web/src/lib/clinical-engine/assietteSurAction.test.ts` — **créé**, 19 cas.
+**Bancs (4)**
+- `web/src/lib/clinical-engine/assietteSurAction.test.ts` — **créé**, 21 cas.
 - `web/src/components/patient-cockpit/AssiettesIndiqueesPanel.test.tsx` — 23 cas.
 - `web/src/components/patient-cockpit/ProtocolMiniBuilder.test.tsx` — 41 cas.
-- `web/src/components/patient-cockpit/ClinicalRuntimeSection.test.tsx` — un cas
-  ajouté (la sélection ne suit pas le praticien d'un dossier à l'autre).
+- `web/src/components/patient-cockpit/ClinicalRuntimeSection.test.tsx` — 47 cas,
+  dont un ajouté (la sélection ne suit pas le praticien d'un dossier à l'autre).
 
-**Documents (6), ce handoff compris** — `docs/DECISIONS.md` (D-240),
+**Documents (7), ce handoff compris** — `docs/DECISIONS.md` (D-240),
 `changelog.d/2026-09-21-assiette-unite-action.md` (créé), le cadrage,
 `docs/FEATURE_FLAGS.md`, `docs/claude/MATRICE_CONSOMMATION.md` (régénérée),
-`docs/claude/handoffs/2026-09-21-1910-assiette-unite-action.md` (créé).
+`docs/claude/handoffs/2026-09-21-1910-assiette-unite-action.md` (créé),
+`docs/claude/SESSION_LOG.md`.
 
-Liste énumérée AVANT le total, et le total pris dessus : 5 + 3 + 3 + 6 = 17.
+Liste énumérée AVANT le total, et le total pris dessus : 5 + 3 + 4 + 7 = 19.
+**Le décompte a été faux une fois** — « dix-sept, dont trois bancs » — et c'est
+un constat de revue qui l'a relevé : `ClinicalRuntimeSection.test.tsx` avait
+rejoint le diff après le comptage, et `SESSION_LOG.md` manquait. Compté depuis
+`git diff --name-status origin/main...HEAD`, jamais de mémoire.
 
 ## 7. Validations exécutées
 
+**Chiffres relus à la source après les DEUX revues** — un constat a relevé que
+cette rubrique portait encore ceux d'avant.
+
 - **T1** `cd web && npm run check` — `T1-EXIT=0`, lu dans le fichier redirigé.
-  1051 cas Vitest + 1623 du second projet (21 ignorés), 0 échec.
-- **Huit mutations, huit rouges**, et cinq ne rougissent qu'un seul cas :
-  retrait de `normalizePlateRef` (8 cas), garde d'axe neutralisée (2), fraîcheur
-  branchée en lecture (3), `contratV4` ramené à `suspendues` (1), refus d'axe
-  retiré de l'écran (1), bouton retiré (1), geste étendu aux non évaluées (1),
-  retrait de l'assiette au changement de type neutralisé (1).
+  **1061 cas** + 1623 du second projet (21 ignorés), 0 échec.
+- **T2** `npm run test:worktree -- --fast` — `T2-EXIT=0` sur la tête d'alors :
+  588 fichiers, 9 897 cas, 205 E2E. **À REJOUER** sur la tête portant les
+  correctifs de la seconde revue (voir §10).
+- **CI** `node scripts/wn-attendre-ci.mjs 1209` — `CI-EXIT=0` sur `dd82587e`,
+  `verify` vert en 13 min 54, tête du SNAPSHOT **égale** à la tête réelle de la
+  PR (le script peut juger la tête précédente : la comparaison n'est pas
+  facultative). À rejouer également sur la tête finale.
+- **Dix mutations, dix rouges** : retrait de `normalizePlateRef` (8 cas), garde
+  d'axe neutralisée (2), fraîcheur branchée en lecture (3), `contratV4` ramené à
+  `suspendues` (1), refus d'axe retiré de l'écran (1), bouton retiré (1), geste
+  étendu aux non évaluées (1), retrait de l'assiette au changement de type
+  neutralisé (1), dépendances asynchrones remises dans la clé de remise à zéro
+  (1) — et, sur le cas de bascule de dossier, **les deux mécanismes ensemble**,
+  chacun seul laissant vert (§8 bis).
   Sauvegarde par `cp`, **mutation vérifiée appliquée** avant de jouer le banc,
   restauration par `cp` — jamais `git checkout --`.
 
@@ -164,6 +181,35 @@ empreinte. Un payload V1/V2/V3 forgé pouvait porter une assiette que l'écritur
 refuse, là où `assertProtocolDraftC5Structure` et
 `assertProtocolDraftSupplementStructure` ferment cela sur leur propre contrat.
 
+## 8 ter. La seconde revue — quatre constats, quatre retenus
+
+**LA CLÔTURE ÉTAIT INCOMPLÈTE, ET C'EST LE GATE DU DÉPÔT QUI LE DIT.**
+`/wn-pr` pose que `docs/claude/SESSION_LOG.md` **ET** un fragment de handoff
+doivent être dans le diff, sous peine de « fenêtre ratée » que `/wn-merge`
+refuse. J'avais écrit le second, pas le premier. Ajouté.
+
+**UNE COURSE EFFAÇAIT LE GESTE EN SILENCE.** La clé de remise à zéro nommait
+`readyDecisionCardId` et `activeVersionId`, par symétrie avec la sélection
+Boussole voisine. **Les deux sont asynchrones** — `activeVersionId` part de
+`null` et n'est servi qu'au retour de `loadVersions` — et la carte des
+assiettes n'est gardée par aucun des deux : elle est cliquable avant. Retenir
+une assiette pendant ce vol effaçait le choix, sans message. Réduite au seul
+`idPatient`, ce qui ne perd rien : le seul tort d'une sélection persistante est
+de traverser vers un AUTRE dossier. **La sélection Boussole porte le même
+défaut** — nommé ici, non corrigé : ce n'est pas le périmètre de ce lot.
+
+Gardé par une **garde de SOURCE** plutôt qu'un banc de rendu, et le banc dit
+pourquoi : rejouer cette fenêtre demanderait de différer une réponse au milieu
+d'un montage de section, ce que le harnais n'offre pas. Ce qui est tenu est la
+FORME — la clé reste le dossier. Vérifié par mutation.
+
+**ET DEUX CONSTATS SUR CE HANDOFF LUI-MÊME**, tous deux justes : son inventaire
+comptait dix-sept fichiers quand le diff en porte dix-neuf (`SESSION_LOG.md` et
+un quatrième fichier de banc manquaient), et sa « prochaine action » présentait
+encore comme à faire ce que §7 rapportait comme fait. Les deux corrigés. C'est
+la **cinquième fois** qu'un décompte écrit de mémoire est faux dans cette
+lignée : il se prend désormais à `git diff --name-status origin/main...HEAD`.
+
 ## 9. Problèmes ouverts
 
 **B3 — ce que ce lot lui coûte, et il faut que la prochaine session le sache.**
@@ -199,11 +245,19 @@ rapproche par sous-chaîne.
 
 ## 10. Prochaine action exacte
 
-T2 (`npm run test:worktree -- --fast`) depuis la racine, sortie redirigée puis
-relue ; PR `--base main` avec `--body-file` ; `node scripts/wn-attendre-ci.mjs
-<N>` en un seul appel bloquant ; **lire la revue aux TROIS emplacements** avant
-de merger (`pulls/<N>/comments`, `.reviews[].body`, bloc « Suppressed
-comments ») ; `gh pr merge --squash --subject` avec le sujet qui nomme D-240.
+**CE QUI EST DÉJÀ FAIT, et ne se rejoue pas** — un constat de revue a relevé que
+cette rubrique présentait encore comme à faire ce que §7 rapportait comme fait :
+T1 `0`, T2 `0`, **PR #1209 ouverte**, `origin/main` **fusionnée** dans la branche
+(conflit réel sur `FEATURE_FLAGS.md`, résolu en gardant la version de #1205 et en
+y greffant la seule correction de ce lot), CI `CI-EXIT=0` sur `dd82587e` avec la
+tête du SNAPSHOT égale à la tête réelle, revue lue **deux fois** aux trois
+emplacements — six constats, six corrigés.
+
+**CE QUI RESTE.** Rejouer T1 et T2 sur la tête portant les correctifs de la
+seconde revue ; attendre une troisième revue sur cette tête plutôt que de merger
+sur un verdict périmé ; puis `gh pr merge --squash --subject` avec le sujet qui
+nomme D-240 — **sans `--subject`, le titre du squash vient du commit de tête**,
+et trois `D-NNN` faux sont déjà sur `main` pour l'avoir oublié.
 
 **Le numéro D-240 se prend au MERGE** : le registre n'admet aucun trou et les
 collisions sont documentées comme récurrentes.

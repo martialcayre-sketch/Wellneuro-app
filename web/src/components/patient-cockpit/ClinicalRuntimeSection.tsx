@@ -1276,14 +1276,31 @@ export function ClinicalRuntimeSection({
     setFoodCompassSelection(null);
   }, [readyDecisionCardId, activeVersionId]);
 
+  // LE DOSSIER, ET RIEN QUE LUI — et la première rédaction s'y était trompée
+  // dans l'autre sens (constat de revue).
+  //
+  // ELLE NOMMAIT AUSSI `readyDecisionCardId` ET `activeVersionId`, par symétrie
+  // avec la sélection Boussole voisine. **Les deux sont renseignés de façon
+  // ASYNCHRONE** : `activeVersionId` part de `null` et ne reçoit sa valeur
+  // qu'au retour de `loadVersions`, `readyDecisionCardId` qu'au retour du
+  // cockpit — et la carte des assiettes, elle, n'est gardée par NI L'UN NI
+  // L'AUTRE : elle est cliquable avant. Un praticien qui retenait une assiette
+  // pendant que ces GET volaient encore voyait donc son choix **effacé en
+  // silence**, sans message et sans cause visible.
+  //
+  // CE QUE LA RÉDUCTION NE PERD PAS. Le seul tort qu'une sélection persistante
+  // peut faire est de traverser vers un AUTRE DOSSIER — c'est le défaut que le
+  // premier constat de revue visait. Une carte de décision neuve ou une version
+  // enregistrée ne rendent pas l'assiette moins indiquée POUR CE PATIENT ; et
+  // l'insertion, elle, vide la sélection par `onClearAssietteSelection`.
+  //
   // UN EFFET À PART, et non une dépendance ajoutée au précédent : y glisser
   // `idPatient` changerait aussi le comportement de la sélection Boussole, qui
-  // n'est pas le sujet de ce lot. `idPatient` est nommé EN PLUS des deux autres
-  // — `readyDecisionCardId` change certes avec le dossier, mais s'appuyer sur
-  // cette corrélation ferait dépendre une garde clinique d'un effet de bord.
+  // n'est pas le sujet de ce lot — et qui porte le même défaut d'asynchronie,
+  // nommé au handoff, non corrigé ici.
   useEffect(() => {
     setAssietteSelection(null);
-  }, [idPatient, readyDecisionCardId, activeVersionId]);
+  }, [idPatient]);
 
   // CE QUI DESCEND AU CONSTRUCTEUR VIENT DE CE DOSSIER-CI, ET DE RIEN D'AUTRE.
   const assietteRetenue = assietteSelection !== null && assietteSelection.pour === idPatient

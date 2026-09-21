@@ -187,6 +187,31 @@ ferment exactement cela sur leur propre contrat. **Le miroir est asymétrique su
 un seul axe** : conservateur sur ce que le catalogue peut faire bouger, strict
 sur tout ce que le payload fige.
 
+**14. LA SECONDE REVUE A TROUVÉ UNE COURSE QUI EFFAÇAIT LE GESTE EN SILENCE.**
+Le §12 ci-dessus corrigeait la fuite entre dossiers en remettant la sélection à
+zéro sur `[idPatient, readyDecisionCardId, activeVersionId]` — par symétrie avec
+la sélection Boussole voisine. **Les deux termes ajoutés sont ASYNCHRONES** :
+`activeVersionId` part de `null` et n'est servi qu'au retour de `loadVersions`,
+`readyDecisionCardId` qu'au retour du cockpit — et la carte des assiettes n'est
+gardée par NI L'UN NI L'AUTRE, elle est cliquable avant. Retenir une assiette
+pendant ce vol effaçait donc le choix **sans message et sans cause visible** :
+le geste que ce lot existe pour poser, perdu par la garde censée le protéger.
+La clé est réduite au seul `idPatient`, et cela ne perd rien — le seul tort
+d'une sélection persistante est de traverser vers un AUTRE dossier ; une carte
+de décision neuve ou une version enregistrée ne rendent pas l'assiette moins
+indiquée pour CE patient. **La sélection Boussole porte le même défaut**, nommé
+et non corrigé : hors périmètre. Gardé par une garde de SOURCE, le banc disant
+lui-même pourquoi il n'est pas un banc de rendu — rejouer cette fenêtre
+demanderait de différer une réponse au milieu d'un montage de section.
+
+**ET LA CLÔTURE ÉTAIT INCOMPLÈTE.** `/wn-pr` exige que `SESSION_LOG.md` **et**
+un fragment de handoff soient dans le diff ; j'avais écrit le second seul, ce
+qui fabriquait la « fenêtre ratée » que `/wn-merge` refuse. Deux constats de
+plus portaient sur le handoff lui-même — un inventaire faux de deux fichiers, et
+une « prochaine action » qui présentait comme à faire ce que la rubrique des
+validations rapportait comme fait. **Six constats en deux revues, six retenus,
+aucun écarté.**
+
 **CE QUE LE LOT NE FAIT PAS.** Il ne sert **rien de neuf au patient** : la vue
 patient ne porte ni le champ ni le code d'assiette, et un banc l'épingle. Il ne
 touche **ni à `INDICATIONS_ASSIETTES_V1`, ni à son `shaPerimetre`, ni à

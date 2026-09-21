@@ -7618,3 +7618,24 @@ touche 1 dossier sur 29.
 
 **Ouvert.** La carte n'offre ni sélection ni validation — conforme, mais dit
 depuis l'écran.
+
+## 2026-09-21 — LOT-02 : l'assiette indiquée devient une unité d'action (D-240)
+
+**Décision.** La carte arme un geste — « Retenir pour le protocole » — et
+n'écrit rien : trois gestes séparent l'assiette affichée du protocole
+enregistré. Trois portes gardent l'écriture : contrat **V4**, action **`food`
+seule**, **axe d'indication** (exécute `D-213` §10). La référence est
+**re-dérivée** du catalogue, jamais crue sur parole.
+
+**Écartées.** `advice_sheet` — `adviceSheetRef` est fermé à l'écriture
+(`D-200` §2). Une V5 — V4 est le contrat courant.
+
+**Corrigé.** Le cadrage faisait lire B3 et B4 comme ouverts : leur direction
+est rendue depuis `D-213`. Les dire « tranchés » serait la faute
+symétrique — `D-239` a renversé sa §9.
+
+**Revue.** Six constats, six corrigés ; le premier laissait l'assiette du
+patient A enregistrable chez B.
+
+**Ouvert.** `LOT-03` attend une source d'équivalence qu'aucun claim ne fonde ;
+`LOT-04` bute sur l'exclusivité des contrats V2 et V4.
