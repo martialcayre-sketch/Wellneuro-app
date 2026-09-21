@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { LimiteProposition } from '@/lib/biology-library/propositionService';
 import type { LignePanelProposition, StatutPanel } from '@/lib/biology-library/statuts';
-import { STATUTS_PROPOSES } from '@/lib/biology-library/courrier';
+// LA FEUILLE, ET NON `courrier` — constat mesuré sur l'artefact. Cet import de
+// VALEUR est le goulot par lequel SIX chaînes atteignaient la couche clinique :
+// `courrier` → `statuts` → `orientationEngine` et `grillesSignees`. Le paquet du
+// navigateur portait donc la table d'orientation entière, ses seuils et
+// crypto-browserify. `vocabulaireStatuts` n'importe rien.
+import { STATUTS_PROPOSES } from '@/lib/biology-library/vocabulaireStatuts';
 import type { StatutChoix } from '@/lib/trust/types';
 
 // Proposition de bilan biologique ([[D-071]]) — panneau présentationnel.

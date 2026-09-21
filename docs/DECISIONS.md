@@ -4,6 +4,121 @@
 
 ## Décisions actives
 
+### D-238 — Le garde du paquet client ne voyait que le PREMIER pas : six chaînes atteignaient la couche clinique par un voisin, et l'artefact le montrait
+
+- Date : 2026-09-21
+- Statut : accepté — constat de revue du lot [[D-237]], **rapporté puis mesuré**, et le remède tient à un import
+- Domaine : sécurité du paquet client, clinique (table d'orientation), praticien
+- Décision : couper la chaîne à son goulot, puis élargir le garde à la clôture transitive.
+
+**1. LE DÉFAUT — UN GARDE QUI LIT LES SPÉCIFIEURS, PAS LES CHEMINS.**
+`bundleClient.guard.test.ts` n'acceptait que les spécifieurs `@/lib/clinical/…`
+écrits DANS un fichier `'use client'`. La chaîne réelle n'en écrivait aucun :
+`PropositionBilanPanel` importait **quatre chaînes de caractères**
+(`STATUTS_PROPOSES`) depuis `biology-library/courrier`, qui les prend de
+`biology-library/statuts`, lequel importe `evaluerDeclencheur` et `sha256`. Le
+banc était vert, et le défaut en place **depuis le 2026-08-18**.
+
+**2. CE QUI PARTAIT AU NAVIGATEUR — MESURÉ SUR L'ARTEFACT, PAS DÉDUIT.** Le
+constat a d'abord été rapporté par déduction sur les imports ; il a ensuite été
+vérifié sur le chunk construit, et la mesure l'a **corrigé dans les deux sens**.
+Le fichier `app/dashboard/patients/[idPatient]/page-*.js`, **403 Ko**, portait
+les **VINGT règles d'orientation sur vingt**, **CINQUANTE-DEUX identifiants de
+claims**, les bornes de comparaison (`4, 7, 10, 14, 17`), les couleurs de zone,
+le `sha256` de portée module et **crypto-browserify**. En revanche le **texte du
+corpus n'y était pas** — ce que le chapeau du garde affirmait pourtant —, ni la
+table des indications d'assiette. Et le nom du fichier **n'est pas énumérable
+publiquement** : le manifeste de build public ne le cite pas, il faut avoir
+chargé le cockpit — donc s'être authentifié — pour l'apprendre. L'exposition est
+donc réelle mais bornée : quiconque détient le nom (cache navigateur, proxy,
+intermédiaire réseau, toute personne ayant ouvert le cockpit), pas n'importe qui
+sur Internet. **La formule « un fichier `/_next/static/…` n'est derrière aucune
+authentification » est vraie du FICHIER et trompeuse sur l'EXPOSITION** ; elle
+est rectifiée dans le garde plutôt que corrigée en silence.
+
+**3. L'AMPLEUR EXACTE : SIX CHAÎNES, DEUX CIBLES, UN GOULOT.** La clôture
+transitive des imports de valeur depuis les **131** composants clients donne
+**24** chemins vers `lib/clinical`, dont **21 indirects** — mais la plupart
+visent des modules FEUILLES, que le garde exempte déjà à juste titre. Restaient
+**six chaînes fautives**, vers deux cibles seulement (`orientationEngine`,
+`grillesSignees`), depuis trois composants (`PropositionBilanPanel`,
+`ClinicalRuntimeSection`, `FichePatientPanel`) — et **toutes les six passaient
+par le même import**. C'est ce chiffre qui a rendu le lot petit : un goulot se
+coupe, une nappe se refactore.
+
+**4. LE REMÈDE HONORE LA DOCTRINE QU'IL DÉPLACE.** `STATUTS_PROPOSES` portait
+cette phrase : « Le prédicat vit ICI, dans le module qui possède le vocabulaire
+des statuts » — avec son motif, que deux artefacts divergents diraient au
+patient et au médecin deux propositions différentes. Déplacer la seule constante
+aurait séparé le prédicat de son vocabulaire, c'est-à-dire cassé la raison même
+de la phrase. C'est donc **le vocabulaire ENTIER** — le type `StatutPanel` et le
+prédicat — qui entre dans `vocabulaireStatuts.ts`, module **feuille** qui
+n'importe rien ; `statuts.ts` les ré-exporte, et **aucun appelant serveur ne
+change**. Seul le composant client puise désormais à la feuille.
+
+**5. LE GARDE SUIT MAINTENANT LES CHEMINS, ET DIT LEQUEL.** Parcours en largeur
+sur les imports de valeur, `export … from` compris — les oublier rouvrirait le
+trou par la ré-export. La règle des feuilles est **vérifiée, jamais déclarée** :
+un import ajouté demain à un module le sort de la liste. Et le message d'échec
+rapporte **la chaîne entière**, pas ses deux bouts : le défaut tenait à un import
+au MILIEU, et un message nommant seulement le composant et le module clinique
+enverrait la session corriger le mauvais fichier.
+
+**6. LE BANC EST GARDÉ CONTRE SA PROPRE VACUITÉ.** Un parcours qui ne trouve
+rien et un dépôt sain rendent le même verdict — c'est le défaut qu'un banc
+d'invariant né vert a déjà coûté au dépôt. Un cas exige donc que le parcours
+SUIVE une chaîne indirecte réelle (`courrier` → `statuts` → clinique) depuis un
+fichier non client, et un autre que le goulot reste coupé. Remettre l'import
+fautif fait rougir **deux** cas ; mesuré.
+
+**7. LA MATRICE CORROBORE LE CORRECTIF — ET A FAILLI MENTIR À CAUSE DU NOM DU
+FICHIER.** Après correction, `MATRICE_CONSOMMATION.md` fait perdre une surface
+cliente à **deux** sources : `Corpus clinique de synthèse V1` passe de 29 à 28,
+`Table d'indications biologiques` de 5 à 4. C'est une confirmation indépendante,
+produite par un outil qui ne sait rien de ce lot.
+
+Mais la première rédaction nommait le module feuille `statutsVocabulaire.ts`, et
+la matrice s'est alors mise à déclarer le panneau **consommateur DIRECT** de la
+table d'indications biologiques, et l'orientation à **gagner** une surface —
+alors que le lot en coupe. Cause : `wn-matrice-consommation.mjs` rapproche un
+module de ses consommateurs par **sous-chaîne** sur l'alias
+(`contenu.includes('@/lib/biology-library/statuts')`), et
+`@/lib/biology-library/statutsVocabulaire` **contient** cet alias. Le fichier est
+donc renommé `vocabulaireStatuts.ts` : un document d'audit ne doit pas porter un
+faux positif que le nom d'un fichier suffit à créer.
+
+**LE DÉFAUT DE L'OUTIL EST RAPPORTÉ, NON CORRIGÉ**, et c'est délibéré : poser une
+frontière de mot dans `mentionne()` changerait potentiellement d'autres lignes de
+la matrice, donc exigerait de justifier un diff d'audit ligne à ligne. C'est un
+lot, pas une ligne — la même raison qui rendait celui-ci petit. Ce qu'il faut
+retenir : **tout module dont le nom PRÉFIXE celui d'un autre du même dossier
+fausse cette matrice**, dans un sens ou dans l'autre.
+
+**8. LA RÈGLE DES FEUILLES AVAIT UN TROU, ET LA PREMIÈRE RÉDACTION DE CE LOT
+L'AVAIT ÉLARGI.** Constat de Copilot, poussé sur la branche, vérifié sur pièce et
+retenu. `feuillesAutorisees()` appelait `importsDeValeur()`, qui **résout** les
+spécifieurs et écarte donc les paquets npm. Un module clinique dont le seul
+import de valeur est un paquet passait pour une FEUILLE — et
+`corpusSyntheseV1.ts` est exactement ce cas : son unique import est
+`createHash` de `'crypto'`. **Le corpus devenait donc importable par un composant
+client avec la bénédiction du garde**, c'est-à-dire l'inverse exact de ce que
+[[D-084]] et ce banc existent pour empêcher. Le défaut est le mien : la version
+d'avant ce lot ne parcourait pas les chaînes, mais sa liste de feuilles était
+construite sur la même fonction que sa détection — en séparant les deux, j'ai
+fait dépendre l'exception d'un test qui ne la voyait plus.
+
+La règle se lit désormais sur les **spécifieurs**, pas sur les chemins résolus :
+un import de paquet suffit à sortir un module de l'exception. Les imports
+LATÉRAUX (`import './module'`) entrent au passage comme arêtes de valeur. Neuf
+modules restent feuilles ; le corpus n'en est plus. **Mutation vérifiée** :
+rendre la règle à sa version résolue fait rougir le cas neuf, et lui seul.
+
+**CE QUE LE LOT NE FAIT PAS.** Il ne touche à **aucune règle, aucun seuil, aucun
+claim, aucune signature** : le vocabulaire déplacé est quatre chaînes de
+caractères et un type. Il ne change **aucun comportement** — ni serveur, ni
+écran. Il ne prétend pas non plus que le paquet client soit désormais exempt de
+tout : il ferme la porte de `lib/clinical`, et rien d'autre.
+
 ### D-237 — La table des indications d'assiette ATTEINT le praticien : un service, une route, une carte — et un vocabulaire pour dire ce qu'on n'a PAS pu regarder
 
 - Date : 2026-09-19
