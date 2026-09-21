@@ -250,8 +250,9 @@ process.stderr.write(
     'cours ne peuvent expliquer cet échec. Signature connue sur macOS, projet\n' +
     'iPhone 13 (WebKit) ; jamais observée en CI.\n\n' +
     "ET C'EST DÉSORMAIS UN FAIT NEUF. La cause a été trouvée le 2026-09-17 :\n" +
-    'WebKit 2311 se bloquait au rang ~64 de CRÉATION DE CONTEXTE (pas de\n' +
-    "navigation), sur mise en veille de l'écran. Corrigée en amont dans WebKit\n" +
+    'WebKit 2311 se bloquait au rang ~64 de CRÉATION DE PAGE — ni contexte (un\n' +
+    'bras à contexte unique bloque au même rang), ni navigation —, sur mise en\n' +
+    "veille de l'écran. Un test = une page. Corrigée en amont dans WebKit\n" +
     '2352, et en service ici depuis Playwright 1.63.0 (WebKit 2359), qui a passé\n' +
     "250 tours du banc sans un blocage. D-049 est CLOSE (D-233).\n\n" +
     "CE QUE CELA VEUT DIRE POUR VOUS : ne classez plus ce rouge, INSTRUISEZ-LE.\n" +

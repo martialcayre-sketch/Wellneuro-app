@@ -7599,6 +7599,24 @@ une erreur de méthode.
 **Prochaine action** : le chantier 6, la porte biologique — il périmera cette
 attestation, et c'est voulu.
 
+## 2026-09-20 — Le compteur de la panne WebKit est la PAGE, pas le contexte
+
+**Décision.** Correction sans numéro neuf, comme `#1187`. `D-233` consignait
+« rang 64 de création de **contexte** » ; le bras C de #1184 — contexte unique,
+page neuve — bloque au **même rang**, ce qui exclut le contexte. Le compteur
+porte sur la **création de page**. La clôture n'est pas rouverte : seul le
+mécanisme consigné change, et une décision close se lit longtemps.
+
+**La cause.** L'amendement du 2026-09-17 dit **déjà** « création de PAGE » ;
+c'est le **titre** de son fragment qui disait « contexte ». J'ai lu le titre,
+pas la table en dessous.
+
+**Écartées.** Réécrire le bras B (sa description est exacte ; c'est la conclusion
+qui était fausse). Rétro-écrire le `SESSION_LOG`, append-only.
+
+**Prochaine action.** Merger #1205 puis #1206, `--subject`.
+
+**Ouvert.** Le témoin du drapeau. `Q_GAS_01` au socle.
 ## 2026-09-21 — Reprise du lot D-237 : le drapeau est posé, puis constaté en cours de lot
 
 **Décision.** Consigner `WN_ASSIETTES_INDIQUEES` : **POSÉ le 2026-09-20 à
