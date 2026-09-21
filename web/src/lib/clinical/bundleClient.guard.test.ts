@@ -68,7 +68,7 @@ function specifieursDeValeur(fichier: string): string[] {
   for (const trouve of source.matchAll(/^\s*import\s+(?!type\b)[^;]*?\bfrom\s+(['"])([^'"]+)\1/gm)) {
     specifieurs.push(trouve[2]);
   }
-  for (const trouve of source.matchAll(/^\s*import\s+(['"])([^'"]+)\1/gm)) {
+  for (const trouve of source.matchAll(/^\s*import\s+(?!type\b)(['"])([^'"]+)\1/gm)) {
     specifieurs.push(trouve[2]);
   }
   for (const trouve of source.matchAll(/^\s*export\s+(?!type\b)[^;]*?\bfrom\s+(['"])([^'"]+)\1/gm)) {
