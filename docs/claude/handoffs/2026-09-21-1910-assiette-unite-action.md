@@ -85,6 +85,8 @@ ne re-tranche donc rien : il corrige la forme du tableau et exécute `D-213` §1
 - `web/src/lib/clinical-engine/assietteSurAction.test.ts` — **créé**, 19 cas.
 - `web/src/components/patient-cockpit/AssiettesIndiqueesPanel.test.tsx` — 23 cas.
 - `web/src/components/patient-cockpit/ProtocolMiniBuilder.test.tsx` — 41 cas.
+- `web/src/components/patient-cockpit/ClinicalRuntimeSection.test.tsx` — un cas
+  ajouté (la sélection ne suit pas le praticien d'un dossier à l'autre).
 
 **Documents (6), ce handoff compris** — `docs/DECISIONS.md` (D-240),
 `changelog.d/2026-09-21-assiette-unite-action.md` (créé), le cadrage,
@@ -133,6 +135,34 @@ Régénérée, non éditée.
 posé depuis le 2026-09-20 et constaté le 2026-09-21, et il affirmait « la carte
 ne porte aucun bouton » — ce que ce lot rend faux. Les deux corrigés, avec
 l'invariant qui, lui, n'a pas bougé.
+
+## 8 bis. La revue a trouvé deux défauts réels — et le premier était le pire du lot
+
+**1. `assietteSelection` n'était remise à zéro PAR RIEN.** La sélection Boussole
+voisine l'est par un effet ; celle-ci ne l'était pas. Le cockpit étant réutilisé
+d'un dossier au suivant, l'assiette retenue pour le patient A restait dans le
+bandeau du patient B — **insérable, puis enregistrable dans son protocole**.
+Corrigé par deux mécanismes : un effet SÉPARÉ sur
+`[idPatient, readyDecisionCardId, activeVersionId]` (séparé pour ne pas changer
+au passage le comportement de la sélection voisine) et un état **daté du
+dossier**, qui seul tient le rendu intermédiaire — qu'aucun banc ne voit
+([[D-237]]).
+
+**Et son banc est né VACANT.** Il passait ; il a continué de passer une fois les
+DEUX mécanismes mutés. Cause constatée **au DOM** : la file de réponses du
+cockpit épuisée à la bascule faisait tomber le constructeur dans sa branche
+« Protocole indisponible », où le bandeau n'existe pas. Réparé par quatre
+réponses par route et un **témoin d'anti-vacuité** — le compteur d'actions, qui
+n'existe que dans la branche vivante. **Ce qu'il garde est la PROPRIÉTÉ, pas l'un
+des deux mécanismes** : muter l'un OU l'autre le laisse vert, il ne rougit qu'en
+mutant les deux. Écrit dans le banc lui-même.
+
+**2. La relecture ne faisait pas respecter le contrat V4.** Mon asymétrie était
+trop large : le CATALOGUE est extérieur au payload et peut dériver — ne pas le
+contrôler en lecture est juste —, mais la VERSION est dans le payload et dans son
+empreinte. Un payload V1/V2/V3 forgé pouvait porter une assiette que l'écriture
+refuse, là où `assertProtocolDraftC5Structure` et
+`assertProtocolDraftSupplementStructure` ferment cela sur leur propre contrat.
 
 ## 9. Problèmes ouverts
 

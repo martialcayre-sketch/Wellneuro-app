@@ -45,6 +45,22 @@ lisaient donc « à décider » quand elles disaient « à faire », et cinq jou
 durant. Ce qui restait n'était pas une décision mais un chantier ; le tableau est
 corrigé, et il porte désormais en tête la raison de l'erreur.
 
+**LA REVUE A TROUVÉ DEUX DÉFAUTS RÉELS, ET LE PREMIER ÉTAIT LE PIRE DU LOT.**
+L'assiette retenue n'était remise à zéro par rien : le cockpit étant réutilisé
+d'un dossier au suivant, celle du patient A restait dans le bandeau du patient B,
+insérable puis **enregistrable dans son protocole**. Corrigée par un effet de
+remise à zéro ET un état daté du dossier — le second seul tenant le rendu
+intermédiaire, qu'aucun banc ne voit. Le second défaut : la relecture d'un
+payload persisté ne faisait pas respecter le contrat V4, là où les deux gardes
+voisines le font. Mon asymétrie était trop large — le catalogue peut dériver, la
+version du payload non.
+
+**Et le banc qui devait tenir le premier est né vacant** : il passait encore une
+fois les deux mécanismes mutés, parce que la file de réponses épuisée faisait
+tomber le constructeur dans sa branche dégradée. Un témoin d'anti-vacuité l'a
+rendu discriminant ; ce qu'il garde est la propriété, pas l'un des deux
+mécanismes, et c'est écrit tel quel.
+
 **Ce que ce lot coûte à B3, et il faut l'écrire.** Jusqu'ici, remplir une famille
 d'équivalence sur les douze assiettes d'indication ne périmait rien : aucune de
 leurs références n'était persistable, le seul porteur en base étant l'épisode

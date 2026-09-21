@@ -216,6 +216,23 @@ describe('La relecture — stricte à l’entrée, CONSERVATRICE à la sortie', 
     expect(() => assertProtocolDraftPlateStructure(draftPersiste())).not.toThrow();
   });
 
+  it('EXIGE LE CONTRAT V4 — un payload V1, V2 ou V3 forgé ne fait pas passer une assiette', () => {
+    // Constat de revue, et ma première rédaction avait étendu l'asymétrie à ce
+    // qui ne la justifiait pas : le CATALOGUE est extérieur au payload et peut
+    // dériver — le contrôler en lecture éteindrait un protocole légitime —, mais
+    // la VERSION est dans le payload et dans son empreinte. La contrôler ne peut
+    // éteindre personne, et son absence laissait passer ce que l'écriture refuse.
+    for (const version of [VERSION_PROTOCOL_DRAFT, VERSION_PROTOCOL_DRAFT_V2, VERSION_PROTOCOL_DRAFT_V3]) {
+      expect(() => assertProtocolDraftPlateStructure(draftPersiste({
+        version,
+        actions: [action({
+          interventionStatus: undefined,
+          recommendedPlateRef: getCurrentRecommendedPlateRef(ASSIETTE_INDIQUEE),
+        })],
+      }))).toThrow('payload protocole V4 explicite');
+    }
+  });
+
   it('relit sans broncher une action SANS assiette, quel que soit le contrat', () => {
     expect(() => assertProtocolDraftPlateStructure(draftPersiste({
       version: VERSION_PROTOCOL_DRAFT, actions: [action({ interventionStatus: undefined })],

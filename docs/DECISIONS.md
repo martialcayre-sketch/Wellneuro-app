@@ -149,6 +149,44 @@ chemin V2 le réinjecte après coup —, `buildFoodCompassProtocolV2FromSource` 
 peut donc pas porter à la fois une assiette et la Boussole de son aliment — c'est
 le vrai verrou de LOT-04, et il n'est ni ouvert ni contourné ici.
 
+**12. LA REVUE A TROUVÉ DEUX DÉFAUTS RÉELS, ET LE PREMIER ÉTAIT LE PIRE DE CE
+LOT.** `assietteSelection` n'était remise à zéro **par rien**. La sélection
+Boussole voisine l'est par un effet (`readyDecisionCardId`, `activeVersionId`) ;
+celle-ci ne l'était pas. Le cockpit étant réutilisé d'un dossier au suivant,
+**l'assiette retenue pour le patient A restait dans le bandeau du patient B —
+insérable, puis enregistrable dans son protocole.** Ce n'est pas une image
+fugace : c'est une indication clinique d'un dossier écrite dans un autre.
+Corrigé par DEUX mécanismes, qui ne couvrent pas la même chose : un effet de
+remise à zéro sur `[idPatient, readyDecisionCardId, activeVersionId]` — dans un
+effet SÉPARÉ, pour ne pas changer au passage le comportement de la sélection
+voisine — et un état **daté du dossier**, qui seul tient le rendu intermédiaire
+(React rend d'abord avec la nouvelle prop et l'ANCIEN état). **Aucun banc ne voit
+cette image**, `act()` faisant tourner l'effet avant qu'elle soit observable :
+c'est mot pour mot la réserve écrite de [[D-237]], et elle se redit plutôt que
+de se maquiller en garde.
+
+**ET LE BANC QUI DEVAIT LE TENIR EST NÉ VACANT.** Écrit, il passait — puis il a
+continué de passer une fois les DEUX mécanismes mutés. Cause constatée au DOM,
+pas supposée : la file de réponses du cockpit était épuisée à la bascule, le
+constructeur tombait dans sa branche « Protocole indisponible », et le bandeau
+était absent quoi qu'il arrive. Un témoin d'anti-vacuité — le compteur d'actions,
+qui n'existe que dans la branche vivante — l'a rendu discriminant. **Ce qu'il
+garde exactement est la PROPRIÉTÉ, pas l'un des deux mécanismes** : muter l'un OU
+l'autre le laisse vert, il ne rougit qu'en mutant les deux. Dit ici parce qu'un
+banc qu'on croit plus fort qu'il n'est vaut moins qu'un banc absent.
+
+**13. LA RELECTURE NE FAISAIT PAS RESPECTER LE CONTRAT, ET MON ASYMÉTRIE ÉTAIT
+TROP LARGE.** Second constat de revue. Le §9 ci-dessus refuse de vérifier en
+lecture ce que le CATALOGUE peut faire dériver — c'est juste. J'avais étendu ce
+refus à la **version du payload**, ce qui ne se justifiait pas : le catalogue est
+extérieur au payload, la version est DEDANS et dans son empreinte. La contrôler
+ne peut éteindre aucun protocole légitime, et son absence laissait un payload V1,
+V2 ou V3 forgé porter une assiette que l'écriture refuse — quand les deux gardes
+voisines (`assertProtocolDraftC5Structure`, `assertProtocolDraftSupplementStructure`)
+ferment exactement cela sur leur propre contrat. **Le miroir est asymétrique sur
+un seul axe** : conservateur sur ce que le catalogue peut faire bouger, strict
+sur tout ce que le payload fige.
+
 **CE QUE LE LOT NE FAIT PAS.** Il ne sert **rien de neuf au patient** : la vue
 patient ne porte ni le champ ni le code d'assiette, et un banc l'épingle. Il ne
 touche **ni à `INDICATIONS_ASSIETTES_V1`, ni à son `shaPerimetre`, ni à

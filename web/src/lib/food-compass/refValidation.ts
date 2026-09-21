@@ -92,10 +92,10 @@ export function assertProtocolDraftC5Structure(draft: ProtocolDraft): void {
  * LA RELECTURE D'UNE ASSIETTE PERSISTÉE — et ce qu'elle refuse de vérifier
  * compte autant que ce qu'elle vérifie ([[D-240]]).
  *
- * ELLE VÉRIFIE LA STRUCTURE : contrat de référence exact, quatre champs non
- * vides, et l'action porteuse de type `food`. C'est la défense en profondeur de
- * `reconstructProtocolDraft` — aucun code ne revalidait un payload en lecture
- * avant qu'elle existe.
+ * ELLE VÉRIFIE LE CONTRAT, LE TYPE D'ACTION ET LA STRUCTURE : payload V4,
+ * action `food`, contrat de référence exact et quatre champs non vides. C'est la
+ * défense en profondeur de `reconstructProtocolDraft` — aucun code ne revalidait
+ * un payload en lecture avant qu'elle existe.
  *
  * ELLE NE VÉRIFIE NI LA FRAÎCHEUR NI L'AXE, ET C'EST DÉLIBÉRÉ. Les deux se
  * vérifient à l'ÉCRITURE, où `assertRefAssietteDIndication` re-dérive la
@@ -106,16 +106,28 @@ export function assertProtocolDraftC5Structure(draft: ProtocolDraft): void {
  * `plates.ts` tient déjà pour exclure `axe` et `sourceProtocole` du
  * `contentHash` : ces champs ne disent pas ce que l'assiette EST.
  *
- * LE MIROIR EST DONC ASYMÉTRIQUE, ET IL DOIT L'ÊTRE : stricte à l'entrée,
- * conservatrice à la sortie. Une observation alimentaire, elle, se relit par
- * `assertRefAssietteDObservation` — parce qu'un épisode se rejoue, là où un
- * protocole diffusé est un engagement déjà pris.
+ * LA VERSION, ELLE, NE BOUGE JAMAIS APRÈS LA PERSISTANCE — constat de revue, et
+ * ma première rédaction l'avait omise en étendant l'asymétrie à ce qui ne la
+ * justifiait pas. Le catalogue est EXTÉRIEUR au payload et peut dériver ; la
+ * version est DANS le payload et dans son empreinte. La contrôler ne peut donc
+ * éteindre aucun protocole légitime, et son absence laissait un payload V1, V2
+ * ou V3 forgé porter une assiette que l'écriture refuse — exactement ce que les
+ * gardes voisines (C5, compléments) ferment sur leur propre contrat.
+ *
+ * LE MIROIR EST DONC ASYMÉTRIQUE SUR UN SEUL AXE : conservateur sur ce que le
+ * catalogue peut faire bouger, strict sur tout ce que le payload fige. Une
+ * observation alimentaire, elle, se relit par `assertRefAssietteDObservation` —
+ * parce qu'un épisode se rejoue, là où un protocole diffusé est un engagement
+ * déjà pris.
  */
 export function assertProtocolDraftPlateStructure(draft: ProtocolDraft): void {
   if (!Array.isArray(draft.actions)) return;
   draft.actions.forEach(action => {
     const ref = action.recommendedPlateRef;
     if (ref === undefined) return;
+    if (draft.version !== VERSION_PROTOCOL_DRAFT_V4) {
+      throw new TypeError('Une référence d’assiette exige un payload protocole V4 explicite.');
+    }
     if (action.type !== 'food') {
       throw new TypeError('Une référence d’assiette exige une action alimentaire.');
     }
