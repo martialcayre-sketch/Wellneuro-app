@@ -7,7 +7,10 @@ import {
   type ProtocolDraft,
 } from '@/lib/clinical-engine/types';
 import { assertProtocolDraftSupplementStructure } from '@/lib/clinical-engine/protocolDraft';
-import { assertProtocolDraftC5Structure } from '@/lib/food-compass/refValidation';
+import {
+  assertProtocolDraftC5Structure,
+  assertProtocolDraftPlateStructure,
+} from '@/lib/food-compass/refValidation';
 
 // Reconstruction d'un `ProtocolDraft` depuis le `payload` JSONB persisté, avec
 // re-vérification d'intégrité (comble le trou LOT-02 : aucun code ne revalidait
@@ -57,6 +60,14 @@ export function reconstructProtocolDraft(
   try {
     assertProtocolDraftC5Structure(draft);
     assertProtocolDraftSupplementStructure(draft);
+    // DEUX CAUSES, DEUX MESSAGES — et la branche `isC5Payload` ci-dessous ne
+    // les confond pas, pour une raison de contrat et non de rédaction : une
+    // référence d'assiette exige V4, et V4 ne peut porter aucun
+    // `foodCompassRef` (`normalizeActions` le refuse). Un payload d'assiette
+    // mal formé n'est donc jamais « C5 », sauf à avoir été forgé à la main hors
+    // de tout chemin d'écriture — et son message, qui ne contient pas « C5 »,
+    // le fait retomber sur le refus générique.
+    assertProtocolDraftPlateStructure(draft);
   } catch (error) {
     const isC5Payload = draft.version === VERSION_PROTOCOL_DRAFT_V2
       || (Array.isArray(draft.actions) && draft.actions.some(action => action.foodCompassRef !== undefined));

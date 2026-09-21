@@ -141,6 +141,124 @@ describe('ProtocolMiniBuilder', () => {
   });
 });
 
+// L'ASSIETTE COMME UNITÉ D'ACTION ([[D-240]]). Le troisième cas est le plus
+// important : il garde une JOINTURE, pas une pièce — le contrat demandé par cet
+// écran et la porte posée par le moteur. Aucun banc de module ne la voit.
+describe('ProtocolMiniBuilder — l’assiette indiquée devient une action', () => {
+  it('n’insère l’assiette qu’après un geste explicite, en action alimentaire portant sa référence', () => {
+    const onClear = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        assietteSelection={{ plateCode: 'ASSIETTE_DOPAMINERGIQUE', libelle: 'Assiette dopaminergique' }}
+        onClearAssietteSelection={onClear}
+      />,
+    );
+    const ui = within(container);
+    expect(ui.getByText('Actions (0/3)')).not.toBeNull();
+    expect(ui.getByText(/Assiette indiquée retenue : Assiette dopaminergique/)).not.toBeNull();
+    fireEvent.click(ui.getByRole('button', { name: 'Insérer manuellement' }));
+    expect(ui.getByText('Actions (1/3)')).not.toBeNull();
+    expect((ui.getByLabelText('Intitulé de l’action 1') as HTMLInputElement).value)
+      .toBe('Assiette dopaminergique');
+    // Le TYPE est posé, pas laissé au praticien : une référence d'assiette
+    // n'existe que sur une action alimentaire, et le moteur la refuserait.
+    expect((ui.getByLabelText('Type de l’action 1') as HTMLSelectElement).value).toBe('food');
+    expect(onClear).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuse un repère de MOMENT DE REPAS, et le DIT en français', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        assietteSelection={{ plateCode: 'ASSIETTE_SOIR_LEGER', libelle: 'Assiette recommandée — Soir léger' }}
+        onClearAssietteSelection={vi.fn()}
+      />,
+    );
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Insérer manuellement' }));
+    // L'écran rejoue la garde du domaine pour la dire ; il ne la remplace pas.
+    expect(container.textContent).toContain('n’est pas une assiette d’indication');
+    expect(ui.getByText('Actions (0/3)')).not.toBeNull();
+  });
+
+  it('LA JOINTURE — une assiette fait DEMANDER le contrat V4, sans qu’aucune action soit suspendue', () => {
+    // Sans ce terme, la soumission partait en V1 et le moteur refusait l'assiette
+    // (« exige un payload protocole V4 explicite ») : le praticien lisait un
+    // refus technique sur un geste que l'écran venait de lui proposer.
+    const onSave = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        onSaveVersion={onSave}
+        assietteSelection={{ plateCode: 'ASSIETTE_DOPAMINERGIQUE', libelle: 'Assiette dopaminergique' }}
+        onClearAssietteSelection={vi.fn()}
+      />,
+    );
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Insérer manuellement' }));
+    fireEvent.change(ui.getByLabelText('Plan idéal de l’action 1'), { target: { value: 'Idéal fixture' } });
+    fireEvent.change(ui.getByLabelText('Plan minimal de l’action 1'), { target: { value: 'Minimal fixture' } });
+    fireEvent.change(ui.getByLabelText('Plan de secours de l’action 1'), { target: { value: 'Secours fixture' } });
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture.' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture.' } });
+    fireEvent.change(ui.getByLabelText('Charge déclarée par le praticien'), { target: { value: 'moderate' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const soumission = onSave.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.version).toBe('c1-protocol-draft-v4');
+    expect(soumission.actions[0].recommendedPlateRef?.plateCode).toBe('ASSIETTE_DOPAMINERGIQUE');
+    // V4 exige un statut sur CHAQUE action : la bascule de contrat l'emporte
+    // avec elle, sans quoi le moteur refuserait pour une seconde raison.
+    expect(soumission.actions[0].interventionStatus).toBe('active');
+  });
+
+  it('changer le type retire l’assiette ET LE DIT — plutôt qu’un refus serveur deux clics plus loin', () => {
+    const onSave = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        onSaveVersion={onSave}
+        assietteSelection={{ plateCode: 'ASSIETTE_DOPAMINERGIQUE', libelle: 'Assiette dopaminergique' }}
+        onClearAssietteSelection={vi.fn()}
+      />,
+    );
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Insérer manuellement' }));
+    fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'chronobiology' } });
+    // Ni silence, ni refus différé : la perte est annoncée au moment où elle a lieu.
+    expect(container.textContent).toContain('L’assiette a été retirée de l’action 1');
+    fireEvent.change(ui.getByLabelText('Plan idéal de l’action 1'), { target: { value: 'Idéal fixture' } });
+    fireEvent.change(ui.getByLabelText('Plan minimal de l’action 1'), { target: { value: 'Minimal fixture' } });
+    fireEvent.change(ui.getByLabelText('Plan de secours de l’action 1'), { target: { value: 'Secours fixture' } });
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture.' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture.' } });
+    fireEvent.change(ui.getByLabelText('Charge déclarée par le praticien'), { target: { value: 'moderate' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    const soumission = onSave.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.actions[0].recommendedPlateRef).toBeUndefined();
+    // L'assiette partie, plus rien n'exige V4 : la demande de contrat retombe.
+    expect(soumission.version).toBeUndefined();
+  });
+
+  it('SANS assiette ni suspension, le contrat n’est toujours PAS demandé — la bascule suit la cause', () => {
+    const onSave = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSave} />,
+    );
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture.' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture.' } });
+    fireEvent.change(ui.getByLabelText('Charge déclarée par le praticien'), { target: { value: 'moderate' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    const soumission = onSave.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.version).toBeUndefined();
+    expect(soumission.actions[0].interventionStatus).toBeUndefined();
+  });
+});
+
 describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
   it('n’affiche jamais « enregistrée » tant que le serveur n’a pas confirmé', () => {
     const { container } = render(

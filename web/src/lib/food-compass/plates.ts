@@ -417,6 +417,41 @@ export function assertRefAssietteDObservation(value: unknown): RecommendedPlateR
   return ref;
 }
 
+/**
+ * CETTE ASSIETTE PEUT-ELLE PORTER UNE ACTION DE PROTOCOLE ?
+ *
+ * LE MIROIR EXACT D'`estAssietteDObservation`, ET IL LUI DOIT SON EXISTENCE.
+ * [[D-230]] a fermé un sens : une assiette d'INDICATION ne rejoint pas un
+ * épisode d'observation alimentaire. L'autre sens était resté ouvert faute de
+ * chemin — rien ne prescrivait. Ce lot ouvre ce chemin, donc il doit fermer ce
+ * sens-là : un repère de MOMENT DE REPAS — « Petit-déjeuner simple », « Soir
+ * léger » — n'est adossé à aucun protocole du corpus et ne fonde donc aucune
+ * indication. L'attacher à une action de protocole ferait prescrire un repère
+ * de journal alimentaire.
+ *
+ * LA GARDE EST AU DOMAINE, ET L'ÉCRAN LA RÉUTILISE. Même motif que sa jumelle :
+ * un brouillon rouvert plus tard et un POST forgé contournent tous deux la
+ * liste affichée, et ne rencontrent qu'`assertCurrentRecommendedPlateRef` —
+ * laquelle vérifie l'appartenance au catalogue et **rien d'autre**.
+ */
+export function estAssietteDIndication(plateCode: string): boolean {
+  return getRecommendedPlate(plateCode)?.axe === 'indication';
+}
+
+/**
+ * La référence d'assiette d'une action de protocole — courante ET du bon axe.
+ *
+ * L'ordre compte, comme pour sa jumelle : une référence caduque doit se dire
+ * caduque, et non « du mauvais axe ».
+ */
+export function assertRefAssietteDIndication(value: unknown): RecommendedPlateRef {
+  const ref = assertCurrentRecommendedPlateRef(value);
+  if (!estAssietteDIndication(ref.plateCode)) {
+    throw new TypeError('Une assiette d’observation ne se prescrit pas dans un protocole.');
+  }
+  return ref;
+}
+
 export function getCurrentRecommendedPlateRef(plateCode: string): RecommendedPlateRef {
   const plate = getRecommendedPlate(plateCode);
   if (!plate) throw new TypeError('Référence d’assiette inconnue.');

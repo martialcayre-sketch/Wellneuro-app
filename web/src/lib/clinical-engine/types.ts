@@ -1,5 +1,5 @@
 import type { JalonMomentum, NiveauPreuveBesoin, StrateCode } from '../equilibre/types';
-import type { FoodCompassActionRef } from '../food-compass/types';
+import type { FoodCompassActionRef, RecommendedPlateRef } from '../food-compass/types';
 
 export const VERSION_SCHEMA_CLINICAL_SNAPSHOT = 'c1-clinical-snapshot-v1' as const;
 // v1 → v2 (2026-07-28) : le besoin 3 « Rythme alimentaire » gagne une source.
@@ -454,6 +454,21 @@ export type ProtocolAction = {
   limitations: string[];
   /** Référence C5 uniquement dans un payload protocole V2. */
   foodCompassRef?: FoodCompassActionRef;
+  /**
+   * L'ASSIETTE INDIQUÉE QUE CETTE ACTION PORTE — payload V4, action `food`
+   * seule ([[D-240]]).
+   *
+   * POURQUOI ELLE NE DEMANDE PAS UN CONTRAT NEUF, là où `foodCompassRef` a
+   * exigé V2 et `supplementCatalogRef` V3. Ces deux-là sont nées avec leur
+   * contrat ; V4 est le contrat COURANT, celui que toute version enregistrée
+   * aujourd'hui demande explicitement. Une V5 n'aurait ajouté qu'un second nom
+   * pour le même jour, et aurait dédoublé les gardes de V4 une à une. La porte
+   * reste donc EXPLICITE — elle est seulement posée sur le contrat en cours.
+   *
+   * LES EMPREINTES DÉJÀ PERSISTÉES NE BOUGENT PAS : `canonicalJson` ignore les
+   * valeurs `undefined`, et une action sans assiette n'écrit pas la clé.
+   */
+  recommendedPlateRef?: RecommendedPlateRef;
   /** Référence catalogue C4 uniquement dans un payload protocole V3 ou V4, sur une action `supplement_exploration` seule. */
   supplementCatalogRef?: SupplementCatalogRef;
   /** Requis sur toute action d'un payload V4 ; interdit avant (`D-056`). */

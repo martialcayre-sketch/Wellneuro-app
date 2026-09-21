@@ -5,7 +5,7 @@
 // les portes atteintes se lirait « aucune assiette n'est indiquée pour ce
 // patient » — un constat clinique là où la vérité est qu'un instrument n'a pas
 // été passé (`DC-24`).
-import { render, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AssiettesIndiqueesPanel, libelleLacune } from './AssiettesIndiqueesPanel';
 
@@ -242,15 +242,59 @@ describe('AssiettesIndiqueesPanel', () => {
     expect(container.textContent).not.toMatch(/Assiette protéinée/);
   });
 
-  it('aucun bouton, aucun formulaire — la carte ne propose AUCUN geste', async () => {
+  it('SANS la prop de geste, la carte n’en propose AUCUN — et ce n’est pas un état, c’est un contrat', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(actif({ indiquees: [INDIQUEE] }))));
     const { container } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
     await waitFor(() => expect(within(container).getByText('Assiette protéinée')).not.toBeNull());
-    // Que l'assiette devienne une unité d'action est un lot à part, suspendu à
-    // deux arbitrages ouverts. Poser un geste ici les aurait tranchés.
+    // La carte doit rester montable là où le geste n'a pas de sens : le bouton
+    // suit sa prop, il ne suit pas la présence d'une assiette.
     expect(container.querySelectorAll('button')).toHaveLength(0);
     expect(container.querySelectorAll('form')).toHaveLength(0);
     expect(container.querySelectorAll('input, select, textarea')).toHaveLength(0);
+  });
+
+  it('AVEC la prop, elle arme UN geste par ligne indiquée — et n’écrit toujours rien', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(actif({ indiquees: [INDIQUEE] }))));
+    const onRetenir = vi.fn();
+    const { container } = render(
+      <AssiettesIndiqueesPanel idPatient="PAT001" onRetenirAssiette={onRetenir} />,
+    );
+    const ui = within(container);
+    await waitFor(() => expect(ui.getByText('Assiette protéinée')).not.toBeNull());
+    expect(container.querySelectorAll('button')).toHaveLength(1);
+    // AUCUNE ÉCRITURE : le geste ne pose ni formulaire ni champ de saisie, et la
+    // route de cette carte n'expose qu'un `GET` (banc de route).
+    expect(container.querySelectorAll('form')).toHaveLength(0);
+    expect(container.querySelectorAll('input, select, textarea')).toHaveLength(0);
+    // LE NOM ACCESSIBLE NOMME L'ASSIETTE : trois indications donneraient sinon
+    // trois boutons indiscernables à la synthèse vocale.
+    fireEvent.click(ui.getByRole('button', { name: 'Retenir « Assiette protéinée » pour le protocole' }));
+    // LE `plateCode` REMONTE, ET IL N'EST PAS AFFICHÉ : un geste bâti sur ce que
+    // l'écran montre n'aurait pas l'identifiant d'assiette — il est dans le
+    // corps de la réponse, pas dans le DOM.
+    expect(onRetenir).toHaveBeenCalledTimes(1);
+    expect(onRetenir).toHaveBeenCalledWith({
+      plateCode: 'ASSIETTE_PROTEINEE', libelle: 'Assiette protéinée',
+    });
+    expect(container.textContent).not.toContain('ASSIETTE_PROTEINEE');
+  });
+
+  it('une assiette NON ÉVALUÉE ne reçoit aucun geste — « on ne sait pas » n’est pas « c’est indiqué »', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(actif({
+      nonEvaluees: [{
+        ligneId: 'ASSIETTE-IND-DOPA', plateCode: 'ASSIETTE_DOPAMINERGIQUE',
+        libelle: 'Assiette dopaminergique',
+        lacunes: [{ type: 'instrument_non_passe', idQuestionnaire: 'Q_INF_03' }],
+      }],
+    }))));
+    const onRetenir = vi.fn();
+    const { container } = render(
+      <AssiettesIndiqueesPanel idPatient="PAT001" onRetenirAssiette={onRetenir} />,
+    );
+    await waitFor(() => expect(within(container).getByText('Assiette dopaminergique')).not.toBeNull());
+    // `DC-24` : une porte qu'on n'a pas pu regarder n'indique rien. Le même
+    // bouton ici ferait prescrire sur une lacune.
+    expect(container.querySelectorAll('button')).toHaveLength(0);
   });
 });
 

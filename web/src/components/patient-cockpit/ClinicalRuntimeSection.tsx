@@ -469,6 +469,18 @@ export function ClinicalRuntimeSection({
     foodLabel: string;
     actionRef: FoodCompassActionRef;
   } | null>(null);
+  /**
+   * L'ASSIETTE RETENUE VIT ICI, PAS DANS LA CARTE ([[D-240]]).
+   *
+   * La carte des indications est DÉMONTÉE dès la sortie de la sous-vue
+   * « protocole » — c'est un correctif assumé, qui évite de journaliser une
+   * lecture de dossier que le praticien n'a pas demandée. Un choix gardé
+   * là-dedans se perdrait à chaque aller-retour vers Biologie ou Diffusion.
+   */
+  const [assietteSelection, setAssietteSelection] = useState<{
+    plateCode: string;
+    libelle: string;
+  } | null>(null);
 
   const loadTrajectoire = useCallback(async () => {
     // Un échec de lecture ne bloque pas le cockpit, mais il est SIGNALÉ, et la
@@ -2056,7 +2068,7 @@ export function ClinicalRuntimeSection({
           son seul coût au remontage est le GET qu'on vient précisément
           d'éviter. */}
       {!fixture && affiche('actions') && sousVueActions === 'protocole' && (
-        <AssiettesIndiqueesPanel idPatient={idPatient} />
+        <AssiettesIndiqueesPanel idPatient={idPatient} onRetenirAssiette={setAssietteSelection} />
       )}
       <div id="protocol-version-builder" hidden={!affiche('actions') || (!fixture && sousVueActions !== 'protocole')}>
         {/* RESTITUER AVANT DE FAIRE SAISIR. Le constructeur ne lisait de
@@ -2097,6 +2109,8 @@ export function ClinicalRuntimeSection({
           onConfirmerRegistre={confirmerRegistreEtEnregistrer}
           foodCompassSelection={foodCompassSelection}
           onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
+          assietteSelection={assietteSelection}
+          onClearAssietteSelection={() => setAssietteSelection(null)}
           sourcesCitables={fixture ? [] : sourcesCitables}
           provenancePurpose={fixture ? null : (contenuActif?.provenancePurpose ?? null)}
           baremeCharge={fixture ? [] : baremeCharge}

@@ -4,6 +4,167 @@
 
 ## Décisions actives
 
+### D-240 — L'assiette indiquée devient une unité d'action ; et le tableau du cadrage faisait lire comme des questions deux directions déjà rendues
+
+- Date : 2026-09-21
+- Statut : accepté — LOT-02 du cadrage Boussole/Assiette, ouvert sur demande du
+  responsable (« Go lot 02 b3 b4 ») après le constat qu'il a formulé depuis
+  l'écran : « le cockpit praticien affiche les assiettes sans possibilité de
+  sélection ni de validation ».
+- Domaine : protocole 21 jours (contrat d'action), catalogue d'assiettes C5B,
+  cockpit praticien. **Aucune règle clinique, aucun seuil, aucune table signée,
+  aucune migration, aucun drapeau neuf.**
+- Exécute [[D-213]] §10. S'appuie sur [[D-230]] (les deux axes), [[D-237]] (la
+  carte), [[D-239]] §3 (re-dériver plutôt que valider), [[D-200]] §2 (la fiche
+  conseil est fermée). Corrige le tableau d'arbitrages du cadrage du 2026-09-16.
+
+**1. B3 ET B4 NE SONT PAS DES QUESTIONS BLANCHES — MAIS LES DIRE « TRANCHÉS »
+SERAIT UNE SUR-LECTURE, ET LE PRÉCÉDENT DE B1 LE PROUVE.** Le cadrage du
+2026-09-16 porte quatre arbitrages ; B1 et B2 y sont barrés, B3 et B4 non, ce qui
+les fait lire « à décider ». [[D-213]], écrite le même jour, annonce pourtant
+fermer « les quatre arbitrages B1→B4 » et les rend : §11 « les douze reçoivent
+leurs familles d'équivalence », §12 « la Boussole reste ATTEIGNABLE depuis le
+protocole ». **Mais [[D-213]] dit d'elle-même « elle grave, elle n'exécute pas »
+et « les douze points ci-dessus sont des chantiers » — et l'histoire lui a donné
+raison contre elle-même** : B1 et B2, « fermés » par ce même en-tête, ont chacun
+reçu ensuite leur décision propre, et celle de B1 a **RENVERSÉ** la direction de
+§9 ([[D-239]] a retiré `attachFoodCompassRef` que §9 demandait de garder et de
+recibler). Une direction de [[D-213]] tombe donc quand le lot la met à l'épreuve.
+
+**CE QUE CELA DONNE POUR CHACUN, SANS RIEN RE-TRANCHER.** Sur B3, le texte
+opératoire n'est pas §11 mais [[D-216]] §4 — même jour, numéro postérieur, et le
+seul des deux qui regarde le mécanisme : « les familles se feront, le mécanisme
+change d'abord », trois préalables nommés. Sur B4, §12 tient, non contredit : ce
+lot ne s'en écarte pas. Le tableau du cadrage est donc corrigé pour cesser de
+faire passer pour des questions ce qui est une direction arbitrée assortie de
+verrous — et il porte désormais la raison de l'erreur, parce que la forme du
+tableau a menti cinq jours durant.
+
+**2. LE VÉHICULE QUE [[D-213]] §9 PRÉVOYAIT N'EXISTE PLUS, ET C'EST BIEN.**
+§9 demandait de GARDER `attachFoodCompassRef` et de la recibler sur une
+`RecommendedPlateRef` ; [[D-239]] l'a retirée six jours plus tard, après avoir
+établi qu'elle était la copie FAIBLE d'un invariant tenu deux fois. Ce lot écrit
+donc le mécanisme au lieu de recycler celui-là — et il applique la leçon de
+[[D-239]] §3 d'emblée : **la référence d'assiette n'est jamais validée telle
+qu'on la soumet, elle est re-dérivée du catalogue.** `assertRefAssietteDIndication`
+rend la copie officielle ; un `contentHash` réécrit, un `catalogVersion` périmé ou
+un `refHash` retouché sortent là.
+
+**3. `food` SEULE, ET PAS `advice_sheet` — le cadrage laissait le choix ouvert.**
+Il écrivait « `advice_sheet` **ou** `food` reçoit une `RecommendedPlateRef` ».
+C'est `food`. Deux raisons, et la seconde est dirimante. Le précédent :
+`supplementCatalogRef` est réservé à `supplement_exploration` seule — une
+référence typée se lie à un type d'action, faute de quoi elle devient un champ
+libre que n'importe quelle action transporte. Et le verrou : **`adviceSheetRef`
+est FERMÉ à l'écriture depuis [[D-200]] §2**, forcé à `null` au serveur parce
+qu'il traversait tout le chemin patient sans qu'aucune surface ne le renseigne
+ni ne le rende. Ouvrir la fiche conseil au passage aurait rouvert ce chemin-là,
+qui n'est pas le sujet de ce lot.
+
+**4. L'AXE N'EST PAS UNE PRÉCAUTION, C'EST [[D-213]] §10 EXÉCUTÉ.** §10 dit
+« seul cet axe peut porter une action ». [[D-230]] avait fermé UN sens — une
+assiette d'indication ne rejoint pas un épisode d'observation — et laissé
+l'autre ouvert faute de chemin : rien ne prescrivait. Ce lot ouvre ce chemin,
+donc il ferme ce sens-là. `estAssietteDIndication` et
+`assertRefAssietteDIndication` sont les miroirs exacts de leurs jumelles, au
+DOMAINE et non à l'écran — un brouillon d'écran rouvert plus tard et un POST
+forgé contournent tous deux la liste affichée. **La garde ne peut pas se poser
+sur la seule référence** : [[D-230]] §5 exclut délibérément `axe` du
+`contentHash`, donc une `RecommendedPlateRef` ne porte pas son axe et il faut le
+relire au catalogue.
+
+**5. V4, ET PAS UN CONTRAT NEUF.** `foodCompassRef` a exigé V2 et
+`supplementCatalogRef` V3 parce qu'ils sont nés avec leur contrat ; V4 est le
+contrat COURANT, le seul que la route accepte en demande explicite. Une V5
+n'aurait ajouté qu'un second nom pour le même jour et dédoublé les gardes de V4
+une à une. La porte reste EXPLICITE — elle est seulement posée sur le contrat en
+cours. **Aucune empreinte déjà persistée ne bouge** : `canonicalJson` ignore les
+clés `undefined`, et une action sans assiette n'en écrit aucune ; un cas de banc
+l'épingle.
+
+**6. LA JOINTURE QUI AURAIT FAIT BUTER LE GESTE SUR UN MUR.** Le constructeur ne
+demandait V4 **que** si une action était suspendue. Une assiette posée sur un
+protocole sans suspension serait donc partie en V1, et le moteur l'aurait
+refusée — le praticien aurait lu un refus technique sur un geste que l'écran
+venait de lui proposer. La demande de contrat suit désormais les deux causes.
+Le contrat reste DEMANDÉ et non déduit au serveur ([[D-130]]) : c'est l'écran
+qui demande, sur ce qu'il porte, exactement comme il le faisait déjà pour une
+suspension. **Aucun banc unitaire de module n'aurait vu ce défaut** — il ne vit
+ni dans le moteur ni dans la carte, mais entre les deux.
+
+**7. LA CARTE ARME UN GESTE ET N'EN EXÉCUTE AUCUN.** [[D-237]] §7 s'interdisait
+tout geste tant que les arbitrages étaient réputés ouverts ; ils ne le sont pas.
+La carte propose donc « Retenir pour le protocole » sur chaque assiette
+INDIQUÉE — jamais sur une non évaluée, où le même bouton ferait d'un « on ne
+sait pas » un « c'est indiqué » (`DC-24`). **Elle n'écrit toujours rien** : sa
+route n'exporte que `GET`, aucun formulaire, aucun champ de saisie, et le banc
+qui comptait les boutons à zéro compte désormais exactement un par ligne
+indiquée, zéro formulaire, zéro champ. Trois gestes séparent l'assiette affichée
+du protocole enregistré — retenir, insérer, enregistrer — et aucun n'est
+automatique.
+
+**8. LE CHOIX NE VIT PAS DANS LA CARTE, ET C'EST UN CORRECTIF DE [[D-237]] QUI
+L'IMPOSE.** Ce panneau est DÉMONTÉ dès que le praticien quitte la sous-vue
+« protocole », délibérément : sous `hidden`, son effet serait parti dès le
+montage de la section et aurait fait **journaliser une lecture de dossier
+clinique que le praticien n'a pas demandée**. Un choix gardé là se perdrait à
+chaque aller-retour, et le remettre sous `hidden` pour le garder rouvrirait le
+défaut. Le choix monte donc au parent, exactement comme la sélection de
+l'observatoire Boussole.
+
+**9. STRICTE À L'ENTRÉE, CONSERVATRICE À LA SORTIE — et l'asymétrie est le
+point.** À l'écriture : contrat, type d'action, axe, fraîcheur. À la relecture
+d'un payload persisté : la structure, et **rien de plus**. Brancher la fraîcheur
+en lecture lierait la lisibilité d'un protocole DÉJÀ DIFFUSÉ à l'état courant du
+catalogue — le jour où une entrée change de libellé, son `contentHash` bouge, et
+l'écran du patient s'éteindrait pour une raison qui ne le concerne pas. C'est le
+raisonnement que [[D-230]] §5 tient déjà. Un cas de banc porte explicitement ce
+refus de symétrie, pour qu'une révision bien intentionnée ne l'« aligne » pas.
+
+**10. CE QUE CE LOT REND POSSIBLE POUR B3 — ET CE QU'IL LUI COÛTE.** [[D-216]]
+§4 nomme trois préalables aux familles : un mécanisme ORIENTÉ (aujourd'hui
+`decidePlateSubstitution` lit une famille comme une clique complète : trois
+assiettes attestent six substitutions dans les deux sens), une garde restreignant
+la substitution aux assiettes **prescrites**, et un chemin qui l'expose. **Ce lot
+fournit le second : « assiette prescrite » a désormais un sens vérifiable.** Il
+en renchérit le prix, et c'est la part qu'il faut écrire : jusqu'ici aucune
+référence des DOUZE assiettes d'indication n'était persistable — le seul porteur
+d'une `RecommendedPlateRef` en base était l'épisode d'observation, que
+`assertRefAssietteDObservation` réserve aux trois repères. Remplir une famille
+sur les douze ne périmait donc rien. **Après ce lot, elle périmerait les
+protocoles qui les portent.** `substitutionFamily` entre dans le `contentHash` —
+vérifié par recalcul, pas sur la foi du commentaire. Un troisième préalable
+s'ajoute donc : `decidePlateSubstitution` ne regarde pas l'`axe`, et une famille
+non nulle ouvrirait mécaniquement la substitution ENTRE les deux axes.
+
+**11. CE QUE CE LOT REND POSSIBLE POUR B4 — et ce qui manque encore.**
+[[D-213]] §12 veut la Boussole atteignable « de l'assiette prescrite vers la
+lecture des aliments ». Le chemin ALIMENT → Boussole existe de bout en bout et
+sert en production ; le chemin ASSIETTE PRESCRITE → aliment n'avait **aucun
+point de départ**, et ce lot le crée. Ce qui reste devant LOT-04 est nommé ici
+parce qu'il n'était écrit nulle part : **les contrats V2 et V4 sont aujourd'hui
+mutuellement exclusifs.** `normalizeActions` refuse TOUT `foodCompassRef` — le
+chemin V2 le réinjecte après coup —, `buildFoodCompassProtocolV2FromSource` n'accepte qu'une cible V1, et
+`resolvePatientFoodCompassView` exige `draft.version === V2`. Un protocole ne
+peut donc pas porter à la fois une assiette et la Boussole de son aliment — c'est
+le vrai verrou de LOT-04, et il n'est ni ouvert ni contourné ici.
+
+**CE QUE LE LOT NE FAIT PAS.** Il ne sert **rien de neuf au patient** : la vue
+patient ne porte ni le champ ni le code d'assiette, et un banc l'épingle. Il ne
+touche **ni à `INDICATIONS_ASSIETTES_V1`, ni à son `shaPerimetre`, ni à
+`C5B_PLATE_CATALOG_HASH`, ni à aucun `contentHash`** — l'attestation du
+2026-09-19 reste valide. Il **ne remplit aucune famille de substitution**, ne
+crée aucune route, n'ajoute aucun drapeau : le geste est servi sous le verrou
+existant `WN_ASSIETTES_INDIQUEES`, et reste invisible partout où il est fermé.
+
+**LIMITE PRÉEXISTANTE, RENDUE ATTEIGNABLE PAR UN SECOND CHEMIN.** Une fois un
+protocole en V4, sa révision doit l'être aussi — la route rend 409 sinon. Retirer
+l'assiette d'un protocole V4 qui ne porte plus aucune suspension fait donc
+retomber la demande en V1, et se heurte à ce refus. Le comportement existe
+depuis V4 et vaut déjà pour une suspension retirée ; ce lot ne l'élargit pas, il
+le rend seulement atteignable par un second geste. Nommé, non corrigé : décider
+si V4 est collant est un arbitrage, pas un correctif.
+
 ### D-239 — B1 est tranché : `attachFoodCompassRef` est retirée, et ce n'était pas du code mort mais une seconde façon de faire
 
 - Date : 2026-09-21

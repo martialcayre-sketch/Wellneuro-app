@@ -11,6 +11,7 @@ import {
   C5_AXIS_CODE,
   C5_DATASET_VERSION,
   C5_MAPPING_VERSION,
+  C5_RECOMMENDED_PLATE_REF_VERSION,
   C5_SCORE_VERSION,
   type FoodCompassActionRef,
 } from './types';
@@ -84,5 +85,47 @@ export function assertProtocolDraftC5Structure(draft: ProtocolDraft): void {
       protocolDraftId: draft.protocolDraftId,
       selectedPriorityId: draft.selectedPriorityId,
     });
+  });
+}
+
+/**
+ * LA RELECTURE D'UNE ASSIETTE PERSISTÉE — et ce qu'elle refuse de vérifier
+ * compte autant que ce qu'elle vérifie ([[D-240]]).
+ *
+ * ELLE VÉRIFIE LA STRUCTURE : contrat de référence exact, quatre champs non
+ * vides, et l'action porteuse de type `food`. C'est la défense en profondeur de
+ * `reconstructProtocolDraft` — aucun code ne revalidait un payload en lecture
+ * avant qu'elle existe.
+ *
+ * ELLE NE VÉRIFIE NI LA FRAÎCHEUR NI L'AXE, ET C'EST DÉLIBÉRÉ. Les deux se
+ * vérifient à l'ÉCRITURE, où `assertRefAssietteDIndication` re-dérive la
+ * référence du catalogue. Les refaire ici lierait la lisibilité d'un protocole
+ * DÉJÀ DIFFUSÉ à l'état courant du catalogue : le jour où une entrée change de
+ * libellé, son `contentHash` bouge — et l'écran du patient s'éteindrait pour
+ * une raison qui ne le concerne pas. C'est exactement le raisonnement que
+ * `plates.ts` tient déjà pour exclure `axe` et `sourceProtocole` du
+ * `contentHash` : ces champs ne disent pas ce que l'assiette EST.
+ *
+ * LE MIROIR EST DONC ASYMÉTRIQUE, ET IL DOIT L'ÊTRE : stricte à l'entrée,
+ * conservatrice à la sortie. Une observation alimentaire, elle, se relit par
+ * `assertRefAssietteDObservation` — parce qu'un épisode se rejoue, là où un
+ * protocole diffusé est un engagement déjà pris.
+ */
+export function assertProtocolDraftPlateStructure(draft: ProtocolDraft): void {
+  if (!Array.isArray(draft.actions)) return;
+  draft.actions.forEach(action => {
+    const ref = action.recommendedPlateRef;
+    if (ref === undefined) return;
+    if (action.type !== 'food') {
+      throw new TypeError('Une référence d’assiette exige une action alimentaire.');
+    }
+    if (ref === null || typeof ref !== 'object'
+      || ref.contractVersion !== C5_RECOMMENDED_PLATE_REF_VERSION
+      || typeof ref.plateCode !== 'string' || ref.plateCode.trim() === ''
+      || typeof ref.catalogVersion !== 'string' || ref.catalogVersion.trim() === ''
+      || typeof ref.contentHash !== 'string' || ref.contentHash.trim() === ''
+      || typeof ref.refHash !== 'string' || ref.refHash.trim() === '') {
+      throw new TypeError('Référence d’assiette de protocole invalide.');
+    }
   });
 }
