@@ -107,13 +107,13 @@ cette rubrique portait encore ceux d'avant.
 
 - **T1** `cd web && npm run check` — `T1-EXIT=0`, lu dans le fichier redirigé.
   **1061 cas** + 1623 du second projet (21 ignorés), 0 échec.
-- **T2** `npm run test:worktree -- --fast` — `T2-EXIT=0` sur la tête d'alors :
-  588 fichiers, 9 897 cas, 205 E2E. **À REJOUER** sur la tête portant les
-  correctifs de la seconde revue (voir §10).
-- **CI** `node scripts/wn-attendre-ci.mjs 1209` — `CI-EXIT=0` sur `dd82587e`,
-  `verify` vert en 13 min 54, tête du SNAPSHOT **égale** à la tête réelle de la
-  PR (le script peut juger la tête précédente : la comparaison n'est pas
-  facultative). À rejouer également sur la tête finale.
+- **T2** `npm run test:worktree -- --fast` — `T2-EXIT=0`, rejoué après les
+  correctifs de la seconde revue : **588 fichiers, 9 898 cas, 205 E2E**.
+- **CI** `node scripts/wn-attendre-ci.mjs 1209` — `CI-EXIT=0` constaté sur
+  `dd82587e` (`verify` vert en 13 min 54), puis **relancé sur la tête finale**.
+  Le verdict qui compte se lit sur la PR, et la tête du SNAPSHOT se compare à la
+  tête réelle : le script peut juger la précédente, la comparaison n'est pas
+  facultative.
 - **Dix mutations, dix rouges** : retrait de `normalizePlateRef` (8 cas), garde
   d'axe neutralisée (2), fraîcheur branchée en lecture (3), `contratV4` ramené à
   `suspendues` (1), refus d'axe retiré de l'écran (1), bouton retiré (1), geste
