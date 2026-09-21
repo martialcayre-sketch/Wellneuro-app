@@ -7598,3 +7598,23 @@ une erreur de méthode.
 
 **Prochaine action** : le chantier 6, la porte biologique — il périmera cette
 attestation, et c'est voulu.
+
+## 2026-09-21 — Reprise du lot D-237 : le drapeau est posé, puis constaté en cours de lot
+
+**Décision.** Consigner `WN_ASSIETTES_INDIQUEES` : **POSÉ le 2026-09-20 à
+08:11 UTC, CONSTATÉ le 2026-09-21 à 05:31 UTC** — 5 lectures, 2 dossiers. Lot
+repris d'une voisine ; les quatre sessions interrogées d'abord. Aucun geste de
+production.
+
+**Le verdict a changé en cours de lot**, les deux états sont gardés : « non
+constaté » a tenu **21 heures**, jusqu'à une session praticien. Ce n'est pas un
+correctif qui l'a levé, c'est l'usage.
+
+**Écartée.** Une sonde non authentifiée : la route teste la session avant le
+verrou, 401 dans les deux états. Une sonde sans témoin ne prouve rien.
+
+**Corrigé.** `D-237` §12 annonçait une ampleur jamais mesurée : la borne d'âge
+touche 1 dossier sur 29.
+
+**Ouvert.** La carte n'offre ni sélection ni validation — conforme, mais dit
+depuis l'écran.
