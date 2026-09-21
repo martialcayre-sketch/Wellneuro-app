@@ -46,7 +46,7 @@ const RACINE = path.join(WEB, 'src');
 const CLINIQUE = path.join(WEB, 'src', 'lib', 'clinical');
 
 /**
- * Les imports de VALEUR d'un fichier, résolus en chemins du dépôt.
+ * Les spécifieurs des imports de VALEUR d'un fichier.
  *
  * `[^;]*?` BORNE LA RECHERCHE À UN SEUL ÉNONCÉ. Avec `[\s\S]*?`, un import
  * ordinaire pouvait ouvrir la correspondance et courir jusqu'au `from` d'un
@@ -56,16 +56,30 @@ const CLINIQUE = path.join(WEB, 'src', 'lib', 'clinical');
  * `export … from` EST UNE ARÊTE DE VALEUR, et l'oublier rouvrirait le trou par
  * la ré-export : un module feuille ré-exporté par un module lourd ne protège
  * personne si l'on ne suit que les `import`.
+ *
+ * L'import LATÉRAL (`import './module'`) est aussi une arête de valeur. Et pour
+ * la règle des FEUILLES, un import de PAQUET compte également : un fichier qui
+ * importe `crypto` n'est pas une feuille, même si aucun chemin du dépôt n'est à
+ * résoudre.
  */
-function importsDeValeur(fichier: string): string[] {
+function specifieursDeValeur(fichier: string): string[] {
   const source = readFileSync(fichier, 'utf8');
   const specifieurs: string[] = [];
-  for (const trouve of source.matchAll(/^\s*import\s+(?!type\b)[^;]*?from\s+'([^']+)'/gm)) {
-    specifieurs.push(trouve[1]);
+  for (const trouve of source.matchAll(/^\s*import\s+(?!type\b)[^;]*?\bfrom\s+(['"])([^'"]+)\1/gm)) {
+    specifieurs.push(trouve[2]);
   }
-  for (const trouve of source.matchAll(/^\s*export\s+(?!type\b)[^;]*?from\s+'([^']+)'/gm)) {
-    specifieurs.push(trouve[1]);
+  for (const trouve of source.matchAll(/^\s*import\s+(['"])([^'"]+)\1/gm)) {
+    specifieurs.push(trouve[2]);
   }
+  for (const trouve of source.matchAll(/^\s*export\s+(?!type\b)[^;]*?\bfrom\s+(['"])([^'"]+)\1/gm)) {
+    specifieurs.push(trouve[2]);
+  }
+  return specifieurs;
+}
+
+/** Les imports de VALEUR d'un fichier, résolus en chemins du dépôt. */
+function importsDeValeur(fichier: string): string[] {
+  const specifieurs = specifieursDeValeur(fichier);
   return specifieurs
     .map(specifieur => resoudre(specifieur, fichier))
     .filter((cible): cible is string => cible !== null);
@@ -97,7 +111,7 @@ function feuillesAutorisees(): Set<string> {
   const feuilles = new Set<string>();
   for (const fichier of readdirSync(CLINIQUE)) {
     if (!fichier.endsWith('.ts') || fichier.endsWith('.test.ts')) continue;
-    if (importsDeValeur(path.join(CLINIQUE, fichier)).length === 0) {
+    if (specifieursDeValeur(path.join(CLINIQUE, fichier)).length === 0) {
       feuilles.add(path.join(CLINIQUE, fichier));
     }
   }
@@ -199,5 +213,13 @@ describe('bundle client — la couche clinique ne part pas au navigateur', () =>
     // Et la feuille en est bien une — sinon le remède ne remédie à rien.
     const vocabulaire = path.join(RACINE, 'lib', 'biology-library', 'vocabulaireStatuts.ts');
     expect(importsDeValeur(vocabulaire)).toEqual([]);
+  });
+
+  it("un import de paquet sort un module clinique de l'exception feuille", () => {
+    const feuilles = feuillesAutorisees();
+    const corpus = path.join(CLINIQUE, 'corpusSyntheseV1.ts');
+    expect(importsDeValeur(corpus)).toEqual([]);
+    expect(specifieursDeValeur(corpus)).toContain('crypto');
+    expect(feuilles.has(corpus)).toBe(false);
   });
 });
