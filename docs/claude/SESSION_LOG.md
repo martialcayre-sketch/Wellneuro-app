@@ -7599,21 +7599,22 @@ une erreur de méthode.
 **Prochaine action** : le chantier 6, la porte biologique — il périmera cette
 attestation, et c'est voulu.
 
-## 2026-09-20 — Reprise du lot D-237 : le drapeau est posé, sa consignation manquait
+## 2026-09-21 — Reprise du lot D-237 : le drapeau est posé, puis constaté en cours de lot
 
 **Décision.** Consigner `WN_ASSIETTES_INDIQUEES` : **POSÉ le 2026-09-20 à
-08:11 UTC, NON CONSTATÉ**. Lot repris d'une voisine sur demande du responsable ;
-les quatre sessions interrogées avant tout geste, deux poses simultanées étant
-le risque réel. Aucun geste de production ici.
+08:11 UTC, CONSTATÉ le 2026-09-21 à 05:31 UTC** — 5 lectures, 2 dossiers. Lot
+repris d'une voisine ; les quatre sessions interrogées d'abord. Aucun geste de
+production.
 
-**Ma lecture était fausse** : le §9 du handoff dit « pas posé », et il a raison
-**à l'heure où il fut écrit**, mergé avant la pose. Un handoff dit l'état de son
-heure.
+**Le verdict a changé en cours de lot**, les deux états sont gardés : « non
+constaté » a tenu **21 heures**, jusqu'à une session praticien. Ce n'est pas un
+correctif qui l'a levé, c'est l'usage.
 
-**Écartée.** Chercher une sonde non authentifiée : la route teste la session
-avant le verrou, 401 dans les deux états. Le seul témoin est le journal d'accès,
-dont le dernier geste **précède** la pose. Une sonde sans témoin ne prouve rien.
+**Écartée.** Une sonde non authentifiée : la route teste la session avant le
+verrou, 401 dans les deux états. Une sonde sans témoin ne prouve rien.
 
-**Prochaine action.** Corriger `D-233` : le compteur est la page.
+**Corrigé.** `D-237` §12 annonçait une ampleur jamais mesurée : la borne d'âge
+touche 1 dossier sur 29.
 
-**Ouvert.** Le témoin. `Q_GAS_01` au socle.
+**Ouvert.** La carte n'offre ni sélection ni validation — conforme, mais dit
+depuis l'écran.

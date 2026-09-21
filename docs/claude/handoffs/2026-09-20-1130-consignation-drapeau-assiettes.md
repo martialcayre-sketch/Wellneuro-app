@@ -20,8 +20,12 @@ Consigner la pose de `WN_ASSIETTES_INDIQUEES` — dernier reste du § 10 de
 
 ## 3. Décisions prises
 
-**Le verdict est POSÉ, NON CONSTATÉ**, et il ne s'écrira pas autrement tant que
-la ligne de `/api/praticien/assiettes-indiquees` n'existe pas au journal d'accès.
+**Le verdict est POSÉ ET CONSTATÉ**, et il a changé EN COURS DE LOT. Écrit
+« non constaté » le 2026-09-20, il l'est resté **21 heures** — jusqu'à ce qu'une
+session praticien ouvre la sous-vue le 2026-09-21 à 05:31 UTC et que le journal
+porte enfin la route. **Le lot garde la trace des deux états** plutôt que de
+présenter le second comme s'il avait toujours été vrai : c'est la discipline
+d'attente qui a produit le constat, pas un correctif.
 
 **Le handoff mergé n'est pas réécrit.** Son § 6 porte un compte faux (57 au lieu
 de 59) et son § 9 dit « le drapeau n'est pas posé ». Les deux se corrigent **dans
@@ -67,8 +71,15 @@ est écrit.
   Le compteur porte sur la création de **page**, et le corps de #1184 l'écrit.
   Signalé par `developer-03`, vérifié sur pièce. **Onze occurrences, cinq
   fichiers.** Lot suivant ; ne pas le mélanger à celui-ci.
-- **Le témoin du drapeau reste à venir** : le premier praticien qui ouvre la
-  sous-vue Protocole l'écrira. Jusque-là, ne rien conclure.
+- ~~Le témoin du drapeau reste à venir~~ — **arrivé le 2026-09-21 à 05:31 UTC**.
+- **LA CARTE N'OFFRE NI SÉLECTION NI VALIDATION, et c'est la première fois que
+  le manque est dit DEPUIS L'ÉCRAN.** Il est **conforme** — `D-237` §7 pose que
+  la route n'expose aucun POST et que la carte ne porte aucun bouton, LOT-02
+  restant suspendu à deux arbitrages. Ce qui est neuf n'est donc pas le fait,
+  c'est **son origine** : jusqu'ici la limite était déduite du code ; elle est
+  maintenant formulée par l'usage, au premier dossier servi. Daté ici pour que
+  l'arbitrage de LOT-02 ait sa date de demande, et non seulement sa date
+  d'écriture.
 - **Réserve préexistante, non corrigée** : `bundleClient.guard.test.ts` ne lit
   que les spécifieurs `@/lib/clinical/…` ; la chaîne `PropositionBilanPanel`
   (`'use client'`) le traverse par un module voisin, et crypto-browserify comme
@@ -80,8 +91,8 @@ est écrit.
 
 1. Revue lue **aux trois emplacements**, puis merge `--squash --subject`.
 2. **Le lot de correction de `D-233`**, séparé.
-3. Le jour où un praticien ouvre la sous-vue : relire le journal et passer la
-   ligne de `FEATURE_FLAGS.md` de « non constaté » à « constaté », avec la date.
+3. ~~Le jour où un praticien ouvre la sous-vue~~ — **fait le 2026-09-21** : la
+   ligne est passée à « constaté », avec sa date et ses chiffres.
 
 ## 9. Interdits encore actifs
 

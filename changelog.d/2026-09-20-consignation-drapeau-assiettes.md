@@ -1,4 +1,4 @@
-### Le drapeau des assiettes indiquées est consigné : posé le 2026-09-20 à 08:11 UTC, et NON constaté faute de témoin (2026-09-20)
+### Le drapeau des assiettes indiquées est posé ET constaté : 21 heures ont séparé la pose de son premier témoin (2026-09-21)
 
 `WN_ASSIETTES_INDIQUEES` a été posé en production ce matin, sur autorisation du
 responsable rendue la veille. Sa ligne de `docs/FEATURE_FLAGS.md` disait encore
@@ -13,15 +13,25 @@ variable était **absente** ; **les deux conteneurs web recréés à 08:11:48 UT
 lus six secondes après — un `env-set` seul ne change rien tant que les conteneurs
 tournent ; sonde d'environnement dans un one-off démarré APRÈS la pose, `true`.
 
-**POSÉ, NON CONSTATÉ — et non constatable pour l'instant.** La quatrième preuve
-manque, et la raison n'est pas une panne : la route teste la **session avant le
-verrou**, donc un appel anonyme rend `401` dans les deux états. C'est l'inverse
+**CONSTATÉ le 2026-09-21 à 05:31 UTC**, et par le comportement. Le journal
+d'accès porte `/api/praticien/assiettes-indiquees` : **5 lectures servies sur 2
+dossiers**, la première à 05:31:27.925 et la dernière à 05:38:12.129 UTC. C'est
+la sonde qui avait été posée — verrou fermé, la route répond **avant**
+`verifierAppartenancePatient` et n'écrit rien ; verrou ouvert, chaque lecture
+écrit sa ligne.
+
+**CE QUI A PRÉCÉDÉ, ET QUI EST LA LEÇON DU LOT.** Pendant **21 heures**, le
+verdict a été « posé, non constaté » — et il fallait écrire *pourquoi*, sans quoi
+il se serait lu comme une panne. La raison n'en était pas une : la route teste la
+**session avant le verrou**, donc un appel anonyme rend `401` dans les deux
+états. C'est l'inverse
 de `WN_ADRESSAGE_COURRIER`, dont la garde de drapeau est la première instruction
 et qui se sonde donc de l'extérieur. Le seul témoin ici est la ligne que
 `verifierAppartenancePatient` écrit au journal d'accès quand un praticien ouvre
 la sous-vue Protocole.
 
-**Et ce témoin n'a pas pu se produire.** Relevé le 2026-09-20 à 11:18 UTC, par
+**Et ce témoin n'avait PAS ENCORE pu se produire — c'est tout ce que l'absence
+disait.** Relevé le 2026-09-20 à 11:18 UTC, par
 conteneur détaché — l'ancre est l'horodatage et la requête, **pas l'identifiant
 du one-off** : Scalingo les réattribue, et `one-off-746` a rendu ce jour-là deux
 conteneurs distincts sous un même filtre de logs, l'un du 2026-09-11.
