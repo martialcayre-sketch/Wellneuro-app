@@ -172,7 +172,28 @@ function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['ver
     if (ids.has(actionId)) throw new TypeError(`Action dupliquée : ${actionId}.`);
     ids.add(actionId);
     if (!(ACTION_TYPES as readonly string[]).includes(action.type)) throw new TypeError('Type d’action inconnu.');
-    if (action.foodCompassRef !== undefined) {
+    // LA BOUSSOLE ET L'ASSIETTE CESSENT DE S'EXCLURE ([[D-243]]).
+    //
+    // CE REFUS ÉTAIT INCONDITIONNEL — la seule des quatre gardes voisines à
+    // ignorer le paramètre `version` pourtant en portée. Le chemin V2 ne s'y
+    // heurtait pas : `buildFoodCompassProtocolV2FromSource` construit d'abord
+    // un brouillon SANS référence, puis les réinjecte. Conséquence : un
+    // protocole V4 — donc tout protocole portant une assiette prescrite depuis
+    // [[D-240]], ou une intention suspendue depuis [[D-056]] — ne pouvait
+    // porter AUCUNE Boussole d'aliment. [[D-213]] §12 veut pourtant que « la
+    // Boussole reste atteignable depuis le protocole » : elle cessait de
+    // l'être dès qu'on y prescrivait une assiette.
+    //
+    // V4 SEULEMENT, ET EXPLICITEMENT. V1 et V3 gardent leur refus mot pour mot.
+    // La relecture, elle, acceptait déjà un V4 porteur de référence — elle ne
+    // nomme que V1 et V2 (`assertProtocolDraftC5Structure`) : ce lot aligne
+    // l'écriture sur ce que la lecture tolérait, il n'élargit pas la lecture.
+    //
+    // CE QUI RESTE VRAI DE V2. Un payload V2 EXIGE au moins une référence, et
+    // V4 n'en exige aucune : l'exclusivité était unilatérale, et seule la
+    // moitié qui bloquait tombe. Aucun chemin existant ne change — un protocole
+    // qui ne porte que des aliments reste servi en V2.
+    if (action.foodCompassRef !== undefined && version !== VERSION_PROTOCOL_DRAFT_V4) {
       throw new TypeError('Une référence C5 exige un payload protocole V2 explicite.');
     }
     if (action.supplementCatalogRef !== undefined
@@ -193,6 +214,11 @@ function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['ver
       limitations: uniqueSorted(action.limitations),
       ...normalizeInterventionStatus(action, version),
       ...normalizePlateRef(action, version),
+      // SANS CE TERME, LA RÉFÉRENCE DISPARAÎTRAIT EN SILENCE : cette fonction
+      // RECONSTRUIT chaque action depuis une liste blanche, et un champ qu'elle
+      // ignore n'est ni refusé ni persisté. C'est le piège que [[D-240]] a
+      // nommé, et il vaut ici mot pour mot.
+      ...(action.foodCompassRef === undefined ? {} : { foodCompassRef: action.foodCompassRef }),
     };
   });
 }

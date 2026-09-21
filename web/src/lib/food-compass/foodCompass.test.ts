@@ -3,6 +3,7 @@ import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
 import {
   VERSION_PROTOCOL_DRAFT_V2,
+  VERSION_PROTOCOL_DRAFT_V4,
   type DecisionCard,
   type ProtocolDraft,
 } from '@/lib/clinical-engine/types';
@@ -167,11 +168,12 @@ function brouillonV2AvecRefPourFixture(
   actionId: string,
   actionRef: FoodCompassActionRef,
   updatedAt: string,
+  version: ProtocolDraft['version'] = VERSION_PROTOCOL_DRAFT_V2,
 ): ProtocolDraft {
   const withoutHash = {
     ...v1,
     updatedAt,
-    version: VERSION_PROTOCOL_DRAFT_V2,
+    version,
     status: 'draft' as const,
     review: null,
     actions: v1.actions.map(action => (action.actionId === actionId
@@ -277,6 +279,66 @@ describe('C5B — contexte, patient et protocole V2', () => {
     expect(contextual()).toMatchObject({
       status: 'practitioner_review_required', automaticRecommendation: false, patientDiffusionAllowed: false,
     });
+  });
+
+  it('LA VUE PATIENT ACCEPTE UN PROTOCOLE V4 — la Boussole survit à l’assiette ([[D-243]])', () => {
+    // CE QUE CE CAS FERME. Le refus de version vit dans
+    // `buildPatientFoodCompassView`, et son `TypeError` est AVALÉ par le
+    // `catch { return null; }` de `patientReference.ts` : un protocole hors V2
+    // ne produisait pas une erreur mais une Boussole ABSENTE EN SILENCE. Depuis
+    // [[D-240]], tout protocole portant une assiette prescrite est V4 — le
+    // patient perdait donc sa Boussole dès qu'on lui prescrivait une assiette,
+    // alors que [[D-213]] §12 veut l'inverse.
+    const v1 = protocolV1();
+    const intrinsic = profile();
+    const reading = buildContextualFoodReading({
+      intrinsicProfile: intrinsic,
+      selectedPriority: { priorityId: 'priority-c5', label: 'Équilibre de l’assiette' },
+      activeProtocol: { protocolDraftId: v1.protocolDraftId, inputHash: v1.inputHash, status: 'active' },
+    });
+    const actionRef = createFoodCompassActionRef({ profile: intrinsic, reading });
+    const brouillonV4 = brouillonV2AvecRefPourFixture(
+      v1, 'food-action', actionRef, '2026-07-18T10:00:00.000Z', VERSION_PROTOCOL_DRAFT_V4,
+    );
+    const reluV4: ProtocolDraft = {
+      ...brouillonV4,
+      status: 'practitioner_reviewed',
+      review: {
+        reviewedAt: '2026-07-18T11:00:00.000Z',
+        reviewerRole: 'practitioner',
+        confirmation: 'content_reviewed',
+      },
+    };
+    const reluV4Hache: ProtocolDraft = {
+      ...reluV4,
+      inputHash: canonicalSha256((({ protocolDraftId: _id, inputHash: _h, ...reste }) => reste)(reluV4)),
+    };
+    const vue = buildPatientFoodCompassView({
+      profile: intrinsic,
+      reading,
+      actionRef,
+      protocolDraft: reluV4Hache,
+      approval: {
+        decisionCardInputHash: reluV4Hache.decisionCardInputHash,
+        protocolDraftInputHash: reluV4Hache.inputHash,
+        approvedAt: '2026-07-18T12:00:00.000Z',
+        approvedBy: 'practitioner' as const,
+        confirmation: 'content_approved_for_diffusion' as const,
+      },
+      qualitativeSummary: 'Accompagne l’assiette retenue avec votre praticien.',
+      reasons: ['Cette lecture est reliée à l’objectif retenu.'],
+      sourceLabel: 'Table Ciqual 2025',
+      limitations: ['À replacer dans l’ensemble de l’assiette.'],
+      alternative: null,
+    });
+    expect(vue.foodRef).toBe(actionRef.foodRef);
+    expect(containsNumber(vue)).toBe(false);
+    // CE QUE CETTE VUE PORTE, ET QUI N'EST PAS CE QUE LE PATIENT REÇOIT — une
+    // première rédaction de ce cas l'a affirmé à tort. `buildPatientFoodCompassView`
+    // rend TROIS empreintes (`protocolInputHash`, `actionRefHash`, `inputHash`) :
+    // c'est la projection SÛRE, en aval, qui les coupe pour n'en garder que sept
+    // champs qualitatifs. La garde du contenu servi vit donc là-bas, pas ici.
+    expect(vue.actionRefHash).toBe(actionRef.refHash);
   });
 
   it('produit une vue patient strictement qualitative après validation manuelle', () => {

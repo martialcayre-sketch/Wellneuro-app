@@ -17,6 +17,7 @@ import {
 import { assertFoodCompassActionRef, assertProtocolDraftC5Structure } from './refValidation';
 import {
   VERSION_PROTOCOL_DRAFT_V2,
+  VERSION_PROTOCOL_DRAFT_V4,
   type ProtocolDiffusionApproval,
   type ProtocolDraft,
 } from '@/lib/clinical-engine/types';
@@ -157,7 +158,19 @@ export function buildPatientFoodCompassView(input: {
   }
   const draft = input.protocolDraft;
   assertProtocolDraftC5Structure(draft);
-  if (draft.version !== VERSION_PROTOCOL_DRAFT_V2
+  // V2 OU V4 ([[D-243]]) — et ce n'est pas un élargissement de la garde, c'est
+  // la levée d'une exclusion. Un protocole V4 qui porte une référence C5 est
+  // désormais écrivable ; s'il l'est, le patient doit pouvoir lire la Boussole
+  // qui va avec. Toutes les autres conditions ci-dessous sont INCHANGÉES : le
+  // protocole doit être relu, son empreinte recalculée, et porter EXACTEMENT la
+  // référence demandée sur une action alimentaire.
+  //
+  // CE QUE CE REFUS FAIT QUAND IL TOMBE, ET IL FAUT LE SAVOIR : son `TypeError`
+  // est AVALÉ par le `catch { return null; }` de `patientReference.ts`. Une
+  // Boussole refusée ne produit donc pas d'erreur visible — elle DISPARAÎT de
+  // la liste du patient. C'est pourquoi la condition se lit ici, et pourquoi
+  // l'élargir devait être délibéré plutôt que constaté par son absence d'effet.
+  if ((draft.version !== VERSION_PROTOCOL_DRAFT_V2 && draft.version !== VERSION_PROTOCOL_DRAFT_V4)
     || draft.status !== 'practitioner_reviewed'
     || draft.review === null
     || recomputeDraftInputHash(draft) !== draft.inputHash
