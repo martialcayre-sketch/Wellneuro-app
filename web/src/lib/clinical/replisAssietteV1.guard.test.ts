@@ -194,41 +194,70 @@ describe('La direction se lit dans un seul sens', () => {
 // décision vivait dans `plates.ts`, les replis lui arrivaient en paramètre et le
 // point de service unique se contournait.
 describe('La décision de substitution — orientée, conditionnée, gardée aux deux bouts', () => {
-  // L'INDICATION EST UNE CONDITION, PAS UNE ÉTIQUETTE : un repli n'est jamais
-  // valable « en général ». Elle est donc obligatoire à l'appel.
-  const INDICATION = 'ASSIETTE-IND-FIXTURE';
+  // LES BANCS PASSENT PAR LE VERROU, EXACTEMENT COMME LA PRODUCTION — constat de
+  // revue, deuxième passe. Ils ne fournissent plus une liste déjà filtrée (la
+  // fonction n'en accepte plus) mais une TABLE et sa SIGNATURE, que la décision
+  // remet elle-même à `replisServables`. Une ligne de fixture doit donc être
+  // complète et cohérente pour être vue : c'est ce qu'on veut éprouver.
+  const AUTRE_INDICATION = INDICATIONS_ASSIETTES_V1[1]?.id ?? 'ASSIETTE-IND-SECONDE';
+
+  function tableDe(lignes: readonly LigneRepliAssiette[]) {
+    return { signature: signeePour(lignes), lignes };
+  }
 
   it('permet explicitement de ne rien proposer — et l’absence est DÉCLARÉE, pas subie', () => {
     const source = getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE');
-    expect(decidePlateSubstitution({ source, replis: [], indication: INDICATION })).toMatchObject({
+    expect(decidePlateSubstitution({ source, indication: INDICATION })).toMatchObject({
       status: 'none', reason: 'no_validated_alternative', decidedBy: 'practitioner',
     });
     expect(decidePlateSubstitution({
-      source, replis: [], indication: INDICATION, noProposalReason: 'practitioner_declined',
+      source, indication: INDICATION, noProposalReason: 'practitioner_declined',
     })).toMatchObject({ status: 'none', reason: 'practitioner_declined' });
   });
 
-  it('refuse une cible qu’AUCUN repli attesté ne désigne', () => {
+  it('SUR LA TABLE RÉELLE — vide et non signée — aucune cible n’est atteignable', () => {
     expect(() => decidePlateSubstitution({
       source: getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE'),
-      replis: [],
       indication: INDICATION,
       targetPlateCode: 'ASSIETTE_SEROTONINERGIQUE',
       justification: 'Choix discuté avec le patient.',
     })).toThrow(/Aucun repli attesté/);
   });
 
+  it('UNE TABLE NON SIGNÉE NE SERT RIEN — le verrou n’est pas contournable par l’appel', () => {
+    // C'est le cœur du constat de revue : la fonction ne reçoit plus une liste
+    // déjà filtrée. Tout ce qu'on lui passe traverse le verrou, qui refuse ici
+    // faute de signature valide.
+    const lignes = [ligne()];
+    expect(() => decidePlateSubstitution({
+      source: getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE'),
+      indication: INDICATION,
+      lignes,
+      signature: { validationExterne: false, dateValidation: null, shaPerimetre: null },
+      targetPlateCode: 'ASSIETTE_SEROTONINERGIQUE',
+      justification: 'Repli discuté avec le patient.',
+    })).toThrow(/Aucun repli attesté/);
+  });
+
+  it('UN BROUILLON N’EST PAS SERVI — même signé avec la table', () => {
+    const lignes = [ligne({ statut: 'brouillon' })];
+    expect(() => decidePlateSubstitution({
+      source: getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE'),
+      indication: INDICATION,
+      ...tableDe(lignes),
+      targetPlateCode: 'ASSIETTE_SEROTONINERGIQUE',
+      justification: 'Repli discuté avec le patient.',
+    })).toThrow(/Aucun repli attesté/);
+  });
+
   it('LA DIRECTION NE SE LIT QUE DANS UN SENS — c’est tout l’objet du lot', () => {
-    // Trois assiettes déclarées dans une famille valaient SIX substitutions.
-    // Ici, une ligne `depuis A vers B` n'autorise QUE A→B.
-    const replis = [{
-      depuis: 'ASSIETTE_DOPAMINERGIQUE', vers: 'ASSIETTE_SEROTONINERGIQUE',
-      indication: INDICATION, degre: 'acceptable',
-    }] as const;
+    // Une étiquette de famille attestait A→B ET B→A, et par transitivité toute
+    // la clique : trois assiettes déclarées valaient six substitutions.
+    const lignes = [ligne()];
     const aVersB = decidePlateSubstitution({
       source: getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE'),
-      replis,
       indication: INDICATION,
+      ...tableDe(lignes),
       targetPlateCode: 'ASSIETTE_SEROTONINERGIQUE',
       justification: 'Repli discuté avec le patient.',
     });
@@ -244,8 +273,8 @@ describe('La décision de substitution — orientée, conditionnée, gardée aux
 
     expect(() => decidePlateSubstitution({
       source: getCurrentRecommendedPlateRef('ASSIETTE_SEROTONINERGIQUE'),
-      replis,
       indication: INDICATION,
+      ...tableDe(lignes),
       targetPlateCode: 'ASSIETTE_DOPAMINERGIQUE',
       justification: 'Repli discuté avec le patient.',
     })).toThrow(/Aucun repli attesté/);
@@ -253,64 +282,45 @@ describe('La décision de substitution — orientée, conditionnée, gardée aux
 
   it('LA CONDITION COMPTE AUTANT QUE LA DIRECTION — constat de revue', () => {
     // Deux lignes du MÊME couple, attestées pour deux indications différentes.
-    // Sans le terme d'indication, `.find()` retenait la première et la décision
-    // perdait la condition qui l'autorise : un repli attesté pour une raison
-    // devenait applicable à toutes. C'est la classe de défaut que ce lot ferme
-    // sur la direction, et qu'il avait reproduite sur la condition.
-    const replis = [
-      {
-        depuis: 'ASSIETTE_DOPAMINERGIQUE', vers: 'ASSIETTE_SEROTONINERGIQUE',
-        indication: 'ASSIETTE-IND-A', degre: 'proche',
-      },
-      {
-        depuis: 'ASSIETTE_DOPAMINERGIQUE', vers: 'ASSIETTE_SEROTONINERGIQUE',
-        indication: 'ASSIETTE-IND-B', degre: 'dernier_recours',
-      },
-    ] as const;
-    const pourB = decidePlateSubstitution({
+    // Sans le terme d'indication, la recherche retenait la première et la
+    // décision perdait la condition qui l'autorise.
+    const lignes = [
+      ligne({ id: 'REPLI-FIXTURE-A', degre: 'proche' }),
+      ligne({ id: 'REPLI-FIXTURE-B', indication: AUTRE_INDICATION, degre: 'dernier_recours' }),
+    ];
+    const pourLaSeconde = decidePlateSubstitution({
       source: getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE'),
-      replis,
-      indication: 'ASSIETTE-IND-B',
+      indication: AUTRE_INDICATION,
+      ...tableDe(lignes),
       targetPlateCode: 'ASSIETTE_SEROTONINERGIQUE',
       justification: 'Repli discuté avec le patient.',
     });
-    // La ligne retenue est celle de l'indication demandée, pas la première.
-    expect(pourB).toMatchObject({
+    expect(pourLaSeconde).toMatchObject({
       status: 'proposed',
-      repli: { indication: 'ASSIETTE-IND-B', degre: 'dernier_recours' },
+      repli: { indication: AUTRE_INDICATION, degre: 'dernier_recours' },
     });
 
     // Et une indication qu'aucune ligne n'atteste ne se sert d'aucune autre.
     expect(() => decidePlateSubstitution({
       source: getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE'),
-      replis,
-      indication: 'ASSIETTE-IND-C',
+      indication: 'ASSIETTE-IND-QUE-RIEN-N-ATTESTE',
+      ...tableDe(lignes),
       targetPlateCode: 'ASSIETTE_SEROTONINERGIQUE',
       justification: 'Repli discuté avec le patient.',
     })).toThrow(/pour cette indication/);
   });
 
-  it('l’AXE est garde aux deux bouts — un repère de repas ne se replie ni ne sert de repli', () => {
-    const replis = [
-      {
-        depuis: 'ASSIETTE_SOIR_LEGER', vers: 'ASSIETTE_DOPAMINERGIQUE',
-        indication: INDICATION, degre: 'proche',
-      },
-      {
-        depuis: 'ASSIETTE_DOPAMINERGIQUE', vers: 'ASSIETTE_SOIR_LEGER',
-        indication: INDICATION, degre: 'proche',
-      },
-    ] as const;
+  it('l’AXE est gardé aux deux bouts — un repère de repas ne se replie ni ne sert de repli', () => {
+    // L'axe se vérifie AVANT toute lecture de table : une assiette d'observation
+    // n'a pas à attendre qu'un repli existe pour être refusée.
     expect(() => decidePlateSubstitution({
       source: getCurrentRecommendedPlateRef('ASSIETTE_SOIR_LEGER'),
-      replis,
       indication: INDICATION,
       targetPlateCode: 'ASSIETTE_DOPAMINERGIQUE',
       justification: 'Repli discuté avec le patient.',
     })).toThrow(/ne se replie pas/);
     expect(() => decidePlateSubstitution({
       source: getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE'),
-      replis,
       indication: INDICATION,
       targetPlateCode: 'ASSIETTE_SOIR_LEGER',
       justification: 'Repli discuté avec le patient.',
@@ -318,13 +328,11 @@ describe('La décision de substitution — orientée, conditionnée, gardée aux
   });
 
   it('la justification praticien reste exigée, même sur un repli attesté', () => {
+    const lignes = [ligne()];
     expect(() => decidePlateSubstitution({
       source: getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE'),
-      replis: [{
-        depuis: 'ASSIETTE_DOPAMINERGIQUE', vers: 'ASSIETTE_SEROTONINERGIQUE',
-        indication: INDICATION, degre: 'proche',
-      }],
       indication: INDICATION,
+      ...tableDe(lignes),
       targetPlateCode: 'ASSIETTE_SEROTONINERGIQUE',
       // Le seuil est `< 10` : « trop court » en fait exactement 10 et PASSE.
       justification: 'court',
@@ -332,12 +340,6 @@ describe('La décision de substitution — orientée, conditionnée, gardée aux
   });
 });
 
-
-// LA PROJECTION DU PROTOCOLE — constat de revue, et il visait une vraie zone
-// aveugle : ce calcul vivait dans la route, où AUCUN banc ne l'atteignait. Le
-// protocole de fixture n'a aucune assiette et la table réelle est vide, si bien
-// que la branche n'était jamais exercée. Un chemin décrit sans être éprouvé est
-// un chemin qu'on croit connaître.
 describe('Les replis d’un protocole — « prescrite » se lit sur les actions', () => {
   const servables = (lignes: readonly LigneRepliAssiette[]) =>
     replisServables(signeePour(lignes), lignes);
@@ -406,8 +408,12 @@ describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
     // où une ligne sera écrite, la différence deviendra observable — d'ici là,
     // c'est la source qui fait foi.
     const source = readFileSync(join(process.cwd(), 'src/lib/clinical/replisAssietteV1.ts'), 'utf8');
-    const defaut = /const repli = \(input\.replis \?\? ([A-Za-z_]+)\(?\)?\)\.find\(/.exec(source);
-    expect(defaut, 'le défaut de `replis` n’a pas été retrouvé dans la source').not.toBeNull();
-    expect(defaut![1]).toBe('replisServables');
+    const appel = /const repli = ([A-Za-z_]+)\(input\.signature, input\.lignes, input\.lignesIndication\)\.find\(/
+      .exec(source);
+    expect(appel, 'l’appel au point de service n’a pas été retrouvé dans la source').not.toBeNull();
+    expect(appel![1]).toBe('replisServables');
+    // ET LA FONCTION N'ACCEPTE AUCUNE LISTE DÉJÀ FILTRÉE : un paramètre `replis`
+    // rouvrirait le contournement que cette garde ferme.
+    expect(source).not.toMatch(/replis\?: readonly RepliAssietteDeclare\[\]/);
   });
 });

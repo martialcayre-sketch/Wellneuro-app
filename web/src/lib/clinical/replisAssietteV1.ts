@@ -299,12 +299,24 @@ export function decidePlateSubstitution(input: {
   justification?: string;
   noProposalReason?: 'practitioner_declined' | 'no_validated_alternative';
   /**
-   * Les replis qui font foi. **Par défaut, et c'est le point : ceux que le
-   * verrou laisse sortir.** Le paramètre n'existe que pour les bancs, qui
-   * doivent pouvoir éprouver la décision sur une table qu'ils maîtrisent — un
-   * appelant de production n'a aucune raison de le fournir.
+   * LA TABLE ET SA SIGNATURE — jamais une liste déjà filtrée.
+   *
+   * CONSTAT DE REVUE, DEUXIÈME PASSE SUR LE MÊME POINT, ET IL AVAIT RAISON DE
+   * PERSISTER. La rédaction précédente acceptait un `readonly
+   * RepliAssietteDeclare[]` et réservait le paramètre aux bancs **par
+   * commentaire** : rien n'empêchait un appelant de production de fabriquer un
+   * tableau — sans `raccourciAssume`, sans `statut`, sans signature — et de le
+   * faire accepter. Un commentaire n'est pas une garde.
+   *
+   * Ce que la fonction reçoit désormais est ce que le VERROU reçoit, et elle le
+   * lui passe elle-même : signature, lignes, table d'indications. Tout ce qu'on
+   * lui donne traverse `replisServables` — sha recalculé, anomalies, statut
+   * publié, table vide refusée. **Il n'y a plus de chemin qui saute le verrou**,
+   * et les bancs éprouvent la décision exactement comme la production la vit.
    */
-  replis?: readonly RepliAssietteDeclare[];
+  signature?: ReplisAssietteMetadata;
+  lignes?: readonly LigneRepliAssiette[];
+  lignesIndication?: readonly LigneIndicationAssiette[];
 }): PlateSubstitutionDecision {
   const source = assertCurrentRecommendedPlateRef(input.source);
   if (!input.targetPlateCode) {
@@ -325,7 +337,7 @@ export function decidePlateSubstitution(input: {
   if (!estAssietteDIndication(target.plateCode)) {
     throw new TypeError('Une assiette d’observation ne peut pas servir de repli.');
   }
-  const repli = (input.replis ?? replisServables()).find(
+  const repli = replisServables(input.signature, input.lignes, input.lignesIndication).find(
     ligne => ligne.depuis === source.plateCode
       && ligne.vers === target.plateCode
       && ligne.indication === input.indication,

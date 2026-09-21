@@ -172,6 +172,23 @@ vide. Une garde de SOURCE tient la forme, et dit pourquoi elle n'est pas un banc
 de comportement. Sans cette vérification par mutation, j'aurais annoncé une
 couverture que je n'avais pas.
 
+## 8 quinquies. Troisième passe — le relecteur a persisté, et il avait raison
+
+Le déménagement laissait un paramètre optionnel `replis`, réservé aux bancs
+**par commentaire**. Un commentaire n'est pas une garde. La fonction reçoit
+désormais la TABLE et sa SIGNATURE, qu'elle remet elle-même au verrou : tout ce
+qu'on lui donne est filtré, et les bancs éprouvent la décision comme la
+production la vit. Deux mutations le tiennent.
+
+Le câblage de la route a reçu son cas : un espion vérifie qu'elle passe les
+ACTIONS du protocole actif et rend le résultat, condition comprise. La
+projection, elle, reste éprouvée chez elle.
+
+**TROIS PASSES SUR LE MÊME POINT, et c'est la leçon à garder** : j'ai fermé le
+contournement en deux temps parce que la première correction déplaçait le
+problème au lieu de le supprimer. Un paramètre « réservé aux bancs » est un
+paramètre public.
+
 ## 9. Problèmes ouverts
 
 **LE QUATRIÈME POINT DU PROGRAMME, ET IL EST ENTIÈREMENT CLINIQUE.** Affirmer

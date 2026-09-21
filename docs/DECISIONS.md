@@ -158,6 +158,21 @@ peut distinguer les deux tant qu'aucune ligne n'existe. Une **garde de source**
 tient donc la forme, et dit elle-même pourquoi elle n'est pas un banc de
 comportement.
 
+**12. TROISIÈME PASSE SUR LE MÊME POINT, ET LE RELECTEUR AVAIT RAISON DE
+PERSISTER.** Le déménagement du §11 laissait un paramètre optionnel `replis`,
+réservé aux bancs **par commentaire**. Un commentaire n'est pas une garde : rien
+n'empêchait un appelant de production de fabriquer un tableau — sans
+`raccourciAssume`, sans `statut`, sans signature — et de le faire accepter. La
+fonction ne reçoit donc plus de liste du tout, mais la **table et sa signature**,
+qu'elle remet elle-même à `replisServables`. Tout ce qu'on lui donne traverse le
+verrou ; **il n'y a plus de chemin qui le saute**, et les bancs éprouvent la
+décision exactement comme la production la vit. Vérifié par deux mutations.
+
+**ET LE CÂBLAGE DE LA ROUTE A REÇU SON CAS.** Ce que la projection calcule est
+éprouvé chez elle ; ce que la route devait prouver est qu'elle lui passe les
+ACTIONS du protocole actif et rend son résultat — la condition comprise. Un
+espion le tient, et une mutation du câblage le fait rougir.
+
 **CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
 décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse
 logique de l'échange, et `DC-19`/`DC-20` interdisent d'affirmer ce qu'aucune
