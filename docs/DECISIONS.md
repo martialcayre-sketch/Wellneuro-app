@@ -52,7 +52,7 @@ des statuts » — avec son motif, que deux artefacts divergents diraient au
 patient et au médecin deux propositions différentes. Déplacer la seule constante
 aurait séparé le prédicat de son vocabulaire, c'est-à-dire cassé la raison même
 de la phrase. C'est donc **le vocabulaire ENTIER** — le type `StatutPanel` et le
-prédicat — qui entre dans `statutsVocabulaire.ts`, module **feuille** qui
+prédicat — qui entre dans `vocabulaireStatuts.ts`, module **feuille** qui
 n'importe rien ; `statuts.ts` les ré-exporte, et **aucun appelant serveur ne
 change**. Seul le composant client puise désormais à la feuille.
 
