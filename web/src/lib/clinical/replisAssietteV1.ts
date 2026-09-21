@@ -231,10 +231,16 @@ export function replisServables(
  * `depuis` est l'assiette qu'on ne peut pas suivre ; les lignes rendues nomment
  * ce vers quoi elle se replie. L'inverse n'est JAMAIS vrai par symétrie : il
  * faudrait une seconde ligne, écrite et attestée à part.
+ *
+ * **NON EXPORTÉE, ET C'EST LE POINT** — constat de revue, quatrième passe sur la
+ * même classe. Elle prend une liste DÉJÀ filtrée : l'exporter offrirait à
+ * n'importe quel appelant le contournement que `decidePlateSubstitution` venait
+ * de fermer. Les appelants légitimes passent par `replisPourProtocole`, qui lit
+ * le point de service lui-même.
  */
-export function replisDepuis(
+function replisDepuis(
   plateCode: string,
-  servables: readonly LigneRepliAssiette[] = replisServables(),
+  servables: readonly LigneRepliAssiette[],
 ): readonly LigneRepliAssiette[] {
   return servables.filter(ligne => ligne.depuis === plateCode);
 }
@@ -380,8 +386,21 @@ export function decidePlateSubstitution(input: {
  */
 export function replisPourProtocole(
   actions: readonly { recommendedPlateRef?: { plateCode: string } }[],
-  servables: readonly LigneRepliAssiette[] = replisServables(),
+  /**
+   * LA TABLE ET SA SIGNATURE, jamais une liste déjà filtrée — constat de revue,
+   * quatrième passe sur la même classe et la dernière instance.
+   *
+   * Le paramètre `servables` qui vivait ici acceptait n'importe quel tableau :
+   * `REPLIS_ASSIETTE_V1` nu, un brouillon, une ligne fabriquée. Il rouvrait donc
+   * exactement le contournement que `decidePlateSubstitution` venait de fermer —
+   * corriger une instance sans balayer ses voisines laisse la classe vivante.
+   * Tout ce qu'on passe ici traverse `replisServables`.
+   */
+  signature?: ReplisAssietteMetadata,
+  lignes?: readonly LigneRepliAssiette[],
+  lignesIndication?: readonly LigneIndicationAssiette[],
 ): readonly RepliAssietteDeclare[] {
+  const servables = replisServables(signature, lignes, lignesIndication);
   const dejaVus = new Set<string>();
   return actions.flatMap(action => {
     const prescrite = action.recommendedPlateRef?.plateCode;

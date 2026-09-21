@@ -9,7 +9,6 @@ import {
   REPLIS_ASSIETTE_V1,
   anomaliesDeLaLigneRepli,
   replisAssietteSignes,
-  replisDepuis,
   replisPourProtocole,
   replisServables,
   shaPerimetreReplisAssiette,
@@ -65,7 +64,8 @@ describe('L’ÉTAT LIVRÉ — la table est vide, non signée, et ne sert rien',
   it('le verrou est FERMÉ et le service VIDE — sur la table réelle, pas une fixture', () => {
     expect(replisAssietteSignes()).toBe(false);
     expect(replisServables()).toEqual([]);
-    expect(replisDepuis('ASSIETTE_DOPAMINERGIQUE')).toEqual([]);
+    expect(replisPourProtocole([{ recommendedPlateRef: { plateCode: 'ASSIETTE_DOPAMINERGIQUE' } }]))
+      .toEqual([]);
   });
 
   it('ON NE SIGNE PAS UNE ABSENCE : une table vide reste non signée même sous une signature valide', () => {
@@ -178,12 +178,20 @@ describe('Les anomalies — ce qu’une ligne ne peut pas être', () => {
 });
 
 describe('La direction se lit dans un seul sens', () => {
-  it('`replisDepuis` ne rend jamais la ligne inverse', () => {
+  it('une assiette qui est une CIBLE n’a pas de repli', () => {
+    // `replisDepuis` n'est plus exportée : elle prenait une liste déjà filtrée,
+    // donc l'exporter offrait le contournement que ce lot ferme. Sa propriété
+    // s'éprouve par le seul point d'entrée qui reste.
     const lignes = [ligne()];
-    const servables = replisServables(signeePour(lignes), lignes);
-    expect(replisDepuis('ASSIETTE_DOPAMINERGIQUE', servables)).toHaveLength(1);
+    expect(replisPourProtocole(
+      [{ recommendedPlateRef: { plateCode: 'ASSIETTE_DOPAMINERGIQUE' } }],
+      signeePour(lignes), lignes,
+    )).toHaveLength(1);
     // Sans une seconde ligne écrite et attestée, l'inverse n'existe pas.
-    expect(replisDepuis('ASSIETTE_SEROTONINERGIQUE', servables)).toEqual([]);
+    expect(replisPourProtocole(
+      [{ recommendedPlateRef: { plateCode: 'ASSIETTE_SEROTONINERGIQUE' } }],
+      signeePour(lignes), lignes,
+    )).toEqual([]);
   });
 });
 
@@ -341,14 +349,11 @@ describe('La décision de substitution — orientée, conditionnée, gardée aux
 });
 
 describe('Les replis d’un protocole — « prescrite » se lit sur les actions', () => {
-  const servables = (lignes: readonly LigneRepliAssiette[]) =>
-    replisServables(signeePour(lignes), lignes);
-
   it('rend les replis de l’assiette PRESCRITE, avec sa direction et sa condition', () => {
     const lignes = [ligne()];
     const alternatives = replisPourProtocole(
       [{ recommendedPlateRef: { plateCode: 'ASSIETTE_DOPAMINERGIQUE' } }],
-      servables(lignes),
+      signeePour(lignes), lignes,
     );
     expect(alternatives).toEqual([{
       depuis: 'ASSIETTE_DOPAMINERGIQUE',
@@ -360,10 +365,10 @@ describe('Les replis d’un protocole — « prescrite » se lit sur les actions
 
   it('ne rend RIEN pour une action sans assiette, ni pour une assiette sans repli', () => {
     const lignes = [ligne()];
-    expect(replisPourProtocole([{}], servables(lignes))).toEqual([]);
+    expect(replisPourProtocole([{}], signeePour(lignes), lignes)).toEqual([]);
     expect(replisPourProtocole(
       [{ recommendedPlateRef: { plateCode: 'ASSIETTE_PSYCHOBIOTIQUE' } }],
-      servables(lignes),
+      signeePour(lignes), lignes,
     )).toEqual([]);
   });
 
@@ -371,7 +376,7 @@ describe('Les replis d’un protocole — « prescrite » se lit sur les actions
     const lignes = [ligne()];
     expect(replisPourProtocole(
       [{ recommendedPlateRef: { plateCode: 'ASSIETTE_SEROTONINERGIQUE' } }],
-      servables(lignes),
+      signeePour(lignes), lignes,
     )).toEqual([]);
   });
 
@@ -380,7 +385,7 @@ describe('Les replis d’un protocole — « prescrite » se lit sur les actions
     const alternatives = replisPourProtocole([
       { recommendedPlateRef: { plateCode: 'ASSIETTE_DOPAMINERGIQUE' } },
       { recommendedPlateRef: { plateCode: 'ASSIETTE_DOPAMINERGIQUE' } },
-    ], servables(lignes));
+    ], signeePour(lignes), lignes);
     expect(alternatives).toHaveLength(1);
   });
 
@@ -415,5 +420,33 @@ describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
     // ET LA FONCTION N'ACCEPTE AUCUNE LISTE DÉJÀ FILTRÉE : un paramètre `replis`
     // rouvrirait le contournement que cette garde ferme.
     expect(source).not.toMatch(/replis\?: readonly RepliAssietteDeclare\[\]/);
+  });
+
+  it('AUCUNE fonction EXPORTÉE de ce module n’accepte une liste déjà filtrée', () => {
+    // LA CLASSE, PAS L'INSTANCE — et c'est la leçon de ce lot, payée en QUATRE
+    // passes de revue. J'ai fermé le contournement sur `decidePlateSubstitution`
+    // en laissant `replisDepuis` et `replisPourProtocole` l'offrir intact : un
+    // paramètre `servables: readonly LigneRepliAssiette[]` accepte
+    // `REPLIS_ASSIETTE_V1` nu, un brouillon, ou une ligne fabriquée. Corriger
+    // une instance sans balayer ses voisines laisse la classe vivante.
+    //
+    // CE QUE CETTE GARDE TIENT : une fonction EXPORTÉE d'ici reçoit la table et
+    // sa signature — jamais le résultat d'un filtre qu'elle n'a pas fait
+    // elle-même. Une fonction interne peut, elle, prendre une liste servable :
+    // son appelant l'a obtenue du verrou.
+    const source = readFileSync(join(process.cwd(), 'src/lib/clinical/replisAssietteV1.ts'), 'utf8');
+    const exportees = [...source.matchAll(// `[^)]*` traverse déjà les sauts de ligne : le drapeau `s` serait inutile,
+    // et il n'est pas disponible pour la cible de compilation.
+    /export function (\w+)\(([^)]*)\)/g)];
+    expect(exportees.length, 'aucune fonction exportée retrouvée — la garde serait vacante')
+      .toBeGreaterThan(3);
+    const fautives = exportees
+      .filter(([, nom, parametres]) =>
+        nom !== 'replisServables'
+        && nom !== 'replisAssietteSignes'
+        && /:\s*readonly LigneRepliAssiette\[\]/.test(parametres)
+        && !/lignes\??:\s*readonly LigneRepliAssiette\[\]/.test(parametres))
+      .map(([, nom]) => nom);
+    expect(fautives, 'ces fonctions exportées prennent une liste déjà filtrée').toEqual([]);
   });
 });

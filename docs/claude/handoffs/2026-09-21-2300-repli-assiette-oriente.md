@@ -189,6 +189,22 @@ contournement en deux temps parce que la première correction déplaçait le
 problème au lieu de le supprimer. Un paramètre « réservé aux bancs » est un
 paramètre public.
 
+## 8 sexies. Quatrième passe — la leçon n'est plus le défaut, c'est ma correction
+
+`replisDepuis` et `replisPourProtocole` offraient INTACT le contournement que je
+venais de fermer sur `decidePlateSubstitution`. **Corriger une instance sans
+balayer ses voisines laisse la classe vivante**, et je l'ai refait trois fois
+dans ce seul lot.
+
+`replisDepuis` n'est plus exportée ; `replisPourProtocole` reçoit la table et sa
+signature. Et **une garde balaie le module** : aucune fonction exportée
+n'accepte une liste déjà filtrée. Réexporter la fonction interne la fait rougir.
+
+**À retenir pour la prochaine correction de ce type** : chercher les SŒURS de la
+fonction corrigée avant de conclure, et préférer une garde qui balaie à une
+garde qui nomme. Un défaut trouvé une fois dans un module y existe souvent
+plusieurs fois.
+
 ## 9. Problèmes ouverts
 
 **LE QUATRIÈME POINT DU PROGRAMME, ET IL EST ENTIÈREMENT CLINIQUE.** Affirmer

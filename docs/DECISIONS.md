@@ -173,6 +173,21 @@ décision exactement comme la production la vit. Vérifié par deux mutations.
 ACTIONS du protocole actif et rend son résultat — la condition comprise. Un
 espion le tient, et une mutation du câblage le fait rougir.
 
+**13. QUATRIÈME PASSE, ET LA LEÇON N'EST PLUS LE DÉFAUT MAIS MA FAÇON DE LE
+CORRIGER.** J'avais fermé le contournement sur `decidePlateSubstitution` en
+laissant `replisDepuis` et `replisPourProtocole` l'offrir **intact** : un
+paramètre `servables: readonly LigneRepliAssiette[]` accepte
+`REPLIS_ASSIETTE_V1` nu, un brouillon, ou une ligne fabriquée. **Corriger une
+instance sans balayer ses voisines laisse la classe vivante** — et j'ai refait
+cela trois fois de suite dans ce seul lot.
+
+`replisDepuis` n'est plus exportée (elle prend une liste déjà filtrée : son
+appelant l'a obtenue du verrou) ; `replisPourProtocole` reçoit la table et sa
+signature. Et surtout, **une garde balaie désormais le module** : aucune
+fonction exportée ne peut accepter une liste déjà filtrée. Vérifiée par mutation
+— réexporter la fonction interne la fait rougir. C'est la classe qui est fermée,
+plus seulement ses instances connues.
+
 **CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
 décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse
 logique de l'échange, et `DC-19`/`DC-20` interdisent d'affirmer ce qu'aucune
