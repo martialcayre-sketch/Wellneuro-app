@@ -134,6 +134,30 @@ ouvrait la table. `estIsoCanonique` est posée, à l'identique
 d'`indicationsAssiettesV1` et de `tableRepliV1` — et elle FERME au lieu de
 jeter, `toISOString()` levant sur une date invalide.
 
+**11. LE SECOND TOUR DE REVUE A TROUVÉ UN CONTOURNEMENT QUE J'AVAIS CRÉÉ POUR
+ÉVITER UN CYCLE.** `decidePlateSubstitution` vivait dans `plates.ts` et recevait
+les replis en PARAMÈTRE — parce que la table importe ce module, et que
+l'importer en retour ferait un cycle. Conséquence : un appelant pouvait passer
+la table NUE, un brouillon, ou un tableau fabriqué à la main. **Le point de
+service unique se contournait**, et c'est mot pour mot ce que [[D-225]] a posé
+en doctrine : « le filtre est un POINT DE SORTIE, pas une consigne ». La
+décision a donc **déménagé chez la table**, où elle appelle `replisServables()`
+elle-même ; le paramètre survit pour les seuls bancs. Le cycle ne se contourne
+plus par un trou dans la garde, il se résout en mettant la fonction à sa place.
+
+**ET UN CHEMIN QUE JE DÉCRIVAIS SANS L'ÉPROUVER.** La projection des replis
+vivait dans la route, où **aucun banc ne l'atteignait** : le protocole de
+fixture n'a aucune assiette et la table réelle est vide. Elle est extraite en
+`replisPourProtocole` — à sa place, la route étant un enveloppeur HTTP — et
+porte cinq cas, dont le refus de la direction inverse et le dédoublonnage.
+
+**UNE MUTATION EST RESTÉE VERTE, ET C'EST INSTRUCTIF.** Remplacer
+`replisServables()` par la table nue dans le défaut ne fait rougir aucun cas de
+comportement : la table étant vide, les deux rendent la même liste. Aucun banc ne
+peut distinguer les deux tant qu'aucune ligne n'existe. Une **garde de source**
+tient donc la forme, et dit elle-même pourquoi elle n'est pas un banc de
+comportement.
+
 **CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
 décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse
 logique de l'échange, et `DC-19`/`DC-20` interdisent d'affirmer ce qu'aucune

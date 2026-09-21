@@ -246,7 +246,11 @@ const EXEMPTIONS: Record<string, string> = {
 
   // — Longueurs de texte. Techniques au sens de `DC-20` : elles portent sur le
   //   NOMBRE DE CARACTÈRES d'une saisie, jamais sur ce qu'elle dit.
-  'src/lib/food-compass/plates.ts\tjustification.length < 10': 'longueur minimale de texte (caractères), pas un seuil clinique',
+  // LA FONCTION A DÉMÉNAGÉ, L'EXEMPTION LA SUIT ([[D-241]]) —
+  // `decidePlateSubstitution` vit désormais chez la table de replis, pour que
+  // le point de service ne se contourne plus. Le seuil, lui, n'a pas bougé
+  // d'un caractère.
+  'src/lib/clinical/replisAssietteV1.ts\tjustification.length < 10': 'longueur minimale de texte (caractères), pas un seuil clinique',
   'src/lib/food-observation/persistence.ts\tdeltaDecision.length < 10': 'longueur minimale de texte (caractères), pas un seuil clinique',
   'src/lib/food-observation/persistence.ts\tfeedbackPatient.length < 10': 'longueur minimale de texte (caractères), pas un seuil clinique',
   'src/lib/instruments.ts\ttitre.length < 3': 'longueur de titre (caractères), contrainte de saisie',

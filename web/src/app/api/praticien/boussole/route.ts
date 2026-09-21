@@ -20,7 +20,7 @@ import {
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
 import { resolveActiveVersion } from '@/lib/protocol/versioning';
 import { buildPractitionerFoodCompassReference } from '@/lib/food-compass/practitionerReference';
-import { replisDepuis, replisServables } from '@/lib/clinical/replisAssietteV1';
+import { replisPourProtocole } from '@/lib/clinical/replisAssietteV1';
 import { getLatestPublishedJaFeasibility } from '@/lib/food-observation/feasibilityRepository';
 import type { PublishedJaFeasibility } from '@/lib/food-observation/feasibility';
 import type { RepliAssietteDeclare } from '@/lib/food-compass/types';
@@ -150,24 +150,7 @@ export async function GET(request: Request): Promise<NextResponse<PractitionerFo
       } catch {
         return error('protocol_stale', 'Version active du protocole incohérente.', 409);
       }
-      const servables = replisServables();
-      const dejaVus = new Set<string>();
-      alternatives = draft.actions.flatMap(action => {
-        const prescrite = action.recommendedPlateRef?.plateCode;
-        if (prescrite === undefined || dejaVus.has(prescrite)) return [];
-        dejaVus.add(prescrite);
-        // LA CONDITION VOYAGE AVEC LA RELATION — constat de revue. La projeter
-        // sans `indication` rendait indiscernables deux replis de même
-        // direction attestés pour des raisons différentes, et les présentait
-        // tous comme applicables. L'identité de la ligne, elle, reste au
-        // dépôt : le client n'a pas à la connaître pour distinguer.
-        return replisDepuis(prescrite, servables).map(ligne => ({
-          depuis: ligne.depuis,
-          vers: ligne.vers,
-          indication: ligne.indication,
-          degre: ligne.degre,
-        }));
-      });
+      alternatives = replisPourProtocole(draft.actions);
       const reference = buildPractitionerFoodCompassReference({
         ciqualCode: foodRef,
         foodLabel: manifest.label,

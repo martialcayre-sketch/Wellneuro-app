@@ -1,6 +1,14 @@
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
-import { estAssietteDIndication, getRecommendedPlate } from '@/lib/food-compass/plates';
-import type { DegreDeRepli, RepliAssietteDeclare } from '@/lib/food-compass/types';
+import {
+  assertCurrentRecommendedPlateRef,
+  estAssietteDIndication,
+  getRecommendedPlate,
+} from '@/lib/food-compass/plates';
+import type {
+  DegreDeRepli,
+  RecommendedPlateRef,
+  RepliAssietteDeclare,
+} from '@/lib/food-compass/types';
 import { INDICATIONS_ASSIETTES_V1, type LigneIndicationAssiette } from './indicationsAssiettesV1';
 
 // LES REPLIS D'ASSIETTE — UNE RELATION ORIENTÉE, ET LA TABLE EST VIDE ([[D-241]]).
@@ -229,4 +237,149 @@ export function replisDepuis(
   servables: readonly LigneRepliAssiette[] = replisServables(),
 ): readonly LigneRepliAssiette[] {
   return servables.filter(ligne => ligne.depuis === plateCode);
+}
+
+
+export type PlateSubstitutionDecision =
+  | {
+      status: 'none';
+      source: RecommendedPlateRef;
+      reason: 'practitioner_declined' | 'no_validated_alternative';
+      decidedBy: 'practitioner';
+    }
+  | {
+      status: 'proposed';
+      source: RecommendedPlateRef;
+      target: RecommendedPlateRef;
+      /** Le repli ATTESTÉ qui autorise cette cible — orienté, conditionné, gradué. */
+      repli: RepliAssietteDeclare;
+      justification: string;
+      decidedBy: 'practitioner';
+    };
+
+/**
+ * LA SUBSTITUTION EST ORIENTÉE, CONDITIONNÉE, ET NE LIT QUE DES REPLIS SERVABLES
+ * ([[D-241]]).
+ *
+ * ELLE VIT ICI, ET PAS DANS `plates.ts` — second tour de revue, et le motif est
+ * une doctrine, pas un goût. Tant qu'elle vivait là-bas, elle ne pouvait pas
+ * importer cette table (cycle), donc les replis lui arrivaient en paramètre : un
+ * appelant pouvait passer la table NUE, un brouillon, ou un tableau fabriqué.
+ * **Le point de service unique se contournait**, ce que [[D-225]] interdit —
+ * « le filtre est un POINT DE SORTIE, pas une consigne ». Ici, elle appelle
+ * `replisServables()` par défaut : le verrou fail-closed redevient inévitable.
+ *
+ * TROIS TERMES GARDENT LA DÉCISION, et aucun ne se supplée :
+ *
+ * - **LA DIRECTION.** `depuis` → `vers`, lue dans un seul sens. L'ancien
+ *   `substitutionFamily` était une étiquette comparée par égalité : trois
+ *   assiettes déclarées valaient SIX substitutions, alors qu'un repli est
+ *   presque toujours asymétrique.
+ * - **LA CONDITION.** Un repli n'est jamais valable « en général » : il l'est
+ *   pour une indication nommée. Sans ce terme, deux lignes du même couple
+ *   attestées pour des raisons différentes rendaient la recherche arbitraire.
+ * - **L'AXE, AUX DEUX BOUTS.** Un repère de moment de repas n'est adossé à aucun
+ *   protocole du corpus : il ne se prescrit pas, donc il ne se replie ni ne sert
+ *   de repli. Sans lui, la substitution serait le seul chemin du dépôt produisant
+ *   une référence d'assiette sans passer par `assertRefAssietteDIndication`.
+ *
+ * CE QU'ELLE NE PEUT PAS GARDER, et qui reste au chemin d'intégration : que
+ * l'assiette source soit réellement PRESCRITE sur ce dossier. Elle ne reçoit
+ * qu'une référence de catalogue ; la prescription se lit sur les actions du
+ * protocole.
+ *
+ * AUCUNE PROPOSITION AUTOMATIQUE : la cible reste un choix praticien, et la
+ * justification explicite reste exigée à chaque substitution.
+ */
+export function decidePlateSubstitution(input: {
+  source: RecommendedPlateRef;
+  /** L'indication pour laquelle l'assiette a été prescrite — obligatoire. */
+  indication: string;
+  targetPlateCode?: string | null;
+  justification?: string;
+  noProposalReason?: 'practitioner_declined' | 'no_validated_alternative';
+  /**
+   * Les replis qui font foi. **Par défaut, et c'est le point : ceux que le
+   * verrou laisse sortir.** Le paramètre n'existe que pour les bancs, qui
+   * doivent pouvoir éprouver la décision sur une table qu'ils maîtrisent — un
+   * appelant de production n'a aucune raison de le fournir.
+   */
+  replis?: readonly RepliAssietteDeclare[];
+}): PlateSubstitutionDecision {
+  const source = assertCurrentRecommendedPlateRef(input.source);
+  if (!input.targetPlateCode) {
+    return {
+      status: 'none',
+      source,
+      reason: input.noProposalReason ?? 'no_validated_alternative',
+      decidedBy: 'practitioner',
+    };
+  }
+  if (!estAssietteDIndication(source.plateCode)) {
+    throw new TypeError('Une assiette d’observation ne se replie pas : elle ne se prescrit pas.');
+  }
+  const target = getRecommendedPlate(input.targetPlateCode);
+  if (!target || target.plateCode === source.plateCode) {
+    throw new TypeError('Assiette de substitution invalide.');
+  }
+  if (!estAssietteDIndication(target.plateCode)) {
+    throw new TypeError('Une assiette d’observation ne peut pas servir de repli.');
+  }
+  const repli = (input.replis ?? replisServables()).find(
+    ligne => ligne.depuis === source.plateCode
+      && ligne.vers === target.plateCode
+      && ligne.indication === input.indication,
+  );
+  if (!repli) {
+    throw new TypeError('Aucun repli attesté ne va de cette assiette vers celle-là pour cette indication.');
+  }
+  const justification = input.justification?.trim() ?? '';
+  if (justification.length < 10) {
+    throw new TypeError('Une justification praticien explicite est requise.');
+  }
+  return {
+    status: 'proposed',
+    source,
+    target: { ...target.ref },
+    repli: {
+      depuis: repli.depuis,
+      vers: repli.vers,
+      indication: repli.indication,
+      degre: repli.degre,
+    },
+    justification,
+    decidedBy: 'practitioner',
+  };
+}
+
+/**
+ * LES REPLIS D'UN PROTOCOLE — ce que la route expose, extrait de la route.
+ *
+ * POURQUOI CETTE FONCTION EXISTE, et c'est un constat de revue : le calcul
+ * vivait dans `api/praticien/boussole/route.ts`, où **aucun banc ne l'exerçait**
+ * — le protocole de fixture n'a aucune assiette et la table réelle est vide, si
+ * bien que la branche n'était jamais atteinte. Un chemin qu'on décrit sans
+ * l'éprouver est un chemin qu'on croit connaître.
+ *
+ * Elle est aussi à sa place : la route est un ENVELOPPEUR HTTP, et le dépôt le
+ * dit de ses voisines. « Prescrite » se lit sur les actions du protocole, jamais
+ * au catalogue — c'est la garde que [[D-216]] §4 confiait au chemin
+ * d'intégration.
+ */
+export function replisPourProtocole(
+  actions: readonly { recommendedPlateRef?: { plateCode: string } }[],
+  servables: readonly LigneRepliAssiette[] = replisServables(),
+): readonly RepliAssietteDeclare[] {
+  const dejaVus = new Set<string>();
+  return actions.flatMap(action => {
+    const prescrite = action.recommendedPlateRef?.plateCode;
+    if (prescrite === undefined || dejaVus.has(prescrite)) return [];
+    dejaVus.add(prescrite);
+    return replisDepuis(prescrite, servables).map(ligne => ({
+      depuis: ligne.depuis,
+      vers: ligne.vers,
+      indication: ligne.indication,
+      degre: ligne.degre,
+    }));
+  });
 }

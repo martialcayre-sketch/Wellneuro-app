@@ -1,4 +1,4 @@
-import type { RecommendedPlateRef, RepliAssietteDeclare } from './types';
+import type { RecommendedPlateRef } from './types';
 
 export const C5B_PLATE_CATALOG_VERSION = 'c5b-plate-catalog-v1' as const;
 
@@ -486,116 +486,16 @@ export function assertCurrentRecommendedPlateRef(value: unknown): RecommendedPla
   return { ...plate.ref };
 }
 
-export type PlateSubstitutionDecision =
-  | {
-      status: 'none';
-      source: RecommendedPlateRef;
-      reason: 'practitioner_declined' | 'no_validated_alternative';
-      decidedBy: 'practitioner';
-    }
-  | {
-      status: 'proposed';
-      source: RecommendedPlateRef;
-      target: RecommendedPlateRef;
-      /** Le repli ATTESTÉ qui autorise cette cible — orienté, et gradué. */
-      repli: RepliAssietteDeclare;
-      justification: string;
-      decidedBy: 'practitioner';
-    };
-
-/**
- * LA SUBSTITUTION EST ORIENTÉE, ET ELLE NE PART QUE D'UNE ASSIETTE
- * PRESCRIPTIBLE ([[D-241]]).
- *
- * CE QUI A CHANGÉ, ET POURQUOI. Elle lisait `substitutionFamily` — une étiquette
- * d'appartenance, comparée par égalité, donc sans sens de lecture : A et B
- * partageant l'étiquette, elle attestait A→B ET B→A, et par transitivité toute
- * la clique. Trois assiettes déclarées valaient SIX substitutions. Un repli est
- * presque toujours asymétrique : le mécanisme le trahissait en l'élargissant en
- * silence. Elle lit désormais une relation ORIENTÉE, et `depuis` → `vers` ne
- * dit rien de `vers` → `depuis`.
- *
- * LES REPLIS ARRIVENT EN PARAMÈTRE, ET C'EST STRUCTUREL. La table vit dans
- * `lib/clinical/replisAssietteV1.ts`, qui importe ce module : l'importer en
- * retour ferait un cycle. Le paramètre n'a donc PAS de valeur par défaut — un
- * appelant ne peut pas oublier de dire quelle table fait foi, et le verrou
- * fail-closed reste à un seul endroit, au point de service de la table.
- *
- * L'AXE EST GARDÉ AUX DEUX BOUTS — [[D-240]] §10 nommait ce trou. Un repère de
- * MOMENT DE REPAS n'est adossé à aucun protocole du corpus : il ne se prescrit
- * pas, donc il ne se replie ni ne sert de repli. Sans ce terme, la substitution
- * serait le SEUL chemin du dépôt produisant une référence d'assiette sans
- * passer par `assertRefAssietteDIndication`.
- *
- * CE QU'ELLE NE PEUT PAS GARDER, ET QUI RESTE AU CHEMIN D'INTÉGRATION : que
- * l'assiette source soit réellement PRESCRITE sur ce dossier. Elle ne reçoit
- * qu'une référence de catalogue ; la prescription se lit sur les actions du
- * protocole, et c'est à l'appelant de l'établir.
- *
- * AUCUNE PROPOSITION AUTOMATIQUE : la cible reste un choix praticien, et la
- * justification explicite reste exigée à chaque substitution.
- */
-export function decidePlateSubstitution(input: {
-  source: RecommendedPlateRef;
-  replis: readonly RepliAssietteDeclare[];
-  /**
-   * L'INDICATION POUR LAQUELLE L'ASSIETTE A ÉTÉ PRESCRITE — obligatoire.
-   *
-   * Constat de revue. Sans ce terme, deux lignes attestant le même couple pour
-   * des indications différentes rendaient `.find()` arbitraire : la décision
-   * retenait la première et perdait la condition qui l'autorise. Un repli n'est
-   * jamais valable « en général » — la table le dit, la décision doit le lire.
-   */
-  indication: string;
-  targetPlateCode?: string | null;
-  justification?: string;
-  noProposalReason?: 'practitioner_declined' | 'no_validated_alternative';
-}): PlateSubstitutionDecision {
-  const source = assertCurrentRecommendedPlateRef(input.source);
-  if (!input.targetPlateCode) {
-    return {
-      status: 'none',
-      source,
-      reason: input.noProposalReason ?? 'no_validated_alternative',
-      decidedBy: 'practitioner',
-    };
-  }
-  if (!estAssietteDIndication(source.plateCode)) {
-    throw new TypeError('Une assiette d’observation ne se replie pas : elle ne se prescrit pas.');
-  }
-  const target = getRecommendedPlate(input.targetPlateCode);
-  if (!target || target.plateCode === source.plateCode) {
-    throw new TypeError('Assiette de substitution invalide.');
-  }
-  if (!estAssietteDIndication(target.plateCode)) {
-    throw new TypeError('Une assiette d’observation ne peut pas servir de repli.');
-  }
-  // LA DIRECTION SE LIT DANS UN SEUL SENS, ET LA CONDITION COMPTE AUTANT.
-  // Chercher la ligne inverse rétablirait la clique ; ignorer l'indication
-  // élargirait un repli attesté pour une raison à toutes les autres.
-  const repli = input.replis.find(
-    ligne => ligne.depuis === source.plateCode
-      && ligne.vers === target.plateCode
-      && ligne.indication === input.indication,
-  );
-  if (!repli) {
-    throw new TypeError('Aucun repli attesté ne va de cette assiette vers celle-là pour cette indication.');
-  }
-  const justification = input.justification?.trim() ?? '';
-  if (justification.length < 10) {
-    throw new TypeError('Une justification praticien explicite est requise.');
-  }
-  return {
-    status: 'proposed',
-    source,
-    target: { ...target.ref },
-    repli: {
-      depuis: repli.depuis,
-      vers: repli.vers,
-      indication: repli.indication,
-      degre: repli.degre,
-    },
-    justification,
-    decidedBy: 'practitioner',
-  };
-}
+// `PlateSubstitutionDecision` ET `decidePlateSubstitution` ONT DÉMÉNAGÉ vers
+// `lib/clinical/replisAssietteV1.ts` ([[D-241]], second tour de revue).
+//
+// POURQUOI ELLES NE POUVAIENT PAS RESTER ICI. La décision lit une TABLE SIGNÉE.
+// Tant qu'elle vivait dans ce module, elle ne pouvait pas l'importer — la table
+// importe `plates.ts`, et l'inverse ferait un cycle — donc les replis lui
+// arrivaient en PARAMÈTRE. Un appelant pouvait alors passer `REPLIS_ASSIETTE_V1`
+// nu, un brouillon, ou un tableau fabriqué à la main : **le point de service
+// unique se contournait**, et c'est exactement le défaut que [[D-225]] a posé en
+// doctrine — « le filtre est un POINT DE SORTIE, pas une consigne ».
+//
+// Chez la table, elle appelle `replisServables()` elle-même. Le verrou
+// fail-closed redevient inévitable au lieu d'être recommandé.

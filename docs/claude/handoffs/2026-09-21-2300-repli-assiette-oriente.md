@@ -153,6 +153,25 @@ Posée à l'identique, et elle FERME au lieu de jeter.
 **Trois mutations de plus, trois rouges** : condition ignorée dans la recherche,
 condition absente de la décision rendue, date non vérifiée.
 
+## 8 quater. Le second tour de revue — deux constats, deux retenus
+
+**UN CONTOURNEMENT QUE J'AVAIS CRÉÉ POUR ÉVITER UN CYCLE.**
+`decidePlateSubstitution` recevait les replis en paramètre, faute de pouvoir
+importer la table depuis `plates.ts`. Un appelant pouvait donc passer la table
+NUE, un brouillon, ou un tableau fabriqué — **le point de service unique se
+contournait**, ce que `D-225` interdit. La décision a déménagé CHEZ la table,
+où elle appelle `replisServables()` par défaut. Ses cas de banc l'ont suivie.
+
+**UN CHEMIN DÉCRIT SANS ÊTRE ÉPROUVÉ.** La projection vivait dans la route, où
+aucun banc ne l'atteignait — protocole de fixture sans assiette, table réelle
+vide. Extraite en `replisPourProtocole`, elle porte cinq cas.
+
+**ET UNE MUTATION RESTÉE VERTE, à retenir** : remplacer `replisServables()` par
+la table nue dans le défaut ne rougit AUCUN cas de comportement, la table étant
+vide. Une garde de SOURCE tient la forme, et dit pourquoi elle n'est pas un banc
+de comportement. Sans cette vérification par mutation, j'aurais annoncé une
+couverture que je n'avais pas.
+
 ## 9. Problèmes ouverts
 
 **LE QUATRIÈME POINT DU PROGRAMME, ET IL EST ENTIÈREMENT CLINIQUE.** Affirmer
