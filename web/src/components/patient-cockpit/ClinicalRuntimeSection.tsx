@@ -1276,7 +1276,7 @@ export function ClinicalRuntimeSection({
     setFoodCompassSelection(null);
   }, [readyDecisionCardId, activeVersionId]);
 
-  // LE DOSSIER ET SA CARTE PRÊTE — et la première rédaction s'y était trompée
+  // LE DOSSIER, ET RIEN QUE LUI — et la première rédaction s'y était trompée
   // dans l'autre sens (constat de revue).
   //
   // ELLE NOMMAIT AUSSI `readyDecisionCardId` ET `activeVersionId`, par symétrie
@@ -1288,10 +1288,10 @@ export function ClinicalRuntimeSection({
   // pendant que ces GET volaient encore voyait donc son choix **effacé en
   // silence**, sans message et sans cause visible.
   //
-  // CE QUE CETTE CLÉ NE PERD PAS. Le seul tort qu'une sélection persistante
-  // peut faire est de traverser vers un AUTRE DOSSIER ou une AUTRE CARTE PRÊTE
-  // du même dossier — c'est le défaut que le premier constat de revue visait.
-  // Une version enregistrée ne rend pas l'assiette moins indiquée POUR CE PATIENT ; et
+  // CE QUE LA RÉDUCTION NE PERD PAS. Le seul tort qu'une sélection persistante
+  // peut faire est de traverser vers un AUTRE DOSSIER — c'est le défaut que le
+  // premier constat de revue visait. Une carte de décision neuve ou une version
+  // enregistrée ne rendent pas l'assiette moins indiquée POUR CE PATIENT ; et
   // l'insertion, elle, vide la sélection par `onClearAssietteSelection`.
   //
   // UN EFFET À PART, et non une dépendance ajoutée au précédent : y glisser
@@ -1300,7 +1300,7 @@ export function ClinicalRuntimeSection({
   // nommé au handoff, non corrigé ici.
   useEffect(() => {
     setAssietteSelection(null);
-  }, [idPatient, readyDecisionCardId]);
+  }, [idPatient]);
 
   // CE QUI DESCEND AU CONSTRUCTEUR VIENT DE CE DOSSIER-CI, ET DE RIEN D'AUTRE.
   const assietteRetenue = assietteSelection !== null && assietteSelection.pour === idPatient
