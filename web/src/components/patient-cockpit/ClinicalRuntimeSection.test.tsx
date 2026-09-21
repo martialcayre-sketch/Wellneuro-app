@@ -640,12 +640,12 @@ describe('ClinicalRuntimeSection', () => {
     // ENREGISTRABLE DANS SON PROTOCOLE. Une indication clinique d'un dossier
     // écrite dans un autre.
     //
-    // CE QUE CE CAS GARDE EXACTEMENT, ET IL FAUT LE DIRE : la PROPRIETE, pas
-    // l'un des deux mecanismes. Le correctif en porte deux — l'effet de remise
-    // a zero et l'etat DATE du dossier — et chacun suffit seul : mesure faite,
+    // CE QUE CE CAS GARDE EXACTEMENT, ET IL FAUT LE DIRE : la PROPRIÉTÉ, pas
+    // l'un des deux mécanismes. Le correctif en porte deux — l'effet de remise
+    // à zéro et l'état DATÉ du dossier — et chacun suffit seul : mesure faite,
     // muter l'un OU l'autre laisse ce cas VERT, il ne rougit qu'en mutant les
-    // DEUX. C'est donc « la selection ne survit pas au changement de dossier »
-    // qui est tenu ici. Le rendu intermediaire, lui, n'est vu par aucun banc —
+    // DEUX. C'est donc « la sélection ne survit pas au changement de dossier »
+    // qui est tenu ici. Le rendu intermédiaire, lui, n'est vu par aucun banc —
     // `act()` fait tourner l'effet avant qu'il soit observable ([[D-237]]).
     const assiettes = (indiquees: unknown[]) => rep({
       ok: true, actif: true, shaPerimetre: 'a'.repeat(64),
@@ -657,10 +657,10 @@ describe('ClinicalRuntimeSection', () => {
       motif: 'âge 76 ans > 60', instruments: [], claims: ['WN-CL-0288-011::v1.0'],
     };
     const fetchMock = fetchParRoute({
-      // Quatre reponses de chaque cote : la section relit au montage ET a la
-      // bascule de dossier, et une file epuisee fait tomber le constructeur
-      // dans sa branche degradee — ou le bandeau n'existe pas, ce qui rendrait
-      // ce cas VACANT. Constate au DOM, pas suppose.
+      // Quatre réponses de chaque côté : la section relit au montage ET à la
+      // bascule de dossier, et une file épuisée fait tomber le constructeur
+      // dans sa branche dégradée — où le bandeau n'existe pas, ce qui rendrait
+      // ce cas VACANT. Constaté au DOM, pas supposé.
       cockpitGet: Array.from({ length: 4 }, () => rep(readyAvecCandidats())),
       assiettesIndiquees: [assiettes([ligne]), assiettes([]), assiettes([]), assiettes([])],
     });
@@ -678,11 +678,11 @@ describe('ClinicalRuntimeSection', () => {
     await screen.findByText(/Assiette indiquée retenue : Assiette protéinée/);
 
     rerender(<ClinicalRuntimeSection idPatient="PAT_AUTRE" {...proprietes} />);
-    // TEMOIN D'ANTI-VACUITE, ET IL A DEJA SERVI. Sans lui, ce cas passait pour
-    // la mauvaise raison : la file de reponses epuisee faisait echouer la
+    // TÉMOIN D'ANTI-VACUITÉ, ET IL A DÉJÀ SERVI. Sans lui, ce cas passait pour
+    // la mauvaise raison : la file de réponses épuisée faisait échouer la
     // relecture du cockpit, le constructeur tombait dans sa branche
-    // « Protocole indisponible » — et le bandeau etait absent quoi qu'il
-    // arrive. Constate au DOM. Le compteur d'actions n'existe que dans la
+    // « Protocole indisponible » — et le bandeau était absent quoi qu'il
+    // arrive. Constaté au DOM. Le compteur d'actions n'existe que dans la
     // branche VIVANTE du constructeur.
     await screen.findByText('Actions (0/3)');
     expect(screen.queryByText(/Assiette indiquée retenue/)).toBeNull();
