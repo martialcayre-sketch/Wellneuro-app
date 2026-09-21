@@ -1,4 +1,4 @@
-import type { RecommendedPlateRef } from './types';
+import type { RecommendedPlateRef, RepliAssietteDeclare } from './types';
 
 export const C5B_PLATE_CATALOG_VERSION = 'c5b-plate-catalog-v1' as const;
 
@@ -56,7 +56,21 @@ export type C5bRecommendedPlate = {
    * écrite par le praticien, comme le dit le commentaire du catalogue.
    */
   sourceProtocole: string | null;
-  /** Null tant qu'aucune famille d'équivalence clinique n'a été validée. */
+  /**
+   * SUPPLANTÉ PAR LA TABLE DE REPLIS ([[D-241]]), ET POURTANT IL RESTE — parce
+   * qu'il est HACHÉ.
+   *
+   * Ce champ était l'étiquette d'appartenance dont la comparaison faisait une
+   * CLIQUE COMPLÈTE : trois assiettes déclarées valaient six substitutions,
+   * dans les deux sens. La relation orientée vit désormais dans
+   * `lib/clinical/replisAssietteV1.ts`, hors du catalogue.
+   *
+   * POURQUOI ON NE LE SUPPRIME PAS. Il est l'un des QUATRE champs du
+   * `contentHash` — le retirer changerait l'empreinte de chaque entrée, donc
+   * périmerait toute référence déjà consignée, protocoles compris depuis
+   * [[D-240]]. Mesuré, pas supposé : le banc recalcule les deux cas. Il reste
+   * donc `null` partout, et un garde l'y tient.
+   */
   substitutionFamily: string | null;
   /**
    * Empreinte d'intégrité de l'entrée, sur `{ catalogVersion, plateCode, label,
@@ -483,20 +497,52 @@ export type PlateSubstitutionDecision =
       status: 'proposed';
       source: RecommendedPlateRef;
       target: RecommendedPlateRef;
-      substitutionFamily: string;
+      /** Le repli ATTESTÉ qui autorise cette cible — orienté, et gradué. */
+      repli: RepliAssietteDeclare;
       justification: string;
       decidedBy: 'practitioner';
     };
 
-/** Aucune proposition automatique : la cible est toujours un choix praticien. */
+/**
+ * LA SUBSTITUTION EST ORIENTÉE, ET ELLE NE PART QUE D'UNE ASSIETTE
+ * PRESCRIPTIBLE ([[D-241]]).
+ *
+ * CE QUI A CHANGÉ, ET POURQUOI. Elle lisait `substitutionFamily` — une étiquette
+ * d'appartenance, comparée par égalité, donc sans sens de lecture : A et B
+ * partageant l'étiquette, elle attestait A→B ET B→A, et par transitivité toute
+ * la clique. Trois assiettes déclarées valaient SIX substitutions. Un repli est
+ * presque toujours asymétrique : le mécanisme le trahissait en l'élargissant en
+ * silence. Elle lit désormais une relation ORIENTÉE, et `depuis` → `vers` ne
+ * dit rien de `vers` → `depuis`.
+ *
+ * LES REPLIS ARRIVENT EN PARAMÈTRE, ET C'EST STRUCTUREL. La table vit dans
+ * `lib/clinical/replisAssietteV1.ts`, qui importe ce module : l'importer en
+ * retour ferait un cycle. Le paramètre n'a donc PAS de valeur par défaut — un
+ * appelant ne peut pas oublier de dire quelle table fait foi, et le verrou
+ * fail-closed reste à un seul endroit, au point de service de la table.
+ *
+ * L'AXE EST GARDÉ AUX DEUX BOUTS — [[D-240]] §10 nommait ce trou. Un repère de
+ * MOMENT DE REPAS n'est adossé à aucun protocole du corpus : il ne se prescrit
+ * pas, donc il ne se replie ni ne sert de repli. Sans ce terme, la substitution
+ * serait le SEUL chemin du dépôt produisant une référence d'assiette sans
+ * passer par `assertRefAssietteDIndication`.
+ *
+ * CE QU'ELLE NE PEUT PAS GARDER, ET QUI RESTE AU CHEMIN D'INTÉGRATION : que
+ * l'assiette source soit réellement PRESCRITE sur ce dossier. Elle ne reçoit
+ * qu'une référence de catalogue ; la prescription se lit sur les actions du
+ * protocole, et c'est à l'appelant de l'établir.
+ *
+ * AUCUNE PROPOSITION AUTOMATIQUE : la cible reste un choix praticien, et la
+ * justification explicite reste exigée à chaque substitution.
+ */
 export function decidePlateSubstitution(input: {
   source: RecommendedPlateRef;
+  replis: readonly RepliAssietteDeclare[];
   targetPlateCode?: string | null;
   justification?: string;
   noProposalReason?: 'practitioner_declined' | 'no_validated_alternative';
 }): PlateSubstitutionDecision {
   const source = assertCurrentRecommendedPlateRef(input.source);
-  const sourcePlate = getRecommendedPlate(source.plateCode)!;
   if (!input.targetPlateCode) {
     return {
       status: 'none',
@@ -505,13 +551,23 @@ export function decidePlateSubstitution(input: {
       decidedBy: 'practitioner',
     };
   }
+  if (!estAssietteDIndication(source.plateCode)) {
+    throw new TypeError('Une assiette d’observation ne se replie pas : elle ne se prescrit pas.');
+  }
   const target = getRecommendedPlate(input.targetPlateCode);
   if (!target || target.plateCode === source.plateCode) {
     throw new TypeError('Assiette de substitution invalide.');
   }
-  if (!sourcePlate.substitutionFamily
-    || target.substitutionFamily !== sourcePlate.substitutionFamily) {
-    throw new TypeError('La substitution n’appartient pas à une famille clinique validée.');
+  if (!estAssietteDIndication(target.plateCode)) {
+    throw new TypeError('Une assiette d’observation ne peut pas servir de repli.');
+  }
+  // LA DIRECTION SE LIT DANS UN SEUL SENS. Chercher aussi la ligne inverse
+  // rétablirait la clique que ce lot existe pour défaire.
+  const repli = input.replis.find(
+    ligne => ligne.depuis === source.plateCode && ligne.vers === target.plateCode,
+  );
+  if (!repli) {
+    throw new TypeError('Aucun repli attesté ne va de cette assiette vers celle-là.');
   }
   const justification = input.justification?.trim() ?? '';
   if (justification.length < 10) {
@@ -521,7 +577,7 @@ export function decidePlateSubstitution(input: {
     status: 'proposed',
     source,
     target: { ...target.ref },
-    substitutionFamily: sourcePlate.substitutionFamily,
+    repli: { depuis: repli.depuis, vers: repli.vers, degre: repli.degre },
     justification,
     decidedBy: 'practitioner',
   };

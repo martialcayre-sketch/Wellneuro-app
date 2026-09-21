@@ -156,6 +156,30 @@ export type PatientFoodCompassView = {
   inputHash: string;
 };
 
+/**
+ * LE DEGRÉ D'UN REPLI — « proche » n'est pas « en dernier recours », et le
+ * mécanisme doit savoir le dire ([[D-241]]).
+ */
+export type DegreDeRepli = 'proche' | 'acceptable' | 'dernier_recours';
+
+/**
+ * UNE RELATION DE REPLI, RÉDUITE À CE QUI LA REND ORIENTÉE.
+ *
+ * Ce type vit ici, et non dans la table clinique, pour une raison de
+ * dépendances : `lib/clinical/replisAssietteV1.ts` importe `plates.ts`, donc
+ * `plates.ts` ne peut pas importer la table en retour. Le vocabulaire commun
+ * descend dans le module qui n'importe rien — `types.ts` — et les deux côtés
+ * s'y adossent. La table ÉTEND ce type avec ce qu'elle seule porte : l'identité
+ * de ligne, l'indication visée, le raccourci assumé et le statut.
+ */
+export type RepliAssietteDeclare = {
+  /** L'assiette PRESCRITE qu'on ne peut pas suivre. */
+  depuis: string;
+  /** Ce vers quoi elle se replie. L'inverse n'est jamais vrai par symétrie. */
+  vers: string;
+  degre: DegreDeRepli;
+};
+
 export type RecommendedPlateRef = {
   contractVersion: typeof C5_RECOMMENDED_PLATE_REF_VERSION;
   plateCode: string;

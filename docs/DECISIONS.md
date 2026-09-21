@@ -4,6 +4,123 @@
 
 ## Décisions actives
 
+### D-241 — Le repli d'assiette devient une relation ORIENTÉE, hors du catalogue ; la table est vide, et deux affirmations de D-240 étaient fausses
+
+- Date : 2026-09-21
+- Statut : accepté — LOT-03 du cadrage Boussole/Assiette, ouvert sur demande du
+  responsable (« Go lot 03 et lot 04 »), **exécuté dans la portée que la surface
+  de relecture du 2026-09-16 autorise** : le mécanisme, jamais les familles.
+- Domaine : catalogue d'assiettes C5B, substitution, route Boussole praticien.
+  **Aucune famille déclarée, aucune table signée, aucun `contentHash` touché,
+  aucune migration, aucun drapeau.**
+- Exécute les trois premiers points du programme de [[D-216]] §4. S'appuie sur
+  [[D-240]] (l'assiette prescrite), [[D-225]] (le filtre est un point de sortie),
+  [[D-230]] §5 (ce qui est hors du `contentHash` et pourquoi). **Corrige deux
+  affirmations de [[D-240]].**
+
+**1. CE QUE LE MÉCANISME NE SAVAIT PAS DIRE.** `substitutionFamily` est une
+**étiquette d'appartenance** portée par l'entrée de catalogue, comparée par
+égalité. Une étiquette n'a pas de sens de lecture : si A et B la partagent, le
+mécanisme atteste A→B **et** B→A, et par transitivité toute la clique.
+**Déclarer une famille de trois assiettes, c'est attester six substitutions.**
+Or un repli est presque toujours asymétrique — le mécanisme le trahissait en
+l'élargissant en silence, ce qui est la classe de défaut que [[D-208]] a fermée
+sur le catalogue de conduites. Il ne savait exprimer ni l'asymétrie, ni la
+condition, ni le degré, ni l'inclusion — qui est pourtant la relation que le
+corpus décrit.
+
+**2. LA RELATION SORT DU CATALOGUE, ET C'EST UNE CONTRAINTE D'EMPREINTE AVANT
+D'ÊTRE UN CHOIX DE DESIGN.** `substitutionFamily` est l'un des **quatre** champs
+du `contentHash` d'une entrée ; toute référence consignée porte ce hachage et
+`assertCurrentRecommendedPlateRef` refuse celle dont il a bougé. Poser la
+relation dans le catalogue aurait donc périmé des références déjà posées — et
+depuis [[D-240]], des protocoles en portent. La table vit dans
+`lib/clinical/replisAssietteV1.ts`, **hors du catalogue** : aucune entrée ne
+bouge d'un octet, ni `contentHash`, ni `refHash`, ni `C5B_PLATE_CATALOG_HASH`.
+Le champ supplanté **reste** dans l'empreinte, `null`, et son commentaire dit
+pourquoi on ne le supprime pas.
+
+**3. TROIS QUALITÉS DEVIENNENT DES CHAMPS.** La DIRECTION (`depuis` → `vers`,
+et l'inverse demande une seconde ligne attestée à part), la CONDITION
+(`indication` nomme l'`id` d'une ligne de `INDICATIONS_ASSIETTES_V1` — un repli
+n'est jamais valable « en général », et la désignation est **vérifiée**), le
+DEGRÉ (`proche`, `acceptable`, `dernier_recours`). S'y ajoute `raccourciAssume`,
+**obligatoire et non vide** : aucun claim ne fondant une substitution, il
+n'existe pas de ligne dont la justification irait de soi.
+
+**4. LA GARDE D'AXE, QUE [[D-240]] §10 NOMMAIT COMME MANQUANTE.** Elle est posée
+**aux deux bouts** : un repère de MOMENT DE REPAS n'est adossé à aucun protocole
+du corpus, il ne se prescrit pas — donc il ne se replie ni ne sert de repli.
+Sans ce terme, la substitution aurait été le **seul chemin du dépôt** produisant
+une référence d'assiette sans passer par `assertRefAssietteDIndication`.
+
+**5. LA TABLE ARRIVE EN PARAMÈTRE, ET LE PARAMÈTRE N'A PAS DE DÉFAUT.**
+`replisAssietteV1` importe `plates.ts` ; l'importer en retour ferait un cycle. Le
+vocabulaire commun descend donc dans `food-compass/types.ts`, qui n'importe rien,
+et la table voyage par paramètre. **Sans valeur par défaut** : un appelant ne
+peut pas oublier de dire quelle table fait foi, et le verrou fail-closed reste à
+un seul endroit — le point de service de la table.
+
+**6. ON NE SIGNE PAS UNE ABSENCE.** Le verrou refuse la table **vide**, même
+sous une signature par ailleurs valide : sans quoi la table deviendrait signée
+sans que personne n'ait rien relu, et la première ligne écrite entrerait sous
+une attestation acquise. L'état nominal « aucun repli déclaré » se sert par
+`replisServables`, qui rend une liste vide **sans rien attester** — c'est la
+distinction entre une absence déclarée et un vide couvert par une signature.
+
+**7. LE CHEMIN EST OUVERT, ET IL RESTE VIDE POUR UNE AUTRE RAISON QU'AVANT.**
+`alternatives` était un **tuple vide littéral** dans la réponse de la route
+Boussole praticien : une liste que le CONTRAT interdisait de remplir. [[D-216]]
+§4 le nommait — « une famille validée resterait aujourd'hui aussi invisible que
+l'absence actuelle ». Elle porte désormais les replis attestés des assiettes
+**prescrites du protocole actif** — car « prescrite » se lit sur les actions,
+pas au catalogue, et c'est la garde que [[D-216]] §4 confiait au chemin
+d'intégration. Le jour où une ligne sera attestée, elle arrivera là **sans
+qu'une ligne de cette route change**.
+
+**8. LA TABLE N'ENTRE PAS À LA MATRICE DE CONSOMMATION, ET C'EST LA CONVENTION
+QUI LE DIT.** Une source y entre « le jour où elle atteint un ÉCRAN, pas le jour
+où elle a été signée ». Celle-ci atteint une réponse d'API qu'aucun composant ne
+rend. Elle y entrera avec l'écran, pas avant. Ce que la matrice a mesuré en
+revanche, et qui est juste : la table d'indications passe de une à deux surfaces
+indirectes, puisque la table de replis la lit pour vérifier ses désignations.
+
+**9. DEUX AFFIRMATIONS DE [[D-240]] ÉTAIENT FAUSSES, RELEVÉES EN CONTRE-LECTURE
+ET VÉRIFIÉES SUR PIÈCE.**
+
+**(a) Le coût d'une famille déclarée n'est pas celui que j'ai écrit.** [[D-240]]
+§10 dit qu'elle « périmerait les protocoles qui les portent », ce qui se lit
+comme un écran patient qui s'éteint. **C'est faux, et c'est [[D-240]] elle-même
+qui l'a rendu faux** : `assertProtocolDraftPlateStructure` ne confronte JAMAIS
+la référence au catalogue — délibérément, pour qu'un protocole diffusé ne
+s'éteigne pas parce que le catalogue a bougé. La lecture est donc immunisée. Ce
+qui casse est l'**ÉCRITURE** : toute révision resoumet la référence, qui est
+re-dérivée et refusée. La conséquence réelle est **un protocole qu'on ne peut
+plus réviser**, pas un patient privé de son écran. Plus étroit, mais pas moins
+sérieux — et le chiffrer demande une lecture de production que ce lot n'a pas
+faite.
+
+**(b) Ce n'est pas `resolvePatientFoodCompassView` qui exige V2.** [[D-240]] §11
+la nomme ; elle ne teste aucune version. Le refus vit dans
+`buildPatientFoodCompassView` (`contextual.ts:160`), et son `TypeError` est
+**avalé** par le `catch { return null; }` de `patientReference.ts`. Un protocole
+hors V2 ne produit donc pas un refus : il produit **une Boussole qui disparaît
+en silence**. L'exclusivité V2/V4 reste vraie, et elle est **unilatérale** — V2
+exige au moins une référence C5, V4 n'exige aucune assiette.
+
+**CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
+décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse
+logique de l'échange, et `DC-19`/`DC-20` interdisent d'affirmer ce qu'aucune
+source ne fonde. Il ne signe rien — **une signature clinique ne se pose jamais
+par l'outil**. Il ne touche à aucun `contentHash`, n'ajoute aucune route,
+aucun drapeau, aucune migration, et ne sert rien de neuf au patient.
+
+**CE QUI RESTE DEVANT LES FAMILLES — le quatrième point du programme, et il est
+entièrement clinique.** Affirmer que telle assiette est un repli acceptable de
+telle autre, pour une indication nommée, en écrivant ce que la ligne ajoute
+au-delà des claims. Le mécanisme sait désormais porter cette affirmation sans la
+déformer ; il ne peut pas la produire.
+
 ### D-240 — L'assiette indiquée devient une unité d'action ; et le tableau du cadrage faisait lire comme des questions deux directions déjà rendues
 
 - Date : 2026-09-21
@@ -127,7 +244,10 @@ refus de symétrie, pour qu'une révision bien intentionnée ne l'« aligne » p
 assiettes attestent six substitutions dans les deux sens), une garde restreignant
 la substitution aux assiettes **prescrites**, et un chemin qui l'expose. **Ce lot
 fournit le second : « assiette prescrite » a désormais un sens vérifiable.** Il
-en renchérit le prix, et c'est la part qu'il faut écrire : jusqu'ici aucune
+en renchérit le prix — ⚠️ *chiffrage CORRIGÉ par [[D-241]] §9(a) : ce qui casse
+est la RÉVISION d'un protocole, pas sa lecture ni l'écran du patient, que le §9
+de cette entrée avait précisément immunisés* — et c'est la part qu'il faut
+écrire : jusqu'ici aucune
 référence des DOUZE assiettes d'indication n'était persistable — le seul porteur
 d'une `RecommendedPlateRef` en base était l'épisode d'observation, que
 `assertRefAssietteDObservation` réserve aux trois repères. Remplir une famille
@@ -145,7 +265,10 @@ point de départ**, et ce lot le crée. Ce qui reste devant LOT-04 est nommé ic
 parce qu'il n'était écrit nulle part : **les contrats V2 et V4 sont aujourd'hui
 mutuellement exclusifs.** `normalizeActions` refuse TOUT `foodCompassRef` — le
 chemin V2 le réinjecte après coup —, `buildFoodCompassProtocolV2FromSource` n'accepte qu'une cible V1, et
-`resolvePatientFoodCompassView` exige `draft.version === V2`. Un protocole ne
+le refus V2 vit dans `buildPatientFoodCompassView` — ⚠️ *et NON dans
+`resolvePatientFoodCompassView`, nommée ici à tort ; corrigé par [[D-241]] §9(b),
+qui ajoute que ce refus est **avalé** et rend donc une Boussole absente en
+silence plutôt qu'une erreur*. Un protocole ne
 peut donc pas porter à la fois une assiette et la Boussole de son aliment — c'est
 le vrai verrou de LOT-04, et il n'est ni ouvert ni contourné ici.
 

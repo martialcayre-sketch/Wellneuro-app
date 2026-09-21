@@ -7657,3 +7657,22 @@ patient A enregistrable chez B.
 
 **Ouvert.** `LOT-03` attend une source d'équivalence qu'aucun claim ne fonde ;
 `LOT-04` bute sur l'exclusivité des contrats V2 et V4.
+
+## 2026-09-21 — LOT-03 : le repli d'assiette devient orienté, la table reste vide (D-241)
+
+**Décision.** La relation sort du catalogue — `substitutionFamily` est l'un des
+quatre champs du `contentHash`, l'y toucher périmerait des références. La table
+`replisAssietteV1` porte trois qualités que l'étiquette ne savait pas dire : la
+DIRECTION, l'INDICATION visée, le DEGRÉ. Garde d'axe **aux deux bouts**. Le
+verrou refuse la table vide : **on ne signe pas une absence**.
+
+**Écartées.** Un champ sur l'assiette — il aurait périmé les empreintes. Une
+famille déclarée — aucun claim ne fonde une substitution, le corpus décrit
+l'inclusion et l'association, qui en sont l'inverse.
+
+**Corrigé.** Deux affirmations de `D-240` : le coût d'une famille est un
+protocole non révisable, pas un écran éteint ; et c'est
+`buildPatientFoodCompassView` qui exige V2, dont le refus est avalé.
+
+**Ouvert.** Le quatrième point du programme — l'affirmation clinique — et
+`LOT-04`.
