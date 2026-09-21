@@ -45,6 +45,21 @@ datée, pas un mécanisme** — l'inférence « le déploiement attend derrière
 `release-db` » a déjà été affirmée puis corrigée, un handoff du 2026-09-12
 documentant une autre cause pour un cas semblable.
 
+**Ce que la carte pourra réellement servir — mesuré, et ça ferme une
+contradiction.** Le handoff de `D-236` dit `Q_GAS_01` hors du pack de base ;
+`QUESTIONNAIRE_OVERRIDES` le liste au socle. **Les deux disaient vrai sur deux
+objets différents** : la base porte **8 packs et un seul `actif`** — celui par
+défaut, 5 qids, sans `Q_GAS_01` —, tandis que `PACK_SOCLE_INIT` le porte bien
+mais est inactif, comme les sept packs thématiques. `Q_GAS_01` n'est donc dans
+**aucun pack actif**. Mesuré ici par conteneur détaché le 2026-09-21. La borne
+d'âge de la ligne protéinée touche **1 dossier sur 29**, et 15 n'ont aucune date
+de naissance — ce qui **réfute une phrase de `D-237` §12**, corrigée en place par
+une note datée : l'ampleur y avait été supposée, jamais mesurée.
+
+Rapportés par la session d'origine et **non relus ici**, donc attribués :
+`Q_INF_03` 18 patients, `Q_GAS_01` 5, `Q_GEO_02` **zéro passation**, et 20 claims
+demandés pour 20 valides — donc `retireesFauteDeClaim = 0`.
+
 **Une correction de compte, portée ici plutôt que dans le handoff mergé.** Son
 § 6 annonce « 57 » cas pour les trois bancs neufs ; le recompte sur `main` en
 donne **59** (26 + 12 + 21), deux cas ayant été ajoutés au banc du panneau au
