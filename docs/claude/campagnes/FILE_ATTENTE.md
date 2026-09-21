@@ -152,7 +152,14 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   **Réserve reportée, non corrigée** : `catalogueConduitesV1` (signée le
   2026-09-17) n'a toujours **aucun consommateur** et **n'est pas** à la matrice
   de consommation. Même profil que celle-ci la veille.
-  **RÉSERVE NEUVE, PRÉEXISTANTE À CE LOT ET NON CORRIGÉE ICI** : le garde
+  **RÉSERVE FERMÉE LE 2026-09-21 par [[D-238]]** — et la mesure sur l'artefact a
+  corrigé le constat dans les deux sens : le chunk portait bien les 20 règles sur
+  20, 52 identifiants de claims, les bornes de comparaison et crypto-browserify,
+  mais **pas** le texte du corpus, et son nom n'est pas énumérable publiquement.
+  Six chaînes fautives, toutes par le même goulot : un import de quatre chaînes
+  de caractères. Après correction : 0 règle, 0 claim, 0 seuil, 0 crypto. Le garde
+  suit désormais la clôture transitive. Ce qui suit décrit l'état ANTÉRIEUR :
+  le garde
   `bundleClient.guard.test.ts` ne lit que les spécifieurs `@/lib/clinical/…`, et
   la chaîne `PropositionBilanPanel` (`'use client'`) → `biology-library/courrier`
   → `biology-library/statuts` → `orientationEngine` + `corpusSyntheseV1` **le
