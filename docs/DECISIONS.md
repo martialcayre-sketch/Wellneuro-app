@@ -4,6 +4,57 @@
 
 ## Décisions actives
 
+### D-239 — B1 est tranché : `attachFoodCompassRef` est retirée, et ce n'était pas du code mort mais une seconde façon de faire
+
+- Date : 2026-09-21
+- Statut : accepté — **arbitrage du responsable**, rendu en séance après que la carte des assiettes indiquées a servi son premier dossier réel
+- Domaine : produit et clinique (protocole, Boussole), praticien
+- Décision : retirer la fonction, et corriger la prémisse sur laquelle l'arbitrage était posé.
+
+**1. CE QUI A DÉCLENCHÉ L'ARBITRAGE, ET C'EST UN FAIT NOUVEAU.** Le drapeau
+`WN_ASSIETTES_INDIQUEES` a été posé le 2026-09-20 et **constaté le 2026-09-21** :
+le journal d'accès porte `/api/praticien/assiettes-indiquees`, cinq lectures
+servies sur deux dossiers. Au premier usage, le responsable a formulé le manque
+depuis l'écran — « les assiettes s'affichent sans possibilité de sélection ni de
+validation ». C'est conforme à [[D-237]] §7, qui s'interdit tout geste ; mais le
+manque a désormais une **date de demande**, et plus seulement une date
+d'écriture. B2 étant tranché depuis le 2026-09-18 ([[D-230]]), B1 était le
+dernier verrou devant LOT-01, donc LOT-02.
+
+**2. LA PRÉMISSE DU CADRAGE ÉTAIT INEXACTE, ET L'ARBITRAGE SURVIT À SA
+CORRECTION.** Le cadrage décrit `attachFoodCompassRef` comme « morte de bout en
+bout ». C'est vrai de la FONCTION — aucun appelant hors son propre banc — et
+**faux du champ qu'elle posait** : `foodCompassRef` est vivant, écrit au geste
+praticien par `ProtocolMiniBuilder` et lu par la voie patient
+(`api/portail/protocole`, `api/portail/boussole/[foodRef]`). La première
+formulation de l'arbitrage — « la granularité a changé, l'aliment n'est plus que
+du contenu » — aurait donc enterré une fonctionnalité en service. Elle est
+corrigée ici avant d'être consignée.
+
+**3. LA VRAIE RAISON EST MEILLEURE : UN INVARIANT TENU DEUX FOIS, DONT LA COPIE
+FAIBLE.** `api/praticien/protocoles/versions` exige un protocole source actif,
+refuse si C5 est éteinte, appelle `assertFoodCompassActionRef` contre le
+brouillon actif — puis **RE-DÉRIVE** la référence depuis les données officielles
+et compare son `refHash`. Elle ne valide pas ce qu'on lui soumet : elle le
+recalcule. La fonction retirée, elle, validait une référence **soumise**. Un
+fail-closed dupliqué est un fail-closed qu'on oublie de corriger dans l'une de
+ses deux copies ; ici la copie retirée était déjà la plus faible.
+
+**4. LE BANC LE PLUS FOURNI COUVRAIT LE CHEMIN MORT.** `foodCompass.test.ts`
+consacrait un cas entier aux gardes d'`attachFoodCompassRef`, quand le
+constructeur VIVANT — `buildFoodCompassProtocolV2FromSource`, appelé en
+`versions/route.ts:472` — est éprouvé ailleurs, par `patientReference.test.ts`.
+Les assertions visant les gardes propres de la fonction sont parties avec elle ;
+celles qui s'en servaient comme FIXTURE ont gardé leur objet — gardes de
+`reconstructProtocolDraft` sur un brouillon persisté, relecture, caducité de
+l'approbation. Le brouillon V2 est désormais fabriqué par une fixture locale
+**qui ne garde rien et ne prétend rien garder**, et le dit.
+
+**CE QUE LE LOT NE FAIT PAS.** Il ne rend **pas** encore l'assiette
+sélectionnable : c'est LOT-02, que ce retrait débloque. Il ne touche **ni au
+champ `foodCompassRef`, ni à la voie patient, ni à aucune table signée, ni à
+aucun seuil**. Aucune migration, aucun drapeau, aucun geste d'exploitation.
+
 ### D-238 — Le garde du paquet client ne voyait que le PREMIER pas : six chaînes atteignaient la couche clinique par un voisin, et l'artefact le montrait
 
 - Date : 2026-09-21
