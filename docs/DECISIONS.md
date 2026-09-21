@@ -94,6 +94,25 @@ lot, pas une ligne — la même raison qui rendait celui-ci petit. Ce qu'il faut
 retenir : **tout module dont le nom PRÉFIXE celui d'un autre du même dossier
 fausse cette matrice**, dans un sens ou dans l'autre.
 
+**8. LA RÈGLE DES FEUILLES AVAIT UN TROU, ET LA PREMIÈRE RÉDACTION DE CE LOT
+L'AVAIT ÉLARGI.** Constat de Copilot, poussé sur la branche, vérifié sur pièce et
+retenu. `feuillesAutorisees()` appelait `importsDeValeur()`, qui **résout** les
+spécifieurs et écarte donc les paquets npm. Un module clinique dont le seul
+import de valeur est un paquet passait pour une FEUILLE — et
+`corpusSyntheseV1.ts` est exactement ce cas : son unique import est
+`createHash` de `'crypto'`. **Le corpus devenait donc importable par un composant
+client avec la bénédiction du garde**, c'est-à-dire l'inverse exact de ce que
+[[D-084]] et ce banc existent pour empêcher. Le défaut est le mien : la version
+d'avant ce lot ne parcourait pas les chaînes, mais sa liste de feuilles était
+construite sur la même fonction que sa détection — en séparant les deux, j'ai
+fait dépendre l'exception d'un test qui ne la voyait plus.
+
+La règle se lit désormais sur les **spécifieurs**, pas sur les chemins résolus :
+un import de paquet suffit à sortir un module de l'exception. Les imports
+LATÉRAUX (`import './module'`) entrent au passage comme arêtes de valeur. Neuf
+modules restent feuilles ; le corpus n'en est plus. **Mutation vérifiée** :
+rendre la règle à sa version résolue fait rougir le cas neuf, et lui seul.
+
 **CE QUE LE LOT NE FAIT PAS.** Il ne touche à **aucune règle, aucun seuil, aucun
 claim, aucune signature** : le vocabulaire déplacé est quatre chaînes de
 caractères et un type. Il ne change **aucun comportement** — ni serveur, ni

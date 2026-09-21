@@ -97,6 +97,26 @@ autre du même dossier fausse cette matrice** — rapporté, non corrigé : pose
 frontière de mot changerait d'autres lignes d'un document d'audit, et cela
 demande son propre lot.
 
+## 8 bis. Copilot a poussé sur la branche, et il avait raison
+
+**LE CI N'A JAMAIS TOURNÉ** : `wn-attendre-ci` a rendu `2` avec sa cause écrite —
+le commit de tête était attribué à Copilot, donc le run passe en
+`action_required`. Piège connu, et la réparation est de pousser un commit réel
+sous le compte du dépôt.
+
+**MAIS SES DEUX COMMITS CORRIGENT UN VRAI DÉFAUT DU MIEN.**
+`feuillesAutorisees()` mesurait « ce module n'importe rien » sur les chemins
+RÉSOLUS — donc en écartant les paquets npm. `corpusSyntheseV1.ts`, dont l'unique
+import de valeur est `createHash` de `'crypto'`, était donc classé FEUILLE : un
+composant client aurait pu l'importer, corpus compris, **et le garde l'aurait
+autorisé**. Vérifié sur pièce avant d'accepter, puis par mutation — rendre la
+règle à ma version fait rougir le cas neuf, et lui seul. Neuf modules restent
+feuilles ; le corpus n'en est plus.
+
+Le défaut est le mien, et sa forme mérite d'être retenue : j'ai séparé la
+détection (transitive, sur chemins) de l'exception (sur la même fonction), si
+bien que **l'exception a cessé de voir ce que la détection avait appris**.
+
 ## 9. Problèmes ouverts
 
 - **Le défaut de `mentionne()` reste ouvert** (ci-dessus). Aucun lot.

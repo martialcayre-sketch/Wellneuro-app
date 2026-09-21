@@ -48,6 +48,14 @@ le confirme de son côté, sans rien savoir du lot : deux sources cliniques
 perdent une surface cliente — le corpus de synthèse passe de 29 à 28, la table
 d'indications biologiques de 5 à 4.
 
+**Et la règle des FEUILLES avait un trou, que ce lot avait élargi — constat de
+revue retenu.** Elle demandait « ce module n'importe rien », mais le mesurait sur
+les chemins RÉSOLUS, donc en écartant les paquets npm. Un module clinique dont le
+seul import est `'crypto'` passait pour une feuille — et c'est le cas du corpus
+de synthèse lui-même, qui devenait ainsi importable par un composant client avec
+la bénédiction du garde. La règle se lit maintenant sur les spécifieurs ; neuf
+modules restent feuilles, le corpus n'en est plus.
+
 **Un faux positif a été introduit puis retiré en chemin, et il est écrit parce
 qu'il attend le prochain.** Le module feuille s'appelait d'abord
 `statutsVocabulaire.ts` ; la matrice s'est mise à déclarer le panneau
