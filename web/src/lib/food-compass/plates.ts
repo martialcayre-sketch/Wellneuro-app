@@ -538,6 +538,15 @@ export type PlateSubstitutionDecision =
 export function decidePlateSubstitution(input: {
   source: RecommendedPlateRef;
   replis: readonly RepliAssietteDeclare[];
+  /**
+   * L'INDICATION POUR LAQUELLE L'ASSIETTE A ÉTÉ PRESCRITE — obligatoire.
+   *
+   * Constat de revue. Sans ce terme, deux lignes attestant le même couple pour
+   * des indications différentes rendaient `.find()` arbitraire : la décision
+   * retenait la première et perdait la condition qui l'autorise. Un repli n'est
+   * jamais valable « en général » — la table le dit, la décision doit le lire.
+   */
+  indication: string;
   targetPlateCode?: string | null;
   justification?: string;
   noProposalReason?: 'practitioner_declined' | 'no_validated_alternative';
@@ -561,13 +570,16 @@ export function decidePlateSubstitution(input: {
   if (!estAssietteDIndication(target.plateCode)) {
     throw new TypeError('Une assiette d’observation ne peut pas servir de repli.');
   }
-  // LA DIRECTION SE LIT DANS UN SEUL SENS. Chercher aussi la ligne inverse
-  // rétablirait la clique que ce lot existe pour défaire.
+  // LA DIRECTION SE LIT DANS UN SEUL SENS, ET LA CONDITION COMPTE AUTANT.
+  // Chercher la ligne inverse rétablirait la clique ; ignorer l'indication
+  // élargirait un repli attesté pour une raison à toutes les autres.
   const repli = input.replis.find(
-    ligne => ligne.depuis === source.plateCode && ligne.vers === target.plateCode,
+    ligne => ligne.depuis === source.plateCode
+      && ligne.vers === target.plateCode
+      && ligne.indication === input.indication,
   );
   if (!repli) {
-    throw new TypeError('Aucun repli attesté ne va de cette assiette vers celle-là.');
+    throw new TypeError('Aucun repli attesté ne va de cette assiette vers celle-là pour cette indication.');
   }
   const justification = input.justification?.trim() ?? '';
   if (justification.length < 10) {
@@ -577,7 +589,12 @@ export function decidePlateSubstitution(input: {
     status: 'proposed',
     source,
     target: { ...target.ref },
-    repli: { depuis: repli.depuis, vers: repli.vers, degre: repli.degre },
+    repli: {
+      depuis: repli.depuis,
+      vers: repli.vers,
+      indication: repli.indication,
+      degre: repli.degre,
+    },
     justification,
     decidedBy: 'practitioner',
   };

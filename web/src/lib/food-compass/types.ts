@@ -177,6 +177,19 @@ export type RepliAssietteDeclare = {
   depuis: string;
   /** Ce vers quoi elle se replie. L'inverse n'est jamais vrai par symétrie. */
   vers: string;
+  /**
+   * POUR QUELLE INDICATION ce repli vaut — l'`id` d'une ligne d'indication.
+   *
+   * ELLE EST DANS LE TYPE PARTAGÉ, ET PAS SEULEMENT DANS LA TABLE — constat de
+   * revue, et il visait une négligence réelle : la première rédaction faisait
+   * de `indication` un champ OBLIGATOIRE de la ligne, puis le laissait tomber
+   * partout en aval. Deux replis de même direction et de conditions
+   * différentes devenaient alors indiscernables, et la décision choisissait
+   * silencieusement le premier. C'est exactement la classe de défaut que ce lot
+   * existe pour fermer — corrigée sur la direction, reproduite sur la
+   * condition.
+   */
+  indication: string;
   degre: DegreDeRepli;
 };
 

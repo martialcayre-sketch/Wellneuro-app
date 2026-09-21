@@ -50,17 +50,6 @@ export type LigneRepliAssiette = RepliAssietteDeclare & {
   /** Identité de la ligne, stable dans le périmètre signé. */
   id: string;
   /**
-   * POUR QUELLE INDICATION ce repli est acceptable — l'`id` d'une ligne de
-   * `INDICATIONS_ASSIETTES_V1`, jamais un texte libre.
-   *
-   * C'est une DÉSIGNATION, et elle est vérifiée : une ligne qui nommerait une
-   * indication inexistante est une anomalie, donc la table entière cesse d'être
-   * servable. Sans ce terme, un repli vaudrait pour toutes les raisons d'avoir
-   * prescrit l'assiette — or c'est l'indication qui décide si un remplacement
-   * garde le sens de la prescription.
-   */
-  indication: string;
-  /**
    * CE QUE LA LIGNE AJOUTE AU-DELÀ DES CLAIMS, et il n'y a pas de ligne sans.
    *
    * Aucun claim ne fonde une substitution : toute ligne est un raccourci assumé.
@@ -116,6 +105,24 @@ export const REPLIS_ASSIETTE_METADATA: ReplisAssietteMetadata = {
 };
 
 const DEGRES: readonly DegreDeRepli[] = ['proche', 'acceptable', 'dernier_recours'];
+
+/**
+ * UNE DATE D'ATTESTATION SE VÉRIFIE — constat de revue, et les deux tables
+ * sœurs le faisaient déjà (`indicationsAssiettesV1`, `tableRepliV1`).
+ *
+ * Sans ce terme, une métadonnée portant `validationExterne: true`,
+ * `dateValidation: 'pas une date'` et le bon sha ouvrait la table. Une date
+ * d'attestation qu'on ne peut pas lire n'atteste rien.
+ *
+ * `getTime()` D'ABORD : `toISOString()` JETTE sur une date invalide, et un
+ * verrou doit FERMER, jamais jeter.
+ */
+function estIsoCanonique(valeur: string | null): valeur is string {
+  if (valeur === null) return false;
+  const date = new Date(valeur);
+  if (Number.isNaN(date.getTime())) return false;
+  return date.toISOString() === valeur;
+}
 
 /**
  * CE QU'UNE LIGNE NE PEUT PAS ÊTRE — et chaque anomalie ferme le service ENTIER,
@@ -182,7 +189,7 @@ export function replisAssietteSignes(
 ): boolean {
   if (lignes.length === 0) return false;
   if (signature.validationExterne !== true) return false;
-  if (signature.dateValidation === null) return false;
+  if (!estIsoCanonique(signature.dateValidation)) return false;
   if (signature.shaPerimetre === null) return false;
   if (signature.shaPerimetre !== shaPerimetreReplisAssiette(lignes)) return false;
   const identifiants = new Set<string>();

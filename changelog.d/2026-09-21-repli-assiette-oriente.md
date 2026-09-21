@@ -39,6 +39,16 @@ décrit l'inclusion, l'association et la parenté de modèle — les trois sont
 l'inverse logique de l'échange. Une ligne écrite ici serait une affirmation
 clinique nouvelle, qui appartient au praticien.
 
+**LA REVUE A TROUVÉ LE MÊME DÉFAUT UN CRAN PLUS LOIN.** `indication` était un
+champ obligatoire de la ligne — un repli n'est jamais valable « en général » —
+mais elle tombait partout en aval : la décision cherchait sur le seul couple
+`depuis`/`vers`, et la projection de la route la supprimait. Deux replis attestés
+pour des raisons différentes devenaient donc interchangeables. C'est
+l'élargissement silencieux que la clique produisait, rejoué sur la condition au
+lieu de la direction. Elle descend désormais dans le type partagé et voyage
+jusqu'au client. Et le verrou n'exigeait de sa date d'attestation que « non
+nulle », là où ses deux tables sœurs vérifient l'ISO canonique.
+
 **Deux affirmations de `D-240` étaient fausses, et elles sont corrigées à leur
 place.** Le coût d'une famille déclarée n'est pas un écran patient qui s'éteint
 mais un protocole qu'on ne peut plus réviser — la relecture avait justement été

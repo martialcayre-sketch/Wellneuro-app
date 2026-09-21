@@ -156,8 +156,17 @@ export async function GET(request: Request): Promise<NextResponse<PractitionerFo
         const prescrite = action.recommendedPlateRef?.plateCode;
         if (prescrite === undefined || dejaVus.has(prescrite)) return [];
         dejaVus.add(prescrite);
-        return replisDepuis(prescrite, servables)
-          .map(ligne => ({ depuis: ligne.depuis, vers: ligne.vers, degre: ligne.degre }));
+        // LA CONDITION VOYAGE AVEC LA RELATION — constat de revue. La projeter
+        // sans `indication` rendait indiscernables deux replis de même
+        // direction attestés pour des raisons différentes, et les présentait
+        // tous comme applicables. L'identité de la ligne, elle, reste au
+        // dépôt : le client n'a pas à la connaître pour distinguer.
+        return replisDepuis(prescrite, servables).map(ligne => ({
+          depuis: ligne.depuis,
+          vers: ligne.vers,
+          indication: ligne.indication,
+          degre: ligne.degre,
+        }));
       });
       const reference = buildPractitionerFoodCompassReference({
         ciqualCode: foodRef,

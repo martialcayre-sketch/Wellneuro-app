@@ -87,6 +87,19 @@ describe('Le verrou — chaque terme ferme, et aucun ne se supplée', () => {
     expect(replisAssietteSignes({ ...bonne, shaPerimetre: 'a'.repeat(64) }, lignes)).toBe(false);
   });
 
+  it('UNE DATE D’ATTESTATION SE VÉRIFIE — constat de revue, et les deux tables sœurs le faisaient déjà', () => {
+    // La première rédaction n'exigeait que `!== null` : une métadonnée portant
+    // `validationExterne: true`, une date illisible et le BON sha ouvrait la
+    // table. Une date d'attestation qu'on ne peut pas lire n'atteste rien.
+    const lignes = [ligne()];
+    const bonne = signeePour(lignes);
+    for (const date of ['pas une date', '2026-09-21', '2026-13-45T00:00:00.000Z', '']) {
+      expect(replisAssietteSignes({ ...bonne, dateValidation: date }, lignes)).toBe(false);
+    }
+    // Et un verrou FERME au lieu de jeter, même sur une date invalide.
+    expect(() => replisAssietteSignes({ ...bonne, dateValidation: 'pas une date' }, lignes)).not.toThrow();
+  });
+
   it('LE PÉRIMÈTRE PORTE LES LIGNES EN ENTIER — une ligne retouchée périme l’attestation', () => {
     const lignes = [ligne()];
     const signature = signeePour(lignes);

@@ -108,6 +108,32 @@ hors V2 ne produit donc pas un refus : il produit **une Boussole qui disparaît
 en silence**. L'exclusivité V2/V4 reste vraie, et elle est **unilatérale** — V2
 exige au moins une référence C5, V4 n'exige aucune assiette.
 
+**10. LA REVUE A TROUVÉ TROIS CONSTATS, ET LES TROIS SONT LE MÊME OUBLI.**
+J'avais fait d'`indication` un champ OBLIGATOIRE de la ligne — « un repli n'est
+jamais valable en général » — puis je l'ai laissée tomber **partout en aval**.
+
+- `decidePlateSubstitution` cherchait sur le seul couple `depuis`/`vers` : deux
+  lignes attestant la même direction pour des indications différentes rendaient
+  `.find()` arbitraire. La décision retenait la première et **perdait la
+  condition qui l'autorise**.
+- La projection de la route supprimait `indication` : deux replis de même
+  direction et de conditions différentes devenaient indiscernables pour le
+  client, tous présentés comme applicables.
+
+**C'est la classe de défaut que ce lot existe pour fermer, reproduite d'un cran
+plus loin** : corrigée sur la DIRECTION, rejouée sur la CONDITION. Un repli
+attesté pour une raison devenait applicable à toutes — exactement l'élargissement
+silencieux que la clique produisait. `indication` descend donc dans le type
+PARTAGÉ, la décision l'exige à l'appel et la porte dans son retour, et la
+projection la transporte.
+
+**Le troisième constat est une garde absente que ses deux tables sœurs
+portaient** : le verrou n'exigeait de `dateValidation` que `!== null`. Une
+métadonnée avec `validationExterne: true`, une date illisible et le BON sha
+ouvrait la table. `estIsoCanonique` est posée, à l'identique
+d'`indicationsAssiettesV1` et de `tableRepliV1` — et elle FERME au lieu de
+jeter, `toISOString()` levant sur une date invalide.
+
 **CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
 décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse
 logique de l'échange, et `DC-19`/`DC-20` interdisent d'affirmer ce qu'aucune

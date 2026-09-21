@@ -134,6 +134,25 @@ de suite complète ; la première passe entière est T2 ». Ligne ajoutée :
 Le document qu'on lit avant de poser un drapeau dit donc l'état réel, y compris
 pour une table qui n'atteste rien.
 
+## 8 ter. La revue — trois constats, trois retenus, et c'est le même oubli
+
+**`indication` ÉTAIT OBLIGATOIRE DANS LA LIGNE ET TOMBAIT PARTOUT EN AVAL.**
+`decidePlateSubstitution` cherchait sur le seul couple `depuis`/`vers` — deux
+lignes de même direction et d'indications différentes rendaient `.find()`
+arbitraire ; la projection de la route la supprimait, rendant ces mêmes lignes
+indiscernables pour le client. **C'est la classe de défaut que ce lot ferme,
+reproduite d'un cran plus loin** : corrigée sur la direction, rejouée sur la
+condition. `indication` descend dans le type PARTAGÉ, la décision l'exige à
+l'appel, et la projection la transporte.
+
+**ET UNE GARDE QUE LES DEUX TABLES SŒURS PORTAIENT.** Le verrou n'exigeait de
+`dateValidation` que `!== null` ; `indicationsAssiettesV1` et `tableRepliV1`
+vérifient l'ISO canonique. Une date illisible sous un bon sha ouvrait la table.
+Posée à l'identique, et elle FERME au lieu de jeter.
+
+**Trois mutations de plus, trois rouges** : condition ignorée dans la recherche,
+condition absente de la décision rendue, date non vérifiée.
+
 ## 9. Problèmes ouverts
 
 **LE QUATRIÈME POINT DU PROGRAMME, ET IL EST ENTIÈREMENT CLINIQUE.** Affirmer
