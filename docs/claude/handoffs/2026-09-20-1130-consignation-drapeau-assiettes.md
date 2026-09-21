@@ -80,6 +80,12 @@ est écrit.
   maintenant formulée par l'usage, au premier dossier servi. Daté ici pour que
   l'arbitrage de LOT-02 ait sa date de demande, et non seulement sa date
   d'écriture.
+  > **Rapporté par la session voisine le 2026-09-21, et NON vérifié ici** : les
+  > deux arbitrages seraient désormais rendus — `B2` le 2026-09-18 ([[D-230]]) et
+  > `B1` ce jour (retrait d'`attachFoodCompassRef`), ce qui débloquerait LOT-01
+  > puis LOT-02. **Écrit comme un rapport, pas comme un fait** : une session ne
+  > source pas l'arbitrage d'une autre, et « le responsable a tranché » se source
+  > ou se tait. À constater au registre avant de s'en servir.
 - **Réserve préexistante, non corrigée** : `bundleClient.guard.test.ts` ne lit
   que les spécifieurs `@/lib/clinical/…` ; la chaîne `PropositionBilanPanel`
   (`'use client'`) le traverse par un module voisin, et crypto-browserify comme
