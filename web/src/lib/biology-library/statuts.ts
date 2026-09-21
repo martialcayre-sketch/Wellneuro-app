@@ -21,13 +21,19 @@ import type { IndicationsBiologieMetadata, RegleIndicationPanel } from './indica
 // rien ; catalogue sans panel actif → rien. Jamais une proposition « au cas
 // où », jamais un statut déduit d'une table absente.
 
-export type StatutPanel =
-  | 'recommande'
-  | 'optionnel'
-  | 'conditionnel'
-  | 'non_indique_actuellement'
-  | 'deja_documente'
-  | 'a_repeter';
+// LE VOCABULAIRE VIT DANS UN MODULE FEUILLE, ET IL EST RÉ-EXPORTÉ ICI.
+// `vocabulaireStatuts.ts` n'importe RIEN : c'est ce qui permet à un composant
+// client d'y puiser `STATUTS_PROPOSES` sans tirer derrière lui ce module-ci —
+// donc `evaluerDeclencheur`, `sha256`, la table d'orientation entière et
+// crypto-browserify. Mesuré sur l'artefact avant correction : 403 Ko de chunk
+// cockpit portant 20 règles sur 20, 52 identifiants de claims et les bornes de
+// comparaison. La ré-export garde ce module comme porte d'entrée naturelle :
+// aucun appelant serveur n'a changé.
+export type { StatutPanel } from './vocabulaireStatuts';
+export { STATUTS_PROPOSES } from './vocabulaireStatuts';
+
+import type { StatutPanel } from './vocabulaireStatuts';
+import { STATUTS_PROPOSES } from './vocabulaireStatuts';
 
 /** Composition d'un panel telle que lue du catalogue (jamais recopiée ici). */
 export type PanelCatalogue = {
@@ -168,18 +174,6 @@ export type PropositionBilan =
        */
       declarationsIgnoreesHorsProposition: Array<{ panelCode: string; motif: string }>;
     };
-
-/**
- * Statuts qui constituent une PROPOSITION : ce qui entre dans le courrier
- * médecin, dans le document patient, et ce sur quoi l'écran offre les deux
- * gestes. Le prédicat vit ICI, dans le module qui possède le vocabulaire des
- * statuts — ni dans un générateur ni dans l'autre : un formulaire affiché là
- * où le serveur refusera fait journaliser un accès pour un 409 (revue M5), et
- * deux artefacts qui divergeraient sur ce prédicat diraient au patient et au
- * médecin deux propositions différentes.
- */
-export const STATUTS_PROPOSES: ReadonlySet<string> =
-  new Set(['recommande', 'a_repeter', 'optionnel', 'conditionnel']);
 
 /** Ordre de présentation : ce qui appelle une action d'abord. */
 const ORDRE_STATUTS: Record<StatutPanel, number> = {

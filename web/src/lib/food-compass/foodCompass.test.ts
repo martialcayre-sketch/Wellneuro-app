@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
-import type { DecisionCard } from '@/lib/clinical-engine/types';
+import {
+  VERSION_PROTOCOL_DRAFT_V2,
+  type DecisionCard,
+  type ProtocolDraft,
+} from '@/lib/clinical-engine/types';
 import { isApprovalStale } from '@/lib/protocol/diffusion';
 import { ProtocolPayloadIntegrityError, reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
 import {
@@ -17,12 +21,12 @@ import {
   isC5Enabled,
   percentileLinear,
   getSignedFoodCompassDistribution,
-  attachFoodCompassRef,
   reviewFoodCompassProtocolV2,
 } from '.';
 import {
   C5_DATASET_VERSION,
   type CiqualNutrientDatum,
+  type FoodCompassActionRef,
   type FoodCompassDistribution,
   type ReferenceNutrientCode,
 } from './types';
@@ -131,13 +135,7 @@ function reviewedProtocolBundle() {
     activeProtocol: { protocolDraftId: v1.protocolDraftId, inputHash: v1.inputHash, status: 'active' },
   });
   const actionRef = createFoodCompassActionRef({ profile: intrinsic, reading });
-  const draft = attachFoodCompassRef({
-    protocolDraft: v1,
-    actionId: 'food-action',
-    actionRef,
-    updatedAt: '2026-07-18T10:00:00.000Z',
-    c5Enabled: true,
-  });
+  const draft = brouillonV2AvecRefPourFixture(v1, 'food-action', actionRef, '2026-07-18T10:00:00.000Z');
   const reviewed = reviewFoodCompassProtocolV2({
     protocolDraft: draft,
     reviewedAt: '2026-07-18T11:00:00.000Z',
@@ -151,6 +149,37 @@ function reviewedProtocolBundle() {
     confirmation: 'content_approved_for_diffusion' as const,
   };
   return { intrinsic, reading, actionRef, draft, reviewed, approval };
+}
+
+/**
+ * FIXTURE DE BANC, ET SURTOUT PAS UN CHEMIN DE PRODUCTION.
+ *
+ * `attachFoodCompassRef` a été retirée ([[D-239]]) : elle n'avait aucun
+ * appelant, et la voie vivante re-dérive la référence au lieu de valider celle
+ * qu'on lui soumet. Ce qui suit ne garde donc AUCUN invariant — il fabrique le
+ * brouillon V2 dont les cas voisins ont besoin pour éprouver
+ * `reconstructProtocolDraft`, `reviewFoodCompassProtocolV2` et la vue patient.
+ * Les gardes, elles, vivent dans `api/praticien/protocoles/versions` et dans
+ * `buildFoodCompassProtocolV2FromSource`, éprouvé par `patientReference.test.ts`.
+ */
+function brouillonV2AvecRefPourFixture(
+  v1: ProtocolDraft,
+  actionId: string,
+  actionRef: FoodCompassActionRef,
+  updatedAt: string,
+): ProtocolDraft {
+  const withoutHash = {
+    ...v1,
+    updatedAt,
+    version: VERSION_PROTOCOL_DRAFT_V2,
+    status: 'draft' as const,
+    review: null,
+    actions: v1.actions.map(action => (action.actionId === actionId
+      ? { ...action, foodCompassRef: { ...actionRef } }
+      : action)),
+  };
+  const { protocolDraftId: _id, inputHash: _hash, ...hashInput } = withoutHash;
+  return { ...withoutHash, inputHash: canonicalSha256(hashInput) };
 }
 
 function syntheticDistributionRows(foodCount = 3): CiqualNutrientDatum[] {
@@ -308,10 +337,9 @@ describe('C5B — contexte, patient et protocole V2', () => {
     const scoredLabelRef = createFoodCompassActionRef({
       profile: scoredLabelProfile, reading: scoredLabelReading,
     });
-    const scoredLabelDraft = attachFoodCompassRef({
-      protocolDraft: scoredLabelV1, actionId: 'food-action', actionRef: scoredLabelRef,
-      updatedAt: '2026-07-18T10:00:00.000Z', c5Enabled: true,
-    });
+    const scoredLabelDraft = brouillonV2AvecRefPourFixture(
+      scoredLabelV1, 'food-action', scoredLabelRef, '2026-07-18T10:00:00.000Z',
+    );
     const scoredLabelReviewed = reviewFoodCompassProtocolV2({
       protocolDraft: scoredLabelDraft, reviewedAt: '2026-07-18T11:00:00.000Z', c5Enabled: true,
     });
@@ -346,32 +374,24 @@ describe('C5B — contexte, patient et protocole V2', () => {
       }],
       therapeuticLoad: { level: 'light', source: 'practitioner', justification: null },
     })).toThrow('payload protocole V2');
-    expect(() => attachFoodCompassRef({
-      protocolDraft: v1, actionId: 'food-action', actionRef,
-      updatedAt: '2026-07-18T10:00:00.000Z', c5Enabled: false,
-    })).toThrow('désactivée');
-    const foreignRef = createFoodCompassActionRef({ profile: profile(), reading: contextual() });
-    expect(() => attachFoodCompassRef({
-      protocolDraft: v1, actionId: 'food-action', actionRef: foreignRef,
-      updatedAt: '2026-07-18T10:00:00.000Z', c5Enabled: true,
-    })).toThrow('version source');
-    const sameHashOtherId = { ...v1, protocolDraftId: 'protocol-other-patient' };
-    expect(sameHashOtherId.inputHash).toBe(v1.inputHash);
-    expect(() => attachFoodCompassRef({
-      protocolDraft: sameHashOtherId, actionId: 'food-action', actionRef,
-      updatedAt: '2026-07-18T10:00:00.000Z', c5Enabled: true,
-    })).toThrow('protocole source');
-    const v2 = attachFoodCompassRef({
-      protocolDraft: v1, actionId: 'food-action', actionRef,
-      updatedAt: '2026-07-18T10:00:00.000Z', c5Enabled: true,
-    });
+    // LES CINQ ASSERTIONS QUI VIVAIENT ICI SONT PARTIES AVEC LEUR FONCTION
+    // ([[D-239]]). Elles éprouvaient les gardes propres d'`attachFoodCompassRef`
+    // — C5 éteinte, référence étrangère, protocole source, référence altérée —
+    // sur un chemin qu'AUCUN appelant de production n'empruntait. Les mêmes
+    // invariants sont tenus, et plus strictement, par
+    // `api/praticien/protocoles/versions` : elle exige un protocole source
+    // actif, refuse si C5 est éteinte, et RE-DÉRIVE la référence depuis les
+    // données officielles au lieu de valider celle qu'on lui soumet.
+    //
+    // CE QUI RESTE CI-DESSOUS GARDE SON OBJET, et c'est pourquoi le cas n'est
+    // pas supprimé : les gardes de `reconstructProtocolDraft` sur un brouillon
+    // PERSISTÉ, la relecture, et la caducité de l'approbation antérieure. Le
+    // brouillon V2 n'est plus produit par la fonction retirée mais par une
+    // fixture locale, qui ne garde rien et ne prétend rien garder.
+    const v2 = brouillonV2AvecRefPourFixture(v1, 'food-action', actionRef, '2026-07-18T10:00:00.000Z');
     expect(v2).toMatchObject({ version: 'c1-protocol-draft-v2', status: 'draft', review: null });
     expect(v2.actions[0].foodCompassRef?.refHash).toBe(actionRef.refHash);
     expect(reconstructProtocolDraft(v2, v2.inputHash).version).toBe('c1-protocol-draft-v2');
-    expect(() => attachFoodCompassRef({
-      protocolDraft: v1, actionId: 'food-action', actionRef: { ...actionRef, sourceHash: 'tampered' },
-      updatedAt: '2026-07-18T10:00:00.000Z', c5Enabled: true,
-    })).toThrow('altérée');
     const v1WithRef = {
       ...v1,
       actions: [{ ...v1.actions[0], foodCompassRef: actionRef }],
