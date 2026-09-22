@@ -188,6 +188,40 @@ fonction exportée ne peut accepter une liste déjà filtrée. Vérifiée par mu
 — réexporter la fonction interne la fait rougir. C'est la classe qui est fermée,
 plus seulement ses instances connues.
 
+**14. CINQUIÈME PASSE, ET LE CONSTAT A CHANGÉ DE NIVEAU — IL EST RETENU, LA
+FORME N'EST PAS CHANGÉE, ET LE MOTIF EST ÉCRIT.** Les quatre premières visaient
+une liste DÉJÀ filtrée ; celle-ci vise les paramètres qui l'ont remplacée
+(`signature`, `lignes`, `lignesIndication`). **Le fait est exact** :
+`replisAssietteSignes` vérifie la COHÉRENCE de ce qu'on lui donne — sha
+recalculé, date ISO, anomalies, statut, identifiants — et jamais sa
+**PROVENANCE**. Une métadonnée fabriquée dont on a recalculé le sha passe le
+verrou.
+
+**La forme n'est pas changée, et ce n'est pas un refus de corriger.** Elle est
+celle des QUATRE tables signées qui précèdent — `indicationsAssiettesV1`,
+`catalogueConduitesV1`, `baremeChargeV1`, `tableRepliV1` : toutes exposent
+`(signature = METADATA, lignes = TABLE)` en paramètres par défaut, vérifié sur
+pièce. Dévier celle-ci seule ne fermerait rien — les quatre autres offrent le
+même geste — et casserait l'uniformité que la prochaine relecture lira ; les
+aligner toutes serait un refactoring de la famille des tables signées, hors de
+la portée de ce lot et de [[D-225]].
+
+**Et surtout : aucune signature de fonction ne peut tenir une provenance ici.**
+Il n'existe aucun secret dans ce dépôt, le `shaPerimetre` est un littéral
+lisible — un appelant qui fabriquerait une signature pourrait tout aussi bien
+éditer la métadonnée du module. La provenance est tenue par le **littéral
+committé**, par son **enrôlement à `shaPerimetreLitteral.guard.test.ts`** — le
+jour de la PREMIÈRE signature, jamais avant, `shaPerimetre` valant `null`
+jusque-là, comme [[D-198]], [[D-223]], [[D-224]] et [[D-236]] l'ont fait — et
+par la relecture qui fait entrer ce littéral.
+
+**CE QUE LE CODE PEUT TENIR, ET QUI EST POSÉ.** Une garde balaie les fichiers de
+PRODUCTION : aucun n'appelle `replisPourProtocole` avec plus d'un argument, ni
+`decidePlateSubstitution` en nommant une clé d'injection. L'injection reste au
+banc — seul endroit où éprouver le verrou sur une table non vide a un sens.
+Vérifiée par trois mutations, dont un témoin d'anti-vacuité : supprimer le seul
+appel de production fait rougir la garde au lieu de la rendre silencieuse.
+
 **CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
 décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse
 logique de l'échange, et `DC-19`/`DC-20` interdisent d'affirmer ce qu'aucune

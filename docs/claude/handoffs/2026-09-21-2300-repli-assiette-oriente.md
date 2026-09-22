@@ -205,6 +205,35 @@ fonction corrigée avant de conclure, et préférer une garde qui balaie à une
 garde qui nomme. Un défaut trouvé une fois dans un module y existe souvent
 plusieurs fois.
 
+## 8 septies. Cinquième passe — retenu sur le fait, la forme inchangée, le motif écrit
+
+Le constat vise cette fois les paramètres qui ont REMPLACÉ la liste filtrée :
+`signature`, `lignes`, `lignesIndication`. **Il est exact.** Le verrou vérifie la
+COHÉRENCE de ce qu'on lui donne, jamais sa PROVENANCE — une métadonnée fabriquée
+dont on a recalculé le sha lui passe.
+
+**Et pourtant la forme ne change pas.** Vérifié sur pièce : les quatre tables
+signées qui précèdent (`indicationsAssiettesV1`, `catalogueConduitesV1`,
+`baremeChargeV1`, `tableRepliV1`) exposent toutes `(signature = METADATA,
+lignes = TABLE)`. Dévier celle-ci seule ne ferme rien et casse l'uniformité ;
+les aligner toutes est un refactoring de la famille des tables signées, hors
+portée. Surtout, **aucune signature de fonction ne peut tenir une provenance
+ici** : il n'y a pas de secret, le `shaPerimetre` est un littéral lisible — qui
+sait fabriquer une signature sait éditer la métadonnée. La provenance est tenue
+par le littéral committé, son enrôlement à `shaPerimetreLitteral.guard.test.ts`
+le jour de la PREMIÈRE signature, et la relecture qui l'y fait entrer.
+
+**Ce que le code peut tenir est posé** : une garde balaie les fichiers de
+PRODUCTION — aucun n'appelle `replisPourProtocole` avec plus d'un argument ni
+`decidePlateSubstitution` en nommant une clé d'injection. Trois mutations, dont
+un témoin d'anti-vacuité : supprimer le seul appel de production fait rougir la
+garde au lieu de la rendre silencieuse.
+
+**À retenir** : un constat de revue peut être VRAI et ne pas appeler le
+changement qu'il propose. Ce qui n'est alors pas négociable, c'est d'écrire le
+motif à l'endroit où le prochain lecteur le cherchera — ici dans le verrou
+lui-même — et de fermer par une garde la part que le code PEUT tenir.
+
 ## 9. Problèmes ouverts
 
 **LE QUATRIÈME POINT DU PROGRAMME, ET IL EST ENTIÈREMENT CLINIQUE.** Affirmer

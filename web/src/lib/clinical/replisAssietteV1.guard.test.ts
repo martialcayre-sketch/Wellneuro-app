@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { getCurrentRecommendedPlateRef } from '@/lib/food-compass/plates';
@@ -398,6 +398,50 @@ describe('Les replis d’un protocole — « prescrite » se lit sur les actions
 });
 
 
+/** Les fichiers de PRODUCTION — un banc n'est pas un chemin de production. */
+function fichiersDeProduction(racine: string): readonly string[] {
+  return readdirSync(racine, { withFileTypes: true }).flatMap(entree => {
+    const chemin = join(racine, entree.name);
+    if (entree.isDirectory()) return fichiersDeProduction(chemin);
+    if (!/\.tsx?$/.test(entree.name)) return [];
+    if (/\.(test|spec|guard\.test)\.tsx?$/.test(entree.name)) return [];
+    return [chemin];
+  });
+}
+
+/** Le texte des arguments de chaque appel a `nom`, parentheses equilibrees. */
+function argumentsDesAppels(source: string, nom: string): readonly string[] {
+  const ouverture = new RegExp(`\\b${nom}\\s*\\(`, 'g');
+  const appels: string[] = [];
+  let trouve = ouverture.exec(source);
+  while (trouve !== null) {
+    const depart = trouve.index + trouve[0].length;
+    let profondeur = 1;
+    let i = depart;
+    while (i < source.length && profondeur > 0) {
+      if (source[i] === '(') profondeur += 1;
+      else if (source[i] === ')') profondeur -= 1;
+      i += 1;
+    }
+    appels.push(source.slice(depart, i - 1));
+    trouve = ouverture.exec(source);
+  }
+  return appels;
+}
+
+/** Combien d'arguments ce texte porte — les virgules de premier niveau. */
+function nombreDArguments(texte: string): number {
+  if (texte.trim() === '') return 0;
+  let profondeur = 0;
+  let nombre = 1;
+  for (const caractere of texte) {
+    if ('([{'.includes(caractere)) profondeur += 1;
+    else if (')]}'.includes(caractere)) profondeur -= 1;
+    else if (caractere === ',' && profondeur === 0) nombre += 1;
+  }
+  return nombre;
+}
+
 describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
   it('la décision lit `replisServables()` par défaut, et non la table nue', () => {
     // POURQUOI UNE GARDE DE SOURCE, ET NON UN BANC DE COMPORTEMENT. Mesuré :
@@ -448,5 +492,57 @@ describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
         && !/lignes\??:\s*readonly LigneRepliAssiette\[\]/.test(parametres))
       .map(([, nom]) => nom);
     expect(fautives, 'ces fonctions exportées prennent une liste déjà filtrée').toEqual([]);
+  });
+
+  it('AUCUN appelant de PRODUCTION n’injecte une table ni une signature', () => {
+    // CINQUIÈME PASSE SUR LA MÊME CLASSE, ET LE CONSTAT A CHANGÉ DE NIVEAU.
+    // Les quatre premières visaient une liste DÉJÀ filtrée ; celle-ci vise les
+    // paramètres qui l'ont remplacée. Le relecteur a raison sur le FAIT :
+    // `replisAssietteSignes` vérifie la COHÉRENCE de ce qu'on lui donne — sha
+    // recalculé, date ISO, anomalies, statut publié, table vide refusée — et
+    // jamais sa PROVENANCE. Une métadonnée fabriquée dont on a recalculé le sha
+    // passe le verrou.
+    //
+    // CE QUI N'EST PAS CHANGÉ, ET POURQUOI IL FAUT LE LIRE AVANT DE LE REFAIRE.
+    // Cette forme est celle des QUATRE tables signées qui précèdent —
+    // `indicationsAssiettesV1`, `catalogueConduitesV1`, `baremeChargeV1`,
+    // `tableRepliV1` : toutes exposent `(signature = METADATA, lignes = TABLE)`
+    // en paramètres par défaut. Dévier celle-ci seule ne fermerait rien, les
+    // quatre autres offrant le même geste, et casserait l'uniformité que la
+    // prochaine relecture lira. Dans ce dépôt la provenance n'est pas tenue par
+    // une signature de fonction — il n'existe aucun secret : elle est tenue par
+    // le littéral committé et son enrôlement à
+    // `shaPerimetreLitteral.guard.test.ts`, le jour de la PREMIÈRE signature.
+    //
+    // CE QUE CETTE GARDE FERME EST LA DIRECTION QUI COMPTE : aucun chemin de
+    // PRODUCTION ne passe d'override. L'injection reste au banc, seul endroit
+    // où éprouver le verrou sur une table non vide a un sens.
+    const racine = join(process.cwd(), 'src');
+    const fichierDuModule = join(racine, 'lib/clinical/replisAssietteV1.ts');
+    const appels = fichiersDeProduction(racine).flatMap(chemin => {
+      // Le NOM, pas le chemin d'alias : une sœur de `lib/clinical/` importerait
+      // par `./replisAssietteV1`, et une garde qui ne connaîtrait que
+      // `@/lib/clinical/...` la manquerait en silence. Le module lui-même est
+      // écarté — ses propres DÉCLARATIONS ne sont pas des appels.
+      if (chemin === fichierDuModule) return [];
+      const source = readFileSync(chemin, 'utf8');
+      if (!source.includes('replisAssietteV1')) return [];
+      return (['replisPourProtocole', 'decidePlateSubstitution'] as const).flatMap(nom =>
+        argumentsDesAppels(source, nom).map(parametres => ({
+          fichier: relative(racine, chemin), nom, parametres,
+        })));
+    });
+    expect(appels.length, 'aucun appel de production retrouvé — la garde serait vacante')
+      .toBeGreaterThan(0);
+    const fautifs = appels.flatMap(appel => {
+      // `replisPourProtocole` se lit positionnellement : un second argument EST
+      // une table. `decidePlateSubstitution` reçoit un objet : ce sont les clés
+      // d'injection qui la trahissent.
+      const trop = appel.nom === 'replisPourProtocole' && nombreDArguments(appel.parametres) > 1;
+      const nomme = /\b(signature|lignes|lignesIndication)\s*:/.test(appel.parametres);
+      return trop || nomme ? [`${appel.fichier} → ${appel.nom}`] : [];
+    });
+    expect(fautifs, 'ces appelants de production injectent une table ou une signature')
+      .toEqual([]);
   });
 });

@@ -189,6 +189,21 @@ export function anomaliesDeLaLigneRepli(
  * L'état nominal « aucun repli déclaré » se sert par `replisServables`, qui rend
  * une liste vide sans rien attester — la distinction entre une absence DÉCLARÉE
  * et une table qu'on prétendrait signée à vide.
+ *
+ * CE QU'IL ATTESTE, ET CE QU'IL N'ATTESTE PAS — dit ici parce qu'un relecteur
+ * l'a demandé et qu'il avait raison de le demander. Ce verrou vérifie la
+ * COHÉRENCE de ce qu'on lui donne : sha recalculé sur les lignes reçues, date
+ * ISO canonique, booléen, anomalies, statut, identifiants uniques. Il ne
+ * vérifie PAS la PROVENANCE — une métadonnée fabriquée dont on a recalculé le
+ * sha lui passe, et aucune signature de fonction ne pourrait l'en empêcher : il
+ * n'y a pas de secret dans ce dépôt, le `shaPerimetre` est un littéral lisible.
+ *
+ * La provenance est tenue ailleurs, et c'est délibéré : par le littéral
+ * committé, par l'enrôlement à `shaPerimetreLitteral.guard.test.ts` — le jour
+ * de la PREMIÈRE signature, jamais avant, son `shaPerimetre` valant `null`
+ * jusque-là — et par la relecture qui fait entrer ce littéral. Ce que le code
+ * peut tenir, lui, est qu'aucun chemin de PRODUCTION ne passe d'override :
+ * c'est la dernière garde de `replisAssietteV1.guard.test.ts`.
  */
 export function replisAssietteSignes(
   signature: ReplisAssietteMetadata = REPLIS_ASSIETTE_METADATA,
