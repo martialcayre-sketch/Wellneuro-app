@@ -4,7 +4,12 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 
 import { BoutonDeconnexion } from './BoutonDeconnexion';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  // Hygiène : vitest isole par fichier, donc rien ne fuit aujourd'hui — mais un
+  // `fetch` bouchonné qui survit à son banc est un faux vert en puissance.
+  vi.unstubAllGlobals();
+});
 
 // CE BANC GARDE UNE PROMESSE, PAS UN APPEL. Le bouton dit « Se déconnecter » ;
 // ce qu'il ne doit JAMAIS faire, c'est conduire le patient à le croire quand
@@ -44,6 +49,26 @@ describe('BoutonDeconnexion', () => {
     expect(assign).not.toHaveBeenCalled();
     // Le bouton redevient actionnable : réessayer est la suite offerte.
     expect(screen.getByRole('button', { name: 'Se déconnecter' })).toBeTruthy();
+  });
+
+  // L'ALERTE NE DOIT PAS SURVIVRE AU RÉESSAI QUI RÉUSSIT. Rien ne gardait le
+  // `setEchec(false)` d'entrée de geste : le retirer laissait les trois bancs
+  // verts, et le patient aurait lu « vous êtes toujours connecté » sur l'écran
+  // qu'il quitte, déconnecté. Relevé par la revue du delta (PR #1211).
+  it('échec puis réessai réussi : l’alerte disparaît et la redirection a lieu', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('{}', { status: 500 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<BoutonDeconnexion />);
+    fireEvent.click(screen.getByRole('button', { name: 'Se déconnecter' }));
+    expect(await screen.findByRole('alert')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Se déconnecter' }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('/portail/connexion'));
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('réseau coupé : même refus de mentir', async () => {

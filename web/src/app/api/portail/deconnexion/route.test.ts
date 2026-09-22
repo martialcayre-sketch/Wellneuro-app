@@ -94,6 +94,22 @@ describe('POST /api/portail/deconnexion', () => {
   it('efface avec les mêmes attributs que la pose, TOUS balayés', async () => {
     const attrs = attributs(await POST(requete(signPatientSession({ idPatient: 'PAT_TEST', email: EMAIL }))));
 
+    // L'ENSEMBLE D'ABORD, LES VALEURS ENSUITE — et c'est l'ordre qui compte.
+    // Boucler sur `PORTAIL_COOKIE_OPTIONS` ne voit que ce que la constante
+    // DÉCLARE : un attribut ajouté à l'effacement SEUL (un `domain`, un
+    // `expires`) passait en silence, et une clé RETIRÉE de la constante aussi.
+    // Trois mutations survivaient, mesurées par la revue du delta — dont le
+    // symétrique exact du défaut que ce banc existe pour attraper. On compare
+    // donc les deux ensembles, dans les deux sens.
+    // Un drapeau à `false` ne se rend pas du tout (pas de `Secure` si
+    // `secure: false`) : il sort de l'ensemble attendu, sinon le banc rougirait
+    // en http local là où le comportement est correct.
+    const attendus = Object.entries(PORTAIL_COOKIE_OPTIONS)
+      .filter(([cle, valeur]) => !(RENDU[cle]?.drapeau && valeur === false))
+      .map(([cle]) => RENDU[cle]?.attribut)
+      .filter((a): a is string => Boolean(a));
+    expect([...attrs.keys()].sort()).toEqual(attendus.sort());
+
     for (const [cle, valeur] of Object.entries(PORTAIL_COOKIE_OPTIONS)) {
       const forme = RENDU[cle];
       // Clé neuve dans les options : ce banc ne sait pas la vérifier, donc il

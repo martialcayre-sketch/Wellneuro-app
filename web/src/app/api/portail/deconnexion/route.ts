@@ -79,14 +79,24 @@ export async function POST(req: Request): Promise<NextResponse> {
     avaitUneSession = false;
   }
 
-  logger.security({
-    event: EVENT_CODES.PORTAIL_SESSION_FERMEE,
-    domain: 'SECURITY',
-    message: avaitUneSession
-      ? 'Session portail fermée par le patient'
-      : 'Déconnexion demandée sans session ouverte',
-    context: finalizeLogContext(contexte, { statusCode: 200, retryable: false }),
-  });
+  // L'ÉCRITURE DU JOURNAL EST PROTÉGÉE ELLE AUSSI. La lire sous `try/catch` sans
+  // protéger l'émission laissait debout la même classe d'échec : une levée ici
+  // jetterait la réponse déjà construite — et son `Set-Cookie` avec elle. Relevé
+  // par la revue du delta, qui a noté que le commentaire ci-dessus promettait
+  // plus que le code.
+  try {
+    logger.security({
+      event: EVENT_CODES.PORTAIL_SESSION_FERMEE,
+      domain: 'SECURITY',
+      message: avaitUneSession
+        ? 'Session portail fermée par le patient'
+        : 'Déconnexion demandée sans session ouverte',
+      context: finalizeLogContext(contexte, { statusCode: 200, retryable: false }),
+    });
+  } catch {
+    // Perdre une ligne de journal coûte moins que laisser un patient connecté
+    // après qu'il a demandé à ne plus l'être.
+  }
 
   return res;
 }

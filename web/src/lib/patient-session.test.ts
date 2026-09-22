@@ -8,6 +8,7 @@ import {
   PORTAIL_COOKIE_OPTIONS,
   SESSION_TTL_SECONDS,
   isSessionAuthorizedForAssignment,
+  readPatientSession,
   isSessionValideForPatient,
   signPatientSession,
   verifyPatientSession,
@@ -94,6 +95,23 @@ describe('session patient', () => {
     expect(session?.iat).toBeGreaterThan(0);
   });
 
+  // LES OPTIONS PORTENT DES ATTRIBUTS DE SÉCURITÉ ; ON EXIGE LEUR PRÉSENCE.
+  // Les bancs de parité (pose ↔ effacement) comparent deux rendus : une clé
+  // RETIRÉE d'ici disparaît des deux côtés et leur échappe, par construction.
+  // Mesuré : retirer `path` laissait tout vert, alors que le cookie retombait
+  // sur le chemin de la requête et cessait d'être lu par `/portail/*`.
+  it('les options de cookie portent les attributs qui tiennent la session', () => {
+    expect(Object.keys(PORTAIL_COOKIE_OPTIONS).sort()).toEqual(
+      ['httpOnly', 'maxAge', 'path', 'sameSite', 'secure'].sort(),
+    );
+    // `/` et rien d'autre : le cookie est lu par tout le portail.
+    expect(PORTAIL_COOKIE_OPTIONS.path).toBe('/');
+    // `lax` et non `strict` : le retour Google est une navigation venue d'un
+    // autre site ; en `strict`, aucune connexion n'aboutirait.
+    expect(PORTAIL_COOKIE_OPTIONS.sameSite).toBe('lax');
+    expect(PORTAIL_COOKIE_OPTIONS.httpOnly).toBe(true);
+  });
+
   it('accepte un cookie émis avant le passage au compte, en reconstruisant sa date', () => {
     // Les 13 accès portail ouverts en production portent cette forme : les
     // refuser déconnecterait au déploiement.
@@ -101,6 +119,26 @@ describe('session patient', () => {
     const session = verifyPatientSession(cookieAncienFormat('PAT_1', 'patient@example.test', exp));
     expect(session).toMatchObject({ idPatient: 'PAT_1', email: 'patient@example.test' });
     expect(session?.iat).toBe(exp - TTL_LEGACY_SECONDS);
+  });
+
+  // LE CAS QUI LEVAIT, ET QUI N'EST PAS UN CAS D'ERREUR. `decodeURIComponent`
+  // lève sur une séquence `%` invalide ; une vingtaine de routes appellent
+  // `readPatientSession` et aucune n'attrapait, donc un cookie illisible rendait
+  // 500 au lieu de « pas de session ». Sur la route de déconnexion, il
+  // empêchait même l'effacement d'aboutir. Trouvé par la revue Copilot, étendu à
+  // la source par la revue du delta (PR #1211).
+  it('un cookie illisible ne lève pas — il ne vaut pas session', () => {
+    const requete = (cookie: string) =>
+      new Request('http://localhost/x', { headers: { cookie } });
+
+    expect(() => readPatientSession(requete('wn_portail=%'))).not.toThrow();
+    expect(readPatientSession(requete('wn_portail=%'))).toBeNull();
+    expect(readPatientSession(requete('wn_portail=%E0%A4%A'))).toBeNull();
+    // Un cookie valide passe toujours : la garde ne rend pas la fonction sourde.
+    const valide = signPatientSession({ idPatient: 'PAT_1', email: 'patient@example.test' });
+    expect(readPatientSession(requete(`wn_portail=${encodeURIComponent(valide)}`))).toMatchObject({
+      idPatient: 'PAT_1',
+    });
   });
 
   it('refuse une charge sans date d’émission ni empreinte', () => {

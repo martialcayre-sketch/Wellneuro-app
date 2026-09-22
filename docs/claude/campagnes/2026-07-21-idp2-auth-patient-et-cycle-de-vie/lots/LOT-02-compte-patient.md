@@ -85,9 +85,16 @@ Le point le plus important du lot n'est pas le nouveau format, c'est l'**ancien*
 
 13 accès portail sont ouverts en production. Un cookie déjà émis porte
 `accessTokenFingerprint` et **pas** `iat`. La vérification doit accepter les deux
-formes ; pour l'ancienne, `iat` se reconstruit exactement par
-`exp - SESSION_TTL_SECONDS`, la durée de vie étant fixe (12 h). Aucun patient
-n'est déconnecté par le déploiement, et l'empreinte cesse simplement d'être lue.
+formes ; pour l'ancienne, `iat` se reconstruit exactement en ôtant la durée qui a
+servi à l'ÉMETTRE — 12 h. Aucun patient n'est déconnecté par le déploiement, et
+l'empreinte cesse simplement d'être lue.
+
+> **Amendé le 2026-09-22 (`D-241`).** Cette phrase disait
+> `exp - SESSION_TTL_SECONDS`, « la durée de vie étant fixe (12 h) ». Les deux
+> moitiés ont cessé d'être vraies ensemble : la fenêtre courante est de 30 jours,
+> et la reconstruction doit rester sur 12 h. D'où une constante séparée,
+> `LEGACY_SESSION_TTL_SECONDS` — adosser la reconstruction à la durée du jour la
+> ferait mentir de 29 jours et demi.
 
 Même exigence de coexistence que pour G4 : personne ne se retrouve dehors
 (question ouverte 3 de la campagne, close par cette clause).

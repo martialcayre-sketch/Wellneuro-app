@@ -229,7 +229,24 @@ export function readPatientSession(req: Request): PatientSession | null {
     if (eq < 0) continue;
     const name = part.slice(0, eq).trim();
     if (name !== PORTAIL_COOKIE_NAME) continue;
-    return verifyPatientSession(decodeURIComponent(part.slice(eq + 1).trim()));
+    // `decodeURIComponent` LÈVE sur une séquence `%` invalide (`wn_portail=%`
+    // suffit) — et cette fonction est appelée par une vingtaine de routes, dont
+    // aucune n'attrapait. Un cookie illisible y rendait 500 là où il ne veut
+    // dire qu'une chose : PAS DE SESSION. C'est ce que la fonction répond
+    // désormais, comme pour une signature fausse ou une charge expirée.
+    //
+    // CORRIGÉ À LA SOURCE, PAS CHEZ L'APPELANT. La première version du
+    // correctif protégeait la seule route de déconnexion ; la revue du delta a
+    // montré qu'elle laissait lever les 21 autres. Le parseur de cookies de
+    // Next fait exactement cela depuis toujours (il jette le cookie malformé) :
+    // ce dépôt réimplémentait le sien, en moins sûr.
+    let brut: string;
+    try {
+      brut = decodeURIComponent(part.slice(eq + 1).trim());
+    } catch {
+      return null;
+    }
+    return verifyPatientSession(brut);
   }
   return null;
 }
