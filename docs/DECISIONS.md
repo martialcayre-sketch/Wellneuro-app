@@ -336,6 +336,43 @@ JSX, et ses apostrophes vivent dans des commentaires, que le balayage retire en
 position de code. Un outil au périmètre où il est juste, pas partout où il
 semblait utile.
 
+**19. DIXIÈME PASSE — ET LA CONCLUSION QU'IL FALLAIT TIRER TROIS TOURS PLUS TÔT :
+UNE GARDE LEXICALE NE PEUT PAS TENIR UNE PROPRIÉTÉ STRUCTURELLE.**
+
+Le §18 avait raison de préférer le bruit au silence ; il a corrigé le retrait de
+la prose sans voir que **le silence avait simplement déménagé**. Sur le texte
+brut, le compteur de parenthèses ne connaît ni chaînes ni expressions
+régulières : `replisPourProtocole(sansSuffixe(actions, ')'), meta, table)` — une
+parenthèse écrite DANS UNE CHAÎNE — refermait l'appel trop tôt, la tranche
+retenue n'avait plus qu'un argument, et l'override redevenait **invisible**.
+Régression mesurée : la rédaction du §17 attrapait ce fichier.
+
+**Trois rédactions lexicales, trois ratés silencieux, et à chaque fois j'ai
+rapiécé le lexeur** : une liste de noms qui en oubliait deux (§16), un retrait de
+prose qui effaçait l'appel (§17), un compteur de parenthèses qu'une chaîne
+referme (§18). Chaînes, gabarits, expressions régulières, commentaires, JSX,
+imports renommés : la liste des cas particuliers n'a pas de fin, et **chacun se
+paie en silence**.
+
+**La garde lit désormais un ARBRE.** Le compilateur TypeScript est déjà au dépôt
+et connaît la grammaire. Conséquences mesurées sur six évasions : les trois que
+les rédactions lexicales manquaient sont attrapées, **l'import renommé compris**
+— que le §16 déclarait hors de portée, et il l'était —, et le fichier conforme
+portant prose, apostrophe en guillemets doubles et JSX ne produit **aucun** faux
+positif. Le §18 gardait un choix entre deux erreurs ; l'arbre ne le demande plus.
+
+**ET LES ÉVASIONS DEVIENNENT DES CAS.** C'est la part la plus utile de ce tour :
+l'analyse prend désormais son TEXTE en paramètre, donc les six sources vivent
+DANS le banc, en mémoire, sans rien déposer au dépôt. Chacune porte son propre
+témoin d'anti-vacuité — un appel qui ne serait pas même VU passerait pour
+conforme. Elles ne sont plus des mutations jouées une fois puis perdues : une
+onzième rédaction de cette garde devra les passer toutes.
+
+**CE QU'ELLE NE TIENT TOUJOURS PAS, déclaré** : un appel indirect — la fonction
+passée en valeur, atteinte par un objet, reconstruite — n'est pas un appel nommé,
+et l'arbre seul ne le résout pas. Rien ici ne peut arrêter un contournement
+délibéré : le `shaPerimetre` est un littéral lisible.
+
 **CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
 décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse
 logique de l'échange, et `DC-19`/`DC-20` interdisent d'affirmer ce qu'aucune

@@ -314,6 +314,29 @@ où il sert à lire les déclarations.
 quand elle a tort. Une garde qui peut se taire à tort est pire qu'une garde qui
 peut crier à tort.
 
+## 8 duodecies. Dixième passe — le silence avait déménagé, pas disparu
+
+Le tour précédent préférait le bruit au silence, et il avait raison. Il n'a pas
+vu que **le silence changeait simplement d'endroit** : sur le texte brut, le
+compteur de parenthèses ne connaît ni chaînes ni expressions régulières, et
+`replisPourProtocole(sansSuffixe(actions, ')'), meta, table)` refermait l'appel
+trop tôt — override invisible. La rédaction d'avant l'attrapait : régression.
+
+**Trois rédactions lexicales, trois ratés silencieux, trois rapiéçages du
+lexeur.** La garde lit maintenant un ARBRE (le compilateur TypeScript est déjà
+au dépôt). Les trois évasions manquées sont attrapées, **l'import renommé
+compris** — qui était déclaré hors de portée —, et le fichier conforme ne
+produit aucun faux positif.
+
+**Et les évasions sont devenues des CAS** : l'analyse prend son texte en
+paramètre, les six sources vivent dans le banc, chacune avec son témoin
+d'anti-vacuité. Une onzième rédaction devra toutes les passer.
+
+**À retenir, et c'est la leçon la plus chère du lot** : dès qu'une garde doit
+distinguer du CODE d'une chaîne, d'un commentaire ou d'une expression
+régulière, elle a besoin d'un parseur — pas d'une expression régulière de plus.
+Le signal d'alarme est le deuxième cas particulier.
+
 ## 9. Problèmes ouverts
 
 **LE QUATRIÈME POINT DU PROGRAMME, ET IL EST ENTIÈREMENT CLINIQUE.** Affirmer

@@ -1,5 +1,14 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import {
+  createSourceFile, isCallExpression, isFunctionDeclaration, isIdentifier,
+  isImportDeclaration, isNamedImports, isObjectLiteralExpression, isPropertyAssignment,
+  isShorthandPropertyAssignment, isSpreadAssignment, isTypeLiteralNode, isTypeReferenceNode,
+  isAsExpression, isNonNullExpression, isParenthesizedExpression, isSatisfiesExpression,
+  isTypeAssertionExpression,
+  ScriptKind, ScriptTarget, SyntaxKind,
+  type Expression, type Node, type SourceFile,
+} from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { getCurrentRecommendedPlateRef } from '@/lib/food-compass/plates';
@@ -442,142 +451,166 @@ function fichiersDeProduction(racine: string): readonly string[] {
 }
 
 /**
- * LA FIN D'UN LITTÉRAL, ou `-1` s'il n'en est pas un.
+ * CE QU'ON LIT ICI EST UN ARBRE, PLUS UN TEXTE — et c'est la troisième fois que
+ * ce lot apprend la même chose.
  *
- * Une apostrophe ou un guillemet n'ouvre une chaîne QUE s'il se referme sur la
- * MÊME ligne — c'est ce qui distingue `'texte'` de l'apostrophe française du
- * texte JSX (`<h2>L'assiette prescrite</h2>`), qui n'ouvre rien. Le gabarit,
- * lui, a le droit de traverser les lignes.
+ * Les trois rédactions précédentes de cette garde étaient LEXICALES, et la
+ * contre-revue a trouvé un défaut réel dans chacune : une liste de noms écrite
+ * en dur qui en oubliait deux ; un retrait de prose par expressions régulières
+ * qui EFFAÇAIT l'appel fautif ; puis, sur le texte brut, un compteur de
+ * parenthèses qu'une parenthèse écrite DANS UNE CHAÎNE — `sansSuffixe(actions,
+ * ')')` — refermait trop tôt, rendant l'override invisible. À chaque fois le
+ * raté était SILENCIEUX, et à chaque fois j'ai rapiécé le lexeur.
+ *
+ * **Une garde LEXICALE ne peut pas tenir une propriété STRUCTURELLE.** Chaînes,
+ * gabarits, expressions régulières, commentaires, JSX, imports renommés : la
+ * liste des cas particuliers n'a pas de fin, et chacun se paie en silence. Le
+ * compilateur, lui, connaît la grammaire — il est déjà au dépôt, et l'arbre
+ * qu'il rend répond exactement aux questions posées ici.
+ *
+ * CE QUE LA GARDE TIENT DÉSORMAIS : aucun appel, dans un fichier de PRODUCTION,
+ * ne passe d'override à une fonction injectable de ce module — **l'import
+ * renommé compris**, que les rédactions lexicales déclaraient hors de portée.
  */
-function finDuLitteral(source: string, debut: number, guillemet: string): number {
-  for (let i = debut + 1; i < source.length; i += 1) {
-    if (source[i] === '\\') { i += 1; continue; }
-    if (source[i] === guillemet) return i;
-    if (source[i] === '\n' && guillemet !== '`') return -1;
-  }
-  return -1;
+function arbreDe(chemin: string, source: string) {
+  return createSourceFile(chemin, source, ScriptTarget.Latest, true, ScriptKind.TSX);
+}
+
+/** Chaque nœud de l'arbre, une fois. */
+function noeuds(racine: Node): readonly Node[] {
+  const tous: Node[] = [];
+  const descendre = (noeud: Node) => {
+    tous.push(noeud);
+    noeud.forEachChild(descendre);
+  };
+  descendre(racine);
+  return tous;
 }
 
 /**
- * LE TEXTE SANS SA PROSE — commentaires et littéraux réduits à du vide.
+ * LES FONCTIONS EXPORTÉES QUI ACCEPTENT UNE SIGNATURE — dérivées du MODULE,
+ * jamais énumérées ici.
  *
- * POURQUOI ELLE EXISTE : sans elle, une phrase citant une ANCIENNE forme d'appel
- * ferait rougir un fichier conforme, et le piège est vif ici — les modules de
- * `lib/clinical/` portent une prose dense qui cite les signatures d'avant.
+ * C'est la leçon de la quatrième passe, et elle tient toujours : une garde qui
+ * NOMME est une instance déguisée en classe. Une cinquième fonction injectable
+ * ajoutée demain est couverte sans que personne y pense.
  *
- * POURQUOI ELLE N'EST PLUS FAITE D'EXPRESSIONS RÉGULIÈRES, ET C'EST LE CONSTAT
- * LE PLUS COÛTEUX DU LOT. La première rédaction remplaçait les apostrophes AVANT
- * les guillemets doubles. Conséquence MESURÉE : l'apostrophe française d'une
- * chaîne à guillemets doubles — « Réserve d'adaptation », forme banale et
- * présente des centaines de fois au dépôt — ouvrait une fausse chaîne qui
- * courait jusqu'à l'apostrophe suivante, EFFAÇANT le code entre les deux. Un
- * consommateur de production réellement fautif devenait invisible et la garde
- * restait verte : une garde ajoutée pour éviter un faux POSITIF fabriquait un
- * faux NÉGATIF, pire que le mal qu'elle soignait. Un BALAYAGE, lui, n'entre dans
- * un littéral qu'à un guillemet rencontré en position de CODE : l'apostrophe
- * intérieure n'est jamais vue.
- *
- * OÙ ELLE S'APPLIQUE, ET NULLE PART AILLEURS : au SEUL texte de
- * `replisAssietteV1.ts`, pour lire ses déclarations — le commentaire posé entre
- * deux paramètres fausserait sinon le compte des arguments nus. Les fichiers de
- * PRODUCTION, eux, sont balayés BRUTS : voir le motif au site d'appel, et
- * [[D-241]] §18. Ce module n'a pas de JSX, et ses apostrophes vivent dans des
- * commentaires, que le balayage retire en position de code.
+ * `argumentsNus` est ce que la PRODUCTION a le droit de passer : le rang du
+ * premier paramètre d'injection. `objet` distingue la décision, qui reçoit un
+ * littéral — là ce sont les propriétés, ou un étalement, qui trahissent.
  */
-function sansProse(source: string): string {
-  let sortie = '';
-  let i = 0;
-  while (i < source.length) {
-    const caractere = source[i];
-    if (caractere === '/' && source[i + 1] === '*') {
-      const fin = source.indexOf('*/', i + 2);
-      sortie += ' ';
-      i = fin === -1 ? source.length : fin + 2;
-      continue;
-    }
-    // Le `:` qui précède épargne les URL, qui ne sont pas des commentaires.
-    if (caractere === '/' && source[i + 1] === '/' && source[i - 1] !== ':') {
-      const fin = source.indexOf('\n', i);
-      sortie += ' ';
-      i = fin === -1 ? source.length : fin;
-      continue;
-    }
-    if (caractere === "'" || caractere === '"' || caractere === '`') {
-      const fin = finDuLitteral(source, i, caractere);
-      if (fin !== -1) {
-        sortie += caractere + caractere;
-        i = fin + 1;
-        continue;
-      }
-    }
-    sortie += caractere;
-    i += 1;
-  }
-  return sortie;
-}
-
-/** Le texte des arguments de chaque appel a `nom`, parentheses equilibrees. */
-function argumentsDesAppels(source: string, nom: string): readonly string[] {
-  const ouverture = new RegExp(`\\b${nom}\\s*\\(`, 'g');
-  const appels: string[] = [];
-  let trouve = ouverture.exec(source);
-  while (trouve !== null) {
-    const depart = trouve.index + trouve[0].length;
-    let profondeur = 1;
-    let i = depart;
-    while (i < source.length && profondeur > 0) {
-      if (source[i] === '(') profondeur += 1;
-      else if (source[i] === ')') profondeur -= 1;
-      i += 1;
-    }
-    appels.push(source.slice(depart, i - 1));
-    trouve = ouverture.exec(source);
-  }
-  return appels;
-}
-
-/**
- * LES FONCTIONS EXPORTÉES QUI ACCEPTENT UNE SIGNATURE — dérivées de la SOURCE,
- * jamais énumérées.
- *
- * SEPTIÈME INSTANCE DE LA MÊME CLASSE DANS CE SEUL LOT, et cette fois la
- * contre-revue l'a prouvée par mutation : ma garde ne cherchait que
- * `replisPourProtocole` et `decidePlateSubstitution`, alors que
- * `replisServables` et `replisAssietteSignes` offrent la MÊME injection. Un
- * fichier de production appelant `replisServables(signatureFabriquée, table)`
- * laissait le banc vert. Enrichir la liste de deux noms aurait été la huitième
- * correction d'instance ; la liste se dérive donc du texte du module, et une
- * cinquième fonction ajoutée demain sera couverte sans que personne y pense.
- *
- * `argumentsNus` est ce que la PRODUCTION a le droit de passer : les paramètres
- * déclarés AVANT le premier paramètre d'injection. Zéro pour le verrou et le
- * point de service, un pour la projection. `objet` distingue la décision, qui
- * reçoit un littéral : là ce sont les clés — ou un étalement — qui trahissent.
- */
-function exportsInjectables(sourceDuModule: string) {
-  return [...sansProse(sourceDuModule).matchAll(/export function (\w+)\(([^)]*)\)/g)]
-    .filter(([, , parametres]) => /ReplisAssietteMetadata/.test(parametres))
-    .map(([, nom, parametres]) => {
-      const avant = parametres.slice(0, parametres.search(/\w+\??:\s*ReplisAssietteMetadata/));
-      return {
-        nom,
-        argumentsNus: nombreDArguments(avant.replace(/,\s*$/, '')),
-        objet: /^\s*\w+\??:\s*\{/.test(parametres),
-      };
+function exportsInjectables(chemin: string, source: string) {
+  const porteUneSignature = (noeud: Node) =>
+    noeuds(noeud).some(fils => isTypeReferenceNode(fils)
+      && fils.typeName.getText() === 'ReplisAssietteMetadata');
+  return noeuds(arbreDe(chemin, source))
+    .filter(isFunctionDeclaration)
+    .filter(fonction => fonction.name !== undefined
+      && fonction.modifiers?.some(mot => mot.kind === SyntaxKind.ExportKeyword) === true
+      && fonction.parameters.some(porteUneSignature))
+    .map(fonction => {
+      const rang = fonction.parameters.findIndex(porteUneSignature);
+      const premier = fonction.parameters[0];
+      const objet = premier !== undefined && premier.type !== undefined
+        && isTypeLiteralNode(premier.type) && porteUneSignature(premier);
+      return { nom: fonction.name!.getText(), argumentsNus: objet ? 1 : rang, objet };
     });
 }
 
-/** Combien d'arguments ce texte porte — les virgules de premier niveau. */
-function nombreDArguments(texte: string): number {
-  if (texte.trim() === '') return 0;
-  let profondeur = 0;
-  let nombre = 1;
-  for (const caractere of texte) {
-    if ('([{'.includes(caractere)) profondeur += 1;
-    else if (')]}'.includes(caractere)) profondeur -= 1;
-    else if (caractere === ',' && profondeur === 0) nombre += 1;
+/** Ce que la production a le droit d'écrire, et ce qui la trahit. */
+const INJECTIONS = ['signature', 'lignes', 'lignesIndication'];
+
+/**
+ * LES APPELS FAUTIFS D'UN FICHIER — la seule chose que cette garde décide.
+ *
+ * ELLE PREND SON TEXTE EN PARAMÈTRE, ET C'EST DÉLIBÉRÉ : l'analyse est ainsi
+ * éprouvable sur des sources écrites DANS LE BANC, sans rien déposer au dépôt.
+ * Les six évasions que les rédactions lexicales manquaient une à une y sont
+ * désormais des CAS, pas des mutations jouées une fois puis perdues. C'est ce
+ * qui doit empêcher une onzième rédaction de cette garde.
+ */
+function appelsFautifs(
+  formes: ReturnType<typeof exportsInjectables>,
+  fichiers: readonly { chemin: string; source: string }[],
+): readonly string[] {
+  const parNom = new Map(formes.map(forme => [forme.nom, forme]));
+  return fichiers.flatMap(({ chemin, source }) => {
+    if (!source.includes('replisAssietteV1')) return [];
+    const arbre = arbreDe(chemin, source);
+    const locaux = nomsLocaux(arbre);
+    return noeuds(arbre).flatMap(noeud => {
+      if (!isCallExpression(noeud) || !isIdentifier(noeud.expression)) return [];
+      const forme = parNom.get(locaux.get(noeud.expression.getText()) ?? '');
+      if (forme === undefined) return [];
+      // Les formes positionnelles : tout argument au-delà des paramètres nus EST
+      // un override. La forme à objet : ce sont les propriétés qui trahissent —
+      // ou un étalement, qui les porterait sans les écrire.
+      const trop = noeud.arguments.length > forme.argumentsNus;
+      const premier = noeud.arguments[0] === undefined
+        ? undefined : sousLEnrobage(noeud.arguments[0]);
+      const nomme = forme.objet && premier !== undefined
+        && isObjectLiteralExpression(premier)
+        && premier.properties.some(propriete =>
+          isSpreadAssignment(propriete)
+          || ((isPropertyAssignment(propriete) || isShorthandPropertyAssignment(propriete))
+            && INJECTIONS.includes(propriete.name.getText())));
+      return trop || nomme ? [`${chemin} → ${forme.nom}`] : [];
+    });
+  });
+}
+
+/** Combien d'appels au module ce fichier porte — anti-vacuité de l'analyse. */
+function nombreDAppels(
+  formes: ReturnType<typeof exportsInjectables>,
+  chemin: string,
+  source: string,
+): number {
+  const parNom = new Map(formes.map(forme => [forme.nom, forme]));
+  const arbre = arbreDe(chemin, source);
+  const locaux = nomsLocaux(arbre);
+  return noeuds(arbre).filter(noeud =>
+    isCallExpression(noeud) && isIdentifier(noeud.expression)
+    && parNom.has(locaux.get(noeud.expression.getText()) ?? '')).length;
+}
+
+/**
+ * L'ARGUMENT SOUS SON ENROBAGE — `as never`, parenthèses, `satisfies`, `!`.
+ *
+ * Trouvé par ma propre batterie de témoins, et c'est pour cela qu'elle existe :
+ * `decidePlateSubstitution({ ...fabrique } as never)` n'est PAS un littéral
+ * d'objet pour l'arbre, c'est une assertion de type qui en contient un. Sans ce
+ * dépouillement, l'étalement — la forme qui porte les clés d'injection sans les
+ * écrire — repassait au travers.
+ */
+function sousLEnrobage(noeud: Expression): Expression {
+  let courant = noeud;
+  while (isAsExpression(courant) || isParenthesizedExpression(courant)
+    || isSatisfiesExpression(courant) || isNonNullExpression(courant)
+    || isTypeAssertionExpression(courant)) {
+    courant = courant.expression;
   }
-  return nombre;
+  return courant;
+}
+
+/**
+ * LES NOMS LOCAUX SOUS LESQUELS CE FICHIER APPELLE LE MODULE.
+ *
+ * `import { decidePlateSubstitution as deciderRepli }` rend
+ * `{ deciderRepli → decidePlateSubstitution }` : l'import renommé cesse d'être
+ * un angle mort. Un fichier qui importe sans renommer rend l'identité.
+ */
+function nomsLocaux(arbre: SourceFile): ReadonlyMap<string, string> {
+  const table = new Map<string, string>();
+  for (const noeud of noeuds(arbre)) {
+    if (!isImportDeclaration(noeud)) continue;
+    if (!noeud.moduleSpecifier.getText().includes('replisAssietteV1')) continue;
+    const nommes = noeud.importClause?.namedBindings;
+    if (nommes === undefined || !isNamedImports(nommes)) continue;
+    for (const element of nommes.elements) {
+      table.set(element.name.getText(), (element.propertyName ?? element.name).getText());
+    }
+  }
+  return table;
 }
 
 describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
@@ -652,69 +685,117 @@ describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
     // le littéral committé et son enrôlement à
     // `shaPerimetreLitteral.guard.test.ts`, le jour de la PREMIÈRE signature.
     //
-    // CE QUE CETTE GARDE TIENT, ET CE QU'ELLE NE TIENT PAS — dit ici parce que
-    // la version précédente promettait plus qu'elle ne tenait, et qu'une
-    // contre-revue l'a prouvé par mutation.
+    // CE QUE CETTE GARDE TIENT — et elle le tient sur un ARBRE, parce que trois
+    // rédactions lexicales de suite ont échoué EN SILENCE (voir l'en-tête
+    // d'`arbreDe`, et [[D-241]] §19).
     //
-    // ELLE TIENT : aucun appel ÉCRIT EN CLAIR, dans un fichier de production, ne
-    // passe d'override à une fonction injectable de ce module — et la liste de
-    // ces fonctions est DÉRIVÉE du texte du module, pas énumérée ici.
+    // ELLE TIENT : aucun appel, dans un fichier de PRODUCTION, ne passe
+    // d'override à une fonction injectable de ce module. La liste de ces
+    // fonctions est DÉRIVÉE du module, et l'IMPORT RENOMMÉ est suivi — ce que
+    // les rédactions précédentes déclaraient hors de portée.
     //
-    // ELLE FAIT DU BRUIT PLUTÔT QUE DU SILENCE : les fichiers de production sont
-    // lus BRUTS. Une phrase qui citerait une ancienne forme d'appel ferait donc
-    // rougir un fichier conforme — c'est le prix, il est visible, et il se paie
-    // en reformulant la phrase. L'inverse ne se voit pas ([[D-241]] §18).
-    //
-    // ELLE NE TIENT PAS, et le raccourci est déclaré plutôt que masqué : c'est
-    // une garde LEXICALE. Un import renommé (`import { X as Y }`) la désarme,
-    // puisqu'elle reconnaît l'identifiant au site d'appel et non la fonction
-    // importée. Aucune expression régulière ne referme cela — il y faudrait une
-    // règle sur l'arbre syntaxique. Ce qu'elle attrape est la rédaction
-    // ORDINAIRE, celle qu'on écrit sans y penser ; elle n'arrête pas quelqu'un
-    // qui contourne exprès, et rien dans ce dépôt ne le pourrait : le
-    // `shaPerimetre` est un littéral lisible.
+    // ELLE NE TIENT TOUJOURS PAS, et c'est déclaré : un appel indirect — la
+    // fonction passée en valeur, atteinte par un objet, ou reconstruite — n'est
+    // pas un appel nommé, et l'arbre seul ne le résout pas. Rien ici ne peut
+    // arrêter un contournement délibéré : le `shaPerimetre` est un littéral
+    // lisible, et qui sait fabriquer une signature sait éditer la métadonnée.
+    // Ce que la garde ferme est la rédaction ORDINAIRE.
     const racine = join(process.cwd(), 'src');
     const fichierDuModule = join(racine, 'lib/clinical/replisAssietteV1.ts');
-    const formes = exportsInjectables(readFileSync(fichierDuModule, 'utf8'));
+    const formes = exportsInjectables(fichierDuModule, readFileSync(fichierDuModule, 'utf8'));
     // TÉMOIN DE DÉRIVATION — il ne fait pas la liste, il atteste qu'elle marche.
-    // Une cinquième fonction injectable est couverte sans toucher ce banc ; un
-    // de ces quatre noms qui disparaît fait rougir, et c'est voulu.
     expect(formes.map(forme => forme.nom), 'la dérivation des fonctions injectables a échoué')
       .toEqual(expect.arrayContaining([
         'replisAssietteSignes', 'replisServables', 'decidePlateSubstitution', 'replisPourProtocole',
       ]));
-    const appels = fichiersDeProduction(racine).flatMap(chemin => {
-      // Le NOM, pas le chemin d'alias : une sœur de `lib/clinical/` importerait
-      // par `./replisAssietteV1`, et une garde qui ne connaîtrait que
-      // `@/lib/clinical/...` la manquerait en silence. Le module lui-même est
-      // écarté — ses propres DÉCLARATIONS ne sont pas des appels.
-      if (chemin === fichierDuModule) return [];
-      const source = readFileSync(chemin, 'utf8');
-      if (!source.includes('replisAssietteV1')) return [];
-      // LE TEXTE BRUT, ET C'EST UN CHOIX DE MODE D'ÉCHEC — voir [[D-241]] §18.
-      // Retirer la prose d'abord donnerait à cette garde un mode d'échec
-      // SILENCIEUX : deux passes de contre-revue de suite y ont trouvé un
-      // défaut réel, dont un qui effaçait l'appel fautif lui-même. Sur le texte
-      // brut, le pire qui puisse arriver est qu'une phrase citant une ancienne
-      // forme d'appel fasse rougir un fichier conforme — on la reformule, et on
-      // l'a VU. Un garde-fou qui se trompe doit faire du BRUIT.
-      return formes.flatMap(forme =>
-        argumentsDesAppels(source, forme.nom).map(parametres => ({
-          fichier: relative(racine, chemin), forme, parametres,
-        })));
-    });
-    expect(appels.length, 'aucun appel de production retrouvé — la garde serait vacante')
+    const fichiers = fichiersDeProduction(racine)
+      // Le module lui-même est écarté : ses DÉCLARATIONS ne sont pas des appels.
+      .filter(chemin => chemin !== fichierDuModule)
+      .map(chemin => ({ chemin: relative(racine, chemin), source: readFileSync(chemin, 'utf8') }));
+    const vus = fichiers.reduce(
+      (total, fichier) => total + nombreDAppels(formes, fichier.chemin, fichier.source), 0);
+    expect(vus, 'aucun appel de production retrouvé — la garde serait vacante')
       .toBeGreaterThan(0);
-    const fautifs = appels.flatMap(appel => {
-      // Les formes positionnelles : tout argument au-delà des paramètres nus EST
-      // un override. La forme à objet : ce sont les clés qui trahissent — ou un
-      // étalement, qui les porterait sans les écrire.
-      const trop = nombreDArguments(appel.parametres) > appel.forme.argumentsNus;
-      const nomme = /\b(signature|lignes|lignesIndication)\s*:/.test(appel.parametres);
-      const etale = appel.forme.objet && appel.parametres.includes('...');
-      return trop || nomme || etale ? [`${appel.fichier} → ${appel.forme.nom}`] : [];
-    });
+    const fautifs = appelsFautifs(formes, fichiers);
     expect(fautifs, 'ces appelants de production injectent une table ou une signature')
       .toEqual([]);
+  });
+
+  it('LES SIX ÉVASIONS QUE LES RÉDACTIONS LEXICALES MANQUAIENT, une à une', () => {
+    // POURQUOI CE CAS EXISTE. Cette garde a été écrite QUATRE fois, et la
+    // contre-revue a trouvé un défaut réel dans chacune des trois premières —
+    // toujours un raté SILENCIEUX, toujours découvert par une mutation jouée
+    // une fois puis perdue. Les évasions deviennent donc des CAS : elles vivent
+    // ici, en mémoire, et une cinquième rédaction devra les passer toutes.
+    //
+    // Les sources ci-dessous ne sont pas déposées au dépôt : l'analyse prend
+    // son texte en paramètre, c'est tout l'intérêt.
+    const formes = exportsInjectables(
+      join(process.cwd(), 'src/lib/clinical/replisAssietteV1.ts'),
+      readFileSync(join(process.cwd(), 'src/lib/clinical/replisAssietteV1.ts'), 'utf8'),
+    );
+    const IMPORT = "import { replisPourProtocole, decidePlateSubstitution } from '@/lib/clinical/replisAssietteV1';";
+    const EVASIONS = [
+      {
+        nom: 'appel ordinaire, trois arguments',
+        source: IMPORT + '\nexport const a = () => replisPourProtocole(actions, meta, table);',
+        fautif: true,
+      },
+      {
+        nom: 'une parenthèse DANS UNE CHAÎNE du premier argument',
+        // Elle refermait l'appel trop tôt pour le compteur de parenthèses : la
+        // tranche retenue n'avait plus qu'un argument, et l'override devenait
+        // invisible.
+        source: IMPORT + "\nexport const b = () => replisPourProtocole(sansSuffixe(actions, ')'), meta, table);",
+        fautif: true,
+      },
+      {
+        nom: 'une parenthèse dans une EXPRESSION RÉGULIÈRE du premier argument',
+        // Celle-ci échappait aux DEUX rédactions lexicales — le retrait de la
+        // prose ne connaissait pas les littéraux d'expression régulière.
+        source: IMPORT + '\nexport const c = () => replisPourProtocole(actions.filter(x => /\\)$/.test(x.k)), meta, table);',
+        fautif: true,
+      },
+      {
+        nom: 'un IMPORT RENOMMÉ — déclaré hors de portée par les rédactions lexicales',
+        source: "import { replisPourProtocole as projeter } from '@/lib/clinical/replisAssietteV1';"
+          + '\nexport const d = () => projeter(actions, meta, table);',
+        fautif: true,
+      },
+      {
+        nom: 'un ÉTALEMENT sous une assertion de type',
+        // `{ ...x } as never` n'est pas un littéral d'objet pour l'arbre : sans
+        // dépouiller l'enrobage, l'étalement repassait au travers.
+        source: IMPORT + '\nexport const e = () => decidePlateSubstitution({ ...fabrique } as never);',
+        fautif: true,
+      },
+      {
+        nom: 'une clé d’injection, avec une parenthèse dans un texte clinique',
+        source: IMPORT + '\nexport const f = () => decidePlateSubstitution({\n'
+          + "  source, indication: 'sommeil (phase)', justification: 'motif ) fabriqué',\n"
+          + '  signature: meta, lignes: table,\n});',
+        fautif: true,
+      },
+      {
+        nom: 'CONFORME — prose citant l’ancienne forme, apostrophe en guillemets doubles, JSX',
+        // Le faux POSITIF que les rédactions lexicales risquaient. L'arbre ne
+        // confond pas une phrase avec un appel.
+        source: IMPORT
+          + '\n// autrefois on écrivait replisPourProtocole(actions, signature, lignes).'
+          + "\nconst H = 'replisPourProtocole(actions, signature, lignes)';"
+          + '\nconst R = "Réserve d\'adaptation : replisPourProtocole(a, b, c)";'
+          + '\nexport const g = () => replisPourProtocole(actions);',
+        fautif: false,
+      },
+    ] as const;
+
+    for (const evasion of EVASIONS) {
+      const fautifs = appelsFautifs(formes, [{ chemin: 'temoin.tsx', source: evasion.source }]);
+      // ANTI-VACUITÉ, CAS PAR CAS : un témoin dont l'appel ne serait pas même VU
+      // passerait pour conforme. On exige donc que l'appel soit trouvé.
+      expect(nombreDAppels(formes, 'temoin.tsx', evasion.source), evasion.nom + ' : appel non vu')
+        .toBe(1);
+      expect(fautifs.length, evasion.nom).toBe(evasion.fautif ? 1 : 0);
+    }
   });
 });
