@@ -216,10 +216,28 @@ export function replisAssietteSignes(
   if (signature.shaPerimetre === null) return false;
   if (signature.shaPerimetre !== shaPerimetreReplisAssiette(lignes)) return false;
   const identifiants = new Set<string>();
+  const cles = new Set<string>();
   for (const ligne of lignes) {
     if (anomaliesDeLaLigneRepli(ligne, lignesIndication).length > 0) return false;
     if (identifiants.has(ligne.id)) return false;
     identifiants.add(ligne.id);
+    // LE RECOUVREMENT EST UN DÉFAUT DE TABLE, PAS UN CAS — même règle que
+    // `baremeChargeV1` et `tableRepliV1`, qui refusent tous deux de servir une
+    // table qui se recouvre, MÊME SIGNÉE.
+    //
+    // La clé est le TRIPLET, pas le couple : deux lignes qui mènent de la même
+    // assiette à la même autre pour des indications DIFFÉRENTES sont
+    // légitimes — c'est précisément ce que la condition existe pour permettre.
+    // Deux lignes partageant les trois termes, en revanche, ne se distinguent
+    // plus que par leur degré et leur raccourci assumé : le `.find()` de la
+    // décision en retiendrait une ARBITRAIREMENT, et la projection les rendrait
+    // toutes deux au client. C'est le constat de la première passe de revue —
+    // « `.find()` choisit silencieusement la première » — un cran plus loin :
+    // corrigé alors en ajoutant l'indication à la clé de recherche, il revient
+    // dès que deux lignes partagent aussi l'indication.
+    const cle = `${ligne.depuis}→${ligne.vers}@${ligne.indication}`;
+    if (cles.has(cle)) return false;
+    cles.add(cle);
   }
   return true;
 }

@@ -25,6 +25,14 @@ import { INDICATIONS_ASSIETTES_V1 } from './indicationsAssiettesV1';
 /** Une indication réellement présente au dépôt — désignée, jamais inventée. */
 const INDICATION = INDICATIONS_ASSIETTES_V1[0]?.id ?? 'ASSIETTE-IND-INTROUVABLE';
 
+/**
+ * UNE SECONDE indication réelle, DISTINCTE de la première — cherchée par
+ * prédicat et non prise à l'indice `[1]`, qui deviendrait la même ligne le jour
+ * où la table d'indications est réordonnée.
+ */
+const AUTRE_INDICATION = INDICATIONS_ASSIETTES_V1
+  .find(candidate => candidate.id !== INDICATION)?.id ?? 'ASSIETTE-IND-INTROUVABLE';
+
 function ligne(over: Partial<LigneRepliAssiette> = {}): LigneRepliAssiette {
   return {
     id: 'REPLI-FIXTURE-1',
@@ -120,6 +128,25 @@ describe('Le verrou — chaque terme ferme, et aucun ne se supplée', () => {
   it('refuse un identifiant de ligne en double', () => {
     const lignes = [ligne(), ligne({ vers: 'ASSIETTE_PSYCHOBIOTIQUE' })];
     expect(replisAssietteSignes(signeePour(lignes), lignes)).toBe(false);
+  });
+
+  it('REFUSE une table qui se recouvre, même signée — deux lignes, le même triplet', () => {
+    // Le recouvrement est un défaut de TABLE, pas un cas : `baremeChargeV1` et
+    // `tableRepliV1` le refusent tous deux. Ici deux lignes ne se distinguent
+    // plus que par leur degré — la décision en retiendrait une arbitrairement.
+    const lignes = [ligne(), ligne({ id: 'REPLI-FIXTURE-2', degre: 'dernier_recours' })];
+    expect(replisAssietteSignes(signeePour(lignes), lignes)).toBe(false);
+    expect(replisServables(signeePour(lignes), lignes)).toEqual([]);
+  });
+
+  it('mais la MÊME direction pour deux indications distinctes reste servable', () => {
+    // Sans ce cas, la garde ci-dessus pourrait être écrite sur le seul couple
+    // `depuis`/`vers` et fermerait ce que la condition existe pour permettre.
+    expect(AUTRE_INDICATION, 'une seconde indication réelle est requise')
+      .not.toBe(INDICATION);
+    const lignes = [ligne(), ligne({ id: 'REPLI-FIXTURE-2', indication: AUTRE_INDICATION })];
+    expect(replisAssietteSignes(signeePour(lignes), lignes)).toBe(true);
+    expect(replisServables(signeePour(lignes), lignes)).toHaveLength(2);
   });
 
   it('une seule ligne anormale ferme le service ENTIER, jamais la seule fautive', () => {
@@ -342,7 +369,10 @@ describe('La décision de substitution — orientée, conditionnée, gardée aux
       indication: INDICATION,
       ...tableDe(lignes),
       targetPlateCode: 'ASSIETTE_SEROTONINERGIQUE',
-      // Le seuil est `< 10` : « trop court » en fait exactement 10 et PASSE.
+      // POURQUOI `'court'` ET NON `'trop court'` : le seuil est `< 10`, et
+      // « trop court » fait EXACTEMENT 10 caractères — il passerait la
+      // validation, et ce cas ne prouverait plus rien. La valeur ci-dessous en
+      // fait 5, donc elle est refusée, ce que l'assertion vérifie.
       justification: 'court',
     })).toThrow(/justification praticien/);
   });

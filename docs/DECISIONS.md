@@ -222,6 +222,32 @@ banc — seul endroit où éprouver le verrou sur une table non vide a un sens.
 Vérifiée par trois mutations, dont un témoin d'anti-vacuité : supprimer le seul
 appel de production fait rougir la garde au lieu de la rendre silencieuse.
 
+**15. SIXIÈME PASSE — LE CONSTAT LE PLUS UTILE DU LOT N'ÉTAIT PAS DÉPOSÉ EN
+COMMENTAIRE.** Il tenait dans la phrase d'entête de la relecture : « la
+validation doit refuser les doublons de clé `(depuis, vers, indication)` ».
+Aucun fil ne le portait, et il était juste. Le verrou refusait l'identifiant en
+double, jamais le **recouvrement** : deux lignes partageant les trois termes ne
+se distinguent plus que par leur degré et leur raccourci assumé — le `.find()`
+de la décision en retient une ARBITRAIREMENT, et la projection les rend toutes
+deux au client.
+
+**C'est le constat de la PREMIÈRE passe, revenu un cran plus loin.** Il disait
+« `.find()` choisit silencieusement la première » ; je l'avais fermé en ajoutant
+l'indication à la clé de recherche, ce qui le rouvre dès que deux lignes
+partagent aussi l'indication. Le verrou refuse désormais le recouvrement —
+**même signé**, comme `baremeChargeV1` et `tableRepliV1` le font déjà, et la
+clé est le TRIPLET, jamais le couple : deux lignes de même direction pour des
+indications différentes sont exactement ce que la condition existe pour
+permettre. Deux mutations, deux rouges — et retirer l'indication de la clé fait
+rougir aussi le cas de la première passe, ce qui est le bon signal.
+
+**L'autre constat de cette passe est écarté, sur pièce.** Le commentaire
+`« trop court » en fait exactement 10 et PASSE` ne décrit pas le cas testé : il
+dit pourquoi la fixture vaut `'court'` (5 caractères, donc refusée) et non
+`'trop court'` (10, donc acceptée par un seuil `< 10`). Il est exact. Mais il
+était assez ambigu pour produire un constat faux, et il est réécrit — écarter
+un constat n'interdit pas de retirer ce qui l'a fabriqué.
+
 **CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
 décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse
 logique de l'échange, et `DC-19`/`DC-20` interdisent d'affirmer ce qu'aucune

@@ -234,6 +234,24 @@ changement qu'il propose. Ce qui n'est alors pas négociable, c'est d'écrire le
 motif à l'endroit où le prochain lecteur le cherchera — ici dans le verrou
 lui-même — et de fermer par une garde la part que le code PEUT tenir.
 
+## 8 octies. Sixième passe — le meilleur constat n'était pas dans un commentaire
+
+Il tenait dans la **phrase d'entête** de la relecture : « la validation doit
+refuser les doublons de clé `(depuis, vers, indication)` ». Aucun fil ne le
+portait — ni `pulls/<N>/comments`, ni « Suppressed comments ». Il était juste.
+
+Le verrou refusait l'identifiant en double, jamais le **recouvrement**. Deux
+lignes partageant les trois termes ne se distinguent plus que par leur degré :
+le `.find()` de la décision en retient une arbitrairement. **C'est le constat de
+la première passe, revenu un cran plus loin** — je l'avais fermé en ajoutant
+l'indication à la clé de RECHERCHE, ce qui le rouvre dès que deux lignes
+partagent aussi l'indication. Le verrou refuse désormais le recouvrement, même
+signé, comme `baremeChargeV1` et `tableRepliV1` ; la clé est le TRIPLET.
+
+**À retenir** : lire la phrase d'entête de la revue, pas seulement ses fils. Et
+quand un défaut a déjà été corrigé une fois, se demander ce qui le ferait
+revenir — ici, l'égalité sur le terme même qu'on venait d'ajouter.
+
 ## 9. Problèmes ouverts
 
 **LE QUATRIÈME POINT DU PROGRAMME, ET IL EST ENTIÈREMENT CLINIQUE.** Affirmer
