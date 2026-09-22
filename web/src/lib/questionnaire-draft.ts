@@ -162,6 +162,77 @@ export function hasDraft(idAssignation: string): boolean {
   return draft != null && Object.keys(draft.answers).length > 0;
 }
 
+/**
+ * Les quatre familles de clés que ce module écrit — deux versionnées, deux
+ * héritées. Balayées par PRÉFIXE et non par identifiant : au moment de fermer
+ * une session, on ne connaît plus les assignations qui ont laissé un brouillon,
+ * et les chercher supposerait une lecture réseau que la déconnexion ne doit pas
+ * attendre.
+ *
+ * `wellneuro:comfort*` n'en fait volontairement PAS partie : le confort de
+ * lecture est un réglage d'appareil, pas une donnée de santé. L'effacer
+ * punirait la personne qui se déconnecte.
+ */
+const PREFIXES_BROUILLON = [
+  'wellneuro:questionnaire-draft:v1:',
+  'wellneuro:questionnaire-draft-meta:v1:',
+  'wellneuro:draft:',
+  'wellneuro:draft-meta:',
+] as const;
+
+/** Les clés de brouillon présentes sur CET appareil, tous patients confondus. */
+function clesBrouillon(): string[] {
+  const cles: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i += 1) {
+    const cle = window.localStorage.key(i);
+    if (cle && PREFIXES_BROUILLON.some((p) => cle.startsWith(p))) cles.push(cle);
+  }
+  return cles;
+}
+
+/**
+ * Y a-t-il des réponses non envoyées sur cet appareil ?
+ *
+ * Sert à AVERTIR avant de purger, jamais à décider seul : un brouillon est du
+ * travail que personne d'autre ne détient.
+ */
+export function aDesBrouillonsLocaux(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return clesBrouillon().length > 0;
+  } catch {
+    // Mode privé, quota, stockage bloqué : on ne peut pas savoir. Répondre
+    // `false` ne fait rien perdre — la purge, elle, échouera pareillement en
+    // silence, et le patient n'aura pas été averti pour rien.
+    return false;
+  }
+}
+
+/**
+ * Efface TOUS les brouillons de questionnaire de cet appareil.
+ *
+ * POURQUOI CE GESTE EXISTE. La session portail dure 30 jours depuis `D-241` ;
+ * « Se déconnecter » est ce qui protège l'ordinateur partagé. Or ces brouillons
+ * sont des réponses de santé, conservées 30 jours elles aussi
+ * (`DUREE_VIE_BROUILLON_JOURS`) : les laisser derrière soi vidait le geste de la
+ * moitié de sa promesse. L'application ne les restitue pas sans session, mais
+ * elles restent lisibles par qui ouvre les outils du navigateur.
+ *
+ * L'APPELANT DOIT AVOIR AVERTI. Cette fonction ne demande rien et ne rend rien :
+ * elle applique une décision déjà prise par la personne.
+ */
+export function effacerTousLesBrouillons(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    // Les clés sont relevées AVANT la première suppression : `localStorage.key(i)`
+    // est indexé, et retirer une entrée pendant le parcours décale les suivantes
+    // — une clé sur deux survivrait.
+    for (const cle of clesBrouillon()) window.localStorage.removeItem(cle);
+  } catch {
+    // Stockage indisponible : rien à effacer qu'on puisse atteindre.
+  }
+}
+
 /** Empêche une reprise de sauter une page requise incomplète. */
 export function resolveResumePage(
   savedPage: number,

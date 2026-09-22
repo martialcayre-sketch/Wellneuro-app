@@ -23,9 +23,13 @@ describe('BoutonDeconnexion', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
     Object.defineProperty(window, 'location', { value: { assign }, writable: true });
   });
 
+  // Ce bloc tourne SANS brouillon (`localStorage` vidé) : le bouton part donc
+  // directement, sans poser de question. Le chemin avec avertissement a son
+  // propre bloc plus bas.
   it('succès serveur : appelle la route puis renvoie vers la connexion', async () => {
     const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
@@ -79,5 +83,110 @@ describe('BoutonDeconnexion', () => {
 
     expect(await screen.findByRole('alert')).toBeTruthy();
     expect(assign).not.toHaveBeenCalled();
+  });
+});
+
+// LA SECONDE MOITIÉ DE LA PROMESSE. Le bouton protège l'appareil partagé ; les
+// brouillons de questionnaire sont des réponses de SANTÉ gardées 30 jours en
+// `localStorage`. Les laisser derrière vidait le geste de la moitié de son sens
+// — mais les effacer sans prévenir détruit du travail que personne d'autre ne
+// détient. D'où : on avertit, et seulement quand il y a quelque chose à perdre.
+describe('BoutonDeconnexion — brouillons locaux', () => {
+  const assign = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+    Object.defineProperty(window, 'location', { value: { assign }, writable: true });
+  });
+
+  function poserBrouillon(idAssignation = 'ASSIGN_1') {
+    window.localStorage.setItem(
+      `wellneuro:questionnaire-draft:v1:${idAssignation}`,
+      JSON.stringify({ version: 1, answers: { q1: 'oui' }, currentPage: 0 }),
+    );
+  }
+
+  it('sans brouillon : aucune question posée, on part directement', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<BoutonDeconnexion />);
+    fireEvent.click(screen.getByRole('button', { name: 'Se déconnecter' }));
+
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('/portail/connexion'));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('avec brouillon : avertit AVANT d’effacer, et n’a encore rien fait', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    poserBrouillon();
+
+    render(<BoutonDeconnexion />);
+    fireEvent.click(screen.getByRole('button', { name: 'Se déconnecter' }));
+
+    const dialogue = await screen.findByRole('alertdialog');
+    // L'avertissement dit ce qui sera perdu, pas « êtes-vous sûr ? ».
+    expect(dialogue.textContent).toMatch(/ne sont pas encore envoyées/i);
+    // RIEN n'a bougé : ni la session, ni le brouillon.
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('wellneuro:questionnaire-draft:v1:ASSIGN_1')).not.toBeNull();
+  });
+
+  it('annuler : le brouillon survit et la session reste ouverte', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    poserBrouillon();
+
+    render(<BoutonDeconnexion />);
+    fireEvent.click(screen.getByRole('button', { name: 'Se déconnecter' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Annuler' }));
+
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('wellneuro:questionnaire-draft:v1:ASSIGN_1')).not.toBeNull();
+  });
+
+  it('confirmer : purge TOUS les brouillons, y compris les clés héritées', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })));
+    poserBrouillon('ASSIGN_1');
+    poserBrouillon('ASSIGN_2');
+    window.localStorage.setItem('wellneuro:draft:VIEUX', '{"q":"a"}');
+    window.localStorage.setItem('wellneuro:draft-meta:VIEUX', '2026-01-01');
+    // Réglage d'appareil, PAS une donnée de santé : il doit survivre.
+    window.localStorage.setItem('wellneuro:comfort', '{"texteAgrandi":true}');
+
+    render(<BoutonDeconnexion />);
+    fireEvent.click(screen.getByRole('button', { name: 'Se déconnecter' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Se déconnecter et effacer' }));
+
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('/portail/connexion'));
+    for (const cle of [
+      'wellneuro:questionnaire-draft:v1:ASSIGN_1',
+      'wellneuro:questionnaire-draft:v1:ASSIGN_2',
+      'wellneuro:draft:VIEUX',
+      'wellneuro:draft-meta:VIEUX',
+    ]) {
+      expect(window.localStorage.getItem(cle)).toBeNull();
+    }
+    expect(window.localStorage.getItem('wellneuro:comfort')).not.toBeNull();
+  });
+
+  // L'ORDRE EST LA PROTECTION. Purger avant d'avoir la confirmation du serveur
+  // ferait perdre les brouillons à qui RESTE connecté parce que la déconnexion
+  // a échoué : du travail détruit, et l'appareil toujours ouvert.
+  it('échec serveur après confirmation : le brouillon N’EST PAS effacé', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 500 })));
+    poserBrouillon();
+
+    render(<BoutonDeconnexion />);
+    fireEvent.click(screen.getByRole('button', { name: 'Se déconnecter' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Se déconnecter et effacer' }));
+
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(assign).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('wellneuro:questionnaire-draft:v1:ASSIGN_1')).not.toBeNull();
   });
 });

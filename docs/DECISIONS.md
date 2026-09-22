@@ -4,6 +4,59 @@
 
 ## Décisions actives
 
+### D-242 — « Se déconnecter » purge les brouillons locaux, après avoir dit ce qui sera perdu
+
+- Date : 2026-09-22
+- Statut : accepté — demande du responsable (« Termine ce qui reste ouvert »),
+  qui clôt l'arbitrage laissé en suspens par [[D-241]] §6.
+- Domaine : portail patient (déconnexion, stockage local). **Aucune migration,
+  aucun drapeau, aucune règle clinique, aucun changement de modèle de données.**
+- Ferme la troisième limite de [[D-241]] §6 et **corrige la deuxième**, qui était
+  fausse.
+
+**1. LA PROMESSE N'ÉTAIT TENUE QU'À MOITIÉ.** « Se déconnecter » existe pour
+l'appareil partagé ([[D-241]] §4). Or `lib/questionnaire-draft.ts` conserve les
+réponses de questionnaire en `localStorage` **30 jours**
+(`DUREE_VIE_BROUILLON_JOURS`) : des données de santé qui survivaient au geste.
+L'application ne les restitue pas sans session — il faut les outils du navigateur
+pour les lire — mais elles restaient là.
+
+**2. ON PURGE, ET ON AVERTIT D'ABORD.** `effacerTousLesBrouillons()` balaie les
+quatre familles de clés du module, **par préfixe et non par identifiant** : au
+moment de fermer une session, on ne connaît plus les assignations qui ont laissé
+un brouillon, et les chercher supposerait une lecture réseau que la déconnexion
+ne doit pas attendre.
+
+L'avertissement n'apparaît **que s'il y a quelque chose à perdre**
+(`aDesBrouillonsLocaux()`). C'est délibéré : un dialogue systématique s'apprend
+par cœur et se congédie sans lire — il cesse alors de protéger. Et il dit CE QUI
+sera perdu, jamais « êtes-vous sûr ? » : une question sans contenu se répond au
+réflexe.
+
+**3. L'ORDRE EST LA PROTECTION.** La purge vient **après** la confirmation du
+serveur. Effacer d'abord ferait perdre les brouillons à qui reste connecté parce
+que la déconnexion a échoué : du travail détruit, et l'appareil toujours ouvert.
+Un banc tient cet ordre ; la mutation qui l'inverse le fait rougir.
+
+**4. LE CONFORT DE LECTURE N'EST PAS PURGÉ**, et c'est une frontière, pas un
+oubli. `wellneuro:comfort*` est un réglage d'appareil — texte agrandi,
+espacement, animations réduites. L'effacer punirait la personne qui se
+déconnecte, en particulier celle qui a réglé ces options parce qu'elle en a
+besoin. Un banc le garde.
+
+**5. LE E2E QUI MANQUAIT.** [[D-241]] livrait le geste sans aucun parcours joué —
+`frontend-ui.md` en attend un pour tout changement d'UI. `e2e/portail-deconnexion.spec.ts`
+vérifie ce qu'aucun banc de composant ne peut voir : que le cookie posé par le
+serveur **disparaît réellement du navigateur**. La parité d'attributs entre pose
+et effacement n'était jusqu'ici qu'une promesse d'en-tête.
+
+**6. CE QUI RESTE OUVERT.** Le rebond d'un patient **déjà connecté une fois** ne
+remonte toujours pas au praticien : l'état `entree_refusee` existe mais ne
+s'affiche que si le dossier n'a jamais connu de connexion réussie. Lot suivant.
+Côté Google, les refus sur adresse inconnue restent **indécidables par
+construction** — `id_patient = NULL`, aucun dossier à nommer. Et la déconnexion
+ne coupe toujours pas les autres appareils ([[D-241]] §6, inchangé).
+
 ### D-241 — La session portail passe de 12 h à 30 jours glissants, et le patient reçoit le moyen de la fermer
 
 - Date : 2026-09-22
@@ -80,13 +133,21 @@ manquait à la première rédaction de ce paragraphe.
 - **La déconnexion ne révoque pas les autres appareils.** Il faudrait écrire
   `sessionsInvalidesAvant` côté patient, donc lui donner un geste qui coupe aussi
   le praticien. Arbitrage distinct, non demandé.
-- **Rien n'alerte le praticien qu'un patient rebondit à l'entrée.** Les refus
-  s'accumulent en base (`portail_connexions_google`, `portail_magic_links`) sans
-  qu'aucune surface ne les remonte : le cas qui a déclenché cette décision a été
-  découvert parce que la personne a téléphoné. C'est la prochaine question, et
-  elle reste ouverte.
-- **« Se déconnecter » ne purge PAS les brouillons locaux, et c'est une limite
-  réelle de la promesse « appareil partagé ».** `lib/questionnaire-draft.ts`
+- ~~**Rien n'alerte le praticien qu'un patient rebondit à l'entrée.**~~
+  **AMENDÉ LE 2026-09-22 — cette phrase était FAUSSE, et lue trop vite.**
+  L'encart « Nouveaux patients » porte un état `entree_refusee`
+  (`lib/fil/nouveauxPatients.ts`), alimenté par `portailMagicLink.rejeuxRefuses`.
+  Ce qui est vrai est plus étroit, et reste un trou : cet état ne s'affiche que
+  si le patient **ne s'est JAMAIS connecté** (`!source.connecteLe &&
+  source.entreeRefusee`). Un patient déjà entré une fois, puis qui rebondit —
+  exactement le cas qui a déclenché cette décision — est avalé. Côté Google, en
+  revanche, rien n'est possible : les refus sur adresse inconnue portent
+  `id_patient = NULL`, il n'y a aucun dossier à nommer, et c'est la propriété de
+  non-oracle, pas un oubli. Repris par `D-242`.
+- ~~**« Se déconnecter » ne purge PAS les brouillons locaux**~~ — **FERMÉ par
+  `D-242` le 2026-09-22 : le geste purge désormais, après avertissement.** Le
+  texte d'origine, conservé pour ce qu'il documente :
+  `lib/questionnaire-draft.ts`
   conserve les réponses de questionnaire en `localStorage` **30 jours**
   (`DUREE_VIE_BROUILLON_JOURS`, clé `wellneuro:questionnaire-draft:v1:<id>`) :
   ce sont des données de santé, et elles survivent au geste. L'application ne les

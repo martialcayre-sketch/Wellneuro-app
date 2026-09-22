@@ -7683,3 +7683,31 @@ aussi `Path=/portail`.
 **Ouvert.** Les brouillons de questionnaire survivent 30 jours en
 `localStorage` après déconnexion (arbitrage non rendu, `D-241` §6) ; rien
 n'alerte le praticien qu'un patient rebondit à l'entrée.
+
+## 2026-09-22 — « Se déconnecter » purge les brouillons locaux (D-242)
+
+**Départ.** « Termine ce qui reste ouvert » — les trois limites de `D-241` §6.
+
+**Décision.** La déconnexion purge les brouillons de questionnaire
+(`localStorage`, 30 jours, données de santé) **après** avoir dit ce qui sera
+perdu. Trois choix motivés : avertir **seulement** s'il y a quelque chose à
+perdre — un dialogue systématique se congédie sans lire ; purger **après** la
+confirmation du serveur — l'ordre inverse détruit du travail sans même fermer
+l'appareil ; ne pas toucher au confort de lecture, réglage d'appareil et non
+donnée de santé.
+
+**Écartée.** La purge sèche, sans avertissement : un brouillon est du travail
+que personne d'autre ne détient.
+
+**Corrigé.** `D-241` §6 affirmait « rien n'alerte le praticien qu'un patient
+rebondit ». **Faux** — `entree_refusee` existe. Le vrai trou est plus étroit :
+l'état ne s'affiche que si le patient ne s'est **jamais** connecté. Affirmation
+posée sans avoir lu `lib/fil/nouveauxPatients.ts`.
+
+**Ajouté.** L'E2E du geste, qui manquait à `D-241` : il vérifie que le cookie
+disparaît **réellement** du navigateur — la parité pose ↔ effacement n'était
+qu'une promesse d'en-tête.
+
+**Ouvert.** Le rebond d'un patient déjà connecté (lot suivant, cadré : il faut
+une comparaison de récence, pas une levée de condition) ; les refus Google sur
+adresse inconnue restent indécidables par construction.
