@@ -129,8 +129,30 @@ describe('Un protocole V4 peut porter l’assiette ET la Boussole', () => {
   it('V1 et V3 gardent leur refus, MOT POUR MOT', () => {
     const avecBoussole = action({ foodCompassRef: REF_ALIMENT, interventionStatus: undefined });
     for (const version of [VERSION_PROTOCOL_DRAFT, VERSION_PROTOCOL_DRAFT_V3]) {
-      expect(() => build([avecBoussole], version)).toThrow('payload protocole V2 explicite');
+      expect(() => build([avecBoussole], version)).toThrow('payload protocole V4 explicite');
     }
+  });
+
+  it('UNE ACTION NON ALIMENTAIRE NE PORTE PAS DE BOUSSOLE — refusée à l’ÉCRITURE', () => {
+    // CONSTAT DE REVUE, ET C'EST L'ASYMÉTRIE QUE CE LOT EXISTE POUR FERMER,
+    // REJOUÉE D'UN CRAN. Ma première rédaction ouvrait V4 sans contrôler le type
+    // d'action. `assertProtocolDraftC5Structure` refuse pourtant une référence
+    // C5 portée par une action non alimentaire — mais à la RELECTURE. On
+    // pouvait donc PERSISTER une version que plus personne ne savait relire.
+    //
+    // Un refus à l'écriture est un message au praticien ; un refus à la
+    // relecture est un protocole mort. Les deux autres chemins portaient déjà
+    // ce terme : c'était le seul des trois à ne pas l'avoir.
+    const hydratationAvecBoussole = action({ type: 'hydration', foodCompassRef: REF_ALIMENT });
+    expect(() => build([hydratationAvecBoussole])).toThrow('exige une action alimentaire');
+
+    // ET LE REFUS DE L'ÉCRITURE DIT LA MÊME CHOSE QUE CELUI DE LA RELECTURE —
+    // sans quoi les deux gardes se contrediraient sur le même fait.
+    const relu: ProtocolDraft = {
+      ...build([action({ foodCompassRef: REF_ALIMENT })]),
+    };
+    relu.actions = [{ ...relu.actions[0], type: 'hydration' }];
+    expect(() => assertProtocolDraftC5Structure(relu)).toThrow('exige une action alimentaire');
   });
 
   it('AUCUNE EMPREINTE NE BOUGE pour une action qui ne porte pas de Boussole', () => {

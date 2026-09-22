@@ -34,6 +34,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
 import { VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
+import { getCurrentRecommendedPlateRef } from '@/lib/food-compass/plates';
 import type { ProtocolAction } from '@/lib/clinical-engine/types';
 import { deriveProtocolDraftId, deriveVersionId } from '@/lib/protocol/versioning';
 import { SECOND_RIDEAU_RENDU_FIXTURE, SYNTHESE_VALIDEE_FIXTURE } from '@/lib/clinical-engine/dossierT0Fixture';
@@ -681,6 +682,60 @@ describe('POST /api/praticien/protocoles/versions', () => {
       expect(create.contractVersion).toBe(VERSION_PROTOCOL_DRAFT_V4);
       expect(create.payload.actions[0].interventionStatus).toBe('conditionnelle_biologie');
       expect(create.payload.actions[0].waitFor).toEqual({ type: 'biologie', cible: 'Ferritine' });
+    });
+
+    it('PERSISTE LA BOUSSOLE ET L’ASSIETTE ENSEMBLE en V4 — le chemin de production', () => {
+      // CONSTAT DE REVUE : le banc éprouvait le moteur et la vue patient, jamais
+      // la ROUTE. Or c'est elle qui re-dérive la référence contre CIQUAL, elle
+      // qui choisit la version de contrat, et elle qui écrit. Un banc de moteur
+      // vert ne dit rien de ce qui est réellement persisté — c'est le défaut de
+      // jointure que [[D-240]] avait déjà payé une fois.
+      process.env.WN_C5_ENABLED = 'true';
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      // UNE RÉFÉRENCE C5 EXIGE UN PROTOCOLE SOURCE ACTIF — la route le vérifie,
+      // et c'est justement ce qu'un banc de moteur ne peut pas voir.
+      prisma.protocolDraft.findMany.mockResolvedValue([activeRow]);
+      return POST(postRequest({
+        episode, decisionCard,
+        submission: {
+          ...submissionV4,
+          actions: [{
+            ...actionV4, title: 'Sardine',
+            foodCompassRef: c5Ref(),
+            recommendedPlateRef: getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE'),
+          }],
+        },
+        baseVersionId: activeRow.id,
+      })).then(async res => {
+        expect(res.status).toBe(200);
+        const create = prisma.protocolDraft.upsert.mock.calls[0][0].create;
+        expect(create.contractVersion).toBe(VERSION_PROTOCOL_DRAFT_V4);
+        // LES DEUX SURVIVENT À L'ÉCRITURE, et c'est tout l'objet du lot : la
+        // liste blanche de `normalizeActions` jette en silence ce qu'elle ne
+        // nomme pas.
+        expect(create.payload.actions[0].foodCompassRef.foodRef).toBe('ciqual-2025-v1:26034');
+        expect(create.payload.actions[0].recommendedPlateRef.plateCode)
+          .toBe('ASSIETTE_DOPAMINERGIQUE');
+      });
+    });
+
+    it('REFUSE en V4 une Boussole portée par une action NON ALIMENTAIRE', () => {
+      // L'écriture refuse, donc la route rend 400 — plutôt que de persister une
+      // version que `assertProtocolDraftC5Structure` refuserait à la relecture.
+      process.env.WN_C5_ENABLED = 'true';
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([activeRow]);
+      return POST(postRequest({
+        episode, decisionCard,
+        submission: {
+          ...submissionV4,
+          actions: [{ ...actionV4, type: 'hydration', foodCompassRef: c5Ref() }],
+        },
+        baseVersionId: activeRow.id,
+      })).then(async res => {
+        expect(res.status).toBe(400);
+        expect(prisma.protocolDraft.upsert).not.toHaveBeenCalled();
+      });
     });
 
     // LE MÊME PAYLOAD SANS LA DEMANDE RESTE REFUSÉ : c'est ce qui prouve que la

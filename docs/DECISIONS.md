@@ -83,6 +83,38 @@ description de ce que le patient reçoit — et une seconde description a déjà
 coûté des mois de champ mort à ce dépôt ([[D-200]]). Ce lot rend la chose
 POSSIBLE ; il ne la câble pas.
 
+**LA REVUE A TROUVÉ DEUX CONSTATS, ET LE PREMIER EST L'ASYMÉTRIE QUE CE LOT
+EXISTE POUR FERMER, REJOUÉE D'UN CRAN.** En ouvrant V4 à `foodCompassRef`, ma
+première rédaction ne contrôlait pas le TYPE d'action. Or
+`assertProtocolDraftC5Structure` refuse une référence C5 portée par une action
+non alimentaire — **à la relecture**. On pouvait donc PERSISTER une version que
+plus personne ne savait relire.
+
+**Un refus à l'écriture est un message au praticien ; un refus à la relecture
+est un protocole mort.** Les deux autres chemins portaient déjà ce terme
+(`refValidation.ts` en lecture, `protocol.ts` pour le constructeur V2) : c'était
+le seul des trois à ne pas l'avoir. `normalizeFoodCompassRef` a désormais la
+MÊME FORME que `normalizePlateRef` — le contrat, puis le type, puis le retour
+explicite. Vérifié par mutation.
+
+**Et la condition ne s'est pas élargie à V2 au passage.** Un payload V2 ne porte
+jamais ses références SUR l'action quand il traverse `normalizeActions` : son
+constructeur les réinjecte après, en contrôlant lui-même le type. Admettre V2
+ici n'aurait ouvert aucun chemin utile et aurait élargi une garde hors mandat.
+Seul le MESSAGE change, qui annonçait « V2 » alors que V4 est le contrat exigé.
+
+**LE SECOND CONSTAT EST UN DÉFAUT DE JOINTURE, ET LE DÉPÔT L'A DÉJÀ PAYÉ.** Le
+chemin V4 de la route n'avait aucun cas : le banc éprouvait le moteur et la vue
+patient, jamais l'écriture réelle. Or c'est la route qui re-dérive la référence
+contre CIQUAL, choisit la version de contrat et écrit. Deux cas sont posés — les
+deux références survivent ensemble à la persistance, et une action non
+alimentaire porteuse d'une Boussole rend 400 sans rien écrire. Une mutation qui
+fait redémonter la référence en V4 les fait rougir.
+
+**Le premier de ces cas a d'abord échoué en 400**, sur un terme que le moteur
+ignore : « une référence C5 exige un protocole source actif ». C'est exactement
+ce qu'un banc de moteur ne peut pas voir, et la raison d'être du constat.
+
 ### D-242 — Le repli d'assiette devient une relation ORIENTÉE, hors du catalogue ; la table est vide, et deux affirmations de D-240 étaient fausses
 
 - Date : 2026-09-21

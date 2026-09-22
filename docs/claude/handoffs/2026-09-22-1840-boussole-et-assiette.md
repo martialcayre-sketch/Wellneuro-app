@@ -99,6 +99,27 @@ que « le patient ne reçoit rien de la référence ». C'est faux de
 `actionRefHash`, `inputHash`. C'est la projection SÛRE, en aval, qui les coupe.
 Le banc le dit désormais à l'endroit exact où l'assertion fautive se trouvait.
 
+## 8 bis. La revue — deux constats, deux retenus
+
+**LE PREMIER EST L'ASYMÉTRIE DE CE LOT, REJOUÉE D'UN CRAN.** En ouvrant V4 à
+`foodCompassRef`, je ne contrôlais pas le TYPE d'action. La relecture, elle,
+refuse une référence C5 sur une action non alimentaire : on pouvait donc
+persister une version que plus personne ne savait relire. **Un refus à
+l'écriture est un message au praticien ; un refus à la relecture est un
+protocole mort.** Les deux autres chemins portaient déjà ce terme — c'était le
+seul des trois à ne pas l'avoir. `normalizeFoodCompassRef` a maintenant la même
+forme que `normalizePlateRef`.
+
+**LE SECOND EST UN DÉFAUT DE JOINTURE.** Le chemin V4 de la ROUTE n'avait aucun
+cas — le banc éprouvait le moteur et la vue patient, jamais l'écriture réelle.
+Deux cas sont posés, et le premier a d'abord échoué en 400 sur un terme que le
+moteur ignore (« une référence C5 exige un protocole source actif ») : c'est
+précisément ce qu'un banc de moteur ne peut pas voir.
+
+**À retenir** : quand un lot lève un verrou, chercher les gardes VOISINES que ce
+verrou rendait inutiles. Ici le contrôle de version masquait le contrôle de
+type ; en levant l'un j'ai découvert que l'autre n'existait pas sur ce chemin.
+
 ## 9. Problèmes ouverts
 
 **LE CHEMIN COMPLET N'EST PAS CÂBLÉ, et ce lot ne le prétend pas.** Le patient

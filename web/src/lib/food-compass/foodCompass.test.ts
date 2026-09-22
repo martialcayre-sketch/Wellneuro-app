@@ -435,7 +435,10 @@ describe('C5B — contexte, patient et protocole V2', () => {
         minimalPlan: 'Minimal', rescuePlan: 'Secours', limitations: [], foodCompassRef: actionRef,
       }],
       therapeuticLoad: { level: 'light', source: 'practitioner', justification: null },
-    })).toThrow('payload protocole V2');
+    // LE MESSAGE A CHANGÉ AVEC [[D-243]], PAS LE COMPORTEMENT : V1 refuse
+    // toujours. Une référence C5 PORTÉE PAR UNE ACTION exige désormais V4 — V2
+    // la porte autrement, par son propre constructeur qui la réinjecte.
+    })).toThrow('exige un payload protocole V4 explicite');
     // LES CINQ ASSERTIONS QUI VIVAIENT ICI SONT PARTIES AVEC LEUR FONCTION
     // ([[D-239]]). Elles éprouvaient les gardes propres d'`attachFoodCompassRef`
     // — C5 éteinte, référence étrangère, protocole source, référence altérée —
