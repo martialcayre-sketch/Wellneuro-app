@@ -39,11 +39,18 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request): Promise<NextResponse> {
   const contexte = createRequestContext(req);
 
-  // Lue avant d'effacer, pour savoir s'il y avait une session à fermer. On ne
-  // journalise QUE ce booléen : ni identifiant, ni adresse — la règle
-  // `auth-securite.md` vaut ici comme ailleurs.
-  const avaitUneSession = readPatientSession(req) !== null;
-
+  // L'EFFACEMENT D'ABORD. RIEN AVANT LUI QUI PUISSE LEVER.
+  //
+  // L'ordre inverse avait un défaut, relevé par la revue Copilot et reproduit :
+  // `readPatientSession` fait un `decodeURIComponent` NON PROTÉGÉ
+  // (`lib/patient-session.ts`), donc un cookie `wn_portail=%` lève `URIError`.
+  // La route sortait alors en 500 AVANT de poser le `Set-Cookie` — et le
+  // bouton redirigeait quand même. Le patient lisait « déconnecté » en gardant
+  // sa session : le pire des trois états possibles, puisqu'il cesse d'essayer.
+  //
+  // La règle qui en sort vaut au-delà de cette route : un geste de fermeture se
+  // construit AVANT toute lecture, parce qu'il doit aboutir même quand ce qu'on
+  // voulait lire est illisible.
   const res = NextResponse.json({ ok: true });
   // ON ÉTALE `PORTAIL_COOKIE_OPTIONS`, ON NE LE RECOPIE PAS. Un cookie ne
   // s'efface que si ses attributs correspondent à ceux de la pose : un `path`
@@ -57,6 +64,20 @@ export async function POST(req: Request): Promise<NextResponse> {
   // attribut ajouté. `maxAge: 0` est le seul écart, et il est l'objet même du
   // geste.
   res.cookies.set(PORTAIL_COOKIE_NAME, '', { ...PORTAIL_COOKIE_OPTIONS, maxAge: 0 });
+
+  // Lecture DÉFENSIVE, et pour le seul journal : savoir s'il y avait une session
+  // à fermer. On ne journalise QUE ce booléen — ni identifiant, ni adresse, la
+  // règle `auth-securite.md` vaut ici comme ailleurs.
+  //
+  // Le `catch` n'avale pas un défaut, il refuse qu'une ligne de journal décide
+  // du sort de la réponse : un cookie illisible est exactement le cas où le
+  // patient a le plus besoin que l'effacement aboutisse.
+  let avaitUneSession = false;
+  try {
+    avaitUneSession = readPatientSession(req) !== null;
+  } catch {
+    avaitUneSession = false;
+  }
 
   logger.security({
     event: EVENT_CODES.PORTAIL_SESSION_FERMEE,

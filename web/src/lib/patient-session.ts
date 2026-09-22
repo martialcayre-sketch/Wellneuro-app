@@ -22,11 +22,17 @@ export const PORTAIL_COOKIE_NAME = 'wn_portail';
 // alimentaire se remplit une fois par jour, le soir : 24 h entre deux passages
 // pour une fenêtre de 12 h — le patient était donc déconnecté À CHAQUE VISITE, et
 // devait reprouver son identité par un lien magique (à usage unique, 24 h) ou par
-// Google. Lu en production le 2026-09-22 sur un dossier réel : entré le 19/09 à
-// 10:42, session morte le soir même, retour le 21/09 devant deux portes fermées —
-// le lien de son e-mail était déjà consommé (4 rejeux refusés), et son compte
-// Google porte une adresse différente de celle du dossier. Aucun des deux échecs
-// n'était un défaut : c'est la fenêtre qui les rendait fréquents.
+// Google. Constaté en production le 2026-09-22 sur un dossier réel, et la forme
+// est toujours la même : on entre, la session meurt dans la journée, et au retour
+// les deux portes sont fermées — le lien de l'e-mail a déjà servi, et le compte
+// Google ne porte pas toujours l'adresse du dossier. Aucun de ces deux refus
+// n'est un défaut : c'est la fenêtre qui les rendait fréquents.
+//
+// Le détail du parcours observé n'est pas recopié ici — horaires, compteurs de
+// tentatives et discordance de compte décrivent UNE personne, et le dépôt ne
+// garde pas de données d'usage patient (règle de la revue, PR #1211). Les
+// chiffres qui fondent la décision vivent dans son instruction (`D-241`), en
+// agrégat de cabinet.
 //
 // CE QUI NE CHANGE PAS — LA RÉVOCATION. `isSessionValideForPatient` relit EN BASE
 // `actif`, `accessTokenRevoked` et `sessionsInvalidesAvant` à chaque requête. Un

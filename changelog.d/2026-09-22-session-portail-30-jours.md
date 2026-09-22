@@ -6,12 +6,15 @@ de 12 h — **le patient était donc déconnecté à chaque visite**, et devait
 reprouver son identité par un lien magique (usage unique, 24 h) ou par Google.
 
 Constaté en production le 2026-09-22 sur un dossier réel, lu par identifiant
-depuis un conteneur : entré le 19/09 à 10:42, session morte le soir même, retour
-le 21/09 devant deux portes fermées — le lien de son e-mail était déjà consommé
-(4 rejeux refusés, dernière tentative le 21/09 à 13:32) et son compte Google
-porte une adresse différente de celle du dossier (9 refus `sans_espace_eligible`
-avec `id_patient` à NULL sur 14 jours). Aucun des deux échecs n'était un défaut :
-c'est la fenêtre qui les rendait fréquents.
+depuis un conteneur : on entre, la session meurt dans la journée, et au retour les
+deux portes sont fermées — le lien reçu par e-mail a déjà servi (usage unique), et
+le compte Google ne porte pas toujours l'adresse enregistrée au dossier. Aucun de
+ces deux refus n'est un défaut : c'est la fenêtre qui les rendait fréquents.
+
+En agrégat de cabinet sur 14 jours, le chemin Google rend **22 connexions
+réussies pour 9 refus « adresse absente du dossier »** : le chemin fonctionne, ce
+sont les reprises d'accès qui échouent. Le détail par dossier n'est pas recopié
+ici — il décrit une personne, et un dépôt ne s'efface pas.
 
 - **`SESSION_TTL_SECONDS` : 12 h → 30 jours**, charge signée et `maxAge` du
   cookie accordés par construction (un banc les compare — les désaccorder ferait

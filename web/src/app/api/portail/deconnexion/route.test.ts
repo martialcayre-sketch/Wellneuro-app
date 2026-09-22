@@ -129,6 +129,22 @@ describe('POST /api/portail/deconnexion', () => {
     expect(enteteCookie(res)).toMatch(/Max-Age=0/i);
   });
 
+  // LE CAS QUI FAISAIT ÉCHOUER LA DÉCONNEXION EN SILENCE (revue Copilot).
+  // `readPatientSession` fait un `decodeURIComponent` non protégé : `%` seul
+  // lève `URIError`. La route sortait en 500 AVANT de poser le `Set-Cookie`, et
+  // le bouton redirigeait sans regarder la réponse — le patient lisait
+  // « déconnecté » en gardant sa session. Un cookie illisible est exactement le
+  // cas où l'effacement doit aboutir.
+  it('efface même quand le cookie est illisible (URIError)', async () => {
+    const req = new Request('http://localhost/api/portail/deconnexion', {
+      method: 'POST',
+      headers: { cookie: 'wn_portail=%' },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(enteteCookie(res)).toMatch(/Max-Age=0/i);
+  });
+
   // `auth-securite.md` : jamais d'e-mail patient ni de cookie dans un journal.
   // La route ne journalise qu'un booléen — ce banc le tient.
   it('ne journalise ni l’adresse ni la valeur du cookie', async () => {

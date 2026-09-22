@@ -19,16 +19,32 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 // cookie, donc plus de bouton sur l'écran d'arrivée.
 export function BoutonDeconnexion() {
   const [enCours, setEnCours] = useState(false);
+  const [echec, setEchec] = useState(false);
 
   async function deconnecter() {
     setEnCours(true);
+    setEchec(false);
+
+    // ON NE REDIRIGE QUE SI LE SERVEUR A CONFIRMÉ. La première version partait
+    // sans regarder la réponse : sur une erreur, le patient atterrissait sur la
+    // page de connexion en gardant son cookie — il lisait « déconnecté » et
+    // cessait d'essayer. C'est le pire des états, et sur un appareil partagé
+    // c'est précisément celui qu'il ne faut pas produire (revue Copilot,
+    // PR #1211).
+    let confirme = false;
     try {
-      await fetch('/api/portail/deconnexion', { method: 'POST' });
+      const reponse = await fetch('/api/portail/deconnexion', { method: 'POST' });
+      confirme = reponse.ok;
     } catch {
-      // Réseau coupé : on redirige quand même. La page de connexion relit le
-      // cookie côté serveur et dira la vérité — mieux vaut y aller que laisser
-      // le patient sur un écran qui prétend l'avoir déconnecté sans preuve.
+      confirme = false; // réseau coupé
     }
+
+    if (!confirme) {
+      setEnCours(false);
+      setEchec(true);
+      return;
+    }
+
     // `location.assign` et non `router.push` : on veut que le navigateur
     // reparte du serveur avec le cookie effacé, sans réutiliser le cache
     // client d'un rendu fait pendant que la session vivait encore.
@@ -36,14 +52,23 @@ export function BoutonDeconnexion() {
   }
 
   return (
-    <PatientButton
-      variant="neutral"
-      onClick={deconnecter}
-      loading={enCours}
-      loadingLabel="Déconnexion…"
-      className="print:hidden"
-    >
-      Se déconnecter
-    </PatientButton>
+    <div className="flex flex-col items-end gap-1 print:hidden">
+      <PatientButton
+        variant="neutral"
+        onClick={deconnecter}
+        loading={enCours}
+        loadingLabel="Déconnexion…"
+      >
+        Se déconnecter
+      </PatientButton>
+      {/* `role="alert"` : l'échec est annoncé, pas seulement affiché — le
+          bouton vient d'être actionné, le lecteur d'écran est ailleurs. */}
+      {echec && (
+        <p role="alert" className="text-xs text-status-danger max-w-[16rem] text-right">
+          La déconnexion n’a pas abouti. Vous êtes toujours connecté — réessayez,
+          ou fermez complètement le navigateur.
+        </p>
+      )}
+    </div>
   );
 }

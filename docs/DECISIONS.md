@@ -20,12 +20,24 @@
 **1. LA FENÊTRE ÉTAIT LA CAUSE, LES DEUX ÉCHECS N'ÉTAIENT QUE SES SYMPTÔMES.**
 Un agenda alimentaire se remplit une fois par jour, le soir : 24 h entre deux
 passages pour une fenêtre de 12 h. Le patient était donc déconnecté **à chaque
-visite**, et devait à chaque fois reprouver son identité. Lu en production sur un
-dossier réel, par identifiant, depuis un conteneur : entré le 19/09 à 10:42,
-session morte le soir même, retour le 21/09 devant deux portes fermées — lien de
-l'e-mail déjà consommé (4 rejeux refusés), et compte Google portant une adresse
-différente de celle du dossier. Ni l'un ni l'autre n'était un défaut de code. Ce
-qui se corrige est ce qui rendait ces deux refus **fréquents**.
+visite**, et devait à chaque fois reprouver son identité. Constaté en production
+le 2026-09-22 sur un dossier réel, lu par identifiant depuis un conteneur : on
+entre, la session meurt dans la journée, et au retour les deux portes sont
+fermées — le lien reçu par e-mail a déjà servi (usage unique), et le compte
+Google ne porte pas toujours l'adresse enregistrée au dossier. Ni l'un ni l'autre
+n'est un défaut de code. Ce qui se corrige est ce qui rendait ces deux refus
+**fréquents**.
+
+**La mesure qui fonde la décision est un agrégat de cabinet, pas un parcours.**
+Sur 14 jours, le chemin Google rend 22 connexions réussies pour 9 refus « adresse
+absente du dossier » (`portail_connexions_google`, `issue`/`motif`) : le chemin
+lui-même fonctionne, ce sont les REPRISES d'accès qui échouent — et la fenêtre de
+12 h en imposait une par jour. **Le détail du parcours observé n'est pas recopié
+ici** : horaires d'accès, compteurs de tentatives et discordance de compte
+décrivent UNE personne, et un registre versionné ne s'efface pas (relevé par la
+revue de la PR #1211 ; la règle « aucune identité réelle dans le dépôt » vise le
+nom et l'adresse, celle-ci l'étend aux données d'usage). Les faits par dossier se
+relisent là où ils vivent — en production, par identifiant, depuis un conteneur.
 
 **2. 30 JOURS, ET GLISSANTS.** `POST /api/portail/session`, appelé à chaque
 ouverture du portail, réémet le cookie : un patient qui revient au moins une fois
@@ -68,9 +80,11 @@ manquait à la première rédaction de ce paragraphe.
 - **La déconnexion ne révoque pas les autres appareils.** Il faudrait écrire
   `sessionsInvalidesAvant` côté patient, donc lui donner un geste qui coupe aussi
   le praticien. Arbitrage distinct, non demandé.
-- **Rien n'alerte le praticien qu'un patient rebondit à l'entrée.** Huit refus en
-  cinq jours sur le dossier ci-dessus, découverts parce que le patient a
-  téléphoné. C'est la prochaine question, et elle reste ouverte.
+- **Rien n'alerte le praticien qu'un patient rebondit à l'entrée.** Les refus
+  s'accumulent en base (`portail_connexions_google`, `portail_magic_links`) sans
+  qu'aucune surface ne les remonte : le cas qui a déclenché cette décision a été
+  découvert parce que la personne a téléphoné. C'est la prochaine question, et
+  elle reste ouverte.
 - **« Se déconnecter » ne purge PAS les brouillons locaux, et c'est une limite
   réelle de la promesse « appareil partagé ».** `lib/questionnaire-draft.ts`
   conserve les réponses de questionnaire en `localStorage` **30 jours**
