@@ -337,6 +337,26 @@ distinguer du CODE d'une chaîne, d'un commentaire ou d'une expression
 régulière, elle a besoin d'un parseur — pas d'une expression régulière de plus.
 Le signal d'alarme est le deuxième cas particulier.
 
+## 8 terdecies. Onzième passe — le bon outil, le mauvais réglage
+
+`arbreDe` passait `ScriptKind.TSX` quelle que soit l'extension. Lire un `.ts`
+comme du TSX **n'échoue pas** : l'arbre est tronqué et les diagnostics ne sont
+pas lus. `const f = <T>(v: T) => [v]` — présent au dépôt,
+`food-observation/persistence.ts:443` — devient une balise JSX ouverte, et tous
+les appels qui suivent disparaissent. Mesuré : 63 appels vus en TSX contre 97 en
+TS sur ce fichier.
+
+**Quatrième mode d'échec silencieux du lot.** Le tour précédent avait raison sur
+l'outil et tort sur son réglage — ce qui ne se voit pas davantage.
+
+**Et l'anti-vacuité GLOBALE ne pouvait pas l'attraper** : c'est une somme, donc
+un fichier tombé à zéro appel y est invisible. Seule l'anti-vacuité **par cas**
+le voit. La batterie reçoit un septième cas, le seul porté par un chemin `.ts`.
+
+**À retenir** : une batterie de témoins doit faire varier **ce que le code fait
+varier**. Ici le code branche sur l'extension ; sept témoins portaient tous la
+même. Et une anti-vacuité qui SOMME ne garde rien contre une disparition locale.
+
 ## 9. Problèmes ouverts
 
 **LE QUATRIÈME POINT DU PROGRAMME, ET IL EST ENTIÈREMENT CLINIQUE.** Affirmer

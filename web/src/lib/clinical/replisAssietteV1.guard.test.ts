@@ -473,7 +473,18 @@ function fichiersDeProduction(racine: string): readonly string[] {
  * renommé compris**, que les rédactions lexicales déclaraient hors de portée.
  */
 function arbreDe(chemin: string, source: string) {
-  return createSourceFile(chemin, source, ScriptTarget.Latest, true, ScriptKind.TSX);
+  // LE DIALECTE SE LIT SUR L'EXTENSION, ET CE N'EST PAS UN DÉTAIL. Lire un `.ts`
+  // comme du TSX n'échoue pas : `createSourceFile` rend un arbre TRONQUÉ et des
+  // diagnostics que personne ne regarde. Or `const f = <T>(v: T) => [v]` est du
+  // TypeScript ordinaire — la forme existe au dépôt — et devient une balise JSX
+  // ouverte en TSX : TOUS les appels qui suivent disparaissent, en silence.
+  // Mesuré : sur un fichier réel, 63 appels vus en TSX contre 97 en TS.
+  //
+  // C'est le même mode d'échec que les trois rédactions lexicales, déplacé
+  // encore d'un cran — et l'anti-vacuité GLOBALE ne peut pas le voir, puisqu'un
+  // fichier qui retombe à zéro appel n'apporte rien à une somme.
+  const kind = chemin.endsWith('.tsx') ? ScriptKind.TSX : ScriptKind.TS;
+  return createSourceFile(chemin, source, ScriptTarget.Latest, true, kind);
 }
 
 /** Chaque nœud de l'arbre, une fois. */
@@ -777,6 +788,17 @@ describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
         fautif: true,
       },
       {
+        nom: 'une FLÈCHE GÉNÉRIQUE dans un `.ts` — le dialecte, pas la syntaxe',
+        // Lu en TSX, `<T>(...)` ouvre une balise : l'arbre est tronqué et
+        // l'appel qui suit disparaît. La forme existe au dépôt. Ce cas est le
+        // seul à porter un chemin `.ts` — sans lui, la batterie n'éprouverait
+        // qu'un seul dialecte, et c'est ce que le relecteur a vu.
+        chemin: 'temoin.ts',
+        source: IMPORT + '\nconst lire = <T>(v: unknown, f: (x: unknown) => T): T[] => [f(v)];'
+          + '\nexport const h = () => replisPourProtocole(lire(actions, x => x), meta, table);',
+        fautif: true,
+      },
+      {
         nom: 'CONFORME — prose citant l’ancienne forme, apostrophe en guillemets doubles, JSX',
         // Le faux POSITIF que les rédactions lexicales risquaient. L'arbre ne
         // confond pas une phrase avec un appel.
@@ -790,10 +812,13 @@ describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
     ] as const;
 
     for (const evasion of EVASIONS) {
-      const fautifs = appelsFautifs(formes, [{ chemin: 'temoin.tsx', source: evasion.source }]);
+      const chemin = 'chemin' in evasion ? evasion.chemin : 'temoin.tsx';
+      const fautifs = appelsFautifs(formes, [{ chemin, source: evasion.source }]);
       // ANTI-VACUITÉ, CAS PAR CAS : un témoin dont l'appel ne serait pas même VU
-      // passerait pour conforme. On exige donc que l'appel soit trouvé.
-      expect(nombreDAppels(formes, 'temoin.tsx', evasion.source), evasion.nom + ' : appel non vu')
+      // passerait pour conforme. On exige donc que l'appel soit trouvé — et
+      // c'est CETTE assertion qui attrape un dialecte mal choisi, là où
+      // l'anti-vacuité globale, étant une somme, ne le peut pas.
+      expect(nombreDAppels(formes, chemin, evasion.source), evasion.nom + ' : appel non vu')
         .toBe(1);
       expect(fautifs.length, evasion.nom).toBe(evasion.fautif ? 1 : 0);
     }

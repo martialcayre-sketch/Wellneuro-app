@@ -373,6 +373,31 @@ passée en valeur, atteinte par un objet, reconstruite — n'est pas un appel no
 et l'arbre seul ne le résout pas. Rien ici ne peut arrêter un contournement
 délibéré : le `shaPerimetre` est un littéral lisible.
 
+**20. ONZIÈME PASSE — L'ARBRE ÉTAIT LE BON OUTIL, ET JE LE LISAIS DANS LE MAUVAIS
+DIALECTE.** `arbreDe` passait `ScriptKind.TSX` **quelle que soit l'extension**.
+Or lire un `.ts` comme du TSX n'échoue pas : `createSourceFile` rend un arbre
+**tronqué** et des diagnostics que personne ne regarde. Et
+`const f = <T>(v: T) => [v]` — du TypeScript ordinaire, **présent au dépôt**
+(`lib/food-observation/persistence.ts:443`) — y devient une balise JSX ouverte :
+**tous les appels qui suivent disparaissent**. Mesuré sur ce fichier réel : 63
+appels vus en TSX contre 97 en TS.
+
+**Le même mode d'échec, déplacé encore d'un cran** — le quatrième de ce lot, et
+toujours silencieux. Le §19 avait raison sur l'outil ; il s'est trompé sur son
+réglage, ce qui ne se voit pas davantage. Un `.ts` de production portant une
+flèche générique avant un appel à trois arguments laissait le banc **VERT** :
+vérifié sur le banc réel, avec témoin déposé puis retiré.
+
+**Et l'anti-vacuité GLOBALE ne pouvait pas l'attraper**, parce qu'elle est une
+SOMME : un fichier dont tous les appels disparaissent apporte zéro et reste
+invisible dans un total qui reste positif. Seule une anti-vacuité **par cas** le
+voit — c'est elle qui tue la mutation ici.
+
+Le dialecte se lit donc sur l'extension, et la batterie des évasions reçoit un
+**septième cas, le seul porté par un chemin `.ts`**. Sans lui elle n'éprouvait
+qu'un dialecte, et c'est exactement ce que le relecteur a nommé : une batterie
+qui ne varie pas ce que le code fait varier ne garde rien de ce côté-là.
+
 **CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
 décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse
 logique de l'échange, et `DC-19`/`DC-20` interdisent d'affirmer ce qu'aucune
