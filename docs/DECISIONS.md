@@ -312,6 +312,30 @@ referme pas sur sa ligne n'ouvre rien, ce qui rend le texte JSX inoffensif. Deux
 mutations : le composant fautif rougit et se nomme ; le fichier conforme portant
 prose, apostrophe en guillemets doubles et JSX ne produit aucun constat.
 
+**18. ET LA CONCLUSION QUE DEUX PASSES AURAIENT DÛ ME FAIRE TIRER TOUT DE SUITE :
+UN GARDE-FOU DOIT SE TROMPER BRUYAMMENT.** Le §17 corrige le retrait de la prose ;
+il ne répond pas à la question que le §16 n'avait pas posée. **Quel est le MODE
+D'ÉCHEC de cette garde ?**
+
+Retirer la prose avant de balayer lui donne un mode d'échec **SILENCIEUX** : si
+le retrait se trompe, l'appel fautif DISPARAÎT et la garde reste verte. Lire le
+texte **BRUT** lui donne un mode d'échec **BRUYANT** : si une phrase cite une
+ancienne forme d'appel, un fichier conforme fait rougir le CI — on le voit, on
+reformule la phrase, et personne n'a couru de risque.
+
+**Les deux erreurs ne se valent pas, et j'ai passé deux tours à perfectionner la
+mauvaise.** Le §16 a été écrit pour un faux positif **jamais observé** — avant
+lui, la garde était verte sur l'arbre réel. Le §17 a corrigé un faux négatif,
+lui, **mesuré sur un composant réel**. Les fichiers de PRODUCTION sont donc lus
+BRUTS à partir d'ici.
+
+**Le balayage n'est pas supprimé, il est ramené à ce qu'il sait faire** : lire
+les DÉCLARATIONS de `replisAssietteV1.ts` — sans lui, le commentaire posé entre
+deux paramètres fausserait le compte des arguments nus. Ce module n'a pas de
+JSX, et ses apostrophes vivent dans des commentaires, que le balayage retire en
+position de code. Un outil au périmètre où il est juste, pas partout où il
+semblait utile.
+
 **CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
 décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse
 logique de l'échange, et `DC-19`/`DC-20` interdisent d'affirmer ce qu'aucune

@@ -294,6 +294,26 @@ prétend comprendre la STRUCTURE d'un fichier (chaînes, commentaires, portées)
 est fausse ; il y faut un balayage. Et un correctif de garde se MESURE dans les
 deux sens — ce qu'il attrape, et ce qu'il a cessé d'attraper.
 
+## 8 undecies. Et la vraie question, que je n'avais pas posée : le MODE D'ÉCHEC
+
+Le tour précédent corrige le retrait de la prose. Il ne répond pas à ceci :
+**quand cette garde se trompe, fait-elle du bruit ou du silence ?**
+
+- Prose retirée AVANT le balayage → échec **silencieux** : l'appel fautif
+  disparaît, la garde reste verte.
+- Texte **brut** → échec **bruyant** : une phrase citant une ancienne forme
+  d'appel fait rougir un fichier conforme. On le voit, on reformule.
+
+**Les deux erreurs ne se valent pas, et j'ai passé deux tours à perfectionner la
+mauvaise.** Le retrait de prose avait été ajouté pour un faux positif **jamais
+observé** ; il a produit un faux négatif **mesuré**. Les fichiers de production
+sont lus BRUTS à partir d'ici, et le balayage est ramené au seul texte du module,
+où il sert à lire les déclarations.
+
+**À retenir** : avant de rendre une garde plus fine, demander ce qu'elle fait
+quand elle a tort. Une garde qui peut se taire à tort est pire qu'une garde qui
+peut crier à tort.
+
 ## 9. Problèmes ouverts
 
 **LE QUATRIÈME POINT DU PROGRAMME, ET IL EST ENTIÈREMENT CLINIQUE.** Affirmer

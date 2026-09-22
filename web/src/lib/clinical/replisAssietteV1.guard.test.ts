@@ -477,9 +477,12 @@ function finDuLitteral(source: string, debut: number, guillemet: string): number
  * un littéral qu'à un guillemet rencontré en position de CODE : l'apostrophe
  * intérieure n'est jamais vue.
  *
- * CE QU'IL NE TIENT PAS, déclaré : deux apostrophes françaises sur la MÊME ligne
- * de texte JSX réduisent encore ce qui les sépare. Le dégât est borné à la
- * ligne, et un appel occupe la sienne.
+ * OÙ ELLE S'APPLIQUE, ET NULLE PART AILLEURS : au SEUL texte de
+ * `replisAssietteV1.ts`, pour lire ses déclarations — le commentaire posé entre
+ * deux paramètres fausserait sinon le compte des arguments nus. Les fichiers de
+ * PRODUCTION, eux, sont balayés BRUTS : voir le motif au site d'appel, et
+ * [[D-241]] §18. Ce module n'a pas de JSX, et ses apostrophes vivent dans des
+ * commentaires, que le balayage retire en position de code.
  */
 function sansProse(source: string): string {
   let sortie = '';
@@ -657,6 +660,11 @@ describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
     // passe d'override à une fonction injectable de ce module — et la liste de
     // ces fonctions est DÉRIVÉE du texte du module, pas énumérée ici.
     //
+    // ELLE FAIT DU BRUIT PLUTÔT QUE DU SILENCE : les fichiers de production sont
+    // lus BRUTS. Une phrase qui citerait une ancienne forme d'appel ferait donc
+    // rougir un fichier conforme — c'est le prix, il est visible, et il se paie
+    // en reformulant la phrase. L'inverse ne se voit pas ([[D-241]] §18).
+    //
     // ELLE NE TIENT PAS, et le raccourci est déclaré plutôt que masqué : c'est
     // une garde LEXICALE. Un import renommé (`import { X as Y }`) la désarme,
     // puisqu'elle reconnaît l'identifiant au site d'appel et non la fonction
@@ -683,9 +691,15 @@ describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
       if (chemin === fichierDuModule) return [];
       const source = readFileSync(chemin, 'utf8');
       if (!source.includes('replisAssietteV1')) return [];
-      const code = sansProse(source);
+      // LE TEXTE BRUT, ET C'EST UN CHOIX DE MODE D'ÉCHEC — voir [[D-241]] §18.
+      // Retirer la prose d'abord donnerait à cette garde un mode d'échec
+      // SILENCIEUX : deux passes de contre-revue de suite y ont trouvé un
+      // défaut réel, dont un qui effaçait l'appel fautif lui-même. Sur le texte
+      // brut, le pire qui puisse arriver est qu'une phrase citant une ancienne
+      // forme d'appel fasse rougir un fichier conforme — on la reformule, et on
+      // l'a VU. Un garde-fou qui se trompe doit faire du BRUIT.
       return formes.flatMap(forme =>
-        argumentsDesAppels(code, forme.nom).map(parametres => ({
+        argumentsDesAppels(source, forme.nom).map(parametres => ({
           fichier: relative(racine, chemin), forme, parametres,
         })));
     });
