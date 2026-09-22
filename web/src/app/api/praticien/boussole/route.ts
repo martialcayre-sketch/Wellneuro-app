@@ -20,8 +20,10 @@ import {
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
 import { resolveActiveVersion } from '@/lib/protocol/versioning';
 import { buildPractitionerFoodCompassReference } from '@/lib/food-compass/practitionerReference';
+import { replisPourProtocole } from '@/lib/clinical/replisAssietteV1';
 import { getLatestPublishedJaFeasibility } from '@/lib/food-observation/feasibilityRepository';
 import type { PublishedJaFeasibility } from '@/lib/food-observation/feasibility';
+import type { RepliAssietteDeclare } from '@/lib/food-compass/types';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 
 export const dynamic = 'force-dynamic';
@@ -37,7 +39,20 @@ type SuccessResponse = {
   manifest: { version: typeof C5_PRACTITIONER_MANIFEST_VERSION; hash: typeof C5_PRACTITIONER_MANIFEST_HASH };
   plateCatalog: { version: typeof C5B_PLATE_CATALOG_VERSION; hash: typeof C5B_PLATE_CATALOG_HASH };
   jaFeasibility: PublishedJaFeasibility | null;
-  alternatives: [];
+  /**
+   * LES REPLIS ATTESTÉS DES ASSIETTES PRESCRITES DE CE PROTOCOLE ([[D-242]]).
+   *
+   * CE CHAMP ÉTAIT UN TUPLE VIDE LITTÉRAL — `[]` — donc une liste que le
+   * CONTRAT lui-même interdisait de remplir. `D-216` §4 le nommait comme le
+   * troisième préalable aux familles : « une famille validée resterait
+   * aujourd'hui aussi invisible que l'absence actuelle ».
+   *
+   * IL RESTE VIDE, ET CE N'EST PLUS LA MÊME CHOSE. Il l'est parce que la table
+   * de replis est vide et non signée, ce que son verrou déclare — une ABSENCE
+   * DÉCLARÉE, là où c'était une absence du parcours. Le jour où une ligne sera
+   * attestée, elle arrivera ici sans qu'une seule ligne de cette route change.
+   */
+  alternatives: readonly RepliAssietteDeclare[];
   insertionAllowed: boolean;
   insertionReason: string | null;
 };
@@ -122,6 +137,12 @@ export async function GET(request: Request): Promise<NextResponse<PractitionerFo
     const activeRow = resolveActiveVersion(protocolRows);
     let reading: ContextualFoodReading | null = null;
     let actionRef: FoodCompassActionRef | null = null;
+    // LA SUBSTITUTION NE PART QUE D'UNE ASSIETTE PRESCRITE, et « prescrite » se
+    // lit ICI : sur les actions du protocole actif, pas au catalogue. C'est la
+    // garde que `D-216` §4 confiait au chemin d'intégration, et que
+    // `decidePlateSubstitution` ne peut pas tenir seule — elle ne reçoit qu'une
+    // référence de catalogue.
+    let alternatives: readonly RepliAssietteDeclare[] = [];
     if (activeRow) {
       let draft;
       try {
@@ -129,6 +150,7 @@ export async function GET(request: Request): Promise<NextResponse<PractitionerFo
       } catch {
         return error('protocol_stale', 'Version active du protocole incohérente.', 409);
       }
+      alternatives = replisPourProtocole(draft.actions);
       const reference = buildPractitionerFoodCompassReference({
         ciqualCode: foodRef,
         foodLabel: manifest.label,
@@ -149,7 +171,7 @@ export async function GET(request: Request): Promise<NextResponse<PractitionerFo
       manifest: { version: C5_PRACTITIONER_MANIFEST_VERSION, hash: C5_PRACTITIONER_MANIFEST_HASH },
       plateCatalog: { version: C5B_PLATE_CATALOG_VERSION, hash: C5B_PLATE_CATALOG_HASH },
       jaFeasibility,
-      alternatives: [],
+      alternatives,
       insertionAllowed,
       insertionReason: insertionAllowed
         ? null

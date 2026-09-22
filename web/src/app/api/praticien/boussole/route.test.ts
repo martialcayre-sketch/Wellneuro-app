@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getServerSession, getLatestPublishedJaFeasibility, prisma } = vi.hoisted(() => ({
+const { getServerSession, getLatestPublishedJaFeasibility, prisma, replisPourProtocole } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   getLatestPublishedJaFeasibility: vi.fn(),
+  replisPourProtocole: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
     ciqualNutrientValue: { findMany: vi.fn() },
@@ -15,6 +16,12 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/food-observation/feasibilityRepository', () => ({ getLatestPublishedJaFeasibility }));
+// ESPION SUR LA PROJECTION, ET RIEN D'AUTRE. Ce que la projection CALCULE est
+// éprouvé chez elle (`clinical/replisAssietteV1.guard.test.ts`, cinq cas) ; ce
+// que la route doit prouver est son CÂBLAGE — qu'elle lui passe les actions du
+// protocole actif et qu'elle rende son résultat. Constat de revue : cette
+// branche n'était atteinte par aucun banc.
+vi.mock('@/lib/clinical/replisAssietteV1', () => ({ replisPourProtocole }));
 
 import { GET } from './route';
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
@@ -71,6 +78,39 @@ describe('GET /api/praticien/boussole', () => {
     prisma.ciqualNutrientValue.findMany.mockResolvedValue(rows());
     prisma.protocolDraft.findMany.mockResolvedValue([]);
     getLatestPublishedJaFeasibility.mockResolvedValue(null);
+    replisPourProtocole.mockReturnValue([]);
+  });
+
+
+  it('SANS protocole actif, aucun repli n’est même cherché', () => {
+    // `alternatives` reste vide, et la projection n'est pas appelée : « prescrite »
+    // se lit sur les actions d'un protocole, et il n'y en a pas.
+    return GET(request()).then(async response => {
+      expect((await response.json()).alternatives).toEqual([]);
+      expect(replisPourProtocole).not.toHaveBeenCalled();
+    });
+  });
+
+  it('LE CÂBLAGE : la route passe les ACTIONS du protocole actif et rend le résultat', async () => {
+    const version = activeProtocol();
+    prisma.protocolDraft.findMany.mockResolvedValue([version]);
+    const attendu = [{
+      depuis: 'ASSIETTE_DOPAMINERGIQUE',
+      vers: 'ASSIETTE_SEROTONINERGIQUE',
+      indication: 'ASSIETTE-IND-FIXTURE',
+      degre: 'acceptable',
+    }];
+    replisPourProtocole.mockReturnValue(attendu);
+
+    const corps = await (await GET(request())).json();
+
+    expect(replisPourProtocole).toHaveBeenCalledTimes(1);
+    // Les ACTIONS, pas le brouillon entier : la projection n'a pas à connaître
+    // le protocole pour lire ses assiettes prescrites.
+    expect(replisPourProtocole).toHaveBeenCalledWith(version.payload.actions);
+    // ET LA CONDITION VOYAGE JUSQU'AU CLIENT — c'est le terme que la première
+    // rédaction de la projection laissait tomber.
+    expect(corps.alternatives).toEqual(attendu);
   });
 
   it('reste invisible lorsque C5 est désactivée', async () => {

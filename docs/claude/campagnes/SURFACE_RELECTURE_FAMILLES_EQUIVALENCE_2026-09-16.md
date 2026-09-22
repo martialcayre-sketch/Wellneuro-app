@@ -4,6 +4,17 @@
 **Ce document ne signe rien.** Il présente au praticien ce qu'il aurait à
 attester.*
 
+> **ÉTAT AU 2026-09-21 — LES TROIS PREMIERS POINTS DU PROGRAMME SONT FAITS
+> ([[D-242]]).** La relation est ORIENTÉE et vit hors du catalogue
+> (`lib/clinical/replisAssietteV1.ts`) ; la garde d'axe est posée AUX DEUX
+> BOUTS ; le chemin est ouvert — `alternatives` n'est plus un tuple vide
+> littéral mais les replis attestés des assiettes **prescrites du protocole
+> actif**. **La table est vide et non signée.** Ce que ce document décrit du
+> MÉCANISME ACTUEL — la clique complète, l'aveuglement à l'axe, l'absence de
+> chemin — est donc désormais HISTORIQUE : c'est l'état qui a motivé le lot, pas
+> l'état du dépôt. Ce qu'il dit de la NATURE de l'affirmation à produire, lui,
+> n'a pas bougé d'une ligne, et c'est le seul point qui reste ouvert.
+
 > **CE QUI A CHANGÉ DANS CETTE VERSION.** La première rédaction concluait qu'il
 > n'y avait « rien à signer » en s'appuyant sur deux arguments dont l'un était
 > faux et l'autre trop fort. Le premier — « deux assiettes seulement ont une
@@ -144,7 +155,24 @@ repli de droit commun, écrit au cas par cas. La famille ne les remplace pas :
 elle ajoutera une alternative **attestée** là où le praticien veut proposer une
 autre assiette plutôt qu'un allègement de la même.
 
-## CE QUE L'ATTESTATION DEMANDERA, UNE FOIS LE MÉCANISME EN PLACE
+## CE QUE L'ATTESTATION DEMANDE, MAINTENANT QUE LE MÉCANISME EST EN PLACE
+
+> **CE QUI A CHANGÉ DANS CETTE LISTE LE 2026-09-21.** Les points 1 et 4
+> ci-dessous étaient écrits sous la contrainte d'un mécanisme qui ne savait
+> porter qu'une clique. Ils sont **levés** : une ligne déclare désormais une
+> DIRECTION (`depuis` → `vers`, et l'inverse demande une seconde ligne attestée
+> à part), une CONDITION (l'`id` d'une ligne d'indication, vérifié) et un DEGRÉ.
+> Il n'y a plus à « nommer une famille et ses membres » ni à prévenir d'une
+> intention asymétrique : le type la porte. Le point 5 est **fait** —
+> `validationExterne`, `dateValidation` et `shaPerimetre` existent sur la table,
+> et son verrou refuse une table vide, un sha qui ne correspond pas, un
+> identifiant en double et toute ligne anormale.
+>
+> **CE QUI RESTE EST LE POINT 3, ET IL EST ENTIER** : écrire ce que la ligne
+> ajoute au-delà des claims. Le champ `raccourciAssume` est obligatoire et non
+> vide, précisément parce qu'aucune ligne ne va de soi.
+
+## CE QUE L'ATTESTATION DEMANDAIT AVANT LE MÉCANISME — conservé pour la trace
 
 1. **Nommer la famille et ses membres**, en sachant que le mécanisme la lira
    comme une clique complète : chaque paire, dans les deux sens.
