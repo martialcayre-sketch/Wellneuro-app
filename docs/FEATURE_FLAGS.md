@@ -333,6 +333,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/catalogueConduitesV1.ts` | `true` | `2026-09-17T20:26:03.000Z` |
 | `clinical/tableRepliV1.ts` | `true` | `2026-09-17T06:06:41.000Z` |
 | `clinical/indicationsAssiettesV1.ts` | `true` | `2026-09-19T18:27:15.000Z` |
+| `clinical/replisAssietteV1.ts` | `false` | `null` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 

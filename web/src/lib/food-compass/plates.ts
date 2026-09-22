@@ -56,7 +56,21 @@ export type C5bRecommendedPlate = {
    * écrite par le praticien, comme le dit le commentaire du catalogue.
    */
   sourceProtocole: string | null;
-  /** Null tant qu'aucune famille d'équivalence clinique n'a été validée. */
+  /**
+   * SUPPLANTÉ PAR LA TABLE DE REPLIS ([[D-242]]), ET POURTANT IL RESTE — parce
+   * qu'il est HACHÉ.
+   *
+   * Ce champ était l'étiquette d'appartenance dont la comparaison faisait une
+   * CLIQUE COMPLÈTE : trois assiettes déclarées valaient six substitutions,
+   * dans les deux sens. La relation orientée vit désormais dans
+   * `lib/clinical/replisAssietteV1.ts`, hors du catalogue.
+   *
+   * POURQUOI ON NE LE SUPPRIME PAS. Il est l'un des QUATRE champs du
+   * `contentHash` — le retirer changerait l'empreinte de chaque entrée, donc
+   * périmerait toute référence déjà consignée, protocoles compris depuis
+   * [[D-240]]. Mesuré, pas supposé : le banc recalcule les deux cas. Il reste
+   * donc `null` partout, et un garde l'y tient.
+   */
   substitutionFamily: string | null;
   /**
    * Empreinte d'intégrité de l'entrée, sur `{ catalogVersion, plateCode, label,
@@ -472,57 +486,16 @@ export function assertCurrentRecommendedPlateRef(value: unknown): RecommendedPla
   return { ...plate.ref };
 }
 
-export type PlateSubstitutionDecision =
-  | {
-      status: 'none';
-      source: RecommendedPlateRef;
-      reason: 'practitioner_declined' | 'no_validated_alternative';
-      decidedBy: 'practitioner';
-    }
-  | {
-      status: 'proposed';
-      source: RecommendedPlateRef;
-      target: RecommendedPlateRef;
-      substitutionFamily: string;
-      justification: string;
-      decidedBy: 'practitioner';
-    };
-
-/** Aucune proposition automatique : la cible est toujours un choix praticien. */
-export function decidePlateSubstitution(input: {
-  source: RecommendedPlateRef;
-  targetPlateCode?: string | null;
-  justification?: string;
-  noProposalReason?: 'practitioner_declined' | 'no_validated_alternative';
-}): PlateSubstitutionDecision {
-  const source = assertCurrentRecommendedPlateRef(input.source);
-  const sourcePlate = getRecommendedPlate(source.plateCode)!;
-  if (!input.targetPlateCode) {
-    return {
-      status: 'none',
-      source,
-      reason: input.noProposalReason ?? 'no_validated_alternative',
-      decidedBy: 'practitioner',
-    };
-  }
-  const target = getRecommendedPlate(input.targetPlateCode);
-  if (!target || target.plateCode === source.plateCode) {
-    throw new TypeError('Assiette de substitution invalide.');
-  }
-  if (!sourcePlate.substitutionFamily
-    || target.substitutionFamily !== sourcePlate.substitutionFamily) {
-    throw new TypeError('La substitution n’appartient pas à une famille clinique validée.');
-  }
-  const justification = input.justification?.trim() ?? '';
-  if (justification.length < 10) {
-    throw new TypeError('Une justification praticien explicite est requise.');
-  }
-  return {
-    status: 'proposed',
-    source,
-    target: { ...target.ref },
-    substitutionFamily: sourcePlate.substitutionFamily,
-    justification,
-    decidedBy: 'practitioner',
-  };
-}
+// `PlateSubstitutionDecision` ET `decidePlateSubstitution` ONT DÉMÉNAGÉ vers
+// `lib/clinical/replisAssietteV1.ts` ([[D-242]], second tour de revue).
+//
+// POURQUOI ELLES NE POUVAIENT PAS RESTER ICI. La décision lit une TABLE SIGNÉE.
+// Tant qu'elle vivait dans ce module, elle ne pouvait pas l'importer — la table
+// importe `plates.ts`, et l'inverse ferait un cycle — donc les replis lui
+// arrivaient en PARAMÈTRE. Un appelant pouvait alors passer `REPLIS_ASSIETTE_V1`
+// nu, un brouillon, ou un tableau fabriqué à la main : **le point de service
+// unique se contournait**, et c'est exactement le défaut que [[D-225]] a posé en
+// doctrine — « le filtre est un POINT DE SORTIE, pas une consigne ».
+//
+// Chez la table, elle appelle `replisServables()` elle-même. Le verrou
+// fail-closed redevient inévitable au lieu d'être recommandé.

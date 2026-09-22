@@ -7658,6 +7658,24 @@ patient A enregistrable chez B.
 **Ouvert.** `LOT-03` attend une source d'équivalence qu'aucun claim ne fonde ;
 `LOT-04` bute sur l'exclusivité des contrats V2 et V4.
 
+## 2026-09-21 — LOT-03 : le repli d'assiette devient orienté, la table reste vide (D-242)
+
+**Décision.** La relation sort du catalogue — `substitutionFamily` est l'un des
+quatre champs du `contentHash`, l'y toucher périmerait des références. La table
+`replisAssietteV1` porte trois qualités que l'étiquette ne savait pas dire : la
+DIRECTION, l'INDICATION visée, le DEGRÉ. Garde d'axe **aux deux bouts**. Le
+verrou refuse la table vide : **on ne signe pas une absence**.
+
+**Écartées.** Un champ sur l'assiette — il aurait périmé les empreintes. Une
+famille déclarée — aucun claim ne fonde une substitution, le corpus décrit
+l'inclusion et l'association, qui en sont l'inverse.
+
+**Corrigé.** Deux affirmations de `D-240` : le coût d'une famille est un
+protocole non révisable, pas un écran éteint ; et c'est
+`buildPatientFoodCompassView` qui exige V2, dont le refus est avalé.
+
+**Ouvert.** Le quatrième point du programme — l'affirmation clinique — et
+`LOT-04`.
 ## 2026-09-22 — La session portail passe à 30 jours glissants (D-241)
 
 **Départ.** Un dossier réel n'entrait plus au portail, ni par lien ni par
@@ -7684,7 +7702,7 @@ aussi `Path=/portail`.
 `localStorage` après déconnexion (arbitrage non rendu, `D-241` §6) ; rien
 n'alerte le praticien qu'un patient rebondit à l'entrée.
 
-## 2026-09-22 — « Se déconnecter » purge les brouillons locaux (D-242)
+## 2026-09-22 — « Se déconnecter » purge les brouillons locaux (D-243)
 
 **Départ.** « Termine ce qui reste ouvert » — les trois limites de `D-241` §6.
 
@@ -7712,10 +7730,10 @@ qu'une promesse d'en-tête.
 une comparaison de récence, pas une levée de condition) ; les refus Google sur
 adresse inconnue restent indécidables par construction.
 
-## 2026-09-22 — Reprise de D-242 après revue : la classe, pas l'instance
+## 2026-09-22 — Reprise de D-243 après revue : la classe, pas l'instance
 
 **Verdict.** La revue adversariale a rendu **NO-GO** sur la première version de
-`D-242`, quatre bloquants, tous fondés — vérifiés un à un contre le dépôt avant
+`D-243`, quatre bloquants, tous fondés — vérifiés un à un contre le dépôt avant
 correction.
 
 **Ce qui était raté.** (1) Le banc « le confort survit » gardait

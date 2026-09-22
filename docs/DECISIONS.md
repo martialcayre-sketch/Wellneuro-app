@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-242 — « Se déconnecter » purge les brouillons locaux, après avoir dit ce qui sera perdu
+### D-243 — « Se déconnecter » purge les brouillons locaux, après avoir dit ce qui sera perdu
 
 - Date : 2026-09-22
 - Statut : accepté — demande du responsable (« Termine ce qui reste ouvert »),
@@ -88,6 +88,412 @@ Enfin, la déconnexion ne coupe toujours pas les autres appareils ([[D-241]] §6
 inchangé), et `aDesDonneesPatientLocales()` rend `false` en stockage bloqué sans
 qu'aucun banc ne le tienne.
 
+### D-242 — Le repli d'assiette devient une relation ORIENTÉE, hors du catalogue ; la table est vide, et deux affirmations de D-240 étaient fausses
+
+- Date : 2026-09-21
+- Statut : accepté — LOT-03 du cadrage Boussole/Assiette, ouvert sur demande du
+  responsable (« Go lot 03 et lot 04 »), **exécuté dans la portée que la surface
+  de relecture du 2026-09-16 autorise** : le mécanisme, jamais les familles.
+- Domaine : catalogue d'assiettes C5B, substitution, route Boussole praticien.
+  **Aucune famille déclarée, aucune table signée, aucun `contentHash` touché,
+  aucune migration, aucun drapeau.**
+- Exécute les trois premiers points du programme de [[D-216]] §4. S'appuie sur
+  [[D-240]] (l'assiette prescrite), [[D-225]] (le filtre est un point de sortie),
+  [[D-230]] §5 (ce qui est hors du `contentHash` et pourquoi). **Corrige deux
+  affirmations de [[D-240]].**
+
+**1. CE QUE LE MÉCANISME NE SAVAIT PAS DIRE.** `substitutionFamily` est une
+**étiquette d'appartenance** portée par l'entrée de catalogue, comparée par
+égalité. Une étiquette n'a pas de sens de lecture : si A et B la partagent, le
+mécanisme atteste A→B **et** B→A, et par transitivité toute la clique.
+**Déclarer une famille de trois assiettes, c'est attester six substitutions.**
+Or un repli est presque toujours asymétrique — le mécanisme le trahissait en
+l'élargissant en silence, ce qui est la classe de défaut que [[D-208]] a fermée
+sur le catalogue de conduites. Il ne savait exprimer ni l'asymétrie, ni la
+condition, ni le degré, ni l'inclusion — qui est pourtant la relation que le
+corpus décrit.
+
+**2. LA RELATION SORT DU CATALOGUE, ET C'EST UNE CONTRAINTE D'EMPREINTE AVANT
+D'ÊTRE UN CHOIX DE DESIGN.** `substitutionFamily` est l'un des **quatre** champs
+du `contentHash` d'une entrée ; toute référence consignée porte ce hachage et
+`assertCurrentRecommendedPlateRef` refuse celle dont il a bougé. Poser la
+relation dans le catalogue aurait donc périmé des références déjà posées — et
+depuis [[D-240]], des protocoles en portent. La table vit dans
+`lib/clinical/replisAssietteV1.ts`, **hors du catalogue** : aucune entrée ne
+bouge d'un octet, ni `contentHash`, ni `refHash`, ni `C5B_PLATE_CATALOG_HASH`.
+Le champ supplanté **reste** dans l'empreinte, `null`, et son commentaire dit
+pourquoi on ne le supprime pas.
+
+**3. TROIS QUALITÉS DEVIENNENT DES CHAMPS.** La DIRECTION (`depuis` → `vers`,
+et l'inverse demande une seconde ligne attestée à part), la CONDITION
+(`indication` nomme l'`id` d'une ligne de `INDICATIONS_ASSIETTES_V1` — un repli
+n'est jamais valable « en général », et la désignation est **vérifiée**), le
+DEGRÉ (`proche`, `acceptable`, `dernier_recours`). S'y ajoute `raccourciAssume`,
+**obligatoire et non vide** : aucun claim ne fondant une substitution, il
+n'existe pas de ligne dont la justification irait de soi.
+
+**4. LA GARDE D'AXE, QUE [[D-240]] §10 NOMMAIT COMME MANQUANTE.** Elle est posée
+**aux deux bouts** : un repère de MOMENT DE REPAS n'est adossé à aucun protocole
+du corpus, il ne se prescrit pas — donc il ne se replie ni ne sert de repli.
+Sans ce terme, la substitution aurait été le **seul chemin du dépôt** produisant
+une référence d'assiette sans passer par `assertRefAssietteDIndication`.
+
+**5. LA TABLE ARRIVE EN PARAMÈTRE, ET LE PARAMÈTRE N'A PAS DE DÉFAUT.**
+`replisAssietteV1` importe `plates.ts` ; l'importer en retour ferait un cycle. Le
+vocabulaire commun descend donc dans `food-compass/types.ts`, qui n'importe rien,
+et la table voyage par paramètre. **Sans valeur par défaut** : un appelant ne
+peut pas oublier de dire quelle table fait foi, et le verrou fail-closed reste à
+un seul endroit — le point de service de la table.
+
+**6. ON NE SIGNE PAS UNE ABSENCE.** Le verrou refuse la table **vide**, même
+sous une signature par ailleurs valide : sans quoi la table deviendrait signée
+sans que personne n'ait rien relu, et la première ligne écrite entrerait sous
+une attestation acquise. L'état nominal « aucun repli déclaré » se sert par
+`replisServables`, qui rend une liste vide **sans rien attester** — c'est la
+distinction entre une absence déclarée et un vide couvert par une signature.
+
+**7. LE CHEMIN EST OUVERT, ET IL RESTE VIDE POUR UNE AUTRE RAISON QU'AVANT.**
+`alternatives` était un **tuple vide littéral** dans la réponse de la route
+Boussole praticien : une liste que le CONTRAT interdisait de remplir. [[D-216]]
+§4 le nommait — « une famille validée resterait aujourd'hui aussi invisible que
+l'absence actuelle ». Elle porte désormais les replis attestés des assiettes
+**prescrites du protocole actif** — car « prescrite » se lit sur les actions,
+pas au catalogue, et c'est la garde que [[D-216]] §4 confiait au chemin
+d'intégration. Le jour où une ligne sera attestée, elle arrivera là **sans
+qu'une ligne de cette route change**.
+
+**8. LA TABLE N'ENTRE PAS À LA MATRICE DE CONSOMMATION, ET C'EST LA CONVENTION
+QUI LE DIT.** Une source y entre « le jour où elle atteint un ÉCRAN, pas le jour
+où elle a été signée ». Celle-ci atteint une réponse d'API qu'aucun composant ne
+rend. Elle y entrera avec l'écran, pas avant. Ce que la matrice a mesuré en
+revanche, et qui est juste : la table d'indications passe de une à deux surfaces
+indirectes, puisque la table de replis la lit pour vérifier ses désignations.
+
+**9. DEUX AFFIRMATIONS DE [[D-240]] ÉTAIENT FAUSSES, RELEVÉES EN CONTRE-LECTURE
+ET VÉRIFIÉES SUR PIÈCE.**
+
+**(a) Le coût d'une famille déclarée n'est pas celui que j'ai écrit.** [[D-240]]
+§10 dit qu'elle « périmerait les protocoles qui les portent », ce qui se lit
+comme un écran patient qui s'éteint. **C'est faux, et c'est [[D-240]] elle-même
+qui l'a rendu faux** : `assertProtocolDraftPlateStructure` ne confronte JAMAIS
+la référence au catalogue — délibérément, pour qu'un protocole diffusé ne
+s'éteigne pas parce que le catalogue a bougé. La lecture est donc immunisée. Ce
+qui casse est l'**ÉCRITURE** : toute révision resoumet la référence, qui est
+re-dérivée et refusée. La conséquence réelle est **un protocole qu'on ne peut
+plus réviser**, pas un patient privé de son écran. Plus étroit, mais pas moins
+sérieux — et le chiffrer demande une lecture de production que ce lot n'a pas
+faite.
+
+**(b) Ce n'est pas `resolvePatientFoodCompassView` qui exige V2.** [[D-240]] §11
+la nomme ; elle ne teste aucune version. Le refus vit dans
+`buildPatientFoodCompassView` (`contextual.ts:160`), et son `TypeError` est
+**avalé** par le `catch { return null; }` de `patientReference.ts`. Un protocole
+hors V2 ne produit donc pas un refus : il produit **une Boussole qui disparaît
+en silence**. L'exclusivité V2/V4 reste vraie, et elle est **unilatérale** — V2
+exige au moins une référence C5, V4 n'exige aucune assiette.
+
+**10. LA REVUE A TROUVÉ TROIS CONSTATS, ET LES TROIS SONT LE MÊME OUBLI.**
+J'avais fait d'`indication` un champ OBLIGATOIRE de la ligne — « un repli n'est
+jamais valable en général » — puis je l'ai laissée tomber **partout en aval**.
+
+- `decidePlateSubstitution` cherchait sur le seul couple `depuis`/`vers` : deux
+  lignes attestant la même direction pour des indications différentes rendaient
+  `.find()` arbitraire. La décision retenait la première et **perdait la
+  condition qui l'autorise**.
+- La projection de la route supprimait `indication` : deux replis de même
+  direction et de conditions différentes devenaient indiscernables pour le
+  client, tous présentés comme applicables.
+
+**C'est la classe de défaut que ce lot existe pour fermer, reproduite d'un cran
+plus loin** : corrigée sur la DIRECTION, rejouée sur la CONDITION. Un repli
+attesté pour une raison devenait applicable à toutes — exactement l'élargissement
+silencieux que la clique produisait. `indication` descend donc dans le type
+PARTAGÉ, la décision l'exige à l'appel et la porte dans son retour, et la
+projection la transporte.
+
+**Le troisième constat est une garde absente que ses deux tables sœurs
+portaient** : le verrou n'exigeait de `dateValidation` que `!== null`. Une
+métadonnée avec `validationExterne: true`, une date illisible et le BON sha
+ouvrait la table. `estIsoCanonique` est posée, à l'identique
+d'`indicationsAssiettesV1` et de `tableRepliV1` — et elle FERME au lieu de
+jeter, `toISOString()` levant sur une date invalide.
+
+**11. LE SECOND TOUR DE REVUE A TROUVÉ UN CONTOURNEMENT QUE J'AVAIS CRÉÉ POUR
+ÉVITER UN CYCLE.** `decidePlateSubstitution` vivait dans `plates.ts` et recevait
+les replis en PARAMÈTRE — parce que la table importe ce module, et que
+l'importer en retour ferait un cycle. Conséquence : un appelant pouvait passer
+la table NUE, un brouillon, ou un tableau fabriqué à la main. **Le point de
+service unique se contournait**, et c'est mot pour mot ce que [[D-225]] a posé
+en doctrine : « le filtre est un POINT DE SORTIE, pas une consigne ». La
+décision a donc **déménagé chez la table**, où elle appelle `replisServables()`
+elle-même ; le paramètre survit pour les seuls bancs. Le cycle ne se contourne
+plus par un trou dans la garde, il se résout en mettant la fonction à sa place.
+
+**ET UN CHEMIN QUE JE DÉCRIVAIS SANS L'ÉPROUVER.** La projection des replis
+vivait dans la route, où **aucun banc ne l'atteignait** : le protocole de
+fixture n'a aucune assiette et la table réelle est vide. Elle est extraite en
+`replisPourProtocole` — à sa place, la route étant un enveloppeur HTTP — et
+porte cinq cas, dont le refus de la direction inverse et le dédoublonnage.
+
+**UNE MUTATION EST RESTÉE VERTE, ET C'EST INSTRUCTIF.** Remplacer
+`replisServables()` par la table nue dans le défaut ne fait rougir aucun cas de
+comportement : la table étant vide, les deux rendent la même liste. Aucun banc ne
+peut distinguer les deux tant qu'aucune ligne n'existe. Une **garde de source**
+tient donc la forme, et dit elle-même pourquoi elle n'est pas un banc de
+comportement.
+
+**12. TROISIÈME PASSE SUR LE MÊME POINT, ET LE RELECTEUR AVAIT RAISON DE
+PERSISTER.** Le déménagement du §11 laissait un paramètre optionnel `replis`,
+réservé aux bancs **par commentaire**. Un commentaire n'est pas une garde : rien
+n'empêchait un appelant de production de fabriquer un tableau — sans
+`raccourciAssume`, sans `statut`, sans signature — et de le faire accepter. La
+fonction ne reçoit donc plus de liste du tout, mais la **table et sa signature**,
+qu'elle remet elle-même à `replisServables`. Tout ce qu'on lui donne traverse le
+verrou ; **il n'y a plus de chemin qui le saute**, et les bancs éprouvent la
+décision exactement comme la production la vit. Vérifié par deux mutations.
+
+**ET LE CÂBLAGE DE LA ROUTE A REÇU SON CAS.** Ce que la projection calcule est
+éprouvé chez elle ; ce que la route devait prouver est qu'elle lui passe les
+ACTIONS du protocole actif et rend son résultat — la condition comprise. Un
+espion le tient, et une mutation du câblage le fait rougir.
+
+**13. QUATRIÈME PASSE, ET LA LEÇON N'EST PLUS LE DÉFAUT MAIS MA FAÇON DE LE
+CORRIGER.** J'avais fermé le contournement sur `decidePlateSubstitution` en
+laissant `replisDepuis` et `replisPourProtocole` l'offrir **intact** : un
+paramètre `servables: readonly LigneRepliAssiette[]` accepte
+`REPLIS_ASSIETTE_V1` nu, un brouillon, ou une ligne fabriquée. **Corriger une
+instance sans balayer ses voisines laisse la classe vivante** — et j'ai refait
+cela trois fois de suite dans ce seul lot.
+
+`replisDepuis` n'est plus exportée (elle prend une liste déjà filtrée : son
+appelant l'a obtenue du verrou) ; `replisPourProtocole` reçoit la table et sa
+signature. Et surtout, **une garde balaie désormais le module** : aucune
+fonction exportée ne peut accepter une liste déjà filtrée. Vérifiée par mutation
+— réexporter la fonction interne la fait rougir. C'est la classe qui est fermée,
+plus seulement ses instances connues.
+
+**14. CINQUIÈME PASSE, ET LE CONSTAT A CHANGÉ DE NIVEAU — IL EST RETENU, LA
+FORME N'EST PAS CHANGÉE, ET LE MOTIF EST ÉCRIT.** Les quatre premières visaient
+une liste DÉJÀ filtrée ; celle-ci vise les paramètres qui l'ont remplacée
+(`signature`, `lignes`, `lignesIndication`). **Le fait est exact** :
+`replisAssietteSignes` vérifie la COHÉRENCE de ce qu'on lui donne — sha
+recalculé, date ISO, anomalies, statut, identifiants — et jamais sa
+**PROVENANCE**. Une métadonnée fabriquée dont on a recalculé le sha passe le
+verrou.
+
+**La forme n'est pas changée, et ce n'est pas un refus de corriger.** Elle est
+celle des QUATRE tables signées qui précèdent — `indicationsAssiettesV1`,
+`catalogueConduitesV1`, `baremeChargeV1`, `tableRepliV1` : toutes exposent
+`(signature = METADATA, lignes = TABLE)` en paramètres par défaut, vérifié sur
+pièce. Dévier celle-ci seule ne fermerait rien — les quatre autres offrent le
+même geste — et casserait l'uniformité que la prochaine relecture lira ; les
+aligner toutes serait un refactoring de la famille des tables signées, hors de
+la portée de ce lot et de [[D-225]].
+
+**Et surtout : aucune signature de fonction ne peut tenir une provenance ici.**
+Il n'existe aucun secret dans ce dépôt, le `shaPerimetre` est un littéral
+lisible — un appelant qui fabriquerait une signature pourrait tout aussi bien
+éditer la métadonnée du module. La provenance est tenue par le **littéral
+committé**, par son **enrôlement à `shaPerimetreLitteral.guard.test.ts`** — le
+jour de la PREMIÈRE signature, jamais avant, `shaPerimetre` valant `null`
+jusque-là, comme [[D-198]], [[D-223]], [[D-224]] et [[D-236]] l'ont fait — et
+par la relecture qui fait entrer ce littéral.
+
+**CE QUE LE CODE PEUT TENIR, ET QUI EST POSÉ.** Une garde balaie les fichiers de
+PRODUCTION : aucun ne passe d'override à une fonction injectable de ce module.
+L'injection reste au banc — seul endroit où éprouver le verrou sur une table non
+vide a un sens. ⚠️ *La première rédaction de cette garde énumérait DEUX noms et
+promettait la propriété pour tous : §16 la corrige et en donne la portée exacte.*
+
+**15. SIXIÈME PASSE — LE CONSTAT LE PLUS UTILE DU LOT N'ÉTAIT PAS DÉPOSÉ EN
+COMMENTAIRE.** Il tenait dans la phrase d'entête de la relecture : « la
+validation doit refuser les doublons de clé `(depuis, vers, indication)` ».
+Aucun fil ne le portait, et il était juste. Le verrou refusait l'identifiant en
+double, jamais le **recouvrement** : deux lignes partageant les trois termes ne
+se distinguent plus que par leur degré et leur raccourci assumé — le `.find()`
+de la décision en retient une ARBITRAIREMENT, et la projection les rend toutes
+deux au client.
+
+**C'est le constat de la PREMIÈRE passe, revenu un cran plus loin.** Il disait
+« `.find()` choisit silencieusement la première » ; je l'avais fermé en ajoutant
+l'indication à la clé de recherche, ce qui le rouvre dès que deux lignes
+partagent aussi l'indication. Le verrou refuse désormais le recouvrement —
+**même signé**, comme `baremeChargeV1` et `tableRepliV1` le font déjà, et la
+clé est le TRIPLET, jamais le couple : deux lignes de même direction pour des
+indications différentes sont exactement ce que la condition existe pour
+permettre. Deux mutations, deux rouges — et retirer l'indication de la clé fait
+rougir aussi le cas de la première passe, ce qui est le bon signal.
+
+**L'autre constat de cette passe est écarté, sur pièce.** Le commentaire
+`« trop court » en fait exactement 10 et PASSE` ne décrit pas le cas testé : il
+dit pourquoi la fixture vaut `'court'` (5 caractères, donc refusée) et non
+`'trop court'` (10, donc acceptée par un seuil `< 10`). Il est exact. Mais il
+était assez ambigu pour produire un constat faux, et il est réécrit — écarter
+un constat n'interdit pas de retirer ce qui l'a fabriqué.
+
+**16. SEPTIÈME PASSE — ELLE EST LA MIENNE, ET ELLE TROUVE LA MÊME CLASSE POUR LA
+SEPTIÈME FOIS.** Le relecteur n'ayant pas repris la main sur la tête suivante, la
+contre-revue a été conduite ici : quatre angles indépendants, chaque constat
+soumis à deux sceptiques chargés de le RÉFUTER. Vingt et un constats produits,
+**sept retenus, quatorze écartés**.
+
+**Le premier est le mien, et il est prouvé par une mutation exécutée.** La garde
+du §14 énumérait deux noms — `replisPourProtocole`, `decidePlateSubstitution` —
+alors que le module en exporte **quatre** qui acceptent une signature :
+`replisServables` et `replisAssietteSignes` offrent la même injection. Un fichier
+de production appelant `replisServables(signatureFabriquée, table)` laissait le
+banc **vert**. Et ma propre docstring affirmait déjà la propriété entière.
+
+**Enrichir la liste de deux noms aurait été la huitième correction d'instance.**
+La liste se DÉRIVE désormais du texte du module — toute fonction exportée dont un
+paramètre est une `ReplisAssietteMetadata` —, avec un témoin qui atteste que la
+dérivation marche sans faire office de liste. Une cinquième fonction ajoutée
+demain est couverte sans que personne y pense.
+
+**Trois autres défauts de la même garde sont fermés** : l'étalement
+(`{ ...objet }`) portait les clés sans les écrire ; commentaires et chaînes
+étaient lus comme du code, si bien qu'une phrase citant une ancienne forme
+d'appel aurait fait rougir un fichier conforme ; et l'énumération « ce que le
+verrou atteste » n'avait pas suivi le second commit — le recouvrement y manquait.
+
+**ET LA PORTÉE EST DÉSORMAIS DÉCLARÉE AU LIEU D'ÊTRE PROMISE.** Cette garde est
+LEXICALE : un import renommé la désarme, et aucune expression régulière ne
+referme cela. Elle attrape la rédaction ORDINAIRE — celle qu'on écrit sans y
+penser — pas un contournement délibéré, que rien ici ne pourrait arrêter puisque
+le `shaPerimetre` est un littéral lisible. Dire ce qu'une garde ne tient pas fait
+partie de ce qu'elle tient.
+
+**Le motif de `AUTRE_INDICATION` était faux, et il est réécrit** : `[1]` ne peut
+jamais désigner le même élément que `[0]`. Ce que la forme à l'indice risque
+vraiment est une table de moins de deux lignes, qui la fait retomber sur son
+littéral de repli — un cas vain qui ne dirait rien. Une seconde déclaration du
+même nom, restée à l'indice, masquait de surcroît la première.
+
+**17. HUITIÈME PASSE — LE CORRECTIF DU §16 AVAIT FABRIQUÉ PIRE QUE LE MAL QU'IL
+SOIGNAIT, ET C'EST LE CONSTAT LE PLUS COÛTEUX DU LOT.** Pour qu'une phrase citant
+une ancienne forme d'appel ne fasse pas rougir un fichier conforme, le §16
+retirait commentaires et chaînes par expressions régulières — les apostrophes
+AVANT les guillemets doubles.
+
+**Conséquence, mesurée par exécution.** L'apostrophe française d'une chaîne à
+guillemets doubles — `"Réserve d'adaptation"`, forme banale, présente des
+centaines de fois au dépôt — ouvrait une fausse chaîne qui courait jusqu'à
+l'apostrophe suivante et **effaçait le code entre les deux**. Un composant de
+production appelant `replisPourProtocole(actions, signature, lignes)` — trois
+arguments, donc un override caractérisé — laissait la garde **VERTE**. Constaté
+sur pièce : le même fichier, dont seules les apostrophes de la prose changent,
+fait rougir. **La garde d'AVANT le §16 l'attrapait** : c'était une régression.
+
+**Une garde ajoutée pour éviter un faux POSITIF fabriquait un faux NÉGATIF.**
+C'est le pire échange possible pour un garde-fou : il ne se tait pas au mauvais
+moment, il se tait AU BON. Et le témoin d'anti-vacuité ne pouvait pas le voir —
+`appels.length > 0` restait satisfait par l'appel propre de la route.
+
+Le retrait de la prose est donc un **BALAYAGE**, plus une expression régulière :
+il n'entre dans un littéral qu'à un guillemet rencontré en position de CODE,
+donc l'apostrophe intérieure n'est jamais vue ; et une apostrophe qui ne se
+referme pas sur sa ligne n'ouvre rien, ce qui rend le texte JSX inoffensif. Deux
+mutations : le composant fautif rougit et se nomme ; le fichier conforme portant
+prose, apostrophe en guillemets doubles et JSX ne produit aucun constat.
+
+**18. ET LA CONCLUSION QUE DEUX PASSES AURAIENT DÛ ME FAIRE TIRER TOUT DE SUITE :
+UN GARDE-FOU DOIT SE TROMPER BRUYAMMENT.** Le §17 corrige le retrait de la prose ;
+il ne répond pas à la question que le §16 n'avait pas posée. **Quel est le MODE
+D'ÉCHEC de cette garde ?**
+
+Retirer la prose avant de balayer lui donne un mode d'échec **SILENCIEUX** : si
+le retrait se trompe, l'appel fautif DISPARAÎT et la garde reste verte. Lire le
+texte **BRUT** lui donne un mode d'échec **BRUYANT** : si une phrase cite une
+ancienne forme d'appel, un fichier conforme fait rougir le CI — on le voit, on
+reformule la phrase, et personne n'a couru de risque.
+
+**Les deux erreurs ne se valent pas, et j'ai passé deux tours à perfectionner la
+mauvaise.** Le §16 a été écrit pour un faux positif **jamais observé** — avant
+lui, la garde était verte sur l'arbre réel. Le §17 a corrigé un faux négatif,
+lui, **mesuré sur un composant réel**. Les fichiers de PRODUCTION sont donc lus
+BRUTS à partir d'ici.
+
+**Le balayage n'est pas supprimé, il est ramené à ce qu'il sait faire** : lire
+les DÉCLARATIONS de `replisAssietteV1.ts` — sans lui, le commentaire posé entre
+deux paramètres fausserait le compte des arguments nus. Ce module n'a pas de
+JSX, et ses apostrophes vivent dans des commentaires, que le balayage retire en
+position de code. Un outil au périmètre où il est juste, pas partout où il
+semblait utile.
+
+**19. DIXIÈME PASSE — ET LA CONCLUSION QU'IL FALLAIT TIRER TROIS TOURS PLUS TÔT :
+UNE GARDE LEXICALE NE PEUT PAS TENIR UNE PROPRIÉTÉ STRUCTURELLE.**
+
+Le §18 avait raison de préférer le bruit au silence ; il a corrigé le retrait de
+la prose sans voir que **le silence avait simplement déménagé**. Sur le texte
+brut, le compteur de parenthèses ne connaît ni chaînes ni expressions
+régulières : `replisPourProtocole(sansSuffixe(actions, ')'), meta, table)` — une
+parenthèse écrite DANS UNE CHAÎNE — refermait l'appel trop tôt, la tranche
+retenue n'avait plus qu'un argument, et l'override redevenait **invisible**.
+Régression mesurée : la rédaction du §17 attrapait ce fichier.
+
+**Trois rédactions lexicales, trois ratés silencieux, et à chaque fois j'ai
+rapiécé le lexeur** : une liste de noms qui en oubliait deux (§16), un retrait de
+prose qui effaçait l'appel (§17), un compteur de parenthèses qu'une chaîne
+referme (§18). Chaînes, gabarits, expressions régulières, commentaires, JSX,
+imports renommés : la liste des cas particuliers n'a pas de fin, et **chacun se
+paie en silence**.
+
+**La garde lit désormais un ARBRE.** Le compilateur TypeScript est déjà au dépôt
+et connaît la grammaire. Conséquences mesurées sur six évasions : les trois que
+les rédactions lexicales manquaient sont attrapées, **l'import renommé compris**
+— que le §16 déclarait hors de portée, et il l'était —, et le fichier conforme
+portant prose, apostrophe en guillemets doubles et JSX ne produit **aucun** faux
+positif. Le §18 gardait un choix entre deux erreurs ; l'arbre ne le demande plus.
+
+**ET LES ÉVASIONS DEVIENNENT DES CAS.** C'est la part la plus utile de ce tour :
+l'analyse prend désormais son TEXTE en paramètre, donc les six sources vivent
+DANS le banc, en mémoire, sans rien déposer au dépôt. Chacune porte son propre
+témoin d'anti-vacuité — un appel qui ne serait pas même VU passerait pour
+conforme. Elles ne sont plus des mutations jouées une fois puis perdues : une
+onzième rédaction de cette garde devra les passer toutes.
+
+**CE QU'ELLE NE TIENT TOUJOURS PAS, déclaré** : un appel indirect — la fonction
+passée en valeur, atteinte par un objet, reconstruite — n'est pas un appel nommé,
+et l'arbre seul ne le résout pas. Rien ici ne peut arrêter un contournement
+délibéré : le `shaPerimetre` est un littéral lisible.
+
+**20. ONZIÈME PASSE — L'ARBRE ÉTAIT LE BON OUTIL, ET JE LE LISAIS DANS LE MAUVAIS
+DIALECTE.** `arbreDe` passait `ScriptKind.TSX` **quelle que soit l'extension**.
+Or lire un `.ts` comme du TSX n'échoue pas : `createSourceFile` rend un arbre
+**tronqué** et des diagnostics que personne ne regarde. Et
+`const f = <T>(v: T) => [v]` — du TypeScript ordinaire, **présent au dépôt**
+(`lib/food-observation/persistence.ts:443`) — y devient une balise JSX ouverte :
+**tous les appels qui suivent disparaissent**. Mesuré sur ce fichier réel : 63
+appels vus en TSX contre 97 en TS.
+
+**Le même mode d'échec, déplacé encore d'un cran** — le quatrième de ce lot, et
+toujours silencieux. Le §19 avait raison sur l'outil ; il s'est trompé sur son
+réglage, ce qui ne se voit pas davantage. Un `.ts` de production portant une
+flèche générique avant un appel à trois arguments laissait le banc **VERT** :
+vérifié sur le banc réel, avec témoin déposé puis retiré.
+
+**Et l'anti-vacuité GLOBALE ne pouvait pas l'attraper**, parce qu'elle est une
+SOMME : un fichier dont tous les appels disparaissent apporte zéro et reste
+invisible dans un total qui reste positif. Seule une anti-vacuité **par cas** le
+voit — c'est elle qui tue la mutation ici.
+
+Le dialecte se lit donc sur l'extension, et la batterie des évasions reçoit un
+**septième cas, le seul porté par un chemin `.ts`**. Sans lui elle n'éprouvait
+qu'un dialecte, et c'est exactement ce que le relecteur a nommé : une batterie
+qui ne varie pas ce que le code fait varier ne garde rien de ce côté-là.
+
+**CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
+décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse
+logique de l'échange, et `DC-19`/`DC-20` interdisent d'affirmer ce qu'aucune
+source ne fonde. Il ne signe rien — **une signature clinique ne se pose jamais
+par l'outil**. Il ne touche à aucun `contentHash`, n'ajoute aucune route,
+aucun drapeau, aucune migration, et ne sert rien de neuf au patient.
+
+**CE QUI RESTE DEVANT LES FAMILLES — le quatrième point du programme, et il est
+entièrement clinique.** Affirmer que telle assiette est un repli acceptable de
+telle autre, pour une indication nommée, en écrivant ce que la ligne ajoute
+au-delà des claims. Le mécanisme sait désormais porter cette affirmation sans la
+déformer ; il ne peut pas la produire.
 ### D-241 — La session portail passe de 12 h à 30 jours glissants, et le patient reçoit le moyen de la fermer
 
 - Date : 2026-09-22
@@ -186,7 +592,7 @@ manquait à la première rédaction de ce paragraphe.
   autre est pire que l'erreur : relevé en revue de la PR #1212.)* Repris par
   `D-242`.
 - ~~**« Se déconnecter » ne purge PAS les brouillons locaux**~~ — **FERMÉ par
-  `D-242` le 2026-09-22 : le geste purge désormais, après avertissement.** Le
+  `D-243` le 2026-09-22 : le geste purge désormais, après avertissement.** Le
   texte d'origine, conservé pour ce qu'il documente :
   `lib/questionnaire-draft.ts`
   conserve les réponses de questionnaire en `localStorage` **30 jours**
@@ -323,7 +729,10 @@ refus de symétrie, pour qu'une révision bien intentionnée ne l'« aligne » p
 assiettes attestent six substitutions dans les deux sens), une garde restreignant
 la substitution aux assiettes **prescrites**, et un chemin qui l'expose. **Ce lot
 fournit le second : « assiette prescrite » a désormais un sens vérifiable.** Il
-en renchérit le prix, et c'est la part qu'il faut écrire : jusqu'ici aucune
+en renchérit le prix — ⚠️ *chiffrage CORRIGÉ par [[D-242]] §9(a) : ce qui casse
+est la RÉVISION d'un protocole, pas sa lecture ni l'écran du patient, que le §9
+de cette entrée avait précisément immunisés* — et c'est la part qu'il faut
+écrire : jusqu'ici aucune
 référence des DOUZE assiettes d'indication n'était persistable — le seul porteur
 d'une `RecommendedPlateRef` en base était l'épisode d'observation, que
 `assertRefAssietteDObservation` réserve aux trois repères. Remplir une famille
@@ -341,7 +750,10 @@ point de départ**, et ce lot le crée. Ce qui reste devant LOT-04 est nommé ic
 parce qu'il n'était écrit nulle part : **les contrats V2 et V4 sont aujourd'hui
 mutuellement exclusifs.** `normalizeActions` refuse TOUT `foodCompassRef` — le
 chemin V2 le réinjecte après coup —, `buildFoodCompassProtocolV2FromSource` n'accepte qu'une cible V1, et
-`resolvePatientFoodCompassView` exige `draft.version === V2`. Un protocole ne
+le refus V2 vit dans `buildPatientFoodCompassView` — ⚠️ *et NON dans
+`resolvePatientFoodCompassView`, nommée ici à tort ; corrigé par [[D-242]] §9(b),
+qui ajoute que ce refus est **avalé** et rend donc une Boussole absente en
+silence plutôt qu'une erreur*. Un protocole ne
 peut donc pas porter à la fois une assiette et la Boussole de son aliment — c'est
 le vrai verrou de LOT-04, et il n'est ni ouvert ni contourné ici.
 

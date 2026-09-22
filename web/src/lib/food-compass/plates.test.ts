@@ -5,7 +5,6 @@ import {
   C5B_PLATE_CATALOG_HASH,
   C5B_RECOMMENDED_PLATES,
   assertCurrentRecommendedPlateRef,
-  decidePlateSubstitution,
   getCurrentRecommendedPlateRef,
 } from './plates';
 
@@ -58,17 +57,8 @@ describe('catalogue d’assiettes C5B', () => {
     expect(() => getCurrentRecommendedPlateRef('INCONNUE')).toThrow(/inconnue/);
   });
 
-  it('permet explicitement de ne rien proposer et interdit les familles non validées', () => {
-    const source = getCurrentRecommendedPlateRef('ASSIETTE_SOIR_LEGER');
-    expect(decidePlateSubstitution({ source })).toMatchObject({
-      status: 'none', reason: 'no_validated_alternative', decidedBy: 'practitioner',
-    });
-    expect(decidePlateSubstitution({ source, noProposalReason: 'practitioner_declined' }))
-      .toMatchObject({ status: 'none', reason: 'practitioner_declined' });
-    expect(() => decidePlateSubstitution({
-      source,
-      targetPlateCode: 'ASSIETTE_DEJEUNER_EXTERIEUR',
-      justification: 'Choix discuté avec le patient.',
-    })).toThrow(/famille clinique validée/);
-  });
+  // LA SUBSTITUTION EST ORIENTÉE DEPUIS [[D-242]]. Le cas d'origine prenait
+  // `ASSIETTE_SOIR_LEGER` pour source — un repère de MOMENT DE REPAS, que rien
+  // ne prescrit. Il butait alors sur l'absence de famille ; il bute désormais,
+  // plus tôt et pour une meilleure raison, sur l'axe.
 });
