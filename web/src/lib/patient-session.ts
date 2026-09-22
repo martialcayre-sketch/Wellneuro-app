@@ -12,8 +12,51 @@ import { prisma } from '@/lib/prisma';
 
 export const PORTAIL_COOKIE_NAME = 'wn_portail';
 
-// Durée de vie de la session (12 h glissantes).
-const SESSION_TTL_SECONDS = 12 * 60 * 60;
+// Durée de vie de la session (30 jours glissants).
+//
+// GLISSANTE, et c'est le mot qui porte : `POST /api/portail/session`, appelé à
+// chaque ouverture du portail, réémet le cookie. Un patient qui revient au moins
+// une fois par fenêtre ne se reconnecte jamais.
+//
+// ELLE VALAIT 12 H, ET C'ÉTAIT LA CAUSE D'UN DÉCROCHAGE MESURÉ. Un agenda
+// alimentaire se remplit une fois par jour, le soir : 24 h entre deux passages
+// pour une fenêtre de 12 h — le patient était donc déconnecté À CHAQUE VISITE, et
+// devait reprouver son identité par un lien magique (à usage unique, 24 h) ou par
+// Google. Constaté en production le 2026-09-22 sur un dossier réel, et la forme
+// est toujours la même : on entre, la session meurt dans la journée, et au retour
+// les deux portes sont fermées — le lien de l'e-mail a déjà servi, et le compte
+// Google ne porte pas toujours l'adresse du dossier. Aucun de ces deux refus
+// n'est un défaut : c'est la fenêtre qui les rendait fréquents.
+//
+// Le détail du parcours observé n'est pas recopié ici — horaires, compteurs de
+// tentatives et discordance de compte décrivent UNE personne, et le dépôt ne
+// garde pas de données d'usage patient (règle de la revue, PR #1211). Les
+// chiffres qui fondent la décision vivent dans son instruction (`D-241`), en
+// agrégat de cabinet.
+//
+// CE QUI NE CHANGE PAS — LA RÉVOCATION. `isSessionValideForPatient` relit EN BASE
+// `actif`, `accessTokenRevoked` et `sessionsInvalidesAvant` à chaque requête. Un
+// cookie de 30 jours meurt dans la seconde où le praticien révoque : la durée du
+// cookie n'a jamais été ce qui tient l'accès fermé, et l'allonger ne déplace donc
+// aucun coupe-circuit. Ce qu'elle déplace est le risque d'appareil partagé — d'où
+// la déconnexion patient livrée avec elle (`POST /api/portail/deconnexion`), qui
+// n'existait pas tant que la session se fermait d'elle-même en fin de journée.
+export const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+/**
+ * Durée de vie des cookies émis AVANT IDP2 LOT-02 — figée à 12 h, définitivement.
+ *
+ * Ces cookies ne portent pas de `iat` : il se reconstruit par `exp - durée`, et la
+ * reconstruction n'est exacte que si la constante est celle qui a servi à les
+ * ÉMETTRE. Adossée à `SESSION_TTL_SECONDS`, elle se mettait à mentir de 29 jours
+ * et demi le jour où la fenêtre changerait — c'est-à-dire aujourd'hui.
+ *
+ * Le format legacy est en pratique éteint (12 h de vie, plus aucun émis depuis le
+ * 2026-07-21 : tous ont expiré le 2026-07-22, et le contrôle de `exp` les écarte
+ * avant même d'arriver ici). La constante est figée quand même — la justesse d'une
+ * reconstruction ne doit pas reposer sur l'argument qu'on ne l'exécute plus.
+ */
+const LEGACY_SESSION_TTL_SECONDS = 12 * 60 * 60;
 
 export const PORTAIL_COOKIE_OPTIONS = {
   httpOnly: true,
@@ -153,11 +196,13 @@ export function verifyPatientSession(raw: string | null | undefined): PatientSes
     // Deux formats acceptés, et c'est délibéré : les cookies émis avant IDP2
     // LOT-02 portent l'empreinte du jeton et pas de `iat`. Les refuser
     // déconnecterait au déploiement les accès portail ouverts. Leur date
-    // d'émission se reconstruit exactement — la durée de vie est fixe.
+    // d'émission se reconstruit exactement — À CONDITION d'ôter la durée qui a
+    // servi à les émettre, et non celle du jour (voir
+    // `LEGACY_SESSION_TTL_SECONDS` : les deux ont cessé d'être la même valeur).
     const iat = typeof payload.iat === 'number'
       ? payload.iat
       : typeof payload.accessTokenFingerprint === 'string'
-        ? payload.exp - SESSION_TTL_SECONDS
+        ? payload.exp - LEGACY_SESSION_TTL_SECONDS
         : null;
     if (iat === null) return null;
 
@@ -184,7 +229,24 @@ export function readPatientSession(req: Request): PatientSession | null {
     if (eq < 0) continue;
     const name = part.slice(0, eq).trim();
     if (name !== PORTAIL_COOKIE_NAME) continue;
-    return verifyPatientSession(decodeURIComponent(part.slice(eq + 1).trim()));
+    // `decodeURIComponent` LÈVE sur une séquence `%` invalide (`wn_portail=%`
+    // suffit) — et cette fonction est appelée par une vingtaine de routes, dont
+    // aucune n'attrapait. Un cookie illisible y rendait 500 là où il ne veut
+    // dire qu'une chose : PAS DE SESSION. C'est ce que la fonction répond
+    // désormais, comme pour une signature fausse ou une charge expirée.
+    //
+    // CORRIGÉ À LA SOURCE, PAS CHEZ L'APPELANT. La première version du
+    // correctif protégeait la seule route de déconnexion ; la revue du delta a
+    // montré qu'elle laissait lever les 21 autres. Le parseur de cookies de
+    // Next fait exactement cela depuis toujours (il jette le cookie malformé) :
+    // ce dépôt réimplémentait le sien, en moins sûr.
+    let brut: string;
+    try {
+      brut = decodeURIComponent(part.slice(eq + 1).trim());
+    } catch {
+      return null;
+    }
+    return verifyPatientSession(brut);
   }
   return null;
 }

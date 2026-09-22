@@ -5,7 +5,10 @@ const { patient } = vi.hoisted(() => ({ patient: { findUnique: vi.fn() } }));
 vi.mock('@/lib/prisma', () => ({ prisma: { patient } }));
 
 import {
+  PORTAIL_COOKIE_OPTIONS,
+  SESSION_TTL_SECONDS,
   isSessionAuthorizedForAssignment,
+  readPatientSession,
   isSessionValideForPatient,
   signPatientSession,
   verifyPatientSession,
@@ -13,7 +16,12 @@ import {
 } from './patient-session';
 
 const SECRET = 'secret-de-test-non-production';
-const TTL_SECONDS = 12 * 60 * 60;
+/**
+ * Durée des cookies d'AVANT IDP2 LOT-02 — 12 h, figée. Ce n'est PLUS la fenêtre
+ * de session courante : la reconstruction du `iat` d'un cookie legacy doit ôter
+ * la durée qui l'a émis, pas celle du jour. Les deux ont divergé le 2026-09-22.
+ */
+const TTL_LEGACY_SECONDS = 12 * 60 * 60;
 
 /** Compte tel que le lisent les routes ; `sessionsInvalidesAvant` à null par défaut. */
 function compte(over: Partial<{
@@ -63,13 +71,74 @@ describe('session patient', () => {
     expect(verifyPatientSession(`${signed}x`)).toBeNull();
   });
 
+  // LA FENÊTRE EST UNE PROMESSE, PAS UN RÉGLAGE. Le patient qui remplit un
+  // agenda sur 21 jours ne doit pas reprouver son identité entre deux saisies ;
+  // c'est ce que la fenêtre courte lui imposait. On garde donc les deux moitiés
+  // ensemble — la charge signée ET le cookie : les désaccorder ferait expirer le
+  // cookie côté navigateur avant la session qu'il porte, et le patient serait
+  // renvoyé à la connexion alors que sa session est encore valable côté serveur.
+  it('ouvre une session de 30 jours, charge et cookie accordés', () => {
+    const TRENTE_JOURS = 30 * 24 * 60 * 60;
+    expect(SESSION_TTL_SECONDS).toBe(TRENTE_JOURS);
+    expect(PORTAIL_COOKIE_OPTIONS.maxAge).toBe(TRENTE_JOURS);
+
+    const session = verifyPatientSession(
+      signPatientSession({ idPatient: 'PAT_1', email: 'patient@example.test' }),
+    );
+    const charge = JSON.parse(
+      Buffer.from(
+        signPatientSession({ idPatient: 'PAT_1', email: 'patient@example.test' }).split('.')[0],
+        'base64url',
+      ).toString('utf8'),
+    ) as { iat: number; exp: number };
+    expect(charge.exp - charge.iat).toBe(TRENTE_JOURS);
+    expect(session?.iat).toBeGreaterThan(0);
+  });
+
+  // LES OPTIONS PORTENT DES ATTRIBUTS DE SÉCURITÉ ; ON EXIGE LEUR PRÉSENCE.
+  // Les bancs de parité (pose ↔ effacement) comparent deux rendus : une clé
+  // RETIRÉE d'ici disparaît des deux côtés et leur échappe, par construction.
+  // Mesuré : retirer `path` laissait tout vert, alors que le cookie retombait
+  // sur le chemin de la requête et cessait d'être lu par `/portail/*`.
+  it('les options de cookie portent les attributs qui tiennent la session', () => {
+    expect(Object.keys(PORTAIL_COOKIE_OPTIONS).sort()).toEqual(
+      ['httpOnly', 'maxAge', 'path', 'sameSite', 'secure'].sort(),
+    );
+    // `/` et rien d'autre : le cookie est lu par tout le portail.
+    expect(PORTAIL_COOKIE_OPTIONS.path).toBe('/');
+    // `lax` et non `strict` : le retour Google est une navigation venue d'un
+    // autre site ; en `strict`, aucune connexion n'aboutirait.
+    expect(PORTAIL_COOKIE_OPTIONS.sameSite).toBe('lax');
+    expect(PORTAIL_COOKIE_OPTIONS.httpOnly).toBe(true);
+  });
+
   it('accepte un cookie émis avant le passage au compte, en reconstruisant sa date', () => {
     // Les 13 accès portail ouverts en production portent cette forme : les
     // refuser déconnecterait au déploiement.
-    const exp = Math.floor(Date.now() / 1000) + TTL_SECONDS;
+    const exp = Math.floor(Date.now() / 1000) + TTL_LEGACY_SECONDS;
     const session = verifyPatientSession(cookieAncienFormat('PAT_1', 'patient@example.test', exp));
     expect(session).toMatchObject({ idPatient: 'PAT_1', email: 'patient@example.test' });
-    expect(session?.iat).toBe(exp - TTL_SECONDS);
+    expect(session?.iat).toBe(exp - TTL_LEGACY_SECONDS);
+  });
+
+  // LE CAS QUI LEVAIT, ET QUI N'EST PAS UN CAS D'ERREUR. `decodeURIComponent`
+  // lève sur une séquence `%` invalide ; une vingtaine de routes appellent
+  // `readPatientSession` et aucune n'attrapait, donc un cookie illisible rendait
+  // 500 au lieu de « pas de session ». Sur la route de déconnexion, il
+  // empêchait même l'effacement d'aboutir. Trouvé par la revue Copilot, étendu à
+  // la source par la revue du delta (PR #1211).
+  it('un cookie illisible ne lève pas — il ne vaut pas session', () => {
+    const requete = (cookie: string) =>
+      new Request('http://localhost/x', { headers: { cookie } });
+
+    expect(() => readPatientSession(requete('wn_portail=%'))).not.toThrow();
+    expect(readPatientSession(requete('wn_portail=%'))).toBeNull();
+    expect(readPatientSession(requete('wn_portail=%E0%A4%A'))).toBeNull();
+    // Un cookie valide passe toujours : la garde ne rend pas la fonction sourde.
+    const valide = signPatientSession({ idPatient: 'PAT_1', email: 'patient@example.test' });
+    expect(readPatientSession(requete(`wn_portail=${encodeURIComponent(valide)}`))).toMatchObject({
+      idPatient: 'PAT_1',
+    });
   });
 
   it('refuse une charge sans date d’émission ni empreinte', () => {
@@ -144,7 +213,7 @@ describe('session patient', () => {
   // cookie volé avant une révocation redeviendrait valide au déploiement.
   it('un cookie ancien format ne survit pas à la rotation qui l’avait tué', async () => {
     const assignment = { idPatient: 'PAT_1', emailPatient: 'patient@example.test' };
-    const exp = Math.floor(Date.now() / 1000) + TTL_SECONDS;
+    const exp = Math.floor(Date.now() / 1000) + TTL_LEGACY_SECONDS;
     const ancien = verifyPatientSession(cookieAncienFormat('PAT_1', 'patient@example.test', exp));
 
     // Rotation d'accès APRÈS l'émission du cookie : la date reprise du

@@ -11,6 +11,10 @@ export const EVENT_CODES = {
   PORTAIL_LIEN_PERMANENT_BASCULE_ILLISIBLE: 'PORTAIL_PATIENT.LIEN_PERMANENT.BASCULE_ILLISIBLE',
   PORTAIL_SESSION_FORBIDDEN: 'PORTAIL_PATIENT.SESSION.FORBIDDEN',
   PORTAIL_SESSION_EXCEPTION: 'PORTAIL_PATIENT.SESSION.EXCEPTION',
+  // Fermeture volontaire par le patient. Tracée pour la même raison que
+  // l'ouverture : « qui a ouvert ce dossier, quand » se répond mal si la moitié
+  // des bornes manque. Aucune donnée nominative dans la ligne.
+  PORTAIL_SESSION_FERMEE: 'PORTAIL_PATIENT.SESSION.FERMEE',
   PORTAIL_ASSIGNATIONS_UNAUTHORIZED: 'PORTAIL_PATIENT.ASSIGNATIONS.UNAUTHORIZED',
   PORTAIL_ASSIGNATIONS_QUERY_FAILED: 'PORTAIL_PATIENT.ASSIGNATIONS.QUERY_FAILED',
   // Campagne « vie du portail patient », LOT-01 — la lecture du journal du

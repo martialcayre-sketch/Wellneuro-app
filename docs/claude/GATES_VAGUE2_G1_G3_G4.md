@@ -248,8 +248,9 @@ un horodatage de création, jamais lu pour périmer quoi que ce soit.
 `findUnique({ accessToken })`, vérifie l'e-mail, la révocation et le champ
 `actif`, puis pose le cookie `wn_portail` : payload JSON
 `{ idPatient, email, accessTokenFingerprint, exp }` encodé base64url et signé
-HMAC-SHA256, `httpOnly`, `sameSite: 'lax'`, `secure` en HTTPS, **12 h
-glissantes** (`web/src/lib/patient-session.ts`). La vérification de signature est
+HMAC-SHA256, `httpOnly`, `sameSite: 'lax'`, `secure` en HTTPS, **30 jours
+glissants** depuis `D-241` (2026-09-22) — 12 h à l'écriture de cette page
+(`web/src/lib/patient-session.ts`). La vérification de signature est
 en temps constant. Le cookie ne porte donc **pas** le jeton, seulement son
 empreinte — ce qui est déjà la bonne propriété.
 
