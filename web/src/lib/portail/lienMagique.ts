@@ -15,7 +15,7 @@ import { createHmac, randomBytes } from 'crypto';
 // fonctions pures avec l'instant injecté. Les routes ne font que lire la base
 // et appliquer ce que ces fonctions répondent.
 
-/** 24 h : arbitrage du 2026-07-20. La session qu'il ouvre reste à 12 h glissantes. */
+/** 24 h : arbitrage du 2026-07-20. La session qu'il ouvre dure 30 jours glissants (D-241). */
 export const DUREE_VALIDITE_MS = 24 * 60 * 60 * 1000;
 
 /** Plafond de redemandes d'un même patient sur une heure glissante. */

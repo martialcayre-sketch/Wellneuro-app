@@ -30,9 +30,15 @@ c'est la fenêtre qui les rendait fréquents.
   déjà copié ailleurs n'est pas tué par ce geste — c'est la révocation praticien
   (`sessionsInvalidesAvant`) qui tient ce rôle, et elle est inchangée.
 - **« Se déconnecter » dans l'en-tête du portail**, rendu par le layout
-  uniquement quand une session signée est présente : la page de connexion — cible
-  de la déconnexion — n'affiche jamais un bouton qui la renverrait sur elle-même,
-  et sa référence visuelle reste intacte.
+  uniquement quand une session signée est présente. Une fois déconnecté, il n'y a
+  plus de cookie, donc plus de bouton sur l'écran d'arrivée — et la référence
+  visuelle de la page de connexion reste intacte.
+
+**Ce que le geste ne fait pas** : il ne purge pas les brouillons de questionnaire
+gardés en `localStorage` (30 jours, `lib/questionnaire-draft.ts`). L'application
+ne les restitue pas sans session, mais ils survivent sur l'appareil partagé.
+Écarté pour cette fois — détruire du travail non envoyé sans avertissement est un
+arbitrage distinct, consigné en `D-241` §6 plutôt que passé sous silence.
 
 **Ce qui ne change pas — la révocation.** `isSessionValideForPatient` relit en
 base `actif`, `accessTokenRevoked` et `sessionsInvalidesAvant` à chaque requête.

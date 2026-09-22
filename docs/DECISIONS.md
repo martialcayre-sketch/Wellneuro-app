@@ -46,8 +46,11 @@ la session se fermait d'elle-même avant la fin de la journée. Ce n'est plus vr
 rien de plus** : la session est sans état côté serveur, un cookie déjà copié
 ailleurs n'est pas tué par ce geste. Écrit dans la route même, pour qu'aucune
 lecture rapide ne lui prête une portée qu'elle n'a pas. Le bouton n'est rendu que
-si une session signée est présente : la page de connexion, cible de la
-déconnexion, n'affiche jamais un bouton qui la renverrait sur elle-même.
+si une session signée est présente — la condition est « une session », **pas**
+« ailleurs que sur la page de connexion » : un patient encore connecté qui ouvre
+`/portail/connexion` y voit donc le bouton, et c'est juste, il a une session à
+fermer. Ce qui est garanti est plus étroit et suffit : une fois déconnecté, il
+n'y a plus de cookie, donc plus de bouton sur l'écran d'arrivée.
 
 **5. LA DURÉE LEGACY EST FIGÉE À PART, ET CE N'EST PAS DU ZÈLE.** Les cookies
 d'avant IDP2 LOT-02 ne portent pas de `iat` : il se reconstruit par
@@ -58,12 +61,28 @@ d'avant IDP2 LOT-02 ne portent pas de `iat` : il se reconstruit par
 reconstruction ne doit pas reposer sur l'argument qu'on ne l'exécute plus. Le
 banc existant l'a d'ailleurs attrapé à la mutation.
 
-**6. CE QUI N'EST PAS FAIT, ET POURQUOI.** La déconnexion ne révoque pas les
-autres appareils : il faudrait pour cela écrire `sessionsInvalidesAvant` côté
-patient, donc donner au patient un geste qui coupe aussi le praticien — arbitrage
-distinct, non demandé. Et **rien n'alerte le praticien qu'un patient rebondit** à
-l'entrée : huit refus en cinq jours sur le dossier ci-dessus, découverts parce que
-le patient a téléphoné. C'est la prochaine question, elle reste ouverte.
+**6. CE QUI N'EST PAS FAIT, ET POURQUOI.** Trois choses, toutes nommées plutôt
+que tues — la revue adversariale de la PR #1211 a relevé la troisième, qui
+manquait à la première rédaction de ce paragraphe.
+
+- **La déconnexion ne révoque pas les autres appareils.** Il faudrait écrire
+  `sessionsInvalidesAvant` côté patient, donc lui donner un geste qui coupe aussi
+  le praticien. Arbitrage distinct, non demandé.
+- **Rien n'alerte le praticien qu'un patient rebondit à l'entrée.** Huit refus en
+  cinq jours sur le dossier ci-dessus, découverts parce que le patient a
+  téléphoné. C'est la prochaine question, et elle reste ouverte.
+- **« Se déconnecter » ne purge PAS les brouillons locaux, et c'est une limite
+  réelle de la promesse « appareil partagé ».** `lib/questionnaire-draft.ts`
+  conserve les réponses de questionnaire en `localStorage` **30 jours**
+  (`DUREE_VIE_BROUILLON_JOURS`, clé `wellneuro:questionnaire-draft:v1:<id>`) :
+  ce sont des données de santé, et elles survivent au geste. L'application ne les
+  RESTITUE pas sans session — il faut les outils de développement du navigateur
+  pour les lire — mais elles sont là. Purger a été écarté **pour cette PR** et
+  non pour toujours : un brouillon est du travail non envoyé, le détruire sans
+  avertissement est une décision plus lourde que l'allongement de session
+  demandé, et elle mérite son propre arbitrage (purge sèche, ou avertissement
+  avant purge). À rouvrir ; d'ici là, la limite est écrite ici plutôt que
+  supposée absente.
 
 ### D-240 — L'assiette indiquée devient une unité d'action ; et le tableau du cadrage faisait lire comme des questions deux directions déjà rendues
 

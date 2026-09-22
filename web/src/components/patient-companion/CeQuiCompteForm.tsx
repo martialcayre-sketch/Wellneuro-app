@@ -111,7 +111,7 @@ export function CeQuiCompteForm() {
         setDepose(true);
       } else {
         // LE CHAMP N'EST PAS VIDÉ SUR ERREUR, et c'est délibéré : la session
-        // du portail dure 12 h (`lib/patient-session.ts`), un 401 peut donc
+        // du portail dure 30 jours (`lib/patient-session.ts`), un 401 peut donc
         // tomber sur un texte tout juste rédigé. Ce n'est pas une suite de
         // clics à refaire, c'est une parole — l'effacer serait la perdre.
         setErreur(data.error ?? 'Votre dépôt n’a pas pu être enregistré.');

@@ -69,13 +69,58 @@ describe('POST /api/portail/deconnexion', () => {
   // cookie que si le trio nom/domaine/chemin correspond : un `Path` divergent
   // laisserait l'original en place et la déconnexion mentirait, SANS la moindre
   // erreur nulle part. Ce banc compare donc à la source de vérité de la pose.
-  it('efface avec les mêmes attributs que la pose, sans quoi le navigateur garde l’original', async () => {
+  // LE DÉFAUT QU'ON CRAINT N'EST PAS « le cookie n'est pas effacé » — c'est
+  // « l'effacement ne correspond pas à la pose ». Un navigateur n'écrase un
+  // cookie que si ses attributs correspondent : un `Path` ou un `Domain`
+  // divergent laisserait l'original en place et la déconnexion mentirait, SANS
+  // la moindre erreur nulle part.
+  //
+  // ON BALAIE `PORTAIL_COOKIE_OPTIONS` EN ENTIER, ON NE NOMME PAS QUATRE
+  // ATTRIBUTS. Une version antérieure de ce banc en vérifiait quatre, nommés à
+  // la main : la revue adversariale a ajouté un `domain` à la pose, et le banc
+  // est resté VERT. Un banc qui n'énumère que ce qu'il connaît ne garde rien
+  // contre l'attribut suivant. La table ci-dessous est donc fermée : une clé
+  // qu'elle ignore fait rougir, ce qui force à traiter le cas plutôt qu'à le
+  // manquer.
+  const RENDU: Record<string, { attribut: string; drapeau: boolean }> = {
+    httpOnly: { attribut: 'httponly', drapeau: true },
+    secure: { attribut: 'secure', drapeau: true },
+    sameSite: { attribut: 'samesite', drapeau: false },
+    path: { attribut: 'path', drapeau: false },
+    domain: { attribut: 'domain', drapeau: false },
+    maxAge: { attribut: 'max-age', drapeau: false },
+  };
+
+  it('efface avec les mêmes attributs que la pose, TOUS balayés', async () => {
     const attrs = attributs(await POST(requete(signPatientSession({ idPatient: 'PAT_TEST', email: EMAIL }))));
 
-    expect(attrs.get('path')).toBe(PORTAIL_COOKIE_OPTIONS.path);
-    expect(attrs.get('samesite')?.toLowerCase()).toBe(PORTAIL_COOKIE_OPTIONS.sameSite);
-    expect(attrs.has('httponly')).toBe(PORTAIL_COOKIE_OPTIONS.httpOnly);
-    expect(attrs.has('secure')).toBe(PORTAIL_COOKIE_OPTIONS.secure);
+    for (const [cle, valeur] of Object.entries(PORTAIL_COOKIE_OPTIONS)) {
+      const forme = RENDU[cle];
+      // Clé neuve dans les options : ce banc ne sait pas la vérifier, donc il
+      // refuse de prétendre le contraire.
+      expect(forme, `attribut de cookie non couvert par ce banc : ${cle}`).toBeDefined();
+
+      // `maxAge` est le SEUL écart admis, et il est l'objet même du geste.
+      if (cle === 'maxAge') {
+        expect(attrs.get('max-age')).toBe('0');
+        continue;
+      }
+      if (forme.drapeau) expect(attrs.has(forme.attribut)).toBe(valeur);
+      else expect(attrs.get(forme.attribut)?.toLowerCase()).toBe(String(valeur).toLowerCase());
+    }
+  });
+
+  // La route AFFIRME, en commentaire, n'accepter que POST — « un `<img src>` sur
+  // un site tiers déconnecterait les patients au passage ». Rien ne tenait cette
+  // affirmation : ajouter `export const GET = POST` laissait les bancs verts.
+  it('n’expose que POST — aucun autre verbe', async () => {
+    // `module` est un nom INTERDIT ici : `@next/next/no-assign-module-variable`
+    // refuse la liaison, y compris dans un banc — vert en Vitest, rouge au lint
+    // de T3. D'où `routeModule`.
+    const routeModule = await import('./route');
+    const verbes = ['GET', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
+    expect(verbes.filter((v) => v in routeModule)).toEqual([]);
+    expect('POST' in routeModule).toBe(true);
   });
 
   it('reste une réussite sans session ouverte', async () => {

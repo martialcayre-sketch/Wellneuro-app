@@ -786,7 +786,7 @@
 - **Possède** : le lien magique à usage unique et expirant (émission,
   consommation, anti-rejeu), sa table de jetons, les passkeys en option, et la
   **bascule progressive** depuis le token permanent.
-- **Consomme** : `lib/patient-session.ts` (cookie signé 12 h, conservé),
+- **Consomme** : `lib/patient-session.ts` (cookie signé 30 jours glissants, D-241 ; conservé),
   `lib/consultation/portail.ts`, le modèle documentaire versionné de TRUST.
 - **Décisions actées** : migration **additive seule**, `patients.access_token`
   conservé ; **coexistence obligatoire** des deux chemins pendant la bascule ;

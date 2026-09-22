@@ -10,9 +10,13 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 // seul le soir. Ce n'est plus le cas.
 //
 // Le composant ne DÉCIDE pas de sa visibilité — c'est le layout du portail qui
-// ne le rend qu'en présence d'une session valide. Ainsi la page de connexion,
-// qui est la cible de la déconnexion, n'affiche jamais un bouton qui la
-// renverrait sur elle-même (et sa référence visuelle reste intacte).
+// ne le rend qu'en présence d'une session signée valide.
+//
+// La condition est « une session », PAS « ailleurs que sur la page de
+// connexion » : un patient encore connecté qui ouvre `/portail/connexion` y voit
+// donc le bouton, et c'est normal — il a bien une session à fermer. Ce qui est
+// garanti est plus étroit, et suffit : une fois déconnecté, il n'y a plus de
+// cookie, donc plus de bouton sur l'écran d'arrivée.
 export function BoutonDeconnexion() {
   const [enCours, setEnCours] = useState(false);
 
