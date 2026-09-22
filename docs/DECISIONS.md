@@ -4,6 +4,67 @@
 
 ## Décisions actives
 
+### D-241 — La session portail passe de 12 h à 30 jours glissants, et le patient reçoit le moyen de la fermer
+
+- Date : 2026-09-22
+- Statut : accepté — demande du responsable (« Vas y pour 2 allonger session »),
+  après le diagnostic d'un dossier réel qui n'arrivait plus à entrer.
+- Domaine : session et accès patient (`lib/patient-session.ts`, layout du
+  portail). **Aucune règle clinique, aucun seuil, aucune migration, aucun
+  drapeau, aucun changement du modèle de données.**
+- S'appuie sur IDP2 LOT-02 (la session appartient au compte, pas au jeton) et
+  n'en révise aucun invariant. Ne touche **pas** à `D1` de cette campagne —
+  « Google et lien magique, et rien d'autre » : aucun fournisseur d'identité,
+  aucun mot de passe n'est ajouté ici.
+
+**1. LA FENÊTRE ÉTAIT LA CAUSE, LES DEUX ÉCHECS N'ÉTAIENT QUE SES SYMPTÔMES.**
+Un agenda alimentaire se remplit une fois par jour, le soir : 24 h entre deux
+passages pour une fenêtre de 12 h. Le patient était donc déconnecté **à chaque
+visite**, et devait à chaque fois reprouver son identité. Lu en production sur un
+dossier réel, par identifiant, depuis un conteneur : entré le 19/09 à 10:42,
+session morte le soir même, retour le 21/09 devant deux portes fermées — lien de
+l'e-mail déjà consommé (4 rejeux refusés), et compte Google portant une adresse
+différente de celle du dossier. Ni l'un ni l'autre n'était un défaut de code. Ce
+qui se corrige est ce qui rendait ces deux refus **fréquents**.
+
+**2. 30 JOURS, ET GLISSANTS.** `POST /api/portail/session`, appelé à chaque
+ouverture du portail, réémet le cookie : un patient qui revient au moins une fois
+par fenêtre ne se reconnecte jamais. La valeur couvre un cycle de 21 jours plus
+sa marge — c'est la durée d'usage du portail, pas un arrondi.
+
+**3. LA RÉVOCATION NE BOUGE PAS D'UN POUCE, ET C'EST CE QUI REND L'ALLONGEMENT
+ACCEPTABLE.** `isSessionValideForPatient` relit **en base** `actif`,
+`accessTokenRevoked` et `sessionsInvalidesAvant` à chaque requête. Un cookie de
+30 jours meurt dans la seconde où le praticien révoque. La durée du cookie n'a
+jamais été ce qui tient l'accès fermé : l'allonger ne déplace aucun
+coupe-circuit.
+
+**4. CE QU'ELLE DÉPLACE, EN REVANCHE, EST L'APPAREIL PARTAGÉ — D'OÙ LA
+DÉCONNEXION, LIVRÉE AVEC.** Le geste n'existait pas, et n'en avait pas besoin :
+la session se fermait d'elle-même avant la fin de la journée. Ce n'est plus vrai.
+`POST /api/portail/deconnexion` efface le cookie du navigateur qui appelle — **et
+rien de plus** : la session est sans état côté serveur, un cookie déjà copié
+ailleurs n'est pas tué par ce geste. Écrit dans la route même, pour qu'aucune
+lecture rapide ne lui prête une portée qu'elle n'a pas. Le bouton n'est rendu que
+si une session signée est présente : la page de connexion, cible de la
+déconnexion, n'affiche jamais un bouton qui la renverrait sur elle-même.
+
+**5. LA DURÉE LEGACY EST FIGÉE À PART, ET CE N'EST PAS DU ZÈLE.** Les cookies
+d'avant IDP2 LOT-02 ne portent pas de `iat` : il se reconstruit par
+`exp - durée`. Adossée à la constante courante, la reconstruction se serait mise
+à mentir de 29 jours et demi le jour du changement — c'est-à-dire celui-ci.
+`LEGACY_SESSION_TTL_SECONDS` la fige à 12 h. Le format est en pratique éteint
+(12 h de vie, plus aucun émis depuis le 2026-07-21), mais la justesse d'une
+reconstruction ne doit pas reposer sur l'argument qu'on ne l'exécute plus. Le
+banc existant l'a d'ailleurs attrapé à la mutation.
+
+**6. CE QUI N'EST PAS FAIT, ET POURQUOI.** La déconnexion ne révoque pas les
+autres appareils : il faudrait pour cela écrire `sessionsInvalidesAvant` côté
+patient, donc donner au patient un geste qui coupe aussi le praticien — arbitrage
+distinct, non demandé. Et **rien n'alerte le praticien qu'un patient rebondit** à
+l'entrée : huit refus en cinq jours sur le dossier ci-dessus, découverts parce que
+le patient a téléphoné. C'est la prochaine question, elle reste ouverte.
+
 ### D-240 — L'assiette indiquée devient une unité d'action ; et le tableau du cadrage faisait lire comme des questions deux directions déjà rendues
 
 - Date : 2026-09-21

@@ -2,7 +2,7 @@
 // mini-app OAuth Google — pattern standard pour tester une app NextAuth avec
 // Playwright. Nécessite NEXTAUTH_SECRET (même valeur que le serveur testé).
 import { encode } from 'next-auth/jwt';
-import { PORTAIL_COOKIE_NAME, signPatientSession } from '../../src/lib/patient-session';
+import { PORTAIL_COOKIE_NAME, SESSION_TTL_SECONDS, signPatientSession } from '../../src/lib/patient-session';
 
 // Exporté depuis le 2026-08-21 : les fixtures qui écrivent en base (une
 // consultation porte `praticienEmail`) doivent poser LE MÊME praticien que la
@@ -23,7 +23,10 @@ export function patientPortailSessionCookie(idPatient: string, email: string) {
     path: '/',
     httpOnly: true,
     sameSite: 'Lax' as const,
-    expires: Math.floor(Date.now() / 1000) + 12 * 60 * 60,
+    // Alignée sur la fenêtre réelle : la charge signée par `signPatientSession`
+    // porte déjà `exp = iat + SESSION_TTL_SECONDS`. Une valeur écrite en dur ici
+    // faisait expirer le cookie CÔTÉ NAVIGATEUR avant la session qu'il porte.
+    expires: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
 }
 

@@ -12,8 +12,45 @@ import { prisma } from '@/lib/prisma';
 
 export const PORTAIL_COOKIE_NAME = 'wn_portail';
 
-// Durée de vie de la session (12 h glissantes).
-const SESSION_TTL_SECONDS = 12 * 60 * 60;
+// Durée de vie de la session (30 jours glissants).
+//
+// GLISSANTE, et c'est le mot qui porte : `POST /api/portail/session`, appelé à
+// chaque ouverture du portail, réémet le cookie. Un patient qui revient au moins
+// une fois par fenêtre ne se reconnecte jamais.
+//
+// ELLE VALAIT 12 H, ET C'ÉTAIT LA CAUSE D'UN DÉCROCHAGE MESURÉ. Un agenda
+// alimentaire se remplit une fois par jour, le soir : 24 h entre deux passages
+// pour une fenêtre de 12 h — le patient était donc déconnecté À CHAQUE VISITE, et
+// devait reprouver son identité par un lien magique (à usage unique, 24 h) ou par
+// Google. Lu en production le 2026-09-22 sur un dossier réel : entré le 19/09 à
+// 10:42, session morte le soir même, retour le 21/09 devant deux portes fermées —
+// le lien de son e-mail était déjà consommé (4 rejeux refusés), et son compte
+// Google porte une adresse différente de celle du dossier. Aucun des deux échecs
+// n'était un défaut : c'est la fenêtre qui les rendait fréquents.
+//
+// CE QUI NE CHANGE PAS — LA RÉVOCATION. `isSessionValideForPatient` relit EN BASE
+// `actif`, `accessTokenRevoked` et `sessionsInvalidesAvant` à chaque requête. Un
+// cookie de 30 jours meurt dans la seconde où le praticien révoque : la durée du
+// cookie n'a jamais été ce qui tient l'accès fermé, et l'allonger ne déplace donc
+// aucun coupe-circuit. Ce qu'elle déplace est le risque d'appareil partagé — d'où
+// la déconnexion patient livrée avec elle (`POST /api/portail/deconnexion`), qui
+// n'existait pas tant que la session se fermait d'elle-même en fin de journée.
+export const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+/**
+ * Durée de vie des cookies émis AVANT IDP2 LOT-02 — figée à 12 h, définitivement.
+ *
+ * Ces cookies ne portent pas de `iat` : il se reconstruit par `exp - durée`, et la
+ * reconstruction n'est exacte que si la constante est celle qui a servi à les
+ * ÉMETTRE. Adossée à `SESSION_TTL_SECONDS`, elle se mettait à mentir de 29 jours
+ * et demi le jour où la fenêtre changerait — c'est-à-dire aujourd'hui.
+ *
+ * Le format legacy est en pratique éteint (12 h de vie, plus aucun émis depuis le
+ * 2026-07-21 : tous ont expiré le 2026-07-22, et le contrôle de `exp` les écarte
+ * avant même d'arriver ici). La constante est figée quand même — la justesse d'une
+ * reconstruction ne doit pas reposer sur l'argument qu'on ne l'exécute plus.
+ */
+const LEGACY_SESSION_TTL_SECONDS = 12 * 60 * 60;
 
 export const PORTAIL_COOKIE_OPTIONS = {
   httpOnly: true,
@@ -153,11 +190,13 @@ export function verifyPatientSession(raw: string | null | undefined): PatientSes
     // Deux formats acceptés, et c'est délibéré : les cookies émis avant IDP2
     // LOT-02 portent l'empreinte du jeton et pas de `iat`. Les refuser
     // déconnecterait au déploiement les accès portail ouverts. Leur date
-    // d'émission se reconstruit exactement — la durée de vie est fixe.
+    // d'émission se reconstruit exactement — À CONDITION d'ôter la durée qui a
+    // servi à les émettre, et non celle du jour (voir
+    // `LEGACY_SESSION_TTL_SECONDS` : les deux ont cessé d'être la même valeur).
     const iat = typeof payload.iat === 'number'
       ? payload.iat
       : typeof payload.accessTokenFingerprint === 'string'
-        ? payload.exp - SESSION_TTL_SECONDS
+        ? payload.exp - LEGACY_SESSION_TTL_SECONDS
         : null;
     if (iat === null) return null;
 
