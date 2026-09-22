@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
-import { aDesBrouillonsLocaux, effacerTousLesBrouillons } from '@/lib/questionnaire-draft';
+import { PatientConfirmDialog } from '@/components/patient/PatientConfirmDialog';
+import { aDesDonneesPatientLocales, effacerDonneesPatientLocales } from '@/lib/portail/stockageAppareil';
 
 // « Se déconnecter » du portail patient.
 //
@@ -24,16 +25,18 @@ export function BoutonDeconnexion() {
   const [confirmation, setConfirmation] = useState(false);
 
   /**
-   * Premier clic. S'il reste des réponses non envoyées sur cet appareil, on
-   * DEMANDE avant d'effacer ; sinon on part directement.
+   * Premier clic. S'il reste du travail non envoyé sur cet appareil, on DEMANDE
+   * avant d'effacer ; sinon on part directement.
    *
-   * Le cas courant est « pas de brouillon » : la confirmation n'apparaît donc
-   * presque jamais, et quand elle apparaît c'est qu'il y a quelque chose à
-   * perdre. Un dialogue systématique aurait le défaut inverse — on apprend à le
-   * congédier sans lire, et l'avertissement ne protège plus rien.
+   * Le cas courant est « rien à perdre » : la confirmation n'apparaît donc
+   * presque jamais, et quand elle apparaît c'est qu'il y a vraiment quelque
+   * chose. Un dialogue systématique aurait le défaut inverse — on apprend à le
+   * congédier sans lire, et l'avertissement ne protège plus rien. C'est
+   * `aDesDonneesPatientLocales()` qui porte cette exigence : un brouillon vide,
+   * une métadonnée orpheline ou un brouillon périmé ne le déclenchent pas.
    */
   function demander() {
-    if (aDesBrouillonsLocaux()) {
+    if (aDesDonneesPatientLocales()) {
       setEchec(false);
       setConfirmation(true);
       return;
@@ -67,10 +70,10 @@ export function BoutonDeconnexion() {
     }
 
     // LA PURGE VIENT APRÈS LA CONFIRMATION DU SERVEUR, ET C'EST L'ORDRE QUI
-    // COMPTE. Effacer d'abord ferait perdre les brouillons à qui reste connecté
-    // parce que la déconnexion a échoué — on aurait détruit du travail sans
+    // COMPTE. Effacer d'abord ferait perdre le travail de qui reste connecté
+    // parce que la déconnexion a échoué — on aurait détruit des réponses sans
     // même rendre l'appareil sûr.
-    effacerTousLesBrouillons();
+    effacerDonneesPatientLocales();
 
     // `location.assign` et non `router.push` : on veut que le navigateur
     // reparte du serveur avec le cookie effacé, sans réutiliser le cache
@@ -89,32 +92,27 @@ export function BoutonDeconnexion() {
         Se déconnecter
       </PatientButton>
 
-      {/* L'avertissement dit CE QUI SERA PERDU, et propose les deux suites.
-          Il ne dit pas « êtes-vous sûr ? » : une question sans contenu se
-          répond au réflexe. `role="alertdialog"` + `aria-describedby` pour que
-          le motif soit lu, pas seulement le titre. */}
-      {confirmation && (
-        <div
-          role="alertdialog"
-          aria-label="Réponses non envoyées"
-          aria-describedby="wn-deconnexion-motif"
-          className="max-w-[18rem] rounded-xl border border-border bg-surface p-3 space-y-2 text-right"
-        >
-          <p id="wn-deconnexion-motif" className="text-xs text-foreground">
-            Des réponses commencées sur cet appareil ne sont pas encore envoyées.
-            Elles seront effacées d’ici — c’est ce qui protège un ordinateur
-            partagé. Vous pourrez les ressaisir à votre prochaine connexion.
-          </p>
-          <div className="flex justify-end gap-2">
-            <PatientButton variant="neutral" onClick={() => setConfirmation(false)}>
-              Annuler
-            </PatientButton>
-            <PatientButton variant="primary" onClick={() => void deconnecter()}>
-              Se déconnecter et effacer
-            </PatientButton>
-          </div>
-        </div>
-      )}
+      {/* `PatientConfirmDialog` ET NON UN PANNEAU MAISON. La première version
+          était un `role="alertdialog"` en flux, sans déplacement du focus : or
+          `alertdialog` n'a pas d'`aria-live` implicite, et un lecteur d'écran
+          n'annonçait donc RIEN — le seul texte que ce lot existe pour faire
+          lire était précisément celui qui ne se lisait pas. Radix apporte le
+          focus à l'ouverture, le piège de focus, `Escape` et la restitution du
+          focus ; et ce composant est déjà celui des écrans voisins du même
+          parcours (`GenericQuestionnaire`, `PlaintesForm`). Relevé en revue de
+          la PR #1212. */}
+      <PatientConfirmDialog
+        open={confirmation}
+        onOpenChange={setConfirmation}
+        message={
+          'Des réponses commencées sur cet appareil ne sont pas encore envoyées. '
+          + 'Se déconnecter les effacera d’ici — c’est ce qui protège un ordinateur partagé. '
+          + 'Il faudra les ressaisir à la prochaine connexion.'
+        }
+        confirmLabel="Se déconnecter et effacer"
+        onConfirm={() => void deconnecter()}
+      />
+
       {/* `role="alert"` : l'échec est annoncé, pas seulement affiché — le
           bouton vient d'être actionné, le lecteur d'écran est ailleurs. */}
       {echec && (

@@ -21,14 +21,25 @@ réponses de questionnaire en `localStorage` **30 jours**
 L'application ne les restitue pas sans session — il faut les outils du navigateur
 pour les lire — mais elles restaient là.
 
-**2. ON PURGE, ET ON AVERTIT D'ABORD.** `effacerTousLesBrouillons()` balaie les
-quatre familles de clés du module, **par préfixe et non par identifiant** : au
-moment de fermer une session, on ne connaît plus les assignations qui ont laissé
-un brouillon, et les chercher supposerait une lecture réseau que la déconnexion
-ne doit pas attendre.
+**2. ON PURGE LES DEUX STOCKAGES, ET ON AVERTIT D'ABORD.**
+`lib/portail/stockageAppareil.ts` tient l'INVENTAIRE des clés que le portail
+dépose sur l'appareil — sept familles, `localStorage` **et** `sessionStorage` —
+et `effacerDonneesPatientLocales()` les balaie **par préfixe, pas par
+identifiant** : au moment de fermer une session, on ne connaît plus les
+assignations ni les brouillons qui traînent, et les chercher supposerait une
+lecture réseau que la déconnexion ne doit pas attendre.
+
+`sessionStorage` N'ÉTAIT PAS DANS LA PREMIÈRE VERSION, et c'était le défaut
+entier : il survit à `location.assign` dans le même onglet — le scénario
+familial exact — et porte le wizard fiche/anamnèse ainsi que l'agenda
+alimentaire patient. Purger la seule famille trouvée aurait laissé la promesse
+aussi fausse qu'avant, en la déclarant tenue.
 
 L'avertissement n'apparaît **que s'il y a quelque chose à perdre**
-(`aDesBrouillonsLocaux()`). C'est délibéré : un dialogue systématique s'apprend
+(`aDesDonneesPatientLocales()`) — et « quelque chose » exclut une métadonnée
+orpheline, un brouillon vide et un brouillon **périmé** que l'application ne
+restituera jamais, alors que le texte promet de pouvoir le ressaisir.
+C'est délibéré : un dialogue systématique s'apprend
 par cœur et se congédie sans lire — il cesse alors de protéger. Et il dit CE QUI
 sera perdu, jamais « êtes-vous sûr ? » : une question sans contenu se répond au
 réflexe.
@@ -39,10 +50,18 @@ que la déconnexion a échoué : du travail détruit, et l'appareil toujours ouv
 Un banc tient cet ordre ; la mutation qui l'inverse le fait rougir.
 
 **4. LE CONFORT DE LECTURE N'EST PAS PURGÉ**, et c'est une frontière, pas un
-oubli. `wellneuro:comfort*` est un réglage d'appareil — texte agrandi,
+oubli. `wellneuro:portail:confort` est un réglage d'appareil — texte agrandi,
 espacement, animations réduites. L'effacer punirait la personne qui se
 déconnecte, en particulier celle qui a réglé ces options parce qu'elle en a
-besoin. Un banc le garde.
+besoin. Il est **exempté nommément, avec motif écrit** (`FAMILLES_EXEMPTEES`), et
+un banc exige ce motif : une exemption sans raison est une purge oubliée qui se
+maquille.
+
+*(La première version gardait `wellneuro:comfort` — une clé que RIEN dans le
+dépôt n'écrit. Le banc ne protégeait donc rien, et « un banc le garde » était
+faux. Trouvé en revue de la PR #1212 par la mutation qui ajoutait
+`wellneuro:portail:` aux préfixes purgés : neuf bancs sur neuf restaient verts en
+effaçant le vrai réglage du patient.)*
 
 **5. LE E2E QUI MANQUAIT.** [[D-241]] livrait le geste sans aucun parcours joué —
 `frontend-ui.md` en attend un pour tout changement d'UI. `e2e/portail-deconnexion.spec.ts`
@@ -52,10 +71,22 @@ et effacement n'était jusqu'ici qu'une promesse d'en-tête.
 
 **6. CE QUI RESTE OUVERT.** Le rebond d'un patient **déjà connecté une fois** ne
 remonte toujours pas au praticien : l'état `entree_refusee` existe mais ne
-s'affiche que si le dossier n'a jamais connu de connexion réussie. Lot suivant.
-Côté Google, les refus sur adresse inconnue restent **indécidables par
-construction** — `id_patient = NULL`, aucun dossier à nommer. Et la déconnexion
-ne coupe toujours pas les autres appareils ([[D-241]] §6, inchangé).
+s'affiche que si le dossier n'a jamais connu de connexion réussie. **Et le
+correctif n'est pas une levée de condition** : `rejeuxRefuses > 0` veut dire
+« refusé un jour », pas « refusé depuis ». Afficher un incident résolu enverrait
+relancer un patient déjà servi — il faut comparer la RÉCENCE
+(`derniereTentative` postérieure à la dernière connexion). Deux bornes de
+l'encart s'y ajoutent, et une comparaison de récence ne les lèvera pas : 30 jours
+depuis la création du dossier, 60 dossiers au plus.
+
+Côté Google, le versant nominatif ne remonterait que des refus **périmés** : le
+seul refus qui nomme un dossier est écrit sous `!actif || accessTokenRevoked`,
+donc sur un dossier fermé que l'ordre des étapes nomme déjà (`nouveauxPatients.ts`).
+Ce n'est pas « indécidable » — une première rédaction le disait, à tort.
+
+Enfin, la déconnexion ne coupe toujours pas les autres appareils ([[D-241]] §6,
+inchangé), et `aDesDonneesPatientLocales()` rend `false` en stockage bloqué sans
+qu'aucun banc ne le tienne.
 
 ### D-241 — La session portail passe de 12 h à 30 jours glissants, et le patient reçoit le moyen de la fermer
 
@@ -140,10 +171,20 @@ manquait à la première rédaction de ce paragraphe.
   Ce qui est vrai est plus étroit, et reste un trou : cet état ne s'affiche que
   si le patient **ne s'est JAMAIS connecté** (`!source.connecteLe &&
   source.entreeRefusee`). Un patient déjà entré une fois, puis qui rebondit —
-  exactement le cas qui a déclenché cette décision — est avalé. Côté Google, en
-  revanche, rien n'est possible : les refus sur adresse inconnue portent
-  `id_patient = NULL`, il n'y a aucun dossier à nommer, et c'est la propriété de
-  non-oracle, pas un oubli. Repris par `D-242`.
+  exactement le cas qui a déclenché cette décision — est avalé.
+
+  **Côté Google, la raison est autre, et elle est déjà écrite** dans
+  `nouveauxPatients.ts` : le seul refus Google qui NOMME un dossier est écrit
+  sous la garde `!patient.actif || patient.accessTokenRevoked`, il ne peut donc
+  désigner qu'un dossier **fermé**, que l'ordre des étapes nomme déjà pour
+  lui-même ; le lire ne remonterait que des refus périmés. *(Une première
+  rédaction de cet amendement disait « rien n'est possible, les refus portent
+  `id_patient = NULL` » : faux. Le motif `sans_espace_eligible` couvre TROIS cas
+  — adresse inconnue, patient désactivé, portail révoqué — et les deux derniers
+  écrivent une trace nominative, le code le dit en toutes lettres. La propriété
+  de non-oracle porte sur l'ÉCRAN, pas sur la donnée. Corriger une erreur par une
+  autre est pire que l'erreur : relevé en revue de la PR #1212.)* Repris par
+  `D-242`.
 - ~~**« Se déconnecter » ne purge PAS les brouillons locaux**~~ — **FERMÉ par
   `D-242` le 2026-09-22 : le geste purge désormais, après avertissement.** Le
   texte d'origine, conservé pour ce qu'il documente :

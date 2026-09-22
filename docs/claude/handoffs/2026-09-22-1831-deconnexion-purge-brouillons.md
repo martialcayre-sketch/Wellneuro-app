@@ -29,21 +29,32 @@ troisième explicitement ouverte.
 
 ## 4. Fichiers modifiés
 
-- `web/src/lib/questionnaire-draft.ts` — `aDesBrouillonsLocaux()`,
-  `effacerTousLesBrouillons()`, `PREFIXES_BROUILLON` (4 familles de clés).
-- `web/src/components/patient/BoutonDeconnexion.tsx` — confirmation inline
-  (`role="alertdialog"`), purge après confirmation serveur.
-- `web/src/components/patient/BoutonDeconnexion.test.tsx` — 5 bancs neufs.
-- `web/e2e/portail-deconnexion.spec.ts` *(neuf)* — le parcours manquait à `D-241`.
+- `web/src/lib/portail/stockageAppareil.ts` *(neuf)* — l'INVENTAIRE des sept
+  familles de clés du portail, `localStorage` **et** `sessionStorage` ;
+  `aDesDonneesPatientLocales()`, `effacerDonneesPatientLocales()`, exemptions
+  motivées.
+- `web/src/lib/portail/stockageAppareil.guard.test.ts` *(neuf)* — garde de
+  CLASSE : toute clé `wellneuro:` des surfaces patient doit être déclarée.
+- `web/src/components/patient/BoutonDeconnexion.tsx` — `PatientConfirmDialog`
+  (et non un panneau maison), purge après confirmation serveur.
+- `web/src/components/patient/BoutonDeconnexion.test.tsx` — 8 bancs neufs.
+- `web/e2e/portail-deconnexion.spec.ts` *(neuf)* — 4 cas, dont la traversée du
+  dialogue ; le parcours manquait à `D-241`.
+- `web/src/lib/questionnaire-draft.ts` — **inchangé** : la première version y
+  avait ajouté la purge, remontée depuis dans `stockageAppareil.ts`.
 - `docs/DECISIONS.md`, `changelog.d/2026-09-22-deconnexion-purge-brouillons.md`.
 
 ## 5. Validations exécutées
 
-- **T1 vert.** **T3 vert** : 9921 + 1623 bancs, **209 E2E** (205 avant — les deux
-  nouveaux cas × deux navigateurs). Le nouvel E2E a réellement tourné.
-- **Deux mutations jouées, deux tuées** : purge déplacée avant l'appel serveur
-  (tue « le brouillon n'est pas effacé sur échec ») ; `wellneuro:comfort` ajouté
-  aux préfixes purgés (tue « le confort survit »).
+- **T1 vert.** **T3 vert** : 9928 + 1623 bancs, **213 E2E** (205 avant — quatre
+  cas neufs × deux navigateurs). Les quatre ont réellement tourné.
+- **Quatre mutations jouées, quatre tuées** : purge déplacée avant l'appel
+  serveur ; `wellneuro:portail:` ajouté aux préfixes PURGÉS (tue « le confort
+  survit » — cette mutation SURVIVAIT à la première version, le banc gardant une
+  clé que rien n'écrit) ; `estSubstantielle` retirée (tue « pas de dialogue sur
+  du vide ») ; une famille retirée de l'inventaire (tue le garde de classe).
+- **UNE REVUE ADVERSARIALE A RENDU NO-GO SUR LA PREMIÈRE VERSION**, quatre
+  bloquants, tous fondés et tous vérifiés à la main avant correction.
 - **Une mutation a échoué à s'appliquer et la garde a ARRÊTÉ** au lieu de rendre
   un faux verdict — puis le fichier a été restauré explicitement, `set -e` ayant
   sauté le `cp` de restauration. Vérifié par md5.
@@ -60,8 +71,14 @@ troisième explicitement ouverte.
   NULL`, aucun dossier à nommer. Propriété de non-oracle, pas un défaut. Seul un
   compteur agrégé serait possible.
 - **La déconnexion ne coupe pas les autres appareils** (`D-241` §6, inchangé).
-- **Aucun banc ne couvre `aDesBrouillonsLocaux()` en mode privé** (localStorage
-  qui lève) : le code renvoie `false`, mais rien ne le tient.
+- **Aucun banc ne couvre `aDesDonneesPatientLocales()` en mode privé**
+  (stockage qui lève) : le code renvoie `false`, mais rien ne le tient.
+- **La purge peut échouer partiellement en silence** : `removeItem` qui lève en
+  milieu de famille laisse le reste en place, et la page part quand même. Aucune
+  post-condition ne le constate.
+- **Le texte du dialogue dit « il faudra les ressaisir »** — juste pour le
+  patient qui se déconnecte, faux pour celui dont le travail d'un AUTRE patient
+  du même appareil est emporté. La purge est délibérément tous-patients.
 
 ## 7. Prochaine action exacte
 

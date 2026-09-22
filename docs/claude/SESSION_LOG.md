@@ -7711,3 +7711,30 @@ qu'une promesse d'en-tête.
 **Ouvert.** Le rebond d'un patient déjà connecté (lot suivant, cadré : il faut
 une comparaison de récence, pas une levée de condition) ; les refus Google sur
 adresse inconnue restent indécidables par construction.
+
+## 2026-09-22 — Reprise de D-242 après revue : la classe, pas l'instance
+
+**Verdict.** La revue adversariale a rendu **NO-GO** sur la première version de
+`D-242`, quatre bloquants, tous fondés — vérifiés un à un contre le dépôt avant
+correction.
+
+**Ce qui était raté.** (1) Le banc « le confort survit » gardait
+`wellneuro:comfort`, **une clé que rien n'écrit** : il ne protégeait rien, et la
+décision affirmait le contraire. (2) Deux familles de clés sur trois étaient
+oubliées — wizard fiche/anamnèse et agenda alimentaire vivent en
+`sessionStorage`, qui survit à la redirection dans le même onglet. (3) Le
+dialogue `role="alertdialog"` sans focus n'était **annoncé par aucun lecteur
+d'écran**, alors que `PatientConfirmDialog` existait déjà dans le même parcours.
+(4) Ma correction de `D-241` §6 contenait **une autre erreur** : « côté Google
+rien n'est possible » — or `sans_espace_eligible` couvre trois cas et deux
+écrivent une trace nominative.
+
+**Correction de méthode.** Arrêter de corriger les instances :
+`lib/portail/stockageAppareil.ts` possède l'inventaire des sept familles et des
+exemptions motivées, et un **garde de classe** refuse toute clé `wellneuro:` non
+déclarée sous les surfaces patient. Sans lui, la prochaine famille rouvrait le
+trou en silence — ce qui venait précisément d'arriver.
+
+**Ouvert.** Le rebond d'un patient déjà connecté (le correctif exige une
+comparaison de récence, plus deux bornes d'encart) ; la purge partielle
+silencieuse ; le mode privé non gardé.
