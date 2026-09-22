@@ -252,6 +252,29 @@ signé, comme `baremeChargeV1` et `tableRepliV1` ; la clé est le TRIPLET.
 quand un défaut a déjà été corrigé une fois, se demander ce qui le ferait
 revenir — ici, l'égalité sur le terme même qu'on venait d'ajouter.
 
+## 8 nonies. Septième passe — conduite ici, et elle retrouve la même classe
+
+Le relecteur n'a pas repris la main sur la tête suivante. La contre-revue a donc
+été conduite en interne : quatre angles indépendants, chaque constat soumis à
+deux sceptiques chargés de le RÉFUTER. **Vingt et un constats, sept retenus,
+quatorze écartés.**
+
+**Le premier est le mien, prouvé par mutation exécutée.** La garde d'appelants
+ÉNUMÉRAIT deux noms alors que le module en exporte quatre qui acceptent une
+signature. Un fichier de production appelant `replisServables(signature, table)`
+laissait le banc **vert** — et ma docstring affirmait déjà la propriété entière.
+La liste se **dérive** désormais du texte du module, avec un témoin qui atteste
+la dérivation sans en tenir lieu.
+
+**Trois autres défauts de la même garde** : l'étalement `{ ...objet }` portait
+les clés sans les écrire ; commentaires et chaînes étaient lus comme du code ; et
+l'énumération « ce que le verrou atteste » n'avait pas suivi le second commit.
+
+**À retenir, et c'est la leçon du lot entier** : j'ai corrigé SEPT FOIS des
+instances de la même classe. Le signal qui aurait dû m'arrêter dès la troisième
+est une garde qui **énumère des noms**. Une garde qui nomme est une instance
+déguisée en classe.
+
 ## 9. Problèmes ouverts
 
 **LE QUATRIÈME POINT DU PROGRAMME, ET IL EST ENTIÈREMENT CLINIQUE.** Affirmer
@@ -268,6 +291,15 @@ rend la table signable, mais toute révision d'un protocole portant l'assiette
 source continue de re-dériver sa référence — la famille, elle, ne touche plus
 au `contentHash` depuis ce lot. **Le prix nommé par `D-240` §10 est donc levé**,
 et c'est l'effet principal du choix de sortir la relation du catalogue.
+
+**RELEVÉ PAR LA CONTRE-REVUE, ÉCARTÉ PAR SES SCEPTIQUES, ET LAISSÉ OUVERT ICI
+PLUTÔT QUE TRANCHÉ SEUL** : `anomaliesDeLaLigneRepli` vérifie que l'indication
+d'un repli EXISTE au dépôt, jamais qu'elle est **publiée**. Un repli conditionné
+par une ligne d'indication en brouillon passerait donc le verrou — pour une
+condition que rien ne sert. Aucune ligne de repli n'existant, le point est
+entièrement prospectif ; il n'a pas été fermé ici parce qu'exiger le statut
+publié change ce que le verrou ACCEPTE, ce qui relève du lot qui écrira la
+première ligne, avec le praticien. **À regarder ce jour-là, pas après.**
 
 **Hérité, non traité** : `alternatives` n'est rendu par aucun composant — la
 table n'entrera à la matrice qu'avec l'écran ; la sélection Boussole du cockpit

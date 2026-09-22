@@ -192,18 +192,22 @@ export function anomaliesDeLaLigneRepli(
  *
  * CE QU'IL ATTESTE, ET CE QU'IL N'ATTESTE PAS — dit ici parce qu'un relecteur
  * l'a demandé et qu'il avait raison de le demander. Ce verrou vérifie la
- * COHÉRENCE de ce qu'on lui donne : sha recalculé sur les lignes reçues, date
- * ISO canonique, booléen, anomalies, statut, identifiants uniques. Il ne
- * vérifie PAS la PROVENANCE — une métadonnée fabriquée dont on a recalculé le
- * sha lui passe, et aucune signature de fonction ne pourrait l'en empêcher : il
- * n'y a pas de secret dans ce dépôt, le `shaPerimetre` est un littéral lisible.
+ * COHÉRENCE de ce qu'on lui donne : table non vide, booléen, date ISO
+ * canonique, sha recalculé sur les lignes reçues, anomalies de chaque ligne,
+ * identifiants uniques, **et recouvrement du triplet**. Il ne vérifie PAS la
+ * PROVENANCE — une métadonnée fabriquée dont on a recalculé le sha lui passe,
+ * et aucune signature de fonction ne pourrait l'en empêcher : il n'y a pas de
+ * secret dans ce dépôt, le `shaPerimetre` est un littéral lisible.
  *
  * La provenance est tenue ailleurs, et c'est délibéré : par le littéral
  * committé, par l'enrôlement à `shaPerimetreLitteral.guard.test.ts` — le jour
  * de la PREMIÈRE signature, jamais avant, son `shaPerimetre` valant `null`
  * jusque-là — et par la relecture qui fait entrer ce littéral. Ce que le code
- * peut tenir, lui, est qu'aucun chemin de PRODUCTION ne passe d'override :
- * c'est la dernière garde de `replisAssietteV1.guard.test.ts`.
+ * peut tenir, lui, est plus étroit, et la contre-revue a eu raison d'exiger que
+ * ce soit écrit ainsi : aucun appel **écrit en clair**, dans un fichier de
+ * production, ne passe d'override — c'est la dernière garde de
+ * `replisAssietteV1.guard.test.ts`, et elle est LEXICALE. Un import renommé la
+ * désarme. Elle attrape la rédaction ordinaire, pas un contournement délibéré.
  */
 export function replisAssietteSignes(
   signature: ReplisAssietteMetadata = REPLIS_ASSIETTE_METADATA,

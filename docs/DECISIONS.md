@@ -216,11 +216,10 @@ jusque-là, comme [[D-198]], [[D-223]], [[D-224]] et [[D-236]] l'ont fait — et
 par la relecture qui fait entrer ce littéral.
 
 **CE QUE LE CODE PEUT TENIR, ET QUI EST POSÉ.** Une garde balaie les fichiers de
-PRODUCTION : aucun n'appelle `replisPourProtocole` avec plus d'un argument, ni
-`decidePlateSubstitution` en nommant une clé d'injection. L'injection reste au
-banc — seul endroit où éprouver le verrou sur une table non vide a un sens.
-Vérifiée par trois mutations, dont un témoin d'anti-vacuité : supprimer le seul
-appel de production fait rougir la garde au lieu de la rendre silencieuse.
+PRODUCTION : aucun ne passe d'override à une fonction injectable de ce module.
+L'injection reste au banc — seul endroit où éprouver le verrou sur une table non
+vide a un sens. ⚠️ *La première rédaction de cette garde énumérait DEUX noms et
+promettait la propriété pour tous : §16 la corrige et en donne la portée exacte.*
 
 **15. SIXIÈME PASSE — LE CONSTAT LE PLUS UTILE DU LOT N'ÉTAIT PAS DÉPOSÉ EN
 COMMENTAIRE.** Il tenait dans la phrase d'entête de la relecture : « la
@@ -247,6 +246,44 @@ dit pourquoi la fixture vaut `'court'` (5 caractères, donc refusée) et non
 `'trop court'` (10, donc acceptée par un seuil `< 10`). Il est exact. Mais il
 était assez ambigu pour produire un constat faux, et il est réécrit — écarter
 un constat n'interdit pas de retirer ce qui l'a fabriqué.
+
+**16. SEPTIÈME PASSE — ELLE EST LA MIENNE, ET ELLE TROUVE LA MÊME CLASSE POUR LA
+SEPTIÈME FOIS.** Le relecteur n'ayant pas repris la main sur la tête suivante, la
+contre-revue a été conduite ici : quatre angles indépendants, chaque constat
+soumis à deux sceptiques chargés de le RÉFUTER. Vingt et un constats produits,
+**sept retenus, quatorze écartés**.
+
+**Le premier est le mien, et il est prouvé par une mutation exécutée.** La garde
+du §14 énumérait deux noms — `replisPourProtocole`, `decidePlateSubstitution` —
+alors que le module en exporte **quatre** qui acceptent une signature :
+`replisServables` et `replisAssietteSignes` offrent la même injection. Un fichier
+de production appelant `replisServables(signatureFabriquée, table)` laissait le
+banc **vert**. Et ma propre docstring affirmait déjà la propriété entière.
+
+**Enrichir la liste de deux noms aurait été la huitième correction d'instance.**
+La liste se DÉRIVE désormais du texte du module — toute fonction exportée dont un
+paramètre est une `ReplisAssietteMetadata` —, avec un témoin qui atteste que la
+dérivation marche sans faire office de liste. Une cinquième fonction ajoutée
+demain est couverte sans que personne y pense.
+
+**Trois autres défauts de la même garde sont fermés** : l'étalement
+(`{ ...objet }`) portait les clés sans les écrire ; commentaires et chaînes
+étaient lus comme du code, si bien qu'une phrase citant une ancienne forme
+d'appel aurait fait rougir un fichier conforme ; et l'énumération « ce que le
+verrou atteste » n'avait pas suivi le second commit — le recouvrement y manquait.
+
+**ET LA PORTÉE EST DÉSORMAIS DÉCLARÉE AU LIEU D'ÊTRE PROMISE.** Cette garde est
+LEXICALE : un import renommé la désarme, et aucune expression régulière ne
+referme cela. Elle attrape la rédaction ORDINAIRE — celle qu'on écrit sans y
+penser — pas un contournement délibéré, que rien ici ne pourrait arrêter puisque
+le `shaPerimetre` est un littéral lisible. Dire ce qu'une garde ne tient pas fait
+partie de ce qu'elle tient.
+
+**Le motif de `AUTRE_INDICATION` était faux, et il est réécrit** : `[1]` ne peut
+jamais désigner le même élément que `[0]`. Ce que la forme à l'indice risque
+vraiment est une table de moins de deux lignes, qui la fait retomber sur son
+littéral de repli — un cas vain qui ne dirait rien. Une seconde déclaration du
+même nom, restée à l'indice, masquait de surcroît la première.
 
 **CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
 décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse

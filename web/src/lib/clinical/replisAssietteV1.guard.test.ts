@@ -27,8 +27,12 @@ const INDICATION = INDICATIONS_ASSIETTES_V1[0]?.id ?? 'ASSIETTE-IND-INTROUVABLE'
 
 /**
  * UNE SECONDE indication réelle, DISTINCTE de la première — cherchée par
- * prédicat et non prise à l'indice `[1]`, qui deviendrait la même ligne le jour
- * où la table d'indications est réordonnée.
+ * PRÉDICAT. Le motif que j'avais écrit ici était faux, et la contre-revue l'a
+ * vu : `[1]` ne peut jamais désigner le même élément que `[0]`, quel que soit
+ * l'ordre. Ce que la forme `[1]` risque vraiment est une table de MOINS DE DEUX
+ * lignes, qui la fait retomber sur son littéral de repli — et le cas serait
+ * alors vain sans rien dire. Le prédicat, lui, ne peut rendre que `INDICATION`
+ * ou rien, et l'assertion du cas refuse le « rien ».
  */
 const AUTRE_INDICATION = INDICATIONS_ASSIETTES_V1
   .find(candidate => candidate.id !== INDICATION)?.id ?? 'ASSIETTE-IND-INTROUVABLE';
@@ -234,8 +238,6 @@ describe('La décision de substitution — orientée, conditionnée, gardée aux
   // fonction n'en accepte plus) mais une TABLE et sa SIGNATURE, que la décision
   // remet elle-même à `replisServables`. Une ligne de fixture doit donc être
   // complète et cohérente pour être vue : c'est ce qu'on veut éprouver.
-  const AUTRE_INDICATION = INDICATIONS_ASSIETTES_V1[1]?.id ?? 'ASSIETTE-IND-SECONDE';
-
   function tableDe(lignes: readonly LigneRepliAssiette[]) {
     return { signature: signeePour(lignes), lignes };
   }
@@ -439,6 +441,23 @@ function fichiersDeProduction(racine: string): readonly string[] {
   });
 }
 
+/**
+ * LE TEXTE SANS SA PROSE — commentaires et chaînes remplacés par du vide.
+ *
+ * Contre-revue : sans cela, une phrase de documentation citant une ANCIENNE
+ * forme d'appel ferait rougir un fichier dont le code est conforme, et le piège
+ * est vif ici — les modules de `lib/clinical/` portent une prose dense qui cite
+ * systématiquement les signatures d'avant. Le `[^:]` devant `//` épargne les
+ * URL, qui ne sont pas des commentaires.
+ */
+function sansProse(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ')
+    .replace(/'(?:\\.|[^'\\])*'/g, "''")
+    .replace(/"(?:\\.|[^"\\])*"/g, '""');
+}
+
 /** Le texte des arguments de chaque appel a `nom`, parentheses equilibrees. */
 function argumentsDesAppels(source: string, nom: string): readonly string[] {
   const ouverture = new RegExp(`\\b${nom}\\s*\\(`, 'g');
@@ -457,6 +476,37 @@ function argumentsDesAppels(source: string, nom: string): readonly string[] {
     trouve = ouverture.exec(source);
   }
   return appels;
+}
+
+/**
+ * LES FONCTIONS EXPORTÉES QUI ACCEPTENT UNE SIGNATURE — dérivées de la SOURCE,
+ * jamais énumérées.
+ *
+ * SEPTIÈME INSTANCE DE LA MÊME CLASSE DANS CE SEUL LOT, et cette fois la
+ * contre-revue l'a prouvée par mutation : ma garde ne cherchait que
+ * `replisPourProtocole` et `decidePlateSubstitution`, alors que
+ * `replisServables` et `replisAssietteSignes` offrent la MÊME injection. Un
+ * fichier de production appelant `replisServables(signatureFabriquée, table)`
+ * laissait le banc vert. Enrichir la liste de deux noms aurait été la huitième
+ * correction d'instance ; la liste se dérive donc du texte du module, et une
+ * cinquième fonction ajoutée demain sera couverte sans que personne y pense.
+ *
+ * `argumentsNus` est ce que la PRODUCTION a le droit de passer : les paramètres
+ * déclarés AVANT le premier paramètre d'injection. Zéro pour le verrou et le
+ * point de service, un pour la projection. `objet` distingue la décision, qui
+ * reçoit un littéral : là ce sont les clés — ou un étalement — qui trahissent.
+ */
+function exportsInjectables(sourceDuModule: string) {
+  return [...sansProse(sourceDuModule).matchAll(/export function (\w+)\(([^)]*)\)/g)]
+    .filter(([, , parametres]) => /ReplisAssietteMetadata/.test(parametres))
+    .map(([, nom, parametres]) => {
+      const avant = parametres.slice(0, parametres.search(/\w+\??:\s*ReplisAssietteMetadata/));
+      return {
+        nom,
+        argumentsNus: nombreDArguments(avant.replace(/,\s*$/, '')),
+        objet: /^\s*\w+\??:\s*\{/.test(parametres),
+      };
+    });
 }
 
 /** Combien d'arguments ce texte porte — les virgules de premier niveau. */
@@ -544,11 +594,32 @@ describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
     // le littéral committé et son enrôlement à
     // `shaPerimetreLitteral.guard.test.ts`, le jour de la PREMIÈRE signature.
     //
-    // CE QUE CETTE GARDE FERME EST LA DIRECTION QUI COMPTE : aucun chemin de
-    // PRODUCTION ne passe d'override. L'injection reste au banc, seul endroit
-    // où éprouver le verrou sur une table non vide a un sens.
+    // CE QUE CETTE GARDE TIENT, ET CE QU'ELLE NE TIENT PAS — dit ici parce que
+    // la version précédente promettait plus qu'elle ne tenait, et qu'une
+    // contre-revue l'a prouvé par mutation.
+    //
+    // ELLE TIENT : aucun appel ÉCRIT EN CLAIR, dans un fichier de production, ne
+    // passe d'override à une fonction injectable de ce module — et la liste de
+    // ces fonctions est DÉRIVÉE du texte du module, pas énumérée ici.
+    //
+    // ELLE NE TIENT PAS, et le raccourci est déclaré plutôt que masqué : c'est
+    // une garde LEXICALE. Un import renommé (`import { X as Y }`) la désarme,
+    // puisqu'elle reconnaît l'identifiant au site d'appel et non la fonction
+    // importée. Aucune expression régulière ne referme cela — il y faudrait une
+    // règle sur l'arbre syntaxique. Ce qu'elle attrape est la rédaction
+    // ORDINAIRE, celle qu'on écrit sans y penser ; elle n'arrête pas quelqu'un
+    // qui contourne exprès, et rien dans ce dépôt ne le pourrait : le
+    // `shaPerimetre` est un littéral lisible.
     const racine = join(process.cwd(), 'src');
     const fichierDuModule = join(racine, 'lib/clinical/replisAssietteV1.ts');
+    const formes = exportsInjectables(readFileSync(fichierDuModule, 'utf8'));
+    // TÉMOIN DE DÉRIVATION — il ne fait pas la liste, il atteste qu'elle marche.
+    // Une cinquième fonction injectable est couverte sans toucher ce banc ; un
+    // de ces quatre noms qui disparaît fait rougir, et c'est voulu.
+    expect(formes.map(forme => forme.nom), 'la dérivation des fonctions injectables a échoué')
+      .toEqual(expect.arrayContaining([
+        'replisAssietteSignes', 'replisServables', 'decidePlateSubstitution', 'replisPourProtocole',
+      ]));
     const appels = fichiersDeProduction(racine).flatMap(chemin => {
       // Le NOM, pas le chemin d'alias : une sœur de `lib/clinical/` importerait
       // par `./replisAssietteV1`, et une garde qui ne connaîtrait que
@@ -557,20 +628,22 @@ describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
       if (chemin === fichierDuModule) return [];
       const source = readFileSync(chemin, 'utf8');
       if (!source.includes('replisAssietteV1')) return [];
-      return (['replisPourProtocole', 'decidePlateSubstitution'] as const).flatMap(nom =>
-        argumentsDesAppels(source, nom).map(parametres => ({
-          fichier: relative(racine, chemin), nom, parametres,
+      const code = sansProse(source);
+      return formes.flatMap(forme =>
+        argumentsDesAppels(code, forme.nom).map(parametres => ({
+          fichier: relative(racine, chemin), forme, parametres,
         })));
     });
     expect(appels.length, 'aucun appel de production retrouvé — la garde serait vacante')
       .toBeGreaterThan(0);
     const fautifs = appels.flatMap(appel => {
-      // `replisPourProtocole` se lit positionnellement : un second argument EST
-      // une table. `decidePlateSubstitution` reçoit un objet : ce sont les clés
-      // d'injection qui la trahissent.
-      const trop = appel.nom === 'replisPourProtocole' && nombreDArguments(appel.parametres) > 1;
+      // Les formes positionnelles : tout argument au-delà des paramètres nus EST
+      // un override. La forme à objet : ce sont les clés qui trahissent — ou un
+      // étalement, qui les porterait sans les écrire.
+      const trop = nombreDArguments(appel.parametres) > appel.forme.argumentsNus;
       const nomme = /\b(signature|lignes|lignesIndication)\s*:/.test(appel.parametres);
-      return trop || nomme ? [`${appel.fichier} → ${appel.nom}`] : [];
+      const etale = appel.forme.objet && appel.parametres.includes('...');
+      return trop || nomme || etale ? [`${appel.fichier} → ${appel.forme.nom}`] : [];
     });
     expect(fautifs, 'ces appelants de production injectent une table ou une signature')
       .toEqual([]);
