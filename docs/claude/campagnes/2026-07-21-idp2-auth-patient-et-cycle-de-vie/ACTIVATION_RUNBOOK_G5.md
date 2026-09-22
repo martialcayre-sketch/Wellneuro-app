@@ -196,8 +196,12 @@ croyant qu'elle ne ferme qu'un chemin.
 `WN_G5_GOOGLE_PATIENT` à `false` (ou variable supprimée), puis redéploiement.
 Non destructif : aucune donnée n'a été écrite par ce chemin — il pose un cookie
 de session, rien d'autre. Les sessions déjà ouvertes restent valides jusqu'à leur
-expiration (12 h) ; pour les couper immédiatement, c'est la révocation d'accès
-existante (`sessionsInvalidesAvant`), qui ne connaît pas le chemin d'entrée.
+expiration — **30 jours glissants depuis `D-241` (2026-09-22), et non plus 12 h**.
+C'est long : **ne pas compter sur l'expiration pour fermer un accès**. Éteindre le
+drapeau ferme la PORTE, pas les sessions déjà entrées ; pour les couper
+immédiatement, c'est la révocation d'accès existante (`sessionsInvalidesAvant`),
+qui ne connaît pas le chemin d'entrée — elle reste le seul geste qui coupe tout
+de suite, et elle est inchangée.
 
 ## Ce que l'activation ne fait pas
 

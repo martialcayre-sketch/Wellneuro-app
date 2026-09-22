@@ -1,4 +1,4 @@
-# Handoff — 2026-09-21 — Le repli d'assiette devient une relation orientée (D-241)
+# Handoff — 2026-09-21 — Le repli d'assiette devient une relation orientée (D-242)
 
 ## 1. Branche et état Git
 
@@ -71,7 +71,7 @@ coûterait exactement le même prix que le remplir.
   réécrits, l'ancien cas butait sur l'absence de famille, il bute désormais plus
   tôt et pour une meilleure raison : l'axe).
 
-**Documents (8)** — `docs/DECISIONS.md` (D-241 **et** les deux corrections
+**Documents (8)** — `docs/DECISIONS.md` (D-242 **et** les deux corrections
 posées DANS D-240), `changelog.d/2026-09-21-repli-assiette-oriente.md` (créé),
 le cadrage, la surface de relecture des familles,
 `docs/claude/MATRICE_CONSOMMATION.md` (régénérée), `docs/FEATURE_FLAGS.md`
@@ -99,7 +99,7 @@ Décompte relu à `git status`, jamais de mémoire.
 
 **DEUX AFFIRMATIONS DE `D-240` ÉTAIENT FAUSSES — les miennes, relevées en
 contre-lecture et vérifiées sur pièce. Corrigées à leur place dans D-240, pas
-seulement signalées dans D-241.**
+seulement signalées dans D-242.**
 
 1. **Le coût d'une famille déclarée n'est pas un écran patient qui s'éteint.**
    `assertProtocolDraftPlateStructure` ne confronte jamais la référence au
@@ -395,9 +395,9 @@ relue ; PR `--base main` avec `--body-file` ;
 `node scripts/wn-attendre-ci.mjs <N>` **depuis la racine** en un seul appel
 bloquant — lancé depuis `web/`, il échoue en `MODULE_NOT_FOUND` et rend `1`, ce
 qui n'est pas un verdict ; **lire la revue aux TROIS emplacements** ; puis
-`gh pr merge --squash --subject` avec le sujet qui nomme D-241.
+`gh pr merge --squash --subject` avec le sujet qui nomme D-242.
 
-**Le numéro D-241 se prend au MERGE.**
+**Le numéro D-242 se prend au MERGE.**
 
 ## 11. Interdits encore actifs
 

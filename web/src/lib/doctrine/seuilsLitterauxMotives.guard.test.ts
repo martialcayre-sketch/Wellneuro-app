@@ -246,7 +246,7 @@ const EXEMPTIONS: Record<string, string> = {
 
   // — Longueurs de texte. Techniques au sens de `DC-20` : elles portent sur le
   //   NOMBRE DE CARACTÈRES d'une saisie, jamais sur ce qu'elle dit.
-  // LA FONCTION A DÉMÉNAGÉ, L'EXEMPTION LA SUIT ([[D-241]]) —
+  // LA FONCTION A DÉMÉNAGÉ, L'EXEMPTION LA SUIT ([[D-242]]) —
   // `decidePlateSubstitution` vit désormais chez la table de replis, pour que
   // le point de service ne se contourne plus. Le seuil, lui, n'a pas bougé
   // d'un caractère.

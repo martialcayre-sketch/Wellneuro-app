@@ -95,7 +95,7 @@ export function ComprehensionView() {
         setDepose(true);
         await charger();
       } else {
-        // LE CHAMP N'EST PAS VIDÉ SUR ERREUR : la session du portail dure 12 h,
+        // LE CHAMP N'EST PAS VIDÉ SUR ERREUR : la session du portail dure 30 jours,
         // un 401 peut donc tomber sur un texte tout juste rédigé. Ce n'est pas
         // une suite de clics à refaire, c'est une parole — l'effacer serait la
         // perdre.

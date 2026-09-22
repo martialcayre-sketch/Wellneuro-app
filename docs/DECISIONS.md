@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-241 — Le repli d'assiette devient une relation ORIENTÉE, hors du catalogue ; la table est vide, et deux affirmations de D-240 étaient fausses
+### D-242 — Le repli d'assiette devient une relation ORIENTÉE, hors du catalogue ; la table est vide, et deux affirmations de D-240 étaient fausses
 
 - Date : 2026-09-21
 - Statut : accepté — LOT-03 du cadrage Boussole/Assiette, ouvert sur demande du
@@ -410,6 +410,99 @@ entièrement clinique.** Affirmer que telle assiette est un repli acceptable de
 telle autre, pour une indication nommée, en écrivant ce que la ligne ajoute
 au-delà des claims. Le mécanisme sait désormais porter cette affirmation sans la
 déformer ; il ne peut pas la produire.
+### D-241 — La session portail passe de 12 h à 30 jours glissants, et le patient reçoit le moyen de la fermer
+
+- Date : 2026-09-22
+- Statut : accepté — demande du responsable (« Vas y pour 2 allonger session »),
+  après le diagnostic d'un dossier réel qui n'arrivait plus à entrer.
+- Domaine : session et accès patient (`lib/patient-session.ts`, layout du
+  portail). **Aucune règle clinique, aucun seuil, aucune migration, aucun
+  drapeau, aucun changement du modèle de données.**
+- S'appuie sur IDP2 LOT-02 (la session appartient au compte, pas au jeton) et
+  n'en révise aucun invariant. Ne touche **pas** à `D1` de cette campagne —
+  « Google et lien magique, et rien d'autre » : aucun fournisseur d'identité,
+  aucun mot de passe n'est ajouté ici.
+
+**1. LA FENÊTRE ÉTAIT LA CAUSE, LES DEUX ÉCHECS N'ÉTAIENT QUE SES SYMPTÔMES.**
+Un agenda alimentaire se remplit une fois par jour, le soir : 24 h entre deux
+passages pour une fenêtre de 12 h. Le patient était donc déconnecté **à chaque
+visite**, et devait à chaque fois reprouver son identité. Constaté en production
+le 2026-09-22 sur un dossier réel, lu par identifiant depuis un conteneur : on
+entre, la session meurt dans la journée, et au retour les deux portes sont
+fermées — le lien reçu par e-mail a déjà servi (usage unique), et le compte
+Google ne porte pas toujours l'adresse enregistrée au dossier. Ni l'un ni l'autre
+n'est un défaut de code. Ce qui se corrige est ce qui rendait ces deux refus
+**fréquents**.
+
+**La mesure qui fonde la décision est un agrégat de cabinet, pas un parcours.**
+Sur 14 jours, le chemin Google rend 22 connexions réussies pour 9 refus « adresse
+absente du dossier » (`portail_connexions_google`, `issue`/`motif`) : le chemin
+lui-même fonctionne, ce sont les REPRISES d'accès qui échouent — et la fenêtre de
+12 h en imposait une par jour. **Le détail du parcours observé n'est pas recopié
+ici** : horaires d'accès, compteurs de tentatives et discordance de compte
+décrivent UNE personne, et un registre versionné ne s'efface pas (relevé par la
+revue de la PR #1211 ; la règle « aucune identité réelle dans le dépôt » vise le
+nom et l'adresse, celle-ci l'étend aux données d'usage). Les faits par dossier se
+relisent là où ils vivent — en production, par identifiant, depuis un conteneur.
+
+**2. 30 JOURS, ET GLISSANTS.** `POST /api/portail/session`, appelé à chaque
+ouverture du portail, réémet le cookie : un patient qui revient au moins une fois
+par fenêtre ne se reconnecte jamais. La valeur couvre un cycle de 21 jours plus
+sa marge — c'est la durée d'usage du portail, pas un arrondi.
+
+**3. LA RÉVOCATION NE BOUGE PAS D'UN POUCE, ET C'EST CE QUI REND L'ALLONGEMENT
+ACCEPTABLE.** `isSessionValideForPatient` relit **en base** `actif`,
+`accessTokenRevoked` et `sessionsInvalidesAvant` à chaque requête. Un cookie de
+30 jours meurt dans la seconde où le praticien révoque. La durée du cookie n'a
+jamais été ce qui tient l'accès fermé : l'allonger ne déplace aucun
+coupe-circuit.
+
+**4. CE QU'ELLE DÉPLACE, EN REVANCHE, EST L'APPAREIL PARTAGÉ — D'OÙ LA
+DÉCONNEXION, LIVRÉE AVEC.** Le geste n'existait pas, et n'en avait pas besoin :
+la session se fermait d'elle-même avant la fin de la journée. Ce n'est plus vrai.
+`POST /api/portail/deconnexion` efface le cookie du navigateur qui appelle — **et
+rien de plus** : la session est sans état côté serveur, un cookie déjà copié
+ailleurs n'est pas tué par ce geste. Écrit dans la route même, pour qu'aucune
+lecture rapide ne lui prête une portée qu'elle n'a pas. Le bouton n'est rendu que
+si une session signée est présente — la condition est « une session », **pas**
+« ailleurs que sur la page de connexion » : un patient encore connecté qui ouvre
+`/portail/connexion` y voit donc le bouton, et c'est juste, il a une session à
+fermer. Ce qui est garanti est plus étroit et suffit : une fois déconnecté, il
+n'y a plus de cookie, donc plus de bouton sur l'écran d'arrivée.
+
+**5. LA DURÉE LEGACY EST FIGÉE À PART, ET CE N'EST PAS DU ZÈLE.** Les cookies
+d'avant IDP2 LOT-02 ne portent pas de `iat` : il se reconstruit par
+`exp - durée`. Adossée à la constante courante, la reconstruction se serait mise
+à mentir de 29 jours et demi le jour du changement — c'est-à-dire celui-ci.
+`LEGACY_SESSION_TTL_SECONDS` la fige à 12 h. Le format est en pratique éteint
+(12 h de vie, plus aucun émis depuis le 2026-07-21), mais la justesse d'une
+reconstruction ne doit pas reposer sur l'argument qu'on ne l'exécute plus. Le
+banc existant l'a d'ailleurs attrapé à la mutation.
+
+**6. CE QUI N'EST PAS FAIT, ET POURQUOI.** Trois choses, toutes nommées plutôt
+que tues — la revue adversariale de la PR #1211 a relevé la troisième, qui
+manquait à la première rédaction de ce paragraphe.
+
+- **La déconnexion ne révoque pas les autres appareils.** Il faudrait écrire
+  `sessionsInvalidesAvant` côté patient, donc lui donner un geste qui coupe aussi
+  le praticien. Arbitrage distinct, non demandé.
+- **Rien n'alerte le praticien qu'un patient rebondit à l'entrée.** Les refus
+  s'accumulent en base (`portail_connexions_google`, `portail_magic_links`) sans
+  qu'aucune surface ne les remonte : le cas qui a déclenché cette décision a été
+  découvert parce que la personne a téléphoné. C'est la prochaine question, et
+  elle reste ouverte.
+- **« Se déconnecter » ne purge PAS les brouillons locaux, et c'est une limite
+  réelle de la promesse « appareil partagé ».** `lib/questionnaire-draft.ts`
+  conserve les réponses de questionnaire en `localStorage` **30 jours**
+  (`DUREE_VIE_BROUILLON_JOURS`, clé `wellneuro:questionnaire-draft:v1:<id>`) :
+  ce sont des données de santé, et elles survivent au geste. L'application ne les
+  RESTITUE pas sans session — il faut les outils de développement du navigateur
+  pour les lire — mais elles sont là. Purger a été écarté **pour cette PR** et
+  non pour toujours : un brouillon est du travail non envoyé, le détruire sans
+  avertissement est une décision plus lourde que l'allongement de session
+  demandé, et elle mérite son propre arbitrage (purge sèche, ou avertissement
+  avant purge). À rouvrir ; d'ici là, la limite est écrite ici plutôt que
+  supposée absente.
 
 ### D-240 — L'assiette indiquée devient une unité d'action ; et le tableau du cadrage faisait lire comme des questions deux directions déjà rendues
 
@@ -534,7 +627,7 @@ refus de symétrie, pour qu'une révision bien intentionnée ne l'« aligne » p
 assiettes attestent six substitutions dans les deux sens), une garde restreignant
 la substitution aux assiettes **prescrites**, et un chemin qui l'expose. **Ce lot
 fournit le second : « assiette prescrite » a désormais un sens vérifiable.** Il
-en renchérit le prix — ⚠️ *chiffrage CORRIGÉ par [[D-241]] §9(a) : ce qui casse
+en renchérit le prix — ⚠️ *chiffrage CORRIGÉ par [[D-242]] §9(a) : ce qui casse
 est la RÉVISION d'un protocole, pas sa lecture ni l'écran du patient, que le §9
 de cette entrée avait précisément immunisés* — et c'est la part qu'il faut
 écrire : jusqu'ici aucune
@@ -556,7 +649,7 @@ parce qu'il n'était écrit nulle part : **les contrats V2 et V4 sont aujourd'hu
 mutuellement exclusifs.** `normalizeActions` refuse TOUT `foodCompassRef` — le
 chemin V2 le réinjecte après coup —, `buildFoodCompassProtocolV2FromSource` n'accepte qu'une cible V1, et
 le refus V2 vit dans `buildPatientFoodCompassView` — ⚠️ *et NON dans
-`resolvePatientFoodCompassView`, nommée ici à tort ; corrigé par [[D-241]] §9(b),
+`resolvePatientFoodCompassView`, nommée ici à tort ; corrigé par [[D-242]] §9(b),
 qui ajoute que ce refus est **avalé** et rend donc une Boussole absente en
 silence plutôt qu'une erreur*. Un protocole ne
 peut donc pas porter à la fois une assiette et la Boussole de son aliment — c'est

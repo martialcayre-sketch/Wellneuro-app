@@ -5,7 +5,7 @@
 attester.*
 
 > **ÉTAT AU 2026-09-21 — LES TROIS PREMIERS POINTS DU PROGRAMME SONT FAITS
-> ([[D-241]]).** La relation est ORIENTÉE et vit hors du catalogue
+> ([[D-242]]).** La relation est ORIENTÉE et vit hors du catalogue
 > (`lib/clinical/replisAssietteV1.ts`) ; la garde d'axe est posée AUX DEUX
 > BOUTS ; le chemin est ouvert — `alternatives` n'est plus un tuple vide
 > littéral mais les replis attestés des assiettes **prescrites du protocole

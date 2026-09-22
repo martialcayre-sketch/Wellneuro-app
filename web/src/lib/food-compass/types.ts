@@ -158,7 +158,7 @@ export type PatientFoodCompassView = {
 
 /**
  * LE DEGRÉ D'UN REPLI — « proche » n'est pas « en dernier recours », et le
- * mécanisme doit savoir le dire ([[D-241]]).
+ * mécanisme doit savoir le dire ([[D-242]]).
  */
 export type DegreDeRepli = 'proche' | 'acceptable' | 'dernier_recours';
 

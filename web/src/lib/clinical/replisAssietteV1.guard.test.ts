@@ -26,7 +26,7 @@ import {
 } from './replisAssietteV1';
 import { INDICATIONS_ASSIETTES_V1 } from './indicationsAssiettesV1';
 
-// LE VERROU DE LA TABLE DE REPLIS ([[D-241]]). Ce banc garde trois choses, et la
+// LE VERROU DE LA TABLE DE REPLIS ([[D-242]]). Ce banc garde trois choses, et la
 // troisième est la seule qui compte vraiment : que l'ÉTAT LIVRÉ — table vide,
 // non signée, rien servi — tienne, et qu'une signature ne puisse pas s'acquérir
 // par inadvertance. Les deux premières sont la mécanique qui le rend vrai.
@@ -237,7 +237,7 @@ describe('La direction se lit dans un seul sens', () => {
 
 
 // LA DÉCISION DE SUBSTITUTION — déplacée depuis `food-compass/plates.test.ts`
-// avec la fonction qu'elle éprouve ([[D-241]], second tour de revue). Elle a
+// avec la fonction qu'elle éprouve ([[D-242]], second tour de revue). Elle a
 // suivi `decidePlateSubstitution` chez la table qui la gouverne : tant que la
 // décision vivait dans `plates.ts`, les replis lui arrivaient en paramètre et le
 // point de service unique se contournait.
@@ -698,7 +698,7 @@ describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
     //
     // CE QUE CETTE GARDE TIENT — et elle le tient sur un ARBRE, parce que trois
     // rédactions lexicales de suite ont échoué EN SILENCE (voir l'en-tête
-    // d'`arbreDe`, et [[D-241]] §19).
+    // d'`arbreDe`, et [[D-242]] §19).
     //
     // ELLE TIENT : aucun appel, dans un fichier de PRODUCTION, ne passe
     // d'override à une fonction injectable de ce module. La liste de ces

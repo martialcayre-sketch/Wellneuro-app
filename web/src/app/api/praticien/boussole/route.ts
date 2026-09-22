@@ -40,7 +40,7 @@ type SuccessResponse = {
   plateCatalog: { version: typeof C5B_PLATE_CATALOG_VERSION; hash: typeof C5B_PLATE_CATALOG_HASH };
   jaFeasibility: PublishedJaFeasibility | null;
   /**
-   * LES REPLIS ATTESTÉS DES ASSIETTES PRESCRITES DE CE PROTOCOLE ([[D-241]]).
+   * LES REPLIS ATTESTÉS DES ASSIETTES PRESCRITES DE CE PROTOCOLE ([[D-242]]).
    *
    * CE CHAMP ÉTAIT UN TUPLE VIDE LITTÉRAL — `[]` — donc une liste que le
    * CONTRAT lui-même interdisait de remplir. `D-216` §4 le nommait comme le

@@ -57,7 +57,7 @@ export type C5bRecommendedPlate = {
    */
   sourceProtocole: string | null;
   /**
-   * SUPPLANTÉ PAR LA TABLE DE REPLIS ([[D-241]]), ET POURTANT IL RESTE — parce
+   * SUPPLANTÉ PAR LA TABLE DE REPLIS ([[D-242]]), ET POURTANT IL RESTE — parce
    * qu'il est HACHÉ.
    *
    * Ce champ était l'étiquette d'appartenance dont la comparaison faisait une
@@ -487,7 +487,7 @@ export function assertCurrentRecommendedPlateRef(value: unknown): RecommendedPla
 }
 
 // `PlateSubstitutionDecision` ET `decidePlateSubstitution` ONT DÉMÉNAGÉ vers
-// `lib/clinical/replisAssietteV1.ts` ([[D-241]], second tour de revue).
+// `lib/clinical/replisAssietteV1.ts` ([[D-242]], second tour de revue).
 //
 // POURQUOI ELLES NE POUVAIENT PAS RESTER ICI. La décision lit une TABLE SIGNÉE.
 // Tant qu'elle vivait dans ce module, elle ne pouvait pas l'importer — la table

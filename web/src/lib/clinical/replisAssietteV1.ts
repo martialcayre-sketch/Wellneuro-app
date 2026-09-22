@@ -11,7 +11,7 @@ import type {
 } from '@/lib/food-compass/types';
 import { INDICATIONS_ASSIETTES_V1, type LigneIndicationAssiette } from './indicationsAssiettesV1';
 
-// LES REPLIS D'ASSIETTE — UNE RELATION ORIENTÉE, ET LA TABLE EST VIDE ([[D-241]]).
+// LES REPLIS D'ASSIETTE — UNE RELATION ORIENTÉE, ET LA TABLE EST VIDE ([[D-242]]).
 //
 // POURQUOI UNE TABLE, ET PAS UN CHAMP SUR L'ASSIETTE. `substitutionFamily` est
 // une ÉTIQUETTE D'APPARTENANCE portée par l'entrée de catalogue, comparée par
@@ -302,7 +302,7 @@ export type PlateSubstitutionDecision =
 
 /**
  * LA SUBSTITUTION EST ORIENTÉE, CONDITIONNÉE, ET NE LIT QUE DES REPLIS SERVABLES
- * ([[D-241]]).
+ * ([[D-242]]).
  *
  * ELLE VIT ICI, ET PAS DANS `plates.ts` — second tour de revue, et le motif est
  * une doctrine, pas un goût. Tant qu'elle vivait là-bas, elle ne pouvait pas

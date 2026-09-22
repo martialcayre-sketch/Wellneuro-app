@@ -7658,7 +7658,7 @@ patient A enregistrable chez B.
 **Ouvert.** `LOT-03` attend une source d'équivalence qu'aucun claim ne fonde ;
 `LOT-04` bute sur l'exclusivité des contrats V2 et V4.
 
-## 2026-09-21 — LOT-03 : le repli d'assiette devient orienté, la table reste vide (D-241)
+## 2026-09-21 — LOT-03 : le repli d'assiette devient orienté, la table reste vide (D-242)
 
 **Décision.** La relation sort du catalogue — `substitutionFamily` est l'un des
 quatre champs du `contentHash`, l'y toucher périmerait des références. La table
@@ -7676,3 +7676,28 @@ protocole non révisable, pas un écran éteint ; et c'est
 
 **Ouvert.** Le quatrième point du programme — l'affirmation clinique — et
 `LOT-04`.
+## 2026-09-22 — La session portail passe à 30 jours glissants (D-241)
+
+**Départ.** Un dossier réel n'entrait plus au portail, ni par lien ni par
+Google. Diagnostic : deux refus normaux — lien à usage unique déjà consommé,
+compte Google portant une autre adresse — rendus **fréquents** par une cause
+unique, la fenêtre de session de 12 h. Un agenda se remplit une fois par jour :
+24 h entre deux passages pour une fenêtre de 12 h.
+
+**Décision.** 12 h → **30 jours glissants**, plus la déconnexion patient, qui
+n'existait pas et devient la condition de sûreté de l'allongement. La
+révocation ne bouge pas : elle se relit en base à chaque requête.
+
+**Écartée.** Identifiant + mot de passe patient — ne réglait aucun des deux
+refus, et `D1` de la campagne IDP2 l'exclut.
+
+**Revues.** Trois passes, six défauts réels, **aucun trouvé par mes bancs** :
+recopie d'attributs de cookie, `layout.tsx` sans couverture, six « 12 h »
+devenus faux, et une déconnexion qui échouait en silence **en annonçant le
+succès** sur un cookie illisible — corrigée à la source, 21 appelants fermés.
+Deux faux gardes trouvés par mutation, dont `toContain('Path=/')` qui matche
+aussi `Path=/portail`.
+
+**Ouvert.** Les brouillons de questionnaire survivent 30 jours en
+`localStorage` après déconnexion (arbitrage non rendu, `D-241` §6) ; rien
+n'alerte le praticien qu'un patient rebondit à l'entrée.

@@ -57,7 +57,7 @@ describe('catalogue d’assiettes C5B', () => {
     expect(() => getCurrentRecommendedPlateRef('INCONNUE')).toThrow(/inconnue/);
   });
 
-  // LA SUBSTITUTION EST ORIENTÉE DEPUIS [[D-241]]. Le cas d'origine prenait
+  // LA SUBSTITUTION EST ORIENTÉE DEPUIS [[D-242]]. Le cas d'origine prenait
   // `ASSIETTE_SOIR_LEGER` pour source — un repère de MOMENT DE REPAS, que rien
   // ne prescrit. Il butait alors sur l'absence de famille ; il bute désormais,
   // plus tôt et pour une meilleure raison, sur l'axe.

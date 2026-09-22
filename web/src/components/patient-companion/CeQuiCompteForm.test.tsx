@@ -133,7 +133,7 @@ describe('CeQuiCompteForm — la parole n’est jamais perdue', () => {
     envoyer();
 
     await waitFor(() => expect(screen.getByText('Session expirée. Reconnectez-vous.')).toBeTruthy());
-    // La session dure 12 h : un 401 peut tomber sur un texte tout juste
+    // La session dure 30 jours : un 401 peut tomber sur un texte tout juste
     // rédigé. Ce n'est pas une suite de clics à refaire, c'est une parole.
     expect(champTexte().value).toBe(TEXTE);
   });
