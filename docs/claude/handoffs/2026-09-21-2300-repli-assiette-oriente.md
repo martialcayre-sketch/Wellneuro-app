@@ -275,6 +275,25 @@ instances de la même classe. Le signal qui aurait dû m'arrêter dès la troisi
 est une garde qui **énumère des noms**. Une garde qui nomme est une instance
 déguisée en classe.
 
+## 8 decies. Huitième passe — mon correctif avait fabriqué pire que le mal
+
+Le retrait de la prose posé au tour précédent remplaçait les apostrophes AVANT
+les guillemets doubles. Une apostrophe française dans une chaîne à guillemets
+doubles — `"Réserve d'adaptation"` — ouvrait donc une fausse chaîne et
+**effaçait le code jusqu'à l'apostrophe suivante**. Un composant de production
+appelant `replisPourProtocole(actions, signature, lignes)` laissait la garde
+VERTE. La garde d'AVANT l'attrapait : régression.
+
+**Une garde ajoutée pour éviter un faux POSITIF fabriquait un faux NÉGATIF.**
+C'est le pire échange possible : elle ne se tait pas au mauvais moment, elle se
+tait au bon. Et l'anti-vacuité ne pouvait pas le voir — l'appel propre de la
+route satisfaisait le compteur.
+
+**À retenir, et c'est la seconde leçon du lot** : une expression régulière qui
+prétend comprendre la STRUCTURE d'un fichier (chaînes, commentaires, portées)
+est fausse ; il y faut un balayage. Et un correctif de garde se MESURE dans les
+deux sens — ce qu'il attrape, et ce qu'il a cessé d'attraper.
+
 ## 9. Problèmes ouverts
 
 **LE QUATRIÈME POINT DU PROGRAMME, ET IL EST ENTIÈREMENT CLINIQUE.** Affirmer

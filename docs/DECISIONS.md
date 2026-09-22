@@ -285,6 +285,33 @@ vraiment est une table de moins de deux lignes, qui la fait retomber sur son
 littéral de repli — un cas vain qui ne dirait rien. Une seconde déclaration du
 même nom, restée à l'indice, masquait de surcroît la première.
 
+**17. HUITIÈME PASSE — LE CORRECTIF DU §16 AVAIT FABRIQUÉ PIRE QUE LE MAL QU'IL
+SOIGNAIT, ET C'EST LE CONSTAT LE PLUS COÛTEUX DU LOT.** Pour qu'une phrase citant
+une ancienne forme d'appel ne fasse pas rougir un fichier conforme, le §16
+retirait commentaires et chaînes par expressions régulières — les apostrophes
+AVANT les guillemets doubles.
+
+**Conséquence, mesurée par exécution.** L'apostrophe française d'une chaîne à
+guillemets doubles — `"Réserve d'adaptation"`, forme banale, présente des
+centaines de fois au dépôt — ouvrait une fausse chaîne qui courait jusqu'à
+l'apostrophe suivante et **effaçait le code entre les deux**. Un composant de
+production appelant `replisPourProtocole(actions, signature, lignes)` — trois
+arguments, donc un override caractérisé — laissait la garde **VERTE**. Constaté
+sur pièce : le même fichier, dont seules les apostrophes de la prose changent,
+fait rougir. **La garde d'AVANT le §16 l'attrapait** : c'était une régression.
+
+**Une garde ajoutée pour éviter un faux POSITIF fabriquait un faux NÉGATIF.**
+C'est le pire échange possible pour un garde-fou : il ne se tait pas au mauvais
+moment, il se tait AU BON. Et le témoin d'anti-vacuité ne pouvait pas le voir —
+`appels.length > 0` restait satisfait par l'appel propre de la route.
+
+Le retrait de la prose est donc un **BALAYAGE**, plus une expression régulière :
+il n'entre dans un littéral qu'à un guillemet rencontré en position de CODE,
+donc l'apostrophe intérieure n'est jamais vue ; et une apostrophe qui ne se
+referme pas sur sa ligne n'ouvre rien, ce qui rend le texte JSX inoffensif. Deux
+mutations : le composant fautif rougit et se nomme ; le fichier conforme portant
+prose, apostrophe en guillemets doubles et JSX ne produit aucun constat.
+
 **CE QUE LE LOT NE FAIT PAS.** Il **ne déclare aucune famille** : le corpus
 décrit l'inclusion, l'association et la parenté de modèle, qui sont l'inverse
 logique de l'échange, et `DC-19`/`DC-20` interdisent d'affirmer ce qu'aucune

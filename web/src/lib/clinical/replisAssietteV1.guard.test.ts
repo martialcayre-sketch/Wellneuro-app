@@ -442,20 +442,75 @@ function fichiersDeProduction(racine: string): readonly string[] {
 }
 
 /**
- * LE TEXTE SANS SA PROSE — commentaires et chaînes remplacés par du vide.
+ * LA FIN D'UN LITTÉRAL, ou `-1` s'il n'en est pas un.
  *
- * Contre-revue : sans cela, une phrase de documentation citant une ANCIENNE
- * forme d'appel ferait rougir un fichier dont le code est conforme, et le piège
- * est vif ici — les modules de `lib/clinical/` portent une prose dense qui cite
- * systématiquement les signatures d'avant. Le `[^:]` devant `//` épargne les
- * URL, qui ne sont pas des commentaires.
+ * Une apostrophe ou un guillemet n'ouvre une chaîne QUE s'il se referme sur la
+ * MÊME ligne — c'est ce qui distingue `'texte'` de l'apostrophe française du
+ * texte JSX (`<h2>L'assiette prescrite</h2>`), qui n'ouvre rien. Le gabarit,
+ * lui, a le droit de traverser les lignes.
+ */
+function finDuLitteral(source: string, debut: number, guillemet: string): number {
+  for (let i = debut + 1; i < source.length; i += 1) {
+    if (source[i] === '\\') { i += 1; continue; }
+    if (source[i] === guillemet) return i;
+    if (source[i] === '\n' && guillemet !== '`') return -1;
+  }
+  return -1;
+}
+
+/**
+ * LE TEXTE SANS SA PROSE — commentaires et littéraux réduits à du vide.
+ *
+ * POURQUOI ELLE EXISTE : sans elle, une phrase citant une ANCIENNE forme d'appel
+ * ferait rougir un fichier conforme, et le piège est vif ici — les modules de
+ * `lib/clinical/` portent une prose dense qui cite les signatures d'avant.
+ *
+ * POURQUOI ELLE N'EST PLUS FAITE D'EXPRESSIONS RÉGULIÈRES, ET C'EST LE CONSTAT
+ * LE PLUS COÛTEUX DU LOT. La première rédaction remplaçait les apostrophes AVANT
+ * les guillemets doubles. Conséquence MESURÉE : l'apostrophe française d'une
+ * chaîne à guillemets doubles — « Réserve d'adaptation », forme banale et
+ * présente des centaines de fois au dépôt — ouvrait une fausse chaîne qui
+ * courait jusqu'à l'apostrophe suivante, EFFAÇANT le code entre les deux. Un
+ * consommateur de production réellement fautif devenait invisible et la garde
+ * restait verte : une garde ajoutée pour éviter un faux POSITIF fabriquait un
+ * faux NÉGATIF, pire que le mal qu'elle soignait. Un BALAYAGE, lui, n'entre dans
+ * un littéral qu'à un guillemet rencontré en position de CODE : l'apostrophe
+ * intérieure n'est jamais vue.
+ *
+ * CE QU'IL NE TIENT PAS, déclaré : deux apostrophes françaises sur la MÊME ligne
+ * de texte JSX réduisent encore ce qui les sépare. Le dégât est borné à la
+ * ligne, et un appel occupe la sienne.
  */
 function sansProse(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ')
-    .replace(/'(?:\\.|[^'\\])*'/g, "''")
-    .replace(/"(?:\\.|[^"\\])*"/g, '""');
+  let sortie = '';
+  let i = 0;
+  while (i < source.length) {
+    const caractere = source[i];
+    if (caractere === '/' && source[i + 1] === '*') {
+      const fin = source.indexOf('*/', i + 2);
+      sortie += ' ';
+      i = fin === -1 ? source.length : fin + 2;
+      continue;
+    }
+    // Le `:` qui précède épargne les URL, qui ne sont pas des commentaires.
+    if (caractere === '/' && source[i + 1] === '/' && source[i - 1] !== ':') {
+      const fin = source.indexOf('\n', i);
+      sortie += ' ';
+      i = fin === -1 ? source.length : fin;
+      continue;
+    }
+    if (caractere === "'" || caractere === '"' || caractere === '`') {
+      const fin = finDuLitteral(source, i, caractere);
+      if (fin !== -1) {
+        sortie += caractere + caractere;
+        i = fin + 1;
+        continue;
+      }
+    }
+    sortie += caractere;
+    i += 1;
+  }
+  return sortie;
 }
 
 /** Le texte des arguments de chaque appel a `nom`, parentheses equilibrees. */
