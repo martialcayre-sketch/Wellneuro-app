@@ -4,6 +4,94 @@
 
 ## Décisions actives
 
+### D-244 — « Se déconnecter » purge les brouillons locaux, après avoir dit ce qui sera perdu
+
+- Date : 2026-09-22
+- Statut : accepté — demande du responsable (« Termine ce qui reste ouvert »),
+  qui clôt l'arbitrage laissé en suspens par [[D-241]] §6. **Choix CONFIRMÉ
+  explicitement le 2026-09-23** (purge avertie, contre purge sèche et statu
+  quo) : la demande d'origine ne départageait pas les trois voies.
+- Numéro : écrit sous `D-242` puis `D-243`, pris par #1210 et #1213 au merge —
+  `D-244`.
+- Domaine : portail patient (déconnexion, stockage local). **Aucune migration,
+  aucun drapeau, aucune règle clinique, aucun changement de modèle de données.**
+- Ferme la troisième limite de [[D-241]] §6 et **corrige la deuxième**, qui était
+  fausse.
+
+**1. LA PROMESSE N'ÉTAIT TENUE QU'À MOITIÉ.** « Se déconnecter » existe pour
+l'appareil partagé ([[D-241]] §4). Or `lib/questionnaire-draft.ts` conserve les
+réponses de questionnaire en `localStorage` **30 jours**
+(`DUREE_VIE_BROUILLON_JOURS`) : des données de santé qui survivaient au geste.
+L'application ne les restitue pas sans session — il faut les outils du navigateur
+pour les lire — mais elles restaient là.
+
+**2. ON PURGE LES DEUX STOCKAGES, ET ON AVERTIT D'ABORD.**
+`lib/portail/stockageAppareil.ts` tient l'INVENTAIRE des clés que le portail
+dépose sur l'appareil — sept familles, `localStorage` **et** `sessionStorage` —
+et `effacerDonneesPatientLocales()` les balaie **par préfixe, pas par
+identifiant** : au moment de fermer une session, on ne connaît plus les
+assignations ni les brouillons qui traînent, et les chercher supposerait une
+lecture réseau que la déconnexion ne doit pas attendre.
+
+`sessionStorage` N'ÉTAIT PAS DANS LA PREMIÈRE VERSION, et c'était le défaut
+entier : il survit à `location.assign` dans le même onglet — le scénario
+familial exact — et porte le wizard fiche/anamnèse ainsi que l'agenda
+alimentaire patient. Purger la seule famille trouvée aurait laissé la promesse
+aussi fausse qu'avant, en la déclarant tenue.
+
+L'avertissement n'apparaît **que s'il y a quelque chose à perdre**
+(`aDesDonneesPatientLocales()`) — et « quelque chose » exclut une métadonnée
+orpheline, un brouillon vide et un brouillon **périmé** que l'application ne
+restituera jamais, alors que le texte promet de pouvoir le ressaisir.
+C'est délibéré : un dialogue systématique s'apprend
+par cœur et se congédie sans lire — il cesse alors de protéger. Et il dit CE QUI
+sera perdu, jamais « êtes-vous sûr ? » : une question sans contenu se répond au
+réflexe.
+
+**3. L'ORDRE EST LA PROTECTION.** La purge vient **après** la confirmation du
+serveur. Effacer d'abord ferait perdre les brouillons à qui reste connecté parce
+que la déconnexion a échoué : du travail détruit, et l'appareil toujours ouvert.
+Un banc tient cet ordre ; la mutation qui l'inverse le fait rougir.
+
+**4. LE CONFORT DE LECTURE N'EST PAS PURGÉ**, et c'est une frontière, pas un
+oubli. `wellneuro:portail:confort` est un réglage d'appareil — texte agrandi,
+espacement, animations réduites. L'effacer punirait la personne qui se
+déconnecte, en particulier celle qui a réglé ces options parce qu'elle en a
+besoin. Il est **exempté nommément, avec motif écrit** (`FAMILLES_EXEMPTEES`), et
+un banc exige ce motif : une exemption sans raison est une purge oubliée qui se
+maquille.
+
+*(La première version gardait `wellneuro:comfort` — une clé que RIEN dans le
+dépôt n'écrit. Le banc ne protégeait donc rien, et « un banc le garde » était
+faux. Trouvé en revue de la PR #1212 par la mutation qui ajoutait
+`wellneuro:portail:` aux préfixes purgés : neuf bancs sur neuf restaient verts en
+effaçant le vrai réglage du patient.)*
+
+**5. LE E2E QUI MANQUAIT.** [[D-241]] livrait le geste sans aucun parcours joué —
+`frontend-ui.md` en attend un pour tout changement d'UI. `e2e/portail-deconnexion.spec.ts`
+vérifie ce qu'aucun banc de composant ne peut voir : que le cookie posé par le
+serveur **disparaît réellement du navigateur**. La parité d'attributs entre pose
+et effacement n'était jusqu'ici qu'une promesse d'en-tête.
+
+**6. CE QUI RESTE OUVERT.** Le rebond d'un patient **déjà connecté une fois** ne
+remonte toujours pas au praticien : l'état `entree_refusee` existe mais ne
+s'affiche que si le dossier n'a jamais connu de connexion réussie. **Et le
+correctif n'est pas une levée de condition** : `rejeuxRefuses > 0` veut dire
+« refusé un jour », pas « refusé depuis ». Afficher un incident résolu enverrait
+relancer un patient déjà servi — il faut comparer la RÉCENCE
+(`derniereTentative` postérieure à la dernière connexion). Deux bornes de
+l'encart s'y ajoutent, et une comparaison de récence ne les lèvera pas : 30 jours
+depuis la création du dossier, 60 dossiers au plus.
+
+Côté Google, le versant nominatif ne remonterait que des refus **périmés** : le
+seul refus qui nomme un dossier est écrit sous `!actif || accessTokenRevoked`,
+donc sur un dossier fermé que l'ordre des étapes nomme déjà (`nouveauxPatients.ts`).
+Ce n'est pas « indécidable » — une première rédaction le disait, à tort.
+
+Enfin, la déconnexion ne coupe toujours pas les autres appareils ([[D-241]] §6,
+inchangé), et `aDesDonneesPatientLocales()` rend `false` en stockage bloqué sans
+qu'aucun banc ne le tienne.
+
 ### D-243 — La Boussole et l'assiette cessent de s'exclure : un protocole V4 peut porter les deux
 
 - Date : 2026-09-22
@@ -597,13 +685,31 @@ manquait à la première rédaction de ce paragraphe.
 - **La déconnexion ne révoque pas les autres appareils.** Il faudrait écrire
   `sessionsInvalidesAvant` côté patient, donc lui donner un geste qui coupe aussi
   le praticien. Arbitrage distinct, non demandé.
-- **Rien n'alerte le praticien qu'un patient rebondit à l'entrée.** Les refus
-  s'accumulent en base (`portail_connexions_google`, `portail_magic_links`) sans
-  qu'aucune surface ne les remonte : le cas qui a déclenché cette décision a été
-  découvert parce que la personne a téléphoné. C'est la prochaine question, et
-  elle reste ouverte.
-- **« Se déconnecter » ne purge PAS les brouillons locaux, et c'est une limite
-  réelle de la promesse « appareil partagé ».** `lib/questionnaire-draft.ts`
+- ~~**Rien n'alerte le praticien qu'un patient rebondit à l'entrée.**~~
+  **AMENDÉ LE 2026-09-22 — cette phrase était FAUSSE, et lue trop vite.**
+  L'encart « Nouveaux patients » porte un état `entree_refusee`
+  (`lib/fil/nouveauxPatients.ts`), alimenté par `portailMagicLink.rejeuxRefuses`.
+  Ce qui est vrai est plus étroit, et reste un trou : cet état ne s'affiche que
+  si le patient **ne s'est JAMAIS connecté** (`!source.connecteLe &&
+  source.entreeRefusee`). Un patient déjà entré une fois, puis qui rebondit —
+  exactement le cas qui a déclenché cette décision — est avalé.
+
+  **Côté Google, la raison est autre, et elle est déjà écrite** dans
+  `nouveauxPatients.ts` : le seul refus Google qui NOMME un dossier est écrit
+  sous la garde `!patient.actif || patient.accessTokenRevoked`, il ne peut donc
+  désigner qu'un dossier **fermé**, que l'ordre des étapes nomme déjà pour
+  lui-même ; le lire ne remonterait que des refus périmés. *(Une première
+  rédaction de cet amendement disait « rien n'est possible, les refus portent
+  `id_patient = NULL` » : faux. Le motif `sans_espace_eligible` couvre TROIS cas
+  — adresse inconnue, patient désactivé, portail révoqué — et les deux derniers
+  écrivent une trace nominative, le code le dit en toutes lettres. La propriété
+  de non-oracle porte sur l'ÉCRAN, pas sur la donnée. Corriger une erreur par une
+  autre est pire que l'erreur : relevé en revue de la PR #1212.)* Repris par
+  `D-244`.
+- ~~**« Se déconnecter » ne purge PAS les brouillons locaux**~~ — **FERMÉ par
+  `D-244` le 2026-09-22 : le geste purge désormais, après avertissement.** Le
+  texte d'origine, conservé pour ce qu'il documente :
+  `lib/questionnaire-draft.ts`
   conserve les réponses de questionnaire en `localStorage` **30 jours**
   (`DUREE_VIE_BROUILLON_JOURS`, clé `wellneuro:questionnaire-draft:v1:<id>`) :
   ce sont des données de santé, et elles survivent au geste. L'application ne les

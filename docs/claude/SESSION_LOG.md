@@ -7702,6 +7702,60 @@ aussi `Path=/portail`.
 `localStorage` après déconnexion (arbitrage non rendu, `D-241` §6) ; rien
 n'alerte le praticien qu'un patient rebondit à l'entrée.
 
+## 2026-09-22 — « Se déconnecter » purge les brouillons locaux (D-244)
+
+**Départ.** « Termine ce qui reste ouvert » — les trois limites de `D-241` §6.
+
+**Décision.** La déconnexion purge les brouillons de questionnaire
+(`localStorage`, 30 jours, données de santé) **après** avoir dit ce qui sera
+perdu. Trois choix motivés : avertir **seulement** s'il y a quelque chose à
+perdre — un dialogue systématique se congédie sans lire ; purger **après** la
+confirmation du serveur — l'ordre inverse détruit du travail sans même fermer
+l'appareil ; ne pas toucher au confort de lecture, réglage d'appareil et non
+donnée de santé.
+
+**Écartée.** La purge sèche, sans avertissement : un brouillon est du travail
+que personne d'autre ne détient.
+
+**Corrigé.** `D-241` §6 affirmait « rien n'alerte le praticien qu'un patient
+rebondit ». **Faux** — `entree_refusee` existe. Le vrai trou est plus étroit :
+l'état ne s'affiche que si le patient ne s'est **jamais** connecté. Affirmation
+posée sans avoir lu `lib/fil/nouveauxPatients.ts`.
+
+**Ajouté.** L'E2E du geste, qui manquait à `D-241` : il vérifie que le cookie
+disparaît **réellement** du navigateur — la parité pose ↔ effacement n'était
+qu'une promesse d'en-tête.
+
+**Ouvert.** Le rebond d'un patient déjà connecté (lot suivant, cadré : il faut
+une comparaison de récence, pas une levée de condition) ; les refus Google sur
+adresse inconnue restent indécidables par construction.
+
+## 2026-09-22 — Reprise de D-244 après revue : la classe, pas l'instance
+
+**Verdict.** La revue adversariale a rendu **NO-GO** sur la première version de
+`D-244`, quatre bloquants, tous fondés — vérifiés un à un contre le dépôt avant
+correction.
+
+**Ce qui était raté.** (1) Le banc « le confort survit » gardait
+`wellneuro:comfort`, **une clé que rien n'écrit** : il ne protégeait rien, et la
+décision affirmait le contraire. (2) Deux familles de clés sur trois étaient
+oubliées — wizard fiche/anamnèse et agenda alimentaire vivent en
+`sessionStorage`, qui survit à la redirection dans le même onglet. (3) Le
+dialogue `role="alertdialog"` sans focus n'était **annoncé par aucun lecteur
+d'écran**, alors que `PatientConfirmDialog` existait déjà dans le même parcours.
+(4) Ma correction de `D-241` §6 contenait **une autre erreur** : « côté Google
+rien n'est possible » — or `sans_espace_eligible` couvre trois cas et deux
+écrivent une trace nominative.
+
+**Correction de méthode.** Arrêter de corriger les instances :
+`lib/portail/stockageAppareil.ts` possède l'inventaire des sept familles et des
+exemptions motivées, et un **garde de classe** refuse toute clé `wellneuro:` non
+déclarée sous les surfaces patient. Sans lui, la prochaine famille rouvrait le
+trou en silence — ce qui venait précisément d'arriver.
+
+**Ouvert.** Le rebond d'un patient déjà connecté (le correctif exige une
+comparaison de récence, plus deux bornes d'encart) ; la purge partielle
+silencieuse ; le mode privé non gardé.
 ## 2026-09-22 — LOT-04 : la Boussole et l'assiette cessent de s'exclure (D-243)
 
 Un protocole V4 peut désormais porter les deux. Depuis D-240, toute assiette

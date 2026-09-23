@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
+import { PatientConfirmDialog } from '@/components/patient/PatientConfirmDialog';
+import { aDesDonneesPatientLocales, effacerDonneesPatientLocales } from '@/lib/portail/stockageAppareil';
 
 // « Se déconnecter » du portail patient.
 //
@@ -20,10 +22,32 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 export function BoutonDeconnexion() {
   const [enCours, setEnCours] = useState(false);
   const [echec, setEchec] = useState(false);
+  const [confirmation, setConfirmation] = useState(false);
+
+  /**
+   * Premier clic. S'il reste du travail non envoyé sur cet appareil, on DEMANDE
+   * avant d'effacer ; sinon on part directement.
+   *
+   * Le cas courant est « rien à perdre » : la confirmation n'apparaît donc
+   * presque jamais, et quand elle apparaît c'est qu'il y a vraiment quelque
+   * chose. Un dialogue systématique aurait le défaut inverse — on apprend à le
+   * congédier sans lire, et l'avertissement ne protège plus rien. C'est
+   * `aDesDonneesPatientLocales()` qui porte cette exigence : un brouillon vide,
+   * une métadonnée orpheline ou un brouillon périmé ne le déclenchent pas.
+   */
+  function demander() {
+    if (aDesDonneesPatientLocales()) {
+      setEchec(false);
+      setConfirmation(true);
+      return;
+    }
+    void deconnecter();
+  }
 
   async function deconnecter() {
     setEnCours(true);
     setEchec(false);
+    setConfirmation(false);
 
     // ON NE REDIRIGE QUE SI LE SERVEUR A CONFIRMÉ. La première version partait
     // sans regarder la réponse : sur une erreur, le patient atterrissait sur la
@@ -45,6 +69,12 @@ export function BoutonDeconnexion() {
       return;
     }
 
+    // LA PURGE VIENT APRÈS LA CONFIRMATION DU SERVEUR, ET C'EST L'ORDRE QUI
+    // COMPTE. Effacer d'abord ferait perdre le travail de qui reste connecté
+    // parce que la déconnexion a échoué — on aurait détruit des réponses sans
+    // même rendre l'appareil sûr.
+    effacerDonneesPatientLocales();
+
     // `location.assign` et non `router.push` : on veut que le navigateur
     // reparte du serveur avec le cookie effacé, sans réutiliser le cache
     // client d'un rendu fait pendant que la session vivait encore.
@@ -55,12 +85,34 @@ export function BoutonDeconnexion() {
     <div className="flex flex-col items-end gap-1 print:hidden">
       <PatientButton
         variant="neutral"
-        onClick={deconnecter}
+        onClick={demander}
         loading={enCours}
         loadingLabel="Déconnexion…"
       >
         Se déconnecter
       </PatientButton>
+
+      {/* `PatientConfirmDialog` ET NON UN PANNEAU MAISON. La première version
+          était un `role="alertdialog"` en flux, sans déplacement du focus : or
+          `alertdialog` n'a pas d'`aria-live` implicite, et un lecteur d'écran
+          n'annonçait donc RIEN — le seul texte que ce lot existe pour faire
+          lire était précisément celui qui ne se lisait pas. Radix apporte le
+          focus à l'ouverture, le piège de focus, `Escape` et la restitution du
+          focus ; et ce composant est déjà celui des écrans voisins du même
+          parcours (`GenericQuestionnaire`, `PlaintesForm`). Relevé en revue de
+          la PR #1212. */}
+      <PatientConfirmDialog
+        open={confirmation}
+        onOpenChange={setConfirmation}
+        message={
+          'Des réponses commencées sur cet appareil ne sont pas encore envoyées. '
+          + 'Se déconnecter les effacera d’ici — c’est ce qui protège un ordinateur partagé. '
+          + 'Il faudra les ressaisir à la prochaine connexion.'
+        }
+        confirmLabel="Se déconnecter et effacer"
+        onConfirm={() => void deconnecter()}
+      />
+
       {/* `role="alert"` : l'échec est annoncé, pas seulement affiché — le
           bouton vient d'être actionné, le lecteur d'écran est ailleurs. */}
       {echec && (
