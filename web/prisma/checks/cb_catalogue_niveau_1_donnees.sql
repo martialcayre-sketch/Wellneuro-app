@@ -62,10 +62,12 @@ BEGIN
   -- panel LÉGITIME fera rougir ce contrat : c'est voulu, le rouge dit « le
   -- catalogue a changé, mettre à jour la décision et ces comptes », jamais
   -- « régression ». Les analytes, eux, sont filtrés sur `saisie_praticien`.
+  -- 47 au niveau 1 (D-068), + 2 le 2026-09-24 (D-245 §5 : index oméga 3 et
+  -- rapport AA/EPA, migration 20260924090000) — le rouge a dit ce qu'il devait.
   SELECT count(*) INTO nb FROM biology_analytes WHERE source_provenance = 'saisie_praticien';
   IF nb > 0 THEN
-    IF nb <> 47 THEN
-      RAISE EXCEPTION 'D-068: % analyte(s) saisie_praticien au lieu des 47 du catalogue niveau 1', nb;
+    IF nb <> 49 THEN
+      RAISE EXCEPTION 'D-068/D-245: % analyte(s) saisie_praticien au lieu des 49 du catalogue', nb;
     END IF;
 
     SELECT count(*) INTO nb FROM biology_panels;
