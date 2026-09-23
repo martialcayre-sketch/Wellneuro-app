@@ -23,7 +23,10 @@ traitements) — c'est le praticien qui porte ce contexte, pas la machine. Le pr
 
 **A2 — LE PÉRIMÈTRE INCLUT L'OMÉGA 3.** L'index oméga 3 et le rapport AA/EPA
 n'ont **aucun code au catalogue** (`BiologyAnalyte`) : le chantier emporte donc
-une migration, **seule dans sa PR** ([[D-087]]).
+une migration, **seule dans sa PR** ([[D-087]]). Les deux entrent comme
+**valeurs rendues par le laboratoire**, sur le patron de `BIO_RATIO_KYN_TRP` —
+précision de lecture de [[D-122]] §2 portée par [[D-245]] §5, arbitrée le
+2026-09-23 : « pas de ratio en V1 » vise l'entité `BiologyRatio` calculée.
 
 ## 2. Ce que le dépôt porte, constaté le 2026-09-23
 
@@ -63,8 +66,9 @@ premier étage **cite** la phrase, il n'en extrait pas de nombre.
 | Dopaminergique | CRP-us (+ HOMA) | `WN-CL-0289-005` | | Les marqueurs biologiques évocateurs d'une insuffisance dopaminergique sont un taux de HVA ou de MHPG bas dans la biologie des neurotransmetteurs et leurs catabolites urinaires, ainsi qu'un indice HOMA élevé et une CRP ultrasensible élevée supérieure à 2 milligrammes/litre. |
 | Méthylation | homocystéine | `WN-CL-0043-014` | | Une méthylation insuffisante correspond à une homocystéine supérieure à 8 à 10 μmol/l. |
 | Méthylation | homocystéine | `WN-CL-0282-007` | P | L'homocystéine est un biomarqueur utile pour orienter un conseil alimentaire de méthylation et une supplémentation en B9, B12 ou SAMe. |
-| Méthylation | folates érythrocytaires | `WN-CL-0125-035`, `WN-CL-0340-004` | | Un taux abaissé de folates érythrocytaires est associé à des troubles de la méthylation […] *(aucune borne chiffrée)* |
-| Détoxication | — | `WN-CL-0287-010` | | Il n'existe pas de marqueurs biologiques spécifiques pour l'assiette de détoxication […] |
+| Méthylation | folates érythrocytaires | `WN-CL-0125-035` | | Le dosage des folates érythrocytaires est un bon témoin du statut en folates ; un taux abaissé est associé à des troubles de la méthylation et à des perturbations de la synthèse de certains neurotransmetteurs impliqués dans les dépressions. |
+| Méthylation | folates érythrocytaires | `WN-CL-0340-004` | | Un taux abaissé de folates érythrocytaires est associé à des troubles de la méthylation et à des perturbations de la synthèse de certains neurotransmetteurs impliqués dans les dépressions. |
+| Détoxication | — | `WN-CL-0287-010` | | Il n'existe pas de marqueurs biologiques spécifiques pour l'assiette de détoxication, mais celle-ci peut être évoquée sur des signes indirects de dysbiose (perturbation du profil métabolomique des acides gras à courte chaîne issus du microbiote intestinal) ou sur des tests fonctionnels de détoxication hépatique tels que le test à la caféine ou le test à l'acétaminophène. |
 
 **Absence documentée, à respecter comme telle** : la détoxication a un claim qui
 dit qu'il n'existe **pas** de marqueur spécifique. **Épargne digestive et

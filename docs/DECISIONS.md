@@ -13,8 +13,8 @@
 - Domaine : clinique (assiettes indiquées), biologie. **Aucune règle clinique,
   aucune borne, aucune migration dans ce lot** — il cadre ceux qui suivent.
 - Cadrage : `docs/claude/campagnes/CADRAGE_PORTE_BIOLOGIQUE_ASSIETTES_2026-09-23.md`.
-- Exécute le chantier ouvert par [[D-236]] §4 ; laisse **intacts** [[D-157]] et
-  [[D-122]].
+- Exécute le chantier ouvert par [[D-236]] §4 ; laisse **intact** [[D-157]] ;
+  **précise la lecture** de [[D-122]] §2 (§5 ci-dessous), sans la réécrire.
 
 **1. LE PREMIER ÉTAGE NE COMPARE PAS.** Pour une assiette dont un claim cite un
 marqueur, la carte pose côte à côte le claim **cité entier** et le **dernier
@@ -44,9 +44,20 @@ cinq claims contre « > 1 bas grade, ≥ 3 neuro-inflammation » dans
 signale, elle ne se résout pas — le premier étage ne choisit pas une borne, il
 cite les phrases.
 
-**5. L'OMÉGA 3 EMPORTE UNE MIGRATION.** Ni l'index oméga 3 ni le rapport AA/EPA
-n'ont de code au catalogue ; ils s'y ajoutent sur le patron des ratios existants
-(analyte d'unité `ratio`), **seuls dans leur PR** ([[D-087]]).
+**5. L'OMÉGA 3 EMPORTE UNE MIGRATION, ET UNE PRÉCISION DE [[D-122]] §2.** Ni
+l'index oméga 3 ni le rapport AA/EPA n'ont de code au catalogue ; ils s'y
+ajoutent comme **analytes**, **seuls dans leur PR** ([[D-087]]). [[D-122]] §2
+écrit « par analyte seulement — pas de ratio en V1 (ils se calculent) ».
+**Précision, arbitrée par le responsable le 2026-09-23** : cette clause vise
+l'entité `BiologyRatio` du catalogue, **calculée** depuis ses deux opérandes ; elle
+ne vise pas une valeur que le **laboratoire rend telle quelle**, que le praticien
+recopie et qui ne se calcule nulle part dans l'application. Le catalogue portait
+déjà trois valeurs de cette nature, saisies comme analytes : `BIO_RATIO_KYN_TRP`,
+`BIO_RATIO_ZINC_CUIVRE` (unité `ratio`) et `BIO_RATIO_HOMA` (`score`) — la
+précision écrit ce que le catalogue faisait déjà sans le dire. Le rapport AA/EPA
+(unité `ratio`) et l'index oméga 3 (unité `%`, rendu par le profil d'acides gras)
+entrent à ce titre. **Ce que la précision n'ouvre pas** : aucun calcul de ratio
+par l'application, aucune saisie d'un ratio `BiologyRatio`.
 
 **Ce que cette décision ne tranche pas** : quels claims retenir assiette par
 assiette — c'est la signature du module, claim par claim, au lot qui l'écrit.

@@ -20,12 +20,15 @@ résultat ↔ borne est un geste du praticien) et `D-122` (règle clinique neuve
   emporte une migration (deux analytes).
 - Écarté : amender `D-157` d'emblée (arbitrage du responsable) ; placer les
   liens dans la table des indications (périmerait sa signature).
+- `D-245` §5 : AA/EPA et index oméga 3 entrent comme **valeurs rendues par le
+  laboratoire** ; « pas de ratio en V1 » (`D-122` §2) vise `BiologyRatio`
+  calculé — précision arbitrée après le constat de revue de la PR #1215.
 
 ## 4. Fichiers modifiés
 
 `docs/claude/campagnes/CADRAGE_PORTE_BIOLOGIQUE_ASSIETTES_2026-09-23.md` (créé)
 · `docs/DECISIONS.md` · `changelog.d/2026-09-23-porte-biologique-cadrage.md` ·
-ce handoff.
+`docs/claude/SESSION_LOG.md` · ce handoff.
 
 ## 5. Validations exécutées
 
