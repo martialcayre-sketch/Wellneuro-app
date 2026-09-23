@@ -119,14 +119,32 @@ servies aussi.
 | LOT-03 | Lecture du dernier résultat par analyte (append-only, tête de chaîne), route et section de carte ; lexique interdit ; E2E | Relecture à l'écran |
 | LOT-04 | Bilan d'usage au conteneur, par identifiant (`D-125`) — puis, seulement là, la décision sur la porte automatique | Toi |
 
-## 6. Ce qui reste ouvert, et appartient au praticien
+## 6. Sélection du responsable, rendue le 2026-09-23
 
-1. **Quels claims de §3 retenir, assiette par assiette** — en particulier la
-   CRP-us de la dopaminergique (0289-005), dont l'identifiant n'était écrit nulle
-   part au dépôt, et 0340-007,
-   dont la double borne contredit les cinq autres.
-2. KYN/TRP n'a **aucune** borne chiffrée dans les sources : le citer sans nombre,
-   ou ne pas le citer.
+Ce que le module du LOT-02 portera — et qu'il signera, claim par claim :
+
+| Assiette | Marqueurs | Claims retenus |
+|---|---|---|
+| Sérotoninergique | CRP-us, KYN/TRP | `WN-CL-0290-007` |
+| Anti-inflammatoire | CRP-us, KYN/TRP, AA/EPA | `WN-CL-0293-013` |
+| Oméga 3 | index oméga 3, AA/EPA, CRP-us | `WN-CL-0294-004`, `WN-CL-0294-005` |
+| Dopaminergique | CRP-us, HOMA | `WN-CL-0289-005` |
+| Méthylation | homocystéine | `WN-CL-0043-013`, `WN-CL-0043-014`, `WN-CL-0043-015` |
+
+- **Écartés** : `WN-CL-0340-007` (double borne 1/3, prescriptif) et
+  `WN-CL-0292-005` (une association, pas une indication). Conséquences : la
+  discordance CRP-us de §3 **ne s'affichera pas** (les claims retenus disent tous
+  « > 2 ») ; l'assiette **antioxydante** n'a aucun marqueur au premier étage.
+- **Homocystéine** : les trois seuils, pour trois questions distinctes.
+- **KYN/TRP** : affiché **sans nombre**, à côté de la phrase « ratio élevé » telle
+  que le claim la porte.
+- Folates érythrocytaires (`WN-CL-0125-035`, `-0340-004`) et `WN-CL-0282-007` :
+  non soumis à cette sélection ; hors premier étage faute de borne ou de marqueur
+  nommé comme porte.
+
+**Reste ouvert** : épargne digestive et psychobiotique (autres marqueurs, non
+recherchés) ; signalement à la curation des deux claims de cas cliniques à unité
+fausse.
 
 ## 7. Contradictions de documentation relevées, sans lien avec le lot
 

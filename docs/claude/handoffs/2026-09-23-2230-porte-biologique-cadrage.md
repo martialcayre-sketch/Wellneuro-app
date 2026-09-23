@@ -35,8 +35,8 @@ T1 avant la PR.
 
 ## 6. Problèmes ouverts
 
-- Quels claims retenir par assiette (dont `WN-CL-0289-005` pour la
-  dopaminergique, et `WN-CL-0340-007` qui contredit les cinq autres).
+- Sélection des claims **rendue le 2026-09-23** (cadrage §6) : 0340-007 et
+  0292-005 écartés, homocystéine à trois seuils, KYN/TRP sans nombre.
 - Épargne digestive et psychobiotique : recherche bornée à quatre marqueurs ;
   d'autres marqueurs (IgA sécrétoires, métabolome) restent à chercher.
 - KYN/TRP : aucune borne chiffrée dans les sources.
