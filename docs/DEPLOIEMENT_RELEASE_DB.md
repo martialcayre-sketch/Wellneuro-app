@@ -317,6 +317,19 @@ Avant ce jugement de contenu (2026-09-06), tout push postérieur à
 l'approbation faisait échouer la release — y compris un push documentaire, en
 pleine fenêtre d'attente de plusieurs heures (run 33966114073).
 
+**Dans ce dernier cas, le run se conclut en ÉCHEC VOLONTAIRE** (étape « Garde
+anti-recul », depuis le 2026-09-23), **après** la release et sa vérification.
+Son vert lèverait le dernier check du commit dépassé, et l'auto-déploiement
+Scalingo le redéploierait par-dessus la tête : c'est arrivé le 2026-09-23 (run
+35563094380), production reculée de quatre lots pendant six heures. Le rouge
+est le seul signal que Scalingo lise ; la base, elle, est à jour.
+
+Le même jour, l'étape de déclenchement cessait de s'abstenir dès qu'**un**
+déploiement du commit existait dans l'historique : elle ne s'abstient plus que
+si c'est **le plus récent**. Sans quoi un recul était irrattrapable par
+`release-db` — le dispatch trouvait le vieux succès de la tête, ne déclenchait
+rien, et la garde refusait sur le recul (run 35854104186).
+
 Depuis le 2026-08-22, `mode=import-cb` est **refusé explicitement** par le
 workflow (hors service — il visait Supabase, l'input `nabm_base` a disparu
 avec lui) ; sa réécriture pour Scalingo viendra avec la Phase C.
