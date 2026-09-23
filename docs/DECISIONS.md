@@ -4,6 +4,53 @@
 
 ## Décisions actives
 
+### D-245 — La porte biologique d'une assiette est d'abord DOCUMENTAIRE : les sources et le dossier côte à côte, sans comparaison
+
+- Date : 2026-09-23
+- Statut : accepté — deux arbitrages du responsable rendus en séance le
+  2026-09-23 (« documentaire d'abord, automatique ensuite » ; périmètre incluant
+  l'oméga 3).
+- Domaine : clinique (assiettes indiquées), biologie. **Aucune règle clinique,
+  aucune borne, aucune migration dans ce lot** — il cadre ceux qui suivent.
+- Cadrage : `docs/claude/campagnes/CADRAGE_PORTE_BIOLOGIQUE_ASSIETTES_2026-09-23.md`.
+- Exécute le chantier ouvert par [[D-236]] §4 ; laisse **intacts** [[D-157]] et
+  [[D-122]].
+
+**1. LE PREMIER ÉTAGE NE COMPARE PAS.** Pour une assiette dont un claim cite un
+marqueur, la carte pose côte à côte le claim **cité entier** et le **dernier
+résultat du dossier** (valeur, unité, date, provenance) — ou son absence. Aucune
+comparaison, aucune couleur, aucun « élevé » ni « hors plage », aucun tri par le
+résultat, et le résultat ne rend jamais une assiette « indiquée ». C'est le geste
+que [[D-157]] qualifie de documentaire ; le rapprochement reste au praticien, qui
+porte le contexte que `DC-46` exige (unités, âge, sexe, inflammation,
+traitements).
+
+**2. LA PORTE AUTOMATIQUE N'EST NI ÉCARTÉE NI OUVERTE.** Elle ne se décide
+qu'après un bilan d'usage du premier étage, au conteneur et par identifiant
+([[D-125]]), et par une décision propre — celle qu'exige [[D-122]] pour faire
+parler un résultat au moteur, et qui devra amender [[D-157]].
+
+**3. UN MODULE SIGNÉ À PART, ET LA TABLE DES INDICATIONS NE BOUGE PAS.** Son
+empreinte couvre toutes ses lignes : la modifier éteindrait les sept assiettes
+servies en production depuis le 2026-09-20 jusqu'à une nouvelle signature. Les
+liens assiette → marqueur → claims vivent dans un module neuf, **sans aucun
+nombre**, avec son propre verrou.
+
+**4. LES SOURCES SE CONTREDISENT, ET ON LE MONTRE.** CRP-us : « > 2 mg/l » dans
+cinq claims contre « > 1 bas grade, ≥ 3 neuro-inflammation » dans
+`WN-CL-0340-007` (prescriptif). Homocystéine : trois seuils pour trois questions
+(`WN-CL-0043-013`, `-014`, `-015`). Index oméga 3 : une association et une
+« valeur optimale » (`WN-CL-0045-010`, `-009`). `DC-30` : une discordance se
+signale, elle ne se résout pas — le premier étage ne choisit pas une borne, il
+cite les phrases.
+
+**5. L'OMÉGA 3 EMPORTE UNE MIGRATION.** Ni l'index oméga 3 ni le rapport AA/EPA
+n'ont de code au catalogue ; ils s'y ajoutent sur le patron des ratios existants
+(analyte d'unité `ratio`), **seuls dans leur PR** ([[D-087]]).
+
+**Ce que cette décision ne tranche pas** : quels claims retenir assiette par
+assiette — c'est la signature du module, claim par claim, au lot qui l'écrit.
+
 ### D-244 — « Se déconnecter » purge les brouillons locaux, après avoir dit ce qui sera perdu
 
 - Date : 2026-09-22
