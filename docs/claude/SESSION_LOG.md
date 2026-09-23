@@ -7780,3 +7780,22 @@ et LOT-03 a pris D-242 au merge.
 mériterait son propre lot.
 
 **Prochaine action** : T2, PR, CI, revue aux trois emplacements.
+
+## 2026-09-23 — Chantier 6 cadré : la porte biologique est documentaire d'abord (D-245)
+
+**Décisions.** Premier étage sans comparaison : le claim cité entier et le
+dernier résultat du dossier, côte à côte (`D-157` intact) ; porte automatique
+après bilan d'usage. Module signé à part — la table des indications couvre les
+sept assiettes servies. AA/EPA et index oméga 3 entrent comme valeurs rendues
+par le labo : `D-122` §2 vise `BiologyRatio` calculé (précision `D-245` §5).
+
+**Écartées.** Amender `D-157` d'emblée ; toucher la table signée ; citer
+`0340-007` et `0292-005`.
+
+**Corrigé en revue.** L'affirmation « D-122 intact » était fausse : le lot
+suivant l'aurait contredit sans le dire.
+
+**Prochaine action.** LOT-01, migration seule, puis `release-db`.
+
+**Ouvert.** Épargne digestive et psychobiotique (autres marqueurs) ; deux claims
+de cas à unité fausse, pour la curation.
