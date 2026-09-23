@@ -5,11 +5,8 @@
 - Branche : `wn-lot04-boussole-depuis-assiette-2026-09-22`, **rebasée sur
   `origin/main` après le merge de `D-242`** (branche non publiée à ce moment-là,
   donc aucun force-push).
-- **Le numéro a bougé deux fois.** Ce lot a été écrit sous `D-242`. Une session
-  voisine a mergé `D-241` (session portail à 30 jours), puis LOT-03 a pris
-  `D-242` au merge : ce lot est donc `D-243`. Vingt-deux références renumérotées
-  — code, registre, handoff. Le numéro se prend AU MERGE, et deux lots en vol le
-  même jour suffisent à le déplacer deux fois.
+- **Le numéro a bougé deux fois** (écrit sous `D-242`, pris par LOT-03 au
+  merge) : `D-243`, vingt-deux références renumérotées. Il se prend AU MERGE.
 - Worktree : `.claude/worktrees/phases-hash-2026-09-16`.
 - Aucune migration, aucun `schema.prisma`, aucun drapeau, **aucune empreinte
   persistée périmée**.
@@ -33,14 +30,10 @@ de son aliment. Trois points, et un seul est un vrai changement de contrat.
 
 ## 4. LE VERROU ÉTAIT PLUS ÉTROIT QUE SON NOM
 
-`D-240` §11 l'a décrit comme « les contrats V2 et V4 sont mutuellement
-exclusifs ». Mesuré, il tenait en **un point d'écriture** : `normalizeActions`
-refusait TOUT `foodCompassRef` — **la seule des quatre gardes voisines à ignorer
-le paramètre `version` pourtant en portée**. La RELECTURE, elle, acceptait déjà
-un V4 porteur de référence (`assertProtocolDraftC5Structure` ne nomme que V1 et
-V2). **Ce lot aligne l'écriture sur ce que la lecture tolérait** ; il n'élargit
-pas la lecture, et un cas l'épingle pour qu'une révision ne « resserre » pas les
-deux d'un coup en croyant corriger une asymétrie.
+`D-240` §11 disait V2 et V4 « mutuellement exclusifs » ; mesuré, c'était **un
+point d'écriture** (`normalizeActions`), la relecture acceptant déjà un V4
+porteur de référence. Ce lot aligne l'écriture sur la lecture, sans élargir
+celle-ci — un cas l'épingle.
 
 ## 5. Décisions prises
 
@@ -86,62 +79,37 @@ le cadrage, `docs/claude/SESSION_LOG.md`, ce handoff (créé).
 
 ## 8. Ce que le lot a trouvé au passage
 
-**LE PIÈGE DE LA LISTE BLANCHE, RENCONTRÉ UNE SECONDE FOIS.**
-`normalizeActions` RECONSTRUIT chaque action : lever le refus sans ajouter le
-champ à la reconstruction aurait donné un système qui compile, des bancs verts,
-et une référence qui **disparaît à l'enregistrement**. Mot pour mot le piège que
-`D-240` a nommé pour l'assiette. Un cas vérifie que la clé EST LÀ après
-construction, pas seulement que la construction passe.
-
-**UNE CORRECTION DE MA PROPRE PROSE.** Une première rédaction du banc affirmait
-que « le patient ne reçoit rien de la référence ». C'est faux de
-`buildPatientFoodCompassView`, qui rend TROIS empreintes — `protocolInputHash`,
-`actionRefHash`, `inputHash`. C'est la projection SÛRE, en aval, qui les coupe.
-Le banc le dit désormais à l'endroit exact où l'assertion fautive se trouvait.
+**Le piège de la liste blanche, une seconde fois** : `normalizeActions`
+reconstruit chaque action ; un cas vérifie que la clé EST LÀ après
+construction. **Une correction de ma prose** : `buildPatientFoodCompassView`
+rend trois empreintes au patient, c'est la projection sûre en aval qui les
+coupe — le banc le dit à l'endroit de l'assertion fautive.
 
 ## 8 bis. La revue — deux constats, deux retenus
 
-**LE PREMIER EST L'ASYMÉTRIE DE CE LOT, REJOUÉE D'UN CRAN.** En ouvrant V4 à
-`foodCompassRef`, je ne contrôlais pas le TYPE d'action. La relecture, elle,
-refuse une référence C5 sur une action non alimentaire : on pouvait donc
-persister une version que plus personne ne savait relire. **Un refus à
-l'écriture est un message au praticien ; un refus à la relecture est un
-protocole mort.** Les deux autres chemins portaient déjà ce terme — c'était le
-seul des trois à ne pas l'avoir. `normalizeFoodCompassRef` a maintenant la même
-forme que `normalizePlateRef`.
-
-**LE SECOND EST UN DÉFAUT DE JOINTURE.** Le chemin V4 de la ROUTE n'avait aucun
-cas — le banc éprouvait le moteur et la vue patient, jamais l'écriture réelle.
-Deux cas sont posés, et le premier a d'abord échoué en 400 sur un terme que le
-moteur ignore (« une référence C5 exige un protocole source actif ») : c'est
-précisément ce qu'un banc de moteur ne peut pas voir.
-
-**À retenir** : quand un lot lève un verrou, chercher les gardes VOISINES que ce
-verrou rendait inutiles. Ici le contrôle de version masquait le contrôle de
-type ; en levant l'un j'ai découvert que l'autre n'existait pas sur ce chemin.
+(1) V4 laissait passer `foodCompassRef` sur une action non alimentaire, que la
+relecture refuse : **un refus à l'écriture est un message, un refus à la
+relecture est un protocole mort** — `normalizeFoodCompassRef` a désormais la
+forme de `normalizePlateRef`. (2) Le chemin V4 de la route n'avait aucun cas ;
+les deux posés ont révélé un terme que le moteur ignore. Détail aux réponses de
+la PR #1213. **À retenir** : lever un verrou, c'est chercher les gardes
+voisines qu'il rendait inutiles.
 
 ## 9. Problèmes ouverts
 
-**LE CHEMIN COMPLET N'EST PAS CÂBLÉ, et ce lot ne le prétend pas.** Le patient
-voit l'assiette par le titre de son action, et sa Boussole dans une section
-séparée : **rien ne RELIE les deux à l'écran**. `boussoles` est un tableau de
-premier niveau du fil patient, et aucune action patient ne porte de `foodRef`.
-Les relier demanderait de rouvrir `vuePatientSurLeFil`, dont le module dit être
-la SEULE description de ce que le patient reçoit — et une seconde description a
-déjà coûté des mois de champ mort à ce dépôt (`D-200`). Ce lot rend la chose
-POSSIBLE ; il ne la câble pas.
-
-**Hérité, non traité** : le refus de version de la vue patient reste AVALÉ par
-le `catch { return null; }` de `patientReference.ts` — une Boussole refusée
-disparaît en silence au lieu d'échouer. Ce lot en réduit la portée sans changer
-ce comportement, qui mériterait son propre lot.
+- **Le chemin complet n'est pas câblé** : rien ne RELIE l'assiette et sa
+  Boussole à l'écran du patient (`boussoles` est un tableau de premier niveau
+  du fil, aucune action patient ne porte de `foodRef`). Les relier rouvre
+  `vuePatientSurLeFil`, seule description de ce que le patient reçoit (`D-200`).
+  Ce lot rend la chose possible, il ne la câble pas.
+- **Hérité** : le refus de version de la vue patient reste avalé par le
+  `catch { return null; }` de `patientReference.ts` — une Boussole refusée
+  disparaît en silence. Mérite son propre lot.
 
 ## 10. Prochaine action exacte
 
-T2 depuis la racine, sortie redirigée puis relue ; PR `--base main` avec
-`--body-file` ; `node scripts/wn-attendre-ci.mjs <N>` **depuis la racine** ;
-lire la revue aux TROIS emplacements ; `gh pr merge --squash --subject` nommant
-D-243.
+Lire la revue aux TROIS emplacements, puis `gh pr merge --squash --subject`
+nommant D-243 (PR #1213).
 
 ## 11. Interdits encore actifs
 
