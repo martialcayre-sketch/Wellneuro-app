@@ -246,6 +246,102 @@ test('un déploiement déjà existant reporte le commit approuvé, et sort sans 
   }
 });
 
+test('un commit ANCIEN déployé par-dessus la tête : le dispatch sur main redéclenche — le recul du 2026-09-23', () => {
+  // L'état exact du 2026-09-23 : la tête a été déployée, puis un commit plus
+  // ancien l'a été APRÈS elle (liste du plus récent au plus ancien). Le dispatch
+  // porte la tête. L'ancienne étape trouvait la tête « quelque part » dans la
+  // liste, ne déclenchait rien, et la garde suivante refusait sur le recul :
+  // boucle (run 35854104186). Seul le déploiement le PLUS RÉCENT dispense de
+  // déclencher.
+  const { base, local, approuve, tete } = depotJouet({ migrations: false });
+  try {
+    const bin = poserScalingo(base, `${approuve} success\n${tete} success`);
+    const r = jouer(scriptDeLEtape('Déclenchement du déploiement'), {
+      cwd: local,
+      bin,
+      env: { GITHUB_SHA: tete },
+    });
+    assert.equal(r.code, 0, `l'étape a échoué :\n${r.sortie}`);
+    assert.match(r.sortie, /build déclenché/, 'une tête qui n’est plus le dernier déploiement doit être redéployée');
+    assert.equal(r.ecrit, `WN_SHA_ATTENDU=${tete}`);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+// ── LA GARDE ANTI-RECUL : UN RUN DÉPASSÉ NE CONCLUT JAMAIS AU VERT ──────────
+
+test('garde anti-recul : un run dont la tête a dépassé le commit échoue, après avoir dit que la release est faite', () => {
+  // Le vert de CE run lèverait le dernier check du vieux commit, et Scalingo
+  // l'auto-déploierait par-dessus la tête — le recul du 2026-09-23.
+  const { base, local, approuve, tete } = depotJouet({ migrations: false });
+  try {
+    const bin = poserScalingo(base, `${tete} success`);
+    const r = jouer(scriptDeLEtape('Garde anti-recul'), {
+      cwd: local,
+      bin,
+      env: { GITHUB_SHA: approuve, WN_SHA_ATTENDU: tete },
+    });
+    assert.notEqual(r.code, 0, 'un run dépassé conclu au vert ferait reculer la production');
+    assert.match(r.sortie, /Échec VOLONTAIRE/);
+    // Le lecteur doit apprendre que la base est À JOUR — sans quoi il relance.
+    assert.match(r.sortie, /NE PAS RELANCER/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('garde anti-recul : un run qui porte la tête de main conclut au vert', () => {
+  const { base, local, tete } = depotJouet({ migrations: false });
+  try {
+    const bin = poserScalingo(base, `${tete} success`);
+    for (const env of [{ GITHUB_SHA: tete, WN_SHA_ATTENDU: tete }, { GITHUB_SHA: tete }]) {
+      const r = jouer(scriptDeLEtape('Garde anti-recul'), { cwd: local, bin, env });
+      assert.equal(r.code, 0, `la garde devait passer :\n${r.sortie}`);
+    }
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('garde anti-recul : la tête a bougé PENDANT le run — rouge même si ce run a déployé son propre commit', () => {
+  // Le run a déployé et migré SON commit (report = commit du run), mais la tête
+  // est arrivée entre-temps : déployée par son propre CI avant la fin de ce run,
+  // elle serait écrasée par le vieux commit dès que ce run conclurait au vert.
+  const { base, local, approuve } = depotJouet({ migrations: false });
+  try {
+    const bin = poserScalingo(base, `${approuve} success`);
+    const r = jouer(scriptDeLEtape('Garde anti-recul'), {
+      cwd: local,
+      bin,
+      env: { GITHUB_SHA: approuve, WN_SHA_ATTENDU: approuve },
+    });
+    assert.notEqual(r.code, 0, 'le critère est la tête de main à la fin du run, pas le SHA déployé');
+    assert.match(r.sortie, /Échec VOLONTAIRE/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('garde anti-recul : tête de main illisible — rouge par prudence, et la release est dite faite', () => {
+  const { base, local, tete } = depotJouet({ migrations: false });
+  try {
+    // Plus d'`origin` : `git fetch origin main` échoue, comme une panne réseau.
+    git(local, 'remote', 'remove', 'origin');
+    const bin = poserScalingo(base, `${tete} success`);
+    const r = jouer(scriptDeLEtape('Garde anti-recul'), {
+      cwd: local,
+      bin,
+      env: { GITHUB_SHA: tete, WN_SHA_ATTENDU: tete },
+    });
+    assert.notEqual(r.code, 0, 'sans tête lisible, un recul ne peut pas être exclu');
+    assert.match(r.sortie, /illisible/);
+    assert.match(r.sortie, /NE PAS RELANCER/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
 // ── LA GARDE QUI LIT LE REPORT ──────────────────────────────────────────────
 
 test('la garde juge le SHA ATTENDU quand il est reporté', () => {

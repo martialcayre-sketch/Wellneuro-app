@@ -186,7 +186,7 @@ puis comme l'absence de toute porte de relecture (2026-09-12 — conclusion écr
 dans cinq documents avant que les règles ne soient lues). Le journal des
 approbations est la seule preuve de qui a ouvert la porte.
 
-## 5. `release-db` — les cinq pièges
+## 5. `release-db` — les six pièges
 
 1. **Un run `queued` sans un seul job** n'est pas un run lent — 45 min à
    `jobs: []` observées. Rouvrir la PR ; ne pas chercher dans le diff.
@@ -210,6 +210,17 @@ approbations est la seule preuve de qui a ouvert la porte.
    sortie — correctif en avant, ou rollback de slug — est un **arbitrage du
    responsable**. Et un rollback vers un slug antérieur au **2026-08-22**
    ré-active l'auto-migration : l'ancien `db-deploy.sh` ignore le drapeau.
+6. **Le vert d'un run sur un commit DÉPASSÉ fait reculer la production.**
+   Scalingo auto-déploie un commit quand TOUS ses checks sont verts, et
+   `release-db` en est un : le 2026-09-23, le run d'un commit vieux de deux
+   jours a déployé la tête, conclu vert — et Scalingo a redéployé le vieux
+   commit une minute après (quatre lots perdus, six heures). Depuis, la
+   **garde anti-recul** fait finir un tel run en échec **volontaire** : la
+   release, elle, a eu lieu — lire « NE PAS RELANCER » avant tout geste.
+   Après chaque release, la PREMIÈRE ligne de `scalingo --app wellneuro
+   deployments` — la liste va du plus récent au plus ancien — doit être la
+   tête de `main`. Un recul se rattrape par
+   `integration-link-manual-deploy main`, jamais en ré-approuvant l'ancien run.
 
 L'approbation (`POST …/pending_deployments`) et le déclenchement
 (`gh workflow run release-db.yml`) sont refusés par le classifieur de permissions :
