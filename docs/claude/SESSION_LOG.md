@@ -7799,3 +7799,19 @@ suivant l'aurait contredit sans le dire.
 
 **Ouvert.** Épargne digestive et psychobiotique (autres marqueurs) ; deux claims
 de cas à unité fausse, pour la curation.
+
+## 2026-09-24 — LOT-01 du chantier 6 : l'index oméga 3 et le rapport AA/EPA au catalogue
+
+**Décision.** Deux analytes, saisis tels que le labo les rend (`D-245` §5) :
+`BIO_INDEX_OMEGA3` (`%`), `BIO_RATIO_AA_EPA` (`ratio`). Migration de données
+seule, aucune borne ni plage. Contrat du catalogue : 49.
+
+**Corrigé en revue.** Le total seul laissait passer une faute sur l'une des deux
+lignes : assertion ligne par ligne ajoutée, éprouvée par mutation sur base
+locale. Quatre commentaires disaient encore 47 — reformulés pour ne plus périmer.
+
+**Écarté.** Plages fonctionnelles dès ce lot : le premier étage cite, il ne
+borne pas.
+
+**Prochaine action.** Merge seul, `release-db` approuvée, constat au conteneur ;
+puis LOT-02, le module signé.

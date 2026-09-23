@@ -21,8 +21,8 @@ import type {
 // d'analytes, fiche justificative ouverte en tiroir. Jamais de score global.
 //
 // Contrairement au rayon C4 (140 148 fiches, mur d'entrée), le catalogue
-// niveau 1 compte 47 analytes et 15 bilans : tout se charge en UNE requête au
-// montage, la recherche et les filtres restent à l'écran. Le jeton de séquence
+// niveau 1 compte une cinquantaine d'analytes et 15 bilans : tout se charge en
+// UNE requête au montage, la recherche et les filtres restent à l'écran. Le jeton de séquence
 // est conservé malgré la requête unique — un démontage/remontage (strict mode,
 // navigation) ne doit pas laisser une réponse en vol écrire sur le suivant.
 //
