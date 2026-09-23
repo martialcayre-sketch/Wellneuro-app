@@ -1,4 +1,4 @@
-// Déconnexion patient (`D-241`, complétée par `D-243`).
+// Déconnexion patient (`D-241`, complétée par `D-244`).
 //
 // CE SPEC EXISTE PARCE QU'IL MANQUAIT. Le lot qui a livré le geste n'ajoutait
 // aucun parcours — `frontend-ui.md` en attend un pour tout changement d'UI, et

@@ -4,11 +4,15 @@
 
 ## Décisions actives
 
-### D-243 — « Se déconnecter » purge les brouillons locaux, après avoir dit ce qui sera perdu
+### D-244 — « Se déconnecter » purge les brouillons locaux, après avoir dit ce qui sera perdu
 
 - Date : 2026-09-22
 - Statut : accepté — demande du responsable (« Termine ce qui reste ouvert »),
-  qui clôt l'arbitrage laissé en suspens par [[D-241]] §6.
+  qui clôt l'arbitrage laissé en suspens par [[D-241]] §6. **Choix CONFIRMÉ
+  explicitement le 2026-09-23** (purge avertie, contre purge sèche et statu
+  quo) : la demande d'origine ne départageait pas les trois voies.
+- Numéro : écrit sous `D-242` puis `D-243`, pris par #1210 et #1213 au merge —
+  `D-244`.
 - Domaine : portail patient (déconnexion, stockage local). **Aucune migration,
   aucun drapeau, aucune règle clinique, aucun changement de modèle de données.**
 - Ferme la troisième limite de [[D-241]] §6 et **corrige la deuxième**, qui était
@@ -87,6 +91,117 @@ Ce n'est pas « indécidable » — une première rédaction le disait, à tort.
 Enfin, la déconnexion ne coupe toujours pas les autres appareils ([[D-241]] §6,
 inchangé), et `aDesDonneesPatientLocales()` rend `false` en stockage bloqué sans
 qu'aucun banc ne le tienne.
+
+### D-243 — La Boussole et l'assiette cessent de s'exclure : un protocole V4 peut porter les deux
+
+- Date : 2026-09-22
+- Statut : accepté — LOT-04 du cadrage Boussole/Assiette, ouvert sur demande du
+  responsable (« Go lot 03 et lot 04 »). Exécute [[D-213]] §12.
+- Domaine : contrat de protocole, vue patient de la Boussole. **Aucune règle
+  clinique, aucun seuil, aucune table signée, aucune empreinte périmée, aucune
+  migration, aucun drapeau.**
+- Lève le verrou que [[D-240]] §11 avait nommé, avec la correction que
+  [[D-242]] §9(b) y a apportée.
+
+**1. LE VERROU ÉTAIT PLUS ÉTROIT QUE SON NOM.** [[D-240]] §11 l'a décrit comme
+« les contrats V2 et V4 sont mutuellement exclusifs ». Mesuré, il tient en UN
+point d'écriture : `normalizeActions` refusait TOUT `foodCompassRef` — la seule
+des quatre gardes voisines à **ignorer le paramètre `version` pourtant en
+portée**. Le chemin V2 ne s'y heurtait pas, parce que
+`buildFoodCompassProtocolV2FromSource` construit d'abord un brouillon SANS
+référence puis les réinjecte. La RELECTURE, elle, acceptait déjà un V4 porteur
+de référence : `assertProtocolDraftC5Structure` ne nomme que V1 et V2. **Ce lot
+aligne donc l'écriture sur ce que la lecture tolérait déjà** ; il n'élargit pas
+la lecture, et un cas de banc l'épingle pour qu'une révision ne « resserre » pas
+les deux d'un coup en croyant corriger une asymétrie.
+
+**2. CE QUE L'EXCLUSION COÛTAIT AU PATIENT, ET C'EST L'INVERSE DE [[D-213]]
+§12.** Depuis [[D-240]], tout protocole portant une assiette prescrite est V4.
+Le patient perdait donc sa Boussole **dès qu'on lui prescrivait une assiette** —
+quand §12 veut précisément que « l'assiette prescrit, la Boussole explique
+pourquoi ». Et il la perdait **en silence** : le refus de version vit dans
+`buildPatientFoodCompassView`, dont le `TypeError` est avalé par le
+`catch { return null; }` de `patientReference.ts`. Une Boussole refusée ne
+produit pas d'erreur, elle **disparaît de la liste**. C'est pourquoi la levée
+devait être délibérée : son absence d'effet visible ne l'aurait pas signalée.
+
+**3. L'EXCLUSIVITÉ ÉTAIT UNILATÉRALE, ET SEULE LA MOITIÉ QUI BLOQUAIT TOMBE.**
+Un payload V2 **exige** au moins une référence C5 ; V4 n'exige aucune assiette.
+V1 et V3 gardent leur refus mot pour mot. Et un protocole qui ne porte que des
+aliments reste servi en V2 : **aucun chemin existant ne change**.
+
+**4. EN V4, LA RÉFÉRENCE RESTE SUR L'ACTION.** Le détour historique — démonter
+la référence avant le moteur, la réinjecter après — n'existe que pour V2, dont
+le constructeur exige une cible V1. En V4 le moteur la porte lui-même, ce qui
+évite de recréer le maillon faible que [[D-239]] a retiré : un invariant tenu
+deux fois finit par diverger dans l'une de ses copies.
+
+**5. LE PIÈGE DE LA LISTE BLANCHE, RENCONTRÉ UNE SECONDE FOIS.**
+`normalizeActions` RECONSTRUIT chaque action depuis une liste blanche : lever le
+refus sans ajouter le champ à la reconstruction aurait donné un système qui
+compile, des bancs verts, et une référence qui **disparaît à l'enregistrement**.
+C'est mot pour mot le piège que [[D-240]] a nommé pour l'assiette. Un cas de banc
+vérifie que la clé EST LÀ après construction, pas seulement que la construction
+passe.
+
+**6. AUCUNE EMPREINTE NE BOUGE.** `canonicalJson` ignore les valeurs
+`undefined` : une action sans Boussole n'écrit pas la clé, et son `inputHash`
+est identique au précédent. Épinglé par un cas.
+
+**CE QUE LE LOT NE FAIT PAS.** Il **n'ajoute aucun champ** au contrat patient :
+la vue sûre garde ses sept champs qualitatifs, et le nom de l'assiette atteint
+le patient comme il le faisait depuis [[D-240]] — par le `title` de l'action, que
+le praticien écrit et que la garde de registre anxiogène relit. Il ne touche ni
+au catalogue, ni à `INDICATIONS_ASSIETTES_V1`, ni à la table de replis de
+[[D-242]]. Il ne crée aucune route, aucun écran, aucun drapeau.
+
+**UNE CORRECTION DE MA PROPRE PROSE, POUR NE PAS LA LAISSER COURIR.** Une
+première rédaction du banc affirmait que « le patient ne reçoit rien de la
+référence ». C'est faux de `buildPatientFoodCompassView`, qui rend TROIS
+empreintes — `protocolInputHash`, `actionRefHash`, `inputHash`. C'est la
+projection SÛRE, en aval, qui les coupe. La garde du contenu servi vit là-bas, et
+le banc le dit désormais à l'endroit exact où l'assertion fautive se trouvait.
+
+**CE QUI RESTE DEVANT LE CHEMIN COMPLET.** Le patient voit l'assiette par le
+titre de son action, et sa Boussole d'aliment dans une section séparée : rien ne
+RELIE encore les deux à l'écran. `boussoles` est un tableau de premier niveau du
+fil patient, et aucune action patient ne porte de `foodRef`. Relier les deux
+demanderait de rouvrir `vuePatientSurLeFil`, dont le module dit être la SEULE
+description de ce que le patient reçoit — et une seconde description a déjà
+coûté des mois de champ mort à ce dépôt ([[D-200]]). Ce lot rend la chose
+POSSIBLE ; il ne la câble pas.
+
+**LA REVUE A TROUVÉ DEUX CONSTATS, ET LE PREMIER EST L'ASYMÉTRIE QUE CE LOT
+EXISTE POUR FERMER, REJOUÉE D'UN CRAN.** En ouvrant V4 à `foodCompassRef`, ma
+première rédaction ne contrôlait pas le TYPE d'action. Or
+`assertProtocolDraftC5Structure` refuse une référence C5 portée par une action
+non alimentaire — **à la relecture**. On pouvait donc PERSISTER une version que
+plus personne ne savait relire.
+
+**Un refus à l'écriture est un message au praticien ; un refus à la relecture
+est un protocole mort.** Les deux autres chemins portaient déjà ce terme
+(`refValidation.ts` en lecture, `protocol.ts` pour le constructeur V2) : c'était
+le seul des trois à ne pas l'avoir. `normalizeFoodCompassRef` a désormais la
+MÊME FORME que `normalizePlateRef` — le contrat, puis le type, puis le retour
+explicite. Vérifié par mutation.
+
+**Et la condition ne s'est pas élargie à V2 au passage.** Un payload V2 ne porte
+jamais ses références SUR l'action quand il traverse `normalizeActions` : son
+constructeur les réinjecte après, en contrôlant lui-même le type. Admettre V2
+ici n'aurait ouvert aucun chemin utile et aurait élargi une garde hors mandat.
+Seul le MESSAGE change, qui annonçait « V2 » alors que V4 est le contrat exigé.
+
+**LE SECOND CONSTAT EST UN DÉFAUT DE JOINTURE, ET LE DÉPÔT L'A DÉJÀ PAYÉ.** Le
+chemin V4 de la route n'avait aucun cas : le banc éprouvait le moteur et la vue
+patient, jamais l'écriture réelle. Or c'est la route qui re-dérive la référence
+contre CIQUAL, choisit la version de contrat et écrit. Deux cas sont posés — les
+deux références survivent ensemble à la persistance, et une action non
+alimentaire porteuse d'une Boussole rend 400 sans rien écrire. Une mutation qui
+fait redémonter la référence en V4 les fait rougir.
+
+**Le premier de ces cas a d'abord échoué en 400**, sur un terme que le moteur
+ignore : « une référence C5 exige un protocole source actif ». C'est exactement
+ce qu'un banc de moteur ne peut pas voir, et la raison d'être du constat.
 
 ### D-242 — Le repli d'assiette devient une relation ORIENTÉE, hors du catalogue ; la table est vide, et deux affirmations de D-240 étaient fausses
 
@@ -590,9 +705,9 @@ manquait à la première rédaction de ce paragraphe.
   écrivent une trace nominative, le code le dit en toutes lettres. La propriété
   de non-oracle porte sur l'ÉCRAN, pas sur la donnée. Corriger une erreur par une
   autre est pire que l'erreur : relevé en revue de la PR #1212.)* Repris par
-  `D-242`.
+  `D-244`.
 - ~~**« Se déconnecter » ne purge PAS les brouillons locaux**~~ — **FERMÉ par
-  `D-243` le 2026-09-22 : le geste purge désormais, après avertissement.** Le
+  `D-244` le 2026-09-22 : le geste purge désormais, après avertissement.** Le
   texte d'origine, conservé pour ce qu'il documente :
   `lib/questionnaire-draft.ts`
   conserve les réponses de questionnaire en `localStorage` **30 jours**

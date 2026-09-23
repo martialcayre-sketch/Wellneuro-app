@@ -1,4 +1,4 @@
-# Handoff — 2026-09-22 — « Se déconnecter » purge les brouillons locaux (D-243)
+# Handoff — 2026-09-22 — « Se déconnecter » purge les brouillons locaux (D-244)
 
 ## 1. Branche et état Git
 
@@ -16,7 +16,7 @@ troisième explicitement ouverte.
 
 ## 3. Décisions prises
 
-- **`D-243`** — la déconnexion purge les brouillons locaux, après avertissement.
+- **`D-244`** — la déconnexion purge les brouillons locaux, après avertissement.
   Trois choix de conception y sont motivés : avertir **seulement** s'il y a
   quelque chose à perdre ; purger **après** la confirmation du serveur ; ne pas
   toucher au confort de lecture.
@@ -83,7 +83,7 @@ troisième explicitement ouverte.
 ## 7. Prochaine action exacte
 
 Ouvrir la PR `--base main --body-file`, attendre le CI, lire la revue Copilot,
-merger en squash avec `--subject` portant `(D-243)`. Puis attaquer le lot du
+merger en squash avec `--subject` portant `(D-244)`. Puis attaquer le lot du
 rebond, cadré en §6 ci-dessus.
 
 ## 8. Interdits encore actifs
@@ -93,7 +93,7 @@ rebond, cadré en §6 ci-dessus.
   horaires, compteurs, discordances de compte comprises.
 - **`D1` de la campagne IDP2 tient** : aucun fournisseur d'identité, aucun mot de
   passe patient.
-- **Le confort de lecture ne se purge pas** — frontière posée par `D-243` §4, et
+- **Le confort de lecture ne se purge pas** — frontière posée par `D-244` §4, et
   gardée par un banc.
-- **`D-241` est sur `main`** : la PR #1210, qui réclame le même numéro, devra
-  renuméroter en `D-243` (D-243 étant pris par ce lot).
+- **Numérotation, au merge** : `D-242` pris par #1210, `D-243` par #1213 — ce
+  lot est `D-244` (renuméroté le 2026-09-23).

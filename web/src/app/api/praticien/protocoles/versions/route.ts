@@ -460,7 +460,15 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         // où une vraie fiche conseil existera, elle entrera par une décision,
         // avec sa garde.
         adviceSheetRef: null,
-        actions: verifiedActions.map(({ foodCompassRef: _foodCompassRef, ...action }) => action),
+        // EN V4, LA RÉFÉRENCE RESTE SUR L'ACTION ([[D-243]]). Le détour
+        // historique — démonter la référence avant le moteur, la réinjecter
+        // après — n'existe que pour le contrat V2, dont le constructeur exige
+        // une cible V1. En V4 le moteur la porte lui-même, ce qui évite de
+        // recréer le maillon faible que [[D-239]] a retiré : un invariant tenu
+        // deux fois finit par diverger dans l'une de ses copies.
+        actions: versionDemandee === VERSION_PROTOCOL_DRAFT_V4
+          ? verifiedActions
+          : verifiedActions.map(({ foodCompassRef: _foodCompassRef, ...action }) => action),
         therapeuticLoad: submission.therapeuticLoad as TherapeuticLoad,
         limitations: submission.limitations ?? [],
         review: { reviewedAt: now, reviewerRole: 'practitioner', confirmation: 'content_reviewed' },
@@ -468,7 +476,10 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         // payloads déjà persistés gardent exactement leur empreinte.
         version: versionDemandee,
       });
-      draft = hasC5Reference
+      // LE CHEMIN V2 N'EST EMPRUNTÉ QUE S'IL EST ENCORE LE CHEMIN. Son
+      // constructeur refuse toute cible qui n'est pas V1 : l'appeler sur un
+      // payload V4 lèverait, et c'est exactement l'exclusion que ce lot défait.
+      draft = hasC5Reference && versionDemandee !== VERSION_PROTOCOL_DRAFT_V4
         ? buildFoodCompassProtocolV2FromSource({
             sourceProtocolDraft: activeDraft as NonNullable<typeof activeDraft>,
             targetProtocolDraft: baseDraft,

@@ -162,6 +162,46 @@ function normalizePlateRef(
   return { recommendedPlateRef: assertRefAssietteDIndication(action.recommendedPlateRef) };
 }
 
+/**
+ * LA RÉFÉRENCE C5 À L'ÉCRITURE — et elle a désormais la MÊME FORME que celle de
+ * l'assiette juste au-dessus, constat de revue.
+ *
+ * MA PREMIÈRE RÉDACTION OUVRAIT V4 SANS CONTRÔLER LE TYPE D'ACTION, et c'est
+ * exactement l'asymétrie que ce lot existe pour fermer, rejouée d'un cran plus
+ * loin. `assertProtocolDraftC5Structure` refuse une référence C5 portée par une
+ * action non alimentaire — à la RELECTURE. L'écriture, elle, l'acceptait : on
+ * pouvait donc persister une version que plus personne ne savait relire. Un
+ * refus à l'écriture est un message au praticien ; un refus à la relecture est
+ * un protocole mort.
+ *
+ * Les deux autres chemins portaient déjà ce terme (`refValidation.ts` en
+ * lecture, `protocol.ts` pour le constructeur V2) : c'était le seul des trois à
+ * ne pas l'avoir.
+ */
+function normalizeFoodCompassRef(
+  action: ProtocolAction,
+  version: ProtocolDraft['version'],
+): Pick<ProtocolAction, 'foodCompassRef'> {
+  if (action.foodCompassRef === undefined) return {};
+  // V4 SEULEMENT, ET LA CONDITION NE S'ÉLARGIT PAS À V2. Un payload V2 ne porte
+  // jamais ses références SUR l'action quand il passe ici :
+  // `buildFoodCompassProtocolV2FromSource` construit un brouillon sans elles,
+  // puis les réinjecte — et c'est lui qui contrôle alors le type d'action
+  // (`protocol.ts`). Admettre V2 ici n'ouvrirait donc aucun chemin utile, et
+  // élargirait une garde que ce lot n'a pas mandat de toucher.
+  if (version !== VERSION_PROTOCOL_DRAFT_V4) {
+    throw new TypeError('Une référence C5 portée par une action exige un payload protocole V4 explicite.');
+  }
+  if (action.type !== 'food') {
+    throw new TypeError('Une référence C5 exige une action alimentaire.');
+  }
+  // SANS CE RETOUR, LA RÉFÉRENCE DISPARAÎTRAIT EN SILENCE : `normalizeActions`
+  // RECONSTRUIT chaque action depuis une liste blanche, et un champ qu'elle
+  // ignore n'est ni refusé ni persisté. C'est le piège que [[D-240]] a nommé, et
+  // il vaut ici mot pour mot.
+  return { foodCompassRef: action.foodCompassRef };
+}
+
 function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['version']): ProtocolAction[] {
   if (actions.length > MAX_ACTIONS_PROTOCOLE_21J) {
     throw new TypeError('Un protocole 21 jours ne peut contenir que trois actions maximum.');
@@ -172,9 +212,27 @@ function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['ver
     if (ids.has(actionId)) throw new TypeError(`Action dupliquée : ${actionId}.`);
     ids.add(actionId);
     if (!(ACTION_TYPES as readonly string[]).includes(action.type)) throw new TypeError('Type d’action inconnu.');
-    if (action.foodCompassRef !== undefined) {
-      throw new TypeError('Une référence C5 exige un payload protocole V2 explicite.');
-    }
+    // LA BOUSSOLE ET L'ASSIETTE CESSENT DE S'EXCLURE ([[D-243]]).
+    //
+    // CE REFUS ÉTAIT INCONDITIONNEL — la seule des quatre gardes voisines à
+    // ignorer le paramètre `version` pourtant en portée. Le chemin V2 ne s'y
+    // heurtait pas : `buildFoodCompassProtocolV2FromSource` construit d'abord
+    // un brouillon SANS référence, puis les réinjecte. Conséquence : un
+    // protocole V4 — donc tout protocole portant une assiette prescrite depuis
+    // [[D-240]], ou une intention suspendue depuis [[D-056]] — ne pouvait
+    // porter AUCUNE Boussole d'aliment. [[D-213]] §12 veut pourtant que « la
+    // Boussole reste atteignable depuis le protocole » : elle cessait de
+    // l'être dès qu'on y prescrivait une assiette.
+    //
+    // V4 SEULEMENT, ET EXPLICITEMENT. V1 et V3 gardent leur refus mot pour mot.
+    // La relecture, elle, acceptait déjà un V4 porteur de référence — elle ne
+    // nomme que V1 et V2 (`assertProtocolDraftC5Structure`) : ce lot aligne
+    // l'écriture sur ce que la lecture tolérait, il n'élargit pas la lecture.
+    //
+    // CE QUI RESTE VRAI DE V2. Un payload V2 EXIGE au moins une référence, et
+    // V4 n'en exige aucune : l'exclusivité était unilatérale, et seule la
+    // moitié qui bloquait tombe. Aucun chemin existant ne change — un protocole
+    // qui ne porte que des aliments reste servi en V2.
     if (action.supplementCatalogRef !== undefined
       && version !== VERSION_PROTOCOL_DRAFT_V3
       && version !== VERSION_PROTOCOL_DRAFT_V4) {
@@ -193,6 +251,7 @@ function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['ver
       limitations: uniqueSorted(action.limitations),
       ...normalizeInterventionStatus(action, version),
       ...normalizePlateRef(action, version),
+      ...normalizeFoodCompassRef(action, version),
     };
   });
 }

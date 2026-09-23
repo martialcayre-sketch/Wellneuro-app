@@ -7702,7 +7702,7 @@ aussi `Path=/portail`.
 `localStorage` après déconnexion (arbitrage non rendu, `D-241` §6) ; rien
 n'alerte le praticien qu'un patient rebondit à l'entrée.
 
-## 2026-09-22 — « Se déconnecter » purge les brouillons locaux (D-243)
+## 2026-09-22 — « Se déconnecter » purge les brouillons locaux (D-244)
 
 **Départ.** « Termine ce qui reste ouvert » — les trois limites de `D-241` §6.
 
@@ -7730,10 +7730,10 @@ qu'une promesse d'en-tête.
 une comparaison de récence, pas une levée de condition) ; les refus Google sur
 adresse inconnue restent indécidables par construction.
 
-## 2026-09-22 — Reprise de D-243 après revue : la classe, pas l'instance
+## 2026-09-22 — Reprise de D-244 après revue : la classe, pas l'instance
 
 **Verdict.** La revue adversariale a rendu **NO-GO** sur la première version de
-`D-243`, quatre bloquants, tous fondés — vérifiés un à un contre le dépôt avant
+`D-244`, quatre bloquants, tous fondés — vérifiés un à un contre le dépôt avant
 correction.
 
 **Ce qui était raté.** (1) Le banc « le confort survit » gardait
@@ -7756,3 +7756,27 @@ trou en silence — ce qui venait précisément d'arriver.
 **Ouvert.** Le rebond d'un patient déjà connecté (le correctif exige une
 comparaison de récence, plus deux bornes d'encart) ; la purge partielle
 silencieuse ; le mode privé non gardé.
+## 2026-09-22 — LOT-04 : la Boussole et l'assiette cessent de s'exclure (D-243)
+
+Un protocole V4 peut désormais porter les deux. Depuis D-240, toute assiette
+prescrite fait passer le protocole en V4 ; la vue patient de la Boussole
+n'acceptait que V2 — le praticien éteignait donc l'explication en prescrivant,
+et **en silence**, le refus étant avalé en amont.
+
+Le verrou était plus étroit que son nom : UN point d'écriture, la seule des
+quatre gardes voisines à ignorer la version qu'elle avait en portée. La lecture
+tolérait déjà un V4 porteur de référence. Le lot aligne l'écriture sur elle, et
+un cas épingle l'asymétrie pour qu'une révision ne resserre pas les deux.
+
+**Écarté** : relier assiette et Boussole à l'écran patient — cela rouvrirait
+`vuePatientSurLeFil`, seule description de ce que le patient reçoit, et une
+seconde description a déjà coûté des mois de champ mort (D-200). Rendu possible,
+non câblé.
+
+**Numéro** : écrit sous D-242, devenu D-243 — une session voisine a pris D-241
+et LOT-03 a pris D-242 au merge.
+
+**Ouvert** : le refus de version reste avalé par `catch { return null; }` ;
+mériterait son propre lot.
+
+**Prochaine action** : T2, PR, CI, revue aux trois emplacements.
