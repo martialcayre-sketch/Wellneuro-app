@@ -70,6 +70,19 @@ BEGIN
       RAISE EXCEPTION 'D-068/D-245: % analyte(s) saisie_praticien au lieu des 49 du catalogue', nb;
     END IF;
 
+    -- Les deux analytes de D-245 §5, LIGNE PAR LIGNE : ils n'entrent dans aucun
+    -- panel, donc aucun autre contrat n'éprouve leur identité — le seul total
+    -- laisserait passer une faute de code, de libellé, d'unité ou de
+    -- prélèvement (revue de la PR #1216).
+    SELECT count(*) INTO nb FROM biology_analytes
+    WHERE (code, libelle, unite, type_prelevement, source_provenance, validation_medicale_requise) IN (
+      ('BIO_INDEX_OMEGA3', 'Index oméga 3', '%', 'sang', 'saisie_praticien', false),
+      ('BIO_RATIO_AA_EPA', 'Rapport AA / EPA', 'ratio', 'autre', 'saisie_praticien', false)
+    );
+    IF nb <> 2 THEN
+      RAISE EXCEPTION 'D-245: % analyte(s) oméga 3 / AA-EPA conformes au lieu de 2 (code, libellé, unité, prélèvement)', nb;
+    END IF;
+
     SELECT count(*) INTO nb FROM biology_panels;
     IF nb <> 15 THEN
       RAISE EXCEPTION 'D-068: % panel(s) au lieu des 15 du catalogue niveau 1', nb;

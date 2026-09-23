@@ -72,9 +72,9 @@ beforeEach(() => {
   });
   prisma.resultatBiologique.findMany.mockResolvedValue([LIGNE_CONSIGNEE]);
   // Par défaut AUCUNE plage publiée ([[D-157]]) : c'est l'état de la
-  // production (2 plages fonctionnelles pour 47 analytes), et un défaut qui
-  // en servirait une ferait passer au vert des bancs qui doivent éprouver le
-  // silence.
+  // production (2 plages fonctionnelles pour une cinquantaine d'analytes), et un
+  // défaut qui en servirait une ferait passer au vert des bancs qui doivent
+  // éprouver le silence.
   prisma.biologyFunctionalRange.findMany.mockResolvedValue([]);
   // Par défaut : aucune cible de correction, aucune ligne supplantée.
   prisma.resultatBiologique.findFirst.mockResolvedValue(null);

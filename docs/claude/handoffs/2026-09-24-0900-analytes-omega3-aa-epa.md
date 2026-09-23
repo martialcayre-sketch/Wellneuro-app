@@ -24,12 +24,17 @@ les claims retenus pour l'assiette oméga 3 et l'anti-inflammatoire (`D-245`).
 
 `web/prisma/migrations/20260924090000_catalogue_biologie_omega3_aa_epa/migration.sql`
 (créé) · `web/prisma/checks/cb_catalogue_niveau_1_donnees.sql` (47 → 49) ·
-`web/src/lib/biology-library/catalogue.ts` (commentaire) ·
-`changelog.d/2026-09-24-analytes-omega3-aa-epa.md` · ce handoff.
+`web/src/lib/biology-library/catalogue.ts` (commentaire) · quatre commentaires
+« 47 analytes » reformulés (`catalogue/route.ts`, `RayonBiologiePanel.tsx`,
+`resultats/route.test.ts`, `courrier.test.ts`) ·
+`changelog.d/2026-09-24-analytes-omega3-aa-epa.md` · `docs/claude/SESSION_LOG.md`
+· ce handoff.
 
 ## 5. Validations exécutées
 
-T3 `npm run test:worktree` avant la PR (résultat au corps de PR).
+T3 `npm run test:worktree` avant la PR (résultat au corps de PR). Après revue :
+assertion ligne par ligne des deux analytes, jouée sur la base locale du
+worktree — verte, puis rouge sur un libellé muté, verte une fois restauré.
 
 ## 6. Problèmes ouverts
 

@@ -14,8 +14,9 @@ import {
 //
 // Fail-closed : derrière WN_CB_ENABLED. Flag éteint = 404, la surface n'est
 // jamais entrouverte. Pas de paramètre de requête : le catalogue niveau 1
-// (47 analytes, 15 panels) se sert entier, le tri et la recherche restent à
-// l'écran.
+// (une cinquantaine d'analytes, 15 panels — compte exact et tenu :
+// `lib/biology-library/catalogue.ts`) se sert entier, le tri et la recherche
+// restent à l'écran.
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

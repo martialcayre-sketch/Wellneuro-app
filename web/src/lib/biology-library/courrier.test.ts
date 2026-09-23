@@ -225,7 +225,8 @@ describe('longueur au catalogue complet (revue B1)', () => {
   // refus serveur est propre (409, motif honnête), mais quiconque allonge
   // libellés ou objectifs du catalogue doit savoir que cette borne se
   // rapproche. Dimensions ci-dessous : les maxima réels du catalogue D-068
-  // (libellé de panel ≤ 30 caractères, d'analyte ≤ 35, 47 analytes),
+  // (libellé de panel ≤ 30 caractères, d'analyte ≤ 35, 47 analytes — 49 depuis
+  // D-245 §5, libellés neufs sous la même borne),
   // arrondies vers le haut.
   it('quinze panels proposés aux dimensions du catalogue tiennent sous la borne', () => {
     const lignes = Array.from({ length: 15 }, (_, i) =>
