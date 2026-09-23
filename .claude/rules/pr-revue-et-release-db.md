@@ -217,8 +217,9 @@ approbations est la seule preuve de qui a ouvert la porte.
    commit une minute après (quatre lots perdus, six heures). Depuis, la
    **garde anti-recul** fait finir un tel run en échec **volontaire** : la
    release, elle, a eu lieu — lire « NE PAS RELANCER » avant tout geste.
-   Après chaque release, la dernière ligne de `scalingo --app wellneuro
-   deployments` doit être la tête de `main`. Un recul se rattrape par
+   Après chaque release, la PREMIÈRE ligne de `scalingo --app wellneuro
+   deployments` — la liste va du plus récent au plus ancien — doit être la
+   tête de `main`. Un recul se rattrape par
    `integration-link-manual-deploy main`, jamais en ré-approuvant l'ancien run.
 
 L'approbation (`POST …/pending_deployments`) et le déclenchement

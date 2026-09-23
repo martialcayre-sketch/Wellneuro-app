@@ -323,6 +323,25 @@ test('garde anti-recul : la tête a bougé PENDANT le run — rouge même si ce 
   }
 });
 
+test('garde anti-recul : tête de main illisible — rouge par prudence, et la release est dite faite', () => {
+  const { base, local, tete } = depotJouet({ migrations: false });
+  try {
+    // Plus d'`origin` : `git fetch origin main` échoue, comme une panne réseau.
+    git(local, 'remote', 'remove', 'origin');
+    const bin = poserScalingo(base, `${tete} success`);
+    const r = jouer(scriptDeLEtape('Garde anti-recul'), {
+      cwd: local,
+      bin,
+      env: { GITHUB_SHA: tete, WN_SHA_ATTENDU: tete },
+    });
+    assert.notEqual(r.code, 0, 'sans tête lisible, un recul ne peut pas être exclu');
+    assert.match(r.sortie, /illisible/);
+    assert.match(r.sortie, /NE PAS RELANCER/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
 // ── LA GARDE QUI LIT LE REPORT ──────────────────────────────────────────────
 
 test('la garde juge le SHA ATTENDU quand il est reporté', () => {
