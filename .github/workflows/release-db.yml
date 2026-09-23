@@ -807,8 +807,23 @@ jobs:
           fi
           TETE=$(git rev-parse origin/main)
           if [ "$TETE" = "$GITHUB_SHA" ]; then
-            echo "✓ Le commit du run est la tête de main — rien à protéger."
-            exit 0
+            if ! git fetch --quiet origin main; then
+              echo "✓ Release APPLIQUÉE — NE PAS RELANCER : la base est à jour." >&2
+              echo "❌ Relecture de la tête impossible juste avant la conclusion : le run" >&2
+              echo "   conclut en échec par prudence pour éviter un vert obsolète." >&2
+              exit 1
+            fi
+            TETE_FINALE=$(git rev-parse origin/main)
+            if [ "$TETE_FINALE" = "$GITHUB_SHA" ]; then
+              echo "✓ Le commit du run est resté la tête de main jusqu’à la conclusion."
+              exit 0
+            fi
+            echo "✓ Release APPLIQUÉE et constatée (image : ${WN_SHA_ATTENDU:-$GITHUB_SHA})."
+            echo "  NE PAS RELANCER : la base est à jour."
+            echo "❌ Échec VOLONTAIRE : la tête a bougé pendant la conclusion ($TETE_FINALE)." >&2
+            echo "   Conclu au vert, ce run lèverait le dernier check de $GITHUB_SHA" >&2
+            echo "   et pourrait déclencher son auto-déploiement par-dessus la tête." >&2
+            exit 1
           fi
           echo "✓ Release APPLIQUÉE et constatée (image : ${WN_SHA_ATTENDU:-$GITHUB_SHA})."
           echo "  NE PAS RELANCER : la base est à jour."
