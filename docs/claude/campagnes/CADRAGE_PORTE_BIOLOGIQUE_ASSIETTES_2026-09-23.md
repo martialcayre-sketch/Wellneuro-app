@@ -131,8 +131,8 @@ Ce que le module du LOT-02 portera — et qu'il signera, claim par claim :
 |---|---|---|
 | Sérotoninergique | CRP-us, KYN/TRP | `WN-CL-0290-007` |
 | Anti-inflammatoire | CRP-us, KYN/TRP, AA/EPA | `WN-CL-0293-013` |
-| Oméga 3 | index oméga 3, AA/EPA, CRP-us | `WN-CL-0294-004`, `WN-CL-0294-005` |
-| Dopaminergique | CRP-us, HOMA | `WN-CL-0289-005` |
+| Oméga 3 | statut AG érythrocytaires *(ajouté à la signature, D-246)*, index oméga 3, AA/EPA, CRP-us | `WN-CL-0294-004`, `WN-CL-0294-005` |
+| Dopaminergique | HVA urinaire *(ajouté à la re-signature, D-246 §3)*, HOMA, CRP-us | `WN-CL-0289-005` |
 | Méthylation | homocystéine | `WN-CL-0043-013`, `WN-CL-0043-014`, `WN-CL-0043-015` |
 
 - **Écartés** : `WN-CL-0340-007` (double borne 1/3, prescriptif) et

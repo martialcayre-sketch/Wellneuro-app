@@ -274,7 +274,19 @@ BEGIN
     ('WN-CL-0292-003', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0293-009', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0293-011', 'v1.0', 'indications_assiettes', false),
-    ('WN-CL-0294-002', 'v1.0', 'indications_assiettes', false)
+    ('WN-CL-0294-002', 'v1.0', 'indications_assiettes', false),
+    -- PORTES BIOLOGIQUES DES ASSIETTES ([[D-245]], premier étage documentaire) —
+    -- cinq lignes, huit claims, `exige_prescriptif` à `false` pour le motif écrit
+    -- dans `TABLE_EXIGE_PRESCRIPTIF`. Épinglés dès le fichier POSÉ, signature ou
+    -- non : ils sont dans le périmètre haché.
+    ('WN-CL-0043-013', 'v1.0', 'portes_biologiques', false),
+    ('WN-CL-0043-014', 'v1.0', 'portes_biologiques', false),
+    ('WN-CL-0043-015', 'v1.0', 'portes_biologiques', false),
+    ('WN-CL-0289-005', 'v1.0', 'portes_biologiques', false),
+    ('WN-CL-0290-007', 'v1.0', 'portes_biologiques', false),
+    ('WN-CL-0293-013', 'v1.0', 'portes_biologiques', false),
+    ('WN-CL-0294-004', 'v1.0', 'portes_biologiques', false),
+    ('WN-CL-0294-005', 'v1.0', 'portes_biologiques', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
   -- La jointure porte sur LA PAIRE. Joindre sur `claim_id` seul laisserait une
   -- table signée s'appuyer sur une version du claim qui n'est pas celle qu'elle
