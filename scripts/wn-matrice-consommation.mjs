@@ -112,6 +112,17 @@ export const SOURCES_DE_SAVOIR = [
     decisionProduite: 'Assiettes indiquées pour un dossier, servies en lecture au cockpit praticien — et ce que le dossier n’a pas permis d’évaluer.',
   },
   {
+    id: 'portes-biologiques-assiettes',
+    libelle: 'Portes biologiques des assiettes (5 lignes signées, 8 claims)',
+    module: 'web/src/lib/clinical/portesBiologiquesAssiettesV1.ts',
+    symboles: ['PORTES_BIOLOGIQUES_ASSIETTES_V1', 'PORTES_BIOLOGIQUES_ASSIETTES_METADATA'],
+    // ENTRÉE LE JOUR OÙ ELLE ATTEINT UN ÉCRAN ([[D-247]]), comme sa voisine. La
+    // garde est `portesBiologiquesService.ts` : le ET des drapeaux de la carte et
+    // des résultats, et de la signature. Une garde hors convention se déclare.
+    modulesGardes: ['web/src/lib/clinical/portesBiologiquesService.ts'],
+    decisionProduite: 'Claims cités entiers et dernier résultat du dossier par marqueur, côte à côte et sans comparaison, sous la carte des assiettes indiquées.',
+  },
+  {
     id: 'contradictions-nnpp2',
     libelle: 'Table de contradictions NNPP2 (règles signées)',
     module: 'web/src/lib/clinical/contradictionsV1.ts',

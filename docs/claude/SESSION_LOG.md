@@ -7841,3 +7841,18 @@ Question reposée, HVA ajouté à la dopaminergique, table re-signée.
 **Leçon.** Affirmer une absence au catalogue exige la liste complète des codes,
 pas une recherche par mot-clé — la même faute de méthode que la méthylation du
 2026-09-19.
+
+## 2026-09-24 — LOT-03 du chantier 6 : la biologie des assiettes à l'écran (D-247)
+
+**Décision.** Section sous la carte : claims cités entiers, dernier résultat
+par marqueur (prélèvement le plus récent après le fil de correction, valeur en
+texte exact). Aucun mot de verdict écrit par la machine — sentinelle hors
+citations, éprouvée par mutation.
+
+**Trouvé en chemin.** Une réponse active sans `portes` faisait tomber la carte
+et le cockpit ; elle se dit désormais illisible.
+
+**Écarté.** Un E2E : le corpus est vide en CI.
+
+**Prochaine action.** Merge seul, `release-db`, puis lecture sur un dossier
+réel porteur d'un résultat.

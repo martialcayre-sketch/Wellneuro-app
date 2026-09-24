@@ -4,6 +4,48 @@
 
 ## Décisions actives
 
+### D-247 — Les portes biologiques atteignent la carte : les sources citées entières, le dernier résultat à côté, et aucun mot de la machine entre les deux
+
+- Date : 2026-09-24
+- Statut : accepté — exécute [[D-245]] (LOT-03 du chantier 6) sur la table
+  signée par [[D-246]].
+- Domaine : clinique (assiettes), biologie, cockpit praticien. **Aucune
+  migration, aucune règle, aucune borne, aucun drapeau neuf.**
+
+**1. CE QUI PARAÎT.** Sous la carte « Assiettes indiquées », une section
+« Biologie : ce que disent les sources, ce que mesure le dossier ». Pour chaque
+assiette de la table signée : ses claims **cités entiers** depuis le corpus, et
+pour chaque marqueur le **dernier résultat qui fait foi** — valeur, unité, date
+de prélèvement, provenance — ou « aucun résultat au dossier ».
+
+**2. CE QUI NE PARAÎT JAMAIS.** Aucune comparaison, aucune couleur de statut,
+aucun tri par la valeur, et aucune assiette n'en sort « indiquée » ([[D-157]]).
+La frontière tient aux MOTS : une sentinelle refuse tout vocabulaire de verdict
+(« élevé », « bas », « normal », « hors plage », « déficit », « dépasse »,
+« indiquée »…) dans le texte que la machine écrit — **hors citations**, puisque
+les sources, elles, disent « élevée » et « déficit », et doivent le dire.
+
+**3. LE DERNIER RÉSULTAT : DEUX ÉLECTIONS.** Le fil de correction d'abord
+(`correctionsParLigne`, [[D-124]]) — une ligne corrigée ne fait plus foi, fourche
+comprise —, puis le prélèvement le plus récent. **Pas la saisie la plus
+récente** : un vieux compte rendu recopié hier n'est pas la mesure du jour. La
+valeur voyage **en texte**, telle que la base la porte, sans arrondi.
+
+**4. LE VERROU À TROIS TERMES.** `WN_ASSIETTES_INDIQUEES` (la carte),
+`isCbResultsEnabled` (les résultats, qui exige aussi le rayon — [[D-081]]), et la
+signature de la table. Chacun ferme sans journaliser d'accès au dossier. Un claim
+invalide ou un texte introuvable au corpus retire SA ligne, et le compte en est
+dit : jamais une citation vide, jamais une source sans son texte.
+
+**5. UNE RÉPONSE ILLISIBLE SE DIT.** Une réponse active sans liste de portes
+est affichée comme illisible au lieu de lever au rendu — la première version
+faisait tomber la carte entière, et le cockpit avec (constaté par le banc de
+`ClinicalRuntimeSection`).
+
+**Pas d'E2E, et c'est dit.** Le corpus de claims est vide en CI : aucune porte
+ne pourrait sortir, et un E2E n'éprouverait que l'absence. La section est tenue
+par ses bancs de service, de route et de composant.
+
 ### D-246 — Les portes biologiques des assiettes sont SIGNÉES : cinq assiettes, huit claims, huit marqueurs distincts, aucun nombre
 
 - Date : 2026-09-24
