@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { AssiettesIndiqueesApiResponse } from '@/app/api/praticien/assiettes-indiquees/route';
 import type { LacuneDeclencheur } from '@/lib/clinical/orientationEngine';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
+import { PortesBiologiquesSection } from './PortesBiologiquesSection';
 
 // LES ASSIETTES INDIQUÉES — carte de LECTURE qui ARME UN GESTE, et n'en exécute
 // aucun ([[D-237]], puis [[D-240]]).
@@ -321,6 +322,11 @@ export function AssiettesIndiqueesPanel({
             <p className="mt-3 text-xs text-muted-foreground">
               Périmètre signé : {lecture.shaPerimetre.slice(0, 12)}…
             </p>
+
+            {/* LA BIOLOGIE, SOUS LES INDICATIONS ET JAMAIS MÊLÉE À ELLES
+                ([[D-245]]). Une section à part, avec sa propre lecture et son
+                propre verrou : une assiette n'y devient jamais « indiquée ». */}
+            <PortesBiologiquesSection idPatient={idPatient} />
           </>
         )}
       </div>

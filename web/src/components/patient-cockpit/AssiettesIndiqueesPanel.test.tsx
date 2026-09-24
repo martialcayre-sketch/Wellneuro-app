@@ -7,6 +7,18 @@
 // été passé (`DC-24`).
 import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// LA SECTION BIOLOGIQUE EST UNE DOUBLURE ICI ([[D-247]]). Elle fait sa propre
+// requête : réelle, elle consommerait les réponses que ces cas enchaînent
+// (`mockImplementationOnce`) et décalerait chaque séquence — le banc éprouverait
+// alors la file de mocks, pas la carte. Elle a ses propres bancs ; ici, on ne
+// garde que son MONTAGE, et pour quel dossier.
+vi.mock('./PortesBiologiquesSection', () => ({
+  PortesBiologiquesSection: ({ idPatient }: { idPatient: string }) => (
+    <div data-testid="portes-biologiques" data-patient={idPatient} />
+  ),
+}));
+
 import { AssiettesIndiqueesPanel, libelleLacune } from './AssiettesIndiqueesPanel';
 
 const SHA = 'a'.repeat(64);
@@ -45,6 +57,23 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+describe('AssiettesIndiqueesPanel — la section biologique', () => {
+  it('carte active : la section est montée, pour CE dossier', async () => {
+    const { findByTestId } = render(<AssiettesIndiqueesPanel idPatient="PAT_A" />);
+    expect((await findByTestId('portes-biologiques')).getAttribute('data-patient')).toBe('PAT_A');
+  });
+
+  it('carte fermée : pas de section', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(reponse({ ok: true, actif: false, message: 'Indications non activées.' })),
+    );
+    const { container } = render(<AssiettesIndiqueesPanel idPatient="PAT_A" />);
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(container.querySelector('[data-testid="portes-biologiques"]')).toBeNull();
+  });
 });
 
 describe('AssiettesIndiqueesPanel', () => {
