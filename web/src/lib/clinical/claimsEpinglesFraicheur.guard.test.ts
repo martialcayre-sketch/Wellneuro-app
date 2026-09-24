@@ -101,6 +101,11 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   // avant la première signature, et lui donner une entrée maintenant rougirait
   // à l'inverse.
   'indicationsAssiettesV1.ts': 'indications_assiettes',
+  // Portes biologiques des assiettes ([[D-245]]). Entrée le jour où le fichier est
+  // POSÉ, et avec ses huit paires dès ce jour : contrairement aux indications,
+  // son `claimsSource` est rempli AVANT la signature — la sélection du
+  // responsable est faite, seule l'attestation reste à poser.
+  'portesBiologiquesAssiettesV1.ts': 'portes_biologiques',
 };
 
 // L'EXIGENCE EST DÉCLARÉE PAR TABLE, JAMAIS DÉDUITE PAR DÉFAUT — [[D-046]].
@@ -206,6 +211,15 @@ const TABLE_EXIGE_PRESCRIPTIF: Record<string, boolean> = {
   // qu'une porte lue indique une assiette. Exiger d'une source qu'elle dise plus
   // que ce qu'elle dit est une autre façon d'inventer.
   indications_assiettes: false,
+  // UNE PORTE BIOLOGIQUE NE PRESCRIT PAS — elle CITE ([[D-245]]). Le premier étage
+  // pose côte à côte le claim entier et le dernier résultat du dossier ; il ne
+  // rend aucune assiette « indiquée ». Exiger le prescriptif serait doublement
+  // faux : sept des huit claims sont descriptifs en production (relu le
+  // 2026-09-24), et ce qu'ils décrivent — « une homocystéine supérieure à 8 à
+  // 10 μmol/l correspond à… » — est exactement ce que le praticien doit lire,
+  // pas une conduite. Rejeter ces claims amputerait la discordance que la table
+  // existe pour montrer (`DC-30`).
+  portes_biologiques: false,
 };
 
 interface TableSignee {

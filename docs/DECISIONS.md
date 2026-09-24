@@ -4,6 +4,48 @@
 
 ## Décisions actives
 
+### D-246 — Les portes biologiques des assiettes sont SIGNÉES : cinq assiettes, huit claims, sept marqueurs distincts, aucun nombre
+
+- Date : 2026-09-24
+- Statut : accepté — attestation du responsable rendue en séance le
+  2026-09-24 à 06:16:52 UTC, après lecture des huit claims ENTIERS en face de
+  leurs marqueurs, et après un ajout de sa main.
+- Domaine : clinique (assiettes), biologie. **Table signée neuve**, aucune
+  migration, aucune borne, **aucun écran** : rien n'atteint le praticien avant
+  le LOT-03.
+- Exécute [[D-245]] (LOT-02 du chantier 6) ; ne touche pas
+  `indicationsAssiettesV1.ts`, dont la signature reste intacte.
+
+**1. CE QUI EST SIGNÉ.** `lib/clinical/portesBiologiquesAssiettesV1.ts` : cinq
+lignes, une par assiette — sérotoninergique (`WN-CL-0290-007`),
+anti-inflammatoire (`WN-CL-0293-013`), oméga 3 (`WN-CL-0294-004`, `-005`),
+dopaminergique (`WN-CL-0289-005`), méthylation (`WN-CL-0043-013`, `-014`,
+`-015`). Chaque ligne porte des codes d'analytes et des claims, **sans aucun
+nombre** : les bornes restent dans le texte des claims, que l'écran citera
+entier. Empreinte figée `3c2f6054…a751`.
+
+**2. L'AJOUT DU RESPONSABLE.** À la relecture, le statut des acides gras
+érythrocytaires (`BIO_AG_ERYTHROCYTAIRES`) a été ajouté à l'assiette oméga 3 :
+`WN-CL-0294-004` le nomme en premier. La sélection du cadrage (§6) ne le
+portait pas.
+
+**3. CE QUI NE S'AFFICHERA PAS, ET POURQUOI.** Des marqueurs nommés par les
+claims n'ont aucun code au catalogue : 5-HIA urinaire (0290-007), HVA et MHPG
+(0289-005), adipokines (0293-013). La phrase du claim les cite quand même ; le
+dossier ne peut en porter aucun résultat.
+
+**4. `exige_prescriptif = false`.** Sept des huit claims sont descriptifs en
+production (relu le 2026-09-24). Une porte biologique CITE, elle ne prescrit
+pas : exiger le prescriptif rejetterait exactement ce que le praticien doit
+lire.
+
+**5. ENRÔLEMENTS FAITS DANS LE MÊME GESTE.** Contrat de fraîcheur des claims
+épinglés et son fichier négatif (huit paires), `TABLE_EXIGE_PRESCRIPTIF`,
+banc du sha littéral, registre des verrous de `FEATURE_FLAGS.md`. Le fichier
+étant sous `lib/clinical/`, son merge déclenche `release-db` : le préflight de
+fraîcheur tournera sur ces huit paires, vérifiées au conteneur le 2026-09-24
+(`VALIDE`, actives, non remplacées, une source chacune).
+
 ### D-245 — La porte biologique d'une assiette est d'abord DOCUMENTAIRE : les sources et le dossier côte à côte, sans comparaison
 
 - Date : 2026-09-23

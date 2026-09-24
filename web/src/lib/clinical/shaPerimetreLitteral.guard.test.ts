@@ -46,6 +46,9 @@ const TABLES = [
   // `shaPerimetre: shaPerimetreIndicationsAssiettes(...)` — une fonction, non
   // une constante recopiable : c'est la forme que le cas 2 refuse.
   { fichier: 'indicationsAssiettesV1.ts', constante: 'shaPerimetreIndicationsAssiettes' },
+  // Enrôlé le jour de sa première signature ([[D-246]], 2026-09-24), dans le même
+  // geste que la signature — ni avant (le sha valait `null`), ni après.
+  { fichier: 'portesBiologiquesAssiettesV1.ts', constante: 'shaPerimetrePortesBiologiques' },
 ] as const;
 
 describe('shaPerimetre — littéral figé dans les tables signées, jamais la constante', () => {

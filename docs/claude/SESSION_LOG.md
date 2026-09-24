@@ -7815,3 +7815,19 @@ borne pas.
 
 **Prochaine action.** Merge seul, `release-db` approuvée, constat au conteneur ;
 puis LOT-02, le module signé.
+
+## 2026-09-24 — LOT-02 du chantier 6 : les portes biologiques sont signées (D-246)
+
+**Décision.** Table signée à part, cinq assiettes, huit claims, aucun nombre.
+Attestée après lecture des claims entiers ; le responsable y a ajouté le statut
+des acides gras érythrocytaires (nommé en premier par `WN-CL-0294-004`).
+
+**Vérifié avant signature.** Les huit claims passent le prédicat de fraîcheur
+au conteneur — le merge déclenche `release-db`, dont c'est le préflight.
+
+**Écarté.** Toucher la table des indications (sept assiettes servies).
+
+**Prochaine action.** Merge seul, `release-db`, puis LOT-03 (l'écran).
+
+**Ouvert.** Marqueurs cités sans code au catalogue (5-HIA, HVA/MHPG,
+adipokines).
