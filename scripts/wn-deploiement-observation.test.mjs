@@ -133,13 +133,30 @@ test('au-delà du seuil, la tête non déployée est un RETARD — averti, jamai
   assert.equal(v.etat, 'retard');
 });
 
-test('un déploiement hors de la ligne main n’est ni un recul ni la version jugée', () => {
+// Revue #1219 : filtrer la ligne main AVANT d'élire la version en service
+// faisait juger `main` pendant qu'une autre branche tournait — vert à tort.
+test('un déploiement hors de la ligne main EN SERVICE rend la production illisible', () => {
   const t = tableau(
     ligne('branche', '2026/09/23 19:00:00', '5m0s', 'a'.repeat(40)),
     ligne('main', '2026/09/23 18:00:00', '5m0s', S_D963),
   );
-  const v = diagnostiquer(faits(t));
-  assert.equal(v.etat, 'a-jour');
+  assert.equal(diagnostiquer(faits(t)).code, SORTIE_ILLISIBLE);
+});
+
+test('un déploiement hors de la ligne main PASSÉ ne gêne pas le verdict', () => {
+  const t = tableau(
+    ligne('main', '2026/09/23 19:00:00', '5m0s', S_D963),
+    ligne('branche', '2026/09/23 18:00:00', '5m0s', 'a'.repeat(40)),
+  );
+  assert.equal(diagnostiquer(faits(t)).etat, 'a-jour');
+});
+
+test('une ligne success à la ref tronquée est illisible, pas ignorée', () => {
+  assert.throws(() => analyserTableau(tableau(ligne('a', '2026/09/23 19:00:00', '5m0s', 'd963be29'))), /illisible/);
+});
+
+test('une date hors plage est refusée, pas normalisée par Date.UTC', () => {
+  assert.throws(() => analyserTableau(tableau(ligne('a', '2026/02/31 25:00:00', '5m0s', S_D963))), /illisible/);
 });
 
 test('aucun déploiement de la ligne main : illisible, jamais conforme', () => {

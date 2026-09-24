@@ -64,13 +64,19 @@ export function analyserTableau(texte) {
     const cellules = ligne.split('│').map((c) => c.trim());
     if (cellules.length < 8) continue;
     const [, id, date, duree, , ref, statut] = cellules;
-    if (statut !== 'success' || !SHA.test(ref)) continue;
+    if (statut !== 'success') continue;
     const d = /^(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(date);
     const s = dureeEnSecondes(duree);
-    if (!d || s === null) {
+    const debut = d ? Date.UTC(+d[1], +d[2] - 1, +d[3], +d[4], +d[5], +d[6]) : NaN;
+    // `Date.UTC` NORMALISE les composantes hors plage (31 février → 3 mars) :
+    // on relit la date construite pour refuser au lieu de reclasser.
+    const relue = Number.isNaN(debut) ? '' : new Date(debut).toISOString().slice(0, 19);
+    const attendue = d ? `${d[1]}-${d[2]}-${d[3]}T${d[4]}:${d[5]}:${d[6]}` : null;
+    // Une ref qui n'est pas un SHA complet est illisible, pas ignorée : si
+    // c'était la dernière ligne, l'ignorer ferait juger une version antérieure.
+    if (!SHA.test(ref) || !d || relue !== attendue || s === null) {
       throw new Error(`ligne de déploiement réussi illisible : ${ligne.trim()}`);
     }
-    const debut = Date.UTC(+d[1], +d[2] - 1, +d[3], +d[4], +d[5], +d[6]);
     deploiements.push({ id, sha: ref, debut, fin: debut + s * 1000 });
   }
   return deploiements;
@@ -80,18 +86,28 @@ export function analyserTableau(texte) {
  * Le verdict, à partir de faits déjà collectés.
  *
  * `estAncetre(a, b)` : `a` est-il ancêtre de `b` ou égal (`merge-base
- * --is-ancestor`) ? Seuls comptent les déploiements de la ligne `main` : un
- * déploiement manuel d'une autre branche n'est ni un recul ni un retard.
+ * --is-ancestor`) ?
+ *
+ * La version en service est élue parmi TOUS les déploiements réussis, puis
+ * seulement confrontée à `main` : filtrer d'abord ferait juger une ancienne
+ * ligne `main` pendant qu'une autre branche est en service. Un déploiement
+ * hors de la ligne `main` en service rend donc la production illisible.
  */
 export function diagnostiquer({ deploiements, tete, ageTeteMin, seuilRetardMin, estAncetre }) {
-  const ligneMain = deploiements.filter((d) => estAncetre(d.sha, tete));
-  if (ligneMain.length === 0) {
-    return { code: SORTIE_ILLISIBLE, etat: 'illisible', motif: 'aucun déploiement réussi de la ligne main dans la liste' };
+  if (deploiements.length === 0) {
+    return { code: SORTIE_ILLISIBLE, etat: 'illisible', motif: 'aucun déploiement réussi dans la liste' };
   }
   // Tri stable par fin décroissante : à fin égale, l'ordre du tableau (début
   // décroissant) départage.
-  const parFin = [...ligneMain].sort((a, b) => b.fin - a.fin);
+  const parFin = [...deploiements].sort((a, b) => b.fin - a.fin);
   const enService = parFin[0];
+  if (!estAncetre(enService.sha, tete)) {
+    return {
+      code: SORTIE_ILLISIBLE,
+      etat: 'illisible',
+      motif: `le déploiement en service (${enService.sha}) n'appartient pas à la ligne main`,
+    };
+  }
   const depasse = parFin.slice(1).find((d) => d.sha !== enService.sha && estAncetre(enService.sha, d.sha));
   if (depasse) {
     return { code: SORTIE_RECUL, etat: 'recul', enService, depasse };
