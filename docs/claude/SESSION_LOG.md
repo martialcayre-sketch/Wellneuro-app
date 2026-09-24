@@ -7831,3 +7831,13 @@ au conteneur — le merge déclenche `release-db`, dont c'est le préflight.
 
 **Ouvert.** Marqueurs cités sans code au catalogue (5-HIA, HVA/MHPG,
 adipokines).
+
+## 2026-09-24 — D-246 re-signée : le HVA existait au catalogue
+
+**Erreur de l'outil.** La surface de relecture affirmait que le HVA n'avait
+aucun code ; `BIO_HVA_URINAIRE` existe. Relevé par la revue de la PR #1217.
+Question reposée, HVA ajouté à la dopaminergique, table re-signée.
+
+**Leçon.** Affirmer une absence au catalogue exige la liste complète des codes,
+pas une recherche par mot-clé — la même faute de méthode que la méthylation du
+2026-09-19.

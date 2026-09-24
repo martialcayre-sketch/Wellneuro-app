@@ -89,9 +89,13 @@ export const PORTES_BIOLOGIQUES_ASSIETTES_V1: readonly LignePorteBiologique[] = 
     statut: 'publiee',
   },
   {
+    // Dans l'ordre où `WN-CL-0289-005` les nomme : HVA, HOMA, CRP-us. Le HVA
+    // urinaire a été AJOUTÉ à la re-signature du 2026-09-24 : la première
+    // relecture le disait, à tort, absent du catalogue (constat de revue, PR
+    // #1217). Le MHPG, lui, n'y est pas.
     id: 'PB-DOPAMINERGIQUE',
     plateCode: 'ASSIETTE_DOPAMINERGIQUE',
-    analyteCodes: ['BIO_CRP_US', 'BIO_RATIO_HOMA'],
+    analyteCodes: ['BIO_HVA_URINAIRE', 'BIO_RATIO_HOMA', 'BIO_CRP_US'],
     claims: [{ claimId: 'WN-CL-0289-005', versionClaim: 'v1.0' }],
     statut: 'publiee',
   },
@@ -127,8 +131,10 @@ export function shaPerimetrePortesBiologiques(
  * MÉTADONNÉE SIGNÉE — verrou OUVERT depuis [[D-246]]. **Une signature clinique
  * ne se pose jamais par l'outil** : celle-ci a été transcrite sur la déclaration
  * du responsable, rendue en séance après lecture des huit claims ENTIERS, en
- * face de leurs marqueurs — et après un ajout de sa main (le statut des acides
- * gras érythrocytaires, que `WN-CL-0294-004` nomme en premier).
+ * face de leurs marqueurs — et après deux ajouts : le statut des acides gras
+ * érythrocytaires (`WN-CL-0294-004`), de sa main ; puis le HVA urinaire
+ * (`WN-CL-0289-005`), à la RE-SIGNATURE, quand la revue a montré que la
+ * première relecture le disait à tort absent du catalogue.
  *
  * RE-SIGNER REMPLACE. Toute ligne retouchée, tout marqueur ou claim ajouté
  * périme cette attestation : le périmètre se hache en entier.
@@ -137,7 +143,7 @@ export const PORTES_BIOLOGIQUES_ASSIETTES_METADATA: PortesBiologiquesMetadata = 
   validationExterne: true,
   // DÉCLARATION RENDUE EN SÉANCE, APRÈS LECTURE — attestée claim par claim :
   // chaque claim fonde l'affichage de ses marqueurs en face de son assiette.
-  dateValidation: '2026-09-24T06:16:52.000Z',
+  dateValidation: '2026-09-24T06:44:55.000Z',
   claimsSource: [
     { claimId: 'WN-CL-0043-013', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0043-014', versionClaim: 'v1.0' },
@@ -152,7 +158,7 @@ export const PORTES_BIOLOGIQUES_ASSIETTES_METADATA: PortesBiologiquesMetadata = 
   // la comparaison tautologique et ferait entrer toute ligne ajoutée plus tard
   // sous une signature acquise ([[D-063]]). Calculé une fois sur le périmètre
   // relu, puis RECOPIÉ ici.
-  shaPerimetre: '3c2f605491d739ba7062c9185559bf3f66e36254dd17f794544994bdf697a751',
+  shaPerimetre: '56575ab47a40bbaebcca5c2523db7f9c60479bb0c856a4f2820c4c955139149c',
 };
 
 function estIsoCanonique(valeur: string | null): valeur is string {

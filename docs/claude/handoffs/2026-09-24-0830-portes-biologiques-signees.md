@@ -13,8 +13,10 @@ aucun nombre (`D-245`).
 
 ## 3. Décisions prises
 
-- `D-246` : cinq lignes, huit claims, signature du responsable à 06:16:52 UTC,
-  après ajout de `BIO_AG_ERYTHROCYTAIRES` à l'assiette oméga 3.
+- `D-246` : cinq lignes, huit claims, signature du responsable à 06:16:52 UTC
+  après ajout de `BIO_AG_ERYTHROCYTAIRES` à l'assiette oméga 3 ; **re-signée à
+  06:44:55 UTC** après ajout de `BIO_HVA_URINAIRE` à la dopaminergique — la
+  relecture l'avait dit à tort absent du catalogue (revue de la PR #1217).
 - `exige_prescriptif = false` (7 claims sur 8 descriptifs, relu en production).
 - Écartés, pour mémoire : `WN-CL-0340-007`, `WN-CL-0292-005` (cadrage §6).
 
@@ -38,8 +40,8 @@ aucun nombre (`D-245`).
 
 ## 6. Problèmes ouverts
 
-- Marqueurs cités sans code au catalogue : 5-HIA urinaire, HVA/MHPG,
-  adipokines.
+- Marqueurs cités sans code au catalogue, vérifiés contre la liste complète :
+  5-HIA urinaire, MHPG, adipokines.
 - Épargne digestive et psychobiotique : autres marqueurs, non recherchés.
 
 ## 7. Prochaine action exacte

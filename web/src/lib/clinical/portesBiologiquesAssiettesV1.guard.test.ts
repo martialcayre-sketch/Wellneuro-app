@@ -65,6 +65,11 @@ describe('portes biologiques — la table est la sélection du responsable', () 
     expect(PORTES_BIOLOGIQUES_ASSIETTES_V1.every(l => l.statut === 'publiee')).toBe(true);
   });
 
+  it('la dopaminergique porte le HVA urinaire AJOUTÉ à la re-signature, en tête', () => {
+    const dopa = PORTES_BIOLOGIQUES_ASSIETTES_V1.find(l => l.id === 'PB-DOPAMINERGIQUE');
+    expect(dopa?.analyteCodes).toEqual(['BIO_HVA_URINAIRE', 'BIO_RATIO_HOMA', 'BIO_CRP_US']);
+  });
+
   it('l’assiette oméga 3 porte le statut érythrocytaire AJOUTÉ à la signature, en tête', () => {
     const omega = PORTES_BIOLOGIQUES_ASSIETTES_V1.find(l => l.id === 'PB-OMEGA-3');
     expect(omega?.analyteCodes).toEqual(['BIO_AG_ERYTHROCYTAIRES', 'BIO_INDEX_OMEGA3', 'BIO_RATIO_AA_EPA', 'BIO_CRP_US']);
@@ -102,10 +107,19 @@ describe('portes biologiques — la table est la sélection du responsable', () 
   // numérique entrait un jour dans une ligne, ce serait une borne extraite d'un
   // claim — une interprétation. Le type l'empêche aujourd'hui ; ce cas empêche
   // qu'on élargisse le type sans le voir.
-  it('aucune ligne ne porte de valeur numérique', () => {
-    for (const ligne of PORTES_BIOLOGIQUES_ASSIETTES_V1) {
-      for (const valeur of Object.values(ligne)) expect(typeof valeur).not.toBe('number');
-    }
+  // RÉCURSIF, et c'est un constat de revue (PR #1217) : la première version ne
+  // regardait que le premier niveau, si bien qu'une borne glissée dans un objet
+  // imbriqué — `{ claimId, versionClaim, seuil: 2 }` — passait.
+  it('aucune ligne ne porte de valeur numérique, à aucune profondeur', () => {
+    const nombres = (valeur: unknown, chemin: string): string[] => {
+      if (typeof valeur === 'number') return [chemin];
+      if (valeur === null || typeof valeur !== 'object') return [];
+      return Object.entries(valeur).flatMap(([cle, v]) => nombres(v, `${chemin}.${cle}`));
+    };
+    const trouves = PORTES_BIOLOGIQUES_ASSIETTES_V1.flatMap(l => nombres(l, l.id));
+    expect(trouves).toEqual([]);
+    // Le garde mord : une borne imbriquée est trouvée.
+    expect(nombres({ claims: [{ claimId: 'x', seuil: 2 }] }, 'PB-TEST')).toEqual(['PB-TEST.claims.0.seuil']);
   });
 });
 
