@@ -1,0 +1,91 @@
+name: Déploiement production
+
+# D-248 — la production ne doit plus pouvoir RECULER. Scalingo déploie tout
+# commit dont les checks ont conclu, dans l'ordre de fin de build, sans
+# connaître l'ascendance de `main` : deux reculs le 2026-09-23 (run release-db
+# approuvé sur un vieux commit ; deux merges rapprochés). Décision complète :
+# docs/DECISIONS.md, D-248.
+#
+# LOT 1 — OBSERVATION SEULE. Ce workflow lit `scalingo deployments` et
+# l'ascendance de `main`, et rougit si le code en service est un ancêtre strict
+# d'un commit qui a déjà été en service. Il ne déploie RIEN : le pouvoir de
+# déployer (lot 2, puis bascule de l'auto-déploiement au lot 3) viendra par une
+# PR relue, et un invariant (scripts/wn-deploiement-observation.test.mjs)
+# refuse d'ici là toute commande d'écriture Scalingo dans ce fichier.
+#
+# LE JETON. L'environnement `deploy-production` porte `SCALINGO_API_TOKEN`,
+# jeton du compte (arbitrage du responsable, 2026-09-24 : pas de compte machine
+# borné), SANS reviewers — il servira aux déploiements de chaque merge. Ses
+# bornes : l'environnement n'accepte que `main` ; le workflow ne se déclenche
+# ni sur `pull_request` ni sur `push` d'une branche, donc aucun code non mergé
+# n'atteint le jeton.
+#
+# UN RUN PLANIFIÉ S'ATTACHE AU COMMIT DE TÊTE. Scalingo attend TOUS les checks
+# d'un commit avant de l'auto-déployer ; si ce run tombe pendant la CI d'un
+# merge, il en fait partie. D'où deux choix : il ne rougit que sur un recul
+# réel ou une production illisible, jamais sur une tête simplement pas encore
+# déployée ; et il est bref (CLI épinglé, une lecture).
+
+on:
+  schedule:
+    # Toutes les 15 minutes, décalé de l'heure pleine (charge GitHub).
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploiement-production-observation
+  cancel-in-progress: true
+
+jobs:
+  observation:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: deploy-production
+    timeout-minutes: 10
+    env:
+      SCALINGO_APP: wellneuro
+      SCALINGO_REGION: osc-fr1
+    steps:
+      - name: "Garde — SCALINGO_API_TOKEN requis (fail-closed)"
+        env:
+          SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
+        run: |
+          if [ -z "${SCALINGO_API_TOKEN:-}" ]; then
+            echo "❌ SCALINGO_API_TOKEN absent des secrets de l'environnement 'deploy-production'." >&2
+            exit 1
+          fi
+
+      # L'historique entier : le verdict est une question d'ASCENDANCE.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Même couple version/empreinte que release-db.yml.
+      - name: "CLI Scalingo 1.48.0 (épinglé, empreinte vérifiée)"
+        run: |
+          curl -fsSL -o scalingo-cli.tgz \
+            https://github.com/Scalingo/cli/releases/download/1.48.0/scalingo_1.48.0_linux_amd64.tar.gz
+          echo "4575a9a960d724d5a4b1edcaef5486cc081080d87e62291c2e0f2cdf21f5ddd1  scalingo-cli.tgz" | sha256sum -c -
+          tar -xzf scalingo-cli.tgz
+          sudo install scalingo_1.48.0_linux_amd64/scalingo /usr/local/bin/scalingo
+          scalingo --version
+
+      # Le CLI n'authentifie pas par la variable d'environnement (leçon de
+      # release-db, run 32578782755) : login explicite, jeton visible de cette
+      # seule étape.
+      - name: "Authentification du CLI (login par jeton)"
+        env:
+          SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
+        run: |
+          if ! scalingo login --api-token "$SCALINGO_API_TOKEN"; then
+            echo "❌ Authentification Scalingo refusée — jeton invalide, expiré ou révoqué." >&2
+            exit 1
+          fi
+
+      # 0 : tête en service, déploiement en cours, ou retard (averti) ;
+      # 1 : RECUL ; 2 : production illisible — aucun recul ne peut être exclu.
+      - name: "Observation — la production a-t-elle reculé ?"
+        run: node scripts/wn-deploiement-observation.mjs

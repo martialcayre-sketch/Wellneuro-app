@@ -4,6 +4,92 @@
 
 ## Décisions actives
 
+### D-248 — La production cesse de pouvoir reculer : GitHub Actions déploiera la tête de `main`, et un filet observe d'abord
+
+- Date : 2026-09-24
+- Statut : accepté — lot 1 (observation) livré par cette entrée ; lots 2 à 4
+  à venir, un par un, chacun validé par le responsable.
+- Domaine : pipeline de déploiement GitHub → Scalingo. Porte sur [[D-102]] et
+  sur la garde anti-recul de `release-db` (2026-09-23), qu'elle rendra sans
+  objet au lot 4. **Ne modifie pas [[D-087]]** : le code se déploie toujours
+  avant la migration approuvée.
+
+**Le fait.** Scalingo auto-déploie tout commit dont **tous** les checks ont
+conclu, dans l'ordre de **fin de build**, sans connaître l'ascendance de
+`main`. Deux reculs le 2026-09-23 : un run `release-db` approuvé sur un vieux
+commit (`de290fd7`, quatre lots retirés pendant six heures) ; deux merges à
+deux minutes d'intervalle dont l'ancien (`b43a94a6`) a fini de builder après le
+récent (`d963be29`). Seule parade aujourd'hui : la discipline « un merge à la
+fois, constater le déploiement ».
+
+**Le mécanisme racine.** Aucun acteur du pipeline ne détient à la fois le droit
+de déployer et la connaissance de l'ascendance. Tant que Scalingo décide, une
+garde côté GitHub ne peut que teinter des checks — jamais révoquer un vert déjà
+conclu.
+
+**Décision — (a) prévention + (d) filet** (consultation architecte du
+2026-09-24) :
+
+- **(a)** Couper l'auto-déploiement (`integration-link-update --no-auto-deploy`,
+  qui conserve le lien d'intégration) et faire déployer par un job GitHub
+  Actions sérialisé (`concurrency`, sans annulation). Ce job s'arrête au vert s'il
+  n'est plus la tête de `main`, sinon lance `integration-link-manual-deploy
+  main` et attend qu'un déploiement réussi contienne son commit. Une branche ne
+  peut livrer qu'un état ≥ sa tête : le recul devient impossible, la seule
+  fenêtre résiduelle ne peut livrer que plus neuf.
+- **(d)** Un workflow planifié observe la production et rougit sur un recul :
+  filet contre ce que (a) ne voit pas (retour arrière manuel, cause inédite).
+
+**Options écartées.** (b) Un check « obsolète » qui rougirait sur un commit
+dépassé : un check vert ne se révoque pas, et le laisser en attente recrée
+l'interblocage de [[D-102]] sur chaque commit. (c) File de merge / protection
+`strict` : sérialise les merges, pas la fin des builds — l'incident 2 reste
+possible, l'incident 1 n'est pas touché ; `strict` est déjà écarté
+(`docs/claude/REGLES_PR_MERGE.md`). (d) seul : réduit un recul de six heures à
+un quart d'heure, ne l'empêche pas.
+
+**Arbitrages du responsable (2026-09-24).**
+
+1. **Jeton** : le jeton actuel du compte, dans un environnement GitHub
+   `deploy-production` restreint à `main` et **sans reviewers**. Écarté : un
+   compte machine borné à l'app (mise en place jugée non nécessaire) ; une
+   approbation à chaque déploiement (le déploiement redeviendrait manuel).
+   Conséquence assumée : un job non gaté détient une créance sur tout le compte.
+   Bornes : environnement limité à `main`, aucun déclencheur `pull_request` ni
+   `push` de branche, aucune permission d'écriture GitHub — tenues par des
+   invariants.
+2. **Ordre code/schéma** : hors périmètre. Retenir le déploiement d'un commit
+   porteur de migration jusqu'à l'approbation changerait [[D-087]] ; décision
+   distincte, à rouvrir.
+3. **Observation avant nettoyage** : le lot 4 attend l'incident 2 rejoué sans
+   recul, puis cinq déploiements verts dont au moins un avec migration.
+
+**Les lots.** 1 — observation seule (cette entrée). 2 — job de déploiement lancé
+à la main sur une tête déjà déployée, auto-déploiement encore actif (répétition
+à vide, méthode [[D-102]]). 3 — bascule `--no-auto-deploy` (geste du
+responsable), job actif sur push, incident 2 rejoué volontairement. 4 — retrait
+de la garde anti-recul de `release-db` et de la discipline « un merge à la
+fois » pour le code pur ; elle reste autour d'une migration.
+
+**Lot 1 — ce qui est livré.** `.github/workflows/deploiement-production.yml`
+(planifié toutes les 15 min + `workflow_dispatch`) joue
+`scripts/wn-deploiement-observation.mjs` : lecture de `scalingo deployments` et
+de l'ascendance, trois verdicts — conforme / **recul** (rouge) / **illisible**
+(rouge : aucun recul ne peut être exclu). Une tête pas encore déployée n'est
+jamais rouge : « en cours », puis « retard » averti au-delà de 45 min.
+
+**Constaté en construisant.** `scalingo deployments` trie par date de
+**début** ; la version en service est celle qui **finit** en dernier. Pendant
+l'incident 2 les builds se chevauchaient (17:56:56 + 9m0s, 17:58:39 + 8m58s).
+L'observation classe donc par DATE + DURATION. La garde de `release-db` lit la
+première ligne — défaut latent, sans objet après le lot 4, non corrigé ici.
+
+**Non vérifié, et conçu en conséquence.** (1) Un run planifié s'attache au
+commit de tête ; s'il tombe pendant la CI d'un merge, Scalingo l'attend
+probablement comme les autres checks. D'où : run bref, et rouge seulement sur
+recul ou illisibilité — jamais sur un simple retard. (2) `manual-deploy` avec
+l'auto-déploiement coupé : c'est ce que le lot 2 éprouve.
+
 ### D-247 — Les portes biologiques atteignent la carte : les sources citées entières, le dernier résultat à côté, et aucun mot de la machine entre les deux
 
 - Date : 2026-09-24
