@@ -82,7 +82,13 @@ function referencesCitees(): ClaimRef[] {
   return [...uniques.values()];
 }
 
-/** Le texte ENTIER de chaque claim servi — mêmes conditions que la validité. */
+/**
+ * Le texte ENTIER de chaque claim servi — sous le MÊME prédicat que
+ * `claimsValidesAuCorpus`, condition par condition. Les deux lectures sont
+ * séparées : si celle-ci n'exigeait que `active`/`VALIDE`, un claim devenu
+ * identifiant, sorti du compartiment actif ou privé de sa source ENTRE les deux
+ * verrait quand même son texte servi (constat de revue, PR #1218).
+ */
 async function textesDesClaims(references: readonly ClaimRef[]): Promise<Map<string, string>> {
   if (references.length === 0) return new Map();
   const ids = references.map(r => r.claimId);
@@ -96,6 +102,11 @@ async function textesDesClaims(references: readonly ClaimRef[]): Promise<Map<str
      AND demande.version_claim = c.version_claim
     WHERE c.active = true
       AND c.statut = 'VALIDE'
+      AND c.patient_identifiable = false
+      AND c.compartment = 'ACTIF'
+      AND EXISTS (
+        SELECT 1 FROM public.rag_corpus_claim_sources AS s WHERE s.claim_pk = c.id
+      )
   `;
   return new Map(
     lignes.map(l => [cleClaim({ claimId: l.claim_id, versionClaim: l.version_claim }), l.texte_normalise]),

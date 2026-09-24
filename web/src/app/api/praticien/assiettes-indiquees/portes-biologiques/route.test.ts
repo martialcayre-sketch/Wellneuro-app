@@ -172,6 +172,22 @@ describe('GET /api/praticien/assiettes-indiquees/portes-biologiques', () => {
     expect(c.portes.flatMap(p => p.claims).every(x => x.texte.length > 0)).toBe(true);
   });
 
+  // LE TEXTE SE LIT SOUS LE MÊME PRÉDICAT QUE LA VALIDITÉ — constat de revue :
+  // la première version n'exigeait que `active`/`VALIDE`.
+  it('la lecture des textes porte les QUATRE conditions d’éligibilité du corpus', async () => {
+    await GET(requete());
+    const sql = (prisma.$queryRaw.mock.calls[0][0] as TemplateStringsArray).join('?');
+    for (const condition of [
+      "c.statut = 'VALIDE'",
+      'c.active = true',
+      'c.patient_identifiable = false',
+      "c.compartment = 'ACTIF'",
+      'rag_corpus_claim_sources',
+    ]) {
+      expect(sql, condition).toContain(condition);
+    }
+  });
+
   it('la route n’exporte que GET — aucune écriture au dossier', async () => {
     const moduleRoute = await import('./route');
     expect(Object.keys(moduleRoute).filter(k => /^(POST|PUT|PATCH|DELETE)$/.test(k))).toEqual([]);

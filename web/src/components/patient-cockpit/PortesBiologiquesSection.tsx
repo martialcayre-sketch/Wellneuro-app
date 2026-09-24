@@ -83,7 +83,9 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
   if (messageErreur === null && (lecture === null || !lecture.ok || lecture.actif === false)) return null;
 
   return (
-    <div className="mt-5 border-t border-border pt-4" aria-labelledby="portes-biologiques-title">
+    // `<section>` ET NON `<div>` : `aria-labelledby` sur un élément sans rôle ne
+    // nomme rien pour un lecteur d'écran — la région n'existait pas.
+    <section className="mt-5 border-t border-border pt-4" aria-labelledby="portes-biologiques-title">
       <h4 id="portes-biologiques-title" className="text-sm font-semibold text-foreground">
         Biologie : ce que disent les sources, ce que mesure le dossier
       </h4>
@@ -105,8 +107,9 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
           )}
           {lecture.corpusLu && lecture.retireesFauteDeClaim > 0 && (
             <p role="alert" className="mt-3 text-sm text-status-warning">
-              {lecture.retireesFauteDeClaim} assiette(s) ne sont pas affichées : une de leurs sources
-              n’est plus valide au corpus.
+              {lecture.retireesFauteDeClaim === 1
+                ? '1 assiette n’est pas affichée : une de ses sources n’est plus valide au corpus.'
+                : `${lecture.retireesFauteDeClaim} assiettes ne sont pas affichées : une de leurs sources n’est plus valide au corpus.`}
             </p>
           )}
           {lecture.corpusLu && lecture.portes.length === 0 && lecture.retireesFauteDeClaim === 0 && (
@@ -151,6 +154,6 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
           </p>
         </>
       )}
-    </div>
+    </section>
   );
 }

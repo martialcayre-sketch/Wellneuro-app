@@ -133,7 +133,9 @@ describe('PortesBiologiquesSection', () => {
 
   it('une porte retirée faute de source valide est comptée, pas tue', async () => {
     monter({ ...ACTIF, retireesFauteDeClaim: 1 });
-    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/1 assiette\(s\) ne sont pas affichées/));
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toBe('1 assiette n’est pas affichée : une de ses sources n’est plus valide au corpus.'),
+    );
   });
 
   it('une réponse ACTIVE sans `portes` est dite illisible — la section ne lève pas', async () => {
@@ -146,6 +148,11 @@ describe('PortesBiologiquesSection', () => {
   it('une erreur de la route est dite', async () => {
     monter({ ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' });
     await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Patient non accessible pour ce praticien.'));
+  });
+
+  it('la section est une RÉGION nommée pour un lecteur d’écran', async () => {
+    monter(ACTIF);
+    expect(await screen.findByRole('region', { name: /ce que disent les sources, ce que mesure le dossier/i })).toBeTruthy();
   });
 
   it('interroge la route du dossier courant, encodé', async () => {
