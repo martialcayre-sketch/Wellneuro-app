@@ -309,10 +309,11 @@ jobs:
     if: github.ref == 'refs/heads/main'
     # L'environnement protégé porte les required reviewers et le jeton d'API.
     environment: release-db
-    # Les trois boucles d'attente (déploiement 20 min, sentinelle 10 min,
-    # contre-épreuve 5 min) tiennent dans cette borne ; au-delà, l'état est
-    # INCONNU et se vérifie à la main — jamais de relance à l'aveugle.
-    timeout-minutes: 45
+    # Les quatre boucles d'attente (calme avant déclenchement 20 min — D-248 —,
+    # déploiement 20 min, sentinelle 10 min, contre-épreuve 5 min) tiennent
+    # dans cette borne ; au-delà, l'état est INCONNU et se vérifie à la main —
+    # jamais de relance à l'aveugle.
+    timeout-minutes: 70
     env:
       SCALINGO_APP: wellneuro
       SCALINGO_REGION: osc-fr1
@@ -508,8 +509,40 @@ jobs:
           # Par défaut, la release attend le commit approuvé. Réécrit plus bas si
           # la tête a dépassé ce commit sans toucher aux migrations.
           SHA_ATTENDU="$GITHUB_SHA"
-          LISTE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
-            deployments 2>/dev/null || true)
+          # CALME AVANT TOUT DÉCLENCHEMENT (D-248, prérequis du lot 3). Le job
+          # `deploiement` de deploiement-production.yml déclenche lui aussi le
+          # déploiement manuel de la branche, dans un AUTRE groupe de
+          # concurrence. (La commande n'est pas citée ici : un invariant de ce
+          # workflow s'ancre sur sa première occurrence dans l'étape.) Deux déclenchements rapprochés font deux builds en
+          # parallèle, et c'est le dernier à FINIR qui passe en service — le
+          # mécanisme de l'incident 2 du 2026-09-23. Le déployeur attend déjà
+          # qu'aucun build ne soit en vol ; cette étape fait de même, pour que
+          # les deux côtés respectent la même règle.
+          #
+          # « En vol » = tout statut qui n'est ni `success`, ni `*-error`, ni
+          # `aborted` — un statut inconnu compris : l'attente bornée tranche.
+          # Une liste ILLISIBLE (CLI en échec) n'est pas une liste calme : elle
+          # se réessaie, puis refuse. Aucune écriture n'a eu lieu à ce stade.
+          CALME=non
+          for i in $(seq 1 40); do
+            if LISTE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" deployments 2>/dev/null); then
+              EN_VOL=$(printf '%s\n' "$LISTE" | awk -F'│' 'NF >= 8 { id = $2; s = $7; gsub(/^[ \t]+|[ \t]+$/, "", id); gsub(/^[ \t]+|[ \t]+$/, "", s); if (id != "" && id != "ID" && s != "success" && s !~ /-error$/ && s != "aborted") print id " " s }')
+              if [ -z "$EN_VOL" ]; then
+                CALME=oui
+                break
+              fi
+              echo "… build en vol ($i/40) : $(printf '%s' "$EN_VOL" | tr '\n' ' ')— attente 30 s avant de déclencher."
+            else
+              echo "… liste des déploiements illisible ($i/40) — attente 30 s."
+            fi
+            sleep 30
+          done
+          if [ "$CALME" != "oui" ]; then
+            echo "❌ Un build reste en vol, ou la liste des déploiements reste illisible," >&2
+            echo "   après 20 min : déclencher maintenant lancerait un second build en" >&2
+            echo "   parallèle, et le dernier à FINIR passerait en service. Aucune écriture." >&2
+            exit 1
+          fi
           # N'IMPORTE QUEL statut, pas seulement `success` : un build déjà en
           # cours pour ce commit n'a pas à être doublé. S'il échoue, l'étape
           # suivante le dira en expirant.
