@@ -93,7 +93,10 @@ export async function deployer({
   essais = ESSAIS_DEFAUT,
   intervalleMs = INTERVALLE_MS_DEFAUT,
   journal = () => {},
-  lireRunsReleaseDb = () => [],
+  // SANS valeur par défaut : un câblage qui l'oublierait retomberait sur
+  // « aucun run release-db » et déploierait un commit de migration avant son
+  // approbation. Oubliée, elle doit faire planter, pas ouvrir la porte.
+  lireRunsReleaseDb,
 }) {
   if (lireTete() !== sha) {
     return { code: SORTIE_OK, etat: 'depasse', motif: `la tête de main a dépassé ce run (${sha}) — son propre run déploiera` };

@@ -10,12 +10,14 @@ name: Déploiement production
 #   - `observation` (lot 1) : lit `scalingo deployments` et l'ascendance de
 #     `main`, rougit si le code en service est un ancêtre strict d'un commit
 #     déjà mis en service. Planifié, et lançable à la main (`action=observer`).
-#   - `deploiement` (lot 2) : déclenche `integration-link-manual-deploy main`
+#   - `deploiement` (lots 2-3) : déclenche `integration-link-manual-deploy main`
 #     si ce run est encore la tête de `main`, puis attend que la version en
-#     service le contienne (scripts/wn-deploiement-deployer.mjs). AU LOT 2, IL
-#     NE PART QU'À LA MAIN (`action=deployer`) : l'auto-déploiement Scalingo
-#     reste actif, et c'est la répétition à vide qui éprouve le chemin. Le
-#     déclencheur `push` n'arrive qu'avec la bascule du lot 3.
+#     service le contienne (scripts/wn-deploiement-deployer.mjs). DEPUIS LE
+#     LOT 3, l'auto-déploiement Scalingo est COUPÉ et ce job est le déployeur :
+#     il part quand le CI de `main` a conclu VERT (`workflow_run`) — la porte
+#     que Scalingo tenait en attendant tous les checks —, et à la main
+#     (`action=deployer`). Un commit qui porte un run release-db non conclu au
+#     vert est RETENU : release-db le déploie à l'approbation (D-087, D-102).
 #   Les invariants (scripts/wn-deploiement-deployer.test.mjs) tiennent : une
 #   seule écriture Scalingo, dans le seul script du déployeur, sur une BRANCHE.
 #
@@ -24,7 +26,9 @@ name: Déploiement production
 # borné), SANS reviewers — il servira aux déploiements de chaque merge. Ses
 # bornes : l'environnement n'accepte que `main` ; le workflow ne se déclenche
 # ni sur `pull_request` ni sur `push` d'une branche, donc aucun code non mergé
-# n'atteint le jeton.
+# n'atteint le jeton. `workflow_run` s'exécute dans le contexte de la branche
+# par défaut (code de `main`), et le job n'accepte que le CI d'un PUSH sur
+# `main` DE CE DÉPÔT — jamais celui d'une PR, fork compris.
 #
 # UN RUN PLANIFIÉ S'ATTACHE AU COMMIT DE TÊTE. Scalingo attend TOUS les checks
 # d'un commit avant de l'auto-déployer ; si ce run tombe pendant la CI d'un
@@ -33,6 +37,12 @@ name: Déploiement production
 # déployée ; et il est bref (CLI épinglé, une lecture).
 
 on:
+  # Lot 3 : la fin du CI de `main` déclenche le déploiement. Le filtre fin
+  # (succès, push, même dépôt) est dans le `if:` du job.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   schedule:
     # Toutes les 15 minutes, décalé de l'heure pleine (charge GitHub).
     - cron: '7,22,37,52 * * * *'
@@ -123,9 +133,15 @@ jobs:
         run: rm -rf "$HOME/.config/scalingo"
 
   deploiement:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.action == 'deployer'
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository) || (github.event_name == 'workflow_dispatch' && inputs.action == 'deployer'))
     runs-on: ubuntu-latest
     environment: deploy-production
+    # LECTURE SEULE de l'API Actions : les runs release-db du commit, pour
+    # retenir un commit de migration jusqu'à l'approbation. Ce bloc REMPLACE
+    # les permissions par défaut du job : rien d'autre n'est accordé.
+    permissions:
+      contents: read
+      actions: read
     # DEUX bornes de 20 min s'additionnent (revue #1220) : le calme AVANT
     # l'écriture, puis la conclusion APRÈS. Un job tué entre les deux
     # laisserait un build en vol et un état inconnu. 40 + installation + marge.
@@ -186,6 +202,9 @@ jobs:
       - name: "Déploiement — la tête de main, et rien de plus ancien"
         env:
           WN_FORCER: ${{ inputs.forcer }}
+          # Le commit que le CI a vérifié (workflow_run) ; à la main, la tête.
+          WN_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: node scripts/wn-deploiement-deployer.mjs
 
       # La session du CLI contient le jeton du compte : effacée avant les
