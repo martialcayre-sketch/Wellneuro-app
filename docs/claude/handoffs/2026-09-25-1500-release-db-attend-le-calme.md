@@ -23,8 +23,11 @@ comme le fait déjà le déployeur de GitHub Actions.
 ## 4. Fichiers modifiés
 
 `.github/workflows/release-db.yml` · `scripts/release-db-comportement.test.mjs`
-(cinq bancs) · `docs/DEPLOIEMENT_RELEASE_DB.md` · `docs/DECISIONS.md` (D-248) ·
-`changelog.d/2026-09-25-release-db-attend-le-calme.md` · ce handoff.
+(sept bancs ajoutés, et `jouer()` qui lève sur une étape tuée) ·
+`scripts/wn-deploiement-deployer.mjs` (`enVol` exporté pour le banc de
+parité) · `docs/DEPLOIEMENT_RELEASE_DB.md` · `docs/DECISIONS.md` (D-248) ·
+`changelog.d/2026-09-25-release-db-attend-le-calme.md` ·
+`docs/claude/SESSION_LOG.md` · ce handoff.
 
 ## 5. Validations exécutées
 
