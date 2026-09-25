@@ -20,6 +20,7 @@ import {
   deployer,
   gardeFinale,
   classerCi,
+  CHEMINS_RELEASE_DB,
   AUTO_DEPLOIEMENT_ACTIF,
   ESSAIS_DEFAUT,
   INTERVALLE_MS_DEFAUT,
@@ -86,6 +87,7 @@ function monde({ tetes, lectures, declencherLeve = null }) {
       intervalleMs: 1,
       lireRunsReleaseDb: () => [],
       lireCi: () => 'success',
+      toucheReleaseDb: () => false,
     },
   };
 }
@@ -462,6 +464,66 @@ test('lot 3 — un run release-db RÉUSSI, ou aucun run : le déploiement suit s
   }
 });
 
+// Revue #1222 : le run release-db du même push peut ne pas encore être visible
+// dans l'API. Une liste vide ne vaut permission que si le commit ne touche
+// AUCUN chemin qui déclenche release-db.
+test('revue #1222 — commit touchant un chemin de release-db SANS run visible : retenu, aucune écriture', async () => {
+  const m = monde({ tetes: [B], lectures: [tableau(EN_SERVICE_A)] });
+  const v = await deployer({ sha: B, ...m.deps, toucheReleaseDb: () => true });
+  assert.equal(v.etat, 'retenu-release-db');
+  assert.equal(v.avertissement, true);
+  assert.equal(m.appels.declencher, 0);
+});
+
+test('revue #1222 — commit touchant un chemin de release-db avec un run RÉUSSI : déployé', async () => {
+  const m = monde({
+    tetes: [B],
+    lectures: [tableau(EN_SERVICE_A), tableau(ligne('dep-b', '2026/09/25 11:00:00', '5m0s', B), EN_SERVICE_A)],
+  });
+  const v = await deployer({
+    sha: B,
+    ...m.deps,
+    toucheReleaseDb: () => true,
+    lireRunsReleaseDb: () => [{ status: 'completed', conclusion: 'success' }],
+  });
+  assert.equal(v.etat, 'deploye', v.motif);
+});
+
+// Revue #1222 : la retenue n'était lue qu'une fois, AVANT une attente du calme
+// qui peut durer vingt minutes. Elle est RELUE juste avant l'écriture.
+test('revue #1222 — un run release-db apparu PENDANT l’attente du calme retient le commit', async () => {
+  let lectures = 0;
+  const m = monde({
+    tetes: [B],
+    lectures: [
+      tableau(ligne('dep-x', '2026/09/25 10:50:00', '', A2, 'building'), EN_SERVICE_A),
+      tableau(ligne('dep-x', '2026/09/25 10:50:00', '6m0s', A2), EN_SERVICE_A),
+    ],
+  });
+  const v = await deployer({
+    sha: B,
+    ...m.deps,
+    lireRunsReleaseDb: () => {
+      lectures += 1;
+      return lectures === 1 ? [] : [{ status: 'waiting', conclusion: null }];
+    },
+  });
+  assert.equal(v.etat, 'retenu-release-db');
+  assert.equal(m.appels.declencher, 0, 'aucune écriture : la retenue est relue juste avant');
+  assert.equal(lectures, 2);
+});
+
+// La liste des chemins que le déployeur surveille doit être CELLE du filtre
+// `paths` de release-db.yml : un chemin ajouté d'un seul côté rouvrirait le
+// déploiement d'un commit clinique ou de migration avant son approbation.
+test('revue #1222 — parité des chemins de release-db entre release-db.yml et le déployeur', () => {
+  const releaseDb = readFileSync(join(RACINE, '.github/workflows/release-db.yml'), 'utf8');
+  const bloc = releaseDb.slice(releaseDb.indexOf('\n  push:\n'), releaseDb.indexOf('\n  workflow_dispatch:'));
+  const chemins = [...bloc.matchAll(/^\s+- '([^']+)\/\*\*'\s*$/gm)].map((m) => m[1]).sort();
+  assert.ok(chemins.length > 0, 'filtre paths de release-db.yml introuvable');
+  assert.deepEqual([...CHEMINS_RELEASE_DB].sort(), chemins);
+});
+
 test('lot 3 — les runs release-db illisibles : aucune écriture', async () => {
   const m = monde({ tetes: [B], lectures: [tableau(EN_SERVICE_A)] });
   await assert.rejects(() =>
@@ -626,6 +688,14 @@ test('le drapeau AUTO_DEPLOIEMENT_ACTIF et l’absence de déclencheur automatiq
 // moment du run, pas le commit que le CI a vérifié. Le script doit juger
 // WN_SHA (workflow_run.head_sha) d'abord — sinon il déploierait un commit non
 // vérifié en le croyant vérifié.
+// Revue #1222 : sans `ref`, un workflow_run extrait la tête de main AU MOMENT
+// du run — des scripts non vérifiés tourneraient avec le jeton.
+test('revue #1222 — le checkout du déployeur est épinglé sur le commit vérifié', () => {
+  const checkout = etapes('deploiement').etapes.find((e) => /uses: actions\/checkout@/.test(e.bloc));
+  assert.ok(checkout, 'checkout introuvable');
+  assert.match(checkout.bloc, /^\s+ref: \$\{\{ github\.event\.workflow_run\.head_sha \|\| github\.sha \}\}\s*$/m);
+});
+
 test('lot 3 : le déployeur juge le commit VÉRIFIÉ par le CI (WN_SHA), sans repli sur workflow_run', () => {
   const principal = DEPLOYEUR.slice(DEPLOYEUR.indexOf('async function principal('));
   assert.match(principal, /const sha = env\.GITHUB_EVENT_NAME === 'workflow_run' \? env\.WN_SHA : env\.WN_SHA \|\| env\.GITHUB_SHA;/);
@@ -642,13 +712,18 @@ test('lot 3 : le câblage transmet la lecture des runs release-db, et le noyau n
   const principal = DEPLOYEUR.slice(DEPLOYEUR.indexOf('async function principal('));
   assert.match(principal, /^\s+lireRunsReleaseDb: \(commit\) =>$/m);
   assert.match(principal, /^\s+lireCi: \(commit\) =>$/m);
+  assert.match(principal, /^\s+toucheReleaseDb: \(commit\) =>$/m);
+  assert.match(principal, /lancer\('git', \['diff', '--name-only', `\$\{commit\}\^`, commit, '--', \.\.\.CHEMINS_RELEASE_DB\]\)/);
   const m = monde({ tetes: [B], lectures: [tableau(EN_SERVICE_A)] });
   const { lireRunsReleaseDb, ...sansLecture } = m.deps;
   await assert.rejects(() => deployer({ sha: B, ...sansLecture }));
   const m2 = monde({ tetes: [C], lectures: [tableau(EN_SERVICE_A)] });
   const { lireCi, ...sansCi } = m2.deps;
   await assert.rejects(() => deployer({ sha: B, ...sansCi }));
-  assert.equal(m.appels.declencher + m2.appels.declencher, 0);
+  const m3 = monde({ tetes: [B], lectures: [tableau(EN_SERVICE_A)] });
+  const { toucheReleaseDb, ...sansChemins } = m3.deps;
+  await assert.rejects(() => deployer({ sha: B, ...sansChemins }));
+  assert.equal(m.appels.declencher + m2.appels.declencher + m3.appels.declencher, 0);
 });
 
 // Le seul appel à l'API GitHub du déployeur : LIRE les runs release-db du
@@ -694,6 +769,7 @@ test('aucune expression ${{ }} dans le job de déploiement hors des `env:` permi
     /^\s+SCALINGO_API_TOKEN: \$\{\{ secrets\.SCALINGO_API_TOKEN \}\}\s*$/,
     /^\s+WN_SHA: \$\{\{ github\.event\.workflow_run\.head_sha \|\| github\.sha \}\}\s*$/,
     /^\s+GH_TOKEN: \$\{\{ github\.token \}\}\s*$/,
+    /^\s+ref: \$\{\{ github\.event\.workflow_run\.head_sha \|\| github\.sha \}\}\s*$/,
   ];
   for (const l of job('deploiement').split('\n').filter((x) => x.includes('${{'))) {
     assert.ok(PERMISES.some((re) => re.test(l)), `expression non permise : ${l.trim()}`);

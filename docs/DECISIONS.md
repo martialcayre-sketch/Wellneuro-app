@@ -201,6 +201,16 @@ confirmés, quatre réfutés ; tous corrigés, 11 mutations sur 11 attrapées.
 - Sur `workflow_run`, plus de repli sur `GITHUB_SHA` quand `WN_SHA` manque.
 - Le changelog affirmait « jamais servi avant son schéma » : reformulé.
 
+**Revue Copilot de la PR** : deux constats, corrigés. (1) Le checkout du job
+de déploiement est **épinglé** sur `workflow_run.head_sha` : sans `ref`, un
+`workflow_run` extrait la tête de `main` au moment du run, et des scripts non
+vérifiés tourneraient avec le jeton. (2) La retenue `release-db` est **relue
+juste avant l'écriture** (l'attente du calme peut durer vingt minutes), et
+une liste de runs VIDE ne vaut permission que si le commit ne touche aucun
+chemin qui déclenche `release-db` — le run du même push peut ne pas être
+encore visible. Ces chemins sont tenus identiques à ceux de `release-db.yml`
+par un banc de parité.
+
 **Écart à connaître, pire qu'avant, mais borné.** Un commit A vert dépassé
 pendant son CI par une tête au CI ROUGE (ou retenue) n'est plus livré : un
 déploiement ne livre qu'une branche, donc A attend la prochaine tête verte.

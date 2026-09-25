@@ -90,6 +90,12 @@ export function classerCi(runs) {
   return runs.length > 0 ? 'echec' : 'absent';
 }
 
+/**
+ * Les chemins dont un push déclenche release-db — la MÊME liste que le filtre
+ * `paths` de `.github/workflows/release-db.yml` (un banc tient la parité).
+ */
+export const CHEMINS_RELEASE_DB = ['web/prisma/migrations', 'web/src/lib/clinical'];
+
 /** Les runs release-db d'un commit qui ne sont PAS conclus au vert. */
 const releaseDbNonConclus = (runs) => runs.filter((r) => !(r.status === 'completed' && r.conclusion === 'success'));
 
@@ -114,6 +120,9 @@ export async function deployer({
   // Même règle : sans repli. L'état du CI de `main` d'un commit (via
   // `classerCi`) — 'success', 'en-cours', 'echec' ou 'absent'.
   lireCi,
+  // Idem, sans repli : ce commit touche-t-il un chemin qui déclenche
+  // release-db ? Sert à ne jamais lire « aucun run » comme « rien à attendre ».
+  toucheReleaseDb,
 }) {
   // UN RUN DÉPASSÉ JUGE LA TÊTE À SA PLACE (revue du lot 3). La concurrence
   // GitHub ne garde qu'UN run en attente : le run de la tête peut être ÉVINCÉ
@@ -154,15 +163,33 @@ export async function deployer({
   // toute la durée de l'attente humaine. Retenu, donc — vert, sans écriture :
   // release-db déploiera à l'approbation. Une lecture en échec propage : aucune
   // écriture n'a eu lieu.
-  const nonConclus = releaseDbNonConclus(lireRunsReleaseDb(cible));
-  if (nonConclus.length > 0) {
-    const etats = nonConclus.map((r) => r.conclusion || r.status).join(', ');
-    return {
-      code: SORTIE_OK,
-      etat: 'retenu-release-db',
-      motif: `${cible} porte un run release-db non conclu au vert (${etats}) — release-db le déploiera à l'approbation`,
-    };
-  }
+  //
+  // UNE LISTE VIDE N'EST PAS UNE PERMISSION (revue #1222) : le run release-db
+  // du même push peut ne pas être encore visible dans l'API. Si le commit
+  // touche un chemin qui déclenche release-db, on exige un run conclu au vert.
+  const retenue = () => {
+    const runs = lireRunsReleaseDb(cible);
+    const nonConclus = releaseDbNonConclus(runs);
+    if (nonConclus.length > 0) {
+      const etats = nonConclus.map((r) => r.conclusion || r.status).join(', ');
+      return {
+        code: SORTIE_OK,
+        etat: 'retenu-release-db',
+        motif: `${cible} porte un run release-db non conclu au vert (${etats}) — release-db le déploiera à l'approbation`,
+      };
+    }
+    if (runs.length === 0 && toucheReleaseDb(cible)) {
+      return {
+        code: SORTIE_OK,
+        etat: 'retenu-release-db',
+        avertissement: true,
+        motif: `${cible} touche un chemin de release-db mais aucun run release-db n'est visible — retenu jusqu'à ce qu'il existe et soit approuvé`,
+      };
+    }
+    return null;
+  };
+  const retenuAvant = retenue();
+  if (retenuAvant) return retenuAvant;
 
   // CALME AVANT L'ÉCRITURE : aucun build en vol. Déclencher pendant un autre
   // build, c'est en lancer un second en parallèle — et laisser l'ordre de fin
@@ -195,6 +222,10 @@ export async function deployer({
   if (lireTete() !== cible) {
     return { code: SORTIE_OK, etat: 'depasse', motif: `la tête de main a dépassé ${cible} juste avant le déclenchement` };
   }
+  // RELUE juste avant l'écriture (revue #1222) : l'attente du calme a pu durer
+  // vingt minutes, et un run release-db apparaître entre-temps.
+  const retenuApres = retenue();
+  if (retenuApres) return retenuApres;
   try {
     declencher();
   } catch (err) {
@@ -351,6 +382,8 @@ async function principal(env = process.env) {
       JSON.parse(
         lancer('gh', ['api', `repos/${env.GITHUB_REPOSITORY}/actions/workflows/release-db.yml/runs?head_sha=${commit}&per_page=100`]),
       ).workflow_runs.map((r) => ({ status: r.status, conclusion: r.conclusion })),
+    toucheReleaseDb: (commit) =>
+      lancer('git', ['diff', '--name-only', `${commit}^`, commit, '--', ...CHEMINS_RELEASE_DB]).trim() !== '',
     lireCi: (commit) =>
       classerCi(
         JSON.parse(

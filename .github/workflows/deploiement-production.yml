@@ -169,9 +169,14 @@ jobs:
 
       # L'historique entier : « ce run est-il encore la tête ? » et « la version
       # en service contient-elle ce commit ? » sont des questions d'ASCENDANCE.
+      # ÉPINGLÉ sur le commit que le CI a VÉRIFIÉ (revue #1222) : sans `ref`,
+      # un `workflow_run` extrait la tête de `main` AU MOMENT du run — un commit
+      # dont le CI n'a peut-être pas conclu, et dont les scripts tourneraient
+      # avec le jeton. Le déployeur relit `origin/main` lui-même (fetch).
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       # Même couple version/empreinte que release-db.yml.
       - name: "CLI Scalingo 1.48.0 (épinglé, empreinte vérifiée)"
