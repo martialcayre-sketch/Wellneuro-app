@@ -7885,3 +7885,15 @@ conclu au vert — le régime D-087 reste celui de l'auto-déploiement.
 
 **Prochaine action.** `--no-auto-deploy` (responsable), merge, constat ; puis
 incident 2 rejoué et cinq déploiements verts avant le lot 4.
+
+## 2026-09-25 — D-248 : bascule constatée, incident 2 rejoué
+
+**Constaté.** Premier déploiement par GitHub Actions, auto-déploiement coupé :
+`e43a40b0`, run 36182085373, déploiement `5e19edc5`, utilisateur `wellneuro` ;
+aucune ligne d'auto-déploiement. `manual-deploy` fonctionne sans lui.
+
+**Décision.** L'incident 2 se rejoue sur deux PR de documentation réelles
+(#1223 D-248, #1224 RUNBOOK devenu faux au lot 3), mergées à deux minutes.
+
+**Prochaine action.** Constater l'absence de recul, le consigner ; cinq
+déploiements verts dont une migration avant le lot 4.
