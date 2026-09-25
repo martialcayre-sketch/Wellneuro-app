@@ -1,24 +1,35 @@
 #!/usr/bin/env node
-// Déploie la tête de `main` sur Scalingo, et ne peut livrer que plus neuf
-// (D-248, lot 2).
+// Déploie la tête de `main` sur Scalingo, et ne conclut au vert que si rien
+// n'a reculé (D-248, lot 2).
 //
 // POURQUOI UNE BRANCHE ET PAS UN SHA. `integration-link-manual-deploy` ne
 // prend qu'une branche (constaté, CLI 1.48 et API) : il livre la tête de
 // `main` AU MOMENT où Scalingo la lit. Si ce run porte encore la tête quand il
-// déclenche, la seule fenêtre résiduelle ne peut livrer que la même tête ou
-// une plus récente — jamais une plus ancienne. C'est ce qui rend le recul
-// impossible, à condition que PLUS PERSONNE d'autre ne déploie selon l'ordre
-// de fin des checks : c'est la bascule `--no-auto-deploy` du lot 3.
+// déclenche, SON build ne peut livrer que cette tête ou une plus récente.
 //
-// CE QUE CE SCRIPT REFUSE DE FAIRE, et pourquoi c'est vert :
-//   - le run n'est plus la tête de `main` → il s'abstient. Un run plus récent
-//     existe (chaque merge a le sien) ; déployer ici ne livrerait rien de plus.
-//   - la version en service contient déjà ce commit → il s'abstient, sauf
-//     `WN_FORCER=true` (répétition à vide du lot 2, relance volontaire).
+// CE QUE LA BRANCHE NE SUFFIT PAS À GARANTIR : un AUTRE build en vol en même
+// temps — auto-déploiement (actif jusqu'au lot 3), `release-db` (qui déclenche
+// aussi, [[D-102]]), ou un run précédent sorti sur délai. Les builds se
+// chevauchent et le dernier à FINIR l'emporte (incident 2). D'où deux règles :
+//   - ne rien déclencher tant qu'un build est en vol (attente bornée) ;
+//   - ne rien conclure tant qu'un build est en vol, puis rejouer le verdict
+//     d'observation sur le tableau définitif — un recul est rouge.
+// La fenêtre restante — un déclenchement concurrent dans les secondes entre
+// notre lecture « calme » et notre écriture — est DÉTECTÉE (rouge), pas
+// empêchée : `release-db` n'attend pas le calme. Routé au lot 3 (D-248).
 //
-// CE QUI EST ROUGE : un déclenchement refusé, un build en échec, un recul
-// constaté après coup, ou vingt minutes sans conclusion (état INCONNU —
-// lire `deployment-logs` avant de relancer).
+// CE QUI EST VERT SANS ÉCRITURE :
+//   - le run n'est plus la tête de `main` → abstention ; son run déploiera.
+//   - la version en service, sur un tableau calme, contient déjà ce commit →
+//     abstention, sauf `WN_FORCER=true` (répétition à vide).
+// TANT QUE L'AUTO-DÉPLOIEMENT EST ACTIF, la garde finale rend rouge tout run
+// qui n'est plus la tête à sa fin — son vert réveillerait l'auto-déploiement
+// d'un vieux commit (incident 1).
+//
+// CE QUI EST ROUGE : déclenchement refusé, build en échec, commit absent de
+// la version en service, recul, production illisible, build en vol trop
+// longtemps, ou vingt minutes sans conclusion (état INCONNU — lire
+// `deployment-logs` avant de relancer).
 //
 // Le noyau `deployer()` reçoit ses dépendances (lecture, déclenchement,
 // ascendance, attente) : le banc le joue sans réseau, et le chemin de
@@ -39,15 +50,36 @@ export const ESSAIS_DEFAUT = 40;
 export const INTERVALLE_MS_DEFAUT = 30_000;
 
 // Statuts terminaux d'échec de Scalingo. Tout autre statut non `success` est
-// traité comme EN COURS — y compris un statut inconnu : l'attente bornée le
+// traité comme EN VOL — y compris un statut inconnu : l'attente bornée le
 // tranchera, plutôt qu'un échec prononcé sur un mot qu'on ne connaît pas.
 const ECHEC = /(-error|^aborted)$/;
+
+// TANT QUE L'AUTO-DÉPLOIEMENT SCALINGO EST ACTIF (lot 2), un run qui conclut
+// VERT sur un commit qui n'est plus la tête lève le dernier check de ce commit
+// — et Scalingo peut le déployer par-dessus la tête : le mécanisme de
+// l'incident 1. La garde finale fait alors échouer le run VOLONTAIREMENT,
+// comme celle de release-db. Passe à `false` au lot 3, avec `--no-auto-deploy`,
+// et pas avant : un invariant du banc lie ce drapeau à l'absence de `push`.
+export const AUTO_DEPLOIEMENT_ACTIF = true;
 
 /** La version en service : le déploiement réussi qui a FINI en dernier. */
 function enService(texte) {
   const reussis = analyserTableau(texte);
   return [...reussis].sort((a, b) => b.fin - a.fin)[0] ?? null;
 }
+
+/**
+ * Les builds EN VOL, connus ou non. Tant qu'il en reste un, rien n'est
+ * jugeable : un build plus ancien qui finit après le nôtre le remplace (les
+ * builds se chevauchent — incident 2), et il peut venir de l'auto-déploiement,
+ * de release-db ou d'un run précédent sorti sur délai.
+ */
+function enVol(texte) {
+  return analyserToutesLignes(texte).filter((l) => l.statut !== 'success' && !ECHEC.test(l.statut));
+}
+
+const decrire = (lignes) => lignes.map((l) => `${l.id} ${l.statut}`).join(', ');
+const premiereLigne = (err) => String(err?.message ?? err).split('\n')[0];
 
 export async function deployer({
   sha,
@@ -61,77 +93,121 @@ export async function deployer({
   intervalleMs = INTERVALLE_MS_DEFAUT,
   journal = () => {},
 }) {
-  const tete = lireTete();
-  if (tete !== sha) {
-    return { code: SORTIE_OK, etat: 'depasse', motif: `la tête de main (${tete}) a dépassé ce run (${sha}) — son propre run déploiera` };
+  if (lireTete() !== sha) {
+    return { code: SORTIE_OK, etat: 'depasse', motif: `la tête de main a dépassé ce run (${sha}) — son propre run déploiera` };
   }
 
-  const avant = lireDeploiements();
+  // CALME AVANT L'ÉCRITURE : aucun build en vol. Déclencher pendant un autre
+  // build, c'est en lancer un second en parallèle — et laisser l'ordre de fin
+  // décider. Une lecture en échec ici propage : aucune écriture n'a eu lieu.
+  let avant;
+  for (let i = 0; ; i += 1) {
+    avant = lireDeploiements();
+    const vol = enVol(avant);
+    if (vol.length === 0) break;
+    if (i >= essais) {
+      return { code: SORTIE_ECHEC, etat: 'en-vol', motif: `un build est toujours en vol (${decrire(vol)}) — aucune écriture` };
+    }
+    journal(`… build en vol avant déclenchement (${decrire(vol)}), attente (${i + 1}/${essais}).`);
+    await dormir(intervalleMs);
+  }
+
+  // Tableau CALME : la version en service ne peut plus être remplacée par un
+  // build plus ancien — l'abstention est sûre.
   const courant = enService(avant);
   if (!forcer && courant && estAncetre(sha, courant.sha)) {
     return { code: SORTIE_OK, etat: 'deja-en-service', motif: `${courant.sha} est en service et contient ${sha}` };
   }
   const connus = new Set(analyserToutesLignes(avant).map((l) => l.id));
 
-  // DERNIER contrôle avant l'écriture : la lecture des déploiements a pris du
-  // temps, et une tête qui a bougé entre-temps a son propre run.
-  const teteAvant = lireTete();
-  if (teteAvant !== sha) {
-    return { code: SORTIE_OK, etat: 'depasse', motif: `la tête de main (${teteAvant}) a dépassé ce run juste avant le déclenchement` };
+  // DERNIER contrôle avant l'écriture : l'attente a pu durer, et une tête qui
+  // a bougé entre-temps a son propre run.
+  if (lireTete() !== sha) {
+    return { code: SORTIE_OK, etat: 'depasse', motif: `la tête de main a dépassé ce run (${sha}) juste avant le déclenchement` };
   }
   try {
     declencher();
   } catch (err) {
-    return { code: SORTIE_ECHEC, etat: 'refuse', motif: `déclenchement refusé — ${String(err?.message ?? err).split('\n')[0]}` };
+    return { code: SORTIE_ECHEC, etat: 'refuse', motif: `déclenchement refusé — ${premiereLigne(err)}` };
   }
   journal(`→ Déploiement de main déclenché (run ${sha}).`);
 
   for (let i = 1; i <= essais; i += 1) {
     await dormir(intervalleMs);
     // Une lecture en échec APRÈS le déclenchement ne conclut rien : le build
-    // tourne, avec ou sans nous. La borne d'attente tranchera.
+    // tourne, avec ou sans nous. La tête est relue (fetch) à CHAQUE tour : un
+    // commit mergé pendant le build, et livré avec lui, doit être connu
+    // localement avant qu'on juge une ascendance.
+    let tete;
     let texte;
+    let lignes;
     let service;
     try {
+      tete = lireTete();
       texte = lireDeploiements();
+      lignes = analyserToutesLignes(texte);
       service = enService(texte);
     } catch (err) {
-      journal(`… lecture des déploiements en échec (${i}/${essais}) — ${String(err?.message ?? err).split('\n')[0]}`);
+      journal(`… lecture en échec (${i}/${essais}) — ${premiereLigne(err)}`);
       continue;
     }
-    const nouveaux = analyserToutesLignes(texte).filter((l) => !connus.has(l.id));
-    const nouveauEnService = service && nouveaux.some((l) => l.id === service.id);
-    if (nouveauEnService && estAncetre(sha, service.sha)) {
-      // Le constat qui compte : pas seulement « mon build a réussi », mais
-      // « ce qui est en service ne recule par rapport à rien ».
-      // Tête relue : un merge arrivé pendant le build a pu être livré avec lui.
-      // Illisible, on juge par rapport au déployé lui-même — le recul se lit
-      // entre déploiements, pas par rapport à la tête.
-      let teteApres;
-      try {
-        teteApres = lireTete();
-      } catch {
-        teteApres = service.sha;
-      }
-      const verdict = diagnostiquer({
-        deploiements: analyserTableau(texte),
-        tete: teteApres,
-        ageTeteMin: 0,
-        seuilRetardMin: Infinity,
-        estAncetre,
-      });
-      if (verdict.code === SORTIE_RECUL) {
-        return { code: SORTIE_ECHEC, etat: 'recul', motif: `déploiement réussi, mais recul constaté : ${verdict.enService.sha} en service, ${verdict.depasse.sha} l'a déjà été` };
-      }
-      return { code: SORTIE_OK, etat: 'deploye', motif: `${service.sha} en service (déploiement ${service.id})` };
+    const nouveaux = lignes.filter((l) => !connus.has(l.id));
+    const vol = enVol(texte);
+    if (vol.length > 0 || nouveaux.length === 0) {
+      journal(`… en attente (${i}/${essais})${vol.length ? ` — en vol : ${decrire(vol)}` : ' — déploiement pas encore listé'}.`);
+      continue;
     }
-    if (nouveaux.length > 0 && nouveaux.every((l) => ECHEC.test(l.statut))) {
-      const statuts = nouveaux.map((l) => `${l.id} ${l.statut}`).join(', ');
-      return { code: SORTIE_ECHEC, etat: 'build-en-echec', motif: `aucun déploiement nouveau n'a abouti : ${statuts}` };
+    // Plus rien en vol, et notre déclenchement a produit au moins une ligne :
+    // le tableau est définitif, on juge.
+    if (nouveaux.every((l) => ECHEC.test(l.statut))) {
+      return { code: SORTIE_ECHEC, etat: 'build-en-echec', motif: `aucun déploiement nouveau n'a abouti : ${decrire(nouveaux)}` };
     }
-    journal(`… pas encore en service (${i}/${essais})${nouveaux.length ? ` — ${nouveaux.map((l) => l.statut).join(', ')}` : ''}.`);
+    if (!service || !estAncetre(sha, service.sha)) {
+      return {
+        code: SORTIE_ECHEC,
+        etat: 'non-livre',
+        motif: `tous les builds sont terminés, et la version en service (${service?.sha ?? 'aucune'}) ne contient pas ${sha}`,
+      };
+    }
+    // Le constat qui compte : pas seulement « mon build a réussi », mais « ce
+    // qui est en service ne recule par rapport à rien ».
+    const verdict = diagnostiquer({
+      deploiements: analyserTableau(texte),
+      tete,
+      ageTeteMin: 0,
+      seuilRetardMin: Infinity,
+      estAncetre,
+    });
+    if (verdict.code === SORTIE_RECUL) {
+      return { code: SORTIE_ECHEC, etat: 'recul', motif: `recul constaté : ${verdict.enService.sha} en service, ${verdict.depasse.sha} l'a déjà été` };
+    }
+    if (verdict.code !== SORTIE_OK) {
+      return { code: SORTIE_ECHEC, etat: 'illisible', motif: verdict.motif };
+    }
+    return { code: SORTIE_OK, etat: 'deploye', motif: `${service.sha} en service (déploiement ${service.id})` };
   }
   return { code: SORTIE_ECHEC, etat: 'delai', motif: `aucune conclusion après ${Math.round((essais * intervalleMs) / 60000)} min — état INCONNU` };
+}
+
+/**
+ * La garde finale, tant que l'auto-déploiement est actif : un run qui n'est
+ * plus la tête ne conclut JAMAIS au vert. Tête illisible ⇒ rouge : dans le
+ * doute, on ne lève pas un check.
+ */
+export function gardeFinale(verdict, { sha, lireTete, autoDeploiementActif = AUTO_DEPLOIEMENT_ACTIF }) {
+  if (!autoDeploiementActif || verdict.code !== SORTIE_OK) return verdict;
+  let tete;
+  try {
+    tete = lireTete();
+  } catch {
+    tete = null;
+  }
+  if (tete === sha) return verdict;
+  return {
+    code: SORTIE_ECHEC,
+    etat: 'garde-finale',
+    motif: `${verdict.motif}. ÉCHEC VOLONTAIRE — ce run porte ${sha}, ${tete ? `dépassé par la tête (${tete})` : 'tête de main illisible'} : conclu au vert, il lèverait le dernier check de ce commit, que l'auto-déploiement Scalingo pourrait livrer par-dessus la tête. NE PAS RELANCER ce run.`,
+  };
 }
 
 // ── Câblage CLI ─────────────────────────────────────────────────────────────
@@ -147,6 +223,10 @@ const TITRES = {
   refuse: '## ❌ Déclenchement refusé par Scalingo',
   'build-en-echec': '## ❌ Build en échec',
   recul: '## ❌ Recul constaté après déploiement',
+  'non-livre': '## ❌ Tous les builds terminés, mais ce commit n’est pas en service',
+  illisible: '## ❌ Production illisible après déploiement',
+  'en-vol': '## ❌ Un build reste en vol — aucune écriture',
+  'garde-finale': '## ❌ Échec volontaire — ce run n’est plus la tête de `main`',
   delai: '## ❌ Aucune conclusion — état inconnu',
 };
 
@@ -159,13 +239,14 @@ async function principal(env = process.env) {
     return SORTIE_ECHEC;
   }
   const scalingo = (...args) => lancer('scalingo', ['--app', app, '--region', region, ...args]);
-  const verdict = await deployer({
+  const lireTete = () => {
+    lancer('git', ['fetch', '--quiet', 'origin', 'main']);
+    return lancer('git', ['rev-parse', 'origin/main']).trim();
+  };
+  const brut = await deployer({
     sha,
     forcer: env.WN_FORCER === 'true',
-    lireTete: () => {
-      lancer('git', ['fetch', '--quiet', 'origin', 'main']);
-      return lancer('git', ['rev-parse', 'origin/main']).trim();
-    },
+    lireTete,
     lireDeploiements: () => scalingo('deployments'),
     // LA SEULE ÉCRITURE de ce script, et un invariant le tient : une BRANCHE,
     // jamais un SHA, jamais un autre verbe.
@@ -181,6 +262,7 @@ async function principal(env = process.env) {
     dormir: (ms) => new Promise((r) => setTimeout(r, ms)),
     journal: (l) => console.log(l),
   });
+  const verdict = gardeFinale(brut, { sha, lireTete });
   const lignes = [TITRES[verdict.etat] ?? `## ${verdict.etat}`, '', verdict.motif];
   if (verdict.code !== SORTIE_OK) {
     lignes.push('', 'Lire le build : `scalingo --region osc-fr1 --app wellneuro deployment-logs`.');

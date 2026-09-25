@@ -97,8 +97,10 @@ jobs:
           scalingo --version
 
       # Le CLI n'authentifie pas par la variable d'environnement (leçon de
-      # release-db, run 32578782755) : login explicite, jeton visible de cette
-      # seule étape.
+      # release-db, run 32578782755) : login explicite. Le jeton n'est en
+      # `env:` que de cette étape et de la garde ; la SESSION que `login` écrit
+      # sur le disque du runner sert aux étapes suivantes, et la dernière étape
+      # l'efface.
       - name: "Authentification du CLI (login par jeton)"
         env:
           SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
@@ -112,6 +114,13 @@ jobs:
       # 1 : RECUL ; 2 : production illisible — aucun recul ne peut être exclu.
       - name: "Observation — la production a-t-elle reculé ?"
         run: node scripts/wn-deploiement-observation.mjs
+
+      # La session du CLI contient le jeton du compte : effacée avant les
+      # post-steps (celui de `actions/checkout` tourne après toutes les étapes),
+      # quelle qu'ait été l'issue.
+      - name: "Effacer la session du CLI"
+        if: always()
+        run: rm -rf "$HOME/.config/scalingo"
 
   deploiement:
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.action == 'deployer'
@@ -155,8 +164,10 @@ jobs:
           scalingo --version
 
       # Le CLI n'authentifie pas par la variable d'environnement (leçon de
-      # release-db, run 32578782755) : login explicite, jeton visible de cette
-      # seule étape.
+      # release-db, run 32578782755) : login explicite. Le jeton n'est en
+      # `env:` que de cette étape et de la garde ; la SESSION que `login` écrit
+      # sur le disque du runner sert aux étapes suivantes, et la dernière étape
+      # l'efface.
       - name: "Authentification du CLI (login par jeton)"
         env:
           SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
@@ -174,3 +185,10 @@ jobs:
         env:
           WN_FORCER: ${{ inputs.forcer }}
         run: node scripts/wn-deploiement-deployer.mjs
+
+      # La session du CLI contient le jeton du compte : effacée avant les
+      # post-steps (celui de `actions/checkout` tourne après toutes les étapes),
+      # quelle qu'ait été l'issue.
+      - name: "Effacer la session du CLI"
+        if: always()
+        run: rm -rf "$HOME/.config/scalingo"

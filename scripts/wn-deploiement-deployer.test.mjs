@@ -3,8 +3,12 @@
 // Le noyau `deployer()` est joué avec des dépendances factices : une tête de
 // `main` scriptée, une suite de tableaux `scalingo deployments`, un
 // déclenchement qui s'enregistre, une ascendance linéaire. Aucun réseau,
-// aucun `sleep` réel. Puis les invariants du workflow et des deux scripts :
-// ce sont eux qui bornent un jeton plein détenu SANS approbation.
+// aucun `sleep` réel. Puis la garde finale, et les invariants du workflow et
+// des deux scripts : ce sont eux qui bornent un jeton plein détenu SANS
+// approbation.
+//
+// Les cas marqués « revue » viennent de la revue adverse du lot 2 : chacun
+// rougit si le défaut qu'elle a confirmé revient.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,15 +16,17 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { deployer, SORTIE_OK, SORTIE_ECHEC } from './wn-deploiement-deployer.mjs';
+import { deployer, gardeFinale, AUTO_DEPLOIEMENT_ACTIF, SORTIE_OK, SORTIE_ECHEC } from './wn-deploiement-deployer.mjs';
 
 const ICI = dirname(fileURLToPath(import.meta.url));
 const RACINE = join(ICI, '..');
 
+// Historique linéaire de `main` : A < A2 < B < C.
 const A = 'a'.repeat(40);
+const A2 = 'd'.repeat(40);
 const B = 'b'.repeat(40);
 const C = 'c'.repeat(40);
-const HISTOIRE = [A, B, C];
+const HISTOIRE = [A, A2, B, C];
 const estAncetre = (x, y) => {
   const ix = HISTOIRE.indexOf(x);
   const iy = HISTOIRE.indexOf(y);
@@ -36,27 +42,31 @@ const EN_SERVICE_A = ligne('dep-a', '2026/09/25 10:00:00', '5m0s', A);
 
 /**
  * Un monde factice. `tetes` : valeurs successives de la tête (la dernière se
- * répète). `lectures` : tableaux successifs (idem). Une entrée `Error` dans
- * `lectures` fait échouer cette lecture-là.
+ * répète). `lectures` : tableaux successifs (idem). Une entrée `Error` fait
+ * échouer cette lecture-là. `trace` garde l'ordre des lectures et de
+ * l'écriture.
  */
 function monde({ tetes, lectures, declencherLeve = null }) {
-  const appels = { declencher: 0, dormir: 0, lireTete: 0 };
+  const appels = { declencher: 0, dormir: 0, trace: [] };
   let iT = 0;
   let iL = 0;
   return {
     appels,
     deps: {
       lireTete: () => {
-        appels.lireTete += 1;
-        return tetes[Math.min(iT++, tetes.length - 1)];
+        const t = tetes[Math.min(iT++, tetes.length - 1)];
+        if (t instanceof Error) throw t;
+        return t;
       },
       lireDeploiements: () => {
         const l = lectures[Math.min(iL++, lectures.length - 1)];
+        appels.trace.push(`lecture ${iL}`);
         if (l instanceof Error) throw l;
         return l;
       },
       declencher: () => {
         appels.declencher += 1;
+        appels.trace.push('ECRITURE');
         if (declencherLeve) throw declencherLeve;
       },
       estAncetre,
@@ -69,7 +79,9 @@ function monde({ tetes, lectures, declencherLeve = null }) {
   };
 }
 
-test('ce run n’est plus la tête : abstention verte, AUCUN déclenchement', async () => {
+// ── Abstentions ─────────────────────────────────────────────────────────────
+
+test('ce run n’est plus la tête : abstention, AUCUN déclenchement', async () => {
   const m = monde({ tetes: [C], lectures: [tableau(EN_SERVICE_A)] });
   const v = await deployer({ sha: B, ...m.deps });
   assert.equal(v.code, SORTIE_OK);
@@ -84,12 +96,14 @@ test('la tête bouge ENTRE la lecture et l’écriture : abstention, aucun décl
   assert.equal(m.appels.declencher, 0);
 });
 
-test('déjà en service : abstention verte, sauf à forcer', async () => {
+test('déjà en service sur un tableau calme : abstention, sauf à forcer', async () => {
   const m = monde({ tetes: [A], lectures: [tableau(EN_SERVICE_A)] });
   const v = await deployer({ sha: A, ...m.deps });
   assert.equal(v.etat, 'deja-en-service');
   assert.equal(m.appels.declencher, 0);
 });
+
+// ── Chemin nominal ──────────────────────────────────────────────────────────
 
 test('répétition à vide (forcer) : redéploie la tête déjà en service, et attend SON déploiement', async () => {
   const m = monde({
@@ -133,6 +147,63 @@ test('une tête plus neuve livrée par la même branche compte comme livrée', a
   assert.equal(v.etat, 'deploye');
 });
 
+// ── Builds en vol (revue, constat C1) ──────────────────────────────────────
+
+test('revue — un build en vol AVANT le déclenchement : on attend qu’il finisse, PUIS on écrit', async () => {
+  const m = monde({
+    tetes: [B],
+    lectures: [
+      tableau(ligne('dep-x', '2026/09/25 10:50:00', '', A2, 'building'), EN_SERVICE_A),
+      tableau(ligne('dep-x', '2026/09/25 10:50:00', '6m0s', A2), EN_SERVICE_A),
+      tableau(ligne('dep-b', '2026/09/25 11:00:00', '5m0s', B), ligne('dep-x', '2026/09/25 10:50:00', '6m0s', A2), EN_SERVICE_A),
+    ],
+  });
+  const v = await deployer({ sha: B, ...m.deps });
+  assert.equal(v.etat, 'deploye', v.motif);
+  assert.deepEqual(m.appels.trace.slice(0, 3), ['lecture 1', 'lecture 2', 'ECRITURE'], 'l’écriture suit la lecture CALME');
+});
+
+test('revue — « déjà en service » n’est pas jugé tant qu’un build plus ancien est en vol', async () => {
+  // B en service, mais A2 en build : s'il finit après, A2 remplace B.
+  const EN_SERVICE_B = ligne('dep-b', '2026/09/25 10:40:00', '5m0s', B);
+  const m = monde({
+    tetes: [B],
+    lectures: [
+      tableau(ligne('dep-x', '2026/09/25 10:50:00', '', A2, 'building'), EN_SERVICE_B),
+      tableau(ligne('dep-x', '2026/09/25 10:50:00', '9m0s', A2), EN_SERVICE_B),
+      tableau(ligne('dep-b2', '2026/09/25 11:00:00', '5m0s', B), ligne('dep-x', '2026/09/25 10:50:00', '9m0s', A2), EN_SERVICE_B),
+    ],
+  });
+  const v = await deployer({ sha: B, ...m.deps });
+  assert.equal(m.appels.declencher, 1, 'A2 a remplacé B : il faut redéployer, pas s’abstenir');
+  assert.equal(v.etat, 'deploye');
+});
+
+test('revue — un build plus ancien en vol APRÈS le nôtre : on ne conclut pas avant sa fin, et s’il l’emporte, rouge', async () => {
+  const m = monde({
+    tetes: [B],
+    lectures: [
+      tableau(EN_SERVICE_A),
+      // Notre build a fini ; un auto-déploiement de A2 est encore en vol.
+      tableau(ligne('dep-x', '2026/09/25 11:01:00', '', A2, 'building'), ligne('dep-b', '2026/09/25 11:00:00', '4m0s', B), EN_SERVICE_A),
+      // A2 finit APRÈS B : A2 en service.
+      tableau(ligne('dep-x', '2026/09/25 11:01:00', '9m0s', A2), ligne('dep-b', '2026/09/25 11:00:00', '4m0s', B), EN_SERVICE_A),
+    ],
+  });
+  const v = await deployer({ sha: B, ...m.deps });
+  assert.equal(v.code, SORTIE_ECHEC);
+  assert.equal(v.etat, 'non-livre');
+});
+
+test('un build en vol qui ne finit jamais avant l’écriture : rouge, AUCUNE écriture', async () => {
+  const m = monde({ tetes: [B], lectures: [tableau(ligne('dep-x', '2026/09/25 10:50:00', '', A2, 'building'), EN_SERVICE_A)] });
+  const v = await deployer({ sha: B, ...m.deps });
+  assert.equal(v.etat, 'en-vol');
+  assert.equal(m.appels.declencher, 0);
+});
+
+// ── Échecs ──────────────────────────────────────────────────────────────────
+
 test('build en échec : rouge sans attendre la borne', async () => {
   const m = monde({
     tetes: [B],
@@ -142,6 +213,42 @@ test('build en échec : rouge sans attendre la borne', async () => {
   assert.equal(v.code, SORTIE_ECHEC);
   assert.equal(v.etat, 'build-en-echec');
   assert.equal(m.appels.dormir, 1);
+});
+
+test('un nouveau build en échec et un autre réussi : c’est le verdict d’ensemble qui compte', async () => {
+  const m = monde({
+    tetes: [B],
+    lectures: [
+      tableau(EN_SERVICE_A),
+      tableau(ligne('dep-b2', '2026/09/25 11:05:00', '5m0s', B), ligne('dep-b', '2026/09/25 11:00:00', '1m0s', B, 'build-error'), EN_SERVICE_A),
+    ],
+  });
+  const v = await deployer({ sha: B, ...m.deps });
+  assert.equal(v.etat, 'deploye', v.motif);
+});
+
+test('un échec ANCIEN, déjà listé avant, n’est pas pris pour le nôtre', async () => {
+  const ANCIEN_ECHEC = ligne('dep-old', '2026/09/25 09:00:00', '2m0s', A, 'build-error');
+  const m = monde({
+    tetes: [B],
+    lectures: [
+      tableau(EN_SERVICE_A, ANCIEN_ECHEC),
+      tableau(EN_SERVICE_A, ANCIEN_ECHEC),
+      tableau(ligne('dep-b', '2026/09/25 11:00:00', '5m0s', B), EN_SERVICE_A, ANCIEN_ECHEC),
+    ],
+  });
+  const v = await deployer({ sha: B, ...m.deps });
+  assert.equal(v.etat, 'deploye', v.motif);
+});
+
+test('revue (C7) — un nouveau déploiement réussi qui ne CONTIENT pas ce commit n’est pas une livraison', async () => {
+  const m = monde({
+    tetes: [B],
+    lectures: [tableau(EN_SERVICE_A), tableau(ligne('dep-x', '2026/09/25 11:00:00', '5m0s', A2), EN_SERVICE_A)],
+  });
+  const v = await deployer({ sha: B, ...m.deps });
+  assert.notEqual(v.etat, 'deploye');
+  assert.equal(v.code, SORTIE_ECHEC);
 });
 
 test('un statut inconnu n’est PAS un échec : l’attente bornée tranche', async () => {
@@ -183,9 +290,9 @@ test('lecture en échec APRÈS l’écriture : on continue d’attendre, on ne c
   assert.equal(v.etat, 'deploye');
 });
 
-test('succès du build mais recul constaté ensuite : rouge', async () => {
-  // C a été mis en service (auto-déploiement encore actif au lot 2), puis le
-  // déploiement de B, parti avant, finit APRÈS : B en service, C retiré.
+test('succès du build mais recul constaté sur le tableau définitif : rouge', async () => {
+  // C a été mis en service (auto-déploiement), puis le déploiement de B, parti
+  // avant, finit APRÈS : B en service, C retiré.
   const m = monde({
     tetes: [B, B, C],
     lectures: [
@@ -202,6 +309,48 @@ test('succès du build mais recul constaté ensuite : rouge', async () => {
   assert.equal(v.etat, 'recul');
 });
 
+test('revue — la tête relue compte : une version en service hors de sa ligne est illisible, pas « déployée »', async () => {
+  const INCONNU = 'e'.repeat(40);
+  const m = monde({
+    tetes: [B, B, INCONNU],
+    lectures: [tableau(EN_SERVICE_A), tableau(ligne('dep-b', '2026/09/25 11:00:00', '5m0s', B), EN_SERVICE_A)],
+  });
+  const v = await deployer({ sha: B, ...m.deps });
+  assert.equal(v.etat, 'illisible');
+  assert.equal(v.code, SORTIE_ECHEC);
+});
+
+// ── Garde finale (revue, constat C4) ────────────────────────────────────────
+
+const VERT = { code: SORTIE_OK, etat: 'deploye', motif: 'x' };
+
+test('revue — garde finale : un run dépassé ne conclut JAMAIS au vert tant que l’auto-déploiement est actif', () => {
+  for (const etat of ['deploye', 'depasse', 'deja-en-service']) {
+    const v = gardeFinale({ ...VERT, etat }, { sha: B, lireTete: () => C, autoDeploiementActif: true });
+    assert.equal(v.code, SORTIE_ECHEC, etat);
+    assert.equal(v.etat, 'garde-finale');
+    assert.match(v.motif, /NE PAS RELANCER/);
+  }
+});
+
+test('garde finale : tête illisible ⇒ rouge ; tête inchangée ⇒ verdict intact', () => {
+  const illisible = gardeFinale(VERT, {
+    sha: B,
+    lireTete: () => {
+      throw new Error('fetch');
+    },
+    autoDeploiementActif: true,
+  });
+  assert.equal(illisible.code, SORTIE_ECHEC);
+  assert.deepEqual(gardeFinale(VERT, { sha: B, lireTete: () => B, autoDeploiementActif: true }), VERT);
+});
+
+test('garde finale : sans auto-déploiement, ou sur un rouge, elle ne change rien', () => {
+  assert.deepEqual(gardeFinale(VERT, { sha: B, lireTete: () => C, autoDeploiementActif: false }), VERT);
+  const rouge = { code: SORTIE_ECHEC, etat: 'build-en-echec', motif: 'y' };
+  assert.deepEqual(gardeFinale(rouge, { sha: B, lireTete: () => C, autoDeploiementActif: true }), rouge);
+});
+
 // ── Invariants ───────────────────────────────────────────────────────────────
 
 const sansCommentaires = (texte, re) =>
@@ -210,8 +359,8 @@ const sansCommentaires = (texte, re) =>
     .filter((l) => !re.test(l))
     .join('\n');
 const WORKFLOW = sansCommentaires(readFileSync(join(RACINE, '.github/workflows/deploiement-production.yml'), 'utf8'), /^\s*#/);
-const DEPLOYEUR = sansCommentaires(readFileSync(join(ICI, 'wn-deploiement-deployer.mjs'), 'utf8'), /^\s*\/\//);
-const OBSERVATION = sansCommentaires(readFileSync(join(ICI, 'wn-deploiement-observation.mjs'), 'utf8'), /^\s*\/\//);
+const DEPLOYEUR = sansCommentaires(readFileSync(join(ICI, 'wn-deploiement-deployer.mjs'), 'utf8'), /^\s*(\/\/|\*|\/\*\*)/);
+const OBSERVATION = sansCommentaires(readFileSync(join(ICI, 'wn-deploiement-observation.mjs'), 'utf8'), /^\s*(\/\/|\*|\/\*\*)/);
 
 /** Le bloc d'un job, jusqu'au job suivant. */
 function job(nom) {
@@ -221,29 +370,59 @@ function job(nom) {
   return suite === -1 ? WORKFLOW.slice(debut) : WORKFLOW.slice(debut, debut + 1 + suite);
 }
 
-test('une seule écriture Scalingo, dans le seul déployeur, sur la BRANCHE main', () => {
-  const verbes = [...DEPLOYEUR.matchAll(/scalingo\('([^']+)'(?:,\s*'([^']+)')?/g)].map((m) => [m[1], m[2]]);
-  assert.deepEqual(
-    verbes.map(([v]) => v).sort(),
-    ['deployments', 'integration-link-manual-deploy'],
-    'le déployeur ne parle à Scalingo que pour lire la liste et déclencher',
-  );
-  assert.deepEqual(
-    verbes.find(([v]) => v === 'integration-link-manual-deploy'),
-    ['integration-link-manual-deploy', 'main'],
-    'le déclenchement vise la branche main, jamais un SHA ni une autre ref',
-  );
-  // L'observation, elle, ne fait que lire.
-  const appelsObs = [...OBSERVATION.matchAll(/lancer\('scalingo',\s*\[([^\]]*)\]/g)].map((m) => m[1]);
-  assert.equal(appelsObs.length, 1);
-  assert.match(appelsObs[0], /'deployments'\s*$/);
+/** Les étapes d'un job : { nom, bloc }. L'en-tête du job (avant `steps:`) à part. */
+function etapes(nom) {
+  const bloc = job(nom);
+  const iSteps = bloc.indexOf('\n    steps:\n');
+  assert.notEqual(iSteps, -1, `${nom} : pas de steps`);
+  const morceaux = bloc.slice(iSteps + '\n    steps:\n'.length).split(/\n(?=      - )/);
+  return {
+    entete: bloc.slice(0, iSteps),
+    etapes: morceaux.map((m) => ({ nom: (m.match(/name:\s*"([^"]+)"/) ?? [])[1] ?? m.split('\n')[0].trim(), bloc: m })),
+  };
+}
+
+// Revue, constat C9 : une LISTE NOIRE laissait passer `run -d` et
+// `--app X deploy`. Liste BLANCHE : chaque mention de `scalingo` dans le code
+// du workflow est l'une de celles-ci, et rien d'autre.
+test('revue — le workflow ne mentionne scalingo que pour l’installer, le connecter et effacer sa session', () => {
+  const PERMIS = [
+    /scalingo-cli\.tgz/,
+    /releases\/download\/1\.48\.0\/scalingo_1\.48\.0_linux_amd64\.tar\.gz/,
+    /^\s*sudo install scalingo_1\.48\.0_linux_amd64\/scalingo \/usr\/local\/bin\/scalingo\s*$/,
+    /^\s*scalingo --version\s*$/,
+    /^\s*if ! scalingo login --api-token "\$SCALINGO_API_TOKEN"; then\s*$/,
+    /^\s*run: rm -rf "\$HOME\/\.config\/scalingo"\s*$/,
+  ];
+  const mentions = WORKFLOW.split('\n').filter((l) => /scalingo/.test(l));
+  for (const l of mentions) {
+    assert.ok(PERMIS.some((re) => re.test(l)), `mention de scalingo hors liste blanche : ${l.trim()}`);
+  }
 });
 
-test('le workflow ne contient aucune commande Scalingo d’écriture en ligne', () => {
-  assert.doesNotMatch(
-    WORKFLOW,
-    /manual-deploy|scalingo deploy|\brun\s+--detached|one-off|rollback|env-set|env-unset|integration-link-update|restart|scale\b/,
-  );
+// Revue (basse) : l'invariant ne voyait que `scalingo('…')` — un
+// `lancer('scalingo', …)` ou un `execFileSync` direct passait.
+test('une seule écriture Scalingo, dans le seul déployeur, sur la BRANCHE main', () => {
+  assert.equal((DEPLOYEUR.match(/'scalingo'/g) ?? []).length, 1, 'un seul point d’appel du binaire scalingo');
+  assert.equal((DEPLOYEUR.match(/execFileSync/g) ?? []).length, 2, 'execFileSync : l’import et `lancer`, rien d’autre');
+  assert.doesNotMatch(DEPLOYEUR, /\bspawn|\bexec\(|child_process'\)\.exec\b/);
+  const verbes = [...DEPLOYEUR.matchAll(/scalingo\('([^']+)'(?:,\s*'([^']+)')?/g)].map((m) => [m[1], m[2]]);
+  assert.deepEqual(verbes.map(([v]) => v).sort(), ['deployments', 'integration-link-manual-deploy']);
+  assert.deepEqual(verbes.find(([v]) => v === 'integration-link-manual-deploy'), ['integration-link-manual-deploy', 'main']);
+  // L'observation, elle, ne fait que lire.
+  assert.equal((OBSERVATION.match(/'scalingo'/g) ?? []).length, 1);
+  assert.match(OBSERVATION, /lancer\('scalingo',\s*\['--app', app, '--region', region, 'deployments'\]\)/);
+});
+
+// La garde finale n'existe que si le câblage l'APPLIQUE : testée seule, elle
+// resterait verte même débranchée de `principal()`. Le code de sortie doit
+// être celui du verdict GARDÉ, pas celui du noyau.
+test('le câblage CLI applique la garde finale au verdict, et sort sur le verdict gardé', () => {
+  const principal = DEPLOYEUR.slice(DEPLOYEUR.indexOf('async function principal('));
+  assert.match(principal, /const brut = await deployer\(\{/);
+  assert.match(principal, /const verdict = gardeFinale\(brut, \{ sha, lireTete \}\);/);
+  assert.match(principal, /return verdict\.code;/);
+  assert.doesNotMatch(principal, /return brut\.code/);
 });
 
 test('lot 2 : le déploiement ne part QUE sur dispatch — aucun déclencheur push', () => {
@@ -256,11 +435,22 @@ test('lot 2 : le déploiement ne part QUE sur dispatch — aucun déclencheur pu
   );
 });
 
-test('les deux jobs : main seule, environnement dédié', () => {
+// La garde finale et le déclencheur `push` basculent ENSEMBLE, au lot 3 : un
+// push sans auto-déploiement coupé, ou l'auto-déploiement coupé sans push,
+// sont chacun un régime faux.
+test('le drapeau AUTO_DEPLOIEMENT_ACTIF et l’absence de `push` vont ensemble', () => {
+  const on = WORKFLOW.slice(WORKFLOW.indexOf('\non:'), WORKFLOW.indexOf('\npermissions:'));
+  assert.equal(AUTO_DEPLOIEMENT_ACTIF, !/^\s+push:/m.test(on));
+});
+
+test('les deux jobs : main seule, environnement dédié, session effacée en dernier', () => {
   for (const nom of ['observation', 'deploiement']) {
     const bloc = job(nom);
     assert.match(bloc, /^\s+if: github\.ref == 'refs\/heads\/main' &&/m, `${nom} : main seule`);
     assert.match(bloc, /^\s+environment: deploy-production\s*$/m, `${nom} : environnement dédié`);
+    const derniere = etapes(nom).etapes.at(-1);
+    assert.equal(derniere.nom, 'Effacer la session du CLI', `${nom} : la session est effacée en dernier`);
+    assert.match(derniere.bloc, /^\s+if: always\(\)\s*$/m);
   }
   assert.doesNotMatch(WORKFLOW, /:\s*write\b|write-all/, 'aucune permission d’écriture GitHub');
 });
@@ -271,20 +461,30 @@ test('concurrence : par job, le déploiement sérialisé et jamais annulé', () 
   const dep = job('deploiement');
   assert.match(dep, /^\s+group: deploiement-production\s*$/m);
   assert.match(dep, /^\s+cancel-in-progress: false\s*$/m);
-  assert.doesNotMatch(job('observation'), /^\s+group: deploiement-production\s*$/m, 'l’observation ne partage pas le groupe du déploiement');
+  assert.doesNotMatch(job('observation'), /^\s+group: deploiement-production\s*$/m);
 });
 
-test('`forcer` passe par l’environnement, jamais interpolé dans un script', () => {
-  const dep = job('deploiement');
-  assert.match(dep, /^\s+WN_FORCER: \$\{\{ inputs\.forcer \}\}\s*$/m);
-  assert.doesNotMatch(dep, /run:[^\n]*\$\{\{/, 'aucune expression ${{ }} dans une ligne run:');
-  assert.match(dep, /node scripts\/wn-deploiement-deployer\.mjs/);
+// Revue (basse) : le test ne lisait que la ligne `run:`, pas le corps d'un
+// `run: |`. Désormais, toute expression `${{ }}` du job est l'une des deux
+// permises, et elle est dans un `env:`.
+test('aucune expression ${{ }} dans le job de déploiement hors des deux `env:` permis', () => {
+  const PERMISES = [/^\s+WN_FORCER: \$\{\{ inputs\.forcer \}\}\s*$/, /^\s+SCALINGO_API_TOKEN: \$\{\{ secrets\.SCALINGO_API_TOKEN \}\}\s*$/];
+  for (const l of job('deploiement').split('\n').filter((x) => x.includes('${{'))) {
+    assert.ok(PERMISES.some((re) => re.test(l)), `expression non permise : ${l.trim()}`);
+  }
+  assert.match(job('deploiement'), /node scripts\/wn-deploiement-deployer\.mjs/);
 });
 
-test('le jeton n’est visible que de la garde et du login, dans chaque job', () => {
+// Revue, constat C8 : on COMPTAIT les citations du jeton. Déplacé dans l'`env:`
+// du job, il restait compté deux fois — et visible de toutes les étapes.
+test('revue — le jeton n’est cité QUE par la garde et le login, jamais au niveau du job ni du workflow', () => {
+  const tete = WORKFLOW.slice(0, WORKFLOW.indexOf('\njobs:'));
+  assert.doesNotMatch(tete, /SCALINGO_API_TOKEN/);
   for (const nom of ['observation', 'deploiement']) {
-    const citations = job(nom).match(/secrets\.SCALINGO_API_TOKEN/g) ?? [];
-    assert.equal(citations.length, 2, `${nom} : deux citations du jeton exactement`);
+    const { entete, etapes: liste } = etapes(nom);
+    assert.doesNotMatch(entete, /SCALINGO_API_TOKEN/, `${nom} : pas dans l’env du job`);
+    const porteuses = liste.filter((e) => /secrets\.SCALINGO_API_TOKEN/.test(e.bloc)).map((e) => e.nom);
+    assert.deepEqual(porteuses, ['Garde — SCALINGO_API_TOKEN requis (fail-closed)', 'Authentification du CLI (login par jeton)'], nom);
   }
   assert.doesNotMatch(WORKFLOW, /secrets\s*\[|toJSON\s*\(\s*secrets/);
 });

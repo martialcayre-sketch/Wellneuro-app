@@ -7,8 +7,9 @@
 ### D-248 — La production cesse de pouvoir reculer : GitHub Actions déploiera la tête de `main`, et un filet observe d'abord
 
 - Date : 2026-09-24
-- Statut : accepté — lot 1 (observation) livré par cette entrée ; lots 2 à 4
-  à venir, un par un, chacun validé par le responsable.
+- Statut : accepté — lot 1 (observation) livré le 2026-09-25 (#1219) ; lot 2
+  (job de déploiement sur dispatch) livré par le complément ci-dessous ; lots 3
+  et 4 à venir, un par un, chacun validé par le responsable.
 - Domaine : pipeline de déploiement GitHub → Scalingo. Porte sur [[D-102]] et
   sur la garde anti-recul de `release-db` (2026-09-23), qu'elle rendra sans
   objet au lot 4. **Ne modifie pas [[D-087]]** : le code se déploie toujours
@@ -88,7 +89,71 @@ première ligne — défaut latent, sans objet après le lot 4, non corrigé ici
 commit de tête ; s'il tombe pendant la CI d'un merge, Scalingo l'attend
 probablement comme les autres checks. D'où : run bref, et rouge seulement sur
 recul ou illisibilité — jamais sur un simple retard. (2) `manual-deploy` avec
-l'auto-déploiement coupé : c'est ce que le lot 2 éprouve.
+l'auto-déploiement coupé : le lot 2 éprouve le chemin depuis Actions, la
+bascule du lot 3 éprouve l'auto-déploiement coupé.
+
+**Lot 2 — ce qui est livré (2026-09-25).** Un job `deploiement` dans le même
+workflow, lançable **à la main seulement** (`action=deployer`) :
+`scripts/wn-deploiement-deployer.mjs`.
+
+- **Abstention verte** si le run n'est plus la tête de `main` (contrôlé deux
+  fois, la seconde juste avant l'écriture), ou si la version en service le
+  contient déjà sur un tableau **calme** (sauf `forcer`, pour la répétition à
+  vide).
+- **Calme avant l'écriture** : rien n'est déclenché tant qu'un build est en vol
+  (auto-déploiement, `release-db`, run précédent) — attente bornée, puis rouge
+  sans écriture.
+- **Écriture** : `integration-link-manual-deploy main`, seule écriture Scalingo
+  possible (invariant).
+- **Conclusion sur un tableau définitif** : on attend qu'aucun build ne soit en
+  vol et que le déclenchement ait produit une ligne ; puis la version en
+  service doit contenir le commit, et le verdict d'observation est rejoué — un
+  recul, un « non livré » ou une production illisible sont rouges. Build en
+  échec : rouge sans attendre la borne ; statut inconnu : l'attente bornée
+  (20 min) tranche ; lecture ratée après l'écriture : on continue d'attendre.
+- **Garde finale, tant que l'auto-déploiement est actif** : un run qui n'est
+  plus la tête à sa fin échoue VOLONTAIREMENT — son vert lèverait le dernier
+  check d'un vieux commit, que Scalingo pourrait livrer par-dessus la tête
+  (incident 1). Le drapeau `AUTO_DEPLOIEMENT_ACTIF` et l'absence de `push`
+  basculent ensemble au lot 3 (invariant).
+- **Concurrence par job** : déploiement sérialisé, jamais annulé ; une
+  concurrence de workflow aurait laissé le `cancel-in-progress` de
+  l'observation annuler un déploiement en plein build.
+- Session du CLI effacée en dernière étape (`if: always()`), avant le post-step
+  de `actions/checkout`.
+
+**Revue adverse avant PR** (quatre angles, un sceptique par constat, 16
+agents) : neuf constats confirmés, trois réfutés. Tous corrigés sauf un, routé
+ci-dessous. Les plus lourds : un build plus ancien en vol était ignoré (le
+script concluait « déployé » puis ce build reculait la production) ; un vert
+sur un commit dépassé réveillait l'auto-déploiement ; le banc du déployeur ne
+tournait nulle part ; les invariants d'écriture étaient une liste noire
+contournable (`run -d`) et le jeton était compté, pas localisé. Chaque
+correctif a sa mutation attrapée (17 sur 17).
+
+**Routé au lot 3, prérequis de la bascule.** `release-db` déclenche lui aussi
+`integration-link-manual-deploy main` ([[D-102]]) et n'attend pas le calme :
+un déclenchement concurrent, dans les secondes entre la lecture calme du
+déployeur et son écriture, relance deux builds en parallèle. Le déployeur le
+**détecte** (recul ou « non livré », rouge) ; seul un « attendre le calme »
+côté `release-db` l'**empêcherait**. À faire avant `--no-auto-deploy`, dans
+l'étape « Déclenchement » de `release-db.yml`. Reste aussi routé au lot 4 : la
+garde de `release-db` lit la première ligne de `deployments` (ordre de début).
+
+**Ce que le lot 2 lève de [[D-102]].** D-102 posait qu'aucun job hors gate ne
+déclenche de déploiement, pour que le jeton ne soit pas atteignable sans
+approbation. L'arbitrage n° 1 ci-dessus assume le contraire pour ce workflow,
+et ses bornes remplacent l'approbation : environnement restreint à `main`,
+aucun déclencheur `pull_request` ni `push` au lot 2, une seule écriture
+Scalingo possible, dans un seul script, sur la branche `main`, jeton cité par
+la seule garde et le seul login (invariants :
+`scripts/wn-deploiement-deployer.test.mjs`, joué en CI). L'invariant de D-102
+reste tenu **dans `release-db.yml`**, où il porte.
+
+**Lot 2 — la répétition à vide.** Dispatch `action=deployer, forcer=true` sur
+une tête déjà en service, auto-déploiement actif : le pire cas est un
+redéploiement de la tête, sans changement de code. Elle constate le
+déclenchement depuis Actions, le suivi du build et le constat d'arrivée.
 
 ### D-247 — Les portes biologiques atteignent la carte : les sources citées entières, le dernier résultat à côté, et aucun mot de la machine entre les deux
 
