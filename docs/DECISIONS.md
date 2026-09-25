@@ -140,6 +140,24 @@ côté `release-db` l'**empêcherait**. À faire avant `--no-auto-deploy`, dans
 l'étape « Déclenchement » de `release-db.yml`. Reste aussi routé au lot 4 : la
 garde de `release-db` lit la première ligne de `deployments` (ordre de début).
 
+**Prérequis du lot 3 — livré (2026-09-25).** L'étape « Déclenchement » de
+`release-db` attend désormais le calme avant d'écrire, comme le déployeur :
+aucun statut en vol (ni `success`, ni `*-error`, ni `aborted`, statut inconnu
+compris), 40 × 30 s, puis refus **sans écriture** ; une liste illisible est
+réessayée, jamais lue comme calme. `timeout-minutes` du job : 45 → 70 (quatre
+boucles d'attente). Ce qui reste : deux lectures calmes **simultanées** des
+deux côtés, suivies de deux écritures dans les mêmes secondes — la fenêtre
+passe de « tout build en cours » à quelques secondes, et le déployeur la
+détecte (rouge). La rendre nulle demanderait un verrou commun aux deux
+workflows ; non retenu, la détection suffisant à une fenêtre de secondes.
+Revue adverse (9 agents) : cinq constats confirmés, tous bas, tous corrigés —
+dont un chemin rendu faux par le calme : un build **en échec** du commit
+approuvé dispensait de déclencher (hérité du « n'importe quel statut », qui
+visait un build EN COURS) ; seul un build **réussi** dispense désormais, un
+échec se redéclenche. L'erreur du CLI n'est plus jetée ; la règle « en vol »
+de `release-db` et celle du déployeur sont tenues identiques par un banc de
+parité. Mutations : 9/9 attrapées.
+
 **Ce que le lot 2 lève de [[D-102]].** D-102 posait qu'aucun job hors gate ne
 déclenche de déploiement, pour que le jeton ne soit pas atteignable sans
 approbation. L'arbitrage n° 1 ci-dessus assume le contraire pour ce workflow,

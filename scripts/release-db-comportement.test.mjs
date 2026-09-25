@@ -177,6 +177,11 @@ function jouer(script, { cwd, bin, env }) {
       stdio: ['ignore', 'pipe', 'pipe'],
     }).toString();
   } catch (erreur) {
+    // Une étape TUÉE par la borne dure n'a pas de code : sans ce refus, un
+    // `notEqual(r.code, 0)` lirait un délai comme un refus (revue D-248).
+    if (erreur.status === null || erreur.signal) {
+      throw new Error(`étape tuée (${erreur.signal ?? 'délai'}) — ce n'est pas un refus :\n${erreur.stdout}${erreur.stderr}`);
+    }
     code = erreur.status;
     sortie = String(erreur.stdout) + String(erreur.stderr);
   }
@@ -471,4 +476,212 @@ test('drapeau NON LU : le refus ne tranche pas entre retrait et panne — [[D-11
   } finally {
     rmSync(base, { recursive: true, force: true });
   }
+});
+
+// ── CALME AVANT DÉCLENCHEMENT (D-248, prérequis du lot 3) ───────────────────
+//
+// Le job `deploiement` de deploiement-production.yml déclenche lui aussi
+// `integration-link-manual-deploy main`. Deux déclenchements rapprochés font
+// deux builds en parallèle, et le dernier à FINIR passe en service (incident 2
+// du 2026-09-23). L'étape attend donc qu'aucun build ne soit en vol.
+//
+// Ces bancs jouent le VRAI tableau de `scalingo deployments` (colonnes
+// séparées par `│`), avec un `scalingo` à sorties SUCCESSIVES et un `sleep`
+// factice posé dans le PATH : la boucle d'attente tourne pour de bon, sans
+// ajouter de couture de test au chemin d'écriture.
+
+const ligneDeploiement = (id, sha, statut) =>
+  `│ ${id} │ 2026/09/25 12:00:00 │ 5m0s │ wellneuro │ ${sha} │ ${statut} │ 1.2 GiB │`;
+const tableauDeploiements = (...lignes) =>
+  ['┌──┐', '│ ID │ DATE │ DURATION │ USER │ GIT REF │ STATUS │ IMAGE SIZE │', '├──┤', ...lignes, '└──┘'].join('\n');
+
+/**
+ * `scalingo` à sorties successives pour `deployments` (la dernière se répète ;
+ * `null` = le CLI échoue), qui journalise chaque déclenchement ; et un `sleep`
+ * qui rend la main aussitôt en comptant ses appels.
+ */
+function poserScalingoSequence(base, sorties) {
+  const bin = join(base, 'bin');
+  mkdirSync(bin, { recursive: true });
+  sorties.forEach((s, i) => writeFileSync(join(base, `sortie-${i}.txt`), s ?? ''));
+  const n = sorties.length;
+  const echecs = sorties
+    .map((s, i) => (s === null ? i : -1))
+    .filter((i) => i >= 0)
+    .join(' ');
+  writeFileSync(
+    join(bin, 'scalingo'),
+    `#!/bin/bash
+for arg in "$@"; do
+  case "$arg" in
+    deployments)
+      c=$(cat "${base}/compteur" 2>/dev/null || echo 0)
+      echo $((c + 1)) > "${base}/compteur"
+      i=$c; [ "$i" -ge ${n} ] && i=${n - 1}
+      for e in ${echecs}; do [ "$i" = "$e" ] && { echo "An error occurred: 401 Unauthorized (jouet)" >&2; exit 1; }; done
+      cat "${base}/sortie-$i.txt"; exit 0 ;;
+    integration-link-manual-deploy) cat "${base}/compteur" 2>/dev/null >> "${base}/declenchements" || echo 0 >> "${base}/declenchements"; echo "(jouet) build déclenché"; exit 0 ;;
+  esac
+done
+exit 0
+`,
+  );
+  writeFileSync(join(bin, 'sleep'), `#!/bin/sh\necho "$1" >> "${base}/sommes"\nexit 0\n`);
+  chmodSync(join(bin, 'scalingo'), 0o755);
+  chmodSync(join(bin, 'sleep'), 0o755);
+  return bin;
+}
+const compter = (base, fichier) => {
+  try {
+    return readFileSync(join(base, fichier), 'utf8').trim().split('\n').filter(Boolean).length;
+  } catch {
+    return 0;
+  }
+};
+
+test('D-248 — un build en vol : l’étape ATTEND qu’il finisse, puis déclenche', () => {
+  const { base, local, approuve } = depotJouet({ migrations: false });
+  try {
+    const autre = 'f'.repeat(40);
+    const bin = poserScalingoSequence(base, [
+      tableauDeploiements(ligneDeploiement('dep-x', autre, 'building'), ligneDeploiement('dep-a', autre, 'success')),
+      tableauDeploiements(ligneDeploiement('dep-x', autre, 'pushing'), ligneDeploiement('dep-a', autre, 'success')),
+      tableauDeploiements(ligneDeploiement('dep-x', autre, 'success'), ligneDeploiement('dep-a', autre, 'success')),
+    ]);
+    const r = jouer(scriptDeLEtape('Déclenchement du déploiement'), { cwd: local, bin, env: { GITHUB_SHA: approuve } });
+    assert.equal(r.code, 0, r.sortie);
+    assert.equal(compter(base, 'sommes'), 2, 'deux attentes : building puis pushing');
+    assert.equal(compter(base, 'declenchements'), 1, 'un seul déclenchement');
+    // Le journal des déclenchements note combien de lectures avaient eu lieu :
+    // la troisième est la première lecture CALME.
+    assert.equal(readFileSync(join(base, 'declenchements'), 'utf8').trim(), '3', 'le déclenchement suit la lecture calme');
+    assert.match(r.sortie, /build en vol \(1\/40\) : dep-x building/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('D-248 — un build qui reste en vol : refus après la borne, AUCUN déclenchement, rien reporté', () => {
+  const { base, local, approuve } = depotJouet({ migrations: false });
+  try {
+    const bin = poserScalingoSequence(base, [tableauDeploiements(ligneDeploiement('dep-x', 'f'.repeat(40), 'starting'))]);
+    const r = jouer(scriptDeLEtape('Déclenchement du déploiement'), { cwd: local, bin, env: { GITHUB_SHA: approuve } });
+    assert.notEqual(r.code, 0);
+    assert.match(r.sortie, /Aucune écriture/);
+    assert.equal(compter(base, 'declenchements'), 0);
+    assert.equal(compter(base, 'sommes'), 40, 'la borne est de 40 attentes');
+    // La borne est de 20 MINUTES : 40 attentes de 30 s, pas 40 de n'importe quoi.
+    const durees = readFileSync(join(base, 'sommes'), 'utf8').trim().split('\n');
+    assert.ok(durees.every((d) => d === '30'), `attentes de 30 s attendues, lu : ${[...new Set(durees)].join(', ')}`);
+    assert.equal(r.ecrit, '');
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('D-248 — une liste ILLISIBLE n’est pas une liste calme', () => {
+  const { base, local, approuve } = depotJouet({ migrations: false });
+  try {
+    const bin = poserScalingoSequence(base, [null]);
+    const r = jouer(scriptDeLEtape('Déclenchement du déploiement'), { cwd: local, bin, env: { GITHUB_SHA: approuve } });
+    // Un REFUS franc (code 1), pas une étape tuée par le délai — `jouer` lève
+    // désormais sur ce dernier cas.
+    assert.equal(r.code, 1, 'un CLI en échec ne doit pas faire déclencher à l’aveugle');
+    assert.match(r.sortie, /reste illisible/);
+    assert.equal(compter(base, 'sommes'), 40);
+    assert.equal(compter(base, 'declenchements'), 0);
+    assert.equal(r.ecrit, '');
+    // La CAUSE est dite : l'erreur du CLI n'est plus jetée (revue D-248).
+    assert.match(r.sortie, /401 Unauthorized \(jouet\)/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('D-248 — une panne de lecture passagère se réessaie, puis la release suit son cours', () => {
+  const { base, local, approuve } = depotJouet({ migrations: false });
+  try {
+    const bin = poserScalingoSequence(base, [null, tableauDeploiements(ligneDeploiement('dep-a', 'f'.repeat(40), 'success'))]);
+    const r = jouer(scriptDeLEtape('Déclenchement du déploiement'), { cwd: local, bin, env: { GITHUB_SHA: approuve } });
+    assert.equal(r.code, 0, r.sortie);
+    assert.equal(compter(base, 'declenchements'), 1);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('D-248 — statuts terminaux (success, *-error, aborted) : calme ; statut inconnu : en vol', () => {
+  const { base, local, approuve } = depotJouet({ migrations: false });
+  try {
+    const f = 'f'.repeat(40);
+    const calme = tableauDeploiements(
+      ligneDeploiement('d1', f, 'success'),
+      ligneDeploiement('d2', f, 'build-error'),
+      ligneDeploiement('d3', f, 'crashed-error'),
+      ligneDeploiement('d4', f, 'aborted'),
+    );
+    const bin = poserScalingoSequence(base, [
+      tableauDeploiements(ligneDeploiement('d0', f, 'queued')),
+      tableauDeploiements(ligneDeploiement('d0', f, 'bizarre')),
+      calme,
+    ]);
+    const r = jouer(scriptDeLEtape('Déclenchement du déploiement'), { cwd: local, bin, env: { GITHUB_SHA: approuve } });
+    assert.equal(r.code, 0, r.sortie);
+    assert.equal(compter(base, 'sommes'), 2, '`queued` et le statut inconnu ont été attendus, les terminaux non');
+    assert.equal(compter(base, 'declenchements'), 1);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+// Revue D-248 : un build de CE commit terminé en ÉCHEC ne dispense pas de
+// déclencher. S'abstenir faisait attendre à la garde suivante, 20 minutes, un
+// succès que personne ne relançait.
+test('D-248 — un build du commit approuvé en ÉCHEC se redéclenche ; un build RÉUSSI dispense', () => {
+  for (const [statut, attendu] of [
+    ['build-error', 1],
+    ['crashed-error', 1],
+    ['aborted', 1],
+    ['success', 0],
+  ]) {
+    const { base, local, approuve } = depotJouet({ migrations: false });
+    try {
+      const bin = poserScalingoSequence(base, [
+        tableauDeploiements(ligneDeploiement('dep-m', approuve, statut), ligneDeploiement('dep-p', 'f'.repeat(40), 'success')),
+      ]);
+      const r = jouer(scriptDeLEtape('Déclenchement du déploiement'), { cwd: local, bin, env: { GITHUB_SHA: approuve } });
+      assert.equal(r.code, 0, `${statut} :\n${r.sortie}`);
+      assert.equal(compter(base, 'declenchements'), attendu, `${statut} : déclenchements`);
+    } finally {
+      rmSync(base, { recursive: true, force: true });
+    }
+  }
+});
+
+// Revue D-248 : les deux workflows qui déclenchent un déploiement doivent
+// appliquer la MÊME règle « en vol ». Un statut compté en vol d'un côté et
+// calme de l'autre rouvrirait la fenêtre des deux builds parallèles. L'awk de
+// l'étape est extrait du YAML et joué sur le format réel, puis comparé à
+// `enVol` du déployeur.
+test('D-248 — parité de la règle « en vol » entre release-db et le déployeur', async () => {
+  const { enVol } = await import('./wn-deploiement-deployer.mjs');
+  const programme = SOURCE.match(/awk -F'│' '([^']*print id " " s[^']*)'/)?.[1];
+  assert.ok(programme, 'le programme awk de l’attente du calme est introuvable');
+  const f = 'f'.repeat(40);
+  const statuts = ['queued', 'building', 'pushing', 'starting', 'success', 'build-error', 'crashed-error', 'timeout-error', 'hook-error', 'aborted', 'bizarre'];
+  const texte = tableauDeploiements(
+    ...statuts.map((st, i) => ligneDeploiement(`d${i}`, f, st)),
+    // Un build en cours au format réel : durée et taille VIDES.
+    `│ d-vide │ 2026/09/25 12:00:00 │          │ wellneuro │ ${f} │ building │            │`,
+  );
+  const cotéReleaseDb = execFileSync('awk', ['-F', '│', programme], { input: `${texte}\n` })
+    .toString()
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => l.split(' ')[0])
+    .sort();
+  const cotéDeployeur = enVol(texte).map((l) => l.id).sort();
+  assert.deepEqual(cotéReleaseDb, cotéDeployeur);
+  assert.deepEqual(cotéDeployeur, ['d-vide', 'd0', 'd1', 'd10', 'd2', 'd3']);
 });

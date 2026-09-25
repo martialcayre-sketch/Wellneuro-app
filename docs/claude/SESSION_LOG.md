@@ -7856,3 +7856,21 @@ et le cockpit ; elle se dit désormais illisible.
 
 **Prochaine action.** Merge seul, `release-db`, puis lecture sur un dossier
 réel porteur d'un résultat.
+
+## 2026-09-25 — D-248 : la production cesse de pouvoir reculer (lots 1, 2, prérequis du lot 3)
+
+**Décision.** GitHub Actions déploiera la tête de `main`, auto-déploiement
+Scalingo coupé ; un filet d'observation d'abord. Lot 1 (#1219) et lot 2 (#1220)
+en production, répétition à vide verte ; `release-db` attend le calme (#1221).
+
+**Écarté.** Check « obsolète » (interblocage D-102 recréé) ; merge queue (ne
+sérialise pas les fins de build) ; compte machine borné (arbitrage du
+responsable : jeton actuel).
+
+**Trouvé en chemin.** La liste `deployments` est triée par DÉBUT de build : la
+version en service est celle qui FINIT en dernier. Au lot 3, le déclencheur doit
+être la fin du CI, et un commit de migration doit rester retenu jusqu'à
+l'approbation — comme sous l'auto-déploiement.
+
+**Ouvert.** L'édition du workflow du lot 3 a été refusée par le classifieur :
+arbitrage du responsable.
