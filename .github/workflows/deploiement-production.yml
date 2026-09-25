@@ -6,12 +6,18 @@ name: Déploiement production
 # approuvé sur un vieux commit ; deux merges rapprochés). Décision complète :
 # docs/DECISIONS.md, D-248.
 #
-# LOT 1 — OBSERVATION SEULE. Ce workflow lit `scalingo deployments` et
-# l'ascendance de `main`, et rougit si le code en service est un ancêtre strict
-# d'un commit qui a déjà été en service. Il ne déploie RIEN : le pouvoir de
-# déployer (lot 2, puis bascule de l'auto-déploiement au lot 3) viendra par une
-# PR relue, et un invariant (scripts/wn-deploiement-observation.test.mjs)
-# refuse d'ici là toute commande d'écriture Scalingo dans ce fichier.
+# DEUX JOBS.
+#   - `observation` (lot 1) : lit `scalingo deployments` et l'ascendance de
+#     `main`, rougit si le code en service est un ancêtre strict d'un commit
+#     déjà mis en service. Planifié, et lançable à la main (`action=observer`).
+#   - `deploiement` (lot 2) : déclenche `integration-link-manual-deploy main`
+#     si ce run est encore la tête de `main`, puis attend que la version en
+#     service le contienne (scripts/wn-deploiement-deployer.mjs). AU LOT 2, IL
+#     NE PART QU'À LA MAIN (`action=deployer`) : l'auto-déploiement Scalingo
+#     reste actif, et c'est la répétition à vide qui éprouve le chemin. Le
+#     déclencheur `push` n'arrive qu'avec la bascule du lot 3.
+#   Les invariants (scripts/wn-deploiement-deployer.test.mjs) tiennent : une
+#   seule écriture Scalingo, dans le seul script du déployeur, sur une BRANCHE.
 #
 # LE JETON. L'environnement `deploy-production` porte `SCALINGO_API_TOKEN`,
 # jeton du compte (arbitrage du responsable, 2026-09-24 : pas de compte machine
@@ -31,22 +37,37 @@ on:
     # Toutes les 15 minutes, décalé de l'heure pleine (charge GitHub).
     - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
+    inputs:
+      action:
+        description: "observer (lecture seule) ou deployer (déploie la tête de main)"
+        type: choice
+        options:
+          - observer
+          - deployer
+        default: observer
+      forcer:
+        description: "deployer : redéployer même si la tête est déjà en service (répétition à vide)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
-# Groupe PAR REF : un dispatch sur une autre branche (refusé par le `if:` du
-# job) ne doit pas annuler une observation de `main` en cours.
-concurrency:
-  group: deploiement-production-observation-${{ github.ref }}
-  cancel-in-progress: true
+# LA CONCURRENCE EST PAR JOB, JAMAIS PAR WORKFLOW : au niveau du workflow, le
+# `cancel-in-progress` de l'observation annulerait un DÉPLOIEMENT en cours à
+# chaque passage du cron — en plein build, après l'écriture.
 
 jobs:
   observation:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.action == 'observer')
     runs-on: ubuntu-latest
     environment: deploy-production
     timeout-minutes: 10
+    # Groupe PAR REF : un dispatch sur une autre branche (refusé par le `if:`)
+    # ne doit pas annuler une observation de `main` en cours.
+    concurrency:
+      group: deploiement-production-observation-${{ github.ref }}
+      cancel-in-progress: true
     env:
       SCALINGO_APP: wellneuro
       SCALINGO_REGION: osc-fr1
@@ -76,8 +97,10 @@ jobs:
           scalingo --version
 
       # Le CLI n'authentifie pas par la variable d'environnement (leçon de
-      # release-db, run 32578782755) : login explicite, jeton visible de cette
-      # seule étape.
+      # release-db, run 32578782755) : login explicite. Le jeton n'est en
+      # `env:` que de cette étape et de la garde ; la SESSION que `login` écrit
+      # sur le disque du runner sert aux étapes suivantes, et la dernière étape
+      # l'efface.
       - name: "Authentification du CLI (login par jeton)"
         env:
           SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
@@ -91,3 +114,83 @@ jobs:
       # 1 : RECUL ; 2 : production illisible — aucun recul ne peut être exclu.
       - name: "Observation — la production a-t-elle reculé ?"
         run: node scripts/wn-deploiement-observation.mjs
+
+      # La session du CLI contient le jeton du compte : effacée avant les
+      # post-steps (celui de `actions/checkout` tourne après toutes les étapes),
+      # quelle qu'ait été l'issue.
+      - name: "Effacer la session du CLI"
+        if: always()
+        run: rm -rf "$HOME/.config/scalingo"
+
+  deploiement:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.action == 'deployer'
+    runs-on: ubuntu-latest
+    environment: deploy-production
+    # DEUX bornes de 20 min s'additionnent (revue #1220) : le calme AVANT
+    # l'écriture, puis la conclusion APRÈS. Un job tué entre les deux
+    # laisserait un build en vol et un état inconnu. 40 + installation + marge.
+    timeout-minutes: 50
+    # SÉRIALISÉ, JAMAIS ANNULÉ : deux déploiements ne s'entrelacent pas, et un
+    # déploiement déclenché n'est pas abandonné en plein build. Le second run
+    # attend le premier, puis s'abstient s'il n'est plus la tête.
+    concurrency:
+      group: deploiement-production
+      cancel-in-progress: false
+    env:
+      SCALINGO_APP: wellneuro
+      SCALINGO_REGION: osc-fr1
+    steps:
+      - name: "Garde — SCALINGO_API_TOKEN requis (fail-closed)"
+        env:
+          SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
+        run: |
+          if [ -z "${SCALINGO_API_TOKEN:-}" ]; then
+            echo "❌ SCALINGO_API_TOKEN absent des secrets de l'environnement 'deploy-production'." >&2
+            exit 1
+          fi
+
+      # L'historique entier : « ce run est-il encore la tête ? » et « la version
+      # en service contient-elle ce commit ? » sont des questions d'ASCENDANCE.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Même couple version/empreinte que release-db.yml.
+      - name: "CLI Scalingo 1.48.0 (épinglé, empreinte vérifiée)"
+        run: |
+          curl -fsSL -o scalingo-cli.tgz \
+            https://github.com/Scalingo/cli/releases/download/1.48.0/scalingo_1.48.0_linux_amd64.tar.gz
+          echo "4575a9a960d724d5a4b1edcaef5486cc081080d87e62291c2e0f2cdf21f5ddd1  scalingo-cli.tgz" | sha256sum -c -
+          tar -xzf scalingo-cli.tgz
+          sudo install scalingo_1.48.0_linux_amd64/scalingo /usr/local/bin/scalingo
+          scalingo --version
+
+      # Le CLI n'authentifie pas par la variable d'environnement (leçon de
+      # release-db, run 32578782755) : login explicite. Le jeton n'est en
+      # `env:` que de cette étape et de la garde ; la SESSION que `login` écrit
+      # sur le disque du runner sert aux étapes suivantes, et la dernière étape
+      # l'efface.
+      - name: "Authentification du CLI (login par jeton)"
+        env:
+          SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
+        run: |
+          if ! scalingo login --api-token "$SCALINGO_API_TOKEN"; then
+            echo "❌ Authentification Scalingo refusée — jeton invalide, expiré ou révoqué." >&2
+            exit 1
+          fi
+
+      # 0 : déployé, ou abstention (dépassé / déjà en service) ; 1 : refus,
+      # build en échec, recul constaté, ou délai — état INCONNU, lire
+      # `deployment-logs` avant de relancer. `forcer` passe par l'environnement,
+      # jamais interpolé dans le script.
+      - name: "Déploiement — la tête de main, et rien de plus ancien"
+        env:
+          WN_FORCER: ${{ inputs.forcer }}
+        run: node scripts/wn-deploiement-deployer.mjs
+
+      # La session du CLI contient le jeton du compte : effacée avant les
+      # post-steps (celui de `actions/checkout` tourne après toutes les étapes),
+      # quelle qu'ait été l'issue.
+      - name: "Effacer la session du CLI"
+        if: always()
+        run: rm -rf "$HOME/.config/scalingo"

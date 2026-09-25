@@ -271,6 +271,13 @@ jobs:
       - name: Observation du recul de production (banc + invariants)
         run: node --test scripts/wn-deploiement-observation.test.mjs
 
+      # D-248, lot 2 — le déployeur : chaque issue de `deployer()` (abstention,
+      # attente du calme, build en échec, recul, garde finale) et les invariants
+      # qui bornent un jeton plein détenu SANS approbation. Un invariant qui ne
+      # tourne nulle part ne borne rien : revue du lot 2, constat confirmé.
+      - name: Déployeur de production (banc + invariants)
+        run: node --test scripts/wn-deploiement-deployer.test.mjs
+
       # Banc de `scripts/changelog-collate.mjs`, qui replie les fragments de
       # `changelog.d/` dans `CHANGELOG.md`. Il ne tournait NULLE PART : ni en
       # CI, ni dans `npm run check`. Un banc qu'aucune passe n'exécute ne
