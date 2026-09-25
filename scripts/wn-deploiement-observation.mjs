@@ -83,6 +83,25 @@ export function analyserTableau(texte) {
 }
 
 /**
+ * TOUTES les lignes du tableau, quel que soit leur statut — pour suivre un
+ * build en cours (`building`, `pushing`…) ou en échec (`build-error`…). Rien
+ * n'y est daté : seul l'identifiant sert à reconnaître un déploiement NOUVEAU,
+ * et les lignes réussies, qui décident de ce qui est en service, passent par
+ * `analyserTableau` et sa validation stricte.
+ */
+export function analyserToutesLignes(texte) {
+  const lignes = [];
+  for (const ligne of texte.split('\n')) {
+    const cellules = ligne.split('│').map((c) => c.trim());
+    if (cellules.length < 8) continue;
+    const [, id, , , , ref, statut] = cellules;
+    if (!id || id === 'ID') continue;
+    lignes.push({ id, sha: ref, statut });
+  }
+  return lignes;
+}
+
+/**
  * Le verdict, à partir de faits déjà collectés.
  *
  * `estAncetre(a, b)` : `a` est-il ancêtre de `b` ou égal (`merge-base

@@ -246,10 +246,11 @@ const WORKFLOW = readFileSync(join(RACINE, '.github/workflows/deploiement-produc
   .filter((l) => !/^\s*#/.test(l))
   .join('\n');
 
-// Lot 1 = observation. Le pouvoir de déployer arrive au lot 2, par décision
-// relue : jusque-là, ce workflow, qui détient un jeton plein sans approbation,
-// ne doit contenir aucune commande qui écrive côté Scalingo.
-test('workflow : aucune commande d’écriture Scalingo', () => {
+// Depuis le lot 2, le pouvoir de déployer existe — mais dans le SEUL script
+// du déployeur, sur la seule branche `main` (invariants complets :
+// wn-deploiement-deployer.test.mjs). Le workflow, lui, reste sans commande
+// Scalingo d'écriture en ligne.
+test('workflow : aucune commande d’écriture Scalingo en ligne', () => {
   assert.doesNotMatch(
     WORKFLOW,
     /manual-deploy|scalingo deploy|\brun\s+--detached|one-off|rollback|env-set|env-unset|integration-link-update|restart|scale\b/,
@@ -257,7 +258,7 @@ test('workflow : aucune commande d’écriture Scalingo', () => {
 });
 
 test('workflow : jeton confiné à main et à l’environnement dédié', () => {
-  assert.match(WORKFLOW, /^\s+if: github\.ref == 'refs\/heads\/main'\s*$/m);
+  assert.match(WORKFLOW, /^\s+if: github\.ref == 'refs\/heads\/main' &&/m);
   assert.match(WORKFLOW, /^\s+environment: deploy-production\s*$/m);
   assert.doesNotMatch(WORKFLOW, /pull_request/, 'aucun déclencheur ouvert au code d’une branche');
   assert.doesNotMatch(WORKFLOW, /:\s*write\b|write-all/, 'aucune permission d’écriture GitHub');
