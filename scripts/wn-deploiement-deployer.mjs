@@ -58,9 +58,10 @@ const ECHEC = /(-error|^aborted)$/;
 // VERT sur un commit qui n'est plus la tête lève le dernier check de ce commit
 // — et Scalingo peut le déployer par-dessus la tête : le mécanisme de
 // l'incident 1. La garde finale fait alors échouer le run VOLONTAIREMENT,
-// comme celle de release-db. Passe à `false` au lot 3, avec `--no-auto-deploy`,
-// et pas avant : un invariant du banc lie ce drapeau à l'absence de `push`.
-export const AUTO_DEPLOIEMENT_ACTIF = true;
+// comme celle de release-db. Passé à `false` au lot 3, avec `--no-auto-deploy`
+// (geste du responsable) : un invariant du banc lie ce drapeau au déclencheur
+// `workflow_run` du workflow — l'un ne bascule pas sans l'autre.
+export const AUTO_DEPLOIEMENT_ACTIF = false;
 
 /** La version en service : le déploiement réussi qui a FINI en dernier. */
 function enService(texte) {
@@ -92,9 +93,28 @@ export async function deployer({
   essais = ESSAIS_DEFAUT,
   intervalleMs = INTERVALLE_MS_DEFAUT,
   journal = () => {},
+  lireRunsReleaseDb = () => [],
 }) {
   if (lireTete() !== sha) {
     return { code: SORTIE_OK, etat: 'depasse', motif: `la tête de main a dépassé ce run (${sha}) — son propre run déploiera` };
+  }
+
+  // UN COMMIT QUI PORTE UN RUN release-db ATTEND SON APPROBATION (D-087, lot 3
+  // de D-248). Sous l'auto-déploiement, ce run était un CHECK du commit, et
+  // Scalingo attendait qu'il conclue : un commit de migration n'était déployé
+  // qu'à l'approbation, par release-db lui-même ([[D-102]]). Le déployer dès la
+  // fin du CI servirait un code qui lit des colonnes absentes de la base, pour
+  // toute la durée de l'attente humaine. Retenu, donc — vert, sans écriture :
+  // release-db déploiera à l'approbation. Une lecture en échec propage : aucune
+  // écriture n'a eu lieu.
+  const nonConclus = lireRunsReleaseDb(sha).filter((r) => !(r.status === 'completed' && r.conclusion === 'success'));
+  if (nonConclus.length > 0) {
+    const etats = nonConclus.map((r) => r.conclusion || r.status).join(', ');
+    return {
+      code: SORTIE_OK,
+      etat: 'retenu-release-db',
+      motif: `${sha} porte un run release-db non conclu au vert (${etats}) — release-db le déploiera à l'approbation`,
+    };
   }
 
   // CALME AVANT L'ÉCRITURE : aucun build en vol. Déclencher pendant un autre
@@ -230,15 +250,19 @@ const TITRES = {
   illisible: '## ❌ Production illisible après déploiement',
   'en-vol': '## ❌ Un build reste en vol — aucune écriture',
   'garde-finale': '## ❌ Échec volontaire — ce run n’est plus la tête de `main`',
+  'retenu-release-db': '## ✓ Retenu — ce commit attend l’approbation de release-db',
   delai: '## ❌ Aucune conclusion — état inconnu',
 };
 
 async function principal(env = process.env) {
   const app = env.SCALINGO_APP ?? 'wellneuro';
   const region = env.SCALINGO_REGION ?? 'osc-fr1';
-  const sha = env.GITHUB_SHA;
+  // Sur `workflow_run`, GITHUB_SHA est la tête de la branche par défaut au
+  // moment du run ; le commit que le CI a VÉRIFIÉ est `workflow_run.head_sha`,
+  // passé par WN_SHA. C'est lui qu'on déploie — ou dont on constate le dépassement.
+  const sha = env.WN_SHA || env.GITHUB_SHA;
   if (!/^[0-9a-f]{40}$/.test(sha ?? '')) {
-    console.error('::error title=Déploiement refusé::GITHUB_SHA absent ou invalide.');
+    console.error('::error title=Déploiement refusé::WN_SHA / GITHUB_SHA absent ou invalide.');
     return SORTIE_ECHEC;
   }
   const scalingo = (...args) => lancer('scalingo', ['--app', app, '--region', region, ...args]);
@@ -249,6 +273,12 @@ async function principal(env = process.env) {
   const brut = await deployer({
     sha,
     forcer: env.WN_FORCER === 'true',
+    // LECTURE SEULE de l'API Actions (`actions: read`) : les runs release-db du
+    // commit. Jamais d'autre verbe que GET.
+    lireRunsReleaseDb: (commit) =>
+      JSON.parse(
+        lancer('gh', ['api', `repos/${env.GITHUB_REPOSITORY}/actions/workflows/release-db.yml/runs?head_sha=${commit}&per_page=100`]),
+      ).workflow_runs.map((r) => ({ status: r.status, conclusion: r.conclusion })),
     lireTete,
     lireDeploiements: () => scalingo('deployments'),
     // LA SEULE ÉCRITURE de ce script, et un invariant le tient : une BRANCHE,
