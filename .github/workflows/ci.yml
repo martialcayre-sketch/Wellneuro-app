@@ -264,6 +264,13 @@ jobs:
       - name: Scripts de release Scalingo (banc des sentinelles)
         run: node --test scripts/release-db-scripts.test.mjs
 
+      # D-248 — l'observation du recul de production : verdict (tri par FIN de
+      # build, recul / retard / illisible), CLI sur git réel et `scalingo`
+      # factice, et les invariants du workflow qui détient le jeton sans
+      # approbation (aucune commande d'écriture Scalingo, main seule).
+      - name: Observation du recul de production (banc + invariants)
+        run: node --test scripts/wn-deploiement-observation.test.mjs
+
       # Banc de `scripts/changelog-collate.mjs`, qui replie les fragments de
       # `changelog.d/` dans `CHANGELOG.md`. Il ne tournait NULLE PART : ni en
       # CI, ni dans `npm run check`. Un banc qu'aucune passe n'exécute ne

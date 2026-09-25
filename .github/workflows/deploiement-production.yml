@@ -35,8 +35,10 @@ on:
 permissions:
   contents: read
 
+# Groupe PAR REF : un dispatch sur une autre branche (refusé par le `if:` du
+# job) ne doit pas annuler une observation de `main` en cours.
 concurrency:
-  group: deploiement-production-observation
+  group: deploiement-production-observation-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
