@@ -9,7 +9,7 @@
 - Date : 2026-09-24
 - Statut : accepté — lot 1 (observation, #1219), lot 2 (job de déploiement sur
   dispatch, #1220) et prérequis du lot 3 (#1221) livrés le 2026-09-25 ; lot 3
-  (bascule) livré par le complément ci-dessous ; lot 4 à venir.
+  (bascule, #1222) livré et constaté le même jour ; lot 4 à venir.
 - Domaine : pipeline de déploiement GitHub → Scalingo. Porte sur [[D-102]] et
   sur la garde anti-recul de `release-db` (2026-09-23), qu'elle rendra sans
   objet au lot 4. **Ne modifie pas [[D-087]]** : le code se déploie toujours
@@ -227,6 +227,19 @@ sous l'auto-déploiement. Le retenir aussi changerait le régime code/schéma.
 **Classifieur de permissions.** L'édition du workflow qui rend le déploiement
 automatique a été refusée à Claude (« Protected-Scope IaC Apply ») ; le
 responsable l'a appliquée lui-même.
+
+**Bascule constatée (2026-09-25).** `--no-auto-deploy` posé par le
+responsable avant le merge de #1222 (`Automatic deployment: ✘`). Le CI de
+`main` sur `e43a40b0` a conclu vert ; le `workflow_run` a lancé le déployeur
+(run 36182085373, 19:50 UTC), qui a déclenché `integration-link-manual-deploy
+main` : déploiement `5e19edc5`, 6 min, `success`, verdict « Tête de `main`
+déployée ». Dans `scalingo deployments`, la ligne porte l'utilisateur
+`wellneuro` (le jeton du compte, donc Actions) ; aucune ligne
+`scalingo-platform-scm` (l'auto-déploiement) pour ce commit. Le point (2) du
+« Non vérifié » du lot 1 est levé : `manual-deploy` fonctionne
+auto-déploiement coupé. Reste avant le lot 4 (arbitrage n° 3) : l'incident 2
+rejoué, et cinq déploiements verts dont au moins un avec migration — celui-ci
+est le premier.
 
 **Ce que le lot 2 lève de [[D-102]].** D-102 posait qu'aucun job hors gate ne
 déclenche de déploiement, pour que le jeton ne soit pas atteignable sans
