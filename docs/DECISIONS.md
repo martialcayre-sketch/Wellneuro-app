@@ -9,7 +9,8 @@
 - Date : 2026-09-24
 - Statut : accepté — lot 1 (observation, #1219), lot 2 (job de déploiement sur
   dispatch, #1220) et prérequis du lot 3 (#1221) livrés le 2026-09-25 ; lot 3
-  (bascule, #1222) livré et constaté le même jour ; lot 4 à venir.
+  (bascule, #1222) livré et constaté le même jour, incident 2 rejoué sans
+  recul ; lot 4 à venir.
 - Domaine : pipeline de déploiement GitHub → Scalingo. Porte sur [[D-102]] et
   sur la garde anti-recul de `release-db` (2026-09-23), qu'elle rendra sans
   objet au lot 4. **Ne modifie pas [[D-087]]** : le code se déploie toujours
@@ -240,6 +241,24 @@ déployée ». Dans `scalingo deployments`, la ligne porte l'utilisateur
 l'auto-déploiement coupé. Reste avant le lot 4 (arbitrage n° 3) : l'incident 2
 rejoué, et cinq déploiements verts dont au moins un avec migration — celui-ci
 est le premier.
+
+**Incident 2 rejoué, sans recul (2026-09-25).** Deux PR de documentation
+(#1223, #1224) mergées à 2 min 09 s d'intervalle (20:29:07 et 20:31:16 UTC).
+Le CI de `main` du premier commit (`02e8d131`) conclut à 20:30:24 ; son run
+déclenche le build `e2810e22` à 20:30:43. Le second (`83143246`) est mergé
+**pendant** ce build ; son CI conclut à 20:32:36, et son run (36186399893)
+reste **en attente** dans le groupe de concurrence jusqu'à la fin du premier
+(20:36:32), puis déclenche `7b55a580` à 20:36:49. Sous l'auto-déploiement, le
+second build serait parti à 20:32:36, à côté du premier encore en vol pour
+3 min 30 : la configuration de l'incident 2, où l'ordre de fin des builds
+choisit la version servie. Ici, aucun chevauchement : fins à 20:36:08 puis
+20:41:32, les deux runs concluent « Tête de `main` déployée », l'observation
+est conforme à chaque relevé (planifiée comprise, 20:30:49 et 20:42:46) et
+`83143246` est en service. **Non exercé** : le chemin « run dépassé » — le
+premier run avait écrit avant le second merge, les CI de documentation
+concluant en moins de deux minutes ; il reste tenu par les bancs. Décompte de
+l'arbitrage n° 3 : trois déploiements verts par Actions (`e43a40b0`,
+`02e8d131`, `83143246`), aucun avec migration.
 
 **Ce que le lot 2 lève de [[D-102]].** D-102 posait qu'aucun job hors gate ne
 déclenche de déploiement, pour que le jeton ne soit pas atteignable sans
