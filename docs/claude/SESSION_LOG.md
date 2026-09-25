@@ -7897,3 +7897,16 @@ aucune ligne d'auto-déploiement. `manual-deploy` fonctionne sans lui.
 
 **Prochaine action.** Constater l'absence de recul, le consigner ; cinq
 déploiements verts dont une migration avant le lot 4.
+
+## 2026-09-25 — D-248 : incident 2 rejoué, sans recul
+
+**Constaté.** #1223 et #1224 mergées à 2 min 09 s ; la seconde pendant le
+build de la première. Son run attend dans le groupe de concurrence, puis livre
+la tête : aucun chevauchement de builds, observation conforme, `83143246` en
+service. Le chemin « run dépassé » n'a pas été exercé (CI de documentation
+trop rapides).
+
+**Trouvé en route.** La vérification contradictoire du RUNBOOK a inversé
+l'ordre du retour arrière de la bascule : revert du code d'abord.
+
+**Prochaine action.** Deux déploiements verts dont une migration, puis lot 4.
