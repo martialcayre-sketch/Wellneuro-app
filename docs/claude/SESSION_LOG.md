@@ -7874,3 +7874,14 @@ l'approbation — comme sous l'auto-déploiement.
 
 **Ouvert.** L'édition du workflow du lot 3 a été refusée par le classifieur :
 arbitrage du responsable.
+
+## 2026-09-25 — D-248 lot 3 : la bascule vers GitHub Actions
+
+**Décision.** Auto-déploiement Scalingo coupé ; le déployeur part sur la fin
+verte du CI de `main` et retient tout commit porteur d'un run `release-db` non
+conclu au vert — le régime D-087 reste celui de l'auto-déploiement.
+
+**Écarté.** Un déclencheur `push` : il aurait déployé avant le CI.
+
+**Prochaine action.** `--no-auto-deploy` (responsable), merge, constat ; puis
+incident 2 rejoué et cinq déploiements verts avant le lot 4.

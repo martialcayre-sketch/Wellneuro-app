@@ -58,9 +58,10 @@ const ECHEC = /(-error|^aborted)$/;
 // VERT sur un commit qui n'est plus la tête lève le dernier check de ce commit
 // — et Scalingo peut le déployer par-dessus la tête : le mécanisme de
 // l'incident 1. La garde finale fait alors échouer le run VOLONTAIREMENT,
-// comme celle de release-db. Passe à `false` au lot 3, avec `--no-auto-deploy`,
-// et pas avant : un invariant du banc lie ce drapeau à l'absence de `push`.
-export const AUTO_DEPLOIEMENT_ACTIF = true;
+// comme celle de release-db. Passé à `false` au lot 3, avec `--no-auto-deploy`
+// (geste du responsable) : un invariant du banc lie ce drapeau au déclencheur
+// `workflow_run` du workflow — l'un ne bascule pas sans l'autre.
+export const AUTO_DEPLOIEMENT_ACTIF = false;
 
 /** La version en service : le déploiement réussi qui a FINI en dernier. */
 function enService(texte) {
@@ -78,6 +79,26 @@ export function enVol(texte) {
   return analyserToutesLignes(texte).filter((l) => l.statut !== 'success' && !ECHEC.test(l.statut));
 }
 
+/**
+ * L'état du CI de `main` pour un commit, à partir de ses runs (événement push).
+ * Un seul run vert suffit (une relance réussie efface un échec) ; un run pas
+ * encore conclu, c'est « en cours » ; aucun run, « absent ».
+ */
+export function classerCi(runs) {
+  if (runs.some((r) => r.status === 'completed' && r.conclusion === 'success')) return 'success';
+  if (runs.some((r) => r.status !== 'completed')) return 'en-cours';
+  return runs.length > 0 ? 'echec' : 'absent';
+}
+
+/**
+ * Les chemins dont un push déclenche release-db — la MÊME liste que le filtre
+ * `paths` de `.github/workflows/release-db.yml` (un banc tient la parité).
+ */
+export const CHEMINS_RELEASE_DB = ['web/prisma/migrations', 'web/src/lib/clinical'];
+
+/** Les runs release-db d'un commit qui ne sont PAS conclus au vert. */
+const releaseDbNonConclus = (runs) => runs.filter((r) => !(r.status === 'completed' && r.conclusion === 'success'));
+
 const decrire = (lignes) => lignes.map((l) => `${l.id} ${l.statut}`).join(', ');
 const premiereLigne = (err) => String(err?.message ?? err).split('\n')[0];
 
@@ -92,10 +113,83 @@ export async function deployer({
   essais = ESSAIS_DEFAUT,
   intervalleMs = INTERVALLE_MS_DEFAUT,
   journal = () => {},
+  // SANS valeur par défaut : un câblage qui l'oublierait retomberait sur
+  // « aucun run release-db » et déploierait un commit de migration avant son
+  // approbation. Oubliée, elle doit faire planter, pas ouvrir la porte.
+  lireRunsReleaseDb,
+  // Même règle : sans repli. L'état du CI de `main` d'un commit (via
+  // `classerCi`) — 'success', 'en-cours', 'echec' ou 'absent'.
+  lireCi,
+  // Idem, sans repli : ce commit touche-t-il un chemin qui déclenche
+  // release-db ? Sert à ne jamais lire « aucun run » comme « rien à attendre ».
+  toucheReleaseDb,
 }) {
-  if (lireTete() !== sha) {
-    return { code: SORTIE_OK, etat: 'depasse', motif: `la tête de main a dépassé ce run (${sha}) — son propre run déploiera` };
+  // UN RUN DÉPASSÉ JUGE LA TÊTE À SA PLACE (revue du lot 3). La concurrence
+  // GitHub ne garde qu'UN run en attente : le run de la tête peut être ÉVINCÉ
+  // par celui d'un commit plus ancien dont le CI a fini après (constaté sur
+  // l'historique : les CI de `main` concluent dans le désordre). S'abstenir
+  // en « son run déploiera » laissait alors la tête hors production, en vert.
+  // Désormais, tout run qui passe APRÈS le CI vert de la tête la livre.
+  let cible = sha;
+  const teteInitiale = lireTete();
+  if (teteInitiale !== sha) {
+    const ci = lireCi(teteInitiale);
+    if (ci === 'en-cours' || ci === 'absent') {
+      return {
+        code: SORTIE_OK,
+        etat: 'depasse',
+        motif: `la tête de main (${teteInitiale}) a dépassé ce run (${sha}) et son CI n'a pas conclu — le run de la tête déploiera`,
+      };
+    }
+    if (ci !== 'success') {
+      // Un déploiement ne livre qu'une BRANCHE : ce commit ne peut pas partir
+      // seul. Averti, pas rouge — le défaut est la tête, pas ce run.
+      return {
+        code: SORTIE_OK,
+        etat: 'depasse-tete-rouge',
+        avertissement: true,
+        motif: `${sha} est dépassé par la tête de main (${teteInitiale}), dont le CI a échoué : ${sha} reste hors production jusqu'à la prochaine tête verte`,
+      };
+    }
+    journal(`→ Run dépassé (${sha}) : il juge la tête (${teteInitiale}), dont le CI est vert.`);
+    cible = teteInitiale;
   }
+
+  // UN COMMIT QUI PORTE UN RUN release-db ATTEND SON APPROBATION (D-087, lot 3
+  // de D-248). Sous l'auto-déploiement, ce run était un CHECK du commit, et
+  // Scalingo attendait qu'il conclue : un commit de migration n'était déployé
+  // qu'à l'approbation, par release-db lui-même ([[D-102]]). Le déployer dès la
+  // fin du CI servirait un code qui lit des colonnes absentes de la base, pour
+  // toute la durée de l'attente humaine. Retenu, donc — vert, sans écriture :
+  // release-db déploiera à l'approbation. Une lecture en échec propage : aucune
+  // écriture n'a eu lieu.
+  //
+  // UNE LISTE VIDE N'EST PAS UNE PERMISSION (revue #1222) : le run release-db
+  // du même push peut ne pas être encore visible dans l'API. Si le commit
+  // touche un chemin qui déclenche release-db, on exige un run conclu au vert.
+  const retenue = () => {
+    const runs = lireRunsReleaseDb(cible);
+    const nonConclus = releaseDbNonConclus(runs);
+    if (nonConclus.length > 0) {
+      const etats = nonConclus.map((r) => r.conclusion || r.status).join(', ');
+      return {
+        code: SORTIE_OK,
+        etat: 'retenu-release-db',
+        motif: `${cible} porte un run release-db non conclu au vert (${etats}) — release-db le déploiera à l'approbation`,
+      };
+    }
+    if (runs.length === 0 && toucheReleaseDb(cible)) {
+      return {
+        code: SORTIE_OK,
+        etat: 'retenu-release-db',
+        avertissement: true,
+        motif: `${cible} touche un chemin de release-db mais aucun run release-db n'est visible — retenu jusqu'à ce qu'il existe et soit approuvé`,
+      };
+    }
+    return null;
+  };
+  const retenuAvant = retenue();
+  if (retenuAvant) return retenuAvant;
 
   // CALME AVANT L'ÉCRITURE : aucun build en vol. Déclencher pendant un autre
   // build, c'est en lancer un second en parallèle — et laisser l'ordre de fin
@@ -118,22 +212,26 @@ export async function deployer({
   // contient aussi (revue #1220). La version en service doit être SUR la
   // ligne de `main` jusqu'à ce run — c'est-à-dire ce commit même.
   const courant = enService(avant);
-  if (!forcer && courant && estAncetre(sha, courant.sha) && estAncetre(courant.sha, sha)) {
-    return { code: SORTIE_OK, etat: 'deja-en-service', motif: `${courant.sha} est en service et contient ${sha}` };
+  if (!forcer && courant && estAncetre(cible, courant.sha) && estAncetre(courant.sha, cible)) {
+    return { code: SORTIE_OK, etat: 'deja-en-service', motif: `${courant.sha} est en service et contient ${cible}` };
   }
   const connus = new Set(analyserToutesLignes(avant).map((l) => l.id));
 
   // DERNIER contrôle avant l'écriture : l'attente a pu durer, et une tête qui
   // a bougé entre-temps a son propre run.
-  if (lireTete() !== sha) {
-    return { code: SORTIE_OK, etat: 'depasse', motif: `la tête de main a dépassé ce run (${sha}) juste avant le déclenchement` };
+  if (lireTete() !== cible) {
+    return { code: SORTIE_OK, etat: 'depasse', motif: `la tête de main a dépassé ${cible} juste avant le déclenchement` };
   }
+  // RELUE juste avant l'écriture (revue #1222) : l'attente du calme a pu durer
+  // vingt minutes, et un run release-db apparaître entre-temps.
+  const retenuApres = retenue();
+  if (retenuApres) return retenuApres;
   try {
     declencher();
   } catch (err) {
     return { code: SORTIE_ECHEC, etat: 'refuse', motif: `déclenchement refusé — ${premiereLigne(err)}` };
   }
-  journal(`→ Déploiement de main déclenché (run ${sha}).`);
+  journal(`→ Déploiement de main déclenché (cible ${cible}, run ${sha}).`);
 
   for (let i = 1; i <= essais; i += 1) {
     await dormir(intervalleMs);
@@ -165,11 +263,11 @@ export async function deployer({
     if (nouveaux.every((l) => ECHEC.test(l.statut))) {
       return { code: SORTIE_ECHEC, etat: 'build-en-echec', motif: `aucun déploiement nouveau n'a abouti : ${decrire(nouveaux)}` };
     }
-    if (!service || !estAncetre(sha, service.sha)) {
+    if (!service || !estAncetre(cible, service.sha)) {
       return {
         code: SORTIE_ECHEC,
         etat: 'non-livre',
-        motif: `tous les builds sont terminés, et la version en service (${service?.sha ?? 'aucune'}) ne contient pas ${sha}`,
+        motif: `tous les builds sont terminés, et la version en service (${service?.sha ?? 'aucune'}) ne contient pas ${cible}`,
       };
     }
     // Le constat qui compte : pas seulement « mon build a réussi », mais « ce
@@ -186,6 +284,27 @@ export async function deployer({
     }
     if (verdict.code !== SORTIE_OK) {
       return { code: SORTIE_ECHEC, etat: 'illisible', motif: verdict.motif };
+    }
+    // LA BRANCHE A PU LIVRER PLUS NEUF que la cible : un commit mergé dans les
+    // secondes entre la dernière lecture de la tête et la résolution de `main`
+    // par Scalingo — sans CI conclu, ni approbation release-db. On ne peut pas
+    // l'empêcher (on déploie une branche), on le DIT (revue du lot 3).
+    if (service.sha !== cible) {
+      let ciLivre;
+      let releaseLivre;
+      try {
+        ciLivre = lireCi(service.sha);
+        releaseLivre = releaseDbNonConclus(lireRunsReleaseDb(service.sha));
+      } catch (err) {
+        return { code: SORTIE_ECHEC, etat: 'livre-non-verifie', motif: `${service.sha} (plus neuf que ${cible}) est en service, et sa vérification est illisible — ${premiereLigne(err)}` };
+      }
+      if (ciLivre !== 'success' || releaseLivre.length > 0) {
+        return {
+          code: SORTIE_ECHEC,
+          etat: 'livre-non-verifie',
+          motif: `${service.sha}, plus neuf que ${cible}, est en service sans être vérifié (CI : ${ciLivre} ; release-db non conclus : ${releaseLivre.length}) — approuver release-db ou constater son CI`,
+        };
+      }
     }
     return { code: SORTIE_OK, etat: 'deploye', motif: `${service.sha} en service (déploiement ${service.id})` };
   }
@@ -230,15 +349,23 @@ const TITRES = {
   illisible: '## ❌ Production illisible après déploiement',
   'en-vol': '## ❌ Un build reste en vol — aucune écriture',
   'garde-finale': '## ❌ Échec volontaire — ce run n’est plus la tête de `main`',
+  'retenu-release-db': '## ✓ Retenu — ce commit attend l’approbation de release-db',
+  'depasse-tete-rouge': '## ⚠️ Dépassé par une tête au CI rouge — ce commit reste hors production',
+  'livre-non-verifie': '## ❌ Un commit plus neuf, non vérifié, a été livré avec la branche',
   delai: '## ❌ Aucune conclusion — état inconnu',
 };
 
 async function principal(env = process.env) {
   const app = env.SCALINGO_APP ?? 'wellneuro';
   const region = env.SCALINGO_REGION ?? 'osc-fr1';
-  const sha = env.GITHUB_SHA;
+  // Sur `workflow_run`, GITHUB_SHA est la tête de la branche par défaut au
+  // moment du run ; le commit que le CI a VÉRIFIÉ est `workflow_run.head_sha`,
+  // passé par WN_SHA. C'est lui qu'on déploie — ou dont on constate le dépassement.
+  // Sur workflow_run, PAS de repli sur GITHUB_SHA : il désignerait un commit que
+  // ce CI n'a pas vérifié. WN_SHA absent ⇒ refus, pas repli silencieux.
+  const sha = env.GITHUB_EVENT_NAME === 'workflow_run' ? env.WN_SHA : env.WN_SHA || env.GITHUB_SHA;
   if (!/^[0-9a-f]{40}$/.test(sha ?? '')) {
-    console.error('::error title=Déploiement refusé::GITHUB_SHA absent ou invalide.');
+    console.error('::error title=Déploiement refusé::WN_SHA / GITHUB_SHA absent ou invalide.');
     return SORTIE_ECHEC;
   }
   const scalingo = (...args) => lancer('scalingo', ['--app', app, '--region', region, ...args]);
@@ -249,6 +376,20 @@ async function principal(env = process.env) {
   const brut = await deployer({
     sha,
     forcer: env.WN_FORCER === 'true',
+    // LECTURE SEULE de l'API Actions (`actions: read`) : les runs release-db du
+    // commit. Jamais d'autre verbe que GET.
+    lireRunsReleaseDb: (commit) =>
+      JSON.parse(
+        lancer('gh', ['api', `repos/${env.GITHUB_REPOSITORY}/actions/workflows/release-db.yml/runs?head_sha=${commit}&per_page=100`]),
+      ).workflow_runs.map((r) => ({ status: r.status, conclusion: r.conclusion })),
+    toucheReleaseDb: (commit) =>
+      lancer('git', ['diff', '--name-only', `${commit}^`, commit, '--', ...CHEMINS_RELEASE_DB]).trim() !== '',
+    lireCi: (commit) =>
+      classerCi(
+        JSON.parse(
+          lancer('gh', ['api', `repos/${env.GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${commit}&event=push&per_page=100`]),
+        ).workflow_runs.map((r) => ({ status: r.status, conclusion: r.conclusion })),
+      ),
     lireTete,
     lireDeploiements: () => scalingo('deployments'),
     // LA SEULE ÉCRITURE de ce script, et un invariant le tient : une BRANCHE,
@@ -270,6 +411,8 @@ async function principal(env = process.env) {
   if (verdict.code !== SORTIE_OK) {
     lignes.push('', 'Lire le build : `scalingo --region osc-fr1 --app wellneuro deployment-logs`.');
     console.error(`::error title=Déploiement::${verdict.motif}`);
+  } else if (verdict.avertissement) {
+    console.log(`::warning title=Déploiement::${verdict.motif}`);
   }
   console.log(lignes.join('\n'));
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, `${lignes.join('\n')}\n`);

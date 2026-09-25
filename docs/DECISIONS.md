@@ -7,9 +7,9 @@
 ### D-248 — La production cesse de pouvoir reculer : GitHub Actions déploiera la tête de `main`, et un filet observe d'abord
 
 - Date : 2026-09-24
-- Statut : accepté — lot 1 (observation) livré le 2026-09-25 (#1219) ; lot 2
-  (job de déploiement sur dispatch) livré par le complément ci-dessous ; lots 3
-  et 4 à venir, un par un, chacun validé par le responsable.
+- Statut : accepté — lot 1 (observation, #1219), lot 2 (job de déploiement sur
+  dispatch, #1220) et prérequis du lot 3 (#1221) livrés le 2026-09-25 ; lot 3
+  (bascule) livré par le complément ci-dessous ; lot 4 à venir.
 - Domaine : pipeline de déploiement GitHub → Scalingo. Porte sur [[D-102]] et
   sur la garde anti-recul de `release-db` (2026-09-23), qu'elle rendra sans
   objet au lot 4. **Ne modifie pas [[D-087]]** : le code se déploie toujours
@@ -157,6 +157,76 @@ visait un build EN COURS) ; seul un build **réussi** dispense désormais, un
 échec se redéclenche. L'erreur du CLI n'est plus jetée ; la règle « en vol »
 de `release-db` et celle du déployeur sont tenues identiques par un banc de
 parité. Mutations : 9/9 attrapées.
+
+**Lot 3 — la bascule (2026-09-25).** L'auto-déploiement Scalingo est coupé
+(`integration-link-update --no-auto-deploy`, geste du responsable, AVANT le
+merge) et le job `deploiement` devient le déployeur. Deux écarts au plan
+initial, trouvés en le préparant — tous deux pour que le comportement reste
+celui de [[D-087]], comme l'arbitrage n° 2 le demande :
+
+1. **Le déclencheur est la fin VERTE du CI, pas le `push`.** Scalingo ne
+   déployait qu'une fois tous les checks conclus, CI de `main` compris ; un
+   déclencheur `push` aurait déployé avant lui. `workflow_run` sur `CI`,
+   filtré dans le `if:` : conclusion `success`, événement `push`, branche
+   `main`, dépôt identique — jamais le CI d'une PR, fork compris. Le SHA
+   déployé est celui que le CI a vérifié (`workflow_run.head_sha`).
+2. **Un commit porteur d'un run `release-db` non conclu au vert est RETENU.**
+   Sous l'auto-déploiement, ce run était un check que Scalingo attendait : un
+   commit de migration (ou clinique) n'était déployé qu'à l'approbation, par
+   `release-db` lui-même — la liste des déploiements le montre (`60e82971` :
+   `wellneuro` à 13:00, puis l'auto-déploiement à 13:07). Le déployer dès le CI
+   servirait un code lisant des colonnes absentes, pendant toute l'attente
+   humaine. Le déployeur lit donc les runs `release-db` du commit (API
+   Actions, lecture seule, `actions: read`) et s'abstient ; `release-db`
+   déploie à l'approbation. Un run rejeté retient aussi — comme Scalingo.
+
+`AUTO_DEPLOIEMENT_ACTIF` passe à `false` avec le déclencheur (invariant) : la
+garde finale n'a plus d'objet, aucun vert ne réveille plus de déploiement.
+
+**Revue adverse du lot 3** (quatre angles, 15 agents) : sept constats
+confirmés, quatre réfutés ; tous corrigés, 11 mutations sur 11 attrapées.
+
+- **Un run dépassé juge la TÊTE** (constat moyen). La concurrence GitHub ne
+  garde qu'un run EN ATTENTE : un nouvel arrivant l'évince, y compris le run
+  de la tête quand le CI d'un commit plus ancien finit après — les CI de
+  `main` concluent dans le désordre (constaté le 2026-09-17 et le 2026-09-23).
+  S'abstenir laissait la tête hors production, en vert. Désormais, un run
+  dépassé lit le CI de la tête : vert, il la livre (sous la retenue
+  `release-db`) ; en cours, il s'abstient (le run de la tête viendra) ; rouge,
+  il s'abstient avec un avertissement nommé.
+- **Un commit plus neuf livré par la branche est vérifié** : si Scalingo
+  résout `main` sur un commit mergé dans les secondes précédentes, son CI et
+  ses runs `release-db` sont lus ; non verts, le run rougit
+  (`livre-non-verifie`). Un déploiement de branche ne peut pas l'empêcher.
+- Sur `workflow_run`, plus de repli sur `GITHUB_SHA` quand `WN_SHA` manque.
+- Le changelog affirmait « jamais servi avant son schéma » : reformulé.
+
+**Revue Copilot de la PR** : deux constats, corrigés. (1) Le checkout du job
+de déploiement est **épinglé** sur `workflow_run.head_sha` : sans `ref`, un
+`workflow_run` extrait la tête de `main` au moment du run, et des scripts non
+vérifiés tourneraient avec le jeton. (2) La retenue `release-db` est **relue
+juste avant l'écriture** (l'attente du calme peut durer vingt minutes), et
+une liste de runs VIDE ne vaut permission que si le commit ne touche aucun
+chemin qui déclenche `release-db` — le run du même push peut ne pas être
+encore visible. Ces chemins sont tenus identiques à ceux de `release-db.yml`
+par un banc de parité.
+
+**Écart à connaître, pire qu'avant, mais borné.** Un commit A vert dépassé
+pendant son CI par une tête au CI ROUGE (ou retenue) n'est plus livré : un
+déploiement ne livre qu'une branche, donc A attend la prochaine tête verte.
+L'auto-déploiement le livrait à la fin de son CI. Le run le dit
+(`depasse-tete-rouge`, avertissement). Pendant le lot 3, la discipline « un
+merge à la fois, constater le déploiement » rend le cas inatteignable ; **le
+lot 4 ne pourra la lever pour le code pur qu'en tenant compte de cet écart.**
+
+**Inchangé, et à connaître** (question [[D-087]] routée par l'arbitrage n° 2) :
+un commit SANS migration mergé après un commit de migration en attente
+d'approbation contient le code de ce dernier, et part au déploiement — comme
+sous l'auto-déploiement. Le retenir aussi changerait le régime code/schéma.
+
+**Classifieur de permissions.** L'édition du workflow qui rend le déploiement
+automatique a été refusée à Claude (« Protected-Scope IaC Apply ») ; le
+responsable l'a appliquée lui-même.
 
 **Ce que le lot 2 lève de [[D-102]].** D-102 posait qu'aucun job hors gate ne
 déclenche de déploiement, pour que le jeton ne soit pas atteignable sans
