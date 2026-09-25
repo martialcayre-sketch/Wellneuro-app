@@ -16,7 +16,15 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { deployer, gardeFinale, AUTO_DEPLOIEMENT_ACTIF, SORTIE_OK, SORTIE_ECHEC } from './wn-deploiement-deployer.mjs';
+import {
+  deployer,
+  gardeFinale,
+  AUTO_DEPLOIEMENT_ACTIF,
+  ESSAIS_DEFAUT,
+  INTERVALLE_MS_DEFAUT,
+  SORTIE_OK,
+  SORTIE_ECHEC,
+} from './wn-deploiement-deployer.mjs';
 
 const ICI = dirname(fileURLToPath(import.meta.url));
 const RACINE = join(ICI, '..');
@@ -94,6 +102,32 @@ test('la tête bouge ENTRE la lecture et l’écriture : abstention, aucun décl
   const v = await deployer({ sha: B, ...m.deps });
   assert.equal(v.etat, 'depasse');
   assert.equal(m.appels.declencher, 0);
+});
+
+// Revue #1220 : une branche DIVERGENTE bâtie sur la tête CONTIENT la tête sans
+// être sur `main`. En service, elle ne doit pas faire conclure « déjà en
+// service » — il faut redéployer `main`.
+test('revue #1220 — une branche divergente en service n’est pas « déjà en service »', async () => {
+  const DIVERGENT = 'f'.repeat(40);
+  const m = monde({
+    tetes: [B],
+    lectures: [
+      tableau(ligne('dep-f', '2026/09/25 10:50:00', '5m0s', DIVERGENT), EN_SERVICE_A),
+      tableau(ligne('dep-b', '2026/09/25 11:00:00', '5m0s', B), ligne('dep-f', '2026/09/25 10:50:00', '5m0s', DIVERGENT), EN_SERVICE_A),
+    ],
+  });
+  // DIVERGENT descend de B, mais n'est pas sur la ligne de main.
+  const v = await deployer({ sha: B, ...m.deps, estAncetre: (x, y) => (y === DIVERGENT ? x === DIVERGENT || estAncetre(x, B) : estAncetre(x, y)) });
+  assert.equal(m.appels.declencher, 1, 'il faut redéployer main');
+  assert.equal(v.etat, 'deploye', v.motif);
+});
+
+// Les deux bornes d'attente (avant ET après l'écriture) doivent tenir dans le
+// timeout du job, installation comprise.
+test('revue #1220 — le timeout du job couvre les deux attentes cumulées', () => {
+  const minutes = Number(job('deploiement').match(/^\s+timeout-minutes:\s*(\d+)\s*$/m)?.[1]);
+  const attentes = (2 * ESSAIS_DEFAUT * INTERVALLE_MS_DEFAUT) / 60000;
+  assert.ok(minutes >= attentes + 5, `timeout ${minutes} min < ${attentes} min d'attentes + 5 min d'installation`);
 });
 
 test('déjà en service sur un tableau calme : abstention, sauf à forcer', async () => {

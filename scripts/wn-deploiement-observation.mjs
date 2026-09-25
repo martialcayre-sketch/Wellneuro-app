@@ -127,7 +127,12 @@ export function diagnostiquer({ deploiements, tete, ageTeteMin, seuilRetardMin, 
       motif: `le déploiement en service (${enService.sha}) n'appartient pas à la ligne main`,
     };
   }
-  const depasse = parFin.slice(1).find((d) => d.sha !== enService.sha && estAncetre(enService.sha, d.sha));
+  // Un recul retire du code de `main` : seul un déploiement passé DE LA LIGNE
+  // `main` peut avoir été dépassé. Une branche divergente remplacée par `main`
+  // n'est pas un recul (revue #1220).
+  const depasse = parFin
+    .slice(1)
+    .find((d) => d.sha !== enService.sha && estAncetre(enService.sha, d.sha) && estAncetre(d.sha, tete));
   if (depasse) {
     return { code: SORTIE_RECUL, etat: 'recul', enService, depasse };
   }

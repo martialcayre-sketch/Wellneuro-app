@@ -151,6 +151,22 @@ test('un déploiement hors de la ligne main PASSÉ ne gêne pas le verdict', () 
   assert.equal(diagnostiquer(faits(t)).etat, 'a-jour');
 });
 
+// Revue #1220 : une branche DIVERGENTE bâtie sur la tête la contient. Qu'elle
+// ait été en service puis remplacée par `main` retire des commits HORS de
+// `main` — ce n'est pas un recul de `main`.
+test('une branche divergente passée, remplacée par main, n’est pas un recul', () => {
+  const DIVERGENT = 'e'.repeat(40);
+  const t = tableau(
+    ligne('main', '2026/09/23 19:00:00', '5m0s', S_D963),
+    ligne('branche', '2026/09/23 18:00:00', '5m0s', DIVERGENT),
+  );
+  const v = diagnostiquer({
+    ...faits(t),
+    estAncetre: (a, b) => (b === DIVERGENT ? a === DIVERGENT || estAncetre(a, S_D963) : estAncetre(a, b)),
+  });
+  assert.equal(v.etat, 'a-jour');
+});
+
 test('une ligne success à la ref tronquée est illisible, pas ignorée', () => {
   assert.throws(() => analyserTableau(tableau(ligne('a', '2026/09/23 19:00:00', '5m0s', 'd963be29'))), /illisible/);
 });

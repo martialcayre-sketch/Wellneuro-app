@@ -113,9 +113,12 @@ export async function deployer({
   }
 
   // Tableau CALME : la version en service ne peut plus être remplacée par un
-  // build plus ancien — l'abstention est sûre.
+  // build plus ancien — l'abstention est sûre. Mais « contient ce commit » ne
+  // suffit pas : un déploiement d'une branche DIVERGENTE bâtie sur la tête le
+  // contient aussi (revue #1220). La version en service doit être SUR la
+  // ligne de `main` jusqu'à ce run — c'est-à-dire ce commit même.
   const courant = enService(avant);
-  if (!forcer && courant && estAncetre(sha, courant.sha)) {
+  if (!forcer && courant && estAncetre(sha, courant.sha) && estAncetre(courant.sha, sha)) {
     return { code: SORTIE_OK, etat: 'deja-en-service', motif: `${courant.sha} est en service et contient ${sha}` };
   }
   const connus = new Set(analyserToutesLignes(avant).map((l) => l.id));

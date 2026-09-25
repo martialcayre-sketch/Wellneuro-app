@@ -126,8 +126,10 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.action == 'deployer'
     runs-on: ubuntu-latest
     environment: deploy-production
-    # 20 min d'attente de build au plus, plus l'installation.
-    timeout-minutes: 30
+    # DEUX bornes de 20 min s'additionnent (revue #1220) : le calme AVANT
+    # l'écriture, puis la conclusion APRÈS. Un job tué entre les deux
+    # laisserait un build en vol et un état inconnu. 40 + installation + marge.
+    timeout-minutes: 50
     # SÉRIALISÉ, JAMAIS ANNULÉ : deux déploiements ne s'entrelacent pas, et un
     # déploiement déclenché n'est pas abandonné en plein build. Le second run
     # attend le premier, puis s'abstient s'il n'est plus la tête.
