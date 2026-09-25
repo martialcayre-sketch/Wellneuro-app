@@ -7906,7 +7906,8 @@ la tête : aucun chevauchement de builds, observation conforme, `83143246` en
 service. Le chemin « run dépassé » n'a pas été exercé (CI de documentation
 trop rapides).
 
-**Trouvé en route.** La vérification contradictoire du RUNBOOK a inversé
-l'ordre du retour arrière de la bascule : revert du code d'abord.
+**Trouvé en route.** La vérification contradictoire du RUNBOOK (#1224) a
+montré que l'ordre de retour arrière écrit d'abord était le dangereux ;
+corrigé avant merge : revert du code d'abord, auto-déploiement ensuite.
 
 **Prochaine action.** Deux déploiements verts dont une migration, puis lot 4.

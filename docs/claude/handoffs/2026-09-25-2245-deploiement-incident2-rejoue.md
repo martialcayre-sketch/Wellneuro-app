@@ -21,7 +21,8 @@ l'arbitrage n° 3 avant le lot 4.
 ## 4. Fichiers modifiés
 
 `docs/DECISIONS.md` (D-248 : statut, « Incident 2 rejoué, sans recul ») ·
-`docs/claude/SESSION_LOG.md` · ce handoff.
+`changelog.d/2026-09-25-deploiement-incident2-rejoue.md` (couvre aussi #1223
+et #1224) · `docs/claude/SESSION_LOG.md` · ce handoff.
 
 ## 5. Validations exécutées
 
