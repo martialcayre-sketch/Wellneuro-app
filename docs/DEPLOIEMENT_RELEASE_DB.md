@@ -292,6 +292,21 @@ Interface : **Actions → Release DB → Run workflow**, choisir le `mode`. Ou :
 gh workflow run release-db.yml -f mode=migrate-only
 ```
 
+### Un build est déjà en vol — la release attend le calme (D-248)
+
+Avant tout déclenchement, l'étape « Déclenchement » attend qu'**aucun build**
+ne soit en vol dans `scalingo deployments` (statut ni `success`, ni `*-error`,
+ni `aborted`) — jusqu'à 20 minutes, puis refus **sans écriture**. Le job
+`deploiement` de `deploiement-production.yml` déclenche la même commande dans
+un autre groupe de concurrence ; deux déclenchements rapprochés feraient deux
+builds en parallèle, et le dernier à **finir** passerait en service. Une liste
+illisible n'est pas une liste calme : réessayée (l'erreur du CLI est affichée),
+puis refus. D'où le `timeout-minutes: 70` du job.
+
+Sur une liste calme, seul un déploiement **réussi** du commit approuvé dispense
+de déclencher ; un build de ce commit terminé en échec est redéclenché (au
+lot 3 de D-248, le code est construit dès le merge, avant l'approbation).
+
 ### La tête a bougé pendant l'attente d'approbation — ce que fait la garde
 
 `integration-link-manual-deploy` déploie une **branche**, pas un SHA : la

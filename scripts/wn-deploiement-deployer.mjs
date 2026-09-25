@@ -74,7 +74,7 @@ function enService(texte) {
  * builds se chevauchent — incident 2), et il peut venir de l'auto-déploiement,
  * de release-db ou d'un run précédent sorti sur délai.
  */
-function enVol(texte) {
+export function enVol(texte) {
   return analyserToutesLignes(texte).filter((l) => l.statut !== 'success' && !ECHEC.test(l.statut));
 }
 
