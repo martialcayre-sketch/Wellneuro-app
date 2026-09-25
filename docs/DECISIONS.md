@@ -183,6 +183,32 @@ celui de [[D-087]], comme l'arbitrage n° 2 le demande :
 `AUTO_DEPLOIEMENT_ACTIF` passe à `false` avec le déclencheur (invariant) : la
 garde finale n'a plus d'objet, aucun vert ne réveille plus de déploiement.
 
+**Revue adverse du lot 3** (quatre angles, 15 agents) : sept constats
+confirmés, quatre réfutés ; tous corrigés, 11 mutations sur 11 attrapées.
+
+- **Un run dépassé juge la TÊTE** (constat moyen). La concurrence GitHub ne
+  garde qu'un run EN ATTENTE : un nouvel arrivant l'évince, y compris le run
+  de la tête quand le CI d'un commit plus ancien finit après — les CI de
+  `main` concluent dans le désordre (constaté le 2026-09-17 et le 2026-09-23).
+  S'abstenir laissait la tête hors production, en vert. Désormais, un run
+  dépassé lit le CI de la tête : vert, il la livre (sous la retenue
+  `release-db`) ; en cours, il s'abstient (le run de la tête viendra) ; rouge,
+  il s'abstient avec un avertissement nommé.
+- **Un commit plus neuf livré par la branche est vérifié** : si Scalingo
+  résout `main` sur un commit mergé dans les secondes précédentes, son CI et
+  ses runs `release-db` sont lus ; non verts, le run rougit
+  (`livre-non-verifie`). Un déploiement de branche ne peut pas l'empêcher.
+- Sur `workflow_run`, plus de repli sur `GITHUB_SHA` quand `WN_SHA` manque.
+- Le changelog affirmait « jamais servi avant son schéma » : reformulé.
+
+**Écart à connaître, pire qu'avant, mais borné.** Un commit A vert dépassé
+pendant son CI par une tête au CI ROUGE (ou retenue) n'est plus livré : un
+déploiement ne livre qu'une branche, donc A attend la prochaine tête verte.
+L'auto-déploiement le livrait à la fin de son CI. Le run le dit
+(`depasse-tete-rouge`, avertissement). Pendant le lot 3, la discipline « un
+merge à la fois, constater le déploiement » rend le cas inatteignable ; **le
+lot 4 ne pourra la lever pour le code pur qu'en tenant compte de cet écart.**
+
 **Inchangé, et à connaître** (question [[D-087]] routée par l'arbitrage n° 2) :
 un commit SANS migration mergé après un commit de migration en attente
 d'approbation contient le code de ce dernier, et part au déploiement — comme

@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import {
   deployer,
   gardeFinale,
+  classerCi,
   AUTO_DEPLOIEMENT_ACTIF,
   ESSAIS_DEFAUT,
   INTERVALLE_MS_DEFAUT,
@@ -84,18 +85,96 @@ function monde({ tetes, lectures, declencherLeve = null }) {
       essais: 5,
       intervalleMs: 1,
       lireRunsReleaseDb: () => [],
+      lireCi: () => 'success',
     },
   };
 }
 
 // ── Abstentions ─────────────────────────────────────────────────────────────
 
-test('ce run n’est plus la tête : abstention, AUCUN déclenchement', async () => {
-  const m = monde({ tetes: [C], lectures: [tableau(EN_SERVICE_A)] });
+test('ce run n’est plus la tête, et le CI de la tête n’a pas conclu : abstention, AUCUN déclenchement', async () => {
+  for (const ci of ['en-cours', 'absent']) {
+    const m = monde({ tetes: [C], lectures: [tableau(EN_SERVICE_A)] });
+    const v = await deployer({ sha: B, ...m.deps, lireCi: () => ci });
+    assert.equal(v.code, SORTIE_OK, ci);
+    assert.equal(v.etat, 'depasse', ci);
+    assert.equal(m.appels.declencher, 0, ci);
+  }
+});
+
+// Revue du lot 3 (C3) : la concurrence GitHub ne garde qu'UN run en attente ;
+// celui de la tête peut être évincé par le run d'un commit plus ancien dont le
+// CI a fini après. Ce run-là doit alors livrer la TÊTE, pas s'abstenir.
+test('revue lot 3 — un run dépassé dont la tête a un CI VERT livre la tête', async () => {
+  const m = monde({
+    tetes: [C],
+    lectures: [tableau(EN_SERVICE_A), tableau(ligne('dep-c', '2026/09/25 11:00:00', '5m0s', C), EN_SERVICE_A)],
+  });
+  const v = await deployer({ sha: B, ...m.deps, lireCi: (x) => (x === C ? 'success' : 'echec') });
+  assert.equal(v.etat, 'deploye', v.motif);
+  assert.equal(m.appels.declencher, 1);
+  assert.match(v.motif, new RegExp(C));
+});
+
+// Quand un run dépassé livre la tête, c'est la TÊTE qui doit être en service :
+// que la version en service contienne le commit du run ne suffit pas.
+test('revue lot 3 — un run dépassé juge la contenance sur la tête qu’il livre, pas sur son commit', async () => {
+  const m = monde({
+    tetes: [C],
+    lectures: [tableau(EN_SERVICE_A), tableau(ligne('dep-b', '2026/09/25 11:00:00', '5m0s', B), EN_SERVICE_A)],
+  });
   const v = await deployer({ sha: B, ...m.deps });
+  assert.equal(v.code, SORTIE_ECHEC);
+  assert.equal(v.etat, 'non-livre');
+});
+
+test('revue lot 3 — dépassé par une tête au CI ROUGE : averti, aucune écriture', async () => {
+  const m = monde({ tetes: [C], lectures: [tableau(EN_SERVICE_A)] });
+  const v = await deployer({ sha: B, ...m.deps, lireCi: () => 'echec' });
   assert.equal(v.code, SORTIE_OK);
-  assert.equal(v.etat, 'depasse');
+  assert.equal(v.etat, 'depasse-tete-rouge');
+  assert.equal(v.avertissement, true);
   assert.equal(m.appels.declencher, 0);
+});
+
+test('revue lot 3 — dépassé par une tête verte mais RETENUE : la retenue vaut pour la tête', async () => {
+  const m = monde({ tetes: [C], lectures: [tableau(EN_SERVICE_A)] });
+  const v = await deployer({
+    sha: B,
+    ...m.deps,
+    lireRunsReleaseDb: (x) => (x === C ? [{ status: 'waiting', conclusion: null }] : []),
+  });
+  assert.equal(v.etat, 'retenu-release-db');
+  assert.equal(m.appels.declencher, 0);
+});
+
+test('revue lot 3 — la branche livre un commit plus neuf NON vérifié : rouge', async () => {
+  for (const [ci, runs] of [
+    ['en-cours', []],
+    ['success', [{ status: 'waiting', conclusion: null }]],
+  ]) {
+    const m = monde({
+      tetes: [B, B, C],
+      lectures: [tableau(EN_SERVICE_A), tableau(ligne('dep-c', '2026/09/25 11:00:00', '5m0s', C), EN_SERVICE_A)],
+    });
+    const v = await deployer({
+      sha: B,
+      ...m.deps,
+      lireCi: (x) => (x === C ? ci : 'success'),
+      lireRunsReleaseDb: (x) => (x === C ? runs : []),
+    });
+    assert.equal(v.code, SORTIE_ECHEC, ci);
+    assert.equal(v.etat, 'livre-non-verifie', ci);
+  }
+});
+
+test('classement du CI d’un commit', () => {
+  assert.equal(classerCi([]), 'absent');
+  assert.equal(classerCi([{ status: 'in_progress', conclusion: null }]), 'en-cours');
+  assert.equal(classerCi([{ status: 'completed', conclusion: 'failure' }]), 'echec');
+  assert.equal(classerCi([{ status: 'completed', conclusion: 'cancelled' }]), 'echec');
+  // Une relance réussie efface l'échec.
+  assert.equal(classerCi([{ status: 'completed', conclusion: 'failure' }, { status: 'completed', conclusion: 'success' }]), 'success');
 });
 
 test('la tête bouge ENTRE la lecture et l’écriture : abstention, aucun déclenchement', async () => {
@@ -397,12 +476,13 @@ test('lot 3 — les runs release-db illisibles : aucune écriture', async () => 
   assert.equal(m.appels.declencher, 0);
 });
 
-test('lot 3 — un run dépassé n’interroge même pas release-db : il s’abstient', async () => {
+test('lot 3 — un run dépassé dont la tête n’a pas fini son CI n’interroge même pas release-db', async () => {
   let lu = false;
   const m = monde({ tetes: [C], lectures: [tableau(EN_SERVICE_A)] });
   const v = await deployer({
     sha: B,
     ...m.deps,
+    lireCi: () => 'en-cours',
     lireRunsReleaseDb: () => {
       lu = true;
       return [];
@@ -546,9 +626,14 @@ test('le drapeau AUTO_DEPLOIEMENT_ACTIF et l’absence de déclencheur automatiq
 // moment du run, pas le commit que le CI a vérifié. Le script doit juger
 // WN_SHA (workflow_run.head_sha) d'abord — sinon il déploierait un commit non
 // vérifié en le croyant vérifié.
-test('lot 3 : le déployeur juge le commit VÉRIFIÉ par le CI (WN_SHA), pas GITHUB_SHA', () => {
+test('lot 3 : le déployeur juge le commit VÉRIFIÉ par le CI (WN_SHA), sans repli sur workflow_run', () => {
   const principal = DEPLOYEUR.slice(DEPLOYEUR.indexOf('async function principal('));
-  assert.match(principal, /const sha = env\.WN_SHA \|\| env\.GITHUB_SHA;/);
+  assert.match(principal, /const sha = env\.GITHUB_EVENT_NAME === 'workflow_run' \? env\.WN_SHA : env\.WN_SHA \|\| env\.GITHUB_SHA;/);
+  // Et le workflow le lui passe (revue C6) : sans ces deux lignes, rien.
+  const etape = etapes('deploiement').etapes.find((e) => e.nom.startsWith('Déploiement — la tête'));
+  assert.ok(etape, 'étape de déploiement introuvable');
+  assert.match(etape.bloc, /^\s+WN_SHA: \$\{\{ github\.event\.workflow_run\.head_sha \|\| github\.sha \}\}\s*$/m);
+  assert.match(etape.bloc, /^\s+GH_TOKEN: \$\{\{ github\.token \}\}\s*$/m);
 });
 
 // La retenue des commits de migration n'existe que si le câblage lui donne de
@@ -556,18 +641,24 @@ test('lot 3 : le déployeur juge le commit VÉRIFIÉ par le CI (WN_SHA), pas GIT
 test('lot 3 : le câblage transmet la lecture des runs release-db, et le noyau n’a pas de repli', async () => {
   const principal = DEPLOYEUR.slice(DEPLOYEUR.indexOf('async function principal('));
   assert.match(principal, /^\s+lireRunsReleaseDb: \(commit\) =>$/m);
+  assert.match(principal, /^\s+lireCi: \(commit\) =>$/m);
   const m = monde({ tetes: [B], lectures: [tableau(EN_SERVICE_A)] });
   const { lireRunsReleaseDb, ...sansLecture } = m.deps;
   await assert.rejects(() => deployer({ sha: B, ...sansLecture }));
-  assert.equal(m.appels.declencher, 0);
+  const m2 = monde({ tetes: [C], lectures: [tableau(EN_SERVICE_A)] });
+  const { lireCi, ...sansCi } = m2.deps;
+  await assert.rejects(() => deployer({ sha: B, ...sansCi }));
+  assert.equal(m.appels.declencher + m2.appels.declencher, 0);
 });
 
 // Le seul appel à l'API GitHub du déployeur : LIRE les runs release-db du
 // commit. Aucun verbe d'écriture, aucun autre chemin.
-test('lot 3 : l’API GitHub n’est que lue, et seulement pour les runs release-db', () => {
-  const appels = [...DEPLOYEUR.matchAll(/lancer\('gh',\s*\[([^\]]*)\]/g)].map((m) => m[1]);
-  assert.equal(appels.length, 1, 'un seul appel à gh');
-  assert.match(appels[0], /^'api', `repos\/\$\{env\.GITHUB_REPOSITORY\}\/actions\/workflows\/release-db\.yml\/runs\?head_sha=\$\{commit\}&per_page=100`$/);
+test('lot 3 : l’API GitHub n’est que lue, et seulement pour les runs CI et release-db', () => {
+  const appels = [...DEPLOYEUR.matchAll(/lancer\('gh',\s*\[([^\]]*)\]/g)].map((m) => m[1]).sort();
+  assert.deepEqual(appels, [
+    "'api', `repos/${env.GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${commit}&event=push&per_page=100`",
+    "'api', `repos/${env.GITHUB_REPOSITORY}/actions/workflows/release-db.yml/runs?head_sha=${commit}&per_page=100`",
+  ]);
   assert.doesNotMatch(DEPLOYEUR, /--method|'-X'|'-f'|'--field'|'-F'/);
   const perms = job('deploiement').match(/^    permissions:\n((?:      \w+: \w+\n)+)/m)?.[1] ?? '';
   assert.deepEqual(perms.trim().split('\n').map((l) => l.trim()).sort(), ['actions: read', 'contents: read']);

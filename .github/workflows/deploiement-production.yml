@@ -146,9 +146,11 @@ jobs:
     # l'écriture, puis la conclusion APRÈS. Un job tué entre les deux
     # laisserait un build en vol et un état inconnu. 40 + installation + marge.
     timeout-minutes: 50
-    # SÉRIALISÉ, JAMAIS ANNULÉ : deux déploiements ne s'entrelacent pas, et un
-    # déploiement déclenché n'est pas abandonné en plein build. Le second run
-    # attend le premier, puis s'abstient s'il n'est plus la tête.
+    # SÉRIALISÉ : deux déploiements ne s'entrelacent pas, et un déploiement
+    # déclenché n'est pas abandonné en plein build. MAIS un seul run ATTEND :
+    # un nouvel arrivant évince celui qui attendait — y compris celui de la
+    # tête, quand le CI d'un commit plus ancien finit après. D'où la règle du
+    # déployeur : un run dépassé juge la TÊTE et la livre si son CI est vert.
     concurrency:
       group: deploiement-production
       cancel-in-progress: false

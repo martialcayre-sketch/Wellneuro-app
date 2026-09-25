@@ -29,8 +29,15 @@ ce handoff.
 
 ## 5. Validations exécutées
 
-Voir la PR : bancs, mutations, revue adverse. La bascule réelle se constate
-après merge (premier déploiement par `workflow_run`).
+- Bancs déployeur + observation : 70/70. Mutations : 10 (déclencheur, filtres,
+  drapeau, retenue, permissions) + 11 (correctifs de revue) + suite du lot 2 —
+  aucune survivante.
+- Revue adverse multi-agents (15 agents) : 7 constats confirmés, 4 réfutés ;
+  tous corrigés, dont « un run dépassé juge la tête » (la concurrence GitHub
+  évince un run en attente) et la vérification d'un commit plus neuf livré par
+  la branche.
+- Non constaté : la bascule réelle (premier déploiement par `workflow_run`,
+  `manual-deploy` avec l'auto-déploiement coupé) — après merge.
 
 ## 6. Problèmes ouverts
 
