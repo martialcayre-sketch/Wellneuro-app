@@ -236,8 +236,8 @@ main` : déploiement `5e19edc5`, 6 min, `success`, verdict « Tête de `main`
 déployée ». Dans `scalingo deployments`, la ligne porte l'utilisateur
 `wellneuro` (le jeton du compte, donc Actions) ; aucune ligne
 `scalingo-platform-scm` (l'auto-déploiement) pour ce commit. Le point (2) du
-« Non vérifié » du lot 1 est levé : `manual-deploy` fonctionne
-auto-déploiement coupé. Reste avant le lot 4 (arbitrage n° 3) : l'incident 2
+« Non vérifié » du lot 1 est levé : `manual-deploy` fonctionne avec
+l'auto-déploiement coupé. Reste avant le lot 4 (arbitrage n° 3) : l'incident 2
 rejoué, et cinq déploiements verts dont au moins un avec migration — celui-ci
 est le premier.
 
