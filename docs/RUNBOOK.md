@@ -56,11 +56,22 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
 2. Merge sur `main` → quand le CI de `main` conclut **vert**, le workflow
    **Déploiement production** (`.github/workflows/deploiement-production.yml`,
    [[D-248]]) déploie la tête de `main` (`integration-link-manual-deploy
-   main`). **L'auto-déploiement Scalingo est coupé depuis le 2026-09-25** :
-   un merge dont le CI de `main` rougit n'est pas déployé, et un run
-   dépassé par un merge plus récent ne livre jamais son propre commit —
-   seulement la tête, si son CI est vert (la production ne recule pas). Un commit porteur d'un run `release-db` non approuvé est
-   **retenu** : `release-db` le déploie à l'approbation.
+   main`). **L'auto-déploiement Scalingo est coupé depuis le 2026-09-25.**
+   - Ce déploiement **automatique** attend le CI vert ; un run dépassé par
+     un merge plus récent ne livre jamais son propre commit — seulement la
+     tête, si son CI est vert (la production ne recule pas). Revers : si la
+     tête rougit, les commits verts qui la précèdent attendent la prochaine
+     tête verte — corriger la tête, pas redéployer à la main.
+   - **Deux chemins livrent la tête SANS lire son CI** : le dispatch
+     `action=deployer` (étape 6) et l'approbation d'un run `release-db`.
+     Constater le CI de `main` vert sur la tête avant l'un comme l'autre.
+   - Un commit porteur d'un run `release-db` non conclu au vert (en
+     attente, rejeté, en échec) est **retenu** — mais seulement tant qu'il
+     est la tête : le merge suivant, même sans migration, livre `main`,
+     donc le code de la migration avant son schéma ([[D-248]], « Inchangé,
+     et à connaître »). **Ne rien merger avant que `release-db` ait conclu
+     au vert.** Un run rejeté ou en échec se reprend par un
+     `workflow_dispatch` de `release-db` sur `main`, approuvé.
 3. Variables d'environnement : `scalingo env-set` (+ `restart` si des
    conteneurs en cours doivent la voir — piège ci-dessus)
 4. **Migrations DB : par le workflow `release-db` exclusivement** ([[D-087]],
@@ -70,12 +81,17 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
    `migrate deploy` à la main contre la production.
 5. Attendre le déploiement (CI de `main` ~13 min, puis build de 5 à 14 min)
    puis contrôle post-déploiement
-6. **Redéployer la tête à la main** : Actions → Déploiement production →
-   Run workflow, `action=deployer` (ou `gh workflow run
-   deploiement-production.yml --ref main -f action=deployer`). Le run
-   s'abstient si la tête est déjà en service ; `forcer` redéploie quand
-   même. Jamais de `integration-link-manual-deploy` lancé à la main pendant
-   qu'un build est en vol.
+6. **Déployer la tête à la main** (par exemple après un build en échec) :
+   Actions → Déploiement production → Run workflow, `action=deployer` (ou
+   `gh workflow run deploiement-production.yml --ref main -f
+   action=deployer`). **Ce chemin ne lit pas le CI de la tête** : le
+   constater vert d'abord. Le run s'abstient, en vert, si la tête est déjà
+   en service (`forcer` ne lève que celle-là), retenue par `release-db`
+   (verdict « Retenu ») ou dépassée : **lire le verdict, pas la couleur**.
+   Jamais de `integration-link-manual-deploy` lancé à la main : il saute la
+   retenue `release-db` et l'attente du calme. Dernier recours, workflow
+   indisponible : aucun build en vol, aucun run `release-db` non conclu au
+   vert sur la tête.
 
 ## Contrôle post-déploiement
 
@@ -85,9 +101,12 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
    `scalingo --app wellneuro --region osc-fr1 deployments` — la liste est
    triée par **début** de build ; la version en service est la ligne
    `success` qui **finit** en dernier (DATE + DURATION), pas forcément la
-   première. La colonne USER dit qui a déployé : `wellneuro` (le jeton du
-   compte : Actions ou `release-db`), `scalingo-platform-scm`
-   (l'auto-déploiement, coupé depuis le 2026-09-25). Le verdict complet
+   première. La colonne USER sépare l'auto-déploiement
+   (`scalingo-platform-scm`, coupé depuis le 2026-09-25) de tout geste
+   fait sous le compte (`wellneuro`) : Actions, `release-db`, mais aussi un
+   déploiement lancé à la main (CLI, tableau de bord). Pour attribuer une
+   ligne `wellneuro`, chercher son ID dans les journaux des runs
+   Déploiement production et `release-db`. Le verdict complet
    (conforme / recul / illisible) : `node scripts/wn-deploiement-observation.mjs`
    depuis le dépôt (CLI Scalingo connecté), ou le même workflow en
    `action=observer`
@@ -115,11 +134,21 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
      2026-09-01, [[D-080]]). Décision du responsable, jamais un geste par
      défaut.
 5. **Revenir à l'auto-déploiement** (retour arrière de la bascule
-   [[D-248]], décision du responsable) : d'abord
-   `scalingo --app wellneuro --region osc-fr1 integration-link-update --auto-deploy`,
-   **puis** merger le revert de #1222. Dans l'ordre inverse, plus rien ne
-   livrerait `main` : le déclencheur du déployeur se lit dans le workflow
-   présent sur `main`, que le revert retire.
+   [[D-248]], décision du responsable) — l'ordre symétrique de la bascule,
+   sans aucun autre merge entre les gestes :
+   1. merger le revert du **code** de #1222 — workflow, déployeur et son
+      banc ramenés à `eb660e3f` ; pas les documents : D-248 est un registre
+      append-only, le retour arrière s'y écrit en ajout. L'auto-déploiement
+      est encore coupé : `main` retrouve le lot 2 (dispatch seul, garde
+      finale active) ;
+   2. `scalingo --app wellneuro --region osc-fr1 integration-link-update --auto-deploy` ;
+   3. livrer la tête par `action=deployer` — le revert n'a été livré par
+      personne ; le run s'abstient si la tête est déjà en service.
+
+   **Jamais l'ordre inverse** : entre les deux gestes, l'auto-déploiement
+   tournerait à côté d'un déployeur dont la garde finale est éteinte — un
+   run dépassé qui conclut vert pourrait réveiller l'auto-déploiement d'un
+   vieux commit (incident 1).
 
 ## Incident : Scalingo / DNS / Configuration
 
