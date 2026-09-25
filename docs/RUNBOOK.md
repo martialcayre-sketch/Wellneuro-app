@@ -53,9 +53,25 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
 ## Déploiement
 
 1. Commits sur branche de feature → PR vers `main`
-2. Merge sur `main` → Scalingo construit et déploie automatiquement
-   (`scalingo --app wellneuro --region osc-fr1 deployments` : SHA complets,
-   le plus récent en tête)
+2. Merge sur `main` → quand le CI de `main` conclut **vert**, le workflow
+   **Déploiement production** (`.github/workflows/deploiement-production.yml`,
+   [[D-248]]) déploie la tête de `main` (`integration-link-manual-deploy
+   main`). **L'auto-déploiement Scalingo est coupé depuis le 2026-09-25.**
+   - Ce déploiement **automatique** attend le CI vert ; un run dépassé par
+     un merge plus récent ne livre jamais son propre commit — seulement la
+     tête, si son CI est vert (la production ne recule pas). Revers : si la
+     tête rougit, les commits verts qui la précèdent attendent la prochaine
+     tête verte — corriger la tête, pas redéployer à la main.
+   - **Deux chemins livrent la tête SANS lire son CI** : le dispatch
+     `action=deployer` (étape 6) et l'approbation d'un run `release-db`.
+     Constater le CI de `main` vert sur la tête avant l'un comme l'autre.
+   - Un commit porteur d'un run `release-db` non conclu au vert (en
+     attente, rejeté, en échec) est **retenu** — mais seulement tant qu'il
+     est la tête : le merge suivant, même sans migration, livre `main`,
+     donc le code de la migration avant son schéma ([[D-248]], « Inchangé,
+     et à connaître »). **Ne rien merger avant que `release-db` ait conclu
+     au vert.** Un run rejeté ou en échec se reprend par un
+     `workflow_dispatch` de `release-db` sur `main`, approuvé.
 3. Variables d'environnement : `scalingo env-set` (+ `restart` si des
    conteneurs en cours doivent la voir — piège ci-dessus)
 4. **Migrations DB : par le workflow `release-db` exclusivement** ([[D-087]],
@@ -63,13 +79,37 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
    d'une migration, appliqué en one-off **après approbation humaine**.
    Séquence et gardes : `docs/DEPLOIEMENT_RELEASE_DB.md`. Jamais de
    `migrate deploy` à la main contre la production.
-5. Attendre le déploiement (~5 min) puis contrôle post-déploiement
+5. Attendre le déploiement (CI de `main` ~13 min, puis build de 5 à 14 min)
+   puis contrôle post-déploiement
+6. **Déployer la tête à la main** (par exemple après un build en échec) :
+   Actions → Déploiement production → Run workflow, `action=deployer` (ou
+   `gh workflow run deploiement-production.yml --ref main -f
+   action=deployer`). **Ce chemin ne lit pas le CI de la tête** : le
+   constater vert d'abord. Le run s'abstient, en vert, si la tête est déjà
+   en service (`forcer` ne lève que celle-là), retenue par `release-db`
+   (verdict « Retenu ») ou dépassée : **lire le verdict, pas la couleur**.
+   Jamais de `integration-link-manual-deploy` lancé à la main : il saute la
+   retenue `release-db` et l'attente du calme. Dernier recours, workflow
+   indisponible : aucun build en vol, aucun run `release-db` non conclu au
+   vert sur la tête.
 
 ## Contrôle post-déploiement
 
 1. Accéder à `https://app.wellneuro.fr` (rafraîchir le cache navigateur)
-2. `scalingo --app wellneuro --region osc-fr1 deployments` : le commit
-   attendu est en tête, statut `success`
+2. Le run **Déploiement production** du merge conclut « Tête de `main`
+   déployée ». Pour lire la production soi-même :
+   `scalingo --app wellneuro --region osc-fr1 deployments` — la liste est
+   triée par **début** de build ; la version en service est la ligne
+   `success` qui **finit** en dernier (DATE + DURATION), pas forcément la
+   première. La colonne USER sépare l'auto-déploiement
+   (`scalingo-platform-scm`, coupé depuis le 2026-09-25) de tout geste
+   fait sous le compte (`wellneuro`) : Actions, `release-db`, mais aussi un
+   déploiement lancé à la main (CLI, tableau de bord). Pour attribuer une
+   ligne `wellneuro`, chercher son ID dans les journaux des runs
+   Déploiement production et `release-db`. Le verdict complet
+   (conforme / recul / illisible) : `node scripts/wn-deploiement-observation.mjs`
+   depuis le dépôt (CLI Scalingo connecté), ou le même workflow en
+   `action=observer`
 3. `scalingo --app wellneuro --region osc-fr1 logs -n 200` : pas d'erreur
    500 récente ni de crash de conteneur
 4. Tester une assignation simple sur dossier de test ([[D-075]] : les
@@ -81,7 +121,9 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
 2. **Revert par PR** (`git revert` + PR + merge) — jamais de
    `git reset --hard` sur `main` : l'historique de `main` est la référence
    des déploiements et des releases DB
-3. Merge → Scalingo redéploie ; contrôle post-déploiement
+3. Merge → CI de `main` vert → Déploiement production redéploie ; contrôle
+   post-déploiement. Un revert avance `main` : il se déploie comme tout
+   merge, sans rien qui ressemble à un recul
 4. **Deux avertissements ([[D-087]])** :
    - redéployer un slug **antérieur au 2026-08-22** ré-active
      l'auto-migration du `postdeploy` (ancien `db-deploy.sh`) — un rollback
@@ -91,6 +133,22 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
      (sauvegardes Scalingo ; la copie Supabase n'est un filet que jusqu'au
      2026-09-01, [[D-080]]). Décision du responsable, jamais un geste par
      défaut.
+5. **Revenir à l'auto-déploiement** (retour arrière de la bascule
+   [[D-248]], décision du responsable) — l'ordre symétrique de la bascule,
+   sans aucun autre merge entre les gestes :
+   1. merger le revert du **code** de #1222 — workflow, déployeur et son
+      banc ramenés à `eb660e3f` ; pas les documents : D-248 est un registre
+      append-only, le retour arrière s'y écrit en ajout. L'auto-déploiement
+      est encore coupé : `main` retrouve le lot 2 (dispatch seul, garde
+      finale active) ;
+   2. `scalingo --app wellneuro --region osc-fr1 integration-link-update --auto-deploy` ;
+   3. livrer la tête par `action=deployer` — le revert n'a été livré par
+      personne ; le run s'abstient si la tête est déjà en service.
+
+   **Jamais l'ordre inverse** : entre les deux gestes, l'auto-déploiement
+   tournerait à côté d'un déployeur dont la garde finale est éteinte — un
+   run dépassé qui conclut vert pourrait réveiller l'auto-déploiement d'un
+   vieux commit (incident 1).
 
 ## Incident : Scalingo / DNS / Configuration
 
