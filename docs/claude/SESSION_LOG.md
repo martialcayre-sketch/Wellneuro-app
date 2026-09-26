@@ -7985,3 +7985,13 @@ migrations autorisées. Le texte ne touche jamais le dépôt, qui est public.
 81 claims VALIDE.
 
 **Prochaine action.** Lot 2 : appariement et invariants.
+
+## 2026-09-26 — Fiche d'assiette, lot 2 : appariement et contrôles
+
+**Livré.** L'appariement assiette → Fiche MY, écrit paire par paire et gardé
+par le registre (règle, titres, statut). Les contrôles d'une fiche adaptée :
+nombres et ce qu'ils comptent, provenance, verbatim, claims de la fiche seuls,
+précautions de sécurité, lexique patient. Bancs sur texte synthétique ;
+mutations jouées.
+
+**Prochaine action.** Lot 3 : migration M1, seule dans sa PR.
