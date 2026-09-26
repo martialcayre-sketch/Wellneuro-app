@@ -3008,9 +3008,13 @@ model FicheAssietteVersion {
 }
 
 /// Un acte du responsable sur une version : la valider, ou la retirer.
-/// Append-only. L'état d'une version est son DERNIER acte.
+/// Append-only. L'état d'une version est son DERNIER acte — au sens d'`ordre`,
+/// jamais de `le` (horodatage figé par transaction, à la milliseconde : deux
+/// actes pourraient y être ex æquo ; constat de revue, #1233).
 model FicheAssietteActe {
   id                   String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (séquence, réaffirmée par trigger).
+  ordre                BigInt   @default(autoincrement()) @map("ordre")
   idVersion            String   @map("id_version")
   /// 'validee' | 'retiree' — fermé par un CHECK en base.
   acte                 String   @map("acte")
@@ -3028,6 +3032,7 @@ model FicheAssietteActe {
 
   version FicheAssietteVersion @relation(fields: [idVersion], references: [id], onDelete: Restrict)
 
-  @@index([idVersion, le], map: "fiches_assiette_actes_version_le_idx")
+  @@unique([ordre], map: "fiches_assiette_actes_ordre_key")
+  @@index([idVersion, ordre], map: "fiches_assiette_actes_version_ordre_idx")
   @@map("fiches_assiette_actes")
 }

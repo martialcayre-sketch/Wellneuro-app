@@ -53,6 +53,7 @@ CREATE TABLE "fiches_assiette_versions" (
 -- CreateTable
 CREATE TABLE "fiches_assiette_actes" (
     "id" TEXT NOT NULL,
+    "ordre" BIGSERIAL NOT NULL,
     "id_version" TEXT NOT NULL,
     "acte" TEXT NOT NULL,
     "contenu_sha256" TEXT NOT NULL,
@@ -69,7 +70,14 @@ CREATE TABLE "fiches_assiette_actes" (
 CREATE UNIQUE INDEX "fiches_assiette_versions_source_numero_key" ON "fiches_assiette_versions"("source_id", "numero");
 
 -- CreateIndex
-CREATE INDEX "fiches_assiette_actes_version_le_idx" ON "fiches_assiette_actes"("id_version", "le");
+-- « LE DERNIER ACTE » SE LIT PAR `ordre`, JAMAIS PAR `le` — constat de revue
+-- (#1233). `now()` est figé pour toute la transaction et la colonne est à la
+-- milliseconde : deux actes pouvaient y être ex æquo, et l'état d'une version
+-- (validée ou retirée) devenait le choix arbitraire du planificateur.
+CREATE INDEX "fiches_assiette_actes_version_ordre_idx" ON "fiches_assiette_actes"("id_version", "ordre");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "fiches_assiette_actes_ordre_key" ON "fiches_assiette_actes"("ordre");
 
 -- AddForeignKey
 -- ON DELETE RESTRICT : un acte ne survit pas à sa version, et une version qui
@@ -138,10 +146,16 @@ CREATE TRIGGER fiches_assiette_actes_no_truncate
 --  1. les instants sont posés par la base — une version ou un acte antidatable
 --     n'est pas une preuve ;
 --  2. une version prend le numéro qui SUIT le dernier de sa fiche, sans trou :
---     l'histoire d'une fiche se relit d'un seul tenant ;
+--     l'histoire d'une fiche se relit d'un seul tenant. Le calcul est
+--     SÉRIALISÉ par fiche (verrou transactionnel consultatif) — constat de
+--     revue (#1233) : deux dépôts concurrents lisaient le même maximum, et l'un
+--     échouait sur l'unicité, de façon intermittente ;
 --  3. un acte porte sur le texte EXACT de sa version : l'empreinte recopiée
 --     doit être la sienne. Sans cela, on validerait un texte et on en
---     servirait un autre.
+--     servirait un autre. La version est immuable (append-only) : cette
+--     lecture n'a pas de course ;
+--  4. l'`ordre` d'un acte est tiré de la séquence PAR LA BASE, même si
+--     l'appelant en fournit un : c'est lui qui dit quel acte est le dernier.
 
 CREATE OR REPLACE FUNCTION public.fiches_assiette_versions_avant_insertion()
 RETURNS trigger
@@ -152,6 +166,10 @@ DECLARE
   attendu integer;
 BEGIN
   NEW.cree_le := now();
+  -- Un verrou par fiche, relâché à la fin de la transaction : les dépôts d'une
+  -- même fiche passent l'un après l'autre, ceux de fiches différentes ne
+  -- s'attendent pas.
+  PERFORM pg_advisory_xact_lock(hashtext('fiches_assiette_versions:' || NEW.source_id));
   SELECT COALESCE(max(v.numero), 0) + 1 INTO attendu
   FROM public.fiches_assiette_versions v
   WHERE v.source_id = NEW.source_id;
@@ -175,6 +193,7 @@ DECLARE
   empreinte text;
 BEGIN
   NEW.le := now();
+  NEW.ordre := nextval(pg_get_serial_sequence('public.fiches_assiette_actes', 'ordre'));
   SELECT v.contenu_sha256 INTO empreinte
   FROM public.fiches_assiette_versions v
   WHERE v.id = NEW.id_version;

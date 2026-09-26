@@ -8,7 +8,10 @@
 - Ce que la base garantit elle-même :
   - les deux tables sont en ajout seul : ni réécriture ni suppression ;
   - les instants sont posés par la base ;
-  - les numéros de version se suivent sans trou ;
+  - les numéros de version se suivent sans trou, et leur calcul est sérialisé
+    par fiche ;
+  - le dernier acte d'une version se lit par un ordre posé par la base, jamais
+    par l'horodatage ;
   - valider exige la déclaration de relecture intégrale, et retirer exige un
     motif ;
   - un acte ne peut porter que l'empreinte exacte du texte de sa version.

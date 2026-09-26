@@ -24,6 +24,15 @@ autorisée explicitement par le responsable le 2026-09-26.
 - CHECK : formats fermés, non-vide en `~ '\S'`, acte fermé, validation qui exige
   la relecture intégrale, retrait qui exige un motif.
 - Empreintes en `TEXT` + CHECK, comme le reste du schéma (aucun `Char(64)`).
+- Deux constats de revue (#1233), corrigés :
+  - le calcul du numéro de version est sérialisé par fiche
+    (`pg_advisory_xact_lock`), sans quoi deux dépôts concurrents échouaient
+    par intermittence ;
+  - « le dernier acte » se lit par `ordre` (séquence, réaffirmée par trigger),
+    jamais par `le`, figé par transaction et à la milliseconde. Le contrat SQL
+    reproduit l'ex æquo sur `le` et exige qu'`ordre` le départage. Le verrou,
+    lui, ne se prouve pas depuis une seule session : il n'est pas éprouvé par
+    le contrat, et c'est dit.
 - DDL de table généré par `prisma migrate diff` depuis le schéma, pour que le
   contrôle de dérive du CI tienne ; contraintes et triggers ajoutés à la main.
 

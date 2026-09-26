@@ -11,6 +11,9 @@
 --   6. l'acte est FERMÉ : ni « brouillon » ni « publiee » (23514) ;
 --   7. VALIDER exige la déclaration de relecture intégrale ;
 --   8. RETIRER exige un motif ;
+--   8 bis. « le dernier acte » se lit par `ordre`, posé par la base et
+--      strictement croissant — même quand deux actes partagent le même `le`
+--      (constat de revue, #1233 : `now()` est figé par transaction) ;
 --   9. un acte dont l'empreinte n'est PAS celle de sa version est refusé —
 --      sans cela, on validerait un texte et on en servirait un autre ;
 --  10. UPDATE, DELETE et TRUNCATE sont refusés sur les deux tables ;
@@ -173,6 +176,35 @@ BEGIN
       RAISE EXCEPTION 'FICHES ASSIETTE: un retrait motivé a été refusé (%)', SQLERRM;
   END;
 
+  -- ── 8 bis. « Le dernier acte » se lit par `ordre` ────────────────────────
+  -- La validation et le retrait ci-dessus sont dans la MÊME transaction : ils
+  -- portent le MÊME `le` — l'ex æquo exact que la revue a signalé. `ordre`
+  -- doit pourtant les départager, et dans l'ordre des gestes.
+  DECLARE
+    ordre_validation bigint;
+    ordre_retrait bigint;
+    le_validation timestamp;
+    le_retrait timestamp;
+    ordre_force bigint;
+  BEGIN
+    SELECT ordre, le INTO ordre_validation, le_validation FROM fiches_assiette_actes WHERE id = 'faa_contrat_1';
+    SELECT ordre, le INTO ordre_retrait, le_retrait FROM fiches_assiette_actes WHERE id = 'faa_retrait';
+    IF le_validation IS DISTINCT FROM le_retrait THEN
+      RAISE EXCEPTION 'FICHES ASSIETTE: les deux actes d''une même transaction devraient partager `le` — le cas ne reproduit plus l''ex æquo qu''il garde.';
+    END IF;
+    IF NOT (ordre_retrait > ordre_validation) THEN
+      RAISE EXCEPTION 'FICHES ASSIETTE: `ordre` ne départage pas deux actes ex æquo sur `le` (% puis %).', ordre_validation, ordre_retrait;
+    END IF;
+    -- Un appelant qui fournit son propre `ordre` ne choisit pas le rang de son
+    -- acte : la base le tire de la séquence.
+    INSERT INTO fiches_assiette_actes (id, ordre, id_version, acte, contenu_sha256, validateur, relecture_integrale)
+    VALUES ('faa_ordre_force', 1, 'fav_contrat_1', 'validee', H1, 'praticien@wellneuro.fr', true);
+    SELECT ordre INTO ordre_force FROM fiches_assiette_actes WHERE id = 'faa_ordre_force';
+    IF NOT (ordre_force > ordre_retrait) THEN
+      RAISE EXCEPTION 'FICHES ASSIETTE: un `ordre` fourni par l''appelant (1) a été gardé (%) — le dernier acte deviendrait falsifiable.', ordre_force;
+    END IF;
+  END;
+
   -- ── 9. L'acte porte sur le texte EXACT de sa version ─────────────────────
   refuse := false;
   BEGIN
@@ -273,7 +305,7 @@ BEGIN
     RAISE EXCEPTION 'FICHES ASSIETTE: % colonne(s) désignent un patient — le catalogue ne porte AUCUNE donnée patient.', nb;
   END IF;
 
-  RAISE NOTICE 'FICHES ASSIETTE: version et acte valides acceptés, instants posés par la base, numéro contigu (saut et doublon refusés), 7 formats refusés, acte fermé, validation sans relecture refusée, retrait sans motif refusé, empreinte étrangère refusée, UPDATE/DELETE/TRUNCATE refusés sur les deux tables, FK RESTRICT, RLS deny-all, aucune colonne patient.';
+  RAISE NOTICE 'FICHES ASSIETTE: version et acte valides acceptés, instants posés par la base, numéro contigu (saut et doublon refusés), 7 formats refusés, acte fermé, validation sans relecture refusée, retrait sans motif refusé, ordre posé par la base et départageant deux actes ex æquo, empreinte étrangère refusée, UPDATE/DELETE/TRUNCATE refusés sur les deux tables, FK RESTRICT, RLS deny-all, aucune colonne patient.';
 END $$;
 
 ROLLBACK;
