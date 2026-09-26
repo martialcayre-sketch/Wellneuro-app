@@ -8006,3 +8006,15 @@ version. Un contrat SQL négatif en éprouve 12 promesses.
 
 **Prochaine action.** Merge, release-db approuvé par le responsable, constat
 par conteneur, puis lot 4.
+
+## 2026-09-26 — Fiche d'assiette, lot 4 : voie d'ingestion
+
+**Constaté.** Migration M1 appliquée par release-db approuvé (sentinelle vue),
+puis constatée par conteneur : tables vides, RLS sans policy, triggers, CHECK.
+
+**Livré.** `POST /api/internal/fiches-assiette/ingest`, sous le secret du
+corpus : contrat fermé, champs de validation refusés (DC-16), claims VALIDE,
+contrôles du lot 2, numéro sous le verrou du trigger, rejeu idempotent, aucun
+texte en journal. Garde : seule cette voie crée une version.
+
+**Prochaine action.** Lot 5 : l'outil d'adaptation hors ligne.
