@@ -963,6 +963,17 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/portail_lectures_patient_v1_negatif.sql
 
+      # Catalogue des fiches d'assiette (D-251, lot 3). Ce que le drift check ne
+      # voit pas, et qui fait toute la valeur des deux tables : l'append-only par
+      # trigger, les instants posés par la base, le numéro de version contigu,
+      # la validation qui exige la relecture intégrale, le retrait qui exige un
+      # motif, et surtout l'acte qui ne peut porter que l'empreinte EXACTE de sa
+      # version — sans quoi on validerait un texte et on en servirait un autre.
+      - name: Fiches assiette catalogue negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/fiches_assiette_catalogue_v1_negatif.sql
+
       # Écartement praticien d'une proposition d'orientation. LA PROMESSE QUI
       # COMPTE LE PLUS EST LA MOINS VISIBLE : un écartement SANS RÈGLES est
       # refusé. `regles_au_geste` est ce qui permet le RÉVEIL d'une proposition
