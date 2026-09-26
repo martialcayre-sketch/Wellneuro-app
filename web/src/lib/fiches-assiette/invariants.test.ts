@@ -174,6 +174,25 @@ describe('controlerFiche — la provenance', () => {
     }
   });
 
+  // Constat de revue (#1235) : toutes les formes que le contrôle retire de la
+  // source sont refusées dans le texte patient, l'astérisque seul compris.
+  it('refuse aussi l’astérisque seul, la puce et le numéro de liste', () => {
+    for (const texte of ['Mangez des *légumes* frais.', '* Mangez des légumes.', '- Mangez des légumes.', '1. Mangez des légumes.']) {
+      const contenu = fiche({ sections: [{ titre: 'T', blocs: [
+        { texte, provenance: { type: 'claims', claims: [CLAIM_FICHE] } },
+      ] }] });
+      expect(codes(entrees({ contenu, texteSource: 'Mangez des légumes. 1 fois.' }))).toContain('balisage_dans_le_texte');
+    }
+  });
+
+  it('un nombre d’une cellule ne compte pas le mot de la cellule suivante', () => {
+    const texteSource = '| 3 |\n| semaines |';
+    const contenu = fiche({ sections: [{ titre: 'T', blocs: [
+      { texte: 'Pendant 3 semaines.', provenance: { type: 'claims', claims: [CLAIM_FICHE] } },
+    ] }] });
+    expect(codes(entrees({ contenu, texteSource }))).toEqual(['nombre_hors_source']);
+  });
+
   it('retirer le balisage ne fait rien passer d’autre : un mot changé reste introuvable', () => {
     const texteSource = '- Répartir la **source de légumes** sur 3 repas.';
     const contenu = fiche({ sections: [{ titre: 'T', blocs: [

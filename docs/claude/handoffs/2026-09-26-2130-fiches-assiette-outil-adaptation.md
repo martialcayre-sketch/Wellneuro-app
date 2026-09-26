@@ -78,6 +78,14 @@ sont rejoués, puis le brouillon est déposé par la route du lot 4.
     - un rapport n'écrase plus le brouillon ;
     - le dépôt refuse les redirections.
   - **CI** : les consignes (`.md`) sont classées comme du code.
+- **Revue Copilot (#1235)**, trois constats :
+  - **corrigé** : le texte patient refuse aussi l'astérisque seul, la puce et
+    le numéro de liste ;
+  - **corrigé** : les nombres se lisent segment par segment et ne s'apparient
+    plus d'une cellule à l'autre ;
+  - **écarté, avec motif** : l'expression signalée comme invalide est valide,
+    le module se charge et ses bancs passent.
+  - Mutations jouées pour les deux corrections.
   - **Bancs** : les deux sens de la comparaison pages / marqueurs sont couverts.
 
 ## 4. Fichiers modifiés

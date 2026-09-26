@@ -95,17 +95,14 @@ export function segmentsSansBalisage(texte: string): string[] {
     .filter(Boolean);
 }
 
-/** Le texte net, segment par segment — ce sur quoi se lisent les nombres. */
-function texteNet(texte: string): string {
-  return segmentsSansBalisage(texte).join('\n');
-}
-
 /**
  * Du balisage, un marqueur de page ou de figure dans un texte que le PATIENT
  * lira : il s'afficherait tel quel. La comparaison verbatim ignore le balisage ;
- * le texte servi, lui, n'en porte pas.
+ * le texte servi, lui, n'en porte pas. Toutes les formes que
+ * `segmentsSansBalisage` retire sont refusées ici — l'astérisque seul, la puce
+ * et le numéro de liste compris (constat de revue, #1235).
  */
-const RE_BALISAGE = /\*\*|__|<!--|-->|\[figure|\||^[ \t]*#{1,6}[ \t]|^[ \t]*>[ \t]/imu;
+const RE_BALISAGE = /\*|__|<!--|-->|\[figure|\||^[ \t]*#{1,6}[ \t]|^[ \t]*>[ \t]|^[ \t]*[-+][ \t]|^[ \t]*\d+[.)][ \t]/imu;
 
 /**
  * CHIFFRE TECHNIQUE, PAS UN SEUIL (`DC-20`) : la longueur à partir de laquelle un
@@ -277,10 +274,11 @@ export function controlerFiche(entrees: EntreesControle): AnomalieFiche[] {
   });
 
   // LES NOMBRES : chacun doit exister, avec ce qu'il compte, dans une source —
-  // lus sur le texte NET, des deux côtés. Les noms qui portent un chiffre
-  // (« oméga-3 ») doivent exister tels quels.
-  const sources = [texteSource, ...textesClaimsCites].map(texteNet);
-  const lisibles = textesLisibles(contenu).map(texteNet);
+  // lus SEGMENT PAR SEGMENT, des deux côtés : un nombre d'une cellule ne
+  // compte pas le mot de la cellule suivante (constat de revue, #1235). Les
+  // noms qui portent un chiffre (« oméga-3 ») doivent exister tels quels.
+  const sources = [texteSource, ...textesClaimsCites].flatMap(segmentsSansBalisage);
+  const lisibles = textesLisibles(contenu).flatMap(segmentsSansBalisage);
   const autorises = new Set([...sources.flatMap(nombresDuTexte), ...sources.flatMap(nomsChiffres)]);
   const vus = new Set<string>();
   for (const nombre of [...lisibles.flatMap(nombresDuTexte), ...lisibles.flatMap(nomsChiffres)]) {
