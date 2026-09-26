@@ -781,7 +781,10 @@ describe('ClinicalRuntimeSection', () => {
     await waitFor(() => expect(fetchMock).not.toHaveBeenCalled());
   });
 
-  it('n’affiche l’Observatoire que lorsque le flag serveur est actif', async () => {
+  // [[D-250]] : l'observatoire Boussole n'est plus monté au niveau du protocole,
+  // MÊME drapeau C5 ouvert — c'est le cas qui le montrait avant. Le témoin
+  // d'anti-vacuité est le constructeur, qui vit dans la même sous-vue.
+  it('n’affiche plus l’Observatoire Boussole, même drapeau C5 ouvert', async () => {
     const fixture = buildValidationErgoC1Fixture();
     const ready: CockpitRuntimeApiResponse = {
       status: 'ready',
@@ -796,16 +799,16 @@ describe('ClinicalRuntimeSection', () => {
     };
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ready });
     vi.stubGlobal('fetch', fetchMock);
-    const { rerender } = render(
-      <ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />,
-    );
-    expect(screen.queryByRole('heading', { name: /Boussole alimentaire/ })).toBeNull();
-    rerender(
+    render(
       <C5FeatureProvider enabled>
         <ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />
       </C5FeatureProvider>,
     );
-    expect(await screen.findByRole('heading', { name: /Boussole alimentaire/ })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Protocole 21 jours' })).toBeTruthy();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(screen.queryByRole('heading', { name: /Boussole alimentaire/ })).toBeNull();
+    expect(fetchMock.mock.calls.map(appel => String(appel[0])).some(url => url.includes('/api/praticien/boussole')))
+      .toBe(false);
   });
 });
 

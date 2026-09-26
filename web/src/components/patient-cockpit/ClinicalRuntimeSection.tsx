@@ -32,10 +32,7 @@ import { resoudreJalonDu, type JalonDu } from '@/lib/protocol/jalonDu';
 import { estJalonMesure, type AncreCycle } from '@/lib/protocol/cycles';
 import { Button } from '@/components/ui/Button';
 import type { JalonMomentum } from '@/lib/equilibre/types';
-import type { FoodCompassActionRef } from '@/lib/food-compass/types';
-import { PractitionerFoodCompassObservatory } from './PractitionerFoodCompassObservatory';
 import { AssiettesIndiqueesPanel } from './AssiettesIndiqueesPanel';
-import { useC5Enabled } from './C5FeatureProvider';
 import { useCbEnabled, useCbResultsEnabled } from './CbFeatureProvider';
 import {
   ArbitrageBiologiquePanel,
@@ -286,15 +283,13 @@ export function ClinicalRuntimeSection({
   statutTrajectoirePartage,
   onRechargerTrajectoire,
 }: ClinicalRuntimeSectionProps) {
-  const c5Enabled = useC5Enabled();
   const cbEnabled = useCbEnabled();
   const cbResultatsActifs = useCbResultsEnabled();
   // Sous-vues de la phase Actions (audit 2026-09-02, constat « jusqu'à 7
   // panneaux lourds dans le même puits de défilement »). Bascule par `hidden`
-  // pour le protocole — ProtocolMiniBuilder et la Boussole doivent rester
-  // MONTÉS (le brouillon et l'aliment sélectionné vivent dans leur état) ;
-  // les autres sous-vues sont pilotées par leurs props, un montage
-  // conditionnel ne leur perd rien.
+  // pour le protocole — ProtocolMiniBuilder doit rester MONTÉ (le brouillon
+  // vit dans son état) ; les autres sous-vues sont pilotées par leurs props,
+  // un montage conditionnel ne leur perd rien.
   const [sousVueActions, setSousVueActions] = useState<
     'protocole' | 'historique' | 'diffusion' | 'biologie'
   >('protocole');
@@ -465,10 +460,6 @@ export function ClinicalRuntimeSection({
    * serait littéralement impossible à mener à son terme.
    */
   const [ouvertureCycle, setOuvertureCycle] = useState<AncreCycle | null>(null);
-  const [foodCompassSelection, setFoodCompassSelection] = useState<{
-    foodLabel: string;
-    actionRef: FoodCompassActionRef;
-  } | null>(null);
   /**
    * L'ASSIETTE RETENUE VIT ICI, PAS DANS LA CARTE ([[D-240]]).
    *
@@ -479,8 +470,9 @@ export function ClinicalRuntimeSection({
    *
    * ELLE PORTE LE DOSSIER QUI L'A PRODUITE — constat de revue, et il visait un
    * défaut GRAVE que la première rédaction avait introduit. La sélection
-   * Boussole voisine est remise à zéro par un effet (`readyDecisionCardId`,
-   * `activeVersionId`) ; celle-ci ne l'était PAR RIEN. Le cockpit étant réutilisé
+   * Boussole voisine — retirée depuis ([[D-250]]) — était remise à zéro par un
+   * effet (`readyDecisionCardId`, `activeVersionId`) ; celle-ci ne l'était PAR
+   * RIEN. Le cockpit étant réutilisé
    * d'un dossier à l'autre, l'assiette retenue pour le patient A restait dans le
    * bandeau du patient B — insérable, puis **enregistrable dans son protocole**.
    * Ce n'est pas une image fugace : c'est une indication clinique d'un dossier
@@ -1283,10 +1275,6 @@ export function ClinicalRuntimeSection({
     loadProposition, loadCriteresDossier,
   ]);
 
-  useEffect(() => {
-    setFoodCompassSelection(null);
-  }, [readyDecisionCardId, activeVersionId]);
-
   // LE DOSSIER, ET RIEN QUE LUI — et la première rédaction s'y était trompée
   // dans l'autre sens (constat de revue).
   //
@@ -1306,9 +1294,9 @@ export function ClinicalRuntimeSection({
   // l'insertion, elle, vide la sélection par `onClearAssietteSelection`.
   //
   // UN EFFET À PART, et non une dépendance ajoutée au précédent : y glisser
-  // `idPatient` changerait aussi le comportement de la sélection Boussole, qui
-  // n'est pas le sujet de ce lot — et qui porte le même défaut d'asynchronie,
-  // nommé au handoff, non corrigé ici.
+  // `idPatient` changeait aussi le comportement de la sélection Boussole, qui
+  // n'était pas le sujet de ce lot. Cette sélection a disparu avec
+  // l'observatoire ([[D-250]]) ; l'effet reste à part.
   useEffect(() => {
     setAssietteSelection(null);
   }, [idPatient]);
@@ -2095,20 +2083,17 @@ export function ClinicalRuntimeSection({
           ))}
         </div>
       )}
-      {/* Boussole alimentaire : montée dès que les gardes métier sont
-          satisfaites, puis seulement MASQUÉE hors phase Actions / hors
-          sous-vue Protocole — la démonter rejouerait son chargement et
-          réinitialiserait l'aliment sélectionné. */}
-      {c5Enabled && !fixture && readyDecisionCardId && (
-        <div hidden={!affiche('actions') || sousVueActions !== 'protocole'}>
-          <PractitionerFoodCompassObservatory
-            idPatient={idPatient}
-            decisionCardId={readyDecisionCardId}
-            onInsert={setFoodCompassSelection}
-          />
-        </div>
-      )}
-      {/* ASSIETTES INDIQUÉES ([[D-237]]) — à côté de l'observatoire, et pour le
+      {/* LA BOUSSOLE ALIMENTAIRE N'EST PLUS MONTÉE ICI ([[D-250]]). Décision du
+          responsable, pour moins de bruit : au niveau du protocole elle
+          n'expliquait rien — un profil CIQUAL identique pour tous les
+          patients, et un geste qui faisait d'un aliment une action. La
+          justification alimentaire vit sur la carte des assiettes, le choix
+          dans l'action « Alimentation » ([[D-249]]). Restent en place, non
+          montés : `PractitionerFoodCompassObservatory`, sa route, le geste
+          d'insertion du constructeur, et toute la relecture des protocoles
+          qui portent un `foodCompassRef` — un refus à la relecture serait un
+          protocole mort. Les remonter suffit à revenir en arrière. */}
+      {/* ASSIETTES INDIQUÉES ([[D-237]]) — là où était l'observatoire, et pour le
           motif du cadrage du 2026-09-16 : l'assiette est l'unité de
           PRESCRIPTION, l'aliment en est le contenu. C'est ici que le praticien
           décide, donc ici que la lecture doit être.
@@ -2183,8 +2168,6 @@ export function ClinicalRuntimeSection({
           saveError={saveError}
           confirmationRegistre={confirmationRegistre}
           onConfirmerRegistre={confirmerRegistreEtEnregistrer}
-          foodCompassSelection={foodCompassSelection}
-          onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
           assietteSelection={assietteRetenue}
           onClearAssietteSelection={() => setAssietteSelection(null)}
           assiettesIndiquees={fixture ? null : assiettesIndiqueesDuDossier}
