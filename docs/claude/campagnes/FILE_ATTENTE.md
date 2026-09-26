@@ -102,6 +102,20 @@ Ni des campagnes (pas de dossier, pas de lots), ni des gestes du responsable :
 du travail de dépôt porté par sa décision et sa PR. Ils figurent ici pour que la
 file cesse de laisser croire que rien ne se fait en dehors d'elle.
 
+- **LE CHANTIER « FICHE D'ASSIETTE »** (ouvert le 2026-09-26 par [[D-251]]). Il
+  fait partir au patient, au clic « Valider pour diffusion », la Fiche MY de
+  l'assiette choisie dans l'action « Alimentation ». La fiche est adaptée par
+  IA hors ligne, puis validée version par version par le responsable. Le
+  patient la lit dans un espace du portail, annoncée par un e-mail neutre.
+  **Onze lots bornés, hors campagne**, un merge à la fois, dont deux migrations
+  autorisées explicitement ; le drapeau `WN_FICHES_ASSIETTE` est livré fermé.
+  **LE TEXTE NE TOUCHE JAMAIS LE DÉPÔT**, qui est public : il vit en base HDS.
+  **LE RISQUE NOMMÉ EST CELUI DE [[D-112]]** : aucun protocole 21 jours n'a
+  encore été servi. Servir un premier protocole de bout en bout précède
+  l'ouverture du drapeau. Ce chantier referme la surface neuve « fiche conseil »
+  nommée plus bas (`adviceSheetRef` reste fermé : la fiche est un document
+  remis, pas un champ du protocole).
+
 - **LE LOT D'EXPOSITION DES INDICATIONS D'ASSIETTE** (livré le 2026-09-19 par
   [[D-237]]). La table signée **atteint le praticien** : un service de lecture,
   `GET /api/praticien/assiettes-indiquees`, et une carte au cockpit dans la

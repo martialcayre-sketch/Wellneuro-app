@@ -7972,3 +7972,16 @@ version augmentée par IA, envoi automatique à la validation du protocole via
 l'inbox, espace de lecture au portail. Cadrage en cours.
 
 **Prochaine action.** Merge seul ; constat en production.
+
+## 2026-09-26 — D-251 : la fiche d'assiette, décision et cadrage
+
+**Décision.** Les Fiches MY (droits du responsable) sont adaptées par IA hors
+ligne, puis validées par version. Elles partent au patient à « Valider pour
+diffusion », lues au portail et annoncées par un e-mail neutre. Les précautions
+de sécurité figurent dans la fiche. V1 la fiche seule, V2 les recettes. Deux
+migrations autorisées. Le texte ne touche jamais le dépôt, qui est public.
+
+**Constaté.** G1-G4 : 12/12 fragments avec preuve ; fragments amendés par LLM ;
+81 claims VALIDE.
+
+**Prochaine action.** Lot 2 : appariement et invariants.
