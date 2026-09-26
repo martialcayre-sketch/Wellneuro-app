@@ -17,7 +17,7 @@
 set -euo pipefail
 
 racine="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-dossiers=("$racine/tools/corpus/certify/lib" "$racine/tools/corpus/claims/lib")
+dossiers=("$racine/tools/corpus/certify/lib" "$racine/tools/corpus/claims/lib" "$racine/tools/corpus/fiches/lib")
 
 shopt -s nullglob
 bancs=()

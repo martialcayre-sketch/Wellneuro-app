@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { controlerFiche, nombresDuTexte, type EntreesControle } from './invariants';
+import { controlerFiche, nombresDuTexte, nomsChiffres, type EntreesControle } from './invariants';
 import { clesSecuriteDeLAssiette } from './securite';
 import type { ContenuFicheAssiette } from './types';
 
@@ -77,6 +77,37 @@ describe('controlerFiche — les nombres', () => {
     expect(nombresDuTexte('1,5 litre ; 1.5 litres')).toEqual(['1.5 litre', '1.5 litre']);
     expect(nombresDuTexte('après 60 ans, 20 % de plus, 8h de sommeil')).toEqual(['60 ans', '20 %', '8 h']);
   });
+
+  // Constat de la revue du lot 5 : « Les oméga-3 se trouvent… » était lu
+  // « 3 se », et refusé. Un chiffre collé à une lettre est un NOM.
+  it('un chiffre dans un nom (oméga-3, B12) n’est pas une quantité — mais le nom doit exister', () => {
+    expect(nombresDuTexte('Les oméga-3 et la vitamine B12 se trouvent ici.')).toEqual([]);
+    expect(nomsChiffres('Les oméga-3 et la vitamine B12.')).toEqual(['oméga-3', 'b12']);
+    const texteSource = 'Les poissons gras apportent des oméga-3.';
+    const present = fiche({ sections: [{ titre: 'Les oméga-3', blocs: [
+      { texte: 'Les oméga-3 se trouvent dans les poissons gras.', provenance: { type: 'claims', claims: [CLAIM_FICHE] } },
+    ] }] });
+    expect(codes(entrees({ contenu: present, texteSource }))).toEqual([]);
+    const invente = fiche({ sections: [{ titre: 'T', blocs: [
+      { texte: 'Les oméga-6 se trouvent dans les poissons gras.', provenance: { type: 'claims', claims: [CLAIM_FICHE] } },
+    ] }] });
+    expect(codes(entrees({ contenu: invente, texteSource }))).toEqual(['nombre_hors_source']);
+  });
+
+  // Constat du premier essai sur WN-SRC-0305 : la source écrit « oméga 3 ».
+  it('« oméga 3 », « omega-3 », « oméga‑3 » sont un seul nom, et pas un « 3 » nu', () => {
+    expect(nombresDuTexte('Sources d’oméga 3 et d’omega-6')).toEqual([]);
+    expect(nomsChiffres('oméga 3, omega-3, oméga‑3')).toEqual(['oméga-3', 'oméga-3', 'oméga-3']);
+    const texteSource = 'Les poissons gras sont riches en oméga 3 nombreux.';
+    const titre = fiche({ sections: [{ titre: 'Sources d’oméga-3', blocs: [
+      { texte: 'Les poissons gras sont riches en oméga 3', provenance: { type: 'verbatim' } },
+    ] }] });
+    expect(codes(entrees({ contenu: titre, texteSource }))).toEqual([]);
+  });
+
+  it('un intervalle reste deux nombres contrôlés : « 3-4 portions » compte bien « 4 portion »', () => {
+    expect(nombresDuTexte('3-4 portions')).toContain('4 portion');
+  });
 });
 
 describe('controlerFiche — la provenance', () => {
@@ -93,6 +124,70 @@ describe('controlerFiche — la provenance', () => {
       { texte: 'Une phrase que la fiche ne contient pas.', provenance: { type: 'verbatim' } },
     ] }] });
     expect(codes(entrees({ contenu }))).toEqual(['verbatim_introuvable']);
+  });
+
+  // Constat des premiers essais de l'outil (lot 5) : l'extraction porte du
+  // Markdown, un bloc est du texte brut. Le balisage n'est pas du texte.
+  it('le balisage de la source n’empêche pas de retrouver un passage verbatim — il n’est pas du texte', () => {
+    const texteSource = [
+      '<!-- page 1 (lecture B) -->',
+      '',
+      '## Titre synthétique',
+      '- Répartir la **source de légumes** sur 3 repas.',
+      '| Colonne | Pendant 4 semaines |',
+    ].join('\n');
+    const contenu = fiche({ sections: [{ titre: 'T', blocs: [
+      { texte: 'Répartir la source de légumes sur 3 repas.', provenance: { type: 'verbatim' } },
+      { texte: 'Titre synthétique', provenance: { type: 'verbatim' } },
+      { texte: 'Pendant 4 semaines', provenance: { type: 'verbatim' } },
+    ] }] });
+    expect(codes(entrees({ contenu, texteSource }))).toEqual([]);
+  });
+
+  // Constat de la revue du lot 5 : aplatir le texte laissait un verbatim
+  // JOINDRE deux cellules ou deux lignes, et inverser le sens.
+  it('un verbatim ne joint jamais deux cellules de tableau ni deux lignes', () => {
+    const texteSource = '| Produit Y | à éviter |\n| Produit Z | autorisé |';
+    const joint = fiche({ sections: [{ titre: 'T', blocs: [
+      { texte: 'à éviter Produit Z', provenance: { type: 'verbatim' } },
+    ] }] });
+    expect(codes(entrees({ contenu: joint, texteSource }))).toEqual(['verbatim_introuvable']);
+    const cellule = fiche({ sections: [{ titre: 'T', blocs: [
+      { texte: 'Produit Y', provenance: { type: 'verbatim' } },
+    ] }] });
+    expect(codes(entrees({ contenu: cellule, texteSource }))).toEqual([]);
+  });
+
+  it('un nombre en gras dans la source se retrouve dans un texte sans balisage', () => {
+    const texteSource = 'Noter ce qui a été mangé pendant **4 semaines**, puis faire le point.';
+    const contenu = fiche({ sections: [{ titre: 'T', blocs: [
+      { texte: 'Noter ce qui a été mangé pendant 4 semaines', provenance: { type: 'verbatim' } },
+    ] }] });
+    expect(codes(entrees({ contenu, texteSource }))).toEqual([]);
+  });
+
+  it('le texte patient ne porte ni balisage, ni marqueur de page, ni marqueur de figure', () => {
+    const texteSource = '<!-- page 2 (lecture B) -->\n\nMangez des légumes frais.\n\n[FIGURE — non transcrite]';
+    for (const texte of ['Mangez des **légumes** frais.', '<!-- page 2 (lecture B) --> Mangez des légumes frais.', '[FIGURE — non transcrite]']) {
+      const contenu = fiche({ sections: [{ titre: 'T', blocs: [{ texte, provenance: { type: 'verbatim' } }] }] });
+      expect(codes(entrees({ contenu, texteSource }))).toContain('balisage_dans_le_texte');
+    }
+  });
+
+  it('retirer le balisage ne fait rien passer d’autre : un mot changé reste introuvable', () => {
+    const texteSource = '- Répartir la **source de légumes** sur 3 repas.';
+    const contenu = fiche({ sections: [{ titre: 'T', blocs: [
+      { texte: 'Répartir la source de fruits sur 3 repas.', provenance: { type: 'verbatim' } },
+    ] }] });
+    expect(codes(entrees({ contenu, texteSource }))).toEqual(['verbatim_introuvable']);
+  });
+
+  it('un marqueur de page n’est pas un texte citable', () => {
+    const texteSource = '<!-- page 1 (lecture B) -->\n\nRépartir la source de légumes sur 3 repas.';
+    const contenu = fiche({ sections: [{ titre: 'T', blocs: [
+      { texte: 'page 1 (lecture B)', provenance: { type: 'verbatim' } },
+    ] }] });
+    expect(codes(entrees({ contenu, texteSource }))).toContain('verbatim_introuvable');
   });
 
   it('un bloc ne cite que les claims de SA fiche — la couche « règle » du protocole n’entre pas ([[D-216]])', () => {
@@ -149,6 +244,15 @@ describe('controlerFiche — les précautions ([[D-251]] §6)', () => {
 describe('controlerFiche — le vocabulaire d’une surface patient', () => {
   it('refuse « prescription », « ordonnance », « diagnostic », « NeuroScore »', () => {
     for (const mot of ['Votre prescription', 'une ordonnance', 'le Diagnostic', 'votre NeuroScore']) {
+      expect(codes(entrees({ contenu: fiche({ titre: mot }) }))).toContain('terme_interdit');
+    }
+  });
+
+  // Constat de la revue du lot 5 : la racine « diagnostic » laissait passer
+  // « diagnostiquée » ; « posologie » et « dosage » disent une dose de
+  // complément, qui devient un renvoi au praticien (DC-44).
+  it('refuse aussi « diagnostiqué(e) », « posologie », « dosage »', () => {
+    for (const mot of ['Une maladie diagnostiquée', 'La posologie', 'Le dosage']) {
       expect(codes(entrees({ contenu: fiche({ titre: mot }) }))).toContain('terme_interdit');
     }
   });

@@ -8018,3 +8018,14 @@ contrôles du lot 2, numéro sous le verrou du trigger, rejeu idempotent, aucun
 texte en journal. Garde : seule cette voie crée une version.
 
 **Prochaine action.** Lot 5 : l'outil d'adaptation hors ligne.
+
+## 2026-09-26 — Fiche d'assiette, lot 5 : l'outil d'adaptation hors ligne
+
+**Livré.** `tools/corpus/fiches/` : Sonnet rédige, GPT contre-lit chaque élément
+dans son contexte, sections amputées relues entières, vrai contrat et vrais
+contrôles rejoués, dépôt vers une cible nommée. Contrôles du lot 2 corrigés
+(balisage, segments, noms à chiffre, lexique) sur preuve des essais réels et
+d'une revue adverse (11 constats, 0 P0). Aucun dépôt en production.
+
+**Prochaine action.** Merge, puis lot 6 (relecture dans la Bibliothèque).
+Ouvert : bornes d'âge (§6), décision du responsable.
