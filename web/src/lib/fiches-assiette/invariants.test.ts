@@ -123,6 +123,20 @@ describe('controlerFiche — les précautions ([[D-251]] §6)', () => {
     expect(codes(entrees({ contenu }))).toEqual(['precaution_sans_claim']);
   });
 
+  it('une précaution ne cite que les réserves de l’assiette ou les claims de sa fiche (revue #1232)', () => {
+    // La réserve d'une AUTRE assiette — ici une borne d'éviction de l'épargne
+    // digestive — ne passe pas, même quand la couverture est complète.
+    const etrangere = fiche({ precautions: [
+      { texte: 'Parlez-en à votre praticien.', claims: [CLAIM_SECURITE, 'WN-CL-0285-002::v1.0'] },
+    ] });
+    expect(codes(entrees({ contenu: etrangere }))).toEqual(['precaution_hors_perimetre']);
+    // Une mise en garde que la fiche porte elle-même est admise.
+    const propre = fiche({ precautions: [
+      { texte: 'Parlez-en à votre praticien.', claims: [CLAIM_SECURITE, CLAIM_FICHE] },
+    ] });
+    expect(codes(entrees({ contenu: propre }))).toEqual([]);
+  });
+
   it('les réserves attendues sont celles des lignes PUBLIÉES de l’assiette', () => {
     expect(clesSecuriteDeLAssiette('ASSIETTE_PROTEINEE')).toEqual(['WN-CL-0288-013::v1.0', 'WN-CL-0288-014::v1.0']);
     expect(clesSecuriteDeLAssiette('ASSIETTE_EPARGNE_DIGESTIVE'))

@@ -28,6 +28,7 @@ export type CodeAnomalie =
   | 'verbatim_introuvable'
   | 'nombre_hors_source'
   | 'precaution_sans_claim'
+  | 'precaution_hors_perimetre'
   | 'precaution_manquante'
   | 'terme_interdit';
 
@@ -136,7 +137,20 @@ export function controlerFiche(entrees: EntreesControle): AnomalieFiche[] {
       anomalies.push({ code: 'precaution_sans_claim', detail: `La précaution ${rang + 1} ne cite aucun claim de sécurité.` });
     }
     for (const cle of precaution.claims) {
-      if (!RE_CLE_CLAIM.test(cle)) anomalies.push({ code: 'claim_mal_forme', detail: `Clé de claim illisible : « ${cle} ».` });
+      const m = RE_CLE_CLAIM.exec(cle);
+      if (!m) {
+        anomalies.push({ code: 'claim_mal_forme', detail: `Clé de claim illisible : « ${cle} ».` });
+      } else if (!clesSecuriteAttendues.includes(cle) && m[1] !== numeroFiche) {
+        // UNE PRÉCAUTION NE CITE QUE CE QUI LUI REVIENT — constat de revue
+        // (#1232). Contrôlée en couverture seule, une précaution pouvait porter
+        // la réserve d'une AUTRE assiette et passer. Le périmètre : les réserves
+        // de sécurité des lignes publiées de l'assiette, et les claims de la
+        // fiche elle-même (une mise en garde qu'elle porte déjà).
+        anomalies.push({
+          code: 'precaution_hors_perimetre',
+          detail: `La précaution ${rang + 1} cite ${cle}, qui n'est ni une réserve de l'assiette ni un claim de la fiche.`,
+        });
+      }
     }
   });
   const portees = new Set(contenu.precautions.flatMap(p => p.claims));
