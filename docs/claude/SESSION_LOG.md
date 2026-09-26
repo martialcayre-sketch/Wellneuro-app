@@ -7934,3 +7934,15 @@ déploiements verts dont une migration : la condition du lot 4 est remplie.
 **Non exercé.** La retenue en production : approbation avant la fin du CI.
 
 **Prochaine action.** Soumettre le lot 4 au responsable.
+
+## 2026-09-26 — La carte des assiettes indiquées était écrasée
+
+**Constaté.** Le praticien ne voyait aucune assiette en phase Actions sur un
+dossier réel qui en justifiait sept (route relue : `actif: true`, sept
+indiquées). La carte, enfant direct d'une colonne flex défilante et
+`overflow-hidden`, était comprimée à 2 px.
+
+**Décision.** `shrink-0` sur la carte, conteneur inchangé. Écarté : les
+assiettes dans le type d'action « Alimentation » (chantier neuf, D-240).
+
+**Prochaine action.** Merge seul ; constater la carte sur le dossier réel.
