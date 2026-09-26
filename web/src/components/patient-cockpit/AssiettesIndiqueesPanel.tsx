@@ -204,10 +204,22 @@ export function AssiettesIndiqueesPanel({
   // cas — rien de ce dossier n'est encore arrivé, donc rien ne paraît.
   if (chargement || (lecture === null && messageErreur === null)) return null;
 
+  // `shrink-0` : LA CARTE ÉTAIT ÉCRASÉE À HAUTEUR NULLE, ET C'ÉTAIT EN
+  // PRODUCTION. `ClinicalRuntimeSection` rend un fragment : cette section est un
+  // enfant DIRECT de la zone focale, colonne flex défilante de hauteur contrainte
+  // (`lg:min-h-0 lg:overflow-y-auto`, FichePatientPanel). Or `overflow-hidden`
+  // ramène la hauteur minimale automatique d'un élément flex à 0 : dès que la
+  // phase Actions dépassait l'écran, toute la compression retombait sur elle, et
+  // il n'en restait que ses deux bordures — un trait. La route servait sept
+  // assiettes indiquées sur un dossier réel, le praticien ne voyait rien
+  // (constaté le 2026-09-26). La Boussole voisine y échappe parce qu'elle est
+  // enveloppée d'une `<div>` ; cette carte est montée sans enveloppe (montage
+  // conditionnel, voir le point de montage). Un banc jsdom ne mesure aucune
+  // mise en page : il garde la CLASSE, et c'est tout ce qu'il peut garder.
   return (
     <section
       aria-labelledby="assiettes-indiquees-title"
-      className="rounded-xl border border-rail bg-surface overflow-hidden"
+      className="shrink-0 rounded-xl border border-rail bg-surface overflow-hidden"
     >
       <div className="border-l-8 border-rail p-4">
         <h3 id="assiettes-indiquees-title" className="font-display text-lg font-semibold text-foreground">

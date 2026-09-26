@@ -102,6 +102,19 @@ describe('AssiettesIndiqueesPanel', () => {
     await waitFor(() => expect(within(container).getByText('Assiette protéinée')).not.toBeNull());
   });
 
+  it('la carte ne se laisse PAS ÉCRASER dans la colonne défilante de la zone focale', async () => {
+    // Constaté en production le 2026-09-26 : enfant direct d'une colonne flex
+    // de hauteur contrainte, la section `overflow-hidden` (hauteur minimale
+    // automatique 0) était comprimée à zéro — sept assiettes servies, un trait
+    // à l'écran. jsdom ne calcule aucune mise en page : ce banc garde la
+    // classe qui l'interdit, pas la hauteur.
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(actif({ indiquees: [INDIQUEE] }))));
+    const { container } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
+    await waitFor(() => expect(within(container).getByText('Assiette protéinée')).not.toBeNull());
+    const carte = container.querySelector('section[aria-labelledby="assiettes-indiquees-title"]');
+    expect(carte?.classList.contains('shrink-0')).toBe(true);
+  });
+
   it('rend l’assiette indiquée, son motif, sa source et ses claims — jamais un verbatim', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(actif({ indiquees: [INDIQUEE] }))));
     const { container } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
