@@ -60,6 +60,8 @@ const CHAMPS_DU_BROUILLON: readonly string[] = [
  * formes qu'un appelant pourrait leur donner. Refusés avec leur motif.
  */
 const CHAMPS_DE_VALIDATION: readonly string[] = [
+  'idVersion',
+  'ordre',
   'acte',
   'validateur',
   'relectureIntegrale',

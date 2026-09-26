@@ -47,7 +47,20 @@ describe('lireBrouillonFiche — le contrat fermé d’un brouillon (D-251, lot 
     expect(lu.contenu.sections[0].blocs[1].provenance).toEqual({ type: 'claims', claims: ['WN-CL-0300-002::v1.0'] });
   });
 
-  it.each(['acte', 'validateur', 'relectureIntegrale', 'motif', 'confirmationRegistre', 'statut', 'valideLe'])(
+  // Tous les champs de `fiches_assiette_actes`, `ordre` et `idVersion` compris
+  // (constat de revue, #1234) — plus les formes d'un état.
+  it.each([
+    'idVersion',
+    'ordre',
+    'acte',
+    'validateur',
+    'relectureIntegrale',
+    'motif',
+    'confirmationRegistre',
+    'statut',
+    'valideLe',
+    'le',
+  ])(
     'REFUSE le champ de validation « %s » en nommant DC-16 — la voie d’ingestion ne valide jamais',
     champ => {
       expect(refus(brouillon({ [champ]: true }))).toMatch(/ne valide jamais \(DC-16\)/);

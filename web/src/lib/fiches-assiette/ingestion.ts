@@ -5,9 +5,9 @@
 // jusqu'à ce que le responsable la valide par un autre chemin (`DC-16`).
 //
 // L'ORDRE DES CONTRÔLES, avant toute écriture :
-//   1. chaque claim cité est VALIDE au corpus, par les mêmes prédicats que la
-//      récupération (`claimsValidesAuCorpus`) — un claim en attente, rejeté ou
-//      désactivé ne fonde aucun texte patient ;
+//   1. chaque claim cité est VALIDE au corpus, par les prédicats de
+//      `claimsValidesAuCorpus` — un claim en attente, rejeté ou désactivé ne
+//      fonde aucun texte patient ;
 //   2. `controlerFiche` sur le texte source, les textes des claims cités et
 //      les réserves de sécurité de l'assiette (invariants.ts).
 // Une seule anomalie refuse le dépôt entier : une fiche à moitié juste n'est
@@ -19,7 +19,7 @@
 import type { Prisma } from '@/generated/prisma';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { prisma } from '@/lib/prisma';
-import { claimsValidesAuCorpus, cleClaim, type ReferenceClaim } from '@/lib/rag/claims/validite';
+import { cleClaim, type ReferenceClaim } from '@/lib/rag/claims/validite';
 import type { BrouillonFiche } from './contrat';
 import { controlerFiche, type AnomalieFiche } from './invariants';
 import { clesSecuriteDeLAssiette } from './securite';
@@ -51,21 +51,40 @@ function referencesCitees(brouillon: BrouillonFiche): ReferenceClaim[] {
 }
 
 /**
- * Le texte des claims — lus pour contrôler les nombres, jamais rendus.
- * `rag_corpus_claims` est hors du schéma Prisma, d'où la requête brute ; le
- * `unnest` apparie les couples position par position (`validite.ts`).
+ * Les claims cités qui sont VALIDE au corpus, chacun avec son texte — lu pour
+ * contrôler les nombres, jamais rendu.
+ *
+ * UNE SEULE LECTURE (constat de revue, #1234). Valider les claims par une
+ * requête puis lire leur texte par une autre laissait une fenêtre : un claim
+ * désactivé entre les deux aurait encore fourni ses nombres au contrôle. Ici,
+ * un claim est valide PARCE QU'il revient de cette requête, et son texte vient
+ * de la même ligne.
+ *
+ * LES PRÉDICATS SONT CEUX DE `claimsValidesAuCorpus`, MOT POUR MOT — recopiés
+ * parce que ce module-là s'interdit de rendre un texte ; `ingestion.test.ts`
+ * rougit s'ils divergent. `rag_corpus_claims` est hors du schéma Prisma, d'où
+ * la requête brute ; le `unnest` apparie les couples position par position.
  */
-async function textesDesClaims(references: readonly ReferenceClaim[]): Promise<string[]> {
-  if (references.length === 0) return [];
-  const lignes = await prisma.$queryRaw<Array<{ texte_normalise: string }>>`
-    SELECT c.texte_normalise
+async function claimsValidesEtLeursTextes(references: readonly ReferenceClaim[]): Promise<Map<string, string>> {
+  if (references.length === 0) return new Map();
+  const lignes = await prisma.$queryRaw<Array<{ claim_id: string; version_claim: string; texte_normalise: string }>>`
+    SELECT c.claim_id, c.version_claim, c.texte_normalise
     FROM public.rag_corpus_claims AS c
     JOIN unnest(${references.map(r => r.claimId)}::text[], ${references.map(r => r.versionClaim)}::text[])
       AS demande(claim_id, version_claim)
       ON demande.claim_id = c.claim_id
      AND demande.version_claim = c.version_claim
+    WHERE c.active = true
+      AND c.statut = 'VALIDE'
+      AND c.patient_identifiable = false
+      AND c.compartment = 'ACTIF'
+      AND EXISTS (
+        SELECT 1 FROM public.rag_corpus_claim_sources AS s WHERE s.claim_pk = c.id
+      )
   `;
-  return lignes.map(l => l.texte_normalise);
+  return new Map(
+    lignes.map(l => [cleClaim({ claimId: l.claim_id, versionClaim: l.version_claim }), l.texte_normalise]),
+  );
 }
 
 /**
@@ -75,7 +94,7 @@ async function textesDesClaims(references: readonly ReferenceClaim[]): Promise<s
  */
 export async function deposerBrouillonFiche(brouillon: BrouillonFiche): Promise<IssueDepot> {
   const citees = referencesCitees(brouillon);
-  const valides = await claimsValidesAuCorpus(citees);
+  const valides = await claimsValidesEtLeursTextes(citees);
   const anomalies: AnomalieIngestion[] = citees
     .filter(r => !valides.has(cleClaim(r)))
     .map(r => ({ code: 'claim_non_valide' as const, detail: `${cleClaim(r)} n'est pas un claim VALIDE du corpus.` }));
@@ -85,7 +104,7 @@ export async function deposerBrouillonFiche(brouillon: BrouillonFiche): Promise<
       contenu: brouillon.contenu,
       sourceIdFiche: brouillon.sourceId,
       texteSource: brouillon.texteSource,
-      textesClaimsCites: await textesDesClaims(citees.filter(r => valides.has(cleClaim(r)))),
+      textesClaimsCites: [...valides.values()],
       clesSecuriteAttendues: clesSecuriteDeLAssiette(brouillon.plateCode),
     }),
   );

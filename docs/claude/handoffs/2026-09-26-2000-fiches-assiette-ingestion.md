@@ -29,12 +29,20 @@ conteneur en lecture seule a constaté :
   - Les champs d'acte et de validation sont refusés nommément, en citant
     DC-16 ; ceux que pose le serveur le sont aussi.
   - Un second modèle distinct est exigé pour la contre-lecture (§5).
-- **Les claims cités doivent être VALIDE**, lus par `claimsValidesAuCorpus`
-  (mêmes prédicats que la récupération). Ensuite seulement, le texte des claims
-  valides est lu pour le contrôle des nombres. Il n'est jamais rendu.
+- **Les claims cités doivent être VALIDE**, sous les prédicats de
+  `claimsValidesAuCorpus`. Leur texte sert au contrôle des nombres et n'est
+  jamais rendu.
 - **Le numéro de version se lit sous le verrou du trigger.** Le verrou est pris
   avant la lecture du maximum. Sans lui, deux dépôts concurrents échoueraient au
   trigger.
+- **Deux constats de revue (#1234), corrigés :**
+  - `idVersion` et `ordre` sont refusés nommément, comme les autres champs
+    d'acte ;
+  - la validité et le texte des claims se lisent en **une seule requête**. Il
+    n'y a plus de fenêtre où un claim désactivé entre deux lectures fournirait
+    encore ses nombres. Les prédicats sont recopiés de `validite.ts`, qui
+    s'interdit de rendre un texte, et un banc exige qu'ils restent identiques
+    mot pour mot (mutation jouée).
 - **L'idempotence porte sur la dernière version seulement.** Un rejeu identique
   rend `BROUILLON_INCHANGE`.
 - **`sourceSha256` est l'empreinte du PDF** tenue par le manifeste local du
@@ -63,7 +71,7 @@ légitime.
 
 ## 5. Validations exécutées
 
-- Bancs ciblés (7 fichiers, 71 tests) verts.
+- Bancs ciblés (7 fichiers, 87 tests avec `validite.test.ts`) verts.
 - T1 vert.
 - T2 vert : 604 fichiers Vitest (10 108 tests), build de production, 213 E2E.
 
