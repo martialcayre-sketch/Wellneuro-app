@@ -310,7 +310,9 @@ describe('Le patient ne reçoit PAS la référence d’assiette', () => {
     expect(serialisee).not.toContain(ASSIETTE_INDIQUEE);
     // Le TITRE, lui, passe — c'est ce que le praticien a écrit pour le patient,
     // et il reste relu par la garde de registre anxiogène côté route. Ce lot ne
-    // sert donc au patient RIEN de neuf : le chemin patient est [[LOT-04]].
+    // sert donc au patient RIEN de neuf. Le chemin patient de l'assiette est la
+    // fiche d'assiette ([[D-251]]), document remis servi par ses propres routes :
+    // cette vue reste sans trace d'assiette.
     expect(serialisee).toContain('Assiette dopaminergique');
   });
 });

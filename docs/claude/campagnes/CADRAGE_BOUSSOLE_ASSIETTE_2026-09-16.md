@@ -104,7 +104,7 @@ pourquoi.** C'est la part de la proposition initiale que ce cadrage refuse.
 | LOT-01 | Trancher le sort de la référence d'aliment sur l'action. | **oui — B1** | — |
 | LOT-02 | ~~L'assiette devient une unité d'action : `advice_sheet` ou `food` reçoit une `RecommendedPlateRef`.~~ **LIVRÉ le 2026-09-21 ([[D-240]])** — `food` SEULE : `adviceSheetRef` est fermé à l'écriture depuis [[D-200]] §2. Contrat V4, axe d'indication seul, référence re-dérivée du catalogue. | **oui — B2** | LOT-01 |
 | LOT-03 | ~~Les familles d'équivalence, donc le secours d'une assiette.~~ **MÉCANISME LIVRÉ le 2026-09-21 ([[D-242]]), FAMILLES NON DÉCLARÉES.** Les trois premiers points du programme de [[D-216]] §4 sont faits : relation orientée hors du catalogue, garde d'axe aux deux bouts, chemin ouvert. Le quatrième — l'affirmation clinique qu'aucun claim ne fonde — appartient au praticien. | **oui — B3** | LOT-02 |
-| LOT-04 | Le chemin patient : de l'assiette prescrite à la lecture de l'aliment. | **oui — B4** | LOT-02 |
+| LOT-04 | Le chemin patient : de l'assiette prescrite à la lecture de l'aliment. ⚠️ *Réorienté le 2026-09-26 : l'observatoire Boussole quitte la sous-vue Protocole ([[D-250]]), et le « pourquoi » patient passe à la fiche d'assiette ([[D-251]]).* | **oui — B4** | LOT-02 |
 
 ## Contraintes non négociables
 

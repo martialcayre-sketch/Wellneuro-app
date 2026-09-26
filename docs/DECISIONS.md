@@ -4,6 +4,165 @@
 
 ## Décisions actives
 
+### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient à la validation du protocole
+
+- Date : 2026-09-26
+- Statut : accepté — décisions du responsable du 2026-09-26, données en deux
+  temps : ses cinq directives, puis ses réponses à quatre questions de cadrage.
+  Exécution en lots bornés, **hors campagne**, un merge à la fois ([[D-248]]).
+- Domaine : contenu remis au patient, portail, protocole 21 jours, corpus.
+  **Deux migrations autorisées explicitement** (réponse du responsable). Un
+  drapeau neuf, `WN_FICHES_ASSIETTE`, livré FERMÉ. **Aucune règle d'indication,
+  aucun seuil, aucune table signée ne change.** Complète [[D-216]], [[D-240]],
+  [[D-249]] et [[D-250]] ; ne rouvre pas `adviceSheetRef` ([[D-200]] §2).
+
+**1. CE QUE LE RESPONSABLE A DÉCIDÉ.**
+
+- Quand le praticien choisit une assiette dans une action « Alimentation », le
+  patient reçoit la fiche de cette assiette.
+- Source : les Fiches MY `WN-SRC-0296 → 0307`, une par assiette d'indication.
+  [[D-216]] leur donnait déjà ce rôle : le support remis au patient, jamais une
+  règle.
+- Contenu : la Fiche MY « en version augmentée par IA ». En V1, la fiche seule ;
+  en V2, des assiettes et recettes types.
+- Les réserves de sécurité des assiettes entrent dans la fiche, en renvoi vers
+  le praticien.
+- Envoi automatique à la validation du protocole ; lecture dans un espace du
+  portail, et un e-mail neutre qui l'annonce.
+
+**2. LES DROITS.** Le responsable déclare être propriétaire des Fiches MY,
+acquises et payées au cours de sa formation. Il en tient donc le droit de remise
+au patient et le droit d'adaptation. Cette déclaration étend G0 (A9 du registre
+des frontières, 2026-07-21), qui ne couvrait que le corpus décisionnel. Le
+passage `rightsStatus: verified` se fait **notice par notice, au lot où la
+version adaptée de la fiche est ingérée**, jamais en masse
+(`docs/claude/corpus/README.md`).
+
+**3. LES PORTES G1 À G4 SONT CONSTATÉES, PAS SUPPOSÉES.** Lecture de production
+par conteneur, en agrégats, le 2026-09-26 :
+
+- les douze fiches sont en base, dans le notebook « 09 — Nutrition et aliments
+  vedettes » ;
+- chacune tient en un fragment actif, qui porte sa preuve de validation
+  (`validation_evidence`, 12 sur 12) ;
+- elles portent 81 claims au statut VALIDE, de 5 à 8 par fiche.
+
+**Un fait commande l'outil d'adaptation** : les douze fragments portent un
+`llm_amendment_model`. Le texte en base a déjà été amendé par un modèle à
+l'ingestion, et n'est donc **pas le verbatim**. L'adaptation part de l'extraction
+du PDF, ancrée sur l'empreinte du manifeste local du snapshot, jamais de ce
+fragment (A9 : un texte amendé n'est jamais présenté comme le verbatim).
+
+**4. LE TEXTE NE TOUCHE JAMAIS LE DÉPÔT, PARCE QUE LE DÉPÔT EST PUBLIC.** Le
+texte source, les brouillons et les versions validées vivent en base, hébergée
+HDS. Ils n'entrent dans aucun commit, aucune PR, aucun handoff, aucun changelog
+et aucun log de CI. Le code ne porte que l'appariement assiette → fiche (des
+identifiants) et les invariants. Les tests et les E2E n'emploient que du texte
+synthétique. La porte qui ferme l'entrée du texte du corpus au dépôt reste
+fermée.
+
+**5. LE RÉGIME « ADAPTÉE PAR IA → VALIDÉE ».** `DC-16`, [[D-094]] (« la machine
+cite, elle n'invente pas »), [[D-195]] §1 (l'outil qui écrit n'atteste jamais).
+
+- L'adaptation se fait **hors ligne, une fois par version de fiche**. Un modèle
+  rédige, un second contre-lit, et un désaccord exclut le bloc. Aucune donnée
+  patient n'entre dans une consigne.
+- La voie d'ingestion ne crée que des brouillons et refuse tout champ de
+  validation.
+- La validation est un **acte du responsable, distinct et daté**. Il la pose
+  après une relecture intégrale, source et adaptation côte à côte, et la déclare
+  au moment de valider.
+- **V1** : la fiche réécrite pour la charte patient. Le « pourquoi » vient du
+  texte de la fiche et des claims de la FICHE, jamais de ceux du protocole, qui
+  sont la couche « règle » écrite pour le praticien ([[D-216]]). La V1 ajoute les
+  précautions du §6. Aucun nombre hors source (`DC-19`) ; aucune composition,
+  aucun aliment ni aucune recette absents de la source. Une posologie de
+  complément devient un renvoi au praticien (`DC-44`).
+- **V2** : des assiettes et recettes types proposées par l'IA, que le responsable
+  valide une à une comme **son propre arbitrage**. Toute quantité y porte sa
+  source, ou se déclare comme cet arbitrage.
+- La page de lecture dit au patient : « fiche adaptée avec l'aide d'une
+  intelligence artificielle, relue et validée par votre praticien ». Le document
+  TRUST sur l'usage de l'IA, publié avant la première remise, nomme les deux
+  fournisseurs.
+- **Aucun appel à un modèle sur le chemin de remise** : la remise est
+  déterministe (assiette, puis dernière version validée).
+
+**6. LES PRÉCAUTIONS — DÉCISION CLINIQUE DU RESPONSABLE.** Les réserves de
+sécurité des lignes d'indication (`claimsSecurite`), aujourd'hui écrites pour le
+praticien, figurent dans la fiche patient, **formulées en renvoi vers le
+praticien**. Elles comprennent les bornes de durée de l'éviction pour
+l'épargne digestive, l'exception « traitement de la maladie de Parkinson » pour
+la protéinée, et les bornes d'âge (`DC-12`, `DC-14`). **Une éviction ne part
+jamais sans ses bornes** ([[D-227]] §3). La présence de ces précautions est
+contrôlée à la validation, puis rejouée au moment de servir.
+
+**7. LA REMISE EST UN EFFET DU CLIC « VALIDER POUR DIFFUSION ».** Ce n'est pas un
+envoi autonome, et le garde-fou 5.0 « jamais d'envoi automatique » (registre des
+frontières, A6) est tenu. La chaîne humaine Relu → Validé → Envoyé y est
+entière :
+
+- relue et validée une fois, version par version, par le responsable ;
+- envoyée par le clic du praticien, **précédé d'un aperçu** des fiches qui
+  partiront et de celles qui ne partiront pas, chacune avec son motif (`DC-24`) ;
+- limitée aux actions Alimentation **fermes** ([[D-056]]), quand le contrat
+  patient sert le protocole et que le dossier est en suivi ;
+- idempotente, avec la version remise figée ;
+- sans rattrapage silencieux : un nouveau clic sur « Valider pour diffusion »
+  est le geste explicite qui remet une fiche validée depuis.
+
+Retirer une version cesse d'en servir le texte, mais l'entrée reste, avec une
+mention : rien ne disparaît en silence. **Le drapeau garde l'émission, pas la
+lecture.** Le coupe-circuit de la lecture est le retrait par version, qui doit
+rester un geste rapide.
+
+**8. LA LECTURE.** Un espace du portail, « Fiches remises par mon praticien »,
+nommé pour ne pas se confondre avec « Mes documents d'information » du centre
+TRUST. Une tâche « à lire » s'ajoute au fil du jour, et la lecture est tracée
+(nouvelle espèce de [[D-175]]). Le plafond de deux lectures attendues
+([[D-175]] §6) tombe : une validation peut remettre jusqu'à trois fiches, une
+par action. Le praticien ne voit jamais « lu » ou « non lu » : la garde
+existante est conservée.
+
+**9. L'E-MAIL EST NEUTRE.** « Un document de votre praticien vous attend dans
+votre espace. » Il ne porte ni nom d'assiette ni axe, puisque le nom d'une
+assiette révèle une indication, ni lien magique. Il sort par un gabarit validé
+par le responsable. La fiche elle-même ne voyage jamais par e-mail : ce n'est
+pas l'exception du bilan ([[D-136]]).
+
+**10. L'OUVERTURE.** `WN_FICHES_ASSIETTE` s'ouvre une fois validées les sept
+fiches des assiettes choisissables aujourd'hui (`WN-SRC-0297`, `0299`, `0300`,
+`0301`, `0302`, `0303`, `0305`), et une fois l'espace de lecture constaté en
+production. Une contre-revue adverse précède ce geste.
+
+**11. LES LOTS**, chacun livrable seul :
+
+1. cette décision ;
+2. l'appariement assiette → fiche et les invariants (modules purs) ;
+3. **migration M1** : catalogue des versions et des actes ;
+4. l'ingestion des brouillons, par une route interne sous secret ;
+5. l'outil d'adaptation hors ligne ;
+6. la relecture et la validation, dans la Bibliothèque, rayon « Fiches
+   conseils » ;
+7. **migration M2** : les remises et l'espèce de lecture ;
+8. la remise à « Valider pour diffusion », avec son aperçu ;
+9. le service patient des fiches remises ;
+10. l'espace de lecture et la tâche du fil ;
+11. l'e-mail neutre.
+
+**12. CE QUE LA DÉCISION NE TOUCHE PAS.** La vue patient du protocole
+(`VuePatientSurLeFil`, [[D-191]]) n'est pas modifiée : la fiche est un document
+remis, servi par ses propres routes. `adviceSheetRef` reste fermé. Restent aussi
+inchangés à l'octet : la table signée des indications, le catalogue d'assiettes
+et son empreinte.
+
+**LE RISQUE NOMMÉ, CELUI DE [[D-112]].** Ce chantier construit une chaîne patient
+complète alors qu'**aucun protocole 21 jours n'a encore été servi** en
+production (constat du 2026-09-26, [[D-250]] §4). L'appareil complet qui ne
+sert jamais est exactement le défaut de [[D-112]]. La parade est d'ordre, pas de
+forme : servir un premier protocole de bout en bout sur un dossier de test avant
+d'ouvrir le drapeau.
+
 ### D-250 — La Boussole alimentaire quitte la sous-vue Protocole : l'observatoire et son geste d'insertion ne sont plus montés
 
 - Date : 2026-09-26
