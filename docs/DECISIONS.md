@@ -273,9 +273,9 @@ commit était le dernier déployé, appliqué la migration en one-off
 base ». Au CI vert, le run du déployeur (36231385539) a trouvé la tête en
 service et **s'est abstenu** (« déjà en service ») : aucun second build.
 Constat par conteneur, lecture seule : l'index est présent, la migration
-appliquée en une tentative, aucune en échec. L'arbre déployé avant la fin du
-CI de `main` était identique à celui de la tête de PR (`28c97a18`), dont le CI
-et le T3 étaient verts. **Non exercé en production : la retenue** (« Retenu »,
+appliquée en une tentative, aucune en échec. Le code déployé avant la fin du
+CI de `main` était celui que le CI de la PR et le T3 avaient validé : le commit
+`5d0344b8` et la tête de PR `0fc95765` portent le même arbre Git (`28c97a18`). **Non exercé en production : la retenue** (« Retenu »,
 un commit de migration que le déployeur laisse à `release-db`) — elle
 n'apparaît que si le CI de `main` conclut AVANT l'approbation ; elle reste
 tenue par les bancs. L'approbation précoce illustre aussi l'écart déjà routé
