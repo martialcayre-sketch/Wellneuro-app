@@ -4,6 +4,64 @@
 
 ## Décisions actives
 
+### D-249 — L'assiette se choisit dans l'action « Alimentation » : le constructeur propose les assiettes indiquées du dossier
+
+- Date : 2026-09-26
+- Statut : accepté — demande du responsable, formulée depuis l'écran le jour
+  même : « je veux que le choix de l'assiette puisse se faire dans le choix des
+  actions sous la rubrique alimentaire, cela me paraît plus cohérent, ne
+  serait-ce que pour le suivi par la suite ».
+- Domaine : cockpit praticien (constructeur de protocole, carte des assiettes
+  indiquées). **Aucune règle clinique, aucun seuil, aucune table signée, aucune
+  route, aucune migration, aucun drapeau neuf.** Complète [[D-240]] sans en
+  défaire un point.
+
+**1. CE QUI CHANGE.** Une action de type « Alimentation » porte un menu
+« Assiette indiquée » : « Aucune assiette — action alimentaire libre » par
+défaut, puis les assiettes que la carte indique pour ce dossier. Choisir pose la
+**même** `RecommendedPlateRef` que le bandeau « Insérer manuellement » de
+[[D-240]] : référence re-dérivée du catalogue, garde d'axe rejouée à l'écran et
+au serveur, contrat V4 demandé. Le suivi ne distingue pas les deux chemins :
+c'est la même action, persistée de la même façon.
+
+**2. LE MENU PROPOSE LA LISTE DE LA CARTE, ET RIEN D'AUTRE.** Les indiquées
+seules — ni le catalogue des douze, ni les non évaluées. Les offrir ferait d'un
+« on ne sait pas » un « c'est indiqué » (`DC-24`), ce que [[D-240]] §7 refuse
+déjà au bouton de la carte. Proposer une assiette NON indiquée au libre choix du
+praticien serait une décision clinique, pas ergonomique : elle n'est pas prise
+ici.
+
+**3. LA LISTE EST REMONTÉE, PAS RELUE.** La carte la transmet au cockpit quand
+elle la lit ; un second GET aurait fait porter au journal d'accès deux lectures
+pour un seul affichage (`G-TRUST-04`). Verrou fermé ou lecture en échec : `null`,
+et le menu ne propose plus rien — il ne survit pas à ce que la carte cesse de
+montrer. Seule une assiette DÉJÀ posée sur une action y reste affichée, avec
+« Aucune assiette » pour la retirer : une référence qui partirait à
+l'enregistrement ne doit jamais être invisible.
+La liste est **datée du dossier** et vidée à son changement, comme la sélection
+de [[D-240]] §12. Le banc qui la tient laisse la lecture du second dossier EN
+VOL — servie, elle écraserait la liste et le cas ne garderait rien — et il
+rougit quand on retire les deux protections (mutation jouée).
+
+**4. L'INTITULÉ SUIT L'ASSIETTE** tant qu'il est vide ou encore égal au libellé
+de l'assiette précédente ; un intitulé qui en diffère n'est jamais écrasé.
+L'intention se lit dans le texte, pas dans un marqueur : un marqueur porté par
+l'action partirait dans le payload soumis, puis haché. Un intitulé tapé à la
+main identique au libellé suit donc l'assiette — il ne s'en distingue pas.
+Revenir à « Aucune assiette » retire la référence, et la
+demande de V4 retombe si rien d'autre ne l'exige. Une assiette posée hors de la
+liste courante reste affichée sous son libellé : un menu ne ment pas sur sa
+propre valeur.
+
+**5. CE QUI RESTE.** Le bouton « Retenir pour le protocole » de la carte et son
+bandeau sont gardés : second chemin vers la même action, non retiré sans
+demande. La carte reste le lieu de la JUSTIFICATION — motif, sources, claims,
+portes biologiques — que le menu ne répète pas.
+
+**Pas d'E2E, et c'est dit.** Le drapeau est éteint dans les E2E (même réserve
+que [[D-237]] et [[D-247]]). Le constat se fera en production, sur un dossier
+réel.
+
 ### D-248 — La production cesse de pouvoir reculer : GitHub Actions déploiera la tête de `main`, et un filet observe d'abord
 
 - Date : 2026-09-24

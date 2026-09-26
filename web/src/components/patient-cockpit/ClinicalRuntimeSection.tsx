@@ -499,6 +499,17 @@ export function ClinicalRuntimeSection({
     pour: string;
     choix: { plateCode: string; libelle: string };
   } | null>(null);
+  /**
+   * LES ASSIETTES QUE LE MENU DE L'ACTION « ALIMENTATION » PROPOSE ([[D-249]]),
+   * telles que la carte les a lues. Elles survivent au démontage de la carte —
+   * le constructeur, lui, reste monté sous `hidden` —, et c'est sans risque : la
+   * carte les relit à chaque retour sur « Protocole ». Datées du dossier comme
+   * la sélection ci-dessus, pour la même raison.
+   */
+  const [assiettesIndiquees, setAssiettesIndiquees] = useState<{
+    pour: string;
+    liste: { plateCode: string; libelle: string }[] | null;
+  } | null>(null);
 
   const loadTrajectoire = useCallback(async () => {
     // Un échec de lecture ne bloque pas le cockpit, mais il est SIGNALÉ, et la
@@ -1302,9 +1313,21 @@ export function ClinicalRuntimeSection({
     setAssietteSelection(null);
   }, [idPatient]);
 
+  // La liste du menu « Alimentation » ([[D-249]]) se vide au même moment, dans
+  // son propre effet : celui de la sélection est tenu par une garde de source
+  // (`assietteSurAction.test.ts`) qui en lit la forme exacte.
+  useEffect(() => {
+    setAssiettesIndiquees(null);
+  }, [idPatient]);
+
   // CE QUI DESCEND AU CONSTRUCTEUR VIENT DE CE DOSSIER-CI, ET DE RIEN D'AUTRE.
   const assietteRetenue = assietteSelection !== null && assietteSelection.pour === idPatient
     ? assietteSelection.choix
+    : null;
+  // Même discipline pour la liste du menu « Alimentation » ([[D-249]]) : une
+  // assiette indiquée pour un dossier ne se propose jamais dans un autre.
+  const assiettesIndiqueesDuDossier = assiettesIndiquees !== null && assiettesIndiquees.pour === idPatient
+    ? assiettesIndiquees.liste
     : null;
 
   // Remontée de l'état observable (rail des phases). Dépendances primitives
@@ -2120,6 +2143,7 @@ export function ClinicalRuntimeSection({
         <AssiettesIndiqueesPanel
           idPatient={idPatient}
           onRetenirAssiette={choix => setAssietteSelection({ pour: idPatient, choix })}
+          onIndiqueesLues={liste => setAssiettesIndiquees({ pour: idPatient, liste })}
         />
       )}
       <div id="protocol-version-builder" hidden={!affiche('actions') || (!fixture && sousVueActions !== 'protocole')}>
@@ -2163,6 +2187,7 @@ export function ClinicalRuntimeSection({
           onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
           assietteSelection={assietteRetenue}
           onClearAssietteSelection={() => setAssietteSelection(null)}
+          assiettesIndiquees={fixture ? null : assiettesIndiqueesDuDossier}
           sourcesCitables={fixture ? [] : sourcesCitables}
           provenancePurpose={fixture ? null : (contenuActif?.provenancePurpose ?? null)}
           baremeCharge={fixture ? [] : baremeCharge}

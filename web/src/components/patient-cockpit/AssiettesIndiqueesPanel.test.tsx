@@ -340,6 +340,49 @@ describe('AssiettesIndiqueesPanel', () => {
   });
 });
 
+// LA LISTE DU MENU « ALIMENTATION » ([[D-249]]) : la carte la remonte, et c'est
+// exactement ce qu'elle affiche comme INDIQUÉ — jamais une non évaluée, jamais
+// une liste qui survivrait à ce que la carte cesse de montrer.
+describe('AssiettesIndiqueesPanel — la liste remontée au constructeur', () => {
+  it('remonte les INDIQUÉES seules, sans les non évaluées', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(actif({
+      indiquees: [INDIQUEE],
+      nonEvaluees: [{
+        ligneId: 'ASSIETTE-IND-DOPA', plateCode: 'ASSIETTE_DOPAMINERGIQUE',
+        libelle: 'Assiette dopaminergique',
+        lacunes: [{ type: 'instrument_non_passe', idQuestionnaire: 'Q_INF_03' }],
+      }],
+    }))));
+    const onIndiquees = vi.fn();
+    render(<AssiettesIndiqueesPanel idPatient="PAT001" onIndiqueesLues={onIndiquees} />);
+    await waitFor(() => expect(onIndiquees).toHaveBeenCalledTimes(1));
+    expect(onIndiquees).toHaveBeenCalledWith([{ plateCode: 'ASSIETTE_PROTEINEE', libelle: 'Assiette protéinée' }]);
+  });
+
+  it('verrou fermé ou route en erreur : `null`, pas une liste vide qui se lirait « rien d’indiqué »', async () => {
+    for (const corps of [
+      { ok: true, actif: false, message: 'Indications non activées.' },
+      { ok: false, reason: 'exception', error: 'Impossible.' },
+    ]) {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(corps)));
+      const onIndiquees = vi.fn();
+      const { unmount } = render(<AssiettesIndiqueesPanel idPatient="PAT001" onIndiqueesLues={onIndiquees} />);
+      await waitFor(() => expect(onIndiquees).toHaveBeenCalledTimes(1));
+      expect(onIndiquees).toHaveBeenCalledWith(null);
+      unmount();
+    }
+  });
+
+  it('un rappel NEUF à chaque rendu du parent ne relance pas la lecture — ni sa journalisation', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(actif({ indiquees: [INDIQUEE] }))));
+    const { rerender } = render(<AssiettesIndiqueesPanel idPatient="PAT001" onIndiqueesLues={() => {}} />);
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    rerender(<AssiettesIndiqueesPanel idPatient="PAT001" onIndiqueesLues={() => {}} />);
+    rerender(<AssiettesIndiqueesPanel idPatient="PAT001" onIndiqueesLues={() => {}} />);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('libelleLacune — aucune phrase n’affirme quoi que ce soit DU PATIENT', () => {
   it('nomme l’instrument par son titre quand le catalogue le connaît', () => {
     const texte = libelleLacune({ type: 'instrument_non_passe', idQuestionnaire: 'Q_GAS_01' });

@@ -17,7 +17,11 @@ import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 // le catalogue d'assiettes suit sans traîner `node:crypto` au paquet client.
 // Le barrel `@/lib/food-compass` le ferait, lui — il ré-exporte `contextual`.
 // Précédent mesuré : `PractitionerFoodObservationPanel` importe déjà ce module.
-import { estAssietteDIndication, getCurrentRecommendedPlateRef } from '@/lib/food-compass/plates';
+import {
+  estAssietteDIndication,
+  getCurrentRecommendedPlateRef,
+  getRecommendedPlate,
+} from '@/lib/food-compass/plates';
 import {
   mesurerProtocole,
   suggererDepuisLignes,
@@ -118,6 +122,7 @@ export function ProtocolMiniBuilder({
   onClearFoodCompassSelection,
   assietteSelection = null,
   onClearAssietteSelection,
+  assiettesIndiquees = null,
   sourcesCitables = [],
   provenancePurpose = null,
   baremeCharge = [],
@@ -151,6 +156,17 @@ export function ProtocolMiniBuilder({
    */
   assietteSelection?: { plateCode: string; libelle: string } | null;
   onClearAssietteSelection?: () => void;
+  /**
+   * Les assiettes INDIQUÉES pour ce dossier, telles que la carte les a lues
+   * ([[D-249]]) : ce que le menu d'une action « Alimentation » propose. `null`
+   * = rien à proposer (verrou fermé, lecture en échec, fixture) : le menu ne
+   * paraît pas sur une action SANS assiette. Une action qui en porte déjà une
+   * garde son menu, réduit à cette assiette et à « Aucune » — une référence qui
+   * partirait à l'enregistrement ne doit jamais être invisible (constat de
+   * revue, #1229). Jamais le catalogue entier : une assiette non indiquée n'y
+   * entre pas plus qu'elle n'a de bouton sur la carte (`DC-24`).
+   */
+  assiettesIndiquees?: { plateCode: string; libelle: string }[] | null;
   /**
    * Les deux sources que la raison d'être a le droit de citer ([[D-193]]),
    * relues au serveur. Liste FERMÉE : ni le motif praticien de sélection, ni le
@@ -313,6 +329,50 @@ export function ProtocolMiniBuilder({
       return fusionnee;
     }));
   };
+
+  // L'ASSIETTE SE CHOISIT AUSSI DANS L'ACTION ALIMENTAIRE ([[D-249]]) — second
+  // chemin vers la MÊME référence qu'« Insérer manuellement », et sous la même
+  // garde. Le menu ne propose que la liste de la carte ; un code hors de cette
+  // liste (DOM retouché) est refusé ici comme il le serait au serveur, qui
+  // re-dérive la référence et ne croit rien de ce que l'écran envoie.
+  //
+  // L'INTITULÉ SUIT L'ASSIETTE TANT QU'IL EST VIDE OU ENCORE ÉGAL AU LIBELLÉ DE
+  // L'ASSIETTE PRÉCÉDENTE. Un intitulé qui en diffère n'est jamais écrasé par un
+  // changement de menu. L'intention se lit dans le TEXTE, pas dans un marqueur :
+  // un marqueur de provenance porté par l'action partirait dans le payload
+  // soumis — les actions y sont recopiées telles quelles, puis hachées. Un
+  // intitulé tapé à la main IDENTIQUE au libellé suit donc l'assiette : il ne
+  // s'en distingue pas (constat de revue, #1229).
+  const choisirAssiette = (actionId: string, plateCode: string) => {
+    const choix = plateCode === ''
+      ? null
+      : (assiettesIndiquees ?? []).find(assiette => assiette.plateCode === plateCode) ?? null;
+    if (plateCode !== '' && (choix === null || !estAssietteDIndication(plateCode))) {
+      setMessage('Cette assiette n’est pas une assiette d’indication pour ce dossier : elle ne peut pas porter une action.');
+      return;
+    }
+    markDirty();
+    setActions(previous => previous.map(action => {
+      if (action.actionId !== actionId) return action;
+      const { recommendedPlateRef: precedente, ...sansAssiette } = action;
+      const libellePrecedent = precedente ? libelleAssiette(precedente.plateCode) : null;
+      const intituleSuit = action.title.trim() === '' || action.title === libellePrecedent;
+      if (choix === null) return { ...sansAssiette, title: intituleSuit ? '' : action.title };
+      return {
+        ...sansAssiette,
+        title: intituleSuit ? choix.libelle : action.title,
+        recommendedPlateRef: getCurrentRecommendedPlateRef(choix.plateCode),
+      };
+    }));
+  };
+
+  // Le libellé d'une assiette : celui de la liste servie, sinon celui du
+  // catalogue — la carte le tire du même catalogue, les deux ne divergent pas.
+  const libelleAssiette = (plateCode: string): string => (
+    assiettesIndiquees?.find(assiette => assiette.plateCode === plateCode)?.libelle
+    ?? getRecommendedPlate(plateCode)?.label
+    ?? plateCode
+  );
 
   const removeAction = (actionId: string) => {
     markDirty();
@@ -527,6 +587,39 @@ export function ProtocolMiniBuilder({
                     <p className="text-xs text-muted-foreground">
                       Intention d’exploration uniquement : aucun produit, forme, marque ou dose.
                     </p>
+                  )}
+                  {/* LE MENU PARAÎT SUR UNE ACTION ALIMENTAIRE dès que la carte a
+                      servi sa liste — ou dès que l'action porte déjà une
+                      assiette, pour qu'elle reste visible et retirable même si
+                      la liste manque. Une assiette posée hors de la liste
+                      courante reste affichée sous son libellé : un menu qui ne
+                      montrerait pas sa propre valeur mentirait sur l'action. */}
+                  {action.type === 'food' && (assiettesIndiquees !== null || action.recommendedPlateRef !== undefined) && (
+                    (assiettesIndiquees ?? []).length === 0 && action.recommendedPlateRef === undefined ? (
+                      <p className="text-xs text-muted-foreground">
+                        Aucune assiette n’est indiquée pour ce dossier — la carte « Assiettes indiquées » en donne la raison.
+                      </p>
+                    ) : (
+                      <label className="text-xs">Assiette indiquée
+                        <select
+                          aria-label={`Assiette de l’action ${index + 1}`}
+                          value={action.recommendedPlateRef?.plateCode ?? ''}
+                          onChange={event => choisirAssiette(action.actionId, event.target.value)}
+                          className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm"
+                        >
+                          <option value="">Aucune assiette — action alimentaire libre</option>
+                          {(assiettesIndiquees ?? []).map(assiette => (
+                            <option key={assiette.plateCode} value={assiette.plateCode}>{assiette.libelle}</option>
+                          ))}
+                          {action.recommendedPlateRef !== undefined
+                            && !(assiettesIndiquees ?? []).some(assiette => assiette.plateCode === action.recommendedPlateRef?.plateCode) && (
+                            <option value={action.recommendedPlateRef.plateCode}>
+                              {libelleAssiette(action.recommendedPlateRef.plateCode)}
+                            </option>
+                          )}
+                        </select>
+                      </label>
+                    )
                   )}
                   {/*
                     LE PRATICIEN SUSPEND, IL N'ACTIVE PAS. Le seul statut qu'il

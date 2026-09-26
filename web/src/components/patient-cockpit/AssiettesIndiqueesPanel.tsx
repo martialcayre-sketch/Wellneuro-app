@@ -116,6 +116,7 @@ export type AssietteRetenue = { plateCode: string; libelle: string };
 export function AssiettesIndiqueesPanel({
   idPatient,
   onRetenirAssiette,
+  onIndiqueesLues,
 }: {
   idPatient: string;
   /**
@@ -126,7 +127,27 @@ export function AssiettesIndiqueesPanel({
    * l'absence de bouton passerait pour un état et non pour un contrat.
    */
   onRetenirAssiette?: (choix: AssietteRetenue) => void;
+  /**
+   * LA LISTE QUE LE CONSTRUCTEUR PROPOSE DANS L'ACTION « ALIMENTATION »
+   * ([[D-249]]) — celle que cette carte affiche, et rien d'autre. La remonter
+   * plutôt que la relire : un second GET ferait porter au journal d'accès une
+   * seconde lecture pour un seul affichage (`G-TRUST-04`).
+   *
+   * Les INDIQUÉES seules : une non évaluée proposée au menu ferait d'un « on ne
+   * sait pas » un « c'est indiqué » (`DC-24`), exactement comme le bouton que
+   * [[D-240]] §7 lui refuse. `null` quand la carte n'a rien à proposer — verrou
+   * fermé ou lecture en échec : le menu cesse de proposer ce que la carte cesse
+   * de montrer.
+   */
+  onIndiqueesLues?: (indiquees: AssietteRetenue[] | null) => void;
 }) {
+  // Le rappel le plus récent, lu par l'effet de lecture sans en devenir une
+  // dépendance : un appelant qui passe une fonction fléchée relancerait sinon
+  // le GET — et sa journalisation — à chacun de ses rendus.
+  const rappelIndiquees = useRef(onIndiqueesLues);
+  useEffect(() => {
+    rappelIndiquees.current = onIndiqueesLues;
+  });
   // CHAQUE ÉTAT PORTE LE DOSSIER QUI L'A PRODUIT — constat de revue, et le
   // jeton seul n'y suffisait pas.
   //
@@ -169,12 +190,17 @@ export function AssiettesIndiqueesPanel({
         if (jeton.current !== courant) return;
         if (!corps.ok) {
           setErreur({ pour: idPatient, message: corps.error });
+          rappelIndiquees.current?.(null);
           return;
         }
         setPayload({ pour: idPatient, corps });
+        rappelIndiquees.current?.(corps.actif
+          ? corps.indiquees.map(assiette => ({ plateCode: assiette.plateCode, libelle: assiette.libelle }))
+          : null);
       } catch {
         if (jeton.current === courant) {
           setErreur({ pour: idPatient, message: "Lecture impossible des indications d'assiette." });
+          rappelIndiquees.current?.(null);
         }
       } finally {
         if (jeton.current === courant) setChargement(false);
