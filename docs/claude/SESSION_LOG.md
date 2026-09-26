@@ -7923,3 +7923,14 @@ arbitrage requis, non additif). L'entrée « milestone » de la file est périm�
 
 **Prochaine action.** Merge seul ; constater « Retenu » après le CI vert ;
 approbation `release-db` ; constat par conteneur.
+
+## 2026-09-26 — D-248 : première migration sous le déployeur, observation remplie
+
+**Constaté.** #1226 (index `questionnaire_reponses.id_assignation`) : `release-db`
+approuvé a déployé la tête et appliqué la migration ; le déployeur s'est
+abstenu au CI vert (déjà en service) ; index constaté par conteneur. Cinq
+déploiements verts dont une migration : la condition du lot 4 est remplie.
+
+**Non exercé.** La retenue en production : approbation avant la fin du CI.
+
+**Prochaine action.** Soumettre le lot 4 au responsable.

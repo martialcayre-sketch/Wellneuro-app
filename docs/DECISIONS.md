@@ -10,7 +10,8 @@
 - Statut : accepté — lot 1 (observation, #1219), lot 2 (job de déploiement sur
   dispatch, #1220) et prérequis du lot 3 (#1221) livrés le 2026-09-25 ; lot 3
   (bascule, #1222) livré et constaté le même jour, incident 2 rejoué sans
-  recul ; lot 4 à venir.
+  recul ; observation de l'arbitrage n° 3 remplie le 2026-09-26 (cinq
+  déploiements verts, dont une migration) ; lot 4 à venir.
 - Domaine : pipeline de déploiement GitHub → Scalingo. Porte sur [[D-102]] et
   sur la garde anti-recul de `release-db` (2026-09-23), qu'elle rendra sans
   objet au lot 4. **Ne modifie pas [[D-087]]** : le code se déploie toujours
@@ -259,6 +260,31 @@ premier run avait écrit avant le second merge, les CI de documentation
 concluant en moins de deux minutes ; il reste tenu par les bancs. Décompte de
 l'arbitrage n° 3 : trois déploiements verts par Actions (`e43a40b0`,
 `02e8d131`, `83143246`), aucun avec migration.
+
+**Première migration sous le déployeur, et l'observation remplie
+(2026-09-26).** Quatrième déploiement : #1225 (`05f2ac41`), par Actions.
+Cinquième : #1226 (`5d0344b8`), l'index `questionnaire_reponses_id_assignation_idx`
+— un index seul, aucune colonne. Le merge (08:44:19 UTC) a proposé le run
+`release-db` 36230679362 ; il a été **approuvé à 08:46, avant la fin du CI de
+`main`** (08:59:12). `release-db` a trouvé le calme, déployé la tête
+(`e2d1dd47`, 08:46:25 → 08:52:33, utilisateur `wellneuro`), constaté que ce
+commit était le dernier déployé, appliqué la migration en one-off
+(`WN_RELEASE_DB_OK`, 08:52:48) et conclu « Schéma à jour, constaté depuis la
+base ». Au CI vert, le run du déployeur (36231385539) a trouvé la tête en
+service et **s'est abstenu** (« déjà en service ») : aucun second build.
+Constat par conteneur, lecture seule : l'index est présent, la migration
+appliquée en une tentative, aucune en échec. L'arbre déployé avant la fin du
+CI de `main` était identique à celui de la tête de PR (`28c97a18`), dont le CI
+et le T3 étaient verts. **Non exercé en production : la retenue** (« Retenu »,
+un commit de migration que le déployeur laisse à `release-db`) — elle
+n'apparaît que si le CI de `main` conclut AVANT l'approbation ; elle reste
+tenue par les bancs. L'approbation précoce illustre aussi l'écart déjà routé
+au lot 4 : `release-db` déploie `main` sans lire le CI de la tête.
+
+Décompte de l'arbitrage n° 3 : **cinq déploiements verts** (`e43a40b0`,
+`02e8d131`, `83143246`, `05f2ac41`, `5d0344b8`), **dont un avec migration** ;
+l'incident 2 a été rejoué sans recul. Le lot 4 peut s'ouvrir, sur validation
+du responsable.
 
 **Ce que le lot 2 lève de [[D-102]].** D-102 posait qu'aucun job hors gate ne
 déclenche de déploiement, pour que le jeton ne soit pas atteignable sans
