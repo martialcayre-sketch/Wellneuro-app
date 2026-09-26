@@ -688,6 +688,45 @@ describe('ClinicalRuntimeSection', () => {
     expect(screen.queryByText(/Assiette indiquée retenue/)).toBeNull();
   });
 
+  it('LE MENU « ALIMENTATION » NE PROPOSE JAMAIS LES ASSIETTES D’UN AUTRE DOSSIER ([[D-249]])', async () => {
+    // La lecture du dossier B reste EN VOL : c'est ce qui rend le cas
+    // discriminant. Servie, sa réponse écraserait la liste de A et le cas
+    // passerait sans rien garder. En vol, seule la remise à zéro ou l'état
+    // daté empêchent les assiettes de A de paraître sous B — même propriété,
+    // mêmes deux mécanismes que le cas précédent.
+    const assiettes = (indiquees: unknown[]) => rep({
+      ok: true, actif: true, shaPerimetre: 'a'.repeat(64),
+      indiquees, nonEvaluees: [], nonIndiquees: 0, retireesFauteDeClaim: 0, corpusLu: true,
+    });
+    const ligne = {
+      ligneId: 'ASSIETTE-IND-PROTEINEE', plateCode: 'ASSIETTE_PROTEINEE',
+      libelle: 'Assiette protéinée', sourceProtocole: 'WN-SRC-0288',
+      motif: 'âge 76 ans > 60', instruments: [], claims: ['WN-CL-0288-011::v1.0'],
+    };
+    const enVol: ReponseMock = { ok: true, status: 200, json: () => new Promise(() => {}) };
+    const fetchMock = fetchParRoute({
+      cockpitGet: Array.from({ length: 4 }, () => rep(readyAvecCandidats())),
+      assiettesIndiquees: [assiettes([ligne]), enVol, enVol, enVol],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const proprietes = {
+      fixture: null, protocolDraft: null, onFixtureReviewed: vi.fn(), phase: 'actions' as const,
+    };
+    const { rerender } = render(<ClinicalRuntimeSection idPatient="PAT_TEST" {...proprietes} />);
+
+    await screen.findByText('Assiette protéinée');
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter une action' }));
+    fireEvent.change(screen.getByLabelText('Type de l’action 1'), { target: { value: 'food' } });
+    // Le menu porte bien la liste de A — le chemin fonctionne.
+    const menuA = screen.getByLabelText('Assiette de l’action 1') as HTMLSelectElement;
+    expect([...menuA.options].map(option => option.textContent)).toContain('Assiette protéinée');
+
+    rerender(<ClinicalRuntimeSection idPatient="PAT_AUTRE" {...proprietes} />);
+    // Témoin d'anti-vacuité : le constructeur est dans sa branche VIVANTE.
+    await screen.findByText('Actions (1/3)');
+    expect(screen.queryByLabelText('Assiette de l’action 1')).toBeNull();
+  });
+
   it('recharge automatiquement une proposition périmée et redemande confirmation', async () => {
     const stale: CockpitRuntimeApiResponse = { status: 'unavailable', reason: 'proposal_stale', error: 'Périmée.' };
     const refreshed = { ...proposalResponse, proposalHash: 'hash-refreshed' } satisfies CockpitRuntimeApiResponse;

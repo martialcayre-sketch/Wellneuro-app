@@ -7946,3 +7946,16 @@ indiquées). La carte, enfant direct d'une colonne flex défilante et
 assiettes dans le type d'action « Alimentation » (chantier neuf, D-240).
 
 **Prochaine action.** Merge seul ; constater la carte sur le dossier réel.
+
+## 2026-09-26 — D-249 : l'assiette se choisit dans l'action « Alimentation »
+
+**Décision.** À la demande du responsable, un menu « Assiette indiquée » sur
+toute action alimentaire du constructeur. Il propose les indiquées de la carte,
+et elles seules, et pose la même référence que D-240 (V4 demandé). La liste est
+remontée par la carte, pas relue : pas de seconde journalisation. Elle est datée
+du dossier.
+
+**Écarté.** Les assiettes non indiquées au menu (décision clinique) ; le retrait
+du bouton de la carte (non demandé).
+
+**Prochaine action.** Merge seul ; constat sur un dossier réel.

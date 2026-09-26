@@ -734,3 +734,140 @@ describe('ProtocolMiniBuilder — le ton du niveau haut', () => {
   });
 });
 
+// L'ASSIETTE SE CHOISIT DANS L'ACTION « ALIMENTATION » ([[D-249]]). Même
+// référence, même contrat, même garde que le bandeau « Insérer manuellement » —
+// seul le point d'entrée change : le type d'action, là où le praticien compose.
+describe('ProtocolMiniBuilder — l’assiette se choisit dans l’action alimentaire', () => {
+  const INDIQUEES = [
+    { plateCode: 'ASSIETTE_DOPAMINERGIQUE', libelle: 'Assiette dopaminergique' },
+    { plateCode: 'ASSIETTE_PROTEINEE', libelle: 'Assiette protéinée' },
+  ];
+
+  function actionAlimentaire(container: HTMLElement) {
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'food' } });
+  }
+
+  function completerEtEnregistrer(container: HTMLElement) {
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Plan idéal de l’action 1'), { target: { value: 'Idéal fixture' } });
+    fireEvent.change(ui.getByLabelText('Plan minimal de l’action 1'), { target: { value: 'Minimal fixture' } });
+    fireEvent.change(ui.getByLabelText('Plan de secours de l’action 1'), { target: { value: 'Secours fixture' } });
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture.' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture.' } });
+    fireEvent.change(ui.getByLabelText('Charge déclarée par le praticien'), { target: { value: 'moderate' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+  }
+
+  it('le menu ne paraît que sur une action ALIMENTAIRE, et ne propose que les indiquées', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} assiettesIndiquees={INDIQUEES} />);
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'chronobiology' } });
+    expect(ui.queryByLabelText('Assiette de l’action 1')).toBeNull();
+    fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'food' } });
+    const menu = ui.getByLabelText('Assiette de l’action 1') as HTMLSelectElement;
+    expect([...menu.options].map(option => option.textContent)).toEqual([
+      'Aucune assiette — action alimentaire libre',
+      'Assiette dopaminergique',
+      'Assiette protéinée',
+    ]);
+    // Aucun choix par défaut : l'action alimentaire reste libre tant que le
+    // praticien ne pose pas d'assiette (`DC-24`).
+    expect(menu.value).toBe('');
+  });
+
+  it('sans liste servie (verrou fermé, lecture en échec), pas de menu', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} />);
+    actionAlimentaire(container);
+    expect(within(container).queryByLabelText('Assiette de l’action 1')).toBeNull();
+  });
+
+  it('liste servie mais VIDE : le dit, sans menu à une seule option', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} assiettesIndiquees={[]} />);
+    actionAlimentaire(container);
+    expect(within(container).queryByLabelText('Assiette de l’action 1')).toBeNull();
+    expect(container.textContent).toContain('Aucune assiette n’est indiquée pour ce dossier');
+  });
+
+  it('choisir une assiette pose sa référence et son intitulé, et fait DEMANDER le contrat V4', () => {
+    const onSave = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSave} assiettesIndiquees={INDIQUEES} />,
+    );
+    actionAlimentaire(container);
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Assiette de l’action 1'), { target: { value: 'ASSIETTE_PROTEINEE' } });
+    expect((ui.getByLabelText('Intitulé de l’action 1') as HTMLInputElement).value).toBe('Assiette protéinée');
+    completerEtEnregistrer(container);
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const soumission = onSave.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.version).toBe('c1-protocol-draft-v4');
+    expect(soumission.actions[0].type).toBe('food');
+    expect(soumission.actions[0].recommendedPlateRef?.plateCode).toBe('ASSIETTE_PROTEINEE');
+    expect(soumission.actions[0].interventionStatus).toBe('active');
+  });
+
+  it('changer d’assiette fait suivre l’intitulé — sauf s’il a été écrit à la main', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} assiettesIndiquees={INDIQUEES} />);
+    actionAlimentaire(container);
+    const ui = within(container);
+    const intitule = () => (ui.getByLabelText('Intitulé de l’action 1') as HTMLInputElement).value;
+    fireEvent.change(ui.getByLabelText('Assiette de l’action 1'), { target: { value: 'ASSIETTE_PROTEINEE' } });
+    fireEvent.change(ui.getByLabelText('Assiette de l’action 1'), { target: { value: 'ASSIETTE_DOPAMINERGIQUE' } });
+    expect(intitule()).toBe('Assiette dopaminergique');
+    fireEvent.change(ui.getByLabelText('Intitulé de l’action 1'), { target: { value: 'Midi : assiette du praticien' } });
+    fireEvent.change(ui.getByLabelText('Assiette de l’action 1'), { target: { value: 'ASSIETTE_PROTEINEE' } });
+    expect(intitule()).toBe('Midi : assiette du praticien');
+  });
+
+  it('revenir à « Aucune assiette » retire la référence, et la demande V4 retombe', () => {
+    const onSave = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSave} assiettesIndiquees={INDIQUEES} />,
+    );
+    actionAlimentaire(container);
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Assiette de l’action 1'), { target: { value: 'ASSIETTE_PROTEINEE' } });
+    fireEvent.change(ui.getByLabelText('Assiette de l’action 1'), { target: { value: '' } });
+    // L'intitulé posé par l'assiette part avec elle : il ne décrit plus rien.
+    expect((ui.getByLabelText('Intitulé de l’action 1') as HTMLInputElement).value).toBe('');
+    fireEvent.change(ui.getByLabelText('Intitulé de l’action 1'), { target: { value: 'Action libre' } });
+    completerEtEnregistrer(container);
+    const soumission = onSave.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.actions[0].recommendedPlateRef).toBeUndefined();
+    expect(soumission.version).toBeUndefined();
+  });
+
+  it('une assiette insérée depuis la carte se RELIT dans le menu de son action', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        assiettesIndiquees={INDIQUEES}
+        assietteSelection={{ plateCode: 'ASSIETTE_DOPAMINERGIQUE', libelle: 'Assiette dopaminergique' }}
+        onClearAssietteSelection={vi.fn()}
+      />,
+    );
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Insérer manuellement' }));
+    expect((ui.getByLabelText('Assiette de l’action 1') as HTMLSelectElement).value).toBe('ASSIETTE_DOPAMINERGIQUE');
+  });
+
+  it('une assiette posée HORS de la liste courante reste affichée — un menu ne ment pas sur sa valeur', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        assiettesIndiquees={[]}
+        assietteSelection={{ plateCode: 'ASSIETTE_DOPAMINERGIQUE', libelle: 'Assiette dopaminergique' }}
+        onClearAssietteSelection={vi.fn()}
+      />,
+    );
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Insérer manuellement' }));
+    const menu = ui.getByLabelText('Assiette de l’action 1') as HTMLSelectElement;
+    expect(menu.value).toBe('ASSIETTE_DOPAMINERGIQUE');
+    expect(menu.selectedOptions[0].textContent).not.toContain('ASSIETTE_');
+  });
+});
+
