@@ -159,8 +159,11 @@ export function ProtocolMiniBuilder({
   /**
    * Les assiettes INDIQUÉES pour ce dossier, telles que la carte les a lues
    * ([[D-249]]) : ce que le menu d'une action « Alimentation » propose. `null`
-   * = rien à proposer (verrou fermé, lecture en échec, fixture) — le menu ne
-   * paraît pas. Jamais le catalogue entier : une assiette non indiquée n'y
+   * = rien à proposer (verrou fermé, lecture en échec, fixture) : le menu ne
+   * paraît pas sur une action SANS assiette. Une action qui en porte déjà une
+   * garde son menu, réduit à cette assiette et à « Aucune » — une référence qui
+   * partirait à l'enregistrement ne doit jamais être invisible (constat de
+   * revue, #1229). Jamais le catalogue entier : une assiette non indiquée n'y
    * entre pas plus qu'elle n'a de bouton sur la carte (`DC-24`).
    */
   assiettesIndiquees?: { plateCode: string; libelle: string }[] | null;
@@ -333,9 +336,13 @@ export function ProtocolMiniBuilder({
   // liste (DOM retouché) est refusé ici comme il le serait au serveur, qui
   // re-dérive la référence et ne croit rien de ce que l'écran envoie.
   //
-  // L'INTITULÉ SUIT L'ASSIETTE TANT QUE LE PRATICIEN NE L'A PAS ÉCRIT : vide, ou
-  // encore égal au libellé de l'assiette précédente. Un intitulé tapé à la main
-  // n'est jamais écrasé par un changement de menu.
+  // L'INTITULÉ SUIT L'ASSIETTE TANT QU'IL EST VIDE OU ENCORE ÉGAL AU LIBELLÉ DE
+  // L'ASSIETTE PRÉCÉDENTE. Un intitulé qui en diffère n'est jamais écrasé par un
+  // changement de menu. L'intention se lit dans le TEXTE, pas dans un marqueur :
+  // un marqueur de provenance porté par l'action partirait dans le payload
+  // soumis — les actions y sont recopiées telles quelles, puis hachées. Un
+  // intitulé tapé à la main IDENTIQUE au libellé suit donc l'assiette : il ne
+  // s'en distingue pas (constat de revue, #1229).
   const choisirAssiette = (actionId: string, plateCode: string) => {
     const choix = plateCode === ''
       ? null

@@ -869,5 +869,27 @@ describe('ProtocolMiniBuilder — l’assiette se choisit dans l’action alimen
     expect(menu.value).toBe('ASSIETTE_DOPAMINERGIQUE');
     expect(menu.selectedOptions[0].textContent).not.toContain('ASSIETTE_');
   });
+
+  // CONSTAT DE REVUE (#1229), ÉCARTÉ AVEC MOTIF ET ÉPINGLÉ ICI : « liste `null`
+  // ⇒ pas de menu » ne vaut que pour une action SANS assiette. Cacher le menu
+  // d'une action qui en porte une rendrait invisible une référence qui
+  // partirait quand même à l'enregistrement.
+  it('liste NON servie : une assiette déjà posée garde son menu, réduit à elle et à « Aucune »', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        assiettesIndiquees={null}
+        assietteSelection={{ plateCode: 'ASSIETTE_DOPAMINERGIQUE', libelle: 'Assiette dopaminergique' }}
+        onClearAssietteSelection={vi.fn()}
+      />,
+    );
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Insérer manuellement' }));
+    const menu = ui.getByLabelText('Assiette de l’action 1') as HTMLSelectElement;
+    expect([...menu.options].map(option => option.value)).toEqual(['', 'ASSIETTE_DOPAMINERGIQUE']);
+    fireEvent.change(menu, { target: { value: '' } });
+    // Retirée, l'assiette ne laisse plus de menu : il n'y a rien à proposer.
+    expect(ui.queryByLabelText('Assiette de l’action 1')).toBeNull();
+  });
 });
 

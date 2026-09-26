@@ -136,8 +136,8 @@ export function AssiettesIndiqueesPanel({
    * Les INDIQUÉES seules : une non évaluée proposée au menu ferait d'un « on ne
    * sait pas » un « c'est indiqué » (`DC-24`), exactement comme le bouton que
    * [[D-240]] §7 lui refuse. `null` quand la carte n'a rien à proposer — verrou
-   * fermé ou lecture en échec : le menu ne doit pas survivre à ce que la carte
-   * cesse de montrer.
+   * fermé ou lecture en échec : le menu cesse de proposer ce que la carte cesse
+   * de montrer.
    */
   onIndiqueesLues?: (indiquees: AssietteRetenue[] | null) => void;
 }) {

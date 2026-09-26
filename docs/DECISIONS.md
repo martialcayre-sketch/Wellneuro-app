@@ -34,15 +34,21 @@ ici.
 **3. LA LISTE EST REMONTÉE, PAS RELUE.** La carte la transmet au cockpit quand
 elle la lit ; un second GET aurait fait porter au journal d'accès deux lectures
 pour un seul affichage (`G-TRUST-04`). Verrou fermé ou lecture en échec : `null`,
-et le menu ne paraît pas — il ne survit pas à ce que la carte cesse de montrer.
+et le menu ne propose plus rien — il ne survit pas à ce que la carte cesse de
+montrer. Seule une assiette DÉJÀ posée sur une action y reste affichée, avec
+« Aucune assiette » pour la retirer : une référence qui partirait à
+l'enregistrement ne doit jamais être invisible.
 La liste est **datée du dossier** et vidée à son changement, comme la sélection
 de [[D-240]] §12. Le banc qui la tient laisse la lecture du second dossier EN
 VOL — servie, elle écraserait la liste et le cas ne garderait rien — et il
 rougit quand on retire les deux protections (mutation jouée).
 
-**4. L'INTITULÉ SUIT L'ASSIETTE** tant que le praticien ne l'a pas écrit : vide,
-ou encore égal au libellé de l'assiette précédente. Un intitulé tapé à la main
-n'est jamais écrasé. Revenir à « Aucune assiette » retire la référence, et la
+**4. L'INTITULÉ SUIT L'ASSIETTE** tant qu'il est vide ou encore égal au libellé
+de l'assiette précédente ; un intitulé qui en diffère n'est jamais écrasé.
+L'intention se lit dans le texte, pas dans un marqueur : un marqueur porté par
+l'action partirait dans le payload soumis, puis haché. Un intitulé tapé à la
+main identique au libellé suit donc l'assiette — il ne s'en distingue pas.
+Revenir à « Aucune assiette » retire la référence, et la
 demande de V4 retombe si rien d'autre ne l'exige. Une assiette posée hors de la
 liste courante reste affichée sous son libellé : un menu ne ment pas sur sa
 propre valeur.
