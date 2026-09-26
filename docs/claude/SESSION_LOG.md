@@ -7911,3 +7911,15 @@ montré que l'ordre de retour arrière écrit d'abord était le dangereux ;
 corrigé avant merge : revert du code d'abord, auto-déploiement ensuite.
 
 **Prochaine action.** Deux déploiements verts dont une migration, puis lot 4.
+
+## 2026-09-26 — Index sur questionnaire_reponses.id_assignation
+
+**Décision.** Le responsable choisit, dans la file, l'index nommé au LOT-07 de
+l'agenda alimentaire : première migration sous le déployeur Actions, et le
+déploiement avec migration qui manque au décompte de D-248.
+
+**Écarté.** Index C5 (tables vides), resserrage des CHECK `btrim` (D-111 :
+arbitrage requis, non additif). L'entrée « milestone » de la file est périmée.
+
+**Prochaine action.** Merge seul ; constater « Retenu » après le CI vert ;
+approbation `release-db` ; constat par conteneur.

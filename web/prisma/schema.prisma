@@ -352,6 +352,7 @@ model QuestionnaireReponse {
   lectures QuestionnaireLecturePraticien[]
 
   @@index([idPatient, statutValidite], map: "questionnaire_reponses_patient_validite_idx")
+  @@index([idAssignation], map: "questionnaire_reponses_id_assignation_idx")
   @@map("questionnaire_reponses")
 }
 
