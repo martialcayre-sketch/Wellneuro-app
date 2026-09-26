@@ -4,6 +4,65 @@
 
 ## Décisions actives
 
+### D-250 — La Boussole alimentaire quitte la sous-vue Protocole : l'observatoire et son geste d'insertion ne sont plus montés
+
+- Date : 2026-09-26
+- Statut : accepté — décision du responsable, le jour même : « pour l'instant
+  retirer la boussole pour moins de bruit ».
+- Domaine : cockpit praticien, phase Actions. **Aucune règle clinique, aucun
+  seuil, aucune table signée, aucune route, aucune migration, aucun drapeau
+  touché.** Amende la lecture de [[D-213]] §12 au niveau du protocole ; prend
+  acte que la voie ouverte par [[D-243]] n'a plus de producteur à l'écran.
+
+**1. CE QUI DISPARAÎT.** L'observatoire « Boussole alimentaire » (profil CIQUAL
+des douze aliments vedettes) n'est plus monté dans la sous-vue Protocole. Son
+geste « Préparer l'insertion manuelle dans le protocole » part avec lui, et le
+bandeau « Sélection Boussole prête » du constructeur ne peut plus paraître :
+plus rien ne pose de sélection.
+
+**2. POURQUOI.** Le responsable l'avait déjà dit le 2026-09-16 (« choisir un
+aliment dans la Boussole comme action me paraît incongru voire inutile ») ; le
+cadrage l'avait maintenue pour son rôle côté patient. Il le redit après usage
+réel, et le code lui donne raison :
+
+- le profil lu est le même pour tous les patients — le « contexte » affiché est
+  un libellé constant ;
+- le geste fait d'un aliment une action, qui prend l'une des trois places du
+  protocole et n'est possible qu'à partir de la deuxième version ;
+- le patient n'en reçoit qu'un gabarit fixe, sans « pourquoi » propre à
+  l'aliment.
+
+[[D-213]] §12 voulait le chemin inverse : de l'assiette prescrite vers ses
+aliments. Ce chemin n'existe pas et ne peut pas exister sans composition
+d'assiette attestée. Le « pourquoi » destiné au patient passe à la fiche
+d'assiette, dont le cadrage est ouvert le même jour. La justification
+alimentaire, côté praticien, vit sur la carte des assiettes ([[D-249]] §5).
+
+**3. CE QUI RESTE, ET POURQUOI C'EST RÉVERSIBLE.** « Pour l'instant » : le
+retrait est un démontage, pas une suppression. Restent en place, non montés,
+le composant `PractitionerFoodCompassObservatory`, la route
+`/api/praticien/boussole` et l'API d'insertion du constructeur. Restent aussi
+les contrats V2 et V4 et toute la relecture des protocoles qui portent un
+`foodCompassRef` : un refus à la relecture serait un protocole mort. Remonter
+le composant suffit à revenir en arrière. `WN_C5_ENABLED` n'est **pas** éteint :
+il fermerait aussi la Boussole patient et la révision des versions qui en
+portent une.
+
+**4. CE QUE LE RETRAIT COÛTE — MESURÉ, PAS SUPPOSÉ.** Lecture de production par
+conteneur, en agrégats, le 2026-09-26 : aucun protocole 21 jours enregistré,
+donc aucun `foodCompassRef` à préserver. Le résumé « Faisabilité publiée par le
+Journal alimentaire » ne s'affichait que dans l'observatoire, après le clic sur
+un aliment. Les données qu'il comptait restent lisibles dans l'onglet
+Alimentation, où le praticien relit lui-même traces et déclarations. Le calcul
+des replis d'assiette ([[D-242]]), hébergé par la route Boussole, reste en
+place ; il n'avait aucun écran, la table étant vide.
+
+**5. LE BANC.** Le cas qui montrait l'observatoire drapeau ouvert affirme
+désormais son absence, drapeau ouvert, et qu'aucun appel ne part vers la route
+Boussole. Le constructeur, qui vit dans la même sous-vue, sert de témoin
+d'anti-vacuité. Rejoué contre la version antérieure, le cas rougit. Aucun E2E ne
+couvrait l'observatoire : drapeau éteint dans les E2E.
+
 ### D-249 — L'assiette se choisit dans l'action « Alimentation » : le constructeur propose les assiettes indiquées du dossier
 
 - Date : 2026-09-26

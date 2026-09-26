@@ -7959,3 +7959,16 @@ du dossier.
 du bouton de la carte (non demandé).
 
 **Prochaine action.** Merge seul ; constat sur un dossier réel.
+
+## 2026-09-26 — D-250 : la Boussole quitte la sous-vue Protocole
+
+**Décision.** Le responsable retire la Boussole du cockpit au niveau du
+protocole, « pour moins de bruit ». L'observatoire et le geste d'insertion ne
+sont plus montés. Le composant, la route et la relecture restent en place, et
+le retrait est réversible. Aucun protocole à préserver : 0 en production.
+
+**Décidé aussi, pour la fiche d'assiette.** Fiches MY (droits acquis),
+version augmentée par IA, envoi automatique à la validation du protocole via
+l'inbox, espace de lecture au portail. Cadrage en cours.
+
+**Prochaine action.** Merge seul ; constat en production.
