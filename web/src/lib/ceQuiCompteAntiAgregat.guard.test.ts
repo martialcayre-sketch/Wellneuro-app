@@ -112,6 +112,10 @@ const CONSOMMATEURS_INTERDITS = [
   'lib/correspondance',
   'lib/equilibre',
   'app/api/praticien/synthese',
+  // Export PDF du dossier (D-252) : une restitution qui part vers un LLM
+  // externe, et dont le préambule affirme exclure cet espace.
+  'lib/export-dossier',
+  'app/api/praticien/export-dossier',
 ];
 
 const REFERENCES_AU_LOT = [

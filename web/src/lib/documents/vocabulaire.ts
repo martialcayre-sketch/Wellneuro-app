@@ -35,6 +35,14 @@
 // | Dossier à deux voix (service portail) | `termeAnxiogene` sur les TROIS textes praticien servis — reformulation, priorité, synthèse (`api/portail/dossier/route.ts`) | journalisant (`PORTAIL_DOSSIER_REGISTRE_ANXIOGENE`) | `api/portail/dossier/route.test.ts` |
 // | Document patient biologie (génération, décision F/D-122) | `termeAnxiogene` sur le texte généré avant consignation (`api/praticien/biologie/proposition/document-patient/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`) | `api/praticien/biologie/proposition/document-patient/route.test.ts` |
 // | Protocole 21 jours (enregistrement d'une version) | `termeAnxiogene` sur les quatre champs servis au patient — `purpose`, `followUpCriterion`, et `title` + `minimalPlan` de CHAQUE action (`api/praticien/protocoles/versions/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`, jeton lié au texte) | `api/praticien/protocoles/versions/route.test.ts` |
+// | Export PDF du dossier (téléchargement praticien, [[D-252]]) | `masquerDocument(…, creerMasqueur(patient))` sur le document ENTIER de la version « IA externe », cochée par défaut (`lib/export-dossier/assembler.ts`) | masquage (transforme, ne refuse pas) ; version « complète » sans masquage, sur choix explicite du praticien | `lib/export-dossier/assembler.test.ts` (parcours exhaustif de tous les textes, vu rouge au débranchement) |
+//
+// L'EXPORT SORT VERS UN TIERS QUE L'APPLICATION NE CONNAÎT PAS ([[D-252]]).
+// Le praticien télécharge le PDF et le soumet lui-même à un outil d'IA
+// externe : l'application n'envoie rien. Les gardes de vocabulaire n'y ont pas
+// d'objet — rien n'est généré, tout est restitué, et le lecteur est le
+// praticien. Le risque propre à ce chemin est l'identité : sa garde est la
+// pseudonymisation de la version par défaut.
 //
 // LE PROTOCOLE SORTAIT SANS GARDE, ET CETTE CARTE LE DISAIT SANS LE SAVOIR
 // ([[D-189]]). `purpose` est le SOUS-TITRE de l'écran d'accueil du patient,
