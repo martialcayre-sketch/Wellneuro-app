@@ -30,6 +30,7 @@ export type CodeAnomalie =
   | 'precaution_sans_claim'
   | 'precaution_hors_perimetre'
   | 'precaution_manquante'
+  | 'balisage_dans_le_texte'
   | 'terme_interdit';
 
 export type AnomalieFiche = { code: CodeAnomalie; detail: string };
@@ -42,8 +43,20 @@ const RE_CLE_CLAIM = /^WN-CL-(\d{4})-\d{3}::v\d+\.\d+$/;
  * vocabulaire réglementaire amendé le 2026-07-21) : « ordonnance »,
  * « diagnostic », « NeuroScore » interdits sans dérogation ; « prescription »
  * proscrit des surfaces patient. Comparaison sur le texte en minuscules.
+ *
+ * `diagnostiq` ajoute « diagnostiqué(e) », qui échappait à `diagnostic` ;
+ * « posologie » et « dosage » sont le vocabulaire d'une dose de complément, qui
+ * devient un renvoi au praticien (`DC-44`) — constats de la revue du lot 5.
  */
-export const LEXIQUE_INTERDIT_FICHE: readonly string[] = ['prescri', 'ordonnance', 'diagnostic', 'neuroscore'];
+export const LEXIQUE_INTERDIT_FICHE: readonly string[] = [
+  'prescri',
+  'ordonnance',
+  'diagnostic',
+  'diagnostiq',
+  'neuroscore',
+  'posologie',
+  'dosage',
+];
 
 /** Mots qu'un nombre traverse pour atteindre ce qu'il compte (« 2 et 3 portions »). */
 const MOTS_DE_LIAISON = new Set(['et', 'à', 'a', 'ou', 'de', 'd', 'du', 'des', 'au', 'aux', 'par', 'sur', '-', '–', 'environ']);
@@ -53,6 +66,43 @@ const ESPACES = /[\s\u00a0\u202f\u2009]+/gu;
 function normaliser(texte: string): string {
   return texte.normalize('NFC').toLowerCase().replace(/[’']/g, "'").replace(ESPACES, ' ').trim();
 }
+
+/**
+ * LE TEXTE SANS SA PRÉSENTATION, découpé en SEGMENTS. L'extraction
+ * (`canonical.md`) porte du Markdown — gras, titres, citations, puces, numéros
+ * de liste, tableaux — et des marqueurs de page en commentaire HTML. Une fiche
+ * patient, elle, est du texte brut.
+ *
+ * Constats des premiers essais de l'outil (lot 5), puis de sa revue :
+ *   — une phrase reprise d'une ligne qui contenait du gras était déclarée
+ *     « introuvable », et un nombre en gras (« **3 semaines** ») comptait
+ *     « semaines** » : la fiche conforme était refusée, celle qui gardait les
+ *     astérisques acceptée ;
+ *   — retirer le balisage en aplatissant tout le texte laissait un verbatim
+ *     JOINDRE deux cellules d'un tableau ou deux lignes (« à éviter » d'une
+ *     ligne, suivi du produit de la ligne suivante) : un sens inversé passait.
+ * D'où des segments : une ligne, ou une cellule de tableau, balisage retiré. Un
+ * verbatim se cherche DANS UN SEUL segment ; les nombres se lisent sur les
+ * segments. Un marqueur de page n'est le texte d'aucun segment.
+ */
+export function segmentsSansBalisage(texte: string): string[] {
+  return texte
+    .replace(/<!--[\s\S]*?-->/g, '\n')
+    .split('\n')
+    .map(ligne => ligne.replace(/^[ \t]*(?:#{1,6}[ \t]+|>[ \t]?|[-*+][ \t]+|\d+[.)][ \t]+)/, '').replace(/\*\*|__|\*/g, ''))
+    .flatMap(ligne => ligne.split('|'))
+    .map(segment => segment.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Du balisage, un marqueur de page ou de figure dans un texte que le PATIENT
+ * lira : il s'afficherait tel quel. La comparaison verbatim ignore le balisage ;
+ * le texte servi, lui, n'en porte pas. Toutes les formes que
+ * `segmentsSansBalisage` retire sont refusées ici — l'astérisque seul, la puce
+ * et le numéro de liste compris (constat de revue, #1235).
+ */
+const RE_BALISAGE = /\*|__|<!--|-->|\[figure|\||^[ \t]*#{1,6}[ \t]|^[ \t]*>[ \t]|^[ \t]*[-+][ \t]|^[ \t]*\d+[.)][ \t]/imu;
 
 /**
  * CHIFFRE TECHNIQUE, PAS UN SEUIL (`DC-20`) : la longueur à partir de laquelle un
@@ -75,10 +125,25 @@ function uniteNormalisee(mot: string): string {
  * quoi « 3 semaines » et « 3 jours » se confondraient sur le seul chiffre. Un
  * nombre qui ne compte rien de lisible garde sa valeur seule.
  */
+/**
+ * « oméga 3 », « omega-3 », « oméga‑3 » : UN nom, écrit de trois façons. Les
+ * Fiches MY l'écrivent avec une espace (constat d'un essai sur `WN-SRC-0305` :
+ * un titre qui finissait par ce nom laissait un « 3 » nu). La forme unique est
+ * `oméga-<n>`, des deux côtés du contrôle.
+ */
+function omegasUnifies(propre: string): string {
+  return propre.replace(/(?<!\p{L})om[ée]ga[ ‑-]?(?=\d)/gu, 'oméga-');
+}
+
 export function nombresDuTexte(texte: string): string[] {
-  const propre = normaliser(texte);
+  const propre = omegasUnifies(normaliser(texte));
   const trouves: string[] = [];
-  const re = /(\d{1,3}(?: \d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?)([a-zà-ÿ%]*)/gu;
+  // UN CHIFFRE COLLÉ À UNE LETTRE N'EST PAS UNE QUANTITÉ : « oméga-3 », « B12 »,
+  // « D3 » sont des NOMS (constat de la revue du lot 5 : ils faisaient refuser
+  // « Les oméga-3 », lu « 3 se »). Ils sont contrôlés à part, par
+  // `nomsChiffres`. Un intervalle « 3-4 portions » reste deux nombres : c'est un
+  // chiffre, pas une lettre, qui précède le trait d'union.
+  const re = /(?<![\p{L}\d])(?<!\p{L}[-‑])(\d{1,3}(?: \d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?)([a-zà-ÿ%]*)/gu;
   for (const m of propre.matchAll(re)) {
     const valeur = String(Number(m[1].replace(/ /g, '').replace(',', '.')));
     let unite = m[2];
@@ -90,6 +155,15 @@ export function nombresDuTexte(texte: string): string[] {
     trouves.push(`${valeur} ${uniteNormalisee(unite)}`.trim());
   }
   return trouves;
+}
+
+/**
+ * Les NOMS qui portent un chiffre — `« oméga-3 »`, `« b12 »` — tels qu'écrits,
+ * trait d'union normalisé. Chacun doit exister dans une source : un « oméga-6 »
+ * absent reste refusé.
+ */
+export function nomsChiffres(texte: string): string[] {
+  return [...omegasUnifies(normaliser(texte)).matchAll(/\p{L}+[-‑]?\d+(?:[.,]\d+)?/gu)].map(m => m[0].replace('‑', '-'));
 }
 
 /** Tous les textes qu'un patient lira — le titre compris. */
@@ -129,6 +203,9 @@ export function controlerFiche(entrees: EntreesControle): AnomalieFiche[] {
 
   for (const texte of textesLisibles(contenu)) {
     if (!/\S/u.test(texte)) anomalies.push({ code: 'texte_vide', detail: 'Un titre, un bloc ou une précaution est vide.' });
+    if (RE_BALISAGE.test(texte)) {
+      anomalies.push({ code: 'balisage_dans_le_texte', detail: 'Un texte patient porte du balisage, ou un marqueur de page ou de figure.' });
+    }
   }
 
   // LES PRÉCAUTIONS D'ABORD, comme le patient les lira.
@@ -161,7 +238,7 @@ export function controlerFiche(entrees: EntreesControle): AnomalieFiche[] {
   }
 
   // LES BLOCS : une provenance, et la bonne.
-  const sourceNormalisee = normaliser(texteSource);
+  const segmentsSource = segmentsSansBalisage(texteSource).map(normaliser);
   contenu.sections.forEach((section, s) => {
     section.blocs.forEach((bloc, b) => {
       const ou = `section ${s + 1}, bloc ${b + 1}`;
@@ -173,7 +250,8 @@ export function controlerFiche(entrees: EntreesControle): AnomalieFiche[] {
         return;
       }
       if (provenance.type === 'verbatim') {
-        if (!sourceNormalisee.includes(normaliser(bloc.texte))) {
+        const cherche = normaliser(bloc.texte);
+        if (!segmentsSource.some(segment => segment.includes(cherche))) {
           anomalies.push({ code: 'verbatim_introuvable', detail: `${ou} : donné pour verbatim, introuvable dans la fiche source.` });
         }
         return;
@@ -195,10 +273,15 @@ export function controlerFiche(entrees: EntreesControle): AnomalieFiche[] {
     });
   });
 
-  // LES NOMBRES : chacun doit exister, avec ce qu'il compte, dans une source.
-  const autorises = new Set([texteSource, ...textesClaimsCites].flatMap(nombresDuTexte));
+  // LES NOMBRES : chacun doit exister, avec ce qu'il compte, dans une source —
+  // lus SEGMENT PAR SEGMENT, des deux côtés : un nombre d'une cellule ne
+  // compte pas le mot de la cellule suivante (constat de revue, #1235). Les
+  // noms qui portent un chiffre (« oméga-3 ») doivent exister tels quels.
+  const sources = [texteSource, ...textesClaimsCites].flatMap(segmentsSansBalisage);
+  const lisibles = textesLisibles(contenu).flatMap(segmentsSansBalisage);
+  const autorises = new Set([...sources.flatMap(nombresDuTexte), ...sources.flatMap(nomsChiffres)]);
   const vus = new Set<string>();
-  for (const nombre of textesLisibles(contenu).flatMap(nombresDuTexte)) {
+  for (const nombre of [...lisibles.flatMap(nombresDuTexte), ...lisibles.flatMap(nomsChiffres)]) {
     if (!autorises.has(nombre) && !vus.has(nombre)) {
       vus.add(nombre);
       anomalies.push({ code: 'nombre_hors_source', detail: `« ${nombre} » ne figure ni dans la fiche source ni dans un claim cité.` });

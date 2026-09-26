@@ -94,7 +94,10 @@ jobs:
           mapping="$(printf '%s\n' "$fichiers" | grep -E '^docs/questionnaires-drive-mapping\.md$' || true)"
           registre="$(printf '%s\n' "$fichiers" | grep -E '^docs/claude/corpus/instrument_registry\.json$' || true)"
           preuves="$(printf '%s\n' "$fichiers" | grep -E '^docs/claude/corpus/measurement_evidence\.json$' || true)"
-          if [ -z "$fichiers" ] || [ -n "$hors_docs" ] || [ -n "$mapping" ] || [ -n "$registre" ] || [ -n "$preuves" ]; then
+          # Les consignes des fiches d'assiette sont des `.md`, mais du CODE :
+          # leur empreinte est épinglée par un banc (D-251, lot 5).
+          consignes="$(printf '%s\n' "$fichiers" | grep -E '^tools/corpus/fiches/consignes/' || true)"
+          if [ -z "$fichiers" ] || [ -n "$hors_docs" ] || [ -n "$mapping" ] || [ -n "$registre" ] || [ -n "$preuves" ] || [ -n "$consignes" ]; then
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
           else
             echo "docs_only=true" >> "$GITHUB_OUTPUT"
