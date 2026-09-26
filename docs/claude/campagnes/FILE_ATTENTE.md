@@ -103,7 +103,7 @@ du travail de dépôt porté par sa décision et sa PR. Ils figurent ici pour qu
 file cesse de laisser croire que rien ne se fait en dehors d'elle.
 
 - **LE CHANTIER « FICHE D'ASSIETTE »** (ouvert le 2026-09-26 par [[D-251]]). Il
-  fait partir au patient, à la validation du protocole, la Fiche MY de
+  fait partir au patient, au clic « Valider pour diffusion », la Fiche MY de
   l'assiette choisie dans l'action « Alimentation ». La fiche est adaptée par
   IA hors ligne, puis validée version par version par le responsable. Le
   patient la lit dans un espace du portail, annoncée par un e-mail neutre.

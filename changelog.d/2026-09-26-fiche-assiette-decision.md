@@ -1,4 +1,4 @@
-### Décision : la fiche d'assiette part au patient à la validation du protocole (2026-09-26)
+### Décision : la fiche d'assiette part au patient au clic « Valider pour diffusion » (2026-09-26)
 
 - **Décision seule, aucun code livré** (`D-251`). Quand le praticien choisit
   une assiette dans une action « Alimentation », le patient recevra la Fiche MY

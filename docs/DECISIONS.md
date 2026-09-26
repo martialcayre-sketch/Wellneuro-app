@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient à la validation du protocole
+### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
 - Date : 2026-09-26
 - Statut : accepté — décisions du responsable du 2026-09-26, données en deux
@@ -27,7 +27,12 @@
   en V2, des assiettes et recettes types.
 - Les réserves de sécurité des assiettes entrent dans la fiche, en renvoi vers
   le praticien.
-- Envoi automatique à la validation du protocole ; lecture dans un espace du
+- « Envoi automatique à la validation du protocole », dans les mots du
+  responsable. Le déclencheur est le **clic explicite « Valider pour
+  diffusion »**, après aperçu : ni l'enregistrement ni la relecture d'une
+  version ne diffusent quoi que ce soit (contrat de
+  `api/praticien/protocoles/versions`). « Automatique » veut dire que ce clic
+  suffit, sans second geste pour la fiche — voir §7. Lecture dans un espace du
   portail, et un e-mail neutre qui l'annonce.
 
 **2. LES DROITS.** Le responsable déclare être propriétaire des Fiches MY,
