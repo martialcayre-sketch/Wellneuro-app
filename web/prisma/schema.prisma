@@ -2969,3 +2969,70 @@ model AccordAtteste {
   @@index([idPatient, creeLe], map: "alli_accord_atteste_patient_idx")
   @@map("accords_attestes_objectif")
 }
+
+// ─── Fiches d'assiette (D-251) — catalogue des versions et des actes ─────────
+//
+// Une version est la Fiche MY adaptée par IA, telle que l'outil hors ligne l'a
+// déposée : un BROUILLON tant qu'aucun acte ne la valide. L'acte est le geste
+// DISTINCT du responsable (DC-16) — jamais le même chemin que le dépôt.
+// Les deux tables sont append-only (triggers) et ne portent AUCUNE donnée
+// patient. Le texte vit ici, en base HDS, et ne touche jamais le dépôt, qui est
+// public (D-251 §4).
+
+/// Une version adaptée d'une Fiche MY. Append-only : une correction est une
+/// version NEUVE (`numero` + 1), jamais une réécriture.
+model FicheAssietteVersion {
+  id              String   @id @default(cuid()) @map("id")
+  /// La Fiche MY adaptée (`WN-SRC-nnnn`).
+  sourceId        String   @map("source_id")
+  /// L'assiette d'indication appariée (`lib/fiches-assiette/appariement.ts`).
+  plateCode       String   @map("plate_code")
+  numero          Int      @map("numero")
+  /// `ContenuFicheAssiette` : précautions, puis sections de blocs sourcés.
+  contenu         Json     @map("contenu")
+  contenuSha256   String   @map("contenu_sha256")
+  /// Le texte extrait du PDF, pour la relecture côte à côte — jamais le
+  /// fragment amendé par LLM qui vit dans `rag_corpus_chunks` (D-251 §3).
+  texteSource     String   @map("texte_source")
+  sourceSha256    String   @map("source_sha256")
+  modeleRedaction String   @map("modele_redaction")
+  modeleFidelite  String   @map("modele_fidelite")
+  versionConsigne String   @map("version_consigne")
+  /// Posé par la base (trigger) : une version antidatable n'est pas une preuve.
+  creeLe          DateTime @default(now()) @map("cree_le")
+
+  actes FicheAssietteActe[]
+
+  @@unique([sourceId, numero], map: "fiches_assiette_versions_source_numero_key")
+  @@map("fiches_assiette_versions")
+}
+
+/// Un acte du responsable sur une version : la valider, ou la retirer.
+/// Append-only. L'état d'une version est son DERNIER acte — au sens d'`ordre`,
+/// jamais de `le` (horodatage figé par transaction, à la milliseconde : deux
+/// actes pourraient y être ex æquo ; constat de revue, #1233).
+model FicheAssietteActe {
+  id                   String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (séquence, réaffirmée par trigger).
+  ordre                BigInt   @default(autoincrement()) @map("ordre")
+  idVersion            String   @map("id_version")
+  /// 'validee' | 'retiree' — fermé par un CHECK en base.
+  acte                 String   @map("acte")
+  /// Recopiée de la version, et vérifiée égale par trigger : l'acte porte sur
+  /// CE texte-là.
+  contenuSha256        String   @map("contenu_sha256")
+  validateur           String   @map("validateur")
+  /// Déclaration de relecture intégrale — exigée pour valider (D-195 §1).
+  relectureIntegrale   Boolean  @map("relecture_integrale")
+  /// Obligatoire pour un retrait (CHECK).
+  motif                String?  @map("motif")
+  confirmationRegistre Boolean  @default(false) @map("confirmation_registre")
+  /// Posé par la base (trigger).
+  le                   DateTime @default(now()) @map("le")
+
+  version FicheAssietteVersion @relation(fields: [idVersion], references: [id], onDelete: Restrict)
+
+  @@unique([ordre], map: "fiches_assiette_actes_ordre_key")
+  @@index([idVersion, ordre], map: "fiches_assiette_actes_version_ordre_idx")
+  @@map("fiches_assiette_actes")
+}

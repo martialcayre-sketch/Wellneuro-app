@@ -7995,3 +7995,14 @@ précautions de sécurité, lexique patient. Bancs sur texte synthétique ;
 mutations jouées.
 
 **Prochaine action.** Lot 3 : migration M1, seule dans sa PR.
+
+## 2026-09-26 — Fiche d'assiette, lot 3 : migration M1
+
+**Livré.** Les tables `fiches_assiette_versions` et `fiches_assiette_actes`,
+sans donnée patient, en migration seule. La base elle-même garantit :
+append-only, instants posés par elle, numéros contigus, relecture intégrale
+pour valider, motif pour retirer, empreinte de l'acte égale à celle de sa
+version. Un contrat SQL négatif en éprouve 12 promesses.
+
+**Prochaine action.** Merge, release-db approuvé par le responsable, constat
+par conteneur, puis lot 4.
