@@ -582,6 +582,33 @@ describe('creerMasqueur — garanties', () => {
       expect(performance.now() - debut, JSON.stringify(blanc)).toBeLessThan(50);
     }
   });
+
+  // Revue finale de #1237 : l'expression se compile au premier appel, de façon
+  // synchrone — un dossier aux champs extrêmes, mais admis par les routes,
+  // bloquait tout le serveur (e-mail très pointé : 2 min ; coordonnées de 500
+  // caractères : plus de 10 min, ou débordement de pile à la compilation).
+  it('se construit vite sur des champs extrêmes admis par les routes : moins de 500 ms, sans lever', () => {
+    const pointe = (n: number) => `${'a.'.repeat(n)}a@${'b.'.repeat(n)}fr`;
+    for (const champs of [
+      { email: pointe(62) },
+      { medecinTraitantCoordonnees: `Mail : ${pointe(124)}` },
+      { medecinTraitantCoordonnees: '1'.repeat(499) },
+      { medecinTraitantCoordonnees: `${'06 12 34 56 78, '.repeat(31)}`.slice(0, 500) },
+      { adresse: `${'12, rue des Lilas'.repeat(29)}`.slice(0, 500) },
+      { nom: `${'Du-'.repeat(33)}Pont` },
+    ]) {
+      const debut = performance.now();
+      const masquer = creerMasqueur(patient(champs));
+      masquer('Texte libre ordinaire, 06 12 34 56 78, a.a@b.fr, 12 rue des Lilas.');
+      expect(performance.now() - debut, Object.keys(champs)[0]).toBeLessThan(500);
+    }
+  });
+
+  it('un e-mail très pointé reste masqué sous sa forme entière et ses voisins emportés', () => {
+    const masquer = creerMasqueur(patient({ email: 'a.b.c.d.e.f@g.h.i.fr' }));
+    expect(masquer('écrire à a.b.c.d.e.f@g.h.i.fr')).toBe('écrire à [masqué]');
+    expect(masquer('mél.a.b.c.d.e.f@g.h.i.fr.Tél')).not.toContain('a.b.c.d.e.f@g.h.i.fr');
+  });
 });
 
 // ── Portée : les textes libres, jamais le catalogue ──

@@ -14,6 +14,8 @@ const VERSION_IA_EXTERNE =
   "Version pseudonymisée, préparée pour être soumise à un outil d'IA externe : le nom, le prénom, " +
   'la date de naissance, les coordonnées, le numéro de sécurité sociale et le médecin traitant sont ' +
   `retirés, et leurs occurrences dans les textes libres sont remplacées par ${MARQUE_MASQUE}. ` +
+  `Un nom qui est aussi un mot courant est masqué partout (« riz ${MARQUE_MASQUE} » pour un patient ` +
+  'nommé Blanc). ' +
   "Un identifiant écrit autrement (surnom, faute de frappe, nom d'un proche) n'est pas détecté : " +
   "relisez le document avant de l'envoyer.";
 

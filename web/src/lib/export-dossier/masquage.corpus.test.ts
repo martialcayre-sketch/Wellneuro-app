@@ -22,6 +22,9 @@
 //   (« 06 . . 12 ») ;
 // - une adresse citée dans un autre ordre que celui du dossier (« Lyon 69001 »
 //   pour « 69001 Lyon »), ou sans code postal avec une ville en plusieurs mots.
+// Et, dans l'autre sens, un SUR-masquage voulu : un nom qui est aussi un mot
+// (Pain, Blanc, Marche, Petit, Rose, Marie) est masqué partout, « riz
+// [masqué] » compris — le préambule du PDF le dit au lecteur.
 //
 // Identités de fixture : Sophie Nicola, Jennifer Martin, Dr Michel Dogné ; noms
 // d'emprunt manifestement fictifs pour les graphies étrangères et les noms qui
@@ -109,6 +112,8 @@ const FUITES: Fuite[] = [
   { origine: '1re #3', dossier: { dateNaissance: '1980-03-12' }, texte: 'née le 12 03 1980', identite: ['12031980'] },
   { origine: '1re #3', dossier: { dateNaissance: '1980-03-12' }, texte: 'née le 12 / 03 / 1980', identite: ['12031980'] },
   { origine: '1re #3', dossier: { dateNaissance: '1980-03-12' }, texte: 'née le 12-mars-1980', identite: ['12mars1980'] },
+  // Revue finale : l'abréviation « mar » du mois.
+  { origine: 'finale', texte: 'née le 14 mar 1985, le 14 mar. 85', identite: ['14mar1985', '14mar85'] },
 
   // 1re passe, constat 4, et 2e passe, N4 : adresses.
   { origine: '1re #4', texte: 'j’habite au 12 rue des Lilas', identite: ['lilas'] },

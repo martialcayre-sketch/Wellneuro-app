@@ -250,10 +250,19 @@ const LETTRES_MIN_JETON = 3;
 const CHIFFRES_MIN_SUITE_FUSIONNEE = 18;
 // La plus longue écriture d'un numéro français : « 0033 » + 9 chiffres.
 const CHIFFRES_MAX_NUMERO_FRANCAIS = 13;
+// Au-delà, un reste de chiffres n'est ni un numéro (15 chiffres au plus en
+// E.164, plus « 00 ») ni un NIR : ce n'est pas un identifiant, et le chercher
+// chiffre à chiffre fait déborder la compilation de l'expression.
+const CHIFFRES_MAX_RESTE = 20;
+// Un e-mail cité a pu emporter un ou deux voisins de chaque côté : la forme
+// entière et ses deux variantes les plus longues suffisent. Sans borne, le
+// produit des variantes d'un e-mail très pointé compilait des milliers
+// d'alternatives, et le serveur restait bloqué des minutes.
+const FORMES_EMAIL_PAR_COTE = 3;
 
 // Le mois en toutes lettres, et ses abréviations d'usage.
 const MOIS = [
-  ['janvier', 'janv'], ['février', 'févr', 'fév'], ['mars'], ['avril', 'avr'], ['mai'], ['juin'],
+  ['janvier', 'janv'], ['février', 'févr', 'fév'], ['mars', 'mar'], ['avril', 'avr'], ['mai'], ['juin'],
   ['juillet', 'juil'], ['août'], ['septembre', 'sept'], ['octobre', 'oct'], ['novembre', 'nov'],
   ['décembre', 'déc'],
 ];
@@ -300,18 +309,23 @@ const PONCTUATION_FINALE = /[.,;:!?»)'’\-]+$/u;
 /**
  * Un e-mail extrait d'un texte a pu emporter ses voisins (« mél.x@y.fr »,
  * « x@y.fr.Tél ») : chaque fin de la partie locale après un « . », et chaque
- * début du domaine arrêté à un « . » ou à un « - », qui garde un « . ».
+ * début du domaine arrêté à un « . » ou à un « - », qui garde un « . » — les
+ * plus longues seulement (`FORMES_EMAIL_PAR_COTE`).
  */
 function formesEmail(texte: string): string[] {
   const arobase = texte.lastIndexOf('@');
   if (arobase < 0) return [texte];
   const locale = texte.slice(0, arobase);
   const domaine = texte.slice(arobase + 1);
-  const locales = [locale, ...Array.from(locale.matchAll(/\./g), m => locale.slice(m.index + 1))].filter(Boolean);
+  const locales = [locale, ...Array.from(locale.matchAll(/\./g), m => locale.slice(m.index + 1))]
+    .filter(Boolean)
+    .slice(0, FORMES_EMAIL_PAR_COTE);
   const domaines = [
     domaine,
-    ...Array.from(domaine.matchAll(/[.\-]/g), m => domaine.slice(0, m.index)).filter(d => d.includes('.')),
-  ];
+    ...Array.from(domaine.matchAll(/[.\-]/g), m => domaine.slice(0, m.index))
+      .filter(d => d.includes('.'))
+      .reverse(),
+  ].slice(0, FORMES_EMAIL_PAR_COTE);
   return locales.flatMap(l => domaines.map(d => `${l}@${d}`));
 }
 
@@ -421,7 +435,7 @@ function motifsTelephone(valeur: string | null): Motif[] {
     const { nationaux, restes } = numerosDansSerie(serie.match(/\d+/g) ?? []);
     motifs.push(...nationaux.map(motifNumeroNational));
     for (const chiffres of restes) {
-      if (chiffres.length < CHIFFRES_MIN_TELEPHONE) continue;
+      if (chiffres.length < CHIFFRES_MIN_TELEPHONE || chiffres.length > CHIFFRES_MAX_RESTE) continue;
       motifs.push({ source: `(?:\\+\\s*)?${motifChiffres(chiffres)}`, poids: chiffres.length, frontiere: 'nombre' });
     }
   }

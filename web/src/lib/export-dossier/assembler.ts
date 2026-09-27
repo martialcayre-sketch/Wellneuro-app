@@ -188,11 +188,12 @@ async function lirePassations(
 type LigneAssignation = { idAssignation: string; idQuestionnaire: string };
 
 // Le MESSAGE seul, comme la route de l'agenda : jamais l'objet d'erreur, qui
-// peut porter la ligne lue.
+// peut porter la ligne lue. Un rejet qui n'est pas une Error n'est pas
+// converti : il pourrait être la ligne elle-même, ou lever à la conversion.
 function journaliserRecueilIllisible(idQuestionnaire: string, err: unknown): void {
   console.error(
     `[export-dossier] recueil ${idQuestionnaire} illisible :`,
-    err instanceof Error ? err.message : String(err),
+    err instanceof Error ? err.message : 'erreur non standard',
   );
 }
 

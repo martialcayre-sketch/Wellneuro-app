@@ -62,8 +62,19 @@ confirmer, questions pour la consultation).
 - Corpus du masqueur : rejoué contre le masqueur d'avant la seconde passe, il
   donne 81 échecs sur 153. Il discrimine.
 - `node --test scripts/specs-drapeau-ali01.test.mjs` vert, `tsc` vert.
-- T1 vert. T2 vert : 625 fichiers Vitest (10 770 tests), build, 217 E2E
+- T1 vert. T2 vert : 625 fichiers Vitest (10 776 tests), build, 217 E2E
   Chromium et WebKit, dont `export-dossier.spec.ts`.
+- Contre-revue finale (`wn-reviewer`), six affirmations à réfuter par script :
+  un P1 corrigé, l'e-mail très pointé dont les variantes compilaient des
+  milliers d'alternatives (serveur bloqué jusqu'à 2 min, plus de 10 min par
+  les coordonnées du médecin). Quatre P2 corrigés : reste de chiffres non
+  borné, abréviation « mar », rejet non-`Error` journalisé tel quel,
+  sur-masquage des noms-mots non écrit. Un banc chronomètre désormais la
+  construction sur des champs extrêmes.
+- Copilot, un constat corrigé : un élément de score persisté `null` faisait
+  tomber l'export (même défaut sur les sous-scores).
+- Baselines visuelles Linux régénérées par `visual-baselines` et relues
+  image par image : seul le bouton neuf change.
 
 ## 6. Problèmes ouverts
 

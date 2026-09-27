@@ -719,6 +719,17 @@ describe('assemblerDossierExport — lectures des agendas et du cabinet', () => 
     expect(espionErreur.mock.calls.flat().every(argument => typeof argument === 'string')).toBe(true);
   });
 
+  it('rejet qui n’est pas une Error (chaîne, objet sans prototype) : rien de son contenu journalisé, export maintenu', async () => {
+    prisma.agendaSommeilNuit.findMany.mockRejectedValue('texte Sophie Nicola 06 12 34 56 78');
+    prisma.agendaAlimentaireJour.findMany.mockRejectedValue(Object.create(null));
+    const doc = await assemblerOuEchouer('complete');
+    expect(lignesEnvoi(doc, 'Q_SOM_09')).toContain(SOM_INCONNU);
+    expect(lignesEnvoi(doc, 'Q_ALI_09')).toEqual([ALI_INCONNU]);
+    const journal = espionErreur.mock.calls.map(appel => appel.join(' '));
+    expect(journal.length).toBeGreaterThan(0);
+    for (const ligne of journal) expect(ligne).toMatch(/illisible : erreur non standard$/);
+  });
+
   it('agenda en cours : le document ne le dit jamais « sans réponse »', async () => {
     const doc = await assemblerOuEchouer('complete');
     const joint = textes(doc).join('\n');

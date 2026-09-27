@@ -50,7 +50,7 @@ describe('sectionPerimetre', () => {
       {
         type: 'paragraphe',
         texte:
-          "Version pseudonymisée, préparée pour être soumise à un outil d'IA externe : le nom, le prénom, la date de naissance, les coordonnées, le numéro de sécurité sociale et le médecin traitant sont retirés, et leurs occurrences dans les textes libres sont remplacées par [masqué]. Un identifiant écrit autrement (surnom, faute de frappe, nom d'un proche) n'est pas détecté : relisez le document avant de l'envoyer.",
+          "Version pseudonymisée, préparée pour être soumise à un outil d'IA externe : le nom, le prénom, la date de naissance, les coordonnées, le numéro de sécurité sociale et le médecin traitant sont retirés, et leurs occurrences dans les textes libres sont remplacées par [masqué]. Un nom qui est aussi un mot courant est masqué partout (« riz [masqué] » pour un patient nommé Blanc). Un identifiant écrit autrement (surnom, faute de frappe, nom d'un proche) n'est pas détecté : relisez le document avant de l'envoyer.",
         ton: 'alerte',
       },
       ...COMMUNS_APRES,

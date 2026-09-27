@@ -65,7 +65,9 @@
   chercher effacerait « le petit-déjeuner » ou « 1500 mg » : un nom stocké
   soudé cité découpé (« Le Petit » pour « Lepetit ») ; une date de naissance
   compacte sur six chiffres ; un prénom et un nom soudés ; des initiales ; une
-  adresse citée dans un autre ordre que celui du dossier.
+  adresse citée dans un autre ordre que celui du dossier. En sens inverse, un
+  nom qui est aussi un mot courant (Blanc, Pain, Marie) est masqué partout,
+  « riz [masqué] » compris : le préambule le dit au lecteur.
 - Nom de fichier et métadonnées PDF ne portent jamais le nom du patient, dans
   aucune des deux versions.
 
