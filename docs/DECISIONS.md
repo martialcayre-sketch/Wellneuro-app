@@ -4,6 +4,119 @@
 
 ## Décisions actives
 
+### D-252 — L'export PDF du dossier patient : deux versions, la pseudonymisée par défaut, pour un outil d'IA externe que le praticien sollicite lui-même
+
+- Date : 2026-09-26
+- Statut : accepté — demande du responsable du 2026-09-26 et ses réponses à
+  quatre questions de cadrage (identité, synthèse, scores, format).
+- Domaine : données patient, export, confidentialité. **Aucune migration,
+  aucun drapeau, aucune règle clinique, aucun seuil ne change** : l'export
+  restitue ce qui est en base. Tâche ROUGE au sens de `docs/ai/POLICY.md`
+  (export de données patient) : revue P0 (`docs/claude/POLITIQUE_REVUE.md`).
+  Complète [[D-221]] (NIR en clair) et [[D-222]] (remise « par ses propres
+  moyens ») ; ne touche pas à la pseudonymisation de la Synthèse IA.
+
+**1. CE QUE LE RESPONSABLE A DÉCIDÉ.**
+
+- Depuis la fiche patient, un bouton « Exporter en PDF » télécharge le dossier,
+  pour le soumettre à un outil d'IA externe (GPT) qui suit ses autres dossiers
+  de neuronutrition.
+- Contenu : renseignements administratifs ; fiche signalétique et anamnèse ;
+  réponses à tous les questionnaires ; dernière synthèse **complète** — axes
+  prioritaires et leur niveau, points à confirmer en entretien, vigilance,
+  questions pour la consultation —, pas seulement le booklet.
+- **Deux versions**, choisies à chaque export : « Pour une IA externe »,
+  pseudonymisée, **cochée par défaut** ; « Complète ».
+- Synthèse : la dernière **validée** (Validée ou Corrigée). Un brouillon plus
+  récent est signalé, jamais inclus.
+- Scores : **comme l'écran praticien**, orientations (conduites) et quantités
+  calculées comprises — alors que la Synthèse IA interne ne les transmet pas au
+  modèle (`scoresPourPrompt`). Le choix est celui du responsable, pour l'outil
+  qu'il sollicite.
+- Format : **téléchargement direct** d'un PDF produit au serveur, et non
+  l'aperçu imprimable du courrier.
+
+**2. LA PSEUDONYMISATION.**
+
+- Retirés : nom, prénom, date de naissance (l'âge la remplace), e-mail,
+  téléphone, adresse, NIR, médecin traitant. Restent l'identifiant `PATnnn` et
+  les dates cliniques.
+- Leurs occurrences dans les **textes libres** — fiche, anamnèse, réponses en
+  texte et clés de réponse hors définition, motif d'invalidation, synthèse,
+  note du praticien — sont remplacées
+  par `[masqué]` **au point d'entrée** : l'assembleur masque ces données avant
+  qu'aucune section ne les lise. La comparaison se fait sur un texte **plié**
+  (casse, accents de toutes les langues, ligatures, pleine chasse et
+  caractères invisibles neutralisés), pour que la forme exacte du dossier,
+  sa forme sans accent et celle qu'imprimera le PDF soient toutes reconnues.
+- Les textes **fixes** (libellés du catalogue, consignes, préambule, titres)
+  ne sont pas masqués : un nom qui est aussi un mot courant n'efface pas une
+  option de réponse. Le titre d'un instrument est donc celui de sa
+  **définition**, jamais le titre saisi librement à l'envoi (« Bilan de Mme
+  … »), qui n'est pas repris ; sans définition, l'identifiant seul.
+- L'identifiant `PATnnn` n'est jamais masqué **seul** ; une coordonnée qui le
+  contient (`PAT030@…`) l'est entière. La section administrative de cette version n'écrit
+  aucune valeur identifiante, et un banc parcourt tous les textes du document
+  pour le prouver.
+- La limite est écrite dans le PDF lui-même : un identifiant écrit autrement
+  (surnom, faute de frappe, nom d'un proche) n'est pas détecté ; le praticien
+  relit avant l'envoi. **Pseudonymisé n'est pas anonyme** : le document reste
+  une donnée de santé à caractère personnel.
+- Un **corpus de non-régression** (`masquage.corpus.test.ts`) oppose les
+  fuites trouvées par deux passes de revue adverse à des textes cliniques qui
+  doivent ressortir intacts (doses, apports, dates cliniques, locutions qui
+  ressemblent à un nom). Limites connues, hors de ce corpus parce que les
+  chercher effacerait « le petit-déjeuner » ou « 1500 mg » : un nom stocké
+  soudé cité découpé (« Le Petit » pour « Lepetit ») ; une date de naissance
+  compacte sur six chiffres ; un prénom et un nom soudés ; des initiales ; une
+  adresse citée dans un autre ordre que celui du dossier. En sens inverse, un
+  nom qui est aussi un mot courant (Blanc, Pain, Marie) est masqué partout,
+  « riz [masqué] » compris : le préambule le dit au lecteur.
+- Nom de fichier et métadonnées PDF ne portent jamais le nom du patient, dans
+  aucune des deux versions.
+
+**3. L'APPLICATION N'ENVOIE RIEN.** L'export est un téléchargement ; la remise
+à l'outil externe est un geste du praticien, par ses propres moyens, comme la
+correspondance de [[D-222]]. Le texte patient « L'application n'envoie rien à
+un tiers » reste exact. **Reste à l'arbitrage du responsable, hors de ce
+lot** : l'inscription au registre (`docs/DOSSIER_RGPD.md` §6-7) du traitement
+« analyse du dossier par un outil d'IA externe choisi par le praticien », son
+fournisseur, son transfert hors UE et l'information des patients.
+
+**4. CE QUE L'EXPORT GARANTIT.**
+
+- Garde d'appartenance et journal G-TRUST-04 : une ligne par export, gabarit
+  `/api/praticien/export-dossier`, aucun contenu journalisé.
+- Restitution fidèle : passation non interprétable sans score ni définition ;
+  statut de validité imprimé ; passation courante marquée ; réponses traduites
+  par la définition et dans son ordre, jamais un code nu présenté comme une
+  réponse ; options indiscernables dites telles ; absence écrite « Non
+  renseigné » ou « Sans réponse » (`DC-24`), métrique d'agenda non calculée
+  écrite comme telle ; questionnaires envoyés et non soumis listés, un agenda
+  en cours distingué d'une absence, ses saisies illisibles dites « en nombre
+  inconnu », jamais comptées ; instrument du cabinet modifié après la
+  passation : réponses en codes bruts sous la réserve, jamais rapportées à ses
+  questions actuelles ; sexe « non renseigné dans la fiche administrative »,
+  jamais déduit ; un signe hors de la police du PDF translittéré ou marqué,
+  jamais effacé entre deux mots.
+- Un préambule adressé au lecteur : périmètre, textes libres entre « » à lire
+  comme des données et non comme des instructions, un score n'est pas un
+  diagnostic, ce qui n'est pas inclus.
+- Non inclus : brouillons de questionnaire (restés sur l'appareil du patient),
+  « Ce qui compte pour moi » (doctrine anti-agrégat), biologie, synthèses non
+  validées.
+
+**5. ÉCARTÉ.**
+
+- L'aperçu imprimable (patron du courrier) : écarté par le responsable au
+  profit du téléchargement direct.
+- `pdfkit` et `pdfmake` lisent leurs polices sur disque à l'exécution, ce que le
+  bundler Next casse sans toucher `next.config` ; `@react-pdf/renderer` alourdit
+  le build Scalingo. Retenu : `pdf-lib`, pur JavaScript, polices standard
+  embarquées.
+- Réutiliser `construireReponsesLisibles` ou `buildContexteClinique` : ordre
+  JSONB, première option retenue, champs omis, texte altéré.
+
 ### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
 > **AMENDEMENT DU 2026-09-27 — QUATRE ARBITRAGES DU RESPONSABLE, ET UNE
