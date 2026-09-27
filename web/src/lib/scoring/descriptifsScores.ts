@@ -36,7 +36,11 @@ export function descriptifsDeScores(scores: Record<string, unknown> | null): Axe
   for (const cle of PORTEURS) {
     const axes = scores?.[cle];
     if (!Array.isArray(axes)) continue;
-    for (const axe of axes as Array<Record<string, unknown>>) {
+    for (const element of axes as unknown[]) {
+      // JSON persisté : un élément qui n'est pas un objet ne porte rien de
+      // lisible, et le lire ferait tomber l'écran comme l'export entier.
+      if (typeof element !== 'object' || element === null || Array.isArray(element)) continue;
+      const axe = element as Record<string, unknown>;
       const valeur = [axe.total, axe.val, axe.count, axe.score]
         .find(v => typeof v === 'number') as number | undefined;
       const max = [axe.max, axe.maxTotal].find(v => typeof v === 'number') as number | undefined;

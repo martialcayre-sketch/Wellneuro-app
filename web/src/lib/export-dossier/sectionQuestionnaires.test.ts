@@ -510,3 +510,23 @@ describe('sectionQuestionnaires — pseudo-titres gardés avec leur suite', () =
     ]);
   });
 });
+
+describe('sectionQuestionnaires — scores persistés malformés', () => {
+  it('un sous-score ou un axe qui n’est pas un objet est ignoré, l’export ne tombe pas', () => {
+    const blocs = sectionQuestionnaires(
+      [
+        passation({
+          scores: {
+            subScores: [null, 7, { id: 'FA', label: 'Fatigue', total: 3, max: 10 }],
+            dimensions: [null, { id: 'D1', label: 'Dimension', total: 2, max: 4 }],
+            rawAnswers: { H1: 1 },
+          },
+        }),
+      ],
+      [],
+    );
+    const listes = blocs.flatMap(b => (b.type === 'liste' ? b.elements : []));
+    expect(listes).toContain('Fatigue : 3/10');
+    expect(listes).toContain('Dimension : 2/4');
+  });
+});

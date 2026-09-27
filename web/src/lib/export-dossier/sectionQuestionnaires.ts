@@ -108,7 +108,13 @@ function qualite(p: PassationExport): string {
 function blocsScores(p: PassationExport): BlocExport[] {
   const scores = p.scores;
   const blocs: BlocExport[] = [];
-  const subScores = Array.isArray(scores?.subScores) ? (scores.subScores as ScoreSubScore[]) : [];
+  // JSON persisté : un élément qui n'est pas un objet ne porte rien de lisible,
+  // et le lire ferait tomber l'export entier.
+  const subScores = Array.isArray(scores?.subScores)
+    ? (scores.subScores as unknown[]).filter(
+        (sub): sub is ScoreSubScore => typeof sub === 'object' && sub !== null && !Array.isArray(sub),
+      )
+    : [];
 
   if (subScores.length > 0) {
     blocs.push(pseudoTitre('Sous-scores :'));

@@ -66,6 +66,14 @@ describe('descriptifsDeScores', () => {
     expect(axes[0].label).toBe('D');
     expect(descriptifsDeScores(null)).toEqual([]);
   });
+
+  it('un élément persisté qui n’est pas un objet est ignoré, sans faire tomber la lecture', () => {
+    const axes = descriptifsDeScores({
+      dimensions: [null, 3, 'x', [1], { id: 'D', label: 'Dimension', total: 2, max: 4 }],
+      components: [undefined],
+    });
+    expect(axes).toEqual([{ cle: 'dimensions', id: 'dimensions:D', label: 'Dimension', texte: '2/4' }]);
+  });
 });
 
 describe('syntheseSansRedondanceSousScores', () => {
