@@ -592,6 +592,20 @@ describe('creerMasqueur — garanties', () => {
     }
   });
 
+  // Contre-audit Codex (passe de correction) : le filtrage des plages tenues
+  // dans l'identifiant était en O(plages × occurrences) — 640 000 caractères
+  // bloquaient le serveur 16 s. À cette taille, 80 000 ne le voyaient pas.
+  it('reste linéaire sur un texte qui répète l’identifiant : 640 000 caractères en moins de 1,5 s', () => {
+    const N = 640_000;
+    const remplir = (motif: string) => motif.repeat(Math.ceil(N / motif.length)).slice(0, N);
+    for (const motif of ['PAT030 Sophie ', 'PAT030 ', 'SophiePAT030', 'PAT030@example.test ']) {
+      const texte = remplir(motif);
+      const debut = performance.now();
+      masquer(texte);
+      expect(performance.now() - debut, motif).toBeLessThan(1500);
+    }
+  });
+
   // Revue finale de #1237 : l'expression se compile au premier appel, de façon
   // synchrone — un dossier aux champs extrêmes, mais admis par les routes,
   // bloquait tout le serveur (e-mail très pointé : 2 min ; coordonnées de 500

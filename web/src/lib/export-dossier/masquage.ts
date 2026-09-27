@@ -674,11 +674,30 @@ export function creerMasqueur(patient: PatientExport): Masqueur {
       if (depart > debut) trouvees.push(...plagesDe(texte.slice(debut, depart), debut));
       debut = arrivee;
     }
-    return remplacer(
-      texte,
-      trouvees.filter(([depart, arrivee]) => !proteges.some(([debutId, finId]) => depart >= debutId && arrivee <= finId)),
-    );
+    return remplacer(texte, horsOccurrences(trouvees, proteges));
   };
+}
+
+/**
+ * Les plages qui ne tiennent pas DANS une occurrence de l'identifiant, en un
+ * seul balayage : les occurrences sont triées et disjointes, donc la seule qui
+ * puisse contenir une plage est la dernière qui commence avant elle. Un
+ * `some()` par plage était quadratique — un texte de 640 000 caractères qui
+ * répète l'identifiant bloquait le serveur 16 s (contre-audit Codex).
+ */
+function horsOccurrences(
+  trouvees: Array<[number, number]>,
+  occurrences: Array<[number, number]>,
+): Array<[number, number]> {
+  trouvees.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
+  const gardees: Array<[number, number]> = [];
+  let rang = 0;
+  for (const plage of trouvees) {
+    while (rang + 1 < occurrences.length && occurrences[rang + 1][0] <= plage[0]) rang++;
+    const [debutId, finId] = occurrences[rang];
+    if (plage[0] < debutId || plage[1] > finId) gardees.push(plage);
+  }
+  return gardees;
 }
 
 // ── Les textes libres, masqués au point d'entrée ───────────────────────────

@@ -81,6 +81,13 @@ confirmer, questions pour la consultation).
     maintenant le titre de la définition, et le titre saisi n'est plus lu.
   - Les fixtures portent l'identité dans les titres saisis, et le balayage du
     document entier le prouve.
+- Contre-audit Codex, passe de correction :
+  - P0-1 et P0-2 sont confirmés corrigés.
+  - Un P0 neuf est corrigé : le filtrage des plages protégées était
+    quadratique ; 640 000 caractères qui répètent `PAT030` bloquaient le
+    serveur 16 s. Il passe désormais par un balayage des deux listes triées.
+  - Un banc à 640 000 caractères a été ajouté. Il rougit contre l'ancien
+    filtre (mutation jouée, 7,8 s) et passe en 0,6 s.
 - Baselines visuelles Linux régénérées par `visual-baselines` et relues
   image par image : seul le bouton neuf change.
 
