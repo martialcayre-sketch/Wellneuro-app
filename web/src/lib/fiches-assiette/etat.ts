@@ -13,6 +13,14 @@
 // jeton de concurrence. `NextResponse.json` refuserait un BigInt brut.
 
 export const ACTES_FICHE = ['validee', 'retiree'] as const;
+
+/**
+ * CHIFFRE TECHNIQUE, PAS UN SEUIL (`DC-20`) : la longueur d'un motif de
+ * retrait, contre un dépôt démesuré. Un motif tient en quelques phrases. Il vit
+ * ici, module pur, pour que l'écran borne sa saisie à la même valeur que la
+ * décision sans importer Prisma.
+ */
+export const MOTIF_MAX = 2_000;
 export type ActeFiche = (typeof ACTES_FICHE)[number];
 
 export function estActeFiche(valeur: string): valeur is ActeFiche {

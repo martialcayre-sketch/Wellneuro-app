@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { QuestionField } from '@/components/patient/QuestionField';
+import { RayonFichesConseilsPanel } from '@/components/fiches-assiette/RayonFichesConseilsPanel';
 import { ECHELLES_NOMMEES, interditTouteBande, type EchelleNommee } from '@/lib/echelles-cabinet';
 import {
   LIBELLE_INSTRUMENT_CABINET,
@@ -348,7 +349,7 @@ export function BibliothequePanel({
         >
           Analyses biologiques
         </BoutonRayon>
-        <BoutonRayon actif={rayon === 'conseils'} onClick={() => setRayon('conseils')} aVenir>
+        <BoutonRayon actif={rayon === 'conseils'} onClick={() => setRayon('conseils')}>
           Fiches conseils
         </BoutonRayon>
       </div>
@@ -376,13 +377,7 @@ export function BibliothequePanel({
             une décision dédiée.
           </BanniereDiffere>
         ))}
-      {rayon === 'conseils' && (
-        <BanniereDiffere>
-          Le rayon Fiches conseils reprendra la bibliothèque d&apos;interventions — compléments,
-          boussole alimentaire et fiches conseils — avec le branchement du corpus. Provenance,
-          statut et compatibilité avec le protocole actif resteront explicites.
-        </BanniereDiffere>
-      )}
+      {rayon === 'conseils' && <RayonFichesConseilsPanel />}
 
       {rayon === 'questionnaires' && (
         <>

@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 // La Bibliothèque est le thème général, organisée en rayons (arbitrage
 // utilisateur du 2026-07-23) : Questionnaires (livré ici), Analyses
 // biologiques (rayon CB-08, livré derrière WN_CB_ENABLED), Fiches conseils
-// (reprend la bibliothèque d'interventions, à venir). Le catalogue vit en
+// (relecture et validation des fiches d'assiette, D-251 lot 6). Le catalogue vit en
 // code : il est calculé côté serveur et passé au panneau client, qui ne
 // recharge que le vivant (patients, file d'envoi, aperçus).
 //
