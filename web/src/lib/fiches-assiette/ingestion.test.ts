@@ -225,7 +225,9 @@ describe('deposerBrouillonFiche — contrôler, puis déposer un BROUILLON (D-25
   // rendre un texte : ce banc rougit le jour où l'un bouge sans l'autre.
   it('ses prédicats sont ceux de claimsValidesAuCorpus, mot pour mot', () => {
     const lire = (relatif: string) => readFileSync(path.join(process.cwd(), 'src', relatif), 'utf8');
-    expect(predicats(lire('lib/fiches-assiette/ingestion.ts'))).toBe(
+    // Depuis le lot 6, la lecture vit dans le module neutre partagé avec la
+    // décision du responsable.
+    expect(predicats(lire('lib/fiches-assiette/claimsCites.ts'))).toBe(
       predicats(lire('lib/rag/claims/validite.ts')),
     );
   });
