@@ -1,7 +1,9 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 391 notices normalisées issues du pack WN
-Ultimate v2. Il s'agit d'un inventaire documentaire, pas d'un corpus runtime.
+`source_registry.json` contient 507 notices normalisées : 391 issues du pack WN
+Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), et 116 instruments du cabinet
+(`INSTRUMENTS_CABINET`). Il s'agit d'un inventaire documentaire, pas d'un
+corpus runtime.
 
 ## Politique de publication
 

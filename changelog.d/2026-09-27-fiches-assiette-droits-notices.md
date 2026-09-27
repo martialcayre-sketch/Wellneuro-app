@@ -10,6 +10,9 @@
   (`WN-SRC-0297`, `0299`, `0300`, `0301`, `0302`, `0303`, `0305`). C'est la
   bascule notice par notice que prévoit `D-251` §2, au lot où la version adaptée
   est ingérée. Ce sont les premières des 507 notices du registre à basculer.
-  `clinicalReviewStatus` reste `not_reviewed`. Aucun code ne lit ce champ.
+  `clinicalReviewStatus` reste `not_reviewed`. Ce champ n'a aucun usage
+  clinique ni produit. Son seul lecteur, `wn-context-pack.mjs`, signale G0 en
+  attente tant qu'une notice reste `to_verify` ; sa sortie ne change pas.
 - Le README du corpus disait « toutes les notices restent `to_verify` ». Il nomme
-  désormais les sept exceptions.
+  désormais les sept exceptions. Son en-tête annonçait 391 notices ; le
+  registre en compte 507, dont les 116 instruments du cabinet.

@@ -40,10 +40,11 @@ la version adaptée est ingérée.
 - **Le diff du registre** compte exactement sept lignes, toutes
   `to_verify → verified`, toutes sur les sept `sourceId` visés. Le script de
   bascule refusait d'écrire autrement.
-- **Aucun lecteur du registre ne réagit à `rightsStatus`** : outils du corpus,
-  vérificateurs de registres, routes, gardes (recherche dans le dépôt).
-  `wn-context-pack.mjs` signale G0 en attente tant qu'une notice est
-  `to_verify` : c'est toujours le cas pour 500 d'entre elles.
+- **Un seul lecteur de `rightsStatus` dans le dépôt : `wn-context-pack.mjs`**
+  (recherche dans le dépôt). Il signale G0 en attente tant qu'une notice reste
+  `to_verify`, et c'est toujours le cas pour 500 d'entre elles : sa sortie ne
+  change pas. Aucun usage clinique ni produit ; les outils du corpus, les
+  vérificateurs de registres, les routes et les gardes ne lisent pas ce champ.
 - **Le dépôt des sept fiches est constaté en production par conteneur**, en
   lecture seule : 7 versions v1, 0 acte.
 - T1 : voir la PR.
