@@ -8,8 +8,11 @@ Ultimate v2. Il s'agit d'un inventaire documentaire, pas d'un corpus runtime.
 - Les `sourceId` sont les seules références de localisation versionnées.
 - URL, chemins, identifiants Drive et liens de doublons Drive restent dans un
   registre externe à accès restreint.
-- Toutes les notices restent `rightsStatus: to_verify` et
-  `clinicalReviewStatus: not_reviewed`.
+- Toutes les notices restent `clinicalReviewStatus: not_reviewed`. Elles
+  restent aussi `rightsStatus: to_verify`, sauf celles dont la source a été
+  ingérée. Au 2026-09-27, sept notices sont `verified` : les Fiches MY dont la
+  version adaptée est déposée (`WN-SRC-0297`, `0299`, `0300`, `0301`, `0302`,
+  `0303`, `0305` ; `D-251` §2).
 - `contentHash` reste nul tant que le contenu probant n'a pas été obtenu,
   vérifié et autorisé.
 - Aucune notice ne peut alimenter un prompt, un RAG, une règle, un document

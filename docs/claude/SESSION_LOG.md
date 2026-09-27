@@ -8089,3 +8089,18 @@ ou l'autre correctif.
 
 **Prochaine action.** Produire et déposer les sept fiches choisissables, puis
 le lot 7 (M2).
+
+## 2026-09-27 — Fiches d'assiette : sept fiches déposées, droits des notices
+
+**Livré.** Les sept fiches choisissables sont déposées en production, en
+brouillon « à valider ». Constat par conteneur : 7 versions v1, 0 acte. Leurs
+notices passent `rightsStatus: verified` (`D-251` §2). Ce sont les premières des
+507 à basculer ; `clinicalReviewStatus` reste `not_reviewed`. Le secret de
+production a été injecté à l'exécution seulement : celui de `.env.local`
+diffère.
+
+#1240 (débordement mobile) est mergé. La mesure de son banc attend désormais la
+liste des packs (revue de Copilot).
+
+**Prochaine action.** Relecture et validation des sept fiches par le praticien,
+puis le lot 7 (M2).
