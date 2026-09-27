@@ -6,6 +6,52 @@
 
 ### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
+> **AMENDEMENT DU 2026-09-27 — QUATRE ARBITRAGES DU RESPONSABLE, ET UNE
+> JUSTIFICATION CORRIGÉE.** Rendus en session le 2026-09-27, après la livraison
+> des lots 6a (#1236) et 6b (#1238), sur les questions que ces lots laissaient
+> ouvertes.
+>
+> 1. **L'acte est posé par tout praticien connecté** (§5). Le validateur est
+>    l'e-mail de la session ; aucun rôle « responsable » n'est créé. Cela tient
+>    tant que le cabinet n'a qu'un praticien ; un second praticien rouvrirait
+>    la question.
+> 2. **Retirer la version de référence rend ce rôle à la précédente version
+>    validée** (§5 : « dernière version validée »). L'écran l'annonce avant la
+>    confirmation. Il dit « version de référence », et non « version servie »,
+>    parce que les contrôles sont rejoués au moment de servir (§6).
+> 3. **Au moment de la remise (lot 8), une version de référence qui ne passe
+>    plus les contrôles rejoués n'est pas remise.** Aucune version plus
+>    ancienne n'est remise à sa place. L'aperçu du §7 la range parmi les fiches
+>    qui ne partent pas, avec son motif (`DC-24`). Aucun repli silencieux.
+> 4. **Une borne d'âge qui fonde une INDICATION n'est pas une précaution**
+>    (§6). L'âge de l'assiette protéinée relève de son indication : sa ligne se
+>    déclenche notamment au-delà de 60 ans, et le claim qui porte cet âge est
+>    un claim d'indication, pas de sécurité (constat du lot 5). Il dit à qui
+>    l'assiette est proposée, et c'est le praticien qui la choisit.
+>    - Les précautions de la fiche ne viennent que des `claimsSecurite` de la
+>      ligne. Une précaution qui citerait un claim d'indication reste refusée
+>      (`precaution_hors_perimetre`).
+>    - La fiche peut parler de la population dans ses blocs, sous la provenance
+>      de ces claims.
+>    - Aucune table clinique ne change, et aucun contrôle non plus.
+>
+> **LA JUSTIFICATION DU §3 ÉTAIT INEXACTE ; LE CHOIX QU'ELLE PORTAIT RESTE
+> JUSTE.** Le §3 disait les douze fragments « amendés par un modèle à
+> l'ingestion », donc pas le verbatim. Vérifié dans l'outillage
+> (`tools/corpus/ingest/ingest.mjs`, `tools/corpus/chunk/chunk.mjs`), c'est
+> faux :
+>
+> - Le fragment en base est `canonical.md` découpé par unités de sens, sous un
+>   en-tête de métadonnées.
+> - `llm_amendment_model` est une étiquette de provenance. Elle nomme les
+>   lecteurs de l'extraction : la lecture B par Claude, retenue comme canonique,
+>   et la lecture C par GPT, en garde-fou avec la lecture A (`pdftotext`).
+>   Aucun amendement n'a lieu à l'ingestion.
+>
+> L'adaptation part bien de `canonical.md`, mais pour une autre raison : c'est
+> la couche verbatim entière, avec ses marqueurs de page, ancrée sur l'empreinte
+> du manifeste. Le fragment n'en est qu'un découpage.
+
 - Date : 2026-09-26
 - Statut : accepté — décisions du responsable du 2026-09-26, données en deux
   temps : ses cinq directives, puis ses réponses à quatre questions de cadrage.
