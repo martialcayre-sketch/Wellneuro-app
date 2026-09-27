@@ -128,6 +128,36 @@ describe('lireVersionFiche — la relecture côte à côte', () => {
     expect(reserve).toMatchObject({ reserveAttendue: true });
     expect(reserve?.texte).toMatch(/^Texte de WN-CL-/);
     expect(d?.claimsCites.find(c => c.cle === CLAIM_FICHE)).toMatchObject({ reserveAttendue: false });
+    // Les clés citées ne sont lues qu'UNE fois — par les contrôles ; la seconde
+    // lecture ne porte que les réserves non citées (constat de revue, #1236).
+    expect(queryRaw).toHaveBeenCalledTimes(2);
+    const [, idsReserves] = queryRaw.mock.calls[1] as [unknown, string[]];
+    expect(idsReserves).not.toContain('WN-CL-0300-002');
+    expect(idsReserves.length).toBe(SECURITE.length);
+  });
+
+  it('un claim cité rendu par les contrôles garde LEUR lecture : texte et anomalies ne se contredisent pas', async () => {
+    let appel = 0;
+    // La première lecture (contrôles) voit le claim VALIDE ; une seconde, s'il y
+    // en avait une, le verrait retiré.
+    queryRaw.mockImplementation(async (_g: unknown, ids: string[], versions: string[]) =>
+      appel++ === 0 ? ids.map((claim_id, i) => ({ claim_id, version_claim: versions[i], texte_normalise: 'Vu par les contrôles.' })) : [],
+    );
+    findUnique.mockResolvedValue({
+      ...version(),
+      plateCode: 'ASSIETTE_DETOXICATION',
+      sourceId: 'WN-SRC-0299',
+      contenu: { ...CONTENU, sections: [{ titre: 'S', blocs: [{ texte: 'R.', provenance: { type: 'claims', claims: ['WN-CL-0299-001::v1.0'] } }] }] },
+      contenuSha256: canonicalSha256({ ...CONTENU, sections: [{ titre: 'S', blocs: [{ texte: 'R.', provenance: { type: 'claims', claims: ['WN-CL-0299-001::v1.0'] } }] }] }),
+      texteSource: 'Source.',
+      sourceSha256: 'c'.repeat(64),
+      modeleRedaction: 'r',
+      modeleFidelite: 'f',
+      versionConsigne: 'v',
+    });
+    const d = await lireVersionFiche('v');
+    expect(d?.anomalies.map(a => a.code)).not.toContain('claim_non_valide');
+    expect(d?.claimsCites).toEqual([{ cle: 'WN-CL-0299-001::v1.0', texte: 'Vu par les contrôles.', reserveAttendue: false }]);
   });
 
   it('un claim cité qui n’est plus VALIDE s’affiche sans texte, et le contrôle le nomme', async () => {

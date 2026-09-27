@@ -167,12 +167,19 @@ export async function lireVersionFiche(idVersion: string): Promise<DetailVersion
 
   // Les textes de TOUTES les clés à relire — citées, et réserves attendues même
   // non citées : une précaution manquante se relit contre la réserve qu'elle
-  // aurait dû porter. Les contrôles, eux, ne lisent que les clés citées.
+  // aurait dû porter. Les clés citées reprennent la lecture DES CONTRÔLES —
+  // une seconde lecture pourrait contredire leurs anomalies (constat de revue,
+  // #1236) ; seules les réserves non citées sont lues à part.
   const reserves = new Set(clesSecuriteDeLAssiette(v.plateCode));
-  const cles = [...new Set([...reserves, ...(controle.contenu ? clesCiteesDuContenu(controle.contenu) : [])])].sort();
-  const textes = await claimsValidesEtLeursTextes(
-    cles.map(referenceDeCle).filter((r): r is NonNullable<typeof r> => r !== null),
+  const citees = new Set(controle.contenu ? clesCiteesDuContenu(controle.contenu) : []);
+  const cles = [...new Set([...reserves, ...citees])].sort();
+  const reservesNonCitees = await claimsValidesEtLeursTextes(
+    [...reserves]
+      .filter(cle => !citees.has(cle))
+      .map(referenceDeCle)
+      .filter((r): r is NonNullable<typeof r> => r !== null),
   );
+  const texteDe = (cle: string) => (citees.has(cle) ? controle.claimsValides.get(cle) : reservesNonCitees.get(cle));
 
   return {
     id: v.id,
@@ -192,7 +199,7 @@ export async function lireVersionFiche(idVersion: string): Promise<DetailVersion
     dernierActe: jetonDernierActe(v.actes),
     actes: v.actes.map(serialiserActe),
     autresVersions: soeurs.map(s => ({ id: s.id, numero: s.numero, etat: etatDeLaVersion(s, s.actes) })),
-    claimsCites: cles.map(cle => ({ cle, texte: textes.get(cle) ?? null, reserveAttendue: reserves.has(cle) })),
+    claimsCites: cles.map(cle => ({ cle, texte: texteDe(cle) ?? null, reserveAttendue: reserves.has(cle) })),
     anomalies: controle.anomalies,
   };
 }
