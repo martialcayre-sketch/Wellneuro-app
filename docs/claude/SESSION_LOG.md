@@ -8116,3 +8116,19 @@ liste des packs (revue de Copilot).
 
 **Prochaine action.** Relecture et validation des sept fiches par le praticien,
 puis le lot 7 (M2).
+
+## 2026-09-27 — Export PDF du dossier patient : mergé et déployé (D-252)
+
+**Livré.** #1237 mergé (`f7e7c134`), déployé sur Scalingo. Le praticien a
+validé les deux exports, IA externe et complet. Après les revues internes,
+Copilot a relevé un score malformé qui faisait tomber l'export. Codex a trouvé
+deux fuites P0 : un e-mail contenant `PATnnn`, et le titre saisi à l'envoi
+rendu comme texte fixe. Sa passe de correction a trouvé un filtrage
+quadratique. Tout est corrigé avec des bancs prouvés par mutation. Leçon en
+mémoire : remonter chaque champ rendu jusqu'à son écrivain.
+
+**Écarté.** Troisième passe Codex : aucun signal de la politique de revue.
+
+**Ouvert.** Registre RGPD (D-252 §3). Deux libellés à confirmer : « [interdit] »
+pour 🚫/⛔ ; l'échelle réservée à l'agenda du sommeil. Défauts mineurs connus :
+ł/ı collés, nombres qui reproduisent la naissance, trois défauts d'affichage.
