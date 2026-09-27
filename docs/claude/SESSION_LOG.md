@@ -8075,3 +8075,17 @@ service (`18ba1a78`).
 
 **Prochaine action.** Débordement mobile de la Bibliothèque (#1240), puis les
 sept fiches à produire et déposer.
+
+## 2026-09-27 — Bibliothèque : plus de défilement horizontal sur téléphone
+
+**Livré.** Deux causes, chacune corrigée d'une ligne :
+- la ligne « Vue catégories » du formulaire de création de pack passe à la
+  ligne (`PacksPanel`) ;
+- la grille du catalogue porte `grid-cols-1` sous `xl` (`BibliothequePanel`).
+
+Le tableau des assignations n'était pas en cause. Un nouvel E2E
+(`bibliotheque-mobile.spec.ts`) tient la page entière ; il rougit sans l'un
+ou l'autre correctif.
+
+**Prochaine action.** Produire et déposer les sept fiches choisissables, puis
+le lot 7 (M2).

@@ -23,11 +23,10 @@ import {
 const URL_ACTES = '/api/praticien/fiches-assiette/actes';
 const MOTIF = 'Retrait de banc : fiche synthétique, jamais servie.';
 
-// Aucun élément de LA ZONE ne sort de la largeur de l'écran. La zone, pas la
-// page : le rayon « Assignations et packs », rendu plus bas sur la même page,
-// déborde déjà sur iPhone (tableau et sélecteur) — défaut antérieur, hors de ce
-// lot. Sur échec, les éléments fautifs sont nommés (balise et classes, jamais
-// leur texte). Deux formes : une boîte qui sort de l'écran, ou un texte qui
+// Aucun élément de LA ZONE du rayon ne sort de la largeur de l'écran. La page
+// entière est tenue par `bibliotheque-mobile.spec.ts` ; ce banc-ci en a
+// révélé le débordement, puis a été borné à sa zone. Sur échec, les éléments
+// fautifs sont nommés (balise et classes, jamais leur texte). Deux formes : une boîte qui sort de l'écran, ou un texte qui
 // sort de sa boîte — un mot long non coupé déborde de son paragraphe sans que
 // le paragraphe bouge (mutation jouée : la première forme seule ne le voyait
 // pas).
