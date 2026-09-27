@@ -8059,3 +8059,19 @@ plutôt que « servie », contenu illisible, liste périmée).
 
 **Prochaine action.** Merge de 6b, puis l'accord de dépôt des brouillons, ou
 le lot 7. Ouvert : le débordement mobile d'`AssignationsPacksPanel` (hors lot).
+
+## 2026-09-27 — D-251 : quatre arbitrages consignés, justification du §3 corrigée
+
+**Livré.** Amendement daté de `D-251`, sans code. Quatre arbitrages :
+- l'acte est posé par tout praticien connecté ;
+- au retrait, la précédente version validée reprend le rôle de référence ;
+- à la remise, une référence qui ne passe plus les contrôles n'est pas remise,
+  sans repli ;
+- une borne d'âge d'indication n'est pas une précaution.
+
+§3 corrigé : le fragment en base est `canonical.md` découpé, et
+`llm_amendment_model` ne fait que nommer les lecteurs. Lot 6b constaté en
+service (`18ba1a78`).
+
+**Prochaine action.** Débordement mobile de la Bibliothèque (#1240), puis les
+sept fiches à produire et déposer.
