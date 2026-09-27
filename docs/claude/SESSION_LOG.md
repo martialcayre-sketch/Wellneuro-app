@@ -8055,3 +8055,19 @@ oppose fuites et fidélité clinique.
 
 **Prochaine action.** Merge, contre-audit Codex, constat du déploiement.
 Ouvert : inscription au registre RGPD (D-252 §3), captures visuelles Linux.
+## 2026-09-27 — Fiche d'assiette, lot 6b : le rayon « Fiches conseils »
+
+**Livré.** L'écran du rayon dans la Bibliothèque, sans drapeau.
+- La liste des 12 fiches, chaque état nommé.
+- La relecture côte à côte : source, adaptation, claims, réserves, anomalies,
+  provenance.
+- La déclaration de relecture intégrale, qui retombe à chaque rechargement.
+- Valider et retirer en deux temps, avec l'annonce de la version de référence.
+- Une garde d'écran et un E2E synthétique.
+
+Lot 6a constaté en service. Revue adverse : 1 P1 et 12 P2 corrigés
+(concurrence, réponse perdue, focus, coupure des mots, garde, « référence »
+plutôt que « servie », contenu illisible, liste périmée).
+
+**Prochaine action.** Merge de 6b, puis l'accord de dépôt des brouillons, ou
+le lot 7. Ouvert : le débordement mobile d'`AssignationsPacksPanel` (hors lot).
