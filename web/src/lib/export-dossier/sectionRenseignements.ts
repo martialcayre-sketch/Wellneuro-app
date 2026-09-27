@@ -29,6 +29,11 @@ function discret(texte: string): BlocExport {
   return { type: 'paragraphe', texte, ton: 'discret' };
 }
 
+/** Titre de section en ton discret : jamais seul en bas de page. */
+function intertitre(texte: string): BlocExport {
+  return { type: 'paragraphe', texte, ton: 'discret', garderAvecSuite: true };
+}
+
 function libelleStatut(consultation: ConsultationExport): string {
   switch (consultation.statut) {
     case 'creee':
@@ -105,7 +110,7 @@ function blocsFiche(fiche: Record<string, string> | null): BlocExport[] {
     return blocs;
   }
   for (const section of FICHE_SECTIONS) {
-    blocs.push(discret(section.titre));
+    blocs.push(intertitre(section.titre));
     for (const c of section.champs) {
       blocs.push(champ(c.label, rendreValeur(fiche[c.id], c)));
     }
@@ -132,7 +137,7 @@ function blocsGroupe(anamnese: AnamneseValeurs, groupe: AnamneseGroupeRepetable)
     : [];
   if (!elements.length) return [champ(groupe.label, NON_RENSEIGNE)];
   return [
-    { type: 'paragraphe', texte: `${groupe.label} :` },
+    { type: 'paragraphe', texte: `${groupe.label} :`, garderAvecSuite: true },
     { type: 'liste', elements },
   ];
 }
@@ -144,7 +149,7 @@ function blocsAnamnese(anamnese: AnamneseValeurs | null): BlocExport[] {
     return blocs;
   }
   for (const section of ANAMNESE_SECTIONS) {
-    blocs.push(discret(section.titre));
+    blocs.push(intertitre(section.titre));
     for (const c of section.champs ?? []) {
       blocs.push(champ(c.label, rendreValeur(anamnese[c.id], c)));
     }

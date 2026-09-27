@@ -41,9 +41,18 @@
 - Retirés : nom, prénom, date de naissance (l'âge la remplace), e-mail,
   téléphone, adresse, NIR, médecin traitant. Restent l'identifiant `PATnnn` et
   les dates cliniques.
-- Leurs occurrences dans les textes libres (fiche, anamnèse, note du
-  praticien…) sont remplacées par `[masqué]` **en un seul point** : sur le
-  document entier, avant le rendu — aucune section ne peut l'oublier.
+- Leurs occurrences dans les **textes libres** — fiche, anamnèse, réponses en
+  texte, motif d'invalidation, synthèse, note du praticien — sont remplacées
+  par `[masqué]` **au point d'entrée** : l'assembleur masque ces données avant
+  qu'aucune section ne les lise. La comparaison se fait sur un texte **plié**
+  (casse, accents de toutes les langues, ligatures, pleine chasse et
+  caractères invisibles neutralisés), pour que la forme exacte du dossier,
+  sa forme sans accent et celle qu'imprimera le PDF soient toutes reconnues.
+- Les textes **fixes** (libellés du catalogue, consignes, préambule, titres)
+  ne sont pas masqués : un nom qui est aussi un mot courant n'efface pas une
+  option de réponse. La section administrative de cette version n'écrit
+  aucune valeur identifiante, et un banc parcourt tous les textes du document
+  pour le prouver.
 - La limite est écrite dans le PDF lui-même : un identifiant écrit autrement
   (surnom, faute de frappe, nom d'un proche) n'est pas détecté ; le praticien
   relit avant l'envoi. **Pseudonymisé n'est pas anonyme** : le document reste
@@ -67,8 +76,11 @@ fournisseur, son transfert hors UE et l'information des patients.
   statut de validité imprimé ; passation courante marquée ; réponses traduites
   par la définition et dans son ordre, jamais un code nu présenté comme une
   réponse ; options indiscernables dites telles ; absence écrite « Non
-  renseigné » ou « Sans réponse » (`DC-24`) ; questionnaires envoyés sans
-  réponse listés ; sexe « non recueilli », jamais déduit.
+  renseigné » ou « Sans réponse » (`DC-24`), métrique d'agenda non calculée
+  écrite comme telle ; questionnaires envoyés et non soumis listés, un agenda
+  en cours distingué d'une absence ; instrument du cabinet modifié après la
+  passation signalé ; sexe « non renseigné dans la fiche administrative »,
+  jamais déduit.
 - Un préambule adressé au lecteur : périmètre, textes libres entre « » à lire
   comme des données et non comme des instructions, un score n'est pas un
   diagnostic, ce qui n'est pas inclus.

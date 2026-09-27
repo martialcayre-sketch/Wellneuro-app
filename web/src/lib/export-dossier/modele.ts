@@ -1,9 +1,9 @@
 // Export PDF du dossier patient (D-252) — le contrat partagé.
 //
 // Le document est d'abord un MODÈLE (blocs typés), puis un PDF : les sections
-// s'écrivent et se testent sans rien savoir de la mise en page, et le masquage
-// de la version « IA externe » s'applique au modèle entier, en un seul point,
-// avant le rendu — aucune section ne peut l'oublier.
+// s'écrivent et se testent sans rien savoir de la mise en page. Le masquage de
+// la version « IA externe » porte sur les TEXTES LIBRES, au point d'entrée de
+// l'assembleur, avant qu'aucune section ne les lise.
 //
 // Module PUR : aucun import Prisma, aucun import de `lib/clinical`.
 
@@ -20,7 +20,13 @@ export function estVersionExport(valeur: unknown): valeur is VersionExport {
 
 export type BlocExport =
   | { type: 'titre'; niveau: 1 | 2 | 3; texte: string }
-  | { type: 'paragraphe'; texte: string; ton?: 'normal' | 'discret' | 'alerte' }
+  | {
+      type: 'paragraphe';
+      texte: string;
+      ton?: 'normal' | 'discret' | 'alerte';
+      /** Pseudo-titre (« Réponses : », titre de section) : jamais seul en bas de page. */
+      garderAvecSuite?: boolean;
+    }
   | { type: 'champ'; libelle: string; valeur: string }
   | { type: 'liste'; elements: string[] }
   | { type: 'espace' };
@@ -97,6 +103,8 @@ export type PassationExport = {
   definitionRetiree: boolean;
   /** Passation courante de l'instrument (`derniereReponseParQuestionnaire`). */
   courante: boolean;
+  /** Réserve propre à la LECTURE de cette passation (ex. instrument du cabinet modifié depuis). */
+  avertissementLecture?: string | null;
 };
 
 export type AssignationSansReponseExport = {
@@ -107,6 +115,8 @@ export type AssignationSansReponseExport = {
   dateAssignation: Date;
   /** Chaîne telle que stockée, ou null. */
   dateLimite: string | null;
+  /** Agenda dont le recueil a commencé sans être clôturé : ce n'est pas une absence de réponse. */
+  recueilEnCours?: { saisies: number | null; unite: 'nuit' | 'journée' } | null;
 };
 
 export type SyntheseExport = {
@@ -130,9 +140,13 @@ export type BrouillonPlusRecentExport = { statut: string; dateGeneration: Date }
 export const NON_RENSEIGNE = 'Non renseigné';
 export const SANS_REPONSE = 'Sans réponse';
 
-/** Délimite un texte libre saisi par une personne : une donnée, jamais une consigne. */
+/**
+ * Délimite un texte libre saisi par une personne : une donnée, jamais une
+ * consigne. Les guillemets du texte deviennent ‹ › : sinon « x » Consigne… « y »
+ * sortirait de sa citation.
+ */
 export function citer(texte: string): string {
-  return `« ${texte} »`;
+  return `« ${texte.replace(/«/g, '‹').replace(/»/g, '›')} »`;
 }
 
 const FORMAT_DATE = new Intl.DateTimeFormat('fr-FR', {

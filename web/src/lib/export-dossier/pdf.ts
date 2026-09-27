@@ -33,15 +33,43 @@ const REMPLACEMENTS: ReadonlyMap<string, string> = new Map([
   ['\u00AD', ''],
   ['≥', '>='],
   ['≤', '<='],
+  ['⩾', '>='],
+  ['⩽', '<='],
   ['≠', '!='],
   ['≈', '~'],
+  // Barre de fraction : NFKD écrit ⅓ « 1⁄3 ».
+  ['\u2044', '/'],
+  ['\u2215', '/'],
+  // ↔ est un pictogramme : sans cette ligne, « 1↔4 » deviendrait « 14 ».
+  ['↔', '<->'],
+  ['⇔', '<=>'],
   ['→', '->'],
   ['←', '<-'],
+  ['➡', '->'],
+  ['⬅', '<-'],
   ['⇒', '=>'],
   ['↑', '^'],
   ['↓', 'v'],
   ['✓', 'oui'],
   ['✔', 'oui'],
+  ['☐', '[ ]'],
+  ['☑', '[x]'],
+  ['☒', '[x]'],
+  ['✖', 'x'],
+  ['✗', 'x'],
+  ['✘', 'x'],
+  // Leurs équivalents en présentation emoji (clavier de téléphone) portent le
+  // même sens : effacés, « 3➕4 » deviendrait « 34 » et « lactose 🚫 » « lactose ».
+  ['➕', '+'],
+  ['➖', '-'],
+  ['➗', '/'],
+  ['✅', '[x]'],
+  ['❌', 'x'],
+  ['❎', 'x'],
+  // Le nom du signe (panneau d'interdiction), entre crochets comme « [x] » : « [non] »
+  // se lirait comme la réponse « Non » d'un questionnaire, ce que le signe n'est pas.
+  ['🚫', '[interdit]'],
+  ['⛔', '[interdit]'],
   // Unités et marqueurs courants (µg, γGT, oméga-3) : un « ? » les rendrait illisibles.
   ['\u03BC', '\u00B5'],
   ['α', 'alpha'],
@@ -52,12 +80,46 @@ const REMPLACEMENTS: ReadonlyMap<string, string> = new Map([
 ]);
 
 const DIACRITIQUE = /\p{M}/gu;
-const A_RETIRER = /[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}\p{Cc}\p{Cf}]/u;
+const INVISIBLE = /[\p{Cc}\p{Cf}]/u;
+// Modificateur de teinte, indicateur régional (drapeau) : des morceaux d'emoji.
+const COMPOSANT_EMOJI = /[\p{Emoji_Modifier}\p{Regional_Indicator}]/u;
+const LETTRE_OU_CHIFFRE = /[\p{L}\p{N}]/u;
+// Symbole de racine, souvent une coche dans une note ressaisie (« √ fait »).
+const RACINE = '√';
+const PICTOGRAMME = /\p{Extended_Pictographic}/u;
+const EMOJI = /\p{Emoji_Presentation}/u;
+const MODIFICATEUR = /\p{Emoji_Modifier}/u;
+
+// Une suite d'exposants se convertit d'un bloc : « 10¹⁰ » doit sortir « 10^10 »,
+// pas « 10¹^0 » ; la NFKD seule collerait les chiffres (« 10⁹ » → « 109 »).
+const EXPOSANTS = /[\u00B2\u00B3\u00B9\u2070\u2071\u2074-\u207F]+/g;
+const INDICES = /[\u2080-\u208E\u2090-\u209C]+/g;
+// « 2⅓ » deviendrait « 21/3 ».
+const CHIFFRE_AVANT_FRACTION = /(\d)(?=[\u2150-\u215F\u2189])/g;
+
+/** Pictogramme en présentation emoji (seul, suivi de VS16, d'un modificateur ou lié par ZWJ). */
+function estEmoji(car: string, precedent: string | undefined, suivant: string | undefined): boolean {
+  if (EMOJI.test(car)) return true;
+  if (precedent === '\u200D') return true;
+  return suivant === '\uFE0F' || suivant === '\u200D' || (suivant !== undefined && MODIFICATEUR.test(suivant));
+}
 
 /**
  * Ramène un texte au jeu de caractères d'une police standard (`font.getCharacterSet()`).
- * Ne lève jamais : ce qui ne s'encode pas est translittéré, retiré (emoji,
- * caractères invisibles) ou remplacé par « ? ».
+ * Ne lève jamais. Un caractère hors du jeu est, dans cet ordre :
+ * - translittéré par `REMPLACEMENTS` (« ≥ » → « >= », « ➕ » → « + », « ✅ » → « [x] »,
+ *   « 🚫 » → « [interdit] »…) ; « √ » devient « racine de » quand une lettre ou un
+ *   chiffre le suit immédiatement (« √2 »), « [x] » sinon (la coche de « √ fait ») ;
+ * - décomposé (NFKD) sans ses diacritiques, si le reste s'encode — une marque
+ *   isolée (sélecteur de variante, accent orphelin, cadre de touche) disparaît ainsi ;
+ * - retiré s'il fait partie d'un emoji : pictogramme en présentation emoji, suivi de
+ *   VS16, de ZWJ ou d'un modificateur, ou précédé de ZWJ (`estEmoji`) ; modificateur
+ *   de teinte ; indicateur régional d'un drapeau ;
+ * - retiré s'il est invisible (contrôle, format : ZWJ, espace sans chasse, BOM) ;
+ * - remplacé par « ? » sinon (pictogramme en présentation texte, écriture hors cp1252).
+ * Une suite de caractères retirés qui contient un emoji et touche une lettre ou un
+ * chiffre (juste avant ou juste après elle) laisse UN « ? » : « 2😀3 » donne « 2?3 »,
+ * jamais « 23 ». Un emoji séparé du texte par une espace ou une ponctuation disparaît.
  */
 export function versWinAnsi(texte: string, jeu: ReadonlySet<number>): string {
   const convertir = (car: string): string | null => {
@@ -66,20 +128,49 @@ export function versWinAnsi(texte: string, jeu: ReadonlySet<number>): string {
     if (car === '\n' || jeu.has(car.codePointAt(0) ?? -1)) return car;
     return null;
   };
+  const encodable = (suite: string) => [...suite].every((car) => jeu.has(car.codePointAt(0) ?? -1));
 
-  let sortie = '';
-  for (const car of texte.replace(/\r\n?/g, '\n').normalize('NFC')) {
+  const prepare = texte
+    .replace(/\r\n?/g, '\n')
+    .normalize('NFC')
+    .replace(EXPOSANTS, (suite) => (encodable(suite) ? suite : `^${suite.normalize('NFKD')}`))
+    .replace(INDICES, (suite) => `_${suite.normalize('NFKD')}`)
+    .replace(CHIFFRE_AVANT_FRACTION, '$1 ');
+  const caracteres = [...prepare];
+
+  // Première passe : chaque caractère converti ; `null` marque un morceau d'emoji retiré.
+  const conversions = caracteres.map((car, i): string | null => {
+    if (car === RACINE) return LETTRE_OU_CHIFFRE.test(caracteres[i + 1] ?? '') ? 'racine de ' : '[x]';
     const direct = convertir(car);
-    if (direct !== null) {
-      sortie += direct;
-      continue;
-    }
+    if (direct !== null) return direct;
     const morceaux = [...car.normalize('NFKD').replace(DIACRITIQUE, '')].map(convertir);
-    if (morceaux.every((m): m is string => m !== null)) {
-      sortie += morceaux.join('');
+    if (morceaux.every((m): m is string => m !== null)) return morceaux.join('');
+    if (COMPOSANT_EMOJI.test(car)) return null;
+    if (PICTOGRAMME.test(car) && estEmoji(car, caracteres[i - 1], caracteres[i + 1])) return null;
+    if (INVISIBLE.test(car)) return '';
+    return '?';
+  });
+
+  // Seconde passe : une suite retirée qui contient un emoji et touche une lettre ou
+  // un chiffre laisse un « ? » — ni « 2😀3 » → « 23 », ni « Merci😀Sophie » → « MerciSophie ».
+  let sortie = '';
+  let i = 0;
+  while (i < conversions.length) {
+    const conversion = conversions[i];
+    if (conversion) {
+      sortie += conversion;
+      i++;
       continue;
     }
-    if (!A_RETIRER.test(car)) sortie += '?';
+    let fin = i;
+    let emoji = false;
+    while (fin < conversions.length && !conversions[fin]) {
+      if (conversions[fin] === null) emoji = true;
+      fin++;
+    }
+    const colle = LETTRE_OU_CHIFFRE.test(caracteres[i - 1] ?? '') || LETTRE_OU_CHIFFRE.test(caracteres[fin] ?? '');
+    if (emoji && colle) sortie += '?';
+    i = fin;
   }
   return sortie;
 }
@@ -198,17 +289,6 @@ function fermerLigne(segments: Segment[], styleParDefaut: Style): Ligne {
   };
 }
 
-function caracteresQuiTiennent(texte: string, style: Style, disponible: number, mesure: Mesure): number {
-  let largeur = 0;
-  let n = 0;
-  for (const car of texte) {
-    largeur += mesure(car, style);
-    if (largeur > disponible) break;
-    n += car.length;
-  }
-  return Math.max(n, 1);
-}
-
 /** Retour à la ligne mot à mot à travers les fragments ; les `\n` sont des retours forcés. */
 function composer(fragments: Fragment[], mesure: Mesure, retraitSuite: number, retraitPremiere = 0): Ligne[] {
   const styleParDefaut = fragments[0]?.style ?? CORPS;
@@ -249,15 +329,23 @@ function composer(fragments: Fragment[], mesure: Mesure, retraitSuite: number, r
       continue;
     }
     if (segments.length > 0) clore();
-    // Mot plus long que la ligne (URL, e-mail) : coupé par caractères.
-    let reste = jeton.texte;
-    while (mesure(reste, jeton.style) > disponible()) {
-      const n = caracteresQuiTiennent(reste, jeton.style, disponible(), mesure);
-      poser(reste.slice(0, n), jeton.style);
-      clore();
-      reste = reste.slice(n);
+    // Mot plus long que la ligne (URL, e-mail, valeur brute) : coupé par
+    // caractères en une seule passe — remesurer le reste à chaque ligne
+    // rendrait la coupe quadratique sur une valeur sans espace.
+    let morceau = '';
+    let largeurMorceau = 0;
+    for (const car of jeton.texte) {
+      const chasse = mesure(car, jeton.style);
+      if (morceau !== '' && largeurMorceau + chasse > disponible()) {
+        poser(morceau, jeton.style);
+        clore();
+        morceau = '';
+        largeurMorceau = 0;
+      }
+      morceau += car;
+      largeurMorceau += chasse;
     }
-    poser(reste, jeton.style);
+    poser(morceau, jeton.style);
   }
   if (segments.length > 0) clore();
   return lignes;
@@ -273,10 +361,12 @@ function avecPuce(lignes: Ligne[]): Ligne[] {
 // ── Éléments et pagination ─────────────────────────────────────────────────
 
 type Element =
-  | { genre: 'titre' | 'texte'; lignes: Ligne[]; avant: number; apres: number }
+  | { genre: 'titre' | 'texte'; lignes: Ligne[]; avant: number; apres: number; garderAvecSuite?: boolean }
   | { genre: 'filet'; avant: number; apres: number };
 
-type Placement = { genre: 'ligne'; ligne: Ligne; haut: number; titre: boolean } | { genre: 'filet'; haut: number };
+type Placement =
+  | { genre: 'ligne'; ligne: Ligne; haut: number; titre: boolean; garderAvecSuite: boolean }
+  | { genre: 'filet'; haut: number };
 
 type Convertir = (texte: string) => string;
 
@@ -284,17 +374,21 @@ function elementsDuBloc(bloc: BlocExport, convertir: Convertir, mesure: Mesure):
   switch (bloc.type) {
     case 'titre': {
       const { style, avant, apres } = TITRES[bloc.niveau];
-      return [{ genre: 'titre', lignes: composer([{ texte: convertir(bloc.texte), style }], mesure, 0), avant, apres }];
+      const lignes = composer([{ texte: convertir(bloc.texte), style }], mesure, 0);
+      return [{ genre: 'titre', lignes, avant, apres, garderAvecSuite: true }];
     }
     case 'paragraphe': {
       const style = bloc.ton === 'discret' ? DISCRET : bloc.ton === 'alerte' ? ALERTE : CORPS;
-      return [{ genre: 'texte', lignes: composer([{ texte: convertir(bloc.texte), style }], mesure, 0), avant: 0, apres: 4 }];
+      const lignes = composer([{ texte: convertir(bloc.texte), style }], mesure, 0);
+      return [{ genre: 'texte', lignes, avant: 0, apres: 4, garderAvecSuite: bloc.garderAvecSuite === true }];
     }
     case 'champ': {
       // Une valeur vide n'est pas « rien à dire » : l'absence s'écrit.
       const valeur = convertir(bloc.valeur) || convertir(NON_RENSEIGNE);
+      // Un libellé du catalogue peut finir par « : » (« Vous êtes : ») : pas de second.
+      const libelle = convertir(bloc.libelle);
       const fragments: Fragment[] = [
-        { texte: `${convertir(bloc.libelle)} :`, style: LIBELLE },
+        { texte: libelle.endsWith(':') ? libelle : `${libelle} :`, style: LIBELLE },
         { texte: ` ${valeur}`, style: CORPS },
       ];
       return [{ genre: 'texte', lignes: composer(fragments, mesure, RETRAIT), avant: 0, apres: 2 }];
@@ -315,16 +409,39 @@ function hauteurDesLignes(lignes: Ligne[]): number {
   return lignes.reduce((total, ligne) => total + ligne.hauteur, 0);
 }
 
-/** Titres consécutifs + deux lignes de corps : ce qui doit tenir ensemble en bas de page. */
+function gardeAvecSuite(element: Element): boolean {
+  return element.genre !== 'filet' && element.garderAvecSuite === true;
+}
+
+/**
+ * Titres et pseudo-titres, chacun suivi de deux lignes ordinaires : ce qui
+ * doit tenir ensemble en bas de page. Même cumul que `paginer`.
+ */
 function hauteurAGarderEnsemble(elements: Element[], debut: number): number {
   let hauteur = 0;
-  let i = debut;
-  for (; i < elements.length; i++) {
+  let lignesSuivantes = 0;
+  for (let i = debut; i < elements.length; i++) {
     const element = elements[i];
-    if (element.genre !== 'titre') break;
-    hauteur += element.avant + hauteurDesLignes(element.lignes) + element.apres;
+    hauteur += element.avant;
+    if (element.genre === 'filet') {
+      hauteur += element.apres;
+    } else if (element.garderAvecSuite) {
+      // Un pseudo-titre rencontré en chemin (titre → « Priorité » → « Arguments : »)
+      // réclame à son tour ses deux lignes.
+      hauteur += hauteurDesLignes(element.lignes) + element.apres;
+      lignesSuivantes = 0;
+    } else {
+      for (const ligne of element.lignes.slice(0, 2 - lignesSuivantes)) {
+        hauteur += ligne.hauteur;
+        lignesSuivantes++;
+      }
+      if (lignesSuivantes >= 2) return hauteur;
+      hauteur += element.apres;
+    }
+    // Plus haut qu'une page : inutile de parcourir plus loin.
+    if (hauteur > HAUTEUR_PAGE) return hauteur;
   }
-  return i < elements.length ? hauteur + 2 * INTERLIGNE_CORPS : hauteur;
+  return hauteur;
 }
 
 function paginer(elements: Element[]): Placement[][] {
@@ -338,16 +455,18 @@ function paginer(elements: Element[]): Placement[][] {
   };
 
   elements.forEach((element, i) => {
-    if (element.genre === 'titre' && courante.length > 0 && curseur + hauteurAGarderEnsemble(elements, i) > LIMITE_BAS) {
+    if (gardeAvecSuite(element) && courante.length > 0 && curseur + hauteurAGarderEnsemble(elements, i) > LIMITE_BAS) {
       nouvellePage();
     }
     if (courante.length > 0) curseur += element.avant;
     if (element.genre === 'filet') {
       courante.push({ genre: 'filet', haut: curseur });
     } else {
+      const titre = element.genre === 'titre';
+      const garderAvecSuite = element.garderAvecSuite === true;
       for (const ligne of element.lignes) {
         if (courante.length > 0 && curseur + ligne.hauteur > LIMITE_BAS) nouvellePage();
-        courante.push({ genre: 'ligne', ligne, haut: curseur, titre: element.genre === 'titre' });
+        courante.push({ genre: 'ligne', ligne, haut: curseur, titre, garderAvecSuite });
         curseur += ligne.hauteur;
       }
     }
@@ -450,6 +569,8 @@ export async function rendrePdf(doc: DocumentExport, options?: { maintenant?: Da
 export type LignePlanifiee = {
   texte: string;
   titre: boolean;
+  /** Titre ou pseudo-titre : jamais la dernière ligne d'une page. */
+  garderAvecSuite: boolean;
   /** Haut de la ligne, en points depuis le haut de la page. */
   haut: number;
   hauteur: number;
@@ -469,6 +590,7 @@ export async function planifierPages(doc: DocumentExport): Promise<LignePlanifie
         {
           texte: segments.map((s) => s.texte).join(''),
           titre: placement.titre,
+          garderAvecSuite: placement.garderAvecSuite,
           haut: placement.haut,
           hauteur,
           gauche: segments[0]?.x ?? 0,

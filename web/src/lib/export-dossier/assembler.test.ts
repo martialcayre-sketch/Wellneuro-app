@@ -1,11 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { PDFDocument } from 'pdf-lib';
 
 // Assemblage serveur de l'export (D-252). La base est simulée : ce banc juge
 // les LECTURES (par idPatient, jamais par e-mail), la préparation des entrées
 // de section (définition retirée, passation courante, Q_PLAINTES, envois sans
-// réponse, synthèse validée) et la pseudonymisation du document entier. Le
-// rendu de chaque section est jugé par son propre banc.
+// réponse, synthèse validée) et la pseudonymisation : textes libres masqués au
+// point d'entrée, textes du catalogue intacts. Le rendu de chaque section est
+// jugé par son propre banc.
 const { prisma } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
@@ -13,6 +14,11 @@ const { prisma } = vi.hoisted(() => ({
     questionnaireReponse: { findMany: vi.fn() },
     assignation: { findMany: vi.fn() },
     syntheseIA: { findFirst: vi.fn() },
+    // Lus par les fonctions du domaine (listNuits, listJours) et pour les
+    // instruments du cabinet — voir « lectures des agendas et du cabinet ».
+    agendaSommeilNuit: { findMany: vi.fn() },
+    agendaAlimentaireJour: { findMany: vi.fn() },
+    cabinetInstrument: { findUnique: vi.fn() },
   },
 }));
 
@@ -34,15 +40,18 @@ vi.mock('./sectionSynthese', async importOriginal => {
   return { sectionSynthese: vi.fn(reel.sectionSynthese) };
 });
 
+import { AGENDA_ALI_CONTRACT_VERSION } from '@/lib/agenda-alimentaire/types';
+import { AGENDA_CONTRACT_VERSION } from '@/lib/agenda-sommeil/types';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { resolveDefinition } from '@/lib/instruments';
 import { QUESTIONNAIRE_PLAINTES_LECTURE } from '@/lib/plaintes';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 import { AVERTISSEMENT_SYNTHESE_ANTERIEURE } from '@/lib/scoring/passationsNonInterpretables';
 import { assemblerDossierExport, nomFichierExport } from './assembler';
-import { MARQUE_MASQUE } from './masquage';
+import { creerMasqueur, MARQUE_MASQUE } from './masquage';
 import type { DocumentExport, PassationExport, VersionExport } from './modele';
 import { planifierPages, rendrePdf } from './pdf';
+import { avertissementInstrumentCabinetModifie } from './reponsesExport';
 import { sectionQuestionnaires } from './sectionQuestionnaires';
 import { sectionRenseignements } from './sectionRenseignements';
 import { sectionSynthese } from './sectionSynthese';
@@ -519,6 +528,252 @@ describe('assemblerDossierExport — passations', () => {
   });
 });
 
+describe('assemblerDossierExport — lectures des agendas et du cabinet', () => {
+  const NUIT = { heureCoucher: '23:00', heureLever: '07:00', latence: 'lt15', qualite: 4 };
+  const JOUR = {
+    prises: [{ heure: '07:30', nature: 'repas' }, { heure: '19:30', nature: 'repas' }],
+    premierePriseProteines: true,
+    legumesDeuxPrises: true,
+    fruitsOuOleagineux: false,
+    ultraTransformes: false,
+  };
+
+  function nuit(id: string, dateNuit: string, supersedesNuitId: string | null = null) {
+    return {
+      id,
+      idPatient: 'PAT030',
+      idAssignation: 'A_SOM',
+      dateNuit,
+      reponses: { contractVersion: AGENDA_CONTRACT_VERSION, ...NUIT },
+      canal: 'portail',
+      supersedesNuitId,
+      soumisLe: new Date(`${dateNuit}T07:00:00.000Z`),
+    };
+  }
+
+  function jour(
+    id: string,
+    dateJour: string,
+    options: { contractVersion?: string; supersedesJourId?: string | null } = {},
+  ) {
+    return {
+      id,
+      idPatient: 'PAT030',
+      idAssignation: 'A_ALI',
+      dateJour,
+      reponses: { contractVersion: options.contractVersion ?? AGENDA_ALI_CONTRACT_VERSION, ...JOUR },
+      canal: 'portail',
+      supersedesJourId: options.supersedesJourId ?? null,
+      soumisLe: new Date(`${dateJour}T20:00:00.000Z`),
+    };
+  }
+
+  /** Journée écrite sous un contrat que la lecture ne connaît pas (ex. après un rollback) : `listJours` la met en quarantaine. */
+  const CONTRAT_INCONNU = 'agenda-alimentaire-v9';
+
+  const NUITS = [
+    nuit('N1', '2026-09-06'),
+    nuit('N2', '2026-09-07'),
+    // Correction de la nuit du 07 : une seule nuit active pour cette date.
+    nuit('N3', '2026-09-07', 'N2'),
+  ];
+  const JOURS = [
+    jour('J1', '2026-09-08'),
+    jour('J2', '2026-09-09'),
+    // Correction de la journée du 09 : une seule journée active pour cette date.
+    jour('J3', '2026-09-09', { supersedesJourId: 'J2' }),
+  ];
+
+  const ENVOI = { statut: 'En attente', dateLimite: null };
+  const AGENDAS = [
+    { ...ENVOI, idAssignation: 'A_SOM', idQuestionnaire: 'Q_SOM_09', titre: 'Agenda du sommeil — 21 nuits', dateAssignation: new Date('2026-09-05T09:00:00.000Z') },
+    { ...ENVOI, idAssignation: 'A_ALI', idQuestionnaire: 'Q_ALI_09', titre: 'Agenda alimentaire — 21 jours', dateAssignation: new Date('2026-09-07T09:00:00.000Z') },
+    { ...ENVOI, idAssignation: 'A_SOM_VIDE', idQuestionnaire: 'Q_SOM_09', titre: 'Agenda du sommeil — 21 nuits', dateAssignation: new Date('2026-09-04T09:00:00.000Z') },
+    { ...ENVOI, idAssignation: 'A_SOM_CLOS', idQuestionnaire: 'Q_SOM_09', titre: 'Agenda du sommeil — 21 nuits', statut: 'Complété', dateAssignation: new Date('2026-08-01T09:00:00.000Z') },
+  ];
+
+  type WhereAgenda = { where: { idPatient: string; idAssignation?: string } };
+
+  const DEF_CAB: QuestionnaireDef = {
+    id: 'CAB_TEST',
+    titre: 'Instrument du cabinet',
+    sections: [
+      {
+        id: 'S1',
+        questions: [
+          { id: 'Q1', texte: 'Troubles du sommeil', type: 'likert', options: [{ v: 0, l: 'Jamais' }, { v: 3, l: 'Toujours' }] },
+        ],
+      },
+    ],
+  };
+  const PASSATIONS_CAB = [
+    ligne({ idReponse: 'R_CAB_2', idQuestionnaire: 'CAB_TEST', dateReponse: new Date('2026-09-12T09:00:00.000Z'), scoresJson: { rawAnswers: { Q1: 0 } } }),
+    ligne({ idReponse: 'R_CAB_1', idQuestionnaire: 'CAB_TEST', dateReponse: new Date('2026-09-03T09:00:00.000Z'), scoresJson: { rawAnswers: { Q1: 3 } } }),
+  ];
+
+  let espionErreur: MockInstance<typeof console.error>;
+
+  afterEach(() => {
+    espionErreur.mockRestore();
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    espionErreur = vi.spyOn(console, 'error').mockImplementation(() => {});
+    espionDefinition.mockImplementation(async (id: string) =>
+      id === 'CAB_TEST' ? { ...DEF_CAB, cabinet: true } : { ...DEFINITION_FICTIVE, cabinet: false },
+    );
+    brancherBase();
+    prisma.assignation.findMany.mockResolvedValue([...AGENDAS, ...ASSIGNATIONS]);
+    prisma.agendaSommeilNuit.findMany.mockImplementation(async ({ where }: WhereAgenda) =>
+      NUITS.filter(n => n.idPatient === where.idPatient && n.idAssignation === where.idAssignation),
+    );
+    prisma.agendaAlimentaireJour.findMany.mockImplementation(async ({ where }: WhereAgenda) =>
+      JOURS.filter(j => j.idPatient === where.idPatient && j.idAssignation === where.idAssignation),
+    );
+    prisma.cabinetInstrument.findUnique.mockResolvedValue({ updatedAt: new Date('2026-09-08T09:00:00.000Z') });
+  });
+
+  it('agenda en cours : les saisies ACTIVES sont comptées, bornées au patient et à l’assignation (constat 11)', async () => {
+    await assembler('complete');
+    const [, sansReponse] = espionQuestionnaires.mock.calls[0];
+    const agendas = sansReponse.filter(a => a.idQuestionnaire === 'Q_SOM_09' || a.idQuestionnaire === 'Q_ALI_09');
+    expect(agendas).toEqual([
+      { ...ENVOI, idQuestionnaire: 'Q_SOM_09', titre: 'Agenda du sommeil — 21 nuits', dateAssignation: AGENDAS[0].dateAssignation, recueilEnCours: { saisies: 2, unite: 'nuit' } },
+      { ...ENVOI, idQuestionnaire: 'Q_ALI_09', titre: 'Agenda alimentaire — 21 jours', dateAssignation: AGENDAS[1].dateAssignation, recueilEnCours: { saisies: 2, unite: 'journée' } },
+      // Rien de saisi : un envoi sans réponse ordinaire.
+      { ...ENVOI, idQuestionnaire: 'Q_SOM_09', titre: 'Agenda du sommeil — 21 nuits', dateAssignation: AGENDAS[2].dateAssignation },
+    ]);
+    const lecturesNuits = prisma.agendaSommeilNuit.findMany.mock.calls.map(([args]) => (args as WhereAgenda).where);
+    expect(lecturesNuits).toEqual([
+      { idPatient: 'PAT030', idAssignation: 'A_SOM' },
+      { idPatient: 'PAT030', idAssignation: 'A_SOM_VIDE' },
+    ]);
+    expect(prisma.agendaAlimentaireJour.findMany.mock.calls.map(([args]) => (args as WhereAgenda).where)).toEqual([
+      { idPatient: 'PAT030', idAssignation: 'A_ALI' },
+    ]);
+  });
+
+  /** Lignes « envoyés et non soumis » d'un instrument. */
+  function lignesEnvoi(doc: DocumentExport, idQuestionnaire: string): string[] {
+    return textes(doc).filter(t => t.includes(`(${idQuestionnaire}) — `));
+  }
+
+  const ALI_INCONNU =
+    'Agenda alimentaire — 21 jours (Q_ALI_09) — recueil en cours : journées saisies en nombre inconnu (lecture impossible), agenda non clôturé — envoyé le 07/09/2026';
+  const SOM_INCONNU =
+    'Agenda du sommeil — 21 nuits (Q_SOM_09) — recueil en cours : nuits saisies en nombre inconnu (lecture impossible), agenda non clôturé — envoyé le 05/09/2026';
+
+  it('agenda alimentaire dont une journée est en quarantaine : nombre inconnu, jamais un compte amputé (NF3, N7)', async () => {
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([
+      ...JOURS,
+      jour('J4', '2026-09-10', { contractVersion: CONTRAT_INCONNU }),
+    ]);
+    const doc = await assemblerOuEchouer('complete');
+    const [, sansReponse] = espionQuestionnaires.mock.calls[0];
+    expect(sansReponse.find(a => a.idQuestionnaire === 'Q_ALI_09')?.recueilEnCours).toEqual({ saisies: null, unite: 'journée' });
+    expect(lignesEnvoi(doc, 'Q_ALI_09')).toEqual([ALI_INCONNU]);
+    // `listJours` ne lève pas sur une journée illisible : c'est son compte
+    // `illisibles` qui est lu, pas une erreur rattrapée.
+    expect(espionErreur).not.toHaveBeenCalled();
+  });
+
+  it('agenda alimentaire dont TOUTES les journées sont illisibles : « nombre inconnu », jamais « En attente » (N14)', async () => {
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue(
+      JOURS.map(j => ({ ...j, reponses: { ...j.reponses, contractVersion: CONTRAT_INCONNU } })),
+    );
+    const doc = await assemblerOuEchouer('complete');
+    expect(lignesEnvoi(doc, 'Q_ALI_09')).toEqual([ALI_INCONNU]);
+    expect(textes(doc).join('\n')).not.toContain('Agenda alimentaire — 21 jours (Q_ALI_09) — En attente');
+  });
+
+  it('nuit du sommeil au contenu illisible (réponses rejetées à la relecture) : nombre inconnu, message seul journalisé', async () => {
+    const illisible = { ...nuit('N4', '2026-09-08'), reponses: { contractVersion: AGENDA_CONTRACT_VERSION, ...NUIT, qualite: 42 } };
+    prisma.agendaSommeilNuit.findMany.mockImplementation(async ({ where }: WhereAgenda) =>
+      [...NUITS, illisible].filter(n => n.idPatient === where.idPatient && n.idAssignation === where.idAssignation),
+    );
+    const doc = await assemblerOuEchouer('complete');
+    const [, sansReponse] = espionQuestionnaires.mock.calls[0];
+    expect(sansReponse.find(a => a.idQuestionnaire === 'Q_SOM_09')?.recueilEnCours).toEqual({ saisies: null, unite: 'nuit' });
+    expect(lignesEnvoi(doc, 'Q_SOM_09')).toContain(SOM_INCONNU);
+    expect(espionErreur.mock.calls).toEqual([
+      ['[export-dossier] recueil Q_SOM_09 illisible :', 'Valeur invalide pour « qualité de la nuit ».'],
+    ]);
+  });
+
+  it('base indisponible pendant la lecture des agendas (requête rejetée) : nombre inconnu, message seul journalisé, export maintenu', async () => {
+    prisma.agendaSommeilNuit.findMany.mockRejectedValue(new Error('base indisponible'));
+    prisma.agendaAlimentaireJour.findMany.mockRejectedValue(new Error('base indisponible'));
+    const doc = await assemblerOuEchouer('complete');
+    const [, sansReponse] = espionQuestionnaires.mock.calls[0];
+    expect(sansReponse.find(a => a.idQuestionnaire === 'Q_SOM_09')?.recueilEnCours).toEqual({ saisies: null, unite: 'nuit' });
+    expect(sansReponse.find(a => a.idQuestionnaire === 'Q_ALI_09')?.recueilEnCours).toEqual({ saisies: null, unite: 'journée' });
+    expect(lignesEnvoi(doc, 'Q_SOM_09')).toContain(SOM_INCONNU);
+    expect(lignesEnvoi(doc, 'Q_ALI_09')).toEqual([ALI_INCONNU]);
+    // Le MESSAGE seul, jamais l'objet d'erreur : une ligne par lecture rejetée.
+    expect(espionErreur.mock.calls.map(appel => appel.join(' ')).sort()).toEqual([
+      '[export-dossier] recueil Q_ALI_09 illisible : base indisponible',
+      '[export-dossier] recueil Q_SOM_09 illisible : base indisponible',
+      '[export-dossier] recueil Q_SOM_09 illisible : base indisponible',
+    ]);
+    expect(espionErreur.mock.calls.flat().every(argument => typeof argument === 'string')).toBe(true);
+  });
+
+  it('agenda en cours : le document ne le dit jamais « sans réponse »', async () => {
+    const doc = await assemblerOuEchouer('complete');
+    const joint = textes(doc).join('\n');
+    expect(joint).toContain(
+      'Agenda du sommeil — 21 nuits (Q_SOM_09) — recueil en cours : 2 nuits saisies, agenda non clôturé — envoyé le 05/09/2026',
+    );
+    expect(joint).toContain('Agenda alimentaire — 21 jours (Q_ALI_09) — recueil en cours : 2 journées saisies, agenda non clôturé');
+    expect(joint).not.toContain('Questionnaires envoyés sans réponse');
+    expect(joint).toContain("les saisies d'un agenda non clôturé ne figurent pas dans ce document.");
+  });
+
+  it('instrument du cabinet modifié APRÈS une passation : réserve de lecture sur celle-là seulement (constat 12)', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([...PASSATIONS_CAB, ...PASSATIONS]);
+    const doc = await assemblerOuEchouer('complete');
+    const reserve = avertissementInstrumentCabinetModifie(new Date('2026-09-08T09:00:00.000Z'));
+    expect(passation('R_CAB_1').avertissementLecture).toBe(reserve);
+    expect(passation('R_CAB_2').avertissementLecture).toBeNull();
+    // Une seule lecture par instrument, par sa clé unique, après la garde de propriété de `resolveDefinition`.
+    expect(prisma.cabinetInstrument.findUnique).toHaveBeenCalledTimes(1);
+    expect(prisma.cabinetInstrument.findUnique).toHaveBeenCalledWith({
+      where: { idInstrument: 'CAB_TEST' },
+      select: { updatedAt: true },
+    });
+    expect(textes(doc)).toContain(reserve);
+  });
+
+  it('instrument du cabinet modifié APRÈS une passation : ses réponses ne sont pas traduites par la définition actuelle (NF4)', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([...PASSATIONS_CAB, ...PASSATIONS]);
+    const reserve = avertissementInstrumentCabinetModifie(new Date('2026-09-08T09:00:00.000Z'));
+    for (const version of ['complete', 'ia-externe'] as const) {
+      const { blocs } = await assemblerOuEchouer(version);
+      // Codes bruts sous la réserve — jamais « Toujours » sous « Troubles du sommeil ».
+      const i = blocs.findIndex(b => b.type === 'paragraphe' && b.texte === reserve);
+      expect(blocs[i + 1], version).toEqual({ type: 'liste', elements: ['« Q1 » : 3'] });
+      expect(blocs, version).not.toContainEqual({ type: 'champ', libelle: 'Troubles du sommeil', valeur: 'Toujours' });
+      // La passation postérieure à la modification se lit par la définition actuelle.
+      expect(blocs, version).toContainEqual({ type: 'champ', libelle: 'Troubles du sommeil', valeur: 'Jamais' });
+    }
+  });
+
+  it('instrument du catalogue : aucune lecture du cabinet, aucune réserve', async () => {
+    await assembler('complete');
+    expect(prisma.cabinetInstrument.findUnique).not.toHaveBeenCalled();
+    expect(passationsTransmises().every(p => !p.avertissementLecture)).toBe(true);
+  });
+
+  it('instrument du cabinet introuvable pour ce praticien : ni lecture de date, ni réserve inventée', async () => {
+    espionDefinition.mockResolvedValue(null);
+    prisma.questionnaireReponse.findMany.mockResolvedValue(PASSATIONS_CAB);
+    await assembler('complete');
+    expect(prisma.cabinetInstrument.findUnique).not.toHaveBeenCalled();
+    expect(passation('R_CAB_1')).toMatchObject({ definition: null, avertissementLecture: null });
+  });
+});
+
 describe('assemblerDossierExport — synthèse', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -692,6 +947,133 @@ describe('assemblerDossierExport — document', () => {
       expect(contientMot(lignes, mot), mot).toBe(false);
     }
   });
+});
+
+describe('assemblerDossierExport — masquage des textes libres', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    espionDefinition.mockResolvedValue({ ...DEFINITION_FICTIVE, cabinet: false });
+    brancherBase();
+  });
+
+  // Patiente de fixture Jennifer Martin : une option du catalogue porte son nom.
+  const DEFINITION_OISEAUX: QuestionnaireDef = {
+    id: 'Q_FICTIF',
+    titre: 'Questionnaire fictif',
+    sections: [
+      {
+        id: 'A',
+        titre: 'Oiseaux',
+        questions: [
+          {
+            id: 'O1',
+            texte: 'Quel oiseau avez-vous observé ?',
+            type: 'likert',
+            options: [{ v: 1, l: 'Martin-pêcheur' }, { v: 2, l: 'Merle' }],
+          },
+          { id: 'O2', texte: 'Combien de martins-pêcheurs ?', type: 'number' },
+        ],
+      },
+    ],
+  };
+
+  it('un libellé du catalogue qui porte le nom reste intact ; le même nom dans un texte libre est masqué', async () => {
+    const jennifer = {
+      ...PATIENT,
+      prenom: 'Jennifer',
+      nom: 'Martin',
+      email: 'jennifer.martin@example.test',
+      medecinTraitantNom: 'Dr Michel Dogné',
+    };
+    prisma.patient.findUnique.mockResolvedValue(jennifer);
+    prisma.consultation.findMany.mockResolvedValue([
+      { ...CONSULTATIONS[1], ficheSignaletique: null, anamnese: { motif_principal: 'Mme Martin dort mal.' } },
+    ]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      ligne({
+        idReponse: 'R_OISEAU',
+        idQuestionnaire: 'Q_FICTIF',
+        titre: 'Questionnaire fictif',
+        dateReponse: new Date('2026-09-10T09:00:00.000Z'),
+        scoresJson: { rawAnswers: { O1: 1, REMARQUE: 'Vu avec Jennifer Martin' } },
+      }),
+    ]);
+    espionDefinition.mockResolvedValue({ ...DEFINITION_OISEAUX, cabinet: false });
+    // Témoin : appliqué au libellé, le masqueur l'effacerait.
+    expect(creerMasqueur(jennifer)('Martin-pêcheur')).not.toBe('Martin-pêcheur');
+
+    const doc = await assemblerOuEchouer('ia-externe');
+    expect(doc.blocs).toContainEqual({ type: 'champ', libelle: 'Quel oiseau avez-vous observé ?', valeur: 'Martin-pêcheur' });
+    expect(doc.blocs).toContainEqual(expect.objectContaining({ type: 'champ', libelle: 'Combien de martins-pêcheurs ?' }));
+    const joint = textes(doc).join('\n');
+    expect(joint).toContain(`Mme ${MARQUE_MASQUE} dort mal.`);
+    expect(joint).toContain(`Vu avec ${MARQUE_MASQUE} ${MARQUE_MASQUE}`);
+    expect(joint).not.toContain('Mme Martin');
+    expect(joint).not.toContain('Jennifer');
+  });
+
+  // Noms D'EMPRUNT, fictifs, choisis pour leurs lettres : aucun ne désigne un patient.
+  const pleineChasse = (texte: string) =>
+    texte.replace(/[A-Za-z]/g, lettre => String.fromCharCode(lettre.charCodeAt(0) + 0xfee0));
+  const sansDiacritique = (texte: string) =>
+    texte.normalize('NFD').replace(/\p{M}/gu, '').replace(/ł/g, 'l').replace(/Ł/g, 'L');
+  const formes = (texte: string) => [
+    texte.normalize('NFC'),
+    texte.normalize('NFD'),
+    sansDiacritique(texte),
+    texte.normalize('NFC').toUpperCase(),
+    // Césure conditionnelle, espace sans chasse, ligatures.
+    texte.replace(/(\p{L}{2})(\p{L})/gu, '$1\u{AD}$2'),
+    texte.replace(/(\p{L}{3})(\p{L})/gu, '$1\u{200B}$2'),
+    texte.replace(/ff/g, '\u{FB00}').replace(/fi/g, '\u{FB01}'),
+    pleineChasse(sansDiacritique(texte)),
+  ];
+
+  it.each([
+    ['Ana', 'Petrović', ['petrovic']],
+    ['Thị Hương', 'Nguyễn', ['huong', 'nguyen']],
+    ['Mirela', 'Kovačević', ['mirela', 'kovacevic']],
+    ['Ioana', 'Stănescu', ['ioana', 'stanescu']],
+    ['Łukasz', 'Dvořák-Černý', ['ukasz', 'dvorak', 'cerny']],
+    ['Joffrey', 'Lafitte', ['joffrey', 'lafitte']],
+  ])('%s %s, sous toutes ses formes : rien ne ressort des lignes du PDF', async (prenom, nom, temoins) => {
+    prisma.patient.findUnique.mockResolvedValue({ ...PATIENT, prenom, nom });
+    const cite = formes(`${prenom} ${nom}`).join(' ; ');
+    prisma.consultation.findMany.mockResolvedValue([
+      { ...CONSULTATIONS[1], ficheSignaletique: { particularites: cite }, anamnese: { motif_principal: cite } },
+    ]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      ligne({
+        idReponse: 'R_X',
+        idQuestionnaire: 'Q_FICTIF',
+        titre: 'Questionnaire fictif',
+        dateReponse: new Date('2026-09-10T09:00:00.000Z'),
+        scoresJson: { rawAnswers: { H1: 1, COMMENTAIRE: cite } },
+        statutValidite: 'INVALID',
+        motifInvalidation: cite,
+      }),
+    ]);
+    brancherSynthese({
+      ...SYNTHESE_VALIDEE,
+      syntheseJson: { ...SYNTHESE_VALIDEE.syntheseJson, resume_praticien: cite },
+      notesPraticien: cite,
+    });
+
+    const lire = async (version: VersionExport) =>
+      sansAccents((await planifierPages(await assemblerOuEchouer(version))).flat().map(l => l.texte).join('\n'));
+    // Témoin : la version complète imprime bien chaque forme.
+    const complete = await lire('complete');
+    for (const temoin of temoins) expect(complete, temoin).toContain(temoin);
+    const pseudonymisee = await lire('ia-externe');
+    for (const temoin of temoins) expect(pseudonymisee, temoin).not.toContain(temoin);
+    expect(pseudonymisee).toContain('pat030');
+  });
+
+  function brancherSynthese(validee: typeof SYNTHESE_VALIDEE) {
+    prisma.syntheseIA.findFirst.mockImplementation(async (args: WhereSynthese) =>
+      args.where.statut.in.includes('Validee_Praticien') ? validee : null,
+    );
+  }
 });
 
 describe('nomFichierExport', () => {

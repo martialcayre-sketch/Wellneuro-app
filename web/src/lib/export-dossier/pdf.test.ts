@@ -1,7 +1,12 @@
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { ANAMNESE_SECTIONS } from '@/lib/consultation/anamnese';
+import { FICHE_SECTIONS } from '@/lib/consultation/fiche';
+import { QUESTIONNAIRE_PLAINTES_LECTURE } from '@/lib/plaintes';
+import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { Q_ALI_01_COURT_14, Q_ALI_01_SIIN_57, Q_ALI_03 } from '@/lib/questionnaires/alimentaire';
 import type { BlocExport, DocumentExport } from './modele';
-import { planifierPages, rendrePdf, versWinAnsi } from './pdf';
+import { planifierPages, rendrePdf, versWinAnsi, type LignePlanifiee } from './pdf';
 
 // Gabarit A4 du moteur : largeur 595.28 − 2 × 56, contenu jusqu'à 64 pt du bas.
 const LARGEUR_UTILE = 595.28 - 56 - 56;
@@ -10,9 +15,15 @@ const LIMITE_BAS = 841.89 - 64;
 let jeu: ReadonlySet<number>;
 
 beforeAll(async () => {
+  // Même jeu que le moteur : ce que les trois polices encodent toutes.
   const pdf = await PDFDocument.create();
-  const police = await pdf.embedFont(StandardFonts.Helvetica);
-  jeu = new Set(police.getCharacterSet());
+  const polices = [
+    await pdf.embedFont(StandardFonts.Helvetica),
+    await pdf.embedFont(StandardFonts.HelveticaBold),
+    await pdf.embedFont(StandardFonts.HelveticaOblique),
+  ];
+  const jeux = polices.map((p) => new Set(p.getCharacterSet()));
+  jeu = new Set(polices[0].getCharacterSet().filter((c) => jeux.every((j) => j.has(c))));
 });
 
 function documentDe(blocs: BlocExport[], surcharge: Partial<DocumentExport> = {}): DocumentExport {
@@ -57,6 +68,108 @@ describe('versWinAnsi', () => {
     expect(versWinAnsi('A → B ← C', jeu)).toBe('A -> B <- C');
     expect(versWinAnsi('↑ ↓', jeu)).toBe('^ v');
     expect(versWinAnsi('✓ fait, ✔ vu', jeu)).toBe('oui fait, oui vu');
+    expect(versWinAnsi('score ⩾ 3, ⩽ 5', jeu)).toBe('score >= 3, <= 5');
+    expect(versWinAnsi('√2', jeu)).toBe('racine de 2');
+    expect(versWinAnsi('A ⇔ B', jeu)).toBe('A <=> B');
+    expect(versWinAnsi('➡ à revoir, ⬅ retour', jeu)).toBe('-> à revoir, <- retour');
+    expect(versWinAnsi('☑ fait, ☐ à faire, ✖ arrêté', jeu)).toBe('[x] fait, [ ] à faire, x arrêté');
+  });
+
+  it('« ↔ » (pictogramme) est translittéré : la note UPPS garde « 1<->4, 2<->3 », pas « 14, 23 »', () => {
+    expect(versWinAnsi('item renversé (recotation 1↔4, 2↔3)', jeu)).toBe('item renversé (recotation 1<->4, 2<->3)');
+    expect(versWinAnsi('axe intestin ↔ cerveau', jeu)).toBe('axe intestin <-> cerveau');
+    expect(versWinAnsi('1\u2194\uFE0F4', jeu)).toBe('1<->4');
+  });
+
+  it('un pictogramme textuel non translittéré devient « ? », jamais rien', () => {
+    expect(versWinAnsi('2↗3', jeu)).toBe('2?3');
+    expect(versWinAnsi('☺ ok', jeu)).toBe('? ok');
+  });
+
+  it('« √ » : « racine de » quand une lettre ou un chiffre le suit, sinon une coche « [x] »', () => {
+    expect(versWinAnsi('√2', jeu)).toBe('racine de 2');
+    expect(versWinAnsi('√x', jeu)).toBe('racine de x');
+    expect(versWinAnsi('√ fait', jeu)).toBe('[x] fait');
+    expect(versWinAnsi('magnésium √', jeu)).toBe('magnésium [x]');
+    expect(versWinAnsi('Mg √ ; vit D √.', jeu)).toBe('Mg [x] ; vit D [x].');
+  });
+
+  it('emoji porteurs de sens (opération, coche, croix, interdiction) : translittérés, avec ou sans VS16', () => {
+    expect(versWinAnsi('3➕4, 10➖2, 8➗2', jeu)).toBe('3+4, 10-2, 8/2');
+    expect(versWinAnsi('Vitamine D ✅, Magnésium ❌, fer ❎', jeu)).toBe('Vitamine D [x], Magnésium x, fer x');
+    expect(versWinAnsi('lactose 🚫, sucre ⛔', jeu)).toBe('lactose [interdit], sucre [interdit]');
+    // Suivis de VS16 (présentation emoji explicite) : même lecture, le sélecteur disparaît.
+    expect(versWinAnsi('✅\u{FE0F} ❌\u{FE0F} ❎\u{FE0F} ⛔\u{FE0F} ➕\u{FE0F}➖\u{FE0F}➗\u{FE0F}', jeu)).toBe(
+      '[x] x x [interdit] +-/',
+    );
+    // Entre deux chiffres : jamais recollés.
+    expect(versWinAnsi('1❌2, 5🚫6, 2✅3', jeu)).toBe('1x2, 5[interdit]6, 2[x]3');
+  });
+
+  it('tout autre emoji collé à une lettre ou à un chiffre laisse un « ? », jamais rien', () => {
+    expect(versWinAnsi('2😀3', jeu)).toBe('2?3');
+    expect(versWinAnsi('Merci😀Sophie', jeu)).toBe('Merci?Sophie');
+    expect(versWinAnsi('fatigue😴', jeu)).toBe('fatigue?');
+    expect(versWinAnsi('😴fatigue', jeu)).toBe('?fatigue');
+    // Une suite collée (emoji + modificateur, séquence ZWJ, plusieurs emoji) : un seul « ? ».
+    expect(versWinAnsi('top👍🏽👍🏽!', jeu)).toBe('top?!');
+    expect(versWinAnsi('famille\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}ok', jeu)).toBe('famille?ok');
+    // Détaché par une espace ou une ponctuation : retiré.
+    expect(versWinAnsi('fatigue 😴 !', jeu)).toBe('fatigue  !');
+    expect(versWinAnsi('fatigue (😴)', jeu)).toBe('fatigue ()');
+  });
+
+  it('exposants : une suite hors cp1252 s’écrit « ^n », sans coller les chiffres au nombre', () => {
+    expect(versWinAnsi('lymphocytes 1,2 × 10⁹/L', jeu)).toBe('lymphocytes 1,2 × 10^9/L');
+    expect(versWinAnsi('10⁴ UFC', jeu)).toBe('10^4 UFC');
+    expect(versWinAnsi('10⁻³, x⁻¹', jeu)).toBe('10^-3, x^-1');
+    expect(versWinAnsi('Na⁺ K⁺', jeu)).toBe('Na^+ K^+');
+    // ¹ ² ³ sont dans cp1252 et restent ; dans une suite mixte, la suite entière se convertit.
+    expect(versWinAnsi('10¹ 10² 10³ 10¹² m²', jeu)).toBe('10¹ 10² 10³ 10¹² m²');
+    expect(versWinAnsi('10¹⁰', jeu)).toBe('10^10');
+  });
+
+  it('indices : « _n »', () => {
+    expect(versWinAnsi('H₂O, vitamine B₁₂, 25(OH)D₃', jeu)).toBe('H_2O, vitamine B_12, 25(OH)D_3');
+  });
+
+  it('fractions : « n/m », séparées d’un entier qui les précède', () => {
+    expect(versWinAnsi('dose ⅓ comprimé', jeu)).toBe('dose 1/3 comprimé');
+    expect(versWinAnsi('⅔ des repas, ⅛ de litre', jeu)).toBe('2/3 des repas, 1/8 de litre');
+    expect(versWinAnsi('2⅓ comprimés', jeu)).toBe('2 1/3 comprimés');
+    expect(versWinAnsi('1\u20442 et 3\u22154', jeu)).toBe('1/2 et 3/4');
+    expect(versWinAnsi('½ ¼ ¾', jeu)).toBe('½ ¼ ¾');
+  });
+
+  it('aucun caractère des textes du catalogue n’est perdu ni remplacé par « ? »', () => {
+    const textes: string[] = [];
+    const visiter = (valeur: unknown, profondeur: number): void => {
+      if (profondeur > 12) return;
+      if (typeof valeur === 'string') textes.push(valeur);
+      else if (Array.isArray(valeur)) valeur.forEach((v) => visiter(v, profondeur + 1));
+      else if (valeur && typeof valeur === 'object') {
+        // `icon` : emoji décoratif d'une option (échelle de Bristol), que l'export ne restitue pas.
+        for (const [cle, v] of Object.entries(valeur)) if (cle !== 'icon') visiter(v, profondeur + 1);
+      }
+    };
+    visiter(Object.values(QUESTIONNAIRE_CATALOGUE), 0);
+    // Les DEUX formes de Q_ALI_01, quelle que soit celle que le drapeau sert.
+    visiter([Q_ALI_01_COURT_14, Q_ALI_01_SIIN_57], 0);
+    visiter(QUESTIONNAIRE_PLAINTES_LECTURE, 0);
+    visiter(ANAMNESE_SECTIONS, 0);
+    visiter(FICHE_SECTIONS, 0);
+    expect(textes.length).toBeGreaterThan(5000);
+
+    const horsJeu = new Set<string>();
+    for (const texte of textes) {
+      for (const car of texte.normalize('NFC')) {
+        if (car !== '\n' && !jeu.has(car.codePointAt(0) ?? -1)) horsJeu.add(car);
+      }
+    }
+    // Garde anti-vacuité : le catalogue porte bien des caractères à convertir (↔, ≥, −…).
+    expect(horsJeu.has('↔')).toBe(true);
+    const perdus = [...horsJeu].filter((car) => ['', '?'].includes(versWinAnsi(car, jeu)));
+    expect(perdus).toEqual([]);
   });
 
   it('ramène les traits d’union insécables à un tiret simple', () => {
@@ -72,10 +185,13 @@ describe('versWinAnsi', () => {
     expect(versWinAnsi('γGT 40, 200 \u03BCg, ω-3', jeu)).toBe('gammaGT 40, 200 \u00B5g, omega-3');
   });
 
-  it('retire les emoji, modificateurs, drapeaux, sélecteurs de variante et ZWJ', () => {
+  it('retire les emoji, modificateurs, drapeaux, sélecteurs de variante et ZWJ détachés du texte', () => {
     expect(versWinAnsi('Bien 😀 dormi', jeu)).toBe('Bien  dormi');
-    expect(versWinAnsi('ok👍🏽', jeu)).toBe('ok');
-    expect(versWinAnsi('🇫🇷France', jeu)).toBe('France');
+    expect(versWinAnsi('ok 👍🏽', jeu)).toBe('ok ');
+    expect(versWinAnsi('🇫🇷 France', jeu)).toBe(' France');
+    // Collés au mot, ils laissent un seul « ? » (voir plus haut).
+    expect(versWinAnsi('ok👍🏽', jeu)).toBe('ok?');
+    expect(versWinAnsi('🇫🇷France', jeu)).toBe('?France');
     expect(versWinAnsi('\u2764\uFE0F', jeu)).toBe('');
     expect(versWinAnsi('\u{1F468}\u200D\u{1F469}\u200D\u{1F467}', jeu)).toBe('');
   });
@@ -177,6 +293,17 @@ describe('planifierPages — mise en page', () => {
     expect(morceaux.length).toBeGreaterThan(1);
   });
 
+  it('coupe un mot sans espace en temps linéaire : 300 000 caractères planifiés en moins d’une seconde, sans perte', async () => {
+    const mot = 'x'.repeat(300_000);
+    const debut = performance.now();
+    const plan = await planifierPages(documentDe([{ type: 'paragraphe', texte: mot }]));
+    const duree = performance.now() - debut;
+    expect(duree).toBeLessThan(1000);
+    const lignes = plan.flat().slice(2);
+    expect(lignes.map((l) => l.texte).join('')).toBe(mot);
+    for (const ligne of lignes) expect(ligne.droite).toBeLessThanOrEqual(LARGEUR_UTILE + 0.01);
+  });
+
   it('écrit le texte converti en WinAnsi', async () => {
     const plan = await planifierPages(documentDe([{ type: 'paragraphe', texte: 'Score ≥ 12\u202F/ 20 😀' }]));
     expect(plan.flat().map((l) => l.texte)).toContain('Score >= 12 / 20');
@@ -192,6 +319,22 @@ describe('planifierPages — mise en page', () => {
     expect(lignes.length).toBeGreaterThanOrEqual(3);
     for (const ligne of lignes.slice(1)) expect(ligne.gauche).toBe(12);
     expect(lignes[lignes.length - 1].texte).toBe('Deuxième ligne forcée');
+  });
+
+  it('champ : un libellé qui finit déjà par « : » n’en reçoit pas un second (Q_ALI_03, AP13)', async () => {
+    const ap13 = Q_ALI_03.sections.flatMap((s) => s.questions).find((q) => q.id === 'AP13');
+    // Garde anti-vacuité : le catalogue porte bien ce libellé ponctué.
+    expect(ap13?.texte.trim().endsWith(':')).toBe(true);
+    const plan = await planifierPages(
+      documentDe([
+        { type: 'champ', libelle: ap13?.texte ?? '', valeur: 'Femme' },
+        { type: 'champ', libelle: 'Sexe', valeur: 'Femme' },
+      ]),
+    );
+    const lignes = plan.flat().map((l) => l.texte);
+    expect(lignes).toContain('Vous êtes : Femme');
+    expect(lignes).toContain('Sexe : Femme');
+    expect(lignes.filter((l) => l.includes(': :'))).toEqual([]);
   });
 
   it('champ vide : l’absence s’écrit « Non renseigné », jamais un blanc', async () => {
@@ -265,5 +408,82 @@ describe('planifierPages — mise en page', () => {
       });
     }
     expect(repousse).toBe(true);
+  });
+
+  /** Toute ligne « à garder avec la suite » a au moins deux lignes ordinaires après elle, sur sa page. */
+  function verifierGardes(plan: LignePlanifiee[][]): void {
+    for (const lignes of plan) {
+      lignes.forEach((ligne, i) => {
+        if (!ligne.garderAvecSuite) return;
+        const suite = lignes.slice(i + 1).filter((l) => !l.garderAvecSuite);
+        expect(suite.length, `« ${ligne.texte} » sans sa suite en bas de page`).toBeGreaterThanOrEqual(2);
+      });
+    }
+  }
+
+  /** La ligne ouvre une page alors qu'elle aurait tenu seule en bas de la précédente. */
+  function repoussee(plan: LignePlanifiee[][], texte: string, espaceAvant: number): boolean {
+    return plan.some((lignes, p) => {
+      if (p === 0 || lignes[0]?.texte !== texte) return false;
+      const fin = plan[p - 1][plan[p - 1].length - 1];
+      return fin.haut + fin.hauteur + espaceAvant + lignes[0].hauteur <= LIMITE_BAS;
+    });
+  }
+
+  it('un pseudo-titre en bas de page est repoussé avec sa suite, chaîne titre → pseudo-titres comprise', async () => {
+    let chaineRepoussee = false;
+    let seulRepousse = false;
+    for (let n = 20; n <= 90; n++) {
+      const chaine = await planifierPages(
+        documentDe([
+          ...paragraphes(n),
+          { type: 'titre', niveau: 2, texte: 'Sommeil' },
+          { type: 'paragraphe', texte: 'Réponses :', garderAvecSuite: true },
+          { type: 'paragraphe', texte: 'Section A', ton: 'discret', garderAvecSuite: true },
+          { type: 'champ', libelle: 'Question 1', valeur: 'Réponse 1' },
+          { type: 'champ', libelle: 'Question 2', valeur: 'Réponse 2' },
+          ...paragraphes(3, 'Après'),
+        ]),
+      );
+      verifierGardes(chaine);
+      // Le titre n'est jamais séparé de ses pseudo-titres.
+      chaine.forEach((lignes) => {
+        const i = lignes.findIndex((l) => l.texte === 'Sommeil');
+        if (i >= 0) expect(lignes.slice(i + 1, i + 3).map((l) => l.texte)).toEqual(['Réponses :', 'Section A']);
+      });
+      // 4 : espace après un paragraphe ; 10 : espace avant un titre de niveau 2.
+      if (repoussee(chaine, 'Sommeil', 4 + 10)) chaineRepoussee = true;
+
+      const seul = await planifierPages(
+        documentDe([
+          ...paragraphes(n),
+          { type: 'paragraphe', texte: 'Arguments :', garderAvecSuite: true },
+          { type: 'liste', elements: ['Score PSQI élevé', 'Réveils nocturnes déclarés', 'Sieste quotidienne'] },
+          ...paragraphes(3, 'Après'),
+        ]),
+      );
+      verifierGardes(seul);
+      if (repoussee(seul, 'Arguments :', 4)) seulRepousse = true;
+
+      // Forme d'un axe de synthèse : un champ d'une ligne entre le titre et le pseudo-titre.
+      const axe = await planifierPages(
+        documentDe([
+          ...paragraphes(n),
+          { type: 'titre', niveau: 3, texte: 'Axe 1 — Sommeil' },
+          { type: 'champ', libelle: 'Priorité', valeur: 'Élevée' },
+          { type: 'paragraphe', texte: 'Arguments :', garderAvecSuite: true },
+          { type: 'liste', elements: ['Score PSQI élevé', 'Réveils nocturnes déclarés', 'Sieste quotidienne'] },
+        ]),
+      );
+      verifierGardes(axe);
+    }
+    expect(chaineRepoussee).toBe(true);
+    expect(seulRepousse).toBe(true);
+  });
+
+  it('un paragraphe ordinaire n’est pas « à garder » : il peut finir une page', async () => {
+    const plan = await planifierPages(documentDe(paragraphes(120)));
+    expect(plan.length).toBeGreaterThan(1);
+    expect(plan.flat().some((l) => l.garderAvecSuite)).toBe(false);
   });
 });

@@ -86,9 +86,9 @@ function blocsAxes(valeur: unknown): BlocExport[] {
     blocs.push(
       { type: 'titre', niveau: 3, texte: `Axe ${i + 1} — ${intitule}` },
       { type: 'champ', libelle: 'Priorité', valeur: libellePriorite(axe.niveau_priorite) },
-      { type: 'paragraphe', texte: 'Arguments :' },
+      { type: 'paragraphe', texte: 'Arguments :', garderAvecSuite: true },
       blocListeAxe(axe.arguments),
-      { type: 'paragraphe', texte: 'À confirmer en entretien :' },
+      { type: 'paragraphe', texte: 'À confirmer en entretien :', garderAvecSuite: true },
       blocListeAxe(axe.points_a_confirmer),
     );
   });

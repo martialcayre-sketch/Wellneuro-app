@@ -3,6 +3,8 @@ import { NON_RENSEIGNE, type BlocExport, type PatientExport } from './modele';
 import { MENTION_PSEUDONYMISATION, sectionAdministrative } from './sectionAdministrative';
 
 const MAINTENANT = new Date('2026-09-26T12:00:00Z');
+// Un questionnaire (Q_ALI_03) peut demander le sexe : la phrase ne le nie pas.
+const SEXE = 'Non renseigné dans la fiche administrative (peut figurer dans les réponses aux questionnaires)';
 
 function patient(surcharge: Partial<PatientExport> = {}): PatientExport {
   return {
@@ -37,7 +39,7 @@ describe('sectionAdministrative — version complète', () => {
       { type: 'champ', libelle: 'Prénom', valeur: 'Sophie' },
       { type: 'champ', libelle: 'Nom', valeur: 'Nicola' },
       { type: 'champ', libelle: 'Date de naissance', valeur: '14/03/1985 (41 ans)' },
-      { type: 'champ', libelle: 'Sexe', valeur: "Non recueilli par l'application" },
+      { type: 'champ', libelle: 'Sexe', valeur: SEXE },
       { type: 'titre', niveau: 2, texte: 'Contact' },
       { type: 'champ', libelle: 'Adresse e-mail', valeur: 'sophie.nicola@example.test' },
       { type: 'champ', libelle: 'Téléphone', valeur: '06 12 34 56 78' },
@@ -118,12 +120,12 @@ describe('sectionAdministrative — version complète', () => {
 });
 
 describe('sectionAdministrative — version IA externe', () => {
-  it('ne garde que l’identifiant, l’âge, le sexe non recueilli et l’état du dossier', () => {
+  it('ne garde que l’identifiant, l’âge, le sexe non renseigné et l’état du dossier', () => {
     expect(sectionAdministrative(patient(), 'ia-externe', MAINTENANT)).toEqual([
       { type: 'titre', niveau: 1, texte: '1. Renseignements administratifs' },
       { type: 'champ', libelle: 'Identifiant WellNeuro', valeur: 'PAT030' },
       { type: 'champ', libelle: 'Âge', valeur: '41 ans' },
-      { type: 'champ', libelle: 'Sexe', valeur: "Non recueilli par l'application" },
+      { type: 'champ', libelle: 'Sexe', valeur: SEXE },
       { type: 'titre', niveau: 2, texte: 'État du dossier' },
       { type: 'champ', libelle: 'Dossier', valeur: 'Actif' },
       { type: 'champ', libelle: 'Accès du patient', valeur: 'Actif' },

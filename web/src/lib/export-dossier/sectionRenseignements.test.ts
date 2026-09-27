@@ -166,7 +166,11 @@ describe('sectionRenseignements — fiche signalétique', () => {
       b.type === 'paragraphe' ? b.texte : b.type === 'champ' ? b.libelle : '?',
     );
     expect(obtenus).toEqual(attendus);
-    expect(blocs.slice(debut + 1, fin).filter(b => b.type === 'paragraphe').every(b => b.type === 'paragraphe' && b.ton === 'discret')).toBe(true);
+    const intertitres = blocs.slice(debut + 1, fin).filter(b => b.type === 'paragraphe');
+    expect(intertitres).toHaveLength(FICHE_SECTIONS.length);
+    for (const b of intertitres) {
+      expect(b.type === 'paragraphe' && b.ton === 'discret' && b.garderAvecSuite === true).toBe(true);
+    }
   });
 });
 
@@ -214,6 +218,7 @@ describe('sectionRenseignements — anamnèse', () => {
   it('étiquette chaque sous-champ d’un groupe répétable et omet les vides', () => {
     const index = blocs.findIndex(b => b.type === 'paragraphe' && b.texte === 'Médicaments en cours :');
     expect(index).toBeGreaterThan(-1);
+    expect(blocs[index]).toEqual({ type: 'paragraphe', texte: 'Médicaments en cours :', garderAvecSuite: true });
     expect(blocs[index + 1]).toEqual({
       type: 'liste',
       elements: [
@@ -244,6 +249,17 @@ describe('sectionRenseignements — anamnèse', () => {
       .filter(b => b.type !== 'liste')
       .map(b => (b.type === 'paragraphe' ? b.texte.replace(/ :$/, '') : b.type === 'champ' ? b.libelle : '?'));
     expect(obtenus).toEqual(attendus);
+  });
+
+  it('les titres de section et « {groupe} : » restent avec leur suite ; les mentions, non', () => {
+    const gardes = blocs.flatMap(b => (b.type === 'paragraphe' && b.garderAvecSuite ? [b.texte] : []));
+    // Fiche non déposée dans ce cas ; seul le groupe « médicaments » a des entrées.
+    expect(gardes).toEqual(ANAMNESE_SECTIONS.flatMap(s => [
+      s.titre,
+      ...(s.groupes ?? []).flatMap(g => (g.id === 'medicaments' ? [`${g.label} :`] : [])),
+    ]));
+    const nonGardes = blocs.flatMap(b => (b.type === 'paragraphe' && !b.garderAvecSuite ? [b.texte] : []));
+    expect(nonGardes).toContain("Consultation qui fait foi : c'est cette anamnèse que lit la synthèse.");
   });
 
   it('n’écrit jamais un zéro ni un « aucun » à la place d’une absence', () => {

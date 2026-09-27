@@ -1,13 +1,16 @@
 // Export PDF du dossier patient (D-252) — l'assemblage serveur.
 //
 // Seul module de l'export qui lit la base : il transforme les lignes Prisma en
-// entrées de sections (`modele.ts`), puis applique le masquage de la version
-// « IA externe » au document ENTIER, en un seul point.
+// entrées de sections (`modele.ts`), et masque les textes libres de la version
+// « IA externe » en un seul point, avant que les sections ne les lisent.
 //
 // L'APPARTENANCE N'EST PAS VÉRIFIÉE ICI : la route la porte avant l'appel, et
 // la journalise. Deux gardes pour une même question finissent par diverger.
 
 import { prisma } from '@/lib/prisma';
+import { AGENDA_ALI_ID, resolveJoursActifs } from '@/lib/agenda-alimentaire';
+import { listJours } from '@/lib/agenda-alimentaire/persistence';
+import { AGENDA_SOMMEIL_ID, listNuits, resolveNuitsActives } from '@/lib/agenda-sommeil/persistence';
 import { derniereReponseParQuestionnaire, type ReponseOrientation } from '@/lib/clinical/orientationEngine';
 import { normaliserAnamnese } from '@/lib/consultation/anamnese';
 import {
@@ -27,7 +30,7 @@ import {
   scoresSansMesure,
 } from '@/lib/scoring/passationsNonInterpretables';
 import { statutExcluDuRaisonnement } from '@/lib/scoring/validite';
-import { creerMasqueur, masquerDocument } from './masquage';
+import { creerMasqueur, masquerConsultation, masquerPassation, masquerSynthese } from './masquage';
 import {
   dateHeureFr,
   type AssignationSansReponseExport,
@@ -38,6 +41,7 @@ import {
   type SyntheseExport,
   type VersionExport,
 } from './modele';
+import { avertissementInstrumentCabinetModifie } from './reponsesExport';
 import { sectionAdministrative } from './sectionAdministrative';
 import { sectionPerimetre } from './sectionPerimetre';
 import { sectionQuestionnaires } from './sectionQuestionnaires';
@@ -104,17 +108,33 @@ function idsPassationsCourantes(lignes: LignePassation[]): Set<string> {
   return ids;
 }
 
+type DefinitionLue = { definition: QuestionnaireDef | null; modifieeLe: Date | null };
+
+// Rien ne fige, à la passation, la définition d'un instrument du cabinet :
+// l'éditeur renumérote ses items à chaque enregistrement. Sa date de dernière
+// modification est le seul repère qui dise si la lecture reste fidèle.
+async function lireDefinition(idQuestionnaire: string, praticienEmail: string): Promise<DefinitionLue> {
+  const definition = await resolveDefinition(idQuestionnaire, { praticienEmail, inclureNonPublies: true });
+  if (!definition?.cabinet) return { definition, modifieeLe: null };
+  // Propriété déjà vérifiée par `resolveDefinition` (null sinon).
+  const instrument = await prisma.cabinetInstrument.findUnique({
+    where: { idInstrument: idQuestionnaire },
+    select: { updatedAt: true },
+  });
+  return { definition, modifieeLe: instrument?.updatedAt ?? null };
+}
+
 async function lirePassations(
   lignes: LignePassation[],
   praticienEmail: string,
 ): Promise<PassationExport[]> {
-  const definitions = new Map<string, Promise<QuestionnaireDef | null>>();
-  const definitionPourLecture = (idQuestionnaire: string): Promise<QuestionnaireDef | null> => {
+  const definitions = new Map<string, Promise<DefinitionLue>>();
+  const definitionPourLecture = (idQuestionnaire: string): Promise<DefinitionLue> => {
     let definition = definitions.get(idQuestionnaire);
     if (!definition) {
       definition = idQuestionnaire === 'Q_PLAINTES'
-        ? Promise.resolve(QUESTIONNAIRE_PLAINTES_LECTURE)
-        : resolveDefinition(idQuestionnaire, { praticienEmail, inclureNonPublies: true });
+        ? Promise.resolve({ definition: QUESTIONNAIRE_PLAINTES_LECTURE, modifieeLe: null })
+        : lireDefinition(idQuestionnaire, praticienEmail);
       definitions.set(idQuestionnaire, definition);
     }
     return definition;
@@ -147,16 +167,70 @@ async function lirePassations(
       };
     }
     const scores = objetOuNull(r.scoresJson);
+    const { definition, modifieeLe } = await definitionPourLecture(r.idQuestionnaire);
     return {
       ...commun,
       scores: r.idQuestionnaire === 'Q_PLAINTES' ? scoresPlaintes(scores) : scores,
       scorePrincipal: r.scorePrincipal,
       interpretation: r.interpretation,
       nonInterpretable: null,
-      definition: await definitionPourLecture(r.idQuestionnaire),
+      definition,
       definitionRetiree: false,
+      // Posée, la réserve suspend la traduction : codes bruts sous elle.
+      avertissementLecture:
+        modifieeLe && modifieeLe.getTime() > r.dateReponse.getTime()
+          ? avertissementInstrumentCabinetModifie(modifieeLe)
+          : null,
     };
   }));
+}
+
+type LigneAssignation = { idAssignation: string; idQuestionnaire: string };
+
+// Le MESSAGE seul, comme la route de l'agenda : jamais l'objet d'erreur, qui
+// peut porter la ligne lue.
+function journaliserRecueilIllisible(idQuestionnaire: string, err: unknown): void {
+  console.error(
+    `[export-dossier] recueil ${idQuestionnaire} illisible :`,
+    err instanceof Error ? err.message : String(err),
+  );
+}
+
+/**
+ * Un agenda n'a de réponse qu'à sa clôture ; avant, ses nuits ou journées
+ * existent sans que l'assignation change. Compte des saisies ACTIVES (têtes de
+ * chaîne, comme l'écran praticien), null quand rien n'est saisi.
+ */
+async function recueilAgendaEnCours(
+  idPatient: string,
+  a: LigneAssignation,
+): Promise<AssignationSansReponseExport['recueilEnCours']> {
+  // Une saisie illisible ne se tait pas : l'export dit « nombre inconnu »,
+  // jamais un compte amputé ni « sans réponse », et n'échoue pas en entier.
+  // Même règle que la clôture, qui refuse, et que l'écran praticien, qui
+  // affiche la quarantaine. Le sommeil lève sur une nuit illisible ;
+  // l'alimentaire met la journée en quarantaine SANS lever (`illisibles`).
+  if (a.idQuestionnaire === AGENDA_SOMMEIL_ID) {
+    try {
+      const saisies = resolveNuitsActives(await listNuits(idPatient, a.idAssignation)).length;
+      return saisies > 0 ? { saisies, unite: 'nuit' } : null;
+    } catch (err) {
+      journaliserRecueilIllisible(a.idQuestionnaire, err);
+      return { saisies: null, unite: 'nuit' };
+    }
+  }
+  if (a.idQuestionnaire === AGENDA_ALI_ID) {
+    try {
+      const lecture = await listJours(idPatient, a.idAssignation);
+      if (lecture.illisibles > 0) return { saisies: null, unite: 'journée' };
+      const saisies = resolveJoursActifs(lecture.jours).length;
+      return saisies > 0 ? { saisies, unite: 'journée' } : null;
+    } catch (err) {
+      journaliserRecueilIllisible(a.idQuestionnaire, err);
+      return { saisies: null, unite: 'journée' };
+    }
+  }
+  return null;
 }
 
 export function nomFichierExport(idPatient: string, version: VersionExport, maintenant: Date): string {
@@ -281,14 +355,18 @@ export async function assemblerDossierExport(params: {
   const assignationsRepondues = new Set(
     passationsDb.map(p => p.idAssignation).filter((id): id is string => Boolean(id)),
   );
-  const sansReponse: AssignationSansReponseExport[] = assignationsDb
+  const sansReponse: AssignationSansReponseExport[] = await Promise.all(assignationsDb
     .filter(a => a.statut !== 'Complété' && !assignationsRepondues.has(a.idAssignation))
-    .map(a => ({
-      idQuestionnaire: a.idQuestionnaire,
-      titre: a.titre,
-      statut: a.statut,
-      dateAssignation: a.dateAssignation,
-      dateLimite: a.dateLimite,
+    .map(async a => {
+      const envoi: AssignationSansReponseExport = {
+        idQuestionnaire: a.idQuestionnaire,
+        titre: a.titre,
+        statut: a.statut,
+        dateAssignation: a.dateAssignation,
+        dateLimite: a.dateLimite,
+      };
+      const recueil = await recueilAgendaEnCours(idPatient, a);
+      return recueil ? { ...envoi, recueilEnCours: recueil } : envoi;
     }));
 
   const synthese: SyntheseExport | null = validee
@@ -301,8 +379,13 @@ export async function assemblerDossierExport(params: {
       }
     : null;
 
+  // Version « IA externe » : les TEXTES LIBRES sont masqués ici, avant
+  // qu'aucune section ne les lise ; les textes fixes (catalogue, consignes,
+  // préambule) ne le sont jamais.
+  const masquer = version === 'ia-externe' ? creerMasqueur(patient) : null;
+
   const titre = `Dossier patient ${patient.idPatient}`;
-  const document: DocumentExport = {
+  return {
     titre,
     sousTitre: version === 'ia-externe'
       ? 'Version pseudonymisée pour une IA externe'
@@ -312,11 +395,12 @@ export async function assemblerDossierExport(params: {
     blocs: [
       ...sectionPerimetre(version, maintenant),
       ...sectionAdministrative(patient, version, maintenant),
-      ...sectionRenseignements(consultations, porteuse?.idConsultation ?? null),
-      ...sectionQuestionnaires(passations, sansReponse),
-      ...sectionSynthese(synthese, brouillonPlusRecent),
+      ...sectionRenseignements(
+        masquer ? consultations.map(c => masquerConsultation(c, masquer)) : consultations,
+        porteuse?.idConsultation ?? null,
+      ),
+      ...sectionQuestionnaires(masquer ? passations.map(p => masquerPassation(p, masquer)) : passations, sansReponse),
+      ...sectionSynthese(synthese && masquer ? masquerSynthese(synthese, masquer) : synthese, brouillonPlusRecent),
     ],
   };
-
-  return version === 'ia-externe' ? masquerDocument(document, creerMasqueur(patient)) : document;
 }

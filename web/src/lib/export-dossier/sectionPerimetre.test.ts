@@ -23,7 +23,7 @@ const COMMUNS_APRES: BlocExport[] = [
   {
     type: 'paragraphe',
     texte:
-      "Une donnée absente n'est jamais une valeur normale ni un zéro : « Non renseigné » ou « Sans réponse » signifie que rien n'a été déposé.",
+      "Une donnée absente n'est jamais une valeur normale ni un zéro : « Non renseigné » ou « Sans réponse » signifie que rien n'a été déposé ; « Non calculé : recueil insuffisant » signifie qu'un agenda n'a pas réuni assez de saisies pour produire cette mesure.",
   },
   {
     type: 'paragraphe',
@@ -38,7 +38,7 @@ const COMMUNS_APRES: BlocExport[] = [
   {
     type: 'paragraphe',
     texte:
-      "Non inclus : les questionnaires commencés mais non soumis (brouillons restés sur l'appareil du patient), l'espace « Ce qui compte pour moi », les résultats de biologie et les synthèses non validées.",
+      "Non inclus : les questionnaires commencés mais non soumis (brouillons restés sur l'appareil du patient), les saisies d'un agenda non encore clôturé, l'espace « Ce qui compte pour moi », les résultats de biologie et les synthèses non validées.",
     ton: 'discret',
   },
 ];

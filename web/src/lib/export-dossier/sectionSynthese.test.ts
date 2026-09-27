@@ -136,17 +136,25 @@ describe('sectionSynthese — synthèse complète', () => {
     expect(sousTitre(blocs, 'Axes prioritaires')).toEqual([
       { type: 'titre', niveau: 3, texte: 'Axe 1 — Sommeil' },
       { type: 'champ', libelle: 'Priorité', valeur: 'Élevée' },
-      { type: 'paragraphe', texte: 'Arguments :' },
+      { type: 'paragraphe', texte: 'Arguments :', garderAvecSuite: true },
       { type: 'liste', elements: ['Score PSQI élevé', 'Réveils nocturnes déclarés'] },
-      { type: 'paragraphe', texte: 'À confirmer en entretien :' },
+      { type: 'paragraphe', texte: 'À confirmer en entretien :', garderAvecSuite: true },
       { type: 'liste', elements: ['Horaires de coucher en semaine'] },
       { type: 'titre', niveau: 3, texte: 'Axe 2 — Digestion' },
       { type: 'champ', libelle: 'Priorité', valeur: 'Modérée' },
-      { type: 'paragraphe', texte: 'Arguments :' },
+      { type: 'paragraphe', texte: 'Arguments :', garderAvecSuite: true },
       { type: 'liste', elements: ['Inconfort post-prandial'] },
-      { type: 'paragraphe', texte: 'À confirmer en entretien :' },
+      { type: 'paragraphe', texte: 'À confirmer en entretien :', garderAvecSuite: true },
       { type: 'liste', elements: ['Fréquence des épisodes'] },
     ]);
+  });
+
+  it('seuls les pseudo-titres « Arguments : » et « À confirmer en entretien : » restent avec leur suite', () => {
+    const gardes = blocs.flatMap((b) => (b.type === 'paragraphe' && b.garderAvecSuite ? [b.texte] : []));
+    expect(gardes).toEqual(['Arguments :', 'À confirmer en entretien :', 'Arguments :', 'À confirmer en entretien :']);
+    blocs.forEach((b, i) => {
+      if (b.type === 'paragraphe' && b.garderAvecSuite) expect(blocs[i + 1]?.type).toBe('liste');
+    });
   });
 
   it("n'émet ni alerte ni mention de brouillon quand il n'y a pas lieu", () => {
@@ -333,9 +341,9 @@ describe('sectionSynthese — axes mal formés', () => {
     expect(axes([{ axe: 'Sommeil' }])).toEqual([
       { type: 'titre', niveau: 3, texte: 'Axe 1 — Sommeil' },
       { type: 'champ', libelle: 'Priorité', valeur: 'Absente de cette synthèse' },
-      { type: 'paragraphe', texte: 'Arguments :' },
+      { type: 'paragraphe', texte: 'Arguments :', garderAvecSuite: true },
       { type: 'paragraphe', texte: LISTE_VIDE, ton: 'discret' },
-      { type: 'paragraphe', texte: 'À confirmer en entretien :' },
+      { type: 'paragraphe', texte: 'À confirmer en entretien :', garderAvecSuite: true },
       { type: 'paragraphe', texte: LISTE_VIDE, ton: 'discret' },
     ]);
   });
@@ -345,9 +353,9 @@ describe('sectionSynthese — axes mal formés', () => {
       .toEqual([
         { type: 'titre', niveau: 3, texte: 'Axe 1 — intitulé absent de cette synthèse' },
         { type: 'champ', libelle: 'Priorité', valeur: 'critique' },
-        { type: 'paragraphe', texte: 'Arguments :' },
+        { type: 'paragraphe', texte: 'Arguments :', garderAvecSuite: true },
         { type: 'paragraphe', texte: ABSENT, ton: 'discret' },
-        { type: 'paragraphe', texte: 'À confirmer en entretien :' },
+        { type: 'paragraphe', texte: 'À confirmer en entretien :', garderAvecSuite: true },
         { type: 'liste', elements: ['Horaires'] },
       ]);
   });
