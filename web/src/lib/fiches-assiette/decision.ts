@@ -27,17 +27,14 @@ import { controlerVersion, type AnomalieVersion } from './controle';
 import {
   etatDeLaVersion,
   jetonDernierActe,
+  MOTIF_MAX,
   serialiserActe,
   type ActeFiche,
   type ActeSerialise,
   type EtatVersion,
 } from './etat';
 
-/**
- * CHIFFRE TECHNIQUE, PAS UN SEUIL (`DC-20`) : la longueur d'un motif de
- * retrait, contre un dépôt démesuré. Un motif tient en quelques phrases.
- */
-export const MOTIF_MAX = 2_000;
+export { MOTIF_MAX };
 
 export type DemandeActe = {
   idVersion: string;

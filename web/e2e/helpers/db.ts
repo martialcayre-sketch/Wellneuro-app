@@ -14,6 +14,12 @@ import { withSupabaseSslMode, supabasePoolSsl } from '../../src/lib/postgres';
 import { getDocumentCourant } from '../../src/lib/trust/contenus/registre';
 import { documentsRequerantAccuse } from '../../src/lib/trust/avantDeCommencer';
 import { PRATICIEN_EMAIL } from './auth';
+import { createHash } from 'node:crypto';
+import { canonicalSha256 } from '../../src/lib/clinical-engine/canonical';
+import { ficheSourceDeLAssiette } from '../../src/lib/fiches-assiette/appariement';
+import { lireContenuFiche } from '../../src/lib/fiches-assiette/contrat';
+import { controlerFiche } from '../../src/lib/fiches-assiette/invariants';
+import { clesSecuriteDeLAssiette } from '../../src/lib/fiches-assiette/securite';
 // Dossier de référence qui PASSE les préconditions T0. RÉUTILISÉ, jamais
 // recopié : son en-tête dit pourquoi il existe — « sans lui, chacune [des
 // routes] décrirait un dossier confirmable à sa façon, et une condition qui
@@ -366,6 +372,112 @@ export async function nettoyerReprise(idPatient: string): Promise<void> {
 
 export async function closePrisma(): Promise<void> {
   await prisma.$disconnect();
+}
+
+// ---------------------------------------------------------------------------
+// Fiches d'assiette ([[D-251]], lot 6) — rayon « Fiches conseils ».
+//
+// Les deux tables sont APPEND-ONLY (triggers) : aucun nettoyage n'est possible,
+// chaque run ajoute une version. La fixture dépose un BROUILLON seul, jamais un
+// acte : c'est l'écran qui les pose, par la route et `decision.ts` (`DC-16`).
+// L'identifiant reste le cuid de Prisma, que les routes exigent ; la marque du
+// banc est la consigne (`versionConsigne`).
+//
+// L'assiette végétale n'a aucune réserve de sécurité et le contenu ne cite
+// aucun claim : les contrôles ne lisent pas le corpus, vide en base éphémère.
+// Texte SYNTHÉTIQUE uniquement (§4).
+// ---------------------------------------------------------------------------
+
+export const PLATE_FICHE_E2E = 'ASSIETTE_VEGETALE';
+const MARQUE_FICHE_E2E = 'banc-e2e-fiches-conseils';
+// Le mot sans espace éprouve la coupure des lignes sur mobile, des deux côtés
+// de la relecture (une URL reprise d'une fiche ferait de même).
+export const PHRASE_VERBATIM_FICHE_E2E =
+  'Une phrase synthétique de banc, reprise telle quelle : motsynthetiquedebanctreslongsansaucuneespacepourprouverlacoupuredeslignessurpetitecran.';
+const TEXTE_SOURCE_FICHE_E2E = [
+  'Ouverture synthétique de banc.',
+  '<!-- page 1 (lecture A) -->',
+  PHRASE_VERBATIM_FICHE_E2E,
+  'Une seconde ligne synthétique, jamais reprise.',
+].join('\n');
+const CONTENU_FICHE_E2E = {
+  titre: 'Fiche conseils de banc',
+  precautions: [],
+  sections: [{ titre: 'Section de banc', blocs: [{ texte: PHRASE_VERBATIM_FICHE_E2E, provenance: { type: 'verbatim' } }] }],
+};
+
+/** Dépose une version BROUILLON validable de la fiche du banc, au numéro suivant. */
+export async function deposerVersionFicheE2E(): Promise<{ idVersion: string; numero: number; contenuSha256: string }> {
+  const sourceId = ficheSourceDeLAssiette(PLATE_FICHE_E2E);
+  if (!sourceId) throw new Error(`deposerVersionFicheE2E : ${PLATE_FICHE_E2E} n'a pas de fiche appariée.`);
+  const reserves = clesSecuriteDeLAssiette(PLATE_FICHE_E2E);
+  if (reserves.length > 0) {
+    throw new Error(`deposerVersionFicheE2E : ${PLATE_FICHE_E2E} porte désormais des réserves — changer d'assiette.`);
+  }
+  // Le contrat et les contrôles de la décision, rejoués ici : une fixture qui
+  // cesse d'être validable échoue avec son motif, pas au clic.
+  const contenu = lireContenuFiche(CONTENU_FICHE_E2E);
+  const anomalies = controlerFiche({
+    contenu,
+    sourceIdFiche: sourceId,
+    texteSource: TEXTE_SOURCE_FICHE_E2E,
+    textesClaimsCites: [],
+    clesSecuriteAttendues: reserves,
+  });
+  if (anomalies.length > 0) {
+    throw new Error(`deposerVersionFicheE2E : fixture non validable (${anomalies.map(a => a.code).join(', ')}).`);
+  }
+  const contenuSha256 = canonicalSha256(contenu);
+  return prisma.$transaction(async tx => {
+    // Le verrou du trigger d'insertion, pris avant de lire le dernier numéro.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`fiches_assiette_versions:${sourceId}`}))`;
+    const derniere = await tx.ficheAssietteVersion.findFirst({
+      where: { sourceId },
+      orderBy: { numero: 'desc' },
+      select: { numero: true },
+    });
+    const creee = await tx.ficheAssietteVersion.create({
+      data: {
+        sourceId,
+        plateCode: PLATE_FICHE_E2E,
+        numero: (derniere?.numero ?? 0) + 1,
+        contenu: contenu as unknown as Prisma.InputJsonValue,
+        contenuSha256,
+        texteSource: TEXTE_SOURCE_FICHE_E2E,
+        sourceSha256: createHash('sha256').update(TEXTE_SOURCE_FICHE_E2E, 'utf8').digest('hex'),
+        modeleRedaction: 'banc-e2e-redaction',
+        modeleFidelite: 'banc-e2e-fidelite',
+        versionConsigne: MARQUE_FICHE_E2E,
+      },
+      select: { id: true, numero: true },
+    });
+    return { idVersion: creee.id, numero: creee.numero, contenuSha256 };
+  });
+}
+
+/** Lecture seule : les actes d'une version, du plus ancien au plus récent (`ordre` en chaîne). */
+export async function lireActesFicheE2E(idVersion: string) {
+  const actes = await prisma.ficheAssietteActe.findMany({
+    where: { idVersion },
+    orderBy: { ordre: 'asc' },
+    select: { ordre: true, acte: true, validateur: true, relectureIntegrale: true, motif: true, contenuSha256: true, confirmationRegistre: true },
+  });
+  return actes.map(a => ({ ...a, ordre: a.ordre.toString() }));
+}
+
+/**
+ * Lecture seule : les versions du banc restées VALIDÉES — un run tué entre
+ * valider et retirer. Le spec les retire par la vraie route avant de semer,
+ * pour qu'aucune ne reste « servie » d'un run à l'autre.
+ */
+export async function versionsFicheE2EEncoreValidees(): Promise<{ id: string; contenuSha256: string; dernierActe: string }[]> {
+  const versions = await prisma.ficheAssietteVersion.findMany({
+    where: { versionConsigne: MARQUE_FICHE_E2E },
+    select: { id: true, contenuSha256: true, actes: { orderBy: { ordre: 'desc' }, take: 1, select: { ordre: true, acte: true } } },
+  });
+  return versions
+    .filter(v => v.actes[0]?.acte === 'validee')
+    .map(v => ({ id: v.id, contenuSha256: v.contenuSha256, dernierActe: v.actes[0].ordre.toString() }));
 }
 
 // ---------------------------------------------------------------------------

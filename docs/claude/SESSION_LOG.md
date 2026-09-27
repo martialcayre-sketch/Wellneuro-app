@@ -8042,3 +8042,20 @@ corrigés (écriture imbriquée, corps `null`).
 **Prochaine action.** Merge, puis 6b (l'écran du rayon et son E2E).
 Ouvert : qui est « le responsable » ; retrait qui remet en service la version
 validée précédente.
+
+## 2026-09-27 — Fiche d'assiette, lot 6b : le rayon « Fiches conseils »
+
+**Livré.** L'écran du rayon dans la Bibliothèque, sans drapeau.
+- La liste des 12 fiches, chaque état nommé.
+- La relecture côte à côte : source, adaptation, claims, réserves, anomalies,
+  provenance.
+- La déclaration de relecture intégrale, qui retombe à chaque rechargement.
+- Valider et retirer en deux temps, avec l'annonce de la version de référence.
+- Une garde d'écran et un E2E synthétique.
+
+Lot 6a constaté en service. Revue adverse : 1 P1 et 12 P2 corrigés
+(concurrence, réponse perdue, focus, coupure des mots, garde, « référence »
+plutôt que « servie », contenu illisible, liste périmée).
+
+**Prochaine action.** Merge de 6b, puis l'accord de dépôt des brouillons, ou
+le lot 7. Ouvert : le débordement mobile d'`AssignationsPacksPanel` (hors lot).

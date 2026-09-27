@@ -66,7 +66,7 @@ test.describe('Praticien Dashboard', () => {
     await expect(page.getByRole('heading', { name: 'Bibliothèque', exact: true })).toBeVisible({
       timeout: 10000,
     });
-    // Rayons : Questionnaires actif, deux rayons annoncés à venir.
+    // Rayons : Questionnaires actif par défaut.
     await expect(page.getByRole('button', { name: /^Questionnaires$/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /Analyses biologiques/ })).toBeVisible();
 
