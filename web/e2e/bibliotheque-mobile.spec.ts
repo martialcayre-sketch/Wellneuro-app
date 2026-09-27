@@ -16,7 +16,13 @@ test.describe('Bibliothèque — aucun défilement horizontal de la page', () =>
     await page.context().addCookies([await praticienSessionCookie(PRATICIEN_EMAIL)]);
     await page.goto('/dashboard/bibliotheque');
     await expect(page.getByRole('heading', { name: 'Bibliothèque', exact: true })).toBeVisible({ timeout: 10000 });
+    // Mesurer après les chargements qui donnent leur largeur aux sélecteurs et
+    // aux listes. Le titre du formulaire n'est rendu qu'une fois les
+    // questionnaires et le registre des catégories chargés (le panneau parent
+    // les attend ensemble) ; la liste des packs, elle, se charge ensuite, dans
+    // `PacksPanel` même.
     await expect(page.getByRole('heading', { name: 'Nouveau pack de questionnaires' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Chargement des packs...')).toHaveCount(0, { timeout: 10000 });
 
     // Sur échec, les éléments fautifs sont nommés (balise et classes). Un
     // élément dans un conteneur à défilement horizontal VOULU (le tableau des
