@@ -67,6 +67,13 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.agendaAlimentaireJours = (
       await tx.agendaAlimentaireJour.deleteMany({ where: par })
     ).count;
+    // Les fiches d'assiette remises ([[D-251]], M2) : FK RESTRICT vers patients
+    // ET vers l'approbation qui les a remises — supprimées avant les
+    // approbations, sinon l'effacement échouerait sur la contrainte. La table
+    // refuse UPDATE et TRUNCATE, pas DELETE : c'est pour ce geste-ci.
+    supprimees.fichesAssietteRemises = (
+      await tx.ficheAssietteRemise.deleteMany({ where: par })
+    ).count;
     supprimees.protocolDiffusionApprovals = (
       await tx.protocolDiffusionApproval.deleteMany({ where: par })
     ).count;

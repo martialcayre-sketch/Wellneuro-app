@@ -977,6 +977,17 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/fiches_assiette_catalogue_v1_negatif.sql
 
+      # Remises des fiches d'assiette (D-251, lot 7, M2). La promesse qui compte
+      # le plus est posée en base, pas dans une route : seule la VERSION DE
+      # RÉFÉRENCE d'une fiche se remet — ni brouillon, ni version retirée, ni
+      # repli sur une version plus ancienne. Puis : une version une seule fois
+      # par dossier, l'empreinte exacte, le clic du même dossier, la remise
+      # figée mais effaçable, et l'espèce de lecture `fiche_assiette`.
+      - name: Fiches assiette remises negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/fiches_assiette_remises_v1_negatif.sql
+
       # Écartement praticien d'une proposition d'orientation. LA PROMESSE QUI
       # COMPTE LE PLUS EST LA MOINS VISIBLE : un écartement SANS RÈGLES est
       # refusé. `regles_au_geste` est ce qui permet le RÉVEIL d'une proposition

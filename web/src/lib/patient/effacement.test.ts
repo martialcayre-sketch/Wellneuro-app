@@ -23,7 +23,7 @@ const { prisma, appels } = vi.hoisted(() => {
     dossierEfface: { create: vi.fn(async () => ({})) },
   };
   for (const nom of [
-    'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'protocolDiffusionApproval',
+    'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'ficheAssietteRemise', 'protocolDiffusionApproval',
     'arbitrageBiologique', 'panelBiologieDocumente',
     'protocolDraft', 'assessmentEpisode', 'decisionPrioritySelection',
     'ecartementProposition',
@@ -143,6 +143,17 @@ describe('effacerDossier', () => {
     await effacerDossier('PAT_SEED_03');
     expect(appels).toContain('agendaAlimentaireJour');
     expect(appels.indexOf('agendaAlimentaireJour')).toBeLessThan(appels.indexOf('assignation'));
+  });
+
+  // Fiches d'assiette remises (D-251, M2) : FK RESTRICT vers patients ET vers
+  // l'approbation de diffusion qui les a remises. Même lecture que l'agenda
+  // alimentaire : le garde structurel attrape la ligne retirée, ce test-ci la
+  // ligne DÉPLACÉE après les approbations — qui rendrait l'effacement
+  // impossible pour tout dossier ayant reçu une fiche.
+  it('supprime les fiches d’assiette remises avant les approbations de diffusion', async () => {
+    await effacerDossier('PAT_SEED_03');
+    expect(appels).toContain('ficheAssietteRemise');
+    expect(appels.indexOf('ficheAssietteRemise')).toBeLessThan(appels.indexOf('protocolDiffusionApproval'));
   });
 
   it('tout passe par une seule transaction', async () => {
