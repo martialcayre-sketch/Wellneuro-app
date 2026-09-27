@@ -256,7 +256,7 @@ export function RelectureFicheAssiette({
               id={idTitre}
               ref={titreRef}
               tabIndex={-1}
-              className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground focus:outline-none"
+              className="rounded-sm font-display text-2xl font-bold tracking-[-0.02em] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               Relecture — {detail.libelle}, v{detail.numero}
             </h3>

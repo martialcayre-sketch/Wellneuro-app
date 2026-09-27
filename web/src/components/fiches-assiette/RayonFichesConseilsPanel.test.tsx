@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { LigneRayonFiche } from '@/lib/fiches-assiette/lecture';
 import { RayonFichesConseilsPanel } from './RayonFichesConseilsPanel';
 
@@ -88,6 +88,10 @@ describe('RayonFichesConseilsPanel — chaque état nommé pour ce qu’il est',
 
     expect(await screen.findByText('Chargement des fiches…')).toBeTruthy();
     expect(screen.queryByTestId('fiche-assiette-ASSIETTE_A_VALIDER')).toBeNull();
+    // Le focus revient au titre du rayon, et il s'y VOIT au clavier (revue #1238).
+    const titre = screen.getByRole('heading', { name: 'Fiches conseils' });
+    await waitFor(() => expect(document.activeElement).toBe(titre));
+    expect(titre.className).toContain('focus-visible:ring-2');
   });
 
   it('un échec de chargement n’est pas une liste vide', async () => {

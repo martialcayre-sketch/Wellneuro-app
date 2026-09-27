@@ -89,7 +89,10 @@ describe('RelectureFicheAssiette — la surface de relecture précède l’attes
   it('source et adaptation côte à côte : pages nommées, provenance, texte des claims, réserves', async () => {
     simulerFetch([detail()]);
     render(<RelectureFicheAssiette idVersion="versionbanc2" onFermer={() => {}} onOuvrirVersion={() => {}} />);
-    await screen.findByRole('heading', { name: /Relecture — Assiette de banc, v2/ });
+    const titre = await screen.findByRole('heading', { name: /Relecture — Assiette de banc, v2/ });
+    // Le focus va au titre, et il s'y VOIT au clavier (revue #1238).
+    await waitFor(() => expect(document.activeElement).toBe(titre));
+    expect(titre.className).toContain('focus-visible:ring-2');
 
     const source = screen.getByTestId('relecture-source');
     // Le marqueur de page devient un séparateur nommé ; le texte est rendu tel quel.
