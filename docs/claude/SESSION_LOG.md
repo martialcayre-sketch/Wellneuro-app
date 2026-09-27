@@ -8133,16 +8133,31 @@ mémoire : remonter chaque champ rendu jusqu'à son écrivain.
 pour 🚫/⛔ ; l'échelle réservée à l'agenda du sommeil. Défauts mineurs connus :
 ł/ı collés, nombres qui reproduisent la naissance, trois défauts d'affichage.
 
-## 2026-09-27 — Fiches d'assiette : migration M2, les remises (D-251, lot 7)
+## 2026-09-28 — Fiches d'assiette : migration M2, les remises (D-251, lot 7)
 
 **Livré (PR de migration seule).** Nouvelle table `fiches_assiette_remises` :
-patient, clic d'approbation, action, version, empreinte. Un trigger refuse
-toute version qui n'est pas la version de référence de sa fiche : ni
-brouillon, ni retirée, ni repli. Il refuse aussi une empreinte étrangère et le
-clic d'un autre dossier. Une version n'est remise qu'une fois par dossier. La
-remise est figée mais effaçable, et l'effacement nommé la supprime avant les
-approbations. L'espèce de lecture `fiche_assiette` est ajoutée. Contrat SQL au
-CI ; 17 mutants tués.
+`ordre`, patient, clic d'approbation, action, version, empreinte. Un trigger
+refuse :
 
-**Prochaine action.** Revue, puis merge et approbation de `release-db` dans la
-foulée, puis constat par conteneur, puis le lot 8.
+- toute version qui n'est pas la version de référence de sa fiche (ni
+  brouillon, ni retirée, ni repli) ;
+- une empreinte étrangère, le clic d'un autre dossier, une action qui ne porte
+  pas l'assiette.
+
+Il prend le verrou de la décision.
+
+**Arbitrage du responsable (amendement de D-251).** La remise en cours d'une
+fiche est la dernière. Un clic qui ne change rien ne remet rien ; la v1 se
+remet après le retrait de la v2. La revue `wn-reviewer` avait fait tomber une
+première unicité (patient, version).
+
+**Autour de la table.**
+
+- Figée mais effaçable : l'effacement nommé passe avant les approbations, et
+  une garde de dépôt le tient.
+- Espèce de lecture `fiche_assiette`.
+- Déclarée en rubrique 5 du RGPD, sans y être qualifiée.
+- 24 mutants tués.
+
+**Prochaine action.** PR, merge et approbation de `release-db` dans la foulée,
+constat par conteneur, puis le lot 8.

@@ -3047,16 +3047,26 @@ model FicheAssietteActe {
 // La trace qu'une VERSION a été remise à UN patient, par UN clic « Valider pour
 // diffusion », au titre d'UNE action Alimentation. Donnée patient : effacée
 // nommément avec le dossier (`patient/effacement.ts`). Figée : UPDATE et
-// TRUNCATE refusés par trigger ; DELETE admis pour l'effacement seul.
+// TRUNCATE refusés par trigger ; DELETE admis pour l'effacement seul (tenu par
+// `lib/fiches-assiette/remises.guard.test.ts`).
 //
-// CE QUE LA BASE REFUSE À L'INSERTION (trigger, migration) : une version qui
-// n'est pas la VERSION DE RÉFÉRENCE de sa fiche (brouillon, retirée, ou plus
-// ancienne que la référence — jamais de repli) ; une empreinte qui n'est pas
-// celle de la version ; une approbation posée sur un autre dossier.
+// LA REMISE EN COURS d'une fiche, pour un patient, est la DERNIÈRE par `ordre`
+// (arbitrage du 2026-09-28). Un clic qui ne change rien ne remet rien : la base
+// annule l'insertion. Une version déjà remise se remet si une autre l'a
+// remplacée depuis.
+//
+// CE QUE LA BASE REFUSE À L'INSERTION (trigger, migration) : une approbation
+// posée sur un autre dossier ; une empreinte qui n'est pas celle de la version ;
+// une action absente du protocole approuvé, ou qui ne porte pas l'assiette de la
+// fiche ; une version qui n'est pas la VERSION DE RÉFÉRENCE de sa fiche
+// (brouillon, retirée, ou plus ancienne — jamais de repli).
 
-/// Une fiche remise à un patient. Une version ne lui est remise qu'une fois.
+/// Une fiche remise à un patient.
 model FicheAssietteRemise {
   id            String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (séquence, réaffirmée par
+  /// trigger) : la remise en cours est la dernière.
+  ordre         BigInt   @default(autoincrement()) @map("ordre")
   idPatient     String   @map("id_patient")
   /// Le clic « Valider pour diffusion » qui l'a remise.
   idApprobation String   @map("id_approbation")
@@ -3072,7 +3082,8 @@ model FicheAssietteRemise {
   approbation ProtocolDiffusionApproval @relation(fields: [idApprobation], references: [id], onDelete: Restrict)
   version     FicheAssietteVersion      @relation(fields: [idVersion], references: [id], onDelete: Restrict)
 
-  @@unique([idPatient, idVersion], map: "fiches_assiette_remises_patient_version_key")
+  @@unique([ordre], map: "fiches_assiette_remises_ordre_key")
+  @@index([idPatient, ordre], map: "fiches_assiette_remises_patient_ordre_idx")
   @@index([idApprobation], map: "fiches_assiette_remises_approbation_idx")
   @@map("fiches_assiette_remises")
 }
