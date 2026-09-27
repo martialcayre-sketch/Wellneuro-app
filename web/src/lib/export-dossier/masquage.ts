@@ -632,32 +632,53 @@ export function creerMasqueur(patient: PatientExport): Masqueur {
       trouve[0].length ? [debut[trouve.index], fin[trouve.index + trouve[0].length - 1]] : null,
     ).filter((plage): plage is [number, number] => plage !== null);
 
-  const masquerMorceau = (morceau: string): string => {
+  /** Les plages d'un morceau, décalées de sa position dans le texte. */
+  const plagesDe = (morceau: string, decalage = 0): Array<[number, number]> => {
     const soude = plier(morceau, '');
     // Sans caractère effacé par le rendu, les deux plis sont identiques.
     const trouvees = soude.effaces ? [...plages(soude), ...plages(plier(morceau, ' '))] : plages(soude);
-    if (!trouvees.length) return morceau;
+    return trouvees.map(([depart, arrivee]) => [depart + decalage, arrivee + decalage]);
+  };
+
+  const remplacer = (texte: string, trouvees: Array<[number, number]>): string => {
+    if (!trouvees.length) return texte;
     // Union des plages : celles qui se chevauchent (ou tiennent dans un même
     // caractère d'origine, « ½ ») ne portent qu'une marque.
     trouvees.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
     let sortie = '';
     let curseur = 0;
     for (const [depart, arrivee] of trouvees) {
-      if (depart >= curseur) sortie += morceau.slice(curseur, depart) + MARQUE_MASQUE;
+      if (depart >= curseur) sortie += texte.slice(curseur, depart) + MARQUE_MASQUE;
       curseur = Math.max(curseur, arrivee);
     }
-    return sortie + morceau.slice(curseur);
+    return sortie + texte.slice(curseur);
   };
 
-  // L'identifiant PATnnn est la clé que le praticien retrouve : il ne se masque jamais.
+  // L'identifiant PATnnn est la clé que le praticien retrouve : il ne se masque
+  // jamais SEUL. Les motifs se cherchent sur le texte ENTIER — une coordonnée
+  // qui le contient (« PAT030@exemple.fr ») se masque entière —, et sur chaque
+  // morceau entre deux occurrences, où un nom collé (« SophiePAT030 ») garde
+  // sa frontière ; seule une plage tenue DANS une occurrence est rendue.
   const identifiant = patient.idPatient.trim();
-  if (!identifiant) return masquerMorceau;
-  const protege = new RegExp(`(${echapper(identifiant)})`, 'i');
-  return texte =>
-    texte
-      .split(protege)
-      .map((morceau, rang) => (rang % 2 === 1 ? morceau : masquerMorceau(morceau)))
-      .join('');
+  if (!identifiant) return texte => remplacer(texte, plagesDe(texte));
+  const occurrencesIdentifiant = new RegExp(echapper(identifiant), 'gi');
+  return texte => {
+    const proteges = Array.from(
+      texte.matchAll(occurrencesIdentifiant),
+      (trouve): [number, number] => [trouve.index, trouve.index + trouve[0].length],
+    );
+    if (!proteges.length) return remplacer(texte, plagesDe(texte));
+    const trouvees = plagesDe(texte);
+    let debut = 0;
+    for (const [depart, arrivee] of [...proteges, [texte.length, texte.length]]) {
+      if (depart > debut) trouvees.push(...plagesDe(texte.slice(debut, depart), debut));
+      debut = arrivee;
+    }
+    return remplacer(
+      texte,
+      trouvees.filter(([depart, arrivee]) => !proteges.some(([debutId, finId]) => depart >= debutId && arrivee <= finId)),
+    );
+  };
 }
 
 // ── Les textes libres, masqués au point d'entrée ───────────────────────────

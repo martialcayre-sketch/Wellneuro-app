@@ -73,6 +73,14 @@ confirmer, questions pour la consultation).
   construction sur des champs extrêmes.
 - Copilot, un constat corrigé : un élément de score persisté `null` faisait
   tomber l'export (même défaut sur les sous-scores).
+- Contre-audit Codex (P0, première passe) : BLOQUER sur deux P0, corrigés.
+  - P0-1 : la protection de `PATnnn` coupait le texte avant la recherche ; un
+    e-mail qui le contient survivait. Les motifs se cherchent désormais sur le
+    texte entier et entre les occurrences.
+  - P0-2 : le titre saisi à l'envoi sortait comme un texte fixe. C'est
+    maintenant le titre de la définition, et le titre saisi n'est plus lu.
+  - Les fixtures portent l'identité dans les titres saisis, et le balayage du
+    document entier le prouve.
 - Baselines visuelles Linux régénérées par `visual-baselines` et relues
   image par image : seul le bouton neuf change.
 

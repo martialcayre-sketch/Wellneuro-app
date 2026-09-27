@@ -46,6 +46,7 @@ import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/co
 import { resolveDefinition } from '@/lib/instruments';
 import { QUESTIONNAIRE_PLAINTES_LECTURE } from '@/lib/plaintes';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
+import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { AVERTISSEMENT_SYNTHESE_ANTERIEURE } from '@/lib/scoring/passationsNonInterpretables';
 import { assemblerDossierExport, nomFichierExport } from './assembler';
 import { creerMasqueur, MARQUE_MASQUE } from './masquage';
@@ -138,6 +139,20 @@ const DEFINITION_FICTIVE: QuestionnaireDef = {
   ],
 };
 
+// Le titre CANONIQUE d'un instrument, porté par sa définition. Les titres
+// enregistrés avec les envois (ci-dessous) sont, eux, des textes libres
+// saisis à l'envoi — ils portent l'identité exprès : ils ne doivent jamais sortir.
+const TITRES_CANONIQUES: Record<string, string> = {
+  Q_SOM_03: 'Questionnaire de Berlin',
+  Q_DIG_01: 'Questionnaire digestif',
+  Q_SOM_09: 'Agenda du sommeil — 21 nuits',
+  Q_ALI_09: 'Agenda alimentaire — 21 jours',
+};
+
+function definitionDe(id: string): QuestionnaireDef & { cabinet: boolean } {
+  return { ...DEFINITION_FICTIVE, titre: TITRES_CANONIQUES[id] ?? DEFINITION_FICTIVE.titre, cabinet: false };
+}
+
 type LigneDb = {
   idReponse: string;
   idAssignation: string | null;
@@ -191,7 +206,8 @@ const PASSATIONS: LigneDb[] = [
   ligne({
     idReponse: 'R_FICTIF_2',
     idQuestionnaire: 'Q_FICTIF',
-    titre: 'Questionnaire fictif',
+    // Titre recopié de l'envoi, saisi librement : il ne doit jamais sortir.
+    titre: 'Bilan de Mme Sophie Nicola',
     idAssignation: 'A_FICTIF_2',
     dateReponse: new Date('2026-09-10T09:00:00.000Z'),
     scoresJson: {
@@ -237,7 +253,7 @@ const ASSIGNATIONS = [
   {
     idAssignation: 'A_ATTENTE',
     idQuestionnaire: 'Q_SOM_03',
-    titre: 'Questionnaire de Berlin',
+    titre: 'Berlin pour Mme Sophie Nicola',
     statut: 'En attente',
     dateAssignation: new Date('2026-09-21T09:00:00.000Z'),
     dateLimite: '2026-10-01',
@@ -262,7 +278,7 @@ const ASSIGNATIONS = [
   {
     idAssignation: 'A_ANNULEE',
     idQuestionnaire: 'Q_DIG_01',
-    titre: 'Questionnaire digestif',
+    titre: 'Digestif — relancer au 06 12 34 56 78',
     statut: 'Annulée',
     dateAssignation: new Date('2026-08-20T09:00:00.000Z'),
     dateLimite: null,
@@ -370,7 +386,7 @@ function passation(idReponse: string): PassationExport {
 describe('assemblerDossierExport — lectures', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    espionDefinition.mockResolvedValue({ ...DEFINITION_FICTIVE, cabinet: false });
+    espionDefinition.mockImplementation(async (id: string) => definitionDe(id));
     brancherBase();
   });
 
@@ -427,7 +443,7 @@ describe('assemblerDossierExport — lectures', () => {
 describe('assemblerDossierExport — passations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    espionDefinition.mockResolvedValue({ ...DEFINITION_FICTIVE, cabinet: false });
+    espionDefinition.mockImplementation(async (id: string) => definitionDe(id));
     brancherBase();
   });
 
@@ -504,6 +520,14 @@ describe('assemblerDossierExport — passations', () => {
     await assembler('complete');
     expect(passation('R_ALI_2').courante).toBe(false);
     expect(passation('R_ALI_1').courante).toBe(true);
+  });
+
+  it('titre saisi à l’envoi : jamais repris — celui de la définition, ou du catalogue pour une passation non interprétable (Codex P0-2)', async () => {
+    await assembler('complete');
+    expect(passation('R_FICTIF_2').titre).toBe('Questionnaire fictif');
+    expect(passation('R_MFI').titre).toBe(QUESTIONNAIRE_CATALOGUE.Q_SOM_07.titre);
+    const [, sansReponse] = espionQuestionnaires.mock.calls[0];
+    expect(sansReponse.map(a => a.titre)).toEqual(['Questionnaire de Berlin', 'Questionnaire digestif']);
   });
 
   it('envois sans réponse : ni complétés, ni déjà rattachés à une passation', async () => {
@@ -586,10 +610,10 @@ describe('assemblerDossierExport — lectures des agendas et du cabinet', () => 
 
   const ENVOI = { statut: 'En attente', dateLimite: null };
   const AGENDAS = [
-    { ...ENVOI, idAssignation: 'A_SOM', idQuestionnaire: 'Q_SOM_09', titre: 'Agenda du sommeil — 21 nuits', dateAssignation: new Date('2026-09-05T09:00:00.000Z') },
-    { ...ENVOI, idAssignation: 'A_ALI', idQuestionnaire: 'Q_ALI_09', titre: 'Agenda alimentaire — 21 jours', dateAssignation: new Date('2026-09-07T09:00:00.000Z') },
-    { ...ENVOI, idAssignation: 'A_SOM_VIDE', idQuestionnaire: 'Q_SOM_09', titre: 'Agenda du sommeil — 21 nuits', dateAssignation: new Date('2026-09-04T09:00:00.000Z') },
-    { ...ENVOI, idAssignation: 'A_SOM_CLOS', idQuestionnaire: 'Q_SOM_09', titre: 'Agenda du sommeil — 21 nuits', statut: 'Complété', dateAssignation: new Date('2026-08-01T09:00:00.000Z') },
+    { ...ENVOI, idAssignation: 'A_SOM', idQuestionnaire: 'Q_SOM_09', titre: 'Sommeil de Sophie Nicola', dateAssignation: new Date('2026-09-05T09:00:00.000Z') },
+    { ...ENVOI, idAssignation: 'A_ALI', idQuestionnaire: 'Q_ALI_09', titre: 'Repas — sophie.nicola@example.test', dateAssignation: new Date('2026-09-07T09:00:00.000Z') },
+    { ...ENVOI, idAssignation: 'A_SOM_VIDE', idQuestionnaire: 'Q_SOM_09', titre: 'Sommeil de Sophie Nicola', dateAssignation: new Date('2026-09-04T09:00:00.000Z') },
+    { ...ENVOI, idAssignation: 'A_SOM_CLOS', idQuestionnaire: 'Q_SOM_09', titre: 'Sommeil de Sophie Nicola', statut: 'Complété', dateAssignation: new Date('2026-08-01T09:00:00.000Z') },
   ];
 
   type WhereAgenda = { where: { idPatient: string; idAssignation?: string } };
@@ -621,7 +645,7 @@ describe('assemblerDossierExport — lectures des agendas et du cabinet', () => 
     vi.clearAllMocks();
     espionErreur = vi.spyOn(console, 'error').mockImplementation(() => {});
     espionDefinition.mockImplementation(async (id: string) =>
-      id === 'CAB_TEST' ? { ...DEF_CAB, cabinet: true } : { ...DEFINITION_FICTIVE, cabinet: false },
+      id === 'CAB_TEST' ? { ...DEF_CAB, cabinet: true } : definitionDe(id),
     );
     brancherBase();
     prisma.assignation.findMany.mockResolvedValue([...AGENDAS, ...ASSIGNATIONS]);
@@ -788,7 +812,7 @@ describe('assemblerDossierExport — lectures des agendas et du cabinet', () => 
 describe('assemblerDossierExport — synthèse', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    espionDefinition.mockResolvedValue({ ...DEFINITION_FICTIVE, cabinet: false });
+    espionDefinition.mockImplementation(async (id: string) => definitionDe(id));
   });
 
   it('prend la dernière synthèse VALIDÉE, triée par validation (nulls en dernier) puis génération', async () => {
@@ -856,7 +880,7 @@ describe('assemblerDossierExport — synthèse', () => {
 describe('assemblerDossierExport — document', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    espionDefinition.mockResolvedValue({ ...DEFINITION_FICTIVE, cabinet: false });
+    espionDefinition.mockImplementation(async (id: string) => definitionDe(id));
     brancherBase();
   });
 
@@ -963,7 +987,7 @@ describe('assemblerDossierExport — document', () => {
 describe('assemblerDossierExport — masquage des textes libres', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    espionDefinition.mockResolvedValue({ ...DEFINITION_FICTIVE, cabinet: false });
+    espionDefinition.mockImplementation(async (id: string) => definitionDe(id));
     brancherBase();
   });
 

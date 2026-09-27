@@ -51,7 +51,11 @@
   sa forme sans accent et celle qu'imprimera le PDF soient toutes reconnues.
 - Les textes **fixes** (libellés du catalogue, consignes, préambule, titres)
   ne sont pas masqués : un nom qui est aussi un mot courant n'efface pas une
-  option de réponse. La section administrative de cette version n'écrit
+  option de réponse. Le titre d'un instrument est donc celui de sa
+  **définition**, jamais le titre saisi librement à l'envoi (« Bilan de Mme
+  … »), qui n'est pas repris ; sans définition, l'identifiant seul.
+- L'identifiant `PATnnn` n'est jamais masqué **seul** ; une coordonnée qui le
+  contient (`PAT030@…`) l'est entière. La section administrative de cette version n'écrit
   aucune valeur identifiante, et un banc parcourt tous les textes du document
   pour le prouver.
 - La limite est écrite dans le PDF lui-même : un identifiant écrit autrement

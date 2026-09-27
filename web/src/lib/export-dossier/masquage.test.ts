@@ -504,6 +504,15 @@ describe('creerMasqueur — garanties', () => {
     expect(pat('PAT030 et Pat')).toBe(`PAT030 et ${M}`);
   });
 
+  // Contre-audit Codex P0-1 : l'identifiant était protégé en COUPANT le texte
+  // avant la recherche — un e-mail qui le contient n'était jamais vu entier.
+  it('une coordonnée qui contient l’identifiant se masque entière ; un nom collé à l’identifiant aussi', () => {
+    const avecId = creerMasqueur(patient({ email: 'PAT030@example.test' }));
+    expect(avecId('Contact PAT030@example.test, dossier PAT030.')).toBe(`Contact ${M}, dossier PAT030.`);
+    expect(avecId('écrire à pat030@EXAMPLE.test')).toBe(`écrire à ${M}`);
+    expect(masquer('SophiePAT030 et PAT030Nicola')).toBe(`${M}PAT030 et PAT030${M}`);
+  });
+
   it('est idempotent : la marque posée n’est pas remasquée', () => {
     const texte = 'Sophie Nicola, 06 12 34 56 78, sophie.nicola@example.test, née le 14/03/1985.';
     expect(masquer(masquer(texte))).toBe(masquer(texte));

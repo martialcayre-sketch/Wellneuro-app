@@ -82,6 +82,11 @@ export type ConsultationExport = {
 export type PassationExport = {
   idReponse: string;
   idQuestionnaire: string;
+  /**
+   * Titre CANONIQUE (définition, ou catalogue pour une passation non
+   * interprétable), '' sans définition — jamais le titre saisi à l'envoi, texte
+   * libre qui sortirait ni masqué ni cité.
+   */
   titre: string;
   dateReponse: Date;
   /**
@@ -113,6 +118,7 @@ export type PassationExport = {
 
 export type AssignationSansReponseExport = {
   idQuestionnaire: string;
+  /** Titre CANONIQUE de la définition, '' sans elle — jamais le titre saisi à l'envoi. */
   titre: string;
   /** 'En attente' | 'Annulée' | … (texte libre du schéma) */
   statut: string;

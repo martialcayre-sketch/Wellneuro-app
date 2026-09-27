@@ -23,6 +23,7 @@ import { STATUTS_SYNTHESE_VALIDES } from '@/lib/documents/types';
 import { resolveDefinition } from '@/lib/instruments';
 import { QUESTIONNAIRE_PLAINTES_LECTURE } from '@/lib/plaintes';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
+import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { instrumentAFormeVariable } from '@/lib/questionnaires/alimentaire';
 import {
   avertissementSyntheseAnterieure,
@@ -54,7 +55,6 @@ type LignePassation = {
   idReponse: string;
   idAssignation: string | null;
   idQuestionnaire: string;
-  titre: string;
   dateReponse: Date;
   scoresJson: unknown;
   scorePrincipal: number | null;
@@ -124,12 +124,12 @@ async function lireDefinition(idQuestionnaire: string, praticienEmail: string): 
   return { definition, modifieeLe: instrument?.updatedAt ?? null };
 }
 
-async function lirePassations(
-  lignes: LignePassation[],
-  praticienEmail: string,
-): Promise<PassationExport[]> {
+type LecteurDefinitions = (idQuestionnaire: string) => Promise<DefinitionLue>;
+
+/** Une lecture par instrument, partagée entre passations et envois sans réponse. */
+function lecteurDefinitions(praticienEmail: string): LecteurDefinitions {
   const definitions = new Map<string, Promise<DefinitionLue>>();
-  const definitionPourLecture = (idQuestionnaire: string): Promise<DefinitionLue> => {
+  return idQuestionnaire => {
     let definition = definitions.get(idQuestionnaire);
     if (!definition) {
       definition = idQuestionnaire === 'Q_PLAINTES'
@@ -139,20 +139,40 @@ async function lirePassations(
     }
     return definition;
   };
+}
+
+// Le titre d'un instrument est celui de sa DÉFINITION, jamais le titre
+// enregistré avec l'envoi ou la réponse : celui-là se saisit librement à
+// l'envoi (« Bilan de Mme … ») et sortirait comme un texte fixe, ni masqué ni
+// cité. Sans définition, l'identifiant seul.
+async function titreCanonique(idQuestionnaire: string, definitionPourLecture: LecteurDefinitions): Promise<string> {
+  return (await definitionPourLecture(idQuestionnaire)).definition?.titre ?? '';
+}
+
+// Une passation non interprétable ne lit pas sa définition (retirée) : son
+// titre vient du catalogue statique, sans rien de la version reconstruite.
+const CATALOGUE: Readonly<Record<string, { titre: string } | undefined>> = QUESTIONNAIRE_CATALOGUE;
+
+async function lirePassations(
+  lignes: LignePassation[],
+  definitionPourLecture: LecteurDefinitions,
+): Promise<PassationExport[]> {
   const courantes = idsPassationsCourantes(lignes);
 
   return Promise.all(lignes.map(async (r): Promise<PassationExport> => {
+    const nonInterpretable = motifNonInterpretable(r.idQuestionnaire, r.dateReponse);
     const commun = {
       idReponse: r.idReponse,
       idQuestionnaire: r.idQuestionnaire,
-      titre: r.titre,
+      titre: nonInterpretable
+        ? CATALOGUE[r.idQuestionnaire]?.titre ?? ''
+        : await titreCanonique(r.idQuestionnaire, definitionPourLecture),
       dateReponse: r.dateReponse,
       statutValidite: r.statutValidite,
       invalideLe: r.invalideLe,
       motifInvalidation: r.motifInvalidation,
       courante: courantes.has(r.idReponse),
     };
-    const nonInterpretable = motifNonInterpretable(r.idQuestionnaire, r.dateReponse);
     if (nonInterpretable) {
       // Même retrait que la fiche et l'inbox : sans définition, pas de
       // libellés de la version reconstruite plaqués sur d'anciennes réponses.
@@ -298,7 +318,6 @@ export async function assemblerDossierExport(params: {
         idReponse: true,
         idAssignation: true,
         idQuestionnaire: true,
-        titre: true,
         dateReponse: true,
         scoresJson: true,
         scorePrincipal: true,
@@ -314,7 +333,6 @@ export async function assemblerDossierExport(params: {
       select: {
         idAssignation: true,
         idQuestionnaire: true,
-        titre: true,
         statut: true,
         dateAssignation: true,
         dateLimite: true,
@@ -351,7 +369,8 @@ export async function assemblerDossierExport(params: {
     anamnese: c.anamnese == null ? null : normaliserAnamnese(c.anamnese),
   }));
 
-  const passations = await lirePassations(passationsDb, praticienEmail);
+  const definitionPourLecture = lecteurDefinitions(praticienEmail);
+  const passations = await lirePassations(passationsDb, definitionPourLecture);
 
   const assignationsRepondues = new Set(
     passationsDb.map(p => p.idAssignation).filter((id): id is string => Boolean(id)),
@@ -361,7 +380,7 @@ export async function assemblerDossierExport(params: {
     .map(async a => {
       const envoi: AssignationSansReponseExport = {
         idQuestionnaire: a.idQuestionnaire,
-        titre: a.titre,
+        titre: await titreCanonique(a.idQuestionnaire, definitionPourLecture),
         statut: a.statut,
         dateAssignation: a.dateAssignation,
         dateLimite: a.dateLimite,

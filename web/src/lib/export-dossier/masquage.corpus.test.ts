@@ -112,6 +112,9 @@ const FUITES: Fuite[] = [
   { origine: '1re #3', dossier: { dateNaissance: '1980-03-12' }, texte: 'née le 12 03 1980', identite: ['12031980'] },
   { origine: '1re #3', dossier: { dateNaissance: '1980-03-12' }, texte: 'née le 12 / 03 / 1980', identite: ['12031980'] },
   { origine: '1re #3', dossier: { dateNaissance: '1980-03-12' }, texte: 'née le 12-mars-1980', identite: ['12mars1980'] },
+  // Contre-audit Codex P0-1 : une coordonnée qui contient l'identifiant PATnnn.
+  { origine: 'Codex P0-1', dossier: { email: 'PAT030@example.test' }, texte: 'Contact : PAT030@example.test', identite: ['pat030exampletest'] },
+  { origine: 'Codex P0-1', texte: 'Écrire à SophiePAT030 ou PAT030Nicola', identite: ['sophie', 'nicola'] },
   // Revue finale : l'abréviation « mar » du mois.
   { origine: 'finale', texte: 'née le 14 mar 1985, le 14 mar. 85', identite: ['14mar1985', '14mar85'] },
 
@@ -195,6 +198,8 @@ const FUITES: Fuite[] = [
 // ── (b) FIDÉLITÉ ───────────────────────────────────────────────────────────
 
 const FIDELITE: Fidelite[] = [
+  // Contre-audit Codex P0-1 : l'identifiant seul reste, même quand l'e-mail le contient.
+  { origine: 'Codex P0-1', dossier: { email: 'PAT030@example.test' }, texte: 'Dossier PAT030, revu le 21/03/2026.' },
   // N2 et N12 : doses, apports et mesures qui partagent les chiffres de la naissance.
   { origine: 'N12', dossier: { dateNaissance: '2000-05-01' }, texte: '1500 mg de magnésium le soir' },
   { origine: 'N12', dossier: { dateNaissance: '2000-05-01' }, texte: 'objectif 1500 kcal' },
