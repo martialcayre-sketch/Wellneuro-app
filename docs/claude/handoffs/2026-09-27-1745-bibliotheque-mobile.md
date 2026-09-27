@@ -33,7 +33,9 @@ horizontal de la page Bibliothèque sur iPhone, révélé par l'E2E du rayon
 - `web/src/components/PacksPanel.tsx`, `web/src/components/BibliothequePanel.tsx`.
 - `web/e2e/bibliotheque-mobile.spec.ts` (nouveau),
   `web/e2e/bibliotheque-fiches-conseils.spec.ts` (commentaire).
-- `changelog.d/2026-09-27-bibliotheque-mobile.md`, ce handoff.
+- `changelog.d/2026-09-27-bibliotheque-mobile.md` (fragment de changelog).
+- `docs/claude/handoffs/2026-09-27-1745-bibliotheque-mobile.md` (ce handoff).
+- `docs/claude/SESSION_LOG.md` (entrée de clôture).
 
 ## 5. Validations exécutées
 
