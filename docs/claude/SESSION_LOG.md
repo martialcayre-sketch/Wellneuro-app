@@ -8029,3 +8029,16 @@ d'une revue adverse (11 constats, 0 P0). Aucun dépôt en production.
 
 **Prochaine action.** Merge, puis lot 6 (relecture dans la Bibliothèque).
 Ouvert : bornes d'âge (§6), décision du responsable.
+
+## 2026-09-27 — Fiche d'assiette, lot 6a : lecture et décision côté serveur
+
+**Livré.** Trois routes praticien (liste des 12 assiettes, détail pour la
+relecture côte à côte, acte valider/retirer), sans drapeau. L'acte porte sur
+l'empreinte et le dernier acte vus, sous verrou par fiche ; valider rejoue tous
+les contrôles ; retirer n'en rejoue aucun. Seule `decision.ts` crée un acte ;
+contrôles partagés dans des modules neutres. Revue adverse : 2 constats P2
+corrigés (écriture imbriquée, corps `null`).
+
+**Prochaine action.** Merge, puis 6b (l'écran du rayon et son E2E).
+Ouvert : qui est « le responsable » ; retrait qui remet en service la version
+validée précédente.

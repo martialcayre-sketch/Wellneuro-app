@@ -159,7 +159,12 @@ function lireSection(valeur: unknown, rang: number): SectionFiche {
   };
 }
 
-function lireContenu(valeur: unknown): ContenuFicheAssiette {
+/**
+ * Le contenu d'une fiche, rebâti champ par champ — ou une `ErreurContratFiche`.
+ * Rejoué sur le JSON rangé en base avant toute validation (lot 6) : ce qui
+ * n'a pas été écrit par ce contrat ne se relit pas comme s'il l'avait été.
+ */
+export function lireContenuFiche(valeur: unknown): ContenuFicheAssiette {
   if (!estObjet(valeur)) throw new ErreurContratFiche('contenu : un objet est attendu.');
   clesFermees(valeur, ['titre', 'precautions', 'sections'], 'contenu');
   const sections = liste(valeur.sections, 'contenu, sections');
@@ -221,7 +226,7 @@ export function lireBrouillonFiche(brut: unknown): BrouillonFiche {
   }
   const versionConsigne = champCourt(brut.versionConsigne, 'versionConsigne');
 
-  const contenu = lireContenu(brut.contenu);
+  const contenu = lireContenuFiche(brut.contenu);
   if (JSON.stringify(contenu).length > CONTENU_SERIALISE_MAX) throw new ErreurContratFiche('contenu : trop long.');
 
   return { sourceId, plateCode, contenu, texteSource, sourceSha256, modeleRedaction, modeleFidelite, versionConsigne };
