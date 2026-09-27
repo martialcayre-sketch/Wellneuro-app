@@ -39,6 +39,12 @@ l'espèce de lecture `fiche_assiette` ([[D-175]]).
   §7 veut que l'entrée reste avec une mention.
 - **Les trois FK sont en RESTRICT** (patient, approbation, version). Elles
   sont indexées là où l'effacement et le lot 8 en ont besoin.
+- **La table est déclarée en rubrique 5 du dossier RGPD, sans y être
+  qualifiée.** T3 l'a exigé (`rubrique5.modeles.test.ts`) : toute table fille
+  de `Patient` doit y figurer avant que la surface qui l'alimente n'existe. La
+  ligne dit ce qu'elle porte, et que le nom d'une assiette révèle une
+  indication (§9). La qualification au titre de l'article 9 reste au
+  responsable de traitement, comme pour les gestes praticien motivés.
 
 ## 4. Fichiers modifiés
 
@@ -51,6 +57,8 @@ l'espèce de lecture `fiche_assiette` ([[D-175]]).
 - `web/src/lib/patient/effacement.ts` et `effacement.test.ts`. C'est le seul
   code, et il est imposé : la garde de complétude exige que toute table portant
   `id_patient` soit effacée.
+- `docs/DOSSIER_RGPD.md` : la déclaration de `FicheAssietteRemise` en
+  rubrique 5.
 - `changelog.d/2026-09-27-fiches-assiette-m2-remises.md` (fragment de
   changelog).
 - `docs/claude/handoffs/2026-09-27-2156-fiches-assiette-m2-remises.md` (ce
@@ -81,6 +89,9 @@ l'espèce de lecture `fiche_assiette` ([[D-175]]).
   `panels_biologie_documentes`. Il faut donc approuver dans la foulée du merge.
 - **Le code des espèces de lecture ne connaît pas encore `fiche_assiette`**
   (`lecturesAttendues.ts`, route `api/portail/lectures`). C'est le lot 10.
+- **La qualification RGPD de la table reste due au responsable de
+  traitement.** Elle est déclarée en rubrique 5, pas qualifiée. À trancher
+  avant d'ouvrir `WN_FICHES_ASSIETTE`.
 
 ## 7. Prochaine action exacte
 

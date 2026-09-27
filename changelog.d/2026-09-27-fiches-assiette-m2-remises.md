@@ -18,6 +18,10 @@
   désormais les remises avant les approbations de diffusion.
 - **L'espèce de lecture `fiche_assiette`** rejoint `bilan` et `synthese`
   (D-251 §8). Aucune colonne ne s'ajoute, et toujours aucune date.
+- **La table est déclarée en rubrique 5 du dossier RGPD** avant que la
+  surface qui l'alimente n'existe. Le nom d'une assiette révèle une
+  indication. Sa qualification au titre de l'article 9 reste au responsable de
+  traitement.
 - **Contrat SQL négatif** (`fiches_assiette_remises_v1_negatif.sql`, au CI) :
   quatorze promesses éprouvées. Dix-sept mutants de la migration, un par règle,
   le font tous rougir sur le cas qui les vise.
