@@ -168,6 +168,22 @@ const ALLOWLIST = new Map([
     'src/app/api/praticien/agenda-sommeil/relance/route.test.ts',
     '« Q_ALI_01 » y est l’identifiant d’un mock Prisma ; la forme servie n’entre pas dans le verdict',
   ],
+  [
+    'src/lib/export-dossier/assembler.test.ts',
+    '« Q_ALI_01 » y est l’identifiant de lignes Prisma simulées, `resolveDefinition` est mocké : '
+      + 'seule l’abstention de passation courante (D-051) y est éprouvée, et elle vient de la CONSTANTE '
+      + '`INSTRUMENTS_A_FORME_VARIABLE`, sans lecture d’environnement (D-252)',
+  ],
+  [
+    'src/lib/export-dossier/pdf.test.ts',
+    'balaye le catalogue pour la conversion WinAnsi, mais visite AUSSI les deux formes importées '
+      + 'explicitement (Q_ALI_01_COURT_14 et Q_ALI_01_SIIN_57) : le verdict couvre les deux, quelle que soit la forme servie (D-252)',
+  ],
+  [
+    'src/lib/export-dossier/sectionQuestionnaires.test.ts',
+    '« Q_ALI_01 » y est l’identifiant de passations fictives dont les DEUX formes sont passées explicitement ; '
+      + 'la mise en garde de forme vient de la constante `INSTRUMENTS_A_FORME_VARIABLE` (D-252)',
+  ],
 ]);
 
 // Racines effectivement balayées. Les dériver de `vitest.config.ts` plutôt que
