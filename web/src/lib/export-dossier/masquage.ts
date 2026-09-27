@@ -508,9 +508,12 @@ function morceauxLigne(ligne: string): string[] {
 function motifsCoordonnees(valeur: string | null): Motif[] {
   const texte = texteUtile(valeur);
   if (!texte) return [];
-  // Morceaux : le texte entier, ses lignes (sauts de ligne, virgules, points-virgules), et dans chaque ligne la voie et « CP ville ».
-  const lignes = texte.split(/[\n,;]+/).map(pli);
-  const morceaux = new Set([pli(texte), ...lignes, ...lignes.flatMap(morceauxLigne)]);
+  // Morceaux : le texte entier, ses parties (sauts de ligne, virgules, points-virgules), et la voie et
+  // « CP ville » de chaque partie et de chaque ligne entière, virgules neutralisées : « 12, rue des
+  // Lilas » garde son numéro à sa voie.
+  const parties = texte.split(/[\n,;]+/).map(pli);
+  const lignes = texte.split(/[\n;]+/).map(ligne => pli(ligne.replace(/,/g, ' ')));
+  const morceaux = new Set([pli(texte), ...parties, ...[...parties, ...lignes].flatMap(morceauxLigne)]);
   return [...morceaux]
     .filter(morceau => morceau.length >= CARACTERES_MIN_MORCEAU && utile(morceau))
     .map(morceau => motifMot(morceau, SEPARATEURS_ADRESSE));

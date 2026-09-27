@@ -118,6 +118,8 @@ const FUITES: Fuite[] = [
   { origine: 'N4', dossier: { adresse: '12 rue des Lilas 75011 Paris Cedex 11' }, texte: 'à 75011 Paris', identite: ['75011'] },
   { origine: 'N4', dossier: { adresse: '75011 Paris 12 rue des Lilas' }, texte: 'au 12 rue des Lilas, à 75011 Paris', identite: ['lilas', '75011'] },
   { origine: 'N4', dossier: { medecinTraitantCoordonnees: 'Cabinet 3 avenue Foch Lyon' }, texte: 'Médecin au 3 avenue Foch', identite: ['foch'] },
+  // Adresse stockée avec virgules : le numéro suit sa voie.
+  { origine: 'N4', dossier: { adresse: '12, rue des Lilas, 75011 Paris' }, texte: 'j’habite au 12 rue des Lilas', identite: ['12', 'lilas'] },
 
   // 1re passe, constat 5, et 2e passe, NF0 : e-mail du médecin et sa ponctuation.
   { origine: '1re #5', dossier: { medecinTraitantCoordonnees: 'Tél 01 23 45 67 89. Mail : cabinet.tilleuls@example.fr.' }, texte: 'Le Dr m’a écrit à cabinet.tilleuls@example.fr hier', identite: ['tilleuls'] },

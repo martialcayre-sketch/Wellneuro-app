@@ -8042,3 +8042,16 @@ corrigés (écriture imbriquée, corps `null`).
 **Prochaine action.** Merge, puis 6b (l'écran du rayon et son E2E).
 Ouvert : qui est « le responsable » ; retrait qui remet en service la version
 validée précédente.
+
+## 2026-09-27 — Export PDF du dossier patient (D-252)
+
+**Livré.** Bouton « Exporter en PDF » sur la fiche patient : administratif,
+fiche et anamnèse, toutes les passations avec scores, dernière synthèse
+validée complète. Deux versions, la pseudonymisée par défaut ; masquage des
+textes libres au point d'entrée, sur un texte plié qui suit le rendu du PDF.
+Deux passes de revue adverse ; la seconde a trouvé des régressions du premier
+correctif (doses, locutions masquées), d'où un corpus de non-régression qui
+oppose fuites et fidélité clinique.
+
+**Prochaine action.** Merge, contre-audit Codex, constat du déploiement.
+Ouvert : inscription au registre RGPD (D-252 §3), captures visuelles Linux.

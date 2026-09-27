@@ -103,7 +103,11 @@ export type PassationExport = {
   definitionRetiree: boolean;
   /** Passation courante de l'instrument (`derniereReponseParQuestionnaire`). */
   courante: boolean;
-  /** Réserve propre à la LECTURE de cette passation (ex. instrument du cabinet modifié depuis). */
+  /**
+   * Réserve propre à la LECTURE de cette passation (ex. instrument du cabinet
+   * modifié depuis) : posée, elle SUSPEND la traduction — les réponses sortent
+   * en codes bruts, sous elle.
+   */
   avertissementLecture?: string | null;
 };
 

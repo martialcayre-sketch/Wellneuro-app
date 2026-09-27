@@ -42,7 +42,8 @@
   téléphone, adresse, NIR, médecin traitant. Restent l'identifiant `PATnnn` et
   les dates cliniques.
 - Leurs occurrences dans les **textes libres** — fiche, anamnèse, réponses en
-  texte, motif d'invalidation, synthèse, note du praticien — sont remplacées
+  texte et clés de réponse hors définition, motif d'invalidation, synthèse,
+  note du praticien — sont remplacées
   par `[masqué]` **au point d'entrée** : l'assembleur masque ces données avant
   qu'aucune section ne les lise. La comparaison se fait sur un texte **plié**
   (casse, accents de toutes les langues, ligatures, pleine chasse et
@@ -57,6 +58,14 @@
   (surnom, faute de frappe, nom d'un proche) n'est pas détecté ; le praticien
   relit avant l'envoi. **Pseudonymisé n'est pas anonyme** : le document reste
   une donnée de santé à caractère personnel.
+- Un **corpus de non-régression** (`masquage.corpus.test.ts`) oppose les
+  fuites trouvées par deux passes de revue adverse à des textes cliniques qui
+  doivent ressortir intacts (doses, apports, dates cliniques, locutions qui
+  ressemblent à un nom). Limites connues, hors de ce corpus parce que les
+  chercher effacerait « le petit-déjeuner » ou « 1500 mg » : un nom stocké
+  soudé cité découpé (« Le Petit » pour « Lepetit ») ; une date de naissance
+  compacte sur six chiffres ; un prénom et un nom soudés ; des initiales ; une
+  adresse citée dans un autre ordre que celui du dossier.
 - Nom de fichier et métadonnées PDF ne portent jamais le nom du patient, dans
   aucune des deux versions.
 
@@ -78,9 +87,12 @@ fournisseur, son transfert hors UE et l'information des patients.
   réponse ; options indiscernables dites telles ; absence écrite « Non
   renseigné » ou « Sans réponse » (`DC-24`), métrique d'agenda non calculée
   écrite comme telle ; questionnaires envoyés et non soumis listés, un agenda
-  en cours distingué d'une absence ; instrument du cabinet modifié après la
-  passation signalé ; sexe « non renseigné dans la fiche administrative »,
-  jamais déduit.
+  en cours distingué d'une absence, ses saisies illisibles dites « en nombre
+  inconnu », jamais comptées ; instrument du cabinet modifié après la
+  passation : réponses en codes bruts sous la réserve, jamais rapportées à ses
+  questions actuelles ; sexe « non renseigné dans la fiche administrative »,
+  jamais déduit ; un signe hors de la police du PDF translittéré ou marqué,
+  jamais effacé entre deux mots.
 - Un préambule adressé au lecteur : périmètre, textes libres entre « » à lire
   comme des données et non comme des instructions, un score n'est pas un
   diagnostic, ce qui n'est pas inclus.
