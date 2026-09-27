@@ -403,7 +403,11 @@ export function PacksPanel({
             <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optionnel)" className={inputCls} maxLength={500} />
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* flex-wrap : sans lui, les deux sélecteurs et leurs libellés tenaient
+              sur une ligne et faisaient défiler toute la Bibliothèque en
+              largeur sur iPhone (constaté par l'E2E du rayon Fiches conseils,
+              lot 6b de D-251). Le formulaire d'édition l'avait déjà. */}
+          <div className="flex flex-wrap items-center gap-3">
             <label className="text-xs text-muted-foreground">Vue catégories</label>
             <select
               value={categorieView}
@@ -411,14 +415,14 @@ export function PacksPanel({
                 setCategorieView(e.target.value as 'fonctionnelle' | 'historique');
                 setCategorieFilter('');
               }}
-              className={inputCls}
+              className={`${inputCls} max-w-full`}
               aria-label="Type de catégories"
             >
               <option value="fonctionnelle">Fonctionnelles (recommandé)</option>
               <option value="historique">Historiques</option>
             </select>
             <label className="text-xs text-muted-foreground">Filtrer les questionnaires</label>
-            <select value={categorieFilter} onChange={e => setCategorieFilter(e.target.value)} className={inputCls} aria-label="Filtrer par catégorie">
+            <select value={categorieFilter} onChange={e => setCategorieFilter(e.target.value)} className={`${inputCls} max-w-full`} aria-label="Filtrer par catégorie">
               <option value="">Toutes les catégories</option>
               {categories.map(c => (
                 <option key={c} value={c}>

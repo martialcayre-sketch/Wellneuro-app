@@ -445,7 +445,10 @@ export function BibliothequePanel({
               {erreur ?? message}
             </p>
           )}
-          <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.05fr),minmax(0,1fr),minmax(280px,0.7fr)]">
+          {/* grid-cols-1 (minmax(0, 1fr)) sous xl : sans lui, la piste implicite
+              prenait la largeur du contenu — la rangée de filtres, pourtant en
+              défilement horizontal — et toute la page défilait sur iPhone. */}
+          <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.05fr),minmax(0,1fr),minmax(280px,0.7fr)]">
             {/* Catalogue */}
             <section className="rounded-xl border border-border bg-surface shadow-card">
               <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
