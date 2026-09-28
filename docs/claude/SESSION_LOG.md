@@ -8161,3 +8161,23 @@ première unicité (patient, version).
 
 **Prochaine action.** #1243 : merge dans le créneau du responsable, approbation
 de `release-db` dans la foulée, constat par conteneur, puis le lot 8.
+
+## 2026-09-28 — Fiches d'assiette : M2 en production, arbitrages des lots 8 à 11
+
+**M2 est en production.** #1243 est mergée (`6132ba24`). Le run `release-db`
+36417128366 a été approuvé par le responsable ; sentinelle
+`WN_RELEASE_DB_OK id=36417128366-1`. Constat par conteneur : table vide,
+8 colonnes, RLS, 3 triggers, 3 FK RESTRICT, espèce `fiche_assiette`. La base
+de dev est remise à niveau.
+
+**Six arbitrages, consignés en amendement de D-251 :**
+
+- table des remises en art. 9 ;
+- lot 8 : clic refusé si l'aperçu n'est plus exact ;
+- lots 9-10 : fiche gardée, avec une mention, si l'assiette quitte le
+  protocole ;
+- lot 11 : objet de l'e-mail ;
+- document TRUST sur l'IA en lot dédié ;
+- premier protocole servi dès le lot 8.
+
+**Prochaine action.** Le lot 8.
