@@ -6,7 +6,8 @@
 --   3. UN CLIC QUI NE CHANGE RIEN NE REMET RIEN : le même clic rejoué, ou la
 --      même version sur une autre action, n'insère aucune ligne — sans erreur ;
 --   4. une empreinte qui n'est PAS celle de la version est refusée ;
---   5. l'approbation d'un AUTRE dossier est refusée ;
+--   5. l'approbation d'un AUTRE dossier est refusée, comme une approbation de
+--      ce dossier qui porte le protocole d'un autre ;
 --   6. une action absente du protocole approuvé, qui porte une AUTRE assiette,
 --      ou aucune, est refusée ;
 --   7. un BROUILLON n'est pas remis ;
@@ -22,7 +23,8 @@
 --      remises, approbations, protocoles, patient ; et une approbation qui a
 --      remis une fiche ne s'efface pas avant ses remises (RESTRICT) ;
 --  14. les trois FK (patient, approbation, version) sont en ON DELETE
---      RESTRICT, et les deux CHECK sont présents ;
+--      RESTRICT, les deux CHECK sont présents, et l'`ordre` est tiré APRÈS le
+--      verrou dans le trigger ;
 --  15. la table porte EXACTEMENT ses huit colonnes (liste blanche) : aucun
 --      texte de fiche n'y est recopié, et toute colonne neuve s'arbitre ;
 --  16. la RLS deny-all est active et sans policy (posture `D-005`) ; l'espèce
@@ -33,8 +35,9 @@
 -- pas seulement à son code (P0001) : un refus venu d'une autre règle ferait
 -- rougir le contrat au lieu de le laisser vert.
 --
--- CE QUE CE CONTRAT NE PEUT PAS TENIR : la sérialisation avec la décision du
--- responsable (verrou consultatif). Une seule session ne rejoue pas une course.
+-- CE QUE CE CONTRAT NE PEUT PAS TENIR : la sérialisation elle-même (verrou
+-- consultatif, partagé avec la décision du responsable). Une seule session ne
+-- rejoue pas une course ; seul l'ordre « verrou, puis `ordre` » s'y vérifie.
 --
 -- TEXTE SYNTHÉTIQUE SEULEMENT, et une fiche SYNTHÉTIQUE (`WN-SRC-9990`,
 -- hors du registre) : aucune phrase d'une Fiche MY n'entre dans le dépôt,
@@ -97,7 +100,10 @@ BEGIN
     ('pda_far1_b', 'PAT_CONTRAT_FAR1', 'pd_contrat_far1'),
     ('pda_far1_c', 'PAT_CONTRAT_FAR1', 'pd_contrat_far1'),
     ('pda_far1_d', 'PAT_CONTRAT_FAR1', 'pd_contrat_far1'),
-    ('pda_far2', 'PAT_CONTRAT_FAR2', 'pd_contrat_far2')
+    ('pda_far2', 'PAT_CONTRAT_FAR2', 'pd_contrat_far2'),
+    -- Mal formée : le second dossier, mais le protocole du premier. Rien ne lie
+    -- les deux clés étrangères d'une approbation ; le trigger, si.
+    ('pda_far2_croisee', 'PAT_CONTRAT_FAR2', 'pd_contrat_far1')
   ) AS c(id, patient, draft);
 
   -- Une fiche synthétique, sa version 1 validée. Le numéro suit ce que la base
@@ -180,6 +186,19 @@ BEGIN
   END;
   IF NOT refuse THEN
     RAISE EXCEPTION 'REMISES FICHES: une remise rattachée au clic d''un AUTRE dossier n''a pas été refusée pour ce motif (%).', message;
+  END IF;
+
+  -- L'approbation est bien de ce dossier, mais le protocole qu'elle approuve
+  -- est celui de l'autre (constat de revue, #1243).
+  refuse := false; message := NULL;
+  BEGIN
+    INSERT INTO fiches_assiette_remises (id, id_patient, id_approbation, action_id, id_version, contenu_sha256)
+    VALUES ('far_protocole_croise', 'PAT_CONTRAT_FAR2', 'pda_far2_croisee', 'act_alim_1', 'fav_far_1', H1);
+  EXCEPTION
+    WHEN raise_exception THEN refuse := SQLERRM LIKE '%dossier%'; message := SQLERRM;
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION 'REMISES FICHES: une approbation de ce dossier portant le protocole d''un AUTRE dossier n''a pas été refusée pour ce motif (%).', message;
   END IF;
 
   -- ── 6. L'action existe dans le protocole approuvé, et porte cette assiette ─
@@ -353,7 +372,10 @@ BEGIN
     RAISE EXCEPTION 'REMISES FICHES: des approbations ont été effacées avant leurs remises — la FK ne retient plus rien.';
   END IF;
 
-  -- Puis la chaîne de `effacement.ts`, dans son ordre.
+  -- Puis la chaîne de `effacement.ts`, dans son ordre. L'approbation croisée
+  -- du cas 5 — le second dossier, le protocole du premier — retiendrait ce
+  -- protocole : c'est une fixture mal formée par construction, elle part avant.
+  DELETE FROM protocol_diffusion_approvals WHERE id = 'pda_far2_croisee';
   BEGIN
     DELETE FROM portail_lectures_patient WHERE id_patient = 'PAT_CONTRAT_FAR1';
     DELETE FROM fiches_assiette_remises WHERE id_patient = 'PAT_CONTRAT_FAR1';
@@ -395,6 +417,19 @@ BEGIN
   IF nb <> 2 THEN
     RAISE EXCEPTION 'REMISES FICHES: % CHECK présent(s) sur 2 (format d''empreinte, action non vide).', nb;
   END IF;
+
+  -- L'`ordre` est tiré SOUS le verrou (constat de revue, #1243). Une seule
+  -- session ne rejoue pas la course qu'il ferme : c'est l'ordre des
+  -- instructions dans la fonction qui s'éprouve ici.
+  DECLARE
+    definition text := pg_get_functiondef('public.fiches_assiette_remises_avant_insertion()'::regprocedure);
+  BEGIN
+    IF position('pg_advisory_xact_lock' IN definition) = 0
+       OR position('nextval' IN definition) = 0
+       OR position('nextval' IN definition) < position('pg_advisory_xact_lock' IN definition) THEN
+      RAISE EXCEPTION 'REMISES FICHES: l''`ordre` n''est plus tiré après le verrou — deux clics concurrents pourraient désigner la mauvaise remise en cours.';
+    END IF;
+  END;
 
   -- ── 15. Liste blanche de colonnes ────────────────────────────────────────
   SELECT array_agg(c.column_name::text ORDER BY c.column_name) INTO reelles

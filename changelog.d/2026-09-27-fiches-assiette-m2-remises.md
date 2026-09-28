@@ -17,11 +17,13 @@
   - toute version qui n'est pas la version de référence de sa fiche : ni
     brouillon, ni version retirée, ni repli sur une version plus ancienne ;
   - une empreinte qui n'est pas celle de la version ;
-  - une approbation posée sur un autre dossier ;
+  - une approbation posée sur un autre dossier, ou qui approuve le protocole
+    d'un autre dossier ;
   - une action absente du protocole approuvé, ou qui ne porte pas l'assiette
     de la fiche.
 - **Aucune course avec la décision du responsable.** La remise prend le même
-  verrou par fiche qu'une validation ou un retrait.
+  verrou par fiche qu'une validation ou un retrait, et son `ordre` n'est tiré
+  qu'ensuite (revue de #1243).
 - **Une remise est figée.** UPDATE et TRUNCATE sont refusés par trigger.
   DELETE reste admis pour l'effacement nommé du dossier, qui supprime
   désormais les remises avant les approbations de diffusion. Un nouveau banc
@@ -33,5 +35,5 @@
   indication. Sa qualification au titre de l'article 9 reste au responsable de
   traitement.
 - **Contrat SQL négatif** (`fiches_assiette_remises_v1_negatif.sql`, au CI) :
-  seize promesses, chaque refus reconnu à son message. Vingt-quatre mutants de
-  la migration, joués en session, le font tous rougir sur le cas qui les vise.
+  seize promesses, chaque refus reconnu à son message. Vingt-six mutants de la
+  migration, joués en session, le font tous rougir sur le cas qui les vise.

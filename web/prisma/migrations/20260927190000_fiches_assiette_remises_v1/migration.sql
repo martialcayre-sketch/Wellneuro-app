@@ -43,7 +43,8 @@
 -- Quatre refus par trigger, parce qu'une route se contourne et qu'une remise
 -- fautive est un texte non validé, ou étranger, devant un patient (`DC-16`) :
 --
---  1. L'APPROBATION PORTE SUR CE DOSSIER.
+--  1. L'APPROBATION, ET LE PROTOCOLE QU'ELLE APPROUVE, PORTENT SUR CE
+--     DOSSIER.
 --  2. L'EMPREINTE RECOPIÉE EST CELLE DE LA VERSION : on ne remet pas un texte
 --     pour en tracer un autre.
 --  3. L'ACTION EXISTE DANS LE PROTOCOLE APPROUVÉ ET PORTE L'ASSIETTE DE CETTE
@@ -167,9 +168,14 @@ CREATE TRIGGER fiches_assiette_remises_no_truncate
 
 -- ── AU MOMENT DE L'INSERTION ───────────────────────────────────────────────
 --
--- L'instant et l'`ordre` sont posés par la base, comme en M1 : une remise
--- antidatable, ou qui choisirait son rang, n'est pas une preuve. Puis les
--- quatre refus décrits en tête, et enfin l'idempotence.
+-- Les quatre refus décrits en tête, puis l'idempotence. L'instant et l'`ordre`
+-- sont posés par la base, comme en M1 — une remise antidatable, ou qui
+-- choisirait son rang, n'est pas une preuve —, et EN DERNIER, sous le verrou.
+--
+-- CONSÉQUENCE POUR LE LOT 8 : une remise identique à la remise en cours rend
+-- ZÉRO ligne. Un `create` de Prisma, qui attend la ligne en retour, échouerait
+-- alors : les remises s'insèrent par `createMany` (qui rend un compte) ou en
+-- SQL.
 
 CREATE OR REPLACE FUNCTION public.fiches_assiette_remises_avant_insertion()
 RETURNS trigger
@@ -178,20 +184,24 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   patient_approbation text;
+  patient_protocole text;
   empreinte text;
   fiche text;
   assiette text;
   reference text;
   en_cours text;
 BEGIN
-  NEW.remise_le := now();
-  NEW.ordre := nextval(pg_get_serial_sequence('public.fiches_assiette_remises', 'ordre'));
-
-  SELECT a.id_patient INTO patient_approbation
+  -- L'approbation ET le protocole qu'elle approuve : ce sont deux clés
+  -- étrangères indépendantes, rien ne les lie en base. Une approbation mal
+  -- formée (ce dossier, le protocole d'un autre) autoriserait sinon une
+  -- action d'un autre dossier (constat de revue, #1243).
+  SELECT a.id_patient, d.id_patient INTO patient_approbation, patient_protocole
   FROM public.protocol_diffusion_approvals a
+  JOIN public.protocol_drafts d ON d.id = a.protocol_draft_id
   WHERE a.id = NEW.id_approbation;
-  IF patient_approbation IS DISTINCT FROM NEW.id_patient THEN
-    RAISE EXCEPTION 'remise refusée : l''approbation % ne porte pas sur ce dossier.', NEW.id_approbation;
+  IF patient_approbation IS DISTINCT FROM NEW.id_patient
+     OR patient_protocole IS DISTINCT FROM NEW.id_patient THEN
+    RAISE EXCEPTION 'remise refusée : l''approbation % ou son protocole ne porte pas sur ce dossier.', NEW.id_approbation;
   END IF;
 
   SELECT v.contenu_sha256, v.source_id, v.plate_code INTO empreinte, fiche, assiette
@@ -246,6 +256,13 @@ BEGIN
     RETURN NULL;
   END IF;
 
+  -- EN DERNIER, SOUS LE VERROU (constat de revue, #1243). Tiré avant, un
+  -- `ordre` pouvait être plus petit que celui d'une remise commitée pendant
+  -- que celle-ci attendait le verrou : la plus récente des deux n'aurait plus
+  -- été « la dernière », et la remise en cours aurait désigné la mauvaise
+  -- version.
+  NEW.remise_le := now();
+  NEW.ordre := nextval(pg_get_serial_sequence('public.fiches_assiette_remises', 'ordre'));
   RETURN NEW;
 END;
 $$;

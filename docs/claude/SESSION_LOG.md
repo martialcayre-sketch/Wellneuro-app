@@ -8141,10 +8141,10 @@ refuse :
 
 - toute version qui n'est pas la version de référence de sa fiche (ni
   brouillon, ni retirée, ni repli) ;
-- une empreinte étrangère, le clic d'un autre dossier, une action qui ne porte
-  pas l'assiette.
+- une empreinte étrangère, le clic ou le protocole d'un autre dossier, une
+  action qui ne porte pas l'assiette.
 
-Il prend le verrou de la décision.
+Il prend le verrou de la décision, puis tire l'`ordre` (revue Copilot).
 
 **Arbitrage du responsable (amendement de D-251).** La remise en cours d'une
 fiche est la dernière. Un clic qui ne change rien ne remet rien ; la v1 se
@@ -8157,7 +8157,7 @@ première unicité (patient, version).
   une garde de dépôt le tient.
 - Espèce de lecture `fiche_assiette`.
 - Déclarée en rubrique 5 du RGPD, sans y être qualifiée.
-- 24 mutants tués.
+- 26 mutants tués.
 
-**Prochaine action.** PR, merge et approbation de `release-db` dans la foulée,
-constat par conteneur, puis le lot 8.
+**Prochaine action.** #1243 : merge dans le créneau du responsable, approbation
+de `release-db` dans la foulée, constat par conteneur, puis le lot 8.

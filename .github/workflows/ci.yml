@@ -980,9 +980,12 @@ jobs:
       # Remises des fiches d'assiette (D-251, lot 7, M2). La promesse qui compte
       # le plus est posée en base, pas dans une route : seule la VERSION DE
       # RÉFÉRENCE d'une fiche se remet — ni brouillon, ni version retirée, ni
-      # repli sur une version plus ancienne. Puis : une version une seule fois
-      # par dossier, l'empreinte exacte, le clic du même dossier, la remise
-      # figée mais effaçable, et l'espèce de lecture `fiche_assiette`.
+      # repli sur une version plus ancienne. Puis : une remise identique à la
+      # remise EN COURS (la dernière) est sans effet, mais une version déjà
+      # remise se remet si une autre l'a remplacée depuis (v1, v2, v1) ;
+      # l'empreinte exacte, l'approbation et son protocole du même dossier,
+      # l'action qui porte l'assiette, la remise figée mais effaçable, et
+      # l'espèce de lecture `fiche_assiette`.
       - name: Fiches assiette remises negative tests
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web

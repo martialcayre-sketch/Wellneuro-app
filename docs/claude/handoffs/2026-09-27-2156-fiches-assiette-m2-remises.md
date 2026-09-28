@@ -28,7 +28,9 @@ l'espèce de lecture `fiche_assiette` ([[D-175]]).
     action, version, empreinte, instant.
   - La liste blanche de huit colonnes est tenue par le contrat.
 - **Quatre refus par trigger :**
-  - une approbation d'un autre dossier ;
+  - une approbation d'un autre dossier, ou dont le protocole est celui d'un
+    autre dossier (revue de #1243 : les deux clés étrangères d'une
+    approbation ne sont liées par rien) ;
   - une empreinte étrangère ;
   - une action absente du protocole approuvé, ou qui ne porte pas l'assiette de
     la fiche (`payload.actions[].recommendedPlateRef.plateCode`) ;
@@ -41,6 +43,11 @@ l'espèce de lecture `fiche_assiette` ([[D-175]]).
 - **Le même verrou par fiche que `decision.ts`.** Il est pris avant de lire la
   référence. Il ferme les deux courses relevées par la revue : un retrait ou
   une validation concurrents. Il sérialise aussi deux clics sur la même fiche.
+- **L'`ordre` et l'instant sont tirés EN DERNIER, sous le verrou** (revue
+  Copilot de #1243). Tiré avant, un `ordre` pouvait être plus petit que celui
+  d'une remise commitée pendant l'attente du verrou. La remise en cours aurait
+  alors désigné la mauvaise version. Le contrat vérifie l'ordre des
+  instructions, puisqu'une seule session ne rejoue pas la course.
 - **La remise est figée mais effaçable.** UPDATE et TRUNCATE sont refusés,
   DELETE est admis pour l'effacement nommé. Qu'aucun autre code ne supprime une
   remise est tenu par `remises.guard.test.ts`.
@@ -71,9 +78,10 @@ l'espèce de lecture `fiche_assiette` ([[D-175]]).
 - **Base de travail neuve (`wn_m2_travail`, locale) :** `migrate deploy`
   passe, la dérive rend « No difference detected », et trois contrats sont
   verts (M2, M1, lectures du portail).
-- **24 mutants de la migration, joués en session** (script hors dépôt) : tous
+- **26 mutants de la migration, joués en session** (script hors dépôt) : tous
   rougissent, chacun sur le cas qui le vise. Ils couvrent :
-  - chaque refus retiré ;
+  - chaque refus retiré, dont le contrôle du protocole du dossier ;
+  - l'`ordre` tiré avant le verrou ;
   - la provenance sans l'assiette ;
   - la référence « la plus ancienne » ou « lue par le premier acte » ;
   - l'idempotence retirée, ou étendue à toute remise passée ;
@@ -95,7 +103,10 @@ l'espèce de lecture `fiche_assiette` ([[D-175]]).
 - **Ce que le lot 8 doit savoir :**
   - Une transaction qui remet plusieurs fiches les insère dans un ordre
     STABLE de `source_id`, sinon deux clics croisés s'interbloquent.
-  - Une remise identique à la remise en cours rend 0 ligne, sans erreur.
+  - Une remise identique à la remise en cours rend 0 ligne, sans erreur. Un
+    `create` de Prisma, qui attend la ligne en retour, échouerait alors : les
+    remises s'insèrent par `createMany` (qui rend un compte) ou en SQL
+    (revue Copilot de #1243).
   - Une version qui n'est plus la référence lève une exception, y compris au
     rejeu d'un clic : c'est le fail-closed voulu.
   - Le nettoyage des E2E (`web/e2e/helpers/db.ts`) ne supprime ni approbations
@@ -113,7 +124,8 @@ l'espèce de lecture `fiche_assiette` ([[D-175]]).
 
 ## 7. Prochaine action exacte
 
-1. Ouvrir la PR, puis lire la revue de Copilot.
+1. PR #1243 : les trois constats de Copilot sont corrigés (arbitrage du
+   responsable). Attendre le CI sur la nouvelle tête.
 2. Merger, avec un créneau choisi par le responsable.
 3. Le responsable approuve `release-db` dans la foulée.
 4. Constater par conteneur : migrations à jour, table présente, CHECK de
