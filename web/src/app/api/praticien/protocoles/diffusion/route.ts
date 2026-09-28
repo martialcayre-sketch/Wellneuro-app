@@ -306,6 +306,13 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         );
       }
       const issue = await prisma.$transaction(async tx => {
+        // UN VERROU PAR CHAÎNE D'APPROBATIONS, pris EN PREMIER (revue Copilot
+        // de #1245). Sans lui, deux clics concurrents sur un protocole sans
+        // fiche — aucun verrou de fiche n'est alors pris — liraient tous deux
+        // une chaîne vide et créeraient deux têtes. Pris avant les verrous de
+        // fiche, toujours dans cet ordre : la décision du responsable ne prend
+        // qu'un verrou de fiche, et n'attend jamais celui-ci.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`protocol_diffusion_approvals:${idPatient}:${version.decisionCardInputHash}`}))`;
         const { blocage, actions } = blocageEtActionsDesFiches({
           dossier: await lireDossierVerrouille(tx, idPatient),
           decisionCard: rejeu.decisionCard,

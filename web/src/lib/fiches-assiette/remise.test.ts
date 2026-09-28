@@ -128,6 +128,19 @@ describe('apercuFichesDuProtocole', () => {
     expect(c.ficheAssietteRemise.findMany).toHaveBeenCalledWith(expect.objectContaining({ orderBy: { ordre: 'desc' } }));
   });
 
+  it('une fiche que seule une action SUSPENDUE porte n’est ni lue ni verrouillée — elle ne part pas', async () => {
+    const c = client();
+    const suspendue = { ...alimentation('a9', 'ASSIETTE_PROTEINEE'), interventionStatus: 'differee' } as ActionPourApercu;
+    const apercu = await apercuFichesDuProtocole(
+      c as never,
+      { idPatient: 'P', protocolDraftInputHash: 'H', actions: [suspendue], blocage: null },
+      { verrouiller: true },
+    );
+    expect(c.$executeRaw).not.toHaveBeenCalled();
+    expect(c.ficheAssietteVersion.findMany).not.toHaveBeenCalled();
+    expect(apercu.lignes[0]).toMatchObject({ statut: 'ne_part_pas', motif: 'action_non_ferme' });
+  });
+
   it('sous un blocage, rien n’est lu ni verrouillé, et rien ne part', async () => {
     const c = client();
     const apercu = await apercuFichesDuProtocole(

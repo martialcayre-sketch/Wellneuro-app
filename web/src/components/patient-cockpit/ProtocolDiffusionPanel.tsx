@@ -34,7 +34,7 @@ function ApercuFichesAssiette({ fiches, dejaValide }: { fiches: ApercuFiches; de
       className="mt-4 rounded-lg border border-border p-3"
     >
       <h4 id="protocol-diffusion-fiches-title" className="text-sm font-semibold text-foreground">
-        Fiches d’assiette remises au patient
+        Fiches d’assiette que ce clic remettra au patient
       </h4>
       {fiches.blocage && (
         <p className="mt-2 text-base text-status-warning">{fiches.blocage.detail}</p>

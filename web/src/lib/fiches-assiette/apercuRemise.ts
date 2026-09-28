@@ -96,7 +96,7 @@ export function assiettesDuProtocole(
 }
 
 /** Une action FERME (`D-056`) : statut `active`. Seules celles-là remettent une fiche (§7). */
-function estFerme(action: ActionPourApercu): boolean {
+export function estFerme(action: ActionPourApercu): boolean {
   return action.interventionStatus === 'active';
 }
 

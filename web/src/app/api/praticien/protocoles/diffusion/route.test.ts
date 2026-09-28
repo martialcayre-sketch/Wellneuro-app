@@ -25,6 +25,7 @@ const {
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
+    $executeRaw: vi.fn(),
   },
 }));
 
@@ -540,6 +541,7 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
     // Ni le payload, ni le dossier : la lecture reste celle d'avant le lot.
     expect(prisma.protocolDraft.findUnique.mock.calls[0][0].select.payload).toBe(false);
     expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
 
     prisma.protocolDraft.findMany.mockResolvedValue([
       { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'E', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: {} },
@@ -603,6 +605,22 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
     );
     const sql = (prisma.$queryRaw.mock.calls[0][0] as string[]).join('?');
     expect(sql).toMatch(/FROM patients WHERE id_patient = \? FOR SHARE/);
+  });
+
+  it('sérialise la chaîne d’approbations : son verrou est pris EN PREMIER, avant tout aperçu', async () => {
+    // Deux clics concurrents sur un protocole sans fiche ne prennent aucun
+    // verrou de fiche : sans celui-ci, ils créeraient deux têtes (revue Copilot).
+    const ordre: string[] = [];
+    prisma.$executeRaw.mockImplementation(async (sql: string[], ...valeurs: unknown[]) => {
+      ordre.push(`verrou ${String(valeurs[0])} (${sql.join('?').includes('pg_advisory_xact_lock') ? 'consultatif' : '?'})`);
+      return 1;
+    });
+    apercuFichesDuProtocole.mockImplementation(async () => {
+      ordre.push('aperçu');
+      return apercuServi;
+    });
+    await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
+    expect(ordre).toEqual(['verrou protocol_diffusion_approvals:PAT_1:HASH_DEC (consultatif)', 'aperçu']);
   });
 
   it('une remise qui échoue emporte tout le clic (500) — la transaction est annulée', async () => {

@@ -22,6 +22,7 @@ import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { getRecommendedPlate } from '@/lib/food-compass/plates';
 import {
   empreinteDeLApercu,
+  estFerme,
   planifierApercuFiches,
   type ActionPourApercu,
   type ApercuFiches,
@@ -143,7 +144,11 @@ export async function apercuFichesDuProtocole(
   },
   options: { verrouiller: boolean },
 ): Promise<ApercuFiches> {
+  // Seules les fiches qu'une action FERME porte sont lues et verrouillées : une
+  // fiche portée par une action suspendue ne part pas, quoi qu'en dise la base
+  // (revue Copilot de #1245).
   const sourceIds = entrees.actions
+    .filter(estFerme)
     .map(a => (a.type === 'food' && a.recommendedPlateRef ? ficheSourceDeLAssiette(a.recommendedPlateRef.plateCode) : null))
     .filter((s): s is string => s !== null);
   // Sous un blocage, aucune fiche ne part : rien à lire, rien à verrouiller.

@@ -53,6 +53,26 @@ aperçu, sous `WN_FICHES_ASSIETTE`.
   - seul le texte de la référence est chargé ;
   - l'écran ne dit plus « aucune action ne porte d'assiette » sous un blocage à
     zéro ligne.
+- **La revue Copilot de #1245.**
+  - **Corrigé :** un verrou consultatif par chaîne d'approbations
+    (`protocol_diffusion_approvals:` + patient + empreinte de carte), pris en
+    PREMIER dans la transaction. Deux clics concurrents sur un protocole sans
+    fiche ne créent plus deux têtes. Ce verrou précède ceux des fiches, et
+    `decision.ts` ne prend qu'un verrou de fiche : l'ordre ne permet aucun
+    cycle.
+  - **Routé :** le même défaut, antérieur au lot, sur le chemin drapeau fermé.
+    C'est une dette nommée de `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` (« Dette
+    technique restante »).
+  - **Corrigé aussi :** seules les fiches portées par une action ferme sont
+    lues et verrouillées, et le titre de la section devient « Fiches d'assiette
+    que ce clic remettra au patient ».
+  - **Écarté, avec motif :**
+    - le jeton ne passe pas avant les bloqueurs de la carte, qui sont des refus
+      plus graves ;
+    - un recalcul en échec reste un 500, puisqu'un 409 « aperçu périmé »
+      mentirait ;
+    - la lecture des remises n'est pas bornée, car son volume est borné par
+      les clics.
 - **« Ferme » veut dire `interventionStatus: 'active'`** (`D-056`). Une même
   assiette sur une action ferme et une action suspendue part par l'action
   ferme.
@@ -72,6 +92,8 @@ aperçu, sous `WN_FICHES_ASSIETTE`.
 - `web/src/components/fiches-assiette/RayonFichesConseilsPanel.tsx` : la phrase
   d'introduction.
 - `docs/FEATURE_FLAGS.md` : `WN_FICHES_ASSIETTE`.
+- `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` : la dette de la chaîne
+  d'approbations, drapeau fermé.
 - `changelog.d/2026-09-28-fiches-assiette-lot8-remise.md` (fragment de
   changelog).
 - `docs/claude/handoffs/2026-09-28-1440-fiches-assiette-lot8-remise.md` (ce
@@ -81,18 +103,20 @@ aperçu, sous `WN_FICHES_ASSIETTE`.
 ## 5. Validations exécutées
 
 - **Bancs verts :**
-  - aperçu (13), la garde des remises (4) et `remise.ts` (9) ;
-  - route (34, dont 12 neufs) ;
+  - aperçu (13), la garde des remises (4) et `remise.ts` (10) ;
+  - route (35, dont 13 neufs) ;
   - l'invariant central (3, `route.fiches.test.ts`), sans simuler la chaîne
     des fiches : le jeton du GET est celui que le POST recalcule, un rejeu est
     refusé, et une version validée entre-temps est refusée puis remise ;
   - panneau (14, dont 6 neufs) et la garde du cockpit (5) ;
   - les bancs du cockpit et de la fiche patient, inchangés ;
   - les gardes des drapeaux et la matrice de consommation.
-- **24 mutants tués, joués en session** (script hors dépôt), chacun par le
+- **26 mutants tués, joués en session** (script hors dépôt), chacun par le
   banc qui vise sa règle. Ils couvrent :
   - le jeton non comparé, absent accepté, ou calculé au GET sur une autre
     version ;
+  - la chaîne d'approbations non verrouillée, les fiches des actions
+    suspendues lues ;
   - le drapeau ignoré, le `payload` lu drapeau fermé, l'approbation toujours
     recréée ;
   - le dossier clos ignoré ou lu sans verrou, la lecture en échec non
