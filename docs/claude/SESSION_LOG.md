@@ -8132,3 +8132,32 @@ mémoire : remonter chaque champ rendu jusqu'à son écrivain.
 **Ouvert.** Registre RGPD (D-252 §3). Deux libellés à confirmer : « [interdit] »
 pour 🚫/⛔ ; l'échelle réservée à l'agenda du sommeil. Défauts mineurs connus :
 ł/ı collés, nombres qui reproduisent la naissance, trois défauts d'affichage.
+
+## 2026-09-28 — Fiches d'assiette : migration M2, les remises (D-251, lot 7)
+
+**Livré (PR de migration seule).** Nouvelle table `fiches_assiette_remises` :
+`ordre`, patient, clic d'approbation, action, version, empreinte. Un trigger
+refuse :
+
+- toute version qui n'est pas la version de référence de sa fiche (ni
+  brouillon, ni retirée, ni repli) ;
+- une empreinte étrangère, le clic ou le protocole d'un autre dossier, une
+  action qui ne porte pas l'assiette.
+
+Il prend le verrou de la décision, puis tire l'`ordre` (revue Copilot).
+
+**Arbitrage du responsable (amendement de D-251).** La remise en cours d'une
+fiche est la dernière. Un clic qui ne change rien ne remet rien ; la v1 se
+remet après le retrait de la v2. La revue `wn-reviewer` avait fait tomber une
+première unicité (patient, version).
+
+**Autour de la table.**
+
+- Figée mais effaçable : l'effacement nommé passe avant les approbations, et
+  une garde de dépôt le tient.
+- Espèce de lecture `fiche_assiette`.
+- Déclarée en rubrique 5 du RGPD, sans y être qualifiée.
+- 26 mutants tués.
+
+**Prochaine action.** #1243 : merge dans le créneau du responsable, approbation
+de `release-db` dans la foulée, constat par conteneur, puis le lot 8.

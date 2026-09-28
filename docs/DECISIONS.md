@@ -119,6 +119,34 @@ fournisseur, son transfert hors UE et l'information des patients.
 
 ### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
+> **AMENDEMENT DU 2026-09-28 — LA REMISE EN COURS.** Arbitrage du responsable
+> rendu en session. Il porte sur un cas relevé par la revue de la migration M2
+> (lot 7). Il précise le §7 et engage les lots 8 à 10.
+>
+> **Le cas.** Le patient reçoit la v1 d'une fiche, puis la v2. La v2 est
+> retirée, et la v1 redevient la version de référence (amendement du
+> 2026-09-27, point 2).
+>
+> **Décidé : un clic remet la v1.** Pour un patient et une fiche, la remise EN
+> COURS est la DERNIÈRE.
+>
+> - Après le retrait, le patient voit la v2 avec sa mention de retrait, sans
+>   son texte.
+> - C'est le clic « Valider pour diffusion » suivant qui lui remet la v1, qui
+>   redevient « à lire ».
+> - Jamais de retour en arrière sans clic : c'est la règle « ne rien servir, et
+>   le dire » (point 3), appliquée à ce que le patient a déjà reçu.
+> - Un clic qui ne change rien ne remet rien.
+> - Une version déjà remise se remet si une autre l'a remplacée depuis.
+>
+> **Écartée : la v1 revenant d'elle-même** (une version remise une seule fois
+> par patient, l'écran montrant la plus récente encore validée). Elle aurait
+> fait réapparaître la v1 sans geste, et interdit au clic de la remettre.
+>
+> **Tenu en base** par la migration M2 : un `ordre` posé par la base et un
+> trigger qui annule une remise identique à la remise en cours. Il n'y a pas
+> d'unicité (patient, version).
+>
 > **AMENDEMENT DU 2026-09-27 — QUATRE ARBITRAGES DU RESPONSABLE, ET UNE
 > JUSTIFICATION CORRIGÉE.** Rendus en session le 2026-09-27, après la livraison
 > des lots 6a (#1236) et 6b (#1238), sur les questions que ces lots laissaient
