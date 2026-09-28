@@ -119,6 +119,48 @@ fournisseur, son transfert hors UE et l'information des patients.
 
 ### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
+> **AMENDEMENT DU 2026-09-28 (SOIR) — LE DRAPEAU D'ÉMISSION S'OUVRE AVANT SES
+> CONDITIONS, SUR ORDRE DU RESPONSABLE, ET LA LECTURE PREND LE SIEN.** Ordre
+> rendu en session après le déploiement du lot 8 (#1245, `e6f1dd70`) :
+> « ouvre le drapeau, termine le lot 8 et ouvre le lot 9 ». Il suit un constat
+> du responsable : la phase 5 « Actions » du poste de pilotage n'est pas assez
+> développée pour mener un protocole réel jusqu'au bout.
+>
+> 1. **`WN_FICHES_ASSIETTE` est posé en production le 2026-09-28**, avant les
+>    conditions du §10, par décision du responsable. La pose, sa relecture et
+>    le redémarrage des conteneurs sont consignés dans `docs/FEATURE_FLAGS.md`.
+> 2. **Ce que la pose change.** Le praticien voit l'aperçu des fiches dans la
+>    sous-vue Diffusion. Le clic « Valider pour diffusion » passe par la
+>    transaction du lot 8 : verrou de chaîne, jeton d'aperçu, remises. Au
+>    moment de la pose, une seule fiche est validée (`WN-SRC-0297`, épargne
+>    digestive) : c'est la seule qui puisse partir.
+> 3. **Ce qu'elle ne change pas : aucun patient ne lit rien.** Les lots 9 et 10
+>    n'existent pas encore. Aucune route ni aucun écran ne sert une remise. Une
+>    remise écrite aujourd'hui est une ligne de la table (art. 9), sans lecteur.
+>    Aucun e-mail ne part (lot 11).
+> 4. **Les conditions du §10 passent à la lecture.** Les lots 9 et 10 se
+>    construisent sous un second drapeau, `WN_FICHES_ASSIETTE_LECTURE`, livré
+>    fermé. Il s'ouvre aux conditions du §10 :
+>    - les sept fiches choisissables validées ;
+>    - l'espace de lecture constaté en production ;
+>    - le document TRUST sur l'usage de l'IA publié (point 5 de l'amendement
+>      « suite » ci-dessous) ;
+>    - une contre-revue adverse.
+>
+>    Sans ce second drapeau, la première remise deviendrait lisible au merge du
+>    lot 10, avant le document TRUST. Le §7 tient toujours : chaque drapeau
+>    garde son côté, et le retrait par version reste le coupe-circuit d'une
+>    fiche.
+> 5. **La parade de [[D-112]] change de forme** (point 6 de l'amendement
+>    « suite »). Le premier protocole servi de bout en bout le sera drapeau
+>    ouvert. Le constat du responsable sur la phase Actions est routé hors de
+>    cette décision : c'est un chantier à cadrer avec lui.
+>
+> **État constaté par conteneur avant la pose** (lecture seule, agrégats) : sept
+> versions v1, une seule validée, aucun acte de retrait, 0 approbation de
+> diffusion, 0 remise, 0 chaîne à deux têtes, un seul brouillon de protocole
+> (l'épisode d'observation alimentaire).
+>
 > **AMENDEMENT DU 2026-09-28 (SUITE) — SIX ARBITRAGES POUR LES LOTS 8 À 11, ET
 > LA QUALIFICATION RGPD.** Rendus en session le 2026-09-28, après
 > l'application de M2 (#1243, `release-db` 36417128366, constat par

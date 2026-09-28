@@ -8201,3 +8201,21 @@ v1 après retrait).
 
 **Prochaine action.** PR, merge ; puis un premier protocole servi sur un
 dossier de test ; puis le lot 9.
+
+## 2026-09-28 — Fiches d'assiette : le drapeau d'émission posé en production (D-251, clôture du lot 8)
+
+**Fait.** Le lot 8 (`e6f1dd70`) est en service. Sur ordre du responsable,
+`WN_FICHES_ASSIETTE` est posé à 18:41:51 UTC, avant les conditions du §10, et
+les conteneurs ont été recréés à 18:58:08 UTC. À la pose, une seule fiche est
+validée, sans approbation ni remise. Aucun patient ne lit rien : les lots 9-10
+n'existent pas.
+
+**Décidé.** La lecture patient aura son propre drapeau, livré fermé avec le
+lot 9, aux conditions du §10 (choix de la session, que le responsable peut
+reprendre). Écarté : laisser les lots 9-10 sous le même drapeau, qui rendrait
+une remise lisible dès le merge du lot 10, avant le document TRUST.
+
+**Ouvert.** Le constat par le comportement, lors d'une session praticien. La
+phase « Actions », à cadrer avec le responsable.
+
+**Prochaine action.** Le lot 9.
