@@ -6,9 +6,66 @@
 // (« Non transmis » reste affiché) — la transmission relève d'un lot ultérieur.
 
 import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
+import { Badge, type BadgeVariant } from '@/components/ui/Badge';
+import { fichesARemettre, type ApercuFiches, type StatutLigneFiche } from '@/lib/fiches-assiette/apercuRemise';
 import { ApercuPatientProtocole } from './ApercuPatientProtocole';
 
 export type DiffusionState = 'idle' | 'saving' | 'error';
+
+const STATUT_FICHE: Record<StatutLigneFiche, { texte: string; variante: BadgeVariant }> = {
+  part: { texte: 'Partira', variante: 'success' },
+  deja_remise: { texte: 'Déjà remise', variante: 'neutral' },
+  ne_part_pas: { texte: 'Ne partira pas', variante: 'warning' },
+};
+
+/**
+ * LES FICHES D'ASSIETTE QUE LE CLIC REMETTRAIT ([[D-251]] §7, lot 8) — celles
+ * qui partiront ET celles qui ne partiront pas, chacune avec sa phrase (`DC-24`).
+ * Sous un blocage (dossier clos, protocole non servable), le motif est dit UNE
+ * fois, en tête, et chaque fiche ne porte plus que son statut.
+ */
+function ApercuFichesAssiette({ fiches, dejaValide }: { fiches: ApercuFiches; dejaValide: boolean }) {
+  return (
+    <section
+      aria-labelledby="protocol-diffusion-fiches-title"
+      data-testid="apercu-fiches-assiette"
+      className="mt-4 rounded-lg border border-border p-3"
+    >
+      <h4 id="protocol-diffusion-fiches-title" className="text-sm font-semibold text-foreground">
+        Fiches d’assiette remises au patient
+      </h4>
+      {fiches.blocage && (
+        <p className="mt-2 text-base text-status-warning">{fiches.blocage.detail}</p>
+      )}
+      {fiches.lignes.length === 0 ? (
+        <p className="mt-2 text-base text-muted-foreground">
+          Aucune action de ce protocole ne porte d’assiette : aucune fiche ne part.
+        </p>
+      ) : (
+        <ul className="mt-2 flex flex-col gap-2">
+          {fiches.lignes.map(ligne => (
+            <li
+              key={ligne.plateCode}
+              data-testid={`fiche-diffusion-${ligne.plateCode}`}
+              className="flex flex-wrap items-baseline gap-x-2 gap-y-1"
+            >
+              <Badge variant={STATUT_FICHE[ligne.statut].variante}>{STATUT_FICHE[ligne.statut].texte}</Badge>
+              <span className="text-base font-medium text-foreground">{ligne.libelle}</span>
+              {ligne.motif !== fiches.blocage?.motif ? (
+                <span className="min-w-0 break-words text-base text-muted-foreground">{ligne.detail}</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+      {dejaValide && fichesARemettre(fiches) && (
+        <p className="mt-2 text-base text-foreground">
+          Ce protocole est déjà validé : un nouveau clic sur « Valider pour diffusion » remet les fiches validées depuis.
+        </p>
+      )}
+    </section>
+  );
+}
 
 function formatDate(iso: string): string {
   const date = new Date(iso);
@@ -23,6 +80,7 @@ export function ProtocolDiffusionPanel({
   approvedAt,
   servieAuPatient = null,
   apercu = null,
+  fiches = null,
   state = 'idle',
   error = null,
   onApprove,
@@ -55,6 +113,11 @@ export function ProtocolDiffusionPanel({
    * dossier réel.
    */
   apercu?: ApercuPatientServi | null;
+  /**
+   * Les fiches d'assiette que le clic remettrait ([[D-251]] §7). `null` :
+   * `WN_FICHES_ASSIETTE` fermé, ou lecture non aboutie — l'écran n'en dit rien.
+   */
+  fiches?: ApercuFiches | null;
   state?: DiffusionState;
   error?: string | null;
   onApprove?: () => void;
@@ -127,6 +190,8 @@ export function ProtocolDiffusionPanel({
           )}
         </div>
       )}
+
+      {fiches && <ApercuFichesAssiette fiches={fiches} dejaValide={approved && !stale} />}
 
       {onApprove && (canApprove || stale) && (
         <div className="mt-3">

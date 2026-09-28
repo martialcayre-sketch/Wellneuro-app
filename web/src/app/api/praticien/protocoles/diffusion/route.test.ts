@@ -1,9 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   getServerSession, prisma, rejouerCarteDecision, reconstructProtocolDraft, vuePatientOuRefus,
+  apercuFichesDuProtocole, remettreFiches,
 } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
+  // LES FICHES D'ASSIETTE ([[D-251]] §7) : ce banc juge le CÂBLAGE de la
+  // route — drapeau, jeton, transaction, approbation reprise ou créée. Le calcul
+  // de l'aperçu et l'écriture ont leurs propres bancs (`remise.test.ts`,
+  // `apercuRemise.test.ts`), et ce que la base refuse, son contrat SQL.
+  apercuFichesDuProtocole: vi.fn(),
+  remettreFiches: vi.fn(),
   rejouerCarteDecision: vi.fn(),
   // LE CONTRAT PATIENT EST LA SECONDE MARCHE DU CONSTAT, et il se moque ici pour
   // la même raison que le rejeu : ce banc juge le MIROIR, pas le contrat — qui a
@@ -16,6 +23,7 @@ const {
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn(), create: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -25,6 +33,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/clinical-engine/rejeuCarteDecision', () => ({ rejouerCarteDecision }));
 vi.mock('@/lib/protocol/fromPrisma', () => ({ reconstructProtocolDraft }));
 vi.mock('@/lib/protocol/servirAuPatient', () => ({ vuePatientOuRefus }));
+vi.mock('@/lib/fiches-assiette/remise', () => ({ apercuFichesDuProtocole, remettreFiches }));
 
 import { deriveProtocolDraftId, deriveVersionId } from '@/lib/protocol/versioning';
 import { GET, POST } from './route';
@@ -483,5 +492,129 @@ describe('GET /api/praticien/protocoles/diffusion — aperçu patient', () => {
     prisma.protocolDraft.findMany.mockResolvedValue([]);
     const json = (await (await GET(requete())).json()) as { apercu: unknown };
     expect(json.apercu).toBeNull();
+  });
+});
+
+// ── LES FICHES D'ASSIETTE AU CLIC ([[D-251]] §7, lot 8) ────────────────────
+//
+// Drapeau fermé, la route fait exactement ce qu'elle faisait : ni aperçu, ni
+// transaction, ni remise. Drapeau ouvert, le clic porte le jeton de l'aperçu
+// affiché ; un jeton absent ou périmé est un clic refusé, RIEN d'écrit — ni
+// approbation, ni remise (arbitrage du 2026-09-28 : « refuser et remontrer »).
+describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiette', () => {
+  const apercuServi = { jeton: 'J1', blocage: null, lignes: [] };
+  const requeteGet = () => new Request('http://localhost/api/praticien/protocoles/diffusion?idPatient=PAT_1&decisionCardId=DEC_1');
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.WN_FICHES_ASSIETTE = 'true';
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr', actif: true, suiviClotureLe: null });
+    prisma.protocolDraft.findUnique.mockResolvedValue({ ...versionRow, payload: { actions: [] } });
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.create.mockResolvedValue({ id: 'appr_new' });
+    prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) => fn(prisma));
+    rejouerCarteDecision.mockResolvedValue(carteSansBloqueur());
+    reconstructProtocolDraft.mockReturnValue({ protocolDraftId: 'PD_1', inputHash: 'HASH_V1', actions: [] });
+    vuePatientOuRefus.mockReturnValue({ ok: true, vue: {} });
+    apercuFichesDuProtocole.mockResolvedValue(apercuServi);
+    remettreFiches.mockResolvedValue(2);
+  });
+
+  afterEach(() => {
+    delete process.env.WN_FICHES_ASSIETTE;
+  });
+
+  it('drapeau FERMÉ : ni aperçu, ni transaction, ni remise — la route d’avant', async () => {
+    delete process.env.WN_FICHES_ASSIETTE;
+    const res = await POST(postRequest(body));
+    const json = (await res.json()) as { ok: boolean; fichesRemises?: number };
+    expect(res.status).toBe(200);
+    expect(json.fichesRemises).toBeUndefined();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(apercuFichesDuProtocole).not.toHaveBeenCalled();
+    expect(remettreFiches).not.toHaveBeenCalled();
+
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'E', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: {} },
+    ]);
+    const lecture = (await (await GET(requeteGet())).json()) as { fiches: unknown };
+    expect(lecture.fiches).toBeNull();
+    expect(apercuFichesDuProtocole).not.toHaveBeenCalled();
+  });
+
+  it('refuse un clic SANS jeton d’aperçu (409), sans rien écrire', async () => {
+    const res = await POST(postRequest(body));
+    const json = (await res.json()) as { ok: boolean; reason: string };
+    expect(res.status).toBe(409);
+    expect(json.reason).toBe('apercu_fiches_perime');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse un clic dont l’aperçu a changé (409) : ni approbation, ni remise', async () => {
+    apercuFichesDuProtocole.mockResolvedValue({ ...apercuServi, jeton: 'J2' });
+    const res = await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
+    const json = (await res.json()) as { ok: boolean; reason: string; error: string };
+    expect(res.status).toBe(409);
+    expect(json.reason).toBe('apercu_fiches_perime');
+    expect(json.error).toContain('n’est plus exact');
+    // L'aperçu du clic est recalculé SOUS VERROU, dans la transaction.
+    expect(apercuFichesDuProtocole).toHaveBeenCalledWith(prisma, expect.objectContaining({ protocolDraftInputHash: 'HASH_V1' }), { verrouiller: true });
+    expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+    expect(remettreFiches).not.toHaveBeenCalled();
+  });
+
+  it('approuve et remet dans la même transaction, rattachées à l’approbation créée', async () => {
+    const res = await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
+    const json = (await res.json()) as { ok: boolean; unchanged: boolean; approvalId: string; fichesRemises: number };
+    expect(res.status).toBe(200);
+    expect(json).toMatchObject({ ok: true, unchanged: false, approvalId: 'appr_new', fichesRemises: 2 });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.protocolDiffusionApproval.create).toHaveBeenCalledTimes(1);
+    expect(remettreFiches).toHaveBeenCalledWith(prisma, apercuServi, { idPatient: 'PAT_1', idApprobation: 'appr_new' });
+  });
+
+  it('une version DÉJÀ approuvée : l’approbation est reprise, et seules les fiches validées depuis partent', async () => {
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+      { id: 'appr_1', protocolDraftInputHash: 'HASH_V1', supersedesApprovalId: null, createdAt: new Date('2026-01-03T00:00:00.000Z') },
+    ]);
+    const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as {
+      unchanged: boolean; approvalId: string; fichesRemises: number;
+    };
+    expect(json).toMatchObject({ unchanged: true, approvalId: 'appr_1', fichesRemises: 2 });
+    expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+    expect(remettreFiches).toHaveBeenCalledWith(prisma, apercuServi, { idPatient: 'PAT_1', idApprobation: 'appr_1' });
+  });
+
+  it('un dossier clos bloque toutes les fiches — le motif atteint l’aperçu', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr', actif: true, suiviClotureLe: new Date('2026-09-01T00:00:00.000Z') });
+    await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
+    expect(apercuFichesDuProtocole).toHaveBeenCalledWith(
+      prisma,
+      expect.objectContaining({ blocage: expect.objectContaining({ motif: 'dossier_non_suivi' }) }),
+      { verrouiller: true },
+    );
+  });
+
+  it('GET drapeau ouvert : l’aperçu des fiches de la version ACTIVE, lu SANS verrou', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v2', inputHash: 'HASH_V2', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'E2', supersedesDraftId: 'v1', createdAt: new Date('2026-01-05T00:00:00.000Z'), payload: {} },
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'E1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: {} },
+    ]);
+    const json = (await (await GET(requeteGet())).json()) as { fiches: { jeton: string } | null };
+    expect(json.fiches?.jeton).toBe('J1');
+    expect(apercuFichesDuProtocole).toHaveBeenCalledWith(
+      prisma,
+      expect.objectContaining({ idPatient: 'PAT_1', protocolDraftInputHash: 'HASH_V2' }),
+      { verrouiller: false },
+    );
+  });
+
+  it('GET drapeau ouvert, sans version : aucun aperçu de fiches', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValue([]);
+    const json = (await (await GET(requeteGet())).json()) as { fiches: unknown };
+    expect(json.fiches).toBeNull();
+    expect(apercuFichesDuProtocole).not.toHaveBeenCalled();
   });
 });
