@@ -35,10 +35,13 @@ export async function GET(req: Request): Promise<NextResponse<PortailFichesAssie
     );
   }
 
-  const auth = await authentifierPatientPortail(req);
-  if (auth.erreur) return auth.erreur as NextResponse<PortailFichesAssietteResponse>;
-
+  // L'authentification DANS le `try` : elle lit la base, et une panne y
+  // remonterait sinon brute au journal du framework, arguments compris (revue
+  // Copilot de #1247).
   try {
+    const auth = await authentifierPatientPortail(req);
+    if (auth.erreur) return auth.erreur as NextResponse<PortailFichesAssietteResponse>;
+
     const fiches = await fichesRemisesAuPatient(auth.patient.idPatient);
     return NextResponse.json({ ok: true, fiches });
   } catch (err) {

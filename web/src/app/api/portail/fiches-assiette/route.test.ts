@@ -102,6 +102,18 @@ describe('GET /api/portail/fiches-assiette — drapeau ouvert', () => {
     expect(fichesRemisesAuPatient).toHaveBeenCalledWith('PAT_TEST');
   });
 
+  it('une panne de la base PENDANT l’authentification rend 500, sans rien journaliser de la requête', async () => {
+    const journal = vi.spyOn(console, 'error').mockImplementation(() => {});
+    prisma.patient.findUnique.mockRejectedValue(new Error('AUTH-SENTINELLE'));
+    const res = await GET(requete());
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ ok: false, reason: 'exception', error: 'Erreur technique.' });
+    expect(fichesRemisesAuPatient).not.toHaveBeenCalled();
+    const journalise = journal.mock.calls.flat().map(a => (a instanceof Error ? `${a.name}: ${a.message}` : String(a))).join(' ');
+    expect(journalise).not.toContain('AUTH-SENTINELLE');
+    journal.mockRestore();
+  });
+
   it('une panne rend 500 sans rien dire de ce que la requête portait', async () => {
     const journal = vi.spyOn(console, 'error').mockImplementation(() => {});
     fichesRemisesAuPatient.mockRejectedValue(new Error('TEXTE-SENTINELLE'));

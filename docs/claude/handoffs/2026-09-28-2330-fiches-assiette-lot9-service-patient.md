@@ -49,7 +49,7 @@ Autres choix :
   est chargé.
 - `web/src/app/api/portail/fiches-assiette/route.ts` : `GET`.
 - Bancs : `ficheServie.test.ts` (21), `servicePatient.test.ts` (22),
-  `fiches-assiette/route.test.ts` (11).
+  `fiches-assiette/route.test.ts` (12).
 - `docs/FEATURE_FLAGS.md` : ligne `WN_FICHES_ASSIETTE_LECTURE`.
 - `docs/DECISIONS.md` : amendement de `D-251` (nuit).
 - `docs/claude/MATRICE_CONSOMMATION.md` : régénérée. Le service lit le
@@ -58,7 +58,7 @@ Autres choix :
 
 ## 5. Validations exécutées
 
-- **Bancs du lot : 54 tests verts**, plus les gardes des drapeaux et des
+- **Bancs du lot : 55 tests verts**, plus les gardes des drapeaux et des
   remises.
 - **Revue `wn-reviewer` : GO**, aucune fuite trouvée. Verdicts :
   - **P1-1, corrigé** : une assiette contre-indiquée ou non indiquée se lisait
@@ -71,7 +71,19 @@ Autres choix :
   - **Tests manquants ajoutés** : chaque statut d'intervention, la panne d'une
     fiche, le brouillon introuvable, le retrait sans motif, le compte
     désactivé.
-- **22 mutants joués en session** (script hors dépôt), tous tués. Les deux
+- **Revue Copilot de #1247**, trois constats :
+  - **Retrait concurrent d'une lecture : écarté, avec motif.** Le dernier acte
+    est lu après le début de la requête, et une version est immuable. Toute
+    lecture commencée après la validation d'un retrait ne sert donc aucun
+    texte. Une lecture commencée avant se place avant le retrait, ce qui est la
+    sémantique d'une lecture concurrente. Un verrou de fiche sur un GET
+    patient n'apporterait rien de plus.
+  - **Panne base pendant l'authentification : corrigé.** L'authentification
+    passe dans le `try`. Un banc le tient, et son mutant est tué.
+  - **Lecture de tout l'historique des remises : écarté, avec motif** (même
+    motif qu'au lot 8). La lecture est bornée au patient, son volume au nombre
+    de clics qui ont changé une fiche, et elle ne charge aucun texte.
+- **23 mutants joués en session** (script hors dépôt), tous tués. Les deux
   premiers survivants étaient deux faiblesses des bancs, renforcés :
   - `JSON.stringify` d'une `Error` rend `{}` ;
   - un ordre d'entrée coïncidait avec l'ordre trié.
