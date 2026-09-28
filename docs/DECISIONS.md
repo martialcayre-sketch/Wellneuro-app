@@ -119,6 +119,35 @@ fournisseur, son transfert hors UE et l'information des patients.
 
 ### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
+> **AMENDEMENT DU 2026-09-28 (SUITE) — SIX ARBITRAGES POUR LES LOTS 8 À 11, ET
+> LA QUALIFICATION RGPD.** Rendus en session le 2026-09-28, après
+> l'application de M2 (#1243, `release-db` 36417128366, constat par
+> conteneur).
+>
+> 1. **La table des remises relève de l'article 9** (catégorie particulière).
+>    C'est la qualification du responsable de traitement. Une remise désigne
+>    une assiette, et le nom d'une assiette révèle une indication (§9). La
+>    rubrique 5 du dossier RGPD le porte.
+> 2. **Lot 8 — l'aperçu fait foi.** Si l'état des fiches change entre l'aperçu
+>    et le clic « Valider pour diffusion » (une fiche validée ou retirée
+>    entre-temps), le clic est REFUSÉ et le nouvel aperçu s'affiche. Le
+>    praticien ne diffuse jamais que ce qu'il a vu : c'est la discipline de la
+>    validation d'une fiche (`dernierActeVu`, lot 6).
+> 3. **Lots 9 et 10 — une fiche reste quand son assiette quitte le
+>    protocole.** Une version ultérieure du protocole ôte ou change
+>    l'assiette : la fiche déjà remise reste lisible, avec la mention « ne fait
+>    plus partie de votre protocole actuel ». Rien ne disparaît en silence
+>    (§7). C'est une lecture au moment de servir, sans migration.
+> 4. **Lot 11 — l'objet de l'e-mail neutre** est « Un document de votre
+>    praticien vous attend ». Le corps reste celui du §9.
+> 5. **Le document TRUST sur l'usage de l'IA** (§5) est rédigé dans un lot
+>    dédié, avant l'ouverture, et validé par le responsable. Il nomme les deux
+>    fournisseurs : Anthropic pour la rédaction, OpenAI pour la contre-lecture.
+> 6. **La parade au risque de [[D-112]] avance.** Un premier protocole est
+>    servi de bout en bout sur un dossier de test DÈS QUE LE LOT 8 EST LIVRÉ,
+>    drapeau fermé, et constaté par conteneur. Un défaut de la chaîne doit
+>    paraître avant les lots 9 à 11, pas à l'ouverture.
+>
 > **AMENDEMENT DU 2026-09-28 — LA REMISE EN COURS.** Arbitrage du responsable
 > rendu en session. Il porte sur un cas relevé par la revue de la migration M2
 > (lot 7). Il précise le §7 et engage les lots 8 à 10.
