@@ -8219,3 +8219,22 @@ une remise lisible dès le merge du lot 10, avant le document TRUST.
 phase « Actions », à cadrer avec le responsable.
 
 **Prochaine action.** Le lot 9.
+
+## 2026-09-28 — Fiches d'assiette : le service patient des fiches remises (D-251, lot 9)
+
+**Livré, sous `WN_FICHES_ASSIETTE_LECTURE` fermé.** `GET
+/api/portail/fiches-assiette` sert, par fiche, la remise en cours : servie
+(contrôles rejoués), retirée (sans texte) ou indisponible (et dit). Il porte
+aussi la place de l'assiette dans le protocole servi. Fermé : 503 avant toute
+lecture.
+
+**Décidé (révisable).** Une action ferme, suspendue ou différée garde son
+assiette au protocole ; contre-indiquée ou non indiquée, elle l'en sort.
+Contrôles rejoués au service, une panne ne retenant que sa fiche. Motif de
+retrait jamais servi.
+
+**Validations.** Revue `wn-reviewer` GO ; son P1 et un P2 corrigés, un P2
+routé au lot 10. 54 tests ; 22 mutants tués ; passage d'intégration sur base
+réelle migrée, annulé.
+
+**Prochaine action.** PR, merge ; puis le lot 10.
