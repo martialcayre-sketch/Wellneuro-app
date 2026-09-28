@@ -6,11 +6,12 @@
 // adaptation côte à côte, avant d'être validée — ou retirée.
 //
 // « VERSION DE RÉFÉRENCE », PAS « VERSION SERVIE » : c'est la plus récente
-// validée (§5), mais ses contrôles seront rejoués au moment de la remettre
-// (§6) — l'écran ne promet pas qu'elle sera servie (constat de revue).
+// validée (§5), mais ses contrôles sont rejoués au moment de la remettre
+// (§6, lot 8) — l'écran ne promet pas qu'elle sera servie (constat de revue).
 //
-// Pas de drapeau : `WN_FICHES_ASSIETTE` gardera l'ÉMISSION, pas la relecture
-// (§7). Rien de ce rayon n'atteint un patient.
+// Pas de drapeau : `WN_FICHES_ASSIETTE` garde l'ÉMISSION, pas la relecture
+// (§7). Rien de ce rayon n'atteint un patient : la remise part du clic
+// « Valider pour diffusion » d'un protocole, au cockpit.
 //
 // Les types seulement, depuis les modules serveur : un import de valeur tirerait
 // Prisma et les tables cliniques dans le bundle client.
@@ -112,8 +113,9 @@ export function RayonFichesConseilsPanel() {
           Une fiche par assiette d’indication. Chaque version déposée se relit en entier, source et
           adaptation côte à côte, avant d’être validée ; une version validée se retire à tout moment,
           avec un motif. La version de référence d’une fiche est sa plus récente version validée ;
-          ses contrôles seront rejoués au moment de la remettre. Valider une fiche ne l’envoie encore
-          à aucun patient : la remise n’est pas branchée.
+          ses contrôles sont rejoués au moment de la remettre. Valider une fiche ne l’envoie à
+          personne : elle part au patient au clic « Valider pour diffusion » d’un protocole qui
+          porte son assiette, une fois l’envoi des fiches ouvert.
         </p>
       </div>
 

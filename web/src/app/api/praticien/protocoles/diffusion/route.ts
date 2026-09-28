@@ -15,12 +15,31 @@ import {
   resolveActiveApproval,
   validateDiffusionApproval,
 } from '@/lib/protocol/diffusion';
+import type { Prisma } from '@/generated/prisma';
+import type { DecisionCard } from '@/lib/clinical-engine/types';
+import { accepteNouvelEnvoi, type EtatDossier } from '@/lib/patient/cycleDeVie';
+import {
+  TEXTE_BLOCAGE,
+  type ActionPourApercu,
+  type ApercuFiches,
+  type BlocageFiches,
+} from '@/lib/fiches-assiette/apercuRemise';
+import { envoiFichesOuvert } from '@/lib/fiches-assiette/drapeau';
+import { apercuFichesDuProtocole, remettreFiches } from '@/lib/fiches-assiette/remise';
 
 // Validation « pour diffusion » du protocole (C2A LOT-03 Part B). Persiste
 // l'approbation praticien (contrat ProtocolDiffusionApproval), distincte de la
 // relecture, ANCRÉE sur une version précise (caduque dès qu'une nouvelle version
-// est enregistrée). Append-only chaîné. N'entraîne AUCUN envoi patient : la
-// transmission relève d'un lot ultérieur (LOT-05).
+// est enregistrée). Append-only chaîné. N'entraîne AUCUN envoi de protocole au
+// patient : la transmission relève d'un lot ultérieur (LOT-05).
+//
+// LES FICHES D'ASSIETTE ([[D-251]] §7, lot 8), sous `WN_FICHES_ASSIETTE` SEUL.
+// Drapeau ouvert, le GET rend l'aperçu des fiches que le clic remettrait, et le
+// POST les remet dans LA MÊME transaction que l'approbation. Le clic renvoie le
+// jeton de l'aperçu qu'il a vu : un aperçu qui a changé entre-temps est un clic
+// refusé, rien d'écrit, et l'aperçu à jour montré (arbitrage du 2026-09-28).
+// Drapeau fermé, cette route lit et écrit exactement ce qu'elle lisait et
+// écrivait avant ; seule la réponse du GET porte une clé de plus, `fiches: null`.
 
 const ID_PATTERN = /^[A-Za-z0-9_:.#-]+$/;
 
@@ -31,11 +50,96 @@ type PostBody = {
   idPatient?: string;
   decisionCardId?: string;
   protocolDraftInputHash?: string;
+  /** Drapeau ouvert : le jeton de l'aperçu des fiches que le praticien a vu. */
+  jetonApercuFiches?: string;
 };
 
 type PostResponse =
-  | { ok: true; unchanged: boolean; approvalId: string; protocolDraftInputHash: string; approvedAt: string }
+  | {
+      ok: true;
+      unchanged: boolean;
+      approvalId: string;
+      protocolDraftInputHash: string;
+      approvedAt: string;
+      /** Drapeau ouvert seulement : le nombre de fiches remises par ce clic. */
+      fichesRemises?: number;
+    }
   | { ok: false; reason: string; error: string };
+
+/**
+ * Ce qui empêche TOUTE fiche de partir (§7), et les actions de la version.
+ *
+ * Le dossier PRIME : un dossier clos n'accepte plus aucun envoi de suivi
+ * (`cycleDeVie.ts`). Puis le contrat patient : une fiche ne part qu'avec un
+ * protocole que le portail saurait servir — une carte qui ne se rejoue plus
+ * (`decisionCard` nul), un payload illisible ou un contrat qui refuse bloquent
+ * tout. Les actions restent listées quand elles se relisent : l'aperçu dit
+ * alors, fiche par fiche, qu'aucune ne part, et pourquoi.
+ *
+ * L'état du dossier est LU PAR L'APPELANT : au clic, dans la transaction et
+ * verrouillé en partage (`lireDossierVerrouille`) ; à la lecture du cockpit,
+ * sans verrou.
+ */
+function blocageEtActionsDesFiches(entrees: {
+  dossier: EtatDossier | null;
+  decisionCard: DecisionCard | null;
+  payload: unknown;
+  inputHash: string;
+}): { blocage: BlocageFiches | null; actions: ActionPourApercu[] } {
+  let actions: ActionPourApercu[] = [];
+  let contratRefuse = entrees.decisionCard === null;
+  try {
+    const draft = reconstructProtocolDraft(entrees.payload, entrees.inputHash);
+    actions = draft.actions;
+    if (entrees.decisionCard && !apercuContenuPatient({
+      decisionCard: entrees.decisionCard,
+      protocolDraft: draft,
+      patientLimitations: [],
+    }).ok) {
+      contratRefuse = true;
+    }
+  } catch {
+    contratRefuse = true;
+  }
+  if (!entrees.dossier || !accepteNouvelEnvoi(entrees.dossier)) {
+    return { blocage: { motif: 'dossier_non_suivi', detail: TEXTE_BLOCAGE.dossier_non_suivi }, actions };
+  }
+  if (contratRefuse) {
+    return { blocage: { motif: 'contrat_refuse', detail: TEXTE_BLOCAGE.contrat_refuse }, actions };
+  }
+  return { blocage: null, actions };
+}
+
+/**
+ * L'état du dossier AU CLIC, verrouillé en partage jusqu'au COMMIT : une
+ * clôture de suivi concurrente attend la fin du clic, au lieu de laisser partir
+ * des fiches vers un dossier qu'elle vient de clore (constat de revue du
+ * lot 8).
+ */
+async function lireDossierVerrouille(
+  client: Pick<Prisma.TransactionClient, '$queryRaw'>,
+  idPatient: string,
+): Promise<EtatDossier | null> {
+  const lignes = await client.$queryRaw<{ actif: boolean; suivi_cloture_le: Date | null }[]>`
+    SELECT actif, suivi_cloture_le FROM patients WHERE id_patient = ${idPatient} FOR SHARE`;
+  const ligne = lignes[0];
+  return ligne ? { actif: ligne.actif, suiviClotureLe: ligne.suivi_cloture_le } : null;
+}
+
+/**
+ * Au GET : une lecture des fiches qui échoue ne fait PAS tomber l'état de
+ * diffusion (approbation, caducité, aperçu patient). Elle se dit, et son jeton
+ * ne peut égaler aucun aperçu calculé — un clic posé dessus est refusé, puis
+ * l'aperçu relu (constat de revue du lot 8).
+ */
+const APERCU_FICHES_ILLISIBLE: ApercuFiches = {
+  jeton: 'lecture_impossible',
+  blocage: { motif: 'lecture_impossible', detail: TEXTE_BLOCAGE.lecture_impossible },
+  lignes: [],
+};
+
+const ERREUR_APERCU_PERIME =
+  'L’aperçu des fiches d’assiette n’est plus exact : il vient d’être mis à jour. Relisez-le avant de valider.';
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.length > 0;
@@ -91,6 +195,9 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         assessmentEpisodeId: true,
         status: true,
         reviewedAt: true,
+        // Lu pour les fiches seulement (actions, contrat patient) — et
+        // seulement drapeau ouvert : fermé, la lecture reste celle d'avant.
+        payload: envoiFichesOuvert(),
       },
     });
     if (!version || version.idPatient !== idPatient) {
@@ -180,6 +287,92 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       );
     }
 
+    // ── LES FICHES D'ASSIETTE, DRAPEAU OUVERT ([[D-251]] §7) ─────────────────
+    //
+    // UNE SEULE TRANSACTION pour l'approbation et les remises : un clic dont
+    // l'approbation passerait sans ses fiches — ou l'inverse — serait un geste
+    // à moitié fait, que personne ne verrait. L'aperçu y est RECALCULÉ sous le
+    // verrou de chaque fiche, puis comparé au jeton que l'écran a montré.
+    //
+    // UN CLIC SUR UNE VERSION DÉJÀ APPROUVÉE N'EST PAS UN NO-OP ici : c'est « le
+    // geste explicite qui remet une fiche validée depuis » (§7). L'approbation
+    // active est reprise telle quelle, et seules les fiches changent.
+    if (envoiFichesOuvert()) {
+      const jeton = body.jetonApercuFiches;
+      if (!isNonEmptyString(jeton)) {
+        return NextResponse.json(
+          { ok: false, reason: 'apercu_fiches_perime', error: ERREUR_APERCU_PERIME },
+          { status: 409 },
+        );
+      }
+      const issue = await prisma.$transaction(async tx => {
+        // UN VERROU PAR CHAÎNE D'APPROBATIONS, pris EN PREMIER (revue Copilot
+        // de #1245). Sans lui, deux clics concurrents sur un protocole sans
+        // fiche — aucun verrou de fiche n'est alors pris — liraient tous deux
+        // une chaîne vide et créeraient deux têtes. Pris avant les verrous de
+        // fiche, toujours dans cet ordre : la décision du responsable ne prend
+        // qu'un verrou de fiche, et n'attend jamais celui-ci.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`protocol_diffusion_approvals:${idPatient}:${version.decisionCardInputHash}`}))`;
+        const { blocage, actions } = blocageEtActionsDesFiches({
+          dossier: await lireDossierVerrouille(tx, idPatient),
+          decisionCard: rejeu.decisionCard,
+          payload: version.payload,
+          inputHash: version.inputHash,
+        });
+        const apercu = await apercuFichesDuProtocole(
+          tx,
+          { idPatient, protocolDraftInputHash, actions, blocage },
+          { verrouiller: true },
+        );
+        if (apercu.jeton !== jeton) return { perime: true as const };
+
+        const approbations = await tx.protocolDiffusionApproval.findMany({
+          where: { idPatient, decisionCardInputHash: version.decisionCardInputHash },
+          select: { id: true, protocolDraftInputHash: true, supersedesApprovalId: true, createdAt: true },
+        });
+        const active = resolveActiveApproval(approbations);
+        let approvalId: string;
+        let unchanged: boolean;
+        if (active && active.protocolDraftInputHash === protocolDraftInputHash) {
+          approvalId = active.id;
+          unchanged = true;
+        } else {
+          const cree = await tx.protocolDiffusionApproval.create({
+            data: {
+              idPatient,
+              protocolDraftId: versionId,
+              decisionCardInputHash: version.decisionCardInputHash,
+              protocolDraftInputHash,
+              approvedAt: new Date(approvedAt),
+              approvedBy: 'practitioner',
+              confirmation: DIFFUSION_CONFIRMATION,
+              supersedesApprovalId: active?.id ?? null,
+            },
+            select: { id: true },
+          });
+          approvalId = cree.id;
+          unchanged = false;
+        }
+        const fichesRemises = await remettreFiches(tx, apercu, { idPatient, idApprobation: approvalId });
+        return { perime: false as const, approvalId, unchanged, fichesRemises };
+      }, { timeout: 20_000 });
+
+      if (issue.perime) {
+        return NextResponse.json(
+          { ok: false, reason: 'apercu_fiches_perime', error: ERREUR_APERCU_PERIME },
+          { status: 409 },
+        );
+      }
+      return NextResponse.json({
+        ok: true,
+        unchanged: issue.unchanged,
+        approvalId: issue.approvalId,
+        protocolDraftInputHash,
+        approvedAt,
+        fichesRemises: issue.fichesRemises,
+      });
+    }
+
     // Chaînage append-only sur le fil d'approbations de cette décision.
     const rows = await prisma.protocolDiffusionApproval.findMany({
       where: { idPatient, decisionCardInputHash: version.decisionCardInputHash },
@@ -256,6 +449,16 @@ type GetResponse =
        * `null` quand aucune version n'existe encore.
        */
       apercu: ApercuPatientServi | null;
+      /**
+       * LES FICHES D'ASSIETTE QUE LE CLIC REMETTRAIT ([[D-251]] §7), sur la
+       * version ACTIVE comme `apercu` : celles qui partiront, celles déjà
+       * remises, et celles qui ne partiront pas, avec leur motif. Son `jeton`
+       * revient avec le clic.
+       *
+       * `null` drapeau fermé, ou sans version : rien ne partira, et l'écran n'en
+       * dit rien.
+       */
+      fiches: ApercuFiches | null;
     }
   | { ok: false; reason: string; error: string };
 
@@ -314,7 +517,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       },
     });
     if (versions.length === 0) {
-      return NextResponse.json({ ok: true, approval: null, stale: false, servieAuPatient: null, apercu: null });
+      return NextResponse.json({ ok: true, approval: null, stale: false, servieAuPatient: null, apercu: null, fiches: null });
     }
     const decisionCardInputHash = versions[0].decisionCardInputHash;
     const activeVersion = resolveActiveVersion(versions);
@@ -460,6 +663,38 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       }
     }
 
+    // ── LES FICHES QUE LE CLIC REMETTRAIT, DRAPEAU OUVERT ([[D-251]] §7) ─────
+    //
+    // Même version que l'aperçu, même rejeu. SANS VERROU : cette lecture
+    // n'écrit rien, et le clic recalcule l'aperçu sous verrou avant d'écrire —
+    // c'est le jeton qui dit si ce que le praticien a vu tient encore.
+    let fiches: ApercuFiches | null = null;
+    if (envoiFichesOuvert() && activeVersion) {
+      try {
+        const rejeuActif = await rejeuDe(activeVersion);
+        const { blocage, actions } = blocageEtActionsDesFiches({
+          dossier: await prisma.patient.findUnique({
+            where: { idPatient },
+            select: { actif: true, suiviClotureLe: true },
+          }),
+          decisionCard: rejeuActif.ok ? rejeuActif.decisionCard : null,
+          payload: activeVersion.payload,
+          inputHash: activeVersion.inputHash,
+        });
+        fiches = await apercuFichesDuProtocole(
+          prisma,
+          { idPatient, protocolDraftInputHash: activeVersion.inputHash, actions, blocage },
+          { verrouiller: false },
+        );
+      } catch (erreur) {
+        console.warn(
+          '[praticien/protocoles/diffusion GET] aperçu des fiches illisible :',
+          erreur instanceof Error ? erreur.message : String(erreur),
+        );
+        fiches = APERCU_FICHES_ILLISIBLE;
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       approval: active
@@ -472,6 +707,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       stale: isApprovalStale(active, activeVersion?.inputHash ?? null),
       servieAuPatient,
       apercu,
+      fiches,
     });
   } catch (err) {
     console.error('[praticien/protocoles/diffusion GET]', err instanceof Error ? err.message : String(err));

@@ -21,6 +21,7 @@ import type { CritereConstatable } from '@/lib/supplement-library/constatsCriter
 import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
 import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
 import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
+import type { ApercuFiches } from '@/lib/fiches-assiette/apercuRemise';
 import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
 import { J21DecisionPanel } from './J21DecisionPanel';
 import { MeteoAdhesionPanel } from './MeteoAdhesionPanel';
@@ -112,6 +113,8 @@ type DiffusionApiResponse = {
   servieAuPatient?: boolean | null;
   /** Ce que le patient LIRA de la version active, projeté par le contrat ([[D-200]]). */
   apercu?: ApercuPatientServi | null;
+  /** Les fiches d'assiette que le clic remettrait ([[D-251]] §7) ; `null` drapeau fermé. */
+  fiches?: ApercuFiches | null;
 };
 
 type RuntimeError = 'session' | 'patient' | 'technical';
@@ -420,6 +423,7 @@ export function ClinicalRuntimeSection({
    * rien plutôt qu'un aperçu vide qui passerait pour un protocole vide.
    */
   const [apercuPatient, setApercuPatient] = useState<ApercuPatientServi | null>(null);
+  const [apercuFiches, setApercuFiches] = useState<ApercuFiches | null>(null);
   /** Ce que la raison d'être a le droit de citer — relu au serveur ([[D-193]]). */
   const [sourcesCitables, setSourcesCitables] = useState<SourceCitablePurpose[]>([]);
   /** Lignes de barème vouchées par le serveur — vide tant qu'il n'est pas signé. */
@@ -552,15 +556,24 @@ export function ClinicalRuntimeSection({
         `/api/praticien/protocoles/diffusion?idPatient=${encodeURIComponent(idPatient)}&decisionCardId=${encodeURIComponent(decisionCardId)}`,
       );
       const payload = (await response.json()) as DiffusionApiResponse;
-      if (!response.ok || !payload.ok) return;
+      // Un aperçu des fiches qu'on n'a pas pu relire ne reste pas affiché comme
+      // s'il était à jour : sans lui, le clic part sans jeton et se fait
+      // refuser, au lieu de remettre sur la foi d'un écran périmé.
+      if (!response.ok || !payload.ok) {
+        setApercuFiches(null);
+        return;
+      }
       setApprovedAt(payload.approval?.approvedAt ?? null);
       setApprovalStale(payload.stale);
       // `?? null` et non `?? false` : un serveur qui ne sait pas ne doit pas
       // faire dire à l'écran « non servie ».
       setServieAuPatient(payload.servieAuPatient ?? null);
       setApercuPatient(payload.apercu ?? null);
+      setApercuFiches(payload.fiches ?? null);
     } catch {
       // L'état de diffusion est indicatif : un échec de lecture ne bloque pas.
+      // L'aperçu des fiches, lui, ne survit pas à une lecture manquée.
+      setApercuFiches(null);
     }
   }, [idPatient]);
 
@@ -1553,12 +1566,23 @@ export function ClinicalRuntimeSection({
           idPatient,
           decisionCardId: readyDecisionCardId,
           protocolDraftInputHash: activeVersion.inputHash,
+          // Le jeton de l'aperçu des fiches AFFICHÉ ([[D-251]] §7) : le serveur
+          // refuse le clic si ce que le praticien a vu ne tient plus.
+          jetonApercuFiches: apercuFiches?.jeton,
         }),
       });
-      const payload = (await response.json()) as { ok: boolean; error?: string };
+      const payload = (await response.json()) as { ok: boolean; reason?: string; error?: string };
       if (!response.ok || !payload.ok) {
         setDiffusionState('error');
         setDiffusionError(payload.error ?? 'Échec de la validation.');
+        // Aperçu périmé : rien n'a été écrit. L'aperçu à jour s'affiche, et
+        // c'est lui que le praticien relit avant de cliquer à nouveau. Les
+        // VERSIONS aussi : le clic vise la version active de l'état local, et
+        // un état local en retard sur le serveur renverrait le même refus sans
+        // fin (constat de revue du lot 8).
+        if (payload.reason === 'apercu_fiches_perime') {
+          await Promise.all([loadVersions(readyDecisionCardId), loadDiffusion(readyDecisionCardId)]);
+        }
         return;
       }
       setDiffusionState('idle');
@@ -2212,6 +2236,7 @@ export function ClinicalRuntimeSection({
             approvedAt={approvedAt}
             servieAuPatient={servieAuPatient}
             apercu={apercuPatient}
+            fiches={apercuFiches}
             state={diffusionState}
             error={diffusionError}
             onApprove={approveForDiffusion}
