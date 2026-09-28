@@ -119,6 +119,31 @@ fournisseur, son transfert hors UE et l'information des patients.
 
 ### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
+> **AMENDEMENT DU 2026-09-28 (NUIT) — LOT 9, TROIS LECTURES DU SERVICE
+> PATIENT.** Choix de mise en œuvre, pris en session et révisables par le
+> responsable. Ils fixent ce que la route du portail sert, sous
+> `WN_FICHES_ASSIETTE_LECTURE` fermé.
+>
+> 1. **Une assiette fait partie du protocole tant qu'une action la conseille
+>    encore** : ferme, suspendue dans l'attente d'un bilan, ou différée. Le
+>    patient lit alors l'action avec son statut, et la fiche ne porte pas la
+>    mention « ne fait plus partie de votre protocole actuel ». La mention
+>    paraît quand le protocole servi ne porte plus l'assiette, **ou la déclare
+>    contre-indiquée ou non indiquée actuellement** : une fiche ne se lit
+>    jamais comme actuelle à côté d'une contre-indication (revue du lot 9,
+>    P1). Si aucun protocole servi ne peut être établi, la mention ne paraît
+>    pas : on n'affirme rien sur un état inconnu (`DC-24`). Aucune phrase ne
+>    dit au patient qu'une fiche « fait partie » de son protocole.
+> 2. **Les contrôles sont rejoués au moment de servir au patient** (§6) :
+>    empreinte, appariement, précautions et claims cités encore valides. Une
+>    fiche qui ne les passe plus n'est pas servie, et c'est dit. C'est la même
+>    règle que l'aperçu du praticien : « ne rien servir, et le dire ». Une
+>    panne pendant ce rejeu retient cette fiche seule ; les autres restent à
+>    l'écran, retirées comprises.
+> 3. **Le motif d'un retrait n'est pas servi au patient.** C'est une note du
+>    cabinet. L'entrée reste, avec sa mention de retrait et sans texte (§7).
+>    Ne sortent pas non plus le validateur, les claims et le texte source.
+>
 > **AMENDEMENT DU 2026-09-28 (SOIR) — LE DRAPEAU D'ÉMISSION S'OUVRE AVANT SES
 > CONDITIONS, SUR ORDRE DU RESPONSABLE, ET LA LECTURE PREND LE SIEN.** Ordre
 > rendu en session après le déploiement du lot 8 (#1245, `e6f1dd70`) :

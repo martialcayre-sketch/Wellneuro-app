@@ -5,10 +5,24 @@
 // gardées, et le coupe-circuit de la LECTURE reste le retrait par version.
 //
 // Convention des drapeaux produit (`docs/FEATURE_FLAGS.md` § A) : la chaîne
-// exacte `'true'`, absent = fermé. Il ne s'ouvre qu'aux conditions du §10 :
-// sept fiches validées, espace de lecture constaté, document TRUST sur l'IA
-// publié, contre-revue adverse.
+// exacte `'true'`, absent = fermé. Posé en production le 2026-09-28, sur ordre
+// du responsable, AVANT les conditions du §10 : celles-ci sont passées au
+// drapeau de lecture, ci-dessous (amendement du 2026-09-28 au soir).
 
 export function envoiFichesOuvert(): boolean {
   return process.env.WN_FICHES_ASSIETTE === 'true';
+}
+
+// `WN_FICHES_ASSIETTE_LECTURE` — LE DRAPEAU GARDE LA LECTURE PATIENT (lots 9-10).
+// Fermé, la route du portail répond 503 avant toute lecture de session ou de
+// base : aucune fiche remise n'atteint un patient. Il porte les conditions du
+// §10 de [[D-251]] : les sept fiches validées, l'espace de lecture constaté, le
+// document TRUST sur l'usage de l'IA publié, une contre-revue adverse.
+//
+// DISTINCT DU DRAPEAU D'ÉMISSION, et c'est le point de l'amendement : le
+// drapeau d'émission est ouvert. Sous un drapeau unique, la première remise
+// deviendrait lisible au merge de l'écran, avant le document TRUST.
+
+export function lectureFichesOuverte(): boolean {
+  return process.env.WN_FICHES_ASSIETTE_LECTURE === 'true';
 }
