@@ -15,8 +15,9 @@ import {
   resolveActiveApproval,
   validateDiffusionApproval,
 } from '@/lib/protocol/diffusion';
+import type { Prisma } from '@/generated/prisma';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
-import { accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import { accepteNouvelEnvoi, type EtatDossier } from '@/lib/patient/cycleDeVie';
 import {
   TEXTE_BLOCAGE,
   type ActionPourApercu,
@@ -37,7 +38,8 @@ import { apercuFichesDuProtocole, remettreFiches } from '@/lib/fiches-assiette/r
 // POST les remet dans LA MÊME transaction que l'approbation. Le clic renvoie le
 // jeton de l'aperçu qu'il a vu : un aperçu qui a changé entre-temps est un clic
 // refusé, rien d'écrit, et l'aperçu à jour montré (arbitrage du 2026-09-28).
-// Drapeau fermé, cette route fait exactement ce qu'elle faisait avant.
+// Drapeau fermé, cette route lit et écrit exactement ce qu'elle lisait et
+// écrivait avant ; seule la réponse du GET porte une clé de plus, `fiches: null`.
 
 const ID_PATTERN = /^[A-Za-z0-9_:.#-]+$/;
 
@@ -67,19 +69,23 @@ type PostResponse =
 /**
  * Ce qui empêche TOUTE fiche de partir (§7), et les actions de la version.
  *
- * Le dossier d'abord : un dossier clos n'accepte plus aucun envoi de suivi
+ * Le dossier PRIME : un dossier clos n'accepte plus aucun envoi de suivi
  * (`cycleDeVie.ts`). Puis le contrat patient : une fiche ne part qu'avec un
  * protocole que le portail saurait servir — une carte qui ne se rejoue plus
  * (`decisionCard` nul), un payload illisible ou un contrat qui refuse bloquent
  * tout. Les actions restent listées quand elles se relisent : l'aperçu dit
  * alors, fiche par fiche, qu'aucune ne part, et pourquoi.
+ *
+ * L'état du dossier est LU PAR L'APPELANT : au clic, dans la transaction et
+ * verrouillé en partage (`lireDossierVerrouille`) ; à la lecture du cockpit,
+ * sans verrou.
  */
-async function blocageEtActionsDesFiches(entrees: {
-  idPatient: string;
+function blocageEtActionsDesFiches(entrees: {
+  dossier: EtatDossier | null;
   decisionCard: DecisionCard | null;
   payload: unknown;
   inputHash: string;
-}): Promise<{ blocage: BlocageFiches | null; actions: ActionPourApercu[] }> {
+}): { blocage: BlocageFiches | null; actions: ActionPourApercu[] } {
   let actions: ActionPourApercu[] = [];
   let contratRefuse = entrees.decisionCard === null;
   try {
@@ -95,11 +101,7 @@ async function blocageEtActionsDesFiches(entrees: {
   } catch {
     contratRefuse = true;
   }
-  const dossier = await prisma.patient.findUnique({
-    where: { idPatient: entrees.idPatient },
-    select: { actif: true, suiviClotureLe: true },
-  });
-  if (!dossier || !accepteNouvelEnvoi(dossier)) {
+  if (!entrees.dossier || !accepteNouvelEnvoi(entrees.dossier)) {
     return { blocage: { motif: 'dossier_non_suivi', detail: TEXTE_BLOCAGE.dossier_non_suivi }, actions };
   }
   if (contratRefuse) {
@@ -107,6 +109,34 @@ async function blocageEtActionsDesFiches(entrees: {
   }
   return { blocage: null, actions };
 }
+
+/**
+ * L'état du dossier AU CLIC, verrouillé en partage jusqu'au COMMIT : une
+ * clôture de suivi concurrente attend la fin du clic, au lieu de laisser partir
+ * des fiches vers un dossier qu'elle vient de clore (constat de revue du
+ * lot 8).
+ */
+async function lireDossierVerrouille(
+  client: Pick<Prisma.TransactionClient, '$queryRaw'>,
+  idPatient: string,
+): Promise<EtatDossier | null> {
+  const lignes = await client.$queryRaw<{ actif: boolean; suivi_cloture_le: Date | null }[]>`
+    SELECT actif, suivi_cloture_le FROM patients WHERE id_patient = ${idPatient} FOR SHARE`;
+  const ligne = lignes[0];
+  return ligne ? { actif: ligne.actif, suiviClotureLe: ligne.suivi_cloture_le } : null;
+}
+
+/**
+ * Au GET : une lecture des fiches qui échoue ne fait PAS tomber l'état de
+ * diffusion (approbation, caducité, aperçu patient). Elle se dit, et son jeton
+ * ne peut égaler aucun aperçu calculé — un clic posé dessus est refusé, puis
+ * l'aperçu relu (constat de revue du lot 8).
+ */
+const APERCU_FICHES_ILLISIBLE: ApercuFiches = {
+  jeton: 'lecture_impossible',
+  blocage: { motif: 'lecture_impossible', detail: TEXTE_BLOCAGE.lecture_impossible },
+  lignes: [],
+};
 
 const ERREUR_APERCU_PERIME =
   'L’aperçu des fiches d’assiette n’est plus exact : il vient d’être mis à jour. Relisez-le avant de valider.';
@@ -165,9 +195,9 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         assessmentEpisodeId: true,
         status: true,
         reviewedAt: true,
-        // Lu pour les fiches seulement (actions, contrat patient) : drapeau
-        // fermé, il n'est pas consulté.
-        payload: true,
+        // Lu pour les fiches seulement (actions, contrat patient) — et
+        // seulement drapeau ouvert : fermé, la lecture reste celle d'avant.
+        payload: envoiFichesOuvert(),
       },
     });
     if (!version || version.idPatient !== idPatient) {
@@ -275,13 +305,13 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           { status: 409 },
         );
       }
-      const { blocage, actions } = await blocageEtActionsDesFiches({
-        idPatient,
-        decisionCard: rejeu.decisionCard,
-        payload: version.payload,
-        inputHash: version.inputHash,
-      });
       const issue = await prisma.$transaction(async tx => {
+        const { blocage, actions } = blocageEtActionsDesFiches({
+          dossier: await lireDossierVerrouille(tx, idPatient),
+          decisionCard: rejeu.decisionCard,
+          payload: version.payload,
+          inputHash: version.inputHash,
+        });
         const apercu = await apercuFichesDuProtocole(
           tx,
           { idPatient, protocolDraftInputHash, actions, blocage },
@@ -633,18 +663,29 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     // c'est le jeton qui dit si ce que le praticien a vu tient encore.
     let fiches: ApercuFiches | null = null;
     if (envoiFichesOuvert() && activeVersion) {
-      const rejeuActif = await rejeuDe(activeVersion);
-      const { blocage, actions } = await blocageEtActionsDesFiches({
-        idPatient,
-        decisionCard: rejeuActif.ok ? rejeuActif.decisionCard : null,
-        payload: activeVersion.payload,
-        inputHash: activeVersion.inputHash,
-      });
-      fiches = await apercuFichesDuProtocole(
-        prisma,
-        { idPatient, protocolDraftInputHash: activeVersion.inputHash, actions, blocage },
-        { verrouiller: false },
-      );
+      try {
+        const rejeuActif = await rejeuDe(activeVersion);
+        const { blocage, actions } = blocageEtActionsDesFiches({
+          dossier: await prisma.patient.findUnique({
+            where: { idPatient },
+            select: { actif: true, suiviClotureLe: true },
+          }),
+          decisionCard: rejeuActif.ok ? rejeuActif.decisionCard : null,
+          payload: activeVersion.payload,
+          inputHash: activeVersion.inputHash,
+        });
+        fiches = await apercuFichesDuProtocole(
+          prisma,
+          { idPatient, protocolDraftInputHash: activeVersion.inputHash, actions, blocage },
+          { verrouiller: false },
+        );
+      } catch (erreur) {
+        console.warn(
+          '[praticien/protocoles/diffusion GET] aperçu des fiches illisible :',
+          erreur instanceof Error ? erreur.message : String(erreur),
+        );
+        fiches = APERCU_FICHES_ILLISIBLE;
+      }
     }
 
     return NextResponse.json({

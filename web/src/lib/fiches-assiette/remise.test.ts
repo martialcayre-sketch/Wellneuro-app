@@ -43,7 +43,10 @@ function client(entrees: { versions?: unknown[]; remises?: unknown[]; count?: nu
   return {
     $queryRaw: vi.fn(),
     $executeRaw: vi.fn(async () => 1),
-    ficheAssietteVersion: { findMany: vi.fn(async () => entrees.versions ?? []) },
+    ficheAssietteVersion: {
+      findMany: vi.fn(async () => entrees.versions ?? []),
+      findUnique: vi.fn(async () => ({ contenu: {}, texteSource: 'Source synthétique.' })),
+    },
     ficheAssietteRemise: {
       findMany: vi.fn(async () => entrees.remises ?? []),
       createMany: vi.fn(async ({ data }: { data: unknown[] }) => ({ count: entrees.count ?? data.length })),
@@ -87,7 +90,14 @@ describe('apercuFichesDuProtocole', () => {
     );
     expect(apercu.lignes[0]).toMatchObject({ statut: 'part', idVersion: 'v1', numero: 1, contenuSha256: H('a') });
     expect(controlerVersion).toHaveBeenCalledTimes(1);
-    expect(controlerVersion.mock.calls[0][0]).toMatchObject({ id: 'v1' });
+    expect(controlerVersion.mock.calls[0][0]).toMatchObject({ id: 'v1', texteSource: 'Source synthétique.' });
+    // Les versions se lisent SANS leur texte ; seul celui de la référence est
+    // chargé (constat de revue du lot 8).
+    const selection = (c.ficheAssietteVersion.findMany.mock.calls[0] as unknown as [{ select: Record<string, unknown> }])[0].select;
+    expect(selection.contenu).toBeUndefined();
+    expect(selection.texteSource).toBeUndefined();
+    expect(c.ficheAssietteVersion.findUnique).toHaveBeenCalledTimes(1);
+    expect(c.ficheAssietteVersion.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'v1' } }));
   });
 
   it('une référence qui échoue aux contrôles ne part pas', async () => {

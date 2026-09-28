@@ -2,8 +2,10 @@
 
 // Validation « pour diffusion » d'une version relue (C2A LOT-03 Part B). La
 // validation est persistée et ancrée sur la version : elle devient caduque dès
-// qu'une nouvelle version est enregistrée. Elle ne déclenche AUCUN envoi patient
-// (« Non transmis » reste affiché) — la transmission relève d'un lot ultérieur.
+// qu'une nouvelle version est enregistrée. Elle ne transmet PAS le protocole au
+// patient (« Non transmis » reste affiché) — la transmission relève d'un lot
+// ultérieur. Sous `WN_FICHES_ASSIETTE` seul, le même clic remet les fiches
+// d'assiette de l'aperçu ci-dessous ([[D-251]] §7, lot 8).
 
 import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
@@ -38,9 +40,15 @@ function ApercuFichesAssiette({ fiches, dejaValide }: { fiches: ApercuFiches; de
         <p className="mt-2 text-base text-status-warning">{fiches.blocage.detail}</p>
       )}
       {fiches.lignes.length === 0 ? (
-        <p className="mt-2 text-base text-muted-foreground">
-          Aucune action de ce protocole ne porte d’assiette : aucune fiche ne part.
-        </p>
+        // Sous un blocage, zéro ligne peut vouloir dire « non lu » (payload
+        // illisible, lecture en échec) : le blocage l'a déjà dit, et affirmer
+        // « aucune action ne porte d'assiette » serait un constat inventé
+        // (`DC-24`, constat de revue du lot 8).
+        fiches.blocage ? null : (
+          <p className="mt-2 text-base text-muted-foreground">
+            Aucune action de ce protocole ne porte d’assiette : aucune fiche ne part.
+          </p>
+        )
       ) : (
         <ul className="mt-2 flex flex-col gap-2">
           {fiches.lignes.map(ligne => (

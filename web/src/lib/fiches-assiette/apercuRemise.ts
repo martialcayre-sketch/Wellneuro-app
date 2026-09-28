@@ -19,8 +19,12 @@
 
 import type { ProtocolAction } from '@/lib/clinical-engine/types';
 
-/** Ce qui empêche TOUTE fiche de partir, quel que soit son état. */
-export type MotifBlocage = 'dossier_non_suivi' | 'contrat_refuse';
+/**
+ * Ce qui empêche TOUTE fiche de partir, quel que soit son état.
+ * `lecture_impossible` : la lecture des fiches a échoué au cockpit — rien n'est
+ * affirmé, et un clic posé sur cet aperçu est refusé.
+ */
+export type MotifBlocage = 'dossier_non_suivi' | 'contrat_refuse' | 'lecture_impossible';
 
 /** Pourquoi UNE fiche ne part pas. */
 export type MotifFiche =
@@ -99,6 +103,8 @@ function estFerme(action: ActionPourApercu): boolean {
 export const TEXTE_BLOCAGE: Record<MotifBlocage, string> = {
   dossier_non_suivi: 'Le dossier n’est pas en suivi : aucune fiche ne part.',
   contrat_refuse: 'Le protocole ne peut pas être servi au patient : aucune fiche ne part.',
+  lecture_impossible:
+    'Les fiches d’assiette n’ont pas pu être lues : rien n’est affirmé sur leur remise. Rechargez avant de valider.',
 };
 
 /**
@@ -202,7 +208,11 @@ export function empreinteDeLApercu(apercu: ApercuFichesSansJeton, protocolDraftI
   };
 }
 
-/** Des fiches partiraient au clic : le bouton de diffusion a une raison d'être offert. */
+/**
+ * Des fiches partiraient au clic. L'écran s'en sert pour dire qu'un nouveau
+ * clic sur un protocole déjà validé les remettrait ; le bouton, lui, est offert
+ * dès qu'une version relue existe.
+ */
 export function fichesARemettre(apercu: ApercuFichesSansJeton | null | undefined): boolean {
   return apercu?.lignes.some(l => l.statut === 'part') ?? false;
 }

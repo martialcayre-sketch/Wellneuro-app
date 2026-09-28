@@ -238,6 +238,25 @@ describe('ProtocolDiffusionPanel — les fiches d’assiette', () => {
     expect(screen.getByText(/Aucune action de ce protocole ne porte d’assiette/)).toBeTruthy();
   });
 
+  it('sous un blocage, zéro ligne n’est JAMAIS lu « aucune action ne porte d’assiette » (`DC-24`)', () => {
+    // Payload illisible, ou lecture des fiches en échec : on ne sait pas.
+    render(
+      <ProtocolDiffusionPanel
+        canApprove
+        approved={false}
+        stale={false}
+        approvedAt={null}
+        fiches={{
+          jeton: 'lecture_impossible',
+          blocage: { motif: 'lecture_impossible', detail: 'Les fiches d’assiette n’ont pas pu être lues.' },
+          lignes: [],
+        }}
+      />,
+    );
+    expect(screen.getByText(/n’ont pas pu être lues/)).toBeTruthy();
+    expect(screen.queryByText(/Aucune action de ce protocole ne porte d’assiette/)).toBeNull();
+  });
+
   it('drapeau fermé (`fiches` nul) : la section n’existe pas', () => {
     render(<ProtocolDiffusionPanel canApprove approved={false} stale={false} approvedAt={null} />);
     expect(screen.queryByTestId('apercu-fiches-assiette')).toBeNull();

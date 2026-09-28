@@ -8191,8 +8191,11 @@ chaque fiche. Un jeton d'aperçu périmé donne un clic refusé, rien d'écrit, 
 l'aperçu rechargé. Un clic sur une version déjà approuvée remet les fiches
 validées depuis. Drapeau fermé, la route est inchangée.
 
-**Validations.** 16 mutants tués ; passage d'intégration sur base réelle
-(v1, rejeu, v2, v1 après retrait).
+**Validations.** Revue `wn-reviewer` GO ; ses cinq P2 sont corrigés (dossier
+verrouillé au clic, lecture en échec dite, refus sans fin évité, texte de la
+seule référence, `payload` non lu drapeau fermé). L'invariant « jeton du GET =
+jeton du POST » a son banc. 24 mutants tués ; passage d'intégration sur base
+réelle (v1, rejeu, v2, v1 après retrait).
 
-**Prochaine action.** Revue, PR, merge ; puis un premier protocole servi sur un
+**Prochaine action.** PR, merge ; puis un premier protocole servi sur un
 dossier de test ; puis le lot 9.

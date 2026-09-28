@@ -71,6 +71,9 @@ async function lireFaits(
   const faits = new Map<string, FaitsFiche>();
   if (fiches.length === 0) return faits;
 
+  // Les versions SANS leur texte : seule la référence est contrôlée, et c'est
+  // elle seule dont le contenu et la source sont chargés, plus bas (constat de
+  // revue du lot 8 — une source porte jusqu'à `TEXTE_SOURCE_MAX` caractères).
   const [versions, remises] = await Promise.all([
     client.ficheAssietteVersion.findMany({
       where: { sourceId: { in: fiches } },
@@ -79,9 +82,7 @@ async function lireFaits(
         sourceId: true,
         plateCode: true,
         numero: true,
-        contenu: true,
         contenuSha256: true,
-        texteSource: true,
         actes: { orderBy: { ordre: 'desc' }, take: 1, select: SELECTION_ACTE },
       },
     }),
@@ -99,7 +100,16 @@ async function lireFaits(
     const reference = derniereVersionValidee(candidates);
     let referenceControlee: FaitsFiche['reference'] = null;
     if (reference) {
-      const controle = await controlerVersion(reference, client);
+      const textes = await client.ficheAssietteVersion.findUnique({
+        where: { id: reference.id },
+        select: { contenu: true, texteSource: true },
+      });
+      // Une version lue à l'instant et introuvable ne se remet pas : elle se
+      // contrôle comme un contenu illisible, donc en échec.
+      const controle = await controlerVersion(
+        { ...reference, contenu: textes?.contenu ?? null, texteSource: textes?.texteSource ?? '' },
+        client,
+      );
       referenceControlee = {
         id: reference.id,
         numero: reference.numero,

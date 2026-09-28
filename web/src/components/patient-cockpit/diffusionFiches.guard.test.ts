@@ -35,8 +35,19 @@ describe('Cockpit — le jeton de l’aperçu des fiches au clic « Valider pour
     expect(corpsDuClic()).toMatch(/jetonApercuFiches:\s*apercuFiches\?\.jeton/);
   });
 
-  it('un aperçu périmé recharge l’état de diffusion — l’aperçu à jour s’affiche', () => {
-    expect(corpsDuClic()).toMatch(/payload\.reason === 'apercu_fiches_perime'\)\s*await loadDiffusion\(/);
+  it('un aperçu périmé recharge l’état de diffusion ET les versions — l’aperçu à jour s’affiche', () => {
+    // Les versions aussi : le clic vise la version active de l'état LOCAL, et
+    // un état local en retard renverrait le même refus sans fin.
+    expect(corpsDuClic()).toMatch(
+      /payload\.reason === 'apercu_fiches_perime'\) \{\s*await Promise\.all\(\[loadVersions\(readyDecisionCardId\), loadDiffusion\(readyDecisionCardId\)\]\)/,
+    );
+  });
+
+  it('une lecture manquée de l’état de diffusion efface l’aperçu des fiches', () => {
+    const debut = SOURCE.indexOf('const loadDiffusion = useCallback');
+    const corps = SOURCE.slice(debut, SOURCE.indexOf('}, [idPatient]);', debut));
+    // Deux chemins d'échec — réponse en erreur, exception —, deux effacements.
+    expect(corps.match(/setApercuFiches\(null\)/g)?.length).toBe(2);
   });
 
   it('le panneau reçoit l’aperçu des fiches', () => {

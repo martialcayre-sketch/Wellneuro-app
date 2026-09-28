@@ -556,7 +556,13 @@ export function ClinicalRuntimeSection({
         `/api/praticien/protocoles/diffusion?idPatient=${encodeURIComponent(idPatient)}&decisionCardId=${encodeURIComponent(decisionCardId)}`,
       );
       const payload = (await response.json()) as DiffusionApiResponse;
-      if (!response.ok || !payload.ok) return;
+      // Un aperçu des fiches qu'on n'a pas pu relire ne reste pas affiché comme
+      // s'il était à jour : sans lui, le clic part sans jeton et se fait
+      // refuser, au lieu de remettre sur la foi d'un écran périmé.
+      if (!response.ok || !payload.ok) {
+        setApercuFiches(null);
+        return;
+      }
       setApprovedAt(payload.approval?.approvedAt ?? null);
       setApprovalStale(payload.stale);
       // `?? null` et non `?? false` : un serveur qui ne sait pas ne doit pas
@@ -566,6 +572,8 @@ export function ClinicalRuntimeSection({
       setApercuFiches(payload.fiches ?? null);
     } catch {
       // L'état de diffusion est indicatif : un échec de lecture ne bloque pas.
+      // L'aperçu des fiches, lui, ne survit pas à une lecture manquée.
+      setApercuFiches(null);
     }
   }, [idPatient]);
 
@@ -1568,8 +1576,13 @@ export function ClinicalRuntimeSection({
         setDiffusionState('error');
         setDiffusionError(payload.error ?? 'Échec de la validation.');
         // Aperçu périmé : rien n'a été écrit. L'aperçu à jour s'affiche, et
-        // c'est lui que le praticien relit avant de cliquer à nouveau.
-        if (payload.reason === 'apercu_fiches_perime') await loadDiffusion(readyDecisionCardId);
+        // c'est lui que le praticien relit avant de cliquer à nouveau. Les
+        // VERSIONS aussi : le clic vise la version active de l'état local, et
+        // un état local en retard sur le serveur renverrait le même refus sans
+        // fin (constat de revue du lot 8).
+        if (payload.reason === 'apercu_fiches_perime') {
+          await Promise.all([loadVersions(readyDecisionCardId), loadDiffusion(readyDecisionCardId)]);
+        }
         return;
       }
       setDiffusionState('idle');

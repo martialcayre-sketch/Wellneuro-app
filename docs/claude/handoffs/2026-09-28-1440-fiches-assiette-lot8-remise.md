@@ -16,8 +16,9 @@ aperçu, sous `WN_FICHES_ASSIETTE`.
 ## 3. Décisions prises
 
 - **Le drapeau garde l'émission, et rien d'autre.** Fermé, la route de
-  diffusion suit exactement son chemin d'avant : ni aperçu, ni transaction, ni
-  remise. Un banc le tient.
+  diffusion lit et écrit exactement ce qu'elle lisait et écrivait : ni
+  `payload`, ni dossier, ni transaction, ni remise. Seule la réponse du GET
+  porte `fiches: null` de plus. Un banc le tient.
 - **Un cœur pur, un module serveur.**
   - `apercuRemise.ts` décide, fiche par fiche : partira, déjà remise, ne
     partira pas (avec son motif).
@@ -38,7 +39,20 @@ aperçu, sous `WN_FICHES_ASSIETTE`.
   - Le protocole n'est pas servable : carte non rejouable, payload illisible,
     ou contrat patient refusé.
 
-  Le dossier est lu en premier. Sous un blocage, rien n'est lu ni verrouillé.
+  Le dossier prime. Au clic, il est lu DANS la transaction avec `FOR SHARE` :
+  une clôture concurrente attend la fin du clic. Sous un blocage, aucune fiche
+  n'est lue ni verrouillée.
+- **Les correctifs de la revue `wn-reviewer`** (GO, aucun P0 ni P1, cinq P2
+  corrigés dans ce lot) :
+  - `payload` lu seulement drapeau ouvert ;
+  - une lecture des fiches en échec ne fait plus tomber le GET : blocage
+    `lecture_impossible`, avec un jeton qui n'égale aucun aperçu calculé ;
+  - sur un aperçu périmé, le cockpit recharge aussi les versions, et une
+    lecture manquée efface l'aperçu ;
+  - le dossier est verrouillé au clic ;
+  - seul le texte de la référence est chargé ;
+  - l'écran ne dit plus « aucune action ne porte d'assiette » sous un blocage à
+    zéro ligne.
 - **« Ferme » veut dire `interventionStatus: 'active'`** (`D-056`). Une même
   assiette sur une action ferme et une action suspendue part par l'action
   ferme.
@@ -50,7 +64,8 @@ aperçu, sous `WN_FICHES_ASSIETTE`.
 - `web/src/lib/fiches-assiette/drapeau.ts` (nouveau).
 - `web/src/lib/fiches-assiette/remises.guard.test.ts` : un seul endroit crée
   une remise, par `createMany`.
-- `web/src/app/api/praticien/protocoles/diffusion/route.ts` et son banc.
+- `web/src/app/api/praticien/protocoles/diffusion/route.ts`, son banc, et
+  `route.fiches.test.ts` (nouveau, l'invariant des jetons).
 - `web/src/components/patient-cockpit/ProtocolDiffusionPanel.tsx` et son banc.
 - `web/src/components/patient-cockpit/ClinicalRuntimeSection.tsx`, et la garde
   `diffusionFiches.guard.test.ts` (nouvelle).
@@ -66,21 +81,30 @@ aperçu, sous `WN_FICHES_ASSIETTE`.
 ## 5. Validations exécutées
 
 - **Bancs verts :**
-  - aperçu (17) et `remise.ts` (9) ;
-  - route (30, dont 8 neufs) et panneau (13, dont 5 neufs) ;
-  - la garde du cockpit (4), et les bancs du cockpit et de la fiche patient,
-    inchangés (162 au total avec la garde) ;
+  - aperçu (13), la garde des remises (4) et `remise.ts` (9) ;
+  - route (34, dont 12 neufs) ;
+  - l'invariant central (3, `route.fiches.test.ts`), sans simuler la chaîne
+    des fiches : le jeton du GET est celui que le POST recalcule, un rejeu est
+    refusé, et une version validée entre-temps est refusée puis remise ;
+  - panneau (14, dont 6 neufs) et la garde du cockpit (5) ;
+  - les bancs du cockpit et de la fiche patient, inchangés ;
   - les gardes des drapeaux et la matrice de consommation.
-- **16 mutants tués, joués en session** (script hors dépôt), chacun par le
+- **24 mutants tués, joués en session** (script hors dépôt), chacun par le
   banc qui vise sa règle. Ils couvrent :
-  - le jeton non comparé ou absent accepté ;
-  - le drapeau ignoré, l'approbation toujours recréée, le dossier clos ignoré,
-    l'aperçu du GET verrouillé ;
+  - le jeton non comparé, absent accepté, ou calculé au GET sur une autre
+    version ;
+  - le drapeau ignoré, le `payload` lu drapeau fermé, l'approbation toujours
+    recréée ;
+  - le dossier clos ignoré ou lu sans verrou, la lecture en échec non
+    rattrapée, l'aperçu du GET verrouillé ;
   - l'action non ferme, les contrôles ignorés, l'idempotence retirée, le
     blocage ignoré, le jeton aveugle à la version ;
   - les verrous non pris, les remises non triées, le compte non vérifié, la
-    remise en cours lue à l'envers ;
-  - le blocage répété à l'écran.
+    remise en cours lue à l'envers, le texte chargé pour toutes les versions ;
+  - à l'écran : le blocage répété, et un blocage à zéro ligne lu « aucune
+    assiette » ;
+  - au cockpit : les versions non rechargées, et un aperçu gardé après une
+    lecture manquée.
 - **Un passage d'intégration sur une base réelle migrée** (`wn_m2_travail_b`,
   locale), en session, dans une transaction annulée : remise de la v1, rejeu
   sans effet, v2 qui la remplace, puis v1 remise à nouveau après le retrait de
@@ -105,7 +129,8 @@ aperçu, sous `WN_FICHES_ASSIETTE`.
 
 ## 7. Prochaine action exacte
 
-1. Revue `wn-reviewer`, puis la PR, sa revue Copilot et le merge.
+1. La PR, sa revue Copilot et le merge. La revue `wn-reviewer` est faite
+   (GO), et ses P2 sont corrigés.
 2. Servir un premier protocole de bout en bout sur un dossier de test, drapeau
    fermé, et le constater par conteneur.
 3. Le lot 9.
