@@ -9,7 +9,14 @@
 
 import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
-import { fichesARemettre, type ApercuFiches, type StatutLigneFiche } from '@/lib/fiches-assiette/apercuRemise';
+import {
+  fichesARemettre,
+  TEXTE_ANNONCE,
+  TEXTE_ANNONCE_A_VENIR,
+  type AnnonceFiches,
+  type ApercuFiches,
+  type StatutLigneFiche,
+} from '@/lib/fiches-assiette/apercuRemise';
 import { ApercuPatientProtocole } from './ApercuPatientProtocole';
 
 export type DiffusionState = 'idle' | 'saving' | 'error';
@@ -26,7 +33,15 @@ const STATUT_FICHE: Record<StatutLigneFiche, { texte: string; variante: BadgeVar
  * Sous un blocage (dossier clos, protocole non servable), le motif est dit UNE
  * fois, en tête, et chaque fiche ne porte plus que son statut.
  */
-function ApercuFichesAssiette({ fiches, dejaValide }: { fiches: ApercuFiches; dejaValide: boolean }) {
+function ApercuFichesAssiette({
+  fiches,
+  dejaValide,
+  annonceParEmail,
+}: {
+  fiches: ApercuFiches;
+  dejaValide: boolean;
+  annonceParEmail: boolean;
+}) {
   return (
     <section
       aria-labelledby="protocol-diffusion-fiches-title"
@@ -71,6 +86,11 @@ function ApercuFichesAssiette({ fiches, dejaValide }: { fiches: ApercuFiches; de
           Ce protocole est déjà validé : un nouveau clic sur « Valider pour diffusion » remet les fiches validées depuis.
         </p>
       )}
+      {/* L'E-MAIL, DIT AVANT LE GESTE ([[D-251]] §9, lot 11) : espace de
+          lecture ouvert, le clic qui remet une fiche avertit le patient. */}
+      {annonceParEmail && fichesARemettre(fiches) && (
+        <p className="mt-2 text-base text-foreground">{TEXTE_ANNONCE_A_VENIR}</p>
+      )}
     </section>
   );
 }
@@ -89,6 +109,8 @@ export function ProtocolDiffusionPanel({
   servieAuPatient = null,
   apercu = null,
   fiches = null,
+  annonceParEmail = false,
+  annonce = null,
   state = 'idle',
   error = null,
   onApprove,
@@ -126,6 +148,10 @@ export function ProtocolDiffusionPanel({
    * `WN_FICHES_ASSIETTE` fermé, ou lecture non aboutie — l'écran n'en dit rien.
    */
   fiches?: ApercuFiches | null;
+  /** Une fiche remise par le clic serait annoncée par e-mail (lecture ouverte). */
+  annonceParEmail?: boolean;
+  /** Le sort de l'e-mail du DERNIER clic ; `null` : aucun n'était dû. */
+  annonce?: AnnonceFiches | null;
   state?: DiffusionState;
   error?: string | null;
   onApprove?: () => void;
@@ -157,7 +183,12 @@ export function ProtocolDiffusionPanel({
           </span>
         ) : canApprove ? (
           <span className="text-muted-foreground">
-            La version active est relue. Vous pouvez la valider pour diffusion (aucun envoi automatique).
+            {/* « aucun envoi automatique » ne vaut que sans fiches : avec elles,
+                le clic REMET, et l'aperçu ci-dessous dit quoi (revue Copilot de
+                #1249). */}
+            {fiches
+              ? 'La version active est relue. Vous pouvez la valider pour diffusion.'
+              : 'La version active est relue. Vous pouvez la valider pour diffusion (aucun envoi automatique).'}
           </span>
         ) : (
           <span className="text-muted-foreground">
@@ -184,6 +215,17 @@ export function ProtocolDiffusionPanel({
         <p role="alert" className="mt-2 text-base text-status-danger">{error ?? 'Échec de la validation.'}</p>
       )}
 
+      {/* LE SORT DE L'E-MAIL, DIT APRÈS LE GESTE : un échec ne doit pas
+          ressembler à un succès. Il ne bloque rien — les fiches sont remises. */}
+      {annonce && (
+        <p
+          role={TEXTE_ANNONCE[annonce].alerte ? 'alert' : 'status'}
+          className={`mt-2 text-base ${TEXTE_ANNONCE[annonce].alerte ? 'text-status-warning' : 'text-foreground'}`}
+        >
+          {TEXTE_ANNONCE[annonce].texte}
+        </p>
+      )}
+
       {/* L'APERÇU, SOUS LA MAIN DU PRATICIEN ET AVANT SON GESTE. Un refus dit son
           motif : il y a alors quelque chose à lever, et un aperçu vide ne
           l'aurait pas appris. */}
@@ -199,7 +241,9 @@ export function ProtocolDiffusionPanel({
         </div>
       )}
 
-      {fiches && <ApercuFichesAssiette fiches={fiches} dejaValide={approved && !stale} />}
+      {fiches && (
+        <ApercuFichesAssiette fiches={fiches} dejaValide={approved && !stale} annonceParEmail={annonceParEmail} />
+      )}
 
       {onApprove && (canApprove || stale) && (
         <div className="mt-3">

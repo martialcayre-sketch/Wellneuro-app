@@ -127,13 +127,19 @@ fournisseur, son transfert hors UE et l'information des patients.
 >    fermée serait promettre une porte close. Drapeau fermé, les fiches partent
 >    sous le drapeau d'émission, l'e-mail non.
 > 2. **Un e-mail par clic « Valider pour diffusion »**, quel que soit le nombre
->    de fiches remises, et seulement si ce clic en a remis au moins une. Il part
->    APRÈS le commit ; un échec d'envoi se journalise et ne défait rien. Un
->    accès au portail révoqué n'en reçoit pas : la trace le dit.
+>    de fiches remises, et seulement si ce clic en a remis au moins une. Sa
+>    trace naît `Non_envoye` DANS la transaction des remises ; l'e-mail part
+>    APRÈS le commit, et la trace est mise à jour. Un arrêt entre les deux
+>    laisse donc « non envoyé » sur la fiche du dossier, jamais rien. Aucune
+>    relance automatique. Un échec ne défait rien. Un portail fermé (compte
+>    désactivé, accès révoqué) ne reçoit rien : la trace le dit. Le praticien
+>    le sait avant le clic, et lit après le sort de l'e-mail.
 > 3. **Le gabarit `document_remis@1` est né validé** : le responsable a choisi
->    le texte exact, puis validé une phrase corrigée pour nommer le bouton vu
->    après connexion (« Accéder à mon parcours »). Objet et phrase centrale
->    sont ceux du §9 et de l'amendement du 2026-09-28, mot pour mot.
+>    le texte exact, puis validé deux corrections de sa phrase de chemin —
+>    nommer le bouton vu après connexion (« Accéder à mon parcours »), puis ne
+>    pas nommer le titre du fil, qui devient « Pour reprendre » en reprise.
+>    Objet et phrase centrale sont ceux du §9 et de l'amendement du
+>    2026-09-28, mot pour mot.
 > 4. **Le document TRUST sur l'usage de l'IA reste dans le dépôt**, sans lien
 >    depuis la page d'une fiche. La condition du §10 (« document publié ») se
 >    lit donc : écrit, validé, versé au dépôt.

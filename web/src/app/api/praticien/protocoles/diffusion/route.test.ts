@@ -25,6 +25,7 @@ const {
     patient: { findUnique: vi.fn() },
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn(), create: vi.fn() },
+    correspondancePatient: { create: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
@@ -646,18 +647,23 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
     beforeEach(() => {
       process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
       annoncerDocumentRemis.mockResolvedValue('envoye');
+      prisma.correspondancePatient.create.mockResolvedValue({ id: 'trace_1' });
     });
 
     afterEach(() => {
       delete process.env.WN_FICHES_ASSIETTE_LECTURE;
     });
 
-    it('UN par clic qui remet, APRÈS le commit, et son sort dans la réponse', async () => {
+    it('UN par clic qui remet : trace réservée DANS la transaction, envoi APRÈS le commit', async () => {
       const ordre: string[] = [];
       prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) => {
         const issue = await fn(prisma);
         ordre.push('commit');
         return issue;
+      });
+      prisma.correspondancePatient.create.mockImplementation(async () => {
+        ordre.push('trace réservée');
+        return { id: 'trace_1' };
       });
       annoncerDocumentRemis.mockImplementation(async () => {
         ordre.push('annonce');
@@ -668,23 +674,43 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
       expect(res.status).toBe(200);
       expect(json).toMatchObject({ fichesRemises: 2, annonceFiches: 'envoye' });
       expect(annoncerDocumentRemis).toHaveBeenCalledTimes(1);
-      expect(annoncerDocumentRemis).toHaveBeenCalledWith('PAT_1');
-      expect(ordre).toEqual(['commit', 'annonce']);
+      expect(annoncerDocumentRemis).toHaveBeenCalledWith('PAT_1', 'trace_1');
+      expect(ordre).toEqual(['trace réservée', 'commit', 'annonce']);
+      expect(prisma.correspondancePatient.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ idPatient: 'PAT_1', type: 'document_remis', statut: 'Non_envoye' }),
+      }));
     });
 
-    it('un clic qui ne remet RIEN (double clic, rien de neuf) n’annonce rien', async () => {
+    it('un clic qui ne remet RIEN (double clic, rien de neuf) n’annonce rien, ni ne trace', async () => {
       remettreFiches.mockResolvedValue(0);
       const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
       expect(annoncerDocumentRemis).not.toHaveBeenCalled();
+      expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
       expect(json).not.toHaveProperty('annonceFiches');
     });
 
-    it('espace de lecture FERMÉ : les fiches partent, l’e-mail non', async () => {
+    it('espace de lecture FERMÉ : les fiches partent, l’e-mail non, et rien n’est tracé', async () => {
       delete process.env.WN_FICHES_ASSIETTE_LECTURE;
       const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
       expect(json).toMatchObject({ fichesRemises: 2 });
       expect(json).not.toHaveProperty('annonceFiches');
       expect(annoncerDocumentRemis).not.toHaveBeenCalled();
+      expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
+    });
+
+    it('GET : l’écran apprend qu’un e-mail suivrait — seulement aperçu servi ET lecture ouverte', async () => {
+      prisma.protocolDraft.findMany.mockResolvedValue([
+        { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'E', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: {} },
+      ]);
+      const ouvert = (await (await GET(requeteGet())).json()) as { annonceParEmail: boolean };
+      expect(ouvert.annonceParEmail).toBe(true);
+      delete process.env.WN_FICHES_ASSIETTE_LECTURE;
+      const ferme = (await (await GET(requeteGet())).json()) as { annonceParEmail: boolean };
+      expect(ferme.annonceParEmail).toBe(false);
+      process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
+      delete process.env.WN_FICHES_ASSIETTE;
+      const sansFiches = (await (await GET(requeteGet())).json()) as { annonceParEmail: boolean };
+      expect(sansFiches.annonceParEmail).toBe(false);
     });
 
     it('un aperçu périmé n’annonce rien', async () => {

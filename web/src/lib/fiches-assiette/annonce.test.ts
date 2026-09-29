@@ -1,29 +1,35 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// L'e-mail neutre ([[D-251]] §9, lot 11) : quand il est dû, et ce qu'un échec
-// rend. L'envoi lui-même a son banc (`consultation/email.test.ts`). Données
-// synthétiques seulement.
+// L'e-mail neutre ([[D-251]] §9, lot 11) : quand il est dû, sa trace réservée
+// dans la transaction du clic, et ce qu'un échec rend. L'envoi lui-même a son
+// banc (`consultation/email.test.ts`). Données synthétiques seulement.
 
-const { prisma, envoyer, journaliser } = vi.hoisted(() => ({
-  prisma: { patient: { findUniqueOrThrow: vi.fn() } },
+const { prisma, envoyer } = vi.hoisted(() => ({
+  prisma: {
+    patient: { findUniqueOrThrow: vi.fn() },
+    correspondancePatient: { create: vi.fn(), update: vi.fn() },
+  },
   envoyer: vi.fn(),
-  journaliser: vi.fn(),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/consultation/email', () => ({ sendDocumentRemisEmail: envoyer }));
-vi.mock('@/lib/correspondance/patient', async orig => ({
-  ...(await orig<typeof import('@/lib/correspondance/patient')>()),
-  journaliserCorrespondancePatient: journaliser,
-}));
 
-import { annonceDue, annoncerDocumentRemis } from './annonce';
+import { annonceDue, annoncerDocumentRemis, reserverAnnonce } from './annonce';
 
 const DOSSIER = { email: 'patient@example.com', prenom: 'Sophie', actif: true, accessTokenRevoked: false };
 
+/** Les mises à jour de la trace réservée : `[statut, erreurCourte]`. */
+const traces = () => prisma.correspondancePatient.update.mock.calls.map(([arg]) => {
+  const { where, data } = arg as { where: { id: string }; data: { statut: string; erreurCourte: string | null } };
+  expect(where).toEqual({ id: 'trace_1' });
+  return [data.statut, data.erreurCourte];
+});
+
 beforeEach(() => {
   prisma.patient.findUniqueOrThrow.mockReset().mockResolvedValue(DOSSIER);
+  prisma.correspondancePatient.create.mockReset().mockResolvedValue({ id: 'trace_1' });
+  prisma.correspondancePatient.update.mockReset().mockResolvedValue({});
   envoyer.mockReset().mockResolvedValue('Envoye');
-  journaliser.mockReset();
 });
 
 afterEach(() => {
@@ -49,57 +55,65 @@ describe('annonceDue — un par clic qui remet, espace de lecture ouvert', () =>
   });
 });
 
-describe('annoncerDocumentRemis', () => {
-  it('envoie au dossier visé, avec son prénom', async () => {
-    await expect(annoncerDocumentRemis('PAT_TEST')).resolves.toBe('envoye');
+describe('reserverAnnonce — la trace naît dans la transaction du clic', () => {
+  it('« Non_envoye », de type « document_remis », sous un objet qui ne nomme rien', async () => {
+    const tx = { correspondancePatient: { create: vi.fn().mockResolvedValue({ id: 'trace_tx' }) } };
+    await expect(reserverAnnonce(tx as never, 'PAT_TEST')).resolves.toBe('trace_tx');
+    const { data } = tx.correspondancePatient.create.mock.calls[0][0] as { data: Record<string, unknown> };
+    expect(data).toMatchObject({ idPatient: 'PAT_TEST', type: 'document_remis', statut: 'Non_envoye', canal: 'email', sens: 'sortant' });
+    expect(String(data.objet)).not.toMatch(/assiette|fiche/i);
+    // Écrite par le client de la TRANSACTION, jamais par le client global.
+    expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('annoncerDocumentRemis — envoie, puis met SA trace à jour', () => {
+  it('envoie au dossier visé, avec son prénom, et marque la trace « Envoye »', async () => {
+    await expect(annoncerDocumentRemis('PAT_TEST', 'trace_1')).resolves.toBe('envoye');
     expect(prisma.patient.findUniqueOrThrow).toHaveBeenCalledWith(expect.objectContaining({ where: { idPatient: 'PAT_TEST' } }));
-    expect(envoyer).toHaveBeenCalledWith('patient@example.com', 'Sophie', 'PAT_TEST');
+    expect(envoyer).toHaveBeenCalledWith('patient@example.com', 'Sophie');
+    expect(traces()).toEqual([['Envoye', null]]);
+    // Une seule trace par clic : la réservée, mise à jour — jamais une seconde.
+    expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
   });
 
-  it('sans messagerie configurée : « non_configure »', async () => {
+  it('sans messagerie configurée : « non_configure », trace laissée « Non_envoye » avec son motif', async () => {
     envoyer.mockResolvedValue('Non_envoye');
-    await expect(annoncerDocumentRemis('PAT_TEST')).resolves.toBe('non_configure');
+    await expect(annoncerDocumentRemis('PAT_TEST', 'trace_1')).resolves.toBe('non_configure');
+    expect(traces()).toEqual([['Non_envoye', 'messagerie non configurée']]);
   });
 
   it.each([
     ['accès révoqué', { accessTokenRevoked: true }],
     ['compte désactivé', { actif: false }],
-  ])('%s : le portail est fermé, rien ne part, et la fiche du dossier le dit', async (_cas, dossier) => {
+  ])('%s : le portail est fermé, rien ne part, et la trace le dit', async (_cas, dossier) => {
     prisma.patient.findUniqueOrThrow.mockResolvedValue({ ...DOSSIER, ...dossier });
-    await expect(annoncerDocumentRemis('PAT_TEST')).resolves.toBe('portail_ferme');
+    await expect(annoncerDocumentRemis('PAT_TEST', 'trace_1')).resolves.toBe('portail_ferme');
     expect(envoyer).not.toHaveBeenCalled();
-    expect(journaliser).toHaveBeenCalledTimes(1);
-    expect(journaliser).toHaveBeenCalledWith(
-      expect.objectContaining({ idPatient: 'PAT_TEST', type: 'document_remis', statut: 'Non_envoye' }),
-    );
+    expect(traces()).toEqual([['Non_envoye', 'portail fermé à ce patient']]);
   });
 
-  it('un journal qui lève sur un portail fermé ne lève pas plus loin', async () => {
-    const avertir = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    prisma.patient.findUniqueOrThrow.mockResolvedValue({ ...DOSSIER, accessTokenRevoked: true });
-    journaliser.mockRejectedValue(new Error('registre'));
-    await expect(annoncerDocumentRemis('PAT_TEST')).resolves.toBe('echoue');
-    avertir.mockRestore();
-  });
-
-  it('échec SMTP : « echoue », sans lever — et sans seconde trace, l’envoi a déjà journalisé', async () => {
+  it('échec SMTP : « echoue », sans lever, trace « Erreur », message jamais au journal applicatif', async () => {
     const avertir = vi.spyOn(console, 'warn').mockImplementation(() => {});
     envoyer.mockRejectedValue(new Error('SMTP-SENTINELLE'));
-    await expect(annoncerDocumentRemis('PAT_TEST')).resolves.toBe('echoue');
-    expect(journaliser).not.toHaveBeenCalled();
+    await expect(annoncerDocumentRemis('PAT_TEST', 'trace_1')).resolves.toBe('echoue');
+    expect(traces().map(([statut]) => statut)).toEqual(['Erreur']);
     expect(avertir.mock.calls.flat().join(' ')).not.toContain('SMTP-SENTINELLE');
     avertir.mockRestore();
   });
 
-  it('panne de lecture du dossier : « echoue », sans lever, et tracée — sinon rien ne le dirait', async () => {
+  it('panne de lecture du dossier : « echoue », sans lever, et tracée', async () => {
     const avertir = vi.spyOn(console, 'warn').mockImplementation(() => {});
     prisma.patient.findUniqueOrThrow.mockRejectedValue(new Error('BASE-SENTINELLE'));
-    await expect(annoncerDocumentRemis('PAT_TEST')).resolves.toBe('echoue');
+    await expect(annoncerDocumentRemis('PAT_TEST', 'trace_1')).resolves.toBe('echoue');
     expect(envoyer).not.toHaveBeenCalled();
-    expect(journaliser).toHaveBeenCalledWith(
-      expect.objectContaining({ idPatient: 'PAT_TEST', type: 'document_remis', statut: 'Erreur' }),
-    );
+    expect(traces().map(([statut]) => statut)).toEqual(['Erreur']);
     expect(avertir.mock.calls.flat().join(' ')).not.toContain('BASE-SENTINELLE');
     avertir.mockRestore();
+  });
+
+  it('une mise à jour de trace qui échoue ne lève pas : le clic reste réussi', async () => {
+    prisma.correspondancePatient.update.mockRejectedValue(new Error('registre'));
+    await expect(annoncerDocumentRemis('PAT_TEST', 'trace_1')).resolves.toBe('envoye');
   });
 });

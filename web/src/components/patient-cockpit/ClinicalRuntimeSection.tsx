@@ -21,7 +21,7 @@ import type { CritereConstatable } from '@/lib/supplement-library/constatsCriter
 import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
 import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
 import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
-import type { ApercuFiches } from '@/lib/fiches-assiette/apercuRemise';
+import type { AnnonceFiches, ApercuFiches } from '@/lib/fiches-assiette/apercuRemise';
 import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
 import { J21DecisionPanel } from './J21DecisionPanel';
 import { MeteoAdhesionPanel } from './MeteoAdhesionPanel';
@@ -115,6 +115,8 @@ type DiffusionApiResponse = {
   apercu?: ApercuPatientServi | null;
   /** Les fiches d'assiette que le clic remettrait ([[D-251]] §7) ; `null` drapeau fermé. */
   fiches?: ApercuFiches | null;
+  /** Une fiche remise serait annoncée par l'e-mail neutre ([[D-251]] §9, lot 11). */
+  annonceParEmail?: boolean;
 };
 
 type RuntimeError = 'session' | 'patient' | 'technical';
@@ -424,6 +426,9 @@ export function ClinicalRuntimeSection({
    */
   const [apercuPatient, setApercuPatient] = useState<ApercuPatientServi | null>(null);
   const [apercuFiches, setApercuFiches] = useState<ApercuFiches | null>(null);
+  const [annonceParEmail, setAnnonceParEmail] = useState(false);
+  /** Le sort de l'e-mail du dernier clic ([[D-251]] §9) — dit, jamais tu. */
+  const [annonceFiches, setAnnonceFiches] = useState<AnnonceFiches | null>(null);
   /** Ce que la raison d'être a le droit de citer — relu au serveur ([[D-193]]). */
   const [sourcesCitables, setSourcesCitables] = useState<SourceCitablePurpose[]>([]);
   /** Lignes de barème vouchées par le serveur — vide tant qu'il n'est pas signé. */
@@ -561,8 +566,10 @@ export function ClinicalRuntimeSection({
       // refuser, au lieu de remettre sur la foi d'un écran périmé.
       if (!response.ok || !payload.ok) {
         setApercuFiches(null);
+        setAnnonceParEmail(false);
         return;
       }
+      setAnnonceParEmail(payload.annonceParEmail === true);
       setApprovedAt(payload.approval?.approvedAt ?? null);
       setApprovalStale(payload.stale);
       // `?? null` et non `?? false` : un serveur qui ne sait pas ne doit pas
@@ -574,6 +581,7 @@ export function ClinicalRuntimeSection({
       // L'état de diffusion est indicatif : un échec de lecture ne bloque pas.
       // L'aperçu des fiches, lui, ne survit pas à une lecture manquée.
       setApercuFiches(null);
+      setAnnonceParEmail(false);
     }
   }, [idPatient]);
 
@@ -1558,6 +1566,7 @@ export function ClinicalRuntimeSection({
     if (!activeVersion || activeVersion.status !== 'practitioner_reviewed') return;
     setDiffusionState('saving');
     setDiffusionError(null);
+    setAnnonceFiches(null);
     try {
       const response = await fetch('/api/praticien/protocoles/diffusion', {
         method: 'POST',
@@ -1571,7 +1580,12 @@ export function ClinicalRuntimeSection({
           jetonApercuFiches: apercuFiches?.jeton,
         }),
       });
-      const payload = (await response.json()) as { ok: boolean; reason?: string; error?: string };
+      const payload = (await response.json()) as {
+        ok: boolean;
+        reason?: string;
+        error?: string;
+        annonceFiches?: AnnonceFiches;
+      };
       if (!response.ok || !payload.ok) {
         setDiffusionState('error');
         setDiffusionError(payload.error ?? 'Échec de la validation.');
@@ -1586,6 +1600,9 @@ export function ClinicalRuntimeSection({
         return;
       }
       setDiffusionState('idle');
+      // Le sort de l'e-mail neutre, quand il était dû : un échec ne doit pas
+      // ressembler à un succès (revue Copilot de #1249).
+      setAnnonceFiches(payload.annonceFiches ?? null);
       await loadDiffusion(readyDecisionCardId);
     } catch {
       setDiffusionState('error');
@@ -2237,6 +2254,8 @@ export function ClinicalRuntimeSection({
             servieAuPatient={servieAuPatient}
             apercu={apercuPatient}
             fiches={apercuFiches}
+            annonceParEmail={annonceParEmail}
+            annonce={annonceFiches}
             state={diffusionState}
             error={diffusionError}
             onApprove={approveForDiffusion}

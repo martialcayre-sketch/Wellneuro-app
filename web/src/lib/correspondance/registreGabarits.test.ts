@@ -82,6 +82,10 @@ describe('registre des gabarits patient — intégrité', () => {
     expect(g.sujet).not.toMatch(/assiette|fiche/i);
     // Ni lien magique : l'adresse est celle de la page d'accès, non secrète.
     expect(g.variables).not.toContain('lien');
+    // Le chemin ne nomme pas un titre qui change : le fil du jour s'intitule
+    // « Pour reprendre » pour un patient qui revient après des mois.
+    expect(g.corps).not.toContain('Ce que j’ai à faire aujourd’hui');
+    expect(g.corps).not.toContain('Pour reprendre');
   });
 
   it('objectif_propose : c’est la v2 qui est servie, la v1 reste au registre', () => {
@@ -338,7 +342,7 @@ describe('registre des gabarits patient — fidélité aux textes historiques', 
       `Un document de votre praticien vous attend dans votre espace.\n\n` +
       `Votre espace :\nhttps://app.wellneuro.fr/portail/connexion\n\n` +
       `Une fois connecté : choisissez « Accéder à mon parcours » ; le document ` +
-      `figure sous « Ce que j’ai à faire aujourd’hui ».\n\n` +
+      `figure dans la liste de ce que vous avez à faire.\n\n` +
       `Vous pouvez taper cette adresse vous-même dans votre navigateur plutôt que de ` +
       `cliquer : elle mène au même endroit. Vous vous y connecterez avec Google, ou ` +
       `en demandant un lien d’accès par e-mail, à l’adresse à laquelle vous recevez ` +

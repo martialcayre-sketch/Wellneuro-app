@@ -537,9 +537,11 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
   // mot pour mot ; le reste reprend `objectif_propose@2`, déjà validé.
   //
   // « Accéder à mon parcours » est le bouton de l'écran qui accueille un
-  // patient connecté (`portail/[token]/page.tsx`, `DoneScreen`) ; « Ce que
-  // j'ai à faire aujourd'hui » est le fil du jour (`MonParcoursAccueil`), où
-  // chaque fiche servie non lue est une tâche (lot 10).
+  // patient connecté (`portail/[token]/page.tsx`, `DoneScreen`) ; « la liste
+  // de ce que vous avez à faire » est le fil du jour (`MonParcoursAccueil`),
+  // où chaque fiche servie non lue est une tâche (lot 10). Le fil n'est PAS
+  // nommé par son titre : il devient « Pour reprendre » pour un patient qui
+  // revient après des mois (revue Copilot de #1249).
   {
     key: 'document_remis',
     version: 1,
@@ -550,7 +552,7 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
       'Un document de votre praticien vous attend dans votre espace.\n\n' +
       'Votre espace :\n{{connexion}}\n\n' +
       'Une fois connecté : choisissez « Accéder à mon parcours » ; le document ' +
-      'figure sous « Ce que j’ai à faire aujourd’hui ».\n\n' +
+      'figure dans la liste de ce que vous avez à faire.\n\n' +
       'Vous pouvez taper cette adresse vous-même dans votre navigateur plutôt que de ' +
       'cliquer : elle mène au même endroit. Vous vous y connecterez avec Google, ou ' +
       'en demandant un lien d’accès par e-mail, à l’adresse à laquelle vous recevez ' +
@@ -565,10 +567,11 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     donneesSante: { statut: 'conforme' },
     redigeLe: '2026-09-29',
     // NÉ VALIDÉ, en session, sur le texte exact : le responsable a choisi la
-    // variante « où le trouver », puis validé la phrase corrigée pour nommer le
-    // bouton réellement vu après connexion (« Accéder à mon parcours »).
+    // variante « où le trouver », puis validé deux corrections de sa phrase —
+    // nommer le bouton réellement vu après connexion (« Accéder à mon
+    // parcours »), puis ne pas nommer un titre de fil qui change en reprise.
     valideLe: '2026-09-29',
-    hash: '37595bbf4b194feeff5e21a137925904ba35e2c7d8ed82e4af81892524f7d68d',
+    hash: '945547ddcdb2b816ebc0bafcd316d24b083e30545ff2cf147717d92845a198ed',
   },
 ]);
 

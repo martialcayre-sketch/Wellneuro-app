@@ -236,7 +236,7 @@ describe('sendDocumentRemisEmail — [[D-251]] §9, lot 11', () => {
   });
 
   it('part avec le gabarit du registre : l’objet du §9 et la page d’accès, jamais un lien qui ouvre', async () => {
-    await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie', 'PAT_TEST')).resolves.toBe('Envoye');
+    await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie')).resolves.toBe('Envoye');
     expect(sendMail).toHaveBeenCalledOnce();
     const envoi = sendMail.mock.calls[0][0];
     expect(envoi.to).toBe('patient@example.com');
@@ -249,25 +249,21 @@ describe('sendDocumentRemisEmail — [[D-251]] §9, lot 11', () => {
     expect(envoi.attachments).toBeUndefined();
   });
 
-  it('journalise « document_remis », sous un objet qui ne nomme rien', async () => {
-    await sendDocumentRemisEmail('patient@example.com', 'Sophie', 'PAT_TEST');
-    expect(journaliser).toHaveBeenCalledWith(
-      expect.objectContaining({ idPatient: 'PAT_TEST', type: 'document_remis', statut: 'Envoye' }),
-    );
-    const { objet } = journaliser.mock.calls[0][0] as { objet: string };
-    expect(objet).not.toMatch(/assiette|fiche/i);
+  it('n’écrit AUCUNE trace elle-même : la sienne est réservée dans la transaction du clic', async () => {
+    await sendDocumentRemisEmail('patient@example.com', 'Sophie');
+    expect(journaliser).not.toHaveBeenCalled();
   });
 
-  it('sans messagerie : « Non_envoye », journalisé, rien tenté', async () => {
+  it('sans messagerie : « Non_envoye », rien tenté', async () => {
     delete process.env.SMTP_URL;
-    await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie', 'PAT_TEST')).resolves.toBe('Non_envoye');
+    await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie')).resolves.toBe('Non_envoye');
     expect(sendMail).not.toHaveBeenCalled();
-    expect(journaliser).toHaveBeenCalledWith(expect.objectContaining({ type: 'document_remis', statut: 'Non_envoye' }));
+    expect(journaliser).not.toHaveBeenCalled();
   });
 
-  it('RELANCE sur échec SMTP, après l’avoir journalisé en « Erreur »', async () => {
+  it('RELANCE sur échec SMTP — l’appelant trace l’échec', async () => {
     sendMail.mockRejectedValueOnce(new Error('smtp down'));
-    await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie', 'PAT_TEST')).rejects.toThrow('smtp down');
-    expect(journaliser).toHaveBeenCalledWith(expect.objectContaining({ type: 'document_remis', statut: 'Erreur' }));
+    await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie')).rejects.toThrow('smtp down');
+    expect(journaliser).not.toHaveBeenCalled();
   });
 });

@@ -38,8 +38,13 @@ trace `Non_envoye` le dit.
   `envoyerAccesTrace` (journalisé).
 - `lib/fiches-assiette/annonce.ts` (neuf) : `annonceDue`,
   `annoncerDocumentRemis` — ne lève jamais.
-- `app/api/praticien/protocoles/diffusion/route.ts` : l'annonce après le
-  commit, et `annonceFiches` dans la réponse.
+- `app/api/praticien/protocoles/diffusion/route.ts` : la trace réservée dans
+  la transaction, l'annonce après le commit, `annonceFiches` (POST) et
+  `annonceParEmail` (GET).
+- Cockpit : `lib/fiches-assiette/apercuRemise.ts` (textes, pur),
+  `ProtocolDiffusionPanel.tsx` (avant et après le clic),
+  `ClinicalRuntimeSection.tsx` (câblage, gardé par
+  `diffusionFiches.guard.test.ts`).
 - `lib/fiches-assiette/servicePatient.ts` : tronc commun et `fichesALire` ;
   `app/api/portail/lectures/route.ts` l'emprunte.
 - `lib/fiches-assiette/drapeau.ts` (commentaire), `docs/FEATURE_FLAGS.md`
@@ -52,7 +57,11 @@ trace `Non_envoye` le dit.
   caractère près), envoi, annonce, route de diffusion (commit AVANT annonce,
   double clic, drapeau fermé, aperçu périmé, échec d'envoi), service
   (`fichesALire` sans protocole), route des lectures.
-- **18 mutants joués** (script hors dépôt), tous tués.
+- **27 mutants joués** sur l'état final (script hors dépôt), tous tués.
+- **Revue Copilot** (3 constats) : trace réservée DANS la transaction
+  (**corrigé** ; relance automatique **écartée**, interdite par le dépôt) ;
+  e-mail dit au praticien avant et après le clic (**corrigé**) ; phrase de
+  chemin fausse en reprise (**corrigé**, nouvelle phrase validée).
 - **Revue `wn-reviewer` : GO**, aucun P0 ni P1. Verdicts :
   - P2-1, compte désactivé non vérifié avant l'envoi : **corrigé** (`actif`
     lu, même trace que la révocation) ;

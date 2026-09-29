@@ -24,9 +24,9 @@ import {
   type ApercuFiches,
   type BlocageFiches,
 } from '@/lib/fiches-assiette/apercuRemise';
-import { envoiFichesOuvert } from '@/lib/fiches-assiette/drapeau';
+import { envoiFichesOuvert, lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
 import { apercuFichesDuProtocole, remettreFiches } from '@/lib/fiches-assiette/remise';
-import { annonceDue, annoncerDocumentRemis, type AnnonceFiches } from '@/lib/fiches-assiette/annonce';
+import { annonceDue, annoncerDocumentRemis, reserverAnnonce, type AnnonceFiches } from '@/lib/fiches-assiette/annonce';
 
 // Validation « pour diffusion » du protocole (C2A LOT-03 Part B). Persiste
 // l'approbation praticien (contrat ProtocolDiffusionApproval), distincte de la
@@ -358,7 +358,10 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           unchanged = false;
         }
         const fichesRemises = await remettreFiches(tx, apercu, { idPatient, idApprobation: approvalId });
-        return { perime: false as const, approvalId, unchanged, fichesRemises };
+        // La trace de l'e-mail naît AVEC les remises (lot 11) : un arrêt entre
+        // le commit et l'envoi ne peut plus le perdre sans rien laisser.
+        const idTraceAnnonce = annonceDue(fichesRemises) ? await reserverAnnonce(tx, idPatient) : null;
+        return { perime: false as const, approvalId, unchanged, fichesRemises, idTraceAnnonce };
       }, { timeout: 20_000 });
 
       if (issue.perime) {
@@ -368,9 +371,11 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         );
       }
       // L'E-MAIL NEUTRE, APRÈS LE COMMIT ([[D-251]] §9, lot 11) : un par clic
-      // qui a remis au moins une fiche, espace de lecture ouvert. Il ne lève
-      // jamais — les fiches sont remises, l'e-mail n'y change rien.
-      const annonceFiches = annonceDue(issue.fichesRemises) ? await annoncerDocumentRemis(idPatient) : undefined;
+      // qui a remis au moins une fiche, espace de lecture ouvert — sa trace est
+      // réservée ci-dessus. Il ne lève jamais : les fiches sont remises.
+      const annonceFiches = issue.idTraceAnnonce
+        ? await annoncerDocumentRemis(idPatient, issue.idTraceAnnonce)
+        : undefined;
       return NextResponse.json({
         ok: true,
         unchanged: issue.unchanged,
@@ -468,6 +473,13 @@ type GetResponse =
        * dit rien.
        */
       fiches: ApercuFiches | null;
+      /**
+       * Une fiche remise par le clic serait-elle annoncée par l'e-mail neutre
+       * ([[D-251]] §9, lot 11) ? Vrai seulement aperçu servi ET espace de
+       * lecture ouvert : l'écran le dit AVANT le geste (revue Copilot de
+       * #1249).
+       */
+      annonceParEmail: boolean;
     }
   | { ok: false; reason: string; error: string };
 
@@ -526,7 +538,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       },
     });
     if (versions.length === 0) {
-      return NextResponse.json({ ok: true, approval: null, stale: false, servieAuPatient: null, apercu: null, fiches: null });
+      return NextResponse.json({ ok: true, approval: null, stale: false, servieAuPatient: null, apercu: null, fiches: null, annonceParEmail: false });
     }
     const decisionCardInputHash = versions[0].decisionCardInputHash;
     const activeVersion = resolveActiveVersion(versions);
@@ -717,6 +729,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       servieAuPatient,
       apercu,
       fiches,
+      annonceParEmail: fiches !== null && lectureFichesOuverte(),
     });
   } catch (err) {
     console.error('[praticien/protocoles/diffusion GET]', err instanceof Error ? err.message : String(err));
