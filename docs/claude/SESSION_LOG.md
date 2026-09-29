@@ -8272,3 +8272,16 @@ seulement ; contre-revue par Codex (responsable).
 remise : la fiche de son assiette n'est pas validée. Comportement attendu.
 
 **Prochaine action.** PR, merge ; puis le document TRUST sur l'IA.
+
+## 2026-09-29 — Fiches d'assiette : l'espace de lecture ouvert en production
+
+**Fait, sur ordre du responsable.** `WN_FICHES_ASSIETTE_LECTURE` posé à
+20:40:15 UTC, conteneurs recréés à 20:40:21. Constat : route anonyme en 401
+(503 fermée). 7 fiches validées, 0 remise à la pose.
+
+**Écarté.** Attendre les trois conditions restantes du §10 (constat de
+l'espace, document TRUST, contre-revue) : le responsable ouvre avant, comme
+pour le drapeau d'émission ; les trois restent à tenir.
+
+**Prochaine action.** Clic de diffusion sur PAT032, constat de la remise et
+de l'e-mail, puis constat de l'espace au portail.
