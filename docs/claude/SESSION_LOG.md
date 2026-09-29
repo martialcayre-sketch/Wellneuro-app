@@ -8279,8 +8279,9 @@ remise : la fiche de son assiette n'est pas validée. Comportement attendu.
 20:40:15 UTC, conteneurs recréés à 20:40:21. Constat : route anonyme en 401
 (503 fermée). 7 fiches validées, 0 remise à la pose.
 
-**Écarté.** Attendre le document TRUST et la contre-revue : le responsable
-ouvre avant, comme pour le drapeau d'émission ; les deux restent à tenir.
+**Écarté.** Attendre les trois conditions restantes du §10 (constat de
+l'espace, document TRUST, contre-revue) : le responsable ouvre avant, comme
+pour le drapeau d'émission ; les trois restent à tenir.
 
 **Prochaine action.** Clic de diffusion sur PAT032, constat de la remise et
 de l'e-mail, puis constat de l'espace au portail.

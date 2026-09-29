@@ -13,9 +13,11 @@ le responsable le 2026-09-29.
 
 ## 3. Décisions prises
 
-Amendement de `D-251` du 2026-09-29 (soir) : ouverture AVANT deux conditions
-du §10 (document TRUST sur l'IA, contre-revue adverse), qui restent à tenir
-après. Sept fiches validées, code des lots 9 à 11 en service.
+Amendement de `D-251` du 2026-09-29 (soir) : ouverture AVANT trois des quatre
+conditions du §10 (constat de l'espace, document TRUST sur l'IA, contre-revue
+adverse), qui restent à tenir après. Seule condition acquise : les sept fiches
+validées. Le code des lots 9 à 11 en service est un préalable, pas une
+condition (revue Copilot de #1250).
 
 ## 4. Fichiers modifiés
 

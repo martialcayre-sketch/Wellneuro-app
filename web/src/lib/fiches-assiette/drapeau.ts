@@ -26,8 +26,8 @@ export function envoiFichesOuvert(): boolean {
 // deviendrait lisible au merge de l'écran, avant le document TRUST.
 //
 // Posé en production le 2026-09-29 à 20:40:15 UTC, sur ordre du responsable,
-// avant le document TRUST et la contre-revue (amendement du 2026-09-29 au
-// soir) : 7 fiches validées, 0 remise à la pose.
+// avant le constat de l'espace, le document TRUST et la contre-revue
+// (amendement du 2026-09-29 au soir) : 7 fiches validées, 0 remise à la pose.
 
 export function lectureFichesOuverte(): boolean {
   return process.env.WN_FICHES_ASSIETTE_LECTURE === 'true';
