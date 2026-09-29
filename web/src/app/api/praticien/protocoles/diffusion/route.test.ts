@@ -643,6 +643,19 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
     expect(annoncerDocumentRemis).not.toHaveBeenCalled();
   });
 
+  it('une exception ne recopie au journal ni son message ni ses arguments — classe et code seulement (contre-revue, P1-1)', async () => {
+    const journal = vi.spyOn(console, 'error').mockImplementation(() => {});
+    remettreFiches.mockRejectedValue(
+      Object.assign(new Error('Invalid invocation: texte: "Texte synthétique."'), { code: 'P2010' }),
+    );
+    const res = await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
+    expect(res.status).toBe(500);
+    const journalise = journal.mock.calls.flat().map(String).join(' ');
+    expect(journalise).not.toContain('synthétique');
+    expect(journalise).toContain('P2010');
+    journal.mockRestore();
+  });
+
   describe('l’e-mail neutre (lot 11)', () => {
     beforeEach(() => {
       process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
@@ -762,6 +775,19 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
     expect(json.fiches.blocage.motif).toBe('lecture_impossible');
     // Un jeton qui ne peut égaler aucun aperçu calculé (64 hexadécimaux).
     expect(json.fiches.jeton).not.toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('GET : l’échec de lecture des fiches ne recopie pas son message au journal (contre-revue, P1-1)', async () => {
+    const journal = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    apercuFichesDuProtocole.mockRejectedValue(new Error('Invalid invocation: texte: "Texte synthétique."'));
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'E1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: {} },
+    ]);
+    expect((await GET(requeteGet())).status).toBe(200);
+    const journalise = journal.mock.calls.flat().map(String).join(' ');
+    expect(journalise).toContain('aperçu des fiches illisible');
+    expect(journalise).not.toContain('synthétique');
+    journal.mockRestore();
   });
 
   it('GET drapeau ouvert : l’aperçu des fiches de la version ACTIVE, lu SANS verrou', async () => {

@@ -22,7 +22,10 @@ export async function POST(req: Request) {
     getRagConfig();
   } catch (error) {
     // Avant authentification, aucun détail sur la cause exacte.
-    console.error('Fiches d’assiette, ingestion : configuration invalide —', error);
+    console.error(
+      'Fiches d’assiette, ingestion : configuration invalide —',
+      error instanceof Error ? error.name : typeof error,
+    );
     return NextResponse.json({ ok: false, error: 'Voie d’ingestion des fiches non configurée.' }, { status: 503 });
   }
 

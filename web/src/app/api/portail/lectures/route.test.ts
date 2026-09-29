@@ -243,6 +243,19 @@ describe('POST — le serveur vérifie, il ne croit pas le navigateur', () => {
     prisma.portailLecturePatient.create.mockRejectedValueOnce(Object.assign(new Error('boom'), { code: 'P1001' }));
     expect((await POST(requete(cookieProprio(), { espece: 'bilan', idObjet: 'env_1' }))).status).toBe(500);
   });
+
+  it('une panne ne recopie au journal ni son message ni ses arguments — classe et code seulement (contre-revue, P1-1)', async () => {
+    // `logger.error` n'est pas simulé : c'est sa ligne réelle qui est lue.
+    const journal = vi.spyOn(console, 'error').mockImplementation(() => {});
+    prisma.portailLecturePatient.create.mockRejectedValueOnce(
+      Object.assign(new Error('Invalid invocation: idObjet: "SENTINELLE-SYNTHETIQUE"'), { code: 'P1001' }),
+    );
+    expect((await POST(requete(cookieProprio(), { espece: 'bilan', idObjet: 'env_1' }))).status).toBe(500);
+    const journalise = journal.mock.calls.flat().map(String).join(' ');
+    expect(journalise).toContain('P1001');
+    expect(journalise).not.toContain('SENTINELLE');
+    journal.mockRestore();
+  });
 });
 
 describe('le GET n’écrit RIEN', () => {

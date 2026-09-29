@@ -53,6 +53,18 @@ describe('POST /api/internal/fiches-assiette/ingest', () => {
     expect(deposer).not.toHaveBeenCalled();
   });
 
+  it('une configuration invalide ne recopie au journal que la classe de l’erreur (contre-revue, P1-1)', async () => {
+    const journal = vi.spyOn(console, 'error').mockImplementation(() => {});
+    getConfig.mockImplementation(() => {
+      throw new Error('Configuration synthétique invalide.');
+    });
+    expect((await POST(requete(BROUILLON))).status).toBe(503);
+    const journalise = journal.mock.calls.flat().map(String).join(' ');
+    expect(journalise).not.toContain('synthétique');
+    expect(journalise).toContain('Error');
+    journal.mockRestore();
+  });
+
   it('répond 401 sans secret valide', async () => {
     isAuthorized.mockReturnValue(false);
     const res = await POST(requete(BROUILLON));
@@ -103,7 +115,7 @@ describe('POST /api/internal/fiches-assiette/ingest', () => {
     expect(res.status).toBe(500);
     const corps = JSON.stringify(await res.json());
     expect(corps).not.toContain('synthétique');
-    const journalise = JSON.stringify(journal.mock.calls);
+    const journalise = journal.mock.calls.flat().map(String).join(' ');
     expect(journalise).not.toContain('synthétique');
     expect(journalise).toContain('P2010');
     journal.mockRestore();

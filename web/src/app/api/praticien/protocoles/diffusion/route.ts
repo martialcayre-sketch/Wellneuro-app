@@ -27,6 +27,7 @@ import {
 import { envoiFichesOuvert, lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
 import { apercuFichesDuProtocole, remettreFiches } from '@/lib/fiches-assiette/remise';
 import { annonceDue, annoncerDocumentRemis, reserverAnnonce, type AnnonceFiches } from '@/lib/fiches-assiette/annonce';
+import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // Validation « pour diffusion » du protocole (C2A LOT-03 Part B). Persiste
 // l'approbation praticien (contrat ProtocolDiffusionApproval), distincte de la
@@ -427,7 +428,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       approvedAt,
     });
   } catch (err) {
-    console.error('[praticien/protocoles/diffusion POST]', err instanceof Error ? err.message : String(err));
+    console.error('[praticien/protocoles/diffusion POST]', ...classeEtCode(err));
     return NextResponse.json(
       { ok: false, reason: 'exception', error: 'Erreur technique.' },
       { status: 500 },
@@ -621,7 +622,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
             // donc juste, et le praticien le lit au lieu d'une page en erreur.
             console.warn(
               '[praticien/protocoles/diffusion GET] protocole approuvé illisible :',
-              erreur instanceof Error ? erreur.message : String(erreur),
+              ...classeEtCode(erreur),
             );
             servieAuPatient = false;
           }
@@ -673,7 +674,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
           // le GET : le reste de l'état de diffusion reste servi.
           console.warn(
             '[praticien/protocoles/diffusion GET] version active illisible :',
-            erreur instanceof Error ? erreur.message : String(erreur),
+            ...classeEtCode(erreur),
           );
           apercu = {
             ok: false,
@@ -710,7 +711,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       } catch (erreur) {
         console.warn(
           '[praticien/protocoles/diffusion GET] aperçu des fiches illisible :',
-          erreur instanceof Error ? erreur.message : String(erreur),
+          ...classeEtCode(erreur),
         );
         fiches = APERCU_FICHES_ILLISIBLE;
       }
@@ -732,7 +733,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       annonceParEmail: fiches !== null && lectureFichesOuverte(),
     });
   } catch (err) {
-    console.error('[praticien/protocoles/diffusion GET]', err instanceof Error ? err.message : String(err));
+    console.error('[praticien/protocoles/diffusion GET]', ...classeEtCode(err));
     return NextResponse.json(
       { ok: false, reason: 'exception', error: 'Erreur technique.' },
       { status: 500 },
