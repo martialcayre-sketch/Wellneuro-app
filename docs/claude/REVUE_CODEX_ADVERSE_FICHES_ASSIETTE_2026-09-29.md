@@ -48,7 +48,7 @@ réfutée, six affaiblies, quatre trouvailles P1.
 brut d'exceptions ; identifiants, arguments Prisma ou détails inattendus
 peuvent atteindre les journaux.
 
-**Vérification.** Exact, six appels :
+**Vérification.** Exact, et plus large : huit appels.
 
 | Ligne (`712a62bc`) | Origine | Portée |
 |---|---|---|
@@ -58,22 +58,33 @@ peuvent atteindre les journaux.
 | `diffusion/route.ts:711` | 2026-09-28, lot 8 | aperçu des fiches illisible (GET) |
 | `diffusion/route.ts:735` | 2026-07-18 | `catch` du GET |
 | `ingest/route.ts:25` | 2026-09-26, lot 4 | objet d'erreur brut, sous un commentaire qui l'interdit |
+| `portail/lectures/route.ts:196` | route des lectures | `logger.error({ error: erreur })` (GET) |
+| `portail/lectures/route.ts:302` | route des lectures | `logger.error({ error: erreur })` (POST) |
 
 Le message d'une erreur Prisma peut recopier les arguments de l'appel ; c'est
 précisément pourquoi le reste du chantier ne journalise que la classe et le
-code. `logger.*` (route des lectures) n'est pas en cause : il passe l'erreur
-par `sanitizeError`.
+code. **Les deux dernières lignes, l'auteur les avait d'abord écartées** :
+`logger.*` passe l'erreur par `sanitizeError`, que l'affirmation A2 admettait.
+La revue Copilot de #1252 a montré que c'était faux : `sanitizeError` garde le
+message (300 caractères), ne masquant qu'e-mails, jetons et identifiants de
+24 caractères ou plus — un `PAT0xx` ou un code d'assiette y survit. A2 était
+donc trop permissive dans sa lettre même.
 
-**Suite : corrigé** — classe et code seulement (`classeEtCode` dans la route
-de diffusion). Deux bancs, éprouvés par mutation (le code de `937fd897`
-remis en place les fait rougir) :
+**Suite : corrigé** — classe et code seulement, par `classeEtCode`
+(`lib/observability/classeEtCode.ts`), passé au `logger` en `metadata` et non
+plus en `error`. Deux bancs, éprouvés par mutation (le code de `937fd897`
+remis en place dans les trois routes les fait rougir) :
 
 - `lib/fiches-assiette/journaux.guard.test.ts` : dans les fichiers du
-  chantier, aucun `console.*` ne reçoit le paramètre d'un `catch` nu, un
-  `.message`, un `.stack` ou un `String(<erreur>)` — rouge sur les six appels ;
-- trois tests de comportement (POST et GET de diffusion, configuration de
-  l'ingestion) : une erreur au message synthétique n'en laisse rien au
-  journal — rouges tous trois.
+  chantier, l'erreur d'un `catch` ne paraît dans un `console.*` ou un
+  `logger.*` que sous `err.name`, `err instanceof …`, `typeof err` ou passée à
+  `classeEtCode`, et aucun `.message` ni `.stack` n'y figure. Lu sur l'**arbre
+  TypeScript** : une première version lisait le texte, et un gabarit `${err}`
+  ou un `\'` échappé la trompaient (revue Copilot de #1252). Rouge sur les
+  huit appels ;
+- quatre tests de comportement (POST et GET de diffusion, configuration de
+  l'ingestion, POST des lectures) : une erreur au message synthétique n'en
+  laisse rien au journal — rouges tous quatre.
 
 Au passage, le banc d'ingestion existant sérialisait le journal par
 `JSON.stringify`, qui rend `{}` pour une `Error` (son message n'est pas

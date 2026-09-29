@@ -27,25 +27,32 @@ motif. C'est la troisième condition du §10, désormais tenue.
 
 ## 4. Fichiers modifiés
 
-- `web/src/app/api/praticien/protocoles/diffusion/route.ts` : `classeEtCode`,
-  cinq appels.
+- `web/src/lib/observability/classeEtCode.ts` : nouveau, pur.
+- `web/src/app/api/praticien/protocoles/diffusion/route.ts` : cinq appels.
 - `web/src/app/api/internal/fiches-assiette/ingest/route.ts` : un appel.
-- `web/src/lib/fiches-assiette/journaux.guard.test.ts` : nouvelle garde.
-- `route.test.ts` de la diffusion (deux tests) et de l'ingestion (un test, et
-  le journal lu par `String` au lieu de `JSON.stringify`).
+- `web/src/app/api/portail/lectures/route.ts` : deux `logger.error`, l'erreur
+  passée en `metadata` par `classeEtCode`, plus en `error`.
+- `web/src/lib/fiches-assiette/journaux.guard.test.ts` : nouvelle garde, sur
+  l'arbre TypeScript.
+- `route.test.ts` de la diffusion (deux tests), de l'ingestion (un test, et
+  le journal lu par `String` au lieu de `JSON.stringify`), des lectures (un
+  test).
 - `docs/claude/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`,
   `docs/DECISIONS.md` (amendement), changelog, ce handoff, SESSION_LOG.
 
 ## 5. Validations exécutées
 
-- Les trois fichiers de tests touchés : 54 tests verts.
-- **Mutation** : le code de `937fd897` remis en place dans les deux routes →
-  la garde rougit sur exactement les six appels ; les trois tests de
+- Fichiers de tests touchés : verts (garde, diffusion, ingestion, lectures).
+- **Mutation** : le code de `937fd897` remis en place dans les trois routes →
+  la garde rougit sur exactement les huit appels ; les quatre tests de
   comportement rougissent. Corrections restaurées.
+- Revue Copilot de #1252, deux fils, corrigés : `logger.*` n'est pas sûr
+  (`sanitizeError` garde le message) ; l'analyseur textuel se laissait tromper
+  par `${err}` et un `\'` échappé.
 - Vérifications dans l'arbre : trigger M2 relu (ce qu'il refuse, ce qu'il ne
-  lit pas) ; `git blame` des six appels ; `logger.*` passe par
-  `sanitizeError` ; `lectureFichesOuverte()` lit l'environnement ; la route des
-  actes exige une session praticien.
+  lit pas) ; `git blame` des appels ; `sanitizeString` relu ;
+  `lectureFichesOuverte()` lit l'environnement ; la route des actes exige une
+  session praticien.
 - T1 et T2 : voir la PR.
 
 ## 6. Problèmes ouverts

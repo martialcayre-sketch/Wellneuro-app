@@ -9,6 +9,7 @@ import { lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
 import { fichesALire } from '@/lib/fiches-assiette/servicePatient';
 import { lecturesAttendues, type EspeceLecture, type LectureAttendue } from '@/lib/portail/lecturesAttendues';
 import { logger } from '@/lib/observability/logger';
+import { classeEtCode } from '@/lib/observability/classeEtCode';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
   createRequestContext,
@@ -198,7 +199,8 @@ export async function GET(req: Request): Promise<NextResponse<PortailLecturesRes
       domain: 'PORTAIL_PATIENT',
       message: 'Lecture des documents remis impossible',
       context: finalizeLogContext(requestContext, { statusCode: 500, retryable: true }),
-      error: erreur,
+      // Pas `error: erreur` : `sanitizeError` en garderait le message.
+      metadata: { erreur: classeEtCode(erreur) },
     });
     return withCorrelationHeader(
       NextResponse.json<PortailLecturesResponse>(
@@ -304,7 +306,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
       domain: 'PORTAIL_PATIENT',
       message: 'Consignation d’une lecture impossible',
       context: finalizeLogContext(requestContext, { statusCode: 500, retryable: true }),
-      error: erreur,
+      metadata: { erreur: classeEtCode(erreur) },
     });
     return echec('exception', 'Enregistrement impossible pour le moment.', 500);
   }

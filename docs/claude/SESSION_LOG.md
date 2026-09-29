@@ -8299,8 +8299,9 @@ par le responsable ; clic de diffusion sur PAT032.
 
 **Constaté.** Codex : aucun P0, quatre P1, chacun vérifié dans l'arbre.
 
-**Fait.** Six journaux recopiaient le message d'une erreur : classe et code
-seulement, garde et trois tests rouges par mutation.
+**Fait.** Huit journaux recopiaient le message d'une erreur (dont deux
+`logger.error`, trouvés par Copilot) : classe et code seulement, garde sur
+l'arbre TypeScript et quatre tests rouges par mutation.
 
 **Décidé (responsable).** Garanties en base bornées à la route, sans
 migration (amendement de D-251) ; seconde passe Codex, mutations seules.

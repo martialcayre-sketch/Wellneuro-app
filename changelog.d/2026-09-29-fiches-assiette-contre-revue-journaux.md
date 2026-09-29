@@ -3,10 +3,11 @@
 - **Contre-revue Codex jouée** sur les lots 1 à 11 : aucun P0, quatre P1.
   Résultat et vérification de chaque trouvaille :
   `docs/claude/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`.
-- **Corrigé : six journaux recopiaient le message d'une erreur**, qui peut
+- **Corrigé : huit journaux recopiaient le message d'une erreur**, qui peut
   porter les arguments d'un appel Prisma (route de diffusion, ingestion des
-  fiches). Ils ne gardent plus que la classe et le code, sous une garde de
-  source et trois tests de comportement éprouvés par mutation.
+  fiches, route des lectures du portail — le `logger` garde le message). Ils
+  ne gardent plus que la classe et le code, sous une garde lue sur l'arbre
+  TypeScript et quatre tests de comportement éprouvés par mutation.
 - **Borné, sans migration** (arbitrage du responsable) : la base refuse une
   remise mal rattachée ou une version non validée ; les contrôles de contenu,
   le dossier clos et le caractère humain d'une validation ne tiennent que par

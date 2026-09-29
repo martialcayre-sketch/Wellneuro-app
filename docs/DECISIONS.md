@@ -144,9 +144,10 @@ fournisseur, son transfert hors UE et l'information des patients.
 >    révocation qui tombe pendant l'appel SMTP laisse partir un e-mail neutre
 >    vers une porte déjà close. Tenir une transaction ouverte pendant un appel
 >    réseau est refusé.
-> 5. **Journaux : la classe et le code d'une erreur, jamais son message** — six
->    appels corrigés (route de diffusion, ingestion), gardés par
->    `journaux.guard.test.ts`.
+> 5. **Journaux : la classe et le code d'une erreur, jamais son message** — huit
+>    appels corrigés (route de diffusion, ingestion, route des lectures), gardés
+>    par `journaux.guard.test.ts`. `logger.*` n'en dispense pas : son
+>    `sanitizeError` garde le message.
 >
 > Aucune mutation n'a été jouée par le contre-relecteur (défaut de l'énoncé,
 > corrigé depuis) : une seconde passe, mutations seules, est décidée.
