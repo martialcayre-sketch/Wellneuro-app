@@ -44,6 +44,15 @@ import { annonceDue, annoncerDocumentRemis, reserverAnnonce, type AnnonceFiches 
 
 const ID_PATTERN = /^[A-Za-z0-9_:.#-]+$/;
 
+// LA CLASSE ET LE CODE D'UNE ERREUR, JAMAIS SON MESSAGE (contre-revue adverse
+// de [[D-251]], P1-1). Le message d'une erreur Prisma peut recopier les
+// arguments de l'appel — identifiants du dossier, payload du protocole ; les
+// routes des fiches ne journalisent déjà que ces deux champs.
+function classeEtCode(err: unknown): [string, string] {
+  const code = typeof err === 'object' && err !== null && 'code' in err ? String((err as { code: unknown }).code) : '';
+  return [err instanceof Error ? err.name : typeof err, code];
+}
+
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/protocoles/diffusion';
 
@@ -427,7 +436,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       approvedAt,
     });
   } catch (err) {
-    console.error('[praticien/protocoles/diffusion POST]', err instanceof Error ? err.message : String(err));
+    console.error('[praticien/protocoles/diffusion POST]', ...classeEtCode(err));
     return NextResponse.json(
       { ok: false, reason: 'exception', error: 'Erreur technique.' },
       { status: 500 },
@@ -621,7 +630,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
             // donc juste, et le praticien le lit au lieu d'une page en erreur.
             console.warn(
               '[praticien/protocoles/diffusion GET] protocole approuvé illisible :',
-              erreur instanceof Error ? erreur.message : String(erreur),
+              ...classeEtCode(erreur),
             );
             servieAuPatient = false;
           }
@@ -673,7 +682,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
           // le GET : le reste de l'état de diffusion reste servi.
           console.warn(
             '[praticien/protocoles/diffusion GET] version active illisible :',
-            erreur instanceof Error ? erreur.message : String(erreur),
+            ...classeEtCode(erreur),
           );
           apercu = {
             ok: false,
@@ -710,7 +719,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       } catch (erreur) {
         console.warn(
           '[praticien/protocoles/diffusion GET] aperçu des fiches illisible :',
-          erreur instanceof Error ? erreur.message : String(erreur),
+          ...classeEtCode(erreur),
         );
         fiches = APERCU_FICHES_ILLISIBLE;
       }
@@ -732,7 +741,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       annonceParEmail: fiches !== null && lectureFichesOuverte(),
     });
   } catch (err) {
-    console.error('[praticien/protocoles/diffusion GET]', err instanceof Error ? err.message : String(err));
+    console.error('[praticien/protocoles/diffusion GET]', ...classeEtCode(err));
     return NextResponse.json(
       { ok: false, reason: 'exception', error: 'Erreur technique.' },
       { status: 500 },

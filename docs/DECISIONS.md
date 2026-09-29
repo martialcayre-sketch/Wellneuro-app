@@ -119,6 +119,38 @@ fournisseur, son transfert hors UE et l'information des patients.
 
 ### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
+> **AMENDEMENT DU 2026-09-29 (NUIT) — LA CONTRE-REVUE ADVERSE : CE QUE LA BASE
+> GARANTIT, CE QUE SEULE LA ROUTE GARANTIT.** Contre-revue Codex jouée le
+> 2026-09-29 (`docs/claude/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`) :
+> aucun P0, quatre P1. Arbitrage du responsable : **borner, sans migration.**
+>
+> 1. **La base refuse**, quel que soit l'écrivain : une remise vers un autre
+>    dossier que celui de l'approbation et de son protocole ; une empreinte
+>    recopiée fausse ; une action du protocole approuvé qui ne porte pas cette
+>    assiette ; toute version qui n'est pas la référence de sa fiche (donc non
+>    validée ou retirée) ; une remise identique à la remise en cours.
+> 2. **Seule la route garantit** : les contrôles de contenu rejoués (inexprimables
+>    en SQL), le refus d'un dossier inactif ou clôturé, et le caractère humain
+>    d'un acte de validation — la base enregistre une déclaration de relecture,
+>    pas la preuve d'un geste. Le seul autre écrivain en production est une
+>    migration relue et approuvée (`D-087`). Une remise dont la version échoue
+>    aux contrôles reste de toute façon `indisponible` au patient.
+> 3. **Refermer le drapeau de lecture** prend effet au remplacement des
+>    conteneurs (`env-unset` puis `restart`), pas à l'`env-unset` : le drapeau
+>    se lit dans l'environnement du processus, fixe pendant sa vie. Une requête
+>    en vol sur un ancien conteneur finit sous l'ancienne valeur, et un onglet
+>    déjà chargé garde ce qu'il a reçu.
+> 4. **L'état du compte est relu juste avant l'e-mail, pas verrouillé** : une
+>    révocation qui tombe pendant l'appel SMTP laisse partir un e-mail neutre
+>    vers une porte déjà close. Tenir une transaction ouverte pendant un appel
+>    réseau est refusé.
+> 5. **Journaux : la classe et le code d'une erreur, jamais son message** — six
+>    appels corrigés (route de diffusion, ingestion), gardés par
+>    `journaux.guard.test.ts`.
+>
+> Aucune mutation n'a été jouée par le contre-relecteur (défaut de l'énoncé,
+> corrigé depuis) : une seconde passe, mutations seules, est décidée.
+>
 > **AMENDEMENT DU 2026-09-29 (SOIR) — L'ESPACE DE LECTURE OUVERT, AVANT TROIS
 > CONDITIONS DU §10.** Sur ordre du responsable (« ouvre l'espace de lecture
 > patient en production »), `WN_FICHES_ASSIETTE_LECTURE` est posé à 20:40:15

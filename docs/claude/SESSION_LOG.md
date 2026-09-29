@@ -8294,3 +8294,18 @@ worktree jetable et propre, `archive/` incluse pour A1 (0 occurrence).
 
 **Prochaine action.** Merge après le déploiement de `87d6cc41` ; Codex lancé
 par le responsable ; clic de diffusion sur PAT032.
+
+## 2026-09-29 — Fiches d'assiette : la contre-revue adverse, et ses suites
+
+**Constaté.** Codex : aucun P0, quatre P1, chacun vérifié dans l'arbre.
+
+**Fait.** Six journaux recopiaient le message d'une erreur : classe et code
+seulement, garde et trois tests rouges par mutation.
+
+**Décidé (responsable).** Garanties en base bornées à la route, sans
+migration (amendement de D-251) ; seconde passe Codex, mutations seules.
+
+**Écarté.** Relire le drapeau avant l'e-mail : l'environnement du processus
+ne change pas pendant sa vie.
+
+**Prochaine action.** PR, merge ; énoncé de la seconde passe.
