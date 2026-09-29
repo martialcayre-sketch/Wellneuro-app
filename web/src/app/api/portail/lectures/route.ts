@@ -5,6 +5,8 @@ import { resolvePortailPatientFromSession } from '@/lib/consultation/portail';
 import { whereEnvoiVisible } from '@/lib/documents/bilanPatient';
 import { syntheseServieAuPatient } from '@/lib/praticien/syntheseComprehension';
 import { isComprehensionEnabled } from '@/lib/patient/featureFlag';
+import { lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
+import { fichesRemisesAuPatient } from '@/lib/fiches-assiette/servicePatient';
 import { lecturesAttendues, type EspeceLecture, type LectureAttendue } from '@/lib/portail/lecturesAttendues';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -41,11 +43,14 @@ import {
  *
  * ── LA RÈGLE DE VISIBILITÉ EST EMPRUNTÉE, JAMAIS RECOPIÉE ──────────────────
  *
- * `whereEnvoiVisible` pour le bilan, `syntheseServieAuPatient` pour la synthèse
- * — les mêmes fonctions que les écrans eux-mêmes. Deux surfaces qui
- * recopieraient la règle finiraient par diverger, ce qui est déjà arrivé sur ce
- * dépôt. Conséquence directe : chaque écran ne servant QUE le document courant,
- * le fil ne peut jamais porter plus de DEUX lectures.
+ * `whereEnvoiVisible` pour le bilan, `syntheseServieAuPatient` pour la synthèse,
+ * `fichesRemisesAuPatient` pour les fiches d'assiette — les mêmes fonctions que
+ * les écrans eux-mêmes. Deux surfaces qui recopieraient la règle finiraient par
+ * diverger, ce qui est déjà arrivé sur ce dépôt. Conséquence directe : chaque
+ * écran ne servant QUE le document courant, le fil porte au plus un bilan, une
+ * synthèse, et une lecture par fiche d'assiette servie. Le plafond de deux
+ * lectures ([[D-175]] §6) est tombé avec les fiches : un clic peut en remettre
+ * trois ([[D-251]] §8).
  *
  * Auth : cookie de session portail, comme `api/portail/bilan`. Pas
  * d'`authorizePortail` — celui-ci exige une assignation, or un patient dont le
@@ -146,14 +151,35 @@ async function documentsCourants(idPatient: string) {
   };
 }
 
+/**
+ * Les fiches d'assiette SERVIES à ce patient — la remise en cours de chaque
+ * fiche, quand son texte part. `null` = surface fermée par
+ * `WN_FICHES_ASSIETTE_LECTURE` : le drapeau est relu ici, APRÈS l'identité, et
+ * une surface fermée ne produit aucune lecture.
+ */
+async function fichesServies(idPatient: string) {
+  if (!lectureFichesOuverte()) return null;
+  const fiches = await fichesRemisesAuPatient(idPatient);
+  return fiches
+    .filter(fiche => fiche.etat === 'servie')
+    .map(fiche => ({ id: fiche.idRemise, remiseLe: new Date(fiche.remiseLe), libelle: fiche.libelle }));
+}
+
 export async function GET(req: Request): Promise<NextResponse<PortailLecturesResponse>> {
   const requestContext = createRequestContext(req);
   const garde = await garderAcces(req, requestContext, 'GET');
   if (garde.refus) return garde.refus;
 
   try {
-    const [documents, dejaLues] = await Promise.all([
+    const [documents, fiches, dejaLues] = await Promise.all([
       documentsCourants(garde.patient.idPatient),
+      // Une panne des fiches tait LEURS lectures, pas celles du bilan et de la
+      // synthèse : le fil retombe sur ce qu'il sait. Seule la classe de
+      // l'erreur est journalisée.
+      fichesServies(garde.patient.idPatient).catch((erreur: unknown) => {
+        console.warn('[portail/lectures] fiches d’assiette illisibles', erreur instanceof Error ? erreur.name : 'inconnu');
+        return null;
+      }),
       prisma.portailLecturePatient.findMany({
         where: { idPatient: garde.patient.idPatient },
         select: { espece: true, idObjet: true },
@@ -163,7 +189,7 @@ export async function GET(req: Request): Promise<NextResponse<PortailLecturesRes
     return withCorrelationHeader(
       NextResponse.json<PortailLecturesResponse>({
         ok: true,
-        lectures: lecturesAttendues({ ...documents, dejaLues }),
+        lectures: lecturesAttendues({ ...documents, fichesServies: fiches, dejaLues }),
       }),
       requestContext,
     );
@@ -185,7 +211,7 @@ export async function GET(req: Request): Promise<NextResponse<PortailLecturesRes
   }
 }
 
-const ESPECES: readonly EspeceLecture[] = ['bilan', 'synthese'];
+const ESPECES: readonly EspeceLecture[] = ['bilan', 'synthese', 'fiche_assiette'];
 
 function especeValide(valeur: unknown): valeur is EspeceLecture {
   return typeof valeur === 'string' && (ESPECES as readonly string[]).includes(valeur);
@@ -239,11 +265,17 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
   }
 
   try {
-    const documents = await documentsCourants(garde.patient.idPatient);
-    const servis =
-      espece === 'bilan'
-        ? documents.bilansTransmis.map(b => b.id)
-        : (documents.synthesesPubliees ?? []).map(s => s.id);
+    let servis: string[];
+    if (espece === 'fiche_assiette') {
+      // Surface fermée : aucune fiche servie, donc un 404 comme pour les autres.
+      servis = ((await fichesServies(garde.patient.idPatient)) ?? []).map(fiche => fiche.id);
+    } else {
+      const documents = await documentsCourants(garde.patient.idPatient);
+      servis =
+        espece === 'bilan'
+          ? documents.bilansTransmis.map(b => b.id)
+          : (documents.synthesesPubliees ?? []).map(s => s.id);
+    }
 
     if (!servis.includes(idObjet)) {
       // 404 et non 403 : rien n'est révélé du dossier d'autrui. « Ce document

@@ -21,6 +21,7 @@ import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
+import { LienFichesRemises } from '@/components/patient-companion/LienFichesRemises';
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
 import { construireFilDuJour } from '@/lib/portail/filDuJour';
 import type { LectureAttendue } from '@/lib/portail/lecturesAttendues';
@@ -357,6 +358,10 @@ export default function QuestionnairesHubPage() {
             Consulter mon bilan
           </a>
         )}
+        {/* Même règle que le bilan : le lien ne paraît que si la surface est
+            ouverte ET qu'une fiche au moins a été remise ([[D-251]] §8). C'est
+            l'accès permanent ; la tâche « à lire », elle, vit au fil. */}
+        <LienFichesRemises token={token} />
         <a href={`/portail/${token}/alimentation`} className={patientButtonClassName('ghost')}>
           Ouvrir Mon carnet alimentaire
         </a>

@@ -5,12 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // vrai cookie avec `signPatientSession` — neutraliser l'authentification par
 // un mock ne la prouverait pas.
 
-const { prisma, fichesRemisesAuPatient } = vi.hoisted(() => ({
+const { prisma, fichesRemisesAuPatient, aDesFichesRemises } = vi.hoisted(() => ({
   prisma: { patient: { findUnique: vi.fn() } },
   fichesRemisesAuPatient: vi.fn(),
+  aDesFichesRemises: vi.fn(),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
-vi.mock('@/lib/fiches-assiette/servicePatient', () => ({ fichesRemisesAuPatient }));
+vi.mock('@/lib/fiches-assiette/servicePatient', () => ({ fichesRemisesAuPatient, aDesFichesRemises }));
 
 import { signPatientSession } from '@/lib/patient-session';
 import { GET } from './route';
@@ -29,9 +30,9 @@ function compteActif(surcharges: Record<string, unknown> = {}): void {
   });
 }
 
-function requete(avecCookie = true): Request {
+function requete(avecCookie = true, suffixe = ''): Request {
   const cookie = signPatientSession({ idPatient: PATIENT.idPatient, email: PATIENT.email });
-  return new Request('http://localhost/api/portail/fiches-assiette', {
+  return new Request(`http://localhost/api/portail/fiches-assiette${suffixe}`, {
     headers: avecCookie ? { cookie: `wn_portail=${encodeURIComponent(cookie)}` } : {},
   });
 }
@@ -125,5 +126,29 @@ describe('GET /api/portail/fiches-assiette — drapeau ouvert', () => {
     const journalise = journal.mock.calls.flat().map(a => (a instanceof Error ? `${a.name}: ${a.message}` : String(a))).join(' ');
     expect(journalise).not.toContain('TEXTE-SENTINELLE');
     journal.mockRestore();
+  });
+});
+
+describe('GET ?interrupteur=1 — le lien de l’accueil (D-251, lot 10)', () => {
+  it.each([true, false])('surface ouverte : dit seulement si une fiche a été remise (%s), sans servir aucune fiche', async remise => {
+    aDesFichesRemises.mockResolvedValue(remise);
+    const res = await GET(requete(true, '?interrupteur=1'));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, ouvert: true, fichesRemises: remise });
+    expect(aDesFichesRemises).toHaveBeenCalledWith('PAT_TEST');
+    expect(fichesRemisesAuPatient).not.toHaveBeenCalled();
+  });
+
+  it('drapeau fermé : 503, même en mode interrupteur', async () => {
+    vi.stubEnv('WN_FICHES_ASSIETTE_LECTURE', undefined as unknown as string);
+    const res = await GET(requete(true, '?interrupteur=1'));
+    expect(res.status).toBe(503);
+    expect(aDesFichesRemises).not.toHaveBeenCalled();
+  });
+
+  it('sans session : 401, rien n’est dit', async () => {
+    const res = await GET(requete(false, '?interrupteur=1'));
+    expect(res.status).toBe(401);
+    expect(aDesFichesRemises).not.toHaveBeenCalled();
   });
 });

@@ -77,7 +77,10 @@ describe('la prémisse de la migration : l’identifiant EST la version', () => 
    * garde-là était un jour relâchée pour un motif de compréhension, la prémisse
    * de CETTE migration tomberait sans que personne ne fasse le lien.
    */
-  const APPEND_ONLY = ['syntheseComprehension', 'bookletEnvoi'];
+  // `ficheAssietteRemise` depuis le lot 10 de [[D-251]] : une lecture de fiche
+  // porte l'identifiant de la REMISE, et une version neuve de fiche est une
+  // remise neuve. Réécrire une remise en place acquitterait un texte jamais lu.
+  const APPEND_ONLY = ['syntheseComprehension', 'bookletEnvoi', 'ficheAssietteRemise'];
   const ECRITURES_EN_PLACE = ['update', 'updateMany', 'upsert', 'updateManyAndReturn'];
 
   it.each(APPEND_ONLY)('%s ne connaît aucune écriture EN PLACE', modele => {

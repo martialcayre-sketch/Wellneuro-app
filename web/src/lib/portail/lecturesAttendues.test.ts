@@ -19,6 +19,7 @@ function sources(over: Partial<SourcesLectures> = {}): SourcesLectures {
   return {
     bilansTransmis: [],
     synthesesPubliees: [],
+    fichesServies: [],
     dejaLues: [],
     ...over,
   };
@@ -107,6 +108,67 @@ describe('la surface fermée ne produit AUCUNE lecture', () => {
   });
 });
 
+describe('les fiches d’assiette remises (D-251, lot 10)', () => {
+  const MEME = D('2026-09-28T10:00:00Z');
+
+  it('chaque fiche servie est une lecture à part, avec son libellé, dans l’ordre stable de la remise', () => {
+    // Un clic peut remettre jusqu'à trois fiches, à la MÊME date : le plafond
+    // de deux lectures ([[D-175]] §6) tombe, et l'identifiant départage.
+    const l = lecturesAttendues(
+      sources({
+        fichesServies: [
+          { id: 'rem_b', remiseLe: MEME, libelle: 'Assiette B' },
+          { id: 'rem_a', remiseLe: MEME, libelle: 'Assiette A' },
+          { id: 'rem_c', remiseLe: MEME, libelle: 'Assiette C' },
+        ],
+      }),
+    );
+    expect(l).toEqual([
+      { espece: 'fiche_assiette', idObjet: 'rem_a', remiseLe: '2026-09-28T10:00:00.000Z', libelle: 'Assiette A' },
+      { espece: 'fiche_assiette', idObjet: 'rem_b', remiseLe: '2026-09-28T10:00:00.000Z', libelle: 'Assiette B' },
+      { espece: 'fiche_assiette', idObjet: 'rem_c', remiseLe: '2026-09-28T10:00:00.000Z', libelle: 'Assiette C' },
+    ]);
+  });
+
+  it('une fiche lue sort du fil ; une REMISE NEUVE de la même fiche y revient', () => {
+    const l = lecturesAttendues(
+      sources({
+        fichesServies: [{ id: 'rem_v2', remiseLe: MEME, libelle: 'Assiette A' }],
+        dejaLues: [{ espece: 'fiche_assiette', idObjet: 'rem_v1' }],
+      }),
+    );
+    expect(cles(l)).toEqual(['fiche_assiette:rem_v2']);
+    expect(
+      lecturesAttendues(
+        sources({
+          fichesServies: [{ id: 'rem_v2', remiseLe: MEME, libelle: 'Assiette A' }],
+          dejaLues: [{ espece: 'fiche_assiette', idObjet: 'rem_v2' }],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('surface fermée (`null`) : aucune lecture de fiche, les autres restent', () => {
+    const l = lecturesAttendues(
+      sources({
+        bilansTransmis: [{ id: 'env_1', envoyeLe: MEME }],
+        fichesServies: null,
+      }),
+    );
+    expect(cles(l)).toEqual(['bilan:env_1']);
+  });
+
+  it('un bilan et une synthèse ne portent pas de libellé', () => {
+    const l = lecturesAttendues(
+      sources({
+        bilansTransmis: [{ id: 'env_1', envoyeLe: MEME }],
+        synthesesPubliees: [{ id: 'syn_1', publieeLe: MEME }],
+      }),
+    );
+    expect(l.every(x => !('libelle' in x))).toBe(true);
+  });
+});
+
 describe('l’ordre : de la plus ancienne à la plus récente', () => {
   it('un dossier se lit dans le sens où il s’est écrit', () => {
     const l = lecturesAttendues(
@@ -144,13 +206,18 @@ describe('les libellés et les liens', () => {
   it.each([
     ['bilan', 'Lire mon bilan', '/portail/TOK/bilan'],
     ['synthese', 'Lire ce que mon praticien a compris', '/portail/TOK/comprehension'],
+    ['fiche_assiette', 'Lire la fiche remise par mon praticien', '/portail/TOK/fiches/rem_1'],
   ] as const)('%s : « %s » vers %s', (espece, cta, href) => {
     expect(ctaLecture(espece)).toBe(cta);
-    expect(lienLecture('TOK', espece)).toBe(href);
+    expect(lienLecture('TOK', { espece, idObjet: 'rem_1' })).toBe(href);
+  });
+
+  it('une fiche se lit sur SA page, et son identifiant ne peut pas sortir du chemin', () => {
+    expect(lienLecture('TOK', { espece: 'fiche_assiette', idObjet: 'a/../b?c' })).toBe('/portail/TOK/fiches/a%2F..%2Fb%3Fc');
   });
 
   it('aucun libellé ne compte, ne date ni ne reproche', () => {
-    for (const espece of ['bilan', 'synthese'] as const) {
+    for (const espece of ['bilan', 'synthese', 'fiche_assiette'] as const) {
       expect(ctaLecture(espece)).not.toMatch(/\d/);
       expect(ctaLecture(espece)).not.toMatch(/depuis|il y a|non lu|en retard|nouveau/i);
     }

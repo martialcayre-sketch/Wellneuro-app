@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma, resolveProtocoleDiffuse, reconstructProtocolDraft, controlerVersion } = vi.hoisted(() => ({
   prisma: {
-    ficheAssietteRemise: { findMany: vi.fn() },
+    ficheAssietteRemise: { findMany: vi.fn(), findFirst: vi.fn() },
     ficheAssietteVersion: { findMany: vi.fn() },
     protocolDraft: { findUnique: vi.fn() },
   },
@@ -21,7 +21,7 @@ vi.mock('@/lib/protocol/fromPrisma', () => ({ reconstructProtocolDraft }));
 vi.mock('./controle', () => ({ controlerVersion }));
 
 import { getRecommendedPlate } from '@/lib/food-compass/plates';
-import { fichesRemisesAuPatient } from './servicePatient';
+import { aDesFichesRemises, fichesRemisesAuPatient } from './servicePatient';
 import type { ContenuFicheAssiette } from './types';
 
 const H = (c: string) => c.repeat(64);
@@ -297,5 +297,17 @@ describe('fichesRemisesAuPatient — la place de l’assiette dans le protocole 
     const [fiche] = await fichesRemisesAuPatient('PAT_TEST');
     expect(fiche).toMatchObject({ protocole: 'inconnu', etat: 'servie' });
     avertissement.mockRestore();
+  });
+});
+
+describe('aDesFichesRemises — ce qui fait paraître l’accès (lot 10)', () => {
+  it.each([
+    [{ id: 'rem_1' }, true],
+    [null, false],
+  ])('remise lue %j : %s, pour le SEUL patient demandé, sans aucun texte', async (ligne, attendu) => {
+    prisma.ficheAssietteRemise.findFirst.mockResolvedValue(ligne);
+    expect(await aDesFichesRemises('PAT_TEST')).toBe(attendu);
+    expect(prisma.ficheAssietteRemise.findFirst).toHaveBeenCalledWith({ where: { idPatient: 'PAT_TEST' }, select: { id: true } });
+    expect(prisma.ficheAssietteVersion.findMany).not.toHaveBeenCalled();
   });
 });

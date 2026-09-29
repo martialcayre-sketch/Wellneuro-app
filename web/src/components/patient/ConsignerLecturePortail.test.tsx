@@ -129,4 +129,30 @@ describe('ConsignerLecturePortail', () => {
     await laisserPartir();
     expect(JSON.parse(postsFaits()[0][1].body as string).idObjet).toBe('env_autre');
   });
+
+  describe('une fiche d’assiette se désigne par son identifiant (D-251, lot 10)', () => {
+    const FICHES = [
+      { espece: 'fiche_assiette', idObjet: 'rem_a', remiseLe: '2026-09-28T10:00:00.000Z', libelle: 'A' },
+      { espece: 'fiche_assiette', idObjet: 'rem_b', remiseLe: '2026-09-28T10:00:00.000Z', libelle: 'B' },
+    ];
+
+    beforeEach(() => {
+      fetchMock.mockImplementation(async (_url: string, init?: RequestInit) =>
+        init?.method === 'POST' ? reponse({ ok: true, consignee: true }) : reponse({ ok: true, lectures: FICHES }),
+      );
+    });
+
+    it('acquitte la fiche OUVERTE, pas la première de son espèce', async () => {
+      render(<ConsignerLecturePortail espece="fiche_assiette" idObjet="rem_b" />);
+      await laisserPartir();
+      expect(postsFaits()).toHaveLength(1);
+      expect(JSON.parse(postsFaits()[0][1].body as string)).toEqual({ espece: 'fiche_assiette', idObjet: 'rem_b' });
+    });
+
+    it('une fiche qui n’est pas attendue (déjà lue, retirée, d’un autre dossier) : AUCUN envoi', async () => {
+      render(<ConsignerLecturePortail espece="fiche_assiette" idObjet="rem_z" />);
+      await laisserPartir();
+      expect(postsFaits()).toHaveLength(0);
+    });
+  });
 });

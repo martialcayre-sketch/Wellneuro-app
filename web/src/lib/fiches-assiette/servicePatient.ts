@@ -65,6 +65,17 @@ async function assiettesDuProtocoleServi(idPatient: string): Promise<Set<string>
   }
 }
 
+/**
+ * Une fiche au moins a-t-elle été remise à ce patient ? C'est ce qui fait
+ * paraître l'accès « Fiches remises par mon praticien » (lot 10). Une remise
+ * retirée compte : son entrée reste lisible, avec sa mention (§7). Aucun texte
+ * lu, aucun contrôle rejoué.
+ */
+export async function aDesFichesRemises(idPatient: string): Promise<boolean> {
+  const remise = await prisma.ficheAssietteRemise.findFirst({ where: { idPatient }, select: { id: true } });
+  return remise !== null;
+}
+
 /** Les fiches remises au patient, dans l'état où elles se servent. */
 export async function fichesRemisesAuPatient(idPatient: string): Promise<FicheRemiseServie[]> {
   const remises = await prisma.ficheAssietteRemise.findMany({

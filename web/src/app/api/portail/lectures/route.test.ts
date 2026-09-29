@@ -23,6 +23,11 @@ const { prisma } = vi.hoisted(() => {
 });
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+// Le service des fiches a ses propres bancs (`servicePatient.test.ts`) : ici, on
+// prouve que la route EMPRUNTE sa règle, sans la rejouer.
+const { fichesRemisesAuPatient } = vi.hoisted(() => ({ fichesRemisesAuPatient: vi.fn() }));
+vi.mock('@/lib/fiches-assiette/servicePatient', () => ({ fichesRemisesAuPatient }));
+
 import { signPatientSession } from '@/lib/patient-session';
 import { GET, POST } from './route';
 
@@ -77,6 +82,7 @@ beforeEach(() => {
 
 afterEach(() => {
   delete process.env.WN_COMPREHENSION;
+  delete process.env.WN_FICHES_ASSIETTE_LECTURE;
 });
 
 describe('la porte', () => {
@@ -250,5 +256,93 @@ describe('le GET n’écrit RIEN', () => {
       }
     }
     expect(appeles).toEqual([]);
+  });
+});
+
+describe('les fiches d’assiette remises (D-251, lot 10)', () => {
+  const REMISE_LE = '2026-09-28T10:00:00.000Z';
+  const fiche = (idRemise: string, etat: 'servie' | 'retiree' | 'indisponible', libelle = 'Assiette synthétique') => ({
+    idRemise, libelle, numero: 1, remiseLe: REMISE_LE, etat, protocole: 'actuel',
+    contenu: etat === 'servie' ? { titre: 'TEXTE-SENTINELLE', precautions: [], sections: [] } : null,
+  });
+
+  beforeEach(() => {
+    fichesRemisesAuPatient.mockResolvedValue([
+      fiche('rem_servie', 'servie', 'Assiette A'),
+      fiche('rem_retiree', 'retiree'),
+      fiche('rem_indispo', 'indisponible'),
+    ]);
+  });
+
+  it('drapeau de lecture FERMÉ : aucune fiche annoncée, et le service n’est même pas appelé', async () => {
+    const corps = await corpsDe(await GET(requete(cookieProprio())));
+    expect((corps.lectures as { espece: string }[]).map(l => l.espece)).not.toContain('fiche_assiette');
+    expect(fichesRemisesAuPatient).not.toHaveBeenCalled();
+  });
+
+  it('drapeau ouvert : seule une fiche SERVIE est une lecture, avec son libellé et sans aucun texte', async () => {
+    process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
+    const reponse = await GET(requete(cookieProprio()));
+    const lectures = (await corpsDe(reponse)).lectures as Record<string, unknown>[];
+    expect(lectures.filter(l => l.espece === 'fiche_assiette')).toEqual([
+      { espece: 'fiche_assiette', idObjet: 'rem_servie', remiseLe: REMISE_LE, libelle: 'Assiette A' },
+    ]);
+    expect(fichesRemisesAuPatient).toHaveBeenCalledWith(PATIENT.idPatient);
+    expect(JSON.stringify(lectures)).not.toContain('TEXTE-SENTINELLE');
+  });
+
+  it('une panne des fiches tait LEURS lectures, pas celles du bilan et de la synthèse', async () => {
+    process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
+    const avertissement = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    fichesRemisesAuPatient.mockRejectedValue(new Error('FICHES-SENTINELLE'));
+    const reponse = await GET(requete(cookieProprio()));
+    expect(reponse.status).toBe(200);
+    expect(((await corpsDe(reponse)).lectures as { espece: string }[]).map(l => l.espece)).toEqual(['bilan', 'synthese']);
+    const journalise = avertissement.mock.calls.flat().map(a => (a instanceof Error ? `${a.name}: ${a.message}` : String(a))).join(' ');
+    expect(journalise).not.toContain('FICHES-SENTINELLE');
+    avertissement.mockRestore();
+  });
+
+  it('POST : consigne une fiche SERVIE à ce patient', async () => {
+    process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
+    const reponse = await POST(requete(cookieProprio(), { espece: 'fiche_assiette', idObjet: 'rem_servie' }));
+    expect(reponse.status).toBe(200);
+    expect(prisma.portailLecturePatient.create).toHaveBeenCalledWith({
+      data: { idPatient: PATIENT.idPatient, espece: 'fiche_assiette', idObjet: 'rem_servie' },
+    });
+  });
+
+  it.each([
+    ['retirée', 'rem_retiree'],
+    ['indisponible', 'rem_indispo'],
+    ['inconnue ou d’un autre dossier', 'rem_autre'],
+    ['identifiant de bilan', 'env_1'],
+  ])('POST : une fiche %s est refusée en 404, et n’écrit rien', async (_cas, idObjet) => {
+    process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
+    const reponse = await POST(requete(cookieProprio(), { espece: 'fiche_assiette', idObjet }));
+    expect(reponse.status).toBe(404);
+    expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+  });
+
+  it('POST : une panne des fiches est une panne — 500, rien d’écrit, jamais un faux succès', async () => {
+    process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
+    fichesRemisesAuPatient.mockRejectedValue(new Error('FICHES-SENTINELLE'));
+    const reponse = await POST(requete(cookieProprio(), { espece: 'fiche_assiette', idObjet: 'rem_servie' }));
+    expect(reponse.status).toBe(500);
+    expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+  });
+
+  it('POST, drapeau FERMÉ : même une fiche servie est refusée, et le service n’est pas appelé', async () => {
+    const reponse = await POST(requete(cookieProprio(), { espece: 'fiche_assiette', idObjet: 'rem_servie' }));
+    expect(reponse.status).toBe(404);
+    expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+    expect(fichesRemisesAuPatient).not.toHaveBeenCalled();
+  });
+
+  it('POST : un identifiant de fiche posté en « bilan » est refusé', async () => {
+    process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
+    const reponse = await POST(requete(cookieProprio(), { espece: 'bilan', idObjet: 'rem_servie' }));
+    expect(reponse.status).toBe(404);
+    expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
   });
 });

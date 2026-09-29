@@ -119,6 +119,32 @@ fournisseur, son transfert hors UE et l'information des patients.
 
 ### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
+> **AMENDEMENT DU 2026-09-29 — LOT 10, L'ESPACE DE LECTURE.** Choix de mise en
+> œuvre, pris en session et révisables par le responsable. Tout est sous
+> `WN_FICHES_ASSIETTE_LECTURE`, fermé.
+>
+> 1. **Deux écrans.** La liste « Fiches remises par mon praticien » ne montre
+>    aucun texte. La page d'une fiche porte le texte et la phrase du §5 (« fiche
+>    adaptée avec l'aide d'une intelligence artificielle, relue et validée par
+>    votre praticien »). **Lire une fiche acquitte SA lecture** : la trace part
+>    de sa page, une fois le texte affiché. Une fiche en erreur, retirée ou
+>    indisponible n'a pas été lue. La liste n'acquitte rien.
+> 2. **Une lecture par fiche servie.** Seule une remise en cours dont le texte
+>    part est une lecture attendue. Une fiche retirée ou indisponible n'a rien à
+>    lire, donc aucune tâche. Au fil du jour, chaque fiche est une tâche « Lire
+>    la fiche remise par mon praticien ». Le libellé de son assiette paraît en
+>    appui, pour distinguer jusqu'à trois fiches remises ensemble. C'est le
+>    portail du patient : l'e-mail, lui, reste neutre (§9).
+> 3. **L'accès permanent** est un lien dans « Autres espaces ». Comme « Consulter
+>    mon bilan », il ne paraît que si la surface est ouverte ET qu'une fiche au
+>    moins a été remise.
+> 4. **La mention « ne fait plus partie de votre protocole actuel » dit la
+>    décision du praticien** (revue du lot 9, P2-2, tranché). Elle se calcule sur
+>    le protocole qu'il a approuvé, même quand la page protocole du patient est
+>    indisponible pour une raison technique : cette indisponibilité est un autre
+>    constat, que l'accueil dit déjà.
+> 5. **Une fiche servie s'imprime**, comme le bilan.
+>
 > **AMENDEMENT DU 2026-09-28 (NUIT) — LOT 9, TROIS LECTURES DU SERVICE
 > PATIENT.** Choix de mise en œuvre, pris en session et révisables par le
 > responsable. Ils fixent ce que la route du portail sert, sous

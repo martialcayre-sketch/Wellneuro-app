@@ -395,6 +395,29 @@ describe('les lectures — ce que le praticien a remis', () => {
     ]);
   });
 
+  it('chaque fiche d’assiette est une tâche à part, vers SA page, son assiette en appui (D-251, lot 10)', () => {
+    const fiche = (idObjet: string, libelle: string) => ({
+      espece: 'fiche_assiette' as const, idObjet, remiseLe: '2026-09-28T10:00:00.000Z', libelle,
+    });
+    const f = fil([], [], new Set(), [], { lectures: [fiche('rem_a', 'Assiette A'), fiche('rem_b', 'Assiette B')] });
+    expect(f.taches).toEqual([
+      {
+        cle: 'lecture:fiche_assiette:rem_a',
+        espece: 'lecture',
+        cta: 'Lire la fiche remise par mon praticien',
+        appui: 'Assiette A',
+        href: '/portail/TOK/fiches/rem_a',
+      },
+      {
+        cle: 'lecture:fiche_assiette:rem_b',
+        espece: 'lecture',
+        cta: 'Lire la fiche remise par mon praticien',
+        appui: 'Assiette B',
+        href: '/portail/TOK/fiches/rem_b',
+      },
+    ]);
+  });
+
   it('elle ne passe PAS devant une nuit à noter', () => {
     const f = fil([assignAgenda()], [agenda()], new Set(), [], { lectures: [bilan] });
     expect(cles(f)).toEqual(['ASS_AGD', 'lecture:bilan:env_1']);
