@@ -8310,3 +8310,12 @@ migration (amendement de D-251) ; seconde passe Codex, mutations seules.
 ne change pas pendant sa vie.
 
 **Prochaine action.** PR, merge ; énoncé de la seconde passe.
+
+## 2026-09-30 — Fiches d'assiette : l'énoncé de la seconde passe Codex (mutations)
+
+**Fait.** #1252 fusionnée (`2cdb6739`). Énoncé de la seconde passe versé
+avant d'être joué : 16 invariants, leurs bancs, mutations choisies par le
+contre-relecteur dans un worktree jetable.
+
+**Prochaine action.** Merge ; le responsable lance Codex ; clic de diffusion
+sur PAT032 ; document TRUST.
