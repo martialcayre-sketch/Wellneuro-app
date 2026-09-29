@@ -119,6 +119,19 @@ fournisseur, son transfert hors UE et l'information des patients.
 
 ### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
+> **AMENDEMENT DU 2026-09-29 (SOIR) — L'ESPACE DE LECTURE OUVERT, AVANT DEUX
+> CONDITIONS DU §10.** Sur ordre du responsable (« ouvre l'espace de lecture
+> patient en production »), `WN_FICHES_ASSIETTE_LECTURE` est posé à 20:40:15
+> UTC. Des quatre conditions du §10, deux sont remplies — les sept fiches sont
+> validées (constat par conteneur), le code des lots 9 à 11 est en service —
+> et deux restent à tenir APRÈS l'ouverture : le document TRUST sur l'usage de
+> l'IA (versé au dépôt, sans lien depuis la fiche) et la contre-revue adverse
+> (Codex, lancée par le responsable). Le constat de l'espace se fait sur le
+> dossier de test `PAT032`, à sa première remise. À la pose, 0 remise : aucun
+> patient n'est concerné avant le prochain clic « Valider pour diffusion ».
+> Le coupe-circuit reste double : retirer une fiche (par version), ou refermer
+> le drapeau.
+>
 > **AMENDEMENT DU 2026-09-29 (SUITE) — LOT 11, L'E-MAIL NEUTRE, ET QUATRE
 > ARBITRAGES DU RESPONSABLE.** Rendus en session le 2026-09-29.
 >
