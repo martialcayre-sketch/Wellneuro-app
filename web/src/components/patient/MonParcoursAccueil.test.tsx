@@ -62,6 +62,31 @@ describe('MonParcoursAccueil — le fil du jour', () => {
     expect(screen.getByRole('list').tagName).toBe('OL');
   });
 
+  it('des tâches au même libellé s’annoncent chacune avec SA phrase d’appui (D-251, lot 10)', () => {
+    // Une tâche par fiche d'assiette remise : le libellé est le même, seule
+    // l'assiette en appui les distingue — et elle doit être annoncée AVEC le
+    // lien, pas laissée en paragraphe voisin.
+    const fiche = (cle: string, appui: string) =>
+      tache({ cle, espece: 'lecture', cta: 'Lire la fiche remise par mon praticien', appui, href: `/portail/TOK/fiches/${cle}` });
+    render(
+      <MonParcoursAccueil
+        {...base}
+        fil={{
+          taches: [fiche('lecture:fiche_assiette:rem_a', 'Assiette A'), fiche('lecture:fiche_assiette:rem_b', 'Assiette B'), fiche('lecture:fiche_assiette:rem_c', 'Assiette C')],
+          repos: { kind: 'stable' },
+        }}
+      />,
+    );
+    for (const assiette of ['Assiette A', 'Assiette B', 'Assiette C']) {
+      expect(screen.getByRole('link', { name: 'Lire la fiche remise par mon praticien', description: assiette })).toBeTruthy();
+    }
+  });
+
+  it('une tâche sans appui ne désigne aucune description', () => {
+    render(<MonParcoursAccueil {...base} fil={{ taches: [tache(), tache({ cle: 'B' })], repos: { kind: 'stable' } }} />);
+    for (const lien of screen.getAllByRole('link')) expect(lien.hasAttribute('aria-describedby')).toBe(false);
+  });
+
   it('ne dit « Ensuite » que s’il y a une suite', () => {
     render(<MonParcoursAccueil {...base} fil={{ taches: [tache()], repos: { kind: 'stable' } }} />);
     expect(screen.queryByText('Ensuite')).toBeNull();

@@ -8238,3 +8238,22 @@ routé au lot 10. 54 tests ; 22 mutants tués ; passage d'intégration sur base
 réelle migrée, annulé.
 
 **Prochaine action.** PR, merge ; puis le lot 10.
+
+## 2026-09-29 — Fiches d'assiette : l'espace de lecture et la tâche du fil (D-251, lot 10)
+
+**Livré, sous `WN_FICHES_ASSIETTE_LECTURE` fermé.** La liste « Fiches remises
+par mon praticien » (sans texte) et la page de chaque fiche (texte, phrase IA
+du §5, impression). Lire une fiche acquitte SA lecture, une fois son texte
+affiché. Au fil, une tâche
+par fiche servie, l'assiette en appui. L'accusé n'est accepté que pour une
+fiche servie. Le lien de l'accueil paraît si la surface est ouverte et
+qu'une fiche a été remise.
+
+**Décidé (révisable).** Une lecture par fiche ; la mention « ne fait plus
+partie » dit la décision du praticien, même page protocole indisponible.
+
+**Validations.** 200 tests sur les fichiers touchés ; 32 mutants tués ; T3
+vert. Revue `wn-reviewer` GO : deux P2 corrigés (trace sous le texte affiché,
+message neutre), un routé au lot 11 (contrôles rejoués à chaque accueil).
+
+**Prochaine action.** PR, merge ; puis le lot 11 (e-mail neutre).

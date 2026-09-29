@@ -49,6 +49,8 @@ const ROUTES: readonly string[] = [
   '/portail/:idPatient/ce-qui-compte',
   '/portail/:idPatient/comprehension',
   '/portail/:idPatient/dossier',
+  '/portail/:idPatient/fiches',
+  '/portail/:idPatient/fiches/:idRemise',
   '/portail/:idPatient/informations',
   '/portail/:idPatient/questionnaires',
   '/portail/:idPatient/questionnaires/:idAssignation',

@@ -1,7 +1,8 @@
 // LES LECTURES QUI ATTENDENT LE PATIENT (domaine PUR, client-safe).
 //
 // Ce que le praticien lui a REMIS et qu'il n'a pas encore ouvert : un bilan
-// transmis, une synthèse de compréhension publiée. Elles entrent au fil du jour
+// transmis, une synthèse de compréhension publiée, une fiche d'assiette remise
+// au clic « Valider pour diffusion » ([[D-251]] §8). Elles entrent au fil du jour
 // comme des tâches, et elles en sortent DÈS QU'ELLES SONT LUES — c'est la règle
 // unique du fil (`filDuJour.ts`), et c'est pour la tenir sur ces deux objets-là
 // qu'une table a été ouverte (`portail_lectures_patient`, LOT-08).
@@ -29,14 +30,24 @@
 // `portailLecturesPatient.guard.test.ts` — si elle tombait, ce module ferait
 // disparaître un texte que le patient n'a jamais vu.
 
-export type EspeceLecture = 'bilan' | 'synthese';
+export type EspeceLecture = 'bilan' | 'synthese' | 'fiche_assiette';
 
 export type LectureAttendue = {
   espece: EspeceLecture;
-  /** L'identifiant de la VERSION : `BookletEnvoi.id` ou `SyntheseComprehension.id`. */
+  /**
+   * L'identifiant de la VERSION : `BookletEnvoi.id`, `SyntheseComprehension.id`
+   * ou `FicheAssietteRemise.id` — une remise est append-only, et une version
+   * neuve de fiche est une remise neuve ([[D-251]] §8).
+   */
   idObjet: string;
   /** Quand le praticien l'a remise. Sert à ORDONNER, jamais à compter. */
   remiseLe: string;
+  /**
+   * Fiches d'assiette seulement : le libellé de l'assiette au catalogue. Jusqu'à
+   * trois fiches peuvent attendre ensemble, sous le même geste : c'est lui qui
+   * les distingue au fil. Jamais un texte de fiche.
+   */
+  libelle?: string;
 };
 
 export type SourcesLectures = {
@@ -51,6 +62,15 @@ export type SourcesLectures = {
    * journal (`D-172`), et il vaut ici mot pour mot.
    */
   synthesesPubliees: { id: string; publieeLe: Date }[] | null;
+  /**
+   * Les fiches d'assiette SERVIES — la remise en cours de chaque fiche, quand
+   * son texte part ([[D-251]] lot 9). Une fiche retirée ou indisponible n'a
+   * rien à lire, donc rien à annoncer.
+   *
+   * `null` = surface fermée par `WN_FICHES_ASSIETTE_LECTURE`, ou lecture en
+   * échec : aucune lecture n'en sort. Même invariant que les synthèses.
+   */
+  fichesServies: { id: string; remiseLe: Date; libelle: string }[] | null;
   /** Ce que `portail_lectures_patient` porte déjà pour ce dossier. */
   dejaLues: { espece: string; idObjet: string }[];
 };
@@ -71,6 +91,14 @@ export function lecturesAttendues(sources: SourcesLectures): LectureAttendue[] {
 
   for (const bilan of sources.bilansTransmis) {
     toutes.push({ espece: 'bilan', idObjet: bilan.id, remiseLe: bilan.envoyeLe.toISOString() });
+  }
+  for (const fiche of sources.fichesServies ?? []) {
+    toutes.push({
+      espece: 'fiche_assiette',
+      idObjet: fiche.id,
+      remiseLe: fiche.remiseLe.toISOString(),
+      libelle: fiche.libelle,
+    });
   }
   for (const synthese of sources.synthesesPubliees ?? []) {
     toutes.push({
@@ -93,10 +121,15 @@ function comparer(a: string, b: string): number {
 
 /** Le libellé du geste. Jamais un compte, jamais une date — c'est une tâche. */
 export function ctaLecture(espece: EspeceLecture): string {
+  if (espece === 'fiche_assiette') return 'Lire la fiche remise par mon praticien';
   return espece === 'bilan' ? 'Lire mon bilan' : 'Lire ce que mon praticien a compris';
 }
 
-/** Où le document se lit. Le token vient de l'écran, jamais du serveur. */
-export function lienLecture(token: string, espece: EspeceLecture): string {
-  return `/portail/${token}/${espece === 'bilan' ? 'bilan' : 'comprehension'}`;
+/**
+ * Où le document se lit. Le token vient de l'écran, jamais du serveur. Une
+ * fiche d'assiette se lit sur SA page : c'est l'ouvrir qui acquitte SA lecture.
+ */
+export function lienLecture(token: string, lecture: Pick<LectureAttendue, 'espece' | 'idObjet'>): string {
+  if (lecture.espece === 'fiche_assiette') return `/portail/${token}/fiches/${encodeURIComponent(lecture.idObjet)}`;
+  return `/portail/${token}/${lecture.espece === 'bilan' ? 'bilan' : 'comprehension'}`;
 }

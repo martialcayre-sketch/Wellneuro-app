@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
 import type { FicheRemiseServie } from '@/lib/fiches-assiette/ficheServie';
-import { fichesRemisesAuPatient } from '@/lib/fiches-assiette/servicePatient';
+import { aDesFichesRemises, fichesRemisesAuPatient } from '@/lib/fiches-assiette/servicePatient';
 
 /*
  * /api/portail/fiches-assiette — les fiches d'assiette remises au patient par
- * son praticien ([[D-251]] §7-§8, lot 9). L'espace de lecture qui les affiche
- * est le lot 10.
+ * son praticien ([[D-251]] §7-§8, lot 9), que l'espace de lecture affiche
+ * (lot 10).
  *
  * DRAPEAU D'ABORD, fail-closed (`WN_FICHES_ASSIETTE_LECTURE`) : une surface
  * fermée ne fait travailler ni la vérification de session, ni la base. 503 et
@@ -21,10 +21,16 @@ import { fichesRemisesAuPatient } from '@/lib/fiches-assiette/servicePatient';
  * CE QUI SORT : pour chaque fiche, la remise en cours, son état, sa place dans
  * le protocole servi, et le texte seulement quand elle est servie. Jamais le
  * motif d'un retrait, le validateur, les claims ou le texte source.
+ *
+ * `?interrupteur=1` : le lien de l'accueil sait s'il doit paraître — surface
+ * ouverte, et au moins une fiche remise. Aucun texte lu, aucun contrôle
+ * rejoué pour une page que personne n'a encore ouverte (même motif
+ * qu'`api/portail/comprehension`).
  */
 
 export type PortailFichesAssietteResponse =
   | { ok: true; fiches: FicheRemiseServie[] }
+  | { ok: true; ouvert: true; fichesRemises: boolean }
   | { ok: false; reason: 'feature_disabled' | 'unauthenticated' | 'forbidden' | 'exception'; error: string };
 
 export async function GET(req: Request): Promise<NextResponse<PortailFichesAssietteResponse>> {
@@ -41,6 +47,10 @@ export async function GET(req: Request): Promise<NextResponse<PortailFichesAssie
   try {
     const auth = await authentifierPatientPortail(req);
     if (auth.erreur) return auth.erreur as NextResponse<PortailFichesAssietteResponse>;
+
+    if (new URL(req.url).searchParams.get('interrupteur') === '1') {
+      return NextResponse.json({ ok: true, ouvert: true, fichesRemises: await aDesFichesRemises(auth.patient.idPatient) });
+    }
 
     const fiches = await fichesRemisesAuPatient(auth.patient.idPatient);
     return NextResponse.json({ ok: true, fiches });

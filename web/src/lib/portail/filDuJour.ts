@@ -277,12 +277,15 @@ export function construireFilDuJour(sources: SourcesFilDuJour): FilDuJour {
    * indépendantes peuvent collisionner, et une clé de rendu dupliquée ferait
    * disparaître une tâche de l'écran sans que rien ne rougisse.
    */
+  // Une fiche d'assiette porte en appui le libellé de son assiette : jusqu'à
+  // trois fiches peuvent attendre sous le même geste, et c'est lui qui les
+  // distingue ([[D-251]] §8).
   const tachesLectures: Tache[] = lectures.map(lecture => ({
     cle: `lecture:${lecture.espece}:${lecture.idObjet}`,
     espece: 'lecture' as const,
     cta: ctaLecture(lecture.espece),
-    appui: null,
-    href: lienLecture(token, lecture.espece),
+    appui: lecture.libelle ?? null,
+    href: lienLecture(token, lecture),
   }));
 
   const invitation: Tache[] =

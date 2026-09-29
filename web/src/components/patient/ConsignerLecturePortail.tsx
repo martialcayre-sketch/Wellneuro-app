@@ -35,6 +35,16 @@ import type { EspeceLecture, LectureAttendue } from '@/lib/portail/lecturesAtten
  * le triplet, le serveur le lit « déjà consigné » — mais une requête inutile
  * sur une surface patient reste une requête inutile.
  *
+ * ── UNE FICHE D'ASSIETTE SE DÉSIGNE PAR SON IDENTIFIANT ───────────────────
+ *
+ * Un clic peut remettre jusqu'à trois fiches ([[D-251]] §8) : l'espèce ne
+ * désigne plus UN document. L'écran d'une fiche passe donc `idObjet`, et seule
+ * la lecture attendue qui porte CET identifiant est acquittée. Il ne le monte
+ * qu'une fois le texte affiché : une fiche en erreur, retirée ou indisponible
+ * n'a pas été lue. L'identifiant vient de l'URL, mais le serveur le revérifie
+ * comme tout autre (`D-164`) : une fiche qui n'est pas servie à ce patient ne
+ * s'acquitte pas.
+ *
  * ── AUCUNE INTERFACE, AUCUN MESSAGE ────────────────────────────────────────
  *
  * Ni confirmation, ni erreur visible. Le patient n'a rien demandé : il a ouvert
@@ -43,7 +53,7 @@ import type { EspeceLecture, LectureAttendue } from '@/lib/portail/lecturesAtten
  * ignore l'existence. Un échec laisse simplement la tâche au fil, ce qui est
  * exactement ce qu'un échec doit produire.
  */
-export function ConsignerLecturePortail({ espece }: { espece: EspeceLecture }) {
+export function ConsignerLecturePortail({ espece, idObjet: idVise }: { espece: EspeceLecture; idObjet?: string }) {
   const envoye = useRef(false);
 
   useEffect(() => {
@@ -79,7 +89,7 @@ export function ConsignerLecturePortail({ espece }: { espece: EspeceLecture }) {
 
       // Rien d'attendu = déjà lu, ou rien de remis. Dans les deux cas il n'y a
       // pas de geste à consigner, et on n'en invente pas un.
-      const attendue = lectures.find(l => l.espece === espece);
+      const attendue = lectures.find(l => l.espece === espece && (idVise === undefined || l.idObjet === idVise));
       if (!attendue) return;
 
       // L'identifiant est lu AVANT le `try`, délibérément : ce qui est lu à
@@ -98,7 +108,7 @@ export function ConsignerLecturePortail({ espece }: { espece: EspeceLecture }) {
         // exactement ce qu'un échec doit produire.
       }
     })();
-  }, [espece]);
+  }, [espece, idVise]);
 
   return null;
 }
