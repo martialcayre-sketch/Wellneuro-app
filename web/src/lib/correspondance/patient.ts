@@ -11,6 +11,8 @@ export const TYPES_CORRESPONDANCE_PATIENT = {
   objectifPropose: 'objectif_propose',
   /** Rappel d'un questionnaire assigné, resté sans réponse passé son échéance. */
   relanceQuestionnaire: 'relance_questionnaire',
+  /** Un document remis attend le patient dans son espace ([[D-251]] §9) — sans le nommer. */
+  documentRemis: 'document_remis',
 } as const;
 
 export type TypeCorrespondancePatient =

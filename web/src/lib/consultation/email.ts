@@ -233,3 +233,39 @@ export async function sendObjectifProposeEmail(
     },
   });
 }
+
+/**
+ * « Un document de votre praticien vous attend » ([[D-251]] §9, lot 11).
+ *
+ * LE TEXTE NE NOMME RIEN : ni l'assiette, ni la fiche, et aucune variable ne
+ * pourrait les porter. L'OBJET JOURNALISÉ non plus, bien qu'il ne quitte pas la
+ * base : il se lit sur la fiche du dossier, et « document remis » y suffit.
+ *
+ * MÊME TRIPLET que les autres envois (`envoyerAccesTrace`) : elle RELANCE sur un
+ * échec SMTP, et l'appelant l'attrape — les fiches sont déjà remises, l'e-mail
+ * ne défait rien.
+ */
+export async function sendDocumentRemisEmail(
+  patientEmail: string,
+  prenom: string,
+  idPatient: string,
+): Promise<StatutEnvoiAcces> {
+  const smtpUrl = process.env.SMTP_URL;
+  const connexion = buildGoogleConnexionUrl();
+  return envoyerAccesTrace({
+    idPatient,
+    type: TYPES_CORRESPONDANCE_PATIENT.documentRemis,
+    objet: 'Document remis dans l’espace patient',
+    envoyer: async () => {
+      if (!smtpUrl) return;
+      const transport = creerTransportSmtp(smtpUrl);
+      const gabarit = rendreGabarit(getGabarit('document_remis'), { prenom, connexion });
+      await transport.sendMail({
+        from: '"Wellneuro" <noreply@wellneuro.fr>',
+        to: patientEmail,
+        subject: gabarit.sujet,
+        text: gabarit.corps,
+      });
+    },
+  });
+}

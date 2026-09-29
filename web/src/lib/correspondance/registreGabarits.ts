@@ -526,6 +526,50 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     valideLe: null,
     hash: '29da6688c0d92bf35b9645066ecc3706c0ca261303c15a802a02f7f1970d0a90',
   },
+  // ── UN DOCUMENT REMIS ([[D-251]] §9, lot 11) ────────────────────────────────
+  // Part au clic « Valider pour diffusion » qui a remis au moins une fiche
+  // d'assiette, UN par clic, et seulement espace de lecture ouvert.
+  //
+  // IL NE NOMME RIEN. Ni l'assiette — son nom révèle une indication, c'est ce
+  // qui a qualifié la table des remises en article 9 —, ni « fiche », ni axe,
+  // ni nombre. La fiche ne voyage jamais par e-mail : l'espace la sert. Objet
+  // et phrase centrale sont ceux du §9 et de l'amendement du 2026-09-28,
+  // mot pour mot ; le reste reprend `objectif_propose@2`, déjà validé.
+  //
+  // « Accéder à mon parcours » est le bouton de l'écran qui accueille un
+  // patient connecté (`portail/[token]/page.tsx`, `DoneScreen`) ; « Ce que
+  // j'ai à faire aujourd'hui » est le fil du jour (`MonParcoursAccueil`), où
+  // chaque fiche servie non lue est une tâche (lot 10).
+  {
+    key: 'document_remis',
+    version: 1,
+    titre: 'Un document remis attend le patient dans son espace',
+    sujet: 'Un document de votre praticien vous attend',
+    corps:
+      'Bonjour {{prenom}},\n\n' +
+      'Un document de votre praticien vous attend dans votre espace.\n\n' +
+      'Votre espace :\n{{connexion}}\n\n' +
+      'Une fois connecté : choisissez « Accéder à mon parcours » ; le document ' +
+      'figure sous « Ce que j’ai à faire aujourd’hui ».\n\n' +
+      'Vous pouvez taper cette adresse vous-même dans votre navigateur plutôt que de ' +
+      'cliquer : elle mène au même endroit. Vous vous y connecterez avec Google, ou ' +
+      'en demandant un lien d’accès par e-mail, à l’adresse à laquelle vous recevez ' +
+      'ce message.\n\n' +
+      'On ne vous demandera jamais de coordonnées bancaires, de numéro de carte ni ' +
+      'de mot de passe. Une question, un doute sur un message reçu : écrivez-moi à ' +
+      'martialcayre@wellneuro.fr.\n\n' +
+      SIGNATURE_PRATICIEN,
+    variables: ['prenom', 'connexion'],
+    // Ni assiette, ni « fiche », ni domaine clinique, ni chiffre — tenu par
+    // `registreGabarits.test.ts`.
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-09-29',
+    // NÉ VALIDÉ, en session, sur le texte exact : le responsable a choisi la
+    // variante « où le trouver », puis validé la phrase corrigée pour nommer le
+    // bouton réellement vu après connexion (« Accéder à mon parcours »).
+    valideLe: '2026-09-29',
+    hash: '37595bbf4b194feeff5e21a137925904ba35e2c7d8ed82e4af81892524f7d68d',
+  },
 ]);
 
 /** Le gabarit courant d'une clé : version la plus haute (les versions

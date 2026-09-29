@@ -15,7 +15,7 @@ vi.mock('@/lib/correspondance/patient', async orig => ({
   journaliserCorrespondancePatient: journaliser,
 }));
 
-import { sendMagicLinkEmail, sendPortailLinkEmail } from './email';
+import { sendDocumentRemisEmail, sendMagicLinkEmail, sendPortailLinkEmail } from './email';
 
 describe('sendPortailLinkEmail', () => {
   const env = { ...process.env };
@@ -218,5 +218,56 @@ describe('sendPortailLinkEmail — le lien qui ouvre, quand il existe', () => {
     );
     const types = journaliser.mock.calls.map(c => (c[0] as { type: string }).type);
     expect(types).toEqual(['acces_portail', 'acces_portail']);
+  });
+});
+
+describe('sendDocumentRemisEmail — [[D-251]] §9, lot 11', () => {
+  const env = { ...process.env };
+
+  beforeEach(() => {
+    process.env.SMTP_URL = 'smtp://localhost:1025';
+    process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
+  });
+
+  afterEach(() => {
+    process.env = { ...env };
+    sendMail.mockClear();
+    journaliser.mockClear();
+  });
+
+  it('part avec le gabarit du registre : l’objet du §9 et la page d’accès, jamais un lien qui ouvre', async () => {
+    await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie', 'PAT_TEST')).resolves.toBe('Envoye');
+    expect(sendMail).toHaveBeenCalledOnce();
+    const envoi = sendMail.mock.calls[0][0];
+    expect(envoi.to).toBe('patient@example.com');
+    expect(envoi.subject).toBe('Un document de votre praticien vous attend');
+    expect(envoi.text).toContain('Bonjour Sophie,');
+    expect(envoi.text).toContain('https://app.wellneuro.fr/portail/connexion');
+    expect(envoi.text).not.toContain('/portail/lien/');
+    // Aucune pièce jointe, aucun HTML : la fiche ne voyage jamais par e-mail.
+    expect(envoi.html).toBeUndefined();
+    expect(envoi.attachments).toBeUndefined();
+  });
+
+  it('journalise « document_remis », sous un objet qui ne nomme rien', async () => {
+    await sendDocumentRemisEmail('patient@example.com', 'Sophie', 'PAT_TEST');
+    expect(journaliser).toHaveBeenCalledWith(
+      expect.objectContaining({ idPatient: 'PAT_TEST', type: 'document_remis', statut: 'Envoye' }),
+    );
+    const { objet } = journaliser.mock.calls[0][0] as { objet: string };
+    expect(objet).not.toMatch(/assiette|fiche/i);
+  });
+
+  it('sans messagerie : « Non_envoye », journalisé, rien tenté', async () => {
+    delete process.env.SMTP_URL;
+    await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie', 'PAT_TEST')).resolves.toBe('Non_envoye');
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(journaliser).toHaveBeenCalledWith(expect.objectContaining({ type: 'document_remis', statut: 'Non_envoye' }));
+  });
+
+  it('RELANCE sur échec SMTP, après l’avoir journalisé en « Erreur »', async () => {
+    sendMail.mockRejectedValueOnce(new Error('smtp down'));
+    await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie', 'PAT_TEST')).rejects.toThrow('smtp down');
+    expect(journaliser).toHaveBeenCalledWith(expect.objectContaining({ type: 'document_remis', statut: 'Erreur' }));
   });
 });

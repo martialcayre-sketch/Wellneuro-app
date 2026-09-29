@@ -33,7 +33,7 @@ describe('registre des gabarits patient — intégrité', () => {
     }
   });
 
-  it('expose les treize versions attendues, dans cet ordre', () => {
+  it('expose les quatorze versions attendues, dans cet ordre', () => {
     expect(REGISTRE_GABARITS_PATIENT.map(g => `${g.key}@${g.version}`)).toEqual([
       'lien_magique@1',
       'acces_portail@1',
@@ -66,7 +66,22 @@ describe('registre des gabarits patient — intégrité', () => {
       // domaine exploré. Seule l'échéance l'accompagne — c'est elle qui rend
       // le rappel actionnable.
       'relance_questionnaire@1',
+      // [[D-251]] §9 — un document remis attend le patient. Il ne nomme rien.
+      'document_remis@1',
     ]);
+  });
+
+  it('document_remis : objet et phrase du §9 mot pour mot, et RIEN du document', () => {
+    const g = getGabarit('document_remis');
+    expect(g.sujet).toBe('Un document de votre praticien vous attend');
+    expect(g.corps).toContain('Un document de votre praticien vous attend dans votre espace.');
+    // Le nom d'une assiette révèle une indication (§9, article 9) : aucune
+    // variable ne peut le porter, et le texte fixe n'en nomme aucune.
+    expect([...g.variables].sort()).toEqual(['connexion', 'prenom']);
+    expect(g.corps).not.toMatch(/assiette|fiche|alimenta|dopamin|digesti|prot[ée]in|sommeil|intestin/i);
+    expect(g.sujet).not.toMatch(/assiette|fiche/i);
+    // Ni lien magique : l'adresse est celle de la page d'accès, non secrète.
+    expect(g.variables).not.toContain('lien');
   });
 
   it('objectif_propose : c’est la v2 qui est servie, la v1 reste au registre', () => {
@@ -88,7 +103,7 @@ describe('registre des gabarits patient — intégrité', () => {
     expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'acces_portail')).toHaveLength(2);
   });
 
-  it('les trois validations formelles sont datées — le reste du registre ne l’est pas', () => {
+  it('les quatre validations formelles sont datées — le reste du registre ne l’est pas', () => {
     // `valideLe` a existé huit versions durant sans jamais être renseigné. Ce
     // banc échoue si une validation est posée ailleurs sans décision.
     const valides = REGISTRE_GABARITS_PATIENT.filter(g => g.valideLe !== null);
@@ -103,8 +118,11 @@ describe('registre des gabarits patient — intégrité', () => {
       // ce que le hash-lock ci-dessus prouve, et c'est pour cela que la
       // validation n'est pas une v2.
       'objectif_propose@1',
+      // [[D-251]] §9 — né validé : le responsable a choisi puis validé le texte
+      // exact en session, le jour de sa rédaction.
+      'document_remis@1',
     ]);
-    expect(valides.map(g => g.valideLe)).toEqual(['2026-09-04', '2026-09-07', '2026-09-08']);
+    expect(valides.map(g => g.valideLe)).toEqual(['2026-09-04', '2026-09-07', '2026-09-08', '2026-09-29']);
   });
 
   it('les segments partagés sont figés', () => {
@@ -306,6 +324,32 @@ describe('registre des gabarits patient — fidélité aux textes historiques', 
       `Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente et les remplir dans l'ordre de votre choix.\n\n` +
       `Accéder à vos questionnaires :\nhttps://app.wellneuro.fr/portail\n\n` +
       `L'équipe Wellneuro`,
+    );
+  });
+
+  it('document remis — le texte validé par le responsable le 2026-09-29, au caractère près', () => {
+    const { sujet, corps } = rendreGabarit(getGabarit('document_remis'), {
+      prenom: 'Sophie',
+      connexion: 'https://app.wellneuro.fr/portail/connexion',
+    });
+    expect(sujet).toBe('Un document de votre praticien vous attend');
+    expect(corps).toBe(
+      `Bonjour Sophie,\n\n` +
+      `Un document de votre praticien vous attend dans votre espace.\n\n` +
+      `Votre espace :\nhttps://app.wellneuro.fr/portail/connexion\n\n` +
+      `Une fois connecté : choisissez « Accéder à mon parcours » ; le document ` +
+      `figure sous « Ce que j’ai à faire aujourd’hui ».\n\n` +
+      `Vous pouvez taper cette adresse vous-même dans votre navigateur plutôt que de ` +
+      `cliquer : elle mène au même endroit. Vous vous y connecterez avec Google, ou ` +
+      `en demandant un lien d’accès par e-mail, à l’adresse à laquelle vous recevez ` +
+      `ce message.\n\n` +
+      `On ne vous demandera jamais de coordonnées bancaires, de numéro de carte ni ` +
+      `de mot de passe. Une question, un doute sur un message reçu : écrivez-moi à ` +
+      `martialcayre@wellneuro.fr.\n\n` +
+      `Martial Cayre\n` +
+      `Docteur en Pharmacie — praticien en santé fonctionnelle\n` +
+      `Labellisé Neuro-Nutrition® (Institut SIIN)\n` +
+      `Wellneuro — wellneuro.fr`,
     );
   });
 

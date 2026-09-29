@@ -26,6 +26,7 @@ import {
 } from '@/lib/fiches-assiette/apercuRemise';
 import { envoiFichesOuvert } from '@/lib/fiches-assiette/drapeau';
 import { apercuFichesDuProtocole, remettreFiches } from '@/lib/fiches-assiette/remise';
+import { annonceDue, annoncerDocumentRemis, type AnnonceFiches } from '@/lib/fiches-assiette/annonce';
 
 // Validation « pour diffusion » du protocole (C2A LOT-03 Part B). Persiste
 // l'approbation praticien (contrat ProtocolDiffusionApproval), distincte de la
@@ -63,6 +64,9 @@ type PostResponse =
       approvedAt: string;
       /** Drapeau ouvert seulement : le nombre de fiches remises par ce clic. */
       fichesRemises?: number;
+      /** Espace de lecture ouvert et fiche remise seulement : le sort de
+       * l'e-mail neutre ([[D-251]] §9). Absent quand il n'était pas dû. */
+      annonceFiches?: AnnonceFiches;
     }
   | { ok: false; reason: string; error: string };
 
@@ -363,6 +367,10 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           { status: 409 },
         );
       }
+      // L'E-MAIL NEUTRE, APRÈS LE COMMIT ([[D-251]] §9, lot 11) : un par clic
+      // qui a remis au moins une fiche, espace de lecture ouvert. Il ne lève
+      // jamais — les fiches sont remises, l'e-mail n'y change rien.
+      const annonceFiches = annonceDue(issue.fichesRemises) ? await annoncerDocumentRemis(idPatient) : undefined;
       return NextResponse.json({
         ok: true,
         unchanged: issue.unchanged,
@@ -370,6 +378,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         protocolDraftInputHash,
         approvedAt,
         fichesRemises: issue.fichesRemises,
+        ...(annonceFiches ? { annonceFiches } : {}),
       });
     }
 
