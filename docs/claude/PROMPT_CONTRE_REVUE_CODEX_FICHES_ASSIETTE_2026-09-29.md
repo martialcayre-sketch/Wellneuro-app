@@ -45,8 +45,13 @@ serait plus propre si », une gravité sans scénario.
 - **Lecture seule.** Aucune PR, aucun commit, aucun push, aucune migration.
   Commandes admises : `grep`, `sed`, `find`, `git log`, `git show`, et, si tu
   les annonces, `npm run check` et `npx vitest run <fichier>` depuis `web/`.
-  Pour éprouver un banc, tu peux muter un fichier **dans ta copie de travail**,
-  jouer le banc, puis **restaurer** — dis-le, et donne la sortie.
+  **Seule exception, pour éprouver un banc** : une mutation, et uniquement
+  dans un **worktree jetable** (`git worktree add --detach <dossier> <commit>`),
+  **propre à sa création** (`git status --porcelain` vide), jamais dans la
+  copie où tu as été lancé. Tu y mutes, joues le banc, puis supprimes le
+  worktree (`git worktree remove --force <dossier>`) — dis-le, et donne la
+  sortie. Si tu ne peux pas créer ce worktree propre, **ne mute pas** : le
+  banc reste `NON VÉRIFIABLE`, avec le motif.
 - **Aucun accès à la production** : ni `scalingo`, ni base, ni URL de
   production.
 - **Aucune identité patient réelle** dans ta sortie. Fixtures seules : Sophie
@@ -78,7 +83,8 @@ depuis ; les commits suivants sont de la documentation).
 | Doctrine | `docs/DECISIONS.md` (`D-251` et ses amendements), `docs/FEATURE_FLAGS.md`, `docs/DOSSIER_RGPD.md` |
 
 Hors sujet : le moteur clinique, le contenu clinique des fiches, `release-db`,
-la CI, `archive/`.
+la CI, `archive/` — **sauf pour A1**, qui porte sur tout le dépôt, `archive/`
+comprise.
 
 **Deux drapeaux**, tous deux ouverts en production : `WN_FICHES_ASSIETTE`
 (émission : aperçu et remise au clic) et `WN_FICHES_ASSIETTE_LECTURE` (lecture :
@@ -106,7 +112,8 @@ en bout) ou **`PLAUSIBLE`** (nomme le maillon supposé). Une commande annoncée
 est une commande exécutée, sortie à l'appui ; sinon `NON VÉRIFIABLE`.
 
 **Pour les bancs** : ne dis pas « le test couvre X ». Donne **la mutation** qui
-devrait le faire rougir, joue-la, et dis s'il rougit.
+devrait le faire rougir, joue-la dans le worktree jetable du §1, et dis s'il
+rougit.
 
 ---
 
@@ -115,7 +122,7 @@ devrait le faire rougir, joue-la, et dis s'il rougit.
 ### A — Rien d'une fiche ne quitte la base par un autre chemin que la page du patient
 
 - **A1.** Aucun texte de Fiche MY ni brouillon IA n'est présent dans le dépôt :
-  code, fixtures, bancs, docs, historique Git. Les bancs n'emploient que du
+  code, fixtures, bancs, docs, `archive/`, historique Git. Les bancs n'emploient que du
   texte synthétique.
 - **A2.** Aucun journal applicatif du chantier (`console.*`, `logger.*`) ne
   porte un texte de fiche, un libellé d'assiette rattaché à un patient, ou le
