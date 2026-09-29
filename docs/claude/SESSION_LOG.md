@@ -8285,3 +8285,12 @@ pour le drapeau d'émission ; les trois restent à tenir.
 
 **Prochaine action.** Clic de diffusion sur PAT032, constat de la remise et
 de l'e-mail, puis constat de l'espace au portail.
+
+## 2026-09-29 — Fiches d'assiette : l'énoncé de la contre-revue Codex
+
+**Fait.** 19 affirmations à réfuter, versées avant la contre-revue (PR #1251).
+Revue Copilot : trois fils corrigés — clôture ajoutée, mutation bornée à un
+worktree jetable et propre, `archive/` incluse pour A1 (0 occurrence).
+
+**Prochaine action.** Merge après le déploiement de `87d6cc41` ; Codex lancé
+par le responsable ; clic de diffusion sur PAT032.
