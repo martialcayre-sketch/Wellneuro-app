@@ -25,8 +25,8 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 
 // Le service des fiches a ses propres bancs (`servicePatient.test.ts`) : ici, on
 // prouve que la route EMPRUNTE sa règle, sans la rejouer.
-const { fichesRemisesAuPatient } = vi.hoisted(() => ({ fichesRemisesAuPatient: vi.fn() }));
-vi.mock('@/lib/fiches-assiette/servicePatient', () => ({ fichesRemisesAuPatient }));
+const { fichesALire } = vi.hoisted(() => ({ fichesALire: vi.fn() }));
+vi.mock('@/lib/fiches-assiette/servicePatient', () => ({ fichesALire }));
 
 import { signPatientSession } from '@/lib/patient-session';
 import { GET, POST } from './route';
@@ -261,40 +261,34 @@ describe('le GET n’écrit RIEN', () => {
 
 describe('les fiches d’assiette remises (D-251, lot 10)', () => {
   const REMISE_LE = '2026-09-28T10:00:00.000Z';
-  const fiche = (idRemise: string, etat: 'servie' | 'retiree' | 'indisponible', libelle = 'Assiette synthétique') => ({
-    idRemise, libelle, numero: 1, remiseLe: REMISE_LE, etat, protocole: 'actuel',
-    contenu: etat === 'servie' ? { titre: 'TEXTE-SENTINELLE', precautions: [], sections: [] } : null,
-  });
 
+  // Le service ne rend QUE les fiches servies (`fichesALire`, son banc) : une
+  // fiche retirée (`rem_retiree`) ou indisponible (`rem_indispo`) n'y figure
+  // pas, et c'est ce que les refus du POST ci-dessous éprouvent.
   beforeEach(() => {
-    fichesRemisesAuPatient.mockResolvedValue([
-      fiche('rem_servie', 'servie', 'Assiette A'),
-      fiche('rem_retiree', 'retiree'),
-      fiche('rem_indispo', 'indisponible'),
-    ]);
+    fichesALire.mockResolvedValue([{ idRemise: 'rem_servie', libelle: 'Assiette A', remiseLe: REMISE_LE }]);
   });
 
   it('drapeau de lecture FERMÉ : aucune fiche annoncée, et le service n’est même pas appelé', async () => {
     const corps = await corpsDe(await GET(requete(cookieProprio())));
     expect((corps.lectures as { espece: string }[]).map(l => l.espece)).not.toContain('fiche_assiette');
-    expect(fichesRemisesAuPatient).not.toHaveBeenCalled();
+    expect(fichesALire).not.toHaveBeenCalled();
   });
 
-  it('drapeau ouvert : seule une fiche SERVIE est une lecture, avec son libellé et sans aucun texte', async () => {
+  it('drapeau ouvert : chaque fiche à lire est une lecture, avec son libellé et rien d’autre', async () => {
     process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
     const reponse = await GET(requete(cookieProprio()));
     const lectures = (await corpsDe(reponse)).lectures as Record<string, unknown>[];
     expect(lectures.filter(l => l.espece === 'fiche_assiette')).toEqual([
       { espece: 'fiche_assiette', idObjet: 'rem_servie', remiseLe: REMISE_LE, libelle: 'Assiette A' },
     ]);
-    expect(fichesRemisesAuPatient).toHaveBeenCalledWith(PATIENT.idPatient);
-    expect(JSON.stringify(lectures)).not.toContain('TEXTE-SENTINELLE');
+    expect(fichesALire).toHaveBeenCalledWith(PATIENT.idPatient);
   });
 
   it('une panne des fiches tait LEURS lectures, pas celles du bilan et de la synthèse', async () => {
     process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
     const avertissement = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    fichesRemisesAuPatient.mockRejectedValue(new Error('FICHES-SENTINELLE'));
+    fichesALire.mockRejectedValue(new Error('FICHES-SENTINELLE'));
     const reponse = await GET(requete(cookieProprio()));
     expect(reponse.status).toBe(200);
     expect(((await corpsDe(reponse)).lectures as { espece: string }[]).map(l => l.espece)).toEqual(['bilan', 'synthese']);
@@ -326,7 +320,7 @@ describe('les fiches d’assiette remises (D-251, lot 10)', () => {
 
   it('POST : une panne des fiches est une panne — 500, rien d’écrit, jamais un faux succès', async () => {
     process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
-    fichesRemisesAuPatient.mockRejectedValue(new Error('FICHES-SENTINELLE'));
+    fichesALire.mockRejectedValue(new Error('FICHES-SENTINELLE'));
     const reponse = await POST(requete(cookieProprio(), { espece: 'fiche_assiette', idObjet: 'rem_servie' }));
     expect(reponse.status).toBe(500);
     expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
@@ -336,7 +330,7 @@ describe('les fiches d’assiette remises (D-251, lot 10)', () => {
     const reponse = await POST(requete(cookieProprio(), { espece: 'fiche_assiette', idObjet: 'rem_servie' }));
     expect(reponse.status).toBe(404);
     expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
-    expect(fichesRemisesAuPatient).not.toHaveBeenCalled();
+    expect(fichesALire).not.toHaveBeenCalled();
   });
 
   it('POST : un identifiant de fiche posté en « bilan » est refusé', async () => {

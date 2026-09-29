@@ -233,3 +233,38 @@ export async function sendObjectifProposeEmail(
     },
   });
 }
+
+/**
+ * « Un document de votre praticien vous attend » ([[D-251]] §9, lot 11).
+ *
+ * LE TEXTE NE NOMME RIEN : ni l'assiette, ni la fiche, et aucune variable ne
+ * pourrait les porter.
+ *
+ * ELLE NE JOURNALISE PAS ELLE-MÊME, et c'est voulu : sa trace est RÉSERVÉE dans
+ * la transaction du clic, puis mise à jour par l'appelant
+ * (`fiches-assiette/annonce.ts`). `envoyerAccesTrace` sans `idPatient` garde le
+ * triplet — `Non_envoye` rendu sans SMTP, échec RELANCÉ — sans écrire une
+ * seconde ligne.
+ */
+export async function sendDocumentRemisEmail(
+  patientEmail: string,
+  prenom: string,
+): Promise<StatutEnvoiAcces> {
+  const smtpUrl = process.env.SMTP_URL;
+  const connexion = buildGoogleConnexionUrl();
+  return envoyerAccesTrace({
+    type: TYPES_CORRESPONDANCE_PATIENT.documentRemis,
+    objet: 'Document remis dans l’espace patient',
+    envoyer: async () => {
+      if (!smtpUrl) return;
+      const transport = creerTransportSmtp(smtpUrl);
+      const gabarit = rendreGabarit(getGabarit('document_remis'), { prenom, connexion });
+      await transport.sendMail({
+        from: '"Wellneuro" <noreply@wellneuro.fr>',
+        to: patientEmail,
+        subject: gabarit.sujet,
+        text: gabarit.corps,
+      });
+    },
+  });
+}

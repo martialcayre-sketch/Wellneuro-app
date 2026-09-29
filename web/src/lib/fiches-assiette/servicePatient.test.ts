@@ -21,7 +21,7 @@ vi.mock('@/lib/protocol/fromPrisma', () => ({ reconstructProtocolDraft }));
 vi.mock('./controle', () => ({ controlerVersion }));
 
 import { getRecommendedPlate } from '@/lib/food-compass/plates';
-import { aDesFichesRemises, fichesRemisesAuPatient } from './servicePatient';
+import { aDesFichesRemises, fichesALire, fichesRemisesAuPatient } from './servicePatient';
 import type { ContenuFicheAssiette } from './types';
 
 const H = (c: string) => c.repeat(64);
@@ -297,6 +297,37 @@ describe('fichesRemisesAuPatient — la place de l’assiette dans le protocole 
     const [fiche] = await fichesRemisesAuPatient('PAT_TEST');
     expect(fiche).toMatchObject({ protocole: 'inconnu', etat: 'servie' });
     avertissement.mockRestore();
+  });
+});
+
+describe('fichesALire — la route des lectures (revue du lot 10, P2-2)', () => {
+  it('les SEULES fiches servies, dans la forme du fil — sans texte, et sans résoudre le protocole', async () => {
+    prisma.ficheAssietteRemise.findMany.mockResolvedValue([
+      remise({ id: 'rem_servie', ordre: 3, idVersion: 'v1', sourceId: 'WN-SRC-0297', dernier: acte('validee', 1, H('a')) }),
+      remise({ id: 'rem_retiree', ordre: 2, idVersion: 'v2', sourceId: 'WN-SRC-0300', plateCode: AUTRE, dernier: acte('retiree', 2, H('a')) }),
+    ]);
+    const fiches = await fichesALire('PAT_TEST');
+    expect(fiches).toEqual([
+      { idRemise: 'rem_servie', libelle: getRecommendedPlate(ASSIETTE)?.label, remiseLe: '2026-09-28T03:00:00.000Z' },
+    ]);
+    expect(resolveProtocoleDiffuse).not.toHaveBeenCalled();
+    expect(prisma.protocolDraft.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('une fiche qui ne passe plus les contrôles n’est pas à lire', async () => {
+    const avertissement = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    prisma.ficheAssietteRemise.findMany.mockResolvedValue([
+      remise({ id: 'rem_1', ordre: 1, idVersion: 'v1', dernier: acte('validee', 1, H('a')) }),
+    ]);
+    controlerVersion.mockRejectedValue(new Error('claims'));
+    expect(await fichesALire('PAT_TEST')).toEqual([]);
+    avertissement.mockRestore();
+  });
+
+  it('aucune remise : rien, et rien n’est chargé', async () => {
+    prisma.ficheAssietteRemise.findMany.mockResolvedValue([]);
+    expect(await fichesALire('PAT_TEST')).toEqual([]);
+    expect(prisma.ficheAssietteVersion.findMany).not.toHaveBeenCalled();
   });
 });
 

@@ -13,9 +13,11 @@ export function envoiFichesOuvert(): boolean {
   return process.env.WN_FICHES_ASSIETTE === 'true';
 }
 
-// `WN_FICHES_ASSIETTE_LECTURE` — LE DRAPEAU GARDE LA LECTURE PATIENT (lots 9-10).
+// `WN_FICHES_ASSIETTE_LECTURE` — LE DRAPEAU GARDE LA LECTURE PATIENT (lots 9-11).
 // Fermé, la route du portail répond 503 avant toute lecture de session ou de
-// base : aucune fiche remise n'atteint un patient. Il porte les conditions du
+// base : aucune fiche remise n'atteint un patient. Il garde aussi l'e-mail
+// neutre (lot 11, `annonce.ts`) : annoncer un document derrière une page
+// fermée serait promettre une porte close. Il porte les conditions du
 // §10 de [[D-251]] : les sept fiches validées, l'espace de lecture constaté, le
 // document TRUST sur l'usage de l'IA publié, une contre-revue adverse.
 //

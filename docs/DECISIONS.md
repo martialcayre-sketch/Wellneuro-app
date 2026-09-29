@@ -119,6 +119,44 @@ fournisseur, son transfert hors UE et l'information des patients.
 
 ### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
+> **AMENDEMENT DU 2026-09-29 (SUITE) — LOT 11, L'E-MAIL NEUTRE, ET QUATRE
+> ARBITRAGES DU RESPONSABLE.** Rendus en session le 2026-09-29.
+>
+> 1. **L'e-mail part seulement espace de lecture ouvert**
+>    (`WN_FICHES_ASSIETTE_LECTURE`). Annoncer un document derrière une page
+>    fermée serait promettre une porte close. Drapeau fermé, les fiches partent
+>    sous le drapeau d'émission, l'e-mail non.
+> 2. **Un e-mail par clic « Valider pour diffusion »**, quel que soit le nombre
+>    de fiches remises, et seulement si ce clic en a remis au moins une. Sa
+>    trace naît `Non_envoye` DANS la transaction des remises ; l'e-mail part
+>    APRÈS le commit, et la trace est mise à jour. Un arrêt entre les deux
+>    laisse donc « non envoyé » sur la fiche du dossier, jamais rien. Aucune
+>    relance automatique. Un échec ne défait rien. Un portail fermé (compte
+>    désactivé, accès révoqué) ne reçoit rien : la trace le dit. Le praticien
+>    le sait avant le clic, et lit après le sort de l'e-mail.
+> 3. **Le gabarit `document_remis@1` est né validé** : le responsable a choisi
+>    le texte exact, puis validé deux corrections de sa phrase de chemin —
+>    nommer le bouton vu après connexion (« Accéder à mon parcours »), puis ne
+>    pas nommer le titre du fil, qui devient « Pour reprendre » en reprise.
+>    Objet et phrase centrale sont ceux du §9 et de l'amendement du
+>    2026-09-28, mot pour mot.
+> 4. **Le document TRUST sur l'usage de l'IA reste dans le dépôt**, sans lien
+>    depuis la page d'une fiche. La condition du §10 (« document publié ») se
+>    lit donc : écrit, validé, versé au dépôt.
+> 5. **La contre-revue adverse est confiée à Codex**, lancée par le
+>    responsable ; Claude en prépare les affirmations à réfuter.
+> 6. **Priorité : finir les fiches** (lot 11, document TRUST, contre-revue),
+>    puis la phase « Actions » du cockpit, qui aura sa propre décision.
+>
+> **Constat du 2026-09-29 (parade à [[D-112]]).** Première approbation de
+> diffusion de la production, sur un dossier de test, drapeau d'émission
+> ouvert. Aucune fiche remise, et c'est le comportement attendu : la seule
+> action du protocole porte une assiette dont la fiche n'est pas encore
+> validée. Constat par conteneur, en lecture seule. **Le drapeau d'émission
+> est ainsi constaté par le comportement** : la section des fiches paraît dans
+> la sous-vue Diffusion, avec « Ne partira pas » et son motif (capture du
+> responsable).
+>
 > **AMENDEMENT DU 2026-09-29 — LOT 10, L'ESPACE DE LECTURE.** Choix de mise en
 > œuvre, pris en session et révisables par le responsable. Tout est sous
 > `WN_FICHES_ASSIETTE_LECTURE`, fermé.

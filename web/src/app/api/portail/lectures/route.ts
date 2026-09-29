@@ -6,7 +6,7 @@ import { whereEnvoiVisible } from '@/lib/documents/bilanPatient';
 import { syntheseServieAuPatient } from '@/lib/praticien/syntheseComprehension';
 import { isComprehensionEnabled } from '@/lib/patient/featureFlag';
 import { lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
-import { fichesRemisesAuPatient } from '@/lib/fiches-assiette/servicePatient';
+import { fichesALire } from '@/lib/fiches-assiette/servicePatient';
 import { lecturesAttendues, type EspeceLecture, type LectureAttendue } from '@/lib/portail/lecturesAttendues';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -44,8 +44,9 @@ import {
  * ── LA RÈGLE DE VISIBILITÉ EST EMPRUNTÉE, JAMAIS RECOPIÉE ──────────────────
  *
  * `whereEnvoiVisible` pour le bilan, `syntheseServieAuPatient` pour la synthèse,
- * `fichesRemisesAuPatient` pour les fiches d'assiette — les mêmes fonctions que
- * les écrans eux-mêmes. Deux surfaces qui recopieraient la règle finiraient par
+ * `fichesALire` pour les fiches d'assiette — les mêmes fonctions que les écrans
+ * eux-mêmes (`fichesALire` partage son tronc avec `fichesRemisesAuPatient`, et
+ * s'arrête avant le protocole servi, dont la lecture n'a pas besoin). Deux surfaces qui recopieraient la règle finiraient par
  * diverger, ce qui est déjà arrivé sur ce dépôt. Conséquence directe : chaque
  * écran ne servant QUE le document courant, le fil porte au plus un bilan, une
  * synthèse, et une lecture par fiche d'assiette servie. Le plafond de deux
@@ -159,10 +160,8 @@ async function documentsCourants(idPatient: string) {
  */
 async function fichesServies(idPatient: string) {
   if (!lectureFichesOuverte()) return null;
-  const fiches = await fichesRemisesAuPatient(idPatient);
-  return fiches
-    .filter(fiche => fiche.etat === 'servie')
-    .map(fiche => ({ id: fiche.idRemise, remiseLe: new Date(fiche.remiseLe), libelle: fiche.libelle }));
+  const fiches = await fichesALire(idPatient);
+  return fiches.map(fiche => ({ id: fiche.idRemise, remiseLe: new Date(fiche.remiseLe), libelle: fiche.libelle }));
 }
 
 export async function GET(req: Request): Promise<NextResponse<PortailLecturesResponse>> {

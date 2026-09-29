@@ -2,6 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ProtocolDiffusionPanel } from './ProtocolDiffusionPanel';
+import { TEXTE_ANNONCE, TEXTE_ANNONCE_A_VENIR } from '@/lib/fiches-assiette/apercuRemise';
 
 // Le panneau n'avait aucun banc de composant. Il en reçoit un avec le constat
 // « servie au patient » ([[D-191]]) : une garde que personne ne voit se mesure à
@@ -260,5 +261,70 @@ describe('ProtocolDiffusionPanel — les fiches d’assiette', () => {
   it('drapeau fermé (`fiches` nul) : la section n’existe pas', () => {
     render(<ProtocolDiffusionPanel canApprove approved={false} stale={false} approvedAt={null} />);
     expect(screen.queryByTestId('apercu-fiches-assiette')).toBeNull();
+  });
+});
+
+describe('ProtocolDiffusionPanel — l’e-mail neutre ([[D-251]] §9, lot 11)', () => {
+  const part = {
+    plateCode: 'ASSIETTE_A',
+    libelle: 'Assiette A',
+    sourceId: 'WN-SRC-0001',
+    actionId: 'a1',
+    statut: 'part' as const,
+    idVersion: 'v2',
+    numero: 2,
+    contenuSha256: 'a'.repeat(64),
+    motif: null,
+    detail: 'Partira : version 2.',
+  };
+  const nePartPas = {
+    ...part,
+    statut: 'ne_part_pas' as const,
+    idVersion: null,
+    motif: 'aucune_version_validee' as const,
+    detail: 'Aucune version validée.',
+  };
+
+  it('AVANT le clic : dit qu’un e-mail neutre suivra, seulement si une fiche part et que l’e-mail est dû', () => {
+    const { rerender } = render(
+      <ProtocolDiffusionPanel canApprove approved={false} stale={false} approvedAt={null} annonceParEmail fiches={{ jeton: 'j', blocage: null, lignes: [part] }} />,
+    );
+    expect(screen.getByText(TEXTE_ANNONCE_A_VENIR)).toBeTruthy();
+    rerender(
+      <ProtocolDiffusionPanel canApprove approved={false} stale={false} approvedAt={null} annonceParEmail fiches={{ jeton: 'j', blocage: null, lignes: [nePartPas] }} />,
+    );
+    expect(screen.queryByText(TEXTE_ANNONCE_A_VENIR)).toBeNull();
+    rerender(
+      <ProtocolDiffusionPanel canApprove approved={false} stale={false} approvedAt={null} annonceParEmail={false} fiches={{ jeton: 'j', blocage: null, lignes: [part] }} />,
+    );
+    expect(screen.queryByText(TEXTE_ANNONCE_A_VENIR)).toBeNull();
+  });
+
+  it('avec des fiches, le panneau ne promet plus « aucun envoi automatique »', () => {
+    const { rerender } = render(
+      <ProtocolDiffusionPanel canApprove approved={false} stale={false} approvedAt={null} fiches={{ jeton: 'j', blocage: null, lignes: [part] }} />,
+    );
+    expect(screen.queryByText(/aucun envoi automatique/)).toBeNull();
+    rerender(<ProtocolDiffusionPanel canApprove approved={false} stale={false} approvedAt={null} />);
+    expect(screen.getByText(/aucun envoi automatique/)).toBeTruthy();
+  });
+
+  it('APRÈS le clic : un e-mail parti se dit en statut', () => {
+    render(<ProtocolDiffusionPanel canApprove approved stale={false} approvedAt={APPROUVE_LE} annonce="envoye" />);
+    expect(screen.getByRole('status').textContent).toBe(TEXTE_ANNONCE.envoye.texte);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it.each(['echoue', 'non_configure', 'portail_ferme'] as const)(
+    'APRÈS le clic : « %s » est une ALERTE — un échec ne ressemble pas à un succès',
+    annonce => {
+      render(<ProtocolDiffusionPanel canApprove approved stale={false} approvedAt={APPROUVE_LE} annonce={annonce} />);
+      expect(screen.getByRole('alert').textContent).toBe(TEXTE_ANNONCE[annonce].texte);
+    },
+  );
+
+  it('aucun e-mail dû : rien n’est dit', () => {
+    render(<ProtocolDiffusionPanel canApprove approved stale={false} approvedAt={APPROUVE_LE} annonce={null} />);
+    expect(screen.queryByText(/e-mail/)).toBeNull();
   });
 });

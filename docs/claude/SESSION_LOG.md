@@ -8257,3 +8257,18 @@ vert. Revue `wn-reviewer` GO : deux P2 corrigés (trace sous le texte affiché,
 message neutre), un routé au lot 11 (contrôles rejoués à chaque accueil).
 
 **Prochaine action.** PR, merge ; puis le lot 11 (e-mail neutre).
+
+## 2026-09-29 — Fiches d'assiette : l'e-mail neutre (D-251, lot 11)
+
+**Livré, sous `WN_FICHES_ASSIETTE_LECTURE` fermé.** « Un document de votre
+praticien vous attend » : un par clic qui remet une fiche, après le commit,
+espace de lecture ouvert seulement. Gabarit `document_remis@1`, validé par le
+responsable. La route des lectures ne résout plus le protocole servi.
+
+**Décidé.** Fiches d'abord, puis phase Actions ; doc TRUST IA dans le dépôt
+seulement ; contre-revue par Codex (responsable).
+
+**Constaté.** Première approbation de diffusion en production (PAT032), sans
+remise : la fiche de son assiette n'est pas validée. Comportement attendu.
+
+**Prochaine action.** PR, merge ; puis le document TRUST sur l'IA.

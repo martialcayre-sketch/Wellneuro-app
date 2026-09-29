@@ -216,3 +216,33 @@ export function empreinteDeLApercu(apercu: ApercuFichesSansJeton, protocolDraftI
 export function fichesARemettre(apercu: ApercuFichesSansJeton | null | undefined): boolean {
   return apercu?.lignes.some(l => l.statut === 'part') ?? false;
 }
+
+// ── L'E-MAIL NEUTRE, DIT AU PRATICIEN ([[D-251]] §9, lot 11) ────────────────
+// Le clic qui remet une fiche avertit le patient par un e-mail neutre, espace
+// de lecture ouvert. Le praticien le sait AVANT de cliquer, et apprend APRÈS
+// si l'e-mail est parti : un échec ne doit pas ressembler à un succès (revue
+// Copilot de #1249).
+
+/** Le sort de l'e-mail d'un clic, tel que la route le rend. */
+export type AnnonceFiches = 'envoye' | 'echoue' | 'non_configure' | 'portail_ferme';
+
+/** Ce que l'écran annonce avant le clic, quand un e-mail suivrait. */
+export const TEXTE_ANNONCE_A_VENIR =
+  'Si une fiche part, votre patient reçoit un e-mail neutre, sans nom d’assiette : « Un document de votre praticien vous attend ».';
+
+/** Ce que l'écran dit après le clic. Seul `envoye` n'est pas une alerte. */
+export const TEXTE_ANNONCE: Record<AnnonceFiches, { texte: string; alerte: boolean }> = {
+  envoye: { texte: 'Fiches remises : votre patient a été averti par e-mail.', alerte: false },
+  echoue: {
+    texte: 'Fiches remises, mais l’e-mail n’est pas parti. L’échec est tracé dans la correspondance du dossier.',
+    alerte: true,
+  },
+  non_configure: {
+    texte: 'Fiches remises, mais l’envoi d’e-mails n’est pas configuré : votre patient n’a pas été averti.',
+    alerte: true,
+  },
+  portail_ferme: {
+    texte: 'Fiches remises, mais l’espace de ce patient est fermé : aucun e-mail n’est parti.',
+    alerte: true,
+  },
+};

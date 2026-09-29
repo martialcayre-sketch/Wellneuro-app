@@ -2,9 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   getServerSession, prisma, rejouerCarteDecision, reconstructProtocolDraft, vuePatientOuRefus,
-  apercuFichesDuProtocole, remettreFiches,
+  apercuFichesDuProtocole, remettreFiches, annoncerDocumentRemis,
 } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
+  // L'E-MAIL NEUTRE ([[D-251]] §9, lot 11) : seul l'envoi est simulé. La règle
+  // « est-il dû ? » (`annonceDue`) est la vraie, lue sur le drapeau.
+  annoncerDocumentRemis: vi.fn(),
   // LES FICHES D'ASSIETTE ([[D-251]] §7) : ce banc juge le CÂBLAGE de la
   // route — drapeau, jeton, transaction, approbation reprise ou créée. Le calcul
   // de l'aperçu et l'écriture ont leurs propres bancs (`remise.test.ts`,
@@ -22,6 +25,7 @@ const {
     patient: { findUnique: vi.fn() },
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn(), create: vi.fn() },
+    correspondancePatient: { create: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
@@ -36,6 +40,10 @@ vi.mock('@/lib/clinical-engine/rejeuCarteDecision', () => ({ rejouerCarteDecisio
 vi.mock('@/lib/protocol/fromPrisma', () => ({ reconstructProtocolDraft }));
 vi.mock('@/lib/protocol/servirAuPatient', () => ({ vuePatientOuRefus }));
 vi.mock('@/lib/fiches-assiette/remise', () => ({ apercuFichesDuProtocole, remettreFiches }));
+vi.mock('@/lib/fiches-assiette/annonce', async orig => ({
+  ...(await orig<typeof import('@/lib/fiches-assiette/annonce')>()),
+  annoncerDocumentRemis,
+}));
 
 import { deriveProtocolDraftId, deriveVersionId } from '@/lib/protocol/versioning';
 import { GET, POST } from './route';
@@ -527,6 +535,7 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
 
   afterEach(() => {
     delete process.env.WN_FICHES_ASSIETTE;
+    delete process.env.WN_FICHES_ASSIETTE_LECTURE;
   });
 
   it('drapeau FERMÉ : ni aperçu, ni transaction, ni remise — la route d’avant', async () => {
@@ -542,6 +551,7 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
     expect(prisma.protocolDraft.findUnique.mock.calls[0][0].select.payload).toBe(false);
     expect(prisma.$queryRaw).not.toHaveBeenCalled();
     expect(prisma.$executeRaw).not.toHaveBeenCalled();
+    expect(annoncerDocumentRemis).not.toHaveBeenCalled();
 
     prisma.protocolDraft.findMany.mockResolvedValue([
       { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'E', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: {} },
@@ -625,9 +635,96 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
 
   it('une remise qui échoue emporte tout le clic (500) — la transaction est annulée', async () => {
     remettreFiches.mockRejectedValue(new Error('remise des fiches : 0 ligne(s) écrite(s) pour 1 attendue(s).'));
+    process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
     const res = await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
     expect(res.status).toBe(500);
     expect(((await res.json()) as { reason: string }).reason).toBe('exception');
+    // Rien de remis, rien d'annoncé.
+    expect(annoncerDocumentRemis).not.toHaveBeenCalled();
+  });
+
+  describe('l’e-mail neutre (lot 11)', () => {
+    beforeEach(() => {
+      process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
+      annoncerDocumentRemis.mockResolvedValue('envoye');
+      prisma.correspondancePatient.create.mockResolvedValue({ id: 'trace_1' });
+    });
+
+    afterEach(() => {
+      delete process.env.WN_FICHES_ASSIETTE_LECTURE;
+    });
+
+    it('UN par clic qui remet : trace réservée DANS la transaction, envoi APRÈS le commit', async () => {
+      const ordre: string[] = [];
+      prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) => {
+        const issue = await fn(prisma);
+        ordre.push('commit');
+        return issue;
+      });
+      prisma.correspondancePatient.create.mockImplementation(async () => {
+        ordre.push('trace réservée');
+        return { id: 'trace_1' };
+      });
+      annoncerDocumentRemis.mockImplementation(async () => {
+        ordre.push('annonce');
+        return 'envoye';
+      });
+      const res = await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
+      const json = (await res.json()) as { fichesRemises: number; annonceFiches: string };
+      expect(res.status).toBe(200);
+      expect(json).toMatchObject({ fichesRemises: 2, annonceFiches: 'envoye' });
+      expect(annoncerDocumentRemis).toHaveBeenCalledTimes(1);
+      expect(annoncerDocumentRemis).toHaveBeenCalledWith('PAT_1', 'trace_1');
+      expect(ordre).toEqual(['trace réservée', 'commit', 'annonce']);
+      expect(prisma.correspondancePatient.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ idPatient: 'PAT_1', type: 'document_remis', statut: 'Non_envoye' }),
+      }));
+    });
+
+    it('un clic qui ne remet RIEN (double clic, rien de neuf) n’annonce rien, ni ne trace', async () => {
+      remettreFiches.mockResolvedValue(0);
+      const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
+      expect(annoncerDocumentRemis).not.toHaveBeenCalled();
+      expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
+      expect(json).not.toHaveProperty('annonceFiches');
+    });
+
+    it('espace de lecture FERMÉ : les fiches partent, l’e-mail non, et rien n’est tracé', async () => {
+      delete process.env.WN_FICHES_ASSIETTE_LECTURE;
+      const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
+      expect(json).toMatchObject({ fichesRemises: 2 });
+      expect(json).not.toHaveProperty('annonceFiches');
+      expect(annoncerDocumentRemis).not.toHaveBeenCalled();
+      expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
+    });
+
+    it('GET : l’écran apprend qu’un e-mail suivrait — seulement aperçu servi ET lecture ouverte', async () => {
+      prisma.protocolDraft.findMany.mockResolvedValue([
+        { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'E', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: {} },
+      ]);
+      const ouvert = (await (await GET(requeteGet())).json()) as { annonceParEmail: boolean };
+      expect(ouvert.annonceParEmail).toBe(true);
+      delete process.env.WN_FICHES_ASSIETTE_LECTURE;
+      const ferme = (await (await GET(requeteGet())).json()) as { annonceParEmail: boolean };
+      expect(ferme.annonceParEmail).toBe(false);
+      process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
+      delete process.env.WN_FICHES_ASSIETTE;
+      const sansFiches = (await (await GET(requeteGet())).json()) as { annonceParEmail: boolean };
+      expect(sansFiches.annonceParEmail).toBe(false);
+    });
+
+    it('un aperçu périmé n’annonce rien', async () => {
+      apercuFichesDuProtocole.mockResolvedValue({ ...apercuServi, jeton: 'J2' });
+      await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
+      expect(annoncerDocumentRemis).not.toHaveBeenCalled();
+    });
+
+    it('un envoi qui échoue ne défait pas le clic : 200, et l’échec est dit', async () => {
+      annoncerDocumentRemis.mockResolvedValue('echoue');
+      const res = await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({ ok: true, fichesRemises: 2, annonceFiches: 'echoue' });
+    });
   });
 
   it('les bloqueurs de la carte refusent AVANT toute transaction, drapeau ouvert comme fermé', async () => {

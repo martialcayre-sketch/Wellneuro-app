@@ -15,7 +15,7 @@ vi.mock('@/lib/correspondance/patient', async orig => ({
   journaliserCorrespondancePatient: journaliser,
 }));
 
-import { sendMagicLinkEmail, sendPortailLinkEmail } from './email';
+import { sendDocumentRemisEmail, sendMagicLinkEmail, sendPortailLinkEmail } from './email';
 
 describe('sendPortailLinkEmail', () => {
   const env = { ...process.env };
@@ -218,5 +218,52 @@ describe('sendPortailLinkEmail — le lien qui ouvre, quand il existe', () => {
     );
     const types = journaliser.mock.calls.map(c => (c[0] as { type: string }).type);
     expect(types).toEqual(['acces_portail', 'acces_portail']);
+  });
+});
+
+describe('sendDocumentRemisEmail — [[D-251]] §9, lot 11', () => {
+  const env = { ...process.env };
+
+  beforeEach(() => {
+    process.env.SMTP_URL = 'smtp://localhost:1025';
+    process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
+  });
+
+  afterEach(() => {
+    process.env = { ...env };
+    sendMail.mockClear();
+    journaliser.mockClear();
+  });
+
+  it('part avec le gabarit du registre : l’objet du §9 et la page d’accès, jamais un lien qui ouvre', async () => {
+    await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie')).resolves.toBe('Envoye');
+    expect(sendMail).toHaveBeenCalledOnce();
+    const envoi = sendMail.mock.calls[0][0];
+    expect(envoi.to).toBe('patient@example.com');
+    expect(envoi.subject).toBe('Un document de votre praticien vous attend');
+    expect(envoi.text).toContain('Bonjour Sophie,');
+    expect(envoi.text).toContain('https://app.wellneuro.fr/portail/connexion');
+    expect(envoi.text).not.toContain('/portail/lien/');
+    // Aucune pièce jointe, aucun HTML : la fiche ne voyage jamais par e-mail.
+    expect(envoi.html).toBeUndefined();
+    expect(envoi.attachments).toBeUndefined();
+  });
+
+  it('n’écrit AUCUNE trace elle-même : la sienne est réservée dans la transaction du clic', async () => {
+    await sendDocumentRemisEmail('patient@example.com', 'Sophie');
+    expect(journaliser).not.toHaveBeenCalled();
+  });
+
+  it('sans messagerie : « Non_envoye », rien tenté', async () => {
+    delete process.env.SMTP_URL;
+    await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie')).resolves.toBe('Non_envoye');
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(journaliser).not.toHaveBeenCalled();
+  });
+
+  it('RELANCE sur échec SMTP — l’appelant trace l’échec', async () => {
+    sendMail.mockRejectedValueOnce(new Error('smtp down'));
+    await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie')).rejects.toThrow('smtp down');
+    expect(journaliser).not.toHaveBeenCalled();
   });
 });

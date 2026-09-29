@@ -76,8 +76,12 @@ export async function aDesFichesRemises(idPatient: string): Promise<boolean> {
   return remise !== null;
 }
 
-/** Les fiches remises au patient, dans l'état où elles se servent. */
-export async function fichesRemisesAuPatient(idPatient: string): Promise<FicheRemiseServie[]> {
+/**
+ * Les remises EN COURS, contrôles rejoués : l'état de chaque fiche et, servie,
+ * son texte. Le tronc commun des deux lectures ci-dessous — seule la place dans
+ * le protocole les distingue.
+ */
+async function remisesEnCoursControlees(idPatient: string) {
   const remises = await prisma.ficheAssietteRemise.findMany({
     where: { idPatient },
     orderBy: { ordre: 'desc' },
@@ -124,19 +128,49 @@ export async function fichesRemisesAuPatient(idPatient: string): Promise<FicheRe
     })),
   );
 
-  const assiettes = await assiettesDuProtocoleServi(idPatient);
   return enCours.map(remise => {
     const avant = avantControle.get(remise.id);
     const contenu = avant === 'a_controler' ? (contenus.get(remise.version.id) ?? null) : null;
     const etat: EtatFicheServie = avant === 'retiree' ? 'retiree' : contenu !== null ? 'servie' : 'indisponible';
     return {
       idRemise: remise.id,
+      plateCode: remise.version.plateCode,
       libelle: getRecommendedPlate(remise.version.plateCode)?.label ?? remise.version.plateCode,
       numero: remise.version.numero,
       remiseLe: remise.remiseLe.toISOString(),
       etat,
-      protocole: placeDansLeProtocole(remise.version.plateCode, assiettes),
       contenu,
     };
   });
+}
+
+/** Les fiches remises au patient, dans l'état où elles se servent. */
+export async function fichesRemisesAuPatient(idPatient: string): Promise<FicheRemiseServie[]> {
+  const fiches = await remisesEnCoursControlees(idPatient);
+  if (fiches.length === 0) return [];
+  const assiettes = await assiettesDuProtocoleServi(idPatient);
+  return fiches.map(({ plateCode, ...fiche }) => ({
+    ...fiche,
+    protocole: placeDansLeProtocole(plateCode, assiettes),
+  }));
+}
+
+/** Une fiche à lire : ce que le fil du jour et l'accusé de lecture en savent. */
+export type FicheALire = { idRemise: string; libelle: string; remiseLe: string };
+
+/**
+ * Les SEULES fiches servies — celles dont le texte part —, pour la route des
+ * lectures (lot 10). Même règle que l'écran, empruntée et non recopiée : la
+ * remise en cours, contrôles rejoués (revue du lot 10, P2-2).
+ *
+ * SANS LE PROTOCOLE SERVI : la route n'a besoin que de l'état. La mention « ne
+ * fait plus partie de votre protocole actuel » ne change pas ce qui est à lire,
+ * et la résoudre coûtait, à chaque ouverture de l'accueil, la tête de la chaîne
+ * d'approbations, le brouillon et sa reconstruction.
+ */
+export async function fichesALire(idPatient: string): Promise<FicheALire[]> {
+  const fiches = await remisesEnCoursControlees(idPatient);
+  return fiches
+    .filter(fiche => fiche.etat === 'servie')
+    .map(({ idRemise, libelle, remiseLe }) => ({ idRemise, libelle, remiseLe }));
 }

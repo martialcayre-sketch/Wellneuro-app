@@ -54,3 +54,24 @@ describe('Cockpit — le jeton de l’aperçu des fiches au clic « Valider pour
     expect(SOURCE).toMatch(/fiches=\{apercuFiches\}/);
   });
 });
+
+// L'E-MAIL NEUTRE ([[D-251]] §9, lot 11 ; revue Copilot de #1249) : le praticien
+// le sait AVANT le clic, et apprend APRÈS s'il est parti. Un cockpit qui jetait
+// `annonceFiches` faisait ressembler un échec à un succès.
+describe('Cockpit — l’e-mail neutre, dit avant et après le clic', () => {
+  it('la lecture de l’état de diffusion pose « un e-mail suivrait »', () => {
+    expect(SOURCE).toMatch(/setAnnonceParEmail\(payload\.annonceParEmail === true\)/);
+  });
+
+  it('le clic efface l’avis précédent, puis pose le sort de SON e-mail', () => {
+    const corps = corpsDuClic();
+    expect(corps).toMatch(/setAnnonceFiches\(null\)/);
+    expect(corps).toMatch(/setAnnonceFiches\(payload\.annonceFiches \?\? null\)/);
+    expect(corps.indexOf('setAnnonceFiches(null)')).toBeLessThan(corps.indexOf('fetch('));
+  });
+
+  it('le panneau reçoit les deux', () => {
+    expect(SOURCE).toMatch(/annonceParEmail=\{annonceParEmail\}/);
+    expect(SOURCE).toMatch(/annonce=\{annonceFiches\}/);
+  });
+});
