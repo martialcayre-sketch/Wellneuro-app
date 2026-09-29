@@ -22,6 +22,14 @@ décidée par le responsable le 2026-09-29 : éprouver par mutation les bancs de
 - Un banc resté vert sous une mutation qui casse l'invariant = P1 confirmée.
 - Mêmes règles que l'énoncé corrigé de la première passe : worktree jetable
   et propre, sinon `NON VÉRIFIABLE`.
+- Revue Copilot de #1253, trois fils, corrigés :
+  1. les bancs censés rougir se désignent avant de jouer, et seul leur
+     silence fait une P1 (une ligne réunit parfois des surfaces
+     indépendantes) ;
+  2. `npm ci` puis `npx prisma generate` dans le worktree neuf, qui n'a pas de
+     `node_modules` ;
+  3. les migrations appliquées par `test:worktree` à sa base éphémère sont
+     admises, puisque c'est ce qui éprouve M4.
 
 ## 4. Fichiers modifiés
 

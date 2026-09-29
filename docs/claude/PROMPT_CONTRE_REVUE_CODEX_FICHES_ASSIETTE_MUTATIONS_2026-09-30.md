@@ -14,9 +14,13 @@ production et dis si le banc qui le garde rougit.**
 L'auteur des bancs est l'auteur du code. **C'est toi qui choisis la
 mutation**, pas lui : une mutation que l'auteur aurait prévue ne prouve rien.
 
-**Un banc qui reste vert sous une mutation qui casse l'invariant est une
-trouvaille P1** (« banc qui ne mord pas sur un invariant »), `CONFIRMÉE`
-puisque tu donnes la sortie.
+**Avant de jouer une mutation, désigne le ou les bancs censés la détecter** —
+ceux qui gardent la surface que tu casses, pas tous ceux de la ligne : une
+ligne peut réunir des surfaces indépendantes (M11 en compte cinq), et le banc
+d'une page n'a pas à rougir quand tu casses la route. **Si tous les bancs
+désignés restent verts, c'est une trouvaille P1** (« banc qui ne mord pas sur
+un invariant »), `CONFIRMÉE` puisque tu donnes la sortie. Un banc non désigné
+qui reste vert ne prouve rien.
 
 ---
 
@@ -31,13 +35,21 @@ puisque tu donnes la sortie.
   propre, **ne mute pas** : tout est `NON VÉRIFIABLE`, avec le motif.
 - **Une mutation touche le code de production, jamais un banc.** Une seule
   idée par mutation, la plus petite possible.
+- **Installation, une fois, avant la première mutation** : le worktree neuf
+  n'a pas les `node_modules` de la copie d'origine. Depuis son `web/` :
+  `npm ci` puis `npx prisma generate` — déterministes, depuis le lockfile et
+  le schéma du commit visé. Si l'un échoue, tout est `NON VÉRIFIABLE`, avec la
+  sortie.
 - **Commandes admises**, depuis `web/` du worktree jetable :
   - `npx vitest run <fichier>`, `npm run check` ;
   - `npm run test:worktree -- --fast`, seulement pour les contrats SQL
     (`prisma/checks/*.sql`), et seulement si un PostgreSQL local répond ;
-    sinon ces invariants sont `NON VÉRIFIABLE`.
-- **Aucune PR, aucun commit, aucun push, aucune migration appliquée.** Aucun
-  accès à la production (ni `scalingo`, ni base, ni URL).
+    sinon ces invariants sont `NON VÉRIFIABLE`. Ce script crée sa propre base
+    **éphémère** et y applique les migrations (`prisma migrate deploy`) :
+    c'est admis, et c'est même ce qui éprouve M4.
+- **Aucune PR, aucun commit, aucun push.** Aucune migration appliquée **hors
+  de la base éphémère de `test:worktree`**. Aucun accès à la production (ni
+  `scalingo`, ni base, ni URL).
 - **Aucune identité patient réelle** ; texte de fiche synthétique seulement.
   Le dépôt est public, et le texte des fiches n'y est pas.
 - **Réponds en français. Ne corrige rien.**
@@ -54,7 +66,9 @@ la première passe) ou postérieur.
 ## 3. Les invariants et leurs bancs
 
 Au moins **une** mutation par ligne. Si la première n'est attrapée que par le
-typage (`npm run check`), joue-en une seconde qui compile.
+typage (`npm run check`), joue-en une seconde qui compile. La dernière colonne
+liste les bancs de la ligne ; pour chaque mutation, tu en désignes ceux qui
+doivent rougir (§0).
 
 | # | Invariant | Code à muter | Bancs à jouer |
 |---|---|---|---|
@@ -97,10 +111,10 @@ Arbitrages du responsable, datés et consignés dans `D-251` :
 ## 5. Sortie attendue
 
 1. **Tableau** : `#` | fichier:ligne muté | mutation (une ligne de diff) |
-   bancs joués | résultat (**rouge** / **vert** / typage seul) | verdict
-   (`MORD` / `NE MORD PAS` / `NON VÉRIFIABLE`).
-2. **Trouvailles** : chaque `NE MORD PAS`, en P1, avec la sortie du banc resté
-   vert et l'invariant qu'il laisse passer.
+   bancs désignés (avant de jouer) | résultat de chacun (**rouge** / **vert** /
+   typage seul) | verdict (`MORD` / `NE MORD PAS` / `NON VÉRIFIABLE`).
+2. **Trouvailles** : chaque `NE MORD PAS`, en P1, avec la sortie des bancs
+   désignés restés verts et l'invariant qu'ils laissent passer.
 3. **Non vérifié**, et pourquoi.
 
 Sois bref sur ce qui mord ; sois précis sur ce qui ne mord pas.
