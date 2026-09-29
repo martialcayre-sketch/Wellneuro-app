@@ -146,7 +146,10 @@ fournisseur, son transfert hors UE et l'information des patients.
 > diffusion de la production, sur un dossier de test, drapeau d'émission
 > ouvert. Aucune fiche remise, et c'est le comportement attendu : la seule
 > action du protocole porte une assiette dont la fiche n'est pas encore
-> validée. Constat par conteneur, en lecture seule.
+> validée. Constat par conteneur, en lecture seule. **Le drapeau d'émission
+> est ainsi constaté par le comportement** : la section des fiches paraît dans
+> la sous-vue Diffusion, avec « Ne partira pas » et son motif (capture du
+> responsable).
 >
 > **AMENDEMENT DU 2026-09-29 — LOT 10, L'ESPACE DE LECTURE.** Choix de mise en
 > œuvre, pris en session et révisables par le responsable. Tout est sous

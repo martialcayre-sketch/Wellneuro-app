@@ -74,9 +74,12 @@ comportement attendu.
 
 ## 6. Problèmes ouverts
 
-- **Le constat par le comportement** du drapeau d'émission reste à confirmer
-  par le responsable : la section des fiches a-t-elle paru dans la sous-vue
-  Diffusion, avec « ne part pas » pour la fiche non validée ?
+- **Le drapeau d'émission est constaté par le comportement** (capture du
+  responsable, PAT032) : section des fiches en sous-vue Diffusion, « Ne
+  partira pas » et son motif. Rien d'ouvert sur ce point.
+- **La phase « Actions »** : le plan minimal de cette action tient en un
+  caractère (vu sur la même capture) — c'est le constat qui fonde le
+  chantier à venir.
 - **Six fiches sur sept** attendent la relecture du responsable. Valider la
   fiche dopaminergique, puis recliquer sur PAT032, remettrait la première
   fiche de la production (sans e-mail tant que la lecture est fermée).
