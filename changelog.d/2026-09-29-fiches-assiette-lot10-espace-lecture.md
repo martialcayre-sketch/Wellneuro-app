@@ -15,7 +15,9 @@
   Un identifiant qui n'est pas servi rend « Cette fiche n'est pas
   disponible. », sans rien montrer.
 - **Au fil du jour**, chaque fiche servie et non lue est une tâche « Lire la
-  fiche remise par mon praticien », avec le nom de son assiette en appui. Une
+  fiche remise par mon praticien », avec le nom de son assiette en appui —
+  annoncé avec le lien au lecteur d'écran (`aria-describedby`, valable pour
+  toute tâche qui porte un appui). Une
   remise neuve de la même fiche y revient. Le plafond de deux lectures attendues
   tombe.
 - **L'accusé de lecture** d'une fiche n'est accepté que pour une fiche

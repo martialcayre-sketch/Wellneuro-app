@@ -40,6 +40,17 @@ import type { FilDuJour } from '@/lib/portail/filDuJour';
  * couleur — chaque état porte sa phrase.
  */
 
+/**
+ * L'identifiant DOM de la phrase d'appui d'une tâche, que son lien désigne par
+ * `aria-describedby`. Sans ce lien, plusieurs tâches au même libellé — une par
+ * fiche d'assiette remise ([[D-251]] §8) — s'annoncent toutes à l'identique au
+ * lecteur d'écran, leur assiette restant un paragraphe voisin muet. La clé est
+ * unique dans le fil ; l'espace, interdit dans un `id`, est remplacé.
+ */
+function idAppui(cle: string): string {
+  return `appui-${cle.replace(/\s/g, '_')}`;
+}
+
 export type MonParcoursAccueilProps = {
   token: string;
   prenom: string | null;
@@ -84,11 +95,16 @@ export function MonParcoursAccueil({
           <>
             <a
               href={premiere.href}
+              aria-describedby={premiere.appui ? idAppui(premiere.cle) : undefined}
               className={`inline-flex items-center justify-center ${patientButtonClassName('primary')}`}
             >
               {premiere.cta}
             </a>
-            {premiere.appui && <p className="mt-2 text-sm text-foreground">{premiere.appui}</p>}
+            {premiere.appui && (
+              <p id={idAppui(premiere.cle)} className="mt-2 text-sm text-foreground">
+                {premiere.appui}
+              </p>
+            )}
             {/* La garde de verrouillage ne vaut QUE pour une transmission : noter
                 une nuit ne transmet ni ne verrouille rien, et l'écrire là ferait
                 différer une saisie quotidienne par prudence. Elle se décide
@@ -115,10 +131,18 @@ export function MonParcoursAccueil({
             <ol className="space-y-2">
               {suivantes.map(tache => (
                 <li key={tache.cle}>
-                  <a href={tache.href} className="text-base text-foreground underline underline-offset-2">
+                  <a
+                    href={tache.href}
+                    aria-describedby={tache.appui ? idAppui(tache.cle) : undefined}
+                    className="text-base text-foreground underline underline-offset-2"
+                  >
                     {tache.cta}
                   </a>
-                  {tache.appui && <p className="text-sm text-muted-foreground">{tache.appui}</p>}
+                  {tache.appui && (
+                    <p id={idAppui(tache.cle)} className="text-sm text-muted-foreground">
+                      {tache.appui}
+                    </p>
+                  )}
                 </li>
               ))}
             </ol>

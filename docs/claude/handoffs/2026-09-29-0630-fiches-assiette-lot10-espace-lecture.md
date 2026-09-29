@@ -48,6 +48,8 @@ révisables par le responsable :
     `FicheRemiseLecture`, `useFichesRemises`, `textesFiches` (pur) ;
   - `components/patient-companion/LienFichesRemises.tsx`, posé dans la nav de
     `app/portail/[token]/questionnaires/page.tsx` ;
+  - `components/patient/MonParcoursAccueil.tsx` : l'appui d'une tâche est la
+    description de son lien ;
   - `components/patient/ConsignerLecturePortail.tsx` : `idObjet` optionnel,
     monté par `FicheRemiseLecture` sous le texte affiché, jamais par la page.
 - **Garde** : `lib/portail/portailLecturesPatient.guard.test.ts` :
@@ -62,24 +64,16 @@ révisables par le responsable :
 
 ## 5. Validations exécutées
 
-- **Bancs** : 200 tests sur les 11 fichiers touchés. Parmi eux :
-  - textes : 12 ;
-  - écrans : 17 ;
-  - lien : 5 ;
-  - pages : 6 ;
-  - trace : 13 ;
-  - route des fiches : 16 ;
-  - route des lectures : 37 ;
-  - lectures attendues : 19 ;
-  - fil : 46 ;
-  - service patient : 24 ;
-  - garde append-only : 5.
-- **32 mutants joués en session** (scripts hors dépôt), tous tués : 24 sur le
-  lot, 8 sur les correctifs de revue. Le seul survivant du premier passage
-  était un banc trop faible : un texte glissé dans une carte de la liste. Le
-  banc est renforcé.
-- **T1 vert ; T3 complet vert sur l'état final** (4 min 2 s, 221 E2E). Un
-  premier T3 avait rougi sur le masquage des chemins, corrigé.
+- **Bancs** : 200 tests sur les 11 fichiers du lot (écrans 17, route des
+  lectures 37, fil 46, service 24…), plus l'accueil (appui annoncé).
+- **36 mutants joués** (scripts hors dépôt), tous tués : 24 sur le lot, 12 sur
+  les correctifs de revue. Un seul survivant au premier passage (texte glissé
+  dans une carte de la liste) : banc renforcé.
+- **T1 vert ; T3 complet vert** (4 min 2 s, 221 E2E). Un premier T3 avait
+  rougi sur le masquage des chemins, corrigé.
+- **Revue Copilot** : l'assiette en appui n'était pas annoncée avec le lien —
+  trois tâches « Lire la fiche… » identiques au lecteur d'écran. **Corrigé**
+  (`aria-describedby` dans `MonParcoursAccueil`). Handoff raccourci.
 - **Revue `wn-reviewer` : GO**, aucun P0 ni P1. Verdicts :
   - P2-1, la tâche acquittée sans que le texte paraisse (panne passagère de
     la route des fiches) : **corrigé**, la trace est montée sous le texte ;
