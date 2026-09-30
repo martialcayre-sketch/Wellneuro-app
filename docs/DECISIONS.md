@@ -59,7 +59,10 @@ d'unité silencieuse (une divergence se refuse, ne se convertit jamais) ;
 colonne qualitative sur `resultats_biologiques` en V1 (une ligne non
 quantitative est refusée à l'import) ; lecture du moteur clinique ; saisie
 vocale (aucune infrastructure voix au dépôt, besoin non démontré une fois la
-saisie groupée livrée — non planifiée, réexamen possible sur besoin exprimé).
+saisie groupée livrée — non planifiée, réexamen possible sur besoin exprimé). Canal e-mail dédié (boîte de réception, transfert automatique) : non
+planifié — un compte rendu reçu par e-mail est une source en amont, déposé
+par le praticien dans la voie PDF du LOT-02 ; un canal dédié ouvrirait un
+flux de données de santé nouveau, à décider séparément.
 
 **4. LOTS.** LOT-00 (ce cadrage) → LOT-01 saisie groupée (sans migration) →
 LOT-02 staging + extraction PDF (migration seule dans sa PR, condition RGPD

@@ -80,6 +80,10 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 
 - La saisie vocale : non planifiée, à réexaminer si le besoin est exprimé
   après usage du LOT-01.
+- Un canal e-mail dédié (boîte de réception, transfert automatique) : un
+  compte rendu reçu par e-mail est une source en amont, que le praticien
+  dépose dans la voie PDF du LOT-02. Un canal dédié ouvrirait un nouveau flux
+  de données de santé, à décider séparément.
 - La lecture de `resultats_biologiques` par le moteur clinique (`D-122`).
 - Les résultats qualitatifs (positif/négatif, génotype, commentaire) : refusés
   à l'import en V1.
