@@ -7,7 +7,7 @@ effort: medium
 
 # WellNeuro — préparation de PR
 
-!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
+!`git status --short --untracked-files=all`
 !`git diff --stat`
 !`git log -n 5 --oneline`
 !`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs 2>&1 || true`

@@ -8,8 +8,8 @@ effort: medium
 # WellNeuro — validation ciblée
 
 !`git diff --stat`
-!`cd "$(git rev-parse --show-toplevel)" && git diff --name-only`
-!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
+!`git diff --name-only`
+!`git status --short --untracked-files=all`
 
 Argument : `$ARGUMENTS`
 
