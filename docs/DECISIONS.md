@@ -157,6 +157,36 @@ d'objectif et E2E), 3c (bandeau, libellé arbitré « Jour n du protocole »).
   `PAT032`.
 - **Bancs.** Dix-huit mutations jouées, toutes détectées.
 
+**Complément du 2026-09-30 — un pivot ne rouvre pas un jalon déjà confirmé.**
+Arbitrage du responsable, rendu sur la revue de la PR #1266. La base n'admet
+qu'une mesure par jalon et par cycle (`assessment_episodes_mesure_cycle_unique_idx`).
+Un jalon confirmé reste donc acquis, et seuls les jalons restants se comptent
+depuis le pivot : après un pivot décidé à J21, le prochain jalon est un J42 à
+pivot + 42. Pour remesurer à J21 le nouveau protocole, le praticien ouvre un
+nouveau cycle. Rouvrir toutes les mesures demanderait une identité d'épisode
+par génération de calendrier et une migration : écarté. Un banc fixe ce
+comportement.
+
+**Complément du 2026-09-30 — lot 3b, les jalons d'objectif.**
+
+- **Les étapes d'objectif se comptent depuis le jour 0** du suivi du cycle
+  courant, la même date que les jalons de mesure : un « J21 » désigne un seul
+  moment ([[D-111]], Décision 6, dont l'ancre unique devient le jour 0). Cela
+  vaut pour les trois lecteurs :
+  - la question d'étape du portail (GET) ;
+  - la garde d'écriture du portail (POST), qui refuse une réponse hors
+    fenêtre ;
+  - la lecture praticien des objectifs.
+- **Sans diffusion, aucune étape n'est ouverte.** Le motif servi au patient ne
+  change pas : « Votre suivi n'a pas encore de point de départ ». Il reste
+  exact, puisque le point de départ est désormais la diffusion.
+- **Après un pivot**, l'étape J21 se rouvre à pivot + 21. Une réponse d'étape
+  n'a pas l'unicité d'une mesure : le patient peut y répondre à nouveau.
+- **L'E2E du portail** pose désormais, à la même date que l'ancre, une version
+  relue et son approbation de diffusion, sur la fixture réservée. Le balayage
+  d'entrée efface les trois lignes.
+- **Bancs.** Six mutations jouées, toutes détectées.
+
 ### D-254 — Les assiettes indiquées se hiérarchisent pour l'aide au choix : la priorité visée d'abord, la convergence ensuite, et la règle est dite à l'écran
 
 - Date : 2026-09-30

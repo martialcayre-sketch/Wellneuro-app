@@ -8457,3 +8457,14 @@ cockpit, résumé J21, cabinet, Fil). 18 mutations, toutes détectées.
 bandeau) ; libellé « Jour n du protocole ».
 
 **Prochaine action.** PR du lot 3a, puis 3b.
+
+## 2026-09-30 — Calendrier de suivi, lot 3b : jalons d'objectif (D-255)
+
+**Fait.** Lot 3a mergé (#1266). Lot 3b : étapes d'objectif (portail GET et
+garde POST, praticien) comptées depuis le jour 0 ; E2E avec diffusion sur la
+fixture réservée. 6 mutations, toutes détectées.
+
+**Décidé (responsable).** Revue de #1266 : après un pivot, un jalon de mesure
+confirmé reste acquis ; seuls les restants repartent du pivot.
+
+**Prochaine action.** PR du lot 3b, puis 3c (bandeau).

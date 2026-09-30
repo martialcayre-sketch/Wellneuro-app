@@ -5,9 +5,11 @@ import { JALONS_OBJECTIF, type JalonObjectif } from '@/lib/praticien/objectifNeg
 // LOT-05, `D-111`)
 //
 // MÊMES NOMBRES, MÊME ANCRE que tout le reste de la chaîne : les fenêtres
-// viennent de `JOURS_JALON` et `TOLERANCE_JOURS_JALON`, et l'ancre est le
-// `confirmedAt` du T0 confirmé LE PLUS RÉCENT — `cycle.dateT0`, celle que
-// `resoudreJalonDu` et la trajectoire emploient déjà. C'est la Décision 6 de
+// viennent de `JOURS_JALON` et `TOLERANCE_JOURS_JALON`, et la date de départ
+// est, depuis [[D-255]], le jour 0 du suivi du cycle courant (la première
+// diffusion de son protocole) — celle que `resoudreJalonDu` et la trajectoire
+// emploient pour les jalons de mesure. Avant, le `confirmedAt` de l'ancre.
+// C'est la Décision 6 de
 // `D-111` : compter « J21 » depuis la naissance de la VERSION d'objectif aurait
 // fabriqué un second calendrier, et deux calendriers pour un même mot est
 // exactement ce que la Décision 1 reproche à `protocol_checkins`.
@@ -67,8 +69,9 @@ function fenetre(dateT0: Date, jalon: JalonObjectif): { debut: Date; fin: Date }
  * d'un moment que le patient n'a pas vécu, et le praticien lirait ensuite ce
  * récit comme s'il avait eu lieu à sa date.
  *
- * `dateT0` À `null` = aucun cycle confirmé. C'est un état ORDINAIRE, pas une
- * erreur : le suivi n'a pas commencé, et il n'y a donc pas d'étape.
+ * `dateT0` — le jour 0 du suivi ([[D-255]]). À `null` = aucun cycle confirmé,
+ * ou aucun protocole diffusé sur le cycle courant. C'est un état ORDINAIRE,
+ * pas une erreur : le suivi n'a pas commencé, et il n'y a donc pas d'étape.
  */
 export function jalonObjectifDu(
   dateT0: Date | null,

@@ -62,6 +62,19 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+// Le jour 0 du suivi du cycle courant ([[D-255]]). Par défaut : la date de
+// l'ancre courante, c'est-à-dire un cycle diffusé le jour même de sa
+// confirmation — les fenêtres de ce banc restent celles qu'il a toujours
+// éprouvées. Les cas D-255 le règlent eux-mêmes ; la résolution du calendrier
+// a son propre banc (`calendriersPersistes.test.ts`).
+const { jourZeroDuCycleCourant } = vi.hoisted(() => ({
+  jourZeroDuCycleCourant: vi.fn(
+    async (_idPatient: string, ancres: readonly { confirmedAt: Date }[]): Promise<Date | null> =>
+      ancres.at(-1)?.confirmedAt ?? null,
+  ),
+}));
+vi.mock('@/lib/protocol/calendriersPersistes', () => ({ jourZeroDuCycleCourant }));
+
 import { GET, POST } from './route';
 import {
   LONGUEUR_MAX_ENONCE,
@@ -203,6 +216,22 @@ describe('/api/praticien/objectifs', () => {
     // consigner un accès qui n'a pas eu lieu.
     expect(prisma.patient.findUnique).not.toHaveBeenCalled();
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('le GET compte l’étape d’objectif depuis le jour 0 du suivi (D-255)', async () => {
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EPI_T0', cycleId: 'EPI_T0', milestone: 'T0', confirmedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000) },
+    ]);
+    // Ancre il y a 21 jours, mais aucune diffusion : aucune étape.
+    jourZeroDuCycleCourant.mockResolvedValueOnce(null);
+    const sansDiffusion = await (await GET(getRequest())).json();
+    expect(sansDiffusion.jalonDu).toMatchObject({ statut: 'aucune' });
+
+    // Diffusion il y a 21 jours : le J21 est ouvert.
+    jourZeroDuCycleCourant.mockResolvedValueOnce(new Date(Date.now() - 21 * 24 * 60 * 60 * 1000));
+    const diffuse = await (await GET(getRequest())).json();
+    expect(diffuse.jalonDu).toMatchObject({ statut: 'ouverte', jalon: 'J21' });
+    expect(jourZeroDuCycleCourant).toHaveBeenCalledWith('PAT_TEST', expect.any(Array));
   });
 
   it('le GET journalise EXACTEMENT une fois, sous le gabarit littéral ; le POST jamais', async () => {

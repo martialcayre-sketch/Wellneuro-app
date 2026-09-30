@@ -7,7 +7,7 @@ import {
   isDossierDeuxVoixEnabled,
 } from '@/lib/patient/featureFlag';
 import { termeAnxiogene } from '@/lib/documents/vocabulaire';
-import { ancreCourante, lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
+import { lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
@@ -38,6 +38,7 @@ import {
   type RefusReponseJalon,
 } from '@/lib/praticien/objectifNegocie';
 import { jalonObjectifDu, type FenetreJalonObjectif } from '@/lib/protocol/jalonObjectifDu';
+import { jourZeroDuCycleCourant } from '@/lib/protocol/calendriersPersistes';
 import { syntheseServieAuPatient } from '@/lib/praticien/syntheseComprehension';
 
 // Le « dossier à deux voix » (Alliance 6.0-A, LOT-06) — route PORTAIL.
@@ -726,7 +727,9 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
         eva: ligne.eva,
         creeLe: ligne.creeLe.toISOString(),
       })),
-      jalonDu: jalonObjectifDu(ancreCourante(ancresPosees)?.confirmedAt ?? null, new Date()),
+      // Depuis le jour 0 du suivi du cycle courant ([[D-255]]) : sans
+      // diffusion, aucune étape n'est ouverte.
+      jalonDu: jalonObjectifDu(await jourZeroDuCycleCourant(patient.idPatient, ancresPosees), new Date()),
       ceQuiCompte: entrees
         ? entrees.map((ligne) => ({
             id: ligne.id,
@@ -1101,8 +1104,9 @@ export async function POST(req: Request): Promise<NextResponse<PortailDossierRes
     // ouverte, mais une horloge de navigateur décalée, un onglet resté ouvert
     // une semaine, ou un POST direct contournent l'écran — pas ceci.
     if (prepare.geste === 'reponse_jalon') {
-      const ancre = ancreCourante(await lireAncresPersistees(patient.idPatient));
-      const fenetre = jalonObjectifDu(ancre?.confirmedAt ?? null, new Date());
+      // La MÊME date que le GET ([[D-255]]) : le jour 0 du suivi du cycle.
+      const ancres = await lireAncresPersistees(patient.idPatient);
+      const fenetre = jalonObjectifDu(await jourZeroDuCycleCourant(patient.idPatient, ancres), new Date());
       if (fenetre.statut !== 'ouverte' || fenetre.jalon !== prepare.donnees.jalon) {
         return echec(
           'jalon_ferme',

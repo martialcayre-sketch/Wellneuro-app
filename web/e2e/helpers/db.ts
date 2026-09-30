@@ -715,7 +715,16 @@ export async function cleanupEpisodeTrajectoire(): Promise<void> {
  * patients différents et ne doivent pas s'effacer l'une l'autre.
  */
 const ID_EPISODE_JALON_E2E = 'ep_e2e_ancre_jalon';
+const ID_VERSION_JALON_E2E = 'proto_e2e_ancre_jalon#e2e';
+const ID_APPROBATION_JALON_E2E = 'appr_e2e_ancre_jalon';
 
+/**
+ * DEPUIS [[D-255]], L'ANCRE NE SUFFIT PLUS : les étapes se comptent depuis la
+ * DIFFUSION du protocole du cycle, et un cycle sans diffusion n'en ouvre
+ * aucune. La fixture pose donc aussi une version relue et son approbation de
+ * diffusion, datées du même instant que l'ancre : le jour 0 coïncide avec elle,
+ * et le parcours éprouve la même fenêtre qu'avant.
+ */
 export async function provisionAncreJalon(idPatient: string, joursDepuisT0: number): Promise<Date> {
   await cleanupAncreJalon();
   const dateT0 = new Date(Date.now() - joursDepuisT0 * 24 * 60 * 60 * 1000);
@@ -733,10 +742,45 @@ export async function provisionAncreJalon(idPatient: string, joursDepuisT0: numb
       versionScore: 'v1',
     },
   });
+  await prisma.protocolDraft.create({
+    data: {
+      id: ID_VERSION_JALON_E2E,
+      idPatient,
+      assessmentEpisodeId: ID_EPISODE_JALON_E2E,
+      decisionCardId: 'runtime-decision-e2e-ancre-jalon',
+      decisionCardInputHash: 'e2e-ancre-jalon-carte',
+      snapshotInputHash: 'e2e-ancre-jalon-instantane',
+      reviewInputHash: 'e2e-ancre-jalon-relecture',
+      selectedPriorityId: 'priority:e2e-ancre-jalon',
+      status: 'practitioner_reviewed',
+      payload: { source: 'e2e-ancre-jalon' },
+      inputHash: 'e2e-ancre-jalon-version',
+      contractVersion: 'c1-protocol-draft-v1',
+      // Relue une minute avant la diffusion : une approbation antérieure à la
+      // relecture n'est pas recevable.
+      reviewedAt: new Date(dateT0.getTime() - 60_000),
+    },
+  });
+  await prisma.protocolDiffusionApproval.create({
+    data: {
+      id: ID_APPROBATION_JALON_E2E,
+      idPatient,
+      protocolDraftId: ID_VERSION_JALON_E2E,
+      decisionCardInputHash: 'e2e-ancre-jalon-carte',
+      protocolDraftInputHash: 'e2e-ancre-jalon-version',
+      approvedAt: dateT0,
+      approvedBy: 'practitioner',
+      confirmation: 'content_approved_for_diffusion',
+    },
+  });
   return dateT0;
 }
 
 export async function cleanupAncreJalon(): Promise<void> {
+  // Dans l'ordre des clés étrangères : l'approbation cite la version, la
+  // version cite l'épisode.
+  await prisma.protocolDiffusionApproval.deleteMany({ where: { id: ID_APPROBATION_JALON_E2E } });
+  await prisma.protocolDraft.deleteMany({ where: { id: ID_VERSION_JALON_E2E } });
   await prisma.assessmentEpisode.deleteMany({ where: { id: ID_EPISODE_JALON_E2E } });
 }
 

@@ -74,6 +74,19 @@ const { prisma, logger } = vi.hoisted(() => ({
   logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
+
+// Le jour 0 du suivi du cycle courant ([[D-255]]). Par défaut : la date de
+// l'ancre courante, c'est-à-dire un cycle diffusé le jour même de sa
+// confirmation — les fenêtres de ce banc restent celles qu'il a toujours
+// éprouvées. Les cas D-255 le règlent eux-mêmes ; la résolution du calendrier
+// a son propre banc (`calendriersPersistes.test.ts`).
+const { jourZeroDuCycleCourant } = vi.hoisted(() => ({
+  jourZeroDuCycleCourant: vi.fn(
+    async (_idPatient: string, ancres: readonly { confirmedAt: Date }[]): Promise<Date | null> =>
+      ancres.at(-1)?.confirmedAt ?? null,
+  ),
+}));
+vi.mock('@/lib/protocol/calendriersPersistes', () => ({ jourZeroDuCycleCourant }));
 vi.mock('@/lib/observability/logger', () => ({ logger }));
 
 import { signPatientSession } from '@/lib/patient-session';
@@ -1405,6 +1418,39 @@ describe('/api/portail/dossier', () => {
       const dehors = await POST(postRequest(cookieProprio(), corpsJalon()));
       expect(dehors.status).toBe(409);
       expect(prisma.reponseJalonObjectif.create).toHaveBeenCalledTimes(2);
+    });
+
+    // [[D-255]] : les étapes se comptent depuis la DIFFUSION du protocole.
+    it('SANS PROTOCOLE DIFFUSÉ, aucune étape n’est écrivable — même à T0 + 21', async () => {
+      jourZeroDuCycleCourant.mockResolvedValueOnce(null);
+      const res = await POST(postRequest(cookieProprio(), corpsJalon()));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ ok: false, reason: 'jalon_ferme' });
+      expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('l’étape se compte depuis la diffusion, pas depuis l’ancre (D-255)', async () => {
+      // Ancre à T0 − 21 j (sa fenêtre J21 serait ouverte), diffusion il y a
+      // trois jours : aucune étape n'est encore ouverte.
+      jourZeroDuCycleCourant.mockResolvedValueOnce(new Date(Date.now() - 3 * 24 * 60 * 60 * 1000));
+      const fermee = await POST(postRequest(cookieProprio(), corpsJalon()));
+      expect(fermee.status).toBe(409);
+
+      // Ancre à T0 − 40 j (hors de toute fenêtre depuis elle), diffusion il y a
+      // 21 jours : la fenêtre J21 est ouverte.
+      prisma.assessmentEpisode.findMany.mockResolvedValue([ancreOuvrant(40)]);
+      jourZeroDuCycleCourant.mockResolvedValueOnce(new Date(Date.now() - JOURS_JALON.J21 * 24 * 60 * 60 * 1000));
+      const ouverte = await POST(postRequest(cookieProprio(), corpsJalon()));
+      expect(ouverte.status).toBe(201);
+      expect(jourZeroDuCycleCourant).toHaveBeenCalledWith(PATIENT.idPatient, expect.any(Array));
+    });
+
+    it('le GET dit l’absence de diffusion comme l’absence de départ, sans reproche', async () => {
+      mockDossierComplet({ ancreT0: [ancreOuvrant(JOURS_JALON.J21)] });
+      jourZeroDuCycleCourant.mockResolvedValueOnce(null);
+      const corps = await (await GET(getRequest(cookieProprio()))).json();
+      expect(corps.jalonDu).toMatchObject({ statut: 'aucune' });
+      expect(corps.jalonDu.motif).toContain('pas encore de point de départ');
     });
 
     it('le GET sert l’étape ouverte, calculée par le SERVEUR', async () => {

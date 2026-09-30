@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { lireAncresPersistees, type AncrePersistee } from './ancresPersistees';
+import { ancreCourante, lireAncresPersistees, type AncrePersistee } from './ancresPersistees';
 import {
   calendriersParCycle,
   joursZeroParCycle,
@@ -147,4 +147,21 @@ export async function calendrierDuProtocoleDiffuse(
     return { jourZero: diffuse.approvedAt, versionIds: [diffuse.protocolDraftId] };
   }
   return { jourZero: calendrier.jourZero, versionIds: calendrier.versionIds };
+}
+
+/**
+ * Le jour 0 du suivi du cycle COURANT (celui de l'ancre du rang le plus haut),
+ * ou `null` : aucune ancre, ou aucune diffusion sur ce cycle. C'est la date
+ * dont partent les jalons d'objectif ([[D-255]]) — la même que celle des
+ * jalons de mesure, pour qu'un « J21 » désigne un seul moment ([[D-111]],
+ * Décision 6).
+ */
+export async function jourZeroDuCycleCourant(
+  idPatient: string,
+  ancres: readonly AncrePersistee[],
+): Promise<Date | null> {
+  const ancre = ancreCourante(ancres);
+  if (!ancre) return null;
+  const { parCycle } = await lireCalendriersSuivi(idPatient, null, ancres);
+  return parCycle.get(ancre.cycleId ?? ancre.id)?.jourZero ?? null;
 }

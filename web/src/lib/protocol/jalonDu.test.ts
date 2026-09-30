@@ -58,6 +58,19 @@ describe('resoudreJalonDu — ce que le cockpit a le droit de proposer', () => {
     expect(du).toMatchObject({ statut: 'du', jalon: 'J21', ouvertLe: apresT0(23).toISOString() });
   });
 
+  // Arbitrage du responsable (2026-09-30, revue de la PR #1266) : après un
+  // pivot, un jalon DÉJÀ confirmé reste acquis — la base n'admet qu'une mesure
+  // par jalon et par cycle. Seuls les jalons restants repartent du pivot.
+  it('après un pivot, le J21 confirmé reste acquis et le J42 se compte depuis le pivot', () => {
+    const traj = trajectoire(['T0', 'J21']);
+    const pivot = apresT0(40);
+    traj.cycles[0].jourZero = pivot.toISOString();
+    // Pivot + 21 : le J21 n'est pas reproposé.
+    expect(resoudreJalonDu(traj, apresT0(61))).toMatchObject({ statut: 'aucun', prochainJalon: 'J42' });
+    // Pivot + 42 : le J42 est dû.
+    expect(resoudreJalonDu(traj, apresT0(82))).toMatchObject({ statut: 'du', jalon: 'J42' });
+  });
+
   it('refuse un jour 0 illisible plutôt que de compter depuis l’ancre', () => {
     const traj = trajectoire();
     traj.cycles[0].jourZero = 'pas-une-date';
