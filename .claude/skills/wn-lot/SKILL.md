@@ -10,7 +10,7 @@ effort: medium
 ## Contexte — chargé ici une fois, et une seule
 
 !`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
-!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
+!`git status --short --untracked-files=all`
 !`git diff --stat 2>/dev/null | tail -n 1`
 !`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-context-pack.mjs --format markdown 2>/dev/null || true`
 
