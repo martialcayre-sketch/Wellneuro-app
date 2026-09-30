@@ -118,6 +118,10 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       approvedBy: diffuse.approvedBy as 'practitioner',
       confirmation: diffuse.confirmation as 'content_approved_for_diffusion',
     };
+    // Le jour 0 du cycle, comme le portail ([[D-255]]). Lu HORS du `try`
+    // ci-dessous : celui-ci traduit un refus de contrat en « indisponible », et
+    // une panne de base doit rester une panne (500), pas un protocole refusé.
+    const { jourZero } = await calendrierDuProtocoleDiffuse(idPatient, diffuse);
     let vue: VuePatientSurLeFil;
     try {
       vue = projeterSurLeFil({
@@ -131,8 +135,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         // surface patient, sous le drapeau C5.
         boussoles: [],
         cycleRef: diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF),
-        // Le jour 0 du cycle, comme le portail ([[D-255]]).
-        debutCycle: (await calendrierDuProtocoleDiffuse(idPatient, diffuse)).jourZero.toISOString(),
+        debutCycle: jourZero.toISOString(),
       });
     } catch (erreur) {
       console.warn(

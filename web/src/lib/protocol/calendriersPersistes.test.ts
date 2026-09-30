@@ -125,6 +125,31 @@ describe('calendrierDuProtocoleDiffuse', () => {
     });
 
     expect(calendrier).toEqual({ jourZero: jour(10), versionIds: ['v-a', 'v-b'] });
+    // Borné à l'approbation active : un pivot publié entre les deux lectures
+    // ne lui donne pas son jour 0.
+    expect(prisma.protocolDiffusionApproval.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { idPatient: 'PAT_1', approvedAt: { lte: jour(20) } } }),
+    );
+  });
+
+  it('se replie aussi quand la version servie n’appartient pas au calendrier rendu', async () => {
+    const avertissement = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Un pivot de même instant que l'approbation active : la borne le laisse
+    // entrer, et le calendrier rendu n'est plus celui de la version servie.
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+      approbation('a', 10, 'PRIO-A'),
+      { ...approbation('b', 10, 'PRIO-B'), createdAt: new Date(jour(10).getTime() + 1) },
+    ]);
+
+    const calendrier = await calendrierDuProtocoleDiffuse('PAT_1', {
+      approbationId: 'a',
+      approvedAt: jour(10),
+      protocolDraftId: 'v-a',
+    });
+
+    expect(calendrier).toEqual({ jourZero: jour(10), versionIds: ['v-a'] });
+    expect(avertissement).toHaveBeenCalledOnce();
+    avertissement.mockRestore();
   });
 
   it('se replie sur l’approbation active quand son calendrier ne se résout pas', async () => {

@@ -84,10 +84,16 @@ export async function calendrierDuProtocoleDiffuse(
   idPatient: string,
   diffuse: { approbationId: string; approvedAt: Date; protocolDraftId: string },
 ): Promise<{ jourZero: Date; versionIds: string[] }> {
-  const { parCycle, cycleParDiffusion } = await lireCalendriersSuivi(idPatient);
+  // BORNÉ À L'APPROBATION ACTIVE. Deux lectures séparées : sans borne, une
+  // diffusion publiée entre elles (un pivot) donnerait son jour 0 au protocole
+  // que la route sert encore. L'approbation active étant la plus récente, la
+  // borne ne retire rien d'autre (revue de la PR #1265).
+  const { parCycle, cycleParDiffusion } = await lireCalendriersSuivi(idPatient, diffuse.approvedAt);
   const cycleId = cycleParDiffusion.get(diffuse.approbationId);
   const calendrier = cycleId === undefined ? undefined : parCycle.get(cycleId);
-  if (!calendrier) {
+  // La version servie doit appartenir au calendrier rendu : sinon celui-ci
+  // n'est pas le sien (une diffusion de même instant l'aurait supplanté).
+  if (!calendrier || !calendrier.versionIds.includes(diffuse.protocolDraftId)) {
     console.warn('[calendrierDuProtocoleDiffuse] calendrier introuvable pour la diffusion active : repli sur son approbation.');
     return { jourZero: diffuse.approvedAt, versionIds: [diffuse.protocolDraftId] };
   }

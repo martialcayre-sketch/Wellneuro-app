@@ -176,6 +176,15 @@ describe('api/praticien/ja/cycle', () => {
     });
     const rediffuse = (await (await GET(new Request(URL_BASE))).json()) as { vue: { debutCycle: string } };
     expect(rediffuse.vue.debutCycle).toBe('2026-07-10T08:00:00.000Z');
+
+    // Une panne de lecture du calendrier reste une panne : elle ne se déguise
+    // pas en protocole « indisponible » (revue de la PR #1265).
+    const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
+    calendrierDuProtocoleDiffuse.mockRejectedValueOnce(new Error('base injoignable'));
+    const panne = await GET(new Request(URL_BASE));
+    expect(panne.status).toBe(500);
+    expect(((await panne.json()) as { reason: string }).reason).toBe('exception');
+    erreur.mockRestore();
   });
 
   // LE PRATICIEN VOIT CE QUE VOIT SON PATIENT — c'est-à-dire rien, et pour la

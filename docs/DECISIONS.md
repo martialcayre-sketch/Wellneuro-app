@@ -118,7 +118,14 @@ lecture datée non bornée.
 - **Repli.** Si le calendrier de la diffusion active ne se résout pas, la
   route compte depuis l'approbation active, comme avant, et le journalise. La
   production ne porte pas ce cas.
-- **Bancs.** Treize mutations jouées, toutes détectées.
+- **Revue de la PR #1265.** Deux correctifs :
+  - la lecture du calendrier est bornée à l'approbation active : un pivot
+    publié entre la lecture de celle-ci et celle du calendrier ne donne pas son
+    jour 0 au protocole encore servi. Si la version servie n'appartient pas
+    au calendrier rendu (une diffusion de même instant), la route se replie ;
+  - au carnet praticien, elle se fait hors du bloc qui traduit un refus de
+    contrat en « indisponible » : une panne de base reste une erreur 500.
+- **Bancs.** Seize mutations jouées, toutes détectées.
 
 ### D-254 — Les assiettes indiquées se hiérarchisent pour l'aide au choix : la priorité visée d'abord, la convergence ensuite, et la règle est dite à l'écran
 
