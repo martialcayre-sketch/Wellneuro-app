@@ -9,7 +9,12 @@ const { prisma } = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { DIFFUSION_CONFIRMATION } from './diffusion';
-import { calendrierDuProtocoleDiffuse, lireCalendriersSuivi, lireJoursZeroParPatient } from './calendriersPersistes';
+import {
+  calendrierDuProtocoleDiffuse,
+  jourZeroDuCycleCourant,
+  lireCalendriersSuivi,
+  lireJoursZeroParPatient,
+} from './calendriersPersistes';
 
 // Ce que ce banc défend ([[D-255]]) : la lecture prend TOUTES les approbations
 // du dossier, jointes à leur version et à l'épisode de celle-ci, et borne la
@@ -211,5 +216,29 @@ describe('lireJoursZeroParPatient', () => {
   it('sans dossier, aucune requête', async () => {
     expect((await lireJoursZeroParPatient(new Map())).size).toBe(0);
     expect(prisma.protocolDiffusionApproval.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('jourZeroDuCycleCourant', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const ancre = (id: string, milestone: string, jourConfirmation: number) =>
+    ({ id, cycleId: id, milestone, confirmedAt: jour(jourConfirmation) });
+
+  it('sans ancre, pas de jour 0 — et aucune lecture', async () => {
+    expect(await jourZeroDuCycleCourant('PAT_1', [])).toBeNull();
+    expect(prisma.protocolDiffusionApproval.findMany).not.toHaveBeenCalled();
+  });
+
+  it('rend le jour 0 du cycle de l’ancre du rang le plus haut', async () => {
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([approbation('a', 10, 'PRIO-A')]);
+    expect(await jourZeroDuCycleCourant('PAT_1', [ancre('ep-T0', 'T0', 0)])).toEqual(jour(10));
+  });
+
+  it('un cycle courant sans diffusion n’emprunte pas celle du cycle précédent', async () => {
+    // La seule diffusion est sur le `T0` ; le cycle courant est le `T1`.
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([approbation('a', 10, 'PRIO-A')]);
+    const ancres = [ancre('ep-T0', 'T0', 0), ancre('ep-T1', 'T1', 60)];
+    expect(await jourZeroDuCycleCourant('PAT_1', ancres)).toBeNull();
   });
 });

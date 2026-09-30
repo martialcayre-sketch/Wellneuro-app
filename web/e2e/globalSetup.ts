@@ -5,7 +5,8 @@ import { cleanupAncreJalon, closePrisma } from './helpers/db';
  * interrompu (Alliance 6.0-B, LOT-05, relevé en revue).
  *
  * `provisionAncreJalon` pose un `assessmentEpisode` T0 sur **PAT_SEED_01** pour
- * ouvrir une fenêtre de jalon. Son `afterAll` l'efface — mais un `Ctrl-C`, un
+ * ouvrir une fenêtre de jalon — avec, depuis [[D-255]], une version relue et
+ * son approbation de diffusion, effacées ici avec lui. Son `afterAll` l'efface — mais un `Ctrl-C`, un
  * worker tué, ou le blocage WebKit intermittent de ce Mac laissent la ligne en
  * base. Or trois specs assertent que ce patient n'a AUCUN épisode confirmé
  * (`trajectoires`, `fiche-trajectoire`, `visual`), et `fiche-trajectoire` passe

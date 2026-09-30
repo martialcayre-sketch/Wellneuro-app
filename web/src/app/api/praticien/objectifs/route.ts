@@ -12,8 +12,9 @@ import {
   isObjectifProposeEnabled,
 } from '@/lib/patient/featureFlag';
 import { sendObjectifProposeEmail } from '@/lib/consultation/email';
-import { ancreCourante, lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
+import { lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
 import { jalonObjectifDu, type FenetreJalonObjectif } from '@/lib/protocol/jalonObjectifDu';
+import { jourZeroDuCycleCourant } from '@/lib/protocol/calendriersPersistes';
 import {
   chaineDObjectif,
   etatRatification,
@@ -563,7 +564,8 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
        * voit. Recalculer autrement ici ferait dire deux choses aux deux écrans,
        * et c'est le praticien qui aurait tort devant son patient.
        */
-      jalonDu: jalonObjectifDu(ancreCourante(ancres)?.confirmedAt ?? null, new Date()),
+      // Depuis le jour 0 du suivi du cycle courant ([[D-255]]), comme au portail.
+      jalonDu: jalonObjectifDu(await jourZeroDuCycleCourant(idPatient, ancres), new Date()),
       ancrage: consultation ? lireAncrage(consultation.anamnese) : ANCRAGE_SANS_CONSULTATION,
       // Un état par tête, jamais un taux : `etatRatification` rend le DERNIER
       // geste porté sur cette version précise — LES DEUX TABLES CONFONDUES,
