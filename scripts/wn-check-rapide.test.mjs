@@ -29,8 +29,8 @@ test("les gardes cliniques et la passe anti-secrets de l'index ne sont JAMAIS sa
   }
 });
 
-test("un diff sous scripts/ ou .github/ rend dus les bancs d'outillage", () => {
-  for (const f of ["scripts/wn-cycle.mjs", ".github/workflows/ci.yml"]) {
+test("un diff sous scripts/, .github/ ou d'un manifeste rend dus les bancs d'outillage", () => {
+  for (const f of ["scripts/wn-cycle.mjs", ".github/workflows/ci.yml", "web/package.json", "package.json"]) {
     assert.ok(selection(etapes, [f]).jouees.includes("npm run bancs-outillage-check"), f);
   }
 });

@@ -21,7 +21,9 @@ const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Étapes lourdes → motif des chemins qui les rendent dues (`null` : jamais en rapide). */
 export const CONDITIONNELLES = new Map([
-  ["npm run bancs-outillage-check", /^(scripts|\.github)\//],
+  // Plusieurs de ces bancs lisent `web/package.json` (parité, drapeau ALI_01,
+  // réexpédition, ce banc-ci) : un manifeste touché les rend dus (revue #1264).
+  ["npm run bancs-outillage-check", /^((scripts|\.github)\/|(web\/)?package\.json$)/],
   ["npm run hooks-check", /^\.claude\/(hooks\/|settings\.json$|agents\/)/],
   ["bash ../scripts/check_no_secrets.sh", null],
 ]);
@@ -58,15 +60,16 @@ function fichiersTouches() {
       return null;
     }
   };
-  const base = git("diff", "--name-only", "origin/main...HEAD");
-  // Sans base lisible, on ne devine pas : tout est dû.
-  if (base === null) return null;
-  return [
-    ...base,
-    ...(git("diff", "--name-only") || []),
-    ...(git("diff", "--name-only", "--cached") || []),
-    ...(git("ls-files", "--others", "--exclude-standard") || []),
-  ].filter(Boolean);
+  const listes = [
+    git("diff", "--name-only", "origin/main...HEAD"),
+    git("diff", "--name-only"),
+    git("diff", "--name-only", "--cached"),
+    git("ls-files", "--others", "--exclude-standard"),
+  ];
+  // Une seule requête illisible et un fichier touché pourrait manquer : on ne
+  // devine pas, tout est dû (revue #1264 — échec fermé sur chaque requête).
+  if (listes.some((l) => l === null)) return null;
+  return listes.flat().filter(Boolean);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -75,7 +78,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const fichiers = fichiersTouches();
   const { jouees, sautees } =
     fichiers === null ? { jouees: etapes, sautees: [] } : selection(etapes, fichiers);
-  if (fichiers === null) console.log("check:rapide — base origin/main illisible : check complet.");
+  if (fichiers === null) console.log("check:rapide — diff illisible : check complet.");
   for (const etape of sautees) console.log(`check:rapide — sautée (diff hors périmètre) : ${etape}`);
   for (const etape of jouees) {
     const r = spawnSync(etape, { cwd: path.join(RACINE, "web"), stdio: "inherit", shell: "/bin/bash" });
