@@ -1048,7 +1048,7 @@ export function FichePatientPanel({
   }, [idPatient]);
 
   // Lecture désormais engagée dès l'ouverture de la fiche (SP-CONV LOT-02) :
-  // le bandeau d'épisode (« Épisode N en cours · T0 + X j ») en a besoin au
+  // le bandeau d'épisode (« Épisode N en cours · Jour X du protocole », D-255) en a besoin au
   // niveau cockpit, pas seulement dans l'onglet Trajectoire.
   useEffect(() => {
     if (etatTrajectoire !== 'inconnue') return;
