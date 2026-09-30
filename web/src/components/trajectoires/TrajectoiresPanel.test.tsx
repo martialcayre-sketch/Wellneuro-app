@@ -82,7 +82,7 @@ describe('TrajectoiresPanel (SP-TRAJ LOT-04)', () => {
 
     const ligneSophie = await screen.findByRole('link', { name: /Sophie Nicola/ });
     expect(ligneSophie.getAttribute('href')).toBe('/dashboard/patients/PAT001?onglet=trajectoire');
-    expect(screen.getByText(/Épisode 1 · T0 \+ \d+ j/)).toBeTruthy();
+    expect(screen.getByText(/Épisode 1 · Jour \d+ du protocole/)).toBeTruthy();
     expect(screen.getByText(/Dernier jalon T0 · indice 40/)).toBeTruthy();
     // T0 au 2026-01-01 : l'échéance J21 (22/01) est passée depuis longtemps.
     // « Prochaine échéance » se lirait « à venir » — c'est un jalon manqué.
@@ -92,7 +92,8 @@ describe('TrajectoiresPanel (SP-TRAJ LOT-04)', () => {
     const ligneMichel = screen.getByRole('link', { name: /Michel Dogné/ });
     expect(ligneMichel.getAttribute('href')).toBe('/dashboard/patients/PAT002?onglet=trajectoire');
     expect(screen.getByText('Aucun épisode confirmé')).toBeTruthy();
-    expect(screen.getByText('T0 à confirmer', { exact: false })).toBeTruthy();
+    // Libellé exact : un dossier sans T0 n'attend pas une diffusion (D-255).
+    expect(screen.getByText('Prochaine échéance : T0 à confirmer')).toBeTruthy();
   });
 
   // Pendant du cas précédent : une échéance réellement à venir reste annoncée
@@ -128,6 +129,29 @@ describe('TrajectoiresPanel (SP-TRAJ LOT-04)', () => {
 
     await screen.findByRole('link', { name: /Sophie Nicola/ });
     expect(screen.getByText(/Prochaine échéance : J21 vers le/)).toBeTruthy();
+  });
+
+  // D-255 : sans protocole diffusé, aucun jour du suivi ne court et le J21
+  // n'a pas de date — ni « Jour n », ni échéance datée, ni jalon « manqué ».
+  it('sans diffusion : « protocole non diffusé », échéance sans date', async () => {
+    stubFetch({
+      ok: true,
+      lignes: [
+        {
+          ...LIGNES[0],
+          trajectoire: {
+            ...LIGNES[0].trajectoire,
+            cycles: [{ ...LIGNES[0].trajectoire.cycles[0], jourZero: null }],
+          },
+        },
+      ],
+    });
+    render(<TrajectoiresPanel />);
+
+    await screen.findByRole('link', { name: /Sophie Nicola/ });
+    expect(screen.getByText(/Épisode 1 · T0 · protocole non diffusé/)).toBeTruthy();
+    expect(screen.getByText('Prochaine échéance : J21, après diffusion du protocole')).toBeTruthy();
+    expect(screen.queryByText(/non mesuré — échéance/)).toBeNull();
   });
 
   it('recherche client : filtre par nom sans re-fetch', async () => {

@@ -251,6 +251,22 @@ comportement.
   d'entrée efface les trois lignes.
 - **Bancs.** Six mutations jouées, toutes détectées.
 
+**Complément du 2026-09-30 — lot 3c, le bandeau et le résumé des trajectoires.**
+
+- **Le bandeau d'épisode compte depuis le jour 0.** Il affiche « Jour n du
+  protocole · vous êtes ici », libellé arbitré par le responsable, au lieu de
+  « T0 + n j ». `n` est le nombre de jours révolus depuis la diffusion : 0 le
+  jour même, 21 au jalon J21. Un pivot relance le compte.
+- **Sans diffusion**, il affiche « T0 · protocole non diffusé », avec le nom
+  de l'ancre du cycle courant (`T1 · …` sur un deuxième cycle, [[D-113]]).
+  Aucun nombre de jours n'est servi.
+- **Le résumé des trajectoires** suit la même règle. La position vient du
+  bandeau. L'échéance d'un jalon de mesure se date depuis le jour 0, celle
+  d'une ancre depuis sa confirmation. Sans diffusion, le jalon reste nommé
+  mais sans date, et la liste dit « après diffusion du protocole », jamais
+  « non mesuré, échéance passée ».
+- **Bancs.** Neuf mutations jouées, toutes détectées.
+
 ### D-254 — Les assiettes indiquées se hiérarchisent pour l'aide au choix : la priorité visée d'abord, la convergence ensuite, et la règle est dite à l'écran
 
 - Date : 2026-09-30

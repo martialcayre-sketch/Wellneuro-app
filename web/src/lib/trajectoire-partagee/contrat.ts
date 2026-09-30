@@ -136,6 +136,9 @@ export type CycleBandeau = {
   /** L'ancre du cycle : `T0`, `T1`, `T2`, … (`D-113`). */
   ancre: AncreCycle;
   dateAncre: string; // ISO
+  // Le jour 0 du suivi ([[D-255]]) : la diffusion qui a ouvert le calendrier
+  // du cycle, pivot compris. null = aucun protocole diffusé.
+  jourZero: string | null; // ISO
   versionScore: string | null;
   momentum: { tendance: TendanceMomentum; delta: number } | null;
 };
@@ -149,9 +152,13 @@ export type EpisodeBandeau = {
    */
   numeroEpisode: number;
   cycleId: string;
-  // Jours révolus depuis l'ancre de l'épisode courant (0 le jour même).
-  positionJours: number;
-  // « T1 + 14 j · vous êtes ici » — libellé mono du bandeau (maquette LOT-02).
+  // Jours révolus depuis le JOUR 0 du suivi de l'épisode courant ([[D-255]]) —
+  // 0 le jour de la diffusion, 21 au jalon J21. Un pivot le relance. null :
+  // aucun protocole diffusé, aucun jour du suivi ne court. Avant [[D-255]], il
+  // se comptait depuis la confirmation de l'ancre, protocole ou non.
+  positionJours: number | null;
+  // « Jour 14 du protocole · vous êtes ici », ou « T1 · protocole non diffusé »
+  // — libellé mono du bandeau (maquette LOT-02, libellé arbitré le 2026-09-30).
   positionLibelle: string;
   // Momentum du tour PRÉCÉDENT, uniquement si sa version de score est connue
   // et identique à celle du tour courant (A8-3). Sinon null — le chip delta
@@ -176,10 +183,13 @@ export function deriverEpisodeBandeau(
   const precedent = tries.length >= 2 ? tries[tries.length - 2] : null;
 
   const msParJour = 24 * 60 * 60 * 1000;
-  const positionJours = Math.max(
-    0,
-    Math.floor((aujourdhui.getTime() - new Date(courant.dateAncre).getTime()) / msParJour),
-  );
+  const positionJours =
+    courant.jourZero === null
+      ? null
+      : Math.max(
+          0,
+          Math.floor((aujourdhui.getTime() - new Date(courant.jourZero).getTime()) / msParJour),
+        );
 
   const comparable =
     precedent !== null &&
@@ -192,7 +202,10 @@ export function deriverEpisodeBandeau(
     numeroEpisode: numeroEpisodeDeCycle(courant.ancre, tries.length - 1),
     cycleId: courant.cycleId,
     positionJours,
-    positionLibelle: `${courant.ancre} + ${positionJours} j · vous êtes ici`,
+    positionLibelle:
+      positionJours === null
+        ? `${courant.ancre} · protocole non diffusé`
+        : `Jour ${positionJours} du protocole · vous êtes ici`,
     deltaTourPrecedent:
       comparable && precedent.momentum
         ? {

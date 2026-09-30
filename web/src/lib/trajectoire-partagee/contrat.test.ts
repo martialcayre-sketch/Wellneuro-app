@@ -117,7 +117,9 @@ describe('deriverEpisodeBandeau', () => {
     dateAncre: string,
     versionScore: string | null,
     momentum: CycleBandeau['momentum'] = null,
-  ): CycleBandeau => ({ cycleId, ancre, dateAncre, versionScore, momentum });
+    // Par défaut, le protocole est diffusé le jour de l'ancre.
+    jourZero: string | null = dateAncre,
+  ): CycleBandeau => ({ cycleId, ancre, dateAncre, jourZero, versionScore, momentum });
 
   const aujourdhui = new Date('2026-07-22T12:00:00Z');
 
@@ -125,15 +127,40 @@ describe('deriverEpisodeBandeau', () => {
     expect(deriverEpisodeBandeau([], aujourdhui)).toBeNull();
   });
 
-  it('numérote les épisodes par RANG D’ANCRE et compte la position en jours depuis l’ancre', () => {
+  it('numérote les épisodes par RANG D’ANCRE et compte la position en jours depuis le jour 0', () => {
     const bandeau = deriverEpisodeBandeau(
       [cycle('c2', 'T1', '2026-07-08T00:00:00Z', 'v1'), cycle('c1', 'T0', '2026-05-01T00:00:00Z', 'v1')],
       aujourdhui,
     );
     expect(bandeau).toMatchObject({ numeroEpisode: 2, cycleId: 'c2', positionJours: 14 });
-    // Le libellé porte le NOM de l'ancre du cycle courant — « T0 + 14 j » sur
-    // un cycle ancré en `T1` serait un contresens à l'écran (`D-113`).
-    expect(bandeau?.positionLibelle).toBe('T1 + 14 j · vous êtes ici');
+    expect(bandeau?.positionLibelle).toBe('Jour 14 du protocole · vous êtes ici');
+  });
+
+  it('D-255 : compte depuis la diffusion, pas depuis la confirmation de l’ancre', () => {
+    // Ancre le 2026-07-01, protocole diffusé le 2026-07-08 : jour 14 le 22.
+    const bandeau = deriverEpisodeBandeau(
+      [cycle('c1', 'T0', '2026-07-01T00:00:00Z', 'v1', null, '2026-07-08T00:00:00Z')],
+      aujourdhui,
+    );
+    expect(bandeau).toMatchObject({ positionJours: 14, positionLibelle: 'Jour 14 du protocole · vous êtes ici' });
+  });
+
+  it('D-255 : le jour de la diffusion est le jour 0', () => {
+    const bandeau = deriverEpisodeBandeau(
+      [cycle('c1', 'T0', '2026-07-01T00:00:00Z', 'v1', null, '2026-07-22T08:00:00Z')],
+      aujourdhui,
+    );
+    expect(bandeau?.positionLibelle).toBe('Jour 0 du protocole · vous êtes ici');
+  });
+
+  it('D-255 : sans diffusion, aucun jour ne court — le libellé porte le nom de l’ancre', () => {
+    const bandeau = deriverEpisodeBandeau(
+      [cycle('c1', 'T0', '2026-05-01T00:00:00Z', 'v1'), cycle('c2', 'T1', '2026-07-08T00:00:00Z', 'v1', null, null)],
+      aujourdhui,
+    );
+    expect(bandeau).toMatchObject({ numeroEpisode: 2, cycleId: 'c2', positionJours: null });
+    // Le NOM de l'ancre du cycle courant, jamais un `T0` recopié (`D-113`).
+    expect(bandeau?.positionLibelle).toBe('T1 · protocole non diffusé');
   });
 
   it('numérote par le RANG, jamais par le nombre de cycles présents', () => {
