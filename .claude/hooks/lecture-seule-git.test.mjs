@@ -159,7 +159,7 @@ test("une entrée illisible ne bloque pas (le garde ne décide que sur une comma
 // Sans ce test, retirer le bloc `hooks:` d'un frontmatter désarmerait le garde
 // sans qu'aucun banc ne rougisse.
 
-for (const agent of ["wn-reviewer", "wn-fable"]) {
+for (const agent of ["wn-reviewer", "wn-fable", "Explore"]) {
   test(`${agent} arme le garde lecture seule, en échec fermé`, () => {
     const racine = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
     const texte = fs.readFileSync(path.join(racine, ".claude", "agents", `${agent}.md`), "utf8");
