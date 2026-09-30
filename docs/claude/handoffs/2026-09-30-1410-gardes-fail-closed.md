@@ -1,4 +1,4 @@
-# Handoff — Gardes fermés et agents de revue en lecture seule (PR #1259)
+# Handoff — 2026-09-30 — Gardes fermés et agents de revue en lecture seule (PR #1259)
 
 ## Branche et état Git
 
