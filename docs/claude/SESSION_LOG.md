@@ -8519,3 +8519,17 @@ jour 0. 9 mutations, toutes détectées.
 **Écarté.** Compter depuis 1 : « Jour 21 » ne tomberait plus sur le J21.
 
 **Prochaine action.** PR du lot 3c, puis le lot 4 (garde serveur du cockpit).
+
+## 2026-09-30 — Diffusion : le badge dit ce que le portail sert
+
+**Fait.** Lot 3c de D-255 mergé (#1268) et déployé. Branches locales
+`feat/assiettes-hierarchie` et `wn-deploiement-lot3` supprimées : déjà livrées
+par #1258, #1221 et #1222. Le badge figé « Non transmis » du panneau de
+diffusion suit maintenant `servieAuPatient` (#1270) ; la lecture de diffusion
+porte un jeton d'obsolescence (revue Copilot).
+
+**Écarté.** Ajouter l'accès du patient au portail dans le constat, ce qui
+demanderait d'étendre l'API.
+
+**Prochaine action.** Lot 4 de D-255 : garde serveur au POST du cockpit, rail
+« Suivi » et panneau J21 sans protocole.

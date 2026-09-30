@@ -561,18 +561,28 @@ export function ClinicalRuntimeSection({
     }
   }, [idPatient]);
 
+  // Jeton d'obsolescence de la diffusion (revue Copilot de #1270) : le badge
+  // « Servi sur le portail » AFFIRME un état, et une réponse d'une carte
+  // précédente arrivée en dernier le ferait affirmer sur la mauvaise carte.
+  // Même règle que `seqProposition` : seule la DERNIÈRE demande écrit l'état.
+  const seqDiffusion = useRef(0);
+
   const loadDiffusion = useCallback(async (decisionCardId: string) => {
+    const seq = ++seqDiffusion.current;
     try {
       const response = await fetch(
         `/api/praticien/protocoles/diffusion?idPatient=${encodeURIComponent(idPatient)}&decisionCardId=${encodeURIComponent(decisionCardId)}`,
       );
       const payload = (await response.json()) as DiffusionApiResponse;
+      if (seq !== seqDiffusion.current) return;
       // Un aperçu des fiches qu'on n'a pas pu relire ne reste pas affiché comme
       // s'il était à jour : sans lui, le clic part sans jeton et se fait
-      // refuser, au lieu de remettre sur la foi d'un écran périmé.
+      // refuser, au lieu de remettre sur la foi d'un écran périmé. Le constat
+      // « servi » non plus : non lu, il redevient `null`, et le badge se tait.
       if (!response.ok || !payload.ok) {
         setApercuFiches(null);
         setAnnonceParEmail(false);
+        setServieAuPatient(null);
         setDiffusionDuCycle({ pour: decisionCardId, diffuse: null });
         return;
       }
@@ -587,9 +597,12 @@ export function ClinicalRuntimeSection({
       setApercuFiches(payload.fiches ?? null);
     } catch {
       // L'état de diffusion est indicatif : un échec de lecture ne bloque pas.
-      // L'aperçu des fiches, lui, ne survit pas à une lecture manquée.
+      // L'aperçu des fiches et le constat « servi », eux, ne survivent pas à
+      // une lecture manquée.
+      if (seq !== seqDiffusion.current) return;
       setApercuFiches(null);
       setAnnonceParEmail(false);
+      setServieAuPatient(null);
       setDiffusionDuCycle({ pour: decisionCardId, diffuse: null });
     }
   }, [idPatient]);

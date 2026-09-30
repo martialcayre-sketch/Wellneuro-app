@@ -86,6 +86,34 @@ describe('ProtocolDiffusionPanel', () => {
   });
 });
 
+// LE BADGE DIT CE QUE LE PORTAIL SERT. « Non transmis », figé depuis C2A
+// LOT-03, s'affichait sur un protocole que le portail servait déjà : le
+// praticien lisait l'inverse de ce que son patient voyait.
+describe('ProtocolDiffusionPanel — ce que le portail sert', () => {
+  it('dit « Servi sur le portail » quand le constat est servi', () => {
+    render(<ProtocolDiffusionPanel canApprove={false} approved stale={false} approvedAt={APPROUVE_LE} servieAuPatient />);
+    expect(screen.getByText('Servi sur le portail')).toBeTruthy();
+    expect(screen.getByText(/servie sur le portail du patient/)).toBeTruthy();
+    expect(screen.queryByText(/non transmis/i)).toBeNull();
+  });
+
+  it('dit « Plus servi au patient » quand le constat est éteint', () => {
+    render(<ProtocolDiffusionPanel canApprove={false} approved stale={false} approvedAt={APPROUVE_LE} servieAuPatient={false} />);
+    expect(screen.getByText('Plus servi au patient')).toBeTruthy();
+    expect(screen.queryByText(/servie sur le portail/)).toBeNull();
+  });
+
+  it('n’affiche aucun badge de service tant que le constat n’est pas lu', () => {
+    render(<ProtocolDiffusionPanel canApprove={false} approved stale={false} approvedAt={APPROUVE_LE} />);
+    expect(screen.queryByText(/Servi sur le portail|Plus servi au patient|non transmis/i)).toBeNull();
+  });
+
+  it('n’affiche aucun badge de service sans approbation', () => {
+    render(<ProtocolDiffusionPanel canApprove approved={false} stale={false} approvedAt={null} servieAuPatient={false} />);
+    expect(screen.queryByText(/Servi sur le portail|Plus servi au patient/)).toBeNull();
+  });
+});
+
 // L'APERÇU AVANT LE GESTE ([[D-200]] dette 1). Le praticien validait pour
 // diffusion sans avoir jamais vu une ligne de ce que son patient lirait : le
 // seul aperçu du cockpit vivait sur fixture.
