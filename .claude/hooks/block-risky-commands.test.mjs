@@ -131,3 +131,33 @@ test("l’enveloppe en commentaire ne dispense pas du niveau « demande »", () 
 test("l’enveloppe ne couvre pas ce qui la suit après un &&", () => {
   assert.equal(verdict("npm run test:worktree && rm -rf /"), "refus");
 });
+
+// ── Sondage : refusé en boucle, permis en un appel ───────────────────────────
+// Chaque tour de sondage relit tout le contexte de la session ; l’attente se
+// fait par `wn-attendre-ci.mjs` en tâche de fond. Les lectures ponctuelles —
+// dont la lecture d’un échec — restent libres.
+
+for (const cmd of [
+  "gh pr checks 1259 --watch",
+  "gh run watch 123456",
+  "until gh pr checks 1259 | grep -q pass; do sleep 30; done",
+  "while true; do gh run list --branch x -L 1; sleep 20; done",
+  "for i in 1 2 3; do gh api repos/o/r/actions/runs; done",
+  "sleep 60 && gh pr checks 1259",
+  "gh run view 123 --json status; sleep 30; gh run view 123 --json status",
+  "sleep 120; tail -5 /private/tmp/x/tasks/b09p0cu7s.output",
+]) {
+  test(`sondage refusé : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
+}
+
+for (const cmd of [
+  "gh pr checks 1259",
+  "gh run view 123 --log-failed",
+  "gh pr view 1259 --json statusCheckRollup",
+  "node scripts/wn-attendre-ci.mjs 1259",
+  "sleep 2",
+  "tail -5 /private/tmp/x/tasks/b09p0cu7s.output",
+  "gh pr create --title x --body \"until gh pr checks passe, sleep 30 et relire\"",
+]) {
+  test(`lecture ponctuelle permise : ${cmd}`, () => assert.equal(verdict(cmd), "passe"));
+}

@@ -20,8 +20,8 @@
 
 ### `/wn-route` — aide-mémoire routage (manuel)
 
-- **Fonction** : restitue en un écran la règle complète — défaut Sonnet 5 +
-  high + solo ; Opus sur risque ou signal Fable unique ; Fable sur ≥ 2
+- **Fonction** : restitue en un écran la règle complète — défaut Opus 5.5 +
+  high + solo (depuis le 2026-09-30), délégué sur Sonnet ; Fable sur ≥ 2
   signaux forts ; Ultracode = largeur en opt-in (mot-clé « ultracode » ou
   `/effort ultracode`, retour `/effort high`) ; overrides `/model`
   (`sonnet`, `opus`, `fable`, `opusplan`). **Le défaut de session est porté

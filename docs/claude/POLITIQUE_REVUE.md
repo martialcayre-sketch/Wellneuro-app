@@ -31,6 +31,13 @@ documentaire reste P2. Les classes de `wn-lot` (§ table) donnent le défaut :
 | P1 | `Agent(wn-reviewer)` (Opus/high) | une passe **si l'indépendance est utile** | sur signal seulement |
 | P0 | `Agent(wn-reviewer)` + `/security-review` si la nature s'y prête | **une passe obligatoire** | sur signal seulement |
 
+**Revue de diff par workflow : P0 seulement**, une passe par mission ; un
+tour de plus exige un fait nouveau. Chercheurs `sonnet`/`medium`,
+vérification `opus`/`high`. En P1, `Agent(wn-reviewer)` suffit. Constat du
+2026-09-30 : 17 revues de diff par workflow en un mois, médiane 19 $ — douze
+à dix-huit fois le budget d'un `wn-reviewer`, souvent en tours successifs.
+Les audits transverses restent régis par Ultracode (opt-in, `CLAUDE.md`).
+
 Jamais deux reviewers sur le même diff avec la même mission ; jamais
 Fable→Opus→Codex→Codex sans signal. Fable ne remplace pas Codex : Fable =
 architecture/arbitrage/cause racine ; Codex = contre-expertise indépendante.

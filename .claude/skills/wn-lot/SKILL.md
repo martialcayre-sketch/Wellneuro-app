@@ -74,7 +74,7 @@ revue clinique est un vrai risque.
 ## Comment le modèle s'applique — solo d'abord
 
 **Classes Docs/UI/API : tout se fait en session, solo.** La session est déjà
-au défaut `sonnet` + effort high (`.claude/settings.json`) — cadrer, exécuter
+au défaut `opus` (Opus 5.5) + effort high (`.claude/settings.json`) — cadrer, exécuter
 et revoir (`/code-review`) sans sous-agent. On ne délègue que si le périmètre
 est réellement volumineux (nombreux fichiers à lire, sorties longues) :
 l'agent natif `Explore` pour l'investigation seulement.
@@ -87,9 +87,8 @@ sous-agent WN ne peut éditer (outils `Read, Grep, Glob, Bash`) ; une exécution
 déléguée passe par `Agent(subagent_type: "general-purpose", model: <classe>)`.
 
 **Exception : le mode Plan.** `EnterPlanMode` est un mode de la session, avec
-sa porte d'approbation humaine (`ExitPlanMode`) — jamais délégué. Si la classe
-exige `opus` pour le plan, **recommander à l'utilisateur** de basculer la
-session (`/model opusplan`) avant cette étape.
+sa porte d'approbation humaine (`ExitPlanMode`) — jamais délégué. La session
+est déjà sur Opus : le plan se fait sans bascule de modèle.
 
 ## Le coût est dans le contexte, pas dans le modèle
 
@@ -110,9 +109,8 @@ T2, un lot sans migration n'a pas besoin de la revue préalable.
    bornées ; agent natif `Explore` seulement si le périmètre est volumineux) ;
    `Agent(wn-reviewer)` pour Scoring/Migration/Auth : écarts entre le lot et
    le dépôt réel, périmètre confirmé, hors périmètre nommé.
-2. **Plan technique** — mode Plan natif (`EnterPlanMode`, jamais délégué).
-   Si la classe exige `opus`, le dire et laisser l'utilisateur basculer
-   (`/model opusplan`) avant cette étape.
+2. **Plan technique** — mode Plan natif (`EnterPlanMode`, jamais délégué),
+   sur le défaut Opus de la session.
 3. **Exécution** — en session pour Docs/UI/API (la session est déjà au modèle
    de la classe) ; `Agent(subagent_type: "general-purpose", model: <modèle de
    la classe>)` pour Scoring/Migration/Auth. Prompt et périmètre bornés aux

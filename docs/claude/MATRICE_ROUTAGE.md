@@ -3,7 +3,8 @@
 Fige huit scénarios rejouables pour la fenêtre d'observation post-merge de la
 PR #727 (handoff `2026-08-21-2030-refonte-environnement-claude.md`, § Ouvert).
 Règles de référence : `CLAUDE.md` § Modèle, effort, exécution ;
-`.claude/skills/wn-route/SKILL.md`.
+`.claude/skills/wn-route/SKILL.md`. Depuis le 2026-09-30, le défaut est
+Opus 5.5 + high : lire « Sonnet » ci-dessous comme « le défaut solo ».
 
 | T | Scénario type | Routage attendu | Échec si… |
 |---|---|---|---|

@@ -26,8 +26,8 @@ ou afficher le prochain lot :
 /wn-campaign next
 ```
 
-Le plan technique s'élabore ensuite dans le mode Plan natif (Shift+Tab, ou
-`/model opusplan` quand le plan est le morceau difficile).
+Le plan technique s'élabore ensuite dans le mode Plan natif (Shift+Tab), sur
+le défaut Opus de la session.
 
 Les commandes historiques `/wn-r0` à `/wn-r6` ont été supprimées le 2026-08-07 (chantier R0→R6 clos
 le 2026-07-10, stubs de redirection sans contenu). Le flux campagnes est le seul chemin.
