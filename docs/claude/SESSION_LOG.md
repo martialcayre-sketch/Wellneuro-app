@@ -8376,3 +8376,18 @@ dit pourquoi. Cinq mutations, toutes détectées.
 jalons sur la diffusion est écarté.
 
 **Ouvert.** Le classement des assiettes (D-254), sur sa branche.
+
+## 2026-09-30 — Les assiettes indiquées, classées pour l'aide au choix (D-254)
+
+**Fait.** La carte classe les assiettes indiquées : d'abord celles liées à la
+priorité visée (par `BESOIN_SOURCES`), puis par nombre de critères atteints ;
+la règle est dite, le menu « Alimentation » suit le même ordre. Le service
+rend toutes les voies atteintes d'une disjonction. 7 mutations, toutes
+détectées.
+
+**Décidé (responsable).** « Priorité puis convergence ».
+
+**Numérotation.** Le garde refuse un trou : classement = D-254, calendrier
+ancré sur la diffusion = D-255 (plan en 4 lots validé).
+
+**Prochaine action.** PR, release-db à approuver, puis lot 1 de D-255.

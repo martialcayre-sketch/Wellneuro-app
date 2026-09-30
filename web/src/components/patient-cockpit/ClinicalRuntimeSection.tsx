@@ -33,7 +33,7 @@ import { resoudreJalonDu, type JalonDu } from '@/lib/protocol/jalonDu';
 import { estAncreDeCycle, estJalonMesure, type AncreCycle } from '@/lib/protocol/cycles';
 import { Button } from '@/components/ui/Button';
 import type { JalonMomentum } from '@/lib/equilibre/types';
-import { AssiettesIndiqueesPanel } from './AssiettesIndiqueesPanel';
+import { AssiettesIndiqueesPanel, type PrioriteVisee } from './AssiettesIndiqueesPanel';
 import { useCbEnabled, useCbResultsEnabled } from './CbFeatureProvider';
 import {
   ArbitrageBiologiquePanel,
@@ -1448,8 +1448,9 @@ export function ClinicalRuntimeSection({
   // la relit (`construireChaineC1Tolerante`) — la première branche est donc
   // atteignable depuis le 2026-09-06. Le repli sert désormais ce qu'il dit :
   // viser la priorité PROPOSÉE tant que le praticien n'a pas tranché. Il ne
-  // vaut que pour la re-passation ciblée : il ne débloque aucun protocole, et
-  // `selectionPrioriteDue` ci-dessus ne s'en sert pas.
+  // vaut que pour la re-passation ciblée et pour la hiérarchie des assiettes
+  // ([[D-254]]) : il ne débloque aucun protocole, et `selectionPrioriteDue`
+  // ci-dessus ne s'en sert pas.
   const idCandidatVise = decisionCard
     ? decisionCard.selectedMainPriority?.candidateId ?? decisionCard.proposedMainPriorityId
     : null;
@@ -1457,6 +1458,16 @@ export function ClinicalRuntimeSection({
     ? decisionCard?.priorityCandidates.find(candidat => candidat.candidateId === idCandidatVise) ?? null
     : null;
   const needIdsPrioriteSelectionnee = candidatVise?.provenance.needIds ?? NEED_IDS_VIDE;
+  // LA HIÉRARCHIE DES ASSIETTES VISE LA MÊME PRIORITÉ ([[D-254]]) — second
+  // usage du repli, qui ne débloque toujours rien : il CLASSE, et la carte dit
+  // si la priorité est retenue par le praticien ou seulement proposée.
+  const prioriteViseeAssiettes: PrioriteVisee | null = candidatVise
+    ? {
+      libelle: candidatVise.label,
+      retenue: decisionCard?.selectedMainPriority?.candidateId === candidatVise.candidateId,
+      needIds: candidatVise.provenance.needIds,
+    }
+    : null;
   // « Un épisode a-t-il été confirmé ? » ne dépend plus du seul écran
   // (`D-118`) : un cycle présent dans la trajectoire vient d'une ligne
   // d'`assessment_episodes`, donc d'une confirmation persistée — l'état
@@ -2234,6 +2245,7 @@ export function ClinicalRuntimeSection({
           idPatient={idPatient}
           onRetenirAssiette={choix => setAssietteSelection({ pour: idPatient, choix })}
           onIndiqueesLues={liste => setAssiettesIndiquees({ pour: idPatient, liste })}
+          prioriteVisee={prioriteViseeAssiettes}
         />
       )}
       <div id="protocol-version-builder" hidden={!affiche('actions') || (!fixture && sousVueActions !== 'protocole')}>

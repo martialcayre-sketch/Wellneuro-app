@@ -4,6 +4,76 @@
 
 ## Décisions actives
 
+### D-254 — Les assiettes indiquées se hiérarchisent pour l'aide au choix : la priorité visée d'abord, la convergence ensuite, et la règle est dite à l'écran
+
+- Date : 2026-09-30
+- Statut : accepté — demande du responsable depuis l'écran d'un dossier réel
+  (« la proposition d'assiettes n'est toujours pas hiérarchisée pour l'aide au
+  choix ») ; critère arbitré en séance le même jour : « priorité puis
+  convergence ».
+- Domaine : clinique (assiettes indiquées), cockpit praticien. **Aucune table
+  signée ne bouge, aucune borne, aucun poids, aucune migration, aucun drapeau
+  neuf.** Le service vit sous `lib/clinical/` : son merge déclenche
+  `release-db`. Complète [[D-237]] et [[D-249]].
+
+**1. LE FAIT.** La carte listait les assiettes indiquées dans l'ordre de la
+table signée : un ordre de rédaction, pas un ordre clinique. Rien au dépôt ne
+classait — ni lien d'une assiette à un besoin, ni rang des besoins.
+
+**2. LE CRITÈRE, ARBITRÉ PAR LE RESPONSABLE.**
+
+- **D'abord, le lien avec la priorité visée.** C'est la priorité retenue par
+  le praticien, à défaut celle que propose la carte de décision : le repli de
+  la re-passation ciblée ([[D-058]]), qui gagne ici un second usage et ne
+  débloque toujours rien. Une assiette y est liée quand un instrument d'une de
+  ses voies atteintes mesure un besoin qui fonde cette priorité
+  (`provenance.needIds`), selon `BESOIN_SOURCES`.
+  - Une source qui vise un sous-score ne couvre que ce sous-score.
+  - Une source qui vise un questionnaire entier couvre toutes ses lectures.
+- **Ensuite, la convergence** : le nombre de voies atteintes de la règle.
+- **À égalité, l'ordre de la table** : le tri est stable.
+
+**3. CE QUE LE CLASSEMENT NE FAIT PAS.**
+
+- **Aucun poids, aucune valeur de score.** La convergence compte des voies ;
+  elle ne mesure pas de combien un score dépasse sa borne ([[D-157]]).
+- **Aucune correspondance nouvelle.** Le lien passe par une table signée déjà
+  lue par la re-passation ciblée (`DC-19`, `DC-26`).
+- **Aucune assiette n'apparaît ni ne disparaît.** Le classement ordonne la
+  liste de la carte ; il ne la filtre pas.
+- **Une voie d'anamnèse ou d'âge ne lie jamais** : elle n'a pas d'instrument.
+
+**4. TOUTES LES VOIES ATTEINTES.** `evaluerDeclencheur` s'arrête à la première
+branche atteinte d'une disjonction ([[D-060]]). Il dit QU'une assiette est
+indiquée, pas par combien de voies — or une seconde branche peut porter seule
+le lien avec la priorité. Le service rend donc `voiesAtteintes`, dont la
+première est celle du motif.
+
+- Chaque branche est évaluée **comme une disjonction à une branche**. La garde
+  de complétude ([[D-060]] §2) tient ainsi branche par branche : un recueil
+  partiel ne compte jamais pour une voie.
+- `orientationEngine` n'est pas modifié.
+
+**5. À L'ÉCRAN.**
+
+- **La règle est dite au-dessus de la liste** : une liste classée sans sa
+  règle se lirait comme un palmarès.
+- **Deux groupes quand une assiette est liée** : « En lien avec la priorité
+  retenue » (ou « proposée »), suivi de son libellé ; puis « Autres assiettes
+  indiquées ».
+- **Une ligne à plusieurs voies les nomme toutes**, avec leur nombre.
+- **Le menu « Alimentation » ([[D-249]]) reçoit la liste dans le même ordre.**
+  Une priorité qui arrive après la lecture reclasse la carte et le menu, sans
+  relire le dossier.
+
+**6. UNE RÉPONSE SANS `voiesAtteintes` NE FAIT PAS TOMBER LA CARTE** : sa voie
+unique est alors celle du motif — la leçon de [[D-247]] §5.
+
+**Pas d'E2E, et c'est dit.** Le drapeau des assiettes est éteint dans les E2E
+(même réserve que [[D-237]] et [[D-249]]). Le lot est tenu par ses bancs de
+service, de module et de carte ; sept mutations ont été jouées, toutes
+détectées. Le constat se fera en production, sur un dossier réel.
+
 ### D-253 — Pas de jalon de suivi sans protocole diffusé : le cockpit reste sur la carte d'ancre, et le constructeur avec elle
 
 - Date : 2026-09-30

@@ -5,7 +5,7 @@
 // les portes atteintes se lirait « aucune assiette n'est indiquée pour ce
 // patient » — un constat clinique là où la vérité est qu'un instrument n'a pas
 // été passé (`DC-24`).
-import { fireEvent, render, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // LA SECTION BIOLOGIQUE EST UNE DOUBLURE ICI ([[D-247]]). Elle fait sa propre
@@ -379,6 +379,145 @@ describe('AssiettesIndiqueesPanel — la liste remontée au constructeur', () =>
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
     rerender(<AssiettesIndiqueesPanel idPatient="PAT001" onIndiqueesLues={() => {}} />);
     rerender(<AssiettesIndiqueesPanel idPatient="PAT001" onIndiqueesLues={() => {}} />);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+// [[D-254]] — LA HIÉRARCHIE. Trois assiettes dans l'ordre de la table :
+// une par l'âge (une voie, sans instrument), une par deux voies sans lien avec
+// le besoin 10, une par `Q_INF_03` DA — qui fonde le besoin 10 dans la vraie
+// `BESOIN_SOURCES`.
+const PAR_AGE = { ...INDIQUEE, voiesAtteintes: [{ motif: 'âge 76 ans > 60', instruments: [] }] };
+const DEUX_VOIES = {
+  ligneId: 'ASSIETTE-IND-EPARGNE-DIGESTIVE',
+  plateCode: 'ASSIETTE_EPARGNE_DIGESTIVE',
+  libelle: 'Assiette d’épargne digestive',
+  sourceProtocole: null,
+  motif: 'Q_GAS_01 : zone warning',
+  instruments: [{ idQuestionnaire: 'Q_GAS_01' }],
+  voiesAtteintes: [
+    { motif: 'Q_GAS_01 : zone warning', instruments: [{ idQuestionnaire: 'Q_GAS_01' }] },
+    { motif: 'Q_STR_02 : score 30', instruments: [{ idQuestionnaire: 'Q_STR_02' }] },
+  ],
+  claims: ['WN-CL-0292-001::v1.0'],
+};
+const LIEE_AU_BESOIN_10 = {
+  ligneId: 'ASSIETTE-IND-DOPAMINERGIQUE',
+  plateCode: 'ASSIETTE_DOPAMINERGIQUE',
+  libelle: 'Assiette dopaminergique',
+  sourceProtocole: null,
+  motif: 'Q_INF_03 DA : score 12 >= 10',
+  instruments: [{ idQuestionnaire: 'Q_INF_03', sousScore: 'DA' }],
+  voiesAtteintes: [
+    { motif: 'Q_INF_03 DA : score 12 >= 10', instruments: [{ idQuestionnaire: 'Q_INF_03', sousScore: 'DA' }] },
+  ],
+  claims: ['WN-CL-0289-005::v1.0'],
+};
+const TROIS = actif({ indiquees: [PAR_AGE, DEUX_VOIES, LIEE_AU_BESOIN_10] });
+const RETENUE_BESOIN_10 = { libelle: 'Axe neurotransmetteurs', retenue: true, needIds: [10] };
+
+function libellesDansLOrdre(racine: HTMLElement): string[] {
+  return [...racine.querySelectorAll('li > p.font-semibold')].map(p => p.textContent ?? '');
+}
+
+describe('AssiettesIndiqueesPanel — la hiérarchie (D-254)', () => {
+  // Les cas voisins laissent leur carte montée : sans ce nettoyage, chaque
+  // requête par texte trouverait aussi la leur.
+  beforeEach(() => cleanup());
+
+  it('priorité retenue : la liée d’abord, sous son titre ; les autres ensuite, par convergence', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(TROIS)));
+    const { container, getByText } = render(
+      <AssiettesIndiqueesPanel idPatient="PAT001" prioriteVisee={RETENUE_BESOIN_10} />,
+    );
+    await waitFor(() => expect(getByText('Assiette dopaminergique')).toBeTruthy());
+    expect(libellesDansLOrdre(container)).toEqual([
+      'Assiette dopaminergique',
+      'Assiette d’épargne digestive',
+      'Assiette protéinée',
+    ]);
+    expect(getByText('En lien avec la priorité retenue — « Axe neurotransmetteurs »')).toBeTruthy();
+    expect(getByText('Autres assiettes indiquées')).toBeTruthy();
+    expect(
+      getByText('Classées d’abord par lien avec la priorité retenue, puis par nombre de critères atteints.'),
+    ).toBeTruthy();
+  });
+
+  it('sans priorité : un seul groupe, par convergence, et la règle est dite', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(TROIS)));
+    const { container, getByText, queryByText } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
+    await waitFor(() => expect(getByText('Assiette dopaminergique')).toBeTruthy());
+    expect(libellesDansLOrdre(container)).toEqual([
+      'Assiette d’épargne digestive',
+      'Assiette protéinée',
+      'Assiette dopaminergique',
+    ]);
+    expect(getByText('Classées par nombre de critères atteints.')).toBeTruthy();
+    expect(queryByText('Autres assiettes indiquées')).toBeNull();
+  });
+
+  it('priorité PROPOSÉE sans aucun lien : dit, et classé par convergence', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(TROIS)));
+    const { getByText } = render(
+      <AssiettesIndiqueesPanel idPatient="PAT001" prioriteVisee={{ libelle: 'Humeur', retenue: false, needIds: [8] }} />,
+    );
+    await waitFor(() => expect(getByText('Assiette dopaminergique')).toBeTruthy());
+    expect(
+      getByText('Aucune n’est en lien avec la priorité proposée « Humeur » : classées par nombre de critères atteints.'),
+    ).toBeTruthy();
+  });
+
+  it('plusieurs voies : toutes nommées, avec leur nombre', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(TROIS)));
+    const { getByText } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
+    await waitFor(() =>
+      expect(getByText('Ce qui l’indique (2 critères) : Q_GAS_01 : zone warning ; Q_STR_02 : score 30')).toBeTruthy(),
+    );
+  });
+
+  it('une réponse SANS `voiesAtteintes` ne fait pas tomber la carte : la voie est celle du motif', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(actif({ indiquees: [INDIQUEE] }))));
+    const { getByText } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
+    await waitFor(() => expect(getByText('Ce qui l’indique : âge 76 ans > 60')).toBeTruthy());
+  });
+
+  it('le menu « Alimentation » reçoit la liste DANS L’ORDRE DE LA CARTE', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(TROIS)));
+    const onIndiquees = vi.fn();
+    render(
+      <AssiettesIndiqueesPanel idPatient="PAT001" onIndiqueesLues={onIndiquees} prioriteVisee={RETENUE_BESOIN_10} />,
+    );
+    await waitFor(() => expect(onIndiquees).toHaveBeenCalledTimes(1));
+    expect(onIndiquees.mock.calls[0][0].map((a: { plateCode: string }) => a.plateCode)).toEqual([
+      'ASSIETTE_DOPAMINERGIQUE',
+      'ASSIETTE_EPARGNE_DIGESTIVE',
+      'ASSIETTE_PROTEINEE',
+    ]);
+  });
+
+  it('une priorité qui arrive APRÈS la lecture reclasse la carte et le menu — sans relire le dossier', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse(TROIS)));
+    const onIndiquees = vi.fn();
+    const { container, rerender, getByText } = render(
+      <AssiettesIndiqueesPanel idPatient="PAT001" onIndiqueesLues={onIndiquees} />,
+    );
+    await waitFor(() => expect(onIndiquees).toHaveBeenCalledTimes(1));
+    rerender(
+      <AssiettesIndiqueesPanel idPatient="PAT001" onIndiqueesLues={onIndiquees} prioriteVisee={RETENUE_BESOIN_10} />,
+    );
+    await waitFor(() => expect(onIndiquees).toHaveBeenCalledTimes(2));
+    expect(onIndiquees.mock.calls[1][0][0].plateCode).toBe('ASSIETTE_DOPAMINERGIQUE');
+    expect(libellesDansLOrdre(container)[0]).toBe('Assiette dopaminergique');
+    expect(getByText('Autres assiettes indiquées')).toBeTruthy();
+    // Un parent qui recrée la priorité à l'identique ne relance rien.
+    rerender(
+      <AssiettesIndiqueesPanel
+        idPatient="PAT001"
+        onIndiqueesLues={onIndiquees}
+        prioriteVisee={{ ...RETENUE_BESOIN_10, needIds: [10] }}
+      />,
+    );
+    expect(onIndiquees).toHaveBeenCalledTimes(2);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AssiettesIndiqueesApiResponse } from '@/app/api/praticien/assiettes-indiquees/route';
+import type { AssietteIndiquee } from '@/lib/clinical/indicationsAssiettesService';
 import type { LacuneDeclencheur } from '@/lib/clinical/orientationEngine';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 import { PortesBiologiquesSection } from './PortesBiologiquesSection';
+import { hierarchiserAssiettes } from './hierarchieAssiettes';
 
 // LES ASSIETTES INDIQUÉES — carte de LECTURE qui ARME UN GESTE, et n'en exécute
 // aucun ([[D-237]], puis [[D-240]]).
@@ -113,12 +115,39 @@ export function libelleLacune(lacune: LacuneDeclencheur): string {
 /** Ce que la carte remonte au parent : l'assiette retenue, rien de plus. */
 export type AssietteRetenue = { plateCode: string; libelle: string };
 
+/** La priorité que la hiérarchie vise ([[D-254]]) : retenue, à défaut proposée. */
+export type PrioriteVisee = {
+  libelle: string;
+  /** `true` : retenue par le praticien ; `false` : proposée par la carte. */
+  retenue: boolean;
+  needIds: readonly number[];
+};
+
+const AUCUN_BESOIN: readonly number[] = [];
+
+/**
+ * UNE RÉPONSE SANS `voiesAtteintes` NE FAIT PAS TOMBER LA CARTE : sa voie unique
+ * est alors celle du motif. La leçon de la biologie ([[D-247]] §5) — un champ
+ * manquant levait au rendu, et le cockpit tombait avec la carte.
+ */
+function avecVoies(assiette: AssietteIndiquee): AssietteIndiquee {
+  return Array.isArray(assiette.voiesAtteintes) && assiette.voiesAtteintes.length > 0
+    ? assiette
+    : { ...assiette, voiesAtteintes: [{ motif: assiette.motif, instruments: assiette.instruments }] };
+}
+
 export function AssiettesIndiqueesPanel({
   idPatient,
   onRetenirAssiette,
   onIndiqueesLues,
+  prioriteVisee = null,
 }: {
   idPatient: string;
+  /**
+   * LA PRIORITÉ VISÉE, pour hiérarchiser ([[D-254]]). Absente ou `null` : les
+   * assiettes sont classées par convergence seule, et la carte le dit.
+   */
+  prioriteVisee?: PrioriteVisee | null;
   /**
    * SANS CETTE PROP, LA CARTE RESTE CE QU'ELLE ÉTAIT : aucun bouton, aucun
    * geste. Elle est optionnelle parce qu'une carte de lecture doit rester
@@ -193,10 +222,9 @@ export function AssiettesIndiqueesPanel({
           rappelIndiquees.current?.(null);
           return;
         }
+        // LA LISTE REMONTE PAR L'EFFET CI-DESSOUS, DANS L'ORDRE DE LA CARTE
+        // ([[D-254]]) : la priorité visée peut arriver après la lecture.
         setPayload({ pour: idPatient, corps });
-        rappelIndiquees.current?.(corps.actif
-          ? corps.indiquees.map(assiette => ({ plateCode: assiette.plateCode, libelle: assiette.libelle }))
-          : null);
       } catch {
         if (jeton.current === courant) {
           setErreur({ pour: idPatient, message: "Lecture impossible des indications d'assiette." });
@@ -211,6 +239,32 @@ export function AssiettesIndiqueesPanel({
   // CE QUI EST RENDU EST CE QUI VIENT DE CE DOSSIER-CI, et rien d'autre.
   const lecture = payload !== null && payload.pour === idPatient ? payload.corps : null;
   const messageErreur = erreur !== null && erreur.pour === idPatient ? erreur.message : null;
+
+  // LA HIÉRARCHIE ([[D-254]]) : la priorité visée d'abord, la convergence
+  // ensuite, l'ordre de la table à égalité. La clé des besoins, et non le
+  // tableau : un parent qui le recrée à chaque rendu ne relance rien.
+  const needIds = prioriteVisee?.needIds ?? AUCUN_BESOIN;
+  const cleBesoins = needIds.join(',');
+  const hierarchie = useMemo(
+    () => (lecture?.ok && lecture.actif === true
+      ? hierarchiserAssiettes(lecture.indiquees.map(avecVoies), cleBesoins === '' ? [] : cleBesoins.split(',').map(Number))
+      : null),
+    [lecture, cleBesoins],
+  );
+
+  // LA LISTE DU MENU « ALIMENTATION » ([[D-249]]) SUIT L'ORDRE DE LA CARTE. Une
+  // lecture de CE dossier seulement : `lecture` est datée, et une réponse en
+  // retard n'a jamais atteint `payload`. L'erreur, elle, remonte `null` depuis
+  // la lecture même.
+  useEffect(() => {
+    if (lecture === null || !lecture.ok) return;
+    rappelIndiquees.current?.(hierarchie === null
+      ? null
+      : [...hierarchie.liees, ...hierarchie.autres].map(assiette => ({
+        plateCode: assiette.plateCode,
+        libelle: assiette.libelle,
+      })));
+  }, [lecture, hierarchie]);
 
   // VERROU FERMÉ : la carte disparaît entièrement. Elle n'a rien à dire au
   // praticien d'une fonctionnalité que le cabinet n'a pas ouverte, et un
@@ -229,6 +283,51 @@ export function AssiettesIndiqueesPanel({
   // une bascule de dossier, il vaut encore `false`. La seconde clause tient ce
   // cas — rien de ce dossier n'est encore arrivé, donc rien ne paraît.
   if (chargement || (lecture === null && messageErreur === null)) return null;
+
+  const prioriteActive = prioriteVisee !== null && needIds.length > 0;
+  const qualificatifPriorite = prioriteVisee?.retenue ? 'retenue' : 'proposée';
+
+  const carteAssiette = (assiette: AssietteIndiquee) => (
+    <li
+      key={assiette.ligneId}
+      className="rounded-lg border border-border bg-background p-3"
+    >
+      <p className="text-sm font-semibold text-foreground">{assiette.libelle}</p>
+      {/* TOUTES LES VOIES ATTEINTES, et leur nombre quand il y en a plus d'une :
+          c'est la convergence qui classe ([[D-254]]), elle se lit donc sur la
+          ligne. */}
+      <p className="mt-1 text-xs text-muted-foreground">
+        {assiette.voiesAtteintes.length > 1
+          ? `Ce qui l’indique (${assiette.voiesAtteintes.length} critères) : ${assiette.voiesAtteintes.map(voie => voie.motif).join(' ; ')}`
+          : `Ce qui l’indique : ${assiette.motif}`}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {assiette.sourceProtocole ? `${assiette.sourceProtocole} · ` : ''}
+        {assiette.claims.join(' · ')}
+      </p>
+      {/* LE GESTE EST SUR LA LIGNE INDIQUÉE, ET NULLE PART AILLEURS. Les
+          assiettes NON ÉVALUÉES n'en reçoivent aucun : une porte qu'on n'a pas
+          pu regarder n'indique rien, et lui offrir le même bouton ferait de
+          « on ne sait pas » un « c'est indiqué » (`DC-24`). */}
+      {onRetenirAssiette && (
+        <button
+          type="button"
+          // LE NOM ACCESSIBLE NOMME L'ASSIETTE, le texte visible reste court.
+          // Sans cela, une carte qui porte trois indications rend trois boutons
+          // de nom IDENTIQUE : à la synthèse vocale, le praticien entendrait
+          // trois fois la même chose sans savoir laquelle il retient.
+          aria-label={`Retenir « ${assiette.libelle} » pour le protocole`}
+          onClick={() => onRetenirAssiette({
+            plateCode: assiette.plateCode,
+            libelle: assiette.libelle,
+          })}
+          className="mt-2 min-h-11 rounded-lg border border-foreground px-3 py-2 text-xs font-medium"
+        >
+          Retenir pour le protocole
+        </button>
+      )}
+    </li>
+  );
 
   // `shrink-0` : LA CARTE ÉTAIT ÉCRASÉE À HAUTEUR NULLE, ET C'ÉTAIT EN
   // PRODUCTION. `ClinicalRuntimeSection` rend un fragment : cette section est un
@@ -293,45 +392,34 @@ export function AssiettesIndiqueesPanel({
               </p>
             )}
 
-            {lecture.indiquees.length > 0 && (
-              <ul className="mt-4 grid gap-3">
-                {lecture.indiquees.map(assiette => (
-                  <li
-                    key={assiette.ligneId}
-                    className="rounded-lg border border-border bg-background p-3"
-                  >
-                    <p className="text-sm font-semibold text-foreground">{assiette.libelle}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Ce qui l’indique : {assiette.motif}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {assiette.sourceProtocole ? `${assiette.sourceProtocole} · ` : ''}
-                      {assiette.claims.join(' · ')}
-                    </p>
-                    {/* LE GESTE EST SUR LA LIGNE INDIQUÉE, ET NULLE PART
-                        AILLEURS. Les assiettes NON ÉVALUÉES n'en reçoivent
-                        aucun : une porte qu'on n'a pas pu regarder n'indique
-                        rien, et lui offrir le même bouton ferait de « on ne
-                        sait pas » un « c'est indiqué » (`DC-24`). */}
-                    {onRetenirAssiette && (
-                      <button
-                        type="button"
-                        // LE NOM ACCESSIBLE NOMME L'ASSIETTE, le texte visible
-                        // reste court. Sans cela, une carte qui porte trois
-                        // indications rend trois boutons de nom IDENTIQUE : à la
-                        // synthèse vocale, le praticien entendrait trois fois la
-                        // même chose sans savoir laquelle il retient.
-                        aria-label={`Retenir « ${assiette.libelle} » pour le protocole`}
-                        onClick={() => onRetenirAssiette({
-                          plateCode: assiette.plateCode,
-                          libelle: assiette.libelle,
-                        })}
-                        className="mt-2 min-h-11 rounded-lg border border-foreground px-3 py-2 text-xs font-medium"
-                      >
-                        Retenir pour le protocole
-                      </button>
+            {hierarchie !== null && hierarchie.liees.length + hierarchie.autres.length > 0 && (
+              <>
+                {/* L'ORDRE SE DIT ([[D-254]]) : une liste classée sans sa règle
+                    se lirait comme un palmarès. */}
+                <p className="mt-4 text-xs text-muted-foreground">
+                  {!prioriteActive
+                    ? 'Classées par nombre de critères atteints.'
+                    : hierarchie.liees.length > 0
+                      ? `Classées d’abord par lien avec la priorité ${qualificatifPriorite}, puis par nombre de critères atteints.`
+                      : `Aucune n’est en lien avec la priorité ${qualificatifPriorite} « ${prioriteVisee?.libelle ?? ''} » : classées par nombre de critères atteints.`}
+                </p>
+                {hierarchie.liees.length > 0 && (
+                  <>
+                    <h4 className="mt-3 text-sm font-medium text-foreground">
+                      En lien avec la priorité {qualificatifPriorite} — « {prioriteVisee?.libelle} »
+                    </h4>
+                    <ul className="mt-2 grid gap-3">{hierarchie.liees.map(carteAssiette)}</ul>
+                  </>
+                )}
+                {hierarchie.autres.length > 0 && (
+                  <>
+                    {hierarchie.liees.length > 0 && (
+                      <h4 className="mt-4 text-sm font-medium text-foreground">Autres assiettes indiquées</h4>
                     )}
-                  </li>
-                ))}
-              </ul>
+                    <ul className="mt-2 grid gap-3">{hierarchie.autres.map(carteAssiette)}</ul>
+                  </>
+                )}
+              </>
             )}
 
             {lecture.nonEvaluees.length > 0 && (
