@@ -1,6 +1,11 @@
 import { prisma } from '@/lib/prisma';
-import { lireAncresPersistees } from './ancresPersistees';
-import { calendriersParCycle, type DiffusionHistorique } from './calendrierSuivi';
+import { lireAncresPersistees, type AncrePersistee } from './ancresPersistees';
+import {
+  calendriersParCycle,
+  joursZeroParCycle,
+  type AncreDeRattachement,
+  type DiffusionHistorique,
+} from './calendrierSuivi';
 
 // LES CALENDRIERS DE SUIVI D'UN DOSSIER, LUS EN BASE ([[D-255]]).
 //
@@ -12,42 +17,40 @@ import { calendriersParCycle, type DiffusionHistorique } from './calendrierSuivi
 // `lireAncresPersistees` : une diffusion postérieure à la date lue ne fuit pas
 // dans une lecture du passé.
 
-export async function lireCalendriersSuivi(
-  idPatient: string,
-  avantOuA?: Date | null,
-): Promise<ReturnType<typeof calendriersParCycle>> {
-  const [approbations, ancres] = await Promise.all([
-    prisma.protocolDiffusionApproval.findMany({
-      where: { idPatient, ...(avantOuA ? { approvedAt: { lte: avantOuA } } : {}) },
-      select: {
-        id: true,
-        approvedAt: true,
-        createdAt: true,
-        approvedBy: true,
-        confirmation: true,
-        decisionCardInputHash: true,
-        protocolDraftInputHash: true,
-        protocolDraftId: true,
-        draft: {
-          select: {
-            idPatient: true,
-            inputHash: true,
-            decisionCardInputHash: true,
-            status: true,
-            reviewedAt: true,
-            selectedPriorityId: true,
-            episode: { select: { id: true, milestone: true, cycleId: true } },
-          },
-        },
-      },
-    }),
-    lireAncresPersistees(idPatient, avantOuA),
-  ]);
+// Ce que chaque lecture sélectionne d'une approbation : la ligne, sa version
+// et l'épisode de celle-ci.
+const SELECTION_APPROBATION = {
+  id: true,
+  idPatient: true,
+  approvedAt: true,
+  createdAt: true,
+  approvedBy: true,
+  confirmation: true,
+  decisionCardInputHash: true,
+  protocolDraftInputHash: true,
+  protocolDraftId: true,
+  draft: {
+    select: {
+      idPatient: true,
+      inputHash: true,
+      decisionCardInputHash: true,
+      status: true,
+      reviewedAt: true,
+      selectedPriorityId: true,
+      episode: { select: { id: true, milestone: true, cycleId: true } },
+    },
+  },
+} as const;
 
-  const diffusions: DiffusionHistorique[] = approbations
+type ApprobationLue = Awaited<
+  ReturnType<typeof prisma.protocolDiffusionApproval.findMany<{ select: typeof SELECTION_APPROBATION }>>
+>[number];
+
+function versDiffusions(approbations: readonly ApprobationLue[], idPatient: string): DiffusionHistorique[] {
+  return approbations
     // Une version d'un autre dossier ne date pas celui-ci, quoi qu'en dise la
     // ligne d'approbation.
-    .filter((approbation) => approbation.draft.idPatient === idPatient)
+    .filter((approbation) => approbation.idPatient === idPatient && approbation.draft.idPatient === idPatient)
     .map((approbation) => ({
       approbationId: approbation.id,
       approuveLe: approbation.approvedAt,
@@ -66,8 +69,54 @@ export async function lireCalendriersSuivi(
         episode: approbation.draft.episode,
       },
     }));
+}
 
-  return calendriersParCycle(diffusions, ancres);
+export async function lireCalendriersSuivi(
+  idPatient: string,
+  avantOuA?: Date | null,
+  /**
+   * Les ancres DÉJÀ lues par l'appelant, quand il en a : une route qui fonde
+   * plusieurs verdicts sur une seule lecture des ancres ne doit pas en faire
+   * une seconde ici (le POST du cockpit).
+   */
+  ancresDejaLues?: readonly AncrePersistee[],
+): Promise<ReturnType<typeof calendriersParCycle>> {
+  const [approbations, ancres] = await Promise.all([
+    prisma.protocolDiffusionApproval.findMany({
+      where: { idPatient, ...(avantOuA ? { approvedAt: { lte: avantOuA } } : {}) },
+      select: SELECTION_APPROBATION,
+    }),
+    ancresDejaLues ?? lireAncresPersistees(idPatient, avantOuA),
+  ]);
+  return calendriersParCycle(versDiffusions(approbations, idPatient), ancres);
+}
+
+/**
+ * Le jour 0 de chaque cycle, pour PLUSIEURS dossiers à la fois — le cabinet et
+ * le Fil, qui construisent la trajectoire de tous les patients d'un praticien.
+ *
+ * Les épisodes sont ceux que l'appelant a DÉJÀ lus : seules les ancres y
+ * servent (`calendriersParCycle` les trie et les filtre lui-même). Une seule
+ * requête de plus, sur les approbations, quel que soit le nombre de dossiers.
+ */
+export async function lireJoursZeroParPatient(
+  episodesParPatient: ReadonlyMap<string, readonly AncreDeRattachement[]>,
+): Promise<Map<string, Map<string, Date>>> {
+  const ids = [...episodesParPatient.keys()];
+  const resultat = new Map<string, Map<string, Date>>();
+  if (ids.length === 0) return resultat;
+  const approbations = await prisma.protocolDiffusionApproval.findMany({
+    where: { idPatient: { in: ids } },
+    select: SELECTION_APPROBATION,
+  });
+  for (const idPatient of ids) {
+    const { parCycle } = calendriersParCycle(
+      versDiffusions(approbations, idPatient),
+      episodesParPatient.get(idPatient) ?? [],
+    );
+    resultat.set(idPatient, joursZeroParCycle(parCycle));
+  }
+  return resultat;
 }
 
 /**

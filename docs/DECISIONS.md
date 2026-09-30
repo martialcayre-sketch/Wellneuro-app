@@ -127,6 +127,36 @@ lecture datée non bornée.
     contrat en « indisponible » : une panne de base reste une erreur 500.
 - **Bancs.** Seize mutations jouées, toutes détectées.
 
+**Complément du 2026-09-30 — lot 3a, la trajectoire et le cockpit.** Le
+responsable a découpé le lot 3 en trois PR : 3a (ci-dessous), 3b (jalons
+d'objectif et E2E), 3c (bandeau, libellé arbitré « Jour n du protocole »).
+
+- **Le moteur Équilibre compte depuis deux dates.** La lecture d'ancre reste à
+  la date de l'ancre ; les lectures de mesure (J21, J42, J90) partent du jour 0.
+  Le paramètre est facultatif : sans lui, rien ne change. La fiche patient
+  « Mon équilibre », qui compte depuis la première réponse du dossier, n'est
+  pas concernée par [[D-255]].
+- **La trajectoire sert le jour 0 de chaque cycle** (`jourZero`, `null` sans
+  diffusion). Sans diffusion, les lectures de mesure gardent l'ancre en
+  repli : l'historique d'avant [[D-255]] se relit à l'identique.
+- **Le jalon dû** (`resoudreJalonDu`) compte depuis le jour 0. Sans diffusion,
+  il n'en propose aucun, et le motif le dit.
+- **Le cockpit** date un jalon de mesure depuis le jour 0 ; le POST relit le
+  même calendrier, donc recalcule la même proposition. Sans diffusion, repli
+  sur la confirmation de l'ancre, pour rejouer à l'identique un épisode
+  confirmé avant [[D-255]].
+- **Le banc de parité de [[D-058]] est réécrit** : client et serveur donnent
+  les mêmes bornes, à la milliseconde, comptées depuis le jour 0.
+- **Même jour 0 partout** : le résumé J21 des check-ins praticien, le cabinet
+  et le Fil lisent le même calendrier. Le cabinet et le Fil passent par une
+  lecture groupée : une seule requête de plus, quel que soit le nombre de
+  dossiers.
+- **Constat par conteneur avant ce lot.** Un seul jalon de mesure est confirmé
+  en production : le J21 de `PAT006`, dans un cycle sans diffusion. Il rejoue à
+  l'identique. Aucun jalon de mesure n'est confirmé sur le cycle diffusé de
+  `PAT032`.
+- **Bancs.** Dix-huit mutations jouées, toutes détectées.
+
 ### D-254 — Les assiettes indiquées se hiérarchisent pour l'aide au choix : la priorité visée d'abord, la convergence ensuite, et la règle est dite à l'écran
 
 - Date : 2026-09-30

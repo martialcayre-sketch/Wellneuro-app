@@ -32,6 +32,7 @@ import {
   refusAncreNonRecevable,
   type AncrePersistee,
 } from '@/lib/protocol/ancresPersistees';
+import { lireCalendriersSuivi } from '@/lib/protocol/calendriersPersistes';
 import { ancreRecevable, estAncreDeCycle } from '@/lib/protocol/cycles';
 import { resolveCycleId, toEpisodeCreateInput, toEpisodeUpdateInput } from '@/lib/protocol/versioning';
 import type {
@@ -277,15 +278,27 @@ async function loadRuntimeInputs(idPatient: string, emailPraticien: string, asOf
 // est résolue par `proposeRuntimeEpisode`. En lecture datée (`asOf`), seules
 // les ancres confirmées à cette date comptent — un épisode postérieur ne doit
 // pas fuir dans une lecture du passé.
+//
+// LE JOUR 0 DU SUIVI ([[D-255]]). Un jalon de mesure se compte depuis la
+// diffusion qui a ouvert le calendrier du cycle, lue par
+// `lireCalendriersSuivi` — la même que la trajectoire sert au client pour
+// `resoudreJalonDu`. Les deux côtés partagent donc toujours la même date.
 function ancreCycleDepuis(
   ancres: readonly AncrePersistee[],
+  calendriers: Awaited<ReturnType<typeof lireCalendriersSuivi>>,
   milestone: JalonMomentum,
 ): AncreCycleCourant | null {
   if (estAncreDeCycle(milestone)) return null;
   const ancre = ancreCourante([...ancres]);
+  if (!ancre) return null;
+  const calendrier = calendriers.parCycle.get(ancre.cycleId ?? ancre.id);
   // Le NOM autant que la date : il entre dans l'identifiant de l'épisode, que
   // deux cycles partageraient sinon (`identifiantEpisode`, `runtimeFromPrisma`).
-  return ancre ? { ancre: ancre.milestone, confirmedAt: ancre.confirmedAt.toISOString() } : null;
+  return {
+    ancre: ancre.milestone,
+    confirmedAt: ancre.confirmedAt.toISOString(),
+    jourZero: calendrier ? calendrier.jourZero.toISOString() : null,
+  };
 }
 
 async function ancreCycleCourant(
@@ -294,7 +307,9 @@ async function ancreCycleCourant(
   asOf: string | null,
 ): Promise<AncreCycleCourant | null> {
   if (estAncreDeCycle(milestone)) return null;
-  return ancreCycleDepuis(await lireAncresPersistees(idPatient, asOf ? new Date(asOf) : null), milestone);
+  const avantOuA = asOf ? new Date(asOf) : null;
+  const ancres = await lireAncresPersistees(idPatient, avantOuA);
+  return ancreCycleDepuis(ancres, await lireCalendriersSuivi(idPatient, avantOuA, ancres), milestone);
 }
 
 /** Le préfixe que `identifiantEpisode` pose sur tout identifiant d'épisode runtime. */
@@ -657,7 +672,9 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     const current = proposeRuntimeEpisode(
       inputs,
       payload.milestone,
-      ancreCycleDepuis(ancres, payload.milestone),
+      estAncreDeCycle(payload.milestone)
+        ? null
+        : ancreCycleDepuis(ancres, await lireCalendriersSuivi(idPatient, null, ancres), payload.milestone),
     );
     if (current.proposalHash !== proposalHash) {
       return unavailable('proposal_stale', 'Les réponses ont changé. Rechargez la proposition.', 409);

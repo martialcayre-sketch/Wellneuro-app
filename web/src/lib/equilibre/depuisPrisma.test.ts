@@ -110,6 +110,22 @@ describe('depuisPrisma — adaptateur Prisma → moteur équilibre', () => {
     expect(ancree.length).toBeGreaterThan(0);
     expect(ancree[0].date.getTime()).toBe(new Date('2026-01-22T00:00:00.000Z').getTime());
   });
+
+  it('le jour 0 du suivi date les MESURES, l’ancre garde sa date (D-255)', () => {
+    const ancre = new Date('2026-01-01T00:00:00.000Z');
+    const jourZero = new Date('2026-01-11T00:00:00.000Z');
+    const reponses = [
+      { statutValidite: null, idQuestionnaire: 'Q_STR_02', dateReponse: ancre, scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
+      { statutValidite: null, idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-02-01T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
+    ];
+    const dates = construireHistoriqueEquilibre(reponses, ancre, jourZero).map((l) => l.date.toISOString());
+    // L'ancre au 1er janvier ; le J21 au 1er février (jour 0 + 21), pas au 22 janvier.
+    expect(dates.slice(0, 2)).toEqual(['2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z']);
+    // Sans jour 0 : comme avant, le J21 au 22 janvier ne voit rien de neuf.
+    const sans = construireHistoriqueEquilibre(reponses, ancre).map((l) => l.date.toISOString());
+    expect(sans).not.toContain('2026-02-01T00:00:00.000Z');
+    expect(sans).not.toContain('2026-01-22T00:00:00.000Z');
+  });
 });
 
 // Constat F1 de l'audit de la chaîne trajectoire (2026-07-27) : sans règle de

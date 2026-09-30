@@ -23,7 +23,7 @@ const LIGNES: LigneCabinet[] = [
         {
           cycleId: 'c1',
           ancre: 'T0',
-          dateAncre: '2026-01-01T00:00:00.000Z',
+          dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
           versionScore: 'v1',
           jalons: [
             { jalon: 'T0', mesure: true, valeur: 40, date: '2026-01-01T00:00:00.000Z' },
@@ -111,7 +111,7 @@ describe('TrajectoiresPanel (SP-TRAJ LOT-04)', () => {
             cycles: [
               {
                 ...LIGNES[0].trajectoire.cycles[0],
-                dateAncre: dateT0,
+                dateAncre: dateT0, jourZero: dateT0,
                 jalons: [
                   { jalon: 'T0', mesure: true, valeur: 40, date: dateT0 },
                   { jalon: 'J21', mesure: false, valeur: null, date: null },

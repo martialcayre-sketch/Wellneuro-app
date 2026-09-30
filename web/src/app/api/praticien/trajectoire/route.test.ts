@@ -5,6 +5,8 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
     assessmentEpisode: { findMany: vi.fn() },
+    // Approbations de diffusion ([[D-255]]) : aucune par défaut.
+    protocolDiffusionApproval: { findMany: vi.fn(async (): Promise<unknown[]> => []) },
     questionnaireReponse: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
@@ -108,6 +110,27 @@ describe('GET /api/praticien/trajectoire', () => {
     expect(json.trajectoire.cycles[0].cycleId).toBe('ep_T0');
     expect(json.trajectoire.cycles[0].versionScore).toBe('v1');
     expect(json.trajectoire.comparaison.raison).toBe('un_seul_cycle');
+  });
+
+  it('sert le jour 0 de chaque cycle, lu sur ses diffusions (D-255)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'ep_T0', milestone: 'T0', confirmedAt: new Date('2026-01-01T00:00:00.000Z'), cycleId: 'ep_T0', versionScore: 'v1' },
+    ]);
+    const approvedAt = new Date('2026-01-11T00:00:00.000Z');
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValueOnce([{
+      id: 'appr_1', idPatient: 'PAT_1', approvedAt, createdAt: approvedAt, approvedBy: 'practitioner',
+      confirmation: 'content_approved_for_diffusion', decisionCardInputHash: 'carte', protocolDraftInputHash: 'version',
+      protocolDraftId: 'pd_1',
+      draft: {
+        idPatient: 'PAT_1', inputHash: 'version', decisionCardInputHash: 'carte', status: 'practitioner_reviewed',
+        reviewedAt: new Date(approvedAt.getTime() - 60_000), selectedPriorityId: 'prio_1',
+        episode: { id: 'ep_T0', milestone: 'T0', cycleId: 'ep_T0' },
+      },
+    }]);
+
+    const json = (await (await GET(request())).json()) as { trajectoire: { cycles: { jourZero: string | null }[] } };
+    expect(json.trajectoire.cycles[0].jourZero).toBe('2026-01-11T00:00:00.000Z');
   });
 
   // Gate G2 : la route LIT la version stockée, elle ne la déduit plus de la

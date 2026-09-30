@@ -8,7 +8,7 @@ function cycle(version: string | null, t0: number | null, j21: number | null, j4
   return {
     cycleId: `c_${Math.abs(t0 ?? 0)}_${j21 ?? 'x'}_${version ?? 'null'}`,
     ancre: 'T0',
-    dateAncre: '2026-01-01T00:00:00.000Z',
+    dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
     versionScore: version,
     jalons: [
       { jalon: 'T0', mesure: t0 !== null, valeur: t0, date: t0 === null ? null : '2026-01-01T00:00:00.000Z' },

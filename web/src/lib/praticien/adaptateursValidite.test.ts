@@ -13,12 +13,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // praticien. Si le champ se reperd un jour, ces cas rougissent.
 
 const episodes = vi.fn();
+const approbations = vi.fn(() => [] as unknown[]);
 const reponses = vi.fn();
 const patients = vi.fn();
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     assessmentEpisode: { findMany: () => episodes() },
+    // Aucune diffusion par défaut : le jour 0 de chaque cycle reste absent ([[D-255]]).
+    protocolDiffusionApproval: { findMany: async () => approbations() },
     questionnaireReponse: { findMany: () => reponses() },
     patient: { findMany: () => patients() },
   },
@@ -82,5 +85,53 @@ describe.each([
       await lire(),
       'une passation retirée par le praticien pèse encore sur ce que la surface affiche',
     ).toBeNull();
+  });
+});
+
+// [[D-255]] : LE JOUR 0 ATTEINT LE MOTEUR. Mêmes deux adaptateurs, même
+// sortie observable. Une diffusion récente (il y a dix jours) repousse tous
+// les jalons de mesure dans le futur : aucune lecture de mesure, donc aucun
+// momentum. Sans elle, le J21 compté depuis l'ancre (22 janvier) en porte un.
+describe.each([
+  {
+    nom: 'momentumJ21 (carte de Fil)',
+    lire: async () => (await momentumJalonsParPatient([ID])).get(ID),
+  },
+  {
+    nom: 'chargementCabinet (Trajectoires, cabinet-momentum)',
+    lire: async () => {
+      patients.mockReturnValue([{ idPatient: ID, prenom: 'Sophie', nom: 'Nicola', email: 's@n.invalid' }]);
+      const lignes = await chargerTrajectoiresCabinet('praticien@wellneuro.fr');
+      return lignes[0]?.trajectoire.cycles[0]?.momentum ?? null;
+    },
+  },
+])('$nom — le jour 0 du suivi atteint le moteur (D-255)', ({ lire }) => {
+  beforeEach(() => {
+    episodes.mockReturnValue(EPISODES);
+    reponses.mockReturnValue(passations(null));
+  });
+
+  afterEach(() => {
+    approbations.mockReturnValue([]);
+    vi.clearAllMocks();
+  });
+
+  it('sans diffusion, les mesures se comptent depuis l’ancre : un momentum existe', async () => {
+    expect(await lire()).not.toBeNull();
+  });
+
+  it('une diffusion récente repousse les mesures : aucun momentum encore', async () => {
+    const approvedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+    approbations.mockReturnValue([{
+      id: 'appr_1', idPatient: ID, approvedAt, createdAt: approvedAt, approvedBy: 'practitioner',
+      confirmation: 'content_approved_for_diffusion', decisionCardInputHash: 'carte', protocolDraftInputHash: 'version',
+      protocolDraftId: 'pd_1',
+      draft: {
+        idPatient: ID, inputHash: 'version', decisionCardInputHash: 'carte', status: 'practitioner_reviewed',
+        reviewedAt: new Date(approvedAt.getTime() - 60_000), selectedPriorityId: 'prio_1',
+        episode: { id: 'ep_T0', milestone: 'T0', cycleId: 'ep_T0' },
+      },
+    }]);
+    expect(await lire()).toBeNull();
   });
 });

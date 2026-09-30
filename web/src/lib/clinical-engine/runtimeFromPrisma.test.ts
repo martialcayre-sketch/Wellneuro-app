@@ -69,12 +69,26 @@ describe('runtime clinique depuis Prisma', () => {
     });
 
     it('`J21` ne l’embarque pas non plus : un jalon de mesure mesure un instant', () => {
-      const { proposal } = proposeRuntimeEpisode(inputs, 'J21', { ancre: 'T0', confirmedAt: '2026-01-01T00:00:00.000Z' });
+      const { proposal } = proposeRuntimeEpisode(inputs, 'J21', { ancre: 'T0', confirmedAt: '2026-01-01T00:00:00.000Z', jourZero: null });
       // Fenêtré au 22 janvier ±8 j : les DEUX réponses en sortent, celle du
       // second rideau comprise. La borne haute ouverte ne fuit pas hors de
       // l'ancre initiale — c'est tout l'objet de `estAncreInitiale`.
       expect(proposal.inWindowResponseIds).toEqual([]);
       expect(proposal.outOfWindowResponseIds).toContain('REP_RIDEAU_2');
+    });
+
+    it('un jalon de mesure se compte depuis le jour 0 du suivi, pas depuis l’ancre (D-255)', () => {
+      const depuisAncre = proposeRuntimeEpisode(inputs, 'J21', { ancre: 'T0', confirmedAt: '2026-01-01T00:00:00.000Z', jourZero: null });
+      const depuisDiffusion = proposeRuntimeEpisode(inputs, 'J21', {
+        ancre: 'T0',
+        confirmedAt: '2026-01-01T00:00:00.000Z',
+        jourZero: '2026-01-15T00:00:00.000Z',
+      });
+      // Sans diffusion, repli sur l'ancre : l'historique se rejoue à l'identique.
+      expect(depuisAncre.proposal.targetAt).toBe('2026-01-22T00:00:00.000Z');
+      expect(depuisDiffusion.proposal.targetAt).toBe('2026-02-05T00:00:00.000Z');
+      // Et l'identifiant ne bouge pas : le cycle est celui de l'ancre.
+      expect(depuisDiffusion.proposal.assessmentEpisodeId).toBe(depuisAncre.proposal.assessmentEpisodeId);
     });
 
     it('deux appels rendent la même proposition — aucune horloge dans la borne haute', () => {
@@ -94,8 +108,8 @@ describe('runtime clinique depuis Prisma', () => {
     ], null);
 
     it('distingue deux cycles sur un même jalon de mesure', () => {
-      const cycle0 = proposeRuntimeEpisode(inputs, 'J21', { ancre: 'T0', confirmedAt: '2026-01-01T00:00:00.000Z' });
-      const cycle1 = proposeRuntimeEpisode(inputs, 'J21', { ancre: 'T1', confirmedAt: '2026-06-01T00:00:00.000Z' });
+      const cycle0 = proposeRuntimeEpisode(inputs, 'J21', { ancre: 'T0', confirmedAt: '2026-01-01T00:00:00.000Z', jourZero: null });
+      const cycle1 = proposeRuntimeEpisode(inputs, 'J21', { ancre: 'T1', confirmedAt: '2026-06-01T00:00:00.000Z', jourZero: null });
       expect(cycle0.proposal.assessmentEpisodeId).toBe('runtime-episode-PAT_TEST-T0-J21');
       expect(cycle1.proposal.assessmentEpisodeId).toBe('runtime-episode-PAT_TEST-T1-J21');
       expect(cycle0.proposal.assessmentEpisodeId).not.toBe(cycle1.proposal.assessmentEpisodeId);
@@ -114,8 +128,8 @@ describe('runtime clinique depuis Prisma', () => {
     });
 
     it('ne change pas le hash de proposition : l’identifiant n’y entre pas', () => {
-      const sans = proposeRuntimeEpisode(inputs, 'J21', { ancre: 'T0', confirmedAt: '2026-01-01T00:00:00.000Z' });
-      const avec = proposeRuntimeEpisode(inputs, 'J21', { ancre: 'T9', confirmedAt: '2026-01-01T00:00:00.000Z' });
+      const sans = proposeRuntimeEpisode(inputs, 'J21', { ancre: 'T0', confirmedAt: '2026-01-01T00:00:00.000Z', jourZero: null });
+      const avec = proposeRuntimeEpisode(inputs, 'J21', { ancre: 'T9', confirmedAt: '2026-01-01T00:00:00.000Z', jourZero: null });
       expect(avec.proposalHash).toBe(sans.proposalHash);
     });
   });

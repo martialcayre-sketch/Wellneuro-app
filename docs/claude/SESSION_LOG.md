@@ -8425,3 +8425,14 @@ lisent sur les versions du calendrier. 13 mutations, toutes détectées.
 détacherait les carnets enregistrés.
 
 **Prochaine action.** PR du lot 2, puis lot 3 (trajectoire et cockpit).
+
+## 2026-09-30 — Calendrier de suivi, lot 3a : trajectoire et cockpit (D-255)
+
+**Fait.** Lot 2 mergé (#1265) et déployé. Lot 3a : jalons de mesure comptés
+depuis le jour 0 (moteur Équilibre à deux dates, trajectoire, jalon dû,
+cockpit, résumé J21, cabinet, Fil). 18 mutations, toutes détectées.
+
+**Décidé (responsable).** Lot 3 en trois PR (3a, 3b objectifs + E2E, 3c
+bandeau) ; libellé « Jour n du protocole ».
+
+**Prochaine action.** PR du lot 3a, puis 3b.

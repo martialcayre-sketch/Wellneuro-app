@@ -12,7 +12,9 @@ import { rattacherReperesAuxCycles, type Trajectoire } from './trajectoire';
 // rien, ne décide d'aucune clinique.
 //
 // MÊMES NOMBRES, MÊME ANCRE que le reste de la chaîne. Les fenêtres viennent
-// de `JOURS_JALON` et `TOLERANCE_JOURS_JALON`, et l'ancre est le `confirmedAt`
+// de `JOURS_JALON` et `TOLERANCE_JOURS_JALON`. Depuis [[D-255]], les jalons de
+// mesure se comptent depuis le jour 0 du suivi (`cycle.jourZero`, la première
+// diffusion du protocole du cycle). Avant, depuis le `confirmedAt`
 // de l'ancre du cycle courant (`cycle.dateAncre`, LOT-08 A8-1) — celle que la
 // trajectoire utilise pour résoudre ses lectures ET celle que le serveur
 // utilise désormais pour bâtir la fenêtre d'un épisode de mesure
@@ -132,8 +134,29 @@ export function resoudreJalonDu(trajectoire: Trajectoire | null, maintenant: Dat
     return { ancreOuvrable, statut: 'aucun', motif: 'Tous les jalons de ce cycle sont confirmés.' };
   }
 
+  // LES MESURES SE COMPTENT DEPUIS LE JOUR 0 DU SUIVI ([[D-255]]) : la
+  // diffusion qui a ouvert le calendrier du cycle, et non plus la confirmation
+  // de l'ancre. Sans diffusion, aucun jalon de suivi ne court ([[D-253]]
+  // généralisé) — un J21 mesure ce que trois semaines de protocole ont changé.
+  if (cycle.jourZero === null) {
+    return {
+      ancreOuvrable,
+      statut: 'aucun',
+      motif: 'Aucun protocole n’a été diffusé sur ce cycle : ses jalons de suivi ne courent pas encore.',
+    };
+  }
+  const jourZero = new Date(cycle.jourZero);
+  if (Number.isNaN(jourZero.getTime())) {
+    return {
+      ancreOuvrable,
+      statut: 'aucun',
+      motif: 'La date de diffusion du protocole de ce cycle est illisible : aucun jalon n’est proposé.',
+    };
+  }
+  const baseDuJalon = (jalon: JalonMomentum) => (jalon === cycle.ancre ? dateAncre : jourZero);
+
   for (const jalon of restants) {
-    const { debut, fin } = fenetre(dateAncre, jalon);
+    const { debut, fin } = fenetre(baseDuJalon(jalon), jalon);
     if (maintenant >= debut && maintenant <= fin) {
       return {
         ancreOuvrable,
@@ -148,7 +171,7 @@ export function resoudreJalonDu(trajectoire: Trajectoire | null, maintenant: Dat
   // Aucune fenêtre ouverte : soit elles sont toutes passées, soit la prochaine
   // n'a pas commencé. Les deux se disent, et ne se disent pas pareil.
   const aVenir = restants
-    .map(jalon => ({ jalon, ...fenetre(dateAncre, jalon) }))
+    .map(jalon => ({ jalon, ...fenetre(baseDuJalon(jalon), jalon) }))
     .filter(candidat => candidat.debut > maintenant)
     .sort((gauche, droite) => gauche.debut.getTime() - droite.debut.getTime())[0];
 

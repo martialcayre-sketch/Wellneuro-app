@@ -126,7 +126,17 @@ export function resoudreDateT0(reponses: ReponseBrute[]): Date | null {
  * nouvelle qui laisse l'indice inchangé produit bien une lecture — c'est une
  * mesure réelle qui se trouve stable, pas un silence.
  */
-export function construireHistoriqueEquilibre(brutes: ReponseBrute[], ancreT0?: Date): LectureDatee[] {
+export function construireHistoriqueEquilibre(
+  brutes: ReponseBrute[],
+  ancreT0?: Date,
+  /**
+   * Le jour 0 du suivi ([[D-255]]) : la première diffusion du protocole du
+   * cycle. Les lectures de MESURE (J21, J42, J90) se comptent depuis lui ; la
+   * lecture d'ANCRE garde la date de l'ancre, qui est une mesure et ne bouge
+   * pas. Absent → les mesures se comptent depuis l'ancre, comme avant.
+   */
+  jourZeroMesures?: Date | null,
+): LectureDatee[] {
   // Filtre de validité en entrée : la règle de nouveauté (ci-dessous) ne doit
   // pas rouvrir un jalon sur l'arrivée d'une passation invalidée.
   const reponses = filtrerPassationsExploitables(brutes);
@@ -142,7 +152,11 @@ export function construireHistoriqueEquilibre(brutes: ReponseBrute[], ancreT0?: 
   // porte plus — et l'énumération aurait SILENCIEUSEMENT PERDU la lecture de
   // référence, sans qu'aucun type ne bronche. C'est le genre de régression que
   // `tsc` ne peut pas voir.
-  const joursDesJalons = [0, ...ORDRE_JALONS_MESURE.map((jalon) => JOURS_JALON[jalon])];
+  const baseMesures = jourZeroMesures ?? dateT0;
+  const datesDesJalons = [
+    dateT0,
+    ...ORDRE_JALONS_MESURE.map((jalon) => new Date(baseMesures.getTime() + JOURS_JALON[jalon] * JOUR_MS)),
+  ];
 
   // Seules comptent comme nouveauté les réponses que le moteur lit RÉELLEMENT :
   // exploitables (`rawAnswers` présent, cf. extraireRawAnswers) ET portant sur
@@ -165,8 +179,7 @@ export function construireHistoriqueEquilibre(brutes: ReponseBrute[], ancreT0?: 
 
   const lectures: LectureDatee[] = [];
   let dateDerniereLecture: Date | null = null;
-  for (const jours of joursDesJalons) {
-    const dateJalon = new Date(dateT0.getTime() + jours * JOUR_MS);
+  for (const dateJalon of datesDesJalons) {
     if (dateJalon > maintenant) continue;
 
     if (dateDerniereLecture) {
