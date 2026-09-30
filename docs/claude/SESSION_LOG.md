@@ -8319,3 +8319,16 @@ contre-relecteur dans un worktree jetable.
 
 **Prochaine action.** Merge ; le responsable lance Codex ; clic de diffusion
 sur PAT032 ; document TRUST.
+
+## 2026-09-30 — Fiches d'assiette : document TRUST sur l'IA, seconde passe adverse
+
+**Fait.** `docs/TRUST_IA_FICHES_ASSIETTE.md` validé tel quel par le
+responsable ; modèles constatés en base (7 versions `claude-sonnet-5` /
+`gpt-5.4`, 7 validées). Seconde passe Codex : 16 invariants, tous mordent ;
+M7a écartée (gardée par `route.test.ts:608`, banc omis par l'énoncé).
+
+**Décidé (responsable).** `usage_ia` v3 au portail : le document servi aux
+patients ne connaît ni les fiches ni OpenAI.
+
+**Prochaine action.** Merge ; texte exact de la v3 à valider ; constat de
+l'espace sur PAT032.

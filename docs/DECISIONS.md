@@ -119,6 +119,34 @@ fournisseur, son transfert hors UE et l'information des patients.
 
 ### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
+> **AMENDEMENT DU 2026-09-30 — LE DOCUMENT TRUST SUR L'IA EST VALIDÉ ; LE
+> DOCUMENT DU PORTAIL SUIVRA.**
+>
+> 1. **`docs/TRUST_IA_FICHES_ASSIETTE.md`**, rédigé par Claude, est validé tel
+>    quel par le responsable le 2026-09-30. Il est versé au dépôt sans lien
+>    depuis la fiche (arbitrage du 2026-09-29). Il nomme les deux
+>    fournisseurs, Anthropic pour la rédaction et OpenAI pour la contre-lecture,
+>    et cite les modèles constatés en base le même jour, en agrégats : 7
+>    versions, `claude-sonnet-5` et `gpt-5.4`, consigne
+>    `fiche-assiette-v1+d4d81bb3a8ae9fa5`, 7 validées après relecture
+>    intégrale. **La condition « document TRUST » du §10 est tenue.**
+> 2. **Fait nouveau à la rédaction.** Le document du portail « L'intelligence
+>    artificielle dans Wellneuro » (`usage_ia` v2), servi aux patients depuis
+>    le 2026-09-10, ne connaît que deux usages et dit « Le fournisseur est
+>    Anthropic ». Arbitrage du responsable : **une v3 au portail**. Elle
+>    ajoute l'usage « fiches d'assiette » et OpenAI, pour une contre-lecture qui
+>    ne reçoit aucune donnée patient. Pas d'accusé de lecture exigé, comme pour
+>    la v2. Le texte exact est validé avant publication, dans un lot à part,
+>    avant la première remise si possible (0 remise au 2026-09-30).
+> 3. **La seconde passe adverse, par mutation, est jouée**
+>    (`docs/claude/REVUE_CODEX_MUTATIONS_FICHES_ASSIETTE_2026-09-30.md`) : les
+>    seize invariants ont chacun au moins un banc qui mord. Sa seule trouvaille
+>    (M7a) est écartée avec motif : l'invariant est gardé par
+>    `route.test.ts:608`, et c'est l'énoncé qui omettait ce banc. **La
+>    condition « contre-revue adverse » du §10 est tenue.**
+> 4. **Ce qui reste du §10** : le constat de l'espace de lecture sur `PAT032`,
+>    à sa première remise.
+>
 > **AMENDEMENT DU 2026-09-29 (NUIT) — LA CONTRE-REVUE ADVERSE : CE QUE LA BASE
 > GARANTIT, CE QUE SEULE LA ROUTE GARANTIT.** Contre-revue Codex jouée le
 > 2026-09-29 (`docs/claude/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`) :
