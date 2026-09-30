@@ -3,8 +3,9 @@
 - **Avant**, la question « Où en êtes-vous par rapport à cet objectif ? »
   s'ouvrait à T0 + 21, 42 et 90 jours, protocole diffusé ou non.
 - **Maintenant**, elle s'ouvre depuis le jour 0 du suivi, c'est-à-dire la
-  première diffusion du protocole du cycle. C'est la même date que les jalons
-  de mesure du cockpit.
+  première diffusion du protocole du cycle, ou la diffusion d'un pivot
+  (priorité changée) : les étapes repartent alors de cette date. C'est la
+  même date que les jalons de mesure du cockpit.
 - **Sans diffusion, aucune étape n'est ouverte.** Le patient lit le même motif
   qu'avant : son suivi n'a pas encore de point de départ.
 - La garde qui refuse une réponse hors fenêtre et la lecture praticien des
