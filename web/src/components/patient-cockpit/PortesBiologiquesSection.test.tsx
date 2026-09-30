@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PortesBiologiquesSection } from './PortesBiologiquesSection';
 
@@ -45,12 +45,34 @@ const ACTIF = {
         { analyteCode: 'BIO_INDEX_OMEGA3', libelle: 'Index oméga 3', dernier: null },
       ],
     },
+    // AUCUN RÉSULTAT SUR AUCUN MARQUEUR : l'assiette n'est pas exploitable, elle
+    // ne paraît pas (amendement du 2026-09-30 à [[D-247]]).
+    {
+      ligneId: 'PB-SEROTONINERGIQUE',
+      plateCode: 'ASSIETTE_SEROTONINERGIQUE',
+      libelle: 'Assiette sérotoninergique',
+      claims: [{ claimId: 'WN-CL-0290-007', versionClaim: 'v1.0', texte: 'Texte de la source sérotoninergique.' }],
+      marqueurs: [
+        { analyteCode: 'BIO_CRP_US', libelle: 'CRP ultrasensible', dernier: null },
+        { analyteCode: 'BIO_RATIO_KYN_TRP', libelle: 'Rapport kynurénine / tryptophane', dernier: null },
+      ],
+    },
   ],
 };
+
+const SANS_RESULTAT = { ...ACTIF, portes: [ACTIF.portes[2]] };
 
 function monter(reponse: unknown, idPatient = 'PAT1') {
   vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
   return render(<PortesBiologiquesSection idPatient={idPatient} />);
+}
+
+/** Laisse la réponse ARRIVER : sans cela, une section vide ne prouverait rien. */
+async function reponseServie() {
+  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => {
+    await new Promise(resolve => setTimeout(resolve, 0));
+  });
 }
 
 /** Le texte que la MACHINE écrit : tout, sauf les citations de sources. */
@@ -117,6 +139,31 @@ describe('PortesBiologiquesSection', () => {
     const valeur = screen.getByText(/12,40 µmol\/L/);
     expect(valeur.className).not.toMatch(/status-|danger|warning|success/);
     expect(container.querySelectorAll('[class*="status-danger"], [class*="status-success"]').length).toBe(0);
+  });
+
+  it('une assiette dont AUCUN marqueur n’a de résultat ne paraît pas, et son absence est comptée', async () => {
+    monter(ACTIF);
+    await waitFor(() => expect(screen.getByText('Assiette de méthylation')).toBeTruthy());
+    expect(screen.queryByText('Assiette sérotoninergique')).toBeNull();
+    expect(screen.queryByText('Texte de la source sérotoninergique.')).toBeNull();
+    expect(
+      screen.getByText('1 autre assiette n’est pas affichée : aucun de ses marqueurs n’a de résultat au dossier.'),
+    ).toBeTruthy();
+  });
+
+  it('rien d’exploitable au dossier : la section n’existe pas', async () => {
+    const { container } = monter(SANS_RESULTAT);
+    await reponseServie();
+    expect(container.textContent).toBe('');
+  });
+
+  it('rien d’exploitable, mais une source retirée : l’anomalie reste dite', async () => {
+    monter({ ...SANS_RESULTAT, retireesFauteDeClaim: 1 });
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toBe('1 assiette n’est pas affichée : une de ses sources n’est plus valide au corpus.'),
+    );
+    expect(screen.queryByText('Assiette sérotoninergique')).toBeNull();
+    expect(screen.queryByText(/autre assiette/)).toBeNull();
   });
 
   it('verrou fermé : la section n’existe pas', async () => {

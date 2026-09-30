@@ -78,9 +78,23 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
   const lecture = payload !== null && payload.pour === idPatient ? payload.corps : null;
   const messageErreur = erreur !== null && erreur.pour === idPatient ? erreur.message : null;
 
-  // Fermée, ou pas encore arrivée : rien. Même motif que la carte — un titre
-  // qui apparaît puis disparaît se lit comme un défaut.
+  // SEULE UNE ASSIETTE EXPLOITABLE PARAÎT (amendement du 2026-09-30 à
+  // [[D-247]]) : au moins un de ses marqueurs porte un résultat au dossier.
+  // Sans résultat, la section recopiait cinq assiettes de citations suivies de
+  // « aucun résultat au dossier » — du bruit sur tout dossier sans biologie.
+  // Le filtre lit la PRÉSENCE d'un résultat, jamais sa valeur : rien n'est
+  // comparé, ni trié par le résultat ([[D-245]] §1).
+  const portes = lecture?.ok && lecture.actif === true ? lecture.portes : [];
+  const exploitables = portes.filter(porte => porte.marqueurs.some(marqueur => marqueur.dernier !== null));
+  const sansResultat = portes.length - exploitables.length;
+  const anomalie = lecture?.ok === true && lecture.actif === true
+    && (!lecture.corpusLu || lecture.retireesFauteDeClaim > 0);
+
+  // Fermée, pas encore arrivée, ou rien d'exploitable sans anomalie à dire :
+  // rien. Même motif que la carte — un titre qui apparaît puis disparaît se lit
+  // comme un défaut.
   if (messageErreur === null && (lecture === null || !lecture.ok || lecture.actif === false)) return null;
+  if (messageErreur === null && exploitables.length === 0 && !anomalie) return null;
 
   return (
     // `<section>` ET NON `<div>` : `aria-labelledby` sur un élément sans rôle ne
@@ -112,12 +126,8 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
                 : `${lecture.retireesFauteDeClaim} assiettes ne sont pas affichées : une de leurs sources n’est plus valide au corpus.`}
             </p>
           )}
-          {lecture.corpusLu && lecture.portes.length === 0 && lecture.retireesFauteDeClaim === 0 && (
-            <p className="mt-3 text-sm text-muted-foreground">Aucune source biologique n’est en service.</p>
-          )}
-
           <ul className="mt-3 grid gap-3">
-            {lecture.portes.map(porte => (
+            {exploitables.map(porte => (
               <li key={porte.ligneId} className="rounded-lg border border-border bg-background p-3">
                 <p className="text-sm font-semibold text-foreground">{porte.libelle}</p>
 
@@ -148,6 +158,14 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
               </li>
             ))}
           </ul>
+
+          {exploitables.length > 0 && sansResultat > 0 && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              {sansResultat === 1
+                ? '1 autre assiette n’est pas affichée : aucun de ses marqueurs n’a de résultat au dossier.'
+                : `${sansResultat} autres assiettes ne sont pas affichées : aucun de leurs marqueurs n’a de résultat au dossier.`}
+            </p>
+          )}
 
           <p className="mt-3 text-xs text-muted-foreground">
             Périmètre signé : {lecture.shaPerimetre.slice(0, 12)}…
