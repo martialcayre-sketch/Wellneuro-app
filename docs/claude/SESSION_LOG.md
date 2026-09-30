@@ -8404,6 +8404,17 @@ par `assessment_episode_id` : le repli par date ne sert à aucune ligne.
 
 **Prochaine action.** PR du lot 1, puis lot 2 (portail).
 
+## 2026-09-30 — Gardes fermés, agents de revue en lecture seule (#1259)
+
+**Fait.** Les six gardes de `.claude/settings.json` sortent en code 2 si leur
+script (ou `node`) est introuvable — ils échouaient en silence dans les
+sessions lancées depuis `~/Developer`. `lecture-seule-git.mjs` (liste
+blanche, `gh` mutants compris) armé par `wn-reviewer` et `wn-fable`.
+
+**Revue.** `wn-reviewer` GO ; P1 (`gh pr checkout/merge`) et P2 corrigés ;
+Copilot : liste blanche.
+
+**Prochaine action.** Merge avant #1260.
 ## 2026-09-30 — Calendrier de suivi, lot 2 : le portail (D-255)
 
 **Fait.** Lot 1 mergé (#1262) et déployé. Lot 2 : check-ins, fin et début

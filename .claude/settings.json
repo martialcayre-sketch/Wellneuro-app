@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-freshness.mjs\""
+            "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/git-freshness.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; [ -f \"$d/.claude/hooks/git-freshness.mjs\" ] && command -v node >/dev/null 2>&1 || { echo 'Garde WellNeuro introuvable (git-freshness.mjs, ou node absent) : ouvrir la session à la racine du dépôt ou de son worktree.' >&2; exit 2; }; exec node \"$d/.claude/hooks/git-freshness.mjs\""
           }
         ]
       }
@@ -36,11 +36,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-wellneuro-files.mjs\""
+            "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/protect-wellneuro-files.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; [ -f \"$d/.claude/hooks/protect-wellneuro-files.mjs\" ] && command -v node >/dev/null 2>&1 || { echo 'Garde WellNeuro introuvable (protect-wellneuro-files.mjs, ou node absent) : ouvrir la session à la racine du dépôt ou de son worktree.' >&2; exit 2; }; exec node \"$d/.claude/hooks/protect-wellneuro-files.mjs\""
           },
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-freshness.mjs\""
+            "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/git-freshness.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; [ -f \"$d/.claude/hooks/git-freshness.mjs\" ] && command -v node >/dev/null 2>&1 || { echo 'Garde WellNeuro introuvable (git-freshness.mjs, ou node absent) : ouvrir la session à la racine du dépôt ou de son worktree.' >&2; exit 2; }; exec node \"$d/.claude/hooks/git-freshness.mjs\""
           }
         ]
       },
@@ -49,11 +49,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-risky-commands.mjs\""
+            "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/block-risky-commands.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; [ -f \"$d/.claude/hooks/block-risky-commands.mjs\" ] && command -v node >/dev/null 2>&1 || { echo 'Garde WellNeuro introuvable (block-risky-commands.mjs, ou node absent) : ouvrir la session à la racine du dépôt ou de son worktree.' >&2; exit 2; }; exec node \"$d/.claude/hooks/block-risky-commands.mjs\""
           },
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/gate-codex-p0.mjs\""
+            "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/gate-codex-p0.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; [ -f \"$d/.claude/hooks/gate-codex-p0.mjs\" ] && command -v node >/dev/null 2>&1 || { echo 'Garde WellNeuro introuvable (gate-codex-p0.mjs, ou node absent) : ouvrir la session à la racine du dépôt ou de son worktree.' >&2; exit 2; }; exec node \"$d/.claude/hooks/gate-codex-p0.mjs\""
           }
         ]
       },
@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-supabase-mcp.mjs\""
+            "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/guard-supabase-mcp.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; [ -f \"$d/.claude/hooks/guard-supabase-mcp.mjs\" ] && command -v node >/dev/null 2>&1 || { echo 'Garde WellNeuro introuvable (guard-supabase-mcp.mjs, ou node absent) : ouvrir la session à la racine du dépôt ou de son worktree.' >&2; exit 2; }; exec node \"$d/.claude/hooks/guard-supabase-mcp.mjs\""
           }
         ]
       }
