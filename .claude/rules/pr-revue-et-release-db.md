@@ -137,6 +137,7 @@ coûte une seconde PR (`.claude/rules/docs-changelog.md`).
 | Panne GraphQL ⇒ équivalents REST | `gh pr create` / `merge` meurent, les routes REST passent |
 | Le numéro `D-xxx` se prend **au merge** | Sept collisions en deux jours ; `scripts/lib/decisions-numerotation.mjs` refuse un numéro sauté, et un sujet de commit qui annonce un `D-xxx` sans l'écrire ne le réserve pas |
 | Le verdict d'une tâche de fond se lit **dans le fichier** | La notification rapporte le code de la dernière commande, pas celui qui compte |
+| Lancée en fond, une attente **se laisse notifier** : ni `TaskOutput` bloquant, ni `sleep` + `tail`, ni `gh run`/`gh pr checks` entre-temps | Chaque sondage relit tout le contexte de la session : environ 1 370 appels de ce type en septembre 2026. `block-risky-commands` refuse les formes en boucle |
 | Un run `queued` sans un seul job n'est pas un run lent | 45 min à `jobs: []` sur la PR #1074 ; remède : `gh pr close <N> && gh pr reopen <N>`, pas une recherche dans le diff |
 
 ## 3. `release-db` — l'ordre

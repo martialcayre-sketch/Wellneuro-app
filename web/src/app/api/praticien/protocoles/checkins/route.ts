@@ -8,6 +8,7 @@ import type { AncreCycle } from '@/lib/protocol/cycles';
 import { listCheckins, type CheckinRow } from '@/lib/protocol/checkins';
 import { buildResumeJ21, type ResumeJ21 } from '@/lib/protocol/resumeJ21';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import { lireCalendriersSuivi } from '@/lib/protocol/calendriersPersistes';
 
 // Lecture praticien des check-ins J7/J14/J21 + résumé J21 « point de jonction »
 // (C2A LOT-04). Le praticien distingue adhésion et effet à partir des réponses ;
@@ -97,13 +98,20 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     // non plus « le T0 confirmé le plus récent » (`D-113`). Repli sur la
     // première réponse du dossier quand aucune ancre n'est confirmée : dans ce
     // cas le cycle n'est pas ouvert, et son nom de repli est `T0`.
-    const ancre = ancreCourante(await lireAncresPersistees(idPatient));
+    const ancres = await lireAncresPersistees(idPatient);
+    const ancre = ancreCourante(ancres);
     const dateAncre = ancre?.confirmedAt ?? resoudreDateT0(reponsesDb);
+    // Le J21 se lit depuis le jour 0 du suivi du cycle courant ([[D-255]]) ;
+    // sans diffusion sur ce cycle, repli sur l'ancre.
+    const jourZero = ancre
+      ? (await lireCalendriersSuivi(idPatient, null, ancres)).parCycle.get(ancre.cycleId ?? ancre.id)?.jourZero ?? null
+      : null;
     const momentum = dateAncre
       ? {
           ancre: (ancre?.milestone ?? 'T0') as AncreCycle,
           dateAncre,
-          lectures: construireHistoriqueEquilibre(reponsesDb, dateAncre),
+          jourZero,
+          lectures: construireHistoriqueEquilibre(reponsesDb, dateAncre, jourZero),
         }
       : null;
 

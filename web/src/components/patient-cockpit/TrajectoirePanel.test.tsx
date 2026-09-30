@@ -33,7 +33,7 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
         {
           cycleId: 'ep_T0',
           ancre: 'T0',
-          dateAncre: '2026-01-01T00:00:00.000Z',
+          dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
           versionScore: 'v1',
           jalons: [
             { jalon: 'T0', mesure: true, valeur: 40, date: '2026-01-01T00:00:00.000Z' },
@@ -60,8 +60,8 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
     const trajectoire: Trajectoire = {
       index: [],
       cycles: [
-        { cycleId: 'a', ancre: 'T0', dateAncre: '2026-01-01T00:00:00.000Z', versionScore: 'v1', jalons: [], momentum: null, momentumParBesoin: [] },
-        { cycleId: 'b', ancre: 'T1', dateAncre: '2026-03-01T00:00:00.000Z', versionScore: 'v2', jalons: [], momentum: null, momentumParBesoin: [] },
+        { cycleId: 'a', ancre: 'T0', dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z', versionScore: 'v1', jalons: [], momentum: null, momentumParBesoin: [] },
+        { cycleId: 'b', ancre: 'T1', dateAncre: '2026-03-01T00:00:00.000Z', jourZero: '2026-03-01T00:00:00.000Z', versionScore: 'v2', jalons: [], momentum: null, momentumParBesoin: [] },
       ],
       discordanceOrdreCycles: false,
       comparaison: { disponible: false, raison: 'versions_differentes' },
@@ -82,7 +82,7 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
       {
         cycleId: 'ep_a',
         ancre: 'T0',
-        dateAncre: '2026-01-01T00:00:00.000Z',
+        dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
@@ -91,7 +91,7 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
       {
         cycleId: 'ep_b',
         ancre: 'T1',
-        dateAncre: '2026-03-01T00:00:00.000Z',
+        dateAncre: '2026-03-01T00:00:00.000Z', jourZero: '2026-03-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(48, null, 'T1'),
         momentum: null,
@@ -177,7 +177,7 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
       {
         cycleId: 'ep_a',
         ancre: 'T0',
-        dateAncre: '2026-01-01T00:00:00.000Z',
+        dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
@@ -186,7 +186,7 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
       {
         cycleId: 'ep_b',
         ancre: 'T1',
-        dateAncre: '2026-03-01T00:00:00.000Z',
+        dateAncre: '2026-03-01T00:00:00.000Z', jourZero: '2026-03-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(48, null, 'T1'),
         momentum: null,
@@ -274,7 +274,7 @@ describe('TrajectoirePanel — cycles anciens repliés (lot Densité)', () => {
       {
         cycleId: 'ep_a',
         ancre: 'T0',
-        dateAncre: '2026-01-01T00:00:00.000Z',
+        dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
@@ -283,7 +283,7 @@ describe('TrajectoirePanel — cycles anciens repliés (lot Densité)', () => {
       {
         cycleId: 'ep_b',
         ancre: 'T1',
-        dateAncre: '2026-03-01T00:00:00.000Z',
+        dateAncre: '2026-03-01T00:00:00.000Z', jourZero: '2026-03-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(48, null, 'T1'),
         momentum: null,
@@ -357,7 +357,7 @@ describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 
       {
         cycleId: 'ep_a',
         ancre: 'T0',
-        dateAncre: '2026-01-01T00:00:00.000Z',
+        dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
@@ -366,7 +366,7 @@ describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 
       {
         cycleId: 'ep_b',
         ancre: 'T1',
-        dateAncre: '2026-03-01T00:00:00.000Z',
+        dateAncre: '2026-03-01T00:00:00.000Z', jourZero: '2026-03-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(48, null, 'T1'),
         momentum: null,
@@ -437,7 +437,7 @@ describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
       {
         cycleId: 'ep_T0',
         ancre: 'T0',
-        dateAncre: '2026-01-01T00:00:00.000Z',
+        dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(12, null),
         momentum: null,
@@ -641,7 +641,7 @@ describe('TrajectoirePanel — montage de l’encart d’orientation', () => {
           cycles: [{
             cycleId: 'ep_a',
             ancre: 'T0',
-            dateAncre: '2026-01-01T00:00:00.000Z',
+            dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
             versionScore: 'v1',
             jalons: [],
             momentum: { tendance: 'hausse', delta: 15 },
@@ -694,7 +694,7 @@ describe('TrajectoirePanel — re-passation ciblée (LOT-07, D-058)', () => {
     return {
       index: [{ milestone: 'T0', date: dateAncre, cycleId: 'ep_a' }],
       cycles: [{
-        cycleId: 'ep_a', ancre: 'T0', dateAncre, versionScore: 'v15', jalons: [], momentum: null,
+        cycleId: 'ep_a', ancre: 'T0', dateAncre, jourZero: dateAncre, versionScore: 'v15', jalons: [], momentum: null,
         momentumParBesoin: [],
       }],
       discordanceOrdreCycles: false,

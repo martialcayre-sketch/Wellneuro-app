@@ -25,7 +25,8 @@ est un titre `#` de la forme :
 Le contenu ne change pas : moins de 120 lignes, branche et état Git, objectif,
 décisions prises, fichiers modifiés, validations exécutées, problèmes ouverts,
 prochaine action exacte, interdits encore actifs. C'est `/wn-handoff write` qui
-le produit — **invoqué à la main**, le skill portant `disable-model-invocation`.
+le produit — le modèle peut l'invoquer depuis le 2026-09-30, en fin de lot et
+avant la PR (fenêtre de clôture), ou l'utilisateur le taper.
 
 Le plafond de 120 lignes vaut pour un handoff **écrit ici**. Il ne s'applique
 pas aux fragments **restaurés** — ceux qu'on récupère d'une branche perdue ou

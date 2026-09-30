@@ -25,7 +25,7 @@ function trajectoire(confirmes: string[] = ['T0']): Trajectoire {
     cycles: [{
       cycleId: 'cycle-1',
       ancre: 'T0',
-      dateAncre: T0,
+      dateAncre: T0, jourZero: T0,
       versionScore: 'equilibre-v15',
       jalons: [],
       momentum: null,
@@ -37,6 +37,36 @@ function trajectoire(confirmes: string[] = ['T0']): Trajectoire {
 }
 
 describe('resoudreJalonDu — ce que le cockpit a le droit de proposer', () => {
+  // [[D-255]] : les jalons de mesure se comptent depuis le JOUR 0 du suivi (la
+  // diffusion), et ne courent pas sans lui.
+  it('sans diffusion sur le cycle, aucun jalon de suivi ne court — et le motif le dit', () => {
+    const traj = trajectoire();
+    traj.cycles[0].jourZero = null;
+    const verdict = resoudreJalonDu(traj, apresT0(21));
+    expect(verdict).toMatchObject({ statut: 'aucun' });
+    if (verdict.statut !== 'aucun') throw new Error('inatteignable');
+    expect(verdict.motif).toContain('Aucun protocole n’a été diffusé');
+  });
+
+  it('compte le J21 depuis la diffusion, pas depuis l’ancre', () => {
+    const traj = trajectoire();
+    traj.cycles[0].jourZero = apresT0(10).toISOString();
+    // T0 + 21 = diffusion + 11 : hors fenêtre (elle s'ouvre à diffusion + 13).
+    expect(resoudreJalonDu(traj, apresT0(21))).toMatchObject({ statut: 'aucun', prochainJalon: 'J21' });
+    // Diffusion + 21 : au centre.
+    const du = resoudreJalonDu(traj, apresT0(31));
+    expect(du).toMatchObject({ statut: 'du', jalon: 'J21', ouvertLe: apresT0(23).toISOString() });
+  });
+
+  it('refuse un jour 0 illisible plutôt que de compter depuis l’ancre', () => {
+    const traj = trajectoire();
+    traj.cycles[0].jourZero = 'pas-une-date';
+    const verdict = resoudreJalonDu(traj, apresT0(21));
+    expect(verdict).toMatchObject({ statut: 'aucun' });
+    if (verdict.statut !== 'aucun') throw new Error('inatteignable');
+    expect(verdict.motif).toContain('illisible');
+  });
+
   it('propose T0 quand aucun cycle n’existe — comportement historique inchangé', () => {
     const verdict = resoudreJalonDu(null, apresT0(0));
     expect(verdict).toMatchObject({ statut: 'du', jalon: 'T0' });
@@ -132,13 +162,18 @@ describe('contrat inter-couches — la fenêtre affichée est celle que le serve
   // fenêtrait le J21 sur le 20 janvier (confirmedAt) et le serveur sur le
   // 1er (première réponse) — fenêtres DISJOINTES dès que l'écart dépasse deux
   // tolérances, et l'épisode « J21 » était bâti sur les réponses du T0.
-  it('même ancre (`confirmedAt` du T0 confirmé), mêmes bornes, à la milliseconde', () => {
+  // RÉÉCRIT PAR [[D-255]] : la date partagée n'est plus la confirmation de
+  // l'ancre mais le jour 0 du suivi (la diffusion). La propriété défendue, elle,
+  // ne change pas — les deux côtés comptent depuis LA MÊME date.
+  it('même jour 0 (la diffusion du cycle), mêmes bornes, à la milliseconde', () => {
     const confirmedAt = '2026-01-20T00:00:00.000Z';
+    const jourZero = '2026-02-01T00:00:00.000Z';
     const traj = trajectoire();
     traj.index = [{ milestone: 'T0', date: confirmedAt, cycleId: 'cycle-1' }];
     traj.cycles[0].dateAncre = confirmedAt;
+    traj.cycles[0].jourZero = jourZero;
 
-    const du = resoudreJalonDu(traj, new Date('2026-02-10T00:00:00.000Z'));
+    const du = resoudreJalonDu(traj, new Date('2026-02-22T00:00:00.000Z'));
     expect(du).toMatchObject({ statut: 'du', jalon: 'J21' });
     if (du.statut !== 'du') throw new Error('inatteignable');
 
@@ -157,10 +192,12 @@ describe('contrat inter-couches — la fenêtre affichée est celle que le serve
         etatPopulation: lireEtatPopulation(null),
       },
       'J21',
-      { ancre: 'T0', confirmedAt },
+      { ancre: 'T0', confirmedAt, jourZero },
     );
     expect(proposal.window.start).toBe(du.ouvertLe);
     expect(proposal.window.end).toBe(du.fermeLe);
+    // Et la fenêtre est bien centrée sur le jour 0 + 21, pas sur l'ancre + 21.
+    expect(du.ouvertLe).toBe('2026-02-14T00:00:00.000Z');
   });
 
   it('sans ancre fournie, le serveur garde son repli historique (première réponse)', () => {
@@ -203,7 +240,7 @@ function deuxCycles(confirmes: string[] = ['T0', 'T1']): Trajectoire {
       {
         cycleId: 'cycle-1',
         ancre: 'T0',
-        dateAncre: T0,
+        dateAncre: T0, jourZero: T0,
         versionScore: 'equilibre-v15',
         jalons: [],
         momentum: null,
@@ -212,7 +249,7 @@ function deuxCycles(confirmes: string[] = ['T0', 'T1']): Trajectoire {
       {
         cycleId: 'cycle-2',
         ancre: 'T1',
-        dateAncre: dateT1,
+        dateAncre: dateT1, jourZero: dateT1,
         versionScore: 'equilibre-v15',
         jalons: [],
         momentum: null,

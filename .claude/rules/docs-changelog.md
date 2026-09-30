@@ -24,9 +24,9 @@ paths:
   **Huit rubriques, et aucune n'est optionnelle** : branche et état Git ;
   objectif ; décisions prises ; fichiers modifiés ; **validations exécutées** ;
   **problèmes ouverts** ; prochaine action exacte ; **interdits encore actifs**.
-  Elles sont listées dans `/wn-handoff` — mais ce skill porte
-  `disable-model-invocation`, donc un handoff **écrit à la main** n'en hérite
-  pas. Les trois en gras sont celles qu'une revue a trouvées manquantes le
+  Elles sont listées dans `/wn-handoff` — que le modèle peut invoquer depuis
+  le 2026-09-30 ; un handoff **écrit à la main**
+  n'en hérite pas. Les trois en gras sont celles qu'une revue a trouvées manquantes le
   2026-09-16, sur le handoff qu'elle examinait (`D-214`) ; elles y ont été
   ajoutées dans la même PR. Elles manquent **toujours** à celui du même jour à
   21 h 54, non réécrit — un handoff passé ne se réinterprète pas. Un handoff qui

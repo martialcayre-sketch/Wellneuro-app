@@ -2,7 +2,8 @@
 description: Transforme une demande brute en demande exécutable — objectif, résultat observable, hors périmètre, questions bloquantes — avant tout routage ou cadrage. Lecture seule, contexte isolé. À NE DÉCLENCHER que si deux lectures de la demande mèneraient à deux travaux différents ; sinon ne pas invoquer — sur une demande déjà exécutable, ce skill rend PASSE et le tour est perdu.
 argument-hint: "<demande brute>"
 # EXCEPTION DÉLIBÉRÉE — ne pas rétablir `disable-model-invocation: true` ici.
-# Seule exemption de la famille `wn` (wn-route est redevenu manuel le 2026-08-07).
+# Exemption de la famille `wn`, partagée depuis le 2026-09-30 avec `wn-handoff`
+# (wn-route est redevenu manuel le 2026-08-07).
 # Plusieurs skills — `wn`, `wn-lot`, `wn-campaign`, `wn-debug` —
 # demandent de passer par ce skill avant de router, cadrer ou ouvrir une campagne.
 # Le drapeau rendait ces consignes inapplicables : un skill qu'il porte n'est

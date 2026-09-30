@@ -1,3 +1,4 @@
+import { lireJoursZeroParPatient } from '@/lib/protocol/calendriersPersistes';
 import { prisma } from '@/lib/prisma';
 import { construireTrajectoire, type TrajectoireEpisode } from '@/lib/protocol/trajectoire';
 import type { ReponseBrute } from '@/lib/equilibre/depuisPrisma';
@@ -65,10 +66,14 @@ export async function momentumJalonsParPatient(
     reponsesParPatient.set(r.idPatient, liste);
   }
 
+  // Le jour 0 de chaque cycle ([[D-255]]), comme la fiche-trajectoire.
+  const joursZero = await lireJoursZeroParPatient(episodesParPatient);
+
   for (const idPatient of idsJalon) {
     const trajectoire = construireTrajectoire({
       episodes: episodesParPatient.get(idPatient) ?? [],
       reponses: reponsesParPatient.get(idPatient) ?? [],
+      joursZero: joursZero.get(idPatient),
     });
     // Le cycle courant = le dernier T0 confirmé (cycles triés par date).
     const cycleCourant = trajectoire.cycles.at(-1);

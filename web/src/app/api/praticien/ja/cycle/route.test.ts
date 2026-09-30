@@ -15,6 +15,19 @@ const { getServerSession, prisma, resolveProtocoleDiffuse, reconstructProtocolDr
 vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
+
+// Le calendrier du cycle ([[D-255]]) : par défaut, le jour 0 est l'approbation
+// active et sa seule version — le cas d'un cycle diffusé une fois. Les cas
+// d'une rediffusion le règlent eux-mêmes.
+const { calendrierDuProtocoleDiffuse } = vi.hoisted(() => ({
+  calendrierDuProtocoleDiffuse: vi.fn(
+    async (_idPatient: string, diffuse: { approvedAt: Date; protocolDraftId: string }) => ({
+      jourZero: diffuse.approvedAt,
+      versionIds: [diffuse.protocolDraftId],
+    }),
+  ),
+}));
+vi.mock('@/lib/protocol/calendriersPersistes', () => ({ calendrierDuProtocoleDiffuse }));
 vi.mock('@/lib/protocol/portailProtocol', () => ({ resolveProtocoleDiffuse }));
 vi.mock('@/lib/protocol/fromPrisma', () => ({
   reconstructProtocolDraft,
@@ -154,6 +167,24 @@ describe('api/praticien/ja/cycle', () => {
     // Le plan idéal reste interne au praticien : il ne transite pas par la vue
     // de cycle, qui est le miroir exact de ce que lit le patient.
     expect(JSON.stringify(json)).not.toContain('INTERNE');
+
+    // Après une rediffusion qui ne relance rien, le début de cycle reste le
+    // jour 0 du cycle, comme au portail ([[D-255]]).
+    calendrierDuProtocoleDiffuse.mockResolvedValueOnce({
+      jourZero: new Date('2026-07-10T08:00:00.000Z'),
+      versionIds: ['PD_0', 'PD_1'],
+    });
+    const rediffuse = (await (await GET(new Request(URL_BASE))).json()) as { vue: { debutCycle: string } };
+    expect(rediffuse.vue.debutCycle).toBe('2026-07-10T08:00:00.000Z');
+
+    // Une panne de lecture du calendrier reste une panne : elle ne se déguise
+    // pas en protocole « indisponible » (revue de la PR #1265).
+    const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
+    calendrierDuProtocoleDiffuse.mockRejectedValueOnce(new Error('base injoignable'));
+    const panne = await GET(new Request(URL_BASE));
+    expect(panne.status).toBe(500);
+    expect(((await panne.json()) as { reason: string }).reason).toBe('exception');
+    erreur.mockRestore();
   });
 
   // LE PRATICIEN VOIT CE QUE VOIT SON PATIENT — c'est-à-dire rien, et pour la

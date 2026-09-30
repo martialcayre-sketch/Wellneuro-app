@@ -136,6 +136,35 @@ for (const motif of refus) {
   }
 }
 
+// SONDAGE — attendre un CI ou une tâche de fond en boucle. Pas dangereux, mais
+// coûteux : chaque tour de sondage est un appel de la boucle principale qui
+// relit tout le contexte (environ 1 370 appels de ce type en septembre 2026).
+// `wn-attendre-ci.mjs` en tâche de fond rend la même information en UN appel,
+// et sa notification réveille la session. Inspecté sur la commande MASQUÉE :
+// un corps de PR qui décrit une boucle n'en est pas une.
+const sondage = [
+  /\bgh\s+pr\s+checks\b[^\n]*--watch\b/,
+  /\bgh\s+run\s+watch\b/,
+  // Le `gh` doit être DANS la boucle (avant son `done`) : une boucle close
+  // suivie d'une lecture ponctuelle n'est pas un sondage (revue Copilot #1260).
+  /\b(while|until|for)\b(?:(?!\bdone\b)[\s\S])*\bgh\s+(pr\s+(checks|view)|run\s+(view|list)|api)\b/,
+  /\bsleep\s+\d+[\s\S]*\bgh\s+(pr\s+(checks|view)|run\s+(view|list))\b/,
+  /\bgh\s+(pr\s+(checks|view)|run\s+(view|list))\b[\s\S]*\bsleep\s+\d+/,
+  /\bsleep\s+\d+[\s\S]*\b(tail|cat)\b[^\n]*\btasks\/[^\s]*\.output\b/
+];
+
+for (const motif of sondage) {
+  if (motif.test(masquee)) {
+    console.error(
+      `Sondage refusé par WellNeuro : ${original}. ` +
+      `Pour un CI : \`node scripts/wn-attendre-ci.mjs <N>\` en tâche de fond, puis ` +
+      `attendre sa notification. Pour une tâche de fond : attendre sa notification. ` +
+      `Un échec se lit en un appel : \`gh run view <id> --log-failed\`.`
+    );
+    process.exit(2);
+  }
+}
+
 // La dérogation n'agit qu'ici : le niveau « refus » ci-dessus s'applique à
 // toutes les commandes, sans exception.
 for (const { motif, raison } of enveloppeSure ? [] : demande) {

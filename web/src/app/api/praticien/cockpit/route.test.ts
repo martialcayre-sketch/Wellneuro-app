@@ -25,6 +25,9 @@ const { getServerSession, prisma, writes } = vi.hoisted(() => {
       // construction de carte. Vide par défaut ⇒ `selectionPraticien: null`,
       // c'est-à-dire l'état d'un dossier où personne n'a encore choisi.
       decisionPrioritySelection: { findMany: vi.fn() },
+      // Approbations de diffusion : le calendrier de suivi ([[D-255]]). Vide
+      // par défaut ⇒ aucun cycle diffusé, repli sur l'ancre.
+      protocolDiffusionApproval: { findMany: vi.fn() },
       // Préconditions de confirmation T0 (D-052).
       syntheseIA: { findFirst: vi.fn() },
       // Second rideau ([[D-158]]) : assignations du dossier, et ancre déjà
@@ -37,6 +40,24 @@ const { getServerSession, prisma, writes } = vi.hoisted(() => {
 });
 
 vi.mock('next-auth', () => ({ getServerSession }));
+
+/**
+ * Une approbation de diffusion recevable, jointe à sa version, sur le cycle
+ * `EPI_T0` — la forme que lit `lireCalendriersSuivi` ([[D-255]]).
+ */
+function diffusionSurT0(approvedAtIso: string) {
+  const approvedAt = new Date(approvedAtIso);
+  return {
+    id: 'APPR_1', idPatient: 'PAT_TEST', approvedAt, createdAt: approvedAt, approvedBy: 'practitioner',
+    confirmation: 'content_approved_for_diffusion', decisionCardInputHash: 'carte', protocolDraftInputHash: 'version',
+    protocolDraftId: 'PD_1',
+    draft: {
+      idPatient: 'PAT_TEST', inputHash: 'version', decisionCardInputHash: 'carte', status: 'practitioner_reviewed',
+      reviewedAt: new Date(approvedAt.getTime() - 60_000), selectedPriorityId: 'PRIO_1',
+      episode: { id: 'EPI_T0', milestone: 'T0', cycleId: 'EPI_T0' },
+    },
+  };
+}
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
@@ -102,6 +123,7 @@ describe('/api/praticien/cockpit', () => {
     prisma.patient.findFirst.mockResolvedValue(patient);
     // Aucune sélection praticien par défaut (`D-127`).
     prisma.decisionPrioritySelection.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
     // Aucune ancre confirmée par défaut. Depuis `D-113` la lecture des ancres
     // passe par `findMany` + filtre de forme : `findFirst` sur `milestone:
     // 'T0'` ne voyait pas les cycles rouverts.
@@ -191,6 +213,18 @@ describe('/api/praticien/cockpit', () => {
     expect(prisma.assessmentEpisode.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ milestone: { startsWith: 'T' } }) }),
     );
+  });
+
+  it('fenêtre un jalon de mesure sur le JOUR 0 du suivi quand le cycle porte une diffusion (D-255)', async () => {
+    // Ancre confirmée le 20 janvier, protocole diffusé le 1er février : le J21
+    // mesure trois semaines de protocole, il se compte depuis le 1er février.
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EPI_T0', cycleId: 'EPI_T0', milestone: 'T0', confirmedAt: new Date('2026-01-20T00:00:00.000Z') },
+    ]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([diffusionSurT0('2026-02-01T00:00:00.000Z')]);
+    const response = await GET(getRequest('idPatient=PAT_TEST&milestone=J21'));
+    const payload = await response.json();
+    expect(payload.proposal.targetAt).toBe('2026-02-22T00:00:00.000Z'); // 1er févr. + 21 j
   });
 
   it('le J21 d’un cycle ROUVERT se compte depuis le T1, jamais depuis le T0 (`D-113`)', async () => {
@@ -363,6 +397,22 @@ describe('/api/praticien/cockpit', () => {
     expect(response.status).toBe(200);
   });
 
+  it('le POST recalcule le J21 depuis le même jour 0 que le GET : pas de 409 (D-255)', async () => {
+    brancherPassations(responses, []);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EPI_T0', cycleId: 'EPI_T0', milestone: 'T0', confirmedAt: new Date('2026-01-20T00:00:00.000Z') },
+    ]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([diffusionSurT0('2026-02-01T00:00:00.000Z')]);
+    const proposed = await proposal('J21');
+    expect((proposed.proposal as { targetAt?: string }).targetAt).toBe('2026-02-22T00:00:00.000Z');
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'J21',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    expect(response.status).toBe(200);
+  });
+
   it('la checklist voyage avec la proposition, jamais en lecture d’un état passé', async () => {
     const present = await (await GET(getRequest())).json();
     expect(present.preconditions.bloquant).toBe(false);
@@ -412,6 +462,7 @@ describe('/api/praticien/cockpit — lecture d’un état passé (SP-TT)', () =>
     prisma.patient.findFirst.mockResolvedValue(patient);
     // Aucune sélection praticien par défaut (`D-127`).
     prisma.decisionPrioritySelection.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
     brancherPassations(responses);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.consultation.findFirst.mockResolvedValue({ anamnese: {} });
@@ -482,6 +533,7 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
     prisma.patient.findFirst.mockResolvedValue(patient);
     // Aucune sélection praticien par défaut (`D-127`).
     prisma.decisionPrioritySelection.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
     brancherPassations(responses);
     prisma.consultation.findFirst.mockResolvedValue(CONSULTATION_VALIDEE_FIXTURE);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
@@ -647,6 +699,7 @@ describe('/api/praticien/cockpit — chaîne C1 rebranchée, table signée', () 
     prisma.patient.findFirst.mockResolvedValue(patient);
     // Aucune sélection praticien par défaut (`D-127`).
     prisma.decisionPrioritySelection.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
     brancherPassations(runtimeGolden, dossierGolden);
     prisma.consultation.findFirst.mockResolvedValue({
       anamnese: {
@@ -770,6 +823,7 @@ describe('/api/praticien/cockpit — ouverture d’un cycle (`D-113`)', () => {
     prisma.patient.findFirst.mockResolvedValue(patient);
     // Aucune sélection praticien par défaut (`D-127`).
     prisma.decisionPrioritySelection.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
     prisma.assessmentEpisode.findMany.mockResolvedValue([t0Pose]);
     brancherPassations(responses);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
@@ -858,6 +912,7 @@ describe('/api/praticien/cockpit — persistance et rejeu de l’épisode (`D-11
     prisma.patient.findFirst.mockResolvedValue(patient);
     // Aucune sélection praticien par défaut (`D-127`).
     prisma.decisionPrioritySelection.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     prisma.assessmentEpisode.findUnique.mockResolvedValue(null);
     prisma.assessmentEpisode.create.mockResolvedValue({});

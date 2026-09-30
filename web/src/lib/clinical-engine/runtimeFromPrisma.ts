@@ -151,6 +151,14 @@ export function adaptRuntimeInputs(
 export type AncreCycleCourant = {
   ancre: string;
   confirmedAt: string;
+  /**
+   * Le jour 0 du suivi du cycle ([[D-255]]), ISO : la diffusion qui a ouvert
+   * son calendrier. Un jalon de MESURE se compte depuis lui. `null` = aucune
+   * diffusion sur ce cycle : repli sur `confirmedAt`, qui ne sert qu'à
+   * rejouer à l'identique un épisode confirmé avant [[D-255]] — aucun jalon
+   * de suivi n'est plus proposé sans diffusion.
+   */
+  jourZero: string | null;
 };
 
 /**
@@ -219,7 +227,7 @@ function dateDeReference(
 ): string {
   const repliDossier = inputs.patient.createdAt.toISOString();
   if (!estAncreDeCycle(milestone)) {
-    return ancreCycle?.confirmedAt ?? inputs.responses[0]?.observedAt ?? repliDossier;
+    return ancreCycle?.jourZero ?? ancreCycle?.confirmedAt ?? inputs.responses[0]?.observedAt ?? repliDossier;
   }
   if ((indexDeCycle(milestone) ?? 0) === 0) {
     return inputs.responses[0]?.observedAt ?? repliDossier;
@@ -245,6 +253,8 @@ export function proposeRuntimeEpisode(
    */
   ancreCycle: AncreCycleCourant | null = null,
 ): RuntimeEpisodeProposal {
+  // Depuis [[D-255]], `ancreCycle.jourZero` date les jalons de mesure ; voir
+  // `dateDeReference`.
   const targetAt = new Date(
     new Date(dateDeReference(inputs, milestone, ancreCycle)).getTime()
     + joursDepuisAncre(milestone) * JOUR_MS,

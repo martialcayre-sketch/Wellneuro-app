@@ -40,7 +40,10 @@ export type ResumeJ21Input = {
   // calcul restait juste sur un cycle ancré en `T1` — mais il l'était par
   // accident, et le jour où un jalon d'ancre porterait un offset propre, le
   // littéral aurait lu le mauvais point sans rien signaler.
-  momentum?: { ancre: AncreCycle; dateAncre: Date; lectures: LectureDatee[] } | null;
+  //
+  // `jourZero` : le jour 0 du suivi du cycle ([[D-255]]). Le J21 se lit depuis
+  // lui ; la lecture d'ancre, depuis `dateAncre`. Absent → repli sur l'ancre.
+  momentum?: { ancre: AncreCycle; dateAncre: Date; jourZero?: Date | null; lectures: LectureDatee[] } | null;
 };
 
 const ORDRE_POINTS: readonly PointEtape[] = ['J7', 'J14', 'J21'] as const;
@@ -57,9 +60,9 @@ export function buildResumeJ21(input: ResumeJ21Input): ResumeJ21 {
 
   let score: ResumeScore = null;
   if (input.momentum) {
-    const { ancre, dateAncre, lectures } = input.momentum;
+    const { ancre, dateAncre, jourZero, lectures } = input.momentum;
     const lectureAncre = resoudreLectureJalon(dateAncre, ancre, lectures);
-    const lectureJ21 = resoudreLectureJalon(dateAncre, 'J21', lectures);
+    const lectureJ21 = resoudreLectureJalon(jourZero ?? dateAncre, 'J21', lectures);
     const resultat = calculerDeltaMomentum(lectureAncre, lectureJ21);
     if (resultat) score = { tendance: resultat.tendance, delta: resultat.delta };
   }

@@ -1,7 +1,9 @@
 ---
-description: Produit un handoff compact et réutilisable pour reprendre le travail dans une nouvelle session ou un autre agent. Seul skill à poser un fragment dans docs/claude/handoffs/.
+description: Produit un handoff compact et réutilisable pour reprendre le travail dans une nouvelle session ou un autre agent. Seul skill à poser un fragment dans docs/claude/handoffs/. À déclencher en fin de lot AVANT la PR (fenêtre de clôture), avant une pause de plus d'une heure, ou sur demande explicite de handoff — jamais en cours de lot ; après le merge, seulement pour rattraper une clôture manquée (PR de doc). Copie principale seulement.
 argument-hint: "[write]"
-disable-model-invocation: true
+# EXCEPTION DÉLIBÉRÉE — invocable par le modèle depuis le 2026-09-30 (audit de
+# consommation : 9 recherches du modèle, toutes en échec). Ne pas rétablir
+# `disable-model-invocation: true` sans nouvel arbitrage du responsable.
 effort: low
 ---
 

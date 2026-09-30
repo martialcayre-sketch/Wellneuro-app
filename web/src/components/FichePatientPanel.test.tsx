@@ -307,7 +307,7 @@ function cycleTrajectoire(j21Mesure: boolean) {
   return {
     cycleId: 'ep_T0',
     ancre: 'T0',
-    dateAncre: '2026-06-01T00:00:00.000Z',
+    dateAncre: '2026-06-01T00:00:00.000Z', jourZero: '2026-06-01T00:00:00.000Z',
     versionScore: 'v1',
     jalons: [
       { jalon: 'T0', mesure: true, valeur: 40, date: '2026-06-01T00:00:00.000Z' },

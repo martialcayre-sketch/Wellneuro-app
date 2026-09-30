@@ -100,13 +100,16 @@ décision `D-xxx` et un fragment `changelog.d/`. Les 58 règles `DC-nn` :
 
 ## Modèle, effort, exécution
 
-**Défaut : Sonnet 5 + effort high + exécution solo** (déjà épinglé dans
-`settings.json`) — couvre ~80-90 % du courant : TypeScript, React, Next.js,
-docs, tests, CRUD, corrections, Git/GitHub.
+**Défaut : Opus 5.5 + effort high + exécution solo** (épinglé dans
+`settings.json`, arbitrage du 2026-09-30). La lecture du cache — 57 % du coût
+de la boucle principale — coûte le même prix sur Opus et Sonnet : le levier
+est la taille du contexte, pas le modèle ; et changer de modèle en cours de
+session réécrit tout le cache. `/model` seulement juste après `/clear`.
 
-- **Opus** sur signal concret : sécurité, auth, revue critique,
-  migration/Prisma sensible, clinique/scoring, bug résistant — ou un seul
-  signal fort de la liste Fable.
+- **Délégué = Sonnet** : agent `Explore` (surchargé dans `.claude/agents/`)
+  et sous-agents sans modèle (`CLAUDE_CODE_SUBAGENT_MODEL`). Workflows :
+  chaque `agent()` fixe modèle et effort — lecteurs `sonnet`/`medium`, juges
+  et vérification `opus`/`high`.
 - **Fable** : exceptionnel (< 10 %), au moins deux signaux forts —
   architecture transverse, arbitrage difficile entre solutions plausibles,
   cause racine introuvable après investigation sérieuse, décision engageant
@@ -114,14 +117,16 @@ docs, tests, CRUD, corrections, Git/GitHub.
   bug déjà localisé.
 - **Ultracode** = largeur parallélisable, opt-in explicite, ponctuel — jamais
   la profondeur d'un bug local. Fable+Ultracode : rare (profondeur ET largeur).
+  Activé pour une tâche puis éteint ; jamais de `/model` pendant un workflow.
 - **Effort natif** : low (mécanique), medium (simple), high (défaut), xhigh
   (exceptionnel), max (quasi jamais) — jamais augmenté sans signal.
 - L'escalade est déterministe : un des signaux ci-dessus, sinon le défaut.
   Elle ne se narre pas et n'ajoute aucune couche de routage — elle s'exécute.
 - Le frontmatter `model:`/`effort:` des agents `.claude/agents/` fait foi.
-- Exploration : agent natif `Explore`. Planification : mode Plan natif ;
-  `/model opusplan` quand le plan est le morceau difficile — jamais deux
-  planifications pour une même tâche.
+- Exploration : agent `Explore` (Sonnet) dès ~5 lectures prévues, en fond si
+  indépendant ; ne relire en principal que le fichier à éditer. Chemins
+  cliniques et sécurité : lecture en principal. Planification : mode Plan
+  natif — jamais deux planifications pour une même tâche.
 - Revue proportionnelle au risque (P0/P1/P2, budgets, signaux d'escalade) :
   `docs/claude/POLITIQUE_REVUE.md`. Ordinaire : `/code-review medium` (nommer
   le niveau — il réutilise sinon le dernier tapé) ; fort risque : agent
@@ -148,8 +153,9 @@ sans rien lire si `WN_ALLOW_RISKY_COMMAND=1`. Détail :
 
 - T1 ne joue pas de suite complète ; la première passe entière est T2 — c'est
   T2 qu'il faut lancer avant de conclure qu'une suite est verte.
-- Rediriger la sortie d'une suite vers un fichier puis la relire ; ne jamais
-  relancer une suite pour en relire la sortie.
+- Rediriger la sortie d'une suite vers un fichier puis la relire (ou
+  `set -o pipefail` : un tube masque le code d'échec) ; ne jamais relancer une
+  suite pour en relire la sortie.
 
 ## Commandes utiles
 
@@ -171,8 +177,10 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 ## PR, CI, merge
 
 - Ouvrir la PR avec `--body-file` et un diff d'une seule finalité.
-- Attendre le CI en un seul appel bloquant :
-  `node scripts/wn-attendre-ci.mjs <N>` — jamais de `gh pr checks` en boucle.
+- Attendre le CI en un seul appel bloquant, **en tâche de fond** :
+  `node scripts/wn-attendre-ci.mjs <N>` — puis attendre sa notification, sans
+  sonder (`gh pr checks`, `gh run`, `sleep` : un garde les refuse). L'attente
+  sert au fragment, au handoff ou à la relecture du lot en cours.
   **`0` est le seul code de sortie qui autorise à annoncer une PR prête.**
 - Revue, merge et suppression des branches appartiennent à Copilot, sauf
   autorisation transitoire en cours. Détail :
@@ -201,8 +209,18 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 
 - Si `docs/claude/SESSION_LOG.md` existe, lire silencieusement sa dernière
   entrée avant de répondre à la première question.
-- **Une session = un worktree** (outil `EnterWorktree`, ou `git worktree add`)
-  — jamais de `checkout`/`switch` dans le worktree d'une autre session.
+- **Lancer à la racine du dépôt** (VS Code ouvert sur
+  `~/Developer/Wellneuro-app`, ou `/cd` vers lui) — jamais sur `~/Developer` :
+  ni skills ni agents `wn`, et les gardes y échouaient en silence.
+- **Session principale : la copie principale**, où tournent les `/wn-*`.
+  **Session concurrente : son propre worktree** (`EnterWorktree`), cycle en
+  `git`/`gh` direct — les `/wn-*` n'y tournent pas. Jamais de
+  `checkout`/`switch` dans la copie d'une autre session.
+- **Un lot = une session** : handoff dans la PR du lot (fenêtre de
+  clôture), puis `/clear` après le merge ;
+  `/compact` seulement dans un lot (une migration et son code consommateur
+  forment un lot). Pause de plus d'une heure : `/compact` avant de partir
+  (cache chaud) ou handoff puis `/clear` — jamais `/compact` au retour.
 - Le hook de fraîcheur Git impose une branche contenant `origin/main` au
   démarrage et rejuge à chaque tentative d'édition. Jamais de
   pull/merge/rebase automatique ; un historique divergent se réconcilie par
@@ -219,3 +237,8 @@ demander confirmation (log interne, sans donnée sensible).
 
 Changement limité au périmètre demandé ; pas de secret ni donnée sensible
 introduits ; documentation mise à jour si nécessaire.
+
+## Compact instructions
+
+Garder : lot et campagne, branche, PR et leur état CI/revue, décisions `D-xxx`,
+fichiers touchés, validations jouées, état `release-db`, interdits actifs.
