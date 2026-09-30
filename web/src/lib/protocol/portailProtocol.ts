@@ -59,6 +59,8 @@ export async function resolveProtocoleDiffuse(
    */
   decisionCardId: string;
   decisionCardInputHash: string;
+  /** L'approbation active : c'est par elle que se retrouve le calendrier du cycle ([[D-255]]). */
+  approbationId: string;
   approvedAt: Date;
   approvedBy: string;
   confirmation: string;
@@ -116,6 +118,7 @@ export async function resolveProtocoleDiffuse(
     protocolDraftInputHash: row.protocolDraftInputHash,
     decisionCardId: approvedDraft.decisionCardId,
     decisionCardInputHash: row.decisionCardInputHash,
+    approbationId: row.id,
     approvedAt: row.approvedAt,
     approvedBy: row.approvedBy,
     confirmation: row.confirmation,
