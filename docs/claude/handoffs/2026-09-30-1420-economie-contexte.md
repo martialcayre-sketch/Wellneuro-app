@@ -1,4 +1,4 @@
-# Handoff — Économie de contexte : défaut Opus 5.5 high, délégué Sonnet, un lot par session (PR #1260)
+# Handoff — 2026-09-30 — Économie de contexte : défaut Opus 5.5 high, délégué Sonnet, un lot par session (PR #1260)
 
 ## Branche et état Git
 
