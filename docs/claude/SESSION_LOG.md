@@ -8404,6 +8404,17 @@ par `assessment_episode_id` : le repli par date ne sert à aucune ligne.
 
 **Prochaine action.** PR du lot 1, puis lot 2 (portail).
 
+## 2026-09-30 — Économie de contexte : défaut Opus 5.5 high, un lot par session (#1260)
+
+**Fait.** Audit de consommation (30 j, ≈ 5 500 $ équivalent API, 90 % de
+cache, contexte principal moyen 340k) traduit en réglages et méthode :
+défaut Opus 5.5 high, délégué Sonnet (`Explore` surchargé), un lot = une
+session, sondage CI refusé, revue par workflow réservée au P0.
+
+**Décidé (responsable).** Opus 5.5 comme base ; session principale dans la
+copie principale pour les `/wn-*`.
+
+**Prochaine action.** Merge après #1259 ; mesurer l'effet sous 2 à 4 semaines.
 ## 2026-09-30 — Gardes fermés, agents de revue en lecture seule (#1259)
 
 **Fait.** Les six gardes de `.claude/settings.json` sortent en code 2 si leur
