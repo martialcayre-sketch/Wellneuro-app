@@ -8549,3 +8549,18 @@ acte daté d'avant D-255.
 
 **Prochaine action.** PR du lot 4, CI, revue, merge, déploiement constaté.
 D-255 est alors entièrement livrée.
+
+## 2026-09-30 — BIO-INGEST : clôture de LOT-00 (PR #1274)
+
+**Décisions.** La fiche LOT-00 restait « en cours » après le merge de #1269.
+Elle, le tableau de la campagne, `active_lot` et `last_completed_lot` disent
+maintenant LOT-00 terminé et LOT-01 à ouvrir. `last_completed_lot` ne suivait
+pas : constat de la revue Copilot, corrigé.
+
+**Écarté.** Laisser la clôture sans handoff ni entrée de journal : le garde
+de merge l'exige, même pour une PR de doc.
+
+**Prochaine action.** CI, merge de #1274, `/clear`, puis LOT-01 (saisie
+groupée praticien) en mode Plan dans un worktree.
+
+**Questions ouvertes.** Aucune.

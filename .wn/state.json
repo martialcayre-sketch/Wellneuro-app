@@ -7,7 +7,7 @@
   "status": "active",
   "active_campaign": "2026-09-30-bio-ingest",
   "active_lot": "LOT-01",
-  "last_completed_lot": "2026-09-17-promesse-tenue-partage-medecin/LOT-00 — terminé le 2026-09-17 (PR #1181) : la garde de consentement ferme le courrier de biologie et la consignation à la main sur refus, retrait ET silence ; la lettre d'adressage sur signal d'alerte en est l'exception, nommée au patient. Quatre textes patient corrigés, la formulation des choix versionnée, la colonne formulation_version migrée et son drapeau posé après constat par conteneur. Deux amendements EN PLACE, aucun numéro neuf : D-222 et D-219 §3 (renversé).\n\nLe champ précédent désignait 2026-09-16-rayon-patients/LOT-07 — la clôture de ce jour-là l'avait mis à jour, celle-ci l'avait oublié. Constat de revue sur #1183.",
+  "last_completed_lot": "2026-09-30-bio-ingest/LOT-00 — terminé le 2026-09-30 (PR #1269) : cadrage de l'acquisition des résultats biologiques, décision D-256 et ouverture de la campagne. Aucun code, aucune migration. Fiche, tableau de campagne et état machine clos par la PR #1274.",
   "validation": {
     "overall_status": "passed",
     "last_checked_at": "2026-09-07T08:00:00Z",
