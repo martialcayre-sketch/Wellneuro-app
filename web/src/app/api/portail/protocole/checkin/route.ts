@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authorizePortail, resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
+import { calendrierDuProtocoleDiffuse } from '@/lib/protocol/calendriersPersistes';
 import {
   ensurePointEtape,
   ensureReponses,
@@ -70,7 +71,10 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       );
     }
 
-    const pointOuvert = pointEtapeCourant(diffuse.approvedAt, new Date());
+    // Le point ouvert se compte depuis le jour 0 du cycle, pas depuis la
+    // dernière rediffusion ([[D-255]]).
+    const { jourZero } = await calendrierDuProtocoleDiffuse(auth.idPatient, diffuse);
+    const pointOuvert = pointEtapeCourant(jourZero, new Date());
     if (!pointOuvert) {
       return NextResponse.json(
         { ok: false, reason: 'no_step_open', error: 'Aucun rendez-vous de suivi ouvert actuellement.' },
@@ -132,7 +136,12 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       });
     }
 
-    const checkins = await listCheckins(auth.idPatient, diffuse.protocolDraftId);
+    // Les points remplis sous une version antérieure du MÊME calendrier restent
+    // remplis : une rediffusion qui ne relance rien ne les redemande pas
+    // ([[D-255]]). Un pivot, lui, ouvre un calendrier neuf.
+    const calendrier = await calendrierDuProtocoleDiffuse(auth.idPatient, diffuse);
+    const versions = new Set(calendrier.versionIds);
+    const checkins = (await listCheckins(auth.idPatient)).filter((checkin) => versions.has(checkin.protocolDraftId));
     const points: PointEtat[] = POINTS_ETAPE.map((pointEtape) => {
       const actif = resolveActiveCheckin(checkins, pointEtape);
       return { pointEtape, renseigne: actif !== null, reponses: actif?.reponses ?? null };
@@ -141,7 +150,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     return NextResponse.json({
       ok: true,
       protocoleDiffuse: true,
-      pointEtapeOuvert: pointEtapeCourant(diffuse.approvedAt, new Date()),
+      pointEtapeOuvert: pointEtapeCourant(calendrier.jourZero, new Date()),
       points,
     });
   } catch (err) {

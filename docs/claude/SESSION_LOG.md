@@ -8414,3 +8414,35 @@ par conteneur, plus par le MCP Supabase d'une base décommissionnée.
 `/wn-*` y tournent tels quels, pas de correctif worktree.
 
 **Prochaine action.** Merge après #1259 et #1260.
+## 2026-09-30 — Économie de contexte : défaut Opus 5.5 high, un lot par session (#1260)
+
+**Fait.** Audit de consommation (30 j, ≈ 5 500 $ équivalent API, 90 % de
+cache, contexte principal moyen 340k) traduit en réglages et méthode :
+défaut Opus 5.5 high, délégué Sonnet (`Explore` surchargé), un lot = une
+session, sondage CI refusé, revue par workflow réservée au P0.
+
+**Décidé (responsable).** Opus 5.5 comme base ; session principale dans la
+copie principale pour les `/wn-*`.
+
+**Prochaine action.** Merge après #1259 ; mesurer l'effet sous 2 à 4 semaines.
+## 2026-09-30 — Gardes fermés, agents de revue en lecture seule (#1259)
+
+**Fait.** Les six gardes de `.claude/settings.json` sortent en code 2 si leur
+script (ou `node`) est introuvable — ils échouaient en silence dans les
+sessions lancées depuis `~/Developer`. `lecture-seule-git.mjs` (liste
+blanche, `gh` mutants compris) armé par `wn-reviewer` et `wn-fable`.
+
+**Revue.** `wn-reviewer` GO ; P1 (`gh pr checkout/merge`) et P2 corrigés ;
+Copilot : liste blanche.
+
+**Prochaine action.** Merge avant #1260.
+## 2026-09-30 — Calendrier de suivi, lot 2 : le portail (D-255)
+
+**Fait.** Lot 1 mergé (#1262) et déployé. Lot 2 : check-ins, fin et début
+de cycle, carnet praticien comptent depuis le jour 0 ; les check-ins se
+lisent sur les versions du calendrier. 13 mutations, toutes détectées.
+
+**Écarté.** Changer l'identité de l'épisode d'agenda (`cycleRef`) : elle
+détacherait les carnets enregistrés.
+
+**Prochaine action.** PR du lot 2, puis lot 3 (trajectoire et cockpit).
