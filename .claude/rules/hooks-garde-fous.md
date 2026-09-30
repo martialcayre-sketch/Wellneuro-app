@@ -73,8 +73,9 @@ septembre) : les gardes se déclenchaient et ne gardaient rien, sans un mot.
 `settings-gardes.test.mjs`, qui joue chacun des lanceurs réellement déclarés.
 
 **Agents en lecture seule.** `wn-reviewer` et `wn-fable` arment dans leur
-frontmatter `lecture-seule-git.mjs`, qui refuse toute commande Git modifiant
-HEAD, l'index, l'arbre, les branches ou le distant, et tout `gh` qui ferait
+frontmatter `lecture-seule-git.mjs` — une **liste blanche** : toute
+sous-commande Git hors des lectures connues est refusée (checkout, reset,
+stash, bisect…), et tout `gh` qui ferait
 de même (`pr checkout`, `pr merge`, `pr review`, `repo sync`…) — un agent de
 revue a déjà fait un `checkout` dans la copie principale partagée. La session
 principale, elle, n'est pas concernée. Le garde exécuté est celui de la

@@ -31,13 +31,22 @@ try {
 const commande = String(data.tool_input?.command || "");
 if (!commande.trim()) process.exit(0);
 
-// Sous-commandes qui écrivent, quels que soient leurs arguments.
-const toujoursMutantes = new Set([
-  "checkout", "switch", "restore", "reset", "clean", "commit", "merge",
-  "rebase", "pull", "push", "cherry-pick", "revert", "am", "rm", "mv", "add",
-  "update-ref", "update-index", "gc", "prune", "init", "clone", "bisect",
-  "symbolic-ref", "read-tree", "checkout-index", "sparse-checkout", "replace",
-  "filter-branch", "filter-repo",
+// LISTE BLANCHE (revue Copilot de #1259) : une sous-commande inconnue est
+// REFUSÉE. Une liste noire ne tient pas « toute commande Git » — `bisect` et
+// `symbolic-ref` y manquaient. Ce qui suit ne lit que l'état du dépôt.
+const lectureSeule = new Set([
+  "diff", "show", "log", "status", "blame", "annotate", "grep", "ls-files",
+  "ls-tree", "ls-remote", "rev-parse", "rev-list", "merge-base", "cat-file",
+  "for-each-ref", "show-ref", "show-branch", "describe", "name-rev",
+  "shortlog", "range-diff", "whatchanged", "cherry", "count-objects",
+  "check-ignore", "check-attr", "check-ref-format", "var", "version", "help",
+  "diff-tree", "diff-index", "diff-files", "merge-tree", "verify-commit",
+  "verify-tag",
+]);
+// Sous-commandes mixtes : lues ci-dessous, argument par argument.
+const mixtes = new Set([
+  "stash", "worktree", "branch", "tag", "config", "apply", "fetch", "reflog",
+  "lfs", "remote", "submodule", "notes",
 ]);
 
 // Drapeaux qui, sur `git branch`, créent, déplacent ou suppriment.
@@ -50,7 +59,6 @@ const brancheLecture =
 // Sous-commandes dont seule une forme est en lecture.
 function mutanteSelonArgs(sous, args) {
   const a = args.trim();
-  if (/(^|\s)--output(=|\s)/.test(a)) return true; // écrit un fichier (diff, log…)
   switch (sous) {
     case "stash":
       return !/^(list|show)\b/.test(a);
@@ -77,14 +85,21 @@ function mutanteSelonArgs(sous, args) {
     case "lfs":
       return !/^(ls-files|status|env|version|logs)\b/.test(a);
     case "remote":
-      return /^(add|remove|rm|rename|set-url|set-head|set-branches|prune|update)\b/.test(a);
+      return a !== "" && !/^(-v\b|--verbose\b|show\b|get-url\b)/.test(a);
     case "submodule":
-      return /^(update|add|deinit|sync|init|absorbgitdirs|foreach)\b/.test(a);
+      return a !== "" && !/^(status|summary)\b/.test(a);
     case "notes":
-      return /^(add|append|copy|edit|merge|remove|prune)\b/.test(a);
+      return a !== "" && !/^(show|list)\b/.test(a);
     default:
-      return false;
+      return true;
   }
+}
+
+function mutante(sous, args) {
+  if (/(^|\s)--output(=|\s)/.test(args)) return true; // écrit un fichier (diff, log…)
+  if (lectureSeule.has(sous)) return false;
+  if (mixtes.has(sous)) return mutanteSelonArgs(sous, args);
+  return true;
 }
 
 // `git` en position de commande — y compris après un guillemet (`bash -c "git …"`),
@@ -115,7 +130,7 @@ if (gh) refuser(gh[0].trim().replace(/^["'\\/(]+/, ""));
 for (const m of commande.matchAll(invocation)) {
   const sous = m[2];
   const args = m[3] || "";
-  if (toujoursMutantes.has(sous) || mutanteSelonArgs(sous, args)) refuser(`git ${sous}`);
+  if (mutante(sous, args)) refuser(`git ${sous}`);
 }
 
 process.exit(0);

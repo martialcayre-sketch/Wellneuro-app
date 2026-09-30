@@ -89,6 +89,12 @@ for (const cmd of [
   "git diff --output=web/x.txt",
   "git log --output=README.md",
   "git config set user.name x",
+  // Revue Copilot de #1259 : liste blanche, une sous-commande inconnue est refusée.
+  "git maintenance run",
+  "git frobnicate",
+  "git remote add x https://example.org/x.git",
+  "git submodule update --init",
+  "git notes add -m x",
 ]) {
   test(`refusé : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
 }

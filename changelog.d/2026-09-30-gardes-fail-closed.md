@@ -21,6 +21,9 @@
   `/usr/bin/git` ou `\git`. Laisse diff, show, log, status, blame, fetch,
   `gh pr diff`. Un agent de revue avait fait un `checkout` dans la copie
   principale partagée. `wn-reviewer` reçoit aussi `maxTurns: 100`.
+- **Liste blanche** (revue Copilot) : une sous-commande Git inconnue est
+  refusée ; les commandes mixtes (`branch`, `tag`, `config`, `fetch`,
+  `stash`…) sont lues argument par argument.
 - **Revue adverse** (`wn-reviewer`) : GO ; son constat majeur (les `gh`
   mutants passaient) et ses mineurs (contournements par guillemet, chemin ou
   antislash ; sous-commandes manquantes ; banc limité à un lanceur ; `node`
