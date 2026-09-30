@@ -737,6 +737,63 @@ const USAGE_IA_V2: VersionDocumentTrust = {
   hash: 'a7471f6282787b5e0af593fb692d2ad505536aa7ceb3956eea6df71f069eb11c',
 };
 
+/*
+ * v3 du 2026-09-30 — LA v2 ÉTAIT FAUSSE SUR TROIS POINTS (amendement du
+ * 2026-09-30 à [[D-251]]), relevés par un inventaire des appels de modèle :
+ *   — elle ignorait les fiches d'assiette, adaptées par IA puis validées ;
+ *   — elle présentait la proposition de priorité ([[D-167]]) comme « avant sa
+ *     mise en service ». Elle sert depuis le déploiement de son code, sous
+ *     `WN_DOSSIER_DEUX_VOIX`, déjà posé ;
+ *   — elle ne connaissait pas le premier jet de « Ce que j'ai compris de
+ *     vous » ([[D-168]]).
+ * Texte exact validé par le responsable le 2026-09-30.
+ */
+const USAGE_IA_V3: VersionDocumentTrust = {
+  key: 'usage_ia',
+  type: 'ai_transparency',
+  version: 'v3',
+  titre: 'L’intelligence artificielle dans Wellneuro',
+  resume:
+    'Où l’IA intervient, ce qu’elle fait, ce qu’elle ne fait jamais, et comment contester un contenu.',
+  sections: [
+    ...USAGE_IA_V2.sections.map(section => {
+      // « Toute synthèse » ne couvrait plus ce qui part : l'objectif, le résumé
+      // et les fiches passent aussi par la validation du praticien.
+      if (section.titre === 'L’essentiel') {
+        return {
+          ...section,
+          paragraphes: [
+            section.paragraphes[0],
+            'Tout contenu préparé avec l’aide de l’IA qui vous est adressé est relu et validé par votre praticien avant de vous parvenir. Sans cette validation, rien ne part.',
+          ],
+        };
+      }
+      if (section.titre === 'Où l’IA intervient') {
+        return {
+          titre: 'Où l’IA intervient',
+          paragraphes: [
+            'La préparation du brouillon de la synthèse de votre bilan, à partir de vos réponses aux questionnaires et des éléments transmis à votre praticien.',
+            'Une proposition de formulation pour la priorité de votre objectif : une phrase courte, à partir de la synthèse validée par votre praticien et de ce que vous avez écrit sous « ce qui compte pour moi ». Elle lui est présentée comme une proposition ; il la valide, la réécrit ou l’efface.',
+            'Un premier jet de « Ce que j’ai compris de vous » : l’outil relie les synthèses déjà validées par votre praticien, dans l’ordre qu’il a validé, et ce que vous avez exprimé en désaccord. Votre praticien doit le réécrire : un texte identique à la proposition ne peut pas vous être publié.',
+            'Les fiches d’assiette : quand votre praticien retient une assiette dans votre protocole, il peut vous remettre la fiche pratique qui l’accompagne. Chaque fiche a été adaptée avec l’aide de l’IA, une fois pour toutes et avant qu’aucun patient ne la reçoive, puis relue en entier et validée par le praticien responsable. Aucune de vos données n’est utilisée pour cela.',
+            'Pour les trois premiers usages, le fournisseur est Anthropic. Pour les fiches, Anthropic rédige l’adaptation et OpenAI la relit ; ni l’un ni l’autre ne reçoit alors de donnée vous concernant. Le modèle utilisé et la version du procédé sont enregistrés à chaque fois, ce qui permet de retracer l’origine de chaque texte.',
+          ],
+        };
+      }
+      return section;
+    }),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Ce document est complété sur trois points. La proposition de formulation de la priorité de votre objectif est en service. L’IA peut aussi proposer à votre praticien un premier jet de « Ce que j’ai compris de vous », qu’il doit réécrire avant de vous le publier. Enfin, les fiches d’assiette ont été adaptées avec l’aide de l’IA (Anthropic rédige, OpenAI relit), sans aucune de vos données, puis relues et validées. Ce que l’IA ne fait jamais ne change pas.',
+  publieLe: '2026-09-30',
+  // MÊME RÉGIME QUE LES v1 ET v2 : ce document DÉCRIT où l'outil intervient,
+  // il ne recueille rien. Et la séquence « Avant de commencer » ne le présente
+  // pas : y exiger un accusé ferait boucler le patient (`avantDeCommencer.ts`).
+  requiresAcknowledgement: false,
+  hash: '34e55f772917bbdb1ddcdc5bf6c6f2daa4a017aef68d02d22d24a3d1a82e5a52',
+};
+
 const DONNEES_CONFIDENTIALITE_V7: VersionDocumentTrust = {
   key: 'donnees_confidentialite',
   type: 'privacy',
@@ -905,6 +962,53 @@ const DONNEES_CONFIDENTIALITE_V9: VersionDocumentTrust = {
 };
 
 /*
+ * v10 du 2026-09-30 — LE RÔLE D'ANTHROPIC, DÉCRIT EN ENTIER. La ligne ne
+ * connaissait que les synthèses et la priorité ; le premier jet de « Ce que
+ * j'ai compris de vous » ([[D-168]]) lui envoie aussi les narratifs validés et
+ * les désaccords du patient. Les fiches d'assiette n'y figurent pas : leur
+ * adaptation ne traite aucune donnée personnelle (document « L'intelligence
+ * artificielle dans Wellneuro », v3). Texte exact validé par le responsable le
+ * 2026-09-30.
+ */
+const DONNEES_CONFIDENTIALITE_V10: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v10',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: [
+    ...DONNEES_CONFIDENTIALITE_V9.sections.map(section => {
+      // Même forme « Nom — rôle » : le banc `registre.dossier.test.ts` compare
+      // les NOMS de cette liste à ceux de la rubrique 6 du dossier RGPD.
+      if (section.titre === 'Quels prestataires techniques interviennent ?') {
+        return {
+          ...section,
+          points: (section.points ?? []).map(point =>
+            point.startsWith('Anthropic — ')
+              ? 'Anthropic — assistance d’intelligence artificielle pour la préparation des synthèses, pour la proposition de formulation de la priorité de votre objectif et pour la proposition d’un premier jet de « Ce que j’ai compris de vous » (voir « L’intelligence artificielle dans Wellneuro »)'
+              : point,
+          ),
+        };
+      }
+      return section;
+    }),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Le rôle d’Anthropic est décrit plus complètement : l’assistance d’IA sert aussi à proposer à votre praticien un premier jet de « Ce que j’ai compris de vous », à partir des synthèses qu’il a validées et de ce que vous avez exprimé en désaccord. Aucun prestataire ne s’ajoute et aucune donnée nouvelle n’est recueillie.',
+  publieLe: '2026-09-30',
+  // UN ACCUSÉ, ALORS QUE LA v10 NE FAIT QUE DÉCRIRE — et ce n'est pas pour
+  // elle. Seule la version COURANTE réclame un accusé (`avantDeCommencer.ts`) :
+  // une v10 sans accusé aurait effacé celui de la v9, encore dû par 23 dossiers
+  // actifs sur 28 au 2026-09-30 (lecture par conteneur). La v10 contient la v9 ;
+  // l'accuser vaut l'accuser. Coût : les 5 dossiers qui ont déjà accusé la v9
+  // revoient la séquence une fois. Arbitrage du responsable, 2026-09-30.
+  requiresAcknowledgement: true,
+  hash: '691cf85c45b519c9d3aef541522a3d4c1a1bd6de9fdd6d7300b8df02bb443b8a',
+};
+
+/*
  * v3 du 2026-09-17 — LE TEXTE DU CONSENTEMENT PORTAIT LA MÊME PROMESSE, et
  * [[D-222]] §3 ne l'avait pas vue : il ne nommait que les huit versions de
  * « Vos données personnelles » et l'écran « Mes choix ». C'est pourtant le
@@ -963,8 +1067,10 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V7,
   DONNEES_CONFIDENTIALITE_V8,
   DONNEES_CONFIDENTIALITE_V9,
+  DONNEES_CONFIDENTIALITE_V10,
   USAGE_IA_V1,
   USAGE_IA_V2,
+  USAGE_IA_V3,
   DROITS_PATIENT_V1,
   CONSENTEMENT_SUIVI_V2,
   CONSENTEMENT_SUIVI_V3,

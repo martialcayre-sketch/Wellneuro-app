@@ -291,7 +291,7 @@ les pages du portail — **v5 depuis le 2026-09-07** (`D-141`).
 | Sous-traitant | Rôle tel qu'il est dit au patient |
 |---|---|
 | Scalingo | hébergement de l'application et de la base de données (HDS, France) |
-| Anthropic | assistance d'IA pour la préparation des synthèses **et pour la proposition de formulation de la priorité d'un objectif** (`D-167`) |
+| Anthropic | assistance d'IA pour la préparation des synthèses, **pour la proposition de formulation de la priorité d'un objectif** (`D-167`) **et pour la proposition d'un premier jet de « Ce que j'ai compris de vous »** (`D-168`) |
 | Google Workspace | acheminement des e-mails Wellneuro, **y compris les documents adressés au patient** (bilan, comptes rendus) |
 | Google | connexion du praticien, **et du patient s'il la choisit** (seule l'adresse e-mail est transmise) |
 | Sentry | détection des erreurs techniques, région européenne — jamais les réponses, les documents ni l'identité |
@@ -613,6 +613,24 @@ ouverte.
   praticien ; ici, une partie ne l'est pas. À verser au même arbitrage
   contractuel que le flux de synthèse, sans attendre qu'il soit rendu pour
   l'avoir écrit.
+- **Anthropic — troisième flux, ouvert par `D-168` (en service sous
+  `WN_DOSSIER_DEUX_VOIX`), écrit ici le 2026-09-30.** La proposition d'un
+  premier jet de « Ce que j'ai compris de vous » envoie au même destinataire
+  les `narratif_patient` des synthèses **validées par le praticien**, la liste
+  ordonnée de leurs axes, et les désaccords que le patient a déjà signalés,
+  **verbatim**. Ce sont des données de santé au titre de l'article 9. Même
+  canal, même réserve et même absence de mécanisme de transfert écrit que les
+  deux flux ci-dessus. Le texte proposé n'atteint jamais le patient tel quel :
+  le serveur refuse de publier un texte identique au tirage (`RESUME_NON_RELU`).
+  **Ce flux était absent de cette rubrique jusqu'au 2026-09-30**, alors que la
+  table `PropositionComprehensionIA` l'était déjà de la rubrique 5 : relevé par
+  l'inventaire des appels de modèle mené pour le document TRUST des fiches
+  d'assiette.
+- **Fiches d'assiette (`D-251`) — aucun flux de donnée personnelle.**
+  L'adaptation des fiches envoie à Anthropic (rédaction) et à OpenAI
+  (contre-lecture) le texte d'une fiche, ses claims et les réserves de sécurité
+  de l'assiette : aucune donnée d'un patient. Elle s'exécute en dehors de
+  l'application (`docs/TRUST_IA_FICHES_ASSIETTE.md`).
 
 - **Google** — connexion du praticien seul.
 
