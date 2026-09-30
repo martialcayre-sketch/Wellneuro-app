@@ -119,6 +119,54 @@ fournisseur, son transfert hors UE et l'information des patients.
 
 ### D-251 — La fiche d'assiette : la Fiche MY, adaptée par IA puis validée par le responsable, part au patient au clic « Valider pour diffusion »
 
+> **AMENDEMENT DU 2026-09-30 — LE DOCUMENT TRUST SUR L'IA EST VALIDÉ ; LE
+> DOCUMENT DU PORTAIL SUIVRA.**
+>
+> 1. **`docs/TRUST_IA_FICHES_ASSIETTE.md`**, rédigé par Claude, est validé par
+>    le responsable le 2026-09-30, puis **revalidé dans son texte final** après
+>    trois corrections du même jour : la seconde passe, désormais jouée ;
+>    « hors ligne » remplacé par « en dehors de l'application », puisque
+>    l'outil appelle les fournisseurs (revue Copilot de #1254) ; la phrase sur
+>    OpenAI ramenée aux fiches (voir le point 2). Il est versé au dépôt sans
+>    lien depuis la fiche (arbitrage du 2026-09-29). Il nomme les deux
+>    fournisseurs, Anthropic pour la rédaction et OpenAI pour la contre-lecture,
+>    et cite les modèles constatés en base le même jour, en agrégats : 7
+>    versions, `claude-sonnet-5` et `gpt-5.4`, consigne
+>    `fiche-assiette-v1+d4d81bb3a8ae9fa5`, 7 validées après relecture
+>    intégrale. **La condition « document TRUST » du §10 est tenue.**
+> 2. **Faits nouveaux à la rédaction, vérifiés dans le dépôt.**
+>    - **Le document du portail** « L'intelligence artificielle dans
+>      Wellneuro » (`usage_ia` v2), servi aux patients depuis le 2026-09-10,
+>      est faux sur trois points :
+>      - il ignore les fiches d'assiette et dit « Le fournisseur est
+>        Anthropic » ;
+>      - il présente la proposition de priorité ([[D-167]]) comme « avant sa
+>        mise en service ». Elle est pourtant en service, sous
+>        `WN_DOSSIER_DEUX_VOIX`, qui est posé ;
+>      - il ne connaît pas la proposition de « Ce que j'ai compris de vous »
+>        ([[D-168]]), en service elle aussi. Anthropic en reçoit les narratifs
+>        validés et les désaccords du patient, et le serveur refuse de publier
+>        un texte que le praticien n'a pas réécrit.
+>    - **Arbitrage du responsable : une v3 complète** couvrant ces trois
+>      points, et une v9 du document « Vos données » qui élargit la ligne
+>      Anthropic. Pas d'accusé de lecture exigé, comme pour la v2. Les textes
+>      exacts sont validés avant publication, dans un lot à part, avant la
+>      première remise si possible (0 remise au 2026-09-30).
+>    - **OpenAI** est déjà un destinataire de l'application, par la recherche
+>      documentaire du praticien. Ce flux est « non déclaré » depuis le
+>      2026-09-07 (`docs/DOSSIER_RGPD.md`). Le document TRUST ne dit donc
+>      « aucune donnée personnelle » que pour les fiches. **Cet arbitrage est
+>      reporté, hors v3** (responsable, 2026-09-30) : la v3 nomme OpenAI pour
+>      les fiches seulement.
+> 3. **La seconde passe adverse, par mutation, est jouée**
+>    (`docs/claude/REVUE_CODEX_MUTATIONS_FICHES_ASSIETTE_2026-09-30.md`) : les
+>    seize invariants ont chacun au moins un banc qui mord. Sa seule trouvaille
+>    (M7a) est écartée avec motif : l'invariant est gardé par
+>    `route.test.ts:608`, et c'est l'énoncé qui omettait ce banc. **La
+>    condition « contre-revue adverse » du §10 est tenue.**
+> 4. **Ce qui reste du §10** : le constat de l'espace de lecture sur `PAT032`,
+>    à sa première remise.
+>
 > **AMENDEMENT DU 2026-09-29 (NUIT) — LA CONTRE-REVUE ADVERSE : CE QUE LA BASE
 > GARANTIT, CE QUE SEULE LA ROUTE GARANTIT.** Contre-revue Codex jouée le
 > 2026-09-29 (`docs/claude/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`) :
