@@ -27,7 +27,7 @@ describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
         {
           cycleId: 'c1',
           ancre: 'T0',
-          dateAncre: '2026-01-01T00:00:00.000Z',
+          dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
           versionScore: 'v1',
           jalons: [
             { jalon: 'T0', mesure: true, valeur: 40, date: '2026-01-01T00:00:00.000Z' },
@@ -53,7 +53,7 @@ describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
         {
           cycleId: 'c1',
           ancre: 'T0',
-          dateAncre: '2026-01-01T00:00:00.000Z',
+          dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
           versionScore: 'v1',
           jalons: [
             { jalon: 'T0', mesure: true, valeur: 40, date: '2026-01-01T00:00:00.000Z' },
@@ -78,7 +78,7 @@ describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
         {
           cycleId: 'c1',
           ancre: 'T0',
-          dateAncre: '2025-03-01T00:00:00.000Z',
+          dateAncre: '2025-03-01T00:00:00.000Z', jourZero: '2025-03-01T00:00:00.000Z',
           versionScore: 'v1',
           jalons: [{ jalon: 'T0', mesure: true, valeur: 30, date: '2025-03-01T00:00:00.000Z' }],
           momentum: null,
@@ -87,7 +87,7 @@ describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
         {
           cycleId: 'c2',
           ancre: 'T1',
-          dateAncre: '2026-01-10T00:00:00.000Z',
+          dateAncre: '2026-01-10T00:00:00.000Z', jourZero: '2026-01-10T00:00:00.000Z',
           versionScore: 'v1',
           jalons: [{ jalon: 'T1', mesure: true, valeur: 44, date: '2026-01-10T00:00:00.000Z' }],
           momentum: null,

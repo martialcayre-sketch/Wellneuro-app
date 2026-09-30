@@ -1,3 +1,4 @@
+import { lireJoursZeroParPatient } from '@/lib/protocol/calendriersPersistes';
 import { prisma } from '@/lib/prisma';
 import { filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { construireTrajectoire, type Trajectoire, type TrajectoireEpisode } from '@/lib/protocol/trajectoire';
@@ -70,11 +71,16 @@ export async function chargerTrajectoiresCabinet(emailPraticien: string): Promis
     reponsesParPatient.set(r.idPatient, liste);
   }
 
+  // Le jour 0 de chaque cycle ([[D-255]]), comme la fiche-trajectoire : le
+  // cabinet ne doit pas lire les mêmes jalons à une autre date qu'elle.
+  const joursZero = await lireJoursZeroParPatient(episodesParPatient);
+
   return patients.map((patient) => ({
     ...patient,
     trajectoire: construireTrajectoire({
       episodes: episodesParPatient.get(patient.idPatient) ?? [],
       reponses: reponsesParPatient.get(patient.idPatient) ?? [],
+      joursZero: joursZero.get(patient.idPatient),
     }),
   }));
 }

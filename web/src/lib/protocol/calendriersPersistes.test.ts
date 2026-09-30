@@ -9,7 +9,7 @@ const { prisma } = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { DIFFUSION_CONFIRMATION } from './diffusion';
-import { calendrierDuProtocoleDiffuse, lireCalendriersSuivi } from './calendriersPersistes';
+import { calendrierDuProtocoleDiffuse, lireCalendriersSuivi, lireJoursZeroParPatient } from './calendriersPersistes';
 
 // Ce que ce banc défend ([[D-255]]) : la lecture prend TOUTES les approbations
 // du dossier, jointes à leur version et à l'épisode de celle-ci, et borne la
@@ -20,6 +20,7 @@ const jour = (n: number) => new Date(Date.UTC(2026, 8, 1 + n, 10, 0, 0));
 function approbation(id: string, jourApprobation: number, priorite: string, idPatient = 'PAT_1') {
   return {
     id,
+    idPatient,
     approvedAt: jour(jourApprobation),
     createdAt: jour(jourApprobation),
     approvedBy: 'practitioner',
@@ -169,5 +170,46 @@ describe('calendrierDuProtocoleDiffuse', () => {
     expect(calendrier).toEqual({ jourZero: jour(10), versionIds: ['v-a'] });
     expect(avertissement).toHaveBeenCalledOnce();
     avertissement.mockRestore();
+  });
+});
+
+describe('lireJoursZeroParPatient', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const T0 = (id: string) => ({ id, cycleId: id, milestone: 'T0', confirmedAt: jour(0) });
+
+  it('rend le jour 0 de chaque cycle, dossier par dossier, en une seule requête', async () => {
+    const autre = approbation('b', 15, 'PRIO-B', 'PAT_2');
+    autre.draft.episode = { id: 'ep-T0-2', milestone: 'T0', cycleId: 'ep-T0-2' };
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([approbation('a', 10, 'PRIO-A'), autre]);
+
+    const joursZero = await lireJoursZeroParPatient(new Map([
+      ['PAT_1', [T0('ep-T0')]],
+      ['PAT_2', [T0('ep-T0-2')]],
+    ]));
+
+    expect(prisma.protocolDiffusionApproval.findMany).toHaveBeenCalledOnce();
+    expect(prisma.protocolDiffusionApproval.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { idPatient: { in: ['PAT_1', 'PAT_2'] } } }),
+    );
+    expect(joursZero.get('PAT_1')).toEqual(new Map([['ep-T0', jour(10)]]));
+    expect(joursZero.get('PAT_2')).toEqual(new Map([['ep-T0-2', jour(15)]]));
+  });
+
+  it('ne prête jamais à un dossier l’approbation d’un autre', async () => {
+    // Une ligne incohérente : l'approbation appartient à `PAT_2`, la version à
+    // `PAT_1`. La lecture d'un seul dossier la filtre par son `where` ; la
+    // lecture groupée doit la filtrer elle-même, sur les DEUX dossiers.
+    const autre = { ...approbation('b', 15, 'PRIO-B', 'PAT_1'), idPatient: 'PAT_2' };
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([autre]);
+
+    const joursZero = await lireJoursZeroParPatient(new Map([['PAT_1', [T0('ep-T0')]], ['PAT_2', []]]));
+
+    expect(joursZero.get('PAT_1')?.size).toBe(0);
+  });
+
+  it('sans dossier, aucune requête', async () => {
+    expect((await lireJoursZeroParPatient(new Map())).size).toBe(0);
+    expect(prisma.protocolDiffusionApproval.findMany).not.toHaveBeenCalled();
   });
 });

@@ -81,6 +81,49 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
     expect(cycle.jalons.find((j) => j.jalon === 'J42')?.mesure).toBe(false);
   });
 
+  // ── [[D-255]] : les mesures se lisent depuis le jour 0 du suivi ────────
+  //
+  // Ancre le 1er janvier, diffusion le 11 : la passation du 1er février tombe
+  // à J21 compté depuis la diffusion, et hors de la fenêtre J21 comptée depuis
+  // l'ancre (22 janvier ± 8 j). L'ancre, elle, garde sa date.
+  it('lit les mesures depuis le jour 0 du cycle, la lecture d’ancre depuis l’ancre (D-255)', () => {
+    const episodes = [t0('ep_T0', '2026-01-01T00:00:00.000Z')];
+    const reponses = [reponse('2026-01-01T00:00:00.000Z'), reponse('2026-02-01T00:00:00.000Z')];
+    const avec = construireTrajectoire({
+      episodes,
+      reponses,
+      avecMomentumParBesoin: true,
+      joursZero: new Map([['ep_T0', new Date('2026-01-11T00:00:00.000Z')]]),
+    }).cycles[0];
+    expect(avec.jourZero).toBe('2026-01-11T00:00:00.000Z');
+    expect(avec.dateAncre).toBe('2026-01-01T00:00:00.000Z');
+    expect(avec.jalons.find((j) => j.jalon === 'T0')?.date).toBe('2026-01-01T00:00:00.000Z');
+    expect(avec.jalons.find((j) => j.jalon === 'J21')).toMatchObject({ mesure: true, date: '2026-02-01T00:00:00.000Z' });
+    expect(avec.momentum).not.toBeNull();
+    const besoin9 = avec.momentumParBesoin.find((ligne) => ligne.besoin === 9);
+    expect(besoin9?.depart?.jalon).toBe('T0');
+    expect(besoin9?.arrivee).toMatchObject({ jalon: 'J21', date: new Date('2026-02-01T00:00:00.000Z') });
+
+    // Sans diffusion : repli sur l'ancre, comme avant — l'historique se relit
+    // à l'identique, et la même passation n'est pas un J21.
+    const sans = construireTrajectoire({ episodes, reponses, avecMomentumParBesoin: true }).cycles[0];
+    expect(sans.jourZero).toBeNull();
+    expect(sans.jalons.find((j) => j.jalon === 'J21')?.mesure).toBe(false);
+    expect(sans.momentumParBesoin.find((ligne) => ligne.besoin === 9)?.arrivee?.jalon).not.toBe('J21');
+  });
+
+  it('le jour 0 d’un cycle ne s’applique qu’à lui (D-255)', () => {
+    const tr = construireTrajectoire({
+      episodes: [
+        t0('ep_T0', '2026-01-01T00:00:00.000Z'),
+        t0('ep_T1', '2026-06-01T00:00:00.000Z', { milestone: 'T1' }),
+      ],
+      reponses: [],
+      joursZero: new Map([['ep_T1', new Date('2026-06-10T00:00:00.000Z')]]),
+    });
+    expect(tr.cycles.map((cycle) => cycle.jourZero)).toEqual([null, '2026-06-10T00:00:00.000Z']);
+  });
+
   // ── A03 : le statut de validité doit atteindre le moteur ───────────────
   //
   // Ces deux cas sont la CONTREPARTIE du correctif. Le moteur portait déjà le
@@ -157,7 +200,7 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
     const cycle = (id: string, versionScore: string | null): TrajectoireCycle => ({
       cycleId: id,
       ancre: 'T0',
-      dateAncre: '2026-01-01T00:00:00.000Z',
+      dateAncre: '2026-01-01T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
       versionScore,
       jalons: [],
       momentum: null,
@@ -239,7 +282,7 @@ describe('rattacherReperesAuxCycles (index navigable)', () => {
   const cycle = (id: string, dateAncre: string, ancre: AncreCycle = 'T0'): TrajectoireCycle => ({
     cycleId: id,
     ancre,
-    dateAncre,
+    dateAncre, jourZero: dateAncre,
     versionScore: 'v1',
     jalons: [],
     momentum: null,

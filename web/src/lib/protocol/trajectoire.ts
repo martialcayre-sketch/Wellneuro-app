@@ -60,6 +60,14 @@ export type TrajectoireCycle = {
    * dès le deuxième cycle.
    */
   dateAncre: string; // ISO
+  /**
+   * Le jour 0 du suivi de ce cycle ([[D-255]]) : la diffusion qui a ouvert son
+   * calendrier, ISO. Les jalons de MESURE (J21, J42, J90) se comptent depuis
+   * lui. `null` = aucun protocole diffusé sur ce cycle : aucun jalon de suivi
+   * n'y court, et ses lectures de mesure gardent l'ancre en repli, pour que
+   * l'historique d'avant [[D-255]] se relise à l'identique.
+   */
+  jourZero: string | null;
   // null = version de score inconnue (ligne antérieure au gate G2). Jamais
   // assimilée à la version courante : ce serait rendre A8-3 indéclenchable.
   versionScore: string | null;
@@ -115,6 +123,12 @@ export function construireTrajectoire(input: {
    * n'en lisent rien : ils ne paient pas ce calcul. Défaut : absent (`[]`).
    */
   avecMomentumParBesoin?: boolean;
+  /**
+   * Le jour 0 de chaque cycle, par `cycleId` ([[D-255]]), tel que
+   * `lireCalendriersSuivi` le rend. Absent ou sans entrée pour un cycle → ce
+   * cycle n'a pas de diffusion.
+   */
+  joursZero?: ReadonlyMap<string, Date>;
 }): Trajectoire {
   const episodesTriees = [...input.episodes].sort(
     (a, b) => a.confirmedAt.getTime() - b.confirmedAt.getTime(),
@@ -134,13 +148,19 @@ export function construireTrajectoire(input: {
       // ne fait que porter au type ce que le filtre garantit.
       const ancre = episodeAncre.milestone as AncreCycle;
       const dateAncre = episodeAncre.confirmedAt;
+      const cycleId = episodeAncre.cycleId ?? episodeAncre.id;
+      const jourZero = input.joursZero?.get(cycleId) ?? null;
+      // La base des lectures de MESURE : le jour 0 ; à défaut l'ancre (repli
+      // de l'historique). La lecture d'ancre, elle, reste à la date de l'ancre.
+      const baseMesures = jourZero ?? dateAncre;
+      const baseDuJalon = (jalon: JalonMomentum) => (jalon === ancre ? dateAncre : baseMesures);
       // Ancrage par épisode (LOT-08) : l'historique daté est reconstruit
       // relativement à l'ancre confirmée DE CE CYCLE — plus jamais celle d'un
       // cycle voisin.
-      const historique = construireHistoriqueEquilibre(input.reponses, dateAncre);
+      const historique = construireHistoriqueEquilibre(input.reponses, dateAncre, jourZero);
 
       const jalons: TrajectoireJalonLecture[] = jalonsDuCycle(ancre).map((jalon) => {
-        const lecture = resoudreLectureJalon(dateAncre, jalon, historique);
+        const lecture = resoudreLectureJalon(baseDuJalon(jalon), jalon, historique);
         return {
           jalon,
           mesure: lecture !== null,
@@ -155,9 +175,9 @@ export function construireTrajectoire(input: {
       // laissé l'ancre entrer dans son propre momentum, qui vaut alors zéro.
       const dernierJalonMesure = [...JALONS_MESURE]
         .reverse()
-        .find((jalon) => resoudreLectureJalon(dateAncre, jalon, historique) !== null);
+        .find((jalon) => resoudreLectureJalon(baseMesures, jalon, historique) !== null);
       const lectureRecente = dernierJalonMesure
-        ? resoudreLectureJalon(dateAncre, dernierJalonMesure, historique)
+        ? resoudreLectureJalon(baseMesures, dernierJalonMesure, historique)
         : null;
       const momentum = calculerDeltaMomentum(lectureAncre, lectureRecente);
 
@@ -173,16 +193,17 @@ export function construireTrajectoire(input: {
       // du cycle `T1` la daterait d'un départ qui n'est pas le sien.
       const momentumParBesoin = input.avecMomentumParBesoin
         ? calculerMomentumParBesoin({
-            series: construireHistoriqueParBesoin(input.reponses, dateAncre, new Date(), ancre),
+            series: construireHistoriqueParBesoin(input.reponses, dateAncre, new Date(), ancre, jourZero),
           })
         : [];
 
       return {
         // Le cycle d'une ancre est le sien : id stocké quand il existe, sinon
         // son propre id (repli pour les lignes antérieures au gate G2).
-        cycleId: episodeAncre.cycleId ?? episodeAncre.id,
+        cycleId,
         ancre,
         dateAncre: dateAncre.toISOString(),
+        jourZero: jourZero ? jourZero.toISOString() : null,
         versionScore: episodeAncre.versionScore,
         jalons,
         momentum: momentum ? { tendance: momentum.tendance, delta: momentum.delta } : null,

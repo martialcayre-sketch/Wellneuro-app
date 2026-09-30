@@ -1097,7 +1097,7 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
       trajectoire: {
         index: [{ milestone: ancre, date: dateAncre, cycleId: 'cycle-1' }],
         cycles: [{
-          cycleId: 'cycle-1', ancre, dateAncre, versionScore: 'v15', jalons: [], momentum: null,
+          cycleId: 'cycle-1', ancre, dateAncre, jourZero: dateAncre, versionScore: 'v15', jalons: [], momentum: null,
           momentumParBesoin: [],
         }],
         comparaison: { disponible: false, raison: 'un_seul_cycle' },
@@ -1201,7 +1201,7 @@ describe('ClinicalRuntimeSection — ouverture d’un nouveau cycle (`D-113`)', 
       trajectoire: {
         index: [{ milestone: ancre, date: dateAncre, cycleId: 'cycle-1' }],
         cycles: [{
-          cycleId: 'cycle-1', ancre, dateAncre, versionScore: 'v15', jalons: [], momentum: null,
+          cycleId: 'cycle-1', ancre, dateAncre, jourZero: dateAncre, versionScore: 'v15', jalons: [], momentum: null,
           momentumParBesoin: [],
         }],
         comparaison: { disponible: false, raison: 'un_seul_cycle' },
@@ -1308,7 +1308,7 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
       trajectoire: {
         index: [{ milestone: 'T0', date: dateAncre, cycleId: 'cycle-1' }],
         cycles: [{
-          cycleId: 'cycle-1', ancre: 'T0', dateAncre, versionScore: 'v15', jalons: [], momentum: null,
+          cycleId: 'cycle-1', ancre: 'T0', dateAncre, jourZero: dateAncre, versionScore: 'v15', jalons: [], momentum: null,
           momentumParBesoin: [],
         }],
         comparaison: { disponible: false, raison: 'un_seul_cycle' },
@@ -1554,8 +1554,8 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
           { milestone: 'T1', date: dateT1, cycleId: 'cycle-2' },
         ],
         cycles: [
-          { cycleId: 'cycle-1', ancre: 'T0', dateAncre: dateT0, versionScore: 'v15', jalons: [], momentum: null, momentumParBesoin: [] },
-          { cycleId: 'cycle-2', ancre: 'T1', dateAncre: dateT1, versionScore: 'v15', jalons: [], momentum: null, momentumParBesoin: [] },
+          { cycleId: 'cycle-1', ancre: 'T0', dateAncre: dateT0, jourZero: dateT0, versionScore: 'v15', jalons: [], momentum: null, momentumParBesoin: [] },
+          { cycleId: 'cycle-2', ancre: 'T1', dateAncre: dateT1, jourZero: dateT1, versionScore: 'v15', jalons: [], momentum: null, momentumParBesoin: [] },
         ],
         comparaison: { disponible: false, raison: 'versions_differentes' },
         discordanceOrdreCycles: false,

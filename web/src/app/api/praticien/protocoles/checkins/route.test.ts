@@ -8,6 +8,8 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     protocolCheckin: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
     assessmentEpisode: { findMany: vi.fn() },
+    // Approbations de diffusion ([[D-255]]) : aucune par défaut.
+    protocolDiffusionApproval: { findMany: vi.fn(async (): Promise<unknown[]> => []) },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
@@ -162,5 +164,37 @@ describe('GET /api/praticien/protocoles/checkins', () => {
       expect.objectContaining({ where: { idPatient: 'PAT_1', milestone: { startsWith: 'T' } } }),
     );
     expect(json.resume.score).not.toBeNull();
+  });
+
+  it('lit le J21 depuis le jour 0 du suivi quand le cycle porte une diffusion (D-255)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.protocolDraft.findMany.mockResolvedValue([{ id: 'proto_DEC_1#h' }]);
+    prisma.protocolCheckin.findMany.mockResolvedValue([]);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EPI_T0', cycleId: 'EPI_T0', confirmedAt: new Date('2026-01-01T00:00:00.000Z'), milestone: 'T0' },
+    ]);
+    // Seconde passation le 31 janvier : 30 jours après l'ancre (hors de la
+    // fenêtre J21 comptée depuis elle, ±8 j), 21 jours après la diffusion.
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
+      { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-01-31T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
+    ]);
+
+    const sansDiffusion = (await (await GET(request())).json()) as { resume: { score: unknown } };
+    expect(sansDiffusion.resume.score).toBeNull();
+
+    const approvedAt = new Date('2026-01-10T00:00:00.000Z');
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValueOnce([{
+      id: 'APPR_1', idPatient: 'PAT_1', approvedAt, createdAt: approvedAt, approvedBy: 'practitioner',
+      confirmation: 'content_approved_for_diffusion', decisionCardInputHash: 'carte', protocolDraftInputHash: 'version',
+      protocolDraftId: 'proto_DEC_1#h',
+      draft: {
+        idPatient: 'PAT_1', inputHash: 'version', decisionCardInputHash: 'carte', status: 'practitioner_reviewed',
+        reviewedAt: new Date(approvedAt.getTime() - 60_000), selectedPriorityId: 'PRIO_1',
+        episode: { id: 'EPI_T0', milestone: 'T0', cycleId: 'EPI_T0' },
+      },
+    }]);
+    const avecDiffusion = (await (await GET(request())).json()) as { resume: { score: unknown } };
+    expect(avecDiffusion.resume.score).not.toBeNull();
   });
 });

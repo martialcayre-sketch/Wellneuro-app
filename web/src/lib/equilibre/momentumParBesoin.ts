@@ -112,6 +112,11 @@ export function construireHistoriqueParBesoin(
    * comportement, sans zone grise.
    */
   ancre: AncreCycle = 'T0',
+  /**
+   * Le jour 0 du suivi ([[D-255]]) : les lectures de MESURE se comptent depuis
+   * lui, la lecture d'ancre garde `dateT0`. Absent → comme avant.
+   */
+  jourZeroMesures: Date | null = null,
 ): Map<number, LectureBesoin[]> {
   const series = new Map<number, LectureBesoin[]>();
   // L'ANCRE PUIS LES MESURES — et ICI LE NOM DE L'ANCRE COMPTE, contrairement à
@@ -151,7 +156,8 @@ export function construireHistoriqueParBesoin(
 
   const derniereLecture = new Map<number, Date>();
   for (const jalon of jalons) {
-    const dateJalon = new Date(dateT0.getTime() + joursDepuisAncre(jalon) * JOUR_MS);
+    const base = jalon === ancre ? dateT0 : jourZeroMesures ?? dateT0;
+    const dateJalon = new Date(base.getTime() + joursDepuisAncre(jalon) * JOUR_MS);
     if (dateJalon > maintenant) continue;
 
     const resultat = calculerEquilibre(construireReponsesParQuestionnaire(brutes, dateJalon));

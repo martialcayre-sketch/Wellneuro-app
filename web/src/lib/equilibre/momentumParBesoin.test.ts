@@ -197,6 +197,23 @@ describe('Historique par besoin — la règle de nouveauté vaut au grain du bes
   const T0 = new Date('2026-01-01T00:00:00.000Z');
   const MAINTENANT = new Date('2026-04-15T00:00:00.000Z'); // tous les jalons atteints
 
+  it('le jour 0 du suivi date les lectures de MESURE, l’ancre garde sa date (D-255)', () => {
+    const series = construireHistoriqueParBesoin([
+      { statutValidite: null, idQuestionnaire: 'Q_STR_02', dateReponse: T0, scoresJson: { rawAnswers: RAW_PSS10_T0 } },
+      {
+        statutValidite: null,
+        idQuestionnaire: 'Q_STR_02',
+        dateReponse: new Date('2026-02-01T00:00:00.000Z'),
+        scoresJson: { rawAnswers: RAW_PSS10_J21 },
+      },
+    ], T0, MAINTENANT, 'T0', new Date('2026-01-11T00:00:00.000Z'));
+    const lectures = series.get(BESOIN_STRESS) ?? [];
+    expect(lectures.map(l => [l.jalon, l.date.toISOString()])).toEqual([
+      ['T0', '2026-01-01T00:00:00.000Z'],
+      ['J21', '2026-02-01T00:00:00.000Z'],
+    ]);
+  });
+
   it('une seule passation ⇒ UNE lecture, jamais quatre copies', () => {
     const series = construireHistoriqueParBesoin([
       { statutValidite: null, idQuestionnaire: 'Q_STR_02', dateReponse: T0, scoresJson: { rawAnswers: RAW_PSS10_T0 } },

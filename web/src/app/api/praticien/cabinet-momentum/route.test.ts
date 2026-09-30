@@ -5,6 +5,8 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn(), findMany: vi.fn() },
     assessmentEpisode: { findMany: vi.fn() },
+    // Approbations de diffusion ([[D-255]]) : aucune par défaut.
+    protocolDiffusionApproval: { findMany: vi.fn(async (): Promise<unknown[]> => []) },
     questionnaireReponse: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },

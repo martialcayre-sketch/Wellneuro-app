@@ -204,3 +204,8 @@ export function calendriersParCycle(
   }
   return { parCycle, cycleParDiffusion, nonRattachees };
 }
+
+/** Le jour 0 de chaque cycle, par `cycleId` — ce que lit `construireTrajectoire`. */
+export function joursZeroParCycle(parCycle: ReadonlyMap<string, CalendrierSuivi>): Map<string, Date> {
+  return new Map([...parCycle].map(([cycleId, calendrier]) => [cycleId, calendrier.jourZero]));
+}

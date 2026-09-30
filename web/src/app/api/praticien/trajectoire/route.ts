@@ -8,6 +8,8 @@ import { construireReperes, resoudreAsOf } from '@/lib/praticien/lectureAsOf';
 import { construireModeVieDate, type ModeVieDate } from '@/lib/equilibre/modeVie';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 import { estJalonMomentum } from '@/lib/protocol/cycles';
+import { lireCalendriersSuivi } from '@/lib/protocol/calendriersPersistes';
+import { joursZeroParCycle } from '@/lib/protocol/calendrierSuivi';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — LECTURE SEULE.
 // Spirale-index des jalons confirmés du patient + comparateur multi-épisodes,
@@ -98,7 +100,15 @@ export async function GET(req: Request): Promise<NextResponse<TrajectoireApiResp
 
     // Seule cette route sert la fiche-trajectoire : elle seule paie le
     // momentum par besoin (opt-in, revue LOT-07 Mo3).
-    const trajectoire = construireTrajectoire({ episodes, reponses: reponsesDb, avecMomentumParBesoin: true });
+    // Le jour 0 de chaque cycle ([[D-255]]) : les jalons de mesure en partent,
+    // côté lectures comme côté `resoudreJalonDu`, qui le lit dans ce payload.
+    const { parCycle } = await lireCalendriersSuivi(idPatient);
+    const trajectoire = construireTrajectoire({
+      episodes,
+      reponses: reponsesDb,
+      avecMomentumParBesoin: true,
+      joursZero: joursZeroParCycle(parCycle),
+    });
 
     // Mode de vie au présent + fantôme à l'ancre du cycle courant (LOT-02).
     // Le cycle courant est celui du RANG le plus haut : `cycles` est ordonné
