@@ -92,7 +92,7 @@ type Options = {
   // `cycleSansDiffusion` : T0 confirmé, aucun protocole diffusé ([[D-255]]).
   trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'discordant' | 'enVol' | 'cycleSansDiffusion';
   // Résumé des points d'étape. ABSENT par défaut : la route rend `resume: null`.
-  checkins?: 'aucunPoint' | 'unPoint';
+  checkins?: 'aucunPoint' | 'unPoint' | 'erreur';
   // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
   // où un bouton d'assignation peut exister — donc la seule où le garde
   // d'identité du destinataire est observable.
@@ -688,6 +688,7 @@ function stubFetch(options: Options = {}) {
     if (url.includes('/api/praticien/protocoles/diffusion')) return ok({ ok: true, approval: null, stale: false });
     if (url.includes('/api/praticien/protocoles/checkins')) {
       if (!options.checkins) return ok({ ok: true, resume: null });
+      if (options.checkins === 'erreur') return ok({ ok: false, reason: 'exception', error: 'Erreur technique.' }, 500);
       const unPoint = options.checkins === 'unPoint';
       return ok({
         ok: true,
@@ -1264,6 +1265,14 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
 
     const onglet = screen.getByRole('tab', { name: /Suivi/i });
     await waitFor(() => expect(onglet.textContent).toContain('renseignée'));
+  });
+
+  it('statut Suivi : check-ins illisibles — « indéterminée », jamais « en attente du patient »', async () => {
+    await rendreFiche({ runtime: 'ready', trajectoire: 'cycleT0Seul', checkins: 'erreur' });
+
+    const onglet = screen.getByRole('tab', { name: /Suivi/i });
+    await waitFor(() => expect(onglet.textContent).toContain('indéterminée'));
+    expect(onglet.textContent).not.toContain('en attente du patient');
   });
 
   it('statut Suivi : trajectoire en lecture — « indéterminée », jamais « à ouvrir »', async () => {

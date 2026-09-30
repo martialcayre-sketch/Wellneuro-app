@@ -291,7 +291,15 @@ comportement.
 - **Le panneau J21 sans protocole** ne dit plus « en attente du patient » et
   n'offre plus d'alléger ni de pivoter. Il dit que les points d'étape ne
   courent pas encore et qu'ils partiront de la diffusion.
-- **Bancs.** Onze mutations jouées, toutes détectées.
+- **Revue de la PR #1273.** Deux correctifs :
+  - le rail ne conclut rien tant que les check-ins ne sont pas lus, ou si leur
+    lecture échoue : « indéterminée », jamais « en attente du patient » ;
+  - le résumé praticien lit les check-ins sur les versions du calendrier du
+    cycle courant, comme le portail depuis le lot 2. Une rediffusion sans
+    pivot peut porter une version d'une autre carte, après un J21, et un point
+    rendu sous la précédente reste rendu. Sans calendrier, la lecture par
+    carte reste en repli.
+- **Bancs.** Seize mutations jouées, toutes détectées.
 
 ### D-254 — Les assiettes indiquées se hiérarchisent pour l'aide au choix : la priorité visée d'abord, la convergence ensuite, et la règle est dite à l'écran
 

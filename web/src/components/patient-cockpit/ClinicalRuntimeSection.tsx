@@ -147,8 +147,11 @@ export type EtatRuntimeClinique = {
   erreur: RuntimeError | null;
   episodeConfirme: boolean;
   nombreVersions: number;
-  /** Au moins un point d'étape rendu par le patient sur le calendrier courant. */
-  suiviRenseigne: boolean;
+  /**
+   * Au moins un point d'étape rendu par le patient sur le calendrier courant.
+   * `null` tant que les check-ins ne sont pas lus, ou si leur lecture a échoué.
+   */
+  suiviRenseigne: boolean | null;
   /**
    * LE SUIVI COURT-IL ? ([[D-255]], lot 4) Vrai quand le cycle courant porte
    * un jour 0, c'est-à-dire une diffusion de protocole. `null` tant que la
@@ -450,6 +453,12 @@ export function ClinicalRuntimeSection({
   const [diffusionError, setDiffusionError] = useState<string | null>(null);
   // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
   const [resumeJ21, setResumeJ21] = useState<ResumeJ21 | null>(null);
+  /**
+   * La carte dont les check-ins ont été LUS avec succès. `null` = pas encore
+   * lus, ou lecture en échec : le rail « Suivi » ne conclut alors rien
+   * (`DC-24`, revue Copilot de #1273).
+   */
+  const [checkinsLusPour, setCheckinsLusPour] = useState<string | null>(null);
   // Points d'étape bruts : la route les renvoyait déjà, le cockpit les ignorait.
   // Ils alimentent la météo d'adhésion (SP-MET), dérivée à la lecture seule.
   const [checkins, setCheckins] = useState<CheckinRow[]>([]);
@@ -560,11 +569,17 @@ export function ClinicalRuntimeSection({
         `/api/praticien/protocoles/checkins?idPatient=${encodeURIComponent(idPatient)}&decisionCardId=${encodeURIComponent(decisionCardId)}`,
       );
       const payload = (await response.json()) as { ok: boolean; resume?: ResumeJ21; checkins?: CheckinRow[] };
-      if (!response.ok || !payload.ok) return;
+      if (!response.ok || !payload.ok) {
+        setCheckinsLusPour(null);
+        return;
+      }
       setResumeJ21(payload.resume ?? null);
       setCheckins(payload.checkins ?? []);
+      setCheckinsLusPour(payload.resume ? decisionCardId : null);
     } catch {
-      // Le résumé est indicatif : un échec de lecture ne bloque pas le cockpit.
+      // Le résumé est indicatif : un échec de lecture ne bloque pas le cockpit,
+      // mais le rail ne dit plus rien du suivi.
+      setCheckinsLusPour(null);
     }
   }, [idPatient]);
 
@@ -1429,7 +1444,11 @@ export function ClinicalRuntimeSection({
   // UN RÉSUMÉ LU N'EST PAS UN SUIVI RENSEIGNÉ ([[D-255]], lot 4). La route rend
   // un résumé sur tout dossier, protocole ou non : le rail disait « renseignée »
   // sur un suivi qui n'avait jamais commencé.
-  const suiviRenseigne = (resumeJ21?.pointsRenseignes ?? 0) > 0;
+  // Et un résumé NON LU n'est pas un suivi vide : `null` tant que la lecture de
+  // la carte servie n'a pas abouti.
+  const suiviRenseigne = checkinsLusPour !== null && checkinsLusPour === readyDecisionCardId
+    ? (resumeJ21?.pointsRenseignes ?? 0) > 0
+    : null;
   // Le jour 0 du cycle COURANT, servi par la trajectoire : la même date que
   // le jalon dû et le bandeau, jamais recalculée ici.
   const suiviOuvert = statutTrajectoire === 'chargee'

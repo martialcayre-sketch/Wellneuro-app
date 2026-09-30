@@ -1187,6 +1187,8 @@ export function FichePatientPanel({
         // phase s'ouvre par la diffusion. Trajectoire non lue : on ne sait pas.
         if (etatRuntime.suiviOuvert === null) return 'inconnu';
         if (!etatRuntime.suiviOuvert) return 'a_ouvrir';
+        // Check-ins non lus : ni « en attente », ni « renseignée ».
+        if (etatRuntime.suiviRenseigne === null) return 'inconnu';
         return etatRuntime.suiviRenseigne ? 'fait' : 'en_attente';
       }
       // Réévaluation : « renseignée » uniquement si un jalon POST-T0 (J21/J42/J90)

@@ -3,8 +3,8 @@
 ## 1. Branche et état Git
 
 `feat/calendrier-suivi-lot4`, copie principale, partie de `origin/main` à
-`c02f209d` (#1272). La branche est partie de `2f172173`. Pendant le lot,
-#1272 a été mergée : elle ne touche aucun fichier commun. La branche a été
+`c02f209d` (#1272). La branche est partie de `2f172173`. La PR #1272 a
+été mergée pendant le lot : elle ne touche aucun fichier commun. La branche a été
 replacée par `git switch -C`, sans commit, avec l'accord du responsable.
 Phase `travail`, fenêtre de clôture ouverte. Un merge à la fois.
 
@@ -30,7 +30,12 @@ Dernier lot de `D-255` (§5.4) :
   - « en attente du patient » quand le protocole est diffusé mais qu'aucun
     point n'est rendu ;
   - « renseignée » dès qu'un point est rendu ;
-  - « indéterminée » tant que la trajectoire n'est pas lue.
+  - « indéterminée » tant que la trajectoire ou les check-ins ne sont pas lus.
+- **Revue Copilot de #1273**, deux correctifs :
+  - l'état des check-ins a trois valeurs (lu, vide, inconnu) ;
+  - la route `praticien/protocoles/checkins` lit les versions du calendrier
+    courant (repli par carte sans calendrier).
+  Le troisième commentaire, « cinq neufs », est corrigé.
 - **Panneau J21 sans diffusion** : il affiche une ligne d'état, sans « en
   attente du patient » et sans boutons d'ajustement.
 - **Choix d'exécution à confirmer en revue** : le libellé « en attente du
@@ -48,10 +53,13 @@ Dernier lot de `D-255` (§5.4) :
   diffusion.
 - `web/src/components/FichePatientPanel.tsx` : statut et libellé du rail
   « Suivi ».
+- `web/src/app/api/praticien/protocoles/checkins/route.ts` : bornage par le
+  calendrier (revue).
 - Bancs : `jalonDu.test.ts` (garde, parité jour par jour), `route.test.ts`
-  (deux cas recalés sur une horloge simulée, cinq neufs),
-  `J21DecisionPanel.test.tsx`, `FichePatientPanel.test.tsx` (quatre cas de
-  rail).
+  (deux cas recalés sur une horloge simulée, cinq nouveaux),
+  `J21DecisionPanel.test.tsx`, `FichePatientPanel.test.tsx` (cinq cas de
+  rail), `protocoles/checkins/route.test.ts` (calendrier sur deux cartes,
+  pivot).
 - `docs/DECISIONS.md` (complément à `D-255`),
   `changelog.d/2026-09-30-calendrier-suivi-lot4.md`, `SESSION_LOG`, ce
   handoff.
@@ -59,7 +67,7 @@ Dernier lot de `D-255` (§5.4) :
 ## 5. Validations exécutées
 
 - Bancs touchés : route 71/71, `jalonDu` 32/32, UI 172/172.
-- Mutations : 11 jouées, toutes détectées. Six portent sur la garde :
+- Mutations : 16 jouées, toutes détectées. Six portent sur la garde :
   - garde retirée ;
   - garde appliquée aussi à un acte déjà posé ;
   - absence de diffusion acceptée ;
@@ -73,10 +81,16 @@ Dernier lot de `D-255` (§5.4) :
   - propriété non passée au panneau ;
   - libellé ;
   - cas « inconnu » non traité.
+
+  Cinq portent sur les correctifs de revue :
+  - lecture par carte seule ;
+  - calendrier ignoré ;
+  - check-ins inconnus non traités ;
+  - échec de lecture compté comme lu ;
+  - carte non comparée.
 - T1 (`check:rapide`) vert.
-- T2 (`test:worktree --fast`) vert : 645 fichiers Vitest (11 168 cas) et
-  221 E2E. T2 a été joué sur la base `2f172173`, avant le replacement ;
-  #1272 ne touche que des skills et un fragment de changelog.
+- T2 (`test:worktree --fast`) vert, rejoué après les correctifs de revue sur
+  la base `c02f209d` : 645 fichiers Vitest (11 171 cas) et 221 E2E.
 
 ## 6. Problèmes ouverts
 

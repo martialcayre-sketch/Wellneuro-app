@@ -9,7 +9,11 @@
   re-confirme comme avant.
 - **Le rail « Suivi »** ne dit plus « renseignée » sur un dossier sans
   protocole. Il dit « à ouvrir » sans diffusion, « en attente du patient »
-  avant le premier point d'étape rendu, « renseignée » ensuite.
+  avant le premier point d'étape rendu, « renseignée » ensuite, et
+  « indéterminée » tant que les points d'étape ne sont pas lus.
+- **Le résumé des points d'étape côté praticien** compte les points rendus
+  sur toutes les versions diffusées du calendrier en cours, comme le portail,
+  et non plus sur la seule carte affichée.
 - **Le panneau J21**, sans protocole diffusé, dit que les points d'étape ne
   courent pas encore, au lieu d'afficher « en attente du patient » et les
   boutons d'ajustement.
