@@ -8345,3 +8345,18 @@ Anthropic de D-168, qui y manquait. Tests TRUST verts (69).
 en réclame un, et 23 dossiers actifs sur 28 devaient encore celui de la v9.
 
 **Prochaine action.** PR, merge ; puis le clic de diffusion sur PAT032.
+
+## 2026-09-30 — La biologie des assiettes, seulement si exploitable
+
+**Fait.** La section « Biologie : ce que disent les sources… » ne montre plus
+qu'une assiette dont au moins un marqueur porte un résultat au dossier ; les
+autres sont comptées. Sans rien d'exploitable, la section disparaît. Composant
+seul, trois bancs neufs qui mordent (mutation jouée).
+
+**Constat.** `resultats_biologiques` est vide en production (28 dossiers
+actifs) : la section disparaît partout.
+
+**Décidé (responsable).** « Seulement si exploitable » — amendement de D-247.
+
+**Ouvert.** La hiérarchisation des assiettes indiquées pour l'aide au choix :
+critère clinique à arbitrer.

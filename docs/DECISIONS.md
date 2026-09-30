@@ -1036,7 +1036,8 @@ déclenchement depuis Actions, le suivi du build et le constat d'arrivée.
 
 - Date : 2026-09-24
 - Statut : accepté — exécute [[D-245]] (LOT-03 du chantier 6) sur la table
-  signée par [[D-246]].
+  signée par [[D-246]] ; **amendé le 2026-09-30** (seule une assiette
+  exploitable paraît, voir en fin de décision).
 - Domaine : clinique (assiettes), biologie, cockpit praticien. **Aucune
   migration, aucune règle, aucune borne, aucun drapeau neuf.**
 
@@ -1073,6 +1074,27 @@ faisait tomber la carte entière, et le cockpit avec (constaté par le banc de
 **Pas d'E2E, et c'est dit.** Le corpus de claims est vide en CI : aucune porte
 ne pourrait sortir, et un E2E n'éprouverait que l'absence. La section est tenue
 par ses bancs de service, de route et de composant.
+
+**Amendement du 2026-09-30 — SEULE UNE ASSIETTE EXPLOITABLE PARAÎT.** Demande
+du responsable, depuis l'écran d'un dossier réel : « il faut l'afficher
+seulement si exploitable ». Le §1 affichait chaque assiette de la table signée.
+Sur un dossier sans biologie, la section recopiait donc cinq assiettes de
+citations suivies de « aucun résultat au dossier » : du bruit, sans rien à
+rapprocher.
+
+- **Le fait qui tranche** (conteneur, en agrégats, le 2026-09-30) : **aucune
+  ligne** dans `resultats_biologiques`, sur 28 dossiers actifs. La section
+  n'a jamais rien eu à mettre en face d'une source.
+- **La règle.** Une assiette paraît si **au moins un** de ses marqueurs porte un
+  résultat au dossier. Ses autres marqueurs restent affichés, « aucun résultat
+  au dossier » compris (`DC-24`). Les assiettes écartées sont **comptées** en
+  une ligne, jamais tues. Rien d'exploitable : la section n'existe pas.
+- **Ce qui ne change pas.** Le filtre lit la PRÉSENCE d'un résultat, jamais sa
+  valeur : aucune comparaison, aucun tri par le résultat (§2, [[D-245]] §1).
+  Une anomalie reste dite même sans rien d'exploitable : corpus illisible,
+  source retirée (§4).
+- **Où.** Dans le composant seul : ni la route, ni le service, ni la table
+  signée ne bougent, et `lib/clinical/` n'est pas touché (pas de `release-db`).
 
 ### D-246 — Les portes biologiques des assiettes sont SIGNÉES : cinq assiettes, huit claims, huit marqueurs distincts, aucun nombre
 
