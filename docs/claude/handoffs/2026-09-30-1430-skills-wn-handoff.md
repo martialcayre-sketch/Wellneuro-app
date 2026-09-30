@@ -1,4 +1,4 @@
-# Handoff — `/wn-handoff` invocable, fin des renvois à la base Supabase morte (PR #1261)
+# Handoff — 2026-09-30 — `/wn-handoff` invocable, fin des renvois à la base Supabase morte (PR #1261)
 
 ## Branche et état Git
 
