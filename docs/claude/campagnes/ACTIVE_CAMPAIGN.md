@@ -1,8 +1,17 @@
 # Campagnes actives
 
-Aucune campagne active.
+## Activité primaire
 
-**Statut global** : idle
-**Mise à jour** : 2026-09-17
+**Campagne** : 2026-09-30-bio-ingest
+**Titre** : BIO-INGEST — acquisition des résultats biologiques
+**Statut** : active
+**Lot actif** : LOT-00
+
+## Activités parallèles
+
+Aucune campagne parallèle active.
+
+**Statut global** : active
+**Mise à jour** : 2026-09-30
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.

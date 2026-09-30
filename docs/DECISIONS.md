@@ -4,6 +4,70 @@
 
 ## Décisions actives
 
+### D-256 — Acquisition biologique (BIO-INGEST) : `resultats_biologiques` reste canonique, un entonnoir de validation humaine remplace la couche d'ingestion générique proposée
+
+- Date : 2026-09-30
+- Statut : accepté — audit adverse `wn-fable` du 2026-09-30 (lecture seule,
+  aucun code touché) sur la proposition BIO-INGEST, et cinq arbitrages du
+  responsable en séance le même jour sur les points que l'audit a laissés
+  ouverts. Détail complet : `docs/claude/campagnes/CADRAGE_BIO_INGEST_2026-09-30.md`.
+- Domaine : biologie, acquisition de résultats. **Aucune migration posée par
+  cette décision** — elle cadre les migrations à venir (LOT-02 et suivants)
+  sans les autoriser d'avance, chacune restant seule dans sa PR ([[D-087]]).
+  Ne modifie ni [[D-122]] (le moteur clinique ne lit pas `resultats_biologiques`),
+  ni [[D-124]] (append-only), ni [[D-157]] (pas de conversion d'unité) —
+  les confirme comme frontières de ce chantier.
+
+**1. LE CADRE.** `ResultatBiologique` / `resultats_biologiques` reste l'unique
+modèle canonique pour toute voie d'acquisition (saisie praticien, import
+document, import laboratoire). Pas de couche « Biology Ingestion » générique :
+le dépôt porte déjà les patrons qui la remplacent (proposition → validation
+humaine, snapshot versionné + sha, correspondance signée jamais par
+rapprochement de libellés). Un **entonnoir** à la place : producteurs → staging
+(lot d'import + lignes candidates, à partir de LOT-02) → écran de validation
+humaine unique → `resultats_biologiques` inchangé.
+
+**2. CINQ ARBITRAGES RENDUS LE 2026-09-30.**
+
+- **A1 — Le silence de la saisie (0 ligne / 28 dossiers actifs depuis le
+  drapeau posé le 2026-09-09) s'explique par l'absence de bilan à saisir ET
+  par le coût déjà perçu de la saisie unitaire.** Les deux raisons coexistent ;
+  la saisie groupée (LOT-01) reste le premier lot, sans mesure supplémentaire
+  préalable.
+- **A2 — Documents source stockés en base Postgres HDS** (texte/bytea), pas de
+  stockage objet externe en V1 : zéro sous-traitant HDS nouveau pour démarrer.
+- **A3 — Saisie groupée tout-ou-rien** : préflight de toutes les lignes,
+  écriture par `$transaction` uniquement si toutes passent ; un refus laisse
+  la saisie en place, aucune écriture partielle.
+- **A4 — Extraction PDF par IA vision (Anthropic), avec condition de sortie
+  non négociable** : amendement du registre RGPD et du document patient TRUST
+  (« L'intelligence artificielle dans Wellneuro », [[D-251]]) déclarant l'envoi
+  de comptes rendus biologiques au sous-traitant IA, posé **avant** toute
+  activation — jamais après, l'ordre inverse ayant déjà été un écart documenté
+  (`docs/DOSSIER_RGPD.md` rubriques 2/5).
+- **A5 — Provenance portée par le lot d'import, jamais par le résultat** :
+  `resultats_biologiques.source` reste à deux valeurs (`saisie_praticien`,
+  `import_labo`) ; canal, laboratoire, mécanisme d'extraction et confiance de
+  mapping vivent sur le staging, référencé depuis le staging vers le résultat
+  créé à la validation — jamais l'inverse. La liste blanche du contrat SQL
+  (`cb_resultats_biologiques_v1_negatif.sql`) n'est pas rouverte par ce
+  chantier.
+
+**3. ÉCARTÉ EXPLICITEMENT.** Mapping analyte tranché par LLM (resolver reste
+une table signée, le LLM propose au mieux un candidat ambigu) ; conversion
+d'unité silencieuse (une divergence se refuse, ne se convertit jamais) ;
+colonne qualitative sur `resultats_biologiques` en V1 (une ligne non
+quantitative est refusée à l'import) ; lecture du moteur clinique ; saisie
+vocale (aucune infrastructure voix au dépôt, besoin non démontré une fois la
+saisie groupée livrée — non planifiée, réexamen possible sur besoin exprimé).
+
+**4. LOTS.** LOT-00 (ce cadrage) → LOT-01 saisie groupée (sans migration) →
+LOT-02 staging + extraction PDF (migration seule dans sa PR, condition RGPD
+préalable) → LOT-03 photo/scan (même pipeline) → LOT-04 portail patient
+(consentement à jour requis avant ouverture) → LOT-05 adaptateur laboratoire
+(après réception d'un format réel). Détail par lot :
+`docs/claude/campagnes/CADRAGE_BIO_INGEST_2026-09-30.md` §4.
+
 ### D-255 — Le suivi d'un cycle part de la diffusion de son protocole : un seul jour 0, que seul un pivot relance
 
 - Date : 2026-09-30
