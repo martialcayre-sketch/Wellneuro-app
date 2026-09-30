@@ -5,7 +5,7 @@
 **Campagne** : 2026-09-30-bio-ingest
 **Titre** : BIO-INGEST — acquisition des résultats biologiques
 **Statut** : active
-**Lot actif** : LOT-00
+**Lot actif** : LOT-01
 
 ## Activités parallèles
 
