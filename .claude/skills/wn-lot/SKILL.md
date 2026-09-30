@@ -59,7 +59,7 @@ exécution** — pas de grille dupliquée ici.
 | **UI** — `web/src/app/**`, `components/**`, `.css` | **T2** | `/code-review` en session | une suite Vitest verte ne prouve rien sur les parcours |
 | **API** — `web/src/app/api/**`, `lib/` hors scoring | **T2** | `/code-review` en session | contrôle d'accès **avant** la lecture des données |
 | **Scoring / clinique** — `questions*.ts`, `equilibre/`, `consultation/`, `prompts/` | **T3** | `Agent(wn-reviewer)` | source obligatoire ; absence de réponse → **non scoré**, jamais `0` |
-| **Prisma / migration** — `schema.prisma`, `prisma/migrations/` | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | confirmation distincte ; **vérifier la base après merge** (`execute_sql`) |
+| **Prisma / migration** — `schema.prisma`, `prisma/migrations/` | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | confirmation distincte ; **merger n'applique rien** : `release-db` approuvée, puis constat **par conteneur** (`.claude/rules/db-prisma.md`) |
 | **Auth** — `lib/auth.ts`, portail, tokens, consentement | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | la revue de diff ne voit pas ce que le lot **ne fait pas** |
 
 **Une seule chose déborde la classe** : le gate Fable de `CLAUDE.md`, et lui

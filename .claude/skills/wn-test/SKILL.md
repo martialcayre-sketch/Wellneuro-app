@@ -84,8 +84,10 @@ En pratique, dans la sortie :
 5. Ne jamais lancer migration, seed production, écriture Supabase ou déploiement.
    La base éphémère locale de `test:worktree` ne compte pas : jetable, isolée,
    100 % fictive.
-6. Vérifier l'état de la base de PRODUCTION par l'outil MCP Supabase
-   (`execute_sql`, lecture seule, autorisée sans interruption), jamais par
-   `psql` ni par une commande Bash.
+6. L'état de la base de PRODUCTION ne se lit que **depuis un conteneur**
+   Scalingo (`scalingo run -d …`, lecture seule) — régime de
+   `.claude/rules/db-prisma.md` (`D-087`). La base Supabase est
+   décommissionnée depuis le 2026-09-01 (`D-120`) : son outil MCP ne vise plus
+   rien de vivant.
 
 Rendre : commandes, résultats, échecs, cause probable, prochain test utile et go/no-go.

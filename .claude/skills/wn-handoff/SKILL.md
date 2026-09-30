@@ -1,7 +1,6 @@
 ---
-description: Produit un handoff compact et réutilisable pour reprendre le travail dans une nouvelle session ou un autre agent. Seul skill à poser un fragment dans docs/claude/handoffs/.
+description: Produit un handoff compact et réutilisable pour reprendre le travail dans une nouvelle session ou un autre agent. Seul skill à poser un fragment dans docs/claude/handoffs/. À déclencher en fin de lot (avant la PR ou après le merge, avant /clear), avant une pause de plus d'une heure, ou sur demande explicite de handoff — jamais en cours de lot. Copie principale seulement.
 argument-hint: "[write]"
-disable-model-invocation: true
 effort: low
 ---
 
