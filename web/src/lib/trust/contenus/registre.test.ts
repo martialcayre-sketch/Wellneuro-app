@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les seize documents attendus', () => {
+  it('expose les dix-huit documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -42,9 +42,13 @@ describe('registre des documents TRUST', () => {
       // `D-222` amendé — la phrase qui promettait une garde que personne
       // n'avait posée devient exacte, et l'exception d'adressage est nommée.
       'donnees_confidentialite@v9',
+      // `D-168` — le rôle d'Anthropic nomme aussi « Ce que j'ai compris de vous ».
+      'donnees_confidentialite@v10',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
+      // `D-251` (2026-09-30) — la v2 était fausse sur trois points.
+      'usage_ia@v3',
       'droits_patient@v1',
       'consentement_suivi@v2',
       // Même correction, dans le texte du consentement lui-même — l'occurrence
@@ -95,7 +99,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v9');
+    expect(courant.version).toBe('v10');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -193,7 +197,50 @@ describe('registre des documents TRUST', () => {
     // partage n'aurait lieu sans son choix explicite, et c'était faux.
     // Arbitrage du responsable, 2026-09-17.
     expect(getVersion('donnees_confidentialite', 'v9')?.requiresAcknowledgement).toBe(true);
-    expect(getDocumentCourant('donnees_confidentialite').version).toBe('v9');
+  });
+
+  it('la v10 EXIGE un accusé, pour ne pas effacer celui de la v9 encore dû', () => {
+    // LA v10 NE FAIT QUE DÉCRIRE — comme les v3 à v7, elle s'en serait
+    // dispensée. Mais seule la version COURANTE réclame un accusé : une v10
+    // sans accusé aurait effacé celui de la v9, que 23 dossiers actifs sur 28
+    // devaient encore au 2026-09-30. Arbitrage du responsable, 2026-09-30.
+    expect(getVersion('donnees_confidentialite', 'v10')?.requiresAcknowledgement).toBe(true);
+    expect(getDocumentCourant('donnees_confidentialite').version).toBe('v10');
+  });
+
+  it('la v10 nomme les trois usages d’Anthropic, et ni les fiches ni OpenAI parmi les prestataires', () => {
+    const points = getDocumentCourant('donnees_confidentialite').sections.flatMap(s => s.points ?? []);
+    const anthropic = points.find(p => p.startsWith('Anthropic — '));
+    expect(anthropic).toContain('préparation des synthèses');
+    expect(anthropic).toContain('priorité de votre objectif');
+    expect(anthropic).toContain('« Ce que j’ai compris de vous »');
+    // L'adaptation des fiches ne traite aucune donnée personnelle : elle n'a
+    // rien à faire dans la liste des prestataires qui en traitent.
+    expect(points.some(p => p.startsWith('OpenAI'))).toBe(false);
+  });
+
+  it('la v3 du document IA dit les quatre usages, ses deux fournisseurs, et ne promet plus un usage « à venir » déjà servi', () => {
+    // LE DÉFAUT QUE CE BANC FERME : la v2 présentait la proposition de priorité
+    // ([[D-167]]) comme « avant sa mise en service », ignorait « Ce que j'ai
+    // compris de vous » ([[D-168]]) et les fiches d'assiette ([[D-251]]), et
+    // disait « Le fournisseur est Anthropic ».
+    const courant = getDocumentCourant('usage_ia');
+    expect(courant.version).toBe('v3');
+    const texte = courant.sections.flatMap(s => s.paragraphes).join(' ');
+    expect(texte).not.toContain('AVANT sa mise en service');
+    expect(texte).not.toContain('Tant qu’il n’est pas ouvert');
+    expect(texte).toContain('brouillon de la synthèse');
+    expect(texte).toContain('priorité de votre objectif');
+    expect(texte).toContain('« Ce que j’ai compris de vous »');
+    expect(texte).toContain('fiches d’assiette');
+    expect(texte).toContain('Anthropic rédige l’adaptation et OpenAI la relit');
+    expect(texte).toContain('Aucune de vos données n’est utilisée pour cela');
+    // Ce que l'IA ne fait jamais ne change pas.
+    const jamais = (v: string) =>
+      getVersion('usage_ia', v)?.sections.find(s => s.titre === 'Ce que l’IA ne fait jamais ici');
+    expect(jamais('v3')).toEqual(jamais('v2'));
+    // Document descriptif, non présenté par la séquence : aucun accusé.
+    expect(courant.requiresAcknowledgement).toBe(false);
   });
 
   it('la v9 RETIRE la promesse que le logiciel ne tenait pas, et NOMME l’exception', () => {

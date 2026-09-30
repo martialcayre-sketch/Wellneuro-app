@@ -158,6 +158,14 @@ fournisseur, son transfert hors UE et l'information des patients.
 >      « aucune donnée personnelle » que pour les fiches. **Cet arbitrage est
 >      reporté, hors v3** (responsable, 2026-09-30) : la v3 nomme OpenAI pour
 >      les fiches seulement.
+> 2 bis. **Publiées le 2026-09-30, textes exacts validés par le responsable** :
+>    `usage_ia` v3 et `donnees_confidentialite` v10. **La v10 exige un
+>    accusé**, bien qu'elle ne fasse que décrire, parce que seule la version
+>    courante en réclame un : sans accusé, elle aurait effacé celui de la v9,
+>    encore dû par 23 dossiers actifs sur 28 (lecture par conteneur). Les 5
+>    dossiers qui ont déjà accusé la v9 revoient la séquence « Avant de
+>    commencer » une fois. Arbitrage du responsable. Le dossier RGPD décrit
+>    désormais le flux Anthropic de [[D-168]], qui y manquait.
 > 3. **La seconde passe adverse, par mutation, est jouée**
 >    (`docs/claude/REVUE_CODEX_MUTATIONS_FICHES_ASSIETTE_2026-09-30.md`) : les
 >    seize invariants ont chacun au moins un banc qui mord. Sa seule trouvaille

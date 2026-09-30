@@ -8334,3 +8334,14 @@ données » ; l'arbitrage OpenAI (recherche corpus, non déclaré) reporté.
 
 **Prochaine action.** Merge ; texte exact de la v3 à valider ; constat de
 l'espace sur PAT032.
+
+## 2026-09-30 — Portail : `usage_ia` v3 et « Vos données » v10
+
+**Fait.** Les deux versions sont écrites au registre TRUST, textes exacts
+validés par le responsable. Le dossier RGPD décrit maintenant le flux
+Anthropic de D-168, qui y manquait. Tests TRUST verts (69).
+
+**Décidé (responsable).** La v10 exige un accusé : seule la version courante
+en réclame un, et 23 dossiers actifs sur 28 devaient encore celui de la v9.
+
+**Prochaine action.** PR, merge ; puis le clic de diffusion sur PAT032.
