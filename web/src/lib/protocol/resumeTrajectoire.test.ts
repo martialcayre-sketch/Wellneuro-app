@@ -41,9 +41,15 @@ describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
       ]),
       AUJOURDHUI,
     );
-    expect(resume.episodeEnCours).toEqual({ numero: 1, ancre: 'T0', dateAncre: '2026-01-01T00:00:00.000Z', positionJours: 14 });
+    expect(resume.episodeEnCours).toEqual({
+      numero: 1,
+      ancre: 'T0',
+      dateAncre: '2026-01-01T00:00:00.000Z',
+      jourZero: '2026-01-01T00:00:00.000Z',
+      positionJours: 14,
+    });
     expect(resume.dernierJalonMesure).toEqual({ jalon: 'T0', valeur: 40, date: '2026-01-01T00:00:00.000Z' });
-    // Prochain jalon non mesuré : J21, à sa date théorique T0 + 21 j.
+    // Prochain jalon non mesuré : J21, à sa date théorique jour 0 + 21 j.
     expect(resume.prochaineEcheance).toEqual({ libelle: 'J21', date: '2026-01-22T00:00:00.000Z' });
   });
 
@@ -102,5 +108,54 @@ describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
     // La première échéance non mesurée du cycle courant est son J21 — jamais
     // un `T0` recopié d'une liste globale, qui appartient au cycle précédent.
     expect(resume.prochaineEcheance?.libelle).toBe('J21');
+  });
+
+  it('D-255 : la position et l’échéance J21 partent de la diffusion, pas de l’ancre', () => {
+    const resume = resumerTrajectoire(
+      trajectoire([
+        {
+          cycleId: 'c1',
+          ancre: 'T0',
+          dateAncre: '2025-12-20T00:00:00.000Z', jourZero: '2026-01-01T00:00:00.000Z',
+          versionScore: 'v1',
+          jalons: [
+            { jalon: 'T0', mesure: true, valeur: 40, date: '2025-12-20T00:00:00.000Z' },
+            { jalon: 'J21', mesure: false, valeur: null, date: null },
+            { jalon: 'J42', mesure: false, valeur: null, date: null },
+            { jalon: 'J90', mesure: false, valeur: null, date: null },
+          ],
+          momentum: null,
+          momentumParBesoin: [],
+        },
+      ]),
+      AUJOURDHUI,
+    );
+    // Ancre le 20/12, diffusion le 01/01 : jour 14 le 15/01, J21 le 22/01.
+    expect(resume.episodeEnCours?.positionJours).toBe(14);
+    expect(resume.prochaineEcheance).toEqual({ libelle: 'J21', date: '2026-01-22T00:00:00.000Z' });
+  });
+
+  it('D-255 : sans diffusion, ni position ni date d’échéance — le jalon reste nommé', () => {
+    const resume = resumerTrajectoire(
+      trajectoire([
+        {
+          cycleId: 'c1',
+          ancre: 'T0',
+          dateAncre: '2025-12-20T00:00:00.000Z', jourZero: null,
+          versionScore: 'v1',
+          jalons: [
+            { jalon: 'T0', mesure: true, valeur: 40, date: '2025-12-20T00:00:00.000Z' },
+            { jalon: 'J21', mesure: false, valeur: null, date: null },
+            { jalon: 'J42', mesure: false, valeur: null, date: null },
+            { jalon: 'J90', mesure: false, valeur: null, date: null },
+          ],
+          momentum: null,
+          momentumParBesoin: [],
+        },
+      ]),
+      AUJOURDHUI,
+    );
+    expect(resume.episodeEnCours).toMatchObject({ ancre: 'T0', jourZero: null, positionJours: null });
+    expect(resume.prochaineEcheance).toEqual({ libelle: 'J21', date: null });
   });
 });

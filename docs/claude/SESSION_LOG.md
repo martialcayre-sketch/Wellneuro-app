@@ -8491,3 +8491,14 @@ fixture réservée. 6 mutations, toutes détectées.
 confirmé reste acquis ; seuls les restants repartent du pivot.
 
 **Prochaine action.** PR du lot 3b, puis 3c (bandeau).
+
+## 2026-09-30 — Calendrier de suivi, lot 3c : bandeau et trajectoires (D-255)
+
+**Fait.** Lot 3b mergé (#1267, deux remarques Copilot corrigées). Lot 3c :
+bandeau « Jour n du protocole » (0 le jour de la diffusion, 21 au J21), sans
+diffusion « T0 · protocole non diffusé » ; résumé des trajectoires daté du
+jour 0. 9 mutations, toutes détectées.
+
+**Écarté.** Compter depuis 1 : « Jour 21 » ne tomberait plus sur le J21.
+
+**Prochaine action.** PR du lot 3c, puis le lot 4 (garde serveur du cockpit).

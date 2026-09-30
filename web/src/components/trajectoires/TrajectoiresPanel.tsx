@@ -25,8 +25,13 @@ function formatDate(iso: string): string {
 // répondu une fois puis s'est arrêté a ses jalons suivants non mesurés — annoncer
 // « prochaine échéance : J21 vers le 22/01 » sur une fiche à T0 + 120 jours
 // donnerait une échéance passée pour un rendez-vous à venir.
-function libelleEcheance(echeance: { libelle: string; date: string | null } | null): string {
+function libelleEcheance(
+  echeance: { libelle: string; date: string | null } | null,
+  enAttenteDeDiffusion: boolean,
+): string {
   if (!echeance) return 'Cycle complet : les 4 jalons sont mesurés';
+  // Sans diffusion, un jalon de mesure ne court pas encore (D-255) : pas de date.
+  if (!echeance.date && enAttenteDeDiffusion) return `Prochaine échéance : ${echeance.libelle}, après diffusion du protocole`;
   if (!echeance.date) return `Prochaine échéance : ${echeance.libelle}`;
   const passee = new Date(echeance.date).getTime() <= Date.now();
   return passee
@@ -132,8 +137,10 @@ export function TrajectoiresPanel() {
                       détails (jalon, échéance) se replient sous sm. */}
                   {resume.episodeEnCours ? (
                     <Badge variant="info">
-                      Épisode {resume.episodeEnCours.numero} · {resume.episodeEnCours.ancre} +{' '}
-                      {resume.episodeEnCours.positionJours} j
+                      Épisode {resume.episodeEnCours.numero} ·{' '}
+                      {resume.episodeEnCours.positionJours === null
+                        ? `${resume.episodeEnCours.ancre} · protocole non diffusé`
+                        : `Jour ${resume.episodeEnCours.positionJours} du protocole`}
                     </Badge>
                   ) : (
                     <Badge variant="neutral">Aucun épisode confirmé</Badge>
@@ -144,7 +151,10 @@ export function TrajectoiresPanel() {
                       : 'Aucun jalon mesuré'}
                   </span>
                   <span className="hidden text-xs text-muted-foreground sm:block">
-                    {libelleEcheance(resume.prochaineEcheance)}
+                    {libelleEcheance(
+                      resume.prochaineEcheance,
+                      resume.episodeEnCours !== null && resume.episodeEnCours.jourZero === null,
+                    )}
                   </span>
                 </span>
               </Link>
