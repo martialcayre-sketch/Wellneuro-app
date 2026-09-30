@@ -135,7 +135,8 @@ T2, un lot sans migration n'a pas besoin de la revue préalable.
    (b) entrée `SESSION_LOG.md` < 150 mots avec les deux promotions (règle
    oubliée → exécutable, décision → `docs/DECISIONS.md`), (c) fragment
    `docs/claude/handoffs/`. Les skills `/wn-finish` et `/wn-handoff write` <!-- mention-seule: wn-finish, wn-handoff -->
-   produisent (b) et (c) et s'invoquent à la main ; l'étape est définie par ce
+   produisent (b) et (c) — le premier s'invoque à la main, le second peut
+   l'être par le modèle depuis le 2026-09-30 ; l'étape est définie par ce
    qu'elle laisse dans le dépôt, pas par la commande qui l'écrit. Le merge est
    un squash : ce qui s'écrit après ne remonte plus vers `main`.
    `node scripts/wn-cycle.mjs` rend la phase courante.

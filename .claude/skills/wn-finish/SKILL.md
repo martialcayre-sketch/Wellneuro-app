@@ -34,8 +34,8 @@ lot précédent à la PR suivante.
 6. Écrire ensuite le handoff du lot : un fragment
    `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md`, dans la foulée et sur la même
    branche (convention : `docs/claude/handoffs/README.md`). C'est
-   `/wn-handoff write` <!-- mention-seule: wn-handoff --> qui le produit, **invoqué à la main**
-   par l'utilisateur — aucun skill ne peut en ouvrir un autre. Le handoff part
+   `/wn-handoff write` <!-- mention-seule: wn-handoff --> qui le produit ; depuis le 2026-09-30 le
+   modèle peut l'invoquer dans la foulée (exemption, comme `/wn-reprompt`). Le handoff part
    **dans la PR du lot**, jamais après le merge — le squash ferme la fenêtre, et
    une clôture écrite après coup coûte une seconde PR.
 7. Si le lot clos relevait d'une classe à risque (scoring/clinique,

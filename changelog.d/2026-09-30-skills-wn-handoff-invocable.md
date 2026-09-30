@@ -1,8 +1,10 @@
 ### Skills wn : `/wn-handoff` invocable par le modèle, et plus aucun renvoi à la base Supabase morte (2026-09-30)
 
 - **`/wn-handoff` perd `disable-model-invocation`**, avec une description qui
-  borne le déclenchement : fin de lot, pause de plus d'une heure, ou demande
-  explicite — jamais en cours de lot. Fait nouveau contre l'arbitrage du
+  borne le déclenchement : fin de lot AVANT la PR (fenêtre de clôture), pause
+  de plus d'une heure, ou demande explicite — jamais en cours de lot ; après
+  le merge, seulement en rattrapage. `handoffs/README.md`, `/wn-finish`,
+  `/wn-lot` et `/wn-reprompt` alignés (revue Copilot). Fait nouveau contre l'arbitrage du
   2026-08-03 : sur 30 jours, le modèle a cherché ce skill 9 fois, et les 13
   tentatives d'invoquer un `/wn-*` ont toutes échoué. C'est le seul skill `wn`
   que la méthode « un lot = une session » appelle à chaque lot. Les autres

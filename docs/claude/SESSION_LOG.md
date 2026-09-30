@@ -8403,3 +8403,14 @@ sans consommateur. 12 mutations, toutes détectées.
 par `assessment_episode_id` : le repli par date ne sert à aucune ligne.
 
 **Prochaine action.** PR du lot 1, puis lot 2 (portail).
+
+## 2026-09-30 — /wn-handoff invocable, skills sans Supabase (#1261)
+
+**Fait.** `/wn-handoff` invocable par le modèle (fin de lot avant la PR, pause
+d'une heure, demande explicite) ; `wn-test` et `wn-lot` lisent la production
+par conteneur, plus par le MCP Supabase d'une base décommissionnée.
+
+**Décidé (responsable).** Session principale dans la copie principale : les
+`/wn-*` y tournent tels quels, pas de correctif worktree.
+
+**Prochaine action.** Merge après #1259 et #1260.
