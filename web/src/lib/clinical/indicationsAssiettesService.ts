@@ -83,6 +83,17 @@ export type AssietteIndiquee = {
   motif: string;
   /** Instruments à l'appui — vide pour une porte d'anamnèse, d'âge ou de régime. */
   instruments: DeclencheurAtteint['instruments'];
+  /**
+   * TOUTES LES VOIES ATTEINTES, dans l'ordre de la règle — la première est
+   * celle de `motif` et `instruments` ([[D-254]]).
+   *
+   * `evaluerDeclencheur` s'arrête à la première branche atteinte d'une
+   * disjonction : c'est son contrat ([[D-060]]), et il suffit à dire QU'une
+   * assiette est indiquée. Il ne dit pas PAR COMBIEN de voies, ni lesquelles —
+   * or c'est ce que le praticien classe pour choisir : la convergence, et le
+   * lien avec la priorité visée, qu'une seconde branche peut porter seule.
+   */
+  voiesAtteintes: readonly DeclencheurAtteint[];
   /** Identifiants de claim, dédoublonnés et triés. Indication ET sécurité. */
   claims: readonly string[];
 };
@@ -223,6 +234,34 @@ function referencesCiteesParLaTable(): readonly { claimId: string; versionClaim:
     for (const claim of claimsDeLaLigne(ligne)) uniques.set(cleClaim(claim), claim);
   }
   return [...uniques.values()];
+}
+
+type ArgumentsDeclencheur = Parameters<typeof evaluerDeclencheur>;
+
+/**
+ * Toutes les voies atteintes d'un déclencheur, dans l'ordre de la règle
+ * ([[D-254]]). Vide si et seulement si `evaluerDeclencheur` rend `null`, et sa
+ * première voie est celle qu'`evaluerDeclencheur` rend.
+ *
+ * CHAQUE BRANCHE EST ÉVALUÉE COMME UNE DISJONCTION À UNE BRANCHE, et c'est ce
+ * qui garde la sémantique. Une branche passée seule à `evaluerDeclencheur`
+ * serait une FEUILLE, et perdrait la garde de complétude que la disjonction
+ * applique à ses branches instrumentales ([[D-060]] §2) : un recueil partiel
+ * compterait pour une voie qu'il n'aurait jamais ouverte dans la règle.
+ */
+export function voiesAtteintes(
+  declencheur: ArgumentsDeclencheur[0],
+  dernieres: ArgumentsDeclencheur[1],
+  drapeaux: ArgumentsDeclencheur[2],
+  dossier: ArgumentsDeclencheur[3],
+): DeclencheurAtteint[] {
+  if (declencheur.type !== 'ou') {
+    const atteint = evaluerDeclencheur(declencheur, dernieres, drapeaux, dossier);
+    return atteint === null ? [] : [atteint];
+  }
+  return declencheur.declencheurs
+    .map(branche => evaluerDeclencheur({ type: 'ou', declencheurs: [branche] }, dernieres, drapeaux, dossier))
+    .filter((atteint): atteint is DeclencheurAtteint => atteint !== null);
 }
 
 /**
@@ -377,6 +416,7 @@ export async function evaluerAssiettesPourPatient(
         sourceProtocole: assiette.sourceProtocole,
         motif: atteint.motif,
         instruments: atteint.instruments,
+        voiesAtteintes: voiesAtteintes(ligne.declencheur, dernieres, drapeaux, dossier),
         claims: [...new Set(claimsDeLaLigne(ligne).map(cleClaim))].sort(),
       });
       continue;

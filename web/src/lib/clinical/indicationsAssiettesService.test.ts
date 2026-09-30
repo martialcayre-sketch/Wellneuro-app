@@ -41,7 +41,9 @@ vi.mock('@/lib/clinical/indicationsAssiettesV1', async (importOriginal) => {
 
 import { cleClaim as cleClaimCorpus } from '@/lib/rag/claims/validite';
 import { INDICATIONS_ASSIETTES_METADATA, INDICATIONS_ASSIETTES_V1, claimsDeLaLigne } from './indicationsAssiettesV1';
-import { assiettesIndiqueesActives, evaluerAssiettesPourPatient } from './indicationsAssiettesService';
+import { assiettesIndiqueesActives, evaluerAssiettesPourPatient, voiesAtteintes } from './indicationsAssiettesService';
+import { evaluerDeclencheur, type ReponseOrientation } from './orientationEngine';
+import type { OrientationDeclencheur, OrientationDeclencheurFeuille } from './orientationRulesV1';
 
 /** Tous les claims de la table, en clés du CORPUS — la jointure, pas une copie. */
 function toutesLesClesDuCorpus(): Set<string> {
@@ -439,5 +441,80 @@ describe('ce qu’on n’a PAS pu regarder — `DC-24`, et c’est le motif du l
       + resultat.nonIndiquees
       + resultat.retireesFauteDeClaim,
     ).toBe(7);
+  });
+});
+
+// [[D-254]] — la hiérarchie classe par convergence et par lien avec la priorité
+// visée : elle a besoin de TOUTES les voies atteintes, pas de la première.
+describe('les voies atteintes — toutes, dans l’ordre de la règle', () => {
+  it('une passation qui ouvre DEUX branches rend deux voies, la première étant celle du motif', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([passationQInf03()]);
+    const resultat = await evaluerAssiettesPourPatient('PAT001');
+    if (!resultat.actif) throw new Error('le verrou devait être ouvert');
+    const dopa = resultat.indiquees.find(a => a.ligneId === 'ASSIETTE-IND-DOPAMINERGIQUE');
+    expect(dopa?.voiesAtteintes.map(voie => voie.instruments)).toEqual([
+      [{ idQuestionnaire: 'Q_INF_03', sousScore: 'DA' }],
+      [{ idQuestionnaire: 'Q_INF_03', sousScore: 'NA' }],
+    ]);
+    expect(dopa?.voiesAtteintes[0]).toEqual({ motif: dopa?.motif, instruments: dopa?.instruments });
+  });
+
+  it('une branche sans donnée ne compte pas : deux voies sur trois', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([passationQInf03()]);
+    const resultat = await evaluerAssiettesPourPatient('PAT001');
+    if (!resultat.actif) throw new Error('le verrou devait être ouvert');
+    const antiInflammatoire = resultat.indiquees.find(a => a.plateCode === 'ASSIETTE_ANTI_INFLAMMATOIRE');
+    // SE puis DA ; la troisième branche vise `Q_GAS_01`, qui n'a pas été passé.
+    expect(antiInflammatoire?.voiesAtteintes.map(voie => voie.instruments[0]?.sousScore)).toEqual(['SE', 'DA']);
+  });
+
+  // LA GARDE DE COMPLÉTUDE TIENT BRANCHE PAR BRANCHE ([[D-060]] §2). Évaluée
+  // seule comme une feuille, la branche garantie par un plancher s'allumerait ;
+  // en voie d'une disjonction, elle ne compte pas — sinon la convergence
+  // compterait un recueil partiel que la règle n'aurait jamais retenu.
+  it('une branche sur recueil incomplet ne compte pas pour une voie, même quand un plancher l’atteindrait', () => {
+    const zoneGarantie: OrientationDeclencheurFeuille = {
+      type: 'zone', idQuestionnaire: 'Q_STR_01', zone: { type: 'couleur', couleurs: ['danger', 'dark'] },
+    };
+    const brancheComplete: OrientationDeclencheurFeuille = {
+      type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'plage', min: 27, max: 50 },
+    };
+    const ou: OrientationDeclencheur = { type: 'ou', declencheurs: [zoneGarantie, brancheComplete] };
+    const reponses: ReponseOrientation[] = [
+      {
+        idQuestionnaire: 'Q_STR_01',
+        dateReponse: '2026-09-20T10:00:00.000Z',
+        scores: {
+          total: null,
+          repondus: 15,
+          items: 21,
+          interpretation: null,
+          bandePlancher: {
+            garanti: true,
+            label: 'Élevé',
+            color: 'danger',
+            labelsPossibles: ['Élevé'],
+            couleursPossibles: ['danger'],
+          },
+        },
+      },
+      {
+        idQuestionnaire: 'Q_STR_02',
+        dateReponse: '2026-09-20T10:00:00.000Z',
+        scores: { total: 30, repondus: 10, items: 10 },
+      },
+    ];
+    const dernieres = new Map(reponses.map(r => [r.idQuestionnaire, r]));
+    // La feuille seule s'allume : c'est la garde, et elle seule, qui l'éteint.
+    expect(evaluerDeclencheur(zoneGarantie, dernieres, undefined)).not.toBeNull();
+    const voies = voiesAtteintes(ou, dernieres, undefined, undefined);
+    expect(voies.map(voie => voie.instruments)).toEqual([[{ idQuestionnaire: 'Q_STR_02' }]]);
+    expect(voies[0]).toEqual(evaluerDeclencheur(ou, dernieres, undefined));
+  });
+
+  it('une feuille atteinte rend une voie ; non atteinte, aucune', () => {
+    const borne: OrientationDeclencheur = { type: 'age', operateur: '>=', valeur: 50 };
+    expect(voiesAtteintes(borne, new Map(), undefined, { ageAnnees: 60 })).toHaveLength(1);
+    expect(voiesAtteintes(borne, new Map(), undefined, { ageAnnees: 40 })).toEqual([]);
   });
 });

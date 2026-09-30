@@ -106,6 +106,17 @@ const ALLOWLIST = new Map([
       + 'à la forme servie : le verdict est identique sous les deux drapeaux',
   ],
   [
+    'src/components/patient-cockpit/hierarchieAssiettes.test.ts',
+    'ne lit de BESOIN_SOURCES que les identifiants et sous-scores des besoins 4, 8 et 10 (Q_GAS_01, '
+      + 'Q_INF_01, Q_NEU_11, Q_INF_03) — jamais Q_ALI_01 ni un max : verdict identique sous les deux '
+      + 'drapeaux (D-254)',
+  ],
+  [
+    'src/components/patient-cockpit/AssiettesIndiqueesPanel.test.tsx',
+    'ne nomme BESOIN_SOURCES qu’en commentaire ; ses cas visent les besoins 8 et 10, sans Q_ALI_01 : '
+      + 'verdict identique sous les deux drapeaux (D-254)',
+  ],
+  [
     'src/app/api/praticien/synthese/route.post.test.ts',
     'mentionne le drapeau mais score sur ses propres fixtures, indépendantes de la forme servie',
   ],
