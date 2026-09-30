@@ -239,12 +239,21 @@ export function ProtocolMiniBuilder({
           Protocole 21 jours
         </h3>
         <div className="rounded-xl border border-border bg-surface p-4">
+          {/* SANS CARTE, ON NE SAIT RIEN DE LA PRIORITÉ ([[D-253]]). Le motif
+              « priorité non sélectionnée » s'affichait aussi quand aucune carte
+              n'était servie — sur un dossier dont la priorité était retenue. */}
           <p className="text-base font-semibold text-foreground">
-            {decisionBlocked
-              ? 'Protocole indisponible — bloqueurs décisionnels à revoir'
-              : 'Protocole indisponible — priorité praticien non sélectionnée'}
+            {!decisionCard
+              ? 'Protocole indisponible — aucune carte de décision n’est servie'
+              : decisionBlocked
+                ? 'Protocole indisponible — bloqueurs décisionnels à revoir'
+                : 'Protocole indisponible — priorité praticien non sélectionnée'}
           </p>
-          <p className="mt-1 text-base text-muted-foreground">Le protocole restera local et inactif jusqu’à cette sélection.</p>
+          <p className="mt-1 text-base text-muted-foreground">
+            {!decisionCard
+              ? 'La carte se lit en phase Décision : un jalon peut y attendre sa confirmation.'
+              : 'Le protocole restera local et inactif jusqu’à cette sélection.'}
+          </p>
         </div>
       </section>
     );

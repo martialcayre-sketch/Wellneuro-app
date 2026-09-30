@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { AbstentionAssessment, ProposedAssessmentEpisode } from '@/lib/clinical-engine/types';
@@ -1327,12 +1327,20 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
     trajectoire: unknown;
     cockpitT0: CockpitRuntimeApiResponse;
     cockpitJ21?: CockpitRuntimeApiResponse;
+    /** Absente : la route répond 500 — la diffusion est illisible. */
+    diffusion?: unknown;
+    /** La carte T0 n'est servie qu'une fois cette promesse tenue. */
+    retardT0?: Promise<void>;
   }) {
     return vi.fn(async (url: string, _init?: { method?: string; body?: string }) => {
       const cible = String(url);
       if (cible.includes('/api/praticien/trajectoire')) return rep(reponses.trajectoire);
+      if (cible.includes('/api/praticien/protocoles/diffusion') && reponses.diffusion !== undefined) {
+        return rep(reponses.diffusion);
+      }
       if (cible.includes('/api/praticien/cockpit')) {
         if (cible.includes('milestone=J21') && reponses.cockpitJ21) return rep(reponses.cockpitJ21);
+        if (reponses.retardT0) await reponses.retardT0;
         return rep(reponses.cockpitT0);
       }
       return rep({}, false, 500);
@@ -1427,19 +1435,26 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
     });
   });
 
-  it('un rejeu ne verrouille pas le jalon dû : le J21 reprend la main sur un T0 rejoué', async () => {
-    // T0 confirmé il y a 21 jours : le J21 est dû. Sans la distinction
-    // frais/rejoué, la garde Mo4 aurait épinglé l'écran sur la carte T0
-    // rejouée et le J21 dû serait resté invisible.
-    const propositionJ21: CockpitRuntimeApiResponse = {
-      status: 'proposal_required',
-      proposal: { ...proposal, assessmentEpisodeId: 'episode-J21', milestone: 'J21' },
-      proposalHash: 'hash-J21',
-    };
+  const PROPOSITION_J21: CockpitRuntimeApiResponse = {
+    status: 'proposal_required',
+    proposal: { ...proposal, assessmentEpisodeId: 'episode-J21', milestone: 'J21' },
+    proposalHash: 'hash-J21',
+  };
+  const DIFFUSE = {
+    ok: true,
+    approval: { protocolDraftInputHash: 'hash-protocole', approvedAt: '2026-09-10T09:00:00.000Z' },
+    stale: false,
+  };
+
+  it('un rejeu ne verrouille pas le jalon dû : le J21 reprend la main une fois un protocole DIFFUSÉ', async () => {
+    // T0 confirmé il y a 21 jours, protocole diffusé : le J21 est dû. Sans la
+    // distinction frais/rejoué, la garde Mo4 aurait épinglé l'écran sur la carte
+    // T0 rejouée et le J21 dû serait resté invisible.
     const fetchMock = fetchParUrl({
       trajectoire: trajectoireAvecCycle(21),
       cockpitT0: pretRejoue(),
-      cockpitJ21: propositionJ21,
+      cockpitJ21: PROPOSITION_J21,
+      diffusion: DIFFUSE,
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -1447,6 +1462,76 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
 
     expect(await screen.findByRole('button', { name: 'Confirmer l’épisode J21' })).toBeTruthy();
     expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(true);
+  });
+
+  // [[D-253]] — PAS DE JALON DE SUIVI SANS PROTOCOLE DIFFUSÉ. Le cas réel :
+  // T0 confirmé, priorité retenue, aucun protocole, et à T0 + 25 j la bascule
+  // sur le J21 retirait la carte — donc le constructeur. La carte d'ancre
+  // reste, le J21 est dit, et il n'est même pas demandé au serveur.
+  it('aucun protocole diffusé : la carte T0 reste, le J21 est dit et n’est pas demandé', async () => {
+    const fetchMock = fetchParUrl({
+      trajectoire: trajectoireAvecCycle(25),
+      cockpitT0: pretRejoue(),
+      cockpitJ21: PROPOSITION_J21,
+      diffusion: { ok: true, approval: null, stale: false },
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+
+    expect(await screen.findByText(
+      'Le jalon J21 est dans sa fenêtre, mais aucun protocole n’a été diffusé sur ce cycle : il ne sera proposé qu’après la diffusion.',
+    )).toBeTruthy();
+    expect(screen.getByText(/Épisode T0 confirmé/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Confirmer l’épisode J21' })).toBeNull();
+    expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(false);
+  });
+
+  // LA COURSE RÉELLE : le GET T0 est le plus lent (lui seul calcule les
+  // préconditions), la trajectoire arrive AVANT lui. Sans l'attente de la carte
+  // d'ancre, le J21 partait à l'arrivée de la trajectoire — et sa réponse
+  // écartait ensuite celle du T0 par le jeton d'obsolescence.
+  it('la trajectoire arrive AVANT la carte T0 : le J21 n’est pas demandé pour autant', async () => {
+    let servirT0: () => void = () => {};
+    const retardT0 = new Promise<void>(resolve => { servirT0 = resolve; });
+    const fetchMock = fetchParUrl({
+      trajectoire: trajectoireAvecCycle(25),
+      cockpitT0: pretRejoue(),
+      cockpitJ21: PROPOSITION_J21,
+      diffusion: { ok: true, approval: null, stale: false },
+      retardT0,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(appel => String(appel[0]).includes('/api/praticien/trajectoire'))).toBe(true),
+    );
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(false);
+
+    servirT0();
+    expect(await screen.findByText(/aucun protocole n’a été diffusé sur ce cycle/)).toBeTruthy();
+    expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(false);
+  });
+
+  it('diffusion ILLISIBLE : ni « diffusé » ni « non diffusé » — le J21 attend, et l’écran le dit', async () => {
+    const fetchMock = fetchParUrl({
+      trajectoire: trajectoireAvecCycle(25),
+      cockpitT0: pretRejoue(),
+      cockpitJ21: PROPOSITION_J21,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+
+    expect(await screen.findByText(
+      'Le jalon J21 est dans sa fenêtre, mais la diffusion du protocole n’a pas pu être lue : il n’est pas proposé pour l’instant.',
+    )).toBeTruthy();
+    expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(false);
   });
 });
 

@@ -4,6 +4,74 @@
 
 ## Décisions actives
 
+### D-253 — Pas de jalon de suivi sans protocole diffusé : le cockpit reste sur la carte d'ancre, et le constructeur avec elle
+
+- Date : 2026-09-30
+- Statut : accepté — constat du responsable sur un dossier réel (« pourquoi ne
+  puis-je pas saisir d'assiette et d'action dans le dossier PAT007 ? ») ;
+  correctif arbitré en séance le même jour : « pas de J21 sans protocole ».
+  L'ancrage des jalons sur la diffusion est écarté de ce lot.
+- Domaine : cockpit praticien (jalons, phase Actions). **Aucune règle
+  clinique, aucune fenêtre, aucune borne, aucune migration, aucun drapeau
+  neuf.** Précise [[D-118]] (un rejeu ne verrouille pas le jalon dû) ; ne
+  touche ni [[D-058]] ni [[D-113]].
+
+**1. LE FAIT.** `PAT007`, lu par conteneur et par identifiant :
+
+- T0 confirmé le 2026-09-04 ;
+- priorité retenue le 2026-09-12 ;
+- aucun protocole.
+
+À T0 + 25 j, le J21 est dans sa fenêtre (J13 à J29). Le cockpit rejouait la
+carte T0, puis basculait sur la proposition du J21, jamais confirmé. Une
+proposition ne porte pas de carte :
+
+- la phase Décision rendait « indéterminée » ;
+- le constructeur, qui ne s'ouvre que sur une carte, affichait « priorité
+  praticien non sélectionnée ». C'était faux.
+
+En agrégat, le même jour : **7 des 10 dossiers actifs** à T0 confirmé sont sans
+protocole, à 13 jours ou plus de leur ancre.
+
+**2. LA RÈGLE.** Un jalon de suivi (J21, J42, J90) n'est proposé qu'une fois
+un protocole **diffusé** sur la carte d'ancre rejouée : une approbation de
+diffusion existe pour elle. Un J21 mesure ce que trois semaines de protocole
+ont changé ; sans protocole, il n'a rien à mesurer.
+
+- Tant que la diffusion n'est pas lue, ou qu'elle est lue et absente, la carte
+  d'ancre reste servie, et le constructeur avec elle.
+- **Une lecture en échec n'est pas « diffusé »** (`DC-24`) : le jalon attend.
+
+**3. L'ATTENTE COMMENCE AVANT LA CARTE.** Le GET de l'ancre est le plus lent :
+il calcule seul les préconditions. La trajectoire arrive donc souvent avant
+lui. Tant que la proposition de l'ancre est en lecture, aucun jalon de suivi
+n'est demandé. Sinon, sa réponse écartait celle de l'ancre par le jeton
+d'obsolescence.
+
+**4. CE QUI SE DIT.**
+
+- En phase Décision, une ligne annonce le jalon retenu : « Le jalon J21 est
+  dans sa fenêtre, mais aucun protocole n'a été diffusé sur ce cycle : il ne
+  sera proposé qu'après la diffusion. » Si la lecture a échoué, la ligne dit
+  qu'elle n'a pas pu être lue.
+- Sans carte, le constructeur dit « aucune carte de décision n'est servie », et
+  ne parle plus de priorité.
+
+**5. CE QUI NE CHANGE PAS.**
+
+- Les fenêtres des jalons et leur ancrage sur la confirmation de l'ancre.
+- La confirmation elle-même et ses préconditions.
+- Une ancre non rejouable (proposition servie) et une carte fraîchement
+  confirmée gardent leur comportement.
+
+**Reste ouvert, et c'est dit.** Un protocole diffusé tard dans la fenêtre fait
+proposer le J21 quelques jours après son début. Ancrer les jalons sur la
+diffusion est une décision à part, que le responsable a écartée de ce lot.
+
+**Bancs.** Quatre cas de cockpit neufs ou réécrits, dont la course réelle (la
+trajectoire avant la carte), et un cas de constructeur. Cinq mutations ont été
+jouées, toutes détectées.
+
 ### D-252 — L'export PDF du dossier patient : deux versions, la pseudonymisée par défaut, pour un outil d'IA externe que le praticien sollicite lui-même
 
 - Date : 2026-09-26

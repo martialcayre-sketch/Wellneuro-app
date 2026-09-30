@@ -30,7 +30,7 @@ import { deriverMeteoAdhesion } from '@/lib/protocol/adhesion';
 import type { CheckinRow } from '@/lib/protocol/checkinDomain';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import { resoudreJalonDu, type JalonDu } from '@/lib/protocol/jalonDu';
-import { estJalonMesure, type AncreCycle } from '@/lib/protocol/cycles';
+import { estAncreDeCycle, estJalonMesure, type AncreCycle } from '@/lib/protocol/cycles';
 import { Button } from '@/components/ui/Button';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 import { AssiettesIndiqueesPanel } from './AssiettesIndiqueesPanel';
@@ -415,6 +415,12 @@ export function ClinicalRuntimeSection({
   const [selectionError, setSelectionError] = useState<string | null>(null);
   // Validation « pour diffusion » (C2A LOT-03 Part B).
   const [approvedAt, setApprovedAt] = useState<string | null>(null);
+  /**
+   * UN PROTOCOLE A-T-IL ÉTÉ DIFFUSÉ SUR LA CARTE D'ANCRE ? ([[D-253]]) Daté de
+   * la carte lue, comme tout état de ce composant. `diffuse: null` = lecture en
+   * échec : ni « oui » ni « non » (`DC-24`).
+   */
+  const [diffusionDuCycle, setDiffusionDuCycle] = useState<{ pour: string; diffuse: boolean | null } | null>(null);
   const [approvalStale, setApprovalStale] = useState(false);
   // `null` = rien n'est affirmé (pas de diffusion, ou lecture non aboutie). Un
   // `false` par défaut ferait crier l'écran avant d'avoir lu ([[D-191]]).
@@ -567,8 +573,10 @@ export function ClinicalRuntimeSection({
       if (!response.ok || !payload.ok) {
         setApercuFiches(null);
         setAnnonceParEmail(false);
+        setDiffusionDuCycle({ pour: decisionCardId, diffuse: null });
         return;
       }
+      setDiffusionDuCycle({ pour: decisionCardId, diffuse: payload.approval !== null });
       setAnnonceParEmail(payload.annonceParEmail === true);
       setApprovedAt(payload.approval?.approvedAt ?? null);
       setApprovalStale(payload.stale);
@@ -582,6 +590,7 @@ export function ClinicalRuntimeSection({
       // L'aperçu des fiches, lui, ne survit pas à une lecture manquée.
       setApercuFiches(null);
       setAnnonceParEmail(false);
+      setDiffusionDuCycle({ pour: decisionCardId, diffuse: null });
     }
   }, [idPatient]);
 
@@ -1078,6 +1087,28 @@ export function ClinicalRuntimeSection({
   // avoir avancé pendant que la page était fermée — épingler l'écran sur un
   // `T0` rejoué masquerait un `J21` devenu dû.
   const decisionAffichee = runtime?.status === 'ready' && !runtime.rejoue;
+
+  // PAS DE JALON DE SUIVI SANS PROTOCOLE DIFFUSÉ ([[D-253]]). Un J21 mesure ce
+  // que trois semaines de protocole ont changé ; sans protocole diffusé, il n'a
+  // rien à mesurer. Or basculer sur sa proposition RETIRAIT la carte de l'ancre
+  // — et avec elle le constructeur, qui ne s'ouvre que sur une carte : le
+  // praticien ne pouvait plus écrire le protocole que le J21 aurait dû suivre.
+  // Constaté en production le 2026-09-30 : T0 confirmé, priorité retenue, aucun
+  // protocole, et la phase Actions fermée à T0 + 25 j.
+  //
+  // LE SUIVI ATTEND donc tant que la carte d'ancre est en lecture, puis tant
+  // que sa diffusion n'est pas LUE et affirmée. Une lecture en échec n'est pas
+  // « diffusé » : le jalon attend, et l'écran le dit.
+  const ancreRejouee = runtime?.status === 'ready' && runtime.rejoue === true
+    ? runtime.decisionCard.decisionCardId
+    : null;
+  /** `undefined` : pas encore lue pour cette carte. */
+  const diffusionAncre = ancreRejouee !== null && diffusionDuCycle?.pour === ancreRejouee
+    ? diffusionDuCycle.diffuse
+    : undefined;
+  const suiviRetenu = (loading && estAncreDeCycle(jalonDemande))
+    || (ancreRejouee !== null && diffusionAncre !== true);
+
   useEffect(() => {
     if (fixture || statutTrajectoire !== 'chargee') return;
     const du = resoudreJalonDu(trajectoire, new Date());
@@ -1087,10 +1118,14 @@ export function ClinicalRuntimeSection({
     // la resynchronisation automatique : c'est un geste, pas un défaut.
     if (ouvertureCycle !== null) return;
     if (du.statut === 'du' && du.jalon !== jalonDemande) {
+      if (!estAncreDeCycle(du.jalon) && suiviRetenu) return;
       setJalonDemande(du.jalon);
       void loadProposal(du.jalon);
     }
-  }, [fixture, statutTrajectoire, trajectoire, jalonDemande, loadProposal, decisionAffichee, ouvertureCycle]);
+  }, [
+    fixture, statutTrajectoire, trajectoire, jalonDemande, loadProposal, decisionAffichee, ouvertureCycle,
+    suiviRetenu,
+  ]);
 
   /**
    * Le geste d'ouverture. Il ne confirme RIEN : il demande la proposition
@@ -1760,6 +1795,17 @@ export function ClinicalRuntimeSection({
         && ouvertureCycle === null && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
           {jalonDu.motif}
+        </div>
+      )}
+      {/* UN JALON DE SUIVI RETENU SE DIT ([[D-253]]) : sans cette ligne, un J21
+          dû qui n'est pas proposé se lirait comme un oubli de l'écran. */}
+      {affiche('decision') && !fixture && jalonDu?.statut === 'du' && !estAncreDeCycle(jalonDu.jalon)
+        && jalonDemande !== jalonDu.jalon && ouvertureCycle === null
+        && ancreRejouee !== null && (diffusionAncre === false || diffusionAncre === null) && (
+        <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
+          {diffusionAncre === false
+            ? `Le jalon ${jalonDu.jalon} est dans sa fenêtre, mais aucun protocole n’a été diffusé sur ce cycle : il ne sera proposé qu’après la diffusion.`
+            : `Le jalon ${jalonDu.jalon} est dans sa fenêtre, mais la diffusion du protocole n’a pas pu être lue : il n’est pas proposé pour l’instant.`}
         </div>
       )}
       {/* OUVRIR UN NOUVEAU CYCLE ([[D-113]] §8) — un geste du praticien, jamais

@@ -35,9 +35,19 @@ function choisirCharge(container: HTMLElement, niveau = 'light') {
 
 describe('ProtocolMiniBuilder', () => {
   it('reste désactivé sans priorité praticien sélectionnée', () => {
-    const { container } = render(<ProtocolMiniBuilder decisionCard={null} />);
+    const { container } = render(<ProtocolMiniBuilder decisionCard={{ ...card(), selectedMainPriority: null }} />);
     expect(container.textContent).toContain('Protocole indisponible — priorité praticien non sélectionnée');
-    expect(screen.queryByRole('button', { name: 'Ajouter une action' })).toBeNull();
+    expect(within(container).queryByRole('button', { name: 'Ajouter une action' })).toBeNull();
+  });
+
+  // [[D-253]] — SANS CARTE, ON NE SAIT RIEN DE LA PRIORITÉ. Le motif « priorité
+  // non sélectionnée » s'affichait sur un dossier réel dont la priorité était
+  // retenue : la carte n'était simplement pas servie (J21 proposé).
+  it('sans carte de décision : le motif le dit, et ne parle pas de priorité', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={null} />);
+    expect(container.textContent).toContain('Protocole indisponible — aucune carte de décision n’est servie');
+    expect(container.textContent).not.toContain('priorité praticien non sélectionnée');
+    expect(within(container).queryByRole('button', { name: 'Ajouter une action' })).toBeNull();
   });
 
   it('ajoute, modifie et supprime au plus trois actions', () => {

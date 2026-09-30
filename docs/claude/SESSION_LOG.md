@@ -8360,3 +8360,19 @@ actifs) : la section disparaît partout.
 
 **Ouvert.** La hiérarchisation des assiettes indiquées pour l'aide au choix :
 critère clinique à arbitrer.
+
+## 2026-09-30 — Pas de jalon de suivi sans protocole diffusé (D-253)
+
+**Constat.** PAT007 : T0 confirmé, priorité retenue, aucun protocole. À
+T0 + 25 j, le cockpit basculait sur la proposition du J21 : plus de carte,
+donc plus de constructeur, et un motif faux (« priorité non sélectionnée »).
+7 des 10 dossiers actifs à T0 confirmé étaient dans ce cas.
+
+**Fait.** Un jalon de suivi n'est proposé qu'après la diffusion d'un
+protocole sur le cycle ; la carte d'ancre reste servie d'ici là, et l'écran
+dit pourquoi. Cinq mutations, toutes détectées.
+
+**Décidé (responsable).** « Pas de J21 sans protocole » ; l'ancrage des
+jalons sur la diffusion est écarté.
+
+**Ouvert.** Le classement des assiettes (D-254), sur sa branche.
