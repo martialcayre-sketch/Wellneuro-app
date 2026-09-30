@@ -4,12 +4,9 @@
 > session, agent `wn-fable`, lecture seule, aucun code touché). Ce document
 > est le LOT-00 : il ne livre aucun code, aucune migration.
 >
-> **D-xxx non réservé.** Ce cadrage a été produit sur la branche
-> `wn-ci-parallele-2026-09-30`, pas sur `main` — la réservation d'un numéro de
-> décision se fait depuis `main` pour éviter une collision avec une session
-> concurrente. Le dernier numéro connu au 2026-09-30 est `D-255` ; ce cadrage
-> vise donc `D-256` (à confirmer et réserver depuis `main` avant toute PR de
-> migration).
+> **Décision : `D-256`** (`docs/DECISIONS.md`), réservée depuis `main` le
+> 2026-09-30. **Campagne suivie :**
+> [`2026-09-30-bio-ingest`](2026-09-30-bio-ingest/CAMPAGNE.md).
 
 ## 1. Arbitrages rendus le 2026-09-30
 
@@ -119,15 +116,14 @@ dans l'écran (aucune écriture automatique).
 
 ## 5. Prochaine action
 
-1. Réserver `D-256` (ou le numéro suivant réel) depuis `main`, fragment
-   `changelog.d/`, reprenant les arbitrages A1-A5 ci-dessus.
+1. ~~Réserver `D-256` depuis `main`, fragment `changelog.d/`, reprenant les
+   arbitrages A1-A5 ci-dessus.~~ Fait le 2026-09-30 (LOT-00).
 2. Démarrer LOT-01 : mode Plan pour le détail technique (route batch,
    composant multi-lignes) avant toute modification — ce cadrage ne remplace
    pas le plan d'implémentation.
 3. Avant LOT-02 : amendement du registre RGPD et du document patient TRUST
    pour l'usage IA vision sur données biologiques (A4) — geste distinct,
    antérieur à toute ligne de code d'extraction.
-4. Décider si ce chantier devient une campagne suivie dans
-   `docs/claude/campagnes/README.md` (ligne de table + `ACTIVE_CAMPAIGN.md`)
-   ou reste une suite de PR directes vers `main` comme la Vague 2 — geste à
-   faire depuis `main`, pas depuis cette branche.
+4. ~~Décider si ce chantier devient une campagne suivie ou reste une suite
+   de PR directes.~~ Tranché le 2026-09-30 par le responsable : **campagne
+   suivie** `2026-09-30-bio-ingest`.

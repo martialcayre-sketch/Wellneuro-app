@@ -1,0 +1,9 @@
+{
+  "title": "BIO-INGEST — acquisition des résultats biologiques",
+  "generatedAt": "2026-09-30T15:46:08.341Z",
+  "campaignDir": "docs/claude/campagnes/2026-09-30-bio-ingest",
+  "sourceDir": null,
+  "sourceFiles": [
+    "docs/claude/campagnes/2026-09-30-bio-ingest/BRIEF.md"
+  ]
+}

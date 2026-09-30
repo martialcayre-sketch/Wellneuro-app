@@ -8492,6 +8492,23 @@ confirmé reste acquis ; seuls les restants repartent du pivot.
 
 **Prochaine action.** PR du lot 3b, puis 3c (bandeau).
 
+## 2026-09-30 — BIO-INGEST, LOT-00 : cadrage, D-256, campagne ouverte
+
+**Fait.** Reprise de la session `cadrage-bio-ingest` (worktree vide, supprimé).
+D-256 posée : son texte avait été bloqué par le hook de fraîcheur, et il a été
+récupéré dans la transcription. Campagne suivie `2026-09-30-bio-ingest`, six
+lots conformes au cadrage.
+
+**Décidé (responsable).** Campagne suivie plutôt que des PR directes.
+
+**Écarté.** La table README des campagnes, qui n'est plus tenue depuis le
+2026-08-04. Les brouillons générés, absents des campagnes récentes.
+
+**Prochaine action.** PR du LOT-00, puis LOT-01 (saisie groupée) en mode Plan,
+dans une nouvelle session.
+
+**Ouvert.** Amendement RGPD/TRUST avant le LOT-02 ; format réel du laboratoire
+avant le LOT-05.
 ## 2026-09-30 — Calendrier de suivi, lot 3c : bandeau et trajectoires (D-255)
 
 **Fait.** Lot 3b mergé (#1267, deux remarques Copilot corrigées). Lot 3c :
