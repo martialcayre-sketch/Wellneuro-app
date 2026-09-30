@@ -19,6 +19,7 @@ import {
   contientSubstitution,
   existeALaRacineDepuis,
   lireSkills,
+  racinesVariables,
 } from "./skill-bang-cwd.mjs";
 
 const ANCRE = "${CLAUDE_PROJECT_DIR}/";
@@ -163,6 +164,27 @@ test("l'ancien cd par substitution n'ancre plus rien : chemins ET substitution s
   assert.equal(violations.length, 1);
   assert.equal(violations[0].substitution, true);
   assert.deepEqual(violations[0].chemins, ["scripts/wn-cycle.mjs"]);
+});
+
+// Revue Copilot de #1275 : `JETON` écarte tout jeton en `$`, donc la variable
+// shell — refusée au chargement par les sondes du 2026-09-30 — passait verte.
+test("une racine variable autre que ${CLAUDE_PROJECT_DIR} est une violation", () => {
+  const { violations } = auditerSkills(
+    [
+      skill(
+        "wn-v",
+        '!`cat "$CLAUDE_PROJECT_DIR/docs/x.md"`',
+        "!`node ${HOME}/scripts/x.mjs`",
+        `!\`cat ${ANCRE}docs/x.md\``,
+        "!`gh pr view $ARGUMENTS --json url`"
+      ),
+    ],
+    existe
+  );
+  assert.equal(violations.length, 2);
+  assert.deepEqual(violations[0].variables, ["$CLAUDE_PROJECT_DIR/"]);
+  assert.deepEqual(violations[1].variables, ["${HOME}/"]);
+  assert.deepEqual(racinesVariables(`cat ${ANCRE}docs/x.md`), []);
 });
 
 test("un chemin ancré à côté d'un chemin nu ne couvre pas le second", () => {

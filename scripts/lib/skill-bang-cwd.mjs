@@ -62,8 +62,18 @@ const SUBSTITUTION = /\$\(/;
 // chemins ancrés (`${CLAUDE_PROJECT_DIR}/docs/…`).
 const JETON = /(?:^|[\s"'`(=|])([A-Za-z0-9._][^\s"'`)|]*)/g;
 
+// Un chemin à racine variable autre que le jeton du chargeur : `$VAR/…` ou
+// `${VAR}/…`. `JETON` écarte tout ce qui commence par `$` — sans ce contrôle,
+// `"$CLAUDE_PROJECT_DIR/docs/…"`, refusé au chargement, passerait vert.
+const RACINE_VARIABLE = /\$(?:\{(?!CLAUDE_PROJECT_DIR\})[^}]*\}|[A-Za-z_][A-Za-z0-9_]*)\//g;
+
 export function contientSubstitution(commande) {
   return SUBSTITUTION.test(commande);
+}
+
+/** Les racines variables de `commande` que le chargeur ne remplace pas. */
+export function racinesVariables(commande) {
+  return [...commande.matchAll(RACINE_VARIABLE)].map((m) => m[0]);
 }
 
 /**
@@ -90,7 +100,7 @@ export function cheminsDeRacine(commande, existeALaRacine) {
 /**
  * @param {Array<{nom: string, texte: string}>} skills
  * @param {(segment: string) => boolean} existeALaRacine
- * @returns {{violations: Array<{skill: string, ligne: number, commande: string, chemins: string[], substitution: boolean}>, scannes: number, blocs: number}}
+ * @returns {{violations: Array<{skill: string, ligne: number, commande: string, chemins: string[], substitution: boolean, variables: string[]}>, scannes: number, blocs: number}}
  */
 export function auditerSkills(skills, existeALaRacine) {
   const violations = [];
@@ -103,8 +113,9 @@ export function auditerSkills(skills, existeALaRacine) {
       const commande = m[1];
       const chemins = cheminsDeRacine(commande, existeALaRacine);
       const substitution = contientSubstitution(commande);
-      if (chemins.length === 0 && !substitution) return;
-      violations.push({ skill: nom, ligne: index + 1, commande, chemins, substitution });
+      const variables = racinesVariables(commande);
+      if (chemins.length === 0 && !substitution && variables.length === 0) return;
+      violations.push({ skill: nom, ligne: index + 1, commande, chemins, substitution, variables });
     });
   }
   return { violations, scannes: skills.length, blocs };
@@ -148,6 +159,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       console.error(
         `✗ .claude/skills/${v.skill}/SKILL.md:${v.ligne} — bloc \`!\` à substitution \`$(…)\` : ` +
           `la vérification des permissions le refuse, le skill ne se charge pas.`
+      );
+    }
+    if (v.variables.length > 0) {
+      console.error(
+        `✗ .claude/skills/${v.skill}/SKILL.md:${v.ligne} — bloc \`!\` à racine variable ` +
+          `${v.variables.join(", ")} : le chargeur ne remplace que \${CLAUDE_PROJECT_DIR}.`
       );
     }
     if (v.chemins.length > 0) {
