@@ -158,6 +158,8 @@ for (const cmd of [
   "sleep 2",
   "tail -5 /private/tmp/x/tasks/b09p0cu7s.output",
   "gh pr create --title x --body \"until gh pr checks passe, sleep 30 et relire\"",
+  // Revue Copilot de #1260 : une boucle close avant la lecture n'est pas un sondage.
+  "for f in a b; do echo \"$f\"; done; gh pr checks 1259",
 ]) {
   test(`lecture ponctuelle permise : ${cmd}`, () => assert.equal(verdict(cmd), "passe"));
 }

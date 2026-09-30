@@ -145,7 +145,9 @@ for (const motif of refus) {
 const sondage = [
   /\bgh\s+pr\s+checks\b[^\n]*--watch\b/,
   /\bgh\s+run\s+watch\b/,
-  /\b(while|until|for)\b[\s\S]*\bgh\s+(pr\s+(checks|view)|run\s+(view|list)|api)\b/,
+  // Le `gh` doit être DANS la boucle (avant son `done`) : une boucle close
+  // suivie d'une lecture ponctuelle n'est pas un sondage (revue Copilot #1260).
+  /\b(while|until|for)\b(?:(?!\bdone\b)[\s\S])*\bgh\s+(pr\s+(checks|view)|run\s+(view|list)|api)\b/,
   /\bsleep\s+\d+[\s\S]*\bgh\s+(pr\s+(checks|view)|run\s+(view|list))\b/,
   /\bgh\s+(pr\s+(checks|view)|run\s+(view|list))\b[\s\S]*\bsleep\s+\d+/,
   /\bsleep\s+\d+[\s\S]*\b(tail|cat)\b[^\n]*\btasks\/[^\s]*\.output\b/

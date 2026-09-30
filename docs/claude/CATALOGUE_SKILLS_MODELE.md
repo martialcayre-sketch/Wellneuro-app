@@ -24,7 +24,8 @@
   high + solo (depuis le 2026-09-30), délégué sur Sonnet ; Fable sur ≥ 2
   signaux forts ; Ultracode = largeur en opt-in (mot-clé « ultracode » ou
   `/effort ultracode`, retour `/effort high`) ; overrides `/model`
-  (`sonnet`, `opus`, `fable`, `opusplan`). **Le défaut de session est porté
+  (`sonnet`, `fable`) **juste après `/clear`** — changer de modèle en cours
+  de session réécrit tout le cache. **Le défaut de session est porté
   par `CLAUDE.md`** : il n'y a plus de passe de méta-routage automatique.
 - **Intérêt** : le routage ne coûte rien quand la demande tombe sur le
   défaut — aucun affichage, aucune invocation.
