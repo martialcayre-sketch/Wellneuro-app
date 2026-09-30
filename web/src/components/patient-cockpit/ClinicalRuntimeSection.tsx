@@ -1099,7 +1099,17 @@ export function ClinicalRuntimeSection({
   // LE SUIVI ATTEND donc tant que la carte d'ancre est en lecture, puis tant
   // que sa diffusion n'est pas LUE et affirmée. Une lecture en échec n'est pas
   // « diffusé » : le jalon attend, et l'écran le dit.
-  const ancreRejouee = runtime?.status === 'ready' && runtime.rejoue === true
+  //
+  // LA CARTE D'ANCRE DU CYCLE COURANT, ET AUCUNE AUTRE (revue de la PR #1257).
+  // Le montage demande toujours `T0` : après l'ouverture d'un `T1`, c'est la
+  // carte du PREMIER cycle qui est rejouée, alors que le jalon dû se calcule
+  // sur le dernier. Lire sa diffusion laisserait passer le J21 du `T1` sur la
+  // foi d'un protocole diffusé au cycle précédent.
+  // L'effet ci-dessous recharge donc l'ancre de CE cycle avant de juger ; et
+  // pendant ce rechargement, `runtime` porte encore la carte précédente — d'où
+  // `!loading`.
+  const ancreCourante = trajectoire?.cycles.at(-1)?.ancre ?? null;
+  const ancreRejouee = !loading && runtime?.status === 'ready' && runtime.rejoue === true
     ? runtime.decisionCard.decisionCardId
     : null;
   /** `undefined` : pas encore lue pour cette carte. */
@@ -1118,13 +1128,21 @@ export function ClinicalRuntimeSection({
     // la resynchronisation automatique : c'est un geste, pas un défaut.
     if (ouvertureCycle !== null) return;
     if (du.statut === 'du' && du.jalon !== jalonDemande) {
-      if (!estAncreDeCycle(du.jalon) && suiviRetenu) return;
+      if (!estAncreDeCycle(du.jalon)) {
+        // D'abord la carte d'ancre de CE cycle : c'est sa diffusion qui compte.
+        if (ancreCourante !== null && jalonDemande !== ancreCourante) {
+          setJalonDemande(ancreCourante);
+          void loadProposal(ancreCourante);
+          return;
+        }
+        if (suiviRetenu) return;
+      }
       setJalonDemande(du.jalon);
       void loadProposal(du.jalon);
     }
   }, [
     fixture, statutTrajectoire, trajectoire, jalonDemande, loadProposal, decisionAffichee, ouvertureCycle,
-    suiviRetenu,
+    suiviRetenu, ancreCourante,
   ]);
 
   /**

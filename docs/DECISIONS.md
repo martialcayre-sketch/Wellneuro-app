@@ -41,6 +41,12 @@ ont changé ; sans protocole, il n'a rien à mesurer.
 - Tant que la diffusion n'est pas lue, ou qu'elle est lue et absente, la carte
   d'ancre reste servie, et le constructeur avec elle.
 - **Une lecture en échec n'est pas « diffusé »** (`DC-24`) : le jalon attend.
+- **La carte est celle de l'ancre du cycle COURANT** (revue de la PR #1257).
+  Le montage demande toujours `T0`. Après l'ouverture d'un `T1`, il rejouait
+  donc la carte du premier cycle, alors que le jalon dû se calcule sur le
+  dernier. Le cockpit recharge d'abord l'ancre du cycle courant, puis juge sur
+  sa diffusion. Pendant ce rechargement, rien n'est dit sur la foi de la carte
+  précédente.
 
 **3. L'ATTENTE COMMENCE AVANT LA CARTE.** Le GET de l'ancre est le plus lent :
 il calcule seul les préconditions. La trajectoire arrive donc souvent avant
@@ -68,9 +74,9 @@ d'obsolescence.
 proposer le J21 quelques jours après son début. Ancrer les jalons sur la
 diffusion est une décision à part, que le responsable a écartée de ce lot.
 
-**Bancs.** Quatre cas de cockpit neufs ou réécrits, dont la course réelle (la
-trajectoire avant la carte), et un cas de constructeur. Cinq mutations ont été
-jouées, toutes détectées.
+**Bancs.** Six cas de cockpit neufs ou réécrits, et un cas de constructeur.
+Parmi eux : la course réelle, où la trajectoire arrive avant la carte, et deux
+cas à deux cycles. Sept mutations ont été jouées, toutes détectées.
 
 ### D-252 — L'export PDF du dossier patient : deux versions, la pseudonymisée par défaut, pour un outil d'IA externe que le praticien sollicite lui-même
 
