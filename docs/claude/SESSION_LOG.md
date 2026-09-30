@@ -8391,3 +8391,15 @@ détectées.
 ancré sur la diffusion = D-255 (plan en 4 lots validé).
 
 **Prochaine action.** PR, release-db à approuver, puis lot 1 de D-255.
+
+## 2026-09-30 — Calendrier de suivi ancré sur la diffusion, lot 1 (D-255)
+
+**Fait.** D-254 mergé (#1258), `release-db` approuvé, déployé. Lot 1 de
+D-255 : module pur `calendrierSuivi.ts` (jour 0 = première diffusion, pivot =
+priorité changée, historique complet) et lecture `calendriersPersistes.ts`,
+sans consommateur. 12 mutations, toutes détectées.
+
+**Constat.** Une seule diffusion en production (PAT032), rattachée à son `T0`
+par `assessment_episode_id` : le repli par date ne sert à aucune ligne.
+
+**Prochaine action.** PR du lot 1, puis lot 2 (portail).
