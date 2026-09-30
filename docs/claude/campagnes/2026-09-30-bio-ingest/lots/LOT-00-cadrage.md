@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Cadrage, D-256, ouverture de la campagne"
-statut: "en_cours"
+statut: "terminé (2026-09-30, PR #1269)"
 dépend_de: "—"
 ---
 
@@ -50,7 +50,7 @@ Tout code applicatif, toute migration.
 - [x] Ouvrir la campagne suivie.
 - [x] T1 complet + `wn-campaign-audit --fail-on-warning-codes`.
 - [x] Handoff (`docs/claude/handoffs/2026-09-30-1749-bio-ingest-lot00.md`).
-- [ ] PR vers `main`.
+- [x] PR vers `main` (#1269, mergée le 2026-09-30).
 
 ## Tests
 
