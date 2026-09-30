@@ -59,7 +59,7 @@ exécution** — pas de grille dupliquée ici.
 | **UI** — `web/src/app/**`, `components/**`, `.css` | **T2** | `/code-review` en session | une suite Vitest verte ne prouve rien sur les parcours |
 | **API** — `web/src/app/api/**`, `lib/` hors scoring | **T2** | `/code-review` en session | contrôle d'accès **avant** la lecture des données |
 | **Scoring / clinique** — `questions*.ts`, `equilibre/`, `consultation/`, `prompts/` | **T3** | `Agent(wn-reviewer)` | source obligatoire ; absence de réponse → **non scoré**, jamais `0` |
-| **Prisma / migration** — `schema.prisma`, `prisma/migrations/` | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | confirmation distincte ; **vérifier la base après merge** (`execute_sql`) |
+| **Prisma / migration** — `schema.prisma`, `prisma/migrations/` | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | confirmation distincte ; **merger n'applique rien** : `release-db` approuvée, puis constat **par conteneur** (`.claude/rules/db-prisma.md`) |
 | **Auth** — `lib/auth.ts`, portail, tokens, consentement | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | la revue de diff ne voit pas ce que le lot **ne fait pas** |
 
 **Une seule chose déborde la classe** : le gate Fable de `CLAUDE.md`, et lui
@@ -133,7 +133,8 @@ T2, un lot sans migration n'a pas besoin de la revue préalable.
    (b) entrée `SESSION_LOG.md` < 150 mots avec les deux promotions (règle
    oubliée → exécutable, décision → `docs/DECISIONS.md`), (c) fragment
    `docs/claude/handoffs/`. Les skills `/wn-finish` et `/wn-handoff write` <!-- mention-seule: wn-finish, wn-handoff -->
-   produisent (b) et (c) et s'invoquent à la main ; l'étape est définie par ce
+   produisent (b) et (c) — le premier s'invoque à la main, le second peut
+   l'être par le modèle depuis le 2026-09-30 ; l'étape est définie par ce
    qu'elle laisse dans le dépôt, pas par la commande qui l'écrit. Le merge est
    un squash : ce qui s'écrit après ne remonte plus vers `main`.
    `node scripts/wn-cycle.mjs` rend la phase courante.

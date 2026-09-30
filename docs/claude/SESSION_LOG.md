@@ -8404,6 +8404,16 @@ par `assessment_episode_id` : le repli par date ne sert à aucune ligne.
 
 **Prochaine action.** PR du lot 1, puis lot 2 (portail).
 
+## 2026-09-30 — /wn-handoff invocable, skills sans Supabase (#1261)
+
+**Fait.** `/wn-handoff` invocable par le modèle (fin de lot avant la PR, pause
+d'une heure, demande explicite) ; `wn-test` et `wn-lot` lisent la production
+par conteneur, plus par le MCP Supabase d'une base décommissionnée.
+
+**Décidé (responsable).** Session principale dans la copie principale : les
+`/wn-*` y tournent tels quels, pas de correctif worktree.
+
+**Prochaine action.** Merge après #1259 et #1260.
 ## 2026-09-30 — Économie de contexte : défaut Opus 5.5 high, un lot par session (#1260)
 
 **Fait.** Audit de consommation (30 j, ≈ 5 500 $ équivalent API, 90 % de
