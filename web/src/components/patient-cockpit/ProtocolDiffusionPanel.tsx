@@ -2,10 +2,12 @@
 
 // Validation « pour diffusion » d'une version relue (C2A LOT-03 Part B). La
 // validation est persistée et ancrée sur la version : elle devient caduque dès
-// qu'une nouvelle version est enregistrée. Elle ne transmet PAS le protocole au
-// patient (« Non transmis » reste affiché) — la transmission relève d'un lot
-// ultérieur. Sous `WN_FICHES_ASSIETTE` seul, le même clic remet les fiches
-// d'assiette de l'aperçu ci-dessous ([[D-251]] §7, lot 8).
+// qu'une nouvelle version est enregistrée. Le portail sert la version validée
+// (`servirAuPatient.ts`) ; aucun e-mail n'annonce le protocole lui-même. Le
+// badge « Non transmis », figé depuis C2A LOT-03, contredisait un portail qui
+// servait : il suit désormais `servieAuPatient`, le constat de la route. Sous
+// `WN_FICHES_ASSIETTE` seul, le même clic remet les fiches d'assiette de
+// l'aperçu ci-dessous ([[D-251]] §7, lot 8).
 
 import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
@@ -166,9 +168,14 @@ export function ProtocolDiffusionPanel({
           <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
             {approved && !stale ? 'Validé pour diffusion' : 'Non validé pour diffusion'}
           </span>
-          <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-            Non transmis
-          </span>
+          {/* CE QUE LE PORTAIL SERT, lu sur `servieAuPatient` : `null` (rien de
+              diffusé, ou constat non lu) n'affirme rien, donc aucun badge ; sans
+              approbation non plus : « plus servi » dirait qu'il l'a été. */}
+          {approved && servieAuPatient !== null && (
+            <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
+              {servieAuPatient ? 'Servi sur le portail' : 'Plus servi au patient'}
+            </span>
+          )}
         </div>
       </div>
 
@@ -179,7 +186,10 @@ export function ProtocolDiffusionPanel({
           </span>
         ) : approved && approvedAt ? (
           <span className="text-foreground">
-            Version active validée pour diffusion le {formatDate(approvedAt)} — non transmise au patient.
+            Version active validée pour diffusion le {formatDate(approvedAt)}
+            {servieAuPatient === true
+              ? ' — servie sur le portail du patient (aucun e-mail n’annonce le protocole lui-même).'
+              : '.'}
           </span>
         ) : canApprove ? (
           <span className="text-muted-foreground">
