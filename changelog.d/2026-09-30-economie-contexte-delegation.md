@@ -16,8 +16,8 @@ coûte le même prix sur Opus et Sonnet.
   Workflows : chaque agent fixe modèle et effort.
 - **Méthode de session** (`CLAUDE.md`) : lancer à la racine du dépôt ;
   session principale dans la copie principale, où tournent les `/wn-*`, et
-  sessions concurrentes en worktree ; un lot = une session (`/wn-handoff` puis
-  `/clear`) ; `/compact` avant une pause d'une heure, jamais au retour ; section
+  sessions concurrentes en worktree ; un lot = une session (handoff dans la PR,
+  `/clear` après le merge) ; `/compact` avant une pause d'une heure, jamais au retour ; section
   « Compact instructions ».
 - **Sondage refusé** par `block-risky-commands` (`gh pr checks --watch`,
   `gh run watch`, boucles et `sleep` autour de `gh`, `sleep` + `tail` d'une

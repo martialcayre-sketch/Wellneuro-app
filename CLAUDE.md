@@ -215,7 +215,8 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   **Session concurrente : son propre worktree** (`EnterWorktree`), cycle en
   `git`/`gh` direct — les `/wn-*` n'y tournent pas. Jamais de
   `checkout`/`switch` dans la copie d'une autre session.
-- **Un lot = une session** : après le merge, `/wn-handoff` puis `/clear` ;
+- **Un lot = une session** : handoff dans la PR du lot (fenêtre de
+  clôture), puis `/clear` après le merge ;
   `/compact` seulement dans un lot (une migration et son code consommateur
   forment un lot). Pause de plus d'une heure : `/compact` avant de partir
   (cache chaud) ou handoff puis `/clear` — jamais `/compact` au retour.
