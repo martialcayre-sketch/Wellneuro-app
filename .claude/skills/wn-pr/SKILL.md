@@ -10,7 +10,7 @@ effort: medium
 !`git status --short --untracked-files=all`
 !`git diff --stat`
 !`git log -n 5 --oneline`
-!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs 2>&1 || true`
+!`node ${CLAUDE_PROJECT_DIR}/scripts/wn-cycle.mjs 2>&1 || true`
 
 Arguments : `$ARGUMENTS`
 

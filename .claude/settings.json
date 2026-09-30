@@ -13,19 +13,9 @@
   "permissions": {
     "allow": [
       "Bash(git push:*)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && cat .claude/rules/pr-revue-et-release-db.md)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && cat docs/claude/REGLES_PR_MERGE.md)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && ls .claude/agents/ .claude/skills/ .github/agents/ .github/instructions/ .github/prompts/)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && node scripts/wn-context-pack.mjs --format markdown)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && node scripts/wn-context-pack.mjs --format markdown 2>/dev/null || true)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && node scripts/wn-cycle.mjs)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && node scripts/wn-cycle.mjs --local 2>/dev/null || true)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && node scripts/wn-cycle.mjs 2>&1 || true)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && test -f docs/claude/SESSION_LOG.md && grep -n '^## ' docs/claude/SESSION_LOG.md || true)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && test -f docs/claude/SESSION_LOG.md && tail -n 30 docs/claude/SESSION_LOG.md || true)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && test -f docs/claude/SESSION_LOG.md && tail -n 40 docs/claude/SESSION_LOG.md || true)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && test -f docs/claude/SESSION_LOG.md && tail -n 70 docs/claude/SESSION_LOG.md || true)",
-      "Bash(cd \"$\\(git rev-parse --show-toplevel\\)\" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true)"
+      "Bash(node /Users/wellneuro/Developer/Wellneuro-app/scripts/wn-context-pack.mjs --format markdown)",
+      "Bash(node /Users/wellneuro/Developer/Wellneuro-app/scripts/wn-cycle.mjs)",
+      "Bash(node /Users/wellneuro/Developer/Wellneuro-app/scripts/wn-cycle.mjs --local)"
     ],
     "deny": [
       "mcp__claude_ai_Supabase__apply_migration",

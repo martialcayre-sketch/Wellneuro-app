@@ -9,7 +9,7 @@ effort: medium
 
 ## Contexte — chargé ici une fois, et une seule
 
-!`cd "$(git rev-parse --show-toplevel)" && ls web/src/components/ui/*.tsx | grep -v '\.test\.' | grep -v '\.guard\.' | xargs -n1 basename`
+!`ls ${CLAUDE_PROJECT_DIR}/web/src/components/ui/*.tsx | grep -v '\.test\.' | grep -v '\.guard\.' | xargs -n1 basename`
 
 Cible : `$ARGUMENTS`
 

@@ -7,8 +7,8 @@ effort: medium
 
 # WellNeuro — fin de lot
 
-!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs`
-!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
+!`node ${CLAUDE_PROJECT_DIR}/scripts/wn-cycle.mjs`
+!`test -f ${CLAUDE_PROJECT_DIR}/docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat ${CLAUDE_PROJECT_DIR}/docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 
 Sujet : `$ARGUMENTS`
 

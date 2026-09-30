@@ -9,8 +9,8 @@ effort: medium
 
 ## Contexte
 
-!`cd "$(git rev-parse --show-toplevel)" && cat docs/claude/REGLES_PR_MERGE.md`
-!`cd "$(git rev-parse --show-toplevel)" && cat .claude/rules/pr-revue-et-release-db.md`
+!`cat ${CLAUDE_PROJECT_DIR}/docs/claude/REGLES_PR_MERGE.md`
+!`cat ${CLAUDE_PROJECT_DIR}/.claude/rules/pr-revue-et-release-db.md`
 !`git worktree list 2>/dev/null || true`
 
 Arguments : `$ARGUMENTS`

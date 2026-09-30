@@ -16,11 +16,18 @@
 //     27 blocs sur 32 le 2026-08-03 — un `sed … CLAUDE.md | sed '$d'` en fait
 //     partie : le code de retour d'un pipeline est celui du DERNIER élément.
 //
-// La règle : tout bloc `!` citant un chemin relatif à la racine doit commencer
-// par `cd "$(git rev-parse --show-toplevel)" &&`. Depuis un worktree, cette
-// commande rend la racine DU WORKTREE (vérifié — `--git-common-dir`, lui,
-// pointerait vers le dépôt principal) : l'ancre y est donc correcte, et c'est
-// le mode nominal ici, « une session = un worktree ».
+// La règle : tout chemin de racine d'un bloc `!` s'écrit
+// `${CLAUDE_PROJECT_DIR}/chemin`. Le chargeur de skill remplace ce jeton par
+// la racine du projet AVANT la vérification des permissions : la commande
+// vérifiée porte un chemin absolu, sans `..`.
+//
+// Et aucun bloc ne contient de substitution `$(…)`. L'ancre d'avant,
+// `cd "$(git rev-parse --show-toplevel)" &&`, échouait à CHAQUE chargement en
+// mode auto et depuis VS Code (« Shell command permission check failed ») :
+// constaté par sondes le 2026-09-30, une commande à substitution n'est jamais
+// admise, même couverte par une règle `allow` exacte. Refusés aussi, par les
+// mêmes sondes : un chemin contenant `..`, et une variable shell
+// (`"$CLAUDE_PROJECT_DIR/…"`, que le chargeur ne remplace pas).
 //
 // **La détection ne repose pas sur une liste de préfixes, mais sur le dépôt
 // lui-même** : un jeton est un chemin de racine si son premier segment existe
@@ -36,10 +43,6 @@
 // (` M ../.claude/…` depuis `web/`), pas l'ensemble des modifications
 // rapportées. Les ancrer stabiliserait cet affichage ; c'est un autre sujet,
 // et le faire ici toucherait 30 blocs sans corriger de défaut.
-//
-// Limite connue, non gardée : hors dépôt git, `git rev-parse` échoue, l'ancre
-// devient `cd "" &&` — un no-op de code 0. L'ancre reproduit alors la maladie.
-// Sans objet en pratique : ces blocs ne s'exécutent que depuis le dépôt.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -50,18 +53,17 @@ import { pathToFileURL } from "node:url";
 // indenté serait tout aussi exécuté.
 const BLOC_BANG = /^\s*!`(.*)`\s*$/;
 
-// L'ancre, exigée EN TÊTE de commande : la trouver n'importe où laisserait
-// passer `node scripts/x.mjs; cd "$(git rev-parse --show-toplevel)" && true`,
-// où elle arrive trop tard.
-const ANCRE = /^\s*cd\s+"\$\(git rev-parse --show-toplevel\)"\s*&&/;
+// Une substitution de commande : le bloc qui la porte ne se charge jamais.
+const SUBSTITUTION = /\$\(/;
 
 // Jetons candidats à être des chemins. Commencent par une lettre, un chiffre,
 // un point ou un tiret bas — ce qui écarte d'emblée les options (`--stat`),
-// les variables (`$ARGUMENTS`) et les chemins absolus (`/dev/null`).
+// les variables (`$ARGUMENTS`), les chemins absolus (`/dev/null`) et les
+// chemins ancrés (`${CLAUDE_PROJECT_DIR}/docs/…`).
 const JETON = /(?:^|[\s"'`(=|])([A-Za-z0-9._][^\s"'`)|]*)/g;
 
-export function estAncre(commande) {
-  return ANCRE.test(commande);
+export function contientSubstitution(commande) {
+  return SUBSTITUTION.test(commande);
 }
 
 /**
@@ -88,7 +90,7 @@ export function cheminsDeRacine(commande, existeALaRacine) {
 /**
  * @param {Array<{nom: string, texte: string}>} skills
  * @param {(segment: string) => boolean} existeALaRacine
- * @returns {{violations: Array<{skill: string, ligne: number, commande: string, chemins: string[]}>, scannes: number, blocs: number}}
+ * @returns {{violations: Array<{skill: string, ligne: number, commande: string, chemins: string[], substitution: boolean}>, scannes: number, blocs: number}}
  */
 export function auditerSkills(skills, existeALaRacine) {
   const violations = [];
@@ -99,10 +101,10 @@ export function auditerSkills(skills, existeALaRacine) {
       if (!m) return;
       blocs += 1;
       const commande = m[1];
-      if (estAncre(commande)) return;
       const chemins = cheminsDeRacine(commande, existeALaRacine);
-      if (chemins.length === 0) return;
-      violations.push({ skill: nom, ligne: index + 1, commande, chemins });
+      const substitution = contientSubstitution(commande);
+      if (chemins.length === 0 && !substitution) return;
+      violations.push({ skill: nom, ligne: index + 1, commande, chemins, substitution });
     });
   }
   return { violations, scannes: skills.length, blocs };
@@ -142,16 +144,24 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   }
   const { violations, scannes, blocs } = auditerSkills(skills, existeALaRacineDepuis(racine));
   for (const v of violations) {
-    console.error(
-      `✗ .claude/skills/${v.skill}/SKILL.md:${v.ligne} — bloc \`!\` non ancré à la racine : ` +
-        `${v.chemins.join(", ")} ne se résout pas depuis un autre répertoire.`
-    );
+    if (v.substitution) {
+      console.error(
+        `✗ .claude/skills/${v.skill}/SKILL.md:${v.ligne} — bloc \`!\` à substitution \`$(…)\` : ` +
+          `la vérification des permissions le refuse, le skill ne se charge pas.`
+      );
+    }
+    if (v.chemins.length > 0) {
+      console.error(
+        `✗ .claude/skills/${v.skill}/SKILL.md:${v.ligne} — bloc \`!\` non ancré à la racine : ` +
+          `${v.chemins.join(", ")} ne se résout pas depuis un autre répertoire.`
+      );
+    }
     console.error(`  !\`${v.commande}\``);
   }
   if (violations.length > 0) {
     console.error(
-      `\n→ Préfixer la commande par cd "$(git rev-parse --show-toplevel)" && — ` +
-        `ou, si elle est réellement agnostique, retirer le chemin relatif à la racine.`
+      `\n→ Écrire chaque chemin de racine \${CLAUDE_PROJECT_DIR}/chemin, sans cd ni $(…) — ` +
+        `ou, si la commande est réellement agnostique, retirer le chemin relatif à la racine.`
     );
     process.exit(1);
   }

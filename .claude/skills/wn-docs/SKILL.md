@@ -7,7 +7,7 @@ effort: medium
 
 # WellNeuro — maintenance documentaire
 
-!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && tail -n 70 docs/claude/SESSION_LOG.md || true`
+!`test -f ${CLAUDE_PROJECT_DIR}/docs/claude/SESSION_LOG.md && tail -n 70 ${CLAUDE_PROJECT_DIR}/docs/claude/SESSION_LOG.md || true`
 !`git status --short --untracked-files=all`
 !`git log -n 10 --date=short --pretty='format:%h %ad %s' -- '*.md' '*.mdx' 2>/dev/null || true`
 
