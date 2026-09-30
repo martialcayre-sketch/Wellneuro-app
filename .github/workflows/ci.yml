@@ -23,9 +23,15 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  verify:
+  # Trois jobs depuis le 2026-09-30. `controles` et `e2e` tournent en
+  # PARALLÈLE ; `verify` les agrège et reste le SEUL check exigé par la
+  # protection de `main` (et attendu par `wn-attendre-ci`). Mesure du
+  # 2026-09-30 sur `main` : 664 s en un job, dont 321 s pour la seule chaîne
+  # E2E (build 88 s, navigateurs 30 s, Playwright 203 s) — en série derrière
+  # des contrôles qui n'en dépendent pas.
+  controles:
     runs-on: ubuntu-latest
-    services:
+    services: &services
       postgres:
         # Image PostgreSQL 15 + extension pgvector précompilée : la migration
         # 20260721090000_add_pgvector_rag exécute CREATE EXTENSION vector.
@@ -42,7 +48,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-    env:
+    env: &env
       DATABASE_URL: postgresql://ci_user:ci_password@localhost:5432/wellneuro_ci
       NEXTAUTH_SECRET: ci-test-secret-r8-2-playwright-automation
       NEXTAUTH_URL: http://localhost:3000
@@ -55,14 +61,16 @@ jobs:
           # purement documentaire (étape « Périmètre du diff » ci-dessous).
           fetch-depth: 0
 
-      # Le nom du job reste `verify` : les règles de protection de branche
-      # continuent d'exiger exactement ce check, quel que soit le périmètre.
+      # Le check exigé reste `verify` (agrégateur en fin de fichier), quel
+      # que soit le périmètre. Cette étape est partagée avec le job `e2e` par
+      # l'ancre `perimetre` : un seul calcul, jamais deux copies qui divergent.
       # Une PR documentaire n'a aucune raison d'installer des navigateurs et de
       # rejouer les E2E — mais elle DOIT rester soumise à l'anti-secrets (un
       # secret se colle aussi bien dans un .md) et à l'audit des campagnes (une
       # modification documentaire est précisément ce qui casse les invariants de
       # miroir). Ces deux contrôles restent donc inconditionnels.
-      - name: Périmètre du diff
+      - &perimetre
+        name: Périmètre du diff
         id: scope
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -1175,6 +1183,47 @@ jobs:
         working-directory: web
         run: npm run lint
 
+  # E2E contre le build de production, en PARALLÈLE de `controles`. Sa propre
+  # base — même service, mêmes migrations, même seed : deux jobs ne partagent
+  # pas de conteneur. Une PR documentaire y saute tout, comme dans `controles`.
+  e2e:
+    runs-on: ubuntu-latest
+    services: *services
+    env: *env
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - *perimetre
+
+      - uses: actions/setup-node@v4
+        if: steps.scope.outputs.docs_only != 'true'
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npm ci
+
+      - name: Generate Prisma client
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma generate
+
+      - name: Setup database schema
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma migrate deploy
+
+      - name: Seed test data
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npm run prisma:seed
+
       - name: Build
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
@@ -1248,3 +1297,20 @@ jobs:
           # croit là le jour où on en a besoin.
           if-no-files-found: error
           retention-days: 7
+
+  # Le check exigé par la protection de `main`. `if: always()` et un contrôle
+  # EXPLICITE de chaque résultat : sans eux, un job amont en échec rendrait
+  # cet agrégateur SKIPPED — et un check requis sauté compte comme réussi.
+  # Un CI rouge passerait pour vert, pour `wn-attendre-ci` comme pour Scalingo.
+  # Un run annulé rend donc `verify` rouge, jamais vert.
+  verify:
+    needs: [controles, e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Contrôles et E2E ont réussi
+        run: |
+          echo "controles : ${{ needs.controles.result }}"
+          echo "e2e       : ${{ needs.e2e.result }}"
+          test "${{ needs.controles.result }}" = success
+          test "${{ needs.e2e.result }}" = success

@@ -8404,6 +8404,18 @@ par `assessment_episode_id` : le repli par date ne sert à aucune ligne.
 
 **Prochaine action.** PR du lot 1, puis lot 2 (portail).
 
+## 2026-09-30 — CI parallèle : controles ∥ e2e, verify agrégateur (#1263)
+
+**Fait.** Le job unique `verify` (664 s, dont 321 s de chaîne E2E) devient
+`controles` ∥ `e2e`, agrégés par `verify` (`needs` sur tous, `if: always()`,
+test explicite des résultats). Mesuré : 8 min 32 s au lieu de 11 min.
+
+**Constat.** Gain −23 %, pas −35/−45 % : `e2e` seul dure 8 min 23 s.
+
+**Preuve.** Commit temporaire en échec : `verify` FAILURE, PR bloquée ;
+retiré ensuite.
+
+**Prochaine action.** Revue, puis merge par Copilot.
 ## 2026-09-30 — /wn-handoff invocable, skills sans Supabase (#1261)
 
 **Fait.** `/wn-handoff` invocable par le modèle (fin de lot avant la PR, pause

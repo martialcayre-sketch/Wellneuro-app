@@ -261,3 +261,36 @@ test('le workflow des baselines réécrit TOUT — le drapeau nu conserverait le
     );
   }
 });
+
+// 5. `verify` EST UN AGRÉGATEUR, ET IL ÉCHOUE FERMÉ (2026-09-30, #1263). C'est
+//    le seul check exigé par la protection de `main`. Un agrégateur à `needs:`
+//    finit SKIPPED quand un job amont échoue — et un check requis sauté compte
+//    comme réussi : un CI rouge passerait pour vert, pour `wn-attendre-ci`
+//    comme pour Scalingo. Trois conditions tiennent ce contrat ; retirer l'une
+//    d'elles laisserait les autres bancs verts.
+test('verify agrège TOUS les jobs, tourne toujours et teste chaque résultat', () => {
+  const debutJobs = SOURCE.indexOf('\njobs:\n');
+  assert.ok(debutJobs >= 0, 'ci.yml : section `jobs:` introuvable.');
+  const jobs = [...SOURCE.slice(debutJobs).matchAll(/^  ([a-z0-9_-]+):\s*$/gm)].map((m) => m[1]);
+  assert.ok(jobs.includes('verify'), 'ci.yml : plus de job `verify` — la protection de `main` l’exige.');
+
+  const debutVerify = SOURCE.indexOf('\n  verify:\n');
+  const suite = SOURCE.slice(debutVerify + 1);
+  const finVerify = suite.slice(1).search(/^  [a-z0-9_-]+:\s*$/m);
+  const bloc = finVerify < 0 ? suite : suite.slice(0, finVerify + 1);
+
+  const needs = /^\s{4}needs:\s*\[([^\]]*)\]/m.exec(bloc);
+  assert.ok(needs, '`verify` doit déclarer `needs: [...]`.');
+  const amont = needs[1].split(',').map((s) => s.trim()).filter(Boolean);
+  const autres = jobs.filter((j) => j !== 'verify');
+  assert.deepEqual([...amont].sort(), [...autres].sort(),
+    `\`verify\` doit dépendre de TOUS les autres jobs (${autres.join(', ')}) ; trouvé : ${amont.join(', ')}. `
+      + 'Un job hors de `needs` peut rougir sans que le check exigé le voie.');
+
+  assert.match(bloc, /^\s{4}if:\s*always\(\)\s*$/m,
+    '`verify` doit porter `if: always()` : sans lui, un amont rouge le rend SKIPPED, donc « réussi ».');
+  for (const job of amont) {
+    assert.match(bloc, new RegExp(`needs\\.${job}\\.result\\s*\\}\\}"?\\s*=\\s*"?success`),
+      `\`verify\` doit tester explicitement \`needs.${job}.result\` = success.`);
+  }
+});
