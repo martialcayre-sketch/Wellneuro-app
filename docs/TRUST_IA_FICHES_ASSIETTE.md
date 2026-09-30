@@ -58,11 +58,14 @@ chaque version de fiche : l'origine de chaque texte se retrace.
 - **Envoyé** : le texte de la fiche, les énoncés sourcés qu'elle cite, et les
   réserves de sécurité de l'assiette.
 - **Jamais envoyé** : aucune donnée d'un patient, ni nom, ni réponse, ni
-  élément de dossier. L'adaptation se fait hors ligne, depuis le poste du
-  responsable, et non depuis l'application.
+  élément de dossier. L'adaptation s'exécute en dehors de l'application,
+  depuis le poste du responsable : l'outil y appelle les deux fournisseurs,
+  qui ne reçoivent que ce qui est listé ci-dessus.
 
-C'est pourquoi OpenAI ne figure pas parmi les prestataires qui traitent vos
-données personnelles : il n'en reçoit aucune.
+Pour les fiches, OpenAI ne reçoit donc aucune donnée personnelle.
+L'application fait par ailleurs appel à OpenAI pour la recherche documentaire
+du praticien dans le corpus ; ce flux, hors du périmètre de ce document, est
+décrit au dossier RGPD (`docs/DOSSIER_RGPD.md`, destinataires).
 
 ## Les règles imposées à l'IA
 

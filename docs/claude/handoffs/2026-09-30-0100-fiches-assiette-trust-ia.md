@@ -17,19 +17,29 @@ les deux ferment une condition du §10.
 
 ## 3. Décisions prises
 
-- Document validé tel quel par le responsable (2026-09-30).
-- **Fait nouveau** : le document du portail `usage_ia` v2 ne connaît que deux
-  usages et un fournisseur. Arbitrage du responsable : **publier une v3 au
-  portail**. Elle ajoutera l'usage des fiches et OpenAI, sans accusé de
-  lecture. Le texte exact sera validé avant publication, dans un lot à part.
+- Document validé par le responsable (2026-09-30), puis **texte final
+  revalidé** après trois corrections : la seconde passe désormais jouée ;
+  « hors ligne » remplacé (revue Copilot) ; la phrase sur OpenAI ramenée aux
+  fiches.
+- **Faits nouveaux**, établis par un inventaire des appels de modèle dans
+  `web/src`, puis vérifiés :
+  - `usage_ia` v2 ignore les fiches ;
+  - il présente la priorité ([[D-167]]) comme à venir, alors qu'elle est en
+    service sous `WN_DOSSIER_DEUX_VOIX`, posé ;
+  - il ignore « Ce que j'ai compris de vous » ([[D-168]]), en service.
+
+  Arbitrage du responsable : **v3 complète, et v9 de « Vos données »**. Pas
+  d'accusé de lecture. Les textes exacts seront validés avant publication,
+  dans un lot à part.
+- **OpenAI** est déjà destinataire de l'application par la recherche
+  documentaire du praticien, « non déclaré » depuis le 2026-09-07. Arbitrage
+  reporté, hors v3.
 - **Seconde passe Codex** : les 16 invariants mordent. Seule trouvaille, M7a
   (`route.fiches.test.ts` vert sous la suppression du contrôle de dossier),
   écartée avec motif : `route.test.ts:608` la garde et rougit, et c'est
   l'énoncé qui omettait ce banc. Aucun banc ajouté.
 - Amendement de `D-251` (2026-09-30) : conditions « document TRUST » et
   « contre-revue adverse » du §10 tenues ; reste le constat de l'espace.
-- Une phrase du document TRUST validé (« seconde passe prévue ») est mise à
-  jour avec le fait, même jour : signalé au responsable.
 
 ## 4. Fichiers modifiés
 
@@ -59,14 +69,16 @@ les deux ferment une condition du §10.
 
 ## 6. Problèmes ouverts
 
-- **`usage_ia` v3 au portail** : texte à rédiger (Claude), à valider
+- **`usage_ia` v3 complète et « Vos données » v9 au portail** : textes à rédiger (Claude), à valider
   (responsable), puis lot de code dans le registre TRUST.
 - **Constat de l'espace** sur `PAT032`, après son prochain clic.
+- **OpenAI, destinataire non déclaré** (recherche documentaire du praticien,
+  `docs/DOSSIER_RGPD.md`) : arbitrage reporté par le responsable.
 - **Phase « Actions »**, après les fiches.
 
 ## 7. Prochaine action exacte
 
-Merger cette PR ; soumettre au responsable le texte exact de `usage_ia` v3.
+Merger cette PR ; soumettre au responsable les textes exacts de `usage_ia` v3 et de « Vos données » v9.
 
 ## 8. Interdits encore actifs
 
