@@ -58,6 +58,23 @@ l'édition, jamais par l'absence du marqueur — un marqueur manquant signifie
   écriture par chemin absolu vers un **autre** worktree n'est pas gardée — la
   convention « une session = un worktree » est ce qui tient cette limite.
 
+**Lanceur fermé.** Chaque garde bloquant est lancé par une ligne qui cherche le
+script sous `$CLAUDE_PROJECT_DIR`, puis sous la racine Git du répertoire
+courant, et sort en **code 2** (bloquant) s'il ne le trouve nulle part. Avant le
+2026-09-30, `node "$CLAUDE_PROJECT_DIR/…"` nu échouait en code 1 — **non
+bloquant** — dans toute session dont la racine n'était pas le dépôt
+(VS Code ouvert sur `~/Developer`, soit environ la moitié du travail de
+septembre) : les gardes se déclenchaient et ne gardaient rien, sans un mot.
+`$CLAUDE_PROJECT_DIR` reste la racine de lancement même après `/cd` ou
+`EnterWorktree`, d'où le repli par `git rev-parse --show-toplevel`. Banc :
+`settings-gardes.test.mjs`, qui éprouve la commande réellement déclarée.
+
+**Agents en lecture seule.** `wn-reviewer` et `wn-fable` arment dans leur
+frontmatter `lecture-seule-git.mjs`, qui refuse toute commande Git modifiant
+HEAD, l'index, l'arbre, les branches ou le distant — un agent de revue a déjà
+fait un `checkout` dans la copie principale partagée. La session principale,
+elle, n'est pas concernée.
+
 Il n'existe pas de variable d'environnement désactivant la protection des
 fichiers (`WN_ALLOW_PROTECTED_WRITE` a été supprimée : elle neutralisait le
 hook pour la session entière).
