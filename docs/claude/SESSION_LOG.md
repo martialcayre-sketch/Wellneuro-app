@@ -8412,4 +8412,7 @@ test explicite des résultats). Mesuré : 8 min 32 s au lieu de 11 min.
 
 **Constat.** Gain −23 %, pas −35/−45 % : `e2e` seul dure 8 min 23 s.
 
-**Prochaine action.** Preuve du rouge par commit temporaire, puis revue.
+**Preuve.** Commit temporaire en échec : `verify` FAILURE, PR bloquée ;
+retiré ensuite.
+
+**Prochaine action.** Revue, puis merge par Copilot.
