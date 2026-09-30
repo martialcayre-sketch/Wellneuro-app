@@ -385,16 +385,28 @@ describe('/api/praticien/cockpit', () => {
   });
 
   // Les jalons de suivi ne sont pas gouvernés par cette porte : le lot pose les
-  // préconditions du point d'entrée, il ne touche pas aux jalons.
+  // préconditions du point d'entrée, il ne touche pas aux jalons. Depuis
+  // [[D-255]] (lot 4), un J21 nouveau se confirme dans sa fenêtre, comptée
+  // depuis la diffusion : le banc pose donc les deux, et l'horloge au J21.
   it('ne pose aucune précondition sur un jalon de suivi (J21)', async () => {
     brancherPassations(responses, []);
-    const proposed = await proposal('J21');
-    const response = await POST(postRequest({
-      idPatient: 'PAT_TEST', milestone: 'J21',
-      includedResponseIds: proposed.proposal.inWindowResponseIds,
-      proposalHash: proposed.proposalHash,
-    }));
-    expect(response.status).toBe(200);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EPI_T0', cycleId: 'EPI_T0', milestone: 'T0', confirmedAt: new Date('2026-01-01T00:00:00.000Z') },
+    ]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([diffusionSurT0('2026-01-01T00:00:00.000Z')]);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-01-22T00:00:00.000Z'));
+    try {
+      const proposed = await proposal('J21');
+      const response = await POST(postRequest({
+        idPatient: 'PAT_TEST', milestone: 'J21',
+        includedResponseIds: proposed.proposal.inWindowResponseIds,
+        proposalHash: proposed.proposalHash,
+      }));
+      expect(response.status).toBe(200);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('le POST recalcule le J21 depuis le même jour 0 que le GET : pas de 409 (D-255)', async () => {
@@ -403,14 +415,97 @@ describe('/api/praticien/cockpit', () => {
       { id: 'EPI_T0', cycleId: 'EPI_T0', milestone: 'T0', confirmedAt: new Date('2026-01-20T00:00:00.000Z') },
     ]);
     prisma.protocolDiffusionApproval.findMany.mockResolvedValue([diffusionSurT0('2026-02-01T00:00:00.000Z')]);
-    const proposed = await proposal('J21');
-    expect((proposed.proposal as { targetAt?: string }).targetAt).toBe('2026-02-22T00:00:00.000Z');
-    const response = await POST(postRequest({
-      idPatient: 'PAT_TEST', milestone: 'J21',
-      includedResponseIds: proposed.proposal.inWindowResponseIds,
-      proposalHash: proposed.proposalHash,
-    }));
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-02-22T00:00:00.000Z'));
+    try {
+      const proposed = await proposal('J21');
+      expect((proposed.proposal as { targetAt?: string }).targetAt).toBe('2026-02-22T00:00:00.000Z');
+      const response = await POST(postRequest({
+        idPatient: 'PAT_TEST', milestone: 'J21',
+        includedResponseIds: proposed.proposal.inWindowResponseIds,
+        proposalHash: proposed.proposalHash,
+      }));
+      expect(response.status).toBe(200);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // ── La garde de fenêtre du POST ([[D-255]], lot 4) ───────────────────────
+  // Le jalon vient du navigateur : ce que `resoudreJalonDu` ne propose pas à
+  // l'écran, le serveur le refuse, avant toute écriture.
+
+  /** POST d'un jalon de mesure à l'instant donné, proposition relue au même instant. */
+  async function posterJalonA(milestone: 'J21' | 'J42', instant: string) {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(instant));
+    try {
+      const proposed = await (await GET(getRequest(`idPatient=PAT_TEST&milestone=${milestone}`))).json() as {
+        proposalHash: string; proposal: { inWindowResponseIds: string[] };
+      };
+      return await POST(postRequest({
+        idPatient: 'PAT_TEST', milestone,
+        includedResponseIds: proposed.proposal.inWindowResponseIds,
+        proposalHash: proposed.proposalHash,
+      }));
+    } finally {
+      vi.useRealTimers();
+    }
+  }
+
+  const ancreT0 = [
+    { id: 'EPI_T0', cycleId: 'EPI_T0', milestone: 'T0', confirmedAt: new Date('2026-01-01T00:00:00.000Z') },
+  ];
+
+  it('refuse un J21 sans diffusion sur le cycle, même dans la fenêtre de l’ancre — rien n’est écrit', async () => {
+    brancherPassations(responses, []);
+    prisma.assessmentEpisode.findMany.mockResolvedValue(ancreT0);
+    const response = await posterJalonA('J21', '2026-01-22T00:00:00.000Z');
+    expect(response.status).toBe(409);
+    const payload = await response.json();
+    expect(payload).toMatchObject({ status: 'unavailable', reason: 'jalon_hors_fenetre' });
+    expect(payload.error).toContain('Aucun protocole n’a été diffusé');
+    expect(prisma.assessmentEpisode.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse un J21 sans aucune ancre confirmée', async () => {
+    brancherPassations(responses, []);
+    const response = await posterJalonA('J21', '2026-01-22T00:00:00.000Z');
+    expect(response.status).toBe(409);
+    expect(prisma.assessmentEpisode.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse un J42 posté le jour du J21 — la fenêtre part de la diffusion', async () => {
+    brancherPassations(responses, []);
+    prisma.assessmentEpisode.findMany.mockResolvedValue(ancreT0);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([diffusionSurT0('2026-01-01T00:00:00.000Z')]);
+    const response = await posterJalonA('J42', '2026-01-22T00:00:00.000Z');
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toContain('J42');
+    expect(prisma.assessmentEpisode.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse un J21 compté depuis l’ancre quand la diffusion est venue après', async () => {
+    // Ancre le 1er janvier, diffusion le 1er février : le 22 janvier est dans
+    // l'ancienne fenêtre (ancre + 21), pas dans la nouvelle (diffusion + 13).
+    brancherPassations(responses, []);
+    prisma.assessmentEpisode.findMany.mockResolvedValue(ancreT0);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([diffusionSurT0('2026-02-01T00:00:00.000Z')]);
+    const response = await posterJalonA('J21', '2026-01-22T00:00:00.000Z');
+    expect(response.status).toBe(409);
+  });
+
+  it('un J21 DÉJÀ posé sans diffusion se re-confirme : la garde ne juge qu’un acte nouveau (D-129)', async () => {
+    // Le cas du J21 confirmé avant [[D-255]] sur un cycle sans protocole : sa
+    // ligne existe, il garde sa date, et une re-confirmation n'est pas refusée.
+    brancherPassations(responses, []);
+    prisma.assessmentEpisode.findMany.mockResolvedValue(ancreT0);
+    prisma.assessmentEpisode.findUnique.mockResolvedValue({
+      confirmedAt: new Date('2026-01-22T00:00:00.000Z'), payloadHash: 'empreinte-anterieure', payload: {},
+    });
+    const response = await posterJalonA('J21', '2026-09-30T00:00:00.000Z');
     expect(response.status).toBe(200);
+    expect(prisma.assessmentEpisode.updateMany).toHaveBeenCalled();
   });
 
   it('la checklist voyage avec la proposition, jamais en lecture d’un état passé', async () => {

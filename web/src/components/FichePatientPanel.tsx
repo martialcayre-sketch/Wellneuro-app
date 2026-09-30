@@ -237,7 +237,9 @@ const LIBELLE_STATUT: Record<StatutPhase, string> = {
  */
 function libelleStatut(id: IdPhase, statut: StatutPhase): string {
   if (statut !== 'en_attente') return LIBELLE_STATUT[statut];
-  return id === 'donnees' ? 'en attente du patient' : 'à traiter';
+  // « Suivi » en attente = protocole diffusé, aucun point d'étape encore rendu
+  // ([[D-255]], lot 4) : c'est le patient qui a la main.
+  return id === 'donnees' || id === 'suivi' ? 'en attente du patient' : 'à traiter';
 }
 
 /**
@@ -1179,8 +1181,13 @@ export function FichePatientPanel({
         return etatRuntime.episodeConfirme ? 'en_attente' : 'a_ouvrir';
       }
       if (id === 'suivi') {
-        if (etatRuntime.suiviRenseigne) return 'fait';
-        return etatRuntime.episodeConfirme ? 'en_attente' : 'a_ouvrir';
+        if (!etatRuntime.episodeConfirme) return 'a_ouvrir';
+        // LE SUIVI PART DE LA DIFFUSION ([[D-255]], lot 4) : sans protocole
+        // diffusé sur le cycle courant, aucun point d'étape n'est dû, et la
+        // phase s'ouvre par la diffusion. Trajectoire non lue : on ne sait pas.
+        if (etatRuntime.suiviOuvert === null) return 'inconnu';
+        if (!etatRuntime.suiviOuvert) return 'a_ouvrir';
+        return etatRuntime.suiviRenseigne ? 'fait' : 'en_attente';
       }
       // Réévaluation : « renseignée » uniquement si un jalon POST-T0 (J21/J42/J90)
       // a réellement été mesuré (booléens `mesure` de la trajectoire, A8-2) — un

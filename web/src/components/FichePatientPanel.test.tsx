@@ -89,7 +89,10 @@ type Options = {
   // `proposal_required` seulement. ABSENT par défaut : la route ne le
   // calcule qu'en visant une ancre, et son absence doit rester testable.
   rideau?: 'satisfait' | 'incomplet';
-  trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'discordant' | 'enVol';
+  // `cycleSansDiffusion` : T0 confirmé, aucun protocole diffusé ([[D-255]]).
+  trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'discordant' | 'enVol' | 'cycleSansDiffusion';
+  // Résumé des points d'étape. ABSENT par défaut : la route rend `resume: null`.
+  checkins?: 'aucunPoint' | 'unPoint';
   // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
   // où un bouton d'assignation peut exister — donc la seule où le garde
   // d'identité du destinataire est observable.
@@ -303,11 +306,11 @@ const REPONSES_A_SUBSCORES_AVEC_DETAIL = {
 
 // Cycle de trajectoire : T0 toujours mesuré (l'ancre), J21 selon le scénario.
 // Un T0 confirmé seul ne constitue PAS une réévaluation (A8-2).
-function cycleTrajectoire(j21Mesure: boolean) {
+function cycleTrajectoire(j21Mesure: boolean, jourZero: string | null = '2026-06-01T00:00:00.000Z') {
   return {
     cycleId: 'ep_T0',
     ancre: 'T0',
-    dateAncre: '2026-06-01T00:00:00.000Z', jourZero: '2026-06-01T00:00:00.000Z',
+    dateAncre: '2026-06-01T00:00:00.000Z', jourZero,
     versionScore: 'v1',
     jalons: [
       { jalon: 'T0', mesure: true, valeur: 40, date: '2026-06-01T00:00:00.000Z' },
@@ -597,6 +600,8 @@ function stubFetch(options: Options = {}) {
       const cycles =
         trajectoire === 'cycleT0Seul'
           ? [cycleTrajectoire(false)]
+          : trajectoire === 'cycleSansDiffusion'
+            ? [cycleTrajectoire(false, null)]
           : trajectoire === 'cycleJ21Mesure' || trajectoire === 'discordant'
             ? [cycleTrajectoire(true)]
             : [];
@@ -681,7 +686,27 @@ function stubFetch(options: Options = {}) {
     }
     if (url.includes('/api/praticien/protocoles/versions')) return ok({ ok: true, active: null, history: [] });
     if (url.includes('/api/praticien/protocoles/diffusion')) return ok({ ok: true, approval: null, stale: false });
-    if (url.includes('/api/praticien/protocoles/checkins')) return ok({ ok: true, resume: null });
+    if (url.includes('/api/praticien/protocoles/checkins')) {
+      if (!options.checkins) return ok({ ok: true, resume: null });
+      const unPoint = options.checkins === 'unPoint';
+      return ok({
+        ok: true,
+        checkins: [],
+        resume: {
+          score: null,
+          points: [
+            {
+              pointEtape: 'J7',
+              renseigne: unPoint,
+              reponses: unPoint ? { adhesion: 'plupart_des_jours', tolerance: 'bien', energie: 'stable', sommeil: 'mieux' } : null,
+            },
+            { pointEtape: 'J14', renseigne: false, reponses: null },
+            { pointEtape: 'J21', renseigne: false, reponses: null },
+          ],
+          pointsRenseignes: unPoint ? 1 : 0,
+        },
+      });
+    }
     if (url.includes('/api/praticien/correspondance-medecin')) {
       // `accorde` DEPUIS LE 2026-09-17 : le silence ferme la consignation
       // ([[D-219]] §3 amendé), donc le formulaire de transcription ne s'offre
@@ -1207,6 +1232,46 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     const onglet = screen.getByRole('tab', { name: /Réévaluation/i });
     await waitFor(() => expect(onglet.textContent).toContain('à ouvrir'));
     expect(onglet.textContent).not.toContain('renseignée');
+  });
+
+  // ── « Suivi » part de la diffusion ([[D-255]], lot 4) ───────────────────
+  // La route des check-ins rend un résumé sur tout dossier : le rail disait
+  // « renseignée » sur un suivi qui n'avait jamais commencé.
+
+  it('statut Suivi : sans diffusion, « à ouvrir » — et le panneau J21 dit pourquoi', async () => {
+    await rendreFiche({ runtime: 'ready', trajectoire: 'cycleSansDiffusion', checkins: 'aucunPoint' });
+
+    const onglet = screen.getByRole('tab', { name: /Suivi/i });
+    await waitFor(() => expect(onglet.textContent).toContain('à ouvrir'));
+    expect(onglet.textContent).not.toContain('renseignée');
+
+    fireEvent.click(onglet);
+    expect(await screen.findByText(/les points d’étape J7, J14 et J21 ne courent pas encore/i)).toBeTruthy();
+    expect(screen.queryByText(/en attente du patient/i, { selector: 'li' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Pivoter' })).toBeNull();
+  });
+
+  it('statut Suivi : protocole diffusé, aucun point rendu — « en attente du patient », pas « renseignée »', async () => {
+    await rendreFiche({ runtime: 'ready', trajectoire: 'cycleT0Seul', checkins: 'aucunPoint' });
+
+    const onglet = screen.getByRole('tab', { name: /Suivi/i });
+    await waitFor(() => expect(onglet.textContent).toContain('en attente du patient'));
+    expect(onglet.textContent).not.toContain('renseignée');
+  });
+
+  it('statut Suivi : « renseignée » dès qu’un point d’étape est rendu', async () => {
+    await rendreFiche({ runtime: 'ready', trajectoire: 'cycleT0Seul', checkins: 'unPoint' });
+
+    const onglet = screen.getByRole('tab', { name: /Suivi/i });
+    await waitFor(() => expect(onglet.textContent).toContain('renseignée'));
+  });
+
+  it('statut Suivi : trajectoire en lecture — « indéterminée », jamais « à ouvrir »', async () => {
+    await rendreFiche({ runtime: 'ready', trajectoire: 'enVol', checkins: 'unPoint' });
+
+    const onglet = screen.getByRole('tab', { name: /Suivi/i });
+    await waitFor(() => expect(onglet.textContent).toContain('indéterminée'));
+    expect(onglet.textContent).not.toContain('à ouvrir');
   });
 
   it('statut Réévaluation : « renseignée » quand un jalon post-T0 est réellement mesuré', async () => {

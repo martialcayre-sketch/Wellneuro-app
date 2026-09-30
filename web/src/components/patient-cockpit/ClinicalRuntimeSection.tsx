@@ -147,7 +147,14 @@ export type EtatRuntimeClinique = {
   erreur: RuntimeError | null;
   episodeConfirme: boolean;
   nombreVersions: number;
+  /** Au moins un point d'étape rendu par le patient sur le calendrier courant. */
   suiviRenseigne: boolean;
+  /**
+   * LE SUIVI COURT-IL ? ([[D-255]], lot 4) Vrai quand le cycle courant porte
+   * un jour 0, c'est-à-dire une diffusion de protocole. `null` tant que la
+   * trajectoire n'est pas lue : ni oui ni non (`DC-24`).
+   */
+  suiviOuvert: boolean | null;
   // Vrai si la lecture de la trajectoire a échoué : le statut de la phase
   // Réévaluation est alors INCONNU, jamais affirmé.
   trajectoireErreur: boolean;
@@ -1207,10 +1214,13 @@ export function ClinicalRuntimeSection({
         // d'écriture n'est pas « les réponses ont changé ». La replier sur
         // `proposal_stale` rechargeait la proposition en posant un notice
         // emprunté, donc faux, et jetait le message du serveur.
+        // `jalon_hors_fenetre` aussi ([[D-255]], lot 4) : le motif dit pourquoi
+        // ce jalon ne se confirme pas aujourd'hui.
         if (payload.status === 'unavailable'
           && (reason === 'preconditions_non_remplies'
             || reason === 'motif_contournement_manquant'
-            || reason === 'episode_ecrit_ailleurs')) {
+            || reason === 'episode_ecrit_ailleurs'
+            || reason === 'jalon_hors_fenetre')) {
           setRefus(payload.error);
           return;
         }
@@ -1416,7 +1426,15 @@ export function ClinicalRuntimeSection({
   const reevaluationMesuree = (trajectoire?.cycles ?? []).some(cycle =>
     cycle.jalons.some(jalon => estJalonMesure(jalon.jalon) && jalon.mesure),
   );
-  const suiviRenseigne = resumeJ21 !== null;
+  // UN RÉSUMÉ LU N'EST PAS UN SUIVI RENSEIGNÉ ([[D-255]], lot 4). La route rend
+  // un résumé sur tout dossier, protocole ou non : le rail disait « renseignée »
+  // sur un suivi qui n'avait jamais commencé.
+  const suiviRenseigne = (resumeJ21?.pointsRenseignes ?? 0) > 0;
+  // Le jour 0 du cycle COURANT, servi par la trajectoire : la même date que
+  // le jalon dû et le bandeau, jamais recalculée ici.
+  const suiviOuvert = statutTrajectoire === 'chargee'
+    ? (trajectoire?.cycles.at(-1)?.jourZero ?? null) !== null
+    : null;
   const nombreVersions = versions.length;
   // Drapeaux dérivés (booléens value-stables : aucune boucle de rendu).
   const trajectoireErreur = statutTrajectoire === 'erreur';
@@ -1504,6 +1522,7 @@ export function ClinicalRuntimeSection({
       episodeConfirme: readyDecisionCardId !== null || episodeConfirmeEnBase,
       nombreVersions,
       suiviRenseigne,
+      suiviOuvert,
       trajectoireErreur,
       trajectoireEnLecture,
       reevaluationMesuree,
@@ -1520,6 +1539,7 @@ export function ClinicalRuntimeSection({
     episodeConfirmeEnBase,
     nombreVersions,
     suiviRenseigne,
+    suiviOuvert,
     trajectoireErreur,
     trajectoireEnLecture,
     reevaluationMesuree,
@@ -2451,6 +2471,7 @@ export function ClinicalRuntimeSection({
       {affiche('suivi') && !fixture && readyDecisionCardId && (
         <J21DecisionPanel
           resume={resumeJ21}
+          suiviOuvert={suiviOuvert}
           onAjuster={
             onAjusterProtocole ??
             (() => document.getElementById('protocol-version-builder')?.scrollIntoView({ behavior: 'smooth' }))
