@@ -4,6 +4,99 @@
 
 ## Décisions actives
 
+### D-255 — Le suivi d'un cycle part de la diffusion de son protocole : un seul jour 0, que seul un pivot relance
+
+- Date : 2026-09-30
+- Statut : accepté — demande du responsable depuis l'écran d'un dossier réel
+  (« tous les jalons doivent donc redémarrer une fois que le protocole initial
+  complet est rendu et publié au patient »). Arbitrages rendus en séance le
+  même jour : la rediffusion ne relance que sur un **pivot** ; un pivot se
+  reconnaît à une **priorité changée** ; plan en quatre lots **validé**.
+- Domaine : suivi du protocole (points d'étape, jalons de mesure, jalons
+  d'objectif). **Aucune migration, aucun drapeau, aucune fenêtre ni tolérance
+  modifiée** (±3 j pour les points d'étape, ±8 j pour les jalons de mesure),
+  rien sous `lib/clinical/`. Supplante le §2 de [[D-151]] (deux calendriers).
+  Amende l'amendement de [[D-058]] (« ancre des jalons, unique »), la Décision 6
+  de [[D-111]] et [[D-113]]. Généralise [[D-253]].
+
+**1. LE FAIT.** Deux calendriers couraient sur un même cycle ([[D-151]] §2) :
+
+- les points d'étape J7, J14 et J21 depuis l'approbation de diffusion
+  **active** — chaque rediffusion les relançait donc ;
+- les jalons J21, J42 et J90 et les jalons d'objectif depuis la confirmation de
+  l'ancre, **protocole ou non**.
+
+Un dossier sans protocole voyait ainsi courir un J21 qui n'avait rien à
+mesurer. Le cockpit de `PAT030` affichait les points d'étape « en attente du
+patient » sur un protocole qui n'existait pas, et le J21 de `PAT007` prenait la
+main sur un T0 sans protocole ([[D-253]]).
+
+**2. LA RÈGLE.**
+
+- **Le jour 0 d'un cycle est la première diffusion de son protocole**,
+  c'est-à-dire la première approbation « pour diffusion » recevable dont la
+  version appartient à ce cycle. Tous les jalons de suivi en partent : points
+  d'étape, jalons de mesure, jalons d'objectif, fin de cycle, fenêtre de
+  l'agenda alimentaire, bandeau « T0 + n j ».
+- **L'ancre garde sa date.** Le T0 (ou le T1, …) est une mesure : il reste daté
+  de sa confirmation, et « une ancre posée ne se déplace plus » ([[D-113]])
+  demeure. Ce qui change, c'est qu'elle n'est plus le jour 0 du suivi.
+- **Sans diffusion, aucun jalon ne court.** C'est la règle de [[D-253]],
+  étendue à tout le suivi.
+- **Seul un pivot relance le calendrier.** Un pivot est une version diffusée
+  dont la priorité (`selectedPriorityId`) diffère de celle de la version qui a
+  ouvert le calendrier courant. Alléger ou densifier ne relance rien. Le pivot
+  se **déduit** de ce qui est enregistré : rien n'est à saisir, et le libellé
+  « Pivoter » du panneau J21 n'est pas persisté.
+- **L'historique complet est lu**, approbations supplantées comprises. Lue
+  seule, la tête de chaîne ferait d'une rediffusion un nouveau départ.
+- **Une seule implémentation.** Le jour 0 se calcule côté serveur, dans
+  `calendrierSuivi.ts` ; les consommateurs lisent la date rendue.
+
+**3. LE RATTACHEMENT D'UNE DIFFUSION À SON CYCLE.** Par l'épisode de la
+version diffusée (`protocol_drafts.assessment_episode_id`) : une ancre porte
+son propre cycle, un jalon de mesure le `cycle_id` stocké à sa confirmation.
+En repli, pour une ligne ancienne sans épisode ou sans `cycle_id`, par la
+date : le cycle du rang le plus haut parmi les ancres confirmées au plus tard à
+la diffusion (la règle de `resolveCycleId`). Une diffusion qu'aucun cycle ne
+reçoit est nommée, jamais perdue en silence (`DC-30`). Les brouillons de
+l'agenda alimentaire (`ja-food-observation-v1`) vivent aussi dans
+`protocol_drafts`, sans épisode, mais la route de diffusion ne les trouve pas
+par leur identifiant : ils ne sont pas diffusables.
+
+**4. LE CONSTAT, par conteneur, le 2026-09-30.** La production porte une
+seule approbation de diffusion (`PAT032`, le 2026-09-29, aucune supplantée).
+Sa version est rattachée à l'épisode d'ancre `T0` de son cycle par
+`assessment_episode_id`. Le repli par date ne sert donc à aucune ligne
+aujourd'hui. Aucun check-in n'existe.
+
+**5. QUATRE LOTS, un merge à la fois.**
+
+1. Le module pur et sa lecture en base, sans consommateur. Aucun comportement
+   ne change.
+2. Le portail : check-ins, protocole (fin et début de cycle), cycle de
+   l'agenda alimentaire.
+3. La trajectoire et le cockpit, dans une seule PR : fenêtres de jalon, jalon
+   d'objectif, momentum, bandeau, date de référence d'une proposition de
+   jalon. Un cycle sans diffusion garde la confirmation de son ancre en repli,
+   pour rejouer l'historique à l'identique (le J21 de `PAT006`, confirmé sans
+   protocole dans un cycle fermé depuis, reste tel quel). Le banc de
+   [[D-058]] est réécrit dans la même PR.
+4. Une garde serveur qui refuse la confirmation d'un jalon de mesure hors de
+   sa fenêtre, et les vérités d'écran (rail « Suivi », panneau J21 sans
+   protocole).
+
+Entre les lots 2 et 3, portail et cockpit comptent depuis deux dates
+différentes. Ce n'est pas pire qu'avant, où ils divergeaient déjà par
+construction ([[D-151]] §2).
+
+**Bancs du lot 1.** 28 cas pour le module, 4 pour la lecture. Douze mutations
+jouées, toutes détectées : la tête de chaîne lue seule, le pivot ignoré, le tri
+retiré, le départage retiré, la recevabilité ignorée, un jalon de mesure pris
+pour une ancre, le repli au plus ancien, le repli sans borne de date,
+l'orpheline perdue, la relance jamais dite, la garde de dossier retirée, la
+lecture datée non bornée.
+
 ### D-254 — Les assiettes indiquées se hiérarchisent pour l'aide au choix : la priorité visée d'abord, la convergence ensuite, et la règle est dite à l'écran
 
 - Date : 2026-09-30
