@@ -270,6 +270,37 @@ comportement.
   « non mesuré, échéance passée ».
 - **Bancs.** Neuf mutations jouées, toutes détectées.
 
+**Complément du 2026-09-30 — lot 4, la garde du POST et les vérités d'écran.**
+
+- **Le POST du cockpit refuse un jalon de mesure nouveau hors de sa fenêtre**
+  (409, `jalon_hors_fenetre`), avant toute écriture. La garde
+  (`refusJalonMesureHorsFenetre`) utilise la même fenêtre que
+  `resoudreJalonDu`, comptée depuis le même jour 0 : un banc vérifie, jour
+  après jour, que le serveur accepte exactement ce que l'écran propose. Sans
+  diffusion, ou sans ancre, le refus le dit.
+- **Un acte déjà posé n'est pas regardé.** Il garde sa date, et une
+  re-confirmation ([[D-129]]) passe. Le J21 de `PAT006`, confirmé sans
+  protocole avant [[D-255]], ne devient pas un refus après coup.
+- **Le rail « Suivi »** disait « renseignée » dès que le résumé des check-ins
+  était lu, et la route en rend un sur tout dossier. Il dit désormais :
+  - « à ouvrir » sans diffusion sur le cycle courant ;
+  - « en attente du patient » quand le protocole est diffusé mais qu'aucun
+    point d'étape n'est rendu ;
+  - « renseignée » dès qu'un point d'étape est rendu ;
+  - « indéterminée » tant que la trajectoire n'est pas lue.
+- **Le panneau J21 sans protocole** ne dit plus « en attente du patient » et
+  n'offre plus d'alléger ni de pivoter. Il dit que les points d'étape ne
+  courent pas encore et qu'ils partiront de la diffusion.
+- **Revue de la PR #1273.** Deux correctifs :
+  - le rail ne conclut rien tant que les check-ins ne sont pas lus, ou si leur
+    lecture échoue : « indéterminée », jamais « en attente du patient » ;
+  - le résumé praticien lit les check-ins sur les versions du calendrier du
+    cycle courant, comme le portail depuis le lot 2. Une rediffusion sans
+    pivot peut porter une version d'une autre carte, après un J21, et un point
+    rendu sous la précédente reste rendu. Sans calendrier, la lecture par
+    carte reste en repli.
+- **Bancs.** Seize mutations jouées, toutes détectées.
+
 ### D-254 — Les assiettes indiquées se hiérarchisent pour l'aide au choix : la priorité visée d'abord, la convergence ensuite, et la règle est dite à l'écran
 
 - Date : 2026-09-30

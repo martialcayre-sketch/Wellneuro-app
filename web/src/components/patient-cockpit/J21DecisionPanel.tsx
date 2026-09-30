@@ -35,11 +35,34 @@ const AUTRES: { titre: string; description: string }[] = [
 export function J21DecisionPanel({
   resume,
   onAjuster,
+  suiviOuvert = null,
 }: {
   resume: ResumeJ21 | null;
   // Renvoie vers le flux de versionnement existant (« Enregistrer la version »).
   onAjuster?: () => void;
+  /**
+   * Le cycle courant porte-t-il une diffusion ? ([[D-255]], lot 4) `null` =
+   * pas encore su : le panneau garde sa forme habituelle.
+   */
+  suiviOuvert?: boolean | null;
 }) {
+  // SANS DIFFUSION, AUCUN POINT D'ÉTAPE NE COURT ([[D-255]]). Le panneau
+  // affichait « en attente du patient » sur un protocole qui n'existait pas, et
+  // offrait d'alléger ou de pivoter un protocole jamais servi.
+  if (suiviOuvert === false) {
+    return (
+      <section aria-labelledby="j21-decision-title" className="rounded-xl border border-border bg-surface p-4">
+        <h3 id="j21-decision-title" className="text-sm font-semibold text-foreground">
+          Point d’étape J21 — résumé et décision
+        </h3>
+        <p role="status" className="mt-3 text-base text-muted-foreground">
+          Aucun protocole n’a été diffusé sur ce cycle : les points d’étape J7, J14 et J21 ne courent pas encore.
+          Ils partiront de la diffusion du protocole (phase Actions).
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section aria-labelledby="j21-decision-title" className="rounded-xl border border-border bg-surface p-4">
       <h3 id="j21-decision-title" className="text-sm font-semibold text-foreground">

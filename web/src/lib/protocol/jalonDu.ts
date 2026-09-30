@@ -1,7 +1,7 @@
 import { TOLERANCE_JOURS_JALON } from '@/lib/equilibre/constants';
 import { joursDepuisAncre } from './fenetreJalon';
 import type { JalonMomentum } from '@/lib/equilibre/types';
-import { ancreSuivante, jalonsDuCycle, type AncreCycle } from './cycles';
+import { ancreSuivante, estAncreDeCycle, jalonsDuCycle, type AncreCycle } from './cycles';
 import { rattacherReperesAuxCycles, type Trajectoire } from './trajectoire';
 
 // Quel jalon le praticien peut-il confirmer MAINTENANT ? (LOT-07, `D-058`)
@@ -68,6 +68,44 @@ function fenetre(dateAncre: Date, jalon: JalonMomentum): { debut: Date; fin: Dat
   const centre = dateAncre.getTime() + joursDepuisAncre(jalon) * JOUR_MS;
   const tolerance = TOLERANCE_JOURS_JALON * JOUR_MS;
   return { debut: new Date(centre - tolerance), fin: new Date(centre + tolerance) };
+}
+
+const MOTIF_SANS_DIFFUSION =
+  'Aucun protocole n’a été diffusé sur ce cycle : ses jalons de suivi ne courent pas encore.';
+
+/**
+ * LA GARDE SERVEUR D'UN JALON DE MESURE ([[D-255]], lot 4) : le motif du refus,
+ * ou `null` quand la confirmation est recevable.
+ *
+ * `resoudreJalonDu` ne PROPOSE rien hors fenêtre, mais c'est une règle
+ * d'écran : le jalon du POST vient du navigateur, et un `J42` posté le jour du
+ * `J21` aurait été daté d'un moment où la mesure n'a pas eu lieu. La garde
+ * rejoue ici la même règle, sur la même `fenetre` et depuis le même jour 0 :
+ * ce que l'écran propose, le serveur l'accepte, et rien d'autre.
+ *
+ * Une ANCRE n'est pas concernée : elle est le jour 0 de son propre cycle, et
+ * ses gardes sont ailleurs (`ancreRecevable`, préconditions). Le repli de
+ * `proposeRuntimeEpisode` sur la confirmation de l'ancre ne sert qu'au REJEU
+ * d'un épisode déjà posé — l'appelant n'applique donc cette garde qu'à un acte
+ * NOUVEAU.
+ */
+export function refusJalonMesureHorsFenetre(
+  jalon: JalonMomentum,
+  cycle: { jourZero: string | null } | null,
+  maintenant: Date,
+): string | null {
+  if (estAncreDeCycle(jalon)) return null;
+  if (!cycle) return `Aucun cycle n’est ouvert : le ${jalon} ne peut pas être confirmé avant l’ancre.`;
+  if (cycle.jourZero === null) return MOTIF_SANS_DIFFUSION;
+  const jourZero = new Date(cycle.jourZero);
+  if (Number.isNaN(jourZero.getTime())) {
+    return 'La date de diffusion du protocole de ce cycle est illisible : aucun jalon ne peut être confirmé.';
+  }
+  const { debut, fin } = fenetre(jourZero, jalon);
+  if (maintenant < debut || maintenant > fin) {
+    return `Le ${jalon} n’est pas dans sa fenêtre aujourd’hui : il ne peut pas être confirmé. Rechargez la fiche pour voir le jalon dû.`;
+  }
+  return null;
 }
 
 /**
@@ -139,11 +177,7 @@ export function resoudreJalonDu(trajectoire: Trajectoire | null, maintenant: Dat
   // de l'ancre. Sans diffusion, aucun jalon de suivi ne court ([[D-253]]
   // généralisé) — un J21 mesure ce que trois semaines de protocole ont changé.
   if (cycle.jourZero === null) {
-    return {
-      ancreOuvrable,
-      statut: 'aucun',
-      motif: 'Aucun protocole n’a été diffusé sur ce cycle : ses jalons de suivi ne courent pas encore.',
-    };
+    return { ancreOuvrable, statut: 'aucun', motif: MOTIF_SANS_DIFFUSION };
   }
   const jourZero = new Date(cycle.jourZero);
   if (Number.isNaN(jourZero.getTime())) {

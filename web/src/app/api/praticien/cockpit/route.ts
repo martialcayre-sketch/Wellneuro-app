@@ -34,6 +34,7 @@ import {
 } from '@/lib/protocol/ancresPersistees';
 import { lireCalendriersSuivi } from '@/lib/protocol/calendriersPersistes';
 import { ancreRecevable, estAncreDeCycle } from '@/lib/protocol/cycles';
+import { refusJalonMesureHorsFenetre } from '@/lib/protocol/jalonDu';
 import { resolveCycleId, toEpisodeCreateInput, toEpisodeUpdateInput } from '@/lib/protocol/versioning';
 import type {
   ClinicalReview,
@@ -60,6 +61,7 @@ type CockpitUnavailableReason =
   | 'episode_ecrit_ailleurs'
   | 'preconditions_non_remplies'
   | 'motif_contournement_manquant'
+  | 'jalon_hors_fenetre'
   | 'exception';
 
 export type CockpitRuntimeApiResponse =
@@ -669,13 +671,11 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     // recevabilité et la résolution de cycle (patron `protocoles/route.ts`) :
     // deux lectures pourraient rendre deux verdicts.
     const ancres = await lireAncresPersistees(idPatient);
-    const current = proposeRuntimeEpisode(
-      inputs,
-      payload.milestone,
-      estAncreDeCycle(payload.milestone)
-        ? null
-        : ancreCycleDepuis(ancres, await lireCalendriersSuivi(idPatient, null, ancres), payload.milestone),
-    );
+    // Le même cycle date la proposition ET garde la fenêtre plus bas.
+    const ancreCycle = estAncreDeCycle(payload.milestone)
+      ? null
+      : ancreCycleDepuis(ancres, await lireCalendriersSuivi(idPatient, null, ancres), payload.milestone);
+    const current = proposeRuntimeEpisode(inputs, payload.milestone, ancreCycle);
     if (current.proposalHash !== proposalHash) {
       return unavailable('proposal_stale', 'Les réponses ont changé. Rechargez la proposition.', 409);
     }
@@ -706,6 +706,16 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     const instantActe = ligneEnregistree
       ? ligneEnregistree.confirmedAt.toISOString()
       : now;
+
+    // UN JALON DE MESURE NOUVEAU SE CONFIRME DANS SA FENÊTRE ([[D-255]], lot 4),
+    // comptée depuis le jour 0 du suivi : sans diffusion, aucun jalon ne court.
+    // Un acte DÉJÀ posé n'est pas regardé : il garde sa date (`instantActe`), et
+    // le J21 confirmé sans protocole avant [[D-255]] doit se re-confirmer
+    // (`D-129`) sans être refusé après coup.
+    if (!ligneEnregistree) {
+      const refusFenetre = refusJalonMesureHorsFenetre(payload.milestone, ancreCycle, new Date(now));
+      if (refusFenetre) return unavailable('jalon_hors_fenetre', refusFenetre, 409);
+    }
 
     // PRÉCONDITIONS T0 ([[D-052]]), recalculées DEPUIS LA BASE et jamais lues
     // dans le corps de requête. Depuis `D-118` ce POST est un point de

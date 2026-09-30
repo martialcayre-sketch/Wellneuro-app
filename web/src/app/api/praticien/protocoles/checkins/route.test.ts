@@ -197,4 +197,68 @@ describe('GET /api/praticien/protocoles/checkins', () => {
     const avecDiffusion = (await (await GET(request())).json()) as { resume: { score: unknown } };
     expect(avecDiffusion.resume.score).not.toBeNull();
   });
+
+  // [[D-255]], lot 4 (revue Copilot de #1273) : les check-ins se lisent sur les
+  // versions du CALENDRIER, comme au portail — pas sur la seule carte demandée.
+  describe('bornage par le calendrier de suivi', () => {
+    function diffusion(id: string, version: string, approvedAtIso: string, priorite: string, episode: object) {
+      const approvedAt = new Date(approvedAtIso);
+      return {
+        id, idPatient: 'PAT_1', approvedAt, createdAt: approvedAt, approvedBy: 'practitioner',
+        confirmation: 'content_approved_for_diffusion', decisionCardInputHash: `carte-${version}`,
+        protocolDraftInputHash: `h-${version}`, protocolDraftId: version,
+        draft: {
+          idPatient: 'PAT_1', inputHash: `h-${version}`, decisionCardInputHash: `carte-${version}`,
+          status: 'practitioner_reviewed', reviewedAt: new Date(approvedAt.getTime() - 60_000),
+          selectedPriorityId: priorite, episode,
+        },
+      };
+    }
+    const episodeT0 = { id: 'EPI_T0', milestone: 'T0', cycleId: 'EPI_T0' };
+    const episodeJ21 = { id: 'EPI_J21', milestone: 'J21', cycleId: 'EPI_T0' };
+    function checkin(id: string, version: string, pointEtape: string, jour: string) {
+      return {
+        id, idPatient: 'PAT_1', idAssignation: 'ASS_1', protocolDraftId: version, pointEtape, reponses,
+        canal: 'portail', supersedesCheckinId: null, soumisLe: new Date(jour),
+      };
+    }
+
+    beforeEach(() => {
+      getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+      prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+      prisma.assessmentEpisode.findMany.mockResolvedValue([
+        { id: 'EPI_T0', cycleId: 'EPI_T0', confirmedAt: new Date('2026-01-01T00:00:00.000Z'), milestone: 'T0' },
+      ]);
+      // La carte demandée ne porte QUE la seconde version : la lecture par
+      // carte perdait le point rendu sous la première.
+      prisma.protocolDraft.findMany.mockResolvedValue([{ id: 'V2' }]);
+      prisma.protocolCheckin.findMany.mockResolvedValue([
+        checkin('ck_1', 'V1', 'J7', '2026-01-17T00:00:00.000Z'),
+        checkin('ck_2', 'V2', 'J14', '2026-01-24T00:00:00.000Z'),
+      ]);
+    });
+
+    it('une rediffusion sans pivot sur une autre carte garde les points déjà rendus', async () => {
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+        diffusion('A1', 'V1', '2026-01-10T00:00:00.000Z', 'PRIO_1', episodeT0),
+        diffusion('A2', 'V2', '2026-01-20T00:00:00.000Z', 'PRIO_1', episodeJ21),
+      ]);
+      const json = (await (await GET(request('idPatient=PAT_1&decisionCardId=DEC_J21'))).json()) as {
+        checkins: unknown[]; resume: { pointsRenseignes: number };
+      };
+      expect(json.checkins).toHaveLength(2);
+      expect(json.resume.pointsRenseignes).toBe(2);
+    });
+
+    it('un pivot ouvre un calendrier neuf : les points d’avant n’y comptent plus', async () => {
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+        diffusion('A1', 'V1', '2026-01-10T00:00:00.000Z', 'PRIO_1', episodeT0),
+        diffusion('A2', 'V2', '2026-01-20T00:00:00.000Z', 'PRIO_2', episodeJ21),
+      ]);
+      const json = (await (await GET(request('idPatient=PAT_1&decisionCardId=DEC_J21'))).json()) as {
+        resume: { pointsRenseignes: number };
+      };
+      expect(json.resume.pointsRenseignes).toBe(1);
+    });
+  });
 });

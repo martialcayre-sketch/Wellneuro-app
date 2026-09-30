@@ -8533,3 +8533,19 @@ demanderait d'étendre l'API.
 
 **Prochaine action.** Lot 4 de D-255 : garde serveur au POST du cockpit, rail
 « Suivi » et panneau J21 sans protocole.
+
+## 2026-09-30 — Calendrier de suivi, lot 4 : garde du POST et rail « Suivi » (D-255)
+
+**Fait.** Le POST du cockpit refuse en 409 (`jalon_hors_fenetre`) un jalon de
+mesure nouveau sans diffusion ou hors de sa fenêtre, avec la même fenêtre que
+`resoudreJalonDu`. Un acte déjà posé n'est pas regardé (D-129, J21 de
+`PAT006`). Le rail « Suivi » ne dit plus « renseignée » sur un résumé vide :
+« à ouvrir » sans diffusion, « en attente du patient », puis « renseignée ».
+Le panneau J21 sans protocole dit que les points ne courent pas. 11 mutations,
+toutes détectées.
+
+**Écarté.** Garder aussi la re-confirmation : elle refuserait après coup un
+acte daté d'avant D-255.
+
+**Prochaine action.** PR du lot 4, CI, revue, merge, déploiement constaté.
+D-255 est alors entièrement livrée.

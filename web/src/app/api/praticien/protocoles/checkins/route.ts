@@ -75,16 +75,6 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       );
     }
 
-    // Versions du fil (protocole logique) → borne les check-ins à ce protocole.
-    const versions = await prisma.protocolDraft.findMany({
-      where: { idPatient, decisionCardId },
-      select: { id: true },
-    });
-    const filIds = new Set(versions.map((v) => v.id));
-
-    const all = await listCheckins(idPatient);
-    const checkins = all.filter((c) => filIds.has(c.protocolDraftId));
-
     // C2B LOT-07/08 : brancher le momentum réel du patient (jalons de mesure lus
     // via l'API publique de momentum.ts, jamais réimplémentés). Un jalon sans
     // couverture est omis par construireHistoriqueEquilibre (jamais un 0) ; sans
@@ -101,11 +91,25 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     const ancres = await lireAncresPersistees(idPatient);
     const ancre = ancreCourante(ancres);
     const dateAncre = ancre?.confirmedAt ?? resoudreDateT0(reponsesDb);
-    // Le J21 se lit depuis le jour 0 du suivi du cycle courant ([[D-255]]) ;
-    // sans diffusion sur ce cycle, repli sur l'ancre.
-    const jourZero = ancre
-      ? (await lireCalendriersSuivi(idPatient, null, ancres)).parCycle.get(ancre.cycleId ?? ancre.id)?.jourZero ?? null
+    // Le calendrier de suivi du cycle courant ([[D-255]]) : son jour 0 date le
+    // J21 ; sans diffusion sur ce cycle, repli sur l'ancre.
+    const calendrier = ancre
+      ? (await lireCalendriersSuivi(idPatient, null, ancres)).parCycle.get(ancre.cycleId ?? ancre.id) ?? null
       : null;
+    const jourZero = calendrier?.jourZero ?? null;
+
+    // LES CHECK-INS SE LISENT SUR LES VERSIONS DU CALENDRIER ([[D-255]], lot 4),
+    // comme au portail : une rediffusion sans pivot peut porter une version
+    // d'une AUTRE carte (après un J21), et un point rendu sous elle reste rendu.
+    // Le rail « Suivi » en dépend. Sans calendrier, repli sur les versions du
+    // fil de la carte (protocole logique), la lecture d'avant.
+    const bornes = calendrier
+      ? new Set(calendrier.versionIds)
+      : new Set(
+          (await prisma.protocolDraft.findMany({ where: { idPatient, decisionCardId }, select: { id: true } }))
+            .map((v) => v.id),
+        );
+    const checkins = (await listCheckins(idPatient)).filter((c) => bornes.has(c.protocolDraftId));
     const momentum = dateAncre
       ? {
           ancre: (ancre?.milestone ?? 'T0') as AncreCycle,

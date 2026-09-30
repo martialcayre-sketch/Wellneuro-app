@@ -34,6 +34,27 @@ describe('J21DecisionPanel', () => {
     expect(screen.getByText(/non disponible/i)).toBeTruthy();
   });
 
+  // [[D-255]], lot 4 : sans diffusion, aucun point d'étape ne court.
+  it('sans diffusion sur le cycle, ne dit ni « en attente du patient » ni n’offre d’ajuster', () => {
+    const vide: ResumeJ21 = {
+      score: null,
+      points: resume.points.map((point) => ({ ...point, renseigne: false, reponses: null })),
+      pointsRenseignes: 0,
+    };
+    render(<J21DecisionPanel resume={vide} suiviOuvert={false} />);
+    expect(screen.getByRole('status').textContent).toContain('Aucun protocole n’a été diffusé sur ce cycle');
+    expect(screen.queryByText(/en attente du patient/i)).toBeNull();
+    for (const label of ['Alléger', 'Densifier', 'Pivoter']) {
+      expect(screen.queryByText(label)).toBeNull();
+    }
+  });
+
+  it('suivi non encore su (`null`) : le panneau garde sa forme habituelle', () => {
+    render(<J21DecisionPanel resume={resume} suiviOuvert={null} />);
+    expect(screen.getByText('Pivoter')).toBeTruthy();
+    expect(screen.queryByText(/Aucun protocole n’a été diffusé/i)).toBeNull();
+  });
+
   it('déclenche onAjuster depuis un label d’ajustement', () => {
     const onAjuster = vi.fn();
     render(<J21DecisionPanel resume={resume} onAjuster={onAjuster} />);

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { proposeRuntimeEpisode } from '@/lib/clinical-engine/runtimeFromPrisma';
 import { lireEtatPopulation } from '@/lib/consultation/etatPopulation';
-import { resoudreJalonDu } from './jalonDu';
+import { refusJalonMesureHorsFenetre, resoudreJalonDu } from './jalonDu';
 import type { Trajectoire } from './trajectoire';
 
 // Ce que ce banc défend (`D-058`, LOT-07) : le cockpit ne propose un jalon que
@@ -329,5 +329,61 @@ describe('resoudreJalonDu — cycles nommés (`D-113`)', () => {
     const verdict = resoudreJalonDu(cassee, apresT0(60));
     expect(verdict.statut).toBe('aucun');
     expect(verdict.statut === 'aucun' && verdict.motif).toContain('T1');
+  });
+});
+
+// [[D-255]], lot 4 : la garde SERVEUR du POST du cockpit. Le jalon vient du
+// navigateur ; ce que l'écran ne propose pas, le serveur le refuse.
+describe('refusJalonMesureHorsFenetre — la garde du POST', () => {
+  const diffuse = { jourZero: T0 };
+
+  it('ne regarde pas une ancre : elle est le jour 0 de son propre cycle', () => {
+    expect(refusJalonMesureHorsFenetre('T0', null, apresT0(0))).toBeNull();
+    expect(refusJalonMesureHorsFenetre('T1', { jourZero: null }, apresT0(300))).toBeNull();
+  });
+
+  it('refuse un jalon de mesure sans cycle ouvert', () => {
+    expect(refusJalonMesureHorsFenetre('J21', null, apresT0(21))).toContain('Aucun cycle');
+  });
+
+  it('refuse un jalon de mesure sans diffusion, avec le motif du jalon dû', () => {
+    const traj = trajectoire();
+    traj.cycles[0].jourZero = null;
+    const verdict = resoudreJalonDu(traj, apresT0(21));
+    expect(refusJalonMesureHorsFenetre('J21', { jourZero: null }, apresT0(21)))
+      .toBe(verdict.statut === 'aucun' ? verdict.motif : 'inatteignable');
+  });
+
+  it('refuse un jour 0 illisible', () => {
+    expect(refusJalonMesureHorsFenetre('J21', { jourZero: 'pas-une-date' }, apresT0(21))).toContain('illisible');
+  });
+
+  it('accepte aux deux bords de la fenêtre, tolérance comprise, et refuse juste au-delà', () => {
+    expect(refusJalonMesureHorsFenetre('J21', diffuse, apresT0(13))).toBeNull();
+    expect(refusJalonMesureHorsFenetre('J21', diffuse, apresT0(29))).toBeNull();
+    expect(refusJalonMesureHorsFenetre('J21', diffuse, new Date(apresT0(13).getTime() - 1))).toContain('fenêtre');
+    expect(refusJalonMesureHorsFenetre('J21', diffuse, new Date(apresT0(29).getTime() + 1))).toContain('fenêtre');
+  });
+
+  it('refuse un J42 posté le jour du J21', () => {
+    expect(refusJalonMesureHorsFenetre('J42', diffuse, apresT0(21))).toContain('J42');
+  });
+
+  it('compte depuis le jour 0, pas depuis l’ancre', () => {
+    const diffusion = { jourZero: apresT0(10).toISOString() };
+    expect(refusJalonMesureHorsFenetre('J21', diffusion, apresT0(21))).not.toBeNull();
+    expect(refusJalonMesureHorsFenetre('J21', diffusion, apresT0(31))).toBeNull();
+  });
+
+  it('même verdict que le jalon dû, jour après jour, sur un cycle diffusé', () => {
+    for (let jour = 0; jour <= 100; jour += 1) {
+      const maintenant = apresT0(jour);
+      const du = resoudreJalonDu(trajectoire(), maintenant);
+      for (const jalon of ['J21', 'J42', 'J90'] as const) {
+        const propose = du.statut === 'du' && du.jalon === jalon;
+        expect(refusJalonMesureHorsFenetre(jalon, diffuse, maintenant) === null, `${jalon} à J+${jour}`)
+          .toBe(propose);
+      }
+    }
   });
 });
