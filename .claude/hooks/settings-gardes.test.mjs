@@ -86,3 +86,37 @@ test("variable de projet absente : même repli", () => {
   const r = lancer(bash.command, { projet: "", cwd: racine, entree: anodin });
   assert.equal(r.status, 0, r.stderr);
 });
+
+// Revue adverse de #1259 : seul le lanceur de block-risky-commands était joué.
+// Une coquille entre `[ -f ]` et `exec` sur un autre garde ferait sortir node
+// en code 1 — le trou d'origine, revenu en silence.
+for (const h of gardes) {
+  const noms = [...h.command.matchAll(/\.claude\/hooks\/([\w.-]+\.mjs)/g)].map((m) => m[1]);
+  const nom = noms[0];
+
+  test(`${h.evenement}/${h.matcher ?? "*"} ${nom} : un seul script nommé, et il existe`, () => {
+    assert.ok(noms.length >= 2, h.command);
+    assert.deepEqual(new Set(noms).size, 1, `noms divergents : ${noms.join(", ")}`);
+    assert.ok(fs.existsSync(path.join(racine, ".claude", "hooks", nom)), `${nom} absent`);
+  });
+
+  test(`${h.evenement}/${h.matcher ?? "*"} ${nom} : hors de tout dépôt, code 2`, () => {
+    const r = lancer(h.command, { projet: horsGit, cwd: horsGit, entree: anodin });
+    assert.equal(r.status, 2, r.stderr);
+  });
+}
+
+test("node absent du PATH : échec fermé, pas le code 127 non bloquant", () => {
+  // PATH réduit à git seul : `[`, `command` et `echo` sont des intégrés de sh.
+  const bin = fs.mkdtempSync(path.join(os.tmpdir(), "wn-garde-bin-"));
+  const git = spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout.trim();
+  fs.symlinkSync(git, path.join(bin, "git"));
+  const r = spawnSync("/bin/sh", ["-c", bash.command], {
+    input: JSON.stringify(destructif),
+    encoding: "utf8",
+    cwd: racine,
+    env: { PATH: bin, CLAUDE_PROJECT_DIR: racine },
+  });
+  assert.equal(r.status, 2, r.stderr);
+  assert.match(r.stderr, /node absent/);
+});

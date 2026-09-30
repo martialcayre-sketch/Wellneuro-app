@@ -9,13 +9,21 @@
   laissaient tout passer, sans signal.
 - **Lanceur fermé** dans `.claude/settings.json` : résolution par
   `$CLAUDE_PROJECT_DIR`, puis par la racine Git du répertoire courant, puis
-  **code 2** si le script reste introuvable. Le journal Bash, asynchrone et
-  sans décision, n'est pas concerné. Banc `settings-gardes.test.mjs` : quatre
-  situations jouées sur la commande réellement déclarée.
+  **code 2** si le script reste introuvable ou si `node` manque (il sortait
+  alors en 127, non bloquant). Le journal Bash, asynchrone et sans décision,
+  n'est pas concerné. Banc `settings-gardes.test.mjs` : chaque lanceur
+  déclaré est joué, un seul nom de script par lanceur, et il existe.
 - **`lecture-seule-git.mjs`**, armé depuis le frontmatter de `wn-reviewer` et
-  `wn-fable` : refuse checkout, switch, reset, stash, commit, push et autres
-  commandes Git mutantes ; laisse diff, show, log, status, blame, fetch. Un
-  agent de revue avait fait un `checkout` dans la copie principale partagée.
-  `wn-reviewer` reçoit aussi `maxTurns: 100` contre les boucles.
+  `wn-fable` : refuse checkout, switch, reset, stash, commit, push, bisect,
+  création de branche, refspec de fetch à destination locale, `--output`, et
+  les `gh` qui déplacent la copie ou écrivent sur GitHub (`pr checkout`,
+  `pr merge`, `pr review`, `repo sync`…) — y compris sous `bash -c "…"`,
+  `/usr/bin/git` ou `\git`. Laisse diff, show, log, status, blame, fetch,
+  `gh pr diff`. Un agent de revue avait fait un `checkout` dans la copie
+  principale partagée. `wn-reviewer` reçoit aussi `maxTurns: 100`.
+- **Revue adverse** (`wn-reviewer`) : GO ; son constat majeur (les `gh`
+  mutants passaient) et ses mineurs (contournements par guillemet, chemin ou
+  antislash ; sous-commandes manquantes ; banc limité à un lanceur ; `node`
+  absent) sont corrigés dans cette PR.
 - Écarté : `isolation: worktree` pour `wn-reviewer` — la copie partirait de
   `main`, pas de la branche à relire.

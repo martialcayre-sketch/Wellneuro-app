@@ -60,20 +60,26 @@ l'édition, jamais par l'absence du marqueur — un marqueur manquant signifie
 
 **Lanceur fermé.** Chaque garde bloquant est lancé par une ligne qui cherche le
 script sous `$CLAUDE_PROJECT_DIR`, puis sous la racine Git du répertoire
-courant, et sort en **code 2** (bloquant) s'il ne le trouve nulle part. Avant le
+courant, et sort en **code 2** s'il ne le trouve nulle part ou si `node` est
+absent (bloquant en `PreToolUse` ; en `SessionStart`, le message s'affiche
+seulement). Une exception levée DANS un garde reste en code 1, non bloquant,
+comme avant. Avant le
 2026-09-30, `node "$CLAUDE_PROJECT_DIR/…"` nu échouait en code 1 — **non
 bloquant** — dans toute session dont la racine n'était pas le dépôt
 (VS Code ouvert sur `~/Developer`, soit environ la moitié du travail de
 septembre) : les gardes se déclenchaient et ne gardaient rien, sans un mot.
 `$CLAUDE_PROJECT_DIR` reste la racine de lancement même après `/cd` ou
 `EnterWorktree`, d'où le repli par `git rev-parse --show-toplevel`. Banc :
-`settings-gardes.test.mjs`, qui éprouve la commande réellement déclarée.
+`settings-gardes.test.mjs`, qui joue chacun des lanceurs réellement déclarés.
 
 **Agents en lecture seule.** `wn-reviewer` et `wn-fable` arment dans leur
 frontmatter `lecture-seule-git.mjs`, qui refuse toute commande Git modifiant
-HEAD, l'index, l'arbre, les branches ou le distant — un agent de revue a déjà
-fait un `checkout` dans la copie principale partagée. La session principale,
-elle, n'est pas concernée.
+HEAD, l'index, l'arbre, les branches ou le distant, et tout `gh` qui ferait
+de même (`pr checkout`, `pr merge`, `pr review`, `repo sync`…) — un agent de
+revue a déjà fait un `checkout` dans la copie principale partagée. La session
+principale, elle, n'est pas concernée. Le garde exécuté est celui de la
+branche où se trouve la copie : si elle repasse sur une branche antérieure
+au garde, l'agent perd son Bash (échec fermé) — le message le dit.
 
 Il n'existe pas de variable d'environnement désactivant la protection des
 fichiers (`WN_ALLOW_PROTECTED_WRITE` a été supprimée : elle neutralisait le

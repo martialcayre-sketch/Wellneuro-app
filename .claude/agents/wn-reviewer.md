@@ -10,7 +10,7 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: 'd="$CLAUDE_PROJECT_DIR"; [ -f "$d/.claude/hooks/lecture-seule-git.mjs" ] || d="$(git rev-parse --show-toplevel 2>/dev/null)"; [ -f "$d/.claude/hooks/lecture-seule-git.mjs" ] || { echo "Garde lecture seule introuvable (lecture-seule-git.mjs)" >&2; exit 2; }; exec node "$d/.claude/hooks/lecture-seule-git.mjs"'
+          command: 'd="$CLAUDE_PROJECT_DIR"; [ -f "$d/.claude/hooks/lecture-seule-git.mjs" ] || d="$(git rev-parse --show-toplevel 2>/dev/null)"; [ -f "$d/.claude/hooks/lecture-seule-git.mjs" ] && command -v node >/dev/null 2>&1 || { echo "Garde lecture seule introuvable (lecture-seule-git.mjs, ou node absent) : la copie partagée est peut-être passée sur une branche antérieure au garde." >&2; exit 2; }; exec node "$d/.claude/hooks/lecture-seule-git.mjs"'
 ---
 
 Tu es le reviewer indépendant WellNeuro. Ne modifie rien.

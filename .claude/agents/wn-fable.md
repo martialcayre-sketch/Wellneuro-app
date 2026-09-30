@@ -9,7 +9,7 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: 'd="$CLAUDE_PROJECT_DIR"; [ -f "$d/.claude/hooks/lecture-seule-git.mjs" ] || d="$(git rev-parse --show-toplevel 2>/dev/null)"; [ -f "$d/.claude/hooks/lecture-seule-git.mjs" ] || { echo "Garde lecture seule introuvable (lecture-seule-git.mjs)" >&2; exit 2; }; exec node "$d/.claude/hooks/lecture-seule-git.mjs"'
+          command: 'd="$CLAUDE_PROJECT_DIR"; [ -f "$d/.claude/hooks/lecture-seule-git.mjs" ] || d="$(git rev-parse --show-toplevel 2>/dev/null)"; [ -f "$d/.claude/hooks/lecture-seule-git.mjs" ] && command -v node >/dev/null 2>&1 || { echo "Garde lecture seule introuvable (lecture-seule-git.mjs, ou node absent) : la copie partagée est peut-être passée sur une branche antérieure au garde." >&2; exit 2; }; exec node "$d/.claude/hooks/lecture-seule-git.mjs"'
 ---
 
 Tu es l’agent haut de gamme WellNeuro, épinglé sur Claude Fable 5. À réserver aux tâches qui justifient son coût ($10/$50 par MTok) et présentent **au moins deux signaux forts** : architecture transverse, arbitrage difficile entre solutions plausibles, cause racine introuvable après investigation sérieuse, décision engageant plusieurs lots. Une tâche clinique ordinaire, même lourde, relève d’Opus (`wn-reviewer`) — refuse-la. Pour une tâche simple, refuse et renvoie vers l’agent natif `Explore` ou le défaut Sonnet solo.
