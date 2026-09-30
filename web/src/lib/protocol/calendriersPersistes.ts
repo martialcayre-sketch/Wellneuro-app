@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { lireAncresPersistees } from './ancresPersistees';
-import { calendriersParCycle, type CalendrierSuivi, type DiffusionHistorique } from './calendrierSuivi';
+import { calendriersParCycle, type DiffusionHistorique } from './calendrierSuivi';
 
 // LES CALENDRIERS DE SUIVI D'UN DOSSIER, LUS EN BASE ([[D-255]]).
 //
@@ -15,7 +15,7 @@ import { calendriersParCycle, type CalendrierSuivi, type DiffusionHistorique } f
 export async function lireCalendriersSuivi(
   idPatient: string,
   avantOuA?: Date | null,
-): Promise<{ parCycle: Map<string, CalendrierSuivi>; nonRattachees: string[] }> {
+): Promise<ReturnType<typeof calendriersParCycle>> {
   const [approbations, ancres] = await Promise.all([
     prisma.protocolDiffusionApproval.findMany({
       where: { idPatient, ...(avantOuA ? { approvedAt: { lte: avantOuA } } : {}) },
@@ -27,6 +27,7 @@ export async function lireCalendriersSuivi(
         confirmation: true,
         decisionCardInputHash: true,
         protocolDraftInputHash: true,
+        protocolDraftId: true,
         draft: {
           select: {
             idPatient: true,
@@ -56,6 +57,7 @@ export async function lireCalendriersSuivi(
       decisionCardInputHash: approbation.decisionCardInputHash,
       protocolDraftInputHash: approbation.protocolDraftInputHash,
       version: {
+        id: approbation.protocolDraftId,
         inputHash: approbation.draft.inputHash,
         decisionCardInputHash: approbation.draft.decisionCardInputHash,
         status: approbation.draft.status,
@@ -66,4 +68,34 @@ export async function lireCalendriersSuivi(
     }));
 
   return calendriersParCycle(diffusions, ancres);
+}
+
+/**
+ * Le calendrier du protocole diffusé ACTIF : le jour 0 de son cycle, et les
+ * versions diffusées depuis. C'est ce que lisent les routes du portail.
+ *
+ * REPLI : si le calendrier ne se résout pas — une approbation active qu'aucun
+ * cycle ne reçoit, ce que la production ne porte pas (constat du 2026-09-30,
+ * [[D-255]] §4) —, la route compte depuis l'approbation active et sa seule
+ * version, c'est-à-dire exactement comme avant. Le repli est journalisé : il
+ * ne doit pas passer pour la règle.
+ */
+export async function calendrierDuProtocoleDiffuse(
+  idPatient: string,
+  diffuse: { approbationId: string; approvedAt: Date; protocolDraftId: string },
+): Promise<{ jourZero: Date; versionIds: string[] }> {
+  // BORNÉ À L'APPROBATION ACTIVE. Deux lectures séparées : sans borne, une
+  // diffusion publiée entre elles (un pivot) donnerait son jour 0 au protocole
+  // que la route sert encore. L'approbation active étant la plus récente, la
+  // borne ne retire rien d'autre (revue de la PR #1265).
+  const { parCycle, cycleParDiffusion } = await lireCalendriersSuivi(idPatient, diffuse.approvedAt);
+  const cycleId = cycleParDiffusion.get(diffuse.approbationId);
+  const calendrier = cycleId === undefined ? undefined : parCycle.get(cycleId);
+  // La version servie doit appartenir au calendrier rendu : sinon celui-ci
+  // n'est pas le sien (une diffusion de même instant l'aurait supplanté).
+  if (!calendrier || !calendrier.versionIds.includes(diffuse.protocolDraftId)) {
+    console.warn('[calendrierDuProtocoleDiffuse] calendrier introuvable pour la diffusion active : repli sur son approbation.');
+    return { jourZero: diffuse.approvedAt, versionIds: [diffuse.protocolDraftId] };
+  }
+  return { jourZero: calendrier.jourZero, versionIds: calendrier.versionIds };
 }
