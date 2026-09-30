@@ -32,6 +32,14 @@ function dateLisible(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { timeZone: 'UTC' });
 }
 
+/** « autre » ne se dit que si une assiette est affichée à côté. */
+function phraseSansResultat(nombre: number, aCote: boolean): string {
+  const autre = aCote ? (nombre === 1 ? 'autre ' : 'autres ') : '';
+  return nombre === 1
+    ? `1 ${autre}assiette n’est pas affichée : aucun de ses marqueurs n’a de résultat au dossier.`
+    : `${nombre} ${autre}assiettes ne sont pas affichées : aucun de leurs marqueurs n’a de résultat au dossier.`;
+}
+
 export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
   // MÊME DISCIPLINE QUE LA CARTE QUI LA PORTE : chaque état est daté du dossier
   // qui l'a produit, et un jeton écarte une réponse en retard. Une valeur
@@ -159,11 +167,12 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
             ))}
           </ul>
 
-          {exploitables.length > 0 && sansResultat > 0 && (
+          {/* COMPTÉES, JAMAIS TUES — y compris quand seule une anomalie tient
+              la section ouverte : « autre » ne se dit que s'il y en a une
+              d'affichée. */}
+          {sansResultat > 0 && (
             <p className="mt-3 text-xs text-muted-foreground">
-              {sansResultat === 1
-                ? '1 autre assiette n’est pas affichée : aucun de ses marqueurs n’a de résultat au dossier.'
-                : `${sansResultat} autres assiettes ne sont pas affichées : aucun de leurs marqueurs n’a de résultat au dossier.`}
+              {phraseSansResultat(sansResultat, exploitables.length > 0)}
             </p>
           )}
 

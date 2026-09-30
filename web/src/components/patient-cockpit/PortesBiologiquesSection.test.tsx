@@ -157,13 +157,17 @@ describe('PortesBiologiquesSection', () => {
     expect(container.textContent).toBe('');
   });
 
-  it('rien d’exploitable, mais une source retirée : l’anomalie reste dite', async () => {
+  it('rien d’exploitable, mais une source retirée : l’anomalie reste dite, ET l’écartée reste comptée', async () => {
     monter({ ...SANS_RESULTAT, retireesFauteDeClaim: 1 });
     await waitFor(() =>
       expect(screen.getByRole('alert').textContent).toBe('1 assiette n’est pas affichée : une de ses sources n’est plus valide au corpus.'),
     );
     expect(screen.queryByText('Assiette sérotoninergique')).toBeNull();
-    expect(screen.queryByText(/autre assiette/)).toBeNull();
+    // Comptée sans « autre » : aucune assiette n'est affichée à côté (revue de
+    // la PR #1256 — le compte était tu dans ce cas).
+    expect(
+      screen.getByText('1 assiette n’est pas affichée : aucun de ses marqueurs n’a de résultat au dossier.'),
+    ).toBeTruthy();
   });
 
   it('verrou fermé : la section n’existe pas', async () => {
