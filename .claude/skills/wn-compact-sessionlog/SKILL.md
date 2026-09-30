@@ -18,8 +18,8 @@ effort: medium
 > L'avertissement vit aussi dans `.gitattributes`, que personne n'ouvre au moment
 > d'agir.
 
-!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && tail -n 70 docs/claude/SESSION_LOG.md || true`
-!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && grep -n '^## ' docs/claude/SESSION_LOG.md || true`
+!`test -f ${CLAUDE_PROJECT_DIR}/docs/claude/SESSION_LOG.md && tail -n 70 ${CLAUDE_PROJECT_DIR}/docs/claude/SESSION_LOG.md || true`
+!`test -f ${CLAUDE_PROJECT_DIR}/docs/claude/SESSION_LOG.md && grep -n '^## ' ${CLAUDE_PROJECT_DIR}/docs/claude/SESSION_LOG.md || true`
 !`git status --short --untracked-files=all`
 
 Arguments : `$ARGUMENTS`

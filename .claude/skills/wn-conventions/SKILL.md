@@ -10,7 +10,7 @@ effort: medium
 # WellNeuro — audit des règles et des définitions d'agents
 
 !`git log -1 --format='%ad  %s' -- :/CLAUDE.md :/AGENTS.md :/.github/copilot-instructions.md`
-!`cd "$(git rev-parse --show-toplevel)" && ls .claude/agents/ .claude/skills/ .github/agents/ .github/instructions/ .github/prompts/`
+!`ls ${CLAUDE_PROJECT_DIR}/.claude/agents/ ${CLAUDE_PROJECT_DIR}/.claude/skills/ ${CLAUDE_PROJECT_DIR}/.github/agents/ ${CLAUDE_PROJECT_DIR}/.github/instructions/ ${CLAUDE_PROJECT_DIR}/.github/prompts/`
 
 Cible : `$ARGUMENTS` (vide : tout le parc ci-dessous)
 

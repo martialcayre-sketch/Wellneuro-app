@@ -16,12 +16,13 @@ import test from "node:test";
 import {
   auditerSkills,
   cheminsDeRacine,
-  estAncre,
+  contientSubstitution,
   existeALaRacineDepuis,
   lireSkills,
+  racinesVariables,
 } from "./skill-bang-cwd.mjs";
 
-const ANCRE = 'cd "$(git rev-parse --show-toplevel)" && ';
+const ANCRE = "${CLAUDE_PROJECT_DIR}/";
 
 // Prédicat d'existence injecté : le banc ne dépend pas du contenu réel de la
 // racine, qui bouge à chaque lot.
@@ -66,7 +67,7 @@ test("le cas SILENCIEUX est attrapé : `|| true` masque l'échec, pas le chemin"
 
 test("un bloc déjà ancré passe", () => {
   const { violations } = auditerSkills(
-    [skill("wn-z", `!\`${ANCRE}node scripts/wn-cycle.mjs\``)],
+    [skill("wn-z", `!\`node ${ANCRE}scripts/wn-cycle.mjs\``)],
     existe
   );
   assert.deepEqual(violations, []);
@@ -145,17 +146,50 @@ test("un premier segment absent de la racine n'est pas signalé", () => {
   assert.deepEqual(cheminsDeRacine("grep -nE 'R[0-6]|Priorité' x", existe), []);
 });
 
-test("l'ancre doit être EN TÊTE : plus loin, elle arrive trop tard", () => {
-  const tardive = 'node scripts/x.mjs; cd "$(git rev-parse --show-toplevel)" && true';
-  assert.equal(estAncre(tardive), false);
-  const { violations } = auditerSkills([skill("wn-t", `!\`${tardive}\``)], existe);
+// Constaté par sondes le 2026-09-30 : un bloc à substitution ne se charge
+// jamais en mode auto ni depuis VS Code, même couvert par une règle `allow`
+// exacte. L'ancre d'avant en était un.
+test("un bloc à substitution `$(…)` est une violation, même sans chemin", () => {
+  const ancien = 'cd "$(git rev-parse --show-toplevel)" && git status --short';
+  assert.equal(contientSubstitution(ancien), true);
+  const { violations } = auditerSkills([skill("wn-t", `!\`${ancien}\``)], existe);
   assert.equal(violations.length, 1);
+  assert.equal(violations[0].substitution, true);
+  assert.deepEqual(violations[0].chemins, []);
 });
 
-test("estAncre tolère les variantes d'espacement autour du &&", () => {
-  assert.equal(estAncre('cd "$(git rev-parse --show-toplevel)" && node x.mjs'), true);
-  assert.equal(estAncre('cd  "$(git rev-parse --show-toplevel)"&& node x.mjs'), true);
-  assert.equal(estAncre("cd /ailleurs && node x.mjs"), false);
+test("l'ancien cd par substitution n'ancre plus rien : chemins ET substitution signalés", () => {
+  const ancien = 'cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs';
+  const { violations } = auditerSkills([skill("wn-t", `!\`${ancien}\``)], existe);
+  assert.equal(violations.length, 1);
+  assert.equal(violations[0].substitution, true);
+  assert.deepEqual(violations[0].chemins, ["scripts/wn-cycle.mjs"]);
+});
+
+// Revue Copilot de #1275 : `JETON` écarte tout jeton en `$`, donc la variable
+// shell — refusée au chargement par les sondes du 2026-09-30 — passait verte.
+test("une racine variable autre que ${CLAUDE_PROJECT_DIR} est une violation", () => {
+  const { violations } = auditerSkills(
+    [
+      skill(
+        "wn-v",
+        '!`cat "$CLAUDE_PROJECT_DIR/docs/x.md"`',
+        "!`node ${HOME}/scripts/x.mjs`",
+        `!\`cat ${ANCRE}docs/x.md\``,
+        "!`gh pr view $ARGUMENTS --json url`"
+      ),
+    ],
+    existe
+  );
+  assert.equal(violations.length, 2);
+  assert.deepEqual(violations[0].variables, ["$CLAUDE_PROJECT_DIR/"]);
+  assert.deepEqual(violations[1].variables, ["${HOME}/"]);
+  assert.deepEqual(racinesVariables(`cat ${ANCRE}docs/x.md`), []);
+});
+
+test("un chemin ancré à côté d'un chemin nu ne couvre pas le second", () => {
+  assert.deepEqual(cheminsDeRacine(`cat ${ANCRE}docs/a.md docs/b.md`, existe), ["docs/b.md"]);
+  assert.equal(contientSubstitution(`cat ${ANCRE}docs/a.md`), false);
 });
 
 test("un bloc `!` indenté est tout aussi exécuté, donc tout aussi contrôlé", () => {
@@ -178,7 +212,7 @@ test("le décompte porte sur tous les skills lus", () => {
     [
       skill("a", "!`cat docs/x.md`"),
       skill("b", "!`git status --short`"),
-      skill("c", `!\`${ANCRE}cat docs/x.md\``),
+      skill("c", `!\`cat ${ANCRE}docs/x.md\``),
     ],
     existe
   );

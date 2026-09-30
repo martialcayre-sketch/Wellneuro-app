@@ -8,9 +8,9 @@ effort: low
 
 ## Contexte
 
-!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
-!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && tail -n 30 docs/claude/SESSION_LOG.md || true`
-!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs --local 2>/dev/null || true`
+!`test -f ${CLAUDE_PROJECT_DIR}/docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat ${CLAUDE_PROJECT_DIR}/docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
+!`test -f ${CLAUDE_PROJECT_DIR}/docs/claude/SESSION_LOG.md && tail -n 30 ${CLAUDE_PROJECT_DIR}/docs/claude/SESSION_LOG.md || true`
+!`node ${CLAUDE_PROJECT_DIR}/scripts/wn-cycle.mjs --local 2>/dev/null || true`
 
 ## Mission
 

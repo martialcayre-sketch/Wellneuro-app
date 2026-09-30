@@ -9,8 +9,8 @@ effort: low
 
 # WellNeuro — handoff
 
-!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs`
-!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-context-pack.mjs --format markdown`
+!`node ${CLAUDE_PROJECT_DIR}/scripts/wn-cycle.mjs`
+!`node ${CLAUDE_PROJECT_DIR}/scripts/wn-context-pack.mjs --format markdown`
 
 Argument : `$ARGUMENTS`
 
