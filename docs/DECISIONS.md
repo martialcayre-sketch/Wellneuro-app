@@ -97,6 +97,29 @@ pour une ancre, le repli au plus ancien, le repli sans borne de date,
 l'orpheline perdue, la relance jamais dite, la garde de dossier retirée, la
 lecture datée non bornée.
 
+**Complément du 2026-09-30 — lot 2, le portail.**
+
+- **Ce qui compte depuis le jour 0** :
+  - le point d'étape ouvert, au GET comme au POST des check-ins ;
+  - la fin de cycle et le début de cycle servis au portail ;
+  - le début de cycle du carnet praticien.
+- **Les check-ins se lisent sur les versions du calendrier.** Un point rempli
+  sous une version rediffusée depuis reste rempli : sans cela, une
+  rediffusion au 15e jour aurait fait redemander un J14 déjà renseigné. Une
+  version d'avant un pivot n'en fait pas partie. Le check-in s'écrit toujours
+  sous la version active. Le côté praticien lisait déjà par carte, toutes
+  versions confondues.
+- **L'identité de l'épisode d'agenda ne change pas.** Il suit toujours la
+  version diffusée (`cycleRef`) : la changer aurait détaché les carnets déjà
+  enregistrés. Seul son début passe au jour 0.
+- **Ce qui ne change pas.** Le prévol, la clôture et la boussole lisent
+  `approvedAt` comme un fait (la date d'une approbation), pas comme un
+  calendrier.
+- **Repli.** Si le calendrier de la diffusion active ne se résout pas, la
+  route compte depuis l'approbation active, comme avant, et le journalise. La
+  production ne porte pas ce cas.
+- **Bancs.** Treize mutations jouées, toutes détectées.
+
 ### D-254 — Les assiettes indiquées se hiérarchisent pour l'aide au choix : la priorité visée d'abord, la convergence ensuite, et la règle est dite à l'écran
 
 - Date : 2026-09-30

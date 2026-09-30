@@ -12,6 +12,19 @@ const { prisma, reconstructProtocolDraft, resolvePatientFoodCompassView, rejouer
   rejouerCarteDecision: vi.fn(),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
+
+// Le calendrier du cycle ([[D-255]]) : par défaut, le jour 0 est l'approbation
+// active et sa seule version — le cas d'un cycle diffusé une fois. Les cas
+// d'une rediffusion le règlent eux-mêmes.
+const { calendrierDuProtocoleDiffuse } = vi.hoisted(() => ({
+  calendrierDuProtocoleDiffuse: vi.fn(
+    async (_idPatient: string, diffuse: { approvedAt: Date; protocolDraftId: string }) => ({
+      jourZero: diffuse.approvedAt,
+      versionIds: [diffuse.protocolDraftId],
+    }),
+  ),
+}));
+vi.mock('@/lib/protocol/calendriersPersistes', () => ({ calendrierDuProtocoleDiffuse }));
 vi.mock('@/lib/protocol/fromPrisma', () => ({
   reconstructProtocolDraft,
   ProtocolPayloadIntegrityError: class ProtocolPayloadIntegrityError extends Error {},
@@ -264,6 +277,23 @@ describe('GET /api/portail/protocole', () => {
     const res = await GET(request(proprioCookie()));
     const json = (await res.json()) as { finDeCycle: boolean };
     expect(json.finDeCycle).toBe(true);
+  });
+
+  it('compte la fin et le début du cycle depuis son jour 0, pas depuis la dernière rediffusion (D-255)', async () => {
+    mockOwnerAuth();
+    mockProtocoleDiffuse();
+    // L'approbation active a 7 jours ; la première diffusion du cycle, 30.
+    const jourZero = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+    calendrierDuProtocoleDiffuse.mockResolvedValueOnce({ jourZero, versionIds: ['proto_DEC#h'] });
+
+    const res = await GET(request(proprioCookie()));
+    const json = (await res.json()) as { finDeCycle: boolean; vue: { debutCycle: string } };
+    expect(json.finDeCycle).toBe(true);
+    expect(json.vue.debutCycle).toBe(jourZero.toISOString());
+    expect(calendrierDuProtocoleDiffuse).toHaveBeenCalledWith(
+      'PAT_PROPRIO',
+      expect.objectContaining({ approbationId: 'appr_1', protocolDraftId: 'proto_DEC#h' }),
+    );
   });
 
   it('ajoute uniquement le résumé Boussole patient-safe du protocole approuvé', async () => {

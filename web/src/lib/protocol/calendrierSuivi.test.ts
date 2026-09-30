@@ -30,7 +30,7 @@ function diffusion(
   approuveLeJour: number,
   priorite: string,
   episode: EpisodeDeRattachement | null = T0,
-  surcharge: Partial<DiffusionHistorique> & { version?: Partial<DiffusionHistorique['version']> } = {},
+  surcharge: Partial<Omit<DiffusionHistorique, 'version'>> & { version?: Partial<DiffusionHistorique['version']> } = {},
 ): DiffusionHistorique {
   const { version, ...reste } = surcharge;
   return {
@@ -43,6 +43,7 @@ function diffusion(
     protocolDraftInputHash: `version-${id}`,
     ...reste,
     version: {
+      id: `v-${id}`,
       inputHash: `version-${id}`,
       decisionCardInputHash: `carte-${id}`,
       status: 'practitioner_reviewed',
@@ -66,6 +67,7 @@ describe('calendrierDuCycle', () => {
       prioriteId: 'PRIO-A',
       approbationId: 'a',
       relance: false,
+      versionIds: ['v-a'],
     });
   });
 
@@ -74,6 +76,25 @@ describe('calendrierDuCycle', () => {
     expect(calendrier?.jourZero).toEqual(jour(10));
     expect(calendrier?.approbationId).toBe('a');
     expect(calendrier?.relance).toBe(false);
+  });
+
+  it('les versions d’un calendrier sont toutes celles diffusées depuis son jour 0, sans doublon', () => {
+    const calendrier = calendrierDuCycle('ep-T0', [
+      diffusion('a', 10, 'PRIO-A'),
+      diffusion('b', 20, 'PRIO-A'),
+      // La même version rediffusée n'est comptée qu'une fois.
+      diffusion('c', 22, 'PRIO-A', T0, { version: { id: 'v-b' } }),
+    ]);
+    expect(calendrier?.versionIds).toEqual(['v-a', 'v-b']);
+  });
+
+  it('un pivot laisse hors de son calendrier les versions d’avant lui', () => {
+    const calendrier = calendrierDuCycle('ep-T0', [
+      diffusion('a', 10, 'PRIO-A'),
+      diffusion('b', 30, 'PRIO-B'),
+      diffusion('c', 35, 'PRIO-B'),
+    ]);
+    expect(calendrier?.versionIds).toEqual(['v-b', 'v-c']);
   });
 
   it('un pivot, une diffusion dont la priorité change, relance le calendrier', () => {
@@ -201,6 +222,19 @@ describe('calendriersParCycle', () => {
       ANCRES,
     );
     expect(parCycle.get('ep-T0')).toMatchObject({ jourZero: jour(20), approbationId: 'b' });
+  });
+
+  it('dit le cycle de chaque diffusion recevable, et d’aucune autre', () => {
+    const { cycleParDiffusion } = calendriersParCycle(
+      [
+        diffusion('a', 10, 'PRIO-A', T0),
+        diffusion('b', 30, 'PRIO-A', J21),
+        diffusion('c', 65, 'PRIO-B', T1),
+        diffusion('d', 66, 'PRIO-B', T1, { confirmation: 'autre' }),
+      ],
+      ANCRES,
+    );
+    expect([...cycleParDiffusion]).toEqual([['a', 'ep-T0'], ['b', 'ep-T0'], ['c', 'ep-T1']]);
   });
 
   it('un cycle sans diffusion n’a pas de calendrier', () => {

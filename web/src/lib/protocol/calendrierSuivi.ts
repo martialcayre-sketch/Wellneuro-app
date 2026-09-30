@@ -49,6 +49,8 @@ export type DiffusionHistorique = {
   decisionCardInputHash: string;
   protocolDraftInputHash: string;
   version: {
+    /** L'identifiant de la version diffusée (`protocol_drafts.id`). */
+    id: string;
     inputHash: string;
     decisionCardInputHash: string;
     status: string;
@@ -67,6 +69,12 @@ export type CalendrierSuivi = {
   approbationId: string;
   /** Vrai quand un pivot a relancé le calendrier après la première diffusion. */
   relance: boolean;
+  /**
+   * Les versions diffusées depuis le jour 0, dans l'ordre. Un point d'étape
+   * rempli sous l'une d'elles appartient à ce calendrier : une rediffusion
+   * qui ne relance rien ne le fait pas redemander.
+   */
+  versionIds: string[];
 };
 
 /**
@@ -151,6 +159,7 @@ export function calendrierDuCycle(
     prioriteId: ouvrante.version.selectedPriorityId,
     approbationId: ouvrante.approbationId,
     relance: ouvrante !== premiere,
+    versionIds: [...new Set(triees.slice(triees.indexOf(ouvrante)).map((diffusion) => diffusion.version.id))],
   };
 }
 
@@ -167,8 +176,14 @@ export function calendrierDuCycle(
 export function calendriersParCycle(
   diffusions: readonly DiffusionHistorique[],
   ancres: readonly AncreDeRattachement[],
-): { parCycle: Map<string, CalendrierSuivi>; nonRattachees: string[] } {
+): {
+  parCycle: Map<string, CalendrierSuivi>;
+  /** Le cycle de chaque diffusion recevable et rattachée, par approbation. */
+  cycleParDiffusion: Map<string, string>;
+  nonRattachees: string[];
+} {
   const groupes = new Map<string, DiffusionHistorique[]>();
+  const cycleParDiffusion = new Map<string, string>();
   const nonRattachees: string[] = [];
   for (const diffusion of diffusions) {
     if (!estDiffusionRecevable(diffusion)) continue;
@@ -177,6 +192,7 @@ export function calendriersParCycle(
       nonRattachees.push(diffusion.approbationId);
       continue;
     }
+    cycleParDiffusion.set(diffusion.approbationId, cycleId);
     const groupe = groupes.get(cycleId);
     if (groupe) groupe.push(diffusion);
     else groupes.set(cycleId, [diffusion]);
@@ -186,5 +202,5 @@ export function calendriersParCycle(
     const calendrier = calendrierDuCycle(cycleId, groupe);
     if (calendrier) parCycle.set(cycleId, calendrier);
   }
-  return { parCycle, nonRattachees };
+  return { parCycle, cycleParDiffusion, nonRattachees };
 }

@@ -8403,3 +8403,14 @@ sans consommateur. 12 mutations, toutes détectées.
 par `assessment_episode_id` : le repli par date ne sert à aucune ligne.
 
 **Prochaine action.** PR du lot 1, puis lot 2 (portail).
+
+## 2026-09-30 — Calendrier de suivi, lot 2 : le portail (D-255)
+
+**Fait.** Lot 1 mergé (#1262) et déployé. Lot 2 : check-ins, fin et début
+de cycle, carnet praticien comptent depuis le jour 0 ; les check-ins se
+lisent sur les versions du calendrier. 13 mutations, toutes détectées.
+
+**Écarté.** Changer l'identité de l'épisode d'agenda (`cycleRef`) : elle
+détacherait les carnets enregistrés.
+
+**Prochaine action.** PR du lot 2, puis lot 3 (trajectoire et cockpit).

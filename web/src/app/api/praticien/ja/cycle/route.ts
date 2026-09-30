@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
+import { calendrierDuProtocoleDiffuse } from '@/lib/protocol/calendriersPersistes';
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
 import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
 import { buildPatientProtocolView } from '@/lib/clinical-engine/patientProtocolView';
@@ -130,7 +131,8 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         // surface patient, sous le drapeau C5.
         boussoles: [],
         cycleRef: diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF),
-        debutCycle: diffuse.approvedAt.toISOString(),
+        // Le jour 0 du cycle, comme le portail ([[D-255]]).
+        debutCycle: (await calendrierDuProtocoleDiffuse(idPatient, diffuse)).jourZero.toISOString(),
       });
     } catch (erreur) {
       console.warn(
