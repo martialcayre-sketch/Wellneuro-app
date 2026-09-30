@@ -141,7 +141,8 @@ sans rien lire si `WN_ALLOW_RISKY_COMMAND=1`. Détail :
 
 | Palier | Commande | Quand |
 |---|---|---|
-| T1 | `cd web && npm run check` | après chaque édition |
+| T1 | `cd web && npm run check:rapide` | après chaque édition |
+| T1 complet | `cd web && npm run check` | avant chaque commit |
 | T2 | `npm run test:worktree -- --fast` | avant tout commit UI ou API |
 | T3 | `npm run test:worktree` | avant une PR migration/scoring/clinique |
 

@@ -8403,3 +8403,15 @@ sans consommateur. 12 mutations, toutes détectées.
 par `assessment_episode_id` : le repli par date ne sert à aucune ligne.
 
 **Prochaine action.** PR du lot 1, puis lot 2 (portail).
+
+## 2026-09-30 — T1 rapide : check:rapide après chaque édition
+
+**Fait.** `npm run check` mesuré (61 s, dont 46 s sur trois postes qui ne
+regardent que `scripts/`, `.github/`, `.claude/` ou le dépôt entier).
+`check:rapide` dérive sa liste de `check` et ne rend conditionnels que ces
+trois postes ; ≈ 15 s sur un diff `web/` ordinaire. `check` complet reste dû
+avant commit.
+
+**Décidé (responsable).** Oui, en PR à part.
+
+**Prochaine action.** PR, puis merge après les quatre PR d'outillage.
