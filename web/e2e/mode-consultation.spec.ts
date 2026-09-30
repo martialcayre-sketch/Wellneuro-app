@@ -32,10 +32,12 @@ test.describe('Mode consultation (fiche patient)', () => {
       await rail.getByRole('tab', { name: /Données fiables/ }).click();
       await expect(page.getByRole('heading', { name: 'Données manquantes' })).toBeVisible();
 
-      // Actions : protocole et clôture indisponibles (aucune priorité sélectionnée).
+      // Actions : protocole et clôture indisponibles. Aucune carte n'est servie
+      // (épisode non confirmé) : le motif le dit, sans parler de priorité
+      // ([[D-253]] — il affirmait « priorité non sélectionnée » sans le savoir).
       await rail.getByRole('tab', { name: /Actions/ }).click();
       await expect(page.getByRole('heading', { name: 'Protocole 21 jours' })).toBeVisible();
-      await expect(page.getByText('Protocole indisponible — priorité praticien non sélectionnée')).toBeVisible();
+      await expect(page.getByText('Protocole indisponible — aucune carte de décision n’est servie')).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Clôture et aperçu patient' })).toBeVisible();
       await expect(page.getByText(/Aperçu du protocole indisponible/)).toBeVisible();
 

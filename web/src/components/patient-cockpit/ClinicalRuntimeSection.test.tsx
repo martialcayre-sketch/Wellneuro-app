@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { AbstentionAssessment, ProposedAssessmentEpisode } from '@/lib/clinical-engine/types';
@@ -1327,12 +1327,34 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
     trajectoire: unknown;
     cockpitT0: CockpitRuntimeApiResponse;
     cockpitJ21?: CockpitRuntimeApiResponse;
+    /** Absente : la route répond 500 — la diffusion est illisible. */
+    diffusion?: unknown;
+    /** La carte T0 n'est servie qu'une fois cette promesse tenue. */
+    retardT0?: Promise<void>;
+    cockpitT1?: CockpitRuntimeApiResponse;
+    /** La carte T1 n'est servie qu'une fois cette promesse tenue. */
+    retardT1?: Promise<void>;
+    /** Diffusion PAR CARTE (`decisionCardId`) ; une carte absente répond 500. */
+    diffusionParCarte?: Record<string, unknown>;
   }) {
     return vi.fn(async (url: string, _init?: { method?: string; body?: string }) => {
       const cible = String(url);
       if (cible.includes('/api/praticien/trajectoire')) return rep(reponses.trajectoire);
+      if (cible.includes('/api/praticien/protocoles/diffusion') && reponses.diffusionParCarte) {
+        const carte = new URL(cible, 'http://banc').searchParams.get('decisionCardId') ?? '';
+        const corps = reponses.diffusionParCarte[carte];
+        return corps === undefined ? rep({}, false, 500) : rep(corps);
+      }
+      if (cible.includes('/api/praticien/protocoles/diffusion') && reponses.diffusion !== undefined) {
+        return rep(reponses.diffusion);
+      }
       if (cible.includes('/api/praticien/cockpit')) {
         if (cible.includes('milestone=J21') && reponses.cockpitJ21) return rep(reponses.cockpitJ21);
+        if (cible.includes('milestone=T1') && reponses.cockpitT1) {
+          if (reponses.retardT1) await reponses.retardT1;
+          return rep(reponses.cockpitT1);
+        }
+        if (reponses.retardT0) await reponses.retardT0;
         return rep(reponses.cockpitT0);
       }
       return rep({}, false, 500);
@@ -1427,19 +1449,26 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
     });
   });
 
-  it('un rejeu ne verrouille pas le jalon dû : le J21 reprend la main sur un T0 rejoué', async () => {
-    // T0 confirmé il y a 21 jours : le J21 est dû. Sans la distinction
-    // frais/rejoué, la garde Mo4 aurait épinglé l'écran sur la carte T0
-    // rejouée et le J21 dû serait resté invisible.
-    const propositionJ21: CockpitRuntimeApiResponse = {
-      status: 'proposal_required',
-      proposal: { ...proposal, assessmentEpisodeId: 'episode-J21', milestone: 'J21' },
-      proposalHash: 'hash-J21',
-    };
+  const PROPOSITION_J21: CockpitRuntimeApiResponse = {
+    status: 'proposal_required',
+    proposal: { ...proposal, assessmentEpisodeId: 'episode-J21', milestone: 'J21' },
+    proposalHash: 'hash-J21',
+  };
+  const DIFFUSE = {
+    ok: true,
+    approval: { protocolDraftInputHash: 'hash-protocole', approvedAt: '2026-09-10T09:00:00.000Z' },
+    stale: false,
+  };
+
+  it('un rejeu ne verrouille pas le jalon dû : le J21 reprend la main une fois un protocole DIFFUSÉ', async () => {
+    // T0 confirmé il y a 21 jours, protocole diffusé : le J21 est dû. Sans la
+    // distinction frais/rejoué, la garde Mo4 aurait épinglé l'écran sur la carte
+    // T0 rejouée et le J21 dû serait resté invisible.
     const fetchMock = fetchParUrl({
       trajectoire: trajectoireAvecCycle(21),
       cockpitT0: pretRejoue(),
-      cockpitJ21: propositionJ21,
+      cockpitJ21: PROPOSITION_J21,
+      diffusion: DIFFUSE,
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -1447,6 +1476,159 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
 
     expect(await screen.findByRole('button', { name: 'Confirmer l’épisode J21' })).toBeTruthy();
     expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(true);
+  });
+
+  // [[D-253]] — PAS DE JALON DE SUIVI SANS PROTOCOLE DIFFUSÉ. Le cas réel :
+  // T0 confirmé, priorité retenue, aucun protocole, et à T0 + 25 j la bascule
+  // sur le J21 retirait la carte — donc le constructeur. La carte d'ancre
+  // reste, le J21 est dit, et il n'est même pas demandé au serveur.
+  it('aucun protocole diffusé : la carte T0 reste, le J21 est dit et n’est pas demandé', async () => {
+    const fetchMock = fetchParUrl({
+      trajectoire: trajectoireAvecCycle(25),
+      cockpitT0: pretRejoue(),
+      cockpitJ21: PROPOSITION_J21,
+      diffusion: { ok: true, approval: null, stale: false },
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+
+    expect(await screen.findByText(
+      'Le jalon J21 est dans sa fenêtre, mais aucun protocole n’a été diffusé sur ce cycle : il ne sera proposé qu’après la diffusion.',
+    )).toBeTruthy();
+    expect(screen.getByText(/Épisode T0 confirmé/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Confirmer l’épisode J21' })).toBeNull();
+    expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(false);
+  });
+
+  // LA COURSE RÉELLE : le GET T0 est le plus lent (lui seul calcule les
+  // préconditions), la trajectoire arrive AVANT lui. Sans l'attente de la carte
+  // d'ancre, le J21 partait à l'arrivée de la trajectoire — et sa réponse
+  // écartait ensuite celle du T0 par le jeton d'obsolescence.
+  it('la trajectoire arrive AVANT la carte T0 : le J21 n’est pas demandé pour autant', async () => {
+    let servirT0: () => void = () => {};
+    const retardT0 = new Promise<void>(resolve => { servirT0 = resolve; });
+    const fetchMock = fetchParUrl({
+      trajectoire: trajectoireAvecCycle(25),
+      cockpitT0: pretRejoue(),
+      cockpitJ21: PROPOSITION_J21,
+      diffusion: { ok: true, approval: null, stale: false },
+      retardT0,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(appel => String(appel[0]).includes('/api/praticien/trajectoire'))).toBe(true),
+    );
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(false);
+
+    servirT0();
+    expect(await screen.findByText(/aucun protocole n’a été diffusé sur ce cycle/)).toBeTruthy();
+    expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(false);
+  });
+
+  // DEUX CYCLES (revue de la PR #1257). Le montage rejoue la carte T0 du
+  // PREMIER cycle, diffusé ; le J21 dû est celui du `T1`, dont aucun protocole
+  // n'a été diffusé. C'est la diffusion de la carte T1 qui compte.
+  function pretRejoueCarte(decisionCardId: string): CockpitRuntimeApiResponse {
+    const base = pretRejoue();
+    if (base.status !== 'ready') throw new Error('fixture inattendue');
+    return { ...base, decisionCard: { ...base.decisionCard, decisionCardId } };
+  }
+
+  /** Un premier cycle ancien (`T0`), un second (`T1`) confirmé il y a 25 jours. */
+  function trajectoireDeuxCycles() {
+    const jour = 24 * 60 * 60 * 1000;
+    const dateT0 = new Date(Date.now() - 140 * jour).toISOString();
+    const dateT1 = new Date(Date.now() - 25 * jour).toISOString();
+    return {
+      ok: true,
+      trajectoire: {
+        index: [
+          { milestone: 'T0', date: dateT0, cycleId: 'cycle-1' },
+          { milestone: 'T1', date: dateT1, cycleId: 'cycle-2' },
+        ],
+        cycles: [
+          { cycleId: 'cycle-1', ancre: 'T0', dateAncre: dateT0, versionScore: 'v15', jalons: [], momentum: null, momentumParBesoin: [] },
+          { cycleId: 'cycle-2', ancre: 'T1', dateAncre: dateT1, versionScore: 'v15', jalons: [], momentum: null, momentumParBesoin: [] },
+        ],
+        comparaison: { disponible: false, raison: 'versions_differentes' },
+        discordanceOrdreCycles: false,
+      },
+    };
+  }
+
+  it('deux cycles : la diffusion lue est celle de l’ancre du cycle COURANT, pas celle du T0', async () => {
+    const fetchMock = fetchParUrl({
+      trajectoire: trajectoireDeuxCycles(),
+      cockpitT0: pretRejoueCarte('carte-cycle-1'),
+      cockpitT1: pretRejoueCarte('carte-cycle-2'),
+      cockpitJ21: PROPOSITION_J21,
+      diffusionParCarte: {
+        'carte-cycle-1': DIFFUSE,
+        'carte-cycle-2': { ok: true, approval: null, stale: false },
+      },
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+
+    expect(await screen.findByText(/aucun protocole n’a été diffusé sur ce cycle/)).toBeTruthy();
+    expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=T1'))).toBe(true);
+    expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(false);
+  });
+
+  // LE RECHARGEMENT DE L'ANCRE COURANTE NE PARLE PAS AU NOM DE L'ANCIENNE.
+  // Pendant que la carte T1 se lit, `runtime` porte encore celle du T0 — non
+  // diffusé ici. L'annonce « aucun protocole diffusé » serait alors fausse pour
+  // un cycle T1 qui, lui, l'est ; et une fois la carte T1 lue, le J21 part.
+  it('deux cycles, ancre courante en lecture : rien n’est dit sur la foi de la carte précédente', async () => {
+    let servirT1: () => void = () => {};
+    const retardT1 = new Promise<void>(resolve => { servirT1 = resolve; });
+    const fetchMock = fetchParUrl({
+      trajectoire: trajectoireDeuxCycles(),
+      cockpitT0: pretRejoueCarte('carte-cycle-1'),
+      cockpitT1: pretRejoueCarte('carte-cycle-2'),
+      retardT1,
+      cockpitJ21: PROPOSITION_J21,
+      diffusionParCarte: {
+        'carte-cycle-1': { ok: true, approval: null, stale: false },
+        'carte-cycle-2': DIFFUSE,
+      },
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+
+    await waitFor(() => expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=T1'))).toBe(true));
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(screen.queryByText(/aucun protocole n’a été diffusé sur ce cycle/)).toBeNull();
+
+    servirT1();
+    expect(await screen.findByRole('button', { name: 'Confirmer l’épisode J21' })).toBeTruthy();
+  });
+
+  it('diffusion ILLISIBLE : ni « diffusé » ni « non diffusé » — le J21 attend, et l’écran le dit', async () => {
+    const fetchMock = fetchParUrl({
+      trajectoire: trajectoireAvecCycle(25),
+      cockpitT0: pretRejoue(),
+      cockpitJ21: PROPOSITION_J21,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+
+    expect(await screen.findByText(
+      'Le jalon J21 est dans sa fenêtre, mais la diffusion du protocole n’a pas pu être lue : il n’est pas proposé pour l’instant.',
+    )).toBeTruthy();
+    expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(false);
   });
 });
 
