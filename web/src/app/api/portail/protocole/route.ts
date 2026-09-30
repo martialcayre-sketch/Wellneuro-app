@@ -5,6 +5,7 @@ import {
   authorizePortail,
   resolveProtocoleDiffuse,
 } from '@/lib/protocol/portailProtocol';
+import { calendrierDuProtocoleDiffuse } from '@/lib/protocol/calendriersPersistes';
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
 import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
 import { vuePatientOuRefus } from '@/lib/protocol/servirAuPatient';
@@ -162,8 +163,11 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
           .filter((view): view is PatientFoodCompassSafeView => view !== null)
       : [];
 
+    // Le cycle se compte depuis son jour 0, pas depuis la dernière
+    // rediffusion ([[D-255]]).
+    const { jourZero } = await calendrierDuProtocoleDiffuse(auth.idPatient, diffuse);
     const finDeCycle =
-      (new Date().getTime() - diffuse.approvedAt.getTime()) / JOUR_MS > JOURS_FIN_DE_CYCLE;
+      (new Date().getTime() - jourZero.getTime()) / JOUR_MS > JOURS_FIN_DE_CYCLE;
 
     // LA CARTE, REJOUÉE. Si elle a dérivé, ou si le contrat refuse ce que le
     // payload contient, rien n'est servi — et l'écran le DIT. Le repli sur
@@ -208,7 +212,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       vue: service.vue,
       boussoles,
       cycleRef: diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF),
-      debutCycle: diffuse.approvedAt.toISOString(),
+      debutCycle: jourZero.toISOString(),
     });
 
     return NextResponse.json({
