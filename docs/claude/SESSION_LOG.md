@@ -8583,3 +8583,20 @@ puis constat d'usage par conteneur (`D-125`). Ensuite : amendement RGPD/TRUST
 avant tout code du LOT-02.
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-01 — BIO-INGEST, préalable du LOT-02 : amendement RGPD/TRUST (A4)
+
+**Fait.** LOT-01 constaté déployé (bf35e7af, 11:54 UTC). `usage_ia` v4 (sans
+accusé) et `donnees_confidentialite` v11 (avec accusé) déclarent le compte
+rendu biologique transmis ENTIER à Anthropic ; dossier RGPD §2 ter, rubriques
+5/6/7/8/14 ; amendement de D-256. Revue `wn-reviewer` : six P2 corrigés.
+
+**Écarté.** Masquer l'identité avant envoi (non garantissable) ; garde
+« accusé v11 requis » par dossier (information par le document, arbitrage) ;
+formulation « avant sa mise en service » (a pourri en v2).
+
+**Prochaine action.** PR, CI, merge sur confirmation, déploiement constaté,
+compte des accusés v11 dus. Puis LOT-02 en mode Plan.
+
+**Questions ouvertes.** Demande de DPA Anthropic à envoyer (condition du
+drapeau) ; aucun document patient ne dit le transfert hors UE.

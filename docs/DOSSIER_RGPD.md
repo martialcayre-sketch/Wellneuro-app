@@ -172,6 +172,79 @@ automatiquement** ». Ce que le document promet au patient porte sur ce qui lui
 PARVIENT, et rien de ce qui lui parvient ne change. Le moment où un brouillon
 commence à se préparer est un fait interne au cabinet.
 
+### 2 ter. Le relevé des comptes rendus biologiques par IA vision ([[D-256]] A4) — déclaré AVANT activation (2026-10-01)
+
+**Ce qui est déclaré, et pourquoi maintenant.** Le LOT-02 de BIO-INGEST fera
+déposer par le praticien le compte rendu d'analyses que le patient lui remet
+(PDF, puis photo ou scan au LOT-03). Le document sera conservé en base Postgres,
+chez l'hébergeur HDS (A2). Un modèle d'Anthropic, en lecture d'image, en
+relèvera les valeurs. [[D-256]] A4 fait de cette déclaration une **condition de
+sortie non négociable**, posée avant toute ligne de code d'extraction et avant
+toute activation. C'est l'inverse de l'épisode du 2026-09-09 rapporté au §2 :
+cette fois, la déclaration vient d'abord. **Au 2026-10-01, rien de ce
+traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
+
+- **Finalité** : alléger l'enregistrement des résultats biologiques chiffrés
+  dans `resultats_biologiques`. Aucune qualification de valeur (normale,
+  anormale) et aucune conclusion ; le moteur clinique ne lit pas ces résultats
+  ([[D-122]]).
+- **Déclencheur** : un geste du praticien, le dépôt d'un document. Rien ne
+  s'extrait sans lui.
+- **Ce qui part chez Anthropic : le compte rendu ENTIER.** Cela comprend
+  l'en-tête d'identité (nom, date de naissance, laboratoire, références), et
+  **toutes** les valeurs du document, y compris celles qui ne seront pas
+  retenues. Aucun masquage n'est promis. Le LOT-02 ne peut pas le garantir sur
+  des documents hétérogènes, et le patient lit le document entier déclaré
+  (arbitrage du 2026-10-01). C'est le flux le plus identifiant des quatre qui
+  partent vers ce sous-traitant (rubrique 7).
+- **Ce qui en sort** : des lignes **candidates**, dans des tables de staging
+  (lot d'import et lignes candidates, A5). Une ligne n'atteint
+  `resultats_biologiques` que par la validation explicite du praticien dans
+  l'écran prévu. Le choix de l'analyte reste une table d'alias signée, jamais un
+  choix du modèle. Aucune unité n'est convertie ([[D-157]]).
+- **Ce qui n'est pas une décision automatisée (art. 22)** : rien n'est écrit au
+  dossier sans geste humain, et rien de ce qui est extrait n'atteint le patient
+  sans passer par le praticien.
+
+**Information du patient, publiée par le même geste** : « L'intelligence
+artificielle dans Wellneuro » **v4** et « Vos données personnelles » **v11**
+(`registre.ts`). La v11 remplace la phrase venue de la v6, « Ces résultats sont
+saisis par votre praticien », qui devenait fausse, et ajoute le relevé à la
+ligne Anthropic. **Accusé exigé sur la v11** : seule la version courante en
+réclame un, et sans lui l'accusé de la v10 encore dû s'effaçait. Pas d'accusé
+sur la v4, que la séquence « Avant de commencer » ne présente pas. **Ce que
+cet accusé ne prouve pas** : l'écran de la séquence qui le recueille ne montre
+pas la transmission du compte rendu. Un accusé `pris_connaissance` de la v11
+atteste que le document courant a été présenté et reconnu. Il ne prouve pas que
+cette phrase a été lue, et ne doit pas être cité comme tel.
+
+**L'information est faite par le document, pas par la personne — arbitrage du
+responsable, 2026-10-01.** L'accusé de la v11 n'atteint un patient qu'à sa
+prochaine visite au portail, et la production montre qu'on y entre le jour même
+ou jamais (rubrique 14, ligne « Information »). Une fois le drapeau posé, un
+compte rendu peut donc partir en entier chez Anthropic pour un patient qui n'a
+lu que la v10, ou rien. **Ce cas est accepté** : aucun garde n'exige l'accusé de
+la v11 avant une extraction, et la déclaration se lit « publiée avant
+activation » pour le document servi, pas « reçue avant activation » par chaque
+patient. Revue `wn-reviewer` du 2026-10-01 (P1), écartée avec ce motif.
+
+**Conditions de pose du drapeau d'extraction (LOT-02)**, toutes **préalables** :
+
+1. la v4 et la v11 publiées, c'est-à-dire mergées **et déployées**, le
+   déploiement constaté ([[D-248]]) ;
+2. le présent paragraphe validé par le responsable ;
+3. **la demande de DPA à Anthropic envoyée**
+   (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`), sa date établie par lecture du fil et
+   non déclarée. Arbitrage du 2026-10-01 : l'envoi est exigé, pas la signature.
+
+La condition s'écrira aussi **sur la ligne du drapeau** dans
+`docs/FEATURE_FLAGS.md` quand le LOT-02 le créera. Une condition qui ne vit que
+dans ce dossier est une condition qu'on manque (§2).
+
+**Ce que ce paragraphe ne fait pas** : il ne qualifie ni la base légale
+(rubrique 3) ni le transfert (rubrique 7). Ces deux actes reviennent au
+responsable avec son conseil.
+
 ## 3. Base légale
 
 **TROU intégral.** Aucune base légale n'est qualifiée dans le dépôt, et ce
@@ -222,6 +295,7 @@ personnelles se répartissent ainsi :
 | Médecin traitant du dossier | `Patient.medecinTraitantNom`, `Patient.medecinTraitantCoordonnees` — recueillis depuis le **2026-09-16** | **Données personnelles d'un TIERS** — un professionnel de santé qui n'est pas la personne concernée, et qui n'est pas informé par ce traitement. Le rattachement d'un patient à un médecin traitant est en outre une information de santé indirecte. Sa qualification appartient au responsable de traitement. **Distinct de `CorrespondanceMedecin.medecinLibelle`**, texte libre saisi par courrier et non attaché au dossier : ces deux colonnes-ci disent « le médecin traitant de ce patient », l'autre disait « le destinataire de cette lettre » |
 | **Santé (art. 9)** | `Consultation`, `QuestionnaireReponse`, `SyntheseIA`, `AssessmentEpisode`, `ProtocolDraft`, `ProtocolCheckin`, `AgendaSommeilNuit`, `AgendaAlimentaireJour`, `CorrespondanceMedecin`, `CorrespondancePatient`, `BookletEnvoi`, `RelectureNote`, `TrustAdverseEffectReport` | **Catégorie particulière** |
 | **Santé — exploration biologique (art. 9)** | `ArbitrageBiologique`, `PanelBiologieDocumente`, `DocumentPatientBiologie`, `ResultatBiologique` | **Catégorie particulière** — voir le paragraphe ci-dessous |
+| **Santé — comptes rendus biologiques déposés et lignes candidates (art. 9)** ([[D-256]] A4, déclaré le 2026-10-01 **avant** leur création) | Tables du LOT-02 de BIO-INGEST (lot d'import, lignes candidates, document source), **nommées ici par la migration qui les créera** : aucun nom de modèle n'est écrit avant d'exister | Même nature que `ResultatBiologique`, dont elles sont l'amont. Elles ajoutent **le document lui-même**, conservé en base HDS (A2) avec son en-tête d'identité et toutes ses valeurs, y compris celles qui ne seront pas retenues. Envoyé en entier à Anthropic pour extraction (§2 ter, rubrique 7). Durée de conservation : trou de la rubrique 8 |
 | **Santé — fiches d'assiette remises au patient (art. 9)** (`D-251`) | `FicheAssietteRemise` (dossier, clic « Valider pour diffusion » qui l'a remise, action du protocole, version de la fiche remise et son empreinte, date de remise) | **Catégorie particulière — qualification du responsable de traitement, rendue le 2026-09-28.** La table ne recopie aucun texte, mais la version désigne une assiette, et **le nom d'une assiette révèle une indication** (`D-251` §9). Elle est rangée en art. 9 comme le protocole qui la porte (`ProtocolDraft`). Elle a été créée par la migration M2 (lot 7, appliquée le 2026-09-28). Elle s'alimente au clic « Valider pour diffusion » depuis l'ouverture de `WN_FICHES_ASSIETTE` (2026-09-28) ; la lecture patient est ouverte depuis le 2026-09-29 (`WN_FICHES_ASSIETTE_LECTURE`). Elle était encore vide à cette seconde ouverture (constat par conteneur). Le patient en est averti par un e-mail neutre qui ne nomme ni l'assiette ni la fiche (type `document_remis` du registre des correspondances). Elle est effacée nommément avec le dossier. La lecture de la fiche par le patient s'accuse dans `PortailLecturePatient`, espèce `fiche_assiette`, sans horodatage |
 | Gestes praticien MOTIVÉS sur un dossier nommé | `EcartementProposition` (identifiant de la cible écartée, règles d'orientation qui la motivaient, motif écrit, e-mail du praticien, date, chaînage de reprise) · `DecisionPrioritySelection` (identifiant de la carte de décision et son empreinte, identifiant du candidat retenu — dérivé d'une règle clinique —, motif écrit, e-mail du praticien, date, chaînage de correction) | **Une seule question, deux tables** — voir le paragraphe ci-dessous. Chacune porte un raisonnement clinique écrit par un praticien sur une personne identifiée : « cette exploration n'a pas lieu d'être pour ce patient, et voici pourquoi », « c'est cette priorité qui est retenue, et voici pourquoi ». Leur qualification au titre de l'article 9 appartient au responsable de traitement et n'est PAS posée ici |
 | Preuves de transparence | `TrustAcknowledgement`, `TrustChoiceEvent`, `TrustRightsRequest`, `TrustPrivacyIncident` | Traces d'information, de choix et de demandes |
@@ -291,7 +365,7 @@ les pages du portail — **v5 depuis le 2026-09-07** (`D-141`).
 | Sous-traitant | Rôle tel qu'il est dit au patient |
 |---|---|
 | Scalingo | hébergement de l'application et de la base de données (HDS, France) |
-| Anthropic | assistance d'IA pour la préparation des synthèses, **pour la proposition de formulation de la priorité d'un objectif** (`D-167`) **et pour la proposition d'un premier jet de « Ce que j'ai compris de vous »** (`D-168`) |
+| Anthropic | assistance d'IA pour la préparation des synthèses, **pour la proposition de formulation de la priorité d'un objectif** (`D-167`), **pour la proposition d'un premier jet de « Ce que j'ai compris de vous »** (`D-168`) **et pour le relevé des valeurs des comptes rendus d'analyses biologiques** (`D-256` A4, déclaré le 2026-10-01 avant activation — §2 ter) |
 | Google Workspace | acheminement des e-mails Wellneuro, **y compris les documents adressés au patient** (bilan, comptes rendus) |
 | Google | connexion du praticien, **et du patient s'il la choisit** (seule l'adresse e-mail est transmise) |
 | Sentry | détection des erreurs techniques, région européenne — jamais les réponses, les documents ni l'identité |
@@ -631,6 +705,20 @@ ouverte.
   (contre-lecture) le texte d'une fiche, ses claims et les réserves de sécurité
   de l'assiette : aucune donnée d'un patient. Elle s'exécute en dehors de
   l'application (`docs/TRUST_IA_FICHES_ASSIETTE.md`).
+- **Anthropic — quatrième flux, déclaré par `D-256` A4 le 2026-10-01, AVANT
+  toute activation (§2 ter).** Le relevé des comptes rendus d'analyses
+  biologiques envoie au même destinataire le **document entier** : l'en-tête
+  d'identité (nom, date de naissance, laboratoire) et toutes les valeurs, y
+  compris celles qui ne seront pas retenues. Ce sont des données de santé au
+  titre de l'article 9, et **le flux le plus identifiant des quatre**. Les trois
+  autres portent des textes du dossier, celui-ci des mentions d'identité (nom,
+  date de naissance) et une biologie complète, qu'aucun praticien n'a rédigées. Même canal, même réserve
+  non levée sur la localisation de l'inférence, et même question sur la
+  rétention des entrées, plus aiguë pour un document que pour un texte (le
+  prompt caching est activé dans ce dépôt). **Condition propre à ce flux,
+  arbitrée le 2026-10-01** : la demande de DPA à Anthropic doit être **envoyée**
+  avant la pose du drapeau d'extraction, sa date établie au fil. Elle ne
+  referme pas le trou ci-dessous : elle l'ouvre à l'instruction.
 
 - **Google** — connexion du praticien seul.
 
@@ -664,7 +752,11 @@ termes exacts (`gouvernance.ts`, repris dans `registre.ts`) :
 
 Cet aveu est honnête ; il n'est pas une politique. Aucune durée n'est fixée pour
 les données de santé elles-mêmes (consultations, réponses, synthèses,
-correspondances). Porteur : responsable, avec conseil qualifié. Échéance
+correspondances), ni pour les **comptes rendus biologiques déposés** du LOT-02
+de BIO-INGEST (§2 ter). Ceux-ci posent une question propre : une fois ses
+valeurs validées, le document source reste-t-il conservé, et combien de temps ?
+Le document patient v11 dit seulement qu'il « est conservé dans votre dossier ».
+Porteur : responsable, avec conseil qualifié. Échéance
 proposée : **2026-10-21**, date de revue de la dérogation.
 
 ## 9. Droits des personnes et modalités d'exercice
@@ -921,6 +1013,7 @@ elle.
 | 6 | Sous-traitants | ~~Sentry non déclaré au patient~~ — **déclaré le 2026-09-07** dans `donnees_confidentialite@v5` (`D-141`), résidence UE rendue invariante par `sentryRegion.ts` ; **reste dû : le DPA Sentry** | Responsable | 2026-10-21 (DPA seul) | `contenus/registre.ts`, rubrique 6 |
 | 6 | Destinataires | **Correspondance médecin — la voie d'EXCEPTION n'a aucune justification écrite.** Le traitement est inventorié depuis `D-222` et ses quatre termes sont posés ; ce qui manque est la qualification de la seule route non gardée, `api/praticien/adressage/courrier`, qui transmet une donnée de santé à un tiers **malgré un refus exprimé** — les deux autres routes sont fail-closed sur refus, retrait et silence. Les deux voies ne peuvent pas reposer sur la même justification. **Aucun article du RGPD n'est écrit dans ce dossier** (rubrique 3) : l'acte revient au conseil, pas au responsable ni à une session | Conseil qualifié | 2026-10-21 | ici, rubrique 6 |
 | 7 | Transferts | Mécanisme invoqué (CCT/DPA) | Conseil qualifié | 2026-10-21 | ici, rubrique 7 |
+| 7 | Transferts | **Demande de DPA à Anthropic non envoyée** (brouillon du 2026-09-11). Depuis `D-256` A4, son envoi conditionne la pose du drapeau d'extraction des comptes rendus biologiques (§2 ter) : l'envoi, pas la signature | Responsable | **avant la pose du drapeau du LOT-02 de BIO-INGEST**, en tout état de cause 2026-10-21 | `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md` (tableau « Trace à tenir »), puis rubriques 6 et 7 |
 | 8 | Conservation | Durées des données de santé | Responsable + conseil | 2026-10-21 | ici, rubrique 8 puis `gouvernance.ts` |
 | 9 | Droits | Délai, vérification d'identité, circuit interne | Responsable | 2026-10-21 | ici, rubrique 9 |
 | 10 | Sécurité | Pentest / revue externe | Prestataire à engager | 2026-10-21 | checklist du gate, exigence 7 |

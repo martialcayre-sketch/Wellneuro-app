@@ -18,6 +18,37 @@
   ni [[D-124]] (append-only), ni [[D-157]] (pas de conversion d'unité) —
   les confirme comme frontières de ce chantier.
 
+> **AMENDEMENT DU 2026-10-01 — A4 : LA DÉCLARATION EST POSÉE, LA CONDITION DE
+> POSE S'ALOURDIT D'UN ENVOI.** Préalable du LOT-02, sans aucun code
+> d'extraction.
+>
+> 1. **Déclaré au patient** (`registre.ts`) : « L'intelligence artificielle dans
+>    Wellneuro » **v4** (sans accusé, document non présenté par la séquence) et
+>    « Vos données personnelles » **v11** (accusé exigé). **Déclaré au registre**
+>    (`docs/DOSSIER_RGPD.md`) : §2 ter, rubriques 5, 6, 7, 8 et 14.
+> 2. **Cinq arbitrages du responsable, rendus le 2026-10-01 :**
+>    - **une v11, avec accusé.** La v10 devenait fausse, puisqu'elle disait les
+>      résultats « saisis par votre praticien ». Elle devenait aussi
+>      incomplète : elle taisait la transmission à Anthropic d'un document qui
+>      reste hébergé en France, et sa ligne Anthropic omettait le relevé. Sans
+>      accusé, la v11 effaçait celui de la v10 encore dû ;
+>    - **le compte rendu est déclaré envoyé EN ENTIER**, en-tête d'identité
+>      compris. Le LOT-02 ne promet aucun masquage et ne doit pas en écrire un ;
+>    - **formulation durable** (« lorsque votre praticien dépose… »), sans « avant
+>      sa mise en service ». Cette phrase avait pourri dans la v2 ;
+>    - **la demande de DPA à Anthropic doit être ENVOYÉE avant la pose du
+>      drapeau d'extraction**, sa date établie au fil
+>      (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`). L'envoi est exigé, pas la
+>      signature.
+>    - **(revue `wn-reviewer`, même jour) information par le document, pas par
+>      la personne** : aucun garde n'exige l'accusé de la v11 avant une
+>      extraction. Un compte rendu peut partir pour un patient qui ne l'a pas
+>      encore vu, et c'est écrit au §2 ter.
+> 3. **Conditions de pose du drapeau du LOT-02**, toutes préalables : la v4 et
+>    la v11 déployées et constatées ([[D-248]]), le §2 ter validé, la demande de
+>    DPA envoyée. Elles s'écriront sur la ligne du drapeau dans
+>    `FEATURE_FLAGS.md` quand le LOT-02 le créera.
+
 **1. LE CADRE.** `ResultatBiologique` / `resultats_biologiques` reste l'unique
 modèle canonique pour toute voie d'acquisition (saisie praticien, import
 document, import laboratoire). Pas de couche « Biology Ingestion » générique :
