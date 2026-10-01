@@ -87,8 +87,9 @@ consigner ici au fur et à mesure, et à reporter au §6 du dossier :
 
 | date (UTC) | événement | trace |
 |---|---|---|
-| 2026-10-01 17:34 | demande envoyée par e-mail, de `martialcayre@wellneuro.fr`, objet du message « Rgpd » | capture du dossier « Messages envoyés » fournie par le responsable et lue en session le 2026-10-01 : expéditeur, heure (19:34, heure de Paris) et corps visibles. **Destinataire affiché « privacy »** : l'adresse complète n'est pas visible sur la capture et n'est donc pas consignée ici |
-| — | réponse / relance | à compléter |
+| 2026-10-01 17:34 | demande envoyée par e-mail de `martialcayre@wellneuro.fr` à **`privacy@anthropic.com`**, objet du message « Rgpd » | deux captures du dossier « Messages envoyés », fournies par le responsable et lues en session le 2026-10-01. Elles montrent l'expéditeur, le destinataire, la date (« 1 oct. 2026 19:34 », heure de Paris), l'envoi par `wellneuro.fr` et le corps |
+| 2026-10-01 ~17:38 | premier retour : bandeau « Nouveau message de Fin AI Agent from Anthropic » | seconde capture, bandeau de notification seul. **Le contenu n'a pas été lu** : c'est vraisemblablement un agent de support automatisé, et rien ne permet d'y voir une réponse sur le fond |
+| — | réponse sur le fond / relance | à compléter |
 
 **Le corps envoyé n'est pas celui du brouillon ci-dessus.** Son second
 paragraphe a été réécrit le 2026-10-01 pour couvrir les usages ouverts depuis
