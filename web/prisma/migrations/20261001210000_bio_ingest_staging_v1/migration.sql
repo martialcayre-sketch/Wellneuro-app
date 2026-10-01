@@ -61,12 +61,25 @@
 --     une trace antidatable n'en est pas une.
 --  5. UNE EXTRACTION EN ÉCHEC NE LAISSE AUCUNE LIGNE, une extraction terminée
 --     n'en reçoit plus, et seule une extraction terminée se valide.
+--  6. LE RÉSULTAT VALIDÉ EST POSTÉRIEUR À L'EXTRACTION (revue `wn-reviewer`,
+--     arbitrage du 2026-10-01) : une ligne ne se rattache pas à une saisie
+--     manuelle antérieure — elle se donnerait pour la source d'une valeur
+--     tapée à la main. Le résultat garde `source = 'saisie_praticien'` : le
+--     praticien qui valide en est l'auteur ; `import_labo` reste réservé à
+--     l'adaptateur laboratoire (LOT-05), et A5 reste à deux valeurs.
 --
 -- Ce que la base NE juge PAS, et qui reste au code de la PR 2 : le choix de
--- l'analyte (resolver signé, jamais le modèle), le refus d'une unité
--- divergente ou d'une ligne non quantitative ([[D-157]] : aucune conversion),
--- et qu'aucune écriture dans `resultats_biologiques` n'ait lieu sans geste du
+-- l'analyte (`analyte_propose` est posé par le resolver signé SEUL, jamais par
+-- le modèle, y compris pour une ligne `ambigu`), le refus d'une unité
+-- divergente ou d'une ligne non quantitative ([[D-157]] : aucune conversion ;
+-- l'écart est confirmé par le praticien, jamais posé par le système), et
+-- qu'aucune écriture dans `resultats_biologiques` n'ait lieu sans geste du
 -- praticien.
+--
+-- ORDRE IMPOSÉ À LA PR 2 : une extraction s'écrit dans UNE transaction
+-- interactive — import en cours, puis ses lignes, puis la terminaison. Une
+-- écriture imbriquée Prisma (`update` du parent avec `lignes: { createMany }`)
+-- terminerait l'import avant ses lignes, qui seraient refusées.
 --
 -- ── FIGÉES, MAIS EFFAÇABLES ────────────────────────────────────────────────
 --
@@ -105,6 +118,7 @@ CREATE TABLE "imports_biologiques" (
     "lance_par" TEXT NOT NULL,
     "lance_le" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "termine_le" TIMESTAMP(3),
+    "laboratoire_lu" TEXT,
 
     CONSTRAINT "imports_biologiques_pkey" PRIMARY KEY ("id")
 );
@@ -173,6 +187,10 @@ CREATE UNIQUE INDEX "lignes_biologiques_candidates_import_rang_key" ON "lignes_b
 -- AddForeignKey
 -- ON DELETE RESTRICT partout : l'effacement d'un dossier est une suppression
 -- NOMMÉE (`patient/effacement.ts`). En CASCADE, elles partiraient en silence.
+-- ON UPDATE CASCADE, comme les autres tables du rayon : le renommage d'un
+-- `id_patient` ou d'un code d'analyte lié au staging est de fait REFUSÉ par
+-- les triggers de gel (message « figée »). Aucun code ne renomme l'un ou
+-- l'autre ; c'est voulu, la trace ne se réécrit pas.
 ALTER TABLE "comptes_rendus_biologiques" ADD CONSTRAINT "comptes_rendus_biologiques_id_patient_fkey" FOREIGN KEY ("id_patient") REFERENCES "patients"("id_patient") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -225,7 +243,11 @@ ALTER TABLE "imports_biologiques"
   ADD CONSTRAINT "imports_biologiques_version_prompt_check"
     CHECK ("version_prompt" ~ '\S' AND char_length("version_prompt") <= 50),
   ADD CONSTRAINT "imports_biologiques_lance_par_check"
-    CHECK ("lance_par" ~ '\S' AND char_length("lance_par") <= 320);
+    CHECK ("lance_par" ~ '\S' AND char_length("lance_par") <= 320),
+  -- Le laboratoire tel que lu sur l'en-tête (A5 : la provenance vit sur le
+  -- staging). Posé à la terminaison, par l'extraction ; NULL s'il n'est pas lu.
+  ADD CONSTRAINT "imports_biologiques_laboratoire_lu_check"
+    CHECK ("laboratoire_lu" ~ '\S' AND char_length("laboratoire_lu") <= 200);
 
 ALTER TABLE "lignes_biologiques_candidates"
   ADD CONSTRAINT "lignes_biologiques_candidates_rang_check" CHECK ("rang" >= 1),
@@ -239,7 +261,8 @@ ALTER TABLE "lignes_biologiques_candidates"
   ADD CONSTRAINT "lignes_biologiques_candidates_statut_mapping_check"
     CHECK ("statut_mapping" IN ('resolu', 'ambigu', 'inconnu')),
   -- `resolu` désigne un analyte ; `inconnu` n'en désigne aucun ; `ambigu` peut
-  -- porter un candidat, que l'écran marque comme tel. Deux implications, pour
+  -- porter un candidat DU RESOLVER (jamais du modèle), que l'écran marque
+  -- comme tel. Deux implications, pour
   -- qu'un statut hors liste ne tombe que sous le CHECK de la liste.
   ADD CONSTRAINT "lignes_biologiques_candidates_mapping_coherent_check"
     CHECK (
@@ -316,6 +339,9 @@ BEGIN
   IF NEW.statut IS DISTINCT FROM 'en_cours' THEN
     RAISE EXCEPTION 'import refusé : une extraction naît en cours (statut %).', NEW.statut;
   END IF;
+  IF NEW.laboratoire_lu IS NOT NULL THEN
+    RAISE EXCEPTION 'import refusé : le laboratoire est lu par l''extraction, pas posé avant elle.';
+  END IF;
   NEW.lance_le := now();
   RETURN NEW;
 END;
@@ -340,7 +366,7 @@ BEGIN
   IF (NEW.id, NEW.id_patient, NEW.id_compte_rendu, NEW.modele, NEW.version_prompt, NEW.lance_par, NEW.lance_le)
      IS DISTINCT FROM
      (OLD.id, OLD.id_patient, OLD.id_compte_rendu, OLD.modele, OLD.version_prompt, OLD.lance_par, OLD.lance_le) THEN
-    RAISE EXCEPTION 'import refusé : seuls le statut, le motif d''échec et la fin changent à la terminaison.';
+    RAISE EXCEPTION 'import refusé : seuls le statut, le motif d''échec, le laboratoire lu et la fin changent à la terminaison.';
   END IF;
   IF NEW.statut = 'echec' AND EXISTS (
     SELECT 1 FROM public.lignes_biologiques_candidates l WHERE l.id_import = NEW.id
@@ -395,7 +421,9 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   statut_import text;
+  fin_import timestamp(3);
   patient_resultat text;
+  saisie_resultat timestamp(3);
 BEGIN
   IF OLD.statut <> 'proposee' THEN
     RAISE EXCEPTION 'ligne figée : une ligne décidée (%) ne change plus.', OLD.statut;
@@ -410,7 +438,7 @@ BEGIN
       OLD.unite_lue, OLD.preleve_le_lu, OLD.analyte_propose, OLD.statut_mapping) THEN
     RAISE EXCEPTION 'ligne refusée : ce qui a été lu ne se réécrit pas.';
   END IF;
-  SELECT i.statut INTO statut_import
+  SELECT i.statut, i.termine_le INTO statut_import, fin_import
   FROM public.imports_biologiques i
   WHERE i.id = NEW.id_import
   FOR SHARE;
@@ -418,11 +446,16 @@ BEGIN
     RAISE EXCEPTION 'ligne refusée : seule une extraction terminée se valide (%).', statut_import;
   END IF;
   IF NEW.id_resultat IS NOT NULL THEN
-    SELECT r.id_patient INTO patient_resultat
+    SELECT r.id_patient, r.saisi_le INTO patient_resultat, saisie_resultat
     FROM public.resultats_biologiques r
     WHERE r.id = NEW.id_resultat;
     IF patient_resultat IS DISTINCT FROM NEW.id_patient THEN
       RAISE EXCEPTION 'ligne refusée : le résultat désigné n''appartient pas à ce dossier.';
+    END IF;
+    -- Point 6 de l'en-tête : le résultat naît de la validation, donc après la
+    -- fin de l'extraction. Une saisie antérieure n'en vient pas.
+    IF saisie_resultat < fin_import THEN
+      RAISE EXCEPTION 'ligne refusée : le résultat désigné a été saisi avant la fin de l''extraction.';
     END IF;
   END IF;
   NEW.traite_le := now();

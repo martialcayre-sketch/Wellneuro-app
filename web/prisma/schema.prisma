@@ -2421,8 +2421,8 @@ model ResultatBiologique {
   analyte BiologyAnalyte @relation(fields: [analyteCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
 
   // Relation inverse SEULE (A5) : la ligne d'import désigne le résultat ; ce
-  // modèle ne reçoit aucune colonne.
-  lignesCandidates LigneBiologiqueCandidate[]
+  // modèle ne reçoit aucune colonne. Au plus une ligne par résultat.
+  ligneCandidate LigneBiologiqueCandidate?
 
   // L'index commence par `idPatient` puis `analyteCode` : la lecture est la
   // série d'un analyte dans un dossier (estimé ↔ mesuré), avec une mesure par
@@ -2458,7 +2458,10 @@ model ResultatBiologique {
 // `bio_ingest_staging_v1_negatif.sql`) : types et taille du document,
 // empreinte recalculée, un même document une fois par dossier, un seul dossier
 // d'un bout à l'autre de la chaîne (clés composites, et trigger vers le
-// résultat), ce qui a été LU figé, transitions de statut à sens unique. Les
+// résultat), un résultat validé postérieur à l'extraction (il garde `source =
+// saisie_praticien`), ce qui a été LU figé, transitions de statut à sens
+// unique. Une extraction s'écrit en UNE transaction interactive : import en
+// cours, lignes, puis terminaison (jamais d'écriture imbriquée). Les
 // trois tables portent `id_patient` : elles entrent dans l'effacement IDP2
 // nommé (`patient/effacement.ts`), lignes d'abord — elles retiennent le
 // résultat validé.
@@ -2501,6 +2504,8 @@ model ImportBiologique {
   lancePar      String    @map("lance_par") // email praticien, posé côté serveur
   lanceLe       DateTime  @default(now()) @map("lance_le")
   termineLe     DateTime? @map("termine_le")
+  /// Le laboratoire tel que lu sur l'en-tête (A5), posé à la terminaison.
+  laboratoireLu String?   @map("laboratoire_lu")
 
   patient     Patient                    @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
   compteRendu CompteRenduBiologique      @relation(fields: [idCompteRendu, idPatient], references: [id, idPatient], onDelete: Restrict)
@@ -2528,7 +2533,7 @@ model LigneBiologiqueCandidate {
   uniteLue       String?   @map("unite_lue")
   /// La date du prélèvement RELEVÉE (promesse de `usage_ia` v4).
   preleveLeLu    DateTime? @map("preleve_le_lu")
-  /// Posé par le resolver signé, jamais par le modèle.
+  /// Posé par le resolver signé SEUL, jamais par le modèle — `ambigu` compris.
   analytePropose String?   @map("analyte_propose")
   statutMapping  String    @map("statut_mapping") // resolu | ambigu | inconnu (CHECK migration)
   statut         String    @default("proposee") @map("statut") // proposee | validee | ecartee (CHECK migration)

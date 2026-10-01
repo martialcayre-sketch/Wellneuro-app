@@ -9,7 +9,8 @@
     fichier.
   - `imports_biologiques` : une extraction de ce document. Elle porte son
     modèle et sa version du procédé dès sa création, donc aussi en cas
-    d'échec (promesse de `usage_ia` v4).
+    d'échec (promesse de `usage_ia` v4), et le laboratoire tel que lu sur
+    l'en-tête, posé à la terminaison (A5 ; arbitrage du 2026-10-01).
   - `lignes_biologiques_candidates` : ce que l'extraction a lu (libellé,
     valeur, unité, date du prélèvement, page), puis la décision du praticien.
     Une ligne validée désigne le résultat créé (A5). `resultats_biologiques`
@@ -20,6 +21,10 @@
     dans un dossier ;
   - un compte rendu, une extraction ou un résultat d'un autre dossier, à
     quelque maillon de la chaîne que ce soit ;
+  - une ligne rattachée à un résultat saisi avant la fin de son extraction :
+    une saisie manuelle ne passe pas pour la provenance d'un document (revue
+    `wn-reviewer`, arbitrage du 2026-10-01). Le résultat validé garde
+    `source = saisie_praticien`, et `import_labo` reste réservé au LOT-05 ;
   - la réécriture de ce qui a été lu, une seconde décision sur une ligne, une
     décision avant la fin de l'extraction, une ligne ajoutée après elle, et
     une extraction en échec qui garderait des lignes ;
@@ -32,4 +37,4 @@
 - **RLS deny-all** sur les trois tables.
 - **Dossier RGPD, rubrique 5** : les trois modèles sont nommés.
 - **Contrat SQL négatif** : `bio_ingest_staging_v1_negatif.sql`, joué au CI.
-  58 mutants ont été tués en session.
+  73 mutants ont été tués en session.

@@ -11,26 +11,28 @@
 --      dossier passe ;
 --   4. le compte rendu est figé : UPDATE refusé ;
 --   5. un import naît EN COURS, à l'instant posé par la base, avec modèle et
---      version du procédé non vides (promesse de `usage_ia` v4) ; il ne
---      désigne qu'un compte rendu de SON dossier ;
+--      version du procédé non vides et bornés (promesse de `usage_ia` v4),
+--      sans laboratoire ; il ne désigne qu'un compte rendu de SON dossier ;
 --   6. un import se termine UNE fois (`extrait` ou `echec`), à l'instant posé
---      par la base, sans rien réécrire d'autre ; un échec porte un motif
---      fermé, et ne laisse aucune ligne ;
+--      par la base, avec le laboratoire lu, sans rien réécrire d'autre ; un
+--      échec porte un motif fermé, et ne laisse aucune ligne ;
 --   7. une ligne naît PROPOSÉE, dans une extraction EN COURS, dans le dossier
---      de cette extraction ; ses CHECK (rang, page, textes lus, cohérence du
---      mapping, auteur hors décision) mordent chacun ;
+--      de cette extraction ; ses CHECK (rang, page, textes lus et leurs
+--      bornes, cohérence du mapping, décision absente) mordent chacun ;
 --   8. une extraction terminée ne reçoit plus de ligne ;
 --   9. seule une ligne d'une extraction TERMINÉE se décide ;
---  10. une ligne se décide UNE fois, sans réécrire ce qui a été lu ; la
---      décision est posée par la base à son instant ; validée ⇔ résultat,
---      écartée ⇔ motif fermé ;
---  11. une ligne ne désigne qu'un résultat de SON dossier, et un résultat ne
---      naît que d'une ligne ;
+--  10. une ligne se décide UNE fois, sans réécrire ce qui a été lu (chaque
+--      colonne lue éprouvée) ; la décision est posée par la base à son
+--      instant ; validée ⇔ résultat, écartée ⇔ motif fermé, dans les deux sens ;
+--  11. une ligne ne désigne qu'un résultat de SON dossier, saisi APRÈS la fin
+--      de son extraction — jamais une saisie manuelle antérieure (arbitrage du
+--      2026-10-01) ; un résultat est désigné par au plus une ligne ;
 --  12. l'effacement NOMMÉ passe en base, dans l'ordre d'`effacement.ts` :
 --      lignes, imports, comptes rendus, résultats, patient — et le résultat
 --      validé ne part pas avant sa ligne (RESTRICT) ;
---  13. sept FK en ON DELETE RESTRICT, trois triggers anti-TRUNCATE (dont un
---      éprouvé), le document stocké EXTERNAL ;
+--  13. sept FK en ON DELETE RESTRICT, nommées une à une ; trois triggers
+--      anti-TRUNCATE (dont un éprouvé) ; deux CHECK de statut présents ; le
+--      document stocké EXTERNAL ; aucune fonction exécutable par PUBLIC ;
 --  14. chaque table porte EXACTEMENT ses colonnes (liste blanche) — aucun nom
 --      de fichier, aucun masquage — et ses index nommés, uniques où il faut ;
 --  15. la RLS deny-all est active et sans policy sur les trois (posture
@@ -92,7 +94,7 @@ DECLARE
     'contenu', 'depose_le', 'depose_par', 'empreinte_sha256', 'id', 'id_patient', 'type_mime'
   ];
   COLS_IMPORT CONSTANT text[] := ARRAY[
-    'id', 'id_compte_rendu', 'id_patient', 'lance_le', 'lance_par', 'modele', 'motif_echec',
+    'id', 'id_compte_rendu', 'id_patient', 'laboratoire_lu', 'lance_le', 'lance_par', 'modele', 'motif_echec',
     'statut', 'termine_le', 'version_prompt'
   ];
   COLS_LIGNE CONSTANT text[] := ARRAY[
@@ -132,6 +134,11 @@ BEGIN
   VALUES
     ('res_stg1', 'PAT_CONTRAT_STG1', 'BIO_CONTRAT_STG', 4.2, 'mg/L', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr'),
     ('res_stg2', 'PAT_CONTRAT_STG2', 'BIO_CONTRAT_STG', 4.2, 'mg/L', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr');
+  -- Une saisie manuelle ANTÉRIEURE à toute extraction (même dossier, autre
+  -- date de prélèvement) : aucune ligne ne doit pouvoir s'y rattacher.
+  INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, saisi_le)
+  VALUES ('res_stg1_ancien', 'PAT_CONTRAT_STG1', 'BIO_CONTRAT_STG', 3.9, 'mg/L', TIMESTAMP '2026-08-01 08:00:00',
+          'saisie_praticien', 'praticien@wellneuro.fr', TIMESTAMP '2026-08-02 10:00:00');
 
   -- ── 1. Compte rendu valide, instant posé par la base ; 10 Mo passent ─────
   BEGIN
@@ -246,6 +253,22 @@ BEGIN
     $q$INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par, termine_le)
        VALUES ('imp_t7', 'PAT_CONTRAT_STG1', 'cr_1', 'm', 'v', 'praticien@wellneuro.fr', CURRENT_TIMESTAMP)$q$,
     '23514', 'imports_biologiques_termine_check');
+  PERFORM pg_temp.refus('import qui porte un laboratoire avant toute lecture',
+    $q$INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par, laboratoire_lu)
+       VALUES ('imp_t8', 'PAT_CONTRAT_STG1', 'cr_1', 'm', 'v', 'praticien@wellneuro.fr', 'Laboratoire')$q$,
+    'P0001', 'le laboratoire est lu par l''extraction');
+  PERFORM pg_temp.refus('modèle au-delà de 100 caractères',
+    $q$INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
+       VALUES ('imp_t9', 'PAT_CONTRAT_STG1', 'cr_1', repeat('m', 101), 'v', 'praticien@wellneuro.fr')$q$,
+    '23514', 'imports_biologiques_modele_check');
+  PERFORM pg_temp.refus('version du procédé au-delà de 50 caractères',
+    $q$INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
+       VALUES ('imp_t10', 'PAT_CONTRAT_STG1', 'cr_1', 'm', repeat('v', 51), 'praticien@wellneuro.fr')$q$,
+    '23514', 'imports_biologiques_version_prompt_check');
+  PERFORM pg_temp.refus('lanceur au-delà de 320 caractères',
+    $q$INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
+       VALUES ('imp_t11', 'PAT_CONTRAT_STG1', 'cr_1', 'm', 'v', repeat('x', 321))$q$,
+    '23514', 'imports_biologiques_lance_par_check');
 
   -- ── 7. Les lignes naissent proposées, dans une extraction en cours ───────
   BEGIN
@@ -307,6 +330,22 @@ BEGIN
     $q$INSERT INTO lignes_biologiques_candidates (id, id_patient, id_import, rang, page, libelle_lu, valeur_lue, statut_mapping, traite_par)
        VALUES ('lig_t11', 'PAT_CONTRAT_STG1', 'imp_1', 9, 1, 'l', '1', 'inconnu', 'praticien@wellneuro.fr')$q$,
     '23514', 'lignes_biologiques_candidates_traitee_check');
+  PERFORM pg_temp.refus('ligne proposée qui porte un instant de décision',
+    $q$INSERT INTO lignes_biologiques_candidates (id, id_patient, id_import, rang, page, libelle_lu, valeur_lue, statut_mapping, traite_le)
+       VALUES ('lig_t14', 'PAT_CONTRAT_STG1', 'imp_1', 9, 1, 'l', '1', 'inconnu', CURRENT_TIMESTAMP)$q$,
+    '23514', 'lignes_biologiques_candidates_traitee_check');
+  PERFORM pg_temp.refus('libellé lu au-delà de 300 caractères',
+    $q$INSERT INTO lignes_biologiques_candidates (id, id_patient, id_import, rang, page, libelle_lu, valeur_lue, statut_mapping)
+       VALUES ('lig_t15', 'PAT_CONTRAT_STG1', 'imp_1', 9, 1, repeat('l', 301), '1', 'inconnu')$q$,
+    '23514', 'lignes_biologiques_candidates_libelle_lu_check');
+  PERFORM pg_temp.refus('valeur lue au-delà de 100 caractères',
+    $q$INSERT INTO lignes_biologiques_candidates (id, id_patient, id_import, rang, page, libelle_lu, valeur_lue, statut_mapping)
+       VALUES ('lig_t16', 'PAT_CONTRAT_STG1', 'imp_1', 9, 1, 'l', repeat('1', 101), 'inconnu')$q$,
+    '23514', 'lignes_biologiques_candidates_valeur_lue_check');
+  PERFORM pg_temp.refus('unité lue au-delà de 50 caractères',
+    $q$INSERT INTO lignes_biologiques_candidates (id, id_patient, id_import, rang, page, libelle_lu, valeur_lue, unite_lue, statut_mapping)
+       VALUES ('lig_t17', 'PAT_CONTRAT_STG1', 'imp_1', 9, 1, 'l', '1', repeat('u', 51), 'inconnu')$q$,
+    '23514', 'lignes_biologiques_candidates_unite_lue_check');
   PERFORM pg_temp.refus('deux lignes au même rang d''une extraction',
     $q$INSERT INTO lignes_biologiques_candidates (id, id_patient, id_import, rang, page, libelle_lu, valeur_lue, statut_mapping)
        VALUES ('lig_t12', 'PAT_CONTRAT_STG1', 'imp_1', 1, 1, 'l', '1', 'inconnu')$q$,
@@ -329,16 +368,24 @@ BEGIN
   PERFORM pg_temp.refus('motif d''échec hors liste (aucun texte libre)',
     $q$UPDATE imports_biologiques SET statut = 'echec', motif_echec = 'Taux de ferritine illisible' WHERE id = 'imp_3'$q$,
     '23514', 'imports_biologiques_motif_echec_check');
+  PERFORM pg_temp.refus('laboratoire lu réduit à des blancs',
+    $q$UPDATE imports_biologiques SET statut = 'extrait', laboratoire_lu = E' \t' WHERE id = 'imp_3'$q$,
+    '23514', 'imports_biologiques_laboratoire_lu_check');
+  PERFORM pg_temp.refus('laboratoire lu au-delà de 200 caractères',
+    $q$UPDATE imports_biologiques SET statut = 'extrait', laboratoire_lu = repeat('l', 201) WHERE id = 'imp_3'$q$,
+    '23514', 'imports_biologiques_laboratoire_lu_check');
   PERFORM pg_temp.refus('terminaison qui réécrit le modèle',
     $q$UPDATE imports_biologiques SET statut = 'extrait', modele = 'autre-modele' WHERE id = 'imp_3'$q$,
-    'P0001', 'seuls le statut, le motif d''échec et la fin changent');
+    'P0001', 'seuls le statut, le motif d''échec, le laboratoire lu et la fin changent');
   PERFORM pg_temp.refus('import qui reste en cours en changeant',
     $q$UPDATE imports_biologiques SET version_prompt = 'releve-v2' WHERE id = 'imp_3'$q$,
     'P0001', 'une extraction en cours ne peut que se terminer');
 
   BEGIN
     UPDATE imports_biologiques SET statut = 'echec', motif_echec = 'delai_depasse' WHERE id = 'imp_3';
-    UPDATE imports_biologiques SET statut = 'extrait', termine_le = TIMESTAMP '2000-01-01 00:00:00' WHERE id = 'imp_1';
+    UPDATE imports_biologiques
+    SET statut = 'extrait', laboratoire_lu = 'Laboratoire de contrat', termine_le = TIMESTAMP '2000-01-01 00:00:00'
+    WHERE id = 'imp_1';
   EXCEPTION
     WHEN others THEN
       RAISE EXCEPTION 'STAGING BIO: une terminaison valide a été refusée (%)', SQLERRM;
@@ -346,6 +393,10 @@ BEGIN
   SELECT termine_le INTO instant FROM imports_biologiques WHERE id = 'imp_1';
   IF instant < TIMESTAMP '2020-01-01' THEN
     RAISE EXCEPTION 'STAGING BIO: une fin antidatée a gardé sa date (%).', instant;
+  END IF;
+  SELECT count(*) INTO nb FROM imports_biologiques WHERE id = 'imp_1' AND laboratoire_lu = 'Laboratoire de contrat';
+  IF nb <> 1 THEN
+    RAISE EXCEPTION 'STAGING BIO: le laboratoire lu à la terminaison n''a pas été conservé.';
   END IF;
   SELECT count(*) INTO nb FROM imports_biologiques WHERE id = 'imp_3' AND modele = 'modele-contrat' AND version_prompt = 'releve-v1';
   IF nb <> 1 THEN
@@ -368,6 +419,11 @@ BEGIN
        SET statut = 'validee', id_resultat = 'res_stg2', traite_par = 'praticien@wellneuro.fr'
        WHERE id = 'lig_1'$q$,
     'P0001', 'n''appartient pas à ce dossier');
+  PERFORM pg_temp.refus('ligne validée vers une saisie manuelle ANTÉRIEURE à l''extraction',
+    $q$UPDATE lignes_biologiques_candidates
+       SET statut = 'validee', id_resultat = 'res_stg1_ancien', traite_par = 'praticien@wellneuro.fr'
+       WHERE id = 'lig_1'$q$,
+    'P0001', 'saisi avant la fin de l''extraction');
   PERFORM pg_temp.refus('ligne qui reste proposée en changeant',
     $q$UPDATE lignes_biologiques_candidates SET libelle_lu = 'réécrit' WHERE id = 'lig_2'$q$,
     'P0001', 'ne change que par la décision du praticien');
@@ -382,6 +438,49 @@ BEGIN
            preleve_le_lu = TIMESTAMP '2026-01-01 00:00:00'
        WHERE id = 'lig_2'$q$,
     'P0001', 'ce qui a été lu ne se réécrit pas');
+  PERFORM pg_temp.refus('décision qui réécrit le libellé lu',
+    $q$UPDATE lignes_biologiques_candidates
+       SET statut = 'ecartee', motif_ecart = 'ecartee_par_praticien', traite_par = 'praticien@wellneuro.fr', libelle_lu = 'autre'
+       WHERE id = 'lig_2'$q$,
+    'P0001', 'ce qui a été lu ne se réécrit pas');
+  PERFORM pg_temp.refus('décision qui réécrit l''unité lue',
+    $q$UPDATE lignes_biologiques_candidates
+       SET statut = 'ecartee', motif_ecart = 'ecartee_par_praticien', traite_par = 'praticien@wellneuro.fr', unite_lue = 'g/L'
+       WHERE id = 'lig_2'$q$,
+    'P0001', 'ce qui a été lu ne se réécrit pas');
+  PERFORM pg_temp.refus('décision qui réécrit la page',
+    $q$UPDATE lignes_biologiques_candidates
+       SET statut = 'ecartee', motif_ecart = 'ecartee_par_praticien', traite_par = 'praticien@wellneuro.fr', page = 7
+       WHERE id = 'lig_2'$q$,
+    'P0001', 'ce qui a été lu ne se réécrit pas');
+  PERFORM pg_temp.refus('décision qui réécrit le rang',
+    $q$UPDATE lignes_biologiques_candidates
+       SET statut = 'ecartee', motif_ecart = 'ecartee_par_praticien', traite_par = 'praticien@wellneuro.fr', rang = 8
+       WHERE id = 'lig_2'$q$,
+    'P0001', 'ce qui a été lu ne se réécrit pas');
+  PERFORM pg_temp.refus('décision qui réécrit l''analyte proposé par le resolver',
+    $q$UPDATE lignes_biologiques_candidates
+       SET statut = 'validee', id_resultat = 'res_stg1', traite_par = 'praticien@wellneuro.fr', analyte_propose = NULL
+       WHERE id = 'lig_3'$q$,
+    'P0001', 'ce qui a été lu ne se réécrit pas');
+  PERFORM pg_temp.refus('décision qui réécrit le statut de mapping',
+    $q$UPDATE lignes_biologiques_candidates
+       SET statut = 'validee', id_resultat = 'res_stg1', traite_par = 'praticien@wellneuro.fr', statut_mapping = 'resolu'
+       WHERE id = 'lig_3'$q$,
+    'P0001', 'ce qui a été lu ne se réécrit pas');
+  PERFORM pg_temp.refus('ligne validée qui porte un motif d''écart',
+    $q$UPDATE lignes_biologiques_candidates
+       SET statut = 'validee', id_resultat = 'res_stg1', motif_ecart = 'non_quantitative', traite_par = 'praticien@wellneuro.fr'
+       WHERE id = 'lig_2'$q$,
+    '23514', 'lignes_biologiques_candidates_ecartee_check');
+  PERFORM pg_temp.refus('ligne écartée qui désigne un résultat',
+    $q$UPDATE lignes_biologiques_candidates
+       SET statut = 'ecartee', id_resultat = 'res_stg1', motif_ecart = 'non_quantitative', traite_par = 'praticien@wellneuro.fr'
+       WHERE id = 'lig_2'$q$,
+    '23514', 'lignes_biologiques_candidates_validee_check');
+  PERFORM pg_temp.refus('auteur de décision au-delà de 320 caractères',
+    $q$UPDATE lignes_biologiques_candidates SET statut = 'ecartee', motif_ecart = 'non_quantitative', traite_par = repeat('x', 321) WHERE id = 'lig_2'$q$,
+    '23514', 'lignes_biologiques_candidates_traite_par_check');
   PERFORM pg_temp.refus('ligne écartée sans motif',
     $q$UPDATE lignes_biologiques_candidates SET statut = 'ecartee', traite_par = 'praticien@wellneuro.fr' WHERE id = 'lig_2'$q$,
     '23514', 'lignes_biologiques_candidates_ecartee_check');
@@ -457,14 +556,43 @@ BEGIN
   END;
 
   -- ── 13. FK RESTRICT, triggers anti-TRUNCATE, stockage ────────────────────
-  SELECT count(*) INTO nb
+  -- Une à une, par leur nom : un compte agrégé laisserait une FK en CASCADE
+  -- compensée par une FK de trop.
+  SELECT array_agg(con.conname::text || ':' || con.confdeltype::text ORDER BY con.conname) INTO reelles
   FROM pg_constraint con
   JOIN pg_class enfant ON enfant.oid = con.conrelid
   WHERE con.contype = 'f'
-    AND enfant.relname IN ('comptes_rendus_biologiques', 'imports_biologiques', 'lignes_biologiques_candidates')
-    AND con.confdeltype = 'r';
-  IF nb <> 7 THEN
-    RAISE EXCEPTION 'STAGING BIO: 7 FK en ON DELETE RESTRICT attendues, % trouvée(s).', nb;
+    AND enfant.relname IN ('comptes_rendus_biologiques', 'imports_biologiques', 'lignes_biologiques_candidates');
+  IF reelles IS DISTINCT FROM ARRAY[
+    'comptes_rendus_biologiques_id_patient_fkey:r',
+    'imports_biologiques_id_compte_rendu_id_patient_fkey:r',
+    'imports_biologiques_id_patient_fkey:r',
+    'lignes_biologiques_candidates_analyte_propose_fkey:r',
+    'lignes_biologiques_candidates_id_import_id_patient_fkey:r',
+    'lignes_biologiques_candidates_id_patient_fkey:r',
+    'lignes_biologiques_candidates_id_resultat_fkey:r'
+  ] THEN
+    RAISE EXCEPTION 'STAGING BIO: FK inattendues (%). Attendu sept FK nommées, toutes en ON DELETE RESTRICT.', reelles;
+  END IF;
+
+  -- Hygiène d'exécution : aucune des six fonctions n'est exécutable par
+  -- PUBLIC (une ACL NULL vaut le défaut, qui l'est).
+  SELECT count(*) INTO nb
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname LIKE 'bio\_ingest\_%'
+    AND (p.proacl IS NULL OR EXISTS (
+      SELECT 1 FROM aclexplode(p.proacl) a WHERE a.grantee = 0 AND a.privilege_type = 'EXECUTE'
+    ));
+  IF nb <> 0 THEN
+    RAISE EXCEPTION 'STAGING BIO: % fonction(s) bio_ingest_* exécutable(s) par PUBLIC.', nb;
+  END IF;
+  SELECT count(*) INTO nb
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname LIKE 'bio\_ingest\_%';
+  IF nb <> 6 THEN
+    RAISE EXCEPTION 'STAGING BIO: 6 fonctions bio_ingest_* attendues, % trouvée(s).', nb;
   END IF;
 
   SELECT count(*) INTO nb
@@ -544,7 +672,7 @@ BEGIN
     RAISE EXCEPTION 'STAGING BIO: policy inattendue sur le staging (deny-all attendu).';
   END IF;
 
-  RAISE NOTICE 'STAGING BIO: dépôt valide horodaté par la base et 10 Mo admis ; type, taille, empreinte, déposant refusés chacun par son CHECK ; doublon refusé dans un dossier, admis dans un autre ; compte rendu figé ; import né en cours, horodaté, dans son dossier, modèle et version non vides ; terminaison unique, motivée, sans ligne en échec, sans réécriture ; lignes nées proposées dans une extraction en cours, CHECK mordant chacun ; rien ne se décide avant la fin ni ne s''ajoute après ; décision unique, horodatée, sans réécrire le lu, dans son dossier, un résultat par ligne ; effacement nommé passant et RESTRICT tenu ; 7 FK RESTRICT, 3 triggers anti-TRUNCATE, document EXTERNAL ; colonnes et index exacts ; RLS deny-all sur les trois.';
+  RAISE NOTICE 'STAGING BIO: dépôt valide horodaté par la base et 10 Mo admis ; type, taille, empreinte, déposant refusés chacun par son CHECK ; doublon refusé dans un dossier, admis dans un autre ; compte rendu figé ; import né en cours, horodaté, sans laboratoire, dans son dossier, modèle et version non vides et bornés ; terminaison unique, motivée, sans ligne en échec, sans réécriture ; lignes nées proposées dans une extraction en cours, CHECK mordant chacun ; rien ne se décide avant la fin ni ne s''ajoute après ; décision unique, horodatée, sans réécrire le lu, dans son dossier, jamais vers une saisie antérieure à l''extraction, un résultat par ligne ; effacement nommé passant et RESTRICT tenu ; 7 FK RESTRICT nommées, 3 triggers anti-TRUNCATE, 2 CHECK de statut, document EXTERNAL, aucune fonction ouverte à PUBLIC ; colonnes et index exacts ; RLS deny-all sur les trois.';
 END $$;
 
 ROLLBACK;

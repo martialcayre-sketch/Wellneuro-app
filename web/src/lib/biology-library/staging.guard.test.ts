@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -12,10 +12,21 @@ import { describe, expect, it } from 'vitest';
 // supprimer. Ce banc garde ce que la base ne peut pas dire — QUEL CODE
 // supprime : l'effacement nommé, et lui seul, une fois par table. Un compte
 // rendu ou une extraction supprimés ailleurs effaceraient la provenance d'un
-// résultat validé (A5).
+// résultat validé (A5). La PR 2 y ajoutera le retrait d'un dépôt erroné
+// (arbitrage du 2026-10-01), tant qu'aucune ligne n'est validée.
+//
+// PORTÉE : le code de l'application, mais aussi les scripts et le dossier
+// Prisma (seed) — un script d'exploitation qui supprimerait du staging n'en
+// serait pas moins un auteur (revue `wn-reviewer`).
 
-const RACINE = path.join(process.cwd(), 'src');
-const EFFACEMENT = path.join('lib', 'patient', 'effacement.ts');
+const WEB = process.cwd();
+const RACINES = [
+  path.join(WEB, 'src'),
+  path.join(WEB, 'scripts'),
+  path.join(WEB, 'prisma'),
+  path.join(WEB, '..', 'scripts'),
+];
+const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
@@ -24,7 +35,7 @@ function fichiersSources(depart: string): string[] {
     if (statSync(complet).isDirectory()) {
       if (entree === 'node_modules' || entree === '.next' || entree === 'generated') continue;
       trouves.push(...fichiersSources(complet));
-    } else if (/\.tsx?$/.test(entree) && !/\.test\.tsx?$/.test(entree)) {
+    } else if (/\.(?:tsx?|mjs|cjs|js)$/.test(entree) && !/\.test\.(?:tsx?|mjs|js)$/.test(entree)) {
       trouves.push(complet);
     }
   }
@@ -32,9 +43,10 @@ function fichiersSources(depart: string): string[] {
 }
 
 function occurrences(motif: RegExp): { fichier: string; n: number }[] {
-  return fichiersSources(RACINE)
+  return RACINES.filter(racine => existsSync(racine))
+    .flatMap(racine => fichiersSources(racine))
     .map(fichier => ({
-      fichier: path.relative(RACINE, fichier),
+      fichier: path.relative(WEB, fichier),
       n: [...readFileSync(fichier, 'utf8').matchAll(new RegExp(motif.source, `${motif.flags}g`))].length,
     }))
     .filter(o => o.n > 0);
