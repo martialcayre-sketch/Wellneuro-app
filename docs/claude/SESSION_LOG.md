@@ -8600,3 +8600,17 @@ compte des accusés v11 dus. Puis LOT-02 en mode Plan.
 
 **Questions ouvertes.** Demande de DPA Anthropic à envoyer (condition du
 drapeau) ; aucun document patient ne dit le transfert hors UE.
+
+## 2026-10-01 — BIO-INGEST : trace de la demande de DPA Anthropic
+
+**Fait.** #1277 mergée et déployée (5a6b9f7f, 16:32 UTC) ; 28 dossiers actifs
+doivent l'accusé v11, dont 1 avait accusé la v10. Demande de DPA envoyée le
+2026-10-01 à 17:34 UTC, date établie par capture du message envoyé ; trace
+consignée (pièce DPA, dossier RGPD §2 ter/§7/§14, fiche LOT-02).
+
+**Écarté.** Consigner une adresse de destinataire non visible sur la capture.
+
+**Prochaine action.** Merge, `/clear`, LOT-02 en mode Plan.
+
+**Questions ouvertes.** Validation du §2 ter par le responsable ; réponse
+d'Anthropic.
