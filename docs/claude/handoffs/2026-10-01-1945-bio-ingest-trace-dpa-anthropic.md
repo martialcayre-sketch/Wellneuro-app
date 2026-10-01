@@ -21,8 +21,8 @@ du drapeau du LOT-02 ajoutée par l'amendement du 2026-10-01 à `D-256`.
   envoyés » de `martialcayre@wellneuro.fr`), lue en session : 2026-10-01 à
   19:34 heure de Paris, soit 17:34 UTC. Elle n'est pas déclarée.
 - **Destinataire : `privacy@anthropic.com`**, établi par une seconde capture
-  (détail des en-têtes). Un premier retour « Fin AI Agent from Anthropic » est
-  signalé à ~17:38 UTC, contenu non lu.
+  (détail des en-têtes). À 17:35 UTC, l'agent automatisé d'Anthropic accuse le
+  transfert à l'équipe Privacy, conversation 215476193483547.
 - Le corps envoyé (second paragraphe réécrit) est recopié dans la pièce.
 
 ## Fichiers modifiés
@@ -38,7 +38,7 @@ T1 complet (`npm run check`) avant le commit. Aucun code touché.
 
 ## Problèmes ouverts
 
-- Lire le retour « Fin AI Agent » (probablement automatisé), puis suivre la réponse sur le fond, puis la signature et l'archivage du DPA
+- Attendre la réponse de l'équipe Privacy d'Anthropic (conversation 215476193483547), puis la consigner, puis la signature et l'archivage du DPA
   (échéance 2026-10-21).
 - Aucun document patient ne dit le transfert hors UE vers Anthropic (trou
   antérieur, relève du conseil).

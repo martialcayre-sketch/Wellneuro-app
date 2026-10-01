@@ -88,7 +88,7 @@ consigner ici au fur et à mesure, et à reporter au §6 du dossier :
 | date (UTC) | événement | trace |
 |---|---|---|
 | 2026-10-01 17:34 | demande envoyée par e-mail de `martialcayre@wellneuro.fr` à **`privacy@anthropic.com`**, objet du message « Rgpd » | deux captures du dossier « Messages envoyés », fournies par le responsable et lues en session le 2026-10-01. Elles montrent l'expéditeur, le destinataire, la date (« 1 oct. 2026 19:34 », heure de Paris), l'envoi par `wellneuro.fr` et le corps |
-| 2026-10-01 ~17:38 | premier retour : bandeau « Nouveau message de Fin AI Agent from Anthropic » | seconde capture, bandeau de notification seul. **Le contenu n'a pas été lu** : c'est vraisemblablement un agent de support automatisé, et rien ne permet d'y voir une réponse sur le fond |
+| 2026-10-01 17:35 | **accusé de transfert**, de « Fin AI Agent from Anthropic » `<support@mail.anthropic.com>`, dans le même fil : « We're transitioning your question to a human member of our Privacy Team for further assistance […] we'll email you when an agent has responded. » **Identifiant de conversation : 215476193483547** | troisième capture, message lu en session (19:35, heure de Paris). Agent automatisé, **pas une réponse sur le fond** : la demande est remise à l'équipe Privacy |
 | — | réponse sur le fond / relance | à compléter |
 
 **Le corps envoyé n'est pas celui du brouillon ci-dessus.** Son second

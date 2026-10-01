@@ -2,8 +2,9 @@
 
 - Envoyée le 2026-10-01 à 17:34 UTC, de `martialcayre@wellneuro.fr` à
   `privacy@anthropic.com`. La date est établie par deux captures du message
-  envoyé, pas déclarée. Un premier retour d'un agent automatisé d'Anthropic
-  est signalé à ~17:38 UTC ; son contenu n'a pas été lu.
+  envoyé, pas déclarée. À 17:35 UTC, l'agent automatisé d'Anthropic accuse le
+  transfert à l'équipe Privacy (conversation 215476193483547). Ce n'est pas
+  encore une réponse sur le fond.
 - Le corps envoyé couvre les usages ouverts depuis le brouillon du 2026-09-11 :
   « Ce que j'ai compris de vous » et l'extraction des comptes rendus
   biologiques, avec leurs mentions d'identité.
