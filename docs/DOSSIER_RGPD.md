@@ -235,7 +235,8 @@ patient. Revue `wn-reviewer` du 2026-10-01 (P1), écartée avec ce motif.
 2. le présent paragraphe validé par le responsable — **validé le 2026-10-01**,
    après sa rédaction (les textes patient l'avaient été par le plan, avant) ;
 3. **la demande de DPA à Anthropic envoyée**
-   (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`), sa date établie par lecture du fil et
+   (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`), sa date établie par une trace du
+   fil (lecture directe, ou capture du message montrant en-têtes et corps) et
    non déclarée. Arbitrage du 2026-10-01 : l'envoi est exigé, pas la signature.
    **Tenue le 2026-10-01 à 17:34 UTC (19:34 heure de Paris)**, établie par la capture du message
    envoyé (expéditeur, heure, corps), lue en session.
