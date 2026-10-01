@@ -98,7 +98,7 @@ describe('EstimeMesurePanel — drapeau levé (étage 2, D-122 §2)', () => {
     // catalogue : aucun champ unité à saisir.
     expect(screen.getByLabelText(/Prélevé le \(avec l’heure\)/)).toBeTruthy();
     expect(screen.queryByLabelText(/^Unité$/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Consigner la mesure' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Enregistrer le bilan/ })).toBeTruthy();
   });
 
   it('le GET de la série vise la route résultats avec l’idPatient', async () => {
@@ -187,7 +187,7 @@ describe('EstimeMesurePanel — drapeau levé (étage 2, D-122 §2)', () => {
     expect(screen.getByText(/3\.4 nmol\/L/)).toBeTruthy();
   });
 
-  it('le POST de saisie ne porte ni unité, ni source, ni auteur — le serveur les pose', async () => {
+  it('le POST du bilan ne porte ni unité, ni source, ni auteur — le serveur les pose', async () => {
     const fetchMock = mockFetch();
     render(
       <CbFeatureProvider enabled resultsEnabled>
@@ -195,27 +195,158 @@ describe('EstimeMesurePanel — drapeau levé (étage 2, D-122 §2)', () => {
       </CbFeatureProvider>,
     );
     await waitFor(() => {
-      expect(screen.getByLabelText('Analyte (unité du catalogue)')).toBeTruthy();
+      expect(screen.getByRole('option', { name: 'Ferritine (µg/L)' })).toBeTruthy();
     });
-    fireEvent.change(screen.getByLabelText('Analyte (unité du catalogue)'), {
+    fireEvent.change(screen.getByLabelText('Analyte (unité du catalogue), ligne 1'), {
       target: { value: 'BIO_FERRITINE' },
     });
-    fireEvent.change(screen.getByLabelText(/^Valeur/), { target: { value: '51,2' } });
+    fireEvent.change(screen.getByLabelText(/^Valeur.*, ligne 1$/), { target: { value: '51,2' } });
     fireEvent.change(screen.getByLabelText(/Prélevé le/), {
       target: { value: '2026-09-02T08:15' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Consigner la mesure' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le bilan (1 mesure)' }));
     await waitFor(() => {
       const post = fetchMock.mock.calls.find(([, init]) => (init as RequestInit)?.method === 'POST');
       expect(post).toBeTruthy();
+      expect(String(post?.[0])).toBe('/api/praticien/biologie/resultats/bilan');
       const corps = JSON.parse(String((post?.[1] as RequestInit).body));
       expect(corps).toEqual({
         idPatient: 'PAT1',
-        analyteCode: 'BIO_FERRITINE',
-        valeur: 51.2,
         preleveLe: new Date('2026-09-02T08:15').toISOString(),
+        lignes: [{ analyteCode: 'BIO_FERRITINE', valeur: 51.2 }],
       });
     });
+  });
+});
+
+// Saisie GROUPÉE (BIO-INGEST LOT-01, A3 de D-256) : tout ou rien côté serveur,
+// et côté écran, un refus qui nomme la ligne SANS rien vider.
+describe('EstimeMesurePanel — saisie d’un bilan (LOT-01)', () => {
+  const CATALOGUE = [
+    { code: 'BIO_FERRITINE', libelle: 'Ferritine', unite: 'µg/L' },
+    { code: 'BIO_ZINC', libelle: 'Zinc', unite: 'µmol/L' },
+  ];
+
+  function mockBilan(reponsePost: { status: number; corps: unknown }) {
+    const fetchMock = vi.fn(async (entree: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(entree);
+      if (init?.method === 'POST') {
+        return {
+          ok: reponsePost.status < 300,
+          status: reponsePost.status,
+          json: async () => reponsePost.corps,
+        } as Response;
+      }
+      if (url.includes('/api/praticien/biologie/resultats')) {
+        return { ok: true, status: 200, json: async () => ({ ok: true, resultats: [] }) } as Response;
+      }
+      return { ok: true, status: 200, json: async () => ({ ok: true, analytes: CATALOGUE }) } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  async function remplirDeuxLignes() {
+    render(
+      <CbFeatureProvider enabled resultsEnabled>
+        <EstimeMesurePanel idPatient="PAT1" />
+      </CbFeatureProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Zinc (µmol/L)' })).toBeTruthy();
+    });
+    fireEvent.change(screen.getByLabelText(/Prélevé le/), { target: { value: '2026-09-02T08:15' } });
+    fireEvent.change(screen.getByLabelText('Analyte (unité du catalogue), ligne 1'), {
+      target: { value: 'BIO_FERRITINE' },
+    });
+    fireEvent.change(screen.getByLabelText(/^Valeur.*, ligne 1$/), { target: { value: '51,2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter une analyse' }));
+    fireEvent.change(screen.getByLabelText('Analyte (unité du catalogue), ligne 2'), {
+      target: { value: 'BIO_ZINC' },
+    });
+    fireEvent.change(screen.getByLabelText(/^Valeur.*, ligne 2$/), { target: { value: '12' } });
+  }
+
+  it('« Ajouter une analyse » ajoute une ligne et y porte le focus', async () => {
+    mockBilan({ status: 201, corps: { ok: true, nombre: 2 } });
+    await remplirDeuxLignes();
+    expect(document.activeElement).toBe(screen.getByLabelText('Analyte (unité du catalogue), ligne 2'));
+    expect(screen.getByRole('button', { name: 'Enregistrer le bilan (2 mesures)' })).toBeTruthy();
+  });
+
+  it('le bouton reste fermé tant qu’une ligne est incomplète', async () => {
+    mockBilan({ status: 201, corps: { ok: true, nombre: 2 } });
+    await remplirDeuxLignes();
+    fireEvent.change(screen.getByLabelText(/^Valeur.*, ligne 2$/), { target: { value: '' } });
+    expect(
+      (screen.getByRole('button', { name: 'Enregistrer le bilan (2 mesures)' }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+  });
+
+  it('un refus nomme la ligne SOUS la ligne, et la saisie reste entière', async () => {
+    mockBilan({
+      status: 409,
+      corps: {
+        ok: false,
+        reason: 'lignes_invalides',
+        error: 'Rien n’a été enregistré : reprenez les lignes signalées.',
+        lignes: [{ index: 1, reason: 'doublon_mesure', error: 'Une mesure de cet analyte existe déjà.' }],
+      },
+    });
+    await remplirDeuxLignes();
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le bilan (2 mesures)' }));
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toBe('Rien n’a été enregistré : 1 ligne à reprendre.');
+    });
+    const zinc = screen.getByLabelText('Analyte (unité du catalogue), ligne 2');
+    expect(zinc.getAttribute('aria-invalid')).toBe('true');
+    const idErreur = zinc.getAttribute('aria-describedby') ?? '';
+    expect(document.getElementById(idErreur)?.textContent).toBe('Une mesure de cet analyte existe déjà.');
+    // La ligne 1 n'est PAS marquée : seule la fautive l'est.
+    expect(screen.getByLabelText('Analyte (unité du catalogue), ligne 1').getAttribute('aria-invalid')).toBeNull();
+    // RIEN n'est vidé.
+    expect((screen.getByLabelText(/^Valeur.*, ligne 1$/) as HTMLInputElement).value).toBe('51,2');
+    expect((screen.getByLabelText(/^Valeur.*, ligne 2$/) as HTMLInputElement).value).toBe('12');
+    expect((zinc as HTMLSelectElement).value).toBe('BIO_ZINC');
+  });
+
+  it('un refus GLOBAL (date, dossier clos) se dit tel que le serveur le formule', async () => {
+    mockBilan({
+      status: 400,
+      corps: { ok: false, reason: 'date_future', error: 'La date de prélèvement est dans le futur.' },
+    });
+    await remplirDeuxLignes();
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le bilan (2 mesures)' }));
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toBe('La date de prélèvement est dans le futur.');
+    });
+    expect((screen.getByLabelText(/^Valeur.*, ligne 2$/) as HTMLInputElement).value).toBe('12');
+  });
+
+  it('au succès : la série est relue, les lignes se vident, la date reste', async () => {
+    const fetchMock = mockBilan({ status: 201, corps: { ok: true, nombre: 2 } });
+    await remplirDeuxLignes();
+    const lecturesAvant = fetchMock.mock.calls.filter(([u]) => String(u).includes('resultats?idPatient')).length;
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le bilan (2 mesures)' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Enregistrer le bilan (1 mesure)' })).toBeTruthy();
+    });
+    expect(fetchMock.mock.calls.filter(([u]) => String(u).includes('resultats?idPatient')).length).toBe(
+      lecturesAvant + 1,
+    );
+    expect((screen.getByLabelText(/^Valeur.*, ligne 1$/) as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText(/Prélevé le/) as HTMLInputElement).value).toBe('2026-09-02T08:15');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('« Retirer » ôte la ligne visée, pas une autre', async () => {
+    mockBilan({ status: 201, corps: { ok: true, nombre: 1 } });
+    await remplirDeuxLignes();
+    fireEvent.click(screen.getByRole('button', { name: 'Retirer la ligne 1' }));
+    expect((screen.getByLabelText('Analyte (unité du catalogue), ligne 1') as HTMLSelectElement).value).toBe(
+      'BIO_ZINC',
+    );
+    expect(screen.queryByRole('button', { name: /^Retirer/ })).toBeNull();
   });
 });
 

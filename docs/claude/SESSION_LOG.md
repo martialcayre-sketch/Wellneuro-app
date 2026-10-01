@@ -8564,3 +8564,22 @@ de merge l'exige, même pour une PR de doc.
 groupée praticien) en mode Plan dans un worktree.
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-01 — BIO-INGEST LOT-01 : saisie groupée d'un bilan, tout ou rien
+
+**Fait.** Route `resultats/bilan` : date commune, N lignes, préflight complet
+(tous les refus, indexés), puis un seul `$transaction`. Une ligne invalide :
+rien n'est écrit. `SaisieBilan` remplace la saisie unitaire ; refus sous la
+ligne, rien n'est vidé. 16 mutations du préflight détectées, T2 vert.
+
+**Écarté.** Étendre le POST unitaire (519 lignes, correction comprise) : route
+dédiée. Garder deux formulaires : un bilan d'une ligne EST la saisie unitaire.
+
+**Promotion.** Un `route.ts` de Next n'exporte que ses handlers : partager un
+message passe par `lib/` (`saisieMessages.ts`).
+
+**Prochaine action.** PR, CI, merge sur confirmation, déploiement constaté,
+puis constat d'usage par conteneur (`D-125`). Ensuite : amendement RGPD/TRUST
+avant tout code du LOT-02.
+
+**Questions ouvertes.** Aucune.
