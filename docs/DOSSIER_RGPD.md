@@ -232,10 +232,13 @@ patient. Revue `wn-reviewer` du 2026-10-01 (P1), écartée avec ce motif.
 
 1. la v4 et la v11 publiées, c'est-à-dire mergées **et déployées**, le
    déploiement constaté ([[D-248]]) ;
-2. le présent paragraphe validé par le responsable ;
+2. le présent paragraphe validé par le responsable — **validé le 2026-10-01**,
+   après sa rédaction (les textes patient l'avaient été par le plan, avant) ;
 3. **la demande de DPA à Anthropic envoyée**
    (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`), sa date établie par lecture du fil et
    non déclarée. Arbitrage du 2026-10-01 : l'envoi est exigé, pas la signature.
+   **Tenue le 2026-10-01 à 17:34 UTC (19:34 heure de Paris)**, établie par la capture du message
+   envoyé (expéditeur, heure, corps), lue en session.
 
 La condition s'écrira aussi **sur la ligne du drapeau** dans
 `docs/FEATURE_FLAGS.md` quand le LOT-02 le créera. Une condition qui ne vit que
@@ -717,8 +720,9 @@ ouverte.
   rétention des entrées, plus aiguë pour un document que pour un texte (le
   prompt caching est activé dans ce dépôt). **Condition propre à ce flux,
   arbitrée le 2026-10-01** : la demande de DPA à Anthropic doit être **envoyée**
-  avant la pose du drapeau d'extraction, sa date établie au fil. Elle ne
-  referme pas le trou ci-dessous : elle l'ouvre à l'instruction.
+  avant la pose du drapeau d'extraction, sa date établie au fil. **Envoyée le
+  2026-10-01 à 17:34 UTC (19:34 heure de Paris)** (trace dans `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`).
+  Elle ne referme pas le trou ci-dessous : elle l'ouvre à l'instruction.
 
 - **Google** — connexion du praticien seul.
 
@@ -1013,7 +1017,7 @@ elle.
 | 6 | Sous-traitants | ~~Sentry non déclaré au patient~~ — **déclaré le 2026-09-07** dans `donnees_confidentialite@v5` (`D-141`), résidence UE rendue invariante par `sentryRegion.ts` ; **reste dû : le DPA Sentry** | Responsable | 2026-10-21 (DPA seul) | `contenus/registre.ts`, rubrique 6 |
 | 6 | Destinataires | **Correspondance médecin — la voie d'EXCEPTION n'a aucune justification écrite.** Le traitement est inventorié depuis `D-222` et ses quatre termes sont posés ; ce qui manque est la qualification de la seule route non gardée, `api/praticien/adressage/courrier`, qui transmet une donnée de santé à un tiers **malgré un refus exprimé** — les deux autres routes sont fail-closed sur refus, retrait et silence. Les deux voies ne peuvent pas reposer sur la même justification. **Aucun article du RGPD n'est écrit dans ce dossier** (rubrique 3) : l'acte revient au conseil, pas au responsable ni à une session | Conseil qualifié | 2026-10-21 | ici, rubrique 6 |
 | 7 | Transferts | Mécanisme invoqué (CCT/DPA) | Conseil qualifié | 2026-10-21 | ici, rubrique 7 |
-| 7 | Transferts | **Demande de DPA à Anthropic non envoyée** (brouillon du 2026-09-11). Depuis `D-256` A4, son envoi conditionne la pose du drapeau d'extraction des comptes rendus biologiques (§2 ter) : l'envoi, pas la signature | Responsable | **avant la pose du drapeau du LOT-02 de BIO-INGEST**, en tout état de cause 2026-10-21 | `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md` (tableau « Trace à tenir »), puis rubriques 6 et 7 |
+| 7 | Transferts | ~~**Demande de DPA à Anthropic non envoyée**~~ — **envoyée le 2026-10-01 à 17:34 UTC (19:34 heure de Paris)** (date établie par capture du message envoyé). La condition de pose du drapeau du LOT-02 est tenue ; **restent dus : la réponse, puis la signature et l'archivage du DPA** | Responsable | 2026-10-21 (DPA) | `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md` (tableau « Trace à tenir »), puis rubriques 6 et 7 |
 | 8 | Conservation | Durées des données de santé | Responsable + conseil | 2026-10-21 | ici, rubrique 8 puis `gouvernance.ts` |
 | 9 | Droits | Délai, vérification d'identité, circuit interne | Responsable | 2026-10-21 | ici, rubrique 9 |
 | 10 | Sécurité | Pentest / revue externe | Prestataire à engager | 2026-10-21 | checklist du gate, exigence 7 |

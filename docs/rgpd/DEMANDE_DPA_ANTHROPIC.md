@@ -1,7 +1,8 @@
 # Demande d'un DPA article 28 — Anthropic
 
-**Statut : brouillon rédigé le 2026-09-11, à relire puis à envoyer par le
-responsable de traitement. Rien n'a été envoyé.**
+**Statut : ENVOYÉE le 2026-10-01 à 17:34 UTC** par le responsable de
+traitement, dans une version mise à jour du corps ci-dessous (voir « Trace à
+tenir »). Brouillon d'origine rédigé le 2026-09-11.
 
 ## Pourquoi cette demande, et pourquoi maintenant
 
@@ -86,8 +87,31 @@ consigner ici au fur et à mesure, et à reporter au §6 du dossier :
 
 | date (UTC) | événement | trace |
 |---|---|---|
-| — | demande envoyée | à compléter |
-| — | réponse / relance | à compléter |
+| 2026-10-01 17:34 | demande envoyée par e-mail de `martialcayre@wellneuro.fr` à **`privacy@anthropic.com`**, objet du message « Rgpd » | deux captures du dossier « Messages envoyés », fournies par le responsable et lues en session le 2026-10-01. Elles montrent l'expéditeur, le destinataire, la date (« 1 oct. 2026 19:34 », heure de Paris), l'envoi par `wellneuro.fr` et le corps |
+| 2026-10-01 17:35 | **accusé de transfert**, de « Fin AI Agent from Anthropic » `<support@mail.anthropic.com>`, dans le même fil : « We're transitioning your question to a human member of our Privacy Team for further assistance […] we'll email you when an agent has responded. » **Identifiant de conversation : 215476193483547** | troisième capture, message lu en session (19:35, heure de Paris). Agent automatisé, **pas une réponse sur le fond** : la demande est remise à l'équipe Privacy |
+| — | réponse sur le fond / relance | à compléter |
 
-**État au 2026-09-11 : non envoyée.** La ligne correspondante du tableau §14
-reste ouverte, et ce brouillon ne la referme pas.
+**Le corps envoyé n'est pas celui du brouillon ci-dessus.** Son second
+paragraphe a été réécrit le 2026-10-01 pour couvrir les usages ouverts depuis
+le brouillon ([[D-168]] et l'extraction des comptes rendus biologiques,
+[[D-256]] A4) :
+
+> Nous exploitons une application de suivi en nutrition clinique dont les
+> traitements portent des données de santé au sens de l'article 9 du RGPD.
+> Votre API est utilisée comme sous-traitant pour une assistance à la
+> rédaction : préparation de brouillons de synthèse, proposition d'une
+> formulation courte et d'un premier jet de résumé à partir de textes du
+> dossier. Elle servira aussi à extraire les valeurs de comptes rendus
+> d'analyses biologiques transmis en image ou en PDF. Les données transmises
+> comprennent des éléments rédigés par un professionnel de santé, des textes
+> écrits par le patient lui-même et, pour l'extraction, des documents de
+> laboratoire complets, mentions d'identité comprises (nom, date de
+> naissance).
+
+Le reste (les quatre points demandés, la phrase sur l'interlocuteur et celle
+sur le registre) est celui du brouillon, mot pour mot.
+
+**État au 2026-10-01 : envoyée, sans réponse.** L'envoi lève la condition de
+pose du drapeau d'extraction du LOT-02 de BIO-INGEST ([[D-256]], amendement du
+2026-10-01), qui exigeait l'envoi et non la signature. Il ne referme pas le
+trou de la rubrique 7 : le DPA reste à obtenir, signer et archiver.

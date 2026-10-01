@@ -49,7 +49,7 @@ LOT-01, amendement RGPD/TRUST
 - [ ] PR migration seule, puis release-db, puis constat. La migration nomme ses tables à la rubrique 5 du dossier RGPD, sur la ligne « comptes rendus biologiques déposés » déjà posée.
 - [ ] PR code consommateur. **Ce que la v4 promet, le staging le tient** : la date du prélèvement est relevée, et chaque extraction enregistre le modèle et la version du procédé (« enregistrés à chaque fois »). Les deux ont un test. **Le compte rendu part ENTIER** : la v4 et la v11 le déclarent, aucun masquage n'est promis ni à écrire (arbitrage du 2026-10-01).
 - [ ] Création du drapeau : sa ligne dans `docs/FEATURE_FLAGS.md` porte les conditions de pose du §2 ter.
-- [ ] **Pose du drapeau, seulement après** : la v4 et la v11 déployées et constatées ; la **demande de DPA Anthropic envoyée**, sa date établie au fil (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`) ; la v4 et la v11 relues contre le comportement livré.
+- [ ] **Pose du drapeau, seulement après** : la v4 et la v11 déployées et constatées ; la **demande de DPA Anthropic envoyée**, sa date établie au fil (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`) — **tenue le 2026-10-01 à 17:34 UTC** ; §2 ter du dossier RGPD validé par le responsable le 2026-10-01 ; la v4 et la v11 relues contre le comportement livré.
 
 ## Tests
 
