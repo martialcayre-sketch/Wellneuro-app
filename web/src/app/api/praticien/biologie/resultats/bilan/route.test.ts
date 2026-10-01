@@ -241,6 +241,16 @@ describe('bilan — refus par ligne', () => {
     ]);
   });
 
+  it('le doublon interne se voit MÊME si la première ligne a une valeur invalide — un seul passage', async () => {
+    const response = await POST(
+      postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: 'abc' }, { analyteCode: 'BIO_A0', valeur: 2 }])),
+    );
+    expect((await response.json()).lignes.map((l: { index: number; reason: string }) => [l.index, l.reason])).toEqual([
+      [0, 'valeur_invalide'],
+      [1, 'analyte_en_double'],
+    ]);
+  });
+
   it('analyte inconnu : 409 nommé', async () => {
     const response = await POST(postRequest(bilan([{ analyteCode: 'BIO_ZZZ', valeur: 1 }])));
     expect(response.status).toBe(409);

@@ -1,4 +1,4 @@
-# Handoff — BIO-INGEST LOT-01 : saisie groupée d'un bilan (2026-10-01 07:37)
+# Handoff — 2026-10-01 — BIO-INGEST LOT-01 : saisie groupée d'un bilan, tout ou rien
 
 ## Branche et état Git
 

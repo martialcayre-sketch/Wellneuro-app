@@ -135,18 +135,21 @@ export async function POST(req: Request) {
         refuser(index, 'analyte_absent');
         return;
       }
-      const verdict = validerSaisieResultat({ valeur: ligne.valeur, preleveLe: body.preleveLe }, maintenant);
-      if (!verdict.ok) {
-        refuser(index, verdict.raison);
-        return;
-      }
       // Deux lignes du même analyte au même horodatage : la seconde
-      // heurterait l'unicité DANS la transaction. Le préflight le dit avant.
+      // heurterait l'unicité DANS la transaction. Le préflight le dit avant —
+      // et le code se mémorise AVANT de juger la valeur : sinon une première
+      // ligne à valeur invalide masquerait le doublon jusqu'au passage suivant
+      // (revue Copilot de #1276).
       if (indexParCode.has(analyteCode)) {
         refuser(index, 'analyte_en_double');
         return;
       }
       indexParCode.set(analyteCode, index);
+      const verdict = validerSaisieResultat({ valeur: ligne.valeur, preleveLe: body.preleveLe }, maintenant);
+      if (!verdict.ok) {
+        refuser(index, verdict.raison);
+        return;
+      }
       lignes.push({ index, analyteCode, valeur: verdict.valeur });
     });
 

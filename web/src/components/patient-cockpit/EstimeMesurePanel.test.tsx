@@ -339,6 +339,26 @@ describe('EstimeMesurePanel — saisie d’un bilan (LOT-01)', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('pendant l’envoi, la saisie est GELÉE : rien ne se modifie qui ne partirait pas', async () => {
+    let relacher: (r: Response) => void = () => {};
+    const fetchMock = mockBilan({ status: 201, corps: { ok: true, nombre: 2 } });
+    const lecture = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation(async (entree: RequestInfo | URL, init?: RequestInit) =>
+      init?.method === 'POST' ? new Promise<Response>(r => { relacher = r; }) : lecture!(entree, init),
+    );
+    await remplirDeuxLignes();
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le bilan (2 mesures)' }));
+    await waitFor(() => {
+      expect((screen.getByLabelText(/Prélevé le/) as HTMLInputElement).disabled).toBe(true);
+    });
+    expect((screen.getByLabelText('Analyte (unité du catalogue), ligne 1') as HTMLSelectElement).disabled).toBe(true);
+    expect((screen.getByLabelText(/^Valeur.*, ligne 2$/) as HTMLInputElement).disabled).toBe(true);
+    relacher({ ok: true, status: 201, json: async () => ({ ok: true, nombre: 2 }) } as Response);
+    await waitFor(() => {
+      expect((screen.getByLabelText(/Prélevé le/) as HTMLInputElement).disabled).toBe(false);
+    });
+  });
+
   it('« Retirer » ôte la ligne visée, pas une autre', async () => {
     mockBilan({ status: 201, corps: { ok: true, nombre: 1 } });
     await remplirDeuxLignes();

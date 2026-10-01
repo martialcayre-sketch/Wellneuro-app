@@ -108,6 +108,10 @@ export function SaisieBilan({
         type="datetime-local"
         value={preleveLe}
         onChange={event => setPreleveLe(event.target.value)}
+        // Pendant l'envoi, la saisie est GELÉE : une frappe faite pendant
+        // l'attente ne partirait pas, puis serait vidée au succès ou recevrait
+        // le refus d'un autre instantané (revue Copilot de #1276).
+        disabled={disabled}
         className="min-h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
       />
       <p className="mt-1 text-xs text-muted-foreground">
@@ -138,6 +142,7 @@ export function SaisieBilan({
                     }}
                     value={ligne.analyteCode}
                     onChange={event => modifier(ligne.id, 'analyteCode', event.target.value)}
+                    disabled={disabled}
                     aria-invalid={refus ? true : undefined}
                     aria-describedby={refus ? idErreur : undefined}
                     className="min-h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
@@ -162,6 +167,7 @@ export function SaisieBilan({
                     inputMode="decimal"
                     value={ligne.valeur}
                     onChange={event => modifier(ligne.id, 'valeur', event.target.value)}
+                    disabled={disabled}
                     placeholder="42,5"
                     aria-invalid={refus ? true : undefined}
                     aria-describedby={refus ? idErreur : undefined}
