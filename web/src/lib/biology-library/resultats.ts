@@ -40,6 +40,29 @@ export type VerdictSaisieResultat =
   | { ok: true; valeur: number; preleveLe: Date }
   | { ok: false; raison: RefusSaisieResultat };
 
+export type VerdictDatePrelevement =
+  | { ok: true; preleveLe: Date }
+  | { ok: false; raison: 'date_invalide' | 'date_future' };
+
+/**
+ * La date de prélèvement SEULE. La saisie groupée d'un bilan (LOT-01) porte
+ * une date COMMUNE à toutes ses lignes : elle se juge une fois, et son refus
+ * est celui du bilan entier, pas d'une ligne.
+ */
+export function validerDatePrelevement(preleveLeBrut: unknown, maintenant: Date): VerdictDatePrelevement {
+  if (typeof preleveLeBrut !== 'string' || preleveLeBrut.trim() === '') {
+    return { ok: false, raison: 'date_invalide' };
+  }
+  const preleveLe = new Date(preleveLeBrut);
+  if (Number.isNaN(preleveLe.getTime())) {
+    return { ok: false, raison: 'date_invalide' };
+  }
+  if (preleveLe.getTime() > maintenant.getTime() + TOLERANCE_FUTUR_MS) {
+    return { ok: false, raison: 'date_future' };
+  }
+  return { ok: true, preleveLe };
+}
+
 export function validerSaisieResultat(
   entree: { valeur: unknown; preleveLe: unknown },
   maintenant: Date,
@@ -52,16 +75,8 @@ export function validerSaisieResultat(
     return { ok: false, raison: 'valeur_hors_capacite' };
   }
 
-  if (typeof entree.preleveLe !== 'string' || entree.preleveLe.trim() === '') {
-    return { ok: false, raison: 'date_invalide' };
-  }
-  const preleveLe = new Date(entree.preleveLe);
-  if (Number.isNaN(preleveLe.getTime())) {
-    return { ok: false, raison: 'date_invalide' };
-  }
-  if (preleveLe.getTime() > maintenant.getTime() + TOLERANCE_FUTUR_MS) {
-    return { ok: false, raison: 'date_future' };
-  }
+  const date = validerDatePrelevement(entree.preleveLe, maintenant);
+  if (!date.ok) return date;
 
-  return { ok: true, valeur, preleveLe };
+  return { ok: true, valeur, preleveLe: date.preleveLe };
 }

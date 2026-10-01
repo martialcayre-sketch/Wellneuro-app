@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TOLERANCE_FUTUR_MS, validerSaisieResultat } from './resultats';
+import { TOLERANCE_FUTUR_MS, validerDatePrelevement, validerSaisieResultat } from './resultats';
 
 const MAINTENANT = new Date('2026-09-03T12:00:00.000Z');
 
@@ -56,5 +56,29 @@ describe('validerSaisieResultat', () => {
     const demain = new Date(MAINTENANT.getTime() + TOLERANCE_FUTUR_MS - 60_000).toISOString();
     const verdict = validerSaisieResultat({ valeur: 1, preleveLe: demain }, MAINTENANT);
     expect(verdict.ok).toBe(true);
+  });
+});
+
+// La date SEULE, telle que la juge la saisie groupée d'un bilan (LOT-01) :
+// mêmes refus, même tolérance que dans `validerSaisieResultat`, qui l'appelle.
+describe('validerDatePrelevement', () => {
+  it('accepte une date ISO, heure comprise', () => {
+    expect(validerDatePrelevement('2026-09-01T08:30:00.000Z', MAINTENANT)).toEqual({
+      ok: true,
+      preleveLe: new Date('2026-09-01T08:30:00.000Z'),
+    });
+  });
+
+  it('refuse une date absente, blanche, non textuelle ou illisible', () => {
+    for (const brut of [undefined, null, '', '   ', 42, 'pas une date']) {
+      expect(validerDatePrelevement(brut, MAINTENANT)).toEqual({ ok: false, raison: 'date_invalide' });
+    }
+  });
+
+  it('refuse au-delà de la tolérance, accepte en deçà', () => {
+    const au_dela = new Date(MAINTENANT.getTime() + TOLERANCE_FUTUR_MS + 60_000).toISOString();
+    const en_deca = new Date(MAINTENANT.getTime() + TOLERANCE_FUTUR_MS - 60_000).toISOString();
+    expect(validerDatePrelevement(au_dela, MAINTENANT)).toEqual({ ok: false, raison: 'date_future' });
+    expect(validerDatePrelevement(en_deca, MAINTENANT).ok).toBe(true);
   });
 });

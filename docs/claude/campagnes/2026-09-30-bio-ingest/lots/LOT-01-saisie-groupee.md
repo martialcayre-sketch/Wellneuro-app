@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Saisie groupée praticien"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-00"
 ---
 
@@ -44,11 +44,11 @@ LOT-00
 
 ## Étapes
 
-- [ ] Mode Plan : route batch dédiée ou extension du POST, réutilisation de `validerSaisieResultat`.
-- [ ] Implémenter le préflight complet puis l'écriture transactionnelle.
-- [ ] Formulaire multi-lignes, textes en français.
-- [ ] Validations T1, T2.
-- [ ] Constat d'usage au conteneur après déploiement (`D-125`).
+- [x] Mode Plan : route bilan DÉDIÉE (`resultats/bilan`), la route unitaire et sa correction inchangées.
+- [x] Implémenter le préflight complet puis l'écriture transactionnelle.
+- [x] Formulaire multi-lignes, textes en français — il REMPLACE la saisie unitaire (arbitrage du 2026-10-01).
+- [x] Validations T1, T2.
+- [ ] Constat d'usage au conteneur après déploiement (`D-125`) — reporté hors lot, voir Résultats.
 
 ## Tests
 
@@ -60,4 +60,21 @@ Saisie groupée en production derrière `WN_CB_RESULTS_ENABLED`, T2 vert, aucune
 
 ## Résultats
 
-À compléter à la clôture.
+Livré le 2026-10-01 sur `feat/bio-ingest-lot01-saisie-groupee`.
+
+- **Route** `POST /api/praticien/biologie/resultats/bilan` : date commune, N lignes, préflight
+  complet (forme, analyte absent/inconnu/inactif, analyte en double, doublon en base sur la clé
+  de l'unicité partielle), TOUS les refus rendus avec leur index, puis un seul `$transaction`
+  (forme tableau). Un `P2002` de course annule le bilan entier. Une ligne qui porte
+  `supersedesResultatId` est refusée : un bilan ne corrige rien (`D-124`). Unité, source et
+  auteur posés serveur. Borne technique : 100 lignes.
+- **Cockpit** : `SaisieBilan` remplace `SaisieMesure` dans `EstimeMesurePanel` ; refus sous la
+  ligne fautive (`aria-invalid`, `aria-describedby`), alerte globale, rien n'est vidé.
+- **Extraction sans changement de comportement** : `saisieMessages.ts` (messages, `signature`),
+  `validerDatePrelevement`. Le banc de la route unitaire est resté vert sans modification.
+- **Validations** : T1 vert ; banc de la route bilan, 16 mutations manuelles du préflight,
+  toutes détectées ; T2 vert (225 E2E, biologie verte sur Chromium et iPhone 13) ;
+  `/code-review medium` sans finding.
+- **Reste, hors lot** : le constat d'usage au conteneur (`D-125`, par identifiant) après
+  déploiement — combien de lignes `resultats_biologiques`, de combien de bilans. La ligne de
+  base est 0 ligne sur 28 dossiers actifs (2026-09-30).

@@ -35,6 +35,10 @@ const ANALYTE_LIBELLE = 'Ferritine';
 const ANALYTE_CODE = 'BIO_FERRITINE';
 /** L'unité vient du CATALOGUE, jamais de la saisie : la vérifier le prouve. */
 const ANALYTE_UNITE = 'ng/mL';
+/** Second analyte du même catalogue de niveau 1, pour un bilan à deux lignes. */
+const ZINC_LIBELLE = 'Zinc plasmatique';
+const ZINC_CODE = 'BIO_ZINC_PLASMATIQUE';
+const ZINC_UNITE = 'µmol/L';
 
 /**
  * Deux prélèvements du MÊME JOUR, distingués par la seule heure — c'est le cas
@@ -45,6 +49,8 @@ const MATIN = '2026-07-01T08:15';
 const SOIR = '2026-07-01T18:45';
 const VALEUR_MATIN = '51.2';
 const VALEUR_SOIR = '47.8';
+/** Le prélèvement du bilan à deux lignes — un autre jour, aucune collision. */
+const BILAN = '2026-07-02T07:30';
 
 let debutDuRun: Date;
 
@@ -59,39 +65,54 @@ async function ouvrirPanneauMesures(page: Page) {
 }
 
 /**
- * Consigne une mesure et rend la réponse du serveur.
+ * Enregistre un bilan (date commune, N lignes) et rend la réponse du serveur.
  *
  * L'attente porte sur la RÉPONSE, pas sur un délai : sans elle, l'assertion
  * suivante courserait le rendu et le banc deviendrait intermittent — la classe
  * d'échec la plus coûteuse à diagnostiquer.
  */
-async function consigner(page: Page, panneau: ReturnType<Page['getByRole']>, saisie: {
-  valeur: string;
-  preleveLe: string;
-}) {
-  // LE PANNEAU EST ATTENDU AU REPOS AVANT D'ÊTRE REMPLI. Après une consignation
-  // réussie, le composant enchaîne : réponse du POST, puis `chargerResultats()`
-  // — un SECOND aller-retour —, puis `envoiEnCours` relâché, et ENFIN
-  // `setValeur('')` (`EstimeMesurePanel.tsx`). Or l'attente ci-dessous ne porte
-  // que sur la réponse du POST : la saisie suivante commencerait avant ce reset,
-  // qui effacerait alors ce qu'on vient de taper. `prete` retombe à faux, le
-  // bouton reste `disabled`, et Playwright réessaie 120 s avant d'accuser la
-  // saisie d'un défaut qui n'est qu'un ordre d'arrivée.
-  //
-  // `setValeur('')` est la DERNIÈRE écriture d'état de la séquence : voir le
-  // champ vide, c'est savoir que tout le reste a atterri. Le champ est contrôlé
-  // (`value={valeur}`), l'assertion observe donc bien l'état, pas le DOM initial.
-  // Observé en CI le 2026-09-07 (#929), et déjà une fois auparavant (#918).
-  await expect(panneau.getByLabel(/^Valeur/)).toHaveValue('');
+async function enregistrerBilan(
+  page: Page,
+  panneau: ReturnType<Page['getByRole']>,
+  bilan: { preleveLe: string; lignes: Array<{ code: string; valeur: string }> },
+) {
+  // LE FORMULAIRE EST ATTENDU AU REPOS AVANT D'ÊTRE REMPLI. Après un
+  // enregistrement réussi, le composant enchaîne : réponse du POST, puis
+  // `chargerResultats()` — un SECOND aller-retour —, puis `envoiEnCours`
+  // relâché, et ENFIN les lignes remises à une seule ligne vide
+  // (`SaisieBilan.tsx`). Commencer avant ce reset ferait effacer ce qu'on vient
+  // de taper : le bouton resterait `disabled` et Playwright réessaierait 120 s
+  // avant d'accuser la saisie d'un défaut qui n'est qu'un ordre d'arrivée
+  // (observé en CI le 2026-09-07, #929, sur l'ancien formulaire unitaire).
+  // Une ligne unique ET vide : c'est la DERNIÈRE écriture d'état de la séquence.
+  await expect(panneau.getByRole('button', { name: /^Retirer/ })).toHaveCount(0);
+  await expect(panneau.getByLabel(/^Valeur.*, ligne 1$/)).toHaveValue('');
 
-  await panneau.getByLabel('Analyte (unité du catalogue)').selectOption(ANALYTE_CODE);
-  await panneau.getByLabel(/^Valeur/).fill(saisie.valeur);
-  await panneau.getByLabel(/Prélevé le/).fill(saisie.preleveLe);
+  await panneau.getByLabel(/Prélevé le/).fill(bilan.preleveLe);
+  for (const [i, ligne] of bilan.lignes.entries()) {
+    if (i > 0) await panneau.getByRole('button', { name: 'Ajouter une analyse' }).click();
+    await panneau
+      .getByLabel(`Analyte (unité du catalogue), ligne ${i + 1}`, { exact: true })
+      .selectOption(ligne.code);
+    await panneau.getByLabel(new RegExp(`^Valeur.*, ligne ${i + 1}$`)).fill(ligne.valeur);
+  }
   const reponse = page.waitForResponse(
-    r => r.url().includes('/api/praticien/biologie/resultats') && r.request().method() === 'POST',
+    r => r.url().includes('/api/praticien/biologie/resultats/bilan') && r.request().method() === 'POST',
   );
-  await panneau.getByRole('button', { name: 'Consigner la mesure' }).click();
+  await panneau.getByRole('button', { name: /^Enregistrer le bilan/ }).click();
   return reponse;
+}
+
+/** Une mesure seule : un bilan d'une ligne. */
+function consigner(
+  page: Page,
+  panneau: ReturnType<Page['getByRole']>,
+  saisie: { valeur: string; preleveLe: string },
+) {
+  return enregistrerBilan(page, panneau, {
+    preleveLe: saisie.preleveLe,
+    lignes: [{ code: ANALYTE_CODE, valeur: saisie.valeur }],
+  });
 }
 
 test.describe('Saisie de résultats biologiques — série, doublon, panne de lecture', () => {
@@ -117,7 +138,7 @@ test.describe('Saisie de résultats biologiques — série, doublon, panne de le
 
     // Aucune unité n'est saisie : le libellé du sélecteur le dit, et le rendu
     // de la série le prouvera.
-    await expect(panneau.getByLabel('Analyte (unité du catalogue)')).toBeVisible();
+    await expect(panneau.getByLabel('Analyte (unité du catalogue), ligne 1')).toBeVisible();
     await expect(panneau.getByLabel(/^Unité$/)).toHaveCount(0);
 
     const premiere = await consigner(page, panneau, {
@@ -162,24 +183,96 @@ test.describe('Saisie de résultats biologiques — série, doublon, panne de le
     const panneau = await ouvrirPanneauMesures(page);
 
     // Même analyte, même horodatage EXACT que la mesure du matin : c'est la
-    // clé d'unicité, et le 409 vient d'un `P2002` de la base, pas d'un contrôle
-    // applicatif — c'est la garde qu'on éprouve, pas sa doublure.
+    // clé d'unicité. Le préflight du bilan la lit AVANT d'écrire — le `P2002`
+    // de la base reste le filet d'une course, éprouvé par son propre banc
+    // (`contrat-unicite-p2002.spec.ts`).
     const reponse = await consigner(page, panneau, {
       valeur: '99.9',
       preleveLe: MATIN,
     });
     expect(reponse.status()).toBe(409);
-    expect((await reponse.json()).reason).toBe('doublon_mesure');
+    const corps = await reponse.json();
+    expect(corps.reason).toBe('lignes_invalides');
+    expect(corps.lignes).toEqual([expect.objectContaining({ index: 0, reason: 'doublon_mesure' })]);
 
-    // LE REFUS EST DIT, et il est dit UTILEMENT : le message nomme la sortie
-    // (l'heure distingue deux prélèvements du même jour). Un 409 avalé en
-    // silence laisserait le praticien croire sa mesure consignée.
-    const alerte = panneau.getByRole('alert');
-    await expect(alerte).toBeVisible();
-    await expect(alerte).toContainText(/existe déjà pour ce patient à cet horodatage/);
+    // LE REFUS EST DIT, et il est dit UTILEMENT : sous la ligne, le message
+    // nomme la sortie (l'heure distingue deux prélèvements du même jour). Un
+    // 409 avalé en silence laisserait le praticien croire sa mesure consignée.
+    await expect(panneau.getByRole('alert')).toHaveText('Rien n’a été enregistré : 1 ligne à reprendre.');
+    await expect(panneau.getByText(/existe déjà pour ce patient à cet horodatage/)).toBeVisible();
 
-    // ET RIEN N'A ÉTÉ ÉCRIT : la valeur refusée n'apparaît pas dans la série.
+    // ET RIEN N'A ÉTÉ ÉCRIT : la valeur refusée n'apparaît pas dans la série,
+    // et elle reste dans le champ — refusée, pas perdue.
     await expect(panneau.getByText(`99.9 ${ANALYTE_UNITE}`)).toHaveCount(0);
+    await expect(panneau.getByLabel(/^Valeur.*, ligne 1$/)).toHaveValue('99.9');
+  });
+
+  test('un bilan de deux analytes s’enregistre en UNE validation, clavier compris', async ({
+    page,
+    context,
+  }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    const panneau = await ouvrirPanneauMesures(page);
+
+    // « Ajouter une analyse » au CLAVIER : la nouvelle ligne reçoit le focus,
+    // sans quoi un bilan de dix analytes se saisirait à la souris seulement.
+    await panneau.getByRole('button', { name: 'Ajouter une analyse' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(panneau.getByLabel('Analyte (unité du catalogue), ligne 2', { exact: true })).toBeFocused();
+    await panneau.getByRole('button', { name: 'Retirer la ligne 2' }).click();
+
+    const reponse = await enregistrerBilan(page, panneau, {
+      preleveLe: BILAN,
+      lignes: [
+        { code: ANALYTE_CODE, valeur: '60.1' },
+        { code: ZINC_CODE, valeur: '14.2' },
+      ],
+    });
+    expect(reponse.status(), `bilan refusé — corps : ${await reponse.text()}`).toBe(201);
+    expect(await reponse.json()).toEqual({ ok: true, nombre: 2 });
+
+    await expect(panneau.getByText(`60.1 ${ANALYTE_UNITE}`)).toBeVisible();
+    await expect(panneau.getByText(`14.2 ${ZINC_UNITE}`)).toBeVisible();
+    await expect(panneau.getByText(ZINC_LIBELLE, { exact: true })).toHaveCount(1);
+  });
+
+  test('TOUT OU RIEN : une ligne en doublon, et la ligne valide n’est PAS écrite', async ({
+    page,
+    context,
+  }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    const panneau = await ouvrirPanneauMesures(page);
+
+    // Ligne 1 : zinc au matin — valide seule. Ligne 2 : ferritine au matin —
+    // la mesure du premier test occupe déjà cet horodatage. Le cas A3 :
+    // l'une refusée, AUCUNE écrite.
+    const reponse = await enregistrerBilan(page, panneau, {
+      preleveLe: MATIN,
+      lignes: [
+        { code: ZINC_CODE, valeur: '9.9' },
+        { code: ANALYTE_CODE, valeur: '33.3' },
+      ],
+    });
+    expect(reponse.status()).toBe(409);
+    expect((await reponse.json()).lignes).toEqual([
+      expect.objectContaining({ index: 1, reason: 'doublon_mesure' }),
+    ]);
+
+    // La ligne fautive est NOMMÉE, et elle seule.
+    const ferritine = panneau.getByLabel('Analyte (unité du catalogue), ligne 2', { exact: true });
+    await expect(ferritine).toHaveAttribute('aria-invalid', 'true');
+    await expect(panneau.getByLabel('Analyte (unité du catalogue), ligne 1', { exact: true })).not.toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+
+    // Le zinc, valide, n'a PAS été écrit — après relecture de la page entière,
+    // pas seulement de l'état local du composant.
+    await page.reload();
+    const relu = page.getByRole('region', { name: 'Estimé et mesuré' });
+    await expect(relu.getByText(`14.2 ${ZINC_UNITE}`)).toBeVisible();
+    await expect(relu.getByText(`9.9 ${ZINC_UNITE}`)).toHaveCount(0);
+    await expect(relu.getByText(`33.3 ${ANALYTE_UNITE}`)).toHaveCount(0);
   });
 
   test('une panne de lecture ne se lit JAMAIS « aucune mesure » (DC-24)', async ({
