@@ -45,7 +45,7 @@ LOT-01, amendement RGPD/TRUST
 ## Étapes
 
 - [x] **Préalable, geste distinct** : amender le registre RGPD et le document patient TRUST pour l'envoi de comptes rendus au sous-traitant IA — fait le 2026-10-01 (amendement de `D-256`) : `usage_ia` v4, `donnees_confidentialite` v11, `DOSSIER_RGPD.md` §2 ter.
-- [ ] Mode Plan du modèle de staging.
+- [x] Mode Plan du modèle de staging — approuvé le 2026-10-01. Arbitrages : types PDF + JPEG/PNG/WebP dès la migration (LOT-03 sans migration), 10 Mo au plus, resolver libellé → analyte en module TS signé (PR 2, aucune table).
 - [ ] PR migration seule, puis release-db, puis constat. La migration nomme ses tables à la rubrique 5 du dossier RGPD, sur la ligne « comptes rendus biologiques déposés » déjà posée.
 - [ ] PR code consommateur. **Ce que la v4 promet, le staging le tient** : la date du prélèvement est relevée, et chaque extraction enregistre le modèle et la version du procédé (« enregistrés à chaque fois »). Les deux ont un test. **Le compte rendu part ENTIER** : la v4 et la v11 le déclarent, aucun masquage n'est promis ni à écrire (arbitrage du 2026-10-01).
 - [ ] Création du drapeau : sa ligne dans `docs/FEATURE_FLAGS.md` porte les conditions de pose du §2 ter.

@@ -165,6 +165,20 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.documentsPatientBiologie = (
       await tx.documentPatientBiologie.deleteMany({ where: par })
     ).count;
+    // Le staging d'import biologique (D-256 A2/A5, BIO-INGEST LOT-02) : le
+    // compte rendu déposé, ses extractions, leurs lignes candidates. FK
+    // RESTRICT tout du long — et la ligne validée retient son résultat : les
+    // lignes partent AVANT les résultats, puis les imports, puis les comptes
+    // rendus.
+    supprimees.lignesBiologiquesCandidates = (
+      await tx.ligneBiologiqueCandidate.deleteMany({ where: par })
+    ).count;
+    supprimees.importsBiologiques = (
+      await tx.importBiologique.deleteMany({ where: par })
+    ).count;
+    supprimees.comptesRendusBiologiques = (
+      await tx.compteRenduBiologique.deleteMany({ where: par })
+    ).count;
     // Les résultats biologiques (étage 2 du rayon, D-122 §2) sont des données
     // de santé nominatives en FK RESTRICT : subsistant, ils feraient échouer
     // la suppression du patient. Ils partent avec le dossier, nommément.
