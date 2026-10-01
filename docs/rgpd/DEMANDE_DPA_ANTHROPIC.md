@@ -86,7 +86,7 @@ d'une demande ne se déclare pas, elle s'établit par une trace du fil** : sa
 lecture directe, ou à défaut une capture du message qui montre en-têtes et
 corps (c'est la preuve retenue le 2026-10-01, la messagerie `wellneuro.fr`
 n'étant pas lisible en session). À consigner ici au fur et à mesure, et à
-reporter aux rubriques 7 et 14 du dossier :
+reporter aux rubriques 6, 7 et 14 du dossier :
 
 | date (UTC) | événement | trace |
 |---|---|---|

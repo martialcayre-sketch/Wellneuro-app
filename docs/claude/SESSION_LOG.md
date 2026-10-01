@@ -8616,3 +8616,17 @@ consignée (pièce DPA, dossier RGPD §2 ter/§7/§14, fiche LOT-02).
 **Questions ouvertes.** Réponse d'Anthropic. Le §2 ter est validé par le
 responsable le même jour : les conditions de pose du drapeau du LOT-02 sont
 toutes tenues.
+
+## 2026-10-01 — RGPD : libellé de la preuve d'envoi du DPA (reliquat de #1278)
+
+**Fait.** #1279 : la preuve d'envoi de la demande de DPA est nommée telle
+qu'elle est (capture du message, à défaut de lecture directe du fil), au §2 ter
+et dans la pièce DPA ; report de la trace aux rubriques 6, 7 et 14 (la
+rubrique 6, omise d'abord, rétablie sur revue Copilot).
+
+**Écarté.** Aucune option écartée : correction de libellé seule.
+
+**Prochaine action.** Merge de #1279, puis LOT-02 de BIO-INGEST : PR 1,
+migration seule du staging (plan approuvé le 2026-10-01).
+
+**Questions ouvertes.** Réponse d'Anthropic sur le fond du DPA.
