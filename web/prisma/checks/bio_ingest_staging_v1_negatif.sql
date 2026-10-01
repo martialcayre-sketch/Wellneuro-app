@@ -50,6 +50,11 @@
 -- fin.
 BEGIN;
 
+-- Le fuseau du Mac, pas celui du CI : les instants posés par la base doivent
+-- être de l'UTC quel que soit le fuseau de la session (point 4 de la
+-- migration). En UTC, un `now()` nu passerait inaperçu.
+SET LOCAL TimeZone TO 'Europe/Paris';
+
 CREATE FUNCTION pg_temp.refus(cas text, requete text, etat text, indice text)
 RETURNS void
 LANGUAGE plpgsql
@@ -132,7 +137,6 @@ BEGIN
 
   INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par)
   VALUES
-    ('res_stg1', 'PAT_CONTRAT_STG1', 'BIO_CONTRAT_STG', 4.2, 'mg/L', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr'),
     ('res_stg2', 'PAT_CONTRAT_STG2', 'BIO_CONTRAT_STG', 4.2, 'mg/L', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr');
   -- Une saisie manuelle ANTÉRIEURE à toute extraction (même dossier, autre
   -- date de prélèvement) : aucune ligne ne doit pouvoir s'y rattacher.
@@ -398,6 +402,23 @@ BEGIN
   IF nb <> 1 THEN
     RAISE EXCEPTION 'STAGING BIO: le laboratoire lu à la terminaison n''a pas été conservé.';
   END IF;
+
+  -- Les instants posés par la base sont de l'UTC, fuseau de session ignoré.
+  SELECT count(*) INTO nb
+  FROM comptes_rendus_biologiques cr, imports_biologiques i
+  WHERE cr.id = 'cr_1' AND i.id = 'imp_1'
+    AND cr.depose_le = (now() AT TIME ZONE 'UTC')::timestamp(3)
+    AND i.lance_le = (now() AT TIME ZONE 'UTC')::timestamp(3)
+    AND i.termine_le = (now() AT TIME ZONE 'UTC')::timestamp(3);
+  IF nb <> 1 THEN
+    RAISE EXCEPTION 'STAGING BIO: un instant posé par la base n''est pas en UTC — il suit le fuseau de la session.';
+  END IF;
+
+  -- Le résultat que la validation créera : saisi APRÈS la fin de l'extraction,
+  -- strictement, et en UTC comme Prisma l'écrit.
+  INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, saisi_le)
+  VALUES ('res_stg1', 'PAT_CONTRAT_STG1', 'BIO_CONTRAT_STG', 4.2, 'mg/L', TIMESTAMP '2026-09-01 08:00:00',
+          'saisie_praticien', 'praticien@wellneuro.fr', clock_timestamp() AT TIME ZONE 'UTC');
   SELECT count(*) INTO nb FROM imports_biologiques WHERE id = 'imp_3' AND modele = 'modele-contrat' AND version_prompt = 'releve-v1';
   IF nb <> 1 THEN
     RAISE EXCEPTION 'STAGING BIO: une extraction en échec ne porte plus son modèle et sa version du procédé.';
@@ -512,8 +533,8 @@ BEGIN
       RAISE EXCEPTION 'STAGING BIO: une décision valide a été refusée (%)', SQLERRM;
   END;
   SELECT traite_le INTO instant FROM lignes_biologiques_candidates WHERE id = 'lig_1';
-  IF instant < TIMESTAMP '2020-01-01' THEN
-    RAISE EXCEPTION 'STAGING BIO: une décision antidatée a gardé sa date (%).', instant;
+  IF instant IS DISTINCT FROM (now() AT TIME ZONE 'UTC')::timestamp(3) THEN
+    RAISE EXCEPTION 'STAGING BIO: une décision antidatée, ou hors UTC, a gardé sa date (%).', instant;
   END IF;
 
   PERFORM pg_temp.refus('ligne décidée qui change de décision',

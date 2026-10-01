@@ -15,15 +15,18 @@ import { describe, expect, it } from 'vitest';
 // résultat validé (A5). La PR 2 y ajoutera le retrait d'un dépôt erroné
 // (arbitrage du 2026-10-01), tant qu'aucune ligne n'est validée.
 //
-// PORTÉE : le code de l'application, mais aussi les scripts et le dossier
-// Prisma (seed) — un script d'exploitation qui supprimerait du staging n'en
-// serait pas moins un auteur (revue `wn-reviewer`).
+// PORTÉE : le code de l'application, mais aussi les scripts, le dossier
+// Prisma (seed) et les E2E (un nettoyage Playwright) — un script qui
+// supprimerait du staging n'en serait pas moins un auteur (revue
+// `wn-reviewer`). Les bancs unitaires (`*.test.*`) en sont exclus : ils
+// nomment les motifs qu'ils éprouvent.
 
 const WEB = process.cwd();
 const RACINES = [
   path.join(WEB, 'src'),
   path.join(WEB, 'scripts'),
   path.join(WEB, 'prisma'),
+  path.join(WEB, 'e2e'),
   path.join(WEB, '..', 'scripts'),
 ];
 const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');

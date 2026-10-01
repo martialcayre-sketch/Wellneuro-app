@@ -58,7 +58,13 @@
 --     ligne ne change que par la décision du praticien, une seule fois ; un
 --     import ne change que pour se terminer, une seule fois.
 --  4. LES INSTANTS SONT POSÉS PAR LA BASE (dépôt, lancement, fin, décision) :
---     une trace antidatable n'en est pas une.
+--     une trace antidatable n'en est pas une. Ils sont posés EN UTC EXPLICITE
+--     (`now() AT TIME ZONE 'UTC'`), la convention de Prisma pour un
+--     `timestamp` sans fuseau : le point 6 compare l'un d'eux à `saisi_le`,
+--     écrit par l'application, et un `now()` nu suivrait le fuseau de la
+--     session — UTC en production, Europe/Paris sur la base locale du Mac, où
+--     toute validation aurait été refusée pendant une à deux heures (revue
+--     `wn-reviewer`).
 --  5. UNE EXTRACTION EN ÉCHEC NE LAISSE AUCUNE LIGNE, une extraction terminée
 --     n'en reçoit plus, et seule une extraction terminée se valide.
 --  6. LE RÉSULTAT VALIDÉ EST POSTÉRIEUR À L'EXTRACTION (revue `wn-reviewer`,
@@ -86,8 +92,9 @@
 -- UPDATE (hors transitions décrites) et TRUNCATE sont refusés par trigger.
 -- DELETE ne l'est PAS : chaque ligne est une donnée patient, et l'effacement
 -- d'un dossier les supprime NOMMÉMENT, lignes d'abord (elles retiennent le
--- résultat validé), puis imports, puis comptes rendus. Qu'aucun AUTRE code ne
--- les supprime est tenu par un banc du dépôt
+-- résultat validé), puis imports, puis comptes rendus. La PR 2 y ajoutera le
+-- retrait d'un dépôt erroné, tant qu'aucune ligne n'est validée (arbitrage du
+-- 2026-10-01). Qu'aucun AUTRE code ne les supprime est tenu par un banc du dépôt
 -- (`biology-library/staging.guard.test.ts`), pas par la base.
 --
 -- Durée de conservation : trou de la rubrique 8 du dossier RGPD, comme pour
@@ -293,7 +300,7 @@ LANGUAGE plpgsql
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-  NEW.depose_le := now();
+  NEW.depose_le := now() AT TIME ZONE 'UTC';
   RETURN NEW;
 END;
 $$;
@@ -308,7 +315,7 @@ LANGUAGE plpgsql
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-  RAISE EXCEPTION '% : ligne figée (% refusé) ; seul l''effacement du dossier la supprime.', TG_TABLE_NAME, TG_OP;
+  RAISE EXCEPTION '% : ligne figée (% refusé) ; seule une suppression nommée la retire.', TG_TABLE_NAME, TG_OP;
 END;
 $$;
 
@@ -342,7 +349,7 @@ BEGIN
   IF NEW.laboratoire_lu IS NOT NULL THEN
     RAISE EXCEPTION 'import refusé : le laboratoire est lu par l''extraction, pas posé avant elle.';
   END IF;
-  NEW.lance_le := now();
+  NEW.lance_le := now() AT TIME ZONE 'UTC';
   RETURN NEW;
 END;
 $$;
@@ -373,7 +380,7 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'import refusé : une extraction en échec ne laisse aucune ligne candidate.';
   END IF;
-  NEW.termine_le := now();
+  NEW.termine_le := now() AT TIME ZONE 'UTC';
   RETURN NEW;
 END;
 $$;
@@ -458,7 +465,7 @@ BEGIN
       RAISE EXCEPTION 'ligne refusée : le résultat désigné a été saisi avant la fin de l''extraction.';
     END IF;
   END IF;
-  NEW.traite_le := now();
+  NEW.traite_le := now() AT TIME ZONE 'UTC';
   RETURN NEW;
 END;
 $$;

@@ -49,7 +49,8 @@ LOT-01, amendement RGPD/TRUST
 - [ ] PR migration seule, puis release-db, puis constat. La migration nomme ses tables à la rubrique 5 du dossier RGPD, sur la ligne « comptes rendus biologiques déposés » déjà posée.
 - [ ] **Consignes laissées à la PR 2 par la revue de la migration** (`wn-reviewer`, arbitrages du 2026-10-01) :
   - une extraction s'écrit dans UNE transaction interactive : import en cours, puis ses lignes, puis la terminaison. Jamais d'écriture imbriquée Prisma, qui terminerait l'import avant ses lignes. Un test le vérifie ;
-  - la validation crée le résultat (`source = saisie_praticien`) puis décide la ligne, dans la même transaction. La base refuse un résultat saisi avant la fin de l'extraction. Un `P2002` (`doublon_mesure`) se rend tel quel, sans repli sur le résultat existant ;
+  - la validation crée le résultat (`source = saisie_praticien`) puis décide la ligne, dans la même transaction. La base refuse un résultat saisi avant la fin de l'extraction. Un `P2002` (`doublon_mesure`) se rend tel quel, sans repli sur le résultat existant — la base ne ferme pas le cas d'une saisie manuelle intercalée entre la fin de l'extraction et la validation : un test de route le prouve (saisie intercalée, puis `P2002` rendu, ligne restée proposée) ;
+  - `saisi_le` du résultat est comparé à `termine_le`, posé par la base en UTC explicite : il doit rester écrit par Prisma (UTC), jamais forcé par le code à une heure locale ;
   - les écarts `non_quantitative` et `unite_divergente` sont pré-marqués par l'écran et **confirmés par le praticien**, jamais posés par le système ;
   - `analyte_propose` est posé par le resolver signé seul, `ambigu` compris ; le modèle ne le remplit jamais ;
   - **retrait d'un dépôt erroné** (mauvais dossier), tant qu'aucune ligne n'est validée : second auteur admis par `staging.guard.test.ts`. La purge du document après validation attend l'arbitrage de la rubrique 8 et demandera une migration ;
