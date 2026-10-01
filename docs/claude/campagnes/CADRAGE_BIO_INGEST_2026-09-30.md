@@ -121,9 +121,11 @@ dans l'écran (aucune écriture automatique).
 2. Démarrer LOT-01 : mode Plan pour le détail technique (route batch,
    composant multi-lignes) avant toute modification — ce cadrage ne remplace
    pas le plan d'implémentation.
-3. Avant LOT-02 : amendement du registre RGPD et du document patient TRUST
+3. ~~Avant LOT-02 : amendement du registre RGPD et du document patient TRUST
    pour l'usage IA vision sur données biologiques (A4) — geste distinct,
-   antérieur à toute ligne de code d'extraction.
+   antérieur à toute ligne de code d'extraction.~~ Fait le 2026-10-01
+   (amendement de `D-256`) ; la pose du drapeau exige en outre l'envoi de la
+   demande de DPA à Anthropic.
 4. ~~Décider si ce chantier devient une campagne suivie ou reste une suite
    de PR directes.~~ Tranché le 2026-09-30 par le responsable : **campagne
    suivie** `2026-09-30-bio-ingest`.

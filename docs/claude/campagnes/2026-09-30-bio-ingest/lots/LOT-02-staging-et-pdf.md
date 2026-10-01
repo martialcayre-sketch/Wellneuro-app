@@ -44,14 +44,16 @@ LOT-01, amendement RGPD/TRUST
 
 ## Étapes
 
-- [ ] **Préalable, geste distinct** : amender le registre RGPD et le document patient TRUST pour l'envoi de comptes rendus au sous-traitant IA.
+- [x] **Préalable, geste distinct** : amender le registre RGPD et le document patient TRUST pour l'envoi de comptes rendus au sous-traitant IA — fait le 2026-10-01 (amendement de `D-256`) : `usage_ia` v4, `donnees_confidentialite` v11, `DOSSIER_RGPD.md` §2 ter.
 - [ ] Mode Plan du modèle de staging.
-- [ ] PR migration seule, puis release-db, puis constat.
-- [ ] PR code consommateur ; drapeau posé seulement après l'amendement.
+- [ ] PR migration seule, puis release-db, puis constat. La migration nomme ses tables à la rubrique 5 du dossier RGPD, sur la ligne « comptes rendus biologiques déposés » déjà posée.
+- [ ] PR code consommateur. **Ce que la v4 promet, le staging le tient** : la date du prélèvement est relevée, et chaque extraction enregistre le modèle et la version du procédé (« enregistrés à chaque fois »). Les deux ont un test. **Le compte rendu part ENTIER** : la v4 et la v11 le déclarent, aucun masquage n'est promis ni à écrire (arbitrage du 2026-10-01).
+- [ ] Création du drapeau : sa ligne dans `docs/FEATURE_FLAGS.md` porte les conditions de pose du §2 ter.
+- [ ] **Pose du drapeau, seulement après** : la v4 et la v11 déployées et constatées ; la **demande de DPA Anthropic envoyée**, sa date établie au fil (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`) ; la v4 et la v11 relues contre le comportement livré.
 
 ## Tests
 
-Contrat SQL négatif du staging ; tests de route de la validation (aucune écriture sans geste) ; import du même document deux fois ; unité divergente refusée ; ligne qualitative refusée ; aucune donnée de santé dans les logs ; effacement patient (IDP2) étendu au staging.
+Enregistrement du modèle et de la version du procédé à chaque extraction ; assertion NOMINATIVE des tables du staging en rubrique 5 (`rubrique5.modeles.test.ts` ne voit que les filles de `Patient`) ; contrat SQL négatif du staging ; tests de route de la validation (aucune écriture sans geste) ; import du même document deux fois ; unité divergente refusée ; ligne qualitative refusée ; aucune donnée de santé dans les logs ; effacement patient (IDP2) étendu au staging.
 
 ## Critères de done
 

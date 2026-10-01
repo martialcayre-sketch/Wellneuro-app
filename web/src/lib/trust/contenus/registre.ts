@@ -1054,6 +1054,121 @@ const CONSENTEMENT_SUIVI_V3: VersionDocumentTrust = {
   hash: 'd896ce38c9ec359567ef0a02aea2f348199eec695acd40792df91351f5361da8',
 };
 
+/*
+ * v4 du 2026-10-01 — LE RELEVÉ DES COMPTES RENDUS BIOLOGIQUES, DÉCLARÉ AVANT
+ * TOUTE ACTIVATION ([[D-256]] A4). L'extraction par IA vision du LOT-02 de
+ * BIO-INGEST envoie le compte rendu ENTIER à Anthropic, en-tête d'identité
+ * compris : c'est ce qui est écrit, et le LOT-02 ne promet aucun masquage
+ * (arbitrage du 2026-10-01).
+ *
+ * PAS DE « AVANT SA MISE EN SERVICE ». La v2 annonçait ainsi la priorité, et
+ * la phrase a survécu à l'ouverture sans que personne ne la voie : la v3 a dû
+ * la corriger. La formulation choisie (« lorsque votre praticien dépose… »)
+ * reste vraie après l'activation ; avant, elle déclare un peu plus que ce qui
+ * a lieu, et c'est le sens sûr (arbitrage du 2026-10-01).
+ *
+ * Le paragraphe s'insère AVANT celui des fiches d'assiette, pour que « les
+ * quatre premiers usages » désigne bien les quatre qui envoient une donnée à
+ * Anthropic.
+ */
+const USAGE_IA_V4: VersionDocumentTrust = {
+  key: 'usage_ia',
+  type: 'ai_transparency',
+  version: 'v4',
+  titre: 'L’intelligence artificielle dans Wellneuro',
+  resume:
+    'Où l’IA intervient, ce qu’elle fait, ce qu’elle ne fait jamais, et comment contester un contenu.',
+  sections: [
+    ...USAGE_IA_V3.sections.map(section => {
+      if (section.titre === 'Où l’IA intervient') {
+        const [synthese, priorite, compris, fiches, fournisseur] = section.paragraphes;
+        return {
+          ...section,
+          paragraphes: [
+            synthese,
+            priorite,
+            compris,
+            'Le relevé des résultats de vos analyses biologiques : lorsque votre praticien dépose dans votre dossier le compte rendu que vous lui avez remis, l’outil en relève les valeurs, leurs unités et la date du prélèvement, et les lui propose. Votre praticien les relit et les valide : aucune n’entre à votre dossier sans cette validation. L’outil ne déclare aucune valeur normale ou anormale et n’en tire aucune conclusion. Pour cela, le compte rendu est transmis en entier, y compris votre nom et les autres mentions qui vous identifient.',
+            fiches,
+            fournisseur.replace('Pour les trois premiers usages', 'Pour les quatre premiers usages'),
+          ],
+        };
+      }
+      return section;
+    }),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Un usage s’ajoute : lorsque votre praticien dépose le compte rendu de vos analyses biologiques, l’IA (Anthropic) en relève les valeurs et les lui propose ; il les relit et les valide avant qu’aucune n’entre à votre dossier. Le compte rendu est transmis en entier, votre identité comprise. Ce que l’IA ne fait jamais ne change pas.',
+  publieLe: '2026-10-01',
+  // MÊME RÉGIME QUE LES v1 À v3 : ce document DÉCRIT, et la séquence « Avant de
+  // commencer » ne le présente pas — y exiger un accusé ferait boucler le
+  // patient (`avantDeCommencer.ts`).
+  requiresAcknowledgement: false,
+  hash: '05f8ca9c37624147d4adaf68985ee43d8bd95cf2c4d3855fe748681d9bed283f',
+};
+
+/*
+ * v11 du 2026-10-01 — LA v10 DEVENAIT FAUSSE SUR UN POINT ET INCOMPLÈTE SUR
+ * DEUX AVEC LE RELEVÉ PAR IA ([[D-256]] A4). Fausse : le paragraphe venu de la
+ * v6 disait les résultats « saisis par votre praticien ». Incomplète : il ne
+ * disait pas que le compte rendu, toujours HÉBERGÉ en France, est TRANSMIS à
+ * Anthropic pour en relever les valeurs (la phrase sur l'hébergement reste
+ * vraie et reste) ; et la ligne Anthropic, qui énumère ses usages un à un, en
+ * aurait omis un.
+ *
+ * AUCUNE LOCALISATION N'EST AFFIRMÉE POUR ANTHROPIC : le dossier RGPD §7 la dit
+ * « non établie », et aucune version servie ne l'a jamais affirmée.
+ *
+ * UN ACCUSÉ, POUR LE MOTIF DE LA v10 : seule la version COURANTE en réclame un,
+ * et une v11 sans accusé aurait effacé celui de la v10, encore dû. Arbitrage du
+ * responsable, 2026-10-01.
+ */
+const DONNEES_CONFIDENTIALITE_V11: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v11',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: [
+    ...DONNEES_CONFIDENTIALITE_V10.sections.map(section => {
+      if (section.titre === 'Quelles données sont recueillies ?') {
+        return {
+          ...section,
+          paragraphes: section.paragraphes.flatMap(paragraphe =>
+            paragraphe.startsWith('Ces résultats sont saisis par votre praticien')
+              ? [
+                  'Ces résultats sont enregistrés par votre praticien à partir du compte rendu que vous lui remettez. Il peut les saisir lui-même, ou déposer le compte rendu dans votre dossier : l’outil en relève alors les valeurs avec l’aide d’une intelligence artificielle, et votre praticien les relit et les valide avant qu’aucune n’y entre. Le compte rendu déposé est conservé dans votre dossier.',
+                  'Ces informations comptent parmi les plus sensibles de votre dossier. Elles suivent les mêmes règles que le reste : même hébergement en France chez un hébergeur certifié « données de santé », même accès réservé à votre seul praticien, mêmes droits pour vous. Pour en relever les valeurs, le compte rendu est transmis en entier, y compris votre nom et les autres mentions qui vous identifient, à Anthropic, prestataire nommé plus bas.',
+                ]
+              : [paragraphe],
+          ),
+        };
+      }
+      // Même forme « Nom — rôle » : `registre.dossier.test.ts` compare les NOMS
+      // de cette liste à ceux de la rubrique 6 du dossier RGPD.
+      if (section.titre === 'Quels prestataires techniques interviennent ?') {
+        return {
+          ...section,
+          points: (section.points ?? []).map(point =>
+            point.startsWith('Anthropic — ')
+              ? 'Anthropic — assistance d’intelligence artificielle pour la préparation des synthèses, pour la proposition de formulation de la priorité de votre objectif, pour la proposition d’un premier jet de « Ce que j’ai compris de vous » et pour le relevé des valeurs des comptes rendus de vos analyses biologiques (voir « L’intelligence artificielle dans Wellneuro »)'
+              : point,
+          ),
+        };
+      }
+      return section;
+    }),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Le compte rendu de vos analyses biologiques peut être déposé dans votre dossier par votre praticien : l’outil en relève les valeurs avec l’aide d’une intelligence artificielle, et votre praticien les relit et les valide avant qu’aucune n’y entre. Pour cela, le compte rendu est transmis en entier, votre identité comprise, à Anthropic, déjà nommé parmi les prestataires. Le compte rendu déposé est conservé dans votre dossier. Aucun prestataire ne s’ajoute.',
+  publieLe: '2026-10-01',
+  requiresAcknowledgement: true,
+  hash: '3ee4643f1b40606bf843737336791114e9718b08ee580aef9fb4a68cf24bef9a',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1068,9 +1183,11 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V8,
   DONNEES_CONFIDENTIALITE_V9,
   DONNEES_CONFIDENTIALITE_V10,
+  DONNEES_CONFIDENTIALITE_V11,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,
+  USAGE_IA_V4,
   DROITS_PATIENT_V1,
   CONSENTEMENT_SUIVI_V2,
   CONSENTEMENT_SUIVI_V3,
