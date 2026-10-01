@@ -12,6 +12,11 @@ du drapeau du LOT-02 ajoutée par l'amendement du 2026-10-01 à `D-256`.
 
 ## Décisions prises
 
+- **§2 ter du dossier RGPD validé par le responsable le 2026-10-01.** Les
+  conditions de pose du drapeau du LOT-02 sont toutes tenues : v4 et v11
+  déployées et constatées, §2 ter validé, demande de DPA envoyée. Le drapeau,
+  lui, n'existe pas encore : il naîtra avec le code du LOT-02.
+
 - La date est **établie par capture** du message envoyé (dossier « Messages
   envoyés » de `martialcayre@wellneuro.fr`), lue en session : 2026-10-01 à
   19:34 heure de Paris, soit 17:34 UTC. Elle n'est pas déclarée.
@@ -34,8 +39,6 @@ T1 complet (`npm run check`) avant le commit. Aucun code touché.
 
 - Réponse d'Anthropic à suivre, puis la signature et l'archivage du DPA
   (échéance 2026-10-21).
-- Validation du §2 ter du dossier RGPD par le responsable : c'est la dernière
-  condition de pose qui ne soit pas encore constatée.
 - Aucun document patient ne dit le transfert hors UE vers Anthropic (trou
   antérieur, relève du conseil).
 
@@ -46,7 +49,8 @@ migration seule dans sa PR).
 
 ## Interdits encore actifs
 
-- Pas de drapeau d'extraction avant la validation du §2 ter.
+- Le drapeau d'extraction ne se crée qu'avec le code du LOT-02, et sa ligne
+  dans `FEATURE_FLAGS.md` reprend les conditions du §2 ter.
 - Aucun masquage d'identité promis ni écrit au LOT-02.
 - Migration seule dans sa PR, `release-db` humaine (`D-087`).
 - Aucune donnée patient réelle dans le dépôt.

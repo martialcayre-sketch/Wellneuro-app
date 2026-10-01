@@ -10,3 +10,5 @@
 - La condition de pose du drapeau du LOT-02 de BIO-INGEST (`D-256`, amendement
   du 2026-10-01) est tenue : elle exigeait l'envoi. Le DPA reste à obtenir,
   signer et archiver (dossier RGPD, rubriques 7 et 14).
+- Le §2 ter du dossier RGPD est validé par le responsable le 2026-10-01 : les
+  trois conditions de pose sont désormais tenues.

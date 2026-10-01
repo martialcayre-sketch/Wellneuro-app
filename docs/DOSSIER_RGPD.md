@@ -232,7 +232,8 @@ patient. Revue `wn-reviewer` du 2026-10-01 (P1), écartée avec ce motif.
 
 1. la v4 et la v11 publiées, c'est-à-dire mergées **et déployées**, le
    déploiement constaté ([[D-248]]) ;
-2. le présent paragraphe validé par le responsable ;
+2. le présent paragraphe validé par le responsable — **validé le 2026-10-01**,
+   après sa rédaction (les textes patient l'avaient été par le plan, avant) ;
 3. **la demande de DPA à Anthropic envoyée**
    (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`), sa date établie par lecture du fil et
    non déclarée. Arbitrage du 2026-10-01 : l'envoi est exigé, pas la signature.

@@ -8612,5 +8612,6 @@ consignée (pièce DPA, dossier RGPD §2 ter/§7/§14, fiche LOT-02).
 
 **Prochaine action.** Merge, `/clear`, LOT-02 en mode Plan.
 
-**Questions ouvertes.** Validation du §2 ter par le responsable ; réponse
-d'Anthropic.
+**Questions ouvertes.** Réponse d'Anthropic. Le §2 ter est validé par le
+responsable le même jour : les conditions de pose du drapeau du LOT-02 sont
+toutes tenues.
