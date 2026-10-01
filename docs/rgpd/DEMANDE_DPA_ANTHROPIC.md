@@ -82,8 +82,11 @@ demande distincte, ou d'un avenant, une fois le DPA obtenu.
 ## Trace à tenir
 
 Sur le modèle de ce qui a été fait pour Scalingo — et qui a servi : **la date
-d'une demande ne se déclare pas, elle s'établit par lecture du fil.** À
-consigner ici au fur et à mesure, et à reporter au §6 du dossier :
+d'une demande ne se déclare pas, elle s'établit par une trace du fil** : sa
+lecture directe, ou à défaut une capture du message qui montre en-têtes et
+corps (c'est la preuve retenue le 2026-10-01, la messagerie `wellneuro.fr`
+n'étant pas lisible en session). À consigner ici au fur et à mesure, et à
+reporter aux rubriques 7 et 14 du dossier :
 
 | date (UTC) | événement | trace |
 |---|---|---|
