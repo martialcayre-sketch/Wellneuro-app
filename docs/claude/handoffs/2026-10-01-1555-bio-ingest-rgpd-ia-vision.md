@@ -1,10 +1,11 @@
-# Handoff — BIO-INGEST, préalable du LOT-02 : amendement RGPD/TRUST (A4 de D-256)
+# Handoff — 2026-10-01 — BIO-INGEST, préalable du LOT-02 : amendement RGPD/TRUST (A4 de D-256)
 
 ## Branche et état Git
 
 - `docs/bio-ingest-rgpd-ia-vision`, partie de `origin/main` à bf35e7af (#1276).
-- Sept fichiers modifiés, commit et PR à suivre ce handoff (phase `travail`,
-  fenêtre de clôture ouverte).
+- Neuf fichiers dans la PR (la liste ci-dessous, plus `SESSION_LOG.md` et ce
+  handoff) ; commit et PR suivent ce handoff (phase `travail`, fenêtre de
+  clôture ouverte).
 - Le LOT-01 est déployé : bf35e7af en `success` le 2026-10-01 à 11:54 UTC, aucun
   commit plus ancien déployé après lui (`D-248`).
 
@@ -51,6 +52,9 @@ pas faire de v11 (elle aurait laissé une phrase fausse servie).
   ajoutés.
 - `docs/claude/campagnes/CADRAGE_BIO_INGEST_2026-09-30.md` : §5 point 3 barré.
 - `changelog.d/2026-10-01-bio-ingest-rgpd-ia-vision.md`.
+- `docs/claude/SESSION_LOG.md` : entrée du 2026-10-01.
+- `docs/claude/handoffs/2026-10-01-1555-bio-ingest-rgpd-ia-vision.md` : ce
+  fragment.
 
 ## Validations exécutées
 
