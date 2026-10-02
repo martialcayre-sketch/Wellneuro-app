@@ -36,6 +36,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'relectureNote', 'portailMagicLink',
     'packProposition', 'envoiBrouillon', 'portailConnexionGoogle',
     'correspondanceMedecin', 'correspondancePatient', 'documentPatientBiologie',
+    'ligneBiologiqueCandidate', 'importBiologique', 'compteRenduBiologique',
     'resultatBiologique',
     'rendezVous', 'journalAccesDossier',
     'agendaSommeilNuit', 'agendaAlimentaireJour',
@@ -154,6 +155,19 @@ describe('effacerDossier', () => {
     await effacerDossier('PAT_SEED_03');
     expect(appels).toContain('ficheAssietteRemise');
     expect(appels.indexOf('ficheAssietteRemise')).toBeLessThan(appels.indexOf('protocolDiffusionApproval'));
+  });
+
+  // Staging d'import biologique (D-256, LOT-02) : la ligne validée retient son
+  // résultat, l'import retient ses lignes, le compte rendu ses imports — tout
+  // en FK RESTRICT. Une ligne déplacée rendrait l'effacement impossible pour
+  // tout dossier où un compte rendu a été déposé.
+  it('supprime le staging biologique dans l’ordre de ses clés, avant les résultats', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('ligneBiologiqueCandidate')).toBeGreaterThanOrEqual(0);
+    expect(rang('ligneBiologiqueCandidate')).toBeLessThan(rang('importBiologique'));
+    expect(rang('importBiologique')).toBeLessThan(rang('compteRenduBiologique'));
+    expect(rang('ligneBiologiqueCandidate')).toBeLessThan(rang('resultatBiologique'));
   });
 
   it('tout passe par une seule transaction', async () => {

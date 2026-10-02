@@ -119,16 +119,21 @@ describe('rubrique 5 du dossier RGPD ↔ tables du dossier patient', () => {
     ).toEqual([]);
   });
 
-  it('les quatre tables du rayon biologie sont déclarées', () => {
+  it('les sept tables du rayon biologie sont déclarées', () => {
     // Le cas concret qui a fait naître ce banc, épinglé pour lui-même : une
-    // regression sur ces quatre-là rougirait déjà au cas précédent, mais elle
-    // s'y perdrait dans une liste. Ici, elle se nomme.
+    // regression sur ces tables-là rougirait déjà au cas précédent, mais elle
+    // s'y perdrait dans une liste. Ici, elle se nomme. Les trois dernières
+    // sont le staging d'import (D-256, BIO-INGEST LOT-02) : le compte rendu
+    // entier, transmis à Anthropic (§2 ter).
     const texte = rubrique5();
     for (const modele of [
       'ArbitrageBiologique',
       'PanelBiologieDocumente',
       'DocumentPatientBiologie',
       'ResultatBiologique',
+      'CompteRenduBiologique',
+      'ImportBiologique',
+      'LigneBiologiqueCandidate',
     ]) {
       expect(texte, `${modele} absent de la rubrique 5`).toContain(`\`${modele}\``);
     }

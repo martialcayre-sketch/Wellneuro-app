@@ -45,8 +45,16 @@ LOT-01, amendement RGPD/TRUST
 ## Étapes
 
 - [x] **Préalable, geste distinct** : amender le registre RGPD et le document patient TRUST pour l'envoi de comptes rendus au sous-traitant IA — fait le 2026-10-01 (amendement de `D-256`) : `usage_ia` v4, `donnees_confidentialite` v11, `DOSSIER_RGPD.md` §2 ter.
-- [ ] Mode Plan du modèle de staging.
+- [x] Mode Plan du modèle de staging — approuvé le 2026-10-01. Arbitrages : types PDF + JPEG/PNG/WebP dès la migration (LOT-03 sans migration), 10 Mo au plus, resolver libellé → analyte en module TS signé (PR 2, aucune table).
 - [ ] PR migration seule, puis release-db, puis constat. La migration nomme ses tables à la rubrique 5 du dossier RGPD, sur la ligne « comptes rendus biologiques déposés » déjà posée.
+- [ ] **Consignes laissées à la PR 2 par la revue de la migration** (`wn-reviewer`, arbitrages du 2026-10-01) :
+  - une extraction s'écrit dans UNE transaction interactive : import en cours, puis ses lignes, puis la terminaison. Jamais d'écriture imbriquée Prisma, qui terminerait l'import avant ses lignes. Un test le vérifie ;
+  - la validation crée le résultat (`source = saisie_praticien`) puis décide la ligne, dans la même transaction. La base refuse un résultat saisi avant la fin de l'extraction. Un `P2002` (`doublon_mesure`) se rend tel quel, sans repli sur le résultat existant — la base ne ferme pas le cas d'une saisie manuelle intercalée entre la fin de l'extraction et la validation : un test de route le prouve (saisie intercalée, puis `P2002` rendu, ligne restée proposée) ;
+  - `saisi_le` du résultat est comparé à `termine_le`, posé par la base en UTC explicite : il doit rester écrit par Prisma (UTC — constaté le 2026-10-02 sur une session Europe/Paris), jamais forcé par le code à une heure locale. Un test de route crée le résultat par Prisma SANS `saisiLe` puis valide la ligne (revue Copilot de #1280) ;
+  - les écarts `non_quantitative` et `unite_divergente` sont pré-marqués par l'écran et **confirmés par le praticien**, jamais posés par le système ;
+  - `analyte_propose` est posé par le resolver signé seul, `ambigu` compris ; le modèle ne le remplit jamais ;
+  - **retrait d'un dépôt erroné** (mauvais dossier), tant qu'aucune ligne n'est validée : second auteur admis par `staging.guard.test.ts`. La purge du document après validation attend l'arbitrage de la rubrique 8 et demandera une migration ;
+  - une image de plus de ~5 Mo dépasse la limite du fournisseur, alors que la base admet 10 Mo : contrôle ou réduction avant l'envoi.
 - [ ] PR code consommateur. **Ce que la v4 promet, le staging le tient** : la date du prélèvement est relevée, et chaque extraction enregistre le modèle et la version du procédé (« enregistrés à chaque fois »). Les deux ont un test. **Le compte rendu part ENTIER** : la v4 et la v11 le déclarent, aucun masquage n'est promis ni à écrire (arbitrage du 2026-10-01).
 - [ ] Création du drapeau : sa ligne dans `docs/FEATURE_FLAGS.md` porte les conditions de pose du §2 ter.
 - [ ] **Pose du drapeau, seulement après** : la v4 et la v11 déployées et constatées ; la **demande de DPA Anthropic envoyée**, sa date établie au fil (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`) — **tenue le 2026-10-01 à 17:34 UTC** ; §2 ter du dossier RGPD validé par le responsable le 2026-10-01 ; la v4 et la v11 relues contre le comportement livré.

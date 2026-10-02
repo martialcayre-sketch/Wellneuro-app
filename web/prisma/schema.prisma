@@ -81,6 +81,9 @@ model Patient {
   panelsBiologieDocumentes   PanelBiologieDocumente[]
   documentsPatientBiologie   DocumentPatientBiologie[]
   resultatsBiologiques       ResultatBiologique[]
+  comptesRendusBiologiques   CompteRenduBiologique[]
+  importsBiologiques         ImportBiologique[]
+  lignesImportBiologique     LigneBiologiqueCandidate[]
   relectureNotes             RelectureNote[]
   filCardRejections          FilCardRejection[]
   filCardLectures            FilCardLecture[]
@@ -1968,6 +1971,7 @@ model BiologyAnalyte {
   ratiosOperandeA      BiologyRatio[]          @relation("ratio_operande_a")
   ratiosOperandeB      BiologyRatio[]          @relation("ratio_operande_b")
   resultats            ResultatBiologique[]
+  lignesCandidates     LigneBiologiqueCandidate[]
 
   @@index([statutFiche, actif], map: "biology_analytes_statut_idx")
   @@index([typePrelevement], map: "biology_analytes_prelevement_idx")
@@ -2416,6 +2420,10 @@ model ResultatBiologique {
   patient Patient        @relation(fields: [idPatient], references: [idPatient])
   analyte BiologyAnalyte @relation(fields: [analyteCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
 
+  // Relation inverse SEULE (A5) : la ligne d'import désigne le résultat ; ce
+  // modèle ne reçoit aucune colonne. Au plus une ligne par résultat.
+  ligneCandidate LigneBiologiqueCandidate?
+
   // L'index commence par `idPatient` puis `analyteCode` : la lecture est la
   // série d'un analyte dans un dossier (estimé ↔ mesuré), avec une mesure par
   // analyte et date de prélèvement.
@@ -2437,6 +2445,111 @@ model ResultatBiologique {
   @@index([idPatient, analyteCode, preleveLe], map: "cb_resultat_bio_serie_idx")
   @@index([supersedesResultatId], map: "cb_resultat_bio_supersedes_idx")
   @@map("resultats_biologiques")
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// BIO-INGEST — LE STAGING D'IMPORT ([[D-256]] A2/A5, LOT-02). Un compte rendu
+// déposé, chaque extraction qui l'a lu, et les lignes candidates qu'elle a
+// proposées. Rien n'y atteint `resultats_biologiques` sans validation du
+// praticien : la ligne validée désigne le résultat créé, jamais l'inverse
+// (A5 — `resultats_biologiques` ne reçoit aucune colonne).
+//
+// CE QUE LA BASE TIENT (migration `bio_ingest_staging_v1`, contrat
+// `bio_ingest_staging_v1_negatif.sql`) : types et taille du document,
+// empreinte recalculée, un même document une fois par dossier, un seul dossier
+// d'un bout à l'autre de la chaîne (clés composites, et trigger vers le
+// résultat), un résultat validé postérieur à l'extraction (il garde `source =
+// saisie_praticien`), ce qui a été LU figé, transitions de statut à sens
+// unique. Une extraction s'écrit en UNE transaction interactive : import en
+// cours, lignes, puis terminaison (jamais d'écriture imbriquée). Les
+// trois tables portent `id_patient` : elles entrent dans l'effacement IDP2
+// nommé (`patient/effacement.ts`), lignes d'abord — elles retiennent le
+// résultat validé.
+
+/// Un compte rendu d'analyses déposé par le praticien, conservé en base HDS
+/// (A2), en entier : aucun masquage n'est promis (§2 ter). Figé.
+model CompteRenduBiologique {
+  id              String   @id @default(cuid())
+  idPatient       String   @map("id_patient")
+  /// Le document tel que déposé. Jamais de nom de fichier : il porte souvent
+  /// l'identité du patient.
+  contenu         Bytes    @map("contenu")
+  typeMime        String   @map("type_mime") // pdf | jpeg | png | webp (CHECK migration)
+  /// Recalculée et vérifiée égale par la base (CHECK).
+  empreinteSha256 String   @map("empreinte_sha256")
+  deposePar       String   @map("depose_par") // email praticien, posé côté serveur
+  deposeLe        DateTime @default(now()) @map("depose_le")
+
+  patient Patient            @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  imports ImportBiologique[]
+
+  @@unique([idPatient, empreinteSha256], map: "comptes_rendus_biologiques_patient_empreinte_key")
+  @@unique([id, idPatient], map: "comptes_rendus_biologiques_id_patient_key")
+  @@index([idPatient, deposeLe], map: "comptes_rendus_biologiques_patient_depose_idx")
+  @@map("comptes_rendus_biologiques")
+}
+
+/// Le lot d'import : UNE extraction d'un compte rendu. Le modèle et la version
+/// du procédé sont posés à la création, avant l'appel — une extraction en
+/// échec les porte aussi (promesse de `usage_ia` v4).
+model ImportBiologique {
+  id            String    @id @default(cuid())
+  idPatient     String    @map("id_patient")
+  idCompteRendu String    @map("id_compte_rendu")
+  modele        String    @map("modele")
+  versionPrompt String    @map("version_prompt")
+  statut        String    @default("en_cours") @map("statut") // en_cours | extrait | echec (CHECK migration)
+  /// Code fermé, jamais de texte libre : aucune donnée de santé dans une erreur.
+  motifEchec    String?   @map("motif_echec")
+  lancePar      String    @map("lance_par") // email praticien, posé côté serveur
+  lanceLe       DateTime  @default(now()) @map("lance_le")
+  termineLe     DateTime? @map("termine_le")
+  /// Le laboratoire tel que lu sur l'en-tête (A5), posé à la terminaison.
+  laboratoireLu String?   @map("laboratoire_lu")
+
+  patient     Patient                    @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  compteRendu CompteRenduBiologique      @relation(fields: [idCompteRendu, idPatient], references: [id, idPatient], onDelete: Restrict)
+  lignes      LigneBiologiqueCandidate[]
+
+  @@unique([id, idPatient], map: "imports_biologiques_id_patient_key")
+  @@index([idCompteRendu], map: "imports_biologiques_compte_rendu_idx")
+  @@index([idPatient], map: "imports_biologiques_patient_idx")
+  @@map("imports_biologiques")
+}
+
+/// Une ligne lue par une extraction. Ce qui a été LU est figé ; seule la
+/// décision du praticien bouge, une fois. La valeur qui entre au dossier est
+/// celle du résultat validé, pas celle-ci.
+model LigneBiologiqueCandidate {
+  id             String    @id @default(cuid())
+  idPatient      String    @map("id_patient")
+  idImport       String    @map("id_import")
+  rang           Int       @map("rang")
+  page           Int       @map("page")
+  libelleLu      String    @map("libelle_lu")
+  /// Tel qu'écrit (« 1,25 », « <0,5 », « positif ») : le refus d'une ligne
+  /// non quantitative est une décision, pas une absence ([[D-157]]).
+  valeurLue      String    @map("valeur_lue")
+  uniteLue       String?   @map("unite_lue")
+  /// La date du prélèvement RELEVÉE (promesse de `usage_ia` v4).
+  preleveLeLu    DateTime? @map("preleve_le_lu")
+  /// Posé par le resolver signé SEUL, jamais par le modèle — `ambigu` compris.
+  analytePropose String?   @map("analyte_propose")
+  statutMapping  String    @map("statut_mapping") // resolu | ambigu | inconnu (CHECK migration)
+  statut         String    @default("proposee") @map("statut") // proposee | validee | ecartee (CHECK migration)
+  motifEcart     String?   @map("motif_ecart")
+  idResultat     String?   @unique(map: "lignes_biologiques_candidates_id_resultat_key") @map("id_resultat")
+  traitePar      String?   @map("traite_par")
+  traiteLe       DateTime? @map("traite_le")
+
+  patient  Patient             @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  import   ImportBiologique    @relation(fields: [idImport, idPatient], references: [id, idPatient], onDelete: Restrict)
+  analyte  BiologyAnalyte?     @relation(fields: [analytePropose], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  resultat ResultatBiologique? @relation(fields: [idResultat], references: [id], onDelete: Restrict)
+
+  @@unique([idImport, rang], map: "lignes_biologiques_candidates_import_rang_key")
+  @@index([idPatient], map: "lignes_biologiques_candidates_patient_idx")
+  @@map("lignes_biologiques_candidates")
 }
 
 // ───────────────────────────────────────────────────────────────────────────

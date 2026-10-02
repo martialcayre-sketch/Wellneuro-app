@@ -8630,3 +8630,20 @@ rubrique 6, omise d'abord, rétablie sur revue Copilot).
 migration seule du staging (plan approuvé le 2026-10-01).
 
 **Questions ouvertes.** Réponse d'Anthropic sur le fond du DPA.
+
+## 2026-10-01 — BIO-INGEST LOT-02 : migration du staging (PR 1)
+
+**Fait.** Migration seule `bio_ingest_staging_v1` : comptes rendus (bytea,
+figés, 10 Mo, empreinte recalculée), imports (modèle, version, laboratoire
+lu), lignes candidates (lu figé, décision unique, FK vers le résultat). Contrat
+négatif joué en fuseau Paris, 77 mutants tués ; effacement IDP2, garde,
+rubrique 5. Deux passes `wn-reviewer` : résultat postérieur à l'extraction,
+instants en UTC explicite.
+
+**Écarté.** `import_labo` pour un document (correction bloquée) ; purge du
+document dès maintenant (attend la rubrique 8) ; écarts posés par le système.
+
+**Prochaine action.** PR, CI, merge, `release-db` approuvé par le responsable,
+constat par conteneur, puis PR 2 (consignes dans la fiche LOT-02).
+
+**Questions ouvertes.** Durée de conservation du document (rubrique 8).
