@@ -7,9 +7,10 @@
 - **Cinq routes** sous `api/praticien/biologie/import`, toutes derrière la
   garde des résultats :
   - liste des comptes rendus d'un dossier ;
-  - dépôt d'un PDF (10 Mo au plus, signature `%PDF-` lue sur les octets, aucun
-    nom de fichier gardé, le même document deux fois refusé). Les images
-    attendent le LOT-03 ;
+  - dépôt d'un PDF : 10 Mo au plus, signature `%PDF-` lue sur les octets,
+    aucun nom de fichier gardé, le même document refusé une seconde fois. Le
+    corps n'est lu qu'après le drapeau, la session, l'appartenance et une
+    longueur annoncée (411 sans elle). Les images attendent le LOT-03 ;
   - extraction ;
   - lecture d'un compte rendu et de ses lignes ;
   - retrait d'un dépôt erroné ;
@@ -25,9 +26,12 @@
     enregistrés sur l'import avant l'appel**, échec compris (promesse de
     `usage_ia` v4).
   - Les lignes et la terminaison s'écrivent dans une seule transaction, les
-    lignes d'abord.
+    lignes d'abord. Des lignes que la base refuse closent l'import en
+    `reponse_invalide`.
 - **Resolver libellé → analyte** (`resolverLibellesV1`, module signé) : les
-  libellés du catalogue et des synonymes de laboratoire.
+  libellés du catalogue et des synonymes de laboratoire, comparés au libellé
+  entier. Une parenthèse n'est jamais retirée, parce qu'elle peut dire la
+  matrice.
   - Il est **livré non signé** : tant que la signature manque, toute ligne
     sort `inconnu` et le praticien choisit l'analyte.
   - Un libellé générique dont la matrice n'est pas dite n'est pas rattaché.
@@ -35,7 +39,8 @@
   `resultats_biologiques`, en tout ou rien.
   - La validation crée le résultat (`saisie_praticien`, sans `saisiLe`, unité
     relue au catalogue), puis décide la ligne.
-  - Valeur et date sont corrigeables.
+  - Valeur et date sont corrigeables. La casse d'une unité compte (« mUI »
+    n'est pas « MUI »), sauf pour le litre.
   - Sont refusées : une ligne lue non quantitative, une unité lue qui n'est
     pas celle de l'analyte (aucune conversion, D-157) et un doublon au
     dossier.

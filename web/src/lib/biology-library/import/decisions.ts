@@ -208,6 +208,12 @@ export async function deciderLignes(params: {
   try {
     await prisma.$transaction(async tx => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(imp.idCompteRendu)}))`;
+      // Relu SOUS le verrou : une décision concurrente sur les mêmes lignes se
+      // dit `ligne_deja_traitee`, pas `doublon_mesure` (revue, P2-9).
+      const encore = await tx.ligneBiologiqueCandidate.count({
+        where: { id: { in: ids }, idImport, idPatient, statut: 'proposee' },
+      });
+      if (encore !== validations.length + ecarts.length) throw new LigneDejaTraitee();
       for (const v of validations) {
         // Le résultat D'ABORD, la ligne ENSUITE : la ligne désigne le résultat (A5).
         const resultat = await tx.resultatBiologique.create({

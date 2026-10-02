@@ -137,9 +137,19 @@ export async function lancerExtraction(params: {
       });
     });
   } catch (err) {
-    // L'import reste `en_cours` : il sera clos `delai_depasse` à la prochaine
-    // tentative. Aucun motif fermé ne nomme une panne d'écriture locale.
+    // La réponse a produit des lignes que la base refuse (une contrainte, une
+    // FK) : l'import se clôt `reponse_invalide` plutôt que de rester en cours
+    // et d'être daté plus tard d'un `delai_depasse` faux (revue, P2-3). Si
+    // même cette clôture échoue, la péremption le rattrapera.
     console.error('[bio-ingest extraction] lignes non consignées :', ...classeEtCode(err));
+    try {
+      await prisma.importBiologique.update({
+        where: { id: idImport },
+        data: { statut: 'echec', motifEchec: 'reponse_invalide' },
+      });
+    } catch (errCloture) {
+      console.error('[bio-ingest extraction] clôture impossible :', ...classeEtCode(errCloture));
+    }
     return { ok: false, reason: 'server_error' };
   }
   return { ok: true, idImport, statut: 'extrait', lignes: resultat.lignes.length };

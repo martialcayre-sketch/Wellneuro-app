@@ -2,7 +2,11 @@ import Anthropic from '@anthropic-ai/sdk';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { create } = vi.hoisted(() => ({ create: vi.fn() }));
-vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { create } } }));
+// `stream(params, options).finalMessage()` : `create` reçoit les deux arguments
+// de l'appel et rend le message final.
+vi.mock('@/lib/anthropic', () => ({
+  anthropic: { messages: { stream: (params: unknown, options: unknown) => ({ finalMessage: () => create(params, options) }) } },
+}));
 
 import {
   analyserSortieExtraction,
@@ -31,15 +35,23 @@ describe('lireDatePrelevement — la date imprimée, heure de Paris', () => {
     expect(lireDatePrelevement('2026-01-15', '08:30')?.toISOString()).toBe('2026-01-15T07:30:00.000Z');
   });
 
-  it('sans heure : minuit à Paris', () => {
+  it('sans heure, ou une heure illisible : minuit à Paris, la date est gardée', () => {
     expect(lireDatePrelevement('2026-09-15', null)?.toISOString()).toBe('2026-09-14T22:00:00.000Z');
+    expect(lireDatePrelevement('2026-09-15', '8h30')?.toISOString()).toBe('2026-09-14T22:00:00.000Z');
+    expect(lireDatePrelevement('2026-09-15', '25:00')?.toISOString()).toBe('2026-09-14T22:00:00.000Z');
+  });
+
+  it('tient aux bascules d’heure', () => {
+    // 02:30 n'existe pas le 2026-03-29 : l'instant tombe à 03:30 CEST.
+    expect(lireDatePrelevement('2026-03-29', '02:30')?.toISOString()).toBe('2026-03-29T01:30:00.000Z');
+    expect(lireDatePrelevement('2026-03-29', '04:00')?.toISOString()).toBe('2026-03-29T02:00:00.000Z');
+    expect(lireDatePrelevement('2026-10-25', '04:00')?.toISOString()).toBe('2026-10-25T03:00:00.000Z');
   });
 
   it('ne devine rien : une date illisible ou impossible rend null', () => {
     expect(lireDatePrelevement(null, null)).toBeNull();
     expect(lireDatePrelevement('15/09/2026', null)).toBeNull();
     expect(lireDatePrelevement('2026-02-30', null)).toBeNull();
-    expect(lireDatePrelevement('2026-09-15', '25:00')).toBeNull();
   });
 });
 

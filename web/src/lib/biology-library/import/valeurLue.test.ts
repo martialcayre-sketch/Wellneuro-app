@@ -22,9 +22,17 @@ describe('unitesConcordent — aucune conversion (D-157)', () => {
   it('admet les seules variantes typographiques', () => {
     expect(unitesConcordent('ng/mL', 'ng/mL')).toBe(true);
     expect(unitesConcordent('ng/ml', 'ng/mL')).toBe(true);
+    expect(unitesConcordent('ng/ML', 'ng/mL')).toBe(false);
     expect(unitesConcordent('µmol / L', 'µmol/L')).toBe(true);
     // Le « mu » grec et le signe micro.
     expect(unitesConcordent('μmol/L', 'µmol/L')).toBe(true);
+  });
+
+  it('la casse compte, sauf pour le litre (revue, P2-8)', () => {
+    expect(unitesConcordent('mUI/L', 'MUI/L')).toBe(false);
+    expect(unitesConcordent('mui/l', 'mUI/L')).toBe(false);
+    expect(unitesConcordent('µmol/l', 'µmol/L')).toBe(true);
+    expect(unitesConcordent('g/dl', 'g/dL')).toBe(true);
   });
 
   it('refuse une unité différente, même convertible', () => {

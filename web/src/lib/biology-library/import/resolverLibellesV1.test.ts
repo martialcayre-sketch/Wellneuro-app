@@ -60,8 +60,12 @@ describe('resolver — la résolution (table supposée signée)', () => {
     expect(resoudre('25 oh vitamine d')).toEqual({ statut: 'resolu', code: 'BIO_VITAMINE_D_25OH' });
   });
 
-  it('retire une parenthèse de méthode en seconde passe', () => {
-    expect(resoudre('Ferritine (chimiluminescence)')).toEqual({ statut: 'resolu', code: 'BIO_FERRITINE' });
+  it('ne retire jamais une parenthèse : elle peut dire la matrice (revue, P1-2)', () => {
+    for (const l of ['Zonuline (selles)', 'BDNF (plasma)', 'Glutathion (réduit)', 'Ferritine (chimiluminescence)']) {
+      expect(resoudre(l), l).toEqual({ statut: 'inconnu', code: null });
+    }
+    // Une parenthèse qui fait partie d'une entrée relue, elle, se résout.
+    expect(resoudre('Vitamine D (25-OH)')).toEqual({ statut: 'resolu', code: 'BIO_VITAMINE_D_25OH' });
   });
 
   it('rend `ambigu` sans code quand un libellé désigne deux analytes', () => {

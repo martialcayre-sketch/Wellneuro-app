@@ -19,7 +19,11 @@ import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 // Prudence délibérée : un libellé générique dont la matrice n'est pas dite
 // (« zinc », « magnésium », « vitamine B12 ») n'est PAS rattaché — « zinc »
 // sérique n'est pas le zinc plasmatique du catalogue, la B12 totale n'est pas
-// l'holotranscobalamine. Un même libellé posé sous DEUX codes rend `ambigu` :
+// l'holotranscobalamine.
+// Font exception les LIBELLÉS DU CATALOGUE eux-mêmes, recopiés tels quels même
+// quand ils taisent la matrice (« Cuivre », « Glutathion », « Zonuline ») :
+// c'est le nom que le catalogue donne à l'analyte. Leur portée exacte est un
+// point de la relecture qui précède la signature (revue `wn-reviewer`, P1-2). Un même libellé posé sous DEUX codes rend `ambigu` :
 // c'est voulu (« cortisol salivaire », « IgA sécrétoires »), le praticien
 // tranche.
 //
@@ -122,7 +126,6 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: 'HVA urinaire', code: 'BIO_HVA_URINAIRE' },
   { libelle: 'Acide homovanillique urinaire', code: 'BIO_HVA_URINAIRE' },
   { libelle: 'Facteur neurotrophique BDNF', code: 'BIO_BDNF' },
-  { libelle: 'BDNF', code: 'BIO_BDNF' },
   { libelle: 'Bêta-défensines de type 2 fécales', code: 'BIO_BETA_DEFENSINE_2' },
   { libelle: 'Bêta-défensine 2', code: 'BIO_BETA_DEFENSINE_2' },
   { libelle: 'Acides gras à chaîne courte fécaux', code: 'BIO_AGCC_FECAUX' },
@@ -227,10 +230,12 @@ function chercher(cle: string, index: Map<string, Set<string>>): Resolution | nu
 }
 
 /**
- * Le code proposé pour un libellé lu. Deux passes : le libellé entier, puis le
- * libellé privé de ses parenthèses (« Ferritine (chimiluminescence) »). Un
- * resolver non signé rend `inconnu` partout — aucune proposition hors d'une
- * table relue.
+ * Le code proposé pour un libellé lu — le libellé ENTIER, sans autre passe. Une
+ * parenthèse peut dire la matrice (« Zonuline (selles) », « BDNF (plasma) ») :
+ * la retirer rattacherait une mesure fécale ou plasmatique à l'analyte sanguin
+ * du catalogue, sous une unité identique que rien ne distinguerait (revue
+ * `wn-reviewer`, P1-2). Un resolver non signé rend `inconnu` partout — aucune
+ * proposition hors d'une table relue.
  */
 export function resoudreLibelle(
   libelle: string,
@@ -240,10 +245,7 @@ export function resoudreLibelle(
   if (!signe) return INCONNU;
   const entier = normaliserLibelle(libelle);
   if (entier === '') return INCONNU;
-  const sansParentheses = normaliserLibelle(libelle.replace(/\([^)]*\)/g, ' '));
-  return chercher(entier, index)
-    ?? (sansParentheses !== '' && sansParentheses !== entier ? chercher(sansParentheses, index) : null)
-    ?? INCONNU;
+  return chercher(entier, index) ?? INCONNU;
 }
 
 /** Exposé pour les bancs : l'index d'une table quelconque. */

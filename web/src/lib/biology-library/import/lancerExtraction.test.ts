@@ -173,7 +173,11 @@ describe('lancerExtraction — imports en cours', () => {
     expect(extraire).not.toHaveBeenCalled();
   });
 
-  it('un compte rendu d’un autre dossier est introuvable', async () => {
+  it('un compte rendu d’un autre dossier est introuvable — la lecture filtre par dossier', async () => {
+    await lancerExtraction(PARAMS);
+    expect(argument<{ where: unknown }>(prisma.compteRenduBiologique.findFirst).where)
+      .toEqual({ id: 'cr_1', idPatient: 'pat_sophie' });
+    vi.clearAllMocks();
     prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce(null);
     expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'compte_rendu_introuvable' });
     expect(extraire).not.toHaveBeenCalled();
@@ -186,6 +190,11 @@ describe('lancerExtraction — aucune donnée de santé dans les journaux', () =
       Object.assign(new Error('Ferritine 48 ng/mL pat_sophie'), { code: 'P2003' }),
     );
     expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'server_error' });
+    // L'import se clôt `reponse_invalide`, il ne reste pas en cours (revue, P2-3).
+    expect(prisma.importBiologique.update).toHaveBeenLastCalledWith({
+      where: { id: 'imp_1' },
+      data: { statut: 'echec', motifEchec: 'reponse_invalide' },
+    });
     const ecrit = JSON.stringify(espions.flatMap(e => e.mock.calls));
     expect(ecrit).toContain('P2003');
     for (const interdit of ['Ferritine', '48', 'ng/mL', 'pat_sophie', '<0,5']) {

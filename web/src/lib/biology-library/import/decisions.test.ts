@@ -6,7 +6,7 @@ const { prisma, journal } = vi.hoisted(() => {
     $executeRaw: vi.fn(async () => 1),
     $transaction: vi.fn(),
     importBiologique: { findFirst: vi.fn() },
-    ligneBiologiqueCandidate: { findMany: vi.fn(), updateMany: vi.fn(), findFirst: vi.fn() },
+    ligneBiologiqueCandidate: { findMany: vi.fn(), updateMany: vi.fn(), findFirst: vi.fn(), count: vi.fn() },
     biologyAnalyte: { findMany: vi.fn() },
     resultatBiologique: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn() },
   };
@@ -52,6 +52,8 @@ beforeEach(() => {
     journal.push('ligne.updateMany');
     return { count: 1 };
   });
+  prisma.ligneBiologiqueCandidate.count.mockImplementation(async ({ where }: { where: { id: { in: string[] } } }) =>
+    where.id.in.length);
   prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
   espions = (['error', 'warn', 'log'] as const).map(m => vi.spyOn(console, m).mockImplementation(() => {}));
 });
@@ -75,7 +77,12 @@ describe('deciderLignes — aucune écriture sans geste', () => {
       .toMatchObject({ ok: false, reason: 'import_non_extrait', status: 409 });
   });
 
-  it('une extraction d’un autre dossier est introuvable', async () => {
+  it('une extraction d’un autre dossier est introuvable — les lectures filtrent par dossier', async () => {
+    await deciderLignes({ ...BASE, decisions: [valider('l1')] });
+    expect(prisma.importBiologique.findFirst.mock.calls[0][0].where).toEqual({ id: 'imp_1', idPatient: 'pat_sophie' });
+    expect(prisma.ligneBiologiqueCandidate.findMany.mock.calls[0][0].where)
+      .toMatchObject({ idImport: 'imp_1', idPatient: 'pat_sophie' });
+    vi.clearAllMocks();
     prisma.importBiologique.findFirst.mockResolvedValueOnce(null);
     expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] }))
       .toMatchObject({ ok: false, reason: 'import_introuvable', status: 404 });
@@ -170,6 +177,13 @@ describe('deciderLignes — courses entre le préflight et l’écriture', () =>
     // Aucun repli : le résultat existant n'est ni relu, ni rattaché.
     expect(prisma.resultatBiologique.findFirst).not.toHaveBeenCalled();
     expect(prisma.ligneBiologiqueCandidate.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('DEUX VALIDATIONS CONCURRENTES : la seconde, relue sous le verrou, rend `ligne_deja_traitee` (revue, P2-9)', async () => {
+    prisma.ligneBiologiqueCandidate.count.mockResolvedValueOnce(0);
+    expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] }))
+      .toMatchObject({ ok: false, reason: 'ligne_deja_traitee', status: 409 });
+    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
   });
 
   it('une ligne décidée entre-temps rend `ligne_deja_traitee` et annule tout', async () => {

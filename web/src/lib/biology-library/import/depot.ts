@@ -35,6 +35,7 @@ export function jugerFichier(octets: Buffer, typeDeclare: string): VerdictFichie
 
 export const MESSAGES_DEPOT: Record<string, string> = {
   fichier_absent: 'Joignez le compte rendu au format PDF.',
+  longueur_requise: 'La taille de l’envoi doit être annoncée.',
   fichier_vide: 'Le fichier est vide.',
   fichier_trop_lourd: 'Le fichier dépasse 10 Mo.',
   format_non_admis: 'Seul un compte rendu PDF est accepté pour l’instant.',

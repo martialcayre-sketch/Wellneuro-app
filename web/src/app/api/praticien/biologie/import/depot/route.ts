@@ -12,12 +12,16 @@ import {
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // Dépôt d'un compte rendu PDF par le praticien (BIO-INGEST LOT-02, [[D-256]]
-// A2). Corps `multipart/form-data` : `idPatient`, `fichier`. Le dépôt n'appelle
-// pas l'IA : l'extraction est un second geste (`../extraction`).
+// A2). `idPatient` en paramètre de requête, corps `multipart/form-data` :
+// `fichier`. Le dépôt n'appelle pas l'IA : l'extraction est un second geste
+// (`../extraction`).
 //
-// La taille se juge AVANT de lire le corps quand l'en-tête la donne : un corps
-// de 50 Mo n'a pas à être monté en mémoire pour être refusé. Une marge couvre
-// l'enveloppe multipart. Le drapeau se teste avant tout, pour la même raison.
+// LE CORPS NE SE LIT QU'EN DERNIER, ET BORNÉ (revue `wn-reviewer`, P1-1) :
+// drapeau, session et appartenance se jugent AVANT, sur l'en-tête et la
+// requête — un client anonyme ne fait monter aucun octet en mémoire. Et la
+// longueur est EXIGÉE : sans `Content-Length` (envoi par morceaux), rien ne
+// borne `formData()`, d'où un 411. Node ne lit pas au-delà de la longueur
+// déclarée ; une marge couvre l'enveloppe multipart.
 
 export const runtime = 'nodejs';
 
@@ -35,10 +39,22 @@ export async function POST(req: Request) {
     if (!isBioIngestEnabled()) {
       return echec('bio_ingest_desactive', 'L’import de comptes rendus n’est pas activé sur cet environnement.', 503);
     }
-    const longueur = Number(req.headers.get('content-length') ?? '');
-    if (Number.isFinite(longueur) && longueur > TAILLE_MAX_OCTETS + MARGE_MULTIPART) {
+    const idPatient = new URL(req.url).searchParams.get('idPatient')?.trim() ?? '';
+    const garde = await garderImport(idPatient);
+    if (!garde.ok) return echec(garde.reason, garde.error, garde.status);
+
+    const enTete = req.headers.get('content-length');
+    const longueur = enTete !== null && /^\d+$/.test(enTete) ? Number(enTete) : Number.NaN;
+    if (Number.isNaN(longueur)) return echec('longueur_requise', MESSAGES_DEPOT.longueur_requise, 411);
+    if (longueur > TAILLE_MAX_OCTETS + MARGE_MULTIPART) {
       return echec('fichier_trop_lourd', MESSAGES_DEPOT.fichier_trop_lourd, 413);
     }
+
+    const patient = await prisma.patient.findUnique({
+      where: { idPatient },
+      select: { actif: true, suiviClotureLe: true },
+    });
+    if (!patient || !accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
 
     let form: FormData;
     try {
@@ -46,20 +62,9 @@ export async function POST(req: Request) {
     } catch {
       return echec('invalid', 'Corps de requête illisible.', 400);
     }
-    const idPatientBrut = form.get('idPatient');
-    const idPatient = typeof idPatientBrut === 'string' ? idPatientBrut.trim() : '';
-    const garde = await garderImport(idPatient);
-    if (!garde.ok) return echec(garde.reason, garde.error, garde.status);
-
     const fichier = form.get('fichier');
     if (!(fichier instanceof Blob)) return echec('fichier_absent', MESSAGES_DEPOT.fichier_absent, 400);
     if (fichier.size > TAILLE_MAX_OCTETS) return echec('fichier_trop_lourd', MESSAGES_DEPOT.fichier_trop_lourd, 413);
-
-    const patient = await prisma.patient.findUnique({
-      where: { idPatient },
-      select: { actif: true, suiviClotureLe: true },
-    });
-    if (!patient || !accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
 
     const octets = Buffer.from(await fichier.arrayBuffer());
     const verdict = jugerFichier(octets, fichier.type);

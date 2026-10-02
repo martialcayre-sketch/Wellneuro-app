@@ -20,7 +20,9 @@ import { anthropic } from '@/lib/anthropic';
 // qui est enregistré.
 
 /** Modèle d'extraction (arbitrage du 2026-10-02), remplaçable par l'environnement. */
-export const MODELE_EXTRACTION = process.env.WN_BIO_INGEST_MODEL ?? 'claude-sonnet-5-5';
+// `||` et non `??` : une variable posée VIDE retombe sur le défaut, au lieu de
+// faire échouer le CHECK `modele` de l'import en 500 opaque (revue, P2-7).
+export const MODELE_EXTRACTION = process.env.WN_BIO_INGEST_MODEL?.trim() || 'claude-sonnet-5-5';
 
 /**
  * Version du procédé : prompt, schéma de sortie et règles de lecture. Un
@@ -101,8 +103,9 @@ function decalageParis(t: number): number {
 /**
  * La date imprimée (heure murale de Paris, celle du laboratoire) en instant
  * UTC — la même conversion que fait le navigateur du praticien pour une saisie.
- * Sans heure imprimée : minuit, que le praticien corrige à la validation.
- * `null` si la date est illisible : on ne devine pas.
+ * Sans heure imprimée — ou une heure illisible (« 8h30 ») : minuit, que le
+ * praticien corrige à la validation ; la date, elle, n'est pas perdue (revue,
+ * P2-5). `null` si la DATE est illisible : on ne devine pas.
  */
 export function lireDatePrelevement(date: string | null, heure: string | null): Date | null {
   if (date === null) return null;
@@ -111,11 +114,12 @@ export function lireDatePrelevement(date: string | null, heure: string | null): 
   let h = 0;
   let mi = 0;
   if (heure !== null && heure.trim() !== '') {
-    const hm = /^(\d{2}):(\d{2})$/.exec(heure.trim());
-    if (!hm) return null;
-    h = Number(hm[1]);
-    mi = Number(hm[2]);
-    if (h > 23 || mi > 59) return null;
+    // Une heure d'horloge, 00:00 à 23:59 — la forme le dit, sans comparaison.
+    const hm = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(heure.trim());
+    if (hm) {
+      h = Number(hm[1]);
+      mi = Number(hm[2]);
+    }
   }
   const [an, mois, jour] = [Number(j[1]), Number(j[2]), Number(j[3])];
   const mural = Date.UTC(an, mois - 1, jour, h, mi);
@@ -184,10 +188,14 @@ export function motifDErreur(err: unknown): MotifEchec {
 export async function extraireCompteRendu(pdf: Buffer): Promise<ResultatExtraction> {
   let reponse: Anthropic.Message;
   try {
-    reponse = await anthropic.messages.create(
+    // En flux : un `max_tokens` de cette taille est refusé d'emblée par le SDK
+    // en appel simple (durée estimée au-delà de 10 min). Seul le message final
+    // est lu ; rien n'est relayé en cours de route.
+    reponse = await anthropic.messages.stream(
       {
         model: MODELE_EXTRACTION,
-        max_tokens: 16_000,
+        // Un bilan dense de 200 lignes ne doit pas être coupé (revue, P2-4).
+        max_tokens: 32_000,
         system: CONSIGNE,
         output_config: { effort: 'medium', format: { type: 'json_schema', schema: SCHEMA_SORTIE } },
         messages: [
@@ -201,7 +209,7 @@ export async function extraireCompteRendu(pdf: Buffer): Promise<ResultatExtracti
         ],
       },
       { timeout: DELAI_EXTRACTION_MS, maxRetries: TENTATIVES_SUPPLEMENTAIRES },
-    );
+    ).finalMessage();
   } catch (err) {
     return { ok: false, motif: motifDErreur(err) };
   }

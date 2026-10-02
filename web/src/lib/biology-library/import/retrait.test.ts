@@ -53,7 +53,11 @@ describe('retirerCompteRendu — retrait d’un dépôt erroné', () => {
     expect(journal).toEqual(['verrou']);
   });
 
-  it('un compte rendu d’un autre dossier est introuvable', async () => {
+  it('un compte rendu d’un autre dossier est introuvable — la lecture filtre par dossier', async () => {
+    await retirerCompteRendu(PARAMS);
+    expect(prisma.compteRenduBiologique.findFirst.mock.calls[0][0].where).toEqual({ id: 'cr_1', idPatient: 'pat_sophie' });
+    vi.clearAllMocks();
+    journal.length = 0;
     prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce(null);
     expect(await retirerCompteRendu(PARAMS)).toEqual({ ok: false, reason: 'compte_rendu_introuvable' });
     expect(journal).toEqual(['verrou']);
