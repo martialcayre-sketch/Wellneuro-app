@@ -1084,6 +1084,18 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/c3_correspondance_ancrage_v1_negatif.sql
 
+      # Adressages sur signal d'alerte (D-257, LOT-02). Une ligne `adressage`
+      # LÈVE une inhibition de sécurité : ce que le drift check ne voit pas, ce
+      # sont les refus qui l'empêchent de lever à tort — lettre d'adressage de
+      # CE dossier seulement, consultation validée de CE dossier, constats
+      # d'anamnèse seulement (jamais un effet indésirable), une couverture par
+      # lettre, une révocation par adressage, l'acte figé, l'effacement nommé
+      # en une instruction, et la RLS deny-all. Transaction annulée.
+      - name: Adressages signal d'alerte negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/adressages_signal_alerte_v1_negatif.sql
+
       # C3 compteur d'attente du rail (D-210) : la sémantique « la DERNIÈRE
       # ligne du dossier décide » vivait en TypeScript éprouvé par un mock, qui
       # servait une liste déjà dédupliquée — il simulait la déduplication au lieu

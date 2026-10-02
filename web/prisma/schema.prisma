@@ -92,6 +92,7 @@ model Patient {
   portailMagicLinks          PortailMagicLink[]
   packPropositions           PackProposition[]
   correspondancesMedecin     CorrespondanceMedecin[]
+  adressagesSignalAlerte     AdressageSignalAlerte[]
   correspondancesPatient     CorrespondancePatient[]
   envoiBrouillons            EnvoiBrouillon[]
   rendezVous                 RendezVous[]
@@ -147,6 +148,8 @@ model Consultation {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  adressagesSignalAlerte AdressageSignalAlerte[]
 
   @@map("consultations")
 }
@@ -1559,8 +1562,50 @@ model CorrespondanceMedecin {
 
   patient Patient @relation(fields: [idPatient], references: [idPatient])
 
+  adressagesSignalAlerte AdressageSignalAlerte[]
+
   @@index([idPatient, consigneLe], map: "c3_correspondance_medecin_patient_idx")
   @@map("correspondances_medecin")
+}
+
+// Couverture STRUCTURÉE d'une lettre d'adressage ([[D-257]] §4-§7) : quels
+// constats de sécurité d'anamnèse une lettre consignée lève, pour quelle
+// consultation — ou la révocation d'une telle couverture. Ajout seul : UPDATE
+// et TRUNCATE refusés par trigger, DELETE réservé à l'effacement nommé du
+// dossier. Les refus (lettre d'adressage de ce dossier, consultation validée de
+// ce dossier, constats d'anamnèse seulement, une couverture par lettre, une
+// révocation par adressage) vivent en base : voir la migration
+// `20261002230000_adressages_signal_alerte_v1`.
+model AdressageSignalAlerte {
+  id                 String    @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (trigger).
+  ordre              BigInt    @default(autoincrement()) @map("ordre")
+  idPatient          String    @map("id_patient")
+  /// `adressage` | `revocation` (CHECK).
+  acte               String    @map("acte")
+  /// Adressage seul : la lettre consignée qui porte la couverture.
+  idCorrespondance   String?   @map("id_correspondance")
+  /// Adressage seul : la consultation porteuse des signaux couverts.
+  idConsultation     String?   @map("id_consultation")
+  /// Adressage seul : `safety:anamnese:` + 16 hexadécimaux, au moins un.
+  findingIds         String[]  @map("finding_ids")
+  /// Révocation seule : l'adressage révoqué.
+  idAdressageRevoque String?   @map("id_adressage_revoque")
+  /// Révocation seule : obligatoire, non vide.
+  motif              String?   @map("motif")
+  praticienEmail     String    @map("praticien_email")
+  /// Posé par la base (trigger), en UTC.
+  acteLe             DateTime  @default(now()) @map("acte_le")
+
+  patient           Patient                 @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  correspondance    CorrespondanceMedecin?  @relation(fields: [idCorrespondance], references: [id], onDelete: Restrict)
+  consultation      Consultation?           @relation(fields: [idConsultation], references: [id], onDelete: Restrict)
+  adressageRevoque  AdressageSignalAlerte?  @relation("RevocationAdressage", fields: [idAdressageRevoque], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  revocations       AdressageSignalAlerte[] @relation("RevocationAdressage")
+
+  @@unique([ordre], map: "adressages_signal_alerte_ordre_key")
+  @@index([idPatient, ordre], map: "adressages_signal_alerte_patient_ordre_idx")
+  @@map("adressages_signal_alerte")
 }
 
 

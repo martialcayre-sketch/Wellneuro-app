@@ -113,6 +113,15 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.criteresDossierConstates = (
       await tx.critereDossierConstate.deleteMany({ where: par })
     ).count;
+    // Adressages sur signal d'alerte ([[D-257]], LOT-02) : la couverture
+    // d'une lettre d'adressage et ses révocations. FK RESTRICT vers le patient,
+    // la consultation porteuse et la lettre : ils partent AVANT les
+    // consultations et les correspondances médecin. Une seule instruction pour
+    // les deux actes — la clé interne révocation → adressage est en NO ACTION,
+    // vérifiée en fin d'instruction.
+    supprimees.adressagesSignalAlerte = (
+      await tx.adressageSignalAlerte.deleteMany({ where: par })
+    ).count;
 
     // 3. Enfants directs.
     supprimees.synthesesIA = (await tx.syntheseIA.deleteMany({ where: par })).count;
