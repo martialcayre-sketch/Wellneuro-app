@@ -69,7 +69,7 @@ LOT-01, amendement RGPD/TRUST
   - ~~à arbitrer~~ **tranché le 2026-10-02** : l'heure est exigée aussi par le serveur (voir ci-dessous).
 - [ ] **Arbitrages du 2026-10-02 après le merge de la 2b (#1283, `7d36e4ed`)** — dans cet ordre de sessions :
   1. **PR de code (sans migration)** :
-     - **l'heure est exigée aussi par le serveur** : une validation est refusée si son horodatage est encore minuit de Paris alors que la ligne a été lue sans heure (ou sans date) — **fait** (`heure_absente`, 400) ;
+     - **l'heure est exigée aussi par le serveur** : une validation est refusée si son horodatage est encore minuit de Paris alors que la ligne a été lue sans heure (ou sans date) — **fait** (`heure_absente`, 400). **Limite connue** (revue Copilot de #1284) : le staging ne garde que l'instant lu, si bien qu'une heure **imprimée** « 00:00 » est indiscernable d'une heure absente et se trouve refusée inchangée, à l'écran comme au serveur. **Routé vers la PR de migration de purge** : y proposer au responsable une colonne « heure lue » (booléen) sur `lignes_biologiques_candidates`, posée par l'extraction — demande explicite requise, comme toute migration ;
      - **délai d'appel porté à 180 s, sans réessai** (pire cas 180 s, sous la péremption de 5 min ; un échec se relance à la main) — **fait**, un test garde l'inégalité.
   2. **Purge du PDF, AVANT la pose du drapeau** :
      - purge dès que toutes les lignes de l'extraction courante sont décidées, **et au plus tard 30 jours après le dépôt** ; les lignes non décidées restent, sans le document ; empreinte et trace conservées ;

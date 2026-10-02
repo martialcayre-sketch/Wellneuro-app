@@ -213,7 +213,7 @@ describe('deciderLignes — refus du préflight, tout ou rien', () => {
       .toMatchObject({ ok: true, validees: 1 });
   });
 
-  it('HEURE LUE : un minuit de Paris est une heure lue, il passe', async () => {
+  it('HEURE LUE à 08:30, corrigée en minuit : elle passe (seul un minuit LU est indiscernable d’une heure absente)', async () => {
     expect(await deciderLignes({ ...BASE, decisions: [valider('l1', { preleveLe: MINUIT_PARIS })] }))
       .toMatchObject({ ok: true, validees: 1 });
   });

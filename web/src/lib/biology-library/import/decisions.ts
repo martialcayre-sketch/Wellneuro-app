@@ -216,8 +216,13 @@ export async function deciderLignes(params: {
     // L'HEURE EST EXIGÉE quand elle n'a pas été lue (arbitrage du 2026-10-02,
     // après la PR 2b) : un minuit de Paris renvoyé tel quel serait une heure
     // que personne n'a lue ni saisie. L'écran l'exige déjà ; le serveur le
-    // tient pour tout client. Un prélèvement réellement fait à 00:00 pile sur
-    // un compte rendu sans heure se saisit à la minute près.
+    // tient pour tout client.
+    // LIMITE CONNUE (revue Copilot de #1284) : le staging ne garde que
+    // l'instant lu, et une heure IMPRIMÉE « 00:00 » y est indiscernable d'une
+    // heure absente — elle est donc refusée inchangée, comme à l'écran. La
+    // distinguer demande une colonne « heure lue » : migration routée vers la
+    // PR de purge (fiche LOT-02). D'ici là, un prélèvement fait réellement à
+    // minuit pile ne se valide pas tel quel.
     const heureNonLue = ligne.preleveLeLu === null || estMinuitParis(ligne.preleveLeLu);
     if (heureNonLue && estMinuitParis(verdict.preleveLe)) return refuser(index, idLigne, 'heure_absente');
     const analyte = analyteParCode.get(analyteCode);
