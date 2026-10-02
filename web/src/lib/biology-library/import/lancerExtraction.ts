@@ -34,19 +34,37 @@ import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
 export type IssueExtraction =
   | { ok: true; idImport: string; statut: 'extrait'; lignes: number }
   | { ok: true; idImport: string; statut: 'echec'; motif: MotifEchec }
-  | { ok: false; reason: 'compte_rendu_introuvable' | 'extraction_en_cours' | 'server_error' };
+  | { ok: false; reason: 'compte_rendu_introuvable' | 'extraction_en_cours' | 'import_clos' | 'server_error' };
 
-export async function lancerExtraction(params: {
+export type IssueOuverture =
+  | { ok: true; idImport: string }
+  | { ok: false; reason: 'compte_rendu_introuvable' | 'extraction_en_cours' };
+
+type ParamsExtraction = {
   idPatient: string;
   idCompteRendu: string;
   lancePar: string;
   maintenant?: Date;
-}): Promise<IssueExtraction> {
+};
+
+/** Les trois temps d'affilée — la route, elle, rend la main après le premier (voir `ouvrirExtraction`). */
+export async function lancerExtraction(params: ParamsExtraction): Promise<IssueExtraction> {
+  const ouverture = await ouvrirExtraction(params);
+  if (!ouverture.ok) return ouverture;
+  return poursuivreExtraction({ ...params, idImport: ouverture.idImport });
+}
+
+/**
+ * TEMPS 1 seul. La route y rend la main (202) et confie la suite à `after()` :
+ * une extraction de trois pages dure ~36 s (mesure du 2026-10-02), au-delà de
+ * la fenêtre de 30 s du routeur Scalingo. L'écran relit ensuite l'import.
+ */
+export async function ouvrirExtraction(params: ParamsExtraction): Promise<IssueOuverture> {
   const { idPatient, idCompteRendu, lancePar } = params;
   const maintenant = params.maintenant ?? new Date();
 
   // TEMPS 1 — l'import en cours, commité avant l'appel.
-  const ouverture = await prisma.$transaction(async tx => {
+  return prisma.$transaction(async tx => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
     const compteRendu = await tx.compteRenduBiologique.findFirst({
       where: { id: idCompteRendu, idPatient },
@@ -81,8 +99,15 @@ export async function lancerExtraction(params: {
     });
     return { ok: true as const, idImport: cree.id };
   });
-  if (!ouverture.ok) return ouverture;
-  const { idImport } = ouverture;
+}
+
+/** TEMPS 2 et 3, sur un import ouvert par `ouvrirExtraction`. */
+export async function poursuivreExtraction(params: {
+  idPatient: string;
+  idCompteRendu: string;
+  idImport: string;
+}): Promise<IssueExtraction> {
+  const { idPatient, idCompteRendu, idImport } = params;
 
   const document = await prisma.compteRenduBiologique.findUnique({
     where: { id: idCompteRendu },
@@ -94,10 +119,13 @@ export async function lancerExtraction(params: {
     ? await extraireCompteRendu(Buffer.from(document.contenu))
     : ({ ok: false, motif: 'erreur_fournisseur' } as const);
 
+  // Chaque terminaison est GARDÉE par `statut: 'en_cours'` : une suite qui
+  // finit après la péremption (l'import a été clos `delai_depasse` par une
+  // tentative suivante) ne réécrit pas un import clos (revue de la PR 2b, P2-5).
   if (!resultat.ok) {
     try {
-      await prisma.importBiologique.update({
-        where: { id: idImport },
+      await prisma.importBiologique.updateMany({
+        where: { id: idImport, statut: 'en_cours' },
         data: { statut: 'echec', motifEchec: resultat.motif },
       });
     } catch (err) {
@@ -109,8 +137,10 @@ export async function lancerExtraction(params: {
 
   // TEMPS 3 — les lignes, PUIS la terminaison, dans une seule transaction.
   try {
-    await prisma.$transaction(async tx => {
+    const encoreOuvert = await prisma.$transaction(async tx => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
+      // Sous le verrou qui sert aussi à clore les imports périmés : la relecture fait foi.
+      if ((await tx.importBiologique.count({ where: { id: idImport, statut: 'en_cours' } })) === 0) return false;
       if (resultat.lignes.length > 0) {
         await tx.ligneBiologiqueCandidate.createMany({
           data: resultat.lignes.map((ligne, i) => {
@@ -135,7 +165,9 @@ export async function lancerExtraction(params: {
         where: { id: idImport },
         data: { statut: 'extrait', laboratoireLu: resultat.laboratoire },
       });
+      return true;
     });
+    if (!encoreOuvert) return { ok: false, reason: 'import_clos' };
   } catch (err) {
     // La réponse a produit des lignes que la base refuse (une contrainte, une
     // FK) : l'import se clôt `reponse_invalide` plutôt que de rester en cours
@@ -143,8 +175,8 @@ export async function lancerExtraction(params: {
     // même cette clôture échoue, la péremption le rattrapera.
     console.error('[bio-ingest extraction] lignes non consignées :', ...classeEtCode(err));
     try {
-      await prisma.importBiologique.update({
-        where: { id: idImport },
+      await prisma.importBiologique.updateMany({
+        where: { id: idImport, statut: 'en_cours' },
         data: { statut: 'echec', motifEchec: 'reponse_invalide' },
       });
     } catch (errCloture) {

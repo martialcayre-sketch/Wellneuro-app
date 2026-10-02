@@ -8647,3 +8647,20 @@ document dès maintenant (attend la rubrique 8) ; écarts posés par le système
 constat par conteneur, puis PR 2 (consignes dans la fiche LOT-02).
 
 **Questions ouvertes.** Durée de conservation du document (rubrique 8).
+
+## 2026-10-02 — BIO-INGEST LOT-02, PR 2a (serveur) et 2b (écran)
+
+**Décidé.** 2a mergée (#1281) et déployée : dépôt, extraction (Sonnet 5.5,
+modèle et version tracés), resolver non signé (tout `inconnu`), décisions en
+tout ou rien, retrait. 2b : panneau d'import derrière `bioIngestEnabled` ; heure
+exigée si non lue (heure de Paris quel que soit le poste) ; extraction en 202
++ `after()` après mesure (36 s pour 3 pages, routeur à 30 s).
+
+**Écarté.** Extraction synchrone (dépasse le routeur) ; seconde passe du
+resolver sans parenthèses (perd la matrice) ; date au fuseau du navigateur
+(minuit Paris contourné hors de France).
+
+**Prochaine action.** PR 2b, CI, merge ; puis migration de purge du PDF.
+
+**Questions ouvertes.** Heure exigée aussi côté serveur ? Constat `after()`
+sur Scalingo avant la pose du drapeau ; signature du resolver.

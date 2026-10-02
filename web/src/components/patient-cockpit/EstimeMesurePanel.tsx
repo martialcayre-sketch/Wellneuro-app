@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
-import { useCbResultsEnabled } from './CbFeatureProvider';
+import { useBioIngestEnabled, useCbResultsEnabled } from './CbFeatureProvider';
+import { ImportCompteRenduPanel } from './ImportCompteRenduPanel';
 import { SaisieBilan, type AnalyteChoix, type IssueBilan } from './SaisieBilan';
 
 // « Estimé ↔ mesuré » (maquette 5.0, écran Fiche-trajectoire) — étage 2 du
@@ -245,6 +246,7 @@ function CorrectionMesure({
 
 export function EstimeMesurePanel({ idPatient }: { idPatient?: string }) {
   const resultsEnabled = useCbResultsEnabled();
+  const bioIngestEnabled = useBioIngestEnabled();
   const [resultats, setResultats] = useState<ResultatAffiche[]>([]);
   /**
    * Les plages fonctionnelles servies avec la série ([[D-157]]). Vide tant
@@ -603,6 +605,16 @@ export function EstimeMesurePanel({ idPatient }: { idPatient?: string }) {
       )}
 
       <SaisieBilan analytes={analytes} disabled={envoiEnCours} onEnregistrer={enregistrerBilan} />
+
+      {/* L'import d'un compte rendu (BIO-INGEST LOT-02) — derrière son propre drapeau. */}
+      {bioIngestEnabled && (
+        <ImportCompteRenduPanel
+          idPatient={idPatient}
+          analytes={analytes}
+          mesures={resultats}
+          onResultatsEnregistres={chargerResultats}
+        />
+      )}
     </section>
   );
 }

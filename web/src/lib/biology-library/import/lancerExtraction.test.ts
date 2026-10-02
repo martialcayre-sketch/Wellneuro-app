@@ -17,6 +17,8 @@ const { prisma, extraire, journal, resoudre } = vi.hoisted(() => {
       findMany: trace('import.findMany', []),
       create: trace('import.create', { id: 'imp_1' }),
       update: trace('import.update', {}),
+      updateMany: trace('import.updateMany', { count: 1 }),
+      count: trace('import.count', 1),
     },
     ligneBiologiqueCandidate: { createMany: trace('lignes.createMany', { count: 0 }) },
     $transaction: vi.fn(),
@@ -98,8 +100,8 @@ describe('lancerExtraction — modèle et version enregistrés à chaque fois (v
       expect(argument<{ data: unknown }>(prisma.importBiologique.create).data).toMatchObject({
         modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v1',
       });
-      expect(prisma.importBiologique.update).toHaveBeenCalledWith({
-        where: { id: 'imp_1' },
+      expect(prisma.importBiologique.updateMany).toHaveBeenCalledWith({
+        where: { id: 'imp_1', statut: 'en_cours' },
         data: { statut: 'echec', motifEchec: motif },
       });
       expect(prisma.ligneBiologiqueCandidate.createMany).not.toHaveBeenCalled();
@@ -114,7 +116,7 @@ describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transac
     // Deux transactions interactives : l'ouverture (avant l'appel), puis lignes + terminaison.
     expect(prisma.$transaction).toHaveBeenCalledTimes(2);
     const apres = journal.slice(journal.indexOf('appel'));
-    expect(apres).toEqual(['appel', 'verrou', 'lignes.createMany', 'import.update']);
+    expect(apres).toEqual(['appel', 'verrou', 'import.count', 'lignes.createMany', 'import.update']);
     const terminaison = argument<{ data: Record<string, unknown> }>(prisma.importBiologique.update);
     expect(terminaison).toEqual({
       where: { id: 'imp_1' },
@@ -184,6 +186,15 @@ describe('lancerExtraction — imports en cours', () => {
   });
 });
 
+describe('lancerExtraction — une suite tardive ne réécrit pas un import clos', () => {
+  it('l’import clos entre-temps (péremption) : aucune ligne, aucune terminaison', async () => {
+    prisma.importBiologique.count.mockResolvedValueOnce(0);
+    expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'import_clos' });
+    expect(prisma.ligneBiologiqueCandidate.createMany).not.toHaveBeenCalled();
+    expect(prisma.importBiologique.update).not.toHaveBeenCalled();
+  });
+});
+
 describe('lancerExtraction — aucune donnée de santé dans les journaux', () => {
   it('une panne d’écriture ne journalise ni libellé, ni valeur, ni message', async () => {
     prisma.ligneBiologiqueCandidate.createMany.mockRejectedValueOnce(
@@ -191,8 +202,8 @@ describe('lancerExtraction — aucune donnée de santé dans les journaux', () =
     );
     expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'server_error' });
     // L'import se clôt `reponse_invalide`, il ne reste pas en cours (revue, P2-3).
-    expect(prisma.importBiologique.update).toHaveBeenLastCalledWith({
-      where: { id: 'imp_1' },
+    expect(prisma.importBiologique.updateMany).toHaveBeenLastCalledWith({
+      where: { id: 'imp_1', statut: 'en_cours' },
       data: { statut: 'echec', motifEchec: 'reponse_invalide' },
     });
     const ecrit = JSON.stringify(espions.flatMap(e => e.mock.calls));
