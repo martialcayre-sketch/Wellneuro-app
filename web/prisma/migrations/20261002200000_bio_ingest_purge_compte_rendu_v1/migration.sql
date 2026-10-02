@@ -1,5 +1,5 @@
 -- BIO-INGEST — LA PURGE DU COMPTE RENDU DÉPOSÉ, ET L'HEURE LUE
--- ([[D-257]], LOT-02 ; rubrique 8 du dossier RGPD).
+-- ([[D-258]], LOT-02 ; rubrique 8 du dossier RGPD).
 --
 -- Migration demandée explicitement par le responsable le 2026-10-02 (plan
 -- approuvé en séance, après le merge de #1284). MIGRATION SEULE ([[D-087]]) :
@@ -9,7 +9,7 @@
 -- conteneur. Le seul code qui l'accompagne est la lecture du document par la
 -- relance d'extraction, qui doit compiler sur un `contenu` devenu nullable.
 --
--- ── LA RÈGLE ([[D-257]]) ───────────────────────────────────────────────────
+-- ── LA RÈGLE ([[D-258]]) ───────────────────────────────────────────────────
 --
 -- Le document déposé est purgé dès que toutes les lignes de son extraction
 -- courante sont décidées (validées ou écartées), et AU PLUS TARD 30 JOURS

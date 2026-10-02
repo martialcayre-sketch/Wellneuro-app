@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-257 — Compte rendu biologique déposé : purgé dès que l'extraction courante est décidée, au plus tard 30 jours après le dépôt
+### D-258 — Compte rendu biologique déposé : purgé dès que l'extraction courante est décidée, au plus tard 30 jours après le dépôt
 
 - Date : 2026-10-02
 - Statut : accepté — arbitrages du responsable du 2026-10-02 (après le merge de

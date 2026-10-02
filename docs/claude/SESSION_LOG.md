@@ -8681,11 +8681,11 @@ purge.
 **Questions ouvertes.** Colonne « heure lue » (une heure imprimée « 00:00 »
 se confond avec une heure absente) : à proposer avec la migration de purge.
 
-## 2026-10-02 — BIO-INGEST LOT-02, migration de la purge (D-257)
+## 2026-10-02 — BIO-INGEST LOT-02, migration de la purge (D-258)
 
 **Décidé.** Purge du document dès l'extraction courante décidée, au plus tard
 30 jours ; motif vérifié par la base ; `heure_lue` DEFAULT false ; échéance
-par cron Scalingo ; règle en D-257 ; v12 avec accusé.
+par cron Scalingo ; règle en D-258 ; v12 avec accusé.
 
 **Écarté.** GitHub Actions + route interne (secret et route exposée de plus) ;
 amendement de D-256 (première durée de conservation d'une donnée de santé,

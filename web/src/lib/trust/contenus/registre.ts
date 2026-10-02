@@ -1171,7 +1171,7 @@ const DONNEES_CONFIDENTIALITE_V11: VersionDocumentTrust = {
 
 /*
  * v12 du 2026-10-02 — LA v11 DEVENAIT FAUSSE AVEC LA PURGE DU COMPTE RENDU
- * ([[D-257]]) : « Le compte rendu déposé est conservé dans votre dossier ». Il
+ * ([[D-258]]) : « Le compte rendu déposé est conservé dans votre dossier ». Il
  * est désormais supprimé dès que chacune des valeurs relevées lors de sa
  * DERNIÈRE lecture (l'extraction courante, la plus récente non échouée) est
  * validée ou écartée, et au plus tard 30 jours après le dépôt. « Dernière

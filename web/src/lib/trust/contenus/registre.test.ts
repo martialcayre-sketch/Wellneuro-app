@@ -46,7 +46,7 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v10',
       // `D-256` A4 — le compte rendu biologique déposé part entier chez Anthropic.
       'donnees_confidentialite@v11',
-      // `D-257` — le compte rendu déposé n'est plus conservé : il est purgé.
+      // `D-258` — le compte rendu déposé n'est plus conservé : il est purgé.
       'donnees_confidentialite@v12',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
@@ -285,7 +285,7 @@ describe('registre des documents TRUST', () => {
     expect(texteDonnees).not.toContain('Ces résultats sont saisis par votre praticien');
     expect(texteDonnees).toContain('déposer le compte rendu dans votre dossier');
     // La conservation du document était la promesse de la v11 ; la v12 la
-    // remplace par sa purge (`D-257`), que son propre banc garde.
+    // remplace par sa purge (`D-258`), que son propre banc garde.
     const texteV11 = (getVersion('donnees_confidentialite', 'v11')?.sections ?? []).flatMap(s => s.paragraphes).join(' ');
     expect(texteV11).toContain('Le compte rendu déposé est conservé dans votre dossier');
     expect(texteDonnees).toContain('y compris votre nom et les autres mentions qui vous identifient, à Anthropic');
@@ -301,7 +301,7 @@ describe('registre des documents TRUST', () => {
     expect(donnees.requiresAcknowledgement).toBe(true);
   });
 
-  it('`D-257` : la v12 dit le compte rendu SUPPRIMÉ, et ne change rien d’autre', () => {
+  it('`D-258` : la v12 dit le compte rendu SUPPRIMÉ, et ne change rien d’autre', () => {
     // LA v11 DEVENAIT FAUSSE : « conservé dans votre dossier ». Le document est
     // purgé dès que chaque valeur relevée est décidée, au plus tard 30 jours
     // après le dépôt — les deux bornes doivent être dites, l'une sans l'autre

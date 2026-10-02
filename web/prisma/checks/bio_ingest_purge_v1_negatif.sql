@@ -1,4 +1,4 @@
--- Contrat de la purge du compte rendu déposé et de l'heure lue ([[D-257]],
+-- Contrat de la purge du compte rendu déposé et de l'heure lue ([[D-258]],
 -- BIO-INGEST LOT-02, migration `20261002200000_bio_ingest_purge_compte_rendu_v1`).
 -- Le reste du staging est tenu par `bio_ingest_staging_v1_negatif.sql`.
 --

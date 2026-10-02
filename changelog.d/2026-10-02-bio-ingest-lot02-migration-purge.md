@@ -1,6 +1,6 @@
 ### BIO-INGEST LOT-02 : migration de la purge du compte rendu et de l'heure lue (2026-10-02)
 
-- **Migration `bio_ingest_purge_compte_rendu_v1`** ([[D-257]]), demandée
+- **Migration `bio_ingest_purge_compte_rendu_v1`** ([[D-258]]), demandée
   explicitement par le responsable. **Migration seule** ([[D-087]]) : aucun
   code ne purge encore. Elle s'applique par `release-db` approuvé, puis se
   constate par conteneur.

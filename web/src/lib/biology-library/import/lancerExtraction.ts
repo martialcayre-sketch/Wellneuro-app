@@ -114,7 +114,7 @@ export async function poursuivreExtraction(params: {
     select: { contenu: true },
   });
 
-  // TEMPS 2 — l'appel, hors transaction. Un document purgé ([[D-257]]) ne
+  // TEMPS 2 — l'appel, hors transaction. Un document purgé ([[D-258]]) ne
   // devrait jamais arriver ici : la base refuse d'ouvrir un import sur lui.
   const resultat = document?.contenu
     ? await extraireCompteRendu(Buffer.from(document.contenu))

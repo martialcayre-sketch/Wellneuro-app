@@ -1,4 +1,4 @@
-# Handoff — 2026-10-02 — BIO-INGEST LOT-02 : migration de la purge du compte rendu (D-257)
+# Handoff — 2026-10-02 — BIO-INGEST LOT-02 : migration de la purge du compte rendu (D-258)
 
 ## Branche et état Git
 
@@ -19,7 +19,7 @@ Point 2 des arbitrages du 2026-10-02 (fiche LOT-02) : purger le PDF déposé
 
 ## Décisions prises (mode Plan, responsable, 2026-10-02)
 
-- **D-257** : le document est purgé dès que l'extraction courante est
+- **D-258** : le document est purgé dès que l'extraction courante est
   décidée, et **au plus tard 30 jours** après le dépôt.
   - Restent l'empreinte, les extractions et les lignes lues (A5).
   - Les sauvegardes de l'hébergeur ne sont pas déclarées tant que leur
@@ -47,7 +47,7 @@ Point 2 des arbitrages du 2026-10-02 (fiche LOT-02) : purger le PDF déposé
     7 fonctions.
 - `web/src/lib/trust/contenus/registre.ts` (v12) et `registre.test.ts`.
 - Documentation :
-  - `docs/DECISIONS.md` (D-257) ;
+  - `docs/DECISIONS.md` (D-258) ;
   - `docs/DOSSIER_RGPD.md` (§2 ter, rubriques 5, 8 et 14) ;
   - `docs/FEATURE_FLAGS.md` ;
   - la fiche LOT-02 ;

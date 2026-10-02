@@ -12,7 +12,7 @@
 --   3. un même document une fois par dossier ; le même document dans un AUTRE
 --      dossier passe ;
 --   4. le compte rendu est figé : tout UPDATE autre que la purge de son
---      document ([[D-257]]) est refusé ;
+--      document ([[D-258]]) est refusé ;
 --   5. un import naît EN COURS, à l'instant posé par la base, avec modèle et
 --      version du procédé non vides et bornés (promesse de `usage_ia` v4),
 --      sans laboratoire ; il ne désigne qu'un compte rendu de SON dossier ;

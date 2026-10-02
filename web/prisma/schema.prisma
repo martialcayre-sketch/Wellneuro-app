@@ -2468,7 +2468,7 @@ model ResultatBiologique {
 
 /// Un compte rendu d'analyses déposé par le praticien, conservé en base HDS
 /// (A2), en entier : aucun masquage n'est promis (§2 ter). Figé, sauf la purge
-/// de son contenu ([[D-257]], migration `bio_ingest_purge_compte_rendu_v1`) :
+/// de son contenu ([[D-258]], migration `bio_ingest_purge_compte_rendu_v1`) :
 /// dès que l'extraction courante est entièrement décidée, au plus tard 30 jours
 /// après le dépôt. L'empreinte reste.
 model CompteRenduBiologique {
@@ -2476,7 +2476,7 @@ model CompteRenduBiologique {
   idPatient       String   @map("id_patient")
   /// Le document tel que déposé. Jamais de nom de fichier : il porte souvent
   /// l'identité du patient.
-  /// NULL une fois purgé ([[D-257]]) — jamais à l'insertion.
+  /// NULL une fois purgé ([[D-258]]) — jamais à l'insertion.
   contenu         Bytes?    @map("contenu")
   typeMime        String    @map("type_mime") // pdf | jpeg | png | webp (CHECK migration)
   /// Recalculée et vérifiée égale par la base (CHECK) ; survit à la purge.
