@@ -8696,3 +8696,21 @@ citable seule) ; phrase sur les sauvegardes sans rétention établie.
 
 **Questions ouvertes.** Rétention des sauvegardes Scalingo ; DROP de la base
 jetable `wellneuro_purge_contrat`.
+
+## 2026-10-02 — BIO-INGEST LOT-02, code consommateur de la purge (D-258, PR 2)
+
+**Décidé.** Purge à la dernière décision, dans la transaction des décisions,
+après avoir compté ses conditions sous le verrou ; échéance par cron Scalingo
+**horaire** (la v12 promet « au plus tard 30 jours ») via `runWithAlias.js`,
+sondé en conteneur ; relance 409 `document_purge` ; `heure_lue` écrite et
+lue ; liste sur l'extraction courante, échec visible à défaut.
+
+**Écarté.** Cron nocturne (J+31) ; purge dans une transaction séparée (non
+atomique, contraire aux conditions de la revue) ; script SQL brut par
+`prisma db execute` (pas de transaction par compte rendu).
+
+**Prochaine action.** PR, CI, merge, constat du premier passage du cron ; puis
+signature du resolver.
+
+**Questions ouvertes.** Épreuve d'intégration code↔triggers non versionnée ;
+`jiti`/`dotenv` non garantis dans l'image ; rétention des sauvegardes.

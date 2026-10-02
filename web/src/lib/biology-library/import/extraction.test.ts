@@ -12,6 +12,7 @@ import {
   analyserSortieExtraction,
   DELAI_EXTRACTION_MS,
   extraireCompteRendu,
+  heureLisible,
   lireDatePrelevement,
   MODELE_EXTRACTION,
   motifDErreur,
@@ -58,6 +59,25 @@ describe('lireDatePrelevement — la date imprimée, heure de Paris', () => {
   });
 });
 
+describe('heure lue (D-258) — une heure imprimée « 00:00 » n’est pas une heure absente', () => {
+  it('une heure d’horloge est lue, minuit compris ; une heure illisible ne l’est pas', () => {
+    expect(heureLisible('00:00')).toBe(true);
+    expect(heureLisible(' 08:30 ')).toBe(true);
+    for (const h of [null, '', '8h30', '25:00', '08:30:00']) expect(heureLisible(h)).toBe(false);
+  });
+
+  it('jamais d’heure lue sans date lue (CHECK de la base)', () => {
+    const ligne = (date: string | null, heure: string | null) => ({ ...SORTIE.lignes[0], date_prelevement: date, heure_prelevement: heure });
+    const r = analyserSortieExtraction(JSON.stringify({
+      ...SORTIE, lignes: [ligne('2026-09-15', '00:00'), ligne(null, '08:30'), ligne('15/09/2026', '08:30')],
+    }));
+    if (!r.ok) throw new Error('attendu ok');
+    expect(r.lignes.map(l => [l.preleveLe?.toISOString() ?? null, l.heureLue])).toEqual([
+      ['2026-09-14T22:00:00.000Z', true], [null, false], [null, false],
+    ]);
+  });
+});
+
 describe('analyserSortieExtraction — schéma fermé aux bornes des CHECK', () => {
   it('relève valeur, unité, page et DATE DU PRÉLÈVEMENT (promesse de la v4)', () => {
     const r = analyserSortieExtraction(JSON.stringify(SORTIE));
@@ -66,7 +86,10 @@ describe('analyserSortieExtraction — schéma fermé aux bornes des CHECK', () 
     expect(r.lignes).toHaveLength(2);
     expect(r.lignes[0]).toEqual({
       page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', preleveLe: new Date('2026-09-15T06:30:00.000Z'),
+      heureLue: true,
     });
+    // Date sans heure : minuit de Paris, et l'heure n'est PAS dite lue.
+    expect(r.lignes[1]).toMatchObject({ preleveLe: new Date('2026-09-14T22:00:00.000Z'), heureLue: false });
     // Le texte reste tel qu'écrit : le refus d'une ligne qualitative vient après.
     expect(r.lignes[1].valeur).toBe('<0,5');
   });

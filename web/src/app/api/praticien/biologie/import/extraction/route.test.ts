@@ -46,6 +46,16 @@ describe('POST /api/praticien/biologie/import/extraction — asynchrone', () => 
     expect(poursuivreExtraction).toHaveBeenCalledWith({ idPatient: 'pat_sophie', idCompteRendu: 'cr_1', idImport: 'imp_1' });
   });
 
+  it('un document purgé (D-258) rend 409 `document_purge`, sans suite', async () => {
+    ouvrirExtraction.mockResolvedValueOnce({ ok: false, reason: 'document_purge' });
+    const res = await POST(requete({ idPatient: 'pat_sophie', idCompteRendu: 'cr_1' }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({
+      ok: false, reason: 'document_purge', error: 'Le document de ce compte rendu a été effacé : il ne peut plus être relu.',
+    });
+    expect(after).not.toHaveBeenCalled();
+  });
+
   it('une suite qui lève est journalisée par sa classe, jamais par son message', async () => {
     const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
     poursuivreExtraction.mockRejectedValueOnce(new Error('Ferritine 48 ng/mL'));

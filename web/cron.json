@@ -1,0 +1,8 @@
+{
+  "jobs": [
+    {
+      "command": "15 * * * * npm run bio:purge-echeance",
+      "size": "M"
+    }
+  ]
+}

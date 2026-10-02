@@ -8,8 +8,8 @@ import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
 //
 // TANT QU'AUCUNE LIGNE N'EST VALIDÉE. Une ligne validée désigne un résultat
 // entré au dossier : supprimer sa provenance effacerait d'où vient ce
-// résultat (A5). Le retrait est alors refusé ; la purge après validation
-// attend l'arbitrage de la rubrique 8 du dossier RGPD, et une migration.
+// résultat (A5). Le retrait est alors refusé ; le document, lui, est purgé
+// à la dernière décision ou à l'échéance ([[D-258]], `decisions.ts`, `purge.ts`).
 //
 // PERMIS SUR UN DOSSIER CLOS (arbitrage du responsable, 2026-10-02) : retirer
 // un document déposé par erreur n'ajoute rien au dossier, cela en retire une

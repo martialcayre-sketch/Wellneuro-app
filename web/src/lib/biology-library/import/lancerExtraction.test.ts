@@ -10,7 +10,7 @@ const { prisma, extraire, journal, resoudre } = vi.hoisted(() => {
   const prisma = {
     $executeRaw: trace('verrou', 1),
     compteRenduBiologique: {
-      findFirst: trace('compteRendu.findFirst', { id: 'cr_1', typeMime: 'application/pdf' }),
+      findFirst: trace('compteRendu.findFirst', { id: 'cr_1', typeMime: 'application/pdf', purgeLe: null }),
       findUnique: trace('compteRendu.findUnique', { contenu: new Uint8Array([37, 80, 68, 70, 45]) }),
     },
     importBiologique: {
@@ -50,8 +50,8 @@ const MAINTENANT = new Date('2026-10-02T10:00:00.000Z');
 const PARAMS = { idPatient: 'pat_sophie', idCompteRendu: 'cr_1', lancePar: 'praticien@wellneuro.fr', maintenant: MAINTENANT };
 
 const LIGNES = [
-  { page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', preleveLe: new Date('2026-09-15T06:30:00.000Z') },
-  { page: 2, libelle: 'CRP ultrasensible', valeur: '<0,5', unite: 'mg/L', preleveLe: null },
+  { page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', preleveLe: new Date('2026-09-15T06:30:00.000Z'), heureLue: true },
+  { page: 2, libelle: 'CRP ultrasensible', valeur: '<0,5', unite: 'mg/L', preleveLe: null, heureLue: false },
 ];
 
 let espions: Array<ReturnType<typeof vi.spyOn>>;
@@ -131,9 +131,9 @@ describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transac
     expect(data[0]).toMatchObject({
       idPatient: 'pat_sophie', idImport: 'imp_1', rang: 1, page: 1,
       libelleLu: 'Ferritine', valeurLue: '48', uniteLue: 'ng/mL',
-      preleveLeLu: new Date('2026-09-15T06:30:00.000Z'),
+      preleveLeLu: new Date('2026-09-15T06:30:00.000Z'), heureLue: true,
     });
-    expect(data[1]).toMatchObject({ rang: 2, valeurLue: '<0,5', preleveLeLu: null });
+    expect(data[1]).toMatchObject({ rang: 2, valeurLue: '<0,5', preleveLeLu: null, heureLue: false });
   });
 
   it('resolver non signé : tout sort `inconnu`, aucun analyte proposé', async () => {
@@ -172,6 +172,16 @@ describe('lancerExtraction — imports en cours', () => {
     ]);
     expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'extraction_en_cours' });
     expect(prisma.importBiologique.create).not.toHaveBeenCalled();
+    expect(extraire).not.toHaveBeenCalled();
+  });
+
+  it('un document purgé (D-258) ne se relit plus : `document_purge`, aucun import ouvert', async () => {
+    prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce({
+      id: 'cr_1', typeMime: 'application/pdf', purgeLe: new Date('2026-10-01T10:00:00.000Z'),
+    });
+    expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'document_purge' });
+    expect(prisma.importBiologique.create).not.toHaveBeenCalled();
+    expect(prisma.importBiologique.update).not.toHaveBeenCalled();
     expect(extraire).not.toHaveBeenCalled();
   });
 

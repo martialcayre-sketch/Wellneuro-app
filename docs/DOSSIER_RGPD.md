@@ -785,9 +785,11 @@ reste dans le trou ci-dessus.
   établir**, et à déclarer au patient une fois établie, pas avant.
 - **Déclarée au patient** par « Vos données personnelles » **v12** (accusé
   exigé), qui remplace « conservé dans votre dossier ».
-- **État** : migration écrite (PR 1) ; la décision qui purge, la relance
-  refusée et le cron viennent avec le code consommateur (PR 2).
-  `WN_BIO_INGEST_ENABLED` ne se pose qu'une fois la purge en œuvre et le
+- **État** : migration appliquée et constatée par conteneur le 2026-10-02
+  (PR 1, #1286) ; la décision qui purge, la relance refusée et le cron
+  (`npm run bio:purge-echeance`, chaque heure) arrivent avec le code
+  consommateur (PR 2). Le cron clôt d'abord les extractions abandonnées, qui
+  bloqueraient sinon la purge. `WN_BIO_INGEST_ENABLED` ne se pose qu'une fois la purge en œuvre et le
   premier passage du cron constaté (`docs/FEATURE_FLAGS.md`) : aucun document
   ne peut être déposé avant.
 

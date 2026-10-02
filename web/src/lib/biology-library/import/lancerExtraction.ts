@@ -24,7 +24,8 @@ import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
 //    dans cette transaction, son but est tenu : les lignes avant la fin).
 //
 // Un échec se consigne par la transition `en_cours` → `echec` avec son motif
-// fermé, sans aucune ligne. Un import resté `en_cours` au-delà de la
+// fermé, sans aucune ligne. Un document purgé ([[D-258]]) ne se relit plus :
+// `document_purge`, avant que la base ne le refuse elle-même. Un import resté `en_cours` au-delà de la
 // péremption (processus mort) est clos `delai_depasse` à la tentative
 // suivante sur le même compte rendu.
 //
@@ -34,11 +35,14 @@ import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
 export type IssueExtraction =
   | { ok: true; idImport: string; statut: 'extrait'; lignes: number }
   | { ok: true; idImport: string; statut: 'echec'; motif: MotifEchec }
-  | { ok: false; reason: 'compte_rendu_introuvable' | 'extraction_en_cours' | 'import_clos' | 'server_error' };
+  | {
+    ok: false;
+    reason: 'compte_rendu_introuvable' | 'extraction_en_cours' | 'document_purge' | 'import_clos' | 'server_error';
+  };
 
 export type IssueOuverture =
   | { ok: true; idImport: string }
-  | { ok: false; reason: 'compte_rendu_introuvable' | 'extraction_en_cours' };
+  | { ok: false; reason: 'compte_rendu_introuvable' | 'extraction_en_cours' | 'document_purge' };
 
 type ParamsExtraction = {
   idPatient: string;
@@ -68,11 +72,14 @@ export async function ouvrirExtraction(params: ParamsExtraction): Promise<IssueO
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
     const compteRendu = await tx.compteRenduBiologique.findFirst({
       where: { id: idCompteRendu, idPatient },
-      select: { id: true, typeMime: true },
+      select: { id: true, typeMime: true, purgeLe: true },
     });
     if (!compteRendu || compteRendu.typeMime !== 'application/pdf') {
       return { ok: false as const, reason: 'compte_rendu_introuvable' as const };
     }
+    // Sous le verrou que prend aussi la purge : la base refuserait l'import
+    // (P0001, une 500 opaque) ; on le dit avant (revue de la migration).
+    if (compteRendu.purgeLe) return { ok: false as const, reason: 'document_purge' as const };
     const enCours = await tx.importBiologique.findMany({
       where: { idCompteRendu, idPatient, statut: 'en_cours' },
       select: { id: true, lanceLe: true },
@@ -156,6 +163,7 @@ export async function poursuivreExtraction(params: {
               valeurLue: ligne.valeur,
               uniteLue: ligne.unite,
               preleveLeLu: ligne.preleveLe,
+              heureLue: ligne.heureLue,
               analytePropose: resolution.code,
               statutMapping: resolution.statut,
             };
