@@ -13,13 +13,9 @@ migration dans cette PR.
 
 ## Constat préalable (conteneur, lecture seule, 2026-10-02)
 
-- `release-db` du commit `9ccd17fb` vert (run 37057825468).
-- Migration appliquée en une tentative.
-- Colonnes présentes : `purge_le`, `motif_purge`, `heure_lue` (NOT NULL, `false`).
-- Trigger `comptes_rendus_biologiques_avant_purge` présent, `no_update` absent.
-- RLS active sur les trois tables du staging.
-- 0 compte rendu en base.
-- Déploiement en service : `9ccd17fb`, la tête de `main`.
+`release-db` de `9ccd17fb` vert (run 37057825468) ; migration appliquée en une
+tentative ; colonnes, trigger `avant_purge`, gel retiré, RLS : présents ;
+0 compte rendu ; déploiement en service = `9ccd17fb`.
 
 ## Décisions prises
 
@@ -40,16 +36,14 @@ migration dans cette PR.
 - **Exécution par `prisma/runWithAlias.js` (jiti)**, le patron déjà en place.
   Sondé dans un conteneur de production : charge `@/lib/prisma` en 0,5 s, pour
   167 Mo.
-- **Relance sur un document purgé** : 409 `document_purge`, vérifié sous le
-  verrou.
+- **Relance sur un document purgé** : 409 `document_purge`, sous le verrou.
 - **`heure_lue`** :
   - écrite par l'extraction (`heureLisible`), jamais vraie sans date ;
   - à la validation, l'heure est exigée si `!heureLue` ;
   - l'écran affiche « 00:00 » quand l'heure a été lue.
 - **Liste des comptes rendus** : elle montre l'extraction courante, sinon le
   dernier échec, qui reste visible.
-- **Écran** : il dit le document effacé et ne propose plus de relecture. Les
-  lignes restent décidables.
+- **Écran** : document effacé dit, relecture retirée, lignes décidables.
 - **Garde** : `staging.guard.test.ts` nomme les seuls auteurs d'une
   modification de compte rendu, `decisions.ts` et `purge.ts`.
 
@@ -77,13 +71,9 @@ migration dans cette PR.
   liste, des commentaires, `cron.json` et des tests. Ces correctifs ont été
   rejoués en tests ciblés puis en T1 complet.
 - Épreuve d'intégration locale, sur base de dev migrée, triggers réels :
-  11 assertions vertes. Elle a été **jouée à la main, non versionnée**, et
-  couvre :
-  - le CHECK `heure_lue` ;
-  - la purge à la dernière décision ;
-  - `document_purge` ;
-  - l'échéance antidatée, import abandonné clos compris ;
-  - un second passage à vide.
+  11 assertions vertes (**jouée à la main, non versionnée**) — CHECK
+  `heure_lue`, purge à la dernière décision, `document_purge`, échéance
+  antidatée avec import abandonné clos, second passage à vide.
 - `npm run bio:purge-echeance` en local : sortie propre, code 0.
 - `wn-reviewer` : **GO**, aucun P0 ni P1. Le passage horaire, l'échec visible
   dans la liste, l'indentation et les tests manquants sont corrigés ; les autres
@@ -94,9 +84,8 @@ migration dans cette PR.
 - **Le premier passage du cron en production verra 0 candidat.** Il prouve le
   démarrage du conteneur et la connexion, pas la requête des imports périmés.
   Seule l'épreuve locale prouve cette requête.
-- **Dépendances de `runWithAlias.js`** : `jiti` est transitif, `dotenv` est en
-  devDependency. Les deux sont présents dans l'image au 2026-10-02, mais rien
-  ne le garantit.
+- **Index de la requête horaire** (revue Copilot) : routé, il demande une
+  migration. `jiti` et `dotenv` sont désormais déclarés en dépendances.
 - **Fuseau du cron Scalingo** : non vérifié. Sans effet sur la règle, que juge
   l'horloge de la base.
 - **Rétention des sauvegardes Scalingo** : à établir avant toute déclaration.
@@ -105,14 +94,11 @@ migration dans cette PR.
 
 ## Prochaine action exacte
 
-1. Commit, puis PR (`--body-file`).
-2. `wn-attendre-ci` en tâche de fond, jusqu'au code 0 ; comparer `head=`.
-3. Lire la revue (corps et commentaires en ligne), trancher chaque
-   commentaire, puis merger.
-4. Constater le déploiement par contenance.
-5. Constater le **premier passage du cron** : `scalingo logs`, ligne
+1. PR #1287 : CI au code 0 sur la tête, revue Copilot tranchée, merge.
+2. Constater le déploiement par contenance.
+3. Constater le **premier passage du cron** : `scalingo logs`, ligne
    `[bio-ingest purge échéance]`, code de sortie 0.
-6. Ensuite, le point 3 de la fiche : relecture et signature du resolver
+4. Ensuite, le point 3 de la fiche : relecture et signature du resolver
    (D-xxx).
 
 ## Interdits encore actifs

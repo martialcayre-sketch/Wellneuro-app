@@ -87,7 +87,7 @@ describe('purgerAEcheance — 30 jours après le dépôt (D-258)', () => {
     expect(prisma.importBiologique.count).toHaveBeenCalledWith({ where: { idCompteRendu: 'cr_1', statut: 'en_cours' } });
   });
 
-  it('une extraction encore fraîche diffère la purge à la nuit suivante, sans la tenter', async () => {
+  it('une extraction encore fraîche diffère la purge au passage suivant, sans la tenter', async () => {
     prisma.importBiologique.count.mockResolvedValueOnce(1);
     expect(await purgerAEcheance()).toMatchObject({ purges: 0, differes: 1, echecs: 0 });
     expect(prisma.compteRenduBiologique.updateMany).not.toHaveBeenCalled();
