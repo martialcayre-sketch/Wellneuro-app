@@ -198,7 +198,9 @@ export const SOURCES_DE_SAVOIR = [
     // `modulesGardes`, qui alimente la colonne des drapeaux sans jamais
     // compter comme un consommateur.
     symboles: ['deriverRemboursement', 'regimeDocumentaire'],
-    modulesGardes: ['web/src/lib/biology-library/featureFlag.ts'],
+    // Bornée à ses accesseurs : `featureFlag.ts` porte aussi `isBioIngestEnabled`
+    // (BIO-INGEST LOT-02), qui ne garde pas cette source (revue Copilot de #1281).
+    modulesGardes: [{ chemin: 'web/src/lib/biology-library/featureFlag.ts', noms: ['isCbEnabled', 'isCbPropositionEnabled', 'isCbResultsEnabled'] }],
     decisionProduite: 'Régime de remboursement d’un acte de biologie proposé.',
   },
   {
@@ -210,7 +212,9 @@ export const SOURCES_DE_SAVOIR = [
     // et son absence rendait le constat de [[D-070]] indémontrable par l'outil.
     module: 'web/src/lib/biology-library/statuts.ts',
     symboles: ['deriverStatutsBiologie'],
-    modulesGardes: ['web/src/lib/biology-library/featureFlag.ts'],
+    // Bornée à ses accesseurs : `featureFlag.ts` porte aussi `isBioIngestEnabled`
+    // (BIO-INGEST LOT-02), qui ne garde pas cette source (revue Copilot de #1281).
+    modulesGardes: [{ chemin: 'web/src/lib/biology-library/featureFlag.ts', noms: ['isCbEnabled', 'isCbPropositionEnabled', 'isCbResultsEnabled'] }],
     decisionProduite:
       'Proposition de bilan hiérarchisée et sourcée, servie au cockpit praticien.',
   },

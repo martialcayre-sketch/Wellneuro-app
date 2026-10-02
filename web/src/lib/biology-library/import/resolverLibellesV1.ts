@@ -1,4 +1,4 @@
-import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
+import { createHash } from 'node:crypto';
 
 // RESOLVER SIGNÉ : LIBELLÉ LU → ANALYTE DU CATALOGUE (BIO-INGEST LOT-02,
 // [[D-256]] A4 ; arbitrages du 2026-10-01 et du 2026-10-02).
@@ -165,7 +165,10 @@ export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   shaPerimetre: null,
 };
 
-export const RESOLVER_LIBELLES_SHA256 = sha256(JSON.stringify(RESOLVER_LIBELLES_V1));
+// Empreinte calculée ICI, par `node:crypto` : importer `sha256` du module du
+// corpus clinique ferait compter ce resolver comme un consommateur du corpus
+// (revue Copilot de #1281). Même algorithme, même forme hexadécimale.
+export const RESOLVER_LIBELLES_SHA256 = createHash('sha256').update(JSON.stringify(RESOLVER_LIBELLES_V1), 'utf8').digest('hex');
 
 /**
  * La table est-elle RÉELLEMENT signée ? ET fail-closed à cinq termes, patron

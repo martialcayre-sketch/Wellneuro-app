@@ -131,6 +131,15 @@ export function lireDatePrelevement(date: string | null, heure: string | null): 
   return new Date(instant);
 }
 
+/** Les clés EXACTES d'un objet : ni absente, ni en trop (revue Copilot de #1281). */
+function clesExactes(objet: Record<string, unknown>, attendues: readonly string[]): boolean {
+  const cles = Object.keys(objet);
+  return cles.length === attendues.length && attendues.every(c => Object.prototype.hasOwnProperty.call(objet, c));
+}
+
+const CLES_SORTIE = SCHEMA_SORTIE.required;
+const CLES_LIGNE = SCHEMA_SORTIE.properties.lignes.items.required;
+
 function texteBorne(v: unknown, max: number): string | null | undefined {
   if (v === null) return null;
   if (typeof v !== 'string') return undefined;
@@ -154,24 +163,26 @@ export function analyserSortieExtraction(texte: string): ResultatExtraction {
   }
   if (brut === null || typeof brut !== 'object' || Array.isArray(brut)) return invalide;
   const sortie = brut as Record<string, unknown>;
+  if (!clesExactes(sortie, CLES_SORTIE)) return invalide;
   if (typeof sortie.lisible !== 'boolean' || !Array.isArray(sortie.lignes)) return invalide;
   if (!sortie.lisible) return { ok: false, motif: 'document_illisible' };
   if (sortie.lignes.length > LIGNES_MAX) return invalide;
 
-  const laboratoire = texteBorne(sortie.laboratoire ?? null, 200);
+  const laboratoire = texteBorne(sortie.laboratoire, 200);
   if (laboratoire === undefined) return invalide;
 
   const lignes: LigneExtraite[] = [];
   for (const l of sortie.lignes as unknown[]) {
     if (l === null || typeof l !== 'object' || Array.isArray(l)) return invalide;
     const ligne = l as Record<string, unknown>;
+    if (!clesExactes(ligne, CLES_LIGNE)) return invalide;
     if (typeof ligne.page !== 'number' || !Number.isInteger(ligne.page) || ligne.page < 1) return invalide;
     const libelle = texteBorne(ligne.libelle, 300);
     const valeur = texteBorne(ligne.valeur, 100);
-    const unite = texteBorne(ligne.unite ?? null, 50);
+    const unite = texteBorne(ligne.unite, 50);
     if (!libelle || !valeur || unite === undefined) return invalide;
-    const date = ligne.date_prelevement ?? null;
-    const heure = ligne.heure_prelevement ?? null;
+    const date = ligne.date_prelevement;
+    const heure = ligne.heure_prelevement;
     if ((date !== null && typeof date !== 'string') || (heure !== null && typeof heure !== 'string')) return invalide;
     lignes.push({ page: ligne.page, libelle, valeur, unite, preleveLe: lireDatePrelevement(date, heure) });
   }

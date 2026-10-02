@@ -87,6 +87,12 @@ describe('analyserSortieExtraction — schéma fermé aux bornes des CHECK', () 
       avec({ valeur: 'x'.repeat(101) }),
       avec({ unite: 'x'.repeat(51) }),
       avec({ valeur: 12 }),
+      // Schéma FERMÉ : une clé requise absente, une clé en trop.
+      JSON.stringify({ lisible: true, lignes: SORTIE.lignes }),
+      JSON.stringify({ ...SORTIE, commentaire: 'normal' }),
+      JSON.stringify({ ...SORTIE, lignes: [{ page: 1, libelle: 'Ferritine', valeur: '48' }] }),
+      avec({ interpretation: 'basse' }),
+      avec({ unite: undefined }),
       JSON.stringify({ ...SORTIE, laboratoire: 'x'.repeat(201) }),
       JSON.stringify({ ...SORTIE, lignes: Array.from({ length: 201 }, () => SORTIE.lignes[0]) }),
     ]) {
