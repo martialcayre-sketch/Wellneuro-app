@@ -1,5 +1,7 @@
 -- Contrat du staging d'import biologique ([[D-256]] A2/A5, BIO-INGEST LOT-02,
--- migration `20261001210000_bio_ingest_staging_v1`).
+-- migration `20261001210000_bio_ingest_staging_v1`, amendée par
+-- `20261002200000_bio_ingest_purge_compte_rendu_v1` — la purge et l'heure lue
+-- ont leur propre contrat, `bio_ingest_purge_v1_negatif.sql`).
 --
 -- Le staging promet QUINZE choses, et ce fichier les éprouve TOUTES :
 --   1. un compte rendu valide s'écrit, à l'instant posé par la BASE ; 10 Mo
@@ -9,7 +11,8 @@
 --      trop long — refusés chacun par SON CHECK ;
 --   3. un même document une fois par dossier ; le même document dans un AUTRE
 --      dossier passe ;
---   4. le compte rendu est figé : UPDATE refusé ;
+--   4. le compte rendu est figé : tout UPDATE autre que la purge de son
+--      document ([[D-258]]) est refusé ;
 --   5. un import naît EN COURS, à l'instant posé par la base, avec modèle et
 --      version du procédé non vides et bornés (promesse de `usage_ia` v4),
 --      sans laboratoire ; il ne désigne qu'un compte rendu de SON dossier ;
@@ -96,14 +99,15 @@ DECLARE
 
   -- ORDRE ALPHABÉTIQUE OBLIGATOIRE (comparé à un `array_agg(... ORDER BY)`).
   COLS_CR CONSTANT text[] := ARRAY[
-    'contenu', 'depose_le', 'depose_par', 'empreinte_sha256', 'id', 'id_patient', 'type_mime'
+    'contenu', 'depose_le', 'depose_par', 'empreinte_sha256', 'id', 'id_patient', 'motif_purge', 'purge_le',
+    'type_mime'
   ];
   COLS_IMPORT CONSTANT text[] := ARRAY[
     'id', 'id_compte_rendu', 'id_patient', 'laboratoire_lu', 'lance_le', 'lance_par', 'modele', 'motif_echec',
     'statut', 'termine_le', 'version_prompt'
   ];
   COLS_LIGNE CONSTANT text[] := ARRAY[
-    'analyte_propose', 'id', 'id_import', 'id_patient', 'id_resultat', 'libelle_lu', 'motif_ecart',
+    'analyte_propose', 'heure_lue', 'id', 'id_import', 'id_patient', 'id_resultat', 'libelle_lu', 'motif_ecart',
     'page', 'preleve_le_lu', 'rang', 'statut', 'statut_mapping', 'traite_le', 'traite_par',
     'unite_lue', 'valeur_lue'
   ];
@@ -211,7 +215,7 @@ BEGIN
   -- ── 4. Le compte rendu est figé ──────────────────────────────────────────
   PERFORM pg_temp.refus('UPDATE d''un compte rendu',
     $q$UPDATE comptes_rendus_biologiques SET type_mime = 'image/jpeg' WHERE id = 'cr_1'$q$,
-    'P0001', 'comptes_rendus_biologiques : ligne figée');
+    'P0001', 'seule la purge de son document le modifie');
 
   -- ── 5. L'import naît en cours, dans son dossier ──────────────────────────
   BEGIN
@@ -625,7 +629,7 @@ BEGIN
     RAISE EXCEPTION 'STAGING BIO: FK inattendues (%). Attendu sept FK nommées, toutes en ON DELETE RESTRICT.', reelles;
   END IF;
 
-  -- Hygiène d'exécution : aucune des six fonctions n'est exécutable par
+  -- Hygiène d'exécution : aucune des sept fonctions n'est exécutable par
   -- PUBLIC (une ACL NULL vaut le défaut, qui l'est).
   SELECT count(*) INTO nb
   FROM pg_proc p
@@ -641,8 +645,8 @@ BEGIN
   SELECT count(*) INTO nb
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname LIKE 'bio\_ingest\_%';
-  IF nb <> 6 THEN
-    RAISE EXCEPTION 'STAGING BIO: 6 fonctions bio_ingest_* attendues, % trouvée(s).', nb;
+  IF nb <> 7 THEN
+    RAISE EXCEPTION 'STAGING BIO: 7 fonctions bio_ingest_* attendues, % trouvée(s).', nb;
   END IF;
 
   SELECT count(*) INTO nb
@@ -722,7 +726,7 @@ BEGIN
     RAISE EXCEPTION 'STAGING BIO: policy inattendue sur le staging (deny-all attendu).';
   END IF;
 
-  RAISE NOTICE 'STAGING BIO: dépôt valide horodaté par la base et 10 Mo admis ; type, taille, empreinte, déposant refusés chacun par son CHECK ; doublon refusé dans un dossier, admis dans un autre ; compte rendu figé ; import né en cours, horodaté, sans laboratoire, dans son dossier, modèle et version non vides et bornés ; terminaison unique, motivée, sans ligne en échec, sans réécriture ; lignes nées proposées dans une extraction en cours, CHECK mordant chacun ; rien ne se décide avant la fin ni ne s''ajoute après ; décision unique, horodatée, sans réécrire le lu, dans son dossier, jamais vers une saisie antérieure à l''extraction, un résultat par ligne ; effacement nommé passant et RESTRICT tenu ; 7 FK RESTRICT nommées, 3 triggers anti-TRUNCATE, 2 CHECK de statut, document EXTERNAL, aucune fonction ouverte à PUBLIC ; colonnes et index exacts ; RLS deny-all sur les trois.';
+  RAISE NOTICE 'STAGING BIO: dépôt valide horodaté par la base et 10 Mo admis ; type, taille, empreinte, déposant refusés chacun par son CHECK ; doublon refusé dans un dossier, admis dans un autre ; compte rendu figé hors purge ; import né en cours, horodaté, sans laboratoire, dans son dossier, modèle et version non vides et bornés ; terminaison unique, motivée, sans ligne en échec, sans réécriture ; lignes nées proposées dans une extraction en cours, CHECK mordant chacun ; rien ne se décide avant la fin ni ne s''ajoute après ; décision unique, horodatée, sans réécrire le lu, dans son dossier, jamais vers une saisie antérieure à l''extraction, un résultat par ligne ; effacement nommé passant et RESTRICT tenu ; 7 FK RESTRICT nommées, 3 triggers anti-TRUNCATE, 2 CHECK de statut, document EXTERNAL, aucune fonction ouverte à PUBLIC ; colonnes et index exacts ; RLS deny-all sur les trois.';
 END $$;
 
 ROLLBACK;

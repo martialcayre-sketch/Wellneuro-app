@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les vingt documents attendus', () => {
+  it('expose les vingt et un documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -46,6 +46,8 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v10',
       // `D-256` A4 — le compte rendu biologique déposé part entier chez Anthropic.
       'donnees_confidentialite@v11',
+      // `D-258` — le compte rendu déposé n'est plus conservé : il est purgé.
+      'donnees_confidentialite@v12',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -103,7 +105,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v11');
+    expect(courant.version).toBe('v12');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -282,7 +284,10 @@ describe('registre des documents TRUST', () => {
     // La phrase de la v6 qui devenait fausse ne survit pas.
     expect(texteDonnees).not.toContain('Ces résultats sont saisis par votre praticien');
     expect(texteDonnees).toContain('déposer le compte rendu dans votre dossier');
-    expect(texteDonnees).toContain('Le compte rendu déposé est conservé dans votre dossier');
+    // La conservation du document était la promesse de la v11 ; la v12 la
+    // remplace par sa purge (`D-258`), que son propre banc garde.
+    const texteV11 = (getVersion('donnees_confidentialite', 'v11')?.sections ?? []).flatMap(s => s.paragraphes).join(' ');
+    expect(texteV11).toContain('Le compte rendu déposé est conservé dans votre dossier');
     expect(texteDonnees).toContain('y compris votre nom et les autres mentions qui vous identifient, à Anthropic');
     const anthropic = donnees.sections.flatMap(s => s.points ?? []).find(p => p.startsWith('Anthropic — '));
     expect(anthropic).toContain('préparation des synthèses');
@@ -294,6 +299,38 @@ describe('registre des documents TRUST', () => {
     expect(anthropic).not.toContain('fiches');
     // Même motif que la v10 : sans accusé, celui de la v10 encore dû s'effaçait.
     expect(donnees.requiresAcknowledgement).toBe(true);
+  });
+
+  it('`D-258` : la v12 dit le compte rendu SUPPRIMÉ, et ne change rien d’autre', () => {
+    // LA v11 DEVENAIT FAUSSE : « conservé dans votre dossier ». Le document est
+    // purgé dès que chaque valeur relevée est décidée, au plus tard 30 jours
+    // après le dépôt — les deux bornes doivent être dites, l'une sans l'autre
+    // laisserait croire à une conservation indéfinie des lignes non décidées.
+    const v11 = getVersion('donnees_confidentialite', 'v11');
+    const v12 = getDocumentCourant('donnees_confidentialite');
+    expect(v12.version).toBe('v12');
+    const texte = v12.sections.flatMap(s => s.paragraphes).join(' ');
+    expect(texte).not.toContain('conservé dans votre dossier');
+    expect(texte).toContain('Le compte rendu déposé est supprimé dès que votre praticien a validé ou écarté chacune des valeurs relevées lors de sa dernière lecture');
+    expect(texte).toContain('au plus tard 30 jours après son dépôt');
+    expect(texte).toContain('Les valeurs validées restent dans votre dossier');
+    expect(texte).toContain('une empreinte du document, qui ne permet pas de le reconstituer');
+    // Ce qui part chez Anthropic, et comment, ne change pas.
+    expect(texte).toContain('y compris votre nom et les autres mentions qui vous identifient, à Anthropic');
+
+    // UNE SEULE PHRASE CHANGE : toute autre section est celle de la v11, et
+    // dans la section modifiée, tout paragraphe sauf un.
+    const titre = 'Quelles données sont recueillies ?';
+    expect(v12.sections.filter(s => s.titre !== titre)).toEqual(v11?.sections.filter(s => s.titre !== titre));
+    const avant = v11?.sections.find(s => s.titre === titre)?.paragraphes ?? [];
+    const apres = v12.sections.find(s => s.titre === titre)?.paragraphes ?? [];
+    expect(apres).toHaveLength(avant.length);
+    expect(apres.filter((p, i) => p !== avant[i])).toHaveLength(1);
+
+    // Même motif que les v10 et v11 : sans accusé, celui de la v11 encore dû
+    // s'effaçait.
+    expect(v12.requiresAcknowledgement).toBe(true);
+    expect(v12.publieLe >= (v11?.publieLe ?? '')).toBe(true);
   });
 
   it('la v9 RETIRE la promesse que le logiciel ne tenait pas, et NOMME l’exception', () => {
