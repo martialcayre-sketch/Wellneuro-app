@@ -8680,3 +8680,19 @@ purge.
 
 **Questions ouvertes.** Colonne « heure lue » (une heure imprimée « 00:00 »
 se confond avec une heure absente) : à proposer avec la migration de purge.
+
+## 2026-10-02 — BIO-INGEST LOT-02, migration de la purge (D-257)
+
+**Décidé.** Purge du document dès l'extraction courante décidée, au plus tard
+30 jours ; motif vérifié par la base ; `heure_lue` DEFAULT false ; échéance
+par cron Scalingo ; règle en D-257 ; v12 avec accusé.
+
+**Écarté.** GitHub Actions + route interne (secret et route exposée de plus) ;
+amendement de D-256 (première durée de conservation d'une donnée de santé,
+citable seule) ; phrase sur les sauvegardes sans rétention établie.
+
+**Prochaine action.** Relecture de la v12 par le responsable, PR, merge,
+`release-db` humain, constat, puis PR 2 (conditions P1/P2 dans la fiche).
+
+**Questions ouvertes.** Rétention des sauvegardes Scalingo ; DROP de la base
+jetable `wellneuro_purge_contrat`.
