@@ -4,6 +4,50 @@
 
 ## Décisions actives
 
+### D-257 — Compte rendu biologique déposé : purgé dès que l'extraction courante est décidée, au plus tard 30 jours après le dépôt
+
+- Date : 2026-10-02
+- Statut : accepté — arbitrages du responsable du 2026-10-02 (après le merge de
+  la PR 2b du LOT-02 de BIO-INGEST, puis en mode Plan pour la migration).
+- Domaine : RGPD, conservation (rubrique 8 de `docs/DOSSIER_RGPD.md`) ;
+  biologie, staging d'import ([[D-256]] A2/A5). Aucune règle clinique, aucun
+  seuil clinique.
+
+**La règle.** Le document déposé (`comptes_rendus_biologiques.contenu`) est
+purgé :
+
+1. dès que toutes les lignes de son extraction **courante** (la plus récente non
+   échouée) sont décidées, validées ou écartées ;
+2. et **au plus tard 30 jours après son dépôt**, décidées ou non. Les lignes
+   non décidées restent décidables sans le document.
+
+Restent l'empreinte du document, les extractions (modèle, version du procédé,
+laboratoire lu) et les lignes lues avec leurs décisions : elles tiennent la
+provenance des résultats validés (A5). Les copies du document dans les
+sauvegardes de l'hébergeur subsistent jusqu'à expiration de leur rétention,
+qui reste à établir et ne se déclare pas avant.
+
+**Ce que la base tient** (migration `bio_ingest_purge_compte_rendu_v1`,
+contrat `bio_ingest_purge_v1_negatif.sql`) : la purge est la seule
+modification admise d'un compte rendu ; son motif (`lignes_decidees`,
+`echeance`) est vérifié par la base, pas déclaré ; jamais pendant une
+extraction en cours ; un import ne s'ouvre plus sur un document purgé ;
+l'instant est posé par la base.
+
+**Arbitrages rendus avec elle (2026-10-02) :**
+
+- l'échéance est tenue par un **cron Scalingo** (`web/cron.json`, conteneur
+  ponctuel) : ni route exposée, ni secret partagé ;
+- une colonne **`heure_lue`** sur `lignes_biologiques_candidates`, `false` par
+  défaut : une heure imprimée « 00:00 » n'est plus confondue avec une heure
+  absente (revue Copilot de #1284) ;
+- **`donnees_confidentialite` v12**, avec accusé : la v11 disait le compte rendu
+  « conservé dans votre dossier ».
+
+**Condition de pose de `WN_BIO_INGEST_ENABLED`** : la purge en œuvre — migration
+appliquée et constatée, code consommateur déployé, premier passage du cron
+constaté — et la v12 servie.
+
 ### D-256 — Acquisition biologique (BIO-INGEST) : `resultats_biologiques` reste canonique, un entonnoir de validation humaine remplace la couche d'ingestion générique proposée
 
 - Date : 2026-09-30

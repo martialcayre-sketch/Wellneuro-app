@@ -2467,18 +2467,25 @@ model ResultatBiologique {
 // résultat validé.
 
 /// Un compte rendu d'analyses déposé par le praticien, conservé en base HDS
-/// (A2), en entier : aucun masquage n'est promis (§2 ter). Figé.
+/// (A2), en entier : aucun masquage n'est promis (§2 ter). Figé, sauf la purge
+/// de son contenu ([[D-257]], migration `bio_ingest_purge_compte_rendu_v1`) :
+/// dès que l'extraction courante est entièrement décidée, au plus tard 30 jours
+/// après le dépôt. L'empreinte reste.
 model CompteRenduBiologique {
   id              String   @id @default(cuid())
   idPatient       String   @map("id_patient")
   /// Le document tel que déposé. Jamais de nom de fichier : il porte souvent
   /// l'identité du patient.
-  contenu         Bytes    @map("contenu")
-  typeMime        String   @map("type_mime") // pdf | jpeg | png | webp (CHECK migration)
-  /// Recalculée et vérifiée égale par la base (CHECK).
-  empreinteSha256 String   @map("empreinte_sha256")
-  deposePar       String   @map("depose_par") // email praticien, posé côté serveur
-  deposeLe        DateTime @default(now()) @map("depose_le")
+  /// NULL une fois purgé ([[D-257]]) — jamais à l'insertion.
+  contenu         Bytes?    @map("contenu")
+  typeMime        String    @map("type_mime") // pdf | jpeg | png | webp (CHECK migration)
+  /// Recalculée et vérifiée égale par la base (CHECK) ; survit à la purge.
+  empreinteSha256 String    @map("empreinte_sha256")
+  deposePar       String    @map("depose_par") // email praticien, posé côté serveur
+  deposeLe        DateTime  @default(now()) @map("depose_le")
+  /// Posé par la base à la purge, en UTC explicite.
+  purgeLe         DateTime? @map("purge_le")
+  motifPurge      String?   @map("motif_purge") // lignes_decidees | echeance (CHECK migration)
 
   patient Patient            @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
   imports ImportBiologique[]
@@ -2533,6 +2540,9 @@ model LigneBiologiqueCandidate {
   uniteLue       String?   @map("unite_lue")
   /// La date du prélèvement RELEVÉE (promesse de `usage_ia` v4).
   preleveLeLu    DateTime? @map("preleve_le_lu")
+  /// L'heure était imprimée : un « 00:00 » lu n'est pas une heure absente.
+  /// `false` par défaut — l'heure est alors exigée à la validation.
+  heureLue       Boolean   @default(false) @map("heure_lue")
   /// Posé par le resolver signé SEUL, jamais par le modèle — `ambigu` compris.
   analytePropose String?   @map("analyte_propose")
   statutMapping  String    @map("statut_mapping") // resolu | ambigu | inconnu (CHECK migration)

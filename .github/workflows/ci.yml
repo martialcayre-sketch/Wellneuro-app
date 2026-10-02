@@ -1010,6 +1010,15 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/bio_ingest_staging_v1_negatif.sql
 
+      # La purge du compte rendu déposé (D-257) : la base juge le motif — toutes
+      # les lignes de l'extraction COURANTE décidées, ou 30 jours révolus —, ne
+      # purge jamais pendant une extraction, n'efface que le document ; et
+      # `heure_lue` distingue un « 00:00 » imprimé d'une heure absente.
+      - name: Purge du compte rendu biologique negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/bio_ingest_purge_v1_negatif.sql
+
       # Écartement praticien d'une proposition d'orientation. LA PROMESSE QUI
       # COMPTE LE PLUS EST LA MOINS VISIBLE : un écartement SANS RÈGLES est
       # refusé. `regles_au_geste` est ce qui permet le RÉVEIL d'une proposition

@@ -1169,6 +1169,54 @@ const DONNEES_CONFIDENTIALITE_V11: VersionDocumentTrust = {
   hash: '3ee4643f1b40606bf843737336791114e9718b08ee580aef9fb4a68cf24bef9a',
 };
 
+/*
+ * v12 du 2026-10-02 — LA v11 DEVENAIT FAUSSE AVEC LA PURGE DU COMPTE RENDU
+ * ([[D-257]]) : « Le compte rendu déposé est conservé dans votre dossier ». Il
+ * est désormais supprimé dès que chacune des valeurs relevées est validée ou
+ * écartée, et au plus tard 30 jours après le dépôt. Restent les valeurs
+ * validées, l'empreinte du document et la trace de sa lecture (modèle, version
+ * du procédé, lignes lues, décisions) — la provenance des résultats (A5).
+ *
+ * VRAIE DÈS SA PUBLICATION : aucun compte rendu ne peut être déposé tant que
+ * `WN_BIO_INGEST_ENABLED` n'est pas posé, et il ne l'est qu'une fois la purge
+ * en œuvre (`docs/FEATURE_FLAGS.md`).
+ *
+ * RIEN N'EST DIT DES SAUVEGARDES de l'hébergeur tant que leur durée de
+ * rétention n'est pas établie : aucun chiffre inventé (rubrique 8).
+ *
+ * UN ACCUSÉ, POUR LE MOTIF DE LA v10 : une v12 sans accusé effacerait celui de
+ * la v11, encore dû.
+ */
+const DONNEES_CONFIDENTIALITE_V12: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v12',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: [
+    ...DONNEES_CONFIDENTIALITE_V11.sections.map(section =>
+      section.titre === 'Quelles données sont recueillies ?'
+        ? {
+            ...section,
+            paragraphes: section.paragraphes.map(paragraphe =>
+              paragraphe.replace(
+                'Le compte rendu déposé est conservé dans votre dossier.',
+                'Le compte rendu déposé est supprimé dès que votre praticien a validé ou écarté chacune des valeurs relevées, et au plus tard 30 jours après son dépôt. Les valeurs validées restent dans votre dossier. Pour savoir d’où vient chaque résultat, nous conservons une empreinte du document, qui ne permet pas de le reconstituer, et la trace de sa lecture : outil utilisé, valeurs relevées et décisions.',
+              ),
+            ),
+          }
+        : section,
+    ),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Le compte rendu de vos analyses biologiques déposé dans votre dossier n’y est plus conservé : il est supprimé dès que votre praticien a validé ou écarté chacune des valeurs relevées, et au plus tard 30 jours après son dépôt. Les valeurs validées restent dans votre dossier, avec une empreinte du document et la trace de sa lecture.',
+  publieLe: '2026-10-02',
+  requiresAcknowledgement: true,
+  hash: 'fa890601e2a49875ca8999fa590fa54c10e3a0715f3ec1e9fffeb92d2efff158',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1184,6 +1232,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V9,
   DONNEES_CONFIDENTIALITE_V10,
   DONNEES_CONFIDENTIALITE_V11,
+  DONNEES_CONFIDENTIALITE_V12,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,
