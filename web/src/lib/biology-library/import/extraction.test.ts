@@ -10,11 +10,14 @@ vi.mock('@/lib/anthropic', () => ({
 
 import {
   analyserSortieExtraction,
+  DELAI_EXTRACTION_MS,
   extraireCompteRendu,
   lireDatePrelevement,
   MODELE_EXTRACTION,
   motifDErreur,
+  TENTATIVES_SUPPLEMENTAIRES,
 } from './extraction';
+import { PEREMPTION_EN_COURS_MS } from './verrou';
 
 const SORTIE = {
   lisible: true,
@@ -118,7 +121,12 @@ describe('extraireCompteRendu — l’appel', () => {
       type: 'document',
       source: { type: 'base64', media_type: 'application/pdf', data: pdf.toString('base64') },
     });
-    expect(options).toMatchObject({ timeout: 120_000, maxRetries: 1 });
+    expect(options).toMatchObject({ timeout: 180_000, maxRetries: 0 });
+  });
+
+  it('le pire cas d’un appel reste sous la péremption d’un import en cours', () => {
+    // Sinon une suite encore vivante serait close `delai_depasse` par une relance.
+    expect(DELAI_EXTRACTION_MS * (1 + TENTATIVES_SUPPLEMENTAIRES)).toBeLessThan(PEREMPTION_EN_COURS_MS);
   });
 
   it('classe les échecs en motifs fermés', async () => {

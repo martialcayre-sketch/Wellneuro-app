@@ -20,11 +20,15 @@ const MAINTENANT = new Date('2026-10-02T10:00:00.000Z');
 const BASE = { idPatient: 'pat_sophie', idImport: 'imp_1', traitePar: 'praticien@wellneuro.fr', maintenant: MAINTENANT };
 const PRELEVE = '2026-09-15T06:30:00.000Z';
 
+const LU = new Date(PRELEVE); // 08:30 à Paris : heure lue
+const MINUIT_PARIS = '2026-09-14T22:00:00.000Z'; // l'extraction n'a lu que la date
 const LIGNES = [
-  { id: 'l1', statut: 'proposee', valeurLue: '48', uniteLue: 'ng/mL' },
-  { id: 'l2', statut: 'proposee', valeurLue: '<0,5', uniteLue: 'mg/L' },
-  { id: 'l3', statut: 'proposee', valeurLue: '3,1', uniteLue: 'mg/dL' },
-  { id: 'l4', statut: 'validee', valeurLue: '12', uniteLue: 'mg/L' },
+  { id: 'l1', statut: 'proposee', valeurLue: '48', uniteLue: 'ng/mL', preleveLeLu: LU },
+  { id: 'l2', statut: 'proposee', valeurLue: '<0,5', uniteLue: 'mg/L', preleveLeLu: LU },
+  { id: 'l3', statut: 'proposee', valeurLue: '3,1', uniteLue: 'mg/dL', preleveLeLu: LU },
+  { id: 'l4', statut: 'validee', valeurLue: '12', uniteLue: 'mg/L', preleveLeLu: LU },
+  { id: 'l5', statut: 'proposee', valeurLue: '50', uniteLue: 'ng/mL', preleveLeLu: new Date(MINUIT_PARIS) },
+  { id: 'l6', statut: 'proposee', valeurLue: '52', uniteLue: 'ng/mL', preleveLeLu: null },
 ];
 const ANALYTES = [
   { code: 'BIO_FERRITINE', unite: 'ng/mL', actif: true },
@@ -190,6 +194,28 @@ describe('deciderLignes — refus du préflight, tout ou rien', () => {
     expect(issue.lignes?.map(l => [l.index, l.reason])).toEqual([
       [0, 'ligne_deja_traitee'], [1, 'ligne_introuvable'], [3, 'ligne_en_double'], [4, 'ligne_absente'],
     ]);
+  });
+
+  it('HEURE NON LUE : un minuit de Paris renvoyé tel quel est refusé, sans transaction', async () => {
+    const issue = await deciderLignes({
+      ...BASE,
+      decisions: [valider('l5', { preleveLe: MINUIT_PARIS }), valider('l6', { preleveLe: MINUIT_PARIS })],
+    });
+    expect(issue).toMatchObject({ ok: false, status: 400 });
+    if (issue.ok) throw new Error('attendu un refus');
+    expect(issue.lignes?.map(l => [l.idLigne, l.reason])).toEqual([['l5', 'heure_absente'], ['l6', 'heure_absente']]);
+    expect(issue.lignes?.[0].error).toBe('L’heure du prélèvement n’a pas été lue : saisissez-la.');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('HEURE NON LUE puis saisie : acceptée', async () => {
+    expect(await deciderLignes({ ...BASE, decisions: [valider('l5', { preleveLe: '2026-09-15T05:45:00.000Z' })] }))
+      .toMatchObject({ ok: true, validees: 1 });
+  });
+
+  it('HEURE LUE : un minuit de Paris est une heure lue, il passe', async () => {
+    expect(await deciderLignes({ ...BASE, decisions: [valider('l1', { preleveLe: MINUIT_PARIS })] }))
+      .toMatchObject({ ok: true, validees: 1 });
   });
 
   it('une mesure déjà au dossier au même horodatage est refusée au préflight', async () => {

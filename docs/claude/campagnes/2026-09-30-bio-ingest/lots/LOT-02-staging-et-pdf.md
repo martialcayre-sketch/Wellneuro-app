@@ -66,11 +66,11 @@ LOT-01, amendement RGPD/TRUST
   - **conservation (rubrique 8)** : **purge du PDF après décision** de toutes les lignes de l'extraction courante ; empreinte et trace conservées. Demande une **migration** (`contenu` nullable, déclencheur de figement à revoir) et son `release-db`, plus une **nouvelle version du document patient** (la v11 dit « conservé dans votre dossier »). À tenir **avant la pose du drapeau**, ou à déclarer tel quel.
 - [ ] **Laissé par la revue `wn-reviewer` de la PR 2b** (GO, six P2 corrigés : heure de Paris quel que soit le fuseau du poste, réponse périmée ignorée, péremption jugée par le serveur, relecture qui survit à un échec, terminaison gardée par `statut = en_cours`, accessibilité) :
   - **avant la pose du drapeau**, constater sur Scalingo (`next start`) qu'une suite `after()` de ~36 s aboutit en `extrait` — le test de route remplace `after` par un double, rien d'autre ne l'atteste ;
-  - **à arbitrer** : l'heure exigée ne l'est que par l'écran ; le serveur accepte un minuit de Paris renvoyé tel quel.
+  - ~~à arbitrer~~ **tranché le 2026-10-02** : l'heure est exigée aussi par le serveur (voir ci-dessous).
 - [ ] **Arbitrages du 2026-10-02 après le merge de la 2b (#1283, `7d36e4ed`)** — dans cet ordre de sessions :
   1. **PR de code (sans migration)** :
-     - **l'heure est exigée aussi par le serveur** : une validation est refusée si son horodatage est encore minuit de Paris alors que la ligne a été lue sans heure ;
-     - **délai d'appel porté à 180 s, sans réessai** (pire cas 180 s, sous la péremption de 5 min ; un échec se relance à la main).
+     - **l'heure est exigée aussi par le serveur** : une validation est refusée si son horodatage est encore minuit de Paris alors que la ligne a été lue sans heure (ou sans date) — **fait** (`heure_absente`, 400) ;
+     - **délai d'appel porté à 180 s, sans réessai** (pire cas 180 s, sous la péremption de 5 min ; un échec se relance à la main) — **fait**, un test garde l'inégalité.
   2. **Purge du PDF, AVANT la pose du drapeau** :
      - purge dès que toutes les lignes de l'extraction courante sont décidées, **et au plus tard 30 jours après le dépôt** ; les lignes non décidées restent, sans le document ; empreinte et trace conservées ;
      - migration seule, puis `release-db` humain, puis constat ;

@@ -65,6 +65,7 @@ export const MESSAGES_REFUS_DECISION: Record<string, string> = {
   valeur_hors_capacite: 'La valeur dépasse la capacité de stockage (35 chiffres) : vérifiez la saisie.',
   date_invalide: 'La date de prélèvement est illisible.',
   date_future: 'La date de prélèvement est dans le futur : un prélèvement n’anticipe pas.',
+  heure_absente: 'L’heure du prélèvement n’a pas été lue : saisissez-la.',
   doublon_mesure:
     'Une mesure de cet analyte existe déjà pour ce patient à cet horodatage exact. Rien n’a été enregistré.',
   lignes_invalides: 'Rien n’a été enregistré : reprenez les lignes signalées.',
@@ -74,7 +75,20 @@ export const MESSAGES_REFUS_DECISION: Record<string, string> = {
 const REFUS_DE_FORME = new Set([
   'ligne_absente', 'ligne_en_double', 'decision_invalide', 'motif_invalide',
   'analyte_absent', 'valeur_invalide', 'valeur_hors_capacite', 'date_invalide', 'analyte_en_double',
+  'heure_absente',
 ]);
+
+const HEURE_PARIS = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Europe/Paris', hourCycle: 'h23', hour: '2-digit', minute: '2-digit',
+});
+
+/**
+ * Minuit pile À PARIS — la convention de l'extraction pour « heure non lue »
+ * (`lireDatePrelevement` garde la date seule à minuit de Paris).
+ */
+function estMinuitParis(instant: Date): boolean {
+  return HEURE_PARIS.format(instant) === '00:00';
+}
 
 export type IssueDecisions =
   | { ok: true; validees: number; ecartees: number }
@@ -161,7 +175,7 @@ export async function deciderLignes(params: {
   // PRÉFLIGHT, ÉTAGE 2 — les lignes de CETTE extraction, de CE dossier.
   const lignes = ids.length === 0 ? [] : await prisma.ligneBiologiqueCandidate.findMany({
     where: { id: { in: ids }, idImport, idPatient },
-    select: { id: true, statut: true, valeurLue: true, uniteLue: true },
+    select: { id: true, statut: true, valeurLue: true, uniteLue: true, preleveLeLu: true },
   });
   const ligneParId = new Map(lignes.map(l => [l.id, l]));
 
@@ -199,6 +213,13 @@ export async function deciderLignes(params: {
     if (analyteCode === '') return refuser(index, idLigne, 'analyte_absent');
     const verdict = validerSaisieResultat({ valeur: b.valeur, preleveLe: b.preleveLe }, maintenant);
     if (!verdict.ok) return refuser(index, idLigne, verdict.raison);
+    // L'HEURE EST EXIGÉE quand elle n'a pas été lue (arbitrage du 2026-10-02,
+    // après la PR 2b) : un minuit de Paris renvoyé tel quel serait une heure
+    // que personne n'a lue ni saisie. L'écran l'exige déjà ; le serveur le
+    // tient pour tout client. Un prélèvement réellement fait à 00:00 pile sur
+    // un compte rendu sans heure se saisit à la minute près.
+    const heureNonLue = ligne.preleveLeLu === null || estMinuitParis(ligne.preleveLeLu);
+    if (heureNonLue && estMinuitParis(verdict.preleveLe)) return refuser(index, idLigne, 'heure_absente');
     const analyte = analyteParCode.get(analyteCode);
     if (!analyte) return refuser(index, idLigne, 'analyte_inconnu');
     if (!analyte.actif) return refuser(index, idLigne, 'analyte_inactif');
