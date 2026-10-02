@@ -5,7 +5,8 @@ const { prisma, journal } = vi.hoisted(() => {
   const prisma = {
     $executeRaw: vi.fn(async () => 1),
     $transaction: vi.fn(),
-    importBiologique: { findFirst: vi.fn() },
+    importBiologique: { findFirst: vi.fn(), count: vi.fn() },
+    compteRenduBiologique: { updateMany: vi.fn() },
     ligneBiologiqueCandidate: { findMany: vi.fn(), updateMany: vi.fn(), findFirst: vi.fn(), count: vi.fn() },
     biologyAnalyte: { findMany: vi.fn() },
     resultatBiologique: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn() },
@@ -23,12 +24,14 @@ const PRELEVE = '2026-09-15T06:30:00.000Z';
 const LU = new Date(PRELEVE); // 08:30 à Paris : heure lue
 const MINUIT_PARIS = '2026-09-14T22:00:00.000Z'; // l'extraction n'a lu que la date
 const LIGNES = [
-  { id: 'l1', statut: 'proposee', valeurLue: '48', uniteLue: 'ng/mL', preleveLeLu: LU },
-  { id: 'l2', statut: 'proposee', valeurLue: '<0,5', uniteLue: 'mg/L', preleveLeLu: LU },
-  { id: 'l3', statut: 'proposee', valeurLue: '3,1', uniteLue: 'mg/dL', preleveLeLu: LU },
-  { id: 'l4', statut: 'validee', valeurLue: '12', uniteLue: 'mg/L', preleveLeLu: LU },
-  { id: 'l5', statut: 'proposee', valeurLue: '50', uniteLue: 'ng/mL', preleveLeLu: new Date(MINUIT_PARIS) },
-  { id: 'l6', statut: 'proposee', valeurLue: '52', uniteLue: 'ng/mL', preleveLeLu: null },
+  { id: 'l1', statut: 'proposee', valeurLue: '48', uniteLue: 'ng/mL', preleveLeLu: LU, heureLue: true },
+  { id: 'l2', statut: 'proposee', valeurLue: '<0,5', uniteLue: 'mg/L', preleveLeLu: LU, heureLue: true },
+  { id: 'l3', statut: 'proposee', valeurLue: '3,1', uniteLue: 'mg/dL', preleveLeLu: LU, heureLue: true },
+  { id: 'l4', statut: 'validee', valeurLue: '12', uniteLue: 'mg/L', preleveLeLu: LU, heureLue: true },
+  { id: 'l5', statut: 'proposee', valeurLue: '50', uniteLue: 'ng/mL', preleveLeLu: new Date(MINUIT_PARIS), heureLue: false },
+  { id: 'l6', statut: 'proposee', valeurLue: '52', uniteLue: 'ng/mL', preleveLeLu: null, heureLue: false },
+  // « 00:00 » IMPRIMÉ sur le compte rendu ([[D-258]], `heure_lue`).
+  { id: 'l7', statut: 'proposee', valeurLue: '53', uniteLue: 'ng/mL', preleveLeLu: new Date(MINUIT_PARIS), heureLue: true },
 ];
 const ANALYTES = [
   { code: 'BIO_FERRITINE', unite: 'ng/mL', actif: true },
@@ -41,6 +44,8 @@ const valider = (idLigne: string, patch: Record<string, unknown> = {}) => ({
 
 let espions: Array<ReturnType<typeof vi.spyOn>>;
 let courante = 'imp_1';
+/** Lignes encore proposées dans l'extraction APRÈS les décisions — 0 déclenche la purge. */
+let restantes = 1;
 
 beforeEach(() => {
   journal.length = 0;
@@ -60,8 +65,14 @@ beforeEach(() => {
     journal.push('ligne.updateMany');
     return { count: 1 };
   });
-  prisma.ligneBiologiqueCandidate.count.mockImplementation(async ({ where }: { where: { id: { in: string[] } } }) =>
-    where.id.in.length);
+  restantes = 1;
+  prisma.ligneBiologiqueCandidate.count.mockImplementation(async ({ where }: { where: { id?: { in: string[] } } }) =>
+    (where.id ? where.id.in.length : restantes));
+  prisma.importBiologique.count.mockResolvedValue(0);
+  prisma.compteRenduBiologique.updateMany.mockImplementation(async () => {
+    journal.push('compteRendu.purge');
+    return { count: 1 };
+  });
   prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
   espions = (['error', 'warn', 'log'] as const).map(m => vi.spyOn(console, m).mockImplementation(() => {}));
 });
@@ -128,7 +139,7 @@ describe('deciderLignes — seule l’extraction courante se décide (arbitrage 
 describe('deciderLignes — valider crée le résultat, PUIS décide la ligne', () => {
   it('crée le résultat SANS saisiLe, source saisie_praticien, unité du catalogue', async () => {
     const issue = await deciderLignes({ ...BASE, decisions: [valider('l1', { valeur: 47.5 })] });
-    expect(issue).toEqual({ ok: true, validees: 1, ecartees: 0 });
+    expect(issue).toEqual({ ok: true, validees: 1, ecartees: 0, documentPurge: false });
     const { data } = prisma.resultatBiologique.create.mock.calls[0][0];
     expect(data).toEqual({
       idPatient: 'pat_sophie',
@@ -150,7 +161,7 @@ describe('deciderLignes — valider crée le résultat, PUIS décide la ligne', 
 
   it('écarte avec le motif confirmé par le praticien', async () => {
     const issue = await deciderLignes({ ...BASE, decisions: [{ idLigne: 'l2', decision: 'ecarter', motif: 'non_quantitative' }] });
-    expect(issue).toEqual({ ok: true, validees: 0, ecartees: 1 });
+    expect(issue).toEqual({ ok: true, validees: 0, ecartees: 1, documentPurge: false });
     expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
     expect(prisma.ligneBiologiqueCandidate.updateMany).toHaveBeenCalledWith({
       where: { id: 'l2', idImport: 'imp_1', idPatient: 'pat_sophie', statut: 'proposee' },
@@ -213,8 +224,13 @@ describe('deciderLignes — refus du préflight, tout ou rien', () => {
       .toMatchObject({ ok: true, validees: 1 });
   });
 
-  it('HEURE LUE à 08:30, corrigée en minuit : elle passe (seul un minuit LU est indiscernable d’une heure absente)', async () => {
+  it('HEURE LUE à 08:30, corrigée en minuit : elle passe', async () => {
     expect(await deciderLignes({ ...BASE, decisions: [valider('l1', { preleveLe: MINUIT_PARIS })] }))
+      .toMatchObject({ ok: true, validees: 1 });
+  });
+
+  it('« 00:00 » IMPRIMÉ (heure lue, D-258) : le minuit lu passe tel quel', async () => {
+    expect(await deciderLignes({ ...BASE, decisions: [valider('l7', { preleveLe: MINUIT_PARIS })] }))
       .toMatchObject({ ok: true, validees: 1 });
   });
 
@@ -258,5 +274,47 @@ describe('deciderLignes — courses entre le préflight et l’écriture', () =>
     const ecrit = JSON.stringify(espions.flatMap(e => e.mock.calls));
     expect(ecrit).toContain('P2010');
     for (const interdit of ['48', 'pat_sophie', 'BIO_FERRITINE']) expect(ecrit).not.toContain(interdit);
+  });
+});
+
+describe('deciderLignes — la dernière décision purge le document (D-258)', () => {
+  it('plus aucune ligne proposée : le document est purgé APRÈS les décisions, dans la même transaction', async () => {
+    restantes = 0;
+    const issue = await deciderLignes({ ...BASE, decisions: [valider('l1')] });
+    expect(issue).toEqual({ ok: true, validees: 1, ecartees: 0, documentPurge: true });
+    expect(journal).toEqual(['resultat.create', 'ligne.updateMany', 'compteRendu.purge']);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.ligneBiologiqueCandidate.count).toHaveBeenLastCalledWith({ where: { idImport: 'imp_1', statut: 'proposee' } });
+    expect(prisma.importBiologique.count).toHaveBeenCalledWith({ where: { idCompteRendu: 'cr_1', statut: 'en_cours' } });
+    expect(prisma.compteRenduBiologique.updateMany).toHaveBeenCalledWith({
+      where: { id: 'cr_1', contenu: { not: null } },
+      data: { contenu: null, motifPurge: 'lignes_decidees' },
+    });
+  });
+
+  it('une ligne encore proposée : aucune purge tentée', async () => {
+    const issue = await deciderLignes({ ...BASE, decisions: [valider('l1')] });
+    expect(issue).toMatchObject({ ok: true, documentPurge: false });
+    expect(prisma.compteRenduBiologique.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('une extraction en cours : aucune purge tentée — la base la refuserait, et les décisions avec', async () => {
+    restantes = 0;
+    prisma.importBiologique.count.mockResolvedValueOnce(1);
+    expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] })).toMatchObject({ ok: true, documentPurge: false });
+    expect(prisma.compteRenduBiologique.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('un document déjà purgé à l’échéance n’est pas retouché : les décisions passent', async () => {
+    restantes = 0;
+    prisma.compteRenduBiologique.updateMany.mockResolvedValueOnce({ count: 0 });
+    expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] }))
+      .toEqual({ ok: true, validees: 1, ecartees: 0, documentPurge: false });
+  });
+
+  it('un refus inattendu de la base annule tout : rien n’est dit enregistré', async () => {
+    restantes = 0;
+    prisma.compteRenduBiologique.updateMany.mockRejectedValueOnce(Object.assign(new Error('purge refusée'), { code: 'P2010' }));
+    expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] })).toMatchObject({ ok: false, status: 500 });
   });
 });

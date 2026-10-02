@@ -25,7 +25,7 @@ const ANALYTES = [
 
 function ligne(partiel: Partial<LigneLue> & { id: string; libelleLu: string; valeurLue: string }): LigneLue {
   return {
-    rang: 1, page: 1, uniteLue: 'ng/mL', preleveLeLu: A_0830, analytePropose: null, statutMapping: 'inconnu',
+    rang: 1, page: 1, uniteLue: 'ng/mL', preleveLeLu: A_0830, heureLue: true, analytePropose: null, statutMapping: 'inconnu',
     statut: 'proposee', motifEcart: null, idResultat: null, preMarquage: null, ...partiel,
   };
 }
@@ -33,13 +33,14 @@ function ligne(partiel: Partial<LigneLue> & { id: string; libelleLu: string; val
 const LIGNES: LigneLue[] = [
   ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48' }),
   ligne({ id: 'l2', libelleLu: 'CRP ultrasensible', valeurLue: '<0,5', uniteLue: 'mg/L', preMarquage: 'non_quantitative' }),
-  ligne({ id: 'l3', libelleLu: '25-OH vitamine D', valeurLue: '32', preleveLeLu: A_MINUIT }),
+  ligne({ id: 'l3', libelleLu: '25-OH vitamine D', valeurLue: '32', preleveLeLu: A_MINUIT, heureLue: false }),
   ligne({ id: 'l4', libelleLu: 'Fer sérique', valeurLue: '17,2', uniteLue: 'mg/L' }),
 ];
 
 function compteRendu(statut: string, lignes: LigneLue[] = LIGNES, perime = false): CompteRenduLu {
   return {
     id: 'cr_1', typeMime: 'application/pdf', deposePar: 'praticien@wellneuro.fr', deposeLe: '2026-10-02T09:00:00.000Z',
+    purgeLe: null, motifPurge: null,
     imports: [{
       id: 'imp_1', statut, motifEchec: null, modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v1',
       laboratoireLu: 'Laboratoire fixture', lanceLe: new Date().toISOString(), termineLe: null, courant: true, perime,
@@ -104,6 +105,11 @@ describe('heure de Paris — quel que soit le fuseau du poste', () => {
     expect(champsDepuisInstant(A_MINUIT)).toEqual({ date: '2026-09-15', heure: '' });
     expect(champsDepuisInstant('2026-01-14T23:00:00.000Z')).toEqual({ date: '2026-01-15', heure: '' });
     expect(champsDepuisInstant(null)).toEqual({ date: '', heure: '' });
+  });
+
+  it('« 00:00 » IMPRIMÉ (heure lue, D-258) reste affiché', () => {
+    expect(champsDepuisInstant(A_MINUIT, true)).toEqual({ date: '2026-09-15', heure: '00:00' });
+    expect(champsDepuisInstant(A_0830, false)).toEqual({ date: '2026-09-15', heure: '08:30' });
   });
 
   it('convertit une saisie murale de Paris en instant, été comme hiver', () => {
@@ -247,6 +253,28 @@ describe('ImportCompteRenduPanel — lecture asynchrone', () => {
     expect(screen.queryByText(/Lecture en cours/)).toBeNull();
     // Une seule extraction lancée : la relecture ne relance rien.
     expect(appels(fetchMock, '/import/extraction')).toHaveLength(1);
+  });
+});
+
+describe('ImportCompteRenduPanel — document effacé (D-258)', () => {
+  it('un document purgé ne se relit plus ; ses lignes restent décidables', async () => {
+    serveur({
+      detail: () => ({ ...compteRendu('extrait'), purgeLe: '2026-11-01T02:15:00.000Z', motifPurge: 'echeance' }),
+    });
+    await rendreEtOuvrir();
+    expect(screen.getByText(/Document effacé le .*30 jours après son dépôt/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Lancer la lecture' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Enregistrer les décisions' })).toBeTruthy();
+  });
+
+  it('un document purgé SANS extraction courante ne propose pas de lecture', async () => {
+    serveur({
+      detail: () => ({ ...compteRendu('extrait'), imports: [], purgeLe: '2026-11-01T02:15:00.000Z', motifPurge: 'echeance' }),
+    });
+    render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    expect(await screen.findByText(/Document effacé le/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Lancer la lecture' })).toBeNull();
   });
 });
 

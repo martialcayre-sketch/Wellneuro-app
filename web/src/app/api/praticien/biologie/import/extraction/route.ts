@@ -21,6 +21,7 @@ const ID = /^[A-Za-z0-9_-]{1,64}$/;
 const MESSAGES: Record<string, string> = {
   compte_rendu_introuvable: 'Ce compte rendu est introuvable dans ce dossier.',
   extraction_en_cours: 'Une extraction est déjà en cours sur ce compte rendu.',
+  document_purge: 'Le document de ce compte rendu a été effacé : il ne peut plus être relu.',
 };
 
 function echec(reason: string, error: string, status: number) {

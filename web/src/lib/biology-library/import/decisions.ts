@@ -27,6 +27,14 @@ import { lireValeurQuantitative, MOTIFS_ECART, unitesConcordent, type MotifEcart
 //
 // Les écarts pré-marqués par l'écran (`non_quantitative`, `unite_divergente`)
 // ne sont posés qu'ici, par la décision du praticien — jamais par le système.
+//
+// LA DERNIÈRE DÉCISION PURGE LE DOCUMENT ([[D-258]]) : dans la même
+// transaction, sous le même verrou, une fois compté qu'aucune ligne de
+// l'extraction courante ne reste proposée et qu'aucune extraction n'est en
+// cours — les deux conditions que la base vérifie. Une purge refusée par la
+// base annulerait les décisions avec elle : on ne la tente qu'une fois ses
+// conditions établies (revue de la migration, P2). Une extraction sans aucune
+// ligne ne purge pas d'elle-même : l'échéance de 30 jours la rattrape.
 
 export const DECISIONS_MAX = 100;
 
@@ -91,7 +99,7 @@ function estMinuitParis(instant: Date): boolean {
 }
 
 export type IssueDecisions =
-  | { ok: true; validees: number; ecartees: number }
+  | { ok: true; validees: number; ecartees: number; documentPurge: boolean }
   | { ok: false; reason: string; error: string; status: number; lignes?: RefusDecision[] };
 
 type Validation = { idLigne: string; analyteCode: string; valeur: number; preleveLe: Date; unite: string | null };
@@ -175,7 +183,7 @@ export async function deciderLignes(params: {
   // PRÉFLIGHT, ÉTAGE 2 — les lignes de CETTE extraction, de CE dossier.
   const lignes = ids.length === 0 ? [] : await prisma.ligneBiologiqueCandidate.findMany({
     where: { id: { in: ids }, idImport, idPatient },
-    select: { id: true, statut: true, valeurLue: true, uniteLue: true, preleveLeLu: true },
+    select: { id: true, statut: true, valeurLue: true, uniteLue: true, preleveLeLu: true, heureLue: true },
   });
   const ligneParId = new Map(lignes.map(l => [l.id, l]));
 
@@ -216,14 +224,11 @@ export async function deciderLignes(params: {
     // L'HEURE EST EXIGÉE quand elle n'a pas été lue (arbitrage du 2026-10-02,
     // après la PR 2b) : un minuit de Paris renvoyé tel quel serait une heure
     // que personne n'a lue ni saisie. L'écran l'exige déjà ; le serveur le
-    // tient pour tout client.
-    // LIMITE CONNUE (revue Copilot de #1284) : le staging ne garde que
-    // l'instant lu, et une heure IMPRIMÉE « 00:00 » y est indiscernable d'une
-    // heure absente — elle est donc refusée inchangée, comme à l'écran. La
-    // distinguer demande une colonne « heure lue » : migration routée vers la
-    // PR de purge (fiche LOT-02). D'ici là, un prélèvement fait réellement à
-    // minuit pile ne se valide pas tel quel.
-    const heureNonLue = ligne.preleveLeLu === null || estMinuitParis(ligne.preleveLeLu);
+    // tient pour tout client. `heure_lue` ([[D-258]]) distingue une heure
+    // IMPRIMÉE « 00:00 », qui passe, d'une heure absente (revue Copilot de
+    // #1284) ; une ligne lue avant la colonne vaut `false` : l'heure reste
+    // exigée, jamais un minuit accepté à tort.
+    const heureNonLue = ligne.preleveLeLu === null || !ligne.heureLue;
     if (heureNonLue && estMinuitParis(verdict.preleveLe)) return refuser(index, idLigne, 'heure_absente');
     const analyte = analyteParCode.get(analyteCode);
     if (!analyte) return refuser(index, idLigne, 'analyte_inconnu');
@@ -260,8 +265,9 @@ export async function deciderLignes(params: {
     return { ok: false, reason: 'lignes_invalides', error: MESSAGES_REFUS_DECISION.lignes_invalides, status, lignes: refus };
   }
 
+  let documentPurge: boolean;
   try {
-    await prisma.$transaction(async tx => {
+    documentPurge = await prisma.$transaction(async tx => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(imp.idCompteRendu)}))`;
       // Relu SOUS le verrou : une décision concurrente sur les mêmes lignes se
       // dit `ligne_deja_traitee`, pas `doublon_mesure` (revue, P2-9).
@@ -300,6 +306,7 @@ export async function deciderLignes(params: {
         });
         if (count !== 1) throw new LigneDejaTraitee();
       }
+      return purgerSiDecide(tx, imp.idCompteRendu, idImport);
     }, { timeout: 20_000 });
   } catch (err) {
     if (err instanceof LigneDejaTraitee) return refusGlobal('ligne_deja_traitee', 409);
@@ -309,5 +316,26 @@ export async function deciderLignes(params: {
     console.error('[bio-ingest decisions] écriture refusée :', ...classeEtCode(err));
     return { ok: false, reason: 'server_error', error: 'Erreur technique.', status: 500 };
   }
-  return { ok: true, validees: validations.length, ecartees: ecarts.length };
+  return { ok: true, validees: validations.length, ecartees: ecarts.length, documentPurge };
+}
+
+type ClientPurge = Pick<typeof prisma, 'ligneBiologiqueCandidate' | 'importBiologique' | 'compteRenduBiologique'>;
+
+/**
+ * Purge le document (`lignes_decidees`) si l'extraction courante — celle qui
+ * vient d'être décidée, vérifiée sous le verrou — n'a plus de ligne proposée
+ * et qu'aucune extraction n'est en cours. Rend `true` si le document est purgé
+ * par CETTE décision. `contenu: { not: null }` : un document déjà purgé
+ * (l'échéance est passée avant) n'est pas retouché — la base le refuserait.
+ */
+async function purgerSiDecide(tx: ClientPurge, idCompteRendu: string, idImport: string): Promise<boolean> {
+  const proposees = await tx.ligneBiologiqueCandidate.count({ where: { idImport, statut: 'proposee' } });
+  if (proposees > 0) return false;
+  const enCours = await tx.importBiologique.count({ where: { idCompteRendu, statut: 'en_cours' } });
+  if (enCours > 0) return false;
+  const { count } = await tx.compteRenduBiologique.updateMany({
+    where: { id: idCompteRendu, contenu: { not: null } },
+    data: { contenu: null, motifPurge: 'lignes_decidees' },
+  });
+  return count === 1;
 }

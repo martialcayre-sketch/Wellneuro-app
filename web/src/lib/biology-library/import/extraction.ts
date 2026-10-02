@@ -52,6 +52,12 @@ export type LigneExtraite = {
   valeur: string;
   unite: string | null;
   preleveLe: Date | null;
+  /**
+   * L'heure a été LUE sur le compte rendu ([[D-258]], colonne `heure_lue`) :
+   * une heure imprimée « 00:00 » n'est plus confondue avec une heure absente.
+   * Jamais vraie sans date lue (CHECK de la base).
+   */
+  heureLue: boolean;
 };
 
 export type ResultatExtraction =
@@ -106,6 +112,14 @@ function decalageParis(t: number): number {
   return Date.UTC(v('year'), v('month') - 1, v('day'), v('hour'), v('minute'), v('second')) - t;
 }
 
+/** Une heure d'horloge, 00:00 à 23:59 — la forme le dit, sans comparaison. */
+const HEURE_HORLOGE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** L'heure imprimée est lisible — sinon l'extraction garde minuit et ne la dit pas lue. */
+export function heureLisible(heure: string | null): boolean {
+  return heure !== null && HEURE_HORLOGE.test(heure.trim());
+}
+
 /**
  * La date imprimée (heure murale de Paris, celle du laboratoire) en instant
  * UTC — la même conversion que fait le navigateur du praticien pour une saisie.
@@ -120,8 +134,7 @@ export function lireDatePrelevement(date: string | null, heure: string | null): 
   let h = 0;
   let mi = 0;
   if (heure !== null && heure.trim() !== '') {
-    // Une heure d'horloge, 00:00 à 23:59 — la forme le dit, sans comparaison.
-    const hm = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(heure.trim());
+    const hm = HEURE_HORLOGE.exec(heure.trim());
     if (hm) {
       h = Number(hm[1]);
       mi = Number(hm[2]);
@@ -190,7 +203,8 @@ export function analyserSortieExtraction(texte: string): ResultatExtraction {
     const date = ligne.date_prelevement;
     const heure = ligne.heure_prelevement;
     if ((date !== null && typeof date !== 'string') || (heure !== null && typeof heure !== 'string')) return invalide;
-    lignes.push({ page: ligne.page, libelle, valeur, unite, preleveLe: lireDatePrelevement(date, heure) });
+    const preleveLe = lireDatePrelevement(date, heure);
+    lignes.push({ page: ligne.page, libelle, valeur, unite, preleveLe, heureLue: preleveLe !== null && heureLisible(heure) });
   }
   return { ok: true, laboratoire, lignes };
 }

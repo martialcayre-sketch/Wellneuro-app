@@ -19,7 +19,12 @@ import type { AnalyteChoix } from './SaisieBilan';
 // L'HEURE DU PRÉLÈVEMENT EST EXIGÉE (arbitrage du 2026-10-02) : l'extraction
 // garde la date seule à minuit DE PARIS quand l'heure n'est pas lue ; l'écran
 // laisse alors le champ VIDE plutôt que de proposer un minuit que personne n'a
-// lu, et signale les mesures du même analyte déjà au dossier ce jour-là.
+// lu, et signale les mesures du même analyte déjà au dossier ce jour-là. Une
+// heure IMPRIMÉE « 00:00 » (`heureLue`, [[D-258]]) reste affichée.
+//
+// LE DOCUMENT S'EFFACE ([[D-258]]) à la dernière décision de l'extraction
+// courante, et au plus tard 30 jours après le dépôt : il ne se relit plus,
+// les lignes restent décidables.
 // DATES ET HEURES EN HEURE DE PARIS, quel que soit le fuseau du poste : c'est
 // celle du laboratoire et celle de l'extraction. Lues dans le fuseau du
 // navigateur, un poste hors Paris verrait « 22:00 » la veille au lieu d'une
@@ -40,6 +45,7 @@ export type MesureAuDossier = {
 type CompteRenduListe = {
   id: string;
   deposeLe: string;
+  purgeLe?: string | null;
   dernierImport: { id: string; statut: string } | null;
 };
 
@@ -96,14 +102,17 @@ function decalageParis(t: number): number {
   return Date.UTC(+p.annee, +p.mois - 1, +p.jour, +p.heure, +p.minute, +p.seconde) - t;
 }
 
-/** Date et heure DE PARIS d'un instant ; l'heure reste VIDE à minuit pile — elle n'a pas été lue. */
-export function champsDepuisInstant(iso: string | null): { date: string; heure: string } {
+/**
+ * Date et heure DE PARIS d'un instant ; l'heure reste VIDE à minuit pile —
+ * elle n'a pas été lue —, sauf si l'extraction l'a LUE (`heureLue`, [[D-258]]).
+ */
+export function champsDepuisInstant(iso: string | null, heureLue = false): { date: string; heure: string } {
   if (!iso) return { date: '', heure: '' };
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return { date: '', heure: '' };
   const p = partiesParis(d);
   const heure = `${p.heure}:${p.minute}`;
-  return { date: `${p.annee}-${p.mois}-${p.jour}`, heure: heure === '00:00' ? '' : heure };
+  return { date: `${p.annee}-${p.mois}-${p.jour}`, heure: heure === '00:00' && !heureLue ? '' : heure };
 }
 
 /**
@@ -142,7 +151,7 @@ function saisieInitiale(ligne: LigneLue): Saisie {
     choix: null,
     analyteCode: ligne.analytePropose ?? '',
     valeur: ligne.valeurLue,
-    ...champsDepuisInstant(ligne.preleveLeLu),
+    ...champsDepuisInstant(ligne.preleveLeLu, ligne.heureLue),
     motif: ligne.preMarquage ?? 'ecartee_par_praticien',
   };
 }
@@ -430,6 +439,7 @@ export function ImportCompteRenduPanel({
         ok: boolean;
         validees?: number;
         ecartees?: number;
+        documentPurge?: boolean;
         error?: string;
         lignes?: Array<{ idLigne: string | null; index: number; error: string }>;
       }>(response);
@@ -444,7 +454,10 @@ export function ImportCompteRenduPanel({
         return;
       }
       setRefusParLigne({});
-      setInfo(`${payload.validees ?? 0} mesure(s) enregistrée(s), ${payload.ecartees ?? 0} ligne(s) écartée(s).`);
+      setInfo(
+        `${payload.validees ?? 0} mesure(s) enregistrée(s), ${payload.ecartees ?? 0} ligne(s) écartée(s).` +
+          (payload.documentPurge ? ' Toutes les lignes sont décidées : le document a été effacé.' : ''),
+      );
       await chargerDetail(idCompteRendu);
       await chargerListe();
       if ((payload.validees ?? 0) > 0) await onResultatsEnregistres();
@@ -455,7 +468,7 @@ export function ImportCompteRenduPanel({
     }
   }
 
-  const peutLancer = detail !== null && (courant === null || interrompu);
+  const peutLancer = detail !== null && !detail.purgeLe && (courant === null || interrompu);
   const lignesProposees = courant?.statut === 'extrait' ? courant.lignes.filter(l => l.statut === 'proposee') : [];
 
   return (
@@ -499,6 +512,7 @@ export function ImportCompteRenduPanel({
               >
                 Déposé le {formatDateHeure(c.deposeLe)}
                 {c.dernierImport && ` — ${LIBELLES_STATUT[c.dernierImport.statut] ?? c.dernierImport.statut}`}
+                {c.purgeLe && ' — document effacé'}
               </button>
             </li>
           ))}
@@ -538,6 +552,14 @@ export function ImportCompteRenduPanel({
                 {MESSAGES_ECHEC[i.motifEchec ?? ''] ?? 'échec.'}
               </p>
             ))}
+
+          {detail.purgeLe && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Document effacé le {formatDateHeure(detail.purgeLe)}
+              {detail.motifPurge === 'echeance' ? ', 30 jours après son dépôt' : ', toutes ses lignes décidées'} :
+              il ne peut plus être relu. Les lignes lues et leurs décisions restent.
+            </p>
+          )}
 
           {enCours && !interrompu && (
             <p role="status" className="mt-2 text-sm text-foreground">

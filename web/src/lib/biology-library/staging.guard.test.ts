@@ -16,6 +16,11 @@ import { describe, expect, it } from 'vitest';
 // le retrait d'un dépôt erroné (arbitrage du 2026-10-01), tant qu'aucune ligne
 // n'est validée — `import/retrait.ts`, une fois par table lui aussi.
 //
+// LA PURGE ([[D-258]]) : la base admet UNE modification du compte rendu, son
+// document passé à NULL, et en vérifie elle-même le motif. Ce banc garde
+// aussi QUEL CODE l'écrit : la dernière décision (`import/decisions.ts`) et
+// l'échéance planifiée (`import/purge.ts`), une fois chacune.
+//
 // PORTÉE : le code de l'application, mais aussi les scripts, le dossier
 // Prisma (seed) et les E2E (un nettoyage Playwright) — un script qui
 // supprimerait du staging n'en serait pas moins un auteur (revue
@@ -32,6 +37,8 @@ const RACINES = [
 ];
 const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');
 const RETRAIT = path.join('src', 'lib', 'biology-library', 'import', 'retrait.ts');
+const DECISIONS = path.join('src', 'lib', 'biology-library', 'import', 'decisions.ts');
+const PURGE = path.join('src', 'lib', 'biology-library', 'import', 'purge.ts');
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
@@ -59,6 +66,8 @@ function occurrences(motif: RegExp): { fichier: string; n: number }[] {
 
 const SUPPRIMER =
   /\.(?:compteRenduBiologique|importBiologique|ligneBiologiqueCandidate)\s*\.\s*(?:delete|deleteMany)\s*\(/;
+const MODIFIER_COMPTE_RENDU = /\.compteRenduBiologique\s*\.\s*(?:update|updateMany|upsert)\s*\(/;
+const SQL_MODIFIER_COMPTE_RENDU = /UPDATE\s+(?:public\.)?"?comptes_rendus_biologiques\b/i;
 const SQL_BRUT =
   /(?:DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+(?:public\.)?"?(?:comptes_rendus_biologiques|imports_biologiques|lignes_biologiques_candidates)\b/i;
 
@@ -72,7 +81,17 @@ describe('Staging d’import biologique — qui supprime (D-256, LOT-02)', () =>
     expect(occurrences(SQL_BRUT)).toEqual([]);
   });
 
+  it('seules la dernière décision et l’échéance modifient un compte rendu — pour le purger (D-258)', () => {
+    const auteurs = occurrences(MODIFIER_COMPTE_RENDU).sort((a, b) => a.fichier.localeCompare(b.fichier));
+    expect(auteurs).toEqual([{ fichier: DECISIONS, n: 1 }, { fichier: PURGE, n: 1 }]);
+    expect(occurrences(SQL_MODIFIER_COMPTE_RENDU)).toEqual([]);
+  });
+
   it('les motifs reconnaissent bien les formes qu’ils doivent refuser', () => {
+    expect(MODIFIER_COMPTE_RENDU.test('tx.compteRenduBiologique.updateMany({ where })')).toBe(true);
+    expect(MODIFIER_COMPTE_RENDU.test('prisma.compteRenduBiologique.update({')).toBe(true);
+    expect(MODIFIER_COMPTE_RENDU.test('prisma.compteRenduBiologique.findFirst({')).toBe(false);
+    expect(SQL_MODIFIER_COMPTE_RENDU.test('update public."comptes_rendus_biologiques" set')).toBe(true);
     expect(SUPPRIMER.test('tx.ligneBiologiqueCandidate.deleteMany({ where: par })')).toBe(true);
     expect(SUPPRIMER.test('prisma.compteRenduBiologique.delete({ where: { id } })')).toBe(true);
     expect(SUPPRIMER.test('prisma.importBiologique.findMany({')).toBe(false);

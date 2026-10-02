@@ -14,6 +14,8 @@ export type LigneLue = {
   valeurLue: string;
   uniteLue: string | null;
   preleveLeLu: string | null;
+  /** L'heure a été lue sur le compte rendu ([[D-258]]) — sinon `preleveLeLu` est un minuit de Paris. */
+  heureLue: boolean;
   analytePropose: string | null;
   statutMapping: string;
   statut: string;
@@ -47,10 +49,18 @@ export type CompteRenduLu = {
   typeMime: string;
   deposePar: string;
   deposeLe: string;
+  /** Le document a été effacé ([[D-258]]) : il ne se relit plus, ses lignes restent décidables. */
+  purgeLe: string | null;
+  motifPurge: string | null;
   imports: ImportLu[];
 };
 
-/** Les comptes rendus d'un dossier, sans leurs lignes — la liste de l'écran. */
+/**
+ * Les comptes rendus d'un dossier, sans leurs lignes — la liste de l'écran.
+ * `dernierImport` est l'extraction COURANTE (la plus récente non échouée),
+ * celle que désignent la base et `decisions.ts` (revue de la migration de
+ * purge) ; à défaut, la dernière tentative échouée, pour que l'échec se voie.
+ */
 export async function listerComptesRendus(idPatient: string) {
   const comptesRendus = await prisma.compteRenduBiologique.findMany({
     where: { idPatient },
@@ -60,7 +70,8 @@ export async function listerComptesRendus(idPatient: string) {
       typeMime: true,
       deposePar: true,
       deposeLe: true,
-      imports: { orderBy: { lanceLe: 'desc' }, take: 1, select: { id: true, statut: true } },
+      purgeLe: true,
+      imports: { orderBy: { lanceLe: 'desc' }, select: { id: true, statut: true } },
     },
   });
   return comptesRendus.map(c => ({
@@ -68,7 +79,8 @@ export async function listerComptesRendus(idPatient: string) {
     typeMime: c.typeMime,
     deposePar: c.deposePar,
     deposeLe: c.deposeLe.toISOString(),
-    dernierImport: c.imports[0] ?? null,
+    purgeLe: c.purgeLe?.toISOString() ?? null,
+    dernierImport: c.imports.find(i => i.statut !== 'echec') ?? c.imports[0] ?? null,
   }));
 }
 
@@ -85,6 +97,8 @@ export async function lireCompteRendu(
       typeMime: true,
       deposePar: true,
       deposeLe: true,
+      purgeLe: true,
+      motifPurge: true,
       imports: {
         orderBy: { lanceLe: 'desc' },
         select: {
@@ -94,7 +108,7 @@ export async function lireCompteRendu(
             orderBy: { rang: 'asc' },
             select: {
               id: true, rang: true, page: true, libelleLu: true, valeurLue: true, uniteLue: true,
-              preleveLeLu: true, analytePropose: true, statutMapping: true, statut: true,
+              preleveLeLu: true, heureLue: true, analytePropose: true, statutMapping: true, statut: true,
               motifEcart: true, idResultat: true,
             },
           },
@@ -118,6 +132,8 @@ export async function lireCompteRendu(
     typeMime: c.typeMime,
     deposePar: c.deposePar,
     deposeLe: c.deposeLe.toISOString(),
+    purgeLe: c.purgeLe?.toISOString() ?? null,
+    motifPurge: c.motifPurge,
     imports: c.imports.map(i => ({
       id: i.id,
       statut: i.statut,
