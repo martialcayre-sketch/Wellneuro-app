@@ -266,10 +266,16 @@ END $$;
 -- et approuvée (`release-db`), jamais en réécrivant l'historique. Elle ne peut
 -- rendre `contenu` NOT NULL que tant qu'aucun document n'a été purgé — un
 -- document purgé ne se restaure pas. DANS CET ORDRE :
---  1. déployer d'abord le code qui ne purge plus et n'écrit plus `heure_lue` ;
+--  1. déployer d'abord le code qui ne purge plus et n'écrit plus `heure_lue`,
+--     avec un `schema.prisma` qui ne porte plus `purge_le`, `motif_purge` ni
+--     `heure_lue` — sinon toute lecture Prisma sans `select` échoue dès les
+--     colonnes supprimées ;
 --  2. la migration compensatrice recrée le trigger
 --     `comptes_rendus_biologiques_no_update` (`bio_ingest_figee`), supprime
 --     `comptes_rendus_biologiques_avant_purge` et sa fonction, reprend les
 --     trois fonctions remplacées dans leur version `bio_ingest_staging_v1`,
 --     puis supprime les deux CHECK, les colonnes `purge_le`, `motif_purge` et
---     `heure_lue` (et son CHECK), et rétablit `contenu` NOT NULL.
+--     `heure_lue` (et son CHECK), et rétablit `contenu` NOT NULL — SEULEMENT
+--     si aucun document n'est purgé. Sinon `contenu` reste nullable, avec
+--     `purge_le` et `motif_purge` : une ligne purgée ne se supprime pas sans
+--     perdre la provenance de ses résultats (A5).
