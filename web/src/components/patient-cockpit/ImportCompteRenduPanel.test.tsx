@@ -111,6 +111,11 @@ describe('heure de Paris — quel que soit le fuseau du poste', () => {
     expect(instantDepuisParis('2026-01-15', '08:30')?.toISOString()).toBe('2026-01-15T07:30:00.000Z');
     expect(instantDepuisParis('2026-09-15', '')).toBeNull();
     expect(instantDepuisParis('2026-09-15', '24:00')).toBeNull();
+    // Heure inexistante au passage à l'heure d'été : refusée, pas normalisée en 03:30.
+    expect(instantDepuisParis('2026-03-29', '02:30')).toBeNull();
+    expect(instantDepuisParis('2026-03-29', '03:30')?.toISOString()).toBe('2026-03-29T01:30:00.000Z');
+    // Heure ambiguë au retour à l'heure d'hiver : une seule lecture, stable.
+    expect(instantDepuisParis('2026-10-25', '02:30')).not.toBeNull();
   });
 });
 
@@ -254,6 +259,8 @@ describe('ImportCompteRenduPanel — relecture robuste', () => {
     render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
     fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
     expect((await screen.findByRole('alert')).textContent).toContain('La lecture semble interrompue');
+    // Le serveur permet le retrait d'un import périmé : l'écran aussi.
+    expect((screen.getByRole('button', { name: 'Retirer ce dépôt' }) as HTMLButtonElement).disabled).toBe(false);
     expect(screen.queryByText(/Lecture en cours/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Lancer la lecture' }));
     expect(await screen.findByText('Une extraction est déjà en cours sur ce compte rendu.')).toBeTruthy();

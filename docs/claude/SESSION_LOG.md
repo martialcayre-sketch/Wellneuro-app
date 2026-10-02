@@ -8652,7 +8652,7 @@ constat par conteneur, puis PR 2 (consignes dans la fiche LOT-02).
 
 **Décidé.** 2a mergée (#1281) et déployée : dépôt, extraction (Sonnet 5.5,
 modèle et version tracés), resolver non signé (tout `inconnu`), décisions en
-tout ou rien, retrait. 2b : panneau d'import derrière `bioIngestActif` ; heure
+tout ou rien, retrait. 2b : panneau d'import derrière `bioIngestEnabled` ; heure
 exigée si non lue (heure de Paris quel que soit le poste) ; extraction en 202
 + `after()` après mesure (36 s pour 3 pages, routeur à 30 s).
 

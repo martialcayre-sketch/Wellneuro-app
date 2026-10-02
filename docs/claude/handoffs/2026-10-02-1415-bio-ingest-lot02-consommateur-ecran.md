@@ -1,4 +1,4 @@
-# Handoff — BIO-INGEST LOT-02, PR 2a (serveur) et 2b (écran)
+# Handoff — 2026-10-02 — BIO-INGEST LOT-02, PR 2a (serveur) et 2b (écran)
 
 Date : 2026-10-02 · Campagne `2026-09-30-bio-ingest` · Lot LOT-02 ([[D-256]] A2/A3/A4/A5)
 

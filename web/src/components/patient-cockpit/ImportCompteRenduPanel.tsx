@@ -106,14 +106,25 @@ export function champsDepuisInstant(iso: string | null): { date: string; heure: 
   return { date: `${p.annee}-${p.mois}-${p.jour}`, heure: heure === '00:00' ? '' : heure };
 }
 
-/** L'instant d'une date et d'une heure murales DE PARIS (deux passes, pour les changements d'heure). */
+/**
+ * L'instant d'une date et d'une heure murales DE PARIS (deux passes, pour les
+ * changements d'heure). `null` si cette heure N'EXISTE PAS à Paris (passage à
+ * l'heure d'été : 02:30 le dernier dimanche de mars) — l'aller-retour le
+ * révèle ; la normaliser en 03:30 enregistrerait une autre heure que la saisie
+ * (revue Copilot de #1283).
+ */
 export function instantDepuisParis(date: string, heure: string): Date | null {
   const j = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   const h = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(heure);
   if (!j || !h) return null;
   const mural = Date.UTC(+j[1], +j[2] - 1, +j[3], +h[1], +h[2]);
   const premier = mural - decalageParis(mural);
-  return new Date(mural - decalageParis(premier));
+  const instant = new Date(mural - decalageParis(premier));
+  const retour = partiesParis(instant);
+  if (`${retour.annee}-${retour.mois}-${retour.jour}` !== date || `${retour.heure}:${retour.minute}` !== heure) {
+    return null;
+  }
+  return instant;
 }
 
 function formatDateHeure(iso: string): string {
@@ -387,7 +398,7 @@ export function ImportCompteRenduPanel({
       }
       const instant = instantDepuisParis(s.date, s.heure);
       if (!instant) {
-        refusLocaux[ligne.id] = 'La date de prélèvement est illisible.';
+        refusLocaux[ligne.id] = 'Cette date et cette heure n’existent pas à Paris (passage à l’heure d’été) : vérifiez la saisie.';
         continue;
       }
       decisions.push({
@@ -511,7 +522,7 @@ export function ImportCompteRenduPanel({
                 </button>
               </span>
             ) : (
-              <button type="button" onClick={() => setRetraitArme(true)} disabled={occupe || enCours} className={BOUTON}>
+              <button type="button" onClick={() => setRetraitArme(true)} disabled={occupe || (enCours && !interrompu)} className={BOUTON}>
                 Retirer ce dépôt
               </button>
             )}
