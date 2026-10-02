@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isCbEnabled, isCbPropositionEnabled, isCbResultsEnabled } from './featureFlag';
+import { isBioIngestEnabled, isCbEnabled, isCbPropositionEnabled, isCbResultsEnabled } from './featureFlag';
 
 describe('isCbEnabled', () => {
   it("n'active le rayon que pour la valeur exacte « true » (fail-closed)", () => {
@@ -54,5 +54,20 @@ describe('isCbResultsEnabled', () => {
 
   it("ne s'ouvre pas quand les deux flags sont absents", () => {
     expect(isCbResultsEnabled(undefined, undefined)).toBe(false);
+  });
+});
+
+describe('isBioIngestEnabled', () => {
+  it("n'ouvre l'import que si les TROIS flags valent « true »", () => {
+    expect(isBioIngestEnabled('true', 'true', 'true')).toBe(true);
+    expect(isBioIngestEnabled('true', 'true', undefined)).toBe(false);
+    expect(isBioIngestEnabled('true', undefined, 'true')).toBe(false);
+    expect(isBioIngestEnabled(undefined, 'true', 'true')).toBe(false);
+  });
+
+  it('reste fermé sur les variantes proches de « true »', () => {
+    for (const v of ['TRUE', '1', 'yes', ' true', '']) {
+      expect(isBioIngestEnabled(v, 'true', 'true')).toBe(false);
+    }
   });
 });

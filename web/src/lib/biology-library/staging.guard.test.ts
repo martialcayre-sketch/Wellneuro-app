@@ -10,10 +10,11 @@ import { describe, expect, it } from 'vitest';
 // (triggers de la migration). Elle ADMET le DELETE, et c'est voulu : chaque
 // ligne est une donnée patient, que l'effacement nommé du dossier doit pouvoir
 // supprimer. Ce banc garde ce que la base ne peut pas dire — QUEL CODE
-// supprime : l'effacement nommé, et lui seul, une fois par table. Un compte
+// supprime : l'effacement nommé, une fois par table. Un compte
 // rendu ou une extraction supprimés ailleurs effaceraient la provenance d'un
-// résultat validé (A5). La PR 2 y ajoutera le retrait d'un dépôt erroné
-// (arbitrage du 2026-10-01), tant qu'aucune ligne n'est validée.
+// résultat validé (A5). Le SECOND auteur, admis nommément par la PR 2 :
+// le retrait d'un dépôt erroné (arbitrage du 2026-10-01), tant qu'aucune ligne
+// n'est validée — `import/retrait.ts`, une fois par table lui aussi.
 //
 // PORTÉE : le code de l'application, mais aussi les scripts, le dossier
 // Prisma (seed) et les E2E (un nettoyage Playwright) — un script qui
@@ -30,6 +31,7 @@ const RACINES = [
   path.join(WEB, '..', 'scripts'),
 ];
 const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');
+const RETRAIT = path.join('src', 'lib', 'biology-library', 'import', 'retrait.ts');
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
@@ -61,8 +63,9 @@ const SQL_BRUT =
   /(?:DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+(?:public\.)?"?(?:comptes_rendus_biologiques|imports_biologiques|lignes_biologiques_candidates)\b/i;
 
 describe('Staging d’import biologique — qui supprime (D-256, LOT-02)', () => {
-  it('seul l’effacement nommé du dossier supprime, une fois par table (le banc n’est pas vide)', () => {
-    expect(occurrences(SUPPRIMER)).toEqual([{ fichier: EFFACEMENT, n: 3 }]);
+  it('seuls l’effacement nommé du dossier et le retrait d’un dépôt erroné suppriment, une fois par table', () => {
+    const auteurs = occurrences(SUPPRIMER).sort((a, b) => a.fichier.localeCompare(b.fichier));
+    expect(auteurs).toEqual([{ fichier: RETRAIT, n: 3 }, { fichier: EFFACEMENT, n: 3 }]);
   });
 
   it('aucun code ne supprime le staging en SQL brut', () => {

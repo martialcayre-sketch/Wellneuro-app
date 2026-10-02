@@ -764,6 +764,19 @@ Le document patient v11 dit seulement qu'il « est conservé dans votre dossier 
 Porteur : responsable, avec conseil qualifié. Échéance
 proposée : **2026-10-21**, date de revue de la dérogation.
 
+**Arbitrage du responsable, 2026-10-02 : purge du document après décision.**
+Quand toutes les lignes de la dernière extraction d'un compte rendu sont
+décidées (validées ou écartées), le PDF est purgé. Son empreinte et la trace des
+extractions (modèle, version du procédé, lignes lues et décisions) restent : ce
+sont elles qui tiennent la provenance des résultats validés (A5). **Ce n'est
+PAS encore en œuvre.** La base fige le document (`contenu` non nul, toute mise à
+jour refusée), donc la purge demande une migration relue et son `release-db`.
+Deux conséquences à tenir **avant la pose de `WN_BIO_INGEST_ENABLED`** :
+- la phrase de la v11 (« conservé dans votre dossier ») devient inexacte et
+  appelle une nouvelle version du document patient ;
+- tant que la purge n'est pas livrée, un document décidé reste conservé : le
+  dire, ou livrer la purge d'abord.
+
 ## 9. Droits des personnes et modalités d'exercice
 
 **Source.** `registre.ts`, section « Exercer mes droits » : accès,
