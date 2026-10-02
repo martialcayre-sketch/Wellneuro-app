@@ -385,6 +385,13 @@ BEGIN
     $q$UPDATE imports_biologiques SET version_prompt = 'releve-v2' WHERE id = 'imp_3'$q$,
     'P0001', 'une extraction en cours ne peut que se terminer');
 
+  -- Un résultat créé dans CETTE transaction, avant la terminaison : il précède
+  -- la fin réelle de l'extraction, et aucune ligne ne doit s'y rattacher.
+  INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, saisi_le)
+  VALUES ('res_stg1_avant', 'PAT_CONTRAT_STG1', 'BIO_CONTRAT_STG', 4.0, 'mg/L', TIMESTAMP '2026-07-01 08:00:00',
+          'saisie_praticien', 'praticien@wellneuro.fr', clock_timestamp() AT TIME ZONE 'UTC');
+  PERFORM pg_sleep(0.01);
+
   BEGIN
     UPDATE imports_biologiques SET statut = 'echec', motif_echec = 'delai_depasse' WHERE id = 'imp_3';
     UPDATE imports_biologiques
@@ -403,19 +410,29 @@ BEGIN
     RAISE EXCEPTION 'STAGING BIO: le laboratoire lu à la terminaison n''a pas été conservé.';
   END IF;
 
-  -- Les instants posés par la base sont de l'UTC, fuseau de session ignoré.
+  -- Les instants posés par la base sont de l'UTC, fuseau de session ignoré,
+  -- et ceux de leurs TRANSITIONS, dans l'ordre où elles ont eu lieu — pas le
+  -- début de la transaction.
   SELECT count(*) INTO nb
   FROM comptes_rendus_biologiques cr, imports_biologiques i
   WHERE cr.id = 'cr_1' AND i.id = 'imp_1'
-    AND cr.depose_le = (now() AT TIME ZONE 'UTC')::timestamp(3)
-    AND i.lance_le = (now() AT TIME ZONE 'UTC')::timestamp(3)
-    AND i.termine_le = (now() AT TIME ZONE 'UTC')::timestamp(3);
+    AND cr.depose_le >= (now() AT TIME ZONE 'UTC')::timestamp(3)
+    AND i.termine_le <= (clock_timestamp() AT TIME ZONE 'UTC')::timestamp(3)
+    AND cr.depose_le <= i.lance_le
+    AND i.lance_le <= i.termine_le;
   IF nb <> 1 THEN
-    RAISE EXCEPTION 'STAGING BIO: un instant posé par la base n''est pas en UTC — il suit le fuseau de la session.';
+    RAISE EXCEPTION 'STAGING BIO: un instant posé par la base n''est pas en UTC, ou pas dans l''ordre des transitions.';
+  END IF;
+  SELECT count(*) INTO nb
+  FROM imports_biologiques i, resultats_biologiques r
+  WHERE i.id = 'imp_1' AND r.id = 'res_stg1_avant' AND i.termine_le > r.saisi_le;
+  IF nb <> 1 THEN
+    RAISE EXCEPTION 'STAGING BIO: la fin d''extraction n''est pas datée APRÈS un résultat créé avant elle dans la même transaction — elle prend le début de la transaction.';
   END IF;
 
   -- Le résultat que la validation créera : saisi APRÈS la fin de l'extraction,
   -- strictement, et en UTC comme Prisma l'écrit.
+  PERFORM pg_sleep(0.01);
   INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, saisi_le)
   VALUES ('res_stg1', 'PAT_CONTRAT_STG1', 'BIO_CONTRAT_STG', 4.2, 'mg/L', TIMESTAMP '2026-09-01 08:00:00',
           'saisie_praticien', 'praticien@wellneuro.fr', clock_timestamp() AT TIME ZONE 'UTC');
@@ -440,6 +457,11 @@ BEGIN
        SET statut = 'validee', id_resultat = 'res_stg2', traite_par = 'praticien@wellneuro.fr'
        WHERE id = 'lig_1'$q$,
     'P0001', 'n''appartient pas à ce dossier');
+  PERFORM pg_temp.refus('ligne validée vers un résultat créé avant la fin de l''extraction, dans la même transaction',
+    $q$UPDATE lignes_biologiques_candidates
+       SET statut = 'validee', id_resultat = 'res_stg1_avant', traite_par = 'praticien@wellneuro.fr'
+       WHERE id = 'lig_1'$q$,
+    'P0001', 'saisi avant la fin de l''extraction');
   PERFORM pg_temp.refus('ligne validée vers une saisie manuelle ANTÉRIEURE à l''extraction',
     $q$UPDATE lignes_biologiques_candidates
        SET statut = 'validee', id_resultat = 'res_stg1_ancien', traite_par = 'praticien@wellneuro.fr'
@@ -532,9 +554,16 @@ BEGIN
     WHEN others THEN
       RAISE EXCEPTION 'STAGING BIO: une décision valide a été refusée (%)', SQLERRM;
   END;
-  SELECT traite_le INTO instant FROM lignes_biologiques_candidates WHERE id = 'lig_1';
-  IF instant IS DISTINCT FROM (now() AT TIME ZONE 'UTC')::timestamp(3) THEN
-    RAISE EXCEPTION 'STAGING BIO: une décision antidatée, ou hors UTC, a gardé sa date (%).', instant;
+  -- La décision est datée de son instant, donc APRÈS le résultat qu'elle
+  -- désigne — pas du début de la transaction, ni en heure de session.
+  SELECT count(*) INTO nb
+  FROM lignes_biologiques_candidates l
+  JOIN resultats_biologiques r ON r.id = l.id_resultat
+  WHERE l.id = 'lig_1'
+    AND l.traite_le >= r.saisi_le
+    AND l.traite_le <= (clock_timestamp() AT TIME ZONE 'UTC')::timestamp(3);
+  IF nb <> 1 THEN
+    RAISE EXCEPTION 'STAGING BIO: la décision est datée avant le résultat qu''elle désigne, ou hors UTC.';
   END IF;
 
   PERFORM pg_temp.refus('ligne décidée qui change de décision',

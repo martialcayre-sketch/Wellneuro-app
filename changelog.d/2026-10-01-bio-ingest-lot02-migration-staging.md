@@ -29,10 +29,12 @@
     décision avant la fin de l'extraction, une ligne ajoutée après elle, et
     une extraction en échec qui garderait des lignes ;
   - un motif d'échec ou d'écart en texte libre.
-  - Les instants (dépôt, lancement, fin, décision) sont posés par la base,
-    en UTC explicite : un `now()` nu suivrait le fuseau de la session
-    (Europe/Paris sur la base locale du Mac), et la garde de postériorité
-    aurait refusé toute validation pendant une à deux heures.
+  - Les instants (dépôt, lancement, fin, décision) sont posés par la base, à
+    l'instant de la transition (`clock_timestamp()`, pas le début de la
+    transaction), en UTC explicite, comme Prisma écrit `saisi_le`. Un `now()`
+    nu suivrait le fuseau de la session (Europe/Paris sur la base locale du
+    Mac), et une décision pourrait être datée avant le résultat qu'elle
+    désigne.
 - **Effacement IDP2 étendu** : les lignes, puis les imports, puis les comptes
   rendus, avant les résultats biologiques.
 - **Garde de dépôt** : `biology-library/staging.guard.test.ts` vérifie que
@@ -40,4 +42,4 @@
 - **RLS deny-all** sur les trois tables.
 - **Dossier RGPD, rubrique 5** : les trois modèles sont nommés.
 - **Contrat SQL négatif** : `bio_ingest_staging_v1_negatif.sql`, joué au CI.
-  Il est joué en fuseau Europe/Paris. 77 mutants ont été tués en session.
+  Il est joué en fuseau Europe/Paris. 79 mutants ont été tués en session.

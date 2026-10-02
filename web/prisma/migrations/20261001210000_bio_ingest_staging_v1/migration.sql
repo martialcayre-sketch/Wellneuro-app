@@ -58,13 +58,16 @@
 --     ligne ne change que par la décision du praticien, une seule fois ; un
 --     import ne change que pour se terminer, une seule fois.
 --  4. LES INSTANTS SONT POSÉS PAR LA BASE (dépôt, lancement, fin, décision) :
---     une trace antidatable n'en est pas une. Ils sont posés EN UTC EXPLICITE
---     (`now() AT TIME ZONE 'UTC'`), la convention de Prisma pour un
---     `timestamp` sans fuseau : le point 6 compare l'un d'eux à `saisi_le`,
---     écrit par l'application, et un `now()` nu suivrait le fuseau de la
---     session — UTC en production, Europe/Paris sur la base locale du Mac, où
---     toute validation aurait été refusée pendant une à deux heures (revue
---     `wn-reviewer`).
+--     une trace antidatable n'en est pas une. Ils sont posés EN UTC EXPLICITE,
+--     la convention de Prisma pour un `timestamp` sans fuseau (constaté le
+--     2026-10-02 : Prisma 7 écrit lui-même `saisi_le` en UTC, même sur une
+--     session Europe/Paris). Le point 6 compare l'un d'eux à `saisi_le` : un
+--     `now()` nu suivrait le fuseau de la session — UTC en production,
+--     Europe/Paris sur la base locale du Mac (revue `wn-reviewer`). Et c'est
+--     `clock_timestamp()`, l'instant de la TRANSITION, pas `now()`, figé au
+--     début de la transaction : sinon une décision serait datée avant le
+--     résultat qu'elle désigne, et une fin d'extraction avant un résultat créé
+--     dans la même transaction (revue Copilot de #1280).
 --  5. UNE EXTRACTION EN ÉCHEC NE LAISSE AUCUNE LIGNE, une extraction terminée
 --     n'en reçoit plus, et seule une extraction terminée se valide.
 --  6. LE RÉSULTAT VALIDÉ EST POSTÉRIEUR À L'EXTRACTION (revue `wn-reviewer`,
@@ -300,7 +303,7 @@ LANGUAGE plpgsql
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-  NEW.depose_le := now() AT TIME ZONE 'UTC';
+  NEW.depose_le := clock_timestamp() AT TIME ZONE 'UTC';
   RETURN NEW;
 END;
 $$;
@@ -349,7 +352,7 @@ BEGIN
   IF NEW.laboratoire_lu IS NOT NULL THEN
     RAISE EXCEPTION 'import refusé : le laboratoire est lu par l''extraction, pas posé avant elle.';
   END IF;
-  NEW.lance_le := now() AT TIME ZONE 'UTC';
+  NEW.lance_le := clock_timestamp() AT TIME ZONE 'UTC';
   RETURN NEW;
 END;
 $$;
@@ -380,7 +383,7 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'import refusé : une extraction en échec ne laisse aucune ligne candidate.';
   END IF;
-  NEW.termine_le := now() AT TIME ZONE 'UTC';
+  NEW.termine_le := clock_timestamp() AT TIME ZONE 'UTC';
   RETURN NEW;
 END;
 $$;
@@ -465,7 +468,7 @@ BEGIN
       RAISE EXCEPTION 'ligne refusée : le résultat désigné a été saisi avant la fin de l''extraction.';
     END IF;
   END IF;
-  NEW.traite_le := now() AT TIME ZONE 'UTC';
+  NEW.traite_le := clock_timestamp() AT TIME ZONE 'UTC';
   RETURN NEW;
 END;
 $$;
@@ -503,12 +506,16 @@ ALTER TABLE "public"."comptes_rendus_biologiques" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."imports_biologiques" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."lignes_biologiques_candidates" ENABLE ROW LEVEL SECURITY;
 
--- ROLLBACK (manuel, si jamais, et seulement tant qu'aucun compte rendu n'a été
--- déposé), DANS CET ORDRE :
+-- RETOUR ARRIÈRE (si jamais, et seulement tant qu'aucun compte rendu n'a été
+-- déposé) : par une NOUVELLE migration compensatrice, relue et approuvée
+-- (`release-db`), jamais en réécrivant l'historique — une fois appliquée,
+-- celle-ci ne se marque plus « rolled back » (`migrate resolve --rolled-back`
+-- ne vise que les migrations échouées, P3012 ; revue Copilot de #1280).
+-- DANS CET ORDRE :
 --  1. déployer d'abord le code sans l'effacement de ces trois tables
 --     (`patient/effacement.ts`) et sans leurs modèles dans `schema.prisma` —
 --     sinon tout effacement de dossier échoue sur une table absente ;
---  2. DROP TABLE "lignes_biologiques_candidates", "imports_biologiques",
---     "comptes_rendus_biologiques" (dans cet ordre) ; DROP FUNCTION des six
---     fonctions `bio_ingest_*` ci-dessus ;
---  3. `prisma migrate resolve --rolled-back 20261001210000_bio_ingest_staging_v1`.
+--  2. la migration compensatrice supprime les tables
+--     "lignes_biologiques_candidates", "imports_biologiques",
+--     "comptes_rendus_biologiques" (dans cet ordre), puis les six fonctions
+--     `bio_ingest_*` ci-dessus.
