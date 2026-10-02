@@ -4,7 +4,8 @@
 > doit pouvoir se lever sur preuve d'adressage, c'est un arbitrage clinique
 > distinct, qui touche la chaîne C1 — il n'est pas rendu »). Ce document est le
 > LOT-00 : il ne livre aucun code, aucune migration, aucune décision `D-xxx`.
-> La décision s'écrit au registre quand les questions du §5 sont tranchées.
+> Les arbitrages du §2 et du §5 sont tous rendus : la décision s'écrit au
+> registre au LOT-01.
 
 ## 1. Le constat
 
@@ -35,7 +36,7 @@ l'action d'orientation vers le médecin. Ensuite la décision (priorité, protoc
 **A3 — GRANULARITÉ PAR SIGNAL.** Seuls les signaux couverts par l'adressage sont
 déclassés ; un signal non couvert — nouveau, ou déclaré après la lettre — rebloque.
 
-## 3. Ce que cela veut dire dans le code (proposition, à valider au §5)
+## 3. Ce que cela veut dire dans le code
 
 **3.1 Le déclencheur : la lettre d'adressage consignée, et non une case à cocher.**
 La lettre existe, elle est ancrée (`ancrageSha256 = SAFETY_SIGNALS_SHA256`,
@@ -50,8 +51,8 @@ nouvel ordre, mais jusqu'à l'adressage).
 Rien de structuré ne dit quels constats elle couvre. Il faut persister, à la
 consignation, la liste des `findingId` couverts (identifiant = empreinte du libellé
 verbatim, déjà stable par construction dans `safetyFindings.ts`) et l'identifiant
-de la consultation porteuse. Deux formes possibles : une colonne nullable sur
-`correspondances_medecin`, ou une table dédiée `adressages_signal` (append-only).
+de la consultation porteuse. Forme retenue (A8) : une table dédiée en ajout
+seul, qui porte aussi les révocations (A12).
 **Migration seule dans sa PR, `release-db` approuvée, constat par conteneur, puis
 seulement le code consommateur** ([[D-087]]). Les lettres déjà consignées (avant
 la colonne) **ne lèvent rien** : leur couverture ne se reconstitue pas en relisant
@@ -93,39 +94,40 @@ lot qui touche `preconditionsT0.ts` et `rideauT0.ts`, pas à supposer.
   `safetyFindingSource`, [[D-218]] §10).
 - La lettre elle-même ([[D-218]] §3-§9) : texte, provenance, filtrage.
 
-## 5. Questions à trancher avant la décision
+## 5. Arbitrages complémentaires rendus le 2026-10-02 (responsable, en session)
 
-1. **Le compte des actions.** L'orientation compte-t-elle dans la borne de trois
-   actions (`MAX_ACTIONS_PROTOCOLE_21J = 3`) ? Proposition : **non** — ce n'est pas
-   une intervention et elle ne pèse pas dans la charge ; la compter amputerait le
-   protocole du seul fait de l'alerte.
-2. **Les six signaux, même règle ?** « Idées noires ou suicidaires » se lève-t-il
-   sur la même pièce que « sang dans les selles » ? La table ne le distingue pas
-   aujourd'hui ; une distinction serait un arbitrage clinique neuf, que le dépôt ne
-   peut pas inventer.
-3. **La re-déclaration.** Une anamnèse validée APRÈS la lettre et qui redéclare le
-   même signal : couvert (même `findingId`) ou rebloquant (nouvel épisode) ?
-   Proposition : **rebloquant** — la couverture vaut pour la consultation porteuse
-   de la lettre, pas pour le libellé en général.
-4. **Le retour du médecin.** La lettre suffit-elle, ou faut-il une réponse
-   consignée au fil médecin (`sens = entrant`) avant de lever ? Proposition : la
-   lettre suffit pour lever ; la réponse reste un suivi, pas une condition.
-5. **La forme de la couverture** : colonne sur `correspondances_medecin` ou table
-   dédiée (3.2).
+Les questions ouvertes à la première version de ce cadrage sont toutes tranchées.
+
+| # | Question | Arbitrage |
+|---|---|---|
+| A4 | L'orientation compte-t-elle dans `MAX_ACTIONS_PROTOCOLE_21J = 3` ? | **Hors borne** : le protocole garde trois actions d'intervention en plus de l'orientation, qui ne pèse pas dans la charge. |
+| A5 | Les six signaux `adressage` se lèvent-ils de la même façon ? | **Même règle pour les six**, « idées noires ou suicidaires » compris. Aucune cotation nouvelle. |
+| A6 | Une anamnèse validée APRÈS la lettre redéclare le même signal | **Rebloque** : la couverture vaut pour la consultation porteuse de la lettre, pas pour le libellé en général. |
+| A7 | Ce qui lève | **La lettre d'adressage consignée suffit.** La réponse du médecin reste un suivi, pas une condition. |
+| A8 | Forme de la couverture | **Table dédiée, en ajout seul** (lettre, consultation porteuse, `findingId` couverts), et non une colonne sur `correspondances_medecin`. |
+| A9 | Lettres consignées avant la migration | **Elles ne lèvent rien** : le praticien re-consigne. Aucune reprise de données depuis le texte libre. |
+| A10 | Texte patient de l'action d'orientation | **Rédigé par l'équipe, signé par le responsable**, comme les autres tables cliniques : neutre, sans « alerte », sans les signaux, sous la garde de registre anxiogène. |
+| A11 | L'action d'orientation est-elle retirable ? | **Non** tant que la levée tient. |
+| A12 | Une lettre consignée par erreur | **Révocation tracée** : une ligne de révocation (ajout seul, motif obligatoire) ; le dossier rebloque. Rien n'est effacé. |
+
+Précision de lecture : « le protocole et le T0 fonctionnent comme un dossier sans
+alerte » désigne la suite normale du parcours — sélection de priorité, protocole
+21 jours, T0 — confirmé le 2026-10-02.
 
 ## 6. Découpage proposé
 
 | Lot | Contenu | Porte |
 |---|---|---|
 | LOT-00 | Ce cadrage ; mesure de production (agrégats : dossiers porteurs, lettres déjà consignées) | — |
-| LOT-01 | Décision `D-xxx` (amende [[D-099]] décision 3 et [[D-218]] §12) + texte de conduite signé de l'action patient | arbitrages du §5 |
-| LOT-02 | Migration seule : couverture structurée des signaux | `release-db` approuvée, constat par conteneur |
-| LOT-03 | Écriture de la couverture à la consignation de la lettre | LOT-02 constaté |
+| LOT-01 | Décision `D-xxx` (amende [[D-099]] décision 3 et [[D-218]] §12) + texte de conduite de l'action patient, soumis à signature | arbitrages rendus (§2, §5) |
+| LOT-02 | Migration seule : table des adressages (couverture + révocation) | `release-db` approuvée, constat par conteneur |
+| LOT-03 | Écriture de la couverture à la consignation de la lettre ; geste de révocation | LOT-02 constaté |
 | LOT-04 | Chaîne C1 : partition ouverts/adressés, carte, empreintes, cockpit | LOT-03 ; derrière un drapeau neuf, éteint à la livraison |
-| LOT-05 | Action d'orientation en tête du protocole, non retirable, texte signé | LOT-04 |
+| LOT-05 | Action d'orientation en tête du protocole, hors borne des trois, non retirable, texte signé | LOT-04 |
 
 Chaque lot touche un chemin clinique : T3 (`npm run test:worktree`) et revue
 `wn-reviewer` avant PR. Bancs à poser : un signal adressé ne réduit jamais
 l'empreinte de sécurité à zéro (il reste porté) ; un signal non couvert rebloque ;
-une lettre sans couverture structurée ne lève rien ; un effet indésirable n'est
-jamais levé par une lettre.
+une lettre sans couverture structurée ne lève rien ; une révocation rebloque ;
+une redéclaration sur une consultation postérieure rebloque ; un effet
+indésirable n'est jamais levé par une lettre.
