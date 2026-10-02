@@ -31,9 +31,15 @@ export const MODELE_EXTRACTION = process.env.WN_BIO_INGEST_MODEL?.trim() || 'cla
  */
 export const VERSION_PROCEDE_EXTRACTION = 'bio-extraction-v1';
 
-/** Délai d'un appel (ms), et une seule nouvelle tentative : technique, sans sémantique clinique. */
-export const DELAI_EXTRACTION_MS = 120_000;
-const TENTATIVES_SUPPLEMENTAIRES = 1;
+/**
+ * Délai d'un appel (ms), SANS nouvelle tentative : technique, sans sémantique
+ * clinique. 180 s plutôt que 120 s × 2 (arbitrage du 2026-10-02) : un compte
+ * rendu de 200 lignes est estimé à ~95 s (36 s mesurées pour 75 lignes), et
+ * le pire cas doit rester sous la péremption d'un import en cours
+ * (`PEREMPTION_EN_COURS_MS`, test). Un échec se relance à la main.
+ */
+export const DELAI_EXTRACTION_MS = 180_000;
+export const TENTATIVES_SUPPLEMENTAIRES = 0;
 
 /** Plafond technique de lignes relevées dans un compte rendu. */
 export const LIGNES_MAX = 200;

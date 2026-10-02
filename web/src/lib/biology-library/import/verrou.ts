@@ -6,5 +6,5 @@ export function cleVerrouCompteRendu(idCompteRendu: string): string {
   return `bio_ingest_compte_rendu:${idCompteRendu}`;
 }
 
-/** Au-delà, un import `en_cours` est réputé abandonné. Borne technique (délai d'appel × 2 + marge). */
+/** Au-delà, un import `en_cours` est réputé abandonné. Borne technique (délai d'appel, sans réessai, + marge). */
 export const PEREMPTION_EN_COURS_MS = 5 * 60_000;

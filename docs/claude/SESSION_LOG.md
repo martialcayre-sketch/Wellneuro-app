@@ -8664,3 +8664,19 @@ resolver sans parenthèses (perd la matrice) ; date au fuseau du navigateur
 
 **Questions ouvertes.** Heure exigée aussi côté serveur ? Constat `after()`
 sur Scalingo avant la pose du drapeau ; signature du resolver.
+
+## 2026-10-02 — BIO-INGEST LOT-02, arbitrages après la 2b et heure serveur
+
+**Décidé.** Heure exigée aussi par le serveur (`heure_absente`) ; délai
+d'appel 180 s sans réessai ; purge du PDF dès décision complète et au plus
+tard à 30 jours, AVANT la pose ; v12 rédigée par Claude ; resolver relu puis
+signé ; constat `after()` sur un dossier de test, PDF fabriqué puis retiré.
+
+**Écarté.** Pose avec un resolver tout-`inconnu` ; pose avant la purge ;
+120 s × 2 (pire cas trop proche de la péremption).
+
+**Prochaine action.** Merger #1284, `/clear`, puis cadrer la migration de
+purge.
+
+**Questions ouvertes.** Colonne « heure lue » (une heure imprimée « 00:00 »
+se confond avec une heure absente) : à proposer avec la migration de purge.
