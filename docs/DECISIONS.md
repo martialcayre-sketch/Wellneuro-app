@@ -48,6 +48,105 @@ l'instant est posé par la base.
 appliquée et constatée, code consommateur déployé, premier passage du cron
 constaté — et la v12 servie.
 
+### D-257 — Un signal d'alerte adressé cesse de bloquer : la lettre consignée lève l'abstention signal par signal, et l'orientation devient la première action du protocole
+
+- Date : 2026-10-02
+- Statut : accepté — arbitrages du responsable rendus en session le 2026-10-02
+  (A1 à A12), texte patient de l'action d'orientation **signé** le même jour.
+  Cadrage : `docs/claude/campagnes/CADRAGE_LEVEE_SIGNAL_ALERTE_2026-10-02.md`
+  (LOT-00, #1282).
+- Domaine : sécurité clinique — `DC-12`, `DC-23`, `DC-24`, `DC-34`/`DC-35`.
+- Amende : [[D-099]] décision 3 (l'inhibition ne vaut plus « jusqu'à nouvel
+  ordre » mais jusqu'à l'adressage consigné) et [[D-218]] §12 (« la lettre
+  trace, elle ne vaut pas » cesse d'être vrai pour les signaux qu'elle couvre).
+- **Ne touche pas** : la cotation signée des douze signaux
+  (`SAFETY_SIGNALS_V1`, `SAFETY_SIGNALS_SHA256`) — ni relue, ni re-cotée ; le
+  rang `vigilance` ; la sortie propre de l'effet indésirable ([[D-101]]).
+- **Aucun code, aucune migration dans cette entrée** : elle autorise les lots
+  LOT-02 à LOT-05 du cadrage, chacun dans sa PR, la migration seule dans la
+  sienne ([[D-087]]).
+
+**1. LE CONSTAT.** Un signal de rang `adressage` fait passer l'abstention en
+`required` : plus de priorité, plus de protocole diffusable. [[D-218]] a donné le
+geste (la lettre), pas la sortie : un dossier concerné reste bloqué sans fin, et la
+seule issue praticable aujourd'hui — faire « décocher » le signal au patient —
+serait pire que le blocage. Mesure du 2026-08-23 : 6 dossiers sur 25.
+
+**2. LE DÉCLENCHEUR EST LA LETTRE D'ADRESSAGE CONSIGNÉE (A7).** Pas une case, pas
+une attestation libre : la lettre est ancrée sur la cotation signée ([[D-073]]),
+relue, et part vers un tiers. La réponse du médecin reste un suivi au fil médecin,
+jamais une condition de levée.
+
+**3. LA LEVÉE EST UN DÉCLASSEMENT, PAS UN EFFACEMENT (A1).** Un constat couvert
+reste produit, porté par la carte, compté dans son empreinte et affiché au
+praticien (« adressage engagé le … ») ; il cesse seulement de nourrir
+`evaluerAbstention` et `decisionCard.safetyFindingIds`. Aucun point dans aucun
+sens (`DC-23`) : la partition ne lit aucun score.
+
+**4. GRANULARITÉ PAR SIGNAL, ANCRÉE SUR LA CONSULTATION (A3, A6).** Seuls les
+`findingId` couverts par la lettre sont déclassés, et seulement pour la
+consultation porteuse de la lettre. Un signal non couvert bloque ; un signal
+redéclaré dans une anamnèse validée **après** la lettre bloque — c'est un nouvel
+épisode, qui appelle une nouvelle lettre. Même règle pour les six signaux de rang
+`adressage`, « idées noires ou suicidaires » compris (A5).
+
+**5. LA COUVERTURE EST STRUCTURÉE, JAMAIS LUE DANS LA PROSE (A8, A9).** Une table
+dédiée en ajout seul enregistre, à la consignation, la lettre, la consultation
+porteuse et les `findingId` couverts. Les lettres consignées avant cette table **ne
+lèvent rien** : leur couverture ne se reconstitue pas depuis le texte libre, le
+praticien re-consigne.
+
+**6. RÉVOCATION TRACÉE (A12).** Une lettre consignée par erreur se révoque par une
+ligne de révocation (ajout seul, motif obligatoire) ; le dossier rebloque. Rien ne
+s'efface.
+
+**7. FAIL-CLOSED.** Couverture illisible, absente ou révoquée ⇒ le constat reste
+ouvert. Cotation non signée ⇒ aucune lettre ([[D-218]] §5), donc aucune levée. Une
+lettre ne lève **jamais** un constat d'effet indésirable (préfixe
+`safetyFindingSource`, [[D-218]] §10).
+
+**8. L'ORIENTATION EST LA PREMIÈRE ACTION DU PROTOCOLE (A2, A4, A11).** Dès qu'au
+moins un constat est adressé, le constructeur place en tête une action
+`medical_referral` (type existant), **hors de la borne** `MAX_ACTIONS_PROTOCOLE_21J`
+— elle n'est pas une intervention et ne pèse pas dans la charge —, et **non
+retirable** tant que la levée tient. Le reste du parcours — sélection de priorité,
+protocole 21 jours, T0 — fonctionne comme pour un dossier sans alerte.
+
+**9. LE TEXTE PATIENT EST SIGNÉ, ET IL EST LE SEUL (A10).** Ni « alerte », ni
+signal nommé (`REGISTRE_FRONTIERES.md`), ni délai chiffré ; il passe la garde de
+registre anxiogène ([[D-189]] §4). Texte signé le 2026-10-02, recopié au caractère
+près dans la table qui le portera (LOT-05) :
+
+- Titre : « Consulter votre médecin »
+- Plan idéal : « Prendre rendez-vous avec votre médecin traitant dès que possible
+  et lui remettre le courrier que je vous ai préparé. »
+- Plan minimal : « Appeler le cabinet de votre médecin pour fixer ce
+  rendez-vous. »
+- Plan de secours : « Si vous ne parvenez pas à obtenir de rendez-vous,
+  prévenez-moi : nous chercherons ensemble une autre solution. »
+
+Un repère d'urgence (« appelez le 15 ») a été proposé et **non retenu**.
+
+**10. MISE EN SERVICE DERRIÈRE UN DRAPEAU.** La partition de la chaîne C1 (LOT-04)
+se livre derrière un drapeau neuf, éteint à la livraison. Éteint, le comportement
+est celui de [[D-099]] au caractère près.
+
+**Options écartées.** Statu quo (impasse, incite à faire décocher le patient) ;
+expiration automatique (la cotation dit que le report **est** le risque) ;
+attestation praticien sans lettre (geste plus léger que celui qu'il lève) ;
+réponse du médecin exigée (bloque indéfiniment sur un tiers) ; reprise des lettres
+passées par lecture du texte ; règle distincte pour « idées noires » (aucune
+cotation nouvelle demandée) ; repère d'urgence dans le texte patient.
+
+**Réserve.** Aucune mesure de production postérieure au 2026-08-23 : le nombre de
+dossiers bloqués et de lettres déjà consignées est à relire par conteneur
+détaché, en agrégats ([[D-125]]), avant la pose du drapeau.
+
+- Référence : `docs/claude/campagnes/CADRAGE_LEVEE_SIGNAL_ALERTE_2026-10-02.md`,
+  [web/src/lib/clinical/safetySignalsV1.ts](web/src/lib/clinical/safetySignalsV1.ts),
+  [web/src/lib/clinical-engine/decisionGuards.ts](web/src/lib/clinical-engine/decisionGuards.ts),
+  [[D-099]], [[D-101]], [[D-218]], [[D-189]], [[D-087]]
+
 ### D-256 — Acquisition biologique (BIO-INGEST) : `resultats_biologiques` reste canonique, un entonnoir de validation humaine remplace la couche d'ingestion générique proposée
 
 - Date : 2026-09-30

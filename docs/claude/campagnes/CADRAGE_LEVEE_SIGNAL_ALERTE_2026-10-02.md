@@ -119,7 +119,7 @@ alerte » désigne la suite normale du parcours — sélection de priorité, pro
 | Lot | Contenu | Porte |
 |---|---|---|
 | LOT-00 | Ce cadrage ; mesure de production (agrégats : dossiers porteurs, lettres déjà consignées) | — |
-| LOT-01 | Décision `D-xxx` (amende [[D-099]] décision 3 et [[D-218]] §12) + texte de conduite de l'action patient, soumis à signature | arbitrages rendus (§2, §5) |
+| LOT-01 | **Livré le 2026-10-02 : [[D-257]]** (amende [[D-099]] décision 3 et [[D-218]] §12) ; texte patient de l'action d'orientation signé le même jour, recopié au §9 de la décision | arbitrages rendus (§2, §5) |
 | LOT-02 | Migration seule : table des adressages (couverture + révocation) | `release-db` approuvée, constat par conteneur |
 | LOT-03 | Écriture de la couverture à la consignation de la lettre ; geste de révocation | LOT-02 constaté |
 | LOT-04 | Chaîne C1 : partition ouverts/adressés, carte, empreintes, cockpit | LOT-03 ; derrière un drapeau neuf, éteint à la livraison |
