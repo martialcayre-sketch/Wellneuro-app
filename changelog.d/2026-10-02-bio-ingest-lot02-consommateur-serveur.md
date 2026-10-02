@@ -1,0 +1,46 @@
+### BIO-INGEST LOT-02 : import d'un compte rendu, côté serveur (D-256 A2/A4/A5) (2026-10-02)
+
+- **Le code qui alimente le staging**, derrière un drapeau neuf et **éteint**,
+  `WN_BIO_INGEST_ENABLED`, qui exige aussi l'étage résultats. Ses conditions
+  de pose (§2 ter du dossier RGPD) sont écrites à sa ligne de
+  `docs/FEATURE_FLAGS.md`. L'écran de validation viendra en PR 2b.
+- **Cinq routes** sous `api/praticien/biologie/import`, toutes derrière la
+  garde des résultats :
+  - liste des comptes rendus d'un dossier ;
+  - dépôt d'un PDF (10 Mo au plus, signature `%PDF-` lue sur les octets, aucun
+    nom de fichier gardé, le même document deux fois refusé). Les images
+    attendent le LOT-03 ;
+  - extraction ;
+  - lecture d'un compte rendu et de ses lignes ;
+  - retrait d'un dépôt erroné ;
+  - décisions du praticien.
+- **Extraction** par `claude-sonnet-5-5` (modifiable par `WN_BIO_INGEST_MODEL`).
+  - Le compte rendu part **entier**, sans aucun masquage.
+  - Le modèle relève libellé, valeur, unité, page, **date du prélèvement** et
+    laboratoire tels qu'écrits. Il n'interprète rien, ne convertit rien et ne
+    choisit aucun analyte.
+  - Sa sortie est structurée, puis re-jugée par un schéma fermé aux bornes de
+    la base.
+  - **Le modèle et la version du procédé (`bio-extraction-v1`) sont
+    enregistrés sur l'import avant l'appel**, échec compris (promesse de
+    `usage_ia` v4).
+  - Les lignes et la terminaison s'écrivent dans une seule transaction, les
+    lignes d'abord.
+- **Resolver libellé → analyte** (`resolverLibellesV1`, module signé) : les
+  libellés du catalogue et des synonymes de laboratoire.
+  - Il est **livré non signé** : tant que la signature manque, toute ligne
+    sort `inconnu` et le praticien choisit l'analyte.
+  - Un libellé générique dont la matrice n'est pas dite n'est pas rattaché.
+- **Décisions** (valider ou écarter), seul chemin d'un import vers
+  `resultats_biologiques`, en tout ou rien.
+  - La validation crée le résultat (`saisie_praticien`, sans `saisiLe`, unité
+    relue au catalogue), puis décide la ligne.
+  - Valeur et date sont corrigeables.
+  - Sont refusées : une ligne lue non quantitative, une unité lue qui n'est
+    pas celle de l'analyte (aucune conversion, D-157) et un doublon au
+    dossier.
+  - Un `P2002` (saisie manuelle intercalée) est rendu tel quel, sans repli.
+- **Retrait d'un dépôt erroné**, tant qu'aucune ligne n'est validée. Il devient
+  le second auteur de suppression admis par `staging.guard.test.ts`.
+- **Journaux** : seulement la classe et le code d'une erreur. Le banc
+  `journaux.guard.test.ts` couvre désormais l'import.

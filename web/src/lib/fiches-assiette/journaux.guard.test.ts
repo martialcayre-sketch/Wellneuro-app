@@ -34,6 +34,10 @@ const PERIMETRE = [
   'components/fiches-assiette',
   'components/patient/fiches-assiette',
   'app/portail/[token]/fiches',
+  // BIO-INGEST LOT-02 ([[D-256]]) : l'import de comptes rendus. Une erreur
+  // Prisma y recopierait un libellé ou une valeur lue — même règle, même banc.
+  'lib/biology-library/import',
+  'app/api/praticien/biologie/import',
 ];
 const JOURNAL = /^(?:console\.(?:error|warn|log|info|debug)|logger\.(?:error|warn|info|debug|security|fatal))$/;
 const NEUTRALISEURS = new Set(['classeEtCode']);
@@ -121,6 +125,8 @@ describe('Journaux des fiches d’assiette — classe et code, jamais le message
       expect(appels.some(a => a.fichier.includes(path.join(...lieu)))).toBe(true);
     }
     expect(appels.some(a => a.texte.startsWith('logger.'))).toBe(true);
+    expect(appels.some(a => a.fichier.includes(path.join('biologie', 'import')))).toBe(true);
+    expect(appels.some(a => a.fichier.includes(path.join('biology-library', 'import')))).toBe(true);
   });
 
   it('aucun console.* ni logger.* ne recopie le message, la pile ou l’objet d’une erreur', () => {

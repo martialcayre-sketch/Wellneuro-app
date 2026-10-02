@@ -35,7 +35,9 @@ const MARQUEUR = 'ETAT_VERROUS_SIGNATURE';
 // Les répertoires où vivent les tables porteuses d'une signature. `biology-library`
 // n'est pas sous `clinical/` et c'est précisément la table dont la signature est
 // la plus fragile ([[D-063]]) : la balayer aussi n'est pas un détail.
-const RACINES_BALAYEES = ['clinical', 'biology-library'];
+// `biology-library/import` : le resolver signé de l'import (BIO-INGEST LOT-02),
+// sous-dossier que la lecture non récursive ne verrait pas.
+const RACINES_BALAYEES = ['clinical', 'biology-library', 'biology-library/import'];
 
 interface Signature {
   fichier: string;

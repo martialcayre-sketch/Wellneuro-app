@@ -1,0 +1,121 @@
+import Anthropic from '@anthropic-ai/sdk';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { create } = vi.hoisted(() => ({ create: vi.fn() }));
+vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { create } } }));
+
+import {
+  analyserSortieExtraction,
+  extraireCompteRendu,
+  lireDatePrelevement,
+  MODELE_EXTRACTION,
+  motifDErreur,
+} from './extraction';
+
+const SORTIE = {
+  lisible: true,
+  laboratoire: 'Laboratoire de fixture',
+  lignes: [
+    { page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', date_prelevement: '2026-09-15', heure_prelevement: '08:30' },
+    { page: 2, libelle: 'CRP ultrasensible', valeur: '<0,5', unite: 'mg/L', date_prelevement: '2026-09-15', heure_prelevement: null },
+  ],
+};
+
+function reponse(texte: string, stop: string = 'end_turn') {
+  return { stop_reason: stop, content: [{ type: 'text', text: texte }] };
+}
+
+describe('lireDatePrelevement — la date imprimée, heure de Paris', () => {
+  it('convertit l’heure murale de Paris en instant UTC, été comme hiver', () => {
+    expect(lireDatePrelevement('2026-09-15', '08:30')?.toISOString()).toBe('2026-09-15T06:30:00.000Z');
+    expect(lireDatePrelevement('2026-01-15', '08:30')?.toISOString()).toBe('2026-01-15T07:30:00.000Z');
+  });
+
+  it('sans heure : minuit à Paris', () => {
+    expect(lireDatePrelevement('2026-09-15', null)?.toISOString()).toBe('2026-09-14T22:00:00.000Z');
+  });
+
+  it('ne devine rien : une date illisible ou impossible rend null', () => {
+    expect(lireDatePrelevement(null, null)).toBeNull();
+    expect(lireDatePrelevement('15/09/2026', null)).toBeNull();
+    expect(lireDatePrelevement('2026-02-30', null)).toBeNull();
+    expect(lireDatePrelevement('2026-09-15', '25:00')).toBeNull();
+  });
+});
+
+describe('analyserSortieExtraction — schéma fermé aux bornes des CHECK', () => {
+  it('relève valeur, unité, page et DATE DU PRÉLÈVEMENT (promesse de la v4)', () => {
+    const r = analyserSortieExtraction(JSON.stringify(SORTIE));
+    expect(r).toMatchObject({ ok: true, laboratoire: 'Laboratoire de fixture' });
+    if (!r.ok) throw new Error('attendu ok');
+    expect(r.lignes).toHaveLength(2);
+    expect(r.lignes[0]).toEqual({
+      page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', preleveLe: new Date('2026-09-15T06:30:00.000Z'),
+    });
+    // Le texte reste tel qu'écrit : le refus d'une ligne qualitative vient après.
+    expect(r.lignes[1].valeur).toBe('<0,5');
+  });
+
+  it('un document illisible rend `document_illisible`', () => {
+    expect(analyserSortieExtraction(JSON.stringify({ lisible: false, laboratoire: null, lignes: [] })))
+      .toEqual({ ok: false, motif: 'document_illisible' });
+  });
+
+  it('toute dérogation rend `reponse_invalide`, jamais une ligne tronquée', () => {
+    const avec = (patch: Record<string, unknown>) =>
+      JSON.stringify({ ...SORTIE, lignes: [{ ...SORTIE.lignes[0], ...patch }] });
+    for (const texte of [
+      'pas du json',
+      '[]',
+      JSON.stringify({ lisible: true, lignes: 'x' }),
+      avec({ page: 0 }),
+      avec({ page: 1.5 }),
+      avec({ libelle: '   ' }),
+      avec({ libelle: 'x'.repeat(301) }),
+      avec({ valeur: 'x'.repeat(101) }),
+      avec({ unite: 'x'.repeat(51) }),
+      avec({ valeur: 12 }),
+      JSON.stringify({ ...SORTIE, laboratoire: 'x'.repeat(201) }),
+      JSON.stringify({ ...SORTIE, lignes: Array.from({ length: 201 }, () => SORTIE.lignes[0]) }),
+    ]) {
+      expect(analyserSortieExtraction(texte), texte.slice(0, 40)).toEqual({ ok: false, motif: 'reponse_invalide' });
+    }
+  });
+});
+
+describe('extraireCompteRendu — l’appel', () => {
+  beforeEach(() => create.mockReset());
+
+  it('envoie le PDF ENTIER au modèle enregistré, en sortie structurée, sans bascule de modèle', async () => {
+    create.mockResolvedValue(reponse(JSON.stringify(SORTIE)));
+    const pdf = Buffer.from('%PDF-1.7 fixture');
+    const r = await extraireCompteRendu(pdf);
+    expect(r.ok).toBe(true);
+    const [params, options] = create.mock.calls[0];
+    expect(params.model).toBe(MODELE_EXTRACTION);
+    expect(params.model).toBe('claude-sonnet-5-5');
+    expect(params.output_config.format.type).toBe('json_schema');
+    expect(params).not.toHaveProperty('fallbacks');
+    expect(params.messages[0].content[0]).toEqual({
+      type: 'document',
+      source: { type: 'base64', media_type: 'application/pdf', data: pdf.toString('base64') },
+    });
+    expect(options).toMatchObject({ timeout: 120_000, maxRetries: 1 });
+  });
+
+  it('classe les échecs en motifs fermés', async () => {
+    create.mockRejectedValueOnce(new Anthropic.APIConnectionTimeoutError());
+    expect(await extraireCompteRendu(Buffer.from('%PDF-'))).toEqual({ ok: false, motif: 'delai_depasse' });
+    create.mockRejectedValueOnce(new Error('panne'));
+    expect(await extraireCompteRendu(Buffer.from('%PDF-'))).toEqual({ ok: false, motif: 'erreur_fournisseur' });
+    create.mockResolvedValueOnce(reponse('', 'refusal'));
+    expect(await extraireCompteRendu(Buffer.from('%PDF-'))).toEqual({ ok: false, motif: 'erreur_fournisseur' });
+    create.mockResolvedValueOnce(reponse('{"lisible":', 'max_tokens'));
+    expect(await extraireCompteRendu(Buffer.from('%PDF-'))).toEqual({ ok: false, motif: 'reponse_invalide' });
+  });
+
+  it('motifDErreur ne lit jamais le message', () => {
+    expect(motifDErreur(new Anthropic.APIConnectionTimeoutError())).toBe('delai_depasse');
+    expect(motifDErreur(null)).toBe('erreur_fournisseur');
+  });
+});

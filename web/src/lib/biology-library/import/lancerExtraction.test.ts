@@ -1,0 +1,195 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { prisma, extraire, journal, resoudre } = vi.hoisted(() => {
+  const journal: string[] = [];
+  const trace = (nom: string, valeur: unknown = undefined) =>
+    vi.fn(async (..._args: unknown[]) => {
+      journal.push(nom);
+      return valeur;
+    });
+  const prisma = {
+    $executeRaw: trace('verrou', 1),
+    compteRenduBiologique: {
+      findFirst: trace('compteRendu.findFirst', { id: 'cr_1', typeMime: 'application/pdf' }),
+      findUnique: trace('compteRendu.findUnique', { contenu: new Uint8Array([37, 80, 68, 70, 45]) }),
+    },
+    importBiologique: {
+      findMany: trace('import.findMany', []),
+      create: trace('import.create', { id: 'imp_1' }),
+      update: trace('import.update', {}),
+    },
+    ligneBiologiqueCandidate: { createMany: trace('lignes.createMany', { count: 0 }) },
+    $transaction: vi.fn(),
+  };
+  return { prisma, extraire: vi.fn(), journal, resoudre: vi.fn() };
+});
+
+vi.mock('@/lib/prisma', () => ({ prisma }));
+vi.mock('./extraction', () => ({
+  extraireCompteRendu: extraire,
+  MODELE_EXTRACTION: 'claude-sonnet-5-5',
+  VERSION_PROCEDE_EXTRACTION: 'bio-extraction-v1',
+}));
+vi.mock('./resolverLibellesV1', async importOriginal => {
+  const reel = await importOriginal<typeof import('./resolverLibellesV1')>();
+  resoudre.mockImplementation((l: string) => reel.resoudreLibelle(l));
+  return { ...reel, resoudreLibelle: resoudre };
+});
+
+import { lancerExtraction } from './lancerExtraction';
+
+/** Le premier argument d'un appel simulé, typé pour l'assertion. */
+function argument<T>(fn: { mock: { calls: unknown[][] } }, rang = 0): T {
+  return fn.mock.calls[rang][0] as T;
+}
+type Lignes = { data: Array<Record<string, unknown>> };
+
+const MAINTENANT = new Date('2026-10-02T10:00:00.000Z');
+const PARAMS = { idPatient: 'pat_sophie', idCompteRendu: 'cr_1', lancePar: 'praticien@wellneuro.fr', maintenant: MAINTENANT };
+
+const LIGNES = [
+  { page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', preleveLe: new Date('2026-09-15T06:30:00.000Z') },
+  { page: 2, libelle: 'CRP ultrasensible', valeur: '<0,5', unite: 'mg/L', preleveLe: null },
+];
+
+let espions: Array<ReturnType<typeof vi.spyOn>>;
+
+beforeEach(() => {
+  journal.length = 0;
+  prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
+  prisma.importBiologique.findMany.mockImplementation(async () => {
+    journal.push('import.findMany');
+    return [];
+  });
+  extraire.mockImplementation(async () => {
+    journal.push('appel');
+    return { ok: true, laboratoire: 'Laboratoire de fixture', lignes: LIGNES };
+  });
+  espions = (['error', 'warn', 'log', 'info', 'debug'] as const).map(m => vi.spyOn(console, m).mockImplementation(() => {}));
+});
+
+afterEach(() => {
+  vi.clearAllMocks();
+  for (const e of espions) e.mockRestore();
+});
+
+describe('lancerExtraction — modèle et version enregistrés à chaque fois (v4)', () => {
+  it('crée l’import en cours avec le modèle et la version AVANT l’appel', async () => {
+    await lancerExtraction(PARAMS);
+    expect(prisma.importBiologique.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'pat_sophie',
+        idCompteRendu: 'cr_1',
+        modele: 'claude-sonnet-5-5',
+        versionPrompt: 'bio-extraction-v1',
+        lancePar: 'praticien@wellneuro.fr',
+      },
+      select: { id: true },
+    });
+    expect(journal.indexOf('import.create')).toBeLessThan(journal.indexOf('appel'));
+  });
+
+  it.each(['erreur_fournisseur', 'reponse_invalide', 'document_illisible', 'delai_depasse'] as const)(
+    'en échec (%s), l’import garde son modèle et sa version et passe en échec, sans ligne',
+    async motif => {
+      extraire.mockResolvedValueOnce({ ok: false, motif });
+      const issue = await lancerExtraction(PARAMS);
+      expect(issue).toEqual({ ok: true, idImport: 'imp_1', statut: 'echec', motif });
+      expect(argument<{ data: unknown }>(prisma.importBiologique.create).data).toMatchObject({
+        modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v1',
+      });
+      expect(prisma.importBiologique.update).toHaveBeenCalledWith({
+        where: { id: 'imp_1' },
+        data: { statut: 'echec', motifEchec: motif },
+      });
+      expect(prisma.ligneBiologiqueCandidate.createMany).not.toHaveBeenCalled();
+    },
+  );
+});
+
+describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transaction', () => {
+  it('écrit les lignes AVANT de terminer l’import, sans écriture imbriquée', async () => {
+    const issue = await lancerExtraction(PARAMS);
+    expect(issue).toEqual({ ok: true, idImport: 'imp_1', statut: 'extrait', lignes: 2 });
+    // Deux transactions interactives : l'ouverture (avant l'appel), puis lignes + terminaison.
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    const apres = journal.slice(journal.indexOf('appel'));
+    expect(apres).toEqual(['appel', 'verrou', 'lignes.createMany', 'import.update']);
+    const terminaison = argument<{ data: Record<string, unknown> }>(prisma.importBiologique.update);
+    expect(terminaison).toEqual({
+      where: { id: 'imp_1' },
+      data: { statut: 'extrait', laboratoireLu: 'Laboratoire de fixture' },
+    });
+    expect(terminaison.data).not.toHaveProperty('lignes');
+  });
+
+  it('enregistre la date du prélèvement relevée et le texte tel que lu', async () => {
+    await lancerExtraction(PARAMS);
+    const { data } = argument<Lignes>(prisma.ligneBiologiqueCandidate.createMany);
+    expect(data[0]).toMatchObject({
+      idPatient: 'pat_sophie', idImport: 'imp_1', rang: 1, page: 1,
+      libelleLu: 'Ferritine', valeurLue: '48', uniteLue: 'ng/mL',
+      preleveLeLu: new Date('2026-09-15T06:30:00.000Z'),
+    });
+    expect(data[1]).toMatchObject({ rang: 2, valeurLue: '<0,5', preleveLeLu: null });
+  });
+
+  it('resolver non signé : tout sort `inconnu`, aucun analyte proposé', async () => {
+    await lancerExtraction(PARAMS);
+    const { data } = argument<Lignes>(prisma.ligneBiologiqueCandidate.createMany);
+    for (const ligne of data) expect(ligne).toMatchObject({ analytePropose: null, statutMapping: 'inconnu' });
+  });
+
+  it('l’analyte proposé vient du resolver seul, `ambigu` sans code', async () => {
+    resoudre
+      .mockReturnValueOnce({ statut: 'resolu', code: 'BIO_FERRITINE' })
+      .mockReturnValueOnce({ statut: 'ambigu', code: null });
+    await lancerExtraction(PARAMS);
+    const { data } = argument<Lignes>(prisma.ligneBiologiqueCandidate.createMany);
+    expect(data[0]).toMatchObject({ analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu' });
+    expect(data[1]).toMatchObject({ analytePropose: null, statutMapping: 'ambigu' });
+  });
+});
+
+describe('lancerExtraction — imports en cours', () => {
+  it('clôt `delai_depasse` un import en cours périmé, puis relance', async () => {
+    prisma.importBiologique.findMany.mockResolvedValueOnce([
+      { id: 'imp_vieux', lanceLe: new Date(MAINTENANT.getTime() - 6 * 60_000) },
+    ]);
+    await lancerExtraction(PARAMS);
+    expect(prisma.importBiologique.update).toHaveBeenCalledWith({
+      where: { id: 'imp_vieux' },
+      data: { statut: 'echec', motifEchec: 'delai_depasse' },
+    });
+    expect(prisma.importBiologique.create).toHaveBeenCalled();
+  });
+
+  it('refuse une seconde extraction pendant qu’une première est en cours', async () => {
+    prisma.importBiologique.findMany.mockResolvedValueOnce([
+      { id: 'imp_frais', lanceLe: new Date(MAINTENANT.getTime() - 60_000) },
+    ]);
+    expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'extraction_en_cours' });
+    expect(prisma.importBiologique.create).not.toHaveBeenCalled();
+    expect(extraire).not.toHaveBeenCalled();
+  });
+
+  it('un compte rendu d’un autre dossier est introuvable', async () => {
+    prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce(null);
+    expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'compte_rendu_introuvable' });
+    expect(extraire).not.toHaveBeenCalled();
+  });
+});
+
+describe('lancerExtraction — aucune donnée de santé dans les journaux', () => {
+  it('une panne d’écriture ne journalise ni libellé, ni valeur, ni message', async () => {
+    prisma.ligneBiologiqueCandidate.createMany.mockRejectedValueOnce(
+      Object.assign(new Error('Ferritine 48 ng/mL pat_sophie'), { code: 'P2003' }),
+    );
+    expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'server_error' });
+    const ecrit = JSON.stringify(espions.flatMap(e => e.mock.calls));
+    expect(ecrit).toContain('P2003');
+    for (const interdit of ['Ferritine', '48', 'ng/mL', 'pat_sophie', '<0,5']) {
+      expect(ecrit).not.toContain(interdit);
+    }
+  });
+});

@@ -69,3 +69,22 @@ export function isCbResultsEnabled(
 ): boolean {
   return isCbEnabled(valueRayon) && value === 'true';
 }
+
+/**
+ * Étage 3 — import d'un compte rendu par IA vision (BIO-INGEST LOT-02,
+ * [[D-256]] A2/A4/A5) : dépôt du document, extraction des valeurs par
+ * Anthropic, validation praticien ligne par ligne.
+ *
+ * Exige AUSSI l'étage résultats (donc le rayon) : l'import n'écrit que des
+ * résultats, et une ligne validée ne peut pas naître sur un étage fermé.
+ * C'est une NOUVELLE transmission de données de santé à un sous-traitant :
+ * ses conditions de pose (§2 ter du dossier RGPD) sont écrites à sa ligne de
+ * `docs/FEATURE_FLAGS.md`. Absent = éteint (fail-closed).
+ */
+export function isBioIngestEnabled(
+  value = process.env.WN_BIO_INGEST_ENABLED,
+  valueResultats = process.env.WN_CB_RESULTS_ENABLED,
+  valueRayon = process.env.WN_CB_ENABLED,
+): boolean {
+  return isCbResultsEnabled(valueResultats, valueRayon) && value === 'true';
+}
