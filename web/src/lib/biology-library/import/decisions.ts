@@ -46,6 +46,8 @@ export const MESSAGES_REFUS_DECISION: Record<string, string> = {
   decisions_trop_nombreuses: 'Trop de lignes pour un seul enregistrement.',
   import_introuvable: 'Cette extraction est introuvable dans ce dossier.',
   import_non_extrait: 'Cette extraction n’est pas terminée : aucune ligne ne se décide encore.',
+  import_remplace:
+    'Une extraction plus récente de ce compte rendu existe : seules ses lignes se décident.',
   ligne_absente: 'La ligne à décider est mal désignée.',
   ligne_en_double: 'Cette ligne figure deux fois dans l’envoi.',
   ligne_introuvable: 'Cette ligne n’appartient pas à cette extraction.',
@@ -81,6 +83,30 @@ export type IssueDecisions =
 type Validation = { idLigne: string; analyteCode: string; valeur: number; preleveLe: Date; unite: string | null };
 type Ecart = { idLigne: string; motif: MotifEcart };
 
+class ImportRemplace extends Error {
+  constructor() {
+    super('import_remplace');
+    this.name = 'ImportRemplace';
+  }
+}
+
+/**
+ * L'extraction COURANTE d'un compte rendu : la plus récente qui n'a pas
+ * échoué (une extraction en cours compte — elle va remplacer la précédente).
+ * Seules ses lignes se décident (arbitrage du responsable, 2026-10-02) : deux
+ * extractions du même document ne donnent pas deux jeux de résultats.
+ */
+type LecteurImports = { importBiologique: { findFirst: typeof prisma.importBiologique.findFirst } };
+
+async function idExtractionCourante(client: LecteurImports, idCompteRendu: string, idPatient: string) {
+  const courante = await client.importBiologique.findFirst({
+    where: { idCompteRendu, idPatient, statut: { not: 'echec' } },
+    orderBy: { lanceLe: 'desc' },
+    select: { id: true },
+  });
+  return courante?.id ?? null;
+}
+
 class LigneDejaTraitee extends Error {
   constructor() {
     super('ligne_deja_traitee');
@@ -110,6 +136,9 @@ export async function deciderLignes(params: {
   });
   if (!imp) return refusGlobal('import_introuvable', 404);
   if (imp.statut !== 'extrait') return refusGlobal('import_non_extrait', 409);
+  if ((await idExtractionCourante(prisma, imp.idCompteRendu, idPatient)) !== idImport) {
+    return refusGlobal('import_remplace', 409);
+  }
 
   const refus: RefusDecision[] = [];
   const refuser = (index: number, idLigne: string | null, reason: string) => {
@@ -214,6 +243,9 @@ export async function deciderLignes(params: {
         where: { id: { in: ids }, idImport, idPatient, statut: 'proposee' },
       });
       if (encore !== validations.length + ecarts.length) throw new LigneDejaTraitee();
+      // Relu aussi sous le verrou, que l'extraction prend : une ré-extraction
+      // lancée entre le préflight et l'écriture passe devant.
+      if ((await idExtractionCourante(tx, imp.idCompteRendu, idPatient)) !== idImport) throw new ImportRemplace();
       for (const v of validations) {
         // Le résultat D'ABORD, la ligne ENSUITE : la ligne désigne le résultat (A5).
         const resultat = await tx.resultatBiologique.create({
@@ -245,6 +277,7 @@ export async function deciderLignes(params: {
     }, { timeout: 20_000 });
   } catch (err) {
     if (err instanceof LigneDejaTraitee) return refusGlobal('ligne_deja_traitee', 409);
+    if (err instanceof ImportRemplace) return refusGlobal('import_remplace', 409);
     // Sans repli : le résultat existant n'est ni relu ni rattaché.
     if ((err as { code?: string } | null)?.code === 'P2002') return refusGlobal('doublon_mesure', 409);
     console.error('[bio-ingest decisions] écriture refusée :', ...classeEtCode(err));

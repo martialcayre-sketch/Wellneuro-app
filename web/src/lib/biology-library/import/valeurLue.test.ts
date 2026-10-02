@@ -28,6 +28,17 @@ describe('unitesConcordent — aucune conversion (D-157)', () => {
     expect(unitesConcordent('μmol/L', 'µmol/L')).toBe(true);
   });
 
+  it('le « u » ASCII vaut « µ » en préfixe de mol, g ou L — et seulement là', () => {
+    expect(unitesConcordent('umol/L', 'µmol/L')).toBe(true);
+    expect(unitesConcordent('ug/24h', 'µg/24h')).toBe(true);
+    expect(unitesConcordent('ug/mL', 'µg/mL')).toBe(true);
+    expect(unitesConcordent('ng/uL', 'ng/µL')).toBe(true);
+    expect(unitesConcordent('UI/L', 'µI/L')).toBe(false);
+    expect(unitesConcordent('U/L', 'UI/L')).toBe(false);
+    expect(unitesConcordent('mUI/L', 'mµI/L')).toBe(false);
+    expect(unitesConcordent('umol/L', 'mmol/L')).toBe(false);
+  });
+
   it('la casse compte, sauf pour le litre (revue, P2-8)', () => {
     expect(unitesConcordent('mUI/L', 'MUI/L')).toBe(false);
     expect(unitesConcordent('mui/l', 'mUI/L')).toBe(false);

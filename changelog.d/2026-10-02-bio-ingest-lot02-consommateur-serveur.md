@@ -31,7 +31,8 @@
 - **Resolver libellé → analyte** (`resolverLibellesV1`, module signé) : les
   libellés du catalogue et des synonymes de laboratoire, comparés au libellé
   entier. Une parenthèse n'est jamais retirée, parce qu'elle peut dire la
-  matrice.
+  matrice. Les libellés qui taisent la matrice (« Zinc », « Cuivre »,
+  « Zonuline »…) ne sont pas rattachés, même quand ils viennent du catalogue.
   - Il est **livré non signé** : tant que la signature manque, toute ligne
     sort `inconnu` et le praticien choisit l'analyte.
   - Un libellé générique dont la matrice n'est pas dite n'est pas rattaché.
@@ -39,13 +40,20 @@
   `resultats_biologiques`, en tout ou rien.
   - La validation crée le résultat (`saisie_praticien`, sans `saisiLe`, unité
     relue au catalogue), puis décide la ligne.
+  - Seules les lignes de l'extraction **courante** du compte rendu se
+    décident.
   - Valeur et date sont corrigeables. La casse d'une unité compte (« mUI »
-    n'est pas « MUI »), sauf pour le litre.
+    n'est pas « MUI »), sauf pour le litre. Le « u » d'une impression ASCII
+    vaut « µ » devant mol, g ou L.
   - Sont refusées : une ligne lue non quantitative, une unité lue qui n'est
     pas celle de l'analyte (aucune conversion, D-157) et un doublon au
     dossier.
   - Un `P2002` (saisie manuelle intercalée) est rendu tel quel, sans repli.
-- **Retrait d'un dépôt erroné**, tant qu'aucune ligne n'est validée. Il devient
+- **Retrait d'un dépôt erroné**, tant qu'aucune ligne n'est validée, y
+  compris sur un dossier clos. Il devient
   le second auteur de suppression admis par `staging.guard.test.ts`.
+- **Rubrique 8 du dossier RGPD** : l'arbitrage du 2026-10-02 (purge du PDF
+  après décision) y est consigné, mais n'est pas encore en œuvre, faute de la
+  migration.
 - **Journaux** : seulement la classe et le code d'une erreur. Le banc
   `journaux.guard.test.ts` couvre désormais l'import.

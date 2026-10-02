@@ -11,6 +11,10 @@ import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
 // résultat (A5). Le retrait est alors refusé ; la purge après validation
 // attend l'arbitrage de la rubrique 8 du dossier RGPD, et une migration.
 //
+// PERMIS SUR UN DOSSIER CLOS (arbitrage du responsable, 2026-10-02) : retirer
+// un document déposé par erreur n'ajoute rien au dossier, cela en retire une
+// donnée qui n'avait pas à y être.
+//
 // Sous le verrou du compte rendu, que prennent aussi les décisions : une
 // validation ne peut pas se glisser entre la vérification et la suppression.
 // Et la suppression des lignes ne vise que les non validées — si l'une

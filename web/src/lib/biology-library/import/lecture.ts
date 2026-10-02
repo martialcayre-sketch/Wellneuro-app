@@ -31,6 +31,8 @@ export type ImportLu = {
   laboratoireLu: string | null;
   lanceLe: string;
   termineLe: string | null;
+  /** L'extraction courante — la seule dont les lignes se décident (arbitrage du 2026-10-02). */
+  courant: boolean;
   lignes: LigneLue[];
 };
 
@@ -98,6 +100,8 @@ export async function lireCompteRendu(idPatient: string, idCompteRendu: string):
     select: { code: true, unite: true },
   });
   const uniteParCode = new Map(analytes.map(a => [a.code, a]));
+  // Triés du plus récent au plus ancien : la courante est la première qui n'a pas échoué.
+  const idCourant = c.imports.find(i => i.statut !== 'echec')?.id ?? null;
 
   return {
     id: c.id,
@@ -113,6 +117,7 @@ export async function lireCompteRendu(idPatient: string, idCompteRendu: string):
       laboratoireLu: i.laboratoireLu,
       lanceLe: i.lanceLe.toISOString(),
       termineLe: i.termineLe?.toISOString() ?? null,
+      courant: i.id === idCourant,
       lignes: i.lignes.map(l => ({
         ...l,
         preleveLeLu: l.preleveLeLu?.toISOString() ?? null,

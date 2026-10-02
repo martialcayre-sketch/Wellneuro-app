@@ -56,6 +56,14 @@ LOT-01, amendement RGPD/TRUST
   - **retrait d'un dépôt erroné** (mauvais dossier), tant qu'aucune ligne n'est validée : second auteur admis par `staging.guard.test.ts`. La purge du document après validation attend l'arbitrage de la rubrique 8 et demandera une migration ;
   - une image de plus de ~5 Mo dépasse la limite du fournisseur, alors que la base admet 10 Mo : contrôle ou réduction avant l'envoi.
 - [ ] PR code consommateur — découpée le 2026-10-02 en **2a (serveur)** et **2b (écran)**. Arbitrages : resolver = catalogue + synonymes, livré non signé ; valeur et date corrigeables à la validation (une ligne lue non quantitative reste refusée) ; modèle `claude-sonnet-5-5`. 2a : en cours. **Ce que la v4 promet, le staging le tient** : la date du prélèvement est relevée, et chaque extraction enregistre le modèle et la version du procédé (« enregistrés à chaque fois »). Les deux ont un test. **Le compte rendu part ENTIER** : la v4 et la v11 le déclarent, aucun masquage n'est promis ni à écrire (arbitrage du 2026-10-01).
+- [ ] **Arbitrages du 2026-10-02 (questions ouvertes par la revue de la PR 2a)** :
+  - `u` vaut `µ` en préfixe de mol, g ou L — **fait en 2a** ;
+  - libellés génériques du catalogue (« Cuivre », « Glutathion », « Zonuline ») retirés du resolver — **fait en 2a** ;
+  - seules les lignes de l'extraction **courante** (la plus récente non échouée) se décident — **fait en 2a** ;
+  - retrait d'un dépôt erroné **permis sur un dossier clos** — **fait en 2a** (documenté) ;
+  - **PR 2b** : sans heure lue (minuit à Paris), l'heure est **exigée** à la validation, et l'écran signale toute mesure du même analyte déjà au dossier le même jour ;
+  - **PR 2b** : délai du routeur Scalingo et durée d'une extraction réelle de plusieurs pages **mesurés, puis décidés** (relecture de l'import par l'écran si le risque est réel) ;
+  - **conservation (rubrique 8)** : **purge du PDF après décision** de toutes les lignes de l'extraction courante ; empreinte et trace conservées. Demande une **migration** (`contenu` nullable, déclencheur de figement à revoir) et son `release-db`, plus une **nouvelle version du document patient** (la v11 dit « conservé dans votre dossier »). À tenir **avant la pose du drapeau**, ou à déclarer tel quel.
 - [x] Création du drapeau : sa ligne dans `docs/FEATURE_FLAGS.md` porte les conditions de pose du §2 ter — `WN_BIO_INGEST_ENABLED`, créé éteint le 2026-10-02 (PR 2a).
 - [ ] **Pose du drapeau, seulement après** : la v4 et la v11 déployées et constatées ; la **demande de DPA Anthropic envoyée**, sa date établie au fil (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`) — **tenue le 2026-10-01 à 17:34 UTC** ; §2 ter du dossier RGPD validé par le responsable le 2026-10-01 ; la v4 et la v11 relues contre le comportement livré.
 

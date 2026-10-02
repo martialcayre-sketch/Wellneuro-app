@@ -57,6 +57,7 @@ describe('GET /api/praticien/biologie/import/compte-rendu', () => {
     expect(res.status).toBe(200);
     const corps = await res.json();
     expect(corps.compteRendu.imports[0].modele).toBe('claude-sonnet-5-5');
+    expect(corps.compteRendu.imports[0].courant).toBe(true);
     expect(corps.compteRendu.imports[0].lignes[0].preMarquage).toBe('unite_divergente');
     for (const ecriture of [
       prisma.compteRenduBiologique.create, prisma.compteRenduBiologique.delete,

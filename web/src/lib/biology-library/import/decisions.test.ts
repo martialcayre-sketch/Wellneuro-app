@@ -36,10 +36,14 @@ const valider = (idLigne: string, patch: Record<string, unknown> = {}) => ({
 });
 
 let espions: Array<ReturnType<typeof vi.spyOn>>;
+let courante = 'imp_1';
 
 beforeEach(() => {
   journal.length = 0;
-  prisma.importBiologique.findFirst.mockResolvedValue({ statut: 'extrait', idCompteRendu: 'cr_1' });
+  // Deux lectures : l'extraction désignée, puis la COURANTE du compte rendu (`statut: { not: 'echec' }`).
+  prisma.importBiologique.findFirst.mockImplementation(async ({ where }: { where: { statut?: unknown } }) =>
+    (where.statut ? { id: courante } : { statut: 'extrait', idCompteRendu: 'cr_1' }));
+  courante = 'imp_1';
   prisma.ligneBiologiqueCandidate.findMany.mockImplementation(async ({ where }: { where: { id: { in: string[] } } }) =>
     LIGNES.filter(l => where.id.in.includes(l.id)));
   prisma.biologyAnalyte.findMany.mockResolvedValue(ANALYTES);
@@ -86,6 +90,34 @@ describe('deciderLignes — aucune écriture sans geste', () => {
     prisma.importBiologique.findFirst.mockResolvedValueOnce(null);
     expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] }))
       .toMatchObject({ ok: false, reason: 'import_introuvable', status: 404 });
+  });
+});
+
+describe('deciderLignes — seule l’extraction courante se décide (arbitrage du 2026-10-02)', () => {
+  it('une extraction remplacée par une plus récente est refusée, sans transaction', async () => {
+    courante = 'imp_2';
+    expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] }))
+      .toMatchObject({ ok: false, reason: 'import_remplace', status: 409 });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('une ré-extraction lancée pendant le préflight est vue sous le verrou, rien n’est écrit', async () => {
+    prisma.$transaction.mockImplementationOnce(async (cb: (tx: typeof prisma) => unknown) => {
+      courante = 'imp_2';
+      return cb(prisma);
+    });
+    expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] }))
+      .toMatchObject({ ok: false, reason: 'import_remplace', status: 409 });
+    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+  });
+
+  it('la courante est la plus récente qui n’a pas échoué', async () => {
+    await deciderLignes({ ...BASE, decisions: [valider('l1')] });
+    expect(prisma.importBiologique.findFirst).toHaveBeenCalledWith({
+      where: { idCompteRendu: 'cr_1', idPatient: 'pat_sophie', statut: { not: 'echec' } },
+      orderBy: { lanceLe: 'desc' },
+      select: { id: true },
+    });
   });
 });
 

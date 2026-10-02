@@ -61,7 +61,7 @@ describe('resolver — la résolution (table supposée signée)', () => {
   });
 
   it('ne retire jamais une parenthèse : elle peut dire la matrice (revue, P1-2)', () => {
-    for (const l of ['Zonuline (selles)', 'BDNF (plasma)', 'Glutathion (réduit)', 'Ferritine (chimiluminescence)']) {
+    for (const l of ['Zonuline (selles)', 'BDNF (plasma)', 'Glutathion (réduit)', 'Ferritine (chimiluminescence)', 'Ferritine (sérum)']) {
       expect(resoudre(l), l).toEqual({ statut: 'inconnu', code: null });
     }
     // Une parenthèse qui fait partie d'une entrée relue, elle, se résout.
@@ -74,7 +74,7 @@ describe('resolver — la résolution (table supposée signée)', () => {
   });
 
   it('ne rattache pas un libellé générique dont la matrice n’est pas dite', () => {
-    for (const l of ['Zinc', 'Magnésium', 'Vitamine B12', 'Glycémie', 'CRP', '']) {
+    for (const l of ['Zinc', 'Magnésium', 'Vitamine B12', 'Glycémie', 'CRP', 'Cuivre', 'Glutathion', 'Zonuline', 'BDNF', '']) {
       expect(resoudre(l), l).toEqual({ statut: 'inconnu', code: null });
     }
   });

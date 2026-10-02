@@ -4,7 +4,8 @@
 // une mesure quantitative, et si l'unité lue est celle de l'analyte.
 //
 // AUCUNE CONVERSION ([[D-157]]). Deux unités concordent si elles s'écrivent
-// pareil, aux variantes typographiques près (casse du litre, espaces, micro « µ »/« μ ») —
+// pareil, aux variantes typographiques près (casse du litre, espaces, micro
+// « µ »/« μ »/« u ») —
 // jamais parce qu'un facteur les relierait. « mg/L » face à « g/L » diverge, et
 // c'est au praticien d'écarter la ligne.
 //
@@ -45,12 +46,18 @@ export function lireValeurQuantitative(texte: string): number | null {
  * La CASSE COMPTE — « mUI/L » (milli) n'est pas « MUI/L » (méga) (revue,
  * P2-8) — sauf pour le symbole du litre, qui s'écrit indifféremment « l » ou
  * « L » : « ng/ml » et « ng/mL » sont la même unité.
+ *
+ * Le « u » d'une impression ASCII vaut « µ », mais SEULEMENT en préfixe d'une
+ * unité de quantité, de masse ou de volume — « umol », « ug », « uL »
+ * (arbitrage du responsable, 2026-10-02). Variante typographique, pas une
+ * conversion : « UI », « U/L » et « mUI » restent intacts.
  */
 function formeUnite(unite: string): string {
   return unite
     .normalize('NFKC')
     .replace(/\s+/g, '')
     .split('/')
+    .map(terme => terme.replace(/^u(mol|g|[lL])$/, '\u03BC$1'))
     .map(terme => (/^[mµμdcn]?[lL]$/.test(terme) ? `${terme.slice(0, -1)}L` : terme))
     .join('/');
 }

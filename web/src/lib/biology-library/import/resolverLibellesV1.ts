@@ -20,10 +20,11 @@ import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 // (« zinc », « magnésium », « vitamine B12 ») n'est PAS rattaché — « zinc »
 // sérique n'est pas le zinc plasmatique du catalogue, la B12 totale n'est pas
 // l'holotranscobalamine.
-// Font exception les LIBELLÉS DU CATALOGUE eux-mêmes, recopiés tels quels même
-// quand ils taisent la matrice (« Cuivre », « Glutathion », « Zonuline ») :
-// c'est le nom que le catalogue donne à l'analyte. Leur portée exacte est un
-// point de la relecture qui précède la signature (revue `wn-reviewer`, P1-2). Un même libellé posé sous DEUX codes rend `ambigu` :
+// La règle vaut AUSSI pour les libellés du catalogue lui-même : « Cuivre »,
+// « Glutathion », « Zonuline » taisent la matrice et ne sont pas repris — une
+// zonuline fécale se rattacherait à l'analyte sanguin sous la même unité
+// (revue `wn-reviewer`, P1-2 ; arbitrage du responsable, 2026-10-02). Un
+// libellé précis (« Cuivre sérique »…) peut s'ajouter à la relecture. Un même libellé posé sous DEUX codes rend `ambigu` :
 // c'est voulu (« cortisol salivaire », « IgA sécrétoires »), le praticien
 // tranche.
 //
@@ -59,7 +60,6 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: 'Sélénium plasmatique', code: 'BIO_SELENIUM' },
   { libelle: 'Iodurie', code: 'BIO_IODURIE' },
   { libelle: 'Iodurie des 24 heures', code: 'BIO_IODURIE' },
-  { libelle: 'Cuivre', code: 'BIO_CUIVRE' },
   { libelle: 'Cuprémie', code: 'BIO_CUIVRE' },
   { libelle: 'Rapport zinc / cuivre', code: 'BIO_RATIO_ZINC_CUIVRE' },
   { libelle: 'Ratio zinc / cuivre', code: 'BIO_RATIO_ZINC_CUIVRE' },
@@ -100,7 +100,6 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: 'Anticorps anti-LDL oxydées', code: 'BIO_ANTI_LDL_OXYDE' },
   { libelle: 'Coenzyme Q10 plasmatique', code: 'BIO_COENZYME_Q10' },
   { libelle: 'Coenzyme Q10', code: 'BIO_COENZYME_Q10' },
-  { libelle: 'Glutathion', code: 'BIO_GLUTATHION' },
   { libelle: 'Rapport kynurénine / tryptophane', code: 'BIO_RATIO_KYN_TRP' },
   { libelle: 'Ratio kynurénine / tryptophane', code: 'BIO_RATIO_KYN_TRP' },
   { libelle: 'Cortisol awakening response', code: 'BIO_CAR' },
@@ -131,7 +130,6 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: 'Acides gras à chaîne courte fécaux', code: 'BIO_AGCC_FECAUX' },
   { libelle: 'Calprotectine fécale', code: 'BIO_CALPROTECTINE' },
   { libelle: 'Calprotectine', code: 'BIO_CALPROTECTINE' },
-  { libelle: 'Zonuline', code: 'BIO_ZONULINE' },
   { libelle: 'LBP (protéine porteuse du LPS)', code: 'BIO_LBP' },
   { libelle: 'LBP', code: 'BIO_LBP' },
   { libelle: 'Lipopolysaccharide binding protein', code: 'BIO_LBP' },
