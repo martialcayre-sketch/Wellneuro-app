@@ -1,14 +1,18 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { garderImport } from '@/lib/biology-library/import/garde';
-import { lancerExtraction } from '@/lib/biology-library/import/lancerExtraction';
+import { ouvrirExtraction, poursuivreExtraction } from '@/lib/biology-library/import/lancerExtraction';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // Lance l'extraction d'un compte rendu déposé (BIO-INGEST LOT-02, [[D-256]]
-// A4) : le document part ENTIER chez Anthropic. Synchrone — la réponse dit
-// l'issue (lignes relevées, ou échec et son motif fermé). Une nouvelle
-// extraction du même document crée un nouvel import ; les précédents restent.
+// A4) : le document part ENTIER chez Anthropic. ASYNCHRONE : la réponse
+// (202) rend l'import ouvert `en_cours`, l'appel se poursuit dans `after()` —
+// trois pages durent ~36 s (mesure du 2026-10-02), au-delà de la fenêtre de
+// 30 s du routeur Scalingo. L'écran relit le compte rendu jusqu'à l'issue
+// (`extrait`, ou `echec` et son motif fermé ; un processus mort est rattrapé
+// par la péremption). Une nouvelle extraction du même document crée un nouvel
+// import ; les précédents restent.
 
 export const runtime = 'nodejs';
 
@@ -47,13 +51,21 @@ export async function POST(req: Request) {
     });
     if (!patient || !accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
 
-    const issue = await lancerExtraction({ idPatient, idCompteRendu, lancePar: garde.email });
-    if (!issue.ok) {
-      if (issue.reason === 'server_error') return echec('server_error', 'Erreur technique.', 500);
-      const status = issue.reason === 'compte_rendu_introuvable' ? 404 : 409;
-      return echec(issue.reason, MESSAGES[issue.reason], status);
+    const ouverture = await ouvrirExtraction({ idPatient, idCompteRendu, lancePar: garde.email });
+    if (!ouverture.ok) {
+      const status = ouverture.reason === 'compte_rendu_introuvable' ? 404 : 409;
+      return echec(ouverture.reason, MESSAGES[ouverture.reason], status);
     }
-    return NextResponse.json(issue, { status: 201 });
+    const { idImport } = ouverture;
+    after(async () => {
+      try {
+        await poursuivreExtraction({ idPatient, idCompteRendu, idImport });
+      } catch (err) {
+        // L'import reste `en_cours` : la péremption le clora `delai_depasse`.
+        console.error('[praticien/biologie/import/extraction] suite interrompue :', ...classeEtCode(err));
+      }
+    });
+    return NextResponse.json({ ok: true, idImport, statut: 'en_cours' }, { status: 202 });
   } catch (err) {
     console.error('[praticien/biologie/import/extraction POST] refus :', ...classeEtCode(err));
     return echec('server_error', 'Erreur technique.', 500);

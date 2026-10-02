@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { preMarquage, type MotifEcart } from './valeurLue';
+import { PEREMPTION_EN_COURS_MS } from './verrou';
 
 // LECTURE DU STAGING POUR L'ÉCRAN (BIO-INGEST LOT-02). Ne rend JAMAIS le
 // contenu du document : chaque sélection est explicite, `contenu` n'y figure
@@ -33,6 +34,11 @@ export type ImportLu = {
   termineLe: string | null;
   /** L'extraction courante — la seule dont les lignes se décident (arbitrage du 2026-10-02). */
   courant: boolean;
+  /**
+   * `en_cours` au-delà de la péremption (processus mort) — jugé par l'horloge
+   * du SERVEUR, pas celle du navigateur (revue de la PR 2b, P2-3).
+   */
+  perime: boolean;
   lignes: LigneLue[];
 };
 
@@ -67,7 +73,11 @@ export async function listerComptesRendus(idPatient: string) {
 }
 
 /** Un compte rendu, ses extractions et leurs lignes, avec le pré-marquage. `null` s'il n'est pas de ce dossier. */
-export async function lireCompteRendu(idPatient: string, idCompteRendu: string): Promise<CompteRenduLu | null> {
+export async function lireCompteRendu(
+  idPatient: string,
+  idCompteRendu: string,
+  maintenant: Date = new Date(),
+): Promise<CompteRenduLu | null> {
   const c = await prisma.compteRenduBiologique.findFirst({
     where: { id: idCompteRendu, idPatient },
     select: {
@@ -118,6 +128,7 @@ export async function lireCompteRendu(idPatient: string, idCompteRendu: string):
       lanceLe: i.lanceLe.toISOString(),
       termineLe: i.termineLe?.toISOString() ?? null,
       courant: i.id === idCourant,
+      perime: i.statut === 'en_cours' && i.lanceLe.getTime() < maintenant.getTime() - PEREMPTION_EN_COURS_MS,
       lignes: i.lignes.map(l => ({
         ...l,
         preleveLeLu: l.preleveLeLu?.toISOString() ?? null,

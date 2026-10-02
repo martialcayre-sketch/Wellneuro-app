@@ -884,3 +884,41 @@ describe('EstimeMesurePanel — la plage sourcée juxtaposée ([[D-157]])', () =
     }
   });
 });
+
+describe('EstimeMesurePanel — import de comptes rendus (BIO-INGEST LOT-02)', () => {
+  function fetchMinimal() {
+    const fetchMock = vi.fn(async (entree: RequestInfo | URL) => {
+      const url = String(entree);
+      const body = url.includes('/import?')
+        ? { ok: true, comptesRendus: [] }
+        : url.includes('/catalogue')
+          ? { ok: true, analytes: [] }
+          : { ok: true, resultats: [], plagesParAnalyte: {} };
+      return { ok: true, status: 200, json: async () => body } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  it('drapeau de l’import éteint : ni panneau, ni lecture des dépôts', async () => {
+    const fetchMock = fetchMinimal();
+    render(
+      <CbFeatureProvider enabled resultsEnabled>
+        <EstimeMesurePanel idPatient="PAT1" />
+      </CbFeatureProvider>,
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(screen.queryByText('Importer un compte rendu de laboratoire')).toBeNull();
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/biologie/import'))).toBe(false);
+  });
+
+  it('drapeau de l’import posé : le panneau apparaît sous la saisie du bilan', async () => {
+    fetchMinimal();
+    render(
+      <CbFeatureProvider enabled resultsEnabled bioIngestEnabled>
+        <EstimeMesurePanel idPatient="PAT1" />
+      </CbFeatureProvider>,
+    );
+    expect(await screen.findByText('Importer un compte rendu de laboratoire')).toBeTruthy();
+  });
+});

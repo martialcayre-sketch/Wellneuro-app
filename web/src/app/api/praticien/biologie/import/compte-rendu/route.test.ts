@@ -69,6 +69,17 @@ describe('GET /api/praticien/biologie/import/compte-rendu', () => {
     }
   });
 
+  it('une extraction en cours au-delà de la péremption est dite périmée — par l’horloge du serveur', async () => {
+    const base = await prisma.compteRenduBiologique.findFirst();
+    const enCours = (minutes: number) => ({
+      ...base.imports[0], id: `imp_${minutes}`, statut: 'en_cours', termineLe: null, lignes: [],
+      lanceLe: new Date(Date.now() - minutes * 60_000),
+    });
+    prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce({ ...base, imports: [enCours(6), enCours(1)] });
+    const corps = await (await GET(new Request(URL_GET))).json();
+    expect(corps.compteRendu.imports.map((i: { perime: boolean }) => i.perime)).toEqual([true, false]);
+  });
+
   it('ne lit jamais le contenu du document', async () => {
     await GET(new Request(URL_GET));
     const { select } = prisma.compteRenduBiologique.findFirst.mock.calls[0][0];
