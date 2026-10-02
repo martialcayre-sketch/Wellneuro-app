@@ -21,8 +21,8 @@
   « 00:00 » d'une heure absente. Tant que l'extraction ne l'écrit pas, le
   comportement reste celui d'avant : l'heure est exigée.
 - **Document patient « Vos données personnelles » v12**, avec accusé : le
-  compte rendu est supprimé dès que chaque valeur relevée est décidée, et au
-  plus tard 30 jours après son dépôt. Il n'est plus « conservé dans votre
+  compte rendu est supprimé dès que chaque valeur relevée lors de sa dernière
+  lecture est décidée, et au plus tard 30 jours après son dépôt. Il n'est plus « conservé dans votre
   dossier ».
 - **Contrats SQL** :
   - nouveau contrat `bio_ingest_purge_v1_negatif.sql` (12 promesses, 32 mutants

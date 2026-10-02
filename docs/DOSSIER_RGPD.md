@@ -178,7 +178,8 @@ commence à se préparer est un fait interne au cabinet.
 déposer par le praticien le compte rendu d'analyses que le patient lui remet
 (PDF, puis photo ou scan au LOT-03). Le document est conservé en base Postgres,
 chez l'hébergeur HDS (A2), **le temps de sa relecture** : purgé dès que chacune
-de ses lignes est décidée, au plus tard 30 jours après le dépôt ([[D-257]],
+des lignes de sa dernière lecture est décidée, au plus tard 30 jours après le
+dépôt ([[D-257]],
 rubrique 8). Un modèle d'Anthropic, en lecture d'image, en
 relèvera les valeurs. [[D-256]] A4 fait de cette déclaration une **condition de
 sortie non négociable**, posée avant toute ligne de code d'extraction et avant

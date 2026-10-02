@@ -311,7 +311,7 @@ describe('registre des documents TRUST', () => {
     expect(v12.version).toBe('v12');
     const texte = v12.sections.flatMap(s => s.paragraphes).join(' ');
     expect(texte).not.toContain('conservé dans votre dossier');
-    expect(texte).toContain('Le compte rendu déposé est supprimé dès que votre praticien a validé ou écarté chacune des valeurs relevées');
+    expect(texte).toContain('Le compte rendu déposé est supprimé dès que votre praticien a validé ou écarté chacune des valeurs relevées lors de sa dernière lecture');
     expect(texte).toContain('au plus tard 30 jours après son dépôt');
     expect(texte).toContain('Les valeurs validées restent dans votre dossier');
     expect(texte).toContain('une empreinte du document, qui ne permet pas de le reconstituer');

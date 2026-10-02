@@ -1172,8 +1172,11 @@ const DONNEES_CONFIDENTIALITE_V11: VersionDocumentTrust = {
 /*
  * v12 du 2026-10-02 — LA v11 DEVENAIT FAUSSE AVEC LA PURGE DU COMPTE RENDU
  * ([[D-257]]) : « Le compte rendu déposé est conservé dans votre dossier ». Il
- * est désormais supprimé dès que chacune des valeurs relevées est validée ou
- * écartée, et au plus tard 30 jours après le dépôt. Restent les valeurs
+ * est désormais supprimé dès que chacune des valeurs relevées lors de sa
+ * DERNIÈRE lecture (l'extraction courante, la plus récente non échouée) est
+ * validée ou écartée, et au plus tard 30 jours après le dépôt. « Dernière
+ * lecture » : une relecture ne laisse pas croire que les valeurs des lectures
+ * précédentes doivent aussi être décidées (revue Copilot de #1286). Restent les valeurs
  * validées, l'empreinte du document et la trace de sa lecture (modèle, version
  * du procédé, lignes lues, décisions) — la provenance des résultats (A5).
  *
@@ -1202,7 +1205,7 @@ const DONNEES_CONFIDENTIALITE_V12: VersionDocumentTrust = {
             paragraphes: section.paragraphes.map(paragraphe =>
               paragraphe.replace(
                 'Le compte rendu déposé est conservé dans votre dossier.',
-                'Le compte rendu déposé est supprimé dès que votre praticien a validé ou écarté chacune des valeurs relevées, et au plus tard 30 jours après son dépôt. Les valeurs validées restent dans votre dossier. Pour savoir d’où vient chaque résultat, nous conservons une empreinte du document, qui ne permet pas de le reconstituer, et la trace de sa lecture : outil utilisé, valeurs relevées et décisions.',
+                'Le compte rendu déposé est supprimé dès que votre praticien a validé ou écarté chacune des valeurs relevées lors de sa dernière lecture, et au plus tard 30 jours après son dépôt. Les valeurs validées restent dans votre dossier. Pour savoir d’où vient chaque résultat, nous conservons une empreinte du document, qui ne permet pas de le reconstituer, et la trace de sa lecture : outil utilisé, valeurs relevées et décisions.',
               ),
             ),
           }
@@ -1211,10 +1214,10 @@ const DONNEES_CONFIDENTIALITE_V12: VersionDocumentTrust = {
   ],
   changeLevel: 'information_substantielle',
   changeSummary:
-    'Le compte rendu de vos analyses biologiques déposé dans votre dossier n’y est plus conservé : il est supprimé dès que votre praticien a validé ou écarté chacune des valeurs relevées, et au plus tard 30 jours après son dépôt. Les valeurs validées restent dans votre dossier, avec une empreinte du document et la trace de sa lecture.',
+    'Le compte rendu de vos analyses biologiques déposé dans votre dossier n’y est plus conservé : il est supprimé dès que votre praticien a validé ou écarté chacune des valeurs relevées lors de sa dernière lecture, et au plus tard 30 jours après son dépôt. Les valeurs validées restent dans votre dossier, avec une empreinte du document et la trace de sa lecture.',
   publieLe: '2026-10-02',
   requiresAcknowledgement: true,
-  hash: 'fa890601e2a49875ca8999fa590fa54c10e3a0715f3ec1e9fffeb92d2efff158',
+  hash: '0d22aa45b01640925153f5fa309ebbc2f3ea1abcb3195d3ec5b1a0c5a0b5efba',
 };
 
 /** Toutes les versions, les plus récentes en premier par clé. */
