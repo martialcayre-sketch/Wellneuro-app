@@ -6,7 +6,7 @@ import {
   VERSION_PROCEDE_EXTRACTION,
   type MotifEchec,
 } from './extraction';
-import { resoudreLibelle } from './resolverLibellesV1';
+import { resoudreLigne } from './resolverLibellesV1';
 import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
 
 // ORCHESTRATION D'UNE EXTRACTION (BIO-INGEST LOT-02, [[D-256]] A4/A5).
@@ -150,10 +150,15 @@ export async function poursuivreExtraction(params: {
       // Sous le verrou qui sert aussi à clore les imports périmés : la relecture fait foi.
       if ((await tx.importBiologique.count({ where: { id: idImport, statut: 'en_cours' } })) === 0) return false;
       if (resultat.lignes.length > 0) {
+        // Les unités du catalogue départagent un libellé ambigu ([[D-263]]).
+        const unitesCatalogue = new Map(
+          (await tx.biologyAnalyte.findMany({ select: { code: true, unite: true } }))
+            .map(a => [a.code, a.unite] as const),
+        );
         await tx.ligneBiologiqueCandidate.createMany({
           data: resultat.lignes.map((ligne, i) => {
             // Le resolver signé, SEUL, propose l'analyte — `ambigu` n'en propose aucun.
-            const resolution = resoudreLibelle(ligne.libelle);
+            const resolution = resoudreLigne(ligne.libelle, ligne.unite, unitesCatalogue);
             return {
               idPatient,
               idImport,

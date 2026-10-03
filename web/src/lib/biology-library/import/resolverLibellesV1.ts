@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { unitesConcordent } from './valeurLue';
 
 // RESOLVER SIGNÉ : LIBELLÉ LU → ANALYTE DU CATALOGUE (BIO-INGEST LOT-02,
 // [[D-256]] A4 ; arbitrages du 2026-10-01 et du 2026-10-02).
@@ -17,9 +18,10 @@ import { createHash } from 'node:crypto';
 // panels sans unité, aucune ligne de compte rendu ne les mesure à elle seule.
 //
 // Prudence délibérée : un libellé générique dont la matrice n'est pas dite
-// (« zinc », « magnésium », « vitamine B12 ») n'est PAS rattaché — « zinc »
-// sérique n'est pas le zinc plasmatique du catalogue, la B12 totale n'est pas
-// l'holotranscobalamine.
+// (« zinc », « magnésium ») n'est PAS rattaché — « zinc » sérique n'est pas le
+// zinc plasmatique du catalogue. La B12 totale n'est pas l'holotranscobalamine :
+// « Vitamine B12 » se rattache à `BIO_VITAMINE_B12` depuis [[D-263]], jamais à
+// `BIO_B12_HOLOTC`.
 // La règle vaut AUSSI pour les libellés du catalogue lui-même : « Cuivre »,
 // « Glutathion », « Zonuline » taisent la matrice et ne sont pas repris — une
 // zonuline fécale se rattacherait à l'analyte sanguin sous la même unité
@@ -31,7 +33,8 @@ import { createHash } from 'node:crypto';
 // SIGNÉE PAR [[D-259]] (2026-10-03), sur la surface de relecture
 // `docs/claude/campagnes/SURFACE_RELECTURE_RESOLVER_LIBELLES_2026-10-03.md`,
 // puis RE-SIGNÉE par [[D-260]] le même jour : trois libellés réels ajoutés,
-// lus sur le premier compte rendu de production.
+// lus sur le premier compte rendu de production ; puis par [[D-263]] : les
+// analyses d'un compte rendu courant, ajoutées au catalogue par [[D-261]].
 // Toute entrée ajoutée, retirée ou retouchée change le SHA calculé et referme
 // le verrou : `resoudreLibelle` rend alors `inconnu` partout jusqu'à une
 // nouvelle signature, avec sa décision `D-xxx`.
@@ -146,6 +149,60 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: 'Index oméga 3', code: 'BIO_INDEX_OMEGA3' },
   { libelle: 'Rapport AA / EPA', code: 'BIO_RATIO_AA_EPA' },
   { libelle: 'Ratio AA / EPA', code: 'BIO_RATIO_AA_EPA' },
+  // [[D-263]] — les analyses d'un compte rendu courant : libellés du catalogue
+  // (migration 20261003150000) et libellés LUS sur le premier compte rendu de
+  // production. Un libellé lu doit être au moins aussi précis que celui du
+  // catalogue : « Créatinine » se rattache (le catalogue ne dit pas plus),
+  // « Fer » non (le catalogue dit « Fer sérique »), « Sodium » non plus (une
+  // natriurèse s'imprime aussi en mmol/L) — l'unité lue garde le reste.
+  { libelle: 'Hématies', code: 'BIO_HEMATIES' },
+  { libelle: 'Hématocrite', code: 'BIO_HEMATOCRITE' },
+  { libelle: 'Volume globulaire moyen (VGM)', code: 'BIO_VGM' },
+  { libelle: 'V.G.M', code: 'BIO_VGM' },
+  { libelle: 'Teneur corpusculaire moyenne en hémoglobine (TCMH)', code: 'BIO_TCMH' },
+  { libelle: 'T.C.M.H', code: 'BIO_TCMH' },
+  { libelle: 'Concentration corpusculaire moyenne en hémoglobine (CCMH)', code: 'BIO_CCMH' },
+  { libelle: 'C.C.M.H', code: 'BIO_CCMH' },
+  { libelle: 'Indice de distribution des globules rouges (IDR)', code: 'BIO_IDR' },
+  { libelle: 'I.D.R', code: 'BIO_IDR' },
+  { libelle: 'Leucocytes', code: 'BIO_LEUCOCYTES' },
+  { libelle: 'Plaquettes', code: 'BIO_PLAQUETTES' },
+  { libelle: 'Volume plaquettaire moyen (VPM)', code: 'BIO_VPM' },
+  { libelle: 'Volume Plaquettaire Moyen', code: 'BIO_VPM' },
+  // Ambiguïté VOULUE : le laboratoire imprime le même libellé pour la valeur
+  // absolue et le pourcentage. L'unité lue départage (`resoudreLigne`). Le
+  // libellé du catalogue « … (%) » se normalise en ce même libellé : le « % »
+  // est une ponctuation pour `normaliserLibelle`.
+  { libelle: 'Polynucléaires neutrophiles', code: 'BIO_NEUTROPHILES' },
+  { libelle: 'Polynucléaires neutrophiles', code: 'BIO_NEUTROPHILES_PCT' },
+  { libelle: 'Polynucléaires éosinophiles', code: 'BIO_EOSINOPHILES' },
+  { libelle: 'Polynucléaires éosinophiles', code: 'BIO_EOSINOPHILES_PCT' },
+  { libelle: 'Polynucléaires basophiles', code: 'BIO_BASOPHILES' },
+  { libelle: 'Polynucléaires basophiles', code: 'BIO_BASOPHILES_PCT' },
+  { libelle: 'Lymphocytes', code: 'BIO_LYMPHOCYTES' },
+  { libelle: 'Lymphocytes', code: 'BIO_LYMPHOCYTES_PCT' },
+  { libelle: 'Monocytes', code: 'BIO_MONOCYTES' },
+  { libelle: 'Monocytes', code: 'BIO_MONOCYTES_PCT' },
+  { libelle: 'Sodium sérique', code: 'BIO_SODIUM' },
+  { libelle: 'Potassium sérique', code: 'BIO_POTASSIUM' },
+  { libelle: 'Chlore sérique', code: 'BIO_CHLORE' },
+  { libelle: 'Créatinine', code: 'BIO_CREATININE' },
+  { libelle: 'Débit de filtration glomérulaire estimé (CKD-EPI)', code: 'BIO_DFG_CKD_EPI' },
+  { libelle: 'Estimation du DFG selon la formule CKD-EPI', code: 'BIO_DFG_CKD_EPI' },
+  { libelle: 'ASAT (Transaminases TGO)', code: 'BIO_ASAT' },
+  { libelle: 'ALAT (Transaminases TGP)', code: 'BIO_ALAT' },
+  { libelle: 'Gamma-glutamyl transférase (GGT)', code: 'BIO_GGT' },
+  { libelle: 'GGT (Gamma Glutamyl Transpeptidase)', code: 'BIO_GGT' },
+  { libelle: 'Cholestérol total', code: 'BIO_CHOLESTEROL_TOTAL' },
+  { libelle: 'Cholestérol HDL', code: 'BIO_HDL' },
+  { libelle: 'Cholestérol LDL calculé', code: 'BIO_LDL_CALCULE' },
+  { libelle: 'Cholestérol non-HDL', code: 'BIO_NON_HDL' },
+  { libelle: 'Triglycérides', code: 'BIO_TRIGLYCERIDES' },
+  { libelle: 'Transferrine', code: 'BIO_TRANSFERRINE' },
+  { libelle: 'Capacité totale de fixation de la transferrine', code: 'BIO_CTF' },
+  { libelle: 'Capacité totale de fixation en fer de la transferrine', code: 'BIO_CTF' },
+  { libelle: 'Vitamine B12', code: 'BIO_VITAMINE_B12' },
+  { libelle: 'CRP (Protéine C Réactive)', code: 'BIO_CRP' },
 ]);
 
 export type ResolverLibellesMetadata = {
@@ -166,13 +223,15 @@ export type ResolverLibellesMetadata = {
 
 export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   version: 'resolver-libelles-v1',
-  // RE-SIGNÉE PAR [[D-260]] — RE-SIGNER REMPLACE : la signature de [[D-259]]
-  // (05:17 UTC, SHA `ccbd8008…`) portait la table sans les trois libellés réels.
+  // RE-SIGNÉE PAR [[D-263]] — RE-SIGNER REMPLACE : la signature de [[D-260]]
+  // (11:12 UTC, SHA `5f95d167…`, 101 entrées) portait la table sans les
+  // analyses du compte rendu courant ; celle de [[D-259]] (SHA `ccbd8008…`)
+  // était déjà remplacée. 145 entrées, 79 analytes.
   // Enrôlée dans `clinical/shaPerimetreLitteral.guard.test.ts` depuis D-259.
   validationExterne: true,
-  dateValidation: '2026-10-03T11:12:22.000Z',
-  sourceReference: 'Relecture du responsable, le 2026-10-03, contre le catalogue biology_analytes (migrations niveau 1 et oméga-3 AA/EPA) ; libellés réels ajoutés depuis un compte rendu de laboratoire de biologie médicale (Biogroup)',
-  shaPerimetre: '5f95d1673a009f06647ae5278a39eef2be6f9b9219639431913782a6bc7280b9',
+  dateValidation: '2026-10-03T20:18:43.000Z',
+  sourceReference: 'Relecture du responsable, le 2026-10-03, contre le catalogue biology_analytes (migrations niveau 1, oméga-3 AA/EPA et compte rendu courant) ; libellés réels lus sur un compte rendu de laboratoire de biologie médicale (Biogroup)',
+  shaPerimetre: 'be9a463c7d3ea0517b0e53c5adb0b7dfe9322d744cabffbdc097522644888fc3',
 };
 
 // Empreinte calculée ICI, par `node:crypto` : importer `sha256` du module du
@@ -257,6 +316,33 @@ export function resoudreLibelle(
   const entier = normaliserLibelle(libelle);
   if (entier === '') return INCONNU;
   return chercher(entier, index) ?? INCONNU;
+}
+
+/**
+ * Le code proposé pour une LIGNE lue : son libellé, puis son unité quand le
+ * libellé désigne plusieurs analytes ([[D-263]]). Parmi eux, seuls restent
+ * ceux dont l'unité au catalogue concorde avec l'unité lue (notations
+ * équivalentes comprises, aucune conversion) ; s'il n'en reste qu'un, il est
+ * proposé — « Polynucléaires neutrophiles » en G/L ou en %. Sinon `ambigu` :
+ * deux analytes de même unité (« Cortisol salivaire ») restent au praticien.
+ * Un code absent de `unitesCatalogue` ne survit jamais au départage.
+ */
+export function resoudreLigne(
+  libelle: string,
+  uniteLue: string | null,
+  unitesCatalogue: ReadonlyMap<string, string | null>,
+  signe: boolean = resolverSigne(),
+  index: Map<string, Set<string>> = INDEX,
+): Resolution {
+  if (!signe) return INCONNU;
+  const entier = normaliserLibelle(libelle);
+  if (entier === '') return INCONNU;
+  const resolution = chercher(entier, index);
+  if (resolution === null) return INCONNU;
+  if (resolution.statut !== 'ambigu') return resolution;
+  const retenus = [...(index.get(entier) ?? [])].filter(code =>
+    unitesCatalogue.has(code) && unitesConcordent(uniteLue, unitesCatalogue.get(code) ?? null));
+  return retenus.length === 1 ? { statut: 'resolu', code: retenus[0] } : resolution;
 }
 
 /** Exposé pour les bancs : l'index d'une table quelconque. */

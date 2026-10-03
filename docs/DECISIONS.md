@@ -4,6 +4,50 @@
 
 ## Décisions actives
 
+### D-263 — Le resolver est re-signé sur les analyses d'un compte rendu courant, et l'unité lue départage un libellé ambigu
+
+- Date : 2026-10-03
+- Statut : accepté — arbitrages du responsable du 2026-10-03 (LOT-06 de
+  BIO-INGEST, après l'application constatée de la migration de [[D-261]]).
+- Domaine : staging d'import ([[D-256]] A4) ; amende [[D-259]] et [[D-260]].
+  Aucune règle clinique, aucun seuil, aucune conversion ([[D-157]]).
+
+**§1 — Le resolver est re-signé** : 44 entrées s'ajoutent pour les 36
+analytes de D-261. Ce sont les libellés du catalogue, plus les libellés **lus
+tels quels** sur le premier compte rendu de production (« V.G.M »,
+« Estimation du DFG selon la formule CKD−EPI », « ASAT (Transaminases
+TGO) »…). Nouvelle empreinte
+`be9a463c7d3ea0517b0e53c5adb0b7dfe9322d744cabffbdc097522644888fc3`
+(145 entrées, 79 analytes). Cette signature remplace celle de D-260.
+
+**§2 — Un libellé lu doit être au moins aussi précis que celui du
+catalogue.**
+
+- Accepté : « Créatinine », « Leucocytes », « Transferrine » se rattachent,
+  puisque le catalogue n'en dit pas plus. L'unité lue garde le reste : une
+  numération urinaire en /mL est signalée divergente.
+- Refusé : « Fer » seul (le catalogue dit « Fer sérique », D-260 tient),
+  et « Sodium », « Potassium », « Chlore » sans « sérique » (une natriurèse
+  s'imprime aussi en mmol/L).
+- Revers assumé : une créatinine urinaire imprimée en µmol/L serait
+  proposée. Le praticien confirme.
+
+**§3 — L'unité lue départage un libellé ambigu** (`resoudreLigne`). Parmi
+les analytes que désigne le libellé, seuls restent ceux dont l'unité au
+catalogue concorde avec l'unité lue, notations équivalentes comprises. S'il
+n'en reste qu'un, il est proposé : « Polynucléaires neutrophiles » en % ou en
+G/L. Sinon, la ligne reste `ambigu` : « Cortisol salivaire » est en nmol/L
+des deux côtés. La règle vaut pour toute ambiguïté, y compris celles de
+D-259 : « IgA sécrétoires » en µg/g se rattache désormais aux selles. Une
+résolution unique n'est jamais touchée, même quand son unité diverge.
+
+**§4 — Une notation de plus** : « mL/min/1.73 m² » ≡ « mL/min/1,73 m² »
+(séparateur décimal du DFG). Les paires de D-261 §5 sont livrées avec elle.
+
+**§5 — Erratum de D-261 §1** (revue Copilot de #1296) : la migration n'est
+pas « données seules ». Elle insère des données **et** étend de façon
+additive le vocabulaire d'unités, en reconstruisant les quatre CHECK
+(DROP/ADD sur une liste strictement élargie).
 ### D-262 — La lettre d'adressage est mise à disposition du patient dans son portail, à la diffusion du protocole qui s'ouvre sur l'orientation
 
 - Date : 2026-10-03
