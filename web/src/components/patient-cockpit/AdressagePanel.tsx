@@ -37,11 +37,18 @@ export function AdressagePanel({
   erreur,
   state,
   onEtablir,
+  leveeOuverte = false,
 }: {
   lettre: AdressageEtabli | null;
   erreur: string | null;
   state: AdressageState;
   onEtablir: (medecinLibelle: string) => void;
+  /**
+   * La levée par adressage est-elle ouverte ([[D-257]], LOT-04b) ? Lu par
+   * l'écran sur la réponse du cockpit — jamais supposé : fermée, la mention
+   * dit que la lettre ne lève rien encore.
+   */
+  leveeOuverte?: boolean;
 }) {
   const [medecin, setMedecin] = useState('');
   // Un envoi à la fois, et pas de re-consignation du même geste : le verrou se
@@ -66,16 +73,23 @@ export function AdressagePanel({
         imprimer ou à transcrire.
       </p>
       {/*
-        CE QUE LA LETTRE FAIT, ET CE QU'ELLE FERA, dit à l'écran avant le clic
-        ([[D-257]], arbitrage du 2026-10-03). Depuis le LOT-03, consigner écrit
-        une couverture des signaux nommés ; elle ne lève rien tant que la levée
-        n'est pas ouverte, et la lèvera ensuite. Le praticien signe donc
-        aujourd'hui ce qui vaudra adressage demain : il doit le lire maintenant.
+        CE QUE LA LETTRE FAIT, dit à l'écran avant le clic ([[D-257]], arbitrage
+        du 2026-10-03). Consigner écrit une couverture des signaux nommés. Levée
+        fermée, elle ne lève rien encore et l'écran le dit ; levée ouverte
+        (LOT-04b), il dit l'état réel — ce que le praticien signe en cliquant.
       */}
-      <p className="mt-1 text-xs text-muted-foreground">
-        La consigner <strong>trace</strong> l’adressage. Elle ne lève pas encore l’abstention
-        clinique ; à l’ouverture de la levée, elle vaudra adressage pour les signaux qu’elle nomme.
-      </p>
+      {leveeOuverte ? (
+        <p className="mt-1 text-xs text-muted-foreground">
+          La consigner <strong>vaut adressage</strong> pour les signaux qu’elle nomme : ils cessent
+          de suspendre la décision et restent affichés. Un signal qu’elle ne nomme pas, ou déclaré
+          après elle, continue de la suspendre.
+        </p>
+      ) : (
+        <p className="mt-1 text-xs text-muted-foreground">
+          La consigner <strong>trace</strong> l’adressage. Elle ne lève pas encore l’abstention
+          clinique ; à l’ouverture de la levée, elle vaudra adressage pour les signaux qu’elle nomme.
+        </p>
+      )}
 
       <label className="mt-2 block text-xs text-muted-foreground" htmlFor="adressage-medecin">
         Nom du médecin destinataire
