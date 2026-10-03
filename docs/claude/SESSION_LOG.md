@@ -8746,3 +8746,17 @@ libellés réellement lus restés `inconnu`.
 
 **Questions ouvertes.** Iodurie sur échantillon (µg/L) vs catalogue µg/24h ;
 cortisol salivaire 8h/20h sur deux lignes ; rétention des sauvegardes.
+## 2026-10-03 — Levée du blocage par signal d'alerte, LOT-03 (D-257)
+
+**Décidé.** La lettre d'adressage écrit sa couverture dans la même
+transaction (porteuse, constats d'anamnèse) ; révocation motivée sans drapeau,
+refusée sur dossier clos ; texte de l'écran amendé (pas encore de levée) ;
+garde « qui écrit » à deux écrivains, portée scripts/E2E/SQL/shell.
+
+**Écarté.** Exporter la borne du motif depuis la route (Next refuse) ; un
+drapeau sur la révocation (elle ne fait que rebloquer).
+
+**Prochaine action.** CI verte et merge de #1290 ; puis mesure de production
+et LOT-04 (lecture derrière drapeau éteint).
+
+**Questions ouvertes.** Délais de la transaction interactive (P2-7).
