@@ -81,13 +81,23 @@ describe('resolver — la résolution (table supposée signée)', () => {
 });
 
 describe('resolver — la signature, fail-closed', () => {
-  it('est signé par D-259 sur la table relue : la proposition s’ouvre', () => {
+  it('est signé (D-259, re-signé par D-260) sur la table relue : la proposition s’ouvre', () => {
     expect(RESOLVER_LIBELLES_METADATA.validationExterne).toBe(true);
     expect(RESOLVER_LIBELLES_METADATA.shaPerimetre).toBe(RESOLVER_LIBELLES_SHA256);
     expect(resolverSigne()).toBe(true);
     expect(resoudreLibelle('Ferritine')).toEqual({ statut: 'resolu', code: 'BIO_FERRITINE' });
     expect(resoudreLibelle('Cortisol salivaire')).toEqual({ statut: 'ambigu', code: null });
     expect(resoudreLibelle('Zonuline')).toEqual({ statut: 'inconnu', code: null });
+  });
+
+  it('rattache les libellés réels ajoutés par D-260, et rien de plus large', () => {
+    expect(resoudreLibelle('Coefficient de saturation en fer de la transferrine')).toEqual({ statut: 'resolu', code: 'BIO_COEF_SATURATION' });
+    expect(resoudreLibelle('Vitamine D 25 OH (D2 + D3)')).toEqual({ statut: 'resolu', code: 'BIO_VITAMINE_D_25OH' });
+    expect(resoudreLibelle('Acide folique - érythrocytes (Chimiluminescence-Dxl-Beckman Coulter)'))
+      .toEqual({ statut: 'resolu', code: 'BIO_FOLATES_ERYTHROCYTAIRES' });
+    // Sans la parenthèse, ou générique : rien n'est deviné.
+    expect(resoudreLibelle('Acide folique')).toEqual({ statut: 'inconnu', code: null });
+    expect(resoudreLibelle('Fer')).toEqual({ statut: 'inconnu', code: null });
   });
 
   it('ne s’ouvre qu’avec les cinq termes, et se referme si la table bouge', () => {

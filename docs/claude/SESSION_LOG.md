@@ -8760,6 +8760,22 @@ drapeau sur la révocation (elle ne fait que rebloquer).
 et LOT-04 (lecture derrière drapeau éteint).
 
 **Questions ouvertes.** Délais de la transaction interactive (P2-7).
+
+## 2026-10-03 — BIO-INGEST LOT-02, mise en production et clôture (D-260)
+
+**Décidé.** Drapeau posé et redémarrage fait ; première extraction réelle
+constatée (`PAT030`, 58 lignes en 20 s), dépôt gardé comme outil de travail ;
+trois libellés réels ajoutés (re-signature) ; « µg/L » ≡ « ng/mL » en notation
+(liste fermée) ; « Valider » pré-positionné. LOT-02 clos, LOT-06 créé
+(catalogue étendu, migration).
+
+**Écarté.** Toute conversion (g/dL face à g/L, pmol/L) ; équivalences
+non demandées (ng/L ≡ pg/mL) ; libellés devinés.
+
+**Prochaine action.** PR, CI, merge ; puis LOT-06 en mode Plan.
+
+**Questions ouvertes.** Unité retenue par analyte du LOT-06 ; « U/L » ≡
+« UI/L » ; sort des quatre panels sans unité.
 ## 2026-10-03 — Levée du blocage par signal d'alerte, LOT-04a (D-257)
 
 **Décidé.** La chaîne C1 sépare constats ouverts et adressés derrière

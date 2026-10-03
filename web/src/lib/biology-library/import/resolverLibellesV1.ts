@@ -29,7 +29,9 @@ import { createHash } from 'node:crypto';
 // tranche.
 //
 // SIGNÉE PAR [[D-259]] (2026-10-03), sur la surface de relecture
-// `docs/claude/campagnes/SURFACE_RELECTURE_RESOLVER_LIBELLES_2026-10-03.md`.
+// `docs/claude/campagnes/SURFACE_RELECTURE_RESOLVER_LIBELLES_2026-10-03.md`,
+// puis RE-SIGNÉE par [[D-260]] le même jour : trois libellés réels ajoutés,
+// lus sur le premier compte rendu de production.
 // Toute entrée ajoutée, retirée ou retouchée change le SHA calculé et referme
 // le verrou : `resoudreLibelle` rend alors `inconnu` partout jusqu'à une
 // nouvelle signature, avec sa décision `D-xxx`.
@@ -45,6 +47,8 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: 'Coefficient de saturation de la transferrine', code: 'BIO_COEF_SATURATION' },
   { libelle: 'Saturation de la transferrine', code: 'BIO_COEF_SATURATION' },
   { libelle: 'CST', code: 'BIO_COEF_SATURATION' },
+  // Libellés RÉELS, lus sur le premier compte rendu de production ([[D-260]]).
+  { libelle: 'Coefficient de saturation en fer de la transferrine', code: 'BIO_COEF_SATURATION' },
   { libelle: 'Zinc plasmatique', code: 'BIO_ZINC_PLASMATIQUE' },
   { libelle: 'Magnésium érythrocytaire', code: 'BIO_MAGNESIUM_ERYTHROCYTAIRE' },
   { libelle: 'Magnésium intra-érythrocytaire', code: 'BIO_MAGNESIUM_ERYTHROCYTAIRE' },
@@ -53,8 +57,12 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: '25-OH vitamine D (D2+D3)', code: 'BIO_VITAMINE_D_25OH' },
   { libelle: '25-hydroxyvitamine D', code: 'BIO_VITAMINE_D_25OH' },
   { libelle: '25(OH)D', code: 'BIO_VITAMINE_D_25OH' },
+  { libelle: 'Vitamine D 25 OH (D2 + D3)', code: 'BIO_VITAMINE_D_25OH' },
   { libelle: 'Folates érythrocytaires', code: 'BIO_FOLATES_ERYTHROCYTAIRES' },
   { libelle: 'Folates intra-érythrocytaires', code: 'BIO_FOLATES_ERYTHROCYTAIRES' },
+  // Libellé ENTIER tel qu'imprimé, méthode comprise : la parenthèse ne se
+  // retire jamais (elle peut dire la matrice).
+  { libelle: 'Acide folique - érythrocytes (Chimiluminescence-Dxl-Beckman Coulter)', code: 'BIO_FOLATES_ERYTHROCYTAIRES' },
   { libelle: 'Vitamine B12 active (holotranscobalamine)', code: 'BIO_B12_HOLOTC' },
   { libelle: 'Vitamine B12 active', code: 'BIO_B12_HOLOTC' },
   { libelle: 'Holotranscobalamine', code: 'BIO_B12_HOLOTC' },
@@ -158,13 +166,13 @@ export type ResolverLibellesMetadata = {
 
 export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   version: 'resolver-libelles-v1',
-  // SIGNÉE PAR [[D-259]] — DÉCLARATION RENDUE EN SÉANCE, APRÈS LECTURE de la
-  // surface de relecture, analyte par analyte. Enrôlée le même jour dans
-  // `clinical/shaPerimetreLitteral.guard.test.ts`.
+  // RE-SIGNÉE PAR [[D-260]] — RE-SIGNER REMPLACE : la signature de [[D-259]]
+  // (05:17 UTC, SHA `ccbd8008…`) portait la table sans les trois libellés réels.
+  // Enrôlée dans `clinical/shaPerimetreLitteral.guard.test.ts` depuis D-259.
   validationExterne: true,
-  dateValidation: '2026-10-03T05:17:05.000Z',
-  sourceReference: 'Relecture du responsable, le 2026-10-03, contre le catalogue biology_analytes (migrations niveau 1 et oméga-3 AA/EPA)',
-  shaPerimetre: 'ccbd8008f913d69900792c976e80311fc390a32d5ca525c2f3b46486ff53504b',
+  dateValidation: '2026-10-03T11:12:22.000Z',
+  sourceReference: 'Relecture du responsable, le 2026-10-03, contre le catalogue biology_analytes (migrations niveau 1 et oméga-3 AA/EPA) ; libellés réels ajoutés depuis un compte rendu de laboratoire de biologie médicale (Biogroup)',
+  shaPerimetre: '5f95d1673a009f06647ae5278a39eef2be6f9b9219639431913782a6bc7280b9',
 };
 
 // Empreinte calculée ICI, par `node:crypto` : importer `sha256` du module du

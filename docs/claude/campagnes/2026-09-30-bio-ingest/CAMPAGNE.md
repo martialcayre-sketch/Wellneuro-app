@@ -1,10 +1,10 @@
 ---
 id: "2026-09-30-bio-ingest"
 titre: "BIO-INGEST — acquisition des résultats biologiques"
-statut: "en_cours (ouverte le 2026-09-30 — LOT-00 et LOT-01 terminés, LOT-02 à ouvrir après l'amendement RGPD/TRUST)"
+statut: "en_cours (ouverte le 2026-09-30 — LOT-00, LOT-01 et LOT-02 terminés, LOT-06 à cadrer)"
 créée_le: "2026-09-30"
-mise_à_jour: "2026-10-01"
-lot_courant: "LOT-02"
+mise_à_jour: "2026-10-03"
+lot_courant: "LOT-06"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -71,10 +71,11 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 |---|---|---|---|---|
 | LOT-00 | Cadrage, `D-256`, ouverture de la campagne | terminé (PR #1269) | non | — |
 | LOT-01 | Saisie groupée praticien, route batch transactionnelle | terminé (2026-10-01) | non | LOT-00 |
-| LOT-02 | Staging d'import, extraction PDF par IA vision, écran de validation | à_faire | **oui, confirmation obligatoire** | LOT-01, amendement RGPD/TRUST |
+| LOT-02 | Staging d'import, extraction PDF par IA vision, écran de validation | terminé (2026-10-03) | **oui, confirmation obligatoire** | LOT-01, amendement RGPD/TRUST |
 | LOT-03 | Photo ou scan : même pipeline, seul l'extracteur change | à_faire | non | LOT-02 |
 | LOT-04 | Transmission depuis le portail patient | à_faire | probable, confirmation obligatoire | LOT-02, consentement RGPD à jour |
 | LOT-05 | Adaptateur laboratoire (pilote Barbier Metz) | à_faire | selon le format reçu | LOT-02, format réel reçu |
+| LOT-06 | Catalogue étendu aux analyses d'un compte rendu courant | à_faire | **oui, confirmation obligatoire** | LOT-02 |
 
 ## Hors périmètre, nommé
 

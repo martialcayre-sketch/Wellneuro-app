@@ -50,6 +50,16 @@ describe('unitesConcordent — aucune conversion (D-157)', () => {
     expect(unitesConcordent('mg/L', 'g/L')).toBe(false);
     expect(unitesConcordent('nmol/L', 'ng/mL')).toBe(false);
     expect(unitesConcordent('g/dL', 'g/L')).toBe(false);
+    expect(unitesConcordent('pmol/L', 'ng/mL')).toBe(false);
+  });
+
+  it('admet les seules notations équivalentes listées, dans les deux sens (D-260)', () => {
+    expect(unitesConcordent('µg/L', 'ng/mL')).toBe(true);
+    expect(unitesConcordent('ug/l', 'ng/mL')).toBe(true);
+    expect(unitesConcordent('ng/mL', 'µg/L')).toBe(true);
+    // Même logique, mais pas validée : hors liste, refusée.
+    expect(unitesConcordent('ng/L', 'pg/mL')).toBe(false);
+    expect(unitesConcordent('mg/L', 'µg/mL')).toBe(false);
   });
 
   it('une unité lue absente ne concorde qu’avec une unité attendue absente', () => {

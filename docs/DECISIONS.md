@@ -4,6 +4,41 @@
 
 ## Décisions actives
 
+### D-260 — Premier compte rendu réel : trois libellés ajoutés au resolver re-signé, « µg/L » et « ng/mL » tenus pour une même notation, « Valider » pré-positionné
+
+- Date : 2026-10-03
+- Statut : accepté — arbitrages du responsable du 2026-10-03, après la
+  première extraction de production (LOT-02 de BIO-INGEST, compte rendu d'un
+  laboratoire de biologie médicale, Biogroup ; 58 lignes, 6 rapprochées).
+- Domaine : biologie, staging d'import ([[D-256]] A3/A4) ; amende [[D-259]].
+  Aucune règle clinique, aucun seuil.
+
+**§1 — Le resolver est re-signé.** Trois libellés **lus tels quels** sur ce
+compte rendu s'ajoutent : « Coefficient de saturation en fer de la
+transferrine » (`BIO_COEF_SATURATION`), « Vitamine D 25 OH (D2 + D3) »
+(`BIO_VITAMINE_D_25OH`), « Acide folique - érythrocytes
+(Chimiluminescence-Dxl-Beckman Coulter) » (`BIO_FOLATES_ERYTHROCYTAIRES`,
+libellé entier, la parenthèse ne se retire jamais). Nouvelle empreinte
+`5f95d1673a009f06647ae5278a39eef2be6f9b9219639431913782a6bc7280b9`
+(101 entrées) ; re-signer remplace la signature de D-259. Les rejets voulus
+restent : « Fer », « Vitamine B12 », « CRP » (matrice ou forme non dite).
+
+**§2 — Une notation, pas une conversion.** « µg/L » et « ng/mL » écrivent la
+même grandeur (facteur 1) : une ligne lue en µg/L concorde avec un analyte du
+catalogue en ng/mL, et la valeur reste celle du compte rendu. La liste des
+notations équivalentes est **fermée**, une paire par arbitrage
+(`NOTATIONS_EQUIVALENTES`, `valeurLue.ts`). [[D-157]] tient pour tout le
+reste : g/dL face à g/L, pmol/L face à ng/mL restent refusés.
+
+**§3 — « Valider » pré-positionné.** Une ligne rapprochée par le resolver
+signé et sans écart pré-marqué s'ouvre sur « Valider » ; toute autre sur
+« Plus tard ». Rien ne part sans « Enregistrer les décisions », et chaque
+ligne reste réversible avant l'envoi.
+
+**Routé.** L'ajout au catalogue des analytes que ce compte rendu mesure et que
+le catalogue ignore (détail de la NFS, ionogramme, créatinine, transaminases,
+lipides détaillés, transferrine…) demande une **migration** : cadrage séparé.
+
 ### D-259 — Le resolver libellé → analyte de BIO-INGEST est SIGNÉ : 98 entrées, 43 analytes, proposées et jamais écrites
 
 - Date : 2026-10-03

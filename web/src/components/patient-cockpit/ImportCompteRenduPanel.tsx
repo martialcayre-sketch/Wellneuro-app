@@ -146,9 +146,19 @@ function formatHeure(iso: string): string {
   return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
 }
 
+/**
+ * « Valider » est PRÉ-POSITIONNÉ pour une ligne rapprochée par le resolver signé
+ * et sans écart pré-marqué ([[D-260]], demande du responsable) ; « Plus tard »
+ * reste le défaut de toute autre ligne. Rien ne part sans « Enregistrer les
+ * décisions » : le geste reste celui du praticien, ligne par ligne réversible.
+ */
+export function choixInitial(ligne: Pick<LigneLue, 'analytePropose' | 'preMarquage'>): Saisie['choix'] {
+  return ligne.analytePropose !== null && ligne.preMarquage === null ? 'valider' : null;
+}
+
 function saisieInitiale(ligne: LigneLue): Saisie {
   return {
-    choix: null,
+    choix: choixInitial(ligne),
     analyteCode: ligne.analytePropose ?? '',
     valeur: ligne.valeurLue,
     ...champsDepuisInstant(ligne.preleveLeLu, ligne.heureLue),

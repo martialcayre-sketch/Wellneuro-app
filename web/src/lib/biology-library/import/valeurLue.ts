@@ -7,7 +7,9 @@
 // pareil, aux variantes typographiques près (casse du litre, espaces, micro
 // « µ »/« μ »/« u ») —
 // jamais parce qu'un facteur les relierait. « mg/L » face à « g/L » diverge, et
-// c'est au praticien d'écarter la ligne.
+// c'est au praticien d'écarter la ligne. Seule exception, de NOTATION : deux
+// écritures d'une même grandeur, au facteur 1, listées une à une
+// (`NOTATIONS_EQUIVALENTES`, [[D-260]]) — la valeur n'est jamais touchée.
 //
 // AUCUNE QUALIFICATION. Rien ici ne dit qu'une valeur est basse, haute ou
 // normale ; « <0,5 » est refusé parce qu'il n'est pas un nombre, pas parce
@@ -68,10 +70,26 @@ function formeUnite(unite: string): string {
  * lue absente face à une unité attendue ne concorde pas (on ne devine pas) ;
  * deux absences concordent.
  */
+/**
+ * Deux écritures d'une MÊME grandeur — facteur 1, la valeur lue reste celle du
+ * compte rendu. Liste fermée, chaque paire validée par le responsable
+ * ([[D-260]] : « µg/L » et « ng/mL », constaté sur un compte rendu réel). Une
+ * paire reliée par un autre facteur (g/dL et g/L) n'a rien à faire ici.
+ */
+const NOTATIONS_EQUIVALENTES: readonly (readonly [string, string])[] = Object.freeze([
+  ['µg/L', 'ng/mL'],
+] as const);
+
 export function unitesConcordent(lue: string | null, attendue: string | null): boolean {
   if (lue === null || lue.trim() === '') return attendue === null;
   if (attendue === null) return false;
-  return formeUnite(lue) === formeUnite(attendue);
+  const a = formeUnite(lue);
+  const b = formeUnite(attendue);
+  if (a === b) return true;
+  return NOTATIONS_EQUIVALENTES.some(([x, y]) => {
+    const [fx, fy] = [formeUnite(x), formeUnite(y)];
+    return (a === fx && b === fy) || (a === fy && b === fx);
+  });
 }
 
 /**
