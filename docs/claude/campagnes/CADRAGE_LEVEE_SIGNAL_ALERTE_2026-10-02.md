@@ -47,6 +47,13 @@ remise à zéro au changement de dossier ; garde des appelants sur tout `src/`.
 **Ouverte (Q2)** : une lettre écrite sous une cotation antérieure continue de
 lever — à trancher avant toute re-signature de la cotation.
 
+**Mise en service (2026-10-03, soir)** : `WN_LEVEE_ADRESSAGE` posé en production
+sur ordre du responsable, conteneurs web recréés, valeur relue par one-off ; le
+blocage du dossier porteur de la première lettre est **levé à l'écran**. Les
+autres dossiers se lèveront chacun à la consignation de sa lettre. Restent
+ouvertes Q1, Q2 et Q3 (§ ci-dessus) ; Q4 tranchée (une action du praticien en
+plus de l'orientation).
+
 ## 2. L'arbitrage rendu le 2026-10-02 (responsable, en session)
 
 **A1 — LA LEVÉE EST DE TYPE « DÉCLASSEMENT », PAS UN EFFACEMENT.** Le signal ne
