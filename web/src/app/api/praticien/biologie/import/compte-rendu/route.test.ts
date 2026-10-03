@@ -36,7 +36,7 @@ beforeEach(() => {
       id: 'imp_1', statut: 'extrait', motifEchec: null, modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v1',
       laboratoireLu: null, lanceLe: new Date('2026-10-02T09:01:00.000Z'), termineLe: new Date('2026-10-02T09:02:00.000Z'),
       lignes: [{
-        id: 'l1', rang: 1, page: 1, libelleLu: 'Ferritine', valeurLue: '48', uniteLue: 'µg/L', preleveLeLu: null,
+        id: 'l1', rang: 1, page: 1, libelleLu: 'Ferritine', valeurLue: '48', uniteLue: 'pmol/L', preleveLeLu: null,
         analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu', statut: 'proposee', motifEcart: null, idResultat: null,
       }],
     }],

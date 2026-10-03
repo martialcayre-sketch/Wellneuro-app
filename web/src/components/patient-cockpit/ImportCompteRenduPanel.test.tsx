@@ -3,7 +3,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CompteRenduLu, LigneLue } from '@/lib/biology-library/import/lecture';
-import { champsDepuisInstant, ImportCompteRenduPanel, instantDepuisParis, type MesureAuDossier } from './ImportCompteRenduPanel';
+import { champsDepuisInstant, choixInitial, ImportCompteRenduPanel, instantDepuisParis, type MesureAuDossier } from './ImportCompteRenduPanel';
 
 afterEach(() => {
   cleanup();
@@ -220,6 +220,25 @@ describe('ImportCompteRenduPanel — décisions', () => {
     expect(await ferritine.findByText('Une mesure de cet analyte existe déjà.')).toBeTruthy();
     expect(screen.getByRole('alert').textContent).toContain('Rien n’a été enregistré');
     expect(recharger).not.toHaveBeenCalled();
+  });
+
+  it('« Valider » est pré-positionné pour une ligne rapprochée sans écart, « Plus tard » ailleurs (D-260)', async () => {
+    expect(choixInitial({ analytePropose: 'BIO_FERRITINE', preMarquage: null })).toBe('valider');
+    expect(choixInitial({ analytePropose: 'BIO_FERRITINE', preMarquage: 'unite_divergente' })).toBeNull();
+    expect(choixInitial({ analytePropose: null, preMarquage: null })).toBeNull();
+
+    const fetchMock = serveur({
+      detail: () => compteRendu('extrait', [
+        ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48', analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu' }),
+        ligne({ id: 'l4', libelleLu: 'Fer sérique', valeurLue: '17,2', uniteLue: 'mg/L', analytePropose: 'BIO_FER', statutMapping: 'resolu', preMarquage: 'unite_divergente' }),
+      ]),
+    });
+    await rendreEtOuvrir();
+    const ferritine = ligneAffichee(/Ferritine : 48/);
+    expect((ferritine.getByLabelText('Valider') as HTMLInputElement).checked).toBe(true);
+    expect((ligneAffichee(/Fer sérique : 17,2/).getByLabelText('Plus tard') as HTMLInputElement).checked).toBe(true);
+    // Le pré-positionnement n'envoie rien de lui-même.
+    expect(appels(fetchMock, '/import/decisions')).toHaveLength(0);
   });
 
   it('une ligne déjà décidée s’affiche sans aucun geste', async () => {

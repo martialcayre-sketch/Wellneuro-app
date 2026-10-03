@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Staging d'import, extraction PDF, écran de validation"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-01, amendement RGPD/TRUST"
 ---
 
@@ -84,8 +84,8 @@ LOT-01, amendement RGPD/TRUST
      - purge dès que toutes les lignes de l'extraction courante sont décidées, **et au plus tard 30 jours après le dépôt** ; les lignes non décidées restent, sans le document ; empreinte et trace conservées ;
      - migration seule, puis `release-db` humain, puis constat ;
      - **document patient v12** (`donnees_confidentialite`) rédigé par Claude dans la PR de la migration, relu et validé par le responsable avant le merge.
-  3. **Resolver** : Claude prépare la relecture de la table, le responsable la valide ou la corrige, puis **signe par une D-xxx**, avec l'enrôlement dans `shaPerimetreLitteral.guard`. Pas de pose « tout-`inconnu` ». **Fait le 2026-10-03 ([[D-259]])** : surface `SURFACE_RELECTURE_RESOLVER_LIBELLES_2026-10-03.md`, table signée telle quelle (98 entrées, 43 analytes, SHA `ccbd8008…504b`), « Albumine » et « Acide urique » gardés, enrôlement fait ; synonymes à compléter d'après les libellés réellement lus restés `inconnu`.
-  4. **Constat de `after()` en production**, une fois le drapeau posé (après 2 et 3) :
+  3. **Resolver** : Claude prépare la relecture de la table, le responsable la valide ou la corrige, puis **signe par une D-xxx**, avec l'enrôlement dans `shaPerimetreLitteral.guard`. Pas de pose « tout-`inconnu` ». **Fait le 2026-10-03 ([[D-259]])** : surface `SURFACE_RELECTURE_RESOLVER_LIBELLES_2026-10-03.md`, table signée telle quelle (98 entrées, 43 analytes, SHA `ccbd8008…504b`), « Albumine » et « Acide urique » gardés, enrôlement fait ; synonymes à compléter d'après les libellés réellement lus restés `inconnu`. **Complété le même jour ([[D-260]])** d'après la première extraction de production (`PAT030`, 58 lignes, 6 rapprochées) : trois libellés réels, notation « µg/L » ≡ « ng/mL », « Valider » pré-positionné.
+  4. **Constat de `after()` en production — FAIT le 2026-10-03** : drapeau posé par le responsable (06:30 UTC), conteneurs redémarrés (08:53 UTC) ; dépôt sur `PAT030` à 11:01:58 UTC, import `extrait` en 20 s (`claude-sonnet-5-5`, `bio-extraction-v1`), 58 lignes proposées, 0 résultat écrit. **Le dépôt est GARDÉ comme outil de travail** (arbitrage du responsable — compte rendu réel d'un laboratoire, non fabriqué) : pas de retrait ; il se purge à la dernière décision ou à 30 jours. Plan initial :
      - le responsable dépose un PDF fabriqué (identité de fixture) dans un **dossier de test réel**, sans rien valider ;
      - constat par conteneur, par identifiant, du passage à `extrait` ;
      - puis retrait du dépôt, sans résidu.
@@ -102,4 +102,28 @@ Migration appliquée et constatée ; extraction active seulement après l'amende
 
 ## Résultats
 
-À compléter à la clôture.
+Livré du 2026-10-01 au 2026-10-03, en huit PR sur `main` : migration du staging (#1280), serveur (#1281),
+écran (#1283), heure exigée par le serveur (#1284), migration de la purge (#1286), purge en œuvre (#1287),
+signature du resolver (#1289), puis la PR de clôture. Décisions : [[D-256]] (amendée), [[D-258]],
+[[D-259]], [[D-260]].
+
+- **Staging** : trois tables (comptes rendus, imports, lignes candidates), RLS active, figement par
+  déclencheurs ; une extraction s'écrit dans une seule transaction ; aucun résultat sans geste du praticien.
+- **Extraction** : `claude-sonnet-5-5`, procédé `bio-extraction-v1`, tous deux enregistrés à chaque
+  extraction ; le compte rendu part entier (v4, v12) ; 202 puis `after()`, l'écran relit l'issue.
+- **Purge** ([[D-258]]) : à la dernière décision, au plus tard 30 jours après le dépôt (cron horaire).
+  Premier passage constaté le 2026-10-03 à 00:15.
+- **Resolver signé** ([[D-259]], re-signé par [[D-260]]) : 101 entrées, 43 analytes ; « µg/L » ≡
+  « ng/mL » (notation, liste fermée) ; « Valider » pré-positionné sur les lignes rapprochées sans écart.
+- **Drapeau `WN_BIO_INGEST_ENABLED` posé** par le responsable le 2026-10-03 (06:30 UTC), effectif au
+  redémarrage de 08:53 UTC. v4 et v12 servies, constatées en conteneur et relues contre le comportement
+  livré : conformes, deux écarts mineurs consignés (purge jusqu'à une heure après les 30 jours, cron
+  horaire ; une extraction sans ligne ne se purge qu'à l'échéance).
+- **Constat de production** (`PAT030`, par identifiant) : dépôt à 11:01:58 UTC, `extrait` en 20 s,
+  58 lignes, 6 rapprochées, 0 résultat écrit. Dépôt **gardé** comme outil de travail (arbitrage du
+  responsable).
+- **Validations** : T1 complet et T2 verts à chaque PR ; revues `wn-reviewer` et Copilot traitées.
+- **Reste, hors lot** : l'ajout au catalogue des analytes que le compte rendu courant mesure et que le
+  catalogue ignore → `LOT-06-catalogue-compte-rendu-courant.md` (migration, confirmation obligatoire) ;
+  iodurie sur échantillon (µg/L) et cortisol salivaire 8h/20h sur deux lignes (catalogue) ; rétention des
+  sauvegardes Scalingo.
