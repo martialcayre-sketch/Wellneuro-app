@@ -21,6 +21,14 @@ const { prisma, extraire, journal, resoudre } = vi.hoisted(() => {
       count: trace('import.count', 1),
     },
     ligneBiologiqueCandidate: { createMany: trace('lignes.createMany', { count: 0 }) },
+    biologyAnalyte: {
+      findMany: trace('analytes.findMany', [
+        { code: 'BIO_FERRITINE', unite: 'ng/mL' },
+        { code: 'BIO_CRP_US', unite: 'mg/L' },
+        { code: 'BIO_NEUTROPHILES', unite: '10^9/L' },
+        { code: 'BIO_NEUTROPHILES_PCT', unite: '%' },
+      ]),
+    },
     $transaction: vi.fn(),
   };
   return { prisma, extraire: vi.fn(), journal, resoudre: vi.fn() };
@@ -34,8 +42,9 @@ vi.mock('./extraction', () => ({
 }));
 vi.mock('./resolverLibellesV1', async importOriginal => {
   const reel = await importOriginal<typeof import('./resolverLibellesV1')>();
-  resoudre.mockImplementation((l: string) => reel.resoudreLibelle(l));
-  return { ...reel, resoudreLibelle: resoudre };
+  resoudre.mockImplementation((l: string, u: string | null, unites: ReadonlyMap<string, string | null>) =>
+    reel.resoudreLigne(l, u, unites));
+  return { ...reel, resoudreLigne: resoudre };
 });
 
 import { lancerExtraction } from './lancerExtraction';
@@ -116,7 +125,7 @@ describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transac
     // Deux transactions interactives : l'ouverture (avant l'appel), puis lignes + terminaison.
     expect(prisma.$transaction).toHaveBeenCalledTimes(2);
     const apres = journal.slice(journal.indexOf('appel'));
-    expect(apres).toEqual(['appel', 'verrou', 'import.count', 'lignes.createMany', 'import.update']);
+    expect(apres).toEqual(['appel', 'verrou', 'import.count', 'analytes.findMany', 'lignes.createMany', 'import.update']);
     const terminaison = argument<{ data: Record<string, unknown> }>(prisma.importBiologique.update);
     expect(terminaison).toEqual({
       where: { id: 'imp_1' },
@@ -140,6 +149,21 @@ describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transac
     await lancerExtraction(PARAMS);
     const { data } = argument<Lignes>(prisma.ligneBiologiqueCandidate.createMany);
     expect(data[0]).toMatchObject({ libelleLu: 'Ferritine', analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu' });
+  });
+
+  it('un libellé ambigu se départage par l’unité lue, contre les unités du catalogue ([[D-262]])', async () => {
+    extraire.mockResolvedValueOnce({
+      ok: true,
+      laboratoire: 'Laboratoire de fixture',
+      lignes: [
+        { page: 1, libelle: 'Polynucléaires neutrophiles', valeur: '52', unite: '%', preleveLe: null, heureLue: false },
+        { page: 1, libelle: 'Polynucléaires neutrophiles', valeur: '3,1', unite: 'G/L', preleveLe: null, heureLue: false },
+      ],
+    });
+    await lancerExtraction(PARAMS);
+    const { data } = argument<Lignes>(prisma.ligneBiologiqueCandidate.createMany);
+    expect(data[0]).toMatchObject({ analytePropose: 'BIO_NEUTROPHILES_PCT', statutMapping: 'resolu' });
+    expect(data[1]).toMatchObject({ analytePropose: 'BIO_NEUTROPHILES', statutMapping: 'resolu' });
   });
 
   it('l’analyte proposé vient du resolver seul, `ambigu` sans code', async () => {

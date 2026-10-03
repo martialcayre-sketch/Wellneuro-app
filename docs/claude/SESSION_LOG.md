@@ -8845,3 +8845,16 @@ blocage levé à l'écran sur le premier dossier adressé.
 **Écarté.** Tout correctif de code : le diagnostic tenait à la variable absente.
 
 **Prochaine action.** Consigner chaque nouvelle lettre ; trancher Q1, Q2, Q3.
+
+## 2026-10-03 — BIO-INGEST LOT-06, catalogue étendu et resolver (D-261, D-262)
+
+**Décidé.** 36 analytes, une unité SI chacun, ajoutés par une migration appliquée et constatée
+(#1296). Le resolver est re-signé (145 entrées). L'unité lue départage un libellé ambigu. Un
+libellé lu doit être au moins aussi précis que celui du catalogue. Cinq notations équivalentes.
+
+**Écarté.** Conversions (Hb et CCMH en g/dL, folates en ng/mL) ; « Fer » et « Sodium » seuls ;
+retrait des quatre composites (les panels les citent).
+
+**Prochaine action.** PR resolver, merge, nouvelle extraction de PAT030, constat, clôture.
+
+**Questions ouvertes.** Aucune.

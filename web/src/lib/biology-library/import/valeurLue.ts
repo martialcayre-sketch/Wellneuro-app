@@ -53,6 +53,8 @@ export function lireValeurQuantitative(texte: string): number | null {
  * unité de quantité, de masse ou de volume — « umol », « ug », « uL »
  * (arbitrage du responsable, 2026-10-02). Variante typographique, pas une
  * conversion : « UI », « U/L » et « mUI » restent intacts.
+ *
+ * Le préfixe femto suit la même règle du litre ([[D-261]] §5) : « fl » est « fL ».
  */
 function formeUnite(unite: string): string {
   return unite
@@ -60,7 +62,7 @@ function formeUnite(unite: string): string {
     .replace(/\s+/g, '')
     .split('/')
     .map(terme => terme.replace(/^u(mol|g|[lL])$/, '\u03BC$1'))
-    .map(terme => (/^[mµμdcn]?[lL]$/.test(terme) ? `${terme.slice(0, -1)}L` : terme))
+    .map(terme => (/^[mµμdcnf]?[lL]$/.test(terme) ? `${terme.slice(0, -1)}L` : terme))
     .join('/');
 }
 
@@ -73,11 +75,19 @@ function formeUnite(unite: string): string {
 /**
  * Deux écritures d'une MÊME grandeur — facteur 1, la valeur lue reste celle du
  * compte rendu. Liste fermée, chaque paire validée par le responsable
- * ([[D-260]] : « µg/L » et « ng/mL », constaté sur un compte rendu réel). Une
+ * ([[D-260]] : « µg/L » et « ng/mL », constaté sur un compte rendu réel ;
+ * [[D-261]] §5 : giga, téra, l'unité enzymatique ; [[D-262]] : la décimale du
+ * DFG). Une
  * paire reliée par un autre facteur (g/dL et g/L) n'a rien à faire ici.
  */
 const NOTATIONS_EQUIVALENTES: readonly (readonly [string, string])[] = Object.freeze([
   ['µg/L', 'ng/mL'],
+  // [[D-261]] §5 : giga et téra par litre, l'unité enzymatique.
+  ['G/L', '10^9/L'],
+  ['T/L', '10^12/L'],
+  ['U/L', 'UI/L'],
+  // [[D-262]] : la décimale du DFG, imprimée en point ou en virgule.
+  ['mL/min/1.73 m²', 'mL/min/1,73 m²'],
 ] as const);
 
 export function unitesConcordent(lue: string | null, attendue: string | null): boolean {

@@ -34,7 +34,7 @@ describe('unitesConcordent — aucune conversion (D-157)', () => {
     expect(unitesConcordent('ug/mL', 'µg/mL')).toBe(true);
     expect(unitesConcordent('ng/uL', 'ng/µL')).toBe(true);
     expect(unitesConcordent('UI/L', 'µI/L')).toBe(false);
-    expect(unitesConcordent('U/L', 'UI/L')).toBe(false);
+    expect(unitesConcordent('U/L', 'µ/L')).toBe(false);
     expect(unitesConcordent('mUI/L', 'mµI/L')).toBe(false);
     expect(unitesConcordent('umol/L', 'mmol/L')).toBe(false);
   });
@@ -60,6 +60,24 @@ describe('unitesConcordent — aucune conversion (D-157)', () => {
     // Même logique, mais pas validée : hors liste, refusée.
     expect(unitesConcordent('ng/L', 'pg/mL')).toBe(false);
     expect(unitesConcordent('mg/L', 'µg/mL')).toBe(false);
+  });
+
+  it('admet les notations de D-261 et D-262, dans les deux sens, et rien d’autour', () => {
+    expect(unitesConcordent('G/L', '10^9/L')).toBe(true);
+    expect(unitesConcordent('10^9/L', 'G/L')).toBe(true);
+    expect(unitesConcordent('T/L', '10^12/L')).toBe(true);
+    expect(unitesConcordent('U/L', 'UI/L')).toBe(true);
+    expect(unitesConcordent('mL/min/1.73 m²', 'mL/min/1,73 m²')).toBe(true);
+    expect(unitesConcordent('mL/min/1,73m2', 'mL/min/1,73 m²')).toBe(true);
+    // Le préfixe femto suit la règle du litre.
+    expect(unitesConcordent('fl', 'fL')).toBe(true);
+    // Un autre facteur n'est pas une notation : refusé.
+    expect(unitesConcordent('G/L', '10^12/L')).toBe(false);
+    expect(unitesConcordent('/mm3', '10^9/L')).toBe(false);
+    expect(unitesConcordent('mU/L', 'UI/L')).toBe(false);
+    expect(unitesConcordent('U/mL', 'UI/L')).toBe(false);
+    expect(unitesConcordent('mL/min', 'mL/min/1,73 m²')).toBe(false);
+    expect(unitesConcordent('FL', 'fL')).toBe(false);
   });
 
   it('une unité lue absente ne concorde qu’avec une unité attendue absente', () => {
