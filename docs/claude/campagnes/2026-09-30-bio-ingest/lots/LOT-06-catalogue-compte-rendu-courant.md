@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Catalogue étendu aux analyses d'un compte rendu courant"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: "LOT-02"
 ---
 
@@ -48,9 +48,13 @@ LOT-02
 - [x] Cadrage en mode Plan ([[D-261]], 2026-10-03) : 36 analytes, une unité SI chacun ; seule
   « mL/min/1,73 m² » entre au vocabulaire ; quatre notations équivalentes (G/L, T/L, U/L, fl) ; les
   quatre composites restent pour les panels.
-- [ ] PR migration seule (`20261003150000_catalogue_biologie_compte_rendu_courant`), `release-db`,
-  constat.
-- [ ] PR resolver (libellés lus, re-signature).
+- [x] PR migration seule (`20261003150000_catalogue_biologie_compte_rendu_courant`, #1296),
+  `release-db` (run 37148574277, sentinelle liée), constat par conteneur : migration appliquée,
+  85 analytes, quatre CHECK identiques.
+- [x] PR resolver ([[D-263]]) : 44 libellés, re-signature (145 entrées), départage par l'unité lue,
+  cinq notations équivalentes.
+- [ ] Constat de production : nouvelle extraction du compte rendu de `PAT030` après déploiement,
+  lignes courantes `resolu` (lecture par conteneur, par identifiant).
 
 ## Tests
 
@@ -62,4 +66,11 @@ Migration appliquée et constatée ; le compte rendu de `PAT030` relu : ses lign
 
 ## Résultats
 
-À compléter à la clôture.
+- Catalogue : 49 → 85 analytes ; « mL/min/1,73 m² » au vocabulaire ([[D-261]]).
+- Resolver re-signé `be9a463c…8fc3` ([[D-263]]) ; l'unité lue départage la formule leucocytaire.
+- Banc des 58 lignes du premier compte rendu réel (libellés et unités, sans valeur) : 40 lignes ont
+  un analyte et une unité concordante, contre 6 rapprochées à l'extraction d'origine. Restent hors :
+  la seconde unité d'une même mesure, « Fer » sans matrice, « Aspect », l'hémoglobine et la CCMH en
+  g/dL, les folates en ng/mL (des conversions, [[D-157]]).
+- Revue de #1296 : `wn-reviewer` OK (P2-1 corrigé) ; deux remarques Copilot routées puis traitées
+  ici (erratum D-261 §1 dans D-263 §5, formulation du fragment).
