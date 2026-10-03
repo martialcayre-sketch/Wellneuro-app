@@ -93,6 +93,8 @@ model Patient {
   packPropositions           PackProposition[]
   correspondancesMedecin     CorrespondanceMedecin[]
   adressagesSignalAlerte     AdressageSignalAlerte[]
+  // Lettres d'adressage mises à disposition du patient (D-262, LOT-01).
+  lettresAdressageRemises    LettreAdressageRemise[]
   correspondancesPatient     CorrespondancePatient[]
   envoiBrouillons            EnvoiBrouillon[]
   rendezVous                 RendezVous[]
@@ -1414,6 +1416,8 @@ model ProtocolDiffusionApproval {
   draft   ProtocolDraft @relation(fields: [protocolDraftId], references: [id])
   // Les fiches d'assiette que ce clic a remises (D-251 §7, lot 8).
   fichesAssietteRemises FicheAssietteRemise[]
+  // La lettre d'adressage que ce clic a remise (D-262, LOT-01).
+  lettresAdressageRemises LettreAdressageRemise[]
 
   @@index([idPatient], map: "c2a_diffusion_patient_idx")
   @@index([protocolDraftId], map: "c2a_diffusion_draft_idx")
@@ -1563,6 +1567,8 @@ model CorrespondanceMedecin {
   patient Patient @relation(fields: [idPatient], references: [idPatient])
 
   adressagesSignalAlerte AdressageSignalAlerte[]
+  // Ses remises au patient (D-262, LOT-01).
+  remisesPatient         LettreAdressageRemise[]
 
   @@index([idPatient, consigneLe], map: "c3_correspondance_medecin_patient_idx")
   @@map("correspondances_medecin")
@@ -3258,4 +3264,36 @@ model FicheAssietteRemise {
   @@index([idPatient, ordre], map: "fiches_assiette_remises_patient_ordre_idx")
   @@index([idApprobation], map: "fiches_assiette_remises_approbation_idx")
   @@map("fiches_assiette_remises")
+}
+
+/// Lettre d'adressage mise à disposition du patient dans son portail ([[D-262]],
+/// LOT-01). Ajout seul : UPDATE et TRUNCATE refusés, DELETE réservé à
+/// l'effacement nommé. Le texte est un instantané figé, son empreinte tenue par
+/// un CHECK ; le trigger vérifie dossier, protocole ouvert sur l'orientation,
+/// lettre d'adressage active sur la consultation porteuse, et rend la remise
+/// idempotente (aucune ligne si la remise en cours porte déjà cette lettre).
+model LettreAdressageRemise {
+  id               String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base sous verrou.
+  ordre            BigInt   @default(autoincrement()) @map("ordre")
+  idPatient        String   @map("id_patient")
+  /// Le clic « Valider pour diffusion » qui l'a remise.
+  idApprobation    String   @map("id_approbation")
+  idCorrespondance String   @map("id_correspondance")
+  /// Instantané du texte de la lettre à la remise.
+  texte            String   @map("texte")
+  /// sha-256 du texte en UTF-8 (CHECK).
+  texteSha256      String   @map("texte_sha256")
+  /// Posé par la base (trigger).
+  remiseLe         DateTime @default(now()) @map("remise_le")
+
+  patient        Patient                   @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  approbation    ProtocolDiffusionApproval @relation(fields: [idApprobation], references: [id], onDelete: Restrict)
+  correspondance CorrespondanceMedecin     @relation(fields: [idCorrespondance], references: [id], onDelete: Restrict)
+
+  @@unique([ordre], map: "lettres_adressage_remises_ordre_key")
+  @@index([idPatient, ordre], map: "lettres_adressage_remises_patient_ordre_idx")
+  @@index([idApprobation], map: "lettres_adressage_remises_approbation_idx")
+  @@index([idCorrespondance], map: "lettres_adressage_remises_correspondance_idx")
+  @@map("lettres_adressage_remises")
 }

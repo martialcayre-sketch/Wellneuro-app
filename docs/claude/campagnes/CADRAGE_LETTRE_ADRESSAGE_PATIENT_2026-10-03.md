@@ -76,7 +76,7 @@ servi au patient — même mécanique que le retrait d'une fiche d'assiette.
 lecture et l'annonce (le code se déploie avant la migration). Pose : migration
 constatée, phrase signée, constat sur un dossier de test.
 
-## 4. Phrase d'accompagnement — proposition à signer
+## 4. Phrase d'accompagnement — signée le 2026-10-03
 
 > **Courrier pour votre médecin**
 >
@@ -85,7 +85,8 @@ constatée, phrase signée, constat sur un dossier de test.
 > montrer depuis ce portail.
 
 Ni « alerte », ni signal nommé, ni délai chiffré (même contrainte que [[D-257]]
-§9) ; à passer au banc `termeAnxiogene` avant signature.
+§9). **Signée par le responsable le 2026-10-03, en session** ; le LOT-02 la
+recopie au caractère près et la passe au banc `termeAnxiogene`.
 
 ## 5. Découpage proposé
 

@@ -1096,6 +1096,19 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/adressages_signal_alerte_v1_negatif.sql
 
+      # Lettres d'adressage remises au patient (D-262, LOT-01). Ce que le drift
+      # check ne voit pas : la remise porte sur une approbation du même dossier
+      # dont le protocole s'ouvre sur l'orientation réservée, une lettre
+      # sortante ancrée sur les signaux d'alerte ET active (couverture non
+      # révoquée sur la consultation porteuse courante), le texte recopié au
+      # caractère près avec son empreinte, l'idempotence sur la remise en
+      # cours, la ligne figée mais effaçable, la RLS deny-all et l'espèce de
+      # lecture `lettre_adressage`. Transaction annulée.
+      - name: Lettres adressage remises negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/lettres_adressage_remises_v1_negatif.sql
+
       # C3 compteur d'attente du rail (D-210) : la sémantique « la DERNIÈRE
       # ligne du dossier décide » vivait en TypeScript éprouvé par un mock, qui
       # servait une liste déjà dédupliquée — il simulait la déduplication au lieu

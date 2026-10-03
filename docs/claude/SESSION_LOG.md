@@ -8857,3 +8857,16 @@ pièce jointe.
 
 **Prochaine action.** Signature de la phrase d'accompagnement, puis LOT-01
 (migration de la table de remises).
+
+## 2026-10-03 — Lettre d'adressage remise au patient : LOT-01 (migration)
+
+**Décidé.** Phrase d'accompagnement signée. Table `lettres_adressage_remises`
+en ajout seul : texte figé recopié et empreinte vérifiée ; la base n'admet que
+la lettre active, sous une diffusion qui s'ouvre sur l'orientation ; remise
+identique à la remise en cours sans effet.
+
+**Écarté.** Régénérer la lettre à la lecture (le gabarit peut changer) ;
+lier la remise sans texte (même raison).
+
+**Prochaine action.** Merge sur accord, `release-db` approuvée, constat par
+conteneur, puis LOT-02.
