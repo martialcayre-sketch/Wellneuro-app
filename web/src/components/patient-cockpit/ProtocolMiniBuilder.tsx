@@ -2,6 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
+import {
+  TEXTE_ORIENTATION,
+  actionOrientation,
+  orientationRequise,
+} from '@/lib/clinical-engine/orientationAdressage';
 // Import de VALEUR depuis `types.ts`, qui n'importe lui-même que des types :
 // la borne suit le moteur sans traîner `node:crypto` dans le bundle client.
 import { MAX_ACTIONS_PROTOCOLE_21J, VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
@@ -259,6 +264,12 @@ export function ProtocolMiniBuilder({
     );
   }
 
+  // L'ORIENTATION VERS LE MÉDECIN ([[D-257]] §8, LOT-05) : due dès qu'un
+  // constat est adressé. Elle n'entre PAS dans le brouillon éditable — ni
+  // retirable, ni modifiable, ni comptée dans les trois — et part en tête à la
+  // soumission, au texte signé. Le moteur la refuse sous toute autre forme.
+  const orientation = orientationRequise(decisionCard);
+
   const markDirty = () => {
     if (reviewed) setReviewed(false);
     setEditedSinceSave(true);
@@ -464,11 +475,14 @@ export function ProtocolMiniBuilder({
       // `''` : la conversion est constatée, pas supposée. En V4, toute action
       // non suspendue porte `active` — le contrat l'exige sur chacune, et ne
       // tolère aucun défaut implicite (`DC-24`).
-      actions: actions.map(action => ({
-        ...action,
-        type: action.type as ProtocolActionType,
-        ...(contratV4 && action.interventionStatus === undefined ? { interventionStatus: 'active' as const } : {}),
-      })),
+      actions: [
+        ...(orientation ? [actionOrientation(contratV4)] : []),
+        ...actions.map(action => ({
+          ...action,
+          type: action.type as ProtocolActionType,
+          ...(contratV4 && action.interventionStatus === undefined ? { interventionStatus: 'active' as const } : {}),
+        })),
+      ],
       therapeuticLoad: { level: loadLevel, source: 'practitioner', justification: loadJustification.trim() || null },
     };
   };
@@ -543,6 +557,26 @@ export function ProtocolMiniBuilder({
           Critère observable à J21
           <input aria-label="Critère observable à J21" value={followUpCriterion} onChange={event => { markDirty(); setFollowUpCriterion(event.target.value); }} className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal" />
         </label>
+
+        {orientation && (
+          <section
+            aria-label="Orientation vers le médecin"
+            className="rounded-lg border border-border bg-background p-3"
+          >
+            <p className="text-sm font-medium text-foreground">
+              Première action : {TEXTE_ORIENTATION.title}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Un signal d’alerte a été adressé au médecin : cette action ouvre le protocole. Son texte
+              est signé — elle ne se modifie pas, ne se retire pas et ne compte pas dans les trois actions.
+            </p>
+            <dl className="mt-2 space-y-1 text-sm text-foreground">
+              <div><dt className="inline font-medium">Plan idéal : </dt><dd className="inline">{TEXTE_ORIENTATION.idealPlan}</dd></div>
+              <div><dt className="inline font-medium">Plan minimal : </dt><dd className="inline">{TEXTE_ORIENTATION.minimalPlan}</dd></div>
+              <div><dt className="inline font-medium">Plan de secours : </dt><dd className="inline">{TEXTE_ORIENTATION.rescuePlan}</dd></div>
+            </dl>
+          </section>
+        )}
 
         <div>
           <div className="flex items-center justify-between gap-3">

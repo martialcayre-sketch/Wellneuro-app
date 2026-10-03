@@ -903,3 +903,45 @@ describe('ProtocolMiniBuilder — l’assiette se choisit dans l’action alimen
   });
 });
 
+
+// L'ORIENTATION VERS LE MÉDECIN ([[D-257]] §8, LOT-05).
+describe('ProtocolMiniBuilder — orientation sur signal adressé', () => {
+  const adressee = (): DecisionCard => ({ ...card(), safetyFindingAdresseIds: ['safety:anamnese:aaaaaaaaaaaaaaaa'] });
+
+  function relire(decisionCard: DecisionCard) {
+    const onReviewed = vi.fn();
+    const { container } = render(<ProtocolMiniBuilder decisionCard={decisionCard} onReviewed={onReviewed} />);
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    choisirCharge(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Marquer comme relu' }));
+    return { container, ui, onReviewed };
+  }
+
+  it('affiche l’orientation signée, en lecture seule, hors des trois actions', () => {
+    const { ui } = relire(adressee());
+    const bloc = ui.getByRole('region', { name: 'Orientation vers le médecin' });
+    expect(bloc.textContent).toContain('Première action : Consulter votre médecin');
+    expect(bloc.textContent).toContain('ne se retire pas et ne compte pas dans les trois actions');
+    expect(within(bloc).queryByRole('textbox')).toBeNull();
+    expect(within(bloc).queryByRole('button')).toBeNull();
+    expect(ui.getByText('Actions (1/3)')).not.toBeNull();
+  });
+
+  it('la soumission s’ouvre sur l’orientation, puis les actions du praticien', () => {
+    const { onReviewed } = relire(adressee());
+    const soumission = onReviewed.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.actions.map(a => a.actionId)).toEqual(['orientation-medecin', 'action-1']);
+    expect(soumission.actions[0]).toMatchObject({ type: 'medical_referral', title: 'Consulter votre médecin' });
+  });
+
+  it('sans signal adressé, ni bloc ni action d’orientation', () => {
+    const { ui, onReviewed } = relire(card());
+    expect(ui.queryByRole('region', { name: 'Orientation vers le médecin' })).toBeNull();
+    const soumission = onReviewed.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.actions.map(a => a.actionId)).toEqual(['action-1']);
+  });
+});

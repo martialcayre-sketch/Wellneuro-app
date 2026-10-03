@@ -1,6 +1,12 @@
 import { canonicalSha256 } from './canonical';
 import { assertRefAssietteDIndication } from '../food-compass/plates';
 import {
+  ACTION_ID_ORIENTATION,
+  TEXTE_ORIENTATION,
+  estActionOrientation,
+  orientationRequise,
+} from './orientationAdressage';
+import {
   MAX_ACTIONS_PROTOCOLE_21J,
   VERSION_PROTOCOL_DRAFT,
   VERSION_PROTOCOL_DRAFT_V3,
@@ -202,8 +208,47 @@ function normalizeFoodCompassRef(
   return { foodCompassRef: action.foodCompassRef };
 }
 
-function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['version']): ProtocolAction[] {
-  if (actions.length > MAX_ACTIONS_PROTOCOLE_21J) {
+/**
+ * L'ORIENTATION VERS LE MÉDECIN ([[D-257]] §8, LOT-05) : due dès qu'un constat
+ * est adressé, en tête, au texte signé, et nulle part ailleurs.
+ *
+ * EXIGÉE, PAS INJECTÉE. Le moteur ne compose rien à la place du praticien : il
+ * refuse un protocole qui ne l'ouvre pas — l'écran la pose, la route la
+ * reçoit, et ce contrôle dit pourquoi un protocole sans elle ne part pas. Hors
+ * de la levée, l'identifiant réservé est refusé : il servirait à loger une
+ * quatrième action hors borne.
+ */
+function assertOrientation(actions: ProtocolAction[], requise: boolean): void {
+  const reservees = actions.filter(action => action.actionId === ACTION_ID_ORIENTATION);
+  if (!requise) {
+    if (reservees.length > 0) {
+      throw new TypeError('L’orientation vers le médecin n’ouvre un protocole que lorsqu’un signal d’alerte a été adressé.');
+    }
+    return;
+  }
+  const tete = actions[0];
+  if (tete === undefined || !estActionOrientation(tete) || reservees.length !== 1) {
+    throw new TypeError('Un signal d’alerte a été adressé : le protocole doit s’ouvrir sur l’orientation vers le médecin.');
+  }
+  if (tete.title !== TEXTE_ORIENTATION.title
+    || tete.idealPlan !== TEXTE_ORIENTATION.idealPlan
+    || tete.minimalPlan !== TEXTE_ORIENTATION.minimalPlan
+    || tete.rescuePlan !== TEXTE_ORIENTATION.rescuePlan
+    || (tete.limitations ?? []).length > 0) {
+    throw new TypeError('L’orientation vers le médecin porte un texte signé : il ne se modifie pas.');
+  }
+}
+
+function normalizeActions(
+  actions: ProtocolAction[],
+  version: ProtocolDraft['version'],
+  orientation = false,
+): ProtocolAction[] {
+  assertOrientation(actions, orientation);
+  // L'ORIENTATION EST HORS BORNE (A4) : elle n'est pas une intervention. La
+  // borne des trois porte sur les AUTRES actions, et sur elles seules.
+  const interventions = actions.filter(action => !(orientation && estActionOrientation(action)));
+  if (interventions.length > MAX_ACTIONS_PROTOCOLE_21J) {
     throw new TypeError('Un protocole 21 jours ne peut contenir que trois actions maximum.');
   }
   const ids = new Set<string>();
@@ -339,7 +384,7 @@ export function buildProtocolDraft(input: {
   } else {
     requestedVersion = VERSION_PROTOCOL_DRAFT;
   }
-  const actions = normalizeActions(input.actions ?? [], requestedVersion);
+  const actions = normalizeActions(input.actions ?? [], requestedVersion, orientationRequise(input.decisionCard));
   const phases = normalizePhases(input.phases ?? [], actions, requestedVersion);
   const therapeuticLoad = normalizeLoad(input.therapeuticLoad);
   let review = input.review ?? null;

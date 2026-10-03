@@ -1,4 +1,5 @@
 import { MAX_ACTIONS_PROTOCOLE_21J } from './types';
+import { estActionOrientation } from './orientationAdressage';
 import type {
   DecisionCard,
   DecisionPriorityCandidate,
@@ -119,7 +120,11 @@ export function projeterContenuPatient(input: {
   patientLimitations?: string[];
 }): ContenuPatientProtocole {
   const { protocolDraft, candidate } = input;
-  if (protocolDraft.actions.length === 0 || protocolDraft.actions.length > MAX_ACTIONS_PROTOCOLE_21J) {
+  // L'orientation vers le médecin ([[D-257]] §8) est HORS BORNE : la borne des
+  // trois porte sur les interventions. Le moteur l'a déjà exigée en tête, au
+  // texte signé, quand la carte porte un constat adressé.
+  const interventions = protocolDraft.actions.filter(action => !estActionOrientation(action));
+  if (protocolDraft.actions.length === 0 || interventions.length > MAX_ACTIONS_PROTOCOLE_21J) {
     throw new TypeError('L’aperçu patient exige entre une et trois actions.');
   }
 

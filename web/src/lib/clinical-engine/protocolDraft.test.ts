@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildProtocolDraft, reviseProtocolDraft } from './protocolDraft';
+import { actionOrientation, ACTION_ID_ORIENTATION } from './orientationAdressage';
+import { projeterContenuPatient } from './contenuPatientProtocole';
 import type { DecisionCard, ProtocolAction } from './types';
 
 function card(overrides: Partial<DecisionCard> = {}): DecisionCard {
@@ -86,5 +88,64 @@ describe('ProtocolDraft', () => {
     const result = build();
     expect(result.status).toBe('draft');
     expect(JSON.stringify(result)).not.toMatch(/active|completed|stopped|sent/);
+  });
+});
+
+// L'ORIENTATION VERS LE MÉDECIN ([[D-257]] §8, LOT-05).
+describe('ProtocolDraft — orientation sur signal adressé', () => {
+  const ADRESSEE = card({ safetyFindingAdresseIds: ['safety:anamnese:aaaaaaaaaaaaaaaa'] });
+  const avecOrientation = (...autres: ProtocolAction[]) => [actionOrientation(false), ...autres];
+
+  it('signal adressé : l’orientation ouvre le protocole, hors de la borne des trois', () => {
+    const draft = build({ decisionCard: ADRESSEE, actions: avecOrientation(action('a1'), action('a2'), action('a3')) });
+    expect(draft.actions).toHaveLength(4);
+    expect(draft.actions[0].actionId).toBe(ACTION_ID_ORIENTATION);
+    expect(() => build({
+      decisionCard: ADRESSEE, actions: avecOrientation(action('a1'), action('a2'), action('a3'), action('a4')),
+    })).toThrow('trois actions');
+  });
+
+  it('signal adressé sans orientation, ou orientation ailleurs qu’en tête : refus', () => {
+    expect(() => build({ decisionCard: ADRESSEE, actions: [action('a1')] })).toThrow('s’ouvrir sur l’orientation');
+    expect(() => build({ decisionCard: ADRESSEE, actions: [action('a1'), actionOrientation(false)] }))
+      .toThrow('s’ouvrir sur l’orientation');
+  });
+
+  it('le texte signé ne se modifie pas', () => {
+    for (const champ of ['title', 'idealPlan', 'minimalPlan', 'rescuePlan'] as const) {
+      const alteree = { ...actionOrientation(false), [champ]: 'Texte réécrit.' };
+      expect(() => build({ decisionCard: ADRESSEE, actions: [alteree, action('a1')] })).toThrow('texte signé');
+    }
+    expect(() => build({
+      decisionCard: ADRESSEE, actions: [{ ...actionOrientation(false), limitations: ['ajout'] }, action('a1')],
+    })).toThrow('texte signé');
+  });
+
+  it('sans signal adressé, l’identifiant réservé est refusé — pas de quatrième action déguisée', () => {
+    expect(() => build({ actions: avecOrientation(action('a1')) })).toThrow('lorsqu’un signal d’alerte a été adressé');
+    // Une orientation ORDINAIRE, choisie par le praticien, reste possible et compte dans les trois.
+    expect(build({ actions: [action('a1', { type: 'medical_referral' })] }).actions).toHaveLength(1);
+  });
+
+  it('sans signal adressé, rien ne change : empreinte identique à avant le lot', () => {
+    expect(build().inputHash).toBe(build({ decisionCard: card({ safetyFindingAdresseIds: undefined }) }).inputHash);
+  });
+
+  it('en contrat V4, l’orientation porte `active`', () => {
+    const draft = build({
+      decisionCard: ADRESSEE, version: 'c1-protocol-draft-v4',
+      actions: [actionOrientation(true), action('a1', { interventionStatus: 'active' })],
+    } as never);
+    expect(draft.actions[0].interventionStatus).toBe('active');
+  });
+
+  it('l’aperçu patient porte l’orientation en tête, hors borne', () => {
+    const draft = build({ decisionCard: ADRESSEE, actions: avecOrientation(action('a1'), action('a2'), action('a3')) });
+    const contenu = projeterContenuPatient({ protocolDraft: draft, candidate: ADRESSEE.priorityCandidates[0] });
+    expect(contenu.actions.map(a => a.actionId)).toEqual([ACTION_ID_ORIENTATION, 'a1', 'a2', 'a3']);
+    expect(contenu.actions[0]).toEqual({
+      actionId: ACTION_ID_ORIENTATION, type: 'medical_referral', title: 'Consulter votre médecin',
+      minimalPlan: 'Appeler le cabinet de votre médecin pour fixer ce rendez-vous.',
+    });
   });
 });

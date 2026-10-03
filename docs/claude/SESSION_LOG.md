@@ -8802,3 +8802,16 @@ le dit déjà, sans requête de plus).
 **Prochaine action.** PR, CI, merge ; puis LOT-05 (orientation en tête).
 
 **Questions ouvertes.** Mesure de production avant allumage.
+## 2026-10-03 — Levée du blocage par signal d'alerte, LOT-05 (D-257)
+
+**Décidé.** Orientation « Consulter votre médecin » exigée en tête par le moteur
+dès qu'un constat est adressé, texte signé recopié et relu contre `D-257` §9,
+hors borne des trois, lecture seule au constructeur.
+
+**Écarté.** Injection par le moteur (il ne compose pas à la place du
+praticien) ; afficher le plan idéal au patient (contrat patient inchangé).
+
+**Prochaine action.** PR, CI, merge ; mesure de production puis décision
+d'allumage du drapeau.
+
+**Questions ouvertes.** « Action du jour » côté patient = l'orientation.
