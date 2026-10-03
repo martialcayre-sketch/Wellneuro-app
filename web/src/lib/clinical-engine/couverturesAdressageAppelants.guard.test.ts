@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -19,6 +19,21 @@ const APPELANTS = [
 const CONSTRUIRE = /construireChaineC1Tolerante\(\{/g;
 const PASSE = /^\s*couverturesAdressage(?::|,)/gm;
 
+/** Tous les sources de `src/`, hors bancs et hors fixture de banc. */
+function sources(depart: string): string[] {
+  const trouves: string[] = [];
+  for (const entree of readdirSync(depart)) {
+    const complet = path.join(depart, entree);
+    if (statSync(complet).isDirectory()) {
+      if (['node_modules', 'generated'].includes(entree)) continue;
+      trouves.push(...sources(complet));
+    } else if (/\.(?:ts|tsx)$/.test(entree) && !/\.test\.tsx?$/.test(entree) && entree !== 'chaineC1Fixture.ts') {
+      trouves.push(complet);
+    }
+  }
+  return trouves;
+}
+
 describe('couvertures d’adressage — les quatre constructions de la chaîne C1', () => {
   it.each(APPELANTS)('%s passe les couvertures à chaque construction', (fichier) => {
     const source = readFileSync(path.join(process.cwd(), fichier), 'utf8');
@@ -28,6 +43,24 @@ describe('couvertures d’adressage — les quatre constructions de la chaîne C
     const blocs = source.split(CONSTRUIRE).slice(1).map(bloc => bloc.split('}, await lireSelectionPriorite')[0]);
     expect(blocs).toHaveLength(constructions);
     for (const bloc of blocs) expect(bloc.match(PASSE)?.length ?? 0).toBe(1);
+  });
+
+  // TOUT `src/`, ET PAS SEULEMENT LES TROIS FICHIERS CONNUS (revue du
+  // 2026-10-03, P2-7) : une cinquième construction écrite ailleurs échappait
+  // au banc. La construction NUE (`construireChaineC1(`) n'est admise que dans
+  // son propre module et dans l'enveloppe tolérante qui la porte.
+  it('aucune construction de la chaîne hors des appelants nommés', () => {
+    const racine = path.join(process.cwd(), 'src');
+    const tolerante = sources(racine)
+      .filter(f => /construireChaineC1Tolerante\(\{/.test(readFileSync(f, 'utf8')))
+      .map(f => path.relative(process.cwd(), f))
+      .sort();
+    expect(tolerante).toEqual([...APPELANTS].sort());
+    const nue = sources(racine)
+      .filter(f => /\bconstruireChaineC1\(\{/.test(readFileSync(f, 'utf8')))
+      .map(f => path.relative(process.cwd(), f))
+      .sort();
+    expect(nue).toEqual([path.join('src', 'lib', 'clinical-engine', 'selectionPrioritePrisma.ts')]);
   });
 
   it('le compte total est quatre : cockpit ×2, vérificateur, rejeu', () => {

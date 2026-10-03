@@ -149,3 +149,30 @@ describe('ProtocolDraft — orientation sur signal adressé', () => {
     });
   });
 });
+
+// Revue du 2026-10-03 (P2-1, Q4).
+describe('ProtocolDraft — orientation, statut et action praticien', () => {
+  const ADRESSEE = card({ safetyFindingAdresseIds: ['safety:anamnese:aaaaaaaaaaaaaaaa'] });
+  const V4 = 'c1-protocol-draft-v4';
+
+  it('en V4, l’orientation ne se suspend pas : tout statut autre qu’`active` est refusé', () => {
+    for (const statut of ['differee', 'contre_indiquee', 'non_indiquee_actuellement'] as const) {
+      expect(() => build({
+        decisionCard: ADRESSEE, version: V4,
+        actions: [{ ...actionOrientation(true), interventionStatus: statut }, action('a1', { interventionStatus: 'active' })],
+      } as never)).toThrow('ne se suspend pas');
+    }
+    expect(() => build({
+      decisionCard: ADRESSEE, version: V4,
+      actions: [
+        { ...actionOrientation(true), interventionStatus: 'conditionnelle_biologie', waitFor: { type: 'biologie', cible: 'bilan' } },
+        action('a1', { interventionStatus: 'active' }),
+      ],
+    } as never)).toThrow('ne se suspend pas');
+  });
+
+  it('l’orientation seule ne fait pas un protocole', () => {
+    expect(() => build({ decisionCard: ADRESSEE, actions: [actionOrientation(false)] }))
+      .toThrow('au moins une action du praticien');
+  });
+});

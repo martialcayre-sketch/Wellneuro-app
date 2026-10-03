@@ -81,8 +81,8 @@ export function AdressagePanel({
       {leveeOuverte ? (
         <p className="mt-1 text-xs text-muted-foreground">
           La consigner <strong>vaut adressage</strong> pour les signaux qu’elle nomme : ils cessent
-          de suspendre la décision et restent affichés. Un signal qu’elle ne nomme pas, ou déclaré
-          après elle, continue de la suspendre.
+          de suspendre la décision et restent affichés. Un signal qu’elle ne nomme pas la suspend
+          toujours, et une nouvelle anamnèse validée la suspend de nouveau pour tous les signaux.
         </p>
       ) : (
         <p className="mt-1 text-xs text-muted-foreground">

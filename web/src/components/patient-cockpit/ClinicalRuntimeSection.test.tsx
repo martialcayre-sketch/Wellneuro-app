@@ -1047,6 +1047,43 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     expect(await screen.findByRole('button', { name: /Établir et consigner la lettre/ })).toBeTruthy();
   });
 
+  // [[D-257]], revue du 2026-10-03 (P2-5) : levée ouverte, une lettre
+  // consignée recharge la chaîne — l'écran montre la levée sans rechargement.
+  it('levée ouverte : consigner la lettre recharge la chaîne ; levée fermée, non', async () => {
+    for (const levee of [true, false]) {
+      cleanup();
+      const reponse = reponsePrete(
+        { status: 'required', ruleIds: ['PRIO-PON-01'], limitations: [] },
+        { domaine: 'digestion', libelle: 'Digestion', valeur: 8, bande: 'Intensité élevée', exAequo: [] },
+      ) as unknown as Record<string, unknown> & { review: { safetyFindings: unknown[] } };
+      reponse.review.safetyFindings = [{
+        findingId: 'safety:anamnese:0123456789abcdef', kind: 'safety', disposition: 'requires_practitioner_review',
+        rationale: 'Un constat suspend la décision.', ruleId: 'ABST-SEC-01', confidence: 'à_documenter',
+        provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] }, limitations: [],
+      }];
+      if (levee) reponse.couverturesAdressage = [];
+      const fetchMock = fetchParRoute({
+        cockpitGet: [rep(proposalResponse), rep(proposalResponse)],
+        cockpitPost: [rep(reponse)],
+        adressageGet: rep({ ok: true, ouvert: true }),
+        adressagePost: rep({ ok: true, texte: 'Docteur, …', html: '', ancrageSha256: 'a'.repeat(64), ancrageVersion: 'safety-signals-nnpp2-v1' }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+      await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+      fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
+      await screen.findByRole('button', { name: /Établir et consigner la lettre/ });
+      const gets = () => fetchMock.mock.calls.filter(([url, init]) =>
+        String(url).startsWith('/api/praticien/cockpit?') && !(init as RequestInit | undefined)?.method).length;
+      const avant = gets();
+      fireEvent.change(screen.getByLabelText('Nom du médecin destinataire'), { target: { value: 'Dr Martin' } });
+      fireEvent.click(screen.getByRole('button', { name: /Établir et consigner la lettre/ }));
+      await screen.findByText(/Lettre consignée au dossier/);
+      if (levee) await waitFor(() => expect(gets()).toBeGreaterThan(avant));
+      else expect(gets()).toBe(avant);
+    }
+  });
+
   it('drapeau fermé : le constat se lit, le geste reste absent', async () => {
     // Le 503 de la route laisse le panneau ABSENT, jamais un bouton qui échoue.
     const fetchMock = await afficherAvecConstats(['safety:anamnese:0123456789abcdef'], {
@@ -1104,7 +1141,7 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     await screen.findByRole('region', { name: 'Signaux adressés' });
     const getsAvant = fetchMock.mock.calls.filter(([url, init]) =>
       String(url).startsWith('/api/praticien/cockpit?') && !(init as RequestInit | undefined)?.method).length;
-    fireEvent.click(screen.getByRole('button', { name: 'Révoquer cet adressage' }));
+    fireEvent.click(screen.getByRole('button', { name: /Révoquer la lettre du 3 octobre 2026/ }));
     fireEvent.change(screen.getByLabelText(/Motif de la révocation/), { target: { value: 'Mauvais dossier.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer la révocation' }));
     await waitFor(() => {

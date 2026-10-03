@@ -237,6 +237,23 @@ function assertOrientation(actions: ProtocolAction[], requise: boolean): void {
     || (tete.limitations ?? []).length > 0) {
     throw new TypeError('L’orientation vers le médecin porte un texte signé : il ne se modifie pas.');
   }
+  // NON RETIRABLE, Y COMPRIS PAR SON STATUT (A11, revue du 2026-10-03, P2-1).
+  // Un statut V4 autre qu'`active` la ferait lire au patient « Écarté pour
+  // vous » ou « Prévu pour plus tard » : retirée sans l'être. Aucune référence
+  // (assiette, Boussole, complément, attente) ne s'y greffe non plus.
+  if ((tete.interventionStatus !== undefined && tete.interventionStatus !== 'active')
+    || tete.waitFor !== undefined
+    || tete.recommendedPlateRef !== undefined
+    || tete.foodCompassRef !== undefined
+    || tete.supplementCatalogRef !== undefined) {
+    throw new TypeError('L’orientation vers le médecin reste active et ne porte aucune référence : elle ne se suspend pas.');
+  }
+  // ELLE OUVRE UN PROTOCOLE, ELLE N'EN TIENT PAS LIEU (arbitrage du
+  // 2026-10-03, Q4) : au moins une action du praticien la suit — la règle que
+  // le constructeur appliquait déjà, désormais tenue au serveur.
+  if (actions.length < 2) {
+    throw new TypeError('L’orientation vers le médecin ouvre le protocole : au moins une action du praticien doit la suivre.');
+  }
 }
 
 function normalizeActions(

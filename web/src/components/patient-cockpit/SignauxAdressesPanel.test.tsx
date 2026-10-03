@@ -40,19 +40,27 @@ describe('SignauxAdressesPanel', () => {
     expect(screen.queryByRole('region', { name: 'Signaux adressés' })).toBeNull();
   });
 
-  it('chaque signal reste affiché, avec TOUTES les lettres qui le couvrent', () => {
+  it('chaque signal reste affiché, avec le nombre de lettres qui le couvrent', () => {
     rendre();
     expect(screen.getByText('Signal déclaré : « A ».')).toBeTruthy();
     expect(screen.getByText('Signal déclaré : « B ».')).toBeTruthy();
-    // A : deux lettres ; B : une seule.
-    expect(screen.getAllByText(/Adressage engagé le/)).toHaveLength(3);
-    expect(screen.getAllByText('Adressage engagé le 3 octobre 2026.')).toHaveLength(1);
-    expect(screen.getAllByRole('button', { name: 'Révoquer cet adressage' })).toHaveLength(3);
+    expect(screen.getByText('Couvert par 2 lettres d’adressage.')).toBeTruthy();
+    expect(screen.getByText('Couvert par une lettre d’adressage.')).toBeTruthy();
+  });
+
+  it('un bouton par LETTRE, qui dit combien de signaux elle couvre — distinguable au lecteur d’écran', () => {
+    rendre();
+    const boutons = screen.getAllByRole('button', { name: /^Révoquer la lettre du/ });
+    expect(boutons.map(b => b.getAttribute('aria-label'))).toEqual([
+      'Révoquer la lettre du 1 octobre 2026, qui couvre 2 signaux',
+      'Révoquer la lettre du 3 octobre 2026, qui couvre un signal',
+    ]);
+    expect(screen.getByText('Adressage engagé le 1 octobre 2026 — la lettre couvre 2 signaux.')).toBeTruthy();
   });
 
   it('la révocation exige un motif, puis vise CETTE lettre', () => {
     const { onRevoquer } = rendre();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Révoquer cet adressage' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: /Révoquer la lettre du 3 octobre 2026/ }));
     const confirmer = screen.getByRole('button', { name: 'Confirmer la révocation' });
     expect((confirmer as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(screen.getByLabelText(/Motif de la révocation/), { target: { value: '  Mauvais dossier.  ' } });
@@ -62,12 +70,12 @@ describe('SignauxAdressesPanel', () => {
 
   it('une erreur de révocation se lit sous la lettre visée', () => {
     rendre({ revocation: { idAdressage: 'adr_1', enCours: false, erreur: 'Cet adressage est déjà révoqué.' } });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Révoquer cet adressage' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: /Révoquer la lettre du 1 octobre 2026/ }));
     expect(screen.getByRole('alert').textContent).toBe('Cet adressage est déjà révoqué.');
   });
 
   it('dit que révoquer rebloque, sauf si une autre lettre couvre', () => {
     rendre();
-    expect(screen.getByText(/sauf si une autre lettre les couvre/)).toBeTruthy();
+    expect(screen.getByText(/à tous les signaux qu’elle couvre, sauf si une autre lettre les couvre/)).toBeTruthy();
   });
 });

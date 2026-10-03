@@ -23,6 +23,30 @@ Mesure de production disponible : **6 dossiers sur 25** portaient un signal de r
 `adressage` au 2026-08-23. Aucune mesure plus récente — à refaire par conteneur
 détaché, en agrégats, avant la décision (§6).
 
+**Mesure du 2026-10-03** (après le LOT-05, par conteneur détaché, agrégats seuls,
+relevée par le responsable) : **22** consultations porteuses (validées, anamnèse
+présente) ; **13** déclarent au moins un signal d'alerte — un **plafond**, la
+requête ne distingue pas le rang `adressage` du rang `vigilance`, qui ne bloque
+rien ; **0** lettre d'adressage consignée, **0** couverture, **0** révocation.
+Conséquence : allumer `WN_LEVEE_ADRESSAGE` ne change l'état d'**aucun** dossier ;
+chacun se lève à la consignation de sa lettre, et aucune lettre antérieure n'est à
+re-consigner (A9 sans objet).
+
+**Le même jour, en fin d'après-midi** : une première lettre d'adressage consignée en
+production, couvrant **deux** signaux (relevé à l'écran par le responsable). Une
+seule lettre couvre tous les signaux qu'elle nomme ; drapeau éteint, elle ne lève
+encore rien.
+
+**Revue `wn-reviewer` des lots mergés (2026-10-03)** : allumage possible, aucun
+P0/P1. P2 corrigés dans la PR de suivi : statut V4 de l'orientation verrouillé à
+`active` et sans référence ; au moins une action du praticien exigée en plus de
+l'orientation (arbitrage Q4) ; défense à la diffusion contre la carte ;
+révocation regroupée **par lettre** ; mention « nouvelle anamnèse validée » ;
+rechargement après consignation ; révision après arbitrage qui suit la carte ;
+remise à zéro au changement de dossier ; garde des appelants sur tout `src/`.
+**Ouverte (Q2)** : une lettre écrite sous une cotation antérieure continue de
+lever — à trancher avant toute re-signature de la cotation.
+
 ## 2. L'arbitrage rendu le 2026-10-02 (responsable, en session)
 
 **A1 — LA LEVÉE EST DE TYPE « DÉCLASSEMENT », PAS UN EFFACEMENT.** Le signal ne
