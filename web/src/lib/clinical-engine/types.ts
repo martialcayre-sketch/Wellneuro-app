@@ -299,6 +299,15 @@ export type ClinicalReview = {
   missingData: MissingDataFinding[];
   discordances: DiscordanceFinding[];
   safetyFindings: SafetyFinding[];
+  /**
+   * Les constats de sécurité COUVERTS par une lettre d'adressage consignée
+   * ([[D-257]], LOT-04) : ils ne bloquent plus, ils restent portés.
+   *
+   * ABSENT QUAND IL SERAIT VIDE, et c'est une garde d'empreinte : un champ
+   * `[]` toujours posé changerait l'`inputHash` de toutes les revues — donc de
+   * toutes les cartes déjà persistées, que le rejeu ne retrouverait plus.
+   */
+  safetyFindingsAdresses?: SafetyFinding[];
   abstention: AbstentionAssessment;
   limitations: string[];
   inputHash: string;
@@ -383,6 +392,13 @@ export type DecisionCard = {
   missingDataFindingIds: string[];
   discordanceFindingIds: string[];
   safetyFindingIds: string[];
+  /**
+   * Identifiants des constats ADRESSÉS ([[D-257]], LOT-04) — jamais les dates
+   * ni les lettres : une seconde lettre ne doit pas faire dériver une carte
+   * déjà diffusée. Absent quand il serait vide (même garde d'empreinte que
+   * `ClinicalReview.safetyFindingsAdresses`).
+   */
+  safetyFindingAdresseIds?: string[];
   abstention: AbstentionAssessment;
   limitations: string[];
   inputHash: string;

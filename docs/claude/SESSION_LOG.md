@@ -8776,3 +8776,17 @@ non demandées (ng/L ≡ pg/mL) ; libellés devinés.
 
 **Questions ouvertes.** Unité retenue par analyte du LOT-06 ; « U/L » ≡
 « UI/L » ; sort des quatre panels sans unité.
+## 2026-10-03 — Levée du blocage par signal d'alerte, LOT-04a (D-257)
+
+**Décidé.** La chaîne C1 sépare constats ouverts et adressés derrière
+`WN_LEVEE_ADRESSAGE` (éteint jusqu'au LOT-05) ; champs neufs absents quand
+vides pour ne bouger aucune empreinte ; lecteur unique fail-closed partagé par
+les quatre constructions ; LOT-04 scindé en 04a (moteur) et 04b (écran).
+
+**Écarté.** Lecture datée (`asOf`) des couvertures : la chaîne n'est pas
+construite en mode passé ; dates de lettre dans la carte (une seconde lettre
+ferait dériver une carte diffusée).
+
+**Prochaine action.** Verdict `wn-reviewer`, merge de #1291, puis LOT-04b.
+
+**Questions ouvertes.** Mesure de production avant allumage.

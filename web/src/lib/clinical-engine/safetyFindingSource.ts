@@ -31,3 +31,17 @@ export const PREFIXE_FINDING_EFFET_INDESIRABLE = 'safety:effet-indesirable:';
 export function estFindingAnamnese(findingId: unknown): boolean {
   return typeof findingId === 'string' && findingId.startsWith(PREFIXE_FINDING_ANAMNESE);
 }
+
+/**
+ * Une couverture d'adressage ACTIVE ([[D-257]], LOT-04) : une lettre consignée,
+ * non révoquée, sur la consultation porteuse courante. `lireCouverturesAdressage`
+ * a déjà écarté tout le reste. Déclarée ici, module feuille, parce que l'écran
+ * la lit aussi : la réponse du cockpit la sert à côté de la carte.
+ */
+export type CouvertureAdressage = {
+  idAdressage: string;
+  idCorrespondance: string;
+  findingIds: string[];
+  /** ISO, posé par la base à la consignation. */
+  acteLe: string;
+};
