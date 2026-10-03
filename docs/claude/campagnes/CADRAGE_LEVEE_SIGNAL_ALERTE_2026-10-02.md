@@ -23,6 +23,15 @@ Mesure de production disponible : **6 dossiers sur 25** portaient un signal de r
 `adressage` au 2026-08-23. Aucune mesure plus récente — à refaire par conteneur
 détaché, en agrégats, avant la décision (§6).
 
+**Mesure du 2026-10-03** (après le LOT-05, par conteneur détaché, agrégats seuls,
+relevée par le responsable) : **22** consultations porteuses (validées, anamnèse
+présente) ; **13** déclarent au moins un signal d'alerte — un **plafond**, la
+requête ne distingue pas le rang `adressage` du rang `vigilance`, qui ne bloque
+rien ; **0** lettre d'adressage consignée, **0** couverture, **0** révocation.
+Conséquence : allumer `WN_LEVEE_ADRESSAGE` ne change l'état d'**aucun** dossier ;
+chacun se lève à la consignation de sa lettre, et aucune lettre antérieure n'est à
+re-consigner (A9 sans objet).
+
 ## 2. L'arbitrage rendu le 2026-10-02 (responsable, en session)
 
 **A1 — LA LEVÉE EST DE TYPE « DÉCLASSEMENT », PAS UN EFFACEMENT.** Le signal ne

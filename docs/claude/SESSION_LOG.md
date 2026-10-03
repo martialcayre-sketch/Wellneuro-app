@@ -8815,3 +8815,13 @@ praticien) ; afficher le plan idéal au patient (contrat patient inchangé).
 d'allumage du drapeau.
 
 **Questions ouvertes.** « Action du jour » côté patient = l'orientation.
+## 2026-10-03 — Levée du blocage par signal d'alerte : mesure avant allumage (D-257)
+
+**Constaté.** 22 porteuses, 13 avec signal déclaré (plafond), 0 lettre, 0
+couverture : l'allumage ne lève aucun dossier par lui-même.
+
+**Décidé.** Revue `wn-reviewer` relancée sur les LOT-04a/04b/05 mergés avant la
+pose ; mesure consignée au cadrage et à `FEATURE_FLAGS.md`.
+
+**Prochaine action.** Verdict de la revue, correctifs éventuels, puis pose du
+drapeau sur ordre du responsable, constatée par le comportement.
