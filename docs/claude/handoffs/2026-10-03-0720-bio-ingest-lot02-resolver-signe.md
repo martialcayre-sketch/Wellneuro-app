@@ -1,4 +1,4 @@
-# Handoff — BIO-INGEST LOT-02, signature du resolver (D-259)
+# Handoff — 2026-10-03 — BIO-INGEST LOT-02, signature du resolver (D-259)
 
 ## Branche et état Git
 
