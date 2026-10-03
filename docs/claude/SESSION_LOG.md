@@ -8731,3 +8731,18 @@ constat par conteneur, puis LOT-03 (écrivain, cadrage §7).
 
 **Questions ouvertes.** Mesure de production des dossiers bloqués et des
 lettres déjà consignées ; T3 E2E non jouable en conteneur cloud.
+## 2026-10-03 — BIO-INGEST LOT-02, signature du resolver (D-259)
+
+**Décidé.** Resolver signé tel quel (98 entrées, 43 analytes, SHA en dur) sur
+surface de relecture ; « Albumine » et « Acide urique » gardés (unité
+divergente déjà refusée en aval) ; enrôlé dans `shaPerimetreLitteral.guard`.
+Premier passage du cron de purge constaté (0 candidat, 0 échec).
+
+**Écarté.** Enrichir la table de synonymes devinés — ils viendront des
+libellés réellement lus restés `inconnu`.
+
+**Prochaine action.** PR, CI, merge ; puis conditions restantes du drapeau
+(v4/v12 constatées et relues), pose par le responsable, constat de `after()`.
+
+**Questions ouvertes.** Iodurie sur échantillon (µg/L) vs catalogue µg/24h ;
+cortisol salivaire 8h/20h sur deux lignes ; rétention des sauvegardes.
