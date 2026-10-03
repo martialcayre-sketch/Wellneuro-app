@@ -17,7 +17,11 @@ vi.mock('@/lib/praticien/appartenance', () => ({
   emailPraticien: (session: { user?: { email?: string } } | null) => session?.user?.email ?? null,
 }));
 
-import { MOTIF_REVOCATION_MAX, POST } from './route';
+import { POST } from './route';
+
+// La borne du CHECK `forme_revocation` : un fichier de route Next.js n'exporte
+// que ses handlers, la valeur est donc recopiée ici.
+const MOTIF_REVOCATION_MAX = 2000;
 
 const PRATICIEN = 'praticien@wellneuro.fr';
 
@@ -104,6 +108,24 @@ describe('révocation d’un adressage — D-257 §6, LOT-03', () => {
     expect((await POST(post(CORPS))).status).toBe(403);
     prisma.patient.findUnique.mockResolvedValueOnce({ actif: false, suiviClotureLe: new Date() });
     expect((await POST(post(CORPS))).status).toBe(409);
+    expect(prisma.adressageSignalAlerte.create).not.toHaveBeenCalled();
+  });
+
+  it('journalise l’accès au dossier nommé, AVANT de lire l’adressage', async () => {
+    await POST(post(CORPS));
+    expect(verifierAppartenancePatient).toHaveBeenCalledWith('PAT1', PRATICIEN, {
+      route: '/api/praticien/adressage/revocation',
+      methode: 'POST',
+    });
+    const ordreAcces = verifierAppartenancePatient.mock.invocationCallOrder[0];
+    const ordreLecture = prisma.adressageSignalAlerte.findFirst.mock.invocationCallOrder[0];
+    expect(ordreAcces).toBeLessThan(ordreLecture);
+  });
+
+  it('dossier introuvable : 404, sans lire ni écrire d’adressage', async () => {
+    verifierAppartenancePatient.mockResolvedValueOnce('introuvable');
+    expect((await POST(post(CORPS))).status).toBe(404);
+    expect(prisma.adressageSignalAlerte.findFirst).not.toHaveBeenCalled();
     expect(prisma.adressageSignalAlerte.create).not.toHaveBeenCalled();
   });
 

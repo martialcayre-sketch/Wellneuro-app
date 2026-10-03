@@ -21,12 +21,16 @@ import { describe, expect, it } from 'vitest';
 //     révocation (l'acte `revocation`). Un troisième lèverait ou rebloquerait
 //     un dossier par un chemin que personne n'a relu.
 //
-// LA PORTÉE COUVRE `src/`, `scripts/`, `prisma/` ET `e2e/` (constat de revue du
-// LOT-02) : un script ou un seed qui écrirait une couverture contournerait le
-// banc aussi sûrement qu'une route.
+// LA PORTÉE COUVRE `src/`, `scripts/`, `prisma/`, `e2e/` ET les scripts de la
+// racine du dépôt, en TypeScript, JavaScript, SQL et shell (constats de revue
+// des LOT-02 et LOT-03) : un script, un seed ou un `psql -c` qui écrirait une
+// couverture contournerait le banc aussi sûrement qu'une route. Restent dehors
+// les migrations (le DDL) et `prisma/checks/` (les contrats, joués dans une
+// transaction annulée).
 
 const RACINE = process.cwd();
-const RACINES = ['src', 'scripts', 'prisma', 'e2e'].map(dossier => path.join(RACINE, dossier));
+const RACINES = ['src', 'scripts', 'prisma', 'e2e', path.join('..', 'scripts')]
+  .map(dossier => path.join(RACINE, dossier));
 const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');
 const NETTOYAGE_E2E = path.join('e2e', 'helpers', 'db.ts');
 const ROUTE_LETTRE = path.join('src', 'app', 'api', 'praticien', 'adressage', 'courrier', 'route.ts');
@@ -37,9 +41,9 @@ function fichiersSources(depart: string): string[] {
   for (const entree of readdirSync(depart)) {
     const complet = path.join(depart, entree);
     if (statSync(complet).isDirectory()) {
-      if (entree === 'node_modules' || entree === '.next' || entree === 'generated' || entree === 'migrations') continue;
+      if (['node_modules', '.next', 'generated', 'migrations', 'checks'].includes(entree)) continue;
       trouves.push(...fichiersSources(complet));
-    } else if (/\.tsx?$/.test(entree) && !/\.test\.tsx?$/.test(entree)) {
+    } else if (/\.(?:[cm]?[jt]sx?|sql|sh)$/.test(entree) && !/\.test\.[cm]?[jt]sx?$/.test(entree)) {
       trouves.push(complet);
     }
   }
@@ -95,7 +99,8 @@ describe('Adressages sur signal d’alerte — qui écrit (D-257, LOT-02 et LOT-
     expect(lettre).toContain("acte: 'adressage'");
     expect(lettre).not.toContain("acte: 'revocation'");
     expect(revocation).toContain("acte: 'revocation'");
-    expect(revocation).not.toContain("acte: 'adressage',\n");
+    // La révocation ne LIT l'acte `adressage` que dans sa recherche de cible ;
+    // ce qu'elle écrit est éprouvé par son propre banc de route.
   });
 
   it('les motifs reconnaissent bien les formes qu’ils doivent refuser', () => {

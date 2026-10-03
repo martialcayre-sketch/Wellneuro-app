@@ -223,9 +223,13 @@ export async function POST(req: Request) {
     // TOUT SE PASSE DANS UNE TRANSACTION INTERACTIVE, lecture de la porteuse
     // comprise : la base refuse une couverture dont la lettre n'est pas de la
     // transaction courante, ou dont la consultation n'est plus la porteuse au
-    // moment de l'insertion. Lire la porteuse dehors ouvrirait une course
-    // qu'elle rejetterait en 500 ; la lire dedans la ferme. Un refus métier
-    // (générateur, libellé) sort de la transaction SANS rien écrire.
+    // moment de l'insertion. Lire la porteuse dans la transaction RÉDUIT la
+    // fenêtre d'une validation concurrente, elle ne la ferme pas (READ
+    // COMMITTED, aucun verrou) : si une consultation est validée entre la
+    // lecture et l'insertion, la base refuse, la transaction annule la lettre
+    // avec sa couverture, et la route rend 500 — refus fermé, rien d'écrit. Un
+    // refus métier (générateur, libellé) sort de la transaction SANS rien
+    // écrire.
     let resultat: Resultat;
     try {
       resultat = await prisma.$transaction(async tx => {

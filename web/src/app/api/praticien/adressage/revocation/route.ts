@@ -31,7 +31,7 @@ const ROUTE_JOURNAL = '/api/praticien/adressage/revocation';
 const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
 const ID_ADRESSAGE_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 /** Borne du CHECK `forme_revocation` : la route refuse avant la base. */
-export const MOTIF_REVOCATION_MAX = 2000;
+const MOTIF_REVOCATION_MAX = 2000;
 
 export type RevocationAdressageApiResponse =
   | { ok: true; idRevocation: string }
@@ -91,7 +91,10 @@ export async function POST(req: Request) {
     }
 
     // Un dossier clos est en lecture seule : rien ne s'y consigne, une
-    // révocation pas plus qu'une lettre ([[D-219]] §2).
+    // révocation pas plus qu'une lettre ([[D-219]] §2). Ce refus ne contredit
+    // pas l'absence de drapeau : un dossier clos ne décide ni ne diffuse rien
+    // (`accepteNouvelEnvoi`), une levée n'y a donc aucun effet à corriger, et
+    // la révocation redevient possible dès que le suivi reprend.
     const patient = await prisma.patient.findUnique({
       where: { idPatient },
       select: { actif: true, suiviClotureLe: true },

@@ -154,6 +154,17 @@ revient aux écrivains et aux lecteurs :
   **courante** (banc d'égalité) ; la lettre est relue à la lecture (sortante,
   ancrage `safety-signals-`, même dossier) — `correspondances_medecin` n'a pas de
   gel, le trigger ne la vérifie qu'à l'insertion.
+- **LOT-04 (lecteur), revue du LOT-03.** Une révocation vise UNE lettre : deux
+  lettres consignées sur la même porteuse donnent deux couvertures, et en révoquer
+  une ne rebloque pas si l'autre couvre le même constat. L'écran du LOT-04 affiche
+  donc TOUTES les couvertures actives d'un constat, et le bouton de révocation
+  s'y pose par couverture. Les transactions interactives gardent les délais par
+  défaut de Prisma (attente 2 s, durée 5 s) : à surveiller sous `DB_POOL_MAX=1`.
+- **Texte de l'écran, arbitré le 2026-10-03.** Depuis le LOT-03, la mention avant
+  consignation dit que la lettre « ne lève pas encore l'abstention » et qu'« à
+  l'ouverture de la levée, elle vaudra adressage pour les signaux qu'elle nomme ».
+  Les couvertures écrites sous cette mention sont donc signées en connaissance de
+  cause ; le LOT-04 la remplacera par l'état réel.
 - **Choix assumé.** Une lettre dont la couverture a été révoquée ne couvre plus
   jamais : le praticien re-consigne une lettre neuve (index unique sans exception
   pour les lettres révoquées).

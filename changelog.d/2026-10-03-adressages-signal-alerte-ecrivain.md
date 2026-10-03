@@ -11,4 +11,7 @@ caractères au plus) d'un adressage de ce dossier, une fois, sans drapeau — el
 ne fait que rebloquer. La garde « qui écrit » nomme ses deux écrivains et balaie
 désormais `scripts/`, `prisma/` et `e2e/` ; le nettoyage des E2E supprime les
 couvertures avant les consultations. **Aucun comportement clinique ne change** :
-la couverture n'est lue par aucune surface tant que le LOT-04 n'est pas ouvert.
+la couverture n'est lue par aucune surface tant que le LOT-04 n'est pas ouvert. La
+mention affichée avant consignation le dit désormais (arbitrage du 2026-10-03) :
+la lettre « ne lève pas encore l'abstention clinique ; à l'ouverture de la levée,
+elle vaudra adressage pour les signaux qu'elle nomme ».
