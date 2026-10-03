@@ -1,10 +1,10 @@
 ---
 id: "2026-09-30-bio-ingest"
 titre: "BIO-INGEST — acquisition des résultats biologiques"
-statut: "en_cours (ouverte le 2026-09-30 — LOT-00, LOT-01 et LOT-02 terminés ; LOT-06 en cours : migration et resolver livrés, constat de production à faire)"
+statut: "en_cours (ouverte le 2026-09-30 — LOT-00, LOT-01, LOT-02 et LOT-06 terminés ; LOT-03 courant, arbitré le 2026-10-03)"
 créée_le: "2026-09-30"
-mise_à_jour: "2026-10-03"
-lot_courant: "LOT-06"
+mise_à_jour: "2026-10-04"
+lot_courant: "LOT-03"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -75,7 +75,13 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 | LOT-03 | Photo ou scan : même pipeline, seul l'extracteur change | à_faire | non | LOT-02 |
 | LOT-04 | Transmission depuis le portail patient | à_faire | probable, confirmation obligatoire | LOT-02, consentement RGPD à jour |
 | LOT-05 | Adaptateur laboratoire (pilote Barbier Metz) | à_faire | selon le format reçu | LOT-02, format réel reçu |
-| LOT-06 | Catalogue étendu aux analyses d'un compte rendu courant | en_cours | **oui, confirmation obligatoire** | LOT-02 |
+| LOT-06 | Catalogue étendu aux analyses d'un compte rendu courant | terminé (2026-10-04, D-261, D-263, D-264) | **oui, confirmation obligatoire** | LOT-02 |
+
+**Reste ouvert, rattaché au LOT-03** (constaté au LOT-06, 2026-10-03) : un import
+`extrait` n'offre aucun bouton « Relancer la lecture » (`ImportCompteRenduPanel.tsx`, `peutLancer`).
+Toute évolution du resolver ne profite donc à un compte rendu déjà lu qu'après retrait et nouveau
+dépôt, ce qui efface la lecture précédente. La route accepte déjà une nouvelle extraction du même
+document : seul l'écran manque.
 
 ## Hors périmètre, nommé
 
