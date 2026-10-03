@@ -136,10 +136,10 @@ describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transac
     expect(data[1]).toMatchObject({ rang: 2, valeurLue: '<0,5', preleveLeLu: null, heureLue: false });
   });
 
-  it('resolver non signé : tout sort `inconnu`, aucun analyte proposé', async () => {
+  it('resolver signé ([[D-259]]) : la table réelle propose l’analyte du libellé lu', async () => {
     await lancerExtraction(PARAMS);
     const { data } = argument<Lignes>(prisma.ligneBiologiqueCandidate.createMany);
-    for (const ligne of data) expect(ligne).toMatchObject({ analytePropose: null, statutMapping: 'inconnu' });
+    expect(data[0]).toMatchObject({ libelleLu: 'Ferritine', analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu' });
   });
 
   it('l’analyte proposé vient du resolver seul, `ambigu` sans code', async () => {

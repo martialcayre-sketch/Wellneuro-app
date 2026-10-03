@@ -49,6 +49,9 @@ const TABLES = [
   // Enrôlé le jour de sa première signature ([[D-246]], 2026-09-24), dans le même
   // geste que la signature — ni avant (le sha valait `null`), ni après.
   { fichier: 'portesBiologiquesAssiettesV1.ts', constante: 'shaPerimetrePortesBiologiques' },
+  // Enrôlé le jour de sa première signature ([[D-259]], 2026-10-03), dans le même
+  // geste. Hors de `clinical/` : le chemin est relatif à ce dossier.
+  { fichier: '../biology-library/import/resolverLibellesV1.ts', constante: 'RESOLVER_LIBELLES_SHA256' },
 ] as const;
 
 describe('shaPerimetre — littéral figé dans les tables signées, jamais la constante', () => {

@@ -81,10 +81,13 @@ describe('resolver — la résolution (table supposée signée)', () => {
 });
 
 describe('resolver — la signature, fail-closed', () => {
-  it('est livré NON signé : tout sort `inconnu`', () => {
-    expect(RESOLVER_LIBELLES_METADATA.validationExterne).toBe(false);
-    expect(resolverSigne()).toBe(false);
-    expect(resoudreLibelle('Ferritine')).toEqual({ statut: 'inconnu', code: null });
+  it('est signé par D-259 sur la table relue : la proposition s’ouvre', () => {
+    expect(RESOLVER_LIBELLES_METADATA.validationExterne).toBe(true);
+    expect(RESOLVER_LIBELLES_METADATA.shaPerimetre).toBe(RESOLVER_LIBELLES_SHA256);
+    expect(resolverSigne()).toBe(true);
+    expect(resoudreLibelle('Ferritine')).toEqual({ statut: 'resolu', code: 'BIO_FERRITINE' });
+    expect(resoudreLibelle('Cortisol salivaire')).toEqual({ statut: 'ambigu', code: null });
+    expect(resoudreLibelle('Zonuline')).toEqual({ statut: 'inconnu', code: null });
   });
 
   it('ne s’ouvre qu’avec les cinq termes, et se referme si la table bouge', () => {
