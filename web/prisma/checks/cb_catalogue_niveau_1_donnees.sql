@@ -82,24 +82,47 @@ BEGIN
     -- arbitrée (SI) — une seconde unité imprimée ne s'y glisse jamais.
     SELECT count(*) INTO nb FROM biology_analytes
     WHERE type_prelevement = 'sang' AND NOT validation_medicale_requise
-      AND (code, unite) IN (
-      ('BIO_HEMATIES', '10^12/L'), ('BIO_HEMATOCRITE', '%'), ('BIO_VGM', 'fL'),
-      ('BIO_TCMH', 'pg'), ('BIO_CCMH', 'g/L'), ('BIO_IDR', '%'),
-      ('BIO_LEUCOCYTES', '10^9/L'), ('BIO_PLAQUETTES', '10^9/L'), ('BIO_VPM', 'fL'),
-      ('BIO_NEUTROPHILES', '10^9/L'), ('BIO_EOSINOPHILES', '10^9/L'),
-      ('BIO_BASOPHILES', '10^9/L'), ('BIO_LYMPHOCYTES', '10^9/L'), ('BIO_MONOCYTES', '10^9/L'),
-      ('BIO_NEUTROPHILES_PCT', '%'), ('BIO_EOSINOPHILES_PCT', '%'),
-      ('BIO_BASOPHILES_PCT', '%'), ('BIO_LYMPHOCYTES_PCT', '%'), ('BIO_MONOCYTES_PCT', '%'),
-      ('BIO_SODIUM', 'mmol/L'), ('BIO_POTASSIUM', 'mmol/L'), ('BIO_CHLORE', 'mmol/L'),
-      ('BIO_CREATININE', 'µmol/L'), ('BIO_DFG_CKD_EPI', 'mL/min/1,73 m²'),
-      ('BIO_ASAT', 'UI/L'), ('BIO_ALAT', 'UI/L'), ('BIO_GGT', 'UI/L'),
-      ('BIO_CHOLESTEROL_TOTAL', 'mmol/L'), ('BIO_HDL', 'mmol/L'),
-      ('BIO_LDL_CALCULE', 'mmol/L'), ('BIO_NON_HDL', 'mmol/L'), ('BIO_TRIGLYCERIDES', 'mmol/L'),
-      ('BIO_TRANSFERRINE', 'g/L'), ('BIO_CTF', 'µmol/L'),
-      ('BIO_VITAMINE_B12', 'pmol/L'), ('BIO_CRP', 'mg/L')
+      AND source_provenance = 'saisie_praticien'
+      AND (code, libelle, unite) IN (
+      ('BIO_HEMATIES', 'Hématies', '10^12/L'),
+      ('BIO_HEMATOCRITE', 'Hématocrite', '%'),
+      ('BIO_VGM', 'Volume globulaire moyen (VGM)', 'fL'),
+      ('BIO_TCMH', 'Teneur corpusculaire moyenne en hémoglobine (TCMH)', 'pg'),
+      ('BIO_CCMH', 'Concentration corpusculaire moyenne en hémoglobine (CCMH)', 'g/L'),
+      ('BIO_IDR', 'Indice de distribution des globules rouges (IDR)', '%'),
+      ('BIO_LEUCOCYTES', 'Leucocytes', '10^9/L'),
+      ('BIO_PLAQUETTES', 'Plaquettes', '10^9/L'),
+      ('BIO_VPM', 'Volume plaquettaire moyen (VPM)', 'fL'),
+      ('BIO_NEUTROPHILES', 'Polynucléaires neutrophiles', '10^9/L'),
+      ('BIO_EOSINOPHILES', 'Polynucléaires éosinophiles', '10^9/L'),
+      ('BIO_BASOPHILES', 'Polynucléaires basophiles', '10^9/L'),
+      ('BIO_LYMPHOCYTES', 'Lymphocytes', '10^9/L'),
+      ('BIO_MONOCYTES', 'Monocytes', '10^9/L'),
+      ('BIO_NEUTROPHILES_PCT', 'Polynucléaires neutrophiles (%)', '%'),
+      ('BIO_EOSINOPHILES_PCT', 'Polynucléaires éosinophiles (%)', '%'),
+      ('BIO_BASOPHILES_PCT', 'Polynucléaires basophiles (%)', '%'),
+      ('BIO_LYMPHOCYTES_PCT', 'Lymphocytes (%)', '%'),
+      ('BIO_MONOCYTES_PCT', 'Monocytes (%)', '%'),
+      ('BIO_SODIUM', 'Sodium', 'mmol/L'),
+      ('BIO_POTASSIUM', 'Potassium', 'mmol/L'),
+      ('BIO_CHLORE', 'Chlore', 'mmol/L'),
+      ('BIO_CREATININE', 'Créatinine', 'µmol/L'),
+      ('BIO_DFG_CKD_EPI', 'Débit de filtration glomérulaire estimé (CKD-EPI)', 'mL/min/1,73 m²'),
+      ('BIO_ASAT', 'ASAT (transaminases TGO)', 'UI/L'),
+      ('BIO_ALAT', 'ALAT (transaminases TGP)', 'UI/L'),
+      ('BIO_GGT', 'Gamma-glutamyl transférase (GGT)', 'UI/L'),
+      ('BIO_CHOLESTEROL_TOTAL', 'Cholestérol total', 'mmol/L'),
+      ('BIO_HDL', 'Cholestérol HDL', 'mmol/L'),
+      ('BIO_LDL_CALCULE', 'Cholestérol LDL calculé', 'mmol/L'),
+      ('BIO_NON_HDL', 'Cholestérol non-HDL', 'mmol/L'),
+      ('BIO_TRIGLYCERIDES', 'Triglycérides', 'mmol/L'),
+      ('BIO_TRANSFERRINE', 'Transferrine', 'g/L'),
+      ('BIO_CTF', 'Capacité totale de fixation de la transferrine', 'µmol/L'),
+      ('BIO_VITAMINE_B12', 'Vitamine B12', 'pmol/L'),
+      ('BIO_CRP', 'CRP (protéine C réactive)', 'mg/L')
     );
     IF nb <> 36 THEN
-      RAISE EXCEPTION 'D-261: % analyte(s) du compte rendu courant conformes au lieu de 36 (code, unité, prélèvement)', nb;
+      RAISE EXCEPTION 'D-261: % analyte(s) du compte rendu courant conformes au lieu de 36 (code, libellé, unité, prélèvement, provenance)', nb;
     END IF;
 
     -- D-059 : un analyte ajouté par D-261 n'arrive avec AUCUNE plage.
