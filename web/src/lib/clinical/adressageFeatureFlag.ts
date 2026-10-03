@@ -24,3 +24,22 @@ export function isAdressageCourrierEnabled(
 export const MESSAGE_ADRESSAGE_FERME =
   'La lettre d’adressage n’est pas ouverte sur cet environnement. Son activation '
   + 'se fait par le drapeau WN_ADRESSAGE_COURRIER.';
+
+// Drapeau de la LEVÉE par adressage ([[D-257]], LOT-04).
+//
+// DISTINCT DU PRÉCÉDENT, ET C'EST LE POINT. `WN_ADRESSAGE_COURRIER` ouvre un
+// document sortant ; celui-ci laisse une couverture consignée LEVER une
+// inhibition de sécurité dans la chaîne C1. Les deux gestes ne se ferment pas
+// pour les mêmes raisons, ni au même moment.
+//
+// IL NE S'ALLUME PAS AVANT LE LOT-05 : sans l'action d'orientation en tête du
+// protocole, un dossier levé recevrait un protocole qui ne la porte pas.
+//
+// Éteint ⇒ aucune lecture de la table, et la chaîne C1 rend des cartes
+// identiques, empreinte comprise, à celles d'avant ce lot. Même doctrine
+// fail-closed : seule la chaîne exacte « true » ouvre.
+export function isLeveeAdressageEnabled(
+  value = process.env.WN_LEVEE_ADRESSAGE,
+): boolean {
+  return value === 'true';
+}

@@ -184,6 +184,29 @@ describe('ClinicalReview', () => {
     })).toThrow(TypeError);
   });
 
+  // [[D-257]], LOT-04 : un constat est OUVERT ou ADRESSÉ, jamais les deux — un
+  // doublon le ferait bloquer et paraître levé à la fois.
+  it('refuse un constat à la fois ouvert et adressé ; pose les adressés seulement s’il y en a', () => {
+    const constat = {
+      findingId: 'safety:anamnese:aaaaaaaaaaaaaaaa', kind: 'safety' as const, confidence: 'à_documenter' as const,
+      disposition: 'requires_practitioner_review' as const, rationale: 'Signal déclaré.',
+      provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
+      ruleId: validatedRule.ruleId, limitations: [],
+    };
+    const base = {
+      reviewId: 'review-adr', createdAt: '2026-01-03T00:00:00.000Z', snapshot: snapshot(), rules: [validatedRule],
+    };
+    expect(() => buildClinicalReview({
+      ...base, findings: { safetyFindings: [constat], safetyFindingsAdresses: [constat] },
+    })).toThrow('à la fois ouvert et adressé');
+    const leve = buildClinicalReview({ ...base, findings: { safetyFindingsAdresses: [constat] } });
+    expect(leve.safetyFindings).toEqual([]);
+    expect(leve.safetyFindingsAdresses?.map(f => f.findingId)).toEqual([constat.findingId]);
+    const vide = buildClinicalReview({ ...base, findings: { safetyFindingsAdresses: [] } });
+    expect(vide).not.toHaveProperty('safetyFindingsAdresses');
+    expect(vide.inputHash).toBe(buildClinicalReview(base).inputHash);
+  });
+
   it('rejette les littéraux hors contrat, notamment toute sécurité automatique', () => {
     expect(() => buildClinicalReview({
       reviewId: 'review-1', createdAt: '2026-01-03T00:00:00.000Z', snapshot: snapshot(),

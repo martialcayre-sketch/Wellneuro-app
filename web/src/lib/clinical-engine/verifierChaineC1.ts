@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import { canonicalJson, canonicalSha256 } from './canonical';
+import { lireCouverturesAdressage } from './adressagesSignalAlertePrisma';
 import { lireEffetsIndesirables } from './effetsIndesirablesPrisma';
 import { construireChaineC1Tolerante, lireSelectionPriorite } from './selectionPrioritePrisma';
 import { adaptRuntimeInputs } from './runtimeFromPrisma';
@@ -75,18 +76,24 @@ export async function entreesRuntime(idPatient: string) {
     }),
     prisma.consultation.findFirst({
       where: whereConsultationPorteuse(idPatient),
-      select: { anamnese: true },
+      // `id` AVEC `anamnese`, dans la même requête ([[D-257]], LOT-04) : la
+      // couverture d'adressage se compare à la porteuse dont les signaux ont
+      // été lus, jamais à une porteuse relue à part.
+      select: { id: true, anamnese: true },
       orderBy: ORDRE_CONSULTATION_PORTEUSE,
     }),
   ]);
-  return adaptRuntimeInputs(
-    // `createdAt` n'est lu que par `proposeRuntimeEpisode`, qui n'est PAS appelé
-    // ici : l'épisode vient du corps de requête et c'est justement ce qu'on
-    // vérifie. Une seconde lecture du patient n'achèterait rien.
-    { idPatient, createdAt: new Date(0) },
-    filtrerPassationsExploitables(responses),
-    consultation,
-  );
+  return {
+    ...adaptRuntimeInputs(
+      // `createdAt` n'est lu que par `proposeRuntimeEpisode`, qui n'est PAS appelé
+      // ici : l'épisode vient du corps de requête et c'est justement ce qu'on
+      // vérifie. Une seconde lecture du patient n'achèterait rien.
+      { idPatient, createdAt: new Date(0) },
+      filtrerPassationsExploitables(responses),
+      consultation,
+    ),
+    idConsultationPorteuse: consultation?.id ?? null,
+  };
 }
 
 /**
@@ -141,6 +148,12 @@ export async function refusChaineC1(
   // recalcule, il ne réinterprète pas ([[D-101]]). Drapeau éteint ⇒ `undefined`
   // des deux côtés, donc aucune divergence possible.
   const effetsIndesirables = await lireEffetsIndesirables(episode.patientId);
+  // Les couvertures d'adressage, par la même fonction que le cockpit
+  // ([[D-257]], LOT-04). Drapeau éteint ⇒ `undefined` des deux côtés.
+  const couverturesAdressage = await lireCouverturesAdressage(
+    episode.patientId,
+    inputs.idConsultationPorteuse,
+  );
 
   let recalculee;
   try {
@@ -181,6 +194,7 @@ export async function refusChaineC1(
       signauxAlerte: inputs.signauxAlerte,
       etatPopulation: inputs.etatPopulation,
       effetsIndesirables,
+      couverturesAdressage,
     }, await lireSelectionPriorite(episode.patientId, decisionCard.decisionCardId)));
   } catch (error) {
     return `La chaîne clinique ne peut pas être recalculée sur ce dossier : ${

@@ -16,7 +16,9 @@ import {
   proposeRuntimeEpisode,
   type AncreCycleCourant,
 } from '@/lib/clinical-engine/runtimeFromPrisma';
+import { lireCouverturesAdressage } from '@/lib/clinical-engine/adressagesSignalAlertePrisma';
 import { lireEffetsIndesirables } from '@/lib/clinical-engine/effetsIndesirablesPrisma';
+import type { CouvertureAdressage } from '@/lib/clinical-engine/safetyFindingSource';
 import {
   construireChaineC1Tolerante,
   lireSelectionPriorite,
@@ -114,6 +116,15 @@ export type CockpitRuntimeApiResponse =
        * y ajouter un champ d'affichage déplacerait toutes les empreintes.
        */
       plainteDominante: PlainteDominante | null;
+      /**
+       * Les couvertures d'adressage ACTIVES lues pour construire la chaîne
+       * ([[D-257]], LOT-04) — absentes quand la levée est éteinte.
+       *
+       * À CÔTÉ DE LA CARTE, PAS DEDANS : la carte ne porte que les identifiants
+       * des constats adressés ; les lettres et leurs dates servent l'écran
+       * (une couverture affichée, un bouton de révocation par couverture).
+       */
+      couverturesAdressage?: CouvertureAdressage[];
       /**
        * Le SHA du périmètre signé sous lequel les candidats ci-dessus ont été
        * produits — `null` tant que la table des priorités n'est pas signée,
@@ -245,7 +256,9 @@ async function loadRuntimeInputs(idPatient: string, emailPraticien: string, asOf
     }),
     prisma.consultation.findFirst({
       where: whereConsultationPorteuse(idPatient),
-      select: { anamnese: true },
+      // `id` AVEC `anamnese` ([[D-257]], LOT-04) : même lecture que
+      // `entreesRuntime`, la couverture se compare à CETTE porteuse.
+      select: { id: true, anamnese: true },
       orderBy: ORDRE_CONSULTATION_PORTEUSE,
     }),
   ]);
@@ -268,6 +281,7 @@ async function loadRuntimeInputs(idPatient: string, emailPraticien: string, asOf
   // la liste complète — un repère est un fait administratif, pas une mesure.
   return {
     ...adaptRuntimeInputs(patient, filtrerPassationsExploitables(tronquerA(responses, asOf)), consultation),
+    idConsultationPorteuse: consultation?.id ?? null,
     asOf: asOf ? asOf.toISOString() : null,
   };
 }
@@ -457,7 +471,12 @@ async function reponsePrete(
     decisionCard: DecisionCard;
     plainteDominante: PlainteDominante | null;
   },
-  options?: { rejoue?: true; selectionEcartee?: boolean; reponsesDepuisConfirmation?: number },
+  options?: {
+    rejoue?: true;
+    selectionEcartee?: boolean;
+    reponsesDepuisConfirmation?: number;
+    couverturesAdressage?: CouvertureAdressage[];
+  },
 ): Promise<NextResponse<CockpitRuntimeApiResponse>> {
   let claimsCites: Awaited<ReturnType<typeof claimsCitesParLaPropositionBilan>> = [];
   if (conflitsSourcesActifs()) {
@@ -480,6 +499,7 @@ async function reponsePrete(
     plainteDominante: chaine.plainteDominante,
     perimetreSigne: tablePrioritesSignee() ? PRIORITY_RULES_METADATA.shaPerimetre : null,
     canalPlainte: CANAL_PLAINTE,
+    ...(options?.couverturesAdressage ? { couverturesAdressage: options.couverturesAdressage } : {}),
     ...(options?.rejoue ? { rejoue: true as const } : {}),
     ...(options?.selectionEcartee ? { selectionEcartee: true as const } : {}),
     ...(options?.reponsesDepuisConfirmation
@@ -551,6 +571,8 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
         try {
           const idSuffix = suffixeEnveloppe(episode.assessmentEpisodeId);
           const decisionCardIdRejeu = `runtime-decision-${idSuffix}`;
+          // Même lecture que `verifierChaineC1` et que le POST ([[D-257]]).
+          const couverturesAdressage = await lireCouverturesAdressage(idPatient, inputs.idConsultationPorteuse);
           // La sélection praticien, relue en base ([[D-127]]) par la MÊME
           // fonction que `verifierChaineC1` — deux lectures divergentes
           // rendraient 409 sur une carte honnête ([[D-101]]) — et construite par
@@ -568,6 +590,7 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
             signauxAlerte: inputs.signauxAlerte,
             etatPopulation: inputs.etatPopulation,
             effetsIndesirables: await lireEffetsIndesirables(idPatient),
+            couverturesAdressage,
           }, await lireSelectionPriorite(idPatient, decisionCardIdRejeu));
           if (selectionEcartee) {
             // Un acte praticien n'est plus servi. Il se dit DÉSORMAIS À L'ÉCRAN
@@ -592,6 +615,7 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
             rejoue: true,
             selectionEcartee,
             reponsesDepuisConfirmation,
+            couverturesAdressage,
           });
         } catch (erreurRejeu) {
           // Le dossier ne porte plus ce que l'épisode cite (passation retirée,
@@ -864,6 +888,10 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     // sélection déjà posée sur cette carte se relit ici : confirmer à nouveau le
     // même épisode ne l'efface donc pas. Lecture ET repli sont ceux du
     // vérificateur ([[D-101]]) — sinon 409 sur une carte que ce POST émet.
+    // Les couvertures d'adressage, par la fonction partagée avec le
+    // vérificateur et le rejeu ([[D-257]], LOT-04). Drapeau éteint ⇒
+    // `undefined`, aucune requête neuve.
+    const couverturesAdressage = await lireCouverturesAdressage(idPatient, inputs.idConsultationPorteuse);
     const {
       chaine: { snapshot, review, decisionCard, plainteDominante },
       selectionEcartee,
@@ -883,6 +911,7 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
       // divergentes rendraient 409 sur une carte que cette route vient
       // d'écrire. Drapeau éteint ⇒ `undefined`, aucune requête neuve.
       effetsIndesirables: await lireEffetsIndesirables(idPatient),
+      couverturesAdressage,
     }, await lireSelectionPriorite(idPatient, `runtime-decision-${idSuffix}`));
     // Après `loadRuntimeInputs`, donc après que l'appartenance du patient au
     // praticien a été vérifiée — un patient d'un autre praticien est sorti en
@@ -989,7 +1018,7 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     return await reponsePrete(
       idPatient,
       { snapshot, review, decisionCard, plainteDominante },
-      { selectionEcartee },
+      { selectionEcartee, couverturesAdressage },
     );
   } catch (error) {
     if (error instanceof TypeError) {
