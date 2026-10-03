@@ -1,4 +1,4 @@
-# Handoff — 2026-10-03 — BIO-INGEST LOT-06, catalogue étendu et resolver re-signé (D-261, D-262)
+# Handoff — 2026-10-03 — BIO-INGEST LOT-06, catalogue étendu et resolver re-signé (D-261, D-263)
 
 ## Branche et état Git
 
@@ -18,7 +18,7 @@ créatinine et DFG, transaminases et GGT, lipides, transferrine, B12, CRP.
   - « mL/min/1,73 m² » ajoutée aux quatre CHECK ;
   - les quatre composites restent, pour les panels ;
   - paires de notation G/L, T/L, U/L et fl.
-- **[[D-262]]** :
+- **[[D-263]]** :
   - resolver re-signé `be9a463c…8fc3` (145 entrées, 79 analytes) ;
   - un libellé lu doit être au moins aussi précis que celui du catalogue (« Fer » et « Sodium »
     seuls sont refusés) ;
@@ -33,7 +33,7 @@ créatinine et DFG, transaminases et GGT, lipides, transferrine, B12, CRP.
 - `resolverLibellesV1.ts` (+ test et banc des 58 lignes réelles, sans valeur) ;
 - `valeurLue.ts` (+ test) ;
 - `lancerExtraction.ts` (+ test) : lit les unités du catalogue dans la transaction ;
-- `DECISIONS.md` (D-262), deux fragments `changelog.d/`, fiche du LOT-06, `CAMPAGNE.md`,
+- `DECISIONS.md` (D-263), deux fragments `changelog.d/`, fiche du LOT-06, `CAMPAGNE.md`,
   `.wn/state.json`.
 
 ## Validations exécutées

@@ -8846,7 +8846,7 @@ blocage levé à l'écran sur le premier dossier adressé.
 
 **Prochaine action.** Consigner chaque nouvelle lettre ; trancher Q1, Q2, Q3.
 
-## 2026-10-03 — BIO-INGEST LOT-06, catalogue étendu et resolver (D-261, D-262)
+## 2026-10-03 — BIO-INGEST LOT-06, catalogue étendu et resolver (D-261, D-263)
 
 **Décidé.** 36 analytes, une unité SI chacun, ajoutés par une migration appliquée et constatée
 (#1296). Le resolver est re-signé (145 entrées). L'unité lue départage un libellé ambigu. Un
@@ -8858,3 +8858,15 @@ retrait des quatre composites (les panels les citent).
 **Prochaine action.** PR resolver, merge, nouvelle extraction de PAT030, constat, clôture.
 
 **Questions ouvertes.** Aucune.
+## 2026-10-03 — Lettre d'adressage remise au patient : cadrage (D-262)
+
+**Décidé.** Remise au portail à la diffusion du protocole (B1), lettre telle
+quelle figée sous une phrase d'accompagnement (B2), e-mail neutre existant
+(B3) ; onglet Correspondance déjà satisfait (B4). Lots : migration, émission,
+portail.
+
+**Écarté.** Remise à la consignation, geste séparé, version patient distincte,
+pièce jointe.
+
+**Prochaine action.** Signature de la phrase d'accompagnement, puis LOT-01
+(migration de la table de remises).

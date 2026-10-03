@@ -62,7 +62,7 @@ describe('unitesConcordent — aucune conversion (D-157)', () => {
     expect(unitesConcordent('mg/L', 'µg/mL')).toBe(false);
   });
 
-  it('admet les notations de D-261 et D-262, dans les deux sens, et rien d’autour', () => {
+  it('admet les notations de D-261 et D-263, dans les deux sens, et rien d’autour', () => {
     expect(unitesConcordent('G/L', '10^9/L')).toBe(true);
     expect(unitesConcordent('10^9/L', 'G/L')).toBe(true);
     expect(unitesConcordent('T/L', '10^12/L')).toBe(true);

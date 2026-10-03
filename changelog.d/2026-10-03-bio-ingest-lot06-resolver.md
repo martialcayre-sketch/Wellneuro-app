@@ -1,6 +1,6 @@
 ### BIO-INGEST LOT-06 : le resolver rattache les analyses d'un compte rendu courant (2026-10-03)
 
-- **Resolver re-signé** ([[D-262]]) : 44 libellés de plus (145 entrées,
+- **Resolver re-signé** ([[D-263]]) : 44 libellés de plus (145 entrées,
   79 analytes), lus sur le premier compte rendu de production ou repris du
   catalogue. Un libellé lu doit être au moins aussi précis que celui du
   catalogue : « Créatinine » se rattache, « Fer » ou « Sodium » seuls non.

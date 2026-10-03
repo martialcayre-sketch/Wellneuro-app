@@ -151,7 +151,7 @@ describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transac
     expect(data[0]).toMatchObject({ libelleLu: 'Ferritine', analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu' });
   });
 
-  it('un libellé ambigu se départage par l’unité lue, contre les unités du catalogue ([[D-262]])', async () => {
+  it('un libellé ambigu se départage par l’unité lue, contre les unités du catalogue ([[D-263]])', async () => {
     extraire.mockResolvedValueOnce({
       ok: true,
       laboratoire: 'Laboratoire de fixture',

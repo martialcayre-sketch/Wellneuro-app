@@ -76,7 +76,7 @@ function formeUnite(unite: string): string {
  * Deux écritures d'une MÊME grandeur — facteur 1, la valeur lue reste celle du
  * compte rendu. Liste fermée, chaque paire validée par le responsable
  * ([[D-260]] : « µg/L » et « ng/mL », constaté sur un compte rendu réel ;
- * [[D-261]] §5 : giga, téra, l'unité enzymatique ; [[D-262]] : la décimale du
+ * [[D-261]] §5 : giga, téra, l'unité enzymatique ; [[D-263]] : la décimale du
  * DFG). Une
  * paire reliée par un autre facteur (g/dL et g/L) n'a rien à faire ici.
  */
@@ -86,7 +86,7 @@ const NOTATIONS_EQUIVALENTES: readonly (readonly [string, string])[] = Object.fr
   ['G/L', '10^9/L'],
   ['T/L', '10^12/L'],
   ['U/L', 'UI/L'],
-  // [[D-262]] : la décimale du DFG, imprimée en point ou en virgule.
+  // [[D-263]] : la décimale du DFG, imprimée en point ou en virgule.
   ['mL/min/1.73 m²', 'mL/min/1,73 m²'],
 ] as const);
 

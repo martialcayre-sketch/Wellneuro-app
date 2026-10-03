@@ -20,7 +20,7 @@ import { unitesConcordent } from './valeurLue';
 // Prudence délibérée : un libellé générique dont la matrice n'est pas dite
 // (« zinc », « magnésium ») n'est PAS rattaché — « zinc » sérique n'est pas le
 // zinc plasmatique du catalogue. La B12 totale n'est pas l'holotranscobalamine :
-// « Vitamine B12 » se rattache à `BIO_VITAMINE_B12` depuis [[D-262]], jamais à
+// « Vitamine B12 » se rattache à `BIO_VITAMINE_B12` depuis [[D-263]], jamais à
 // `BIO_B12_HOLOTC`.
 // La règle vaut AUSSI pour les libellés du catalogue lui-même : « Cuivre »,
 // « Glutathion », « Zonuline » taisent la matrice et ne sont pas repris — une
@@ -33,7 +33,7 @@ import { unitesConcordent } from './valeurLue';
 // SIGNÉE PAR [[D-259]] (2026-10-03), sur la surface de relecture
 // `docs/claude/campagnes/SURFACE_RELECTURE_RESOLVER_LIBELLES_2026-10-03.md`,
 // puis RE-SIGNÉE par [[D-260]] le même jour : trois libellés réels ajoutés,
-// lus sur le premier compte rendu de production ; puis par [[D-262]] : les
+// lus sur le premier compte rendu de production ; puis par [[D-263]] : les
 // analyses d'un compte rendu courant, ajoutées au catalogue par [[D-261]].
 // Toute entrée ajoutée, retirée ou retouchée change le SHA calculé et referme
 // le verrou : `resoudreLibelle` rend alors `inconnu` partout jusqu'à une
@@ -149,7 +149,7 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: 'Index oméga 3', code: 'BIO_INDEX_OMEGA3' },
   { libelle: 'Rapport AA / EPA', code: 'BIO_RATIO_AA_EPA' },
   { libelle: 'Ratio AA / EPA', code: 'BIO_RATIO_AA_EPA' },
-  // [[D-262]] — les analyses d'un compte rendu courant : libellés du catalogue
+  // [[D-263]] — les analyses d'un compte rendu courant : libellés du catalogue
   // (migration 20261003150000) et libellés LUS sur le premier compte rendu de
   // production. Un libellé lu doit être au moins aussi précis que celui du
   // catalogue : « Créatinine » se rattache (le catalogue ne dit pas plus),
@@ -223,7 +223,7 @@ export type ResolverLibellesMetadata = {
 
 export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   version: 'resolver-libelles-v1',
-  // RE-SIGNÉE PAR [[D-262]] — RE-SIGNER REMPLACE : la signature de [[D-260]]
+  // RE-SIGNÉE PAR [[D-263]] — RE-SIGNER REMPLACE : la signature de [[D-260]]
   // (11:12 UTC, SHA `5f95d167…`, 101 entrées) portait la table sans les
   // analyses du compte rendu courant ; celle de [[D-259]] (SHA `ccbd8008…`)
   // était déjà remplacée. 145 entrées, 79 analytes.
@@ -320,7 +320,7 @@ export function resoudreLibelle(
 
 /**
  * Le code proposé pour une LIGNE lue : son libellé, puis son unité quand le
- * libellé désigne plusieurs analytes ([[D-262]]). Parmi eux, seuls restent
+ * libellé désigne plusieurs analytes ([[D-263]]). Parmi eux, seuls restent
  * ceux dont l'unité au catalogue concorde avec l'unité lue (notations
  * équivalentes comprises, aucune conversion) ; s'il n'en reste qu'un, il est
  * proposé — « Polynucléaires neutrophiles » en G/L ou en %. Sinon `ambigu` :

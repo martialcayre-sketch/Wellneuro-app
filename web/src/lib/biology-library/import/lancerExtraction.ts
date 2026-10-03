@@ -150,7 +150,7 @@ export async function poursuivreExtraction(params: {
       // Sous le verrou qui sert aussi à clore les imports périmés : la relecture fait foi.
       if ((await tx.importBiologique.count({ where: { id: idImport, statut: 'en_cours' } })) === 0) return false;
       if (resultat.lignes.length > 0) {
-        // Les unités du catalogue départagent un libellé ambigu ([[D-262]]).
+        // Les unités du catalogue départagent un libellé ambigu ([[D-263]]).
         const unitesCatalogue = new Map(
           (await tx.biologyAnalyte.findMany({ select: { code: true, unite: true } }))
             .map(a => [a.code, a.unite] as const),

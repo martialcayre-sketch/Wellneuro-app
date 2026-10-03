@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-262 — Le resolver est re-signé sur les analyses d'un compte rendu courant, et l'unité lue départage un libellé ambigu
+### D-263 — Le resolver est re-signé sur les analyses d'un compte rendu courant, et l'unité lue départage un libellé ambigu
 
 - Date : 2026-10-03
 - Statut : accepté — arbitrages du responsable du 2026-10-03 (LOT-06 de
@@ -48,6 +48,73 @@ résolution unique n'est jamais touchée, même quand son unité diverge.
 pas « données seules ». Elle insère des données **et** étend de façon
 additive le vocabulaire d'unités, en reconstruisant les quatre CHECK
 (DROP/ADD sur une liste strictement élargie).
+### D-262 — La lettre d'adressage est mise à disposition du patient dans son portail, à la diffusion du protocole qui s'ouvre sur l'orientation
+
+- Date : 2026-10-03
+- Statut : accepté — arbitrages du responsable rendus en session le
+  2026-10-03 (B1 à B4) ; **phrase d'accompagnement proposée, à signer**
+  (cadrage §4) avant le LOT-02. Cadrage :
+  `docs/claude/campagnes/CADRAGE_LETTRE_ADRESSAGE_PATIENT_2026-10-03.md`.
+- Domaine : correspondance ([[D-218]]), levée par adressage ([[D-257]]),
+  portail patient, remise de document ([[D-251]] comme patron).
+- Précise : [[D-218]] — la lettre reste remise au médecin hors application,
+  par le patient ou par le praticien (« l'application n'envoie rien » à un
+  tiers reste vrai) ; elle est **aussi** mise à disposition du patient lui-même,
+  qui n'est pas un tiers.
+- **Ne touche pas** : la cotation des signaux ([[D-099]]), le texte de la
+  lettre ([[D-218]] §3-§9), le texte signé de l'orientation ([[D-257]] §9),
+  la levée elle-même.
+- **Aucun code, aucune migration dans cette entrée** : elle autorise les lots
+  LOT-01 à LOT-03 du cadrage, la migration seule dans sa PR ([[D-087]]).
+
+**1. LE CONSTAT.** Depuis [[D-257]], le protocole d'un dossier adressé s'ouvre
+sur « Consulter votre médecin », dont le plan idéal dit « lui remettre le
+courrier que je vous ai préparé ». Le patient reçoit l'action par son portail,
+pas le courrier : la remise reste en main propre, et un patient qui ne repasse
+pas au cabinet n'a rien à remettre.
+
+**2. LE MOMENT (B1).** La lettre est remise dans la transaction de « Valider pour
+diffusion », comme les fiches d'assiette ([[D-251]]) : le patient reçoit
+ensemble l'action et le courrier qu'elle nomme. Est remise la lettre **active la
+plus récente** (couverture non révoquée, sur la consultation porteuse
+courante) ; aucune lettre active ⇒ rien n'est remis, et la diffusion n'en est
+pas bloquée.
+
+**3. LE TEXTE (B2).** Le patient lit **la lettre telle quelle** — c'est le
+document à remettre au médecin —, sous une phrase d'accompagnement signée côté
+patient. Le texte remis est un **instantané figé** à la remise (texte consigné
+et empreinte), jamais régénéré à la lecture.
+
+**4. LE REGISTRE.** La lettre, adressée au médecin, nomme des « signaux
+d'alerte » et liste les signaux déclarés : elle est **exemptée** de la garde de
+registre anxiogène ([[D-189]] §4) par cette décision, et inscrite comme telle à
+la carte des chemins sortants. La phrase d'accompagnement, seule prose patient
+de la surface, passe la garde, sans « alerte », signal nommé ni délai chiffré.
+
+**5. L'ANNONCE (B3).** L'e-mail neutre existant (`document_remis`, « Un document
+de votre praticien vous attend »), sans nom de document ni contenu de santé,
+mutualisé avec l'annonce de la diffusion. Aucune pièce jointe.
+
+**6. RÉVOCATION.** Une lettre révoquée après remise n'est pas effacée du portail
+(ajout seul) : elle y est marquée retirée, sans motif servi au patient.
+
+**7. MISE EN SERVICE.** Table de remises dédiée en ajout seul (migration seule,
+`release-db`, constat par conteneur) ; drapeau neuf, éteint à la livraison,
+qui garde émission, lecture et annonce ; pose après la phrase signée et un
+constat sur un dossier de test. `DOSSIER_RGPD` (rubrique 6, correspondance
+médecin) déclare ce destinataire **avant** activation.
+
+**8. ONGLET CORRESPONDANCE (B4).** La lettre consignée y figure déjà ; rien à
+ajouter, sinon un libellé plus parlant.
+
+**Options écartées.** Remise dès la consignation (le patient la reçoit sans
+l'action qui lui dit quoi en faire) ; geste de remise séparé (un clic de plus,
+oublié) ; version patient distincte de la lettre (ce n'est plus le courrier
+que le médecin doit recevoir) ; lettre en pièce jointe d'e-mail (donnée de
+santé hors HDS).
+
+- Référence : `docs/claude/campagnes/CADRAGE_LETTRE_ADRESSAGE_PATIENT_2026-10-03.md`,
+  [[D-218]], [[D-251]], [[D-257]], [[D-189]], [[D-087]]
 
 ### D-261 — Le catalogue biologie s'étend aux analyses d'un compte rendu courant : 36 analytes, une unité SI chacun, quatre notations équivalentes
 

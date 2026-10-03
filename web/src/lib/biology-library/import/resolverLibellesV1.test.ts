@@ -100,7 +100,7 @@ describe('resolver — la résolution (table supposée signée)', () => {
 });
 
 describe('resolver — la signature, fail-closed', () => {
-  it('est signé (D-259, re-signé par D-260 puis D-262) sur la table relue : la proposition s’ouvre', () => {
+  it('est signé (D-259, re-signé par D-260 puis D-263) sur la table relue : la proposition s’ouvre', () => {
     expect(RESOLVER_LIBELLES_METADATA.validationExterne).toBe(true);
     expect(RESOLVER_LIBELLES_METADATA.shaPerimetre).toBe(RESOLVER_LIBELLES_SHA256);
     expect(resolverSigne()).toBe(true);
@@ -136,7 +136,7 @@ describe('resolver — la signature, fail-closed', () => {
   });
 });
 
-describe('resolver — une ligne : le libellé, puis l’unité qui départage ([[D-262]])', () => {
+describe('resolver — une ligne : le libellé, puis l’unité qui départage ([[D-263]])', () => {
   const UNITES = unitesDuCatalogue();
   const ligne = (l: string, u: string | null) => resoudreLigne(l, u, UNITES, true, INDEX);
 
@@ -172,7 +172,7 @@ describe('resolver — une ligne : le libellé, puis l’unité qui départage (
   });
 });
 
-describe('banc — un compte rendu courant, libellés et unités tels qu’imprimés ([[D-262]])', () => {
+describe('banc — un compte rendu courant, libellés et unités tels qu’imprimés ([[D-263]])', () => {
   // Les 58 lignes du premier compte rendu de production, SANS valeur et sans
   // identité : le libellé et l'unité imprimés. Attendu : le code proposé, puis
   // la concordance de l'unité lue avec celle du catalogue — la ligne dans
