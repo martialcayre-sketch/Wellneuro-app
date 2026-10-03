@@ -39,17 +39,33 @@
 --     famille `safety-signals-`, [[D-218]] §7). Une lettre de biologie, une
 --     correspondance saisie à la main ou une lettre d'un autre dossier ne
 --     lèvent rien.
---  2. LA CONSULTATION EST DE CE DOSSIER, ET VALIDÉE : c'est la consultation
---     porteuse que la levée désigne ([[D-257]] §4, A6). Le choix de LA
---     porteuse (la plus récente) reste à l'écrivain du LOT-03 ; la base refuse
---     ce qui ne peut en aucun cas l'être.
---  3. CHAQUE CONSTAT COUVERT EST UN CONSTAT D'ANAMNÈSE, une fois : un constat
+--  2. LA LETTRE EST CONSIGNÉE DANS LA MÊME TRANSACTION QUE SA COUVERTURE
+--     ([[D-257]] §5, A9 ; constat de revue P1-1). Sans cela, une lettre
+--     ancienne — écrite sur les signaux d'une consultation antérieure, ou
+--     consignée avant cette table — pourrait être rattachée après coup à une
+--     consultation plus récente, et lever un signal REDÉCLARÉ que A6 dit
+--     rebloquant (même libellé, donc même identifiant de constat). La preuve
+--     est l'`xmin` de la lettre, comparé à la transaction courante : aucune
+--     comparaison d'horodatage, donc aucune dépendance au fuseau de session.
+--     Conséquence pour l'écrivain (LOT-03) : la lettre et sa couverture
+--     s'insèrent dans une seule transaction, au même niveau — une lettre
+--     insérée sous un point de sauvegarde porte l'identifiant de la
+--     sous-transaction, et sa couverture est refusée (refus fermé).
+--  3. LA CONSULTATION EST LA PORTEUSE DE CE DOSSIER AU MOMENT DE L'INSERTION
+--     ([[D-257]] §4, A6) : validée, avec une anamnèse, et la première dans
+--     l'ordre de `consultationPorteuse.ts` (`date_validation` décroissante
+--     puis `created_at` décroissante, NULL en tête comme le fait Prisma). La
+--     règle est rejouée ici telle quelle : deux lectures différentes de « la
+--     porteuse » feraient lever une couverture que la chaîne C1 n'aurait pas
+--     désignée. Avec le point 2, la lettre a donc été écrite sur les signaux
+--     de cette consultation-là.
+--  4. CHAQUE CONSTAT COUVERT EST UN CONSTAT D'ANAMNÈSE, une fois : un constat
 --     d'effet indésirable n'est JAMAIS levé par une lettre ([[D-257]] §7,
 --     [[D-218]] §10) — le préfixe est fermé ici, en base.
---  4. UNE LETTRE NE COUVRE QU'UNE FOIS (index unique partiel) : une seconde
+--  5. UNE LETTRE NE COUVRE QU'UNE FOIS (index unique partiel) : une seconde
 --     ligne sur la même lettre élargirait la couverture d'une lettre déjà
 --     relue et envoyée.
---  5. UNE RÉVOCATION VISE UN ADRESSAGE DE CE DOSSIER, une fois, avec un motif.
+--  6. UNE RÉVOCATION VISE UN ADRESSAGE DE CE DOSSIER, une fois, avec un motif.
 --
 -- ── FIGÉE, MAIS EFFAÇABLE ──────────────────────────────────────────────────
 --
@@ -114,11 +130,13 @@ ALTER TABLE "adressages_signal_alerte" ADD CONSTRAINT "adressages_signal_alerte_
 ALTER TABLE "adressages_signal_alerte" ADD CONSTRAINT "adressages_signal_alerte_id_consultation_fkey" FOREIGN KEY ("id_consultation") REFERENCES "consultations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
--- NO ACTION, et non RESTRICT, sur la clé interne : l'effacement supprime les
--- adressages d'un dossier en UNE instruction, révocations comprises. RESTRICT
--- se vérifie ligne à ligne et refuserait de supprimer un adressage avant sa
--- révocation dans la même instruction ; NO ACTION se vérifie à la fin de
--- l'instruction, quand les deux sont partis.
+-- NO ACTION sur la clé interne : l'effacement supprime les adressages d'un
+-- dossier en UNE instruction, révocations comprises, et la contrainte n'est
+-- vérifiée qu'à la fin de l'instruction, quand les deux lignes sont parties
+-- (éprouvé par le contrat, cas 14). Les trois clés vers le patient, la lettre
+-- et la consultation sont en ON UPDATE CASCADE comme ailleurs dans le schéma ;
+-- combinées au trigger de gel, un changement de clé parente serait refusé
+-- comme une réécriture — sans effet aujourd'hui, aucune de ces clés ne change.
 ALTER TABLE "adressages_signal_alerte" ADD CONSTRAINT "adressages_signal_alerte_id_adressage_revoque_fkey" FOREIGN KEY ("id_adressage_revoque") REFERENCES "adressages_signal_alerte"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- ── LES CHECK — la forme de chaque acte ────────────────────────────────────
@@ -135,6 +153,7 @@ ALTER TABLE "adressages_signal_alerte"
       AND "id_consultation" IS NOT NULL
       AND "finding_ids" IS NOT NULL
       AND cardinality("finding_ids") >= 1
+      AND array_ndims("finding_ids") = 1
       AND "id_adressage_revoque" IS NULL
       AND "motif" IS NULL
     )),
@@ -182,15 +201,15 @@ DECLARE
   lettre_patient text;
   lettre_sens text;
   lettre_ancrage text;
-  consultation_patient text;
-  consultation_statut text;
+  lettre_xmin text;
+  porteuse text;
   cible_patient text;
   cible_acte text;
   constat text;
 BEGIN
   IF NEW.acte = 'adressage' THEN
-    SELECT c.id_patient, c.sens, c.ancrage_version
-      INTO lettre_patient, lettre_sens, lettre_ancrage
+    SELECT c.id_patient, c.sens, c.ancrage_version, c.xmin::text
+      INTO lettre_patient, lettre_sens, lettre_ancrage, lettre_xmin
     FROM public.correspondances_medecin c
     WHERE c.id = NEW.id_correspondance;
     IF lettre_patient IS DISTINCT FROM NEW.id_patient
@@ -200,24 +219,38 @@ BEGIN
       RAISE EXCEPTION 'adressage refusé : la correspondance % n''est pas une lettre d''adressage de ce dossier.', NEW.id_correspondance;
     END IF;
 
-    SELECT k.id_patient, k.statut INTO consultation_patient, consultation_statut
-    FROM public.consultations k
-    WHERE k.id = NEW.id_consultation;
-    IF consultation_patient IS DISTINCT FROM NEW.id_patient
-       OR consultation_statut IS DISTINCT FROM 'validee' THEN
-      RAISE EXCEPTION 'adressage refusé : la consultation % n''est pas une consultation validée de ce dossier.', NEW.id_consultation;
+    -- `txid_current()` porte l'époque : ses 32 bits bas sont l'identifiant
+    -- de la transaction de haut niveau, celui que porte `xmin`.
+    IF lettre_xmin IS DISTINCT FROM (txid_current() % 4294967296)::text THEN
+      RAISE EXCEPTION 'adressage refusé : la lettre % n''a pas été consignée dans cette transaction.', NEW.id_correspondance;
     END IF;
 
-    IF array_position(NEW.finding_ids, NULL) IS NOT NULL THEN
-      RAISE EXCEPTION 'adressage refusé : un constat couvert est vide.';
+    SELECT k.id INTO porteuse
+    FROM public.consultations k
+    WHERE k.id_patient = NEW.id_patient
+      AND k.statut = 'validee'
+      AND k.anamnese IS NOT NULL
+    ORDER BY k.date_validation DESC, k.created_at DESC
+    LIMIT 1;
+    IF porteuse IS DISTINCT FROM NEW.id_consultation THEN
+      RAISE EXCEPTION 'adressage refusé : la consultation % n''est pas la consultation porteuse de ce dossier.', NEW.id_consultation;
     END IF;
-    FOREACH constat IN ARRAY NEW.finding_ids LOOP
-      IF constat !~ '^safety:anamnese:[0-9a-f]{16}$' THEN
-        RAISE EXCEPTION 'adressage refusé : % n''est pas un constat de signal d''anamnèse.', constat;
+
+    -- Une couverture absente, vide ou multidimensionnelle est refusée par le
+    -- CHECK `forme_adressage` ; elle ne se parcourt pas ici, où FOREACH
+    -- échouerait sur un message qui ne dit rien du refus.
+    IF NEW.finding_ids IS NOT NULL AND array_ndims(NEW.finding_ids) = 1 THEN
+      IF array_position(NEW.finding_ids, NULL) IS NOT NULL THEN
+        RAISE EXCEPTION 'adressage refusé : un constat couvert est vide.';
       END IF;
-    END LOOP;
-    IF (SELECT count(DISTINCT x) FROM unnest(NEW.finding_ids) AS x) <> cardinality(NEW.finding_ids) THEN
-      RAISE EXCEPTION 'adressage refusé : un constat est couvert deux fois.';
+      FOREACH constat IN ARRAY NEW.finding_ids LOOP
+        IF constat !~ '^safety:anamnese:[0-9a-f]{16}$' THEN
+          RAISE EXCEPTION 'adressage refusé : % n''est pas un constat de signal d''anamnèse.', constat;
+        END IF;
+      END LOOP;
+      IF (SELECT count(DISTINCT x) FROM unnest(NEW.finding_ids) AS x) <> cardinality(NEW.finding_ids) THEN
+        RAISE EXCEPTION 'adressage refusé : un constat est couvert deux fois.';
+      END IF;
     END IF;
   ELSIF NEW.acte = 'revocation' THEN
     SELECT a.id_patient, a.acte INTO cible_patient, cible_acte

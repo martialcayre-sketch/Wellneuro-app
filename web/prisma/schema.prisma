@@ -1572,9 +1572,10 @@ model CorrespondanceMedecin {
 // constats de sécurité d'anamnèse une lettre consignée lève, pour quelle
 // consultation — ou la révocation d'une telle couverture. Ajout seul : UPDATE
 // et TRUNCATE refusés par trigger, DELETE réservé à l'effacement nommé du
-// dossier. Les refus (lettre d'adressage de ce dossier, consultation validée de
-// ce dossier, constats d'anamnèse seulement, une couverture par lettre, une
-// révocation par adressage) vivent en base : voir la migration
+// dossier. Les refus (lettre d'adressage de ce dossier, consignée dans la même
+// transaction que sa couverture ; consultation porteuse de ce dossier ;
+// constats d'anamnèse seulement ; une couverture par lettre ; une révocation
+// par adressage) vivent en base : voir la migration
 // `20261002230000_adressages_signal_alerte_v1`.
 model AdressageSignalAlerte {
   id                 String    @id @default(cuid()) @map("id")

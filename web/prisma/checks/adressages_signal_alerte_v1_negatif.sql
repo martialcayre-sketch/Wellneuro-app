@@ -8,16 +8,19 @@
 --   4. une lettre ENTRANTE est refusée ;
 --   5. une correspondance SANS ancrage, ou ancrée sur une AUTRE table que la
 --      cotation des signaux (biologie), est refusée ;
---   6. la consultation d'un AUTRE dossier est refusée, comme une consultation
---      de ce dossier NON VALIDÉE ;
+--   6. seule la consultation PORTEUSE du dossier est acceptée : ni celle d'un
+--      autre dossier, ni une consultation non validée, ni une validée SANS
+--      anamnèse, ni une validée PLUS ANCIENNE que la porteuse ; et une
+--      lettre consignée hors de la transaction de sa couverture (ici : sous
+--      un point de sauvegarde) est refusée — A6/A9, constat de revue P1-1 ;
 --   7. un constat d'EFFET INDÉSIRABLE n'est jamais couvert ([[D-257]] §7),
---      comme un identifiant mal formé, un identifiant vide, ou un constat
---      couvert deux fois ;
---   8. une couverture VIDE est refusée ;
+--      comme un identifiant mal formé (casse, préfixe, longueur en deçà ou
+--      au-delà), un identifiant vide, ou un constat couvert deux fois ;
+--   8. une couverture VIDE, ABSENTE ou MULTIDIMENSIONNELLE est refusée ;
 --   9. une lettre ne couvre qu'UNE fois ;
 --  10. une révocation valide s'écrit ; elle vise un adressage de CE dossier,
 --      jamais une révocation, et une seule fois ;
---  11. une révocation exige un motif non vide ;
+--  11. une révocation exige un motif non vide, d'au plus 2 000 caractères ;
 --  12. chaque acte a sa forme : un adressage ne porte ni motif ni cible de
 --      révocation, une révocation ne porte ni lettre, ni consultation, ni
 --      constats ; un acte inconnu est refusé ;
@@ -75,10 +78,18 @@ INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updat
   ('pat_contrat_adr_a', 'PAT_CONTRAT_ADR_A', 'sophie.nicola@example.test', 'Sophie', 'Nicola', 'praticien@wellneuro.fr', CURRENT_TIMESTAMP),
   ('pat_contrat_adr_b', 'PAT_CONTRAT_ADR_B', 'jennifer.martin@example.test', 'Jennifer', 'Martin', 'praticien@wellneuro.fr', CURRENT_TIMESTAMP);
 
-INSERT INTO consultations (id, id_consultation, id_patient, email_patient, praticien_email, statut, updated_at) VALUES
-  ('cons_a_validee', 'CONS_A_VALIDEE', 'PAT_CONTRAT_ADR_A', 'sophie.nicola@example.test', 'praticien@wellneuro.fr', 'validee', CURRENT_TIMESTAMP),
-  ('cons_a_en_cours', 'CONS_A_EN_COURS', 'PAT_CONTRAT_ADR_A', 'sophie.nicola@example.test', 'praticien@wellneuro.fr', 'en_cours', CURRENT_TIMESTAMP),
-  ('cons_b_validee', 'CONS_B_VALIDEE', 'PAT_CONTRAT_ADR_B', 'jennifer.martin@example.test', 'praticien@wellneuro.fr', 'validee', CURRENT_TIMESTAMP);
+-- La porteuse de A est `cons_a_validee`. Chaque autre consultation de A
+-- deviendrait la porteuse si l'on retirait UNE règle de sa désignation : le
+-- statut (`cons_a_en_cours`, sans date, donc en tête d'un tri décroissant),
+-- l'anamnèse (`cons_a_sans_anamnese`, plus récente) ou le sens du tri
+-- (`cons_a_ancienne`). Celle de B est la plus récente de toutes : retirer le
+-- filtre de dossier en ferait la porteuse de A.
+INSERT INTO consultations (id, id_consultation, id_patient, email_patient, praticien_email, statut, anamnese, date_validation, updated_at) VALUES
+  ('cons_a_validee', 'CONS_A_VALIDEE', 'PAT_CONTRAT_ADR_A', 'sophie.nicola@example.test', 'praticien@wellneuro.fr', 'validee', '{}'::jsonb, TIMESTAMP '2026-09-01 08:00:00', CURRENT_TIMESTAMP),
+  ('cons_a_ancienne', 'CONS_A_ANCIENNE', 'PAT_CONTRAT_ADR_A', 'sophie.nicola@example.test', 'praticien@wellneuro.fr', 'validee', '{}'::jsonb, TIMESTAMP '2026-08-01 08:00:00', CURRENT_TIMESTAMP),
+  ('cons_a_sans_anamnese', 'CONS_A_SANS_ANAMNESE', 'PAT_CONTRAT_ADR_A', 'sophie.nicola@example.test', 'praticien@wellneuro.fr', 'validee', NULL, TIMESTAMP '2026-09-20 08:00:00', CURRENT_TIMESTAMP),
+  ('cons_a_en_cours', 'CONS_A_EN_COURS', 'PAT_CONTRAT_ADR_A', 'sophie.nicola@example.test', 'praticien@wellneuro.fr', 'en_cours', '{}'::jsonb, NULL, CURRENT_TIMESTAMP),
+  ('cons_b_validee', 'CONS_B_VALIDEE', 'PAT_CONTRAT_ADR_B', 'jennifer.martin@example.test', 'praticien@wellneuro.fr', 'validee', '{}'::jsonb, TIMESTAMP '2026-09-30 08:00:00', CURRENT_TIMESTAMP);
 
 INSERT INTO correspondances_medecin (id, id_patient, praticien_email, sens, medecin_libelle, texte, ancrage_sha256, ancrage_version) VALUES
   ('lettre_a_1', 'PAT_CONTRAT_ADR_A', 'praticien@wellneuro.fr', 'sortant', 'Dr Test', 'texte', repeat('a', 64), 'safety-signals-nnpp2-v1'),
@@ -132,15 +143,37 @@ BEGIN
        VALUES ('x5b', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_bio', 'cons_a_validee', ARRAY['safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr')$q$,
     'P0001', 'n''est pas une lettre d''adressage de ce dossier');
 
-  -- ── 6. La consultation ───────────────────────────────────────────────────
+  -- ── 6. La consultation porteuse, et la lettre de cette transaction ───────
   PERFORM pg_temp.refuse('6 consultation d''un autre dossier',
     $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email)
        VALUES ('x6a', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_2', 'cons_b_validee', ARRAY['safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr')$q$,
-    'P0001', 'n''est pas une consultation validée de ce dossier');
+    'P0001', 'n''est pas la consultation porteuse de ce dossier');
   PERFORM pg_temp.refuse('6 consultation non validée',
     $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email)
        VALUES ('x6b', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_2', 'cons_a_en_cours', ARRAY['safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr')$q$,
-    'P0001', 'n''est pas une consultation validée de ce dossier');
+    'P0001', 'n''est pas la consultation porteuse de ce dossier');
+  PERFORM pg_temp.refuse('6 consultation validée sans anamnèse',
+    $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email)
+       VALUES ('x6c', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_2', 'cons_a_sans_anamnese', ARRAY['safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr')$q$,
+    'P0001', 'n''est pas la consultation porteuse de ce dossier');
+  PERFORM pg_temp.refuse('6 consultation validée plus ancienne que la porteuse',
+    $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email)
+       VALUES ('x6d', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_2', 'cons_a_ancienne', ARRAY['safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr')$q$,
+    'P0001', 'n''est pas la consultation porteuse de ce dossier');
+  -- Une lettre consignée hors de la transaction de sa couverture : un bloc à
+  -- gestionnaire d'exception ouvre une sous-transaction, dont l'identifiant
+  -- devient l'`xmin` de la lettre. C'est la seule façon, dans un contrat qui
+  -- s'annule, de produire une lettre « d'une autre transaction ».
+  BEGIN
+    INSERT INTO correspondances_medecin (id, id_patient, praticien_email, sens, medecin_libelle, texte, ancrage_sha256, ancrage_version)
+    VALUES ('lettre_a_ailleurs', 'PAT_CONTRAT_ADR_A', 'praticien@wellneuro.fr', 'sortant', 'Dr Test', 'texte', repeat('a', 64), 'safety-signals-nnpp2-v1');
+  EXCEPTION WHEN OTHERS THEN
+    RAISE;
+  END;
+  PERFORM pg_temp.refuse('6 lettre consignée hors de la transaction de sa couverture',
+    $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email)
+       VALUES ('x6e', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_ailleurs', 'cons_a_validee', ARRAY['safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr')$q$,
+    'P0001', 'n''a pas été consignée dans cette transaction');
 
   -- ── 7 et 8. Les constats couverts ────────────────────────────────────────
   PERFORM pg_temp.refuse('7 constat d''effet indésirable',
@@ -155,6 +188,14 @@ BEGIN
     $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email)
        VALUES ('x7c', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_2', 'cons_a_validee', ARRAY['safety:anamnese:0123'], 'p@wellneuro.fr')$q$,
     'P0001', 'n''est pas un constat de signal d''anamnèse');
+  PERFORM pg_temp.refuse('7 identifiant trop long (17 hexadécimaux)',
+    $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email)
+       VALUES ('x7f', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_2', 'cons_a_validee', ARRAY['safety:anamnese:0123456789abcdef0'], 'p@wellneuro.fr')$q$,
+    'P0001', 'n''est pas un constat de signal d''anamnèse');
+  PERFORM pg_temp.refuse('7 identifiant préfixé',
+    $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email)
+       VALUES ('x7g', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_2', 'cons_a_validee', ARRAY['x:safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr')$q$,
+    'P0001', 'n''est pas un constat de signal d''anamnèse');
   PERFORM pg_temp.refuse('7 identifiant nul',
     $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email)
        VALUES ('x7d', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_2', 'cons_a_validee', ARRAY['safety:anamnese:0123456789abcdef', NULL], 'p@wellneuro.fr')$q$,
@@ -166,6 +207,14 @@ BEGIN
   PERFORM pg_temp.refuse('8 couverture vide',
     $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email)
        VALUES ('x8', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_2', 'cons_a_validee', ARRAY[]::text[], 'p@wellneuro.fr')$q$,
+    '23514', 'adressages_signal_alerte_forme_adressage');
+  PERFORM pg_temp.refuse('8 couverture absente',
+    $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, praticien_email)
+       VALUES ('x8b', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_2', 'cons_a_validee', 'p@wellneuro.fr')$q$,
+    '23514', 'adressages_signal_alerte_forme_adressage');
+  PERFORM pg_temp.refuse('8 couverture multidimensionnelle',
+    $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email)
+       VALUES ('x8c', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_2', 'cons_a_validee', ARRAY[ARRAY['safety:anamnese:0123456789abcdef'], ARRAY['safety:anamnese:fedcba9876543210']], 'p@wellneuro.fr')$q$,
     '23514', 'adressages_signal_alerte_forme_adressage');
 
   -- ── 9. Une lettre ne couvre qu'une fois ──────────────────────────────────
@@ -205,6 +254,10 @@ BEGIN
     $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_adressage_revoque, motif, praticien_email)
        VALUES ('x11b', 'PAT_CONTRAT_ADR_B', 'revocation', 'adr_b_1', '   ', 'p@wellneuro.fr')$q$,
     '23514', 'adressages_signal_alerte_forme_revocation');
+  PERFORM pg_temp.refuse('11 révocation au motif de plus de 2 000 caractères',
+    $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_adressage_revoque, motif, praticien_email)
+       VALUES ('x11c', 'PAT_CONTRAT_ADR_B', 'revocation', 'adr_b_1', repeat('m', 2001), 'p@wellneuro.fr')$q$,
+    '23514', 'adressages_signal_alerte_forme_revocation');
 
   -- ── 12. La forme de chaque acte ──────────────────────────────────────────
   PERFORM pg_temp.refuse('12 adressage qui porte un motif',
@@ -214,6 +267,18 @@ BEGIN
   PERFORM pg_temp.refuse('12 révocation qui porte des constats',
     $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_adressage_revoque, motif, finding_ids, praticien_email)
        VALUES ('x12b', 'PAT_CONTRAT_ADR_B', 'revocation', 'adr_b_1', 'motif', ARRAY['safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr')$q$,
+    '23514', 'adressages_signal_alerte_forme_revocation');
+  PERFORM pg_temp.refuse('12 adressage qui porte une cible de révocation',
+    $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, id_adressage_revoque, praticien_email)
+       VALUES ('x12e', 'PAT_CONTRAT_ADR_A', 'adressage', 'lettre_a_2', 'cons_a_validee', ARRAY['safety:anamnese:0123456789abcdef'], 'adr_a_1', 'p@wellneuro.fr')$q$,
+    '23514', 'adressages_signal_alerte_forme_adressage');
+  PERFORM pg_temp.refuse('12 révocation qui porte une lettre',
+    $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_adressage_revoque, motif, id_correspondance, praticien_email)
+       VALUES ('x12f', 'PAT_CONTRAT_ADR_B', 'revocation', 'adr_b_1', 'motif', 'lettre_b', 'p@wellneuro.fr')$q$,
+    '23514', 'adressages_signal_alerte_forme_revocation');
+  PERFORM pg_temp.refuse('12 révocation qui porte une consultation',
+    $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_adressage_revoque, motif, id_consultation, praticien_email)
+       VALUES ('x12g', 'PAT_CONTRAT_ADR_B', 'revocation', 'adr_b_1', 'motif', 'cons_b_validee', 'p@wellneuro.fr')$q$,
     '23514', 'adressages_signal_alerte_forme_revocation');
   PERFORM pg_temp.refuse('12 acte inconnu',
     $q$INSERT INTO adressages_signal_alerte (id, id_patient, acte, praticien_email)
