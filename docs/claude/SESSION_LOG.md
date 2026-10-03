@@ -8836,3 +8836,12 @@ révocation par lettre, rechargement, révision alignée, garde élargie).
 **Prochaine action.** Merge #1295, contenance du déploiement, pose du drapeau.
 
 **Questions ouvertes.** Q1, Q2, Q3.
+## 2026-10-03 — Levée du blocage par signal d'alerte : mise en service (D-257)
+
+**Constaté.** Drapeau d'abord annoncé posé mais absent de l'environnement
+(`env` vide, one-off `undefined`) ; posé, conteneurs recréés, one-off `"true"` ;
+blocage levé à l'écran sur le premier dossier adressé.
+
+**Écarté.** Tout correctif de code : le diagnostic tenait à la variable absente.
+
+**Prochaine action.** Consigner chaque nouvelle lettre ; trancher Q1, Q2, Q3.
