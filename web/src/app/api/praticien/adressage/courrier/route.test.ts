@@ -17,6 +17,10 @@ const {
     // premier « oubli » qu'un relecteur croira corriger.
     trustChoiceEvent: { findMany: vi.fn() },
     correspondanceMedecin: { create: vi.fn() },
+    adressageSignalAlerte: { create: vi.fn() },
+    // La transaction interactive rejoue le même client : la lettre et sa
+    // couverture s'écrivent par `tx`, qui est ici le mock lui-même.
+    $transaction: vi.fn(),
   },
   verifierAppartenancePatient: vi.fn(),
   genererCourrierAdressage: vi.fn(),
@@ -37,6 +41,7 @@ vi.mock('@/lib/clinical/safetySignalsV1', async (importOriginal) => ({
 }));
 
 import { GET, POST } from './route';
+import { construireSafetyFindings, signauxDeclares } from '@/lib/clinical-engine/safetyFindings';
 
 const URL_BASE = 'http://localhost/api/praticien/adressage/courrier';
 const PRATICIEN = 'praticien@wellneuro.fr';
@@ -78,9 +83,12 @@ beforeEach(() => {
     nom: 'Nicola',
   });
   prisma.consultation.findFirst.mockResolvedValue({
+    id: 'cons_porteuse',
     anamnese: { signaux_alerte: ['Douleur thoracique / oppression'] },
   });
-  prisma.correspondanceMedecin.create.mockResolvedValue({});
+  prisma.correspondanceMedecin.create.mockResolvedValue({ id: 'lettre_1' });
+  prisma.adressageSignalAlerte.create.mockResolvedValue({ id: 'adr_1' });
+  prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) => fn(prisma));
   genererCourrierAdressage.mockReturnValue(lettreGeneree());
 });
 
@@ -346,5 +354,98 @@ describe('l’EXCEPTION d’adressage — D-219 §3 amendé (2026-09-17)', () =>
     // Celle-ci tient parce que la route n'interroge jamais la table des choix.
     await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
     expect(prisma.trustChoiceEvent.findMany).not.toHaveBeenCalled();
+  });
+});
+
+// ── LA COUVERTURE ÉCRITE AVEC LA LETTRE ([[D-257]], LOT-03) ─────────────────
+// La lettre consignée vaut adressage pour les constats qu'elle porte. Ce que
+// ces bancs tiennent, et que la base ne peut pas tenir seule : la couverture
+// désigne LA porteuse lue, nomme EXACTEMENT les constats que le moteur produit
+// sur les mêmes signaux, et ne s'écrit jamais sans sa lettre.
+describe('couverture — D-257, LOT-03', () => {
+  const constatsAttendus = (signaux: string[]) =>
+    construireSafetyFindings(signaux).findings.map(finding => finding.findingId);
+
+  it('écrit la lettre ET sa couverture dans la même transaction', async () => {
+    const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(res.status).toBe(201);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.adressageSignalAlerte.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT1',
+        acte: 'adressage',
+        idCorrespondance: 'lettre_1',
+        idConsultation: 'cons_porteuse',
+        findingIds: constatsAttendus(['Douleur thoracique / oppression']),
+        praticienEmail: PRATICIEN,
+      },
+      select: { id: true },
+    });
+    // La lettre d'abord, sa couverture ensuite : la base exige que la lettre
+    // existe dans la transaction au moment où la couverture la nomme.
+    const ordreLettre = prisma.correspondanceMedecin.create.mock.invocationCallOrder[0];
+    const ordreCouverture = prisma.adressageSignalAlerte.create.mock.invocationCallOrder[0];
+    expect(ordreLettre).toBeLessThan(ordreCouverture);
+  });
+
+  it('lit la porteuse avec son id ET son anamnèse, dans la transaction', async () => {
+    await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(prisma.consultation.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ select: { id: true, anamnese: true } }),
+    );
+  });
+
+  it('couvre les constats du moteur : rang adressage et libellé hors cotation, jamais la vigilance', async () => {
+    const signaux = [
+      'Douleur thoracique / oppression',
+      'Constipation récente inexpliquée',
+      'Libellé inconnu de la cotation',
+    ];
+    prisma.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: { signaux_alerte: signaux } });
+    await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    const { findingIds } = prisma.adressageSignalAlerte.create.mock.calls[0][0].data;
+    // Les signaux sont triés par `signauxDeclares` : la comparaison se fait sur
+    // la sortie du moteur, pas sur l'ordre de saisie.
+    expect(findingIds).toEqual(constatsAttendus(signauxDeclares({ signaux_alerte: signaux })));
+    expect(findingIds).toHaveLength(2);
+    for (const id of findingIds) expect(id).toMatch(/^safety:anamnese:[0-9a-f]{16}$/);
+  });
+
+  it('une lettre qui ne couvrirait aucun constat n’est pas consignée', async () => {
+    // Seul un signal de vigilance : le moteur ne pose aucun constat. Même si le
+    // générateur rendait une lettre, la consigner affirmerait un adressage que
+    // rien ne justifie.
+    prisma.consultation.findFirst.mockResolvedValue({
+      id: 'cons_porteuse',
+      anamnese: { signaux_alerte: ['Constipation récente inexpliquée'] },
+    });
+    const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('aucun_signal_adressage');
+    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(prisma.adressageSignalAlerte.create).not.toHaveBeenCalled();
+  });
+
+  it('un refus du générateur n’écrit NI lettre NI couverture', async () => {
+    genererCourrierAdressage.mockReturnValue({ ok: false, raison: 'terme_prescriptif' });
+    const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(res.status).toBe(409);
+    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(prisma.adressageSignalAlerte.create).not.toHaveBeenCalled();
+  });
+
+  it('une couverture refusée par la base fait échouer la consignation, sans fuite', async () => {
+    // La transaction annule la lettre avec sa couverture : la route rend 500
+    // et ne journalise que le NOM de l'erreur.
+    const espion = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const erreur = new Error('adressage refusé : la consultation x n’est pas la consultation porteuse de ce dossier.');
+    erreur.name = 'PrismaClientKnownRequestError';
+    prisma.adressageSignalAlerte.create.mockRejectedValue(erreur);
+    const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(res.status).toBe(500);
+    const journalise = espion.mock.calls.flat().join(' ');
+    expect(journalise).toContain('PrismaClientKnownRequestError');
+    expect(journalise).not.toContain('porteuse');
+    espion.mockRestore();
   });
 });

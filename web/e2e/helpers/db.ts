@@ -67,6 +67,10 @@ export async function resetPortailState(idPatient: string): Promise<void> {
   // symptôme revienne aurait coûté le diagnostic une seconde fois.
   await prisma.agendaAlimentaireJour.deleteMany({ where: { idPatient } });
   await prisma.assignation.deleteMany({ where: { idPatient } });
+  // Les adressages sur signal d'alerte ([[D-257]]) AVANT les consultations :
+  // FK RESTRICT vers la consultation porteuse. Une seule instruction emporte
+  // adressages et révocations (clé interne en NO ACTION).
+  await prisma.adressageSignalAlerte.deleteMany({ where: { idPatient } });
   await prisma.consultation.deleteMany({ where: { idPatient } });
   await prisma.questionnaireReponse.deleteMany({ where: { idPatient, idAssignation: { not: null } } });
   // TRUST : purge des traces du patient fictif pour que la séquence « Avant
@@ -1117,6 +1121,11 @@ export async function nettoyerDossierBiologie(idPatient: string): Promise<void> 
   // — un échec qui décrit une course concurrente là où il n'y a qu'un reste.
   await prisma.decisionPrioritySelection.deleteMany({
     where: { idPatient, decisionCardId: { startsWith: 'runtime-decision-' } },
+  });
+  // Une couverture d'adressage ([[D-257]]) retiendrait sa lettre et sa
+  // consultation en RESTRICT : bornée aux lettres que ce banc consigne.
+  await prisma.adressageSignalAlerte.deleteMany({
+    where: { idPatient, correspondance: { medecinLibelle: MEDECIN_BIO_E2E } },
   });
   await prisma.correspondanceMedecin.deleteMany({
     where: { idPatient, medecinLibelle: MEDECIN_BIO_E2E },

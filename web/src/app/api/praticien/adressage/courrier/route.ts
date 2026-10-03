@@ -13,7 +13,8 @@ import {
   ORDRE_CONSULTATION_PORTEUSE,
   whereConsultationPorteuse,
 } from '@/lib/consultation/consultationPorteuse';
-import { signauxDeclares } from '@/lib/clinical-engine/safetyFindings';
+import { construireSafetyFindings, signauxDeclares } from '@/lib/clinical-engine/safetyFindings';
+import { estFindingAnamnese } from '@/lib/clinical-engine/safetyFindingSource';
 import { genererCourrierAdressage } from '@/lib/clinical/courrierAdressage';
 import {
   isAdressageCourrierEnabled,
@@ -53,10 +54,19 @@ import {
 // jointe ([[D-122]]). La réponse rend les deux formes du même rendu — `texte` à
 // transcrire, `html` à imprimer. Le `html` n'est pas consigné.
 //
-// CE QUE CETTE ROUTE NE FAIT PAS : lever l'abstention. Une lettre consignée
-// TRACE l'adressage, elle ne le vaut pas. Si l'abstention doit pouvoir se lever
-// sur preuve d'adressage, c'est un arbitrage clinique distinct, qui touche la
-// chaîne C1 et n'a pas été rendu.
+// LA COUVERTURE S'ÉCRIT AVEC LA LETTRE ([[D-257]] §2-§5, LOT-03). La lettre
+// consignée vaut désormais adressage pour les constats qu'elle porte : la route
+// écrit, dans la MÊME transaction et au même niveau, la ligne
+// `adressages_signal_alerte` qui les nomme. La base l'exige (la lettre doit
+// être de cette transaction, la consultation doit être la porteuse) ; la route
+// lit donc la porteuse — `id` et anamnèse ensemble — DANS la transaction, et
+// dérive les constats couverts de `construireSafetyFindings`, la fonction même
+// que le moteur appellera pour les comparer (LOT-04). Pas de lettre sans
+// couverture, pas de couverture d'une autre lettre.
+//
+// CE QUE CETTE ROUTE NE FAIT PAS ENCORE : lever l'abstention. La couverture est
+// écrite, personne ne la lit. La levée appartient à la chaîne C1, derrière un
+// drapeau éteint (LOT-04).
 
 const ROUTE_JOURNAL = '/api/praticien/adressage/courrier';
 
@@ -79,6 +89,7 @@ const MESSAGES_REFUS_COURRIER: Record<string, string> = {
     'La lettre n’a pas pu être rendue : un libellé porte un terme prescriptif. Rien n’est consigné.',
   bloc_non_diffuse:
     'Le rendu médecin n’est pas diffusable : le texte jugé par la garde est absent. Rien n’est consigné.',
+  provenance_absente: 'Lettre sans provenance : rien n’est consigné.',
 };
 
 const MESSAGES_REFUS_CONSIGNATION: Record<string, string> = {
@@ -92,6 +103,15 @@ const MESSAGES_REFUS_CONSIGNATION: Record<string, string> = {
 };
 
 const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+type CourrierGenere = Extract<ReturnType<typeof genererCourrierAdressage>, { ok: true }>['courrier'];
+type Resultat =
+  | {
+      ok: true;
+      courrier: CourrierGenere;
+      provenance: NonNullable<CourrierGenere['document']['blocs'][number]['provenance']>;
+    }
+  | { ok: false; reason: string; status: number };
 
 function echec(reason: string, error: string, status: number) {
   return NextResponse.json<AdressageCourrierApiResponse>({ ok: false, reason, error }, { status });
@@ -200,68 +220,103 @@ export async function POST(req: Request) {
       );
     }
 
-    const consultation = await prisma.consultation.findFirst({
-      where: whereConsultationPorteuse(idPatient),
-      select: { anamnese: true },
-      orderBy: ORDRE_CONSULTATION_PORTEUSE,
-    });
-
-    const genere = genererCourrierAdressage({
-      patientId: idPatient,
-      // La MÊME fonction pure que le runtime clinique : deux lectures
-      // différentes des signaux déclarés feraient diverger la lettre du blocage
-      // qu'elle est censée porter.
-      signaux: signauxDeclares(consultation?.anamnese),
-      // Le SHA VIVANT de la table, recalculé à l'import depuis les signaux
-      // réellement publiés — jamais le littéral figé de la signature, qui
-      // dirait ce qui a été relu, pas ce qui a servi.
-      tableSha256: SAFETY_SIGNALS_SHA256,
-      dateCourrier: new Date().toISOString(),
-      patientNom: `${patient.prenom} ${patient.nom}`.trim(),
-    });
-    if (!genere.ok) {
-      return echec(
-        genere.raison,
-        MESSAGES_REFUS_COURRIER[genere.raison] ?? 'Lettre indisponible.',
-        409,
-      );
-    }
-
-    // L'ancre vient du bloc EFFECTIVEMENT RENDU, celui que la garde non
-    // prescriptive a jugé. La reconstruire ici rouvrirait l'écart entre ce qui
-    // a été rendu et ce qui est consigné.
-    const provenance = genere.courrier.document.blocs[0]?.provenance;
-    if (!provenance) {
-      return echec('provenance_absente', 'Lettre sans provenance : rien n’est consigné.', 500);
-    }
-
-    const preparation = preparerCorrespondance({
-      idPatient,
-      praticienEmail: email ?? '',
-      sens: 'sortant',
-      medecinLibelle: body.medecinLibelle,
-      texte: genere.courrier.texte,
-    });
-    if (!preparation.ok) {
-      // `texte_vide` et `texte_trop_long` portent sur un texte que le SERVEUR a
-      // généré : un 400 accuserait le client d'un refus dont il n'est pas
-      // l'auteur. Les refus de libellé, eux, restent siens.
-      const refusServeur =
-        preparation.raison === 'texte_vide' || preparation.raison === 'texte_trop_long';
-      return echec(
-        preparation.raison,
-        MESSAGES_REFUS_CONSIGNATION[preparation.raison] ?? 'Consignation refusée.',
-        refusServeur ? 409 : 400,
-      );
-    }
-
+    // TOUT SE PASSE DANS UNE TRANSACTION INTERACTIVE, lecture de la porteuse
+    // comprise : la base refuse une couverture dont la lettre n'est pas de la
+    // transaction courante, ou dont la consultation n'est plus la porteuse au
+    // moment de l'insertion. Lire la porteuse dehors ouvrirait une course
+    // qu'elle rejetterait en 500 ; la lire dedans la ferme. Un refus métier
+    // (générateur, libellé) sort de la transaction SANS rien écrire.
+    let resultat: Resultat;
     try {
-      await prisma.correspondanceMedecin.create({
-        data: {
-          ...preparation.donnees,
-          ancrageSha256: provenance.ancrageHash,
-          ancrageVersion: provenance.version,
-        },
+      resultat = await prisma.$transaction(async tx => {
+        const consultation = await tx.consultation.findFirst({
+          where: whereConsultationPorteuse(idPatient),
+          // `id` ET `anamnese` dans la même lecture : la couverture désigne la
+          // consultation dont la lettre recopie les signaux, aucune autre.
+          select: { id: true, anamnese: true },
+          orderBy: ORDRE_CONSULTATION_PORTEUSE,
+        });
+        // La MÊME fonction pure que le runtime clinique : deux lectures
+        // différentes des signaux déclarés feraient diverger la lettre du
+        // blocage qu'elle est censée porter.
+        const signaux = signauxDeclares(consultation?.anamnese);
+
+        const genere = genererCourrierAdressage({
+          patientId: idPatient,
+          signaux,
+          // Le SHA VIVANT de la table, recalculé à l'import depuis les signaux
+          // réellement publiés — jamais le littéral figé de la signature, qui
+          // dirait ce qui a été relu, pas ce qui a servi.
+          tableSha256: SAFETY_SIGNALS_SHA256,
+          dateCourrier: new Date().toISOString(),
+          patientNom: `${patient.prenom} ${patient.nom}`.trim(),
+        });
+        if (!genere.ok) {
+          return { ok: false, reason: genere.raison, status: 409 } satisfies Resultat;
+        }
+
+        // L'ancre vient du bloc EFFECTIVEMENT RENDU, celui que la garde non
+        // prescriptive a jugé. La reconstruire ici rouvrirait l'écart entre ce
+        // qui a été rendu et ce qui est consigné.
+        const provenance = genere.courrier.document.blocs[0]?.provenance;
+        if (!provenance) {
+          return { ok: false, reason: 'provenance_absente', status: 500 } satisfies Resultat;
+        }
+
+        const preparation = preparerCorrespondance({
+          idPatient,
+          praticienEmail: email ?? '',
+          sens: 'sortant',
+          medecinLibelle: body.medecinLibelle,
+          texte: genere.courrier.texte,
+        });
+        if (!preparation.ok) {
+          // `texte_vide` et `texte_trop_long` portent sur un texte que le
+          // SERVEUR a généré : un 400 accuserait le client d'un refus dont il
+          // n'est pas l'auteur. Les refus de libellé, eux, restent siens.
+          const refusServeur =
+            preparation.raison === 'texte_vide' || preparation.raison === 'texte_trop_long';
+          return {
+            ok: false,
+            reason: preparation.raison,
+            status: refusServeur ? 409 : 400,
+          } satisfies Resultat;
+        }
+
+        // Les constats couverts : ceux que le producteur de sécurité tire des
+        // MÊMES signaux — rang `adressage` et libellés hors cotation, exactement
+        // ceux que la lettre imprime ([[D-218]] §4). Jamais un constat d'effet
+        // indésirable : la base le refuserait, et le préfixe est filtré ici
+        // pour que le refus ne soit pas le seul rempart.
+        const findingIds = construireSafetyFindings(signaux).findings
+          .map(finding => finding.findingId)
+          .filter(estFindingAnamnese);
+        if (!consultation || findingIds.length === 0) {
+          // Un générateur qui rend une lettre sans constat à couvrir dirait un
+          // adressage que le moteur ne pose pas : refus fermé, rien d'écrit.
+          return { ok: false, reason: 'aucun_signal_adressage', status: 409 } satisfies Resultat;
+        }
+
+        const lettre = await tx.correspondanceMedecin.create({
+          data: {
+            ...preparation.donnees,
+            ancrageSha256: provenance.ancrageHash,
+            ancrageVersion: provenance.version,
+          },
+          select: { id: true },
+        });
+        await tx.adressageSignalAlerte.create({
+          data: {
+            idPatient,
+            acte: 'adressage',
+            idCorrespondance: lettre.id,
+            idConsultation: consultation.id,
+            findingIds,
+            praticienEmail: email ?? '',
+          },
+          select: { id: true },
+        });
+        return { ok: true, courrier: genere.courrier, provenance } satisfies Resultat;
       });
     } catch (err) {
       // JAMAIS `err.message` ici : un `PrismaClientValidationError` rend ses
@@ -275,15 +330,25 @@ export async function POST(req: Request) {
       return echec('server_error', 'Erreur technique.', 500);
     }
 
+    if (!resultat.ok) {
+      return echec(
+        resultat.reason,
+        MESSAGES_REFUS_COURRIER[resultat.reason]
+          ?? MESSAGES_REFUS_CONSIGNATION[resultat.reason]
+          ?? 'Lettre indisponible : rien n’est consigné.',
+        resultat.status,
+      );
+    }
+
     // 201 : les deux routes sœurs qui écrivent cette table rendent ce code à la
     // création.
     return NextResponse.json<AdressageCourrierApiResponse>(
       {
         ok: true,
-        texte: genere.courrier.texte,
-        html: genere.courrier.html,
-        ancrageSha256: provenance.ancrageHash,
-        ancrageVersion: provenance.version,
+        texte: resultat.courrier.texte,
+        html: resultat.courrier.html,
+        ancrageSha256: resultat.provenance.ancrageHash,
+        ancrageVersion: resultat.provenance.version,
       },
       { status: 201 },
     );
