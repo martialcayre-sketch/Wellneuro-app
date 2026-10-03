@@ -16,8 +16,11 @@ import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import {
   PREFIXE_FINDING_ANAMNESE,
   PREFIXE_FINDING_EFFET_INDESIRABLE,
+  type CouvertureAdressage,
 } from './safetyFindingSource';
 import type { ClinicalRuleRef, SafetyFinding } from './types';
+
+export type { CouvertureAdressage };
 
 // PRODUCTEUR DE CONSTATS DE SÉCURITÉ — [[D-099]], LOT-04.
 //
@@ -290,4 +293,35 @@ export function construireSafetyFindings(
     rules: [regle, ...securiteEI.rules],
     limitations: securiteEI.limitations,
   };
+}
+
+/**
+ * Les constats de sécurité, séparés en OUVERTS et ADRESSÉS ([[D-257]], A1, A3).
+ *
+ * UN CONSTAT ADRESSÉ N'EST PAS EFFACÉ : il change de liste. Il cesse de
+ * nourrir l'abstention et le blocage de la carte, et reste porté par la revue,
+ * donc par son empreinte, et par l'écran.
+ *
+ * SEUL UN CONSTAT D'ANAMNÈSE SE LÈVE. Un effet indésirable ([[D-101]]) a sa
+ * propre sortie ; une lettre d'adressage ne le couvre jamais, même si son
+ * identifiant figurait — par erreur ou par forge — dans une couverture.
+ *
+ * AUCUN POINT, DANS AUCUN SENS (`DC-23`) : la partition ne lit aucun score,
+ * seulement des identifiants. L'ordre d'entrée est conservé dans chaque liste.
+ */
+export function partitionnerConstatsAdresses(
+  findings: SafetyFinding[],
+  couvertures: CouvertureAdressage[],
+): { ouverts: SafetyFinding[]; adresses: SafetyFinding[] } {
+  const couverts = new Set(couvertures.flatMap(couverture => couverture.findingIds));
+  const ouverts: SafetyFinding[] = [];
+  const adresses: SafetyFinding[] = [];
+  for (const finding of findings) {
+    if (finding.findingId.startsWith(PREFIXE_FINDING_ANAMNESE) && couverts.has(finding.findingId)) {
+      adresses.push(finding);
+    } else {
+      ouverts.push(finding);
+    }
+  }
+  return { ouverts, adresses };
 }

@@ -170,6 +170,11 @@ export function buildDecisionCard(input: {
     missingDataFindingIds: uniqueSorted(input.review.missingData.map(finding => finding.findingId)),
     discordanceFindingIds: uniqueSorted(input.review.discordances.map(finding => finding.findingId)),
     safetyFindingIds: uniqueSorted(input.review.safetyFindings.map(finding => finding.findingId)),
+    // Les constats ADRESSÉS ([[D-257]]) : portés, jamais bloquants. Absent
+    // quand vide, pour que l'empreinte des cartes sans adressage ne bouge pas.
+    ...((input.review.safetyFindingsAdresses?.length ?? 0) > 0
+      ? { safetyFindingAdresseIds: uniqueSorted(input.review.safetyFindingsAdresses!.map(finding => finding.findingId)) }
+      : {}),
     abstention: input.review.abstention,
     limitations,
   };

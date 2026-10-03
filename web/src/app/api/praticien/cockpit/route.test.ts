@@ -35,6 +35,8 @@ const { getServerSession, prisma, writes } = vi.hoisted(() => {
       assignation: { findMany: vi.fn() },
       // Journal des accès (G-TRUST-04) : écriture d'audit, pas clinique.
       journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
+      // Couvertures d'adressage ([[D-257]], LOT-04) : lues drapeau allumé seulement.
+      adressageSignalAlerte: { findMany: vi.fn() },
     },
   };
 });
@@ -72,6 +74,7 @@ import {
 } from '@/lib/clinical-engine/dossierT0Fixture';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { PRIORITY_RULES_METADATA } from '@/lib/clinical/priorityRulesV1';
+import { construireSafetyFindings } from '@/lib/clinical-engine/safetyFindings';
 import { GET, POST } from './route';
 
 const patient = { idPatient: 'PAT_TEST', createdAt: new Date('2026-01-01T00:00:00.000Z') };
@@ -884,6 +887,61 @@ describe('/api/praticien/cockpit — chaîne C1 rebranchée, table signée', () 
       expect(String(candidat.label).toLowerCase()).not.toContain('stress');
     }
     espion.mockRestore();
+  });
+
+  // LA LEVÉE PAR ADRESSAGE TRAVERSE LA ROUTE ([[D-257]], LOT-04) : la
+  // couverture est cherchée sur la porteuse dont l'anamnèse a été lue, la
+  // chaîne la consomme, et la réponse la sert à côté de la carte.
+  describe('levée par adressage (D-257, LOT-04)', () => {
+    const SIGNAL = 'Douleur thoracique / oppression';
+    const idConstat = () => construireSafetyFindings([SIGNAL]).findings[0].findingId;
+
+    beforeEach(() => {
+      prisma.consultation.findFirst.mockResolvedValue({
+        id: 'cons_porteuse',
+        anamnese: {
+          motif_principal: 'Ballonnements et prise de poids depuis un an.',
+          objectif_prioritaire: 'Retrouver un confort digestif',
+          signaux_alerte: [SIGNAL],
+        },
+      });
+      prisma.adressageSignalAlerte.findMany.mockResolvedValue([{
+        id: 'adr_1',
+        idCorrespondance: 'lettre_1',
+        findingIds: [idConstat()],
+        acteLe: new Date('2026-10-03T08:00:00.000Z'),
+        correspondance: { idPatient: 'PAT_TEST', sens: 'sortant', ancrageVersion: 'safety-signals-v1' },
+      }]);
+    });
+    afterEach(() => {
+      delete process.env.WN_LEVEE_ADRESSAGE;
+    });
+
+    it('drapeau éteint : la table n’est pas lue, le dossier reste bloqué', async () => {
+      const { statut, payload } = await confirmer();
+      expect(statut).toBe(200);
+      expect(prisma.adressageSignalAlerte.findMany).not.toHaveBeenCalled();
+      expect(payload.decisionCard.safetyFindingIds).toEqual([idConstat()]);
+      expect(payload.decisionCard).not.toHaveProperty('safetyFindingAdresseIds');
+      expect(payload).not.toHaveProperty('couverturesAdressage');
+    });
+
+    it('drapeau allumé : le constat couvert ne bloque plus, il reste porté et sa lettre est servie', async () => {
+      process.env.WN_LEVEE_ADRESSAGE = 'true';
+      const { statut, payload } = await confirmer();
+      expect(statut).toBe(200);
+      expect(prisma.adressageSignalAlerte.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ idConsultation: 'cons_porteuse' }) }),
+      );
+      expect(payload.decisionCard.safetyFindingIds).toEqual([]);
+      expect(payload.decisionCard.safetyFindingAdresseIds).toEqual([idConstat()]);
+      expect(payload.review.abstention.status).toBe('not_required');
+      expect(payload.decisionCard.priorityCandidates.length).toBeGreaterThan(0);
+      expect(payload.couverturesAdressage).toEqual([{
+        idAdressage: 'adr_1', idCorrespondance: 'lettre_1', findingIds: [idConstat()],
+        acteLe: '2026-10-03T08:00:00.000Z',
+      }]);
+    });
   });
 
   // Un dossier dont le canal de plainte est retiré de l'épisode : la table ne

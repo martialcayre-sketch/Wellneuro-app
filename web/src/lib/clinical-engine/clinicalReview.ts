@@ -16,6 +16,8 @@ type AuthoredFindings = {
   missingData?: MissingDataFinding[];
   discordances?: DiscordanceFinding[];
   safetyFindings?: SafetyFinding[];
+  /** Constats couverts par un adressage consigné ([[D-257]], LOT-04). */
+  safetyFindingsAdresses?: SafetyFinding[];
   abstention?: AbstentionAssessment;
 };
 
@@ -248,6 +250,13 @@ export function buildClinicalReview(input: {
   );
   const discordances = normalizeFindings(authored.discordances ?? [], 'discordance', input.snapshot, ruleMap);
   const safetyFindings = normalizeFindings(authored.safetyFindings ?? [], 'safety', input.snapshot, ruleMap);
+  const safetyFindingsAdresses = normalizeFindings(
+    authored.safetyFindingsAdresses ?? [], 'safety', input.snapshot, ruleMap,
+  );
+  const ouverts = new Set(safetyFindings.map(finding => finding.findingId));
+  if (safetyFindingsAdresses.some(finding => ouverts.has(finding.findingId))) {
+    throw new TypeError('Un constat de sécurité ne peut être à la fois ouvert et adressé.');
+  }
   const validatedRuleIds = new Set(rules.filter(rule => rule.lifecycle === 'clinically_validated').map(rule => rule.ruleId));
   let abstention: AbstentionAssessment = authored.abstention ?? {
     status: 'not_evaluated', ruleIds: [], limitations: [validatedRuleIds.size === 0
@@ -285,6 +294,9 @@ export function buildClinicalReview(input: {
     missingData,
     discordances,
     safetyFindings,
+    // ABSENT QUAND VIDE : l'empreinte des revues sans adressage reste celle
+    // d'avant le LOT-04, et les cartes persistées se rejouent à l'identique.
+    ...(safetyFindingsAdresses.length > 0 ? { safetyFindingsAdresses } : {}),
     abstention: normalizedAbstention,
     limitations,
   };

@@ -35,6 +35,7 @@ const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');
 const NETTOYAGE_E2E = path.join('e2e', 'helpers', 'db.ts');
 const ROUTE_LETTRE = path.join('src', 'app', 'api', 'praticien', 'adressage', 'courrier', 'route.ts');
 const ROUTE_REVOCATION = path.join('src', 'app', 'api', 'praticien', 'adressage', 'revocation', 'route.ts');
+const LECTEUR_CHAINE = path.join('src', 'lib', 'clinical-engine', 'adressagesSignalAlertePrisma.ts');
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
@@ -62,6 +63,13 @@ function occurrences(motif: RegExp): { fichier: string; n: number }[] {
 const CREER = /\.adressageSignalAlerte\s*\.\s*(?:create|createMany|createManyAndReturn)\s*\(/;
 const SUPPRIMER = /\.adressageSignalAlerte\s*\.\s*(?:delete|deleteMany)\s*\(/;
 const REECRIRE = /\.adressageSignalAlerte\s*\.\s*(?:update|updateMany|updateManyAndReturn|upsert)\s*\(/;
+/**
+ * LA LECTURE ([[D-257]], LOT-04) : une couverture lue LÈVE une inhibition. Un
+ * second lecteur, qui jugerait autrement la porteuse, la lettre ou la
+ * révocation, ferait diverger le cockpit, le vérificateur et le rejeu — donc
+ * 409 sur une carte honnête, ou une levée que la chaîne n'aurait pas accordée.
+ */
+const LIRE = /\.adressageSignalAlerte\s*\.\s*(?:findMany|findFirst|findFirstOrThrow|findUnique|findUniqueOrThrow|count|aggregate|groupBy)\s*\(/;
 const SQL_BRUT = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+(?:public\.)?"?adressages_signal_alerte\b/i;
 /**
  * L'ÉCRITURE IMBRIQUÉE : `correspondanceMedecin.create({ data: {
@@ -72,7 +80,7 @@ const SQL_BRUT = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s
  */
 const IMBRIQUEE = /\b(?:adressagesSignalAlerte|revocations)\s*:\s*\{\s*(?:create|createMany|connectOrCreate|upsert|update|updateMany|delete|deleteMany|set)\b/;
 
-describe('Adressages sur signal d’alerte — qui écrit (D-257, LOT-02 et LOT-03)', () => {
+describe('Adressages sur signal d’alerte — qui écrit, qui lit (D-257, LOT-02 à LOT-04)', () => {
   it('seuls l’effacement nommé et le nettoyage des E2E suppriment un adressage — et ils le font', () => {
     expect(occurrences(SUPPRIMER)).toEqual([
       { fichier: EFFACEMENT, n: 1 },
@@ -91,6 +99,14 @@ describe('Adressages sur signal d’alerte — qui écrit (D-257, LOT-02 et LOT-
       { fichier: ROUTE_REVOCATION, n: 1 },
     ]);
     expect(occurrences(IMBRIQUEE)).toEqual([]);
+  });
+
+  it('deux lecteurs, et deux seulement — la chaîne C1 et la route de révocation (LOT-04)', () => {
+    expect(occurrences(LIRE)).toEqual([
+      { fichier: ROUTE_REVOCATION, n: 1 },
+      { fichier: LECTEUR_CHAINE, n: 1 },
+    ]);
+    expect(LIRE.test('prisma.adressageSignalAlerte.findMany({')).toBe(true);
   });
 
   it('la lettre n’écrit que l’acte `adressage`, la révocation que l’acte `revocation`', () => {

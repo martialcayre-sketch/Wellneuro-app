@@ -1,18 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, entreesRuntime, construireChaineC1Tolerante, lireSelectionPriorite, lireEffetsIndesirables } =
+const {
+  prisma, entreesRuntime, construireChaineC1Tolerante, lireSelectionPriorite, lireEffetsIndesirables,
+  lireCouverturesAdressage,
+} =
   vi.hoisted(() => ({
     prisma: { assessmentEpisode: { findUnique: vi.fn() } },
     entreesRuntime: vi.fn(),
     construireChaineC1Tolerante: vi.fn(),
     lireSelectionPriorite: vi.fn(),
     lireEffetsIndesirables: vi.fn(),
+    lireCouverturesAdressage: vi.fn(),
   }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('./verifierChaineC1', () => ({ entreesRuntime }));
 vi.mock('./selectionPrioritePrisma', () => ({ construireChaineC1Tolerante, lireSelectionPriorite }));
 vi.mock('./effetsIndesirablesPrisma', () => ({ lireEffetsIndesirables }));
+vi.mock('./adressagesSignalAlertePrisma', () => ({ lireCouverturesAdressage }));
 
 import { canonicalSha256 } from './canonical';
 import { rejouerCarteDecision } from './rejeuCarteDecision';
@@ -38,6 +43,7 @@ function entrees(responseIds: string[] = ['r1', 'r2', 'r3']) {
     patientContext: {},
     signauxAlerte: [],
     etatPopulation: {},
+    idConsultationPorteuse: 'cons_porteuse',
   };
 }
 
@@ -61,6 +67,7 @@ describe('rejouerCarteDecision', () => {
     entreesRuntime.mockResolvedValue(entrees());
     lireSelectionPriorite.mockResolvedValue(null);
     lireEffetsIndesirables.mockResolvedValue([]);
+    lireCouverturesAdressage.mockResolvedValue(undefined);
     construireChaineC1Tolerante.mockReturnValue({
       chaine: { decisionCard: { decisionCardId: ID_CARTE, inputHash: EMPREINTE_APPROUVEE } },
       selectionEcartee: false,
@@ -81,6 +88,19 @@ describe('rejouerCarteDecision', () => {
     await appel();
     expect(construireChaineC1Tolerante).toHaveBeenCalledWith(
       expect.objectContaining({ horodatage: EPISODE.confirmedAt, episode: EPISODE, patientId: ID_PATIENT }),
+      null,
+    );
+  });
+
+  // LA MÊME LECTURE QUE LE COCKPIT ([[D-257]], LOT-04) : les couvertures de la
+  // porteuse dont l'anamnèse a été lue, passées telles quelles à la chaîne.
+  it('rejoue avec les couvertures d’adressage de la porteuse lue', async () => {
+    const couvertures = [{ idAdressage: 'adr_1', idCorrespondance: 'l_1', findingIds: [], acteLe: 'x' }];
+    lireCouverturesAdressage.mockResolvedValue(couvertures);
+    await appel();
+    expect(lireCouverturesAdressage).toHaveBeenCalledWith(ID_PATIENT, 'cons_porteuse');
+    expect(construireChaineC1Tolerante).toHaveBeenCalledWith(
+      expect.objectContaining({ couverturesAdressage: couvertures }),
       null,
     );
   });

@@ -24,6 +24,7 @@ import {
   tablePrioritesSignee,
 } from '@/lib/clinical/priorityRulesV1';
 import { EXCLUSIONS_INTERVENTIONS_V1 } from '@/lib/clinical/gatePopulationV1';
+import type { CouvertureAdressage } from './safetyFindingSource';
 
 // CAS DE RÉFÉRENCE DU LOT-04 ([[D-054]]), mis à jour le 2026-08-15 ([[D-061]]).
 // Ce banc éprouve la chaîne dans les DEUX positions du verrou. LES RÔLES ONT
@@ -85,6 +86,8 @@ function chaine(options: {
   signaux?: string[];
   /** Champs bruts de la section « État actuel » ([[D-101]]). */
   etat?: Record<string, string>;
+  /** Couvertures d'adressage actives ([[D-257]], LOT-04) ; absent = non lues. */
+  couvertures?: CouvertureAdressage[];
 } = {}) {
   const lignes = reponsesRuntimeRideauT0(
     DATE_RIDEAU_FIXTURE,
@@ -121,6 +124,7 @@ function chaine(options: {
     selectionPraticien: null,
     signauxAlerte: inputs.signauxAlerte,
     etatPopulation: inputs.etatPopulation,
+    ...(options.couvertures !== undefined ? { couverturesAdressage: options.couvertures } : {}),
   });
 }
 
@@ -417,6 +421,82 @@ describe('chaîne C1 — cas de référence, table signée', () => {
     expect(avec.decisionCard.priorityCandidates[0].limitations).toContain(limitation);
     expect(sans.decisionCard.priorityCandidates[0].limitations).not.toContain(limitation);
     expect(JSON.stringify(avec.decisionCard)).not.toContain('Retrouver un confort digestif');
+  });
+});
+
+// LA LEVÉE PAR ADRESSAGE ([[D-257]], LOT-04 ; bancs du cadrage §6). Un constat
+// couvert par une lettre consignée cesse d'inhiber ; il reste PORTÉ — par la
+// revue, par la carte et par leurs empreintes. Rien n'est effacé.
+describe('chaîne C1 — levée par adressage (D-257, LOT-04)', () => {
+  const THORAX = 'Douleur thoracique / oppression';
+  const IDEES = 'Idées noires ou suicidaires';
+  const idDe = (libelle: string) => chaine({ signaux: [libelle] }).decisionCard.safetyFindingIds[0];
+  const couverture = (findingIds: string[], idAdressage = 'adr_1'): CouvertureAdressage => ({
+    idAdressage,
+    idCorrespondance: `lettre_${idAdressage}`,
+    findingIds,
+    acteLe: '2026-10-03T08:00:00.000Z',
+  });
+
+  it('sans couverture lue, ou avec une liste vide, la chaîne est IDENTIQUE à celle d’avant le lot', () => {
+    simulerSignature();
+    const reference = chaine({ signaux: [THORAX] });
+    for (const couvertures of [undefined, [], [couverture(['safety:anamnese:0000000000000000'])]]) {
+      const autre = chaine({ signaux: [THORAX], couvertures });
+      expect(autre.review.inputHash).toBe(reference.review.inputHash);
+      expect(autre.decisionCard.inputHash).toBe(reference.decisionCard.inputHash);
+      expect(autre.review).not.toHaveProperty('safetyFindingsAdresses');
+      expect(autre.decisionCard).not.toHaveProperty('safetyFindingAdresseIds');
+    }
+  });
+
+  it('un constat couvert cesse de bloquer, et reste porté par la revue et la carte', () => {
+    simulerSignature();
+    const id = idDe(THORAX);
+    const sans = chaine();
+    const leve = chaine({ signaux: [THORAX], couvertures: [couverture([id])] });
+    expect(leve.review.safetyFindings).toEqual([]);
+    expect(leve.decisionCard.safetyFindingIds).toEqual([]);
+    expect(leve.review.safetyFindingsAdresses?.map(f => f.findingId)).toEqual([id]);
+    expect(leve.decisionCard.safetyFindingAdresseIds).toEqual([id]);
+    // La suite du parcours est celle d'un dossier sans alerte (A2)…
+    expect(leve.review.abstention.status).toBe('not_required');
+    expect(leve.decisionCard.priorityCandidates).toEqual(sans.decisionCard.priorityCandidates);
+    expect(leve.decisionCard.proposedMainPriorityId).toBe(sans.decisionCard.proposedMainPriorityId);
+    // …mais le signal n'a pas disparu : les empreintes le portent (A1).
+    expect(leve.review.inputHash).not.toBe(sans.review.inputHash);
+    expect(leve.decisionCard.inputHash).not.toBe(sans.decisionCard.inputHash);
+    // Et aucun point n'a bougé (`DC-23`).
+    expect(leve.snapshot.inputHash).toBe(sans.snapshot.inputHash);
+  });
+
+  it('un signal non couvert rebloque — granularité par signal (A3)', () => {
+    simulerSignature();
+    const partiel = chaine({ signaux: [THORAX, IDEES], couvertures: [couverture([idDe(THORAX)])] });
+    expect(partiel.review.safetyFindings.map(f => f.findingId)).toEqual([idDe(IDEES)]);
+    expect(partiel.decisionCard.safetyFindingAdresseIds).toEqual([idDe(THORAX)]);
+    expect(partiel.review.abstention.status).toBe('required');
+    expect(partiel.decisionCard.priorityCandidates).toEqual([]);
+    expect(partiel.decisionCard.proposedMainPriorityId).toBeNull();
+  });
+
+  it('deux lettres sur le même constat : il est adressé une fois, et la carte ne dépend pas du nombre de lettres', () => {
+    simulerSignature();
+    const id = idDe(THORAX);
+    const une = chaine({ signaux: [THORAX], couvertures: [couverture([id])] });
+    const deux = chaine({ signaux: [THORAX], couvertures: [couverture([id]), couverture([id], 'adr_2')] });
+    expect(deux.decisionCard.safetyFindingAdresseIds).toEqual([id]);
+    expect(deux.decisionCard.inputHash).toBe(une.decisionCard.inputHash);
+  });
+
+  it('constat levé mais canal non mesurable : l’abstention reste requise, sur le motif du canal', () => {
+    simulerSignature();
+    const id = idDe(THORAX);
+    const leve = chaine({ plaintes: {}, signaux: [THORAX], couvertures: [couverture([id])] });
+    const motifs = leve.review.abstention.limitations.join(' ');
+    expect(leve.review.abstention.status).toBe('required');
+    expect(motifs).toContain('ne rend aucune mesure sur l’épisode confirmé');
+    expect(motifs).not.toContain('Au moins un constat de sécurité est présent');
   });
 });
 

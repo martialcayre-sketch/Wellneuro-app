@@ -12,7 +12,12 @@ import { etatIntegralementInconnu, type EtatPopulation } from '@/lib/consultatio
 import { buildClinicalReview } from './clinicalReview';
 import { buildClinicalSnapshot } from './clinicalSnapshot';
 import { buildDecisionCard } from './decisionCard';
-import { construireSafetyFindings, type EffetIndesirableRuntime } from './safetyFindings';
+import {
+  construireSafetyFindings,
+  partitionnerConstatsAdresses,
+  type CouvertureAdressage,
+  type EffetIndesirableRuntime,
+} from './safetyFindings';
 import type {
   AbstentionAssessment,
   ClinicalReview,
@@ -155,6 +160,17 @@ export type EntreeChaineC1 = {
    * sans quoi la carte recalculée divergerait de la carte émise.
    */
   effetsIndesirables?: EffetIndesirableRuntime[];
+  /**
+   * Les couvertures d'adressage ACTIVES du dossier ([[D-257]], LOT-04), telles
+   * que `lireCouverturesAdressage` les rend.
+   *
+   * OPTIONNEL, POUR LE MOTIF EXACT DE `effetsIndesirables` : absent, il dit que
+   * l'appelant n'a pas lu la table — drapeau `WN_LEVEE_ADRESSAGE` éteint. Les
+   * QUATRE appelants (cockpit ×2, vérificateur, rejeu) le passent par la même
+   * fonction : une couverture lue d'un côté seulement ferait 409 sur une carte
+   * honnête, ou éteindrait l'écran du patient.
+   */
+  couverturesAdressage?: CouvertureAdressage[];
 };
 
 /** Un objet de score lisible — typage défensif, le JSON n'est pas garanti. */
@@ -410,13 +426,20 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
   // branche `> 0` comme inatteignable : les deux affirmations tombent avec cette
   // ligne. Le chemin n'est plus câblé « pour le jour où », il est alimenté.
   const securite = construireSafetyFindings(input.signauxAlerte, input.effetsIndesirables);
+  // LA LEVÉE PAR ADRESSAGE ([[D-257]], LOT-04) : un constat couvert par une
+  // lettre consignée cesse d'inhiber, et reste porté. Sans couverture lue, la
+  // partition est l'identité — tout reste ouvert.
+  const { ouverts, adresses } = partitionnerConstatsAdresses(
+    securite.findings,
+    input.couverturesAdressage ?? [],
+  );
   const abstention = evaluerAbstention({
     // Les règles de PRIORITÉ, et elles seules : `abstention.ruleIds` nomme ce
     // que l'abstention suspend, pas ce qui la déclenche. La règle de sécurité
     // est jointe à `rules` (elle doit y être pour que la revue accepte les
     // constats), jamais à cette liste.
     ruleIds: regles.map(regle => regle.ruleId),
-    safetyFindings: securite.findings.length,
+    safetyFindings: ouverts.length,
     canalMesure: canalPlainteMesure(canal?.scores ?? null),
   });
 
@@ -430,7 +453,8 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
     rules: [...regles, ...securite.rules],
     findings: {
       ...(abstention ? { abstention } : {}),
-      safetyFindings: securite.findings,
+      safetyFindings: ouverts,
+      ...(adresses.length > 0 ? { safetyFindingsAdresses: adresses } : {}),
     },
     // Ce que le second producteur a lu sans pouvoir conclure ([[D-101]]) : un
     // signalement ouvert que le patient n'a rattaché à aucun protocole. La
