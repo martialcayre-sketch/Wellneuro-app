@@ -8715,6 +8715,22 @@ signature du resolver.
 **Questions ouvertes.** Épreuve d'intégration code↔triggers non versionnée ;
 `jiti`/`dotenv` non garantis dans l'image ; rétention des sauvegardes.
 
+## 2026-10-03 — Signal d'alerte : sortie du blocage, LOT-00 à LOT-02 (D-257)
+
+**Fait.** Cadrage #1282 (arbitrages A1-A12), `D-257` #1285 (lettre consignée ⇒
+levée par signal ; orientation en première action, hors borne, texte patient
+signé). #1288 : migration seule `adressages_signal_alerte_v1`, refus en base,
+contrat 17 promesses, 45 mutants tués ; revue `wn-reviewer` : lettre de la même
+transaction et consultation porteuse imposées (P1-1).
+
+**Écarté.** Expiration, attestation sans lettre, réponse du médecin exigée,
+reprise des lettres passées, règle distincte « idées noires », repère « 15 ».
+
+**Prochaine action.** Merge de #1288 et `release-db` approuvée dans la foulée,
+constat par conteneur, puis LOT-03 (écrivain, cadrage §7).
+
+**Questions ouvertes.** Mesure de production des dossiers bloqués et des
+lettres déjà consignées ; T3 E2E non jouable en conteneur cloud.
 ## 2026-10-03 — BIO-INGEST LOT-02, signature du resolver (D-259)
 
 **Décidé.** Resolver signé tel quel (98 entrées, 43 analytes, SHA en dur) sur

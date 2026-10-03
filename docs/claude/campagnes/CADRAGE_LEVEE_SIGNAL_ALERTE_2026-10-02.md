@@ -131,3 +131,29 @@ l'empreinte de sécurité à zéro (il reste porté) ; un signal non couvert reb
 une lettre sans couverture structurée ne lève rien ; une révocation rebloque ;
 une redéclaration sur une consultation postérieure rebloque ; un effet
 indésirable n'est jamais levé par une lettre.
+
+## 7. Consignes pour les lots suivants (revue `wn-reviewer` du LOT-02, 2026-10-03)
+
+La migration du LOT-02 (#1288) tient en base la lettre **de la même transaction** et
+la consultation **porteuse au moment de l'insertion**. Ce qu'elle ne peut pas tenir
+revient aux écrivains et aux lecteurs :
+
+- **LOT-03 (écrivain).** La route d'adressage lit la porteuse avec son `id` ET son
+  `anamnese` dans la même requête (aujourd'hui `select: { anamnese: true }`) ;
+  `finding_ids` dérive du même `signauxDeclares(...)`, restreint au rang
+  `adressage`, libellés hors cotation compris — exactement les signaux imprimés
+  dans la lettre. Lettre et couverture s'insèrent dans **une seule `$transaction`
+  interactive, au même niveau** (pas de point de sauvegarde entre les deux : la
+  base refuserait la couverture). Une révocation s'écrit avec `findingIds` absent,
+  jamais `[]` (Prisma relit le NULL d'une révocation comme `[]`, et `[]` serait
+  refusé par le CHECK).
+- **LOT-03 (gardes et E2E).** La garde « qui écrit » ne scanne que `src/` : l'étendre
+  aux scripts et à `web/e2e/helpers/db.ts`, dont les nettoyages par dossier
+  échoueront en RESTRICT dès qu'un E2E créera une couverture.
+- **LOT-04 (lecteur).** La levée ne vaut que si `id_consultation` est la porteuse
+  **courante** (banc d'égalité) ; la lettre est relue à la lecture (sortante,
+  ancrage `safety-signals-`, même dossier) — `correspondances_medecin` n'a pas de
+  gel, le trigger ne la vérifie qu'à l'insertion.
+- **Choix assumé.** Une lettre dont la couverture a été révoquée ne couvre plus
+  jamais : le praticien re-consigne une lettre neuve (index unique sans exception
+  pour les lettres révoquées).

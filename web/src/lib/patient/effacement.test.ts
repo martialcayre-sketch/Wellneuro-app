@@ -28,6 +28,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'protocolDraft', 'assessmentEpisode', 'decisionPrioritySelection',
     'ecartementProposition',
     'critereDossierConstate',
+    'adressageSignalAlerte',
     'syntheseIA', 'questionnaireReponse',
     'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',
     'trustChoiceEvent', 'trustAdverseEffectReport', 'trustPrivacyIncident',
@@ -168,6 +169,18 @@ describe('effacerDossier', () => {
     expect(rang('ligneBiologiqueCandidate')).toBeLessThan(rang('importBiologique'));
     expect(rang('importBiologique')).toBeLessThan(rang('compteRenduBiologique'));
     expect(rang('ligneBiologiqueCandidate')).toBeLessThan(rang('resultatBiologique'));
+  });
+
+  // Adressages sur signal d'alerte (D-257, LOT-02) : FK RESTRICT vers la
+  // consultation porteuse et la lettre d'adressage. Une ligne déplacée après
+  // l'une ou l'autre rendrait l'effacement impossible pour tout dossier
+  // adressé.
+  it('supprime les adressages sur signal d’alerte avant les consultations et les lettres', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('adressageSignalAlerte')).toBeGreaterThanOrEqual(0);
+    expect(rang('adressageSignalAlerte')).toBeLessThan(rang('consultation'));
+    expect(rang('adressageSignalAlerte')).toBeLessThan(rang('correspondanceMedecin'));
   });
 
   it('tout passe par une seule transaction', async () => {
