@@ -123,7 +123,7 @@ alerte » désigne la suite normale du parcours — sélection de priorité, pro
 | LOT-02 | Migration seule : table des adressages (couverture + révocation) | `release-db` approuvée, constat par conteneur |
 | LOT-03 | Écriture de la couverture à la consignation de la lettre ; route de révocation (le bouton de révocation se pose au LOT-04, avec l'affichage de la couverture) | LOT-02 constaté le 2026-10-03 (run `release-db` n° 131) |
 | LOT-04 | Chaîne C1 : partition ouverts/adressés, carte, empreintes, cockpit — **scindé** : 04a moteur + lecteur + réponse cockpit (drapeau `WN_LEVEE_ADRESSAGE`, éteint) ; 04b écran (couvertures par constat, révocation, texte de `AdressagePanel`) | LOT-03 ; derrière un drapeau neuf, éteint à la livraison **et jusqu'au LOT-05** |
-| LOT-05 | Action d'orientation en tête du protocole, hors borne des trois, non retirable, texte signé | LOT-04 |
+| LOT-05 | Action d'orientation en tête du protocole, hors borne des trois, non retirable, texte signé — exigée par le moteur (`buildProtocolDraft`), affichée en lecture seule au constructeur | LOT-04 (04a #1291, 04b #1293) |
 
 Chaque lot touche un chemin clinique : T3 (`npm run test:worktree`) et revue
 `wn-reviewer` avant PR. Bancs à poser : un signal adressé ne réduit jamais
