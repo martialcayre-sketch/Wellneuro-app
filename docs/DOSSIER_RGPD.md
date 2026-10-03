@@ -425,7 +425,7 @@ Wellneuro vers un tiers qui n'est ni le patient ni un sous-traitant :
 |---|---|
 | **Finalité** | tracer au dossier ce qui a été transmis à un médecin et ce qu'il a répondu ; **produire la lettre d'adressage** quand un signal d'alerte déclaré suspend la décision ([[D-218]]) |
 | **Données** | un **libellé libre** désignant le médecin — jamais son adresse e-mail, le refus du caractère `@` étant une garde structurelle —, le texte de l'échange (données de santé, c'est sa fonction), deux dates, et l'ancre du document généré |
-| **Destinataire** | **le médecin désigné**, hors application, par les canaux du praticien |
+| **Destinataire** | **le médecin désigné**, hors application, par les canaux du praticien. **Déclaré avant activation ([[D-262]], 2026-10-03)** : la lettre d'adressage sera aussi **mise à disposition du patient lui-même** dans son portail, à la diffusion du protocole — le patient n'est pas un tiers ; annonce par l'e-mail neutre `document_remis`, sans contenu de santé ni pièce jointe ; drapeau éteint tant que la table de remises n'est pas en service |
 | **Durée** | **non fixée**, comme les autres données de santé du dossier (rubrique 8). La correspondance suit le dossier : clôture ⇒ lecture seule, effacement ⇒ effacement ([[D-219]] §2) |
 
 **DEUX VOIES DEPUIS LE 2026-09-17, ET UNE SEULE EST GARDÉE — c'est le fait
