@@ -29,8 +29,9 @@
 --      révocation ensemble), et la consultation comme la lettre ne
 --      s'effacent pas avant leurs adressages (RESTRICT) ;
 --  15. les FK ont la règle annoncée (RESTRICT vers patient, lettre,
---      consultation ; NO ACTION sur la clé interne), les CHECK et les deux
---      index uniques partiels sont présents ;
+--      consultation ; NO ACTION sur la clé interne), les CHECK, les deux
+--      index uniques partiels et les trois index ordinaires des clés
+--      étrangères sont présents ;
 --  16. la table porte EXACTEMENT ses onze colonnes (liste blanche) : aucun
 --      libellé de signal n'y est recopié, et toute colonne neuve s'arbitre ;
 --  17. la RLS deny-all est active et sans policy (posture `D-005`), et aucune
@@ -336,6 +337,17 @@ BEGIN
     AND indexdef LIKE 'CREATE UNIQUE INDEX%WHERE%';
   IF nb <> 2 THEN
     RAISE EXCEPTION 'CONTRAT — 15 : % index unique(s) partiel(s) sur 2 sont présents.', nb;
+  END IF;
+  -- Les index ORDINAIRES des clés étrangères : sans prédicat, sinon la
+  -- vérification d'une clé à l'effacement d'un parent ne s'en sert pas.
+  SELECT count(*) INTO nb FROM pg_indexes
+  WHERE tablename = 'adressages_signal_alerte'
+    AND indexdef NOT LIKE '%WHERE%'
+    AND ((indexname = 'adressages_signal_alerte_correspondance_idx' AND indexdef LIKE '%(id_correspondance)')
+      OR (indexname = 'adressages_signal_alerte_consultation_idx' AND indexdef LIKE '%(id_consultation)')
+      OR (indexname = 'adressages_signal_alerte_adressage_revoque_idx' AND indexdef LIKE '%(id_adressage_revoque)'));
+  IF nb <> 3 THEN
+    RAISE EXCEPTION 'CONTRAT — 15 : % index de clé étrangère sur 3 sont présents, sans prédicat.', nb;
   END IF;
 
   -- ── 16. Liste blanche des colonnes ───────────────────────────────────────

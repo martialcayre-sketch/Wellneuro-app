@@ -1606,6 +1606,9 @@ model AdressageSignalAlerte {
 
   @@unique([ordre], map: "adressages_signal_alerte_ordre_key")
   @@index([idPatient, ordre], map: "adressages_signal_alerte_patient_ordre_idx")
+  @@index([idCorrespondance], map: "adressages_signal_alerte_correspondance_idx")
+  @@index([idConsultation], map: "adressages_signal_alerte_consultation_idx")
+  @@index([idAdressageRevoque], map: "adressages_signal_alerte_adressage_revoque_idx")
   @@map("adressages_signal_alerte")
 }
 

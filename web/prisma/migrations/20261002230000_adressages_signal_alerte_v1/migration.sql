@@ -108,6 +108,16 @@ CREATE UNIQUE INDEX "adressages_signal_alerte_ordre_key" ON "adressages_signal_a
 -- lecture que la chaîne C1 fera (LOT-04).
 CREATE INDEX "adressages_signal_alerte_patient_ordre_idx" ON "adressages_signal_alerte"("id_patient", "ordre");
 
+-- CreateIndex
+-- Index ORDINAIRES des trois clés étrangères vers la lettre, la consultation
+-- et l'adressage révoqué (constat de revue Copilot, #1288) : la vérification
+-- d'une clé étrangère, à l'effacement d'une consultation ou d'une lettre,
+-- filtre sur la seule colonne — les index uniques partiels ci-dessous, qui
+-- portent un prédicat sur `acte`, ne lui servent pas.
+CREATE INDEX "adressages_signal_alerte_correspondance_idx" ON "adressages_signal_alerte"("id_correspondance");
+CREATE INDEX "adressages_signal_alerte_consultation_idx" ON "adressages_signal_alerte"("id_consultation");
+CREATE INDEX "adressages_signal_alerte_adressage_revoque_idx" ON "adressages_signal_alerte"("id_adressage_revoque");
+
 -- Une lettre ne couvre qu'une fois ; un adressage ne se révoque qu'une fois.
 -- Index partiels : Prisma ne les modélise pas, la parité de schéma ne les voit
 -- pas, le contrat négatif les éprouve.

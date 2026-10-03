@@ -10,6 +10,6 @@ indésirable ; une lettre ne couvre
 qu'une fois, un adressage ne se révoque qu'une fois, avec un motif. UPDATE et
 TRUNCATE refusés, RLS deny-all, effacement nommé du dossier étendu, table
 déclarée en rubrique 5 du registre RGPD. Contrat négatif au CI (dix-sept
-promesses, 45 mutants tués). **Aucun code n'écrit ni ne lit encore la table** :
+promesses, 48 mutants tués). **Aucun code n'écrit ni ne lit encore la table** :
 l'écriture à la consignation de la lettre (LOT-03) n'arrive qu'après
 l'application constatée par conteneur.

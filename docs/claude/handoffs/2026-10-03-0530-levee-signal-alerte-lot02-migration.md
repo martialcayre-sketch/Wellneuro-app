@@ -1,4 +1,4 @@
-# Handoff — levée du blocage par signal d'alerte, LOT-02 (migration seule)
+# Handoff — 2026-10-03 — Levée du blocage par signal d'alerte : la migration des adressages (LOT-02)
 
 ## Branche et état Git
 
