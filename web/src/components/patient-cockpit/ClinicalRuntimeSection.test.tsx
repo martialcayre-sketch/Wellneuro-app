@@ -84,6 +84,8 @@ const ROUTES_NOMMEES = [
   // exact que ce routage a fermé. Sans déclaration, un cas reçoit l'échec par
   // défaut, donc le geste reste absent.
   ['/api/praticien/adressage/courrier', 'adressage'],
+  // Révocation d'un adressage ([[D-257]], LOT-04b) : un POST, au clic seulement.
+  ['/api/praticien/adressage/revocation', 'revocation'],
   // Assiettes indiquées ([[D-237]]) — MÊME DÉFAUT QUE CI-DESSUS, RETROUVÉ À
   // L'IDENTIQUE au montage du panneau : non nommée, la route consommait une
   // réponse du cockpit dans la file générique, et VINGT-SEPT cas tombaient sur
@@ -1052,6 +1054,69 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     });
     await waitFor(() => expect(aDemandeAdressage(fetchMock)).toBe(true));
     expect(screen.queryByRole('button', { name: /Établir et consigner la lettre/ })).toBeNull();
+  });
+
+  // ── LA LEVÉE PAR ADRESSAGE ([[D-257]], LOT-04b) ─────────────────────────
+  // Le serveur ne sert `couverturesAdressage` que levée ouverte : c'est le seul
+  // signal que l'écran lit pour afficher les signaux adressés.
+  async function afficherLevee(routes: Record<string, unknown> = {}, couvertures: unknown = [{
+    idAdressage: 'adr_1', idCorrespondance: 'l_1',
+    findingIds: ['safety:anamnese:0123456789abcdef'], acteLe: '2026-10-03T08:00:00.000Z',
+  }]) {
+    const reponse = reponsePrete(
+      { status: 'not_required', ruleIds: ['PRIO-PON-01'], limitations: [] },
+      { domaine: 'digestion', libelle: 'Digestion', valeur: 8, bande: 'Intensité élevée', exAequo: [] },
+    ) as unknown as Record<string, unknown> & { review: Record<string, unknown> };
+    reponse.review.safetyFindingsAdresses = [{
+      findingId: 'safety:anamnese:0123456789abcdef', kind: 'safety', disposition: 'requires_practitioner_review',
+      rationale: 'Signal déclaré : « Douleur thoracique / oppression ».', ruleId: 'SAF-ANAM-01',
+      confidence: 'à_documenter', provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] }, limitations: [],
+    }];
+    if (couvertures !== null) reponse.couverturesAdressage = couvertures;
+    const fetchMock = fetchParRoute({
+      cockpitGet: [rep(proposalResponse), rep(proposalResponse)],
+      cockpitPost: [rep(reponse)],
+      ...routes,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
+    return fetchMock;
+  }
+
+  it('levée ouverte : le signal adressé reste lu, avec sa lettre, hors de « ce qui suspend »', async () => {
+    await afficherLevee();
+    expect(await screen.findByRole('region', { name: 'Signaux adressés' })).toBeTruthy();
+    expect(screen.getByText('Signal déclaré : « Douleur thoracique / oppression ».')).toBeTruthy();
+    expect(screen.getByText(/Adressage engagé le 3 octobre 2026/)).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Constats de sécurité' })).toBeNull();
+  });
+
+  it('levée fermée (aucune couverture servie) : aucun bloc des signaux adressés', async () => {
+    await afficherLevee({}, null);
+    await screen.findByText(/Abstention clinique évaluée/);
+    expect(screen.queryByRole('region', { name: 'Signaux adressés' })).toBeNull();
+  });
+
+  it('révoquer poste la lettre visée avec son motif, puis RECHARGE la chaîne', async () => {
+    const fetchMock = await afficherLevee({ revocation: rep({ ok: true, idRevocation: 'rev_1' }, true, 201) });
+    await screen.findByRole('region', { name: 'Signaux adressés' });
+    const getsAvant = fetchMock.mock.calls.filter(([url, init]) =>
+      String(url).startsWith('/api/praticien/cockpit?') && !(init as RequestInit | undefined)?.method).length;
+    fireEvent.click(screen.getByRole('button', { name: 'Révoquer cet adressage' }));
+    fireEvent.change(screen.getByLabelText(/Motif de la révocation/), { target: { value: 'Mauvais dossier.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la révocation' }));
+    await waitFor(() => {
+      const appel = fetchMock.mock.calls.find(([url]) => String(url).includes('/api/praticien/adressage/revocation'));
+      expect(appel).toBeTruthy();
+      expect(JSON.parse(String((appel![1] as RequestInit).body))).toEqual({
+        idPatient: 'PAT_TEST', idAdressage: 'adr_1', motif: 'Mauvais dossier.',
+      });
+    });
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([url, init]) =>
+      String(url).startsWith('/api/praticien/cockpit?') && !(init as RequestInit | undefined)?.method).length)
+      .toBeGreaterThan(getsAvant));
   });
 
   it('sans constat de sécurité, la section est ABSENTE — pas vide', async () => {

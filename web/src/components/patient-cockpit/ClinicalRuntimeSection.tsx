@@ -47,6 +47,7 @@ import {
   type AdressageEtabli,
   type AdressageState,
 } from './AdressagePanel';
+import { SignauxAdressesPanel, type RevocationState } from './SignauxAdressesPanel';
 import {
   PropositionBilanPanel,
   type CourrierEtabli,
@@ -387,6 +388,8 @@ export function ClinicalRuntimeSection({
   const [adressage, setAdressage] = useState<AdressageEtabli | null>(null);
   const [adressageErreur, setAdressageErreur] = useState<string | null>(null);
   const [adressageState, setAdressageState] = useState<AdressageState>('idle');
+  // Révocation d'un adressage ([[D-257]] §6, LOT-04b) : une à la fois.
+  const [revocation, setRevocation] = useState<RevocationState>(null);
   const [courrierErreur, setCourrierErreur] = useState<string | null>(null);
   const [documentPatient, setDocumentPatient] = useState<DocumentPatientEtabli | null>(null);
   // UN SEUL état de refus (raison + message + empreinte du texte refusé) : trois
@@ -1086,6 +1089,36 @@ export function ClinicalRuntimeSection({
       if (seq === seqProposition.current) setLoading(false);
     }
   }, [fixture, idPatient]);
+
+  // Révocation d'un adressage consigné par erreur ([[D-257]] §6, A12). Rien
+  // n'est effacé : une ligne motivée s'ajoute, le dossier rebloque. Au succès,
+  // la chaîne est RECHARGÉE depuis le serveur — l'écran ne retire jamais un
+  // signal adressé de son propre chef.
+  const revoquerAdressage = useCallback(
+    async (idAdressage: string, motif: string) => {
+      setRevocation({ idAdressage, enCours: true, erreur: null });
+      try {
+        const response = await fetch('/api/praticien/adressage/revocation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idPatient, idAdressage, motif }),
+        });
+        const payload = (await response.json()) as { ok?: boolean; error?: string };
+        if (dossierCourantRef.current !== idPatient) return;
+        if (!response.ok || !payload.ok) {
+          setRevocation({ idAdressage, enCours: false, erreur: payload.error ?? 'La révocation n’a pas pu être consignée.' });
+          return;
+        }
+        setRevocation(null);
+        await loadProposal(jalonDemande);
+      } catch {
+        if (dossierCourantRef.current !== idPatient) return;
+        setRevocation({ idAdressage, enCours: false, erreur: 'La révocation n’a pas pu être consignée.' });
+      }
+    },
+    [idPatient, loadProposal, jalonDemande],
+  );
+
 
   // Le jalon n'est plus codé en dur ([[D-058]], LOT-07). Il se dérive de la
   // trajectoire, désormais lue dès le montage — et non plus seulement après
@@ -1797,6 +1830,11 @@ export function ClinicalRuntimeSection({
   };
 
   const review = fixture?.review ?? (runtime?.status === 'ready' ? runtime.review : null);
+  // LA LEVÉE EST-ELLE OUVERTE ? Lu sur la réponse du cockpit, jamais deviné :
+  // le serveur ne sert `couverturesAdressage` que drapeau `WN_LEVEE_ADRESSAGE`
+  // allumé ([[D-257]], LOT-04a).
+  const couverturesAdressage = runtime?.status === 'ready' ? runtime.couverturesAdressage : undefined;
+  const leveeOuverte = couverturesAdressage !== undefined;
 
   // IL NE PART QUE LÀ OÙ LE GESTE PEUT ABOUTIR, et trois constats l'ont écrit.
   //
@@ -2078,9 +2116,23 @@ export function ClinicalRuntimeSection({
               erreur={adressageErreur}
               state={adressageState}
               onEtablir={etablirAdressage}
+              leveeOuverte={leveeOuverte}
             />
           )}
         </section>
+      )}
+
+      {/* LES SIGNAUX ADRESSÉS ([[D-257]], LOT-04b) : ils ne suspendent plus la
+          décision, ils restent lus — avec chaque lettre qui les couvre, et sa
+          révocation. Absents tant que la levée est fermée : la revue n'en
+          porte alors aucun. */}
+      {affiche('decision') && !fixture && leveeOuverte && (
+        <SignauxAdressesPanel
+          constats={review?.safetyFindingsAdresses ?? []}
+          couvertures={couverturesAdressage ?? []}
+          revocation={revocation}
+          onRevoquer={revoquerAdressage}
+        />
       )}
 
       {affiche('donnees') && (

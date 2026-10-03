@@ -129,3 +129,19 @@ describe('le papier', () => {
     expect(within(container).getByLabelText(/Texte de la lettre/i)).toBeTruthy();
   });
 });
+
+describe('levée ouverte (D-257, LOT-04b) : la mention dit l’état réel', () => {
+  it('dit que la lettre VAUT adressage, et ce qu’elle ne couvre pas', () => {
+    rendre({ leveeOuverte: true });
+    const mention = screen.getByText(/vaut adressage/i).closest('p');
+    expect(mention?.textContent).toContain('ils cessent de suspendre la décision et restent affichés');
+    expect(mention?.textContent).toContain('déclaré après elle, continue de la suspendre');
+    expect(screen.queryByText(/ne lève pas encore/i)).toBeNull();
+  });
+
+  it('levée fermée par défaut : la mention d’avant reste', () => {
+    rendre();
+    expect(screen.queryByText(/vaut adressage/i)).toBeNull();
+    expect(screen.getByText(/ne lève pas encore/i)).toBeTruthy();
+  });
+});

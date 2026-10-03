@@ -8790,3 +8790,15 @@ ferait dériver une carte diffusée).
 **Prochaine action.** Verdict `wn-reviewer`, merge de #1291, puis LOT-04b.
 
 **Questions ouvertes.** Mesure de production avant allumage.
+## 2026-10-03 — Levée du blocage par signal d'alerte, LOT-04b (D-257)
+
+**Décidé.** Bloc « Signaux adressés au médecin » (toutes les lettres par signal,
+révocation motivée par lettre puis rechargement serveur) ; mention de la lettre
+selon l'état réel ; levée lue sur la réponse du cockpit. Drapeau toujours éteint.
+
+**Écarté.** Exposer le drapeau par le GET de la lettre (la réponse du cockpit
+le dit déjà, sans requête de plus).
+
+**Prochaine action.** PR, CI, merge ; puis LOT-05 (orientation en tête).
+
+**Questions ouvertes.** Mesure de production avant allumage.
