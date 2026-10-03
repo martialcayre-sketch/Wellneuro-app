@@ -8825,3 +8825,14 @@ pose ; mesure consignée au cadrage et à `FEATURE_FLAGS.md`.
 
 **Prochaine action.** Verdict de la revue, correctifs éventuels, puis pose du
 drapeau sur ordre du responsable, constatée par le comportement.
+## 2026-10-03 — Levée du blocage par signal d'alerte : correctifs de revue (D-257)
+
+**Décidé.** Revue des lots mergés : allumage possible ; P2 corrigés (statut
+d'orientation verrouillé, action praticien exigée, défense à la diffusion,
+révocation par lettre, rechargement, révision alignée, garde élargie).
+
+**Écarté.** Exiger la cotation courante sur la lettre (Q2) sans arbitrage.
+
+**Prochaine action.** Merge #1295, contenance du déploiement, pose du drapeau.
+
+**Questions ouvertes.** Q1, Q2, Q3.

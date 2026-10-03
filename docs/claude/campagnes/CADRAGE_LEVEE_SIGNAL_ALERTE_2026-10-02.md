@@ -32,6 +32,21 @@ Conséquence : allumer `WN_LEVEE_ADRESSAGE` ne change l'état d'**aucun** dossie
 chacun se lève à la consignation de sa lettre, et aucune lettre antérieure n'est à
 re-consigner (A9 sans objet).
 
+**Le même jour, en fin d'après-midi** : une première lettre d'adressage consignée en
+production, couvrant **deux** signaux (relevé à l'écran par le responsable). Une
+seule lettre couvre tous les signaux qu'elle nomme ; drapeau éteint, elle ne lève
+encore rien.
+
+**Revue `wn-reviewer` des lots mergés (2026-10-03)** : allumage possible, aucun
+P0/P1. P2 corrigés dans la PR de suivi : statut V4 de l'orientation verrouillé à
+`active` et sans référence ; au moins une action du praticien exigée en plus de
+l'orientation (arbitrage Q4) ; défense à la diffusion contre la carte ;
+révocation regroupée **par lettre** ; mention « nouvelle anamnèse validée » ;
+rechargement après consignation ; révision après arbitrage qui suit la carte ;
+remise à zéro au changement de dossier ; garde des appelants sur tout `src/`.
+**Ouverte (Q2)** : une lettre écrite sous une cotation antérieure continue de
+lever — à trancher avant toute re-signature de la cotation.
+
 ## 2. L'arbitrage rendu le 2026-10-02 (responsable, en session)
 
 **A1 — LA LEVÉE EST DE TYPE « DÉCLASSEMENT », PAS UN EFFACEMENT.** Le signal ne

@@ -1,5 +1,5 @@
 import { MAX_ACTIONS_PROTOCOLE_21J } from './types';
-import { estActionOrientation } from './orientationAdressage';
+import { ACTION_ID_ORIENTATION, estActionOrientation, orientationRequise } from './orientationAdressage';
 import type {
   DecisionCard,
   DecisionPriorityCandidate,
@@ -105,6 +105,16 @@ export function garderCoherencePatient(input: {
     || protocolDraft.decisionCardInputHash !== decisionCard.inputHash
     || protocolDraft.selectedPriorityId !== selected.candidateId) {
     throw new TypeError('Le protocole ne correspond pas à la décision sélectionnée.');
+  }
+  // DÉFENSE EN PROFONDEUR ([[D-257]] §8, revue du 2026-10-03, P2-8). Le moteur
+  // l'a déjà exigé à l'écriture ; ce qui part au patient le re-vérifie contre
+  // la carte : orientation en tête si un constat est adressé, et jamais sinon.
+  const tete = protocolDraft.actions[0];
+  const porteOrientation = protocolDraft.actions.some(action => action.actionId === ACTION_ID_ORIENTATION);
+  if (orientationRequise(decisionCard)
+    ? !(tete !== undefined && estActionOrientation(tete))
+    : porteOrientation) {
+    throw new TypeError('L’orientation vers le médecin ne correspond pas aux signaux adressés de la décision.');
   }
   return { selectedPriorityId: selected.candidateId, candidate, reviewedAt: protocolDraft.review.reviewedAt };
 }

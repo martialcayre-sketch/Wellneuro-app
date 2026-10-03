@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { apercuContenuPatient, buildContenuPatientProtocole } from './contenuPatientProtocole';
 import { buildPatientProtocolView } from './patientProtocolView';
+import { actionOrientation } from './orientationAdressage';
 import type {
   DecisionCard,
   ProtocolAction,
@@ -133,5 +134,30 @@ describe('ContenuPatientProtocole — un refus porte son motif', () => {
       }),
     });
     expect(refus.ok === false && refus.detail).toContain('Statut d’intervention patient inconnu');
+  });
+});
+
+// [[D-257]] §8 — défense en profondeur à la diffusion (revue du 2026-10-03, P2-8).
+describe('ContenuPatientProtocole — orientation contre la carte', () => {
+  const ADRESSEE = { safetyFindingAdresseIds: ['safety:anamnese:aaaaaaaaaaaaaaaa'] };
+
+  it('carte adressée et orientation en tête : diffusable, orientation hors borne', () => {
+    const contenu = buildContenuPatientProtocole({
+      decisionCard: card(ADRESSEE),
+      protocolDraft: protocol({ actions: [actionOrientation(false), action({ actionId: 'a1' }), action({ actionId: 'a2' }), action({ actionId: 'a3' })] }),
+    });
+    expect(contenu.actions.map(a => a.actionId)).toEqual(['orientation-medecin', 'a1', 'a2', 'a3']);
+  });
+
+  it('carte adressée sans orientation en tête : refus', () => {
+    expect(() => buildContenuPatientProtocole({ decisionCard: card(ADRESSEE), protocolDraft: protocol() }))
+      .toThrow('signaux adressés');
+  });
+
+  it('carte sans adressage portant l’orientation réservée : refus', () => {
+    expect(() => buildContenuPatientProtocole({
+      decisionCard: card(),
+      protocolDraft: protocol({ actions: [actionOrientation(false), action()] }),
+    })).toThrow('signaux adressés');
   });
 });

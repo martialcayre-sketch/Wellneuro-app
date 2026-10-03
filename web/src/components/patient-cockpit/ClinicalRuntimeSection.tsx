@@ -43,6 +43,11 @@ import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
 import { appliquerArbitrages } from '@/lib/biology-library/revision';
 import { estFindingAnamnese } from '@/lib/clinical-engine/safetyFindingSource';
 import {
+  ACTION_ID_ORIENTATION,
+  actionOrientation,
+  orientationRequise,
+} from '@/lib/clinical-engine/orientationAdressage';
+import {
   AdressagePanel,
   type AdressageEtabli,
   type AdressageState,
@@ -390,6 +395,10 @@ export function ClinicalRuntimeSection({
   const [adressageState, setAdressageState] = useState<AdressageState>('idle');
   // Révocation d'un adressage ([[D-257]] §6, LOT-04b) : une à la fois.
   const [revocation, setRevocation] = useState<RevocationState>(null);
+  // Lettres consignées pendant la visite : levée ouverte, chacune recharge la
+  // chaîne (P2-5) — l'écran ne retire pas lui-même un signal de « ce qui
+  // suspend », il relit ce que le serveur calcule.
+  const [lettresConsignees, setLettresConsignees] = useState(0);
   const [courrierErreur, setCourrierErreur] = useState<string | null>(null);
   const [documentPatient, setDocumentPatient] = useState<DocumentPatientEtabli | null>(null);
   // UN SEUL état de refus (raison + message + empreinte du texte refusé) : trois
@@ -872,6 +881,9 @@ export function ClinicalRuntimeSection({
   useEffect(() => {
     setAdressage(null);
     setAdressageErreur(null);
+    // Une révocation en vol appartient au dossier qui l'a émise ([[D-257]],
+    // revue du 2026-10-03, P2-2) : son état ne suit pas le praticien.
+    setRevocation(null);
   }, [idPatient]);
 
   // LE DOSSIER COURANT, LU AU RETOUR DE LA REQUÊTE. Ce `ref` ferme une fuite
@@ -919,6 +931,7 @@ export function ClinicalRuntimeSection({
           setAdressageErreur(payload.error ?? 'La lettre n’a pas pu être établie.');
           return;
         }
+        setLettresConsignees(compte => compte + 1);
         setAdressage({
           texte: payload.texte,
           // Le rendu imprimable est SERVI, jamais recomposé : absent, l'écran
@@ -1118,6 +1131,17 @@ export function ClinicalRuntimeSection({
     },
     [idPatient, loadProposal, jalonDemande],
   );
+
+  // LEVÉE OUVERTE, UNE LETTRE CONSIGNÉE RECHARGE LA CHAÎNE ([[D-257]], revue
+  // du 2026-10-03, P2-5) : la mention vient de dire que la lettre lève, l'écran
+  // doit le montrer sans attendre un rechargement manuel.
+  const leveeOuverteRef = useRef(false);
+  useEffect(() => {
+    if (lettresConsignees === 0 || !leveeOuverteRef.current) return;
+    void loadProposal(jalonDemande);
+    // `jalonDemande` et `loadProposal` sont lus à la consignation, pas suivis.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lettresConsignees]);
 
 
   // Le jalon n'est plus codé en dur ([[D-058]], LOT-07). Il se dérive de la
@@ -1814,7 +1838,16 @@ export function ClinicalRuntimeSection({
     await saveVersion({
       purpose: contenuActif.purpose,
       followUpCriterion: contenuActif.followUpCriterion,
-      actions: appliquerArbitrages(contenuActif.actions, lies),
+      // L'ORIENTATION SUIT LA CARTE COURANTE ([[D-257]], revue du 2026-10-03,
+      // P2-6) : retirée de ce qui est révisé, reposée en tête si la carte porte
+      // un constat adressé. Sans cela, une carte qui change d'état d'adressage
+      // rendait la révision impossible (refus du moteur).
+      actions: [
+        ...(orientationRequise(runtime?.status === 'ready' ? runtime.decisionCard : null)
+          ? [actionOrientation(true)] : []),
+        ...appliquerArbitrages(contenuActif.actions, lies)
+          .filter(action => action.actionId !== ACTION_ID_ORIENTATION),
+      ],
       therapeuticLoad: contenuActif.therapeuticLoad,
       // LA RÉVISION DEMANDE LE MÊME CONTRAT QUE CE QU'ELLE RÉVISE. Sans ce
       // champ, la soumission retombait en V1 ([[D-130]] : la version est
@@ -1835,6 +1868,7 @@ export function ClinicalRuntimeSection({
   // allumé ([[D-257]], LOT-04a).
   const couverturesAdressage = runtime?.status === 'ready' ? runtime.couverturesAdressage : undefined;
   const leveeOuverte = couverturesAdressage !== undefined;
+  leveeOuverteRef.current = leveeOuverte;
 
   // IL NE PART QUE LÀ OÙ LE GESTE PEUT ABOUTIR, et trois constats l'ont écrit.
   //
@@ -2128,6 +2162,7 @@ export function ClinicalRuntimeSection({
           porte alors aucun. */}
       {affiche('decision') && !fixture && leveeOuverte && (
         <SignauxAdressesPanel
+          key={idPatient}
           constats={review?.safetyFindingsAdresses ?? []}
           couvertures={couverturesAdressage ?? []}
           revocation={revocation}
