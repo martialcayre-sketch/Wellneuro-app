@@ -28,9 +28,11 @@ import { createHash } from 'node:crypto';
 // c'est voulu (« cortisol salivaire », « IgA sécrétoires »), le praticien
 // tranche.
 //
-// LIVRÉE NON SIGNÉE. Tant que la signature manque, `resoudreLibelle` rend
-// `inconnu` partout : l'import reste utilisable, le praticien choisit chaque
-// analyte. Signer est un acte praticien distinct, avec sa décision `D-xxx`.
+// SIGNÉE PAR [[D-259]] (2026-10-03), sur la surface de relecture
+// `docs/claude/campagnes/SURFACE_RELECTURE_RESOLVER_LIBELLES_2026-10-03.md`.
+// Toute entrée ajoutée, retirée ou retouchée change le SHA calculé et referme
+// le verrou : `resoudreLibelle` rend alors `inconnu` partout jusqu'à une
+// nouvelle signature, avec sa décision `D-xxx`.
 
 export type EntreeResolver = { libelle: string; code: string };
 
@@ -156,13 +158,13 @@ export type ResolverLibellesMetadata = {
 
 export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   version: 'resolver-libelles-v1',
-  // NON SIGNÉE (livrée le 2026-10-02). La table s'enrôlera dans
-  // `clinical/shaPerimetreLitteral.guard.test.ts` le jour de sa signature,
-  // comme les tables qui l'ont précédée — pas avant, le sha valant `null`.
-  validationExterne: false,
-  dateValidation: null,
-  sourceReference: null,
-  shaPerimetre: null,
+  // SIGNÉE PAR [[D-259]] — DÉCLARATION RENDUE EN SÉANCE, APRÈS LECTURE de la
+  // surface de relecture, analyte par analyte. Enrôlée le même jour dans
+  // `clinical/shaPerimetreLitteral.guard.test.ts`.
+  validationExterne: true,
+  dateValidation: '2026-10-03T05:17:05.000Z',
+  sourceReference: 'Relecture du responsable, le 2026-10-03, contre le catalogue biology_analytes (migrations niveau 1 et oméga-3 AA/EPA)',
+  shaPerimetre: 'ccbd8008f913d69900792c976e80311fc390a32d5ca525c2f3b46486ff53504b',
 };
 
 // Empreinte calculée ICI, par `node:crypto` : importer `sha256` du module du

@@ -4,6 +4,42 @@
 
 ## Décisions actives
 
+### D-259 — Le resolver libellé → analyte de BIO-INGEST est SIGNÉ : 98 entrées, 43 analytes, proposées et jamais écrites
+
+- Date : 2026-10-03
+- Statut : accepté — validation du responsable rendue en séance, après lecture,
+  le 2026-10-03 à 05:17 UTC.
+- Domaine : biologie, staging d'import ([[D-256]] A4). Aucune règle clinique,
+  aucun seuil : la table rattache un libellé lu à un code du catalogue.
+
+**Ce qui est signé.** `web/src/lib/biology-library/import/resolverLibellesV1.ts`,
+empreinte `ccbd8008f913d69900792c976e80311fc390a32d5ca525c2f3b46486ff53504b`
+(98 entrées, 96 libellés distincts, 43 analytes), relue sur
+`docs/claude/campagnes/SURFACE_RELECTURE_RESOLVER_LIBELLES_2026-10-03.md`.
+Source déclarée : relecture du responsable contre le catalogue
+`biology_analytes` (migrations niveau 1 et oméga-3 AA/EPA).
+
+**Ce que la signature engage.** La table **propose** un analyte
+(`analyte_propose`) ; le praticien le confirme ou le corrige à la validation.
+Une unité lue différente de celle du catalogue reste refusée à la validation
+(`unite_divergente`) : le seul piège résiduel est une autre matrice sous la
+même unité.
+
+**Arbitrages rendus avec elle :**
+
+- « Albumine » et « Acide urique » **restent rattachés** à l'analyte sanguin :
+  une mesure urinaire de même unité est rare, et le praticien confirme
+  l'analyte ;
+- **signée telle quelle** : les synonymes s'ajouteront d'après les libellés
+  réellement lus restés `inconnu`, constatés par identifiant en conteneur —
+  pas devinés. Chaque ajout est une re-signature ;
+- hors table, `inconnu` permanent : Glutathion, Zonuline (matrice tue), les
+  quatre panels sans unité.
+
+**Verrou.** Toute retouche de la table change le SHA calculé et referme la
+proposition (`inconnu` partout) jusqu'à une nouvelle décision. Le littéral est
+enrôlé le même jour dans `shaPerimetreLitteral.guard.test.ts`.
+
 ### D-258 — Compte rendu biologique déposé : purgé dès que l'extraction courante est décidée, au plus tard 30 jours après le dépôt
 
 - Date : 2026-10-02
