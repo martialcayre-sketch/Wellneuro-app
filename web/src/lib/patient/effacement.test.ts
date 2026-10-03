@@ -23,7 +23,7 @@ const { prisma, appels } = vi.hoisted(() => {
     dossierEfface: { create: vi.fn(async () => ({})) },
   };
   for (const nom of [
-    'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'ficheAssietteRemise', 'protocolDiffusionApproval',
+    'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'ficheAssietteRemise', 'lettreAdressageRemise', 'protocolDiffusionApproval',
     'arbitrageBiologique', 'panelBiologieDocumente',
     'protocolDraft', 'assessmentEpisode', 'decisionPrioritySelection',
     'ecartementProposition',
@@ -156,6 +156,17 @@ describe('effacerDossier', () => {
     await effacerDossier('PAT_SEED_03');
     expect(appels).toContain('ficheAssietteRemise');
     expect(appels.indexOf('ficheAssietteRemise')).toBeLessThan(appels.indexOf('protocolDiffusionApproval'));
+  });
+
+  // Lettres d'adressage remises (D-262, LOT-01) : FK RESTRICT vers patients,
+  // vers l'approbation de diffusion ET vers la lettre consignée. Déplacée
+  // après l'une ou l'autre, elle rendrait l'effacement impossible pour tout
+  // dossier qui a reçu sa lettre.
+  it('supprime les lettres d’adressage remises avant les approbations et les correspondances', async () => {
+    await effacerDossier('PAT_SEED_03');
+    expect(appels).toContain('lettreAdressageRemise');
+    expect(appels.indexOf('lettreAdressageRemise')).toBeLessThan(appels.indexOf('protocolDiffusionApproval'));
+    expect(appels.indexOf('lettreAdressageRemise')).toBeLessThan(appels.indexOf('correspondanceMedecin'));
   });
 
   // Staging d'import biologique (D-256, LOT-02) : la ligne validée retient son

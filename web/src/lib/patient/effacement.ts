@@ -74,6 +74,12 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.fichesAssietteRemises = (
       await tx.ficheAssietteRemise.deleteMany({ where: par })
     ).count;
+    // Lettres d'adressage remises au patient ([[D-262]]) : FK RESTRICT vers
+    // patients, l'approbation ET la lettre consignée — supprimées avant les
+    // approbations et les correspondances qu'elles désignent.
+    supprimees.lettresAdressageRemises = (
+      await tx.lettreAdressageRemise.deleteMany({ where: par })
+    ).count;
     supprimees.protocolDiffusionApprovals = (
       await tx.protocolDiffusionApproval.deleteMany({ where: par })
     ).count;
