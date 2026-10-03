@@ -2,7 +2,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// GARDE : QUI ÉCRIT LES ADRESSAGES SUR SIGNAL D'ALERTE ([[D-257]], LOT-02).
+// GARDE : QUI ÉCRIT LES ADRESSAGES SUR SIGNAL D'ALERTE ([[D-257]], LOT-02,
+// écrivains posés au LOT-03).
 //
 // Une ligne `adressage` LÈVE une inhibition de sécurité : elle fait sortir un
 // dossier du blocage que [[D-099]] pose. La base refuse déjà UPDATE et
@@ -12,23 +13,37 @@ import { describe, expect, it } from 'vitest';
 // l'effacement nommé du dossier doit pouvoir supprimer. Ce banc garde ce que
 // la base ne peut pas dire — QUEL CODE écrit :
 //   — un adressage ne se supprime QUE dans `patient/effacement.ts` (supprimer
-//     une révocation rouvrirait une levée sans trace) ;
+//     une révocation rouvrirait une levée sans trace) — et dans le nettoyage
+//     des E2E, qui vide les dossiers de fixture avant leurs consultations ;
 //   — aucun code ne le réécrit, ni par Prisma, ni en SQL brut ;
-//   — AUCUN code ne le crée encore : la migration part SEULE ([[D-087]]), et
-//     l'écrivain (LOT-03) n'arrive qu'après l'application constatée par
-//     conteneur. Le LOT-03 remplacera cette assertion par son unique écrivain.
+//   — DEUX écrivains, et deux seulement : la route de la lettre d'adressage
+//     (l'acte `adressage`, dans la transaction de sa lettre) et la route de
+//     révocation (l'acte `revocation`). Un troisième lèverait ou rebloquerait
+//     un dossier par un chemin que personne n'a relu.
+//
+// LA PORTÉE COUVRE `src/`, `scripts/`, `prisma/`, `e2e/` ET les scripts de la
+// racine du dépôt, en TypeScript, JavaScript, SQL et shell (constats de revue
+// des LOT-02 et LOT-03) : un script, un seed ou un `psql -c` qui écrirait une
+// couverture contournerait le banc aussi sûrement qu'une route. Restent dehors
+// les migrations (le DDL) et `prisma/checks/` (les contrats, joués dans une
+// transaction annulée).
 
-const RACINE = path.join(process.cwd(), 'src');
-const EFFACEMENT = path.join('lib', 'patient', 'effacement.ts');
+const RACINE = process.cwd();
+const RACINES = ['src', 'scripts', 'prisma', 'e2e', path.join('..', 'scripts')]
+  .map(dossier => path.join(RACINE, dossier));
+const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');
+const NETTOYAGE_E2E = path.join('e2e', 'helpers', 'db.ts');
+const ROUTE_LETTRE = path.join('src', 'app', 'api', 'praticien', 'adressage', 'courrier', 'route.ts');
+const ROUTE_REVOCATION = path.join('src', 'app', 'api', 'praticien', 'adressage', 'revocation', 'route.ts');
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
   for (const entree of readdirSync(depart)) {
     const complet = path.join(depart, entree);
     if (statSync(complet).isDirectory()) {
-      if (entree === 'node_modules' || entree === '.next' || entree === 'generated') continue;
+      if (['node_modules', '.next', 'generated', 'migrations', 'checks'].includes(entree)) continue;
       trouves.push(...fichiersSources(complet));
-    } else if (/\.tsx?$/.test(entree) && !/\.test\.tsx?$/.test(entree)) {
+    } else if (/\.(?:[cm]?[jt]sx?|sql|sh)$/.test(entree) && !/\.test\.[cm]?[jt]sx?$/.test(entree)) {
       trouves.push(complet);
     }
   }
@@ -36,7 +51,7 @@ function fichiersSources(depart: string): string[] {
 }
 
 function occurrences(motif: RegExp): { fichier: string; n: number }[] {
-  return fichiersSources(RACINE)
+  return RACINES.flatMap(fichiersSources)
     .map(fichier => ({
       fichier: path.relative(RACINE, fichier),
       n: [...readFileSync(fichier, 'utf8').matchAll(new RegExp(motif.source, `${motif.flags}g`))].length,
@@ -57,9 +72,12 @@ const SQL_BRUT = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s
  */
 const IMBRIQUEE = /\b(?:adressagesSignalAlerte|revocations)\s*:\s*\{\s*(?:create|createMany|connectOrCreate|upsert|update|updateMany|delete|deleteMany|set)\b/;
 
-describe('Adressages sur signal d’alerte — qui écrit (D-257, LOT-02)', () => {
-  it('seul l’effacement nommé du dossier supprime un adressage — et il le fait (le banc n’est pas vide)', () => {
-    expect(occurrences(SUPPRIMER)).toEqual([{ fichier: EFFACEMENT, n: 1 }]);
+describe('Adressages sur signal d’alerte — qui écrit (D-257, LOT-02 et LOT-03)', () => {
+  it('seuls l’effacement nommé et le nettoyage des E2E suppriment un adressage — et ils le font', () => {
+    expect(occurrences(SUPPRIMER)).toEqual([
+      { fichier: EFFACEMENT, n: 1 },
+      { fichier: NETTOYAGE_E2E, n: 2 },
+    ]);
   });
 
   it('aucun code ne réécrit un adressage, par Prisma ou en SQL brut', () => {
@@ -67,9 +85,22 @@ describe('Adressages sur signal d’alerte — qui écrit (D-257, LOT-02)', () =
     expect(occurrences(SQL_BRUT)).toEqual([]);
   });
 
-  it('aucun code ne crée encore d’adressage, ni directement ni par écriture imbriquée (migration seule)', () => {
-    expect(occurrences(CREER)).toEqual([]);
+  it('deux écrivains, et deux seulement — la lettre et la révocation —, sans écriture imbriquée', () => {
+    expect(occurrences(CREER)).toEqual([
+      { fichier: ROUTE_LETTRE, n: 1 },
+      { fichier: ROUTE_REVOCATION, n: 1 },
+    ]);
     expect(occurrences(IMBRIQUEE)).toEqual([]);
+  });
+
+  it('la lettre n’écrit que l’acte `adressage`, la révocation que l’acte `revocation`', () => {
+    const lettre = readFileSync(path.join(RACINE, ROUTE_LETTRE), 'utf8');
+    const revocation = readFileSync(path.join(RACINE, ROUTE_REVOCATION), 'utf8');
+    expect(lettre).toContain("acte: 'adressage'");
+    expect(lettre).not.toContain("acte: 'revocation'");
+    expect(revocation).toContain("acte: 'revocation'");
+    // La révocation ne LIT l'acte `adressage` que dans sa recherche de cible ;
+    // ce qu'elle écrit est éprouvé par son propre banc de route.
   });
 
   it('les motifs reconnaissent bien les formes qu’ils doivent refuser', () => {

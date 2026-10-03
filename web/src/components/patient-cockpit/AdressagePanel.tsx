@@ -66,12 +66,15 @@ export function AdressagePanel({
         imprimer ou à transcrire.
       </p>
       {/*
-        CE QUE LA LETTRE NE FAIT PAS, dit à l'écran et pas seulement au registre :
-        elle TRACE l'adressage, elle ne le vaut pas. Consigner ne lève aucune
-        abstention, et le praticien doit le savoir avant de cliquer.
+        CE QUE LA LETTRE FAIT, ET CE QU'ELLE FERA, dit à l'écran avant le clic
+        ([[D-257]], arbitrage du 2026-10-03). Depuis le LOT-03, consigner écrit
+        une couverture des signaux nommés ; elle ne lève rien tant que la levée
+        n'est pas ouverte, et la lèvera ensuite. Le praticien signe donc
+        aujourd'hui ce qui vaudra adressage demain : il doit le lire maintenant.
       */}
       <p className="mt-1 text-xs text-muted-foreground">
-        La consigner <strong>trace</strong> l’adressage ; elle ne lève pas l’abstention clinique.
+        La consigner <strong>trace</strong> l’adressage. Elle ne lève pas encore l’abstention
+        clinique ; à l’ouverture de la levée, elle vaudra adressage pour les signaux qu’elle nomme.
       </p>
 
       <label className="mt-2 block text-xs text-muted-foreground" htmlFor="adressage-medecin">

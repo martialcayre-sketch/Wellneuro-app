@@ -38,9 +38,12 @@ describe('ce que le panneau doit dire à voix haute', () => {
     // Le `<strong>` coupe le nœud de texte : c'est le PARAGRAPHE qui porte la
     // phrase entière, et c'est lui qu'il faut lire — interroger le fragment
     // rendrait un banc vert sur une moitié d'affirmation.
-    const phrase = screen.getByText(/ne lève pas l’abstention/i).closest('p')?.textContent ?? '';
+    const phrase = screen.getByText(/ne lève pas encore l’abstention/i).closest('p')?.textContent ?? '';
     expect(phrase).toMatch(/trace/i);
-    expect(phrase).toMatch(/ne lève pas l’abstention/i);
+    expect(phrase).toMatch(/ne lève pas encore l’abstention/i);
+    // D-257, LOT-03 : la lettre écrit déjà la couverture qui lèvera — le
+    // praticien le lit AVANT de cliquer, pas après l'ouverture de la levée.
+    expect(phrase).toMatch(/vaudra adressage pour les signaux qu’elle nomme/i);
   });
 
   it('dit que les signaux sont DÉCLARÉS par le patient', () => {

@@ -121,7 +121,7 @@ alerte » désigne la suite normale du parcours — sélection de priorité, pro
 | LOT-00 | Ce cadrage ; mesure de production (agrégats : dossiers porteurs, lettres déjà consignées) | — |
 | LOT-01 | **Livré le 2026-10-02 : [[D-257]]** (amende [[D-099]] décision 3 et [[D-218]] §12) ; texte patient de l'action d'orientation signé le même jour, recopié au §9 de la décision | arbitrages rendus (§2, §5) |
 | LOT-02 | Migration seule : table des adressages (couverture + révocation) | `release-db` approuvée, constat par conteneur |
-| LOT-03 | Écriture de la couverture à la consignation de la lettre ; geste de révocation | LOT-02 constaté |
+| LOT-03 | Écriture de la couverture à la consignation de la lettre ; route de révocation (le bouton de révocation se pose au LOT-04, avec l'affichage de la couverture) | LOT-02 constaté le 2026-10-03 (run `release-db` n° 131) |
 | LOT-04 | Chaîne C1 : partition ouverts/adressés, carte, empreintes, cockpit | LOT-03 ; derrière un drapeau neuf, éteint à la livraison |
 | LOT-05 | Action d'orientation en tête du protocole, hors borne des trois, non retirable, texte signé | LOT-04 |
 
@@ -154,6 +154,17 @@ revient aux écrivains et aux lecteurs :
   **courante** (banc d'égalité) ; la lettre est relue à la lecture (sortante,
   ancrage `safety-signals-`, même dossier) — `correspondances_medecin` n'a pas de
   gel, le trigger ne la vérifie qu'à l'insertion.
+- **LOT-04 (lecteur), revue du LOT-03.** Une révocation vise UNE lettre : deux
+  lettres consignées sur la même porteuse donnent deux couvertures, et en révoquer
+  une ne rebloque pas si l'autre couvre le même constat. L'écran du LOT-04 affiche
+  donc TOUTES les couvertures actives d'un constat, et le bouton de révocation
+  s'y pose par couverture. Les transactions interactives gardent les délais par
+  défaut de Prisma (attente 2 s, durée 5 s) : à surveiller sous `DB_POOL_MAX=1`.
+- **Texte de l'écran, arbitré le 2026-10-03.** Depuis le LOT-03, la mention avant
+  consignation dit que la lettre « ne lève pas encore l'abstention » et qu'« à
+  l'ouverture de la levée, elle vaudra adressage pour les signaux qu'elle nomme ».
+  Les couvertures écrites sous cette mention sont donc signées en connaissance de
+  cause ; le LOT-04 la remplacera par l'état réel.
 - **Choix assumé.** Une lettre dont la couverture a été révoquée ne couvre plus
   jamais : le praticien re-consigne une lettre neuve (index unique sans exception
   pour les lettres révoquées).

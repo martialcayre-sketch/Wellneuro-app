@@ -3,11 +3,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   getServerSession,
   prisma,
+  tx,
   verifierAppartenancePatient,
   genererCourrierAdressage,
   tableSignauxSecuriteSignee,
 } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
+  // LA TRANSACTION A SON PROPRE CLIENT, distinct du client racine (constat de
+  // revue P1-2 du LOT-03) : si la route lisait la porteuse ou écrivait la
+  // lettre par `prisma.…` au lieu de `tx.…`, la lettre serait commitée hors
+  // transaction et sa couverture refusée par la base. Les méthodes du client
+  // racine restent présentes pour PROUVER qu'elles ne sont pas appelées.
+  tx: {
+    consultation: { findFirst: vi.fn() },
+    correspondanceMedecin: { create: vi.fn() },
+    adressageSignalAlerte: { create: vi.fn() },
+  },
   prisma: {
     patient: { findUnique: vi.fn() },
     consultation: { findFirst: vi.fn() },
@@ -17,6 +28,8 @@ const {
     // premier « oubli » qu'un relecteur croira corriger.
     trustChoiceEvent: { findMany: vi.fn() },
     correspondanceMedecin: { create: vi.fn() },
+    adressageSignalAlerte: { create: vi.fn() },
+    $transaction: vi.fn(),
   },
   verifierAppartenancePatient: vi.fn(),
   genererCourrierAdressage: vi.fn(),
@@ -37,6 +50,7 @@ vi.mock('@/lib/clinical/safetySignalsV1', async (importOriginal) => ({
 }));
 
 import { GET, POST } from './route';
+import { construireSafetyFindings, signauxDeclares } from '@/lib/clinical-engine/safetyFindings';
 
 const URL_BASE = 'http://localhost/api/praticien/adressage/courrier';
 const PRATICIEN = 'praticien@wellneuro.fr';
@@ -77,10 +91,13 @@ beforeEach(() => {
     prenom: 'Sophie',
     nom: 'Nicola',
   });
-  prisma.consultation.findFirst.mockResolvedValue({
+  tx.consultation.findFirst.mockResolvedValue({
+    id: 'cons_porteuse',
     anamnese: { signaux_alerte: ['Douleur thoracique / oppression'] },
   });
-  prisma.correspondanceMedecin.create.mockResolvedValue({});
+  tx.correspondanceMedecin.create.mockResolvedValue({ id: 'lettre_1' });
+  tx.adressageSignalAlerte.create.mockResolvedValue({ id: 'adr_1' });
+  prisma.$transaction.mockImplementation(async (fn: (client: typeof tx) => unknown) => fn(tx));
   genererCourrierAdressage.mockReturnValue(lettreGeneree());
 });
 
@@ -100,8 +117,8 @@ describe('drapeau — fail-closed, et avant toute lecture', () => {
     // lecture de dossier, ni ligne au journal d'accès.
     expect(verifierAppartenancePatient).not.toHaveBeenCalled();
     expect(prisma.patient.findUnique).not.toHaveBeenCalled();
-    expect(prisma.consultation.findFirst).not.toHaveBeenCalled();
-    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(tx.consultation.findFirst).not.toHaveBeenCalled();
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 
   it('une valeur approchante n’ouvre rien', async () => {
@@ -140,7 +157,7 @@ describe('cotation non signée — aucune lettre', () => {
     expect(res.status).toBe(409);
     expect(payload.reason).toBe('table_non_signee');
     expect(genererCourrierAdressage).not.toHaveBeenCalled();
-    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 });
 
@@ -196,7 +213,7 @@ describe('gardes', () => {
     });
     const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
     expect(res.status).toBe(409);
-    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 });
 
@@ -208,7 +225,7 @@ describe('texte et ancrage', () => {
       medecinLibelle: 'Dr Nicola',
       texte: 'Adressez ce patient en urgence.',
     }));
-    const consigne = prisma.correspondanceMedecin.create.mock.calls[0][0].data;
+    const consigne = tx.correspondanceMedecin.create.mock.calls[0][0].data;
     expect(consigne.texte).toBe('Docteur, …');
   });
 
@@ -220,7 +237,7 @@ describe('texte et ancrage', () => {
   });
 
   it('un dossier sans consultation porteuse ne fabrique aucun signal', async () => {
-    prisma.consultation.findFirst.mockResolvedValue(null);
+    tx.consultation.findFirst.mockResolvedValue(null);
     await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
     expect(genererCourrierAdressage).toHaveBeenCalledWith(
       expect.objectContaining({ signaux: [] }),
@@ -229,7 +246,7 @@ describe('texte et ancrage', () => {
 
   it('consigne le SHA et la version lus dans la provenance du bloc rendu', async () => {
     await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
-    const consigne = prisma.correspondanceMedecin.create.mock.calls[0][0].data;
+    const consigne = tx.correspondanceMedecin.create.mock.calls[0][0].data;
     expect(consigne.ancrageSha256).toBe(ANCRE);
     expect(consigne.ancrageVersion).toBe('safety-signals-nnpp2-v1');
     expect(consigne.sens).toBe('sortant');
@@ -243,7 +260,7 @@ describe('texte et ancrage', () => {
       version: 'safety-signals-nnpp2-v2',
     }));
     await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
-    const consigne = prisma.correspondanceMedecin.create.mock.calls[0][0].data;
+    const consigne = tx.correspondanceMedecin.create.mock.calls[0][0].data;
     expect(consigne.ancrageSha256).toBe('b'.repeat(64));
     expect(consigne.ancrageVersion).toBe('safety-signals-nnpp2-v2');
   });
@@ -252,7 +269,7 @@ describe('texte et ancrage', () => {
     genererCourrierAdressage.mockReturnValue(lettreGeneree(null));
     const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
     expect(res.status).toBe(500);
-    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 
   it('sert les deux formes du rendu, et ne consigne que le texte', async () => {
@@ -261,7 +278,7 @@ describe('texte et ancrage', () => {
     expect(res.status).toBe(201);
     expect(payload.html).toBe('<p>lettre</p>');
     expect(payload.texte).toBe('Docteur, …');
-    const consigne = JSON.stringify(prisma.correspondanceMedecin.create.mock.calls[0][0]);
+    const consigne = JSON.stringify(tx.correspondanceMedecin.create.mock.calls[0][0]);
     expect(consigne).not.toContain('<p>lettre</p>');
     // Ni le nom du patient : le dossier le porte déjà.
     expect(consigne).not.toContain('Sophie');
@@ -287,14 +304,14 @@ describe('refus', () => {
     const payload = await res.json();
     expect(res.status).toBe(409);
     expect(payload.error).toMatch(/n’appelle un adressage/);
-    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 
   it('terme prescriptif au rendu : refus, et RIEN n’est consigné', async () => {
     genererCourrierAdressage.mockReturnValue({ ok: false, raison: 'terme_prescriptif' });
     const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
     expect(res.status).toBe(409);
-    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 
   it('nom de médecin absent : refus lisible, rien n’est consigné', async () => {
@@ -302,13 +319,13 @@ describe('refus', () => {
     const payload = await res.json();
     expect(res.status).toBe(400);
     expect(payload.error).toMatch(/médecin/i);
-    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 
   it('une adresse e-mail à la place du nom est refusée', async () => {
     const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'dr@cabinet.fr' }));
     expect(res.status).toBe(400);
-    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 
   it('une consignation qui lève ne journalise JAMAIS le texte de la lettre', async () => {
@@ -316,7 +333,7 @@ describe('refus', () => {
     // donc les signaux déclarés du patient. Seul le NOM de l'erreur est écrit.
     const erreur = new Error('Argument texte: Docteur, … signal déclaré');
     erreur.name = 'PrismaClientValidationError';
-    prisma.correspondanceMedecin.create.mockRejectedValue(erreur);
+    tx.correspondanceMedecin.create.mockRejectedValue(erreur);
     const espion = vi.spyOn(console, 'error').mockImplementation(() => {});
     const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
     expect(res.status).toBe(500);
@@ -338,7 +355,7 @@ describe('l’EXCEPTION d’adressage — D-219 §3 amendé (2026-09-17)', () =>
     ]);
     const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
     expect(res.status).toBe(201);
-    expect(prisma.correspondanceMedecin.create).toHaveBeenCalled();
+    expect(tx.correspondanceMedecin.create).toHaveBeenCalled();
   });
 
   it('★ la route ne LIT même pas le consentement — l’exception est structurelle', async () => {
@@ -346,5 +363,111 @@ describe('l’EXCEPTION d’adressage — D-219 §3 amendé (2026-09-17)', () =>
     // Celle-ci tient parce que la route n'interroge jamais la table des choix.
     await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
     expect(prisma.trustChoiceEvent.findMany).not.toHaveBeenCalled();
+  });
+});
+
+// ── LA COUVERTURE ÉCRITE AVEC LA LETTRE ([[D-257]], LOT-03) ─────────────────
+// La lettre consignée vaut adressage pour les constats qu'elle porte. Ce que
+// ces bancs tiennent, et que la base ne peut pas tenir seule : la couverture
+// désigne LA porteuse lue, nomme EXACTEMENT les constats que le moteur produit
+// sur les mêmes signaux, et ne s'écrit jamais sans sa lettre.
+describe('couverture — D-257, LOT-03', () => {
+  const constatsAttendus = (signaux: string[]) =>
+    construireSafetyFindings(signaux).findings.map(finding => finding.findingId);
+
+  it('écrit la lettre ET sa couverture dans la même transaction', async () => {
+    const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(res.status).toBe(201);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.adressageSignalAlerte.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT1',
+        acte: 'adressage',
+        idCorrespondance: 'lettre_1',
+        idConsultation: 'cons_porteuse',
+        findingIds: constatsAttendus(['Douleur thoracique / oppression']),
+        praticienEmail: PRATICIEN,
+      },
+      select: { id: true },
+    });
+    // La lettre d'abord, sa couverture ensuite : la base exige que la lettre
+    // existe dans la transaction au moment où la couverture la nomme.
+    const ordreLettre = tx.correspondanceMedecin.create.mock.invocationCallOrder[0];
+    const ordreCouverture = tx.adressageSignalAlerte.create.mock.invocationCallOrder[0];
+    expect(ordreLettre).toBeLessThan(ordreCouverture);
+  });
+
+  it('lit la porteuse avec son id ET son anamnèse, dans la transaction', async () => {
+    await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(tx.consultation.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ select: { id: true, anamnese: true } }),
+    );
+  });
+
+  it('couvre les constats du moteur : rang adressage et libellé hors cotation, jamais la vigilance', async () => {
+    const signaux = [
+      'Douleur thoracique / oppression',
+      'Constipation récente inexpliquée',
+      'Libellé inconnu de la cotation',
+    ];
+    tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: { signaux_alerte: signaux } });
+    await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    const { findingIds } = tx.adressageSignalAlerte.create.mock.calls[0][0].data;
+    // Les signaux sont triés par `signauxDeclares` : la comparaison se fait sur
+    // la sortie du moteur, pas sur l'ordre de saisie.
+    expect(findingIds).toEqual(constatsAttendus(signauxDeclares({ signaux_alerte: signaux })));
+    expect(findingIds).toHaveLength(2);
+    for (const id of findingIds) expect(id).toMatch(/^safety:anamnese:[0-9a-f]{16}$/);
+  });
+
+  it('une lettre qui ne couvrirait aucun constat n’est pas consignée', async () => {
+    // Seul un signal de vigilance : le moteur ne pose aucun constat. Même si le
+    // générateur rendait une lettre, la consigner affirmerait un adressage que
+    // rien ne justifie.
+    tx.consultation.findFirst.mockResolvedValue({
+      id: 'cons_porteuse',
+      anamnese: { signaux_alerte: ['Constipation récente inexpliquée'] },
+    });
+    const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('aucun_signal_adressage');
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(tx.adressageSignalAlerte.create).not.toHaveBeenCalled();
+  });
+
+  it('un refus du générateur n’écrit NI lettre NI couverture', async () => {
+    genererCourrierAdressage.mockReturnValue({ ok: false, raison: 'terme_prescriptif' });
+    const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(res.status).toBe(409);
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(tx.adressageSignalAlerte.create).not.toHaveBeenCalled();
+  });
+
+  it('une couverture refusée par la base fait échouer la consignation, sans fuite', async () => {
+    // La transaction annule la lettre avec sa couverture : la route rend 500
+    // et ne journalise que le NOM de l'erreur.
+    const espion = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const erreur = new Error('adressage refusé : la consultation x n’est pas la consultation porteuse de ce dossier.');
+    erreur.name = 'PrismaClientKnownRequestError';
+    tx.adressageSignalAlerte.create.mockRejectedValue(erreur);
+    const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(res.status).toBe(500);
+    const journalise = espion.mock.calls.flat().join(' ');
+    expect(journalise).toContain('PrismaClientKnownRequestError');
+    expect(journalise).not.toContain('porteuse');
+    espion.mockRestore();
+  });
+});
+
+describe('transaction — ce que la route ne fait JAMAIS hors de `tx` (P1-2)', () => {
+  it('ni la porteuse, ni la lettre, ni la couverture ne passent par le client racine', async () => {
+    const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(res.status).toBe(201);
+    expect(tx.consultation.findFirst).toHaveBeenCalledTimes(1);
+    expect(tx.correspondanceMedecin.create).toHaveBeenCalledTimes(1);
+    expect(tx.adressageSignalAlerte.create).toHaveBeenCalledTimes(1);
+    expect(prisma.consultation.findFirst).not.toHaveBeenCalled();
+    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(prisma.adressageSignalAlerte.create).not.toHaveBeenCalled();
   });
 });
