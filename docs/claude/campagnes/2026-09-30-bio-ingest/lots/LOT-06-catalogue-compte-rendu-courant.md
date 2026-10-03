@@ -45,11 +45,11 @@ LOT-02
 
 ## Étapes
 
-- [ ] Cadrage en mode Plan : liste des analytes, unité retenue par analyte (le laboratoire en imprime
-  souvent deux), extension du vocabulaire d'unités (« g/dL », « U/L », « mL/min/1,73 m² »), notations
-  équivalentes (« G/L » et « 10^9/L », « T/L » et « 10^12/L », « U/L » et « UI/L »), sort des quatre
-  panels sans unité.
-- [ ] PR migration seule, `release-db`, constat.
+- [x] Cadrage en mode Plan ([[D-261]], 2026-10-03) : 36 analytes, une unité SI chacun ; seule
+  « mL/min/1,73 m² » entre au vocabulaire ; quatre notations équivalentes (G/L, T/L, U/L, fl) ; les
+  quatre composites restent pour les panels.
+- [ ] PR migration seule (`20261003150000_catalogue_biologie_compte_rendu_courant`), `release-db`,
+  constat.
 - [ ] PR resolver (libellés lus, re-signature).
 
 ## Tests

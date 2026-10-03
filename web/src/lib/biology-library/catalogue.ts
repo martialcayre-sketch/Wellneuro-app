@@ -6,7 +6,8 @@
 //
 // AUCUNE donnée patient n'entre ici : le catalogue est global au cabinet
 // (étage 1 documentaire, verrou HDS intact). Le volume est celui du catalogue
-// niveau 1 (47 analytes, 15 panels, D-068 ; 49 analytes depuis D-245 §5) :
+// niveau 1 (47 analytes, 15 panels, D-068 ; 49 analytes depuis D-245 §5, 85
+// depuis D-261) :
 // tout se sert en une réponse, sans pagination — rien de commun avec les
 // 140 148 fiches du rayon C4.
 //

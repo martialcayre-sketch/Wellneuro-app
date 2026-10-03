@@ -4,6 +4,51 @@
 
 ## Décisions actives
 
+### D-261 — Le catalogue biologie s'étend aux analyses d'un compte rendu courant : 36 analytes, une unité SI chacun, quatre notations équivalentes
+
+- Date : 2026-10-03
+- Statut : accepté — arbitrages du responsable du 2026-10-03 (cadrage du
+  LOT-06 de BIO-INGEST, après la première extraction de production de
+  [[D-260]]).
+- Domaine : catalogue biologie ([[D-068]]), staging d'import ([[D-256]]).
+  Aucune règle clinique, aucun seuil, aucune plage ([[D-059]]) ; aucune
+  conversion ([[D-157]]) ; le moteur clinique ne lit toujours pas les
+  résultats ([[D-122]]).
+
+**§1 — 36 analytes ajoutés** (migration
+`20261003150000_catalogue_biologie_compte_rendu_courant`, données seules) :
+détail de l'hémogramme (hématies, hématocrite, VGM, TCMH, CCMH, IDR,
+leucocytes, plaquettes, VPM) ; formule leucocytaire en valeur absolue ET en
+pourcentage (deux mesures imprimées, pas une conversion : codes `_PCT`) ;
+sodium, potassium, chlore ; créatinine et DFG CKD-EPI ; ASAT, ALAT, GGT ;
+cholestérol total, HDL, LDL calculé, non-HDL, triglycérides ; transferrine,
+capacité totale de fixation, vitamine B12 (forme totale, distincte de
+`BIO_B12_HOLOTC`), CRP (distincte de `BIO_CRP_US`). Le catalogue passe de 49
+à 85 analytes `saisie_praticien`. Phosphatases alcalines et bilirubine restent
+hors : aucun libellé n'en a été lu.
+
+**§2 — Une unité par analyte, en SI.** Le laboratoire en imprime souvent
+deux ; la ligne dans l'autre unité est écartée par le praticien, jamais
+convertie. Lipides en mmol/L, créatinine et capacité de fixation en µmol/L,
+B12 en pmol/L, CCMH en g/L ; transferrine en g/L (comme l'albumine). Revers
+assumé : l'hémoglobine et la CCMH imprimées en g/dL restent refusées.
+
+**§3 — Une unité au vocabulaire** : « mL/min/1,73 m² » (DFG), sur les quatre
+CHECK ensemble (« défini une fois, appliqué quatre fois »).
+
+**§4 — Les quatre composites sans unité restent** (`BIO_NFS`,
+`BIO_IONOGRAMME`, `BIO_BILAN_HEPATIQUE`, `BIO_PROFIL_LIPIDIQUE`) : les panels
+les citent ; le resolver ne les vise toujours pas.
+
+**§5 — Quatre notations équivalentes** (facteur 1, la valeur lue reste celle
+du compte rendu), qui s'ajoutent à la paire de D-260 §2 : « G/L » ≡ « 10^9/L »,
+« T/L » ≡ « 10^12/L », « U/L » ≡ « UI/L », « fl » ≡ « fL » (préfixe femto dans
+la mise en forme typographique). Livrées avec le resolver, en PR distincte.
+
+**§6 — Le resolver sera re-signé** dans la PR qui suit l'application de la
+migration, avec les libellés lus sur le compte rendu. Les rejets voulus de
+D-260 tiennent : « Fer » seul ne se rattache pas (matrice non dite).
+
 ### D-260 — Premier compte rendu réel : trois libellés ajoutés au resolver re-signé, « µg/L » et « ng/mL » tenus pour une même notation, « Valider » pré-positionné
 
 - Date : 2026-10-03
