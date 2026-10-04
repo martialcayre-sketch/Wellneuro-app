@@ -22,6 +22,7 @@ import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
 import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
 import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
 import type { AnnonceFiches, ApercuFiches } from '@/lib/fiches-assiette/apercuRemise';
+import type { ApercuLettreAdressage } from '@/lib/correspondance/lettreAdressageRemise';
 import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
 import { J21DecisionPanel } from './J21DecisionPanel';
 import { MeteoAdhesionPanel } from './MeteoAdhesionPanel';
@@ -123,6 +124,8 @@ type DiffusionApiResponse = {
   fiches?: ApercuFiches | null;
   /** Une fiche remise serait annoncée par l'e-mail neutre ([[D-251]] §9, lot 11). */
   annonceParEmail?: boolean;
+  /** Le courrier pour le médecin que le clic remettrait ([[D-262]], LOT-03b). */
+  lettre?: ApercuLettreAdressage | null;
 };
 
 type RuntimeError = 'session' | 'patient' | 'technical';
@@ -454,6 +457,7 @@ export function ClinicalRuntimeSection({
    */
   const [apercuPatient, setApercuPatient] = useState<ApercuPatientServi | null>(null);
   const [apercuFiches, setApercuFiches] = useState<ApercuFiches | null>(null);
+  const [apercuLettre, setApercuLettre] = useState<ApercuLettreAdressage | null>(null);
   const [annonceParEmail, setAnnonceParEmail] = useState(false);
   /** Le sort de l'e-mail du dernier clic ([[D-251]] §9) — dit, jamais tu. */
   const [annonceFiches, setAnnonceFiches] = useState<AnnonceFiches | null>(null);
@@ -615,6 +619,7 @@ export function ClinicalRuntimeSection({
       // « servi » non plus : non lu, il redevient `null`, et le badge se tait.
       if (!response.ok || !payload.ok) {
         setApercuFiches(null);
+        setApercuLettre(null);
         setAnnonceParEmail(false);
         setServieAuPatient(null);
         setDiffusionDuCycle({ pour: decisionCardId, diffuse: null });
@@ -629,12 +634,14 @@ export function ClinicalRuntimeSection({
       setServieAuPatient(payload.servieAuPatient ?? null);
       setApercuPatient(payload.apercu ?? null);
       setApercuFiches(payload.fiches ?? null);
+      setApercuLettre(payload.lettre ?? null);
     } catch {
       // L'état de diffusion est indicatif : un échec de lecture ne bloque pas.
       // L'aperçu des fiches et le constat « servi », eux, ne survivent pas à
       // une lecture manquée.
       if (seq !== seqDiffusion.current) return;
       setApercuFiches(null);
+      setApercuLettre(null);
       setAnnonceParEmail(false);
       setServieAuPatient(null);
       setDiffusionDuCycle({ pour: decisionCardId, diffuse: null });
@@ -2469,6 +2476,7 @@ export function ClinicalRuntimeSection({
             servieAuPatient={servieAuPatient}
             apercu={apercuPatient}
             fiches={apercuFiches}
+            lettre={apercuLettre}
             annonceParEmail={annonceParEmail}
             annonce={annonceFiches}
             state={diffusionState}

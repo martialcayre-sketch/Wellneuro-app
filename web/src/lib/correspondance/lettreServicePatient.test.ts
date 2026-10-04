@@ -6,13 +6,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma } = vi.hoisted(() => ({
   prisma: {
-    lettreAdressageRemise: { findFirst: vi.fn() },
+    lettreAdressageRemise: { findFirst: vi.fn(), findUnique: vi.fn() },
     adressageSignalAlerte: { findFirst: vi.fn() },
+    patient: { findUnique: vi.fn() },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
-import { aUneLettreRemise, lettreALire, lettreRemiseAuPatient } from './lettreServicePatient';
+import { aUneLettreRemise, lettreALire, lettreImprimable, lettreRemiseAuPatient } from './lettreServicePatient';
 
 const TEXTE = 'Docteur, je vous adresse Michel Dogné.';
 const REMISE = {
@@ -71,5 +72,28 @@ describe('Courrier servi au patient (D-262, LOT-03a)', () => {
     expect(prisma.lettreAdressageRemise.findFirst).toHaveBeenCalledWith({ where: { idPatient: 'PAT_1' }, select: { id: true } });
     prisma.lettreAdressageRemise.findFirst.mockResolvedValue(null);
     expect(await aUneLettreRemise('PAT_1')).toBe(false);
+  });
+
+  it('LOT-03b — la version à imprimer : le texte figé, par le rendu médecin, avec le nom du patient', async () => {
+    prisma.lettreAdressageRemise.findUnique.mockResolvedValue({
+      correspondance: { consigneLe: new Date('2026-10-03T08:00:00.000Z'), ancrageSha256: 'a'.repeat(64), ancrageVersion: 'safety-signals-nnpp2-v1' },
+    });
+    prisma.patient.findUnique.mockResolvedValue({ prenom: 'Michel', nom: 'Dogné' });
+    const html = await lettreImprimable('PAT_1');
+    expect(html).toContain('Michel Dogné');
+    expect(html).toContain('je vous adresse Michel Dogné.');
+    expect(prisma.lettreAdressageRemise.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'lar_1' } }));
+  });
+
+  it('LOT-03b — retirée : rien à imprimer, rien d’autre n’est lu', async () => {
+    prisma.adressageSignalAlerte.findFirst.mockResolvedValue(null);
+    expect(await lettreImprimable('PAT_1')).toBeNull();
+    expect(prisma.lettreAdressageRemise.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('LOT-03b — indisponible : rien à imprimer', async () => {
+    prisma.lettreAdressageRemise.findFirst.mockResolvedValue({ ...REMISE, texteSha256: '0'.repeat(64) });
+    expect(await lettreImprimable('PAT_1')).toBeNull();
+    expect(prisma.lettreAdressageRemise.findUnique).not.toHaveBeenCalled();
   });
 });

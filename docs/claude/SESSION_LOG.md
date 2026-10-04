@@ -8949,3 +8949,14 @@ Promotions : décision → `D-266` ; règle → `pr-revue-et-release-db.md` (mê
 **Prochaine action.** Passe Codex sur la PR, merge, puis BP-01 (gardes) ou BIO-INGEST LOT-03.
 
 **Questions ouvertes.** Questions 2 à 5 du §6.5 du cadrage.
+
+## 2026-10-04 — Lettre d'adressage remise au patient : LOT-03b (aperçu, impression)
+
+**Décidé.** Aperçu de la lettre au cockpit, identifiant dans le jeton des
+fiches (refus puis relecture si elle change) ; impression patient par le rendu
+`medecin` depuis le texte figé.
+
+**Écarté.** Second jeton dédié (le premier est déjà envoyé et relu) ; texte de
+la lettre dans l'aperçu (déjà dans Correspondance).
+
+**Prochaine action.** Merge, arbitrage Q-L1, pose sur ordre.

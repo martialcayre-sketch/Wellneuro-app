@@ -27,7 +27,13 @@ import {
 import { envoiFichesOuvert, lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
 import { apercuFichesDuProtocole, remettreFiches } from '@/lib/fiches-assiette/remise';
 import { annonceDue, annoncerDocumentRemis, reserverAnnonce, type AnnonceFiches } from '@/lib/fiches-assiette/annonce';
-import { lettreAdressagePatientOuverte, remettreLettreAdressage } from '@/lib/correspondance/lettreAdressageRemise';
+import {
+  apercuLettreAdressage,
+  jetonAvecLettre,
+  lettreAdressagePatientOuverte,
+  remettreLettreAdressage,
+  type ApercuLettreAdressage,
+} from '@/lib/correspondance/lettreAdressageRemise';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // Validation « pour diffusion » du protocole (C2A LOT-03 Part B). Persiste
@@ -148,7 +154,7 @@ const APERCU_FICHES_ILLISIBLE: ApercuFiches = {
 };
 
 const ERREUR_APERCU_PERIME =
-  'L’aperçu des fiches d’assiette n’est plus exact : il vient d’être mis à jour. Relisez-le avant de valider.';
+  'L’aperçu de ce que le clic remettra au patient n’est plus exact : il vient d’être mis à jour. Relisez-le avant de valider.';
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.length > 0;
@@ -333,7 +339,11 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           { idPatient, protocolDraftInputHash, actions, blocage },
           { verrouiller: true },
         );
-        if (apercu.jeton !== jeton) return { perime: true as const };
+        // LA LETTRE DUE ENTRE DANS LE JETON ([[D-262]], LOT-03b) : une lettre
+        // consignée ou révoquée depuis l'aperçu périme le clic, comme une fiche.
+        // Drapeau fermé, le jeton est celui des fiches, inchangé.
+        const apercuLettre = await apercuLettreAdressage(tx, { idPatient, actions, bloque: blocage !== null });
+        if (jetonAvecLettre(apercu.jeton, apercuLettre) !== jeton) return { perime: true as const };
 
         const approbations = await tx.protocolDiffusionApproval.findMany({
           where: { idPatient, decisionCardInputHash: version.decisionCardInputHash },
@@ -371,6 +381,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           idApprobation: approvalId,
           actions,
           bloque: blocage !== null,
+          idCorrespondanceVue: apercuLettre?.idCorrespondance ?? null,
         });
         // La trace de l'e-mail naît AVEC les remises (lot 11) : un arrêt entre
         // le commit et l'envoi ne peut plus le perdre sans rien laisser. UNE
@@ -491,6 +502,13 @@ type GetResponse =
        * dit rien.
        */
       fiches: ApercuFiches | null;
+      /**
+       * LE COURRIER POUR LE MÉDECIN QUE LE CLIC REMETTRAIT ([[D-262]],
+       * LOT-03b). Clé absente drapeau `WN_LETTRE_ADRESSAGE_PATIENT` fermé ;
+       * `null` : aucune lettre ne partira. Son identifiant entre dans le jeton
+       * des fiches.
+       */
+      lettre?: ApercuLettreAdressage | null;
       /**
        * Une fiche remise par le clic serait-elle annoncée par l'e-mail neutre
        * ([[D-251]] §9, lot 11) ? Vrai seulement aperçu servi ET espace de
@@ -708,6 +726,9 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     // n'écrit rien, et le clic recalcule l'aperçu sous verrou avant d'écrire —
     // c'est le jeton qui dit si ce que le praticien a vu tient encore.
     let fiches: ApercuFiches | null = null;
+    // LA LETTRE QUE LE CLIC REMETTRAIT ([[D-262]], LOT-03b) : sur le même
+    // chemin que les fiches, et son identifiant entre dans leur jeton.
+    let lettre: ApercuLettreAdressage | null = null;
     if (envoiFichesOuvert() && activeVersion) {
       try {
         const rejeuActif = await rejeuDe(activeVersion);
@@ -725,12 +746,15 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
           { idPatient, protocolDraftInputHash: activeVersion.inputHash, actions, blocage },
           { verrouiller: false },
         );
+        lettre = await apercuLettreAdressage(prisma, { idPatient, actions, bloque: blocage !== null });
+        fiches = { ...fiches, jeton: jetonAvecLettre(fiches.jeton, lettre) };
       } catch (erreur) {
         console.warn(
           '[praticien/protocoles/diffusion GET] aperçu des fiches illisible :',
           ...classeEtCode(erreur),
         );
         fiches = APERCU_FICHES_ILLISIBLE;
+        lettre = null;
       }
     }
 
@@ -747,6 +771,8 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       servieAuPatient,
       apercu,
       fiches,
+      // Drapeau fermé : la clé n'existe pas, la réponse est celle d'avant.
+      ...(lettreAdressagePatientOuverte() ? { lettre } : {}),
       annonceParEmail: fiches !== null && lectureFichesOuverte(),
     });
   } catch (err) {

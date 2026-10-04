@@ -3,7 +3,7 @@ import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
 import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 import { contientTermePrescriptif } from '@/lib/documents/vocabulaire';
 import { SAFETY_SIGNAL_CONDUITES, SAFETY_SIGNALS_V1 } from './safetySignalsV1';
-import { genererCourrierAdressage, VERSION_ANCRAGE_ADRESSAGE } from './courrierAdressage';
+import { rendreCourrierAdressageFige, genererCourrierAdressage, VERSION_ANCRAGE_ADRESSAGE } from './courrierAdressage';
 
 // Un signal de chaque rang, pris DANS la table signée — jamais inventé ici : un
 // libellé de fixture qui n'existe pas dans la table éprouverait le cas « hors
@@ -154,5 +154,41 @@ describe('ancrage et couplage rendu ↔ consigné', () => {
     const resultat = genererCourrierAdressage(entree(tous));
     if (!resultat.ok) throw new Error('refus inattendu');
     expect(resultat.courrier.texte.length).toBeLessThan(8000);
+  });
+});
+
+describe('La lettre remise, rendue pour l’impression (D-262, LOT-03b)', () => {
+  const ENTREE = {
+    patientId: 'PAT_SONDE',
+    texte: 'Docteur,\n\nJe vous adresse ce patient. <b>pas du HTML</b>',
+    dateCourrier: '2026-10-03T08:00:00.000Z',
+    patientNom: 'Michel Dogné',
+    ancrageSha256: 'a'.repeat(64),
+    ancrageVersion: 'safety-signals-nnpp2-v1',
+  };
+
+  it('même feuille que la lettre du praticien : en-tête, titre, nom, date, cadre interprofessionnel', () => {
+    const html = rendreCourrierAdressageFige(ENTREE);
+    expect(html).not.toBeNull();
+    expect(html).toContain('WELLNEURO');
+    expect(html).toContain('Correspondance — adressage sur signal d’alerte');
+    expect(html).toContain('Michel Dogné');
+    expect(html).toContain('2026-10-03');
+    expect(html).toContain('échange interprofessionnel');
+  });
+
+  it('le texte figé est ÉCHAPPÉ, jamais interprété', () => {
+    const html = rendreCourrierAdressageFige(ENTREE)!;
+    expect(html).toContain('&lt;b&gt;pas du HTML&lt;/b&gt;');
+    expect(html).not.toContain('<b>pas du HTML</b>');
+  });
+
+  it('aucune provenance fabriquée : sans ancrage, rien n’est rendu', () => {
+    expect(rendreCourrierAdressageFige({ ...ENTREE, ancrageSha256: null })).toBeNull();
+    expect(rendreCourrierAdressageFige({ ...ENTREE, ancrageVersion: null })).toBeNull();
+  });
+
+  it('un texte qui ne passe plus la garde du chokepoint : rien n’est rendu, aucun rendu contourné', () => {
+    expect(rendreCourrierAdressageFige({ ...ENTREE, texte: 'Docteur, merci de prescrire un traitement.' })).toBeNull();
   });
 });

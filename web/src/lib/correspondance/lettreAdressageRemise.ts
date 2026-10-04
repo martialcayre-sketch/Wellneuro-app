@@ -64,7 +64,7 @@ function empreinte(texte: string): string {
 async function lettreDue(
   client: Client,
   idPatient: string,
-): Promise<{ id: string; texte: string } | null> {
+): Promise<{ id: string; texte: string; consigneLe: Date } | null> {
   const porteuse = await client.consultation.findFirst({
     where: whereConsultationPorteuse(idPatient),
     orderBy: ORDRE_CONSULTATION_PORTEUSE,
@@ -80,14 +80,80 @@ async function lettreDue(
     },
     orderBy: { ordre: 'desc' },
     select: {
-      correspondance: { select: { id: true, idPatient: true, sens: true, ancrageVersion: true, texte: true } },
+      correspondance: { select: { id: true, idPatient: true, sens: true, ancrageVersion: true, texte: true, consigneLe: true } },
     },
   });
   const lettre = couverture?.correspondance;
   if (!lettre || lettre.idPatient !== idPatient || lettre.sens !== 'sortant') return null;
   if (!lettre.ancrageVersion?.startsWith(PREFIXE_ANCRAGE)) return null;
   if (!/\S/.test(lettre.texte)) return null;
-  return { id: lettre.id, texte: lettre.texte };
+  return { id: lettre.id, texte: lettre.texte, consigneLe: lettre.consigneLe };
+}
+
+type EntreesClic = {
+  idPatient: string;
+  actions: readonly { actionId: string; type: string }[];
+  bloque: boolean;
+};
+
+/**
+ * La lettre que CE clic remettrait — drapeau ouvert, dossier non bloqué,
+ * protocole ouvert par l'orientation —, ou `null`. Une seule règle pour
+ * l'aperçu du praticien et pour la remise : deux règles finiraient par montrer
+ * une lettre et en remettre une autre.
+ */
+async function lettreDuClic(client: Client, entrees: EntreesClic) {
+  if (!lettreAdressagePatientOuverte() || entrees.bloque) return null;
+  const premiere = entrees.actions[0];
+  if (!premiere || !estActionOrientation(premiere)) return null;
+  return lettreDue(client, entrees.idPatient);
+}
+
+/**
+ * CE QUE LE PRATICIEN VOIT AVANT LE CLIC ([[D-262]], LOT-03b ; revue du
+ * LOT-02, P1). Le courrier qui partira, ou celui que la remise en cours porte
+ * déjà. Jamais son texte : il est sous les yeux du praticien dans l'onglet
+ * Correspondance, et l'aperçu n'est pas une seconde restitution.
+ */
+/** `null` à la place de l'aperçu : aucune lettre ne partira. */
+export type ApercuLettreAdressage = {
+  /** La lettre due au clic. */
+  idCorrespondance: string;
+  consigneLe: string;
+  /** La remise en cours porte déjà cette lettre : le clic ne la remet pas. */
+  dejaRemise: boolean;
+};
+
+export async function apercuLettreAdressage(
+  client: Client,
+  entrees: EntreesClic,
+): Promise<ApercuLettreAdressage | null> {
+  const lettre = await lettreDuClic(client, entrees);
+  if (!lettre) return null;
+  const enCours = await client.lettreAdressageRemise.findFirst({
+    where: { idPatient: entrees.idPatient },
+    orderBy: { ordre: 'desc' },
+    select: { idCorrespondance: true },
+  });
+  return {
+    idCorrespondance: lettre.id,
+    consigneLe: lettre.consigneLe.toISOString(),
+    dejaRemise: enCours?.idCorrespondance === lettre.id,
+  };
+}
+
+/**
+ * LE JETON DU CLIC COUVRE AUSSI LA LETTRE. Celui des fiches dit déjà « ce que
+ * le praticien a vu tient encore » ; la lettre due s'y ajoute : une lettre
+ * consignée ou révoquée entre l'aperçu et le clic périme le jeton, et le clic
+ * est refusé puis l'aperçu relu — même voie que les fiches (D-251 §7).
+ *
+ * Drapeau fermé : le jeton des fiches, INCHANGÉ — octet pour octet.
+ */
+export function jetonAvecLettre(jetonFiches: string, apercu: ApercuLettreAdressage | null): string {
+  if (!lettreAdressagePatientOuverte()) return jetonFiches;
+  const lettre = apercu ? `${apercu.idCorrespondance}:${apercu.dejaRemise ? 'deja' : 'part'}` : 'aucune';
+  return createHash('sha256').update(`${jetonFiches}|lettre:${lettre}`, 'utf8').digest('hex');
 }
 
 /**
@@ -102,14 +168,18 @@ export async function remettreLettreAdressage(
     idApprobation: string;
     actions: readonly { actionId: string; type: string }[];
     bloque: boolean;
+    /**
+     * La lettre que l'aperçu recalculé dans CETTE transaction a montrée
+     * (revue du LOT-03b, P2-1). Une lettre consignée entre cet aperçu et la
+     * remise — la consignation ne prend pas le verrou des remises — ne part
+     * pas : le praticien ne l'a pas vue.
+     */
+    idCorrespondanceVue?: string | null;
   },
 ): Promise<number> {
-  if (!lettreAdressagePatientOuverte() || entrees.bloque) return 0;
-  const premiere = entrees.actions[0];
-  if (!premiere || !estActionOrientation(premiere)) return 0;
-
-  const lettre = await lettreDue(client, entrees.idPatient);
+  const lettre = await lettreDuClic(client, entrees);
   if (!lettre) return 0;
+  if (entrees.idCorrespondanceVue !== undefined && entrees.idCorrespondanceVue !== lettre.id) return 0;
 
   await client.$executeRaw`SAVEPOINT lettre_adressage_remise`;
   try {

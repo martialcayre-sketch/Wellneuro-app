@@ -6,7 +6,7 @@ import type { PortailLettreAdressageResponse } from '@/app/api/portail/lettre-ad
 import type { LettreAdressageServie } from '@/lib/correspondance/lettreServicePatient';
 import { ConsignerLecturePortail } from '@/components/patient/ConsignerLecturePortail';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
-import { PatientButton } from '@/components/patient/ui/PatientButton';
+import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import {
   AUCUN_COURRIER,
@@ -117,9 +117,17 @@ export function CourrierMedecinLecture({ token }: { token: string }) {
 
       {lettre.etat === 'servie' && lettre.texte && (
         <div className="print:hidden">
-          <PatientButton variant="ghost" onClick={() => window.print()}>
-            Imprimer ou enregistrer en PDF
-          </PatientButton>
+          {/* LA FEUILLE À IMPRIMER EST CELLE DU MÉDECIN ([[D-262]], LOT-03b) :
+              en-tête, nom, date, cadre interprofessionnel — rendue au serveur
+              par le même chokepoint que la lettre du praticien. */}
+          <a
+            href="/api/portail/lettre-adressage/impression"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={patientButtonClassName('ghost')}
+          >
+            Ouvrir la version à imprimer
+          </a>
           <ConsignerLecturePortail espece="lettre_adressage" idObjet={lettre.idRemise} />
         </div>
       )}

@@ -19,6 +19,7 @@ import {
   type ApercuFiches,
   type StatutLigneFiche,
 } from '@/lib/fiches-assiette/apercuRemise';
+import type { ApercuLettreAdressage } from '@/lib/correspondance/lettreAdressageRemise';
 import { ApercuPatientProtocole } from './ApercuPatientProtocole';
 
 export type DiffusionState = 'idle' | 'saving' | 'error';
@@ -103,6 +104,62 @@ function formatDate(iso: string): string {
   return date.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+/**
+ * La date de la lettre TELLE QU'ELLE EST ÉCRITE dans la lettre : le générateur
+ * (`genererCourrierAdressage`) date « Courrier préparé le … » au jour UTC, et la
+ * version imprimée reprend ce jour. L'aperçu le suit, fuseau épinglé — jamais
+ * celui du navigateur (revue Copilot de #1309) —, pour ne pas annoncer un autre
+ * jour que celui imprimé. Passer le générateur au jour de Paris changerait le
+ * texte des lettres : hors de ce lot.
+ */
+function dateLisible(iso: string): string {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime())
+    ? iso
+    : date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+
+/** Le drapeau de la lettre ouvre sa lecture : une lettre remise est toujours annoncée ([[D-262]] B3). */
+export const TEXTE_ANNONCE_LETTRE =
+  'Votre patient reçoit un e-mail neutre, sans contenu de santé : « Un document de votre praticien vous attend ». Un seul e-mail par clic, fiches comprises.';
+
+/**
+ * LE COURRIER POUR LE MÉDECIN QUE LE CLIC REMETTRAIT ([[D-262]], LOT-03b ;
+ * revue du LOT-02, P1). Le praticien atteste ce qui part : la lettre est dite
+ * AVANT le geste, et son identifiant entre dans le jeton du clic — une lettre
+ * consignée ou révoquée entre-temps fait refuser le clic, puis relire l'aperçu.
+ * Le texte n'est pas recopié ici : il est dans l'onglet Correspondance.
+ */
+function ApercuLettreAdressageBloc({
+  lettre,
+  annonceDejaDite,
+}: {
+  lettre: ApercuLettreAdressage;
+  /** L'e-mail est déjà annoncé au-dessus, pour les fiches : un seul par clic. */
+  annonceDejaDite: boolean;
+}) {
+  const quand = dateLisible(lettre.consigneLe);
+  return (
+    <section
+      aria-labelledby="protocol-diffusion-lettre-title"
+      data-testid="apercu-lettre-adressage"
+      className="mt-4 rounded-lg border border-border p-3"
+    >
+      <h4 id="protocol-diffusion-lettre-title" className="text-sm font-semibold text-foreground">
+        Courrier pour le médecin traitant
+      </h4>
+      <p className="mt-2 text-base text-foreground">
+        {lettre.dejaRemise
+          ? `La lettre d’adressage du ${quand} est déjà remise au patient : ce clic ne la remet pas de nouveau.`
+          : `La lettre d’adressage du ${quand} sera remise au patient avec ce protocole, telle qu’elle a été consignée.`}
+      </p>
+      {!lettre.dejaRemise && !annonceDejaDite && (
+        <p className="mt-2 text-sm text-muted-foreground">{TEXTE_ANNONCE_LETTRE}</p>
+      )}
+    </section>
+  );
+}
+
 export function ProtocolDiffusionPanel({
   canApprove,
   approved,
@@ -111,6 +168,7 @@ export function ProtocolDiffusionPanel({
   servieAuPatient = null,
   apercu = null,
   fiches = null,
+  lettre = null,
   annonceParEmail = false,
   annonce = null,
   state = 'idle',
@@ -150,6 +208,11 @@ export function ProtocolDiffusionPanel({
    * `WN_FICHES_ASSIETTE` fermé, ou lecture non aboutie — l'écran n'en dit rien.
    */
   fiches?: ApercuFiches | null;
+  /**
+   * Le courrier pour le médecin que le clic remettrait ([[D-262]], LOT-03b).
+   * `null` : aucune lettre ne partira, ou drapeau fermé — l'écran n'en dit rien.
+   */
+  lettre?: ApercuLettreAdressage | null;
   /** Une fiche remise par le clic serait annoncée par e-mail (lecture ouverte). */
   annonceParEmail?: boolean;
   /** Le sort de l'e-mail du DERNIER clic ; `null` : aucun n'était dû. */
@@ -253,6 +316,13 @@ export function ProtocolDiffusionPanel({
 
       {fiches && (
         <ApercuFichesAssiette fiches={fiches} dejaValide={approved && !stale} annonceParEmail={annonceParEmail} />
+      )}
+
+      {lettre && (
+        <ApercuLettreAdressageBloc
+          lettre={lettre}
+          annonceDejaDite={Boolean(fiches && annonceParEmail && fichesARemettre(fiches))}
+        />
       )}
 
       {onApprove && (canApprove || stale) && (
