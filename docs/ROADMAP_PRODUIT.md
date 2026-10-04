@@ -69,9 +69,16 @@
 - Interface 100 % en français.
 - Vocabulaire réglementaire : « recommandation », « protocole personnalisé »,
   « indice de suivi » — jamais « prescription », « ordonnance », « diagnostic ».
+  **Amendé le 2026-10-04 par `D-266` §4** : « prescription » est admis côté
+  praticien (compléments et produits hors médicament, jamais un médicament).
+  Le mot reste proscrit côté patient, « protocole personnalisé » compris : seul
+  le contenu d'une prescription validée y est admis. « Ordonnance » et
+  « diagnostic » restent interdits. `REGISTRE_FRONTIERES.md` §1 fait foi.
 - Éviter par conception la qualification dispositif médical : finalité
   bien-être/suivi, validation praticien systématique de tout contenu
-  généré par IA avant diffusion au patient.
+  généré par IA avant diffusion au patient. Pour BIO-PARCOURS (`D-266` §2) :
+  vrai de l'étage outil ; l'étage assistant ouvre fonction par fonction
+  (BP-26).
 - HDS obligatoire avant tout stockage de données de santé réelles
   (résultats biologiques notamment).
 - Discipline de livraison : 1 tâche = 1 branche courte = 1 PR = 1 périmètre.
@@ -158,6 +165,11 @@ logique de PatientsPanel.
 - Versionné, validé praticien, injecté automatiquement dans le booklet.
 - À terme : signalement (jamais décision automatique) des interactions
   connues complément/médicament.
+- **Amendé le 2026-10-04 (`D-266` §4)** : le titre garde sa trace, mais
+  « prescription » est désormais admis côté praticien. La prescription de
+  BIO-PARCOURS vient d'une bibliothèque signée d'options (BP-17), avec dose
+  sourcée ou « information manquante » (BP-18a), et sa remise au patient passe
+  par le seul « protocole personnalisé » (BP-18b).
 
 ### R5 — Catalogue et packs d'analyses biologiques
 - Référentiel de marqueurs de biologie fonctionnelle (homocystéine, vit. D,
@@ -178,6 +190,11 @@ logique de PatientsPanel.
   synthèse IA = différenciant majeur — **entièrement à faire** : c'est la
   ré-alimentation du moteur par le mesuré, frontière fermée par `D-122`,
   entrée « à cadrer » de la file d'attente des campagnes.
+  **Amendé le 2026-10-04 (`D-266` §4, §10)** : ce croisement **ne passe plus
+  par la synthèse IA**. Il passe par le constat posé par le praticien
+  (BP-11) dans l'étage outil, puis, dans l'étage assistant, par un évaluateur
+  signé marqueur par marqueur (BP-27), chacun sous sa propre décision.
+  Campagne `2026-10-04-bio-parcours`.
 
 ### R6 — Workflow RDV complet (extension de D3)
 - **Socle livré le 2026-07-23** (accueil-observatoire LOT-04) : modèle
@@ -233,6 +250,11 @@ logique de PatientsPanel.
   biomarqueurs deviennent un mécanisme de raffinement ultérieur
   (T0 = questionnaires, T1 = ajustement biologique), pas un prérequis.
   Mécanisme de traçabilité T0/T1 à concevoir avant implémentation.
+  **Précisé le 2026-10-04 (`D-266` §2, §3)** : aucune mesure ne pèse sur le
+  score dans BIO-PARCOURS. La biologie s'y affiche à côté des besoins (« non
+  évalué, pas zéro ») sous la nomenclature unique ; un ajustement du score par
+  la biologie reste un horizon non daté, sous décision propre et bump de
+  version.
 - **Suivi longitudinal (momentum)** : jalons T0/J21/J42/J90, traité comme
   objet à part entière du calcul, porteur de la dimension motivationnelle.
 - Côté patient : un seul objet visuel synthétique sur l'écran d'accueil
