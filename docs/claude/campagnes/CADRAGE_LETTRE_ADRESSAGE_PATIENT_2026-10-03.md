@@ -103,10 +103,19 @@ porte l'écran, la recopie au caractère près et la passe au banc
 | LOT-03a | Portail : espèce de lecture `lettre_adressage`, route `api/portail/lettre-adressage`, écran `courrier-medecin` (phrase signée + lettre + impression), retrait après révocation calculé à la lecture, lien « Autres espaces » — #1308 | LOT-02 |
 | LOT-03b | **Aperçu praticien de la lettre au GET de diffusion et dans le jeton** (revue du LOT-02, P1) ; **impression par le rendu `medecin`** (en-tête, nom du patient, date, cadre interprofessionnel — §3.2 ; revue du LOT-03a, P1 : le LOT-03a imprime le corps seul) — deux conditions de la pose du drapeau ; livré : clé `lettre` du GET de diffusion, identifiant de la lettre due dans le jeton du clic, route `api/portail/lettre-adressage/impression` | LOT-03a |
 
-**Question ouverte Q-L1 (revue du LOT-03a).** Une lettre remise reste servie
-tant qu'elle n'est pas révoquée : une consultation porteuse dépassée, ou une
-lettre plus récente pas encore diffusée, ne la retirent pas (« remise en
-cours ≠ lettre due »). À trancher par le responsable avant la pose.
+**Q-L1 (revue du LOT-03a) — TRANCHÉE le 2026-10-04 par le responsable, en
+session.** Une lettre remise reste servie tant qu'elle n'est pas révoquée :
+  1. **consultation porteuse dépassée** (nouvelle anamnèse validée, lettre non
+     révoquée) : la lettre **reste servie** — c'est un document remis, que le
+     patient peut encore apporter ; seule la révocation la retire ;
+  2. **lettre plus récente consignée, protocole pas encore rediffusé** :
+     l'ancienne **reste servie jusqu'au clic** — la remise suit la diffusion
+     (B1), et la nouvelle lettre part au prochain « Valider pour diffusion »,
+     que le praticien voit dans l'aperçu (LOT-03b).
+Écartés : la marquer « retirée » (un rendez-vous pris perdrait son courrier
+sans geste du praticien), une mention « consultation précédente » (phrase de
+plus à signer), une remise hors du clic (contredit B1). Le comportement livré
+au LOT-03a est donc le comportement voulu ; aucun code ne change.
 
 Chaque lot : `wn-reviewer` avant PR ; T2 pour l'écran (E2E par le CI).
 

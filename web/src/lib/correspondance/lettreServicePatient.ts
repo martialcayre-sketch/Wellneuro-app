@@ -25,7 +25,7 @@ import { rendreCourrierAdressageFige } from '@/lib/clinical/courrierAdressage';
 // REMIS ; le LOT-02 décide ce qui est DÛ à un clic. Seule la révocation retire
 // une lettre remise (cadrage §3.5) : une consultation porteuse dépassée, ou une
 // lettre plus récente pas encore diffusée, la laissent servie jusqu'à la
-// prochaine remise. Question ouverte au cadrage (Q-L1).
+// prochaine remise. Voulu : arbitrage Q-L1 du 2026-10-04 (cadrage §5).
 //
 // UNE COUVERTURE PAR LETTRE : « retirée » le suppose. La base l'impose — index
 // unique partiel `adressages_signal_alerte_une_couverture_par_lettre`
