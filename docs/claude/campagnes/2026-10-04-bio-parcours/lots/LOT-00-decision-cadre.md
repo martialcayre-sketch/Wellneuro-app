@@ -59,8 +59,10 @@ clinique.
 - [x] Ouvrir la campagne, écrire les fiches de phase 0, amender BIO-INGEST et
       la file d'attente.
 - [x] T1 complet, revue `wn-reviewer` (aucun P0, six P1 corrigés).
-- [ ] Passe Codex (décision de frontière), geste de l'utilisateur, avant le
-      merge.
+- [x] Passe Codex (décision de frontière), geste de l'utilisateur : première
+      passe BLOQUER (deux P0 : contenu clinique au cadrage versé, DC-20/DC-47
+      dites armées), corrigés avec réécriture de l'historique de la branche ;
+      passe de correction ACCEPTER sur `f11d2d56`.
 - [x] Statut de `D-266` passé à « accepté » sur confirmation du responsable.
 
 ## Tests

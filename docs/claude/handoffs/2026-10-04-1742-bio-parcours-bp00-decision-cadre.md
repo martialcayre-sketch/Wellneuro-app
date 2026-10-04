@@ -75,8 +75,9 @@ Plus `.wn/state.json`, `changelog.d/2026-10-04-bio-parcours-bp00-decision-cadre.
 
 ## Problèmes ouverts
 
-- **Seconde passe Codex** sur la tête réécrite : le signal d'escalade est un P0 corrigé. Elle se
-  fait avant le merge, sous forme de passe de correction.
+- **Passe Codex de correction : ACCEPTER** sur `f11d2d56`, les deux P0 sont fermés. Les six
+  commentaires Copilot sont traités avant le merge : cinq corrigés, un déjà corrigé par la
+  réécriture.
 - Purge des anciens SHA de #1307 par le support GitHub : geste facultatif de l'utilisateur.
 - Questions 2 à 5 du §6.5 du cadrage (preuves, instrument de fatigue, vue patient, évaluateur
   indépendant) : elles ne bloquent aucun lot de phase 0.
