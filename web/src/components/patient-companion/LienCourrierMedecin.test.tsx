@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 describe('LienCourrierMedecin', () => {
-  it('surface ouverte ET une fiche remise : le lien paraît, vers l’espace', async () => {
+  it('surface ouverte ET un courrier remis : le lien paraît, vers l’écran', async () => {
     const fetchMock = repondre(true, { ok: true, ouvert: true, lettreRemise: true });
     render(<LienCourrierMedecin token="TOK" />);
     await laisserPartir();
@@ -34,7 +34,7 @@ describe('LienCourrierMedecin', () => {
   });
 
   it.each([
-    ['aucune fiche remise', true, { ok: true, ouvert: true, lettreRemise: false }],
+    ['aucun courrier remis', true, { ok: true, ouvert: true, lettreRemise: false }],
     ['espace fermé (503)', false, { ok: false, reason: 'feature_disabled' }],
     ['réponse sans le double oui', true, { ok: true, ouvert: true }],
   ])('%s : aucun lien', async (_cas, ok, corps) => {

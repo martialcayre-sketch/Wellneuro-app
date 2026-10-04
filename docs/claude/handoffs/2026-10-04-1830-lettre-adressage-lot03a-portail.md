@@ -39,11 +39,17 @@ Servir au patient le courrier remis ([[D-262]], cadrage §3-§4) : route portail
   verte après ajout du chemin à `masquageChemin.ts` (rouge avant : la garde a
   vu le nouvel écran).
 - E2E : job `e2e` du CI (pas de Playwright ici).
-- Revue `wn-reviewer` (périmètre auth portail) : verdicts dans la PR.
+- Revue `wn-reviewer` (périmètre auth portail) : **GO commit, NO-GO pose**.
+  P1 (impression sans le rendu `medecin`) routé au LOT-03b, condition de la
+  pose. P2 : « remise en cours ≠ lettre due » écrit (service, RGPD) et posé en
+  question Q-L1 ; prémisse « une couverture par lettre » rattachée à l'index
+  unique qui la tient ; « au caractère près » précisé (apostrophes) ; tests
+  ajoutés (indisponible, masquage à l'impression, page fermée, libellés du lien).
 
 ## Problèmes ouverts
 
-- LOT-03b (aperçu praticien), condition de la pose.
+- LOT-03b (aperçu praticien + impression par le rendu `medecin`) et Q-L1,
+  conditions de la pose.
 - E-mail pour une lettre révoquée pendant sa remise ; export d'accès sans les
   remises — à trancher.
 

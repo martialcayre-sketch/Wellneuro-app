@@ -20,6 +20,17 @@ import { prisma } from '@/lib/prisma';
 //     fiches rejouent pour les leurs (D-251 §6).
 // Le texte ne sort que d'une lettre servie.
 //
+// REMISE EN COURS ≠ LETTRE DUE (revue du LOT-03a). Ce service sert ce qui a été
+// REMIS ; le LOT-02 décide ce qui est DÛ à un clic. Seule la révocation retire
+// une lettre remise (cadrage §3.5) : une consultation porteuse dépassée, ou une
+// lettre plus récente pas encore diffusée, la laissent servie jusqu'à la
+// prochaine remise. Question ouverte au cadrage (Q-L1).
+//
+// UNE COUVERTURE PAR LETTRE : « retirée » le suppose. La base l'impose — index
+// unique partiel `adressages_signal_alerte_une_couverture_par_lettre`
+// (migration `adressages_signal_alerte_v1`, promesse 5 de son contrat) ; sans
+// lui, révoquer l'une de deux couvertures laisserait la lettre servie.
+//
 // CE QUI NE SORT JAMAIS : l'identifiant de la lettre consignée, de
 // l'approbation, de la couverture, le motif d'une révocation.
 

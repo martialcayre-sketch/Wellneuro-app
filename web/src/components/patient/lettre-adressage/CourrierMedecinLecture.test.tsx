@@ -10,7 +10,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => router }));
 vi.mock('@/components/patient/ConsignerLecturePortail', () => ({ ConsignerLecturePortail: consigner }));
 
 import { CourrierMedecinLecture } from './CourrierMedecinLecture';
-import { AUCUN_COURRIER, MENTION_RETIREE, PHRASE_ACCOMPAGNEMENT, TITRE_LETTRE } from './textesLettre';
+import { AUCUN_COURRIER, MENTION_INDISPONIBLE, MENTION_RETIREE, PHRASE_ACCOMPAGNEMENT, TITRE_LETTRE } from './textesLettre';
 
 const tracesPosees = () => consigner.mock.calls.map(appel => (appel as unknown[])[0]);
 const SERVIE = { idRemise: 'lar_1', remiseLe: '2026-10-04T08:00:00.000Z', etat: 'servie', texte: 'Docteur,\n<b>pas du HTML</b>' };
@@ -54,6 +54,22 @@ describe('Courrier pour votre médecin (D-262, LOT-03a)', () => {
     expect(screen.queryByText(PHRASE_ACCOMPAGNEMENT)).toBeNull();
     expect(screen.queryByLabelText('Texte du courrier')).toBeNull();
     expect(tracesPosees()).toEqual([]);
+  });
+
+  it('indisponible : la mention, ni texte, ni lecture consignée', async () => {
+    repondre(200, { ok: true, lettre: { ...SERVIE, etat: 'indisponible', texte: null } });
+    await afficher();
+    expect(screen.getByText(MENTION_INDISPONIBLE)).toBeTruthy();
+    expect(screen.queryByLabelText('Texte du courrier')).toBeNull();
+    expect(tracesPosees()).toEqual([]);
+  });
+
+  it('à l’impression, seule la lettre reste : en-tête, phrase et boutons sont masqués', async () => {
+    repondre(200, { ok: true, lettre: SERVIE });
+    await afficher();
+    expect(screen.getByText(PHRASE_ACCOMPAGNEMENT).closest('header')?.className).toContain('print:hidden');
+    expect(screen.getByRole('button', { name: 'Imprimer ou enregistrer en PDF' }).closest('div.print\\:hidden')).toBeTruthy();
+    expect(screen.getByLabelText('Texte du courrier').closest('.print\\:hidden')).toBeNull();
   });
 
   it('aucun courrier remis : le dit, sans rien consigner', async () => {

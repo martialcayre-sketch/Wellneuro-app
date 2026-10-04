@@ -2,8 +2,10 @@
 // Module PUR : les écrans client l'importent.
 //
 // LA PHRASE D'ACCOMPAGNEMENT EST SIGNÉE (cadrage §4, signée par le responsable
-// le 2026-10-03) et recopiée ici AU CARACTÈRE PRÈS : un banc relit le cadrage et
-// rougit au premier écart, et un autre la passe à `termeAnxiogene`. C'est la
+// le 2026-10-03) et recopiée ici AU CARACTÈRE PRÈS, à la typographie des
+// apostrophes près (droites au cadrage, courbes à l'écran) : un banc relit le
+// cadrage et rougit au premier autre écart, et un autre la passe à
+// `termeAnxiogene`. C'est la
 // seule prose patient de la surface ; le texte de la lettre, adressé au médecin,
 // est exempté par décision (cadrage §3.4, carte de `lib/documents/vocabulaire.ts`).
 
