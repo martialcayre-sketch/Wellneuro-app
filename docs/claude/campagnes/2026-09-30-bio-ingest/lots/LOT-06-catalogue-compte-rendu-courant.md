@@ -53,6 +53,9 @@ LOT-02
   85 analytes, quatre CHECK identiques.
 - [x] PR resolver ([[D-263]]) : 44 libellés, re-signature (145 entrées), départage par l'unité lue,
   cinq notations équivalentes.
+- [ ] PR migration ([[D-264]], `20261003230000_catalogue_biologie_unites_imprimees`) : hémoglobine et
+  CCMH en g/dL, folates érythrocytaires en ng/mL, comme le laboratoire les imprime ; `release-db`,
+  constat.
 - [ ] Constat de production : nouvelle extraction du compte rendu de `PAT030` après déploiement,
   lignes courantes `resolu` (lecture par conteneur, par identifiant).
 
