@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Catalogue étendu aux analyses d'un compte rendu courant"
-statut: "en_cours"
+statut: "terminé"
 dépend_de: "LOT-02"
 ---
 
@@ -53,11 +53,15 @@ LOT-02
   85 analytes, quatre CHECK identiques.
 - [x] PR resolver ([[D-263]]) : 44 libellés, re-signature (145 entrées), départage par l'unité lue,
   cinq notations équivalentes.
-- [ ] PR migration ([[D-264]], `20261003230000_catalogue_biologie_unites_imprimees`) : hémoglobine et
-  CCMH en g/dL, folates érythrocytaires en ng/mL, comme le laboratoire les imprime ; `release-db`,
-  constat.
-- [ ] Constat de production : nouvelle extraction du compte rendu de `PAT030` après déploiement,
-  lignes courantes `resolu` (lecture par conteneur, par identifiant).
+- [x] Constat de production (2026-10-03, 21:40 UTC, par conteneur, par identifiant) : nouvelle
+  extraction du compte rendu de `PAT030` après retrait et nouveau dépôt — 55 lignes `resolu`, 3
+  `inconnu` (« Fer » ×2, « Aspect »), 0 `ambigu` ; identique au banc.
+- [x] PR migration ([[D-264]], `20261003230000_catalogue_biologie_unites_imprimees`, #1302) :
+  hémoglobine et CCMH en g/dL, folates érythrocytaires en ng/mL, comme le laboratoire les imprime.
+  `release-db` run 37188072447 approuvé, sentinelle liée ; constat par conteneur (2026-10-04) :
+  migration appliquée, trois unités en vigueur, quatre CHECK identiques portant « g/dL » (32
+  unités), aucun résultat des trois codes dans une autre unité que le catalogue, dernier
+  déploiement = tête de `main` (`5a3fa7d2`).
 
 ## Tests
 
@@ -75,5 +79,15 @@ Migration appliquée et constatée ; le compte rendu de `PAT030` relu : ses lign
   un analyte et une unité concordante, contre 6 rapprochées à l'extraction d'origine. Restent hors :
   la seconde unité d'une même mesure, « Fer » sans matrice, « Aspect », l'hémoglobine et la CCMH en
   g/dL, les folates en ng/mL (des conversions, [[D-157]]).
+- [[D-264]] lève les trois dernières : l'unité de ces analytes suit désormais l'impression, et le
+  banc passe à 43 lignes validables sur 58. Leur validation en production reste un geste du
+  praticien, non constaté ici.
+- Revue de #1302 : un constat Copilot (course entre la garde de migration et une saisie en vol)
+  écarté avec motif, arbitré par le responsable ; l'invariant « unité du résultat = unité du
+  catalogue » en base est une dette nommée de `FILE_ATTENTE.md` (« Ce qui n'est PAS en file »).
 - Revue de #1296 : `wn-reviewer` OK (P2-1 corrigé) ; deux remarques Copilot routées puis traitées
   ici (erratum D-261 §1 dans D-263 §5, formulation du fragment).
+- Production : 55 lignes sur 58 proposent un analyte, la formule leucocytaire départagée par
+  l'unité ; 40 sont validables, 15 s'ouvrent pré-marquées « unité divergente ».
+- Constaté en route : un import `extrait` n'offre aucun bouton « Relancer la lecture » — routé
+  au LOT-03 (`CAMPAGNE.md` de BIO-INGEST, sous la table des lots).

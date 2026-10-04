@@ -8883,3 +8883,17 @@ lier la remise sans texte (même raison).
 
 **Prochaine action.** Merge sur accord, `release-db` approuvée, constat par
 conteneur, puis LOT-02.
+## 2026-10-04 — BIO-INGEST LOT-06, clôture
+
+**Décidé.** Constat de production : après retrait et nouveau dépôt, la nouvelle extraction de
+PAT030 rattache 55 lignes sur 58 (40 validables), identique au banc. D-264 cale l'hémoglobine, la
+CCMH et les folates sur l'unité imprimée (#1302, release-db constatée) : banc à 43 sur 58. LOT-06
+clos ; D-262 pris par la lettre d'adressage, la décision du resolver est D-263. Audit BIO-PARCOURS
+versé en proposition de cadrage (#1301, corrigé par #1303), non arbitré.
+
+**Écarté.** LOT-04 et LOT-05 comme lot suivant : LOT-03 est arbitré (2026-10-03).
+
+**Prochaine action.** LOT-03 (photo ou scan) en mode Plan, avec le bouton « Relancer la
+lecture ».
+
+**Questions ouvertes.** Aucune.
