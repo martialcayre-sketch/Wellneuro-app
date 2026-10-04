@@ -482,8 +482,10 @@ La condition d'hébergement est tenue depuis [[D-121]] (annexe HDS signée le
 2026-08-30). La base légale et l'AIPD sont posées par le responsable lui-même
 (`docs/DOSSIER_RGPD.md`, rubriques 3 et 13).
 
-- Date de la reconduction : *à compléter par le responsable, au plus tard le 2026-10-20*
-- Responsable du traitement : *signature à compléter*
+- Date de la reconduction : **2026-10-04**
+- Responsable du traitement : **reconduite par déclaration du responsable du
+  traitement (`G-TRUST-02` : le praticien), rendue en session le 2026-10-04 et
+  consignée par l'assistant**
 
 ## Qui lève ce gate
 

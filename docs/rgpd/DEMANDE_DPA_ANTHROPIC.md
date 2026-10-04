@@ -92,7 +92,8 @@ reporter aux rubriques 6, 7 et 14 du dossier :
 |---|---|---|
 | 2026-10-01 17:34 | demande envoyée par e-mail de `martialcayre@wellneuro.fr` à **`privacy@anthropic.com`**, objet du message « Rgpd » | deux captures du dossier « Messages envoyés », fournies par le responsable et lues en session le 2026-10-01. Elles montrent l'expéditeur, le destinataire, la date (« 1 oct. 2026 19:34 », heure de Paris), l'envoi par `wellneuro.fr` et le corps |
 | 2026-10-01 17:35 | **accusé de transfert**, de « Fin AI Agent from Anthropic » `<support@mail.anthropic.com>`, dans le même fil : « We're transitioning your question to a human member of our Privacy Team for further assistance […] we'll email you when an agent has responded. » **Identifiant de conversation : 215476193483547** | troisième capture, message lu en session (19:35, heure de Paris). Agent automatisé, **pas une réponse sur le fond** : la demande est remise à l'équipe Privacy |
-| — | réponse sur le fond / relance | à compléter |
+| 2026-10-02 22:23 | réponse sur le fond de l'équipe de confidentialité d'Anthropic : DPA et CCT intégrés aux Conditions commerciales, sans signature distincte | message lu en session le 2026-10-04 |
+| — | relance sur les points sans réponse (ci-dessous) | à compléter |
 
 **Le corps envoyé n'est pas celui du brouillon ci-dessus.** Son second
 paragraphe a été réécrit le 2026-10-01 pour couvrir les usages ouverts depuis
@@ -118,3 +119,9 @@ sur le registre) est celui du brouillon, mot pour mot.
 pose du drapeau d'extraction du LOT-02 de BIO-INGEST ([[D-256]], amendement du
 2026-10-01), qui exigeait l'envoi et non la signature. Il ne referme pas le
 trou de la rubrique 7 : le DPA reste à obtenir, signer et archiver.
+
+**État au 2026-10-04 : réponse reçue.** La signature n'est plus due. Restent
+dus : l'archivage d'une copie datée du DPA et des CCT, la date d'opposabilité
+et la couverture des traitements antérieurs (points 2 et 4 de la demande, sans
+réponse). La réserve de la rubrique 7 sur la localisation de l'inférence et la
+rétention des entrées n'est pas levée.

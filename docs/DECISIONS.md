@@ -7,10 +7,9 @@
 ### D-265 — Les dossiers réels en production et le portail G4 cessent d'être bornés au 2026-10-21 ; la voie d'exception d'adressage est maintenue ; le responsable pose base légale et AIPD
 
 - Date : 2026-10-04
-- Statut : **proposé** — arbitrages du responsable rendus en session le
-  2026-10-04. La reconduction (checklist G-TRUST-04) et les trames des
-  rubriques 3 et 13 du dossier RGPD sont complétées et signées par le
-  responsable **avant le merge**, au plus tard le 2026-10-20.
+- Statut : accepté — arbitrages et déclarations du responsable rendus en
+  session le 2026-10-04 : reconduction, bases légales, conclusion sur l'AIPD,
+  échéance des trous ouverts. Toutes consignées par l'assistant.
 - Domaine : frontières et conformité ; premier lot, hors campagne, du cadrage
   BIO-PARCOURS v3.1. Amende `REGISTRE_FRONTIERES.md` §1 et section IDP,
   `DOSSIER_RGPD.md` (préambule, rubriques 3, 6, 13 et 14) et la checklist
@@ -43,13 +42,19 @@ série d'arbitrages du cadrage, 2026-10-04). Deux trames sont versées : en
 rubrique 3, une ligne par traitement, cellules vides ; en rubrique 13, le seuil
 de l'AIPD avant son contenu. **Cette décision n'écrit aucun article du
 RGPD** : le contenu des trames est écrit par le responsable, jamais par une
-session. Une AIPD qui décrirait des failles exploitables se dépose hors dépôt ;
-le dossier en garde la conclusion, la date et l'emplacement.
+session. Bases déclarées par le responsable le 2026-10-04, sur la liste des
+bases du règlement et sans recommandation : le consentement (6.1.a, 9.2.a)
+pour l'accompagnement, la synthèse, le relevé par IA et la voie ordinaire de
+correspondance ; les intérêts vitaux et la prise en charge sanitaire (6.1.d,
+9.2.h) pour la voie d'exception. Une AIPD qui décrirait des failles exploitables se dépose hors dépôt ;
+le dossier en garde la conclusion, la date et l'emplacement. Le 2026-10-04, le
+responsable a conclu : **AIPD non requise à ce stade**, à réexaminer à
+l'achèvement du produit.
 
 **§4 — Chaque trou encore ouvert reçoit son échéance.** Le 2026-10-21 était
 l'échéance par défaut de la rubrique 14, parce qu'il bornait la dérogation. Le
-responsable fixe une échéance propre pour chaque trou encore ouvert ; la date
-d'origine reste lisible.
+responsable a fixé, le 2026-10-04, une échéance unique au 2027-06-30 pour
+chaque trou encore ouvert ; la date d'origine reste lisible.
 
 ### D-264 — Hémoglobine, CCMH et folates érythrocytaires : l'unité du catalogue suit celle que le laboratoire imprime
 
