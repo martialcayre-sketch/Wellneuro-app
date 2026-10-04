@@ -8950,6 +8950,22 @@ Promotions : décision → `D-266` ; règle → `pr-revue-et-release-db.md` (mê
 
 **Questions ouvertes.** Questions 2 à 5 du §6.5 du cadrage.
 
+## 2026-10-04 — BIO-INGEST LOT-03 : photo ou scan
+
+**Décidé.** Photo ou scan (JPEG, PNG, WebP) par le pipeline du LOT-02, sans migration : le CHECK
+l'admettait déjà, le §2 ter RGPD le déclarait. Format à la signature, concordant avec le type déclaré.
+EXIF/GPS retirés au dépôt par réencodage `sharp` (arbitrage du responsable), orientation appliquée.
+Plafonds de l'image préparée : 3,75 Mio (5 Mio en base64) et 8 000 px, dimensions lues avant décodage.
+Procédé `bio-extraction-v1` inchangé.
+Promotions : décision → aucune (arbitrage consigné au lot et au dossier RGPD) ; règle → aucune.
+
+**Écarté.** Redimensionnement serveur (refus avec message) ; qualité > 85 (le fournisseur réduit
+lui-même les grandes images) ; HEIC.
+
+**Prochaine action.** CI, merge ; drapeau déjà posé : l'image est servie dès le déploiement.
+
+**Questions ouvertes.** Plusieurs photos pour un même compte rendu ; redimensionnement si les refus
+`image_trop_lourde` se constatent.
 ## 2026-10-04 — Lettre d'adressage remise au patient : LOT-03b (aperçu, impression)
 
 **Décidé.** Aperçu de la lettre au cockpit, identifiant dans le jeton des

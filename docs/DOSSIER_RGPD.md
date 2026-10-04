@@ -206,6 +206,10 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
   des documents hétérogènes, et le patient lit le document entier déclaré
   (arbitrage du 2026-10-01). C'est le flux le plus identifiant des quatre qui
   partent vers ce sous-traitant (rubrique 7).
+- **Une photo ou un scan (LOT-03)** part entier lui aussi, mais **sans ses
+  métadonnées** : l'image est réencodée au dépôt, avant d'être consignée, et ses
+  données EXIF — dont la position GPS d'une photo de téléphone — ne sont ni
+  gardées en base ni transmises (arbitrage du 2026-10-04).
 - **Ce qui en sort** : des lignes **candidates**, dans des tables de staging
   (lot d'import et lignes candidates, A5). Une ligne n'atteint
   `resultats_biologiques` que par la validation explicite du praticien dans

@@ -8,8 +8,9 @@ import type { AnalyteChoix } from './SaisieBilan';
 
 // IMPORT D'UN COMPTE RENDU DE LABORATOIRE (BIO-INGEST LOT-02, [[D-256]]),
 // derrière `WN_BIO_INGEST_ENABLED`. Quatre gestes, tous du praticien :
-// déposer le PDF, lancer la lecture, décider chaque ligne, retirer un dépôt
-// erroné. RIEN n'entre au dossier sans la décision « Valider » d'une ligne.
+// déposer le document (PDF, ou photo au LOT-03), lancer la lecture, décider
+// chaque ligne, retirer un dépôt erroné. RIEN n'entre au dossier sans la
+// décision « Valider » d'une ligne.
 //
 // LA LECTURE EST ASYNCHRONE : la route rend la main (202) et l'écran relit le
 // compte rendu jusqu'à l'issue — trois pages durent ~36 s, au-delà de la
@@ -485,17 +486,17 @@ export function ImportCompteRenduPanel({
     <div className="mt-4 rounded-lg border border-border p-3">
       <h4 className="text-sm font-medium text-foreground">Importer un compte rendu de laboratoire</h4>
       <p className="mt-1 text-xs text-muted-foreground">
-        Le PDF est transmis entier au service de lecture (Anthropic). Les lignes lues vous sont proposées : rien
+        Le document est transmis entier au service de lecture (Anthropic) ; une photo, sans ses métadonnées. Les lignes lues vous sont proposées : rien
         n’entre au dossier sans votre validation, ligne par ligne. Dates et heures en heure de Paris.
       </p>
 
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          Compte rendu (PDF, 10 Mo au plus)
+          Compte rendu (PDF de 10 Mo, ou photo JPEG, PNG, WebP de 3,75 Mo au plus)
           <input
             key={cleFichier}
             type="file"
-            accept="application/pdf"
+            accept="application/pdf,image/jpeg,image/png,image/webp"
             disabled={occupe}
             onChange={e => setFichier(e.target.files?.[0] ?? null)}
             className="text-sm text-foreground"

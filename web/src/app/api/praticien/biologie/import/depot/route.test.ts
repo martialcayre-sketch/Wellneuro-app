@@ -12,8 +12,17 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+import { randomBytes } from 'node:crypto';
+import sharp from 'sharp';
 import { POST } from './route';
-import { empreinteSha256, jugerFichier, TAILLE_MAX_OCTETS } from '@/lib/biology-library/import/depot';
+import {
+  COTE_MAX_IMAGE_PX,
+  empreinteSha256,
+  jugerFichier,
+  preparerImage,
+  TAILLE_MAX_IMAGE_OCTETS,
+  TAILLE_MAX_OCTETS,
+} from '@/lib/biology-library/import/depot';
 
 const PDF = Buffer.from('%PDF-1.7\n% fixture Sophie Nicola\n%%EOF');
 
@@ -31,6 +40,14 @@ async function requete(fichier: Blob | null, opts: { longueur?: string | null; i
 }
 
 const pdf = (octets: Buffer = PDF, type = 'application/pdf') => new Blob([new Uint8Array(octets)], { type });
+
+/** Une photo de téléphone : 40 × 20, tournée par son EXIF, avec une position GPS. */
+const photo = () =>
+  sharp({ create: { width: 40, height: 20, channels: 3, background: '#ffffff' } })
+    .jpeg()
+    .withMetadata({ orientation: 6 })
+    .withExif({ IFD3: { GPSLatitudeRef: 'N', GPSLatitude: '48/1 51/1 0/1' } })
+    .toBuffer();
 
 beforeEach(() => {
   process.env.WN_CB_ENABLED = 'true';
@@ -51,6 +68,20 @@ afterEach(() => {
 });
 
 describe('jugerFichier', () => {
+  it('admet JPEG, PNG et WebP à leur signature, si le type déclaré concorde (LOT-03)', () => {
+    const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const webp = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBPVP8 ')]);
+    expect(jugerFichier(jpeg, 'image/jpeg')).toEqual({ ok: true, typeMime: 'image/jpeg' });
+    expect(jugerFichier(png, 'image/png')).toEqual({ ok: true, typeMime: 'image/png' });
+    expect(jugerFichier(webp, 'image/webp')).toEqual({ ok: true, typeMime: 'image/webp' });
+    expect(jugerFichier(jpeg, 'image/png')).toMatchObject({ reason: 'format_non_admis', status: 415 });
+    expect(jugerFichier(jpeg, 'application/pdf')).toMatchObject({ reason: 'format_non_admis', status: 415 });
+    // HEIC (iPhone), GIF : refusés.
+    expect(jugerFichier(Buffer.from('\0\0\0\x18ftypheic'), 'image/heic')).toMatchObject({ reason: 'format_non_admis' });
+    expect(jugerFichier(Buffer.from('GIF89a'), 'image/gif')).toMatchObject({ reason: 'format_non_admis' });
+  });
+
   it('admet un PDF à sa signature, refuse le reste', () => {
     expect(jugerFichier(PDF, 'application/pdf')).toEqual({ ok: true, typeMime: 'application/pdf' });
     expect(jugerFichier(Buffer.alloc(0), 'application/pdf')).toMatchObject({ reason: 'fichier_vide', status: 400 });
@@ -58,6 +89,27 @@ describe('jugerFichier', () => {
     expect(jugerFichier(PDF, 'image/png')).toMatchObject({ reason: 'format_non_admis', status: 415 });
     expect(jugerFichier(Buffer.alloc(TAILLE_MAX_OCTETS + 1), 'application/pdf'))
       .toMatchObject({ reason: 'fichier_trop_lourd', status: 413 });
+  });
+});
+
+describe('preparerImage', () => {
+  it('au-delà de 8 000 pixels de côté : refusée', async () => {
+    const large = await sharp({ create: { width: COTE_MAX_IMAGE_PX + 1, height: 1, channels: 3, background: '#fff' } })
+      .png().toBuffer();
+    expect(await preparerImage(large, 'image/png')).toMatchObject({ ok: false, reason: 'image_trop_grande', status: 413 });
+  });
+
+  it('au-delà de 3,75 Mio une fois préparée : refusée', async () => {
+    const bruit = await sharp(randomBytes(1200 * 1200 * 3), { raw: { width: 1200, height: 1200, channels: 3 } })
+      .png().toBuffer();
+    expect(bruit.length).toBeGreaterThan(TAILLE_MAX_IMAGE_OCTETS);
+    expect(await preparerImage(bruit, 'image/png')).toMatchObject({ ok: false, reason: 'image_trop_lourde', status: 413 });
+  });
+
+  it('le même fichier donne les mêmes octets (unicité par empreinte)', async () => {
+    const source = await photo();
+    const [a, b] = await Promise.all([preparerImage(source, 'image/jpeg'), preparerImage(source, 'image/jpeg')]);
+    expect(a.ok && b.ok && a.octets.equals(b.octets)).toBe(true);
   });
 });
 
@@ -90,9 +142,26 @@ describe('POST /api/praticien/biologie/import/depot', () => {
     expect(prisma.compteRenduBiologique.create).not.toHaveBeenCalled();
   });
 
-  it('une image ou un faux PDF : 415 (l’image relève du LOT-03)', async () => {
-    expect((await POST(await requete(pdf(Buffer.from([0xff, 0xd8, 0xff]), 'image/jpeg')))).status).toBe(415);
+  it('une photo : consignée SANS ses métadonnées (GPS), orientation appliquée (LOT-03)', async () => {
+    const source = await photo();
+    expect((await sharp(source).metadata()).exif).toBeDefined();
+    const res = await POST(await requete(new File([new Uint8Array(source)], 'IMG_0001.jpg', { type: 'image/jpeg' })));
+    expect(res.status).toBe(201);
+    const { data } = prisma.compteRenduBiologique.create.mock.calls[0][0];
+    const consigne = Buffer.from(data.contenu);
+    const lu = await sharp(consigne).metadata();
+    expect(lu.exif).toBeUndefined();
+    expect(lu.orientation).toBeUndefined();
+    expect([lu.width, lu.height]).toEqual([20, 40]);
+    expect(data).toMatchObject({ typeMime: 'image/jpeg', empreinteSha256: empreinteSha256(consigne) });
+  });
+
+  it('une image illisible, un faux PDF, un HEIC : 415, sans écriture', async () => {
+    const tronquee = await POST(await requete(pdf(Buffer.from([0xff, 0xd8, 0xff]), 'image/jpeg')));
+    expect(tronquee.status).toBe(415);
+    expect(await tronquee.json()).toMatchObject({ reason: 'image_illisible' });
     expect((await POST(await requete(pdf(Buffer.from('<html>'), 'application/pdf')))).status).toBe(415);
+    expect((await POST(await requete(pdf(Buffer.from('\0\0\0\x18ftypheic'), 'image/heic')))).status).toBe(415);
     expect(prisma.compteRenduBiologique.create).not.toHaveBeenCalled();
   });
 

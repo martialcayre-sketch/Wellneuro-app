@@ -6,6 +6,7 @@ import {
   VERSION_PROCEDE_EXTRACTION,
   type MotifEchec,
 } from './extraction';
+import { estTypeCompteRendu } from './depot';
 import { resoudreLigne } from './resolverLibellesV1';
 import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
 
@@ -74,7 +75,7 @@ export async function ouvrirExtraction(params: ParamsExtraction): Promise<IssueO
       where: { id: idCompteRendu, idPatient },
       select: { id: true, typeMime: true, purgeLe: true },
     });
-    if (!compteRendu || compteRendu.typeMime !== 'application/pdf') {
+    if (!compteRendu || !estTypeCompteRendu(compteRendu.typeMime)) {
       return { ok: false as const, reason: 'compte_rendu_introuvable' as const };
     }
     // Sous le verrou que prend aussi la purge : la base refuserait l'import
@@ -118,13 +119,13 @@ export async function poursuivreExtraction(params: {
 
   const document = await prisma.compteRenduBiologique.findUnique({
     where: { id: idCompteRendu },
-    select: { contenu: true },
+    select: { contenu: true, typeMime: true },
   });
 
   // TEMPS 2 — l'appel, hors transaction. Un document purgé ([[D-258]]) ne
   // devrait jamais arriver ici : la base refuse d'ouvrir un import sur lui.
-  const resultat = document?.contenu
-    ? await extraireCompteRendu(Buffer.from(document.contenu))
+  const resultat = document?.contenu && estTypeCompteRendu(document.typeMime)
+    ? await extraireCompteRendu(Buffer.from(document.contenu), document.typeMime)
     : ({ ok: false, motif: 'erreur_fournisseur' } as const);
 
   // Chaque terminaison est GARDÉE par `statut: 'en_cours'` : une suite qui
