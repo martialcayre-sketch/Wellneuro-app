@@ -61,6 +61,10 @@ BEGIN
   IF position('mL/min/1,73 m²' in def_analytes) = 0 THEN
     RAISE EXCEPTION 'D-261: l''unité « mL/min/1,73 m² » manque au vocabulaire d''unités';
   END IF;
+  -- D-264 : « g/dL », unité imprimée de l'hémoglobine et de la CCMH.
+  IF position('''g/dL''' in def_analytes) = 0 THEN
+    RAISE EXCEPTION 'D-264: l''unité « g/dL » manque au vocabulaire d''unités';
+  END IF;
 
   -- ── Comptes du niveau 1 (conditionnels : base vide en CI avant release) ──
   -- COMPROMIS ÉCRIT (MI-9) : les panels et items sont comptés en TOTAUX de
@@ -88,7 +92,7 @@ BEGIN
       ('BIO_HEMATOCRITE', 'Hématocrite', '%'),
       ('BIO_VGM', 'Volume globulaire moyen (VGM)', 'fL'),
       ('BIO_TCMH', 'Teneur corpusculaire moyenne en hémoglobine (TCMH)', 'pg'),
-      ('BIO_CCMH', 'Concentration corpusculaire moyenne en hémoglobine (CCMH)', 'g/L'),
+      ('BIO_CCMH', 'Concentration corpusculaire moyenne en hémoglobine (CCMH)', 'g/dL'),
       ('BIO_IDR', 'Indice de distribution des globules rouges (IDR)', '%'),
       ('BIO_LEUCOCYTES', 'Leucocytes', '10^9/L'),
       ('BIO_PLAQUETTES', 'Plaquettes', '10^9/L'),
@@ -123,6 +127,14 @@ BEGIN
     );
     IF nb <> 36 THEN
       RAISE EXCEPTION 'D-261: % analyte(s) du compte rendu courant conformes au lieu de 36 (code, libellé, unité, prélèvement, provenance)', nb;
+    END IF;
+
+    -- D-264 : trois unités calées sur l'impression du laboratoire (la CCMH est
+    -- tenue ci-dessus avec les 36).
+    SELECT count(*) INTO nb FROM biology_analytes
+    WHERE (code, unite) IN (('BIO_HEMOGLOBINE', 'g/dL'), ('BIO_FOLATES_ERYTHROCYTAIRES', 'ng/mL'));
+    IF nb <> 2 THEN
+      RAISE EXCEPTION 'D-264: % analyte(s) en unité imprimée au lieu de 2 (hémoglobine g/dL, folates érythrocytaires ng/mL)', nb;
     END IF;
 
     -- D-059 : un analyte ajouté par D-261 n'arrive avec AUCUNE plage.
