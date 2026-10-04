@@ -207,6 +207,7 @@ describe('les libellés et les liens', () => {
     ['bilan', 'Lire mon bilan', '/portail/TOK/bilan'],
     ['synthese', 'Lire ce que mon praticien a compris', '/portail/TOK/comprehension'],
     ['fiche_assiette', 'Lire la fiche remise par mon praticien', '/portail/TOK/fiches/rem_1'],
+    ['lettre_adressage', 'Lire le courrier pour mon médecin', '/portail/TOK/courrier-medecin'],
   ] as const)('%s : « %s » vers %s', (espece, cta, href) => {
     expect(ctaLecture(espece)).toBe(cta);
     expect(lienLecture('TOK', { espece, idObjet: 'rem_1' })).toBe(href);
@@ -217,9 +218,31 @@ describe('les libellés et les liens', () => {
   });
 
   it('aucun libellé ne compte, ne date ni ne reproche', () => {
-    for (const espece of ['bilan', 'synthese', 'fiche_assiette'] as const) {
+    for (const espece of ['bilan', 'synthese', 'fiche_assiette', 'lettre_adressage'] as const) {
       expect(ctaLecture(espece)).not.toMatch(/\d/);
       expect(ctaLecture(espece)).not.toMatch(/depuis|il y a|non lu|en retard|nouveau/i);
     }
+  });
+});
+
+describe('le courrier pour le médecin (D-262, LOT-03a)', () => {
+  it('un courrier servi est une lecture, à sa place dans l’ordre des remises', () => {
+    const lectures = lecturesAttendues(sources({
+      bilansTransmis: [{ id: 'env_1', envoyeLe: D('2026-09-01T10:00:00Z') }],
+      lettresServies: [{ id: 'lar_1', remiseLe: D('2026-10-04T10:00:00Z') }],
+    }));
+    expect(cles(lectures)).toEqual(['bilan:env_1', 'lettre_adressage:lar_1']);
+  });
+
+  it('surface fermée (`null`) ou absente : aucune lecture n’en sort', () => {
+    expect(lecturesAttendues(sources({ lettresServies: null }))).toEqual([]);
+    expect(lecturesAttendues(sources({}))).toEqual([]);
+  });
+
+  it('un courrier déjà ouvert n’est plus attendu', () => {
+    expect(lecturesAttendues(sources({
+      lettresServies: [{ id: 'lar_1', remiseLe: D('2026-10-04T10:00:00Z') }],
+      dejaLues: [{ espece: 'lettre_adressage', idObjet: 'lar_1' }],
+    }))).toEqual([]);
   });
 });
