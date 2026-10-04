@@ -6,6 +6,7 @@ import {
   listerCatalogueBiologie,
   type CatalogueBiologieResult,
 } from '@/lib/biology-library/catalogue';
+import { signature } from '@/lib/biology-library/saisieMessages';
 
 // Service du catalogue documentaire biologie (CB-08) — PRATICIEN SEUL, patron
 // exact de /api/praticien/complements (C4). Le référentiel est global au
@@ -40,7 +41,7 @@ export async function GET(): Promise<NextResponse<CatalogueBiologieApiResponse>>
     const catalogue = await listerCatalogueBiologie();
     return NextResponse.json({ ok: true, ...catalogue });
   } catch (err) {
-    console.error('[praticien/biologie/catalogue GET]', err instanceof Error ? err.message : String(err));
+    console.error('[praticien/biologie/catalogue GET]', signature(err));
     return echec('exception', 'Erreur technique.', 500);
   }
 }

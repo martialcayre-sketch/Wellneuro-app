@@ -140,4 +140,58 @@ for (const motif of demandeClinique) {
   }
 }
 
+// Niveau DEMANDE — toute table signée, récente ou future (BP-01, D-266).
+// La liste ci-dessus est littérale : neuf tables signées après le Socle n'y
+// étaient pas (catalogue des conduites, signaux de sécurité, portes
+// biologiques…), et la prochaine n'y serait pas davantage. Le critère est
+// donc le marqueur lui-même, `validationExterne: true` hors commentaire,
+// cherché dans le fichier sur disque ET dans le contenu entrant (`Write` d'un
+// fichier neuf, `Edit` qui pose le marqueur). Les compagnons de test restent
+// en silence, comme plus haut : leurs fixtures portent le marqueur.
+const estSourceDeProduction =
+  /\.([cm]?[tj]sx?|json)$/.test(normalized) && !/\.(test|spec)\.[a-z]+$/.test(normalized);
+
+if (estSourceDeProduction) {
+  const sansCommentaires = (texte) =>
+    String(texte)
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .filter((ligne) => !/^\s*\/\//.test(ligne))
+      .join("\n");
+  const textes = [];
+  try {
+    const absolu = path.resolve(process.env.CLAUDE_PROJECT_DIR || process.cwd(), filePath);
+    textes.push(fs.readFileSync(absolu, "utf8"));
+  } catch {
+    // Fichier neuf ou illisible : seul le contenu entrant est jugé.
+  }
+  for (const champ of [toolInput.content, toolInput.new_string]) {
+    if (typeof champ === "string") textes.push(champ);
+  }
+  if (Array.isArray(toolInput.edits)) {
+    for (const edit of toolInput.edits) {
+      if (edit && typeof edit.new_string === "string") textes.push(edit.new_string);
+    }
+  }
+  // Clé nue ou entre guillemets (`"validationExterne": true` en JSON).
+  const marqueur = /["']?validationExterne["']?\s*:\s*true/;
+  if (textes.some((texte) => marqueur.test(sansCommentaires(texte)))) {
+    process.stdout.write(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "ask",
+        permissionDecisionReason:
+          // Le littéral du marqueur n'est PAS recopié ici : ce hook se
+          // demanderait sinon confirmation pour sa propre édition.
+          `Table signée détectée (marqueur validationExterne) : ${filePath}. ` +
+          `Toute modification — même une ligne, même un commentaire — exige ` +
+          `une décision D-xxx et un fragment changelog.d/ (DC-17, DC-18) ; ` +
+          `un fichier au sha épinglé devra être ré-épinglé dans son banc. ` +
+          `Autoriser vaut confirmation explicite dans la session.`
+      }
+    }));
+    process.exit(0);
+  }
+}
+
 process.exit(0);

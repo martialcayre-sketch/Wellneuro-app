@@ -8987,3 +8987,21 @@ précédente » ; remise hors du clic.
 
 **Prochaine action.** Ordre de pose de `WN_LETTRE_ADRESSAGE_PATIENT`, constat
 sur un dossier de test.
+
+## 2026-10-04 — BIO-PARCOURS BP-01 : gardes avant surface
+
+**Décidé.** Neuf gardes sous `web/src/lib/bio-parcours/`, chacune prouvée par
+mutation. Liste blanche `biology-library` figée sur ses 26 importeurs réels.
+Hook DC-17 sur le marqueur `validationExterne: true` (14 tables, plus les
+futures). Vérificateur DC-03 pur, non branché ; `extraction.ts` exempté, lié à
+son schéma fermé. Neuf lignes de journal `err.message` corrigées.
+
+**Écarté.** Liste blanche limitée à un seul fichier (fausse au dépôt) ; mots
+de population dans la sentinelle (« déficit » vient d'un libellé signé).
+
+Promotions : décision → aucune (D-266 suffit) ; règle → hook DC-17 étendu.
+
+**Prochaine action.** PR, CI, merge ; désignation du lot suivant par le
+responsable.
+
+**Questions ouvertes.** Les bancs ne voient que l'import direct.

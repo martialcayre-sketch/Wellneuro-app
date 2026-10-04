@@ -94,7 +94,7 @@ lots s'écrivent quand ils arrivent.
 | **Phase 0** | | **Destination, gouvernance, gardes** | | | |
 | BP-00 | LOT-00 | Décision-cadre `D-266`, ouverture de la campagne | terminé (2026-10-04) | non | — |
 | BP-26 | LOT-26 | Note de qualification par fonction, existant compris | à_faire | non | BP-00 |
-| BP-01 | LOT-01 | Gardes avant surface | à_faire | non | BP-00 |
+| BP-01 | LOT-01 | Gardes avant surface | terminé (2026-10-04) | non | BP-00 |
 | BP-02 | LOT-02 | Constat d'usage et ligne de base, en agrégats | à_faire | non | — (lecture seule) |
 | BP-25 | LOT-25 | Plafond d'actions porté à 7 | à_faire | non | BP-00 |
 | BP-23 | LOT-23 | Relecture réelle (`D-213` §1) | à_faire | non | BP-01 |

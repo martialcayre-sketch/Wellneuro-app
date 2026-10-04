@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import { classeEtCode } from '@/lib/observability/classeEtCode';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import {
   evaluerPortesBiologiquesPourPatient,
@@ -82,7 +83,7 @@ export async function GET(req: Request): Promise<NextResponse<PortesBiologiquesA
     }
     return NextResponse.json({ ok: true, ...resultat });
   } catch (err) {
-    console.error('[portes-biologiques] lecture impossible', err instanceof Error ? err.message : String(err));
+    console.error('[portes-biologiques] lecture impossible', ...classeEtCode(err));
     return NextResponse.json(
       { ok: false, reason: 'exception', error: 'Lecture impossible de la biologie des assiettes.' },
       { status: 500 },

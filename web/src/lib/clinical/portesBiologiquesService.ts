@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
 import { derniersResultatsParAnalyte } from '@/lib/biology-library/derniersResultats';
+import { signature } from '@/lib/biology-library/saisieMessages';
 import { getRecommendedPlate } from '@/lib/food-compass/plates';
 import { claimsValidesAuCorpus } from '@/lib/rag/claims/validite';
 import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
@@ -125,7 +126,7 @@ export async function evaluerPortesBiologiquesPourPatient(idPatient: string): Pr
   try {
     claimsValides = await claimsValidesAuCorpus(referencesCitees());
   } catch (err) {
-    console.error('[portesBiologiquesService] corpus illisible', err instanceof Error ? err.message : String(err));
+    console.error('[portesBiologiquesService] corpus illisible', signature(err));
     claimsValides = null;
   }
 

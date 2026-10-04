@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "BP-01 — Gardes avant surface"
-statut: "à_faire"
+statut: "terminé (2026-10-04)"
 dépend_de: "LOT-00"
 ---
 
@@ -57,9 +57,9 @@ LOT-00 (BP-00).
 
 ## Étapes
 
-- [ ] Écrire chaque banc, vert sur le code actuel.
-- [ ] Prouver chaque banc par sa mutation.
-- [ ] Étendre le hook DC-17.
+- [x] Écrire chaque banc, vert sur le code actuel.
+- [x] Prouver chaque banc par sa mutation.
+- [x] Étendre le hook DC-17.
 
 ## Tests
 
@@ -71,4 +71,43 @@ T2 vert ; chaque garde a sa mutation qui rougit.
 
 ## Résultats
 
-À compléter à la clôture.
+Bancs sous `web/src/lib/bio-parcours/`, chacun prouvé par une mutation
+appliquée puis retirée (le rouge a été constaté à chaque fois) :
+
+| Garde | Banc | Mutation qui rougit |
+|---|---|---|
+| Empreintes du chemin documentaire | `cheminDocumentaire.guard.test.ts` | import (de type) de `biology-library` dans `canonical.ts` ; la carte qui recopie son entrée dans l'empreinte |
+| Liste blanche `biology-library` (26 importeurs figés) | `importeursBiologyLibrary.guard.test.ts` | importeur neuf |
+| Faits du laboratoire (modèle entier, 5 fichiers d'accès) | `lecteursResultatBiologique.guard.test.ts` | lecteur neuf de `resultatBiologique` |
+| Sentinelle (mots de verdict sur une valeur, couleur, priorité ; `innerText`) | `web/e2e/helpers/sentinelle.ts` | texte « anormal / priorité / urgent » rejeté |
+| Hook DC-17 sur toute table signée (`.ts`, `.mts`, `.cts`, `.json`, clé entre guillemets) | `.claude/hooks/protect-wellneuro-files.{mjs,test.mjs}` | détection désactivée : 11 tests rouges |
+| Aucune phrase dans une structure signable (verrou posé ou éteint) | `aucunePhraseStructureSignee.guard.test.ts` | structure signée neuve portant une phrase |
+| Vérificateur DC-03 bloquant (doses collées à l'unité comprises) | `verifierDc03.ts` + `appelantsLlmBiologie.guard.test.ts` | rédacteur LLM biologie sans le vérificateur |
+| « Besoin 2 » hors `catalogueConduitesV1` | `catalogueConduitesSepare.guard.test.ts` | importeur neuf du catalogue ; le catalogue qui importe un module neuf |
+| `signature(err)` sur les routes biologie | `journalisationRoutesBiologie.guard.test.ts` | `err.message` rétabli |
+
+Écarts au lot, constatés au cadrage :
+
+- **Liste blanche** : la liste prévue (un seul fichier) était fausse,
+  `biology-library` ayant déjà 26 importeurs. On les a figés (arbitrage du
+  2026-10-04).
+- **Journalisation** : 9 lignes (6 routes et `portesBiologiquesService`)
+  écrivaient `err.message`. Elles sont corrigées vers `signature(err)` ou
+  `classeEtCode(err)`, sans effet sur les réponses.
+- **Reporté** :
+  - « entrées décisionnelles du nouveau module tracées » → BP-12a (le module
+    n'existe pas) ;
+  - garde des faits du laboratoire champ par champ → BIO-INGEST LOT-07 ;
+  - forme « région » de la sentinelle → première surface patient (BP-16) ;
+    aucune page du portail ne montre de biologie aujourd'hui.
+- **Exemption DC-03** : `biology-library/import/extraction.ts` (BIO-INGEST).
+  Sa sortie suit un schéma fermé (D-256), est validée ligne à ligne et n'est
+  jamais servie telle quelle. L'exemption est liée à cette forme : les champs
+  du schéma sont épinglés.
+- **Revue `wn-reviewer`** : 2 P1 et 5 P2, tous traités dans ce lot.
+  - P1 : la sentinelle refusait « déficit », qui figure dans le libellé de
+    population d'un panel signé ; ce n'est pas un verdict, les mots de
+    population sont retirés de la liste.
+  - P1 : `verifierDc03` ne voyait pas une dose collée à son unité.
+  - P2 : limites des bancs écrites ; hook étendu ; détecteur de journal
+    élargi ; structures au verrou éteint jugées.
