@@ -370,7 +370,10 @@ additive le vocabulaire d'unités, en reconstruisant les quatre CHECK
 - Statut : accepté — arbitrages du responsable rendus en session le
   2026-10-03 (B1 à B4) ; **phrase d'accompagnement signée le 2026-10-03**
   (cadrage §4, texte au caractère près). LOT-01 : table
-  `lettres_adressage_remises` (migration seule). Cadrage :
+  `lettres_adressage_remises` (migration seule). **Q-L1 tranchée le
+  2026-10-04** (cadrage §5) : une lettre remise reste servie jusqu'à sa
+  révocation, porteuse dépassée ou lettre plus récente non encore diffusée
+  comprises. Cadrage :
   `docs/claude/campagnes/CADRAGE_LETTRE_ADRESSAGE_PATIENT_2026-10-03.md`.
 - Domaine : correspondance ([[D-218]]), levée par adressage ([[D-257]]),
   portail patient, remise de document ([[D-251]] comme patron).
