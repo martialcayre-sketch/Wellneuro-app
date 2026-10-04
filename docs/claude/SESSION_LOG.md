@@ -8987,3 +8987,17 @@ précédente » ; remise hors du clic.
 
 **Prochaine action.** Ordre de pose de `WN_LETTRE_ADRESSAGE_PATIENT`, constat
 sur un dossier de test.
+
+## 2026-10-04 — Lettre d'adressage remise au patient : pose du drapeau
+
+**Décidé.** `WN_LETTRE_ADRESSAGE_PATIENT` posé en production (env, conteneurs
+recréés, one-off, sonde 401) ; consigné « posé, non constaté ».
+
+**Écarté.** Écrire « constaté » sans clic ni remise relue par conteneur.
+
+**Prochaine action.** Clic « Valider pour diffusion » sur `PAT011` (version
+active relue), constat portail/impression, une seule remise ; puis consigner
+le constat.
+
+**Questions ouvertes.** Date UTC de la lettre ; e-mail si révocation pendant
+la remise ; export d'accès sans les remises.
