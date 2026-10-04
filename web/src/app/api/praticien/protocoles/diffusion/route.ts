@@ -27,6 +27,7 @@ import {
 import { envoiFichesOuvert, lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
 import { apercuFichesDuProtocole, remettreFiches } from '@/lib/fiches-assiette/remise';
 import { annonceDue, annoncerDocumentRemis, reserverAnnonce, type AnnonceFiches } from '@/lib/fiches-assiette/annonce';
+import { lettreAdressagePatientOuverte, remettreLettreAdressage } from '@/lib/correspondance/lettreAdressageRemise';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // Validation « pour diffusion » du protocole (C2A LOT-03 Part B). Persiste
@@ -65,6 +66,9 @@ type PostResponse =
       approvedAt: string;
       /** Drapeau ouvert seulement : le nombre de fiches remises par ce clic. */
       fichesRemises?: number;
+      /** `WN_LETTRE_ADRESSAGE_PATIENT` ouvert seulement : ce clic a-t-il remis
+       * la lettre d'adressage au patient ([[D-262]]) ? */
+      lettreAdressageRemise?: boolean;
       /** Espace de lecture ouvert et fiche remise seulement : le sort de
        * l'e-mail neutre ([[D-251]] §9). Absent quand il n'était pas dû. */
       annonceFiches?: AnnonceFiches;
@@ -359,10 +363,22 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           unchanged = false;
         }
         const fichesRemises = await remettreFiches(tx, apercu, { idPatient, idApprobation: approvalId });
+        // LA LETTRE D'ADRESSAGE ([[D-262]], LOT-02), dans la même transaction,
+        // sous son propre drapeau : le même sort que les fiches quand le dossier
+        // les bloque, et seulement sous un protocole ouvert par l'orientation.
+        const lettreRemise = await remettreLettreAdressage(tx, {
+          idPatient,
+          idApprobation: approvalId,
+          actions,
+          bloque: blocage !== null,
+        });
         // La trace de l'e-mail naît AVEC les remises (lot 11) : un arrêt entre
-        // le commit et l'envoi ne peut plus le perdre sans rien laisser.
-        const idTraceAnnonce = annonceDue(fichesRemises) ? await reserverAnnonce(tx, idPatient) : null;
-        return { perime: false as const, approvalId, unchanged, fichesRemises, idTraceAnnonce };
+        // le commit et l'envoi ne peut plus le perdre sans rien laisser. UNE
+        // annonce par clic, fiches et lettre confondues ([[D-262]] B3).
+        const idTraceAnnonce = annonceDue(fichesRemises) || lettreRemise > 0
+          ? await reserverAnnonce(tx, idPatient)
+          : null;
+        return { perime: false as const, approvalId, unchanged, fichesRemises, lettreRemise, idTraceAnnonce };
       }, { timeout: 20_000 });
 
       if (issue.perime) {
@@ -384,6 +400,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         protocolDraftInputHash,
         approvedAt,
         fichesRemises: issue.fichesRemises,
+        ...(lettreAdressagePatientOuverte() ? { lettreAdressageRemise: issue.lettreRemise > 0 } : {}),
         ...(annonceFiches ? { annonceFiches } : {}),
       });
     }

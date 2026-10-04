@@ -36,6 +36,10 @@ const NETTOYAGE_E2E = path.join('e2e', 'helpers', 'db.ts');
 const ROUTE_LETTRE = path.join('src', 'app', 'api', 'praticien', 'adressage', 'courrier', 'route.ts');
 const ROUTE_REVOCATION = path.join('src', 'app', 'api', 'praticien', 'adressage', 'revocation', 'route.ts');
 const LECTEUR_CHAINE = path.join('src', 'lib', 'clinical-engine', 'adressagesSignalAlertePrisma.ts');
+// [[D-262]], LOT-02 : la remise de la lettre au patient relit la couverture
+// active la plus récente, dans la transaction de diffusion — la règle même que
+// le trigger de `lettres_adressage_remises` opposera à l'insertion.
+const LECTEUR_REMISE = path.join('src', 'lib', 'correspondance', 'lettreAdressageRemise.ts');
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
@@ -101,10 +105,11 @@ describe('Adressages sur signal d’alerte — qui écrit, qui lit (D-257, LOT-0
     expect(occurrences(IMBRIQUEE)).toEqual([]);
   });
 
-  it('deux lecteurs, et deux seulement — la chaîne C1 et la route de révocation (LOT-04)', () => {
+  it('trois lecteurs, et trois seulement — la chaîne C1, la route de révocation (LOT-04) et la remise au patient (D-262)', () => {
     expect(occurrences(LIRE)).toEqual([
       { fichier: ROUTE_REVOCATION, n: 1 },
       { fichier: LECTEUR_CHAINE, n: 1 },
+      { fichier: LECTEUR_REMISE, n: 1 },
     ]);
     expect(LIRE.test('prisma.adressageSignalAlerte.findMany({')).toBe(true);
   });
