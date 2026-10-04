@@ -40,8 +40,12 @@ Ce qui existe déjà (relevé du 2026-10-03) :
 ## 3. Ce que cela veut dire dans le code
 
 **3.1 Quelle lettre est remise.** La lettre ACTIVE la plus récente du dossier :
-une couverture `adressage` non révoquée, sur la consultation porteuse courante
-(`lireCouverturesAdressage`), dont la lettre est relue. Plusieurs lettres
+une couverture `adressage` non révoquée, sur la consultation porteuse courante,
+dont la lettre est relue. Le lecteur est celui de la remise
+(`lettreAdressageRemise.ts`, LOT-02), pas `lireCouverturesAdressage` : il suit
+la règle du trigger — la plus récente au sens d'`ordre`, **sans repli** sur une
+lettre plus ancienne si celle-ci n'est pas conforme —, quand le lecteur de la
+chaîne C1 rend toutes les couvertures conformes. Plusieurs lettres
 actives (le cas existe déjà en production : trois consignations successives sur
 un même dossier) ⇒ une seule est remise, la plus récente. Aucune lettre active ⇒
 rien n'est remis, et la diffusion n'en est pas bloquée (le moteur exige déjà
@@ -85,17 +89,18 @@ constatée, phrase signée, constat sur un dossier de test.
 > montrer depuis ce portail.
 
 Ni « alerte », ni signal nommé, ni délai chiffré (même contrainte que [[D-257]]
-§9). **Signée par le responsable le 2026-10-03, en session** ; le LOT-02 la
-recopie au caractère près et la passe au banc `termeAnxiogene`.
+§9). **Signée par le responsable le 2026-10-03, en session** ; le LOT-03, qui
+porte l'écran, la recopie au caractère près et la passe au banc
+`termeAnxiogene` (le LOT-02 n'a aucune prose patient).
 
 ## 5. Découpage proposé
 
 | Lot | Contenu | Porte |
 |---|---|---|
 | LOT-00 | Ce cadrage ; [[D-262]] (précise [[D-218]] : la lettre reste remise au médecin par le patient ou le praticien, et devient aussi mise à disposition du patient lui-même) ; `DOSSIER_RGPD` déclaré avant activation | arbitrages B1-B4 |
-| LOT-01 | Migration seule : table des remises de lettre, contrat SQL, effacement nommé | `release-db` approuvée, constat par conteneur |
-| LOT-02 | Émission dans la transaction de diffusion + réservation de l'annonce, derrière le drapeau éteint | LOT-01 constaté ; phrase signée |
-| LOT-03 | Portail : espèce de lecture `lettre_adressage`, route `api/portail`, écran (phrase + lettre + impression), retrait après révocation | LOT-02 |
+| LOT-01 | Migration seule : table des remises de lettre, contrat SQL, effacement nommé — **appliquée 2026-10-04** (#1300) | `release-db` approuvée, constat par conteneur |
+| LOT-02 | Émission dans la transaction de diffusion + réservation de l'annonce, derrière le drapeau éteint (`WN_LETTRE_ADRESSAGE_PATIENT`) — PR #1306 | LOT-01 constaté (run `release-db` 37210794747, 2026-10-04) ; phrase signée |
+| LOT-03 | Portail : espèce de lecture `lettre_adressage`, route `api/portail`, écran (phrase + lettre + impression), retrait après révocation ; **aperçu praticien de la lettre au GET de diffusion et dans le jeton** (revue du LOT-02, P1 : condition de la pose du drapeau) | LOT-02 |
 
 Chaque lot : `wn-reviewer` avant PR ; T2 pour l'écran (E2E par le CI).
 

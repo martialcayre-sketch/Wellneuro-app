@@ -8913,3 +8913,14 @@ l'e-mail d'Anthropic dans le dépôt public.
 **Prochaine action.** Merge de #1305 après CI vert, puis BP-00 en mode Plan, dans une session neuve.
 
 **Questions ouvertes.** Critères du seuil de l'AIPD non renseignés (choix du responsable).
+
+## 2026-10-04 — Lettre d'adressage remise au patient : LOT-02 (émission)
+
+**Décidé.** Remise dans la transaction de diffusion, par la règle du trigger ;
+refus de la base isolé par point de sauvegarde ; annonce mutualisée avec les
+fiches ; drapeau `WN_LETTRE_ADRESSAGE_PATIENT` éteint.
+
+**Écarté.** Chemin non transactionnel (drapeau des fiches fermé) : la lettre
+n'y part pas ; aperçu praticien de la lettre au GET (LOT-03 au besoin).
+
+**Prochaine action.** CI, merge, puis LOT-03 (portail).

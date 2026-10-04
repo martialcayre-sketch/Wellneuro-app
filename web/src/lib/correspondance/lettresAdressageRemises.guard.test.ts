@@ -10,9 +10,10 @@ import { describe, expect, it } from 'vitest';
 // supprimer. Ce banc garde ce que la base ne peut pas dire — QUEL CODE écrit :
 //   — une remise ne se supprime QUE dans `patient/effacement.ts` ;
 //   — aucun code ne la réécrit, ni par Prisma, ni en SQL brut ;
-//   — AUCUN code ne la crée encore : LOT-01 livre la table seule ([[D-087]]).
-//     Le LOT-02 nommera ici son unique émetteur, par `createMany` (la base
-//     annule sans erreur une remise identique à la remise en cours).
+//   — UN SEUL ENDROIT en crée : `lettreAdressageRemise.ts` (LOT-02), par
+//     `createMany` — la base annule sans erreur une remise identique à la
+//     remise en cours, et un `create` qui attend sa ligne échouerait. La route
+//     de diffusion l'appelle ; elle n'écrit pas elle-même.
 
 // LA PORTÉE EST CELLE DE LA GARDE DES ADRESSAGES : `src/`, `scripts/`,
 // `prisma/`, `e2e/` et les scripts de la racine du dépôt, en TypeScript,
@@ -24,6 +25,7 @@ const RACINE = process.cwd();
 const RACINES = ['src', 'scripts', 'prisma', 'e2e', path.join('..', 'scripts')]
   .map(dossier => path.join(RACINE, dossier));
 const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');
+const EMETTEUR = path.join('src', 'lib', 'correspondance', 'lettreAdressageRemise.ts');
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
@@ -49,6 +51,7 @@ function occurrences(motif: RegExp): { fichier: string; n: number }[] {
 }
 
 const CREER = /\.lettreAdressageRemise\s*\.\s*(?:create|createMany|createManyAndReturn)\s*\(/;
+const CREER_UNE = /\.lettreAdressageRemise\s*\.\s*create\s*\(/;
 const SUPPRIMER = /\.lettreAdressageRemise\s*\.\s*(?:delete|deleteMany)\s*\(/;
 const REECRIRE = /\.lettreAdressageRemise\s*\.\s*(?:update|updateMany|updateManyAndReturn|upsert)\s*\(/;
 const SQL_BRUT = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+(?:public\.)?"?lettres_adressage_remises\b/i;
@@ -68,14 +71,17 @@ describe('Remises de lettre d’adressage — qui écrit (D-262, LOT-01)', () =>
     expect(occurrences(SQL_BRUT)).toEqual([]);
   });
 
-  it('aucun code ne crée encore de remise, ni directement ni par écriture imbriquée', () => {
-    expect(occurrences(CREER)).toEqual([]);
+  it('un seul endroit crée des remises — par `createMany` —, et aucune écriture imbriquée', () => {
+    expect(occurrences(CREER)).toEqual([{ fichier: EMETTEUR, n: 1 }]);
+    expect(occurrences(CREER_UNE)).toEqual([]);
     expect(occurrences(IMBRIQUEE)).toEqual([]);
   });
 
   it('les motifs reconnaissent bien les formes qu’ils doivent refuser', () => {
     expect(SUPPRIMER.test('tx.lettreAdressageRemise.deleteMany({ where: par })')).toBe(true);
     expect(CREER.test('tx.lettreAdressageRemise.createMany({ data })')).toBe(true);
+    expect(CREER_UNE.test('tx.lettreAdressageRemise.create({ data })')).toBe(true);
+    expect(CREER_UNE.test('client.lettreAdressageRemise.createMany({ data })')).toBe(false);
     expect(REECRIRE.test('prisma.lettreAdressageRemise.upsert({')).toBe(true);
     expect(SQL_BRUT.test('DELETE FROM public.lettres_adressage_remises WHERE')).toBe(true);
     expect(SQL_BRUT.test('update "lettres_adressage_remises" set')).toBe(true);
