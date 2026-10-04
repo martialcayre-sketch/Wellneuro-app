@@ -7,6 +7,8 @@ import { syntheseServieAuPatient } from '@/lib/praticien/syntheseComprehension';
 import { isComprehensionEnabled } from '@/lib/patient/featureFlag';
 import { lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
 import { fichesALire } from '@/lib/fiches-assiette/servicePatient';
+import { lettreAdressagePatientOuverte } from '@/lib/correspondance/lettreAdressageRemise';
+import { lettreALire } from '@/lib/correspondance/lettreServicePatient';
 import { lecturesAttendues, type EspeceLecture, type LectureAttendue } from '@/lib/portail/lecturesAttendues';
 import { logger } from '@/lib/observability/logger';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
@@ -165,19 +167,32 @@ async function fichesServies(idPatient: string) {
   return fiches.map(fiche => ({ id: fiche.idRemise, remiseLe: new Date(fiche.remiseLe), libelle: fiche.libelle }));
 }
 
+/**
+ * Le courrier pour le médecin SERVI à ce patient ([[D-262]], LOT-03a). `null` =
+ * surface fermée par `WN_LETTRE_ADRESSAGE_PATIENT`, relu ici après l'identité.
+ */
+async function lettresServies(idPatient: string) {
+  if (!lettreAdressagePatientOuverte()) return null;
+  return lettreALire(idPatient);
+}
+
 export async function GET(req: Request): Promise<NextResponse<PortailLecturesResponse>> {
   const requestContext = createRequestContext(req);
   const garde = await garderAcces(req, requestContext, 'GET');
   if (garde.refus) return garde.refus;
 
   try {
-    const [documents, fiches, dejaLues] = await Promise.all([
+    const [documents, fiches, lettres, dejaLues] = await Promise.all([
       documentsCourants(garde.patient.idPatient),
       // Une panne des fiches tait LEURS lectures, pas celles du bilan et de la
       // synthèse : le fil retombe sur ce qu'il sait. Seule la classe de
       // l'erreur est journalisée.
       fichesServies(garde.patient.idPatient).catch((erreur: unknown) => {
         console.warn('[portail/lectures] fiches d’assiette illisibles', erreur instanceof Error ? erreur.name : 'inconnu');
+        return null;
+      }),
+      lettresServies(garde.patient.idPatient).catch((erreur: unknown) => {
+        console.warn('[portail/lectures] courrier pour le médecin illisible', ...classeEtCode(erreur));
         return null;
       }),
       prisma.portailLecturePatient.findMany({
@@ -189,7 +204,7 @@ export async function GET(req: Request): Promise<NextResponse<PortailLecturesRes
     return withCorrelationHeader(
       NextResponse.json<PortailLecturesResponse>({
         ok: true,
-        lectures: lecturesAttendues({ ...documents, fichesServies: fiches, dejaLues }),
+        lectures: lecturesAttendues({ ...documents, fichesServies: fiches, lettresServies: lettres, dejaLues }),
       }),
       requestContext,
     );
@@ -212,7 +227,7 @@ export async function GET(req: Request): Promise<NextResponse<PortailLecturesRes
   }
 }
 
-const ESPECES: readonly EspeceLecture[] = ['bilan', 'synthese', 'fiche_assiette'];
+const ESPECES: readonly EspeceLecture[] = ['bilan', 'synthese', 'fiche_assiette', 'lettre_adressage'];
 
 function especeValide(valeur: unknown): valeur is EspeceLecture {
   return typeof valeur === 'string' && (ESPECES as readonly string[]).includes(valeur);
@@ -270,6 +285,8 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
     if (espece === 'fiche_assiette') {
       // Surface fermée : aucune fiche servie, donc un 404 comme pour les autres.
       servis = ((await fichesServies(garde.patient.idPatient)) ?? []).map(fiche => fiche.id);
+    } else if (espece === 'lettre_adressage') {
+      servis = ((await lettresServies(garde.patient.idPatient)) ?? []).map(lettre => lettre.id);
     } else {
       const documents = await documentsCourants(garde.patient.idPatient);
       servis =

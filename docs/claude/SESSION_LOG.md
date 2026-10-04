@@ -8925,6 +8925,16 @@ n'y part pas ; aperçu praticien de la lettre au GET (LOT-03 au besoin).
 
 **Prochaine action.** CI, merge, puis LOT-03 (portail).
 
+## 2026-10-04 — Lettre d'adressage remise au patient : LOT-03a (portail)
+
+**Décidé.** Écran « Courrier pour votre médecin », route portail, espèce de
+lecture, retrait calculé à la lecture, lien de l'accueil ; LOT-03 coupé en
+03a/03b (aperçu praticien).
+
+**Écarté.** Rendu HTML médecin réutilisé côté patient (cadre destiné au
+médecin) ; liste de toutes les remises (seule la plus récente sert).
+
+**Prochaine action.** Revue, CI, merge, puis LOT-03b.
 ## 2026-10-04 — BIO-PARCOURS BP-00, décision-cadre (D-266)
 
 **Décidé.** D-266 acceptée : deux étages, prescription hors médicament côté praticien (mot proscrit
@@ -8956,3 +8966,13 @@ lui-même les grandes images) ; HEIC.
 
 **Questions ouvertes.** Plusieurs photos pour un même compte rendu ; redimensionnement si les refus
 `image_trop_lourde` se constatent.
+## 2026-10-04 — Lettre d'adressage remise au patient : LOT-03b (aperçu, impression)
+
+**Décidé.** Aperçu de la lettre au cockpit, identifiant dans le jeton des
+fiches (refus puis relecture si elle change) ; impression patient par le rendu
+`medecin` depuis le texte figé.
+
+**Écarté.** Second jeton dédié (le premier est déjà envoyé et relu) ; texte de
+la lettre dans l'aperçu (déjà dans Correspondance).
+
+**Prochaine action.** Merge, arbitrage Q-L1, pose sur ordre.

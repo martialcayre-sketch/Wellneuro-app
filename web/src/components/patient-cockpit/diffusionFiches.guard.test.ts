@@ -75,3 +75,19 @@ describe('Cockpit — l’e-mail neutre, dit avant et après le clic', () => {
     expect(SOURCE).toMatch(/annonce=\{annonceFiches\}/);
   });
 });
+
+// LE COURRIER POUR LE MÉDECIN ([[D-262]], LOT-03b) : le praticien le voit AVANT
+// le clic. Son identifiant voyage dans le jeton des fiches, déjà envoyé — seul
+// l'affichage est à câbler, et à effacer comme l'aperçu des fiches.
+describe('Cockpit — l’aperçu du courrier pour le médecin', () => {
+  it('la lecture de l’état de diffusion pose l’aperçu de la lettre, et l’efface sur les deux échecs', () => {
+    expect(SOURCE).toMatch(/setApercuLettre\(payload\.lettre \?\? null\)/);
+    const debut = SOURCE.indexOf('const loadDiffusion = useCallback');
+    const corps = SOURCE.slice(debut, SOURCE.indexOf('}, [idPatient]);', debut));
+    expect(corps.match(/setApercuLettre\(null\)/g)?.length).toBe(2);
+  });
+
+  it('le panneau reçoit l’aperçu de la lettre', () => {
+    expect(SOURCE).toMatch(/lettre=\{apercuLettre\}/);
+  });
+});

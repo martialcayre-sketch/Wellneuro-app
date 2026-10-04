@@ -22,6 +22,7 @@ import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
 import { LienFichesRemises } from '@/components/patient-companion/LienFichesRemises';
+import { LienCourrierMedecin } from '@/components/patient-companion/LienCourrierMedecin';
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
 import { construireFilDuJour } from '@/lib/portail/filDuJour';
 import type { LectureAttendue } from '@/lib/portail/lecturesAttendues';
@@ -362,6 +363,9 @@ export default function QuestionnairesHubPage() {
             ouverte ET qu'une fiche au moins a été remise ([[D-251]] §8). C'est
             l'accès permanent ; la tâche « à lire », elle, vit au fil. */}
         <LienFichesRemises token={token} />
+        {/* Le courrier pour le médecin traitant ([[D-262]]) : même règle, sous
+            son propre drapeau. */}
+        <LienCourrierMedecin token={token} />
         <a href={`/portail/${token}/alimentation`} className={patientButtonClassName('ghost')}>
           Ouvrir Mon carnet alimentaire
         </a>

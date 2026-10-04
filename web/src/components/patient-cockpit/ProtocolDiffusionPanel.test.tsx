@@ -356,3 +356,33 @@ describe('ProtocolDiffusionPanel — l’e-mail neutre ([[D-251]] §9, lot 11)',
     expect(screen.queryByText(/e-mail/)).toBeNull();
   });
 });
+
+describe('ProtocolDiffusionPanel — le courrier pour le médecin (D-262, LOT-03b)', () => {
+  const LETTRE = { idCorrespondance: 'lettre_1', consigneLe: '2026-10-03T08:00:00.000Z', dejaRemise: false };
+  const panneau = (lettre: typeof LETTRE | null) =>
+    render(<ProtocolDiffusionPanel canApprove approved={false} stale={false} approvedAt={null} lettre={lettre} onApprove={() => undefined} />);
+
+  it('AVANT le clic : la lettre qui partira est dite, avec sa date et l’e-mail qui suivra', () => {
+    panneau(LETTRE);
+    const bloc = screen.getByTestId('apercu-lettre-adressage');
+    expect(bloc.textContent).toMatch(/La lettre d’adressage du 3 octobre 2026 sera remise au patient avec ce protocole/);
+    expect(bloc.textContent).toMatch(/e-mail neutre, sans contenu de santé/);
+  });
+
+  it('déjà remise : le clic ne la remet pas, et aucun e-mail n’est annoncé pour elle', () => {
+    panneau({ ...LETTRE, dejaRemise: true });
+    const bloc = screen.getByTestId('apercu-lettre-adressage');
+    expect(bloc.textContent).toMatch(/déjà remise au patient : ce clic ne la remet pas de nouveau/);
+    expect(bloc.textContent).not.toMatch(/e-mail/);
+  });
+
+  it('aucune lettre (ou drapeau fermé) : rien n’est dit', () => {
+    panneau(null);
+    expect(screen.queryByTestId('apercu-lettre-adressage')).toBeNull();
+  });
+
+  it('la date est celle écrite dans la lettre (jour UTC), quel que soit le fuseau du navigateur', () => {
+    panneau({ ...LETTRE, consigneLe: '2026-03-29T22:30:00.000Z' });
+    expect(screen.getByTestId('apercu-lettre-adressage').textContent).toMatch(/du 29 mars 2026/);
+  });
+});
