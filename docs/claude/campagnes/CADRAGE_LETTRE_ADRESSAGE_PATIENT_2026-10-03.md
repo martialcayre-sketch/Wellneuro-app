@@ -100,8 +100,8 @@ porte l'écran, la recopie au caractère près et la passe au banc
 | LOT-00 | Ce cadrage ; [[D-262]] (précise [[D-218]] : la lettre reste remise au médecin par le patient ou le praticien, et devient aussi mise à disposition du patient lui-même) ; `DOSSIER_RGPD` déclaré avant activation | arbitrages B1-B4 |
 | LOT-01 | Migration seule : table des remises de lettre, contrat SQL, effacement nommé — **appliquée 2026-10-04** (#1300) | `release-db` approuvée, constat par conteneur |
 | LOT-02 | Émission dans la transaction de diffusion + réservation de l'annonce, derrière le drapeau éteint (`WN_LETTRE_ADRESSAGE_PATIENT`) — PR #1306 | LOT-01 constaté (run `release-db` 37210794747, 2026-10-04) ; phrase signée |
-| LOT-03a | Portail : espèce de lecture `lettre_adressage`, route `api/portail/lettre-adressage`, écran `courrier-medecin` (phrase signée + lettre + impression), retrait après révocation calculé à la lecture, lien « Autres espaces » | LOT-02 |
-| LOT-03b | **Aperçu praticien de la lettre au GET de diffusion et dans le jeton** (revue du LOT-02, P1) ; **impression par le rendu `medecin`** (en-tête, nom du patient, date, cadre interprofessionnel — §3.2 ; revue du LOT-03a, P1 : le LOT-03a imprime le corps seul) — deux conditions de la pose du drapeau | LOT-03a |
+| LOT-03a | Portail : espèce de lecture `lettre_adressage`, route `api/portail/lettre-adressage`, écran `courrier-medecin` (phrase signée + lettre + impression), retrait après révocation calculé à la lecture, lien « Autres espaces » — #1308 | LOT-02 |
+| LOT-03b | **Aperçu praticien de la lettre au GET de diffusion et dans le jeton** (revue du LOT-02, P1) ; **impression par le rendu `medecin`** (en-tête, nom du patient, date, cadre interprofessionnel — §3.2 ; revue du LOT-03a, P1 : le LOT-03a imprime le corps seul) — deux conditions de la pose du drapeau ; livré : clé `lettre` du GET de diffusion, identifiant de la lettre due dans le jeton du clic, route `api/portail/lettre-adressage/impression` | LOT-03a |
 
 **Question ouverte Q-L1 (revue du LOT-03a).** Une lettre remise reste servie
 tant qu'elle n'est pas révoquée : une consultation porteuse dépassée, ou une

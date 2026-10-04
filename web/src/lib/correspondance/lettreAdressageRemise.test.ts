@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
-import { lettreAdressagePatientOuverte, remettreLettreAdressage } from './lettreAdressageRemise';
+import { apercuLettreAdressage, jetonAvecLettre, lettreAdressagePatientOuverte, remettreLettreAdressage } from './lettreAdressageRemise';
 
 // [[D-262]], LOT-02 — la remise de la lettre au clic « Valider pour diffusion ».
 // La base tient la règle (contrat `lettres_adressage_remises_v1_negatif.sql`) ;
@@ -16,6 +16,7 @@ function client(options: {
   porteuse?: { id: string } | null;
   correspondance?: Record<string, unknown> | null;
   createMany?: () => Promise<{ count: number }>;
+  enCours?: string;
 } = {}) {
   const sql: string[] = [];
   const c = {
@@ -25,13 +26,14 @@ function client(options: {
     adressageSignalAlerte: {
       findFirst: vi.fn(async () => {
         const correspondance = options.correspondance === undefined
-          ? { id: 'lettre_1', idPatient: 'PAT_1', sens: 'sortant', ancrageVersion: 'safety-signals-nnpp2-v1', texte: TEXTE }
+          ? { id: 'lettre_1', idPatient: 'PAT_1', sens: 'sortant', ancrageVersion: 'safety-signals-nnpp2-v1', texte: TEXTE, consigneLe: new Date('2026-10-03T08:00:00.000Z') }
           : options.correspondance;
         return correspondance === null ? null : { correspondance };
       }),
     },
     lettreAdressageRemise: {
       createMany: vi.fn(options.createMany ?? (async () => ({ count: 1 }))),
+      findFirst: vi.fn(async () => (options.enCours === undefined ? null : { idCorrespondance: options.enCours })),
     },
     $executeRaw: vi.fn(async (gabarit: TemplateStringsArray) => {
       sql.push(gabarit.join('?'));
@@ -134,5 +136,27 @@ describe('Remise de la lettre d’adressage au patient (D-262, LOT-02)', () => {
     expect(sql).toEqual(['SAVEPOINT lettre_adressage_remise', 'ROLLBACK TO SAVEPOINT lettre_adressage_remise']);
     // La classe et le code au journal, jamais le message (il cite la lettre).
     expect(console.warn).toHaveBeenCalledWith(expect.any(String), 'Error', 'P0001');
+  });
+
+  it('LOT-03b — l’aperçu dit la lettre due, et si la remise en cours la porte déjà', async () => {
+    const neuve = client();
+    expect(await apercuLettreAdressage(neuve.c as never, ENTREES)).toEqual({
+      idCorrespondance: 'lettre_1', consigneLe: '2026-10-03T08:00:00.000Z', dejaRemise: false,
+    });
+    const deja = client({ enCours: 'lettre_1' });
+    expect(await apercuLettreAdressage(deja.c as never, ENTREES)).toEqual(expect.objectContaining({ dejaRemise: true }));
+    // Mêmes refus que la remise : sans orientation, ou dossier bloqué, aucun aperçu.
+    expect(await apercuLettreAdressage(client().c as never, { ...ENTREES, actions: [AUTRE] })).toBeNull();
+    expect(await apercuLettreAdressage(client().c as never, { ...ENTREES, bloque: true })).toBeNull();
+  });
+
+  it('LOT-03b — le jeton couvre la lettre ; drapeau fermé, il est celui des fiches, inchangé', () => {
+    const avec = (id: string | null, deja = false) =>
+      jetonAvecLettre('jeton_fiches', id ? { idCorrespondance: id, consigneLe: '', dejaRemise: deja } : null);
+    expect(new Set([avec(null), avec('lettre_1'), avec('lettre_2'), avec('lettre_1', true)]).size).toBe(4);
+    expect(avec('lettre_1')).not.toBe('jeton_fiches');
+    vi.stubEnv('WN_LETTRE_ADRESSAGE_PATIENT', '');
+    expect(avec('lettre_1')).toBe('jeton_fiches');
+    expect(avec(null)).toBe('jeton_fiches');
   });
 });

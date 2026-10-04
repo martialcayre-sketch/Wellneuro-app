@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
+import { rendreCourrierAdressageFige } from '@/lib/clinical/courrierAdressage';
 
 // LA LETTRE D'ADRESSAGE SERVIE AU PATIENT — [[D-262]], LOT-03a.
 //
@@ -92,4 +93,31 @@ export async function lettreALire(idPatient: string): Promise<{ id: string; remi
 export async function aUneLettreRemise(idPatient: string): Promise<boolean> {
   const remise = await prisma.lettreAdressageRemise.findFirst({ where: { idPatient }, select: { id: true } });
   return remise !== null;
+}
+
+/**
+ * La lettre SERVIE, rendue pour l'impression ([[D-262]], LOT-03b) : le texte
+ * figé de la remise, par le rendu `medecin` de la lettre générée (en-tête, nom
+ * du patient, date de la lettre). `null` : rien de servi, ou rendu refusé par
+ * le chokepoint.
+ */
+export async function lettreImprimable(idPatient: string): Promise<string | null> {
+  const lettre = await lettreRemiseAuPatient(idPatient);
+  if (lettre?.etat !== 'servie' || !lettre.texte) return null;
+  const [remise, patient] = await Promise.all([
+    prisma.lettreAdressageRemise.findUnique({
+      where: { id: lettre.idRemise },
+      select: { correspondance: { select: { consigneLe: true, ancrageSha256: true, ancrageVersion: true } } },
+    }),
+    prisma.patient.findUnique({ where: { idPatient }, select: { prenom: true, nom: true } }),
+  ]);
+  if (!remise) return null;
+  return rendreCourrierAdressageFige({
+    patientId: idPatient,
+    texte: lettre.texte,
+    dateCourrier: remise.correspondance.consigneLe.toISOString(),
+    patientNom: patient ? `${patient.prenom} ${patient.nom}`.trim() : undefined,
+    ancrageSha256: remise.correspondance.ancrageSha256,
+    ancrageVersion: remise.correspondance.ancrageVersion,
+  });
 }

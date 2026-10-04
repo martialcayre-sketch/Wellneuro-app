@@ -43,7 +43,7 @@ describe('Courrier pour votre médecin (D-262, LOT-03a)', () => {
     expect(screen.getByRole('heading', { name: TITRE_LETTRE })).toBeTruthy();
     expect(screen.getByText(PHRASE_ACCOMPAGNEMENT)).toBeTruthy();
     expect(screen.getByLabelText('Texte du courrier').textContent).toContain('<b>pas du HTML</b>');
-    expect(screen.getByRole('button', { name: 'Imprimer ou enregistrer en PDF' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Ouvrir la version à imprimer' }).getAttribute('href')).toBe('/api/portail/lettre-adressage/impression');
     expect(tracesPosees()).toEqual([{ espece: 'lettre_adressage', idObjet: 'lar_1' }]);
   });
 
@@ -68,7 +68,7 @@ describe('Courrier pour votre médecin (D-262, LOT-03a)', () => {
     repondre(200, { ok: true, lettre: SERVIE });
     await afficher();
     expect(screen.getByText(PHRASE_ACCOMPAGNEMENT).closest('header')?.className).toContain('print:hidden');
-    expect(screen.getByRole('button', { name: 'Imprimer ou enregistrer en PDF' }).closest('div.print\\:hidden')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Ouvrir la version à imprimer' }).closest('div.print\\:hidden')).toBeTruthy();
     expect(screen.getByLabelText('Texte du courrier').closest('.print\\:hidden')).toBeNull();
   });
 

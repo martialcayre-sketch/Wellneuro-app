@@ -203,3 +203,43 @@ export function genererCourrierAdressage(
 
   return { ok: true, courrier: { document, html, texte } };
 }
+
+/**
+ * LA LETTRE REMISE, RENDUE POUR L'IMPRESSION ([[D-262]], LOT-03b ; cadrage
+ * §3.2). Le texte FIGÉ de la remise passe par le MÊME chokepoint que la lettre
+ * générée — `renderDocumentHtml(…, 'medecin')` : en-tête, nom du patient, date,
+ * cadre interprofessionnel, garde non prescriptive. Le médecin reçoit la même
+ * feuille, que le patient l'imprime ou que le praticien la lui remette.
+ *
+ * AUCUNE RÉGÉNÉRATION : le corps est l'instantané de la remise, jamais une
+ * relecture des signaux. La provenance recopie celle de la lettre consignée.
+ * La garde du chokepoint lève sur un terme prescriptif : `null`, l'appelant le
+ * dit sans servir de rendu contourné.
+ */
+export function rendreCourrierAdressageFige(entree: {
+  patientId: string;
+  texte: string;
+  dateCourrier: string;
+  patientNom?: string;
+  ancrageSha256: string | null;
+  ancrageVersion: string | null;
+}): string | null {
+  const dateLisible = entree.dateCourrier.slice(0, 10);
+  const bloc: Bloc = {
+    id: `courrier-adressage-${entree.patientId}-${dateLisible}`,
+    type: 'narratif',
+    regime: 'statique_valide',
+    provenance: {
+      source: 'signaux_securite_anamnese',
+      ancrageHash: entree.ancrageSha256 ?? '',
+      version: entree.ancrageVersion ?? VERSION_ANCRAGE_ADRESSAGE,
+    },
+    contenu: { praticien: entree.texte, medecin: entree.texte },
+  };
+  const document = assemblerDocument({ modele: MODELE_COURRIER_ADRESSAGE, patientId: entree.patientId, blocs: [bloc] });
+  try {
+    return renderDocumentHtml(document, 'medecin', { dateDocument: dateLisible, patientNom: entree.patientNom });
+  } catch {
+    return null;
+  }
+}

@@ -100,13 +100,15 @@ vi.mock('@/lib/fiches-assiette/controle', () => ({
   controlerVersion: vi.fn(async () => ({ contenu: {}, anomalies: [], claimsValides: new Map() })),
 }));
 
-const { remettreLettreAdressage, annoncerDocumentRemis } = vi.hoisted(() => ({
+const { remettreLettreAdressage, apercuLettreAdressage, annoncerDocumentRemis } = vi.hoisted(() => ({
   remettreLettreAdressage: vi.fn(async () => 1),
+  apercuLettreAdressage: vi.fn(async (): Promise<null | { idCorrespondance: string; consigneLe: string; dejaRemise: boolean }> => null),
   annoncerDocumentRemis: vi.fn(async () => 'envoye' as const),
 }));
 vi.mock('@/lib/correspondance/lettreAdressageRemise', async importOriginal => ({
   ...(await importOriginal<typeof import('@/lib/correspondance/lettreAdressageRemise')>()),
   remettreLettreAdressage,
+  apercuLettreAdressage,
 }));
 vi.mock('@/lib/fiches-assiette/annonce', async importOriginal => ({
   ...(await importOriginal<typeof import('@/lib/fiches-assiette/annonce')>()),
@@ -213,11 +215,45 @@ describe('La lettre d’adressage part avec le clic de diffusion (D-262, LOT-02)
     expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
   });
 
+  it('LOT-03b — le GET sert la lettre due, et son identifiant entre dans le jeton', async () => {
+    const LETTRE = { idCorrespondance: 'lettre_1', consigneLe: '2026-10-03T08:00:00.000Z', dejaRemise: false };
+    apercuLettreAdressage.mockResolvedValue(null);
+    const sans = await lireJeton();
+    apercuLettreAdressage.mockResolvedValue(LETTRE);
+    const reponse = await (await GET(new Request('http://localhost/api/praticien/protocoles/diffusion?idPatient=PAT_1&decisionCardId=DEC_1'))).json();
+    expect(reponse.lettre).toEqual(LETTRE);
+    expect(reponse.fiches.jeton).not.toBe(sans);
+    apercuLettreAdressage.mockResolvedValue(null);
+  });
+
+  it('LOT-03b — une lettre devenue due entre l’aperçu et le clic : refusé, rien n’est remis', async () => {
+    const jetonVu = await lireJeton(); // aucune lettre due à l'aperçu
+    apercuLettreAdressage.mockResolvedValue({ idCorrespondance: 'lettre_2', consigneLe: '2026-10-04T08:00:00.000Z', dejaRemise: false });
+    const res = await POST(
+      new Request('http://localhost/api/praticien/protocoles/diffusion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient: 'PAT_1', decisionCardId: 'DEC_1', protocolDraftInputHash: 'HASH_V1', jetonApercuFiches: jetonVu }),
+      }),
+    );
+    apercuLettreAdressage.mockResolvedValue(null);
+    expect(res.status).toBe(409);
+    expect(remettreLettreAdressage).not.toHaveBeenCalled();
+    expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+  });
+
+  it('LOT-03b — l’aperçu de la lettre est calculé DANS la transaction du clic, avec le blocage', async () => {
+    await cliquer();
+    expect(apercuLettreAdressage).toHaveBeenCalledWith(tx, expect.objectContaining({ idPatient: 'PAT_1', bloque: false }));
+  });
+
   it('drapeau fermé : la réponse ne porte pas la clé de la lettre', async () => {
     delete process.env.WN_LETTRE_ADRESSAGE_PATIENT;
     remettreLettreAdressage.mockResolvedValueOnce(0);
     const corps = await (await cliquer()).json();
     expect(corps).not.toHaveProperty('lettreAdressageRemise');
+    const get = await (await GET(new Request('http://localhost/api/praticien/protocoles/diffusion?idPatient=PAT_1&decisionCardId=DEC_1'))).json();
+    expect(get).not.toHaveProperty('lettre');
     expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
   });
 });
