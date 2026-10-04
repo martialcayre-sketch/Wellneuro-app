@@ -20,11 +20,12 @@
   Dogné** (avec accent). Aucune donnée patient réelle, jamais — **dans le code,
   les seeds, les tests et les données de démonstration**. Cette portée-là reste
   entière et sans dérogation.
-  **Suspendu pour la base de production seule**, du 2026-07-21 au **2026-10-21**,
-  par décision datée du responsable du traitement autorisant une phase de test
+  **Suspendu pour la base de production seule** depuis le 2026-07-21, par
+  décision datée du responsable du traitement autorisant une phase de test
   avec des personnes réelles (`campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`,
-  § « Décision du responsable »). Sans reconduction écrite à cette date,
-  l'invariant reprend son plein effet.
+  § « Décision du responsable »), **reconduite sans terme** par [[D-265]]
+  (même checklist, § « Reconduction du responsable »). Le terme initial du
+  2026-10-21 ne s'applique plus.
 - Interface 100 % en français.
 - Vocabulaire réglementaire — **amendé le 2026-07-21** (décision utilisateur,
   cadre consigné : docteur en pharmacie, label NEURONUTRITION SIIN, activité
@@ -802,7 +803,8 @@
   **Statut réel au 2026-07-21** : G4 est **activé en production**
   (`WN_G4_LIEN_MAGIQUE`), le canal public de redemande également
   (`WN_G4_REDEMANDE_PATIENT`), par décision datée du responsable — le NO-GO
-  antérieur est levé dans ce périmètre et jusqu'au 2026-10-21.
+  antérieur est levé dans ce périmètre, sans terme depuis [[D-265]] (il
+  l'était d'abord jusqu'au 2026-10-21).
 - **Ne possède pas** : le contenu de l'espace patient (SP-SPI) ; la suppression
   du chemin token permanent ; l'authentification praticien (NextAuth).
 - **Statut** : cadrée le 2026-07-19. Remplace l'entrée différée « Auth patient
