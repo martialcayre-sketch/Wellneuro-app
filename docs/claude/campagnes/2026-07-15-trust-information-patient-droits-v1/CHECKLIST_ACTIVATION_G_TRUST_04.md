@@ -469,6 +469,24 @@ même cadre, pas à côté. Le modèle livré sert la recommandation 2 ci-dessus
 (minimisation) : texte seul par construction, aucune adresse e-mail ni RPPS
 médecin, effacement du dossier = effacement du fil, nommément testé.
 
+## Reconduction du responsable — [[D-265]]
+
+La décision du 2026-07-21 exigeait, à sa date de revue, qu'elle soit
+« reconduite explicitement, datée et signée ici ». **Elle est reconduite sans
+terme.** La reconduction couvre la phase avec des personnes réelles en
+production, l'ouverture du portail G4 et le fil de correspondance médecin
+placé sous la même dérogation le 2026-07-22. La voie d'exception de ce fil est
+maintenue ([[D-265]] §2).
+
+La condition d'hébergement est tenue depuis [[D-121]] (annexe HDS signée le
+2026-08-30). La base légale et l'AIPD sont posées par le responsable lui-même
+(`docs/DOSSIER_RGPD.md`, rubriques 3 et 13).
+
+- Date de la reconduction : **2026-10-04**
+- Responsable du traitement : **reconduite par déclaration du responsable du
+  traitement (`G-TRUST-02` : le praticien), rendue en session le 2026-10-04 et
+  consignée par l'assistant**
+
 ## Qui lève ce gate
 
 **Pas l'assistant.** La levée est une décision du responsable du traitement

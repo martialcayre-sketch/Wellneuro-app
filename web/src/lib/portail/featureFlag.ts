@@ -9,9 +9,10 @@
 // Production le 2026-07-21 (`docs/FEATURE_FLAGS.md` § B, `CHANGELOG.md`
 // « Gate G4 — activé en production »), et RELU sur Scalingo le 2026-09-07 par
 // `env-get` : la porte est ouverte. Le NO-GO du registre est LEVÉ dans ce
-// périmètre par décision datée du responsable — et jusqu'au 2026-10-21
-// seulement (`docs/claude/REGISTRE_FRONTIERES.md`, section IDP). Lire le
-// tableau, pas ce commentaire, pour savoir quelle porte est ouverte.
+// périmètre par décision datée du responsable — borné d'abord au 2026-10-21,
+// sans terme depuis [[D-265]] (`docs/claude/REGISTRE_FRONTIERES.md`, section
+// IDP). Lire le tableau, pas ce commentaire, pour savoir quelle porte est
+// ouverte.
 //
 // Éteint (défaut) : la route d'entrée et le canal de redemande répondent
 // `notFound()`, l'action d'émission praticien est refusée — le comportement du
