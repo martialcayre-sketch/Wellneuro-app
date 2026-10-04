@@ -115,8 +115,9 @@ async function lettreDuClic(client: Client, entrees: EntreesClic) {
  * déjà. Jamais son texte : il est sous les yeux du praticien dans l'onglet
  * Correspondance, et l'aperçu n'est pas une seconde restitution.
  */
+/** `null` à la place de l'aperçu : aucune lettre ne partira. */
 export type ApercuLettreAdressage = {
-  /** La lettre due au clic ; `null` : aucune ne partira. */
+  /** La lettre due au clic. */
   idCorrespondance: string;
   consigneLe: string;
   /** La remise en cours porte déjà cette lettre : le clic ne la remet pas. */
@@ -167,10 +168,18 @@ export async function remettreLettreAdressage(
     idApprobation: string;
     actions: readonly { actionId: string; type: string }[];
     bloque: boolean;
+    /**
+     * La lettre que l'aperçu recalculé dans CETTE transaction a montrée
+     * (revue du LOT-03b, P2-1). Une lettre consignée entre cet aperçu et la
+     * remise — la consignation ne prend pas le verrou des remises — ne part
+     * pas : le praticien ne l'a pas vue.
+     */
+    idCorrespondanceVue?: string | null;
   },
 ): Promise<number> {
   const lettre = await lettreDuClic(client, entrees);
   if (!lettre) return 0;
+  if (entrees.idCorrespondanceVue !== undefined && entrees.idCorrespondanceVue !== lettre.id) return 0;
 
   await client.$executeRaw`SAVEPOINT lettre_adressage_remise`;
   try {

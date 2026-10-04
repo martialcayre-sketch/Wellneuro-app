@@ -224,6 +224,9 @@ export function rendreCourrierAdressageFige(entree: {
   ancrageSha256: string | null;
   ancrageVersion: string | null;
 }): string | null {
+  // Aucune provenance fabriquée (revue du LOT-03b) : une lettre sans ancrage
+  // n'est pas une lettre d'adressage, et la remise l'a déjà refusée.
+  if (!entree.ancrageSha256 || !entree.ancrageVersion) return null;
   const dateLisible = entree.dateCourrier.slice(0, 10);
   const bloc: Bloc = {
     id: `courrier-adressage-${entree.patientId}-${dateLisible}`,
@@ -231,8 +234,8 @@ export function rendreCourrierAdressageFige(entree: {
     regime: 'statique_valide',
     provenance: {
       source: 'signaux_securite_anamnese',
-      ancrageHash: entree.ancrageSha256 ?? '',
-      version: entree.ancrageVersion ?? VERSION_ANCRAGE_ADRESSAGE,
+      ancrageHash: entree.ancrageSha256,
+      version: entree.ancrageVersion,
     },
     contenu: { praticien: entree.texte, medecin: entree.texte },
   };

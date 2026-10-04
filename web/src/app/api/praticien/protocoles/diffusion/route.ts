@@ -154,7 +154,7 @@ const APERCU_FICHES_ILLISIBLE: ApercuFiches = {
 };
 
 const ERREUR_APERCU_PERIME =
-  'L’aperçu des fiches d’assiette n’est plus exact : il vient d’être mis à jour. Relisez-le avant de valider.';
+  'L’aperçu des documents remis au patient (fiches d’assiette, courrier pour le médecin) n’est plus exact : il vient d’être mis à jour. Relisez-le avant de valider.';
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.length > 0;
@@ -381,6 +381,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           idApprobation: approvalId,
           actions,
           bloque: blocage !== null,
+          idCorrespondanceVue: apercuLettre?.idCorrespondance ?? null,
         });
         // La trace de l'e-mail naît AVEC les remises (lot 11) : un arrêt entre
         // le commit et l'envoi ne peut plus le perdre sans rien laisser. UNE

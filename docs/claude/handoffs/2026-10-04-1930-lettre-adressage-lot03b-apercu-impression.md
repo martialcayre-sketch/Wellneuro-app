@@ -38,7 +38,15 @@ par le rendu `medecin` (P1 de la revue du LOT-03a, cadrage §3.2).
 ## Validations exécutées
 
 - `tsc` vert ; Vitest ciblé vert (correspondance, diffusion, cockpit, portail).
-- `npm run check`, suite complète et revue `wn-reviewer` : voir la PR.
+- `npm run check` vert ; suite Vitest complète verte (675 fichiers).
+- Revue `wn-reviewer` : **GO merge**, aucun P0/P1. P2 corrigés : la remise est
+  liée à la lettre VUE dans l'aperçu recalculé (une lettre consignée entre les
+  deux ne part pas) ; aucune provenance fabriquée au rendu imprimable ; message
+  de refus « périmé » exact ; e-mail non annoncé deux fois. Tests ajoutés (cas
+  passant avec lettre, jeton brut drapeau éteint, terme prescriptif, ancrage
+  absent, indisponible, 403). P2 restant, noté : si le chokepoint refuse le
+  rendu imprimable, l'onglet montre un 404 JSON (repli : impression de la page
+  de lecture).
 - E2E : job `e2e` du CI.
 
 ## Problèmes ouverts

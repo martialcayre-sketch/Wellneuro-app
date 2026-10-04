@@ -62,4 +62,13 @@ describe('GET /api/portail/lettre-adressage/impression (D-262, LOT-03b)', () => 
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ ok: false, reason: 'introuvable', error: 'Aucun courrier à imprimer.' });
   });
+
+  it('compte révoqué : 403, rien n’est rendu', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: PATIENT.idPatient, actif: true, accessTokenRevoked: true, email: PATIENT.email,
+      sessionsInvalidesAvant: null, createdAt: new Date('2026-06-01T08:00:00.000Z'),
+    });
+    expect((await GET(requete())).status).toBe(403);
+    expect(lettreImprimable).not.toHaveBeenCalled();
+  });
 });

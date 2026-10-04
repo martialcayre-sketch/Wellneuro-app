@@ -159,4 +159,14 @@ describe('Remise de la lettre d’adressage au patient (D-262, LOT-02)', () => {
     expect(avec('lettre_1')).toBe('jeton_fiches');
     expect(avec(null)).toBe('jeton_fiches');
   });
+
+  it('LOT-03b — la remise est liée à la lettre VUE : une autre lettre due entre-temps ne part pas', async () => {
+    const autre = client();
+    expect(await remettreLettreAdressage(autre.c as never, { ...ENTREES, idCorrespondanceVue: 'lettre_vue_avant' })).toBe(0);
+    expect(autre.c.lettreAdressageRemise.createMany).not.toHaveBeenCalled();
+    const vue = client();
+    expect(await remettreLettreAdressage(vue.c as never, { ...ENTREES, idCorrespondanceVue: 'lettre_1' })).toBe(1);
+    const aucuneVue = client();
+    expect(await remettreLettreAdressage(aucuneVue.c as never, { ...ENTREES, idCorrespondanceVue: null })).toBe(0);
+  });
 });

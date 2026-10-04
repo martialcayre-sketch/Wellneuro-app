@@ -90,4 +90,10 @@ describe('Courrier servi au patient (D-262, LOT-03a)', () => {
     expect(await lettreImprimable('PAT_1')).toBeNull();
     expect(prisma.lettreAdressageRemise.findUnique).not.toHaveBeenCalled();
   });
+
+  it('LOT-03b — indisponible : rien à imprimer', async () => {
+    prisma.lettreAdressageRemise.findFirst.mockResolvedValue({ ...REMISE, texteSha256: '0'.repeat(64) });
+    expect(await lettreImprimable('PAT_1')).toBeNull();
+    expect(prisma.lettreAdressageRemise.findUnique).not.toHaveBeenCalled();
+  });
 });

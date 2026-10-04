@@ -137,6 +137,9 @@ describe('La lettre d’adressage part avec le clic de diffusion (D-262, LOT-02)
     process.env.WN_FICHES_ASSIETTE = 'true';
     process.env.WN_LETTRE_ADRESSAGE_PATIENT = 'true';
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    // Remis à zéro ICI, pas en fin de test : un test qui échoue ne fuit pas.
+    apercuLettreAdressage.mockResolvedValue(null);
+    remettreLettreAdressage.mockResolvedValue(1);
     etat.versions = [];
     etat.remises = [];
   });
@@ -159,6 +162,8 @@ describe('La lettre d’adressage part avec le clic de diffusion (D-262, LOT-02)
         expect.objectContaining({ actionId: 'a1' }),
       ],
       bloque: false,
+      // Aucune lettre due à l'aperçu : la remise ne peut rien envoyer d'autre.
+      idCorrespondanceVue: null,
     });
     expect(await res.json()).toEqual(expect.objectContaining({ fichesRemises: 0, lettreAdressageRemise: true, annonceFiches: 'envoye' }));
   });
@@ -245,6 +250,19 @@ describe('La lettre d’adressage part avec le clic de diffusion (D-262, LOT-02)
   it('LOT-03b — l’aperçu de la lettre est calculé DANS la transaction du clic, avec le blocage', async () => {
     await cliquer();
     expect(apercuLettreAdressage).toHaveBeenCalledWith(tx, expect.objectContaining({ idPatient: 'PAT_1', bloque: false }));
+  });
+
+  it('LOT-03b — lettre vue au GET, même lettre au clic : passe, et la remise est liée à la lettre VUE', async () => {
+    apercuLettreAdressage.mockResolvedValue({ idCorrespondance: 'lettre_1', consigneLe: '2026-10-03T08:00:00.000Z', dejaRemise: false });
+    const res = await cliquer();
+    expect(res.status).toBe(200);
+    expect(remettreLettreAdressage).toHaveBeenCalledWith(tx, expect.objectContaining({ idCorrespondanceVue: 'lettre_1' }));
+  });
+
+  it('LOT-03b — drapeau fermé : le jeton BRUT des fiches est accepté au clic', async () => {
+    delete process.env.WN_LETTRE_ADRESSAGE_PATIENT;
+    remettreLettreAdressage.mockResolvedValue(0);
+    expect((await cliquer()).status).toBe(200);
   });
 
   it('drapeau fermé : la réponse ne porte pas la clé de la lettre', async () => {

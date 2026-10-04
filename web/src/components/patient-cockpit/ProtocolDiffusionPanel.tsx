@@ -111,6 +111,10 @@ function dateLisible(iso: string): string {
     : date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+/** Le drapeau de la lettre ouvre sa lecture : une lettre remise est toujours annoncée ([[D-262]] B3). */
+export const TEXTE_ANNONCE_LETTRE =
+  'Votre patient reçoit un e-mail neutre, sans contenu de santé : « Un document de votre praticien vous attend ». Un seul e-mail par clic, fiches comprises.';
+
 /**
  * LE COURRIER POUR LE MÉDECIN QUE LE CLIC REMETTRAIT ([[D-262]], LOT-03b ;
  * revue du LOT-02, P1). Le praticien atteste ce qui part : la lettre est dite
@@ -118,11 +122,14 @@ function dateLisible(iso: string): string {
  * consignée ou révoquée entre-temps fait refuser le clic, puis relire l'aperçu.
  * Le texte n'est pas recopié ici : il est dans l'onglet Correspondance.
  */
-/** Le drapeau de la lettre ouvre sa lecture : une lettre remise est toujours annoncée ([[D-262]] B3). */
-export const TEXTE_ANNONCE_LETTRE =
-  'Votre patient reçoit un e-mail neutre, sans contenu de santé : « Un document de votre praticien vous attend ». Un seul e-mail par clic, fiches comprises.';
-
-function ApercuLettreAdressageBloc({ lettre }: { lettre: ApercuLettreAdressage }) {
+function ApercuLettreAdressageBloc({
+  lettre,
+  annonceDejaDite,
+}: {
+  lettre: ApercuLettreAdressage;
+  /** L'e-mail est déjà annoncé au-dessus, pour les fiches : un seul par clic. */
+  annonceDejaDite: boolean;
+}) {
   const quand = dateLisible(lettre.consigneLe);
   return (
     <section
@@ -138,7 +145,9 @@ function ApercuLettreAdressageBloc({ lettre }: { lettre: ApercuLettreAdressage }
           ? `La lettre d’adressage du ${quand} est déjà remise au patient : ce clic ne la remet pas de nouveau.`
           : `La lettre d’adressage du ${quand} sera remise au patient avec ce protocole, telle qu’elle a été consignée.`}
       </p>
-      {!lettre.dejaRemise && <p className="mt-2 text-sm text-muted-foreground">{TEXTE_ANNONCE_LETTRE}</p>}
+      {!lettre.dejaRemise && !annonceDejaDite && (
+        <p className="mt-2 text-sm text-muted-foreground">{TEXTE_ANNONCE_LETTRE}</p>
+      )}
     </section>
   );
 }
@@ -301,7 +310,12 @@ export function ProtocolDiffusionPanel({
         <ApercuFichesAssiette fiches={fiches} dejaValide={approved && !stale} annonceParEmail={annonceParEmail} />
       )}
 
-      {lettre && <ApercuLettreAdressageBloc lettre={lettre} />}
+      {lettre && (
+        <ApercuLettreAdressageBloc
+          lettre={lettre}
+          annonceDejaDite={Boolean(fiches && annonceParEmail && fichesARemettre(fiches))}
+        />
+      )}
 
       {onApprove && (canApprove || stale) && (
         <div className="mt-3">

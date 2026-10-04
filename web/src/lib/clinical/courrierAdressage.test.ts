@@ -182,4 +182,13 @@ describe('La lettre remise, rendue pour l’impression (D-262, LOT-03b)', () => 
     expect(html).toContain('&lt;b&gt;pas du HTML&lt;/b&gt;');
     expect(html).not.toContain('<b>pas du HTML</b>');
   });
+
+  it('aucune provenance fabriquée : sans ancrage, rien n’est rendu', () => {
+    expect(rendreCourrierAdressageFige({ ...ENTREE, ancrageSha256: null })).toBeNull();
+    expect(rendreCourrierAdressageFige({ ...ENTREE, ancrageVersion: null })).toBeNull();
+  });
+
+  it('un texte qui ne passe plus la garde du chokepoint : rien n’est rendu, aucun rendu contourné', () => {
+    expect(rendreCourrierAdressageFige({ ...ENTREE, texte: 'Docteur, merci de prescrire un traitement.' })).toBeNull();
+  });
 });
