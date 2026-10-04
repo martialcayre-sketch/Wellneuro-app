@@ -1636,12 +1636,13 @@ model AdressageSignalAlerte {
 // neuve. Un banc épingle l'apparition d'un `update` sur ces deux modèles.
 model PortailLecturePatient {
   idPatient String @map("id_patient")
-  /// 'bilan' | 'synthese' | 'fiche_assiette' — fermé par un CHECK en base :
-  /// l'espèce est un arbitrage, pas un champ libre (la troisième : D-251 §8).
+  /// 'bilan' | 'synthese' | 'fiche_assiette' | 'lettre_adressage' — fermé par
+  /// un CHECK en base : l'espèce est un arbitrage, pas un champ libre (la
+  /// troisième : D-251 §8 ; la quatrième : D-262).
   espece    String @map("espece")
   /// L'identifiant de la VERSION lue : `BookletEnvoi.id`,
-  /// `SyntheseComprehension.id` ou `FicheAssietteRemise.id`. Polymorphe, donc
-  /// sans clé étrangère.
+  /// `SyntheseComprehension.id`, `FicheAssietteRemise.id` ou
+  /// `LettreAdressageRemise.id`. Polymorphe, donc sans clé étrangère.
   idObjet   String @map("id_objet")
 
   patient Patient @relation(fields: [idPatient], references: [idPatient])

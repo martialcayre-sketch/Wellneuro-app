@@ -1,4 +1,4 @@
-### Lettre d'adressage remise au patient — la table des remises ([[D-262]], LOT-01)
+### Lettre d'adressage remise au patient — la table des remises ([[D-262]], LOT-01) (2026-10-03)
 
 - **Migration seule** `20261003210000_lettres_adressage_remises_v1` : table
   `lettres_adressage_remises` en ajout seul (dossier, approbation de diffusion,

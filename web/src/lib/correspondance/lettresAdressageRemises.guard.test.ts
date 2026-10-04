@@ -14,17 +14,25 @@ import { describe, expect, it } from 'vitest';
 //     Le LOT-02 nommera ici son unique émetteur, par `createMany` (la base
 //     annule sans erreur une remise identique à la remise en cours).
 
-const RACINE = path.join(process.cwd(), 'src');
-const EFFACEMENT = path.join('lib', 'patient', 'effacement.ts');
+// LA PORTÉE EST CELLE DE LA GARDE DES ADRESSAGES : `src/`, `scripts/`,
+// `prisma/`, `e2e/` et les scripts de la racine du dépôt, en TypeScript,
+// JavaScript, SQL et shell (revue de la PR #1300) — un seed, un script ou un
+// `psql -c` contournerait le banc aussi sûrement qu'une route. Restent dehors
+// les migrations (le DDL) et `prisma/checks/` (les contrats, joués dans une
+// transaction annulée).
+const RACINE = process.cwd();
+const RACINES = ['src', 'scripts', 'prisma', 'e2e', path.join('..', 'scripts')]
+  .map(dossier => path.join(RACINE, dossier));
+const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
   for (const entree of readdirSync(depart)) {
     const complet = path.join(depart, entree);
     if (statSync(complet).isDirectory()) {
-      if (entree === 'node_modules' || entree === '.next' || entree === 'generated') continue;
+      if (['node_modules', '.next', 'generated', 'migrations', 'checks'].includes(entree)) continue;
       trouves.push(...fichiersSources(complet));
-    } else if (/\.tsx?$/.test(entree) && !/\.test\.tsx?$/.test(entree)) {
+    } else if (/\.(?:[cm]?[jt]sx?|sql|sh)$/.test(entree) && !/\.test\.[cm]?[jt]sx?$/.test(entree)) {
       trouves.push(complet);
     }
   }
@@ -32,7 +40,7 @@ function fichiersSources(depart: string): string[] {
 }
 
 function occurrences(motif: RegExp): { fichier: string; n: number }[] {
-  return fichiersSources(RACINE)
+  return RACINES.flatMap(fichiersSources)
     .map(fichier => ({
       fichier: path.relative(RACINE, fichier),
       n: [...readFileSync(fichier, 'utf8').matchAll(new RegExp(motif.source, `${motif.flags}g`))].length,
