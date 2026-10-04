@@ -41,6 +41,35 @@ async function requete(fichier: Blob | null, opts: { longueur?: string | null; i
 
 const pdf = (octets: Buffer = PDF, type = 'application/pdf') => new Blob([new Uint8Array(octets)], { type });
 
+/**
+ * Un WebP animé de deux trames, assemblé à la main (sharp n'en écrit pas
+ * depuis une image créée) : VP8X drapeau animation, ANIM, deux ANMF.
+ */
+async function webpAnime() {
+  const bloc = (id: string, data: Buffer) => {
+    const entete = Buffer.alloc(8);
+    entete.write(id, 0, 'ascii');
+    entete.writeUInt32LE(data.length, 4);
+    return Buffer.concat([entete, data, Buffer.alloc(data.length % 2)]);
+  };
+  const u24 = (n: number) => { const b = Buffer.alloc(3); b.writeUIntLE(n, 0, 3); return b; };
+  const trame = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#ffffff' } })
+    .webp({ lossless: true }).toBuffer();
+  const vp8l = trame.subarray(12);
+  const anmf = bloc('ANMF', Buffer.concat([u24(0), u24(0), u24(9), u24(9), u24(100), Buffer.from([0]), vp8l]));
+  const corps = Buffer.concat([
+    Buffer.from('WEBP'),
+    bloc('VP8X', Buffer.concat([Buffer.from([0x02, 0, 0, 0]), u24(9), u24(9)])),
+    bloc('ANIM', Buffer.alloc(6)),
+    anmf,
+    anmf,
+  ]);
+  const riff = Buffer.alloc(8);
+  riff.write('RIFF', 0, 'ascii');
+  riff.writeUInt32LE(corps.length, 4);
+  return Buffer.concat([riff, corps]);
+}
+
 /** Une photo de téléphone : 40 × 20, tournée par son EXIF, avec une position GPS. */
 const photo = () =>
   sharp({ create: { width: 40, height: 20, channels: 3, background: '#ffffff' } })
@@ -104,6 +133,12 @@ describe('preparerImage', () => {
       .png().toBuffer();
     expect(bruit.length).toBeGreaterThan(TAILLE_MAX_IMAGE_OCTETS);
     expect(await preparerImage(bruit, 'image/png')).toMatchObject({ ok: false, reason: 'image_trop_lourde', status: 413 });
+  });
+
+  it('une image animée : refusée, aucune trame n’est perdue en silence', async () => {
+    const animee = await webpAnime();
+    expect((await sharp(animee).metadata()).pages).toBe(2);
+    expect(await preparerImage(animee, 'image/webp')).toMatchObject({ ok: false, reason: 'image_animee', status: 415 });
   });
 
   it('le même fichier donne les mêmes octets (unicité par empreinte)', async () => {

@@ -68,7 +68,7 @@ export function jugerFichier(octets: Buffer, typeDeclare: string): VerdictFichie
 
 export type ImagePreparee =
   | { ok: true; octets: Buffer }
-  | { ok: false; reason: 'image_illisible' | 'image_trop_grande' | 'image_trop_lourde'; status: number };
+  | { ok: false; reason: 'image_illisible' | 'image_animee' | 'image_trop_grande' | 'image_trop_lourde'; status: number };
 
 /**
  * Réencode l'image dans son format : orientation appliquée, métadonnées
@@ -79,8 +79,11 @@ export async function preparerImage(octets: Buffer, typeMime: TypeMimeImage): Pr
   // Les dimensions se lisent dans l'en-tête, AVANT tout décodage : une image
   // géante est refusée sans être décompressée en mémoire (revue).
   try {
-    const { width, height } = await sharp(octets, { limitInputPixels: PIXELS_MAX_IMAGE }).metadata();
+    const { width, height, pages } = await sharp(octets, { limitInputPixels: PIXELS_MAX_IMAGE }).metadata();
     if (!width || !height) return { ok: false, reason: 'image_illisible', status: 415 };
+    // Une image animée (WebP, PNG) ne se lirait qu'à sa première trame : les
+    // autres seraient perdues en silence. Une image par dépôt, d'une trame (revue Copilot, #1310).
+    if (pages !== undefined && pages > 1) return { ok: false, reason: 'image_animee', status: 415 };
     if (width > COTE_MAX_IMAGE_PX || height > COTE_MAX_IMAGE_PX) {
       return { ok: false, reason: 'image_trop_grande', status: 413 };
     }
@@ -109,6 +112,7 @@ export const MESSAGES_DEPOT: Record<string, string> = {
   fichier_trop_lourd: 'Le fichier dépasse 10 Mo.',
   format_non_admis: 'Formats acceptés : PDF, JPEG, PNG ou WebP.',
   image_illisible: 'L’image n’a pas pu être lue.',
+  image_animee: 'Une image animée n’est pas acceptée : déposez une photo fixe.',
   image_trop_grande: 'L’image dépasse 8 000 pixels de côté.',
   image_trop_lourde: 'L’image dépasse 3,75 Mo une fois préparée : reprenez-la en résolution moindre.',
   document_deja_depose: 'Ce compte rendu a déjà été déposé dans ce dossier.',
