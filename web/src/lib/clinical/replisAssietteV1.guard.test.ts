@@ -730,7 +730,11 @@ describe('Le point de service ne se contourne pas — garde de SOURCE', () => {
     const fautifs = appelsFautifs(formes, fichiers);
     expect(fautifs, 'ces appelants de production injectent une table ou une signature')
       .toEqual([]);
-  });
+    // DÉLAI TECHNIQUE, PAS UNE VALEUR CLINIQUE : cette garde parcourt l'arbre
+    // syntaxique de tout `src/` (~2,5 s seule) et a dépassé les 5 s par défaut
+    // sous la charge du CI à deux reprises (PR #1300 et #1308), toutes
+    // assertions vertes. Aucune vérification n'est changée.
+  }, 30_000);
 
   it('LES SIX ÉVASIONS QUE LES RÉDACTIONS LEXICALES MANQUAIENT, une à une', () => {
     // POURQUOI CE CAS EXISTE. Cette garde a été écrite QUATRE fois, et la
