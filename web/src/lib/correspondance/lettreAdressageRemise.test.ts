@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { lettreAdressagePatientOuverte, remettreLettreAdressage } from './lettreAdressageRemise';
 
 // [[D-262]], LOT-02 — la remise de la lettre au clic « Valider pour diffusion ».
@@ -82,6 +83,13 @@ describe('Remise de la lettre d’adressage au patient (D-262, LOT-02)', () => {
   it('remet la lettre de la couverture active la plus récente, texte recopié et empreinte UTF-8', async () => {
     const { c, sql } = client();
     expect(await remettreLettreAdressage(c as never, ENTREES)).toBe(1);
+    // La porteuse par la sélection PARTAGÉE — validée, anamnèse non nulle, la
+    // validation d'abord : la moitié de la règle que le trigger opposera.
+    expect(c.consultation.findFirst).toHaveBeenCalledWith({
+      where: whereConsultationPorteuse('PAT_1'),
+      orderBy: ORDRE_CONSULTATION_PORTEUSE,
+      select: { id: true },
+    });
     expect(c.adressageSignalAlerte.findFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: { idPatient: 'PAT_1', acte: 'adressage', idConsultation: 'cons_1', revocations: { none: {} } },
       orderBy: { ordre: 'desc' },
@@ -120,10 +128,11 @@ describe('Remise de la lettre d’adressage au patient (D-262, LOT-02)', () => {
   });
 
   it('refusée par la base : annulée SEULE au point de sauvegarde, le clic continue', async () => {
-    const { c, sql } = client({ createMany: async () => { throw new Error('remise refusée : …'); } });
+    const refus = Object.assign(new Error('remise refusée : …'), { code: 'P0001' });
+    const { c, sql } = client({ createMany: async () => { throw refus; } });
     expect(await remettreLettreAdressage(c as never, ENTREES)).toBe(0);
     expect(sql).toEqual(['SAVEPOINT lettre_adressage_remise', 'ROLLBACK TO SAVEPOINT lettre_adressage_remise']);
-    // La classe au journal, jamais le message (il cite la lettre).
-    expect(console.warn).toHaveBeenCalledWith(expect.any(String), 'Error');
+    // La classe et le code au journal, jamais le message (il cite la lettre).
+    expect(console.warn).toHaveBeenCalledWith(expect.any(String), 'Error', 'P0001');
   });
 });

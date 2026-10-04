@@ -20,7 +20,7 @@ type Version = {
   actes: { ordre: bigint; acte: string; contenuSha256: string; validateur: string; relectureIntegrale: boolean; motif: string | null; le: Date }[];
 };
 
-const { etat, prisma, getServerSession } = vi.hoisted(() => {
+const { etat, prisma, tx, getServerSession } = vi.hoisted(() => {
   const etat = { versions: [] as Version[], remises: [] as { idVersion: string; ordre: number }[] };
   const prisma = {
     patient: { findUnique: vi.fn(async () => ({ praticienEmail: 'p@wellneuro.fr', actif: true, suiviClotureLe: null })) },
@@ -64,9 +64,12 @@ const { etat, prisma, getServerSession } = vi.hoisted(() => {
     correspondancePatient: { create: vi.fn(async () => ({ id: 'trace_1' })) },
     $executeRaw: vi.fn(async () => 1),
     $queryRaw: vi.fn(async () => [{ actif: true, suivi_cloture_le: null }]),
-    $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(prisma)),
+    $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(tx)),
   };
-  return { etat, prisma, getServerSession: vi.fn() };
+  // UN CLIENT DE TRANSACTION DISTINCT (revue du LOT-02) : mêmes espions, autre
+  // identité — un appel fait hors de la transaction, avec `prisma`, se voit.
+  const tx: typeof prisma = { ...prisma };
+  return { etat, prisma, tx, getServerSession: vi.fn() };
 });
 
 vi.mock('next-auth', () => ({ getServerSession }));
@@ -146,7 +149,7 @@ describe('La lettre d’adressage part avec le clic de diffusion (D-262, LOT-02)
     const res = await cliquer();
     expect(res.status).toBe(200);
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(remettreLettreAdressage).toHaveBeenCalledWith(prisma, {
+    expect(remettreLettreAdressage).toHaveBeenCalledWith(tx, {
       idPatient: 'PAT_1',
       idApprobation: 'appr_1',
       actions: [
@@ -178,11 +181,36 @@ describe('La lettre d’adressage part avec le clic de diffusion (D-262, LOT-02)
     prisma.$queryRaw.mockResolvedValue([{ actif: true, suivi_cloture_le: clos }] as never);
     try {
       expect((await cliquer()).status).toBe(200);
-      expect(remettreLettreAdressage).toHaveBeenCalledWith(prisma, expect.objectContaining({ bloque: true }));
+      expect(remettreLettreAdressage).toHaveBeenCalledWith(tx, expect.objectContaining({ bloque: true }));
     } finally {
       prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr', actif: true, suiviClotureLe: null });
       prisma.$queryRaw.mockResolvedValue([{ actif: true, suivi_cloture_le: null }]);
     }
+  });
+
+  it('fiches ET lettre remises par le même clic : UNE seule annonce', async () => {
+    process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
+    etat.versions = [{
+      id: 'fav_1', sourceId: 'WN-SRC-0300', plateCode: 'ASSIETTE_PROTEINEE', numero: 1, contenuSha256: 'a'.repeat(64),
+      actes: [{ ordre: BigInt(1), acte: 'validee', contenuSha256: 'a'.repeat(64), validateur: 'praticien@wellneuro.fr', relectureIntegrale: true, motif: null, le: new Date('2026-09-28T00:00:00.000Z') }],
+    }];
+    const corps = await (await cliquer()).json();
+    expect(corps).toEqual(expect.objectContaining({ fichesRemises: 1, lettreAdressageRemise: true }));
+    expect(prisma.correspondancePatient.create).toHaveBeenCalledTimes(1);
+    expect(annoncerDocumentRemis).toHaveBeenCalledTimes(1);
+  });
+
+  it('aperçu des fiches périmé : refusé avant toute remise de lettre', async () => {
+    const res = await POST(
+      new Request('http://localhost/api/praticien/protocoles/diffusion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient: 'PAT_1', decisionCardId: 'DEC_1', protocolDraftInputHash: 'HASH_V1', jetonApercuFiches: 'jeton_perime' }),
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect(remettreLettreAdressage).not.toHaveBeenCalled();
+    expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
   });
 
   it('drapeau fermé : la réponse ne porte pas la clé de la lettre', async () => {

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import type { Prisma } from '@/generated/prisma';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { estActionOrientation } from '@/lib/clinical-engine/orientationAdressage';
+import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // LA LETTRE D'ADRESSAGE REMISE AU PATIENT — [[D-262]], LOT-02.
 //
@@ -125,8 +126,11 @@ export async function remettreLettreAdressage(
     return count;
   } catch (err) {
     await client.$executeRaw`ROLLBACK TO SAVEPOINT lettre_adressage_remise`;
-    // La classe seule au journal applicatif, jamais le message (il cite la lettre).
-    console.warn('[correspondance/lettreAdressageRemise] remise refusée', err instanceof Error ? err.name : 'inconnu');
+    // La classe et le code au journal, jamais le message (il cite la lettre) :
+    // le code distingue un refus du trigger (`P2039` sous l'adaptateur pg,
+    // constaté en sonde) d'un défaut durable — clé étrangère, droits,
+    // validation Prisma — qui éteindrait la remise en silence.
+    console.warn('[correspondance/lettreAdressageRemise] remise refusée', ...classeEtCode(err));
     return 0;
   }
 }

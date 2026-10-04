@@ -39,12 +39,22 @@ drapeau éteint ([[D-262]], cadrage §3, B1-B3).
   base isolé par le point de sauvegarde puis transaction committée, empreinte
   d'un texte accentué acceptée par le CHECK.
 - E2E : job `e2e` du CI (pas de Playwright dans cette session).
-- Revue `wn-reviewer` (verdicts dans la PR).
+- Revue `wn-reviewer` : **GO merge, NO-GO pose**. P1 routé au LOT-03 (aperçu
+  praticien de la lettre au GET et dans le jeton — condition de la pose, écrite
+  au cadrage §5 et dans `FEATURE_FLAGS.md`). P2 corrigés : journal par
+  `classeEtCode` ; dépendance de l'annonce documentée ; cadrage §3.1 et §4
+  rectifiés ; client de transaction distinct dans le banc de route ; arguments
+  de la porteuse vérifiés ; tests ajoutés (fiches + lettre ⇒ une annonce,
+  jeton périmé ⇒ aucune remise).
+- Sonde rejouée avec un refus du TRIGGER (protocole sans orientation) sous le
+  client de production (`adapter-pg`) : isolé par le point de sauvegarde (code
+  Prisma `P2039`), transaction committée, aucune ligne écrite.
 
 ## Problèmes ouverts
 
 - LOT-03 : espèce `lettre_adressage`, route portail, écran, retrait après
-  révocation ; export d'accès sans les remises (comme les fiches) à trancher.
+  révocation, aperçu praticien de la lettre (P1 de revue) ; e-mail pour une
+  lettre révoquée pendant la remise (course documentée) à trancher ; export d'accès sans les remises (comme les fiches) à trancher.
 - Q1, Q2, Q3 de la campagne levée toujours ouvertes.
 
 ## Prochaine action exacte
