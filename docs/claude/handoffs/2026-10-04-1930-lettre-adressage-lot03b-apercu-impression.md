@@ -55,6 +55,11 @@ par le rendu `medecin` (P1 de la revue du LOT-03a, cadrage §3.2).
   porteuse dépassée — à trancher avant la pose.
 - E-mail pour une lettre révoquée pendant sa remise ; export d'accès sans les
   remises.
+- **Date de la lettre au jour UTC** (préexistant, `genererCourrierAdressage` :
+  `new Date().toISOString().slice(0, 10)`) : une lettre consignée entre minuit
+  et 2 h à Paris porte la veille. L'aperçu et l'impression suivent ce jour pour
+  ne pas contredire le corps ; passer le générateur à `dateJourParis` change le
+  texte des lettres futures — à décider (revue Copilot de #1309).
 
 ## Prochaine action exacte
 

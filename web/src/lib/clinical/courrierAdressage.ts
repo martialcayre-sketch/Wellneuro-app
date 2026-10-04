@@ -227,6 +227,8 @@ export function rendreCourrierAdressageFige(entree: {
   // Aucune provenance fabriquée (revue du LOT-03b) : une lettre sans ancrage
   // n'est pas une lettre d'adressage, et la remise l'a déjà refusée.
   if (!entree.ancrageSha256 || !entree.ancrageVersion) return null;
+  // Le JOUR UTC, comme `genererCourrierAdressage` : l'en-tête imprimé doit dire
+  // le jour que le corps écrit (« Courrier préparé le … »), au caractère près.
   const dateLisible = entree.dateCourrier.slice(0, 10);
   const bloc: Bloc = {
     id: `courrier-adressage-${entree.patientId}-${dateLisible}`,

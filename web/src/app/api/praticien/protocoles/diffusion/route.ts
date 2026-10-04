@@ -154,7 +154,7 @@ const APERCU_FICHES_ILLISIBLE: ApercuFiches = {
 };
 
 const ERREUR_APERCU_PERIME =
-  'L’aperçu des documents remis au patient (fiches d’assiette, courrier pour le médecin) n’est plus exact : il vient d’être mis à jour. Relisez-le avant de valider.';
+  'L’aperçu de ce que le clic remettra au patient n’est plus exact : il vient d’être mis à jour. Relisez-le avant de valider.';
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.length > 0;

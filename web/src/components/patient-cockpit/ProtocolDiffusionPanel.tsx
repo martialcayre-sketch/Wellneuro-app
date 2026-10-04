@@ -104,11 +104,19 @@ function formatDate(iso: string): string {
   return date.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+/**
+ * La date de la lettre TELLE QU'ELLE EST ÉCRITE dans la lettre : le générateur
+ * (`genererCourrierAdressage`) date « Courrier préparé le … » au jour UTC, et la
+ * version imprimée reprend ce jour. L'aperçu le suit, fuseau épinglé — jamais
+ * celui du navigateur (revue Copilot de #1309) —, pour ne pas annoncer un autre
+ * jour que celui imprimé. Passer le générateur au jour de Paris changerait le
+ * texte des lettres : hors de ce lot.
+ */
 function dateLisible(iso: string): string {
   const date = new Date(iso);
   return Number.isNaN(date.getTime())
     ? iso
-    : date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    : date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
 
 /** Le drapeau de la lettre ouvre sa lecture : une lettre remise est toujours annoncée ([[D-262]] B3). */

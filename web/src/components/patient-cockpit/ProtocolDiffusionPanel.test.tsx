@@ -380,4 +380,9 @@ describe('ProtocolDiffusionPanel — le courrier pour le médecin (D-262, LOT-03
     panneau(null);
     expect(screen.queryByTestId('apercu-lettre-adressage')).toBeNull();
   });
+
+  it('la date est celle écrite dans la lettre (jour UTC), quel que soit le fuseau du navigateur', () => {
+    panneau({ ...LETTRE, consigneLe: '2026-03-29T22:30:00.000Z' });
+    expect(screen.getByTestId('apercu-lettre-adressage').textContent).toMatch(/du 29 mars 2026/);
+  });
 });
