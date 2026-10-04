@@ -474,6 +474,18 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   2026-09-15 ; elle n'a pas été contournée. Ce que la campagne a livré est vert en CI
   et constaté en ligne par contenance — son **usage n'est pas mesuré**, et c'est
   exactement l'avertissement que le dossier portait à l'ouverture.
+- **L'unité d'un résultat biologique n'est liée au catalogue qu'en application** —
+  dette nommée à la revue de la PR #1302 (`D-264`, 2026-10-04). Les routes de
+  saisie et la validation d'import lisent l'unité de l'analyte, puis écrivent le
+  résultat dans une requête séparée (`resultats/route.ts`, `resultats/bilan/route.ts`,
+  `import/decisions.ts`). Les CHECK ne connaissent que le vocabulaire : rien en
+  base n'impose « unité du résultat = unité du catalogue ». Un changement d'unité
+  d'analyte, comme D-264, laisse donc une course de quelques millisecondes avec
+  une saisie en vol. Pour D-264, le constat a été écarté avec motif : aucune
+  ligne existante, résultat porteur de sa propre unité, constat post-release par
+  conteneur. Le prochain changement d'unité d'un analyte qui porte déjà des
+  résultats exige d'abord l'invariant en base (contrainte ou trigger), par
+  migration et décision propres. Porteur : aucun à ce jour.
 - **`adviceSheetRef` est mort de bout en bout** — dette nommée par `D-191`
   (LOT-03 de `2026-09-14-protocole-assiste`), non refermée par lui. Le champ
   existe au contrat de vue patient, la route l'écrit `null` depuis toujours, et
