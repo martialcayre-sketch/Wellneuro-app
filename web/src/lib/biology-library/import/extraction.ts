@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { anthropic } from '@/lib/anthropic';
+import type { TypeMimeCompteRendu } from './depot';
 
 // EXTRACTION D'UN COMPTE RENDU PAR IA VISION (BIO-INGEST LOT-02, [[D-256]] A4).
 //
@@ -215,8 +216,20 @@ export function motifDErreur(err: unknown): MotifEchec {
   return 'erreur_fournisseur';
 }
 
-/** Appelle le modèle sur un PDF entier et rend ses lignes relevées, ou un motif d'échec. */
-export async function extraireCompteRendu(pdf: Buffer): Promise<ResultatExtraction> {
+/**
+ * Appelle le modèle sur un compte rendu entier — PDF, ou image (LOT-03) — et
+ * rend ses lignes relevées, ou un motif d'échec. Seul le bloc d'entrée change
+ * avec le format : consigne, schéma et règles de lecture sont les mêmes.
+ */
+export async function extraireCompteRendu(
+  document: Buffer,
+  typeMime: TypeMimeCompteRendu,
+): Promise<ResultatExtraction> {
+  const data = document.toString('base64');
+  const entree: Anthropic.ContentBlockParam =
+    typeMime === 'application/pdf'
+      ? { type: 'document', source: { type: 'base64', media_type: typeMime, data } }
+      : { type: 'image', source: { type: 'base64', media_type: typeMime, data } };
   let reponse: Anthropic.Message;
   try {
     // En flux : un `max_tokens` de cette taille est refusé d'emblée par le SDK
@@ -233,7 +246,7 @@ export async function extraireCompteRendu(pdf: Buffer): Promise<ResultatExtracti
           {
             role: 'user',
             content: [
-              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdf.toString('base64') } },
+              entree,
               { type: 'text', text: 'Relève les résultats de ce compte rendu.' },
             ],
           },

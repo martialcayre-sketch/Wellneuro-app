@@ -133,7 +133,7 @@ describe('extraireCompteRendu — l’appel', () => {
   it('envoie le PDF ENTIER au modèle enregistré, en sortie structurée, sans bascule de modèle', async () => {
     create.mockResolvedValue(reponse(JSON.stringify(SORTIE)));
     const pdf = Buffer.from('%PDF-1.7 fixture');
-    const r = await extraireCompteRendu(pdf);
+    const r = await extraireCompteRendu(pdf, 'application/pdf');
     expect(r.ok).toBe(true);
     const [params, options] = create.mock.calls[0];
     expect(params.model).toBe(MODELE_EXTRACTION);
@@ -147,6 +147,19 @@ describe('extraireCompteRendu — l’appel', () => {
     expect(options).toMatchObject({ timeout: 180_000, maxRetries: 0 });
   });
 
+  it('envoie une photo ENTIÈRE en bloc image, sous la même consigne (LOT-03)', async () => {
+    create.mockResolvedValue(reponse(JSON.stringify(SORTIE)));
+    const photo = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
+    const r = await extraireCompteRendu(photo, 'image/jpeg');
+    expect(r.ok).toBe(true);
+    const [params] = create.mock.calls[0];
+    expect(params.messages[0].content[0]).toEqual({
+      type: 'image',
+      source: { type: 'base64', media_type: 'image/jpeg', data: photo.toString('base64') },
+    });
+    expect(params.messages[0].content[1]).toEqual({ type: 'text', text: 'Relève les résultats de ce compte rendu.' });
+  });
+
   it('le pire cas d’un appel reste sous la péremption d’un import en cours', () => {
     // Sinon une suite encore vivante serait close `delai_depasse` par une relance.
     expect(DELAI_EXTRACTION_MS * (1 + TENTATIVES_SUPPLEMENTAIRES)).toBeLessThan(PEREMPTION_EN_COURS_MS);
@@ -154,13 +167,13 @@ describe('extraireCompteRendu — l’appel', () => {
 
   it('classe les échecs en motifs fermés', async () => {
     create.mockRejectedValueOnce(new Anthropic.APIConnectionTimeoutError());
-    expect(await extraireCompteRendu(Buffer.from('%PDF-'))).toEqual({ ok: false, motif: 'delai_depasse' });
+    expect(await extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf')).toEqual({ ok: false, motif: 'delai_depasse' });
     create.mockRejectedValueOnce(new Error('panne'));
-    expect(await extraireCompteRendu(Buffer.from('%PDF-'))).toEqual({ ok: false, motif: 'erreur_fournisseur' });
+    expect(await extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf')).toEqual({ ok: false, motif: 'erreur_fournisseur' });
     create.mockResolvedValueOnce(reponse('', 'refusal'));
-    expect(await extraireCompteRendu(Buffer.from('%PDF-'))).toEqual({ ok: false, motif: 'erreur_fournisseur' });
+    expect(await extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf')).toEqual({ ok: false, motif: 'erreur_fournisseur' });
     create.mockResolvedValueOnce(reponse('{"lisible":', 'max_tokens'));
-    expect(await extraireCompteRendu(Buffer.from('%PDF-'))).toEqual({ ok: false, motif: 'reponse_invalide' });
+    expect(await extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf')).toEqual({ ok: false, motif: 'reponse_invalide' });
   });
 
   it('motifDErreur ne lit jamais le message', () => {

@@ -11,7 +11,7 @@ const { prisma, extraire, journal, resoudre } = vi.hoisted(() => {
     $executeRaw: trace('verrou', 1),
     compteRenduBiologique: {
       findFirst: trace('compteRendu.findFirst', { id: 'cr_1', typeMime: 'application/pdf', purgeLe: null }),
-      findUnique: trace('compteRendu.findUnique', { contenu: new Uint8Array([37, 80, 68, 70, 45]) }),
+      findUnique: trace('compteRendu.findUnique', { contenu: new Uint8Array([37, 80, 68, 70, 45]), typeMime: 'application/pdf' }),
     },
     importBiologique: {
       findMany: trace('import.findMany', []),
@@ -85,6 +85,14 @@ afterEach(() => {
 });
 
 describe('lancerExtraction — modèle et version enregistrés à chaque fois (v4)', () => {
+  it('une photo passe à l’extracteur avec son type, par le même pipeline (LOT-03)', async () => {
+    const octets = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+    prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce({ id: 'cr_1', typeMime: 'image/jpeg', purgeLe: null });
+    prisma.compteRenduBiologique.findUnique.mockResolvedValueOnce({ contenu: octets, typeMime: 'image/jpeg' });
+    await lancerExtraction(PARAMS);
+    expect(extraire).toHaveBeenCalledWith(Buffer.from(octets), 'image/jpeg');
+  });
+
   it('crée l’import en cours avec le modèle et la version AVANT l’appel', async () => {
     await lancerExtraction(PARAMS);
     expect(prisma.importBiologique.create).toHaveBeenCalledWith({

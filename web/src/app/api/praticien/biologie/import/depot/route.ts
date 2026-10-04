@@ -7,13 +7,14 @@ import {
   deposerCompteRendu,
   jugerFichier,
   MESSAGES_DEPOT,
+  preparerImage,
   TAILLE_MAX_OCTETS,
 } from '@/lib/biology-library/import/depot';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
-// Dépôt d'un compte rendu PDF par le praticien (BIO-INGEST LOT-02, [[D-256]]
-// A2). `idPatient` en paramètre de requête, corps `multipart/form-data` :
-// `fichier`. Le dépôt n'appelle pas l'IA : l'extraction est un second geste
+// Dépôt d'un compte rendu — PDF, ou photo ou scan (LOT-03) — par le praticien
+// (BIO-INGEST LOT-02, [[D-256]] A2). `idPatient` en paramètre de requête,
+// corps `multipart/form-data` : `fichier`. Le dépôt n'appelle pas l'IA : l'extraction est un second geste
 // (`../extraction`).
 //
 // LE CORPS NE SE LIT QU'EN DERNIER, ET BORNÉ (revue `wn-reviewer`, P1-1) :
@@ -66,9 +67,15 @@ export async function POST(req: Request) {
     if (!(fichier instanceof Blob)) return echec('fichier_absent', MESSAGES_DEPOT.fichier_absent, 400);
     if (fichier.size > TAILLE_MAX_OCTETS) return echec('fichier_trop_lourd', MESSAGES_DEPOT.fichier_trop_lourd, 413);
 
-    const octets = Buffer.from(await fichier.arrayBuffer());
+    let octets: Buffer = Buffer.from(await fichier.arrayBuffer());
     const verdict = jugerFichier(octets, fichier.type);
     if (!verdict.ok) return echec(verdict.reason, MESSAGES_DEPOT[verdict.reason], verdict.status);
+    if (verdict.typeMime !== 'application/pdf') {
+      // Une image n'est consignée que nettoyée de ses métadonnées (LOT-03).
+      const image = await preparerImage(octets, verdict.typeMime);
+      if (!image.ok) return echec(image.reason, MESSAGES_DEPOT[image.reason], image.status);
+      octets = image.octets;
+    }
 
     const issue = await deposerCompteRendu({ idPatient, deposePar: garde.email, octets, typeMime: verdict.typeMime });
     if (!issue.ok) return echec(issue.reason, MESSAGES_DEPOT[issue.reason], 409, issue.idCompteRendu);

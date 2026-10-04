@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Photo ou scan"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-02"
 ---
 
@@ -42,9 +42,9 @@ LOT-02
 
 ## Étapes
 
-- [ ] Vérifier que l'amendement RGPD du LOT-02 couvre les images.
-- [ ] Brancher l'extracteur image.
-- [ ] Validations.
+- [x] Vérifier que l'amendement RGPD du LOT-02 couvre les images.
+- [x] Brancher l'extracteur image.
+- [x] Validations.
 
 ## Tests
 
@@ -56,4 +56,20 @@ Photo acceptée sans nouvelle table ni nouvelle voie d'écriture.
 
 ## Résultats
 
-À compléter à la clôture.
+Livré le 2026-10-04 en une PR, sans migration : le CHECK `type_mime` du LOT-02
+admettait déjà JPEG, PNG et WebP, et le §2 ter du dossier RGPD déclarait déjà
+« photo ou scan ».
+
+- **Admission** : format lu à la signature, concordant avec le type déclaré ;
+  HEIC et GIF refusés (415).
+- **Métadonnées** (arbitrage du responsable, 2026-10-04) : l'image est
+  réencodée au dépôt par `sharp`, devenue dépendance directe. Orientation
+  appliquée, EXIF et GPS retirés avant consignation et envoi ; une ligne au
+  dossier RGPD.
+- **Plafonds** : 10 Mo reçus ; image préparée ≤ 3,75 Mio (5 Mio en base64 chez
+  le fournisseur) et ≤ 8 000 px de côté. Pas de redimensionnement : une image
+  trop lourde est refusée avec un message.
+- **Extraction** : bloc `image` au lieu de `document`, même consigne et même
+  schéma, procédé `bio-extraction-v1` inchangé.
+- **Hors lot** : un compte rendu de plusieurs pages en plusieurs photos (une
+  photo par dépôt) ; HEIC.
