@@ -8885,3 +8885,19 @@ versé en proposition de cadrage (#1301, corrigé par #1303), non arbitré.
 lecture ».
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-04 — BIO-PARCOURS v3.1 et décision du 2026-10-21 (D-265)
+
+**Décidé.** Contre-revue `wn-fable` du cadrage v3, corrections portées au Claude Doc (rev 67) :
+BP-12, BP-18 et BP-21 scindés en a et b, faits du laboratoire en BIO-INGEST LOT-07, §5.3 sans
+contradiction. Premier lot : D-265 (#1305). Le régime des dossiers réels et le portail G4 sont
+reconduits sans terme. La voie d'exception D-234 est maintenue : la fermer rebloquerait les
+dossiers signalés (D-257 A7). Bases légales déclarées par le responsable, AIPD non requise à ce
+stade, trous ouverts re-datés au 2027-06-30.
+
+**Écarté.** Fermeture de D-234 (TRUST v13, accusé rouvert pour tous) ; trace détaillée de
+l'e-mail d'Anthropic dans le dépôt public.
+
+**Prochaine action.** Merge de #1305 après CI vert, puis BP-00 en mode Plan, dans une session neuve.
+
+**Questions ouvertes.** Critères du seuil de l'AIPD non renseignés (choix du responsable).

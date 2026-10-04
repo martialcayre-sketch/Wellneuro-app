@@ -33,16 +33,16 @@ d'adressage recréerait le blocage sans fin que [[D-257]] a levé le 2026-10-02.
 Seule une lettre consignée lève une abstention sur signal d'adressage (D-257
 A7), et le 2026-09-19, aucun dossier sur 29 n'avait exprimé d'accord de
 partage ([[D-234]] §4). Le texte servi au patient, qui nomme l'exception,
-reste exact. Ce qui manquait est sa justification écrite : elle prend place
-dans la trame de la rubrique 3 du dossier RGPD.
+reste exact. Ce qui manquait était sa base écrite : le responsable l'a
+déclarée dans la trame de la rubrique 3 du dossier RGPD (§3).
 
 **§3 — Le responsable pose base légale et AIPD.** Le dossier RGPD les
 réservait à un conseil qualifié. Le responsable les prend en charge (seconde
 série d'arbitrages du cadrage, 2026-10-04). Deux trames sont versées : en
-rubrique 3, une ligne par traitement, cellules vides ; en rubrique 13, le seuil
-de l'AIPD avant son contenu. **Cette décision n'écrit aucun article du
-RGPD** : le contenu des trames est écrit par le responsable, jamais par une
-session. Bases déclarées par le responsable le 2026-10-04, sur la liste des
+rubrique 3, une ligne par traitement ; en rubrique 13, le seuil de l'AIPD avant
+son contenu. **Aucune session ne choisit un article du RGPD** : le contenu des
+trames est déclaré par le responsable, et l'assistant le consigne sans en
+recommander aucun. Bases déclarées par le responsable le 2026-10-04, sur la liste des
 bases du règlement et sans recommandation : le consentement (6.1.a, 9.2.a)
 pour l'accompagnement, la synthèse, le relevé par IA et la voie ordinaire de
 correspondance ; les intérêts vitaux et la prise en charge sanitaire (6.1.d,
