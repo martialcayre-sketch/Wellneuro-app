@@ -3,9 +3,10 @@
 // POURQUOI UN DRAPEAU ICI, alors que le fil médecin n'en a aucun. Le fil
 // consigne un geste déjà fait hors de l'outil ; cette route-ci PRODUIT un
 // document qui nomme des signaux d'alerte déclarés par un patient et part vers
-// un tiers. Si la revue RGPD du 2026-10-21 imposait une suspension, il
-// n'existerait aujourd'hui aucun geste d'exploitation pour la produire — il
-// faudrait un déploiement. Le drapeau est ce geste.
+// un tiers. Si une revue RGPD imposait une suspension, il n'existerait aucun
+// geste d'exploitation pour la produire — il faudrait un déploiement. Le
+// drapeau est ce geste. (La revue du 2026-10-21 a reconduit le régime sans
+// terme et maintenu la voie d'exception de cette route : [[D-265]].)
 //
 // Fail-closed : seule la chaîne exacte « true » ouvre. Absente, vide, « 1 » ou
 // « TRUE » laissent fermé — une faute de frappe dans un panneau d'environnement

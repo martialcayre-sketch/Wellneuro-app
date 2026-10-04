@@ -19,6 +19,12 @@
 **Ce dossier ne lève rien.** Le gate G-TRUST-04 reste non levé ; il est couvert
 par une dérogation datée du 2026-07-21, bornée au **2026-10-21**.
 
+> **Mise à jour du 2026-10-04 ([[D-265]]).** G-TRUST-04 est clos depuis
+> [[D-121]] (annexe HDS signée le 2026-08-30), et la phase avec des personnes
+> réelles est reconduite sans terme. La base légale (rubrique 3) et l'AIPD
+> (rubrique 13) sont écrites par le responsable lui-même, sur une trame ; le
+> reste de ce dossier, écrit par l'assistant, garde l'alerte ci-dessus.
+
 > **Deux dates, deux évènements — ne pas les confondre ni les « aligner ».** Le
 > **2026-07-21** est celui de l'instruction de l'hébergement (Supabase et Vercel
 > absents de l'annuaire ANS) et de la dérogation ci-dessus. Le **2026-07-22** est
@@ -254,8 +260,25 @@ responsable avec son conseil.
 
 ## 3. Base légale
 
-**TROU intégral.** Aucune base légale n'est qualifiée dans le dépôt, et ce
-document n'en qualifie pas.
+**Qualifiée par le responsable du traitement le 2026-10-04** ([[D-265]] §3).
+Ce dossier réservait la qualification à un conseil qualifié ; le responsable la
+prend en charge. Les bases ci-dessous sont **ses déclarations**, rendues en
+session sur la liste des bases du règlement, sans qu'aucune lui soit
+recommandée, et consignées par l'assistant.
+
+| Traitement | Où il est décrit | Article 6 (licéité) | Article 9 (condition, données de santé) | Justification | Écrit par | Date |
+|---|---|---|---|---|---|---|
+| Accompagnement en neuronutrition : questionnaires, anamnèse, consultations, résultats biologiques, documents remis | rubrique 2 | 6.1.a — consentement | 9.2.a — consentement explicite | Choix déclaré par le responsable le 2026-10-04 | Responsable (déclaration en session, consignée par l'assistant) | 2026-10-04 |
+| Synthèse préparée sans geste du praticien | rubrique 2 bis | 6.1.a — consentement (même base que l'accompagnement) | 9.2.a — consentement explicite (même base) | Choix déclaré par le responsable le 2026-10-04 | Responsable (déclaration en session, consignée par l'assistant) | 2026-10-04 |
+| Relevé des comptes rendus biologiques par IA vision | rubrique 2 ter | 6.1.a — consentement (même base que l'accompagnement) | 9.2.a — consentement explicite (même base) | Choix déclaré par le responsable le 2026-10-04 | Responsable (déclaration en session, consignée par l'assistant) | 2026-10-04 |
+| Correspondance avec le médecin traitant — voie ordinaire, accord du patient exigé ([[D-219]] §3) | rubrique 6 | 6.1.a — consentement | 9.2.a — consentement explicite | Choix déclaré par le responsable le 2026-10-04 | Responsable (déclaration en session, consignée par l'assistant) | 2026-10-04 |
+| Lettre d'adressage sur signal d'alerte — voie d'exception, maintenue malgré un refus ([[D-234]], [[D-265]] §2) | rubrique 6 | 6.1.d — sauvegarde des intérêts vitaux | 9.2.h — prise en charge sanitaire par un professionnel de santé soumis au secret (art. 9.3) | Choix déclaré par le responsable le 2026-10-04 | Responsable (déclaration en session, consignée par l'assistant) | 2026-10-04 |
+| *Tout autre traitement que le responsable identifie* | | | | | | |
+
+La ligne de la voie d'exception porte la base que [[D-234]] laissait ouverte :
+cette voie transmet une donnée de santé à un tiers malgré un refus exprimé, et
+ne peut pas reposer sur le consentement qui fonde la voie ordinaire
+(rubrique 6).
 
 Ce qui existe, et qui n'en tient pas lieu :
 
@@ -268,8 +291,8 @@ Ce qui existe, et qui n'en tient pas lieu :
 
 Un consentement recueilli n'est pas la même chose qu'une base légale
 qualifiée, et la qualification d'un traitement de données de santé ne se déduit
-pas d'un fichier. **Ne pas écrire ici d'article du RGPD** — ni 6.1.a, ni 9.2.h,
-ni aucun autre — tant qu'un conseil qualifié ne l'a pas posé. La checklist du
+pas d'un fichier. **Seul le responsable écrit un article dans la trame
+ci-dessus** ([[D-265]] §3) ; une session n'en propose aucun. La checklist du
 gate porte déjà, sur un sujet voisin, la démonstration de ce qu'une intuition
 juridique non vérifiée coûte (§ consentement ≠ HDS).
 
@@ -444,15 +467,20 @@ du texte libre sur tous les chemins d'écriture. L'étendue de l'exception tient
 donc à la discipline de routage : une quatrième route qui n'appellerait pas la
 garde en hériterait **en silence**.
 
-**CE QUI SE DÉDUIT DE CE TABLEAU, ET QUI EST LA QUESTION OUVERTE** : la voie
+**CE QUI SE DÉDUIT DE CE TABLEAU, ET QUI ÉTAIT LA QUESTION OUVERTE** (close par [[D-265]] le 2026-10-04) : la voie
 ordinaire repose sur le choix explicite du patient, et ce choix est désormais
 **techniquement tenu**. La voie d'exception, elle, transmet une donnée de santé à
 un tiers **malgré un refus exprimé**. Ces deux voies ne peuvent pas reposer sur
-la même justification, et la seconde n'en a aucune d'écrite.
+la même justification, et la seconde n'en avait aucune d'écrite avant le 2026-10-04.
+
+**LA VOIE D'EXCEPTION EST MAINTENUE** ([[D-265]] §2, 2026-10-04). La fermer
+recréerait le blocage sans fin que [[D-257]] a levé : seule une lettre
+consignée lève une abstention sur signal d'adressage. Sa base est déclarée par
+le responsable dans la trame de la rubrique 3 (6.1.d + 9.2.h, 2026-10-04).
 
 **AUCUN ARTICLE DU RGPD N'EST ÉCRIT ICI**, conformément à la rubrique 3 : la
-qualification revient à un **conseil qualifié**, pas au responsable ni à une
-session. Ce qui est écrit est le **fait** — ce qui part, à qui, par quel chemin,
+qualification revient au **responsable**, dans la trame de la rubrique 3
+([[D-265]] §3), jamais à une session. Ce qui est écrit est le **fait** — ce qui part, à qui, par quel chemin,
 sous quelle garde, et ce que le produit ne garantit pas. Les deux items entrent
 au récapitulatif de la rubrique 14 avec leur porteur.
 
@@ -728,6 +756,12 @@ ouverte.
   avant la pose du drapeau d'extraction, sa date établie au fil. **Envoyée le
   2026-10-01 à 17:34 UTC (19:34 heure de Paris)** (trace dans `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`).
   Elle ne referme pas le trou ci-dessous : elle l'ouvre à l'instruction.
+  **Réponse reçue le 2026-10-02 à 22:23 UTC** : le DPA d'Anthropic, clauses
+  contractuelles types comprises, est intégré à ses Conditions commerciales de
+  service et s'accepte avec elles, sans signature distincte. Restent l'archivage
+  d'une copie datée, la date d'opposabilité et la couverture des traitements
+  antérieurs (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`). La réserve sur la
+  localisation de l'inférence et la rétention n'est pas levée.
 
 - **Google** — connexion du praticien seul.
 
@@ -1025,44 +1059,78 @@ référencer ici).
 
 ## 13. Analyse d'impact (AIPD)
 
-**TROU.** Aucune AIPD n'existe. Elle est listée comme réserve à lever dans
-D-006 et dans `CHECKLIST_FINALISATION.md:67`. Un traitement de données de santé
-à grande échelle ou systématique en requiert une ; savoir si l'expérimentation
-actuelle franchit ce seuil est une question de conseil qualifié, pas de dépôt.
-**Elle n'est pas rédigée ici**, et ce document ne doit pas être confondu avec
-elle.
+**À établir par le responsable du traitement** ([[D-265]] §3), sur la trame
+ci-dessous. Elle est listée comme réserve à lever dans D-006 et dans
+`CHECKLIST_FINALISATION.md:67`. Rien n'est conclu ici : la trame pose les
+questions, le responsable y répond. Ce document ne doit pas être confondu avec
+l'AIPD elle-même.
+
+**A. Le seuil : une AIPD est-elle requise ?** Les critères des lignes
+directrices du G29 (WP248 rév. 01, reprises par le CEPD), à cocher ou non par
+le responsable, chacun avec son motif :
+
+- [ ] données sensibles ou à caractère hautement personnel —
+- [ ] personnes vulnérables —
+- [ ] traitement à grande échelle —
+- [ ] évaluation ou notation —
+- [ ] décision automatisée avec effet juridique ou similaire —
+- [ ] surveillance systématique —
+- [ ] croisement ou combinaison d'ensembles de données —
+- [ ] usage innovant ou nouvelle solution technologique (modèles d'IA des rubriques 2 bis et 2 ter compris) —
+- [ ] traitement qui empêche d'exercer un droit ou de bénéficier d'un service —
+
+Conclusion du responsable : **AIPD non requise à ce stade.** Il statuera à
+nouveau quand le produit sera achevé, ce qui est encore loin d'être le cas.
+Déclaration rendue en session le 2026-10-04, consignée par l'assistant. Les
+critères ci-dessus n'ont pas été renseignés un à un.
+
+**B. Si elle est requise : l'AIPD elle-même**, en pièce dédiée.
+
+1. Description du traitement : finalités (rubrique 2), données (rubrique 5),
+   destinataires (rubrique 6), durées (rubrique 8), supports.
+2. Nécessité et proportionnalité : base légale (rubrique 3), minimisation,
+   exactitude, information (rubrique 11), droits (rubrique 9), sous-traitants
+   (rubrique 6), transferts (rubrique 7).
+3. Risques pour les personnes — accès illégitime, modification non désirée,
+   disparition : pour chacun, sources, impacts, vraisemblance, gravité.
+4. Mesures existantes ou prévues (rubrique 10), risque résiduel.
+5. Avis éventuels (DPO, personnes concernées) ; validation datée du responsable.
+
+Où elle se dépose : hors dépôt si elle décrit des failles exploitables ; ce
+dossier en garde alors la conclusion, la date et l'emplacement.
 
 ## 14. Récapitulatif des trous
 
 | # | Rubrique | Ce qui manque | Porteur | Échéance | Où la réponse se consignera |
 |---|---|---|---|---|---|
-| 1 | Responsable | Identité juridique exacte | Responsable | 2026-10-21 | ici, rubrique 1 |
-| 1 | Responsable | Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | 2026-10-21 | `docs/DECISIONS.md` |
-| 3 | Base légale | Qualification, non rédigée à ce jour | Conseil qualifié | 2026-10-21 | ici, rubrique 3 |
-| 4 | Personnes | Cas des mineurs | Responsable | 2026-10-21 | `SOURCES_ET_VALIDATIONS.md` |
-| 5 | Catégories | **Six tables filles de `patients` ne sont pas déclarées** — dix-sept au 2026-09-09, mesuré en comparant `schema.prisma` à cette rubrique (38 modèles portaient alors une relation vers `Patient`, 21 y étaient cités ; ils sont 46 et 40 au 2026-09-13). ONZE noms sont sortis de la liste depuis, dont dix le 2026-09-13 : `DecisionPrioritySelection`, déclarée avec `EcartementProposition` sous une même entrée ; et neuf **dettes périmées** — déjà déclarées depuis le rattrapage `D-167`, mais laissées dans la liste, donc DISPENSÉES de vérification alors qu'elles n'en avaient plus besoin. Les qualifier (art. 9 ou non) reste un acte juridique, pas une écriture de code ; la liste vit dans `rubrique5.modeles.test.ts`, qui **rougit sur toute table ajoutée après cette date** et, depuis la purge, sur toute déclaration retirée pour l'une des dix — le passif est ouvert, la récidive est fermée | Responsable + conseil | 2026-10-21 | ici, rubrique 5 |
+| 1 | Responsable | Identité juridique exacte | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 1 |
+| 1 | Responsable | Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | 2027-06-30 (était 2026-10-21) | `docs/DECISIONS.md` |
+| 3 | Base légale | ~~Qualification, non rédigée à ce jour~~ — **qualifiée le 2026-10-04** par déclaration du responsable ([[D-265]] §3) | Responsable | fermé | ici, rubrique 3 |
+| 4 | Personnes | Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
+| 5 | Catégories | **Six tables filles de `patients` ne sont pas déclarées** — dix-sept au 2026-09-09, mesuré en comparant `schema.prisma` à cette rubrique (38 modèles portaient alors une relation vers `Patient`, 21 y étaient cités ; ils sont 46 et 40 au 2026-09-13). ONZE noms sont sortis de la liste depuis, dont dix le 2026-09-13 : `DecisionPrioritySelection`, déclarée avec `EcartementProposition` sous une même entrée ; et neuf **dettes périmées** — déjà déclarées depuis le rattrapage `D-167`, mais laissées dans la liste, donc DISPENSÉES de vérification alors qu'elles n'en avaient plus besoin. Les qualifier (art. 9 ou non) reste un acte juridique, pas une écriture de code ; la liste vit dans `rubrique5.modeles.test.ts`, qui **rougit sur toute table ajoutée après cette date** et, depuis la purge, sur toute déclaration retirée pour l'une des dix — le passif est ouvert, la récidive est fermée | Responsable + conseil | 2027-06-30 (était 2026-10-21) | ici, rubrique 5 |
 | 5 | Catégories | ~~Catégorie « résultats biologiques » absente~~ — **déclarée le 2026-09-09** (quatre tables du rayon), mais **après** la pose de `WN_CB_RESULTS_ENABLED` que la rubrique 2 posait comme conditionnée à cette déclaration préalable. Écart daté en rubrique 2 ; portée nulle sur les données (0 ligne au constat) | — | fermé | ici, rubriques 2 et 5 |
-| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais ~~**signature et archivage non faits**~~ — **annexe HDS signée le 2026-08-30** (déclaration du responsable, consignée le 2026-08-31, `D-121`) ; **restent dus : l'archivage du document signé, et la signature + archivage du DPA** | Responsable | ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19 — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6 ; **signée le 2026-08-30**) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) ; archivage dû **avant la revue du 2026-10-21** | `CHECKLIST_FINALISATION.md` §F |
+| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais ~~**signature et archivage non faits**~~ — **annexe HDS signée le 2026-08-30** (déclaration du responsable, consignée le 2026-08-31, `D-121`) ; **restent dus : l'archivage du document signé, et la signature + archivage du DPA** | Responsable | 2027-06-30 (était : ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19 — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6 ; **signée le 2026-08-30**) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) ; archivage dû **avant la revue du 2026-10-21**) | `CHECKLIST_FINALISATION.md` §F |
 | 6 | Sous-traitants | ~~Périmètre HDS de la région `osc-fr1` non confirmé~~ — **répondu par écrit le 2026-08-11** : couvert, activités 5 et 6 incluses | Responsable | fermé | ici, rubrique 6 |
-| 6 | Sous-traitants | ~~Fournisseur SMTP réel non identifié~~ — **identifié le 2026-08-22 : Google Workspace** (rubrique 6, TROU 2 — SPF/MX/DKIM du domaine + expéditeur du code) ; **restent dus** : localisation du traitement et couverture DPA | Responsable | 2026-10-21 | ici, rubrique 6 |
-| 6 | Sous-traitants | ~~Sentry non déclaré au patient~~ — **déclaré le 2026-09-07** dans `donnees_confidentialite@v5` (`D-141`), résidence UE rendue invariante par `sentryRegion.ts` ; **reste dû : le DPA Sentry** | Responsable | 2026-10-21 (DPA seul) | `contenus/registre.ts`, rubrique 6 |
-| 6 | Destinataires | **Correspondance médecin — la voie d'EXCEPTION n'a aucune justification écrite.** Le traitement est inventorié depuis `D-222` et ses quatre termes sont posés ; ce qui manque est la qualification de la seule route non gardée, `api/praticien/adressage/courrier`, qui transmet une donnée de santé à un tiers **malgré un refus exprimé** — les deux autres routes sont fail-closed sur refus, retrait et silence. Les deux voies ne peuvent pas reposer sur la même justification. **Aucun article du RGPD n'est écrit dans ce dossier** (rubrique 3) : l'acte revient au conseil, pas au responsable ni à une session | Conseil qualifié | 2026-10-21 | ici, rubrique 6 |
-| 7 | Transferts | Mécanisme invoqué (CCT/DPA) | Conseil qualifié | 2026-10-21 | ici, rubrique 7 |
-| 7 | Transferts | ~~**Demande de DPA à Anthropic non envoyée**~~ — **envoyée le 2026-10-01 à 17:34 UTC (19:34 heure de Paris)** (date établie par capture du message envoyé). La condition de pose du drapeau du LOT-02 est tenue ; **restent dus : la réponse, puis la signature et l'archivage du DPA** | Responsable | 2026-10-21 (DPA) | `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md` (tableau « Trace à tenir »), puis rubriques 6 et 7 |
-| 8 | Conservation | Durées des données de santé — hors le document des comptes rendus biologiques déposés, fixé par [[D-258]] | Responsable + conseil | 2026-10-21 | ici, rubrique 8 puis `gouvernance.ts` |
-| 9 | Droits | Délai, vérification d'identité, circuit interne | Responsable | 2026-10-21 | ici, rubrique 9 |
-| 10 | Sécurité | Pentest / revue externe | Prestataire à engager | 2026-10-21 | checklist du gate, exigence 7 |
-| 10 | Sécurité | Registre physique des violations (EX-3) | Responsable | 2026-10-21 | `PROCEDURE_VIOLATION_DONNEES.md` |
-| 10 | Sécurité | Preuve fonctionnelle de la piste d'audit | Responsable | ~~premier dossier ouvert~~ — **échéance dépassée** : des dossiers réels sont ouverts et utilisés (`D-075`, 2026-08-18), la production porte des passations (`D-077`) ; la preuve reste à produire, échéance reportée au 2026-10-21 | checklist du gate, item 4 |
-| 11 | Information | ~~Information sur l'écart HDS non consignée~~ — **partiellement consignée le 2026-08-19** (forme orale et contenu, sur déclaration du responsable, rubrique 11). **Reste dû** : renouvellement après `D-078`, qui change la nature de l'écart — brouillon de support prêt, publication = geste TRUST distinct | Responsable | ~~**avant la bascule Scalingo** (c'est elle qui ouvre la fenêtre de moindre couverture, `D-078` §3)~~ — **échéance dépassée le 2026-08-22** : la bascule des données a eu lieu (03:24 CEST, rubrique 12) **sans** que le renouvellement soit publié. Relevé le jour même, pas découvert après coup ; à rattraper **au plus tôt**, en tout état de cause avant le 2026-10-21 | ici, rubrique 11 |
-| 11 | Information | **Date de délivrance non établie** et **modalité de retrait non consignée** — deux des quatre composantes du trou d'origine ; la période déclarée (« en continu depuis la souscription HDS ») ne fournit pas de point de départ tenu pour établi par le dépôt | Responsable | 2026-10-21 | ici, rubrique 11 |
-| 11 | Information | **Aucune trace écrite par participant** de l'information sur l'écart HDS — aucun acquittement individuel ne la porte ; périmètre des personnes couvertes non établi | Responsable | 2026-10-21 | ici, rubrique 11 |
-| 11 | Information | **Deux patients ont accusé `donnees_confidentialite@v8` sans avoir vu `v9`**, qui corrige la promesse inexacte sur le partage. L'accusé de `v9` étant exigé **au portail**, il ne les atteindra qu'à leur prochaine visite — or la production dit qu'on y entre le jour même ou jamais. Deux personnes, mesurées le 2026-09-19 : ce n'est pas un mécanisme à construire mais un geste à décider. Ce qui part vers un patient reste un geste du responsable | Responsable | **à fixer** — au plus tôt, en tout état de cause avant le 2026-10-21 | ici, rubrique 11 |
-| 13 | AIPD | Absente | Conseil qualifié | 2026-10-21 | document dédié |
+| 6 | Sous-traitants | ~~Fournisseur SMTP réel non identifié~~ — **identifié le 2026-08-22 : Google Workspace** (rubrique 6, TROU 2 — SPF/MX/DKIM du domaine + expéditeur du code) ; **restent dus** : localisation du traitement et couverture DPA | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 6 |
+| 6 | Sous-traitants | ~~Sentry non déclaré au patient~~ — **déclaré le 2026-09-07** dans `donnees_confidentialite@v5` (`D-141`), résidence UE rendue invariante par `sentryRegion.ts` ; **reste dû : le DPA Sentry** | Responsable | 2027-06-30 (était 2026-10-21, DPA seul) | `contenus/registre.ts`, rubrique 6 |
+| 6 | Destinataires | **Correspondance médecin — la voie d'EXCEPTION, maintenue ([[D-265]] §2)** — ~~n'a aucune justification écrite~~. Le traitement est inventorié depuis `D-222` et ses quatre termes sont posés ; ce qui manque est la qualification de la seule route non gardée, `api/praticien/adressage/courrier`, qui transmet une donnée de santé à un tiers **malgré un refus exprimé** — les deux autres routes sont fail-closed sur refus, retrait et silence. Les deux voies ne peuvent pas reposer sur la même justification. ~~Sa justification s'écrit dans la trame de la rubrique 3~~ — **base déclarée le 2026-10-04** : 6.1.d + 9.2.h | Responsable | fermé | ici, rubrique 3 |
+| 7 | Transferts | Mécanisme invoqué (CCT/DPA) | Conseil qualifié | 2027-06-30 (était 2026-10-21) | ici, rubrique 7 |
+| 7 | Transferts | ~~**Demande de DPA à Anthropic non envoyée**~~ — **envoyée le 2026-10-01 à 17:34 UTC (19:34 heure de Paris)** (date établie par capture du message envoyé). La condition de pose du drapeau du LOT-02 est tenue. ~~**Restent dus : la réponse, puis la signature et l'archivage du DPA**~~ — **réponse reçue le 2026-10-02 à 22:23 UTC** : DPA et CCT intégrés aux Conditions commerciales, aucune signature distincte. **Restent dus** : l'archivage d'une copie datée, la date d'opposabilité, la couverture des traitements antérieurs | Responsable | 2027-06-30 (était 2026-10-21, DPA) | `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md` (tableau « Trace à tenir »), puis rubriques 6 et 7 |
+| 8 | Conservation | Durées des données de santé — hors le document des comptes rendus biologiques déposés, fixé par [[D-258]] | Responsable + conseil | 2027-06-30 (était 2026-10-21) | ici, rubrique 8 puis `gouvernance.ts` |
+| 9 | Droits | Délai, vérification d'identité, circuit interne | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 9 |
+| 10 | Sécurité | Pentest / revue externe | Prestataire à engager | 2027-06-30 (était 2026-10-21) | checklist du gate, exigence 7 |
+| 10 | Sécurité | Registre physique des violations (EX-3) | Responsable | 2027-06-30 (était 2026-10-21) | `PROCEDURE_VIOLATION_DONNEES.md` |
+| 10 | Sécurité | Preuve fonctionnelle de la piste d'audit | Responsable | 2027-06-30 (était : ~~premier dossier ouvert~~ — **échéance dépassée** : des dossiers réels sont ouverts et utilisés (`D-075`, 2026-08-18), la production porte des passations (`D-077`) ; la preuve reste à produire, échéance reportée au 2026-10-21) | checklist du gate, item 4 |
+| 11 | Information | ~~Information sur l'écart HDS non consignée~~ — **partiellement consignée le 2026-08-19** (forme orale et contenu, sur déclaration du responsable, rubrique 11). **Reste dû** : renouvellement après `D-078`, qui change la nature de l'écart — brouillon de support prêt, publication = geste TRUST distinct | Responsable | 2027-06-30 (était : ~~**avant la bascule Scalingo** (c'est elle qui ouvre la fenêtre de moindre couverture, `D-078` §3)~~ — **échéance dépassée le 2026-08-22** : la bascule des données a eu lieu (03:24 CEST, rubrique 12) **sans** que le renouvellement soit publié. Relevé le jour même, pas découvert après coup ; à rattraper **au plus tôt**, en tout état de cause avant le 2026-10-21) | ici, rubrique 11 |
+| 11 | Information | **Date de délivrance non établie** et **modalité de retrait non consignée** — deux des quatre composantes du trou d'origine ; la période déclarée (« en continu depuis la souscription HDS ») ne fournit pas de point de départ tenu pour établi par le dépôt | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 11 |
+| 11 | Information | **Aucune trace écrite par participant** de l'information sur l'écart HDS — aucun acquittement individuel ne la porte ; périmètre des personnes couvertes non établi | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 11 |
+| 11 | Information | **Deux patients ont accusé `donnees_confidentialite@v8` sans avoir vu `v9`**, qui corrige la promesse inexacte sur le partage. L'accusé de `v9` étant exigé **au portail**, il ne les atteindra qu'à leur prochaine visite — or la production dit qu'on y entre le jour même ou jamais. Deux personnes, mesurées le 2026-09-19 : ce n'est pas un mécanisme à construire mais un geste à décider. Ce qui part vers un patient reste un geste du responsable | Responsable | 2027-06-30 (était : **à fixer** — au plus tôt, en tout état de cause avant le 2026-10-21) | ici, rubrique 11 |
+| 13 | AIPD | ~~Absente~~ — **non requise à ce stade**, déclaration du responsable du 2026-10-04 ([[D-265]] §3), **critères du seuil non renseignés** ; à réexaminer à l'achèvement du produit | Responsable | réexamen à l'achèvement du produit (était 2026-10-21) | ici, rubrique 13 |
 
-L'échéance par défaut est le **2026-10-21**, date de revue de la dérogation :
-au-delà, sans reconduction écrite, la règle du dépôt reprend et la phase de test
-avec des personnes réelles n'est plus couverte.
+Le **2026-10-21** était l'échéance par défaut, date de revue de la dérogation.
+La dérogation est reconduite sans terme ([[D-265]] §1) : le responsable a fixé
+le 2026-10-04 une échéance unique, le **2027-06-30**, pour chaque trou encore
+ouvert ; la date d'origine reste lisible ([[D-265]] §4).
 
 ---
 
