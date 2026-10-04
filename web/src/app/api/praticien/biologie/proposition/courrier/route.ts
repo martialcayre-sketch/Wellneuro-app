@@ -10,6 +10,7 @@ import { deriverPropositionPourPatient } from '@/lib/biology-library/proposition
 import { genererCourrierBiologie } from '@/lib/biology-library/courrier';
 import { isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
 import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
+import { signature } from '@/lib/biology-library/saisieMessages';
 import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
 import { refusPartage, verdictPartageMedecin } from '@/lib/trust/consentementPartage';
 
@@ -251,7 +252,7 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error(
       '[praticien/biologie/proposition/courrier POST]',
-      err instanceof Error ? err.message : String(err),
+      signature(err),
     );
     return echec('server_error', 'Erreur technique.', 500);
   }

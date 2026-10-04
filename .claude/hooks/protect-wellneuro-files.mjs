@@ -140,4 +140,89 @@ for (const motif of demandeClinique) {
   }
 }
 
+// Niveau DEMANDE — toute table signée, récente ou future (BP-01, D-266).
+// La liste ci-dessus est littérale : neuf tables signées après le Socle n'y
+// étaient pas (catalogue des conduites, signaux de sécurité, portes
+// biologiques…), et la prochaine n'y serait pas davantage. Le critère est
+// donc le marqueur lui-même, `validationExterne: true` hors commentaire,
+// cherché dans le fichier sur disque ET dans le contenu entrant (`Write` d'un
+// fichier neuf, `Edit` qui pose le marqueur). Les compagnons de test restent
+// en silence, comme plus haut : leurs fixtures portent le marqueur.
+const estSourceDeProduction =
+  /\.([cm]?[tj]sx?|json)$/.test(normalized) && !/\.(test|spec)\.[a-z]+$/.test(normalized);
+
+if (estSourceDeProduction) {
+  // Commentaires retirés : blocs `/* */`, et `//` jusqu'à la fin de ligne
+  // quand il est HORS d'une chaîne de la même ligne (une URL `'http://…'`
+  // n'est pas un commentaire ; `x = 1; // validationExterne: true` en est un).
+  const retirerFinDeLigne = (ligne) => {
+    let guillemet = null;
+    for (let i = 0; i < ligne.length; i++) {
+      const c = ligne[i];
+      if (guillemet) {
+        if (c === "\\") i++;
+        else if (c === guillemet) guillemet = null;
+      } else if (c === "'" || c === '"' || c === "`") guillemet = c;
+      else if (c === "/" && ligne[i + 1] === "/") return ligne.slice(0, i);
+    }
+    return ligne;
+  };
+  const sansCommentaires = (texte) =>
+    String(texte)
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .map(retirerFinDeLigne)
+      .join("\n");
+  let surDisque = null;
+  try {
+    const absolu = path.resolve(process.env.CLAUDE_PROJECT_DIR || process.cwd(), filePath);
+    surDisque = fs.readFileSync(absolu, "utf8");
+  } catch {
+    // Fichier neuf ou illisible : seul le contenu entrant est jugé.
+  }
+  // Le source RÉSULTANT est jugé, pas seulement chaque fragment : remplacer
+  // `false` par `true` sur une table au verrou éteint ne porte le marqueur
+  // complet ni sur disque ni dans le fragment — seulement après l'édition.
+  const appliquer = (texte, edit) => {
+    if (typeof texte !== "string" || !edit || typeof edit.old_string !== "string"
+      || typeof edit.new_string !== "string") return texte;
+    return edit.replace_all
+      ? texte.split(edit.old_string).join(edit.new_string)
+      : texte.replace(edit.old_string, () => edit.new_string);
+  };
+  let resultat = typeof toolInput.content === "string" ? toolInput.content : surDisque;
+  resultat = appliquer(resultat, toolInput);
+  if (Array.isArray(toolInput.edits)) {
+    for (const edit of toolInput.edits) resultat = appliquer(resultat, edit);
+  }
+  const textes = [surDisque, resultat];
+  for (const champ of [toolInput.content, toolInput.new_string]) {
+    if (typeof champ === "string") textes.push(champ);
+  }
+  if (Array.isArray(toolInput.edits)) {
+    for (const edit of toolInput.edits) {
+      if (edit && typeof edit.new_string === "string") textes.push(edit.new_string);
+    }
+  }
+  // Clé nue ou entre guillemets (`"validationExterne": true` en JSON).
+  const marqueur = /["']?validationExterne["']?\s*:\s*true/;
+  if (textes.some((texte) => typeof texte === "string" && marqueur.test(sansCommentaires(texte)))) {
+    process.stdout.write(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "ask",
+        permissionDecisionReason:
+          // Le littéral du marqueur n'est PAS recopié ici : ce hook se
+          // demanderait sinon confirmation pour sa propre édition.
+          `Table signée détectée (marqueur validationExterne) : ${filePath}. ` +
+          `Toute modification — même une ligne, même un commentaire — exige ` +
+          `une décision D-xxx et un fragment changelog.d/ (DC-17, DC-18) ; ` +
+          `un fichier au sha épinglé devra être ré-épinglé dans son banc. ` +
+          `Autoriser vaut confirmation explicite dans la session.`
+      }
+    }));
+    process.exit(0);
+  }
+}
+
 process.exit(0);

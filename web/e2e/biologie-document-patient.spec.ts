@@ -29,6 +29,7 @@ import {
   nettoyerDossierBiologie,
   nettoyerDocumentsPatientBiologie,
 } from './helpers/db';
+import { assertTexteSentinelle } from './helpers/sentinelle';
 
 const PATIENT_ID = 'PAT_SEED_02';
 
@@ -120,7 +121,8 @@ test.describe('Document patient biologie — consigner, puis relire après recha
       name: 'Consigner malgré le registre signalé',
     });
     await expect(consigne.or(malgreRegistre).first()).toBeVisible();
-    if ((await malgreRegistre.count()) > 0) {
+    const registreTranche = (await malgreRegistre.count()) > 0;
+    if (registreTranche) {
       // Le refus s'affiche AVANT d'être tranché : un second temps sans motif
       // lisible serait un clic à l'aveugle.
       await expect(panneau.getByRole('alert')).toBeVisible();
@@ -146,6 +148,9 @@ test.describe('Document patient biologie — consigner, puis relire après recha
     const texte = panneau.getByLabel('Texte du document patient à remettre');
     await expect(texte).toBeVisible();
     await expect(texte).toHaveValue(/\S/);
+    // Sentinelle biologie (BP-01) : le texte remis au patient. Un terme du
+    // registre tranché par le praticien ci-dessus y est légitime (D-090).
+    assertTexteSentinelle(await texte.inputValue(), { registreTranche });
   });
 
   test('la pièce SURVIT au rechargement et se relit — ce qu’aucun banc de rendu ne prouve', async ({

@@ -13,6 +13,7 @@ import {
   type LimiteProposition,
   type ResultatProposition,
 } from '@/lib/biology-library/propositionService';
+import { signature } from '@/lib/biology-library/saisieMessages';
 
 // Proposition de bilan biologique hiérarchisée ([[D-071]]) — PREMIER APPELANT
 // de production du moteur de statuts.
@@ -117,7 +118,7 @@ export async function GET(req: Request) {
       partageMedecinTraitant: statutPartageMedecinTraitant(choix),
     });
   } catch (err) {
-    console.error('[praticien/biologie/proposition GET]', err instanceof Error ? err.message : String(err));
+    console.error('[praticien/biologie/proposition GET]', signature(err));
     return echec('server_error', 'Erreur technique.', 500);
   }
 }
@@ -212,7 +213,7 @@ export async function POST(req: Request) {
       documente: exposerDocumente(ligne),
     });
   } catch (err) {
-    console.error('[praticien/biologie/proposition POST]', err instanceof Error ? err.message : String(err));
+    console.error('[praticien/biologie/proposition POST]', signature(err));
     return echec('server_error', 'Erreur technique.', 500);
   }
 }

@@ -25,7 +25,11 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
   `contradictionsV1`, `corpusSyntheseV1`, `indicationsBiologieV1`) et deux
   fichiers de constantes (`equilibre/constants.ts`, `questions.ts`) — avec un
   motif distinct citant `DC-17`/`DC-18` : autoriser vaut confirmation de la
-  décision `D-xxx` exigée. Portée dite sans sur-promettre : le hook ne voit
+  décision `D-xxx` exigée. Depuis BP-01 (`D-266`), **toute table signée**
+  demande aussi, détectée par son marqueur `validationExterne: true` hors
+  commentaire — sur disque, ou dans le contenu entrant d'un Write/Edit (une
+  table signée neuve demande dès sa création) ; compagnons de test exclus.
+  Portée dite sans sur-promettre : le hook ne voit
   que Edit/Write — une écriture par commande Bash n'y passe pas (suivi nommé
   du Socle).
 - **silence** — tout le reste.

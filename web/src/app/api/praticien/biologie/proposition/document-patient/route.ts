@@ -14,6 +14,7 @@ import {
 } from '@/lib/biology-library/documentPatient';
 import { isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
 import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
+import { signature } from '@/lib/biology-library/saisieMessages';
 import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 
 // Document patient de la proposition de bilan (décision F, [[D-122]] §1) —
@@ -352,7 +353,7 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error(
       '[praticien/biologie/proposition/document-patient POST]',
-      err instanceof Error ? err.message : String(err),
+      signature(err),
     );
     return echec('server_error', 'Erreur technique.', 500);
   }
