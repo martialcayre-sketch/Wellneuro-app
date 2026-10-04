@@ -13,10 +13,11 @@
 --      sans ancrage ou ancrée ailleurs (biologie) sont refusées ;
 --   6. un texte qui n'est pas celui de la lettre est refusé ;
 --   7. une empreinte qui n'est pas celle du texte est refusée (CHECK) ;
---   8. une lettre INACTIVE est refusée : sans couverture, couverture révoquée,
---      couverture sur une consultation qui n'est plus la porteuse ;
+--   8. une lettre qui n'est pas LA lettre due est refusée : sans couverture,
+--      couverture révoquée, couverture sur une consultation qui n'est plus la
+--      porteuse, ou lettre active mais pas la plus récente ;
 --   9. une lettre plus récente se remet et devient la remise en cours ; la
---      précédente se remet de nouveau si elle redevient la dernière ;
+--      précédente se remet de nouveau si la plus récente est révoquée ;
 --  10. UPDATE et TRUNCATE sont refusés ;
 --  11. l'effacement nommé passe ; approbation et lettre ne s'effacent pas
 --      avant leurs remises (RESTRICT) ;
@@ -93,7 +94,6 @@ INSERT INTO correspondances_medecin (id, id_patient, praticien_email, sens, mede
 -- Les couvertures : même transaction que les lettres (le trigger des adressages l'exige).
 INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email) VALUES
   ('cov_a_1', 'PAT_CONTRAT_LAR_A', 'adressage', 'lar_a_1', 'cons_lar_a', ARRAY['safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr'),
-  ('cov_a_2', 'PAT_CONTRAT_LAR_A', 'adressage', 'lar_a_2', 'cons_lar_a', ARRAY['safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr'),
   ('cov_a_rev', 'PAT_CONTRAT_LAR_A', 'adressage', 'lar_a_revoquee', 'cons_lar_a', ARRAY['safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr'),
   ('cov_b_1', 'PAT_CONTRAT_LAR_B', 'adressage', 'lar_b_1', 'cons_lar_b', ARRAY['safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr');
 INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_adressage_revoque, motif, praticien_email) VALUES
@@ -161,6 +161,11 @@ BEGIN
     RAISE EXCEPTION 'CONTRAT — 2 : un clic rejoué a remis % ligne(s).', nb;
   END IF;
 
+  -- Une seconde lettre est consignée : elle devient la lettre active la plus
+  -- récente, et la première, toujours active, n'est plus la lettre due.
+  INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_correspondance, id_consultation, finding_ids, praticien_email)
+  VALUES ('cov_a_2', 'PAT_CONTRAT_LAR_A', 'adressage', 'lar_a_2', 'cons_lar_a', ARRAY['safety:anamnese:0123456789abcdef'], 'p@wellneuro.fr');
+
   -- ── 3. Approbation ───────────────────────────────────────────────────────
   PERFORM pg_temp.refuse('3 approbation d''un autre dossier',
     $q$SELECT pg_temp.remettre('x3a', 'PAT_CONTRAT_LAR_A', 'pda_lar_b', 'lar_a_2')$q$,
@@ -220,12 +225,18 @@ BEGIN
   PERFORM pg_temp.refuse('8 couverture révoquée',
     $q$SELECT pg_temp.remettre('x8b', 'PAT_CONTRAT_LAR_A', 'pda_lar_a3', 'lar_a_revoquee')$q$,
     'P0001', 'aucune couverture active');
+  PERFORM pg_temp.refuse('8 active mais pas la plus récente',
+    $q$SELECT pg_temp.remettre('x8d', 'PAT_CONTRAT_LAR_A', 'pda_lar_a3', 'lar_a_1')$q$,
+    'P0001', 'n''est pas la lettre active la plus récente');
 
   -- ── 9. Une lettre plus récente devient la remise en cours ────────────────
   nb := pg_temp.remettre('rem_2', 'PAT_CONTRAT_LAR_A', 'pda_lar_a3', 'lar_a_2');
   IF nb <> 1 THEN
     RAISE EXCEPTION 'CONTRAT — 9 : la seconde lettre n''a pas été remise.';
   END IF;
+  -- La seconde est révoquée : la première redevient la lettre due.
+  INSERT INTO adressages_signal_alerte (id, id_patient, acte, id_adressage_revoque, motif, praticien_email)
+  VALUES ('rev_a_2', 'PAT_CONTRAT_LAR_A', 'revocation', 'cov_a_2', 'Consignée par erreur.', 'p@wellneuro.fr');
   nb := pg_temp.remettre('rem_3', 'PAT_CONTRAT_LAR_A', 'pda_lar_a4', 'lar_a_1');
   SELECT id_correspondance INTO en_cours FROM lettres_adressage_remises
   WHERE id_patient = 'PAT_CONTRAT_LAR_A' ORDER BY ordre DESC LIMIT 1;
@@ -247,7 +258,7 @@ BEGIN
     '23503', 'lettres_adressage_remises');
   PERFORM pg_temp.refuse('11 lettre avant ses remises',
     -- La couverture part dans la même instruction : seule la remise retient la lettre.
-    $q$WITH c AS (DELETE FROM adressages_signal_alerte WHERE id_correspondance = 'lar_a_2')
+    $q$WITH c AS (DELETE FROM adressages_signal_alerte WHERE id_correspondance = 'lar_a_2' OR id_adressage_revoque = 'cov_a_2')
        DELETE FROM correspondances_medecin WHERE id = 'lar_a_2'$q$,
     '23503', 'lettres_adressage_remises');
 

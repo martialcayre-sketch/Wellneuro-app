@@ -37,7 +37,14 @@ seul, contrôles en base, effacement nommé. Aucun code consommateur ([[D-087]])
   detected*, `prisma validate` OK.
 - Contrat négatif : quatorze promesses tenues ; mutation 9/9 mutants tués.
 - Vitest ciblé (patient, portail, fiches, gardes) vert ; `npm run check` vert.
-- Revue `wn-reviewer` (verdicts dans la PR).
+- Revue `wn-reviewer` : **P1 corrigé** — la base n'admettait pas que la plus
+  récente des lettres actives ; elle refuse désormais toute autre (refus
+  distinct, cas « 8 active mais pas la plus récente », cas 9 réécrit avec
+  révocation ; mutant tué). **P2 corrigés** : retour arrière par migration
+  compensatrice ; limites du verrou, exception du refus 4 à isoler au LOT-02
+  et idempotence par lettre écrites en tête de migration. **P2 routé** :
+  export d'accès sans les remises, comme les fiches — à trancher au LOT-03.
+- Contrat rejoué après correctif : quatorze promesses tenues ; parité OK.
 
 ## Problèmes ouverts
 

@@ -29,9 +29,11 @@
 --     l'action qui la nomme, jamais seule.
 --  3. LA LETTRE EST UNE LETTRE D'ADRESSAGE DE CE DOSSIER : sortante, ancrée sur
 --     la cotation des signaux (`safety-signals-%`).
---  4. LA LETTRE EST ACTIVE : une couverture `adressage` la porte, non révoquée,
---     sur la consultation porteuse COURANTE (même règle que
---     `consultationPorteuse.ts` et que `adressages_signal_alerte_v1`).
+--  4. LA LETTRE EST LA LETTRE ACTIVE LA PLUS RÉCENTE : celle de la couverture
+--     `adressage` non révoquée de plus haut `ordre`, sur la consultation
+--     porteuse COURANTE (même règle que `consultationPorteuse.ts` et que
+--     `adressages_signal_alerte_v1`). Jamais de repli sur une lettre active
+--     plus ancienne.
 --  5. LE TEXTE RECOPIÉ EST CELUI DE LA LETTRE, et son empreinte est la sienne
 --     (sha-256 du texte en UTF-8, calculée par la base).
 --
@@ -140,6 +142,7 @@ DECLARE
   lettre_ancrage text;
   lettre_texte text;
   porteuse text;
+  lettre_due text;
   en_cours text;
 BEGIN
   -- 1. L'approbation et le protocole qu'elle approuve.
@@ -195,14 +198,32 @@ BEGIN
     WHERE s.id_correspondance = NEW.id_correspondance
       AND s.id_patient = NEW.id_patient
       AND s.acte = 'adressage'
-      AND s.id_consultation IS NOT DISTINCT FROM porteuse
       AND porteuse IS NOT NULL
+      AND s.id_consultation = porteuse
       AND NOT EXISTS (
         SELECT 1 FROM public.adressages_signal_alerte r
         WHERE r.acte = 'revocation' AND r.id_adressage_revoque = s.id
       )
   ) THEN
     RAISE EXCEPTION 'remise refusée : la lettre % ne porte aucune couverture active sur la consultation porteuse.', NEW.id_correspondance;
+  END IF;
+  -- LA PLUS RÉCENTE, ET ELLE SEULE ([[D-262]], cadrage §3.1) : la couverture
+  -- active de plus haut `ordre` désigne la lettre due ; une lettre active plus
+  -- ancienne est refusée, comme une fiche hors référence ([[D-251]]).
+  SELECT s.id_correspondance INTO lettre_due
+  FROM public.adressages_signal_alerte s
+  WHERE s.id_patient = NEW.id_patient
+    AND s.acte = 'adressage'
+    AND porteuse IS NOT NULL
+    AND s.id_consultation = porteuse
+    AND NOT EXISTS (
+      SELECT 1 FROM public.adressages_signal_alerte r
+      WHERE r.acte = 'revocation' AND r.id_adressage_revoque = s.id
+    )
+  ORDER BY s.ordre DESC
+  LIMIT 1;
+  IF lettre_due IS DISTINCT FROM NEW.id_correspondance THEN
+    RAISE EXCEPTION 'remise refusée : la lettre % n''est pas la lettre active la plus récente du dossier.', NEW.id_correspondance;
   END IF;
 
   -- Idempotence : la remise en cours porte déjà cette lettre.
@@ -255,10 +276,25 @@ ALTER TABLE "portail_lectures_patient"
   ADD CONSTRAINT "portail_lectures_patient_espece_check"
   CHECK ("espece" IN ('bilan', 'synthese', 'fiche_assiette', 'lettre_adressage'));
 
--- ROLLBACK (manuel, si jamais, et seulement tant qu'aucune remise ni aucune
--- lecture `lettre_adressage` n'existe), DANS CET ORDRE :
---  1. déployer d'abord le code sans l'effacement des remises et sans le modèle
---     `LettreAdressageRemise` de `schema.prisma` ;
---  2. DROP TABLE "lettres_adressage_remises" ; DROP FUNCTION des deux fonctions ;
---  3. rétablir le CHECK `espece IN ('bilan', 'synthese', 'fiche_assiette')` ;
---  4. `prisma migrate resolve --rolled-back 20261003210000_lettres_adressage_remises_v1`.
+-- CE QUE LE VERROU NE COUVRE PAS. Il sérialise les remises d'un patient, pas
+-- la consignation ni la révocation d'une lettre, qui ne le prennent pas : une
+-- lettre révoquée à l'instant d'une remise peut être remise. À la charge des
+-- lots suivants :
+--  — LOT-03 : « retirée » se calcule À LA LECTURE (cadrage §3.5), jamais
+--    depuis la seule existence de la remise ;
+--  — LOT-02 : le refus 4 LÈVE une exception (il ne rend pas zéro ligne) ;
+--    l'émetteur choisit la lettre par la même règle et isole l'insertion
+--    (point de sauvegarde), pour qu'une lettre devenue inactive entre-temps ne
+--    fasse pas échouer la diffusion (cadrage §3.1).
+--
+-- L'IDEMPOTENCE PORTE SUR LA LETTRE, PAS SUR SON TEXTE : la remise est figée
+-- ([[D-262]], cadrage §3.2). Une lettre corrigée après remise n'est pas
+-- remise de nouveau ; une nouvelle lettre consignée, si.
+--
+-- RETOUR ARRIÈRE : par une migration compensatrice relue et approuvée
+-- (`release-db`), jamais à la main — `migrate resolve --rolled-back` ne vise
+-- que les migrations échouées (précédent BIO-INGEST, P3012). Tant qu'aucune
+-- remise ni aucune lecture `lettre_adressage` n'existe : déployer d'abord le
+-- code sans l'effacement des remises et sans le modèle `LettreAdressageRemise`,
+-- puis supprimer la table et les deux fonctions, et rétablir le CHECK
+-- `espece IN ('bilan', 'synthese', 'fiche_assiette')`.
