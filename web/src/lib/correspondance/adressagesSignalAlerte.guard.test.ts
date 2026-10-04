@@ -40,6 +40,9 @@ const LECTEUR_CHAINE = path.join('src', 'lib', 'clinical-engine', 'adressagesSig
 // active la plus récente, dans la transaction de diffusion — la règle même que
 // le trigger de `lettres_adressage_remises` opposera à l'insertion.
 const LECTEUR_REMISE = path.join('src', 'lib', 'correspondance', 'lettreAdressageRemise.ts');
+// [[D-262]], LOT-03a : le service patient relit, À LA LECTURE, si la lettre
+// remise porte encore une couverture non révoquée — sinon elle est « retirée ».
+const LECTEUR_SERVICE_PATIENT = path.join('src', 'lib', 'correspondance', 'lettreServicePatient.ts');
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
@@ -105,11 +108,12 @@ describe('Adressages sur signal d’alerte — qui écrit, qui lit (D-257, LOT-0
     expect(occurrences(IMBRIQUEE)).toEqual([]);
   });
 
-  it('trois lecteurs, et trois seulement — la chaîne C1, la route de révocation (LOT-04) et la remise au patient (D-262)', () => {
+  it('quatre lecteurs, et quatre seulement — la chaîne C1, la route de révocation (LOT-04), la remise au patient et son service (D-262)', () => {
     expect(occurrences(LIRE)).toEqual([
       { fichier: ROUTE_REVOCATION, n: 1 },
       { fichier: LECTEUR_CHAINE, n: 1 },
       { fichier: LECTEUR_REMISE, n: 1 },
+      { fichier: LECTEUR_SERVICE_PATIENT, n: 1 },
     ]);
     expect(LIRE.test('prisma.adressageSignalAlerte.findMany({')).toBe(true);
   });

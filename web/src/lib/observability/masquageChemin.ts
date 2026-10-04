@@ -47,6 +47,7 @@ const ROUTES: readonly string[] = [
   '/portail/:idPatient/alimentation/boussole/:foodRef',
   '/portail/:idPatient/bilan',
   '/portail/:idPatient/ce-qui-compte',
+  '/portail/:idPatient/courrier-medecin',
   '/portail/:idPatient/comprehension',
   '/portail/:idPatient/dossier',
   '/portail/:idPatient/fiches',

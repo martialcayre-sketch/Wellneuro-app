@@ -30,14 +30,15 @@
 // `portailLecturesPatient.guard.test.ts` — si elle tombait, ce module ferait
 // disparaître un texte que le patient n'a jamais vu.
 
-export type EspeceLecture = 'bilan' | 'synthese' | 'fiche_assiette';
+export type EspeceLecture = 'bilan' | 'synthese' | 'fiche_assiette' | 'lettre_adressage';
 
 export type LectureAttendue = {
   espece: EspeceLecture;
   /**
-   * L'identifiant de la VERSION : `BookletEnvoi.id`, `SyntheseComprehension.id`
-   * ou `FicheAssietteRemise.id` — une remise est append-only, et une version
-   * neuve de fiche est une remise neuve ([[D-251]] §8).
+   * L'identifiant de la VERSION : `BookletEnvoi.id`, `SyntheseComprehension.id`,
+   * `FicheAssietteRemise.id` ou `LettreAdressageRemise.id` — une remise est
+   * append-only, et une version neuve de fiche ou de lettre est une remise
+   * neuve ([[D-251]] §8, [[D-262]]).
    */
   idObjet: string;
   /** Quand le praticien l'a remise. Sert à ORDONNER, jamais à compter. */
@@ -71,6 +72,14 @@ export type SourcesLectures = {
    * échec : aucune lecture n'en sort. Même invariant que les synthèses.
    */
   fichesServies: { id: string; remiseLe: Date; libelle: string }[] | null;
+  /**
+   * Le courrier pour le médecin SERVI ([[D-262]], LOT-03a) — la remise en
+   * cours, quand son texte part. Retiré ou indisponible : rien à annoncer.
+   *
+   * `null` ou absent = surface fermée par `WN_LETTRE_ADRESSAGE_PATIENT`, ou
+   * lecture en échec : aucune lecture n'en sort.
+   */
+  lettresServies?: { id: string; remiseLe: Date }[] | null;
   /** Ce que `portail_lectures_patient` porte déjà pour ce dossier. */
   dejaLues: { espece: string; idObjet: string }[];
 };
@@ -100,6 +109,9 @@ export function lecturesAttendues(sources: SourcesLectures): LectureAttendue[] {
       libelle: fiche.libelle,
     });
   }
+  for (const lettre of sources.lettresServies ?? []) {
+    toutes.push({ espece: 'lettre_adressage', idObjet: lettre.id, remiseLe: lettre.remiseLe.toISOString() });
+  }
   for (const synthese of sources.synthesesPubliees ?? []) {
     toutes.push({
       espece: 'synthese',
@@ -122,6 +134,7 @@ function comparer(a: string, b: string): number {
 /** Le libellé du geste. Jamais un compte, jamais une date — c'est une tâche. */
 export function ctaLecture(espece: EspeceLecture): string {
   if (espece === 'fiche_assiette') return 'Lire la fiche remise par mon praticien';
+  if (espece === 'lettre_adressage') return 'Lire le courrier pour mon médecin';
   return espece === 'bilan' ? 'Lire mon bilan' : 'Lire ce que mon praticien a compris';
 }
 
@@ -131,5 +144,6 @@ export function ctaLecture(espece: EspeceLecture): string {
  */
 export function lienLecture(token: string, lecture: Pick<LectureAttendue, 'espece' | 'idObjet'>): string {
   if (lecture.espece === 'fiche_assiette') return `/portail/${token}/fiches/${encodeURIComponent(lecture.idObjet)}`;
+  if (lecture.espece === 'lettre_adressage') return `/portail/${token}/courrier-medecin`;
   return `/portail/${token}/${lecture.espece === 'bilan' ? 'bilan' : 'comprehension'}`;
 }
