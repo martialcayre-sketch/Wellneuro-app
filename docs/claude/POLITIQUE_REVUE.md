@@ -31,6 +31,14 @@ documentaire reste P2. Les classes de `wn-lot` (§ table) donnent le défaut :
 | P1 | `Agent(wn-reviewer)` (Opus/high) | une passe **si l'indépendance est utile** | sur signal seulement |
 | P0 | `Agent(wn-reviewer)` + `/security-review` si la nature s'y prête | **une passe obligatoire** | sur signal seulement |
 
+**Campagne BIO-PARCOURS seulement** (`D-266` §11, 2026-10-04) : la passe
+Codex y vise nommément toute **migration**, tout **module clinique signé**
+(table TS signée, fiche d'usage, bibliothèque d'options) et toute **décision
+de frontière** (registre des frontières, étages, vocabulaire réglementaire) ;
+les autres lots P0 de la campagne passent par `Agent(wn-reviewer)`. **Hors de
+cette campagne, la ligne P0 de la table ci-dessus est inchangée** : une passe
+Codex obligatoire. La passe reste un geste manuel de l'utilisateur.
+
 **Revue de diff par workflow : P0 seulement**, une passe par mission ; un
 tour de plus exige un fait nouveau. Chercheurs `sonnet`/`medium`,
 vérification `opus`/`high`. En P1, `Agent(wn-reviewer)` suffit. Constat du

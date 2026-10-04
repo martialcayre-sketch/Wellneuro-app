@@ -4,6 +4,240 @@
 
 ## Décisions actives
 
+### D-266 — Décision-cadre BIO-PARCOURS : deux étages, prescription hors médicament côté praticien, nomenclature unique, doctrine amendée, campagne ouverte
+
+- Date : 2026-10-04
+- Statut : accepté — décision du responsable du 2026-10-04, rendue en session
+  BP-00 sur le texte corrigé après la revue `wn-reviewer`. Arbitrages
+  consignés par l'assistant : ceux du cadrage v3.1 (§6.5) et ceux de la
+  session (nomenclature, constantes produit, organisation de la campagne,
+  portée de la passe Codex bornée à la campagne, DC-45 laissée orpheline).
+- Domaine : frontières, doctrine clinique, gouvernance des lots. Lot BP-00 de
+  la campagne `2026-10-04-bio-parcours`, cadrage
+  `docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md` (version
+  versée de la v3.1). Amende `REGISTRE_FRONTIERES.md` §1,
+  `ROADMAP_PRODUIT.md` §2 et R4, R5, R9, `POLITIQUE_REVUE.md`,
+  `.claude/rules/pr-revue-et-release-db.md`, la constitution clinique (DC-06,
+  DC-07, DC-13, DC-45 ; acte en doctrine DC-20 et DC-47, banc dû ; constate
+  la dette DC-46 ; reprend les orphelines DC-03, DC-38, DC-39, DC-40, DC-41,
+  DC-44, DC-47, DC-48) et l'arbitrage du
+  2026-08-24 (`FILE_ATTENTE.md`). Précise [[D-037]], [[D-122]], [[D-059]] §4,
+  [[D-206]] et DC-19.
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune dose, aucune
+  migration, aucun drapeau, aucune ouverture en production ; les textes TRUST
+  servis au patient (nommés au §4, exécutés par BP-24) ; [[D-234]] et
+  [[D-257]] A7 ; [[D-121]] ; [[D-157]] §2 et §3 (amendées marqueur par
+  marqueur, plus tard, par BP-27).
+
+**§1 — Arbitrages consignés.** Le cadrage v3.1 est arrêté. Ses arbitrages du
+2026-10-04 font foi tels que consignés à son §6.5 : brainstorming (arbitrages
+1 à 8), première série, seconde série, reprise après la contre-revue
+d'architecture. Ils ne sont pas recopiés ici. Les questions restantes 2 à 5 du
+§6.5 ne conditionnent pas cette décision ; les questions 1, 6 et 7 sont
+tranchées aux §3, §14 et §15.
+
+**§2 — Deux étages.** Le programme se construit en deux étages, définis par
+fonction au §2 du cadrage. L'**étage outil** (restitution fidèle,
+bibliothèque signée, décision humaine enregistrée, historique factuel) s'ouvre
+dans sa limite « outil ». L'**étage assistant** (évaluateur par marqueur,
+classement d'après le dossier, note d'impact générée, marches 2 à 4 du suivi)
+se développe derrière drapeau ; chaque fonction n'ouvre qu'après sa ligne de
+la note de qualification signée (BP-26). Changer un intitulé ne change pas une
+fonction : seule une réduction effective de ce que fait le logiciel la fait
+changer d'étage. BP-26 statue aussi sur les fonctions déjà servies qui
+proposent d'après le dossier (`indicationsBiologieV1`, orientation) ; d'ici
+là, la règle « sa ligne avant ouverture » ne vaut que pour les fonctions
+nouvelles. La lecture MDR/IVDR qui fonde cette séparation est une hypothèse de
+travail que seule la note BP-26 assume.
+
+**§3 — Une seule nomenclature.** Trois axes orthogonaux par lien de la
+matrice besoin ↔ mesure :
+
+| Axe | Valeurs |
+|---|---|
+| Nature du lien | mesure directe · information contributive · piste exploratoire · usage non étayé |
+| Usage décisionnel | confirmer une hypothèse · réduire sa plausibilité · départager des options · surveiller une intervention · réexaminer la stratégie ; marqueur **sécurité / admissibilité** (affichage obligatoire) |
+| Statut d'usage | étayé et validé · preuves limitées · non validé |
+
+Correspondance arbitrée le 2026-10-04 (question 1), sans règle par défaut —
+un lien absent de la table est « non validé » :
+
+| Nature du lien | Statut d'usage le plus haut admis |
+|---|---|
+| mesure directe | étayé et validé |
+| information contributive | preuves limitées |
+| piste exploratoire | non validé (espace de réflexion, aucun déclenchement) |
+| usage non étayé | non validé (espace de réflexion, aucun déclenchement) |
+
+La table borne un plafond ; elle n'attribue aucun statut. Le statut de chaque
+lien reste porté par ses claims et signé avec sa fiche (BP-12a). Effets sur la
+doctrine : DC-07 (catégories de claims) et DC-45 (niveaux de mesure) restent
+des axes distincts, alignés sur cette table sans fusion ; DC-13 porte le
+niveau d'exécution sur l'**usage**, non sur le claim. L'homonymie avec
+`niveau_preuve` A-D de `biology_functional_ranges` et avec les lettres de DC-45
+est nommée : trois vocabulaires, aucune lettre partagée n'a le même sens.
+
+**§4 — Frontières.** `REGISTRE_FRONTIERES.md` §1 est amendé :
+- « prescription » reste admis **côté praticien** (déjà le cas depuis le
+  2026-07-21) et désigne désormais l'acte de BIO-PARCOURS. Les **mots**
+  « prescription », « posologie » et « dosage » restent proscrits dans toute
+  surface patient, « protocole personnalisé » compris ; seul le **contenu**
+  d'une prescription validée (forme, dose, durée) est admis dans ce document
+  (BP-18b) ;
+- le périmètre prescrit est celui des compléments alimentaires et produits
+  hors médicament, jamais un médicament ; la biologie part en demande
+  d'examens contresignée par un médecin, hors de l'outil ;
+- « la qualification dispositif médical s'évite par conception » reste vrai de
+  l'étage outil ; l'étage assistant ouvre fonction par fonction (§2) ;
+- « la finalité revendiquée du logiciel ne dépend pas des diplômes de
+  l'opérateur » est conservée.
+
+`ROADMAP_PRODUIT.md` §2, R4, R5 et R9 sont alignés : le croisement
+questionnaires × biologie ne passe plus par la synthèse IA (R5), il passe par
+le constat du praticien puis, à l'étage assistant, par un évaluateur signé.
+[[D-037]] est précisée : l'activité est un conseil en compléments hors
+médicament, exercé par un docteur en pharmacie sous label SIIN. Cette
+décision ne rouvre pas la prémisse de D-037 (activité hors exercice
+réglementé, sur laquelle repose l'absence de carte CPS) ; sa tenue face au
+mot « prescription » est une question nommée pour la note BP-26. TRUST
+(`registre.ts`) et la finalité opposable du dossier RGPD sont **nommés ici et
+amendés par BP-24**, par une nouvelle version (une version publiée est
+immuable) avec nouvel acquittement : aucun texte servi au patient ne change
+par cette décision.
+
+**§5 — Restrictions exécutables maintenues.** Elles sont cohérentes avec
+« hors médicament » et « le LLM rédige seulement », et restent en vigueur :
+`consultation/contexteClinique.ts` (pas d'ajustement ni d'arrêt d'un
+médicament), `anthropic.ts` (pas de dosage par le LLM),
+`fiches-assiette/invariants.ts`, `assertRenduMedecinNonPrescriptif`. Tout
+besoin qui touche un médicament sort en « à discuter avec le médecin ».
+
+**§6 — Portée face à [[D-206]].** Le premier parcours se nomme « exploration
+du besoin 2 », pas « axe fatigue » (A1 : la fatigue est un carrefour). Son
+module de fiches d'usage est un module signé **distinct** de
+`catalogueConduitesV1` : il ne l'alimente pas, ne crée aucun axe, ne
+sélectionne aucun tableau clinique (A2 inchangé). La garde est posée par
+BP-01.
+
+**§7 — Règles orphelines reprises nommément.** L'arbitrage du 2026-08-24
+(campagne dédiée, [[D-107]]) est amendé pour les règles que BIO-PARCOURS
+porte ; un porteur nommé n'arme rien tant que son lot n'est pas livré :
+
+| Règle | Porteur(s) |
+|---|---|
+| DC-03 | BP-01 (vérificateur bloquant pour toute sortie LLM du programme ; la synthèse existante reste sous [[D-011]]), BP-18b |
+| DC-38 | BP-18a (contrat d'action V5 : critère d'arrêt, surveillance, durée bornée par la source) |
+| DC-39 | BP-20 (avertissement d'attribution, étage outil) ; marche 4 du suivi (étage assistant) |
+| DC-40 | BP-15 (maintenir, ajuster, arrêter persistés), BP-18a, BP-20 |
+| DC-41 | BP-20 (efficacité et tolérance en dimensions séparées) |
+| DC-44 | BP-13 (traitements et compléments en cours structurés), BP-18a |
+| DC-48 | BP-13, BP-15 (début réel, interruption, reprise) ; marche 4 du suivi |
+| DC-47 | §9 de cette décision ; BIO-INGEST LOT-07 (intervalle imprimé), BP-12a et BP-27 (seuil, cible) — reprise ajoutée aux sept du cadrage (B4) par sa ligne « arm. » du §5.1 |
+
+DC-45 est amendée au §3 (alignement sur la nomenclature), mais aucun lot ne
+porte sa taxonomie A/B/C de niveaux de mesure : **elle reste orpheline**. Restent
+à la campagne dédiée : DC-36, DC-45 et la part de DC-11 hors exclusions.
+
+**§8 — DC-06 : un rang « position d'expert signée ».** Il s'insère sous les
+sources certifiées du corpus et au-dessus des données observationnelles
+internes. Contrat de provenance : pièce versionnée comme un claim
+(`identifiant@version`, auteur, date, périmètre, population, appuis cités,
+révision) ; elle cède devant toute source de rang supérieur qui la contredit ;
+elle s'affiche « position du responsable — preuves limitées », jamais comme un
+consensus ; elle renseigne une dose affichée et modifiable, et ne déclenche
+jamais de règle automatique. Les référentiels SIIN n'entrent pas comme source.
+DC-19 est précisée : une dose modifiée par le praticien est son arbitrage
+tracé avec motif, pas une source.
+
+**§9 — Biologie : DC-20 et DC-47 actées en doctrine, banc dû ; dette DC-46
+constatée.**
+- **DC-20 et DC-47** (actées en doctrine, **banc dû** : aucune ne bascule
+  avant ses trois preuves — décision, banc qui tourne, statut) : toute valeur
+  de référence déclare sa nature dans une triade **intervalle du laboratoire** (fait imprimé, attribué au laboratoire,
+  jamais recalculé ni réutilisé comme plage Wellneuro) · **seuil décisionnel
+  documenté** · **cible thérapeutique**. Porteurs : BIO-INGEST LOT-07 pour
+  l'intervalle, BP-12a et BP-27 pour les deux autres.
+- **DC-46** : son texte d'état est périmé — des résultats biologiques entrent
+  désormais dans l'application (saisie, [[D-122]] §2 ; import validé,
+  [[D-256]]). La dette est **constatée** : la règle est exigible, son contexte
+  n'est pas recueilli. Ce qui suit est **nommé, non exécuté** ; tout est
+  porté par BP-05 (qui absorbe l'affichage des manques de l'ex-BP-06) et par
+  sa propre décision de forme :
+  - un régime transitoire, proposé par le cadrage v1 : chaque surface qui
+    restitue une valeur dirait « contexte de prélèvement non recueilli » ;
+  - une liste de champs candidats, alignée sur
+    `biology_preanalytics.type_condition` (jeûne, moment de la journée, délai
+    après prise, arrêt de supplémentation, cycle menstruel) et complétée par
+    les éléments de DC-46 et de la question C6 du v1 ;
+  - les formes proposées par le v1 (§4) : l'inconnu y est toujours explicite.
+
+  Cette décision ne fixe ni la liste définitive, ni les formes, ni les
+  valeurs des catégories ; elle n'en invente aucune.
+
+**§10 — Précisions de [[D-122]] et [[D-059]] §4.** Le premier parcours ne
+fait parler aucun résultat au moteur : il lit un **acte du praticien**, le
+constat (BP-11), objet distinct de l'arbitrage biologique, à quatre états,
+pièces par identifiant, sans aucune valeur. Chaque marqueur de l'évaluateur
+de l'étage assistant (BP-27) exigera sa propre décision et ses claims : D-122
+s'applique à lui sans exception. L'arbitrage biologique ne porte toujours
+aucune valeur.
+
+**§11 — Convention de lot et de revue.** Un lot porte au plus une migration
+et son code consommateur, livrés en deux PR : la migration seule, puis le
+code après `release-db` approuvée et constat par conteneur ([[D-087]]).
+`pr-revue-et-release-db.md` s'aligne (« même lot, seconde PR » au lieu de
+« lot suivant »). **Pour les lots de BIO-PARCOURS seulement**, la passe
+Codex, geste manuel de l'utilisateur, vise nommément les migrations, les
+modules cliniques signés et les décisions de frontière ; les autres lots P0
+de la campagne passent par `wn-reviewer`. Hors de la campagne, la table de
+`POLITIQUE_REVUE.md` reste inchangée : une passe Codex obligatoire sur tout
+P0.
+
+**§12 — Le constat d'usage verrouille l'ouverture, jamais le
+développement.** Aucune fonction n'ouvre sans constat d'usage au conteneur du
+palier précédent (BP-02, refait en BP-21a) ; le développement derrière
+drapeau n'attend pas.
+
+**§13 — Critères d'acceptation écrits avant.** Chaque ouverture (BP-21a,
+BP-21b, puis chaque fonction de l'étage assistant) a ses critères écrits
+**avant** le lot qui la prononce, une contre-revue adverse avant sa clôture
+(patron [[D-108]]), et un retrait par drapeau réel testé « posé puis
+retiré ».
+
+**§14 — Constantes produit (question 6).** Liste fermée : plafond de
+questions ouvertes par dossier ; fiches validées par séance ; seuil d'usage
+réel avant ouverture ; effectif minimal en dessous duquel un agrégat est
+masqué ; cadence de revue des sources. Ce sont des constantes produit, pas
+des seuils cliniques (DC-20 : nature `technical` ou `data_quality`). Chacune
+est chiffrée par décision du responsable dans le lot qui la consomme ; aucune
+valeur par défaut. Un lot qui lit une constante sans valeur posée n'ouvre
+pas.
+
+**§15 — Organisation.**
+- La campagne `2026-10-04-bio-parcours` s'ouvre **en parallèle** ; BIO-INGEST
+  reste la campagne primaire (LOT-03).
+- Les fiches portent l'identifiant `LOT-nn` qu'exige l'audit des campagnes :
+  `LOT-nn` = `BP-nn`, et les lots b prennent des numéros libres (BP-12b →
+  LOT-28, BP-18b → LOT-29, BP-21b → LOT-30). Les documents disent `BP-nn`.
+- BIO-INGEST reçoit un LOT-07 (faits du laboratoire : intervalle et marquage
+  imprimés, transcrits avant la purge [[D-258]]), avancé avant LOT-04 ; LOT-05
+  reste l'adaptateur laboratoire. BP-10 (sécurité biologique, étage 1) est une
+  précondition de BIO-INGEST LOT-04.
+- `FILE_ATTENTE.md` : l'entrée « Ré-alimentation du moteur par le mesuré »
+  devient l'entrée parapluie « Assistant clinique — BIO-PARCOURS » ; l'entrée
+  « Import laboratoire » est close, absorbée par BIO-INGEST LOT-05.
+
+- Options écartées : une décision par texte amendé (vingt décisions pour un
+  seul arbitrage d'ensemble ; la décision groupée était arbitrée) ; chiffrer
+  les constantes produit maintenant (aucun usage ne les fonde encore) ;
+  identifiants `BP-nn` dans les fiches (changement du script d'audit, hors
+  lot documentaire).
+- Réversibilité : une décision de registre se révoque par une décision de
+  registre ; les amendements documentaires se reprennent par `git revert`.
+- Référence : `CADRAGE_BIO_PARCOURS_v3_2026-10-04.md` (§2, §3.1, §4.2, §4.6,
+  §5.1, §5.2, §5.3, §6.5) ; Claude Doc privé `c054ca75-…`, rev 67, qui fait
+  foi pour les passages cliniques retirés du dépôt ; [[D-265]].
+
 ### D-265 — Les dossiers réels en production et le portail G4 cessent d'être bornés au 2026-10-21 ; la voie d'exception d'adressage est maintenue ; le responsable pose base légale et AIPD
 
 - Date : 2026-10-04

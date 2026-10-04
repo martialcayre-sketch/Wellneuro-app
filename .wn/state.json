@@ -83,6 +83,12 @@
     "D-260"
   ],
   "last_session": null,
-  "updated_at": "2026-10-04T08:26:29Z",
-  "parallel_campaigns": []
+  "updated_at": "2026-10-04T15:41:42Z",
+  "parallel_campaigns": [
+    {
+      "campaign_id": "2026-10-04-bio-parcours",
+      "active_lot": "LOT-01",
+      "status": "active"
+    }
+  ]
 }

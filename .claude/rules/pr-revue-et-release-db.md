@@ -152,7 +152,7 @@ Chaque étape a un état **à constater**, jamais à supposer.
 | 4 | Scalingo déploie le **code seul** | Le `postdeploy` ne migre plus sous `WN_MIGRATIONS_PAR_RELEASE_DB=1` |
 | 5 | **Approuver** — humain, dans l'environnement protégé | Sentinelle `WN_RELEASE_DB_OK id=<run>` dans les logs du one-off — **liée à CE run** : un `OK` nu laissé par un run antérieur ne prouve rien |
 | 6 | Constater **par conteneur** | `scalingo --app wellneuro run -d "npx prisma migrate status"` → *up to date* |
-| 7 | Le code consommateur part — et seulement là | Lot suivant |
+| 7 | Le code consommateur part — et seulement là | Même lot, seconde PR (`D-266` §11) |
 
 **« Migration seule » emporte le schéma, pas seulement le SQL** : `migration.sql`
 + le bloc `schema.prisma` + le contrat SQL négatif + sa ligne de CI + le fragment
