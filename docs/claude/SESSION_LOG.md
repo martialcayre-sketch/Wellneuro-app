@@ -8976,3 +8976,14 @@ fiches (refus puis relecture si elle change) ; impression patient par le rendu
 la lettre dans l'aperçu (déjà dans Correspondance).
 
 **Prochaine action.** Merge, arbitrage Q-L1, pose sur ordre.
+
+## 2026-10-04 — Lettre d'adressage remise au patient : arbitrage Q-L1
+
+**Décidé.** Une lettre remise reste servie jusqu'à sa révocation (porteuse
+dépassée, lettre plus récente non diffusée) ; comportement livré confirmé.
+
+**Écarté.** « Retirée » sur porteuse dépassée ; mention « consultation
+précédente » ; remise hors du clic.
+
+**Prochaine action.** Ordre de pose de `WN_LETTRE_ADRESSAGE_PATIENT`, constat
+sur un dossier de test.
