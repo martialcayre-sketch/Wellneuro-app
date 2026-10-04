@@ -4,6 +4,36 @@
 
 ## Décisions actives
 
+### D-264 — Hémoglobine, CCMH et folates érythrocytaires : l'unité du catalogue suit celle que le laboratoire imprime
+
+- Date : 2026-10-03
+- Statut : accepté — arbitrage du responsable du 2026-10-03, après la
+  validation du premier compte rendu réel (LOT-06 de BIO-INGEST).
+- Domaine : catalogue biologie ; amende [[D-261]] §2 pour trois analytes.
+  Aucune règle clinique, aucun seuil, aucune conversion ([[D-157]]).
+
+**§1 — Le constat.** Le compte rendu n'imprime l'hémoglobine et la CCMH
+qu'en g/dL, et les folates érythrocytaires qu'en ng/mL. Le catalogue les
+attendait en g/L et en nmol/L. Aucune de ces trois mesures n'avait de ligne
+validable, et passer de l'une à l'autre serait une conversion.
+
+**§2 — L'unité retenue suit l'impression** (migration
+`20261003230000_catalogue_biologie_unites_imprimees`) :
+
+- « g/dL » entre au vocabulaire d'unités, sur les quatre CHECK ensemble ;
+- `BIO_HEMOGLOBINE` et `BIO_CCMH` passent en g/dL ;
+- `BIO_FOLATES_ERYTHROCYTAIRES` passe en ng/mL.
+
+L'unité reste unique par analyte. La règle SI de D-261 §2 tient pour tous
+les autres. Revers assumé : un laboratoire qui imprime l'hémoglobine en g/L
+sera refusé.
+
+**§3 — Une garde dans la migration.** Changer l'unité d'un analyte qui porte
+déjà une mesure ou une plage rendrait cette mesure fausse. La migration
+échoue si un résultat ou une plage existe pour ces trois codes. Constat par
+conteneur du 2026-10-03 : 39 résultats en production, aucun sur ces trois
+codes ; les seules plages portent sur la vitamine D et la ferritine.
+
 ### D-263 — Le resolver est re-signé sur les analyses d'un compte rendu courant, et l'unité lue départage un libellé ambigu
 
 - Date : 2026-10-03

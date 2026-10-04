@@ -43,6 +43,10 @@ function unitesDuCatalogue(): Map<string, string | null> {
     for (const m of sql.matchAll(/\('bioan_[a-z0-9_]+',\s*'([A-Z0-9_]+)',\s*'(?:[^']|'')*',\s*(NULL|'[^']*')/g)) {
       unites.set(m[1], m[2] === 'NULL' ? null : m[2].slice(1, -1));
     }
+    // Une unité CHANGÉE par une migration ultérieure ([[D-264]]) : une instruction par code.
+    for (const m of sql.matchAll(/UPDATE "biology_analytes" SET "unite" = '([^']+)'[^;]*WHERE "code" = '([A-Z0-9_]+)'/g)) {
+      unites.set(m[2], m[1]);
+    }
   }
   return unites;
 }
@@ -144,6 +148,10 @@ describe('resolver — une ligne : le libellé, puis l’unité qui départage (
     expect(UNITES.size).toBe(85);
     expect(UNITES.get('BIO_DFG_CKD_EPI')).toBe('mL/min/1,73 m²');
     expect(UNITES.get('BIO_NFS')).toBeNull();
+    // Unités calées sur l'impression ([[D-264]]) : l'UPDATE prime sur l'INSERT.
+    expect(UNITES.get('BIO_HEMOGLOBINE')).toBe('g/dL');
+    expect(UNITES.get('BIO_CCMH')).toBe('g/dL');
+    expect(UNITES.get('BIO_FOLATES_ERYTHROCYTAIRES')).toBe('ng/mL');
   });
 
   it('départage la formule leucocytaire : % ou valeur absolue', () => {
@@ -180,11 +188,11 @@ describe('banc — un compte rendu courant, libellés et unités tels qu’impri
   const UNITES = unitesDuCatalogue();
   const BANC: Array<[string, string | null, string | null, boolean]> = [
     ['Hématies', 'T/L', 'BIO_HEMATIES', true],
-    ['Hémoglobine', 'g/dL', 'BIO_HEMOGLOBINE', false],
+    ['Hémoglobine', 'g/dL', 'BIO_HEMOGLOBINE', true],
     ['Hématocrite', '%', 'BIO_HEMATOCRITE', true],
     ['V.G.M', 'fL', 'BIO_VGM', true],
     ['T.C.M.H', 'pg', 'BIO_TCMH', true],
-    ['C.C.M.H', 'g/dL', 'BIO_CCMH', false],
+    ['C.C.M.H', 'g/dL', 'BIO_CCMH', true],
     ['I.D.R', '%', 'BIO_IDR', true],
     ['Leucocytes', 'G/L', 'BIO_LEUCOCYTES', true],
     ['Polynucléaires neutrophiles', '%', 'BIO_NEUTROPHILES_PCT', true],
@@ -236,7 +244,7 @@ describe('banc — un compte rendu courant, libellés et unités tels qu’impri
     ['Vitamine D 25 OH (D2 + D3)', 'ng/mL', 'BIO_VITAMINE_D_25OH', true],
     ['Vitamine D 25 OH (D2 + D3)', 'nmol/L', 'BIO_VITAMINE_D_25OH', false],
     ['TSH', 'mUI/L', 'BIO_TSH_US', true],
-    ['Acide folique - érythrocytes (Chimiluminescence-Dxl-Beckman Coulter)', 'ng/mL', 'BIO_FOLATES_ERYTHROCYTAIRES', false],
+    ['Acide folique - érythrocytes (Chimiluminescence-Dxl-Beckman Coulter)', 'ng/mL', 'BIO_FOLATES_ERYTHROCYTAIRES', true],
   ];
 
   it('couvre les 58 lignes', () => {
@@ -249,7 +257,7 @@ describe('banc — un compte rendu courant, libellés et unités tels qu’impri
     if (code !== null) expect(unitesConcordent(unite, UNITES.get(code) ?? null)).toBe(concorde);
   });
 
-  it('chaque mesure courante a UNE ligne validable : 40 sur 58', () => {
-    expect(BANC.filter(([, , code, concorde]) => code !== null && concorde)).toHaveLength(40);
+  it('chaque mesure courante a UNE ligne validable : 43 sur 58', () => {
+    expect(BANC.filter(([, , code, concorde]) => code !== null && concorde)).toHaveLength(43);
   });
 });
