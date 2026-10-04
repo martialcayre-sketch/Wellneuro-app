@@ -9,7 +9,11 @@
 
 ## Activités parallèles
 
-Aucune campagne parallèle active.
+### 2026-10-04-bio-parcours
+
+**Titre** : BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout
+**Statut** : active
+**Lot actif** : LOT-01
 
 **Statut global** : active
 **Mise à jour** : 2026-10-04

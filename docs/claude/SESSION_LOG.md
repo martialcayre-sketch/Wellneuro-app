@@ -8924,3 +8924,18 @@ fiches ; drapeau `WN_LETTRE_ADRESSAGE_PATIENT` éteint.
 n'y part pas ; aperçu praticien de la lettre au GET (LOT-03 au besoin).
 
 **Prochaine action.** CI, merge, puis LOT-03 (portail).
+
+## 2026-10-04 — BIO-PARCOURS BP-00, décision-cadre (D-266)
+
+**Décidé.** D-266 acceptée : deux étages, prescription hors médicament côté praticien (mot proscrit
+côté patient), nomenclature à trois axes avec table de correspondance, DC-06/07/13/19/20/46/47
+amendées, huit orphelines reprises (DC-45 reste orpheline), constantes produit nommées sans valeur.
+Cadrage v3.1 versé sans contenu clinique. Campagne ouverte en parallèle, ids LOT-nn = BP-nn
+(b → LOT-28/29/30). BIO-INGEST : LOT-07 ajouté, LOT-04 conditionné à BP-10.
+Promotions : décision → `D-266` ; règle → `pr-revue-et-release-db.md` (même lot, seconde PR).
+
+**Écarté.** Codex recentré pour tout le dépôt (borné à la campagne) ; amender l'audit pour des ids BP.
+
+**Prochaine action.** Passe Codex sur la PR, merge, puis BP-01 (gardes) ou BIO-INGEST LOT-03.
+
+**Questions ouvertes.** Questions 2 à 5 du §6.5 du cadrage.

@@ -41,12 +41,28 @@
   validation praticien systématique de tout contenu généré par IA avant
   diffusion ; la finalité revendiquée du logiciel ne dépend pas des diplômes
   de l'opérateur.
+  **Amendé le 2026-10-04 par [[D-266]] §4** (cadrage BIO-PARCOURS v3.1) :
+  « prescription », déjà admis côté praticien, y désigne désormais l'acte de
+  BIO-PARCOURS. Les **mots** « prescription », « posologie » et « dosage »
+  restent proscrits dans toute surface patient, « protocole personnalisé »
+  compris ; seul le **contenu** d'une prescription validée (forme, dose,
+  durée) est admis dans ce document (BP-18b). Le périmètre prescrit est celui
+  des compléments alimentaires et produits **hors médicament**, jamais un
+  médicament ; la biologie part en demande d'examens contresignée par un
+  médecin, hors de l'outil. Le programme suit la **règle des deux étages**
+  ([[D-266]] §2) : « par conception » reste vrai de l'**étage outil** ;
+  l'**étage assistant** n'ouvre que fonction par fonction, après sa ligne de
+  la note de qualification signée (BP-26). La phrase sur les diplômes de
+  l'opérateur est conservée telle quelle. Les textes TRUST servis au patient
+  ne changent pas ici : BP-24 les amende par une nouvelle version.
 - Aucune modification de logique clinique, seuil, cotation ou interprétation
   sans demande explicite documentée dans `CHANGELOG.md`, avec versionnage
   (`versionScore`, `versionPrompt`).
 - Éviter par conception la qualification dispositif médical : finalité
   bien-être/suivi, validation praticien systématique de tout contenu généré
-  par IA avant diffusion.
+  par IA avant diffusion. *Pour BIO-PARCOURS ([[D-266]] §2) : vrai de
+  l'étage outil ; l'étage assistant n'ouvre que fonction par fonction, après
+  sa ligne de la note de qualification (BP-26).*
 - HDS obligatoire avant tout stockage de données de santé réelles. **Écart
   constaté et assumé depuis le 2026-07-21** : Supabase et Vercel sont **absents
   de l'annuaire ANS des hébergeurs certifiés** (404 hébergeurs recensés ;

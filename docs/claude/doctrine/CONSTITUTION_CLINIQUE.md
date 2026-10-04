@@ -62,8 +62,11 @@ invoque doit préexister.
 (`anthropic.ts:505`, `:443`) ; le reste de la synthèse (hypothèses, points de
 vigilance) est en prose libre sans provenance. [[D-011]] a délibérément choisi
 de ne pas la faire mordre : `verifierRestitutionOrientation.ts` journalise, il
-ne censure pas, et ses angles morts sont nommés (`:23-32`). **Orpheline** : le
-LOT-01 de la chaîne T0 la portait « partiellement » et il est livré.*
+ne censure pas, et ses angles morts sont nommés (`:23-32`). Orpheline jusqu'au
+2026-10-04 (le LOT-01 de la chaîne T0 la portait « partiellement » et il est
+livré) ; **reprise** par [[D-266]] §7 : porteurs BP-01 (vérificateur bloquant
+pour toute sortie LLM de BIO-PARCOURS ; la synthèse existante reste sous
+[[D-011]]) et BP-18b. Non armée tant que BP-01 n'est pas livré.*
 
 **DC-04 — Pas de claim sans citation exploitable.** Source, chunk ou section,
 notebook, version. Un claim qui cite un verbatim absent est refusé à
@@ -96,6 +99,16 @@ information en règle automatique.
 *Proposition — les champs `classe_autorite` et `niveau_preuve` existent déjà
 par claim ; l'ordre de résolution, lui, n'est écrit nulle part.*
 
+*Amendée par [[D-266]] §8 (2026-10-04) : un rang **position d'expert signée**
+s'insère sous « autre source certifiée du corpus » et au-dessus des « données
+observationnelles internes ». Pièce versionnée comme un claim
+(`identifiant@version`, auteur, date, périmètre, population, appuis cités,
+révision) ; elle cède devant toute source de rang supérieur qui la contredit ;
+affichée « position du responsable — preuves limitées », jamais comme un
+consensus ; elle renseigne une dose affichée et modifiable et ne déclenche
+jamais de règle automatique. Les référentiels SIIN n'entrent pas comme source.
+Porteur : BP-12b.*
+
 ---
 
 ## II — Claims : taxonomie, cycle de vie, niveau d'exécution
@@ -110,6 +123,11 @@ colonne catégorie `A-E` sur `rag_corpus_claims` y a été transférée depuis
 n'existe au dépôt ; `typologie_lecture` est un axe de **lecture**
 (déclaré/observé/vécu/interprété, `CHECK rag_corpus_claims_typologie`), sans
 rapport avec celui-ci.*
+
+*Amendée par [[D-266]] §3 (2026-10-04) : la catégorie d'un claim reste un axe
+distinct de la nomenclature unique de BIO-PARCOURS (nature du lien, usage
+décisionnel, statut d'usage), qui qualifie un **lien** besoin ↔ mesure et non
+un claim. Les deux s'alignent sans fusion.*
 
 **DC-08 — Un claim descriptif peut s'exécuter automatiquement** s'il est
 parfaitement certifié (correspondance score ↔ catégorie d'un questionnaire,
@@ -199,6 +217,11 @@ s'applique.
 *Proposition — aujourd'hui l'axe est binaire (`prescriptif`, `statut`). Porté
 par la campagne **Curation signée** ([[D-096]]).*
 
+*Amendée par [[D-266]] §3 (2026-10-04) : le niveau d'exécution se porte sur
+l'**usage** d'un claim (une fiche d'usage, un lien de la matrice), non sur le
+claim lui-même ; un même claim peut servir deux usages de niveaux différents.
+La règle du plus restrictif en l'absence de niveau explicite est inchangée.*
+
 **DC-14 — Aucune extrapolation hors de la population du claim.** Un claim
 établi chez l'adulte ne vaut pas chez l'enfant, la femme enceinte, la personne
 âgée, l'insuffisant rénal ou hépatique. L'absence de population déclarée se
@@ -277,6 +300,10 @@ forme (c'est lui la source), et `.slice` reste hors balayage — 30 des 39
 littéraux d'écrêtage y sont des troncatures d'affichage, qui ne décident de
 rien.*
 
+*Précisée par [[D-266]] §8 (2026-10-04) : une dose modifiée par le praticien
+est son arbitrage tracé avec motif, pas une source ; elle ne devient jamais la
+provenance d'une autre dose.*
+
 **DC-20 — Seuil clinique et seuil technique ne partagent pas le même statut.**
 Chaque seuil déclare sa nature : `clinical` · `instrument` · `data_quality` ·
 `technical` · `regulatory`. « 85 % » n'est pas la même chose selon qu'il borne
@@ -299,6 +326,13 @@ mord. Mais elle est **en prose, dans un banc**, non dans un champ
 ne se requête pas. `DC-20` reste donc **actée sans être armée au sens qu'elle
 décrit** — la distance est plus courte qu'au 2026-08-11, elle n'est pas
 franchie.*
+
+*Actée en doctrine par [[D-266]] §9 (2026-10-04), pour la biologie — pas armée au sens de l'en-tête : toute
+valeur de référence déclare sa nature dans la triade intervalle du
+laboratoire · seuil décisionnel documenté · cible thérapeutique (voir DC-47).
+Les constantes produit de BIO-PARCOURS ([[D-266]] §14) sont de nature
+`technical` ou `data_quality`. Le **banc dû** reste dû : porteurs
+BIO-INGEST LOT-07, BP-12a et BP-27.*
 
 **DC-21 — Aucune pondération clinique tacite.** Un poids égal entre axes n'est
 pas neutre : c'est déjà une décision de modèle. Toute pondération est
@@ -622,18 +656,22 @@ action, d'un `phaseId` dupliqué, d'un `reviewAt` non canonique), avec
 `protocolV4.test.ts:165-229` (CI). **Sur les six composantes** : « pourquoi
 maintenant » et « critère d'arrêt » n'ont aucun champ, « ce qui vient ensuite »
 se réduit à `reviewAt`, et les phases restent facultatives même en V4
-(`protocolDraft.ts:167`). **Orpheline** : le LOT-05 de la chaîne T0 la portait
-et il est livré.*
+(`protocolDraft.ts:167`). Orpheline jusqu'au 2026-10-04 (le LOT-05 de la
+chaîne T0 la portait et il est livré) ; **reprise** par [[D-266]] §7 : porteur
+BP-18a (contrat d'action V5 : critère d'arrêt, surveillance, durée bornée par
+la source).*
 
 **DC-39 — Une modification à la fois lorsque l'interprétation l'exige.** Le
 moteur distingue les interventions compatibles simultanément de celles à
 tester séquentiellement. Dix changements simultanés rendent inattribuables
 l'amélioration comme l'intolérance.
-*Proposition — **Orpheline**. Le véhicule V4 de l'audit (« deux paragraphes
-dans deux fiches de lot ») est **périmé** : ses fiches d'accueil, LOT-05 et
-LOT-07 de la chaîne T0, sont livrées depuis le 2026-08-18. Rien dans
-`web/src/lib` ne distingue les interventions compatibles simultanément de
-celles à tester séquentiellement. Dette nommée sans véhicule.*
+*Proposition — orpheline jusqu'au 2026-10-04. Le véhicule V4 de l'audit
+(« deux paragraphes dans deux fiches de lot ») est **périmé** : ses fiches
+d'accueil, LOT-05 et LOT-07 de la chaîne T0, sont livrées depuis le
+2026-08-18. Rien dans `web/src/lib` ne distingue les interventions compatibles
+simultanément de celles à tester séquentiellement. **Reprise** par
+[[D-266]] §7 : porteur BP-20 (avertissement d'attribution, étage outil) ;
+l'armement complet relève de la marche 4 du suivi (étage assistant).*
 
 **DC-40 — Toute intervention a un critère de suivi.** Pas « prendre X », mais
 intervention → variable(s) suivie(s) → moment de réévaluation → maintenir,
@@ -647,8 +685,10 @@ T0 (clos) : `followUpCriterion` obligatoire et non vide sur tout draft
 `checkins.test.ts` (CI). **Manquent** : le lien par intervention (les phases
 sont facultatives, `mesures` est un tableau de chaînes libres) et « maintenir /
 ajuster / arrêter » comme objet — les six labels du J21 sont un affichage
-guidé explicitement non persisté (`J21DecisionPanel.tsx:7-11`). **Orpheline** :
-les LOT-05 et LOT-07 de la chaîne T0 la portaient et ils sont livrés.*
+guidé explicitement non persisté (`J21DecisionPanel.tsx:7-11`). Orpheline
+jusqu'au 2026-10-04 (les LOT-05 et LOT-07 de la chaîne T0 la portaient et ils
+sont livrés) ; **reprise** par [[D-266]] §7 : porteurs BP-15 (maintenir,
+ajuster, arrêter persistés), BP-18a, BP-20.*
 
 **DC-41 — Efficacité et tolérance sont deux axes distincts.** Une intervention
 efficace et mal tolérée n'est pas un succès.
@@ -657,7 +697,9 @@ quatre questions du catalogue gelé de check-in depuis le **2026-07-18**
 (`protocol/checkinDomain.ts:68-76`), soit trois semaines avant le constat qui
 écrivait « aucun axe de tolérance ». Ce qui manque n'est pas l'axe mais sa
 **séparation opposable** de l'efficacité dans une décision d'intervention.
-**Orpheline** : véhicule V4 périmé, comme `DC-39`.*
+Orpheline jusqu'au 2026-10-04 (véhicule V4 périmé, comme `DC-39`) ;
+**reprise** par [[D-266]] §7 : porteur BP-20 (efficacité et tolérance en
+dimensions séparées).*
 
 **DC-42 — Un effet indésirable interrompt la logique automatique.** Un nouveau
 symptôme temporellement associé à une intervention interdit d'augmenter ou de
@@ -779,8 +821,11 @@ sont collectés qu'en prose (`consultation/contexteClinique.ts:196-201`) et
 `deciderIntentionAvantBiologie` (`decisionAvantBiologie.ts:149`) **n'a aucun
 appelant** alors que `D-056` le décrivait branché. **Décision due** : `DC-44`
 ne figure pas parmi les neuf bascules de [[D-043]] et aucune entrée ne
-prononce ce « acté partiellement ». **Orpheline** pour ce qui reste dû : le
-LOT-05 de la chaîne T0 la portait et il est livré.*
+prononce ce « acté partiellement ». Orpheline jusqu'au 2026-10-04 pour ce qui
+reste dû (le LOT-05 de la chaîne T0 la portait et il est livré) ; **reprise**
+par [[D-266]] §7 : porteurs BP-13 (traitements et compléments en cours
+structurés) et BP-18a. Le refus par choix de la dose totale cumulée n'est pas
+rouvert par cette reprise.*
 
 ---
 
@@ -796,12 +841,19 @@ part. **Homonymie à ne pas confondre** : les lettres A/B/C de cette règle
 désignent des types de mesure, quand `biology_functional_ranges.niveau_preuve`
 porte un `CHECK` A-D de **niveau de preuve** — deux vocabulaires différents.*
 
+*Amendée par [[D-266]] §3 (2026-10-04) : la règle reste un axe distinct, aligné
+sans fusion sur la nomenclature unique de BIO-PARCOURS (nature du lien, usage
+décisionnel, statut d'usage). Un troisième vocabulaire s'ajoute donc aux deux
+ci-dessus ; aucune lettre partagée n'a le même sens. Aucun lot ne porte la
+taxonomie A/B/C : la règle **reste orpheline** ([[D-266]] §7).*
+
 **DC-46 — Une valeur de laboratoire ne s'interprète pas isolément.** Unités,
 référence du laboratoire, sexe et âge lorsque pertinent, contexte, traitements,
 état inflammatoire, jeûne, temporalité.
 *Proposition — **sans objet tant que le verrou HDS tient**, et le verrou n'est
 plus une intention de conception : aucune valeur de laboratoire n'entre dans
-l'application ([[D-059]] §4), tenu par deux contrats exécutés en CI —
+l'application ([[D-059]] §4) — **texte d'état périmé, voir l'amendement
+ci-dessous** —, tenu par deux contrats exécutés en CI —
 `cb_biologie_structure_v1.sql:29-95` (noms de colonnes interdits sur les douze
 tables `biology_*`, aucune FK vers patients/assignations/consultations, RLS
 deny-all ; `ci.yml:609`) et `cb_arbitrage_biologique_v1_negatif.sql:61-73`
@@ -811,6 +863,15 @@ fermée, `population` à `CHECK` fermé, `biology_preanalytics.type_condition`) 
 manquent l'âge en années, les traitements en cours, l'état inflammatoire.
 **Exigible dès l'ouverture de `WN_CB_RESULTS_ENABLED` — porteur CB-09**, hors
 campagne.*
+
+*Dette constatée par [[D-266]] §9 (2026-10-04). Le texte d'état ci-dessus est périmé : des résultats biologiques
+entrent dans l'application par la saisie ([[D-122]] §2) et par l'import validé
+([[D-256]]), et `WN_CB_RESULTS_ENABLED` est posé depuis le 2026-09-09. La règle
+est donc **exigible**, et son contexte n'est pas recueilli. Sont **nommés,
+non exécutés** : un régime transitoire (« contexte de prélèvement non
+recueilli » sur chaque surface qui restitue une valeur) et une liste de champs
+candidats alignée sur `biology_preanalytics.type_condition`. Porteur : BP-05,
+qui arrête par sa propre décision la liste, les formes et les valeurs.*
 
 **DC-47 — Toute « valeur optimale » est identifiée comme telle.** Une
 fourchette fonctionnelle ne se présente jamais comme une norme médicale. Chaque
@@ -828,7 +889,19 @@ vocabulaire à cinq valeurs (zéro occurrence au dépôt) et **tout
 consommateur** — aucune plage fonctionnelle n'est lue par `web/src`, et ni la
 proposition de bilan (`statuts.ts:67-88`) ni le courrier médecin
 (`courrier.ts:76-107`) ne citent de borne. L'audit affirmait le contraire.
-**Orpheline** : le LOT-06 de la chaîne T0 la portait et il est livré.*
+Orpheline jusqu'au 2026-10-04 : le LOT-06 de la chaîne T0 la portait et il est
+livré.*
+
+*Actée en doctrine par [[D-266]] §9 (2026-10-04), avec DC-20 — **Banc dû** : toute valeur de référence déclare sa
+nature dans une triade **intervalle du laboratoire** (fait imprimé, attribué
+au laboratoire, jamais recalculé ni réutilisé comme plage Wellneuro) · **seuil
+décisionnel documenté** · **cible thérapeutique**. Le vocabulaire à cinq
+valeurs ci-dessus s'y range sans disparaître. **Reprise** par [[D-266]] §7 :
+porteurs BIO-INGEST LOT-07 (intervalle imprimé), BP-12a et BP-27 (seuil
+décisionnel, cible). **Texte d'état périmé, corrigé le 2026-10-04** : « aucune
+plage fonctionnelle n'est lue par `web/src` » n'est plus vrai —
+`api/praticien/biologie/resultats/route.ts` lit `biologyFunctionalRange` pour
+la juxtaposition documentaire de [[D-157]].*
 
 ---
 
@@ -839,7 +912,9 @@ pour les symptômes, médicaments, compléments, alimentation, sommeil et
 événements de vie. Sans temporalité, un moteur fabrique des causalités
 artificielles.
 *Acté partiellement — [[D-010]], [[D-023]] ; pas de modèle temporel général.
-**Orpheline** : le LOT-07 de la chaîne T0 la portait et il est livré — il a
+**Reprise** par [[D-266]] §7 : porteurs BP-13 et BP-15 (début réel,
+interruption, reprise) ; l'attribution relève de la marche 4 du suivi (étage
+assistant). Orpheline jusqu'au 2026-10-04 : le LOT-07 de la chaîne T0 la portait et il est livré — il a
 posé les jalons T0/J21/J42/J90, pas le modèle avant/pendant/après. Aucun
 modèle temporel sur les médicaments et les compléments (aucun modèle
 `Traitement` au schéma).*
@@ -1077,6 +1152,12 @@ banc qui tourne dans la suite du CI, un statut basculé :
   paragraphes dans deux fiches de lot », ces fiches sont livrées depuis le
   2026-08-18, et le code ne porte ni l'un ni l'autre. Les nommer ici est ce qui
   les empêche de disparaître avec leur véhicule, en attendant le cadrage.
+  **Amendé par [[D-266]] §7 (2026-10-04)** :
+  huit de ces statuts sont repris nommément par BIO-PARCOURS (`DC-03`,
+  `DC-38`, `DC-39`, `DC-40`, `DC-41`, `DC-44`, `DC-47`, `DC-48`) ; chaque
+  règle nomme son porteur. Restent orphelines et à la campagne dédiée : la
+  part de `DC-11` hors exclusions, `DC-36` et `DC-45`. Recompte au grep le
+  2026-10-04 : **5** occurrences du marqueur, dont deux en en-tête.
 - **`DC-50`**, **`DC-51`** : **renvoyées** à la campagne
   `2026-08-10-chaine-alimentaire`, qui est leur matière. Un renvoi est un
   routage, pas une fermeture.

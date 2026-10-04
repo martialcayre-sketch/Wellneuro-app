@@ -1,5 +1,10 @@
 # Cadrage — BIO-PARCOURS, la biologie comme aide à la décision à chaque échelon du parcours (2026-10-04)
 
+> **Remplacé par la v3.1** — `CADRAGE_BIO_PARCOURS_v3_2026-10-04.md`, versée par
+> BP-00 ([[D-266]]). Ce v1 reste la trace de la première proposition : ses
+> identifiants BP-00 à BP-09 sont conservés et étendus par la v3.1, BP-00 y
+> devient la décision-cadre et BP-06 est absorbé par BP-05. Ne pas l'exécuter.
+
 > **Proposition de cadrage, non arbitrée.** Elle répond à la ligne « Ré-alimentation
 > du moteur par le mesuré » de `FILE_ATTENTE.md` (frontière [[D-122]]). Aucune
 > décision n'est prise ici : la campagne ne s'ouvre qu'après vos réponses au §7,

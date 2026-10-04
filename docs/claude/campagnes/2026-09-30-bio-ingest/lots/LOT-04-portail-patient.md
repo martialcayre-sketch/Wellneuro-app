@@ -2,7 +2,7 @@
 id: "LOT-04"
 titre: "Transmission depuis le portail patient"
 statut: "à_faire"
-dépend_de: "LOT-02, consentement RGPD à jour"
+dépend_de: "LOT-02, consentement RGPD à jour, LOT-07, BIO-PARCOURS BP-10"
 ---
 
 # LOT-04 — Transmission depuis le portail patient
@@ -40,7 +40,10 @@ Toute écriture de résultat sans validation praticien ; messagerie de santé.
 
 ## Dépendances
 
-LOT-02, consentement RGPD à jour
+LOT-02, consentement RGPD à jour. **Précondition de sécurité** (`D-266` §15,
+2026-10-04) : LOT-07 (faits du laboratoire transcrits) puis BIO-PARCOURS BP-10
+(sécurité biologique, étage 1 : marquage restitué, acte de lecture tracé,
+carte « geste »). Ce lot n'ouvre pas avant BP-10 livré.
 
 ## Étapes
 

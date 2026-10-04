@@ -19,6 +19,11 @@ Un fichier réel du laboratoire pilote alimente le staging ; le laboratoire est 
 
 Aucun code avant la réception d'un format réel. Prendre alors la décision « rectificatif labo » (sœur de `D-124`).
 
+Exigences reprises de l'entrée « Import laboratoire » de `FILE_ATTENTE.md`, close et absorbée ici le
+2026-10-04 (`D-266` §15) : authentification de la source, doublons, **exactitude décimale de bout en
+bout** (la valeur transitait en `number` JSON, dette nommée), volet RGPD (nouvelle provenance de
+données de santé, sous-traitant éventuel).
+
 ## Hors périmètre
 
 Présumer un format (CDA, HPRIM, HL7…) avant de l'avoir reçu.

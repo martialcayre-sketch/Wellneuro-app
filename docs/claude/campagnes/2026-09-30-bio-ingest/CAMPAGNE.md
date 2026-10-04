@@ -73,9 +73,10 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 | LOT-01 | Saisie groupée praticien, route batch transactionnelle | terminé (2026-10-01) | non | LOT-00 |
 | LOT-02 | Staging d'import, extraction PDF par IA vision, écran de validation | terminé (2026-10-03) | **oui, confirmation obligatoire** | LOT-01, amendement RGPD/TRUST |
 | LOT-03 | Photo ou scan : même pipeline, seul l'extracteur change | à_faire | non | LOT-02 |
-| LOT-04 | Transmission depuis le portail patient | à_faire | probable, confirmation obligatoire | LOT-02, consentement RGPD à jour |
+| LOT-04 | Transmission depuis le portail patient | à_faire | probable, confirmation obligatoire | LOT-02, consentement RGPD à jour, LOT-07, BP-10 (BIO-PARCOURS, `D-266` §15) |
 | LOT-05 | Adaptateur laboratoire (pilote Barbier Metz) | à_faire | selon le format reçu | LOT-02, format réel reçu |
 | LOT-06 | Catalogue étendu aux analyses d'un compte rendu courant | terminé (2026-10-04, D-261, D-263, D-264) | **oui, confirmation obligatoire** | LOT-02 |
+| LOT-07 | Faits du laboratoire : intervalle et marquage imprimés, transcrits avant la purge (ajouté par `D-266` §15) ; avancé avant LOT-04 | à_faire | **oui, confirmation obligatoire** | LOT-02, BP-00 et BP-01 (BIO-PARCOURS) |
 
 **Reste ouvert, rattaché au LOT-03** (constaté au LOT-06, 2026-10-03) : un import
 `extrait` n'offre aucun bouton « Relancer la lecture » (`ImportCompteRenduPanel.tsx`, `peutLancer`).
