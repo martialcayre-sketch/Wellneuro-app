@@ -134,8 +134,9 @@ additive le vocabulaire d'unités, en reconstruisant les quatre CHECK
 
 - Date : 2026-10-03
 - Statut : accepté — arbitrages du responsable rendus en session le
-  2026-10-03 (B1 à B4) ; **phrase d'accompagnement proposée, à signer**
-  (cadrage §4) avant le LOT-02. Cadrage :
+  2026-10-03 (B1 à B4) ; **phrase d'accompagnement signée le 2026-10-03**
+  (cadrage §4, texte au caractère près). LOT-01 : table
+  `lettres_adressage_remises` (migration seule). Cadrage :
   `docs/claude/campagnes/CADRAGE_LETTRE_ADRESSAGE_PATIENT_2026-10-03.md`.
 - Domaine : correspondance ([[D-218]]), levée par adressage ([[D-257]]),
   portail patient, remise de document ([[D-251]] comme patron).
