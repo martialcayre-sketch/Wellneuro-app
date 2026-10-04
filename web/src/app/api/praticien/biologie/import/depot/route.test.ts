@@ -141,6 +141,18 @@ describe('preparerImage', () => {
     expect(await preparerImage(animee, 'image/webp')).toMatchObject({ ok: false, reason: 'image_animee', status: 415 });
   });
 
+  it('un PNG animé (APNG) : refusé, bien que sharp n’en compte pas les trames', async () => {
+    const png = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#ffffff' } }).png().toBuffer();
+    // Bloc acTL (2 trames, boucle infinie) inséré après IHDR, avant le premier IDAT.
+    const finIhdr = 8 + 12 + png.readUInt32BE(8);
+    const donnees = Buffer.alloc(8);
+    donnees.writeUInt32BE(2, 0);
+    const actl = Buffer.concat([Buffer.from([0, 0, 0, 8]), Buffer.from('acTL'), donnees, Buffer.alloc(4)]);
+    const apng = Buffer.concat([png.subarray(0, finIhdr), actl, png.subarray(finIhdr)]);
+    expect(await preparerImage(apng, 'image/png')).toMatchObject({ ok: false, reason: 'image_animee', status: 415 });
+    expect(await preparerImage(png, 'image/png')).toMatchObject({ ok: true });
+  });
+
   it('le même fichier donne les mêmes octets (unicité par empreinte)', async () => {
     const source = await photo();
     const [a, b] = await Promise.all([preparerImage(source, 'image/jpeg'), preparerImage(source, 'image/jpeg')]);

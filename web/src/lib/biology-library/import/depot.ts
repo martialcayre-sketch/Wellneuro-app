@@ -66,6 +66,22 @@ export function jugerFichier(octets: Buffer, typeDeclare: string): VerdictFichie
   return { ok: true, typeMime: typeLu };
 }
 
+/**
+ * Un PNG est-il animé (APNG) ? Son bloc `acTL` précède obligatoirement le
+ * premier `IDAT` : on parcourt les blocs jusque-là, sans rien décoder.
+ */
+function estPngAnime(octets: Buffer): boolean {
+  let position = 8; // après la signature
+  while (position + 8 <= octets.length) {
+    const longueur = octets.readUInt32BE(position);
+    const type = octets.toString('ascii', position + 4, position + 8);
+    if (type === 'acTL') return true;
+    if (type === 'IDAT' || type === 'IEND') return false;
+    position += 12 + longueur; // longueur, type, données, CRC
+  }
+  return false;
+}
+
 export type ImagePreparee =
   | { ok: true; octets: Buffer }
   | { ok: false; reason: 'image_illisible' | 'image_animee' | 'image_trop_grande' | 'image_trop_lourde'; status: number };
@@ -81,9 +97,13 @@ export async function preparerImage(octets: Buffer, typeMime: TypeMimeImage): Pr
   try {
     const { width, height, pages } = await sharp(octets, { limitInputPixels: PIXELS_MAX_IMAGE }).metadata();
     if (!width || !height) return { ok: false, reason: 'image_illisible', status: 415 };
-    // Une image animée (WebP, PNG) ne se lirait qu'à sa première trame : les
-    // autres seraient perdues en silence. Une image par dépôt, d'une trame (revue Copilot, #1310).
-    if (pages !== undefined && pages > 1) return { ok: false, reason: 'image_animee', status: 415 };
+    // Une image animée ne se lirait qu'à sa première trame : les autres seraient
+    // perdues en silence. Une image par dépôt, d'une trame (revue Copilot, #1310).
+    // sharp compte les trames d'un WebP, pas celles d'un PNG animé (APNG) : lui
+    // se reconnaît à son bloc `acTL` (revue Copilot, #1312).
+    if ((pages !== undefined && pages > 1) || (typeMime === 'image/png' && estPngAnime(octets))) {
+      return { ok: false, reason: 'image_animee', status: 415 };
+    }
     if (width > COTE_MAX_IMAGE_PX || height > COTE_MAX_IMAGE_PX) {
       return { ok: false, reason: 'image_trop_grande', status: 413 };
     }
