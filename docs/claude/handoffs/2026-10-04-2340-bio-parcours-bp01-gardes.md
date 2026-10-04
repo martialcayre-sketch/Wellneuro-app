@@ -1,4 +1,4 @@
-# Handoff — BIO-PARCOURS BP-01 (LOT-01) : gardes avant surface
+# Handoff — 2026-10-04 — BIO-PARCOURS BP-01 (LOT-01) : gardes avant surface
 
 ## Branche et état Git
 

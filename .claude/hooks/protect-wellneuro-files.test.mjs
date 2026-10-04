@@ -263,11 +263,38 @@ for (const [cas, entree] of [
   });
 }
 
+test("Edit qui bascule le verrou false → true (source résultant jugé) : demande", () => {
+  const j = jugementBrut({
+    file_path: path.join(racine, "web/src/lib/clinical/replisAssietteV1.ts"),
+    // Le fragment ne porte pas le marqueur complet : seul le source
+    // RÉSULTANT le porte (contournement relevé par la revue Copilot).
+    old_string: "Externe: false,",
+    new_string: "Externe: true,",
+  });
+  assert.equal(j.verdict, "demande");
+});
+
+test("Edit qui ne touche qu'un mot du verrou (fragment sans le marqueur) : demande", () => {
+  const j = jugementBrut({
+    file_path: path.join(racine, "web/src/lib/neuf/fictif.ts"),
+    content: undefined,
+    old_string: "false",
+    new_string: "true",
+  });
+  // Fichier absent du disque : rien à appliquer, silence attendu ; le cas
+  // réel (fichier présent) est couvert ci-dessus.
+  assert.equal(j.verdict, "passe");
+});
+
 test("le hook ne se demande pas confirmation pour sa propre édition", () => {
   assert.equal(jugementBrut({ file_path: path.join(racine, ".claude/hooks/protect-wellneuro-files.mjs") }).verdict, "passe");
 });
 
 for (const [cas, entree] of [
+  ["marqueur en commentaire de fin de ligne", {
+    file_path: path.join(racine, "web/src/lib/neuf/z.ts"),
+    content: "const x = 'http://exemple'; // validationExterne: true\n",
+  }],
   ["marqueur en commentaire seulement", {
     file_path: path.join(racine, "web/src/lib/neuf/x.ts"),
     content: "// une table signée porte `validationExterne: true`\n/* validationExterne: true */\n",

@@ -44,6 +44,12 @@ describe('verifierDc03 — une justification n\'est jamais générée (DC-03, BP
     expect(verifierDc03('Soit 1 000 mg.', ['Dose de 1000 mg.']).ok).toBe(true);
   });
 
+  it('le signe fait partie du nombre : une inversion est une invention', () => {
+    expect(verifierDc03('Dose : -5 mg.', ['Dose : 5 mg.'])).toEqual({ ok: false, inconnus: { identifiants: [], nombres: ['-5'] } });
+    expect(verifierDc03('Écart −5.', ['Écart -5.']).ok).toBe(true);
+    expect(verifierDc03('Le 2026-10-04.', ['Daté 2026, 10 et 04.']).ok).toBe(true);
+  });
+
   it('sans source, tout identifiant ou nombre refuse', () => {
     expect(verifierDc03('Durée : 7 jours.', []).ok).toBe(false);
     expect(verifierDc03('Un texte sans jeton.', []).ok).toBe(true);

@@ -152,19 +152,50 @@ const estSourceDeProduction =
   /\.([cm]?[tj]sx?|json)$/.test(normalized) && !/\.(test|spec)\.[a-z]+$/.test(normalized);
 
 if (estSourceDeProduction) {
+  // Commentaires retirés : blocs `/* */`, et `//` jusqu'à la fin de ligne
+  // quand il est HORS d'une chaîne de la même ligne (une URL `'http://…'`
+  // n'est pas un commentaire ; `x = 1; // validationExterne: true` en est un).
+  const retirerFinDeLigne = (ligne) => {
+    let guillemet = null;
+    for (let i = 0; i < ligne.length; i++) {
+      const c = ligne[i];
+      if (guillemet) {
+        if (c === "\\") i++;
+        else if (c === guillemet) guillemet = null;
+      } else if (c === "'" || c === '"' || c === "`") guillemet = c;
+      else if (c === "/" && ligne[i + 1] === "/") return ligne.slice(0, i);
+    }
+    return ligne;
+  };
   const sansCommentaires = (texte) =>
     String(texte)
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .split("\n")
-      .filter((ligne) => !/^\s*\/\//.test(ligne))
+      .map(retirerFinDeLigne)
       .join("\n");
-  const textes = [];
+  let surDisque = null;
   try {
     const absolu = path.resolve(process.env.CLAUDE_PROJECT_DIR || process.cwd(), filePath);
-    textes.push(fs.readFileSync(absolu, "utf8"));
+    surDisque = fs.readFileSync(absolu, "utf8");
   } catch {
     // Fichier neuf ou illisible : seul le contenu entrant est jugé.
   }
+  // Le source RÉSULTANT est jugé, pas seulement chaque fragment : remplacer
+  // `false` par `true` sur une table au verrou éteint ne porte le marqueur
+  // complet ni sur disque ni dans le fragment — seulement après l'édition.
+  const appliquer = (texte, edit) => {
+    if (typeof texte !== "string" || !edit || typeof edit.old_string !== "string"
+      || typeof edit.new_string !== "string") return texte;
+    return edit.replace_all
+      ? texte.split(edit.old_string).join(edit.new_string)
+      : texte.replace(edit.old_string, () => edit.new_string);
+  };
+  let resultat = typeof toolInput.content === "string" ? toolInput.content : surDisque;
+  resultat = appliquer(resultat, toolInput);
+  if (Array.isArray(toolInput.edits)) {
+    for (const edit of toolInput.edits) resultat = appliquer(resultat, edit);
+  }
+  const textes = [surDisque, resultat];
   for (const champ of [toolInput.content, toolInput.new_string]) {
     if (typeof champ === "string") textes.push(champ);
   }
@@ -175,7 +206,7 @@ if (estSourceDeProduction) {
   }
   // Clé nue ou entre guillemets (`"validationExterne": true` en JSON).
   const marqueur = /["']?validationExterne["']?\s*:\s*true/;
-  if (textes.some((texte) => marqueur.test(sansCommentaires(texte)))) {
+  if (textes.some((texte) => typeof texte === "string" && marqueur.test(sansCommentaires(texte)))) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
         hookEventName: "PreToolUse",

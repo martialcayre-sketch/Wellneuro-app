@@ -30,9 +30,11 @@ const MOTIF_IDENTIFIANT = /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+[a-z]?\b|[\p{L}\p{N}_.
  * Nombres, décimale à point ou à virgule, séparateur de milliers par espace
  * (`1 000`). COLLÉS À LEUR UNITÉ compris : « 500mg », « 2g », « 1000UI »,
  * « x3 » — c'est exactement la forme d'une dose inventée (revue BP-01, P1-2).
+ * Le SIGNE fait partie du jeton (« -5 » n'est pas « 5 », revue Copilot), sauf
+ * quand le tiret suit un caractère de mot : `2026-10-04` reste trois nombres.
  * Les chiffres d'un identifiant à tiret ou versionné sont retirés avant.
  */
-const MOTIF_NOMBRE = /(?<![\p{N}_.,])\d{1,3}(?:[ \u00a0\u202f]\d{3})+(?:[.,]\d+)?(?!\p{N})|(?<![\p{N}_.,])\d+(?:[.,]\d+)?(?!\p{N})/gu;
+const MOTIF_NOMBRE = /(?:(?<![\p{L}\p{N}_.,])[-−])?(?:(?<![\p{N}_.,])\d{1,3}(?:[ \u00a0\u202f]\d{3})+(?:[.,]\d+)?(?!\p{N})|(?<![\p{N}_.,])\d+(?:[.,]\d+)?(?!\p{N}))/gu;
 
 function identifiantsDe(texte: string): string[] {
   return texte.match(MOTIF_IDENTIFIANT) ?? [];
@@ -46,7 +48,7 @@ function identifiantsDe(texte: string): string[] {
 function nombresDe(texte: string): string[] {
   const sansIdentifiants = texte.replace(MOTIF_IDENTIFIANT, ' ');
   return (sansIdentifiants.match(MOTIF_NOMBRE) ?? [])
-    .map(n => String(Number(n.replace(/[ \u00a0\u202f]/g, '').replace(',', '.'))));
+    .map(n => String(Number(n.replace(/[ \u00a0\u202f]/g, '').replace('−', '-').replace(',', '.'))));
 }
 
 export function verifierDc03(sortie: string, sources: readonly string[]): VerdictDc03 {

@@ -59,7 +59,10 @@ export function reprochesTexte(texte: string, options: OptionsSentinelle = {}): 
   const anxiogene = options.registreTranche ? null : termeAnxiogene(texte);
   if (anxiogene) reproches.push(`terme anxiogène « ${anxiogene} »`);
   for (const mot of [...MOTS_VERDICT, ...MOTS_PRIORITE, ...motsEnPlus.map(normaliser)]) {
-    if (new RegExp(`(?<![\\p{L}\\p{N}])${mot.replace(/ /g, '\\s+')}`, 'u').test(norme)) {
+    // Échappé AVANT de convertir les espaces : un mot propre à un écran
+    // (`[urgent]`, `CRP+`) se cherche littéralement (revue Copilot).
+    const litteral = mot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s+');
+    if (new RegExp(`(?<![\\p{L}\\p{N}])${litteral}`, 'u').test(norme)) {
       reproches.push(`mot « ${mot} »`);
     }
   }
