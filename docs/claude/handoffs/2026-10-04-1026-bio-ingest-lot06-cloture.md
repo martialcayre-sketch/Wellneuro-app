@@ -2,11 +2,11 @@
 
 ## Branche et état Git
 
-- `docs/bio-ingest-lot06-cloture-finale`, partie de `origin/main` à `5a3fa7d2` (merge de #1302).
-  PR de clôture à ouvrir.
+- `docs/bio-ingest-lot06-cloture-finale`, partie de `origin/main` à `5a3fa7d2` (merge de #1302),
+  puis à niveau de `main` après #1303. PR de clôture : #1304.
 - Campagne `2026-09-30-bio-ingest` : LOT-06 **terminé**, lot actif **LOT-03**.
-- **#1303** (corrections du cadrage BIO-PARCOURS et dette nommée) est ouverte. Elle doit être mergée
-  **avant** cette PR, parce que la fiche du LOT-06 renvoie à sa dette dans `FILE_ATTENTE.md`.
+- **#1303** (corrections du cadrage BIO-PARCOURS et dette nommée) est mergée : la dette à laquelle
+  renvoie la fiche du LOT-06 est sur `main`.
 
 ## Objectif
 
@@ -72,9 +72,8 @@ Clore le LOT-06 : rattacher et rendre validables les analyses d'un compte rendu 
 
 ## Prochaine action exacte
 
-1. Merger #1303 : sa CI doit être verte sur `6a40fc03`, et ses commentaires sont tous traités.
-2. Ouvrir la PR de clôture de cette branche, attendre la CI, merger.
-3. `/clear`, puis LOT-03 en mode Plan, avec le bouton « Relancer la lecture ».
+1. #1304 : CI verte sur sa tête, commentaires de revue traités, merger.
+2. `/clear`, puis LOT-03 en mode Plan, avec le bouton « Relancer la lecture ».
 
 ## Interdits encore actifs
 
