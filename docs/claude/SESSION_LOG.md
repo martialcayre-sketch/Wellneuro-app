@@ -9189,3 +9189,18 @@ Promotions : décision → aucune ; règle → aucune.
 **Prochaine action.** Merge, constat de la v5 servie, puis le code du LOT-07.
 
 **Questions ouvertes.** Intervalle de plus de 300 caractères ; questions BioFlow.
+
+## 2026-10-05 — BIO-PARCOURS BP-02 : constat d'usage
+
+**Décidé.** Ligne de base versée en agrégats, script rejouable. Le constat
+« aucun protocole 21 jours servi » est périmé : deux V4 ont été diffusés, sans
+check-in. Biologie : un dossier, un import à moitié décidé, aucune attente
+conditionnelle ; `clinical_rules` est vide.
+
+**Écarté.** Lire ligne par ligne les écarts d'unité, hors agrégats.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** BP-26, la trame.
+
+**Questions ouvertes.** Les 14 écarts d'unité textuels : graphie ou vraie divergence.
