@@ -38,6 +38,12 @@ paths:
   fermée → écrire depuis `main`, jamais en rebranchant sur la branche
   squashée.
 - `docs/claude/SESSION_LOG.md` est append-only.
+- **Identifiant de dossier sans métrique** (arbitrage du 2026-10-05) : dans
+  un fichier durable (`.wn/state.json`, handoff, `SESSION_LOG`, fiche, `D-xxx`),
+  un identifiant de dossier réel ne s'accompagne jamais de mesures qui en
+  décrivent le contenu (nombre de lignes, valeurs, constats). Écrire « un
+  dossier de test » et des agrégats. L'historique déjà versé ne se réécrit
+  pas ; les fixtures de code ne sont pas visées.
 - Ne pas supprimer, déplacer, fusionner ou archiver un document sans
   confirmation distincte ; préférer un lien vers la source canonique à une
   duplication.

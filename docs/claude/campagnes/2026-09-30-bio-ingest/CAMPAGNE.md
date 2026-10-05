@@ -81,7 +81,7 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 | LOT-06 | Catalogue étendu aux analyses d'un compte rendu courant | terminé (2026-10-04, D-261, D-263, D-264) | **oui, confirmation obligatoire** | LOT-02 |
 | LOT-07 | Faits du laboratoire : intervalle et marquage imprimés, transcrits avant la purge (ajouté par `D-266` §15) ; avancé avant LOT-04 | à_faire | **oui, confirmation obligatoire** | LOT-02, BP-00 et BP-01 (BIO-PARCOURS) |
 | LOT-08 | Durcissement : borne totale de l'appel d'extraction (flux compris) et délai explicite de la transaction des lignes | terminé (2026-10-05) | non | LOT-02 |
-| LOT-09 | « Relancer la lecture » d'un compte rendu sans ligne validée, jamais destructive | à_faire (non ordonnancé) | non | LOT-02 |
+| LOT-09 | « Relancer la lecture » d'un compte rendu sans ligne validée, jamais destructive | à_faire (juste après LOT-07, arbitré le 2026-10-05) | non | LOT-02, LOT-07 |
 
 **Lot courant : LOT-07** (déclaré le 2026-10-05). Ses dépendances sont
 satisfaites : LOT-02 terminé, BIO-PARCOURS BP-00 (#1307) et BP-01 (#1314)
