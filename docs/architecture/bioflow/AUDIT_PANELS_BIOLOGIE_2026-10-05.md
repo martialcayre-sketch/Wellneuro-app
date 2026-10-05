@@ -10,6 +10,23 @@
 > agrégats lus le 2026-10-05 dans une transaction en lecture seule, depuis un
 > conteneur `scalingo run -d`.
 
+## 0. Décision directrice du cadrage (§35)
+
+La chaîne visée est la suivante :
+
+```
+analytes canoniques + axes cliniques + règles sourcées
+  → proposition patient unique → validation praticien → NABM / conditions
+  → validation médecin → résultats → suivi longitudinal
+```
+
+Le cadrage écarte la multiplication des packs, qui produit des listes, des
+règles et des documents redondants. **Priorité immédiate : mesurer et
+rationaliser l'existant avant d'ajouter des packs ou des modèles.** Consigne :
+audit et proposition d'abord ; aucun refactoring avant la matrice réelle des
+`BiologyPanel`, de leurs consommateurs et des doublons mesurés. Ce document est
+cette matrice (§1 à §3) et cette proposition (§4 à §6).
+
 ## 1. Cartographie
 
 ### 1.1 Où vit la vérité du catalogue
