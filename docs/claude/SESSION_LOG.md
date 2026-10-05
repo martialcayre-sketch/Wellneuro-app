@@ -9190,6 +9190,22 @@ Promotions : décision → aucune ; règle → aucune.
 
 **Questions ouvertes.** Intervalle de plus de 300 caractères ; questions BioFlow.
 
+## 2026-10-05 — Nuit BioFlow : BP-26 (trame), état et blocages
+
+**Décidé.** Trame BP-26 versée, contre-revue corrigée. Fait relevé : la
+couverture des 12 besoins est servie au patient sans validation du
+praticien. Le suivi BioFlow est à jour.
+
+**Écarté.** BP-23, à cadrer en mode Plan (effet sur la diffusion), et
+BP-25 et la PR 1 des panels, qui relèvent du responsable.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** Relancer le déploiement bloqué depuis 17:52, constater
+la v5, merger #1330 puis cette PR, coder le LOT-07.
+
+**Questions ouvertes.** Le panneau J21 dans la trame ; MDCG 2019-11 à relire
+sur le texte officiel.
 ## 2026-10-05 — BIO-PARCOURS BP-02 : constat d'usage
 
 **Décidé.** Ligne de base versée en agrégats, script rejouable. Le constat
