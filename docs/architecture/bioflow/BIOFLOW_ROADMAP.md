@@ -21,6 +21,11 @@ BIOFLOW
 │   ├── prochain gate : G4, BP-26 avant toute assistance
 │   └── objectif      : l'exploitation longitudinale de la donnée validée
 │
+├── Socle terminologique — existant, à préserver (audit §3.4)
+│   ├── analytes, synonymes / resolver, NABM versionnée (ANS)
+│   ├── remboursement dérivé (remboursable.ts), correspondances signées
+│   └── LOINC [futur] : en complément de la NABM, jamais à sa place
+│
 ├── CROSS-TRACK GATES
 │   G1  BP-01 (levé, #1314) + décision préalable mergée → code LOT-07
 │   G2  LOT-07 livré                                    → purge, réconciliation des imports

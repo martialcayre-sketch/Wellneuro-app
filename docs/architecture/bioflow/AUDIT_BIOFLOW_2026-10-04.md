@@ -2,7 +2,8 @@
 
 > **Snapshot historique du 2026-10-04 : ne pas l'utiliser comme état courant
 > sans vérifier `main`.** Ce document est une photographie datée, versée
-> telle quelle le 2026-10-05. Il ne constitue ni une campagne, ni un backlog,
+> le 2026-10-05 et complétée le même jour par le §3.4 (NABM et
+> remboursement), avant tout usage. Il ne constitue ni une campagne, ni un backlog,
 > ni une autorisation de modifier le schéma (§16). Ce qui a changé depuis :
 >
 > - la borne totale d'extraction est corrigée (BIO-INGEST LOT-08, #1315 et
@@ -195,6 +196,113 @@ Le développement devait débuter par :
 Les fonctions d'assistance clinique ne doivent intervenir qu'après
 qualification fonctionnelle et réglementaire.
 
+### 3.4 NABM, cotation et remboursement : un actif à préserver
+
+Le premier versement de cet audit sous-estimait ce sous-système. Il est
+pourtant mûr, et c'est un actif propre à BioFlow en France.
+
+**Import NABM versionné.** La nomenclature est importée depuis le Serveur
+Multi-Terminologies de l'ANS (FHIR `$expand`).
+
+- La provenance est `nabm_smt_ans`.
+- Chaque import porte le millésime de la source.
+- Un snapshot canonique est conservé, avec son empreinte SHA-256 recalculée
+  par la base.
+- Des contrôles de couverture et un plancher de volumétrie refusent un
+  import incomplet.
+
+Champs repris pour chaque acte :
+
+- coefficient B ;
+- entente préalable ;
+- indication médicale ;
+- nombre maximal par facturation ;
+- RMO ;
+- remboursement total ;
+- acte réservé ;
+- incompatibilités ;
+- règles applicables ;
+- statut actif ou inactif.
+
+Code : `web/prisma/nabmImport.ts`.
+
+**Remboursement dérivé, jamais stocké.** Il n'existe pas de colonne
+`remboursable`. Le statut se calcule dans un seul fichier,
+`web/src/lib/biology-library/remboursable.ts`. La règle : il faut une
+correspondance analyte ↔ acte **signée**, vers un acte **actif** du
+millésime **courant**.
+
+Le calcul rend l'un de quatre états, jamais un booléen :
+
+| État | Sens |
+|---|---|
+| `non_evalue` | Aucune correspondance signée. Ce n'est pas « non remboursé ». |
+| `hors_nomenclature` | Aucune correspondance signée ne se résout sur un acte actif du millésime courant. |
+| `remboursable` | Au moins un acte cote l'analyte seul ou au choix. |
+| `remboursable_si_groupe` | L'analyte n'est coté qu'au sein d'un groupe imposé. |
+
+Trois conditions s'affichent à côté de l'état, sans jamais le modifier :
+
+- `entente_prealable` ;
+- `acte_reserve` ;
+- `remboursement_partiel`.
+
+**Correspondance analyte ↔ NABM.** Elle vit dans la relation
+`biology_analyte_nabm` : un code d'acte, une nature (`isole`, `groupe_et`,
+`groupe_ou`) et une vérification humaine (`verifie_par`, `verifie_le`). Une
+ligne non signée n'est qu'une proposition de rapprochement. La nature évite
+de déclarer remboursable seul un analyte qui ne l'est qu'en groupe.
+
+**Limite : le régime, pas le montant.** WellNeuro détermine le **régime**
+NABM d'un analyte, pas le montant remboursé en euros. La source ne porte
+qu'un coefficient, et la valeur de la lettre-clé relève d'un arrêté.
+L'interface n'affiche jamais d'euros. Annoncer « coûte X €, remboursé Y € »
+exigerait une source tarifaire officielle, versionnée par date, avec ses
+règles de prise en charge. C'est hors champ.
+
+#### Quatre principes d'architecture
+
+1. `remboursable.ts` reste la **seule source de dérivation** du
+   remboursement. Aucune colonne booléenne `remboursable`.
+2. L'import NABM de l'ANS, versionné et appuyé sur un snapshot à empreinte,
+   reste le **référentiel français des actes**.
+3. La correspondance analyte ↔ NABM n'est **jamais automatisée sans
+   contrôle**. Un algorithme peut proposer ; la correspondance de référence
+   reste validée par un humain.
+4. LOINC et NABM seront, le moment venu, **deux correspondances
+   complémentaires, jamais concurrentes** : LOINC ne remplace pas NABM.
+
+| Référentiel | Fonction |
+|---|---|
+| LOINC | Identifier sémantiquement une observation biologique ; faciliter l'interopérabilité. |
+| NABM | Nomenclature française des actes ; conditions de cotation et de remboursement. |
+| Catalogue WellNeuro | Objet clinique interne : l'analyte. |
+| Correspondances | Relier ces mondes, avec validation et versionnement. |
+
+#### Socle terminologique de BioFlow
+
+```text
+BioFlow Terminology Layer
+├── analytes WellNeuro
+├── synonymes / resolver
+├── NABM versionnée
+├── remboursement dérivé
+├── correspondances analyte ↔ NABM signées
+└── LOINC versionné [futur]
+```
+
+Un analyte se représente ainsi, sur le plan conceptuel :
+
+```text
+analyte
+├── WellNeuro : code du catalogue
+├── LOINC     : code(s) selon matrice et méthode [futur]
+└── NABM      : acte(s) français correspondant(s)
+                ├── coefficient B
+                ├── conditions
+                └── statut de remboursement dérivé
+```
+
 ---
 
 ## 4. Architecture cible
@@ -212,7 +320,7 @@ Elle est :
         ┌────────────┼────────────┐
         │            │            │
    terminology     ingest      parcours
-        │            │            │
+   (NABM, §3.4)      │            │
         └────────────┼────────────┘
                      │
                 PostgreSQL
@@ -643,7 +751,8 @@ Seulement après stabilisation :
 - idempotency keys ;
 - rate limiting ;
 - terminologies versionnées ;
-- LOINC si besoin démontré ;
+- LOINC si besoin démontré, en complément de la NABM et jamais à sa place
+  (§3.4) ;
 - webhooks.
 
 ### Phase P3 — SaaS/API pilote
@@ -753,6 +862,10 @@ Ne pas créer de registre de décisions parallèle.
    mais l'évolution biologique dans le temps.
 5. **Boucle clinique** : BIO-PARCOURS permet potentiellement de relier
    biologique, symptômes, questionnaires, alimentation, intervention et suivi.
+
+6. **Régime NABM** : au-delà de « ferritine = 43 », WellNeuro sait rattacher
+   l'analyse à ses actes français et à son régime de remboursement dérivé,
+   sans confondre régime et montant (§3.4).
 
 Ce niveau d'intégration peut devenir plus défendable qu'un simple OCR
 médical.

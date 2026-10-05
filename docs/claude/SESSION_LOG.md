@@ -9124,3 +9124,18 @@ Promotions : décision → aucune ; règle → aucune.
 **Prochaine action.** La décision préalable à LOT-07, sur feu vert.
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-05 — BioFlow : l'audit reconnaît NABM et le remboursement
+
+**Décidé.** L'audit gagne un §3.4, vérifié contre le dépôt : import NABM de
+l'ANS versionné, dérivation unique dans `remboursable.ts`, correspondance
+signée, régime sans montant. LOINC complète la NABM, il ne la remplace pas.
+La roadmap nomme le socle terminologique.
+
+**Écarté.** Un montant en euros (pas de source tarifaire) ; un nouveau lot.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** La décision préalable à LOT-07, sur feu vert.
+
+**Questions ouvertes.** Aucune.
