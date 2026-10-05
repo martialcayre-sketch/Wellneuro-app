@@ -1220,6 +1220,58 @@ const DONNEES_CONFIDENTIALITE_V12: VersionDocumentTrust = {
   hash: '0d22aa45b01640925153f5fa309ebbc2f3ea1abcb3195d3ec5b1a0c5a0b5efba',
 };
 
+/*
+ * v5 du 2026-10-05 — LE RELEVÉ S'ÉTEND AUX FAITS DU LABORATOIRE ([[D-267]] §8).
+ * `bio-extraction-v2` recopie aussi l'intervalle de référence et la marque
+ * d'anomalie TELS QU'IMPRIMÉS (§1, §4). La v4 ne nommait que les valeurs, les
+ * unités et la date : un relevé plus large que ce qu'elle déclare, c'est le
+ * sens qu'on ne prend pas. La v5 est servie et constatée AVANT le déploiement
+ * de `bio-extraction-v2` ; d'ici là elle déclare un peu plus que ce qui a lieu,
+ * le sens sûr retenu pour la v4.
+ *
+ * « NE DÉCLARE LUI-MÊME AUCUNE VALEUR NORMALE OU ANORMALE » : la marque est
+ * celle du laboratoire, recopiée, jamais déduite par comparaison à
+ * l'intervalle (§1). « Ce que l'IA ne fait jamais ici » ne change pas.
+ *
+ * SANS ACCUSÉ, comme la v4 : la séquence « Avant de commencer » ne présente
+ * pas ce document. « Vos données personnelles » reste en v12 : « l'outil en
+ * relève les valeurs » demeure vrai (§8).
+ */
+const USAGE_IA_V5: VersionDocumentTrust = {
+  key: 'usage_ia',
+  type: 'ai_transparency',
+  version: 'v5',
+  titre: 'L’intelligence artificielle dans Wellneuro',
+  resume:
+    'Où l’IA intervient, ce qu’elle fait, ce qu’elle ne fait jamais, et comment contester un contenu.',
+  sections: USAGE_IA_V4.sections.map(section =>
+    section.titre === 'Où l’IA intervient'
+      ? {
+          ...section,
+          paragraphes: section.paragraphes.map(paragraphe =>
+            paragraphe.startsWith('Le relevé des résultats')
+              ? paragraphe
+                  .replace(
+                    'l’outil en relève les valeurs, leurs unités et la date du prélèvement, et les lui propose.',
+                    'l’outil en relève les valeurs, leurs unités et la date du prélèvement, ainsi que l’intervalle de référence et la marque d’anomalie tels que le laboratoire les a imprimés, et les lui propose.',
+                  )
+                  .replace(
+                    'L’outil ne déclare aucune valeur normale ou anormale et n’en tire aucune conclusion.',
+                    'Ces deux mentions du laboratoire sont recopiées sans être complétées ni reformulées. L’outil ne déclare lui-même aucune valeur normale ou anormale et n’en tire aucune conclusion.',
+                  )
+              : paragraphe,
+          ),
+        }
+      : section,
+  ),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Le relevé des comptes rendus de vos analyses biologiques s’étend : l’outil relève aussi l’intervalle de référence et la marque d’anomalie tels que le laboratoire les a imprimés, et les recopie sans les compléter ni les reformuler. Il ne déclare toujours lui-même aucune valeur normale ou anormale et n’en tire aucune conclusion. Rien d’autre ne change.',
+  publieLe: '2026-10-05',
+  requiresAcknowledgement: false,
+  hash: 'bbaf61cecd4dbdb2d90f549aa2e607c1e5f7da682145068d43cb382d9b066b92',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1240,6 +1292,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   USAGE_IA_V2,
   USAGE_IA_V3,
   USAGE_IA_V4,
+  USAGE_IA_V5,
   DROITS_PATIENT_V1,
   CONSENTEMENT_SUIVI_V2,
   CONSENTEMENT_SUIVI_V3,

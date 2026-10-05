@@ -9173,3 +9173,19 @@ registre RGPD, puis le code du LOT-07.
 
 **Questions ouvertes.** Track C en campagne ou en lots BIO-PARCOURS ; axes en liste neuve ou via `NeuroAxis` ; signataire des
 correspondances NABM.
+
+## 2026-10-05 — LOT-07 : TRUST `usage_ia` v5 et registre RGPD
+
+**Décidé.** `usage_ia` v5 sans accusé : le relevé nomme l'intervalle et la
+marque imprimés, recopiés sans complément. `donnees_confidentialite` reste en
+v12. Dossier RGPD : §2 ter, table santé, rubrique 8, note au réexamen AIPD.
+La ligne du drapeau exige la v5 avant `bio-extraction-v2`.
+
+**Écarté.** Une v13 avec accusé (`D-267` §8) ; conclure sur l'AIPD à la place
+du responsable.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** Merge, constat de la v5 servie, puis le code du LOT-07.
+
+**Questions ouvertes.** Intervalle de plus de 300 caractères ; questions BioFlow.
