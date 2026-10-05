@@ -19,6 +19,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const hook = path.join(
@@ -189,3 +190,130 @@ test("file_path hostile (objet, null) : silence, jamais un crash", () => {
     assert.equal(res.stdout || "", "");
   }
 });
+
+// ── Tables signées détectées par leur marqueur (BP-01, D-266) ───────────────
+// La liste littérale a laissé hors du hook neuf tables signées après le
+// Socle. Le marqueur `validationExterne: true` (hors commentaire) fait
+// désormais foi : sur disque, et dans le contenu entrant d'un Write ou d'un
+// Edit — une table signée NEUVE demande dès sa création.
+
+function jugementBrut(toolInput) {
+  const res = spawnSync("node", [hook], {
+    input: JSON.stringify({ tool_input: toolInput }),
+    encoding: "utf8",
+  });
+  const sortie = res.stdout || "";
+  return { verdict: sortie.includes('"ask"') ? "demande" : "passe", sortie, status: res.status };
+}
+
+const racine = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const sansCommentaires = (texte) =>
+  texte.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
+const signesSuivis = spawnSync(
+  "git", ["grep", "-l", "validationExterne:", "--", "web/src"], { cwd: racine, encoding: "utf8" },
+).stdout.split("\n").filter(Boolean)
+  .filter((f) => /\.tsx?$/.test(f) && !/\.(test|spec)\.tsx?$/.test(f))
+  .filter((f) => /validationExterne:\s*true/.test(sansCommentaires(readFileSync(path.join(racine, f), "utf8"))));
+
+test("le dépôt porte au moins les quatorze tables signées du jour de BP-01", () => {
+  assert.ok(signesSuivis.length >= 14, `trouvées : ${signesSuivis.length}`);
+});
+
+for (const chemin of signesSuivis) {
+  test(`demande table signée (marqueur) : ${chemin}`, () => {
+    const j = jugementBrut({ file_path: path.join(racine, chemin) });
+    assert.equal(j.verdict, "demande");
+    assert.match(j.sortie, /DC-17/);
+  });
+}
+
+test("Write d'une table signée NEUVE : demande dès la création", () => {
+  const j = jugementBrut({
+    file_path: path.join(racine, "web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts"),
+    content: "export const META = {\n  validationExterne: true,\n};\n",
+  });
+  assert.equal(j.verdict, "demande");
+  assert.match(j.sortie, /validationExterne/);
+});
+
+test("Edit qui pose le marqueur sur un fichier ordinaire : demande", () => {
+  const j = jugementBrut({
+    file_path: path.join(racine, "web/src/lib/documents/vocabulaire.ts"),
+    old_string: "x",
+    new_string: "  validationExterne: true,",
+  });
+  assert.equal(j.verdict, "demande");
+});
+
+test("MultiEdit qui pose le marqueur : demande", () => {
+  const j = jugementBrut({
+    file_path: path.join(racine, "web/src/lib/documents/vocabulaire.ts"),
+    edits: [{ old_string: "a", new_string: "b" }, { old_string: "c", new_string: "validationExterne: true" }],
+  });
+  assert.equal(j.verdict, "demande");
+});
+
+for (const [cas, entree] of [
+  ["extension .mts", { file_path: path.join(racine, "web/src/lib/neuf/table.mts"), content: "export const M = { validationExterne: true };" }],
+  ["extension .cts", { file_path: path.join(racine, "web/src/lib/neuf/table.cts"), content: "export const M = { validationExterne: true };" }],
+  ["clé entre guillemets (JSON)", { file_path: path.join(racine, "web/src/lib/neuf/table.json"), content: '{ "validationExterne": true }' }],
+]) {
+  test(`demande table signée : ${cas}`, () => {
+    assert.equal(jugementBrut(entree).verdict, "demande");
+  });
+}
+
+test("Edit qui bascule le verrou false → true (source résultant jugé) : demande", () => {
+  const j = jugementBrut({
+    file_path: path.join(racine, "web/src/lib/clinical/replisAssietteV1.ts"),
+    // Le fragment ne porte pas le marqueur complet : seul le source
+    // RÉSULTANT le porte (contournement relevé par la revue Copilot).
+    old_string: "Externe: false,",
+    new_string: "Externe: true,",
+  });
+  assert.equal(j.verdict, "demande");
+});
+
+test("Edit qui ne touche qu'un mot du verrou (fragment sans le marqueur) : demande", () => {
+  const j = jugementBrut({
+    file_path: path.join(racine, "web/src/lib/neuf/fictif.ts"),
+    content: undefined,
+    old_string: "false",
+    new_string: "true",
+  });
+  // Fichier absent du disque : rien à appliquer, silence attendu ; le cas
+  // réel (fichier présent) est couvert ci-dessus.
+  assert.equal(j.verdict, "passe");
+});
+
+test("le hook ne se demande pas confirmation pour sa propre édition", () => {
+  assert.equal(jugementBrut({ file_path: path.join(racine, ".claude/hooks/protect-wellneuro-files.mjs") }).verdict, "passe");
+});
+
+for (const [cas, entree] of [
+  ["marqueur en commentaire de fin de ligne", {
+    file_path: path.join(racine, "web/src/lib/neuf/z.ts"),
+    content: "const x = 'http://exemple'; // validationExterne: true\n",
+  }],
+  ["marqueur en commentaire seulement", {
+    file_path: path.join(racine, "web/src/lib/neuf/x.ts"),
+    content: "// une table signée porte `validationExterne: true`\n/* validationExterne: true */\n",
+  }],
+  ["table au verrou éteint (validationExterne: false)", {
+    file_path: path.join(racine, "web/src/lib/clinical/replisAssietteV1.ts"),
+  }],
+  ["compagnon de test d'une table signée", {
+    file_path: path.join(racine, "web/src/lib/clinical/safetySignalsV1.test.ts"),
+    content: "const META = { validationExterne: true };",
+  }],
+  ["fichier neuf ordinaire", {
+    file_path: path.join(racine, "web/src/lib/neuf/y.ts"),
+    content: "export const x = 1;\n",
+  }],
+]) {
+  test(`silence : ${cas}`, () => {
+    const j = jugementBrut(entree);
+    assert.equal(j.status, 0);
+    assert.equal(j.verdict, "passe");
+  });
+}

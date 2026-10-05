@@ -11,6 +11,7 @@ import {
 } from '@/lib/patient/cycleDeVie';
 import { isCbEnabled } from '@/lib/biology-library/featureFlag';
 import { preparerArbitrage } from '@/lib/biology-library/arbitrage';
+import { signature } from '@/lib/biology-library/saisieMessages';
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
 import { resolveActiveVersion } from '@/lib/protocol/versioning';
 
@@ -138,7 +139,7 @@ export async function GET(req: Request) {
       arbitrages: lignes.map(exposer),
     });
   } catch (err) {
-    console.error('[praticien/biologie/arbitrage GET]', err instanceof Error ? err.message : String(err));
+    console.error('[praticien/biologie/arbitrage GET]', signature(err));
     return echec('server_error', 'Erreur technique.', 500);
   }
 }
@@ -248,7 +249,7 @@ export async function POST(req: Request) {
       throw err;
     }
   } catch (err) {
-    console.error('[praticien/biologie/arbitrage POST]', err instanceof Error ? err.message : String(err));
+    console.error('[praticien/biologie/arbitrage POST]', signature(err));
     return echec('server_error', 'Erreur technique.', 500);
   }
 }
