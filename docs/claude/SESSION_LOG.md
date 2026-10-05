@@ -9089,3 +9089,22 @@ Promotions : décision → aucune ; règle → aucune.
 
 **Questions ouvertes.** La dette auto-merge ; des copies anciennes d'un
 identifiant de dossier.
+
+## 2026-10-05 — Gouvernance : incohérences 3, 4 et 5 tranchées
+
+**Décidé.**
+- Identifiant de dossier : une règle prospective, sans mesure de contenu dans
+  un fichier durable ; la copie vivante est retirée de l'état.
+- Dette auto-merge : inscrite au registre de dette, comme lot outillage à
+  faire.
+- LOT-09 : placé juste après LOT-07.
+
+**Écarté.** Purger l'identifiant de l'historique (documents datés, journal en
+ajout seul) ; implémenter le check CI dès maintenant.
+
+Promotions : décision → aucune ; règle → `.claude/rules/docs-changelog.md`
+(identifiant sans mesure).
+
+**Prochaine action.** La décision préalable au LOT-07, sur feu vert.
+
+**Questions ouvertes.** L'état des lieux du 2026-10-04 reste à verser.

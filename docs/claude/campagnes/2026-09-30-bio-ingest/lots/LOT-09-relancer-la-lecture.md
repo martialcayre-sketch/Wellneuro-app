@@ -2,7 +2,7 @@
 id: "LOT-09"
 titre: "Relancer la lecture d'un compte rendu sans ligne validée"
 statut: "à_faire"
-dépend_de: "LOT-02"
+dépend_de: "LOT-02, LOT-07"
 ---
 
 # LOT-09 — Relancer la lecture d'un compte rendu sans ligne validée
@@ -56,8 +56,11 @@ nouvel import, et ses lignes candidates sont relues comme au LOT-02.
 
 ## Dépendances
 
-LOT-02. Ordonnancement à fixer par le responsable : ce lot ne figure pas dans
-l'ordre arbitré le 2026-10-05.
+LOT-02 ; LOT-07. Le responsable a placé ce lot juste après LOT-07 le
+2026-10-05, avant le chantier worker. LOT-07 change le procédé d'extraction
+(intervalle et marquage imprimés) ; la relance devient alors le moyen de
+relire, sous le nouveau procédé, un compte rendu dont aucune ligne n'est
+validée.
 
 ## Étapes
 
