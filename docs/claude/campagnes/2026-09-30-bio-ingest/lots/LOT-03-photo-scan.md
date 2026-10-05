@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Photo ou scan"
-statut: "terminé"
+statut: "terminé (2026-10-04)"
 dépend_de: "LOT-02"
 ---
 
@@ -73,3 +73,10 @@ admettait déjà JPEG, PNG et WebP, et le §2 ter du dossier RGPD déclarait dé
   schéma, procédé `bio-extraction-v1` inchangé.
 - **Hors lot** : un compte rendu de plusieurs pages en plusieurs photos (une
   photo par dépôt) ; HEIC.
+- **Non livré : « Relancer la lecture »**. Le geste avait été rattaché au
+  LOT-03 lors de l'arbitrage du 2026-10-03, et la PR du lot ne l'a pas porté.
+  Le 2026-10-05, le responsable l'a déplacé vers sa propre fiche, le
+  [LOT-09](LOT-09-relancer-la-lecture.md), sans le rattacher au LOT-07. Aucune
+  relance n'y est permise après qu'une ligne a été validée.
+- **Clôture administrative** : le 2026-10-05, la campagne et `.wn/state.json`
+  marquaient encore le LOT-03 « à_faire » et courant ; ils sont réalignés.

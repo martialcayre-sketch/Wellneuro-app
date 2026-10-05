@@ -1,10 +1,10 @@
 ---
 id: "2026-09-30-bio-ingest"
 titre: "BIO-INGEST — acquisition des résultats biologiques"
-statut: "en_cours (ouverte le 2026-09-30 — LOT-00, LOT-01, LOT-02 et LOT-06 terminés ; LOT-03 courant, arbitré le 2026-10-03)"
+statut: "en_cours (ouverte le 2026-09-30 — LOT-00, LOT-01, LOT-02, LOT-03, LOT-06 et LOT-08 terminés ; LOT-07 courant, déclaré le 2026-10-05)"
 créée_le: "2026-09-30"
-mise_à_jour: "2026-10-04"
-lot_courant: "LOT-03"
+mise_à_jour: "2026-10-05"
+lot_courant: "LOT-07"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -75,18 +75,23 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 | LOT-00 | Cadrage, `D-256`, ouverture de la campagne | terminé (PR #1269) | non | — |
 | LOT-01 | Saisie groupée praticien, route batch transactionnelle | terminé (2026-10-01) | non | LOT-00 |
 | LOT-02 | Staging d'import, extraction PDF par IA vision, écran de validation | terminé (2026-10-03) | **oui, confirmation obligatoire** | LOT-01, amendement RGPD/TRUST |
-| LOT-03 | Photo ou scan : même pipeline, seul l'extracteur change | à_faire | non | LOT-02 |
+| LOT-03 | Photo ou scan : même pipeline, seul l'extracteur change | terminé (2026-10-04, #1310, #1312) ; « Relancer la lecture » non livré, déplacé au LOT-09 | non | LOT-02 |
 | LOT-04 | Transmission depuis le portail patient | à_faire | probable, confirmation obligatoire | LOT-02, consentement RGPD à jour, LOT-07, BP-10 (BIO-PARCOURS, `D-266` §15) |
 | LOT-05 | Adaptateur laboratoire (pilote Barbier Metz) | à_faire | selon le format reçu | LOT-02, format réel reçu |
 | LOT-06 | Catalogue étendu aux analyses d'un compte rendu courant | terminé (2026-10-04, D-261, D-263, D-264) | **oui, confirmation obligatoire** | LOT-02 |
 | LOT-07 | Faits du laboratoire : intervalle et marquage imprimés, transcrits avant la purge (ajouté par `D-266` §15) ; avancé avant LOT-04 | à_faire | **oui, confirmation obligatoire** | LOT-02, BP-00 et BP-01 (BIO-PARCOURS) |
 | LOT-08 | Durcissement : borne totale de l'appel d'extraction (flux compris) et délai explicite de la transaction des lignes | terminé (2026-10-05) | non | LOT-02 |
+| LOT-09 | « Relancer la lecture » d'un compte rendu sans ligne validée, jamais destructive | à_faire (non ordonnancé) | non | LOT-02 |
 
-**Reste ouvert, rattaché au LOT-03** (constaté au LOT-06, 2026-10-03) : un import
-`extrait` n'offre aucun bouton « Relancer la lecture » (`ImportCompteRenduPanel.tsx`, `peutLancer`).
-Toute évolution du resolver ne profite donc à un compte rendu déjà lu qu'après retrait et nouveau
-dépôt, ce qui efface la lecture précédente. La route accepte déjà une nouvelle extraction du même
-document : seul l'écran manque.
+**Lot courant : LOT-07** (déclaré le 2026-10-05). Ses dépendances sont
+satisfaites : LOT-02 terminé, BIO-PARCOURS BP-00 (#1307) et BP-01 (#1314)
+mergés. Sa première étape est la décision préalable, à réserver dans `main` ;
+aucun code ni aucune migration avant que cette décision soit mergée.
+
+**« Relancer la lecture »** (constaté au LOT-06, 2026-10-03) : ce geste
+n'a pas été livré au LOT-03. Le responsable l'a déplacé le 2026-10-05 vers sa
+propre fiche, le LOT-09, hors LOT-07. Aucune relance n'y est permise après
+qu'une ligne a été validée.
 
 ## Hors périmètre, nommé
 
