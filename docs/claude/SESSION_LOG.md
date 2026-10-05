@@ -9193,8 +9193,8 @@ Promotions : décision → aucune ; règle → aucune.
 ## 2026-10-05 — BIO-PARCOURS BP-02 : constat d'usage
 
 **Décidé.** Ligne de base versée en agrégats, script rejouable. Le constat
-« aucun protocole 21 jours servi » est périmé : deux V4 ont été diffusés, sans
-check-in. Biologie : un dossier, un import à moitié décidé, aucune attente
+« aucun protocole 21 jours servi » est à nuancer : deux V4 sont approuvés pour
+diffusion, sans check-in ; le service effectif n'est pas vérifié. Biologie : un dossier, un import à moitié décidé, aucune attente
 conditionnelle ; `clinical_rules` est vide.
 
 **Écarté.** Lire ligne par ligne les écarts d'unité, hors agrégats.

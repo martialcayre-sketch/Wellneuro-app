@@ -65,6 +65,6 @@ Note datée versée ; aucun identifiant ni nom dans le dépôt.
 ## Résultats
 
 Note versée : `CONSTAT_USAGE_2026-10-05.md` (script `CONSTAT_USAGE_BP02.sql`).
-Le constat « aucun protocole 21 jours servi » est périmé : deux V4 ont été
-diffusés, sans check-in. `clinical_rules` et `biology_analyte_links` sont
+Deux V4 sont approuvés pour diffusion (0 au 2026-09-26), sans check-in.
+Le service effectif au portail n'est pas vérifié par ces agrégats. `clinical_rules` et `biology_analyte_links` sont
 vides ; il n'y a aucune attente `conditionnelle_biologie`.

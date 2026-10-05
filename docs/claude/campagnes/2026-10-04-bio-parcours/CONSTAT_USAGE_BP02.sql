@@ -35,10 +35,13 @@ GROUP BY i.modele, i.version_prompt, l.statut ORDER BY i.modele, i.version_promp
 SELECT 'lignes_ecartees_par_motif' AS libelle, motif_ecart, count(*) AS valeur
 FROM lignes_biologiques_candidates WHERE statut = 'ecartee' GROUP BY motif_ecart ORDER BY motif_ecart;
 
--- 08 refus d'unité (proxy) : lignes encore proposées/écartées dont l'unité lue diffère de l'unité du catalogue pour l'analyte proposé
+-- 08 écart textuel d'unité (proxy, pas un refus) : unité lue ≠ unité du catalogue.
+--    Lignes validées : analyte RETENU par le praticien (id_resultat → resultats_biologiques.analyte_code),
+--    qui peut différer de analyte_propose (decisions.ts). Autres statuts : analyte proposé.
 SELECT 'lignes_unite_lue_differe_catalogue' AS libelle, l.statut, count(*) AS valeur
 FROM lignes_biologiques_candidates l
-JOIN biology_analytes a ON a.code = l.analyte_propose
+LEFT JOIN resultats_biologiques r ON r.id = l.id_resultat AND l.statut = 'validee'
+JOIN biology_analytes a ON a.code = CASE WHEN l.statut = 'validee' THEN r.analyte_code ELSE l.analyte_propose END
 WHERE l.unite_lue IS DISTINCT FROM a.unite
 GROUP BY l.statut ORDER BY l.statut;
 
@@ -87,12 +90,20 @@ FROM protocol_drafts d,
      jsonb_array_elements(CASE WHEN jsonb_typeof(d.payload->'actions') = 'array' THEN d.payload->'actions' ELSE '[]'::jsonb END) AS act
 GROUP BY 2 ORDER BY 2;
 
--- 16 véhicule 1 : intentions conditionnelle_biologie sur la VERSION ACTIVE (dernier draft du dossier : aucun supersede ne le pointe)
+-- 16 véhicule 1 : intentions conditionnelle_biologie sur la VERSION ACTIVE, une par (dossier, carte de décision),
+--    comme resolveActiveVersion (versioning.ts) : têtes non supplantées, puis created_at puis id décroissants.
+WITH tetes AS (
+  SELECT d.* FROM protocol_drafts d
+  WHERE NOT EXISTS (SELECT 1 FROM protocol_drafts s WHERE s.supersedes_draft_id = d.id
+                      AND s.id_patient = d.id_patient AND s.decision_card_id = d.decision_card_id)
+), actives AS (
+  SELECT DISTINCT ON (id_patient, decision_card_id) *
+  FROM tetes ORDER BY id_patient, decision_card_id, created_at DESC, id DESC
+)
 SELECT 'v1_cond_bio_sur_version_active' AS libelle, count(DISTINCT d.id) AS drafts, count(*) AS intentions
-FROM protocol_drafts d,
+FROM actives d,
      jsonb_array_elements(CASE WHEN jsonb_typeof(d.payload->'actions') = 'array' THEN d.payload->'actions' ELSE '[]'::jsonb END) AS act
-WHERE act->>'interventionStatus' = 'conditionnelle_biologie'
-  AND NOT EXISTS (SELECT 1 FROM protocol_drafts s WHERE s.supersedes_draft_id = d.id);
+WHERE act->>'interventionStatus' = 'conditionnelle_biologie';
 
 -- 17 véhicule 1 : arbitrages biologiques rendus, par verdict
 SELECT 'arbitrages_par_verdict' AS libelle, verdict, count(*) AS valeur
