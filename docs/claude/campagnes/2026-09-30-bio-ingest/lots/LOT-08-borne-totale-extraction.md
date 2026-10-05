@@ -83,8 +83,20 @@ verts, CI à 0.
   rouge constatée) ; après, il est clos `delai_depasse`.
 - Écart à l'état des lieux du 2026-10-04 : la transaction des lignes n'était
   pas « sans timeout » mais bornée aux 5 s implicites de Prisma. Le délai
-  devient explicite et cohérent avec le verrou que peut tenir une décision
-  (20 s).
+  devient explicite (20 s). Il court attente du verrou comprise : si une
+  décision tenait le verrou ses 20 s entières, la transaction expirerait et
+  l'import serait clos `reponse_invalide`, motif inexact mais échec sûr et
+  relançable (cas extrême, une décision dure quelques millisecondes ; c'était
+  pire à 5 s). Le classement de cette expiration en `delai_depasse` est laissé
+  à un lot ultérieur.
+- Revue `wn-reviewer` : GO, aucun P0 ni P1. P2 traités : valeur exacte de la
+  borne testée ; attente du verrou documentée. P2 accepté : une borne qui
+  tombe entre la fin du flux et sa résolution donne un `delai_depasse`
+  relançable (fenêtre de quelques microtâches).
+- Reste à constater sur Scalingo : le client prend le `fetch` global, modifié
+  par Next 15, dans `after()`. La preuve hors dépôt porte sur le `fetch` de
+  Node nu. Un appel interrompu doit y finir `delai_depasse` ; ce constat
+  rejoint celui de `after()` qu'attend déjà la fiche LOT-02.
 - Risque résiduel : un compte rendu dense légitime de plus de 240 s finirait
   en échec, relançable à la main. 36 s ont été mesurées pour 75 lignes, ~95 s
   estimées pour 200.

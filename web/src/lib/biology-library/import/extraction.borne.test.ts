@@ -13,7 +13,7 @@ vi.mock('@/lib/anthropic', async () => {
   return { anthropic: new Anthropic({ apiKey: 'cle-de-test', fetch: (url, init) => faux.fetch(url, init) }) };
 });
 
-import { extraireCompteRendu } from './extraction';
+import { DUREE_TOTALE_EXTRACTION_MS, extraireCompteRendu } from './extraction';
 import { PEREMPTION_EN_COURS_MS } from './verrou';
 
 const encodeur = new TextEncoder();
@@ -84,6 +84,15 @@ describe('extraireCompteRendu — borne totale, sur le vrai client du SDK', () =
     faux.fetch = fluxSansFin();
     const issue = extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf');
     await vi.advanceTimersByTimeAsync(PEREMPTION_EN_COURS_MS);
+    expect(await Promise.race([issue, Promise.resolve(EN_ATTENTE)])).toEqual({ ok: false, motif: 'delai_depasse' });
+  });
+
+  it('la borne tombe à `DUREE_TOTALE_EXTRACTION_MS`, ni avant ni après', async () => {
+    faux.fetch = fluxSansFin();
+    const issue = extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf');
+    await vi.advanceTimersByTimeAsync(DUREE_TOTALE_EXTRACTION_MS - 1);
+    expect(await Promise.race([issue, Promise.resolve(EN_ATTENTE)])).toBe(EN_ATTENTE);
+    await vi.advanceTimersByTimeAsync(1);
     expect(await Promise.race([issue, Promise.resolve(EN_ATTENTE)])).toEqual({ ok: false, motif: 'delai_depasse' });
   });
 
