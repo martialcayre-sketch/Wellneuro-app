@@ -11,6 +11,7 @@ vi.mock('@/lib/anthropic', () => ({
 import {
   analyserSortieExtraction,
   DELAI_EXTRACTION_MS,
+  DUREE_TOTALE_EXTRACTION_MS,
   extraireCompteRendu,
   heureLisible,
   lireDatePrelevement,
@@ -18,7 +19,7 @@ import {
   motifDErreur,
   TENTATIVES_SUPPLEMENTAIRES,
 } from './extraction';
-import { PEREMPTION_EN_COURS_MS } from './verrou';
+import { DELAI_TRANSACTION_LIGNES_MS, PEREMPTION_EN_COURS_MS } from './verrou';
 
 const SORTIE = {
   lisible: true,
@@ -144,7 +145,7 @@ describe('extraireCompteRendu — l’appel', () => {
       type: 'document',
       source: { type: 'base64', media_type: 'application/pdf', data: pdf.toString('base64') },
     });
-    expect(options).toMatchObject({ timeout: 180_000, maxRetries: 0 });
+    expect(options).toMatchObject({ timeout: 180_000, maxRetries: 0, signal: expect.any(AbortSignal) });
   });
 
   it('envoie une photo ENTIÈRE en bloc image, sous la même consigne (LOT-03)', async () => {
@@ -160,9 +161,14 @@ describe('extraireCompteRendu — l’appel', () => {
     expect(params.messages[0].content[1]).toEqual({ type: 'text', text: 'Relève les résultats de ce compte rendu.' });
   });
 
-  it('le pire cas d’un appel reste sous la péremption d’un import en cours', () => {
+  it('le pire cas d’une extraction reste sous la péremption d’un import en cours', () => {
     // Sinon une suite encore vivante serait close `delai_depasse` par une relance.
-    expect(DELAI_EXTRACTION_MS * (1 + TENTATIVES_SUPPLEMENTAIRES)).toBeLessThan(PEREMPTION_EN_COURS_MS);
+    // Le délai des en-têtes ne borne pas le flux : c'est la durée totale qui compte
+    // (sa preuve sur le vrai client : `extraction.borne.test.ts`).
+    expect(TENTATIVES_SUPPLEMENTAIRES).toBe(0);
+    expect(DELAI_EXTRACTION_MS).toBeLessThan(DUREE_TOTALE_EXTRACTION_MS);
+    const MARGE_MS = 30_000; // lecture du document, attente d'une connexion (2 s par défaut)
+    expect(DUREE_TOTALE_EXTRACTION_MS + DELAI_TRANSACTION_LIGNES_MS + MARGE_MS).toBeLessThanOrEqual(PEREMPTION_EN_COURS_MS);
   });
 
   it('classe les échecs en motifs fermés', async () => {
@@ -178,6 +184,7 @@ describe('extraireCompteRendu — l’appel', () => {
 
   it('motifDErreur ne lit jamais le message', () => {
     expect(motifDErreur(new Anthropic.APIConnectionTimeoutError())).toBe('delai_depasse');
+    expect(motifDErreur(new Anthropic.APIUserAbortError())).toBe('delai_depasse');
     expect(motifDErreur(null)).toBe('erreur_fournisseur');
   });
 });

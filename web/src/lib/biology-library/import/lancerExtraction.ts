@@ -8,7 +8,7 @@ import {
 } from './extraction';
 import { estTypeCompteRendu } from './depot';
 import { resoudreLigne } from './resolverLibellesV1';
-import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
+import { cleVerrouCompteRendu, DELAI_TRANSACTION_LIGNES_MS, PEREMPTION_EN_COURS_MS } from './verrou';
 
 // ORCHESTRATION D'UNE EXTRACTION (BIO-INGEST LOT-02, [[D-256]] A4/A5).
 //
@@ -17,7 +17,8 @@ import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
 //    est COMMITÉ AVANT l'appel : la trace existe même si le processus meurt
 //    pendant l'appel (promesse de la v4 : « enregistrés à chaque fois ») ;
 // 2. l'appel au fournisseur, HORS de toute transaction — on ne tient pas une
-//    transaction Postgres ouverte pendant deux minutes d'appel réseau ;
+//    transaction Postgres ouverte pendant des minutes d'appel réseau ; l'appel
+//    entier est borné (`DUREE_TOTALE_EXTRACTION_MS`) ;
 // 3. UNE transaction interactive : les lignes, PUIS la terminaison. Jamais
 //    d'écriture imbriquée Prisma, qui terminerait l'import avant ses lignes —
 //    la base refuserait alors les lignes d'un import qui n'est plus en cours
@@ -181,7 +182,7 @@ export async function poursuivreExtraction(params: {
         data: { statut: 'extrait', laboratoireLu: resultat.laboratoire },
       });
       return true;
-    });
+    }, { timeout: DELAI_TRANSACTION_LIGNES_MS });
     if (!encoreOuvert) return { ok: false, reason: 'import_clos' };
   } catch (err) {
     // La réponse a produit des lignes que la base refuse (une contrainte, une
