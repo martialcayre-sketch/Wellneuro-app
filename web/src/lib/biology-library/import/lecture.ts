@@ -16,6 +16,15 @@ export type LigneLue = {
   preleveLeLu: string | null;
   /** L'heure a été lue sur le compte rendu ([[D-258]]) — sinon `preleveLeLu` est un minuit de Paris. */
   heureLue: boolean;
+  /**
+   * Faits du laboratoire TELS QU'IMPRIMÉS ([[D-267]]) — affichés seuls,
+   * attribués au laboratoire ; jamais modifiables (la base les fige).
+   */
+  intervalleLu: string | null;
+  marquageLu: string | null;
+  /** Imprimé mais trop long pour être transcrit : à lire sur le document (§10). */
+  intervalleNonTranscrit: boolean;
+  marquageNonTranscrit: boolean;
   analytePropose: string | null;
   statutMapping: string;
   statut: string;
@@ -108,7 +117,9 @@ export async function lireCompteRendu(
             orderBy: { rang: 'asc' },
             select: {
               id: true, rang: true, page: true, libelleLu: true, valeurLue: true, uniteLue: true,
-              preleveLeLu: true, heureLue: true, analytePropose: true, statutMapping: true, statut: true,
+              preleveLeLu: true, heureLue: true, intervalleLu: true, marquageLu: true,
+              intervalleNonTranscrit: true, marquageNonTranscrit: true,
+              analytePropose: true, statutMapping: true, statut: true,
               motifEcart: true, idResultat: true,
             },
           },

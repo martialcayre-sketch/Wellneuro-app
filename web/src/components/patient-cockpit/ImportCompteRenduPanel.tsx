@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { lireValeurQuantitative, unitesConcordent, type MotifEcart } from '@/lib/biology-library/import/valeurLue';
 import type { CompteRenduLu, LigneLue } from '@/lib/biology-library/import/lecture';
 import type { AnalyteChoix } from './SaisieBilan';
+import { FaitsDuLaboratoire } from './FaitsDuLaboratoire';
 
 // IMPORT D'UN COMPTE RENDU DE LABORATOIRE (BIO-INGEST LOT-02, [[D-256]]),
 // derrière `WN_BIO_INGEST_ENABLED`. Quatre gestes, tous du praticien :
@@ -661,6 +662,12 @@ function LigneImport({
             ? 'Validée'
             : `Écartée${ligne.motifEcart ? ` (${LIBELLES_MOTIF[ligne.motifEcart as MotifEcart] ?? ligne.motifEcart})` : ''}`}
         </Badge>
+        <FaitsDuLaboratoire
+          intervalle={ligne.intervalleLu}
+          marquage={ligne.marquageLu}
+          intervalleNonTranscrit={ligne.intervalleNonTranscrit}
+          marquageNonTranscrit={ligne.marquageNonTranscrit}
+        />
       </li>
     );
   }
@@ -685,6 +692,12 @@ function LigneImport({
         <span className="text-xs text-muted-foreground">p. {ligne.page} — </span>
         {lue}
       </p>
+      <FaitsDuLaboratoire
+        intervalle={ligne.intervalleLu}
+        marquage={ligne.marquageLu}
+        intervalleNonTranscrit={ligne.intervalleNonTranscrit}
+        marquageNonTranscrit={ligne.marquageNonTranscrit}
+      />
       {ligne.preMarquage && (
         <p className="mt-1 text-xs text-muted-foreground">Signalé : {LIBELLES_MOTIF[ligne.preMarquage]}</p>
       )}

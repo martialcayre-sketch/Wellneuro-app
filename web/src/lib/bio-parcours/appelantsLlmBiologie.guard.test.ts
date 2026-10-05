@@ -26,6 +26,10 @@ const EXEMPTES = ['web/src/lib/biology-library/import/extraction.ts'];
 const CHAMPS_SORTIE_EXTRACTION = [
   'lisible', 'laboratoire', 'lignes', 'items',
   'page', 'libelle', 'valeur', 'unite', 'date_prelevement', 'heure_prelevement',
+  // [[D-267]] (LOT-07, jugé à la revue) : deux faits RECOPIÉS tels qu'imprimés,
+  // nullables, jamais rédigés — l'exemption tient : ils sont validés ligne à
+  // ligne avec la valeur, et restitués attribués au laboratoire.
+  'intervalle_reference', 'marquage',
 ];
 
 function appelleUnLlm(specs: readonly string[]): boolean {

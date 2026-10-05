@@ -26,6 +26,7 @@ const ANALYTES = [
 function ligne(partiel: Partial<LigneLue> & { id: string; libelleLu: string; valeurLue: string }): LigneLue {
   return {
     rang: 1, page: 1, uniteLue: 'ng/mL', preleveLeLu: A_0830, heureLue: true, analytePropose: null, statutMapping: 'inconnu',
+    intervalleLu: null, marquageLu: null, intervalleNonTranscrit: false, marquageNonTranscrit: false,
     statut: 'proposee', motifEcart: null, idResultat: null, preMarquage: null, ...partiel,
   };
 }
@@ -239,6 +240,44 @@ describe('ImportCompteRenduPanel — décisions', () => {
     expect((ligneAffichee(/Fer sérique : 17,2/).getByLabelText('Plus tard') as HTMLInputElement).checked).toBe(true);
     // Le pré-positionnement n'envoie rien de lui-même.
     expect(appels(fetchMock, '/import/decisions')).toHaveLength(0);
+  });
+
+  // FAITS DU LABORATOIRE ([[D-267]] §5, §10) : juxtaposés et attribués,
+  // sans statut ni priorité — la marque « H » ne change pas le choix proposé.
+  it('les faits imprimés s’affichent attribués, et la marque ne change pas le choix proposé', async () => {
+    expect(choixInitial({ analytePropose: 'BIO_FERRITINE', preMarquage: null })).toBe('valider');
+    serveur({
+      detail: () => compteRendu('extrait', [
+        ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48', analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu',
+          intervalleLu: '30 – 400', marquageLu: 'H' }),
+      ]),
+    });
+    await rendreEtOuvrir();
+    const ferritine = ligneAffichee(/Ferritine : 48/);
+    expect(ferritine.getByText(/Imprimé par le laboratoire/)).toBeTruthy();
+    expect(ferritine.getByText(/intervalle 30 – 400/)).toBeTruthy();
+    expect(ferritine.getByText('H').getAttribute('data-fait-laboratoire')).toBe('marquage');
+    expect((ferritine.getByLabelText('Valider') as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('un fait trop long pour être transcrit se DIT à la validation, sans bloquer la ligne', async () => {
+    serveur({
+      detail: () => compteRendu('extrait', [
+        ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48', analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu',
+          intervalleNonTranscrit: true }),
+      ]),
+    });
+    await rendreEtOuvrir();
+    const ferritine = ligneAffichee(/Ferritine : 48/);
+    expect(ferritine.getByText(/Imprimé mais trop long pour être transcrit : l’intervalle de référence\./)).toBeTruthy();
+    expect(ferritine.queryByText(/Imprimé par le laboratoire/)).toBeNull();
+    expect((ferritine.getByLabelText('Valider') as HTMLInputElement).disabled).toBe(false);
+  });
+
+  it('aucun fait, aucun signal : rien ne s’affiche', async () => {
+    serveur({});
+    await rendreEtOuvrir();
+    expect(screen.queryByText(/Imprimé par le laboratoire|trop long pour être transcrit/)).toBeNull();
   });
 
   it('une ligne déjà décidée s’affiche sans aucun geste', async () => {

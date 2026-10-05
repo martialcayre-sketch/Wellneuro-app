@@ -15,9 +15,13 @@ import {
   extraireCompteRendu,
   heureLisible,
   lireDatePrelevement,
+  lireFaitLaboratoire,
+  LONGUEUR_MAX_INTERVALLE,
+  LONGUEUR_MAX_MARQUAGE,
   MODELE_EXTRACTION,
   motifDErreur,
   TENTATIVES_SUPPLEMENTAIRES,
+  VERSION_PROCEDE_EXTRACTION,
 } from './extraction';
 import { DELAI_TRANSACTION_LIGNES_MS, PEREMPTION_EN_COURS_MS } from './verrou';
 
@@ -25,8 +29,14 @@ const SORTIE = {
   lisible: true,
   laboratoire: 'Laboratoire de fixture',
   lignes: [
-    { page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', date_prelevement: '2026-09-15', heure_prelevement: '08:30' },
-    { page: 2, libelle: 'CRP ultrasensible', valeur: '<0,5', unite: 'mg/L', date_prelevement: '2026-09-15', heure_prelevement: null },
+    {
+      page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', date_prelevement: '2026-09-15', heure_prelevement: '08:30',
+      intervalle_reference: null, marquage: null,
+    },
+    {
+      page: 2, libelle: 'CRP ultrasensible', valeur: '<0,5', unite: 'mg/L', date_prelevement: '2026-09-15', heure_prelevement: null,
+      intervalle_reference: null, marquage: null,
+    },
   ],
 };
 
@@ -87,7 +97,7 @@ describe('analyserSortieExtraction — schéma fermé aux bornes des CHECK', () 
     expect(r.lignes).toHaveLength(2);
     expect(r.lignes[0]).toEqual({
       page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', preleveLe: new Date('2026-09-15T06:30:00.000Z'),
-      heureLue: true,
+      heureLue: true, intervalle: null, marquage: null, intervalleNonTranscrit: false, marquageNonTranscrit: false,
     });
     // Date sans heure : minuit de Paris, et l'heure n'est PAS dite lue.
     expect(r.lignes[1]).toMatchObject({ preleveLe: new Date('2026-09-14T22:00:00.000Z'), heureLue: false });
@@ -119,12 +129,75 @@ describe('analyserSortieExtraction — schéma fermé aux bornes des CHECK', () 
       JSON.stringify({ ...SORTIE, commentaire: 'normal' }),
       JSON.stringify({ ...SORTIE, lignes: [{ page: 1, libelle: 'Ferritine', valeur: '48' }] }),
       avec({ interpretation: 'basse' }),
+      // Les faits du laboratoire ([[D-267]]) : des clés requises, nullables,
+      // de type texte — absentes ou d'un autre type, la sortie est invalide.
+      avec({ intervalle_reference: undefined }),
+      avec({ marquage: undefined }),
+      avec({ intervalle_reference: 5 }),
+      avec({ marquage: true }),
       avec({ unite: undefined }),
       JSON.stringify({ ...SORTIE, laboratoire: 'x'.repeat(201) }),
       JSON.stringify({ ...SORTIE, lignes: Array.from({ length: 201 }, () => SORTIE.lignes[0]) }),
     ]) {
       expect(analyserSortieExtraction(texte), texte.slice(0, 40)).toEqual({ ok: false, motif: 'reponse_invalide' });
     }
+  });
+});
+
+describe('faits du laboratoire (D-267) — recopiés tels qu’imprimés, jamais tronqués', () => {
+  const avec = (patch: Record<string, unknown>) =>
+    JSON.stringify({ ...SORTIE, lignes: [{ ...SORTIE.lignes[0], ...patch }] });
+
+  it('recopie l’intervalle et la marque tels qu’imprimés, rognés comme les autres champs', () => {
+    const r = analyserSortieExtraction(avec({ intervalle_reference: '  Homme : 30 à 400 ; Femme : 15 à 150 ', marquage: ' ↑ ' }));
+    if (!r.ok) throw new Error('attendu ok');
+    expect(r.lignes[0]).toMatchObject({
+      intervalle: 'Homme : 30 à 400 ; Femme : 15 à 150', marquage: '↑',
+      intervalleNonTranscrit: false, marquageNonTranscrit: false,
+    });
+  });
+
+  it('absents ou vides : null, sans signal — rien n’a été omis', () => {
+    // Sans caractère visible aussi : un NUL ferait échouer tout l'import en base.
+    for (const vide of [null, '', '   ', '\u00a0', '\u0000', '\u200b', '\u0085', '\u001c\u001f']) {
+      const r = analyserSortieExtraction(avec({ intervalle_reference: vide, marquage: vide }));
+      if (!r.ok) throw new Error('attendu ok');
+      expect(r.lignes[0]).toMatchObject({
+        intervalle: null, marquage: null, intervalleNonTranscrit: false, marquageNonTranscrit: false,
+      });
+    }
+  });
+
+  it('TOUT dépassement pose le signal, et le fait reste null : ni troncature, ni échec de l’import (§10)', () => {
+    const r = analyserSortieExtraction(avec({
+      intervalle_reference: 'x'.repeat(LONGUEUR_MAX_INTERVALLE + 1),
+      marquage: 'y'.repeat(LONGUEUR_MAX_MARQUAGE + 1),
+    }));
+    if (!r.ok) throw new Error('attendu ok : un fait trop long ne fait pas échouer l’import');
+    expect(r.lignes[0]).toMatchObject({
+      intervalle: null, marquage: null, intervalleNonTranscrit: true, marquageNonTranscrit: true,
+    });
+    // La borne elle-même est admise, verbatim.
+    const juste = analyserSortieExtraction(avec({
+      intervalle_reference: 'x'.repeat(LONGUEUR_MAX_INTERVALLE), marquage: 'y'.repeat(LONGUEUR_MAX_MARQUAGE),
+    }));
+    if (!juste.ok) throw new Error('attendu ok');
+    expect(juste.lignes[0].intervalle).toHaveLength(LONGUEUR_MAX_INTERVALLE);
+    expect(juste.lignes[0].intervalleNonTranscrit).toBe(false);
+  });
+
+  it('mesure en points de code, comme `char_length` de la base — pas en unités UTF-16', () => {
+    // 50 flèches hors plan multilingue de base : 100 unités UTF-16, 50 points de code.
+    const fleches = '🡅'.repeat(LONGUEUR_MAX_MARQUAGE);
+    expect(fleches.length).toBe(2 * LONGUEUR_MAX_MARQUAGE);
+    expect(lireFaitLaboratoire(fleches, LONGUEUR_MAX_MARQUAGE)).toEqual({ texte: fleches, nonTranscrit: false });
+    expect(lireFaitLaboratoire(`${fleches}🡅`, LONGUEUR_MAX_MARQUAGE)).toEqual({ texte: null, nonTranscrit: true });
+    expect(lireFaitLaboratoire(12, LONGUEUR_MAX_MARQUAGE)).toBeUndefined();
+  });
+
+  it('les bornes sont celles des CHECK de la base (migration 20261005150000)', () => {
+    expect(LONGUEUR_MAX_INTERVALLE).toBe(300);
+    expect(LONGUEUR_MAX_MARQUAGE).toBe(50);
   });
 });
 
@@ -146,6 +219,25 @@ describe('extraireCompteRendu — l’appel', () => {
       source: { type: 'base64', media_type: 'application/pdf', data: pdf.toString('base64') },
     });
     expect(options).toMatchObject({ timeout: 180_000, maxRetries: 0, signal: expect.any(AbortSignal) });
+  });
+
+  it('`bio-extraction-v2` : la consigne amendée par D-267 §4, le schéma sans borne sur les faits (§10)', async () => {
+    create.mockResolvedValue(reponse(JSON.stringify(SORTIE)));
+    await extraireCompteRendu(Buffer.from('%PDF-1.7 fixture'), 'application/pdf');
+    const [params] = create.mock.calls[0];
+    expect(VERSION_PROCEDE_EXTRACTION).toBe('bio-extraction-v2');
+    // La phrase de D-256 amendée ne survit pas ; « n'interprète rien » reste.
+    expect(params.system).not.toContain('ne recopie ni les valeurs de référence');
+    expect(params.system).toContain('N’interprète rien');
+    expect(params.system).toContain('tels qu’imprimés, sans les compléter ni les reformuler');
+    expect(params.system).toContain('Ne déduis jamais une marque d’anomalie en comparant la valeur à l’intervalle');
+    expect(params.system).toContain('Ne recopie aucun commentaire');
+    const items = params.output_config.format.schema.properties.lignes.items;
+    expect(items.required).toEqual(expect.arrayContaining(['intervalle_reference', 'marquage']));
+    // Une `maxLength` ferait tronquer le modèle lui-même : le signal ne se poserait jamais.
+    for (const cle of ['intervalle_reference', 'marquage']) {
+      expect(items.properties[cle]).toEqual({ type: ['string', 'null'] });
+    }
   });
 
   it('envoie une photo ENTIÈRE en bloc image, sous la même consigne (LOT-03)', async () => {
