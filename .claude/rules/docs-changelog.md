@@ -4,6 +4,7 @@ paths:
   - "changelog.d/**"
   - "CHANGELOG.md"
   - "*.md"
+  - ".wn/state.json"
 ---
 
 # Documentation, changelog, handoffs
