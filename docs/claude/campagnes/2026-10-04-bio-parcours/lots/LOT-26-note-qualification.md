@@ -50,7 +50,7 @@ LOT-00 (BP-00).
 
 ## Étapes
 
-- [ ] Préparer une trame par fonction.
+- [x] Préparer une trame par fonction (`TRAME_QUALIFICATION_BP26.md`, 2026-10-05).
 - [ ] Faire statuer le responsable fonction par fonction.
 - [ ] Consigner la conclusion au dépôt.
 
