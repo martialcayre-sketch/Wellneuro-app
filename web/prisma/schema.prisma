@@ -2603,6 +2603,10 @@ model LigneBiologiqueCandidate {
   /// dérivée, jamais de marquage calculé ; absents de l'impression ⇒ NULL.
   intervalleLu   String?   @map("intervalle_lu")
   marquageLu     String?   @map("marquage_lu")
+  /// Le fait était imprimé mais dépassait la borne technique : NULL, et la
+  /// ligne le dit à la validation ([[D-267]] §10). Jamais tronqué.
+  intervalleNonTranscrit Boolean @default(false) @map("intervalle_non_transcrit")
+  marquageNonTranscrit   Boolean @default(false) @map("marquage_non_transcrit")
   /// Posé par le resolver signé SEUL, jamais par le modèle — `ambigu` compris.
   analytePropose String?   @map("analyte_propose")
   statutMapping  String    @map("statut_mapping") // resolu | ambigu | inconnu (CHECK migration)

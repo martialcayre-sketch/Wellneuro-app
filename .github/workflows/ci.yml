@@ -1027,6 +1027,13 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/bio_ingest_faits_laboratoire_v1_negatif.sql
 
+      # Le signal « fait non transcrit » (D-267 §10) : faux par défaut, vrai
+      # seulement à côté d'un fait NULL, figé à la décision.
+      - name: Faits non transcrits negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/bio_ingest_faits_non_transcrits_v1_negatif.sql
+
       # Écartement praticien d'une proposition d'orientation. LA PROMESSE QUI
       # COMPTE LE PLUS EST LA MOINS VISIBLE : un écartement SANS RÈGLES est
       # refusé. `regles_au_geste` est ce qui permet le RÉVEIL d'une proposition
