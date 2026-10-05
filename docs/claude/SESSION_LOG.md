@@ -9139,3 +9139,19 @@ Promotions : décision → aucune ; règle → aucune.
 **Prochaine action.** La décision préalable à LOT-07, sur feu vert.
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-05 — BIO-INGEST : D-267, faits du laboratoire
+
+**Décidé.** D-267 acceptée : intervalle et marquage imprimés verbatim sur la
+ligne lue (`intervalle_lu`, `marquage_lu`), A5 intact, survie à la purge,
+`bio-extraction-v2`, D-157 précisée. Exemption bornée de la sentinelle ;
+`usage_ia` v5, v12 inchangée.
+
+**Écarté.** Faits sur `ResultatBiologique` ; bornes min/max ; noms anglais ;
+v13 avec accusé.
+
+Promotions : décision → D-267 ; règle → aucune.
+
+**Prochaine action.** Merge, puis migration seule du LOT-07.
+
+**Questions ouvertes.** §35 du cadrage BioFlow vide ; audit BioFlow en cours.

@@ -4,6 +4,101 @@
 
 ## Décisions actives
 
+### D-267 — Faits du laboratoire (BIO-INGEST LOT-07) : l'intervalle et le marquage imprimés sont transcrits verbatim sur la ligne lue, jamais sur le résultat ; la consigne d'extraction de D-256 est amendée, D-157 précisée
+
+- Date : 2026-10-05
+- Statut : accepté — arbitrages du responsable du 2026-10-05 après l'état
+  des lieux BioFlow (A5 intact, deux champs bruts, survie à la purge,
+  `bio-extraction-v2`, TRUST et RGPD), complétés le même jour en session :
+  noms des colonnes, exemption bornée de la sentinelle, v12 inchangée.
+- Domaine : biologie, acquisition (BIO-INGEST LOT-07, gate G1 de
+  `docs/architecture/bioflow/BIOFLOW_ROADMAP.md`) ; frontière DC-19/DC-20.
+  **Aucune règle clinique, aucun seuil, aucune borne** : un intervalle
+  transcrit est un fait du document, pas une plage. **Aucune migration posée
+  par cette décision** : elle autorise la migration du LOT-07, seule dans sa
+  PR ([[D-087]], [[D-266]] §11).
+- Amende : la consigne d'extraction de [[D-256]] (« ne recopie ni les valeurs
+  de référence… ») ; la fiche LOT-07 (« persistés sur le résultat validé »).
+  Précise : [[D-157]] §6 ; le banc BP-01 des lecteurs de faits du laboratoire
+  ([[D-266]] §15). **Ne touche pas** : [[D-256]] A5 et §3 (qualitatif écarté),
+  [[D-258]], [[D-059]] §4, [[D-122]], [[D-124]], le resolver signé
+  ([[D-259]], [[D-263]]).
+
+**§1 — Deux faits, verbatim, sur la ligne lue.** L'extraction relève, pour
+chaque ligne, l'intervalle de référence et le marquage d'anomalie **tels
+qu'imprimés** par le laboratoire. Ils vivent sur `LigneBiologiqueCandidate`,
+en deux colonnes texte nullables, `intervalle_lu` et `marquage_lu` (la
+convention de `valeur_lue` et `unite_lue`), recopiées sans reformulation : jamais de
+bornes min/max dérivées, jamais de marquage déduit. Absents de l'impression ⇒
+`NULL`. Un marquage n'est jamais calculé en comparant la valeur à
+l'intervalle : le modèle qui le ferait interpréterait.
+
+**§2 — A5 intact : rien sur `ResultatBiologique`.** Le résultat validé ne
+gagne aucune colonne ; `resultats_biologiques.source` reste à deux valeurs et
+la liste blanche du contrat `cb_resultats_biologiques_v1_negatif.sql` n'est
+pas rouverte. Les faits restent sur la ligne, qui pointe déjà vers le résultat
+qu'elle a créé (`id_resultat`). La restitution passe par ce lien, dans ce
+sens seulement (A5).
+
+**§3 — Ils survivent à la purge.** [[D-258]] ne vide que le contenu du
+document ; les lignes lues et leurs décisions restent. Les faits du
+laboratoire suivent la ligne : ils sont transcrits **avant** la purge, et la
+purge n'y touche pas. Le contrat SQL de purge le vérifie.
+
+**§4 — La consigne d'extraction est amendée.** La phrase de [[D-256]]
+devient : recopier tels qu'imprimés l'intervalle de référence et le marquage
+de chaque ligne, sans les compléter ni les reformuler ; ne recopier aucun
+commentaire. « N'interprète rien » reste. Le schéma d'extraction (fermé) et
+le parseur à clés exactes gagnent ces deux clés, nullables. Le procédé passe
+à `bio-extraction-v2`. Les lignes `bio-extraction-v1` gardent `NULL` : aucun
+rattrapage, aucune relecture automatique (la relecture est la fiche LOT-09).
+
+**§5 — D-157 précisée : un fait du dossier n'est pas un référentiel.**
+L'intervalle imprimé est un fait **de ce compte rendu**, attribué à son
+laboratoire. Il n'entre jamais dans le référentiel LABORATOIRE de
+`biology-library` (§6 de [[D-157]] inchangé : ni servi, ni fusionné), n'est
+jamais citable par une règle, jamais recalculé, jamais comparé à la valeur
+par le logiciel. La restitution le juxtapose au résultat qu'il accompagne,
+attribué (« imprimé par le laboratoire »), sans couleur, sans tri, sans
+statut, sans priorité. Les silences de [[D-157]] §4 s'appliquent : aucun fait
+⇒ rien ne s'affiche ; unité du résultat différente de l'unité lue sur la
+ligne ⇒ silence ; un résultat corrigé ([[D-124]]) n'hérite pas des faits de
+la ligne qui a créé l'original.
+
+**§6 — Le marquage verbatim et la sentinelle.** Un laboratoire imprime « H »,
+« * », « ↑ » ou « Élevé ». La sentinelle BP-01 tient les mots **de
+Wellneuro**. Le marquage est rendu dans un seul élément attribué au
+laboratoire, qui ne contient que le champ brut ; la sentinelle exempte cet
+élément et lui seul, et un banc vérifie qu'il ne contient rien d'autre.
+
+**§7 — Le banc des lecteurs suit les colonnes.** Le banc BP-01
+`lecteursResultatBiologique.guard.test.ts` supposait les faits sur
+`ResultatBiologique`. LOT-07 l'étend aux deux colonnes de
+`lignes_biologiques_candidates` : seuls la décision du praticien et le
+lecteur de restitution les lisent, liste blanche nominative.
+
+**§8 — Déclarer avant de relever.** « L'intelligence artificielle dans
+Wellneuro » passe en **v5** (sans accusé, comme la v4) : l'outil relève aussi
+l'intervalle et le marquage imprimés, et n'en tire toujours aucune
+conclusion. Le registre RGPD (§2 ter, table des données de santé) et la note
+AIPD le disent. « Vos données personnelles » reste en **v12** : sa phrase
+(« l'outil en relève les valeurs ») demeure vraie, aucun accusé nouveau. La v5 est servie et constatée ([[D-248]]) **avant** le
+déploiement de `bio-extraction-v2`.
+
+**§9 — Séquence du LOT-07.** Cette décision mergée → migration seule
+(colonnes, CHECK de forme : non vide si présent, longueur bornée — la classe
+d'espaces ne se teste pas par `btrim/1`) → `release-db` approuvée et constat
+par conteneur → TRUST v5 et registre constatés → code (schéma, parseur,
+consigne, validation, restitution, bancs). Passe Codex obligatoire sur la
+migration et sur ce code ([[D-266]] §11, hors BIO-PARCOURS : table de
+`POLITIQUE_REVUE.md`).
+
+- Options écartées : les faits sur `ResultatBiologique` (rouvre A5 et la
+  liste blanche du contrat) ; des bornes min/max numériques (une borne
+  dérivée deviendrait citable, et le format imprimé varie : « < 5 »,
+  « 0,5–1,2 », par âge, par sexe) ; afficher l'intervalle sans le marquage
+  (le laboratoire a marqué, le taire serait retrancher un fait).
+
 ### D-266 — Décision-cadre BIO-PARCOURS : deux étages, prescription hors médicament côté praticien, nomenclature unique, doctrine amendée, campagne ouverte
 
 - Date : 2026-10-04
