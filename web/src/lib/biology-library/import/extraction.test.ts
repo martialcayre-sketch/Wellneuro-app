@@ -157,6 +157,11 @@ describe('faits du laboratoire (D-267) — recopiés tels qu’imprimés, jamais
     });
   });
 
+  it('un NUL intérieur se retire : la base le refuserait et l’import entier échouerait', () => {
+    expect(lireFaitLaboratoire('30\u0000 – 400', LONGUEUR_MAX_INTERVALLE)).toEqual({ texte: '30 – 400', nonTranscrit: false });
+    expect(lireFaitLaboratoire('\u0000H\u0000', LONGUEUR_MAX_MARQUAGE)).toEqual({ texte: 'H', nonTranscrit: false });
+  });
+
   it('absents ou vides : null, sans signal — rien n’a été omis', () => {
     // Sans caractère visible aussi : un NUL ferait échouer tout l'import en base.
     for (const vide of [null, '', '   ', '\u00a0', '\u0000', '\u200b', '\u0085', '\u001c\u001f']) {

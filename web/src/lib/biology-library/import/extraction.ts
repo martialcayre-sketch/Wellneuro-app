@@ -219,9 +219,11 @@ export function lireFaitLaboratoire(
 ): { texte: string | null; nonTranscrit: boolean } | undefined {
   if (v === null) return { texte: null, nonTranscrit: false };
   if (typeof v !== 'string') return undefined;
-  const t = v.trim();
+  // Un NUL n'est jamais imprimé, et la base le refuse : laissé dans le texte, il
+  // ferait échouer tout l'import. Il se retire avant le rognage.
+  const t = v.replace(/\u0000/g, '').trim();
   // Aucun caractère visible (contrôles, formats, espaces seuls) : rien
-  // d'imprimé à recopier — et un NUL ferait échouer tout l'import.
+  // d'imprimé à recopier.
   if (!/[^\p{White_Space}\p{Cc}\p{Cf}]/u.test(t)) return { texte: null, nonTranscrit: false };
   return [...t].length <= max ? { texte: t, nonTranscrit: false } : { texte: null, nonTranscrit: true };
 }

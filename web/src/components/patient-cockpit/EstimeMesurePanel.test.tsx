@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CbFeatureProvider } from './CbFeatureProvider';
@@ -919,6 +921,11 @@ describe('EstimeMesurePanel — la plage sourcée juxtaposée ([[D-157]])', () =
     for (const mot of [/hors\s+plage/i, /\banormal/i, /\bélevée?\b/i, /\bbasse?\b/i, /\bnormal/i]) {
       expect(mot.test(texte), `vocabulaire de verdict trouvé hors de la marque : ${mot}`).toBe(false);
     }
+  });
+
+  it('le sélecteur exempté par la sentinelle e2e est celui du composant', () => {
+    const helper = readFileSync(resolve(__dirname, '../../../e2e/helpers/sentinelle.ts'), 'utf8');
+    expect(helper).toContain(`SELECTEUR_MARQUAGE_LABORATOIRE = '${SELECTEUR_MARQUAGE_LABORATOIRE}'`);
   });
 
   it('sans fait (saisie praticien) : rien ne s’affiche', async () => {

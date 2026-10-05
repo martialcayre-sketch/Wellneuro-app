@@ -109,9 +109,11 @@ laboratoire.
   charge `faitsLaboratoire` ; classe du paragraphe et de la ligne figées ;
   faits rendus après les marqueurs DC-30 ; NUL et caractères invisibles
   rendus `null` (un NUL faisait échouer tout l'import).
+- Copilot (#1333) : NUL intérieur retiré ; exemption portée par le vrai
+  helper e2e et exercée par un spec ; lecture de §7 explicitée dans le banc.
 - Ouvert, à arbitrer (handoff du lot) : intervalle hors de l'élément exempté
-  de la sentinelle ; texte de §7 plus large que le code ; faits affichés à
-  côté d'une valeur corrigée à la validation ; intervalle imprimé dans l'autre
-  unité d'un compte rendu à double unité.
+  de la sentinelle ; faits affichés à côté d'une valeur corrigée à la
+  validation ; intervalle imprimé dans l'autre unité d'un compte rendu à
+  double unité.
 - Reste à constater après déploiement : une extraction réelle porte
   `version_prompt = 'bio-extraction-v2'` et des faits non nuls.

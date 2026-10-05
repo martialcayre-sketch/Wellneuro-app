@@ -21,12 +21,15 @@
   corrigé. Rien n'est copié sur `ResultatBiologique` (A5 intact) : la route des
   résultats lit les faits par la relation de la ligne qui a créé la mesure.
 - **Sentinelle de vocabulaire.** La marque (« Élevé », « H ») est rendue dans
-  un seul élément `data-fait-laboratoire="marquage"`, exempté de la
-  sentinelle et éprouvé pour ne contenir que le texte imprimé.
+  un seul élément `data-fait-laboratoire="marquage"`. Le helper e2e
+  `assertSentinelleBiologie` l'exempte, lui seul, à condition qu'il ne porte
+  que le texte brut ; un spec l'exerce (`sentinelle-marquage.spec.ts`).
 - **Banc BP-01 (§7).** Un second banc épingle, champ par champ, les sept
   modules qui écrivent, restituent ou transmettent les faits (charge
-  `faitsLaboratoire` de la route comprise) ; la décision du praticien n'en
-  fait pas partie.
+  `faitsLaboratoire` de la route comprise) : l'écran de décision et la
+  restitution (les deux lecteurs de §7), plus les deux écrivains de
+  l'extraction. L'enregistrement de la décision ne lit aucun fait.
 - **Fait sans caractère visible.** Un NUL, un espace de largeur nulle ou des
-  caractères de contrôle seuls valent `null` sans signal : un NUL aurait fait
-  échouer tout l'import.
+  caractères de contrôle seuls valent `null` sans signal ; un NUL intérieur se
+  retire (jamais imprimé, refusé par la base : il aurait fait échouer tout
+  l'import).

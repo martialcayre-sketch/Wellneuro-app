@@ -64,9 +64,11 @@ describe('ResultatBiologique — accès de production épinglés (BP-01, faits d
 
 // [[D-267]] §7 — LOT-07 a posé les faits sur `lignes_biologiques_candidates`,
 // pas sur le résultat (A5 intact) : ce second banc épingle, champ par champ,
-// les modules qui les ÉCRIVENT (extraction) et ceux qui les RESTITUENT
-// (validation, série). La décision du praticien n'y figure pas : elle ne les
-// recopie nulle part. Le client Prisma généré est ignoré par Git, donc hors
+// les modules admis. §7 en nomme deux lecteurs — la décision du praticien,
+// c'est-à-dire l'ÉCRAN où il décide (`lecture.ts`, `ImportCompteRenduPanel`),
+// et la restitution (route des résultats, série, rendu partagé) — auxquels
+// s'ajoutent les deux ÉCRIVAINS de l'extraction. L'ENREGISTREMENT de la
+// décision (`decisions.ts`) ne les lit pas : il ne recopie aucun fait. Le client Prisma généré est ignoré par Git, donc hors
 // balayage. La charge `faitsLaboratoire` rendue par la route est suivie aussi :
 // un écran qui la lirait pour colorer ou trier rougit ici. Restent hors de vue,
 // et relèvent de la revue : un `include` ou un `SELECT *` sur la ligne lue.
