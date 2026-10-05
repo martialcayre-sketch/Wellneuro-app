@@ -34,7 +34,7 @@ handoff.
 
 ## Validations exécutées
 
-`vitest src/lib/trust` 72/72 ; `npm run check` vert ; T2 `--fast` lancé.
+`vitest src/lib/trust` 72/72 ; `npm run check` vert ; T2 `--fast` vert (225 E2E, 3 min 53 s) ; CI #1328 vert.
 
 ## Problèmes ouverts
 
