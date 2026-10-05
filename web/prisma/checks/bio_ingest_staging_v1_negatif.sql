@@ -106,8 +106,11 @@ DECLARE
     'id', 'id_compte_rendu', 'id_patient', 'laboratoire_lu', 'lance_le', 'lance_par', 'modele', 'motif_echec',
     'statut', 'termine_le', 'version_prompt'
   ];
+  -- `intervalle_lu` et `marquage_lu` : les faits du laboratoire ([[D-267]]),
+  -- tenus par `bio_ingest_faits_laboratoire_v1_negatif.sql`.
   COLS_LIGNE CONSTANT text[] := ARRAY[
-    'analyte_propose', 'heure_lue', 'id', 'id_import', 'id_patient', 'id_resultat', 'libelle_lu', 'motif_ecart',
+    'analyte_propose', 'heure_lue', 'id', 'id_import', 'id_patient', 'id_resultat', 'intervalle_lu',
+    'libelle_lu', 'marquage_lu', 'motif_ecart',
     'page', 'preleve_le_lu', 'rang', 'statut', 'statut_mapping', 'traite_le', 'traite_par',
     'unite_lue', 'valeur_lue'
   ];

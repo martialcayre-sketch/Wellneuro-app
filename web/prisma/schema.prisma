@@ -2599,6 +2599,10 @@ model LigneBiologiqueCandidate {
   /// L'heure était imprimée : un « 00:00 » lu n'est pas une heure absente.
   /// `false` par défaut — l'heure est alors exigée à la validation.
   heureLue       Boolean   @default(false) @map("heure_lue")
+  /// Faits du laboratoire, TELS QU'IMPRIMÉS ([[D-267]]) : jamais de borne
+  /// dérivée, jamais de marquage calculé ; absents de l'impression ⇒ NULL.
+  intervalleLu   String?   @map("intervalle_lu")
+  marquageLu     String?   @map("marquage_lu")
   /// Posé par le resolver signé SEUL, jamais par le modèle — `ambigu` compris.
   analytePropose String?   @map("analyte_propose")
   statutMapping  String    @map("statut_mapping") // resolu | ambigu | inconnu (CHECK migration)
