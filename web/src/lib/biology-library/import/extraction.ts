@@ -33,14 +33,26 @@ export const MODELE_EXTRACTION = process.env.WN_BIO_INGEST_MODEL?.trim() || 'cla
 export const VERSION_PROCEDE_EXTRACTION = 'bio-extraction-v1';
 
 /**
- * Délai d'un appel (ms), SANS nouvelle tentative : technique, sans sémantique
- * clinique. 180 s plutôt que 120 s × 2 (arbitrage du 2026-10-02) : un compte
- * rendu de 200 lignes est estimé à ~95 s (36 s mesurées pour 75 lignes), et
- * le pire cas doit rester sous la péremption d'un import en cours
- * (`PEREMPTION_EN_COURS_MS`, test). Un échec se relance à la main.
+ * Délai d'attente des EN-TÊTES (ms), SANS nouvelle tentative : technique, sans
+ * sémantique clinique. 180 s plutôt que 120 s × 2 (arbitrage du 2026-10-02) :
+ * un compte rendu de 200 lignes est estimé à ~95 s (36 s mesurées pour 75
+ * lignes). Un échec se relance à la main.
+ *
+ * Ce délai NE BORNE PAS l'appel : le SDK (0.107.0) efface son minuteur dès les
+ * en-têtes reçus, et la lecture du flux qui suit n'a aucune borne. C'est
+ * `DUREE_TOTALE_EXTRACTION_MS` qui borne l'appel entier.
  */
 export const DELAI_EXTRACTION_MS = 180_000;
 export const TENTATIVES_SUPPLEMENTAIRES = 0;
+
+/**
+ * Durée TOTALE d'un appel (ms) : en-têtes ET lecture du flux, par un signal
+ * d'abandon. Le pire cas d'une extraction (cette borne, puis la transaction
+ * des lignes) doit rester sous la péremption d'un import en cours
+ * (`PEREMPTION_EN_COURS_MS`, test) : sinon une suite encore vivante serait
+ * close `delai_depasse` par une relance, ou ne serait jamais close du tout.
+ */
+export const DUREE_TOTALE_EXTRACTION_MS = 240_000;
 
 /** Plafond technique de lignes relevées dans un compte rendu. */
 export const LIGNES_MAX = 200;
@@ -213,6 +225,8 @@ export function analyserSortieExtraction(texte: string): ResultatExtraction {
 /** Le motif d'échec d'une erreur d'appel — jamais son message. */
 export function motifDErreur(err: unknown): MotifEchec {
   if (err instanceof Anthropic.APIConnectionTimeoutError) return 'delai_depasse';
+  // Seule la borne totale abandonne un appel : aucun autre signal n'est passé.
+  if (err instanceof Anthropic.APIUserAbortError) return 'delai_depasse';
   return 'erreur_fournisseur';
 }
 
@@ -231,6 +245,8 @@ export async function extraireCompteRendu(
       ? { type: 'document', source: { type: 'base64', media_type: typeMime, data } }
       : { type: 'image', source: { type: 'base64', media_type: typeMime, data } };
   let reponse: Anthropic.Message;
+  const borne = new AbortController();
+  const minuteur = setTimeout(() => borne.abort(), DUREE_TOTALE_EXTRACTION_MS);
   try {
     // En flux : un `max_tokens` de cette taille est refusé d'emblée par le SDK
     // en appel simple (durée estimée au-delà de 10 min). Seul le message final
@@ -252,10 +268,13 @@ export async function extraireCompteRendu(
           },
         ],
       },
-      { timeout: DELAI_EXTRACTION_MS, maxRetries: TENTATIVES_SUPPLEMENTAIRES },
+      { timeout: DELAI_EXTRACTION_MS, maxRetries: TENTATIVES_SUPPLEMENTAIRES, signal: borne.signal },
     ).finalMessage();
   } catch (err) {
-    return { ok: false, motif: motifDErreur(err) };
+    // La borne atteinte fait foi, quelle que soit la forme de l'erreur levée.
+    return { ok: false, motif: borne.signal.aborted ? 'delai_depasse' : motifDErreur(err) };
+  } finally {
+    clearTimeout(minuteur);
   }
   // Un refus du fournisseur n'est pas une réponse à juger ; une sortie coupée
   // non plus.

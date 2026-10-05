@@ -77,6 +77,7 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 | LOT-05 | Adaptateur laboratoire (pilote Barbier Metz) | à_faire | selon le format reçu | LOT-02, format réel reçu |
 | LOT-06 | Catalogue étendu aux analyses d'un compte rendu courant | terminé (2026-10-04, D-261, D-263, D-264) | **oui, confirmation obligatoire** | LOT-02 |
 | LOT-07 | Faits du laboratoire : intervalle et marquage imprimés, transcrits avant la purge (ajouté par `D-266` §15) ; avancé avant LOT-04 | à_faire | **oui, confirmation obligatoire** | LOT-02, BP-00 et BP-01 (BIO-PARCOURS) |
+| LOT-08 | Durcissement : borne totale de l'appel d'extraction (flux compris) et délai explicite de la transaction des lignes | terminé (2026-10-05) | non | LOT-02 |
 
 **Reste ouvert, rattaché au LOT-03** (constaté au LOT-06, 2026-10-03) : un import
 `extrait` n'offre aucun bouton « Relancer la lecture » (`ImportCompteRenduPanel.tsx`, `peutLancer`).

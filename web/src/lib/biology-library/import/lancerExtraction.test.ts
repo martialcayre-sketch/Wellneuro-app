@@ -48,6 +48,7 @@ vi.mock('./resolverLibellesV1', async importOriginal => {
 });
 
 import { lancerExtraction } from './lancerExtraction';
+import { DELAI_TRANSACTION_LIGNES_MS } from './verrou';
 
 /** Le premier argument d'un appel simulé, typé pour l'assertion. */
 function argument<T>(fn: { mock: { calls: unknown[][] } }, rang = 0): T {
@@ -132,6 +133,8 @@ describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transac
     expect(issue).toEqual({ ok: true, idImport: 'imp_1', statut: 'extrait', lignes: 2 });
     // Deux transactions interactives : l'ouverture (avant l'appel), puis lignes + terminaison.
     expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    // La seconde a un délai explicite, compté dans le pire cas sous la péremption.
+    expect(prisma.$transaction.mock.calls[1][1]).toEqual({ timeout: DELAI_TRANSACTION_LIGNES_MS });
     const apres = journal.slice(journal.indexOf('appel'));
     expect(apres).toEqual(['appel', 'verrou', 'import.count', 'analytes.findMany', 'lignes.createMany', 'import.update']);
     const terminaison = argument<{ data: Record<string, unknown> }>(prisma.importBiologique.update);
