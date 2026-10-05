@@ -88,6 +88,10 @@ satisfaites : LOT-02 terminé, BIO-PARCOURS BP-00 (#1307) et BP-01 (#1314)
 mergés. Sa première étape est la décision préalable, à réserver dans `main` ;
 aucun code ni aucune migration avant que cette décision soit mergée.
 
+**Clôture d'un lot** : avec le handoff, mettre à jour le suivi BioFlow du
+responsable (page hors dépôt, créée le 2026-10-05) : état du lot, lots
+nouveaux, décisions acceptées.
+
 **« Relancer la lecture »** (constaté au LOT-06, 2026-10-03) : ce geste
 n'a pas été livré au LOT-03. Le responsable l'a déplacé le 2026-10-05 vers sa
 propre fiche, le LOT-09, hors LOT-07. Aucune relance n'y est permise après

@@ -93,6 +93,10 @@ BP-26 (LOT-26) avance en parallèle, et toute assistance reste bloquée sans
 lui (gate G4 de `BIOFLOW_ROADMAP.md`). Les fiches ne sont écrites que pour la phase 0 ; celles des autres
 lots s'écrivent quand ils arrivent.
 
+**Clôture d'un lot** : avec le handoff, mettre à jour le suivi BioFlow du
+responsable (page hors dépôt, créée le 2026-10-05) : état du lot, lots
+nouveaux, décisions acceptées.
+
 | BP | Fiche | Objet | Statut | Migration | Dépend de |
 |---|---|---|---|---|---|
 | — | — | Préalable hors campagne : décision du 2026-10-21 (`D-265`) | terminé (PR #1305) | non | — |
