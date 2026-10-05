@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les vingt et un documents attendus', () => {
+  it('expose les vingt-deux documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -55,6 +55,8 @@ describe('registre des documents TRUST', () => {
       'usage_ia@v3',
       // `D-256` A4 — le relevé des comptes rendus biologiques, déclaré avant activation.
       'usage_ia@v4',
+      // `D-267` §8 — le relevé recopie aussi l'intervalle et la marque imprimés.
+      'usage_ia@v5',
       'droits_patient@v1',
       'consentement_suivi@v2',
       // Même correction, dans le texte du consentement lui-même — l'occurrence
@@ -258,7 +260,7 @@ describe('registre des documents TRUST', () => {
     // ENTIER, identité comprise (arbitrage du 2026-10-01). Une mutation qui
     // retire « vous identifient » de l'un des deux textes rougit ici.
     const usageIa = getDocumentCourant('usage_ia');
-    expect(usageIa.version).toBe('v4');
+    expect(usageIa.version).toBe('v5');
     const texteIa = usageIa.sections.flatMap(s => s.paragraphes).join(' ');
     expect(texteIa).toContain('compte rendu que vous lui avez remis');
     expect(texteIa).toContain('aucune n’entre à votre dossier sans cette validation');
@@ -277,6 +279,7 @@ describe('registre des documents TRUST', () => {
     const jamais = (v: string) =>
       getVersion('usage_ia', v)?.sections.find(s => s.titre === 'Ce que l’IA ne fait jamais ici');
     expect(jamais('v4')).toEqual(jamais('v3'));
+    expect(jamais('v5')).toEqual(jamais('v3'));
     expect(usageIa.requiresAcknowledgement).toBe(false);
 
     const donnees = getDocumentCourant('donnees_confidentialite');
@@ -331,6 +334,38 @@ describe('registre des documents TRUST', () => {
     // s'effaçait.
     expect(v12.requiresAcknowledgement).toBe(true);
     expect(v12.publieLe >= (v11?.publieLe ?? '')).toBe(true);
+  });
+
+  it('`D-267` §8 : la v5 déclare l’intervalle et la marque recopiés tels qu’imprimés, sans rien en conclure', () => {
+    // DÉCLARER AVANT DE RELEVER : `bio-extraction-v2` ne se déploie qu'une fois
+    // cette version servie et constatée. Une mutation qui retire « tels que le
+    // laboratoire les a imprimés » ou « lui-même » rougit ici.
+    const v5 = getVersion('usage_ia', 'v5');
+    expect(v5).not.toBeNull();
+    if (!v5) return;
+    const releve = (v: string) =>
+      (getVersion('usage_ia', v)?.sections.find(s => s.titre === 'Où l’IA intervient')?.paragraphes ?? []).find(p =>
+        p.startsWith('Le relevé des résultats'),
+      ) ?? '';
+    const texte = releve('v5');
+    expect(texte).toContain('l’intervalle de référence et la marque d’anomalie tels que le laboratoire les a imprimés');
+    expect(texte).toContain('recopiées sans être complétées ni reformulées');
+    expect(texte).toContain('L’outil ne déclare lui-même aucune valeur normale ou anormale et n’en tire aucune conclusion');
+    // Ce que la v4 déclarait reste déclaré : validation, document entier, identité.
+    expect(texte).toContain('aucune n’entre à votre dossier sans cette validation');
+    expect(texte).toContain('y compris votre nom et les autres mentions qui vous identifient');
+    expect(releve('v4')).not.toContain('intervalle');
+    // Seul le paragraphe du relevé change.
+    const autres = (v: string) =>
+      getVersion('usage_ia', v)?.sections.map(s =>
+        s.titre === 'Où l’IA intervient'
+          ? { ...s, paragraphes: s.paragraphes.filter(p => !p.startsWith('Le relevé des résultats')) }
+          : s,
+      );
+    expect(autres('v5')).toEqual(autres('v4'));
+    expect(v5.requiresAcknowledgement).toBe(false);
+    // « Vos données personnelles » reste en v12 (`D-267` §8) : aucun accusé nouveau.
+    expect(getDocumentCourant('donnees_confidentialite').version).toBe('v12');
   });
 
   it('la v9 RETIRE la promesse que le logiciel ne tenait pas, et NOMME l’exception', () => {
