@@ -54,6 +54,10 @@ SESSION_LOG, ce handoff.
 3. **Compte rendu à double unité** : l'intervalle peut être relevé dans
    l'autre unité ; la concordance d'unité de la route ne le voit pas.
 
+Routé : un NUL dans le libellé, la valeur ou l'unité fait encore échouer
+l'import (`texteBorne`, défaut antérieur au lot) — `FILE_ATTENTE.md`, « Dette
+— un NUL dans le libellé… ».
+
 ## Prochaine action exacte
 
 1. Passe Codex sur la PR (geste du responsable, bloc dans la PR) —
