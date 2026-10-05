@@ -9108,3 +9108,19 @@ Promotions : décision → aucune ; règle → `.claude/rules/docs-changelog.md`
 **Prochaine action.** La décision préalable au LOT-07, sur feu vert.
 
 **Questions ouvertes.** L'état des lieux du 2026-10-04 reste à verser.
+
+## 2026-10-05 — BioFlow : audit du 2026-10-04 versé
+
+**Décidé.** L'audit est versé comme snapshot historique figé
+(`docs/architecture/bioflow/AUDIT_BIOFLOW_2026-10-04.md`). Un bandeau
+rappelle de vérifier `main` et renvoie à ce qui a changé depuis. La roadmap
+renvoie à l'audit sans le dupliquer.
+
+**Écarté.** Actualiser le contenu de l'audit : il reste une photographie
+datée.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** La décision préalable à LOT-07, sur feu vert.
+
+**Questions ouvertes.** Aucune.
