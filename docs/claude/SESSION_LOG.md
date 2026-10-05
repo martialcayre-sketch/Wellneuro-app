@@ -9074,3 +9074,18 @@ Promotions : décision → aucune ; règle → aucune.
 **Questions ouvertes.** Les questions des entrées précédentes restent
 ouvertes : la dette auto-merge, et les copies anciennes d'un identifiant de
 dossier.
+
+## 2026-10-05 — BioFlow : roadmap ramenée à une forme courte
+
+**Décidé.** `BIOFLOW_ROADMAP.md` réécrit en un arbre court : Track A
+(LOT-07, G1) et Track B (BP-02, BP-26 en parallèle, G4), gates G1 à G4,
+BIOFLOW PLATFORM non ouverte. Elle référence les lots sans les dupliquer.
+
+**Écarté.** Garder l'ordre détaillé des lots : c'était un troisième backlog.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** Décision préalable au LOT-07, sur feu vert.
+
+**Questions ouvertes.** La dette auto-merge ; des copies anciennes d'un
+identifiant de dossier.
