@@ -9057,3 +9057,18 @@ décision préalable au LOT-07.
 **Questions ouvertes.** Le `lot_courant` de BIO-PARCOURS est périmé (LOT-01
 terminé). Il reste à rendre le contrôle de clôture obligatoire face à
 l'auto-merge.
+
+## 2026-10-05 — BIO-PARCOURS : lot courant réaligné sur BP-02
+
+**Décidé.** Le `lot_courant` de BIO-PARCOURS passe de LOT-01 (terminé) à
+LOT-02 (BP-02), conformément à l'arbitrage du 2026-10-05. BP-26 avance en
+parallèle.
+
+**Écarté.** Désigner BP-26 comme lot courant : c'est une note qui avance en
+parallèle, pas la suite séquentielle.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** Remise en forme de `BIOFLOW_ROADMAP.md`.
+
+**Questions ouvertes.** Aucune.
