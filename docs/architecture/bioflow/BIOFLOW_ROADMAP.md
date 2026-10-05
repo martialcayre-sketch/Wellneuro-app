@@ -13,11 +13,11 @@ BIOFLOW
 │
 ├── Track A — BIO-INGEST
 │   ├── lot courant   : LOT-07, faits imprimés du laboratoire
-│   ├── prochain gate : G1 levé (D-267, #1325) ; migration #1326 en release-db
+│   ├── prochain gate : G1 levé (D-267, #1325) ; migration #1326 appliquée et constatée ; `usage_ia` v5 (#1328)
 │   └── objectif      : une donnée biologique fiable
 │
 ├── Track B — BIO-PARCOURS
-│   ├── lot courant   : LOT-02 (BP-02), constat d'usage ; BP-26 en parallèle
+│   ├── lot courant   : LOT-26 (BP-26), note de qualification ; BP-02 terminé (2026-10-05)
 │   ├── prochain gate : G4, BP-26 avant toute assistance
 │   └── objectif      : l'exploitation longitudinale de la donnée validée
 │

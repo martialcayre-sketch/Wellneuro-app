@@ -9206,3 +9206,17 @@ la v5, merger #1330 puis cette PR, coder le LOT-07.
 
 **Questions ouvertes.** Le panneau J21 dans la trame ; MDCG 2019-11 à relire
 sur le texte officiel.
+## 2026-10-05 — BIO-PARCOURS BP-02 : constat d'usage
+
+**Décidé.** Ligne de base versée en agrégats, script rejouable. Le constat
+« aucun protocole 21 jours servi » est à nuancer : deux V4 sont approuvés pour
+diffusion, sans check-in ; le service effectif n'est pas vérifié. Biologie : un dossier, un import à moitié décidé, aucune attente
+conditionnelle ; `clinical_rules` est vide.
+
+**Écarté.** Lire ligne par ligne les écarts d'unité, hors agrégats.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** BP-26, la trame.
+
+**Questions ouvertes.** Les 14 écarts d'unité textuels : graphie ou vraie divergence.
