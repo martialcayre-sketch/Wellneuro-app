@@ -7,7 +7,7 @@
   - 987 actes NABM et 0 correspondance signée, donc 0 analyte évaluable en
     remboursement ;
   - 0 lien vers un axe, 0 panel documenté, 0 action `biological_exploration`.
-- Classification : aucun vrai panel technique, dix axes cliniques déguisés,
+- Classification : aucun vrai panel technique, neuf axes cliniques déguisés,
   trois panels d'indication ou de population, un template optionnel, deux
   coquilles « non indiqué ».
 - La cible s'appuie au maximum sur l'existant (`BiologyAnalyteLink`,

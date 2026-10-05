@@ -161,7 +161,7 @@ catégorie « technique » reste vide ; il n'y a rien à conserver à ce titre.
 | Responsabilité | Existant réutilisé | Ce qui manque |
 |---|---|---|
 | Analyte canonique | `BiologyAnalyte` (85), synonymes/resolver signés, plages, claims | rien de structurel |
-| Axe | `BiologyAnalyteLink` (claim **obligatoire**, `cible_type` besoin / axe / nutriment), aujourd'hui vide | un référentiel d'axes biologiques (statut martial, thyroïde, méthylation…) distinct de `NeuroAxis` — à arbitrer |
+| Axe | `BiologyAnalyteLink` (claim **obligatoire**, `cible_type` besoin / axe / nutriment, `cible_code` d'un axe non contrôlé), aujourd'hui vide | un référentiel d'axes biologiques (statut martial, thyroïde, méthylation…) distinct de `NeuroAxis` — à arbitrer |
 | Indication (quand proposer) | `indicationsBiologieV1` signée | qu'elle cible des **analytes ou des axes**, plus des panels |
 | Proposition patient | `deriverStatutsBiologie` | une vue **par analyte**, dédoublonnée, multi-justification (§25 du cadrage) |
 | Décision praticien | 5. Actions, `biological_exploration` | une référence au catalogue (`analyteCodes`), au patron de `SupplementCatalogRef` — c'est CB-07 / BP-04 |
@@ -222,10 +222,13 @@ lien analyte ↔ axe porte un claim (constitution clinique) ; la priorité
 
 ### PR 3 — Référentiel d'axes biologiques (migration seule)
 
-- **Objectif** : poser le référentiel d'axes et l'admettre comme cible de
-  `biology_analyte_links` ; aucun lien inséré (la curation est signée, plus tard).
-- **Modèles** : `BiologyAnalyteLink` (CHECK `cible_type` étendu), table
-  d'axes ou valeur fermée — selon la PR 1.
+- **Objectif** : valider les codes d'axe. Le CHECK admet **déjà**
+  `cible_type = 'axe'` (`20260725160000_cb_biologie_catalogue_v1`), mais
+  `cible_code` y est libre, alors que les besoins sont bornés de 1 à 12.
+  Aucun lien inséré (la curation est signée, plus tard).
+- **Modèles** : `BiologyAnalyteLink` (`cible_type` inchangé ; contrôle de
+  `cible_code` pour `axe`, par référentiel d'axes ou liste fermée, selon la
+  PR 1).
 - **Consommateurs** : aucun avant le code.
 - **Migration** : oui, seule dans sa PR, `release-db`, constat par conteneur,
   passe Codex.
