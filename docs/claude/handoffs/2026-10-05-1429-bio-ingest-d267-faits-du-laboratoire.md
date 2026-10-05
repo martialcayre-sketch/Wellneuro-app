@@ -1,4 +1,4 @@
-# Handoff — BIO-INGEST : D-267, décision préalable au LOT-07
+# Handoff — 2026-10-05 — BIO-INGEST : D-267, décision préalable au LOT-07
 
 ## Branche et état Git
 
@@ -41,11 +41,13 @@ Poser la décision qui autorise la migration du LOT-07 (faits du laboratoire).
 ## Prochaine action exacte
 
 Merge de D-267, vérification de `main`, puis migration seule du LOT-07
-(colonnes + CHECK de forme, sans `btrim/1`), passe Codex, `release-db`.
+(colonnes + CHECK de forme, sans `btrim/1`), passe Codex, `release-db` ;
+puis TRUST v5 et registre constatés ; puis le code.
 
 ## Interdits encore actifs
 
-- Pas de code LOT-07 avant la migration appliquée et constatée.
+- Pas de code LOT-07 avant la migration appliquée et constatée, ET `usage_ia`
+  v5 et le registre RGPD servis et constatés (`D-267` §9).
 - Rien sur `ResultatBiologique` ; aucune borne dérivée.
 - `bio-extraction-v2` jamais déployé avant `usage_ia` v5 constatée.
 - Aucune identité réelle ; aucun nom de praticien ou de patient des modèles
