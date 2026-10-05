@@ -21,6 +21,9 @@ transmission par le patient et l'import d'un laboratoire. **Toutes les voies
 aboutissent à `resultats_biologiques`, toujours après une validation humaine
 explicite.**
 
+Coordination avec BIO-PARCOURS (pistes, gates, parallélisme) :
+[`BIOFLOW_ROADMAP.md`](../../../architecture/bioflow/BIOFLOW_ROADMAP.md).
+
 ## Ce qui a causé cette campagne
 
 La saisie biologique est ouverte en production depuis le 2026-09-09

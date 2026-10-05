@@ -22,6 +22,9 @@ Le premier parcours est l'« exploration du besoin 2 », construit d'abord dans
 l'**étage outil**. L'**étage assistant** se développe derrière drapeau et
 n'ouvre que fonction par fonction (`D-266` §2).
 
+Coordination avec BIO-INGEST (pistes, gates, parallélisme) :
+[`BIOFLOW_ROADMAP.md`](../../../architecture/bioflow/BIOFLOW_ROADMAP.md).
+
 ## Ce qui a causé cette campagne
 
 La saisie et l'import des résultats biologiques sont ouverts en production
