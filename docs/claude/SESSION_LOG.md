@@ -9155,3 +9155,22 @@ Promotions : décision → D-267 ; règle → aucune.
 **Prochaine action.** Merge, puis migration seule du LOT-07.
 
 **Questions ouvertes.** §35 du cadrage BioFlow vide ; audit BioFlow en cours.
+
+## 2026-10-05 — LOT-07 migré (#1326) ; BioFlow : audit des panels versé
+
+**Décidé.** Migration des faits du laboratoire mergée. `wn-reviewer` a rendu
+un GO et Codex un avis favorable. `release-db` reste à approuver, puis le
+constat par conteneur. L'audit des panels est versé comme snapshot. La
+roadmap gagne la Track C (en cadrage) et le gel des nouveaux packs cliniques.
+
+**Écarté.** Un test sur l'espace insécable seule (dépend de la locale de la
+base) ; une Track C qui réécrirait BP-04, BP-16 ou BP-18.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** Constat de la migration, puis TRUST `usage_ia` v5 et
+registre RGPD, puis le code du LOT-07.
+
+**Questions ouvertes.** Le §35 du cadrage BioFlow ; Track C en campagne ou en
+lots BIO-PARCOURS ; axes en liste neuve ou via `NeuroAxis` ; signataire des
+correspondances NABM.
