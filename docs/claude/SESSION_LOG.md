@@ -9019,3 +9019,22 @@ le constat.
 
 **Questions ouvertes.** Date UTC de la lettre ; e-mail si révocation pendant
 la remise ; export d'accès sans les remises.
+
+## 2026-10-05 — BIO-INGEST LOT-08 : borne totale réelle de l'extraction
+
+**Décidé.** L'appel d'extraction entier est borné à 240 s par un
+`AbortSignal`, flux compris (le `timeout` du SDK ne borne que les en-têtes).
+Un abandon est classé `delai_depasse`. TEMPS 3 a un délai explicite de 20 s.
+Invariant testé sous la péremption de 5 min. PR #1315 mergée.
+
+**Écarté.** Worker, queue et retry (hors lot) ; un passage à
+`bio-extraction-v2` (attend LOT-07).
+
+Promotions : décision → aucune (correctif d'un invariant existant) ; règle →
+aucune (mémoire SDK mise à jour).
+
+**Prochaine action.** Clôture de BIO-INGEST LOT-03, puis
+`BIOFLOW_ROADMAP.md`, puis D-267.
+
+**Questions ouvertes.** Abort du fetch Next dans `after()` à constater sur
+Scalingo ; l'auto-merge contourne le contrôle de clôture.
