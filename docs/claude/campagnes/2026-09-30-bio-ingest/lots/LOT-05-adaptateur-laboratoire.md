@@ -47,7 +47,8 @@ LOT-02, format réel reçu
 
 ## Étapes
 
-- [ ] Obtenir un format réel et un échantillon anonymisé.
+- [ ] Obtenir un format réel et un échantillon anonymisé. Demande envoyée au laboratoire pilote le
+  2026-10-05 (format, canal, contenu, rectificatifs, exemple fictif, conditions) ; réponse attendue.
 - [ ] Décision rectificatif labo.
 - [ ] Mode Plan, puis adaptateur.
 
