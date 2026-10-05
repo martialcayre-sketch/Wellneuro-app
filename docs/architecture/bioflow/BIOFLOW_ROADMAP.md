@@ -42,3 +42,9 @@ L'arbre ci-dessus se met à jour quand un lot courant change.
 - Jamais deux PR simultanées sur les mêmes modèles Prisma ou la même
   frontière biologique.
 - Un merge à la fois (`D-248`) et une migration à la fois (`D-087`).
+
+## Référence
+
+[`AUDIT_BIOFLOW_2026-10-04.md`](AUDIT_BIOFLOW_2026-10-04.md) : l'état des
+lieux du 2026-10-04, figé. C'est une photographie datée, pas un backlog ni
+l'état courant.
