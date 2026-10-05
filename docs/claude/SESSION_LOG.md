@@ -9071,4 +9071,6 @@ Promotions : décision → aucune ; règle → aucune.
 
 **Prochaine action.** Remise en forme de `BIOFLOW_ROADMAP.md`.
 
-**Questions ouvertes.** Aucune.
+**Questions ouvertes.** Les questions des entrées précédentes restent
+ouvertes : la dette auto-merge, et les copies anciennes d'un identifiant de
+dossier.

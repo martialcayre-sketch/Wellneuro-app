@@ -23,6 +23,8 @@ BP-01, BP-26 en parallèle, toute assistance bloquée sans BP-26.
   une phrase sous « Lots ».
 - `.wn/state.json` : `parallel_campaigns[].active_lot`.
 - `ACTIVE_CAMPAIGN.md`, régénéré par `wn-cycle --appliquer`.
+- `changelog.d/2026-10-05-bio-parcours-lot-courant-bp02.md`, ce handoff et
+  l'entrée `SESSION_LOG.md`.
 
 ## Validations exécutées
 
