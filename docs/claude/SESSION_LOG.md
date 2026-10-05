@@ -9038,3 +9038,22 @@ aucune (mémoire SDK mise à jour).
 
 **Questions ouvertes.** Abort du fetch Next dans `after()` à constater sur
 Scalingo ; l'auto-merge contourne le contrôle de clôture.
+
+## 2026-10-05 — BIO-INGEST : clôture administrative du LOT-03
+
+**Décidé.** LOT-03 est marqué terminé dans la campagne, la fiche et
+`.wn/state.json`. « Relancer la lecture » est déclaré non livré et déplacé
+vers une fiche neuve, LOT-09 (non ordonnancée, jamais destructive après
+validation). Les dépendances du LOT-07 sont vérifiées ; il devient lot
+courant, et sa première étape est la décision préalable.
+
+**Écarté.** Rattacher la relance au LOT-07 ; démarrer le LOT-07 dans cette PR.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** Remettre en forme `BIOFLOW_ROADMAP.md`, puis la
+décision préalable au LOT-07.
+
+**Questions ouvertes.** Le `lot_courant` de BIO-PARCOURS est périmé (LOT-01
+terminé). Il reste à rendre le contrôle de clôture obligatoire face à
+l'auto-merge.
