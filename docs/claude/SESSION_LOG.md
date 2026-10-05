@@ -9171,6 +9171,5 @@ Promotions : décision → aucune ; règle → aucune.
 **Prochaine action.** Constat de la migration, puis TRUST `usage_ia` v5 et
 registre RGPD, puis le code du LOT-07.
 
-**Questions ouvertes.** Le §35 du cadrage BioFlow ; Track C en campagne ou en
-lots BIO-PARCOURS ; axes en liste neuve ou via `NeuroAxis` ; signataire des
+**Questions ouvertes.** Track C en campagne ou en lots BIO-PARCOURS ; axes en liste neuve ou via `NeuroAxis` ; signataire des
 correspondances NABM.
