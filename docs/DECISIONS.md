@@ -93,6 +93,20 @@ consigne, validation, restitution, bancs). Passe Codex obligatoire sur la
 migration et sur ce code ([[D-266]] §11, hors BIO-PARCOURS : table de
 `POLITIQUE_REVUE.md`).
 
+**§10 — Un fait non transcrit se dit (précision du 2026-10-05, arbitrage du
+responsable).** Un intervalle imprimé plus long que la borne technique de
+`intervalle_lu` (300 caractères) n'est ni tronqué (ce serait trahir le
+verbatim), ni bloquant pour l'import, ni l'occasion d'une borne nouvelle : le
+fait reste `NULL` et la ligne le **dit**, de façon visible à la validation.
+Même traitement pour un marquage au-delà de 50 caractères. Faute de colonne,
+le signal mourait avec la requête d'extraction : deux booléens
+`intervalle_non_transcrit` et `marquage_non_transcrit` (faux par défaut, vrais
+seulement à côté d'un fait `NULL`, figés à la décision) sont posés par une
+migration seule (`20261005210000_bio_ingest_faits_non_transcrits_v1`), avant le
+code. Ils ne recopient rien du document. **Ils ne se posent que sur un
+dépassement de borne** : un fait absent de l'impression reste `NULL` avec un
+signal faux.
+
 - Options écartées : les faits sur `ResultatBiologique` (rouvre A5 et la
   liste blanche du contrat) ; des bornes min/max numériques (une borne
   dérivée deviendrait citable, et le format imprimé varie : « < 5 »,

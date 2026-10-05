@@ -63,17 +63,24 @@ LOT-02 ; BIO-PARCOURS BP-00 (`D-266`) et BP-01 (garde de non-consommation).
 - [x] Livrer la migration seule (`20261005150000_bio_ingest_faits_laboratoire_v1`,
   contrat `bio_ingest_faits_laboratoire_v1_negatif.sql`), puis la faire
   appliquer par `release-db`.
-- [ ] Servir et constater TRUST `usage_ia` v5 et le registre RGPD (`D-267` §8),
-  avant toute ligne de code d'extraction.
+- [x] Servir et constater TRUST `usage_ia` v5 et le registre RGPD (`D-267` §8),
+  avant toute ligne de code d'extraction (#1328, constatée dans l'image servie
+  682d7de1 le 2026-10-05).
+- [ ] Migration seule du signal « fait non transcrit » (`D-267` §10,
+  `20261005210000_bio_ingest_faits_non_transcrits_v1`), `release-db`, constat.
 - [ ] Livrer l'extraction, le staging, la validation et la restitution.
 
-## Question ouverte pour le code
+## Question tranchée pour le code
 
 Un intervalle imprimé de plus de 300 caractères (tableau par phase du cycle,
-par exemple) ferait échouer tout l'import sous `createMany`. Tronquer
-trahirait le verbatim : choisir et tester un comportement (fait laissé NULL et
-signalé, ou échec motivé). Relevé par `wn-reviewer` sur #1326. La preuve de
-survie à la purge (`D-267` §3) vit dans `bio_ingest_faits_laboratoire_v1_negatif.sql`.
+par exemple) aurait fait échouer tout l'import sous `createMany`. **Tranché
+(`D-267` §10, arbitrage du 2026-10-05)** : le fait reste NULL et la ligne
+porte `intervalle_non_transcrit` (de même `marquage_non_transcrit` au-delà de
+50 caractères), affiché à la validation. Rien n'est tronqué, l'import
+n'échoue pas, aucune borne nouvelle. Le code mesure la longueur comme la base
+(points de code, après le même rognage) et ne pose aucune `maxLength` dans le
+schéma envoyé au modèle. La preuve de survie à la purge (`D-267` §3) vit dans
+`bio_ingest_faits_laboratoire_v1_negatif.sql`.
 
 ## Tests
 

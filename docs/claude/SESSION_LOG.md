@@ -9220,3 +9220,20 @@ Promotions : décision → aucune ; règle → aucune.
 **Prochaine action.** BP-26, la trame.
 
 **Questions ouvertes.** Les 14 écarts d'unité textuels : graphie ou vraie divergence.
+
+## 2026-10-05 — LOT-07 : déploiement débloqué, v5 constatée, migration « non transcrit »
+
+**Décidé.** Le run 37333798544, resté « queued », tenait le groupe de
+déploiement depuis 15:33 : il a été annulé, le déploiement relancé, et la v5 est
+constatée dans l'image servie. Le signal « fait non transcrit » passe par une
+colonne booléenne (arbitrage du responsable), en migration seule. `D-267`
+gagne un §10.
+
+**Écarté.** Une trace serveur seule (le praticien n'aurait rien vu) ; la
+troncature ; l'échec de l'import.
+
+Promotions : décision → aucune (précision de D-267) ; règle → aucune.
+
+**Prochaine action.** Passe Codex, merge, `release-db`, constat, puis le code.
+
+**Questions ouvertes.** Aucune.

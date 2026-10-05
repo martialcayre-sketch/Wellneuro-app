@@ -107,10 +107,11 @@ DECLARE
     'statut', 'termine_le', 'version_prompt'
   ];
   -- `intervalle_lu` et `marquage_lu` : les faits du laboratoire ([[D-267]]),
-  -- tenus par `bio_ingest_faits_laboratoire_v1_negatif.sql`.
+  -- tenus par `bio_ingest_faits_laboratoire_v1_negatif.sql` ; leurs signaux
+  -- `*_non_transcrit` (§10), par `bio_ingest_faits_non_transcrits_v1_negatif.sql`.
   COLS_LIGNE CONSTANT text[] := ARRAY[
     'analyte_propose', 'heure_lue', 'id', 'id_import', 'id_patient', 'id_resultat', 'intervalle_lu',
-    'libelle_lu', 'marquage_lu', 'motif_ecart',
+    'intervalle_non_transcrit', 'libelle_lu', 'marquage_lu', 'marquage_non_transcrit', 'motif_ecart',
     'page', 'preleve_le_lu', 'rang', 'statut', 'statut_mapping', 'traite_le', 'traite_par',
     'unite_lue', 'valeur_lue'
   ];
