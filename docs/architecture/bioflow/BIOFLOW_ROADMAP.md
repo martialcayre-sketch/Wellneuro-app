@@ -13,7 +13,7 @@ BIOFLOW
 │
 ├── Track A — BIO-INGEST
 │   ├── lot courant   : LOT-07, faits imprimés du laboratoire
-│   ├── prochain gate : G1, la décision préalable à LOT-07
+│   ├── prochain gate : G1 levé (D-267, #1325) ; migration #1326 en release-db
 │   └── objectif      : une donnée biologique fiable
 │
 ├── Track B — BIO-PARCOURS
@@ -21,13 +21,18 @@ BIOFLOW
 │   ├── prochain gate : G4, BP-26 avant toute assistance
 │   └── objectif      : l'exploitation longitudinale de la donnée validée
 │
+├── Track C — BIO-PRESCRIPTION
+│   ├── statut        : cadrage (audit du 2026-10-05), non ouverte
+│   ├── articulation  : BP-04, BP-16 et BP-18 de BIO-PARCOURS, sans les dupliquer
+│   └── objectif      : une exploration hiérarchisée, décidée par le praticien, soumise au médecin
+│
 ├── Socle terminologique — existant, à préserver (audit §3.4)
 │   ├── analytes, synonymes / resolver, NABM versionnée (ANS)
 │   ├── remboursement dérivé (remboursable.ts), correspondances signées
 │   └── LOINC [futur] : en complément de la NABM, jamais à sa place
 │
 ├── CROSS-TRACK GATES
-│   G1  BP-01 (levé, #1314) + décision préalable mergée → code LOT-07
+│   G1  BP-01 (levé, #1314) + D-267 (levé, #1325)       → code LOT-07
 │   G2  LOT-07 livré                                    → purge, réconciliation des imports
 │   G3  traitement asynchrone durable livré             → montée en charge de l'ingestion
 │   G4  ligne BP-26 statuée                             → toute assistance clinique
@@ -53,3 +58,11 @@ L'arbre ci-dessus se met à jour quand un lot courant change.
 [`AUDIT_BIOFLOW_2026-10-04.md`](AUDIT_BIOFLOW_2026-10-04.md) : l'état des
 lieux du 2026-10-04, figé. C'est une photographie datée, pas un backlog ni
 l'état courant.
+
+[`AUDIT_PANELS_BIOLOGIE_2026-10-05.md`](AUDIT_PANELS_BIOLOGIE_2026-10-05.md) :
+l'audit des panels (cadrage directeur, première mission). On y trouve les
+mesures de production, la classification, la cible et les trois prochaines
+PR. Lui aussi est figé. **Règle immédiate du responsable (2026-10-05)** :
+aucun nouveau pack biologique clinique tant que la décision de
+rationalisation n'est pas prise ; un besoin s'exprime en analytes, axes,
+règles ou propositions patient.
