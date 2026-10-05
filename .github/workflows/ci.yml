@@ -1019,6 +1019,14 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/bio_ingest_purge_v1_negatif.sql
 
+      # Les faits du laboratoire (D-267) : intervalle et marquage imprimés,
+      # verbatim, nullables, jamais vides ni réécrits à la décision ; ils
+      # survivent à la purge ; resultats_biologiques n'en porte aucun (A5).
+      - name: Faits du laboratoire negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/bio_ingest_faits_laboratoire_v1_negatif.sql
+
       # Écartement praticien d'une proposition d'orientation. LA PROMESSE QUI
       # COMPTE LE PLUS EST LA MOINS VISIBLE : un écartement SANS RÈGLES est
       # refusé. `regles_au_geste` est ce qui permet le RÉVEIL d'une proposition

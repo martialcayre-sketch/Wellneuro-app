@@ -60,7 +60,9 @@ LOT-02 ; BIO-PARCOURS BP-00 (`D-266`) et BP-01 (garde de non-consommation).
 
 - [x] Rédiger la décision amendant la consigne `D-256` et précisant `D-157`
   (`D-267`).
-- [ ] Livrer la migration seule, puis la faire appliquer par `release-db`.
+- [ ] Livrer la migration seule (`20261005150000_bio_ingest_faits_laboratoire_v1`,
+  contrat `bio_ingest_faits_laboratoire_v1_negatif.sql`), puis la faire
+  appliquer par `release-db`.
 - [ ] Servir et constater TRUST `usage_ia` v5 et le registre RGPD (`D-267` §8),
   avant toute ligne de code d'extraction.
 - [ ] Livrer l'extraction, le staging, la validation et la restitution.
