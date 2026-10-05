@@ -5,7 +5,7 @@
 -- Les faits du laboratoire promettent SIX choses, et ce fichier les éprouve TOUTES :
 --   1. absents de l'impression ⇒ NULL : une ligne sans faits s'insère ;
 --   2. présents, ils sont conservés VERBATIM (virgule décimale, tiret long,
---      flèche, intervalle par sexe) ;
+--      flèche, intervalle par sexe, espaces de bord : la base ne normalise rien) ;
 --   3. jamais vides : chaîne vide, espaces, tabulation refusés — la
 --      tabulation est le cas que `btrim` à un argument laissait passer ;
 --   4. bornés : 300 caractères pour l'intervalle, 50 pour le marquage —
@@ -86,6 +86,7 @@ BEGIN
     PERFORM pg_temp.ligne('lig_f3', 3, 'Homme : 30 à 400 ; Femme : 15 à 150', NULL);
     PERFORM pg_temp.ligne('lig_f4', 4, NULL, '*');
     PERFORM pg_temp.ligne('lig_f5', 5, repeat('x', 300), repeat('y', 50));
+    PERFORM pg_temp.ligne('lig_f6', 6, ' < 5 ', ' H ');
   EXCEPTION
     WHEN others THEN
       RAISE EXCEPTION 'FAITS LABO: une ligne valide, avec ou sans faits, a été refusée (%)', SQLERRM;
@@ -95,9 +96,10 @@ BEGIN
      OR (id = 'lig_f2' AND intervalle_lu = '3,5 – 5,0' AND marquage_lu = '↑')
      OR (id = 'lig_f3' AND intervalle_lu = 'Homme : 30 à 400 ; Femme : 15 à 150' AND marquage_lu IS NULL)
      OR (id = 'lig_f4' AND intervalle_lu IS NULL AND marquage_lu = '*')
-     OR (id = 'lig_f5' AND char_length(intervalle_lu) = 300 AND char_length(marquage_lu) = 50);
-  IF nb <> 5 THEN
-    RAISE EXCEPTION 'FAITS LABO: % ligne(s) sur 5 conservent leurs faits tels quels.', nb;
+     OR (id = 'lig_f5' AND char_length(intervalle_lu) = 300 AND char_length(marquage_lu) = 50)
+     OR (id = 'lig_f6' AND intervalle_lu = ' < 5 ' AND marquage_lu = ' H ');
+  IF nb <> 6 THEN
+    RAISE EXCEPTION 'FAITS LABO: % ligne(s) sur 6 conservent leurs faits tels quels (la base ne normalise rien).', nb;
   END IF;
 
   -- ── 3. Jamais vides ──────────────────────────────────────────────────────
@@ -194,7 +196,7 @@ BEGIN
   DELETE FROM comptes_rendus_biologiques WHERE id_patient = 'PAT_CONTRAT_FL1';
   DELETE FROM patients WHERE id_patient = 'PAT_CONTRAT_FL1';
 
-  RAISE NOTICE 'FAITS LABO: absents ⇒ NULL ; verbatim conservés (5 formes) ; vides, espaces et tabulations refusés ; bornes 300/50 admises, +1 refusée ; figés à la décision (réécriture, effacement, ajout) ; survivent à la purge ; resultats_biologiques sans colonne de faits (A5) ; 2 colonnes TEXT nullables, 2 CHECK présents.';
+  RAISE NOTICE 'FAITS LABO: absents ⇒ NULL ; verbatim conservés (6 formes, sans normalisation) ; vides, espaces et tabulations refusés ; bornes 300/50 admises, +1 refusée ; figés à la décision (réécriture, effacement, ajout) ; survivent à la purge ; resultats_biologiques sans colonne de faits (A5) ; 2 colonnes TEXT nullables, 2 CHECK présents.';
 END $$;
 
 ROLLBACK;

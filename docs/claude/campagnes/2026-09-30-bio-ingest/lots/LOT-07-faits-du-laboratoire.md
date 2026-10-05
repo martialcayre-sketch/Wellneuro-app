@@ -67,6 +67,14 @@ LOT-02 ; BIO-PARCOURS BP-00 (`D-266`) et BP-01 (garde de non-consommation).
   avant toute ligne de code d'extraction.
 - [ ] Livrer l'extraction, le staging, la validation et la restitution.
 
+## Question ouverte pour le code
+
+Un intervalle imprimé de plus de 300 caractères (tableau par phase du cycle,
+par exemple) ferait échouer tout l'import sous `createMany`. Tronquer
+trahirait le verbatim : choisir et tester un comportement (fait laissé NULL et
+signalé, ou échec motivé). Relevé par `wn-reviewer` sur #1326. La preuve de
+survie à la purge (`D-267` §3) vit dans `bio_ingest_faits_laboratoire_v1_negatif.sql`.
+
 ## Tests
 
 T3 ; contrat de staging à jour ; banc « un intervalle transcrit ne produit ni

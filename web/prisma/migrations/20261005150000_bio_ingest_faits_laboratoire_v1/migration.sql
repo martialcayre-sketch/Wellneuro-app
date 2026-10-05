@@ -9,7 +9,10 @@
 -- CE QUE LA BASE TIENT :
 --   1. deux colonnes texte NULLABLES — absent de l'impression ⇒ NULL ;
 --   2. non vides si présentes (`~ '\S'`, jamais `btrim` à un argument, qui ne
---      retire que l'espace ASCII) et bornées en longueur. Les bornes sont
+--      retire que l'espace ASCII ; la portée de `\S` au-delà de l'ASCII dépend
+--      de la locale de la base : une valeur faite d'espaces insécables seules
+--      passerait — le parseur, qui écrit seul ces colonnes, la rogne avant) et
+--      bornées en longueur. Les bornes sont
 --      techniques (un intervalle par âge ou par sexe tient sur une ligne de
 --      compte rendu), aucune n'est clinique ;
 --   3. figées avec ce qui a été lu : la décision du praticien ne les réécrit
