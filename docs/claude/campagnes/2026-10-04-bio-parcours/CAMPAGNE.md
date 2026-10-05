@@ -1,10 +1,10 @@
 ---
 id: "2026-10-04-bio-parcours"
 titre: "BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout"
-statut: "en_cours (ouverte le 2026-10-04 en parallèle de BIO-INGEST — LOT-00 terminé, LOT-01 courant)"
+statut: "en_cours (ouverte le 2026-10-04 en parallèle de BIO-INGEST — LOT-00 et LOT-01 terminés ; LOT-02 courant, BP-26 en parallèle, arbitré le 2026-10-05)"
 créée_le: "2026-10-04"
-mise_à_jour: "2026-10-04"
-lot_courant: "LOT-01"
+mise_à_jour: "2026-10-05"
+lot_courant: "LOT-02"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -88,7 +88,9 @@ programme, après deux contre-revues Codex et une contre-revue d'architecture.
 
 Les fiches portent l'identifiant `LOT-nn` qu'exige l'audit ; les documents
 disent `BP-nn` (`D-266` §15). BP-06 est absorbé par BP-05 : `LOT-06` n'est pas
-attribué. Les fiches ne sont écrites que pour la phase 0 ; celles des autres
+attribué. **Lot courant : LOT-02 (BP-02)**, arbitré le 2026-10-05 après BP-01 ;
+BP-26 (LOT-26) avance en parallèle, et toute assistance reste bloquée sans
+lui (gate G4 de `BIOFLOW_ROADMAP.md`). Les fiches ne sont écrites que pour la phase 0 ; celles des autres
 lots s'écrivent quand ils arrivent.
 
 | BP | Fiche | Objet | Statut | Migration | Dépend de |
