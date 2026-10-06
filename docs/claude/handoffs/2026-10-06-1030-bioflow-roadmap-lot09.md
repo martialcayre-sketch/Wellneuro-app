@@ -17,7 +17,9 @@ de lot courant.
 
 ## Fichiers modifiés
 
-`docs/architecture/bioflow/BIOFLOW_ROADMAP.md`, SESSION_LOG, ce handoff.
+`docs/architecture/bioflow/BIOFLOW_ROADMAP.md`, fragment
+`changelog.d/2026-10-06-bioflow-cadrages-et-feuille-de-route.md` (rattrape
+aussi #1337, #1339, #1340), SESSION_LOG, ce handoff.
 
 ## Validations exécutées
 
