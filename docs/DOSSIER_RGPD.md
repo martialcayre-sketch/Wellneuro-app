@@ -238,7 +238,10 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
   Une ligne porte : le dossier, l'import, la nature de l'acte (`lecture` ou
   `revocation`), le code de révocation, l'e-mail du praticien et la date.
   Le code de révocation est pris dans une **liste fermée**, sans texte libre
-  (arbitrage du 2026-10-06) : aucune donnée de santé n'y est saisie. Elle ne
+  (arbitrage du 2026-10-06), donc sans texte libre saisi. Les codes ne sont
+  pas encore fixés : ils le seront au lot de migration, dans un vocabulaire
+  de procédure qui décrit le geste et jamais le patient ([[D-268]] §5,
+  précision). La table reste classée en catégorie particulière. Elle ne
   recopie **aucune valeur**, aucun libellé, aucun marquage (contrat SQL
   négatif). Elle est en **ajout seul** (une révocation est une ligne de plus),
   avec RLS activée sans politique. Elle est **effacée nommément avec le
