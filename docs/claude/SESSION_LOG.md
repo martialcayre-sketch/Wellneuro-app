@@ -9323,3 +9323,17 @@ Promotions : décision → aucune ; règle → aucune.
 **Prochaine action.** CI, merge.
 
 **Questions ouvertes.** Aucune.
+## 2026-10-06 — BIO-PARCOURS BP-23 : cadrage
+
+**Décidé.** #1336 (NUL, procédé v3) est mergée. BP-23 est cadré sans code. Le
+client n'envoie aucune coche : un correctif de route seul bloquerait toute
+diffusion. Une relecture sans modification est un no-op. Trois questions sont
+posées au responsable, chacune avec une recommandation.
+
+**Écarté.** Corriger la route seule ; réécrire la ligne active (append-only).
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** Arbitrages du responsable, puis le banc et le correctif.
+
+**Questions ouvertes.** Les trois de la fiche LOT-23.
