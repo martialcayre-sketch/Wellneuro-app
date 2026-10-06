@@ -124,4 +124,15 @@ describe('GET /api/praticien/biologie/import/compte-rendu', () => {
     }));
     expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
   });
+
+  it('la lecture des actes échoue : le compte rendu reste servi, l’échec est dit (§6)', async () => {
+    process.env.WN_BIO_LECTURE_ENABLED = 'true';
+    prisma.lectureImportBiologique.findMany.mockRejectedValue(new Error('panne'));
+    const res = await GET(new Request(URL_GET));
+    expect(res.status).toBe(200);
+    const corps = await res.json();
+    expect(corps.compteRendu.id).toBe('cr_1');
+    expect(corps.actesLectureIndisponibles).toBe(true);
+    expect(corps).not.toHaveProperty('actesLecture');
+  });
 });

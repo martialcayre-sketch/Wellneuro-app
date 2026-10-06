@@ -410,14 +410,20 @@ export function FilDuJour() {
   ) : null;
 
   if (data.cartes.length === 0 && groupesLus.length === 0) {
-    return (
-      <div data-testid="fil-du-jour" className="flex flex-col gap-3">
-        {alerteLecturesBiologie}
-        <div className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-card">
-          {alerteLecturesBiologie
-            ? 'Aucune autre carte ne vous attend pour le moment.'
-            : "Rien n'appelle votre attention pour le moment. Le Fil se remplit à mesure que les signalements, les échéances et les synthèses arrivent."}
+    if (alerteLecturesBiologie) {
+      return (
+        <div data-testid="fil-du-jour" className="flex flex-col gap-3">
+          {alerteLecturesBiologie}
+          <div className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-card">
+            Aucune autre carte ne vous attend pour le moment.
+          </div>
         </div>
+      );
+    }
+    return (
+      <div data-testid="fil-du-jour" className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-card">
+        Rien n&apos;appelle votre attention pour le moment. Le Fil se remplit à mesure
+        que les signalements, les échéances et les synthèses arrivent.
       </div>
     );
   }

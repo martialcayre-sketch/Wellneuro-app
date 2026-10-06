@@ -412,7 +412,7 @@ describe('GET /api/praticien/fil — comptes rendus biologiques à lire (D-268, 
     }
   });
 
-  it('BANC : un import validé sans lecture produit sa carte, sans bouton de refus côté serveur', async () => {
+  it('BANC : un import validé sans lecture produit sa carte, bornée au praticien en session', async () => {
     const payload = await (await GET()).json();
     expect(payload.cartes).toEqual([
       expect.objectContaining({ type: 'import_biologique_a_lire', cle: 'import_biologique_a_lire:imp_1', idPatient: 'PAT_SOPHIE' }),

@@ -174,6 +174,17 @@ describe('POST /api/praticien/biologie/import/lecture', () => {
     expect((await res.json()).reason).toBe('lecture_deja_active');
   });
 
+  it('DEUX RÉVOCATIONS CONCURRENTES : l’index unique refuse la seconde, nommée « déjà révoquée », jamais un 500', async () => {
+    const revocation = { ...LECTURE, id: 'rev_1', acte: 'revocation', idLectureRevoquee: 'lec_1', codeRevocation: 'mauvais_import' };
+    prisma.lectureImportBiologique.findMany.mockResolvedValueOnce([LECTURE]).mockResolvedValueOnce([LECTURE, revocation]);
+    prisma.lectureImportBiologique.create.mockRejectedValue(Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }));
+    const res = await POST(requete({
+      idPatient: 'PAT_SOPHIE', idImport: 'imp_1', acte: 'revocation', idLecture: 'lec_1', code: 'lecture_a_refaire',
+    }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('lecture_deja_revoquee');
+  });
+
   it('un refus de la base que la relecture n’explique pas reste une erreur technique, jamais un succès', async () => {
     prisma.lectureImportBiologique.create.mockRejectedValue(new Error('panne'));
     const res = await POST(requete({ idPatient: 'PAT_SOPHIE', idImport: 'imp_1', acte: 'lecture' }));

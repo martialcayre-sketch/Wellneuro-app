@@ -42,8 +42,15 @@ export async function GET(req: Request) {
     const compteRendu = await lireCompteRendu(idPatient, idCompteRendu);
     if (!compteRendu) return echec('compte_rendu_introuvable', MESSAGES_RETRAIT.compte_rendu_introuvable, 404);
     if (!isBioLectureEnabled()) return NextResponse.json({ ok: true, compteRendu });
-    const actesLecture = await lireActesLecture(idPatient, compteRendu.imports.map(i => i.id));
-    return NextResponse.json({ ok: true, compteRendu, actesLecture });
+    // ISOLÉE : un échec de lecture des actes ne rend pas le compte rendu
+    // illisible (les décisions de ligne en dépendent) ; l'écran le dit (§6).
+    try {
+      const actesLecture = await lireActesLecture(idPatient, compteRendu.imports.map(i => i.id));
+      return NextResponse.json({ ok: true, compteRendu, actesLecture });
+    } catch (err) {
+      console.error('[praticien/biologie/import/compte-rendu GET] actes de lecture :', ...classeEtCode(err));
+      return NextResponse.json({ ok: true, compteRendu, actesLectureIndisponibles: true });
+    }
   } catch (err) {
     console.error('[praticien/biologie/import/compte-rendu GET] refus :', ...classeEtCode(err));
     return echec('server_error', 'Erreur technique.', 500);

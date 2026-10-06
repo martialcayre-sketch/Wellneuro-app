@@ -42,6 +42,11 @@ const URL_BASE = process.env.DATABASE_URL;
 if (!URL_BASE) throw new Error('DATABASE_URL est requise.');
 const BASE_ATTENDUE = process.env.WN_BIO_LECTURE_BANC_BASE;
 const BASE_REELLE = new URL(URL_BASE).pathname.slice(1);
+// Hôte LOCAL seulement (garde-fou de T3) : le banc commet des écritures.
+const HOTE = new URL(URL_BASE).hostname;
+if (HOTE !== '127.0.0.1' && HOTE !== 'localhost') {
+  throw new Error(`REFUS : DATABASE_URL vise l'hôte « ${HOTE} », le banc n'écrit que sur une base locale.`);
+}
 if (!BASE_ATTENDUE || BASE_ATTENDUE !== BASE_REELLE) {
   throw new Error(
     `REFUS : DATABASE_URL vise « ${BASE_REELLE} », WN_BIO_LECTURE_BANC_BASE annonce « ${BASE_ATTENDUE ?? ''} ».`,

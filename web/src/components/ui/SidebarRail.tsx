@@ -126,7 +126,11 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
     fetch('/api/praticien/fil')
       .then(r => r.json())
       .then((d: FilApiResponse) => {
-        if (vivant && !d.unavailable && Array.isArray(d.cartes)) setNbCartesFil(d.cartes.length);
+        // Un Fil dont les comptes rendus à lire n'ont pas pu être calculés
+        // ([[D-268]] §6) SOUS-COMPTERAIT : pas de compteur plutôt qu'un faux.
+        if (vivant && !d.unavailable && !d.lecturesBiologieIndisponibles && Array.isArray(d.cartes)) {
+          setNbCartesFil(d.cartes.length);
+        }
       })
       .catch(() => {});
     // Le COMPTEUR, pas la liste : le rail n'a jamais affiché les lignes, et les

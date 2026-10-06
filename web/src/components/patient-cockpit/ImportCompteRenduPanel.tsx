@@ -215,6 +215,7 @@ export function ImportCompteRenduPanel({
    * que la route ne les rend pas (drapeau `WN_BIO_LECTURE_ENABLED` éteint).
    */
   const [actesLecture, setActesLecture] = useState<Record<string, ActeLectureLu[]> | null>(null);
+  const [actesLectureIndisponibles, setActesLectureIndisponibles] = useState(false);
   const bioLectureEnabled = useBioLectureEnabled();
 
   const urlDossier = `idPatient=${encodeURIComponent(idPatient)}`;
@@ -244,6 +245,7 @@ export function ImportCompteRenduPanel({
           ok: boolean;
           compteRendu?: CompteRenduLu;
           actesLecture?: Record<string, ActeLectureLu[]>;
+          actesLectureIndisponibles?: boolean;
           error?: string;
         }>(response);
         if (ouvertRef.current !== idCompteRendu) return false;
@@ -254,6 +256,7 @@ export function ImportCompteRenduPanel({
         const lu = payload.compteRendu;
         setDetail(lu);
         setActesLecture(payload.actesLecture ?? null);
+        setActesLectureIndisponibles(payload.actesLectureIndisponibles === true);
         // Les saisies en cours survivent à une relecture ; une ligne décidée sort.
         const lignes = lu.imports.find(i => i.courant)?.lignes ?? [];
         setSaisies(avant => {
@@ -304,6 +307,7 @@ export function ImportCompteRenduPanel({
       ouvertRef.current = idCompteRendu;
       setDetail(null);
       setActesLecture(null);
+      setActesLectureIndisponibles(false);
       setErreur(null);
       setInfo(null);
       setRefusParLigne({});
@@ -663,6 +667,11 @@ export function ImportCompteRenduPanel({
 
           {/* L'acte de lecture d'un import VALIDÉ ([[D-268]]) : sous la
               restitution qu'il atteste, jamais à sa place. */}
+          {bioLectureEnabled && actesLectureIndisponibles && (
+            <p role="alert" className="mt-3 text-sm text-status-danger">
+              L’état de lecture de ce compte rendu n’a pas pu être vérifié. Rouvrez-le pour réessayer.
+            </p>
+          )}
           {bioLectureEnabled && actesLecture !== null && detail.imports.map(i => (
             <LectureImportBiologique
               key={i.id}
