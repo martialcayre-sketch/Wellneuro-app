@@ -105,6 +105,18 @@ describe('analyserSortieExtraction — schéma fermé aux bornes des CHECK', () 
     expect(r.lignes[1].valeur).toBe('<0,5');
   });
 
+  it('un NUL dans le libellé, la valeur, l’unité ou le laboratoire se retire : la base le refuserait et l’import entier échouerait', () => {
+    const r = analyserSortieExtraction(JSON.stringify({
+      ...SORTIE,
+      laboratoire: 'Laboratoire\u0000 de fixture',
+      lignes: [{ ...SORTIE.lignes[0], libelle: 'Ferri\u0000tine', valeur: '\u000048', unite: 'ng/mL\u0000' }],
+    }));
+    if (!r.ok) throw new Error('attendu ok');
+    expect(r.laboratoire).toBe('Laboratoire de fixture');
+    expect(r.lignes[0]).toMatchObject({ libelle: 'Ferritine', valeur: '48', unite: 'ng/mL' });
+    expect(JSON.stringify(r)).not.toContain('\\u0000');
+  });
+
   it('un document illisible rend `document_illisible`', () => {
     expect(analyserSortieExtraction(JSON.stringify({ lisible: false, laboratoire: null, lignes: [] })))
       .toEqual({ ok: false, motif: 'document_illisible' });
@@ -120,6 +132,7 @@ describe('analyserSortieExtraction — schéma fermé aux bornes des CHECK', () 
       avec({ page: 0 }),
       avec({ page: 1.5 }),
       avec({ libelle: '   ' }),
+      avec({ libelle: '\u0000' }),
       avec({ libelle: 'x'.repeat(301) }),
       avec({ valeur: 'x'.repeat(101) }),
       avec({ unite: 'x'.repeat(51) }),
@@ -237,7 +250,8 @@ describe('extraireCompteRendu — l’appel', () => {
     create.mockResolvedValue(reponse(JSON.stringify(SORTIE)));
     await extraireCompteRendu(Buffer.from('%PDF-1.7 fixture'), 'application/pdf');
     const [params] = create.mock.calls[0];
-    expect(VERSION_PROCEDE_EXTRACTION).toBe('bio-extraction-v2');
+    // v3 : mêmes prompt et schéma que la v2, règle de lecture du NUL en plus.
+    expect(VERSION_PROCEDE_EXTRACTION).toBe('bio-extraction-v3');
     // La phrase de D-256 amendée ne survit pas ; « n'interprète rien » reste.
     expect(params.system).not.toContain('ne recopie ni les valeurs de référence');
     expect(params.system).toContain('N’interprète rien');

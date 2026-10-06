@@ -9290,3 +9290,20 @@ Promotions : décision → aucune ; règle → aucune.
 
 **Questions ouvertes.** Une lecture entièrement écartée est purgée (D-258) et
 ne se relance plus : faut-il un recours ?
+
+## 2026-10-06 — BIO-INGEST : NUL dans `texteBorne`, procédé v3
+
+**Décidé.** #1335 (LOT-09) est mergée, son déploiement est en cours. La dette
+NUL est soldée : le NUL se retire du libellé, de la valeur, de l'unité et du
+laboratoire lus. Le procédé passe à `bio-extraction-v3` (revue Copilot). Aucune
+extraction v2 n'avait eu lieu en production.
+
+**Écarté.** Garder v2 : le contrat du littéral impose l'incrément dès qu'une
+règle de lecture change.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** Merge, constat ; BP-23 cadré, en attente d'arbitrage.
+
+**Questions ouvertes.** Les trois arbitrages de BP-23 (relecture d'un contenu
+inchangé, ré-enregistrement décoché, coche à l'écran).

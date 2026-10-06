@@ -321,7 +321,8 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   `WN-CL-0387-013`. Quelques lignes, à poser au prochain passage sur ce fichier.
 
 - **Dette — un NUL dans le libellé, la valeur ou l'unité lus fait échouer
-  tout l'import** (constatée le 2026-10-05, routée depuis la revue Copilot de
+  tout l'import — SOLDÉE le 2026-10-06** (le NUL se retire dans `texteBorne`
+  avant le rognage ; banc dans `extraction.test.ts`). (Constatée le 2026-10-05, routée depuis la revue Copilot de
   la PR #1333). `texteBorne` (`web/src/lib/biology-library/import/extraction.ts`)
   rogne et borne, mais laisse passer un U+0000 intérieur, que PostgreSQL
   refuse : le `createMany` des lignes échoue et l'import entier se clôt
