@@ -105,6 +105,8 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
   },
 ];
 
+const LIBELLE_FIL_INCOMPLET = 'comptes rendus biologiques à lire non vérifiés';
+
 interface SidebarRailProps {
   collapsed: boolean;
   onNavigate?: () => void;
@@ -117,6 +119,12 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
   const pathname = usePathname();
   // Compteur réel du Fil — même API que l'écran ; silence en cas d'échec.
   const [nbCartesFil, setNbCartesFil] = useState<number | null>(null);
+  /**
+   * Le Fil a été servi SANS ses comptes rendus biologiques à lire, dont le
+   * calcul a échoué ([[D-268]] §6). Le rail le DIT — un rail sans compteur
+   * ressemblerait à un Fil vide (contre-revue Codex, #1347).
+   */
+  const [filIncomplet, setFilIncomplet] = useState(false);
   // Dossiers où l'on a écrit au médecin et où rien n'est revenu — silence en
   // cas d'échec. Le délai vient du serveur : l'écran le dit, il ne le fixe pas.
   const [nbCorrespondance, setNbCorrespondance] = useState<number | null>(null);
@@ -126,7 +134,11 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
     fetch('/api/praticien/fil')
       .then(r => r.json())
       .then((d: FilApiResponse) => {
-        if (vivant && !d.unavailable && Array.isArray(d.cartes)) setNbCartesFil(d.cartes.length);
+        // Un Fil dont les comptes rendus à lire n'ont pas pu être calculés
+        // ([[D-268]] §6) SOUS-COMPTERAIT : pas de compteur plutôt qu'un faux.
+        if (!vivant || d.unavailable) return;
+        if (d.lecturesBiologieIndisponibles) setFilIncomplet(true);
+        else if (Array.isArray(d.cartes)) setNbCartesFil(d.cartes.length);
       })
       .catch(() => {});
     // Le COMPTEUR, pas la liste : le rail n'a jamais affiché les lignes, et les
@@ -206,7 +218,13 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
                 href={item.href}
                 onClick={onNavigate}
                 aria-current={active ? 'page' : undefined}
-                aria-label={collapsed ? item.label : undefined}
+                aria-label={
+                  collapsed
+                    ? item.badge === 'fil' && filIncomplet
+                      ? `${item.label} — ${LIBELLE_FIL_INCOMPLET}`
+                      : item.label
+                    : undefined
+                }
                 className={`group flex min-h-11 items-center gap-3 rounded-[11px] px-3 py-2.5 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
                   collapsed ? 'justify-center' : ''
                 } ${
@@ -224,6 +242,18 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
                   className={`shrink-0 ${active ? '' : 'opacity-85'}`}
                 />
                 {!collapsed && <span className="min-w-0 flex-1 truncate">{item.label}</span>}
+                {item.badge === 'fil' && filIncomplet && (
+                  // Le « ! » double le texte, jamais la couleur seule (A5-R1),
+                  // et se voit rail réduit comme déplié.
+                  <span
+                    className="shrink-0 rounded-full border border-rail-accent px-1.5 py-0.5 font-mono text-2xs font-semibold text-rail-accent"
+                    title={LIBELLE_FIL_INCOMPLET}
+                    data-testid="fil-incomplet"
+                  >
+                    <span aria-hidden="true">!</span>
+                    {!collapsed && <span className="sr-only">{LIBELLE_FIL_INCOMPLET}</span>}
+                  </span>
+                )}
                 {(() => {
                   const compteur = compteurBadge(item.badge);
                   return !collapsed && compteur !== null && compteur > 0 ? (

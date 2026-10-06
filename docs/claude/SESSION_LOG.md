@@ -9454,3 +9454,20 @@ Promotions : décision → précisions `D-268` §5 ; règle → aucune.
 le code sous drapeau.
 
 **Questions ouvertes.** Aucune pour la table.
+
+## 2026-10-06 — BP-10, code de l'acte de lecture sous drapeau
+
+**Décidé.**
+- Carte du Fil non écartable, sans plafond, échec visible.
+- Acte au cockpit biologie, révocation par code fermé.
+- Écrivain en une instruction hors transaction.
+- Drapeau `WN_BIO_LECTURE_ENABLED`, éteint.
+- Banc à deux sessions en CI et en T3. Isolation de production constatée
+  `read committed`.
+
+**Écarté.** Plafond de cartes : il tronquerait en silence.
+
+**Prochaine action.** PR, Codex, merge, puis allumage par le responsable.
+
+**Questions ouvertes.** Dossiers inactifs sans carte ; la carte ne désigne
+pas le compte rendu.

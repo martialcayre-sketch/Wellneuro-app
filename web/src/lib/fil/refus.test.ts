@@ -107,3 +107,9 @@ describe('cleCarteValide', () => {
     expect(cleCarteValide('reponse_recente:REP_1')).toBe(false);
   });
 });
+
+describe('compte rendu biologique à lire — la carte ne s’écarte pas (D-268 §5)', () => {
+  it('la route du refus rejette sa clé : aucun refus ne peut la faire disparaître', () => {
+    expect(cleCarteValide('import_biologique_a_lire:imp_1')).toBe(false);
+  });
+});

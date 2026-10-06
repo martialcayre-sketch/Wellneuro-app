@@ -134,6 +134,11 @@ distinct**, hors BP-10. `AdressageSignalAlerte` n'est pas étendu par ce lot.
 déjà validé en production sans acte de lecture produit sa carte. Aucun acte
 n'est présumé pour le passé.
 
+*Précision du 2026-10-06, au lot de code (arbitrage du responsable, revue
+`wn-reviewer` de la PR #1347)* : « tout import validé » s'entend **des dossiers
+actifs**. Un dossier `actif = false` ne produit aucune carte, comme pour toutes
+les cartes du Fil : la carte suit le régime commun, sans exception.
+
 **§9 — La surface dit ce qu'elle n'est pas.** La carte et l'écran de l'acte
 disent qu'ils ne sont **pas un filet de sécurité** : Wellneuro ne lit aucune
 valeur et ne surveille rien en continu. Le marquage imprimé est restitué tel

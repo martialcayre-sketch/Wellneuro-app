@@ -88,3 +88,23 @@ export function isBioIngestEnabled(
 ): boolean {
   return isCbResultsEnabled(valueResultats, valueRayon) && value === 'true';
 }
+
+/**
+ * Sécurité biologique, étage 1 — l'ACTE DE LECTURE d'un import validé
+ * ([[D-268]], BIO-PARCOURS BP-10) : la carte du Fil « compte rendu à lire »,
+ * et le geste qui la résout dans le cockpit biologie.
+ *
+ * Drapeau NÉ AVEC LE CODE, éteint = comportement actuel (§10) : aucune carte,
+ * aucune lecture de la table, route en 503. Exige AUSSI l'import
+ * (`isBioIngestEnabled`) : un acte se pose sur un import, et la surface qui
+ * le porte est l'écran de l'import — une carte qui mènerait à un écran fermé
+ * appellerait un geste impossible. Absent = éteint (fail-closed).
+ */
+export function isBioLectureEnabled(
+  value = process.env.WN_BIO_LECTURE_ENABLED,
+  valueImport = process.env.WN_BIO_INGEST_ENABLED,
+  valueResultats = process.env.WN_CB_RESULTS_ENABLED,
+  valueRayon = process.env.WN_CB_ENABLED,
+): boolean {
+  return isBioIngestEnabled(valueImport, valueResultats, valueRayon) && value === 'true';
+}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlarmClock, CalendarClock, Flag, FlagTriangleRight, FlaskConical, MailX, MessageSquare, PenLine, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
+import { AlarmClock, CalendarClock, FileText, Flag, FlagTriangleRight, FlaskConical, MailX, MessageSquare, PenLine, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 import type { MeteoAdhesionApiResponse } from '@/app/api/praticien/meteo-adhesion/route';
 import { indexCarteImminente, resumeFil, type CarteFil, type TypeCarteFil } from '@/lib/fil/cartes';
@@ -25,6 +25,10 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
   jalon_j21: { libelle: 'Jalon', icon: Flag },
   t0_a_confirmer: { libelle: 'T0 à confirmer', icon: FlagTriangleRight },
   biologie_arbitree: { libelle: 'Biologie arbitrée', icon: FlaskConical },
+  // « À LIRE » ET NON « ALERTE » : la carte dit qu'aucune lecture n'est
+  // consignée, pas que le résultat inquiète — Wellneuro ne lit aucune valeur
+  // ([[D-268]] §1, §9).
+  import_biologique_a_lire: { libelle: 'Biologie à lire', icon: FileText },
   assignation_en_retard: { libelle: 'En retard', icon: AlarmClock },
   reprise: { libelle: 'Reprise', icon: RotateCcw },
   // UN LIBELLÉ NEUTRE, jamais « Alerte » : un patient qui conteste fait ce
@@ -185,6 +189,11 @@ function CarteDuFil({
             </span>
           </div>
         </div>
+        {/* UNE CARTE NE S'ÉCARTE PAS : le compte rendu à lire ([[D-268]] §5).
+            Seul l'acte de lecture la résout, et la route du refus rejette sa
+            clé (`cleCarteValide`) — offrir le bouton ferait voir un geste que
+            le serveur refuse. */}
+        {carte.type !== 'import_biologique_a_lire' && (
         <div className="flex w-full items-center justify-end gap-3 sm:w-auto sm:shrink-0 sm:self-center">
           {/* Écarter est un geste réversible : rien n'est supprimé, la carte
               reste annulable juste après (garde-fou 5.0). La carte imminente
@@ -198,6 +207,7 @@ function CarteDuFil({
             Écarter
           </button>
         </div>
+        )}
       </div>
     </article>
   );
@@ -389,7 +399,27 @@ export function FilDuJour() {
   // quelque chose de rassurant.
   const groupesLus = grouperLuesParLecture(data.lues ?? []);
 
+  // L'ÉCHEC DU CALCUL DES COMPTES RENDUS À LIRE SE VOIT ([[D-268]] §6), et
+  // jusque dans le Fil vide : « rien n'appelle votre attention » serait une
+  // affirmation fausse sur un signalement qu'on n'a pas pu calculer.
+  const alerteLecturesBiologie = data.lecturesBiologieIndisponibles ? (
+    <p role="alert" className="rounded-lg border border-border bg-muted px-4 py-2 text-base text-foreground">
+      Les comptes rendus biologiques à lire n&apos;ont pas pu être vérifiés. Rechargez la page ; si
+      cela persiste, ouvrez la biologie de vos dossiers.
+    </p>
+  ) : null;
+
   if (data.cartes.length === 0 && groupesLus.length === 0) {
+    if (alerteLecturesBiologie) {
+      return (
+        <div data-testid="fil-du-jour" className="flex flex-col gap-3">
+          {alerteLecturesBiologie}
+          <div className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-card">
+            Aucune autre carte ne vous attend pour le moment.
+          </div>
+        </div>
+      );
+    }
     return (
       <div data-testid="fil-du-jour" className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-card">
         Rien n&apos;appelle votre attention pour le moment. Le Fil se remplit à mesure
@@ -419,6 +449,7 @@ export function FilDuJour() {
           aria-hidden="true"
           className="pointer-events-none absolute bottom-4 left-[69px] top-4 w-px bg-border sm:left-[81px]"
         />
+        {alerteLecturesBiologie}
         {erreurRefus && (
           <p role="alert" className="rounded-lg border border-border bg-muted px-4 py-2 text-base text-foreground">
             {erreurRefus}

@@ -9,6 +9,12 @@
 import { bornesJourParis, formatHeureParis } from './fuseau';
 import { lienFilVersFiche } from './lectureCartes';
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
+import {
+  LIBELLES_CODE_REVOCATION,
+  MENTION_PAS_UN_FILET,
+  estCodeRevocation,
+  type ImportALireRow,
+} from '@/lib/biology-library/import/lectureImport';
 
 // `reponse_recente` a été retiré (accueil-observatoire LOT-02, décision
 // propriétaire 2026-07-23) : les questionnaires reçus vivent dans l'inbox par
@@ -29,6 +35,13 @@ export type TypeCarteFil =
   | 'jalon_j21'
   | 't0_a_confirmer'
   | 'biologie_arbitree'
+  // UN COMPTE RENDU BIOLOGIQUE VALIDÉ QUE PERSONNE N'A LU ([[D-268]], BP-10).
+  // Valider des lignes n'est pas lire le compte rendu. La carte NE S'ÉCARTE
+  // PAS (absente de `TYPES_CARTE`, `refus.ts`) et NE S'ACQUITTE PAS PAR
+  // LECTURE (absente de `TYPES_ACQUITTABLES_PAR_LECTURE`) : seul l'acte de
+  // lecture, posé dans le cockpit biologie, la résout ; sa révocation la
+  // rouvre (§5).
+  | 'import_biologique_a_lire'
   | 'assignation_en_retard'
   | 'reprise'
   // LE RETOUR DU PATIENT SUR SON OBJECTIF. Jusqu'au 2026-09-10, ratifier,
@@ -668,6 +681,64 @@ export function cartesBiologieArbitree(
     }));
 }
 
+/**
+ * Compte rendu biologique validé sans acte de lecture actif ([[D-268]]). Une
+ * carte par import, ancrée sur `idImport`.
+ *
+ * AUCUN PLAFOND, à la différence des autres types : la carte ne s'écarte pas,
+ * et en tronquer la liste ferait échouer en silence le signalement d'un
+ * import (§6). Tous les imports antérieurs sont inclus (§8).
+ *
+ * Trois formes, selon ce qui attend le praticien : des lignes à décider (la
+ * lecture ne se consigne qu'ensuite), une lecture révoquée (la révocation a
+ * rouvert), ou une lecture jamais consignée. Toutes trois disent ce qu'elles ne
+ * sont pas (§9).
+ */
+export function cartesImportsALire(
+  lignes: ImportALireRow[],
+  noms: Map<string, string>,
+): CarteFil[] {
+  return lignes
+    .slice()
+    .sort((a, b) => a.valideLe.getTime() - b.valideLe.getTime())
+    .map(ligne => {
+      const revocation = ligne.derniereRevocation;
+      let titre: string;
+      let pourquoi: string;
+      let date = ligne.valideLe;
+      if (ligne.nbProposees > 0) {
+        titre = 'Compte rendu biologique — lignes à décider';
+        pourquoi =
+          `Des résultats sont entrés au dossier le ${formatDateFr(ligne.valideLe)} ; `
+          + `${ligne.nbProposees} ligne${ligne.nbProposees > 1 ? 's restent' : ' reste'} à décider `
+          + 'avant que la lecture se consigne.';
+      } else if (revocation) {
+        const motif = estCodeRevocation(revocation.codeRevocation)
+          ? ` (${LIBELLES_CODE_REVOCATION[revocation.codeRevocation].toLowerCase()})`
+          : '';
+        titre = 'Compte rendu biologique — lecture à consigner à nouveau';
+        pourquoi = `Lecture révoquée le ${formatDateFr(revocation.acteLe)}${motif} : aucune lecture n’est consignée.`;
+        date = revocation.acteLe;
+      } else {
+        titre = 'Compte rendu biologique à lire';
+        pourquoi = `Résultats entrés au dossier le ${formatDateFr(ligne.valideLe)} : aucune lecture n’est consignée.`;
+      }
+      return {
+        type: 'import_biologique_a_lire' as const,
+        idPatient: ligne.idPatient,
+        patient: nomPatient(noms, ligne.idPatient),
+        titre,
+        pourquoi: `${pourquoi} ${MENTION_PAS_UN_FILET}`,
+        date: date.toISOString(),
+        // Le cockpit biologie vit sous l'onglet Trajectoire : on y lit la
+        // restitution et on y pose l'acte — jamais depuis la carte.
+        href: `/dashboard/patients/${encodeURIComponent(ligne.idPatient)}?onglet=trajectoire`,
+        actionLabel: 'Ouvrir la biologie',
+        cle: cleCarte('import_biologique_a_lire', ligne.idImport),
+      };
+    });
+}
+
 export function cartesAssignationsEnRetard(
   assignations: AssignationRow[],
   noms: Map<string, string>,
@@ -750,6 +821,7 @@ const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string 
   { type: 'synthese_non_servie', singulier: 'synthèse non transmise', pluriel: 'synthèses non transmises' },
   { type: 'jalon_j21', singulier: 'jalon', pluriel: 'jalons' },
   { type: 'biologie_arbitree', singulier: 'biologie arbitrée', pluriel: 'biologies arbitrées' },
+  { type: 'import_biologique_a_lire', singulier: 'compte rendu à lire', pluriel: 'comptes rendus à lire' },
   { type: 'assignation_en_retard', singulier: 'retard', pluriel: 'retards' },
   { type: 'reprise', singulier: 'reprise', pluriel: 'reprises' },
 ];
@@ -807,6 +879,7 @@ export function construireFil(entrees: {
   premieresSyntheses?: Map<string, Date>;
   assignationsToutes?: AssignationRideauRow[];
   biologiesArbitrees?: BiologieArbitreeCarteRow[];
+  importsALire?: ImportALireRow[];
   gestesObjectif?: GesteObjectifRow[];
   assignations: AssignationRow[];
   activites: DerniereActiviteRow[];
@@ -829,6 +902,7 @@ export function construireFil(entrees: {
     premieresSyntheses = new Map<string, Date>(),
     assignationsToutes = [],
     biologiesArbitrees = [],
+    importsALire = [],
     gestesObjectif = [],
     assignations,
     activites,
@@ -840,6 +914,11 @@ export function construireFil(entrees: {
     // une consultation imminente. Viennent ensuite les consultations du jour.
     ...cartesSignalementsTrust(signalements, noms),
     ...cartesConsultationsPrevues(consultations, noms, maintenant),
+    // UN COMPTE RENDU VALIDÉ ET NON LU passe juste après : c'est une donnée de
+    // santé entrée au dossier sans qu'un praticien l'ait lue ([[D-268]]). Il ne
+    // précède ni un signalement Trust (une réponse humaine attendue) ni la
+    // consultation du jour.
+    ...cartesImportsALire(importsALire, noms),
     // LE RETOUR DU PATIENT VIENT TÔT, et c'est délibéré : il a répondu, il
     // attend. Après les signalements et les consultations du jour, avant les
     // synthèses à produire — une parole reçue passe devant un travail à faire.

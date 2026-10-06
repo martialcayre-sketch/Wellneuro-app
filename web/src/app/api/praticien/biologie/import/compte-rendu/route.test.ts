@@ -10,6 +10,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     ligneBiologiqueCandidate: { createMany: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() },
     resultatBiologique: { create: vi.fn() },
     biologyAnalyte: { findMany: vi.fn() },
+    lectureImportBiologique: { findMany: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -48,6 +49,7 @@ afterEach(() => {
   delete process.env.WN_CB_ENABLED;
   delete process.env.WN_CB_RESULTS_ENABLED;
   delete process.env.WN_BIO_INGEST_ENABLED;
+  delete process.env.WN_BIO_LECTURE_ENABLED;
   vi.clearAllMocks();
 });
 
@@ -96,5 +98,41 @@ describe('GET /api/praticien/biologie/import/compte-rendu', () => {
     const res = await GET(new Request(URL_GET));
     expect(res.status).toBe(503);
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('drapeau de la lecture éteint : ni actes rendus, ni table lue (comportement actuel)', async () => {
+    const corps = await (await GET(new Request(URL_GET))).json();
+    expect(corps).not.toHaveProperty('actesLecture');
+    expect(prisma.lectureImportBiologique.findMany).not.toHaveBeenCalled();
+  });
+
+  it('drapeau de la lecture allumé : les actes des imports, dans la même réponse, un seul accès journalisé (D-268)', async () => {
+    process.env.WN_BIO_LECTURE_ENABLED = 'true';
+    prisma.lectureImportBiologique.findMany.mockResolvedValue([{
+      id: 'lec_1', idImport: 'imp_1', acte: 'lecture', idLectureRevoquee: null, codeRevocation: null,
+      praticienEmail: 'praticien@wellneuro.fr', acteLe: new Date('2026-10-06T10:00:00.000Z'),
+    }]);
+    const corps = await (await GET(new Request(URL_GET))).json();
+    expect(corps.actesLecture).toEqual({
+      imp_1: [{
+        id: 'lec_1', acte: 'lecture', idLectureRevoquee: null, codeRevocation: null,
+        praticienEmail: 'praticien@wellneuro.fr', acteLe: '2026-10-06T10:00:00.000Z',
+      }],
+    });
+    expect(prisma.lectureImportBiologique.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { idPatient: 'pat_sophie', idImport: { in: ['imp_1'] } },
+    }));
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('la lecture des actes échoue : le compte rendu reste servi, l’échec est dit (§6)', async () => {
+    process.env.WN_BIO_LECTURE_ENABLED = 'true';
+    prisma.lectureImportBiologique.findMany.mockRejectedValue(new Error('panne'));
+    const res = await GET(new Request(URL_GET));
+    expect(res.status).toBe(200);
+    const corps = await res.json();
+    expect(corps.compteRendu.id).toBe('cr_1');
+    expect(corps.actesLectureIndisponibles).toBe(true);
+    expect(corps).not.toHaveProperty('actesLecture');
   });
 });

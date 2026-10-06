@@ -28,6 +28,8 @@ const IMPORTEURS_ADMIS = [
   'web/src/app/api/praticien/biologie/import/decisions/route.ts',
   'web/src/app/api/praticien/biologie/import/depot/route.ts',
   'web/src/app/api/praticien/biologie/import/extraction/route.ts',
+  // L'acte de lecture d'un import validé ([[D-268]], BP-10).
+  'web/src/app/api/praticien/biologie/import/lecture/route.ts',
   'web/src/app/api/praticien/biologie/import/route.ts',
   'web/src/app/api/praticien/biologie/proposition/courrier/route.ts',
   'web/src/app/api/praticien/biologie/proposition/document-patient/route.ts',
@@ -48,9 +50,14 @@ const IMPORTEURS_ADMIS = [
   'web/src/components/patient-cockpit/ArbitrageBiologiquePanel.tsx',
   'web/src/components/patient-cockpit/ClinicalRuntimeSection.tsx',
   'web/src/components/patient-cockpit/ImportCompteRenduPanel.tsx',
+  // L'écran de l'acte de lecture ([[D-268]], BP-10) : codes et états, sans valeur.
+  'web/src/components/patient-cockpit/LectureImportBiologique.tsx',
   'web/src/components/patient-cockpit/PropositionBilanPanel.tsx',
   // Portes biologiques des assiettes ([[D-245]]).
   'web/src/lib/clinical/portesBiologiquesService.ts',
+  // La carte « compte rendu à lire » du Fil ([[D-268]], BP-10) : le module pur
+  // des états de lecture, qui ne lit aucune valeur.
+  'web/src/lib/fil/cartes.ts',
   // Ancrage des courriers.
   'web/src/lib/praticien/ancrageCorrespondance.ts',
 ];

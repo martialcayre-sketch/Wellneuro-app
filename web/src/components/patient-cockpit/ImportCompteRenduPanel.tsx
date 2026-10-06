@@ -6,6 +6,9 @@ import { lireValeurQuantitative, unitesConcordent, type MotifEcart } from '@/lib
 import type { CompteRenduLu, LigneLue } from '@/lib/biology-library/import/lecture';
 import type { AnalyteChoix } from './SaisieBilan';
 import { FaitsDuLaboratoire } from './FaitsDuLaboratoire';
+import type { ActeLectureLu } from '@/lib/biology-library/import/acteLecture';
+import { useBioLectureEnabled } from './CbFeatureProvider';
+import { LectureImportBiologique } from './LectureImportBiologique';
 
 // IMPORT D'UN COMPTE RENDU DE LABORATOIRE (BIO-INGEST LOT-02, [[D-256]]),
 // derrière `WN_BIO_INGEST_ENABLED`. Quatre gestes, tous du praticien :
@@ -207,6 +210,13 @@ export function ImportCompteRenduPanel({
    * moment d'en ouvrir un second) est ignorée (revue de la PR 2b, P2-2).
    */
   const ouvertRef = useRef<string | null>(null);
+  /**
+   * Les actes de lecture des imports ouverts ([[D-268]], BP-10) — `null` tant
+   * que la route ne les rend pas (drapeau `WN_BIO_LECTURE_ENABLED` éteint).
+   */
+  const [actesLecture, setActesLecture] = useState<Record<string, ActeLectureLu[]> | null>(null);
+  const [actesLectureIndisponibles, setActesLectureIndisponibles] = useState(false);
+  const bioLectureEnabled = useBioLectureEnabled();
 
   const urlDossier = `idPatient=${encodeURIComponent(idPatient)}`;
 
@@ -231,7 +241,13 @@ export function ImportCompteRenduPanel({
         const response = await fetch(
           `/api/praticien/biologie/import/compte-rendu?${urlDossier}&idCompteRendu=${encodeURIComponent(idCompteRendu)}`,
         );
-        const payload = await lireJson<{ ok: boolean; compteRendu?: CompteRenduLu; error?: string }>(response);
+        const payload = await lireJson<{
+          ok: boolean;
+          compteRendu?: CompteRenduLu;
+          actesLecture?: Record<string, ActeLectureLu[]>;
+          actesLectureIndisponibles?: boolean;
+          error?: string;
+        }>(response);
         if (ouvertRef.current !== idCompteRendu) return false;
         if (!response.ok || !payload?.ok || !payload.compteRendu) {
           setErreur(payload?.error ?? 'Le compte rendu n’a pas pu être lu.');
@@ -239,6 +255,8 @@ export function ImportCompteRenduPanel({
         }
         const lu = payload.compteRendu;
         setDetail(lu);
+        setActesLecture(payload.actesLecture ?? null);
+        setActesLectureIndisponibles(payload.actesLectureIndisponibles === true);
         // Les saisies en cours survivent à une relecture ; une ligne décidée sort.
         const lignes = lu.imports.find(i => i.courant)?.lignes ?? [];
         setSaisies(avant => {
@@ -288,6 +306,8 @@ export function ImportCompteRenduPanel({
     async (idCompteRendu: string) => {
       ouvertRef.current = idCompteRendu;
       setDetail(null);
+      setActesLecture(null);
+      setActesLectureIndisponibles(false);
       setErreur(null);
       setInfo(null);
       setRefusParLigne({});
@@ -644,6 +664,25 @@ export function ImportCompteRenduPanel({
               )}
             </>
           )}
+
+          {/* L'acte de lecture d'un import VALIDÉ ([[D-268]]) : sous la
+              restitution qu'il atteste, jamais à sa place. */}
+          {bioLectureEnabled && actesLectureIndisponibles && (
+            <p role="alert" className="mt-3 text-sm text-status-danger">
+              L’état de lecture de ce compte rendu n’a pas pu être vérifié. Rouvrez-le pour réessayer.
+            </p>
+          )}
+          {bioLectureEnabled && actesLecture !== null && detail.imports.map(i => (
+            <LectureImportBiologique
+              key={i.id}
+              idPatient={idPatient}
+              imp={i}
+              actes={actesLecture[i.id] ?? []}
+              onActe={async () => {
+                await chargerDetail(detail.id);
+              }}
+            />
+          ))}
         </div>
       )}
 

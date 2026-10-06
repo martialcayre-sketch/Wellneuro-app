@@ -25,6 +25,12 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     patient: { findMany: vi.fn() },
     filCardRejection: { findMany: vi.fn() },
     filCardLecture: { findMany: vi.fn() },
+    // Compte rendu biologique à lire (D-268, BP-10) — lu sous drapeau seulement.
+    importBiologique: { findMany: vi.fn() },
+    lectureImportBiologique: { findMany: vi.fn() },
+    // Lus par le drapeau du rayon (`WN_CB_ENABLED`), qu'exige celui de la lecture.
+    arbitrageBiologique: { findMany: vi.fn() },
+    protocolDraft: { findMany: vi.fn() },
   },
 }));
 
@@ -362,6 +368,117 @@ describe('GET /api/praticien/fil', () => {
     const res = await GET();
     const payload = await res.json();
     expect(payload.unavailable).toBe(true);
+    expect(payload.cartes).toEqual([]);
+  });
+});
+
+describe('GET /api/praticien/fil — comptes rendus biologiques à lire (D-268, BP-10)', () => {
+  const DRAPEAUX = ['WN_CB_ENABLED', 'WN_CB_RESULTS_ENABLED', 'WN_BIO_INGEST_ENABLED', 'WN_BIO_LECTURE_ENABLED'];
+  const avant: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    for (const nom of DRAPEAUX) {
+      avant[nom] = process.env[nom];
+      process.env[nom] = 'true';
+    }
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    for (const table of [
+      prisma.trustAdverseEffectReport, prisma.trustPrivacyIncident, prisma.trustRightsRequest,
+      prisma.syntheseIA, prisma.bookletEnvoi, prisma.assignation, prisma.ratificationObjectif,
+      prisma.amendementObjectif, prisma.reponseJalonObjectif, prisma.finObjectif, prisma.questionnaireReponse,
+      prisma.protocolCheckin, prisma.assessmentEpisode, prisma.rendezVous, prisma.filCardRejection,
+      prisma.filCardLecture, prisma.arbitrageBiologique, prisma.protocolDraft,
+    ]) table.findMany.mockResolvedValue([]);
+    prisma.syntheseIA.groupBy.mockResolvedValue([]);
+    prisma.questionnaireReponse.groupBy.mockResolvedValue([]);
+    prisma.questionnaireLecturePraticien.groupBy.mockResolvedValue([]);
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SOPHIE', prenom: 'Sophie', nom: 'Nicola', suiviClotureLe: null },
+    ]);
+    prisma.importBiologique.findMany.mockResolvedValue([
+      {
+        id: 'imp_1', idPatient: 'PAT_SOPHIE', termineLe: new Date('2026-10-06T08:00:00Z'), lanceLe: new Date('2026-10-06T07:59:00Z'),
+        lignes: [{ statut: 'validee', traiteLe: new Date('2026-10-06T09:00:00Z') }],
+      },
+    ]);
+    prisma.lectureImportBiologique.findMany.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    for (const nom of DRAPEAUX) {
+      if (avant[nom] === undefined) delete process.env[nom];
+      else process.env[nom] = avant[nom];
+    }
+  });
+
+  it('BANC : un import validé sans lecture produit sa carte, bornée au praticien en session', async () => {
+    const payload = await (await GET()).json();
+    expect(payload.cartes).toEqual([
+      expect.objectContaining({ type: 'import_biologique_a_lire', cle: 'import_biologique_a_lire:imp_1', idPatient: 'PAT_SOPHIE' }),
+    ]);
+    expect(payload.lecturesBiologieIndisponibles).toBeUndefined();
+    // Les deux lectures sont bornées au praticien en session dès la requête.
+    expect(prisma.importBiologique.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ patient: { praticienEmail: { equals: 'p@wellneuro.fr', mode: 'insensitive' } } }),
+    }));
+    expect(prisma.lectureImportBiologique.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { patient: { praticienEmail: { equals: 'p@wellneuro.fr', mode: 'insensitive' } } },
+    }));
+  });
+
+  it('une lecture active résout la carte ; sa révocation la rouvre', async () => {
+    const lecture = {
+      id: 'lec_1', ordre: BigInt(1), idImport: 'imp_1', acte: 'lecture', idLectureRevoquee: null, codeRevocation: null,
+      praticienEmail: 'p@wellneuro.fr', acteLe: new Date('2026-10-06T10:00:00Z'),
+    };
+    prisma.lectureImportBiologique.findMany.mockResolvedValue([lecture]);
+    expect((await (await GET()).json()).cartes).toEqual([]);
+
+    prisma.lectureImportBiologique.findMany.mockResolvedValue([
+      lecture,
+      { ...lecture, id: 'rev_1', ordre: BigInt(2), acte: 'revocation', idLectureRevoquee: 'lec_1', codeRevocation: 'mauvais_import', acteLe: new Date('2026-10-06T11:00:00Z') },
+    ]);
+    expect((await (await GET()).json()).cartes).toEqual([
+      expect.objectContaining({ type: 'import_biologique_a_lire', titre: 'Compte rendu biologique — lecture à consigner à nouveau' }),
+    ]);
+  });
+
+  it('dossier clos et lignes à décider : pas de carte ; import entièrement décidé : la carte reste', async () => {
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SOPHIE', prenom: 'Sophie', nom: 'Nicola', suiviClotureLe: new Date('2026-10-01T00:00:00Z') },
+    ]);
+    prisma.importBiologique.findMany.mockResolvedValue([
+      {
+        id: 'imp_partiel', idPatient: 'PAT_SOPHIE', termineLe: null, lanceLe: new Date('2026-10-06T07:59:00Z'),
+        lignes: [{ statut: 'validee', traiteLe: new Date('2026-10-06T09:00:00Z') }, { statut: 'proposee', traiteLe: null }],
+      },
+      {
+        id: 'imp_decide', idPatient: 'PAT_SOPHIE', termineLe: null, lanceLe: new Date('2026-10-06T07:59:00Z'),
+        lignes: [{ statut: 'validee', traiteLe: new Date('2026-10-06T09:00:00Z') }],
+      },
+    ]);
+    const payload = await (await GET()).json();
+    expect(payload.cartes.map((c: { cle: string }) => c.cle)).toEqual(['import_biologique_a_lire:imp_decide']);
+  });
+
+  it('L’ÉCHEC SE VOIT (§6) : le Fil reste servi et le dit, jamais un silence', async () => {
+    prisma.importBiologique.findMany.mockRejectedValue(new Error('panne'));
+    prisma.syntheseIA.findMany.mockResolvedValue([
+      { idSynthese: 'SYN_1', idPatient: 'PAT_SOPHIE', dateGeneration: new Date('2026-10-06T08:00:00Z') },
+    ]);
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const payload = await res.json();
+    expect(payload.lecturesBiologieIndisponibles).toBe(true);
+    expect(payload.cartes.map((c: { type: string }) => c.type)).toContain('synthese_a_valider');
+  });
+
+  it('drapeau éteint : aucune lecture de la table, aucune carte (comportement actuel)', async () => {
+    delete process.env.WN_BIO_LECTURE_ENABLED;
+    const payload = await (await GET()).json();
+    expect(prisma.importBiologique.findMany).not.toHaveBeenCalled();
+    expect(prisma.lectureImportBiologique.findMany).not.toHaveBeenCalled();
     expect(payload.cartes).toEqual([]);
   });
 });

@@ -15,9 +15,12 @@ import { describe, expect, it } from 'vitest';
 //   — un acte ne se supprime QUE dans `patient/effacement.ts` (supprimer une
 //     révocation ferait passer pour lue une lecture révoquée) ;
 //   — aucun code ne le réécrit, ni par Prisma, ni en SQL brut ;
-//   — AUCUN écrivain ni lecteur à ce jour : la migration est livrée seule
-//     ([[D-087]], [[D-266]] §11). La PR du code consommateur nommera ici la
-//     route de l'acte et le lecteur de la carte du Fil, et eux seuls.
+//   — UN SEUL ÉCRIVAIN, `import/acteLecture.ts` (appelé par la route de
+//     l'acte), en UNE instruction hors transaction : la migration exige READ
+//     COMMITTED et interdit de poser un acte dans la transaction d'une
+//     décision de ligne ;
+//   — DEUX LECTEURS NOMMÉS : ce même module (l'écran du cockpit et la relecture
+//     d'un refus) et la route du Fil (la carte « compte rendu à lire »).
 //
 // LA PORTÉE COUVRE `src/`, `scripts/`, `prisma/`, `e2e/` ET les scripts de la
 // racine du dépôt, en TypeScript, JavaScript, SQL et shell (patron du banc des
@@ -28,6 +31,8 @@ const RACINE = process.cwd();
 const RACINES = ['src', 'scripts', 'prisma', 'e2e', path.join('..', 'scripts')]
   .map(dossier => path.join(RACINE, dossier));
 const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');
+const ACTE = path.join('src', 'lib', 'biology-library', 'import', 'acteLecture.ts');
+const FIL = path.join('src', 'app', 'api', 'praticien', 'fil', 'route.ts');
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
@@ -76,10 +81,17 @@ describe('Actes de lecture d’un import biologique — qui écrit, qui lit (D-2
     expect(occurrences(SQL_BRUT)).toEqual([]);
   });
 
-  it('aucun écrivain ni lecteur avant le code consommateur, sans écriture imbriquée', () => {
-    expect(occurrences(CREER)).toEqual([]);
-    expect(occurrences(LIRE)).toEqual([]);
+  it('un seul écrivain, deux lecteurs nommés, aucune écriture imbriquée', () => {
+    expect(occurrences(CREER)).toEqual([{ fichier: ACTE, n: 1 }]);
+    expect(occurrences(LIRE).sort((a, b) => a.fichier.localeCompare(b.fichier))).toEqual(
+      [{ fichier: FIL, n: 1 }, { fichier: ACTE, n: 2 }].sort((a, b) => a.fichier.localeCompare(b.fichier)),
+    );
     expect(occurrences(IMBRIQUEE)).toEqual([]);
+  });
+
+  it('l’écrivain pose l’acte hors de toute transaction (READ COMMITTED, jamais avec une décision)', () => {
+    const source = readFileSync(path.join(RACINE, ACTE), 'utf8');
+    expect(source).not.toMatch(/\$transaction|isolationLevel|RepeatableRead|Serializable/);
   });
 
   it('les motifs reconnaissent bien les formes qu’ils doivent refuser', () => {
