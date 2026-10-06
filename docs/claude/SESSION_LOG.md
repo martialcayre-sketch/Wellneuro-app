@@ -9337,3 +9337,19 @@ Promotions : décision → aucune ; règle → aucune.
 **Prochaine action.** Arbitrages du responsable, puis le banc et le correctif.
 
 **Questions ouvertes.** Les trois de la fiche LOT-23.
+
+## 2026-10-06 — BIO-PARCOURS BP-10 : état des lieux
+
+**Décidé.** BP-10 est débloqué, et son état des lieux est versé dans la
+fiche : l'existant, une contradiction sur le déclencheur (tout import validé,
+ou le marquage non nul ?), neuf questions pour la décision de sécurité
+biologique, et les préalables RGPD et TRUST.
+
+**Écarté.** Rédiger un projet de D-xxx avant que ces questions soient
+tranchées.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** Arbitrages du responsable.
+
+**Questions ouvertes.** Les neuf de la fiche LOT-10.
