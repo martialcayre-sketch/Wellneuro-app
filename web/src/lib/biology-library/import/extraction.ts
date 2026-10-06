@@ -31,9 +31,11 @@ export const MODELE_EXTRACTION = process.env.WN_BIO_INGEST_MODEL?.trim() || 'cla
 /**
  * Version du procédé : prompt, schéma de sortie et règles de lecture. Un
  * LITTÉRAL à incrémenter à la main dès que l'un des trois change — c'est elle
- * que l'import enregistre.
+ * que l'import enregistre. v3 (2026-10-06) : prompt et schéma de la v2
+ * ([[D-267]]) inchangés ; règle de lecture nouvelle, un NUL se retire aussi du
+ * libellé, de la valeur, de l'unité et du laboratoire (`texteBorne`).
  */
-export const VERSION_PROCEDE_EXTRACTION = 'bio-extraction-v2';
+export const VERSION_PROCEDE_EXTRACTION = 'bio-extraction-v3';
 
 /**
  * Délai d'attente des EN-TÊTES (ms), SANS nouvelle tentative : technique, sans

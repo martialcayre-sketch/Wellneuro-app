@@ -250,7 +250,8 @@ describe('extraireCompteRendu — l’appel', () => {
     create.mockResolvedValue(reponse(JSON.stringify(SORTIE)));
     await extraireCompteRendu(Buffer.from('%PDF-1.7 fixture'), 'application/pdf');
     const [params] = create.mock.calls[0];
-    expect(VERSION_PROCEDE_EXTRACTION).toBe('bio-extraction-v2');
+    // v3 : mêmes prompt et schéma que la v2, règle de lecture du NUL en plus.
+    expect(VERSION_PROCEDE_EXTRACTION).toBe('bio-extraction-v3');
     // La phrase de D-256 amendée ne survit pas ; « n'interprète rien » reste.
     expect(params.system).not.toContain('ne recopie ni les valeurs de référence');
     expect(params.system).toContain('N’interprète rien');
