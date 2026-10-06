@@ -29,7 +29,9 @@
 --      (RESTRICT) ;
 --  13. les FK ont la règle annoncée (RESTRICT vers patient et import, NO
 --      ACTION sur la clé interne), les CHECK, l'index unique partiel et les
---      index ordinaires sont présents ;
+--      index ordinaires sont présents, comme le verrou de l'import et le
+--      `search_path` épinglé des deux fonctions (présence relue : une session
+--      seule n'éprouve pas la concurrence) ;
 --  14. la table porte EXACTEMENT ses neuf colonnes (liste blanche) : aucune
 --      valeur, aucun libellé, aucun marquage, aucun texte libre — toute
 --      colonne neuve s'arbitre ;
@@ -318,6 +320,19 @@ BEGIN
           AND position('id_lecture_revoquee IS NOT NULL' IN pg_get_constraintdef(oid)) > 0));
   IF nb <> 2 THEN
     RAISE EXCEPTION 'CONTRAT — 13 : % clause(s) de garde résiduelle sur 2 sont présentes.', nb;
+  END IF;
+  -- Le verrou qui sérialise les actes sur un import, et le `search_path`
+  -- épinglé des deux fonctions (revue wn-reviewer du lot) : une session seule
+  -- n'éprouve pas la concurrence, elle relit au moins leur présence.
+  IF position('FOR NO KEY UPDATE' IN pg_get_functiondef('public.lectures_imports_biologiques_avant_insertion()'::regprocedure)) = 0 THEN
+    RAISE EXCEPTION 'CONTRAT — 13 : le trigger d''insertion ne verrouille plus l''import.';
+  END IF;
+  SELECT count(*) INTO nb FROM pg_proc p
+  WHERE p.oid IN ('public.lectures_imports_biologiques_avant_insertion()'::regprocedure,
+                  'public.lectures_imports_biologiques_figee()'::regprocedure)
+    AND p.proconfig @> ARRAY['search_path=public, pg_temp'];
+  IF nb <> 2 THEN
+    RAISE EXCEPTION 'CONTRAT — 13 : % fonction(s) sur 2 ont le search_path épinglé.', nb;
   END IF;
   SELECT count(*) INTO nb FROM pg_indexes
   WHERE tablename = 'lectures_imports_biologiques'

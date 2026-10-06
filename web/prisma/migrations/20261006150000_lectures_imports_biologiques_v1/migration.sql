@@ -52,7 +52,20 @@
 --     est admise. Le trigger prend un verrou `FOR NO KEY UPDATE` sur la ligne
 --     de l'import : deux actes concurrents sur le même import se sérialisent,
 --     et la décision concurrente d'une ligne (qui prend `FOR SHARE`) aussi —
---     la règle 3 ne lit donc pas une décision non encore commise.
+--     une lecture attend la décision en vol au lieu d'être refusée sur l'état
+--     d'avant.
+--     DEUX CONDITIONS POUR L'ÉCRIVAIN (revue wn-reviewer du lot) :
+--       — rester en READ COMMITTED (ou SERIALIZABLE), jamais en REPEATABLE
+--         READ : l'instantané de transaction y masquerait la lecture que le
+--         verrou vient de laisser commettre, et deux lectures actives
+--         passeraient ;
+--       — ne jamais décider des lignes et poser une lecture dans la même
+--         transaction ([[D-268]] §2 sépare les deux gestes) : la montée d'un
+--         `FOR SHARE` vers `FOR NO KEY UPDATE` sur le même import, par deux
+--         transactions à la fois, finirait en interblocage.
+--     Une règle de concurrence ne s'éprouve pas dans un contrat à une
+--     session : le contrat vérifie la présence du verrou, le banc à deux
+--     sessions viendra avec la route.
 --  5. UNE RÉVOCATION VISE UNE LECTURE DU MÊME IMPORT, une fois (index unique
 --     partiel).
 --
@@ -114,9 +127,9 @@ ALTER TABLE "lectures_imports_biologiques" ADD CONSTRAINT "lectures_imports_biol
 ALTER TABLE "lectures_imports_biologiques" ADD CONSTRAINT "lectures_imports_biologiques_id_import_id_patient_fkey" FOREIGN KEY ("id_import", "id_patient") REFERENCES "imports_biologiques"("id", "id_patient") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
--- NO ACTION sur la clé interne : l'effacement supprime les actes d'un dossier
--- en UNE instruction, révocations comprises, et la contrainte n'est vérifiée
--- qu'à la fin de l'instruction (éprouvé par le contrat).
+-- NO ACTION sur la clé interne, comme pour les adressages : l'effacement
+-- supprime les actes d'un dossier en UNE instruction, révocations comprises,
+-- et le contrat éprouve que cette instruction passe.
 ALTER TABLE "lectures_imports_biologiques" ADD CONSTRAINT "lectures_imports_biologiques_id_lecture_revoquee_fkey" FOREIGN KEY ("id_lecture_revoquee") REFERENCES "lectures_imports_biologiques"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- ── LES CHECK — la forme de chaque acte ────────────────────────────────────

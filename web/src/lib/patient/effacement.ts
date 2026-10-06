@@ -187,8 +187,8 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     // rendus.
     // Actes de lecture clinique d'un import validé ([[D-268]], BP-10) : FK
     // RESTRICT vers le patient et l'import — ils partent AVANT les imports. Une
-    // seule instruction pour les deux actes : la clé interne révocation →
-    // lecture est en NO ACTION, vérifiée en fin d'instruction.
+    // seule instruction pour les deux actes, révocations comprises (éprouvé
+    // par le contrat `lectures_imports_biologiques_v1_negatif.sql`, cas 12).
     supprimees.lecturesImportsBiologiques = (
       await tx.lectureImportBiologique.deleteMany({ where: par })
     ).count;

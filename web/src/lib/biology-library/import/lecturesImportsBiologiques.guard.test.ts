@@ -56,7 +56,7 @@ const CREER = /\.lectureImportBiologique\s*\.\s*(?:create|createMany|createManyA
 const SUPPRIMER = /\.lectureImportBiologique\s*\.\s*(?:delete|deleteMany)\s*\(/;
 const REECRIRE = /\.lectureImportBiologique\s*\.\s*(?:update|updateMany|updateManyAndReturn|upsert)\s*\(/;
 const LIRE = /\.lectureImportBiologique\s*\.\s*(?:findMany|findFirst|findFirstOrThrow|findUnique|findUniqueOrThrow|count|aggregate|groupBy)\s*\(/;
-const SQL_BRUT = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+(?:public\.)?"?lectures_imports_biologiques\b/i;
+const SQL_BRUT = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+(?:"?public"?\.)?"?lectures_imports_biologiques\b/i;
 /**
  * L'ÉCRITURE IMBRIQUÉE : `importBiologique.update({ data: { lectures: {
  * create: … } } })` créerait un acte sans passer par les motifs ci-dessus. Les
@@ -89,6 +89,7 @@ describe('Actes de lecture d’un import biologique — qui écrit, qui lit (D-2
     expect(LIRE.test('prisma.lectureImportBiologique.findMany({')).toBe(true);
     expect(SQL_BRUT.test('DELETE FROM public.lectures_imports_biologiques WHERE')).toBe(true);
     expect(SQL_BRUT.test('update "lectures_imports_biologiques" set')).toBe(true);
+    expect(SQL_BRUT.test('DELETE FROM "public"."lectures_imports_biologiques"')).toBe(true);
     expect(IMBRIQUEE.test('data: { lectures: { create: [] } }')).toBe(true);
     expect(IMBRIQUEE.test('include: { revocations: { orderBy: { ordre: "desc" } } }')).toBe(false);
   });
