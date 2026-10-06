@@ -185,6 +185,13 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     // RESTRICT tout du long — et la ligne validée retient son résultat : les
     // lignes partent AVANT les résultats, puis les imports, puis les comptes
     // rendus.
+    // Actes de lecture clinique d'un import validé ([[D-268]], BP-10) : FK
+    // RESTRICT vers le patient et l'import — ils partent AVANT les imports. Une
+    // seule instruction pour les deux actes : la clé interne révocation →
+    // lecture est en NO ACTION, vérifiée en fin d'instruction.
+    supprimees.lecturesImportsBiologiques = (
+      await tx.lectureImportBiologique.deleteMany({ where: par })
+    ).count;
     supprimees.lignesBiologiquesCandidates = (
       await tx.ligneBiologiqueCandidate.deleteMany({ where: par })
     ).count;

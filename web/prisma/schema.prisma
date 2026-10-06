@@ -84,6 +84,8 @@ model Patient {
   comptesRendusBiologiques   CompteRenduBiologique[]
   importsBiologiques         ImportBiologique[]
   lignesImportBiologique     LigneBiologiqueCandidate[]
+  // Actes de lecture clinique d'un import validé (D-268, BP-10).
+  lecturesImportsBiologiques LectureImportBiologique[]
   relectureNotes             RelectureNote[]
   filCardRejections          FilCardRejection[]
   filCardLectures            FilCardLecture[]
@@ -2573,6 +2575,7 @@ model ImportBiologique {
   patient     Patient                    @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
   compteRendu CompteRenduBiologique      @relation(fields: [idCompteRendu, idPatient], references: [id, idPatient], onDelete: Restrict)
   lignes      LigneBiologiqueCandidate[]
+  lectures    LectureImportBiologique[]
 
   @@unique([id, idPatient], map: "imports_biologiques_id_patient_key")
   @@index([idCompteRendu], map: "imports_biologiques_compte_rendu_idx")
@@ -2624,6 +2627,41 @@ model LigneBiologiqueCandidate {
   @@unique([idImport, rang], map: "lignes_biologiques_candidates_import_rang_key")
   @@index([idPatient], map: "lignes_biologiques_candidates_patient_idx")
   @@map("lignes_biologiques_candidates")
+}
+
+/// L'acte de lecture clinique d'un import validé ([[D-268]], BP-10) : « le
+/// praticien du dossier a lu cet import », ou la révocation de cette lecture.
+/// Ajout seul (UPDATE et TRUNCATE refusés par trigger), aucune valeur, aucun
+/// texte libre. Les refus vivent en base (migration
+/// `lectures_imports_biologiques_v1`) : import de ce dossier, praticien du
+/// dossier, import validé, une lecture active par import.
+model LectureImportBiologique {
+  id                String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (trigger).
+  ordre             BigInt   @default(autoincrement()) @map("ordre")
+  idPatient         String   @map("id_patient")
+  idImport          String   @map("id_import")
+  /// `lecture` | `revocation` (CHECK).
+  acte              String   @map("acte")
+  /// Révocation seule : la lecture révoquée.
+  idLectureRevoquee String?  @map("id_lecture_revoquee")
+  /// Révocation seule, liste fermée (CHECK) : `acte_pose_par_erreur` |
+  /// `mauvais_import` | `lecture_a_refaire`.
+  codeRevocation    String?  @map("code_revocation")
+  praticienEmail    String   @map("praticien_email")
+  /// Posé par la base (trigger), en UTC.
+  acteLe            DateTime @default(now()) @map("acte_le")
+
+  patient         Patient                   @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  import          ImportBiologique          @relation(fields: [idImport, idPatient], references: [id, idPatient], onDelete: Restrict)
+  lectureRevoquee LectureImportBiologique?  @relation("RevocationLecture", fields: [idLectureRevoquee], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  revocations     LectureImportBiologique[] @relation("RevocationLecture")
+
+  @@unique([ordre], map: "lectures_imports_biologiques_ordre_key")
+  @@index([idPatient, ordre], map: "lectures_imports_biologiques_patient_ordre_idx")
+  @@index([idImport, ordre], map: "lectures_imports_biologiques_import_ordre_idx")
+  @@index([idLectureRevoquee], map: "lectures_imports_biologiques_lecture_revoquee_idx")
+  @@map("lectures_imports_biologiques")
 }
 
 // ───────────────────────────────────────────────────────────────────────────
