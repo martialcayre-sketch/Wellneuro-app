@@ -9399,3 +9399,19 @@ Promotions : décision → précision `D-213` §1 ; règle → aucune.
 
 **Questions ouvertes.** Aperçu de la révision avant la coche du panneau ;
 P2 de revue routés au handoff.
+
+## 2026-10-06 — BP-10, décision de sécurité biologique (D-268)
+
+**Décidé.** Tout import validé appelle un acte de lecture par import. L'acte
+est révocable avec motif et signalé au Fil par une carte neuve. Il ne bloque
+rien. La lettre reste un geste du praticien. Les imports antérieurs sont inclus.
+
+**Écarté.** Le marquage comme déclencheur (trois angles morts). Le blocage de
+la diffusion. L'extension d'`AdressageSignalAlerte`.
+
+Promotions : décision → `D-268` ; règle → aucune.
+
+**Prochaine action.** Registre RGPD, puis migration sur confirmation distincte.
+
+**Questions ouvertes.** Noms de la table et du type de carte, au lot de
+migration.
