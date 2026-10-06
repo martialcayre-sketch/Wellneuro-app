@@ -12,12 +12,12 @@ décisions vont au registre `D-xxx`.
 BIOFLOW
 │
 ├── Track A — BIO-INGEST
-│   ├── lot courant   : LOT-07, faits imprimés du laboratoire
-│   ├── prochain gate : G1 levé (D-267, #1325) ; migration #1326 appliquée et constatée ; `usage_ia` v5 (#1328)
+│   ├── lot courant   : LOT-09 terminé (#1335, relancer la lecture) ; LOT-07 terminé (#1326 → #1334, `bio-extraction-v3` depuis #1336)
+│   ├── prochain gate : G2 levé ; G3, décision sur l'asynchrone durable, à poser
 │   └── objectif      : une donnée biologique fiable
 │
 ├── Track B — BIO-PARCOURS
-│   ├── lot courant   : LOT-26 (BP-26), note de qualification ; BP-02 terminé (2026-10-05)
+│   ├── lot courant   : LOT-26 (BP-26), note de qualification, en attente du responsable ; BP-23 et BP-10 cadrés (#1337, #1339), en attente d'arbitrages
 │   ├── prochain gate : G4, BP-26 avant toute assistance
 │   └── objectif      : l'exploitation longitudinale de la donnée validée
 │
@@ -33,7 +33,7 @@ BIOFLOW
 │
 ├── CROSS-TRACK GATES
 │   G1  BP-01 (levé, #1314) + D-267 (levé, #1325)       → code LOT-07
-│   G2  LOT-07 livré                                    → purge, réconciliation des imports
+│   G2  LOT-07 livré (levé, #1333)                      → purge, réconciliation des imports
 │   G3  traitement asynchrone durable livré             → montée en charge de l'ingestion
 │   G4  ligne BP-26 statuée                             → toute assistance clinique
 │
