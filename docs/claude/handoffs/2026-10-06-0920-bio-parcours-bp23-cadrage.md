@@ -27,6 +27,14 @@ Fiche `LOT-23-relecture-reelle.md`, SESSION_LOG, ce handoff.
 T1 complet. Cartographie du circuit (agent Explore), relue en principal sur
 les points de route, de diffusion et d'empreinte.
 
+## Problèmes ouverts
+
+- Trois arbitrages du responsable, consignés dans la fiche LOT-23 :
+  relecture d'un contenu inchangé, ré-enregistrement décoché d'un contenu
+  relu, coche explicite à l'écran.
+- Les versions déjà enregistrées portent un tampon de relecture non gagné ;
+  elles restent telles quelles (append-only).
+
 ## Prochaine action exacte
 
 1. Le responsable tranche les trois questions de la fiche.

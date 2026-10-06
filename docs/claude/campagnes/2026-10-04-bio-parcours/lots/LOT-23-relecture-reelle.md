@@ -18,7 +18,8 @@ diffusion reste un second verrou.
 
 ## Périmètre
 
-La route des versions (`versions/route.ts`) et son banc.
+La route des versions (`versions/route.ts`) et son banc ; le transport de la
+coche depuis le constructeur (cadrage du 2026-10-06, piège 1).
 
 ## Hors périmètre
 
@@ -29,7 +30,10 @@ même PR.
 
 ## Fichiers probables
 
-- `web/src/app/api/**/versions/route.ts`
+- `web/src/app/api/praticien/protocoles/versions/route.ts`
+- `web/src/lib/protocol/versioning.ts` (court-circuit « inchangé »)
+- `web/src/components/patient-cockpit/ProtocolMiniBuilder.tsx`
+- `web/src/components/patient-cockpit/ClinicalRuntimeSection.tsx`
 
 ## Interdits
 
@@ -72,14 +76,18 @@ que la version active est `draft`.
 
 **Questions au responsable :**
 
-1. **Relire un contenu inchangé.** Recommandation : le no-op devient « même
-   contenu clinique ET même état de relecture ». Cocher un brouillon inchangé
-   crée une nouvelle version append-only (même contenu, revue posée, chaînée
-   par `supersedes_draft_id`). Écarté : modifier la ligne existante, ce qui
-   romprait l'append-only.
+1. **Relire un contenu inchangé.** Recommandation : une seule transition
+   écrit sans changement de contenu, de `draft` vers relu. Contenu identique,
+   version active `draft`, coche vraie : nouvelle version append-only (même
+   contenu, revue posée, chaînée par `supersedes_draft_id`). Écarté : modifier
+   la ligne existante, ce qui romprait l'append-only.
 2. **Ré-enregistrer décoché un contenu déjà relu.** Recommandation : no-op.
-   La relecture s'attache au contenu ; une coche remise à faux sans frappe ne
-   la retire pas. L'alternative serait de la rétrograder en `draft`.
+   La transition inverse, de relu vers `draft`, n'écrit jamais sur un contenu
+   identique. La relecture s'attache au contenu ; une coche remise à faux sans
+   frappe ne la retire pas. L'alternative serait de rétrograder en `draft`.
+   **Contrat proposé pour le banc** : contenu identique ⇒ no-op, SAUF
+   (active `draft` ET coche vraie) ⇒ nouvelle version relue. Contenu modifié
+   ⇒ nouvelle version, relue si et seulement si la coche est vraie.
 3. **Le geste à l'écran.** Recommandation : une coche explicite « J'ai relu ce
    contenu » à côté d'« Enregistrer la version ». Elle part dans la soumission
    et se remet à faux à chaque frappe, comme aujourd'hui. La validation pour
