@@ -9368,3 +9368,18 @@ Promotions : décision → aucune ; règle → aucune.
 **Prochaine action.** Arbitrages BP-23 et BP-10.
 
 **Questions ouvertes.** Celles des fiches LOT-23 et LOT-10.
+
+## 2026-10-06 — Feuille de route BioFlow à jour du LOT-09
+
+**Décidé.** L'arbre de `BIOFLOW_ROADMAP.md` suit les lots courants : en
+Track A, LOT-07 et LOT-09 sont terminés et G2 est levé ; en Track B, BP-23 et
+BP-10 sont cadrés.
+
+**Écarté.** Ouvrir une fiche « réconciliation des imports » sans arbitrage.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** Arbitrages BP-23, BP-10, décision G3.
+
+**Questions ouvertes.** Qui porte la réconciliation des imports fantômes,
+maintenant que G2 est levé ?
