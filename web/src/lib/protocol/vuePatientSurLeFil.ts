@@ -67,8 +67,11 @@ export type VuePatientSurLeFil = {
  * La projection, et elle n'invente rien : chaque champ est recopié du contrat.
  *
  * Les champs ÉCARTÉS le sont nommément — `decisionCardId`, `protocolDraftId`,
- * les trois empreintes, `inputHash`, `version`, `diffusionStatus`,
+ * `selectedPriorityId`, les trois empreintes (`decisionCardInputHash`,
+ * `protocolDraftInputHash`, `inputHash`), `version`, `diffusionStatus`,
  * `deliveryStatus`, `approvedAt` : identité interne et états de la mécanique.
+ * Le banc (`vuePatientSurLeFil.test.ts`) tient cette liste : un champ ajouté au
+ * contrat sans y être classé rend `tsc` rouge.
  */
 export function projeterSurLeFil(input: {
   vue: PatientProtocolView;

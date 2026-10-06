@@ -9308,6 +9308,21 @@ Promotions : décision → aucune ; règle → aucune.
 **Questions ouvertes.** Les trois arbitrages de BP-23 (relecture d'un contenu
 inchangé, ré-enregistrement décoché, coche à l'écran).
 
+## 2026-10-06 — Protocole : banc de la projection sur le fil
+
+**Décidé.** La dette (2) de D-200 est fermée par un banc. Chaque champ du
+contrat patient est classé, servi ou écarté, et `tsc` rougit sur un champ
+non classé. Les mutations ont été constatées rouges. Le comportement ne
+change pas.
+
+**Écarté.** Retirer `limitations` du contrat dans la foulée : c'est D-213 §2,
+un lot à part.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** CI, merge.
+
+**Questions ouvertes.** Aucune.
 ## 2026-10-06 — BIO-PARCOURS BP-23 : cadrage
 
 **Décidé.** #1336 (NUL, procédé v3) est mergée. BP-23 est cadré sans code. Le
