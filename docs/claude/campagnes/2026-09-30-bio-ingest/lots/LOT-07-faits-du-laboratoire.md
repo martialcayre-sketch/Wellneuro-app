@@ -72,6 +72,9 @@ LOT-02 ; BIO-PARCOURS BP-00 (`D-266`) et BP-01 (garde de non-consommation).
   constatés par conteneur le 2026-10-05, production sur d0ee7e87).
 - [x] Livrer l'extraction, le staging, la validation et la restitution
   (`bio-extraction-v2`, PR du code).
+- [x] Lot de suite : exempter l'intervalle de la sentinelle comme la marque
+  (`D-267` §6, précision du 2026-10-06), élément
+  `data-fait-laboratoire="intervalle"` et `assertSentinelleBiologie`.
 
 ## Question tranchée pour le code
 
@@ -118,5 +121,8 @@ laboratoire.
   modifiée est validée ; l'intervalle sera exempté comme la marque (`D-267`
   §6 à amender, lot de suite) ; double unité acceptée telle quelle, verbatim
   attribué.
+- Lot de suite (2026-10-06) : l'intervalle est rendu dans son propre élément
+  attribué, exempté par la sentinelle au même titre que la marque et sous les
+  mêmes conditions (texte brut seul) ; `D-267` §6 précisé.
 - Reste à constater après déploiement : une extraction réelle porte
   `version_prompt = 'bio-extraction-v2'` et des faits non nuls.

@@ -255,7 +255,7 @@ describe('ImportCompteRenduPanel — décisions', () => {
     await rendreEtOuvrir();
     const ferritine = ligneAffichee(/Ferritine : 48/);
     expect(ferritine.getByText(/Imprimé par le laboratoire/)).toBeTruthy();
-    expect(ferritine.getByText(/intervalle 30 – 400/)).toBeTruthy();
+    expect(ferritine.getByText('30 – 400').getAttribute('data-fait-laboratoire')).toBe('intervalle');
     expect(ferritine.getByText('H').getAttribute('data-fait-laboratoire')).toBe('marquage');
     expect((ferritine.getByLabelText('Valider') as HTMLInputElement).checked).toBe(true);
   });

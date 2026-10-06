@@ -3,13 +3,16 @@
 // attribués au laboratoire. Ils ne produisent ni statut, ni couleur, ni tri,
 // ni priorité (§5) : aucune classe d'état, aucune comparaison à la valeur.
 //
-// LA MARQUE EST DANS UN SEUL ÉLÉMENT, QUI NE CONTIENT QUE LE CHAMP BRUT (§6).
-// Un laboratoire imprime « H », « ↑ » ou « Élevé » : ces mots sont les siens,
-// pas ceux de Wellneuro. La sentinelle exempte cet élément-là, et lui seul —
-// `[data-fait-laboratoire="marquage"]` —, et un banc vérifie qu'il ne porte
-// rien d'autre que le texte imprimé.
+// CHAQUE FAIT EST DANS UN SEUL ÉLÉMENT, QUI NE CONTIENT QUE LE CHAMP BRUT (§6).
+// Un laboratoire imprime « H », « ↑ » ou « Élevé », et un intervalle peut
+// porter « anormal au-delà de … » ou « risque élevé si … » : ces mots sont les siens,
+// pas ceux de Wellneuro. La sentinelle exempte ces deux éléments-là, et eux
+// seuls — `[data-fait-laboratoire="marquage"]` et
+// `[data-fait-laboratoire="intervalle"]` (précision du 2026-10-06) —, et un
+// banc vérifie qu'ils ne portent rien d'autre que le texte imprimé.
 
 export const SELECTEUR_MARQUAGE_LABORATOIRE = '[data-fait-laboratoire="marquage"]';
+export const SELECTEUR_INTERVALLE_LABORATOIRE = '[data-fait-laboratoire="intervalle"]';
 
 export function FaitsDuLaboratoire({
   intervalle,
@@ -33,7 +36,11 @@ export function FaitsDuLaboratoire({
       {(intervalle !== null || marquage !== null) && (
         <p className="mt-1 text-xs text-muted-foreground">
           Imprimé par le laboratoire :
-          {intervalle !== null && <> intervalle {intervalle}</>}
+          {intervalle !== null && (
+            <>
+              {' '}intervalle <span data-fait-laboratoire="intervalle">{intervalle}</span>
+            </>
+          )}
           {intervalle !== null && marquage !== null && ' ·'}
           {marquage !== null && (
             <>

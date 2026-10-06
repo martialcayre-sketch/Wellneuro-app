@@ -73,6 +73,13 @@ elle, garde ses faits.
 Wellneuro**. Le marquage est rendu dans un seul élément attribué au
 laboratoire, qui ne contient que le champ brut ; la sentinelle exempte cet
 élément et lui seul, et un banc vérifie qu'il ne contient rien d'autre.
+*Précision du 2026-10-06 (arbitrage du responsable, revue de la PR #1333)* :
+l'intervalle imprimé reçoit le même traitement. Il porte lui aussi les mots du
+laboratoire (« anormal au-delà de … », « risque élevé si … ») et serait sinon refusé
+par la sentinelle ou réécrit pour lui plaire. Il est rendu dans son propre
+élément attribué, qui ne contient que le champ brut ; la sentinelle exempte ces
+deux éléments et eux seuls, et le banc vérifie l'un et l'autre. Aucune autre
+exemption, aucun texte de Wellneuro dans ces éléments.
 
 **§7 — Le banc des lecteurs suit les colonnes.** Le banc BP-01
 `lecteursResultatBiologique.guard.test.ts` supposait les faits sur

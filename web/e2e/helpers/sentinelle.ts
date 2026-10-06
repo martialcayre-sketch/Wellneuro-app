@@ -75,20 +75,22 @@ export function assertTexteSentinelle(texte: string, options: OptionsSentinelle 
 }
 
 /**
- * L'élément de la marque d'anomalie IMPRIMÉE par le laboratoire ([[D-267]] §6).
- * « H », « ↑ » ou « Anormal » y sont les mots du laboratoire, pas ceux de
- * Wellneuro : la sentinelle exempte cet élément, et lui seul, à condition
- * qu'il ne porte que le texte brut (ni enfant, ni autre attribut que le marqueur). Miroir de
- * `SELECTEUR_MARQUAGE_LABORATOIRE` (`FaitsDuLaboratoire.tsx`), tenu égal par un
- * banc Vitest.
+ * Les éléments des faits IMPRIMÉS par le laboratoire ([[D-267]] §6) : la marque
+ * d'anomalie et, depuis la précision du 2026-10-06, l'intervalle de référence.
+ * « H », « Anormal » ou « risque élevé si … » y sont les mots du laboratoire,
+ * pas ceux de Wellneuro : la sentinelle exempte ces deux éléments, et eux
+ * seuls, à condition qu'ils ne portent que le texte brut (ni enfant, ni autre
+ * attribut que le marqueur). Miroirs des sélecteurs de `FaitsDuLaboratoire.tsx`,
+ * tenus égaux par un banc Vitest.
  */
 export const SELECTEUR_MARQUAGE_LABORATOIRE = '[data-fait-laboratoire="marquage"]';
+export const SELECTEUR_INTERVALLE_LABORATOIRE = '[data-fait-laboratoire="intervalle"]';
 
 /** Sentinelle sur une région rendue : texte visible, champs, couleurs, badges. */
 export async function assertSentinelleBiologie(region: Locator, options: OptionsSentinelle = {}): Promise<void> {
-  // Le texte visible SANS les marques imprimées : vidées le temps de la
-  // lecture, puis rendues. Un retrait par chaîne après coup pourrait amputer un
-  // mot de Wellneuro qui contient la marque (« a » dans « anormal »).
+  // Le texte visible SANS les faits imprimés : vidés le temps de la lecture,
+  // puis rendus. Un retrait par chaîne après coup pourrait amputer un mot de
+  // Wellneuro qui contient la marque (« a » dans « anormal »).
   const { visible, marques } = await region.evaluate((racine, selecteur) => {
     const noeuds = Array.from(racine.querySelectorAll<HTMLElement>(selecteur));
     const lues = noeuds.map(n => ({
@@ -101,10 +103,10 @@ export async function assertSentinelleBiologie(region: Locator, options: Options
     const texte = (racine as HTMLElement).innerText;
     noeuds.forEach((n, i) => { n.textContent = textes[i]; });
     return { visible: texte, marques: lues };
-  }, SELECTEUR_MARQUAGE_LABORATOIRE);
+  }, `${SELECTEUR_MARQUAGE_LABORATOIRE}, ${SELECTEUR_INTERVALLE_LABORATOIRE}`);
   expect(
     marques.filter(m => m.enfants > 0 || m.attributs.length > 0),
-    'sentinelle biologie (BP-01) : la marque exemptée ne porte que le texte imprimé',
+    'sentinelle biologie (BP-01) : un fait exempté ne porte que le texte imprimé',
   ).toEqual([]);
   const valeurs = await region.locator('textarea, input[type="text"]').evaluateAll(
     champs => champs.map(champ => (champ as HTMLInputElement | HTMLTextAreaElement).value),

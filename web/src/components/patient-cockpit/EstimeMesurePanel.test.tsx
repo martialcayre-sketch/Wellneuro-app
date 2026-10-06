@@ -6,7 +6,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CbFeatureProvider } from './CbFeatureProvider';
 import { EstimeMesurePanel } from './EstimeMesurePanel';
-import { SELECTEUR_MARQUAGE_LABORATOIRE } from './FaitsDuLaboratoire';
+import { SELECTEUR_INTERVALLE_LABORATOIRE, SELECTEUR_MARQUAGE_LABORATOIRE } from './FaitsDuLaboratoire';
 
 afterEach(() => {
   cleanup();
@@ -888,8 +888,8 @@ describe('EstimeMesurePanel — la plage sourcée juxtaposée ([[D-157]])', () =
   });
 
   // FAITS DU LABORATOIRE ([[D-267]] §5-§6) : juxtaposés et attribués. La
-  // marque imprimée (« Élevé ») est un mot DU LABORATOIRE ; la sentinelle
-  // exempte son seul élément, et rien d'autre.
+  // marque imprimée (« Élevé ») et l'intervalle sont des mots DU LABORATOIRE ;
+  // la sentinelle exempte leurs deux seuls éléments, et rien d'autre.
   const IMPORTEE = {
     ...MESURE,
     source: 'import_labo',
@@ -900,10 +900,10 @@ describe('EstimeMesurePanel — la plage sourcée juxtaposée ([[D-157]])', () =
     monter([IMPORTEE], {});
     await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
     expect(screen.getByText(/Imprimé par le laboratoire/)).toBeTruthy();
-    expect(screen.getByText(/intervalle 30 – 400/)).toBeTruthy();
+    expect(screen.getByText('30 – 400').getAttribute('data-fait-laboratoire')).toBe('intervalle');
   });
 
-  it('sentinelle : seul l’élément de la marque est exempté, et il ne porte que le champ brut', async () => {
+  it('sentinelle : seuls les éléments de la marque et de l’intervalle sont exemptés, et ne portent que le champ brut', async () => {
     monter([IMPORTEE], { BIO_FERRITINE: [PLAGE] });
     await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
     const region = screen.getByRole('region', { name: 'Estimé et mesuré' });
@@ -912,20 +912,28 @@ describe('EstimeMesurePanel — la plage sourcée juxtaposée ([[D-157]])', () =
     expect(marques[0].textContent).toBe('Élevé');
     expect(marques[0].children).toHaveLength(0);
     expect(marques[0].getAttributeNames()).toEqual(['data-fait-laboratoire']);
+    const intervalles = region.querySelectorAll(SELECTEUR_INTERVALLE_LABORATOIRE);
+    expect(intervalles).toHaveLength(1);
+    expect(intervalles[0].textContent).toBe('30 – 400');
+    expect(intervalles[0].children).toHaveLength(0);
+    expect(intervalles[0].getAttributeNames()).toEqual(['data-fait-laboratoire']);
+    expect(intervalles[0].parentElement).toBe(marques[0].parentElement);
     // Ni le paragraphe ni la ligne ne prennent une classe d'état selon la marque.
     expect(marques[0].parentElement?.getAttribute('class')).toBe('mt-1 text-xs text-muted-foreground');
     expect(marques[0].closest('li')?.getAttribute('class')).toBe('text-xs text-muted-foreground');
     const copie = region.cloneNode(true) as HTMLElement;
-    copie.querySelectorAll(SELECTEUR_MARQUAGE_LABORATOIRE).forEach(e => e.remove());
+    copie.querySelectorAll(`${SELECTEUR_MARQUAGE_LABORATOIRE}, ${SELECTEUR_INTERVALLE_LABORATOIRE}`).forEach(e => e.remove());
     const texte = copie.textContent ?? '';
-    for (const mot of [/hors\s+plage/i, /\banormal/i, /\bélevée?\b/i, /\bbasse?\b/i, /\bnormal/i]) {
-      expect(mot.test(texte), `vocabulaire de verdict trouvé hors de la marque : ${mot}`).toBe(false);
+    // `\b` ignore « é » (même sous `u`) : frontière par classe de lettres.
+    for (const mot of [/hors\s+plage/i, /\banormal/i, /(?<!\p{L})élevée?(?!\p{L})/iu, /\bbasse?\b/i, /\bnormal/i]) {
+      expect(mot.test(texte), `vocabulaire de verdict trouvé hors des faits imprimés : ${mot}`).toBe(false);
     }
   });
 
-  it('le sélecteur exempté par la sentinelle e2e est celui du composant', () => {
+  it('les sélecteurs exemptés par la sentinelle e2e sont ceux du composant', () => {
     const helper = readFileSync(resolve(__dirname, '../../../e2e/helpers/sentinelle.ts'), 'utf8');
     expect(helper).toContain(`SELECTEUR_MARQUAGE_LABORATOIRE = '${SELECTEUR_MARQUAGE_LABORATOIRE}'`);
+    expect(helper).toContain(`SELECTEUR_INTERVALLE_LABORATOIRE = '${SELECTEUR_INTERVALLE_LABORATOIRE}'`);
   });
 
   it('sans fait (saisie praticien) : rien ne s’affiche', async () => {
