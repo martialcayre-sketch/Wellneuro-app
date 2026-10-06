@@ -9471,3 +9471,14 @@ le code sous drapeau.
 
 **Questions ouvertes.** Dossiers inactifs sans carte ; la carte ne désigne
 pas le compte rendu.
+
+## 2026-10-07 — BP-10, allumage du drapeau
+
+**Décidé.** Drapeau posé par délégation du responsable (CLI Scalingo),
+après le constat du déploiement et le compte des cartes à naître (une).
+Effet constaté par sonde (`401` au lieu de `503`).
+
+**Prochaine action.** Constat d'usage en agrégats, une fois des lectures
+consignées ; lien direct vers le compte rendu en file d'attente.
+
+**Questions ouvertes.** Aucune.
