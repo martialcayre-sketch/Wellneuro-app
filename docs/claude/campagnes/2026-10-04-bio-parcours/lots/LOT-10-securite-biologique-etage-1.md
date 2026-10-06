@@ -142,10 +142,15 @@ encore « pas un filet de sécurité ».
 3. Objet de données : **table dédiée** (ni `AdressageSignalAlerte`, ni
    `ArbitrageBiologique`).
 4. Carte : **type neuf** de `TypeCarteFil`, non acquittable par lecture ;
-   destinataire : **tout praticien du domaine**.
+   destinataire arbitré : **tout praticien du domaine**. **Exécution
+   suspendue** (`D-268` §5) : le Fil filtre par appartenance, et cet
+   élargissement serait une portée d'accès nouvelle. À reconfirmer par le
+   responsable ; d'ici là, la carte va au praticien du dossier.
 5. Notification : **le Fil seul**, échec visible à l'écran.
-6. Lettre et `medical_referral` : **geste du praticien**, par la chaîne
-   existante ; aucun déclenchement automatique.
+6. Lettre et `medical_referral` : **geste du praticien** ; aucun
+   déclenchement automatique. L'action `medical_referral` se pose à la main.
+   Une lettre sur un constat biologique seul n'existe pas (la route exige un
+   constat d'anamnèse) : ce sera un lot distinct (`D-268` §7).
 7. Drapeau, bancs et précédence BP-10 → LOT-04 : repris de la fiche et de
    `D-266` (`D-268` §10-11).
 

@@ -41,6 +41,14 @@ T1 complet.
 
 ## Problèmes ouverts
 
+- **À reconfirmer par le responsable** (revue Copilot, `D-268` §5) : la carte
+  serait ouverte à « tout praticien du domaine ». Or le Fil filtre par
+  appartenance (`filtrePatientsDuPraticien`). L'élargissement crée donc une
+  portée d'accès nouvelle. Exécution suspendue ; d'ici là, la carte va au
+  praticien du dossier.
+- Une lettre d'adressage sur un constat biologique seul n'existe pas, car la
+  route exige un constat d'anamnèse. Ce sera un lot distinct (`D-268` §7).
+
 - Les noms de la table, de ses colonnes et du type de carte ne sont pas
   fixés. Ils se fixent au lot de migration, sous revue.
 - Le registre RGPD n'est pas encore mis à jour. Il porte la table des

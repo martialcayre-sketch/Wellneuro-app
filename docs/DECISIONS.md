@@ -54,8 +54,21 @@ politique ; effacement aligné sur le dossier patient (IDP2).
 de `TypeCarteFil` signale un import validé sans acte de lecture actif. Lire
 la carte ne la ferme pas (elle n'entre pas dans
 `TYPES_ACQUITTABLES_PAR_LECTURE`) : seul l'acte de lecture la résout, et sa
-révocation la rouvre. Destinataire : tout praticien du domaine (le Fil
-n'a pas de « praticien du dossier »).
+révocation la rouvre.
+
+**Destinataire : arbitré « tout praticien du domaine », exécution suspendue à
+une confirmation.** La question avait été posée en croyant que le Fil n'avait
+pas de « praticien du dossier ». C'est faux : le Fil filtre ses dossiers par
+`filtrePatientsDuPraticien` (`api/praticien/fil/route.ts`), et sa route de
+lecture refuse un autre praticien (`fil/lecture/route.ts`). Ouvrir la carte à
+tout le domaine serait donc une **portée d'accès nouvelle** : un praticien
+verrait l'identité d'un dossier qui n'est pas le sien et y poserait un acte.
+Constat de la revue Copilot de la PR de cette décision. Le lot de code
+applique l'appartenance existante, au praticien du dossier seul, tant que le
+responsable n'a pas reconfirmé l'élargissement en connaissance de cause. Une
+reconfirmation exigerait une autorisation serveur explicite, bornée à cette
+carte et à cet acte, sans élargir les autres cartes du Fil, ainsi que sa
+déclaration au registre RGPD.
 
 **§6 — Notification : le Fil seul, et l'échec se voit.** Aucun canal
 sortant n'est créé. Le Fil est tiré à l'ouverture ; si le calcul de la carte
@@ -65,9 +78,16 @@ sortant n'est créé. Le Fil est tiré à l'ouverture ; si le calcul de la carte
 
 **§7 — Lettre et `medical_referral` : un geste du praticien.** Aucun constat
 biologique n'ouvre automatiquement un signal d'adressage, une lettre ou une
-action `medical_referral`. Le praticien qui lit et juge qu'il faut adresser
-passe par la chaîne existante ([[D-218]], [[D-257]], [[D-262]]).
-`AdressageSignalAlerte` n'est pas étendu par ce lot.
+action `medical_referral`. **Ce qui existe aujourd'hui pour le praticien
+qui juge qu'il faut adresser** : l'action `medical_referral`, qu'il pose à la
+main au constructeur du protocole. **Ce qui n'existe pas** : une lettre
+d'adressage fondée sur un constat biologique seul. La route
+`api/praticien/adressage/courrier` construit la lettre à partir des signaux
+d'anamnèse, et refuse une lettre sans constat d'anamnèse à couvrir
+(`aucun_signal_adressage`). La chaîne [[D-218]], [[D-257]], [[D-262]] ne
+s'applique donc pas à ce cas. Un adressage biologique par lettre est un **lot
+distinct**, hors BP-10. `AdressageSignalAlerte` n'est pas étendu par ce lot.
+(Précision issue de la revue Copilot de la PR de cette décision.)
 
 **§8 — Les imports antérieurs sont inclus.** À l'activation, tout import
 déjà validé en production sans acte de lecture produit sa carte. Aucun acte
