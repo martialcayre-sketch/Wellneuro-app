@@ -18,12 +18,13 @@
   et dans la série des mesures : « Imprimé par le laboratoire : intervalle … ·
   marque … ». Ni couleur, ni tri, ni statut, ni changement du choix proposé.
   Silences : aucun fait, unité lue différente de celle du résultat, résultat
-  corrigé. Rien n'est copié sur `ResultatBiologique` (A5 intact) : la route des
+  corrigé, valeur modifiée par le praticien à la validation (précision de
+  `D-267` §5, revue Codex). Rien n'est copié sur `ResultatBiologique` (A5 intact) : la route des
   résultats lit les faits par la relation de la ligne qui a créé la mesure.
 - **Sentinelle de vocabulaire.** La marque (« Élevé », « H ») est rendue dans
   un seul élément `data-fait-laboratoire="marquage"`. Le helper e2e
   `assertSentinelleBiologie` l'exempte, lui seul, à condition qu'il ne porte
-  que le texte brut ; un spec l'exerce (`sentinelle-marquage.spec.ts`).
+  que le texte brut (ni enfant, ni classe, ni style) ; un spec l'exerce (`sentinelle-marquage.spec.ts`).
 - **Banc BP-01 (§7).** Un second banc épingle, champ par champ, les sept
   modules qui écrivent, restituent ou transmettent les faits (charge
   `faitsLaboratoire` de la route comprise) : l'écran de décision et la
@@ -32,4 +33,4 @@
 - **Fait sans caractère visible.** Un NUL, un espace de largeur nulle ou des
   caractères de contrôle seuls valent `null` sans signal ; un NUL intérieur se
   retire (jamais imprimé, refusé par la base : il aurait fait échouer tout
-  l'import).
+  l'import). Un demi-caractère Unicode isolé invalide la sortie.

@@ -24,6 +24,10 @@ d'anomalie imprimés (`D-267`), signal « non transcrit » compris (§10).
 - Banc BP-01 champ par champ : sept modules. Lecture de §7 retenue (Copilot
   #1333) : « la décision du praticien » = l'écran où il décide ; son
   enregistrement (`decisions.ts`) ne lit aucun fait.
+- Revue Codex (#1333) : P1 corrigé — une valeur modifiée à la validation
+  tait les faits dans la série (précision datée de `D-267` §5) ; P2 corrigés —
+  surrogate isolé ⇒ sortie invalide, marque exemptée sans aucun attribut que
+  le marqueur (style compris).
 - Exemption de la marque portée par le vrai helper e2e
   (`assertSentinelleBiologie`), exercé par `sentinelle-marquage.spec.ts`
   (Copilot #1333). Un NUL intérieur se retire avant rognage.
@@ -48,10 +52,7 @@ SESSION_LOG, ce handoff.
 1. **Intervalle hors exemption** : « Normale : 30-400 » imprimé est un mot du
    laboratoire mais la sentinelle ne l'exempte pas (§6 ne vise que la marque).
    Aucun banc ne rougit aujourd'hui (aucun E2E ne monte de ligne importée).
-2. **Valeur corrigée à la validation** : les faits restent affichés à côté
-   d'une valeur que le laboratoire n'a pas imprimée. Taire si
-   `valeur ≠ valeurLue` ?
-3. **Compte rendu à double unité** : l'intervalle peut être relevé dans
+2. **Compte rendu à double unité** : l'intervalle peut être relevé dans
    l'autre unité ; la concordance d'unité de la route ne le voit pas.
 
 Routé : un NUL dans le libellé, la valeur ou l'unité fait encore échouer

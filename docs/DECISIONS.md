@@ -63,7 +63,10 @@ attribué (« imprimé par le laboratoire »), sans couleur, sans tri, sans
 statut, sans priorité. Les silences de [[D-157]] §4 s'appliquent : aucun fait
 ⇒ rien ne s'affiche ; unité du résultat différente de l'unité lue sur la
 ligne ⇒ silence ; un résultat corrigé ([[D-124]]) n'hérite pas des faits de
-la ligne qui a créé l'original.
+la ligne qui a créé l'original. *Précision du 2026-10-06 (revue Codex de la
+PR #1333)* : une valeur modifiée par le praticien à la validation ⇒ silence
+dans la série, la marque imprimée portant sur une autre valeur ; la ligne lue,
+elle, garde ses faits.
 
 **§6 — Le marquage verbatim et la sentinelle.** Un laboratoire imprime « H »,
 « * », « ↑ » ou « Élevé ». La sentinelle BP-01 tient les mots **de

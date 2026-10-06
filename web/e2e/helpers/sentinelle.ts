@@ -78,7 +78,7 @@ export function assertTexteSentinelle(texte: string, options: OptionsSentinelle 
  * L'élément de la marque d'anomalie IMPRIMÉE par le laboratoire ([[D-267]] §6).
  * « H », « ↑ » ou « Anormal » y sont les mots du laboratoire, pas ceux de
  * Wellneuro : la sentinelle exempte cet élément, et lui seul, à condition
- * qu'il ne porte que le texte brut (ni enfant, ni classe). Miroir de
+ * qu'il ne porte que le texte brut (ni enfant, ni autre attribut que le marqueur). Miroir de
  * `SELECTEUR_MARQUAGE_LABORATOIRE` (`FaitsDuLaboratoire.tsx`), tenu égal par un
  * banc Vitest.
  */
@@ -91,7 +91,11 @@ export async function assertSentinelleBiologie(region: Locator, options: Options
   // mot de Wellneuro qui contient la marque (« a » dans « anormal »).
   const { visible, marques } = await region.evaluate((racine, selecteur) => {
     const noeuds = Array.from(racine.querySelectorAll<HTMLElement>(selecteur));
-    const lues = noeuds.map(n => ({ enfants: n.children.length, classe: n.getAttribute('class') }));
+    const lues = noeuds.map(n => ({
+      enfants: n.children.length,
+      // Seul l'attribut marqueur est admis : ni classe, ni style, ni rien.
+      attributs: n.getAttributeNames().filter(a => a !== 'data-fait-laboratoire'),
+    }));
     const textes = noeuds.map(n => n.textContent);
     noeuds.forEach(n => { n.textContent = ''; });
     const texte = (racine as HTMLElement).innerText;
@@ -99,7 +103,7 @@ export async function assertSentinelleBiologie(region: Locator, options: Options
     return { visible: texte, marques: lues };
   }, SELECTEUR_MARQUAGE_LABORATOIRE);
   expect(
-    marques.filter(m => m.enfants > 0 || m.classe !== null),
+    marques.filter(m => m.enfants > 0 || m.attributs.length > 0),
     'sentinelle biologie (BP-01) : la marque exemptée ne porte que le texte imprimé',
   ).toEqual([]);
   const valeurs = await region.locator('textarea, input[type="text"]').evaluateAll(

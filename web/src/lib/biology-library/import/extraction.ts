@@ -211,7 +211,7 @@ function texteBorne(v: unknown, max: number): string | null | undefined {
  * s'il est absent, vide ou sans caractère visible. Au-delà de sa borne — mesurée en POINTS DE CODE,
  * comme `char_length` de la base, et non en unités UTF-16 —, il n'est ni
  * tronqué ni bloquant : `null`, et `nonTranscrit` le dit (§10). `undefined` :
- * type invalide, la sortie entière l'est.
+ * type invalide ou Unicode malformé, la sortie entière l'est.
  */
 export function lireFaitLaboratoire(
   v: unknown,
@@ -219,6 +219,10 @@ export function lireFaitLaboratoire(
 ): { texte: string | null; nonTranscrit: boolean } | undefined {
   if (v === null) return { texte: null, nonTranscrit: false };
   if (typeof v !== 'string') return undefined;
+  // Un demi-caractère isolé (surrogate) n'est pas de l'UTF-8 valide : ce n'est
+  // pas un texte imprimé, la sortie est invalide (revue Codex #1333). Une paire
+  // complète (emoji, flèche hors BMP) reste admise.
+  if (/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(v)) return undefined;
   // Un NUL n'est jamais imprimé, et la base le refuse : laissé dans le texte, il
   // ferait échouer tout l'import. Il se retire avant le rognage.
   const t = v.replace(/\u0000/g, '').trim();

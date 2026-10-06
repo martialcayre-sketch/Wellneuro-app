@@ -158,7 +158,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
     const IMPORTEE = {
       ...LIGNE_CONSIGNEE,
       source: 'import_labo',
-      ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'µg/L' },
+      ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'µg/L', valeurLue: '42,5' },
     };
 
     it('une mesure importée rend les faits de SA ligne lue, tels quels', async () => {
@@ -169,7 +169,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
 
     it('un seul des deux faits imprimé : l’autre reste `null`, jamais complété', async () => {
       prisma.resultatBiologique.findMany.mockResolvedValue([
-        { ...IMPORTEE, ligneCandidate: { intervalleLu: null, marquageLu: '*', uniteLue: 'µg/L' } },
+        { ...IMPORTEE, ligneCandidate: { intervalleLu: null, marquageLu: '*', uniteLue: 'µg/L', valeurLue: '42,5' } },
       ]);
       const payload = await (await GET(getRequest('PAT1'))).json();
       expect(payload.resultats[0].faitsLaboratoire).toEqual({ intervalle: null, marquage: '*' });
@@ -177,7 +177,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
 
     it('ligne lue sans aucun fait : silence (`null`), pas un objet vide', async () => {
       prisma.resultatBiologique.findMany.mockResolvedValue([
-        { ...IMPORTEE, ligneCandidate: { intervalleLu: null, marquageLu: null, uniteLue: 'µg/L' } },
+        { ...IMPORTEE, ligneCandidate: { intervalleLu: null, marquageLu: null, uniteLue: 'µg/L', valeurLue: '42,5' } },
       ]);
       const payload = await (await GET(getRequest('PAT1'))).json();
       expect(payload.resultats[0].faitsLaboratoire).toBeNull();
@@ -185,7 +185,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
 
     it('unité lue DISCORDANTE de l’unité du résultat : silence — l’intervalle d’une autre unité trompe', async () => {
       prisma.resultatBiologique.findMany.mockResolvedValue([
-        { ...IMPORTEE, ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'mg/L' } },
+        { ...IMPORTEE, ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'mg/L', valeurLue: '42,5' } },
       ]);
       const payload = await (await GET(getRequest('PAT1'))).json();
       expect(payload.resultats[0].faitsLaboratoire).toBeNull();
@@ -201,10 +201,18 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
       expect(payload.resultats[1].faitsLaboratoire).toBeNull();
     });
 
-    it('la relation lue porte les deux faits ET l’unité lue, et rien d’autre de la ligne', async () => {
+    it('valeur CORRIGÉE à la validation (48 lu, 4,8 validé) : silence — la marque portait sur 48', async () => {
+      prisma.resultatBiologique.findMany.mockResolvedValue([
+        { ...IMPORTEE, valeur: 4.8, ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'µg/L', valeurLue: '48' } },
+      ]);
+      const payload = await (await GET(getRequest('PAT1'))).json();
+      expect(payload.resultats[0].faitsLaboratoire).toBeNull();
+    });
+
+    it('la relation lue porte les deux faits, l’unité et la valeur lues, et rien d’autre de la ligne', async () => {
       await GET(getRequest('PAT1'));
       expect(prisma.resultatBiologique.findMany.mock.calls[0][0].select.ligneCandidate).toEqual({
-        select: { intervalleLu: true, marquageLu: true, uniteLue: true },
+        select: { intervalleLu: true, marquageLu: true, uniteLue: true, valeurLue: true },
       });
     });
   });

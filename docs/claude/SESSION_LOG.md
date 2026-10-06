@@ -9253,5 +9253,6 @@ Promotions : décision → aucune ; règle → aucune.
 
 **Prochaine action.** Passe Codex, merge, constat de la première extraction v2.
 
-**Questions ouvertes.** Trois arbitrages au handoff : intervalle hors
-exemption, valeur corrigée, double unité.
+**Questions ouvertes.** Deux arbitrages au handoff : intervalle hors
+exemption, double unité (la valeur corrigée est tranchée par la revue Codex :
+silence).

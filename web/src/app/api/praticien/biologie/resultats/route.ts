@@ -8,7 +8,7 @@ import {
 import { garderResultats, type VerdictGardeResultats } from '@/lib/biology-library/gardeResultats';
 import { validerSaisieResultat } from '@/lib/biology-library/resultats';
 import { correctionsParLigne } from '@/lib/biology-library/filCorrection';
-import { unitesConcordent } from '@/lib/biology-library/import/valeurLue';
+import { lireValeurQuantitative, unitesConcordent } from '@/lib/biology-library/import/valeurLue';
 import { MESSAGES_REFUS_SAISIE, signature } from '@/lib/biology-library/saisieMessages';
 
 // Résultats biologiques réels du dossier (étage 2, CB-09, [[D-122]] §2) —
@@ -148,7 +148,12 @@ type LigneLue = {
   /** La relation, non filtrée par `actif` : `unite` y est celle d'AUJOURD'HUI. */
   analyte: { libelle: string; unite: string | null };
   /** La ligne lue qui a créé ce résultat, dans ce sens seulement ([[D-256]] A5). */
-  ligneCandidate: { intervalleLu: string | null; marquageLu: string | null; uniteLue: string | null } | null;
+  ligneCandidate: {
+    intervalleLu: string | null;
+    marquageLu: string | null;
+    uniteLue: string | null;
+    valeurLue: string;
+  } | null;
 };
 
 /** Les faits de la ligne lue, ou le silence ([[D-267]] §5). */
@@ -156,6 +161,9 @@ function faitsDeLaLigne(ligne: LigneLue): ResultatConsigne['faitsLaboratoire'] {
   const lue = ligne.ligneCandidate;
   if (!lue || (lue.intervalleLu === null && lue.marquageLu === null)) return null;
   if (!unitesConcordent(lue.uniteLue, ligne.unite)) return null;
+  // Valeur corrigée à la validation : la marque imprimée portait sur une autre
+  // valeur que celle qui fait foi. Silence (§5 précisé, revue Codex #1333).
+  if (lireValeurQuantitative(lue.valeurLue) !== Number(ligne.valeur)) return null;
   return { intervalle: lue.intervalleLu, marquage: lue.marquageLu };
 }
 
@@ -191,7 +199,7 @@ const CHAMPS_LUS = {
   analyte: { select: { libelle: true, unite: true } },
   // Les faits du laboratoire ([[D-267]]) : lus par la relation, jamais copiés
   // sur le résultat (A5). Une saisie praticien n'a pas de ligne : `null`.
-  ligneCandidate: { select: { intervalleLu: true, marquageLu: true, uniteLue: true } },
+  ligneCandidate: { select: { intervalleLu: true, marquageLu: true, uniteLue: true, valeurLue: true } },
 } as const;
 
 export async function GET(req: Request) {

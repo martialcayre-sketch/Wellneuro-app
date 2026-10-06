@@ -911,7 +911,7 @@ describe('EstimeMesurePanel — la plage sourcée juxtaposée ([[D-157]])', () =
     expect(marques).toHaveLength(1);
     expect(marques[0].textContent).toBe('Élevé');
     expect(marques[0].children).toHaveLength(0);
-    expect(marques[0].getAttribute('class')).toBeNull();
+    expect(marques[0].getAttributeNames()).toEqual(['data-fait-laboratoire']);
     // Ni le paragraphe ni la ligne ne prennent une classe d'état selon la marque.
     expect(marques[0].parentElement?.getAttribute('class')).toBe('mt-1 text-xs text-muted-foreground');
     expect(marques[0].closest('li')?.getAttribute('class')).toBe('text-xs text-muted-foreground');

@@ -103,7 +103,7 @@ laboratoire.
   sa borne (points de code) vaut `null` avec signal.
 - Restitution : écran de validation et série des mesures, « Imprimé par le
   laboratoire », silences de §5 éprouvés à la route (aucun fait, unité
-  discordante, correction). La décision du praticien ne touche à aucun fait
+  discordante, correction, valeur modifiée à la validation). La décision du praticien ne touche à aucun fait
   (`decisions.test.ts`, données exactes).
 - Revue `wn-reviewer` : GO, ni P0 ni P1. P2 corrigés : banc BP-01 étendu à la
   charge `faitsLaboratoire` ; classe du paragraphe et de la ligne figées ;
@@ -111,9 +111,11 @@ laboratoire.
   rendus `null` (un NUL faisait échouer tout l'import).
 - Copilot (#1333) : NUL intérieur retiré ; exemption portée par le vrai
   helper e2e et exercée par un spec ; lecture de §7 explicitée dans le banc.
+- Codex (#1333) : P1 corrigé — valeur modifiée à la validation ⇒ silence
+  dans la série (`D-267` §5 précisé) ; P2 corrigés — surrogate isolé, style
+  sur la marque exemptée.
 - Ouvert, à arbitrer (handoff du lot) : intervalle hors de l'élément exempté
-  de la sentinelle ; faits affichés à côté d'une valeur corrigée à la
-  validation ; intervalle imprimé dans l'autre unité d'un compte rendu à
-  double unité.
+  de la sentinelle ; intervalle imprimé dans l'autre unité d'un compte rendu
+  à double unité.
 - Reste à constater après déploiement : une extraction réelle porte
   `version_prompt = 'bio-extraction-v2'` et des faits non nuls.

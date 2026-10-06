@@ -157,6 +157,13 @@ describe('faits du laboratoire (D-267) — recopiés tels qu’imprimés, jamais
     });
   });
 
+  it('un surrogate isolé invalide la sortie ; une paire complète reste admise', () => {
+    expect(lireFaitLaboratoire('\uD800', LONGUEUR_MAX_MARQUAGE)).toBeUndefined();
+    expect(lireFaitLaboratoire('30 \uDC00 400', LONGUEUR_MAX_INTERVALLE)).toBeUndefined();
+    expect(lireFaitLaboratoire('\uD83E\uDC45', LONGUEUR_MAX_MARQUAGE)).toEqual({ texte: '🡅', nonTranscrit: false });
+    expect(analyserSortieExtraction(avec({ intervalle_reference: null, marquage: '\uD800' })).ok).toBe(false);
+  });
+
   it('un NUL intérieur se retire : la base le refuserait et l’import entier échouerait', () => {
     expect(lireFaitLaboratoire('30\u0000 – 400', LONGUEUR_MAX_INTERVALLE)).toEqual({ texte: '30 – 400', nonTranscrit: false });
     expect(lireFaitLaboratoire('\u0000H\u0000', LONGUEUR_MAX_MARQUAGE)).toEqual({ texte: 'H', nonTranscrit: false });
