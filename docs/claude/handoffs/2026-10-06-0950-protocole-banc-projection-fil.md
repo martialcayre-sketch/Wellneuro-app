@@ -28,10 +28,16 @@ patient n'avait aucun banc.
 Banc : 5 verts. Mutations rouges : un champ retiré de la projection (2 échecs),
 un champ ajouté au type (`tsc` rouge sur le banc). T1 complet.
 
+## Problèmes ouverts
+
+- Dette (5) de `D-200` : hydratation du constructeur depuis la version
+  active, et `versionsLues` non remonté au rail.
+- `D-213` §2 (`limitations` sort du contrat patient) n'est pas exécutée ; le
+  banc suivra le type le jour où elle l'est.
+
 ## Prochaine action exacte
 
-CI, merge. Dettes de `D-200` encore ouvertes : (5), l'hydratation du
-constructeur et `versionsLues`.
+CI, commentaires de revue, merge.
 
 ## Interdits encore actifs
 
