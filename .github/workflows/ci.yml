@@ -1136,6 +1136,17 @@ jobs:
           WN_BIO_LECTURE_BANC_BASE: wellneuro_ci
         run: node scripts/banc-lectures-imports-deux-sessions.test.mjs
 
+      # Le VRAI écrivain (`poserActeLecture`, client Prisma de production)
+      # contre PostgreSQL : deux requêtes simultanées, la course FORCÉE par un
+      # verrou tenu sur l'import — une lecture et un refus nommé, puis une
+      # révocation et un refus nommé ; jamais deux actes, jamais un 500.
+      - name: Lectures imports biologiques writer bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_LECTURE_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-ecrivain-lecture-deux-requetes.test.ts
+
       # Lettres d'adressage remises au patient (D-262, LOT-01). Ce que le drift
       # check ne voit pas : la remise porte sur une approbation du même dossier
       # dont le protocole s'ouvre sur l'orientation réservée, une lettre

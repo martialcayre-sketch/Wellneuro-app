@@ -516,6 +516,12 @@ grep -q 'banc-lectures-imports-deux-sessions.test.mjs' "$ROOT/.github/workflows/
   || die "ci.yml ne lance plus le banc à deux sessions des actes de lecture."
 WN_BIO_LECTURE_BANC_BASE=wellneuro_ci node scripts/banc-lectures-imports-deux-sessions.test.mjs > /dev/null < /dev/null \
   || die "banc à deux sessions en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-lectures-imports-deux-sessions.test.mjs\`, depuis web/)."
+# Le vrai écrivain contre la base (même discipline) — après `prisma generate`,
+# fait plus haut : il charge le client Prisma.
+grep -q 'banc-ecrivain-lecture-deux-requetes.test.ts' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc de l'écrivain des actes de lecture."
+WN_BIO_LECTURE_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-ecrivain-lecture-deux-requetes.test.ts > /dev/null < /dev/null \
+  || die "banc de l'écrivain en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-ecrivain-lecture-deux-requetes.test.ts\`, depuis web/)."
 
 step "Seed (patients fictifs uniquement)"
 npm run prisma:seed

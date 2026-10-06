@@ -331,6 +331,16 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   `texteBorne`, avec son banc. Quelques lignes, au prochain lot BIO-INGEST qui
   touche l'extraction.
 
+- **Suite — la carte « compte rendu à lire » ouvre le compte rendu qu'elle
+  désigne** (arbitrage du responsable du 2026-10-06, PR #1347, `D-268`). La
+  carte du Fil `import_biologique_a_lire` mène aujourd'hui à l'onglet
+  Trajectoire de la fiche : avec plusieurs dépôts, le praticien retrouve
+  lui-même le compte rendu. **Correctif** : la carte porte l'identifiant du
+  compte rendu ; le paramètre traverse la fiche, `TrajectoirePanel`,
+  `EstimeMesurePanel` et `ImportCompteRenduPanel`, qui l'ouvre à l'arrivée.
+  Sans marqueur `?fil=` : la carte ne s'acquitte pas par lecture. Lot
+  BIO-PARCOURS suivant, après l'allumage de `WN_BIO_LECTURE_ENABLED`.
+
 - **`D-113` — les cycles nommés `T0`, `T1`, `T2`** (2026-08-26, arbitrage du
   responsable). Chaque cycle s'ouvrait par un `T0` : un second cycle
   **déplaçait l'ancre du premier** et refermait ses fenêtres de jalon par effet

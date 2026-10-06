@@ -50,16 +50,26 @@ Code consommateur de `lectures_imports_biologiques` (`D-268`), derrière
 - Isolation de production `read committed`, sans réglage par base ni par
   rôle (`one-off-5510`).
 
-## Problèmes ouverts (au responsable)
+## Arbitrages du responsable (2026-10-06, sur la PR #1347)
 
-- Un dossier `actif=false` n'a pas de carte : c'est le régime commun du Fil.
-- La carte mène à l'onglet Trajectoire sans désigner le compte rendu.
-- `poserActeLecture` n'est pas éprouvé de bout en bout contre PostgreSQL : le
-  banc joue du SQL brut, la route est éprouvée sur des mocks.
+- Dossiers inactifs : sans carte, régime du Fil (précision de `D-268` §8).
+- Lien direct vers le compte rendu : lot suivant (`FILE_ATTENTE.md`).
+- Avant le merge : passe Codex par le responsable. Le banc du vrai écrivain
+  contre PostgreSQL est ajouté (`scripts/banc-ecrivain-lecture-deux-requetes.test.ts`,
+  CI et T3).
+- Allumage après constat : compter les imports validés sans lecture par
+  conteneur, puis poser la variable, puis vérifier son effet.
+
+## Problèmes ouverts
+
+- Une fixture du banc de l'écrivain (`PAT_BANC_ECR_…`) reste dans la base
+  locale de dev de la copie principale, laissée par un essai raté : la garde
+  refuse le nettoyage par `psql`. Elle est inerte, et son identifiant est
+  propre à ce run.
 
 ## Prochaine action exacte
 
-1. PR, `wn-attendre-ci`, passe Codex, merge.
+1. Passe Codex (le responsable), verdicts, puis merge.
 2. Allumage de `WN_BIO_LECTURE_ENABLED` : geste du responsable. Tous les
    imports déjà validés produiront leur carte (§8).
 3. Constat d'usage en agrégats (`D-266` §12).

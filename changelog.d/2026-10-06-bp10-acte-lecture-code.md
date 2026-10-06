@@ -16,4 +16,8 @@
   appartenance du dossier, une instruction hors transaction (READ COMMITTED).
 - **Bancs** : module pur, route, Fil, écran, et un banc à deux sessions joué
   en CI et en T3 (deux lectures concurrentes, témoin REPEATABLE READ, lecture
-  contre la dernière décision commise puis annulée).
+  contre la dernière décision commise puis annulée), plus un banc du vrai
+  écrivain contre PostgreSQL : deux requêtes simultanées, course forcée par un
+  verrou, une seule acceptée et un refus nommé.
+- **`D-268` §8 précisé** : les dossiers inactifs ne produisent pas de carte
+  (régime commun du Fil).

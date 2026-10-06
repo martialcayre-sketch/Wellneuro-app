@@ -196,8 +196,20 @@ encore « pas un filet de sécurité ».
     `api/praticien/biologie/import/lecture` (garde de l'import, appartenance,
     une instruction hors transaction). Bancs : module pur, route, Fil, écran,
     et banc à deux sessions (deux lectures concurrentes, témoin REPEATABLE
-    READ, lecture contre la dernière décision commise puis annulée). Reste :
-    l'allumage du drapeau, geste du responsable, puis le constat d'usage.
+    READ, lecture contre la dernière décision commise puis annulée), et banc
+    du vrai écrivain contre PostgreSQL (deux lectures, puis deux révocations
+    simultanées, course forcée par un verrou). Reste : l'allumage du drapeau,
+    geste du responsable, puis le constat d'usage.
+  - Arbitrages du 2026-10-06 sur la PR #1347 :
+    - dossiers inactifs : régime du Fil, sans carte (précision de `D-268`
+      §8) ;
+    - la carte qui ouvre le compte rendu désigné : lot suivant
+      (`FILE_ATTENTE.md`) ;
+    - avant le merge : passe Codex par le responsable, et banc de l'écrivain
+      ajouté ;
+    - allumage après constat : d'abord le compte, par conteneur, des imports
+      validés sans lecture, puis la pose de la variable, puis la vérification
+      de son effet.
 
 ## Tests
 
