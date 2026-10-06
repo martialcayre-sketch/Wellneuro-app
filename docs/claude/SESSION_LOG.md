@@ -9435,3 +9435,22 @@ confirmation distincte.
 
 **Questions ouvertes.** Aucune sur le registre : le responsable l'a validé le
 2026-10-06, note patient inchangée comprise.
+
+## 2026-10-06 — BP-10, migration de la table des actes de lecture
+
+**Décidé.** `lectures_imports_biologiques`, migration seule. Les refus
+vivent en base : dossier, praticien du dossier, import validé et
+entièrement décidé, une lecture active. Codes de révocation fermés (trois).
+Lecture de la restitution, PDF déjà purgé. Praticien actuel révoque. Dossier
+clos : carte seulement si actionnable.
+
+**Écarté.** Lecture dès une ligne validée (une validation postérieure
+rouvrirait). Purge retardée jusqu'à la lecture (toucherait `D-258`). Carte
+toujours visible sur dossier clos.
+
+Promotions : décision → précisions `D-268` §5 ; règle → aucune.
+
+**Prochaine action.** PR, passe Codex, merge, `release-db`, constat ; puis
+le code sous drapeau.
+
+**Questions ouvertes.** Aucune pour la table.

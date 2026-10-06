@@ -37,6 +37,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'relectureNote', 'portailMagicLink',
     'packProposition', 'envoiBrouillon', 'portailConnexionGoogle',
     'correspondanceMedecin', 'correspondancePatient', 'documentPatientBiologie',
+    'lectureImportBiologique',
     'ligneBiologiqueCandidate', 'importBiologique', 'compteRenduBiologique',
     'resultatBiologique',
     'rendezVous', 'journalAccesDossier',
@@ -192,6 +193,16 @@ describe('effacerDossier', () => {
     expect(rang('adressageSignalAlerte')).toBeGreaterThanOrEqual(0);
     expect(rang('adressageSignalAlerte')).toBeLessThan(rang('consultation'));
     expect(rang('adressageSignalAlerte')).toBeLessThan(rang('correspondanceMedecin'));
+  });
+
+  // Actes de lecture d'un import validé (D-268, BP-10) : FK RESTRICT vers
+  // l'import. Une ligne déplacée après lui rendrait l'effacement impossible
+  // pour tout dossier dont un import a été lu.
+  it('supprime les actes de lecture biologique avant les imports', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('lectureImportBiologique')).toBeGreaterThanOrEqual(0);
+    expect(rang('lectureImportBiologique')).toBeLessThan(rang('importBiologique'));
   });
 
   it('tout passe par une seule transaction', async () => {

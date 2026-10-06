@@ -81,6 +81,36 @@ déclaration au registre RGPD.
   patient ni son résultat. Un code qui nommerait un motif clinique sort de
   cette précision et appelle une décision.
 
+*Précision du 2026-10-06, au lot de migration (arbitrages du responsable)* :
+- **Une lecture porte sur un import entièrement décidé.** Elle exige au moins
+  une ligne validée (§1) et plus aucune ligne proposée ; la base refuse
+  sinon. Aucune ligne ne naît ni ne change après, donc aucune validation ne
+  suit une lecture : il n'y a pas de réouverture à calculer. D'ici là, la
+  carte invite à décider les lignes restantes.
+- **Codes de révocation** : les trois de la précision ci-dessus, sans ajout
+  (`acte_pose_par_erreur`, `mauvais_import`, `lecture_a_refaire`).
+- **Changement de praticien du dossier** : une lecture posée par l'ancien
+  praticien reste valable. Elle est tracée avec son auteur, et la carte
+  reste résolue.
+- **Surface de l'acte** : le cockpit biologie, là où s'affichent les
+  résultats et le marquage imprimé. La carte du Fil y mène, mais on ne lit
+  pas depuis la carte.
+- **Ce qui est lu : la restitution, pas le document.** La dernière décision
+  d'un import purge son document ([[D-258]]), si bien que le PDF n'existe
+  plus quand la lecture devient possible. Le praticien lit les lignes lues,
+  l'intervalle et le marquage tels qu'imprimés ([[D-267]]), et les résultats
+  validés. L'écran dit qu'il ne montre pas le document. [[D-258]] n'est pas
+  touchée.
+- **Révocation après un changement de praticien** : seul le praticien actuel
+  du dossier agit. Il peut révoquer une lecture posée par l'ancien, puis
+  relire.
+- **Dossier au suivi clôturé : la carte seulement si elle est
+  actionnable.** Un import entièrement décidé et non lu garde sa carte, et
+  l'acte se pose même sur un dossier clos. Un import qui garde des lignes à
+  décider n'a pas de carte tant que le suivi est clos : la route refuse ces
+  décisions (`accepteNouvelEnvoi`), comme pour la carte de sortie. La carte
+  revient à la réouverture du suivi (constat de la revue wn-reviewer du lot).
+
 **§6 — Notification : le Fil seul, et l'échec se voit.** Aucun canal
 sortant n'est créé. Le Fil est tiré à l'ouverture ; si le calcul de la carte
 échoue, le Fil le dit à l'écran — jamais le `catch` silencieux de

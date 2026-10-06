@@ -1111,6 +1111,18 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/adressages_signal_alerte_v1_negatif.sql
 
+      # Actes de lecture d'un import biologique validé (D-268, BP-10). Une ligne
+      # `lecture` RÉSOUT un signalement : ce que le drift check ne voit pas, ce
+      # sont les refus qui l'empêchent de le résoudre à tort — import de CE
+      # dossier, praticien DU dossier, import validé, une lecture active par
+      # import, révocation à code fermé d'une lecture de CET import, aucune
+      # colonne valeur, l'acte figé, l'effacement nommé en une instruction, et
+      # la RLS deny-all. Transaction annulée.
+      - name: Lectures imports biologiques negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/lectures_imports_biologiques_v1_negatif.sql
+
       # Lettres d'adressage remises au patient (D-262, LOT-01). Ce que le drift
       # check ne voit pas : la remise porte sur une approbation du même dossier
       # dont le protocole s'ouvre sur l'orientation réservée, une lettre
