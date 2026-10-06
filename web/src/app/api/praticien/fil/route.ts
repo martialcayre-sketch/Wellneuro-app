@@ -279,11 +279,19 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
           prisma.lectureImportBiologique.findMany({
             where: { patient: filtrePatientsDuPraticien(email) },
             select: {
-              id: true, idImport: true, acte: true, idLectureRevoquee: true, codeRevocation: true,
+              id: true, ordre: true, idImport: true, acte: true, idLectureRevoquee: true, codeRevocation: true,
               praticienEmail: true, acteLe: true,
             },
           }),
         ]);
+        // Regroupés UNE fois par import : les deux listes couvrent tout
+        // l'historique, un filtre par import serait quadratique (revue #1347).
+        const actesParImport = new Map<string, typeof actes>();
+        for (const a of actes) {
+          const liste = actesParImport.get(a.idImport);
+          if (liste) liste.push(a);
+          else actesParImport.set(a.idImport, [a]);
+        }
         importsValides = imports.map(i => {
           const validees = i.lignes.filter(l => l.statut === 'validee');
           // La date de la DERNIÈRE validation ; à défaut (colonne nullable),
@@ -297,7 +305,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
             nbValidees: validees.length,
             nbProposees: i.lignes.length - validees.length,
             valideLe,
-            actes: actes.filter(a => a.idImport === i.id),
+            actes: actesParImport.get(i.id) ?? [],
           };
         });
       } catch (err) {

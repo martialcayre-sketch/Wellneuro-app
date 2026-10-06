@@ -15,10 +15,10 @@ const PRATICIEN = 'praticien@wellneuro.fr';
 const ANCIEN = 'ancien.praticien@wellneuro.fr';
 
 function lecture(id: string, minute: number, praticienEmail = PRATICIEN): ActeLectureRow {
-  return { id, acte: 'lecture', idLectureRevoquee: null, codeRevocation: null, praticienEmail, acteLe: new Date(Date.UTC(2026, 9, 6, 10, minute)) };
+  return { id, ordre: minute, acte: 'lecture', idLectureRevoquee: null, codeRevocation: null, praticienEmail, acteLe: new Date(Date.UTC(2026, 9, 6, 10, minute)) };
 }
 function revocation(id: string, cible: string, minute: number, code = 'lecture_a_refaire'): ActeLectureRow {
-  return { id, acte: 'revocation', idLectureRevoquee: cible, codeRevocation: code, praticienEmail: PRATICIEN, acteLe: new Date(Date.UTC(2026, 9, 6, 10, minute)) };
+  return { id, ordre: minute, acte: 'revocation', idLectureRevoquee: cible, codeRevocation: code, praticienEmail: PRATICIEN, acteLe: new Date(Date.UTC(2026, 9, 6, 10, minute)) };
 }
 function importValide(partiel: Partial<ImportValideRow> = {}): ImportValideRow {
   return {
@@ -66,6 +66,17 @@ describe('etatLecture', () => {
     const etat = etatLecture([lecture('l1', 1), revocation('r1', 'l1', 2), lecture('l2', 3)]);
     expect(etat.active?.id).toBe('l2');
     expect(etat.derniereRevocation).toBeNull();
+  });
+
+  it('l’ORDRE canonique départage, jamais l’instant : deux révocations à la même milliseconde', () => {
+    const meme = new Date('2026-10-06T10:00:00Z');
+    const etat = etatLecture([
+      { ...lecture('l1', 1), acteLe: meme },
+      { ...revocation('r1', 'l1', 2, 'mauvais_import'), acteLe: meme },
+      { ...lecture('l2', 3), acteLe: meme },
+      { ...revocation('r2', 'l2', 4, 'lecture_a_refaire'), acteLe: meme },
+    ].reverse());
+    expect(etat.derniereRevocation?.codeRevocation).toBe('lecture_a_refaire');
   });
 
   it('la lecture d’un ANCIEN praticien du dossier reste active (précision du 2026-10-06)', () => {

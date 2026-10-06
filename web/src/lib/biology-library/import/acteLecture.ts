@@ -111,7 +111,10 @@ async function raisonDeRefus(idPatient: string, idImport: string, demande: Deman
     }),
     prisma.lectureImportBiologique.findMany({
       where: { idPatient, idImport },
-      select: { id: true, acte: true, idLectureRevoquee: true, codeRevocation: true, praticienEmail: true, acteLe: true },
+      select: {
+        id: true, ordre: true, acte: true, idLectureRevoquee: true, codeRevocation: true, praticienEmail: true,
+        acteLe: true,
+      },
     }),
   ]);
   if (!imp) return 'import_introuvable';

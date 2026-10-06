@@ -429,7 +429,7 @@ describe('GET /api/praticien/fil — comptes rendus biologiques à lire (D-268, 
 
   it('une lecture active résout la carte ; sa révocation la rouvre', async () => {
     const lecture = {
-      id: 'lec_1', idImport: 'imp_1', acte: 'lecture', idLectureRevoquee: null, codeRevocation: null,
+      id: 'lec_1', ordre: BigInt(1), idImport: 'imp_1', acte: 'lecture', idLectureRevoquee: null, codeRevocation: null,
       praticienEmail: 'p@wellneuro.fr', acteLe: new Date('2026-10-06T10:00:00Z'),
     };
     prisma.lectureImportBiologique.findMany.mockResolvedValue([lecture]);
@@ -437,7 +437,7 @@ describe('GET /api/praticien/fil — comptes rendus biologiques à lire (D-268, 
 
     prisma.lectureImportBiologique.findMany.mockResolvedValue([
       lecture,
-      { ...lecture, id: 'rev_1', acte: 'revocation', idLectureRevoquee: 'lec_1', codeRevocation: 'mauvais_import', acteLe: new Date('2026-10-06T11:00:00Z') },
+      { ...lecture, id: 'rev_1', ordre: BigInt(2), acte: 'revocation', idLectureRevoquee: 'lec_1', codeRevocation: 'mauvais_import', acteLe: new Date('2026-10-06T11:00:00Z') },
     ]);
     expect((await (await GET()).json()).cartes).toEqual([
       expect.objectContaining({ type: 'import_biologique_a_lire', titre: 'Compte rendu biologique — lecture à consigner à nouveau' }),

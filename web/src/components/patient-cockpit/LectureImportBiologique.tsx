@@ -67,7 +67,9 @@ export function LectureImportBiologique({
   const nbProposees = imp.lignes.filter(l => l.statut === 'proposee').length;
   if (nbValidees === 0) return null;
 
-  const etat = etatLecture(actes.map(a => ({ ...a, acteLe: new Date(a.acteLe) })));
+  // `actes` arrive dans l'ordre canonique de la base (`lireActesLecture`) :
+  // son rang EST l'ordre.
+  const etat = etatLecture(actes.map((a, rang) => ({ ...a, ordre: rang, acteLe: new Date(a.acteLe) })));
   const revocationDe = new Map(
     actes.filter(a => a.acte === 'revocation' && a.idLectureRevoquee).map(a => [a.idLectureRevoquee as string, a]),
   );
@@ -116,7 +118,9 @@ export function LectureImportBiologique({
         </p>
       ) : etat.active ? (
         <div className="mt-2">
-          <p className="text-sm text-foreground">
+          {/* `role="status"` : le bouton qui avait le focus disparaît, la
+              confirmation doit s'annoncer (revue #1347). */}
+          <p role="status" className="text-sm text-foreground">
             Lecture consignée le {formatInstant(etat.active.acteLe.toISOString())} par {etat.active.praticienEmail}.
           </p>
           {revocationArmee ? (
@@ -159,7 +163,7 @@ export function LectureImportBiologique({
       ) : (
         <div className="mt-2">
           {etat.derniereRevocation && (
-            <p className="text-sm text-foreground">
+            <p role="status" className="text-sm text-foreground">
               Lecture révoquée le {formatInstant(etat.derniereRevocation.acteLe.toISOString())} (
               {libelleCode(etat.derniereRevocation.codeRevocation).toLowerCase()}) : aucune lecture n’est consignée.
             </p>

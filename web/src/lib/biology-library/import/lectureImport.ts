@@ -30,6 +30,11 @@ export function estCodeRevocation(valeur: unknown): valeur is CodeRevocation {
 /** Un acte tel que la table le porte, sans rien d'autre. */
 export type ActeLectureRow = {
   id: string;
+  /**
+   * L'ordre CANONIQUE, posé par la base (`ordre`, monotone). Jamais `acteLe` :
+   * deux actes peuvent partager une milliseconde (revue Copilot, #1347).
+   */
+  ordre: bigint | number;
   acte: string;
   idLectureRevoquee: string | null;
   codeRevocation: string | null;
@@ -57,12 +62,12 @@ export function etatLecture(actes: ActeLectureRow[]): EtatLecture {
       .filter(a => a.acte === 'revocation' && a.idLectureRevoquee !== null)
       .map(a => a.idLectureRevoquee as string),
   );
-  const parDate = [...actes].sort((a, b) => b.acteLe.getTime() - a.acteLe.getTime());
-  const active = parDate.find(a => a.acte === 'lecture' && !revoquees.has(a.id)) ?? null;
+  const plusRecentsDabord = [...actes].sort((a, b) => (b.ordre > a.ordre ? 1 : b.ordre < a.ordre ? -1 : 0));
+  const active = plusRecentsDabord.find(a => a.acte === 'lecture' && !revoquees.has(a.id)) ?? null;
   if (active) {
     return { active: { id: active.id, praticienEmail: active.praticienEmail, acteLe: active.acteLe }, derniereRevocation: null };
   }
-  const revocation = parDate.find(a => a.acte === 'revocation') ?? null;
+  const revocation = plusRecentsDabord.find(a => a.acte === 'revocation') ?? null;
   return {
     active: null,
     derniereRevocation: revocation ? { acteLe: revocation.acteLe, codeRevocation: revocation.codeRevocation } : null,
