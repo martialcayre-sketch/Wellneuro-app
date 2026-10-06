@@ -9433,4 +9433,5 @@ fantômes avec G3, purge LOT-09 par redépôt.
 **Prochaine action.** Validation RGPD par le responsable, puis migration sur
 confirmation distincte.
 
-**Questions ouvertes.** Note patient inchangée : à confirmer.
+**Questions ouvertes.** Aucune sur le registre : le responsable l'a validé le
+2026-10-06, note patient inchangée comprise.

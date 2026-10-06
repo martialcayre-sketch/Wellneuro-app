@@ -161,8 +161,8 @@ encore « pas un filet de sécurité ».
 - [x] Rédiger la décision de sécurité biologique (`D-268`).
 - [x] Registre RGPD rédigé (2026-10-06 : §2 ter et rubrique 5,
   `LectureImportBiologique`). Note patient proposée inchangée.
-- [ ] **Validation du paragraphe RGPD par le responsable** (patron du §2 ter),
-  note patient comprise.
+- [x] **Validation du paragraphe RGPD par le responsable** (patron du §2 ter),
+  note patient inchangée comprise : validé le 2026-10-06.
 - [ ] Livrer la migration seule et la faire appliquer par `release-db`.
 - [ ] Livrer le code consommateur derrière un drapeau né avec lui.
 

@@ -251,12 +251,12 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
     **praticien du dossier** la lit et l'écrit, selon l'appartenance
     existante (`filtrePatientsDuPraticien`). L'élargissement à tout le
     domaine, d'abord arbitré, a été écarté le 2026-10-06 ([[D-268]] §5).
-  - **Information du patient.** Proposée **inchangée** : « Vos données
-    personnelles » v12 déclare déjà le relevé et la validation des résultats.
-    La trace du geste de lecture du praticien sur ces résultats n'ajoute ni
-    catégorie, ni destinataire, ni finalité vue du patient. **À valider par le
-    responsable** ; s'il en juge autrement, une version TRUST passe avant la
-    table.
+  - **Information du patient : inchangée.** « Vos données personnelles »
+    v12 déclare déjà le relevé et la validation des résultats. La trace du
+    geste de lecture du praticien sur ces résultats n'ajoute ni catégorie, ni
+    destinataire, ni finalité vue du patient. **Ce paragraphe a été validé par
+    le responsable le 2026-10-06**, note patient inchangée comprise, après sa
+    rédaction (PR #1344).
 
 **Information du patient, publiée par le même geste** : « L'intelligence
 artificielle dans Wellneuro » **v4** et « Vos données personnelles » **v11**
