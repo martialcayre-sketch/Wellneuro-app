@@ -41,13 +41,18 @@
 --     l'acte égale, sans égard à la casse, celui que porte le dossier — la
 --     règle même de `filtrePatientsDuPraticien`. La route le vérifiera ; la
 --     base est la garde qui reste si une route l'oubliait.
---  3. UNE LECTURE PORTE SUR UN IMPORT VALIDÉ : au moins une ligne `validee`.
+--  3. UNE LECTURE PORTE SUR UN IMPORT VALIDÉ ET ENTIÈREMENT DÉCIDÉ : au moins
+--     une ligne `validee`, et plus aucune ligne `proposee` (arbitrage du
+--     responsable, 2026-10-06). Aucune ligne ne naît après la fin d'une
+--     extraction, et une ligne décidée ne change plus (triggers du LOT-02 de
+--     BIO-INGEST) : une lecture porte donc sur un import qui ne bougera plus,
+--     et aucune validation ne peut la suivre.
 --  4. AU PLUS UNE LECTURE ACTIVE PAR IMPORT ([[D-268]] §4) : une lecture que
 --     n'a révoquée aucune révocation. Après révocation, une nouvelle lecture
 --     est admise. Le trigger prend un verrou `FOR NO KEY UPDATE` sur la ligne
 --     de l'import : deux actes concurrents sur le même import se sérialisent,
 --     et la décision concurrente d'une ligne (qui prend `FOR SHARE`) aussi —
---     la règle 3 ne lit donc pas une validation non encore commise.
+--     la règle 3 ne lit donc pas une décision non encore commise.
 --  5. UNE RÉVOCATION VISE UNE LECTURE DU MÊME IMPORT, une fois (index unique
 --     partiel).
 --
@@ -190,6 +195,12 @@ BEGIN
       WHERE l.id_import = NEW.id_import AND l.statut = 'validee'
     ) THEN
       RAISE EXCEPTION 'lecture refusée : l''import % n''a aucune ligne validée.', NEW.id_import;
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM public.lignes_biologiques_candidates l
+      WHERE l.id_import = NEW.id_import AND l.statut = 'proposee'
+    ) THEN
+      RAISE EXCEPTION 'lecture refusée : l''import % a encore des lignes à décider.', NEW.id_import;
     END IF;
     IF EXISTS (
       SELECT 1 FROM public.lectures_imports_biologiques a

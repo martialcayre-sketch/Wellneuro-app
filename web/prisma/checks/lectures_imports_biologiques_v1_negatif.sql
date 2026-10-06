@@ -9,8 +9,10 @@
 --   4. seul le praticien DU DOSSIER pose un acte (l'e-mail d'un autre
 --      praticien est refusé, la casse ne compte pas) — lecture comme
 --      révocation ;
---   5. une lecture exige un import VALIDÉ : ni un import dont les lignes sont
---      toutes écartées, ni un import dont les lignes sont encore proposées ;
+--   5. une lecture exige un import VALIDÉ et ENTIÈREMENT DÉCIDÉ : ni un
+--      import dont les lignes sont toutes écartées, ni un import dont les
+--      lignes sont encore proposées, ni un import validé qui garde une ligne
+--      proposée ;
 --   6. au plus UNE lecture active par import : une seconde est refusée ;
 --   7. une révocation valide s'écrit, et une nouvelle lecture est alors
 --      admise — puis une troisième redevient refusée ;
@@ -75,9 +77,10 @@ $$;
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 --
--- Dossier A (praticien@wellneuro.fr) : quatre imports — deux validés
+-- Dossier A (praticien@wellneuro.fr) : cinq imports — deux validés
 -- (`imp_a1`, `imp_a2`), un dont la seule ligne est écartée (`imp_a_ecarte`),
--- un dont la seule ligne reste proposée (`imp_a_propose`). Dossier B, d'un
+-- un dont la seule ligne reste proposée (`imp_a_propose`), un qui a une ligne
+-- validée et une ligne encore proposée (`imp_a_partiel`). Dossier B, d'un
 -- AUTRE praticien : un import validé (`imp_b`).
 
 INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updated_at) VALUES
@@ -98,6 +101,7 @@ INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, versio
   ('imp_a2', 'PAT_CONTRAT_LIB_A', 'cr_lib_a', 'modele-contrat', 'bio-extraction-v3', 'praticien@wellneuro.fr'),
   ('imp_a_ecarte', 'PAT_CONTRAT_LIB_A', 'cr_lib_a', 'modele-contrat', 'bio-extraction-v3', 'praticien@wellneuro.fr'),
   ('imp_a_propose', 'PAT_CONTRAT_LIB_A', 'cr_lib_a', 'modele-contrat', 'bio-extraction-v3', 'praticien@wellneuro.fr'),
+  ('imp_a_partiel', 'PAT_CONTRAT_LIB_A', 'cr_lib_a', 'modele-contrat', 'bio-extraction-v3', 'praticien@wellneuro.fr'),
   ('imp_b', 'PAT_CONTRAT_LIB_B', 'cr_lib_b', 'modele-contrat', 'bio-extraction-v3', 'autre.praticien@wellneuro.fr');
 
 INSERT INTO lignes_biologiques_candidates (id, id_patient, id_import, rang, page, libelle_lu, valeur_lue, statut_mapping) VALUES
@@ -105,10 +109,12 @@ INSERT INTO lignes_biologiques_candidates (id, id_patient, id_import, rang, page
   ('lig_a2', 'PAT_CONTRAT_LIB_A', 'imp_a2', 1, 1, 'Libellé', '1', 'inconnu'),
   ('lig_a_ecarte', 'PAT_CONTRAT_LIB_A', 'imp_a_ecarte', 1, 1, 'Libellé', '1', 'inconnu'),
   ('lig_a_propose', 'PAT_CONTRAT_LIB_A', 'imp_a_propose', 1, 1, 'Libellé', '1', 'inconnu'),
+  ('lig_a_partiel_1', 'PAT_CONTRAT_LIB_A', 'imp_a_partiel', 1, 1, 'Libellé', '1', 'inconnu'),
+  ('lig_a_partiel_2', 'PAT_CONTRAT_LIB_A', 'imp_a_partiel', 2, 1, 'Libellé', '1', 'inconnu'),
   ('lig_b', 'PAT_CONTRAT_LIB_B', 'imp_b', 1, 1, 'Libellé', '1', 'inconnu');
 
 UPDATE imports_biologiques SET statut = 'extrait', termine_le = CURRENT_TIMESTAMP
-WHERE id IN ('imp_a1', 'imp_a2', 'imp_a_ecarte', 'imp_a_propose', 'imp_b');
+WHERE id IN ('imp_a1', 'imp_a2', 'imp_a_ecarte', 'imp_a_propose', 'imp_a_partiel', 'imp_b');
 
 -- Les résultats sont saisis APRÈS la fin des extractions (la décision d'une
 -- ligne le vérifie) : instant posé à la main, après une courte attente.
@@ -116,11 +122,13 @@ SELECT pg_sleep(0.01);
 INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, saisi_le) VALUES
   ('res_lib_a1', 'PAT_CONTRAT_LIB_A', 'BIO_CONTRAT_LIB', 1, 'mg/L', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', clock_timestamp() AT TIME ZONE 'UTC'),
   ('res_lib_a2', 'PAT_CONTRAT_LIB_A', 'BIO_CONTRAT_LIB', 1, 'mg/L', TIMESTAMP '2026-09-02 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', clock_timestamp() AT TIME ZONE 'UTC'),
+  ('res_lib_a_partiel', 'PAT_CONTRAT_LIB_A', 'BIO_CONTRAT_LIB', 1, 'mg/L', TIMESTAMP '2026-09-03 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', clock_timestamp() AT TIME ZONE 'UTC'),
   ('res_lib_b', 'PAT_CONTRAT_LIB_B', 'BIO_CONTRAT_LIB', 1, 'mg/L', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'autre.praticien@wellneuro.fr', clock_timestamp() AT TIME ZONE 'UTC');
 
 UPDATE lignes_biologiques_candidates SET statut = 'validee', id_resultat = 'res_lib_a1', traite_par = 'praticien@wellneuro.fr' WHERE id = 'lig_a1';
 UPDATE lignes_biologiques_candidates SET statut = 'validee', id_resultat = 'res_lib_a2', traite_par = 'praticien@wellneuro.fr' WHERE id = 'lig_a2';
 UPDATE lignes_biologiques_candidates SET statut = 'validee', id_resultat = 'res_lib_b', traite_par = 'autre.praticien@wellneuro.fr' WHERE id = 'lig_b';
+UPDATE lignes_biologiques_candidates SET statut = 'validee', id_resultat = 'res_lib_a_partiel', traite_par = 'praticien@wellneuro.fr' WHERE id = 'lig_a_partiel_1';
 UPDATE lignes_biologiques_candidates SET statut = 'ecartee', motif_ecart = 'ecartee_par_praticien', traite_par = 'praticien@wellneuro.fr' WHERE id = 'lig_a_ecarte';
 
 DO $$
@@ -182,6 +190,14 @@ BEGIN
     $q$INSERT INTO lectures_imports_biologiques (id, id_patient, id_import, acte, praticien_email)
        VALUES ('x5b', 'PAT_CONTRAT_LIB_A', 'imp_a_propose', 'lecture', 'praticien@wellneuro.fr')$q$,
     'P0001', 'n''a aucune ligne validée');
+  PERFORM pg_temp.refuse('5 import validé qui garde une ligne proposée',
+    $q$INSERT INTO lectures_imports_biologiques (id, id_patient, id_import, acte, praticien_email)
+       VALUES ('x5c', 'PAT_CONTRAT_LIB_A', 'imp_a_partiel', 'lecture', 'praticien@wellneuro.fr')$q$,
+    'P0001', 'a encore des lignes à décider');
+  -- Sa dernière ligne décidée (écartée), l'import se lit.
+  UPDATE lignes_biologiques_candidates SET statut = 'ecartee', motif_ecart = 'ecartee_par_praticien', traite_par = 'praticien@wellneuro.fr' WHERE id = 'lig_a_partiel_2';
+  INSERT INTO lectures_imports_biologiques (id, id_patient, id_import, acte, praticien_email)
+  VALUES ('lec_a_partiel', 'PAT_CONTRAT_LIB_A', 'imp_a_partiel', 'lecture', 'praticien@wellneuro.fr');
 
   -- ── 6. Une lecture active par import ─────────────────────────────────────
   PERFORM pg_temp.refuse('6 seconde lecture active',

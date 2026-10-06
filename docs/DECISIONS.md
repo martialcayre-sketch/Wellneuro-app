@@ -81,6 +81,21 @@ déclaration au registre RGPD.
   patient ni son résultat. Un code qui nommerait un motif clinique sort de
   cette précision et appelle une décision.
 
+*Précision du 2026-10-06, au lot de migration (arbitrages du responsable)* :
+- **Une lecture porte sur un import entièrement décidé.** Elle exige au moins
+  une ligne validée (§1) et plus aucune ligne proposée ; la base refuse
+  sinon. Aucune ligne ne naît ni ne change après, donc aucune validation ne
+  suit une lecture : il n'y a pas de réouverture à calculer. D'ici là, la
+  carte invite à décider les lignes restantes.
+- **Codes de révocation** : les trois de la précision ci-dessus, sans ajout
+  (`acte_pose_par_erreur`, `mauvais_import`, `lecture_a_refaire`).
+- **Changement de praticien du dossier** : une lecture posée par l'ancien
+  praticien reste valable. Elle est tracée avec son auteur, et la carte
+  reste résolue.
+- **Surface de l'acte** : le cockpit biologie, là où s'affichent les
+  résultats et le marquage imprimé. La carte du Fil y mène, mais on ne lit
+  pas depuis la carte.
+
 **§6 — Notification : le Fil seul, et l'échec se voit.** Aucun canal
 sortant n'est créé. Le Fil est tiré à l'ouverture ; si le calcul de la carte
 échoue, le Fil le dit à l'écran — jamais le `catch` silencieux de

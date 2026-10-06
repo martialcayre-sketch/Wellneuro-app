@@ -164,6 +164,18 @@ encore « pas un filet de sécurité ».
 - [x] **Validation du paragraphe RGPD par le responsable** (patron du §2 ter),
   note patient inchangée comprise : validé le 2026-10-06.
 - [ ] Livrer la migration seule et la faire appliquer par `release-db`.
+  - 2026-10-06 : migration `lectures_imports_biologiques_v1` écrite et
+    relue, sur confirmation distincte du responsable (« Go migration »).
+    Codes de révocation fixés : `acte_pose_par_erreur`, `mauvais_import`,
+    `lecture_a_refaire`. La base refuse aussi l'acte d'un autre praticien que
+    celui du dossier. Case à cocher après la `release-db` constatée.
+  - Arbitrages du 2026-10-06 au lot de migration, gravés en précision de
+    `D-268` §5 :
+    - lecture seulement sur un import **entièrement décidé** (trigger de la
+      migration) ;
+    - les trois codes, sans ajout ;
+    - une lecture posée par l'ancien praticien reste valable ;
+    - l'acte se pose dans le **cockpit biologie**, la carte du Fil y mène.
 - [ ] Livrer le code consommateur derrière un drapeau né avec lui.
 
 ## Tests
