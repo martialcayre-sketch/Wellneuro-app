@@ -102,3 +102,37 @@ describe('SidebarRail — l’ambiguïté de préfixe entre la liste et les fich
     }
   });
 });
+
+describe('SidebarRail — le Fil incomplet se voit (D-268 §6, contre-revue Codex #1347)', () => {
+  function stubFil(corps: unknown) {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () => (url === '/api/praticien/fil' ? corps : {}),
+    }) as unknown as Response));
+  }
+
+  it('aucune carte : ni compteur, ni indicateur', async () => {
+    stubFil({ cartes: [] });
+    const { container } = rendreSur('/dashboard');
+    await new Promise(r => setTimeout(r, 0));
+    expect(within(container).queryByTestId('fil-incomplet')).toBeNull();
+    expect(within(container).getByRole('link', { name: 'Le Fil du jour' })).toBeTruthy();
+  });
+
+  it('calcul indisponible : un indicateur explicite, et non un silence', async () => {
+    stubFil({ cartes: [], lecturesBiologieIndisponibles: true });
+    const { container } = rendreSur('/dashboard');
+    const indicateur = await within(container).findByTestId('fil-incomplet');
+    expect(indicateur.textContent).toMatch(/comptes rendus biologiques à lire non vérifiés/);
+  });
+
+  it('rail réduit : l’indicateur reste visible et le lien le dit', async () => {
+    stubFil({ cartes: [], lecturesBiologieIndisponibles: true });
+    pathnameMock.mockReturnValue('/dashboard');
+    const { container } = render(<SidebarRail collapsed />);
+    await within(container).findByTestId('fil-incomplet');
+    expect(
+      within(container).getByRole('link', { name: 'Le Fil du jour — comptes rendus biologiques à lire non vérifiés' }),
+    ).toBeTruthy();
+  });
+});
