@@ -9256,3 +9256,20 @@ Promotions : décision → aucune ; règle → aucune.
 **Questions ouvertes.** Aucune : le responsable a validé le silence sur une
 valeur modifiée, retenu l'exemption de l'intervalle (lot de suite, §6 à
 amender) et accepté la double unité telle quelle.
+
+## 2026-10-06 — LOT-07, lot de suite : exemption de l'intervalle
+
+**Décidé.** `D-267` §6 gagne une précision datée : l'intervalle imprimé est
+rendu dans son propre élément attribué (`data-fait-laboratoire="intervalle"`,
+texte brut seul) et la sentinelle exempte ces deux éléments, et eux seuls.
+Rendu inchangé. Revue `wn-reviewer` : GO, P2 corrigés (dont un contrôle de
+vocabulaire mort, `\b` devant « é »).
+
+**Écarté.** Un nouveau numéro de décision (précision de §6, comme celle de
+§5) ; des exemples chiffrés dans la décision.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** PR, CI, verdict du responsable sur la passe Codex, merge.
+
+**Questions ouvertes.** Passe Codex requise ou non pour ce lot de suite.
