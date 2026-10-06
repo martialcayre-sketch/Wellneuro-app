@@ -320,6 +320,16 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   **Correctif** : un `N11` sur le patron de `N10`, mutant `WN-CL-0312-018` ou
   `WN-CL-0387-013`. Quelques lignes, à poser au prochain passage sur ce fichier.
 
+- **Dette — un NUL dans le libellé, la valeur ou l'unité lus fait échouer
+  tout l'import** (constatée le 2026-10-05, routée depuis la revue Copilot de
+  la PR #1333). `texteBorne` (`web/src/lib/biology-library/import/extraction.ts`)
+  rogne et borne, mais laisse passer un U+0000 intérieur, que PostgreSQL
+  refuse : le `createMany` des lignes échoue et l'import entier se clôt
+  `reponse_invalide`. Les faits du laboratoire en sont protégés depuis #1333
+  (le NUL s'y retire avant le rognage). **Correctif** : le même retrait dans
+  `texteBorne`, avec son banc. Quelques lignes, au prochain lot BIO-INGEST qui
+  touche l'extraction.
+
 - **`D-113` — les cycles nommés `T0`, `T1`, `T2`** (2026-08-26, arbitrage du
   responsable). Chaque cycle s'ouvrait par un `T0` : un second cycle
   **déplaçait l'ancre du premier** et refermait ses fenêtres de jalon par effet

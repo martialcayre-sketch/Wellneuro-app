@@ -9,7 +9,10 @@ import type { TypeMimeCompteRendu } from './depot';
 // masquage n'est promis (arbitrage du 2026-10-01, §2 ter du dossier RGPD).
 //
 // LE MODÈLE RELÈVE, IL N'INTERPRÈTE PAS. Il recopie libellé, valeur, unité,
-// page, date du prélèvement et laboratoire TELS QU'ILS SONT ÉCRITS. Il ne
+// page, date du prélèvement et laboratoire TELS QU'ILS SONT ÉCRITS — et, depuis
+// `bio-extraction-v2` ([[D-267]]), l'intervalle de référence et la marque
+// d'anomalie TELS QU'IMPRIMÉS : des faits du document, jamais une plage, jamais
+// une marque déduite en comparant la valeur à l'intervalle (`usage_ia` v5). Il ne
 // choisit aucun analyte (c'est le resolver signé), ne convertit aucune unité
 // ([[D-157]]), ne qualifie aucune valeur. Sa réponse est contrainte par un
 // schéma (sortie structurée), puis RE-JUGÉE ici par un schéma fermé aux bornes
@@ -30,7 +33,7 @@ export const MODELE_EXTRACTION = process.env.WN_BIO_INGEST_MODEL?.trim() || 'cla
  * LITTÉRAL à incrémenter à la main dès que l'un des trois change — c'est elle
  * que l'import enregistre.
  */
-export const VERSION_PROCEDE_EXTRACTION = 'bio-extraction-v1';
+export const VERSION_PROCEDE_EXTRACTION = 'bio-extraction-v2';
 
 /**
  * Délai d'attente des EN-TÊTES (ms), SANS nouvelle tentative : technique, sans
@@ -71,7 +74,20 @@ export type LigneExtraite = {
    * Jamais vraie sans date lue (CHECK de la base).
    */
   heureLue: boolean;
+  /** Faits du laboratoire TELS QU'IMPRIMÉS ([[D-267]] §1) — absents ⇒ `null`. */
+  intervalle: string | null;
+  marquage: string | null;
+  /**
+   * Le fait était imprimé mais dépassait sa borne technique : il reste `null`,
+   * et la ligne le DIT à la validation ([[D-267]] §10). Jamais tronqué.
+   */
+  intervalleNonTranscrit: boolean;
+  marquageNonTranscrit: boolean;
 };
+
+/** Bornes techniques des faits — celles des CHECK de la base (`intervalle_lu`, `marquage_lu`). */
+export const LONGUEUR_MAX_INTERVALLE = 300;
+export const LONGUEUR_MAX_MARQUAGE = 50;
 
 export type ResultatExtraction =
   | { ok: true; laboratoire: string | null; lignes: LigneExtraite[] }
@@ -82,7 +98,10 @@ const CONSIGNE = [
   'Recopie chaque résultat mesuré TEL QU’IL EST ÉCRIT : libellé, valeur, unité, numéro de page (1 pour la première).',
   'La valeur se recopie caractère pour caractère, signes compris (« 12,5 », « <0,5 », « positif »).',
   'L’unité se recopie telle qu’imprimée, ou null si aucune n’est écrite. Ne convertis jamais une unité.',
-  'N’interprète rien : ne dis jamais si une valeur est normale, basse, haute ou pathologique, et ne recopie ni les valeurs de référence ni les commentaires.',
+  'N’interprète rien : ne dis jamais si une valeur est normale, basse, haute ou pathologique.',
+  'Pour chaque résultat, recopie tels qu’imprimés, sans les compléter ni les reformuler, l’intervalle de référence et la marque d’anomalie que le laboratoire lui a apposée (par exemple « H », « * », une flèche), ou null s’ils ne sont pas imprimés.',
+  'Ne déduis jamais une marque d’anomalie en comparant la valeur à l’intervalle : seule celle qu’a imprimée le laboratoire se recopie.',
+  'Ne recopie aucun commentaire.',
   'Ne rattache aucun résultat à un code ou à un nom d’analyte : recopie le libellé imprimé.',
   'Pour chaque résultat, la date du prélèvement au format AAAA-MM-JJ et son heure au format HH:MM si elles sont imprimées, sinon null.',
   'Le nom du laboratoire tel qu’imprimé en en-tête, ou null.',
@@ -101,7 +120,12 @@ const SCHEMA_SORTIE = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['page', 'libelle', 'valeur', 'unite', 'date_prelevement', 'heure_prelevement'],
+        // AUCUNE `maxLength` sur les faits : le modèle tronquerait de lui-même,
+        // et le signal « non transcrit » ne se poserait jamais ([[D-267]] §10).
+        required: [
+          'page', 'libelle', 'valeur', 'unite', 'date_prelevement', 'heure_prelevement',
+          'intervalle_reference', 'marquage',
+        ],
         properties: {
           page: { type: 'integer' },
           libelle: { type: 'string' },
@@ -109,6 +133,8 @@ const SCHEMA_SORTIE = {
           unite: { type: ['string', 'null'] },
           date_prelevement: { type: ['string', 'null'] },
           heure_prelevement: { type: ['string', 'null'] },
+          intervalle_reference: { type: ['string', 'null'] },
+          marquage: { type: ['string', 'null'] },
         },
       },
     },
@@ -181,9 +207,36 @@ function texteBorne(v: unknown, max: number): string | null | undefined {
 }
 
 /**
+ * Un fait du laboratoire ([[D-267]]) : rogné comme les autres champs, `null`
+ * s'il est absent, vide ou sans caractère visible. Au-delà de sa borne — mesurée en POINTS DE CODE,
+ * comme `char_length` de la base, et non en unités UTF-16 —, il n'est ni
+ * tronqué ni bloquant : `null`, et `nonTranscrit` le dit (§10). `undefined` :
+ * type invalide ou Unicode malformé, la sortie entière l'est.
+ */
+export function lireFaitLaboratoire(
+  v: unknown,
+  max: number,
+): { texte: string | null; nonTranscrit: boolean } | undefined {
+  if (v === null) return { texte: null, nonTranscrit: false };
+  if (typeof v !== 'string') return undefined;
+  // Un demi-caractère isolé (surrogate) n'est pas de l'UTF-8 valide : ce n'est
+  // pas un texte imprimé, la sortie est invalide (revue Codex #1333). Une paire
+  // complète (emoji, flèche hors BMP) reste admise.
+  if (/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(v)) return undefined;
+  // Un NUL n'est jamais imprimé, et la base le refuse : laissé dans le texte, il
+  // ferait échouer tout l'import. Il se retire avant le rognage.
+  const t = v.replace(/\u0000/g, '').trim();
+  // Aucun caractère visible (contrôles, formats, espaces seuls) : rien
+  // d'imprimé à recopier.
+  if (!/[^\p{White_Space}\p{Cc}\p{Cf}]/u.test(t)) return { texte: null, nonTranscrit: false };
+  return [...t].length <= max ? { texte: t, nonTranscrit: false } : { texte: null, nonTranscrit: true };
+}
+
+/**
  * Re-juge la sortie du modèle par un schéma FERMÉ, aux bornes des CHECK du
  * staging. Pure : testable sans appel. Toute dérogation rend
- * `reponse_invalide` — jamais une ligne tronquée ou complétée.
+ * `reponse_invalide` — jamais une ligne tronquée ou complétée. Seule exception,
+ * arbitrée : un fait du laboratoire trop long devient `null` signalé (§10).
  */
 export function analyserSortieExtraction(texte: string): ResultatExtraction {
   const invalide: ResultatExtraction = { ok: false, motif: 'reponse_invalide' };
@@ -217,7 +270,14 @@ export function analyserSortieExtraction(texte: string): ResultatExtraction {
     const heure = ligne.heure_prelevement;
     if ((date !== null && typeof date !== 'string') || (heure !== null && typeof heure !== 'string')) return invalide;
     const preleveLe = lireDatePrelevement(date, heure);
-    lignes.push({ page: ligne.page, libelle, valeur, unite, preleveLe, heureLue: preleveLe !== null && heureLisible(heure) });
+    const intervalle = lireFaitLaboratoire(ligne.intervalle_reference, LONGUEUR_MAX_INTERVALLE);
+    const marquage = lireFaitLaboratoire(ligne.marquage, LONGUEUR_MAX_MARQUAGE);
+    if (!intervalle || !marquage) return invalide;
+    lignes.push({
+      page: ligne.page, libelle, valeur, unite, preleveLe, heureLue: preleveLe !== null && heureLisible(heure),
+      intervalle: intervalle.texte, marquage: marquage.texte,
+      intervalleNonTranscrit: intervalle.nonTranscrit, marquageNonTranscrit: marquage.nonTranscrit,
+    });
   }
   return { ok: true, laboratoire, lignes };
 }

@@ -9237,3 +9237,22 @@ Promotions : décision → aucune (précision de D-267) ; règle → aucune.
 **Prochaine action.** Passe Codex, merge, `release-db`, constat, puis le code.
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-05 — LOT-07 : code `bio-extraction-v2`
+
+**Décidé.** Migration « non transcrit » appliquée et constatée (`release-db`
+vert). Le code relève l'intervalle et la marque imprimés : borne en points de
+code, signal au dépassement, fait invisible ⇒ `null`. Il les juxtapose,
+attribués, à la validation et dans la série, sans rien copier sur le résultat.
+Revue `wn-reviewer` : GO, P2 corrigés.
+
+**Écarté.** Une `maxLength` vers le modèle (le dépassement doit se dire, pas
+se tronquer).
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** Passe Codex, merge, constat de la première extraction v2.
+
+**Questions ouvertes.** Aucune : le responsable a validé le silence sur une
+valeur modifiée, retenu l'exemption de l'intervalle (lot de suite, §6 à
+amender) et accepté la double unité telle quelle.

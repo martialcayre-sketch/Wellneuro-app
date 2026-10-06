@@ -74,9 +74,38 @@ export function assertTexteSentinelle(texte: string, options: OptionsSentinelle 
   expect(reprochesTexte(texte, options), 'sentinelle biologie (BP-01) : texte servi au patient').toEqual([]);
 }
 
+/**
+ * L'élément de la marque d'anomalie IMPRIMÉE par le laboratoire ([[D-267]] §6).
+ * « H », « ↑ » ou « Anormal » y sont les mots du laboratoire, pas ceux de
+ * Wellneuro : la sentinelle exempte cet élément, et lui seul, à condition
+ * qu'il ne porte que le texte brut (ni enfant, ni autre attribut que le marqueur). Miroir de
+ * `SELECTEUR_MARQUAGE_LABORATOIRE` (`FaitsDuLaboratoire.tsx`), tenu égal par un
+ * banc Vitest.
+ */
+export const SELECTEUR_MARQUAGE_LABORATOIRE = '[data-fait-laboratoire="marquage"]';
+
 /** Sentinelle sur une région rendue : texte visible, champs, couleurs, badges. */
 export async function assertSentinelleBiologie(region: Locator, options: OptionsSentinelle = {}): Promise<void> {
-  const visible = await region.innerText();
+  // Le texte visible SANS les marques imprimées : vidées le temps de la
+  // lecture, puis rendues. Un retrait par chaîne après coup pourrait amputer un
+  // mot de Wellneuro qui contient la marque (« a » dans « anormal »).
+  const { visible, marques } = await region.evaluate((racine, selecteur) => {
+    const noeuds = Array.from(racine.querySelectorAll<HTMLElement>(selecteur));
+    const lues = noeuds.map(n => ({
+      enfants: n.children.length,
+      // Seul l'attribut marqueur est admis : ni classe, ni style, ni rien.
+      attributs: n.getAttributeNames().filter(a => a !== 'data-fait-laboratoire'),
+    }));
+    const textes = noeuds.map(n => n.textContent);
+    noeuds.forEach(n => { n.textContent = ''; });
+    const texte = (racine as HTMLElement).innerText;
+    noeuds.forEach((n, i) => { n.textContent = textes[i]; });
+    return { visible: texte, marques: lues };
+  }, SELECTEUR_MARQUAGE_LABORATOIRE);
+  expect(
+    marques.filter(m => m.enfants > 0 || m.attributs.length > 0),
+    'sentinelle biologie (BP-01) : la marque exemptée ne porte que le texte imprimé',
+  ).toEqual([]);
   const valeurs = await region.locator('textarea, input[type="text"]').evaluateAll(
     champs => champs.map(champ => (champ as HTMLInputElement | HTMLTextAreaElement).value),
   );

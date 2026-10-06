@@ -8,6 +8,7 @@ import {
 import { garderResultats, type VerdictGardeResultats } from '@/lib/biology-library/gardeResultats';
 import { validerSaisieResultat } from '@/lib/biology-library/resultats';
 import { correctionsParLigne } from '@/lib/biology-library/filCorrection';
+import { lireValeurQuantitative, unitesConcordent } from '@/lib/biology-library/import/valeurLue';
 import { MESSAGES_REFUS_SAISIE, signature } from '@/lib/biology-library/saisieMessages';
 
 // Résultats biologiques réels du dossier (étage 2, CB-09, [[D-122]] §2) —
@@ -79,6 +80,14 @@ export type ResultatConsigne = {
    * deux histoires du même dossier.
    */
   corrigeeParId: string | null;
+  /**
+   * Les faits du laboratoire TELS QU'IMPRIMÉS sur la ligne lue qui a créé ce
+   * résultat ([[D-267]]) — juxtaposés, attribués au laboratoire, jamais
+   * comparés à la valeur. `null` (silence, [[D-157]] §4) : saisie praticien,
+   * résultat corrigé (une correction n'a pas de ligne lue et n'hérite de
+   * rien), aucun fait imprimé, ou unité du résultat différente de l'unité lue.
+   */
+  faitsLaboratoire: { intervalle: string | null; marquage: string | null } | null;
 };
 
 /**
@@ -138,7 +147,25 @@ type LigneLue = {
   supersedesResultatId: string | null;
   /** La relation, non filtrée par `actif` : `unite` y est celle d'AUJOURD'HUI. */
   analyte: { libelle: string; unite: string | null };
+  /** La ligne lue qui a créé ce résultat, dans ce sens seulement ([[D-256]] A5). */
+  ligneCandidate: {
+    intervalleLu: string | null;
+    marquageLu: string | null;
+    uniteLue: string | null;
+    valeurLue: string;
+  } | null;
 };
+
+/** Les faits de la ligne lue, ou le silence ([[D-267]] §5). */
+function faitsDeLaLigne(ligne: LigneLue): ResultatConsigne['faitsLaboratoire'] {
+  const lue = ligne.ligneCandidate;
+  if (!lue || (lue.intervalleLu === null && lue.marquageLu === null)) return null;
+  if (!unitesConcordent(lue.uniteLue, ligne.unite)) return null;
+  // Valeur corrigée à la validation : la marque imprimée portait sur une autre
+  // valeur que celle qui fait foi. Silence (§5 précisé, revue Codex #1333).
+  if (lireValeurQuantitative(lue.valeurLue) !== Number(ligne.valeur)) return null;
+  return { intervalle: lue.intervalleLu, marquage: lue.marquageLu };
+}
 
 function versConsigne(ligne: LigneLue, corrigeeParId: string | null = null): ResultatConsigne {
   return {
@@ -153,6 +180,7 @@ function versConsigne(ligne: LigneLue, corrigeeParId: string | null = null): Res
     saisiLe: ligne.saisiLe.toISOString(),
     supersedesResultatId: ligne.supersedesResultatId,
     corrigeeParId,
+    faitsLaboratoire: faitsDeLaLigne(ligne),
   };
 }
 
@@ -169,6 +197,9 @@ const CHAMPS_LUS = {
   // La RELATION n'est pas filtrée par `actif` : elle rend l'unité courante
   // même d'un analyte retiré, ce que la route du catalogue ne fait pas.
   analyte: { select: { libelle: true, unite: true } },
+  // Les faits du laboratoire ([[D-267]]) : lus par la relation, jamais copiés
+  // sur le résultat (A5). Une saisie praticien n'a pas de ligne : `null`.
+  ligneCandidate: { select: { intervalleLu: true, marquageLu: true, uniteLue: true, valeurLue: true } },
 } as const;
 
 export async function GET(req: Request) {

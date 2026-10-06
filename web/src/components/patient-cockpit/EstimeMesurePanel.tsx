@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { useBioIngestEnabled, useCbResultsEnabled } from './CbFeatureProvider';
 import { ImportCompteRenduPanel } from './ImportCompteRenduPanel';
 import { SaisieBilan, type AnalyteChoix, type IssueBilan } from './SaisieBilan';
+import { FaitsDuLaboratoire } from './FaitsDuLaboratoire';
 
 // « Estimé ↔ mesuré » (maquette 5.0, écran Fiche-trajectoire) — étage 2 du
 // rayon biologie (CB-09, [[D-122]] §2), derrière `isCbResultsEnabled` (posé
@@ -40,6 +41,11 @@ type ResultatAffiche = {
   supersedesResultatId: string | null;
   /** Posé par le SERVEUR : `null` ⇒ cette ligne fait foi. */
   corrigeeParId: string | null;
+  /**
+   * Faits du laboratoire tels qu'imprimés ([[D-267]]), posés par le SERVEUR
+   * avec ses silences (§5). Absent d'une réponse antérieure : rien ne s'affiche.
+   */
+  faitsLaboratoire?: { intervalle: string | null; marquage: string | null } | null;
 };
 
 /**
@@ -536,6 +542,13 @@ export function EstimeMesurePanel({ idPatient }: { idPatient?: string }) {
                               + ` consignée le ${formatDateHeure(correction.saisiLe)}`
                             : ''}
                         </span>
+                      )}
+                      {/* Après les marqueurs DC-30 : ils restent sur la ligne de la valeur. */}
+                      {mesure.faitsLaboratoire && (
+                        <FaitsDuLaboratoire
+                          intervalle={mesure.faitsLaboratoire.intervalle}
+                          marquage={mesure.faitsLaboratoire.marquage}
+                        />
                       )}
                       {/* UNE MESURE DE LABORATOIRE NE SE CORRIGE PAS ICI, et
                           l'écran cesse de le proposer. La route refuse déjà en

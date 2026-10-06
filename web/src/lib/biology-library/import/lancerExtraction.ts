@@ -171,6 +171,12 @@ export async function poursuivreExtraction(params: {
               uniteLue: ligne.unite,
               preleveLeLu: ligne.preleveLe,
               heureLue: ligne.heureLue,
+              // Faits du laboratoire, tels qu'imprimés ([[D-267]]) ; un fait trop
+              // long reste NULL et la ligne le dit (§10).
+              intervalleLu: ligne.intervalle,
+              marquageLu: ligne.marquage,
+              intervalleNonTranscrit: ligne.intervalleNonTranscrit,
+              marquageNonTranscrit: ligne.marquageNonTranscrit,
               analytePropose: resolution.code,
               statutMapping: resolution.statut,
             };

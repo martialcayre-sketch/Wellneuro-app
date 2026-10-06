@@ -1,7 +1,7 @@
 ---
 id: "LOT-07"
 titre: "Faits du laboratoire : intervalle et marquage imprimés"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-02, BIO-PARCOURS BP-00 et BP-01"
 ---
 
@@ -66,9 +66,12 @@ LOT-02 ; BIO-PARCOURS BP-00 (`D-266`) et BP-01 (garde de non-consommation).
 - [x] Servir et constater TRUST `usage_ia` v5 et le registre RGPD (`D-267` §8),
   avant toute ligne de code d'extraction (#1328, constatée dans l'image servie
   682d7de1 le 2026-10-05).
-- [ ] Migration seule du signal « fait non transcrit » (`D-267` §10,
-  `20261005210000_bio_ingest_faits_non_transcrits_v1`), `release-db`, constat.
-- [ ] Livrer l'extraction, le staging, la validation et la restitution.
+- [x] Migration seule du signal « fait non transcrit » (`D-267` §10,
+  `20261005210000_bio_ingest_faits_non_transcrits_v1`), `release-db`, constat
+  (#1332, run `release-db` 37372358586 vert, colonnes, CHECK et fonction
+  constatés par conteneur le 2026-10-05, production sur d0ee7e87).
+- [x] Livrer l'extraction, le staging, la validation et la restitution
+  (`bio-extraction-v2`, PR du code).
 
 ## Question tranchée pour le code
 
@@ -94,4 +97,26 @@ laboratoire.
 
 ## Résultats
 
-À compléter à la clôture.
+- `bio-extraction-v2` : schéma fermé à deux clés de plus, sans `maxLength` ;
+  consigne amendée (`D-267` §4), sans déduction de marque. Parseur : un fait
+  vide ou sans caractère visible vaut `null` sans signal, un fait au-delà de
+  sa borne (points de code) vaut `null` avec signal.
+- Restitution : écran de validation et série des mesures, « Imprimé par le
+  laboratoire », silences de §5 éprouvés à la route (aucun fait, unité
+  discordante, correction, valeur modifiée à la validation). La décision du praticien ne touche à aucun fait
+  (`decisions.test.ts`, données exactes).
+- Revue `wn-reviewer` : GO, ni P0 ni P1. P2 corrigés : banc BP-01 étendu à la
+  charge `faitsLaboratoire` ; classe du paragraphe et de la ligne figées ;
+  faits rendus après les marqueurs DC-30 ; NUL et caractères invisibles
+  rendus `null` (un NUL faisait échouer tout l'import).
+- Copilot (#1333) : NUL intérieur retiré ; exemption portée par le vrai
+  helper e2e et exercée par un spec ; lecture de §7 explicitée dans le banc.
+- Codex (#1333) : P1 corrigé — valeur modifiée à la validation ⇒ silence
+  dans la série (`D-267` §5 précisé) ; P2 corrigés — surrogate isolé, style
+  sur la marque exemptée.
+- Arbitrages du responsable (2026-10-06) : la précision de §5 sur la valeur
+  modifiée est validée ; l'intervalle sera exempté comme la marque (`D-267`
+  §6 à amender, lot de suite) ; double unité acceptée telle quelle, verbatim
+  attribué.
+- Reste à constater après déploiement : une extraction réelle porte
+  `version_prompt = 'bio-extraction-v2'` et des faits non nuls.

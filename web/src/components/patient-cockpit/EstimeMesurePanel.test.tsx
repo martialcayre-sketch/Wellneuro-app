@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CbFeatureProvider } from './CbFeatureProvider';
 import { EstimeMesurePanel } from './EstimeMesurePanel';
+import { SELECTEUR_MARQUAGE_LABORATOIRE } from './FaitsDuLaboratoire';
 
 afterEach(() => {
   cleanup();
@@ -882,6 +885,53 @@ describe('EstimeMesurePanel — la plage sourcée juxtaposée ([[D-157]])', () =
     ]) {
       expect(mot.test(texte), `vocabulaire de verdict trouvé : ${mot}`).toBe(false);
     }
+  });
+
+  // FAITS DU LABORATOIRE ([[D-267]] §5-§6) : juxtaposés et attribués. La
+  // marque imprimée (« Élevé ») est un mot DU LABORATOIRE ; la sentinelle
+  // exempte son seul élément, et rien d'autre.
+  const IMPORTEE = {
+    ...MESURE,
+    source: 'import_labo',
+    faitsLaboratoire: { intervalle: '30 – 400', marquage: 'Élevé' },
+  };
+
+  it('les faits imprimés s’affichent, attribués au laboratoire', async () => {
+    monter([IMPORTEE], {});
+    await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
+    expect(screen.getByText(/Imprimé par le laboratoire/)).toBeTruthy();
+    expect(screen.getByText(/intervalle 30 – 400/)).toBeTruthy();
+  });
+
+  it('sentinelle : seul l’élément de la marque est exempté, et il ne porte que le champ brut', async () => {
+    monter([IMPORTEE], { BIO_FERRITINE: [PLAGE] });
+    await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
+    const region = screen.getByRole('region', { name: 'Estimé et mesuré' });
+    const marques = region.querySelectorAll(SELECTEUR_MARQUAGE_LABORATOIRE);
+    expect(marques).toHaveLength(1);
+    expect(marques[0].textContent).toBe('Élevé');
+    expect(marques[0].children).toHaveLength(0);
+    expect(marques[0].getAttributeNames()).toEqual(['data-fait-laboratoire']);
+    // Ni le paragraphe ni la ligne ne prennent une classe d'état selon la marque.
+    expect(marques[0].parentElement?.getAttribute('class')).toBe('mt-1 text-xs text-muted-foreground');
+    expect(marques[0].closest('li')?.getAttribute('class')).toBe('text-xs text-muted-foreground');
+    const copie = region.cloneNode(true) as HTMLElement;
+    copie.querySelectorAll(SELECTEUR_MARQUAGE_LABORATOIRE).forEach(e => e.remove());
+    const texte = copie.textContent ?? '';
+    for (const mot of [/hors\s+plage/i, /\banormal/i, /\bélevée?\b/i, /\bbasse?\b/i, /\bnormal/i]) {
+      expect(mot.test(texte), `vocabulaire de verdict trouvé hors de la marque : ${mot}`).toBe(false);
+    }
+  });
+
+  it('le sélecteur exempté par la sentinelle e2e est celui du composant', () => {
+    const helper = readFileSync(resolve(__dirname, '../../../e2e/helpers/sentinelle.ts'), 'utf8');
+    expect(helper).toContain(`SELECTEUR_MARQUAGE_LABORATOIRE = '${SELECTEUR_MARQUAGE_LABORATOIRE}'`);
+  });
+
+  it('sans fait (saisie praticien) : rien ne s’affiche', async () => {
+    monter([{ ...MESURE, faitsLaboratoire: null }], {});
+    await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
+    expect(screen.queryByText(/Imprimé par le laboratoire/)).toBeNull();
   });
 });
 

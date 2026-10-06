@@ -38,7 +38,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('./extraction', () => ({
   extraireCompteRendu: extraire,
   MODELE_EXTRACTION: 'claude-sonnet-5-5',
-  VERSION_PROCEDE_EXTRACTION: 'bio-extraction-v1',
+  VERSION_PROCEDE_EXTRACTION: 'bio-extraction-v2',
 }));
 vi.mock('./resolverLibellesV1', async importOriginal => {
   const reel = await importOriginal<typeof import('./resolverLibellesV1')>();
@@ -60,8 +60,10 @@ const MAINTENANT = new Date('2026-10-02T10:00:00.000Z');
 const PARAMS = { idPatient: 'pat_sophie', idCompteRendu: 'cr_1', lancePar: 'praticien@wellneuro.fr', maintenant: MAINTENANT };
 
 const LIGNES = [
-  { page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', preleveLe: new Date('2026-09-15T06:30:00.000Z'), heureLue: true },
-  { page: 2, libelle: 'CRP ultrasensible', valeur: '<0,5', unite: 'mg/L', preleveLe: null, heureLue: false },
+  { page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', preleveLe: new Date('2026-09-15T06:30:00.000Z'), heureLue: true,
+    intervalle: '30 – 300', marquage: null, intervalleNonTranscrit: false, marquageNonTranscrit: false },
+  { page: 2, libelle: 'CRP ultrasensible', valeur: '<0,5', unite: 'mg/L', preleveLe: null, heureLue: false,
+    intervalle: null, marquage: null, intervalleNonTranscrit: true, marquageNonTranscrit: false },
 ];
 
 let espions: Array<ReturnType<typeof vi.spyOn>>;
@@ -101,7 +103,7 @@ describe('lancerExtraction — modèle et version enregistrés à chaque fois (v
         idPatient: 'pat_sophie',
         idCompteRendu: 'cr_1',
         modele: 'claude-sonnet-5-5',
-        versionPrompt: 'bio-extraction-v1',
+        versionPrompt: 'bio-extraction-v2',
         lancePar: 'praticien@wellneuro.fr',
       },
       select: { id: true },
@@ -116,7 +118,7 @@ describe('lancerExtraction — modèle et version enregistrés à chaque fois (v
       const issue = await lancerExtraction(PARAMS);
       expect(issue).toEqual({ ok: true, idImport: 'imp_1', statut: 'echec', motif });
       expect(argument<{ data: unknown }>(prisma.importBiologique.create).data).toMatchObject({
-        modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v1',
+        modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v2',
       });
       expect(prisma.importBiologique.updateMany).toHaveBeenCalledWith({
         where: { id: 'imp_1', statut: 'en_cours' },
@@ -154,6 +156,17 @@ describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transac
       preleveLeLu: new Date('2026-09-15T06:30:00.000Z'), heureLue: true,
     });
     expect(data[1]).toMatchObject({ rang: 2, valeurLue: '<0,5', preleveLeLu: null, heureLue: false });
+  });
+
+  it('faits du laboratoire ([[D-267]]) : recopiés tels que lus, signal « non transcrit » compris', async () => {
+    await lancerExtraction(PARAMS);
+    const { data } = argument<Lignes>(prisma.ligneBiologiqueCandidate.createMany);
+    expect(data[0]).toMatchObject({
+      intervalleLu: '30 – 300', marquageLu: null, intervalleNonTranscrit: false, marquageNonTranscrit: false,
+    });
+    expect(data[1]).toMatchObject({
+      intervalleLu: null, marquageLu: null, intervalleNonTranscrit: true, marquageNonTranscrit: false,
+    });
   });
 
   it('resolver signé ([[D-259]]) : la table réelle propose l’analyte du libellé lu', async () => {
