@@ -9353,3 +9353,18 @@ Promotions : décision → aucune ; règle → aucune.
 **Prochaine action.** Arbitrages du responsable.
 
 **Questions ouvertes.** Les neuf de la fiche LOT-10.
+
+## 2026-10-06 — État de validation rafraîchi, bilan de la matinée
+
+**Décidé.** T3 complet est vert sur `main` (c1f14800), et `validation` ne
+reprend que ce qui a été rejoué. Six PR ont été mergées et déployées une à
+une : #1334 à #1339.
+
+**Écarté.** Dater d'aujourd'hui l'inventaire du registre ou la relecture des
+packs en production : ni l'un ni l'autre n'a été refait.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** Arbitrages BP-23 et BP-10.
+
+**Questions ouvertes.** Celles des fiches LOT-23 et LOT-10.

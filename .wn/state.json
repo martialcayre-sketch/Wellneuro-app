@@ -10,14 +10,14 @@
   "last_completed_lot": "2026-09-30-bio-ingest/LOT-07 — terminé le 2026-10-06 (#1326, #1328, #1332, #1333, #1334) : intervalle et marquage imprimés transcrits verbatim sur la ligne lue (D-267), bio-extraction-v2 en production, signal « non transcrit », restitution juxtaposée attribuée au laboratoire, intervalle et marque exemptés de la sentinelle BP-01. Précédent : LOT-03 (#1310, #1312) et LOT-08 (#1315, #1316).",
   "validation": {
     "overall_status": "passed",
-    "last_checked_at": "2026-09-07T08:00:00Z",
+    "last_checked_at": "2026-10-06T08:09:00Z",
     "checks": {
-      "orchestration": "audit campagnes vert le 2026-09-07 (npm run check, wn-campaign-audit --fail-on-warning-codes)",
-      "type_check": "vert — tsc 0 erreur, projet entier, rejoué le 2026-09-07",
-      "scoring_certification": "vert — certification scoring rejouée dans T3 COMPLET le 2026-09-07 (les deux passes du drapeau Q_ALI_01, forme SIIN 57 comprise). L'INVENTAIRE DÉTAILLÉ du registre (65 instruments, statuts, COSMIN) reste celui du 2026-08-09 : il n'a pas été recompté ce jour.",
-      "no_secrets": "vert — check_no_secrets.sh, dépôt entier et lignes indexées, le 2026-09-07",
-      "e2e": "T3 COMPLET vert le 2026-09-07 : 491 fichiers Vitest / 6 596 cas, 186 E2E (Chromium + WebKit, build de production), contrats SQL de prisma/checks joués, dérive schéma ↔ migrations nulle. RÉSERVE HONNÊTE : le fichier e2e/portail-dossier-deux-voix.spec.ts est INTERMITTENT sur WebKit/macOS — trois occurrences le 2026-09-07, sur deux tests différents, dont une sur origin/main NU (run témoin). Le CI Linux est vert. Classe D-049, propre au Mac.",
-      "contrats_sql_packs": "packs_registre_coherence_v1 rejoué dans T3 le 2026-09-07 (base éphémère). LA RELECTURE DE PRODUCTION reste celle du 2026-08-09 (0 divergence sur 8 packs) : elle n'a PAS été refaite ce jour.",
+      "orchestration": "audit campagnes vert le 2026-10-06 (wn-campaign-audit, codes bloquants du CI, sur main c1f14800)",
+      "type_check": "vert — tsc 0 erreur, projet entier, rejoué dans T3 le 2026-10-06 (main c1f14800)",
+      "scoring_certification": "vert — certification scoring (63 questionnaires) rejouée dans T3 COMPLET le 2026-10-06, forme SIIN 57 et forme courte 14. L'INVENTAIRE DÉTAILLÉ du registre (65 instruments, statuts, COSMIN) reste celui du 2026-08-09 : il n'a pas été recompté ce jour.",
+      "no_secrets": "vert — check_no_secrets.sh, dépôt entier et lignes indexées, le 2026-10-06",
+      "e2e": "T3 COMPLET vert le 2026-10-06 sur main c1f14800 : 685 fichiers Vitest / 11 722 cas (forme SIIN 57), 24 fichiers / 1 623 cas (forme courte 14), 245 E2E (Chromium + WebKit iPhone 13, build de production), 53 contrats SQL de prisma/checks joués, dérive schéma ↔ migrations nulle. Séquence en 4 min 14 s.",
+      "contrats_sql_packs": "packs_registre_coherence_v1 rejoué dans T3 le 2026-10-06 (base éphémère). LA RELECTURE DE PRODUCTION reste celle du 2026-08-09 (0 divergence sur 8 packs) : elle n'a PAS été refaite ce jour.",
       "corpus_registry": "inchangé"
     }
   },
@@ -86,7 +86,7 @@
     "D-263"
   ],
   "last_session": null,
-  "updated_at": "2026-10-06T06:35:59Z",
+  "updated_at": "2026-10-06T08:10:29Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-10-04-bio-parcours",
