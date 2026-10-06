@@ -1123,6 +1123,19 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/lectures_imports_biologiques_v1_negatif.sql
 
+      # Le même acte, À DEUX SESSIONS (D-268, BP-10) : le contrat ci-dessus voit
+      # le verrou de l'import, pas qu'il sérialise. Deux lectures concurrentes,
+      # le témoin REPEATABLE READ, une lecture contre la dernière décision
+      # (commise, puis annulée). Commet ses fixtures puis les efface : la base
+      # doit être nommée. `node` et non `node --test` — T3 joue les `node --test`
+      # avant d'avoir une base ; il a son propre pas après les contrats.
+      - name: Lectures imports biologiques two-session bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_LECTURE_BANC_BASE: wellneuro_ci
+        run: node scripts/banc-lectures-imports-deux-sessions.test.mjs
+
       # Lettres d'adressage remises au patient (D-262, LOT-01). Ce que le drift
       # check ne voit pas : la remise porte sur une approbation du même dossier
       # dont le protocole s'ouvre sur l'orientation réservée, une lettre

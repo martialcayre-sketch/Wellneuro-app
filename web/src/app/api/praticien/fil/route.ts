@@ -9,7 +9,8 @@ import { partagerParLecture } from '@/lib/fil/lectureCartes';
 import { jalonsSansDecision } from '@/lib/fil/jalonsJ21';
 import { RIDEAU_T0, STATUTS_SYNTHESE_VALIDEE } from '@/lib/clinical-engine/preconditionsT0';
 import { arbitragesSansRevision } from '@/lib/fil/biologieArbitree';
-import { isCbEnabled } from '@/lib/biology-library/featureFlag';
+import { isBioLectureEnabled, isCbEnabled } from '@/lib/biology-library/featureFlag';
+import { importsALire, type ImportValideRow } from '@/lib/biology-library/import/lectureImport';
 import { momentumJalonsParPatient } from '@/lib/fil/momentumJ21';
 import { bornesJourParis } from '@/lib/fil/fuseau';
 
@@ -22,6 +23,12 @@ export type FilApiResponse = {
    * simplement le Fil sans traces, ce qui reste juste.
    */
   lues?: CarteFil[];
+  /**
+   * Le calcul des comptes rendus biologiques à lire a ÉCHOUÉ ([[D-268]] §6) :
+   * le reste du Fil est servi, et l'écran le DIT — jamais un Fil qui se tait
+   * sur un signalement qu'il n'a pas pu calculer.
+   */
+  lecturesBiologieIndisponibles?: boolean;
   unavailable?: boolean;
   error?: string;
 };
@@ -247,6 +254,58 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       biologiesArbitreesBrutes = arbitragesSansRevision(arbitrages, versions);
     }
 
+    // Comptes rendus biologiques validés sans acte de lecture ([[D-268]],
+    // BP-10) : drapeau éteint, aucune requête, aucune carte. La lecture est
+    // ISOLÉE : son échec ne fait pas tomber le Fil, il s'y affiche (§6).
+    // Scopée au praticien dès la requête, et de nouveau par `actifs` plus bas.
+    let importsValides: ImportValideRow[] = [];
+    let lecturesBiologieIndisponibles = false;
+    if (isBioLectureEnabled()) {
+      try {
+        const [imports, actes] = await Promise.all([
+          prisma.importBiologique.findMany({
+            where: { lignes: { some: { statut: 'validee' } }, patient: filtrePatientsDuPraticien(email) },
+            select: {
+              id: true,
+              idPatient: true,
+              termineLe: true,
+              lanceLe: true,
+              lignes: {
+                where: { statut: { in: ['validee', 'proposee'] } },
+                select: { statut: true, traiteLe: true },
+              },
+            },
+          }),
+          prisma.lectureImportBiologique.findMany({
+            where: { patient: filtrePatientsDuPraticien(email) },
+            select: {
+              id: true, idImport: true, acte: true, idLectureRevoquee: true, codeRevocation: true,
+              praticienEmail: true, acteLe: true,
+            },
+          }),
+        ]);
+        importsValides = imports.map(i => {
+          const validees = i.lignes.filter(l => l.statut === 'validee');
+          // La date de la DERNIÈRE validation ; à défaut (colonne nullable),
+          // la fin de l'extraction, puis son lancement — jamais une date
+          // inventée.
+          const dates = validees.flatMap(l => (l.traiteLe ? [l.traiteLe.getTime()] : []));
+          const valideLe = dates.length > 0 ? new Date(Math.max(...dates)) : i.termineLe ?? i.lanceLe;
+          return {
+            idImport: i.id,
+            idPatient: i.idPatient,
+            nbValidees: validees.length,
+            nbProposees: i.lignes.length - validees.length,
+            valideLe,
+            actes: actes.filter(a => a.idImport === i.id),
+          };
+        });
+      } catch (err) {
+        console.error('[fil GET] comptes rendus à lire :', err instanceof Error ? err.message : String(err));
+        lecturesBiologieIndisponibles = true;
+      }
+    }
+
     const signalements = [
       ...effets.map(e => ({ id: e.id, idPatient: e.idPatient, kind: 'effet_indesirable' as const, soumisLe: e.soumisLe })),
       ...incidents.map(i => ({ id: i.id, idPatient: i.idPatient, kind: 'incident_confidentialite' as const, soumisLe: i.soumisLe })),
@@ -263,6 +322,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         ...rdvs.map(r => r.idPatient),
         ...lectures.map(l => l.idPatient),
         ...biologiesArbitreesBrutes.map(b => b.idPatient),
+        ...importsValides.map(i => i.idPatient),
         ...passationsRideau.map(p => p.idPatient),
         ...synthesesValidees.map(s => s.idPatient),
       ]),
@@ -358,6 +418,12 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       ),
       assignationsToutes: assignationsToutes.filter(a => actifs.has(a.idPatient)),
       biologiesArbitrees: biologiesArbitreesBrutes.filter(b => actifs.has(b.idPatient)),
+      // `servables` = suivi ouvert : les lignes encore à décider ne font une
+      // carte que là où la route des décisions les accepte.
+      importsALire: importsALire(
+        importsValides.filter(i => actifs.has(i.idPatient)),
+        idPatient => servables.has(idPatient),
+      ),
       assignations: assignations.filter(a => actifs.has(a.idPatient)),
       activites: activites
         .filter(a => actifs.has(a.idPatient) && a._max.dateReponse !== null)
@@ -392,7 +458,11 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     });
     const partage = partagerParLecture(retenues, lecturesCartesFil, maintenant);
 
-    return NextResponse.json({ cartes: partage.visibles, lues: partage.lues });
+    return NextResponse.json({
+      cartes: partage.visibles,
+      lues: partage.lues,
+      ...(lecturesBiologieIndisponibles ? { lecturesBiologieIndisponibles: true } : {}),
+    });
   } catch (err) {
     console.error('[fil GET]', err instanceof Error ? err.message : String(err));
     return NextResponse.json(

@@ -3,6 +3,7 @@ import {
   cartesAssignationsEnRetard,
   cartesConsultationsPrevues,
   cartesGestesObjectif,
+  cartesImportsALire,
   cartesJalons,
   cartesReprise,
   cartesSignalementsTrust,
@@ -777,5 +778,83 @@ describe('cartesSynthesesNonServies', () => {
       noms,
     );
     expect(cartes.map(c => c.idPatient)).toEqual(['PAT_1', 'PAT_2']);
+  });
+});
+
+describe('cartesImportsALire — compte rendu biologique validé sans lecture (D-268, BP-10)', () => {
+  const VALIDE_LE = new Date('2026-10-06T09:00:00Z');
+  const ligne = (idImport: string, partiel: Partial<Parameters<typeof cartesImportsALire>[0][number]> = {}) => ({
+    idImport,
+    idPatient: 'P-SOPHIE',
+    valideLe: VALIDE_LE,
+    nbProposees: 0,
+    derniereRevocation: null,
+    ...partiel,
+  });
+
+  it('une carte par import, ancrée sur l’import, vers le cockpit biologie', () => {
+    const [carte] = cartesImportsALire([ligne('imp_1')], NOMS);
+    expect(carte).toMatchObject({
+      type: 'import_biologique_a_lire',
+      patient: 'Sophie Nicola',
+      titre: 'Compte rendu biologique à lire',
+      cle: 'import_biologique_a_lire:imp_1',
+      href: '/dashboard/patients/P-SOPHIE?onglet=trajectoire',
+      actionLabel: 'Ouvrir la biologie',
+      date: VALIDE_LE.toISOString(),
+    });
+  });
+
+  it('dit qu’elle n’est pas un filet de sécurité (§9), sous ses trois formes', () => {
+    const cartes = cartesImportsALire(
+      [
+        ligne('imp_1'),
+        ligne('imp_2', { nbProposees: 2 }),
+        ligne('imp_3', { derniereRevocation: { acteLe: VALIDE_LE, codeRevocation: 'mauvais_import' } }),
+      ],
+      NOMS,
+    );
+    expect(cartes).toHaveLength(3);
+    for (const carte of cartes) expect(carte.pourquoi).toMatch(/n’est pas un filet de sécurité/);
+  });
+
+  it('lignes à décider : la carte invite à décider avant de lire', () => {
+    const [carte] = cartesImportsALire([ligne('imp_1', { nbProposees: 2 })], NOMS);
+    expect(carte.titre).toBe('Compte rendu biologique — lignes à décider');
+    expect(carte.pourquoi).toMatch(/2 lignes restent à décider/);
+  });
+
+  it('révocation : la carte dit qu’elle a rouvert, avec le libellé du code', () => {
+    const revoqueLe = new Date('2026-10-07T09:00:00Z');
+    const [carte] = cartesImportsALire(
+      [ligne('imp_1', { derniereRevocation: { acteLe: revoqueLe, codeRevocation: 'lecture_a_refaire' } })],
+      NOMS,
+    );
+    expect(carte.titre).toBe('Compte rendu biologique — lecture à consigner à nouveau');
+    expect(carte.pourquoi).toMatch(/Lecture révoquée le .* \(lecture à refaire\)/);
+    expect(carte.date).toBe(revoqueLe.toISOString());
+  });
+
+  it('AUCUN plafond : une carte qui ne s’écarte pas ne se tronque pas non plus (§6)', () => {
+    const lignes = Array.from({ length: 12 }, (_, i) => ligne(`imp_${i}`));
+    expect(cartesImportsALire(lignes, NOMS)).toHaveLength(12);
+  });
+
+  it('aucun mot de verdict (D-157 §3)', () => {
+    const cartes = cartesImportsALire([ligne('imp_1'), ligne('imp_2', { nbProposees: 1 })], NOMS);
+    for (const carte of cartes) expect(`${carte.titre} ${carte.pourquoi}`).not.toMatch(/déficit|carence|anormal/i);
+  });
+
+  it('entre au Fil par construireFil, et se résume', () => {
+    const fil = construireFil({
+      syntheses: [],
+      assignations: [],
+      activites: [],
+      importsALire: [ligne('imp_1')],
+      noms: NOMS,
+      maintenant: MAINTENANT,
+    });
+    expect(fil.map(c => c.type)).toEqual(['import_biologique_a_lire']);
+    expect(resumeFil(fil)).toBe('1 compte rendu à lire');
   });
 });

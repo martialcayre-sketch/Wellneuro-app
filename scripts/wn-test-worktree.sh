@@ -508,6 +508,15 @@ done <<< "$contrats"
 [[ "$joues" == "$attendus" ]] \
   || die "$joues contrat(s) joué(s) pour $attendus extrait(s) de ci.yml — la boucle s'est interrompue sans le dire."
 
+# Banc à deux sessions des actes de lecture (D-268, BP-10) : lancé par `node`
+# et non `node --test` (l'extraction plus haut le jouerait avant la base). Le
+# CI doit le lancer aussi — sinon ce palier serait seul à le jouer.
+step "Banc à deux sessions (actes de lecture d'un import biologique)"
+grep -q 'banc-lectures-imports-deux-sessions.test.mjs' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc à deux sessions des actes de lecture."
+WN_BIO_LECTURE_BANC_BASE=wellneuro_ci node scripts/banc-lectures-imports-deux-sessions.test.mjs > /dev/null < /dev/null \
+  || die "banc à deux sessions en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-lectures-imports-deux-sessions.test.mjs\`, depuis web/)."
+
 step "Seed (patients fictifs uniquement)"
 npm run prisma:seed
 

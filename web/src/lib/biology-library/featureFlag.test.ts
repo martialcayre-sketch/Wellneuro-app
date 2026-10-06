@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isBioIngestEnabled, isCbEnabled, isCbPropositionEnabled, isCbResultsEnabled } from './featureFlag';
+import { isBioIngestEnabled, isBioLectureEnabled, isCbEnabled, isCbPropositionEnabled, isCbResultsEnabled } from './featureFlag';
 
 describe('isCbEnabled', () => {
   it("n'active le rayon que pour la valeur exacte « true » (fail-closed)", () => {
@@ -68,6 +68,22 @@ describe('isBioIngestEnabled', () => {
   it('reste fermé sur les variantes proches de « true »', () => {
     for (const v of ['TRUE', '1', 'yes', ' true', '']) {
       expect(isBioIngestEnabled(v, 'true', 'true')).toBe(false);
+    }
+  });
+});
+
+describe('isBioLectureEnabled (D-268, BP-10)', () => {
+  it("n'ouvre l'acte de lecture que si son drapeau ET les trois de l'import valent « true »", () => {
+    expect(isBioLectureEnabled('true', 'true', 'true', 'true')).toBe(true);
+    expect(isBioLectureEnabled(undefined, 'true', 'true', 'true')).toBe(false);
+    expect(isBioLectureEnabled('true', undefined, 'true', 'true')).toBe(false);
+    expect(isBioLectureEnabled('true', 'true', undefined, 'true')).toBe(false);
+    expect(isBioLectureEnabled('true', 'true', 'true', undefined)).toBe(false);
+  });
+
+  it('reste fermé sur les variantes proches de « true »', () => {
+    for (const v of ['TRUE', '1', 'yes', ' true', '']) {
+      expect(isBioLectureEnabled(v, 'true', 'true', 'true')).toBe(false);
     }
   });
 });

@@ -2,11 +2,16 @@ import { NextResponse } from 'next/server';
 import { garderImport } from '@/lib/biology-library/import/garde';
 import { lireCompteRendu } from '@/lib/biology-library/import/lecture';
 import { MESSAGES_RETRAIT, retirerCompteRendu } from '@/lib/biology-library/import/retrait';
+import { isBioLectureEnabled } from '@/lib/biology-library/featureFlag';
+import { lireActesLecture } from '@/lib/biology-library/import/acteLecture';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // Un compte rendu déposé (BIO-INGEST LOT-02) :
 // - GET : ses extractions et leurs lignes candidates, avec le pré-marquage des
 //   écarts — jamais le document. Lecture d'un dossier : accès journalisé (GD-1) ;
+//   drapeau `WN_BIO_LECTURE_ENABLED` allumé, les actes de lecture de ses
+//   imports AUSSI ([[D-268]], BP-10) — dans la même réponse, pour qu'un seul
+//   accès soit journalisé ;
 // - DELETE : retrait d'un dépôt erroné, tant qu'aucune ligne n'est validée
 //   (arbitrage du 2026-10-01). Dispense d'écriture GD-1, comme les POST.
 // Paramètres de requête : `idPatient`, `idCompteRendu`.
@@ -36,7 +41,9 @@ export async function GET(req: Request) {
     if (!ID.test(idCompteRendu)) return echec('invalid', 'Compte rendu mal désigné.', 400);
     const compteRendu = await lireCompteRendu(idPatient, idCompteRendu);
     if (!compteRendu) return echec('compte_rendu_introuvable', MESSAGES_RETRAIT.compte_rendu_introuvable, 404);
-    return NextResponse.json({ ok: true, compteRendu });
+    if (!isBioLectureEnabled()) return NextResponse.json({ ok: true, compteRendu });
+    const actesLecture = await lireActesLecture(idPatient, compteRendu.imports.map(i => i.id));
+    return NextResponse.json({ ok: true, compteRendu, actesLecture });
   } catch (err) {
     console.error('[praticien/biologie/import/compte-rendu GET] refus :', ...classeEtCode(err));
     return echec('server_error', 'Erreur technique.', 500);

@@ -460,3 +460,44 @@ describe('FilDuJour — rappeler un questionnaire en retard', () => {
     expect(screen.queryByRole('button', { name: /Rappeler au patient/i })).toBeNull();
   });
 });
+
+describe('FilDuJour — compte rendu biologique à lire (D-268, BP-10)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const aLire = carte({
+    type: 'import_biologique_a_lire',
+    titre: 'Compte rendu biologique à lire',
+    pourquoi: 'Résultats entrés au dossier le 6 octobre : aucune lecture n’est consignée.',
+    href: '/dashboard/patients/PAT_SEED_01?onglet=trajectoire',
+    actionLabel: 'Ouvrir la biologie',
+    cle: 'import_biologique_a_lire:imp_1',
+  });
+
+  it('la carte mène à la biologie et ne s’écarte pas (§5)', async () => {
+    stubFetch(async () => ({ cartes: [aLire, carte()] }));
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByText('Compte rendu biologique à lire')).toBeTruthy());
+    expect(screen.getByText('Biologie à lire')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Ouvrir la biologie/ }).getAttribute('href')).toBe(
+      '/dashboard/patients/PAT_SEED_01?onglet=trajectoire',
+    );
+    // Une seule carte écartable : celle du retard, pas celle de la biologie.
+    const ecarter = screen.getAllByRole('button', { name: /^Écarter cette carte/ });
+    expect(ecarter).toHaveLength(1);
+    expect(ecarter[0].getAttribute('aria-label')).toMatch(/Questionnaire en retard/);
+  });
+
+  it('L’ÉCHEC SE VOIT (§6), même dans un Fil vide qui ne dit plus « rien »', async () => {
+    stubFetch(async () => ({ cartes: [], lecturesBiologieIndisponibles: true }));
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/comptes rendus biologiques à lire n.ont pas pu être vérifiés/));
+    expect(screen.queryByText(/Rien n.appelle votre attention/i)).toBeNull();
+  });
+
+  it('l’échec se voit aussi au-dessus d’un Fil qui a des cartes', async () => {
+    stubFetch(async () => ({ cartes: [carte()], lecturesBiologieIndisponibles: true }));
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/n.ont pas pu être vérifiés/));
+    expect(screen.getByText('Questionnaire en retard')).toBeTruthy();
+  });
+});

@@ -163,7 +163,9 @@ encore « pas un filet de sécurité ».
   `LectureImportBiologique`). Note patient proposée inchangée.
 - [x] **Validation du paragraphe RGPD par le responsable** (patron du §2 ter),
   note patient inchangée comprise : validé le 2026-10-06.
-- [ ] Livrer la migration seule et la faire appliquer par `release-db`.
+- [x] Livrer la migration seule et la faire appliquer par `release-db`.
+  - 2026-10-06 : `release-db` sur 0b49401e ; appliquée à 18:37:49 UTC,
+    constatée par conteneur (`one-off-951`, table vide).
   - 2026-10-06 : migration `lectures_imports_biologiques_v1` écrite et
     relue, sur confirmation distincte du responsable (« Go migration »).
     Codes de révocation fixés : `acte_pose_par_erreur`, `mauvais_import`,
@@ -187,7 +189,15 @@ encore « pas un filet de sécurité ».
     bancs à deux sessions (deux lectures concurrentes ; lecture contre
     dernière décision) ; banc « dossier clos et lignes à décider → pas de
     carte » ; la route de l'acte passe par `verifierAppartenancePatient`.
-- [ ] Livrer le code consommateur derrière un drapeau né avec lui.
+- [x] Livrer le code consommateur derrière un drapeau né avec lui.
+  - 2026-10-06 : PR de code sous `WN_BIO_LECTURE_ENABLED` (éteint) — carte
+    `import_biologique_a_lire` (non écartable, sans plafond, échec visible),
+    acte et révocation au cockpit biologie, route
+    `api/praticien/biologie/import/lecture` (garde de l'import, appartenance,
+    une instruction hors transaction). Bancs : module pur, route, Fil, écran,
+    et banc à deux sessions (deux lectures concurrentes, témoin REPEATABLE
+    READ, lecture contre la dernière décision commise puis annulée). Reste :
+    l'allumage du drapeau, geste du responsable, puis le constat d'usage.
 
 ## Tests
 
