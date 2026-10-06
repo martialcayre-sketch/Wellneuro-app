@@ -61,11 +61,14 @@ détaille pas et dit seulement « précondition de LOT-04 ». Le cadrage v3
 « Constat biologique d'adressage ») en donne le contour.
 
 **Ce qui existe.**
-- Le Fil a dix types de cartes (`lib/fil/cartes.ts`). Une seule est
+- Le Fil a onze types de cartes (`lib/fil/cartes.ts`). Une seule est
   acquittable par lecture : `geste_objectif` (`lectureCartes.ts`,
   `TYPES_ACQUITTABLES_PAR_LECTURE`). `biologie_arbitree` est déjà une carte
-  non acquittable, que seul un refus motivé (`FilCardRejection`) écarte. Le
-  Fil est « tiré à l'ouverture », sans canal sortant.
+  non acquittable, avec deux sorties distinctes : un refus motivé
+  (`FilCardRejection`) l'écarte, et une révision qui supplante la version
+  arbitrée la **résout** (`arbitragesSansRevision`,
+  `lib/fil/biologieArbitree.ts`). Ni l'une ni l'autre n'est un acquittement par
+  lecture. Le Fil est « tiré à l'ouverture », sans canal sortant.
 - Aucune carte, aucune route et aucune table ne couvre l'« import validé ».
   Après la validation (`import/decisions.ts`), les résultats ne se lisent que
   dans le cockpit (`EstimeMesurePanel`) : rien ne pousse le praticien. Aucun
@@ -74,8 +77,9 @@ détaille pas et dit seulement « précondition de LOT-04 ». Le cadrage v3
   `AdressageSignalAlerte` est en ajout seul, avec révocation motivée. Elle ne
   couvre que les constats d'anamnèse (`safety:anamnese:`). Un constat
   biologique demande donc de l'**étendre**, comme le dit le cadrage. `D-257`
-  A7 (lettre consignée seule levée) et `D-234` (voie sans garde, qualification
-  attendue le 2026-10-21) restent intactes.
+  A7 (lettre consignée seule levée) reste intacte. La voie d'exception de
+  `D-234` (route non gardée) est **maintenue par `D-265` §2-3**, avec la base
+  déclarée le 2026-10-04 : ce n'est plus une qualification attendue.
 - La notification de `lib/trust/notification.ts` échoue en silence (catch).
   C'est le patron que le cadrage désigne comme défaut.
 - Le marquage imprimé (`marquage_lu`, `D-267`) vit sur la ligne lue et se
@@ -114,7 +118,7 @@ borne) :
    des mots de verdict.
 6. **Lettre et `medical_referral`** pour un constat biologique : quel
    déclencheur ? Avec quel rôle de `D-257` A7 ? Et quelle place pour la voie
-   de `D-234` ?
+   d'exception de `D-234`, maintenue par `D-265` ?
 7. **Levée et révocation** : motif obligatoire, effet sur la carte, nouvel
    épisode (patron `D-257` §4 et §6).
 8. **Drapeau** (né avec le code ; éteint = comportement actuel), constat
