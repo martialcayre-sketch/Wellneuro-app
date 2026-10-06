@@ -18,4 +18,4 @@
 - La table est figée : aucune mise à jour, aucune troncature. Elle est
   effacée nommément avec le dossier. Le contrat
   `lectures_imports_biologiques_v1_negatif.sql` est joué au CI : 15
-  promesses, 37 mutants tués.
+  promesses, 40 mutants tués.

@@ -176,6 +176,17 @@ encore « pas un filet de sécurité ».
     - les trois codes, sans ajout ;
     - une lecture posée par l'ancien praticien reste valable ;
     - l'acte se pose dans le **cockpit biologie**, la carte du Fil y mène.
+    - le praticien lit la **restitution** (lignes lues, intervalle et
+      marquage imprimés, résultats validés), pas le document, qui est déjà
+      purgé ;
+    - le praticien actuel peut révoquer une lecture de l'ancien ;
+    - sur un dossier clos, la carte n'existe que si elle est actionnable
+      (import entièrement décidé).
+  - Pour la PR de code (revue wn-reviewer) : l'écrivain reste en READ
+    COMMITTED, jamais de décision et de lecture dans la même transaction ;
+    bancs à deux sessions (deux lectures concurrentes ; lecture contre
+    dernière décision) ; banc « dossier clos et lignes à décider → pas de
+    carte » ; la route de l'acte passe par `verifierAppartenancePatient`.
 - [ ] Livrer le code consommateur derrière un drapeau né avec lui.
 
 ## Tests
