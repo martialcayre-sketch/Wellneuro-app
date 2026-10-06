@@ -9415,3 +9415,23 @@ Promotions : décision → `D-268` ; règle → aucune.
 
 **Questions ouvertes.** Noms de la table et du type de carte, au lot de
 migration.
+
+## 2026-10-06 — BP-10, registre RGPD avant la table
+
+**Décidé.** Carte et acte au praticien du dossier (élargissement écarté) ;
+motif de révocation en liste fermée ; `LectureImportBiologique` déclarée en
+§2 ter et rubrique 5 ; note patient proposée inchangée.
+
+**Écarté.** Tout praticien du domaine (portée d'accès nouvelle) ; texte libre
+(donnée de santé saisie).
+
+Promotions : décision → précision `D-268` §5 ; règle → aucune.
+
+Feuille de route BioFlow portée dans la même PR : G3 différé, imports
+fantômes avec G3, purge LOT-09 par redépôt.
+
+**Prochaine action.** Validation RGPD par le responsable, puis migration sur
+confirmation distincte.
+
+**Questions ouvertes.** Aucune sur le registre : le responsable l'a validé le
+2026-10-06, note patient inchangée comprise.

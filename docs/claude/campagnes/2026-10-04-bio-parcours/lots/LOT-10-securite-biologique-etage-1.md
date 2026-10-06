@@ -142,10 +142,10 @@ encore « pas un filet de sécurité ».
 3. Objet de données : **table dédiée** (ni `AdressageSignalAlerte`, ni
    `ArbitrageBiologique`).
 4. Carte : **type neuf** de `TypeCarteFil`, non acquittable par lecture ;
-   destinataire arbitré : **tout praticien du domaine**. **Exécution
-   suspendue** (`D-268` §5) : le Fil filtre par appartenance, et cet
-   élargissement serait une portée d'accès nouvelle. À reconfirmer par le
-   responsable ; d'ici là, la carte va au praticien du dossier.
+   destinataire d'abord arbitré « tout praticien du domaine », puis
+   **ramené au praticien du dossier** le 2026-10-06, après le constat qu'il
+   ouvrirait une portée d'accès nouvelle (`D-268` §5, précision). Motif de
+   révocation : **liste fermée de codes**, sans texte libre.
 5. Notification : **le Fil seul**, échec visible à l'écran.
 6. Lettre et `medical_referral` : **geste du praticien** ; aucun
    déclenchement automatique. L'action `medical_referral` se pose à la main.
@@ -159,7 +159,10 @@ encore « pas un filet de sécurité ».
 - [x] État des lieux et questions (2026-10-06, ci-dessus).
 - [x] Arbitrages du responsable sur les neuf questions.
 - [x] Rédiger la décision de sécurité biologique (`D-268`).
-- [ ] Registre RGPD (et note patient si elle change) avant la table.
+- [x] Registre RGPD rédigé (2026-10-06 : §2 ter et rubrique 5,
+  `LectureImportBiologique`). Note patient proposée inchangée.
+- [x] **Validation du paragraphe RGPD par le responsable** (patron du §2 ter),
+  note patient inchangée comprise : validé le 2026-10-06.
 - [ ] Livrer la migration seule et la faire appliquer par `release-db`.
 - [ ] Livrer le code consommateur derrière un drapeau né avec lui.
 
