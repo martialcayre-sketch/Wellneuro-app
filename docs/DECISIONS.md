@@ -70,6 +70,13 @@ reconfirmation exigerait une autorisation serveur explicite, bornée à cette
 carte et à cet acte, sans élargir les autres cartes du Fil, ainsi que sa
 déclaration au registre RGPD.
 
+*Précision du 2026-10-06 (arbitrages du responsable, après la revue)* :
+- **Destinataire : le praticien du dossier.** L'élargissement est écarté et
+  l'appartenance existante s'applique, à la carte comme à l'acte.
+- **Motif de révocation (§2) : une liste fermée de codes**, sans texte libre.
+  Ainsi, aucune donnée de santé n'est saisie. Les codes se fixent au lot de
+  migration (contrat SQL).
+
 **§6 — Notification : le Fil seul, et l'échec se voit.** Aucun canal
 sortant n'est créé. Le Fil est tiré à l'ouverture ; si le calcul de la carte
 échoue, le Fil le dit à l'écran — jamais le `catch` silencieux de
