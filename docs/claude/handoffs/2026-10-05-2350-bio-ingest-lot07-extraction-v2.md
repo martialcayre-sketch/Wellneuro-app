@@ -47,13 +47,16 @@ SESSION_LOG, ce handoff.
 - Copilot #1333 : trois constats, corrigés (NUL intérieur, helper e2e,
   commentaire du banc BP-01).
 
-## Problèmes ouverts — à arbitrer par le responsable
+## Arbitrages du responsable (2026-10-06)
 
-1. **Intervalle hors exemption** : « Normale : 30-400 » imprimé est un mot du
-   laboratoire mais la sentinelle ne l'exempte pas (§6 ne vise que la marque).
-   Aucun banc ne rougit aujourd'hui (aucun E2E ne monte de ligne importée).
-2. **Compte rendu à double unité** : l'intervalle peut être relevé dans
-   l'autre unité ; la concordance d'unité de la route ne le voit pas.
+1. **Valeur modifiée à la validation : taire** les faits dans la série.
+   Valide la précision datée de `D-267` §5 et le code de df6155db.
+2. **Intervalle : l'exempter aussi** de la sentinelle, par le même mécanisme
+   que la marque (`data-fait-laboratoire="intervalle"`, texte brut seul).
+   Il faut amender `D-267` §6 et faire un **lot de suite** séparé ; aucune
+   surface patient ne l'affiche aujourd'hui.
+3. **Double unité : accepté**, verbatim attribué, sans comparaison
+   logicielle. Aucun code.
 
 Routé : un NUL dans le libellé, la valeur ou l'unité fait encore échouer
 l'import (`texteBorne`, défaut antérieur au lot) — `FILE_ATTENTE.md`, « Dette
@@ -66,7 +69,9 @@ l'import (`texteBorne`, défaut antérieur au lot) — `FILE_ATTENTE.md`, « Det
 2. Merge, constat du déploiement (première ligne `deployments` = tête).
 3. Constat par conteneur à la première extraction réelle :
    `version_prompt = 'bio-extraction-v2'`, faits relevés.
-4. LOT-09 ensuite.
+4. Lot de suite « exemption de l'intervalle » : amender `D-267` §6, puis
+   coder l'élément et l'exemption dans `assertSentinelleBiologie`.
+5. LOT-09 ensuite.
 
 ## Interdits encore actifs
 

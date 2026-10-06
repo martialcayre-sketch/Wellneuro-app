@@ -114,8 +114,9 @@ laboratoire.
 - Codex (#1333) : P1 corrigé — valeur modifiée à la validation ⇒ silence
   dans la série (`D-267` §5 précisé) ; P2 corrigés — surrogate isolé, style
   sur la marque exemptée.
-- Ouvert, à arbitrer (handoff du lot) : intervalle hors de l'élément exempté
-  de la sentinelle ; intervalle imprimé dans l'autre unité d'un compte rendu
-  à double unité.
+- Arbitrages du responsable (2026-10-06) : la précision de §5 sur la valeur
+  modifiée est validée ; l'intervalle sera exempté comme la marque (`D-267`
+  §6 à amender, lot de suite) ; double unité acceptée telle quelle, verbatim
+  attribué.
 - Reste à constater après déploiement : une extraction réelle porte
   `version_prompt = 'bio-extraction-v2'` et des faits non nuls.
