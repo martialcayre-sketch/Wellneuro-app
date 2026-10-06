@@ -3,7 +3,7 @@ id: "2026-10-04-bio-parcours"
 titre: "BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout"
 statut: "en_cours (ouverte le 2026-10-04 en parallèle de BIO-INGEST — LOT-00, LOT-01 et LOT-02 terminés ; LOT-26 courant, arbitré le 2026-10-05)"
 créée_le: "2026-10-04"
-mise_à_jour: "2026-10-05"
+mise_à_jour: "2026-10-06"
 lot_courant: "LOT-26"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
@@ -89,7 +89,7 @@ programme, après deux contre-revues Codex et une contre-revue d'architecture.
 Les fiches portent l'identifiant `LOT-nn` qu'exige l'audit ; les documents
 disent `BP-nn` (`D-266` §15). BP-06 est absorbé par BP-05 : `LOT-06` n'est pas
 attribué. **Lot courant : LOT-26 (BP-26)**, après BP-02 (terminé le 2026-10-05,
-`CONSTAT_USAGE_2026-10-05.md`) ; BP-26 était arbitré en parallèle de BP-02, et toute assistance reste bloquée sans
+`CONSTAT_USAGE_2026-10-05.md`), et BP-23 terminé le 2026-10-06 en marge ; BP-26 était arbitré en parallèle de BP-02, et toute assistance reste bloquée sans
 lui (gate G4 de `BIOFLOW_ROADMAP.md`). Les fiches ne sont écrites que pour la phase 0 ; celles des autres
 lots s'écrivent quand ils arrivent.
 
@@ -106,7 +106,7 @@ nouveaux, décisions acceptées.
 | BP-01 | LOT-01 | Gardes avant surface | terminé (2026-10-04) | non | BP-00 |
 | BP-02 | LOT-02 | Constat d'usage et ligne de base, en agrégats | terminé (2026-10-05) | non | — (lecture seule) |
 | BP-25 | LOT-25 | Plafond d'actions porté à 7 | à_faire | non | BP-00 |
-| BP-23 | LOT-23 | Relecture réelle (`D-213` §1) | à_faire | non | BP-01 |
+| BP-23 | LOT-23 | Relecture réelle (`D-213` §1) | terminé (2026-10-06) | non | BP-01 |
 | BP-10 | LOT-10 | Sécurité biologique, étage 1 | à_faire | **oui** | BP-02, BIO-INGEST LOT-07 |
 | **Phase 1** | | **Fondations** | | | |
 | BP-09 | LOT-09 | Annulation d'un résultat, ajout seul | à_faire | **oui** | BP-00 |

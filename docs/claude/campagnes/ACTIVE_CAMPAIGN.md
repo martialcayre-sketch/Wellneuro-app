@@ -13,7 +13,7 @@
 
 **Titre** : BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout
 **Statut** : active
-**Lot actif** : LOT-02
+**Lot actif** : LOT-26
 
 **Statut global** : active
 **Mise à jour** : 2026-10-06

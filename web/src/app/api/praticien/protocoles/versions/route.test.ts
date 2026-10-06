@@ -107,6 +107,9 @@ const submission = {
   followUpCriterion: 'Réveils nocturnes < 2 par nuit à J21',
   actions: [action],
   therapeuticLoad: { level: 'light', source: 'practitioner', justification: null } as const,
+  // La coche « J'ai relu ce contenu » ([[D-213]] §1) : les cas historiques
+  // enregistrent une version relue ; le banc BP-23 ci-dessous joue l'absence.
+  reviewed: true,
 };
 
 // Version active préexistante, au MÊME contenu clinique que `submission`.
@@ -127,6 +130,26 @@ const activeRow = {
   supersedesDraftId: null,
   createdAt: new Date('2026-01-02T00:00:00.000Z'),
   payload: activeDraft,
+};
+
+// La même version active, mais restée BROUILLON (coche non posée).
+const activeDraftBrouillon = buildProtocolDraft({
+  protocolDraftId: deriveProtocolDraftId(decisionCardId),
+  decisionCard,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-02T00:00:00.000Z',
+  purpose: submission.purpose,
+  followUpCriterion: submission.followUpCriterion,
+  therapeuticLoad: submission.therapeuticLoad,
+  actions: submission.actions,
+  review: null,
+});
+const activeRowBrouillon = {
+  id: deriveVersionId(deriveProtocolDraftId(decisionCardId), activeDraftBrouillon.inputHash),
+  inputHash: activeDraftBrouillon.inputHash,
+  supersedesDraftId: null,
+  createdAt: new Date('2026-01-02T00:00:00.000Z'),
+  payload: activeDraftBrouillon,
 };
 
 function c5Ref(): FoodCompassActionRef {
@@ -352,6 +375,103 @@ describe('POST /api/praticien/protocoles/versions', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
+  // BP-23 — LA RELECTURE EST UN GESTE, PAS UN TAMPON ([[D-213]] §1, arbitrages
+  // du 2026-10-06). Ces cas mordent sur la ROUTE, pas sur l'interface.
+  describe('relecture réelle (BP-23)', () => {
+    type Reponse = { unchanged: boolean; status: string; versionId: string; supersedesDraftId: string | null };
+    type Cree = { create: { status: string; reviewedAt: Date | null; payload: { review: unknown } } };
+    const cree = () => (prisma.protocolDraft.upsert.mock.calls[0][0] as unknown as Cree).create;
+
+    it('sans la coche : version brouillon, aucune revue posée', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const { reviewed: _reviewed, ...sansCoche } = submission;
+      const res = await POST(postRequest({ episode, decisionCard, submission: sansCoche }));
+      const json = (await res.json()) as Reponse;
+      expect(res.status).toBe(200);
+      expect(json.status).toBe('draft');
+      expect(cree().status).toBe('draft');
+      expect(cree().reviewedAt).toBeNull();
+      expect(cree().payload.review).toBeNull();
+    });
+
+    it('une coche forgée qui n’est pas le booléen vrai ne relit rien', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      for (const forgee of ['true', 1, 'oui']) {
+        prisma.protocolDraft.upsert.mockClear();
+        const res = await POST(postRequest({ episode, decisionCard, submission: { ...submission, reviewed: forgee } }));
+        expect(res.status).toBe(200);
+        expect(cree().status, String(forgee)).toBe('draft');
+      }
+    });
+
+    it('avec la coche : version relue, revue praticien posée', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest({ episode, decisionCard, submission }));
+      expect(res.status).toBe(200);
+      expect(cree().status).toBe('practitioner_reviewed');
+      expect(cree().reviewedAt).toBeInstanceOf(Date);
+      expect(cree().payload.review).toMatchObject({ reviewerRole: 'practitioner', confirmation: 'content_reviewed' });
+    });
+
+    it('brouillon actif, même contenu, coche posée : NOUVELLE version relue, chaînée', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([activeRowBrouillon]);
+      const res = await POST(postRequest({ episode, decisionCard, submission }));
+      const json = (await res.json()) as Reponse;
+      expect(res.status).toBe(200);
+      expect(json.unchanged).toBe(false);
+      expect(json.status).toBe('practitioner_reviewed');
+      expect(json.supersedesDraftId).toBe(activeRowBrouillon.id);
+      expect(json.versionId).not.toBe(activeRowBrouillon.id);
+      expect(cree().status).toBe('practitioner_reviewed');
+    });
+
+    it('brouillon actif, même contenu, sans coche : no-op', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([activeRowBrouillon]);
+      const res = await POST(postRequest({ episode, decisionCard, submission: { ...submission, reviewed: false } }));
+      const json = (await res.json()) as Reponse;
+      expect(json.unchanged).toBe(true);
+      expect(json.status).toBe('draft');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('relue active, même contenu, coche retirée : no-op — la relecture n’est pas retirée', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([activeRow]);
+      const res = await POST(postRequest({ episode, decisionCard, submission: { ...submission, reviewed: false } }));
+      const json = (await res.json()) as Reponse;
+      expect(json.unchanged).toBe(true);
+      expect(json.status).toBe('practitioner_reviewed');
+      expect(json.versionId).toBe(activeRow.id);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('contenu modifié sans coche : nouvelle version, BROUILLON', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([activeRow]);
+      const res = await POST(postRequest({
+        episode, decisionCard, submission: { ...submission, purpose: 'Objectif révisé', reviewed: false },
+      }));
+      const json = (await res.json()) as Reponse;
+      expect(json.unchanged).toBe(false);
+      expect(json.status).toBe('draft');
+      expect(cree().reviewedAt).toBeNull();
+    });
+
+    it('un brouillon ne naît pas sans action', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest({ episode, decisionCard, submission: { ...submission, actions: [], reviewed: false } }));
+      expect(res.status).toBe(400);
+      expect(((await res.json()) as { reason: string }).reason).toBe('draft_invalid');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+  });
+
   it('rejette une version périmée (409 version_stale)', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.protocolDraft.findMany.mockResolvedValue([activeRow]);
@@ -406,6 +526,29 @@ describe('POST /api/praticien/protocoles/versions', () => {
         }),
       }),
     }));
+  });
+
+  // BP-23 ([[D-213]] §1) : le chemin V2 exige une cible relue. Sans la coche,
+  // un refus qui dit le geste, et aucune écriture.
+  it('refuse une référence C5 en V2 sans la coche de relecture', async () => {
+    process.env.WN_C5_ENABLED = 'true';
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.protocolDraft.findMany.mockResolvedValue([activeRow]);
+    const res = await POST(postRequest({
+      episode, decisionCard,
+      submission: {
+        ...submission,
+        reviewed: false,
+        actions: [{ ...action, title: 'Sardine', foodCompassRef: c5Ref() }],
+      },
+      baseVersionId: activeRow.id,
+    }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({
+      reason: 'draft_invalid',
+      error: expect.stringMatching(/J’ai relu ce contenu/),
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('refuse une référence C5 sémantiquement forgée même si son hash public est cohérent', async () => {

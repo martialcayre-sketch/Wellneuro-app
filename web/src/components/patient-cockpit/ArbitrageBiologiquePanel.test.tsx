@@ -94,6 +94,31 @@ describe('ArbitrageBiologiquePanel', () => {
     expect(ui.getByText(/Bornes du laboratoire respectées/)).not.toBeNull();
   });
 
+  // BP-23 ([[D-213]] §1, arbitrage du 2026-10-06) : la révision ne part
+  // qu'avec la coche, transmise telle quelle. Sans elle, le bouton reste inactif
+  // — une révision née brouillon ne se relirait plus nulle part.
+  it('la révision exige la coche « J’ai relu le protocole révisé », et la transmet', () => {
+    const onReviser = vi.fn();
+    const { container } = render(
+      <ArbitrageBiologiquePanel
+        intentions={[intention()]}
+        arbitrages={[{ intentionId: 'act-1', verdict: 'confirme', noteCourte: null, arbitreLe: '2026-09-15T08:00:00.000Z' }]}
+        revisionPossible
+        onArbitrer={vi.fn()}
+        onReviser={onReviser}
+      />,
+    );
+    const ui = within(container);
+    const bouton = ui.getByRole('button', { name: /Appliquer les arbitrages/ }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(true);
+    fireEvent.click(bouton);
+    expect(onReviser).not.toHaveBeenCalled();
+    fireEvent.click(ui.getByLabelText('J’ai relu le protocole révisé'));
+    expect(bouton.disabled).toBe(false);
+    fireEvent.click(bouton);
+    expect(onReviser).toHaveBeenCalledWith(true);
+  });
+
   it('le badge suit l’état réel de l’étage 2, et la phrase reste vraie dans les deux cas', () => {
     const { container, rerender } = render(
       <ArbitrageBiologiquePanel

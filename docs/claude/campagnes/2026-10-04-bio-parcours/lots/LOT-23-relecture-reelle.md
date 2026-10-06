@@ -1,7 +1,7 @@
 ---
 id: "LOT-23"
 titre: "BP-23 — Relecture réelle (D-213 §1)"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-01"
 ---
 
@@ -97,13 +97,32 @@ que la version active est `draft`.
 non gagné. On n'y touche pas (append-only). La date de bascule se lit au
 changelog du lot.
 
+## Arbitrages du responsable (2026-10-06)
+
+1. Relire un contenu inchangé : **les trois recommandations sont retenues**.
+   Brouillon actif + coche vraie ⇒ nouvelle version relue, chaînée.
+2. Décoché sur un contenu déjà relu : **no-op**.
+3. Le geste : **coche explicite** « J'ai relu ce contenu ».
+4. Question née du code (piège 3, ci-dessous) : la révision après arbitrages
+   biologiques porte **sa propre coche dans le panneau** ; le bouton reste
+   inactif tant qu'elle n'est pas posée.
+
+**Piège 3, trouvé en écrivant le transport.** La révision après arbitrages
+(`ArbitrageBiologiquePanel` → `ClinicalRuntimeSection.reviserApresArbitrages`)
+enregistre sans passer par le constructeur. Sans coche, elle naissait
+toujours brouillon, sur un contenu qu'aucun écran ne permettait ensuite de
+relire. D'où l'arbitrage 4.
+
+Trace de la précision : `D-213` §1, précision du 2026-10-06.
+
 ## Étapes
 
 - [x] Cadrage (2026-10-06) : deux pièges, trois questions ci-dessus.
-- [ ] Arbitrages du responsable sur les trois questions.
-- [ ] Écrire le banc sur la route, rouge sur le code actuel.
-- [ ] Corriger la route et transporter la coche depuis le constructeur.
-- [ ] T2 : parcours d'enregistrement puis de diffusion d'un protocole.
+- [x] Arbitrages du responsable sur les trois questions (et la quatrième).
+- [x] Écrire le banc sur la route (huit cas, `relecture réelle (BP-23)`).
+- [x] Corriger la route et transporter la coche depuis le constructeur et le
+  panneau d'arbitrage.
+- [x] T2 : parcours d'enregistrement du constructeur, coche comprise.
 
 ## Tests
 
@@ -115,4 +134,23 @@ Le banc mord sur la route, pas seulement sur l'interface.
 
 ## Résultats
 
-À compléter à la clôture.
+- Route : `review` n'est posé que sur `reviewed === true` (booléen strict :
+  `'true'`, `1` et `'oui'` ne relisent rien). Seule la transition brouillon → relu
+  écrit sur un contenu identique. Un enregistrement sans action est refusé
+  (400 `draft_invalid`) : il ne passait que parce que la relecture tamponnée
+  le faisait valider plus loin.
+- Une référence Boussole (V1/V2) exige la coche : refus 400 explicite, au lieu
+  de l'erreur interne de `buildFoodCompassProtocolV2FromSource`.
+- **Mutations jouées** : tampon inconditionnel rétabli ⇒ 4 rouges sur 47 ;
+  exception du no-op retirée ⇒ 1 rouge (la version relue chaînée). Les deux
+  restaurées, verts.
+- Revue wn-reviewer : NO-GO sur un défaut, corrigé. Le bouton « Re-valider
+  pour diffusion » s'affichait sur une version active brouillon et ne faisait
+  rien ; il ne s'affiche plus que sur une version relue, et le panneau dit le
+  geste dû. La coche du panneau d'arbitrage survivait à la révision suivante :
+  le panneau se remonte désormais à chaque version active. Routés au handoff :
+  le badge du constructeur suit la coche locale, pas le serveur ; un brouillon
+  relu perd ses arbitrages (append-only) ; pas de réhydratation du
+  constructeur ; E2E de diffusion après relecture.
+- Les versions déjà enregistrées gardent leur tampon (append-only) ; la bascule
+  se lit au changelog `2026-10-06-bio-parcours-bp23-relecture-reelle.md`.

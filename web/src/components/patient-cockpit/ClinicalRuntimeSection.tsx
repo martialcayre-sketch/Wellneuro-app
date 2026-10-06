@@ -1831,7 +1831,7 @@ export function ClinicalRuntimeSection({
   // via le chemin de versionnement existant (préconditions, chaîne C1, garde
   // `resolution_sans_arbitrage` côté serveur). La re-validation pour diffusion
   // redevient obligatoire d'elle-même (approbation caduque).
-  const reviserApresArbitrages = async () => {
+  const reviserApresArbitrages = async (reviewed: boolean) => {
     if (fixture || !contenuActif || !activeVersionId) return;
     const lies = arbitrages
       .filter(a => a.protocolDraftId === activeVersionId)
@@ -1845,6 +1845,9 @@ export function ClinicalRuntimeSection({
     await saveVersion({
       purpose: contenuActif.purpose,
       followUpCriterion: contenuActif.followUpCriterion,
+      // La coche du panneau ([[D-213]] §1) : la révision n'est relue que si le
+      // praticien l'a cochée.
+      reviewed,
       // L'ORIENTATION SUIT LA CARTE COURANTE ([[D-257]], revue du 2026-10-03,
       // P2-6) : retirée de ce qui est révisé, reposée en tête si la carte porte
       // un constat adressé. Sans cela, une carte qui change d'état d'adressage
@@ -2537,6 +2540,10 @@ export function ClinicalRuntimeSection({
           )}
           {cbEnabled && contenuActif && activeVersionId && (
             <ArbitrageBiologiquePanel
+              // Une version neuve remonte le panneau : sa coche « J'ai relu le
+              // protocole révisé » ne survit pas à la révision qu'elle a
+              // attestée ([[D-213]] §1, BP-23).
+              key={activeVersionId}
               resultatsActifs={cbResultatsActifs}
               intentions={contenuActif.actions
                 .filter(action => action.interventionStatus === 'conditionnelle_biologie')

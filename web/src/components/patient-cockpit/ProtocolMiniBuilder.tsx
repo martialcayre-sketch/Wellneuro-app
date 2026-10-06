@@ -60,6 +60,12 @@ export type RelectureProtocoleSoumission = {
    * formulaire : le praticien confirme un TEXTE, pas un principe.
    */
   confirmerRegistre?: string;
+  /**
+   * La coche « J'ai relu ce contenu » ([[D-213]] §1) : remise à faux à chaque
+   * frappe, transmise telle quelle. Le serveur ne pose la relecture que si
+   * elle est vraie ; la validation pour diffusion reste un second geste.
+   */
+  reviewed: boolean;
 };
 
 // État de sauvegalde serveur (C2A LOT-03). « Enregistré » n'est jamais affiché
@@ -464,6 +470,7 @@ export function ProtocolMiniBuilder({
     return {
       purpose,
       followUpCriterion,
+      reviewed,
       // LE CONTRAT EST DEMANDÉ, JAMAIS DÉDUIT ([[D-130]]) : un statut
       // d'intervention n'existe qu'en V4, et la route refuse de choisir le
       // contrat à la place de qui soumet. Une soumission SANS suspension reste
@@ -490,15 +497,16 @@ export function ProtocolMiniBuilder({
   const review = () => {
     const submission = collectSubmission();
     if (!submission) return;
-    onReviewed?.(submission);
+    onReviewed?.({ ...submission, reviewed: true });
     setReviewed(true);
     setMessage('Brouillon relu par le praticien — non activé et non transmis.');
   };
 
+  // La coche n'est plus posée ici ([[D-213]] §1) : enregistrer n'est pas
+  // relire. Elle voyage dans la soumission, telle que le praticien l'a laissée.
   const saveVersion = () => {
     const submission = collectSubmission();
     if (!submission) return;
-    setReviewed(true);
     setEditedSinceSave(false);
     setMessage(null);
     onSaveVersion?.(submission);
@@ -846,6 +854,18 @@ export function ProtocolMiniBuilder({
                     ? <span className="text-status-danger">{saveError ?? 'Échec de l’enregistrement.'}</span>
                     : <span className="text-muted-foreground">Brouillon local — non enregistré.</span>}
         </p>
+      )}
+      {onSaveVersion && (
+        <label className="mt-4 flex min-h-11 items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={reviewed}
+            onChange={event => setReviewed(event.target.checked)}
+            disabled={saveState === 'saving'}
+            className="h-4 w-4"
+          />
+          J’ai relu ce contenu
+        </label>
       )}
       <div className="mt-4 flex flex-wrap gap-2">
         {onSaveVersion ? (
