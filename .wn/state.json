@@ -6,8 +6,8 @@
   },
   "status": "active",
   "active_campaign": "2026-09-30-bio-ingest",
-  "active_lot": "LOT-07",
-  "last_completed_lot": "2026-09-30-bio-ingest/LOT-03 — terminé le 2026-10-04 (#1310, #1312), clôture administrative le 2026-10-05 : photo ou scan (JPEG, PNG, WebP) par le même pipeline, image réencodée par sharp (EXIF et GPS retirés), procédé bio-extraction-v1 inchangé. « Relancer la lecture » NON livré, déplacé au LOT-09 (fiche dédiée, non ordonnancée, jamais destructive après validation). LOT-08 (borne totale de l'extraction, 240 s flux compris) terminé le 2026-10-05 (#1315, #1316).",
+  "active_lot": "LOT-09",
+  "last_completed_lot": "2026-09-30-bio-ingest/LOT-07 — terminé le 2026-10-06 (#1326, #1328, #1332, #1333, #1334) : intervalle et marquage imprimés transcrits verbatim sur la ligne lue (D-267), bio-extraction-v2 en production, signal « non transcrit », restitution juxtaposée attribuée au laboratoire, intervalle et marque exemptés de la sentinelle BP-01. Précédent : LOT-03 (#1310, #1312) et LOT-08 (#1315, #1316).",
   "validation": {
     "overall_status": "passed",
     "last_checked_at": "2026-09-07T08:00:00Z",
@@ -22,7 +22,8 @@
     }
   },
   "next_action": [
-    "CAMPAGNE ACTIVE : 2026-09-30-bio-ingest (« BIO-INGEST — acquisition des résultats biologiques »). LOT-00, LOT-01, LOT-02, LOT-03, LOT-06 et LOT-08 TERMINÉS. LOT-09 (« Relancer la lecture », sans ligne validée) à faire, ordonnancé juste après LOT-07 (arbitrage du 2026-10-05).\n\nLOT COURANT : LOT-07 (faits du laboratoire : intervalle et marquage imprimés, verbatim), déclaré le 2026-10-05 ; dépendances satisfaites (LOT-02, BP-00 #1307, BP-01 #1314). Décision préalable posée : D-267 (PR #1325). Après son merge et une vérification de main : migration seule (intervalle_lu, marquage_lu sur lignes_biologiques_candidates), passe Codex, release-db approuvée et constat par conteneur ; puis TRUST usage_ia v5 et registre RGPD servis et constatés ; seulement ensuite le code (bio-extraction-v2, parseur, validation, restitution). Ordre arbitré ensuite : décision sur l'asynchrone durable, BioJob et worker, gold dataset et métriques. Coordination : docs/architecture/bioflow/BIOFLOW_ROADMAP.md.\n\nFRONTIÈRES : aucune ligne n'atteint resultats_biologiques sans validation humaine ; aucune conversion d'unité (D-157) ; le moteur clinique ne lit pas les résultats (D-122) ; ResultatBiologique n'est pas modifié par LOT-07.\n\nCAMPAGNE PARALLÈLE : 2026-10-04-bio-parcours (« BIO-PARCOURS », D-266). BP-00 et BP-01 TERMINÉS ; suite arbitrée : BP-02, BP-26 en parallèle.",
+    "CAMPAGNE ACTIVE : 2026-09-30-bio-ingest (« BIO-INGEST — acquisition des résultats biologiques »). LOT-00, LOT-01, LOT-02, LOT-03, LOT-06, LOT-07 et LOT-08 TERMINÉS.\n\nLOT COURANT : LOT-09 (« Relancer la lecture » d'un compte rendu sans ligne validée), déclaré le 2026-10-06, livré par la PR #1335 : refus serveur `ligne_validee` sous le verrou de la décision, import précédent intact, geste à l'écran avec confirmation, aucune migration. Après son merge : constater le déploiement.\n\nLOT-07 CLOS : bio-extraction-v2 en production (#1333), intervalle exempté de la sentinelle comme la marque (#1334, D-267 §6). Constat du 2026-10-06 par conteneur : aucune extraction v2 encore (un seul import, en v1) ; à constater à la première extraction réelle.\n\nSUITE : ordre arbitré (BIOFLOW_ROADMAP) — décision sur l'asynchrone durable, BioJob et worker (arbitrage du responsable requis), gold dataset et métriques. Dette routée : un NUL dans le libellé, la valeur ou l'unité fait échouer l'import (`texteBorne`, FILE_ATTENTE).\n\nFRONTIÈRES : aucune ligne n'atteint resultats_biologiques sans validation humaine ; aucune conversion d'unité (D-157) ; le moteur clinique ne lit pas les résultats (D-122) ; rien sur ResultatBiologique (D-267 §2).\n\nCAMPAGNE PARALLÈLE : 2026-10-04-bio-parcours (« BIO-PARCOURS », D-266).",
+    "[trace 2026-10-06 — ancienne tête remplacée à la clôture du LOT-07 et à l'ouverture du LOT-09] LOT-07 était lot courant (faits du laboratoire, D-267) ; LOT-09 à faire. Contenu complet : git log de .wn/state.json.",
     "[trace 2026-10-05 — ancienne tête remplacée à la pose de D-267] LOT-07 courant ; première étape : la décision préalable, numéro non réservé. Contenu complet : git log de .wn/state.json.",
     "[trace 2026-10-05 — ancienne tête remplacée à la clôture du LOT-03] LOT-03 était lot courant (photo ou scan, arbitré le 2026-10-03, avec « Relancer la lecture ») ; LOT-00, LOT-01, LOT-02 et LOT-06 terminés ; BIO-PARCOURS LOT-01 (BP-01) courant. Contenu complet : git log de .wn/state.json.",
     "[trace 2026-10-04 — ancienne tête remplacée à la clôture du LOT-06] CAMPAGNE ACTIVE : 2026-09-30-bio-ingest (« BIO-INGEST — acquisition des résultats biologiques »). LOT-00, LOT-01 et LOT-02 TERMINÉS. LOT-02 (2026-10-03) : import d'un compte rendu par IA vision EN PRODUCTION, drapeau WN_BIO_INGEST_ENABLED posé, première extraction constatée sur un dossier de test, dépôt gardé comme outil de travail.\n\nLOT COURANT : LOT-06 (catalogue étendu aux analyses d'un compte rendu courant — NFS détaillée, ionogramme, créatinine, bilan hépatique, lipides détaillés), demandé par le responsable le 2026-10-03. Migration, confirmation obligatoire, cadrage en mode Plan d'abord. Puis LOT-03 (photo/scan), LOT-04 (portail), LOT-05 (format laboratoire réel).\n\nFRONTIÈRES : aucune ligne n'atteint resultats_biologiques sans validation humaine ; aucune conversion d'unité (D-157), seules des notations équivalentes listées une à une (D-260) ; le moteur clinique ne lit pas les résultats (D-122).",
@@ -85,7 +86,7 @@
     "D-263"
   ],
   "last_session": null,
-  "updated_at": "2026-10-05T12:39:54Z",
+  "updated_at": "2026-10-06T06:35:59Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-10-04-bio-parcours",
