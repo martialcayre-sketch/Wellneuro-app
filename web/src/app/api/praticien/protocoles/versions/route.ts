@@ -75,6 +75,13 @@ type Submission = {
    * fabrique pas — il le reçoit et le rend.
    */
   confirmerRegistre?: string;
+  /**
+   * La coche « J'ai relu ce contenu » du constructeur ([[D-213]] §1) : seule
+   * source de la relecture. Absente ou fausse ⇒ `review: null`, version
+   * `draft`, que la diffusion refuse (`not_reviewed`). Le serveur ne tamponne
+   * plus rien de lui-même.
+   */
+  reviewed?: boolean;
 };
 
 type PostBody = {
@@ -321,7 +328,18 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     let draft;
     try {
       const submittedActions = submission.actions ?? [];
+      // AU MOINS UNE ACTION, RELU OU NON. Le moteur ne l'exige que d'une
+      // version relue ; tant que le serveur tamponnait toute version, c'était
+      // toujours le cas. Une version brouillon (coche non posée, [[D-213]] §1)
+      // ne doit pas en profiter pour naître vide.
+      if (submittedActions.length === 0) {
+        throw new TypeError('Un protocole enregistré exige au moins une action.');
+      }
       const hasC5Reference = submittedActions.some(action => action.foodCompassRef !== undefined);
+      // Le chemin V2 exige une cible relue : le dire, plutôt que « cible invalide ».
+      if (hasC5Reference && versionDemandee !== VERSION_PROTOCOL_DRAFT_V4 && submission.reviewed !== true) {
+        throw new TypeError('Une référence Boussole exige la relecture : cochez « J’ai relu ce contenu ».');
+      }
       if (hasC5Reference && !activeDraft) {
         throw new TypeError('Une référence C5 exige un protocole source actif.');
       }
@@ -471,7 +489,13 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           : verifiedActions.map(({ foodCompassRef: _foodCompassRef, ...action }) => action),
         therapeuticLoad: submission.therapeuticLoad as TherapeuticLoad,
         limitations: submission.limitations ?? [],
-        review: { reviewedAt: now, reviewerRole: 'practitioner', confirmation: 'content_reviewed' },
+        // LA RELECTURE EST UN GESTE, PAS UN TAMPON ([[D-213]] §1, BP-23) : la
+        // revue n'est posée que si le praticien a coché « J'ai relu ce
+        // contenu ». `=== true` : une valeur forgée qui ne serait pas le
+        // booléen vrai ne relit rien.
+        review: submission.reviewed === true
+          ? { reviewedAt: now, reviewerRole: 'practitioner', confirmation: 'content_reviewed' }
+          : null,
         // `undefined` ⇒ le moteur retombe sur `c1-protocol-draft-v1` : les
         // payloads déjà persistés gardent exactement leur empreinte.
         version: versionDemandee,
@@ -494,8 +518,13 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       );
     }
 
-    // Pas de changement clinique → no-op (jamais de version en double).
-    if (active && activeDraft && !isClinicalChange(activeDraft, draft)) {
+    // Pas de changement clinique → no-op (jamais de version en double), SAUF
+    // une transition et une seule : brouillon actif → relu (arbitrage du
+    // 2026-10-06, BP-23). Relire un texte inchangé crée une version
+    // append-only (même contenu, revue posée) ; l'inverse n'écrit jamais — une
+    // coche remise à faux sans frappe ne retire pas une relecture déjà posée.
+    const relectureDUnBrouillon = activeDraft?.status === 'draft' && draft.status === 'practitioner_reviewed';
+    if (active && activeDraft && !isClinicalChange(activeDraft, draft) && !relectureDUnBrouillon) {
       return NextResponse.json({
         ok: true,
         unchanged: true,

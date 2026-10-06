@@ -119,10 +119,25 @@ export function ArbitrageBiologiquePanel({
   /** Au moins un verdict résolutif (confirme/infirme) attend une révision. */
   revisionPossible: boolean;
   onArbitrer: (intentionId: string, verdict: VerdictArbitrage, note: string) => void;
-  onReviser?: () => void;
+  /**
+   * La révision ne part qu'avec la coche « J'ai relu le protocole révisé »
+   * ([[D-213]] §1, arbitrage du 2026-10-06) : elle est transmise comme celle
+   * du constructeur, et le serveur ne pose la relecture que si elle est vraie.
+   */
+  onReviser?: (reviewed: boolean) => void;
   /** Étage 2 actif : le badge « aucune valeur conservée » suit l'état réel. */
   resultatsActifs?: boolean;
 }) {
+  const [reluRevision, setReluRevision] = useState(false);
+  // Un verdict consigné après la coche change la révision qui sera générée :
+  // la coche tombe ([[D-213]] §1, BP-23). Le changement de version active,
+  // lui, remonte le panneau (`key` posée par le parent).
+  const signatureArbitrages = arbitrages.map(a => `${a.intentionId}:${a.verdict}`).join('|');
+  const [signatureRelue, setSignatureRelue] = useState(signatureArbitrages);
+  if (signatureArbitrages !== signatureRelue) {
+    setSignatureRelue(signatureArbitrages);
+    setReluRevision(false);
+  }
   if (intentions.length === 0 && arbitrages.length === 0) return null;
   const parIntention = new Map(arbitrages.map(a => [a.intentionId, a]));
 
@@ -182,17 +197,31 @@ export function ArbitrageBiologiquePanel({
 
       {revisionPossible && onReviser && (
         <div className="mt-3">
+          {/* Bouton inactif sans la coche : une révision née en brouillon ne
+              se relirait plus, le panneau ne propose de réviser que la version
+              arbitrée, et le constructeur n'est pas réhydraté depuis elle. */}
+          <label className="mb-2 flex min-h-11 items-center gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              checked={reluRevision}
+              onChange={event => setReluRevision(event.target.checked)}
+              disabled={state === 'saving'}
+              className="h-4 w-4"
+            />
+            J’ai relu le protocole révisé
+          </label>
           <button
             type="button"
-            onClick={onReviser}
-            disabled={state === 'saving'}
+            onClick={() => onReviser(reluRevision)}
+            disabled={state === 'saving' || !reluRevision}
             className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
             Appliquer les arbitrages (nouvelle version à re-valider)
           </button>
           <p className="mt-1 text-xs text-muted-foreground">
-            La révision crée une nouvelle version : re-lecture et re-validation pour diffusion
-            obligatoires — le patient continue de voir la dernière version validée.
+            La révision crée une nouvelle version, relue par la coche ci-dessus : seule la
+            re-validation pour diffusion reste à faire — le patient continue de voir la dernière
+            version validée.
           </p>
         </div>
       )}

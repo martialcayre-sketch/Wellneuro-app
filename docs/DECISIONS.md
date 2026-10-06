@@ -5946,6 +5946,16 @@ simplement jamais transmis, et la route tamponne
 reste le second verrou, distinct. Le cockpit affiche déjà ces deux états séparés —
 c'est le transport qui manquait, pas la conception.
 
+*Précision du 2026-10-06 (arbitrages du responsable, BP-23 — exécution)* : la
+coche est un booléen strict (`reviewed === true`, toute autre valeur vaut
+faux). Contenu identique ⇒ aucune écriture, **sauf** une version active
+`draft` et une coche vraie : une version relue naît, append-only, chaînée à ce
+brouillon. Ré-enregistrer décoché un contenu déjà relu ne le rétrograde pas.
+Le geste est une coche « J'ai relu ce contenu » à côté d'« Enregistrer la
+version », et une coche « J'ai relu le protocole révisé » conditionne la
+révision après arbitrages biologiques. Les versions antérieures gardent leur
+tampon (append-only) ; la bascule se lit au changelog du lot.
+
 **Ce que cela retire au dépôt** : plus aucun raisonnement de sûreté ne peut
 s'adosser à « la relecture praticien répond de ce texte » **sans que ce soit
 vrai**. Plusieurs le faisaient.

@@ -68,6 +68,36 @@ describe('ProtocolDiffusionPanel', () => {
     expect(screen.getByText(/Vous pouvez la valider pour diffusion/i)).toBeTruthy();
   });
 
+  // BP-23 ([[D-213]] §1) : la version qui rend la validation caduque peut être
+  // un brouillon. « Re-valider » n'aurait rien fait — l'écran dit le geste dû.
+  it('validation caduque sur une version active BROUILLON : ni bouton, mais le geste dû', () => {
+    render(
+      <ProtocolDiffusionPanel
+        canApprove={false}
+        approved
+        stale
+        approvedAt={APPROUVE_LE}
+        onApprove={() => {}}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /valider pour diffusion/i })).toBeNull();
+    expect(screen.getByText(/brouillon non relu : cochez « J’ai relu ce contenu »/)).toBeTruthy();
+  });
+
+  it('validation caduque sur une version active RELUE : le bouton « Re-valider »', () => {
+    render(
+      <ProtocolDiffusionPanel
+        canApprove
+        approved
+        stale
+        approvedAt={APPROUVE_LE}
+        onApprove={() => {}}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Re-valider pour diffusion' })).toBeTruthy();
+    expect(screen.queryByText(/brouillon non relu/)).toBeNull();
+  });
+
   // LES DEUX CONSTATS SONT DISTINCTS : `stale` compare deux VERSIONS, celui-ci
   // compare le DOSSIER à lui-même. Les confondre ferait proposer une
   // re-validation là où la relecture ne changerait rien.

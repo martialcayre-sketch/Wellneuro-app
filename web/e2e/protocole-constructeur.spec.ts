@@ -128,6 +128,11 @@ test.describe('Constructeur de protocole — le parcours nominal, à l’écran'
 
     // ── 4. LE TYPE POSÉ, LA VERSION S'ENREGISTRE ─────────────────────────────
     await selecteurType.selectOption('medical_referral');
+    // LA RELECTURE EST UN GESTE ([[D-213]] §1, BP-23) : la coche n'est jamais
+    // présumée — elle s'ouvre décochée, et seule elle fait une version relue.
+    const coche = constructeur.getByLabel('J’ai relu ce contenu');
+    await expect(coche).not.toBeChecked();
+    await coche.check();
     await page.getByRole('button', { name: 'Enregistrer la version' }).click();
     await expect(
       page.getByText('Version enregistrée sur le serveur — non transmise au patient.'),

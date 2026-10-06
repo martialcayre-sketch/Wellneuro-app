@@ -280,6 +280,71 @@ describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
     expect(ui.queryByText(/Version enregistrée/)).toBeNull();
   });
 
+  // BP-23 ([[D-213]] §1) : la relecture est un geste — la coche voyage telle
+  // que le praticien l'a laissée, et toute frappe la remet à faux.
+  describe('coche « J’ai relu ce contenu » (BP-23)', () => {
+    function brouillonComplet() {
+      const onSaveVersion = vi.fn();
+      const { container } = render(
+        <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+      );
+      const ui = within(container);
+      fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+      fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+      fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+      fillFirstAction(container);
+      choisirCharge(container);
+      return { ui, onSaveVersion };
+    }
+    const derniere = (fn: ReturnType<typeof vi.fn>) =>
+      fn.mock.calls[fn.mock.calls.length - 1][0] as RelectureProtocoleSoumission;
+
+    it('enregistrer sans cocher transmet `reviewed: false` — enregistrer n’est pas relire', () => {
+      const { ui, onSaveVersion } = brouillonComplet();
+      expect((ui.getByLabelText('J’ai relu ce contenu') as HTMLInputElement).checked).toBe(false);
+      fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+      expect(derniere(onSaveVersion).reviewed).toBe(false);
+      // Le badge ne se pose plus de lui-même à l'enregistrement.
+      expect(ui.queryByText('Relu par le praticien')).toBeNull();
+    });
+
+    it('cocher puis enregistrer transmet `reviewed: true`', () => {
+      const { ui, onSaveVersion } = brouillonComplet();
+      fireEvent.click(ui.getByLabelText('J’ai relu ce contenu'));
+      fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+      expect(derniere(onSaveVersion).reviewed).toBe(true);
+    });
+
+    it('une frappe après la coche la remet à faux', () => {
+      const { ui, onSaveVersion } = brouillonComplet();
+      fireEvent.click(ui.getByLabelText('J’ai relu ce contenu'));
+      fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison retouchée' } });
+      expect((ui.getByLabelText('J’ai relu ce contenu') as HTMLInputElement).checked).toBe(false);
+      fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+      expect(derniere(onSaveVersion).reviewed).toBe(false);
+    });
+
+    // Revue Copilot de #1342 : l'orientation part de la carte, pas du
+    // formulaire. Si elle bascule après la coche, la coche tombe.
+    it('une orientation qui bascule après la coche la remet à faux', () => {
+      const onSaveVersion = vi.fn();
+      const { container, rerender } = render(
+        <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+      );
+      const ui = within(container);
+      fireEvent.click(ui.getByLabelText('J’ai relu ce contenu'));
+      expect((ui.getByLabelText('J’ai relu ce contenu') as HTMLInputElement).checked).toBe(true);
+      rerender(
+        <ProtocolMiniBuilder
+          decisionCard={{ ...card(), safetyFindingAdresseIds: ['safety:anamnese:aaaaaaaaaaaaaaaa'] }}
+          onSaveVersion={onSaveVersion}
+          saveState="idle"
+        />,
+      );
+      expect((ui.getByLabelText('J’ai relu ce contenu') as HTMLInputElement).checked).toBe(false);
+    });
+  });
+
   it('transmet la soumission validée à onSaveVersion', () => {
     const onSaveVersion = vi.fn();
     const { container } = render(

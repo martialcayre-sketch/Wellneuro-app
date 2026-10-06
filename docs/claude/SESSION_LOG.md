@@ -9383,3 +9383,19 @@ Promotions : décision → aucune ; règle → aucune.
 
 **Questions ouvertes.** Qui porte la réconciliation des imports fantômes,
 maintenant que G2 est levé ?
+
+## 2026-10-06 — BP-23, relecture réelle (D-213 §1)
+
+**Décidé.** `review` posé seulement sur `reviewed === true`. No-op sur
+contenu identique, sauf brouillon actif + coche ⇒ version relue chaînée.
+Coche au constructeur et au panneau d'arbitrage. Précision datée de `D-213` §1.
+
+**Écarté.** Modifier la ligne brouillon (append-only) ; rétrograder un contenu
+relu sur décoche.
+
+Promotions : décision → précision `D-213` §1 ; règle → aucune.
+
+**Prochaine action.** Merge, puis décision de sécurité biologique BP-10.
+
+**Questions ouvertes.** Aperçu de la révision avant la coche du panneau ;
+P2 de revue routés au handoff.

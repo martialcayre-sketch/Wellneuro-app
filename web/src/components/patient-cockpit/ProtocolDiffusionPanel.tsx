@@ -245,7 +245,13 @@ export function ProtocolDiffusionPanel({
       <p className="mt-3 text-base">
         {approved && stale ? (
           <span className="text-status-warning">
-            Une nouvelle version a été enregistrée : la validation précédente est caduque. Re-validez la version active.
+            {/* UNE VERSION ACTIVE BROUILLON NE SE RE-VALIDE PAS ([[D-213]] §1,
+                BP-23) : depuis que la relecture n'est plus tamponnée, la
+                version qui rend la validation caduque peut être un brouillon.
+                Proposer « Re-valider » sur elle était un bouton sans effet. */}
+            {canApprove
+              ? 'Une nouvelle version a été enregistrée : la validation précédente est caduque. Re-validez la version active.'
+              : 'Une nouvelle version a été enregistrée : la validation précédente est caduque. La version active est un brouillon non relu : cochez « J’ai relu ce contenu » puis enregistrez-la avant de la re-valider.'}
           </span>
         ) : approved && approvedAt ? (
           <span className="text-foreground">
@@ -325,7 +331,7 @@ export function ProtocolDiffusionPanel({
         />
       )}
 
-      {onApprove && (canApprove || stale) && (
+      {onApprove && canApprove && (
         <div className="mt-3">
           <button
             type="button"
