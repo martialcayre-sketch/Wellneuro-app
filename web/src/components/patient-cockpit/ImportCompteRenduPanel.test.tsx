@@ -336,6 +336,74 @@ describe('ImportCompteRenduPanel — document effacé (D-258)', () => {
   });
 });
 
+describe('ImportCompteRenduPanel — relancer la lecture (LOT-09)', () => {
+  it('une lecture aboutie sans ligne validée se relance, après confirmation', async () => {
+    const fetchMock = serveur({ extraction: { status: 202, body: { ok: true, idImport: 'imp_2', statut: 'en_cours' } } });
+    await rendreEtOuvrir();
+    fireEvent.click(screen.getByRole('button', { name: 'Relancer la lecture' }));
+    expect(appels(fetchMock, '/import/extraction')).toHaveLength(0);
+    expect(screen.getByText(/transmis à nouveau au service de lecture/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la relance' }));
+    await waitFor(() => expect(appels(fetchMock, '/import/extraction')).toHaveLength(1));
+    expect(JSON.parse(String(appels(fetchMock, '/import/extraction')[0][1]?.body))).toEqual({ idPatient: 'pat_sophie', idCompteRendu: 'cr_1' });
+  });
+
+  it('annuler ne lance rien', async () => {
+    const fetchMock = serveur({});
+    await rendreEtOuvrir();
+    fireEvent.click(screen.getByRole('button', { name: 'Relancer la lecture' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+    expect(screen.getByRole('button', { name: 'Relancer la lecture' })).toBeTruthy();
+    expect(appels(fetchMock, '/import/extraction')).toHaveLength(0);
+  });
+
+  it('une ligne écartée n’empêche pas la relance', async () => {
+    serveur({
+      detail: () => compteRendu('extrait', [
+        ...LIGNES.slice(0, 3),
+        ligne({ id: 'l4', libelleLu: 'Fer sérique', valeurLue: '17,2', statut: 'ecartee', motifEcart: 'unite_divergente' }),
+      ]),
+    });
+    await rendreEtOuvrir();
+    expect(screen.getByRole('button', { name: 'Relancer la lecture' })).toBeTruthy();
+  });
+
+  it('une ligne validée, même d’une lecture antérieure, retire le geste', async () => {
+    serveur({
+      detail: () => {
+        const cr = compteRendu('extrait');
+        return {
+          ...cr,
+          imports: [
+            ...cr.imports,
+            { ...cr.imports[0], id: 'imp_0', courant: false,
+              lignes: [ligne({ id: 'l0', libelleLu: 'Ferritine', valeurLue: '50', statut: 'validee', idResultat: 'res_1' })] },
+          ],
+        };
+      },
+    });
+    await rendreEtOuvrir();
+    expect(screen.queryByRole('button', { name: 'Relancer la lecture' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Lancer la lecture' })).toBeNull();
+  });
+
+  it('un document purgé ne se relance pas', async () => {
+    serveur({ detail: () => ({ ...compteRendu('extrait'), purgeLe: '2026-11-01T02:15:00.000Z', motifPurge: 'echeance' }) });
+    await rendreEtOuvrir();
+    expect(screen.queryByRole('button', { name: 'Relancer la lecture' })).toBeNull();
+  });
+
+  it('le refus du serveur (`ligne_validee`) se dit', async () => {
+    serveur({
+      extraction: { status: 409, body: { ok: false, reason: 'ligne_validee', error: 'Une ligne de ce compte rendu a déjà été validée.' } },
+    });
+    await rendreEtOuvrir();
+    fireEvent.click(screen.getByRole('button', { name: 'Relancer la lecture' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la relance' }));
+    expect(await screen.findByText('Une ligne de ce compte rendu a déjà été validée.')).toBeTruthy();
+  });
+});
+
 describe('ImportCompteRenduPanel — relecture robuste', () => {
   it('une lecture périmée (jugée par le serveur) se dit interrompue et se relance ; le 409 se dit', async () => {
     serveur({

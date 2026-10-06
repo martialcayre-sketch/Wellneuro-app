@@ -9273,3 +9273,20 @@ Promotions : décision → aucune ; règle → aucune.
 **Prochaine action.** PR, CI, verdict du responsable sur la passe Codex, merge.
 
 **Questions ouvertes.** Passe Codex requise ou non pour ce lot de suite.
+
+## 2026-10-06 — BIO-INGEST LOT-09 : relancer la lecture
+
+**Décidé.** #1334 est mergée après le GO de Codex et constatée en production.
+LOT-09 : la relance est refusée côté serveur dès qu'une ligne est validée
+(`ligne_validee`), sous le verrou de la décision. L'import précédent reste
+intact. Le geste à l'écran passe par une confirmation. `wn-reviewer` : GO,
+trois P2 corrigés.
+
+**Écarté.** Une décision `D-xxx` (ni clinique ni frontière) ; une migration.
+
+Promotions : décision → aucune ; règle → aucune.
+
+**Prochaine action.** CI, merge, constat ; puis la suite de BIO-INGEST.
+
+**Questions ouvertes.** Une lecture entièrement écartée est purgée (D-258) et
+ne se relance plus : faut-il un recours ?

@@ -20,7 +20,10 @@ const { prisma, extraire, journal, resoudre } = vi.hoisted(() => {
       updateMany: trace('import.updateMany', { count: 1 }),
       count: trace('import.count', 1),
     },
-    ligneBiologiqueCandidate: { createMany: trace('lignes.createMany', { count: 0 }) },
+    ligneBiologiqueCandidate: {
+      createMany: trace('lignes.createMany', { count: 0 }),
+      count: trace('lignes.count', 0),
+    },
     biologyAnalyte: {
       findMany: trace('analytes.findMany', [
         { code: 'BIO_FERRITINE', unite: 'ng/mL' },
@@ -231,6 +234,49 @@ describe('lancerExtraction — imports en cours', () => {
     expect(prisma.importBiologique.create).not.toHaveBeenCalled();
     expect(prisma.importBiologique.update).not.toHaveBeenCalled();
     expect(extraire).not.toHaveBeenCalled();
+  });
+
+  // RELANCER LA LECTURE (LOT-09) : jamais destructive après validation.
+  it('une ligne validée sur ce compte rendu refuse la relance : `ligne_validee`, rien n’est touché', async () => {
+    prisma.ligneBiologiqueCandidate.count.mockResolvedValueOnce(1);
+    expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'ligne_validee' });
+    expect(argument<{ where: unknown }>(prisma.ligneBiologiqueCandidate.count).where)
+      .toEqual({ idPatient: 'pat_sophie', statut: 'validee', import: { idCompteRendu: 'cr_1' } });
+    expect(prisma.importBiologique.create).not.toHaveBeenCalled();
+    expect(prisma.importBiologique.update).not.toHaveBeenCalled();
+    expect(prisma.importBiologique.updateMany).not.toHaveBeenCalled();
+    expect(extraire).not.toHaveBeenCalled();
+  });
+
+  it('une ligne validée n’empêche pas de clore un import périmé : il ne reste pas « courant »', async () => {
+    prisma.importBiologique.findMany.mockResolvedValueOnce([
+      { id: 'imp_mort', lanceLe: new Date(MAINTENANT.getTime() - 6 * 60_000) },
+    ]);
+    prisma.ligneBiologiqueCandidate.count.mockResolvedValueOnce(1);
+    expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'ligne_validee' });
+    expect(prisma.importBiologique.update).toHaveBeenCalledWith({
+      where: { id: 'imp_mort' },
+      data: { statut: 'echec', motifEchec: 'delai_depasse' },
+    });
+    expect(prisma.importBiologique.create).not.toHaveBeenCalled();
+    expect(extraire).not.toHaveBeenCalled();
+  });
+
+  it('la garde se lit SOUS le verrou du compte rendu, celui que prend aussi la décision', async () => {
+    await lancerExtraction(PARAMS);
+    const ordre = journal.slice(0, journal.indexOf('import.create'));
+    expect(ordre.indexOf('verrou')).toBeLessThan(ordre.indexOf('lignes.count'));
+  });
+
+  it('sans ligne validée (proposées ou écartées), la relance ouvre un nouvel import sans toucher aux précédents', async () => {
+    await lancerExtraction(PARAMS);
+    expect(prisma.importBiologique.create).toHaveBeenCalled();
+    // La seule écriture d'import est la terminaison du NOUVEAU ; les lignes
+    // écrites sont les siennes. L'ancien import et ses lignes restent tels quels.
+    expect(prisma.importBiologique.update).toHaveBeenCalledTimes(1);
+    expect(argument<{ where: unknown }>(prisma.importBiologique.update).where).toEqual({ id: 'imp_1' });
+    const { data } = argument<Lignes>(prisma.ligneBiologiqueCandidate.createMany);
+    expect(data.every(l => l.idImport === 'imp_1')).toBe(true);
   });
 
   it('un compte rendu d’un autre dossier est introuvable — la lecture filtre par dossier', async () => {

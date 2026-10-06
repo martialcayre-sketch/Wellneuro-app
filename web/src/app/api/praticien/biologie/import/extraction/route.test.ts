@@ -56,6 +56,18 @@ describe('POST /api/praticien/biologie/import/extraction — asynchrone', () => 
     expect(after).not.toHaveBeenCalled();
   });
 
+  it('une ligne validée (LOT-09) rend 409 `ligne_validee`, sans suite', async () => {
+    ouvrirExtraction.mockResolvedValueOnce({ ok: false, reason: 'ligne_validee' });
+    const res = await POST(requete({ idPatient: 'pat_sophie', idCompteRendu: 'cr_1' }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({
+      ok: false,
+      reason: 'ligne_validee',
+      error: 'Une ligne de ce compte rendu a déjà été validée : il ne peut plus être relu, rien de ce qui est enregistré n’est remplacé.',
+    });
+    expect(after).not.toHaveBeenCalled();
+  });
+
   it('une suite qui lève est journalisée par sa classe, jamais par son message', async () => {
     const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
     poursuivreExtraction.mockRejectedValueOnce(new Error('Ferritine 48 ng/mL'));

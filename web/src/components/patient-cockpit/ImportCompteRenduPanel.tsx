@@ -197,6 +197,7 @@ export function ImportCompteRenduPanel({
   const [info, setInfo] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [retraitArme, setRetraitArme] = useState(false);
+  const [relanceArmee, setRelanceArmee] = useState(false);
   /** Remonte le champ fichier natif, qui garde sinon le nom d'un fichier déjà déposé. */
   const [cleFichier, setCleFichier] = useState(0);
   /** Fait avancer la relecture même quand une relecture échoue (sans nouveau détail). */
@@ -291,6 +292,7 @@ export function ImportCompteRenduPanel({
       setInfo(null);
       setRefusParLigne({});
       setRetraitArme(false);
+      setRelanceArmee(false);
       setSaisies({});
       await chargerDetail(idCompteRendu);
     },
@@ -331,6 +333,7 @@ export function ImportCompteRenduPanel({
     if (!detail) return;
     setOccupe(true);
     setErreur(null);
+    setRelanceArmee(false);
     try {
       const response = await fetch('/api/praticien/biologie/import/extraction', {
         method: 'POST',
@@ -480,7 +483,13 @@ export function ImportCompteRenduPanel({
     }
   }
 
-  const peutLancer = detail !== null && !detail.purgeLe && (courant === null || interrompu);
+  // RELANCER LA LECTURE (LOT-09) : une lecture aboutie se relit tant qu'aucune
+  // ligne d'aucune lecture de ce compte rendu n'est validée — le serveur le
+  // refuse de toute façon (`ligne_validee`). La lecture précédente et ses
+  // écarts restent consignés ; seules les lignes de la nouvelle se décident.
+  const aUneLigneValidee = detail?.imports.some(i => i.lignes.some(l => l.statut === 'validee')) ?? false;
+  const peutLancer = detail !== null && !detail.purgeLe && (courant === null || interrompu) && !aUneLigneValidee;
+  const peutRelancer = detail !== null && !detail.purgeLe && courant?.statut === 'extrait' && !aUneLigneValidee;
   const lignesProposees = courant?.statut === 'extrait' ? courant.lignes.filter(l => l.statut === 'proposee') : [];
 
   return (
@@ -588,6 +597,26 @@ export function ImportCompteRenduPanel({
               Lancer la lecture
             </button>
           )}
+          {peutRelancer && (relanceArmee ? (
+            <div className="mt-2">
+              <p className="text-xs text-muted-foreground">
+                Le document est transmis à nouveau au service de lecture. Si la nouvelle lecture aboutit, les lignes
+                de la lecture actuelle ne se décideront plus ; celles déjà écartées restent consignées.
+              </p>
+              <span className="mt-2 flex gap-2">
+                <button type="button" onClick={() => void lancerLecture()} disabled={occupe} className={BOUTON_PRIMAIRE}>
+                  Confirmer la relance
+                </button>
+                <button type="button" onClick={() => setRelanceArmee(false)} disabled={occupe} className={BOUTON}>
+                  Annuler
+                </button>
+              </span>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setRelanceArmee(true)} disabled={occupe} className={`${BOUTON} mt-2`}>
+              Relancer la lecture
+            </button>
+          ))}
 
           {courant?.statut === 'extrait' && (
             <>

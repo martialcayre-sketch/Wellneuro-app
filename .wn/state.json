@@ -6,7 +6,7 @@
   },
   "status": "active",
   "active_campaign": "2026-09-30-bio-ingest",
-  "active_lot": "LOT-07",
+  "active_lot": "LOT-09",
   "last_completed_lot": "2026-09-30-bio-ingest/LOT-03 — terminé le 2026-10-04 (#1310, #1312), clôture administrative le 2026-10-05 : photo ou scan (JPEG, PNG, WebP) par le même pipeline, image réencodée par sharp (EXIF et GPS retirés), procédé bio-extraction-v1 inchangé. « Relancer la lecture » NON livré, déplacé au LOT-09 (fiche dédiée, non ordonnancée, jamais destructive après validation). LOT-08 (borne totale de l'extraction, 240 s flux compris) terminé le 2026-10-05 (#1315, #1316).",
   "validation": {
     "overall_status": "passed",
@@ -85,7 +85,7 @@
     "D-263"
   ],
   "last_session": null,
-  "updated_at": "2026-10-05T12:39:54Z",
+  "updated_at": "2026-10-06T06:24:22Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-10-04-bio-parcours",

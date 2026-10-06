@@ -31,6 +31,15 @@ import { cleVerrouCompteRendu, DELAI_TRANSACTION_LIGNES_MS, PEREMPTION_EN_COURS_
 // péremption (processus mort) est clos `delai_depasse` à la tentative
 // suivante sur le même compte rendu.
 //
+// RELANCER LA LECTURE (LOT-09) : une nouvelle extraction d'un compte rendu
+// déjà lu est permise tant qu'AUCUNE ligne d'aucun de ses imports n'est
+// `validee` — refus `ligne_validee` sinon, sous le verrou que prend aussi la
+// décision (une validation et une relance ne se croisent pas). Rien n'est
+// effacé : l'import précédent et ses lignes restent tels quels (proposées ou
+// écartées, motifs compris) ; le nouvel import devient le courant dès son
+// ouverture, et la décision refuse alors les lignes de l'ancien
+// (`import_remplace`). Si la relance échoue, l'ancien redevient le courant.
+//
 // JOURNAUX : la classe et le code d'une erreur, jamais son message — il peut
 // recopier un libellé ou une valeur lue.
 
@@ -39,12 +48,18 @@ export type IssueExtraction =
   | { ok: true; idImport: string; statut: 'echec'; motif: MotifEchec }
   | {
     ok: false;
-    reason: 'compte_rendu_introuvable' | 'extraction_en_cours' | 'document_purge' | 'import_clos' | 'server_error';
+    reason:
+      | 'compte_rendu_introuvable'
+      | 'extraction_en_cours'
+      | 'document_purge'
+      | 'ligne_validee'
+      | 'import_clos'
+      | 'server_error';
   };
 
 export type IssueOuverture =
   | { ok: true; idImport: string }
-  | { ok: false; reason: 'compte_rendu_introuvable' | 'extraction_en_cours' | 'document_purge' };
+  | { ok: false; reason: 'compte_rendu_introuvable' | 'extraction_en_cours' | 'document_purge' | 'ligne_validee' };
 
 type ParamsExtraction = {
   idPatient: string;
@@ -96,6 +111,14 @@ export async function ouvrirExtraction(params: ParamsExtraction): Promise<IssueO
         data: { statut: 'echec', motifEchec: 'delai_depasse' },
       });
     }
+    // Une ligne validée a créé un résultat : relire ce document en produirait
+    // un second jeu. Jamais de relance destructive (LOT-09). Après la clôture
+    // des imports périmés : un import mort ne doit pas rester « courant » et
+    // bloquer la décision des lignes encore proposées (revue, P2).
+    const validees = await tx.ligneBiologiqueCandidate.count({
+      where: { idPatient, statut: 'validee', import: { idCompteRendu } },
+    });
+    if (validees > 0) return { ok: false as const, reason: 'ligne_validee' as const };
     const cree = await tx.importBiologique.create({
       data: {
         idPatient,

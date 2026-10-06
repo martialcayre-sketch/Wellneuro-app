@@ -1,7 +1,7 @@
 ---
 id: "LOT-09"
 titre: "Relancer la lecture d'un compte rendu sans ligne validée"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-02, LOT-07"
 ---
 
@@ -64,10 +64,10 @@ validée.
 
 ## Étapes
 
-- [ ] Cadrage en mode Plan : sort de l'import précédent et de ses lignes.
-- [ ] Garde serveur, avec un test qui prouve le refus après validation.
-- [ ] Geste à l'écran.
-- [ ] Validations.
+- [x] Cadrage : sort de l'import précédent et de ses lignes (ci-dessous).
+- [x] Garde serveur, avec un test qui prouve le refus après validation.
+- [x] Geste à l'écran.
+- [x] Validations.
 
 ## Tests
 
@@ -82,4 +82,29 @@ T2 vert ; le refus après validation est prouvé côté serveur.
 
 ## Résultats
 
-—
+- **Sort de l'import précédent.** Rien n'est effacé ni réécrit. L'import
+  précédent et ses lignes restent tels quels, proposées ou écartées (motifs
+  compris). Le nouvel import devient le courant dès son ouverture
+  (`idExtractionCourante` : la plus récente qui n'a pas échoué). La décision
+  refuse alors les lignes de l'ancien (`import_remplace`). Si la relance
+  échoue, l'ancien redevient le courant et ses lignes se décident à nouveau.
+- **Garde serveur.** `ouvrirExtraction` refuse `ligne_validee` (409) dès
+  qu'une ligne d'un import de ce compte rendu est `validee`. La lecture se
+  fait sous le verrou du compte rendu, que prend aussi la décision : une
+  validation et une relance ne se croisent pas. Elle suit la clôture des
+  imports périmés, pour qu'un import mort ne reste pas « courant ». Bancs : refus sans aucune
+  écriture ni appel au fournisseur, lecture après le verrou, nouvel import
+  sans écriture sur l'ancien ; route 409. Mutation (garde retirée) vue rouge.
+- **Écran.** « Relancer la lecture » sur une lecture aboutie, non purgée,
+  sans ligne validée dans aucune lecture, avec une confirmation qui dit que
+  le document repart au service de lecture. Le refus du serveur se dit.
+  Mutation (condition retirée) vue rouge.
+- Aucune migration, aucune écriture dans `resultats_biologiques`.
+- Revue `wn-reviewer` : GO, ni P0 ni P1. P2 corrigés : garde après la
+  clôture des imports périmés, « Lancer la lecture » masqué s'il y a une ligne
+  validée, confirmation au conditionnel (une relance échouée rend l'ancienne
+  lecture décidable).
+- À signaler au responsable : D-258 purge le document dès que toutes les
+  lignes de la lecture courante sont décidées. Un praticien qui écarte tout
+  parce que la lecture est mauvaise ne peut donc plus relancer. Ce cas reste
+  hors périmètre.

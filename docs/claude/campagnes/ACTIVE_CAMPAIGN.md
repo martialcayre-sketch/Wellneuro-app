@@ -5,7 +5,7 @@
 **Campagne** : 2026-09-30-bio-ingest
 **Titre** : BIO-INGEST — acquisition des résultats biologiques
 **Statut** : active
-**Lot actif** : LOT-07
+**Lot actif** : LOT-09
 
 ## Activités parallèles
 
@@ -16,6 +16,6 @@
 **Lot actif** : LOT-02
 
 **Statut global** : active
-**Mise à jour** : 2026-10-05
+**Mise à jour** : 2026-10-06
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.

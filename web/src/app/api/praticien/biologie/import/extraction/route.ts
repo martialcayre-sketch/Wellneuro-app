@@ -12,7 +12,8 @@ import { classeEtCode } from '@/lib/observability/classeEtCode';
 // 30 s du routeur Scalingo. L'écran relit le compte rendu jusqu'à l'issue
 // (`extrait`, ou `echec` et son motif fermé ; un processus mort est rattrapé
 // par la péremption). Une nouvelle extraction du même document crée un nouvel
-// import ; les précédents restent.
+// import ; les précédents restent. Elle est refusée dès qu'une ligne d'un
+// import de ce compte rendu est validée (LOT-09, `ligne_validee`, 409).
 
 export const runtime = 'nodejs';
 
@@ -22,6 +23,8 @@ const MESSAGES: Record<string, string> = {
   compte_rendu_introuvable: 'Ce compte rendu est introuvable dans ce dossier.',
   extraction_en_cours: 'Une extraction est déjà en cours sur ce compte rendu.',
   document_purge: 'Le document de ce compte rendu a été effacé : il ne peut plus être relu.',
+  ligne_validee:
+    'Une ligne de ce compte rendu a déjà été validée : il ne peut plus être relu, rien de ce qui est enregistré n’est remplacé.',
 };
 
 function echec(reason: string, error: string, status: number) {
