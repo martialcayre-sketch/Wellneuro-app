@@ -4,6 +4,92 @@
 
 ## Décisions actives
 
+### D-268 — Sécurité biologique, étage 1 (BIO-PARCOURS BP-10) : tout import validé appelle un acte de lecture clinique tracé, signalé au Fil sans rien bloquer ; BP-10 précède BIO-INGEST LOT-04
+
+- Date : 2026-10-06
+- Statut : accepté — arbitrages du responsable du 2026-10-06 sur les neuf
+  questions de la fiche LOT-10 (état des lieux du même jour, #1339) ;
+  rédaction en session. §4 (invariants de la table), §10 et §11 reprennent
+  les interdits déjà écrits de la fiche LOT-10 et de [[D-266]].
+- Domaine : biologie, sécurité (BIO-PARCOURS BP-10, étage 1 de [[D-266]]).
+  **Aucune règle clinique, aucun seuil, aucune borne, aucune lecture de
+  valeur** : Wellneuro ne décide pas de ce qui est préoccupant, il exige
+  qu'un praticien ait lu. **Aucune migration posée par cette décision** :
+  elle autorise la migration du LOT-10, seule dans sa PR, sur confirmation
+  distincte ([[D-087]], [[D-266]] §11).
+- Précise : [[D-266]] (« BP-10, précondition de LOT-04 »), [[D-267]] (le
+  marquage restitué tel quel). **Ne touche pas** : [[D-257]] A7 (lettre
+  consignée seule levée d'un signal d'adressage), [[D-218]], [[D-262]],
+  [[D-234]] maintenue par [[D-265]] §2-3, [[D-256]] A5, [[D-258]].
+
+**§1 — Le déclencheur est l'import validé, pas le marquage.** Tout import
+biologique dont au moins une ligne a été validée (un résultat est entré au
+dossier) appelle un acte de lecture clinique. Le marquage imprimé n'est
+**pas** le déclencheur : il manque sur les lignes `bio-extraction-v1`, il
+reste `NULL` au-delà de sa borne ([[D-267]] §10), et son absence ne prouve
+rien ([[D-256]] §3). Écarté : déclencher sur le marquage non nul, qui
+ferait de Wellneuro le juge du préoccupant par un angle mort.
+
+**§2 — L'acte de lecture : par import, tracé, distinct de la validation.**
+Il se pose sur un import entier, par un praticien authentifié, côté serveur
+(qui, quand, quel import). Valider des lignes n'est pas lire le compte rendu
+: les deux gestes restent séparés, et le second n'est jamais déduit du
+premier. L'acte est **révocable**, en ajout seul, avec un **motif
+obligatoire** ; une révocation rouvre le signalement.
+
+**§3 — Il signale, il ne bloque rien.** Aucun geste (diffusion, lettre,
+validation) n'est conditionné à l'acte de lecture. Écarté : bloquer la
+diffusion, qui aurait fait de l'étage 1 un verrou sans lecture de valeur
+pour le justifier.
+
+**§4 — Une table dédiée.** L'acte vit dans une table neuve, ni dans
+`AdressageSignalAlerte` (dont la sémantique est l'adressage d'un constat
+d'anamnèse, levé par la lettre — [[D-257]] A7), ni dans
+`ArbitrageBiologique`. Invariants : ajout seul (aucune mise à jour, aucune
+suppression hors effacement du dossier) ; au plus un acte actif par import ;
+**aucune colonne valeur** (contrat SQL négatif) ; RLS activée sans
+politique ; effacement aligné sur le dossier patient (IDP2).
+
+**§5 — Une carte neuve au Fil, non acquittable par lecture.** Un type neuf
+de `TypeCarteFil` signale un import validé sans acte de lecture actif. Lire
+la carte ne la ferme pas (elle n'entre pas dans
+`TYPES_ACQUITTABLES_PAR_LECTURE`) : seul l'acte de lecture la résout, et sa
+révocation la rouvre. Destinataire : tout praticien du domaine (le Fil
+n'a pas de « praticien du dossier »).
+
+**§6 — Notification : le Fil seul, et l'échec se voit.** Aucun canal
+sortant n'est créé. Le Fil est tiré à l'ouverture ; si le calcul de la carte
+échoue, le Fil le dit à l'écran — jamais le `catch` silencieux de
+`lib/trust/notification.ts`. Vocabulaire borné par [[D-157]] §3 : ni
+« déficit », ni « carence », ni « anormal » hors marquage cité.
+
+**§7 — Lettre et `medical_referral` : un geste du praticien.** Aucun constat
+biologique n'ouvre automatiquement un signal d'adressage, une lettre ou une
+action `medical_referral`. Le praticien qui lit et juge qu'il faut adresser
+passe par la chaîne existante ([[D-218]], [[D-257]], [[D-262]]).
+`AdressageSignalAlerte` n'est pas étendu par ce lot.
+
+**§8 — Les imports antérieurs sont inclus.** À l'activation, tout import
+déjà validé en production sans acte de lecture produit sa carte. Aucun acte
+n'est présumé pour le passé.
+
+**§9 — La surface dit ce qu'elle n'est pas.** La carte et l'écran de l'acte
+disent qu'ils ne sont **pas un filet de sécurité** : Wellneuro ne lit aucune
+valeur et ne surveille rien en continu. Le marquage imprimé est restitué tel
+quel, attribué au laboratoire ([[D-267]] §5), sous la sentinelle BP-01.
+
+**§10 — Livraison.** Registre RGPD (table des données de santé, rubriques
+concernées) mis à jour **avant** la table ; version TRUST seulement si la
+note patient change. Migration seule dans sa PR, passe Codex, `release-db`
+approuvée, constat par conteneur ; puis le code consommateur derrière un
+drapeau né avec lui (éteint = comportement actuel). Banc : « import validé
+sans lecture → signalé », révocation ⇒ rouvert ; constat d'usage en agrégats
+([[D-266]] §12).
+
+**§11 — BP-10 précède BIO-INGEST LOT-04.** Aucune assistance sur valeur
+(LOT-04, étage 2) ne s'ouvre tant que l'étage 1 n'est pas en production et
+constaté.
+
 ### D-267 — Faits du laboratoire (BIO-INGEST LOT-07) : l'intervalle et le marquage imprimés sont transcrits verbatim sur la ligne lue, jamais sur le résultat ; la consigne d'extraction de D-256 est amendée, D-157 précisée
 
 - Date : 2026-10-05

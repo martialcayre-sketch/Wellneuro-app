@@ -133,11 +133,28 @@ patient change. La mention « ni service d'urgence, ni surveillance continue »
 existe déjà dans `trust/contenus/registre.ts` ; aucune surface praticien ne dit
 encore « pas un filet de sécurité ».
 
+## Arbitrages du responsable (2026-10-06) — gravés par `D-268`
+
+1. Déclencheur : **tout import validé** (au moins une ligne validée), pas le
+   marquage ; les imports antérieurs sont inclus.
+2. Acte de lecture **par import**, distinct de la validation ; il **signale
+   seulement**, ne bloque aucun geste ; **révocable, motif obligatoire**.
+3. Objet de données : **table dédiée** (ni `AdressageSignalAlerte`, ni
+   `ArbitrageBiologique`).
+4. Carte : **type neuf** de `TypeCarteFil`, non acquittable par lecture ;
+   destinataire : **tout praticien du domaine**.
+5. Notification : **le Fil seul**, échec visible à l'écran.
+6. Lettre et `medical_referral` : **geste du praticien**, par la chaîne
+   existante ; aucun déclenchement automatique.
+7. Drapeau, bancs et précédence BP-10 → LOT-04 : repris de la fiche et de
+   `D-266` (`D-268` §10-11).
+
 ## Étapes
 
 - [x] État des lieux et questions (2026-10-06, ci-dessus).
-- [ ] Arbitrages du responsable sur les neuf questions.
-- [ ] Rédiger la décision de sécurité biologique.
+- [x] Arbitrages du responsable sur les neuf questions.
+- [x] Rédiger la décision de sécurité biologique (`D-268`).
+- [ ] Registre RGPD (et note patient si elle change) avant la table.
 - [ ] Livrer la migration seule et la faire appliquer par `release-db`.
 - [ ] Livrer le code consommateur derrière un drapeau né avec lui.
 
