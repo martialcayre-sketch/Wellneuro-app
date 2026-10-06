@@ -13,11 +13,11 @@ BIOFLOW
 │
 ├── Track A — BIO-INGEST
 │   ├── lot courant   : LOT-09 terminé (#1335, relancer la lecture) ; LOT-07 terminé (#1326 → #1334, `bio-extraction-v3` depuis #1336)
-│   ├── prochain gate : G2 levé ; G3, décision sur l'asynchrone durable, à poser
+│   ├── prochain gate : G2 levé ; G3 (asynchrone durable) DIFFÉRÉ par le responsable le 2026-10-06 — la réconciliation des imports fantômes partira avec lui ; purge du compte rendu v1 non purgé : redéposer suffit, pas de lot
 │   └── objectif      : une donnée biologique fiable
 │
 ├── Track B — BIO-PARCOURS
-│   ├── lot courant   : LOT-26 (BP-26), note de qualification, en attente du responsable ; BP-23 et BP-10 cadrés (#1337, #1339), en attente d'arbitrages
+│   ├── lot courant   : LOT-26 (BP-26), note de qualification, en attente du responsable ; BP-23 terminé (#1342, relecture réelle) ; BP-10 décidé (`D-268`, #1343), registre RGPD à valider (#1344), puis migration sur confirmation distincte
 │   ├── prochain gate : G4, BP-26 avant toute assistance
 │   └── objectif      : l'exploitation longitudinale de la donnée validée
 │
