@@ -201,7 +201,11 @@ const CLES_LIGNE = SCHEMA_SORTIE.properties.lignes.items.required;
 function texteBorne(v: unknown, max: number): string | null | undefined {
   if (v === null) return null;
   if (typeof v !== 'string') return undefined;
-  const t = v.trim();
+  // Un NUL n'est jamais imprimé, et la base le refuse : laissé dans le texte, il
+  // ferait échouer le `createMany` des lignes et clore tout l'import
+  // `reponse_invalide`. Retiré avant le rognage, comme pour les faits du
+  // laboratoire (dette routée depuis la revue Copilot de #1333).
+  const t = v.replace(/\u0000/g, '').trim();
   if (t === '') return null;
   return t.length <= max ? t : undefined;
 }
