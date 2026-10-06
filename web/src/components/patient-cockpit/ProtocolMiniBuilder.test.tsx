@@ -323,6 +323,26 @@ describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
       fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
       expect(derniere(onSaveVersion).reviewed).toBe(false);
     });
+
+    // Revue Copilot de #1342 : l'orientation part de la carte, pas du
+    // formulaire. Si elle bascule après la coche, la coche tombe.
+    it('une orientation qui bascule après la coche la remet à faux', () => {
+      const onSaveVersion = vi.fn();
+      const { container, rerender } = render(
+        <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+      );
+      const ui = within(container);
+      fireEvent.click(ui.getByLabelText('J’ai relu ce contenu'));
+      expect((ui.getByLabelText('J’ai relu ce contenu') as HTMLInputElement).checked).toBe(true);
+      rerender(
+        <ProtocolMiniBuilder
+          decisionCard={{ ...card(), safetyFindingAdresseIds: ['safety:anamnese:aaaaaaaaaaaaaaaa'] }}
+          onSaveVersion={onSaveVersion}
+          saveState="idle"
+        />,
+      );
+      expect((ui.getByLabelText('J’ai relu ce contenu') as HTMLInputElement).checked).toBe(false);
+    });
   });
 
   it('transmet la soumission validée à onSaveVersion', () => {

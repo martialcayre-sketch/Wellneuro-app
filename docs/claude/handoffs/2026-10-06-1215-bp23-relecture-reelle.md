@@ -24,6 +24,10 @@ depuis l'écran.
   ne s'affiche plus sur une version active brouillon, et le panneau dit le
   geste dû. P2-1 est corrigé aussi : le panneau d'arbitrage porte
   `key={activeVersionId}`.
+- Revue Copilot de #1342 : trois commentaires, tous corrigés. La coche du
+  panneau tombe sur un nouvel arbitrage ; celle du constructeur tombe quand
+  l'orientation dérivée de la carte bascule ; le texte d'aide de la révision
+  ne dit plus qu'une relecture reste due.
 
 ## Fichiers modifiés
 

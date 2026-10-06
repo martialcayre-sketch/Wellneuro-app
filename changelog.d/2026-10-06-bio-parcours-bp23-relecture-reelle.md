@@ -20,7 +20,9 @@
   brouillon ne propose plus « Re-valider » (le clic ne faisait rien) : le
   panneau dit le geste dû, relire puis enregistrer. Le panneau d'arbitrage se
   remonte à chaque nouvelle version active, sa coche avec lui (revue
-  wn-reviewer).
+  wn-reviewer). Une coche tombe aussi quand ce qui sera soumis change sans
+  frappe : nouvel arbitrage consigné (panneau), orientation de la carte qui
+  bascule (constructeur) — revue Copilot.
 - **Bascule.** Les versions enregistrées avant ce lot gardent leur tampon
   (append-only) : une version datée d'avant le déploiement de ce lot ne
   prouve pas une relecture.

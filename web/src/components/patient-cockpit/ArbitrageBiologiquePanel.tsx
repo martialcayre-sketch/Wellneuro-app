@@ -129,6 +129,15 @@ export function ArbitrageBiologiquePanel({
   resultatsActifs?: boolean;
 }) {
   const [reluRevision, setReluRevision] = useState(false);
+  // Un verdict consigné après la coche change la révision qui sera générée :
+  // la coche tombe ([[D-213]] §1, BP-23). Le changement de version active,
+  // lui, remonte le panneau (`key` posée par le parent).
+  const signatureArbitrages = arbitrages.map(a => `${a.intentionId}:${a.verdict}`).join('|');
+  const [signatureRelue, setSignatureRelue] = useState(signatureArbitrages);
+  if (signatureArbitrages !== signatureRelue) {
+    setSignatureRelue(signatureArbitrages);
+    setReluRevision(false);
+  }
   if (intentions.length === 0 && arbitrages.length === 0) return null;
   const parIntention = new Map(arbitrages.map(a => [a.intentionId, a]));
 
@@ -210,8 +219,9 @@ export function ArbitrageBiologiquePanel({
             Appliquer les arbitrages (nouvelle version à re-valider)
           </button>
           <p className="mt-1 text-xs text-muted-foreground">
-            La révision crée une nouvelle version : re-lecture et re-validation pour diffusion
-            obligatoires — le patient continue de voir la dernière version validée.
+            La révision crée une nouvelle version, relue par la coche ci-dessus : seule la
+            re-validation pour diffusion reste à faire — le patient continue de voir la dernière
+            version validée.
           </p>
         </div>
       )}

@@ -229,6 +229,16 @@ export function ProtocolMiniBuilder({
     return suggererDepuisLignes(mesurerProtocole(mesurables), baremeCharge);
   }, [actions, baremeCharge]);
   const [reviewed, setReviewed] = useState(false);
+  // CE QUI PART SANS ÊTRE SAISI SE RELIT AUSSI ([[D-213]] §1, BP-23) :
+  // l'orientation vient de la carte, pas du formulaire, et le constructeur
+  // reste monté quand il est masqué. Si elle bascule, la coche tombe — la
+  // frappe n'est pas le seul changement de ce qui sera soumis.
+  const orientationSoumise = orientationRequise(decisionCard);
+  const [orientationRelue, setOrientationRelue] = useState(orientationSoumise);
+  if (orientationSoumise !== orientationRelue) {
+    setOrientationRelue(orientationSoumise);
+    setReviewed(false);
+  }
   const [message, setMessage] = useState<string | null>(null);
   /**
    * LE REFUS NE S'EFFACE PAS À LA PREMIÈRE FRAPPE. Il vivait dans `message`,

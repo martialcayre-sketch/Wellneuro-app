@@ -119,6 +119,29 @@ describe('ArbitrageBiologiquePanel', () => {
     expect(onReviser).toHaveBeenCalledWith(true);
   });
 
+  // Revue Copilot de #1342 : un verdict consigné après la coche change la
+  // révision qui sera générée — la coche ne lui survit pas.
+  it('un nouvel arbitrage après la coche la fait tomber', () => {
+    const premier = { intentionId: 'act-1', verdict: 'confirme', noteCourte: null, arbitreLe: '2026-09-15T08:00:00.000Z' };
+    const second = { intentionId: 'act-2', verdict: 'infirme', noteCourte: null, arbitreLe: '2026-09-15T09:00:00.000Z' };
+    const panneau = (arbitrages: typeof premier[]) => (
+      <ArbitrageBiologiquePanel
+        intentions={[intention(), { ...intention(), actionId: 'act-2' }]}
+        arbitrages={arbitrages}
+        revisionPossible
+        onArbitrer={vi.fn()}
+        onReviser={vi.fn()}
+      />
+    );
+    const { container, rerender } = render(panneau([premier]));
+    const ui = within(container);
+    fireEvent.click(ui.getByLabelText('J’ai relu le protocole révisé'));
+    expect((ui.getByLabelText('J’ai relu le protocole révisé') as HTMLInputElement).checked).toBe(true);
+    rerender(panneau([premier, second]));
+    expect((ui.getByLabelText('J’ai relu le protocole révisé') as HTMLInputElement).checked).toBe(false);
+    expect((ui.getByRole('button', { name: /Appliquer les arbitrages/ }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('le badge suit l’état réel de l’étage 2, et la phrase reste vraie dans les deux cas', () => {
     const { container, rerender } = render(
       <ArbitrageBiologiquePanel
