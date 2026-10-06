@@ -210,6 +210,11 @@ encore « pas un filet de sécurité ».
     - allumage après constat : d'abord le compte, par conteneur, des imports
       validés sans lecture, puis la pose de la variable, puis la vérification
       de son effet.
+  - 2026-10-06 : #1347 mergée (cbbafb6b), déployée et constatée. Drapeau
+    **posé à 22:12 UTC** (délégation du responsable), avec 1 carte à naître
+    (`one-off-4100`). Effet constaté : la route répond `401` au lieu de
+    `503`. Reste au LOT-10 : le constat d'usage en agrégats (`D-266` §12),
+    une fois des lectures consignées.
 
 ## Tests
 
