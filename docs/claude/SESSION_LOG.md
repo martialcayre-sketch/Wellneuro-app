@@ -9427,6 +9427,9 @@ motif de révocation en liste fermée ; `LectureImportBiologique` déclarée en
 
 Promotions : décision → précision `D-268` §5 ; règle → aucune.
 
+Feuille de route BioFlow portée dans la même PR : G3 différé, imports
+fantômes avec G3, purge LOT-09 par redépôt.
+
 **Prochaine action.** Validation RGPD par le responsable, puis migration sur
 confirmation distincte.
 

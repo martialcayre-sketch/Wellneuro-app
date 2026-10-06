@@ -1,4 +1,4 @@
-### Feuille de route BioFlow : arbitrages BIO-INGEST du 2026-10-06 et état de BP-23 / BP-10
+### Feuille de route BioFlow : arbitrages BIO-INGEST et état de BP-23 / BP-10 (2026-10-06)
 
 - **Track A.** Le gate G3 (traitement asynchrone durable) est **différé** par
   le responsable. La réconciliation des imports fantômes partira avec lui.

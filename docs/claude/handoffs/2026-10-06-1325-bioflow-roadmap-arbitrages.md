@@ -2,7 +2,7 @@
 
 ## Branche et état Git
 
-`docs/bioflow-roadmap-arbitrages-1006`, depuis `main` cf8a7717. Doc seule.
+Porté par la branche `docs/bio-parcours-bp10-registre-rgpd` (#1344) : la PR séparée #1345 a été fermée pour éviter un conflit sur `SESSION_LOG.md`. Doc seule.
 
 ## Objectif
 
@@ -21,7 +21,7 @@ Ce sont des arbitrages du responsable, sans décision `D-xxx` :
 
 - `docs/architecture/bioflow/BIOFLOW_ROADMAP.md`
 - fragment `changelog.d/2026-10-06-bioflow-roadmap-arbitrages.md`
-- (pas d’entrée SESSION_LOG : elle entrerait en conflit avec #1344, ouverte en parallèle ; ce handoff en tient lieu)
+- SESSION_LOG (entrée du registre RGPD BP-10, complétée)
 - ce handoff
 
 ## Validations exécutées
@@ -35,8 +35,8 @@ T1 complet.
 
 ## Prochaine action exacte
 
-1. Merger, puis constater le déploiement.
-2. Après validation de #1344 : migration `LectureImportBiologique`, sur
+1. Validation de #1344 par le responsable, merge, constat du déploiement.
+2. Puis migration `LectureImportBiologique`, sur
    confirmation distincte.
 
 ## Interdits encore actifs
