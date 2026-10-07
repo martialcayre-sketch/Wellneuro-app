@@ -340,3 +340,31 @@ describe('resolveNuitsActives — chaînage append-only', () => {
     expect(actives.map((n) => n.dateNuit)).toEqual(['2026-07-24', '2026-07-25']);
   });
 });
+
+// Le formulaire patient (SaisieNuitForm, `RE_REFUS_ORDRE`) reconnaît les refus
+// d'ORDRE à leur tournure pour les rendre sous le cadran. Reformuler l'un d'eux
+// sans garder « doit suivre » / « doit se situer » le renverrait, sans bruit,
+// sous le bouton d'envoi : ce banc fige la tournure des trois.
+describe('refus d’ordre des repères — tournure reconnue par le formulaire', () => {
+  const base = {
+    ...express,
+    reveils: { dureeTotale: 'aucun', nombre: 0 },
+    aideSommeil: 'aucune',
+  };
+  const refus = (v: Record<string, unknown>) => {
+    try {
+      ensureNuitReponses({ ...base, ...v }, { exigerObligatoires: true });
+    } catch (e) {
+      return (e as Error).message;
+    }
+    return '';
+  };
+
+  it.each([
+    [{ extinctionImmediate: false, heureMiseAuLit: '23:30', leverImmediat: true }],
+    [{ extinctionImmediate: true, leverImmediat: false, heureReveilFinal: '08:00' }],
+    [{ extinctionImmediate: false, heureMiseAuLit: '22:00', leverImmediat: false, heureReveilFinal: '22:30' }],
+  ])('%o', (v) => {
+    expect(refus(v)).toMatch(/doit (suivre|se situer)/);
+  });
+});

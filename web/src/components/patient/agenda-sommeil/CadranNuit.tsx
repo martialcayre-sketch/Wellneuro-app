@@ -674,7 +674,11 @@ export function CadranNuit({
       </div>
       {!toutConfirme && (
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          Faites glisser les repères — une estimation suffit.
+          {/* Un appui confirme un repère à sa place : il ne faut pas le faire
+              glisser. « Faites glisser » taisait ce geste, et des repères
+              proposés en pointillé restaient non confirmés — d'où un formulaire
+              qui refusait de partir. */}
+          Touchez chaque repère pour le confirmer, ou faites-le glisser — une estimation suffit.
         </p>
       )}
     </div>
