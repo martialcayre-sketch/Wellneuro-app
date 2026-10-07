@@ -64,9 +64,10 @@ export const EVENT_CODES = {
   DOSSIER_EFFACE: 'SECURITY.CYCLE_DE_VIE.EFFACE',
   DOSSIER_CYCLE_DE_VIE_EXCEPTION: 'SECURITY.CYCLE_DE_VIE.EXCEPTION',
 
-  // Agenda alimentaire (Q_ALI_09), surface PORTAIL. Le jumeau du sommeil ne
-  // trace RIEN : une énumération d'`idAssignation` y est invisible, alors que
-  // `patient/submit` la trace depuis toujours. On ne reproduit pas ce trou.
+  // Agendas du portail — alimentaire (Q_ALI_09) puis sommeil (Q_SOM_09), surface
+  // PORTAIL. Sans trace, une énumération d'`idAssignation` est invisible, alors
+  // que `patient/submit` la trace depuis toujours : l'alimentaire a comblé ce
+  // trou le premier, le sommeil l'a ensuite aligné sur lui (blocs ci-dessous).
   //
   // Le préfixe est `PORTAIL_PATIENT.` et non `AGENDA_ALIMENTAIRE.` : `EventCode`
   // vaut `${LogDomain}.${string}`, et `AGENDA_ALIMENTAIRE` n'est pas un
@@ -88,6 +89,22 @@ export const EVENT_CODES = {
   // la lecture n'a pas su relire (version de contrat inconnue). Le compte
   // remonte au patient par le GET, mais c'est ce code qui ouvre un incident.
   AGENDA_ALIMENTAIRE_LIGNE_ILLISIBLE: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.LIGNE_ILLISIBLE',
+
+  // Agenda du sommeil (Q_SOM_09), surface PORTAIL — même patron, même préfixe
+  // `PORTAIL_PATIENT.` (voir plus haut). Le sommeil n'a ni instrument suspendu
+  // ni ligne en quarantaine : ni `UNAVAILABLE` ni `LIGNE_ILLISIBLE`.
+  //
+  // Refus d'ACCÈS (session absente, assignation inconnue ou d'un autre patient,
+  // mauvais instrument, assignation annulée), sur le GET comme sur le POST.
+  AGENDA_SOMMEIL_PORTAIL_FORBIDDEN: 'PORTAIL_PATIENT.AGENDA_SOMMEIL.FORBIDDEN',
+  // Refus d'écriture APRÈS authentification : agenda clôturé, période de recueil
+  // terminée, date hors fenêtre, nuit refusée par le contrat de domaine (400).
+  AGENDA_SOMMEIL_NUIT_REJETEE: 'PORTAIL_PATIENT.AGENDA_SOMMEIL.NUIT_REJETEE',
+  // Refus de FORME rendu AVANT toute barrière (corps JSON illisible). Distinct de
+  // `NUIT_REJETEE`, qui suppose une session portail valide.
+  AGENDA_SOMMEIL_FORME_REJETEE: 'PORTAIL_PATIENT.AGENDA_SOMMEIL.FORME_REJETEE',
+  AGENDA_SOMMEIL_NUIT_ENREGISTREE: 'PORTAIL_PATIENT.AGENDA_SOMMEIL.NUIT_ENREGISTREE',
+  AGENDA_SOMMEIL_PORTAIL_EXCEPTION: 'PORTAIL_PATIENT.AGENDA_SOMMEIL.EXCEPTION',
 
   QUESTIONNAIRE_SUBMIT_INVALID_PAYLOAD: 'QUESTIONNAIRE.SUBMIT.VALIDATION_FAILED',
   QUESTIONNAIRE_SUBMIT_FORBIDDEN: 'QUESTIONNAIRE.SUBMIT.FORBIDDEN',

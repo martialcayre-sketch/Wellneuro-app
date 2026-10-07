@@ -68,6 +68,12 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
   // Position d'ouverture des poignées du cadran — une suggestion en pointillé,
   // pas une valeur : elle ne devient une réponse qu'au toucher.
   const habituels = useMemo(() => horairesHabituels(data?.nuits ?? []), [data]);
+  // Les horaires sont-ils ceux du patient, ou les défauts faute de nuit
+  // plausible ? Un défaut vide le dit sans toucher à `horairesHabituels`.
+  const habituelsPersonnels = useMemo(
+    () => horairesHabituels(data?.nuits ?? [], { extinction: '', sortie: '' }).extinction !== '',
+    [data],
+  );
 
   async function enregistrer(reponses: NuitReponses) {
     setEnvoi(true);
@@ -177,6 +183,11 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
   // SAISIE, `transmettre` de la FRISE. Ne le poser que sur l'une laisserait
   // l'autre muette — c'est le défaut d'origine, à moitié.
   //
+  // Dans la SAISIE, le refus est rendu par le formulaire lui-même, sous le
+  // bouton d'envoi (`refus`) : en tête de page, il restait hors champ sur
+  // téléphone, au-dessus d'un formulaire long que le patient venait de
+  // descendre. La FRISE, courte, le garde ici.
+  //
   // EN PLACE, JAMAIS EN PLEIN ÉCRAN : basculer `etat` remplacerait la page par
   // l'écran d'échec et emporterait la saisie en cours.
   const alerteRefus = erreur !== '' ? (
@@ -189,13 +200,12 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
   ) : null;
 
   if (mode === 'saisie') {
-    const enCorrection = cibleDate !== aujourdHui;
+    const nuitDHier = cibleDate !== aujourdHui;
     return (
       <div className="space-y-4">
-        {alerteRefus}
         <PatientCard>
           <h2 className="font-display text-lg font-bold text-foreground mb-1">
-            {enCorrection ? 'Corriger la nuit d’hier' : 'Votre nuit passée'}
+            {nuitDHier ? 'Noter la nuit d’hier' : 'Votre nuit passée'}
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
             En une minute, sans regarder l’heure exacte — une estimation suffit.
@@ -210,8 +220,10 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
             key={cibleDate}
             initial={nuitsParDate.get(cibleDate) ?? null}
             horairesHabituels={habituels}
+            suggestionsPersonnelles={habituelsPersonnels}
+            refus={erreur}
             submitting={envoi}
-            ctaLabel={enCorrection ? 'Corriger ✓' : 'C’est noté ✓'}
+            ctaLabel="C’est noté ✓"
             onSubmit={enregistrer}
           />
         </PatientCard>
@@ -287,7 +299,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
               setMode('saisie');
             }}
           >
-            Corriger la nuit d’hier
+            Noter la nuit d’hier
           </PatientButton>
         )}
 

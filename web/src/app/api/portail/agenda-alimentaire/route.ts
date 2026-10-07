@@ -211,8 +211,8 @@ function refuserAcces(
       context: finalizeLogContext(requestContext, { statusCode: auth.status, retryable: false }),
     });
   } else {
-    // Le jumeau du sommeil ne trace RIEN : une énumération d'`idAssignation` y
-    // est parfaitement invisible. `metadata` ne porte AUCUN identifiant — le
+    // Le jumeau du sommeil ne traçait RIEN jusqu'au 2026-10-07 (une énumération
+    // d'`idAssignation` y était invisible) ; il suit désormais ce patron. `metadata` ne porte AUCUN identifiant — le
     // motif suffit à compter, et corréler se fait par `correlationId`.
     //
     // Convention CONSTATÉE du dépôt : sur un `logger.security`, `domain` porte

@@ -12,7 +12,9 @@ import type {
 } from './types';
 
 export const LABEL_LATENCE: Record<ClasseLatence, string> = {
-  lt15: 'Vite',
+  // « Vite » était la seule classe sans chiffre, alors que les trois autres en
+  // portent : même clé, même borne, le libellé dit enfin ce qui est stocké.
+  lt15: 'En moins de 15 min',
   e15_30: 'En 15 à 30 min',
   e30_60: 'En 30 à 60 min',
   gt60: "Après plus d'une heure",
@@ -62,6 +64,10 @@ export const LABEL_AIDE_SOMMEIL: Record<ClasseAideSommeil, string> = {
   prise: 'Une aide pour dormir',
 };
 
+// Portée affichée sous la question : la même que l'aria, rendue visible. Elle
+// ne redéfinit rien — « une aide pour dormir » couvrait déjà ces trois cas.
+export const PORTEE_AIDE_SOMMEIL = 'Médicament, mélatonine ou plante';
+
 export const ARIA_AIDE_SOMMEIL: Record<ClasseAideSommeil, string> = {
   aucune: 'Aucune aide pour dormir cette nuit',
   prise: 'Une aide pour dormir cette nuit : médicament, mélatonine ou plante',
@@ -69,16 +75,30 @@ export const ARIA_AIDE_SOMMEIL: Record<ClasseAideSommeil, string> = {
 
 // Mode de lever. La seconde réponse ouvre une poignée supplémentaire : sans
 // elle, les minutes passées éveillé au lit le matin sont comptées en sommeil.
-export const LABEL_LEVER_IMMEDIAT = 'Dès mon réveil';
-export const LABEL_LEVER_DIFFERE = 'Après être resté·e au lit';
+//
+// La question pose la référence (« par rapport à votre réveil ») et les tuiles
+// répondent « au même moment / plus tard ». L'ancienne paire « dès mon réveil /
+// après être resté·e au lit » laissait le patient juger seul ce qui comptait
+// comme « rester au lit ». Aucun seuil n'est ajouté : le cadran au quart d'heure
+// reste ce qui distingue les deux heures.
+export const QUESTION_LEVER = 'Par rapport à votre réveil, vous vous êtes levé·e…';
+export const LABEL_LEVER_IMMEDIAT = 'Au même moment';
+export const LABEL_LEVER_DIFFERE = 'Plus tard';
+export const ARIA_LEVER_IMMEDIAT = 'Au même moment que mon réveil';
+export const ARIA_LEVER_DIFFERE = 'Plus tard que mon réveil';
 export const LABEL_REVEIL_FINAL = 'Je me suis réveillé·e';
 
 // Mode de coucher, symétrique du précédent. La seconde réponse ouvre la poignée
 // de mise au lit — sans elle, le temps passé au lit sans chercher à dormir est
 // invisible, et l'efficacité se calcule sur une fenêtre trop courte, donc
 // flatteuse.
-export const LABEL_EXTINCTION_IMMEDIATE = 'En me couchant';
-export const LABEL_EXTINCTION_DIFFEREE = 'Après un moment au lit';
+// Même construction : « après un moment au lit » laissait « un moment » à
+// l'appréciation du patient.
+export const QUESTION_EXTINCTION = 'Par rapport à votre coucher, vous avez éteint la lumière…';
+export const LABEL_EXTINCTION_IMMEDIATE = 'Au même moment';
+export const LABEL_EXTINCTION_DIFFEREE = 'Plus tard';
+export const ARIA_EXTINCTION_IMMEDIATE = 'Au même moment que mon coucher';
+export const ARIA_EXTINCTION_DIFFEREE = 'Plus tard que mon coucher';
 export const LABEL_MISE_AU_LIT = 'Je me suis mis·e au lit';
 
 export const LABEL_SIESTE: Record<ClasseSieste, string> = {

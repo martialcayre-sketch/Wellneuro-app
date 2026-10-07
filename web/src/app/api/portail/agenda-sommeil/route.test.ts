@@ -246,3 +246,200 @@ describe('GET /api/portail/agenda-sommeil', () => {
     expect(JSON.stringify(json)).not.toContain('AGD_');
   });
 });
+
+// ── Journalisation des refus ─────────────────────────────────────────────────
+// Le journal se lit par `console` (`logger.ts`) : WARN → `console.warn`,
+// ERROR/SECURITY → `console.error`, le reste → `console.log`. Le CANAL fait donc
+// partie de l'assertion. Jumeau de `describe('journalisation …')` côté
+// agenda-alimentaire : aucune saisie du patient ne doit atteindre le journal.
+describe('journalisation de /api/portail/agenda-sommeil', () => {
+  type Ligne = {
+    level: string;
+    event: string;
+    domain: string;
+    statusCode?: number;
+    metadata?: { motif?: string; detail?: string; correction?: boolean };
+    error?: { type?: string; message?: string };
+  };
+  const SAISIE_SECRETE = 'SAISIE_SECRETE_DU_PATIENT';
+
+  function espionner(canal: 'warn' | 'error' | 'log') {
+    const espion = vi.spyOn(console, canal).mockImplementation(() => {});
+    return {
+      lignes: () => espion.mock.calls.map((appel) => String(appel[0])),
+      relacher: () => espion.mockRestore(),
+    };
+  }
+
+  it('un refus de validation journalise NUIT_REJETEE, sans `reponses` ni valeur saisie', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    const warn = espionner('warn');
+    const res = await POST(
+      req('POST', cookieFor(), {
+        body: {
+          idAssignation: 'ASS_AGD',
+          reponses: { ...reponses, heureCoucher: '23:07', commentaire: SAISIE_SECRETE },
+        },
+      }),
+    );
+    const lignes = warn.lignes();
+    warn.relacher();
+
+    expect(res.status).toBe(400);
+    expect(lignes).toHaveLength(1);
+    const ev = JSON.parse(lignes[0]) as Ligne;
+    expect(ev.level).toBe('WARN');
+    expect(ev.event).toBe('PORTAIL_PATIENT.AGENDA_SOMMEIL.NUIT_REJETEE');
+    expect(ev.statusCode).toBe(400);
+    expect(ev.metadata?.motif).toBe('invalid');
+    // Le motif nomme le champ fautif (par son libellé), jamais sa valeur.
+    expect(ev.metadata?.detail).toContain('Heure invalide pour');
+    // Ni la clé `reponses`, ni une valeur saisie, ni l'identifiant d'assignation.
+    expect(lignes[0]).not.toContain('"reponses"');
+    expect(lignes[0]).not.toContain('23:07');
+    expect(lignes[0]).not.toContain(SAISIE_SECRETE);
+    expect(lignes[0]).not.toContain('ASS_AGD');
+  });
+
+  it.each([
+    ['agenda clôturé', { statutReponses: 'verrouille' }, {}, 409, 'locked'],
+    ['période de recueil terminée', { dateLimite: '2026-07-01' }, {}, 410, 'expired'],
+    ['date hors fenêtre', {}, { dateNuit: '2026-07-10' }, 409, 'date_hors_fenetre'],
+  ])('le refus « %s » journalise NUIT_REJETEE avec son motif', async (_libelle, assignation, extra, statut, motif) => {
+    prisma.assignation.findUnique.mockResolvedValue({ ...assignationAgenda, ...assignation });
+    mockOwner();
+    const warn = espionner('warn');
+    const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses, ...extra } }));
+    const lignes = warn.lignes();
+    warn.relacher();
+
+    expect(res.status).toBe(statut);
+    expect(((await res.json()) as { reason: string }).reason).toBe(motif);
+    expect(lignes).toHaveLength(1);
+    const ev = JSON.parse(lignes[0]) as Ligne;
+    expect(ev.event).toBe('PORTAIL_PATIENT.AGENDA_SOMMEIL.NUIT_REJETEE');
+    expect(ev.statusCode).toBe(statut);
+    expect(ev.metadata?.motif).toBe(motif);
+    expect(lignes[0]).not.toContain('"reponses"');
+    expect(lignes[0]).not.toContain('ASS_AGD');
+  });
+
+  it('un refus d’accès journalise FORBIDDEN en SECURITY, sans identifiant', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    const erreur = espionner('error');
+    const res = await POST(
+      req('POST', cookieFor('PAT_INTRUS'), { body: { idAssignation: 'ASS_AGD', reponses } }),
+    );
+    const lignes = erreur.lignes();
+    erreur.relacher();
+
+    expect(res.status).toBe(404);
+    expect(lignes).toHaveLength(1);
+    const ev = JSON.parse(lignes[0]) as Ligne;
+    expect(ev.level).toBe('SECURITY');
+    expect(ev.domain).toBe('SECURITY');
+    expect(ev.event).toBe('PORTAIL_PATIENT.AGENDA_SOMMEIL.FORBIDDEN');
+    expect(ev.metadata?.motif).toBe('not_found');
+    expect(lignes[0]).not.toContain('ASS_AGD');
+    expect(lignes[0]).not.toContain('PAT_INTRUS');
+  });
+
+  it('une assignation annulée (410) est journalisée FORBIDDEN, sur le GET comme sur le POST', async () => {
+    mockOwner();
+    prisma.assignation.findUnique.mockResolvedValue({ ...assignationAgenda, statut: 'Annulée' });
+    const erreur = espionner('error');
+    const post = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses } }));
+    const get = await GET(req('GET', cookieFor(), { query: '?id=ASS_AGD' }));
+    const lignes = erreur.lignes();
+    erreur.relacher();
+
+    expect(post.status).toBe(410);
+    expect(get.status).toBe(410);
+    expect(lignes).toHaveLength(2);
+    for (const l of lignes) {
+      const ev = JSON.parse(l) as Ligne;
+      expect(ev.event).toBe('PORTAIL_PATIENT.AGENDA_SOMMEIL.FORBIDDEN');
+      expect(ev.metadata?.motif).toBe('annulee');
+    }
+  });
+
+  it('un corps JSON illisible est tracé en DEBUG (FORME_REJETEE), pas en WARN', async () => {
+    const warn = espionner('warn');
+    const log = espionner('log');
+    const res = await POST(
+      new Request('http://localhost/api/portail/agenda-sommeil', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{ ceci n’est pas du JSON',
+      }),
+    );
+    const lignesWarn = warn.lignes();
+    const lignesLog = log.lignes();
+    warn.relacher();
+    log.relacher();
+
+    expect(res.status).toBe(400);
+    expect(lignesWarn).toHaveLength(0);
+    expect(lignesLog).toHaveLength(1);
+    const ev = JSON.parse(lignesLog[0]) as Ligne;
+    expect(ev.level).toBe('DEBUG');
+    expect(ev.event).toBe('PORTAIL_PATIENT.AGENDA_SOMMEIL.FORME_REJETEE');
+  });
+
+  it('l’enregistrement d’une nuit journalise NUIT_ENREGISTREE sans la saisie', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    prisma.agendaSommeilNuit.create.mockResolvedValue({
+      id: 'nuit_1',
+      idPatient: OWNER.idPatient,
+      idAssignation: 'ASS_AGD',
+      dateNuit: AUJOURDHUI,
+      reponses: { contractVersion: 'agenda-sommeil-v1', ...reponses },
+      canal: 'portail',
+      supersedesNuitId: null,
+      soumisLe: new Date(),
+    });
+    const log = espionner('log');
+    const res = await POST(
+      req('POST', cookieFor(), {
+        body: { idAssignation: 'ASS_AGD', reponses: { ...reponses, commentaire: SAISIE_SECRETE } },
+      }),
+    );
+    const lignes = log.lignes();
+    log.relacher();
+
+    expect(res.status).toBe(201);
+    expect(lignes).toHaveLength(1);
+    const ev = JSON.parse(lignes[0]) as Ligne;
+    expect(ev.level).toBe('INFO');
+    expect(ev.event).toBe('PORTAIL_PATIENT.AGENDA_SOMMEIL.NUIT_ENREGISTREE');
+    expect(ev.metadata?.correction).toBe(false);
+    expect(lignes[0]).not.toContain(SAISIE_SECRETE);
+    expect(lignes[0]).not.toContain('nuit_1');
+  });
+
+  it('une panne à l’écriture journalise EXCEPTION SANS citer le message de l’erreur', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    // Un `PrismaClientValidationError` recopie l'invocation fautive, `reponses`
+    // comprise : le message ne doit jamais atteindre le journal.
+    prisma.agendaSommeilNuit.create.mockRejectedValue(
+      new Error(`Invalid prisma.create() invocation: data.reponses ${SAISIE_SECRETE}`),
+    );
+    const erreur = espionner('error');
+    const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses } }));
+    const lignes = erreur.lignes();
+    erreur.relacher();
+
+    expect(res.status).toBe(500);
+    expect(((await res.json()) as { reason: string }).reason).toBe('exception');
+    expect(lignes).toHaveLength(1);
+    const ev = JSON.parse(lignes[0]) as Ligne;
+    expect(ev.event).toBe('PORTAIL_PATIENT.AGENDA_SOMMEIL.EXCEPTION');
+    expect(ev.error?.message).toContain('non journalisé');
+    expect(lignes[0]).not.toContain(SAISIE_SECRETE);
+    expect(lignes[0]).not.toContain('data.reponses');
+  });
+});

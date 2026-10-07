@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { CadranNuit } from './CadranNuit';
 import {
   ARIA_AIDE_SOMMEIL,
+  ARIA_EXTINCTION_DIFFEREE,
+  ARIA_EXTINCTION_IMMEDIATE,
+  ARIA_LEVER_DIFFERE,
+  ARIA_LEVER_IMMEDIAT,
   ARIA_QUALITE,
   ARIA_FORME,
   ARIA_REVEILS,
@@ -20,7 +24,11 @@ import {
   LABEL_REVEILS_PATIENT,
   LABEL_RIEN_DE_PARTICULIER,
   LABEL_SIESTE,
+  PORTEE_AIDE_SOMMEIL,
+  QUESTION_EXTINCTION,
+  QUESTION_LEVER,
 } from '@/lib/agenda-sommeil/libelles';
+import { ensureNuitReponses } from '@/lib/agenda-sommeil/nuit';
 import {
   CLASSES_AIDE_SOMMEIL,
   CLASSES_DUREE_REVEILS,
@@ -92,12 +100,21 @@ function ChoixEmoji({
           );
         })}
       </div>
+      {/* Les deux ancres de l'échelle, VISIBLES : un visage seul se lit comme
+          une humeur ou une fatigue autant que comme une qualité. Ce sont les
+          mots de l'aria, inchangés — l'item entre dans l'indice, on ne touche
+          pas à son stimulus. */}
+      <div aria-hidden="true" className="mt-1 flex justify-between text-xs text-muted-foreground">
+        <span>{aria[0]}</span>
+        <span>{aria[aria.length - 1]}</span>
+      </div>
     </div>
   );
 }
 
 function Puces<T extends string>({
   label,
+  aide,
   options,
   libelle,
   aria,
@@ -105,6 +122,7 @@ function Puces<T extends string>({
   onChange,
 }: {
   label: string;
+  aide?: string;
   options: readonly T[];
   libelle: (v: T) => string;
   aria?: (v: T) => string;
@@ -113,7 +131,8 @@ function Puces<T extends string>({
 }) {
   return (
     <div>
-      <p className="text-sm font-medium text-foreground mb-2">{label}</p>
+      <p className={`text-sm font-medium text-foreground ${aide ? '' : 'mb-2'}`}>{label}</p>
+      {aide && <p className="text-xs text-muted-foreground mb-2">{aide}</p>}
       <div className="flex flex-wrap gap-2">
         {options.map((opt) => {
           const actif = value === opt;
@@ -188,6 +207,16 @@ function Compteur({
   );
 }
 
+// Les blocs vers lesquels un envoi incomplet ramène le patient. Les repères
+// conditionnels (🛏️, 👁️) vivent sur le cadran : ils y ramènent aussi.
+type Bloc = 'cadran' | 'coucher' | 'latence' | 'nuit' | 'aide' | 'lever' | 'qualite';
+
+// « a », « a et b », « a, b et c ».
+function enumerer(elements: string[]): string {
+  if (elements.length <= 1) return elements.join('');
+  return `${elements.slice(0, -1).join(', ')} et ${elements[elements.length - 1]}`;
+}
+
 type Props = {
   // Renseigné UNIQUEMENT en correction d'une nuit déjà saisie. Jamais la nuit
   // de la veille : ce serait rouvrir la porte au report automatique.
@@ -195,6 +224,13 @@ type Props = {
   // Horaires habituels du patient (médianes des nuits précédentes) : position
   // d'ouverture des poignées, en pointillé, sans valeur tant qu'on n'y touche pas.
   horairesHabituels: { extinction: string; sortie: string };
+  // Vrai seulement si ces horaires viennent des nuits DU PATIENT. Sur les
+  // horaires par défaut (aucune nuit encore), « confirmer ces horaires »
+  // ferait valider en un geste une heure que personne n'a donnée.
+  suggestionsPersonnelles?: boolean;
+  // Refus du serveur, rendu À CÔTÉ DU BOUTON : en tête de page, il restait
+  // hors champ sur téléphone, sous un formulaire long.
+  refus?: string;
   submitting: boolean;
   ctaLabel?: string;
   onSubmit: (reponses: NuitReponses) => void;
@@ -203,6 +239,8 @@ type Props = {
 export function SaisieNuitForm({
   initial,
   horairesHabituels,
+  suggestionsPersonnelles = false,
+  refus = '',
   submitting,
   ctaLabel = 'C’est noté ✓',
   onSubmit,
@@ -239,22 +277,64 @@ export function SaisieNuitForm({
   const [facteurs, setFacteurs] = useState<FacteursNuit>(initial?.facteurs ?? {});
 
   const [erreur, setErreur] = useState('');
+  // Passe à vrai au premier envoi incomplet : les questions sans réponse sont
+  // alors signalées une à une, jamais avant — on ne gronde pas un formulaire
+  // qu'on vient d'ouvrir.
+  const [tentative, setTentative] = useState(false);
+  const ancres = useRef<Partial<Record<Bloc, HTMLDivElement | null>>>({});
 
+  // CE QUI MANQUE, NOMMÉ, dans l'ordre de la page. Le bouton était désactivé
+  // tant que la nuit était incomplète, et le message d'aide vivait dans le
+  // gestionnaire de clic — qu'un bouton désactivé ne déclenche jamais : le
+  // patient restait devant un bouton grisé, sans savoir quoi compléter. Le
+  // bouton reste actif ; c'est cette liste qui garde la règle « rien ne part
+  // sans un geste sur chaque réponse obligatoire ».
+  //
   // Les deux heures conditionnelles ne sont requises que si leur question
   // l'appelle : sinon elles n'existent pas, elles ne valent pas zéro.
-  const complet =
-    heureCoucher !== undefined &&
-    heureLever !== undefined &&
-    latence !== undefined &&
-    qualite !== undefined &&
-    dureeReveils !== undefined &&
-    aideSommeil !== undefined &&
-    extinctionImmediate !== undefined &&
-    (extinctionImmediate === true || heureMiseAuLit !== undefined) &&
-    leverImmediat !== undefined &&
-    (leverImmediat === true || heureReveilFinal !== undefined);
+  const manquants: { bloc: Bloc; libelle: string }[] = [];
+  if (heureCoucher === undefined && heureLever === undefined) {
+    manquants.push({ bloc: 'cadran', libelle: 'les repères 🌑 et 🌅 du cadran' });
+  } else if (heureCoucher === undefined) {
+    manquants.push({ bloc: 'cadran', libelle: 'le repère 🌑 du cadran' });
+  } else if (heureLever === undefined) {
+    manquants.push({ bloc: 'cadran', libelle: 'le repère 🌅 du cadran' });
+  }
+  if (extinctionImmediate === false && heureMiseAuLit === undefined) {
+    manquants.push({ bloc: 'cadran', libelle: 'le repère 🛏️ du cadran' });
+  }
+  if (leverImmediat === false && heureReveilFinal === undefined) {
+    manquants.push({ bloc: 'cadran', libelle: 'le repère 👁️ du cadran' });
+  }
+  if (extinctionImmediate === undefined) manquants.push({ bloc: 'coucher', libelle: 'le coucher' });
+  if (latence === undefined) manquants.push({ bloc: 'latence', libelle: 'l’endormissement' });
+  if (dureeReveils === undefined) manquants.push({ bloc: 'nuit', libelle: 'la nuit' });
+  if (aideSommeil === undefined) manquants.push({ bloc: 'aide', libelle: 'l’aide pour dormir' });
+  if (leverImmediat === undefined) manquants.push({ bloc: 'lever', libelle: 'le lever' });
+  if (qualite === undefined) manquants.push({ bloc: 'qualite', libelle: 'la qualité de la nuit' });
+  const complet = manquants.length === 0;
+
+  const blocManquant = (bloc: Bloc) => tentative && manquants.some((m) => m.bloc === bloc);
+  const classeBloc = (bloc: Bloc) =>
+    `rounded-xl outline-none transition-shadow ${
+      blocManquant(bloc) ? 'ring-2 ring-status-warning/60 ring-offset-4 ring-offset-surface' : ''
+    }`;
+  const ancre = (bloc: Bloc) => (el: HTMLDivElement | null) => {
+    ancres.current[bloc] = el;
+  };
+
+  // Amène le patient à la question visée. `scrollIntoView` n'existe pas sous
+  // jsdom : l'appel est conditionnel, le focus suffit aux tests.
+  function allerA(bloc: Bloc) {
+    const el = ancres.current[bloc];
+    if (!el) return;
+    el.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    el.focus({ preventScroll: true });
+  }
 
   function majHoraire(poignee: 'lit' | 'extinction' | 'reveil' | 'sortie', valeur: string) {
+    // Un refus d'ordre porte sur les repères : en bouger un le rend caduc.
+    setErreur('');
     if (poignee === 'lit') setHeureMiseAuLit(valeur);
     else if (poignee === 'extinction') setHeureCoucher(valeur);
     else if (poignee === 'reveil') setHeureReveilFinal(valeur);
@@ -287,9 +367,8 @@ export function SaisieNuitForm({
 
   function soumettre() {
     if (!complet) {
-      setErreur(
-        'Il manque un geste : les repères de la nuit, le coucher, l’endormissement, la nuit, l’aide au sommeil, le lever et la qualité.',
-      );
+      setTentative(true);
+      allerA(manquants[0].bloc);
       return;
     }
     setErreur('');
@@ -316,11 +395,25 @@ export function SaisieNuitForm({
       Object.entries(facteurs).filter(([, v]) => v === true),
     ) as FacteursNuit;
     if (Object.keys(facteursNets).length > 0) reponses.facteurs = facteursNets;
+    // La validation d'ÉCRITURE du serveur, jouée ici avant l'envoi — la même
+    // fonction, pas une copie. Une nuit complète peut encore être refusée pour
+    // l'ordre de ses repères (réveil placé après la sortie du lit, par
+    // exemple) : le dire ici, sous le bouton, plutôt qu'au retour d'un aller-
+    // retour réseau, en tête d'une page que le patient a quittée des yeux.
+    try {
+      ensureNuitReponses(reponses, { exigerObligatoires: true });
+    } catch (e) {
+      if (!(e instanceof TypeError)) throw e;
+      setErreur(`${e.message} Ajustez les repères du cadran.`);
+      allerA('cadran');
+      return;
+    }
     onSubmit(reponses);
   }
 
   return (
     <div className="space-y-6">
+      <div ref={ancre('cadran')} tabIndex={-1} className={classeBloc('cadran')}>
       <CadranNuit
         extinction={heureCoucher}
         sortieDuLit={heureLever}
@@ -332,6 +425,28 @@ export function SaisieNuitForm({
         suggestionSortie={horairesHabituels.sortie}
         onChange={majHoraire}
       />
+      {/* « Comme d'habitude » en UN geste pour les deux seules ancres
+          suggérées. Le garde-fou de la v2 tient : chaque nuit exige un geste
+          explicite, et rien d'autre n'est repris — ni latence, ni qualité, ni
+          réveils. Les heures confirmées sont écrites sur le bouton : on
+          confirme ce qu'on lit, pas une valeur cachée. Absent tant que le
+          patient n'a pas de nuit à lui : les horaires par défaut ne sont pas
+          les siens. */}
+      {suggestionsPersonnelles && heureCoucher === undefined && heureLever === undefined && (
+        <div className="mt-2 flex justify-center">
+          <button
+            type="button"
+            onClick={() => {
+              setHeureCoucher(horairesHabituels.extinction);
+              setHeureLever(horairesHabituels.sortie);
+            }}
+            className="min-h-11 rounded-xl border border-primary/40 px-4 py-2 text-sm text-primary hover:bg-primary/10"
+          >
+            Confirmer ces horaires : 🌑 {horairesHabituels.extinction} → 🌅 {horairesHabituels.sortie}
+          </button>
+        </div>
+      )}
+      </div>
 
       {/* Obligatoire. Sans cette question, le temps passé au lit sans chercher à
           dormir est invisible et l'efficacité se calcule sur une fenêtre trop
@@ -339,23 +454,27 @@ export function SaisieNuitForm({
           convention. Elle sépare aussi deux conduites opposées : lire une heure
           au lit relève du contrôle du stimulus, éteindre et ne pas s'endormir
           non. C'est la latence d'endormissement qui mesure la seconde. */}
+      <div ref={ancre('coucher')} tabIndex={-1} className={classeBloc('coucher')}>
       <Puces<string>
-        label="Vous avez éteint la lumière…"
+        label={QUESTION_EXTINCTION}
         options={['immediate', 'differee']}
         libelle={(v) =>
           v === 'immediate' ? LABEL_EXTINCTION_IMMEDIATE : LABEL_EXTINCTION_DIFFEREE
         }
+        aria={(v) => (v === 'immediate' ? ARIA_EXTINCTION_IMMEDIATE : ARIA_EXTINCTION_DIFFEREE)}
         value={
           extinctionImmediate === undefined ? undefined : extinctionImmediate ? 'immediate' : 'differee'
         }
         onChange={(v) => majCoucher(v === 'immediate')}
       />
+      </div>
       {extinctionImmediate === false && heureMiseAuLit === undefined && (
         <p className="-mt-4 text-xs text-muted-foreground">
           Placez le repère 🛏️ sur le cadran, à l’heure où vous vous êtes mis·e au lit.
         </p>
       )}
 
+      <div ref={ancre('latence')} tabIndex={-1} className={classeBloc('latence')}>
       <Puces<ClasseLatence>
         label="Une fois la lumière éteinte, vous vous êtes endormi·e…"
         options={CLASSES_LATENCE}
@@ -363,11 +482,13 @@ export function SaisieNuitForm({
         value={latence}
         onChange={setLatence}
       />
+      </div>
 
       {/* Obligatoire depuis la v2. En v1 cette question vivait dans l'accordéon
           facultatif : une nuit sans réponse était agrégée comme « zéro minute
           éveillée », ce qui gonflait l'efficacité et récompensait la
           non-réponse. « Nuit continue » est désormais une réponse à part. */}
+      <div ref={ancre('nuit')} tabIndex={-1} className={classeBloc('nuit')}>
       <Puces<ClasseDureeReveils>
         label="Votre nuit a été…"
         options={CLASSES_DUREE_REVEILS}
@@ -383,38 +504,46 @@ export function SaisieNuitForm({
           setNbReveils(v === 'aucun' ? 0 : undefined);
         }}
       />
+      </div>
 
       {/* Obligatoire : sans elle, une efficacité de 90 % sous hypnotique se lit
           comme une efficacité de 90 % sans rien, et une amélioration à J21 sous
           traitement instauré entre-temps passe pour une amélioration du sommeil.
           Le nom du produit reste au dossier médicamenteux — on ne le redemande
           pas chaque matin. */}
+      <div ref={ancre('aide')} tabIndex={-1} className={classeBloc('aide')}>
       <Puces<ClasseAideSommeil>
         label="Pour cette nuit, vous avez pris…"
+        aide={PORTEE_AIDE_SOMMEIL}
         options={CLASSES_AIDE_SOMMEIL}
         libelle={(v) => LABEL_AIDE_SOMMEIL[v]}
         aria={(v) => ARIA_AIDE_SOMMEIL[v]}
         value={aideSommeil}
         onChange={setAideSommeil}
       />
+      </div>
 
       {/* Obligatoire : c'est la seule question qui rend visible le réveil matinal
           précoce. Sans elle, les minutes passées éveillé au lit le matin sont
           comptées comme du sommeil. La 3ᵉ poignée du cadran n'apparaît que si le
           patient est resté au lit — les autres ne la voient jamais. */}
+      <div ref={ancre('lever')} tabIndex={-1} className={classeBloc('lever')}>
       <Puces<string>
-        label="Le matin, vous vous êtes levé·e…"
+        label={QUESTION_LEVER}
         options={['immediat', 'differe']}
         libelle={(v) => (v === 'immediat' ? LABEL_LEVER_IMMEDIAT : LABEL_LEVER_DIFFERE)}
+        aria={(v) => (v === 'immediat' ? ARIA_LEVER_IMMEDIAT : ARIA_LEVER_DIFFERE)}
         value={leverImmediat === undefined ? undefined : leverImmediat ? 'immediat' : 'differe'}
         onChange={(v) => majLever(v === 'immediat')}
       />
+      </div>
       {leverImmediat === false && heureReveilFinal === undefined && (
         <p className="-mt-4 text-xs text-muted-foreground">
           Placez le repère 👁️ sur le cadran, à l’heure où vous vous êtes réveillé·e.
         </p>
       )}
 
+      <div ref={ancre('qualite')} tabIndex={-1} className={classeBloc('qualite')}>
       <ChoixEmoji
         label="Cette nuit était…"
         emojis={EMOJI_QUALITE}
@@ -422,6 +551,7 @@ export function SaisieNuitForm({
         value={qualite}
         onChange={setQualite}
       />
+      </div>
 
       <div className="border-t border-border pt-4">
         <button
@@ -501,14 +631,28 @@ export function SaisieNuitForm({
         </div>
       )}
 
-      {erreur && <p className="text-sm text-status-danger">{erreur}</p>}
+      {/* Sous le bouton qu'on vient de toucher, jamais en tête de page. Le refus
+          local (ce qui manque) passe avant celui du serveur, qui date de
+          l'envoi précédent. */}
+      {/* La liste se recalcule à chaque geste : elle raccourcit à mesure que
+          le patient complète, et disparaît quand il n'y a plus rien à faire. */}
+      {(() => {
+        const message =
+          tentative && !complet
+            ? `Il reste à renseigner : ${enumerer(manquants.map((m) => m.libelle))}.`
+            : erreur || refus;
+        return message ? (
+          <p role="alert" className="text-sm text-status-danger">
+            {message}
+          </p>
+        ) : null;
+      })()}
 
       <PatientButton
         variant="primary"
         className="w-full"
         loading={submitting}
         loadingLabel="Enregistrement…"
-        disabled={!complet}
         onClick={soumettre}
       >
         {ctaLabel}
