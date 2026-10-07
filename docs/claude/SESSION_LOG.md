@@ -9596,3 +9596,21 @@ script versés à la campagne. Migration du LOT-04 constatée par conteneur
 
 **Questions ouvertes.** Effectif de masquage des agrégats (`D-266` §14) à
 chiffrer par le responsable.
+
+## 2026-10-07 — BIO-INGEST LOT-04, PR 3 : code de la transmission patient (D-269)
+
+**Décidé.** Code sous `WN_BIO_PORTAIL_ENABLED` éteint : dépôt et statuts au
+portail, « Écarter ce document », retrait refusé sur un document patient,
+carte du Fil, textes v6/v13. Sur le P1 de `wn-reviewer` (le praticien ne
+pouvait pas regarder le document avant la lecture), le responsable a choisi
+une visionneuse dans ce lot : « Voir le document ». Accusé de la v13 accepté
+(réaffichage d'« Avant de commencer » au déploiement).
+
+**Écarté.** Amender §1 et la v6 plutôt que livrer la visionneuse. Retenir
+v6/v13 jusqu'à l'allumage.
+
+**Prochaine action.** PR, CI, relecture des `changeSummary` v6/v13 par le
+responsable, merge ; constat des textes servis (`D-248`), puis allumage.
+
+**Questions ouvertes.** Banc sur base réelle des dépôts concurrents au
+plafond (hors lot).

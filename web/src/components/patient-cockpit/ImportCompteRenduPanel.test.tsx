@@ -47,8 +47,8 @@ const LIGNES: LigneLue[] = [
 
 function compteRendu(statut: string, lignes: LigneLue[] = LIGNES, perime = false): CompteRenduLu {
   return {
-    id: 'cr_1', typeMime: 'application/pdf', deposePar: 'praticien@wellneuro.fr', deposeLe: '2026-10-02T09:00:00.000Z',
-    purgeLe: null, motifPurge: null,
+    id: 'cr_1', typeMime: 'application/pdf', origine: 'praticien', deposePar: 'praticien@wellneuro.fr', deposeLe: '2026-10-02T09:00:00.000Z',
+    purgeLe: null, motifPurge: null, motifEcart: null,
     imports: [{
       id: 'imp_1', statut, motifEchec: null, modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v1',
       laboratoireLu: 'Laboratoire fixture', lanceLe: new Date().toISOString(), termineLe: null, courant: true, perime,
@@ -65,6 +65,7 @@ function serveur(routes: {
   extraction?: Reponse;
   decisions?: Reponse;
   retrait?: Reponse;
+  ecart?: Reponse;
 }) {
   const fetchMock = vi.fn(async (entree: RequestInfo | URL, init?: RequestInit) => {
     const url = String(entree);
@@ -73,6 +74,7 @@ function serveur(routes: {
     if (url.includes('/import/depot')) r = routes.depot ?? { status: 500, body: {} };
     else if (url.includes('/import/extraction')) r = routes.extraction ?? { status: 500, body: {} };
     else if (url.includes('/import/decisions')) r = routes.decisions ?? { status: 500, body: {} };
+    else if (url.includes('/import/ecart')) r = routes.ecart ?? { status: 500, body: {} };
     else if (url.includes('/import/compte-rendu') && methode === 'DELETE') r = routes.retrait ?? { status: 500, body: {} };
     else if (url.includes('/import/compte-rendu')) {
       r = { status: 200, body: { ok: true, compteRendu: (routes.detail ?? (() => compteRendu('extrait')))() } };
@@ -735,5 +737,58 @@ describe('arrivée par la carte « compte rendu à lire » (D-268, BP-10)', () =
     );
     rendre('cr_autre');
     expect(await screen.findByText('Le compte rendu n’a pas pu être lu.')).toBeTruthy();
+  });
+});
+
+describe('ImportCompteRenduPanel — document transmis par le patient (D-269)', () => {
+  const transmis = (partiel: Partial<CompteRenduLu> = {}): CompteRenduLu => ({
+    ...compteRendu('extrait'),
+    origine: 'patient',
+    deposePar: null,
+    imports: [],
+    ...partiel,
+  });
+
+  async function ouvrir() {
+    render(<ImportCompteRenduPanel idPatient="pat_jennifer" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    await screen.findByText(/Compte rendu déposé le .* — transmis par le patient/);
+  }
+
+  it('il ne se retire pas : il s’écarte ; avant la lecture, l’écran demande de vérifier le document', async () => {
+    serveur({ detail: () => transmis() });
+    await ouvrir();
+    expect(screen.queryByRole('button', { name: 'Retirer ce dépôt' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Écarter ce document' })).toBeTruthy();
+    expect(screen.getByText(/vérifiez qu’il s’agit bien de son compte\s+rendu avant de lancer la lecture/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Lancer la lecture' })).toBeTruthy();
+    // Le regard d'abord (§1) : le document s'ouvre sans rien envoyer.
+    expect(screen.getByRole('link', { name: 'Voir le document' }).getAttribute('href')).toBe(
+      '/api/praticien/biologie/import/document?idPatient=pat_jennifer&idCompteRendu=cr_1',
+    );
+  });
+
+  it('écarter exige un motif fermé, puis l’envoie, et l’écran relit le document', async () => {
+    const fetchMock = serveur({ detail: () => transmis(), ecart: { status: 200, body: { ok: true } } });
+    await ouvrir();
+    fireEvent.click(screen.getByRole('button', { name: 'Écarter ce document' }));
+    const confirmer = screen.getByRole('button', { name: 'Confirmer l’écart' }) as HTMLButtonElement;
+    expect(confirmer.disabled).toBe(true);
+    fireEvent.click(screen.getByRole('radio', { name: 'Pas un compte rendu de ce patient' }));
+    fireEvent.click(confirmer);
+    await screen.findByText('Le document a été écarté et effacé.');
+    const [, init] = appels(fetchMock, '/import/ecart')[0];
+    expect(JSON.parse(String(init?.body))).toEqual({ idPatient: 'pat_jennifer', idCompteRendu: 'cr_1', motif: 'document_non_conforme' });
+  });
+
+  it('une ligne validée, ou le document déjà écarté : plus de geste ; l’écart effacé se dit avec son motif', async () => {
+    serveur({
+      detail: () => transmis({ purgeLe: '2026-10-07T10:00:00.000Z', motifPurge: 'ecarte', motifEcart: 'illisible' }),
+    });
+    await ouvrir();
+    expect(screen.queryByRole('button', { name: 'Écarter ce document' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Retirer ce dépôt' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Voir le document' })).toBeNull();
+    expect(screen.getByText(/Document effacé le .*, écarté \(illisible\)/)).toBeTruthy();
   });
 });

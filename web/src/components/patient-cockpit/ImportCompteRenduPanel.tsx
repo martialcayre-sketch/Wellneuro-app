@@ -10,6 +10,8 @@ import type { ActeLectureLu } from '@/lib/biology-library/import/acteLecture';
 import { useBioLectureEnabled } from './CbFeatureProvider';
 import { LectureImportBiologique } from './LectureImportBiologique';
 
+type MotifEcartDocument = 'illisible' | 'document_non_conforme';
+
 // IMPORT D'UN COMPTE RENDU DE LABORATOIRE (BIO-INGEST LOT-02, [[D-256]]),
 // derrière `WN_BIO_INGEST_ENABLED`. Quatre gestes, tous du praticien :
 // déposer le document (PDF, ou photo au LOT-03), lancer la lecture, décider
@@ -26,6 +28,10 @@ import { LectureImportBiologique } from './LectureImportBiologique';
 // laisse alors le champ VIDE plutôt que de proposer un minuit que personne n'a
 // lu, et signale les mesures du même analyte déjà au dossier ce jour-là. Une
 // heure IMPRIMÉE « 00:00 » (`heureLue`, [[D-258]]) reste affichée.
+//
+// UN DOCUMENT TRANSMIS PAR LE PATIENT ([[D-269]]) ne se retire pas : il
+// S'ÉCARTE, motif fermé, ce qui l'efface aussitôt (§3). Avant la lecture, le
+// praticien vérifie que c'est bien le compte rendu de ce patient (§1).
 //
 // LE DOCUMENT S'EFFACE ([[D-258]]) à la dernière décision de l'extraction
 // courante, et au plus tard 30 jours après le dépôt : il ne se relit plus,
@@ -50,6 +56,7 @@ export type MesureAuDossier = {
 type CompteRenduListe = {
   id: string;
   deposeLe: string;
+  origine?: string;
   purgeLe?: string | null;
   dernierImport: { id: string; statut: string } | null;
 };
@@ -68,6 +75,12 @@ type Saisie = {
 };
 
 const INTERVALLE_RELECTURE_MS = 3_000;
+
+/** Les deux motifs fermés de l'écart d'un document transmis ([[D-269]] §3). */
+const LIBELLES_MOTIF_ECART_DOCUMENT: Record<MotifEcartDocument, string> = {
+  illisible: 'Illisible',
+  document_non_conforme: 'Pas un compte rendu de ce patient',
+};
 
 const LIBELLES_MOTIF: Record<MotifEcart, string> = {
   non_quantitative: 'Valeur non chiffrée',
@@ -234,6 +247,9 @@ export function ImportCompteRenduPanel({
   const [info, setInfo] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [retraitArme, setRetraitArme] = useState(false);
+  /** L'écart d'un document transmis, armé : le motif reste à choisir avant de confirmer. */
+  const [ecartArme, setEcartArme] = useState(false);
+  const [motifEcartDocument, setMotifEcartDocument] = useState<MotifEcartDocument | null>(null);
   const [relanceArmee, setRelanceArmee] = useState(false);
   /** Remonte le champ fichier natif, qui garde sinon le nom d'un fichier déjà déposé. */
   const [cleFichier, setCleFichier] = useState(0);
@@ -352,6 +368,8 @@ export function ImportCompteRenduPanel({
       setInfo(null);
       setRefusParLigne({});
       setRetraitArme(false);
+      setEcartArme(false);
+      setMotifEcartDocument(null);
       setRelanceArmee(false);
       setSaisies({});
       await chargerDetail(idCompteRendu);
@@ -446,6 +464,33 @@ export function ImportCompteRenduPanel({
     } finally {
       setOccupe(false);
       setRetraitArme(false);
+    }
+  }
+
+  async function ecarterDocument() {
+    if (!detail || !motifEcartDocument) return;
+    setOccupe(true);
+    setErreur(null);
+    try {
+      const response = await fetch('/api/praticien/biologie/import/ecart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient, idCompteRendu: detail.id, motif: motifEcartDocument }),
+      });
+      const payload = await lireJson<{ ok: boolean; error?: string }>(response);
+      if (!response.ok || !payload?.ok) {
+        setErreur(payload?.error ?? 'Le document n’a pas pu être écarté.');
+        return;
+      }
+      setInfo('Le document a été écarté et effacé.');
+      await chargerDetail(detail.id);
+      await chargerListe();
+    } catch {
+      setErreur('Le document n’a pas pu être écarté.');
+    } finally {
+      setOccupe(false);
+      setEcartArme(false);
+      setMotifEcartDocument(null);
     }
   }
 
@@ -577,6 +622,7 @@ export function ImportCompteRenduPanel({
   // refuse de toute façon (`ligne_validee`). La lecture précédente et ses
   // écarts restent consignés ; seules les lignes de la nouvelle se décident.
   const aUneLigneValidee = detail?.imports.some(i => i.lignes.some(l => l.statut === 'validee')) ?? false;
+  const transmisParLePatient = detail?.origine === 'patient';
   const peutLancer = detail !== null && !detail.purgeLe && (courant === null || interrompu) && !aUneLigneValidee;
   const peutRelancer = detail !== null && !detail.purgeLe && courant?.statut === 'extrait' && !aUneLigneValidee;
   const lignesProposees = courant?.statut === 'extrait' ? courant.lignes.filter(l => l.statut === 'proposee') : [];
@@ -646,6 +692,7 @@ export function ImportCompteRenduPanel({
                 className={`${BOUTON} w-full text-left ${detail?.id === c.id ? 'font-medium' : ''}`}
               >
                 Déposé le {formatDateHeure(c.deposeLe)}
+                {c.origine === 'patient' && ' — transmis par le patient'}
                 {c.dernierImport && ` — ${LIBELLES_STATUT[c.dernierImport.statut] ?? c.dernierImport.statut}`}
                 {c.purgeLe && ' — document effacé'}
               </button>
@@ -659,9 +706,31 @@ export function ImportCompteRenduPanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-foreground">
               Compte rendu déposé le {formatDateHeure(detail.deposeLe)}
+              {transmisParLePatient && ' — transmis par le patient'}
               {courant?.laboratoireLu && ` — ${courant.laboratoireLu}`}
             </p>
-            {retraitArme ? (
+            {/* LE REGARD AVANT LA LECTURE ([[D-269]] §1) : le document s'ouvre
+                dans un onglet, servi par la route du praticien ; rien ne part
+                chez Anthropic. Plus rien à montrer une fois effacé. */}
+            {!detail.purgeLe && (
+              <a
+                href={`/api/praticien/biologie/import/document?${urlDossier}&idCompteRendu=${encodeURIComponent(detail.id)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${BOUTON} inline-flex items-center`}
+              >
+                Voir le document
+              </a>
+            )}
+            {transmisParLePatient ? (
+              // Écarter, jamais retirer ([[D-269]] §3). Rien à écarter une fois
+              // le document effacé ; la base refuse aussi après une ligne validée.
+              !detail.purgeLe && !aUneLigneValidee && !ecartArme && (
+                <button type="button" onClick={() => setEcartArme(true)} disabled={occupe || (enCours && !interrompu)} className={BOUTON}>
+                  Écarter ce document
+                </button>
+              )
+            ) : retraitArme ? (
               <span className="flex gap-2">
                 <button type="button" onClick={() => void retirer()} disabled={occupe} className={BOUTON}>
                   Confirmer le retrait
@@ -677,6 +746,52 @@ export function ImportCompteRenduPanel({
             )}
           </div>
 
+          {ecartArme && (
+            <fieldset className="mt-2 rounded-lg border border-border/60 p-2">
+              <legend className="px-1 text-xs text-muted-foreground">
+                Écarter ce document l’efface aussitôt, sans retour possible. Le patient le verra « refusé » ou « illisible ».
+              </legend>
+              <div className="flex flex-wrap gap-3">
+                {(Object.keys(LIBELLES_MOTIF_ECART_DOCUMENT) as MotifEcartDocument[]).map(motif => (
+                  <label key={motif} className="flex min-h-11 items-center gap-2 text-sm text-foreground">
+                    <input
+                      type="radio"
+                      name="motif-ecart-document"
+                      value={motif}
+                      checked={motifEcartDocument === motif}
+                      onChange={() => setMotifEcartDocument(motif)}
+                      disabled={occupe}
+                    />
+                    {LIBELLES_MOTIF_ECART_DOCUMENT[motif]}
+                  </label>
+                ))}
+              </div>
+              <span className="mt-2 flex gap-2">
+                <button type="button" onClick={() => void ecarterDocument()} disabled={occupe || !motifEcartDocument} className={BOUTON}>
+                  Confirmer l’écart
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEcartArme(false);
+                    setMotifEcartDocument(null);
+                  }}
+                  disabled={occupe}
+                  className={BOUTON}
+                >
+                  Annuler
+                </button>
+              </span>
+            </fieldset>
+          )}
+
+          {transmisParLePatient && !detail.purgeLe && detail.imports.length === 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Transmis par le patient : ouvrez-le (« Voir le document ») et vérifiez qu’il s’agit bien de son compte
+              rendu avant de lancer la lecture, qui l’envoie entier au service de lecture. Sinon, écartez-le.
+            </p>
+          )}
+
           {/* L'échec de la DERNIÈRE tentative seulement : un échec qu’une lecture réussie a suivi ne se rappelle pas. */}
           {detail.imports
             .slice(0, 1)
@@ -691,7 +806,11 @@ export function ImportCompteRenduPanel({
           {detail.purgeLe && (
             <p className="mt-2 text-xs text-muted-foreground">
               Document effacé le {formatDateHeure(detail.purgeLe)}
-              {detail.motifPurge === 'echeance' ? ', 30 jours après son dépôt' : ', toutes ses lignes décidées'} :
+              {detail.motifPurge === 'echeance'
+                ? ', 30 jours après son dépôt'
+                : detail.motifPurge === 'ecarte'
+                  ? `, écarté (${(LIBELLES_MOTIF_ECART_DOCUMENT[detail.motifEcart as MotifEcartDocument] ?? 'motif inconnu').toLowerCase()})`
+                  : ', toutes ses lignes décidées'} :
               il ne peut plus être relu. Les lignes lues et leurs décisions restent.
             </p>
           )}

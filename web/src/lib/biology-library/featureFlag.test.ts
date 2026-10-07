@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isBioIngestEnabled, isBioLectureEnabled, isCbEnabled, isCbPropositionEnabled, isCbResultsEnabled } from './featureFlag';
+import { isBioIngestEnabled, isBioLectureEnabled, isBioPortailEnabled, isCbEnabled, isCbPropositionEnabled, isCbResultsEnabled } from './featureFlag';
 
 describe('isCbEnabled', () => {
   it("n'active le rayon que pour la valeur exacte « true » (fail-closed)", () => {
@@ -84,6 +84,22 @@ describe('isBioLectureEnabled (D-268, BP-10)', () => {
   it('reste fermé sur les variantes proches de « true »', () => {
     for (const v of ['TRUE', '1', 'yes', ' true', '']) {
       expect(isBioLectureEnabled(v, 'true', 'true', 'true')).toBe(false);
+    }
+  });
+});
+
+describe('isBioPortailEnabled (D-269, LOT-04)', () => {
+  it("n'ouvre la transmission patient que si son drapeau ET les trois de l'import valent « true »", () => {
+    expect(isBioPortailEnabled('true', 'true', 'true', 'true')).toBe(true);
+    expect(isBioPortailEnabled(undefined, 'true', 'true', 'true')).toBe(false);
+    expect(isBioPortailEnabled('true', undefined, 'true', 'true')).toBe(false);
+    expect(isBioPortailEnabled('true', 'true', undefined, 'true')).toBe(false);
+    expect(isBioPortailEnabled('true', 'true', 'true', undefined)).toBe(false);
+  });
+
+  it('reste fermé sur les variantes proches de « true »', () => {
+    for (const v of ['TRUE', '1', 'yes', ' true', '']) {
+      expect(isBioPortailEnabled(v, 'true', 'true', 'true')).toBe(false);
     }
   });
 });

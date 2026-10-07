@@ -3,13 +3,13 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
-import { construireFil, type CarteFil } from '@/lib/fil/cartes';
+import { construireFil, type CarteFil, type CompteRenduTransmisRow } from '@/lib/fil/cartes';
 import { clesRefusees, filtrerCartesRefusees } from '@/lib/fil/refus';
 import { partagerParLecture } from '@/lib/fil/lectureCartes';
 import { jalonsSansDecision } from '@/lib/fil/jalonsJ21';
 import { RIDEAU_T0, STATUTS_SYNTHESE_VALIDEE } from '@/lib/clinical-engine/preconditionsT0';
 import { arbitragesSansRevision } from '@/lib/fil/biologieArbitree';
-import { isBioLectureEnabled, isCbEnabled } from '@/lib/biology-library/featureFlag';
+import { isBioIngestEnabled, isBioLectureEnabled, isCbEnabled } from '@/lib/biology-library/featureFlag';
 import { importsALire, type ImportValideRow } from '@/lib/biology-library/import/lectureImport';
 import { momentumJalonsParPatient } from '@/lib/fil/momentumJ21';
 import { bornesJourParis } from '@/lib/fil/fuseau';
@@ -316,6 +316,30 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       }
     }
 
+    // Comptes rendus TRANSMIS PAR LE PATIENT, sans lecture lancée ([[D-269]]
+    // §7). Sous l'import, pas sous `WN_BIO_PORTAIL_ENABLED` : un document déjà
+    // transmis garde sa carte si le portail est rééteint. Tant qu'aucun n'a été
+    // transmis, la requête ne rend rien. Isolée comme la précédente, et son
+    // échec se dit par la même alerte : ces documents attendent une lecture.
+    let comptesRendusTransmis: CompteRenduTransmisRow[] = [];
+    if (isBioIngestEnabled()) {
+      try {
+        const transmis = await prisma.compteRenduBiologique.findMany({
+          where: {
+            origine: 'patient',
+            purgeLe: null,
+            imports: { none: {} },
+            patient: filtrePatientsDuPraticien(email),
+          },
+          select: { id: true, idPatient: true, deposeLe: true },
+        });
+        comptesRendusTransmis = transmis.map(t => ({ idCompteRendu: t.id, idPatient: t.idPatient, deposeLe: t.deposeLe }));
+      } catch (err) {
+        console.error('[fil GET] comptes rendus transmis :', err instanceof Error ? err.message : String(err));
+        lecturesBiologieIndisponibles = true;
+      }
+    }
+
     const signalements = [
       ...effets.map(e => ({ id: e.id, idPatient: e.idPatient, kind: 'effet_indesirable' as const, soumisLe: e.soumisLe })),
       ...incidents.map(i => ({ id: i.id, idPatient: i.idPatient, kind: 'incident_confidentialite' as const, soumisLe: i.soumisLe })),
@@ -333,6 +357,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         ...lectures.map(l => l.idPatient),
         ...biologiesArbitreesBrutes.map(b => b.idPatient),
         ...importsValides.map(i => i.idPatient),
+        ...comptesRendusTransmis.map(t => t.idPatient),
         ...passationsRideau.map(p => p.idPatient),
         ...synthesesValidees.map(s => s.idPatient),
       ]),
@@ -434,6 +459,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         importsValides.filter(i => actifs.has(i.idPatient)),
         idPatient => servables.has(idPatient),
       ),
+      comptesRendusTransmis: comptesRendusTransmis.filter(t => actifs.has(t.idPatient)),
       assignations: assignations.filter(a => actifs.has(a.idPatient)),
       activites: activites
         .filter(a => actifs.has(a.idPatient) && a._max.dateReponse !== null)

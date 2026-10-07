@@ -19,7 +19,9 @@ import { describe, expect, it } from 'vitest';
 // LA PURGE ([[D-258]]) : la base admet UNE modification du compte rendu, son
 // document passé à NULL, et en vérifie elle-même le motif. Ce banc garde
 // aussi QUEL CODE l'écrit : la dernière décision (`import/decisions.ts`) et
-// l'échéance planifiée (`import/purge.ts`), une fois chacune.
+// l'échéance planifiée (`import/purge.ts`), une fois chacune — et, depuis
+// [[D-269]] §3, l'écart d'un document transmis par le patient
+// (`import/ecart.ts`), dont la purge porte le motif `ecarte`.
 //
 // PORTÉE : le code de l'application, mais aussi les scripts, le dossier
 // Prisma (seed) et les E2E (un nettoyage Playwright) — un script qui
@@ -39,6 +41,7 @@ const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');
 const RETRAIT = path.join('src', 'lib', 'biology-library', 'import', 'retrait.ts');
 const DECISIONS = path.join('src', 'lib', 'biology-library', 'import', 'decisions.ts');
 const PURGE = path.join('src', 'lib', 'biology-library', 'import', 'purge.ts');
+const ECART = path.join('src', 'lib', 'biology-library', 'import', 'ecart.ts');
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
@@ -81,9 +84,9 @@ describe('Staging d’import biologique — qui supprime (D-256, LOT-02)', () =>
     expect(occurrences(SQL_BRUT)).toEqual([]);
   });
 
-  it('seules la dernière décision et l’échéance modifient un compte rendu — pour le purger (D-258)', () => {
+  it('seules la dernière décision, l’échéance et l’écart modifient un compte rendu — pour le purger (D-258, D-269)', () => {
     const auteurs = occurrences(MODIFIER_COMPTE_RENDU).sort((a, b) => a.fichier.localeCompare(b.fichier));
-    expect(auteurs).toEqual([{ fichier: DECISIONS, n: 1 }, { fichier: PURGE, n: 1 }]);
+    expect(auteurs).toEqual([{ fichier: DECISIONS, n: 1 }, { fichier: ECART, n: 1 }, { fichier: PURGE, n: 1 }]);
     expect(occurrences(SQL_MODIFIER_COMPTE_RENDU)).toEqual([]);
   });
 

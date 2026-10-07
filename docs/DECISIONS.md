@@ -166,6 +166,13 @@ Le constat d'usage de BP-10 ([[D-266]] §12) attend des lectures consignées.
 C'est une observation, pas une garde de sécurité, et il ne retient pas ce
 lot.
 
+**Précision du 2026-10-07 (§4-§5, arbitrage du responsable après la revue de
+la migration, écrite avec le code)** : un document transmis **purgé sans
+écart** — à l'échéance, ou toutes ses lignes écartées une à une — s'affiche
+**« reçu »** : il n'est ni « en attente » d'un geste devenu impossible, ni
+« refusé ». Le plafond de 3 documents « en attente » ou « reçus » ne compte que
+les documents **non purgés**.
+
 - Options écartées : l'extraction automatique (§1) ; une table de
   transmission (§2) ; le statut dérivé de l'échec (§3) ; le texte sans accusé
   et la case à chaque dépôt (§6, arbitrage) ; un e-mail au praticien (§7).

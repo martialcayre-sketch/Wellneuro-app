@@ -113,3 +113,9 @@ describe('compte rendu biologique à lire — la carte ne s’écarte pas (D-268
     expect(cleCarteValide('import_biologique_a_lire:imp_1')).toBe(false);
   });
 });
+
+describe('compte rendu transmis par le patient — la carte ne s’écarte pas (D-269 §7)', () => {
+  it('la route du refus rejette sa clé', () => {
+    expect(cleCarteValide('compte_rendu_transmis:cr_1')).toBe(false);
+  });
+});

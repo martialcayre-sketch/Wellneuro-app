@@ -23,6 +23,7 @@ import { PatientCompanionHome } from '@/components/patient-companion/PatientComp
 import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
 import { LienFichesRemises } from '@/components/patient-companion/LienFichesRemises';
 import { LienCourrierMedecin } from '@/components/patient-companion/LienCourrierMedecin';
+import { LienTransmissionCompteRendu } from '@/components/patient-companion/LienTransmissionCompteRendu';
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
 import { construireFilDuJour } from '@/lib/portail/filDuJour';
 import type { LectureAttendue } from '@/lib/portail/lecturesAttendues';
@@ -366,6 +367,9 @@ export default function QuestionnairesHubPage() {
         {/* Le courrier pour le médecin traitant ([[D-262]]) : même règle, sous
             son propre drapeau. */}
         <LienCourrierMedecin token={token} />
+        {/* La transmission d'un compte rendu d'analyses ([[D-269]]) : sous son
+            propre drapeau, le lien n'existe que si la route répond. */}
+        <LienTransmissionCompteRendu token={token} />
         <a href={`/portail/${token}/alimentation`} className={patientButtonClassName('ghost')}>
           Ouvrir Mon carnet alimentaire
         </a>
