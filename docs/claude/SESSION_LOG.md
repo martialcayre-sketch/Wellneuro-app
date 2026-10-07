@@ -9581,3 +9581,18 @@ Ajouter des analytes sur 2 lignes : attendre d'autres imports.
 `release-db` de #1352 (un merge à la fois).
 
 **Questions ouvertes.** Seuil de masquage de `D-266` §14 à chiffrer.
+
+## 2026-10-07 — BIO-PARCOURS BP-10 : constat d'usage et clôture
+
+**Décidé.** LOT-10 clos. Constat en agrégats (`one-off-1330`) : 1 import
+validé, 1 lecture, 0 révocation, 0 import validé sans lecture. Note et
+script versés à la campagne. Migration du LOT-04 constatée par conteneur
+(`one-off-4793`) ; #1353 (`D-270`) mergée.
+
+**Écarté.** Conclure à un usage sur une occurrence.
+
+**Prochaine action.** BIO-INGEST LOT-04, PR 3 : code sous
+`WN_BIO_PORTAIL_ENABLED` éteint.
+
+**Questions ouvertes.** Effectif de masquage des agrégats (`D-266` §14) à
+chiffrer par le responsable.
