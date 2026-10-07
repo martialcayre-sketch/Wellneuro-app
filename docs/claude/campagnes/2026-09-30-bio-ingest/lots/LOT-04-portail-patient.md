@@ -56,7 +56,7 @@ garde.
 - refus ou illisible : un geste praticien « Écarter ce document », motif
   fermé, purge immédiate ;
 - accusé `usage_ia` v6 exigé côté serveur avant tout dépôt ;
-- au plus 3 documents en attente par dossier, 10 dépôts par 24 h, mêmes
+- au plus 3 documents « en attente » ou « reçus » par dossier, 10 dépôts par 24 h, mêmes
   types et taille que le praticien ;
 - la carte du Fil seule.
 

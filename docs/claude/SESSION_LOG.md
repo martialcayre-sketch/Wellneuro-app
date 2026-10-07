@@ -9496,3 +9496,27 @@ Résoudre l'import côté panneau : le Fil connaît déjà le compte rendu.
 d'usage viendra quand des lectures seront consignées (0 à 00:34).
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-07 — BIO-INGEST LOT-04, ouverture : D-269 et registre RGPD
+
+**Décidé.** LOT-04 ouvert, la précondition BP-10 étant remplie (`D-269` §9).
+Arbitrages du responsable :
+- un geste « Écarter » à motif fermé, avec purge immédiate ;
+- l'accusé `usage_ia` v6 exigé avant tout dépôt ;
+- au plus 3 documents en attente ou reçus, et 10 dépôts par 24 h ;
+- la carte du Fil seule.
+
+Le dépôt patient ne déclenche jamais d'extraction.
+
+**Écarté.**
+- L'extraction automatique : le document d'un tiers partirait chez
+  Anthropic.
+- Un statut tiré de l'échec d'extraction.
+- Une table de transmission séparée.
+- L'e-mail au praticien.
+
+**Prochaine action.** Le responsable valide les textes v6 et v13 (#1350),
+puis vient le merge. Ensuite la migration `bio_ingest_transmission_patient_v1`,
+seule dans sa PR, sur confirmation distincte.
+
+**Questions ouvertes.** La validation des textes patient.

@@ -267,7 +267,7 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
   compte rendu (PDF, photo ou scan) dans son espace. Le document rejoint
   `CompteRenduBiologique` avec son **origine** (`patient`), sans e-mail de
   praticien. Mêmes types, même taille et même nettoyage d'image que le dépôt
-  praticien. Au plus 3 documents en attente par dossier, et 10 dépôts par
+  praticien. Au plus 3 documents « en attente » ou « reçus » par dossier, et 10 dépôts par
   24 heures.
   - **Ce qui ne change pas.** Le dépôt n'appelle pas l'IA. Le document ne
     part chez Anthropic que lorsque le **praticien** lance la lecture, après
