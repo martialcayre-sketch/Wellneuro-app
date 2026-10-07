@@ -9564,3 +9564,20 @@ par conteneur. Ensuite la PR 3, le code sous drapeau éteint.
 **Questions ouvertes.** Aucune. Un document patient purgé sans écart
 s'affiche « reçu », et le plafond ne compte que les non purgés (validé le
 2026-10-07, précision de `D-269` en PR 3).
+
+## 2026-10-07 — BIO-INGEST : seconde unité d'une même mesure, « Écarter » pré-coché (D-270)
+
+**Décidé.** Arbitrage du responsable : une ligne en unité divergente
+s'ouvre sur « Écarter » quand sa jumelle (même analyte, même instant lu)
+s'ouvre sur « Valider ». Elle est repliée sous un titre qui dit son sort.
+L'écart ne part qu'avec la jumelle validée dans le même envoi ; toucher la
+ligne en fait la décision du praticien. Constat préalable par conteneur :
+12 des 16 lignes écartées du premier import étaient des secondes unités.
+
+**Écarté.** Ajouter des unités au catalogue (conversion, `D-157`).
+Ajouter des analytes sur 2 lignes : attendre d'autres imports.
+
+**Prochaine action.** PR, CI ; merge seulement après le constat de
+`release-db` de #1352 (un merge à la fois).
+
+**Questions ouvertes.** Seuil de masquage de `D-266` §14 à chiffrer.
