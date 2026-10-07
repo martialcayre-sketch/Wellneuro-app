@@ -9,8 +9,8 @@
   10 dépôts par 24 h. L'accusé `usage_ia` v6 est exigé avant tout dépôt. La
   notification passe par la carte du Fil seule.
 - **Registre** (`DOSSIER_RGPD.md`, §2 ter, rubriques 5 et 8) : le patient
-  émetteur, le motif de purge `ecarte`, les textes v6 et v13 proposés à la
-  validation du responsable, et les conditions de pose de
+  émetteur, le motif de purge `ecarte`, les textes v6 et v13 validés par le
+  responsable le 2026-10-07, et les conditions de pose de
   `WN_BIO_PORTAIL_ENABLED`.
 - **Précondition `D-266` §15 consignée** : LOT-07 est terminé, BP-10 est en
   production.

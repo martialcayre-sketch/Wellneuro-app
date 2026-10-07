@@ -9515,8 +9515,8 @@ Le dépôt patient ne déclenche jamais d'extraction.
 - Une table de transmission séparée.
 - L'e-mail au praticien.
 
-**Prochaine action.** Le responsable valide les textes v6 et v13 (#1350),
-puis vient le merge. Ensuite la migration `bio_ingest_transmission_patient_v1`,
+**Prochaine action.** Textes v6 et v13 validés le 2026-10-07 : merge de
+#1350. Ensuite la migration `bio_ingest_transmission_patient_v1`,
 seule dans sa PR, sur confirmation distincte.
 
-**Questions ouvertes.** La validation des textes patient.
+**Questions ouvertes.** Aucune.

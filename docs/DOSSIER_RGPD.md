@@ -291,7 +291,8 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
   - **Information du patient : accusé exigé avant le premier dépôt.** La
     route de dépôt refuse tout dépôt sans un accusé `pris_connaissance` de
     la version **courante** de « L'intelligence artificielle dans
-    Wellneuro ». Textes proposés, **à valider par le responsable** :
+    Wellneuro ». Textes **validés par le responsable le 2026-10-07**, avec ce
+    paragraphe :
     - **`usage_ia` v6.** Dans le paragraphe du relevé, la phrase « lorsque
       votre praticien dépose dans votre dossier le compte rendu que vous lui
       avez remis » devient : « lorsque votre praticien dépose dans votre
@@ -306,7 +307,7 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
       l'écarte, s'il est illisible ou s'il ne s'agit pas de votre compte
       rendu ». Accusé exigé, comme la v12.
   - **Conditions de pose de `WN_BIO_PORTAIL_ENABLED`**, toutes préalables :
-    1. ce paragraphe validé par le responsable ;
+    1. ce paragraphe validé par le responsable — **tenue le 2026-10-07** ;
     2. la migration appliquée et constatée par conteneur ;
     3. la v6 et la v13 servies, et le déploiement constaté ([[D-248]]).
 

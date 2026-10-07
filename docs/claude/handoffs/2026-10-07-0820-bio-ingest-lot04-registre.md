@@ -41,12 +41,12 @@ T1 complet vert. CI de #1350 vert. Revue Copilot : 4 corrections faites
 
 ## Ouvert
 
-- **Validation par le responsable** des textes v6 et v13 proposés
-  (`DOSSIER_RGPD.md` §2 ter) avant le merge de #1350.
+- Textes v6 et v13 **validés par le responsable le 2026-10-07**
+  (`DOSSIER_RGPD.md` §2 ter).
 
 ## Prochaine action
 
-1. Après la validation : CI, puis merge de #1350.
+1. CI, puis merge de #1350.
 2. Ensuite la PR 2, la migration `bio_ingest_transmission_patient_v1`
    (plan : `D-269` §8, fiche LOT-04), **seule dans sa PR, sur confirmation
    distincte** :
