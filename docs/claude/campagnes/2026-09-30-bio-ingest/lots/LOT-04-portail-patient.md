@@ -60,6 +60,12 @@ garde.
   types et taille que le praticien ;
 - la carte du Fil seule.
 
+**Arbitrage du 2026-10-07 (après la revue de la migration)** : un document
+patient purgé sans écart (à l'échéance, ou toutes ses lignes écartées une à
+une) s'affiche **« reçu »** ; le plafond de 3 ne compte que les documents
+**non purgés**. Précision de `D-269` §4-§5 à écrire avec la PR 3, qui
+l'applique.
+
 **Découpage** :
 1. PR 1, la décision et le registre RGPD ;
 2. PR 2, la migration `bio_ingest_transmission_patient_v1`, seule dans sa PR ;
@@ -71,7 +77,7 @@ garde.
 
 - [ ] Mettre à jour le consentement et le registre **avant** l'ouverture (registre et `D-269` : PR 1 ; textes v6 et v13 : PR 3).
 - [x] Mode Plan : droits, taille, types, rétention (2026-10-07, `D-269`).
-- [ ] Migration seule si nécessaire, puis code.
+- [ ] Migration seule si nécessaire, puis code. Migration `bio_ingest_transmission_patient_v1` écrite le 2026-10-07 (confirmée par le responsable), seule dans sa PR ; à appliquer par `release-db` approuvée, puis à constater par conteneur.
 
 ## Tests
 
