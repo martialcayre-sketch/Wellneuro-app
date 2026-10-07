@@ -1,7 +1,7 @@
 ---
 id: "LOT-10"
 titre: "BP-10 — Sécurité biologique, étage 1"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-02, BIO-INGEST LOT-07"
 ---
 
@@ -223,6 +223,12 @@ encore « pas un filet de sécurité ».
     s'acquitte que par l'acte.
   - 2026-10-07 : **précondition de BIO-INGEST LOT-04 consignée** (`D-269`
     §9) : BP-10 est en production, et le constat d'usage n'est pas une garde.
+- [x] Constat d'usage en agrégats (`D-266` §12).
+  - 2026-10-07 : lecture consignée par le praticien à 12:38 (heure de
+    Paris), après décision des 16 lignes restées en « Plus tard ». Relevé à
+    10:48 UTC (`one-off-1330`) : 1 import validé, 1 lecture active, 0
+    révocation, 0 import validé sans lecture. Note :
+    `CONSTAT_USAGE_BP10_2026-10-07.md`, script `CONSTAT_USAGE_BP10.sql`.
 
 ## Tests
 
@@ -235,4 +241,18 @@ consignée.
 
 ## Résultats
 
-À compléter à la clôture.
+- `D-268` livrée en trois PR : décision et registre RGPD (#1343, #1344),
+  migration `lectures_imports_biologiques_v1` appliquée par `release-db` le
+  2026-10-06, code sous `WN_BIO_LECTURE_ENABLED` (#1347), puis la carte qui
+  ouvre le compte rendu désigné (#1349).
+- Drapeau posé le 2026-10-06 à 22:12 UTC ; effet constaté (`401` au lieu de
+  `503`).
+- Constat d'usage du 2026-10-07 : la chaîne import décidé → carte → acte →
+  carte effacée a fonctionné une fois en production. Une occurrence établit
+  le chemin, pas l'usage ; la révocation n'est éprouvée qu'en banc.
+- Le blocage observé (lignes en « Plus tard ») a produit deux suites hors
+  lot : les replis de l'écran de validation (#1351) et la seconde unité
+  pré-cochée « Écarter » (`D-270`, #1353).
+- Précondition de BIO-INGEST LOT-04 consignée (`D-269` §9).
+- Réserve : l'effectif de masquage des agrégats (`D-266` §14) n'est pas
+  chiffré ; dû avant tout constat sur plusieurs dossiers et avant BP-21a.
