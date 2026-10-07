@@ -286,6 +286,53 @@ describe('ImportCompteRenduPanel — décisions', () => {
     expect(screen.getByText('Validée')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Enregistrer les décisions' })).toBeNull();
   });
+
+  it('les lignes décidées se replient sous les lignes à décider, et se déplient une fois tout décidé', async () => {
+    serveur({
+      detail: () => compteRendu('extrait', [
+        ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48', statut: 'validee' }),
+        ligne({ id: 'l2', libelleLu: 'TSH', valeurLue: '2,2', statut: 'proposee' }),
+        ligne({ id: 'l3', libelleLu: 'Folates', valeurLue: '427', statut: 'ecartee' }),
+      ]),
+    });
+    await rendreEtOuvrir();
+    const repli = screen.getByText(/Lignes déjà décidées \(1 validée, 1 écartée\)/).closest('details')!;
+    expect(repli.open).toBe(false);
+    expect(within(repli).getByText(/Ferritine : 48/)).toBeTruthy();
+    expect(within(repli).queryByText(/TSH : 2,2/)).toBeNull();
+    expect(screen.getByText(/TSH : 2,2/).closest('details')).toBeNull();
+  });
+
+  it('seules les lignes à trancher restent dépliées ; les rapprochées se replient sous un titre qui dit leur sort', async () => {
+    serveur({
+      detail: () => compteRendu('extrait', [
+        ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48', analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu' }),
+        ligne({ id: 'l2', libelleLu: 'Libellé inconnu', valeurLue: '3' }),
+      ]),
+    });
+    await rendreEtOuvrir();
+    const repli = screen.getByText(/« Valider » pré-coché \(1\) — validées à l’enregistrement/).closest('details')!;
+    expect(repli.open).toBe(false);
+    expect(within(repli).getByText(/Ferritine : 48/)).toBeTruthy();
+    expect(screen.getByText(/Libellé inconnu : 3/).closest('details')).toBeNull();
+  });
+
+  it('plus rien à trancher : les lignes rapprochées se présentent dépliées', async () => {
+    serveur({
+      detail: () => compteRendu('extrait', [
+        ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48', analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu' }),
+      ]),
+    });
+    await rendreEtOuvrir();
+    expect(screen.getByText(/« Valider » pré-coché \(1\)/).closest('details')!.open).toBe(true);
+  });
+
+  it('tout décidé : la restitution se présente dépliée', async () => {
+    serveur({ detail: () => compteRendu('extrait', [ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48', statut: 'validee' })]) });
+    await rendreEtOuvrir();
+    const repli = screen.getByText(/Lignes déjà décidées \(1 validée, 0 écartée\)/).closest('details')!;
+    expect(repli.open).toBe(true);
+  });
 });
 
 describe('ImportCompteRenduPanel — lecture asynchrone', () => {

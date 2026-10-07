@@ -9520,3 +9520,25 @@ Le dépôt patient ne déclenche jamais d'extraction.
 seule dans sa PR, sur confirmation distincte.
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-07 — Écran de validation d'un compte rendu : replis
+
+**Décidé.** Ce sont les demandes du responsable, motivées par trop de bruit
+et trop de défilement :
+- seules les lignes à trancher restent dépliées ;
+- les lignes rapprochées (« Valider » pré-coché, `D-260`) sont repliées sous
+  un titre qui précise qu'elles seront validées à l'enregistrement ;
+- les lignes décidées sont repliées sous leur décompte.
+
+Le partage suit le choix initial, pour qu'une ligne ne saute pas d'une
+liste à l'autre sous le clic.
+
+**Écarté.** Cacher les lignes rapprochées sans dire leur sort. Écarter les
+16 lignes à la place du praticien : ni écriture SQL (`D-087`), ni
+extension Chrome connectée.
+
+**Prochaine action.** PR, CI, merge. Côté responsable : écarter les 16
+lignes de l'import en attente, puis consigner la lecture (constat d'usage
+BP-10). LOT-04 : la migration attend sa confirmation.
+
+**Questions ouvertes.** Aucune.

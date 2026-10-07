@@ -530,6 +530,16 @@ export function ImportCompteRenduPanel({
   const peutLancer = detail !== null && !detail.purgeLe && (courant === null || interrompu) && !aUneLigneValidee;
   const peutRelancer = detail !== null && !detail.purgeLe && courant?.statut === 'extrait' && !aUneLigneValidee;
   const lignesProposees = courant?.statut === 'extrait' ? courant.lignes.filter(l => l.statut === 'proposee') : [];
+  const lignesDecidees = courant?.statut === 'extrait' ? courant.lignes.filter(l => l.statut !== 'proposee') : [];
+  // Deux repliés (demande du responsable, 2026-10-07) : seules les lignes à
+  // TRANCHER (« Plus tard » d'office : signalées ou non rapprochées) restent
+  // déployées. Le partage suit le choix INITIAL ([[D-260]]), pas la saisie :
+  // une ligne ne saute pas d'une liste à l'autre sous le clic.
+  const lignesATrancher = lignesProposees.filter(l => choixInitial(l) === null);
+  const lignesPretes = lignesProposees.filter(l => choixInitial(l) !== null);
+  const pretesRefusees = lignesPretes.some(l => refusParLigne[l.id] !== undefined);
+  const nbValidees = lignesDecidees.filter(l => l.statut === 'validee').length;
+  const nbEcartees = lignesDecidees.length - nbValidees;
 
   return (
     <div ref={racineRef} className="mt-4 rounded-lg border border-border p-3">
@@ -662,20 +672,82 @@ export function ImportCompteRenduPanel({
               {courant.lignes.length === 0 && (
                 <p className="mt-2 text-sm text-muted-foreground">Aucune ligne n’a été relevée sur ce compte rendu.</p>
               )}
-              <ol className="mt-3 space-y-2">
-                {courant.lignes.map(ligne => (
-                  <LigneImport
-                    key={ligne.id}
-                    ligne={ligne}
-                    saisie={saisies[ligne.id]}
-                    refus={refusParLigne[ligne.id]}
-                    analytes={analytes}
-                    mesures={mesures}
-                    disabled={occupe}
-                    onModifier={patch => modifier(ligne.id, patch)}
-                  />
-                ))}
-              </ol>
+              {lignesATrancher.length > 0 && (
+                <ol className="mt-3 space-y-2">
+                  {lignesATrancher.map(ligne => (
+                    <LigneImport
+                      key={ligne.id}
+                      ligne={ligne}
+                      saisie={saisies[ligne.id]}
+                      refus={refusParLigne[ligne.id]}
+                      analytes={analytes}
+                      mesures={mesures}
+                      disabled={occupe}
+                      onModifier={patch => modifier(ligne.id, patch)}
+                    />
+                  ))}
+                </ol>
+              )}
+              {/* Les lignes rapprochées, « Valider » pré-positionné : repliées
+                  tant qu'il reste à trancher, mais le titre DIT qu'elles partent
+                  validées à l'enregistrement. Un refus du serveur sur l'une
+                  d'elles, ou plus rien à trancher, les déplie. */}
+              {lignesPretes.length > 0 && (
+                <details
+                  key={lignesATrancher.length > 0 && !pretesRefusees ? 'replie' : 'deplie'}
+                  open={lignesATrancher.length === 0 || pretesRefusees}
+                  className="mt-3"
+                >
+                  <summary className="cursor-pointer text-sm font-semibold text-foreground">
+                    Lignes rapprochées, « Valider » pré-coché ({lignesPretes.length}) — validées à l’enregistrement,
+                    sauf changement
+                  </summary>
+                  <ol className="mt-2 space-y-2">
+                    {lignesPretes.map(ligne => (
+                      <LigneImport
+                        key={ligne.id}
+                        ligne={ligne}
+                        saisie={saisies[ligne.id]}
+                        refus={refusParLigne[ligne.id]}
+                        analytes={analytes}
+                        mesures={mesures}
+                        disabled={occupe}
+                        onModifier={patch => modifier(ligne.id, patch)}
+                      />
+                    ))}
+                  </ol>
+                </details>
+              )}
+              {/* Les lignes déjà décidées, repliées tant qu'il en reste à
+                  décider (demande du responsable, 2026-10-07 : trop de
+                  défilement). Dépliées d'office une fois tout décidé : c'est
+                  la restitution que l'acte de lecture atteste ([[D-268]]). */}
+              {lignesDecidees.length > 0 && (
+                <details
+                  key={lignesProposees.length > 0 ? 'replie' : 'deplie'}
+                  open={lignesProposees.length === 0}
+                  className="mt-3"
+                >
+                  <summary className="cursor-pointer text-sm font-semibold text-foreground">
+                    Lignes déjà décidées ({nbValidees} validée{nbValidees > 1 ? 's' : ''}, {nbEcartees} écartée
+                    {nbEcartees > 1 ? 's' : ''})
+                  </summary>
+                  <ol className="mt-2 space-y-2">
+                    {lignesDecidees.map(ligne => (
+                      <LigneImport
+                        key={ligne.id}
+                        ligne={ligne}
+                        saisie={saisies[ligne.id]}
+                        refus={refusParLigne[ligne.id]}
+                        analytes={analytes}
+                        mesures={mesures}
+                        disabled={occupe}
+                        onModifier={patch => modifier(ligne.id, patch)}
+                      />
+                    ))}
+                  </ol>
+                </details>
+              )}
               {lignesProposees.length > 0 && (
                 <button type="button" onClick={() => void enregistrer()} disabled={occupe} className={`${BOUTON_PRIMAIRE} mt-3`}>
                   Enregistrer les décisions
