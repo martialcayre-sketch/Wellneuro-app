@@ -164,7 +164,7 @@ describe('ImportCompteRenduPanel — décisions', () => {
       idPatient: 'pat_sophie',
       idImport: 'imp_1',
       decisions: [
-        { idLigne: 'l1', decision: 'valider', analyteCode: 'BIO_FERRITINE', valeur: 48, preleveLe: A_0830 },
+        { idLigne: 'l1', decision: 'valider', analyteCode: 'BIO_FERRITINE', valeur: '48', preleveLe: A_0830 },
         { idLigne: 'l2', decision: 'ecarter', motif: 'non_quantitative' },
       ],
     });
@@ -199,10 +199,10 @@ describe('ImportCompteRenduPanel — décisions', () => {
     serveur({});
     await rendreEtOuvrir({
       mesures: [
-        { analyteCode: 'BIO_FERRITINE', valeur: 51, unite: 'ng/mL', preleveLe: '2026-09-15T05:45:00.000Z', corrigeeParId: null },
+        { analyteCode: 'BIO_FERRITINE', valeur: '51', unite: 'ng/mL', preleveLe: '2026-09-15T05:45:00.000Z', corrigeeParId: null },
         // 00:30 à Paris le 15/09, encore le 14/09 en UTC : le jour est celui de Paris.
-        { analyteCode: 'BIO_FERRITINE', valeur: 55, unite: 'ng/mL', preleveLe: '2026-09-14T22:30:00.000Z', corrigeeParId: null },
-        { analyteCode: 'BIO_FERRITINE', valeur: 60, unite: 'ng/mL', preleveLe: '2026-09-14T05:45:00.000Z', corrigeeParId: null },
+        { analyteCode: 'BIO_FERRITINE', valeur: '55', unite: 'ng/mL', preleveLe: '2026-09-14T22:30:00.000Z', corrigeeParId: null },
+        { analyteCode: 'BIO_FERRITINE', valeur: '60', unite: 'ng/mL', preleveLe: '2026-09-14T05:45:00.000Z', corrigeeParId: null },
       ],
     });
     const ferritine = ligneAffichee(/Ferritine : 48/);
@@ -404,7 +404,7 @@ describe('ImportCompteRenduPanel — seconde unité (D-270)', () => {
     await waitFor(() => expect(appels(fetchMock, '/import/decisions')).toHaveLength(1));
     const [, init] = appels(fetchMock, '/import/decisions')[0];
     expect(JSON.parse(String(init?.body)).decisions).toEqual([
-      { idLigne: 'l1', decision: 'valider', analyteCode: 'BIO_FER', valeur: 17.2, preleveLe: A_0830 },
+      { idLigne: 'l1', decision: 'valider', analyteCode: 'BIO_FER', valeur: '17.2', preleveLe: A_0830 },
       { idLigne: 'l2', decision: 'ecarter', motif: 'unite_divergente' },
     ]);
   });

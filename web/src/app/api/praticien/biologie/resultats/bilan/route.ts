@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import {
   accepteNouvelEnvoi,
@@ -120,7 +121,7 @@ export async function POST(req: Request) {
     const refuser = (index: number, reason: string) => {
       refus.push({ index, reason, error: MESSAGES_REFUS_SAISIE[reason] });
     };
-    const lignes: Array<{ index: number; analyteCode: string; valeur: number }> = [];
+    const lignes: Array<{ index: number; analyteCode: string; valeur: string }> = [];
     const indexParCode = new Map<string, number>();
 
     (body.lignes as unknown[]).forEach((brute, index) => {
@@ -171,7 +172,7 @@ export async function POST(req: Request) {
     });
     const codesExistants = new Set(existants.map(e => e.analyteCode));
 
-    const aEcrire: Array<{ analyteCode: string; valeur: number; unite: string | null }> = [];
+    const aEcrire: Array<{ analyteCode: string; valeur: string; unite: string | null }> = [];
     for (const ligne of lignes) {
       const analyte = analyteParCode.get(ligne.analyteCode);
       if (!analyte) {
@@ -200,7 +201,8 @@ export async function POST(req: Request) {
             data: {
               idPatient,
               analyteCode: l.analyteCode,
-              valeur: l.valeur,
+              // Chaîne canonique → `Decimal` : aucun flottant (LOT-10).
+              valeur: new Prisma.Decimal(l.valeur),
               unite: l.unite,
               preleveLe,
               source: 'saisie_praticien',

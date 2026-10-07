@@ -8,7 +8,7 @@
 export const MESSAGES_REFUS_SAISIE: Record<string, string> = {
   valeur_invalide: 'La valeur mesurée doit être un nombre.',
   valeur_hors_capacite:
-    'La valeur dépasse la capacité de stockage (35 chiffres) : vérifiez la saisie.',
+    'La valeur dépasse la capacité de stockage (35 chiffres avant la virgule, 30 après) : vérifiez la saisie.',
   date_invalide: 'La date de prélèvement est illisible.',
   date_future: 'La date de prélèvement est dans le futur : un prélèvement n’anticipe pas.',
   analyte_inconnu: 'Cet analyte n’existe pas au catalogue.',

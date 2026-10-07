@@ -1,7 +1,7 @@
 ---
 id: "LOT-10"
 titre: "Décimales exactes de bout en bout"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-01, LOT-02"
 ---
 
@@ -59,8 +59,8 @@ LOT-01, LOT-02
 
 ## Étapes
 
-- [ ] Cadrage : inventaire des passages en `number`, précision et échelle réelles de la colonne.
-- [ ] Mode Plan, puis correctif.
+- [x] Cadrage : inventaire des passages en `number`, précision et échelle réelles de la colonne.
+- [x] Mode Plan, puis correctif.
 
 ## Tests
 
@@ -73,4 +73,29 @@ Plus aucun `number` sur le trajet de la valeur ; aller-retour exact prouvé par 
 
 ## Résultats
 
-À compléter à la clôture.
+Livré le 2026-10-07, sans migration.
+
+- **Colonne** : `DECIMAL(65,30)` — 35 chiffres avant la virgule, 30 après. Au-delà
+  de 30 décimales Postgres arrondissait en silence : c'est désormais un refus
+  `valeur_hors_capacite`, message précisé. Échelle fixe ⇒ les zéros de queue ne
+  sont pas conservables : « à l'identique » = même valeur, forme canonique
+  (point, sans zéro de tête ni de queue, ni `+` ni `-0`).
+- **Module pur** `web/src/lib/biology-library/valeurDecimale.ts` (sans import,
+  partagé écran/serveur) : `lireDecimalSaisi`, `canoniserDecimal`,
+  `depasseCapacite`.
+- **Trajet** : les trois écrans envoient la chaîne canonique ;
+  `validerSaisieResultat` n'accepte qu'une chaîne (un `number` JSON est refusé,
+  l'exactitude est déjà perdue) ; `lireValeurQuantitative` rend une chaîne ;
+  les trois écrivains posent `new Prisma.Decimal(...)` ; la route rend
+  `valeur: string` par `Decimal#toFixed()` (`toString()` passait en
+  exponentielle) et compare les faits du laboratoire en chaînes.
+- **Écart avec la grammaire d'avant** : `1e3`, `0x10`, `Infinity` étaient
+  acceptés par `Number()` à l'écran ; ils sont refusés.
+- **Preuves** : aller-retour exact par voie en Vitest (`Decimal` passé à
+  `create`, restitution GET en notation normale, corps POST des écrans) ;
+  aller-retour en base locale réelle par le client Prisma et l'adaptateur pg,
+  8 valeurs limites dont 35 + 30 chiffres, transaction annulée, aucun résidu.
+- **Hors périmètre, inchangé** : `portesBiologiquesService.ts` (moteur
+  clinique, `D-122`) lit `valeur.toString()` — exact, mais en exponentielle
+  pour les très petites ou très grandes valeurs ; à reprendre seulement si ce
+  moteur affiche la valeur.

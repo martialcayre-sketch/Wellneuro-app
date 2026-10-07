@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { lireDecimalSaisi } from '@/lib/biology-library/valeurDecimale';
 
 // Saisie GROUPÉE d'un bilan (BIO-INGEST LOT-01, A1 et A3 de [[D-256]]) : une
 // date de prélèvement commune, N analytes, UNE validation. Remplace la saisie
@@ -26,10 +27,6 @@ export type IssueBilan =
 
 type Ligne = { id: number; analyteCode: string; valeur: string };
 
-function valeurNumerique(brute: string): number {
-  return brute.trim() === '' ? Number.NaN : Number(brute.replace(',', '.'));
-}
-
 export function SaisieBilan({
   analytes,
   disabled,
@@ -39,7 +36,7 @@ export function SaisieBilan({
   disabled: boolean;
   onEnregistrer: (bilan: {
     preleveLe: string;
-    lignes: Array<{ analyteCode: string; valeur: number }>;
+    lignes: Array<{ analyteCode: string; valeur: string }>;
   }) => Promise<IssueBilan>;
 }) {
   const prochainId = useRef(1);
@@ -61,7 +58,7 @@ export function SaisieBilan({
   const prete =
     preleveLe !== '' &&
     lignes.length > 0 &&
-    lignes.every(l => l.analyteCode !== '' && Number.isFinite(valeurNumerique(l.valeur)));
+    lignes.every(l => l.analyteCode !== '' && lireDecimalSaisi(l.valeur) !== null);
 
   const modifier = (id: number, champ: 'analyteCode' | 'valeur', valeur: string) => {
     setLignes(courantes => courantes.map(l => (l.id === id ? { ...l, [champ]: valeur } : l)));
@@ -73,7 +70,9 @@ export function SaisieBilan({
     setRefusParLigne({});
     const issue = await onEnregistrer({
       preleveLe: new Date(preleveLe).toISOString(),
-      lignes: envoyees.map(l => ({ analyteCode: l.analyteCode, valeur: valeurNumerique(l.valeur) })),
+      // Chaîne décimale canonique, jamais un `number` (LOT-10). Une ligne
+      // illisible partirait vide : `prete` l'interdit, le serveur la refuserait.
+      lignes: envoyees.map(l => ({ analyteCode: l.analyteCode, valeur: lireDecimalSaisi(l.valeur) ?? '' })),
     });
     if (issue.ok) {
       // La date reste : un analyte oublié du même prélèvement se rajoute sans

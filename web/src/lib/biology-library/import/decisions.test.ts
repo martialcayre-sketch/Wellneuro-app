@@ -15,6 +15,7 @@ const { prisma, journal } = vi.hoisted(() => {
 });
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+import { Prisma } from '@/generated/prisma';
 import { deciderLignes } from './decisions';
 
 const MAINTENANT = new Date('2026-10-02T10:00:00.000Z');
@@ -39,7 +40,7 @@ const ANALYTES = [
 ];
 
 const valider = (idLigne: string, patch: Record<string, unknown> = {}) => ({
-  idLigne, decision: 'valider', analyteCode: 'BIO_FERRITINE', valeur: 48, preleveLe: PRELEVE, ...patch,
+  idLigne, decision: 'valider', analyteCode: 'BIO_FERRITINE', valeur: '48', preleveLe: PRELEVE, ...patch,
 });
 
 let espions: Array<ReturnType<typeof vi.spyOn>>;
@@ -139,13 +140,13 @@ describe('deciderLignes — seule l’extraction courante se décide (arbitrage 
 
 describe('deciderLignes — valider crée le résultat, PUIS décide la ligne', () => {
   it('crée le résultat SANS saisiLe, source saisie_praticien, unité du catalogue', async () => {
-    const issue = await deciderLignes({ ...BASE, decisions: [valider('l1', { valeur: 47.5 })] });
+    const issue = await deciderLignes({ ...BASE, decisions: [valider('l1', { valeur: '47.5' })] });
     expect(issue).toEqual({ ok: true, validees: 1, ecartees: 0, documentPurge: false });
     const { data } = prisma.resultatBiologique.create.mock.calls[0][0];
     expect(data).toEqual({
       idPatient: 'pat_sophie',
       analyteCode: 'BIO_FERRITINE',
-      valeur: 47.5,
+      valeur: new Prisma.Decimal('47.5'),
       unite: 'ng/mL',
       preleveLe: new Date(PRELEVE),
       source: 'saisie_praticien',
@@ -158,6 +159,20 @@ describe('deciderLignes — valider crée le résultat, PUIS décide la ligne', 
       where: { id: 'l1', idImport: 'imp_1', idPatient: 'pat_sophie', statut: 'proposee' },
       data: { statut: 'validee', idResultat: 'res_1', traitePar: 'praticien@wellneuro.fr' },
     });
+  });
+
+  it('écrit un `Decimal` EXACT, en chaîne de bout en bout (LOT-10)', async () => {
+    const issue = await deciderLignes({ ...BASE, decisions: [valider('l1', { valeur: '0,30000000000000004' })] });
+    expect(issue).toMatchObject({ ok: true, validees: 1 });
+    const { data } = prisma.resultatBiologique.create.mock.calls[0][0];
+    expect(data.valeur).toBeInstanceOf(Prisma.Decimal);
+    expect(data.valeur.toFixed()).toBe('0.30000000000000004');
+  });
+
+  it('une valeur en NOMBRE JSON est refusée : l’exactitude est déjà perdue', async () => {
+    const issue = await deciderLignes({ ...BASE, decisions: [valider('l1', { valeur: 47.5 })] });
+    expect(issue).toMatchObject({ ok: false, status: 400, lignes: [{ idLigne: 'l1', reason: 'valeur_invalide' }] });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('écarte avec le motif confirmé par le praticien', async () => {
@@ -178,13 +193,13 @@ describe('deciderLignes — valider crée le résultat, PUIS décide la ligne', 
 
 describe('deciderLignes — refus du préflight, tout ou rien', () => {
   it('une ligne LUE non quantitative est refusée, même si le praticien tape un nombre', async () => {
-    const issue = await deciderLignes({ ...BASE, decisions: [valider('l2', { analyteCode: 'BIO_CRP_US', valeur: 0.4 })] });
+    const issue = await deciderLignes({ ...BASE, decisions: [valider('l2', { analyteCode: 'BIO_CRP_US', valeur: '0.4' })] });
     expect(issue).toMatchObject({ ok: false, status: 409, lignes: [{ idLigne: 'l2', reason: 'non_quantitative' }] });
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('une unité divergente est refusée, sans conversion ni transaction', async () => {
-    const issue = await deciderLignes({ ...BASE, decisions: [valider('l3', { analyteCode: 'BIO_CRP_US', valeur: 3.1 })] });
+    const issue = await deciderLignes({ ...BASE, decisions: [valider('l3', { analyteCode: 'BIO_CRP_US', valeur: '3.1' })] });
     expect(issue).toMatchObject({ ok: false, status: 409, lignes: [{ idLigne: 'l3', reason: 'unite_divergente' }] });
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });

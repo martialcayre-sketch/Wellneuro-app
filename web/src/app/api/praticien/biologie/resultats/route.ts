@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import {
   accepteNouvelEnvoi,
@@ -57,7 +58,8 @@ export type ResultatConsigne = {
   id: string;
   analyteCode: string;
   analyteLibelle: string;
-  valeur: number;
+  /** Décimal exact en forme canonique (LOT-10) — jamais un `number`, qui arrondirait. */
+  valeur: string;
   /** L'unité CONSIGNÉE avec la mesure — celle qui avait cours ce jour-là. */
   unite: string | null;
   /**
@@ -138,8 +140,11 @@ function depuisVerdictPost(verdict: Exclude<VerdictGardeResultats, { ok: true }>
 type LigneLue = {
   id: string;
   analyteCode: string;
-  /** `Decimal` du client Prisma — `Number()` le lit ; typé par sa capacité. */
-  valeur: number | { toString(): string };
+  /**
+   * `Decimal` du client Prisma. `toFixed()` sans argument le rend en notation
+   * normale EXACTE — `toString()` passerait en exponentielle (`1e-7`).
+   */
+  valeur: { toFixed(): string };
   unite: string | null;
   preleveLe: Date;
   source: string;
@@ -163,7 +168,7 @@ function faitsDeLaLigne(ligne: LigneLue): ResultatConsigne['faitsLaboratoire'] {
   if (!unitesConcordent(lue.uniteLue, ligne.unite)) return null;
   // Valeur corrigée à la validation : la marque imprimée portait sur une autre
   // valeur que celle qui fait foi. Silence (§5 précisé, revue Codex #1333).
-  if (lireValeurQuantitative(lue.valeurLue) !== Number(ligne.valeur)) return null;
+  if (lireValeurQuantitative(lue.valeurLue) !== ligne.valeur.toFixed()) return null;
   return { intervalle: lue.intervalleLu, marquage: lue.marquageLu };
 }
 
@@ -172,7 +177,7 @@ function versConsigne(ligne: LigneLue, corrigeeParId: string | null = null): Res
     id: ligne.id,
     analyteCode: ligne.analyteCode,
     analyteLibelle: ligne.analyte.libelle,
-    valeur: Number(ligne.valeur),
+    valeur: ligne.valeur.toFixed(),
     unite: ligne.unite,
     uniteCatalogue: ligne.analyte.unite,
     preleveLe: ligne.preleveLe.toISOString(),
@@ -459,12 +464,9 @@ export async function POST(req: Request) {
         data: {
           idPatient,
           analyteCode: analyte.code,
-          // La valeur transite en `number` JSON (flottant IEEE 754) : pour
-          // une saisie manuelle à quelques chiffres significatifs, la
-          // précision est exacte ; l'exactitude décimale de bout en bout
-          // (chaîne → numeric) viendra avec l'import laboratoire si sa
-          // source l'exige.
-          valeur: verdict.valeur,
+          // Chaîne décimale canonique → `Decimal` : aucun flottant entre la
+          // saisie et la colonne (LOT-10).
+          valeur: new Prisma.Decimal(verdict.valeur),
           // L'unité de l'ANALYTE, relue à l'instant de la saisie — jamais
           // celle du client.
           unite: analyte.unite,

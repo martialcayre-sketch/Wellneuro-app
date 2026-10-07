@@ -59,7 +59,7 @@ describe('EstimeMesurePanel — drapeau levé (étage 2, D-122 §2)', () => {
                 id: 'r1',
                 analyteCode: 'BIO_FERRITINE',
                 analyteLibelle: 'Ferritine',
-                valeur: 42.5,
+                valeur: '42.5',
                 unite: 'µg/L',
                 preleveLe: '2026-09-01T08:00:00.000Z',
                 source: 'saisie_praticien',
@@ -161,12 +161,12 @@ describe('EstimeMesurePanel — drapeau levé (étage 2, D-122 §2)', () => {
             resultats: [
               {
                 id: 'r1', analyteCode: 'BIO_CORTISOL', analyteLibelle: 'Cortisol salivaire',
-                valeur: 12.1, unite: 'nmol/L', preleveLe: '2026-09-01T06:30:00.000Z',
+                valeur: '12.1', unite: 'nmol/L', preleveLe: '2026-09-01T06:30:00.000Z',
                 source: 'saisie_praticien',
               },
               {
                 id: 'r2', analyteCode: 'BIO_CORTISOL', analyteLibelle: 'Cortisol salivaire',
-                valeur: 3.4, unite: 'nmol/L', preleveLe: '2026-09-01T15:30:00.000Z',
+                valeur: '3.4', unite: 'nmol/L', preleveLe: '2026-09-01T15:30:00.000Z',
                 source: 'saisie_praticien',
               },
             ],
@@ -216,7 +216,38 @@ describe('EstimeMesurePanel — drapeau levé (étage 2, D-122 §2)', () => {
       expect(corps).toEqual({
         idPatient: 'PAT1',
         preleveLe: new Date('2026-09-02T08:15').toISOString(),
-        lignes: [{ analyteCode: 'BIO_FERRITINE', valeur: 51.2 }],
+        lignes: [{ analyteCode: 'BIO_FERRITINE', valeur: '51.2' }],
+      });
+    });
+  });
+
+  it('le bilan poste la valeur EXACTE, en chaîne canonique — jamais un flottant (LOT-10)', async () => {
+    const fetchMock = mockFetch();
+    render(
+      <CbFeatureProvider enabled resultsEnabled>
+        <EstimeMesurePanel idPatient="PAT1" />
+      </CbFeatureProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Ferritine (µg/L)' })).toBeTruthy();
+    });
+    fireEvent.change(screen.getByLabelText('Analyte (unité du catalogue), ligne 1'), {
+      target: { value: 'BIO_FERRITINE' },
+    });
+    fireEvent.change(screen.getByLabelText(/^Valeur.*, ligne 1$/), { target: { value: '0,30000000000000004' } });
+    fireEvent.change(screen.getByLabelText(/Prélevé le/), {
+      target: { value: '2026-09-02T08:15' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le bilan (1 mesure)' }));
+    await waitFor(() => {
+      const post = fetchMock.mock.calls.find(([, init]) => (init as RequestInit)?.method === 'POST');
+      expect(post).toBeTruthy();
+      expect(String(post?.[0])).toBe('/api/praticien/biologie/resultats/bilan');
+      const corps = JSON.parse(String((post?.[1] as RequestInit).body));
+      expect(corps).toEqual({
+        idPatient: 'PAT1',
+        preleveLe: new Date('2026-09-02T08:15').toISOString(),
+        lignes: [{ analyteCode: 'BIO_FERRITINE', valeur: '0.30000000000000004' }],
       });
     });
   });
@@ -378,7 +409,7 @@ describe('EstimeMesurePanel — le geste de correction (D-124)', () => {
     id: 'r1',
     analyteCode: 'BIO_FERRITINE',
     analyteLibelle: 'Ferritine',
-    valeur: 42.5,
+    valeur: '42.5',
     unite: 'µg/L',
     uniteCatalogue: 'µg/L',
     preleveLe: '2026-09-01T08:00:00.000Z',
@@ -463,7 +494,7 @@ describe('EstimeMesurePanel — le geste de correction (D-124)', () => {
     const correction = {
       ...ORIGINE,
       id: 'r2',
-      valeur: 45.5,
+      valeur: '45.5',
       saisiLe: '2026-09-02T09:00:00.000Z',
       supersedesResultatId: 'r1',
     };
@@ -489,7 +520,7 @@ describe('EstimeMesurePanel — le geste de correction (D-124)', () => {
       {
         ...ORIGINE,
         id: 'r2',
-        valeur: 45.5,
+        valeur: '45.5',
         saisiLe: '2026-09-02T09:00:00.000Z',
         supersedesResultatId: 'r1',
         corrigeeParId: 'r3',
@@ -497,7 +528,7 @@ describe('EstimeMesurePanel — le geste de correction (D-124)', () => {
       {
         ...ORIGINE,
         id: 'r3',
-        valeur: 46,
+        valeur: '46',
         saisiLe: '2026-09-03T09:00:00.000Z',
         supersedesResultatId: 'r2',
         corrigeeParId: null,
@@ -525,8 +556,8 @@ describe('EstimeMesurePanel — le geste de correction (D-124)', () => {
     // Le verbe « corrigée » serait faux ; « remplacée » dit l'état, qui l'est.
     monterAvec([
       { ...ORIGINE, corrigeeParId: 'r3' },
-      { ...ORIGINE, id: 'r2', valeur: 45.5, supersedesResultatId: 'r1', corrigeeParId: 'r3' },
-      { ...ORIGINE, id: 'r3', valeur: 46, supersedesResultatId: 'r1', corrigeeParId: null },
+      { ...ORIGINE, id: 'r2', valeur: '45.5', supersedesResultatId: 'r1', corrigeeParId: 'r3' },
+      { ...ORIGINE, id: 'r3', valeur: '46', supersedesResultatId: 'r1', corrigeeParId: null },
     ]);
     await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
     expect(screen.queryByText(/· corrigée/)).toBeNull();
@@ -616,7 +647,7 @@ describe('EstimeMesurePanel — le geste de correction (D-124)', () => {
   });
 
   it('une mesure DÉJÀ corrigée n’offre pas « Corriger » — on corrige la version qui fait foi', async () => {
-    const correction = { ...ORIGINE, id: 'r2', valeur: 45.5, supersedesResultatId: 'r1' };
+    const correction = { ...ORIGINE, id: 'r2', valeur: '45.5', supersedesResultatId: 'r1' };
     monterAvec([{ ...ORIGINE, corrigeeParId: 'r2' }, correction]);
     await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
     // Une seule ligne est corrigible : la tête de fil.
@@ -639,8 +670,26 @@ describe('EstimeMesurePanel — le geste de correction (D-124)', () => {
     expect(corps[0]).toEqual({
       idPatient: 'PAT1',
       supersedesResultatId: 'r1',
-      valeur: 45.5,
+      valeur: '45.5',
     });
+  });
+
+  it('corriger poste la valeur EXACTE, en chaîne canonique — jamais un flottant (LOT-10)', async () => {
+    const { corps } = monterAvec([ORIGINE]);
+    await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: /^Corriger la mesure du/ }));
+    fireEvent.change(screen.getByLabelText(/Valeur corrigée/), { target: { value: '0012345678901234567,10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Consigner la correction' }));
+    await waitFor(() => expect(corps).toHaveLength(1));
+    expect(corps[0]).toMatchObject({ valeur: '12345678901234567.1' });
+  });
+
+  it('une valeur non décimale ne se consigne pas : le bouton reste fermé', async () => {
+    monterAvec([ORIGINE]);
+    await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: /^Corriger la mesure du/ }));
+    fireEvent.change(screen.getByLabelText(/Valeur corrigée/), { target: { value: '1e3' } });
+    expect((screen.getByRole('button', { name: 'Consigner la correction' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('le champ s’ouvre PRÉ-REMPLI de la valeur d’origine : on corrige, on ne resaisit pas', async () => {
@@ -682,8 +731,8 @@ describe('EstimeMesurePanel — le geste de correction (D-124)', () => {
     // se prolongeraient chacune de son côté.
     monterAvec([
       { ...ORIGINE, corrigeeParId: 'r3' },
-      { ...ORIGINE, id: 'r2', valeur: 45.5, supersedesResultatId: 'r1', corrigeeParId: 'r3' },
-      { ...ORIGINE, id: 'r3', valeur: 46, supersedesResultatId: 'r1', corrigeeParId: null },
+      { ...ORIGINE, id: 'r2', valeur: '45.5', supersedesResultatId: 'r1', corrigeeParId: 'r3' },
+      { ...ORIGINE, id: 'r3', valeur: '46', supersedesResultatId: 'r1', corrigeeParId: null },
     ]);
     await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
     expect(screen.getAllByRole('button', { name: /^Corriger la mesure du/ })).toHaveLength(1);
@@ -703,7 +752,7 @@ describe('EstimeMesurePanel — le geste de correction (D-124)', () => {
   it('ouvrir le second temps porte le focus sur le champ, et ferme les autres gestes', async () => {
     monterAvec([
       ORIGINE,
-      { ...ORIGINE, id: 'r9', preleveLe: '2026-09-02T08:00:00.000Z', valeur: 50 },
+      { ...ORIGINE, id: 'r9', preleveLe: '2026-09-02T08:00:00.000Z', valeur: '50' },
     ]);
     await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
     const gestes = screen.getAllByRole('button', { name: /^Corriger la mesure du/ });
@@ -741,7 +790,7 @@ describe('EstimeMesurePanel — la plage sourcée juxtaposée ([[D-157]])', () =
     id: 'r1',
     analyteCode: 'BIO_FERRITINE',
     analyteLibelle: 'Ferritine',
-    valeur: 42.5,
+    valeur: '42.5',
     unite: 'µg/L',
     uniteCatalogue: 'µg/L',
     preleveLe: '2026-09-01T08:00:00.000Z',

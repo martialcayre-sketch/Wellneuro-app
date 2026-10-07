@@ -15,6 +15,7 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+import { Prisma } from '@/generated/prisma';
 import { GET, POST } from './route';
 
 const URL_BASE = 'http://localhost/api/praticien/biologie/resultats';
@@ -35,7 +36,8 @@ function postRequest(body: unknown): Request {
 const LIGNE_CONSIGNEE = {
   id: 'res1',
   analyteCode: 'BIO_FERRITINE',
-  valeur: 42.5,
+  // Le client Prisma rend un `Decimal`, jamais un `number`.
+  valeur: new Prisma.Decimal('42.5'),
   unite: 'µg/L',
   preleveLe: new Date('2026-09-01T08:00:00.000Z'),
   source: 'saisie_praticien',
@@ -51,7 +53,7 @@ const LIGNE_CONSIGNEE = {
 const LIGNE_CORRECTION = {
   ...LIGNE_CONSIGNEE,
   id: 'res2',
-  valeur: 45.5,
+  valeur: new Prisma.Decimal('45.5'),
   saisiLe: new Date('2026-09-02T09:00:00.000Z'),
   supersedesResultatId: 'res1',
 };
@@ -112,6 +114,16 @@ describe('drapeau étage 2 — fail-closed des DEUX côtés (D-081, D-122 §2)',
 });
 
 describe('GET — la série du dossier, journalisée (GD-1)', () => {
+  it('rend la valeur EXACTE, en notation normale — jamais un flottant ni une exponentielle (LOT-10)', async () => {
+    const valeurs = [`${'9'.repeat(35)}.${'9'.repeat(30)}`, '0.0000001', '0.30000000000000004'];
+    prisma.resultatBiologique.findMany.mockResolvedValue(
+      // Postgres rend l'échelle fixe de la colonne : zéros de queue compris.
+      valeurs.map((v, i) => ({ ...LIGNE_CONSIGNEE, id: `res${i}`, valeur: new Prisma.Decimal(`${v}000`) })),
+    );
+    const payload = await (await GET(getRequest('PAT1'))).json();
+    expect(payload.resultats.map((r: { valeur: string }) => r.valeur)).toEqual(valeurs);
+  });
+
   it('rend la série avec libellé, unité et horodatage ISO', async () => {
     const response = await GET(getRequest('PAT1'));
     expect(response.status).toBe(200);
@@ -121,7 +133,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
         id: 'res1',
         analyteCode: 'BIO_FERRITINE',
         analyteLibelle: 'Ferritine',
-        valeur: 42.5,
+        valeur: '42.5',
         unite: 'µg/L',
         uniteCatalogue: 'µg/L',
         preleveLe: '2026-09-01T08:00:00.000Z',
@@ -203,7 +215,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
 
     it('valeur CORRIGÉE à la validation (48 lu, 4,8 validé) : silence — la marque portait sur 48', async () => {
       prisma.resultatBiologique.findMany.mockResolvedValue([
-        { ...IMPORTEE, valeur: 4.8, ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'µg/L', valeurLue: '48' } },
+        { ...IMPORTEE, valeur: new Prisma.Decimal('4.8'), ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'µg/L', valeurLue: '48' } },
       ]);
       const payload = await (await GET(getRequest('PAT1'))).json();
       expect(payload.resultats[0].faitsLaboratoire).toBeNull();
@@ -234,7 +246,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
     const autre = {
       ...LIGNE_CORRECTION,
       id: 'res3',
-      valeur: 46,
+      valeur: new Prisma.Decimal('46'),
       saisiLe: new Date('2026-09-03T09:00:00.000Z'),
     };
     prisma.resultatBiologique.findMany.mockResolvedValue([LIGNE_CONSIGNEE, LIGNE_CORRECTION, autre]);
@@ -279,7 +291,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
 
   it('le POST, lui, ne journalise PAS : il ne lit rien du dossier (GD-1 sans fausse ligne)', async () => {
     await POST(postRequest({
-      idPatient: 'PAT1', analyteCode: 'BIO_FERRITINE', valeur: 42.5,
+      idPatient: 'PAT1', analyteCode: 'BIO_FERRITINE', valeur: '42,5',
       preleveLe: '2026-09-01T08:00:00.000Z',
     }));
     // L'écriture est tracée par la ligne consignée (saisi_par, saisi_le) —
@@ -298,7 +310,7 @@ describe('POST — la saisie praticien, bornée par le serveur', () => {
   const SAISIE = {
     idPatient: 'PAT1',
     analyteCode: 'BIO_FERRITINE',
-    valeur: 42.5,
+    valeur: '42,5',
     preleveLe: '2026-09-01T08:00:00.000Z',
   };
 
@@ -330,16 +342,35 @@ describe('POST — la saisie praticien, bornée par le serveur', () => {
     expect((await response.json()).reason).toBe('analyte_inactif');
   });
 
-  it('une valeur en CHAÎNE (« 42.5 ») est refusée au niveau route : 400', async () => {
-    const response = await POST(postRequest({ ...SAISIE, valeur: '42.5' }));
+  it('une valeur en NOMBRE JSON (42.5) est refusée au niveau route : 400 — l’exactitude est déjà perdue', async () => {
+    const response = await POST(postRequest({ ...SAISIE, valeur: 42.5 }));
     expect(response.status).toBe(400);
     expect((await response.json()).reason).toBe('valeur_invalide');
   });
 
   it('une valeur au-delà de la capacité DECIMAL(65,30) : 400 motivé, jamais un 500 opaque', async () => {
-    const response = await POST(postRequest({ ...SAISIE, valeur: 1e40 }));
-    expect(response.status).toBe(400);
-    expect((await response.json()).reason).toBe('valeur_hors_capacite');
+    for (const valeur of [`1${'0'.repeat(40)}`, `0,${'1'.repeat(31)}`]) {
+      const response = await POST(postRequest({ ...SAISIE, valeur }));
+      expect(response.status).toBe(400);
+      expect((await response.json()).reason).toBe('valeur_hors_capacite');
+    }
+    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+  });
+
+  it('écrit un `Decimal` EXACT : aucun flottant entre la saisie et la colonne (LOT-10)', async () => {
+    for (const [saisie, attendue] of [
+      ['0,30000000000000004', '0.30000000000000004'],
+      ['12345678901234567,1', '12345678901234567.1'],
+      ['007,500', '7.5'],
+      [`${'9'.repeat(35)},${'9'.repeat(30)}`, `${'9'.repeat(35)}.${'9'.repeat(30)}`],
+    ]) {
+      prisma.resultatBiologique.create.mockClear();
+      const response = await POST(postRequest({ ...SAISIE, valeur: saisie }));
+      expect(response.status, saisie).toBe(201);
+      const data = prisma.resultatBiologique.create.mock.calls[0][0].data;
+      expect(data.valeur).toBeInstanceOf(Prisma.Decimal);
+      expect(data.valeur.toFixed()).toBe(attendue);
+    }
   });
 
   it('un analyte sans unité au catalogue se consigne SANS unité — jamais une unité inventée', async () => {
@@ -437,7 +468,7 @@ describe('POST — la correction d’une mesure (D-124) : une ligne de plus, jam
     preleveLe: new Date('2026-09-01T08:00:00.000Z'),
     source: 'saisie_praticien',
   };
-  const CORRECTION = { idPatient: 'PAT1', supersedesResultatId: 'res1', valeur: 45.5 };
+  const CORRECTION = { idPatient: 'PAT1', supersedesResultatId: 'res1', valeur: '45,5' };
 
   /** Cible trouvée, et TÊTE de son fil relu : le chemin nominal. */
   function cibleCorrigible() {
@@ -453,7 +484,8 @@ describe('POST — la correction d’une mesure (D-124) : une ligne de plus, jam
     expect(response.status).toBe(201);
     const data = prisma.resultatBiologique.create.mock.calls[0][0].data;
     expect(data.supersedesResultatId).toBe('res1');
-    expect(data.valeur).toBe(45.5);
+    expect(data.valeur).toBeInstanceOf(Prisma.Decimal);
+    expect(data.valeur.toFixed()).toBe('45.5');
   });
 
   it('l’analyte et la date VIENNENT DE LA CIBLE : ceux du corps sont ignorés', async () => {
@@ -592,7 +624,7 @@ describe('POST — la correction d’une mesure (D-124) : une ligne de plus, jam
       postRequest({
         idPatient: 'PAT1',
         analyteCode: 'BIO_FERRITINE',
-        valeur: 42.5,
+        valeur: '42,5',
         preleveLe: '2026-09-01T08:00:00.000Z',
       }),
     );
@@ -600,9 +632,9 @@ describe('POST — la correction d’une mesure (D-124) : une ligne de plus, jam
     expect((await response.json()).reason).toBe('analyte_inactif');
   });
 
-  it('la valeur reste validée : une chaîne est refusée en correction comme en saisie', async () => {
+  it('la valeur reste validée : un nombre JSON est refusé en correction comme en saisie', async () => {
     cibleCorrigible();
-    const response = await POST(postRequest({ ...CORRECTION, valeur: '45.5' }));
+    const response = await POST(postRequest({ ...CORRECTION, valeur: 45.5 }));
     expect(response.status).toBe(400);
     expect((await response.json()).reason).toBe('valeur_invalide');
     expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
@@ -660,7 +692,7 @@ describe('POST — la correction d’une mesure (D-124) : une ligne de plus, jam
       postRequest({
         idPatient: 'PAT1',
         analyteCode: 'BIO_FERRITINE',
-        valeur: 42.5,
+        valeur: '42,5',
         preleveLe: '2026-09-01T08:00:00.000Z',
         supersedesResultatId: '   ',
       }),
@@ -675,7 +707,7 @@ describe('POST — la correction d’une mesure (D-124) : une ligne de plus, jam
       postRequest({
         idPatient: 'PAT1',
         analyteCode: 'BIO_FERRITINE',
-        valeur: 42.5,
+        valeur: '42,5',
         preleveLe: '2026-09-01T08:00:00.000Z',
         supersedesResultatId: { $ne: null },
       }),
@@ -698,7 +730,7 @@ describe('POST — la correction d’une mesure (D-124) : une ligne de plus, jam
       postRequest({
         idPatient: 'PAT1',
         analyteCode: 'BIO_FERRITINE',
-        valeur: 42.5,
+        valeur: '42,5',
         preleveLe: '2026-09-01T08:00:00.000Z',
         supersedesResultatId: null,
       }),

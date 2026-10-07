@@ -15,6 +15,8 @@
 // normale ; « <0,5 » est refusé parce qu'il n'est pas un nombre, pas parce
 // qu'il serait bas.
 
+import { canoniserDecimal } from '../valeurDecimale';
+
 export type MotifEcart =
   | 'non_quantitative'
   | 'unite_divergente'
@@ -34,14 +36,16 @@ export const MOTIFS_ECART: readonly MotifEcart[] = Object.freeze([
 const NOMBRE = /^[+-]?\d{1,3}(?:[   ]\d{3})+(?:[.,]\d+)?$|^[+-]?\d+(?:[.,]\d+)?$/;
 
 /**
- * La valeur lue est-elle une mesure QUANTITATIVE ? Rend le nombre, ou `null`
- * pour tout ce qui n'en est pas un (« <0,5 », « positif », « 1,2 x10^9 »).
+ * La valeur lue est-elle une mesure QUANTITATIVE ? Rend le nombre en CHAÎNE
+ * décimale canonique (`valeurDecimale.ts`, LOT-10) — jamais un `number`, qui
+ * arrondirait — ou `null` pour tout ce qui n'en est pas un (« <0,5 »,
+ * « positif », « 1,2 x10^9 »).
  */
-export function lireValeurQuantitative(texte: string): number | null {
+export function lireValeurQuantitative(texte: string): string | null {
   const brut = texte.trim();
   if (!NOMBRE.test(brut)) return null;
-  const nombre = Number(brut.replace(/[   ]/g, '').replace(',', '.'));
-  return Number.isFinite(nombre) ? nombre : null;
+  const [entier, fraction = ''] = brut.replace(/^[+-]/, '').replace(/[   ]/g, '').split(/[.,]/);
+  return canoniserDecimal(brut.startsWith('-'), entier, fraction);
 }
 
 /**

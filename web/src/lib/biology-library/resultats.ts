@@ -14,22 +14,20 @@
 // distingués par l'heure (frontière tracée à la PR #838). La borne « date non
 // future » vit ICI, côté code (`now()` est interdit en CHECK), avec la
 // tolérance de 24 h posée pour les fuseaux — technique, pas clinique.
+//
+// LA VALEUR EST UNE CHAÎNE DÉCIMALE (LOT-10) : elle arrive en texte, ressort
+// en forme canonique, et la route la remet à `Prisma.Decimal` — jamais de
+// `number` entre la saisie et la colonne.
+
+import { depasseCapacite, lireDecimalSaisi } from './valeurDecimale';
 
 /** Tolérance sur « non futur » : fuseaux et horloges décalées, pas un délai clinique. */
 export const TOLERANCE_FUTUR_MS = 24 * 60 * 60 * 1000;
 
-/**
- * Capacité de la colonne `DECIMAL(65,30)` : 35 chiffres avant la virgule.
- * Borne TECHNIQUE nommée comme telle (aucune sémantique clinique, comme la
- * tolérance « non futur ») : refuser ici en français vaut mieux qu'un 500
- * opaque quand Postgres refuse.
- */
-export const CAPACITE_VALEUR_ABS = 1e35;
-
 export type RefusSaisieResultat =
-  /** `valeur` absente, non numérique, ou non finie (NaN, ±Infinity). */
+  /** `valeur` absente, ou pas une CHAÎNE décimale (un `number` est refusé : il a perdu l'exactitude). */
   | 'valeur_invalide'
-  /** `valeur` au-delà de la capacité de la colonne (borne technique). */
+  /** `valeur` au-delà de la capacité de la colonne : 35 chiffres entiers, 30 décimales (borne technique). */
   | 'valeur_hors_capacite'
   /** `preleveLe` absent ou illisible comme date ISO 8601. */
   | 'date_invalide'
@@ -37,7 +35,7 @@ export type RefusSaisieResultat =
   | 'date_future';
 
 export type VerdictSaisieResultat =
-  | { ok: true; valeur: number; preleveLe: Date }
+  | { ok: true; /** Forme canonique (`valeurDecimale.ts`), jamais un `number`. */ valeur: string; preleveLe: Date }
   | { ok: false; raison: RefusSaisieResultat };
 
 export type VerdictDatePrelevement =
@@ -67,11 +65,11 @@ export function validerSaisieResultat(
   entree: { valeur: unknown; preleveLe: unknown },
   maintenant: Date,
 ): VerdictSaisieResultat {
-  const valeur = typeof entree.valeur === 'number' ? entree.valeur : Number.NaN;
-  if (!Number.isFinite(valeur)) {
+  const valeur = lireDecimalSaisi(entree.valeur);
+  if (valeur === null) {
     return { ok: false, raison: 'valeur_invalide' };
   }
-  if (Math.abs(valeur) >= CAPACITE_VALEUR_ABS) {
+  if (depasseCapacite(valeur)) {
     return { ok: false, raison: 'valeur_hors_capacite' };
   }
 
