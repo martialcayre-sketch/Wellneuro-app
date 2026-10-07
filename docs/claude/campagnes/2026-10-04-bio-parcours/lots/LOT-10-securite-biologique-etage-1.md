@@ -221,6 +221,8 @@ encore « pas un filet de sécurité ».
     sélectionne `idCompteRendu` de l'import, la page valide le paramètre, le
     panneau l'ouvre une fois à l'arrivée. Toujours sans `?fil=` : la carte ne
     s'acquitte que par l'acte.
+  - 2026-10-07 : **précondition de BIO-INGEST LOT-04 consignée** (`D-269`
+    §9) : BP-10 est en production, et le constat d'usage n'est pas une garde.
 
 ## Tests
 
