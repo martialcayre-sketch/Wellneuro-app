@@ -468,7 +468,7 @@ describe('FilDuJour — compte rendu biologique à lire (D-268, BP-10)', () => {
     type: 'import_biologique_a_lire',
     titre: 'Compte rendu biologique à lire',
     pourquoi: 'Résultats entrés au dossier le 6 octobre : aucune lecture n’est consignée.',
-    href: '/dashboard/patients/PAT_SEED_01?onglet=trajectoire',
+    href: '/dashboard/patients/PAT_SEED_01?onglet=trajectoire&compteRendu=cr_1',
     actionLabel: 'Ouvrir la biologie',
     cle: 'import_biologique_a_lire:imp_1',
   });
@@ -479,7 +479,7 @@ describe('FilDuJour — compte rendu biologique à lire (D-268, BP-10)', () => {
     await waitFor(() => expect(screen.getByText('Compte rendu biologique à lire')).toBeTruthy());
     expect(screen.getByText('Biologie à lire')).toBeTruthy();
     expect(screen.getByRole('link', { name: /Ouvrir la biologie/ }).getAttribute('href')).toBe(
-      '/dashboard/patients/PAT_SEED_01?onglet=trajectoire',
+      '/dashboard/patients/PAT_SEED_01?onglet=trajectoire&compteRendu=cr_1',
     );
     // Une seule carte écartable : celle du retard, pas celle de la biologie.
     const ecarter = screen.getAllByRole('button', { name: /^Écarter cette carte/ });

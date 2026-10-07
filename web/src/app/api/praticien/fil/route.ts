@@ -268,6 +268,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
             select: {
               id: true,
               idPatient: true,
+              idCompteRendu: true,
               termineLe: true,
               lanceLe: true,
               lignes: {
@@ -302,6 +303,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
           return {
             idImport: i.id,
             idPatient: i.idPatient,
+            idCompteRendu: i.idCompteRendu,
             nbValidees: validees.length,
             nbProposees: i.lignes.length - validees.length,
             valideLe,

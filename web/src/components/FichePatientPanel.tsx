@@ -440,6 +440,7 @@ export function FichePatientPanel({
   idPatient,
   ongletInitial,
   phaseDemandee,
+  compteRenduDemande,
   fixtureValidationErgo = null,
   lienMagiqueActif = false,
 }: {
@@ -453,6 +454,9 @@ export function FichePatientPanel({
    * écrasée. Voir `phaseChoisieParPraticien` plus bas.
    */
   phaseDemandee?: PhaseFiche;
+  /** Compte rendu biologique à ouvrir à l'arrivée (deep-link `?compteRendu=`,
+   *  validé par la page serveur — carte du Fil, [[D-268]]). */
+  compteRenduDemande?: string;
   fixtureValidationErgo?: ValidationErgoC1Fixture | null;
   /** Drapeau G4, lu au serveur par la page. Sans lui, le menu du cockpit perd
    *  « Lien à usage unique (24 h) » que le rayon, lui, propose. */
@@ -2717,6 +2721,7 @@ export function FichePatientPanel({
               modeViePresent={modeViePresent}
               modeVieT0CycleCourant={modeVieT0CycleCourant}
               needIdsPriorite={etatRuntime?.needIdsPrioriteSelectionnee}
+              compteRenduDemande={compteRenduDemande}
             />
           ))}
       </div>

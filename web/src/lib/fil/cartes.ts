@@ -731,8 +731,12 @@ export function cartesImportsALire(
         pourquoi: `${pourquoi} ${MENTION_PAS_UN_FILET}`,
         date: date.toISOString(),
         // Le cockpit biologie vit sous l'onglet Trajectoire : on y lit la
-        // restitution et on y pose l'acte — jamais depuis la carte.
-        href: `/dashboard/patients/${encodeURIComponent(ligne.idPatient)}?onglet=trajectoire`,
+        // restitution et on y pose l'acte — jamais depuis la carte. Le lien
+        // ouvre le compte rendu désigné ; SANS marqueur `?fil=` : la carte ne
+        // s'acquitte pas par lecture, seul l'acte la fait sortir.
+        href:
+          `/dashboard/patients/${encodeURIComponent(ligne.idPatient)}?onglet=trajectoire`
+          + `&compteRendu=${encodeURIComponent(ligne.idCompteRendu)}`,
         actionLabel: 'Ouvrir la biologie',
         cle: cleCarte('import_biologique_a_lire', ligne.idImport),
       };

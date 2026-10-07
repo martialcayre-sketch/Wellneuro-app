@@ -9482,3 +9482,17 @@ Effet constaté par sonde (`401` au lieu de `503`).
 consignées ; lien direct vers le compte rendu en file d'attente.
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-07 — BP-10, la carte ouvre le compte rendu désigné
+
+**Décidé.** Suite du LOT-10, sans lot neuf. Le lien de la carte porte
+`?compteRendu=`, sans `?fil=`. La page valide le paramètre, le panneau
+l'ouvre une fois par demande nouvelle.
+
+**Écarté.** Un lot neuf, qui aurait été de la comptabilité sans objet.
+Résoudre l'import côté panneau : le Fil connaît déjà le compte rendu.
+
+**Prochaine action.** PR, CI, merge, constat du déploiement. Le constat
+d'usage viendra quand des lectures seront consignées (0 à 00:34).
+
+**Questions ouvertes.** Aucune.

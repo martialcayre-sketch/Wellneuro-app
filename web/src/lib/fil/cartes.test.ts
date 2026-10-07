@@ -786,23 +786,30 @@ describe('cartesImportsALire — compte rendu biologique validé sans lecture (D
   const ligne = (idImport: string, partiel: Partial<Parameters<typeof cartesImportsALire>[0][number]> = {}) => ({
     idImport,
     idPatient: 'P-SOPHIE',
+    idCompteRendu: 'cr_1',
     valideLe: VALIDE_LE,
     nbProposees: 0,
     derniereRevocation: null,
     ...partiel,
   });
 
-  it('une carte par import, ancrée sur l’import, vers le cockpit biologie', () => {
+  it('une carte par import, ancrée sur l’import, vers le compte rendu qu’elle désigne', () => {
     const [carte] = cartesImportsALire([ligne('imp_1')], NOMS);
     expect(carte).toMatchObject({
       type: 'import_biologique_a_lire',
       patient: 'Sophie Nicola',
       titre: 'Compte rendu biologique à lire',
       cle: 'import_biologique_a_lire:imp_1',
-      href: '/dashboard/patients/P-SOPHIE?onglet=trajectoire',
+      href: '/dashboard/patients/P-SOPHIE?onglet=trajectoire&compteRendu=cr_1',
       actionLabel: 'Ouvrir la biologie',
       date: VALIDE_LE.toISOString(),
     });
+  });
+
+  it('son lien NE porte PAS le marqueur `?fil=` : la carte ne s’acquitte pas par lecture', () => {
+    const [carte] = cartesImportsALire([ligne('imp_1', { idCompteRendu: 'cr 2/é' })], NOMS);
+    expect(new URL(carte.href, 'https://x').searchParams.get('fil')).toBeNull();
+    expect(new URL(carte.href, 'https://x').searchParams.get('compteRendu')).toBe('cr 2/é');
   });
 
   it('dit qu’elle n’est pas un filet de sécurité (§9), sous ses trois formes', () => {

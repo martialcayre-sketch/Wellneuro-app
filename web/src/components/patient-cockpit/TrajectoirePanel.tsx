@@ -68,6 +68,7 @@ export function TrajectoirePanel({
   modeViePresent,
   modeVieT0CycleCourant,
   needIdsPriorite,
+  compteRenduDemande,
 }: {
   trajectoire: Trajectoire | null;
   idPatient?: string;
@@ -86,6 +87,9 @@ export function TrajectoirePanel({
    * proposition de re-passation ciblée au jalon. Absent ou vide : aucun bloc.
    */
   needIdsPriorite?: number[];
+  /** Compte rendu biologique à ouvrir à l'arrivée (deep-link `?compteRendu=`,
+   *  validé par la page serveur — carte du Fil, [[D-268]]). */
+  compteRenduDemande?: string;
 }) {
   // Index de repère sélectionné. Depuis SP-CONV LOT-03, la sélection n'est
   // plus une simple mise en avant : elle pilote la lecture datée `asOf`
@@ -331,7 +335,7 @@ export function TrajectoirePanel({
               libelle={`épisode ${cycles.length}`}
             />
           )}
-          <EstimeMesurePanel idPatient={idPatient} />
+          <EstimeMesurePanel idPatient={idPatient} compteRenduDemande={compteRenduDemande} />
           {/* Orientation NNPP2 (LOT-06) — au présent seulement. Une
               recommandation d'exploration se lit sur l'état courant du dossier ;
               l'afficher en lecture datée la ferait passer pour ce que la table

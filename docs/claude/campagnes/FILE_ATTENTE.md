@@ -332,8 +332,11 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   touche l'extraction.
 
 - **Suite — la carte « compte rendu à lire » ouvre le compte rendu qu'elle
-  désigne** (arbitrage du responsable du 2026-10-06, PR #1347, `D-268`). La
-  carte du Fil `import_biologique_a_lire` mène aujourd'hui à l'onglet
+  désigne — LIVRÉE le 2026-10-07** (suite du LOT-10 : paramètre
+  `?compteRendu=`, validé par la page, ouvert par `ImportCompteRenduPanel` ;
+  bancs carte, route du Fil et panneau). Arbitrage du responsable du
+  2026-10-06, PR #1347, `D-268`. La
+  carte du Fil `import_biologique_a_lire` menait à l'onglet
   Trajectoire de la fiche : avec plusieurs dépôts, le praticien retrouve
   lui-même le compte rendu. **Correctif** : la carte porte l'identifiant du
   compte rendu ; le paramètre traverse la fiche, `TrajectoirePanel`,

@@ -250,7 +250,14 @@ function CorrectionMesure({
   );
 }
 
-export function EstimeMesurePanel({ idPatient }: { idPatient?: string }) {
+export function EstimeMesurePanel({
+  idPatient,
+  compteRenduDemande,
+}: {
+  idPatient?: string;
+  /** Compte rendu à ouvrir à l'arrivée (carte du Fil, [[D-268]]). */
+  compteRenduDemande?: string;
+}) {
   const resultsEnabled = useCbResultsEnabled();
   const bioIngestEnabled = useBioIngestEnabled();
   const [resultats, setResultats] = useState<ResultatAffiche[]>([]);
@@ -626,6 +633,7 @@ export function EstimeMesurePanel({ idPatient }: { idPatient?: string }) {
           analytes={analytes}
           mesures={resultats}
           onResultatsEnregistres={chargerResultats}
+          compteRenduDemande={compteRenduDemande}
         />
       )}
     </section>
