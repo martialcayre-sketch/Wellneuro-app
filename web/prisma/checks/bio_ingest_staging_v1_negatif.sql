@@ -98,9 +98,11 @@ DECLARE
   doc_max bytea := convert_to(repeat('x', 10485760), 'UTF8');
 
   -- ORDRE ALPHABÉTIQUE OBLIGATOIRE (comparé à un `array_agg(... ORDER BY)`).
+  -- `origine` et `ecarte_*` : la transmission par le patient ([[D-269]]),
+  -- tenue par `bio_ingest_transmission_patient_v1_negatif.sql`.
   COLS_CR CONSTANT text[] := ARRAY[
-    'contenu', 'depose_le', 'depose_par', 'empreinte_sha256', 'id', 'id_patient', 'motif_purge', 'purge_le',
-    'type_mime'
+    'contenu', 'depose_le', 'depose_par', 'ecarte_le', 'ecarte_par', 'empreinte_sha256', 'id', 'id_patient',
+    'motif_ecart', 'motif_purge', 'origine', 'purge_le', 'type_mime'
   ];
   COLS_IMPORT CONSTANT text[] := ARRAY[
     'id', 'id_compte_rendu', 'id_patient', 'laboratoire_lu', 'lance_le', 'lance_par', 'modele', 'motif_echec',
@@ -120,6 +122,7 @@ DECLARE
     'comptes_rendus_biologiques_id_patient_key:t',
     'comptes_rendus_biologiques_patient_depose_idx:f',
     'comptes_rendus_biologiques_patient_empreinte_key:t',
+    'comptes_rendus_biologiques_patient_origine_idx:f',
     'comptes_rendus_biologiques_pkey:t',
     'imports_biologiques_compte_rendu_idx:f',
     'imports_biologiques_id_patient_key:t',

@@ -56,7 +56,8 @@ export type ImportLu = {
 export type CompteRenduLu = {
   id: string;
   typeMime: string;
-  deposePar: string;
+  /** NULL pour un document transmis par le patient ([[D-269]] §2). */
+  deposePar: string | null;
   deposeLe: string;
   /** Le document a été effacé ([[D-258]]) : il ne se relit plus, ses lignes restent décidables. */
   purgeLe: string | null;

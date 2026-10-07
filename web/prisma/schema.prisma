@@ -2539,11 +2539,20 @@ model CompteRenduBiologique {
   typeMime        String    @map("type_mime") // pdf | jpeg | png | webp (CHECK migration)
   /// Recalculée et vérifiée égale par la base (CHECK) ; survit à la purge.
   empreinteSha256 String    @map("empreinte_sha256")
-  deposePar       String    @map("depose_par") // email praticien, posé côté serveur
+  /// `praticien` | `patient` ([[D-269]] §2, CHECK migration) : posée au dépôt, figée.
+  origine         String    @default("praticien") @map("origine")
+  /// Email praticien, posé côté serveur ; NULL si et seulement si `origine` =
+  /// `patient` (CHECK migration `bio_ingest_transmission_patient_v1`).
+  deposePar       String?   @map("depose_par")
   deposeLe        DateTime  @default(now()) @map("depose_le")
   /// Posé par la base à la purge, en UTC explicite.
   purgeLe         DateTime? @map("purge_le")
-  motifPurge      String?   @map("motif_purge") // lignes_decidees | echeance (CHECK migration)
+  motifPurge      String?   @map("motif_purge") // lignes_decidees | echeance | ecarte (CHECK migration)
+  /// L'écart d'un document transmis par le patient ([[D-269]] §3) : entier ou
+  /// absent, posé par la même écriture que la purge `ecarte`, date par la base.
+  ecarteLe        DateTime? @map("ecarte_le")
+  ecartePar       String?   @map("ecarte_par") // email praticien, posé côté serveur
+  motifEcart      String?   @map("motif_ecart") // illisible | document_non_conforme (CHECK migration)
 
   patient Patient            @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
   imports ImportBiologique[]
@@ -2551,6 +2560,7 @@ model CompteRenduBiologique {
   @@unique([idPatient, empreinteSha256], map: "comptes_rendus_biologiques_patient_empreinte_key")
   @@unique([id, idPatient], map: "comptes_rendus_biologiques_id_patient_key")
   @@index([idPatient, deposeLe], map: "comptes_rendus_biologiques_patient_depose_idx")
+  @@index([idPatient, origine, deposeLe], map: "comptes_rendus_biologiques_patient_origine_idx")
   @@map("comptes_rendus_biologiques")
 }
 

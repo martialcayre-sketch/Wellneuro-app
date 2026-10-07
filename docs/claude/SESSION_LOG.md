@@ -9542,3 +9542,25 @@ lignes de l'import en attente, puis consigner la lecture (constat d'usage
 BP-10). LOT-04 : la migration attend sa confirmation.
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-07 — BIO-INGEST LOT-04, PR 2 : migration de la transmission patient
+
+**Décidé.** Migration `bio_ingest_transmission_patient_v1`, seule dans sa
+PR, confirmée par le responsable. Elle ajoute :
+- l'origine du document ;
+- un `depose_par` nullable, la base tenant « praticien ⇔ auteur » ;
+- l'écart jugé par le trigger de purge ;
+- la réciproque, ajoutée sur le P1 de `wn-reviewer` : plus aucune
+  validation après l'écart, sous verrou partagé.
+
+Le contrat négatif mord ; la preuve est la mutation de l'ancienne fonction.
+
+**Écarté.** Écarter un document déjà purgé : sans document, le praticien
+ne peut rien juger.
+
+**Prochaine action.** PR, CI, merge, puis `release-db` approuvée et constat
+par conteneur. Ensuite la PR 3, le code sous drapeau éteint.
+
+**Questions ouvertes.** Un document patient purgé sans écart reste
+« reçu », et le plafond ne compte que les non purgés : à confirmer par le
+responsable.
