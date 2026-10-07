@@ -82,7 +82,7 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 | LOT-07 | Faits du laboratoire : intervalle et marquage imprimés, transcrits avant la purge (ajouté par `D-266` §15) ; avancé avant LOT-04 | terminé (2026-10-06, #1326, #1328, #1332, #1333, #1334 ; D-267) | **oui, confirmation obligatoire** | LOT-02, BP-00 et BP-01 (BIO-PARCOURS) |
 | LOT-08 | Durcissement : borne totale de l'appel d'extraction (flux compris) et délai explicite de la transaction des lignes | terminé (2026-10-05) | non | LOT-02 |
 | LOT-09 | « Relancer la lecture » d'un compte rendu sans ligne validée, jamais destructive | terminé (2026-10-06) | non | LOT-02, LOT-07 |
-| LOT-10 | Décimales exactes de bout en bout, toutes voies (cadrage LOT-05 du 2026-10-07) | à_faire | à confirmer, seule si nécessaire | LOT-01, LOT-02 |
+| LOT-10 | Décimales exactes de bout en bout, toutes voies (cadrage LOT-05 du 2026-10-07) | terminé (2026-10-07) | non | LOT-01, LOT-02 |
 
 **Lot courant : LOT-04** (déclaré le 2026-10-07), après la clôture du
 LOT-09. La précondition de `D-266` §15 est remplie : le LOT-07 est terminé

@@ -3,12 +3,22 @@ import { lireValeurQuantitative, preMarquage, unitesConcordent } from './valeurL
 
 describe('lireValeurQuantitative — une mesure, ou rien', () => {
   it('lit la virgule décimale française, le point, le signe et les milliers espacés', () => {
-    expect(lireValeurQuantitative('12,5')).toBe(12.5);
-    expect(lireValeurQuantitative('12.5')).toBe(12.5);
-    expect(lireValeurQuantitative(' 48 ')).toBe(48);
-    expect(lireValeurQuantitative('-0,3')).toBe(-0.3);
-    expect(lireValeurQuantitative('1 250')).toBe(1250);
-    expect(lireValeurQuantitative('1 250,5')).toBe(1250.5);
+    expect(lireValeurQuantitative('12,5')).toBe('12.5');
+    expect(lireValeurQuantitative('12.5')).toBe('12.5');
+    expect(lireValeurQuantitative(' 48 ')).toBe('48');
+    expect(lireValeurQuantitative('-0,3')).toBe('-0.3');
+    expect(lireValeurQuantitative('1 250')).toBe('1250');
+    expect(lireValeurQuantitative('1 250,5')).toBe('1250.5');
+  });
+
+  it('rend une CHAÎNE canonique exacte, jamais un flottant (LOT-10)', () => {
+    expect(lireValeurQuantitative('0,30000000000000004')).toBe('0.30000000000000004');
+    expect(lireValeurQuantitative('12345678901234567,1')).toBe('12345678901234567.1');
+    expect(lireValeurQuantitative('007,500')).toBe('7.5');
+    expect(lireValeurQuantitative('-0,00')).toBe('0');
+    expect(lireValeurQuantitative('+5')).toBe('5');
+    expect(lireValeurQuantitative('1\u00a0250,50')).toBe('1250.5');
+    expect(lireValeurQuantitative('1\u202f250')).toBe('1250');
   });
 
   it('refuse tout ce qui n’est pas un nombre : opérateur, texte, exposant', () => {

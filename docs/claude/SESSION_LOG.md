@@ -9647,3 +9647,17 @@ fichiers fictifs envoyés) ; LOT-10 en session à part.
 
 **Questions ouvertes.** Canal (MSSanté ou HTTPS), destinataire non
 prescripteur, rôles RGPD, sémantique des rectificatifs.
+
+## 2026-10-07 — BIO-INGEST LOT-10 : décimales exactes de bout en bout
+
+**Décidé.** Valeur en chaîne décimale canonique de l'écran à `Prisma.Decimal`,
+sur les quatre voies ; restitution par `toFixed()`. Pas de migration
+(`DECIMAL(65,30)`) ; refus au-delà de 30 décimales. Un `number` JSON est
+refusé.
+
+**Écarté.** Accepter encore un `number` pour les onglets ouverts (l'exactitude
+est déjà perdue) ; toucher le moteur clinique (`D-122`).
+
+**Prochaine action.** PR du lot, CI.
+
+**Questions ouvertes.** Aucune sur le lot.

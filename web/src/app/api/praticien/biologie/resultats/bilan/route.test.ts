@@ -21,6 +21,7 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+import { Prisma } from '@/generated/prisma';
 import { POST } from './route';
 
 const URL_BILAN = 'http://localhost/api/praticien/biologie/resultats/bilan';
@@ -47,8 +48,8 @@ function bilan(lignes: unknown[], extra: Record<string, unknown> = {}) {
 }
 
 const DEUX_LIGNES = [
-  { analyteCode: 'BIO_A0', valeur: 42.5 },
-  { analyteCode: 'BIO_A1', valeur: 7 },
+  { analyteCode: 'BIO_A0', valeur: '42,5' },
+  { analyteCode: 'BIO_A1', valeur: '7' },
 ];
 
 beforeEach(() => {
@@ -84,7 +85,7 @@ function donneesEcrites() {
 
 describe('bilan — tout ou rien (A3)', () => {
   it('9 lignes valides + 1 invalide ⇒ RIEN n’est écrit, la 10e ligne est nommée', async () => {
-    const lignes = CATALOGUE.map((a, i) => ({ analyteCode: a.code, valeur: i === 9 ? 'abc' : i + 1 }));
+    const lignes = CATALOGUE.map((a, i) => ({ analyteCode: a.code, valeur: i === 9 ? 'abc' : String(i + 1) }));
     const response = await POST(postRequest(bilan(lignes)));
     expect(response.status).toBe(400);
     const payload = await response.json();
@@ -98,7 +99,7 @@ describe('bilan — tout ou rien (A3)', () => {
   });
 
   it('10 lignes valides ⇒ UNE transaction de 10 créations, 201', async () => {
-    const lignes = CATALOGUE.map((a, i) => ({ analyteCode: a.code, valeur: i + 1 }));
+    const lignes = CATALOGUE.map((a, i) => ({ analyteCode: a.code, valeur: String(i + 1) }));
     const response = await POST(postRequest(bilan(lignes)));
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ ok: true, nombre: 10 });
@@ -111,8 +112,8 @@ describe('bilan — tout ou rien (A3)', () => {
       postRequest(
         bilan([
           { analyteCode: 'BIO_A0', valeur: 'x' },
-          { analyteCode: 'BIO_A1', valeur: 1 },
-          { analyteCode: 'BIO_INCONNU', valeur: 2 },
+          { analyteCode: 'BIO_A1', valeur: '1' },
+          { analyteCode: 'BIO_INCONNU', valeur: '2' },
         ]),
       ),
     );
@@ -128,7 +129,7 @@ describe('bilan — tout ou rien (A3)', () => {
     const response = await POST(
       postRequest(
         bilan([
-          { analyteCode: 'BIO_INCONNU', valeur: 1 },
+          { analyteCode: 'BIO_INCONNU', valeur: '1' },
           { analyteCode: 'BIO_A1', valeur: 'x' },
         ]),
       ),
@@ -150,8 +151,8 @@ describe('bilan — ce que le serveur pose, et lui seul', () => {
     const response = await POST(
       postRequest(
         bilan([
-          { analyteCode: 'BIO_A0', valeur: 42.5, unite: 'mg/L', source: 'import_labo', saisiPar: 'x@y.fr' },
-          { analyteCode: 'BIO_A1', valeur: 7 },
+          { analyteCode: 'BIO_A0', valeur: '42,5', unite: 'mg/L', source: 'import_labo', saisiPar: 'x@y.fr' },
+          { analyteCode: 'BIO_A1', valeur: '7' },
         ]),
       ),
     );
@@ -160,7 +161,7 @@ describe('bilan — ce que le serveur pose, et lui seul', () => {
       {
         idPatient: 'PAT1',
         analyteCode: 'BIO_A0',
-        valeur: 42.5,
+        valeur: new Prisma.Decimal('42.5'),
         unite: 'u0',
         preleveLe: new Date(PRELEVE_LE),
         source: 'saisie_praticien',
@@ -170,7 +171,7 @@ describe('bilan — ce que le serveur pose, et lui seul', () => {
       {
         idPatient: 'PAT1',
         analyteCode: 'BIO_A1',
-        valeur: 7,
+        valeur: new Prisma.Decimal('7'),
         unite: 'u1',
         preleveLe: new Date(PRELEVE_LE),
         source: 'saisie_praticien',
@@ -182,13 +183,13 @@ describe('bilan — ce que le serveur pose, et lui seul', () => {
 
   it('un analyte sans unité au catalogue se consigne SANS unité — jamais une unité inventée', async () => {
     prisma.biologyAnalyte.findMany.mockResolvedValueOnce([{ code: 'BIO_A0', unite: null, actif: true }]);
-    await POST(postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: 3, unite: 'mg/L' }])));
+    await POST(postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: '3', unite: 'mg/L' }])));
     expect(donneesEcrites()[0].unite).toBeNull();
   });
 
   it('une ligne qui porte `supersedesResultatId` est REFUSÉE — un bilan ne corrige rien', async () => {
     const response = await POST(
-      postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: 1, supersedesResultatId: 'res1' }, DEUX_LIGNES[1]])),
+      postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: '1', supersedesResultatId: 'res1' }, DEUX_LIGNES[1]])),
     );
     expect(response.status).toBe(400);
     const payload = await response.json();
@@ -200,7 +201,7 @@ describe('bilan — ce que le serveur pose, et lui seul', () => {
 
   it('`supersedesResultatId: null` vaut absence de chaîne : la ligne passe', async () => {
     const response = await POST(
-      postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: 1, supersedesResultatId: null }])),
+      postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: '1', supersedesResultatId: null }])),
     );
     expect(response.status).toBe(201);
   });
@@ -233,7 +234,7 @@ describe('bilan — refus par ligne', () => {
 
   it('le même analyte deux fois dans le bilan : la SECONDE ligne est refusée, 400', async () => {
     const response = await POST(
-      postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: 1 }, { analyteCode: ' BIO_A0 ', valeur: 2 }])),
+      postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: '1' }, { analyteCode: ' BIO_A0 ', valeur: '2' }])),
     );
     expect(response.status).toBe(400);
     expect((await response.json()).lignes).toEqual([
@@ -243,7 +244,7 @@ describe('bilan — refus par ligne', () => {
 
   it('le doublon interne se voit MÊME si la première ligne a une valeur invalide — un seul passage', async () => {
     const response = await POST(
-      postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: 'abc' }, { analyteCode: 'BIO_A0', valeur: 2 }])),
+      postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: 'abc' }, { analyteCode: 'BIO_A0', valeur: '2' }])),
     );
     expect((await response.json()).lignes.map((l: { index: number; reason: string }) => [l.index, l.reason])).toEqual([
       [0, 'valeur_invalide'],
@@ -252,20 +253,20 @@ describe('bilan — refus par ligne', () => {
   });
 
   it('analyte inconnu : 409 nommé', async () => {
-    const response = await POST(postRequest(bilan([{ analyteCode: 'BIO_ZZZ', valeur: 1 }])));
+    const response = await POST(postRequest(bilan([{ analyteCode: 'BIO_ZZZ', valeur: '1' }])));
     expect(response.status).toBe(409);
     expect((await response.json()).lignes[0].reason).toBe('analyte_inconnu');
   });
 
   it('analyte inactif : pas de nouvelle mesure sur une fiche retirée', async () => {
     prisma.biologyAnalyte.findMany.mockResolvedValueOnce([{ code: 'BIO_A0', unite: 'u0', actif: false }]);
-    const response = await POST(postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: 1 }])));
+    const response = await POST(postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: '1' }])));
     expect(response.status).toBe(409);
     expect((await response.json()).lignes[0].reason).toBe('analyte_inactif');
   });
 
   it('ligne sans analyte, ou ligne qui n’est pas un objet : refus de forme nommé', async () => {
-    const response = await POST(postRequest(bilan([{ valeur: 1 }, null, DEUX_LIGNES[0]])));
+    const response = await POST(postRequest(bilan([{ valeur: '1' }, null, DEUX_LIGNES[0]])));
     expect(response.status).toBe(400);
     expect((await response.json()).lignes.map((l: { index: number; reason: string }) => [l.index, l.reason])).toEqual([
       [0, 'analyte_absent'],
@@ -273,20 +274,38 @@ describe('bilan — refus par ligne', () => {
     ]);
   });
 
-  it('une valeur en CHAÎNE (« 42.5 ») est refusée, comme en unitaire', async () => {
-    const response = await POST(postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: '42.5' }])));
+  it('une valeur en NOMBRE JSON (42.5) est refusée, comme en unitaire — l’exactitude est déjà perdue', async () => {
+    const response = await POST(postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: 42.5 }])));
     expect((await response.json()).lignes[0].reason).toBe('valeur_invalide');
   });
 
+  it('chaque ligne s’écrit en `Decimal` EXACT : aucun flottant entre la saisie et la colonne (LOT-10)', async () => {
+    const response = await POST(
+      postRequest(
+        bilan([
+          { analyteCode: 'BIO_A0', valeur: '0,30000000000000004' },
+          { analyteCode: 'BIO_A1', valeur: '007,500' },
+          { analyteCode: 'BIO_A2', valeur: `${'9'.repeat(35)},${'9'.repeat(30)}` },
+        ]),
+      ),
+    );
+    expect(response.status).toBe(201);
+    const valeurs = donneesEcrites().map(d => {
+      expect(d.valeur).toBeInstanceOf(Prisma.Decimal);
+      return (d.valeur as InstanceType<typeof Prisma.Decimal>).toFixed();
+    });
+    expect(valeurs).toEqual(['0.30000000000000004', '7.5', `${'9'.repeat(35)}.${'9'.repeat(30)}`]);
+  });
+
   it('une valeur au-delà de la capacité DECIMAL(65,30) : refus motivé, jamais un 500', async () => {
-    const response = await POST(postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: 1e36 }])));
+    const response = await POST(postRequest(bilan([{ analyteCode: 'BIO_A0', valeur: `1${'0'.repeat(35)}` }])));
     expect(response.status).toBe(400);
     expect((await response.json()).lignes[0].reason).toBe('valeur_hors_capacite');
   });
 
   it('refus d’état et de forme mêlés : 400 — la faute est d’abord au corps', async () => {
     const response = await POST(
-      postRequest(bilan([{ analyteCode: 'BIO_ZZZ', valeur: 1 }, { analyteCode: 'BIO_A1', valeur: 'x' }])),
+      postRequest(bilan([{ analyteCode: 'BIO_ZZZ', valeur: '1' }, { analyteCode: 'BIO_A1', valeur: 'x' }])),
     );
     expect(response.status).toBe(400);
   });
@@ -317,7 +336,7 @@ describe('bilan — refus du bilan entier', () => {
   });
 
   it('bilan au-delà de la borne technique : 400, aucune lecture', async () => {
-    const lignes = Array.from({ length: 101 }, (_, i) => ({ analyteCode: `BIO_${i}`, valeur: 1 }));
+    const lignes = Array.from({ length: 101 }, (_, i) => ({ analyteCode: `BIO_${i}`, valeur: '1' }));
     const response = await POST(postRequest(bilan(lignes)));
     expect(response.status).toBe(400);
     expect((await response.json()).reason).toBe('bilan_trop_long');

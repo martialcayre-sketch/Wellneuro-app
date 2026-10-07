@@ -46,7 +46,8 @@ type MotifEcartDocument = 'illisible' | 'document_non_conforme';
 
 export type MesureAuDossier = {
   analyteCode: string;
-  valeur: number;
+  /** Décimal exact en forme canonique (LOT-10). */
+  valeur: string;
   unite: string | null;
   preleveLe: string;
   /** `null` ⇒ cette mesure fait foi (non corrigée). */

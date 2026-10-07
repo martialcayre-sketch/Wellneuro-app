@@ -60,10 +60,16 @@ const IMPORTEURS_ADMIS = [
   'web/src/components/biologie/RayonBiologiePanel.tsx',
   'web/src/components/patient-cockpit/ArbitrageBiologiquePanel.tsx',
   'web/src/components/patient-cockpit/ClinicalRuntimeSection.tsx',
+  // La saisie d'une valeur (BIO-INGEST LOT-10) : le module PUR
+  // `valeurDecimale` seul, qui met en forme ce que le praticien tape — aucune
+  // donnée lue, aucune qualification.
+  'web/src/components/patient-cockpit/EstimeMesurePanel.tsx',
   'web/src/components/patient-cockpit/ImportCompteRenduPanel.tsx',
   // L'écran de l'acte de lecture ([[D-268]], BP-10) : codes et états, sans valeur.
   'web/src/components/patient-cockpit/LectureImportBiologique.tsx',
   'web/src/components/patient-cockpit/PropositionBilanPanel.tsx',
+  // Même motif (LOT-10) : `valeurDecimale` seul.
+  'web/src/components/patient-cockpit/SaisieBilan.tsx',
   // Portes biologiques des assiettes ([[D-245]]).
   'web/src/lib/clinical/portesBiologiquesService.ts',
   // La carte « compte rendu à lire » du Fil ([[D-268]], BP-10) : le module pur

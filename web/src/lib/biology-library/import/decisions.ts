@@ -1,3 +1,4 @@
+import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 import { validerSaisieResultat } from '@/lib/biology-library/resultats';
@@ -71,7 +72,7 @@ export const MESSAGES_REFUS_DECISION: Record<string, string> = {
   analyte_inactif: 'Cet analyte est inactif au catalogue : pas de nouvelle mesure.',
   analyte_en_double: 'Deux lignes portent le même analyte au même horodatage : gardez-en une.',
   valeur_invalide: 'La valeur mesurée doit être un nombre.',
-  valeur_hors_capacite: 'La valeur dépasse la capacité de stockage (35 chiffres) : vérifiez la saisie.',
+  valeur_hors_capacite: 'La valeur dépasse la capacité de stockage (35 chiffres avant la virgule, 30 après) : vérifiez la saisie.',
   date_invalide: 'La date de prélèvement est illisible.',
   date_future: 'La date de prélèvement est dans le futur : un prélèvement n’anticipe pas.',
   heure_absente: 'L’heure du prélèvement n’a pas été lue : saisissez-la.',
@@ -103,7 +104,7 @@ export type IssueDecisions =
   | { ok: true; validees: number; ecartees: number; documentPurge: boolean }
   | { ok: false; reason: string; error: string; status: number; lignes?: RefusDecision[] };
 
-type Validation = { idLigne: string; analyteCode: string; valeur: number; preleveLe: Date; unite: string | null };
+type Validation = { idLigne: string; analyteCode: string; valeur: string; preleveLe: Date; unite: string | null };
 type Ecart = { idLigne: string; motif: MotifEcart };
 
 class ImportRemplace extends Error {
@@ -305,7 +306,8 @@ export async function deciderLignes(params: {
           data: {
             idPatient,
             analyteCode: v.analyteCode,
-            valeur: v.valeur,
+            // Chaîne canonique → `Decimal` : aucun flottant (LOT-10).
+            valeur: new Prisma.Decimal(v.valeur),
             unite: v.unite,
             preleveLe: v.preleveLe,
             source: 'saisie_praticien',

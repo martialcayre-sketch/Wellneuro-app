@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
+import { lireDecimalSaisi } from '@/lib/biology-library/valeurDecimale';
 import { useBioIngestEnabled, useCbResultsEnabled } from './CbFeatureProvider';
 import { ImportCompteRenduPanel } from './ImportCompteRenduPanel';
 import { SaisieBilan, type AnalyteChoix, type IssueBilan } from './SaisieBilan';
@@ -27,7 +28,8 @@ type ResultatAffiche = {
   id: string;
   analyteCode: string;
   analyteLibelle: string;
-  valeur: number;
+  /** Décimal exact en forme canonique, tel que la route le rend (LOT-10). */
+  valeur: string;
   unite: string | null;
   /**
    * L'unité que l'analyte porte AUJOURD'HUI au catalogue — celle qui sera
@@ -102,7 +104,7 @@ function formatDateHeure(iso: string): string {
   return date.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
-function formatValeur(mesure: { valeur: number; unite: string | null }): string {
+function formatValeur(mesure: { valeur: string; unite: string | null }): string {
   return `${mesure.valeur}${mesure.unite ? ` ${mesure.unite}` : ''}`;
 }
 
@@ -124,13 +126,14 @@ function CorrectionMesure({
   /** Le catalogue a-t-il été lu JUSQU'AU BOUT ? Sinon `null` ne prouve rien. */
   catalogueLu: boolean;
   disabled: boolean;
-  onCorriger: (valeur: number) => Promise<boolean>;
+  onCorriger: (valeur: string) => Promise<boolean>;
   onAnnuler: () => void;
 }) {
-  const [valeur, setValeur] = useState(String(mesure.valeur));
+  const [valeur, setValeur] = useState(mesure.valeur);
   const champ = useRef<HTMLInputElement | null>(null);
-  const valeurNum = Number(valeur.replace(',', '.'));
-  const prete = valeur.trim() !== '' && Number.isFinite(valeurNum);
+  // Chaîne décimale canonique, jamais un `number` (LOT-10).
+  const valeurCanonique = lireDecimalSaisi(valeur);
+  const prete = valeurCanonique !== null;
 
   // LE LABEL DOIT DIRE L'UNITÉ QUI SERA CONSIGNÉE, pas celle d'origine. Le
   // serveur relit l'unité sur l'analyte au catalogue : si elle a changé depuis
@@ -233,7 +236,9 @@ function CorrectionMesure({
         <button
           type="button"
           disabled={disabled || !prete}
-          onClick={() => void onCorriger(valeurNum)}
+          onClick={() => {
+            if (valeurCanonique !== null) void onCorriger(valeurCanonique);
+          }}
           className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           Consigner la correction
@@ -349,7 +354,7 @@ export function EstimeMesurePanel({
   // un refus (fil déjà corrigé, dossier clos, 500) laisse la saisie intacte
   // plutôt que de forcer une re-frappe de mémoire d'une donnée clinique.
   const consigner = useCallback(
-    async (saisie: { supersedesResultatId: string; valeur: number }): Promise<boolean> => {
+    async (saisie: { supersedesResultatId: string; valeur: string }): Promise<boolean> => {
       setEnvoiEnCours(true);
       setErreur(null);
       try {
@@ -381,7 +386,7 @@ export function EstimeMesurePanel({
   const enregistrerBilan = useCallback(
     async (bilan: {
       preleveLe: string;
-      lignes: Array<{ analyteCode: string; valeur: number }>;
+      lignes: Array<{ analyteCode: string; valeur: string }>;
     }): Promise<IssueBilan> => {
       setEnvoiEnCours(true);
       setErreur(null);
