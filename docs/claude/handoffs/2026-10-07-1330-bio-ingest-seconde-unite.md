@@ -17,7 +17,9 @@ fois, dans l'unité du catalogue et dans une seconde unité.
 - Jumelle : même import, même analyte proposé, même `preleveLeLu`, et
   « Valider » d'office. Sans jumelle, la ligne reste à trancher.
 - Garde-fou à l'envoi : jumelle non validée ⇒ refus local, rien ne part,
-  liste dépliée. Toucher la ligne efface la dépendance (`jumelles`).
+  la ligne repasse sur « Plus tard » (revue Copilot de #1353 : un
+  « Écarter » resté coché ne se confirmait plus d'un clic), liste dépliée.
+  Toucher la ligne efface la dépendance (`jumelles`).
 - Écarté : unités ou analytes ajoutés au catalogue.
 
 ## Fichiers

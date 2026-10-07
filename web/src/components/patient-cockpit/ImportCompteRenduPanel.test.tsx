@@ -407,14 +407,25 @@ describe('ImportCompteRenduPanel — seconde unité (D-270)', () => {
     ]);
   });
 
-  it('jumelle décochée : rien ne part, la seconde unité se rejuge et sa liste se déplie', async () => {
-    const fetchMock = serveur({ detail: () => compteRendu('extrait', [A_TRANCHER, FER_CATALOGUE, FER_SECONDE]) });
+  it('jumelle décochée : rien ne part, la seconde unité repasse sur « Plus tard » et s’écarte d’un clic', async () => {
+    const fetchMock = serveur({
+      detail: () => compteRendu('extrait', [A_TRANCHER, FER_CATALOGUE, FER_SECONDE]),
+      decisions: { status: 201, body: { ok: true, validees: 0, ecartees: 1 } },
+    });
     await rendreEtOuvrir();
     fireEvent.click(ligneAffichee(/Fer sérique : 17,2/).getByLabelText('Plus tard'));
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les décisions' }));
     expect(await screen.findByText('La même mesure dans l’unité du catalogue ne part plus validée : décidez cette ligne.')).toBeTruthy();
     expect(appels(fetchMock, '/import/decisions')).toHaveLength(0);
     expect(screen.getByText(/seconde unité, « Écarter » pré-coché/).closest('details')!.open).toBe(true);
+    const seconde = () => ligneAffichee(/Fer sérique : 0,96/);
+    expect((seconde().getByLabelText('Plus tard') as HTMLInputElement).checked).toBe(true);
+    // Le praticien confirme l'écart d'un seul clic : c'est désormais sa décision.
+    fireEvent.click(seconde().getByLabelText('Écarter'));
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les décisions' }));
+    await waitFor(() => expect(appels(fetchMock, '/import/decisions')).toHaveLength(1));
+    const [, init] = appels(fetchMock, '/import/decisions')[0];
+    expect(JSON.parse(String(init?.body)).decisions).toEqual([{ idLigne: 'l2', decision: 'ecarter', motif: 'unite_divergente' }]);
   });
 
   it('touchée par le praticien, la ligne est sa décision : elle part sans sa jumelle', async () => {
@@ -424,13 +435,12 @@ describe('ImportCompteRenduPanel — seconde unité (D-270)', () => {
     });
     await rendreEtOuvrir();
     fireEvent.click(ligneAffichee(/Fer sérique : 17,2/).getByLabelText('Plus tard'));
-    // Un radio déjà coché ne se re-coche pas : le praticien la change, puis y revient.
-    fireEvent.click(ligneAffichee(/Fer sérique : 0,96/).getByLabelText('Plus tard'));
-    fireEvent.click(ligneAffichee(/Fer sérique : 0,96/).getByLabelText('Écarter'));
+    // Le praticien change le motif de l'écart pré-coché : la décision est la sienne.
+    fireEvent.change(ligneAffichee(/Fer sérique : 0,96/).getByLabelText('Motif de l’écart'), { target: { value: 'ecartee_par_praticien' } });
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les décisions' }));
     await waitFor(() => expect(appels(fetchMock, '/import/decisions')).toHaveLength(1));
     const [, init] = appels(fetchMock, '/import/decisions')[0];
-    expect(JSON.parse(String(init?.body)).decisions).toEqual([{ idLigne: 'l2', decision: 'ecarter', motif: 'unite_divergente' }]);
+    expect(JSON.parse(String(init?.body)).decisions).toEqual([{ idLigne: 'l2', decision: 'ecarter', motif: 'ecartee_par_praticien' }]);
   });
 
   it('sans jumelle, la seconde unité est la seule mesure : elle reste à trancher, sur « Plus tard »', async () => {

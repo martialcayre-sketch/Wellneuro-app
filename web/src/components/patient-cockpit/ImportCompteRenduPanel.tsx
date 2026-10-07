@@ -465,6 +465,7 @@ export function ImportCompteRenduPanel({
     setErreur(null);
     setInfo(null);
     const refusLocaux: Record<string, string> = {};
+    const aRejuger: string[] = [];
     const decisions: Array<Record<string, unknown>> = [];
     for (const ligne of courant.lignes) {
       const s = saisies[ligne.id];
@@ -475,6 +476,7 @@ export function ImportCompteRenduPanel({
         const jumelleValidee = s.jumelles?.some(id => saisies[id]?.choix === 'valider' && saisies[id]?.analyteCode === ligne.analytePropose);
         if (s.jumelles && !jumelleValidee) {
           refusLocaux[ligne.id] = 'La même mesure dans l’unité du catalogue ne part plus validée : décidez cette ligne.';
+          aRejuger.push(ligne.id);
           continue;
         }
         decisions.push({ idLigne: ligne.id, decision: 'ecarter', motif: s.motif });
@@ -512,6 +514,15 @@ export function ImportCompteRenduPanel({
       });
     }
     if (Object.keys(refusLocaux).length > 0) {
+      // La ligne à rejuger repasse sur « Plus tard » (revue Copilot de #1353) :
+      // un « Écarter » resté coché ne se confirmerait plus d'un clic.
+      if (aRejuger.length > 0) {
+        setSaisies(avant => {
+          const apres = { ...avant };
+          for (const id of aRejuger) apres[id] = { ...avant[id], choix: null, jumelles: undefined };
+          return apres;
+        });
+      }
       setRefusParLigne(refusLocaux);
       setErreur('Rien n’a été enregistré : reprenez les lignes signalées.');
       return;

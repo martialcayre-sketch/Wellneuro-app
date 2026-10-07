@@ -29,7 +29,8 @@ sur « Valider ». Ces lignes se replient sous un titre qui dit leur sort :
 
 **§3 — Le garde-fou.** L'écart pré-coché ne part qu'avec sa jumelle validée
 sur le même analyte, dans le même envoi. Si la jumelle ne part plus validée,
-rien n'est enregistré et la ligne se rejuge, sa liste dépliée. Dès que le
+rien n'est enregistré et la ligne repasse sur « Plus tard », sa liste dépliée :
+elle se rejuge. Dès que le
 praticien touche la ligne, la décision est la sienne et ne dépend plus de la
 jumelle. Sans jumelle (autre jour, analyte différent, instant non lu), la
 ligne reste à trancher : c'est alors la seule mesure de cet analyte.
