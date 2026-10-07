@@ -56,12 +56,16 @@ export type ImportLu = {
 export type CompteRenduLu = {
   id: string;
   typeMime: string;
+  /** `praticien` | `patient` ([[D-269]] §2). */
+  origine: string;
   /** NULL pour un document transmis par le patient ([[D-269]] §2). */
   deposePar: string | null;
   deposeLe: string;
   /** Le document a été effacé ([[D-258]]) : il ne se relit plus, ses lignes restent décidables. */
   purgeLe: string | null;
   motifPurge: string | null;
+  /** L'écart d'un document transmis par le patient ([[D-269]] §3) : `illisible` | `document_non_conforme`. */
+  motifEcart: string | null;
   imports: ImportLu[];
 };
 
@@ -78,18 +82,22 @@ export async function listerComptesRendus(idPatient: string) {
     select: {
       id: true,
       typeMime: true,
+      origine: true,
       deposePar: true,
       deposeLe: true,
       purgeLe: true,
+      motifEcart: true,
       imports: { orderBy: { lanceLe: 'desc' }, select: { id: true, statut: true } },
     },
   });
   return comptesRendus.map(c => ({
     id: c.id,
     typeMime: c.typeMime,
+    origine: c.origine,
     deposePar: c.deposePar,
     deposeLe: c.deposeLe.toISOString(),
     purgeLe: c.purgeLe?.toISOString() ?? null,
+    motifEcart: c.motifEcart,
     dernierImport: c.imports.find(i => i.statut !== 'echec') ?? c.imports[0] ?? null,
   }));
 }
@@ -105,10 +113,12 @@ export async function lireCompteRendu(
     select: {
       id: true,
       typeMime: true,
+      origine: true,
       deposePar: true,
       deposeLe: true,
       purgeLe: true,
       motifPurge: true,
+      motifEcart: true,
       imports: {
         orderBy: { lanceLe: 'desc' },
         select: {
@@ -142,10 +152,12 @@ export async function lireCompteRendu(
   return {
     id: c.id,
     typeMime: c.typeMime,
+    origine: c.origine,
     deposePar: c.deposePar,
     deposeLe: c.deposeLe.toISOString(),
     purgeLe: c.purgeLe?.toISOString() ?? null,
     motifPurge: c.motifPurge,
+    motifEcart: c.motifEcart,
     imports: c.imports.map(i => ({
       id: i.id,
       statut: i.statut,

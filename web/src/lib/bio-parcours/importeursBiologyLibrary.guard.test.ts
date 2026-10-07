@@ -21,12 +21,23 @@ import { RACINE, estUnTest, fichiersSource, lire, specificateursImportes } from 
 // plus rougit aussi — une liste blanche qui se périme finit par couvrir un
 // fichier qu'on ne relit plus.
 const IMPORTEURS_ADMIS = [
+  // LA TRANSMISSION PAR LE PATIENT ([[D-269]], BIO-INGEST LOT-04) : route, page
+  // et écran du portail. Drapeau, dépôt, statut dérivé (date et statut seuls) :
+  // aucune valeur, aucun libellé lu, aucun marquage ne sort vers le patient.
+  'web/src/app/api/portail/comptes-rendus/route.ts',
+  'web/src/app/portail/[token]/comptes-rendus/page.tsx',
+  'web/src/components/patient/biologie/TransmissionCompteRendu.tsx',
   // Routes praticien de la biologie.
   'web/src/app/api/praticien/biologie/arbitrage/route.ts',
   'web/src/app/api/praticien/biologie/catalogue/route.ts',
   'web/src/app/api/praticien/biologie/import/compte-rendu/route.ts',
   'web/src/app/api/praticien/biologie/import/decisions/route.ts',
   'web/src/app/api/praticien/biologie/import/depot/route.ts',
+  // Le regard du praticien sur le document déposé ([[D-269]] §1) : les octets
+  // consignés, servis au praticien du dossier, aucune valeur lue.
+  'web/src/app/api/praticien/biologie/import/document/route.ts',
+  // « Écarter ce document » transmis par le patient ([[D-269]] §3) : purge, aucune valeur lue.
+  'web/src/app/api/praticien/biologie/import/ecart/route.ts',
   'web/src/app/api/praticien/biologie/import/extraction/route.ts',
   // L'acte de lecture d'un import validé ([[D-268]], BP-10).
   'web/src/app/api/praticien/biologie/import/lecture/route.ts',

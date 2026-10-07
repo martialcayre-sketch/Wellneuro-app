@@ -60,6 +60,7 @@ export const MESSAGES_REFUS_DECISION: Record<string, string> = {
   ligne_en_double: 'Cette ligne figure deux fois dans l’envoi.',
   ligne_introuvable: 'Cette ligne n’appartient pas à cette extraction.',
   ligne_deja_traitee: 'Cette ligne a déjà été décidée : relisez l’extraction.',
+  document_ecarte: 'Ce document a été écarté : ses lignes ne se valident plus, elles peuvent seulement être écartées.',
   decision_invalide: 'La décision doit être « valider » ou « écarter ».',
   motif_invalide: 'Choisissez le motif de l’écart.',
   non_quantitative: 'La valeur lue n’est pas un nombre : la ligne ne peut que s’écarter.',
@@ -127,6 +128,19 @@ async function idExtractionCourante(client: LecteurImports, idCompteRendu: strin
     select: { id: true },
   });
   return courante?.id ?? null;
+}
+
+/**
+ * Le document a été écarté ([[D-269]] §3) : ses lignes s'écartent encore, plus
+ * aucune ne se valide. Le trigger des lignes le refuse aussi ; lu ici sous le
+ * verrou que prend l'écart, le refus se dit en clair plutôt qu'en erreur
+ * technique (revue `wn-reviewer` de la PR 3, P2).
+ */
+class DocumentEcarte extends Error {
+  constructor() {
+    super('document_ecarte');
+    this.name = 'DocumentEcarte';
+  }
 }
 
 class LigneDejaTraitee extends Error {
@@ -278,6 +292,13 @@ export async function deciderLignes(params: {
       // Relu aussi sous le verrou, que l'extraction prend : une ré-extraction
       // lancée entre le préflight et l'écriture passe devant.
       if ((await idExtractionCourante(tx, imp.idCompteRendu, idPatient)) !== idImport) throw new ImportRemplace();
+      if (validations.length > 0) {
+        const document = await tx.compteRenduBiologique.findUnique({
+          where: { id: imp.idCompteRendu },
+          select: { motifPurge: true },
+        });
+        if (document?.motifPurge === 'ecarte') throw new DocumentEcarte();
+      }
       for (const v of validations) {
         // Le résultat D'ABORD, la ligne ENSUITE : la ligne désigne le résultat (A5).
         const resultat = await tx.resultatBiologique.create({
@@ -311,6 +332,7 @@ export async function deciderLignes(params: {
   } catch (err) {
     if (err instanceof LigneDejaTraitee) return refusGlobal('ligne_deja_traitee', 409);
     if (err instanceof ImportRemplace) return refusGlobal('import_remplace', 409);
+    if (err instanceof DocumentEcarte) return refusGlobal('document_ecarte', 409);
     // Sans repli : le résultat existant n'est ni relu ni rattaché.
     if ((err as { code?: string } | null)?.code === 'P2002') return refusGlobal('doublon_mesure', 409);
     console.error('[bio-ingest decisions] écriture refusée :', ...classeEtCode(err));

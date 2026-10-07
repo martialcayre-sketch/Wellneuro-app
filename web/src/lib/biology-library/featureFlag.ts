@@ -108,3 +108,28 @@ export function isBioLectureEnabled(
 ): boolean {
   return isBioIngestEnabled(valueImport, valueResultats, valueRayon) && value === 'true';
 }
+
+/**
+ * Transmission du compte rendu PAR LE PATIENT depuis son portail ([[D-269]],
+ * BIO-INGEST LOT-04) : l'écran de dépôt, la route du portail et la liste des
+ * statuts qu'il voit.
+ *
+ * Drapeau NÉ AVEC LE CODE, éteint = comportement actuel (§8) : page en 404,
+ * routes en 503, aucun lien. Exige AUSSI l'import (`isBioIngestEnabled`) : un
+ * document transmis attend la lecture du praticien, qui se fait sur l'écran de
+ * l'import — l'ouvrir sur un import fermé laisserait des documents que
+ * personne ne peut lire.
+ *
+ * Ce qu'il NE garde PAS : le geste « Écarter » et la carte du Fil, côté
+ * praticien. Ils visent des documents déjà transmis, et un drapeau rééteint ne
+ * doit pas laisser ces documents sans regard ni sans recours ; tant qu'aucun
+ * n'a été transmis, ils sont inertes. Absent = éteint (fail-closed).
+ */
+export function isBioPortailEnabled(
+  value = process.env.WN_BIO_PORTAIL_ENABLED,
+  valueImport = process.env.WN_BIO_INGEST_ENABLED,
+  valueResultats = process.env.WN_CB_RESULTS_ENABLED,
+  valueRayon = process.env.WN_CB_ENABLED,
+): boolean {
+  return isBioIngestEnabled(valueImport, valueResultats, valueRayon) && value === 'true';
+}

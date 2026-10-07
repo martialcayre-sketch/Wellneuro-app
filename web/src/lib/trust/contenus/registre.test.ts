@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les vingt-deux documents attendus', () => {
+  it('expose les vingt-quatre documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -48,6 +48,8 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v11',
       // `D-258` — le compte rendu déposé n'est plus conservé : il est purgé.
       'donnees_confidentialite@v12',
+      // `D-269` — le compte rendu déposé par le patient, et son écart.
+      'donnees_confidentialite@v13',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -57,6 +59,8 @@ describe('registre des documents TRUST', () => {
       'usage_ia@v4',
       // `D-267` §8 — le relevé recopie aussi l'intervalle et la marque imprimés.
       'usage_ia@v5',
+      // `D-269` §6 — le patient peut déposer lui-même ; rien n'est relevé avant la lecture.
+      'usage_ia@v6',
       'droits_patient@v1',
       'consentement_suivi@v2',
       // Même correction, dans le texte du consentement lui-même — l'occurrence
@@ -107,7 +111,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v12');
+    expect(courant.version).toBe('v13');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -260,7 +264,7 @@ describe('registre des documents TRUST', () => {
     // ENTIER, identité comprise (arbitrage du 2026-10-01). Une mutation qui
     // retire « vous identifient » de l'un des deux textes rougit ici.
     const usageIa = getDocumentCourant('usage_ia');
-    expect(usageIa.version).toBe('v5');
+    expect(usageIa.version).toBe('v6');
     const texteIa = usageIa.sections.flatMap(s => s.paragraphes).join(' ');
     expect(texteIa).toContain('compte rendu que vous lui avez remis');
     expect(texteIa).toContain('aucune n’entre à votre dossier sans cette validation');
@@ -280,6 +284,7 @@ describe('registre des documents TRUST', () => {
       getVersion('usage_ia', v)?.sections.find(s => s.titre === 'Ce que l’IA ne fait jamais ici');
     expect(jamais('v4')).toEqual(jamais('v3'));
     expect(jamais('v5')).toEqual(jamais('v3'));
+    expect(jamais('v6')).toEqual(jamais('v3'));
     expect(usageIa.requiresAcknowledgement).toBe(false);
 
     const donnees = getDocumentCourant('donnees_confidentialite');
@@ -310,8 +315,9 @@ describe('registre des documents TRUST', () => {
     // après le dépôt — les deux bornes doivent être dites, l'une sans l'autre
     // laisserait croire à une conservation indéfinie des lignes non décidées.
     const v11 = getVersion('donnees_confidentialite', 'v11');
-    const v12 = getDocumentCourant('donnees_confidentialite');
-    expect(v12.version).toBe('v12');
+    const v12 = getVersion('donnees_confidentialite', 'v12');
+    expect(v12).not.toBeNull();
+    if (!v12) return;
     const texte = v12.sections.flatMap(s => s.paragraphes).join(' ');
     expect(texte).not.toContain('conservé dans votre dossier');
     expect(texte).toContain('Le compte rendu déposé est supprimé dès que votre praticien a validé ou écarté chacune des valeurs relevées lors de sa dernière lecture');
@@ -364,8 +370,64 @@ describe('registre des documents TRUST', () => {
       );
     expect(autres('v5')).toEqual(autres('v4'));
     expect(v5.requiresAcknowledgement).toBe(false);
-    // « Vos données personnelles » reste en v12 (`D-267` §8) : aucun accusé nouveau.
-    expect(getDocumentCourant('donnees_confidentialite').version).toBe('v12');
+    // « Vos données personnelles » est restée en v12 (`D-267` §8) : aucun accusé
+    // nouveau avec la v5. La v13 ne vient qu'avec `D-269`, après.
+    expect(getVersion('donnees_confidentialite', 'v12')?.publieLe).toBe('2026-10-02');
+    expect((getVersion('donnees_confidentialite', 'v13')?.publieLe ?? '') > v5.publieLe).toBe(true);
+  });
+
+  it('`D-269` §6 : la v6 et la v13 disent le dépôt par le patient, mot pour mot comme validées, et rien d’autre', () => {
+    // TEXTES VALIDÉS PAR LE RESPONSABLE LE 2026-10-07 (`DOSSIER_RGPD.md` §2 ter).
+    // Une reformulation, même juste, rougit ici : ce qui est servi est ce qui a
+    // été validé.
+    const v5 = getVersion('usage_ia', 'v5');
+    const v6 = getDocumentCourant('usage_ia');
+    expect(v6.version).toBe('v6');
+    const releve = (doc: typeof v5) =>
+      (doc?.sections.find(s => s.titre === 'Où l’IA intervient')?.paragraphes ?? []).find(p =>
+        p.startsWith('Le relevé des résultats'),
+      ) ?? '';
+    const texteIa = releve(v6);
+    expect(texteIa).toContain(
+      'lorsque votre praticien dépose dans votre dossier le compte rendu que vous lui avez remis, ou que vous l’y déposez vous-même depuis votre espace,',
+    );
+    expect(texteIa).toContain(
+      'Si vous le déposez vous-même, rien n’en est relevé tant que votre praticien n’a pas lancé la lecture : il vérifie d’abord qu’il s’agit bien de votre compte rendu.',
+    );
+    // Ce qui part alors, et la validation, restent dits.
+    expect(texteIa).toContain('y compris votre nom et les autres mentions qui vous identifient');
+    expect(texteIa).toContain('aucune n’entre à votre dossier sans cette validation');
+    // Seul le paragraphe du relevé change.
+    const autres = (doc: typeof v5) =>
+      doc?.sections.map(s =>
+        s.titre === 'Où l’IA intervient'
+          ? { ...s, paragraphes: s.paragraphes.filter(p => !p.startsWith('Le relevé des résultats')) }
+          : s,
+      );
+    expect(autres(v6)).toEqual(autres(v5));
+    // L'accusé de la v6 est recueilli sur l'écran de dépôt, pas dans la séquence
+    // « Avant de commencer » — qui bouclerait (`avantDeCommencer.ts`).
+    expect(v6.requiresAcknowledgement).toBe(false);
+
+    const v12 = getVersion('donnees_confidentialite', 'v12');
+    const v13 = getDocumentCourant('donnees_confidentialite');
+    expect(v13.version).toBe('v13');
+    const texte = v13.sections.flatMap(s => s.paragraphes).join(' ');
+    expect(texte).toContain(
+      'les éléments de votre situation que vous décrivez, les comptes rendus d’analyses que vous déposez dans votre espace, vos signalements et vos choix.',
+    );
+    expect(texte).toContain(
+      'chacune des valeurs relevées lors de sa dernière lecture, ou dès qu’il l’écarte, s’il est illisible ou s’il ne s’agit pas de votre compte rendu, et au plus tard 30 jours après son dépôt.',
+    );
+    // DEUX PARAGRAPHES CHANGENT, dans une seule section ; le reste est la v12.
+    const titre = 'Quelles données sont recueillies ?';
+    expect(v13.sections.filter(s => s.titre !== titre)).toEqual(v12?.sections.filter(s => s.titre !== titre));
+    const avant = v12?.sections.find(s => s.titre === titre)?.paragraphes ?? [];
+    const apres = v13.sections.find(s => s.titre === titre)?.paragraphes ?? [];
+    expect(apres).toHaveLength(avant.length);
+    expect(apres.filter((p, i) => p !== avant[i])).toHaveLength(2);
+    // Même motif que les v10 à v12 : sans accusé, celui de la v12 encore dû s'effaçait.
+    expect(v13.requiresAcknowledgement).toBe(true);
   });
 
   it('la v9 RETIRE la promesse que le logiciel ne tenait pas, et NOMME l’exception', () => {

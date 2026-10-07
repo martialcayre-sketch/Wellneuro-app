@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlarmClock, CalendarClock, FileText, Flag, FlagTriangleRight, FlaskConical, MailX, MessageSquare, PenLine, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
+import { AlarmClock, CalendarClock, FileText, FileUp, Flag, FlagTriangleRight, FlaskConical, MailX, MessageSquare, PenLine, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 import type { MeteoAdhesionApiResponse } from '@/app/api/praticien/meteo-adhesion/route';
 import { indexCarteImminente, resumeFil, type CarteFil, type TypeCarteFil } from '@/lib/fil/cartes';
@@ -29,6 +29,8 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
   // consignée, pas que le résultat inquiète — Wellneuro ne lit aucune valeur
   // ([[D-268]] §1, §9).
   import_biologique_a_lire: { libelle: 'Biologie à lire', icon: FileText },
+  // « TRANSMIS » : un fait (le patient a déposé), pas un verdict sur le document.
+  compte_rendu_transmis: { libelle: 'Transmis', icon: FileUp },
   assignation_en_retard: { libelle: 'En retard', icon: AlarmClock },
   reprise: { libelle: 'Reprise', icon: RotateCcw },
   // UN LIBELLÉ NEUTRE, jamais « Alerte » : un patient qui conteste fait ce
@@ -189,11 +191,12 @@ function CarteDuFil({
             </span>
           </div>
         </div>
-        {/* UNE CARTE NE S'ÉCARTE PAS : le compte rendu à lire ([[D-268]] §5).
-            Seul l'acte de lecture la résout, et la route du refus rejette sa
-            clé (`cleCarteValide`) — offrir le bouton ferait voir un geste que
-            le serveur refuse. */}
-        {carte.type !== 'import_biologique_a_lire' && (
+        {/* UNE CARTE NE S'ÉCARTE PAS : le compte rendu à lire ([[D-268]] §5),
+            ni le compte rendu transmis ([[D-269]] §7). Seul le geste dans le
+            cockpit biologie les résout, et la route du refus rejette leur clé
+            (`cleCarteValide`) — offrir le bouton ferait voir un geste que le
+            serveur refuse. */}
+        {carte.type !== 'import_biologique_a_lire' && carte.type !== 'compte_rendu_transmis' && (
         <div className="flex w-full items-center justify-end gap-3 sm:w-auto sm:shrink-0 sm:self-center">
           {/* Écarter est un geste réversible : rien n'est supprimé, la carte
               reste annulable juste après (garde-fou 5.0). La carte imminente

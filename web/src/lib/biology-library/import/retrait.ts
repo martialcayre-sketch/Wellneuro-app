@@ -20,13 +20,19 @@ import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
 // Et la suppression des lignes ne vise que les non validées — si l'une
 // l'était malgré tout, la FK RESTRICT de l'import ferait échouer la
 // transaction entière, sans résidu.
+//
+// REFUSÉ SUR UN DOCUMENT TRANSMIS PAR LE PATIENT ([[D-269]] §3) : le supprimer
+// effacerait ce que le patient a transmis et ce qu'il voit. Il s'ÉCARTE
+// (`ecart.ts`). La base ne tient pas ce refus — l'effacement nommé du dossier
+// doit, lui, pouvoir supprimer ce document — : c'est ce module qui le tient.
 
 export type IssueRetrait =
   | { ok: true }
-  | { ok: false; reason: 'compte_rendu_introuvable' | 'ligne_validee' | 'extraction_en_cours' };
+  | { ok: false; reason: 'compte_rendu_introuvable' | 'origine_patient' | 'ligne_validee' | 'extraction_en_cours' };
 
 export const MESSAGES_RETRAIT: Record<string, string> = {
   compte_rendu_introuvable: 'Ce compte rendu est introuvable dans ce dossier.',
+  origine_patient: 'Ce document a été transmis par le patient : il ne se retire pas, il s’écarte.',
   ligne_validee:
     'Une ligne de ce compte rendu a déjà été validée : il n’est plus retirable.',
   extraction_en_cours: 'Une extraction est en cours sur ce compte rendu : réessayez dans quelques minutes.',
@@ -43,9 +49,10 @@ export async function retirerCompteRendu(params: {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
     const compteRendu = await tx.compteRenduBiologique.findFirst({
       where: { id: idCompteRendu, idPatient },
-      select: { id: true },
+      select: { id: true, origine: true },
     });
     if (!compteRendu) return { ok: false as const, reason: 'compte_rendu_introuvable' as const };
+    if (compteRendu.origine !== 'praticien') return { ok: false as const, reason: 'origine_patient' as const };
 
     const validees = await tx.ligneBiologiqueCandidate.count({
       where: { idPatient, statut: 'validee', import: { idCompteRendu } },

@@ -6,7 +6,7 @@ const { prisma, journal } = vi.hoisted(() => {
     $executeRaw: vi.fn(async () => 1),
     $transaction: vi.fn(),
     importBiologique: { findFirst: vi.fn(), count: vi.fn() },
-    compteRenduBiologique: { updateMany: vi.fn() },
+    compteRenduBiologique: { updateMany: vi.fn(), findUnique: vi.fn() },
     ligneBiologiqueCandidate: { findMany: vi.fn(), updateMany: vi.fn(), findFirst: vi.fn(), count: vi.fn() },
     biologyAnalyte: { findMany: vi.fn() },
     resultatBiologique: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn() },
@@ -73,6 +73,7 @@ beforeEach(() => {
     journal.push('compteRendu.purge');
     return { count: 1 };
   });
+  prisma.compteRenduBiologique.findUnique.mockResolvedValue({ motifPurge: null });
   prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
   espions = (['error', 'warn', 'log'] as const).map(m => vi.spyOn(console, m).mockImplementation(() => {}));
 });
@@ -274,6 +275,22 @@ describe('deciderLignes — courses entre le préflight et l’écriture', () =>
     const ecrit = JSON.stringify(espions.flatMap(e => e.mock.calls));
     expect(ecrit).toContain('P2010');
     for (const interdit of ['48', 'pat_sophie', 'BIO_FERRITINE']) expect(ecrit).not.toContain(interdit);
+  });
+});
+
+describe('deciderLignes — document écarté (D-269 §3)', () => {
+  it('une validation est refusée en clair (409), relue sous le verrou ; rien n’est écrit', async () => {
+    prisma.compteRenduBiologique.findUnique.mockResolvedValue({ motifPurge: 'ecarte' });
+    expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] }))
+      .toMatchObject({ ok: false, reason: 'document_ecarte', status: 409 });
+    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+    expect(journal).not.toContain('ligne.updateMany');
+  });
+
+  it('les lignes d’un document écarté s’écartent encore', async () => {
+    prisma.compteRenduBiologique.findUnique.mockResolvedValue({ motifPurge: 'ecarte' });
+    expect(await deciderLignes({ ...BASE, decisions: [{ idLigne: 'l2', decision: 'ecarter', motif: 'ecartee_par_praticien' }] }))
+      .toMatchObject({ ok: true, ecartees: 1 });
   });
 });
 

@@ -64,7 +64,7 @@ garde.
 patient purgé sans écart (à l'échéance, ou toutes ses lignes écartées une à
 une) s'affiche **« reçu »** ; le plafond de 3 ne compte que les documents
 **non purgés**. Précision de `D-269` §4-§5 à écrire avec la PR 3, qui
-l'applique.
+l'applique. **Écrite le 2026-10-07** (`D-269`, paragraphe « Précision »).
 
 **Découpage** :
 1. PR 1, la décision et le registre RGPD ;
@@ -77,7 +77,8 @@ l'applique.
 
 - [ ] Mettre à jour le consentement et le registre **avant** l'ouverture (registre et `D-269` : PR 1 ; textes v6 et v13 : PR 3).
 - [x] Mode Plan : droits, taille, types, rétention (2026-10-07, `D-269`).
-- [ ] Migration seule si nécessaire, puis code. Migration `bio_ingest_transmission_patient_v1` écrite le 2026-10-07 (confirmée par le responsable), seule dans sa PR ; à appliquer par `release-db` approuvée, puis à constater par conteneur.
+- [x] Migration seule si nécessaire, puis code. Migration `bio_ingest_transmission_patient_v1` écrite le 2026-10-07 (confirmée par le responsable), seule dans sa PR (#1352), appliquée par `release-db` et constatée par conteneur (`one-off-4793`). Code de la PR 3 écrit le 2026-10-07 sous `WN_BIO_PORTAIL_ENABLED` éteint : route et page du portail, « Écarter ce document », refus du retrait d'un document patient, carte du Fil « compte rendu transmis », textes `usage_ia` v6 et `donnees_confidentialite` v13.
+- [ ] Textes v6 et v13 servis et constatés après déploiement (`D-248`) ; puis allumage, geste du responsable.
 
 ## Tests
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   cartesAssignationsEnRetard,
+  cartesComptesRendusTransmis,
   cartesConsultationsPrevues,
   cartesGestesObjectif,
   cartesImportsALire,
@@ -863,5 +864,49 @@ describe('cartesImportsALire — compte rendu biologique validé sans lecture (D
     });
     expect(fil.map(c => c.type)).toEqual(['import_biologique_a_lire']);
     expect(resumeFil(fil)).toBe('1 compte rendu à lire');
+  });
+});
+
+describe('cartesComptesRendusTransmis — document transmis par le patient, non lu (D-269 §7)', () => {
+  const ligne = (idCompteRendu: string, deposeLe: string, idPatient = 'P-JENNIFER') => ({
+    idCompteRendu,
+    idPatient,
+    deposeLe: new Date(deposeLe),
+  });
+
+  it('une carte par document, ancrée sur le document, vers le compte rendu qu’elle désigne — du plus ancien au plus récent', () => {
+    const cartes = cartesComptesRendusTransmis(
+      [ligne('cr_recent', '2026-10-07T09:00:00Z'), ligne('cr_ancien', '2026-10-05T09:00:00Z')],
+      NOMS,
+    );
+    expect(cartes.map(c => c.cle)).toEqual(['compte_rendu_transmis:cr_ancien', 'compte_rendu_transmis:cr_recent']);
+    expect(cartes[0]).toMatchObject({
+      type: 'compte_rendu_transmis',
+      patient: 'Jennifer Martin',
+      titre: 'Compte rendu transmis par le patient',
+      href: '/dashboard/patients/P-JENNIFER?onglet=trajectoire&compteRendu=cr_ancien',
+      actionLabel: 'Ouvrir le compte rendu',
+    });
+    // La vérification d'abord (§1) : la carte la demande, et offre l'écart.
+    expect(cartes[0].pourquoi).toContain('Vérifiez qu’il s’agit bien de son compte rendu');
+    expect(cartes[0].pourquoi).toContain('écartez-le');
+  });
+
+  it('aucun plafond : la carte ne s’écarte pas, une liste tronquée ferait disparaître un document', () => {
+    const lignes = Array.from({ length: 12 }, (_, i) => ligne(`cr_${i}`, `2026-10-0${(i % 7) + 1}T09:00:00Z`));
+    expect(cartesComptesRendusTransmis(lignes, NOMS)).toHaveLength(12);
+  });
+
+  it('se place juste après les comptes rendus à lire, et se résume', () => {
+    const fil = construireFil({
+      syntheses: [],
+      assignations: [],
+      activites: [],
+      noms: NOMS,
+      maintenant: MAINTENANT,
+      comptesRendusTransmis: [ligne('cr_1', '2026-10-07T09:00:00Z')],
+    });
+    expect(fil.map(c => c.type)).toEqual(['compte_rendu_transmis']);
+    expect(resumeFil(fil)).toBe('1 compte rendu transmis');
   });
 });

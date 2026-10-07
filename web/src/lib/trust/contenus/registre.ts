@@ -1272,6 +1272,104 @@ const USAGE_IA_V5: VersionDocumentTrust = {
   hash: 'bbaf61cecd4dbdb2d90f549aa2e607c1e5f7da682145068d43cb382d9b066b92',
 };
 
+/*
+ * v6 du 2026-10-07 — LE PATIENT PEUT DÉPOSER LUI-MÊME ([[D-269]] §6, BIO-INGEST
+ * LOT-04). Texte validé par le responsable le 2026-10-07 (`DOSSIER_RGPD.md`
+ * §2 ter). Deux changements dans le paragraphe du relevé, et rien d'autre :
+ * « ou que vous l'y déposez vous-même depuis votre espace », et la phrase qui
+ * dit que rien n'est relevé avant que le praticien lance la lecture. « Le
+ * compte rendu est transmis en entier » reste : c'est ce qui part alors.
+ *
+ * RÉDIGÉE AU CONDITIONNEL D'USAGE (« lorsque… », « si vous le déposez… ») :
+ * vraie tant que `WN_BIO_PORTAIL_ENABLED` est éteint, et vraie après.
+ *
+ * SANS ACCUSÉ DANS LA SÉQUENCE, comme les v1 à v5 : « Avant de commencer » ne
+ * présente pas ce document, et y exiger un accusé ferait boucler le patient.
+ * L'accusé `pris_connaissance` de CETTE version est recueilli sur l'écran de
+ * dépôt, et la route de dépôt le vérifie côté serveur (§6).
+ */
+const USAGE_IA_V6: VersionDocumentTrust = {
+  key: 'usage_ia',
+  type: 'ai_transparency',
+  version: 'v6',
+  titre: 'L’intelligence artificielle dans Wellneuro',
+  resume:
+    'Où l’IA intervient, ce qu’elle fait, ce qu’elle ne fait jamais, et comment contester un contenu.',
+  sections: USAGE_IA_V5.sections.map(section =>
+    section.titre === 'Où l’IA intervient'
+      ? {
+          ...section,
+          paragraphes: section.paragraphes.map(paragraphe =>
+            paragraphe.startsWith('Le relevé des résultats')
+              ? paragraphe
+                  .replace(
+                    'lorsque votre praticien dépose dans votre dossier le compte rendu que vous lui avez remis,',
+                    'lorsque votre praticien dépose dans votre dossier le compte rendu que vous lui avez remis, ou que vous l’y déposez vous-même depuis votre espace,',
+                  )
+                  .replace(
+                    'et les lui propose.',
+                    'et les lui propose. Si vous le déposez vous-même, rien n’en est relevé tant que votre praticien n’a pas lancé la lecture : il vérifie d’abord qu’il s’agit bien de votre compte rendu.',
+                  )
+              : paragraphe,
+          ),
+        }
+      : section,
+  ),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Vous pouvez déposer vous-même le compte rendu de vos analyses biologiques depuis votre espace. Rien n’en est relevé tant que votre praticien n’a pas lancé la lecture : il vérifie d’abord qu’il s’agit bien de votre compte rendu. Le reste ne change pas.',
+  publieLe: '2026-10-07',
+  requiresAcknowledgement: false,
+  hash: 'dc0d3b26b9c4254e741c3a0cec3a4afc5f7c5183ad3e549f6b4b6f43319ae72d',
+};
+
+/*
+ * v13 du 2026-10-07 — LE COMPTE RENDU DÉPOSÉ PAR LE PATIENT, ET SON ÉCART
+ * ([[D-269]] §6). Texte validé par le responsable le 2026-10-07
+ * (`DOSSIER_RGPD.md` §2 ter). Deux ajouts dans « Quelles données sont
+ * recueillies ? », et rien d'autre : les comptes rendus déposés rejoignent
+ * « les informations que vous transmettez », et la phrase de la purge dit
+ * l'écart, qui efface aussitôt.
+ *
+ * RÉDIGÉE AU CONDITIONNEL D'USAGE : vraie tant que `WN_BIO_PORTAIL_ENABLED`
+ * est éteint (aucun compte rendu n'est alors déposé par le patient).
+ *
+ * UN ACCUSÉ, POUR LE MOTIF DE LA v10 : une v13 sans accusé effacerait celui de
+ * la v12, encore dû.
+ */
+const DONNEES_CONFIDENTIALITE_V13: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v13',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V12.sections.map(section =>
+    section.titre === 'Quelles données sont recueillies ?'
+      ? {
+          ...section,
+          paragraphes: section.paragraphes.map(paragraphe =>
+            paragraphe
+              .replace(
+                'les éléments de votre situation que vous décrivez, vos signalements et vos choix.',
+                'les éléments de votre situation que vous décrivez, les comptes rendus d’analyses que vous déposez dans votre espace, vos signalements et vos choix.',
+              )
+              .replace(
+                'chacune des valeurs relevées lors de sa dernière lecture, et au plus tard 30 jours après son dépôt.',
+                'chacune des valeurs relevées lors de sa dernière lecture, ou dès qu’il l’écarte, s’il est illisible ou s’il ne s’agit pas de votre compte rendu, et au plus tard 30 jours après son dépôt.',
+              ),
+          ),
+        }
+      : section,
+  ),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Vous pouvez déposer vous-même dans votre espace le compte rendu de vos analyses : il rejoint les informations que vous transmettez. Votre praticien peut l’écarter s’il est illisible ou s’il ne s’agit pas de votre compte rendu ; il est alors supprimé aussitôt. Le reste ne change pas.',
+  publieLe: '2026-10-07',
+  requiresAcknowledgement: true,
+  hash: 'afbb91c9319c5ab1572476de4078294fb16401d6b417e0e262018587bcdb5f48',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1288,11 +1386,13 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V10,
   DONNEES_CONFIDENTIALITE_V11,
   DONNEES_CONFIDENTIALITE_V12,
+  DONNEES_CONFIDENTIALITE_V13,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,
   USAGE_IA_V4,
   USAGE_IA_V5,
+  USAGE_IA_V6,
   DROITS_PATIENT_V1,
   CONSENTEMENT_SUIVI_V2,
   CONSENTEMENT_SUIVI_V3,

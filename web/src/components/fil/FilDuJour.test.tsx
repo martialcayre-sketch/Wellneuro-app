@@ -501,3 +501,28 @@ describe('FilDuJour — compte rendu biologique à lire (D-268, BP-10)', () => {
     expect(screen.getByText('Questionnaire en retard')).toBeTruthy();
   });
 });
+
+describe('FilDuJour — compte rendu transmis par le patient (D-269 §7)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('la carte mène au compte rendu et ne s’écarte pas', async () => {
+    const transmis = carte({
+      type: 'compte_rendu_transmis',
+      titre: 'Compte rendu transmis par le patient',
+      pourquoi: 'Transmis le 7 octobre : aucune lecture n’est lancée.',
+      href: '/dashboard/patients/PAT_SEED_01?onglet=trajectoire&compteRendu=cr_patient',
+      actionLabel: 'Ouvrir le compte rendu',
+      cle: 'compte_rendu_transmis:cr_patient',
+    });
+    stubFetch(async () => ({ cartes: [transmis, carte()] }));
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByText('Compte rendu transmis par le patient')).toBeTruthy());
+    expect(screen.getByText('Transmis')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Ouvrir le compte rendu/ }).getAttribute('href')).toBe(
+      '/dashboard/patients/PAT_SEED_01?onglet=trajectoire&compteRendu=cr_patient',
+    );
+    const ecarter = screen.getAllByRole('button', { name: /^Écarter cette carte/ });
+    expect(ecarter).toHaveLength(1);
+    expect(ecarter[0].getAttribute('aria-label')).toMatch(/Questionnaire en retard/);
+  });
+});

@@ -42,6 +42,12 @@ export type TypeCarteFil =
   // lecture, posé dans le cockpit biologie, la résout ; sa révocation la
   // rouvre (§5).
   | 'import_biologique_a_lire'
+  // UN COMPTE RENDU TRANSMIS PAR LE PATIENT, que personne n'a encore lu
+  // ([[D-269]] §7, patron de `import_biologique_a_lire`). Le Fil est le SEUL
+  // canal : aucun e-mail. Même régime : la carte NE S'ÉCARTE PAS (absente de
+  // `TYPES_CARTE`) et NE S'ACQUITTE PAS PAR LECTURE ; elle s'éteint quand la
+  // lecture est lancée ou que le document est écarté (ou purgé).
+  | 'compte_rendu_transmis'
   | 'assignation_en_retard'
   | 'reprise'
   // LE RETOUR DU PATIENT SUR SON OBJECTIF. Jusqu'au 2026-09-10, ratifier,
@@ -743,6 +749,49 @@ export function cartesImportsALire(
     });
 }
 
+/** Un document transmis par le patient, non purgé, sans lecture lancée ([[D-269]] §7). */
+export type CompteRenduTransmisRow = {
+  idCompteRendu: string;
+  idPatient: string;
+  deposeLe: Date;
+};
+
+/**
+ * Compte rendu transmis par le patient et pas encore lu ([[D-269]] §7). Une
+ * carte par document, ancrée sur `idCompteRendu`, du plus ancien au plus récent.
+ *
+ * AUCUN PLAFOND, pour le motif de `cartesImportsALire` : la carte ne s'écarte
+ * pas, et tronquer la liste ferait disparaître en silence un document transmis.
+ * Le patient en dépose au plus trois en attente (§5) : la liste reste courte.
+ */
+export function cartesComptesRendusTransmis(
+  lignes: CompteRenduTransmisRow[],
+  noms: Map<string, string>,
+): CarteFil[] {
+  return lignes
+    .slice()
+    .sort((a, b) => a.deposeLe.getTime() - b.deposeLe.getTime())
+    .map(ligne => ({
+      type: 'compte_rendu_transmis' as const,
+      idPatient: ligne.idPatient,
+      patient: nomPatient(noms, ligne.idPatient),
+      titre: 'Compte rendu transmis par le patient',
+      // LA VÉRIFICATION D'ABORD (§1) : un patient peut déposer le document d'un
+      // tiers, et la lecture l'enverrait entier chez Anthropic.
+      pourquoi:
+        `Transmis le ${formatDateFr(ligne.deposeLe)} : aucune lecture n’est lancée. `
+        + 'Vérifiez qu’il s’agit bien de son compte rendu avant de la lancer, ou écartez-le.',
+      date: ligne.deposeLe.toISOString(),
+      // Même destination que la carte « compte rendu à lire » : le cockpit
+      // biologie, compte rendu désigné ouvert, SANS marqueur `?fil=`.
+      href:
+        `/dashboard/patients/${encodeURIComponent(ligne.idPatient)}?onglet=trajectoire`
+        + `&compteRendu=${encodeURIComponent(ligne.idCompteRendu)}`,
+      actionLabel: 'Ouvrir le compte rendu',
+      cle: cleCarte('compte_rendu_transmis', ligne.idCompteRendu),
+    }));
+}
+
 export function cartesAssignationsEnRetard(
   assignations: AssignationRow[],
   noms: Map<string, string>,
@@ -826,6 +875,7 @@ const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string 
   { type: 'jalon_j21', singulier: 'jalon', pluriel: 'jalons' },
   { type: 'biologie_arbitree', singulier: 'biologie arbitrée', pluriel: 'biologies arbitrées' },
   { type: 'import_biologique_a_lire', singulier: 'compte rendu à lire', pluriel: 'comptes rendus à lire' },
+  { type: 'compte_rendu_transmis', singulier: 'compte rendu transmis', pluriel: 'comptes rendus transmis' },
   { type: 'assignation_en_retard', singulier: 'retard', pluriel: 'retards' },
   { type: 'reprise', singulier: 'reprise', pluriel: 'reprises' },
 ];
@@ -884,6 +934,7 @@ export function construireFil(entrees: {
   assignationsToutes?: AssignationRideauRow[];
   biologiesArbitrees?: BiologieArbitreeCarteRow[];
   importsALire?: ImportALireRow[];
+  comptesRendusTransmis?: CompteRenduTransmisRow[];
   gestesObjectif?: GesteObjectifRow[];
   assignations: AssignationRow[];
   activites: DerniereActiviteRow[];
@@ -907,6 +958,7 @@ export function construireFil(entrees: {
     assignationsToutes = [],
     biologiesArbitrees = [],
     importsALire = [],
+    comptesRendusTransmis = [],
     gestesObjectif = [],
     assignations,
     activites,
@@ -923,6 +975,10 @@ export function construireFil(entrees: {
     // précède ni un signalement Trust (une réponse humaine attendue) ni la
     // consultation du jour.
     ...cartesImportsALire(importsALire, noms),
+    // UN DOCUMENT TRANSMIS PAR LE PATIENT suit ([[D-269]] §7) : il n'est pas
+    // encore une donnée entrée au dossier, mais il attend un regard que lui
+    // seul peut recevoir — et un document d'un tiers attend d'être écarté.
+    ...cartesComptesRendusTransmis(comptesRendusTransmis, noms),
     // LE RETOUR DU PATIENT VIENT TÔT, et c'est délibéré : il a répondu, il
     // attend. Après les signalements et les consultations du jour, avant les
     // synthèses à produire — une parole reçue passe devant un travail à faire.

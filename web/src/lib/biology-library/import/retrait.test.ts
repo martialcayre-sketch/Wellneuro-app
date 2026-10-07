@@ -24,7 +24,7 @@ const PARAMS = { idPatient: 'pat_sophie', idCompteRendu: 'cr_1', maintenant: new
 beforeEach(() => {
   journal.length = 0;
   prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
-  prisma.compteRenduBiologique.findFirst.mockResolvedValue({ id: 'cr_1' });
+  prisma.compteRenduBiologique.findFirst.mockResolvedValue({ id: 'cr_1', origine: 'praticien' });
   prisma.ligneBiologiqueCandidate.count.mockResolvedValue(0);
   prisma.importBiologique.count.mockResolvedValue(0);
 });
@@ -44,6 +44,12 @@ describe('retirerCompteRendu — retrait d’un dépôt erroné', () => {
   it('est refusé dès qu’une ligne est validée — la provenance d’un résultat ne s’efface pas', async () => {
     prisma.ligneBiologiqueCandidate.count.mockResolvedValueOnce(1);
     expect(await retirerCompteRendu(PARAMS)).toEqual({ ok: false, reason: 'ligne_validee' });
+    expect(journal).toEqual(['verrou']);
+  });
+
+  it('est refusé sur un document transmis par le patient — il s’écarte, il ne se retire pas (D-269 §3)', async () => {
+    prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce({ id: 'cr_1', origine: 'patient' });
+    expect(await retirerCompteRendu(PARAMS)).toEqual({ ok: false, reason: 'origine_patient' });
     expect(journal).toEqual(['verrou']);
   });
 
