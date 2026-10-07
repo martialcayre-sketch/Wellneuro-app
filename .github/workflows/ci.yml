@@ -1028,6 +1028,19 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/bio_ingest_transmission_patient_v1_negatif.sql
 
+      # La même règle, À DEUX SESSIONS (D-269, revue Copilot de #1352) : le
+      # contrat ci-dessus joue l'écart puis la validation en série, il ne voit
+      # pas que le FOR SHARE du trigger des lignes les SÉRIALISE. Écart
+      # d'abord, validation d'abord, et leurs deux témoins annulés. Commet ses
+      # fixtures puis les efface : la base doit être nommée. `node` et non
+      # `node --test` — T3 joue les `node --test` avant d'avoir une base.
+      - name: Transmission patient two-session bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_ECART_BANC_BASE: wellneuro_ci
+        run: node scripts/banc-ecart-validation-deux-sessions.test.mjs
+
       # Les faits du laboratoire (D-267) : intervalle et marquage imprimés,
       # verbatim, nullables, jamais vides ni réécrits à la décision ; ils
       # survivent à la purge ; resultats_biologiques n'en porte aucun (A5).

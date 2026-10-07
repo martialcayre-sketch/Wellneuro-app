@@ -20,6 +20,11 @@
   après l'écart, aucune ligne de ce document ne se valide plus, mais elle
   peut encore s'écarter. Un verrou partagé sur le compte rendu sérialise
   l'écart et la validation, dans les deux sens.
+- **Banc à deux sessions** `banc-ecart-validation-deux-sessions.test.mjs`
+  (revue Copilot de #1352). Il joue l'écart d'abord, la validation
+  d'abord, et leurs deux témoins annulés. Chaque course constate d'abord
+  que la seconde session attend un verrou. Avec l'ancienne fonction des
+  lignes, les quatre courses échouent. Le banc est branché au CI et à T3.
 - **Contrat SQL négatif** `bio_ingest_transmission_patient_v1_negatif.sql`,
   branché au CI. Le contrat de staging gagne les nouvelles colonnes et
   l'index.

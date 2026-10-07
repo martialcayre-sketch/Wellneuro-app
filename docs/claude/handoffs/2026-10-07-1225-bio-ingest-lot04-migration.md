@@ -43,6 +43,9 @@ confirmée par le responsable le 2026-10-07.
 - `migrate diff` : No difference.
 - T1 vert.
 - T3 complet vert, en 4 min 21 s.
+- Banc à deux sessions écart / validation (commentaire Copilot de #1352,
+  arbitré « banc d'abord ») : 4 courses sur 4 vertes ; les quatre échouent
+  avec l'ancienne fonction.
 
 ## Ouvert
 
