@@ -261,6 +261,58 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
     destinataire, ni finalité vue du patient. **Ce paragraphe a été validé par
     le responsable le 2026-10-06**, note patient inchangée comprise, après sa
     rédaction (PR #1344).
+- **Transmission du compte rendu par le patient depuis son portail
+  ([[D-269]], BIO-INGEST LOT-04) — déclarée le 2026-10-07, avant la
+  migration et avant tout code.** Le patient peut déposer lui-même son
+  compte rendu (PDF, photo ou scan) dans son espace. Le document rejoint
+  `CompteRenduBiologique` avec son **origine** (`patient`), sans e-mail de
+  praticien. Mêmes types, même taille et même nettoyage d'image que le dépôt
+  praticien. Au plus 3 documents « en attente » ou « reçus » par dossier, et 10 dépôts par
+  24 heures.
+  - **Ce qui ne change pas.** Le dépôt n'appelle pas l'IA. Le document ne
+    part chez Anthropic que lorsque le **praticien** lance la lecture, après
+    avoir vérifié que c'est bien le compte rendu de ce patient. Le
+    déclencheur ci-dessus (« un geste du praticien ») reste vrai : le dépôt
+    patient ne déclenche rien. Les sous-traitants, l'hébergement, la
+    validation ligne à ligne et la purge à 30 jours ([[D-258]]) sont
+    inchangés.
+  - **Ce qui est nouveau.**
+    - **Le patient est émetteur.** Son document lui reste visible sous la
+      forme d'une date et d'un statut : en attente, reçu, validé, refusé ou
+      illisible. Il ne voit jamais de valeur, de libellé ni de marquage.
+    - **Un motif de purge s'ajoute, `ecarte`.** Le praticien peut écarter un
+      document transmis, motif `illisible` ou `document_non_conforme`, sans
+      texte libre : le contenu est purgé aussitôt, l'empreinte reste. Un
+      document transmis ne se « retire » pas, il s'écarte.
+    - **Un document qui n'est pas celui du patient** (celui d'un tiers)
+      peut entrer en base HDS. Il n'en sort pas avant le regard du praticien.
+      Il est purgé à l'écart, au plus tard à 30 jours. C'est le risque propre
+      de ce flux, réduit par l'absence d'extraction automatique.
+  - **Information du patient : accusé exigé avant le premier dépôt.** La
+    route de dépôt refuse tout dépôt sans un accusé `pris_connaissance` de
+    la version **courante** de « L'intelligence artificielle dans
+    Wellneuro ». Textes **validés par le responsable le 2026-10-07**, avec ce
+    paragraphe :
+    - **`usage_ia` v6.** Dans le paragraphe du relevé, la phrase « lorsque
+      votre praticien dépose dans votre dossier le compte rendu que vous lui
+      avez remis » devient : « lorsque votre praticien dépose dans votre
+      dossier le compte rendu que vous lui avez remis, ou que vous l'y
+      déposez vous-même depuis votre espace ». Une phrase s'ajoute : « Si
+      vous le déposez vous-même, rien n'en est relevé tant que votre
+      praticien n'a pas lancé la lecture : il vérifie d'abord qu'il s'agit
+      bien de votre compte rendu. »
+    - **`donnees_confidentialite` v13.** « Les informations que vous
+      transmettez » ajoute : « les comptes rendus d'analyses que vous déposez
+      dans votre espace ». La phrase de la purge ajoute : « ou dès qu'il
+      l'écarte, s'il est illisible ou s'il ne s'agit pas de votre compte
+      rendu ». Accusé exigé, comme la v12.
+  - **Conditions de pose de `WN_BIO_PORTAIL_ENABLED`**, toutes préalables :
+    1. ce paragraphe validé par le responsable — **tenue le 2026-10-07** ;
+    2. la migration appliquée et constatée par conteneur ;
+    3. la v6 et la v13 servies, et le déploiement constaté ([[D-248]]).
+
+    La DPA Anthropic est déjà demandée (2026-10-01) : aucun sous-traitant
+    nouveau.
 
 **Information du patient, publiée par le même geste** : « L'intelligence
 artificielle dans Wellneuro » **v4** et « Vos données personnelles » **v11**
@@ -372,7 +424,7 @@ personnelles se répartissent ainsi :
 | Médecin traitant du dossier | `Patient.medecinTraitantNom`, `Patient.medecinTraitantCoordonnees` — recueillis depuis le **2026-09-16** | **Données personnelles d'un TIERS** — un professionnel de santé qui n'est pas la personne concernée, et qui n'est pas informé par ce traitement. Le rattachement d'un patient à un médecin traitant est en outre une information de santé indirecte. Sa qualification appartient au responsable de traitement. **Distinct de `CorrespondanceMedecin.medecinLibelle`**, texte libre saisi par courrier et non attaché au dossier : ces deux colonnes-ci disent « le médecin traitant de ce patient », l'autre disait « le destinataire de cette lettre » |
 | **Santé (art. 9)** | `Consultation`, `QuestionnaireReponse`, `SyntheseIA`, `AssessmentEpisode`, `ProtocolDraft`, `ProtocolCheckin`, `AgendaSommeilNuit`, `AgendaAlimentaireJour`, `CorrespondanceMedecin`, `CorrespondancePatient`, `BookletEnvoi`, `RelectureNote`, `TrustAdverseEffectReport` | **Catégorie particulière** |
 | **Santé — exploration biologique (art. 9)** | `ArbitrageBiologique`, `PanelBiologieDocumente`, `DocumentPatientBiologie`, `ResultatBiologique` | **Catégorie particulière** — voir le paragraphe ci-dessous |
-| **Santé — comptes rendus biologiques déposés et lignes candidates (art. 9)** ([[D-256]] A4, déclaré le 2026-10-01 **avant** leur création) | Tables du LOT-02 de BIO-INGEST, **nommées ici par la migration qui les crée** (`bio_ingest_staging_v1`, 2026-10-01) : `CompteRenduBiologique` (le document source), `ImportBiologique` (le lot d'import : une extraction, avec son modèle, sa version du procédé et le laboratoire tel que lu), `LigneBiologiqueCandidate` (les lignes candidates : libellé, valeur, unité et date du prélèvement tels que lus, l'intervalle de référence et la marque d'anomalie tels qu'imprimés — `intervalle_lu`, `marquage_lu`, migration `bio_ingest_faits_laboratoire_v1` du 2026-10-05, [[D-267]] ; deux indicateurs d'omission, sans contenu, quand l'un dépasse sa borne technique, §10 —, puis la décision du praticien) | Même nature que `ResultatBiologique`, dont elles sont l'amont. Elles ajoutent **le document lui-même**, conservé en base HDS (A2) avec son en-tête d'identité et toutes ses valeurs, y compris celles qui ne seront pas retenues. Envoyé en entier à Anthropic pour extraction (§2 ter, rubrique 7). Durée de conservation du **document** : jusqu'à la décision de toutes les lignes de son extraction courante, **30 jours au plus** ([[D-258]], rubrique 8) ; son empreinte, les extractions et les lignes lues restent (provenance, A5), faits du laboratoire compris ([[D-267]] §3), sans durée fixée — trou de la rubrique 8 |
+| **Santé — comptes rendus biologiques déposés et lignes candidates (art. 9)** ([[D-256]] A4, déclaré le 2026-10-01 **avant** leur création) | Tables du LOT-02 de BIO-INGEST, **nommées ici par la migration qui les crée** (`bio_ingest_staging_v1`, 2026-10-01) : `CompteRenduBiologique` (le document source), `ImportBiologique` (le lot d'import : une extraction, avec son modèle, sa version du procédé et le laboratoire tel que lu), `LigneBiologiqueCandidate` (les lignes candidates : libellé, valeur, unité et date du prélèvement tels que lus, l'intervalle de référence et la marque d'anomalie tels qu'imprimés — `intervalle_lu`, `marquage_lu`, migration `bio_ingest_faits_laboratoire_v1` du 2026-10-05, [[D-267]] ; deux indicateurs d'omission, sans contenu, quand l'un dépasse sa borne technique, §10 —, puis la décision du praticien) | Même nature que `ResultatBiologique`, dont elles sont l'amont. Elles ajoutent **le document lui-même**, conservé en base HDS (A2) avec son en-tête d'identité et toutes ses valeurs, y compris celles qui ne seront pas retenues. Envoyé en entier à Anthropic pour extraction (§2 ter, rubrique 7). Durée de conservation du **document** : jusqu'à la décision de toutes les lignes de son extraction courante, **30 jours au plus** ([[D-258]], rubrique 8) ; son empreinte, les extractions et les lignes lues restent (provenance, A5), faits du laboratoire compris ([[D-267]] §3), sans durée fixée — trou de la rubrique 8. **Émetteur ([[D-269]], déclaré le 2026-10-07 avant sa migration)** : le document porte son origine, `praticien` ou `patient` (dépôt depuis le portail, sans e-mail de praticien). Un document transmis par le patient peut être écarté par le praticien (`illisible` ou `document_non_conforme`, sans texte libre) : son contenu est alors purgé aussitôt |
 | **Santé — acte de lecture clinique d'un import validé (art. 9)** ([[D-268]], déclaré le 2026-10-06 **avant** la création de la table) | `LectureImportBiologique` (dossier, import, acte `lecture` ou `revocation`, code de révocation pris dans une liste fermée — `acte_pose_par_erreur`, `mauvais_import`, `lecture_a_refaire` —, e-mail du praticien, date). Créée par la migration `lectures_imports_biologiques_v1` (2026-10-06), **appliquée** en production le 2026-10-06 (`release-db`, constat par conteneur) ; écrite et lue derrière `WN_BIO_LECTURE_ENABLED`, éteint à la livraison | **Même nature que `ResultatBiologique`, dont elle est l'aval.** Elle ne recopie aucune valeur, aucun libellé et aucun marquage. Elle dit seulement : « ce patient a un import biologique validé, et son praticien l'a lu ou a révoqué sa lecture ». Elle est écrite en ajout seul, par le praticien du dossier seul ([[D-268]] §5). Aucun texte libre n'y est saisi. Rien n'en part vers un tiers. Elle est effacée nommément avec le dossier (rubrique 8) |
 | **Santé — fiches d'assiette remises au patient (art. 9)** (`D-251`) | `FicheAssietteRemise` (dossier, clic « Valider pour diffusion » qui l'a remise, action du protocole, version de la fiche remise et son empreinte, date de remise) | **Catégorie particulière — qualification du responsable de traitement, rendue le 2026-09-28.** La table ne recopie aucun texte, mais la version désigne une assiette, et **le nom d'une assiette révèle une indication** (`D-251` §9). Elle est rangée en art. 9 comme le protocole qui la porte (`ProtocolDraft`). Elle a été créée par la migration M2 (lot 7, appliquée le 2026-09-28). Elle s'alimente au clic « Valider pour diffusion » depuis l'ouverture de `WN_FICHES_ASSIETTE` (2026-09-28) ; la lecture patient est ouverte depuis le 2026-09-29 (`WN_FICHES_ASSIETTE_LECTURE`). Elle était encore vide à cette seconde ouverture (constat par conteneur). Le patient en est averti par un e-mail neutre qui ne nomme ni l'assiette ni la fiche (type `document_remis` du registre des correspondances). Elle est effacée nommément avec le dossier. La lecture de la fiche par le patient s'accuse dans `PortailLecturePatient`, espèce `fiche_assiette`, sans horodatage |
 | **Santé — adressage sur signal d'alerte (art. 9)** ([[D-257]], déclaré le 2026-10-02 **avant** toute écriture) | `AdressageSignalAlerte` (dossier, acte `adressage` ou `revocation`, lettre d'adressage consignée qui porte la couverture, consultation porteuse, identifiants des constats de sécurité couverts, motif de révocation, e-mail du praticien, date) | **Même nature que `CorrespondanceMedecin`, dont elle est le prolongement.** Elle ne recopie aucun libellé de signal, mais chaque identifiant de constat est l'empreinte d'un signal d'alerte **déclaré par le patient** dans son anamnèse : la ligne dit « ce patient a déclaré un signal qui appelle un avis médical, et il a été adressé ». Créée par la migration `adressages_signal_alerte_v1` (appliquée le 2026-10-03, run `release-db` n° 131). **Alimentée depuis le LOT-03** : une ligne `adressage` s'écrit à chaque lettre d'adressage consignée, dans la même transaction ; une ligne `revocation` au geste de révocation motivé. **Lue depuis le LOT-04** par la chaîne C1 (lecteur unique `lireCouverturesAdressage`), et seulement drapeau `WN_LEVEE_ADRESSAGE` allumé ; éteint à la livraison, la table n'est lue par aucune surface hors la route de révocation, qui vérifie sa cible. Rien n'en part vers un tiers : la lettre, elle, est déjà déclarée. Effacée nommément avec le dossier |
@@ -865,6 +917,11 @@ reste dans le trou ci-dessus.
   vérifié, jamais pendant une extraction ; un document purgé ne se relit plus.
 - **L'échéance** est tenue par un cron Scalingo (`web/cron.json`), dans un
   conteneur ponctuel chez l'hébergeur.
+- **L'écart ([[D-269]] §3, déclaré le 2026-10-07)** : un document transmis
+  par le patient et écarté par le praticien (illisible, ou pas le compte
+  rendu de ce patient) est purgé **aussitôt**, motif `ecarte`. Les mêmes
+  conditions que la purge s'appliquent : aucune ligne validée, et aucune
+  extraction en cours.
 - **Ce que la purge n'efface pas** : les copies du document dans les
   sauvegardes de l'hébergeur, jusqu'à expiration de leur rétention — **durée à
   établir**, et à déclarer au patient une fois établie, pas avant.

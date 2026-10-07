@@ -1,10 +1,10 @@
 ---
 id: "2026-09-30-bio-ingest"
 titre: "BIO-INGEST — acquisition des résultats biologiques"
-statut: "en_cours (ouverte le 2026-09-30 — LOT-00, LOT-01, LOT-02, LOT-03, LOT-06, LOT-07 et LOT-08 terminés ; LOT-09 courant, déclaré le 2026-10-06)"
+statut: "en_cours (ouverte le 2026-09-30 — LOT-00, LOT-01, LOT-02, LOT-03, LOT-06, LOT-07, LOT-08 et LOT-09 terminés ; LOT-04 courant, déclaré le 2026-10-07)"
 créée_le: "2026-09-30"
-mise_à_jour: "2026-10-06"
-lot_courant: "LOT-09"
+mise_à_jour: "2026-10-07"
+lot_courant: "LOT-04"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -76,17 +76,17 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 | LOT-01 | Saisie groupée praticien, route batch transactionnelle | terminé (2026-10-01) | non | LOT-00 |
 | LOT-02 | Staging d'import, extraction PDF par IA vision, écran de validation | terminé (2026-10-03) | **oui, confirmation obligatoire** | LOT-01, amendement RGPD/TRUST |
 | LOT-03 | Photo ou scan : même pipeline, seul l'extracteur change | terminé (2026-10-04, #1310, #1312) ; « Relancer la lecture » non livré, déplacé au LOT-09 | non | LOT-02 |
-| LOT-04 | Transmission depuis le portail patient | à_faire | probable, confirmation obligatoire | LOT-02, consentement RGPD à jour, LOT-07, BP-10 (BIO-PARCOURS, `D-266` §15) |
+| LOT-04 | Transmission depuis le portail patient | en_cours (2026-10-07, `D-269`) | **oui, confirmation obligatoire** | LOT-02, consentement RGPD à jour, LOT-07, BP-10 (BIO-PARCOURS, `D-266` §15) |
 | LOT-05 | Adaptateur laboratoire (pilote Barbier Metz) | à_faire | selon le format reçu | LOT-02, format réel reçu |
 | LOT-06 | Catalogue étendu aux analyses d'un compte rendu courant | terminé (2026-10-04, D-261, D-263, D-264) | **oui, confirmation obligatoire** | LOT-02 |
 | LOT-07 | Faits du laboratoire : intervalle et marquage imprimés, transcrits avant la purge (ajouté par `D-266` §15) ; avancé avant LOT-04 | terminé (2026-10-06, #1326, #1328, #1332, #1333, #1334 ; D-267) | **oui, confirmation obligatoire** | LOT-02, BP-00 et BP-01 (BIO-PARCOURS) |
 | LOT-08 | Durcissement : borne totale de l'appel d'extraction (flux compris) et délai explicite de la transaction des lignes | terminé (2026-10-05) | non | LOT-02 |
 | LOT-09 | « Relancer la lecture » d'un compte rendu sans ligne validée, jamais destructive | terminé (2026-10-06) | non | LOT-02, LOT-07 |
 
-**Lot courant : LOT-09** (déclaré le 2026-10-06), après la clôture du
-LOT-07 (`bio-extraction-v2` en production, intervalle exempté de la
-sentinelle comme la marque, #1334). Ses dépendances sont satisfaites : LOT-02
-et LOT-07 terminés. Aucune migration.
+**Lot courant : LOT-04** (déclaré le 2026-10-07), après la clôture du
+LOT-09. La précondition de `D-266` §15 est remplie : le LOT-07 est terminé
+et BP-10 est en production (`D-269` §9). Il y a une migration, seule dans sa
+PR, sur confirmation distincte.
 
 **Clôture d'un lot** : avec le handoff, mettre à jour le suivi BioFlow du
 responsable (page hors dépôt, créée le 2026-10-05) : état du lot, lots

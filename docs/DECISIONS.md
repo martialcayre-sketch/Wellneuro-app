@@ -4,6 +4,132 @@
 
 ## Décisions actives
 
+### D-269 — Transmission du compte rendu par le patient (BIO-INGEST LOT-04) : un document transmis n'est pas un résultat, la lecture reste un geste du praticien, un document refusé s'écarte et se purge
+
+- Date : 2026-10-07
+- Statut : accepté. Ce sont les arbitrages du responsable du 2026-10-07 sur
+  le plan du LOT-04 (refus, consentement, bornes, notification). La rédaction
+  a été faite en session.
+- Domaine : biologie, portail patient, RGPD (BIO-INGEST LOT-04).
+  **Aucune règle clinique, aucun seuil, aucune lecture de valeur.**
+  **Cette décision ne pose aucune migration** : elle autorise celle du
+  LOT-04, seule dans sa PR, sur une confirmation distincte ([[D-087]]).
+- Précise : [[D-256]] (A2 conservation en base HDS, A4 déclaration avant
+  activation, A5 provenance) et [[D-258]] (la purge gagne un motif).
+  S'appuie sur [[D-266]] §15 (précondition BP-10, remplie, voir §9) et sur
+  [[D-268]] (la carte du Fil sert de patron). **Ne touche pas** : [[D-157]],
+  [[D-267]], le retrait d'un dépôt erroné par le praticien (LOT-02).
+
+**§1 — Le patient peut déposer, il ne déclenche rien.** Depuis son portail
+(session `wn_portail`, dossier tiré du cookie et jamais du client), le
+patient dépose un compte rendu : un PDF, ou une photo ou un scan. Le dépôt
+**n'appelle pas l'IA**. La lecture (l'extraction) reste un second geste du
+**praticien**, qui vérifie d'abord que le document est bien celui de son
+patient. Un document transmis n'est **pas** un résultat : rien n'entre dans
+`resultats_biologiques` sans la validation ligne à ligne du LOT-02.
+Écartée : une extraction lancée automatiquement au dépôt. Un patient peut
+déposer le document d'un tiers, et ce document partirait alors entier chez
+Anthropic sans regard humain.
+
+**§2 — L'émetteur est porté par le document.** Le compte rendu porte son
+origine, `praticien` ou `patient`. Un dépôt patient ne porte pas d'e-mail
+de praticien. La base tient la cohérence entre l'origine et l'auteur
+(contrat SQL). Écartée : une table de transmission séparée, qui aurait
+dédoublé le document, sa purge et son empreinte.
+
+**§3 — « Écarter ce document » : un geste neuf du praticien, motif fermé,
+purge immédiate.** Le praticien peut écarter un document transmis par le
+patient, pour un des deux motifs d'une liste fermée : `illisible`, ou
+`document_non_conforme` (ce n'est pas un compte rendu de ce patient). Aucun
+texte libre n'est saisi.
+- L'écart **purge le contenu aussitôt**. L'empreinte reste : un doublon
+  reste refusé.
+- L'écart est **refusé** si une ligne du document a été validée (provenance,
+  [[D-256]] A5) ou si une extraction est en cours.
+- L'écart est **irréversible** : on n'« un-écarte » pas un document.
+- Le motif de purge gagne la valeur `ecarte` ([[D-258]]).
+
+Le **retrait** d'un dépôt erroné (LOT-02), qui supprime la ligne, est
+**refusé** sur un document transmis par le patient : il effacerait ce que
+le patient a transmis et ce qu'il voit. Écarté : un statut « refusé » dérivé
+d'une extraction en échec. Un échec technique serait montré au patient comme
+un verdict.
+
+**§4 — Le statut vu par le patient est dérivé, jamais stocké, et ne dit rien
+du contenu.** Pour chaque document qu'il a transmis, le patient voit la date
+et l'un de ces cinq statuts :
+
+| Statut | Condition |
+|---|---|
+| **refusé** ou **illisible** | le document est écarté, selon le motif |
+| sinon **validé** | au moins une ligne a été validée |
+| sinon **reçu** | une lecture a été lancée |
+| sinon **en attente** | aucune des conditions précédentes |
+
+Le patient ne voit jamais une valeur, un libellé lu, un marquage ou une
+qualification. Il ne voit pas non plus les documents déposés par le praticien.
+
+**§5 — Bornes.** Les types et la taille sont ceux du dépôt praticien : PDF,
+JPEG, PNG et WebP, 10 Mo au plus. Une image est réencodée, sans ses
+métadonnées. La signature du fichier est contrôlée et le nom de fichier
+n'est jamais gardé. S'y ajoutent deux plafonds, qui sont des constantes
+produit et non des bornes cliniques :
+- **au plus 3 documents « en attente » ou « reçus » par dossier** ;
+- **au plus 10 transmissions par 24 heures** et par dossier, comptées à
+  l'horloge de la base.
+
+Le corps de la requête ne se lit qu'après le drapeau, la session, l'accusé,
+le dossier ouvert et les plafonds. La longueur est exigée (patron du dépôt
+praticien). Un dossier clos refuse le dépôt.
+
+**§6 — Information du patient : un accusé exigé avant le premier dépôt.**
+« L'intelligence artificielle dans Wellneuro » passe en **v6** : elle dit
+que le patient peut déposer lui-même, que rien n'est relevé avant que le
+praticien lance la lecture, et que le document part alors entier. « Vos
+données personnelles » passe en **v13** : le compte rendu déposé rejoint les
+informations transmises, et l'écart purge. La route de dépôt **vérifie côté
+serveur** un accusé `pris_connaissance` de la version **courante** de
+`usage_ia` (version et hash). Sans cet accusé, elle refuse le dépôt.
+- L'accusé se recueille sur l'écran de dépôt, par la route existante, sans
+  migration.
+- Il diffère du régime du dépôt praticien (`DOSSIER_RGPD.md` §2 ter,
+  « l'information est faite par le document ») : ici c'est le patient qui
+  agit, et l'informer au moment du geste ne coûte rien.
+- Les deux textes sont rédigés de façon conditionnelle (« lorsque vous
+  déposez… »). Ils restent donc vrais tant que le drapeau est éteint.
+
+**§7 — Notification : le Fil seul.** Une carte « compte rendu transmis par
+le patient » est posée au praticien du dossier, sur le patron de [[D-268]].
+Elle vise un document d'origine patient, non écarté, sans lecture lancée.
+Elle s'éteint quand la lecture est lancée ou que le document est écarté, et
+elle ouvre le compte rendu désigné. Aucun canal sortant n'est créé : pas
+d'e-mail.
+
+**§8 — Drapeau et ordre.**
+1. Le registre RGPD et cette décision.
+2. La migration, seule dans sa PR, appliquée par `release-db` approuvée
+   puis constatée par conteneur.
+3. Le code, livré drapeau `WN_BIO_PORTAIL_ENABLED` éteint. Ce drapeau exige
+   `WN_BIO_INGEST_ENABLED`.
+4. Les textes v6 et v13 servis et constatés ([[D-248]]).
+5. L'allumage, geste du responsable, constaté par son effet.
+
+**§9 — Précondition [[D-266]] §15 : remplie.** Le LOT-07 est terminé
+(2026-10-06). BP-10 est en production :
+- l'acte de lecture est tracé ;
+- la carte « compte rendu à lire » ouvre le compte rendu désigné ;
+- `WN_BIO_LECTURE_ENABLED` est posé depuis le 2026-10-06 à 22:12 UTC.
+
+Le constat d'usage de BP-10 ([[D-266]] §12) attend des lectures consignées.
+C'est une observation, pas une garde de sécurité, et il ne retient pas ce
+lot.
+
+- Options écartées : l'extraction automatique (§1) ; une table de
+  transmission (§2) ; le statut dérivé de l'échec (§3) ; le texte sans accusé
+  et la case à chaque dépôt (§6, arbitrage) ; un e-mail au praticien (§7).
+- Réversibilité : drapeau éteint ; la migration est additive, les lignes
+  existantes prennent `praticien`.
+
 ### D-268 — Sécurité biologique, étage 1 (BIO-PARCOURS BP-10) : tout import validé appelle un acte de lecture clinique tracé, signalé au Fil sans rien bloquer ; BP-10 précède BIO-INGEST LOT-04
 
 - Date : 2026-10-06

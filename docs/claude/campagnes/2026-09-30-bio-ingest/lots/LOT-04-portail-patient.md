@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Transmission depuis le portail patient"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: "LOT-02, consentement RGPD à jour, LOT-07, BIO-PARCOURS BP-10"
 ---
 
@@ -45,10 +45,32 @@ LOT-02, consentement RGPD à jour. **Précondition de sécurité** (`D-266` §15
 (sécurité biologique, étage 1 : marquage restitué, acte de lecture tracé,
 carte « geste »). Ce lot n'ouvre pas avant BP-10 livré.
 
+**Précondition consignée le 2026-10-07 (`D-269` §9) : remplie.** LOT-07
+terminé (2026-10-06). BP-10 en production : acte de lecture tracé, carte
+« compte rendu à lire » qui ouvre le compte rendu désigné (#1349),
+`WN_BIO_LECTURE_ENABLED` posé le 2026-10-06 à 22:12 UTC. Le constat d'usage
+de BP-10 attend des lectures consignées ; c'est une observation, pas une
+garde.
+
+**Arbitrages du 2026-10-07 (`D-269`)** :
+- refus ou illisible : un geste praticien « Écarter ce document », motif
+  fermé, purge immédiate ;
+- accusé `usage_ia` v6 exigé côté serveur avant tout dépôt ;
+- au plus 3 documents « en attente » ou « reçus » par dossier, 10 dépôts par 24 h, mêmes
+  types et taille que le praticien ;
+- la carte du Fil seule.
+
+**Découpage** :
+1. PR 1, la décision et le registre RGPD ;
+2. PR 2, la migration `bio_ingest_transmission_patient_v1`, seule dans sa PR ;
+3. PR 3, le code sous `WN_BIO_PORTAIL_ENABLED` éteint, avec les textes v6
+   et v13 ;
+4. l'allumage.
+
 ## Étapes
 
-- [ ] Mettre à jour le consentement et le registre **avant** l'ouverture.
-- [ ] Mode Plan : droits, taille, types, rétention.
+- [ ] Mettre à jour le consentement et le registre **avant** l'ouverture (registre et `D-269` : PR 1 ; textes v6 et v13 : PR 3).
+- [x] Mode Plan : droits, taille, types, rétention (2026-10-07, `D-269`).
 - [ ] Migration seule si nécessaire, puis code.
 
 ## Tests
