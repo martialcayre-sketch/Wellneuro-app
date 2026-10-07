@@ -308,8 +308,14 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
       rendu ». Accusé exigé, comme la v12.
   - **Conditions de pose de `WN_BIO_PORTAIL_ENABLED`**, toutes préalables :
     1. ce paragraphe validé par le responsable — **tenue le 2026-10-07** ;
-    2. la migration appliquée et constatée par conteneur ;
-    3. la v6 et la v13 servies, et le déploiement constaté ([[D-248]]).
+    2. la migration appliquée et constatée par conteneur — **tenue le
+       2026-10-07** (`one-off-4793`) ;
+    3. la v6 et la v13 servies, et le déploiement constaté ([[D-248]]) —
+       **tenue le 2026-10-07** (`one-off-810`).
+
+    **Drapeau posé le 2026-10-07 à 17:53 UTC**, effet constaté (route du
+    portail en `401` sans session au lieu de `503`). Le praticien voit le
+    document avant d'en lancer la lecture (« Voir le document », §1).
 
     La DPA Anthropic est déjà demandée (2026-10-01) : aucun sous-traitant
     nouveau.
