@@ -46,9 +46,9 @@ confirmée par le responsable le 2026-10-07.
 
 ## Ouvert
 
-- **À confirmer par le responsable** : un document patient purgé sans écart
-  (échéance, ou lignes toutes écartées) s'afficherait « reçu », et le
-  plafond de 3 ne compterait que les documents non purgés.
+- **Validé par le responsable le 2026-10-07** : un document patient purgé
+  sans écart s'affiche « reçu », et le plafond de 3 ne compte que les
+  documents non purgés. La précision de `D-269` se fait en PR 3.
 - PR 3 : refuser le retrait d'un document d'origine patient
   (`retrait.ts`).
 

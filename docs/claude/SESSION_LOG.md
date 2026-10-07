@@ -9561,6 +9561,6 @@ ne peut rien juger.
 **Prochaine action.** PR, CI, merge, puis `release-db` approuvée et constat
 par conteneur. Ensuite la PR 3, le code sous drapeau éteint.
 
-**Questions ouvertes.** Un document patient purgé sans écart reste
-« reçu », et le plafond ne compte que les non purgés : à confirmer par le
-responsable.
+**Questions ouvertes.** Aucune. Un document patient purgé sans écart
+s'affiche « reçu », et le plafond ne compte que les non purgés (validé le
+2026-10-07, précision de `D-269` en PR 3).
