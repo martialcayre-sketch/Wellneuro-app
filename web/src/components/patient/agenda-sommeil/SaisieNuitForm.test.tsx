@@ -31,6 +31,8 @@ function rendre(props: Partial<Parameters<typeof SaisieNuitForm>[0]> = {}) {
 
 const cta = () => screen.getByRole('button', { name: /c’est noté/i }) as HTMLButtonElement;
 const poignees = () => screen.getAllByRole('slider');
+// La liste de ce qui manque, sous le bouton (annonce polie, pas une alerte).
+const reste = () => screen.queryByText(/^Il reste à renseigner/);
 
 // Le bouton reste ACTIF : c'est l'envoi qui doit être refusé tant qu'une
 // réponse obligatoire manque, avec la liste de ce qui manque sous le bouton.
@@ -42,7 +44,8 @@ function envoiRefuse(onSubmit: ReturnType<typeof vi.fn>): boolean {
 }
 
 // Parcours minimal complet du contrat v2 : les deux poignées, l'endormissement,
-// la nuit, l'aide au sommeil, le mode de lever et la qualité — sept gestes.
+// la nuit, l'aide au sommeil, le mode de coucher, le mode de lever et la
+// qualité — huit gestes.
 function completerLeMinimum() {
   poignees().forEach((p) => fireEvent.keyDown(p, { key: 'Enter' }));
   fireEvent.click(screen.getByRole('button', { name: 'En moins de 15 min' }));
@@ -76,7 +79,7 @@ describe('rien n’est pré-rempli', () => {
     const { onSubmit } = rendre();
     expect(cta().disabled).toBe(false);
     expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(screen.getByRole('alert').textContent).toMatch(
+    expect(reste()!.textContent).toMatch(
       /^Il reste à renseigner : les repères 🌑 et 🌅 du cadran, le coucher, .* et la qualité de la nuit\.$/,
     );
   });
@@ -85,9 +88,9 @@ describe('rien n’est pré-rempli', () => {
     const { onSubmit } = rendre();
     envoiRefuse(onSubmit);
     fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
-    expect(screen.getByRole('alert').textContent).not.toMatch(/qualité/);
+    expect(reste()!.textContent).not.toMatch(/qualité/);
     completerLeMinimum();
-    expect(screen.queryByRole('alert')).toBeNull();
+    expect(reste()).toBeNull();
   });
 
   it('un envoi incomplet ramène le focus sur la première question sans réponse', () => {
@@ -95,8 +98,9 @@ describe('rien n’est pré-rempli', () => {
     poignees().forEach((p) => fireEvent.keyDown(p, { key: 'Enter' }));
     fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon coucher' }));
     envoiRefuse(onSubmit);
-    // Le coucher est renseigné : la première question vide est l'endormissement.
-    expect(document.activeElement?.textContent).toMatch(/une fois la lumière éteinte/i);
+    // Le coucher est renseigné : la première question vide est l'endormissement,
+    // et le focus va sur sa première tuile — un nom, pas tout le bloc.
+    expect(document.activeElement?.textContent).toBe('En moins de 15 min');
   });
 
   it('les horaires proposés sont annoncés comme une proposition, pas une valeur', () => {
@@ -114,7 +118,7 @@ describe('rien n’est pré-rempli', () => {
   });
 
   it('même en correction, seule la nuit visée est reprise', () => {
-    rendre({
+    const { onSubmit } = rendre({
       initial: {
         heureCoucher: '00:15',
         heureLever: '08:00',
@@ -127,6 +131,8 @@ describe('rien n’est pré-rempli', () => {
       },
     });
     expect(poignees()[0].getAttribute('aria-valuetext')).toMatch(/0 heures 15/);
+    // Une correction complète part sans geste supplémentaire.
+    expect(envoiRefuse(onSubmit)).toBe(false);
   });
 
   it('une classe d’éveil héritée n’est pas pré-sélectionnée : la question est reposée', () => {
@@ -215,7 +221,7 @@ describe('l’éveil nocturne est obligatoire', () => {
     fireEvent.click(screen.getByRole('button', { name: 'En moins de 15 min' }));
     fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
     expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(screen.getByRole('alert').textContent).toMatch(/la nuit/);
+    expect(reste()!.textContent).toMatch(/la nuit/);
   });
 
   it('« nuit continue » est une réponse : elle débloque l’envoi', () => {
@@ -246,7 +252,7 @@ describe('aide au sommeil et mode de lever', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon réveil' }));
     fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
     expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(screen.getByRole('alert').textContent).toMatch(/l’aide pour dormir/);
+    expect(reste()!.textContent).toMatch(/l’aide pour dormir/);
   });
 
   it('la 3ᵉ poignée n’existe que si le patient est resté au lit', () => {
@@ -271,9 +277,7 @@ describe('aide au sommeil et mode de lever', () => {
     fireEvent.keyDown(extinction, { key: 'Enter' });
     fireEvent.keyDown(sortie, { key: 'Enter' });
     expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(screen.getByRole('alert').textContent).toBe(
-      'Il reste à renseigner : le repère 👁️ du cadran.',
-    );
+    expect(reste()!.textContent).toBe('Il reste à renseigner : le repère 👁️ du cadran.');
     fireEvent.keyDown(poignees()[1], { key: 'Enter' });
     expect(envoiRefuse(onSubmit)).toBe(false);
   });
@@ -311,7 +315,7 @@ describe('mise au lit', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon réveil' }));
     fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
     expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(screen.getByRole('alert').textContent).toBe('Il reste à renseigner : le coucher.');
+    expect(reste()!.textContent).toBe('Il reste à renseigner : le coucher.');
   });
 
   it('revenir à « en me couchant » efface l’heure de mise au lit', () => {
@@ -432,7 +436,7 @@ describe('confirmer ces horaires — un geste pour les deux ancres suggérées',
     poignees().forEach((p) => expect(p.getAttribute('aria-valuetext')).not.toMatch(/à confirmer/i));
     // Aucune autre réponse n'est reprise : l'envoi reste refusé.
     expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(screen.getByRole('alert').textContent).not.toMatch(/cadran/);
+    expect(reste()!.textContent).not.toMatch(/cadran/);
     expect(bouton()).toBeNull();
   });
 });
@@ -449,9 +453,28 @@ describe('ordre des repères — refusé ici, sous le bouton, avant tout envoi',
     fireEvent.keyDown(poignees()[1], { key: 'Enter' });
     for (let i = 0; i < 5; i += 1) fireEvent.keyDown(poignees()[1], { key: 'PageUp' });
     expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(screen.getByRole('alert').textContent).toMatch(
+    const alerte = screen.getByRole('alert');
+    expect(alerte.textContent).toMatch(
       /Le réveil doit se situer avant la sortie du lit\. Ajustez les repères du cadran\./,
     );
+    // Rendu SOUS LE CADRAN, là où le patient est ramené — focus sur un repère.
+    const blocCadran = alerte.parentElement!;
+    expect(blocCadran.querySelector('[role="slider"]')).not.toBeNull();
+    expect(blocCadran.className).toMatch(/ring-2/);
+    expect(document.activeElement?.getAttribute('role')).toBe('slider');
+  });
+
+  it('le refus d’ordre disparaît quand le repère fautif disparaît', () => {
+    const { onSubmit } = rendre();
+    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon réveil' }));
+    completerLeMinimum();
+    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon réveil' }));
+    fireEvent.keyDown(poignees()[1], { key: 'Enter' });
+    for (let i = 0; i < 5; i += 1) fireEvent.keyDown(poignees()[1], { key: 'PageUp' });
+    envoiRefuse(onSubmit);
+    expect(screen.getByRole('alert')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon réveil' }));
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
 

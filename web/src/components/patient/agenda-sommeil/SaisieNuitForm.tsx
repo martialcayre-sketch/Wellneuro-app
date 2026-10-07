@@ -211,6 +211,11 @@ function Compteur({
 // conditionnels (🛏️, 👁️) vivent sur le cadran : ils y ramènent aussi.
 type Bloc = 'cadran' | 'coucher' | 'latence' | 'nuit' | 'aide' | 'lever' | 'qualite';
 
+// Les trois refus d'ORDRE de `ensureNuitReponses` (lib/agenda-sommeil/nuit.ts,
+// mode écriture) : « L'extinction doit suivre… », « Le réveil doit se situer
+// avant… », « Le réveil doit suivre… ». Un banc les fige.
+const RE_REFUS_ORDRE = /doit (suivre|se situer)/;
+
 // « a », « a et b », « a, b et c ».
 function enumerer(elements: string[]): string {
   if (elements.length <= 1) return elements.join('');
@@ -276,7 +281,10 @@ export function SaisieNuitForm({
   const [sieste, setSieste] = useState<ClasseSieste | undefined>(initial?.siesteVeille);
   const [facteurs, setFacteurs] = useState<FacteursNuit>(initial?.facteurs ?? {});
 
-  const [erreur, setErreur] = useState('');
+  // Refus d'ORDRE des repères (réveil après la sortie du lit…), rendu SOUS LE
+  // CADRAN, là où le patient est ramené et où se corrige l'erreur — et non sous
+  // le bouton, que le défilement vers le cadran vient de faire sortir du champ.
+  const [erreurOrdre, setErreurOrdre] = useState('');
   // Passe à vrai au premier envoi incomplet : les questions sans réponse sont
   // alors signalées une à une, jamais avant — on ne gronde pas un formulaire
   // qu'on vient d'ouvrir.
@@ -314,7 +322,8 @@ export function SaisieNuitForm({
   if (qualite === undefined) manquants.push({ bloc: 'qualite', libelle: 'la qualité de la nuit' });
   const complet = manquants.length === 0;
 
-  const blocManquant = (bloc: Bloc) => tentative && manquants.some((m) => m.bloc === bloc);
+  const blocManquant = (bloc: Bloc) =>
+    (tentative && manquants.some((m) => m.bloc === bloc)) || (bloc === 'cadran' && erreurOrdre !== '');
   const classeBloc = (bloc: Bloc) =>
     `rounded-xl outline-none transition-shadow ${
       blocManquant(bloc) ? 'ring-2 ring-status-warning/60 ring-offset-4 ring-offset-surface' : ''
@@ -323,18 +332,20 @@ export function SaisieNuitForm({
     ancres.current[bloc] = el;
   };
 
-  // Amène le patient à la question visée. `scrollIntoView` n'existe pas sous
-  // jsdom : l'appel est conditionnel, le focus suffit aux tests.
+  // Amène le patient à la question visée, focus sur son PREMIER CONTRÔLE (une
+  // tuile, un repère) : un lecteur d'écran annonce alors un nom, pas tout le
+  // bloc. `scrollIntoView` n'existe pas sous jsdom : l'appel est conditionnel.
   function allerA(bloc: Bloc) {
     const el = ancres.current[bloc];
     if (!el) return;
     el.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-    el.focus({ preventScroll: true });
+    const cible = el.querySelector<HTMLElement>('button, [role="slider"]') ?? el;
+    cible.focus({ preventScroll: true });
   }
 
   function majHoraire(poignee: 'lit' | 'extinction' | 'reveil' | 'sortie', valeur: string) {
     // Un refus d'ordre porte sur les repères : en bouger un le rend caduc.
-    setErreur('');
+    setErreurOrdre('');
     if (poignee === 'lit') setHeureMiseAuLit(valeur);
     else if (poignee === 'extinction') setHeureCoucher(valeur);
     else if (poignee === 'reveil') setHeureReveilFinal(valeur);
@@ -345,11 +356,14 @@ export function SaisieNuitForm({
   // garder enverrait au serveur une nuit contradictoire, que la validation
   // refuse (et refuserait à raison — mieux vaut ne pas la produire).
   function majCoucher(immediate: boolean) {
+    // Fait apparaître ou disparaître un repère : le refus d'ordre est caduc.
+    setErreurOrdre('');
     setExtinctionImmediate(immediate);
     if (immediate) setHeureMiseAuLit(undefined);
   }
 
   function majLever(immediat: boolean) {
+    setErreurOrdre('');
     setLeverImmediat(immediat);
     if (immediat) setHeureReveilFinal(undefined);
   }
@@ -371,7 +385,7 @@ export function SaisieNuitForm({
       allerA(manquants[0].bloc);
       return;
     }
-    setErreur('');
+    setErreurOrdre('');
     const reponses: NuitReponses = {
       heureCoucher: heureCoucher!,
       heureLever: heureLever!,
@@ -400,13 +414,21 @@ export function SaisieNuitForm({
     // l'ordre de ses repères (réveil placé après la sortie du lit, par
     // exemple) : le dire ici, sous le bouton, plutôt qu'au retour d'un aller-
     // retour réseau, en tête d'une page que le patient a quittée des yeux.
+    //
+    // Une nuit COMPLÈTE ne peut échouer ici que sur l'ordre des repères : tout
+    // le reste est garanti par construction du formulaire. Toute autre
+    // `TypeError` signalerait un formulaire cassé — elle part alors au serveur,
+    // qui la refuse et la dit sous le bouton, plutôt que d'être maquillée ici en
+    // erreur de cadran.
     try {
       ensureNuitReponses(reponses, { exigerObligatoires: true });
     } catch (e) {
       if (!(e instanceof TypeError)) throw e;
-      setErreur(`${e.message} Ajustez les repères du cadran.`);
-      allerA('cadran');
-      return;
+      if (RE_REFUS_ORDRE.test(e.message)) {
+        setErreurOrdre(`${e.message} Ajustez les repères du cadran.`);
+        allerA('cadran');
+        return;
+      }
     }
     onSubmit(reponses);
   }
@@ -445,6 +467,11 @@ export function SaisieNuitForm({
             Confirmer ces horaires : 🌑 {horairesHabituels.extinction} → 🌅 {horairesHabituels.sortie}
           </button>
         </div>
+      )}
+      {erreurOrdre && (
+        <p role="alert" className="mt-2 text-sm text-status-danger">
+          {erreurOrdre}
+        </p>
       )}
       </div>
 
@@ -635,18 +662,20 @@ export function SaisieNuitForm({
           local (ce qui manque) passe avant celui du serveur, qui date de
           l'envoi précédent. */}
       {/* La liste se recalcule à chaque geste : elle raccourcit à mesure que
-          le patient complète, et disparaît quand il n'y a plus rien à faire. */}
-      {(() => {
-        const message =
-          tentative && !complet
-            ? `Il reste à renseigner : ${enumerer(manquants.map((m) => m.libelle))}.`
-            : erreur || refus;
-        return message ? (
+          le patient complète, et disparaît quand il n'y a plus rien à faire.
+          Annonce POLIE : assertive, chaque geste interromprait le lecteur
+          d'écran. Le refus du serveur, lui, reste une alerte. */}
+      {tentative && !complet ? (
+        <p aria-live="polite" className="text-sm text-status-danger">
+          {`Il reste à renseigner : ${enumerer(manquants.map((m) => m.libelle))}.`}
+        </p>
+      ) : (
+        refus && (
           <p role="alert" className="text-sm text-status-danger">
-            {message}
+            {refus}
           </p>
-        ) : null;
-      })()}
+        )
+      )}
 
       <PatientButton
         variant="primary"

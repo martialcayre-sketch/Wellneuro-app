@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { AgendaSommeilJournal } from './AgendaSommeilJournal';
 
 // CE QUE CE BANC PROTÈGE, ET POURQUOI IL N'EXISTAIT PAS.
@@ -107,6 +107,46 @@ describe('AgendaSommeilJournal — un refus ne reste pas muet', () => {
     // le geste de saisie lui-même appartenant au banc de `SaisieNuitForm`.
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByText('Votre nuit passée')).toBeTruthy();
+  });
+
+  it('un refus d’enregistrement s’affiche UNE fois, sous le bouton d’envoi', async () => {
+    const sansNuitDuJour = { ...CHARGEMENT_OK, nuits: [{ dateNuit: '2026-09-02', reponses: NUIT }] };
+    fetchMock.mockImplementation((url: string, init?: { method?: string }) => {
+      if (init?.method === 'POST') return reponse({ ok: false, error: 'Nuit hors fenêtre.' }, false);
+      return reponse(sansNuitDuJour);
+    });
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Votre nuit passée')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: /confirmer ces horaires/i }));
+    for (const nom of [
+      'Au même moment que mon coucher',
+      'En moins de 15 min',
+      'Nuit continue, aucun réveil',
+      'Aucune aide pour dormir cette nuit',
+      'Au même moment que mon réveil',
+      'Très bonne',
+    ]) {
+      fireEvent.click(screen.getByRole('button', { name: nom }));
+    }
+    fireEvent.click(screen.getByRole('button', { name: /c’est noté/i }));
+    await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(1));
+    const alerte = screen.getByRole('alert');
+    expect(alerte.textContent).toBe('Nuit hors fenêtre.');
+    // Juste avant le bouton, dans le formulaire — plus en tête de page.
+    expect(alerte.nextElementSibling?.textContent).toMatch(/c’est noté/i);
+  });
+
+  it('« Confirmer ces horaires » n’apparaît pas sans nuit du patient', async () => {
+    const aucuneNuit = {
+      ...CHARGEMENT_OK,
+      fenetre: { ...FENETRE, dateDebut: null, emplacements: [], nbRenseignees: 0, jourCourant: null },
+      nuits: [],
+      derniereNuit: null,
+    };
+    fetchMock.mockImplementation(() => reponse(aucuneNuit));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Votre nuit passée')).toBeTruthy());
+    expect(screen.queryByRole('button', { name: /confirmer ces horaires/i })).toBeNull();
   });
 
   it('ne montre aucune alerte tant que rien n’a été refusé', async () => {

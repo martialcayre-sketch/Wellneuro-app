@@ -258,7 +258,7 @@ describe('journalisation de /api/portail/agenda-sommeil', () => {
     event: string;
     domain: string;
     statusCode?: number;
-    metadata?: { motif?: string; detail?: string; correction?: boolean };
+    metadata?: { motif?: string; detail?: string };
     error?: { type?: string; message?: string };
   };
   const SAISIE_SECRETE = 'SAISIE_SECRETE_DU_PATIENT';
@@ -415,7 +415,7 @@ describe('journalisation de /api/portail/agenda-sommeil', () => {
     const ev = JSON.parse(lignes[0]) as Ligne;
     expect(ev.level).toBe('INFO');
     expect(ev.event).toBe('PORTAIL_PATIENT.AGENDA_SOMMEIL.NUIT_ENREGISTREE');
-    expect(ev.metadata?.correction).toBe(false);
+    expect(ev.metadata).toBeUndefined();
     expect(lignes[0]).not.toContain(SAISIE_SECRETE);
     expect(lignes[0]).not.toContain('nuit_1');
   });

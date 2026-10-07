@@ -205,8 +205,11 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       event: EVENT_CODES.AGENDA_SOMMEIL_NUIT_ENREGISTREE,
       domain: 'PORTAIL_PATIENT',
       message: 'Nuit d’agenda du sommeil enregistrée',
+      // Pas de drapeau « correction » : le portail n'envoie jamais
+      // `supersedesNuitId` (une modification est une nouvelle ligne de même
+      // date), il vaudrait toujours faux. Le taux de correction se lit en base :
+      // lignes − dates distinctes.
       context: finalizeLogContext(requestContext, { statusCode: 201, retryable: false }),
-      metadata: { correction: Boolean(supersedesNuitId) },
     });
 
     return NextResponse.json({ ok: true, nuitId: created.id }, { status: 201 });

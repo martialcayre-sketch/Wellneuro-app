@@ -18,8 +18,9 @@ adverse versée au dossier de campagne.
   quand elles viennent des nuits du patient. Le garde-fou anti-recopie garde sa
   lettre : un geste explicite par nuit, aucune autre réponse reprise.
 - **L'ordre des repères est vérifié avant l'envoi**, par la fonction de
-  validation du serveur elle-même ; le refus, comme celui du serveur, s'affiche
-  sous le bouton et non plus en tête de page, hors champ sur téléphone.
+  validation du serveur elle-même ; le refus s'affiche sous le cadran, qui est
+  entouré et reçoit le focus. Le refus du serveur s'affiche sous le bouton et
+  non plus en tête de page, hors champ sur téléphone.
 - **Libellés** : « Vite » devient « En moins de 15 min » (même classe) ; le
   coucher et le lever se posent « par rapport à votre coucher / réveil » avec
   « Au même moment / Plus tard », sans seuil ajouté ; les ancres de l'échelle de
@@ -31,7 +32,9 @@ adverse versée au dossier de campagne.
   comptables.
 
 Aucun changement de contrat (`agenda-sommeil-v3`), de classe, de seuil, de
-fenêtre ni de barème ; aucune migration. **Comparabilité** : le stimulus des
-questions de coucher et de lever est reformulé sans changer les valeurs
-enregistrées ; une dérive de la part des réponses « plus tard » après ce lot
-se lira comme un effet de libellé, pas comme un changement de sommeil.
+fenêtre ni de barème ; aucune migration. **Comparabilité** : trois stimulus
+changent sans changer les valeurs enregistrées — les questions de coucher et
+de lever (« au même moment / plus tard »), la tuile de latence la plus courte
+(« En moins de 15 min », classe `lt15` inchangée) et les ancres écrites de
+l'échelle de qualité. Une dérive de leurs distributions après ce lot se lira
+d'abord comme un effet de libellé, pas comme un changement de sommeil.

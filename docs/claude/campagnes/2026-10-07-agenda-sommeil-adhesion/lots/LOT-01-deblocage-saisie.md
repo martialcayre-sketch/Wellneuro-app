@@ -24,7 +24,8 @@ comptables.
   patient** (jamais sur les défauts 23:00 / 07:00). Rien d'autre n'est repris.
 - L'ordre des repères est vérifié avant l'envoi par la fonction de validation
   du serveur (`ensureNuitReponses`, mode écriture) ; le refus s'affiche sous le
-  bouton. Le refus serveur aussi, dans la vue de saisie.
+  cadran, entouré, focus sur un repère. Le refus serveur s'affiche sous le
+  bouton dans la vue de saisie.
 - Libellés : « Vite » → « En moins de 15 min » (même classe `lt15`) ; coucher et
   lever posés « par rapport à votre coucher / réveil » → « Au même moment /
   Plus tard » (sans seuil) ; ancres de qualité et de forme écrites (mots de
