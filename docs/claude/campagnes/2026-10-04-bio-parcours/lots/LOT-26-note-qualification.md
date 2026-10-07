@@ -51,6 +51,8 @@ LOT-00 (BP-00).
 ## Étapes
 
 - [x] Préparer une trame par fonction (`TRAME_QUALIFICATION_BP26.md`, 2026-10-05).
+- [x] Relire le texte officiel de MDCG 2019-11 Rev.1 et corriger l'arbre de la
+  trame (2026-10-07).
 - [ ] Faire statuer le responsable fonction par fonction.
 - [ ] Consigner la conclusion au dépôt.
 

@@ -18,21 +18,36 @@ Pour chaque fonction :
    code. Le responsable le confirme ou le corrige : la qualification dépend de
    la destination revendiquée et de ce que la fonction fait réellement, pas de
    son intitulé.
-2. **Arbre de décision.** MDCG 2019-11 Rev.1, §3, §3.4 et annexe I b. Le
-   cadrage le cite ; **cette session n'a pas relu le texte officiel**. Les
-   questions ci-dessous résument les étapes telles que le cadrage les invoque,
-   et se vérifient sur le texte avant toute réponse :
-   - Q1 — Est-ce un logiciel au sens du guide ?
+2. **Arbre de décision.** MDCG 2019-11 Rev.1 (juin 2025), figure 1 (§3.3,
+   cinq étapes) puis figure 2 (§3.4, trois étapes). Texte relu le 2026-10-07
+   (section « Relecture du texte officiel » ci-dessous). Les libellés Q1 à Q5
+   sont conservés pour les renvois des lignes A ; Q1b est l'étape que la
+   première version omettait.
+   - Q1 — Est-ce un logiciel au sens du guide (« un ensemble d'instructions qui
+     traite des données d'entrée et crée des données de sortie ») ? Figure 1,
+     étape 1.
+   - Q1b — Est-ce un produit de l'annexe XVI du MDR, un accessoire d'un
+     dispositif, ou un logiciel qui pilote ou influence l'usage d'un
+     dispositif matériel ? Si oui, il suit ce dispositif. Figure 1, étape 2.
    - Q2 — Le logiciel fait-il plus que stocker, archiver, communiquer,
-     rechercher simplement ou compresser sans perte ?
-   - Q3 — Ce traitement sert-il un patient individuel ?
-   - Q4 — La finalité relève-t-elle de l'article 2(1) du MDR (diagnostic,
-     prévention, surveillance, prédiction, pronostic, traitement ou atténuation
-     d'une maladie…) ? L'annexe I b vise le logiciel qui recommande un
-     traitement à un patient donné.
-   - Q5 — L'information porte-t-elle sur des données issues de dispositifs de
-     diagnostic in vitro, au sens de l'article 2(2) de l'IVDR (orientation
-     IVDR plutôt que MDR) ?
+     rechercher simplement ou compresser sans perte ? Figure 1, étape 3 ; §3.1.
+   - Q3 — Ce traitement sert-il un patient individuel ? Ne le servent pas :
+     l'agrégation de données de population, les parcours génériques non
+     dirigés vers un patient, la littérature, les atlas, modèles et gabarits.
+     Figure 1, étape 4.
+   - Q4 — La finalité est-elle celle d'un dispositif médical : article 2(1) du
+     MDR (diagnostic, prévention, surveillance, prédiction, pronostic,
+     traitement ou atténuation d'une maladie…) ou article 2(2) de l'IVDR ?
+     Figure 1, étape 5. L'annexe I b range parmi les dispositifs les outils
+     qui combinent des connaissances médicales générales et des algorithmes
+     avec des données propres au patient, pour fournir aux professionnels ou
+     aux utilisateurs des recommandations de diagnostic, de pronostic, de
+     surveillance ou de traitement **pour un patient individuel**.
+   - Q5 — Si Q4 est oui : MDR ou IVDR ? L'information relève-t-elle de
+     l'article 2(2) de l'IVDR (étape 1) ; repose-t-elle sur des données issues
+     uniquement de dispositifs de diagnostic in vitro (étape 2) ; sinon, la
+     destination est-elle portée principalement par ces données (étape 3,
+     pondération qualitative des sources) ? Figure 2.
 3. **Limite « outil ».** Ce que la fonction ne fait pas, et doit continuer de
    ne pas faire, pour rester dans l'étage outil.
 4. **Conclusion du responsable** : hors champ, à réduire, à porter par une
@@ -241,17 +256,88 @@ sans qualification. L'étage assistant n'ouvre qu'après sa ligne.
 Pour chaque ligne : énoncé de destination, Q1 à Q5, limite, conclusion du
 responsable.
 
+## Relecture du texte officiel (2026-10-07)
+
+**Texte relu.** MDCG 2019-11 Rev.1, *Guidance on Qualification and
+Classification of Software in Regulation (EU) 2017/745 – MDR and Regulation
+(EU) 2017/746 – IVDR*, octobre 2019, révision 1 de juin 2025. PDF anglais
+téléchargé le 2026-10-07 depuis le site de la Commission
+(`health.ec.europa.eu`, fichier `mdcg_2019_11_en.pdf`), SHA-256
+`ed60b2084a91648bf483eb6c33641e0635e51bfb9712f889124c279b1885f38d`. Le
+document n'est pas juridiquement contraignant : seule la Cour de justice de
+l'Union donne une interprétation qui lie (page de garde).
+
+**Ce que la relecture corrige dans la trame.**
+
+- L'arbre de la figure 1 a **cinq** étapes, pas quatre : l'étape 2 (annexe XVI,
+  accessoire, logiciel qui pilote ou influence un dispositif) manquait. Elle
+  est ajoutée en Q1b.
+- Q4 et Q5 ne sont pas deux étapes du même arbre : Q4 est la dernière étape de
+  la figure 1, Q5 résume la figure 2, qui ne se joue que si Q4 est oui.
+- L'annexe I b ne vise pas seulement le logiciel qui « recommande un
+  traitement ». Elle vise les recommandations de diagnostic, de pronostic, de
+  surveillance **et** de traitement, pour un patient individuel, à
+  destination des professionnels ou des utilisateurs.
+
+**Principes transverses, à garder en tête sur chaque ligne.** Ce sont des
+citations du texte ; aucune n'est appliquée ici à une fonction.
+
+- **La destination déclarée compte.** « The intended purpose, as described by
+  the manufacturer of the software is relevant for the qualification » (§3.1).
+  Elle doit décrire toutes les fonctions qui servent une finalité médicale,
+  sans ambiguïté, et toute revendication médicale doit être étayée par des
+  preuves cliniques (§3, article 7 MDR et IVDR).
+- **Le risque n'est pas un critère.** Le risque de nuire, panne comprise,
+  « is not a criterion on whether the software qualifies as a medical
+  device » (§3.1).
+- **Bien-être.** Les applications « wellness or fitness » ne sont pas des
+  logiciels dispositifs médicaux (§3.1). Mais le §3.2 range parmi eux un
+  logiciel qui réagit à des données de régime et d'activité pour atténuer un
+  trouble alimentaire : c'est la finalité qui décide, pas la donnée traitée.
+- **Traiter de l'information médicale.** Un logiciel qui traite, analyse,
+  interprète, calcule, crée ou modifie de l'information médicale « may be
+  qualified » quand cette création est gouvernée par une finalité médicale
+  (§3.1).
+- **Modules (§7).** La qualification se fait module par module. C'est au
+  fabricant de délimiter les modules et leurs interfaces, et de dire aux
+  utilisateurs lesquels relèvent du MDR ou de l'IVDR. Les fonctions non
+  médicales nécessaires au fonctionnement d'un module médical entrent dans
+  sa description. La note « une ligne par fonction » suit ce découpage.
+
+**Passages à confronter, par fonction.** Ce relevé renvoie au texte. Il ne
+dit pas comment la fonction en sort.
+
+| Fonction | Passages du guide |
+|---|---|
+| A1 Proposition de bilan | Annexe I b (aide à la décision : données du patient + algorithme → recommandation pour un patient) ; §3.2 note 4, exemple du module de dossier patient qui analyse les données d'un patient pour proposer des recommandations thérapeutiques ou des alertes ; Q3 pour le document remis au patient |
+| A2 Orientation | Annexe I b ; §3.2 note 4, exemple du logiciel de dépression (questionnaires d'humeur et de symptômes, exercices choisis selon les réponses) |
+| A3 Candidats de priorité, A4 Objectif | Annexe I b ; §3.1 (« process, analyse, interpret, calculate, create ») |
+| A5 IA générative | Annexe I b ; §3.1 ; « axes prioritaires » et « points de vigilance » au regard de Q4 |
+| A6 Relevé des comptes rendus | §2 : un document numérique (PDF, image) se distingue du logiciel capable de le lire ; annexe I f.1, note (modifier la représentation de résultats IVD disponibles n'est pas un dispositif IVD, à condition que les résultats restent lisibles et compréhensibles sans le logiciel) ; annexe I f.4 (transférer des résultats vers le professionnel n'est pas un dispositif IVD) |
+| A7 Restitution | Annexe I f.1, note : ne relèvent pas de l'IVDR les opérations arithmétiques de base (moyenne, conversion d'unités), le tracé dans le temps et « a comparison of the result to the limits of acceptance **set by the user** ». Ici la plage est sourcée par l'outil et non fixée par l'utilisateur : point nommé, à examiner |
+| A8 Assiettes, portes, fiches | §3.1 (bien-être) et §3.2 (exemple du trouble alimentaire) ; annexe I b pour les assiettes indiquées d'après les scores |
+| A9 Contradictions | §3.1 ; Q3 et Q4 |
+| A10 Scoring et couverture | §3.2 note 4 (logiciel utilisé par des profanes, exemple du logiciel de dépression qui évalue et suit par questionnaires) ; note 22 (un usage par des profanes ajoute des exigences : annexe I, points 22 et 23.4 w du MDR) |
+| A11 Sécurité | Q4, article 2(1) du MDR (prévention, surveillance) ; §4.2.1 (règle 11, ajout de la révision 1 sur la prévention du risque de maladie), à lire si Q4 est oui |
+| B, étage assistant biologique (BP-27, BP-11, BP-04) | Annexe I f.2, système expert : un logiciel qui fournit de l'information au sens de l'IVDR en analysant ensemble un ou plusieurs résultats in vitro d'un même patient ; figure 2, étapes 2 et 3, si la biologie est combinée aux questionnaires |
+| B, Options et dose (BP-17, BP-19) | Annexe I b, systèmes de planification médicamenteuse (calcul de la dose pour un patient donné) |
+| BIO-INGEST LOT-05, adaptateur laboratoire | Annexe I f.1 (systèmes d'information de laboratoire) et f.4 (transfert de résultats) ; Q1b |
+
 ## Ce que la trame laisse ouvert
 
-- La lecture de MDCG 2019-11 Rev.1 est une **hypothèse de travail** du
-  cadrage. Elle se vérifie sur le texte officiel avant la première réponse.
+- La lecture de MDCG 2019-11 Rev.1 que portait le cadrage a été **vérifiée
+  sur le texte officiel le 2026-10-07** (section ci-dessus). L'arbre est
+  corrigé, mais aucune ligne n'est tranchée.
 - `REGISTRE_FRONTIERES.md` §1 affirme que la qualification de dispositif
   médical « s'évite par conception ». `D-266` §4 l'affirme pour l'étage outil,
   sous l'hypothèse de travail de §2. Les lignes B le confirment ou
   l'infirment ; les lignes A disent ce qu'il en est des fonctions déjà
   servies.
-- L'arbre Q1 à Q5 n'a pas d'étape « accessoire, ou logiciel qui pilote un
-  dispositif ». À vérifier en relisant le texte officiel.
+- L'étape « accessoire, ou logiciel qui pilote un dispositif » existe dans le
+  texte (figure 1, étape 2). Elle est ajoutée en Q1b.
+- La relecture n'a porté que sur la qualification (§1 à §3, §7, annexe I).
+  La classification (§4 et §5, règle 11) n'est pas relue : elle ne se lit que
+  si une ligne conclut à un dispositif.
 - Contre-revue de la trame : faite le 2026-10-05 par `wn-reviewer` (7 P1 et
-  9 P2 corrigés). La relecture du texte officiel de MDCG 2019-11 Rev.1 reste
-  à faire.
+  9 P2 corrigés). Relecture du texte officiel de MDCG 2019-11 Rev.1 : faite
+  le 2026-10-07.
