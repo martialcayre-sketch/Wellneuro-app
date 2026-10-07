@@ -538,6 +538,13 @@ export function ImportCompteRenduPanel({
   const lignesATrancher = lignesProposees.filter(l => choixInitial(l) === null);
   const lignesPretes = lignesProposees.filter(l => choixInitial(l) !== null);
   const pretesRefusees = lignesPretes.some(l => refusParLigne[l.id] !== undefined);
+  // Le dépli sur refus TIENT (revue Copilot de #1351) : la première correction
+  // efface le refus (`modifier`), et la liste se refermerait en pleine saisie.
+  const [pretesDepliees, setPretesDepliees] = useState(false);
+  useEffect(() => {
+    if (pretesRefusees) setPretesDepliees(true);
+  }, [pretesRefusees]);
+  const pretesOuvertes = lignesATrancher.length === 0 || pretesRefusees || pretesDepliees;
   const nbValidees = lignesDecidees.filter(l => l.statut === 'validee').length;
   const nbEcartees = lignesDecidees.length - nbValidees;
 
@@ -694,8 +701,8 @@ export function ImportCompteRenduPanel({
                   d'elles, ou plus rien à trancher, les déplie. */}
               {lignesPretes.length > 0 && (
                 <details
-                  key={lignesATrancher.length > 0 && !pretesRefusees ? 'replie' : 'deplie'}
-                  open={lignesATrancher.length === 0 || pretesRefusees}
+                  key={pretesOuvertes ? 'deplie' : 'replie'}
+                  open={pretesOuvertes}
                   className="mt-3"
                 >
                   <summary className="cursor-pointer text-sm font-semibold text-foreground">

@@ -317,6 +317,32 @@ describe('ImportCompteRenduPanel — décisions', () => {
     expect(screen.getByText(/Libellé inconnu : 3/).closest('details')).toBeNull();
   });
 
+  it('un refus sur une ligne rapprochée déplie sa liste, et la correction ne la referme pas', async () => {
+    serveur({
+      detail: () => compteRendu('extrait', [
+        ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48', analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu' }),
+        ligne({ id: 'l2', libelleLu: 'Libellé inconnu', valeurLue: '3' }),
+      ]),
+      decisions: {
+        status: 409,
+        body: {
+          ok: false, reason: 'lignes_invalides', error: 'Rien n’a été enregistré : reprenez les lignes signalées.',
+          lignes: [{ idLigne: 'l1', index: 0, reason: 'doublon_mesure', error: 'Une mesure de cet analyte existe déjà.' }],
+        },
+      },
+    });
+    await rendreEtOuvrir();
+    const repli = () => screen.getByText(/« Valider » pré-coché \(1\)/).closest('details')!;
+    expect(repli().open).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les décisions' }));
+    // Le repli est remonté (clé) : la ligne se relit après coup.
+    expect(await screen.findByText('Une mesure de cet analyte existe déjà.')).toBeTruthy();
+    expect(repli().open).toBe(true);
+    fireEvent.change(ligneAffichee(/Ferritine : 48/).getByLabelText('Analyte'), { target: { value: '' } });
+    expect(screen.queryByText('Une mesure de cet analyte existe déjà.')).toBeNull();
+    expect(repli().open).toBe(true);
+  });
+
   it('plus rien à trancher : les lignes rapprochées se présentent dépliées', async () => {
     serveur({
       detail: () => compteRendu('extrait', [

@@ -1,4 +1,4 @@
-# Handoff — Écran de validation d'un compte rendu : replis
+# Handoff — 2026-10-07 — Écran de validation d'un compte rendu : replis
 
 ## Git
 
