@@ -48,7 +48,9 @@ LOT-02, format réel reçu
 ## Étapes
 
 - [ ] Obtenir un format réel et un échantillon anonymisé. Demande envoyée au laboratoire pilote le
-  2026-10-05 (format, canal, contenu, rectificatifs, exemple fictif, conditions) ; réponse attendue.
+  2026-10-05 ; réponse reçue (HPRIM, HL7, CDA, PDF ; canal automatisé possible). Questions
+  détaillées et fichiers d'exemple fictifs demandés par écrit le 2026-10-07. Architecture arrêtée :
+  `../CADRAGE_LOT05_ADAPTATEUR_2026-10-07.md` ; dette décimale extraite au LOT-10.
 - [ ] Décision rectificatif labo.
 - [ ] Mode Plan, puis adaptateur.
 
