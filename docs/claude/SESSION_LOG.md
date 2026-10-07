@@ -9614,3 +9614,18 @@ responsable, merge ; constat des textes servis (`D-248`), puis allumage.
 
 **Questions ouvertes.** Banc sur base réelle des dépôts concurrents au
 plafond (hors lot).
+
+## 2026-10-07 — BIO-INGEST LOT-04 : transmission patient allumée
+
+**Décidé.** #1355 mergée sans revue Copilot (absente, arbitrage du
+responsable), déployée dans 95c97c9f ; v6 et v13 constatées dans l'image
+(`one-off-810`). Drapeau posé à 17:53 UTC (geste délégué), effet constaté :
+route en 401 au lieu de 503, page servie.
+
+**Écarté.** Attendre la revue Copilot.
+
+**Prochaine action.** Constat d'usage du LOT-04 en agrégats, puis clôture du
+lot.
+
+**Questions ouvertes.** Banc sur base réelle des dépôts concurrents au
+plafond.
