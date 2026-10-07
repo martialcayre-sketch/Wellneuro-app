@@ -24,6 +24,7 @@ function importValide(partiel: Partial<ImportValideRow> = {}): ImportValideRow {
   return {
     idImport: 'imp_sophie',
     idPatient: 'PAT_SOPHIE',
+    idCompteRendu: 'cr_sophie',
     nbValidees: 2,
     nbProposees: 0,
     valideLe: new Date('2026-10-06T09:00:00Z'),
@@ -87,7 +88,13 @@ describe('etatLecture', () => {
 describe('importsALire — le signalement (D-268 §1, §5, §8)', () => {
   it('BANC : un import validé SANS lecture est signalé', () => {
     expect(importsALire([importValide()], OUVERT)).toEqual([
-      expect.objectContaining({ idImport: 'imp_sophie', idPatient: 'PAT_SOPHIE', nbProposees: 0, derniereRevocation: null }),
+      expect.objectContaining({
+        idImport: 'imp_sophie',
+        idPatient: 'PAT_SOPHIE',
+        idCompteRendu: 'cr_sophie',
+        nbProposees: 0,
+        derniereRevocation: null,
+      }),
     ]);
   });
 

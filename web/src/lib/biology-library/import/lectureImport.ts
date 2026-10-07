@@ -78,6 +78,8 @@ export function etatLecture(actes: ActeLectureRow[]): EtatLecture {
 export type ImportValideRow = {
   idImport: string;
   idPatient: string;
+  /** Le compte rendu de l'import : la carte l'ouvre directement. */
+  idCompteRendu: string;
   nbValidees: number;
   nbProposees: number;
   /** Date de la dernière ligne validée (sa décision) — la date de la carte. */
@@ -89,6 +91,7 @@ export type ImportValideRow = {
 export type ImportALireRow = {
   idImport: string;
   idPatient: string;
+  idCompteRendu: string;
   valideLe: Date;
   /** > 0 : des lignes restent à décider, la lecture ne se consigne pas encore. */
   nbProposees: number;
@@ -119,6 +122,7 @@ export function importsALire(imports: ImportValideRow[], suiviOuvert: (idPatient
     resultat.push({
       idImport: imp.idImport,
       idPatient: imp.idPatient,
+      idCompteRendu: imp.idCompteRendu,
       valideLe: imp.valideLe,
       nbProposees: imp.nbProposees,
       derniereRevocation: etat.derniereRevocation,

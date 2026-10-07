@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { FichePatientPanel } from './FichePatientPanel';
-import { estOngletFiche, estPhaseFiche, type PhaseFiche } from '@/lib/praticien/ongletsFiche';
+import { compteRenduDemande, estOngletFiche, estPhaseFiche, type PhaseFiche } from '@/lib/praticien/ongletsFiche';
 import { C5FeatureProvider } from './patient-cockpit/C5FeatureProvider';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 
@@ -1588,6 +1588,17 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     expect(estPhaseFiche('cockpit')).toBe(false); // un onglet n'est pas une phase
     expect(estPhaseFiche(undefined)).toBe(false);
     expect(estPhaseFiche(42)).toBe(false);
+  });
+
+  it('compteRenduDemande : identifiant de la forme des routes biologie, sinon ignoré', () => {
+    expect(compteRenduDemande('cmg1abc_DEF-2')).toBe('cmg1abc_DEF-2');
+    expect(compteRenduDemande(['cr_1', 'cr_2'])).toBe('cr_1');
+    expect(compteRenduDemande('')).toBeUndefined();
+    expect(compteRenduDemande('cr 1')).toBeUndefined();
+    expect(compteRenduDemande('../cr')).toBeUndefined();
+    expect(compteRenduDemande('x'.repeat(65))).toBeUndefined();
+    expect(compteRenduDemande(undefined)).toBeUndefined();
+    expect(compteRenduDemande(42)).toBeUndefined();
   });
 });
 

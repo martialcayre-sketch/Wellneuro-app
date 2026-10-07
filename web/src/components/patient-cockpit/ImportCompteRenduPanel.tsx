@@ -184,11 +184,14 @@ export function ImportCompteRenduPanel({
   analytes,
   mesures,
   onResultatsEnregistres,
+  compteRenduDemande,
 }: {
   idPatient: string;
   analytes: AnalyteChoix[];
   mesures: MesureAuDossier[];
   onResultatsEnregistres: () => Promise<void>;
+  /** Compte rendu ouvert à l'arrivée — la carte du Fil le désigne ([[D-268]]). */
+  compteRenduDemande?: string;
 }) {
   const [liste, setListe] = useState<CompteRenduListe[]>([]);
   const [lectureListe, setLectureListe] = useState<'chargement' | 'ok' | 'erreur'>('chargement');
@@ -210,6 +213,12 @@ export function ImportCompteRenduPanel({
    * moment d'en ouvrir un second) est ignorée (revue de la PR 2b, P2-2).
    */
   const ouvertRef = useRef<string | null>(null);
+  /**
+   * La dernière demande d'arrivée servie : ouvrir ensuite un autre compte rendu
+   * n'y ramène pas, une demande NOUVELLE (autre carte, même fiche) est servie.
+   */
+  const demandeServieRef = useRef<string | null>(null);
+  const racineRef = useRef<HTMLDivElement>(null);
   /**
    * Les actes de lecture des imports ouverts ([[D-268]], BP-10) — `null` tant
    * que la route ne les rend pas (drapeau `WN_BIO_LECTURE_ENABLED` éteint).
@@ -318,6 +327,16 @@ export function ImportCompteRenduPanel({
     },
     [chargerDetail],
   );
+
+  // Arrivée par la carte « compte rendu à lire » : le compte rendu désigné
+  // s'ouvre et le panneau vient à l'écran. Un identifiant inconnu ou étranger
+  // au dossier est refusé par la route (404) : le message d'échec habituel.
+  useEffect(() => {
+    if (!compteRenduDemande || demandeServieRef.current === compteRenduDemande) return;
+    demandeServieRef.current = compteRenduDemande;
+    racineRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+    void ouvrir(compteRenduDemande);
+  }, [compteRenduDemande, ouvrir]);
 
   async function deposer() {
     if (!fichier) return;
@@ -513,7 +532,7 @@ export function ImportCompteRenduPanel({
   const lignesProposees = courant?.statut === 'extrait' ? courant.lignes.filter(l => l.statut === 'proposee') : [];
 
   return (
-    <div className="mt-4 rounded-lg border border-border p-3">
+    <div ref={racineRef} className="mt-4 rounded-lg border border-border p-3">
       <h4 className="text-sm font-medium text-foreground">Importer un compte rendu de laboratoire</h4>
       <p className="mt-1 text-xs text-muted-foreground">
         Le document est transmis entier au service de lecture (Anthropic) ; une photo, sans ses métadonnées. Les lignes lues vous sont proposées : rien

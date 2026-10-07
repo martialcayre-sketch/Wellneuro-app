@@ -54,3 +54,16 @@ export const IDS_PHASES_FICHE: readonly PhaseFiche[] = [
 export function estPhaseFiche(valeur: unknown): valeur is PhaseFiche {
   return typeof valeur === 'string' && (IDS_PHASES_FICHE as readonly string[]).includes(valeur);
 }
+
+/**
+ * Garde du deep-link `?compteRendu=` : le compte rendu biologique que la carte
+ * du Fil désigne ([[D-268]], BP-10). Même forme d'identifiant que les routes
+ * `biologie/import/*` ; toute autre valeur est ignorée et la fiche s'ouvre sans
+ * compte rendu déplié. L'appartenance au dossier, elle, se juge à la route.
+ */
+const ID_COMPTE_RENDU = /^[A-Za-z0-9_-]{1,64}$/;
+
+export function compteRenduDemande(valeur: unknown): string | undefined {
+  const brut = Array.isArray(valeur) ? valeur[0] : valeur;
+  return typeof brut === 'string' && ID_COMPTE_RENDU.test(brut) ? brut : undefined;
+}

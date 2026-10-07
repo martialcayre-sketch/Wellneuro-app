@@ -398,7 +398,7 @@ describe('GET /api/praticien/fil — comptes rendus biologiques à lire (D-268, 
     ]);
     prisma.importBiologique.findMany.mockResolvedValue([
       {
-        id: 'imp_1', idPatient: 'PAT_SOPHIE', termineLe: new Date('2026-10-06T08:00:00Z'), lanceLe: new Date('2026-10-06T07:59:00Z'),
+        id: 'imp_1', idPatient: 'PAT_SOPHIE', idCompteRendu: 'cr_1', termineLe: new Date('2026-10-06T08:00:00Z'), lanceLe: new Date('2026-10-06T07:59:00Z'),
         lignes: [{ statut: 'validee', traiteLe: new Date('2026-10-06T09:00:00Z') }],
       },
     ]);
@@ -415,7 +415,13 @@ describe('GET /api/praticien/fil — comptes rendus biologiques à lire (D-268, 
   it('BANC : un import validé sans lecture produit sa carte, bornée au praticien en session', async () => {
     const payload = await (await GET()).json();
     expect(payload.cartes).toEqual([
-      expect.objectContaining({ type: 'import_biologique_a_lire', cle: 'import_biologique_a_lire:imp_1', idPatient: 'PAT_SOPHIE' }),
+      expect.objectContaining({
+        type: 'import_biologique_a_lire',
+        cle: 'import_biologique_a_lire:imp_1',
+        idPatient: 'PAT_SOPHIE',
+        // Le lien ouvre le compte rendu de l'import, sans marqueur `?fil=`.
+        href: '/dashboard/patients/PAT_SOPHIE?onglet=trajectoire&compteRendu=cr_1',
+      }),
     ]);
     expect(payload.lecturesBiologieIndisponibles).toBeUndefined();
     // Les deux lectures sont bornées au praticien en session dès la requête.
@@ -450,11 +456,11 @@ describe('GET /api/praticien/fil — comptes rendus biologiques à lire (D-268, 
     ]);
     prisma.importBiologique.findMany.mockResolvedValue([
       {
-        id: 'imp_partiel', idPatient: 'PAT_SOPHIE', termineLe: null, lanceLe: new Date('2026-10-06T07:59:00Z'),
+        id: 'imp_partiel', idPatient: 'PAT_SOPHIE', idCompteRendu: 'cr_1', termineLe: null, lanceLe: new Date('2026-10-06T07:59:00Z'),
         lignes: [{ statut: 'validee', traiteLe: new Date('2026-10-06T09:00:00Z') }, { statut: 'proposee', traiteLe: null }],
       },
       {
-        id: 'imp_decide', idPatient: 'PAT_SOPHIE', termineLe: null, lanceLe: new Date('2026-10-06T07:59:00Z'),
+        id: 'imp_decide', idPatient: 'PAT_SOPHIE', idCompteRendu: 'cr_2', termineLe: null, lanceLe: new Date('2026-10-06T07:59:00Z'),
         lignes: [{ statut: 'validee', traiteLe: new Date('2026-10-06T09:00:00Z') }],
       },
     ]);

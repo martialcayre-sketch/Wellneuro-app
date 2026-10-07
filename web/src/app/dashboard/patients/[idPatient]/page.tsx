@@ -3,6 +3,7 @@ import { isG4LienMagiqueEnabled } from '@/lib/portail/featureFlag';
 import { ConsignerLectureFil } from '@/components/fil/ConsignerLectureFil';
 import { typeLuAlAtterrissage, urlSansMarqueurFil } from '@/lib/fil/lectureCartes';
 import {
+  compteRenduDemande,
   estOngletFiche,
   estPhaseFiche,
   type OngletFiche,
@@ -50,6 +51,10 @@ export default async function FichePatientPage({
   // une valeur inconnue est ignorée et la règle D5 reprend la main.
   const phaseBrute = Array.isArray(parametres?.phase) ? parametres.phase[0] : parametres?.phase;
   const phaseDemandee: PhaseFiche | undefined = estPhaseFiche(phaseBrute) ? phaseBrute : undefined;
+  // Deep-link `?compteRendu=` : la carte « compte rendu à lire » du Fil ouvre
+  // le compte rendu qu'elle désigne. N'acquitte rien — seul l'acte de lecture
+  // fait sortir la carte ([[D-268]]).
+  const compteRendu = compteRenduDemande(parametres?.compteRendu);
   // MARQUEUR `?fil=` : le praticien arrive PAR une carte du Fil, et l'atteinte
   // de cette page vaut lecture de ce type de carte pour ce dossier. La liste
   // des types acquittables par lecture est étroite et tenue au serveur — une
@@ -82,6 +87,7 @@ export default async function FichePatientPage({
             idPatient={idPatient}
             ongletInitial={ongletInitial}
             phaseDemandee={phaseDemandee}
+            compteRenduDemande={compteRendu}
             fixtureValidationErgo={fixtureValidationErgo}
             // LE DRAPEAU SE LIT AU SERVEUR, comme pour le rayon. Sans lui, le
             // menu du cockpit perdait sa neuvième action — « Lien à usage

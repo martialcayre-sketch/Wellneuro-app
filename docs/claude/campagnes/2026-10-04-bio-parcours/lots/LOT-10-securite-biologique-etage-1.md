@@ -215,6 +215,12 @@ encore « pas un filet de sécurité ».
     (`one-off-4100`). Effet constaté : la route répond `401` au lieu de
     `503`. Reste au LOT-10 : le constat d'usage en agrégats (`D-266` §12),
     une fois des lectures consignées.
+  - 2026-10-07 : aucune lecture consignée à 00:34 (`one-off-3398`, table
+    vide) ; le constat d'usage attend. La carte ouvre désormais le compte
+    rendu qu'elle désigne (`?compteRendu=`, arbitrage du 2026-10-06) : le Fil
+    sélectionne `idCompteRendu` de l'import, la page valide le paramètre, le
+    panneau l'ouvre une fois à l'arrivée. Toujours sans `?fil=` : la carte ne
+    s'acquitte que par l'acte.
 
 ## Tests
 

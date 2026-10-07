@@ -515,3 +515,60 @@ describe('ImportCompteRenduPanel — dépôt et retrait', () => {
     expect(screen.queryByText(/Ferritine : 48/)).toBeNull();
   });
 });
+
+describe('arrivée par la carte « compte rendu à lire » (D-268, BP-10)', () => {
+  function rendre(compteRenduDemande?: string) {
+    render(
+      <ImportCompteRenduPanel
+        idPatient="pat_sophie"
+        analytes={ANALYTES}
+        mesures={[]}
+        onResultatsEnregistres={async () => {}}
+        compteRenduDemande={compteRenduDemande}
+      />,
+    );
+  }
+
+  it('ouvre le compte rendu désigné au montage, une seule fois', async () => {
+    const fetchMock = serveur({});
+    rendre('cr_1');
+    await screen.findByText(/Ferritine : 48/);
+    const detail = appels(fetchMock, '/import/compte-rendu');
+    expect(detail).toHaveLength(1);
+    expect(String(detail[0][0])).toContain('idPatient=pat_sophie&idCompteRendu=cr_1');
+    expect(screen.getByRole('button', { name: /Déposé le/ }).getAttribute('aria-current')).toBe('true');
+  });
+
+  it('une demande nouvelle sur la même fiche est servie ; la même ne se rejoue pas', async () => {
+    const fetchMock = serveur({});
+    const props = { idPatient: 'pat_sophie', analytes: ANALYTES, mesures: [], onResultatsEnregistres: async () => {} };
+    const { rerender } = render(<ImportCompteRenduPanel {...props} compteRenduDemande="cr_1" />);
+    await screen.findByText(/Ferritine : 48/);
+    rerender(<ImportCompteRenduPanel {...props} compteRenduDemande="cr_1" />);
+    rerender(<ImportCompteRenduPanel {...props} compteRenduDemande="cr_2" />);
+    await waitFor(() => expect(appels(fetchMock, '/import/compte-rendu')).toHaveLength(2));
+    expect(String(appels(fetchMock, '/import/compte-rendu')[1][0])).toContain('idCompteRendu=cr_2');
+  });
+
+  it('sans demande : aucun compte rendu ouvert, aucune lecture de détail', async () => {
+    const fetchMock = serveur({});
+    rendre();
+    await screen.findByRole('button', { name: /Déposé le/ });
+    expect(appels(fetchMock, '/import/compte-rendu')).toHaveLength(0);
+  });
+
+  it('un compte rendu refusé par la route (inconnu ou étranger au dossier) : le message d’échec habituel', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (entree: RequestInfo | URL) => {
+        const url = String(entree);
+        const r = url.includes('/import/compte-rendu')
+          ? { status: 404, body: { ok: false } }
+          : { status: 200, body: { ok: true, comptesRendus: [] } };
+        return { ok: r.status < 300, status: r.status, json: async () => r.body } as Response;
+      }),
+    );
+    rendre('cr_autre');
+    expect(await screen.findByText('Le compte rendu n’a pas pu être lu.')).toBeTruthy();
+  });
+});
