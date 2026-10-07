@@ -61,6 +61,10 @@ type Saisie = {
   date: string;
   heure: string;
   motif: MotifEcart;
+  /** Seconde unité ([[D-270]]) : l'« Écarter » pré-coché tient tant que l'une
+   *  de ces lignes part validée sur le même analyte. Effacé dès que le
+   *  praticien touche la ligne : la décision est alors la sienne. */
+  jumelles?: readonly string[];
 };
 
 const INTERVALLE_RELECTURE_MS = 3_000;
@@ -161,9 +165,36 @@ export function choixInitial(ligne: Pick<LigneLue, 'analytePropose' | 'preMarqua
   return ligne.analytePropose !== null && ligne.preMarquage === null ? 'valider' : null;
 }
 
-function saisieInitiale(ligne: LigneLue): Saisie {
+/**
+ * Les JUMELLES d'une ligne imprimée dans une SECONDE UNITÉ ([[D-270]]) : les
+ * lignes du même import qui portent le même analyte proposé, au même instant
+ * de prélèvement lu, et que « Valider » attend d'office (unité du catalogue).
+ * Le laboratoire imprime la même mesure deux fois (g/L et mmol/L) ; la seconde
+ * ne peut que s'écarter, aucune conversion ([[D-157]]). Vide ⇒ la ligne reste
+ * à trancher : c'est alors la seule mesure de cet analyte.
+ */
+export function jumellesEnUniteCatalogue(
+  ligne: Pick<LigneLue, 'id' | 'analytePropose' | 'preMarquage' | 'preleveLeLu'>,
+  lignes: readonly Pick<LigneLue, 'id' | 'statut' | 'analytePropose' | 'preMarquage' | 'preleveLeLu'>[],
+): string[] {
+  if (ligne.preMarquage !== 'unite_divergente' || ligne.analytePropose === null || ligne.preleveLeLu === null) return [];
+  return lignes
+    .filter(
+      l =>
+        l.id !== ligne.id &&
+        l.statut === 'proposee' &&
+        l.analytePropose === ligne.analytePropose &&
+        l.preleveLeLu === ligne.preleveLeLu &&
+        choixInitial(l) === 'valider',
+    )
+    .map(l => l.id);
+}
+
+function saisieInitiale(ligne: LigneLue, lignes: readonly LigneLue[]): Saisie {
+  const jumelles = jumellesEnUniteCatalogue(ligne, lignes);
   return {
-    choix: choixInitial(ligne),
+    ...(jumelles.length > 0 ? { jumelles } : {}),
+    choix: jumelles.length > 0 ? 'ecarter' : choixInitial(ligne),
     analyteCode: ligne.analytePropose ?? '',
     valeur: ligne.valeurLue,
     ...champsDepuisInstant(ligne.preleveLeLu, ligne.heureLue),
@@ -271,7 +302,7 @@ export function ImportCompteRenduPanel({
         setSaisies(avant => {
           const apres: Record<string, Saisie> = {};
           for (const ligne of lignes) {
-            if (ligne.statut === 'proposee') apres[ligne.id] = avant[ligne.id] ?? saisieInitiale(ligne);
+            if (ligne.statut === 'proposee') apres[ligne.id] = avant[ligne.id] ?? saisieInitiale(ligne, lignes);
           }
           return apres;
         });
@@ -419,7 +450,8 @@ export function ImportCompteRenduPanel({
   }
 
   function modifier(idLigne: string, patch: Partial<Saisie>) {
-    setSaisies(avant => ({ ...avant, [idLigne]: { ...avant[idLigne], ...patch } }));
+    // Toucher la ligne la fait sienne : un « Écarter » pré-coché ne dépend plus de sa jumelle.
+    setSaisies(avant => ({ ...avant, [idLigne]: { ...avant[idLigne], ...patch, jumelles: undefined } }));
     setRefusParLigne(avant => {
       const apres = { ...avant };
       delete apres[idLigne];
@@ -433,11 +465,20 @@ export function ImportCompteRenduPanel({
     setErreur(null);
     setInfo(null);
     const refusLocaux: Record<string, string> = {};
+    const aRejuger: string[] = [];
     const decisions: Array<Record<string, unknown>> = [];
     for (const ligne of courant.lignes) {
       const s = saisies[ligne.id];
       if (!s || s.choix === null) continue;
       if (s.choix === 'ecarter') {
+        // [[D-270]] : la seconde unité ne s'écarte d'office qu'avec sa mesure
+        // dans l'unité du catalogue. Jumelle décochée ⇒ la ligne se rejuge.
+        const jumelleValidee = s.jumelles?.some(id => saisies[id]?.choix === 'valider' && saisies[id]?.analyteCode === ligne.analytePropose);
+        if (s.jumelles && !jumelleValidee) {
+          refusLocaux[ligne.id] = 'La même mesure dans l’unité du catalogue ne part plus validée : décidez cette ligne.';
+          aRejuger.push(ligne.id);
+          continue;
+        }
         decisions.push({ idLigne: ligne.id, decision: 'ecarter', motif: s.motif });
         continue;
       }
@@ -473,6 +514,15 @@ export function ImportCompteRenduPanel({
       });
     }
     if (Object.keys(refusLocaux).length > 0) {
+      // La ligne à rejuger repasse sur « Plus tard » (revue Copilot de #1353) :
+      // un « Écarter » resté coché ne se confirmerait plus d'un clic.
+      if (aRejuger.length > 0) {
+        setSaisies(avant => {
+          const apres = { ...avant };
+          for (const id of aRejuger) apres[id] = { ...avant[id], choix: null, jumelles: undefined };
+          return apres;
+        });
+      }
       setRefusParLigne(refusLocaux);
       setErreur('Rien n’a été enregistré : reprenez les lignes signalées.');
       return;
@@ -535,7 +585,9 @@ export function ImportCompteRenduPanel({
   // TRANCHER (« Plus tard » d'office : signalées ou non rapprochées) restent
   // déployées. Le partage suit le choix INITIAL ([[D-260]]), pas la saisie :
   // une ligne ne saute pas d'une liste à l'autre sous le clic.
-  const lignesATrancher = lignesProposees.filter(l => choixInitial(l) === null);
+  // Troisième repli ([[D-270]]) : la seconde unité d'une mesure rapprochée.
+  const lignesSecondeUnite = lignesProposees.filter(l => jumellesEnUniteCatalogue(l, lignesProposees).length > 0);
+  const lignesATrancher = lignesProposees.filter(l => choixInitial(l) === null && !lignesSecondeUnite.includes(l));
   const lignesPretes = lignesProposees.filter(l => choixInitial(l) !== null);
   const pretesRefusees = lignesPretes.some(l => refusParLigne[l.id] !== undefined);
   // Le dépli sur refus TIENT (revue Copilot de #1351) : la première correction
@@ -545,6 +597,12 @@ export function ImportCompteRenduPanel({
     if (pretesRefusees) setPretesDepliees(true);
   }, [pretesRefusees]);
   const pretesOuvertes = lignesATrancher.length === 0 || pretesRefusees || pretesDepliees;
+  const secondesRefusees = lignesSecondeUnite.some(l => refusParLigne[l.id] !== undefined);
+  const [secondesDepliees, setSecondesDepliees] = useState(false);
+  useEffect(() => {
+    if (secondesRefusees) setSecondesDepliees(true);
+  }, [secondesRefusees]);
+  const secondesOuvertes = lignesATrancher.length === 0 || secondesRefusees || secondesDepliees;
   const nbValidees = lignesDecidees.filter(l => l.statut === 'validee').length;
   const nbEcartees = lignesDecidees.length - nbValidees;
 
@@ -725,6 +783,34 @@ export function ImportCompteRenduPanel({
                   </ol>
                 </details>
               )}
+              {/* La même mesure imprimée dans une seconde unité ([[D-270]]) :
+                  « Écarter » pré-coché tant que sa jumelle part validée. */}
+              {lignesSecondeUnite.length > 0 && (
+                <details
+                  key={secondesOuvertes ? 'deplie' : 'replie'}
+                  open={secondesOuvertes}
+                  className="mt-3"
+                >
+                  <summary className="cursor-pointer text-sm font-semibold text-foreground">
+                    Mesures imprimées dans une seconde unité, « Écarter » pré-coché ({lignesSecondeUnite.length}) — écartées
+                    à l’enregistrement, sauf changement
+                  </summary>
+                  <ol className="mt-2 space-y-2">
+                    {lignesSecondeUnite.map(ligne => (
+                      <LigneImport
+                        key={ligne.id}
+                        ligne={ligne}
+                        saisie={saisies[ligne.id]}
+                        refus={refusParLigne[ligne.id]}
+                        analytes={analytes}
+                        mesures={mesures}
+                        disabled={occupe}
+                        onModifier={patch => modifier(ligne.id, patch)}
+                      />
+                    ))}
+                  </ol>
+                </details>
+              )}
               {/* Les lignes déjà décidées, repliées tant qu'il en reste à
                   décider (demande du responsable, 2026-10-07 : trop de
                   défilement). Dépliées d'office une fois tout décidé : c'est
@@ -866,6 +952,11 @@ function LigneImport({
       />
       {ligne.preMarquage && (
         <p className="mt-1 text-xs text-muted-foreground">Signalé : {LIBELLES_MOTIF[ligne.preMarquage]}</p>
+      )}
+      {saisie.jumelles && saisie.choix === 'ecarter' && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          La même mesure, dans l’unité du catalogue, part validée : celle-ci s’écarte, aucune conversion n’est faite.
+        </p>
       )}
 
       <fieldset className="mt-2 flex flex-wrap gap-3 text-sm text-foreground" disabled={disabled}>

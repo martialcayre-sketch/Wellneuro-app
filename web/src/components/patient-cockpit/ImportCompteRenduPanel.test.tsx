@@ -3,7 +3,14 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CompteRenduLu, LigneLue } from '@/lib/biology-library/import/lecture';
-import { champsDepuisInstant, choixInitial, ImportCompteRenduPanel, instantDepuisParis, type MesureAuDossier } from './ImportCompteRenduPanel';
+import {
+  champsDepuisInstant,
+  choixInitial,
+  ImportCompteRenduPanel,
+  instantDepuisParis,
+  jumellesEnUniteCatalogue,
+  type MesureAuDossier,
+} from './ImportCompteRenduPanel';
 
 afterEach(() => {
   cleanup();
@@ -358,6 +365,91 @@ describe('ImportCompteRenduPanel — décisions', () => {
     await rendreEtOuvrir();
     const repli = screen.getByText(/Lignes déjà décidées \(1 validée, 0 écartée\)/).closest('details')!;
     expect(repli.open).toBe(true);
+  });
+});
+
+// [[D-270]] : la même mesure imprimée dans une seconde unité (le fer en µmol/L
+// et en mg/L). La ferritine non rapprochée garde une ligne à trancher.
+const A_TRANCHER = ligne({ id: 'l0', libelleLu: 'Ferritine', valeurLue: '48' });
+const FER_CATALOGUE = ligne({ id: 'l1', libelleLu: 'Fer sérique', valeurLue: '17,2', uniteLue: 'µmol/L', analytePropose: 'BIO_FER', statutMapping: 'resolu' });
+const FER_SECONDE = ligne({ id: 'l2', libelleLu: 'Fer sérique', valeurLue: '0,96', uniteLue: 'mg/L', analytePropose: 'BIO_FER', statutMapping: 'resolu', preMarquage: 'unite_divergente' });
+
+describe('ImportCompteRenduPanel — seconde unité (D-270)', () => {
+  it('une jumelle : même analyte, même instant lu, « Valider » attendu d’office', () => {
+    expect(jumellesEnUniteCatalogue(FER_SECONDE, [FER_CATALOGUE, FER_SECONDE])).toEqual(['l1']);
+    // Pas la seule mesure d'un autre jour (antériorité), ni une jumelle elle-même signalée.
+    expect(jumellesEnUniteCatalogue(FER_SECONDE, [{ ...FER_CATALOGUE, preleveLeLu: A_MINUIT }])).toEqual([]);
+    expect(jumellesEnUniteCatalogue(FER_SECONDE, [{ ...FER_CATALOGUE, preMarquage: 'unite_divergente' }])).toEqual([]);
+    expect(jumellesEnUniteCatalogue(FER_SECONDE, [{ ...FER_CATALOGUE, statut: 'validee' }])).toEqual([]);
+    expect(jumellesEnUniteCatalogue({ ...FER_SECONDE, preleveLeLu: null }, [FER_CATALOGUE])).toEqual([]);
+    // Une ligne sans signal d'unité n'a pas de jumelle.
+    expect(jumellesEnUniteCatalogue(FER_CATALOGUE, [FER_CATALOGUE, FER_SECONDE])).toEqual([]);
+  });
+
+  it('repliée sous un titre qui dit son sort, et écartée avec sa jumelle validée en un envoi', async () => {
+    const fetchMock = serveur({
+      detail: () => compteRendu('extrait', [A_TRANCHER, FER_CATALOGUE, FER_SECONDE]),
+      decisions: { status: 201, body: { ok: true, validees: 1, ecartees: 1 } },
+    });
+    await rendreEtOuvrir();
+    const repli = screen.getByText(/seconde unité, « Écarter » pré-coché \(1\) — écartées à l’enregistrement/).closest('details')!;
+    expect(repli.open).toBe(false);
+    const seconde = within(within(repli).getByText(/Fer sérique : 0,96/).closest('li') as HTMLElement);
+    expect((seconde.getByLabelText('Écarter') as HTMLInputElement).checked).toBe(true);
+    expect(seconde.getByText(/La même mesure, dans l’unité du catalogue, part validée/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les décisions' }));
+    await waitFor(() => expect(appels(fetchMock, '/import/decisions')).toHaveLength(1));
+    const [, init] = appels(fetchMock, '/import/decisions')[0];
+    expect(JSON.parse(String(init?.body)).decisions).toEqual([
+      { idLigne: 'l1', decision: 'valider', analyteCode: 'BIO_FER', valeur: 17.2, preleveLe: A_0830 },
+      { idLigne: 'l2', decision: 'ecarter', motif: 'unite_divergente' },
+    ]);
+  });
+
+  it('jumelle décochée : rien ne part, la seconde unité repasse sur « Plus tard » et s’écarte d’un clic', async () => {
+    const fetchMock = serveur({
+      detail: () => compteRendu('extrait', [A_TRANCHER, FER_CATALOGUE, FER_SECONDE]),
+      decisions: { status: 201, body: { ok: true, validees: 0, ecartees: 1 } },
+    });
+    await rendreEtOuvrir();
+    fireEvent.click(ligneAffichee(/Fer sérique : 17,2/).getByLabelText('Plus tard'));
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les décisions' }));
+    expect(await screen.findByText('La même mesure dans l’unité du catalogue ne part plus validée : décidez cette ligne.')).toBeTruthy();
+    expect(appels(fetchMock, '/import/decisions')).toHaveLength(0);
+    expect(screen.getByText(/seconde unité, « Écarter » pré-coché/).closest('details')!.open).toBe(true);
+    const seconde = () => ligneAffichee(/Fer sérique : 0,96/);
+    expect((seconde().getByLabelText('Plus tard') as HTMLInputElement).checked).toBe(true);
+    // Le praticien confirme l'écart d'un seul clic : c'est désormais sa décision.
+    fireEvent.click(seconde().getByLabelText('Écarter'));
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les décisions' }));
+    await waitFor(() => expect(appels(fetchMock, '/import/decisions')).toHaveLength(1));
+    const [, init] = appels(fetchMock, '/import/decisions')[0];
+    expect(JSON.parse(String(init?.body)).decisions).toEqual([{ idLigne: 'l2', decision: 'ecarter', motif: 'unite_divergente' }]);
+  });
+
+  it('touchée par le praticien, la ligne est sa décision : elle part sans sa jumelle', async () => {
+    const fetchMock = serveur({
+      detail: () => compteRendu('extrait', [A_TRANCHER, FER_CATALOGUE, FER_SECONDE]),
+      decisions: { status: 201, body: { ok: true, validees: 0, ecartees: 1 } },
+    });
+    await rendreEtOuvrir();
+    fireEvent.click(ligneAffichee(/Fer sérique : 17,2/).getByLabelText('Plus tard'));
+    // Le praticien change le motif de l'écart pré-coché : la décision est la sienne.
+    fireEvent.change(ligneAffichee(/Fer sérique : 0,96/).getByLabelText('Motif de l’écart'), { target: { value: 'ecartee_par_praticien' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les décisions' }));
+    await waitFor(() => expect(appels(fetchMock, '/import/decisions')).toHaveLength(1));
+    const [, init] = appels(fetchMock, '/import/decisions')[0];
+    expect(JSON.parse(String(init?.body)).decisions).toEqual([{ idLigne: 'l2', decision: 'ecarter', motif: 'ecartee_par_praticien' }]);
+  });
+
+  it('sans jumelle, la seconde unité est la seule mesure : elle reste à trancher, sur « Plus tard »', async () => {
+    serveur({ detail: () => compteRendu('extrait', [A_TRANCHER, FER_SECONDE]) });
+    await rendreEtOuvrir();
+    expect(screen.queryByText(/seconde unité, « Écarter » pré-coché/)).toBeNull();
+    const seconde = ligneAffichee(/Fer sérique : 0,96/);
+    expect(screen.getByText(/Fer sérique : 0,96/).closest('details')).toBeNull();
+    expect((seconde.getByLabelText('Plus tard') as HTMLInputElement).checked).toBe(true);
   });
 });
 

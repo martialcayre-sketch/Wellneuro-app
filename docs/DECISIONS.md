@@ -4,6 +4,48 @@
 
 ## Décisions actives
 
+### D-270 — Seconde unité d'une même mesure : « Écarter » pré-coché tant que sa jumelle part validée (précise D-260 §3)
+
+- Date : 2026-10-07
+- Statut : accepté. Arbitrage du responsable rendu en session le 2026-10-07
+  (« go pour écarter coché à l'avance »), sur le constat du premier import
+  entièrement décidé.
+- Domaine : biologie, écran de validation d'un import (BIO-INGEST).
+  **Aucune règle clinique, aucun seuil, aucune conversion.**
+
+**§1 — Le constat.** Sur le premier import réel décidé en entier, 12 des 16
+lignes écartées étaient la même mesure, imprimée par le laboratoire dans une
+seconde unité (g/L à côté de mmol/L, nmol/L à côté de ng/mL). Leur jumelle
+dans l'unité du catalogue était validée dans le même import. [[D-260]] §3 les
+ouvrait sur « Plus tard » : seize décisions à prendre une à une, et une
+lecture ([[D-268]]) bloquée tant qu'elles restaient en attente. Comptage en
+agrégats, par conteneur, sans identifiant.
+
+**§2 — La règle.** Une ligne signalée `unite_divergente` s'ouvre sur
+« Écarter », avec ce motif, quand une autre ligne du même import porte le
+même analyte proposé, le même instant de prélèvement lu, et s'ouvre elle-même
+sur « Valider ». Ces lignes se replient sous un titre qui dit leur sort :
+« écartées à l'enregistrement, sauf changement ».
+
+**§3 — Le garde-fou.** L'écart pré-coché ne part qu'avec sa jumelle validée
+sur le même analyte, dans le même envoi. Si la jumelle ne part plus validée,
+rien n'est enregistré et la ligne repasse sur « Plus tard », sa liste dépliée :
+elle se rejuge. Dès que le
+praticien touche la ligne, la décision est la sienne et ne dépend plus de la
+jumelle. Sans jumelle (autre jour, analyte différent, instant non lu), la
+ligne reste à trancher : c'est alors la seule mesure de cet analyte.
+
+**§4 — Ce qui ne change pas.** Rien ne part sans « Enregistrer les
+décisions » ; l'envoi reste tout ou rien ; la base et les routes ne changent
+pas ; le motif `unite_divergente` existait. [[D-157]] tient : aucune unité
+n'est ajoutée au catalogue, aucune valeur n'est convertie.
+
+**Écarté.** Accepter la seconde unité au catalogue : elle exigerait une
+conversion ou deux séries dans deux unités, et sur cet import elle n'aurait
+rien apporté, la mesure étant déjà validée. Ajouter des analytes : 2 lignes
+sur 58 en auraient profité ; on attend plusieurs imports pour voir lesquels
+reviennent.
+
 ### D-269 — Transmission du compte rendu par le patient (BIO-INGEST LOT-04) : un document transmis n'est pas un résultat, la lecture reste un geste du praticien, un document refusé s'écarte et se purge
 
 - Date : 2026-10-07
