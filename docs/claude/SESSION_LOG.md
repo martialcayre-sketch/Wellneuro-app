@@ -9629,3 +9629,21 @@ lot.
 
 **Questions ouvertes.** Banc sur base réelle des dépôts concurrents au
 plafond.
+
+## 2026-10-07 — BIO-INGEST LOT-05 : cadrage de l'adaptateur laboratoire
+
+**Décidé.** Flux automatisé visé (souhait du responsable). Architecture arrêtée
+par brainstorming Claude/Codex : un analyseur par format, staging et validation
+communs, pas d'IA sur le structuré, versions immuables, rattachement patient
+confirmé, identifiants de version conservés après purge
+(`CADRAGE_LOT05_ADAPTATEUR_2026-10-07.md`, #1356). Dette décimale extraite au
+LOT-10, indépendant du laboratoire.
+
+**Écarté.** Pilote par dépôt manuel comme cible ; envoi HTTPS imposé avant de
+connaître le canal natif ; moteur multi-format.
+
+**Prochaine action.** Attendre la réponse écrite du laboratoire (questions et
+fichiers fictifs envoyés) ; LOT-10 en session à part.
+
+**Questions ouvertes.** Canal (MSSanté ou HTTPS), destinataire non
+prescripteur, rôles RGPD, sémantique des rectificatifs.
