@@ -2,6 +2,9 @@
 -- Usage : depuis un conteneur `scalingo run -d`, encodé en base64 puis passé à `psql -f -` (--file est refusé en détaché).
 -- Fenêtre d'un agenda = 21 nuits à partir de la PREMIÈRE nuit saisie (lib/agenda-sommeil/fenetre.ts).
 -- Saisie possible pour aujourd'hui ou la veille seulement (estDateSaisissable) : au-delà, la nuit est perdue.
+-- `soumis_le` est un TIMESTAMP SANS fuseau qui porte l'heure UTC (Prisma) : l'heure de Paris s'en tire par
+-- `(soumis_le AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Paris'` (corrigé le 2026-10-08 : un seul `AT TIME ZONE`
+-- lisait l'heure UTC comme une heure de Paris, et décalait les requêtes 09 et 10 de deux heures).
 BEGIN READ ONLY;
 \pset format aligned
 \pset null '(null)'
@@ -86,12 +89,12 @@ FROM a WHERE premiere_saisie IS NOT NULL;
 SELECT '09_corrections_et_rattrapage' AS libelle,
        count(*) AS lignes,
        count(*) - count(DISTINCT (id_assignation, date_nuit))                     AS corrections,
-       count(*) FILTER (WHERE (soumis_le AT TIME ZONE 'Europe/Paris')::date > date_nuit::date) AS saisies_le_lendemain
+       count(*) FILTER (WHERE ((soumis_le AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Paris')::date > date_nuit::date) AS saisies_le_lendemain
 FROM agenda_sommeil_nuits;
 
 -- 10 heure de saisie (Paris) : le geste est-il fait le matin ?
 SELECT '10_heure_saisie_paris' AS libelle,
-       extract(hour FROM soumis_le AT TIME ZONE 'Europe/Paris')::int AS heure, count(*) AS valeur
+       extract(hour FROM (soumis_le AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Paris')::int AS heure, count(*) AS valeur
 FROM agenda_sommeil_nuits GROUP BY 2 ORDER BY 2;
 
 -- 11 version du contrat et branches conditionnelles (charge réelle du formulaire)
