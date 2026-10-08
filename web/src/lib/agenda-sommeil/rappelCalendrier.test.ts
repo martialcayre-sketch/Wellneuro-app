@@ -5,7 +5,7 @@ const base = {
   heure: '07:30',
   dateDebut: '2026-10-09',
   nombre: 12,
-  uid: 'rappel-test@wellneuro.fr',
+  uid: 'rappel-test@rappel',
   maintenant: new Date(Date.UTC(2026, 9, 8, 10, 5, 0)),
 };
 
@@ -15,7 +15,7 @@ describe('rappel du matin — fichier calendrier posé sur l’appareil', () => 
     expect(ics).toContain('DTSTART:20261009T073000\r\n');
     expect(ics).toContain('RRULE:FREQ=DAILY;COUNT=12\r\n');
     expect(ics).toContain('DTSTAMP:20261008T100500Z\r\n');
-    expect(ics).toContain('UID:rappel-test@wellneuro.fr\r\n');
+    expect(ics).toContain('UID:rappel-test@rappel\r\n');
     // Une alarme à l'heure dite : c'est le téléphone qui sonne.
     expect(ics).toMatch(/BEGIN:VALARM\r\nACTION:DISPLAY\r\n.*\r\nTRIGGER:PT0M\r\nEND:VALARM/);
   });
@@ -36,7 +36,7 @@ describe('rappel du matin — fichier calendrier posé sur l’appareil', () => 
   it('ni lien, ni mot qui trahisse un suivi de santé', () => {
     const ics = genererRappelIcs(base).toLowerCase();
     expect(ics).not.toMatch(/https?:|url:|portail|token/);
-    for (const mot of ['sommeil', 'nuit', 'agenda', 'santé', 'wellneuro.fr/']) {
+    for (const mot of ['sommeil', 'nuit', 'agenda', 'santé', 'wellneuro']) {
       expect(ics).not.toContain(mot);
     }
     expect(TITRE_RAPPEL).toBe('Rappel du matin');

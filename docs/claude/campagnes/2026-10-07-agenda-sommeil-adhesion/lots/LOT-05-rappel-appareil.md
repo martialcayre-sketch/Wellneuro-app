@@ -38,6 +38,20 @@ l'application (le fichier téléchargé appartient au patient). Contrat
 
 T1 complet, suites de l'agenda (domaine `rappelCalendrier` et carte du
 journal). **Recette sur appareil** à joindre à celle du LOT-03 (même
-arbitrage : après merge, avant annonce) : sur iPhone, le fichier téléchargé
-ouvre la proposition d'ajout au Calendrier ; sur Android, il s'ouvre avec
-l'agenda du téléphone ; le rappel sonne à l'heure choisie.
+arbitrage : après merge, avant annonce). Le comportement d'un `.ics`
+téléchargé dépend du téléphone ; le texte affiché au patient ne promet donc
+qu'un fichier « à ouvrir », et la recette tranche :
+
+- **iPhone, Safari** : le téléchargement aboutit (l'URL n'est révoquée qu'après
+  40 s, Safari demandant d'abord « Télécharger ? »), le fichier ouvre l'ajout
+  au Calendrier, le rappel sonne à l'heure choisie. À refaire depuis l'app
+  posée sur l'écran d'accueil et depuis le navigateur d'une messagerie.
+- **Android** : sur un téléphone Samsung (Samsung Agenda) **et** sur un
+  téléphone sans (Google Agenda seul). Google Agenda n'ouvre pas toujours un
+  `.ics` téléchargé et ignore souvent l'alarme du fichier : si la recette le
+  confirme, le texte d'aide doit le dire avant l'annonce.
+
+Relecture `wn-reviewer` : GO conditionnel, P1 (révocation trop tôt, promesse
+d'ouverture) et P2 corrigés dans la PR (PRODID neutre, repli d'identifiant,
+message d'échec, zone `aria-live` toujours montée, avertissement contre le
+double ajout, texte « enregistré dans votre agenda, pas chez nous »).

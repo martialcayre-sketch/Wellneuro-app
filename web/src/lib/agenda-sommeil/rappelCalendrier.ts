@@ -55,7 +55,9 @@ export function genererRappelIcs({
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//WellNeuro//Rappel du matin//FR',
+    // PRODID neutre : il n'est pas affiché, mais iCloud le conserve, et une
+    // marque de soin suffirait à trahir un suivi.
+    'PRODID:-//Rappel du matin//FR',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',

@@ -8,9 +8,10 @@ planifiée ni relance déduite d'un état »). Le responsable a retenu le rappel
 
 - Sur la frise de l'agenda, une carte « Un rappel chaque matin » : le patient
   choisit l'heure et touche « Ajouter à mon agenda ». Le **navigateur**
-  fabrique un fichier calendrier que le téléphone propose d'ajouter à son
-  agenda ; c'est le téléphone qui sonne, du lendemain jusqu'à la fin des 21
-  nuits.
+  fabrique un fichier calendrier, que le patient ouvre pour l'ajouter à
+  l'agenda de son téléphone ; c'est le téléphone qui sonne, du lendemain
+  jusqu'à la fin des 21 nuits. L'ouverture dépend du téléphone : une recette
+  sur iPhone et Android (Samsung et Google Agenda) précède toute annonce.
 - **Le serveur n'est pas appelé** et ne garde rien du choix.
 - Le fichier ne porte **ni lien** — une clé de session copiée dans un agenda
   synchronisé serait une fuite — **ni donnée de santé** : son titre, visible
