@@ -168,3 +168,52 @@ describe('AgendaSommeilJournal — un refus ne reste pas muet', () => {
     expect(screen.queryByText('Vos nuits')).toBeNull();
   });
 });
+
+describe('AgendaSommeilJournal — rappel du matin posé sur l’appareil (LOT-05)', () => {
+  const createObjectURL = vi.fn((_blob: Blob) => 'blob:rappel');
+  beforeEach(() => {
+    createObjectURL.mockClear();
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, writable: true, value: createObjectURL });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, writable: true, value: vi.fn() });
+  });
+  afterEach(() => {
+    Reflect.deleteProperty(URL, 'createObjectURL');
+    Reflect.deleteProperty(URL, 'revokeObjectURL');
+  });
+
+  it('fabrique le fichier calendrier dans le navigateur, sans appel au serveur', async () => {
+    fetchMock.mockImplementation(() => reponse(CHARGEMENT_OK));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Un rappel chaque matin')).toBeTruthy());
+    const appelsAvant = fetchMock.mock.calls.length;
+
+    fireEvent.change(screen.getByLabelText('Heure du rappel'), { target: { value: '07:30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter à mon agenda' }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls.length).toBe(appelsAvant);
+    const ics = await (createObjectURL.mock.calls[0][0] as Blob).text();
+    // Nuit 3 sur 21 : rappels du lendemain jusqu'à la fin de la fenêtre.
+    expect(ics).toContain('DTSTART:20260904T073000');
+    expect(ics).toContain('RRULE:FREQ=DAILY;COUNT=18');
+    expect(screen.getByText(/Ouvrez le fichier téléchargé/)).toBeTruthy();
+  });
+
+  it('sans heure choisie, rien n’est fabriqué et le patient sait pourquoi', async () => {
+    fetchMock.mockImplementation(() => reponse(CHARGEMENT_OK));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Un rappel chaque matin')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter à mon agenda' }));
+    expect(createObjectURL).not.toHaveBeenCalled();
+    expect(screen.getByText('Choisissez d’abord l’heure du rappel.')).toBeTruthy();
+  });
+
+  it('absent quand il ne reste aucun matin dans la fenêtre', async () => {
+    const derniereNuit = { ...CHARGEMENT_OK, fenetre: { ...FENETRE, jourCourant: 21 } };
+    fetchMock.mockImplementation(() => reponse(derniereNuit));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Vos nuits')).toBeTruthy());
+    expect(screen.queryByText('Un rappel chaque matin')).toBeNull();
+  });
+});
+

@@ -1,10 +1,10 @@
 ---
 id: "2026-10-07-agenda-sommeil-adhesion"
 titre: "AGENDA-SOMMEIL — adhésion : une nuit qu'on peut noter jusqu'au bout"
-statut: "en_cours (ouverte le 2026-10-07 — LOT-01 mergé, LOT-03 courant)"
+statut: "en_cours (ouverte le 2026-10-07 — LOT-01 et LOT-03 mergés, LOT-05 courant)"
 créée_le: "2026-10-07"
-mise_à_jour: "2026-10-07"
-lot_courant: "LOT-03"
+mise_à_jour: "2026-10-08"
+lot_courant: "LOT-05"
 branche_campagne: "aucune"
 branche_lot_courant: "ccr-6dd6bb64-2sku9o"
 cible_pr_lot: "main"
@@ -40,7 +40,7 @@ entérinée par le responsable le 2026-10-07.
 
 ## Lots
 
-LOT-01 est mergé (#1359, 2026-10-07). L'ordre courant découle des arbitrages
+LOT-01 est mergé (#1359, 2026-10-07), LOT-03 aussi (#1363, 2026-10-08 ; recette sur appareil après merge). L'ordre courant découle des arbitrages
 du responsable du 2026-10-07, consignés dans la synthèse (§ « Arbitrages du
 responsable ») : LOT-00 (mesure), LOT-03 (cadran remplacé), LOT-05 (rappel
 côté appareil), LOT-04 (deux `D-xxx`, contrat v4), puis LOT-02 (re-mesure).
