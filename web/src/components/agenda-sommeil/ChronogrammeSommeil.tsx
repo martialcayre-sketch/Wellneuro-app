@@ -13,11 +13,17 @@ import {
 import {
   LABEL_DUREE_REVEILS,
   LABEL_FACTEURS,
+  LABEL_INCONNU_PRATICIEN,
   LABEL_LATENCE,
   LABEL_RIEN_DE_PARTICULIER,
 } from '@/lib/agenda-sommeil/libelles';
 import { dureeMinutes, estWeekend } from '@/lib/agenda-sommeil/nuit';
-import { CLES_FACTEURS, type CleFacteur, type NuitRow } from '@/lib/agenda-sommeil/types';
+import {
+  CLES_FACTEURS,
+  INCONNU,
+  type CleFacteur,
+  type NuitRow,
+} from '@/lib/agenda-sommeil/types';
 
 // Chronogramme praticien — recharts, AVEC chiffres (contrairement à la frise
 // patient). Barres flottantes extinction→lever sur un axe horaire réel
@@ -65,6 +71,13 @@ type Point = {
   semaine: number; // 0..2
   weekend: boolean;
   nuit: NuitRow['reponses'] | null;
+  // v4 : le haut de la barre est l'heure où le patient a ESSAYÉ DE DORMIR, plus
+  // l'extinction ([[D-272]]).
+  essaiDeDormir: boolean;
+  // « Je ne sais pas » pour l'endormissement (v4, [[D-271]]) : aucune portion
+  // n'est dessinée, et un tiret en tête de barre le distingue d'un
+  // endormissement immédiat — sans lui, la barre dirait « zéro minute ».
+  latenceInconnue: boolean;
 };
 
 function tickHeure(t: number): string {
@@ -127,6 +140,17 @@ function BarreNuit(props: unknown) {
       {hLatence > 1 && (
         <rect x={x} y={y} width={width} height={hLatence} rx={3} fill={couleur} opacity={0.35} />
       )}
+      {payload.latenceInconnue && (
+        <line
+          x1={x}
+          x2={x + width}
+          y1={y}
+          y2={y}
+          stroke="#64748b"
+          strokeWidth={2}
+          strokeDasharray="2 2"
+        />
+      )}
       {hEveilMatin > 1 && (
         <rect
           x={x}
@@ -169,9 +193,13 @@ function Tooltipilote({ active, payload }: { active?: boolean; payload?: { paylo
         {p.weekend ? ' · week-end' : ''}
       </p>
       <p>
-        Extinction {n.heureCoucher} · lever {n.heureLever}
+        {p.essaiDeDormir ? 'Essai de dormir' : 'Extinction'} {n.heureCoucher} · lever{' '}
+        {n.heureLever}
       </p>
-      <p>Endormissement : {LABEL_LATENCE[n.latence]}</p>
+      <p>
+        Endormissement :{' '}
+        {n.latence === INCONNU ? LABEL_INCONNU_PRATICIEN : LABEL_LATENCE[n.latence]}
+      </p>
       <p>
         Lever :{' '}
         {n.leverImmediat === true
@@ -221,7 +249,10 @@ export function ChronogrammeSommeil({ nuits }: { nuits: NuitRow[] }) {
     return {
       label: `Nuit ${i + 1}`,
       plage: [debut, fin] as [number, number],
-      latenceH: CENTRE_LATENCE_H[r.latence] ?? 0,
+      // « Je ne sais pas » (v4) : aucune portion d'endormissement n'est
+      // dessinée — une position inventée ferait passer une estimation absente
+      // pour une observation. L'infobulle dit « ne sait pas ».
+      latenceH: r.latence === INCONNU ? 0 : (CENTRE_LATENCE_H[r.latence] ?? 0),
       eveilMatinH:
         r.leverImmediat === true
           ? 0
@@ -231,6 +262,8 @@ export function ChronogrammeSommeil({ nuits }: { nuits: NuitRow[] }) {
       semaine: Math.floor(i / 7),
       weekend: estWeekend(row.dateNuit),
       nuit: r,
+      essaiDeDormir: row.contrat === 'agenda-sommeil-v4',
+      latenceInconnue: r.latence === INCONNU,
     };
   });
 
@@ -274,8 +307,10 @@ export function ChronogrammeSommeil({ nuits }: { nuits: NuitRow[] }) {
         Teinte : semaine 1 → 3. Liseré ambré : nuit de week-end. Portions claires : temps
         d’endormissement (en tête) et éveil au lit le matin (en pied) — les deux seuls éveils
         dont l’heure est recueillie. L’éveil nocturne n’est connu qu’en durée cumulée : il se
-        lit dans l’infobulle, il n’est pas dessiné à une position inventée. Pointillés :
-        médianes d’extinction et de lever.
+        lit dans l’infobulle, il n’est pas dessiné à une position inventée. Tiret gris en tête de
+        barre : endormissement que le patient ne sait pas estimer, sans portion dessinée. Haut de barre : extinction
+        de la lumière, ou heure où le patient a essayé de dormir pour les agendas ouverts
+        depuis la v4. Pointillés : médianes de ce repère du soir et du lever.
       </p>
     </div>
   );

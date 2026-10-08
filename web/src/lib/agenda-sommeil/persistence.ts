@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
-import { estDateValide, ensureNuitReponses } from './nuit';
-import { AGENDA_CONTRACT_VERSION, type NuitInput, type NuitRow } from './types';
+import { contratDeLAgenda, estDateValide, ensureNuitReponses } from './nuit';
+import type { NuitInput, NuitRow } from './types';
 
 // Persistance des nuits d'agenda du sommeil (Q_SOM_09). Le domaine pur
 // (validation, chaînage, fenêtre, agrégats) vit dans les autres modules ;
@@ -52,8 +52,18 @@ type PrismaNuit = {
   soumisLe: Date;
 };
 
+// Contrat inscrit dans le JSON d'une ligne (`contractVersion`), s'il y est.
+function contratLu(reponses: unknown): string | undefined {
+  const version =
+    reponses && typeof reponses === 'object'
+      ? (reponses as Record<string, unknown>).contractVersion
+      : undefined;
+  return typeof version === 'string' ? version : undefined;
+}
+
 // Re-valide le payload JSONB en lecture (défense en profondeur).
 function toNuitRow(row: PrismaNuit): NuitRow {
+  const contrat = contratLu(row.reponses);
   return {
     id: row.id,
     idPatient: row.idPatient,
@@ -63,6 +73,7 @@ function toNuitRow(row: PrismaNuit): NuitRow {
     canal: row.canal,
     supersedesNuitId: row.supersedesNuitId,
     soumisLe: row.soumisLe.toISOString(),
+    ...(contrat !== undefined ? { contrat } : {}),
   };
 }
 
@@ -72,10 +83,24 @@ export async function saveNuit(input: NuitInput): Promise<NuitRow> {
   const idPatient = ensureId(input.idPatient, 'Identifiant patient');
   const idAssignation = ensureId(input.idAssignation, "Identifiant d'assignation");
   const dateNuit = ensureDateNuit(input.dateNuit);
-  // Écriture = contrat v2 : éveil nocturne, aide au sommeil et mode de lever
-  // sont obligatoires, et les classes d'éveil héritées y sont refusées. C'est le
-  // seul point où l'exiger empêche l'agrégation d'inventer un zéro plus tard.
-  const reponses = ensureNuitReponses(input.reponses, { exigerObligatoires: true });
+  // L'agenda garde le contrat de sa PREMIÈRE nuit ([[D-272]] §3) : v4 s'il n'en
+  // a aucune, v3 s'il a été ouvert avant la v4. Lu ici, au seul point
+  // d'écriture, pour qu'aucun client ne puisse le choisir.
+  const premiere = await prisma.agendaSommeilNuit.findFirst({
+    where: { idPatient, idAssignation },
+    orderBy: { soumisLe: 'asc' },
+    select: { reponses: true, soumisLe: true },
+  });
+  const contrat = contratDeLAgenda(
+    !premiere
+      ? []
+      : [{ contrat: contratLu(premiere.reponses), soumisLe: premiere.soumisLe.toISOString() }],
+  );
+  // Écriture : éveil nocturne, aide au sommeil et modes de coucher et de lever
+  // sont obligatoires (v2), et les classes d'éveil héritées y sont refusées.
+  // C'est le seul point où l'exiger empêche l'agrégation d'inventer un zéro plus
+  // tard. « Je ne sais pas » n'y passe qu'en v4.
+  const reponses = ensureNuitReponses(input.reponses, { exigerObligatoires: true, contrat });
   const supersedesNuitId =
     input.supersedesNuitId != null ? ensureId(input.supersedesNuitId, 'Identifiant de nuit') : null;
 
@@ -101,7 +126,7 @@ export async function saveNuit(input: NuitInput): Promise<NuitRow> {
       idPatient,
       idAssignation,
       dateNuit,
-      reponses: { contractVersion: AGENDA_CONTRACT_VERSION, ...reponses } as unknown as object,
+      reponses: { contractVersion: contrat, ...reponses } as unknown as object,
       canal: 'portail',
       supersedesNuitId,
     },

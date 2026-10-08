@@ -219,9 +219,9 @@ export const Q_SOM_09 = {
       description:"Valeurs calculées automatiquement à partir des nuits renseignées. Le patient ne les voit pas. Une métrique non couverte vaut null, jamais 0.",
       questions:[
         qn('AGD_NB_NUITS',"Nombre de nuits renseignées",0,21,1,'nuits'),
-        qn('AGD_FENETRE_MOY',"Fenêtre de sommeil (extinction → lever)",0,960,1,'min'),
+        qn('AGD_FENETRE_MOY',"Fenêtre de sommeil (extinction ou essai de dormir → lever)",0,960,1,'min'),
         qn('AGD_TIB_MOY',"Temps au lit (mise au lit → lever)",0,1200,1,'min'),
-        qn('AGD_PRELIT_MOY',"Temps au lit avant extinction",0,480,1,'min'),
+        qn('AGD_PRELIT_MOY',"Temps au lit avant l'extinction ou l'essai de dormir",0,480,1,'min'),
         qn('AGD_TST_MOY',"Temps de sommeil total moyen",0,960,1,'min'),
         qn('AGD_EFF_MOY',"Efficacité du sommeil moyenne",0,100,1,'%'),
         qn('AGD_LAT_MED',"Latence d'endormissement médiane",0,120,1,'min'),
@@ -242,6 +242,9 @@ export const Q_SOM_09 = {
         qn('AGD_NB_NUITS_PRELIT',"Nuits où le mode de coucher est connu",0,21,1,'nuits'),
         qn('AGD_NB_NUITS_REV',"Nuits où le compte de réveils est connu",0,21,1,'nuits'),
         qn('AGD_NB_NUITS_TWAK',"Nuits où le mode de lever est connu",0,21,1,'nuits'),
+        // Contrat v4 ([[D-271]]) : « je ne sais pas » pour l'endormissement.
+        qn('AGD_NB_NUITS_LAT',"Nuits où l'endormissement est connu",0,21,1,'nuits'),
+        qn('AGD_NB_NUITS_FREQ_WASO',"Nuits où l'éveil nocturne est classable pour le seuil de 30 min",0,21,1,'nuits'),
         qn('AGD_NB_NUITS_FREQ',"Nuits classables pour le seuil de 30 min",0,21,1,'nuits'),
         qn('AGD_NB_NUITS_AIDE_CONNU',"Nuits où l'aide au sommeil est renseignée",0,21,1,'nuits'),
         qn('AGD_NB_NUITS_WE',"Nuits de week-end retenues",0,21,1,'nuits'),

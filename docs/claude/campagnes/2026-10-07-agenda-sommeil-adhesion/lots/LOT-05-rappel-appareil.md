@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Le rappel du matin, posé par le patient sur son téléphone"
-statut: "en_cours (2026-10-08)"
+statut: "terminé (2026-10-08, #1364) — recette sur appareil après merge, avant annonce"
 dépend_de: "LOT-03"
 ---
 

@@ -4,6 +4,102 @@
 
 ## Décisions actives
 
+### D-272 — Agenda du sommeil : le repère du soir devient « essayé de dormir » (contrat `agenda-sommeil-v4`), et un agenda garde le contrat de sa première nuit
+
+- Date : 2026-10-08
+- Statut : accepté. Changement d'instrument retenu par le responsable le
+  2026-10-07 (synthèse de la campagne `2026-10-07-agenda-sommeil-adhesion`,
+  § « Arbitrages du responsable ») ; libellé et sort des agendas en cours
+  tranchés en session le 2026-10-08, sur questions fermées (« « Essayé de
+  dormir » », « Gardent leur contrat »).
+- Domaine : instrument de recueil Q_SOM_09 (agenda du sommeil 21 nuits),
+  LOT-04 de la campagne. **Aucun seuil, aucune borne, aucun poids, aucun
+  barème modifié.**
+
+**§1 — Le constat.** Depuis la v2, `heureCoucher` désigne l'extinction de la
+lumière. Les retours patients et la revue adverse du 2026-10-07 ont montré
+l'angle mort : le patient qui s'endort lumière éteinte devant un écran ou un
+podcast éteint tôt et n'essaie de dormir que plus tard. Il ne sait pas quelle
+heure donner, et la latence comme le temps au lit avant le sommeil se
+mesurent alors depuis le mauvais instant.
+
+**§2 — La règle.** Le repère du soir devient l'heure où le patient **a
+essayé de dormir** — l'item « What time did you try to go to sleep? » du
+Consensus Sleep Diary. La question de coucher s'y rapporte (« Par rapport à
+votre coucher, vous avez essayé de dormir… au même moment / plus tard ») et
+la latence se compte depuis lui. Les noms de champs ne changent pas
+(`heureCoucher`, `extinctionImmediate`) : seul leur sens change, sous un
+nouveau contrat `agenda-sommeil-v4`, comme la v2 l'avait fait pour
+l'extinction. Les formules (fenêtre, temps au lit, TST, efficacité, milieu de
+sommeil) restent les mêmes et s'appliquent à ce repère.
+
+**§3 — Un agenda garde le contrat de sa première nuit.** Le contrat d'un
+agenda est celui de la plus ancienne nuit soumise ; sans nuit, il s'ouvre en
+v4. Un agenda commencé en v3 s'y termine, avec ses mots et sans « je ne sais
+pas » ([[D-271]]). C'est le serveur qui le lit au moment d'écrire
+(`saveNuit`) ; aucun client ne le choisit. Ainsi aucune moyenne ne mélange
+deux définitions du repère du soir — au prix d'au plus trois semaines de
+coexistence des deux contrats.
+
+**§4 — Ce qui ne change pas.** Pas de migration (le contrat vit dans le JSON
+de chaque nuit), pas de seuil, pas de barème. Les lignes v1 à v3 se lisent
+telles quelles. Les libellés praticien disent le repère tel qu'il a été
+demandé : « Essai de dormir » ou « Extinction » dans le chronogramme, « Au lit
+avant d'essayer de dormir » ou « avant extinction » dans les tuiles.
+Fragment : `changelog.d/2026-10-08-agenda-sommeil-contrat-v4.md`.
+
+### D-271 — Agenda du sommeil : « Je ne sais pas » est une réponse pour l'endormissement et la durée des réveils, et pour eux seuls
+
+- Date : 2026-10-08
+- Statut : accepté. Changement d'instrument retenu par le responsable le
+  2026-10-07 (« « Je ne sais pas » / nuit partielle ») ; périmètre tranché en
+  session le 2026-10-08, sur question fermée (« Endormissement et réveils »).
+- Domaine : instrument de recueil Q_SOM_09, contrat `agenda-sommeil-v4`
+  ([[D-272]]), LOT-04 de la campagne `2026-10-07-agenda-sommeil-adhesion`.
+  **Aucun seuil, aucune borne, aucun poids, aucun barème modifié.**
+
+**§1 — Le constat.** Toutes les réponses de base sont obligatoires depuis la
+v2, pour qu'une absence ne soit plus agrégée comme un zéro. Mais deux d'entre
+elles sont des estimations d'un temps que le patient n'a pas observé — le
+temps mis à s'endormir, la durée cumulée des réveils. Faute de réponse
+honnête possible, il devait inventer une classe ou abandonner la nuit.
+
+**§2 — La règle.** Pour ces deux questions seulement, « Je ne sais pas »
+(`inconnu`) est une réponse explicite. Elle n'est pas l'absence de réponse
+que la v2 a fermée : la nuit est envoyée, et chaque métrique qui en aurait
+besoin la laisse de côté **au lieu de lui prêter un centre de classe** —
+c'est la règle de couverture par métrique déjà appliquée aux nuits v1 sans
+éveil (`DC-24`, `DC-25`). Concrètement :
+- endormissement inconnu → la nuit sort de la latence médiane, de la
+  fréquence d'endormissement « > 30 min » et du critère combiné, et du temps
+  de sommeil (donc de l'efficacité) — **pas** de la fréquence d'éveil ;
+- éveil inconnu → elle sort du WASO, de la fréquence d'éveil « > 30 min » et
+  du critère combiné, et du temps de sommeil — **pas** de la fréquence
+  d'endormissement ;
+- dans les deux cas, elle reste comptée pour la qualité, la régularité, le
+  temps au lit et les seuils de couverture (7 et 14 nuits) : ses heures sont
+  connues.
+
+Chaque fréquence a donc son dénominateur. Deux compteurs nouveaux le disent :
+`AGD_NB_NUITS_LAT` (nuits où l'endormissement est connu, dénominateur de la
+latence médiane et de sa fréquence) et `AGD_NB_NUITS_FREQ_WASO` (nuits où
+l'éveil est classable pour le seuil de 30 min) ; `AGD_NB_NUITS_FREQ` reste
+celui du critère combiné. Le panneau praticien affiche chaque fréquence
+« sur N nuits » quand N est inférieur au nombre de nuits. Une latence médiane
+sans nuit connue vaut `null`, jamais 0.
+
+**§3 — Ce qui reste obligatoire.** Les heures, la qualité, l'aide au sommeil
+et les modes de coucher et de lever : le patient les connaît, et sans l'aide
+au sommeil une efficacité sous hypnotique se lirait comme une efficacité sans
+rien. « Je ne sais pas » ne s'étend à aucune autre réponse.
+
+**§4 — Ce qui ne change pas.** Barème et pondérations de l'indice /100
+inchangés : ses axes portent déjà leur propre plancher de couverture
+(`minNuitsAxe`) et sortent du total quand la métrique manque. La nuit
+blanche, la durée configurable et la saisie à J-2 restent écartées
+(arbitrage du 2026-10-07). Fragment :
+`changelog.d/2026-10-08-agenda-sommeil-contrat-v4.md`.
+
 ### D-270 — Seconde unité d'une même mesure : « Écarter » pré-coché tant que sa jumelle part validée (précise D-260 §3)
 
 - Date : 2026-10-07

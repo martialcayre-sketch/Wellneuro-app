@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  contratDeLAgenda,
   decalerDate,
   ensureNuitReponses,
   estDateSaisissable,
@@ -366,5 +367,102 @@ describe('refus d’ordre des repères — tournure reconnue par le formulaire',
     [{ extinctionImmediate: false, heureMiseAuLit: '22:00', leverImmediat: false, heureReveilFinal: '22:30' }],
   ])('%o', (v) => {
     expect(refus(v)).toMatch(/doit (suivre|se situer)/);
+  });
+
+  // Le formulaire renvoie à l'écran du SOIR le refus qui dit « doit suivre la
+  // mise au lit » — sous les deux contrats, dont les mots du repère diffèrent.
+  it.each([['agenda-sommeil-v3'], ['agenda-sommeil-v4']] as const)(
+    'le refus du soir garde « doit suivre la mise au lit » (%s)',
+    (contrat) => {
+      let message = '';
+      try {
+        ensureNuitReponses(
+          { ...base, extinctionImmediate: false, heureMiseAuLit: '23:30', leverImmediat: true },
+          { exigerObligatoires: true, contrat },
+        );
+      } catch (e) {
+        message = (e as Error).message;
+      }
+      expect(message).toMatch(/doit suivre la mise au lit/);
+    },
+  );
+});
+
+// Contrat v4 ([[D-271]], [[D-272]]).
+describe('contrat v4 — « je ne sais pas » et contrat de l’agenda', () => {
+  const inconnus = { ...v2, latence: 'inconnu', reveils: { dureeTotale: 'inconnu' } };
+
+  it('accepte « je ne sais pas » pour l’endormissement et l’éveil, en écriture v4', () => {
+    const nuit = ensureNuitReponses(inconnus, { exigerObligatoires: true, contrat: 'agenda-sommeil-v4' });
+    expect(nuit.latence).toBe('inconnu');
+    expect(nuit.reveils).toEqual({ dureeTotale: 'inconnu' });
+  });
+
+  it('le refuse en écriture v3 — un agenda ouvert en v3 s’y termine', () => {
+    for (const nuit of [
+      { ...v2, latence: 'inconnu' },
+      { ...v2, reveils: { dureeTotale: 'inconnu' } },
+    ]) {
+      expect(() =>
+        ensureNuitReponses(nuit, { exigerObligatoires: true, contrat: 'agenda-sommeil-v3' }),
+      ).toThrow(TypeError);
+    }
+  });
+
+  it('le lit toujours, quel que soit le contrat', () => {
+    expect(ensureNuitReponses(inconnus).latence).toBe('inconnu');
+  });
+
+  it('ne l’étend à aucune autre réponse', () => {
+    for (const nuit of [
+      { ...v2, qualite: 'inconnu' },
+      { ...v2, aideSommeil: 'inconnu' },
+      { ...v2, heureCoucher: 'inconnu' },
+      { ...v2, siesteVeille: 'inconnu' },
+    ]) {
+      expect(() => ensureNuitReponses(nuit, { exigerObligatoires: true })).toThrow(TypeError);
+    }
+  });
+
+  it('refuse un éveil inconnu avec un compte de zéro réveil — zéro, c’est une nuit continue', () => {
+    expect(() =>
+      ensureNuitReponses(
+        { ...v2, reveils: { dureeTotale: 'inconnu', nombre: 0 } },
+        { exigerObligatoires: true },
+      ),
+    ).toThrow(TypeError);
+    expect(
+      ensureNuitReponses({ ...v2, reveils: { dureeTotale: 'inconnu', nombre: 2 } }, { exigerObligatoires: true })
+        .reveils,
+    ).toEqual({ dureeTotale: 'inconnu', nombre: 2 });
+  });
+
+  it('nomme le repère du soir selon le contrat', () => {
+    const { extinctionImmediate: _absent, ...sansMode } = v2;
+    const message = (contrat: 'agenda-sommeil-v3' | 'agenda-sommeil-v4') => {
+      try {
+        ensureNuitReponses(sansMode, { exigerObligatoires: true, contrat });
+      } catch (e) {
+        return (e as Error).message;
+      }
+      return '';
+    };
+    expect(message('agenda-sommeil-v3')).toBe('Indiquez si vous avez éteint la lumière en vous couchant.');
+    expect(message('agenda-sommeil-v4')).toBe('Indiquez si vous avez essayé de dormir dès votre coucher.');
+  });
+
+  it('un agenda garde le contrat de sa première nuit soumise ; sans nuit, il s’ouvre en v4', () => {
+    expect(contratDeLAgenda([])).toBe('agenda-sommeil-v4');
+    expect(
+      contratDeLAgenda([
+        { contrat: 'agenda-sommeil-v4', soumisLe: '2026-10-10T07:00:00.000Z' },
+        { contrat: 'agenda-sommeil-v3', soumisLe: '2026-10-09T07:00:00.000Z' },
+      ]),
+    ).toBe('agenda-sommeil-v3');
+    expect(
+      contratDeLAgenda([{ contrat: 'agenda-sommeil-v4', soumisLe: '2026-10-10T07:00:00.000Z' }]),
+    ).toBe('agenda-sommeil-v4');
+    // Une ligne sans contrat inscrit est antérieure à la v4.
+    expect(contratDeLAgenda([{ soumisLe: '2026-10-10T07:00:00.000Z' }])).toBe('agenda-sommeil-v3');
   });
 });

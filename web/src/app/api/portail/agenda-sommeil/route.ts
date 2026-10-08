@@ -8,9 +8,10 @@ import {
 import { listNuits, saveNuit } from '@/lib/agenda-sommeil/persistence';
 import {
   calculerFenetre,
-  ensureNuitReponses,
+  contratDeLAgenda,
   estDateSaisissable,
   resolveNuitsActives,
+  type ContratEcriture,
   type FenetreAgenda,
   type NuitReponses,
 } from '@/lib/agenda-sommeil/persistence';
@@ -40,6 +41,9 @@ type GetResponse =
       derniereNuit: NuitReponses | null;
       statutReponses: string;
       aujourdHui: string;
+      // Contrat de l'agenda, celui de sa première nuit ([[D-272]] §3) : le
+      // formulaire en tire ses mots et l'offre de « je ne sais pas ».
+      contrat: ContratEcriture;
     }
   | ErrorResponse;
 
@@ -112,9 +116,8 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     const auth = await authorizeAgendaPortail(req, searchParams.get('id'));
     if ('ok' in auth) return refuserAcces(auth, requestContext);
 
-    const nuitsActives = resolveNuitsActives(
-      await listNuits(auth.idPatient, auth.assignation.idAssignation),
-    );
+    const lignes = await listNuits(auth.idPatient, auth.assignation.idAssignation);
+    const nuitsActives = resolveNuitsActives(lignes);
     const aujourdHui = dateJourParis();
     const fenetre = calculerFenetre(nuitsActives, aujourdHui);
     // Saisies brutes du patient (ses propres réponses) — jamais un agrégat.
@@ -128,6 +131,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       derniereNuit: derniere,
       statutReponses: auth.assignation.statutReponses,
       aujourdHui,
+      contrat: contratDeLAgenda(lignes),
     });
   } catch (err) {
     // La lecture ne passe à Prisma que des identifiants (`idPatient`,
@@ -190,14 +194,18 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       );
     }
 
-    const reponses = ensureNuitReponses(body.reponses, { exigerObligatoires: true });
+    // La validation d'écriture se joue dans `saveNuit`, sous le contrat RÉEL de
+    // l'agenda — celui de sa première nuit ([[D-272]] §3). La jouer ici sous un
+    // contrat supposé nommerait, dans un agenda v3, un repère que le patient n'a
+    // jamais vu. Ses refus sont des `TypeError`, rendus en 400 ci-dessous.
     const supersedesNuitId = typeof body.supersedesNuitId === 'string' ? body.supersedesNuitId : undefined;
 
     const created = await saveNuit({
       idPatient: auth.idPatient,
       idAssignation: ass.idAssignation,
       dateNuit,
-      reponses,
+      // Non validé ici : `saveNuit` le valide (cf. ci-dessus) avant toute écriture.
+      reponses: body.reponses as NuitReponses,
       supersedesNuitId,
     });
 
