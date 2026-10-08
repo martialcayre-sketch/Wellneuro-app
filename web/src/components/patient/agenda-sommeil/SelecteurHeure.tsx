@@ -69,9 +69,12 @@ export function SelecteurHeure({
           valeur === undefined ? 'border-border text-muted-foreground' : 'border-primary text-foreground'
         }`}
       >
-        <option value="" disabled>
-          Choisir
-        </option>
+        {/* SÉLECTIONNABLE, et non `disabled` : sur iPhone, une roue ouverte sur
+            une option désactivée se cale sur la première heure disponible, et
+            « OK » sans tourner la roue poserait 18:00 ou 03:00 — une heure
+            jamais choisie. Choisir « Choisir » ne fait rien : `onChange` ignore
+            la valeur vide, et la liste, contrôlée, garde l'heure en place. */}
+        <option value="">Choisir</option>
         {options(heureDebut).map((h) => (
           <option key={h} value={h}>
             {h}

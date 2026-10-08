@@ -214,8 +214,8 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
               Jamais la nuit précédente : la v1 la reprenait en entier — latence
               et qualité comprises —, le bouton d'envoi était actif sans un seul
               geste, et vingt copies conformes de la première nuit passaient
-              pour un recueil. Les horaires habituels passent à part, en
-              suggestion fantôme. */}
+              pour un recueil. Les horaires habituels passent à part, et ne se
+              posent que par « Confirmer ces horaires ». */}
           <SaisieNuitForm
             key={cibleDate}
             initial={nuitsParDate.get(cibleDate) ?? null}

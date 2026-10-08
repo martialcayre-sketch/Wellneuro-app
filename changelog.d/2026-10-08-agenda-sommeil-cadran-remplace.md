@@ -27,5 +27,5 @@ fenêtre ni de barème ; aucune migration. Les heures restent au quart d'heure,
 comme l'exige la validation serveur. **Comparabilité** : le mode de saisie des
 heures change (liste au lieu de cadran) et les bornes des classes de réveil
 deviennent visibles ; un déplacement des distributions après ce lot se lira
-d'abord comme un effet d'interface. La re-mesure (LOT-02) couvrira LOT-01 et
-LOT-03 ensemble, sans pouvoir les départager.
+d'abord comme un effet d'interface. La re-mesure (LOT-02), dernière de
+l'ordre arbitré, mesurera l'ensemble des lots sans pouvoir les départager.

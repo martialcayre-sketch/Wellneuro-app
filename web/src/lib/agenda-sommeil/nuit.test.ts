@@ -342,7 +342,7 @@ describe('resolveNuitsActives — chaînage append-only', () => {
 });
 
 // Le formulaire patient (SaisieNuitForm, `RE_REFUS_ORDRE`) reconnaît les refus
-// d'ORDRE à leur tournure pour les rendre sous le cadran. Reformuler l'un d'eux
+// d'ORDRE à leur tournure pour les rendre sur l'écran de l'heure à corriger. Reformuler l'un d'eux
 // sans garder « doit suivre » / « doit se situer » le renverrait, sans bruit,
 // sous le bouton d'envoi : ce banc fige la tournure des trois.
 describe('refus d’ordre des repères — tournure reconnue par le formulaire', () => {

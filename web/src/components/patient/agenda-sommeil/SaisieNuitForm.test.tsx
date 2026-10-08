@@ -87,6 +87,13 @@ describe('saisie sans clavier à taper', () => {
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
+  it('revenir sur « Choisir » ne vide pas une heure déjà donnée', () => {
+    rendre();
+    choisir(/éteint la lumière à/, '23:00');
+    choisir(/éteint la lumière à/, '');
+    expect(liste(/éteint la lumière à/).value).toBe('23:00');
+  });
+
   it('les heures sont des listes au quart d’heure, ouvertes sur « Choisir »', () => {
     rendre();
     const extinction = liste(/éteint la lumière à/);
@@ -427,6 +434,12 @@ describe('confirmer ces horaires — un geste pour les deux heures suggérées',
     expect(bouton()).toBeNull();
   });
 
+  it('masqué dès qu’une des deux heures est choisie à la main', () => {
+    rendre({ suggestionsPersonnelles: true });
+    choisir(/éteint la lumière à/, '22:45');
+    expect(bouton()).toBeNull();
+  });
+
   it('confirme l’extinction et le lever, et rien d’autre', () => {
     rendre({ suggestionsPersonnelles: true });
     expect(bouton()?.textContent).toMatch(/23:00 → .*07:00/);
@@ -466,7 +479,14 @@ describe('ordre des heures — refusé avant tout envoi, sur l’écran à corri
       'Le réveil doit se situer avant la sortie du lit. Ajustez les heures.',
     );
     expect(titre()).toBe('Le matin');
-    expect(document.activeElement?.id).toBe('agenda-heure-sortie');
+    expect(document.activeElement?.id).toBe('agenda-heure-reveil');
+  });
+
+  it('le refus disparaît quand l’heure fautive disparaît', () => {
+    const { onSubmit } = reveilApresLeLever();
+    envoiRefuse(onSubmit);
+    clic('Au même moment que mon réveil');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('le refus disparaît dès qu’une heure bouge', () => {
@@ -499,13 +519,48 @@ describe('ordre des heures — refusé avant tout envoi, sur l’écran à corri
 });
 
 describe('refus du serveur', () => {
-  it('rendu sur l’écran du matin, sous le bouton d’envoi', () => {
+  it('rendu sur l’écran du matin seulement, sous le bouton d’envoi', () => {
     rendre({ refus: 'Cette nuit ne peut plus être notée.' });
+    expect(screen.queryByRole('alert')).toBeNull();
     soirMinimum();
     continuer();
+    expect(screen.queryByRole('alert')).toBeNull();
     nuitMinimum();
     continuer();
     expect(screen.getByRole('alert').textContent).toBe('Cette nuit ne peut plus être notée.');
+  });
+});
+
+describe('changement d’écran', () => {
+  it('le titre du nouvel écran reçoit le focus — pas à l’ouverture', () => {
+    rendre();
+    expect(document.activeElement?.tagName).not.toBe('H3');
+    soirMinimum();
+    continuer();
+    expect(document.activeElement?.textContent).toBe('Pendant la nuit');
+  });
+
+  it('un double appui sur « Continuer » de l’écran de la nuit n’envoie rien', () => {
+    const { onSubmit } = rendre({
+      initial: {
+        heureCoucher: '23:00',
+        heureLever: '07:00',
+        latence: 'lt15',
+        qualite: 4,
+        reveils: { dureeTotale: 'aucun', nombre: 0 },
+        aideSommeil: 'aucune',
+        extinctionImmediate: true,
+        leverImmediat: true,
+      },
+    });
+    continuer();
+    const bouton = screen.getByRole('button', { name: 'Continuer' });
+    fireEvent.click(bouton);
+    // Le second appui tombe sur l'ANCIEN nœud : détaché, il ne fait rien.
+    fireEvent.click(bouton);
+    expect(titre()).toBe('Le matin');
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(reste()).toBeNull();
   });
 });
 

@@ -5,8 +5,8 @@ import { AgendaSommeilJournal } from './AgendaSommeilJournal';
 
 // CE QUE CE BANC PROTÈGE, ET POURQUOI IL N'EXISTAIT PAS.
 //
-// Le composant n'avait AUCUN banc — ses deux voisins (`CadranNuit`,
-// `SaisieNuitForm`) en ont un chacun, lui non. C'est exactement là que le défaut
+// Le composant n'avait AUCUN banc — ses deux voisins (le cadran, retiré depuis,
+// et `SaisieNuitForm`) en avaient un chacun, lui non. C'est exactement là que le défaut
 // s'est logé : `enregistrer` et `transmettre` posaient `erreur` sans basculer
 // `etat`, et `erreur` n'était rendu que par la branche `etat === 'erreur'`. Le
 // message n'atteignait donc JAMAIS l'écran, et le patient repartait en croyant

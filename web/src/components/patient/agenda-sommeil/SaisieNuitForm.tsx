@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { SelecteurHeure } from './SelecteurHeure';
 import {
@@ -263,8 +263,9 @@ const ETAPE_DU_BLOC: Record<Bloc, Etape> = {
 };
 
 // Les trois refus d'ORDRE de `ensureNuitReponses` (lib/agenda-sommeil/nuit.ts,
-// mode écriture), figés par un banc dans nuit.test.ts. Le premier se corrige le
-// soir, les deux autres le matin (le réveil est une heure du matin).
+// mode écriture), figés par un banc dans nuit.test.ts. Le premier porte sur
+// l'extinction et la mise au lit, et se corrige le soir ; les deux autres
+// portent sur l'heure du réveil, le matin.
 const RE_REFUS_ORDRE = /doit (suivre|se situer)/;
 const RE_REFUS_ORDRE_DU_SOIR = /^L’extinction doit suivre/;
 
@@ -341,6 +342,20 @@ export function SaisieNuitForm({
   // pas un écran qu'on vient d'ouvrir.
   const [tentees, setTentees] = useState<ReadonlySet<Etape>>(new Set());
   const ancres = useRef<Partial<Record<Bloc, HTMLDivElement | null>>>({});
+  const titreRef = useRef<HTMLHeadingElement | null>(null);
+  const etapeAnnoncee = useRef<Etape>(etape);
+
+  // Un nouvel écran s'annonce : focus sur son titre (un lecteur d'écran le lit)
+  // et retour en haut (sur téléphone, la page restait défilée en bas, sur les
+  // boutons). Seulement sur un VRAI changement d'écran — jamais à l'ouverture,
+  // ni au double montage du mode strict. `allerA`, qui vise une question
+  // précise, passe après et l'emporte.
+  useEffect(() => {
+    if (etapeAnnoncee.current === etape) return;
+    etapeAnnoncee.current = etape;
+    titreRef.current?.scrollIntoView?.({ block: 'start' });
+    titreRef.current?.focus({ preventScroll: true });
+  }, [etape]);
 
   // CE QUI MANQUE, NOMMÉ, dans l'ordre de la nuit. Le bouton d'envoi est
   // toujours actif ; c'est cette liste qui garde la règle « rien ne part sans un
@@ -486,7 +501,7 @@ export function SaisieNuitForm({
       if (!(e instanceof TypeError)) throw e;
       if (RE_REFUS_ORDRE.test(e.message)) {
         setErreurOrdre(`${e.message} Ajustez les heures.`);
-        allerA(RE_REFUS_ORDRE_DU_SOIR.test(e.message) ? 'extinction' : 'sortie');
+        allerA(RE_REFUS_ORDRE_DU_SOIR.test(e.message) ? 'extinction' : 'reveilFinal');
         return;
       }
     }
@@ -502,7 +517,11 @@ export function SaisieNuitForm({
   return (
     <div className="space-y-6">
       <div className="flex items-baseline justify-between">
-        <h3 className="font-display text-base font-semibold text-foreground">
+        <h3
+          ref={titreRef}
+          tabIndex={-1}
+          className="font-display text-base font-semibold text-foreground outline-none"
+        >
           {ETAPES[etape].titre}
         </h3>
         <span className="text-xs text-muted-foreground">
@@ -789,11 +808,14 @@ export function SaisieNuitForm({
           </PatientButton>
         )}
         {etape < 2 ? (
-          <PatientButton variant="primary" className="flex-1" onClick={continuer}>
+          // Clés distinctes : sans elles React réutilise le même bouton, et un
+          // double appui sur « Continuer » de l'écran 2 envoyait la nuit.
+          <PatientButton key="continuer" variant="primary" className="flex-1" onClick={continuer}>
             Continuer
           </PatientButton>
         ) : (
           <PatientButton
+            key="envoyer"
             variant="primary"
             className="flex-1"
             loading={submitting}

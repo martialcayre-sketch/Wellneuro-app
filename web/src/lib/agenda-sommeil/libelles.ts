@@ -85,13 +85,13 @@ export const ARIA_AIDE_SOMMEIL: Record<ClasseAideSommeil, string> = {
   prise: 'Une aide pour dormir cette nuit : médicament, mélatonine ou plante',
 };
 
-// Mode de lever. La seconde réponse ouvre une poignée supplémentaire : sans
+// Mode de lever. La seconde réponse ouvre une heure supplémentaire : sans
 // elle, les minutes passées éveillé au lit le matin sont comptées en sommeil.
 //
 // La question pose la référence (« par rapport à votre réveil ») et les tuiles
 // répondent « au même moment / plus tard ». L'ancienne paire « dès mon réveil /
 // après être resté·e au lit » laissait le patient juger seul ce qui comptait
-// comme « rester au lit ». Aucun seuil n'est ajouté : le cadran au quart d'heure
+// comme « rester au lit ». Aucun seuil n'est ajouté : la liste au quart d'heure
 // reste ce qui distingue les deux heures.
 export const QUESTION_LEVER = 'Par rapport à votre réveil, vous vous êtes levé·e…';
 export const LABEL_LEVER_IMMEDIAT = 'Au même moment';
@@ -100,7 +100,7 @@ export const ARIA_LEVER_IMMEDIAT = 'Au même moment que mon réveil';
 export const ARIA_LEVER_DIFFERE = 'Plus tard que mon réveil';
 export const LABEL_REVEIL_FINAL = 'Je me suis réveillé·e';
 
-// Mode de coucher, symétrique du précédent. La seconde réponse ouvre la poignée
+// Mode de coucher, symétrique du précédent. La seconde réponse ouvre l'heure
 // de mise au lit — sans elle, le temps passé au lit sans chercher à dormir est
 // invisible, et l'efficacité se calcule sur une fenêtre trop courte, donc
 // flatteuse.
