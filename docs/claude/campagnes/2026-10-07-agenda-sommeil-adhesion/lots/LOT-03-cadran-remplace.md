@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Le cadran remplacé — sélecteurs au quart d'heure, soir / nuit / matin"
-statut: "en_cours (2026-10-08, lancé sans attendre la re-mesure)"
+statut: "terminé (2026-10-08, #1363) — recette sur appareil après merge, avant annonce"
 dépend_de: "LOT-01"
 ---
 

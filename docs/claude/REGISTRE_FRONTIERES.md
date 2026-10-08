@@ -260,6 +260,20 @@
   chemin d'envoi : un plafond de cadence opposable **côté serveur**, comptant
   **toutes** les tentatives quel que soit leur statut (un échec SMTP n'est pas
   la preuve d'une non-livraison), et aucune donnée de santé dans le corps.
+- **Un rappel posé par le patient sur son appareil n'est ni une relance ni une
+  notification proactive autonome** (arbitrage du responsable du 2026-10-07,
+  consigné le 2026-10-08 ; campagne `2026-10-07-agenda-sommeil-adhesion`,
+  LOT-05). Le portail peut proposer au patient d'ajouter **lui-même** un rappel
+  à l'agenda de son téléphone — un fichier calendrier fabriqué dans le
+  navigateur, à son geste —, parce que rien ne part du serveur : aucune tâche
+  planifiée, aucun envoi, aucune trace du choix ; c'est l'appareil qui sonne.
+  Trois conditions le gardent hors de l'interdit : **fabriqué côté appareil,
+  jamais émis par le serveur** ; **aucun lien** (une clé de session copiée
+  dans un agenda synchronisé serait une fuite) ; **aucune donnée de santé**,
+  ni dans le titre, visible sur l'écran verrouillé, ni dans les champs cachés
+  du fichier. Un rappel **émis par le serveur**, même demandé par le patient,
+  reste une notification proactive : il exigerait un réarbitrage de cette
+  frontière.
 - **Ce que « reprise sans pression » n'interdit pas** : rendre visible, à
   l'ouverture de l'espace patient, une tâche **périssable**. L'agenda du
   sommeil en est une — `estDateSaisissable` referme la porte à J-2 — et il

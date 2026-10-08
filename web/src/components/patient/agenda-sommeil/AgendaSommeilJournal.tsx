@@ -9,6 +9,7 @@ import { horairesHabituels } from '@/lib/agenda-sommeil/agregats';
 import type { FenetreAgenda } from '@/lib/agenda-sommeil/fenetre';
 import { NB_JOURS_AGENDA, type NuitReponses } from '@/lib/agenda-sommeil/types';
 import { FriseNuits } from './FriseNuits';
+import { RappelDuMatin } from './RappelDuMatin';
 import { SaisieNuitForm } from './SaisieNuitForm';
 
 type GetOk = {
@@ -149,6 +150,14 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
   const dateHier = decalerDate(aujourdHui, -1);
   const hierDansFenetre = fenetre.dateDebut !== null && dateHier >= fenetre.dateDebut;
   const hierRenseignee = nuitsParDate.has(dateHier);
+  // Matins encore à noter après aujourd'hui, dans la fenêtre de 21 nuits ;
+  // une fenêtre pas encore ouverte en compte 21.
+  const matinsRestants =
+    fenetre.jourCourant !== null
+      ? NB_JOURS_AGENDA - fenetre.jourCourant
+      : fenetre.dateDebut === null
+        ? NB_JOURS_AGENDA
+        : 0;
 
   // Agenda clôturé : frise en consultation seule, sans aucune saisie.
   if (mode === 'clos') {
@@ -309,6 +318,13 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
           </PatientButton>
         )}
       </div>
+
+      {/* Rappel posé sur l'appareil (LOT-05) : du lendemain jusqu'à la fin de
+          la fenêtre de 21 nuits. Absent quand il ne reste aucun matin à
+          rappeler. */}
+      {matinsRestants > 0 && (
+        <RappelDuMatin premierMatin={decalerDate(aujourdHui, 1)} nombreDeMatins={matinsRestants} />
+      )}
 
       <PatientCard padding="sm" className="text-xs text-muted-foreground">
         Astuce : ajoutez cette page à l’écran d’accueil de votre téléphone pour la retrouver chaque matin, avec votre café.

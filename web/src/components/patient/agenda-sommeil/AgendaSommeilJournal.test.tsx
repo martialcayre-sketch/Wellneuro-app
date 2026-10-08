@@ -168,3 +168,104 @@ describe('AgendaSommeilJournal — un refus ne reste pas muet', () => {
     expect(screen.queryByText('Vos nuits')).toBeNull();
   });
 });
+
+describe('AgendaSommeilJournal — rappel du matin posé sur l’appareil (LOT-05)', () => {
+  const createObjectURL = vi.fn((_blob: Blob) => 'blob:rappel');
+  const revokeObjectURL = vi.fn();
+  const originaux = { create: URL.createObjectURL, revoke: URL.revokeObjectURL };
+  let clicLien: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    createObjectURL.mockClear();
+    revokeObjectURL.mockClear();
+    URL.createObjectURL = createObjectURL;
+    URL.revokeObjectURL = revokeObjectURL;
+    // jsdom ne navigue pas : le clic sur le lien de téléchargement est neutralisé.
+    clicLien = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    URL.createObjectURL = originaux.create;
+    URL.revokeObjectURL = originaux.revoke;
+    clicLien.mockRestore();
+    vi.useRealTimers();
+  });
+
+  async function fabriquer(): Promise<string> {
+    fireEvent.change(screen.getByLabelText('Heure du rappel'), { target: { value: '07:30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter à mon agenda' }));
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    return (createObjectURL.mock.calls[0][0] as Blob).text();
+  }
+
+  it('fabrique le fichier calendrier dans le navigateur, sans appel au serveur', async () => {
+    fetchMock.mockImplementation(() => reponse(CHARGEMENT_OK));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Un rappel chaque matin')).toBeTruthy());
+    const appelsAvant = fetchMock.mock.calls.length;
+
+    const ics = await fabriquer();
+
+    expect(fetchMock.mock.calls.length).toBe(appelsAvant);
+    expect(clicLien).toHaveBeenCalledTimes(1);
+    // Nuit 3 sur 21 : rappels du lendemain jusqu'à la fin de la fenêtre.
+    expect(ics).toContain('DTSTART:20260904T073000');
+    expect(ics).toContain('RRULE:FREQ=DAILY;COUNT=18');
+    // Rien qui désigne le dossier.
+    expect(ics).not.toContain('ASSIGN_1');
+    expect(screen.getByText(/rappel-du-matin\.ics/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Télécharger à nouveau' })).toBeTruthy();
+  });
+
+  it('l’URL du fichier n’est révoquée qu’après le délai laissé au navigateur', async () => {
+    fetchMock.mockImplementation(() => reponse(CHARGEMENT_OK));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Un rappel chaque matin')).toBeTruthy());
+    vi.useFakeTimers();
+    fireEvent.change(screen.getByLabelText('Heure du rappel'), { target: { value: '07:30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter à mon agenda' }));
+    vi.advanceTimersByTime(39_000);
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1_000);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:rappel');
+  });
+
+  it('sans heure choisie, rien n’est fabriqué et le patient sait pourquoi', async () => {
+    fetchMock.mockImplementation(() => reponse(CHARGEMENT_OK));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Un rappel chaque matin')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter à mon agenda' }));
+    expect(createObjectURL).not.toHaveBeenCalled();
+    expect(screen.getByText('Choisissez d’abord l’heure du rappel.')).toBeTruthy();
+  });
+
+  it('fenêtre pas encore ouverte : 21 matins à partir du lendemain', async () => {
+    const aucuneNuit = {
+      ...CHARGEMENT_OK,
+      fenetre: { ...FENETRE, dateDebut: null, emplacements: [], nbRenseignees: 0, jourCourant: null },
+      nuits: [],
+      derniereNuit: null,
+    };
+    fetchMock.mockImplementation(() => reponse(aucuneNuit));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Votre nuit passée')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Voir ma frise' }));
+    const ics = await fabriquer();
+    expect(ics).toContain('RRULE:FREQ=DAILY;COUNT=21');
+  });
+
+  it('absent quand il ne reste aucun matin dans la fenêtre', async () => {
+    const derniereNuit = { ...CHARGEMENT_OK, fenetre: { ...FENETRE, jourCourant: 21 } };
+    fetchMock.mockImplementation(() => reponse(derniereNuit));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Vos nuits')).toBeTruthy());
+    expect(screen.queryByText('Un rappel chaque matin')).toBeNull();
+  });
+
+  it('absent quand la fenêtre est échue', async () => {
+    const echue = { ...CHARGEMENT_OK, fenetre: { ...FENETRE, jourCourant: null } };
+    fetchMock.mockImplementation(() => reponse(echue));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Vos nuits')).toBeTruthy());
+    expect(screen.queryByText('Un rappel chaque matin')).toBeNull();
+  });
+});
