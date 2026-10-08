@@ -56,10 +56,12 @@ test.describe('agenda du sommeil — saisie d’une nuit', () => {
   test('une nuit se note en trois écrans et rejoint la frise', async ({ page }) => {
     await ouvrirAgenda(page);
 
-    // Le soir.
-    await page.getByLabel(/éteint la lumière à/).selectOption('23:00');
+    // Le soir. Un agenda neuf s'ouvre sous le contrat v4 ([[D-271]], [[D-272]]) :
+    // le repère est l'heure où le patient a essayé de dormir, et « je ne sais
+    // pas » est une réponse que le serveur accepte.
+    await page.getByLabel(/essayé de dormir à/).selectOption('23:00');
     await page.getByRole('button', { name: 'Au même moment que mon coucher' }).click();
-    await page.getByRole('button', { name: 'En moins de 15 min' }).click();
+    await page.getByRole('button', { name: 'Je ne sais pas' }).click();
     await page.getByRole('button', { name: 'Continuer' }).click();
 
     // La nuit.

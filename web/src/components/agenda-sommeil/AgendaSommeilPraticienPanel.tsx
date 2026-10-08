@@ -33,7 +33,7 @@ function Tuile({ libelle, valeur, appui }: { libelle: string; valeur: string | n
   );
 }
 
-function TuilesAgregats({ a }: { a: AgregatsAgenda }) {
+function TuilesAgregats({ a, essaiDeDormir }: { a: AgregatsAgenda; essaiDeDormir: boolean }) {
   // Chaque métrique porte sa propre couverture : le dénominateur du sommeil
   // moyen n'est pas celui de la régularité dès qu'une nuit v1 est dans la
   // fenêtre. L'afficher évite de lire une moyenne partielle comme complète.
@@ -68,14 +68,24 @@ function TuilesAgregats({ a }: { a: AgregatsAgenda }) {
           Un patient à « 60 min avant extinction / 10 min de latence » et un
           patient à « 0 / 70 » avaient le même profil ; ils appellent des
           conduites opposées. */}
+      {/* v4 ([[D-272]]) : le repère du soir est l'heure où le patient a essayé
+          de dormir — la tuile le nomme tel qu'il a été demandé. */}
       <Tuile
-        libelle="Au lit avant extinction"
+        libelle={essaiDeDormir ? 'Au lit avant d’essayer de dormir' : 'Au lit avant extinction'}
         valeur={a.AGD_PRELIT_MOY === null ? null : `${a.AGD_PRELIT_MOY} min`}
         appui={
           a.AGD_NB_NUITS_PRELIT < a.AGD_NB_NUITS ? `sur ${a.AGD_NB_NUITS_PRELIT} nuits` : undefined
         }
       />
-      <Tuile libelle="Endormissement médian" valeur={`${a.AGD_LAT_MED} min`} />
+      {/* « Je ne sais pas » (v4, [[D-271]]) sort de la médiane : la tuile dit
+          sur combien de nuits elle porte. */}
+      <Tuile
+        libelle="Endormissement médian"
+        valeur={a.AGD_LAT_MED === null ? null : `${a.AGD_LAT_MED} min`}
+        appui={
+          a.AGD_NB_NUITS_LAT < a.AGD_NB_NUITS ? `sur ${a.AGD_NB_NUITS_LAT} nuits` : undefined
+        }
+      />
       <Tuile
         libelle="Éveil nocturne"
         valeur={a.AGD_WASO_MOY === null ? null : `${a.AGD_WASO_MOY} min`}
@@ -128,7 +138,7 @@ function Frequences({ a }: { a: AgregatsAgenda }) {
       <p className="text-2xs text-muted-foreground">
         Convention de recherche : ≥ 3 nuits/semaine.
         {partiel
-          ? ` Calculé sur ${a.AGD_NB_NUITS_FREQ} nuits — les nuits notées avant la refonte des bornes ne sont pas classables pour ce seuil.`
+          ? ` Calculé sur ${a.AGD_NB_NUITS_FREQ} nuits — les autres ne sont pas classables pour ce seuil (nuits notées avant la refonte des bornes, ou durée que le patient ne savait pas estimer).`
           : ''}
       </p>
     </div>
@@ -239,7 +249,10 @@ export function AgendaSommeilPraticienPanel({ idPatient }: { idPatient: string }
 
           {ep.agregats ? (
             <>
-              <TuilesAgregats a={ep.agregats} />
+              <TuilesAgregats
+                a={ep.agregats}
+                essaiDeDormir={ep.nuits.some((n) => n.contrat === 'agenda-sommeil-v4')}
+              />
               <Frequences a={ep.agregats} />
               <NoteCouverture a={ep.agregats} />
             </>

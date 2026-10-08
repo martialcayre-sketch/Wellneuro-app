@@ -4,7 +4,7 @@ const { prisma } = vi.hoisted(() => ({
   prisma: {
     assignation: { findUnique: vi.fn() },
     patient: { findUnique: vi.fn() },
-    agendaSommeilNuit: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn() },
+    agendaSommeilNuit: { findUnique: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -147,6 +147,54 @@ describe('POST /api/portail/agenda-sommeil', () => {
     expect(prisma.agendaSommeilNuit.create).toHaveBeenCalled();
   });
 
+  // Contrat v4 ([[D-271]], [[D-272]]) : un agenda garde le contrat de sa
+  // PREMIÈRE nuit. Le serveur le lit lui-même — aucun client ne le choisit.
+  it('un agenda sans nuit s’ouvre en v4 : « je ne sais pas » passe, la ligne porte la v4', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    prisma.agendaSommeilNuit.findFirst.mockResolvedValue(null);
+    const nuitIncertaine = { ...reponses, latence: 'inconnu', reveils: { dureeTotale: 'inconnu' } };
+    prisma.agendaSommeilNuit.create.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
+      id: 'nuit_v4',
+      soumisLe: new Date(),
+      canal: 'portail',
+      supersedesNuitId: null,
+      ...data,
+    }));
+    const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses: nuitIncertaine } }));
+    expect(res.status).toBe(201);
+    const ecrit = prisma.agendaSommeilNuit.create.mock.calls[0][0].data.reponses as Record<string, unknown>;
+    expect(ecrit.contractVersion).toBe('agenda-sommeil-v4');
+    expect(ecrit.latence).toBe('inconnu');
+    expect(ecrit.reveils).toEqual({ dureeTotale: 'inconnu' });
+  });
+
+  it('un agenda ouvert en v3 s’y termine : « je ne sais pas » y est refusé, une nuit complète y reste v3', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    prisma.agendaSommeilNuit.findFirst.mockResolvedValue({
+      reponses: { contractVersion: 'agenda-sommeil-v3', ...reponses },
+      soumisLe: new Date('2026-07-14T07:00:00.000Z'),
+    });
+    const refus = await POST(
+      req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses: { ...reponses, latence: 'inconnu' } } }),
+    );
+    expect(refus.status).toBe(400);
+    expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
+
+    prisma.agendaSommeilNuit.create.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
+      id: 'nuit_v3',
+      soumisLe: new Date(),
+      canal: 'portail',
+      supersedesNuitId: null,
+      ...data,
+    }));
+    const ok = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses } }));
+    expect(ok.status).toBe(201);
+    const ecrit = prisma.agendaSommeilNuit.create.mock.calls[0][0].data.reponses as Record<string, unknown>;
+    expect(ecrit.contractVersion).toBe('agenda-sommeil-v3');
+  });
+
   it('rejette une nuit mal formée (400)', async () => {
     prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
     mockOwner();
@@ -237,13 +285,30 @@ describe('GET /api/portail/agenda-sommeil', () => {
       },
     ]);
     const res = await GET(req('GET', cookieFor(), { query: '?id=ASS_AGD' }));
-    const json = (await res.json()) as { ok: boolean; nuits: unknown[]; fenetre: { dateDebut: string } };
+    const json = (await res.json()) as {
+      ok: boolean;
+      nuits: unknown[];
+      fenetre: { dateDebut: string };
+      contrat: string;
+    };
     expect(res.status).toBe(200);
     expect(json.ok).toBe(true);
     expect(json.nuits).toHaveLength(1);
     expect(json.fenetre.dateDebut).toBe('2026-07-14');
+    // Un agenda ouvert avant la v4 s'y termine ([[D-272]] §3).
+    expect(json.contrat).toBe('agenda-sommeil-v3');
     // Aucune clé d'agrégat ne doit transiter vers le patient.
     expect(JSON.stringify(json)).not.toContain('AGD_');
+  });
+
+  it('un agenda sans nuit annonce le contrat v4', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    prisma.agendaSommeilNuit.findMany.mockResolvedValue([]);
+    const res = await GET(req('GET', cookieFor(), { query: '?id=ASS_AGD' }));
+    const json = (await res.json()) as { contrat: string };
+    expect(res.status).toBe(200);
+    expect(json.contrat).toBe('agenda-sommeil-v4');
   });
 });
 

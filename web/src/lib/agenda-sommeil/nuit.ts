@@ -5,19 +5,23 @@
 // anti-fabrication et anti-culpabilisation).
 
 import {
+  AGENDA_CONTRACT_VERSION,
   CLASSES_AIDE_SOMMEIL,
   CLASSES_DUREE_REVEILS,
   CLASSES_DUREE_REVEILS_LUES,
   CLASSES_LATENCE,
   CLASSES_SIESTE,
   CLES_FACTEURS,
+  INCONNU,
   NB_REVEILS_MAX,
   type ClasseAideSommeil,
+  type ContratEcriture,
   type ClasseDureeReveils,
   type ClasseDureeReveilsHeritee,
   type ClasseLatence,
   type ClasseSieste,
   type FacteursNuit,
+  type Inconnu,
   type NuitReponses,
   type NuitRow,
 } from './types';
@@ -76,6 +80,39 @@ function ensureDansClasses<T extends string>(
   return value as T;
 }
 
+// ─── Contrat d'un agenda ─────────────────────────────────────────────────────
+// Un agenda garde le contrat de sa PREMIÈRE nuit écrite ([[D-272]] §3) : un
+// agenda ouvert en v3 s'y termine, et aucune moyenne ne mélange l'extinction de
+// la lumière (v3) et l'heure où le patient a essayé de dormir (v4). La première
+// nuit est la plus ancienne SOUMISE, correction ou non : c'est elle qui a fixé
+// le sens de l'agenda. Sans nuit, l'agenda s'ouvre en v4.
+export function contratDeLAgenda(
+  lignes: readonly { contrat?: string; soumisLe: string }[],
+): ContratEcriture {
+  if (lignes.length === 0) return AGENDA_CONTRACT_VERSION;
+  const premiere = lignes.reduce((a, b) => (b.soumisLe < a.soumisLe ? b : a));
+  return premiere.contrat === 'agenda-sommeil-v4' ? 'agenda-sommeil-v4' : 'agenda-sommeil-v3';
+}
+
+// Les mots du repère du soir, selon le contrat : les messages de refus le
+// nomment tel que le patient l'a vu à l'écran.
+const MOTS_REPERE: Record<ContratEcriture, { champ: string; mode: string; article: string }> = {
+  'agenda-sommeil-v3': {
+    champ: 'extinction de la lumière',
+    mode: 'Indiquez si vous avez éteint la lumière en vous couchant.',
+    article: 'l’extinction',
+  },
+  'agenda-sommeil-v4': {
+    champ: 'heure où vous avez essayé de dormir',
+    mode: 'Indiquez si vous avez essayé de dormir dès votre coucher.',
+    article: 'l’heure où vous avez essayé de dormir',
+  },
+};
+
+function majuscule(texte: string): string {
+  return texte.charAt(0).toUpperCase() + texte.slice(1);
+}
+
 // ─── Validation d'une nuit complète (throw TypeError → 400) ──────────────────
 // Ignore les clés supplémentaires (ex. `contractVersion` rangé dans le JSON
 // stocké), comme `ensureReponses` des check-ins.
@@ -86,20 +123,34 @@ function ensureDansClasses<T extends string>(
 // En lecture ils restent facultatifs — des milliers de nuits v1 sont déjà en
 // base sans aucun des trois, et `toNuitRow` re-valide chaque ligne lue ; les
 // exiger en lecture rendrait l'historique illisible.
+//
+// `contrat` (écriture seulement, v4 par défaut) : sous v3, « je ne sais pas »
+// est refusé — un agenda commencé en v3 s'y termine ([[D-272]] §3). En lecture,
+// `INCONNU` est toujours accepté : les lignes v4 le portent.
 export function ensureNuitReponses(
   value: unknown,
-  options: { exigerObligatoires?: boolean } = {},
+  options: { exigerObligatoires?: boolean; contrat?: ContratEcriture } = {},
 ): NuitReponses {
   if (!value || typeof value !== 'object') {
     throw new TypeError('Réponses de nuit illisibles.');
   }
   const v = value as Record<string, unknown>;
+  const contrat = options.contrat ?? AGENDA_CONTRACT_VERSION;
+  const mots = MOTS_REPERE[contrat];
+  // « Je ne sais pas » ([[D-271]]) : accepté en lecture, et en écriture v4.
+  const inconnuPermis = !options.exigerObligatoires || contrat === 'agenda-sommeil-v4';
+  const avecInconnu = <T extends string>(classes: readonly T[]): readonly (T | Inconnu)[] =>
+    inconnuPermis ? [...classes, INCONNU] : classes;
 
   // — Obligatoire —
   const out: NuitReponses = {
-    heureCoucher: ensureHeure(v.heureCoucher, 'extinction de la lumière'),
+    heureCoucher: ensureHeure(v.heureCoucher, mots.champ),
     heureLever: ensureHeure(v.heureLever, 'sortie du lit'),
-    latence: ensureDansClasses<ClasseLatence>(v.latence, CLASSES_LATENCE, 'endormissement'),
+    latence: ensureDansClasses<ClasseLatence | Inconnu>(
+      v.latence,
+      avecInconnu(CLASSES_LATENCE),
+      'endormissement',
+    ),
     qualite: ensureEntierBorne(v.qualite, 1, 5, 'qualité de la nuit'),
   };
 
@@ -116,9 +167,11 @@ export function ensureNuitReponses(
     // En lecture on accepte aussi les classes héritées de la v1 ; en écriture,
     // seules les classes courantes passent — sinon un client obsolète pourrait
     // continuer d'écrire des bornes que le critère de 30 min ne sait pas lire.
-    let dureeTotale = ensureDansClasses<ClasseDureeReveils | ClasseDureeReveilsHeritee>(
+    let dureeTotale = ensureDansClasses<ClasseDureeReveils | ClasseDureeReveilsHeritee | Inconnu>(
       r.dureeTotale,
-      options.exigerObligatoires ? CLASSES_DUREE_REVEILS : CLASSES_DUREE_REVEILS_LUES,
+      avecInconnu<ClasseDureeReveils | ClasseDureeReveilsHeritee>(
+        options.exigerObligatoires ? CLASSES_DUREE_REVEILS : CLASSES_DUREE_REVEILS_LUES,
+      ),
       'durée des réveils',
     );
     if (options.exigerObligatoires) {
@@ -161,7 +214,7 @@ export function ensureNuitReponses(
     }
     out.extinctionImmediate = v.extinctionImmediate;
   } else if (options.exigerObligatoires) {
-    throw new TypeError('Indiquez si vous avez éteint la lumière en vous couchant.');
+    throw new TypeError(mots.mode);
   }
 
   if (v.heureMiseAuLit !== undefined && v.heureMiseAuLit !== null) {
@@ -212,7 +265,7 @@ export function ensureNuitReponses(
     const depuisOrigine = (h: string) => dureeMinutes(origine, h);
     const versLever = depuisOrigine(out.heureLever);
     if (out.heureMiseAuLit !== undefined && depuisOrigine(out.heureCoucher) > versLever) {
-      throw new TypeError('L’extinction doit suivre la mise au lit.');
+      throw new TypeError(`${majuscule(mots.article)} doit suivre la mise au lit.`);
     }
     if (out.heureReveilFinal !== undefined && depuisOrigine(out.heureReveilFinal) > versLever) {
       throw new TypeError('Le réveil doit se situer avant la sortie du lit.');
@@ -222,7 +275,7 @@ export function ensureNuitReponses(
       out.heureReveilFinal !== undefined &&
       depuisOrigine(out.heureReveilFinal) < depuisOrigine(out.heureCoucher)
     ) {
-      throw new TypeError('Le réveil doit suivre l’extinction.');
+      throw new TypeError(`Le réveil doit suivre ${mots.article}.`);
     }
   }
 

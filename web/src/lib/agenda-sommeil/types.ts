@@ -56,12 +56,42 @@ export const AGENDA_SOMMEIL_TITRE = 'Agenda du sommeil — 21 nuits' as const;
 //       compte exact — on ne réécrit pas ce que le patient n'a pas dit. Le
 //       champ reste facultatif et n'entre dans aucun calcul structurel
 //       (`AGD_REV_MOY` est une métrique brute, hors indice).
-export const AGENDA_CONTRACT_VERSION = 'agenda-sommeil-v3' as const;
+//
+// v3 → v4 (2026-10-08, [[D-271]] et [[D-272]], LOT-04 de la campagne
+// 2026-10-07-agenda-sommeil-adhesion) — deux changements de SENS :
+//   (h) Repère du soir. `heureCoucher` désigne désormais l'heure où le patient
+//       a ESSAYÉ DE DORMIR (« try to go to sleep », Consensus Sleep Diary), et
+//       `extinctionImmediate` le fait d'avoir essayé de dormir dès le coucher.
+//       Les noms de champs ne changent pas — v2 avait fait de même. L'extinction
+//       de la lumière laissait sans réponse juste le patient qui s'endort devant
+//       un écran ou un podcast, lumière éteinte (retours patients, synthèse du
+//       2026-10-07).
+//   (i) « Je ne sais pas » (`INCONNU`) devient une RÉPONSE pour l'endormissement
+//       et la durée des réveils, et pour eux seuls. Elle est explicite, donc
+//       distincte de l'absence de réponse que la v2 a fermée : la nuit est
+//       envoyée, et chaque métrique qui en a besoin la laisse de côté au lieu de
+//       lui prêter une valeur (cf. `agregats.ts`). Heures, qualité, aide au
+//       sommeil et modes de coucher et de lever restent obligatoires.
+//
+// UN AGENDA GARDE LE CONTRAT DE SA PREMIÈRE NUIT ([[D-272]] §3) : ceux ouverts
+// en v3 s'y terminent, pour qu'aucune moyenne ne mélange deux définitions du
+// repère du soir (cf. `contratDeLAgenda`). La v4 n'est donc écrite que dans un
+// agenda dont la première nuit est v4 — ou qui n'en a encore aucune.
+export const AGENDA_CONTRACT_VERSION = 'agenda-sommeil-v4' as const;
 export const AGENDA_CONTRACT_VERSIONS_LUES = [
   'agenda-sommeil-v1',
   'agenda-sommeil-v2',
   'agenda-sommeil-v3',
+  'agenda-sommeil-v4',
 ] as const;
+
+// Les deux contrats qu'une écriture peut encore produire : la v4, et la v3 pour
+// finir un agenda commencé avant elle.
+export type ContratEcriture = 'agenda-sommeil-v3' | 'agenda-sommeil-v4';
+
+// « Je ne sais pas » (v4) — une réponse, jamais l'absence de réponse.
+export const INCONNU = 'inconnu' as const;
+export type Inconnu = typeof INCONNU;
 
 // Fenêtre de recueil : 21 emplacements (une culture « protocole 21 jours » et le
 // jalon J21 partagés par le produit).
@@ -160,7 +190,8 @@ export type ReveilsNuit = {
   // Durée cumulée d'éveil nocturne — c'est elle qui porte le critère clinique
   // et qui entre dans l'efficacité, pas le compte. Le type accepte les classes
   // héritées : elles existent en base, seule l'écriture les refuse.
-  dureeTotale: ClasseDureeReveils | ClasseDureeReveilsHeritee;
+  // v4 : `INCONNU` possible (« je ne sais pas »).
+  dureeTotale: ClasseDureeReveils | ClasseDureeReveilsHeritee | Inconnu;
   // Nombre de réveils : raffinement FACULTATIF, proposé seulement quand la nuit
   // n'a pas été continue. Absent = inconnu ; il n'entre dans aucun calcul
   // structurel, donc son absence ne biaise rien (contrairement au WASO).
@@ -171,20 +202,24 @@ export type ReveilsNuit = {
 
 export type NuitReponses = {
   // — Obligatoire —
-  heureCoucher: string; // HH:MM, pas de 15 min — extinction de la lumière (v2)
+  // HH:MM, pas de 15 min — extinction de la lumière (v2, v3), heure où le
+  // patient a essayé de dormir (v4).
+  heureCoucher: string;
   heureLever: string; // HH:MM, pas de 15 min — sortie du lit (v2)
   // La latence reste une CLASSE et non une heure : demander l'heure exacte
   // d'endormissement supposerait que le patient l'ait observée, donc qu'il ait
   // regardé sa montre en essayant de dormir. Le Consensus Sleep Diary la
   // recueille lui aussi comme une durée estimée.
-  latence: ClasseLatence;
+  // v4 : `INCONNU` possible (« je ne sais pas »).
+  latence: ClasseLatence | Inconnu;
   qualite: number; // 1..5 (emoji)
   // Les trois champs suivants sont obligatoires en ÉCRITURE v2
   // (`ensureNuitReponses(..., { exigerObligatoires: true })`) et facultatifs dans
   // le type : les lignes v1 déjà en base n'en portent aucun.
   reveils?: ReveilsNuit;
   aideSommeil?: ClasseAideSommeil;
-  // `true` = lumière éteinte en se couchant. `false` impose `heureMiseAuLit`.
+  // `true` = lumière éteinte en se couchant (v2, v3), essai de dormir dès le
+  // coucher (v4). `false` impose `heureMiseAuLit`.
   // Symétrique de `leverImmediat`, et pour la même raison : le temps passé au
   // lit SANS chercher à dormir est une grandeur distincte de la latence
   // d'endormissement. Les confondre, c'est confondre deux conduites opposées —
@@ -221,6 +256,10 @@ export type NuitRow = {
   canal: string;
   supersedesNuitId: string | null;
   soumisLe: string; // ISO
+  // Contrat sous lequel la ligne a été écrite (`contractVersion` du JSON). Il
+  // dit au lecteur ce que `heureCoucher` désigne. Absent sur une ligne qui n'en
+  // porte pas : elle se lit comme antérieure à la v4.
+  contrat?: string;
 };
 
 export type NuitInput = {

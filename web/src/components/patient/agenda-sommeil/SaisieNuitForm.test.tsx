@@ -48,7 +48,7 @@ function envoiRefuse(onSubmit: ReturnType<typeof vi.fn>): boolean {
 }
 
 function soirMinimum() {
-  choisir(/éteint la lumière à/, '23:00');
+  choisir(/essayé de dormir à/, '23:00');
   clic('Au même moment que mon coucher');
   clic('En moins de 15 min');
 }
@@ -61,7 +61,8 @@ function matinMinimum() {
   clic('Au même moment que mon réveil');
   clic('Très bonne');
 }
-// Parcours minimal complet du contrat v3 : huit réponses, trois écrans.
+// Parcours minimal complet : huit réponses, trois écrans. Le formulaire s'ouvre
+// par défaut sous le contrat v4 (repère « essayé de dormir »).
 function completerLeMinimum() {
   soirMinimum();
   continuer();
@@ -89,14 +90,14 @@ describe('saisie sans clavier à taper', () => {
 
   it('revenir sur « Choisir » ne vide pas une heure déjà donnée', () => {
     rendre();
-    choisir(/éteint la lumière à/, '23:00');
-    choisir(/éteint la lumière à/, '');
-    expect(liste(/éteint la lumière à/).value).toBe('23:00');
+    choisir(/essayé de dormir à/, '23:00');
+    choisir(/essayé de dormir à/, '');
+    expect(liste(/essayé de dormir à/).value).toBe('23:00');
   });
 
   it('les heures sont des listes au quart d’heure, ouvertes sur « Choisir »', () => {
     rendre();
-    const extinction = liste(/éteint la lumière à/);
+    const extinction = liste(/essayé de dormir à/);
     expect(extinction.value).toBe('');
     const valeurs = Array.from(extinction.options)
       .map((o) => o.value)
@@ -128,7 +129,7 @@ describe('trois écrans — rien ne passe sans geste, et ce qui manque est nomm�
     continuer();
     expect(titre()).toBe('Le soir');
     expect(reste()!.textContent).toBe(
-      'Il reste à renseigner : l’heure où vous avez éteint 🌑, le coucher et l’endormissement.',
+      'Il reste à renseigner : l’heure où vous avez essayé de dormir 🌑, le coucher et l’endormissement.',
     );
   });
 
@@ -143,7 +144,7 @@ describe('trois écrans — rien ne passe sans geste, et ce qui manque est nomm�
 
   it('« Continuer » incomplet ramène le focus sur le premier contrôle sans réponse', () => {
     rendre();
-    choisir(/éteint la lumière à/, '23:00');
+    choisir(/essayé de dormir à/, '23:00');
     clic('Au même moment que mon coucher');
     continuer();
     expect(document.activeElement?.textContent).toBe('En moins de 15 min');
@@ -156,7 +157,7 @@ describe('trois écrans — rien ne passe sans geste, et ce qui manque est nomm�
     expect(titre()).toBe('Pendant la nuit');
     retour();
     expect(titre()).toBe('Le soir');
-    expect(liste(/éteint la lumière à/).value).toBe('23:00');
+    expect(liste(/essayé de dormir à/).value).toBe('23:00');
     expect(
       screen.getByRole('button', { name: 'En moins de 15 min' }).getAttribute('aria-pressed'),
     ).toBe('true');
@@ -188,7 +189,7 @@ describe('trois écrans — rien ne passe sans geste, et ce qui manque est nomm�
         leverImmediat: true,
       },
     });
-    expect(liste(/éteint la lumière à/).value).toBe('00:15');
+    expect(liste(/essayé de dormir à/).value).toBe('00:15');
     continuer();
     continuer();
     expect(envoiRefuse(onSubmit)).toBe(false);
@@ -330,7 +331,7 @@ describe('mise au lit', () => {
 
   it('transmet l’heure quand le patient est resté au lit avant d’éteindre', () => {
     const { onSubmit } = rendre();
-    choisir(/éteint la lumière à/, '23:00');
+    choisir(/essayé de dormir à/, '23:00');
     clic('Plus tard que mon coucher');
     choisir(/mis·e au lit à/, '22:30');
     clic('En moins de 15 min');
@@ -353,9 +354,9 @@ describe('mise au lit', () => {
     expect(onSubmit.mock.calls[0][0].extinctionImmediate).toBe(true);
   });
 
-  it('la question de latence porte explicitement sur l’après-extinction', () => {
+  it('la question de latence porte explicitement sur l’après-essai de dormir (v4)', () => {
     rendre();
-    expect(screen.getByText(/une fois la lumière éteinte/i)).toBeTruthy();
+    expect(screen.getByText(/une fois que vous avez essayé de dormir/i)).toBeTruthy();
   });
 });
 
@@ -438,7 +439,7 @@ describe('« comme d’habitude » — un bouton par écran, pour l’heure qu�
     rendre({ suggestionsPersonnelles: true });
     expect(bouton()?.textContent).toBe('Comme d’habitude : 23:00');
     fireEvent.click(bouton()!);
-    expect(liste(/éteint la lumière à/).value).toBe('23:00');
+    expect(liste(/essayé de dormir à/).value).toBe('23:00');
     expect(bouton()).toBeNull();
     // Aucune autre réponse n'est reprise : l'écran du soir reste incomplet.
     continuer();
@@ -457,7 +458,7 @@ describe('« comme d’habitude » — un bouton par écran, pour l’heure qu�
 
   it('masqué dès que l’heure de l’écran est choisie à la main', () => {
     rendre({ suggestionsPersonnelles: true });
-    choisir(/éteint la lumière à/, '22:45');
+    choisir(/essayé de dormir à/, '22:45');
     expect(bouton()).toBeNull();
   });
 });
@@ -503,7 +504,7 @@ describe('ordre des heures — refusé avant tout envoi, sur l’écran à corri
 
   it('une extinction avant le coucher ramène à l’écran du soir', async () => {
     const { onSubmit } = rendre();
-    choisir(/éteint la lumière à/, '23:00');
+    choisir(/essayé de dormir à/, '23:00');
     clic('Plus tard que mon coucher');
     choisir(/mis·e au lit à/, '23:30');
     clic('En moins de 15 min');
@@ -517,7 +518,7 @@ describe('ordre des heures — refusé avant tout envoi, sur l’écran à corri
     expect(onSubmit).not.toHaveBeenCalled();
     expect(titre()).toBe('Le soir');
     expect(screen.getByRole('alert').textContent).toBe(
-      'L’extinction doit suivre la mise au lit. Ajustez les heures.',
+      'L’heure où vous avez essayé de dormir doit suivre la mise au lit. Ajustez les heures.',
     );
   });
 });
@@ -577,5 +578,70 @@ describe('libellés visibles', () => {
     continuer();
     expect(screen.getAllByText('Très difficile').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Très bonne').length).toBeGreaterThan(0);
+  });
+});
+
+// Contrat v4 ([[D-271]], [[D-272]]) : le repère du soir est l'heure où le
+// patient a essayé de dormir, et « je ne sais pas » est une réponse pour
+// l'endormissement et la nuit — pour eux seuls. Un agenda ouvert en v3 garde
+// ses mots et ne le propose pas.
+describe('contrat v4 — « je ne sais pas » et repère « essayé de dormir »', () => {
+  it('« je ne sais pas » est proposé pour l’endormissement et pour la nuit, et part tel quel', () => {
+    const { onSubmit } = rendre();
+    choisir(/essayé de dormir à/, '23:00');
+    clic('Au même moment que mon coucher');
+    clic('Je ne sais pas');
+    continuer();
+    expect(titre()).toBe('Pendant la nuit');
+    clic('Je ne sais pas');
+    clic('Aucune aide pour dormir cette nuit');
+    continuer();
+    matinMinimum();
+    fireEvent.click(cta());
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const nuit = onSubmit.mock.calls[0][0];
+    expect(nuit.latence).toBe('inconnu');
+    expect(nuit.reveils).toEqual({ dureeTotale: 'inconnu' });
+  });
+
+  it('ni l’aide au sommeil, ni le lever, ni la qualité ne le proposent', () => {
+    rendre();
+    soirMinimum();
+    continuer();
+    // Une seule tuile « Je ne sais pas » à l'écran de la nuit : celle des réveils.
+    expect(screen.getAllByRole('button', { name: 'Je ne sais pas' })).toHaveLength(1);
+    nuitMinimum();
+    continuer();
+    expect(screen.queryByRole('button', { name: 'Je ne sais pas' })).toBeNull();
+  });
+
+  it('« je ne sais pas » ne porte pas d’ordre de grandeur sous sa tuile', () => {
+    rendre();
+    soirMinimum();
+    continuer();
+    expect(screen.getByRole('button', { name: 'Je ne sais pas' }).textContent).toBe('Je ne sais pas');
+  });
+});
+
+describe('contrat v3 — un agenda ouvert avant la v4 s’y termine', () => {
+  it('garde l’extinction de la lumière et ne propose pas « je ne sais pas »', () => {
+    rendre({ contrat: 'agenda-sommeil-v3' });
+    expect(liste(/éteint la lumière à/).value).toBe('');
+    expect(screen.getByText(/vous avez éteint la lumière…/)).toBeTruthy();
+    expect(screen.getByText(/une fois la lumière éteinte/i)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Je ne sais pas' })).toBeNull();
+    choisir(/éteint la lumière à/, '23:00');
+    clic('Au même moment que mon coucher');
+    clic('En moins de 15 min');
+    continuer();
+    expect(screen.queryByRole('button', { name: 'Je ne sais pas' })).toBeNull();
+  });
+
+  it('nomme l’extinction dans ce qui manque', () => {
+    rendre({ contrat: 'agenda-sommeil-v3' });
+    continuer();
+    expect(reste()?.textContent).toBe(
+      'Il reste à renseigner : l’heure où vous avez éteint 🌑, le coucher et l’endormissement.',
+    );
   });
 });

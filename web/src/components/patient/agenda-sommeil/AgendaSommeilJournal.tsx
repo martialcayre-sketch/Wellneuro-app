@@ -7,7 +7,11 @@ import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { decalerDate } from '@/lib/agenda-sommeil/nuit';
 import { horairesHabituels } from '@/lib/agenda-sommeil/agregats';
 import type { FenetreAgenda } from '@/lib/agenda-sommeil/fenetre';
-import { NB_JOURS_AGENDA, type NuitReponses } from '@/lib/agenda-sommeil/types';
+import {
+  NB_JOURS_AGENDA,
+  type ContratEcriture,
+  type NuitReponses,
+} from '@/lib/agenda-sommeil/types';
 import { FriseNuits } from './FriseNuits';
 import { RappelDuMatin } from './RappelDuMatin';
 import { SaisieNuitForm } from './SaisieNuitForm';
@@ -19,6 +23,8 @@ type GetOk = {
   derniereNuit: NuitReponses | null;
   statutReponses: string;
   aujourdHui: string;
+  // Contrat de l'agenda (celui de sa première nuit, [[D-272]] §3).
+  contrat?: ContratEcriture;
 };
 
 type Props = { idAssignation: string; onRetourHub: () => void };
@@ -227,6 +233,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
               posent que par « Comme d'habitude ». */}
           <SaisieNuitForm
             key={cibleDate}
+            contrat={data.contrat}
             initial={nuitsParDate.get(cibleDate) ?? null}
             horairesHabituels={habituels}
             suggestionsPersonnelles={habituelsPersonnels}

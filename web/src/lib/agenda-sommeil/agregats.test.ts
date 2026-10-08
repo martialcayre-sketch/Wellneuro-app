@@ -392,3 +392,51 @@ describe('couvertureSuffisante — l’indice demande aussi du week-end', () => 
     expect(calculerAgregats(nuits)!.AGD_INDICE_ELIGIBLE).toBe(0);
   });
 });
+
+// « Je ne sais pas » (v4, [[D-271]]) : une réponse, jamais une valeur. La nuit
+// sort de chaque métrique qui en aurait besoin et reste comptée ailleurs.
+describe('« je ne sais pas » — sorti des métriques qui en dépendent, jamais un centre de classe', () => {
+  it('un endormissement inconnu sort de la médiane, des fréquences et du temps de sommeil', () => {
+    const nuits = [...serie(4), ...serie(3, { latence: 'inconnu' }, decale(LUNDI, 4))];
+    const a = calculerAgregats(nuits)!;
+    expect(a.AGD_NB_NUITS).toBe(7);
+    expect(a.AGD_NB_NUITS_LAT).toBe(4);
+    expect(a.AGD_LAT_MED).toBe(8);
+    expect(a.AGD_NB_NUITS_TST).toBe(4);
+    expect(a.AGD_NB_NUITS_EFF).toBe(4);
+    expect(a.AGD_FREQ_LAT30_SEM).toBe(0);
+    expect(a.AGD_NB_NUITS_FREQ).toBe(4);
+    // Les heures sont connues : qualité, régularité et temps au lit comptent
+    // les sept nuits.
+    expect(a.AGD_QUAL_MOY).toBe(4);
+    expect(a.AGD_TIB_MOY).toBe(480);
+  });
+
+  it('un endormissement toujours inconnu rend la médiane inconnue, pas nulle', () => {
+    const a = calculerAgregats(serie(7, { latence: 'inconnu' }))!;
+    expect(a.AGD_LAT_MED).toBeNull();
+    expect(a.AGD_FREQ_LAT30_SEM).toBeNull();
+    expect(a.AGD_FREQ_CRITERE_SEM).toBeNull();
+    expect(a.AGD_TST_MOY).toBeNull();
+    expect(a.AGD_EFF_MOY).toBeNull();
+    expect(a.AGD_NB_NUITS_LAT).toBe(0);
+  });
+
+  it('un éveil inconnu sort du WASO, des fréquences et du temps de sommeil — jamais « 0 minute »', () => {
+    const a = calculerAgregats(serie(7, { reveils: { dureeTotale: 'inconnu' } }))!;
+    expect(a.AGD_WASO_MOY).toBeNull();
+    expect(a.AGD_FREQ_WASO30_SEM).toBeNull();
+    expect(a.AGD_FREQ_CRITERE_SEM).toBeNull();
+    expect(a.AGD_TST_MOY).toBeNull();
+    expect(a.AGD_NB_NUITS_TST).toBe(0);
+    // La latence, elle, reste connue.
+    expect(a.AGD_LAT_MED).toBe(8);
+    expect(a.AGD_FREQ_LAT30_SEM).toBe(0);
+  });
+
+  it('une nuit « je ne sais pas » compte pour la couverture de l’indice', () => {
+    const nuits = serie(14, { latence: 'inconnu', reveils: { dureeTotale: 'inconnu' } });
+    expect(couvertureSuffisante(nuits)).toBe(true);
+    expect(compterNuitsPlausibles(nuits)).toBe(14);
+  });
+});

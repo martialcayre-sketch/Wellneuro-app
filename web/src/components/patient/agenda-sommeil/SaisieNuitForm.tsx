@@ -16,7 +16,6 @@ import {
   EMOJI_FORME,
   EMOJI_QUALITE,
   LABEL_AIDE_SOMMEIL,
-  LABEL_EXTINCTION,
   LABEL_FACTEURS,
   LABEL_LATENCE,
   LABEL_EXTINCTION_DIFFEREE,
@@ -30,23 +29,27 @@ import {
   LABEL_SIESTE,
   LABEL_SORTIE_DU_LIT,
   PORTEE_AIDE_SOMMEIL,
-  QUESTION_EXTINCTION,
   QUESTION_LEVER,
+  motsDuSoir,
 } from '@/lib/agenda-sommeil/libelles';
 import { ensureNuitReponses } from '@/lib/agenda-sommeil/nuit';
 import {
+  AGENDA_CONTRACT_VERSION,
   CLASSES_AIDE_SOMMEIL,
   CLASSES_DUREE_REVEILS,
   CLASSES_LATENCE,
   CLASSES_SIESTE,
   CLES_FACTEURS,
+  INCONNU,
   NB_REVEILS_MAX,
   type ClasseAideSommeil,
   type ClasseDureeReveils,
   type ClasseLatence,
   type ClasseSieste,
   type CleFacteur,
+  type ContratEcriture,
   type FacteursNuit,
+  type Inconnu,
   type NuitReponses,
 } from '@/lib/agenda-sommeil/types';
 
@@ -60,7 +63,8 @@ import {
 // pointillé semblaient renseignées sans l'être (LOT-03 de la campagne
 // 2026-10-07-agenda-sommeil-adhesion).
 //
-// Réponses obligatoires : l'extinction, le mode de coucher, l'endormissement,
+// Réponses obligatoires : le repère du soir (l'heure où le patient a essayé de
+// dormir en v4, l'extinction en v3), le mode de coucher, l'endormissement,
 // la nuit (continue ou coupée), l'aide au sommeil, le lever, le mode de lever et
 // la qualité — huit. Deux heures supplémentaires ne sont demandées que si le
 // patient déclare du temps au lit éveillé, le soir ou le matin. Le reste est
@@ -73,6 +77,11 @@ import {
 // sans un seul geste : on pouvait valider vingt copies conformes de sa première
 // nuit. Les horaires habituels ne sont qu'une proposition, confirmée par un
 // geste explicite (« Comme d'habitude », un bouton par écran).
+//
+// « JE NE SAIS PAS » (v4, [[D-271]]) : une tuile de plus pour l'endormissement
+// et pour la nuit, et pour eux seuls. C'est une réponse — elle lève le blocage
+// sans rien deviner : la nuit part, et les métriques qui en auraient besoin la
+// laissent de côté. Un agenda ouvert en v3 ne la propose pas ([[D-272]] §3).
 
 function ChoixEmoji({
   label,
@@ -163,7 +172,7 @@ function Puces<T extends string>({
               }`}
             >
               {libelle(opt)}
-              {detail && (
+              {detail && detail(opt) && (
                 <span
                   className={`block text-xs ${actif ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}
                 >
@@ -279,10 +288,10 @@ const ETAPE_DU_BLOC: Record<Bloc, Etape> = {
 
 // Les trois refus d'ORDRE de `ensureNuitReponses` (lib/agenda-sommeil/nuit.ts,
 // mode écriture), figés par un banc dans nuit.test.ts. Le premier porte sur
-// l'extinction et la mise au lit, et se corrige le soir ; les deux autres
+// le repère du soir et la mise au lit, et se corrige le soir ; les deux autres
 // portent sur l'heure du réveil, le matin.
 const RE_REFUS_ORDRE = /doit (suivre|se situer)/;
-const RE_REFUS_ORDRE_DU_SOIR = /^L’extinction doit suivre/;
+const RE_REFUS_ORDRE_DU_SOIR = /doit suivre la mise au lit/;
 
 // « a », « a et b », « a, b et c ».
 function enumerer(elements: string[]): string {
@@ -291,6 +300,10 @@ function enumerer(elements: string[]): string {
 }
 
 type Props = {
+  // Contrat de l'agenda, donné par le serveur : il fixe les mots du repère du
+  // soir et l'offre de « je ne sais pas ». Le serveur l'applique de toute façon
+  // à l'écriture ; le formulaire ne fait que montrer ce qu'il acceptera.
+  contrat?: ContratEcriture;
   // Renseigné UNIQUEMENT en correction d'une nuit déjà saisie. Jamais la nuit
   // de la veille : ce serait rouvrir la porte au report automatique.
   initial: NuitReponses | null;
@@ -309,6 +322,7 @@ type Props = {
 };
 
 export function SaisieNuitForm({
+  contrat = AGENDA_CONTRACT_VERSION,
   initial,
   horairesHabituels,
   suggestionsPersonnelles = false,
@@ -317,19 +331,29 @@ export function SaisieNuitForm({
   ctaLabel = 'C’est noté ✓',
   onSubmit,
 }: Props) {
+  const mots = motsDuSoir(contrat);
+  const inconnuPropose = contrat === 'agenda-sommeil-v4';
+  const optionsLatence: readonly (ClasseLatence | Inconnu)[] = inconnuPropose
+    ? [...CLASSES_LATENCE, INCONNU]
+    : CLASSES_LATENCE;
+  const optionsReveils: readonly (ClasseDureeReveils | Inconnu)[] = inconnuPropose
+    ? [...CLASSES_DUREE_REVEILS, INCONNU]
+    : CLASSES_DUREE_REVEILS;
   const [heureCoucher, setHeureCoucher] = useState<string | undefined>(initial?.heureCoucher);
   const [heureLever, setHeureLever] = useState<string | undefined>(initial?.heureLever);
-  const [latence, setLatence] = useState<ClasseLatence | undefined>(initial?.latence);
+  const [latence, setLatence] = useState<ClasseLatence | Inconnu | undefined>(initial?.latence);
   const [qualite, setQualite] = useState<number | undefined>(initial?.qualite);
   // Une nuit héritée v1 peut porter une classe d'éveil qui n'est plus proposée :
   // on la traite comme non répondue plutôt que de pré-sélectionner une tuile
   // inexistante — le patient reprend simplement la question.
-  const [dureeReveils, setDureeReveils] = useState<ClasseDureeReveils | undefined>(() => {
-    const heritee = initial?.reveils?.dureeTotale;
-    return heritee !== undefined && (CLASSES_DUREE_REVEILS as readonly string[]).includes(heritee)
-      ? (heritee as ClasseDureeReveils)
-      : undefined;
-  });
+  const [dureeReveils, setDureeReveils] = useState<ClasseDureeReveils | Inconnu | undefined>(
+    () => {
+      const heritee = initial?.reveils?.dureeTotale;
+      return heritee !== undefined && (optionsReveils as readonly string[]).includes(heritee)
+        ? (heritee as ClasseDureeReveils | Inconnu)
+        : undefined;
+    },
+  );
   const [aideSommeil, setAideSommeil] = useState<ClasseAideSommeil | undefined>(
     initial?.aideSommeil,
   );
@@ -379,7 +403,7 @@ export function SaisieNuitForm({
   // elles ne valent pas zéro.
   const manquants: { bloc: Bloc; libelle: string }[] = [];
   if (heureCoucher === undefined) {
-    manquants.push({ bloc: 'extinction', libelle: 'l’heure où vous avez éteint 🌑' });
+    manquants.push({ bloc: 'extinction', libelle: mots.manquant });
   }
   if (extinctionImmediate === undefined) manquants.push({ bloc: 'coucher', libelle: 'le coucher' });
   if (extinctionImmediate === false && heureMiseAuLit === undefined) {
@@ -511,7 +535,7 @@ export function SaisieNuitForm({
     // l'ordre de ses heures ; toute autre `TypeError` signalerait un formulaire
     // cassé — elle part alors au serveur, qui la refuse et la dit sous le bouton.
     try {
-      ensureNuitReponses(reponses, { exigerObligatoires: true });
+      ensureNuitReponses(reponses, { exigerObligatoires: true, contrat });
     } catch (e) {
       if (!(e instanceof TypeError)) throw e;
       if (RE_REFUS_ORDRE.test(e.message)) {
@@ -561,7 +585,7 @@ export function SaisieNuitForm({
           <div ref={ancre('extinction')} tabIndex={-1} className={classeBloc('extinction')}>
             <SelecteurHeure
               id="agenda-heure-extinction"
-              label={`🌑 ${LABEL_EXTINCTION} à`}
+              label={`🌑 ${mots.repere} à`}
               valeur={heureCoucher}
               heureDebut={18}
               onChange={majHeure(setHeureCoucher)}
@@ -574,7 +598,7 @@ export function SaisieNuitForm({
               appliquant la convention. */}
           <div ref={ancre('coucher')} tabIndex={-1} className={classeBloc('coucher')}>
             <Puces<string>
-              label={QUESTION_EXTINCTION}
+              label={mots.question}
               options={['immediate', 'differee']}
               libelle={(v) =>
                 v === 'immediate' ? LABEL_EXTINCTION_IMMEDIATE : LABEL_EXTINCTION_DIFFEREE
@@ -604,9 +628,9 @@ export function SaisieNuitForm({
           )}
 
           <div ref={ancre('latence')} tabIndex={-1} className={classeBloc('latence')}>
-            <Puces<ClasseLatence>
-              label="Une fois la lumière éteinte, vous vous êtes endormi·e…"
-              options={CLASSES_LATENCE}
+            <Puces<ClasseLatence | Inconnu>
+              label={mots.latence}
+              options={optionsLatence}
               libelle={(v) => LABEL_LATENCE[v]}
               value={latence}
               onChange={setLatence}
@@ -623,9 +647,9 @@ export function SaisieNuitForm({
               L'ordre de grandeur s'affiche sous chaque tuile : la classe mesure
               une DURÉE cumulée, pas un nombre de réveils. */}
           <div ref={ancre('nuit')} tabIndex={-1} className={classeBloc('nuit')}>
-            <Puces<ClasseDureeReveils>
+            <Puces<ClasseDureeReveils | Inconnu>
               label="Votre nuit a été…"
-              options={CLASSES_DUREE_REVEILS}
+              options={optionsReveils}
               libelle={(v) => LABEL_REVEILS_PATIENT[v]}
               detail={(v) => BORNES_REVEILS_PATIENT[v]}
               aria={(v) => ARIA_REVEILS[v]}

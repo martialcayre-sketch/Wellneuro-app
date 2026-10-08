@@ -21,8 +21,16 @@
 // récompensait la non-réponse, et dans le sens qui masque la pathologie. La même
 // nuit reste comptée pour la qualité, la régularité et le temps au lit, qui
 // n'ont pas besoin du WASO.
+//
+// « JE NE SAIS PAS » (v4, [[D-271]]) suit la même règle, sans rien y ajouter :
+// une latence inconnue sort de la latence médiane, des fréquences et du temps de
+// sommeil (donc de l'efficacité) ; un éveil inconnu, du WASO, des fréquences et
+// du temps de sommeil. La nuit reste comptée pour la qualité, la régularité, le
+// temps au lit et les seuils de couverture : ses heures sont connues. Aucun
+// centre de classe ne lui est prêté — ce serait un zéro déguisé.
 
 import {
+  INCONNU,
   MIN_NUITS_AGREGATS,
   MIN_NUITS_INDICE,
   MIN_NUITS_WEEKEND_INDICE,
@@ -83,7 +91,7 @@ export type AgregatsAgenda = {
   AGD_PRELIT_MOY: number | null; // temps au lit avant extinction (minutes)
   AGD_TST_MOY: number | null; // temps de sommeil total moyen (minutes)
   AGD_EFF_MOY: number | null; // efficacité moyenne (%)
-  AGD_LAT_MED: number; // latence médiane (minutes, centres de classe)
+  AGD_LAT_MED: number | null; // latence médiane (minutes, centres de classe)
   AGD_WASO_MOY: number | null; // éveil nocturne cumulé moyen (minutes)
   AGD_TWAK_MOY: number | null; // éveil AU LIT après le réveil final (minutes)
   AGD_REV_MOY: number | null; // réveils nocturnes moyens par nuit (compte)
@@ -104,6 +112,7 @@ export type AgregatsAgenda = {
   AGD_NB_NUITS_PRELIT: number; // nuits où le mode de coucher est connu
   AGD_NB_NUITS_REV: number; // nuits où le COMPTE de réveils est connu
   AGD_NB_NUITS_TWAK: number; // nuits où le mode de lever est connu
+  AGD_NB_NUITS_LAT: number; // nuits où l'endormissement est connu (v4)
   AGD_NB_NUITS_FREQ: number; // nuits classables pour le seuil de 30 min
   AGD_NB_NUITS_AIDE_CONNU: number; // nuits où l'aide au sommeil est renseignée
   AGD_NB_NUITS_WE: number; // nuits de week-end retenues
@@ -166,7 +175,7 @@ type NuitDerivee = {
   twak: number | null; // éveil au lit après le réveil final — null si inconnu
   tst: number | null; // temps de sommeil total estimé — null si waso ou twak l'est
   efficacite: number | null; // % — null si le TST l'est
-  latence: number; // centre de classe (minutes)
+  latence: number | null; // centre de classe (minutes) — null si « je ne sais pas »
   // Compte de réveils — null si non renseigné (facultatif). Exact depuis la
   // v3 ; sur une nuit v1/v2, 3 = « 3 ou plus » : la moyenne le prend tel quel,
   // en PLANCHER — trancher davantage inventerait un compte non déclaré, même
@@ -175,7 +184,7 @@ type NuitDerivee = {
   milieu: number; // milieu de sommeil, minutes depuis midi
   qualite: number;
   aide: boolean | null; // aide au sommeil — null si non renseignée (v1)
-  latenceAu30: boolean | null; // latence > 30 min — jamais indéterminée
+  latenceAu30: boolean | null; // latence > 30 min — null si « je ne sais pas »
   wasoAu30: boolean | null; // éveil > 30 min — null sur une classe héritée
 };
 
@@ -202,9 +211,12 @@ function derivee(nuit: NuitAgregable): NuitDerivee {
   // courte, ce qui la rendrait flatteuse et incomparable.
   const tib = prelit === null ? null : fenetre + prelit;
 
-  const latence = CENTRE_LATENCE[reponses.latence] ?? 0;
+  const latence = reponses.latence === INCONNU ? null : (CENTRE_LATENCE[reponses.latence] ?? 0);
   const classeWaso = reponses.reveils?.dureeTotale;
-  const waso = classeWaso === undefined ? null : (CENTRE_DUREE_REVEILS[classeWaso] ?? 0);
+  const waso =
+    classeWaso === undefined || classeWaso === INCONNU
+      ? null
+      : (CENTRE_DUREE_REVEILS[classeWaso] ?? 0);
 
   // Temps passé éveillé AU LIT après le dernier réveil. `leverImmediat` vaut le
   // zéro explicite ; son absence (nuits v1) laisse la valeur inconnue plutôt que
@@ -221,7 +233,10 @@ function derivee(nuit: NuitAgregable): NuitDerivee {
   // au lit. Le temps passé au lit AVANT extinction n'en fait pas partie : le
   // patient ne cherchait pas encore à dormir. Il pèse en revanche sur
   // l'efficacité, via le dénominateur.
-  const tst = waso === null || twak === null ? null : Math.max(0, fenetre - latence - waso - twak);
+  const tst =
+    latence === null || waso === null || twak === null
+      ? null
+      : Math.max(0, fenetre - latence - waso - twak);
   const efficacite = tst === null || tib === null || tib <= 0 ? null : (tst / tib) * 100;
 
   return {
@@ -240,7 +255,10 @@ function derivee(nuit: NuitAgregable): NuitDerivee {
     milieu: minutesDepuisMidi(reponses.heureCoucher) + fenetre / 2,
     qualite: reponses.qualite,
     aide: reponses.aideSommeil === undefined ? null : reponses.aideSommeil === 'prise',
-    latenceAu30: reponses.latence === 'e30_60' || reponses.latence === 'gt60',
+    latenceAu30:
+      reponses.latence === INCONNU
+        ? null
+        : reponses.latence === 'e30_60' || reponses.latence === 'gt60',
     wasoAu30:
       classeWaso === undefined || !CLASSABLE_POUR_30.has(classeWaso)
         ? null
@@ -322,11 +340,16 @@ export function calculerAgregats(nuits: NuitAgregable[]): AgregatsAgenda | null 
     (n): n is NuitDerivee & { nbReveils: number } => n.nbReveils !== null,
   );
   const avecAide = plausibles.filter((n): n is NuitDerivee & { aide: boolean } => n.aide !== null);
+  const avecLat = plausibles.filter(
+    (n): n is NuitDerivee & { latence: number; latenceAu30: boolean } => n.latence !== null,
+  );
   // Fréquence : une nuit n'y compte que si les DEUX critères sont tranchables.
-  // Une classe d'éveil héritée rend la nuit indéterminée — elle sort du calcul
-  // plutôt que d'être rangée arbitrairement au-dessus ou au-dessous de 30 min.
+  // Une classe d'éveil héritée, ou un « je ne sais pas » de l'un ou l'autre côté,
+  // rend la nuit indéterminée — elle sort du calcul plutôt que d'être rangée
+  // arbitrairement au-dessus ou au-dessous de 30 min.
   const classables = plausibles.filter(
-    (n): n is NuitDerivee & { wasoAu30: boolean; latenceAu30: boolean } => n.wasoAu30 !== null,
+    (n): n is NuitDerivee & { wasoAu30: boolean; latenceAu30: boolean } =>
+      n.wasoAu30 !== null && n.latenceAu30 !== null,
   );
   // Taux hebdomadaire : on ramène le compte au nombre de nuits réellement
   // classables, pas aux 21 emplacements — sinon un recueil incomplet paraîtrait
@@ -341,7 +364,7 @@ export function calculerAgregats(nuits: NuitAgregable[]): AgregatsAgenda | null 
     AGD_PRELIT_MOY: moyenneOuNull(avecPrelit.map((n) => n.prelit)),
     AGD_TST_MOY: moyenneOuNull(avecTst.map((n) => n.tst)),
     AGD_EFF_MOY: moyenneOuNull(avecEff.map((n) => n.efficacite)),
-    AGD_LAT_MED: arrondi(mediane(plausibles.map((n) => n.latence))),
+    AGD_LAT_MED: avecLat.length === 0 ? null : arrondi(mediane(avecLat.map((n) => n.latence))),
     AGD_WASO_MOY: moyenneOuNull(avecWaso.map((n) => n.waso)),
     AGD_TWAK_MOY: moyenneOuNull(avecTwak.map((n) => n.twak)),
     AGD_REV_MOY: moyenneOuNull(
@@ -351,12 +374,12 @@ export function calculerAgregats(nuits: NuitAgregable[]): AgregatsAgenda | null 
     AGD_REG_ECT: arrondi(ecartType(plausibles.map((n) => n.milieu))),
     AGD_QUAL_MOY: arrondi(moyenne(plausibles.map((n) => n.qualite)), 1),
     // La latence est obligatoire depuis la v1 et ses bornes ont toujours inclus
-    // 30 min : elle est tranchable sur TOUTES les nuits, y compris héritées. La
-    // faire partager le dénominateur de l'éveil la rendait `null` sur une
-    // cohorte 100 % v1, alors que la réponse était connue.
+    // 30 min : elle est tranchable sur toutes les nuits où elle est CONNUE, y
+    // compris héritées. La faire partager le dénominateur de l'éveil la rendait
+    // `null` sur une cohorte 100 % v1, alors que la réponse était connue.
     AGD_FREQ_LAT30_SEM: parSemaine(
-      plausibles.filter((n) => n.latenceAu30).length,
-      plausibles.length,
+      avecLat.filter((n) => n.latenceAu30).length,
+      avecLat.length,
     ),
     AGD_FREQ_WASO30_SEM: parSemaine(
       classables.filter((n) => n.wasoAu30).length,
@@ -374,6 +397,7 @@ export function calculerAgregats(nuits: NuitAgregable[]): AgregatsAgenda | null 
     AGD_NB_NUITS_PRELIT: avecPrelit.length,
     AGD_NB_NUITS_REV: avecRev.length,
     AGD_NB_NUITS_TWAK: avecTwak.length,
+    AGD_NB_NUITS_LAT: avecLat.length,
     AGD_NB_NUITS_FREQ: classables.length,
     AGD_NB_NUITS_AIDE_CONNU: avecAide.length,
     AGD_NB_NUITS_WE: retenues.filter((n) => estWeekend(n.dateNuit)).length,
