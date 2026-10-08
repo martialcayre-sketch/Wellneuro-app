@@ -248,9 +248,9 @@ function derivee(nuit: NuitAgregable): NuitDerivee {
   };
 }
 
-// Horaires habituels du patient — position d'ouverture des poignées du cadran.
-// C'est une SUGGESTION affichée en pointillé, jamais une valeur enregistrée : le
-// patient doit toucher chaque poignée pour qu'elle compte (cf. `CadranNuit`).
+// Horaires habituels du patient — proposés au formulaire par « Confirmer ces
+// horaires ». C'est une SUGGESTION, jamais une valeur enregistrée : elle ne
+// compte qu'au geste du patient (cf. `SaisieNuitForm`).
 //
 // Médiane et non moyenne : une nuit blanche ne doit pas déplacer le repère de
 // tout le monde. Calcul ancré à midi (`minutesDepuisMidi`), sans quoi 23:45 et

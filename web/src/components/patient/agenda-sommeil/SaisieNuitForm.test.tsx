@@ -1,17 +1,15 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { SaisieNuitForm } from './SaisieNuitForm';
 
 // Ce que ces tests protègent : la saisie d'une nuit ne doit ni exiger un clavier
-// (objectif « sans saisie textuelle »), ni pouvoir être validée sans geste
-// (défaut de validité de la v1), ni laisser un champ obligatoire prendre une
-// valeur par défaut.
-//
-// jsdom ne calcule aucune géométrie : le glissement au doigt n'est pas testable
-// ici (getBoundingClientRect rend des zéros). C'est justement pourquoi le cadran
-// répond AUSSI aux flèches — chemin clavier, obligatoire pour l'accessibilité,
-// et seul chemin observable en test.
+// à taper (objectif « sans saisie textuelle »), ni pouvoir être validée sans
+// geste (défaut de validité de la v1), ni laisser un champ obligatoire prendre
+// une valeur par défaut — et elle doit toujours dire ce qui manque (défaut du
+// bouton grisé muet, corrigé au LOT-01). Depuis le LOT-03, les heures se
+// choisissent dans des listes au quart d'heure et la saisie tient en trois
+// écrans : le soir, la nuit, le matin.
 
 const HABITUELS = { extinction: '23:00', sortie: '07:00' };
 
@@ -30,94 +28,147 @@ function rendre(props: Partial<Parameters<typeof SaisieNuitForm>[0]> = {}) {
 }
 
 const cta = () => screen.getByRole('button', { name: /c’est noté/i }) as HTMLButtonElement;
-const poignees = () => screen.getAllByRole('slider');
+const continuer = () => fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
+const retour = () => fireEvent.click(screen.getByRole('button', { name: 'Retour' }));
+const titre = () => screen.getByRole('heading', { level: 3 }).textContent;
+const clic = (nom: string | RegExp) => fireEvent.click(screen.getByRole('button', { name: nom }));
 // La liste de ce qui manque, sous le bouton (annonce polie, pas une alerte).
 const reste = () => screen.queryByText(/^Il reste à renseigner/);
+const liste = (label: RegExp) => screen.getByLabelText(label) as HTMLSelectElement;
+const choisir = (label: RegExp, heure: string) =>
+  fireEvent.change(liste(label), { target: { value: heure } });
 
-// Le bouton reste ACTIF : c'est l'envoi qui doit être refusé tant qu'une
-// réponse obligatoire manque, avec la liste de ce qui manque sous le bouton.
-// `envoiRefuse` touche le bouton et dit si rien n'est parti.
+// Le bouton d'envoi est toujours ACTIF : c'est l'envoi qui doit être refusé
+// tant qu'une réponse obligatoire manque. `envoiRefuse` le touche et dit si
+// rien n'est parti.
 function envoiRefuse(onSubmit: ReturnType<typeof vi.fn>): boolean {
   const appelsAvant = onSubmit.mock.calls.length;
   fireEvent.click(cta());
   return onSubmit.mock.calls.length === appelsAvant;
 }
 
-// Parcours minimal complet du contrat v2 : les deux poignées, l'endormissement,
-// la nuit, l'aide au sommeil, le mode de coucher, le mode de lever et la
-// qualité — huit gestes.
+function soirMinimum() {
+  choisir(/éteint la lumière à/, '23:00');
+  clic('Au même moment que mon coucher');
+  clic('En moins de 15 min');
+}
+function nuitMinimum() {
+  clic('Nuit continue, aucun réveil');
+  clic('Aucune aide pour dormir cette nuit');
+}
+function matinMinimum() {
+  choisir(/levé·e à/, '07:00');
+  clic('Au même moment que mon réveil');
+  clic('Très bonne');
+}
+// Parcours minimal complet du contrat v3 : huit réponses, trois écrans.
 function completerLeMinimum() {
-  poignees().forEach((p) => fireEvent.keyDown(p, { key: 'Enter' }));
-  fireEvent.click(screen.getByRole('button', { name: 'En moins de 15 min' }));
-  fireEvent.click(screen.getByRole('button', { name: /nuit continue/i }));
-  fireEvent.click(screen.getByRole('button', { name: /aucune aide/i }));
-  fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon coucher' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon réveil' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
+  soirMinimum();
+  continuer();
+  nuitMinimum();
+  continuer();
+  matinMinimum();
 }
 
 afterEach(cleanup);
 
-describe('saisie sans clavier', () => {
-  it('n’expose aucun champ de texte', () => {
+describe('saisie sans clavier à taper', () => {
+  it('aucun écran n’expose de champ de texte', () => {
     rendre();
-    fireEvent.click(screen.getByRole('button', { name: /ajouter des détails/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon coucher' }));
+    expect(screen.queryByRole('textbox')).toBeNull();
+    soirMinimum();
+    continuer();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    nuitMinimum();
+    continuer();
+    clic('Plus tard que mon réveil');
+    clic(/ajouter des détails/i);
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('les deux ancres horaires sont des sliders accessibles', () => {
+  it('les heures sont des listes au quart d’heure, ouvertes sur « Choisir »', () => {
     rendre();
-    const [extinction, sortie] = poignees();
-    expect(extinction.getAttribute('aria-label')).toMatch(/éteint la lumière/i);
-    expect(sortie.getAttribute('aria-label')).toMatch(/levé/i);
-    expect(extinction.getAttribute('aria-valuetext')).toMatch(/23 heures/);
+    const extinction = liste(/éteint la lumière à/);
+    expect(extinction.value).toBe('');
+    const valeurs = Array.from(extinction.options)
+      .map((o) => o.value)
+      .filter(Boolean);
+    expect(valeurs).toHaveLength(96);
+    expect(valeurs.every((v) => /^([01]\d|2[0-3]):(00|15|30|45)$/.test(v))).toBe(true);
+    // Le soir, la liste part de 18 h : la nuit se lit d'un seul tenant.
+    expect(valeurs[0]).toBe('18:00');
+    expect(valeurs).toContain('00:30');
+  });
+
+  it('le matin, la liste part de 3 h', () => {
+    rendre();
+    soirMinimum();
+    continuer();
+    nuitMinimum();
+    continuer();
+    const valeurs = Array.from(liste(/levé·e à/).options)
+      .map((o) => o.value)
+      .filter(Boolean);
+    expect(valeurs[0]).toBe('03:00');
   });
 });
 
-describe('rien n’est pré-rempli', () => {
-  it('à l’ouverture, rien ne part (défaut v1 corrigé) et ce qui manque est nommé', () => {
-    const { onSubmit } = rendre();
-    expect(cta().disabled).toBe(false);
-    expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(reste()!.textContent).toMatch(
-      /^Il reste à renseigner : les repères 🌑 et 🌅 du cadran, le coucher, .* et la qualité de la nuit\.$/,
+describe('trois écrans — rien ne passe sans geste, et ce qui manque est nommé', () => {
+  it('à l’ouverture, « Continuer » ne passe pas et nomme les trois réponses du soir', () => {
+    rendre();
+    expect(titre()).toBe('Le soir');
+    continuer();
+    expect(titre()).toBe('Le soir');
+    expect(reste()!.textContent).toBe(
+      'Il reste à renseigner : l’heure où vous avez éteint 🌑, le coucher et l’endormissement.',
     );
   });
 
-  it('la liste raccourcit à chaque geste et disparaît une fois tout renseigné', () => {
-    const { onSubmit } = rendre();
-    envoiRefuse(onSubmit);
-    fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
-    expect(reste()!.textContent).not.toMatch(/qualité/);
-    completerLeMinimum();
+  it('la liste raccourcit à chaque geste et disparaît une fois l’écran complet', () => {
+    rendre();
+    continuer();
+    clic('En moins de 15 min');
+    expect(reste()!.textContent).not.toMatch(/endormissement/);
+    soirMinimum();
     expect(reste()).toBeNull();
   });
 
-  it('un envoi incomplet ramène le focus sur la première question sans réponse', () => {
-    const { onSubmit } = rendre();
-    poignees().forEach((p) => fireEvent.keyDown(p, { key: 'Enter' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon coucher' }));
-    envoiRefuse(onSubmit);
-    // Le coucher est renseigné : la première question vide est l'endormissement,
-    // et le focus va sur sa première tuile — un nom, pas tout le bloc.
+  it('« Continuer » incomplet ramène le focus sur le premier contrôle sans réponse', () => {
+    rendre();
+    choisir(/éteint la lumière à/, '23:00');
+    clic('Au même moment que mon coucher');
+    continuer();
     expect(document.activeElement?.textContent).toBe('En moins de 15 min');
   });
 
-  it('les horaires proposés sont annoncés comme une proposition, pas une valeur', () => {
+  it('un écran complet passe au suivant ; « Retour » garde les réponses', () => {
     rendre();
-    expect(poignees()[0].getAttribute('aria-valuetext')).toMatch(/à confirmer/i);
+    soirMinimum();
+    continuer();
+    expect(titre()).toBe('Pendant la nuit');
+    retour();
+    expect(titre()).toBe('Le soir');
+    expect(liste(/éteint la lumière à/).value).toBe('23:00');
+    expect(
+      screen.getByRole('button', { name: 'En moins de 15 min' }).getAttribute('aria-pressed'),
+    ).toBe('true');
   });
 
-  it('toucher une poignée la confirme sans plus l’annoncer comme proposition', () => {
-    rendre();
-    fireEvent.keyDown(poignees()[0], { key: 'Enter' });
-    expect(poignees()[0].getAttribute('aria-valuetext')).not.toMatch(/à confirmer/i);
-    // La seconde poignée reste, elle, une proposition : chaque ancre demande
-    // son propre geste.
-    expect(poignees()[1].getAttribute('aria-valuetext')).toMatch(/à confirmer/i);
+  it('le bouton d’envoi est actif et ne part pas sans la qualité', () => {
+    const { onSubmit } = rendre();
+    soirMinimum();
+    continuer();
+    nuitMinimum();
+    continuer();
+    choisir(/levé·e à/, '07:00');
+    clic('Au même moment que mon réveil');
+    expect(cta().disabled).toBe(false);
+    expect(envoiRefuse(onSubmit)).toBe(true);
+    expect(reste()!.textContent).toBe('Il reste à renseigner : la qualité de la nuit.');
   });
 
-  it('même en correction, seule la nuit visée est reprise', () => {
+  it('une correction complète part sans geste supplémentaire', () => {
     const { onSubmit } = rendre({
       initial: {
         heureCoucher: '00:15',
@@ -130,98 +181,46 @@ describe('rien n’est pré-rempli', () => {
         leverImmediat: true,
       },
     });
-    expect(poignees()[0].getAttribute('aria-valuetext')).toMatch(/0 heures 15/);
-    // Une correction complète part sans geste supplémentaire.
+    expect(liste(/éteint la lumière à/).value).toBe('00:15');
+    continuer();
+    continuer();
     expect(envoiRefuse(onSubmit)).toBe(false);
   });
 
   it('une classe d’éveil héritée n’est pas pré-sélectionnée : la question est reposée', () => {
     // La nuit v1 porte « 15 à 45 min », qui n'a plus de tuile. Pré-cocher une
     // tuile voisine trancherait à la place du patient ; on repose la question.
-    const { onSubmit } = rendre({
+    rendre({
       initial: {
         heureCoucher: '23:00',
         heureLever: '07:00',
         latence: 'lt15',
         qualite: 4,
         reveils: { dureeTotale: 'e15_45' },
+        aideSommeil: 'aucune',
+        extinctionImmediate: true,
+        leverImmediat: true,
       },
     });
-    expect(envoiRefuse(onSubmit)).toBe(true);
+    continuer();
     screen
       .getAllByRole('button', { pressed: true })
       .forEach((b) => expect(b.textContent).not.toMatch(/éveillé/i));
-  });
-});
-
-describe('le cadran au clavier', () => {
-  it('la flèche droite avance de 15 minutes', () => {
-    rendre();
-    const extinction = poignees()[0];
-    fireEvent.keyDown(extinction, { key: 'ArrowRight' });
-    expect(poignees()[0].getAttribute('aria-valuetext')).toMatch(/23 heures 15/);
-  });
-
-  it('passe minuit sans repartir à l’envers', () => {
-    rendre();
-    const extinction = poignees()[0];
-    // 23:00 + 4×15 min = 00:00 le lendemain.
-    for (let i = 0; i < 4; i += 1) fireEvent.keyDown(extinction, { key: 'ArrowRight' });
-    expect(poignees()[0].getAttribute('aria-valuetext')).toMatch(/^0 heures$/);
-  });
-
-  it('Page monte d’une heure', () => {
-    rendre();
-    fireEvent.keyDown(poignees()[1], { key: 'PageUp' });
-    expect(poignees()[1].getAttribute('aria-valuetext')).toMatch(/8 heures/);
-  });
-});
-
-describe('géométrie du cadran', () => {
-  // jsdom ne dessine rien, mais les coordonnées calculées sont vérifiables : un
-  // arc tracé à l'envers, ou des poignées placées en miroir, ne se verrait dans
-  // aucun autre test.
-  it('minuit en haut, midi en bas, sens horaire', () => {
-    const { container } = render(
-      <SaisieNuitForm
-        initial={null}
-        horairesHabituels={HABITUELS}
-        submitting={false}
-        onSubmit={vi.fn()}
-      />,
-    );
-    const [extinction, sortie] = Array.from(container.querySelectorAll('[role="slider"]'));
-    // 23:00 = juste avant minuit → au-dessus du centre (cy = 100), à gauche.
-    expect(Number(extinction.getAttribute('cy'))).toBeLessThan(100);
-    expect(Number(extinction.getAttribute('cx'))).toBeLessThan(100);
-    // 07:00 = après 06:00 (à droite) → à droite du centre, un peu plus bas.
-    expect(Number(sortie.getAttribute('cx'))).toBeGreaterThan(100);
-    expect(Number(sortie.getAttribute('cy'))).toBeGreaterThan(100);
-  });
-
-  it('l’arc de nuit va bien de l’extinction au lever, dans le sens horaire', () => {
-    const { container } = render(
-      <SaisieNuitForm
-        initial={null}
-        horairesHabituels={HABITUELS}
-        submitting={false}
-        onSubmit={vi.fn()}
-      />,
-    );
-    const arc = container.querySelector('path')!.getAttribute('d')!;
-    // 23:00 → 07:00 = 8 h = 120° : petit arc (0), sens horaire (1).
-    expect(arc).toMatch(/A 70 70 0 0 1 /);
+    continuer();
+    expect(titre()).toBe('Pendant la nuit');
+    expect(reste()!.textContent).toBe('Il reste à renseigner : la nuit.');
   });
 });
 
 describe('l’éveil nocturne est obligatoire', () => {
-  it('sans lui, l’envoi reste impossible — jamais un zéro inféré', () => {
-    const { onSubmit } = rendre();
-    poignees().forEach((p) => fireEvent.keyDown(p, { key: 'Enter' }));
-    fireEvent.click(screen.getByRole('button', { name: 'En moins de 15 min' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
-    expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(reste()!.textContent).toMatch(/la nuit/);
+  it('sans lui, l’écran de la nuit ne passe pas — jamais un zéro inféré', () => {
+    rendre();
+    soirMinimum();
+    continuer();
+    clic('Aucune aide pour dormir cette nuit');
+    continuer();
+    expect(titre()).toBe('Pendant la nuit');
+    expect(reste()!.textContent).toBe('Il reste à renseigner : la nuit.');
   });
 
   it('« nuit continue » est une réponse : elle débloque l’envoi', () => {
@@ -241,54 +240,73 @@ describe('l’éveil nocturne est obligatoire', () => {
       }),
     );
   });
+
+  it('l’ordre de grandeur de chaque classe est écrit sous sa tuile', () => {
+    rendre();
+    soirMinimum();
+    continuer();
+    expect(screen.getByText('moins de 15 min au total')).toBeTruthy();
+    expect(screen.getByText('30 à 60 min au total')).toBeTruthy();
+    // Le nom accessible commence par le texte visible (WCAG 2.5.3).
+    expect(screen.getByRole('button', { name: /^Un bref réveil, moins de 15 min au total$/ })).toBeTruthy();
+  });
 });
 
-describe('aide au sommeil et mode de lever', () => {
-  it('sans l’aide au sommeil, l’envoi reste impossible', () => {
-    const { onSubmit } = rendre();
-    poignees().forEach((p) => fireEvent.keyDown(p, { key: 'Enter' }));
-    fireEvent.click(screen.getByRole('button', { name: 'En moins de 15 min' }));
-    fireEvent.click(screen.getByRole('button', { name: /nuit continue/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon réveil' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
-    expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(reste()!.textContent).toMatch(/l’aide pour dormir/);
-  });
-
-  it('la 3ᵉ poignée n’existe que si le patient est resté au lit', () => {
+describe('aide au sommeil', () => {
+  it('sans elle, l’écran de la nuit ne passe pas', () => {
     rendre();
-    expect(poignees()).toHaveLength(2);
-    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon réveil' }));
-    expect(poignees()).toHaveLength(3);
-    expect(poignees()[1].getAttribute('aria-label')).toMatch(/réveillé/i);
+    soirMinimum();
+    continuer();
+    clic('Nuit continue, aucun réveil');
+    continuer();
+    expect(reste()!.textContent).toBe('Il reste à renseigner : l’aide pour dormir.');
   });
 
-  it('rester au lit sans placer le repère bloque l’envoi', () => {
+  it('sa portée est affichée', () => {
+    rendre();
+    soirMinimum();
+    continuer();
+    expect(screen.getByText('Médicament, mélatonine ou plante')).toBeTruthy();
+  });
+});
+
+describe('réveil final', () => {
+  function jusquAuMatin() {
+    soirMinimum();
+    continuer();
+    nuitMinimum();
+    continuer();
+  }
+
+  it('la liste du réveil n’existe que si le patient s’est levé plus tard', () => {
+    rendre();
+    jusquAuMatin();
+    expect(screen.queryByLabelText(/réveillé·e à/)).toBeNull();
+    clic('Plus tard que mon réveil');
+    expect(screen.getByLabelText(/réveillé·e à/)).toBeTruthy();
+  });
+
+  it('se lever plus tard sans donner l’heure du réveil bloque l’envoi', () => {
     const { onSubmit } = rendre();
-    fireEvent.click(screen.getByRole('button', { name: 'En moins de 15 min' }));
-    fireEvent.click(screen.getByRole('button', { name: /nuit continue/i }));
-    fireEvent.click(screen.getByRole('button', { name: /aucune aide/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon coucher' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon réveil' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
-    // Ordre des poignées : extinction, réveil, sortie du lit. Les deux ancres
-    // permanentes sont confirmées, la conditionnelle non.
-    const [extinction, , sortie] = poignees();
-    fireEvent.keyDown(extinction, { key: 'Enter' });
-    fireEvent.keyDown(sortie, { key: 'Enter' });
+    jusquAuMatin();
+    choisir(/levé·e à/, '07:00');
+    clic('Plus tard que mon réveil');
+    clic('Très bonne');
     expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(reste()!.textContent).toBe('Il reste à renseigner : le repère 👁️ du cadran.');
-    fireEvent.keyDown(poignees()[1], { key: 'Enter' });
+    expect(reste()!.textContent).toBe('Il reste à renseigner : l’heure du réveil 👁️.');
+    choisir(/réveillé·e à/, '06:30');
     expect(envoiRefuse(onSubmit)).toBe(false);
+    expect(onSubmit.mock.calls[0][0].heureReveilFinal).toBe('06:30');
+    expect(onSubmit.mock.calls[0][0].leverImmediat).toBe(false);
   });
 
-  it('revenir à « dès mon réveil » efface l’heure de réveil', () => {
+  it('revenir à « au même moment » efface l’heure du réveil', () => {
     // La garder enverrait une nuit contradictoire, que la validation refuse.
     const { onSubmit } = rendre();
-    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon réveil' }));
-    fireEvent.keyDown(poignees()[1], { key: 'Enter' });
-    fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon réveil' }));
-    completerLeMinimum();
+    jusquAuMatin();
+    clic('Plus tard que mon réveil');
+    choisir(/réveillé·e à/, '06:30');
+    matinMinimum();
     fireEvent.click(cta());
     expect(onSubmit.mock.calls[0][0].heureReveilFinal).toBeUndefined();
     expect(onSubmit.mock.calls[0][0].leverImmediat).toBe(true);
@@ -296,106 +314,88 @@ describe('aide au sommeil et mode de lever', () => {
 });
 
 describe('mise au lit', () => {
-  it('la poignée de mise au lit n’apparaît qu’après « après un moment au lit »', () => {
+  it('la liste du coucher n’apparaît qu’après « plus tard »', () => {
     rendre();
-    expect(poignees()).toHaveLength(2);
-    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon coucher' }));
-    expect(poignees()).toHaveLength(3);
-    // Elle précède l'extinction dans l'ordre du DOM comme dans la nuit.
-    expect(poignees()[0].getAttribute('aria-label')).toMatch(/mis·e au lit/i);
-    expect(poignees()[1].getAttribute('aria-label')).toMatch(/éteint la lumière/i);
+    expect(screen.queryByLabelText(/mis·e au lit à/)).toBeNull();
+    clic('Plus tard que mon coucher');
+    expect(screen.getByLabelText(/mis·e au lit à/)).toBeTruthy();
   });
 
-  it('sans le mode de coucher, l’envoi reste impossible', () => {
+  it('transmet l’heure quand le patient est resté au lit avant d’éteindre', () => {
     const { onSubmit } = rendre();
-    poignees().forEach((p) => fireEvent.keyDown(p, { key: 'Enter' }));
-    fireEvent.click(screen.getByRole('button', { name: 'En moins de 15 min' }));
-    fireEvent.click(screen.getByRole('button', { name: /nuit continue/i }));
-    fireEvent.click(screen.getByRole('button', { name: /aucune aide/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon réveil' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
-    expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(reste()!.textContent).toBe('Il reste à renseigner : le coucher.');
+    choisir(/éteint la lumière à/, '23:00');
+    clic('Plus tard que mon coucher');
+    choisir(/mis·e au lit à/, '22:30');
+    clic('En moins de 15 min');
+    continuer();
+    nuitMinimum();
+    continuer();
+    matinMinimum();
+    fireEvent.click(cta());
+    expect(onSubmit.mock.calls[0][0].heureMiseAuLit).toBe('22:30');
+    expect(onSubmit.mock.calls[0][0].extinctionImmediate).toBe(false);
   });
 
-  it('revenir à « en me couchant » efface l’heure de mise au lit', () => {
+  it('revenir à « au même moment » efface l’heure du coucher', () => {
     const { onSubmit } = rendre();
-    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon coucher' }));
-    fireEvent.keyDown(poignees()[0], { key: 'Enter' });
-    fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon coucher' }));
+    clic('Plus tard que mon coucher');
+    choisir(/mis·e au lit à/, '22:30');
     completerLeMinimum();
     fireEvent.click(cta());
     expect(onSubmit.mock.calls[0][0].heureMiseAuLit).toBeUndefined();
     expect(onSubmit.mock.calls[0][0].extinctionImmediate).toBe(true);
   });
 
-  it('transmet l’heure quand le patient est resté au lit avant d’éteindre', () => {
-    const { onSubmit } = rendre();
-    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon coucher' }));
-    // La poignée s'ouvre 30 min avant l'extinction proposée (23:00) → 22:30.
-    fireEvent.keyDown(poignees()[0], { key: 'Enter' });
-    fireEvent.click(screen.getByRole('button', { name: 'En moins de 15 min' }));
-    fireEvent.click(screen.getByRole('button', { name: /nuit continue/i }));
-    fireEvent.click(screen.getByRole('button', { name: /aucune aide/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon réveil' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
-    poignees().forEach((p) => fireEvent.keyDown(p, { key: 'Enter' }));
-    fireEvent.click(cta());
-    expect(onSubmit.mock.calls[0][0].heureMiseAuLit).toBe('22:30');
-    expect(onSubmit.mock.calls[0][0].extinctionImmediate).toBe(false);
-  });
-
   it('la question de latence porte explicitement sur l’après-extinction', () => {
-    // Les deux grandeurs se ressemblent et se confondaient : le libellé doit
-    // dire laquelle on demande.
     rendre();
     expect(screen.getByText(/une fois la lumière éteinte/i)).toBeTruthy();
   });
 });
 
 describe('compte de réveils — exact, au compteur, sans clavier (v3)', () => {
-  // Parcours d'une nuit coupée, prêt pour l'envoi, détails ouverts.
+  // Parcours d'une nuit coupée, prêt pour l'envoi.
   function nuitCoupee() {
     const rendu = rendre();
-    poignees().forEach((p) => fireEvent.keyDown(p, { key: 'Enter' }));
-    fireEvent.click(screen.getByRole('button', { name: 'En moins de 15 min' }));
-    fireEvent.click(screen.getByRole('button', { name: /éveillé·e longtemps/i }));
-    fireEvent.click(screen.getByRole('button', { name: /aucune aide/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon coucher' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon réveil' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
-    fireEvent.click(screen.getByRole('button', { name: /ajouter des détails/i }));
+    soirMinimum();
+    continuer();
+    clic(/éveillé·e longtemps/i);
+    clic('Aucune aide pour dormir cette nuit');
     return rendu;
+  }
+  function finir() {
+    continuer();
+    matinMinimum();
+    fireEvent.click(cta());
   }
   const plus = () => screen.getByRole('button', { name: 'Un réveil de plus' });
   const moins = () => screen.getByRole('button', { name: 'Un réveil de moins' });
 
-  it('transmet un compte exact au-delà de trois — « 3 ou plus » n’existe plus', () => {
+  it('transmet un compte exact au-delà de trois', () => {
     const { onSubmit } = nuitCoupee();
     for (let i = 0; i < 5; i += 1) fireEvent.click(plus());
-    fireEvent.click(cta());
+    finir();
     expect(onSubmit.mock.calls[0][0].reveils).toEqual({ dureeTotale: 'e30_60', nombre: 5 });
   });
 
   it('reste facultatif : sans geste sur le compteur, le compte est absent', () => {
     const { onSubmit } = nuitCoupee();
-    fireEvent.click(cta());
+    finir();
     expect(onSubmit.mock.calls[0][0].reveils).toEqual({ dureeTotale: 'e30_60' });
   });
 
   it('décrémenter depuis 1 revient à « pas de réponse », jamais à un zéro', () => {
-    // Un zéro contredirait la nuit coupée déclarée — le serveur le refuse.
     const { onSubmit } = nuitCoupee();
     fireEvent.click(plus());
     fireEvent.click(moins());
-    fireEvent.click(cta());
+    finir();
     expect(onSubmit.mock.calls[0][0].reveils).toEqual({ dureeTotale: 'e30_60' });
   });
 
   it('le compteur n’apparaît pas sur une nuit continue', () => {
     rendre();
-    completerLeMinimum();
-    fireEvent.click(screen.getByRole('button', { name: /ajouter des détails/i }));
+    soirMinimum();
+    continuer();
+    nuitMinimum();
     expect(screen.queryByRole('button', { name: 'Un réveil de plus' })).toBeNull();
   });
 });
@@ -404,13 +404,11 @@ describe('facteurs — « rien de particulier » est exclusif', () => {
   it('cocher un facteur décoche « rien de particulier », et réciproquement', () => {
     const { onSubmit } = rendre();
     completerLeMinimum();
-    fireEvent.click(screen.getByRole('button', { name: /ajouter des détails/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Rien de particulier' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Stress' }));
+    clic(/ajouter des détails/i);
+    clic('Rien de particulier');
+    clic('Stress');
     fireEvent.click(cta());
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ facteurs: { stress: true } }),
-    );
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ facteurs: { stress: true } }));
   });
 
   it('aucun facteur coché : la clé est absente, pas un objet vide', () => {
@@ -421,7 +419,7 @@ describe('facteurs — « rien de particulier » est exclusif', () => {
   });
 });
 
-describe('confirmer ces horaires — un geste pour les deux ancres suggérées', () => {
+describe('confirmer ces horaires — un geste pour les deux heures suggérées', () => {
   const bouton = () => screen.queryByRole('button', { name: /confirmer ces horaires/i });
 
   it('absent quand les horaires ne sont pas ceux du patient (défauts)', () => {
@@ -430,57 +428,83 @@ describe('confirmer ces horaires — un geste pour les deux ancres suggérées',
   });
 
   it('confirme l’extinction et le lever, et rien d’autre', () => {
-    const { onSubmit } = rendre({ suggestionsPersonnelles: true });
+    rendre({ suggestionsPersonnelles: true });
     expect(bouton()?.textContent).toMatch(/23:00 → .*07:00/);
     fireEvent.click(bouton()!);
-    poignees().forEach((p) => expect(p.getAttribute('aria-valuetext')).not.toMatch(/à confirmer/i));
-    // Aucune autre réponse n'est reprise : l'envoi reste refusé.
-    expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(reste()!.textContent).not.toMatch(/cadran/);
+    expect(liste(/éteint la lumière à/).value).toBe('23:00');
     expect(bouton()).toBeNull();
+    // Aucune autre réponse n'est reprise : l'écran du soir reste incomplet.
+    continuer();
+    expect(reste()!.textContent).toBe('Il reste à renseigner : le coucher et l’endormissement.');
+    clic('Au même moment que mon coucher');
+    clic('En moins de 15 min');
+    continuer();
+    nuitMinimum();
+    continuer();
+    expect(liste(/levé·e à/).value).toBe('07:00');
   });
 });
 
-describe('ordre des repères — refusé ici, sous le bouton, avant tout envoi', () => {
-  it('un réveil placé après la sortie du lit est refusé avec le message du serveur', () => {
-    const { onSubmit } = rendre();
-    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon réveil' }));
-    completerLeMinimum();
-    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon réveil' }));
-    // Ordre des poignées : extinction, réveil, sortie. Le réveil s'ouvre à
-    // mi-nuit (03:00) ; cinq heures plus tard, il tombe à 08:00, après la
-    // sortie du lit (07:00).
-    fireEvent.keyDown(poignees()[1], { key: 'Enter' });
-    for (let i = 0; i < 5; i += 1) fireEvent.keyDown(poignees()[1], { key: 'PageUp' });
+describe('ordre des heures — refusé avant tout envoi, sur l’écran à corriger', () => {
+  function reveilApresLeLever() {
+    const rendu = rendre();
+    soirMinimum();
+    continuer();
+    nuitMinimum();
+    continuer();
+    choisir(/levé·e à/, '07:00');
+    clic('Plus tard que mon réveil');
+    choisir(/réveillé·e à/, '08:00');
+    clic('Très bonne');
+    return rendu;
+  }
+
+  it('un réveil après la sortie du lit est refusé avec le message du serveur', () => {
+    const { onSubmit } = reveilApresLeLever();
     expect(envoiRefuse(onSubmit)).toBe(true);
-    const alerte = screen.getByRole('alert');
-    expect(alerte.textContent).toMatch(
-      /Le réveil doit se situer avant la sortie du lit\. Ajustez les repères du cadran\./,
+    expect(screen.getByRole('alert').textContent).toBe(
+      'Le réveil doit se situer avant la sortie du lit. Ajustez les heures.',
     );
-    // Rendu SOUS LE CADRAN, là où le patient est ramené — focus sur un repère.
-    const blocCadran = alerte.parentElement!;
-    expect(blocCadran.querySelector('[role="slider"]')).not.toBeNull();
-    expect(blocCadran.className).toMatch(/ring-2/);
-    expect(document.activeElement?.getAttribute('role')).toBe('slider');
+    expect(titre()).toBe('Le matin');
+    expect(document.activeElement?.id).toBe('agenda-heure-sortie');
   });
 
-  it('le refus d’ordre disparaît quand le repère fautif disparaît', () => {
-    const { onSubmit } = rendre();
-    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon réveil' }));
-    completerLeMinimum();
-    fireEvent.click(screen.getByRole('button', { name: 'Plus tard que mon réveil' }));
-    fireEvent.keyDown(poignees()[1], { key: 'Enter' });
-    for (let i = 0; i < 5; i += 1) fireEvent.keyDown(poignees()[1], { key: 'PageUp' });
+  it('le refus disparaît dès qu’une heure bouge', () => {
+    const { onSubmit } = reveilApresLeLever();
     envoiRefuse(onSubmit);
-    expect(screen.getByRole('alert')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Au même moment que mon réveil' }));
+    choisir(/réveillé·e à/, '06:30');
     expect(screen.queryByRole('alert')).toBeNull();
+    expect(envoiRefuse(onSubmit)).toBe(false);
+  });
+
+  it('une extinction avant le coucher ramène à l’écran du soir', async () => {
+    const { onSubmit } = rendre();
+    choisir(/éteint la lumière à/, '23:00');
+    clic('Plus tard que mon coucher');
+    choisir(/mis·e au lit à/, '23:30');
+    clic('En moins de 15 min');
+    continuer();
+    nuitMinimum();
+    continuer();
+    matinMinimum();
+    await act(async () => {
+      fireEvent.click(cta());
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(titre()).toBe('Le soir');
+    expect(screen.getByRole('alert').textContent).toBe(
+      'L’extinction doit suivre la mise au lit. Ajustez les heures.',
+    );
   });
 });
 
 describe('refus du serveur', () => {
-  it('rendu sous le bouton d’envoi', () => {
+  it('rendu sur l’écran du matin, sous le bouton d’envoi', () => {
     rendre({ refus: 'Cette nuit ne peut plus être notée.' });
+    soirMinimum();
+    continuer();
+    nuitMinimum();
+    continuer();
     expect(screen.getByRole('alert').textContent).toBe('Cette nuit ne peut plus être notée.');
   });
 });
@@ -488,12 +512,11 @@ describe('refus du serveur', () => {
 describe('libellés visibles', () => {
   it('les ancres de l’échelle de qualité sont écrites, pas seulement lues', () => {
     rendre();
+    soirMinimum();
+    continuer();
+    nuitMinimum();
+    continuer();
     expect(screen.getAllByText('Très difficile').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Très bonne').length).toBeGreaterThan(0);
-  });
-
-  it('la portée de l’aide pour dormir est affichée', () => {
-    rendre();
-    expect(screen.getByText('Médicament, mélatonine ou plante')).toBeTruthy();
   });
 });

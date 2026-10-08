@@ -65,7 +65,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
     return m;
   }, [data]);
 
-  // Position d'ouverture des poignées du cadran — une suggestion en pointillé,
+  // Horaires proposés par « Confirmer ces horaires » — une suggestion,
   // pas une valeur : elle ne devient une réponse qu'au toucher.
   const habituels = useMemo(() => horairesHabituels(data?.nuits ?? []), [data]);
   // Les horaires sont-ils ceux du patient, ou les défauts faute de nuit

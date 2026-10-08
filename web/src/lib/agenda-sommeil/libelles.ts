@@ -36,8 +36,12 @@ export const LABEL_DUREE_REVEILS: Record<
   gt45: 'Plus de 45 min (barème v1)',
 };
 
-// Version PATIENT, sans minutes : le patient estime, il ne chronomètre pas — et
-// on ne veut surtout pas l'inciter à regarder l'heure la nuit.
+// Version PATIENT. Le libellé reste une estimation en mots — on ne veut pas
+// inciter à regarder l'heure la nuit —, mais l'ordre de grandeur s'affiche
+// désormais dessous, en aide discrète (arbitrage du responsable du
+// 2026-10-07) : sans lui, « un bref réveil » se lisait comme un NOMBRE de
+// réveils alors que la classe mesure une DURÉE cumulée. Classes et bornes
+// inchangées : on écrit ce qui est déjà stocké.
 export const LABEL_REVEILS_PATIENT: Record<ClasseDureeReveils, string> = {
   aucun: 'Nuit continue',
   lt15: 'Un bref réveil',
@@ -46,13 +50,21 @@ export const LABEL_REVEILS_PATIENT: Record<ClasseDureeReveils, string> = {
   gt60: 'Éveillé·e une bonne partie de la nuit',
 };
 
-// L'aria commence par le libellé visible (WCAG 2.5.3, « label in name ») et
-// ajoute l'ordre de grandeur, invisible à l'écran.
+export const BORNES_REVEILS_PATIENT: Record<ClasseDureeReveils, string> = {
+  aucun: 'aucun réveil',
+  lt15: 'moins de 15 min au total',
+  e15_30: '15 à 30 min au total',
+  e30_60: '30 à 60 min au total',
+  gt60: 'plus d’une heure au total',
+};
+
+// L'aria reprend exactement le texte visible, libellé puis borne (WCAG 2.5.3,
+// « label in name »).
 export const ARIA_REVEILS: Record<ClasseDureeReveils, string> = {
   aucun: 'Nuit continue, aucun réveil',
-  lt15: 'Un bref réveil, moins de quinze minutes éveillé au total',
-  e15_30: 'Éveillé·e un moment, quinze à trente minutes au total',
-  e30_60: 'Éveillé·e longtemps, trente à soixante minutes au total',
+  lt15: 'Un bref réveil, moins de 15 min au total',
+  e15_30: 'Éveillé·e un moment, 15 à 30 min au total',
+  e30_60: 'Éveillé·e longtemps, 30 à 60 min au total',
   gt60: 'Éveillé·e une bonne partie de la nuit, plus d’une heure au total',
 };
 

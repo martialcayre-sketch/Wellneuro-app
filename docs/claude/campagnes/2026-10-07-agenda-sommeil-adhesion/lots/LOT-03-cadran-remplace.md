@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Le cadran remplacé — sélecteurs au quart d'heure, soir / nuit / matin"
-statut: "à faire (arbitré le 2026-10-07 : lancé sans attendre la re-mesure)"
+statut: "en_cours (2026-10-08, lancé sans attendre la re-mesure)"
 dépend_de: "LOT-01"
 ---
 
@@ -40,6 +40,18 @@ serveur, fenêtre J / J-1, agrégats, barème. Aucune migration.
 
 ## Validation attendue
 
-T1 complet, suites de l'agenda, et le job CI `e2e` (le spec
-`agenda-sommeil-cadran.spec.ts` est à réécrire pour les sélecteurs). Relecture
+T1 complet, suites de l'agenda, et le job CI `e2e` : le spec de hit-test du
+cadran (`agenda-sommeil-cadran.spec.ts`) est retiré avec lui et remplacé par
+`agenda-sommeil-saisie.spec.ts`, qui note une nuit de bout en bout. Relecture
 `wn-reviewer` avant la PR.
+
+## Choix d'exécution
+
+- **Une liste native par heure** (`SelecteurHeure`), 96 quarts d'heure partant
+  de 18 h le soir et de 3 h le matin, ouverte sur « Choisir » : aucune heure
+  affichée d'office, donc plus de proposition qui ressemble à une réponse.
+  Ni champ de texte ni glissement.
+- Les horaires habituels ne se posent que par « Confirmer ces horaires », sur
+  l'écran du soir ; il remplit aussi l'heure du lever, visible au matin.
+- « Continuer » exige l'écran complet et nomme ce qui manque ; « Retour » garde
+  les réponses. Un refus d'ordre ramène à l'écran qui porte l'heure à corriger.

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
-import { CadranNuit } from './CadranNuit';
+import { SelecteurHeure } from './SelecteurHeure';
 import {
   ARIA_AIDE_SOMMEIL,
   ARIA_EXTINCTION_DIFFEREE,
@@ -12,18 +12,23 @@ import {
   ARIA_QUALITE,
   ARIA_FORME,
   ARIA_REVEILS,
+  BORNES_REVEILS_PATIENT,
   EMOJI_FORME,
   EMOJI_QUALITE,
   LABEL_AIDE_SOMMEIL,
+  LABEL_EXTINCTION,
   LABEL_FACTEURS,
   LABEL_LATENCE,
   LABEL_EXTINCTION_DIFFEREE,
   LABEL_EXTINCTION_IMMEDIATE,
   LABEL_LEVER_DIFFERE,
   LABEL_LEVER_IMMEDIAT,
+  LABEL_MISE_AU_LIT,
+  LABEL_REVEIL_FINAL,
   LABEL_REVEILS_PATIENT,
   LABEL_RIEN_DE_PARTICULIER,
   LABEL_SIESTE,
+  LABEL_SORTIE_DU_LIT,
   PORTEE_AIDE_SOMMEIL,
   QUESTION_EXTINCTION,
   QUESTION_LEVER,
@@ -45,24 +50,29 @@ import {
   type NuitReponses,
 } from '@/lib/agenda-sommeil/types';
 
-// Saisie d'une nuit — SANS CLAVIER : cadran tactile pour les ancres horaires,
-// puces et emoji pour le reste. Aucun champ de texte.
+// Saisie d'une nuit — SANS CLAVIER À TAPER, en TROIS ÉCRANS : le soir, la nuit,
+// le matin. Chaque écran tient sur un téléphone ; « Continuer » ne passe au
+// suivant que si l'écran est complet, et nomme sinon ce qui manque.
 //
-// Sept gestes obligatoires : les deux poignées du cadran, le mode de coucher,
-// l'endormissement, la nuit (continue ou coupée), l'aide au sommeil, le mode de
-// lever et la qualité. Deux poignées supplémentaires n'apparaissent que si le
+// Les heures se choisissent dans des listes au quart d'heure (`SelecteurHeure`),
+// qui remplacent le cadran circulaire de la v2 : le cadran demandait
+// d'apprendre un geste pour donner une heure familière, et ses poignées en
+// pointillé semblaient renseignées sans l'être (LOT-03 de la campagne
+// 2026-10-07-agenda-sommeil-adhesion).
+//
+// Réponses obligatoires : l'extinction, le mode de coucher, l'endormissement,
+// la nuit (continue ou coupée), l'aide au sommeil, le lever, le mode de lever et
+// la qualité — huit. Deux heures supplémentaires ne sont demandées que si le
 // patient déclare du temps au lit éveillé, le soir ou le matin. Le reste est
-// facultatif et replié.
-//
-// C'est le prix de la couverture du noyau du Consensus Sleep Diary, qui compte
-// neuf items : chacune des questions ajoutées comble un angle mort qui rendait
-// une métrique fausse plutôt qu'imprécise.
+// facultatif et replié. C'est le prix de la couverture du noyau du Consensus
+// Sleep Diary : chacune des questions ajoutées en v2 comble un angle mort qui
+// rendait une métrique fausse plutôt qu'imprécise.
 //
 // RIEN N'EST PRÉ-COCHÉ. En v1 le formulaire s'ouvrait pré-rempli avec la nuit de
 // la veille — latence et qualité comprises — et le bouton d'envoi était actif
 // sans un seul geste : on pouvait valider vingt copies conformes de sa première
-// nuit. Seuls les horaires reçoivent une suggestion, en pointillé, qui ne
-// devient une valeur qu'au toucher.
+// nuit. Les horaires habituels ne sont qu'une proposition, confirmée par un
+// geste explicite (« Confirmer ces horaires »).
 
 function ChoixEmoji({
   label,
@@ -117,6 +127,7 @@ function Puces<T extends string>({
   aide,
   options,
   libelle,
+  detail,
   aria,
   value,
   onChange,
@@ -125,6 +136,8 @@ function Puces<T extends string>({
   aide?: string;
   options: readonly T[];
   libelle: (v: T) => string;
+  // Seconde ligne discrète sous le libellé d'une tuile (ordre de grandeur).
+  detail?: (v: T) => string;
   aria?: (v: T) => string;
   value: T | undefined;
   onChange: (v: T) => void;
@@ -143,13 +156,20 @@ function Puces<T extends string>({
               aria-pressed={actif}
               aria-label={aria ? aria(opt) : undefined}
               onClick={() => onChange(opt)}
-              className={`min-h-11 rounded-xl px-4 py-2 text-sm border transition-colors ${
+              className={`min-h-11 rounded-xl px-4 py-2 text-sm border text-left transition-colors ${
                 actif
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-transparent text-foreground border-border hover:bg-muted'
               }`}
             >
               {libelle(opt)}
+              {detail && (
+                <span
+                  className={`block text-xs ${actif ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}
+                >
+                  {detail(opt)}
+                </span>
+              )}
             </button>
           );
         })}
@@ -207,14 +227,46 @@ function Compteur({
   );
 }
 
-// Les blocs vers lesquels un envoi incomplet ramène le patient. Les repères
-// conditionnels (🛏️, 👁️) vivent sur le cadran : ils y ramènent aussi.
-type Bloc = 'cadran' | 'coucher' | 'latence' | 'nuit' | 'aide' | 'lever' | 'qualite';
+// Les trois écrans, dans l'ordre de la nuit. La numérotation affichée (« 1 sur
+// 3 ») dit une séquence réelle : le patient remonte sa nuit du soir au matin.
+const ETAPES = [
+  { cle: 'soir', titre: 'Le soir' },
+  { cle: 'nuit', titre: 'Pendant la nuit' },
+  { cle: 'matin', titre: 'Le matin' },
+] as const;
+type Etape = 0 | 1 | 2;
+
+// Les blocs vers lesquels un envoi incomplet ramène le patient, avec l'écran
+// qui les porte.
+type Bloc =
+  | 'extinction'
+  | 'coucher'
+  | 'miseAuLit'
+  | 'latence'
+  | 'nuit'
+  | 'aide'
+  | 'sortie'
+  | 'lever'
+  | 'reveilFinal'
+  | 'qualite';
+const ETAPE_DU_BLOC: Record<Bloc, Etape> = {
+  extinction: 0,
+  coucher: 0,
+  miseAuLit: 0,
+  latence: 0,
+  nuit: 1,
+  aide: 1,
+  sortie: 2,
+  lever: 2,
+  reveilFinal: 2,
+  qualite: 2,
+};
 
 // Les trois refus d'ORDRE de `ensureNuitReponses` (lib/agenda-sommeil/nuit.ts,
-// mode écriture) : « L'extinction doit suivre… », « Le réveil doit se situer
-// avant… », « Le réveil doit suivre… ». Un banc les fige.
+// mode écriture), figés par un banc dans nuit.test.ts. Le premier se corrige le
+// soir, les deux autres le matin (le réveil est une heure du matin).
 const RE_REFUS_ORDRE = /doit (suivre|se situer)/;
+const RE_REFUS_ORDRE_DU_SOIR = /^L’extinction doit suivre/;
 
 // « a », « a et b », « a, b et c ».
 function enumerer(elements: string[]): string {
@@ -226,15 +278,14 @@ type Props = {
   // Renseigné UNIQUEMENT en correction d'une nuit déjà saisie. Jamais la nuit
   // de la veille : ce serait rouvrir la porte au report automatique.
   initial: NuitReponses | null;
-  // Horaires habituels du patient (médianes des nuits précédentes) : position
-  // d'ouverture des poignées, en pointillé, sans valeur tant qu'on n'y touche pas.
+  // Horaires habituels du patient (médianes des nuits précédentes), proposés
+  // par « Confirmer ces horaires » — jamais posés sans ce geste.
   horairesHabituels: { extinction: string; sortie: string };
   // Vrai seulement si ces horaires viennent des nuits DU PATIENT. Sur les
   // horaires par défaut (aucune nuit encore), « confirmer ces horaires »
   // ferait valider en un geste une heure que personne n'a donnée.
   suggestionsPersonnelles?: boolean;
-  // Refus du serveur, rendu À CÔTÉ DU BOUTON : en tête de page, il restait
-  // hors champ sur téléphone, sous un formulaire long.
+  // Refus du serveur, rendu À CÔTÉ DU BOUTON d'envoi.
   refus?: string;
   submitting: boolean;
   ctaLabel?: string;
@@ -281,82 +332,98 @@ export function SaisieNuitForm({
   const [sieste, setSieste] = useState<ClasseSieste | undefined>(initial?.siesteVeille);
   const [facteurs, setFacteurs] = useState<FacteursNuit>(initial?.facteurs ?? {});
 
-  // Refus d'ORDRE des repères (réveil après la sortie du lit…), rendu SOUS LE
-  // CADRAN, là où le patient est ramené et où se corrige l'erreur — et non sous
-  // le bouton, que le défilement vers le cadran vient de faire sortir du champ.
+  const [etape, setEtape] = useState<Etape>(0);
+  // Refus d'ORDRE des heures (réveil après la sortie du lit…), rendu en tête de
+  // l'écran qui porte l'heure à corriger — là où le patient est ramené.
   const [erreurOrdre, setErreurOrdre] = useState('');
-  // Passe à vrai au premier envoi incomplet : les questions sans réponse sont
-  // alors signalées une à une, jamais avant — on ne gronde pas un formulaire
-  // qu'on vient d'ouvrir.
-  const [tentative, setTentative] = useState(false);
+  // Écrans dont « Continuer » (ou l'envoi) a déjà été tenté incomplet : leurs
+  // questions sans réponse sont alors signalées, jamais avant — on ne gronde
+  // pas un écran qu'on vient d'ouvrir.
+  const [tentees, setTentees] = useState<ReadonlySet<Etape>>(new Set());
   const ancres = useRef<Partial<Record<Bloc, HTMLDivElement | null>>>({});
 
-  // CE QUI MANQUE, NOMMÉ, dans l'ordre de la page. Le bouton était désactivé
-  // tant que la nuit était incomplète, et le message d'aide vivait dans le
-  // gestionnaire de clic — qu'un bouton désactivé ne déclenche jamais : le
-  // patient restait devant un bouton grisé, sans savoir quoi compléter. Le
-  // bouton reste actif ; c'est cette liste qui garde la règle « rien ne part
-  // sans un geste sur chaque réponse obligatoire ».
-  //
-  // Les deux heures conditionnelles ne sont requises que si leur question
-  // l'appelle : sinon elles n'existent pas, elles ne valent pas zéro.
+  // CE QUI MANQUE, NOMMÉ, dans l'ordre de la nuit. Le bouton d'envoi est
+  // toujours actif ; c'est cette liste qui garde la règle « rien ne part sans un
+  // geste sur chaque réponse obligatoire ». Les deux heures conditionnelles ne
+  // sont requises que si leur question l'appelle : sinon elles n'existent pas,
+  // elles ne valent pas zéro.
   const manquants: { bloc: Bloc; libelle: string }[] = [];
-  if (heureCoucher === undefined && heureLever === undefined) {
-    manquants.push({ bloc: 'cadran', libelle: 'les repères 🌑 et 🌅 du cadran' });
-  } else if (heureCoucher === undefined) {
-    manquants.push({ bloc: 'cadran', libelle: 'le repère 🌑 du cadran' });
-  } else if (heureLever === undefined) {
-    manquants.push({ bloc: 'cadran', libelle: 'le repère 🌅 du cadran' });
-  }
-  if (extinctionImmediate === false && heureMiseAuLit === undefined) {
-    manquants.push({ bloc: 'cadran', libelle: 'le repère 🛏️ du cadran' });
-  }
-  if (leverImmediat === false && heureReveilFinal === undefined) {
-    manquants.push({ bloc: 'cadran', libelle: 'le repère 👁️ du cadran' });
+  if (heureCoucher === undefined) {
+    manquants.push({ bloc: 'extinction', libelle: 'l’heure où vous avez éteint 🌑' });
   }
   if (extinctionImmediate === undefined) manquants.push({ bloc: 'coucher', libelle: 'le coucher' });
+  if (extinctionImmediate === false && heureMiseAuLit === undefined) {
+    manquants.push({ bloc: 'miseAuLit', libelle: 'l’heure du coucher 🛏️' });
+  }
   if (latence === undefined) manquants.push({ bloc: 'latence', libelle: 'l’endormissement' });
   if (dureeReveils === undefined) manquants.push({ bloc: 'nuit', libelle: 'la nuit' });
   if (aideSommeil === undefined) manquants.push({ bloc: 'aide', libelle: 'l’aide pour dormir' });
+  if (heureLever === undefined) {
+    manquants.push({ bloc: 'sortie', libelle: 'l’heure du lever 🌅' });
+  }
   if (leverImmediat === undefined) manquants.push({ bloc: 'lever', libelle: 'le lever' });
+  if (leverImmediat === false && heureReveilFinal === undefined) {
+    manquants.push({ bloc: 'reveilFinal', libelle: 'l’heure du réveil 👁️' });
+  }
   if (qualite === undefined) manquants.push({ bloc: 'qualite', libelle: 'la qualité de la nuit' });
-  const complet = manquants.length === 0;
 
-  const blocManquant = (bloc: Bloc) =>
-    (tentative && manquants.some((m) => m.bloc === bloc)) || (bloc === 'cadran' && erreurOrdre !== '');
+  const manquantsDe = (e: Etape) => manquants.filter((m) => ETAPE_DU_BLOC[m.bloc] === e);
+  const manquantsEtape = manquantsDe(etape);
+  const signale = (bloc: Bloc) =>
+    tentees.has(ETAPE_DU_BLOC[bloc]) && manquants.some((m) => m.bloc === bloc);
   const classeBloc = (bloc: Bloc) =>
     `rounded-xl outline-none transition-shadow ${
-      blocManquant(bloc) ? 'ring-2 ring-status-warning/60 ring-offset-4 ring-offset-surface' : ''
+      signale(bloc) ? 'ring-2 ring-status-warning/60 ring-offset-4 ring-offset-surface' : ''
     }`;
   const ancre = (bloc: Bloc) => (el: HTMLDivElement | null) => {
     ancres.current[bloc] = el;
   };
 
   // Amène le patient à la question visée, focus sur son PREMIER CONTRÔLE (une
-  // tuile, un repère) : un lecteur d'écran annonce alors un nom, pas tout le
-  // bloc. `scrollIntoView` n'existe pas sous jsdom : l'appel est conditionnel.
+  // liste, une tuile) : un lecteur d'écran annonce alors un nom, pas tout le
+  // bloc. Le bloc peut n'être rendu qu'après un changement d'écran : on attend
+  // le rendu suivant. `scrollIntoView` n'existe pas sous jsdom.
   function allerA(bloc: Bloc) {
-    const el = ancres.current[bloc];
-    if (!el) return;
-    el.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-    const cible = el.querySelector<HTMLElement>('button, [role="slider"]') ?? el;
-    cible.focus({ preventScroll: true });
+    const viser = () => {
+      const el = ancres.current[bloc];
+      if (!el) return;
+      el.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+      const cible = el.querySelector<HTMLElement>('select, button') ?? el;
+      cible.focus({ preventScroll: true });
+    };
+    if (ETAPE_DU_BLOC[bloc] === etape) viser();
+    else {
+      setEtape(ETAPE_DU_BLOC[bloc]);
+      setTimeout(viser, 0);
+    }
   }
 
-  function majHoraire(poignee: 'lit' | 'extinction' | 'reveil' | 'sortie', valeur: string) {
-    // Un refus d'ordre porte sur les repères : en bouger un le rend caduc.
-    setErreurOrdre('');
-    if (poignee === 'lit') setHeureMiseAuLit(valeur);
-    else if (poignee === 'extinction') setHeureCoucher(valeur);
-    else if (poignee === 'reveil') setHeureReveilFinal(valeur);
-    else setHeureLever(valeur);
+  function marquerTentee(e: Etape) {
+    setTentees((t) => (t.has(e) ? t : new Set(t).add(e)));
   }
 
-  // Revenir sur la réponse « immédiate » efface l'heure devenue sans objet : la
-  // garder enverrait au serveur une nuit contradictoire, que la validation
-  // refuse (et refuserait à raison — mieux vaut ne pas la produire).
+  function continuer() {
+    if (manquantsEtape.length > 0) {
+      marquerTentee(etape);
+      allerA(manquantsEtape[0].bloc);
+      return;
+    }
+    setEtape((e) => (e < 2 ? ((e + 1) as Etape) : e));
+  }
+
+  // Toute heure qui bouge, ou tout repère qui apparaît ou disparaît, rend
+  // caduc un refus d'ordre.
+  function majHeure(setter: (v: string) => void) {
+    return (v: string) => {
+      setErreurOrdre('');
+      setter(v);
+    };
+  }
+
+  // Revenir sur la réponse « au même moment » efface l'heure devenue sans
+  // objet : la garder enverrait au serveur une nuit contradictoire, que la
+  // validation refuse (et refuserait à raison — mieux vaut ne pas la produire).
   function majCoucher(immediate: boolean) {
-    // Fait apparaître ou disparaître un repère : le refus d'ordre est caduc.
     setErreurOrdre('');
     setExtinctionImmediate(immediate);
     if (immediate) setHeureMiseAuLit(undefined);
@@ -380,12 +447,12 @@ export function SaisieNuitForm({
   }
 
   function soumettre() {
-    if (!complet) {
-      setTentative(true);
+    if (manquants.length > 0) {
+      marquerTentee(ETAPE_DU_BLOC[manquants[0].bloc]);
+      marquerTentee(etape);
       allerA(manquants[0].bloc);
       return;
     }
-    setErreurOrdre('');
     const reponses: NuitReponses = {
       heureCoucher: heureCoucher!,
       heureLever: heureLever!,
@@ -410,266 +477,300 @@ export function SaisieNuitForm({
     ) as FacteursNuit;
     if (Object.keys(facteursNets).length > 0) reponses.facteurs = facteursNets;
     // La validation d'ÉCRITURE du serveur, jouée ici avant l'envoi — la même
-    // fonction, pas une copie. Une nuit complète peut encore être refusée pour
-    // l'ordre de ses repères (réveil placé après la sortie du lit, par
-    // exemple) : le dire ici, sous le bouton, plutôt qu'au retour d'un aller-
-    // retour réseau, en tête d'une page que le patient a quittée des yeux.
-    //
-    // Une nuit COMPLÈTE ne peut échouer ici que sur l'ordre des repères : tout
-    // le reste est garanti par construction du formulaire. Toute autre
-    // `TypeError` signalerait un formulaire cassé — elle part alors au serveur,
-    // qui la refuse et la dit sous le bouton, plutôt que d'être maquillée ici en
-    // erreur de cadran.
+    // fonction, pas une copie. Une nuit complète ne peut échouer ici que sur
+    // l'ordre de ses heures ; toute autre `TypeError` signalerait un formulaire
+    // cassé — elle part alors au serveur, qui la refuse et la dit sous le bouton.
     try {
       ensureNuitReponses(reponses, { exigerObligatoires: true });
     } catch (e) {
       if (!(e instanceof TypeError)) throw e;
       if (RE_REFUS_ORDRE.test(e.message)) {
-        setErreurOrdre(`${e.message} Ajustez les repères du cadran.`);
-        allerA('cadran');
+        setErreurOrdre(`${e.message} Ajustez les heures.`);
+        allerA(RE_REFUS_ORDRE_DU_SOIR.test(e.message) ? 'extinction' : 'sortie');
         return;
       }
     }
     onSubmit(reponses);
   }
 
+  const alerteOrdre = erreurOrdre ? (
+    <p role="alert" className="text-sm text-status-danger">
+      {erreurOrdre}
+    </p>
+  ) : null;
+
   return (
     <div className="space-y-6">
-      <div ref={ancre('cadran')} tabIndex={-1} className={classeBloc('cadran')}>
-      <CadranNuit
-        extinction={heureCoucher}
-        sortieDuLit={heureLever}
-        miseAuLit={heureMiseAuLit}
-        afficherMiseAuLit={extinctionImmediate === false}
-        reveilFinal={heureReveilFinal}
-        afficherReveilFinal={leverImmediat === false}
-        suggestionExtinction={horairesHabituels.extinction}
-        suggestionSortie={horairesHabituels.sortie}
-        onChange={majHoraire}
-      />
-      {/* « Comme d'habitude » en UN geste pour les deux seules ancres
-          suggérées. Le garde-fou de la v2 tient : chaque nuit exige un geste
-          explicite, et rien d'autre n'est repris — ni latence, ni qualité, ni
-          réveils. Les heures confirmées sont écrites sur le bouton : on
-          confirme ce qu'on lit, pas une valeur cachée. Absent tant que le
-          patient n'a pas de nuit à lui : les horaires par défaut ne sont pas
-          les siens. */}
-      {suggestionsPersonnelles && heureCoucher === undefined && heureLever === undefined && (
-        <div className="mt-2 flex justify-center">
-          <button
-            type="button"
-            onClick={() => {
-              setHeureCoucher(horairesHabituels.extinction);
-              setHeureLever(horairesHabituels.sortie);
-            }}
-            className="min-h-11 rounded-xl border border-primary/40 px-4 py-2 text-sm text-primary hover:bg-primary/10"
-          >
-            Confirmer ces horaires : 🌑 {horairesHabituels.extinction} → 🌅 {horairesHabituels.sortie}
-          </button>
-        </div>
-      )}
-      {erreurOrdre && (
-        <p role="alert" className="mt-2 text-sm text-status-danger">
-          {erreurOrdre}
-        </p>
-      )}
+      <div className="flex items-baseline justify-between">
+        <h3 className="font-display text-base font-semibold text-foreground">
+          {ETAPES[etape].titre}
+        </h3>
+        <span className="text-xs text-muted-foreground">
+          {etape + 1} sur {ETAPES.length}
+        </span>
       </div>
 
-      {/* Obligatoire. Sans cette question, le temps passé au lit sans chercher à
-          dormir est invisible et l'efficacité se calcule sur une fenêtre trop
-          courte — donc plus flatteuse que celle de tout service appliquant la
-          convention. Elle sépare aussi deux conduites opposées : lire une heure
-          au lit relève du contrôle du stimulus, éteindre et ne pas s'endormir
-          non. C'est la latence d'endormissement qui mesure la seconde. */}
-      <div ref={ancre('coucher')} tabIndex={-1} className={classeBloc('coucher')}>
-      <Puces<string>
-        label={QUESTION_EXTINCTION}
-        options={['immediate', 'differee']}
-        libelle={(v) =>
-          v === 'immediate' ? LABEL_EXTINCTION_IMMEDIATE : LABEL_EXTINCTION_DIFFEREE
-        }
-        aria={(v) => (v === 'immediate' ? ARIA_EXTINCTION_IMMEDIATE : ARIA_EXTINCTION_DIFFEREE)}
-        value={
-          extinctionImmediate === undefined ? undefined : extinctionImmediate ? 'immediate' : 'differee'
-        }
-        onChange={(v) => majCoucher(v === 'immediate')}
-      />
-      </div>
-      {extinctionImmediate === false && heureMiseAuLit === undefined && (
-        <p className="-mt-4 text-xs text-muted-foreground">
-          Placez le repère 🛏️ sur le cadran, à l’heure où vous vous êtes mis·e au lit.
-        </p>
-      )}
+      {etape === 0 && (
+        <>
+          {alerteOrdre}
+          {/* « Comme d'habitude » en UN geste pour les deux seules heures
+              suggérées. Le garde-fou de la v2 tient : chaque nuit exige un
+              geste explicite, et rien d'autre n'est repris — ni latence, ni
+              qualité, ni réveils. Les heures confirmées sont écrites sur le
+              bouton : on confirme ce qu'on lit. Absent tant que le patient n'a
+              pas de nuit à lui : les horaires par défaut ne sont pas les siens. */}
+          {suggestionsPersonnelles && heureCoucher === undefined && heureLever === undefined && (
+            <button
+              type="button"
+              onClick={() => {
+                setErreurOrdre('');
+                setHeureCoucher(horairesHabituels.extinction);
+                setHeureLever(horairesHabituels.sortie);
+              }}
+              className="min-h-11 rounded-xl border border-primary/40 px-4 py-2 text-sm text-primary hover:bg-primary/10"
+            >
+              Confirmer ces horaires : 🌑 {horairesHabituels.extinction} → 🌅 {horairesHabituels.sortie}
+            </button>
+          )}
 
-      <div ref={ancre('latence')} tabIndex={-1} className={classeBloc('latence')}>
-      <Puces<ClasseLatence>
-        label="Une fois la lumière éteinte, vous vous êtes endormi·e…"
-        options={CLASSES_LATENCE}
-        libelle={(v) => LABEL_LATENCE[v]}
-        value={latence}
-        onChange={setLatence}
-      />
-      </div>
+          <div ref={ancre('extinction')} tabIndex={-1} className={classeBloc('extinction')}>
+            <SelecteurHeure
+              id="agenda-heure-extinction"
+              label={`🌑 ${LABEL_EXTINCTION} à`}
+              valeur={heureCoucher}
+              heureDebut={18}
+              onChange={majHeure(setHeureCoucher)}
+            />
+          </div>
 
-      {/* Obligatoire depuis la v2. En v1 cette question vivait dans l'accordéon
-          facultatif : une nuit sans réponse était agrégée comme « zéro minute
-          éveillée », ce qui gonflait l'efficacité et récompensait la
-          non-réponse. « Nuit continue » est désormais une réponse à part. */}
-      <div ref={ancre('nuit')} tabIndex={-1} className={classeBloc('nuit')}>
-      <Puces<ClasseDureeReveils>
-        label="Votre nuit a été…"
-        options={CLASSES_DUREE_REVEILS}
-        libelle={(v) => LABEL_REVEILS_PATIENT[v]}
-        aria={(v) => ARIA_REVEILS[v]}
-        value={dureeReveils}
-        onChange={(v) => {
-          setDureeReveils(v);
-          // Le compte suit toujours la classe. Le laisser à 0 après un
-          // changement d'avis (« nuit continue » puis « éveillé·e longtemps »)
-          // enverrait un compte qui contredit la durée déclarée — et le serveur
-          // refuserait la nuit, à raison.
-          setNbReveils(v === 'aucun' ? 0 : undefined);
-        }}
-      />
-      </div>
+          {/* Obligatoire. Sans cette question, le temps passé au lit sans
+              chercher à dormir est invisible et l'efficacité se calcule sur une
+              fenêtre trop courte — donc plus flatteuse que celle de tout service
+              appliquant la convention. */}
+          <div ref={ancre('coucher')} tabIndex={-1} className={classeBloc('coucher')}>
+            <Puces<string>
+              label={QUESTION_EXTINCTION}
+              options={['immediate', 'differee']}
+              libelle={(v) =>
+                v === 'immediate' ? LABEL_EXTINCTION_IMMEDIATE : LABEL_EXTINCTION_DIFFEREE
+              }
+              aria={(v) => (v === 'immediate' ? ARIA_EXTINCTION_IMMEDIATE : ARIA_EXTINCTION_DIFFEREE)}
+              value={
+                extinctionImmediate === undefined
+                  ? undefined
+                  : extinctionImmediate
+                    ? 'immediate'
+                    : 'differee'
+              }
+              onChange={(v) => majCoucher(v === 'immediate')}
+            />
+          </div>
 
-      {/* Obligatoire : sans elle, une efficacité de 90 % sous hypnotique se lit
-          comme une efficacité de 90 % sans rien, et une amélioration à J21 sous
-          traitement instauré entre-temps passe pour une amélioration du sommeil.
-          Le nom du produit reste au dossier médicamenteux — on ne le redemande
-          pas chaque matin. */}
-      <div ref={ancre('aide')} tabIndex={-1} className={classeBloc('aide')}>
-      <Puces<ClasseAideSommeil>
-        label="Pour cette nuit, vous avez pris…"
-        aide={PORTEE_AIDE_SOMMEIL}
-        options={CLASSES_AIDE_SOMMEIL}
-        libelle={(v) => LABEL_AIDE_SOMMEIL[v]}
-        aria={(v) => ARIA_AIDE_SOMMEIL[v]}
-        value={aideSommeil}
-        onChange={setAideSommeil}
-      />
-      </div>
+          {extinctionImmediate === false && (
+            <div ref={ancre('miseAuLit')} tabIndex={-1} className={classeBloc('miseAuLit')}>
+              <SelecteurHeure
+                id="agenda-heure-mise-au-lit"
+                label={`🛏️ ${LABEL_MISE_AU_LIT} à`}
+                valeur={heureMiseAuLit}
+                heureDebut={18}
+                onChange={majHeure(setHeureMiseAuLit)}
+              />
+            </div>
+          )}
 
-      {/* Obligatoire : c'est la seule question qui rend visible le réveil matinal
-          précoce. Sans elle, les minutes passées éveillé au lit le matin sont
-          comptées comme du sommeil. La 3ᵉ poignée du cadran n'apparaît que si le
-          patient est resté au lit — les autres ne la voient jamais. */}
-      <div ref={ancre('lever')} tabIndex={-1} className={classeBloc('lever')}>
-      <Puces<string>
-        label={QUESTION_LEVER}
-        options={['immediat', 'differe']}
-        libelle={(v) => (v === 'immediat' ? LABEL_LEVER_IMMEDIAT : LABEL_LEVER_DIFFERE)}
-        aria={(v) => (v === 'immediat' ? ARIA_LEVER_IMMEDIAT : ARIA_LEVER_DIFFERE)}
-        value={leverImmediat === undefined ? undefined : leverImmediat ? 'immediat' : 'differe'}
-        onChange={(v) => majLever(v === 'immediat')}
-      />
-      </div>
-      {leverImmediat === false && heureReveilFinal === undefined && (
-        <p className="-mt-4 text-xs text-muted-foreground">
-          Placez le repère 👁️ sur le cadran, à l’heure où vous vous êtes réveillé·e.
-        </p>
+          <div ref={ancre('latence')} tabIndex={-1} className={classeBloc('latence')}>
+            <Puces<ClasseLatence>
+              label="Une fois la lumière éteinte, vous vous êtes endormi·e…"
+              options={CLASSES_LATENCE}
+              libelle={(v) => LABEL_LATENCE[v]}
+              value={latence}
+              onChange={setLatence}
+            />
+          </div>
+        </>
       )}
 
-      <div ref={ancre('qualite')} tabIndex={-1} className={classeBloc('qualite')}>
-      <ChoixEmoji
-        label="Cette nuit était…"
-        emojis={EMOJI_QUALITE}
-        aria={ARIA_QUALITE}
-        value={qualite}
-        onChange={setQualite}
-      />
-      </div>
+      {etape === 1 && (
+        <>
+          {/* Obligatoire depuis la v2. En v1 cette question vivait dans
+              l'accordéon facultatif : une nuit sans réponse était agrégée comme
+              « zéro minute éveillée ». « Nuit continue » est une réponse à part.
+              L'ordre de grandeur s'affiche sous chaque tuile : la classe mesure
+              une DURÉE cumulée, pas un nombre de réveils. */}
+          <div ref={ancre('nuit')} tabIndex={-1} className={classeBloc('nuit')}>
+            <Puces<ClasseDureeReveils>
+              label="Votre nuit a été…"
+              options={CLASSES_DUREE_REVEILS}
+              libelle={(v) => LABEL_REVEILS_PATIENT[v]}
+              detail={(v) => BORNES_REVEILS_PATIENT[v]}
+              aria={(v) => ARIA_REVEILS[v]}
+              value={dureeReveils}
+              onChange={(v) => {
+                setDureeReveils(v);
+                // Le compte suit toujours la classe. Le laisser à 0 après un
+                // changement d'avis enverrait un compte qui contredit la durée
+                // déclarée — et le serveur refuserait la nuit, à raison.
+                setNbReveils(v === 'aucun' ? 0 : undefined);
+              }}
+            />
+          </div>
 
-      <div className="border-t border-border pt-4">
-        <button
-          type="button"
-          onClick={() => setDetailsOuverts((v) => !v)}
-          className="text-sm text-primary hover:underline"
-          aria-expanded={detailsOuverts}
-        >
-          {detailsOuverts ? '− Masquer les détails' : '+ Ajouter des détails (facultatif)'}
-        </button>
-      </div>
-
-      {detailsOuverts && (
-        <div className="space-y-6">
-          {/* Raffinement facultatif, proposé seulement si la nuit a été coupée :
-              le compte n'entre dans aucun calcul structurel, donc son absence ne
-              biaise rien — contrairement à la durée d'éveil, plus haut. Compte
-              EXACT depuis la v3 (fini le « 3 ou plus ») : la fragmentation
-              au-delà de trois réveils était invisible. */}
+          {/* Raffinement facultatif, proposé seulement si la nuit a été
+              coupée : le compte n'entre dans aucun calcul structurel, donc son
+              absence ne biaise rien. Compte EXACT depuis la v3. */}
           {dureeReveils !== undefined && dureeReveils !== 'aucun' && (
             <Compteur
-              label="Combien de fois, à peu près ?"
+              label="Combien de fois, à peu près ? (facultatif)"
               value={nbReveils !== undefined && nbReveils > 0 ? nbReveils : undefined}
               max={NB_REVEILS_MAX}
               onChange={setNbReveils}
             />
           )}
-          <ChoixEmoji
-            label="Votre forme au réveil"
-            emojis={EMOJI_FORME}
-            aria={ARIA_FORME}
-            value={forme}
-            onChange={setForme}
-          />
-          <Puces<ClasseSieste>
-            label="Sieste la veille"
-            options={CLASSES_SIESTE}
-            libelle={(v) => LABEL_SIESTE[v]}
-            value={sieste}
-            onChange={setSieste}
-          />
-          <div>
-            <p className="text-sm font-medium text-foreground mb-2">La veille au soir</p>
-            <div className="flex flex-wrap gap-2">
-              {CLES_FACTEURS.map((cle) => {
-                const actif = facteurs[cle] === true;
-                return (
-                  <button
-                    key={cle}
-                    type="button"
-                    aria-pressed={actif}
-                    onClick={() => basculerFacteur(cle)}
-                    className={`min-h-11 rounded-xl px-4 py-2 text-sm border transition-colors ${
-                      actif
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-transparent text-foreground border-border hover:bg-muted'
-                    }`}
-                  >
-                    {LABEL_FACTEURS[cle]}
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                aria-pressed={facteurs.rienDeParticulier === true}
-                onClick={basculerRien}
-                className={`min-h-11 rounded-xl px-4 py-2 text-sm border transition-colors ${
-                  facteurs.rienDeParticulier
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-transparent text-muted-foreground border-dashed border-border hover:bg-muted'
-                }`}
-              >
-                {LABEL_RIEN_DE_PARTICULIER}
-              </button>
-            </div>
+
+          {/* Obligatoire : sans elle, une efficacité de 90 % sous hypnotique se
+              lit comme une efficacité de 90 % sans rien. Le nom du produit reste
+              au dossier médicamenteux. */}
+          <div ref={ancre('aide')} tabIndex={-1} className={classeBloc('aide')}>
+            <Puces<ClasseAideSommeil>
+              label="Pour cette nuit, vous avez pris…"
+              aide={PORTEE_AIDE_SOMMEIL}
+              options={CLASSES_AIDE_SOMMEIL}
+              libelle={(v) => LABEL_AIDE_SOMMEIL[v]}
+              aria={(v) => ARIA_AIDE_SOMMEIL[v]}
+              value={aideSommeil}
+              onChange={setAideSommeil}
+            />
           </div>
-        </div>
+        </>
       )}
 
-      {/* Sous le bouton qu'on vient de toucher, jamais en tête de page. Le refus
-          local (ce qui manque) passe avant celui du serveur, qui date de
-          l'envoi précédent. */}
-      {/* La liste se recalcule à chaque geste : elle raccourcit à mesure que
-          le patient complète, et disparaît quand il n'y a plus rien à faire.
-          Annonce POLIE : assertive, chaque geste interromprait le lecteur
-          d'écran. Le refus du serveur, lui, reste une alerte. */}
-      {tentative && !complet ? (
+      {etape === 2 && (
+        <>
+          {alerteOrdre}
+          <div ref={ancre('sortie')} tabIndex={-1} className={classeBloc('sortie')}>
+            <SelecteurHeure
+              id="agenda-heure-sortie"
+              label={`🌅 ${LABEL_SORTIE_DU_LIT} à`}
+              valeur={heureLever}
+              heureDebut={3}
+              onChange={majHeure(setHeureLever)}
+            />
+          </div>
+
+          {/* Obligatoire : c'est la seule question qui rend visible le réveil
+              matinal précoce. Sans elle, les minutes passées éveillé au lit le
+              matin sont comptées comme du sommeil. */}
+          <div ref={ancre('lever')} tabIndex={-1} className={classeBloc('lever')}>
+            <Puces<string>
+              label={QUESTION_LEVER}
+              options={['immediat', 'differe']}
+              libelle={(v) => (v === 'immediat' ? LABEL_LEVER_IMMEDIAT : LABEL_LEVER_DIFFERE)}
+              aria={(v) => (v === 'immediat' ? ARIA_LEVER_IMMEDIAT : ARIA_LEVER_DIFFERE)}
+              value={leverImmediat === undefined ? undefined : leverImmediat ? 'immediat' : 'differe'}
+              onChange={(v) => majLever(v === 'immediat')}
+            />
+          </div>
+
+          {leverImmediat === false && (
+            <div ref={ancre('reveilFinal')} tabIndex={-1} className={classeBloc('reveilFinal')}>
+              <SelecteurHeure
+                id="agenda-heure-reveil"
+                label={`👁️ ${LABEL_REVEIL_FINAL} à`}
+                valeur={heureReveilFinal}
+                heureDebut={3}
+                onChange={majHeure(setHeureReveilFinal)}
+              />
+            </div>
+          )}
+
+          <div ref={ancre('qualite')} tabIndex={-1} className={classeBloc('qualite')}>
+            <ChoixEmoji
+              label="Cette nuit était…"
+              emojis={EMOJI_QUALITE}
+              aria={ARIA_QUALITE}
+              value={qualite}
+              onChange={setQualite}
+            />
+          </div>
+
+          <div className="border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={() => setDetailsOuverts((v) => !v)}
+              className="text-sm text-primary hover:underline"
+              aria-expanded={detailsOuverts}
+            >
+              {detailsOuverts ? '− Masquer les détails' : '+ Ajouter des détails (facultatif)'}
+            </button>
+          </div>
+
+          {detailsOuverts && (
+            <div className="space-y-6">
+              <ChoixEmoji
+                label="Votre forme au réveil"
+                emojis={EMOJI_FORME}
+                aria={ARIA_FORME}
+                value={forme}
+                onChange={setForme}
+              />
+              <Puces<ClasseSieste>
+                label="Sieste la veille"
+                options={CLASSES_SIESTE}
+                libelle={(v) => LABEL_SIESTE[v]}
+                value={sieste}
+                onChange={setSieste}
+              />
+              <div>
+                <p className="text-sm font-medium text-foreground mb-2">La veille au soir</p>
+                <div className="flex flex-wrap gap-2">
+                  {CLES_FACTEURS.map((cle) => {
+                    const actif = facteurs[cle] === true;
+                    return (
+                      <button
+                        key={cle}
+                        type="button"
+                        aria-pressed={actif}
+                        onClick={() => basculerFacteur(cle)}
+                        className={`min-h-11 rounded-xl px-4 py-2 text-sm border transition-colors ${
+                          actif
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-transparent text-foreground border-border hover:bg-muted'
+                        }`}
+                      >
+                        {LABEL_FACTEURS[cle]}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    aria-pressed={facteurs.rienDeParticulier === true}
+                    onClick={basculerRien}
+                    className={`min-h-11 rounded-xl px-4 py-2 text-sm border transition-colors ${
+                      facteurs.rienDeParticulier
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-transparent text-muted-foreground border-dashed border-border hover:bg-muted'
+                    }`}
+                  >
+                    {LABEL_RIEN_DE_PARTICULIER}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Ce qui manque à l'écran courant, sous le bouton qu'on vient de
+          toucher. La liste se recalcule à chaque geste et disparaît quand
+          l'écran est complet. Annonce POLIE : assertive, chaque geste
+          interromprait le lecteur d'écran. Le refus du serveur reste une
+          alerte. */}
+      {tentees.has(etape) && manquantsEtape.length > 0 ? (
         <p aria-live="polite" className="text-sm text-status-danger">
-          {`Il reste à renseigner : ${enumerer(manquants.map((m) => m.libelle))}.`}
+          {`Il reste à renseigner : ${enumerer(manquantsEtape.map((m) => m.libelle))}.`}
         </p>
       ) : (
+        etape === 2 &&
         refus && (
           <p role="alert" className="text-sm text-status-danger">
             {refus}
@@ -677,15 +778,32 @@ export function SaisieNuitForm({
         )
       )}
 
-      <PatientButton
-        variant="primary"
-        className="w-full"
-        loading={submitting}
-        loadingLabel="Enregistrement…"
-        onClick={soumettre}
-      >
-        {ctaLabel}
-      </PatientButton>
+      <div className="flex gap-3">
+        {etape > 0 && (
+          <PatientButton
+            variant="ghost"
+            className="flex-1"
+            onClick={() => setEtape((e) => (e > 0 ? ((e - 1) as Etape) : e))}
+          >
+            Retour
+          </PatientButton>
+        )}
+        {etape < 2 ? (
+          <PatientButton variant="primary" className="flex-1" onClick={continuer}>
+            Continuer
+          </PatientButton>
+        ) : (
+          <PatientButton
+            variant="primary"
+            className="flex-1"
+            loading={submitting}
+            loadingLabel="Enregistrement…"
+            onClick={soumettre}
+          >
+            {ctaLabel}
+          </PatientButton>
+        )}
+      </div>
     </div>
   );
 }
