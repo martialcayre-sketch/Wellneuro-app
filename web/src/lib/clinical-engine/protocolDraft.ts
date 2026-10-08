@@ -263,10 +263,11 @@ function normalizeActions(
 ): ProtocolAction[] {
   assertOrientation(actions, orientation);
   // L'ORIENTATION EST HORS BORNE (A4) : elle n'est pas une intervention. La
-  // borne des trois porte sur les AUTRES actions, et sur elles seules.
+  // borne de `MAX_ACTIONS_PROTOCOLE_21J` porte sur les AUTRES actions, et sur
+  // elles seules.
   const interventions = actions.filter(action => !(orientation && estActionOrientation(action)));
   if (interventions.length > MAX_ACTIONS_PROTOCOLE_21J) {
-    throw new TypeError('Un protocole 21 jours ne peut contenir que trois actions maximum.');
+    throw new TypeError('Un protocole 21 jours ne peut contenir que sept actions maximum.');
   }
   const ids = new Set<string>();
   return actions.map(action => {

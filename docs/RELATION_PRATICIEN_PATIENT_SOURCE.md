@@ -135,7 +135,7 @@ objets suivants appartiennent aux campagnes C1/C2/C3 :
 
 - décision structurée ;
 - protocole 21 jours ;
-- trois actions maximum ;
+- trois actions maximum à l'audit (plafond porté à sept par `D-273`, arbitrage du responsable du 2026-09-29) ;
 - publication patient ;
 - check-ins J7/J14/J21 ;
 - ajustements ;

@@ -2,10 +2,12 @@ import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import { chevauchementsBareme } from './baremeChargePur';
 import { lireRepliDepuisLignes, type LectureRepli, type LigneRepli } from './tableRepliPur';
 
-// LA TABLE DU REPLI — mécanisme livré, CONTENU ATTESTÉ le 2026-09-17, verrou ARMÉ.
+// LA TABLE DU REPLI — mécanisme livré, CONTENU ATTESTÉ le 2026-09-17, RÉÉCRIT ET
+// RE-ATTESTÉ le 2026-10-08 par [[D-273]], verrou ARMÉ.
 //
-// CE QU'ELLE DIT, ET C'EST TOUT CE QU'ELLE PEUT DIRE. Combien d'actions engagées
-// répètent le même texte en plan idéal et en plan minimal. Elle constate une
+// CE QU'ELLE DIT, ET C'EST TOUT CE QU'ELLE PEUT DIRE. Quelle part des actions
+// engagées — aucune, une partie, chacune — répète le même texte en plan idéal et
+// en plan minimal. Elle constate une
 // absence d'écart TEXTUEL, jamais une absence d'allègement réel : deux
 // formulations du même niveau d'exigence passeraient pour un repli, et rien ici
 // ne sait qu'un plan minimal est vraiment plus accessible. **C'est un raccourci,
@@ -33,7 +35,16 @@ export type { LectureRepli, LigneRepli, MotifSilenceRepli } from './tableRepliPu
 export { lireRepliDepuisLignes } from './tableRepliPur';
 
 /**
- * LES TROIS LIGNES — ATTESTÉES PAR LE PRATICIEN le 2026-09-17.
+ * LES TROIS LIGNES — ATTESTÉES PAR LE PRATICIEN le 2026-09-17 ([[D-223]]), puis
+ * RÉÉCRITES ET RE-ATTESTÉES le 2026-10-08 ([[D-273]]).
+ *
+ * LA TABLE LIT UNE PROPORTION DEPUIS [[D-273]] (`etendueSansRepli` : aucune,
+ * une partie, chacune), et non plus un compte. À plafond sept, trois actions
+ * sans repli ne veulent plus dire toutes ; or « toutes » est ce qui informe.
+ * `REPLI-02` et `REPLI-03`, écrites sur le compte, sont retirées et leurs
+ * identifiants ne sont pas réutilisés : `REPLI-04` et `REPLI-05` les remplacent.
+ * `REPLI-01` garde son texte et son identifiant — à zéro, compte et proportion
+ * disent la même chose.
  *
  * D'OÙ VIENNENT CES BORNES, ET IL FAUT LE DIRE PLUTÔT QUE LE LAISSER SUPPOSER.
  * Elles n'ont **aucune source clinique** : rien au dépôt ne traite du repli
@@ -47,16 +58,19 @@ export { lireRepliDepuisLignes } from './tableRepliPur';
  * la production ne portait, au 2026-09-16, **aucune action de protocole** — un
  * seul brouillon, une observation alimentaire sans actions.
  *
- * CE QUI LES CONTRAINT EST STRUCTUREL : `MAX_ACTIONS_PROTOCOLE_21J` vaut 3, donc
- * le terme n'a que quatre valeurs possibles, et l'échelle est contiguë et sans
- * recouvrement.
+ * CE QUI LES CONTRAINT EST STRUCTUREL : le terme n'a que trois valeurs (0, 1,
+ * 2), quel que soit le plafond, et l'échelle est contiguë et sans recouvrement.
+ *
+ * `REPLI-05` (« chaque action ») NE S'AFFICHE QUE SI CHAQUE ACTION ENGAGÉE A UN
+ * PLAN IDÉAL ÉCRIT ET IDENTIQUE À SON PLAN MINIMAL. Une action en cours de
+ * saisie ne répète rien, et ramène la part à « une partie » — ce qui reste vrai.
  *
  * `REPLI-01` COUVRE TROIS SITUATIONS, et son texte doit rester vrai dans les
  * trois — c'est la correction exacte que la relecture du 2026-09-15 avait
  * imposée à `CHARGE-01`, dont le texte proposé affirmait faux à zéro action.
  * Ici la troisième situation est la plus traître : une action **en cours de
  * saisie**, dont le plan idéal n'est pas encore tapé, n'entre pas dans
- * `actionsSansRepli` (le `!== ''` l'exclut), donc le terme vaut zéro et
+ * `actionsSansRepli` (le `!== ''` l'exclut), donc la part vaut zéro et
  * `REPLI-01` s'affiche. Un texte disant « chaque action engagée distingue ses
  * deux plans » AFFIRMERAIT FAUX pendant la composition, là où cette table est
  * précisément lue. La formulation retenue ne parle que de ce que la mesure
@@ -69,28 +83,26 @@ export { lireRepliDepuisLignes } from './tableRepliPur';
 export const TABLE_REPLI_V1: LigneRepli[] = [
   {
     id: 'REPLI-01',
-    terme: 'actionsSansRepli',
+    terme: 'etendueSansRepli',
     min: null,
     max: 0,
     constat: 'Aucune action engagée ne répète son plan idéal en plan minimal.',
     statut: 'publiee',
   },
   {
-    id: 'REPLI-02',
-    terme: 'actionsSansRepli',
+    id: 'REPLI-04',
+    terme: 'etendueSansRepli',
     min: 1,
-    max: 2,
-    constat: 'Au moins une action engagée répète le même plan en idéal et en minimal : '
-      + 'rien n’y est écrit comme allègement.',
+    max: 1,
+    constat: 'Une partie seulement des actions engagées répète son plan idéal en plan minimal.',
     statut: 'publiee',
   },
   {
-    id: 'REPLI-03',
-    terme: 'actionsSansRepli',
-    min: 3,
-    max: 3,
-    constat: 'Aucune des actions engagées ne distingue ses deux plans : '
-      + 'le protocole ne propose aucun repli écrit.',
+    id: 'REPLI-05',
+    terme: 'etendueSansRepli',
+    min: 2,
+    max: 2,
+    constat: 'Chaque action engagée répète son plan idéal en plan minimal.',
     statut: 'publiee',
   },
 ];
@@ -111,7 +123,21 @@ export type TableRepliMetadata = {
 };
 
 /**
- * LE VERROU EST ARMÉ — attestation du 2026-09-17 ([[D-223]]).
+ * LE VERROU EST ARMÉ — attestation du 2026-09-17 ([[D-223]]), renouvelée le
+ * 2026-10-08 ([[D-273]]).
+ *
+ * LA RE-ATTESTATION DU 2026-10-08. Le plafond passe de trois à sept ; la table
+ * lit désormais la PART des actions engagées sans repli (`etendueSansRepli`),
+ * en trois lignes (`REPLI-01`, `REPLI-04`, `REPLI-05`). Le responsable a relu
+ * les trois constats et la phrase rendue dans quatorze situations calculées
+ * sur la surface
+ * `docs/claude/campagnes/2026-10-04-bio-parcours/SURFACE_RELECTURE_BP25.md`
+ * (§ 2), produite avant la demande ([[D-195]] §2), puis a déclaré :
+ * « Conforme ». Une première version du même jour, à deux lignes sur
+ * `actionsSansRepli`, avait été déclarée conforme puis remplacée avant tout
+ * merge ; son périmètre est rangé ci-dessous.
+ *
+ * L'ATTESTATION D'ORIGINE, CONSERVÉE CI-DESSOUS, portait trois lignes.
  *
  * CE QUI A ÉTÉ ATTESTÉ, ET PAR QUEL GESTE. Le responsable a relu **mot à mot**
  * les trois constats sur la surface de relecture
@@ -133,13 +159,24 @@ export type TableRepliMetadata = {
  */
 export const TABLE_REPLI_METADATA: TableRepliMetadata = {
   validationExterne: true,
-  dateValidation: '2026-09-17T06:06:41.000Z',
+  dateValidation: '2026-10-08T00:00:00.000Z',
+  // LES PÉRIMÈTRES SE RANGENT, ILS NE S'EFFACENT PAS ([[D-195]] §4) :
+  // - `a42fed33d68a9475d72daa5928a1afc0416e11b4413e2d8179cbc25d5b566c3b` —
+  //   périmètre attesté le 2026-09-17 (trois lignes, 0 à 3). **Signé, puis
+  //   remplacé par [[D-273]]** le 2026-10-08.
+  // - `f6593020069643cecb86e5147524c4d8ac6a833683efce76b5462b39291c5ece` —
+  //   périmètre déclaré conforme le 2026-10-08 (deux lignes sur
+  //   `actionsSansRepli`), **remplacé le même jour, avant tout merge**, par la
+  //   version en proportion ([[D-273]]).
+  // - `3d2e5f0d…7f20` — périmètre déclaré conforme le 2026-10-08 (trois lignes
+  //   sur `etendueSansRepli`, [[D-273]]), recopié ci-dessous.
+  //
   // LITTÉRAL FIGÉ, recopié à la main le jour de l'attestation — surtout pas
   // `TABLE_REPLI_SHA256`, qui rendrait la comparaison tautologique ([[D-063]]).
   // Changer un seul mot d'un constat fait diverger ce littéral du périmètre
   // recalculé : la table cesse alors d'être servie, et c'est exactement ce qu'on
   // veut — un texte réécrit demande une NOUVELLE relecture, pas un ajustement.
-  shaPerimetre: 'a42fed33d68a9475d72daa5928a1afc0416e11b4413e2d8179cbc25d5b566c3b',
+  shaPerimetre: '3d2e5f0d5e5f88734ca43e2d729b419d6312b062770093cbbb063d6989167f20',
 };
 
 /** Le périmètre à signer : la table ENTIÈRE, jamais une sélection de champs. */

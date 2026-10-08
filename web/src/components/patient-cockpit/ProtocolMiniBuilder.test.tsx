@@ -2,7 +2,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ProtocolMiniBuilder, type RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
-import type { DecisionCard } from '@/lib/clinical-engine/types';
+import { MAX_ACTIONS_PROTOCOLE_21J, type DecisionCard } from '@/lib/clinical-engine/types';
+import { lignesBaremeServables } from '@/lib/clinical/baremeChargeV1';
 import type { FoodCompassActionRef } from '@/lib/food-compass';
 
 function card(): DecisionCard {
@@ -50,18 +51,22 @@ describe('ProtocolMiniBuilder', () => {
     expect(within(container).queryByRole('button', { name: 'Ajouter une action' })).toBeNull();
   });
 
-  it('ajoute, modifie et supprime au plus trois actions', () => {
+  it('ajoute, modifie et supprime au plus sept actions', () => {
     const { container } = render(<ProtocolMiniBuilder decisionCard={card()} />);
     const ui = within(container);
     const add = ui.getByRole('button', { name: 'Ajouter une action' });
     expect(add.className).toContain('min-h-11');
-    fireEvent.click(add); fireEvent.click(add); fireEvent.click(add);
-    expect(ui.getByText('Actions (3/3)')).not.toBeNull();
+    expect(MAX_ACTIONS_PROTOCOLE_21J).toBe(7);
+    for (let clic = 0; clic < MAX_ACTIONS_PROTOCOLE_21J; clic += 1) fireEvent.click(add);
+    expect(ui.getByText('Actions (7/7)')).not.toBeNull();
     expect(add.hasAttribute('disabled')).toBe(true);
+    // Un clic de plus sur le bouton désactivé n'ajoute rien.
+    fireEvent.click(add);
+    expect(ui.getAllByRole('button', { name: 'Supprimer l’action' })).toHaveLength(MAX_ACTIONS_PROTOCOLE_21J);
     fireEvent.change(ui.getByLabelText('Intitulé de l’action 1'), { target: { value: 'Action modifiée' } });
     expect((ui.getByLabelText('Intitulé de l’action 1') as HTMLInputElement).value).toBe('Action modifiée');
     fireEvent.click(ui.getAllByRole('button', { name: 'Supprimer l’action' })[0]);
-    expect(ui.getByText('Actions (2/3)')).not.toBeNull();
+    expect(ui.getByText('Actions (6/7)')).not.toBeNull();
   });
 
   it('affiche la justification excessive et marque un brouillon complet comme relu', () => {
@@ -142,10 +147,10 @@ describe('ProtocolMiniBuilder', () => {
       />,
     );
     const ui = within(container);
-    expect(ui.getByText('Actions (0/3)')).not.toBeNull();
+    expect(ui.getByText('Actions (0/7)')).not.toBeNull();
     expect(ui.getByText(/Sélection Boussole prête : Sardine/)).not.toBeNull();
     fireEvent.click(ui.getByRole('button', { name: 'Insérer manuellement' }));
-    expect(ui.getByText('Actions (1/3)')).not.toBeNull();
+    expect(ui.getByText('Actions (1/7)')).not.toBeNull();
     expect((ui.getByLabelText('Intitulé de l’action 1') as HTMLInputElement).value).toBe('Sardine');
     expect(onClear).toHaveBeenCalledTimes(1);
   });
@@ -165,10 +170,10 @@ describe('ProtocolMiniBuilder — l’assiette indiquée devient une action', ()
       />,
     );
     const ui = within(container);
-    expect(ui.getByText('Actions (0/3)')).not.toBeNull();
+    expect(ui.getByText('Actions (0/7)')).not.toBeNull();
     expect(ui.getByText(/Assiette indiquée retenue : Assiette dopaminergique/)).not.toBeNull();
     fireEvent.click(ui.getByRole('button', { name: 'Insérer manuellement' }));
-    expect(ui.getByText('Actions (1/3)')).not.toBeNull();
+    expect(ui.getByText('Actions (1/7)')).not.toBeNull();
     expect((ui.getByLabelText('Intitulé de l’action 1') as HTMLInputElement).value)
       .toBe('Assiette dopaminergique');
     // Le TYPE est posé, pas laissé au praticien : une référence d'assiette
@@ -189,7 +194,7 @@ describe('ProtocolMiniBuilder — l’assiette indiquée devient une action', ()
     fireEvent.click(ui.getByRole('button', { name: 'Insérer manuellement' }));
     // L'écran rejoue la garde du domaine pour la dire ; il ne la remplace pas.
     expect(container.textContent).toContain('n’est pas une assiette d’indication');
-    expect(ui.getByText('Actions (0/3)')).not.toBeNull();
+    expect(ui.getByText('Actions (0/7)')).not.toBeNull();
   });
 
   it('LA JOINTURE — une assiette fait DEMANDER le contrat V4, sans qu’aucune action soit suspendue', () => {
@@ -986,14 +991,14 @@ describe('ProtocolMiniBuilder — orientation sur signal adressé', () => {
     return { container, ui, onReviewed };
   }
 
-  it('affiche l’orientation signée, en lecture seule, hors des trois actions', () => {
+  it('affiche l’orientation signée, en lecture seule, hors de la limite d’actions', () => {
     const { ui } = relire(adressee());
     const bloc = ui.getByRole('region', { name: 'Orientation vers le médecin' });
     expect(bloc.textContent).toContain('Première action : Consulter votre médecin');
-    expect(bloc.textContent).toContain('ne se retire pas et ne compte pas dans les trois actions');
+    expect(bloc.textContent).toContain('ne se retire pas et ne compte pas dans la limite de sept actions');
     expect(within(bloc).queryByRole('textbox')).toBeNull();
     expect(within(bloc).queryByRole('button')).toBeNull();
-    expect(ui.getByText('Actions (1/3)')).not.toBeNull();
+    expect(ui.getByText('Actions (1/7)')).not.toBeNull();
   });
 
   it('la soumission s’ouvre sur l’orientation, puis les actions du praticien', () => {
@@ -1008,5 +1013,81 @@ describe('ProtocolMiniBuilder — orientation sur signal adressé', () => {
     expect(ui.queryByRole('region', { name: 'Orientation vers le médecin' })).toBeNull();
     const soumission = onReviewed.mock.calls[0][0] as RelectureProtocoleSoumission;
     expect(soumission.actions.map(a => a.actionId)).toEqual(['action-1']);
+  });
+});
+
+// LE COMPTAGE PENDANT LA COMPOSITION ([[D-273]] §5). Le constructeur ne mesurait
+// que les actions TYPÉES : à trois actions dont une sans type, il affirmait
+// « Deux actions engagées ». Il compte désormais toutes les actions non
+// suspendues du brouillon, et se tait tant qu'AUCUNE action n'est typée,
+// suspendues comprises. Cas tirés de la surface déclarée
+// (`SURFACE_RELECTURE_BP25.md` §3), rejoués sur le barème SIGNÉ réel.
+describe('ProtocolMiniBuilder — le comptage pendant la composition', () => {
+  const LEGER = 'Le barème suggère Léger — Au plus une action engagée : la charge reste minimale.';
+  const MODERE = 'Le barème suggère Modéré — Deux ou trois actions engagées en parallèle.';
+  const CHARGE = 'Le barème suggère Chargé — Au moins quatre actions engagées en parallèle.';
+
+  type Brouillon = { typees: number; vierges: number; suspendues?: number[] };
+
+  function composer({ typees, vierges, suspendues = [] }: Brouillon) {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} baremeCharge={lignesBaremeServables()} />);
+    const ui = within(container);
+    for (let rang = 0; rang < typees + vierges; rang += 1) fireEvent.click(ui.getByText('Ajouter une action'));
+    // Les `typees` premières reçoivent un type ; les suivantes restent vierges.
+    for (let rang = 1; rang <= typees; rang += 1) {
+      fireEvent.change(ui.getByLabelText(`Type de l’action ${rang}`), { target: { value: 'food' } });
+    }
+    for (const rang of suspendues) {
+      fireEvent.click(ui.getAllByRole('checkbox', { name: /En attente du bilan biologique/ })[rang - 1]);
+    }
+    return { container, ui };
+  }
+
+  function suggestion(container: HTMLElement): string | null {
+    const p = Array.from(container.querySelectorAll('p')).find(el => el.textContent?.startsWith('Le barème suggère'));
+    return p?.textContent?.trim() ?? null;
+  }
+
+  it('le barème signé est servi à ce banc', () => {
+    expect(lignesBaremeServables()).toHaveLength(3);
+  });
+
+  const CAS: { nom: string; brouillon: Brouillon; attendu: string | null }[] = [
+    { nom: '1 vierge, aucune typée', brouillon: { typees: 0, vierges: 1 }, attendu: null },
+    { nom: '3 vierges, aucune typée', brouillon: { typees: 0, vierges: 3 }, attendu: null },
+    { nom: '1 typée', brouillon: { typees: 1, vierges: 0 }, attendu: LEGER },
+    { nom: '1 typée + 1 vierge', brouillon: { typees: 1, vierges: 1 }, attendu: MODERE },
+    { nom: '2 typées + 1 vierge', brouillon: { typees: 2, vierges: 1 }, attendu: MODERE },
+    { nom: '3 typées + 1 vierge', brouillon: { typees: 3, vierges: 1 }, attendu: CHARGE },
+    { nom: '1 typée + 6 vierges', brouillon: { typees: 1, vierges: 6 }, attendu: CHARGE },
+    { nom: '3 typées dont 1 suspendue', brouillon: { typees: 3, vierges: 0, suspendues: [3] }, attendu: MODERE },
+    { nom: '3 typées, toutes suspendues', brouillon: { typees: 3, vierges: 0, suspendues: [1, 2, 3] }, attendu: LEGER },
+    // Une action typée mais suspendue LÈVE le silence : le brouillon a un contenu.
+    { nom: '1 typée suspendue + 1 vierge suspendue', brouillon: { typees: 1, vierges: 1, suspendues: [1, 2] }, attendu: LEGER },
+    { nom: '1 vierge suspendue, seule', brouillon: { typees: 0, vierges: 1, suspendues: [1] }, attendu: null },
+    { nom: '2 typées + 2 vierges dont 1 suspendue', brouillon: { typees: 2, vierges: 2, suspendues: [4] }, attendu: MODERE },
+    { nom: '7 typées', brouillon: { typees: 7, vierges: 0 }, attendu: CHARGE },
+    { nom: '4 typées + 3 suspendues', brouillon: { typees: 7, vierges: 0, suspendues: [5, 6, 7] }, attendu: CHARGE },
+  ];
+
+  for (const cas of CAS) {
+    it(`${cas.nom} ⇒ ${cas.attendu ?? 'silence'}`, () => {
+      const { container } = composer(cas.brouillon);
+      expect(suggestion(container)).toBe(cas.attendu);
+    });
+  }
+
+  it('le retrait de l’action non typée fait redescendre la suggestion', () => {
+    const { container, ui } = composer({ typees: 1, vierges: 1 });
+    expect(suggestion(container)).toBe(MODERE);
+    fireEvent.click(ui.getAllByRole('button', { name: 'Supprimer l’action' })[1]);
+    expect(suggestion(container)).toBe(LEGER);
+  });
+
+  it('typer la première action d’un brouillon vierge lève le silence', () => {
+    const { container, ui } = composer({ typees: 0, vierges: 2 });
+    expect(suggestion(container)).toBeNull();
+    fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'food' } });
+    expect(suggestion(container)).toBe(MODERE);
   });
 });

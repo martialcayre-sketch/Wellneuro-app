@@ -103,7 +103,7 @@ describe('ProtocolConsultationPanel', () => {
     );
     const ui = within(container);
     expect(ui.getByRole('button', { name: 'Valider pour diffusion' }).hasAttribute('disabled')).toBe(true);
-    expect(ui.getByText(/entre une et trois actions/)).not.toBeNull();
+    expect(ui.getByText(/entre une et sept actions/)).not.toBeNull();
   });
 
   it('reverrouille l’aperçu lorsque le hash du protocole change', () => {

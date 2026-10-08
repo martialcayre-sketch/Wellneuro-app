@@ -68,6 +68,20 @@ export type MesureProtocole = {
    * `!== ''` explicite ci-dessous.
    */
   actionsSansRepli: number;
+  /**
+   * LA PART des actions engagées qui répètent leur plan idéal en plan minimal :
+   * `0` aucune, `1` une partie seulement, `2` chacune ([[D-273]]).
+   *
+   * POURQUOI UNE PROPORTION ET NON UN COMPTE. À plafond sept, « trois actions
+   * sans repli » ne dit plus si ce sont toutes les actions ou une sur sept ; or
+   * c'est « toutes » qui informe. La table du repli lit ce terme seul — elle ne
+   * croise pas deux termes ([[D-213]] §4), c'est la mesure qui les rapporte.
+   *
+   * `2` EXIGE QUE CHAQUE ACTION ENGAGÉE AIT UN PLAN IDÉAL ÉCRIT. Une action en
+   * cours de saisie (plan idéal vide) ne répète rien : elle n'entre pas dans
+   * `actionsSansRepli`, donc la part retombe à `1` (ou `0`), jamais à « chacune ».
+   */
+  etendueSansRepli: 0 | 1 | 2;
 };
 
 /**
@@ -112,18 +126,29 @@ export type LigneBaremeCharge = {
   statut: 'publiee' | 'brouillon';
 };
 
+/**
+ * Ce que la mesure lit : une action du contrat, ou une action de BROUILLON
+ * dont le type n'est pas encore choisi (`''`). La mesure tourne dans le
+ * navigateur pendant la composition ([[D-273]]) : une action non typée y est
+ * une action du brouillon, elle compte parmi les actions et les engagées —
+ * mais un type vide n'est pas un registre, il n'entre pas dans `typesDistincts`.
+ */
+export type ActionMesurable = Omit<ProtocolAction, 'type'> & { type: ProtocolAction['type'] | '' };
+
 /** Ce que le protocole mesure — dérivé, jamais déclaré. */
-export function mesurerProtocole(actions: readonly ProtocolAction[]): MesureProtocole {
+export function mesurerProtocole(actions: readonly ActionMesurable[]): MesureProtocole {
   const fermes = actions.filter(action => action.interventionStatus === undefined
     || action.interventionStatus === 'active');
+  const actionsSansRepli = fermes.filter(action =>
+    action.idealPlan.trim() !== '' && action.idealPlan.trim() === action.minimalPlan.trim()).length;
   return {
     nombreActions: actions.length,
     nombreActionsFermes: fermes.length,
-    typesDistincts: new Set(fermes.map(action => action.type)).size,
+    typesDistincts: new Set(fermes.map(action => action.type).filter(type => type !== '')).size,
     actionsAvecEcartDePlan: fermes.filter(action =>
       action.idealPlan.trim() !== '' && action.idealPlan.trim() !== action.minimalPlan.trim()).length,
-    actionsSansRepli: fermes.filter(action =>
-      action.idealPlan.trim() !== '' && action.idealPlan.trim() === action.minimalPlan.trim()).length,
+    actionsSansRepli,
+    etendueSansRepli: actionsSansRepli === 0 ? 0 : actionsSansRepli === fermes.length ? 2 : 1,
   };
 }
 

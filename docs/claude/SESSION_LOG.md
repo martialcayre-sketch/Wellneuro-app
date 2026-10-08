@@ -9661,3 +9661,18 @@ est déjà perdue) ; toucher le moteur clinique (`D-122`).
 **Prochaine action.** PR du lot, CI.
 
 **Questions ouvertes.** Aucune sur le lot.
+
+## 2026-10-08 — BIO-PARCOURS BP-25 : plafond à sept, repli en proportion (D-273)
+
+**Décidé.** Plafond 3 → 7 ; barème en échelle B re-signé ; table du repli
+mesurée en proportion (aucune / une partie / chacune), re-signée après seconde
+déclaration ; correctif du comptage du constructeur. Décision renumérotée D-273
+(D-271/272 pris par l'agenda du sommeil).
+
+**Écarté.** Table à deux lignes sur un compte (déclarée le matin, remplacée) :
+elle ne savait plus dire « toutes » à plafond sept.
+
+**Prochaine action.** CI de la PR, revue Codex par le responsable, merge.
+
+**Questions ouvertes.** BP-26 à reprendre à tête reposée ; « Reprendre cette
+charge » fige un niveau gonflé par des actions vierges.

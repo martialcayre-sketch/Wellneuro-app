@@ -686,7 +686,7 @@ describe('ClinicalRuntimeSection', () => {
     // « Protocole indisponible » — et le bandeau était absent quoi qu'il
     // arrive. Constaté au DOM. Le compteur d'actions n'existe que dans la
     // branche VIVANTE du constructeur.
-    await screen.findByText('Actions (0/3)');
+    await screen.findByText('Actions (0/7)');
     expect(screen.queryByText(/Assiette indiquée retenue/)).toBeNull();
   });
 
@@ -725,7 +725,7 @@ describe('ClinicalRuntimeSection', () => {
 
     rerender(<ClinicalRuntimeSection idPatient="PAT_AUTRE" {...proprietes} />);
     // Témoin d'anti-vacuité : le constructeur est dans sa branche VIVANTE.
-    await screen.findByText('Actions (1/3)');
+    await screen.findByText('Actions (1/7)');
     expect(screen.queryByLabelText('Assiette de l’action 1')).toBeNull();
   });
 

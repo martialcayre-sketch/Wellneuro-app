@@ -71,7 +71,7 @@ diffusable.
 
 - C1 ne produit qu'un brouillon, sans statut `active`, `completed` ou
   `stopped`. Ces états appartiennent au protocole persisté par C2.
-- Trois actions maximum uniquement après validation clinique du barème de
+- Sept actions maximum (`D-273`) uniquement après validation du barème de
   charge ; plans idéal, minimal et secours ; critères observables explicites.
 - Le domaine complément porte une intention d'exploration, jamais un produit,
   une forme ou une dose avant C4.

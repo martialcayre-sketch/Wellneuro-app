@@ -615,7 +615,7 @@
   `ClinicalSnapshot`, `DecisionCard` et `ProtocolDraft` ; cockpit fiche
   patient (dont instanciations radar / 12
   besoins / 5 objets / badges de preuve), carte de décision explicable,
-  protocole 21 jours minimal (3 actions max, plan idéal/minimal/secours,
+  protocole 21 jours minimal (7 actions max, plan idéal/minimal/secours,
   charge thérapeutique), instanciations `ModeConsultation` et
   `PrévisualisationPatient`, file et flux de validation praticien.
 - **Consomme** : `web/src/lib/equilibre/` (score, evidence A/B/C/D,

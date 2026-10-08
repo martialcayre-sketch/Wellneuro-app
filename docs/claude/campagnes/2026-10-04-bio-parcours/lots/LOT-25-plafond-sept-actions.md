@@ -1,7 +1,7 @@
 ---
 id: "LOT-25"
 titre: "BP-25 — Plafond d'actions porté à 7"
-statut: "à_faire"
+statut: "terminé (2026-10-08, D-273)"
 dépend_de: "LOT-00"
 ---
 
@@ -61,3 +61,23 @@ Signatures à cinq termes ; gardes vertes à 7.
 ## Résultats
 
 À compléter à la clôture.
+
+## Résultats
+
+- `MAX_ACTIONS_PROTOCOLE_21J` vaut 7 (`D-273`, amende `D-105`) ; refus du
+  moteur, aperçu patient et constructeur disent « sept ».
+- Barème re-signé (`7848189d…`) : `CHARGE-02` 2 à 3, `CHARGE-03` 4 à 7 ; à
+  trois actions engagées, « Chargé » devient « Modéré ».
+- Table du repli réécrite **en proportion** (`etendueSansRepli` : aucune, une
+  partie, chacune) et re-signée (`3d2e5f0d…`) : `REPLI-01`, `REPLI-04`,
+  `REPLI-05` ; `REPLI-02` et `REPLI-03` retirées. Toujours lue par aucun écran.
+  Une première version à deux lignes, déclarée conforme le matin, a été
+  remplacée le soir même avant merge ; son périmètre est rangé.
+- Constructeur : le comptage porte sur toutes les actions non suspendues du
+  brouillon, et se tait tant qu'aucune n'est typée.
+- Deux déclarations de conformité du responsable, chacune sur une surface
+  produite avant la demande (`SURFACE_RELECTURE_BP25.md`, `D-195`).
+- Validations : T1 complet vert, T3 complet vert (12 020 + 1 625 tests
+  unitaires, 243 E2E, dérive schéma nulle). Revue `wn-reviewer` : GO, aucun
+  P0/P1 ; trois écarts documentaires corrigés, le quatrième consigné dans
+  `D-273`. Passe Codex : à lancer par le responsable sur la PR.

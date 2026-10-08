@@ -29,7 +29,7 @@ function action(surcharges: Partial<ProtocolAction> = {}): ProtocolAction {
 function ligne(surcharges: Partial<LigneRepli> = {}): LigneRepli {
   return {
     id: 'L1',
-    terme: 'actionsSansRepli',
+    terme: 'etendueSansRepli',
     min: null,
     max: 0,
     constat: 'Constat de banc — aucune valeur clinique.',
@@ -57,12 +57,16 @@ function TABLE_REPLI_SHA256_DE(lignes: LigneRepli[]): string {
 }
 
 describe('table du repli — le verrou', () => {
-  it('est ARMÉE au dépôt : l’attestation du 2026-09-17 est en vigueur', () => {
+  it('est ARMÉE au dépôt : la déclaration du 2026-10-08 est en vigueur', () => {
     expect(TABLE_REPLI_METADATA.validationExterne).toBe(true);
-    expect(TABLE_REPLI_METADATA.dateValidation).toBe('2026-09-17T06:06:41.000Z');
+    expect(TABLE_REPLI_METADATA.dateValidation).toBe('2026-10-08T00:00:00.000Z');
     expect(tableRepliSignee()).toBe(true);
-    // Le point de sortie unique sert les trois lignes publiées, et elles seules.
-    expect(lignesRepliServables().map(l => l.id)).toEqual(['REPLI-01', 'REPLI-02', 'REPLI-03']);
+    // Le point de sortie unique sert les trois lignes publiées, et elles seules
+    // ([[D-273]] : `REPLI-02` et `REPLI-03` retirées, leurs identifiants ne sont
+    // pas réutilisés).
+    expect(lignesRepliServables().map(l => l.id)).toEqual(['REPLI-01', 'REPLI-04', 'REPLI-05']);
+    expect(TABLE_REPLI_V1.some(l => l.id === 'REPLI-02' || l.id === 'REPLI-03')).toBe(false);
+    expect(TABLE_REPLI_V1.every(l => l.terme === 'etendueSansRepli')).toBe(true);
   });
 
   it('PERD SA SIGNATURE si un seul mot d’un constat change', () => {
@@ -79,10 +83,10 @@ describe('table du repli — le verrou', () => {
     expect(lignesRepliServables(reecrite, TABLE_REPLI_METADATA)).toEqual([]);
   });
 
-  it('N’ABSORBE PAS une quatrième ligne ajoutée après l’attestation', () => {
+  it('N’ABSORBE PAS une ligne ajoutée après l’attestation', () => {
     // Le défaut que [[D-063]] a fermé ailleurs : une ligne ajoutée ne doit pas
     // entrer en service sous une signature acquise.
-    const elargie = [...TABLE_REPLI_V1, ligne({ id: 'REPLI-04', min: 4, max: null })];
+    const elargie = [...TABLE_REPLI_V1, ligne({ id: 'REPLI-06', min: 3, max: null })];
     expect(tableRepliSignee(TABLE_REPLI_METADATA, elargie)).toBe(false);
     expect(lignesRepliServables(elargie, TABLE_REPLI_METADATA)).toEqual([]);
   });
@@ -144,13 +148,53 @@ describe('table du repli — le verrou', () => {
   });
 });
 
-describe('table du repli — les trois lignes proposées', () => {
-  it('couvre les quatre valeurs possibles, sans trou ni recouvrement', () => {
+describe('table du repli — les trois lignes attestées', () => {
+  it('couvre les trois valeurs possibles de la part, sans trou ni recouvrement', () => {
     expect(chevauchementsBareme(TABLE_REPLI_V1)).toEqual([]);
-    for (let valeur = 0; valeur <= MAX_ACTIONS_PROTOCOLE_21J; valeur += 1) {
+    for (const valeur of [0, 1, 2]) {
       const couvrantes = TABLE_REPLI_V1.filter(l =>
         (l.min === null || valeur >= l.min) && (l.max === null || valeur <= l.max));
       expect(couvrantes, `valeur ${valeur}`).toHaveLength(1);
+    }
+  });
+
+  it('sert REPLI-01, REPLI-04, REPLI-05 pour aucune, une partie, chacune — la surface déclarée le 2026-10-08', () => {
+    const attendu = { 0: 'REPLI-01', 1: 'REPLI-04', 2: 'REPLI-05' } as const;
+    for (const valeur of [0, 1, 2] as const) {
+      const couvrante = TABLE_REPLI_V1.find(l =>
+        (l.min === null || valeur >= l.min) && (l.max === null || valeur <= l.max));
+      expect(couvrante?.id, `valeur ${valeur}`).toBe(attendu[valeur]);
+    }
+  });
+
+  it('LES QUATORZE SITUATIONS DE LA SURFACE déclarée conforme le 2026-10-08', () => {
+    // Chaque situation du § 2 de `SURFACE_RELECTURE_BP25.md`, rejouée sur la
+    // chaîne réelle : mesure, puis lecture sur les lignes servies.
+    const R = () => action({ idealPlan: 'Même texte', minimalPlan: 'Même texte' });
+    const D = () => action({ idealPlan: 'Marcher 30 min', minimalPlan: 'Marcher 10 min' });
+    const V = () => action({ idealPlan: '', minimalPlan: '' });
+    const S = (ideal: string, minimal: string) =>
+      action({ idealPlan: ideal, minimalPlan: minimal, interventionStatus: 'conditionnelle_biologie' } as Partial<ProtocolAction>);
+    const n = (k: number, f: () => ProtocolAction) => Array.from({ length: k }, f);
+    const cas: [string, ProtocolAction[], string][] = [
+      ['aucune action', [], 'REPLI-01'],
+      ['1 action, plan idéal encore vide', [V()], 'REPLI-01'],
+      ['3 distinctes + 1 plan idéal vide', [...n(3, D), V()], 'REPLI-01'],
+      ['1 distincte', [D()], 'REPLI-01'],
+      ['7 distinctes', n(7, D), 'REPLI-01'],
+      ['1 répétée + 2 distinctes', [R(), D(), D()], 'REPLI-04'],
+      ['6 répétées + 1 distincte', [...n(6, R), D()], 'REPLI-04'],
+      ['2 répétées + 1 plan idéal vide', [R(), R(), V()], 'REPLI-04'],
+      ['1 répétée, seule', [R()], 'REPLI-05'],
+      ['3 répétées sur 3', n(3, R), 'REPLI-05'],
+      ['7 répétées sur 7', n(MAX_ACTIONS_PROTOCOLE_21J, R), 'REPLI-05'],
+      ['1 répétée + 1 distincte suspendue', [R(), S('X', 'Y')], 'REPLI-05'],
+      ['1 répétée suspendue, seule', [S('X', 'X')], 'REPLI-01'],
+      ['même texte aux espaces près', [action({ idealPlan: '  X', minimalPlan: 'X  ' })], 'REPLI-05'],
+    ];
+    for (const [nom, actions, id] of cas) {
+      const lecture = lireRepliDepuisLignes(mesurerProtocole(actions), lignesRepliServables());
+      expect(lecture.statut === 'constat' ? lecture.idLigne : lecture.motif, nom).toBe(id);
     }
   });
 
@@ -174,6 +218,7 @@ describe('table du repli — les trois lignes proposées', () => {
       action({ actionId: 'a2', idealPlan: '', minimalPlan: '' }),
     ]);
     expect(mesure.actionsSansRepli).toBe(0);
+    expect(mesure.etendueSansRepli).toBe(0);
 
     const lecture = lireRepliDepuisLignes(mesure, TABLE_REPLI_V1);
     expect(lecture).toEqual({
@@ -227,6 +272,37 @@ describe('actionsSansRepli — ce que la mesure compte', () => {
       action({ actionId: 'a1', idealPlan: 'X', minimalPlan: 'X', interventionStatus: 'conditionnelle_biologie' }),
     ] as ProtocolAction[]);
     expect(mesure.actionsSansRepli).toBe(0);
+    expect(mesure.etendueSansRepli).toBe(0);
+  });
+});
+
+describe('etendueSansRepli — la part que la table lit ([[D-273]])', () => {
+  it('vaut 2 seulement quand CHAQUE action engagée répète son plan', () => {
+    const toutes = mesurerProtocole([
+      action({ actionId: 'a1', idealPlan: 'X', minimalPlan: 'X' }),
+      action({ actionId: 'a2', idealPlan: 'Y', minimalPlan: 'Y' }),
+    ]);
+    expect(toutes.etendueSansRepli).toBe(2);
+    const partie = mesurerProtocole([
+      action({ actionId: 'a1', idealPlan: 'X', minimalPlan: 'X' }),
+      action({ actionId: 'a2', idealPlan: 'Y', minimalPlan: 'Z' }),
+    ]);
+    expect(partie.etendueSansRepli).toBe(1);
+  });
+
+  it('UNE ACTION AU PLAN IDÉAL VIDE ramène « chacune » à « une partie », jamais l’inverse', () => {
+    // Le cas qui ferait mentir REPLI-05 : pendant la composition, l'action vide
+    // ne répète rien, donc « chaque action engagée répète » serait faux.
+    const mesure = mesurerProtocole([
+      action({ actionId: 'a1', idealPlan: 'X', minimalPlan: 'X' }),
+      action({ actionId: 'a2', idealPlan: '', minimalPlan: '' }),
+    ]);
+    expect(mesure.actionsSansRepli).toBe(1);
+    expect(mesure.etendueSansRepli).toBe(1);
+  });
+
+  it('vaut 0 sans action engagée — jamais 2 par égalité de deux zéros', () => {
+    expect(mesurerProtocole([]).etendueSansRepli).toBe(0);
   });
 });
 
@@ -244,13 +320,13 @@ describe('lireRepliDepuisLignes — un motif par cause', () => {
   });
 
   it('LE CHEMIN RÉEL REND MAINTENANT UN CONSTAT — la table est armée', () => {
-    // `mesure` porte une action dont les deux plans sont identiques : 1 action
-    // sans repli, donc REPLI-02. Ce banc vérifie la chaîne ENTIÈRE — verrou,
-    // filtre de service, lecture — sur les lignes réelles du dépôt.
+    // `mesure` porte une seule action, dont les deux plans sont identiques :
+    // chaque action engagée répète, donc REPLI-05. Ce banc vérifie la chaîne
+    // ENTIÈRE — verrou, filtre de service, lecture — sur les lignes réelles.
     expect(lireRepliDepuisLignes(mesure, lignesRepliServables())).toEqual({
       statut: 'constat',
-      constat: TABLE_REPLI_V1[1].constat,
-      idLigne: 'REPLI-02',
+      constat: TABLE_REPLI_V1[2].constat,
+      idLigne: 'REPLI-05',
     });
   });
 

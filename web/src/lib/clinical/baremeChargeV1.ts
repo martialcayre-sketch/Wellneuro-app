@@ -38,7 +38,8 @@ export type { LigneBaremeCharge, MesureProtocole, NiveauCharge, SuggestionCharge
 export { chevauchementsBareme, mesurerProtocole, suggererDepuisLignes } from './baremeChargePur';
 
 /**
- * LE BARÈME — UNE ÉCHELLE SUR UN SEUL TERME, RATIFIÉE LE 2026-09-15.
+ * LE BARÈME — UNE ÉCHELLE SUR UN SEUL TERME, RATIFIÉE LE 2026-09-15, RÉÉCRITE
+ * ET RE-RATIFIÉE LE 2026-10-08 PAR [[D-273]].
  *
  * D'OÙ VIENNENT CES BORNES, ET IL FAUT LE DIRE PLUTÔT QUE LE LAISSER SUPPOSER.
  * Elles n'ont **aucune source clinique** : rien au dépôt ne traite de la charge
@@ -49,11 +50,12 @@ export { chevauchementsBareme, mesurerProtocole, suggererDepuisLignes } from './
  * les prendrait pour une règle sourcée se tromperait.
  *
  * CE QUI LES CONTRAINT, EN REVANCHE, EST STRUCTUREL :
- * `MAX_ACTIONS_PROTOCOLE_21J` vaut 3, donc les quatre termes mesurés sont bornés
- * à 0–3. Une échelle sur un terme n'a que quatre valeurs possibles.
+ * `MAX_ACTIONS_PROTOCOLE_21J` vaut 7 ([[D-273]]), donc les termes comptés sur
+ * les actions sont bornés à 0–7. Une échelle sur un terme a huit valeurs
+ * possibles.
  *
  * `excessive` N'EST ATTEIGNABLE PAR AUCUNE LIGNE, et c'est voulu (arbitrage du
- * 2026-09-15) : aucun terme ne dépasse 3, et surtout « excessif » est un jugement
+ * 2026-09-15) : aucun terme ne dépasse 7, et surtout « excessif » est un jugement
  * sur CE patient — un comptage ne peut pas savoir qu'un protocole de deux actions
  * est excessif pour quelqu'un qui traverse un déménagement. Le contrat exige déjà
  * une justification écrite quand le praticien le déclare lui-même.
@@ -62,7 +64,7 @@ export { chevauchementsBareme, mesurerProtocole, suggererDepuisLignes } from './
  * une table qui se recouvre, et le banc de garde le vérifie.
  *
  * `CHARGE-01` DIT « AU PLUS UNE », ET PAS « UNE SEULE », parce qu'elle couvre
- * AUSSI ZÉRO : un protocole dont les trois actions attendent un bilan n'engage
+ * AUSSI ZÉRO : un protocole dont toutes les actions attendent un bilan n'engage
  * rien, et une phrase qui compterait une action affirmerait faux à l'écran.
  */
 export const BAREME_CHARGE_V1: LigneBaremeCharge[] = [
@@ -79,18 +81,18 @@ export const BAREME_CHARGE_V1: LigneBaremeCharge[] = [
     id: 'CHARGE-02',
     terme: 'nombreActionsFermes',
     min: 2,
-    max: 2,
+    max: 3,
     niveau: 'moderate',
-    motif: 'Deux actions engagées en parallèle.',
+    motif: 'Deux ou trois actions engagées en parallèle.',
     statut: 'publiee',
   },
   {
     id: 'CHARGE-03',
     terme: 'nombreActionsFermes',
-    min: 3,
-    max: 3,
+    min: 4,
+    max: 7,
     niveau: 'loaded',
-    motif: 'Trois actions engagées, le maximum que le protocole permet.',
+    motif: 'Au moins quatre actions engagées en parallèle.',
     statut: 'publiee',
   },
 ];
@@ -120,12 +122,35 @@ export type BaremeChargeMetadata = {
  */
 export const BAREME_CHARGE_METADATA: BaremeChargeMetadata = {
   validationExterne: true,
-  dateValidation: '2026-09-15T00:00:00.000Z',
-  shaPerimetre: '40f5057e6f3c17c5c67a6a65025a579790b3e39574a033eac5cd74873dd4757d',
+  dateValidation: '2026-10-08T00:00:00.000Z',
+  shaPerimetre: '7848189d86ff32f80ad181026d3fbd955f9625ac106a87716c5dffcdcb83c6a7',
 };
 
 /**
- * LA DÉCLARATION DE CONFORMITÉ QUI PORTE CETTE SIGNATURE — 2026-09-15.
+ * LA DÉCLARATION DE CONFORMITÉ QUI PORTE CETTE SIGNATURE — 2026-10-08, [[D-273]].
+ *
+ * Rendue en séance par le responsable, APRÈS lecture d'une surface produite
+ * avant la demande ([[D-195]] §2, versée à
+ * `docs/claude/campagnes/2026-10-04-bio-parcours/SURFACE_RELECTURE_BP25.md`).
+ * À la question « après lecture de cette surface, déclarez-vous conformes les
+ * deux tables proposées (barème 7848189d…, repli f6593020…), en tant que
+ * convention d'organisation sans source clinique ? », réponse : « Je déclare
+ * conforme ».
+ *
+ * CE QUE LA SURFACE MONTRAIT : les trois lignes, leurs bornes, et la phrase
+ * servie à chacune des HUIT valeurs de `nombreActionsFermes`, 0 à 7 — le
+ * plafond passe de trois à sept (arbitrage du 2026-09-29). En regard, l'ancien
+ * affichage de 0 à 3 : à trois actions engagées, la suggestion passe de
+ * « Chargé » à « Modéré ». L'ancien `CHARGE-03` (« Trois actions engagées, le
+ * maximum que le protocole permet ») ne pouvait pas rester : à plafond sept, il
+ * affirmait faux.
+ *
+ * LA DÉCLARATION DU 2026-09-15, CI-DESSOUS, EST CONSERVÉE : elle portait le
+ * périmètre précédent, aujourd'hui remplacé.
+ */
+
+/**
+ * LA DÉCLARATION DE CONFORMITÉ QUI A PORTÉ LA PREMIÈRE SIGNATURE — 2026-09-15.
  *
  * ELLE A ÉTÉ RENDUE EN SÉANCE, APRÈS LECTURE, et c'est elle le geste attestant :
  * la recopie de la chaîne hex ci-dessous est mécanique et ne vaut que portée par
@@ -149,7 +174,11 @@ export const BAREME_CHARGE_METADATA: BaremeChargeMetadata = {
  *   périmètre du texte PROPOSÉ le 2026-09-15, périmé par la reformulation
  *   ci-dessus. **Jamais signé** : aucune déclaration ne l'a porté.
  * - `40f5057e6f3c17c5c67a6a65025a579790b3e39574a033eac5cd74873dd4757d` —
- *   périmètre DÉCLARÉ CONFORME, recopié en littéral dans les métadonnées.
+ *   périmètre DÉCLARÉ CONFORME le 2026-09-15 (échelle 0 à 3). **Signé, puis
+ *   remplacé par [[D-273]]** le 2026-10-08.
+ * - `7848189d86ff32f80ad181026d3fbd955f9625ac106a87716c5dffcdcb83c6a7` —
+ *   périmètre DÉCLARÉ CONFORME le 2026-10-08 (échelle 0 à 7, [[D-273]]),
+ *   recopié en littéral dans les métadonnées.
  */
 
 /** Le périmètre signé : le barème ENTIER, jamais une sélection de champs. */
