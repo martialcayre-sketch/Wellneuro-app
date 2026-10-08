@@ -5,8 +5,8 @@ import { AgendaSommeilJournal } from './AgendaSommeilJournal';
 
 // CE QUE CE BANC PROTÈGE, ET POURQUOI IL N'EXISTAIT PAS.
 //
-// Le composant n'avait AUCUN banc — ses deux voisins (`CadranNuit`,
-// `SaisieNuitForm`) en ont un chacun, lui non. C'est exactement là que le défaut
+// Le composant n'avait AUCUN banc — ses deux voisins (le cadran, retiré depuis,
+// et `SaisieNuitForm`) en avaient un chacun, lui non. C'est exactement là que le défaut
 // s'est logé : `enregistrer` et `transmettre` posaient `erreur` sans basculer
 // `etat`, et `erreur` n'était rendu que par la branche `etat === 'erreur'`. Le
 // message n'atteignait donc JAMAIS l'écran, et le patient repartait en croyant
@@ -117,26 +117,26 @@ describe('AgendaSommeilJournal — un refus ne reste pas muet', () => {
     });
     render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
     await waitFor(() => expect(screen.getByText('Votre nuit passée')).toBeTruthy());
-    fireEvent.click(screen.getByRole('button', { name: /confirmer ces horaires/i }));
-    for (const nom of [
-      'Au même moment que mon coucher',
-      'En moins de 15 min',
-      'Nuit continue, aucun réveil',
-      'Aucune aide pour dormir cette nuit',
-      'Au même moment que mon réveil',
-      'Très bonne',
-    ]) {
-      fireEvent.click(screen.getByRole('button', { name: nom }));
-    }
+    const clic = (nom: string) => fireEvent.click(screen.getByRole('button', { name: nom }));
+    clic('Comme d’habitude : 23:00');
+    clic('Au même moment que mon coucher');
+    clic('En moins de 15 min');
+    clic('Continuer');
+    clic('Nuit continue, aucun réveil');
+    clic('Aucune aide pour dormir cette nuit');
+    clic('Continuer');
+    clic('Comme d’habitude : 07:00');
+    clic('Au même moment que mon réveil');
+    clic('Très bonne');
     fireEvent.click(screen.getByRole('button', { name: /c’est noté/i }));
     await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(1));
     const alerte = screen.getByRole('alert');
     expect(alerte.textContent).toBe('Nuit hors fenêtre.');
-    // Juste avant le bouton, dans le formulaire — plus en tête de page.
+    // Juste avant les boutons du formulaire — plus en tête de page.
     expect(alerte.nextElementSibling?.textContent).toMatch(/c’est noté/i);
   });
 
-  it('« Confirmer ces horaires » n’apparaît pas sans nuit du patient', async () => {
+  it('« Comme d’habitude » n’apparaît pas sans nuit du patient', async () => {
     const aucuneNuit = {
       ...CHARGEMENT_OK,
       fenetre: { ...FENETRE, dateDebut: null, emplacements: [], nbRenseignees: 0, jourCourant: null },
@@ -146,7 +146,7 @@ describe('AgendaSommeilJournal — un refus ne reste pas muet', () => {
     fetchMock.mockImplementation(() => reponse(aucuneNuit));
     render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
     await waitFor(() => expect(screen.getByText('Votre nuit passée')).toBeTruthy());
-    expect(screen.queryByRole('button', { name: /confirmer ces horaires/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /comme d’habitude/i })).toBeNull();
   });
 
   it('ne montre aucune alerte tant que rien n’a été refusé', async () => {

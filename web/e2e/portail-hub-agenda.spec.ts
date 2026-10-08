@@ -104,6 +104,6 @@ test.describe('Hub patient — agenda du sommeil', () => {
     }
 
     // Le lien pointe la bonne assignation — l'ouverture du journal elle-même
-    // (et son écran de consentement) est l'objet d'`agenda-sommeil-cadran`.
+    // (et son écran de consentement) est l'objet d'`agenda-sommeil-saisie`.
   });
 });

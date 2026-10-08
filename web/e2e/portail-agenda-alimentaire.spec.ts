@@ -15,8 +15,8 @@
 // Ce spec emprunte ces chemins-là. Deux prises consécutives (08:00 et 08:15) se
 // recouvrent à l'écran — 44 px de large pour 15 minutes d'écart —, si bien
 // qu'un clic au centre de la première serait intercepté par la seconde. Le
-// glissement du cadran, lui, a son spec dédié côté sommeil
-// (`agenda-sommeil-cadran.spec.ts`) : c'est là qu'un hit-test se teste.
+// cadran du sommeil, qui avait son spec de hit-test, a été remplacé par des
+// listes d'heures (`agenda-sommeil-saisie.spec.ts`).
 //
 // Patient fictif Michel Dogné (PAT_SEED_03), autorisé. `workers: 1` et
 // `fullyParallel: false` : aucun autre spec ne tourne pendant celui-ci.
