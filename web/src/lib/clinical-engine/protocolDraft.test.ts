@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildProtocolDraft, reviseProtocolDraft } from './protocolDraft';
 import { actionOrientation, ACTION_ID_ORIENTATION } from './orientationAdressage';
 import { projeterContenuPatient } from './contenuPatientProtocole';
-import type { DecisionCard, ProtocolAction } from './types';
+import { MAX_ACTIONS_PROTOCOLE_21J, type DecisionCard, type ProtocolAction } from './types';
 
 function card(overrides: Partial<DecisionCard> = {}): DecisionCard {
   return {
@@ -29,6 +29,11 @@ function action(id = 'action-1', overrides: Partial<ProtocolAction> = {}): Proto
   };
 }
 
+/** `n` actions distinctes, a1 à an — dérivées de la borne, jamais écrites à la main. */
+function actions(n: number): ProtocolAction[] {
+  return Array.from({ length: n }, (_, rang) => action(`a${rang + 1}`));
+}
+
 function build(overrides: Partial<Parameters<typeof buildProtocolDraft>[0]> = {}) {
   return buildProtocolDraft({
     protocolDraftId: 'protocol-1', decisionCard: card(), createdAt: '2026-01-02T00:00:00.000Z',
@@ -48,9 +53,12 @@ describe('ProtocolDraft', () => {
     expect(first.inputHash).toBe(second.inputHash);
   });
 
-  it('garantit trois actions maximum et refuse les identifiants dupliqués', () => {
-    expect(build({ actions: [action('a1'), action('a2'), action('a3')] }).actions).toHaveLength(3);
-    expect(() => build({ actions: [action('a1'), action('a2'), action('a3'), action('a4')] })).toThrow('trois actions');
+  it('garantit sept actions maximum et refuse les identifiants dupliqués', () => {
+    // Entrées DÉRIVÉES de la borne ([[D-273]]) : un plafond qui bouge entraîne
+    // le banc avec lui, au lieu de transformer un refus en acceptation.
+    expect(MAX_ACTIONS_PROTOCOLE_21J).toBe(7);
+    expect(build({ actions: actions(MAX_ACTIONS_PROTOCOLE_21J) }).actions).toHaveLength(MAX_ACTIONS_PROTOCOLE_21J);
+    expect(() => build({ actions: actions(MAX_ACTIONS_PROTOCOLE_21J + 1) })).toThrow('sept actions maximum');
     expect(() => build({ actions: [action('a1'), action('a1')] })).toThrow('dupliquée');
   });
 
@@ -96,13 +104,13 @@ describe('ProtocolDraft — orientation sur signal adressé', () => {
   const ADRESSEE = card({ safetyFindingAdresseIds: ['safety:anamnese:aaaaaaaaaaaaaaaa'] });
   const avecOrientation = (...autres: ProtocolAction[]) => [actionOrientation(false), ...autres];
 
-  it('signal adressé : l’orientation ouvre le protocole, hors de la borne des trois', () => {
-    const draft = build({ decisionCard: ADRESSEE, actions: avecOrientation(action('a1'), action('a2'), action('a3')) });
-    expect(draft.actions).toHaveLength(4);
+  it('signal adressé : l’orientation ouvre le protocole, hors de la borne', () => {
+    const draft = build({ decisionCard: ADRESSEE, actions: avecOrientation(...actions(MAX_ACTIONS_PROTOCOLE_21J)) });
+    expect(draft.actions).toHaveLength(MAX_ACTIONS_PROTOCOLE_21J + 1);
     expect(draft.actions[0].actionId).toBe(ACTION_ID_ORIENTATION);
     expect(() => build({
-      decisionCard: ADRESSEE, actions: avecOrientation(action('a1'), action('a2'), action('a3'), action('a4')),
-    })).toThrow('trois actions');
+      decisionCard: ADRESSEE, actions: avecOrientation(...actions(MAX_ACTIONS_PROTOCOLE_21J + 1)),
+    })).toThrow('sept actions maximum');
   });
 
   it('signal adressé sans orientation, ou orientation ailleurs qu’en tête : refus', () => {
@@ -121,9 +129,9 @@ describe('ProtocolDraft — orientation sur signal adressé', () => {
     })).toThrow('texte signé');
   });
 
-  it('sans signal adressé, l’identifiant réservé est refusé — pas de quatrième action déguisée', () => {
+  it('sans signal adressé, l’identifiant réservé est refusé — pas d’action de plus déguisée', () => {
     expect(() => build({ actions: avecOrientation(action('a1')) })).toThrow('lorsqu’un signal d’alerte a été adressé');
-    // Une orientation ORDINAIRE, choisie par le praticien, reste possible et compte dans les trois.
+    // Une orientation ORDINAIRE, choisie par le praticien, reste possible et compte dans la borne.
     expect(build({ actions: [action('a1', { type: 'medical_referral' })] }).actions).toHaveLength(1);
   });
 

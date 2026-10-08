@@ -421,16 +421,35 @@ describe('seuils littéraux — les deux corrections de D-105 tiennent', () => {
     expect(neutraliser(source)).not.toMatch(/SIIN54\s*>=\s*10/);
   });
 
-  it('la borne « trois actions » n’est plus écrite qu’une fois', () => {
+  // LA BORNE D'ACTIONS DU PROTOCOLE ([[D-105]], portée à sept par [[D-273]]).
+  // Les porteurs sont ceux qui la LISENT réellement : le refus du moteur, celui
+  // de l'aperçu patient, et les gardes de saisie du constructeur. Le motif vise
+  // toute longueur comparée à un littéral de trois ou plus — la borne réelle
+  // s'écrit `interventions.length > MAX…`, pas seulement `actions.length`.
+  const LITTERAL_DE_BORNE = /\b\w+\.length\s*[<>]=?\s*(?:[3-9]|[1-9]\d+)\b/;
+
+  it('la borne d’actions du protocole n’est écrite qu’une fois', () => {
     const porteurs = [
-      'clinical-engine/types.ts',
-      'clinical-engine/protocolDraft.ts',
-      'clinical-engine/patientProtocolView.ts',
-    ].map(f => neutraliser(readFileSync(path.join(LIB, f), 'utf8')));
-    const declarations = porteurs.filter(s => /export const MAX_ACTIONS_PROTOCOLE_21J\s*=\s*3/.test(s));
+      path.join(LIB, 'clinical-engine/types.ts'),
+      path.join(LIB, 'clinical-engine/protocolDraft.ts'),
+      path.join(LIB, 'clinical-engine/patientProtocolView.ts'),
+      path.join(LIB, 'clinical-engine/contenuPatientProtocole.ts'),
+      path.join(RACINE, 'src/components/patient-cockpit/ProtocolMiniBuilder.tsx'),
+    ].map(f => neutraliser(readFileSync(f, 'utf8')));
+    const declarations = porteurs.filter(s => /export const MAX_ACTIONS_PROTOCOLE_21J\s*=\s*7\b/.test(s));
     expect(declarations).toHaveLength(1);
     for (const source of porteurs) {
-      expect(source).not.toMatch(/actions\.length\s*[<>]=?\s*3/);
+      expect(source).not.toMatch(LITTERAL_DE_BORNE);
     }
+  });
+
+  // CAS NÉGATIF : la garde rougit bien sur un littéral réécrit à la place de la
+  // constante — sans quoi elle passerait au vert sans rien garder.
+  it('la garde de la borne reconnaît un littéral réécrit', () => {
+    expect('if (interventions.length > 7) {').toMatch(LITTERAL_DE_BORNE);
+    expect('if (interventions.length > 3) {').toMatch(LITTERAL_DE_BORNE);
+    expect('if (actions.length >= 12) {').toMatch(LITTERAL_DE_BORNE);
+    expect('if (interventions.length > MAX_ACTIONS_PROTOCOLE_21J) {').not.toMatch(LITTERAL_DE_BORNE);
+    expect('if (reservees.length > 0) {').not.toMatch(LITTERAL_DE_BORNE);
   });
 });

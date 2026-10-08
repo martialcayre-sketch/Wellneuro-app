@@ -217,16 +217,23 @@ export function ProtocolMiniBuilder({
    * sur la version enregistrée. C'est le sens même d'une aide à la saisie : elle
    * doit bouger quand une action s'ajoute ou se suspend.
    *
-   * Les actions sans type ne sont pas mesurables : `mesurerProtocole` lit le
-   * type pour compter les registres distincts, et un type vide en fabriquerait
-   * un. Elles sont donc écartées du comptage — le refus de `collectSubmission`
-   * les nommera de toute façon à l'enregistrement.
+   * TOUTES LES ACTIONS NON SUSPENDUES SONT COMPTÉES, typées ou non ([[D-273]]).
+   * Elles étaient filtrées sur leur type : à trois actions dont une encore sans
+   * type, l'écran affirmait « Deux actions engagées ». Une action non typée est
+   * une action du brouillon ; `collectSubmission` refusera de l'enregistrer
+   * ainsi, donc la version la portera typée ou ne la portera pas — et la
+   * suggestion suit sa suppression. `mesurerProtocole` n'en fait pas un
+   * registre : le type vide n'entre pas dans `typesDistincts`.
+   *
+   * SILENCE TANT QU'AUCUNE ACTION DU BROUILLON N'EST TYPÉE, suspendues
+   * comprises : un brouillon fait seulement d'emplacements vierges n'a encore
+   * rien dit de son contenu. Une action typée mais suspendue lève ce silence
+   * (elle ne compte pas parmi les engagées, mais le brouillon a un contenu).
    */
   const suggestionCharge = useMemo(() => {
     if (baremeCharge.length === 0) return null;
-    const mesurables = actions.filter((item): item is ProtocolAction => item.type !== '');
-    if (mesurables.length === 0) return null;
-    return suggererDepuisLignes(mesurerProtocole(mesurables), baremeCharge);
+    if (!actions.some(item => item.type !== '')) return null;
+    return suggererDepuisLignes(mesurerProtocole(actions), baremeCharge);
   }, [actions, baremeCharge]);
   const [reviewed, setReviewed] = useState(false);
   // CE QUI PART SANS ÊTRE SAISI SE RELIT AUSSI ([[D-213]] §1, BP-23) :
@@ -282,7 +289,7 @@ export function ProtocolMiniBuilder({
 
   // L'ORIENTATION VERS LE MÉDECIN ([[D-257]] §8, LOT-05) : due dès qu'un
   // constat est adressé. Elle n'entre PAS dans le brouillon éditable — ni
-  // retirable, ni modifiable, ni comptée dans les trois — et part en tête à la
+  // retirable, ni modifiable, ni comptée dans la borne — et part en tête à la
   // soumission, au texte signé. Le moteur la refuse sous toute autre forme.
   const orientation = orientationRequise(decisionCard);
 
@@ -586,7 +593,7 @@ export function ProtocolMiniBuilder({
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Un signal d’alerte a été adressé au médecin : cette action ouvre le protocole. Son texte
-              est signé — elle ne se modifie pas, ne se retire pas et ne compte pas dans les trois actions.
+              est signé — elle ne se modifie pas, ne se retire pas et ne compte pas dans la limite de sept actions.
             </p>
             <dl className="mt-2 space-y-1 text-sm text-foreground">
               <div><dt className="inline font-medium">Plan idéal : </dt><dd className="inline">{TEXTE_ORIENTATION.idealPlan}</dd></div>
@@ -788,7 +795,7 @@ export function ProtocolMiniBuilder({
             vers un choix que le praticien n'a pas fait.
 
             CETTE BRANCHE EST DORMANTE, ET C'EST DÉLIBÉRÉ : l'échelle signée le
-            2026-09-15 ne monte pas jusqu'à « excessif » — aucune ligne ne peut
+            2026-10-08 ([[D-273]]) ne monte pas jusqu'à « excessif » — aucune ligne ne peut
             donc la déclencher aujourd'hui. Elle s'arme le jour où une ligne
             l'atteindra, et l'arbitrage a préféré la garder écrite plutôt que
             d'avoir à re-décider le registre d'alerte à ce moment-là. Un

@@ -105,7 +105,7 @@ nouveaux, décisions acceptées.
 | BP-26 | LOT-26 | Note de qualification par fonction, existant compris | à_faire | non | BP-00 |
 | BP-01 | LOT-01 | Gardes avant surface | terminé (2026-10-04) | non | BP-00 |
 | BP-02 | LOT-02 | Constat d'usage et ligne de base, en agrégats | terminé (2026-10-05) | non | — (lecture seule) |
-| BP-25 | LOT-25 | Plafond d'actions porté à 7 | à_faire | non | BP-00 |
+| BP-25 | LOT-25 | Plafond d'actions porté à 7 | terminé (2026-10-08, D-273) | non | BP-00 |
 | BP-23 | LOT-23 | Relecture réelle (`D-213` §1) | terminé (2026-10-06) | non | BP-01 |
 | BP-10 | LOT-10 | Sécurité biologique, étage 1 | terminé (2026-10-07) | **oui** | BP-02, BIO-INGEST LOT-07 |
 | **Phase 1** | | **Fondations** | | | |

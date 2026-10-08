@@ -51,20 +51,21 @@ const SIGNATURE_BANC = (lignes: LigneBaremeCharge[]) => ({
 });
 
 describe('barème de charge — le verrou de signature', () => {
-  // L'ÉCHELLE EST EN SERVICE DEPUIS LA DÉCLARATION DE CONFORMITÉ DU PRATICIEN,
-  // rendue en séance le 2026-09-15 après lecture des trois lignes et des quatre
-  // cas qu'elles couvrent ([[D-195]] §1 et §2). L'outil a proposé le contenu ;
+  // L'ÉCHELLE EST EN SERVICE DEPUIS LA DÉCLARATION DE CONFORMITÉ DU
+  // RESPONSABLE, rendue en séance le 2026-10-08 ([[D-273]]) après lecture des
+  // trois lignes et des huit cas qu'elles couvrent ([[D-195]] §1 et §2) ; elle
+  // remplace celle du 2026-09-15. L'outil a proposé le contenu ;
   // il ne l'a pas attesté — sans quoi le verrou « n'enregistre plus, il
   // ratifie ».
   it('l’échelle est SIGNÉE — le verrou est ouvert sur ce périmètre-là', () => {
     expect(BAREME_CHARGE_V1).toHaveLength(3);
     expect(BAREME_CHARGE_METADATA.validationExterne).toBe(true);
-    expect(BAREME_CHARGE_METADATA.dateValidation).toBe('2026-09-15T00:00:00.000Z');
+    expect(BAREME_CHARGE_METADATA.dateValidation).toBe('2026-10-08T00:00:00.000Z');
     // LE LITTÉRAL FIGÉ, recopié — jamais `BAREME_CHARGE_SHA256`, que
     // `shaPerimetreLitteral.guard.test.ts` interdit au source. L'épingler ici
     // fait rougir toute réécriture d'une ligne non re-déclarée.
     expect(BAREME_CHARGE_METADATA.shaPerimetre)
-      .toBe('40f5057e6f3c17c5c67a6a65025a579790b3e39574a033eac5cd74873dd4757d');
+      .toBe('7848189d86ff32f80ad181026d3fbd955f9625ac106a87716c5dffcdcb83c6a7');
     expect(baremeChargeSigne()).toBe(true);
     // Conséquence directe : les trois lignes sortent vers l'écran.
     expect(lignesBaremeServables()).toEqual(BAREME_CHARGE_V1);
@@ -78,6 +79,9 @@ describe('barème de charge — le verrou de signature', () => {
     expect(new Set(BAREME_CHARGE_V1.map(l => l.terme))).toEqual(new Set(['nombreActionsFermes']));
     expect(BAREME_CHARGE_V1.map(l => l.niveau)).toEqual(['light', 'moderate', 'loaded']);
     expect(BAREME_CHARGE_V1.some(l => l.niveau === 'excessive')).toBe(false);
+    // Aucun motif ne dit le plafond : l'ancien CHARGE-03 (« le maximum que le
+    // protocole permet ») est devenu faux le jour où le plafond a bougé ([[D-273]]).
+    expect(BAREME_CHARGE_V1.some(l => /maximum/i.test(l.motif))).toBe(false);
     expect(chevauchementsBareme(BAREME_CHARGE_V1)).toEqual([]);
     // Contiguïté : aucune valeur de 0 à MAX_ACTIONS_PROTOCOLE_21J ne tombe dans
     // un trou. Un trou serait un silence que personne n'a décidé.
@@ -139,22 +143,46 @@ describe('barème de charge — ce qu’il mesure et ce qu’il suggère', () =>
     expect(mesure.typesDistincts).toBe(2);
   });
 
-  // LA SURFACE EXACTE DÉCLARÉE CONFORME LE 2026-09-15 — quatre valeurs
-  // possibles de `nombreActionsFermes`, quatre phrases. Ce banc est la
-  // relecture rendue exécutable : il rougit si une borne ou un motif bouge sans
-  // que la déclaration soit reposée.
+  // UNE ACTION DE BROUILLON SANS TYPE ([[D-273]] §5) : le constructeur la mesure
+  // pendant la composition. Elle compte parmi les actions et les engagées, mais
+  // un type vide n'est pas un registre.
+  it('une action de brouillon sans type compte, mais n’est pas un registre', () => {
+    const mesure = mesurerProtocole([action(), { ...action({ actionId: 'a2' }), type: '' }]);
+    expect(mesure.nombreActions).toBe(2);
+    expect(mesure.nombreActionsFermes).toBe(2);
+    expect(mesure.typesDistincts).toBe(1);
+    // Contre-épreuve : seule, une action sans type ne fabrique aucun registre.
+    expect(mesurerProtocole([{ ...action(), type: '' }]).typesDistincts).toBe(0);
+  });
+
+  // LA SURFACE EXACTE DÉCLARÉE CONFORME LE 2026-10-08 ([[D-273]]) — huit
+  // valeurs possibles de `nombreActionsFermes`, de 0 à MAX_ACTIONS_PROTOCOLE_21J.
+  // Ce banc est la relecture rendue exécutable : il rougit si une borne ou un
+  // motif bouge sans que la déclaration soit reposée. Les boucles de contiguïté
+  // ne voient pas le NIVEAU servi : déplacer la frontière entre CHARGE-02 et
+  // CHARGE-03 reste contigu, seul ce banc le voit.
   //
   // LE CAS ZÉRO EST LE POINT DÉLICAT, et c'est la relecture qui l'a trouvé : un
-  // protocole dont les trois actions attendent un bilan n'engage RIEN, et le
+  // protocole dont toutes les actions attendent un bilan n'engage RIEN, et le
   // motif proposé disait « Une seule action engagée ». `CHARGE-01` couvre zéro
   // parce que `min` vaut `null` — la phrase devait donc couvrir zéro aussi.
-  it('sert, sur la table signée, la phrase déclarée pour chacun des quatre cas', () => {
+  it('sert, sur la table signée, la phrase déclarée pour chacun des huit cas', () => {
+    const LEGER = { niveau: 'light', idLigne: 'CHARGE-01', motif: 'Au plus une action engagée : la charge reste minimale.' } as const;
+    const MODERE = { niveau: 'moderate', idLigne: 'CHARGE-02', motif: 'Deux ou trois actions engagées en parallèle.' } as const;
+    const CHARGE = { niveau: 'loaded', idLigne: 'CHARGE-03', motif: 'Au moins quatre actions engagées en parallèle.' } as const;
     const CAS = [
-      { fermes: 0, niveau: 'light', motif: 'Au plus une action engagée : la charge reste minimale.' },
-      { fermes: 1, niveau: 'light', motif: 'Au plus une action engagée : la charge reste minimale.' },
-      { fermes: 2, niveau: 'moderate', motif: 'Deux actions engagées en parallèle.' },
-      { fermes: 3, niveau: 'loaded', motif: 'Trois actions engagées, le maximum que le protocole permet.' },
+      { fermes: 0, ...LEGER },
+      { fermes: 1, ...LEGER },
+      { fermes: 2, ...MODERE },
+      { fermes: 3, ...MODERE },
+      { fermes: 4, ...CHARGE },
+      { fermes: 5, ...CHARGE },
+      { fermes: 6, ...CHARGE },
+      { fermes: 7, ...CHARGE },
     ] as const;
+    // La surface couvre exactement la plage atteignable : 0 à MAX.
+    expect(CAS.map(cas => cas.fermes))
+      .toEqual(Array.from({ length: MAX_ACTIONS_PROTOCOLE_21J + 1 }, (_, valeur) => valeur));
     for (const cas of CAS) {
       const actions = Array.from({ length: MAX_ACTIONS_PROTOCOLE_21J }, (_, rang) => action({
         actionId: `a${rang}`,
@@ -168,6 +196,7 @@ describe('barème de charge — ce qu’il mesure et ce qu’il suggère', () =>
       const suggestion = suggererDepuisLignes(mesure, lignesBaremeServables());
       expect(suggestion?.niveau, `${cas.fermes} engagées`).toBe(cas.niveau);
       expect(suggestion?.motif, `${cas.fermes} engagées`).toBe(cas.motif);
+      expect(suggestion?.idLigne, `${cas.fermes} engagées`).toBe(cas.idLigne);
     }
     // À zéro, aucune phrase servie ne peut annoncer une action engagée.
     const toutesSuspendues = Array.from({ length: MAX_ACTIONS_PROTOCOLE_21J }, (_, rang) => action({

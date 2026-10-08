@@ -4,6 +4,195 @@
 
 ## Décisions actives
 
+### D-273 — Le plafond d'actions passe à sept : le barème et la table du repli sont réécrits et re-signés, et l'écran compte toutes les actions non suspendues qu'il compose
+
+- Date : 2026-10-08
+- Statut : accepté. Déclaration de conformité du responsable rendue en séance
+  le 2026-10-08, après lecture de la surface produite avant la demande
+  ([[D-195]] §2). Arbitrages du même jour : échelle B du barème, table du
+  repli **en proportion** (révision du même jour, voir ci-dessous), correctif
+  du comptage dans ce lot, texte du constructeur « ne compte pas dans la
+  limite de sept actions ». Plafond arbitré le 2026-09-29.
+- Domaine : clinique — borne de charge du protocole 21 jours, re-signature de
+  `BAREME_CHARGE_V1` et de `TABLE_REPLI_V1`, constructeur de protocole.
+  **Aucun seuil sourcé, aucune dose, aucun claim.**
+- Amende : [[D-105]] (Décision 3, point 2 — le plafond), [[D-198]] §1 et §3
+  (le périmètre signé), [[D-223]] §1 (et §5 pour le nombre de lignes servies,
+  désormais trois). Applique [[D-195]] §1 à §5. S'appuie sur [[D-063]],
+  [[D-213]] §4, `DC-19`, `DC-20`, `DC-24`.
+- Campagne : `2026-10-04-bio-parcours`, LOT-25 (BP-25).
+
+**D'OÙ VIENT LE SEPT, ET IL FAUT LE DIRE PLUTÔT QUE LE LAISSER SUPPOSER.** Le
+responsable ne pouvait pas mener un protocole réel jusqu'au bout : trois actions
+ne suffisaient pas. Il a arbitré le 2026-09-29, au cadrage de la phase 5
+« Actions » du cockpit, un plafond de **sept** (consigné au handoff
+`2026-09-29-1400-fiches-assiette-lot11-email-neutre.md`, point 6, puis au
+cadrage BIO-PARCOURS v3, « plafond porté à 7 maintenant »). Comme le trois
+qu'il remplace, c'est une **borne de charge de la relation praticien-patient**,
+pas un seuil mesuré sur une population : ni claim ni intervalle, et elle n'a pas
+à en avoir. **Sa provenance change** : [[D-105]] rattachait le trois à
+`docs/RELATION_PRATICIEN_PATIENT_SOURCE.md` ; le sept n'a pour source que cet
+arbitrage daté. Écrire qu'un document le portait fabriquerait une source.
+
+**POURQUOI LE PLAFOND ET LES DEUX TABLES PARTENT ENSEMBLE.** Les deux tables
+couvraient 0 à 3, la seule plage possible. Porter le plafond seul laissait le
+barème muet de 4 à 7 — ce qui est fail-closed — mais surtout **faux à 3** :
+`CHARGE-03` y affichait « Trois actions engagées, le maximum que le protocole
+permet ». Et `REPLI-03` lisait « trois actions sans repli » comme « toutes les
+actions engagées », ce qui cesse d'être vrai dès qu'une quatrième existe. Les
+bancs de contiguïté (boucle de 0 à `MAX_ACTIONS_PROTOCOLE_21J`) rougissent
+d'ailleurs si l'un part sans l'autre.
+
+**CE QUE LA RELECTURE A EU SOUS LES YEUX.** La surface de relecture (versée à
+`docs/claude/campagnes/2026-10-04-bio-parcours/SURFACE_RELECTURE_BP25.md`) a
+été produite avant la demande : les deux tables, la phrase servie à chacune
+des huit valeurs de `nombreActionsFermes` et — dans sa première version — de
+`actionsSansRepli` (0 à 7 ; le § 2 révisé porte sur `etendueSansRepli`, 0 à 2,
+et quatorze situations, voir ci-dessous), l'ancien affichage en regard de 0 à 3, et les situations de composition après
+le correctif. Les phrases y ont été calculées par les fonctions pures du dépôt,
+pas recopiées. Deux réserves de lecture, sans retoucher la surface déclarée
+([[D-195]] §4) : au §3, la colonne « Avant » des brouillons à quatre actions
+ou plus (« 3 typées + 1 vierge », « 1 typée + 6 vierges », « 2 typées + 2
+vierges dont 1 suspendue ») est **hypothétique** — l'ancienne table et
+l'ancien comptage appliqués hors de l'ancien plafond, que l'écran n'a jamais
+affichés puisque l'ajout bloquait à trois ; et les scripts qu'elle cite
+(`surface.mjs`, `correctif.md`, `surface-c.ts`) n'ont pas été versés — la règle qu'ils
+appliquent est décrite au §5 ci-dessous, et les cas de la surface sont
+rejoués par `ProtocolMiniBuilder.test.tsx` et les bancs des deux tables. Enfin,
+la phrase de l'écran citée en tête de surface (`ProtocolMiniBuilder.tsx:809`)
+est à la ligne 816 du code livré.
+
+**La déclaration de conformité.** À la question « après lecture de cette
+surface, déclarez-vous conformes les deux tables proposées (barème
+`7848189d…`, repli `f6593020…`), en tant que convention d'organisation sans
+source clinique ? », le responsable a répondu en séance le 2026-10-08 : « Je
+déclare conforme ».
+
+**LA RÉVISION DU MÊME JOUR, ET SA SECONDE DÉCLARATION.** Le soir, ayant répondu
+à beaucoup de questions dont il n'avait pas toujours perçu la portée, le
+responsable a demandé qu'elles lui soient reposées une à une, avec les enjeux
+de chaque réponse. Sur la table du repli, il a changé de réponse : **mesurer en
+proportion** plutôt que garder deux lignes sur un compte. La version à deux
+lignes n'avait pas été mergée. Le § 2 de la surface a été réécrit — trois
+constats et quatorze situations calculées par les fonctions réelles — et, à la
+question de la conformité de la table en proportion (`3d2e5f0d…`), le
+responsable a répondu le 2026-10-08 : « Conforme ». Le barème et le comptage
+pendant la composition (§ 1 et § 3 de la surface) n'ont pas bougé : la première
+déclaration les couvre.
+
+**Décision :**
+
+1. **Le plafond passe de trois à sept** : `MAX_ACTIONS_PROTOCOLE_21J = 7`
+   (`clinical-engine/types.ts`), seul foyer de la borne ([[D-105]]). Il porte
+   toujours sur les **interventions**, suspendues comprises ; l'orientation
+   vers le médecin reste hors borne ([[D-257]] §8). Le refus du moteur, celui
+   de l'aperçu patient et les gardes de saisie le lisent sans changement de
+   code ; seuls les messages qui écrivaient « trois » sont réécrits.
+
+2. **Le barème de charge — amende [[D-198]] §1.** Une échelle sur le même
+   terme unique, `nombreActionsFermes`, bornes incluses, contiguë de 0 à 7 sans
+   trou ni recouvrement :
+   `CHARGE-01` jusqu'à 1 ⇒ **léger** — « Au plus une action engagée : la charge
+   reste minimale. » (inchangée) ;
+   `CHARGE-02` de 2 à 3 ⇒ **modéré** — « Deux ou trois actions engagées en
+   parallèle. » ;
+   `CHARGE-03` de 4 à 7 ⇒ **chargé** — « Au moins quatre actions engagées en
+   parallèle. »
+   **À trois actions engagées, la suggestion passe de « Chargé » à « Modéré ».**
+   C'est voulu et c'est le seul changement de niveau **de la table** sur
+   l'ancienne plage — valeur par valeur de `nombreActionsFermes`. Le correctif
+   du comptage (§5) déplace en outre la suggestion des brouillons qui portent
+   une action non typée : « 1 typée + 1 vierge » passe de « Léger » à
+   « Modéré » (surface §3) ;
+   aucune version enregistrée n'est touchée — la charge reste celle que le
+   praticien a déclarée ([[D-198]] §5). `excessive` reste inatteignable par
+   toute ligne ([[D-198]] §2, maintenu).
+
+3. **La table du repli — amende [[D-223]] §1 — lit une proportion.** Un terme
+   neuf, dérivé et jamais saisi, `etendueSansRepli` (`baremeChargePur.ts`) :
+   `0` si aucune action engagée ne répète son plan idéal en plan minimal, `2` si
+   chacune le fait (`actionsSansRepli` égale `nombreActionsFermes`, non nul),
+   `1` sinon. Trois lignes, bornes incluses, contiguës de 0 à 2 :
+   `REPLI-01` à 0 — « Aucune action engagée ne répète son plan idéal en plan
+   minimal. » (inchangée) ;
+   `REPLI-04` à 1 — « Une partie seulement des actions engagées répète son plan
+   idéal en plan minimal. » ;
+   `REPLI-05` à 2 — « Chaque action engagée répète son plan idéal en plan
+   minimal. »
+   **`REPLI-02` et `REPLI-03` sont retirées, et leurs identifiants ne sont pas
+   réutilisés.** Pourquoi une proportion : à plafond sept, un compte ne dit plus
+   si les actions sans repli sont toutes les actions ou une sur sept, et c'est
+   « toutes » qui informe. La table lit toujours un **seul** terme — c'est la
+   mesure qui rapporte les deux comptes, la table n'en croise aucun
+   ([[D-213]] §4). Une action au plan idéal encore vide ne répète rien : elle
+   ramène « chacune » à « une partie », jamais l'inverse. `LigneRepli.terme` est
+   figé à `'etendueSansRepli'`. La table reste **non branchée** ([[D-223]] §5,
+   revérifié) : aucun écran ne change.
+
+4. **Ces bornes n'ont aucune source clinique.** Ce sont des conventions
+   d'organisation ; la ratification du responsable est leur seule provenance,
+   comme en [[D-198]] et [[D-223]] §2. Elles ne sont pas calibrées sur
+   l'observé.
+
+5. **Le comptage pendant la composition est corrigé.** Le constructeur ne
+   mesurait que les actions **typées** : à trois actions dont une encore sans
+   type, l'écran affirmait « Deux actions engagées » ; à sept actions dont une
+   seule typée, il aurait affirmé « Au plus une ». Il compte désormais **toutes
+   les actions non suspendues** du brouillon, et **se tait tant qu'aucune action
+   du brouillon n'est typée, suspendues comprises** : une action typée mais
+   suspendue lève le silence (« 1 vierge suspendue + 1 typée suspendue » ⇒
+   « Léger », zéro engagée). Un type vide n'est pas un registre : `mesurerProtocole` l'écarte de
+   `typesDistincts`, et son résultat est inchangé pour toute entrée typée — il
+   n'a aucun autre appelant de production. Une action vierge non suspendue
+   compte donc parmi les engagées : `collectSubmission` refuse de l'enregistrer
+   sans type, la version la portera typée ou ne la portera pas, et la
+   suggestion suit sa suppression.
+
+6. **Les deux tables sont re-signées, et les périmètres remplacés se rangent
+   ([[D-195]] §4).** `shaPerimetre` reçoit en littéral figé :
+   - barème : `7848189d86ff32f80ad181026d3fbd955f9625ac106a87716c5dffcdcb83c6a7` ;
+   - repli : `3d2e5f0d5e5f88734ca43e2d729b419d6312b062770093cbbb063d6989167f20` ;
+   et `dateValidation` vaut `2026-10-08T00:00:00.000Z` pour les deux. Restent
+   écrits dans chaque module, au-dessus du nouveau :
+   - barème : `e2ac8539…bb969910` (proposé le 2026-09-15, **jamais signé**) et
+     `40f5057e6f3c17c5c67a6a65025a579790b3e39574a033eac5cd74873dd4757d`
+     (signé le 2026-09-15, **remplacé par la présente**) ;
+   - repli : `a42fed33d68a9475d72daa5928a1afc0416e11b4413e2d8179cbc25d5b566c3b`
+     (signé le 2026-09-17, **remplacé par la présente**) et
+     `f6593020069643cecb86e5147524c4d8ac6a833683efce76b5462b39291c5ece`
+     (version à deux lignes, déclarée conforme le 2026-10-08 puis **remplacée
+     le même jour, avant tout merge**).
+   Le verrou ne change pas de forme : booléen, date ISO canonique, table non
+   vide, littéral concordant avec le périmètre recalculé ([[D-063]] ; patron
+   [[D-198]]/[[D-223]], quatre termes). **Le critère « signatures à cinq
+   termes » de la fiche LOT-25 ne s'applique pas** : le cinquième terme de
+   [[D-067]] est celui des claims, et ces deux tables n'en ont aucun — un champ
+   `claimsSource` vide se lirait comme un oubli. Le critère de la fiche se
+   corrige à la clôture.
+   Les deux modules restent enrôlés à `shaPerimetreLitteral.guard.test.ts` ;
+   `docs/FEATURE_FLAGS.md` reçoit les deux nouvelles dates ([[D-195]] §5).
+
+7. **Une autorisation d'outillage ne couvre ni `shaPerimetre` ni
+   `dateValidation`** ([[D-195]] §3) : ils ne sont recopiés qu'après la
+   déclaration ci-dessus, et jamais l'ancien barème signé ne part avec le
+   plafond à sept.
+
+**Ce que cette décision ne fait pas :** elle ne pose aucun seuil clinique, ne
+touche aucune règle, aucun claim, aucun questionnaire, aucune base (ni
+migration ni contrainte : rien en SQL ne bornait le nombre d'actions). Elle ne
+change rien de ce que le patient lit, sinon qu'un protocole peut désormais
+porter jusqu'à sept actions — le contrat de vue patient exclut toujours la
+charge nommément. Elle n'allume aucun drapeau : le verrou de signature est
+l'interrupteur. **Le reste de la phase 5 « Actions » est hors de ce lot** :
+catalogue d'actions (référentiels existants et liste du responsable), dose
+d'un complément suggérée depuis le registre, complétion des zones par
+propositions IA relues ([[D-251]] §5) — ils suivent les fiches, chacun sous sa
+propre décision. `docs/RELATION_PRATICIEN_PATIENT_SOURCE.md` garde son « trois
+actions maximum » d'audit, assorti d'une note de renvoi vers la présente. Elle
+ne retrace pas la provenance de
+`source.axes_prioritaires.length > 3` (`synthese-praticien.ts`), autre borne
+« trois » sans rapport avec celle-ci.
+
 ### D-272 — Agenda du sommeil : le repère du soir devient « essayé de dormir » (contrat `agenda-sommeil-v4`), et un agenda garde le contrat de sa première nuit
 
 - Date : 2026-10-08

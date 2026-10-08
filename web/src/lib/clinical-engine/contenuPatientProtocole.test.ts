@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { apercuContenuPatient, buildContenuPatientProtocole } from './contenuPatientProtocole';
 import { buildPatientProtocolView } from './patientProtocolView';
 import { actionOrientation } from './orientationAdressage';
-import type {
-  DecisionCard,
-  ProtocolAction,
-  ProtocolDiffusionApproval,
-  ProtocolDraft,
+import {
+  MAX_ACTIONS_PROTOCOLE_21J,
+  type DecisionCard,
+  type ProtocolAction,
+  type ProtocolDiffusionApproval,
+  type ProtocolDraft,
 } from './types';
 
 function card(overrides: Partial<DecisionCard> = {}): DecisionCard {
@@ -116,14 +117,21 @@ describe('ContenuPatientProtocole — un refus porte son motif', () => {
   // CE QUE L'APERÇU ÉCRIT À LA MAIN LAISSAIT PASSER. Ses conditions recopiées
   // ne comptaient pas les actions : un protocole sans action déverrouillait un
   // aperçu vide, un protocole à quatre actions en montrait quatre.
-  it('refuse zéro action comme quatre', () => {
+  // Entrées DÉRIVÉES de la borne ([[D-273]]) : la limite acceptée et la
+  // première refusée suivent `MAX_ACTIONS_PROTOCOLE_21J`.
+  it('refuse zéro action comme une de plus que la borne, accepte la borne', () => {
+    const actions = (n: number) => Array.from({ length: n }, (_, rang) => action({ actionId: `action-${rang + 1}` }));
     expect(apercuContenuPatient({ decisionCard: card(), protocolDraft: protocol({ actions: [] }) }).ok).toBe(false);
     expect(apercuContenuPatient({
       decisionCard: card(),
-      protocolDraft: protocol({
-        actions: [1, 2, 3, 4].map(n => action({ actionId: `action-${n}` })),
-      }),
-    }).ok).toBe(false);
+      protocolDraft: protocol({ actions: actions(MAX_ACTIONS_PROTOCOLE_21J) }),
+    }).ok).toBe(true);
+    const refus = apercuContenuPatient({
+      decisionCard: card(),
+      protocolDraft: protocol({ actions: actions(MAX_ACTIONS_PROTOCOLE_21J + 1) }),
+    });
+    expect(refus.ok).toBe(false);
+    expect(refus.ok === false && refus.detail).toContain('entre une et sept actions');
   });
 
   it('refuse un statut d’intervention inconnu plutôt que de le taire', () => {

@@ -39,12 +39,15 @@ export const VERSION_PROTOCOL_DRAFT_V4 = 'c1-protocol-draft-v4' as const;
 export const VERSION_PATIENT_PROTOCOL_VIEW = 'c1-patient-protocol-view-v2' as const;
 
 /**
- * TROIS ACTIONS MAXIMUM sur un protocole 21 jours — [[D-105]].
+ * SEPT ACTIONS MAXIMUM sur un protocole 21 jours — [[D-105]], amendée par
+ * [[D-273]].
  *
- * PROVENANCE : `docs/RELATION_PRATICIEN_PATIENT_SOURCE.md`, « trois actions
- * maximum ». C'est une borne de CHARGE de la relation praticien-patient, pas un
- * seuil mesuré sur une population : elle n'a ni claim ni intervalle, et n'a pas
- * à en avoir un. Elle est nommée ici pour être identifiable comme telle
+ * PROVENANCE : arbitrage du responsable du 2026-09-29 (cadrage de la phase 5
+ * « Actions »), [[D-273]]. Le trois d'origine venait de
+ * `docs/RELATION_PRATICIEN_PATIENT_SOURCE.md` ; le sept n'a pas d'autre source
+ * que cet arbitrage daté. C'est une borne de CHARGE de la relation
+ * praticien-patient, pas un seuil mesuré sur une population : elle n'a ni claim
+ * ni intervalle, et n'a pas à en avoir un. Elle est nommée ici pour être identifiable comme telle
  * (`DC-19`), pas pour prétendre à une provenance qu'elle n'a pas.
  *
  * POURQUOI ICI. La borne était écrite SIX FOIS dans trois fichiers —
@@ -60,7 +63,7 @@ export const VERSION_PATIENT_PROTOCOL_VIEW = 'c1-patient-protocol-view-v2' as co
  * traînerait le moteur entier dans le bundle du cockpit, exactement le défaut
  * que `bundleClient.guard.test.ts` ferme pour `lib/clinical`.
  */
-export const MAX_ACTIONS_PROTOCOLE_21J = 3;
+export const MAX_ACTIONS_PROTOCOLE_21J = 7;
 
 export type MeasurementUnit = 'ratio' | 'score_100' | 'delta';
 

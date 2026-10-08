@@ -130,12 +130,12 @@ export function projeterContenuPatient(input: {
   patientLimitations?: string[];
 }): ContenuPatientProtocole {
   const { protocolDraft, candidate } = input;
-  // L'orientation vers le médecin ([[D-257]] §8) est HORS BORNE : la borne des
-  // trois porte sur les interventions. Le moteur l'a déjà exigée en tête, au
+  // L'orientation vers le médecin ([[D-257]] §8) est HORS BORNE : la borne porte
+  // sur les interventions. Le moteur l'a déjà exigée en tête, au
   // texte signé, quand la carte porte un constat adressé.
   const interventions = protocolDraft.actions.filter(action => !estActionOrientation(action));
   if (protocolDraft.actions.length === 0 || interventions.length > MAX_ACTIONS_PROTOCOLE_21J) {
-    throw new TypeError('L’aperçu patient exige entre une et trois actions.');
+    throw new TypeError('L’aperçu patient exige entre une et sept actions.');
   }
 
   const actions: PatientProtocolAction[] = protocolDraft.actions.map(action => {

@@ -202,7 +202,7 @@ Critères de validation :
 | Absence jamais transformée en zéro | `ClinicalSnapshot` / `ClinicalReview` | tests unitaires + replay C1 | Praticien |
 | Abstention et sécurité bloquent la suite | `DecisionCard` | tests unitaires + replay C1 | Praticien |
 | Priorité sélectionnée par le praticien | `DecisionCard` | tests unitaires + replay C1 | Praticien |
-| Trois actions maximum, charge déclarée | `ProtocolDraft` | tests unitaires + replay C1 | Praticien |
+| Sept actions maximum (`D-273`), charge déclarée | `ProtocolDraft` | tests unitaires + replay C1 | Praticien |
 | Modification après revue → brouillon | `ProtocolDraft` | tests unitaires + replay C1 | Praticien |
 | Approbation liée aux hashes | `PatientProtocolView` | tests unitaires + replay C1 | Les deux |
 | Détails internes exclus | projection par liste blanche | tests contrat et composant | Patient |
