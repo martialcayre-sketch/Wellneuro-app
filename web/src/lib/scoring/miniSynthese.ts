@@ -6,10 +6,18 @@ import { type RubriqueScore, rubriquesDuScore } from './rubriques';
 type ScoreInput = (Partial<ScoreResultBase> & Record<string, unknown>) | null | undefined;
 
 // Sévérité déduite de la couleur d'interprétation (partagée par tous les questionnaires).
-const SEVERITE: Record<string, number> = { danger: 3, warning: 2, success: 1 };
+//
+// LES QUATRE COULEURS DÉFAVORABLES, DANS L'ORDRE DÉJÀ ÉCRIT AU DÉPÔT
+// (`orientationRulesV1.ts` : `info` < `warning` < `danger` < `dark`) — [[D-274]].
+// `dark` manquait : elle porte les bandes « Très sévère » du DASS-21, et un axe
+// très sévère sortait du résumé, jusqu'à laisser lire « Tous les axes explorés
+// sont peu perturbés ». `info` (bandes « Léger ») est nommée elle aussi, sur
+// arbitrage du responsable. Une couleur absente de cette table n'est PAS
+// perturbée — `success` compris.
+const SEVERITE: Record<string, number> = { dark: 4, danger: 3, warning: 2, info: 1 };
 
 function estPerturbe(interp?: ScoreInterpretation | null): boolean {
-  return interp?.color === 'danger' || interp?.color === 'warning';
+  return (SEVERITE[interp?.color ?? ''] ?? 0) > 0;
 }
 
 // ─── Rubriques ───────────────────────────────────────────────────────────────

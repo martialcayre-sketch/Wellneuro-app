@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { calculateScore, QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { buildMiniSynthese } from './miniSynthese';
+import { rubriquesDuScore } from './rubriques';
 
 type IdQuestionnaire = keyof typeof QUESTIONNAIRE_CATALOGUE;
 
@@ -237,3 +238,117 @@ describe('buildMiniSynthese — détail par rubrique sur les sorties réelles du
     expect(s).not.toContain('Détail');
   });
 });
+
+// LA COULEUR `dark` ET LA COULEUR `info` ([[D-274]]). Le DASS-21 est le seul
+// instrument du catalogue qui les porte au niveau de la RUBRIQUE (« Très
+// sévère », « Léger »). Avant D-274, un axe très sévère sortait du résumé :
+// « Tous les axes explorés sont peu perturbés » à D 21/21. Réponses de
+// fixture, jouées sur le moteur réel.
+describe('buildMiniSynthese — DASS-21 : « Très sévère » et « Léger » sont nommés ([[D-274]])', () => {
+  const D = ['Q003', 'Q005', 'Q010', 'Q013', 'Q016', 'Q017', 'Q021'];
+  const A = ['Q002', 'Q004', 'Q007', 'Q009', 'Q015', 'Q019', 'Q020'];
+  const S = ['Q001', 'Q006', 'Q008', 'Q011', 'Q012', 'Q014', 'Q018'];
+  const z = [0, 0, 0, 0, 0, 0, 0];
+  const max = [3, 3, 3, 3, 3, 3, 3];
+  function dass(d: number[], a: number[], s: number[]): string {
+    const reponses: Record<string, number> = {};
+    D.forEach((k, i) => { reponses[k] = d[i]; });
+    A.forEach((k, i) => { reponses[k] = a[i]; });
+    S.forEach((k, i) => { reponses[k] = s[i]; });
+    return buildMiniSynthese(calculateScore('Q_STR_04', reponses) as Record<string, unknown>);
+  }
+
+  it('D très sévère, A et S normaux : la dépression est nommée, jamais la phrase rassurante', () => {
+    const phrase = dass(max, z, z);
+    expect(phrase).toBe('Dépression : très sévère');
+    expect(phrase).not.toMatch(/peu perturbés/);
+  });
+
+  it('D très sévère, A modéré : la dépression vient en premier', () => {
+    expect(dass(max, [3, 3, 0, 0, 0, 0, 0], z)).toBe('Dépression : très sévère ; Anxiété : modéré');
+  });
+
+  it('les trois axes très sévères : les trois sont nommés', () => {
+    const phrase = dass(max, max, max);
+    expect(phrase.split(' ; ')).toHaveLength(3);
+    expect(phrase).not.toMatch(/peu perturbés/);
+    for (const axe of ['Dépression', 'Anxiété', 'Stress']) expect(phrase).toContain(`${axe} : très sévère`);
+  });
+
+  it('deux axes très sévères et un modéré : le modéré passe derrière', () => {
+    // La configuration mesurée en production le 2026-10-08 (en agrégat) :
+    // le résumé ne nommait que l'axe modéré.
+    const phrase = dass(max, max, [3, 3, 3, 1, 0, 0, 0]);
+    expect(phrase).toMatch(/^(Dépression|Anxiété) : très sévère ; (Dépression|Anxiété) : très sévère ; Stress : modéré$/);
+  });
+
+  it('très sévère passe AVANT sévère, même placé après dans l’ordre de l’instrument', () => {
+    // Le tri est stable : seul un axe plus grave placé APRÈS un moins grave
+    // prouve le rang. `dark` à égalité avec `danger` laisserait la dépression
+    // (sévère) devant l'anxiété (très sévère).
+    expect(dass([3, 3, 3, 3, 0, 0, 0], max, z)).toBe('Anxiété : très sévère ; Dépression : sévère');
+  });
+
+  it('témoin `danger` inchangé : D sévère, A modéré', () => {
+    expect(dass([3, 3, 3, 3, 0, 0, 0], [3, 3, 0, 0, 0, 0, 0], z)).toBe('Dépression : sévère ; Anxiété : modéré');
+  });
+
+  it('un axe léger est nommé, et retire la phrase rassurante', () => {
+    // D 5 = « Léger » (5-6) ; A et S normaux.
+    const phrase = dass([3, 2, 0, 0, 0, 0, 0], z, z);
+    expect(phrase).toBe('Dépression : léger');
+  });
+
+  it('léger passe derrière modéré', () => {
+    expect(dass([3, 2, 0, 0, 0, 0, 0], [3, 3, 0, 0, 0, 0, 0], z)).toBe('Anxiété : modéré ; Dépression : léger');
+  });
+
+  it('les trois axes normaux restent rassurants', () => {
+    expect(dass(z, z, z)).toBe('Tous les axes explorés sont peu perturbés.');
+  });
+});
+
+// LA GARDE DU CATALOGUE ([[D-274]] §2). La décision repose sur un fait : au
+// niveau de la RUBRIQUE, seules les bandes « Léger » (`info`) et « Très
+// sévère » (`dark`) du DASS-21 portent ces couleurs. Les libellés `info` non
+// défavorables (« Niveau de stress bas », « Modérément du matin ») sont des
+// interprétations globales, que la mini-synthèse recopie sans les trier. Un
+// instrument futur qui mettrait un tel libellé sur une RUBRIQUE le ferait
+// nommer comme axe à noter, et retirerait la phrase rassurante : ce banc
+// rougit alors, et la décision est à reprendre.
+describe('buildMiniSynthese — `info` et `dark` au niveau des rubriques : le DASS-21 seul ([[D-274]])', () => {
+  it('aucun autre couple (instrument, libellé) ne porte `info` ou `dark` sur une rubrique', () => {
+    const admis = new Set(['Q_STR_04|Léger', 'Q_STR_04|Très sévère']);
+    const vus = new Set<string>();
+    for (const id of Object.keys(QUESTIONNAIRE_CATALOGUE) as IdQuestionnaire[]) {
+      const questions = (QUESTIONNAIRE_CATALOGUE[id]?.sections ?? []).flatMap(
+        (s: { questions?: { id: string; options?: { v?: unknown }[] }[] }) => s.questions ?? [],
+      );
+      if (questions.length === 0) continue;
+      // Niveaux déterministes : du minimum au maximum de chaque échelle, avec
+      // un décalage par item pour croiser les rubriques entre elles.
+      for (let niveau = 0; niveau <= 10; niveau += 1) {
+        for (let decalage = 0; decalage < 4; decalage += 1) {
+          const reponses: Record<string, unknown> = {};
+          questions.forEach((q, i) => {
+            const valeurs = (q.options ?? []).map(o => o.v).filter(v => v !== undefined);
+            if (valeurs.length === 0) return;
+            const p = Math.max(0, Math.min(1, (niveau + ((i * decalage) % 5) - 2) / 10));
+            reponses[q.id] = valeurs[Math.round(p * (valeurs.length - 1))];
+          });
+          const scores = calculateScore(id, reponses) as Record<string, unknown>;
+          if (!scores || 'error' in scores) continue;
+          for (const r of rubriquesDuScore(scores)) {
+            const couleur = r.interpretation?.color;
+            if (couleur === 'info' || couleur === 'dark') vus.add(`${id}|${r.interpretation!.label}`);
+          }
+        }
+      }
+    }
+    expect([...vus].filter(couple => !admis.has(couple))).toEqual([]);
+    // Témoin : le balayage atteint bien les deux bandes admises — sinon il
+    // prouverait le vide.
+    expect(vus).toEqual(admis);
+  });
+});
+
