@@ -9,7 +9,6 @@ import { listNuits, saveNuit } from '@/lib/agenda-sommeil/persistence';
 import {
   calculerFenetre,
   contratDeLAgenda,
-  ensureNuitReponses,
   estDateSaisissable,
   resolveNuitsActives,
   type ContratEcriture,
@@ -195,16 +194,18 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       );
     }
 
-    // Contrôle de forme, sous le contrat le plus large (v4). Le contrat réel de
-    // l'agenda — celui de sa première nuit — est appliqué par `saveNuit`.
-    const reponses = ensureNuitReponses(body.reponses, { exigerObligatoires: true });
+    // La validation d'écriture se joue dans `saveNuit`, sous le contrat RÉEL de
+    // l'agenda — celui de sa première nuit ([[D-272]] §3). La jouer ici sous un
+    // contrat supposé nommerait, dans un agenda v3, un repère que le patient n'a
+    // jamais vu. Ses refus sont des `TypeError`, rendus en 400 ci-dessous.
     const supersedesNuitId = typeof body.supersedesNuitId === 'string' ? body.supersedesNuitId : undefined;
 
     const created = await saveNuit({
       idPatient: auth.idPatient,
       idAssignation: ass.idAssignation,
       dateNuit,
-      reponses,
+      // Non validé ici : `saveNuit` le valide (cf. ci-dessus) avant toute écriture.
+      reponses: body.reponses as NuitReponses,
       supersedesNuitId,
     });
 

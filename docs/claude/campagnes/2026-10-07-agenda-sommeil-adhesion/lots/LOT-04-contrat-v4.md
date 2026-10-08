@@ -33,7 +33,17 @@ deux estimations que le patient n'a pas observées. Clinique : deux décisions,
   d'endormissement dessinée, latence médiane « sur N nuits », repère nommé
   selon le contrat.
 - Agrégats : une réponse inconnue sort de chaque métrique qui en dépend,
-  jamais un centre de classe ; nouveau compteur `AGD_NB_NUITS_LAT`.
+  jamais un centre de classe ; chaque fréquence a son dénominateur
+  (`AGD_NB_NUITS_LAT`, `AGD_NB_NUITS_FREQ_WASO`, `AGD_NB_NUITS_FREQ`).
+
+## Risque de déploiement
+
+**Pas de retour arrière du code** une fois une nuit `inconnu` écrite : la
+lecture d'avant la v4 la refuse, et le GET portail, la vue praticien et la
+clôture du patient tomberaient. Seule une correction en avant est possible.
+Fenêtre résiduelle connue : un onglet ouvert avant le déploiement sur un
+agenda encore vide envoie sa première nuit avec les mots v3 (« éteint la
+lumière »), et le serveur la tamponne v4.
 
 ## Ce qui ne change pas
 

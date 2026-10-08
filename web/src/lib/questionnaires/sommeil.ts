@@ -244,6 +244,7 @@ export const Q_SOM_09 = {
         qn('AGD_NB_NUITS_TWAK',"Nuits où le mode de lever est connu",0,21,1,'nuits'),
         // Contrat v4 ([[D-271]]) : « je ne sais pas » pour l'endormissement.
         qn('AGD_NB_NUITS_LAT',"Nuits où l'endormissement est connu",0,21,1,'nuits'),
+        qn('AGD_NB_NUITS_FREQ_WASO',"Nuits où l'éveil nocturne est classable pour le seuil de 30 min",0,21,1,'nuits'),
         qn('AGD_NB_NUITS_FREQ',"Nuits classables pour le seuil de 30 min",0,21,1,'nuits'),
         qn('AGD_NB_NUITS_AIDE_CONNU',"Nuits où l'aide au sommeil est renseignée",0,21,1,'nuits'),
         qn('AGD_NB_NUITS_WE',"Nuits de week-end retenues",0,21,1,'nuits'),

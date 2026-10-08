@@ -269,3 +269,25 @@ describe('AgendaSommeilJournal — rappel du matin posé sur l’appareil (LOT-0
     expect(screen.queryByText('Un rappel chaque matin')).toBeNull();
   });
 });
+
+// Contrat de l'agenda ([[D-272]] §3) : le serveur le donne au GET, le journal le
+// transmet au formulaire. Un agenda ouvert en v3 garde ses mots.
+describe('AgendaSommeilJournal — le formulaire suit le contrat de l’agenda (LOT-04)', () => {
+  const sansNuitDuJour = { ...CHARGEMENT_OK, nuits: [{ dateNuit: '2026-09-02', reponses: NUIT }] };
+
+  it('agenda v3 : « éteint la lumière », sans « je ne sais pas »', async () => {
+    fetchMock.mockImplementation(() => reponse({ ...sansNuitDuJour, contrat: 'agenda-sommeil-v3' }));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Votre nuit passée')).toBeTruthy());
+    expect(screen.getByLabelText(/éteint la lumière à/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Je ne sais pas' })).toBeNull();
+  });
+
+  it('agenda v4 : « essayé de dormir », et « je ne sais pas » proposé', async () => {
+    fetchMock.mockImplementation(() => reponse({ ...sansNuitDuJour, contrat: 'agenda-sommeil-v4' }));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Votre nuit passée')).toBeTruthy());
+    expect(screen.getByLabelText(/essayé de dormir à/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Je ne sais pas' })).toBeTruthy();
+  });
+});

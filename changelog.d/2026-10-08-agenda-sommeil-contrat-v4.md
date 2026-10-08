@@ -14,11 +14,17 @@ seuil, aucune borne, aucun poids, aucun barème modifié ; aucune migration.
   en aurait besoin (latence médiane, fréquences au-delà de 30 min, éveil
   nocturne, temps de sommeil et efficacité) la laisse de côté, sans jamais lui
   prêter de valeur. Elle compte pour la qualité, la régularité, le temps au
-  lit et la couverture. Nouveau compteur `AGD_NB_NUITS_LAT`, affiché sous la
-  latence médiane côté praticien.
+  lit et la couverture. Chaque fréquence a son dénominateur : une latence
+  inconnue ne retire pas la nuit de la fréquence d'éveil, et réciproquement.
+  Nouveaux compteurs `AGD_NB_NUITS_LAT` et `AGD_NB_NUITS_FREQ_WASO`, affichés
+  « sur N nuits » côté praticien.
 - **Contrat `agenda-sommeil-v4`.** Un agenda garde le contrat de sa première
   nuit : ceux commencés en v3 s'y terminent, avec leurs mots et sans « je ne
   sais pas ». C'est le serveur qui l'applique, à l'écriture.
 - Vue praticien : le chronogramme et les tuiles nomment le repère tel qu'il a
-  été demandé (« Essai de dormir » ou « Extinction »), et l'infobulle écrit
-  « Ne sait pas » sans dessiner de portion d'endormissement.
+  été demandé (« Essai de dormir » ou « Extinction ») ; un endormissement
+  inconnu est marqué d'un tiret en tête de barre, sans portion dessinée, et
+  l'infobulle écrit « Ne sait pas ».
+- **Pas de retour arrière du code** une fois une nuit « je ne sais pas »
+  écrite : l'ancienne lecture la refuserait et rendrait l'agenda illisible.
+  Seule une correction en avant est possible.

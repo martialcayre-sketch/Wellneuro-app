@@ -186,11 +186,13 @@ export function ensureNuitReponses(
       if (nombre !== undefined && nombre > 0 && dureeTotale === 'aucun') {
         throw new TypeError('Nuit continue incompatible avec des réveils comptés.');
       }
-    } else if (nombre === 0) {
+    } else if (nombre === 0 && dureeTotale !== INCONNU) {
       // LECTURE seule : artefact connu du formulaire v1, qui masquait la
       // question de durée quand le patient déclarait 0 réveil et rangeait tout
       // de même `'lt15'` par défaut. Une nuit sans réveil n'a pas 8 minutes
-      // d'éveil — on la ramène à la classe `aucun`, désormais explicite.
+      // d'éveil — on la ramène à la classe `aucun`, désormais explicite. Un
+      // « je ne sais pas » (v4) n'est jamais réécrit : l'artefact est propre à
+      // la v1, et le changer en nuit continue inventerait un zéro.
       dureeTotale = 'aucun';
     }
     out.reveils = nombre === undefined ? { dureeTotale } : { dureeTotale, nombre };

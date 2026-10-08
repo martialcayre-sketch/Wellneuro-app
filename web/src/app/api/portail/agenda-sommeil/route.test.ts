@@ -195,6 +195,69 @@ describe('POST /api/portail/agenda-sommeil', () => {
     expect(ecrit.contractVersion).toBe('agenda-sommeil-v3');
   });
 
+  it('une correction dans un agenda v4 garde « je ne sais pas » et le contrat v4', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    prisma.agendaSommeilNuit.findFirst.mockResolvedValue({
+      reponses: { contractVersion: 'agenda-sommeil-v4', ...reponses },
+      soumisLe: new Date('2026-07-15T06:00:00.000Z'),
+    });
+    prisma.agendaSommeilNuit.findUnique.mockResolvedValue({
+      idPatient: OWNER.idPatient,
+      idAssignation: 'ASS_AGD',
+      dateNuit: AUJOURDHUI,
+    });
+    prisma.agendaSommeilNuit.create.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
+      id: 'nuit_corrigee',
+      soumisLe: new Date(),
+      canal: 'portail',
+      ...data,
+    }));
+    const res = await POST(
+      req('POST', cookieFor(), {
+        body: {
+          idAssignation: 'ASS_AGD',
+          reponses: { ...reponses, latence: 'inconnu' },
+          supersedesNuitId: 'nuit_v4',
+        },
+      }),
+    );
+    expect(res.status).toBe(201);
+    const ecrit = prisma.agendaSommeilNuit.create.mock.calls[0][0].data;
+    expect(ecrit.supersedesNuitId).toBe('nuit_v4');
+    expect((ecrit.reponses as Record<string, unknown>).contractVersion).toBe('agenda-sommeil-v4');
+  });
+
+  it('une première ligne sans contrat inscrit vaut v3 : « je ne sais pas » y est refusé', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    prisma.agendaSommeilNuit.findFirst.mockResolvedValue({
+      reponses: { ...reponses },
+      soumisLe: new Date('2026-07-14T07:00:00.000Z'),
+    });
+    const res = await POST(
+      req('POST', cookieFor(), {
+        body: { idAssignation: 'ASS_AGD', reponses: { ...reponses, reveils: { dureeTotale: 'inconnu' } } },
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
+  });
+
+  it('dans un agenda v3, un refus nomme l’extinction — le repère que le patient a vu', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    prisma.agendaSommeilNuit.findFirst.mockResolvedValue({
+      reponses: { contractVersion: 'agenda-sommeil-v3', ...reponses },
+      soumisLe: new Date('2026-07-14T07:00:00.000Z'),
+    });
+    const { extinctionImmediate: _absent, ...sansMode } = reponses;
+    const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses: sansMode } }));
+    const json = (await res.json()) as { error?: string };
+    expect(res.status).toBe(400);
+    expect(json.error).toBe('Indiquez si vous avez éteint la lumière en vous couchant.');
+  });
+
   it('rejette une nuit mal formée (400)', async () => {
     prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
     mockOwner();

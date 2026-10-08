@@ -71,17 +71,22 @@ besoin la laisse de côté **au lieu de lui prêter un centre de classe** —
 c'est la règle de couverture par métrique déjà appliquée aux nuits v1 sans
 éveil (`DC-24`, `DC-25`). Concrètement :
 - endormissement inconnu → la nuit sort de la latence médiane, de la
-  fréquence « > 30 min » et du critère combiné, et du temps de sommeil (donc
-  de l'efficacité) ;
-- éveil inconnu → elle sort du WASO, des fréquences d'éveil et du critère
-  combiné, et du temps de sommeil ;
+  fréquence d'endormissement « > 30 min » et du critère combiné, et du temps
+  de sommeil (donc de l'efficacité) — **pas** de la fréquence d'éveil ;
+- éveil inconnu → elle sort du WASO, de la fréquence d'éveil « > 30 min » et
+  du critère combiné, et du temps de sommeil — **pas** de la fréquence
+  d'endormissement ;
 - dans les deux cas, elle reste comptée pour la qualité, la régularité, le
   temps au lit et les seuils de couverture (7 et 14 nuits) : ses heures sont
   connues.
 
-Un compteur nouveau, `AGD_NB_NUITS_LAT`, dit sur combien de nuits porte la
-latence médiane ; la tuile praticien l'affiche. Une latence médiane sans nuit
-connue vaut `null`, jamais 0.
+Chaque fréquence a donc son dénominateur. Deux compteurs nouveaux le disent :
+`AGD_NB_NUITS_LAT` (nuits où l'endormissement est connu, dénominateur de la
+latence médiane et de sa fréquence) et `AGD_NB_NUITS_FREQ_WASO` (nuits où
+l'éveil est classable pour le seuil de 30 min) ; `AGD_NB_NUITS_FREQ` reste
+celui du critère combiné. Le panneau praticien affiche chaque fréquence
+« sur N nuits » quand N est inférieur au nombre de nuits. Une latence médiane
+sans nuit connue vaut `null`, jamais 0.
 
 **§3 — Ce qui reste obligatoire.** Les heures, la qualité, l'aide au sommeil
 et les modes de coucher et de lever : le patient les connaît, et sans l'aide

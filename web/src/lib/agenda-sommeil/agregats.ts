@@ -113,7 +113,8 @@ export type AgregatsAgenda = {
   AGD_NB_NUITS_REV: number; // nuits où le COMPTE de réveils est connu
   AGD_NB_NUITS_TWAK: number; // nuits où le mode de lever est connu
   AGD_NB_NUITS_LAT: number; // nuits où l'endormissement est connu (v4)
-  AGD_NB_NUITS_FREQ: number; // nuits classables pour le seuil de 30 min
+  AGD_NB_NUITS_FREQ: number; // nuits classables pour le seuil de 30 min (les deux grandeurs)
+  AGD_NB_NUITS_FREQ_WASO: number; // nuits où l'éveil est classable pour ce seuil (v4)
   AGD_NB_NUITS_AIDE_CONNU: number; // nuits où l'aide au sommeil est renseignée
   AGD_NB_NUITS_WE: number; // nuits de week-end retenues
   AGD_INDICE_ELIGIBLE: 1 | 0; // couverture suffisante pour l'indice composite
@@ -343,13 +344,16 @@ export function calculerAgregats(nuits: NuitAgregable[]): AgregatsAgenda | null 
   const avecLat = plausibles.filter(
     (n): n is NuitDerivee & { latence: number; latenceAu30: boolean } => n.latence !== null,
   );
-  // Fréquence : une nuit n'y compte que si les DEUX critères sont tranchables.
-  // Une classe d'éveil héritée, ou un « je ne sais pas » de l'un ou l'autre côté,
-  // rend la nuit indéterminée — elle sort du calcul plutôt que d'être rangée
-  // arbitrairement au-dessus ou au-dessous de 30 min.
-  const classables = plausibles.filter(
-    (n): n is NuitDerivee & { wasoAu30: boolean; latenceAu30: boolean } =>
-      n.wasoAu30 !== null && n.latenceAu30 !== null,
+  // Fréquences : chaque grandeur a son dénominateur. Une classe d'éveil héritée
+  // ou un éveil « je ne sais pas » rend la nuit indéterminée POUR L'ÉVEIL — elle
+  // sort de ce calcul plutôt que d'être rangée arbitrairement au-dessus ou
+  // au-dessous de 30 min ; une latence inconnue ne l'en fait pas sortir.
+  const classablesWaso = plausibles.filter(
+    (n): n is NuitDerivee & { wasoAu30: boolean } => n.wasoAu30 !== null,
+  );
+  // Le critère combiné exige les DEUX grandeurs tranchables.
+  const classables = classablesWaso.filter(
+    (n): n is NuitDerivee & { wasoAu30: boolean; latenceAu30: boolean } => n.latenceAu30 !== null,
   );
   // Taux hebdomadaire : on ramène le compte au nombre de nuits réellement
   // classables, pas aux 21 emplacements — sinon un recueil incomplet paraîtrait
@@ -382,11 +386,11 @@ export function calculerAgregats(nuits: NuitAgregable[]): AgregatsAgenda | null 
       avecLat.length,
     ),
     AGD_FREQ_WASO30_SEM: parSemaine(
-      classables.filter((n) => n.wasoAu30).length,
-      classables.length,
+      classablesWaso.filter((n) => n.wasoAu30).length,
+      classablesWaso.length,
     ),
     // Le critère combiné exige les DEUX grandeurs : il se limite donc aux nuits
-    // où l'éveil est lui aussi classable.
+    // où l'une et l'autre sont classables.
     AGD_FREQ_CRITERE_SEM: parSemaine(
       classables.filter((n) => n.latenceAu30 || n.wasoAu30).length,
       classables.length,
@@ -399,6 +403,7 @@ export function calculerAgregats(nuits: NuitAgregable[]): AgregatsAgenda | null 
     AGD_NB_NUITS_TWAK: avecTwak.length,
     AGD_NB_NUITS_LAT: avecLat.length,
     AGD_NB_NUITS_FREQ: classables.length,
+    AGD_NB_NUITS_FREQ_WASO: classablesWaso.length,
     AGD_NB_NUITS_AIDE_CONNU: avecAide.length,
     AGD_NB_NUITS_WE: retenues.filter((n) => estWeekend(n.dateNuit)).length,
     AGD_INDICE_ELIGIBLE: couvertureSuffisante(nuits) ? 1 : 0,

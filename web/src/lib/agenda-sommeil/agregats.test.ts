@@ -434,6 +434,22 @@ describe('« je ne sais pas » — sorti des métriques qui en dépendent, jamai
     expect(a.AGD_FREQ_LAT30_SEM).toBe(0);
   });
 
+  // Chaque fréquence a SON dénominateur : une latence inconnue ne retire pas la
+  // nuit de la fréquence d'éveil (revue du 2026-10-08, P1).
+  it('une latence inconnue laisse la nuit dans la fréquence d’éveil, pas dans le critère combiné', () => {
+    const nuits = [
+      ...serie(4, { reveils: { dureeTotale: 'e30_60' } }),
+      ...serie(3, { latence: 'inconnu', reveils: { dureeTotale: 'e30_60' } }, decale(LUNDI, 4)),
+    ];
+    const a = calculerAgregats(nuits)!;
+    expect(a.AGD_NB_NUITS_FREQ_WASO).toBe(7);
+    expect(a.AGD_FREQ_WASO30_SEM).toBe(7);
+    expect(a.AGD_NB_NUITS_FREQ).toBe(4);
+    expect(a.AGD_FREQ_CRITERE_SEM).toBe(7);
+    expect(a.AGD_NB_NUITS_LAT).toBe(4);
+    expect(a.AGD_FREQ_LAT30_SEM).toBe(0);
+  });
+
   it('une nuit « je ne sais pas » compte pour la couverture de l’indice', () => {
     const nuits = serie(14, { latence: 'inconnu', reveils: { dureeTotale: 'inconnu' } });
     expect(couvertureSuffisante(nuits)).toBe(true);

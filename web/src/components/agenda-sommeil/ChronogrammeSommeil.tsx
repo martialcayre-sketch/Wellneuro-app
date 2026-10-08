@@ -74,6 +74,10 @@ type Point = {
   // v4 : le haut de la barre est l'heure où le patient a ESSAYÉ DE DORMIR, plus
   // l'extinction ([[D-272]]).
   essaiDeDormir: boolean;
+  // « Je ne sais pas » pour l'endormissement (v4, [[D-271]]) : aucune portion
+  // n'est dessinée, et un tiret en tête de barre le distingue d'un
+  // endormissement immédiat — sans lui, la barre dirait « zéro minute ».
+  latenceInconnue: boolean;
 };
 
 function tickHeure(t: number): string {
@@ -135,6 +139,17 @@ function BarreNuit(props: unknown) {
       />
       {hLatence > 1 && (
         <rect x={x} y={y} width={width} height={hLatence} rx={3} fill={couleur} opacity={0.35} />
+      )}
+      {payload.latenceInconnue && (
+        <line
+          x1={x}
+          x2={x + width}
+          y1={y}
+          y2={y}
+          stroke="#64748b"
+          strokeWidth={2}
+          strokeDasharray="2 2"
+        />
       )}
       {hEveilMatin > 1 && (
         <rect
@@ -248,6 +263,7 @@ export function ChronogrammeSommeil({ nuits }: { nuits: NuitRow[] }) {
       weekend: estWeekend(row.dateNuit),
       nuit: r,
       essaiDeDormir: row.contrat === 'agenda-sommeil-v4',
+      latenceInconnue: r.latence === INCONNU,
     };
   });
 
@@ -291,8 +307,8 @@ export function ChronogrammeSommeil({ nuits }: { nuits: NuitRow[] }) {
         Teinte : semaine 1 → 3. Liseré ambré : nuit de week-end. Portions claires : temps
         d’endormissement (en tête) et éveil au lit le matin (en pied) — les deux seuls éveils
         dont l’heure est recueillie. L’éveil nocturne n’est connu qu’en durée cumulée : il se
-        lit dans l’infobulle, il n’est pas dessiné à une position inventée ; un endormissement
-        que le patient ne sait pas estimer ne l’est pas davantage. Haut de barre : extinction
+        lit dans l’infobulle, il n’est pas dessiné à une position inventée. Tiret gris en tête de
+        barre : endormissement que le patient ne sait pas estimer, sans portion dessinée. Haut de barre : extinction
         de la lumière, ou heure où le patient a essayé de dormir pour les agendas ouverts
         depuis la v4. Pointillés : médianes de ce repère du soir et du lever.
       </p>

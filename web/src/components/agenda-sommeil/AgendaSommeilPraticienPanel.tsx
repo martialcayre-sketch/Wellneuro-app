@@ -124,21 +124,35 @@ function TuilesAgregats({ a, essaiDeDormir }: { a: AgregatsAgenda; essaiDeDormir
 // 22 min peut recouvrir quatre nuits à 8 min et trois à plus d'une heure. La
 // convention de recherche (≥ 3 nuits/semaine) est nommée, jamais conclue : on
 // rapporte un nombre et sa convention, on ne pose pas de diagnostic.
+//
+// Chaque fréquence porte SON dénominateur (v4, [[D-271]]) : un « je ne sais
+// pas » sur l'endormissement ne retire pas la nuit de la fréquence d'éveil, et
+// réciproquement. Une fréquence incalculable s'écrit, elle ne masque pas les
+// autres.
 function Frequences({ a }: { a: AgregatsAgenda }) {
-  if (a.AGD_FREQ_CRITERE_SEM === null) return null;
-  const partiel = a.AGD_NB_NUITS_FREQ < a.AGD_NB_NUITS;
+  const lignes: { libelle: string; valeur: number | null; sur: number }[] = [
+    { libelle: 'Endormissement', valeur: a.AGD_FREQ_LAT30_SEM, sur: a.AGD_NB_NUITS_LAT },
+    { libelle: 'éveil nocturne', valeur: a.AGD_FREQ_WASO30_SEM, sur: a.AGD_NB_NUITS_FREQ_WASO },
+    { libelle: 'l’un ou l’autre', valeur: a.AGD_FREQ_CRITERE_SEM, sur: a.AGD_NB_NUITS_FREQ },
+  ];
+  if (lignes.every((l) => l.valeur === null)) return null;
+  const partiel = lignes.some((l) => l.sur < a.AGD_NB_NUITS);
   return (
     <div className="rounded-lg border border-border bg-surface px-3 py-2">
       <p className="text-xs text-muted-foreground">Nuits par semaine au-delà de 30 min</p>
       <p className="text-sm text-foreground tabular-nums">
-        Endormissement <strong>{a.AGD_FREQ_LAT30_SEM}</strong> · éveil nocturne{' '}
-        <strong>{a.AGD_FREQ_WASO30_SEM}</strong> · l’un ou l’autre{' '}
-        <strong>{a.AGD_FREQ_CRITERE_SEM}</strong>
+        {lignes.map((l, i) => (
+          <span key={l.libelle}>
+            {i > 0 ? ' · ' : ''}
+            {l.libelle} <strong>{l.valeur === null ? 'non calculé' : l.valeur}</strong>
+            {l.valeur !== null && l.sur < a.AGD_NB_NUITS ? ` (sur ${l.sur} nuits)` : ''}
+          </span>
+        ))}
       </p>
       <p className="text-2xs text-muted-foreground">
         Convention de recherche : ≥ 3 nuits/semaine.
         {partiel
-          ? ` Calculé sur ${a.AGD_NB_NUITS_FREQ} nuits — les autres ne sont pas classables pour ce seuil (nuits notées avant la refonte des bornes, ou durée que le patient ne savait pas estimer).`
+          ? ' Une nuit sort d’un calcul quand sa grandeur n’y est pas classable : bornes d’avant la refonte, ou « je ne sais pas ».'
           : ''}
       </p>
     </div>
