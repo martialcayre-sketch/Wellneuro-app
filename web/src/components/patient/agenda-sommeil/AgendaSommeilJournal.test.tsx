@@ -118,13 +118,14 @@ describe('AgendaSommeilJournal — un refus ne reste pas muet', () => {
     render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
     await waitFor(() => expect(screen.getByText('Votre nuit passée')).toBeTruthy());
     const clic = (nom: string) => fireEvent.click(screen.getByRole('button', { name: nom }));
-    clic('Confirmer ces horaires : 🌑 23:00 → 🌅 07:00');
+    clic('Comme d’habitude : 23:00');
     clic('Au même moment que mon coucher');
     clic('En moins de 15 min');
     clic('Continuer');
     clic('Nuit continue, aucun réveil');
     clic('Aucune aide pour dormir cette nuit');
     clic('Continuer');
+    clic('Comme d’habitude : 07:00');
     clic('Au même moment que mon réveil');
     clic('Très bonne');
     fireEvent.click(screen.getByRole('button', { name: /c’est noté/i }));
@@ -135,7 +136,7 @@ describe('AgendaSommeilJournal — un refus ne reste pas muet', () => {
     expect(alerte.nextElementSibling?.textContent).toMatch(/c’est noté/i);
   });
 
-  it('« Confirmer ces horaires » n’apparaît pas sans nuit du patient', async () => {
+  it('« Comme d’habitude » n’apparaît pas sans nuit du patient', async () => {
     const aucuneNuit = {
       ...CHARGEMENT_OK,
       fenetre: { ...FENETRE, dateDebut: null, emplacements: [], nbRenseignees: 0, jourCourant: null },
@@ -145,7 +146,7 @@ describe('AgendaSommeilJournal — un refus ne reste pas muet', () => {
     fetchMock.mockImplementation(() => reponse(aucuneNuit));
     render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
     await waitFor(() => expect(screen.getByText('Votre nuit passée')).toBeTruthy());
-    expect(screen.queryByRole('button', { name: /confirmer ces horaires/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /comme d’habitude/i })).toBeNull();
   });
 
   it('ne montre aucune alerte tant que rien n’a été refusé', async () => {

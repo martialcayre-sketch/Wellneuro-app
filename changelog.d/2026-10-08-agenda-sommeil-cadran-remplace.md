@@ -16,6 +16,10 @@ donner une heure que tout le monde sait lire.
   ne passe que si l'écran est complet et nomme sinon ce qui manque ;
   « Retour » garde les réponses. Un refus d'ordre des heures ramène à l'écran
   qui porte l'heure à corriger.
+- **« Comme d'habitude : hh:mm »** remplace « Confirmer ces horaires » : un
+  bouton par écran, pour la seule heure que le patient y voit (l'extinction le
+  soir, le lever le matin), et seulement quand ces horaires viennent de ses
+  propres nuits.
 - **Les classes de réveil affichent leur ordre de grandeur** sous chaque tuile
   (« moins de 15 min au total »…), en aide discrète : la classe mesure une
   durée cumulée, pas un nombre de réveils (arbitrage du 2026-10-07).

@@ -426,23 +426,17 @@ describe('facteurs — « rien de particulier » est exclusif', () => {
   });
 });
 
-describe('confirmer ces horaires — un geste pour les deux heures suggérées', () => {
-  const bouton = () => screen.queryByRole('button', { name: /confirmer ces horaires/i });
+describe('« comme d’habitude » — un bouton par écran, pour l’heure qu’on y voit', () => {
+  const bouton = () => screen.queryByRole('button', { name: /comme d’habitude/i });
 
   it('absent quand les horaires ne sont pas ceux du patient (défauts)', () => {
     rendre();
     expect(bouton()).toBeNull();
   });
 
-  it('masqué dès qu’une des deux heures est choisie à la main', () => {
+  it('le soir, ne confirme que l’extinction, et rien d’autre', () => {
     rendre({ suggestionsPersonnelles: true });
-    choisir(/éteint la lumière à/, '22:45');
-    expect(bouton()).toBeNull();
-  });
-
-  it('confirme l’extinction et le lever, et rien d’autre', () => {
-    rendre({ suggestionsPersonnelles: true });
-    expect(bouton()?.textContent).toMatch(/23:00 → .*07:00/);
+    expect(bouton()?.textContent).toBe('Comme d’habitude : 23:00');
     fireEvent.click(bouton()!);
     expect(liste(/éteint la lumière à/).value).toBe('23:00');
     expect(bouton()).toBeNull();
@@ -454,7 +448,17 @@ describe('confirmer ces horaires — un geste pour les deux heures suggérées',
     continuer();
     nuitMinimum();
     continuer();
+    // Le lever n'a PAS été rempli au soir : il se confirme ici, où on le voit.
+    expect(liste(/levé·e à/).value).toBe('');
+    expect(bouton()?.textContent).toBe('Comme d’habitude : 07:00');
+    fireEvent.click(bouton()!);
     expect(liste(/levé·e à/).value).toBe('07:00');
+  });
+
+  it('masqué dès que l’heure de l’écran est choisie à la main', () => {
+    rendre({ suggestionsPersonnelles: true });
+    choisir(/éteint la lumière à/, '22:45');
+    expect(bouton()).toBeNull();
   });
 });
 

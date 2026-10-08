@@ -72,7 +72,7 @@ import {
 // la veille — latence et qualité comprises — et le bouton d'envoi était actif
 // sans un seul geste : on pouvait valider vingt copies conformes de sa première
 // nuit. Les horaires habituels ne sont qu'une proposition, confirmée par un
-// geste explicite (« Confirmer ces horaires »).
+// geste explicite (« Comme d'habitude », un bouton par écran).
 
 function ChoixEmoji({
   label,
@@ -227,6 +227,21 @@ function Compteur({
   );
 }
 
+// « Comme d'habitude » : confirme en un geste l'heure habituelle du patient
+// pour la question de l'écran, l'heure écrite sur le bouton. Absent tant que le
+// patient n'a pas de nuit à lui : les horaires par défaut ne sont pas les siens.
+function ConfirmerHabituel({ heure, onConfirmer }: { heure: string; onConfirmer: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onConfirmer}
+      className="min-h-11 rounded-xl border border-primary/40 px-4 py-2 text-sm text-primary hover:bg-primary/10"
+    >
+      Comme d’habitude : {heure}
+    </button>
+  );
+}
+
 // Les trois écrans, dans l'ordre de la nuit. La numérotation affichée (« 1 sur
 // 3 ») dit une séquence réelle : le patient remonte sa nuit du soir au matin.
 const ETAPES = [
@@ -280,10 +295,10 @@ type Props = {
   // de la veille : ce serait rouvrir la porte au report automatique.
   initial: NuitReponses | null;
   // Horaires habituels du patient (médianes des nuits précédentes), proposés
-  // par « Confirmer ces horaires » — jamais posés sans ce geste.
+  // par « Comme d'habitude » — jamais posés sans ce geste.
   horairesHabituels: { extinction: string; sortie: string };
   // Vrai seulement si ces horaires viennent des nuits DU PATIENT. Sur les
-  // horaires par défaut (aucune nuit encore), « confirmer ces horaires »
+  // horaires par défaut (aucune nuit encore), « comme d'habitude »
   // ferait valider en un geste une heure que personne n'a donnée.
   suggestionsPersonnelles?: boolean;
   // Refus du serveur, rendu À CÔTÉ DU BOUTON d'envoi.
@@ -532,24 +547,15 @@ export function SaisieNuitForm({
       {etape === 0 && (
         <>
           {alerteOrdre}
-          {/* « Comme d'habitude » en UN geste pour les deux seules heures
-              suggérées. Le garde-fou de la v2 tient : chaque nuit exige un
-              geste explicite, et rien d'autre n'est repris — ni latence, ni
-              qualité, ni réveils. Les heures confirmées sont écrites sur le
-              bouton : on confirme ce qu'on lit. Absent tant que le patient n'a
-              pas de nuit à lui : les horaires par défaut ne sont pas les siens. */}
-          {suggestionsPersonnelles && heureCoucher === undefined && heureLever === undefined && (
-            <button
-              type="button"
-              onClick={() => {
-                setErreurOrdre('');
-                setHeureCoucher(horairesHabituels.extinction);
-                setHeureLever(horairesHabituels.sortie);
-              }}
-              className="min-h-11 rounded-xl border border-primary/40 px-4 py-2 text-sm text-primary hover:bg-primary/10"
-            >
-              Confirmer ces horaires : 🌑 {horairesHabituels.extinction} → 🌅 {horairesHabituels.sortie}
-            </button>
+          {/* « Comme d'habitude » pour l'heure de CET écran seulement : chaque
+              heure ne se confirme que là où le patient la voit (arbitrage du
+              responsable du 2026-10-08). Le garde-fou de la v2 tient : un geste
+              explicite, l'heure écrite sur le bouton, rien d'autre repris. */}
+          {suggestionsPersonnelles && heureCoucher === undefined && (
+            <ConfirmerHabituel
+              heure={horairesHabituels.extinction}
+              onConfirmer={() => majHeure(setHeureCoucher)(horairesHabituels.extinction)}
+            />
           )}
 
           <div ref={ancre('extinction')} tabIndex={-1} className={classeBloc('extinction')}>
@@ -666,6 +672,12 @@ export function SaisieNuitForm({
       {etape === 2 && (
         <>
           {alerteOrdre}
+          {suggestionsPersonnelles && heureLever === undefined && (
+            <ConfirmerHabituel
+              heure={horairesHabituels.sortie}
+              onConfirmer={() => majHeure(setHeureLever)(horairesHabituels.sortie)}
+            />
+          )}
           <div ref={ancre('sortie')} tabIndex={-1} className={classeBloc('sortie')}>
             <SelecteurHeure
               id="agenda-heure-sortie"

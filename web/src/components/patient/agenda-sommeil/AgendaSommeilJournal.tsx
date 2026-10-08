@@ -65,7 +65,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
     return m;
   }, [data]);
 
-  // Horaires proposés par « Confirmer ces horaires » — une suggestion,
+  // Horaires proposés par « Comme d'habitude » — une suggestion,
   // pas une valeur : elle ne devient une réponse qu'au toucher.
   const habituels = useMemo(() => horairesHabituels(data?.nuits ?? []), [data]);
   // Les horaires sont-ils ceux du patient, ou les défauts faute de nuit
@@ -215,7 +215,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
               et qualité comprises —, le bouton d'envoi était actif sans un seul
               geste, et vingt copies conformes de la première nuit passaient
               pour un recueil. Les horaires habituels passent à part, et ne se
-              posent que par « Confirmer ces horaires ». */}
+              posent que par « Comme d'habitude ». */}
           <SaisieNuitForm
             key={cibleDate}
             initial={nuitsParDate.get(cibleDate) ?? null}
