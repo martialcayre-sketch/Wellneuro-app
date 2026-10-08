@@ -81,6 +81,29 @@ terme.
 | LOT-04 | Instrument : ancre « essayer de dormir », inconnu / nuit partielle / nuit blanche, durée configurable (+ `DC-19`), J-2, redéfinition de l'aide | `D-xxx` + contrat v4 chacun |
 | LOT-05 | Rappels | réarbitrage `REGISTRE_FRONTIERES.md` d'abord |
 
-**Arbitrage en attente (non tranché)** : afficher les minutes des classes de
-réveil côté patient renverse un choix de conception écrit
-(`libelles.ts`, « sans minutes ») — à décider par le responsable, hors LOT-01.
+## Arbitrages du responsable (2026-10-07, après le merge de #1359)
+
+Rendus en session, sur questions fermées. Ils **réordonnent** le tableau
+ci-dessus ; le tableau reste tel qu'il a été entériné, pour la trace.
+
+| Question | Arbitrage | Conséquence |
+|---|---|---|
+| « Confirmer ces horaires » : minimum de nuits ? | **Dès 1 nuit** (statu quo) | Aucun code. Le patient voit les heures et confirme : un geste explicite par nuit. |
+| Minutes des classes de réveil côté patient | **Bornes en aide discrète** : le libellé reste, une ligne grise donne l'ordre de grandeur (« moins de 15 min au total ») | Interface seule, mêmes classes, pas de `D-xxx`. Renverse le commentaire « sans minutes » de `libelles.ts`, qui sera réécrit. Rejoint LOT-03. |
+| LOT-04 : quels changements d'instrument ? | **« Je ne sais pas » / nuit partielle** et **repère « essayer de dormir »**. Écartés pour l'instant : J-2, durée configurable. | Deux `D-xxx` à écrire, contrat `agenda-sommeil-v4` commun, revue clinique. |
+| Rappels | **Rappel côté appareil** : le portail propose d'ajouter un rappel quotidien à l'agenda du téléphone (fichier calendrier), sans envoi serveur | Compatible avec `REGISTRE_FRONTIERES.md` ; pas de réarbitrage. Le rappel ne porte **ni lien magique ni donnée de santé** (un lien de session dans un calendrier synchronisé serait une fuite). Devient LOT-05. |
+| LOT-03 (remplacement du cadran) : quand ? | **Maintenant**, sans attendre la re-mesure | Le gain de LOT-01 et celui de LOT-03 seront indiscernables dans la mesure : accepté. LOT-02 mesure désormais l'ensemble. |
+| Mesure de référence (LOT-00) | Commande préparée par Claude, jouée par le responsable, sortie analysée ensuite | — |
+| Journal `SECURITY` sur un agenda annulé (410) | **Laisser tel quel** (même patron sur les deux agendas) | Revu seulement si des alertes s'y calent. |
+| Clôture du LOT-01 (handoff, `.wn/state.json`) | **Depuis la copie principale** | Rien depuis une session distante. |
+
+### Ordre résultant
+
+1. **LOT-00** — mesure de référence (commande fournie).
+2. **LOT-03** — sélecteurs au quart d'heure, parcours soir / nuit / matin, bornes
+   des réveils en aide discrète. Interface seule.
+3. **LOT-05** — rappel côté appareil. Interface seule.
+4. **LOT-04** — `D-xxx` « nuit partielle / je ne sais pas » et `D-xxx` « repère
+   essayer de dormir », contrat v4. Clinique : revue `wn-reviewer` et T3.
+5. **LOT-02** — re-mesure, trois semaines après le dernier déploiement
+   d'interface.

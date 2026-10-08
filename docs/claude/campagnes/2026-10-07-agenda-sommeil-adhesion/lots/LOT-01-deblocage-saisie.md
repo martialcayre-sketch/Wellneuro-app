@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Déblocage de la saisie d'une nuit — interface pure"
-statut: "en_cours (2026-10-07)"
+statut: "terminé (2026-10-07, #1359)"
 dépend_de: "—"
 ---
 
