@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 import { EncartUrgenceSuicide } from './EncartUrgenceSuicide';
@@ -11,7 +11,7 @@ const TEXTE_VALIDE = [
   'Besoin d’aide maintenant ?',
   'Si vous avez des idées suicidaires, appelez le 3114, numéro national de prévention du suicide.'
     + ' En cas de danger immédiat, appelez le 15 (SAMU, urgence médicale) ou le 112 (numéro d’urgence européen).'
-    + ' Par SMS ou application : le 114.',
+    + ' Si vous ne pouvez pas parler ou entendre, même temporairement\u00a0: le 114, par SMS ou application.',
   'Vos réponses sont transmises à votre praticien, mais il ne les lit pas en temps réel : n’attendez pas sa réponse.',
 ];
 
@@ -52,3 +52,39 @@ describe('GenericQuestionnaire — encart d’urgence', () => {
     expect(screen.queryByRole('note', { name: 'Besoin d’aide maintenant ?' })).toBeNull();
   });
 });
+
+// SUR CHAQUE ÉCRAN, Y COMPRIS LE RÉSUMÉ, QUELLE QUE SOIT LA RÉPONSE ([[D-275]]).
+// Revue Codex de la PR #1370 : le résumé avant transmission est une branche de
+// rendu à part, et l'encart y manquait. Les réponses choisies sont les PLUS
+// graves de chaque question (dernière option) : l'encart ne dépend d'aucune.
+describe('GenericQuestionnaire — l’encart reste présent jusqu’au résumé, sur les quatre questionnaires', () => {
+  for (const idQ of ['Q_NEU_01', 'Q_NEU_02', 'Q_NEU_03', 'Q_NEU_12'] as const) {
+    it(`${idQ} : chaque écran de saisie et le résumé portent l’encart`, () => {
+      localStorage.clear();
+      vi.stubGlobal('scrollTo', vi.fn());
+      const a = assignation(idQ);
+      render(<GenericQuestionnaire assignation={a} questionnaire={QUESTIONNAIRE_CATALOGUE[idQ] as QuestionnaireDef} email={a.emailPatient} onDone={vi.fn()} />);
+      let ecrans = 0;
+      for (; ecrans < 80; ecrans += 1) {
+        expect(screen.getAllByRole('note', { name: 'Besoin d’aide maintenant ?' }), `${idQ}, écran ${ecrans + 1}`).toHaveLength(1);
+        if (screen.queryByRole('heading', { name: 'Vérifiez votre questionnaire' })) break;
+        for (const groupe of screen.queryAllByRole('radiogroup').concat(screen.queryAllByRole('group'))) {
+          const radios = groupe.querySelectorAll('input[type="radio"]');
+          if (radios.length > 0) fireEvent.click(radios[radios.length - 1]);
+        }
+        for (const liste of document.querySelectorAll('select')) {
+          const options = [...liste.querySelectorAll('option')].filter(o => o.value !== '');
+          if (options.length > 0) fireEvent.change(liste, { target: { value: options[options.length - 1].value } });
+        }
+        for (const champ of document.querySelectorAll<HTMLInputElement>('input[type="number"]')) {
+          fireEvent.change(champ, { target: { value: champ.min || '1' } });
+        }
+        const bouton = screen.queryByRole('button', { name: 'Voir le résumé' }) ?? screen.getByRole('button', { name: /Suivant/ });
+        fireEvent.click(bouton);
+      }
+      expect(screen.getByRole('heading', { name: 'Vérifiez votre questionnaire' }), idQ).not.toBeNull();
+      expect(ecrans, idQ).toBeGreaterThan(0);
+    });
+  }
+});
+

@@ -204,6 +204,8 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
             {answeredCount} réponses sur {allQuestions.length}.{' '}
             {questionnaireComplet ? 'Toutes les parties sont complètes.' : 'Certaines parties restent à compléter.'}
           </p>
+          {/* Le résumé est un écran à part : l'encart doit y être aussi ([[D-275]]). */}
+          {afficheEncartUrgence(assignation.idQuestionnaire) && <EncartUrgenceSuicide className="mt-3" />}
         </div>
 
         <ol className="space-y-3" aria-label="Parties du questionnaire">

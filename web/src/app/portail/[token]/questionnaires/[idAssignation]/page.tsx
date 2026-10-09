@@ -12,6 +12,8 @@ import { PlaintesForm } from '@/components/patient/PlaintesForm';
 import { AgendaSommeilJournal } from '@/components/patient/agenda-sommeil/AgendaSommeilJournal';
 import { AgendaAlimentaireJournal } from '@/components/patient/agenda-alimentaire/AgendaAlimentaireJournal';
 import { GenericQuestionnaire } from '@/components/patient/GenericQuestionnaire';
+import { EncartUrgenceSuicide } from '@/components/patient/EncartUrgenceSuicide';
+import { afficheEncartUrgence } from '@/lib/securite/urgenceSuicide';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
@@ -236,6 +238,7 @@ export default function PortailQuestionnairePage() {
           titre={assignation.titre}
           badge={assignation.statutReponses === 'modification_demandee' ? 'Correction demandée' : 'Transmis au praticien'}
         />
+        {afficheEncartUrgence(assignation.idQuestionnaire) && <EncartUrgenceSuicide className="mb-4" />}
         <ConsultationScreen
           idAssignation={assignation.idAssignation}
           statutReponses={assignation.statutReponses}

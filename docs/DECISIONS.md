@@ -29,15 +29,19 @@ pas à ces endroits.
 **Décision :**
 
 1. **Un encart d'urgence toujours visible** (livré) : en tête de chaque écran des
-   quatre questionnaires et dans la section « Signaux à signaler » de l'anamnèse.
+   quatre questionnaires — résumé avant transmission compris, et écran consulté
+   après transmission — et dans la section « Signaux à signaler » de l'anamnèse.
    Sans aucun calcul : il ne dépend d'aucune réponse, un défaut de règle ne peut
    pas le faire disparaître, et il n'ajoute aucun triage. Texte validé :
    « Besoin d'aide maintenant ? Si vous avez des idées suicidaires, appelez le
    3114, numéro national de prévention du suicide. En cas de danger immédiat,
    appelez le 15 (SAMU, urgence médicale) ou le 112 (numéro d'urgence européen).
-   Par SMS ou application : le 114. Vos réponses sont transmises à votre
+   Si vous ne pouvez pas parler ou entendre, même temporairement : le 114, par
+   SMS ou application. Vos réponses sont transmises à votre
    praticien, mais il ne les lit pas en temps réel : n'attendez pas sa réponse. »
-   Les libellés des numéros reprennent la gouvernance publiée. Une garde balaie le
+   Les libellés des numéros reprennent la gouvernance publiée ; la phrase du 114
+   a été précisée le même jour sur la revue Codex (public visé, y compris une
+   impossibilité temporaire), puis validée par le responsable. Une garde balaie le
    catalogue et rougit si une question sur le suicide apparaît dans un
    questionnaire qui n'affiche pas l'encart. **Limite** : les instruments du
    cabinet (`CAB_`), hors catalogue, ne sont pas couverts par cette garde.
