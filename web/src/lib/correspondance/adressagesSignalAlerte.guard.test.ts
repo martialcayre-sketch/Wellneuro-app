@@ -108,10 +108,12 @@ describe('Adressages sur signal d’alerte — qui écrit, qui lit (D-257, LOT-0
     expect(occurrences(IMBRIQUEE)).toEqual([]);
   });
 
-  it('quatre lecteurs, et quatre seulement — la chaîne C1, la route de révocation (LOT-04), la remise au patient et son service (D-262)', () => {
+  it('quatre lecteurs, et quatre seulement — la chaîne C1 (et sa lecture groupée pour le Fil, D-275 §3), la route de révocation (LOT-04), la remise au patient et son service (D-262)', () => {
     expect(occurrences(LIRE)).toEqual([
       { fichier: ROUTE_REVOCATION, n: 1 },
-      { fichier: LECTEUR_CHAINE, n: 1 },
+      // Deux lectures dans le module de la chaîne : la lecture par dossier et
+      // la lecture groupée du Fil, qui partagent leur filtre par ligne.
+      { fichier: LECTEUR_CHAINE, n: 2 },
       { fichier: LECTEUR_REMISE, n: 1 },
       { fichier: LECTEUR_SERVICE_PATIENT, n: 1 },
     ]);

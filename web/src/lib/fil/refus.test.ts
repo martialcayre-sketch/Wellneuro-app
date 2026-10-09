@@ -89,6 +89,10 @@ describe('cleCarteValide', () => {
     expect(cleCarteValide('synthese_a_generer:agregat:PAT_1:2026-01-01T00:00:00.000Z')).toBe(true);
   });
 
+  it('refuse la clé d’un signal de sécurité : la carte ne s’écarte pas (D-275 §3)', () => {
+    expect(cleCarteValide('signal_securite:PAT_1')).toBe(false);
+  });
+
   it('refuse une clé arbitraire, tronquée ou démesurée', () => {
     // Sans ce contrôle, la table se remplirait de clés inertes mais
     // indistinguables plus tard d'un refus réel.

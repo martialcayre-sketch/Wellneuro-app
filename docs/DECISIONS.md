@@ -9,8 +9,9 @@
 - Date : 2026-10-09
 - Statut : accepté. Arbitrages du responsable du 2026-10-09 sur trois questions
   posées avec leurs conséquences, et texte de l'encart relu et validé. Le §1 est
-  livré par la PR de l'encart ; les §2 et §3 suivent dans une PR à part, après
-  signature de leur table sur une surface de relecture ([[D-195]]).
+  livré par la PR de l'encart ; le §3 par la PR de la carte du Fil ; le §2 suit
+  en deux PR, après signature de sa table sur une surface de relecture
+  ([[D-195]]) — voir la précision de mise en œuvre ci-dessous.
 - Domaine : sécurité patient. Découvert par l'instruction BP-26 (LOT-26), revérifié
   dans le code : *démontré dans le code, sans occurrence observée* (`D-125`).
 - S'appuie sur : [[D-099]] (signaux d'alerte d'anamnèse), [[D-257]] (levée par
@@ -54,9 +55,46 @@ pas à ces endroits.
    porte sa propre réponse « non ». La table de quatre lignes sera signée sur une
    surface de relecture ; la levée par lettre d'adressage ([[D-257]]), qui ne
    connaît aujourd'hui que les constats d'anamnèse, devra s'étendre à ceux-ci.
-3. **Une carte au Fil du jour** (à livrer) : « Signal de sécurité à évaluer », en
+3. **Une carte au Fil du jour** (livré) : « Signal de sécurité à évaluer », en
    tête du Fil, pour tout constat de sécurité ouvert (anamnèse, questionnaires,
    effet indésirable), tant qu'il n'est pas adressé.
+
+**PRÉCISION DE MISE EN ŒUVRE (2026-10-09, plan du §2-§3 relu par le
+responsable).**
+
+- **Trois PR au lieu d'une, dans cet ordre.** (a) La carte du Fil, sans
+  migration : elle sert dès maintenant les constats d'anamnèse. (b) Une
+  migration seule : le trigger de `adressages_signal_alerte` n'accepte que le
+  préfixe `safety:anamnese:`, et une lettre ne pourrait donc couvrir aucun
+  constat de questionnaire. (c) Le producteur, sa table et la lettre étendue,
+  une fois la migration appliquée et constatée. **Le motif de l'ordre** : la
+  levée est allumée en production (`WN_LEVEE_ADRESSAGE`). Un constat de
+  questionnaire actif avant que la lettre puisse le couvrir bloquerait un
+  dossier sans aucune issue (A7 de [[D-257]] fait de la lettre la seule levée).
+- **La carte (§3)** compose la définition d'« ouvert » de la chaîne C1
+  (`constatsSecuriteOuverts` = producteur + partition par couvertures) sur les
+  mêmes sources, lues en groupe. Elle ne vaut que pour les dossiers **actifs à
+  suivi ouvert** : un dossier clos ne peut plus recevoir de lettre, et une
+  carte que rien n'éteint ne serait que du bruit. Elle mène à la phase Décision
+  et dit combien de constats sont ouverts et d'où ils viennent, jamais les mots
+  du patient. Elle ne s'écarte pas, ne s'acquitte pas par lecture, n'a pas de
+  plafond par type, et un échec de calcul se dit à l'écran. Un dossier qui n'a
+  pas encore son T0 reçoit aussi la carte, mais le geste de lettre n'y apparaît
+  qu'une fois la revue clinique construite.
+- **Arbitrages du responsable pour le §2** (posés sur scénario, à reprendre
+  dans le « à lire avant de signer » de la table) :
+  - **A1** : compte **toute passation non invalidée**, pas seulement la
+    dernière ni celle de l'épisode. Une réponse positive bloque jusqu'à une
+    lettre qui la couvre ; un « non » ultérieur ne lève rien, et une nouvelle
+    réponse positive appelle une nouvelle lettre. Déclarer la passation
+    invalide la retire : c'est une seconde sortie, assumée.
+  - **A2** : une question **sans réponse lisible** produit une limitation lue
+    par le praticien, sans blocage. Une valeur présente mais hors des options
+    produit un constat (fail-closed).
+- **Constat de production** (lecture seule par conteneur, en agrégats,
+  2026-10-09) : une seule passation existe sur les quatre questionnaires, et
+  elle répond « non ». Le §2, une fois livré, ne bloquera donc aucun dossier
+  existant.
 
 ### D-274 — Mini-synthèse : « Très sévère » (`dark`) et « Léger » (`info`) sont des rubriques perturbées, nommées par ordre de gravité
 

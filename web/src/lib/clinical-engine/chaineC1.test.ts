@@ -25,6 +25,7 @@ import {
 } from '@/lib/clinical/priorityRulesV1';
 import { EXCLUSIONS_INTERVENTIONS_V1 } from '@/lib/clinical/gatePopulationV1';
 import type { CouvertureAdressage } from './safetyFindingSource';
+import { constatsSecuriteOuverts, signauxDeclares } from './safetyFindings';
 
 // CAS DE RÉFÉRENCE DU LOT-04 ([[D-054]]), mis à jour le 2026-08-15 ([[D-061]]).
 // Ce banc éprouve la chaîne dans les DEUX positions du verrou. LES RÔLES ONT
@@ -487,6 +488,31 @@ describe('chaîne C1 — levée par adressage (D-257, LOT-04)', () => {
     const deux = chaine({ signaux: [THORAX], couvertures: [couverture([id]), couverture([id], 'adr_2')] });
     expect(deux.decisionCard.safetyFindingAdresseIds).toEqual([id]);
     expect(deux.decisionCard.inputHash).toBe(une.decisionCard.inputHash);
+  });
+
+  // LE FIL DU JOUR LIT « OUVERT » PAR `constatsSecuriteOuverts` ([[D-275]] §3) :
+  // il doit dire exactement ce que la chaîne tient pour bloquant, sans quoi la
+  // carte « Signal de sécurité à évaluer » se tairait sur un dossier bloqué.
+  it.each([
+    ['sans couverture lue', undefined],
+    ['couverture vide', []],
+    ['un constat couvert sur deux', 'THORAX'],
+    ['les deux couverts', 'TOUS'],
+  ] as const)('constatsSecuriteOuverts = constats ouverts de la chaîne (%s)', (_cas, cible) => {
+    simulerSignature();
+    const signaux = [THORAX, IDEES];
+    const couvertures = cible === undefined
+      ? undefined
+      : Array.isArray(cible)
+        ? []
+        : [couverture(cible === 'TOUS' ? [idDe(THORAX), idDe(IDEES)] : [idDe(THORAX)])];
+    const { review } = chaine({ signaux, ...(couvertures !== undefined ? { couvertures } : {}) });
+    // Par `signauxDeclares`, comme le Fil. L'ordre, lui, est celui que la revue
+    // normalise (par identifiant) ; le Fil trie ses identifiants de même.
+    const parId = (a: { findingId: string }, b: { findingId: string }) => a.findingId.localeCompare(b.findingId);
+    const declares = signauxDeclares({ signaux_alerte: signaux });
+    expect(constatsSecuriteOuverts(declares, undefined, couvertures).sort(parId))
+      .toEqual([...review.safetyFindings].sort(parId));
   });
 
   it('constat levé mais canal non mesurable : l’abstention reste requise, sur le motif du canal', () => {

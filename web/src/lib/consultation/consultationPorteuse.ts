@@ -48,8 +48,28 @@ import { Prisma } from '@/generated/prisma';
 export function whereConsultationPorteuse(idPatient: string) {
   return {
     idPatient,
-    statut: 'validee',
-    NOT: { anamnese: { equals: Prisma.DbNull } },
+    ...CONDITION_PORTEUSE,
+  } satisfies Prisma.ConsultationWhereInput;
+}
+
+const CONDITION_PORTEUSE = {
+  statut: 'validee',
+  NOT: { anamnese: { equals: Prisma.DbNull } },
+} satisfies Prisma.ConsultationWhereInput;
+
+/**
+ * Le même `where`, sur PLUSIEURS dossiers à la fois — le Fil du jour
+ * ([[D-275]] §3), qui cherche les signaux de sécurité de toute une patientèle.
+ *
+ * MÊME CONDITION, PAS UNE SECONDE : elle est partagée avec
+ * `whereConsultationPorteuse`, seule la portée change. Lu avec
+ * `ORDRE_CONSULTATION_PORTEUSE`, la PREMIÈRE ligne rencontrée pour un patient
+ * est sa porteuse — celle que la requête par dossier aurait rendue.
+ */
+export function whereConsultationsPorteuses(patient: Prisma.PatientWhereInput) {
+  return {
+    patient,
+    ...CONDITION_PORTEUSE,
   } satisfies Prisma.ConsultationWhereInput;
 }
 

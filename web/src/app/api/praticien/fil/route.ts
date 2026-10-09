@@ -3,7 +3,13 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
-import { construireFil, type CarteFil, type CompteRenduTransmisRow } from '@/lib/fil/cartes';
+import {
+  construireFil,
+  type CarteFil,
+  type CompteRenduTransmisRow,
+  type SignalSecuriteRow,
+} from '@/lib/fil/cartes';
+import { lireSignauxSecuriteOuverts } from '@/lib/fil/signauxSecurite';
 import { clesRefusees, filtrerCartesRefusees } from '@/lib/fil/refus';
 import { partagerParLecture } from '@/lib/fil/lectureCartes';
 import { jalonsSansDecision } from '@/lib/fil/jalonsJ21';
@@ -29,6 +35,12 @@ export type FilApiResponse = {
    * sur un signalement qu'il n'a pas pu calculer.
    */
   lecturesBiologieIndisponibles?: boolean;
+  /**
+   * Le calcul des signaux de sécurité ouverts a ÉCHOUÉ ([[D-275]] §3) : même
+   * règle que la biologie — le Fil est servi, et l'écran dit qu'il n'a pas pu
+   * vérifier. Une absence de carte « Sécurité » ne vaut alors rien.
+   */
+  signauxSecuriteIndisponibles?: boolean;
   unavailable?: boolean;
   error?: string;
 };
@@ -340,6 +352,17 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       }
     }
 
+    // SIGNAUX DE SÉCURITÉ OUVERTS ([[D-275]] §3). Lecture ISOLÉE, comme la
+    // biologie : son échec ne fait pas tomber le Fil, il s'y affiche.
+    let signauxSecurite: SignalSecuriteRow[] = [];
+    let signauxSecuriteIndisponibles = false;
+    try {
+      signauxSecurite = await lireSignauxSecuriteOuverts(email);
+    } catch (err) {
+      console.error('[fil GET] signaux de sécurité :', err instanceof Error ? err.message : String(err));
+      signauxSecuriteIndisponibles = true;
+    }
+
     const signalements = [
       ...effets.map(e => ({ id: e.id, idPatient: e.idPatient, kind: 'effet_indesirable' as const, soumisLe: e.soumisLe })),
       ...incidents.map(i => ({ id: i.id, idPatient: i.idPatient, kind: 'incident_confidentialite' as const, soumisLe: i.soumisLe })),
@@ -348,6 +371,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
 
     const idsConcernes = [
       ...new Set([
+        ...signauxSecurite.map(s => s.idPatient),
         ...signalements.map(s => s.idPatient),
         ...syntheses.map(s => s.idPatient),
         ...assignations.map(a => a.idPatient),
@@ -424,6 +448,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     ].filter((g) => actifs.has(g.idPatient));
 
     const cartes = construireFil({
+      signauxSecurite: signauxSecurite.filter(s => servables.has(s.idPatient)),
       gestesObjectif,
       consultations: rdvs.filter(r => actifs.has(r.idPatient)),
       signalements: signalements.filter(s => actifs.has(s.idPatient)),
@@ -498,6 +523,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       cartes: partage.visibles,
       lues: partage.lues,
       ...(lecturesBiologieIndisponibles ? { lecturesBiologieIndisponibles: true } : {}),
+      ...(signauxSecuriteIndisponibles ? { signauxSecuriteIndisponibles: true } : {}),
     });
   } catch (err) {
     console.error('[fil GET]', err instanceof Error ? err.message : String(err));

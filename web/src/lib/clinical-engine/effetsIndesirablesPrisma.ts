@@ -1,3 +1,4 @@
+import type { Prisma } from '@/generated/prisma';
 import { prisma } from '../prisma';
 import { interruptionEffetIndesirableActive } from '../clinical/safetyEffetIndesirableV1';
 import type { EffetIndesirableRuntime } from './safetyFindings';
@@ -39,4 +40,31 @@ export async function lireEffetsIndesirables(
     select: { id: true, protocolDraftId: true, statutTraitement: true },
     orderBy: { id: 'asc' },
   });
+}
+
+/**
+ * Les signalements de PLUSIEURS dossiers, en une requête — le Fil du jour
+ * ([[D-275]] §3). Même garde que `lireEffetsIndesirables` : dispositif éteint
+ * ⇒ `undefined`, aucune requête ; même `select`, et pour la même raison.
+ *
+ * BORNÉE PAR UN FILTRE DE DOSSIER, pas par une liste d'identifiants : le
+ * cockpit lit les signalements d'un dossier même sans consultation porteuse,
+ * et le Fil doit voir les mêmes.
+ */
+export async function lireEffetsIndesirablesGroupes(
+  dossiers: Prisma.PatientWhereInput,
+): Promise<Map<string, EffetIndesirableRuntime[]> | undefined> {
+  if (!interruptionEffetIndesirableActive()) return undefined;
+  const parDossier = new Map<string, EffetIndesirableRuntime[]>();
+  const lignes = await prisma.trustAdverseEffectReport.findMany({
+    where: { patient: dossiers },
+    select: { id: true, idPatient: true, protocolDraftId: true, statutTraitement: true },
+    orderBy: { id: 'asc' },
+  });
+  for (const { idPatient, ...signalement } of lignes) {
+    const liste = parDossier.get(idPatient);
+    if (liste) liste.push(signalement);
+    else parDossier.set(idPatient, [signalement]);
+  }
+  return parDossier;
 }

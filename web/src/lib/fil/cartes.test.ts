@@ -7,6 +7,7 @@ import {
   cartesImportsALire,
   cartesJalons,
   cartesReprise,
+  cartesSignalSecurite,
   cartesSignalementsTrust,
   cartesT0AConfirmer,
   cartesSynthesesAGenerer,
@@ -908,5 +909,71 @@ describe('cartesComptesRendusTransmis — document transmis par le patient, non 
     });
     expect(fil.map(c => c.type)).toEqual(['compte_rendu_transmis']);
     expect(resumeFil(fil)).toBe('1 compte rendu transmis');
+  });
+});
+
+describe('cartesSignalSecurite — constat de sécurité ouvert (D-275 §3)', () => {
+  const ANAM_1 = 'safety:anamnese:0123456789abcdef';
+  const ANAM_2 = 'safety:anamnese:fedcba9876543210';
+  const EI_1 = 'safety:effet-indesirable:EI_1';
+
+  it('une carte par dossier, qui dit combien et d’où — jamais quoi', () => {
+    const [carte] = cartesSignalSecurite(
+      [{ idPatient: 'P-SOPHIE', findingIds: [ANAM_1, ANAM_2, EI_1], depuis: new Date('2026-07-10T09:00:00.000Z') }],
+      NOMS,
+    );
+    expect(carte).toMatchObject({
+      type: 'signal_securite',
+      patient: 'Sophie Nicola',
+      titre: 'Signal de sécurité à évaluer',
+      pourquoi:
+        'Anamnèse : 2 signaux d’alerte non adressés · Effet indésirable : 1 signalement non traité.'
+        + ' Priorité et protocole restent suspendus.',
+      date: '2026-07-10T09:00:00.000Z',
+      href: '/dashboard/patients/P-SOPHIE?onglet=cockpit&phase=decision',
+      actionLabel: 'Évaluer',
+      cle: 'signal_securite:P-SOPHIE',
+    });
+    expect(carte.nbElements).toBeUndefined();
+  });
+
+  it('un identifiant qu’aucun producteur connu ne revendique est compté, pas tu', () => {
+    const [carte] = cartesSignalSecurite(
+      [{ idPatient: 'P-MICHEL', findingIds: ['safety:inconnu:1'], depuis: null }],
+      NOMS,
+    );
+    expect(carte.pourquoi).toBe('Autre : 1 constat de sécurité ouvert. Priorité et protocole restent suspendus.');
+    expect(carte.date).toBeNull();
+  });
+
+  it('aucun constat ouvert ⇒ aucune carte', () => {
+    expect(cartesSignalSecurite([{ idPatient: 'P-SOPHIE', findingIds: [], depuis: null }], NOMS)).toEqual([]);
+  });
+
+  it('SANS PLAFOND : un sixième dossier bloqué ne disparaît pas', () => {
+    const lignes = Array.from({ length: 7 }, (_, i) => ({
+      idPatient: `P-${i}`,
+      findingIds: [ANAM_1],
+      depuis: new Date(`2026-07-0${i + 1}T09:00:00.000Z`),
+    }));
+    const cartes = cartesSignalSecurite(lignes, NOMS);
+    expect(cartes).toHaveLength(7);
+    // Le plus ancien d'abord : il attend depuis le plus longtemps.
+    expect(cartes.map(c => c.idPatient)).toEqual(lignes.map(l => l.idPatient));
+  });
+
+  it('passe EN TÊTE du Fil, devant un signalement Trust et une consultation, et se résume', () => {
+    const fil = construireFil({
+      signauxSecurite: [{ idPatient: 'P-JENNIFER', findingIds: [ANAM_1], depuis: null }],
+      signalements: [{ id: 'SIG_1', idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
+      consultations: [{ id: 'RDV_1', idPatient: 'P-SOPHIE', dateHeure: new Date('2026-07-15T11:00:00') }],
+      syntheses: [],
+      assignations: [],
+      activites: [],
+      noms: NOMS,
+      maintenant: MAINTENANT,
+    });
+    expect(fil.map(c => c.type)).toEqual(['signal_securite', 'signalement_trust', 'consultation_prevue']);
+    expect(resumeFil(fil)).toBe('1 dossier à signal de sécurité · 1 consultation · 1 signalement');
   });
 });
