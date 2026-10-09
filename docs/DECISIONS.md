@@ -29,8 +29,9 @@ pas à ces endroits.
 **Décision :**
 
 1. **Un encart d'urgence toujours visible** (livré) : en tête de chaque écran des
-   quatre questionnaires — résumé avant transmission compris, et écran consulté
-   après transmission — et dans la section « Signaux à signaler » de l'anamnèse.
+   quatre questionnaires — consentement, période close, saisie, résumé avant
+   transmission, écran consulté après transmission et ses sous-vues « Mon
+   équilibre » — et dans la section « Signaux à signaler » de l'anamnèse.
    Sans aucun calcul : il ne dépend d'aucune réponse, un défaut de règle ne peut
    pas le faire disparaître, et il n'ajoute aucun triage. Texte validé :
    « Besoin d'aide maintenant ? Si vous avez des idées suicidaires, appelez le
