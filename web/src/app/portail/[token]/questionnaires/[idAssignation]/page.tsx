@@ -12,6 +12,8 @@ import { PlaintesForm } from '@/components/patient/PlaintesForm';
 import { AgendaSommeilJournal } from '@/components/patient/agenda-sommeil/AgendaSommeilJournal';
 import { AgendaAlimentaireJournal } from '@/components/patient/agenda-alimentaire/AgendaAlimentaireJournal';
 import { GenericQuestionnaire } from '@/components/patient/GenericQuestionnaire';
+import { EncartUrgenceSuicide } from '@/components/patient/EncartUrgenceSuicide';
+import { afficheEncartUrgence } from '@/lib/securite/urgenceSuicide';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
@@ -103,6 +105,12 @@ export default function PortailQuestionnairePage() {
   // n'en ont plus besoin, pour éviter de l'exposer en query string.
   const email = assignation.emailPatient;
   const retourHub = () => router.push(`/portail/${token}/questionnaires`);
+  // L'ENCART D'URGENCE SUIT LE PATIENT SUR CHAQUE ÉCRAN DE CES QUESTIONNAIRES
+  // ([[D-275]]) : consentement, période close, écran transmis et ses sous-vues.
+  // La saisie et le résumé le portent dans `GenericQuestionnaire`.
+  const encart = afficheEncartUrgence(assignation.idQuestionnaire)
+    ? <EncartUrgenceSuicide className="mb-4" />
+    : null;
 
   // 1) Consentement non encore donné (assignation hors pack).
   //
@@ -142,6 +150,7 @@ export default function PortailQuestionnairePage() {
       return (
         <div className="w-full max-w-2xl">
           <EnTete token={token} titre={assignation.titre} />
+          {encart}
           <PatientCard className="text-center">
             <PatientErrorState
               message="La période est terminée : votre consentement ne peut plus être enregistré."
@@ -154,6 +163,7 @@ export default function PortailQuestionnairePage() {
     return (
       <div className="w-full max-w-2xl">
         <EnTete token={token} titre={assignation.titre} />
+        {encart}
         <ConsentScreen
           idAssignation={assignation.idAssignation}
           email={email}
@@ -214,19 +224,25 @@ export default function PortailQuestionnairePage() {
   if (assignation.statutReponses === 'verrouille' || assignation.statutReponses === 'modification_demandee') {
     if (vue === 'equilibre') {
       return (
-        <MonEquilibreAccueil
-          idAssignation={assignation.idAssignation}
-          onVoirDetail={() => setVue('equilibre-detail')}
-          onRetour={() => setVue('principal')}
-        />
+        <>
+          {encart && <div className="w-full max-w-md">{encart}</div>}
+          <MonEquilibreAccueil
+            idAssignation={assignation.idAssignation}
+            onVoirDetail={() => setVue('equilibre-detail')}
+            onRetour={() => setVue('principal')}
+          />
+        </>
       );
     }
     if (vue === 'equilibre-detail') {
       return (
-        <MonEquilibreDetail
-          idAssignation={assignation.idAssignation}
-          onRetour={() => setVue('equilibre')}
-        />
+        <>
+          {encart && <div className="w-full max-w-md">{encart}</div>}
+          <MonEquilibreDetail
+            idAssignation={assignation.idAssignation}
+            onRetour={() => setVue('equilibre')}
+          />
+        </>
       );
     }
     return (
@@ -236,6 +252,7 @@ export default function PortailQuestionnairePage() {
           titre={assignation.titre}
           badge={assignation.statutReponses === 'modification_demandee' ? 'Correction demandée' : 'Transmis au praticien'}
         />
+        {encart}
         <ConsultationScreen
           idAssignation={assignation.idAssignation}
           statutReponses={assignation.statutReponses}

@@ -6,6 +6,8 @@ import type { PortailSessionResponse, PortailConsultationState } from '@/app/api
 import { MOTIFS_CONSULTATION } from '@/lib/consultation/motifs';
 import { FICHE_SECTIONS, FICHE_CHAMPS_REQUIS } from '@/lib/consultation/fiche';
 import { ANAMNESE_SECTIONS, ANAMNESE_CHAMP_REQUIS } from '@/lib/consultation/anamnese';
+import { SECTION_ANAMNESE_SIGNAUX } from '@/lib/securite/urgenceSuicide';
+import { EncartUrgenceSuicide } from '@/components/patient/EncartUrgenceSuicide';
 import type { AnamneseChamp, AnamneseValeurs } from '@/lib/consultation/anamnese';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
@@ -456,6 +458,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
       <fieldset className="space-y-4">
         <legend className="text-sm font-semibold text-foreground">{section.titre}</legend>
         {section.description && <p className="text-xs text-muted-foreground/70 -mt-2">{section.description}</p>}
+        {section.id === SECTION_ANAMNESE_SIGNAUX && <EncartUrgenceSuicide />}
 
         {(section.champs ?? []).map(champ => (
           <ChampSimple

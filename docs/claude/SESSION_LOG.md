@@ -9687,3 +9687,17 @@ rang le plus bas), ordre repris de l'orientation ; garde du catalogue ajoutée.
 **Prochaine action.** CI, revue Codex par le responsable, merge.
 
 **Questions ouvertes.** Badges `dark` gris (issue #1368) ; exports déjà remis.
+
+## 2026-10-09 — Idées suicidaires : encart d'urgence (D-275 §1)
+
+**Décidé.** Encart 3114 / 15 / 112 / 114 toujours visible sur les quatre
+questionnaires qui parlent de suicide et dans les signaux d'anamnèse ; réponse
+autre que « non » = constat `adressage` ; carte au Fil pour tout constat ouvert.
+
+**Écarté.** Encart conditionnel à la réponse (un défaut de règle le ferait
+disparaître) ; alerte sans blocage (incohérente avec l'anamnèse).
+
+**Prochaine action.** CI et Codex de la PR de l'encart ; mode Plan pour §2-§3.
+
+**Questions ouvertes.** Quelle passation compte pour le constat ; levée par
+lettre d'adressage à étendre.

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 /**
  * ── CE QUE CE BANC PROTÈGE ───────────────────────────────────────────────────
@@ -34,6 +34,31 @@ const { router, replace, push } = vi.hoisted(() => {
 vi.mock('next/navigation', () => ({
   useParams: () => ({ token: 'TOK_TEST', idAssignation: 'ASS_TEST' }),
   useRouter: () => router,
+}));
+
+// Les écrans de lecture seule chargent leurs propres données : remplacés par
+// des doublures qui n'exposent que la navigation, seule chose testée ici.
+vi.mock('@/components/patient/ConsultationScreen', () => ({
+  ConsultationScreen: ({ onVoirEquilibre }: { onVoirEquilibre: () => void }) => (
+    <button type="button" onClick={onVoirEquilibre}>Voir Mon équilibre</button>
+  ),
+}));
+vi.mock('@/components/patient/MonEquilibreAccueil', () => ({
+  MonEquilibreAccueil: ({ onVoirDetail, onRetour }: { onVoirDetail: () => void; onRetour: () => void }) => (
+    <div>
+      <p>Accueil Mon équilibre</p>
+      <button type="button" onClick={onVoirDetail}>Voir le détail</button>
+      <button type="button" onClick={onRetour}>Retour</button>
+    </div>
+  ),
+}));
+vi.mock('@/components/patient/MonEquilibreDetail', () => ({
+  MonEquilibreDetail: ({ onRetour }: { onRetour: () => void }) => (
+    <div>
+      <p>Détail Mon équilibre</p>
+      <button type="button" onClick={onRetour}>Retour à l’accueil</button>
+    </div>
+  ),
 }));
 
 import PortailQuestionnairePage from './page';
@@ -135,3 +160,56 @@ describe('écran portail — garde « période terminée » devant le consenteme
     expect(screen.queryByText(/ne peut plus être enregistré/i)).toBeNull();
   });
 });
+
+// APRÈS TRANSMISSION, L'ENCART SUIT LE PATIENT DANS CHAQUE SOUS-VUE ([[D-275]]).
+// Revue Codex de la PR #1370 : « Mon équilibre » et son détail retournaient
+// avant l'encart.
+describe('écran portail — encart d’urgence après transmission', () => {
+  const ENCART = { name: 'Besoin d’aide maintenant ?' };
+  for (const idQuestionnaire of ['Q_NEU_01', 'Q_NEU_02', 'Q_NEU_03', 'Q_NEU_12']) {
+    it(`${idQuestionnaire} : présent sur l’écran transmis, l’accueil et le détail de Mon équilibre`, async () => {
+      monter({ assignation: { idQuestionnaire, consentement: 'donne', statutReponses: 'verrouille' } });
+      fireEvent.click(await screen.findByRole('button', { name: 'Voir Mon équilibre' }));
+      expect(screen.getByText('Accueil Mon équilibre')).not.toBeNull();
+      expect(screen.getAllByRole('note', ENCART)).toHaveLength(1);
+      fireEvent.click(screen.getByRole('button', { name: 'Voir le détail' }));
+      expect(screen.getByText('Détail Mon équilibre')).not.toBeNull();
+      expect(screen.getAllByRole('note', ENCART)).toHaveLength(1);
+      fireEvent.click(screen.getByRole('button', { name: 'Retour à l’accueil' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Retour' }));
+      expect(screen.getByRole('button', { name: 'Voir Mon équilibre' })).not.toBeNull();
+      expect(screen.getAllByRole('note', ENCART)).toHaveLength(1);
+    });
+  }
+
+  it('témoin : un questionnaire sans question sur le suicide n’affiche l’encart dans aucune sous-vue', async () => {
+    monter({ assignation: { idQuestionnaire: 'Q_STR_04', consentement: 'donne', statutReponses: 'verrouille' } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Voir Mon équilibre' }));
+    expect(screen.queryByRole('note', ENCART)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Voir le détail' }));
+    expect(screen.queryByRole('note', ENCART)).toBeNull();
+  });
+});
+
+describe('écran portail — encart d’urgence avant la saisie', () => {
+  const ENCART = { name: 'Besoin d’aide maintenant ?' };
+  it('présent sur l’écran de consentement d’un questionnaire qui parle de suicide', async () => {
+    monter({ assignation: { idQuestionnaire: 'Q_NEU_01' } });
+    await screen.findByRole('note', ENCART);
+    expect(screen.getAllByRole('note', ENCART)).toHaveLength(1);
+  });
+
+  it('présent sur l’écran « période terminée »', async () => {
+    monter({ assignation: { idQuestionnaire: 'Q_NEU_02' }, consentementPossible: false });
+    await screen.findByText(/La période est terminée/);
+    expect(screen.getAllByRole('note', ENCART)).toHaveLength(1);
+  });
+
+  it('témoin : absent du consentement d’un autre questionnaire', async () => {
+    monter({ assignation: { idQuestionnaire: 'Q_STR_04' } });
+    // Attendre l'écran chargé, sinon le témoin passerait pendant le chargement.
+    await screen.findAllByText('Questionnaire test');
+    expect(screen.queryByRole('note', ENCART)).toBeNull();
+  });
+});
+
