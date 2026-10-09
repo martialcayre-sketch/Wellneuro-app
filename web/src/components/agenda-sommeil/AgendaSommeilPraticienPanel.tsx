@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { EpisodeAgenda } from '@/app/api/praticien/agenda-sommeil/route';
 import type { AgregatsAgenda } from '@/lib/agenda-sommeil/agregats';
-import { NB_JOURS_AGENDA } from '@/lib/agenda-sommeil/types';
+import { MIN_NUITS_AGREGATS, NB_JOURS_AGENDA } from '@/lib/agenda-sommeil/types';
 import { ChronogrammeSommeil } from './ChronogrammeSommeil';
 
 // Panneau praticien de l'agenda du sommeil : détail nuit par nuit + agrégats
@@ -179,6 +179,11 @@ export function AgendaSommeilPraticienPanel({ idPatient }: { idPatient: string }
   const [episodes, setEpisodes] = useState<EpisodeAgenda[]>([]);
   const [message, setMessage] = useState('');
   const [clotureEnCours, setClotureEnCours] = useState<string | null>(null);
+  // Agenda dont la clôture attend une confirmation (LOT-06). La mesure de
+  // référence du 2026-10-09 comptait au moins six agendas transmis sans sept
+  // nuits, donc sans aucune moyenne. Le geste reste possible ; il est seulement
+  // dit avant d'être fait, avec ce qu'il ferme : la saisie du patient.
+  const [aConfirmer, setAConfirmer] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
     setEtat('chargement');
@@ -203,6 +208,7 @@ export function AgendaSommeilPraticienPanel({ idPatient }: { idPatient: string }
   }, [charger]);
 
   async function cloturer(idAssignation: string) {
+    setAConfirmer(null);
     setClotureEnCours(idAssignation);
     try {
       const res = await fetch('/api/praticien/agenda-sommeil/cloture', {
@@ -249,10 +255,12 @@ export function AgendaSommeilPraticienPanel({ idPatient }: { idPatient: string }
                 {ep.fenetre.jourCourant !== null ? ` · jour ${ep.fenetre.jourCourant}/${NB_JOURS_AGENDA}` : ''}
               </p>
             </div>
-            {ep.statut === 'en_cours' && ep.fenetre.nbRenseignees > 0 && (
+            {ep.statut === 'en_cours' && ep.fenetre.nbRenseignees > 0 && aConfirmer !== ep.idAssignation && (
               <button
                 type="button"
-                onClick={() => cloturer(ep.idAssignation)}
+                onClick={() =>
+                  ep.agregats === null ? setAConfirmer(ep.idAssignation) : cloturer(ep.idAssignation)
+                }
                 disabled={clotureEnCours === ep.idAssignation}
                 className="inline-flex min-h-9 items-center rounded-lg border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
@@ -260,6 +268,34 @@ export function AgendaSommeilPraticienPanel({ idPatient }: { idPatient: string }
               </button>
             )}
           </div>
+
+          {aConfirmer === ep.idAssignation && (
+            <div
+              role="alert"
+              className="flex flex-col gap-2 rounded-lg border border-status-warning/40 bg-status-warning/10 px-3 py-2"
+            >
+              <p className="text-sm text-foreground">
+                Moins de {MIN_NUITS_AGREGATS} nuits exploitables : la clôture ne calculera aucune
+                moyenne, et le patient ne pourra plus noter de nuit.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => cloturer(ep.idAssignation)}
+                  className="inline-flex min-h-9 items-center rounded-lg border border-primary px-3 text-sm font-medium text-primary hover:bg-primary/10"
+                >
+                  Clôturer quand même
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAConfirmer(null)}
+                  className="inline-flex min-h-9 items-center rounded-lg border border-border px-3 text-sm text-foreground hover:bg-muted"
+                >
+                  Laisser l’agenda ouvert
+                </button>
+              </div>
+            </div>
+          )}
 
           {ep.agregats ? (
             <>

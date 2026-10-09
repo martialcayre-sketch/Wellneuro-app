@@ -164,6 +164,17 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
       : fenetre.dateDebut === null
         ? NB_JOURS_AGENDA
         : 0;
+  // Tant qu'une seule nuit est notée, le rappel passe EN TÊTE de la frise, sous
+  // une phrase qui dit pourquoi (LOT-06). La mesure de référence du 2026-10-09
+  // l'a montré : plus de la moitié des agendas échus s'arrêtaient après la
+  // première nuit — c'est le deuxième matin qui manque, pas la saisie. Proposé
+  // une fois, à cet endroit, jamais insisté : dès la deuxième nuit, la carte
+  // reprend sa place discrète en bas de page.
+  const rappelEnTete = fenetre.nbRenseignees === 1 && matinsRestants > 0;
+  const rappel =
+    matinsRestants > 0 ? (
+      <RappelDuMatin premierMatin={decalerDate(aujourdHui, 1)} nombreDeMatins={matinsRestants} />
+    ) : null;
 
   // Agenda clôturé : frise en consultation seule, sans aucune saisie.
   if (mode === 'clos') {
@@ -259,6 +270,15 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
           Merci, à demain matin. ☕
         </div>
       )}
+      {rappelEnTete && (
+        <div className="space-y-2">
+          <p className="text-sm text-foreground text-center">
+            Votre première nuit est notée. Pour y penser demain matin, vous pouvez ajouter un
+            rappel à votre téléphone.
+          </p>
+          {rappel}
+        </div>
+      )}
       <PatientCard>
         <div className="flex items-baseline justify-between mb-1">
           <h2 className="font-display text-lg font-bold text-foreground">Vos nuits</h2>
@@ -328,10 +348,8 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
 
       {/* Rappel posé sur l'appareil (LOT-05) : du lendemain jusqu'à la fin de
           la fenêtre de 21 nuits. Absent quand il ne reste aucun matin à
-          rappeler. */}
-      {matinsRestants > 0 && (
-        <RappelDuMatin premierMatin={decalerDate(aujourdHui, 1)} nombreDeMatins={matinsRestants} />
-      )}
+          rappeler ; en tête de page après la première nuit (ci-dessus). */}
+      {!rappelEnTete && rappel}
 
       <PatientCard padding="sm" className="text-xs text-muted-foreground">
         Astuce : ajoutez cette page à l’écran d’accueil de votre téléphone pour la retrouver chaque matin, avec votre café.

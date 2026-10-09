@@ -57,8 +57,13 @@ export const AVERTISSEMENT_SANS_QUESTION =
   'La définition de ce questionnaire ne déclare aucune question : valeurs enregistrées restituées ' +
   'telles quelles, sans traduction.';
 
-/** Métrique d'agenda absente ou nulle : le recueil ne l'a pas couverte — ce n'est pas une absence de réponse. */
-export const NON_CALCULE = 'Non calculé : recueil insuffisant';
+/**
+ * Métrique d'agenda absente ou nulle : le recueil ne l'a pas couverte — ce n'est pas une absence de réponse.
+ * « Données insuffisantes » et non plus « recueil insuffisant » (LOT-06) : depuis le contrat v4 du sommeil
+ * ([[D-271]]), un agenda bien rempli peut laisser une mesure non calculée parce que le patient a répondu
+ * « je ne sais pas » — le recueil n'était pas insuffisant, la donnée de cette mesure l'était.
+ */
+export const NON_CALCULE = 'Non calculé : données insuffisantes';
 
 /**
  * La passation ne fige pas la définition d'un instrument du cabinet, et

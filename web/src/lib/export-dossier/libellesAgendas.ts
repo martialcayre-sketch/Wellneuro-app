@@ -114,11 +114,11 @@ export function definitionLectureAgendaAli(definition: QuestionnaireDef): Questi
 /**
  * Légende de LECTURE des agrégats du sommeil. Celle du catalogue est une note
  * de développeur (« vaut null ») : le document n'écrit jamais « null », il
- * écrit « Non calculé : recueil insuffisant », que le préambule définit.
+ * écrit « Non calculé : données insuffisantes », que le préambule définit.
  */
 export const LEGENDE_AGREGATS_SOMMEIL =
   'Valeurs calculées à partir des nuits renseignées ; une métrique non couverte est écrite ' +
-  '« Non calculé : recueil insuffisant », jamais 0.';
+  '« Non calculé : données insuffisantes », jamais 0.';
 
 /**
  * Définition de LECTURE de l'agenda du sommeil : questions, bornes et unités

@@ -291,3 +291,47 @@ describe('AgendaSommeilJournal — le formulaire suit le contrat de l’agenda (
     expect(screen.getByRole('button', { name: 'Je ne sais pas' })).toBeTruthy();
   });
 });
+
+// LOT-06 : la mesure de référence du 2026-10-09 montrait le décrochage après
+// la PREMIÈRE nuit. Tant qu'une seule nuit est notée, le rappel passe en tête
+// de la frise, sous une phrase qui dit pourquoi ; ensuite, il reprend sa place.
+describe('AgendaSommeilJournal — le rappel en tête après la première nuit (LOT-06)', () => {
+  const PHRASE = /Votre première nuit est notée/;
+  const avant = (a: HTMLElement, b: HTMLElement) =>
+    Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('une seule nuit notée : la phrase, puis le rappel, avant la frise', async () => {
+    const uneNuit = {
+      ...CHARGEMENT_OK,
+      fenetre: {
+        ...FENETRE,
+        dateDebut: '2026-09-03',
+        emplacements: [{ dateNuit: '2026-09-03', index: 1, renseignee: true, estAujourdHui: true }],
+        nbRenseignees: 1,
+        jourCourant: 1,
+        cloturablePatient: false,
+      },
+      nuits: [{ dateNuit: '2026-09-03', reponses: NUIT }],
+    };
+    fetchMock.mockImplementation(() => reponse(uneNuit));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Vos nuits')).toBeTruthy());
+    const phrase = screen.getByText(PHRASE);
+    const rappel = screen.getByRole('heading', { name: 'Un rappel chaque matin' });
+    const frise = screen.getByRole('heading', { name: 'Vos nuits' });
+    expect(avant(phrase, rappel)).toBe(true);
+    expect(avant(rappel, frise)).toBe(true);
+    // Une seule carte de rappel : elle a changé de place, elle ne s'est pas dédoublée.
+    expect(screen.getAllByRole('heading', { name: 'Un rappel chaque matin' })).toHaveLength(1);
+  });
+
+  it('dès la deuxième nuit : pas de phrase, le rappel reprend sa place après la frise', async () => {
+    fetchMock.mockImplementation(() => reponse(CHARGEMENT_OK));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Vos nuits')).toBeTruthy());
+    expect(screen.queryByText(PHRASE)).toBeNull();
+    const rappel = screen.getByRole('heading', { name: 'Un rappel chaque matin' });
+    const frise = screen.getByRole('heading', { name: 'Vos nuits' });
+    expect(avant(frise, rappel)).toBe(true);
+  });
+});
