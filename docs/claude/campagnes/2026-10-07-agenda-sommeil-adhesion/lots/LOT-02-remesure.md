@@ -61,6 +61,50 @@ bornes (R07), usage de « je ne sais pas » (R08), heure de saisie (R09).
   journalise (`PORTAIL_PATIENT.AGENDA_SOMMEIL.NUIT_REJETEE`, motif seul) ; leur
   compte se lit dans les journaux Scalingo, dans la limite de leur rétention.
 
+## Mesure de référence (jouée le 2026-10-09)
+
+Première exécution en production, par conteneur `scalingo run -d`, bornes par
+défaut (`av` 2026-10-07, `ap` 2026-10-09). Agrégats seuls ; la sortie brute
+n'est pas versée. Les dossiers de test vivent en production (`D-075`) et sont
+compris dans ces comptes — aucun moyen de les isoler en agrégat.
+
+**Contrôle des bornes (R07) : conforme.** Cohorte `a_avant` : nuits v2 et v3
+seulement ; cohorte `b_transition` (3 agendas commencés avant le déploiement) :
+v3, comme le veut [[D-272]] §3 ; aucune nuit v4 encore écrite, aucun agenda
+`c_apres` — attendu le lendemain du déploiement.
+
+| Cohorte `a_avant` (référence) | Valeur |
+|---|---|
+| Assignations d'au moins 7 jours, commencées | 16 / 20 |
+| Délai assignation → première nuit | médiane 0 j, maximum 28 j |
+| Fenêtres échues | 15 |
+| Taux de réponse sur fenêtres échues | 85 / 315 nuits = **27,0 %** |
+| Nuits par agenda (médiane) | **1** |
+| Agendas ≥ 14 nuits (seuil de l'indice) / = 21 nuits | 2 / 0 |
+| Décrochage des 15 fenêtres incomplètes | 8 à la 1re nuit, 7 en 3e semaine, aucun entre |
+| Transmis (statut `Complété`) / ≥ 7 nuits | 11 / 5 |
+| Corrections / saisies le lendemain | 5 / 7, sur 90 lignes |
+| Saisies entre 5 h et 11 h (Paris) | 46 / 90 |
+
+Lecture, au sens de `D-125` — observé en agrégat, causes non établies :
+
+- **Le démarrage n'est pas le goulot** : quatre agendas sur cinq commencent,
+  en général le jour même. Les quatre jamais commencés peuvent contenir des
+  blocages à la première saisie, qui n'atteignent pas la base — *inconnu faute
+  de preuve*.
+- **Le décrochage est bimodal** : plus de la moitié des fenêtres échues
+  s'arrêtent après la première nuit ; les autres vont jusqu'à la dernière
+  semaine, autour de onze nuits. C'est le retour du deuxième matin qui manque,
+  non la saisie elle-même — ce que vise le rappel posé sur l'appareil (LOT-05).
+- **Au moins six agendas transmis n'avaient pas sept nuits** : clôturés sans
+  agrégats, ils produisent une réponse non scorée.
+
+**Ce que la lecture du 2026-10-29 compare**, cohorte `c_apres` contre cette
+référence : part des agendas à une seule nuit (8 / 15), nuits médianes (1),
+agendas ≥ 14 nuits (2 / 15), et R08. Les agendas créés pendant la recette sur
+appareil tomberont dans `c_apres` : leur nombre est à relever pour les retirer
+du compte.
+
 ## Correction apportée au constat
 
 `CONSTAT_ADHESION.sql` lisait `soumis_le` — un TIMESTAMP sans fuseau qui porte
