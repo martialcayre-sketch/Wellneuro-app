@@ -31,8 +31,9 @@ const CONTENU =
 
 const ABSENCE =
   "Une donnée absente n'est jamais une valeur normale ni un zéro : « Non renseigné » ou « Sans " +
-  "réponse » signifie que rien n'a été déposé ; « Non calculé : recueil insuffisant » signifie qu'un " +
-  "agenda n'a pas réuni assez de saisies pour produire cette mesure.";
+  "réponse » signifie que rien n'a été déposé ; « Non calculé : données insuffisantes » signifie qu'un " +
+  "agenda n'a pas réuni assez de données exploitables pour produire cette mesure — trop peu de saisies, " +
+  "ou, pour l'agenda du sommeil, des réponses « je ne sais pas ».";
 
 const CITATIONS =
   'Les passages entre guillemets « » sont des textes saisis par le patient ou par le praticien, ' +

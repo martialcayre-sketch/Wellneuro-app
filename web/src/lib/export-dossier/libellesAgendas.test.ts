@@ -90,7 +90,7 @@ describe('definitionLectureAgendaSommeil (NF5, N15)', () => {
   it('la légende parle la langue du document : jamais « null », le terme que le préambule définit', () => {
     expect(LEGENDE_AGREGATS_SOMMEIL).toBe(
       'Valeurs calculées à partir des nuits renseignées ; une métrique non couverte est écrite ' +
-        '« Non calculé : recueil insuffisant », jamais 0.',
+        '« Non calculé : données insuffisantes », jamais 0.',
     );
     expect(LEGENDE_AGREGATS_SOMMEIL).toContain(`« ${NON_CALCULE} »`);
     expect(LEGENDE_AGREGATS_SOMMEIL).not.toMatch(/\bnull\b/i);

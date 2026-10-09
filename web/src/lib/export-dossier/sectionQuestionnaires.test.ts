@@ -413,7 +413,7 @@ describe('sectionQuestionnaires — Q_SOM_09 clôturé (NF5, N15)', () => {
     expect(t).toContain("C Couverture suffisante pour l'indice composite : oui");
     expect(t).toContain('C Qualité subjective moyenne : 2 (échelle de 1 à 5)');
     expect(t).toContain("C Couverture suffisante pour l'indice composite : non");
-    expect(t).toContain('C Réveils nocturnes moyens par nuit : Non calculé : recueil insuffisant');
+    expect(t).toContain('C Réveils nocturnes moyens par nuit : Non calculé : données insuffisantes');
   });
 });
 
