@@ -94,6 +94,11 @@ responsable).**
   de la porteuse du trigger sur ce même départage par `id` (arbitrage du
   responsable du 2026-10-09) : sans lui, la base pouvait refuser la lettre
   que la route venait de consigner.
+  Deux conséquences, acceptées par le responsable le même jour : un constat
+  de questionnaire sur un dossier sans consultation porteuse n'a pas de levée
+  tant qu'elle n'existe pas (pas de T0, donc rien à débloquer) ; une nouvelle
+  anamnèse validée rebloque aussi les couvertures de questionnaire, comme
+  celles d'anamnèse (A6 de [[D-257]]).
 - **Arbitrages du responsable pour le §2** (posés sur scénario, à reprendre
   dans le « à lire avant de signer » de la table) :
   - **A1** : compte **toute passation non invalidée**, pas seulement la

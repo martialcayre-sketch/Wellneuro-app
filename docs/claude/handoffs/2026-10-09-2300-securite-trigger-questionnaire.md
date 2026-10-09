@@ -18,6 +18,9 @@ Migration seule ([[D-087]]) préalable au producteur de constats de questionnair
 - Arbitrage du responsable : le tri de la porteuse du trigger gagne `k.id DESC`,
   aligné sur `ORDRE_CONSULTATION_PORTEUSE` (#1373).
 - Retour arrière : retirer d'abord le producteur LOT-3, ne restaurer que la regex.
+- Acceptés par le responsable (consignés dans D-275) : un constat de questionnaire
+  sans porteuse n'a pas de levée tant qu'elle n'existe pas ; une nouvelle anamnèse
+  validée rebloque aussi les couvertures de questionnaire (A6).
 
 ## Fichiers modifiés
 
@@ -40,9 +43,6 @@ Migration seule ([[D-087]]) préalable au producteur de constats de questionnair
 
 - Commentaire périmé `schema.prisma:1599` (« safety:anamnese: » seul) : routé au
   LOT-3 (modification du schéma soumise à demande explicite).
-- Questions posées au responsable avant `release-db` : (1) constat de questionnaire
-  sur un dossier sans porteuse = sans levée possible tant qu'elle n'existe pas ;
-  (2) une nouvelle anamnèse validée rebloque aussi les couvertures de questionnaire (A6).
 - LOT-3 : `couverturesRetenues` (`.every`) écarte une ligne mixte entière — à élargir
   avec le producteur ; tests vitest à ids `questionnaire`.
 
