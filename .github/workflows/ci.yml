@@ -1133,6 +1133,15 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/adressages_signal_alerte_v1_negatif.sql
 
+      # Constats de questionnaire couverts par une lettre (D-275 §2, LOT-2) :
+      # le préfixe `safety:questionnaire:` aussi strict que celui de
+      # l'anamnèse, l'effet indésirable toujours refusé, et la porteuse
+      # départagée par l'id comme dans l'application. Transaction annulée.
+      - name: Adressages signal d'alerte questionnaire negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/adressages_signal_alerte_questionnaire_v1_negatif.sql
+
       # Actes de lecture d'un import biologique validé (D-268, BP-10). Une ligne
       # `lecture` RÉSOUT un signalement : ce que le drift check ne voit pas, ce
       # sont les refus qui l'empêchent de le résoudre à tort — import de CE

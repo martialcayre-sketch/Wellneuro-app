@@ -89,6 +89,11 @@ responsable).**
   différentes, et le Fil se taire sur un dossier que le cockpit bloque. Seul
   ce cas d'égalité change de résultat ; il n'a pas été recherché en
   production.
+- **La migration (b)** (`adressages_signal_alerte_constats_questionnaire_v1`)
+  accepte `^safety:(anamnese|questionnaire):[0-9a-f]{16}$` et aligne le tri
+  de la porteuse du trigger sur ce même départage par `id` (arbitrage du
+  responsable du 2026-10-09) : sans lui, la base pouvait refuser la lettre
+  que la route venait de consigner.
 - **Arbitrages du responsable pour le §2** (posés sur scénario, à reprendre
   dans le « à lire avant de signer » de la table) :
   - **A1** : compte **toute passation non invalidée**, pas seulement la
