@@ -9676,3 +9676,14 @@ elle ne savait plus dire « toutes » à plafond sept.
 
 **Questions ouvertes.** BP-26 à reprendre à tête reposée ; « Reprendre cette
 charge » fige un niveau gonflé par des actions vierges.
+
+## 2026-10-08 — Mini-synthèse : « Très sévère » et « Léger » nommés (D-274)
+
+**Décidé.** `dark` et `info` deviennent des rubriques perturbées (rang le plus haut,
+rang le plus bas), ordre repris de l'orientation ; garde du catalogue ajoutée.
+
+**Écarté.** Laisser « Léger » hors du résumé (proposé, non retenu par le responsable).
+
+**Prochaine action.** CI, revue Codex par le responsable, merge.
+
+**Questions ouvertes.** Badges `dark` gris (issue #1368) ; exports déjà remis.

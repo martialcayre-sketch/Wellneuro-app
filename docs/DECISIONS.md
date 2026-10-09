@@ -4,6 +4,59 @@
 
 ## Décisions actives
 
+### D-274 — Mini-synthèse : « Très sévère » (`dark`) et « Léger » (`info`) sont des rubriques perturbées, nommées par ordre de gravité
+
+- Date : 2026-10-08
+- Statut : accepté. Arbitrage du responsable en séance le 2026-10-08, sur les
+  deux questions posées avec leurs conséquences.
+- Domaine : clinique — restitution déterministe des scores
+  (`web/src/lib/scoring/miniSynthese.ts`). **Aucun seuil, aucune bande, aucune
+  couleur du catalogue ne change** : seule la lecture de la couleur change.
+- S'appuie sur : l'ordre des couleurs déjà écrit dans
+  `clinical/orientationRulesV1.ts` (`info` < `warning` < `danger` < `dark`),
+  `DC-24`, `DC-30`. Découvert en vérifiant les limites de BP-26 (LOT-26).
+
+**LE DÉFAUT.** La mini-synthèse ne tenait pour perturbées que `danger` et
+`warning`. Or `dark` porte les bandes « Très sévère » du DASS-21 (`Q_STR_04`),
+seul instrument du catalogue qui la porte au niveau de la rubrique. Un axe très
+sévère sortait donc du résumé : à D 21/21 avec A et S normaux, la fiche, l'inbox
+et l'export lisaient « Tous les axes explorés sont peu perturbés. » ; avec un
+axe modéré à côté, seul le modéré était nommé. La limite de la trame BP-26
+selon laquelle la sévérité « ne fait que recopier la couleur du catalogue »
+n'était donc pas tenue.
+
+**CE QUI A ÉTÉ CONSTATÉ EN PRODUCTION** (lecture seule par conteneur, en
+agrégats, 2026-10-08). Un DASS-21 sur sept portait des rubriques « Très
+sévère » ; son résumé affiché ne nommait que l'axe modéré. Les synthèses IA
+générées ensuite pour ce dossier recevaient les bandes « Très sévère » dans
+leurs données d'entrée, et aucune ne contient la phrase rassurante. La
+mini-synthèse se recalcule à chaque affichage : le correctif répare l'écran
+rétroactivement, pas un export déjà remis.
+
+**Décision :**
+
+1. **`dark` est perturbée, et de rang le plus élevé.** Elle est nommée en
+   premier ; la phrase « Tous les axes explorés sont peu perturbés » devient
+   inatteignable dès qu'un axe est « Très sévère ».
+2. **`info` est perturbée aussi, au rang le plus bas** (arbitrage du
+   responsable) : un axe « Léger » est nommé, derrière les axes modérés, et
+   retire la phrase rassurante. Vérifié sur tout le catalogue avant la
+   décision : au niveau de la RUBRIQUE, seule la bande « Léger » du DASS-21
+   porte `info` ; les libellés `info` non défavorables (« Niveau de stress
+   bas », « Modérément du matin »…) sont des interprétations GLOBALES, que la
+   mini-synthèse recopie sans les trier par couleur.
+3. **Une couleur absente de la table n'est pas perturbée** — `success` compris.
+   Le résumé reste plafonné à trois axes (inchangé).
+
+**Ce qui ne change pas** : l'orientation, les indications et les règles, qui
+connaissaient déjà `dark` et `info` ; la voie « interprétation globale », qui
+recopie le libellé. **Gardé par un banc** : `miniSynthese.test.ts` balaie tout le catalogue et
+rougit si une autre rubrique que les bandes « Léger » et « Très sévère » du
+DASS-21 porte `info` ou `dark` — le point 2 serait alors à reprendre.
+**Constat connexe, routé à l'issue #1368** : les badges de sous-score
+(`FichePatientPanel.tsx`, `interpColorToVariant`) rendent `dark` en gris
+neutre — présentation, lot UI distinct.
+
 ### D-273 — Le plafond d'actions passe à sept : le barème et la table du repli sont réécrits et re-signés, et l'écran compte toutes les actions non suspendues qu'il compose
 
 - Date : 2026-10-08
