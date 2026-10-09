@@ -81,8 +81,16 @@ export function whereConsultationsPorteuses(patient: Prisma.PatientWhereInput) {
  * terme n'est pas décoratif : `dateValidation` est nullable au schéma, et deux
  * lignes également nulles s'ordonneraient sinon selon ce que le moteur SQL
  * rend, c'est-à-dire selon rien de stable.
+ *
+ * LE TROISIÈME TERME FERME L'ÉGALITÉ RESTANTE (revue Codex de #1373, D-275 §3).
+ * Rien n'interdit deux consultations aux deux mêmes dates ; sans départage
+ * unique, le `findFirst` du cockpit et la lecture groupée du Fil pouvaient
+ * retenir deux porteuses différentes — l'une avec un signal bloquant, l'autre
+ * sans —, et le Fil se taire sur un dossier que le cockpit bloque. `id` est la
+ * clé primaire : l'ordre devient total, identique sur tous les chemins.
  */
 export const ORDRE_CONSULTATION_PORTEUSE = [
   { dateValidation: 'desc' },
   { createdAt: 'desc' },
+  { id: 'desc' },
 ] satisfies Prisma.ConsultationOrderByWithRelationInput[];

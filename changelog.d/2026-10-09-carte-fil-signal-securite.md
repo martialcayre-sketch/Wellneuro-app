@@ -8,4 +8,7 @@ lettre d'adressage ne couvre le constat (`D-275` §3). La carte dit combien de
 constats sont ouverts et d'où ils viennent, sans recopier les mots du patient,
 et mène à la phase Décision. Elle ne s'écarte pas, et si le calcul échoue, le
 Fil le dit. Les constats d'effet indésirable y entreront dès la signature de
-leur règle, ceux des questionnaires avec le §2 de `D-275`.
+leur règle, ceux des questionnaires avec le §2 de `D-275`. Le choix de la
+consultation qui fait foi est désormais départagé par son identifiant quand
+deux consultations portent les mêmes dates : tous les écrans retiennent la
+même.

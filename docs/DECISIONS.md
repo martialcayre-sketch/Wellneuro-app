@@ -81,6 +81,14 @@ responsable).**
   plafond par type, et un échec de calcul se dit à l'écran. Un dossier qui n'a
   pas encore son T0 reçoit aussi la carte, mais le geste de lettre n'y apparaît
   qu'une fois la revue clinique construite.
+- **Le tri de la porteuse devient total** (revue Codex de #1373). Ce tri est
+  `ORDRE_CONSULTATION_PORTEUSE`, partagé par tous les lecteurs de la porteuse.
+  Il gagne un troisième terme, l'`id`. Deux consultations aux deux mêmes dates
+  laissaient au moteur SQL le choix de la porteuse. Le `findFirst` du cockpit
+  et la lecture groupée du Fil pouvaient alors retenir deux lignes
+  différentes, et le Fil se taire sur un dossier que le cockpit bloque. Seul
+  ce cas d'égalité change de résultat ; il n'a pas été recherché en
+  production.
 - **Arbitrages du responsable pour le §2** (posés sur scénario, à reprendre
   dans le « à lire avant de signer » de la table) :
   - **A1** : compte **toute passation non invalidée**, pas seulement la

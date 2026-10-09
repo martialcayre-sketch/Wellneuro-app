@@ -48,6 +48,10 @@ questionnaires + lettre. Plan détaillé : `~/.claude/plans/jiggly-petting-dawn.
 - Revue `wn-reviewer` : GO, aucun P0/P1. P2-1 (effets indésirables hors porteuse)
   et P2-3 (résumé) corrigés, tests demandés ajoutés ; P2-2 (égalité de tri des
   porteuses) préexistant, laissé.
+- Passe Codex (bb136f35) : CHANGES REQUESTED, P0 = ce même P2-2. Corrigé :
+  `ORDRE_CONSULTATION_PORTEUSE` gagne `{ id: 'desc' }` (ordre total, tous les
+  lecteurs de la porteuse), banc `consultationPorteuse.test.ts` (mutation sans
+  `id` attrapée), deux tests qui figeaient l'ancien tri mis à jour.
 - Production (conteneur, lecture seule, agrégats) : une seule passation sur les quatre
   questionnaires, réponse « non ».
 

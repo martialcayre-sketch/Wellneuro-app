@@ -215,7 +215,7 @@ describe('evaluerOrientationPourPatient', () => {
     const argument = prisma.consultation.findFirst.mock.calls[0][0];
     expect(argument.where.NOT).toBeTruthy();
     expect(argument.where.statut).toBe('validee');
-    expect(argument.orderBy).toEqual([{ dateValidation: 'desc' }, { createdAt: 'desc' }]);
+    expect(argument.orderBy).toEqual([{ dateValidation: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }]);
   });
 
   it('ne considère que les packs actifs', async () => {
