@@ -325,3 +325,26 @@ export function partitionnerConstatsAdresses(
   }
   return { ouverts, adresses };
 }
+
+/**
+ * Les constats de sécurité OUVERTS d'un dossier — ceux qui suspendent la
+ * décision ([[D-275]] §3).
+ *
+ * LA DÉFINITION DE LA CHAÎNE C1, COMPOSÉE ET NON RECOPIÉE : le même
+ * producteur, puis la même partition. Le Fil du jour la lit pour dire « Signal
+ * de sécurité à évaluer » ; une seconde définition d'« ouvert » ferait taire la
+ * carte d'un dossier que le cockpit tient pour bloqué, ou l'inverse.
+ *
+ * `couvertures` absent (levée éteinte) ⇒ tout reste ouvert, comme dans la
+ * chaîne.
+ */
+export function constatsSecuriteOuverts(
+  signauxAlerte: string[],
+  effetsIndesirables: EffetIndesirableRuntime[] | undefined,
+  couvertures: CouvertureAdressage[] | undefined,
+): SafetyFinding[] {
+  return partitionnerConstatsAdresses(
+    construireSafetyFindings(signauxAlerte, effetsIndesirables ?? []).findings,
+    couvertures ?? [],
+  ).ouverts;
+}

@@ -355,7 +355,7 @@ describe('GET /api/praticien/orientation', () => {
       // décoratif — `dateValidation` est nullable, et deux lignes également
       // nulles s'ordonneraient sinon selon ce que rend le moteur SQL.
       expect(critere.where.statut).toBe('validee');
-      expect(critere.orderBy).toEqual([{ dateValidation: 'desc' }, { createdAt: 'desc' }]);
+      expect(critere.orderBy).toEqual([{ dateValidation: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }]);
     });
 
     it("un libellé d'attente hors énuméré est ignoré, jamais deviné", async () => {

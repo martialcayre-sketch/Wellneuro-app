@@ -33,6 +33,10 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     // Lus par le drapeau du rayon (`WN_CB_ENABLED`), qu'exige celui de la lecture.
     arbitrageBiologique: { findMany: vi.fn() },
     protocolDraft: { findMany: vi.fn() },
+    // Signaux de sécurité ouverts (D-275 §3) : consultation porteuse et
+    // couvertures d'adressage, vides par défaut.
+    consultation: { findMany: vi.fn() },
+    adressageSignalAlerte: { findMany: vi.fn() },
   },
 }));
 
@@ -41,6 +45,8 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { GET } from './route';
+import { construireSafetyFindings } from '@/lib/clinical-engine/safetyFindings';
+import { ORDRE_CONSULTATION_PORTEUSE } from '@/lib/consultation/consultationPorteuse';
 import { bornesJourParis } from '@/lib/fil/fuseau';
 
 // L'accueil praticien (SP-FIL LOT-01) n'avait aucun test de route. Les gardes
@@ -72,6 +78,8 @@ describe('GET /api/praticien/fil', () => {
     prisma.patient.findMany.mockResolvedValue([]);
     prisma.filCardRejection.findMany.mockResolvedValue([]);
     prisma.filCardLecture.findMany.mockResolvedValue([]);
+    prisma.consultation.findMany.mockResolvedValue([]);
+    prisma.adressageSignalAlerte.findMany.mockResolvedValue([]);
   });
 
   it('sans session : 401 et `unavailable`, jamais un fil vide silencieux', async () => {
@@ -89,6 +97,7 @@ describe('GET /api/praticien/fil', () => {
     const payload = await res.json();
     expect(payload.cartes).toEqual([]);
     expect(payload.unavailable).toBeUndefined();
+    expect(payload.signauxSecuriteIndisponibles).toBeUndefined();
   });
 
   it('un patient inactif ne produit aucune carte', async () => {
@@ -569,5 +578,160 @@ describe('GET /api/praticien/fil — comptes rendus transmis par le patient (D-2
     const payload = await (await GET()).json();
     expect(prisma.compteRenduBiologique.findMany).not.toHaveBeenCalled();
     expect(payload.cartes).toEqual([]);
+  });
+});
+
+describe('GET /api/praticien/fil — signal de sécurité ouvert (D-275 §3)', () => {
+  const SIGNAL = 'Idées noires ou suicidaires';
+  const ID_CONSTAT = construireSafetyFindings([SIGNAL]).findings[0].findingId;
+  const PORTEUSE = {
+    id: 'CONS_1',
+    idPatient: 'PAT_SEED_01',
+    anamnese: { signaux_alerte: [SIGNAL] },
+    dateValidation: new Date('2026-10-01T09:00:00.000Z'),
+  };
+  const lettre = (findingIds: string[], idConsultation = 'CONS_1') => ({
+    id: 'ADR_1',
+    idPatient: 'PAT_SEED_01',
+    idConsultation,
+    idCorrespondance: 'COR_1',
+    findingIds,
+    acteLe: new Date('2026-10-02T09:00:00.000Z'),
+    correspondance: { idPatient: 'PAT_SEED_01', sens: 'sortant', ancrageVersion: 'safety-signals-nnpp2-v1' },
+  });
+  let levee: string | undefined;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    levee = process.env.WN_LEVEE_ADRESSAGE;
+    process.env.WN_LEVEE_ADRESSAGE = 'true';
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    for (const table of Object.values(prisma)) {
+      for (const methode of Object.values(table)) methode.mockResolvedValue([]);
+    }
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola', suiviClotureLe: null },
+    ]);
+    prisma.consultation.findMany.mockResolvedValue([PORTEUSE]);
+  });
+
+  afterEach(() => {
+    if (levee === undefined) delete process.env.WN_LEVEE_ADRESSAGE;
+    else process.env.WN_LEVEE_ADRESSAGE = levee;
+  });
+
+  it('un signal d’anamnèse de rang adressage, non couvert ⇒ la carte, en tête', async () => {
+    const payload = await (await GET()).json();
+    expect(payload.cartes[0]).toMatchObject({
+      type: 'signal_securite',
+      patient: 'Sophie Nicola',
+      cle: 'signal_securite:PAT_SEED_01',
+    });
+    expect(payload.signauxSecuriteIndisponibles).toBeUndefined();
+    // La porteuse est lue pour les dossiers du praticien, actifs, suivi ouvert.
+    expect(prisma.consultation.findMany.mock.calls[0][0].where).toMatchObject({
+      statut: 'validee',
+      patient: {
+        actif: true,
+        suiviClotureLe: null,
+        praticienEmail: { equals: 'p@wellneuro.fr', mode: 'insensitive' },
+      },
+    });
+  });
+
+  it('LES MOTS DU PATIENT NE SORTENT PAS : la réponse ne porte que des comptes', async () => {
+    const payload = await (await GET()).json();
+    expect(payload.cartes[0].type).toBe('signal_securite');
+    expect(JSON.stringify(payload)).not.toContain('Idées noires');
+    expect(JSON.stringify(payload)).not.toContain(ID_CONSTAT);
+  });
+
+  it('la lecture groupée des couvertures a le where de la lecture unitaire, à la portée près', async () => {
+    await GET();
+    expect(prisma.adressageSignalAlerte.findMany.mock.calls[0][0].where).toEqual({
+      acte: 'adressage',
+      idConsultation: { in: ['CONS_1'] },
+      revocations: { none: {} },
+    });
+  });
+
+  it('la porteuse est la PREMIÈRE ligne du dossier, dans l’ordre de la chaîne', async () => {
+    const recente = { ...PORTEUSE, id: 'CONS_2', anamnese: { signaux_alerte: [] } };
+    prisma.consultation.findMany.mockResolvedValue([recente, PORTEUSE]);
+    expect((await (await GET()).json()).cartes).toEqual([]);
+    expect(prisma.consultation.findMany.mock.calls[0][0].orderBy).toEqual(ORDRE_CONSULTATION_PORTEUSE);
+    prisma.consultation.findMany.mockResolvedValue([PORTEUSE, recente]);
+    expect((await (await GET()).json()).cartes[0].type).toBe('signal_securite');
+  });
+
+  it('une lettre d’un dossier ne couvre rien chez un autre, même constat compris', async () => {
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola', suiviClotureLe: null },
+      { idPatient: 'PAT_SEED_02', prenom: 'Jennifer', nom: 'Martin', suiviClotureLe: null },
+    ]);
+    prisma.consultation.findMany.mockResolvedValue([
+      PORTEUSE,
+      { ...PORTEUSE, id: 'CONS_B', idPatient: 'PAT_SEED_02' },
+    ]);
+    prisma.adressageSignalAlerte.findMany.mockResolvedValue([
+      {
+        ...lettre([ID_CONSTAT], 'CONS_B'),
+        idPatient: 'PAT_SEED_02',
+        correspondance: { idPatient: 'PAT_SEED_02', sens: 'sortant', ancrageVersion: 'safety-signals-nnpp2-v1' },
+      },
+      // Forgée : posée au nom de A sur la consultation de B.
+      { ...lettre([ID_CONSTAT], 'CONS_B'), id: 'ADR_2' },
+    ]);
+    const payload = await (await GET()).json();
+    const signaux = payload.cartes.filter((c: { type: string }) => c.type === 'signal_securite');
+    expect(signaux.map((c: { idPatient: string }) => c.idPatient)).toEqual(['PAT_SEED_01']);
+  });
+
+  it('une lettre consignée sur la porteuse qui couvre le constat ⇒ plus de carte', async () => {
+    prisma.adressageSignalAlerte.findMany.mockResolvedValue([lettre([ID_CONSTAT])]);
+    const payload = await (await GET()).json();
+    expect(payload.cartes.filter((c: { type: string }) => c.type === 'signal_securite')).toEqual([]);
+  });
+
+  it('une lettre posée sur une AUTRE consultation ne couvre rien ⇒ la carte reste', async () => {
+    prisma.adressageSignalAlerte.findMany.mockResolvedValue([lettre([ID_CONSTAT], 'CONS_ANCIENNE')]);
+    const payload = await (await GET()).json();
+    expect(payload.cartes[0].type).toBe('signal_securite');
+  });
+
+  it('levée éteinte ⇒ aucune couverture lue, la carte reste', async () => {
+    process.env.WN_LEVEE_ADRESSAGE = 'false';
+    prisma.adressageSignalAlerte.findMany.mockResolvedValue([lettre([ID_CONSTAT])]);
+    const payload = await (await GET()).json();
+    expect(prisma.adressageSignalAlerte.findMany).not.toHaveBeenCalled();
+    expect(payload.cartes[0].type).toBe('signal_securite');
+  });
+
+  it('un signal de rang vigilance seul ⇒ aucune carte', async () => {
+    prisma.consultation.findMany.mockResolvedValue([
+      { ...PORTEUSE, anamnese: { signaux_alerte: ['Vomissements persistants'] } },
+    ]);
+    const payload = await (await GET()).json();
+    expect(payload.cartes).toEqual([]);
+  });
+
+  it('suivi clos ⇒ aucune carte : la lettre n’y est plus possible', async () => {
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola', suiviClotureLe: new Date('2026-10-05T00:00:00.000Z') },
+    ]);
+    const payload = await (await GET()).json();
+    expect(payload.cartes).toEqual([]);
+  });
+
+  it('ÉCHEC DE LECTURE ⇒ le Fil est servi, et dit qu’il n’a pas pu vérifier', async () => {
+    prisma.consultation.findMany.mockRejectedValue(new Error('base indisponible'));
+    prisma.syntheseIA.findMany.mockResolvedValue([
+      { idSynthese: 'SYN_1', idPatient: 'PAT_SEED_01', dateGeneration: new Date('2026-07-20T09:00:00.000Z') },
+    ]);
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const payload = await res.json();
+    expect(payload.signauxSecuriteIndisponibles).toBe(true);
+    expect(payload.cartes.map((c: { type: string }) => c.type)).toEqual(['synthese_a_valider']);
   });
 });

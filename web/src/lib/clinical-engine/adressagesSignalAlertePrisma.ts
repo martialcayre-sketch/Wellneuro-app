@@ -47,15 +47,79 @@ export async function lireCouverturesAdressage(
       idConsultation: idConsultationPorteuse,
       revocations: { none: {} },
     },
-    select: {
-      id: true,
-      idCorrespondance: true,
-      findingIds: true,
-      acteLe: true,
-      correspondance: { select: { idPatient: true, sens: true, ancrageVersion: true } },
-    },
-    orderBy: [{ acteLe: 'asc' }, { id: 'asc' }],
+    select: SELECT_COUVERTURE,
+    orderBy: ORDRE_COUVERTURES,
   });
+  return couverturesRetenues(lignes, idPatient);
+}
+
+/**
+ * Les couvertures ACTIVES de PLUSIEURS dossiers, en une requête — le Fil du
+ * jour ([[D-275]] §3), qui doit dire quels constats restent ouverts sur toute
+ * la patientèle sans une lecture par dossier.
+ *
+ * MÊME FILTRE QUE `lireCouverturesAdressage`, PAS UNE COPIE : la condition
+ * SQL est la même, et chaque ligne passe par `couverturesRetenues`. Une
+ * couverture que le Fil croirait active et que le cockpit écarterait ferait
+ * disparaître la carte d'un dossier encore bloqué.
+ *
+ * `porteuses` associe chaque dossier à la consultation dont l'appelant a LU
+ * l'anamnèse. Une ligne posée sur une autre consultation du dossier est
+ * écartée, exactement comme par la requête unitaire. Un dossier absent de la
+ * carte rendue n'a aucune couverture active.
+ */
+export async function lireCouverturesAdressageGroupees(
+  porteuses: Map<string, string>,
+): Promise<Map<string, CouvertureAdressage[]> | undefined> {
+  if (!isLeveeAdressageEnabled()) return undefined;
+  const parDossier = new Map<string, CouvertureAdressage[]>();
+  if (porteuses.size === 0) return parDossier;
+  const lignes = await prisma.adressageSignalAlerte.findMany({
+    where: {
+      acte: 'adressage',
+      idConsultation: { in: [...new Set(porteuses.values())] },
+      revocations: { none: {} },
+    },
+    select: { ...SELECT_COUVERTURE, idPatient: true, idConsultation: true },
+    orderBy: ORDRE_COUVERTURES,
+  });
+  const lignesParDossier = new Map<string, typeof lignes>();
+  for (const ligne of lignes) {
+    if (porteuses.get(ligne.idPatient) !== ligne.idConsultation) continue;
+    const liste = lignesParDossier.get(ligne.idPatient);
+    if (liste) liste.push(ligne);
+    else lignesParDossier.set(ligne.idPatient, [ligne]);
+  }
+  for (const [idPatient, liste] of lignesParDossier) {
+    parDossier.set(idPatient, couverturesRetenues(liste, idPatient));
+  }
+  return parDossier;
+}
+
+const SELECT_COUVERTURE = {
+  id: true,
+  idCorrespondance: true,
+  findingIds: true,
+  acteLe: true,
+  correspondance: { select: { idPatient: true, sens: true, ancrageVersion: true } },
+} as const;
+
+const ORDRE_COUVERTURES = [{ acteLe: 'asc' as const }, { id: 'asc' as const }];
+
+type LigneCouverture = {
+  id: string;
+  idCorrespondance: string | null;
+  findingIds: string[];
+  acteLe: Date;
+  correspondance: { idPatient: string; sens: string; ancrageVersion: string | null } | null;
+};
+
+/**
+ * Le filtre par ligne, partagé par les deux lectures : la lettre est relue
+ * (dossier, sens, ancrage) et les constats couverts doivent tous être des
+ * constats d'anamnèse. Tout écart écarte la couverture — fail-closed.
+ */
+function couverturesRetenues(lignes: LigneCouverture[], idPatient: string): CouvertureAdressage[] {
   const couvertures: CouvertureAdressage[] = [];
   for (const ligne of lignes) {
     const lettre = ligne.correspondance;

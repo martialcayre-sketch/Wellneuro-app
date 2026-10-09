@@ -526,3 +526,42 @@ describe('FilDuJour — compte rendu transmis par le patient (D-269 §7)', () =>
     expect(ecarter[0].getAttribute('aria-label')).toMatch(/Questionnaire en retard/);
   });
 });
+
+describe('FilDuJour — signal de sécurité à évaluer (D-275 §3)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const signal = carte({
+    type: 'signal_securite',
+    titre: 'Signal de sécurité à évaluer',
+    pourquoi: 'Anamnèse : 1 signal d’alerte non adressé. Priorité et protocole restent suspendus.',
+    href: '/dashboard/patients/PAT_SEED_01?onglet=cockpit&phase=decision',
+    actionLabel: 'Évaluer',
+    cle: 'signal_securite:PAT_SEED_01',
+  });
+
+  it('la carte se nomme « Sécurité », mène à la phase Décision et ne s’écarte pas', async () => {
+    stubFetch(async () => ({ cartes: [signal, carte()] }));
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByText('Signal de sécurité à évaluer')).toBeTruthy());
+    expect(screen.getByText('Sécurité')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Évaluer/ }).getAttribute('href')).toBe(
+      '/dashboard/patients/PAT_SEED_01?onglet=cockpit&phase=decision',
+    );
+    const ecarter = screen.getAllByRole('button', { name: /^Écarter cette carte/ });
+    expect(ecarter).toHaveLength(1);
+    expect(ecarter[0].getAttribute('aria-label')).toMatch(/Questionnaire en retard/);
+  });
+
+  it('L’ÉCHEC DU CALCUL SE VOIT, même dans un Fil vide qui ne dit plus « rien »', async () => {
+    stubFetch(async () => ({ cartes: [], signauxSecuriteIndisponibles: true }));
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/signaux de sécurité de vos dossiers n.ont pas pu être vérifiés/));
+    expect(screen.queryByText(/Rien n.appelle votre attention/i)).toBeNull();
+  });
+
+  it('les deux échecs se disent ensemble', async () => {
+    stubFetch(async () => ({ cartes: [carte()], signauxSecuriteIndisponibles: true, lecturesBiologieIndisponibles: true }));
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2));
+  });
+});

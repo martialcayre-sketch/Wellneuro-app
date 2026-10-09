@@ -10,6 +10,10 @@ import { bornesJourParis, formatHeureParis } from './fuseau';
 import { lienFilVersFiche } from './lectureCartes';
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import {
+  PREFIXE_FINDING_EFFET_INDESIRABLE,
+  estFindingAnamnese,
+} from '@/lib/clinical-engine/safetyFindingSource';
+import {
   LIBELLES_CODE_REVOCATION,
   MENTION_PAS_UN_FILET,
   estCodeRevocation,
@@ -23,6 +27,13 @@ import {
 // dès sa lecture confirmée — sans rien d'autre, un patient lu sans synthèse
 // générée devient invisible partout. `synthese_a_generer` couvre ce trou.
 export type TypeCarteFil =
+  // UN CONSTAT DE SÉCURITÉ OUVERT ([[D-275]] §3) : un signal qui suspend la
+  // décision et qu'aucune lettre d'adressage ne couvre encore. Jusqu'ici le
+  // praticien ne l'apprenait qu'en ouvrant le dossier. La carte NE S'ÉCARTE
+  // PAS (absente de `TYPES_CARTE`, `refus.ts`) et NE S'ACQUITTE PAS PAR
+  // LECTURE : seule la sortie du constat l'éteint — lettre consignée, ou
+  // signalement d'effet indésirable traité.
+  | 'signal_securite'
   | 'consultation_prevue'
   | 'signalement_trust'
   | 'synthese_a_valider'
@@ -187,6 +198,19 @@ const LIBELLE_SIGNALEMENT: Record<SignalementRow['kind'], string> = {
   demande_droit: 'Demande d’exercice de droit',
 };
 
+/**
+ * Les constats de sécurité OUVERTS d'un dossier, tels que
+ * `constatsSecuriteOuverts` les rend — leurs IDENTIFIANTS seulement. Ni
+ * libellé déclaré ni texte de conduite ne descendent jusqu'ici : la carte dit
+ * combien et d'où, le dossier dit quoi.
+ */
+export type SignalSecuriteRow = {
+  idPatient: string;
+  findingIds: string[];
+  /** Validation de l'anamnèse porteuse, ou `null` si non datée. */
+  depuis: Date | null;
+};
+
 /** Rendez-vous planifié (accueil-observatoire LOT-04). Ligne source réelle. */
 export type RendezVousRow = { id: string; idPatient: string; dateHeure: Date };
 
@@ -227,6 +251,64 @@ export function cartesConsultationsPrevues(
         href: `/dashboard/copilote?idPatient=${encodeURIComponent(r.idPatient)}`,
         actionLabel: 'Ouvrir le pré-vol',
         cle: cleCarte('consultation_prevue', r.id),
+      };
+    });
+}
+
+function pluriel(nb: number, singulier: string, plurielTexte: string): string {
+  return `${nb} ${nb > 1 ? plurielTexte : singulier}`;
+}
+
+/**
+ * Signaux de sécurité ouverts → une carte PAR DOSSIER, en tête du Fil
+ * ([[D-275]] §3).
+ *
+ * SANS PLAFOND, à la différence des autres types : un sixième dossier
+ * bloqué sur un signal de sécurité n'est pas un détail de lisibilité, et
+ * `MAX_CARTES_PAR_TYPE` le ferait disparaître en silence.
+ *
+ * LA PROVENANCE SE LIT SUR L'IDENTIFIANT (`safetyFindingSource`), jamais sur
+ * un texte. Un identifiant qu'aucun producteur connu ne revendique est compté
+ * à part, plutôt qu'ignoré : la carte ne doit pas annoncer moins que ce qui
+ * bloque.
+ */
+export function cartesSignalSecurite(
+  lignes: SignalSecuriteRow[],
+  noms: Map<string, string>,
+): CarteFil[] {
+  return lignes
+    .filter(l => l.findingIds.length > 0)
+    .slice()
+    .sort((a, b) =>
+      (a.depuis?.getTime() ?? Infinity) - (b.depuis?.getTime() ?? Infinity)
+      || (a.idPatient < b.idPatient ? -1 : a.idPatient > b.idPatient ? 1 : 0))
+    .map(l => {
+      const anamnese = l.findingIds.filter(id => estFindingAnamnese(id)).length;
+      const effets = l.findingIds.filter(id => id.startsWith(PREFIXE_FINDING_EFFET_INDESIRABLE)).length;
+      const autres = l.findingIds.length - anamnese - effets;
+      const parties = [
+        ...(anamnese > 0
+          ? [`Anamnèse : ${pluriel(anamnese, 'signal d’alerte non adressé', 'signaux d’alerte non adressés')}`]
+          : []),
+        ...(effets > 0
+          ? [`Effet indésirable : ${pluriel(effets, 'signalement non traité', 'signalements non traités')}`]
+          : []),
+        ...(autres > 0 ? [`Autre : ${pluriel(autres, 'constat de sécurité ouvert', 'constats de sécurité ouverts')}`] : []),
+      ];
+      return {
+        type: 'signal_securite' as const,
+        idPatient: l.idPatient,
+        patient: nomPatient(noms, l.idPatient),
+        titre: 'Signal de sécurité à évaluer',
+        pourquoi: `${parties.join(' · ')}. Priorité et protocole restent suspendus.`,
+        date: l.depuis ? l.depuis.toISOString() : null,
+        // La phase Décision est celle où le constat se lit (« Ce qui suspend la
+        // décision ») et où la lettre d'adressage s'établit.
+        href: `/dashboard/patients/${encodeURIComponent(l.idPatient)}?onglet=cockpit&phase=decision`,
+        actionLabel: 'Évaluer',
+        // UNE CARTE PAR DOSSIER, et elle ne s'écarte pas : la clé n'a rien à
+        // désigner de plus fin que le dossier.
+        cle: cleCarte('signal_securite', l.idPatient),
       };
     });
 }
@@ -867,6 +949,8 @@ export function cartesReprise(
  * devant ; les cartes agrégées comptent leurs lignes sources (`nbElements`).
  */
 const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string }[] = [
+  // Compté PAR DOSSIER : c'est le dossier qui attend un geste, pas le constat.
+  { type: 'signal_securite', singulier: 'dossier à signal de sécurité', pluriel: 'dossiers à signal de sécurité' },
   { type: 'consultation_prevue', singulier: 'consultation', pluriel: 'consultations' },
   { type: 'signalement_trust', singulier: 'signalement', pluriel: 'signalements' },
   { type: 'synthese_a_valider', singulier: 'relecture', pluriel: 'relectures' },
@@ -918,6 +1002,7 @@ export function indexCarteImminente(cartes: CarteFil[], maintenant?: Date): numb
 
 /** Ordre du Fil : ce qui attend le praticien d'abord, les signaux ensuite. */
 export function construireFil(entrees: {
+  signauxSecurite?: SignalSecuriteRow[];
   consultations?: RendezVousRow[];
   signalements?: SignalementRow[];
   syntheses: SyntheseRow[];
@@ -942,6 +1027,7 @@ export function construireFil(entrees: {
   maintenant: Date;
 }): CarteFil[] {
   const {
+    signauxSecurite = [],
     consultations = [],
     signalements = [],
     syntheses,
@@ -966,8 +1052,12 @@ export function construireFil(entrees: {
     maintenant,
   } = entrees;
   return [
-    // Un signalement TRUST attend une réponse humaine : il précède tout, même
-    // une consultation imminente. Viennent ensuite les consultations du jour.
+    // UN SIGNAL DE SÉCURITÉ OUVERT PRÉCÈDE TOUT ([[D-275]] §3, `DC-12`) : il
+    // suspend la décision du dossier, et son délai est lui-même le risque.
+    ...cartesSignalSecurite(signauxSecurite, noms),
+    // Un signalement TRUST attend une réponse humaine : il précède tout le
+    // reste, même une consultation imminente. Viennent ensuite les
+    // consultations du jour.
     ...cartesSignalementsTrust(signalements, noms),
     ...cartesConsultationsPrevues(consultations, noms, maintenant),
     // UN COMPTE RENDU VALIDÉ ET NON LU passe juste après : c'est une donnée de

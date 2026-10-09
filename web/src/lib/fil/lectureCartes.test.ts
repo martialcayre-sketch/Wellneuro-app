@@ -225,6 +225,7 @@ describe('les types qui s’acquittent par lecture — liste fermée et étroite
 
   it('CE QUI APPELLE UN GESTE AILLEURS ne s’acquitte PAS par lecture', () => {
     const exigeantUnGeste: TypeCarteFil[] = [
+      'signal_securite',
       'signalement_trust',
       'biologie_arbitree',
       'assignation_en_retard',
@@ -274,6 +275,7 @@ describe('lienFilVersFiche — le lien de la carte porte sa destination ET sa pr
     // observable. Un lien qui porte le marqueur est un lien dont la
     // destination est déclarée — il doit donc être acquittable par lecture.
     const nonAcquittables: TypeCarteFil[] = [
+      'signal_securite',
       'signalement_trust',
       'biologie_arbitree',
       'assignation_en_retard',

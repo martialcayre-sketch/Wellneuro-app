@@ -48,8 +48,28 @@ import { Prisma } from '@/generated/prisma';
 export function whereConsultationPorteuse(idPatient: string) {
   return {
     idPatient,
-    statut: 'validee',
-    NOT: { anamnese: { equals: Prisma.DbNull } },
+    ...CONDITION_PORTEUSE,
+  } satisfies Prisma.ConsultationWhereInput;
+}
+
+const CONDITION_PORTEUSE = {
+  statut: 'validee',
+  NOT: { anamnese: { equals: Prisma.DbNull } },
+} satisfies Prisma.ConsultationWhereInput;
+
+/**
+ * Le même `where`, sur PLUSIEURS dossiers à la fois — le Fil du jour
+ * ([[D-275]] §3), qui cherche les signaux de sécurité de toute une patientèle.
+ *
+ * MÊME CONDITION, PAS UNE SECONDE : elle est partagée avec
+ * `whereConsultationPorteuse`, seule la portée change. Lu avec
+ * `ORDRE_CONSULTATION_PORTEUSE`, la PREMIÈRE ligne rencontrée pour un patient
+ * est sa porteuse — celle que la requête par dossier aurait rendue.
+ */
+export function whereConsultationsPorteuses(patient: Prisma.PatientWhereInput) {
+  return {
+    patient,
+    ...CONDITION_PORTEUSE,
   } satisfies Prisma.ConsultationWhereInput;
 }
 
@@ -61,8 +81,16 @@ export function whereConsultationPorteuse(idPatient: string) {
  * terme n'est pas décoratif : `dateValidation` est nullable au schéma, et deux
  * lignes également nulles s'ordonneraient sinon selon ce que le moteur SQL
  * rend, c'est-à-dire selon rien de stable.
+ *
+ * LE TROISIÈME TERME FERME L'ÉGALITÉ RESTANTE (revue Codex de #1373, D-275 §3).
+ * Rien n'interdit deux consultations aux deux mêmes dates ; sans départage
+ * unique, le `findFirst` du cockpit et la lecture groupée du Fil pouvaient
+ * retenir deux porteuses différentes — l'une avec un signal bloquant, l'autre
+ * sans —, et le Fil se taire sur un dossier que le cockpit bloque. `id` est la
+ * clé primaire : l'ordre devient total, identique sur tous les chemins.
  */
 export const ORDRE_CONSULTATION_PORTEUSE = [
   { dateValidation: 'desc' },
   { createdAt: 'desc' },
+  { id: 'desc' },
 ] satisfies Prisma.ConsultationOrderByWithRelationInput[];

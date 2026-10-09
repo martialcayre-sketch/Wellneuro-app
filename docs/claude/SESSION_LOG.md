@@ -9701,3 +9701,17 @@ disparaître) ; alerte sans blocage (incohérente avec l'anamnèse).
 
 **Questions ouvertes.** Quelle passation compte pour le constat ; levée par
 lettre d'adressage à étendre.
+
+## 2026-10-09 — D-275 §3 : carte « Signal de sécurité à évaluer » (LOT-1/3)
+
+**Décidé.** §2-§3 en trois PR (carte, migration du trigger, producteur) : la
+levée est allumée, un constat sans lettre possible serait sans issue. A1 : toute
+passation non invalidée compte, seule une lettre lève. A2 : réponse absente =
+limitation sans blocage. Carte pour les dossiers à suivi ouvert, non écartable,
+même définition d'« ouvert » que la chaîne C1.
+
+**Écarté.** Une seule PR ; dernière passation seule ; passations de l'épisode seules.
+
+**Prochaine action.** CI, Codex, merge ; puis LOT-2 (migration) en session neuve.
+
+**Questions ouvertes.** Aucune sur ce lot.

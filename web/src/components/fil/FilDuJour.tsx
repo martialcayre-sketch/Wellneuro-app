@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlarmClock, CalendarClock, FileText, FileUp, Flag, FlagTriangleRight, FlaskConical, MailX, MessageSquare, PenLine, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
+import { AlarmClock, CalendarClock, FileText, FileUp, Flag, FlagTriangleRight, FlaskConical, MailX, MessageSquare, PenLine, RotateCcw, ShieldAlert, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 import type { MeteoAdhesionApiResponse } from '@/app/api/praticien/meteo-adhesion/route';
 import { indexCarteImminente, resumeFil, type CarteFil, type TypeCarteFil } from '@/lib/fil/cartes';
@@ -14,6 +14,9 @@ import { BadgeMeteo } from '@/components/meteo/BadgeMeteo';
 /** Identité visuelle de chaque type de carte — l'icône double toujours le
  * libellé textuel (jamais la couleur seule, règle de relief A5-R1). */
 const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = {
+  // « SÉCURITÉ » : le libellé nomme la nature du constat ([[D-275]] §3), pas
+  // un verdict sur le patient.
+  signal_securite: { libelle: 'Sécurité', icon: ShieldAlert },
   consultation_prevue: { libelle: 'Consultation', icon: CalendarClock },
   signalement_trust: { libelle: 'Signalement', icon: ShieldCheck },
   synthese_a_valider: { libelle: 'À valider', icon: Sparkles },
@@ -195,8 +198,10 @@ function CarteDuFil({
             ni le compte rendu transmis ([[D-269]] §7). Seul le geste dans le
             cockpit biologie les résout, et la route du refus rejette leur clé
             (`cleCarteValide`) — offrir le bouton ferait voir un geste que le
-            serveur refuse. */}
-        {carte.type !== 'import_biologique_a_lire' && carte.type !== 'compte_rendu_transmis' && (
+            serveur refuse. Le signal de sécurité non plus ([[D-275]] §3) :
+            seule la sortie du constat l'éteint. */}
+        {carte.type !== 'import_biologique_a_lire' && carte.type !== 'compte_rendu_transmis'
+          && carte.type !== 'signal_securite' && (
         <div className="flex w-full items-center justify-end gap-3 sm:w-auto sm:shrink-0 sm:self-center">
           {/* Écarter est un geste réversible : rien n'est supprimé, la carte
               reste annulable juste après (garde-fou 5.0). La carte imminente
@@ -405,18 +410,31 @@ export function FilDuJour() {
   // L'ÉCHEC DU CALCUL DES COMPTES RENDUS À LIRE SE VOIT ([[D-268]] §6), et
   // jusque dans le Fil vide : « rien n'appelle votre attention » serait une
   // affirmation fausse sur un signalement qu'on n'a pas pu calculer.
-  const alerteLecturesBiologie = data.lecturesBiologieIndisponibles ? (
+  // MÊME RÈGLE POUR LES SIGNAUX DE SÉCURITÉ ([[D-275]] §3) : un Fil sans carte
+  // « Sécurité » ne doit jamais se lire « aucun signal » quand le calcul a échoué.
+  const alerteSignauxSecurite = data.signauxSecuriteIndisponibles ? (
     <p role="alert" className="rounded-lg border border-border bg-muted px-4 py-2 text-base text-foreground">
-      Les comptes rendus biologiques à lire n&apos;ont pas pu être vérifiés. Rechargez la page ; si
-      cela persiste, ouvrez la biologie de vos dossiers.
+      Les signaux de sécurité de vos dossiers n&apos;ont pas pu être vérifiés. Rechargez la page ; si
+      cela persiste, ouvrez la phase Décision de vos dossiers.
     </p>
+  ) : null;
+  const alertesCalcul = data.lecturesBiologieIndisponibles || alerteSignauxSecurite ? (
+    <>
+      {alerteSignauxSecurite}
+      {data.lecturesBiologieIndisponibles && (
+        <p role="alert" className="rounded-lg border border-border bg-muted px-4 py-2 text-base text-foreground">
+          Les comptes rendus biologiques à lire n&apos;ont pas pu être vérifiés. Rechargez la page ; si
+          cela persiste, ouvrez la biologie de vos dossiers.
+        </p>
+      )}
+    </>
   ) : null;
 
   if (data.cartes.length === 0 && groupesLus.length === 0) {
-    if (alerteLecturesBiologie) {
+    if (alertesCalcul) {
       return (
         <div data-testid="fil-du-jour" className="flex flex-col gap-3">
-          {alerteLecturesBiologie}
+          {alertesCalcul}
           <div className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-card">
             Aucune autre carte ne vous attend pour le moment.
           </div>
@@ -452,7 +470,7 @@ export function FilDuJour() {
           aria-hidden="true"
           className="pointer-events-none absolute bottom-4 left-[69px] top-4 w-px bg-border sm:left-[81px]"
         />
-        {alerteLecturesBiologie}
+        {alertesCalcul}
         {erreurRefus && (
           <p role="alert" className="rounded-lg border border-border bg-muted px-4 py-2 text-base text-foreground">
             {erreurRefus}
