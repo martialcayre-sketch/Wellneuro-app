@@ -13,6 +13,8 @@ import {
   writeQuestionnaireDraft,
 } from '@/lib/questionnaire-draft';
 import { QuestionField } from './QuestionField';
+import { EncartUrgenceSuicide } from './EncartUrgenceSuicide';
+import { afficheEncartUrgence } from '@/lib/securite/urgenceSuicide';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
@@ -290,6 +292,7 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
             Merci de ne pas le compléter seul&nbsp;: attendez le rendez-vous.
           </p>
         )}
+        {afficheEncartUrgence(assignation.idQuestionnaire) && <EncartUrgenceSuicide className="mt-2" />}
         {currentSection === 0 && questionnaire.instructions && (
           <p className="text-sm text-muted-foreground mt-1">{questionnaire.instructions}</p>
         )}

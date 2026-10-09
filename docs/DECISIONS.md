@@ -4,6 +4,55 @@
 
 ## Décisions actives
 
+### D-275 — Idées suicidaires : un encart d'urgence toujours visible, un constat de sécurité tiré des questionnaires, une carte au Fil
+
+- Date : 2026-10-09
+- Statut : accepté. Arbitrages du responsable du 2026-10-09 sur trois questions
+  posées avec leurs conséquences, et texte de l'encart relu et validé. Le §1 est
+  livré par la PR de l'encart ; les §2 et §3 suivent dans une PR à part, après
+  signature de leur table sur une surface de relecture ([[D-195]]).
+- Domaine : sécurité patient. Découvert par l'instruction BP-26 (LOT-26), revérifié
+  dans le code : *démontré dans le code, sans occurrence observée* (`D-125`).
+- S'appuie sur : [[D-099]] (signaux d'alerte d'anamnèse), [[D-257]] (levée par
+  lettre d'adressage), `DC-12`, `DC-23`.
+
+**LE DÉFAUT.** Quatre questionnaires posent une question sur le suicide — BDI
+`Q_NEU_01` (B7), MADRS `Q_NEU_02` (Q010), SIGH-SAD-SA `Q_NEU_03` (SIGH_Q019),
+IDTAS-AE `Q_NEU_12` (IA9) — et aucune règle ne lit leurs réponses : « J'ai des
+plans précis pour me suicider » ne produit aucun constat. À l'anamnèse, la case
+« Idées noires ou suicidaires » produit bien un constat `adressage` qui bloque
+priorité et protocole, mais le praticien ne le voit qu'en ouvrant le dossier, et
+le patient ne lit que « Ces éléments peuvent nécessiter un avis médical
+prioritaire ». Les numéros d'urgence existent dans la page d'information publiée,
+pas à ces endroits.
+
+**Décision :**
+
+1. **Un encart d'urgence toujours visible** (livré) : en tête de chaque écran des
+   quatre questionnaires et dans la section « Signaux à signaler » de l'anamnèse.
+   Sans aucun calcul : il ne dépend d'aucune réponse, un défaut de règle ne peut
+   pas le faire disparaître, et il n'ajoute aucun triage. Texte validé :
+   « Besoin d'aide maintenant ? Si vous avez des idées suicidaires, appelez le
+   3114, numéro national de prévention du suicide. En cas de danger immédiat,
+   appelez le 15 (SAMU, urgence médicale) ou le 112 (numéro d'urgence européen).
+   Par SMS ou application : le 114. Vos réponses sont transmises à votre
+   praticien, mais il ne les lit pas en temps réel : n'attendez pas sa réponse. »
+   Les libellés des numéros reprennent la gouvernance publiée. Une garde balaie le
+   catalogue et rougit si une question sur le suicide apparaît dans un
+   questionnaire qui n'affiche pas l'encart. **Limite** : les instruments du
+   cabinet (`CAB_`), hors catalogue, ne sont pas couverts par cette garde.
+2. **Un constat de sécurité tiré des questionnaires** (à livrer) : toute réponse
+   autre que la première — celle qui dit explicitement « non » — à l'une des
+   quatre questions produit un constat de rang `adressage`, comme la case de
+   l'anamnèse : il bloque priorité et protocole jusqu'à l'adressage au médecin,
+   et cite la réponse. Aucun seuil chiffré n'est inventé : chaque instrument
+   porte sa propre réponse « non ». La table de quatre lignes sera signée sur une
+   surface de relecture ; la levée par lettre d'adressage ([[D-257]]), qui ne
+   connaît aujourd'hui que les constats d'anamnèse, devra s'étendre à ceux-ci.
+3. **Une carte au Fil du jour** (à livrer) : « Signal de sécurité à évaluer », en
+   tête du Fil, pour tout constat de sécurité ouvert (anamnèse, questionnaires,
+   effet indésirable), tant qu'il n'est pas adressé.
+
 ### D-274 — Mini-synthèse : « Très sévère » (`dark`) et « Léger » (`info`) sont des rubriques perturbées, nommées par ordre de gravité
 
 - Date : 2026-10-08
@@ -50,9 +99,13 @@ rétroactivement, pas un export déjà remis.
 
 **Ce qui ne change pas** : l'orientation, les indications et les règles, qui
 connaissaient déjà `dark` et `info` ; la voie « interprétation globale », qui
-recopie le libellé. **Gardé par un banc** : `miniSynthese.test.ts` balaie tout le catalogue et
-rougit si une autre rubrique que les bandes « Léger » et « Très sévère » du
-DASS-21 porte `info` ou `dark` — le point 2 serait alors à reprendre.
+recopie le libellé. **Gardé par un banc, dans ses limites** : `miniSynthese.test.ts` balaie le
+catalogue par un échantillon déterministe de réponses (44 configurations par
+questionnaire, résultats en erreur ignorés) et rougit s'il rencontre une autre
+rubrique que les bandes « Léger » et « Très sévère » du DASS-21 portant `info`
+ou `dark`. Une bande future assez étroite pour échapper à l'échantillon ne le
+ferait pas rougir : le banc détecte, il ne prouve pas l'absence (précision
+ajoutée le 2026-10-09 sur la revue Codex de la PR #1369).
 **Constat connexe, routé à l'issue #1368** : les badges de sous-score
 (`FichePatientPanel.tsx`, `interpColorToVariant`) rendent `dark` en gris
 neutre — présentation, lot UI distinct.
