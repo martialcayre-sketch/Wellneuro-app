@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Contrat v4 — « Je ne sais pas » et repère « essayé de dormir »"
-statut: "terminé (2026-10-08, #1365) — recette sur appareil après merge, avant annonce"
+statut: "terminé (2026-10-08, #1365) — recette sur appareil faite le 2026-10-10 (Android, simulateur iOS)"
 dépend_de: "LOT-03"
 ---
 

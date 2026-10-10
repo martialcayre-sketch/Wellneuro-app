@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Le cadran remplacé — sélecteurs au quart d'heure, soir / nuit / matin"
-statut: "terminé (2026-10-08, #1363) — recette sur appareil après merge, avant annonce"
+statut: "terminé (2026-10-08, #1363) — recette sur appareil faite le 2026-10-10 (Android, simulateur iOS)"
 dépend_de: "LOT-01"
 ---
 
@@ -52,6 +52,12 @@ liste Android). Arbitrage : **recette après merge**, en production, avec un
 dossier de test, avant d'annoncer le changement aux patients. À vérifier sur
 iPhone et Android : la liste s'ouvre sur « Choisir », et fermer la roue sans
 la tourner ne pose aucune heure.
+
+**Faite le 2026-10-10** par le responsable, sur un dossier de test en
+production (observé, au sens de `D-125`), sur un téléphone Android et, faute
+d'iPhone, dans le simulateur iOS du Mac (le Safari d'iOS et sa roue) : fermer
+la liste sans rien choisir laisse l'heure sur « Choisir ». Liste de recette
+tenue hors dépôt.
 
 ## Choix d'exécution
 
