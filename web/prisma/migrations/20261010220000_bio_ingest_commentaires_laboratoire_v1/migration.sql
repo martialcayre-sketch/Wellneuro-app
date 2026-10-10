@@ -32,7 +32,9 @@
 --      fonction d'insertion est reprise de `bio_ingest_purge_compte_rendu_v1`,
 --      le refus du laboratoire pré-posé s'étend aux deux colonnes. Une fois
 --      l'extraction terminée, l'import est déjà figé tout entier
---      (`bio_ingest_import_avant_modification`, inchangée) ;
+--      (`bio_ingest_import_avant_modification`, reprise de
+--      `bio_ingest_staging_v1` à l'identique, seul son message de refus
+--      nommant désormais les commentaires — revue de la PR #1397) ;
 --   6. une extraction en ÉCHEC n'en porte aucun : ce que lit une réponse jugée
 --      invalide ne survit pas à la purge (revue de la PR #1397).
 --
@@ -95,6 +97,36 @@ BEGIN
     RAISE EXCEPTION 'import refusé : le document de ce compte rendu est purgé.';
   END IF;
   NEW.lance_le := clock_timestamp() AT TIME ZONE 'UTC';
+  RETURN NEW;
+END;
+$$;
+
+-- Reprise de la fonction de `bio_ingest_staging_v1`, jamais redéfinie depuis :
+-- gardes identiques, seul le message nomme ce qui change à la terminaison.
+
+CREATE OR REPLACE FUNCTION public.bio_ingest_import_avant_modification()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF OLD.statut <> 'en_cours' THEN
+    RAISE EXCEPTION 'import figé : une extraction terminée (%) ne change plus.', OLD.statut;
+  END IF;
+  IF NEW.statut NOT IN ('extrait', 'echec') THEN
+    RAISE EXCEPTION 'import refusé : une extraction en cours ne peut que se terminer (statut %).', NEW.statut;
+  END IF;
+  IF (NEW.id, NEW.id_patient, NEW.id_compte_rendu, NEW.modele, NEW.version_prompt, NEW.lance_par, NEW.lance_le)
+     IS DISTINCT FROM
+     (OLD.id, OLD.id_patient, OLD.id_compte_rendu, OLD.modele, OLD.version_prompt, OLD.lance_par, OLD.lance_le) THEN
+    RAISE EXCEPTION 'import refusé : seuls le statut, le motif d''échec, le laboratoire lu, les commentaires lus et la fin changent à la terminaison.';
+  END IF;
+  IF NEW.statut = 'echec' AND EXISTS (
+    SELECT 1 FROM public.lignes_biologiques_candidates l WHERE l.id_import = NEW.id
+  ) THEN
+    RAISE EXCEPTION 'import refusé : une extraction en échec ne laisse aucune ligne candidate.';
+  END IF;
+  NEW.termine_le := clock_timestamp() AT TIME ZONE 'UTC';
   RETURN NEW;
 END;
 $$;
@@ -176,8 +208,8 @@ $$;
 --  1. déployer d'abord le code qui n'écrit ni ne lit plus les quatre colonnes,
 --     avec un `schema.prisma` qui ne les porte plus — sinon toute lecture
 --     Prisma sans `select` échoue dès les colonnes supprimées ;
---  2. la migration compensatrice reprend les deux fonctions de
---     `bio_ingest_transmission_patient_v1` et de
---     `bio_ingest_purge_compte_rendu_v1`, puis supprime les cinq CHECK et les
+--  2. la migration compensatrice reprend les fonctions de
+--     `bio_ingest_transmission_patient_v1`, de
+--     `bio_ingest_purge_compte_rendu_v1` et de `bio_ingest_staging_v1`, puis supprime les cinq CHECK et les
 --     quatre colonnes. Les commentaires recopiés sont alors perdus : ils ne se
 --     restaurent pas, le document étant purgé.

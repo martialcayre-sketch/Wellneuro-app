@@ -397,7 +397,7 @@ BEGIN
     '23514', 'imports_biologiques_laboratoire_lu_check');
   PERFORM pg_temp.refus('terminaison qui réécrit le modèle',
     $q$UPDATE imports_biologiques SET statut = 'extrait', modele = 'autre-modele' WHERE id = 'imp_3'$q$,
-    'P0001', 'seuls le statut, le motif d''échec, le laboratoire lu et la fin changent');
+    'P0001', 'seuls le statut, le motif d''échec, le laboratoire lu, les commentaires lus et la fin changent');
   PERFORM pg_temp.refus('import qui reste en cours en changeant',
     $q$UPDATE imports_biologiques SET version_prompt = 'releve-v2' WHERE id = 'imp_3'$q$,
     'P0001', 'une extraction en cours ne peut que se terminer');

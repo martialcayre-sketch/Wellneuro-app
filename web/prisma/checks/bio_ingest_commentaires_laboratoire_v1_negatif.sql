@@ -171,6 +171,11 @@ BEGIN
     WHEN others THEN
       RAISE EXCEPTION 'COMMENTAIRES: un import au signal « non transcrit » seul a été refusé (%)', SQLERRM;
   END;
+  SELECT count(*) INTO nb FROM imports_biologiques
+  WHERE id = 'imp_s' AND statut = 'extrait' AND commentaires_lus IS NULL AND commentaires_non_transcrits;
+  IF nb <> 1 THEN
+    RAISE EXCEPTION 'COMMENTAIRES: le signal « non transcrit » seul n''a pas été conservé à la terminaison.';
+  END IF;
   PERFORM pg_temp.refus('import terminé dont on retire le signal non transcrit',
     $q$UPDATE imports_biologiques SET commentaires_non_transcrits = false WHERE id = 'imp_s'$q$,
     'P0001', 'import figé');
