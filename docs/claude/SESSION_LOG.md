@@ -9810,7 +9810,7 @@ lot de clôture.
 ## 2026-10-10 — Lettre d'adressage remise au patient : constat du drapeau
 
 **Décidé.** `WN_LETTRE_ADRESSAGE_PATIENT` consigné « constaté par le
-comportement » sur `PAT011`, sur déclaration du responsable.
+comportement » sur un dossier de test, sur déclaration du responsable.
 
 **Écarté.** Inventer comptes ou horodatages non transmis : ils restent à
 relire par conteneur si une preuve datée est requise.
