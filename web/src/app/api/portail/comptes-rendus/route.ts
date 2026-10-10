@@ -113,7 +113,10 @@ export async function POST(req: Request) {
 
     const issue = await deposerTransmission({ idPatient: patient.idPatient, octets, typeMime: verdict.typeMime });
     if (!issue.ok) {
-      const status = issue.reason === 'document_deja_transmis' || issue.reason === 'document_deja_ecarte' ? 409 : 429;
+      const status =
+        issue.reason === 'document_deja_transmis' || issue.reason === 'document_deja_ecarte' || issue.reason === RAISON_DOSSIER_CLOS
+          ? 409
+          : 429;
       return echec(issue.reason, MESSAGES_TRANSMISSION[issue.reason], status);
     }
     return NextResponse.json({ ok: true }, { status: 201 });

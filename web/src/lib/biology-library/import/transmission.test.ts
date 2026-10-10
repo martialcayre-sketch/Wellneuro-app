@@ -28,11 +28,23 @@ import { aPrisConnaissanceUsageIa, deposerTransmission, jugerPlafonds, listerTra
 
 const OCTETS = Buffer.from('%PDF-1.7 fixture');
 
+/** L'état du dossier relu sous le verrou du dépôt ; ouvert par défaut. */
+let dossier: { actif: boolean; suivi_cloture_le: Date | null } | null;
+
+function sqlDe(appel: unknown[]): string {
+  return (appel[0] as TemplateStringsArray).join('?');
+}
+
 beforeEach(() => {
   journal.length = 0;
   prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
   prisma.compteRenduBiologique.count.mockResolvedValue(0);
-  prisma.$queryRaw.mockResolvedValue([{ n: 0 }]);
+  dossier = { actif: true, suivi_cloture_le: null };
+  prisma.$queryRaw.mockImplementation(async (...appel: unknown[]) => {
+    if (!sqlDe(appel).includes('FROM patients')) return [{ n: 0 }];
+    journal.push('dossier');
+    return dossier ? [dossier] : [];
+  });
 });
 
 afterEach(() => vi.clearAllMocks());
@@ -87,7 +99,7 @@ describe('jugerPlafonds (D-269 §5)', () => {
 describe('deposerTransmission', () => {
   it('rejuge les plafonds SOUS le verrou du dossier, puis consigne un dépôt patient sans auteur praticien', async () => {
     expect(await deposerTransmission({ idPatient: 'pat_jennifer', octets: OCTETS, typeMime: 'application/pdf' })).toEqual({ ok: true });
-    expect(journal).toEqual(['verrou', 'create']);
+    expect(journal).toEqual(['verrou', 'dossier', 'create']);
     const data = prisma.compteRenduBiologique.create.mock.calls[0][0].data;
     expect(data).toMatchObject({ idPatient: 'pat_jennifer', typeMime: 'application/pdf', origine: 'patient', deposePar: null });
     expect(data.empreinteSha256).toMatch(/^[0-9a-f]{64}$/);
@@ -99,7 +111,30 @@ describe('deposerTransmission', () => {
     prisma.compteRenduBiologique.count.mockResolvedValueOnce(3);
     expect(await deposerTransmission({ idPatient: 'pat_jennifer', octets: OCTETS, typeMime: 'application/pdf' }))
       .toEqual({ ok: false, reason: 'plafond_en_attente' });
-    expect(journal).toEqual(['verrou']);
+    expect(journal).toEqual(['verrou', 'dossier']);
+  });
+
+  // Contre-revue adverse de campagne, C2 : la route juge le dossier AVANT le
+  // téléversement du corps ; une clôture concurrente ne prend pas le verrou
+  // consultatif. Le dépôt relit donc le dossier sous ce verrou, en partage.
+  it('le dossier relu SOUS le verrou, verrouillé en partage jusqu’au commit', async () => {
+    await deposerTransmission({ idPatient: 'pat_jennifer', octets: OCTETS, typeMime: 'application/pdf' });
+    const lecture = prisma.$queryRaw.mock.calls.find(appel => sqlDe(appel).includes('FROM patients'));
+    expect(lecture).toBeDefined();
+    expect(sqlDe(lecture!)).toMatch(/SELECT actif, suivi_cloture_le FROM patients WHERE id_patient = \? FOR SHARE/);
+    expect(lecture!.slice(1)).toEqual(['pat_jennifer']);
+  });
+
+  it.each([
+    ['clos pendant l’envoi', { actif: true, suivi_cloture_le: new Date('2026-10-10T12:00:00Z') }],
+    ['désactivé pendant l’envoi', { actif: false, suivi_cloture_le: null }],
+    ['introuvable', null],
+  ])('un dossier %s : refus `dossier_cloture`, rien n’est écrit', async (_cas, etat) => {
+    dossier = etat;
+    expect(await deposerTransmission({ idPatient: 'pat_jennifer', octets: OCTETS, typeMime: 'application/pdf' }))
+      .toEqual({ ok: false, reason: 'dossier_cloture' });
+    expect(journal).toEqual(['verrou', 'dossier']);
+    expect(prisma.compteRenduBiologique.create).not.toHaveBeenCalled();
   });
 
   it('un document déjà dans le dossier (unicité patient, empreinte) : refus, sans identifiant rendu', async () => {

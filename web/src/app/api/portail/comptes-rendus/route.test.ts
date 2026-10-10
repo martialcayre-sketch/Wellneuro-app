@@ -67,7 +67,12 @@ beforeEach(() => {
   prisma.compteRenduBiologique.count.mockResolvedValue(0);
   prisma.compteRenduBiologique.findMany.mockResolvedValue([]);
   prisma.compteRenduBiologique.create.mockResolvedValue({ id: 'cr_neuf' });
-  prisma.$queryRaw.mockResolvedValue([{ n: 0 }]);
+  // La relecture du dossier sous le verrou du dépôt rend l'état de la fixture.
+  prisma.$queryRaw.mockImplementation(async (sql: TemplateStringsArray) =>
+    sql.join('?').includes('FROM patients')
+      ? [{ actif: patient.actif, suivi_cloture_le: patient.suiviClotureLe }]
+      : [{ n: 0 }],
+  );
   prisma.$executeRaw.mockResolvedValue(1);
   prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
 });
@@ -172,6 +177,21 @@ describe('POST /api/portail/comptes-rendus — le dépôt', () => {
     expect(await res.json()).toEqual({ ok: true });
     const data = prisma.compteRenduBiologique.create.mock.calls[0][0].data;
     expect(data).toMatchObject({ idPatient: 'PAT_JENNIFER', origine: 'patient', deposePar: null, typeMime: 'application/pdf' });
+  });
+
+  it('dossier clos PENDANT l’envoi (après le contrôle de la route) : 409, même raison et même message, rien n’est écrit', async () => {
+    prisma.$queryRaw.mockImplementation(async (sql: TemplateStringsArray) =>
+      sql.join('?').includes('FROM patients')
+        ? [{ actif: true, suivi_cloture_le: new Date('2026-10-10T12:00:00Z') }]
+        : [{ n: 0 }],
+    );
+    const { req } = await requete();
+    const res = await POST(req);
+    expect(res.status).toBe(409);
+    const corps = await res.json();
+    expect(corps.reason).toBe('dossier_cloture');
+    expect(corps.error).toBe('Votre suivi est clôturé : vous ne pouvez plus déposer de document.');
+    expect(prisma.compteRenduBiologique.create).not.toHaveBeenCalled();
   });
 
   it('un document déjà présent : 409, sans identifiant rendu', async () => {

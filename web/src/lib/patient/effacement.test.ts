@@ -21,6 +21,10 @@ const { prisma, appels } = vi.hoisted(() => {
       }),
     },
     dossierEfface: { create: vi.fn(async () => ({})) },
+    $queryRaw: vi.fn(async (sql: TemplateStringsArray) => {
+      appels.push(`sql:${sql.join('?')}`);
+      return [{ '?column?': 1 }];
+    }),
   };
   for (const nom of [
     'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'ficheAssietteRemise', 'lettreAdressageRemise', 'protocolDiffusionApproval',
@@ -203,6 +207,15 @@ describe('effacerDossier', () => {
     const rang = (nom: string) => appels.indexOf(nom);
     expect(rang('lectureImportBiologique')).toBeGreaterThanOrEqual(0);
     expect(rang('lectureImportBiologique')).toBeLessThan(rang('importBiologique'));
+  });
+
+  // Revue Copilot de la PR #1385 : un écrivain qui verrouille le dossier en
+  // partage avant d'écrire un enfant croiserait l'ordre « enfants puis
+  // patient » de l'effacement. La ligne du dossier est donc prise en premier.
+  it('verrouille la ligne du dossier AVANT toute suppression', async () => {
+    await effacerDossier('PAT_SEED_03');
+    expect(appels[0]).toBe('sql:SELECT 1 FROM patients WHERE id_patient = ? FOR UPDATE');
+    expect(prisma.$queryRaw).toHaveBeenCalledWith(expect.anything(), 'PAT_SEED_03');
   });
 
   it('tout passe par une seule transaction', async () => {

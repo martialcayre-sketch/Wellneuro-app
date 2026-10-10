@@ -1,5 +1,6 @@
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
+import { accepteNouvelEnvoi, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 import { empreinteSha256, type TypeMimeCompteRendu } from './depot';
 import {
@@ -73,12 +74,22 @@ export async function jugerPlafonds(idPatient: string, client: Client = prisma):
 
 export type IssueTransmission =
   | { ok: true }
-  | { ok: false; reason: 'plafond_en_attente' | 'plafond_24h' | 'document_deja_transmis' | 'document_deja_ecarte' };
+  | {
+      ok: false;
+      reason: 'plafond_en_attente' | 'plafond_24h' | 'document_deja_transmis' | 'document_deja_ecarte' | typeof RAISON_DOSSIER_CLOS;
+    };
 
 /**
  * Consigne le document transmis. Les plafonds sont JUGÉS DE NOUVEAU sous le
  * verrou du dossier : la route les a lus avant le corps, mais deux envois
  * simultanés passeraient tous deux ce premier contrôle.
+ *
+ * Le DOSSIER OUVERT aussi, et verrouillé en partage jusqu'au COMMIT : la route
+ * l'a jugé avant le téléversement du corps, et la clôture du suivi ne prend pas
+ * le verrou consultatif. Une clôture concurrente attend la fin du dépôt au lieu
+ * de laisser entrer un document dans un dossier qu'elle vient de clore
+ * (contre-revue adverse de campagne, C2 ; patron `lireDossierVerrouille` de la
+ * diffusion des fiches).
  *
  * Un document déjà présent dans le dossier — déposé par le patient OU par le
  * praticien, l'unicité (patient, empreinte) ne distingue pas — est refusé sans
@@ -98,6 +109,11 @@ export async function deposerTransmission(params: {
   try {
     return await prisma.$transaction(async tx => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouTransmission(idPatient)}))`;
+      const [dossier] = await tx.$queryRaw<{ actif: boolean; suivi_cloture_le: Date | null }[]>`
+        SELECT actif, suivi_cloture_le FROM patients WHERE id_patient = ${idPatient} FOR SHARE`;
+      if (!dossier || !accepteNouvelEnvoi({ actif: dossier.actif, suiviClotureLe: dossier.suivi_cloture_le })) {
+        return { ok: false as const, reason: RAISON_DOSSIER_CLOS };
+      }
       const plafonds = await jugerPlafonds(idPatient, tx);
       if (!plafonds.ok) return plafonds;
       await tx.compteRenduBiologique.create({
