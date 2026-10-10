@@ -63,8 +63,7 @@ import {
 // pointillé semblaient renseignées sans l'être (LOT-03 de la campagne
 // 2026-10-07-agenda-sommeil-adhesion).
 //
-// Réponses obligatoires : le repère du soir (l'heure où le patient a essayé de
-// dormir en v4, l'extinction en v3), le mode de coucher, l'endormissement,
+// Réponses obligatoires : l'heure du coucher, le mode de coucher, l'endormissement,
 // la nuit (continue ou coupée), l'aide au sommeil, le lever, le mode de lever et
 // la qualité — huit. Deux heures supplémentaires ne sont demandées que si le
 // patient déclare du temps au lit éveillé, le soir ou le matin. Le reste est
@@ -263,9 +262,9 @@ type Etape = 0 | 1 | 2;
 // Les blocs vers lesquels un envoi incomplet ramène le patient, avec l'écran
 // qui les porte.
 type Bloc =
-  | 'extinction'
-  | 'coucher'
   | 'miseAuLit'
+  | 'coucher'
+  | 'extinction'
   | 'latence'
   | 'nuit'
   | 'aide'
@@ -274,9 +273,9 @@ type Bloc =
   | 'reveilFinal'
   | 'qualite';
 const ETAPE_DU_BLOC: Record<Bloc, Etape> = {
-  extinction: 0,
-  coucher: 0,
   miseAuLit: 0,
+  coucher: 0,
+  extinction: 0,
   latence: 0,
   nuit: 1,
   aide: 1,
@@ -288,10 +287,10 @@ const ETAPE_DU_BLOC: Record<Bloc, Etape> = {
 
 // Les trois refus d'ORDRE de `ensureNuitReponses` (lib/agenda-sommeil/nuit.ts,
 // mode écriture), figés par un banc dans nuit.test.ts. Le premier porte sur
-// le repère du soir et la mise au lit, et se corrige le soir ; les deux autres
+// le repère du soir et le coucher, et se corrige le soir ; les deux autres
 // portent sur l'heure du réveil, le matin.
 const RE_REFUS_ORDRE = /doit (suivre|se situer)/;
-const RE_REFUS_ORDRE_DU_SOIR = /doit suivre la mise au lit/;
+const RE_REFUS_ORDRE_DU_SOIR = /doit suivre l’heure du coucher/;
 
 // « a », « a et b », « a, b et c ».
 function enumerer(elements: string[]): string {
@@ -309,7 +308,7 @@ type Props = {
   initial: NuitReponses | null;
   // Horaires habituels du patient (médianes des nuits précédentes), proposés
   // par « Comme d'habitude » — jamais posés sans ce geste.
-  horairesHabituels: { extinction: string; sortie: string };
+  horairesHabituels: { coucher: string; sortie: string };
   // Vrai seulement si ces horaires viennent des nuits DU PATIENT. Sur les
   // horaires par défaut (aucune nuit encore), « comme d'habitude »
   // ferait valider en un geste une heure que personne n'a donnée.
@@ -339,7 +338,25 @@ export function SaisieNuitForm({
   const optionsReveils: readonly (ClasseDureeReveils | Inconnu)[] = inconnuPropose
     ? [...CLASSES_DUREE_REVEILS, INCONNU]
     : CLASSES_DUREE_REVEILS;
-  const [heureCoucher, setHeureCoucher] = useState<string | undefined>(initial?.heureCoucher);
+  // Le soir dans l'ordre vécu (LOT-09) : l'heure du coucher d'abord, puis le
+  // moment du repère — extinction, ou essai de dormir en v4 — par rapport à
+  // lui, et l'heure du repère seulement s'il est venu « plus tard ». Les champs
+  // du contrat ne changent pas : « au même moment », l'heure du coucher EST le
+  // repère (`heureCoucher`) ; « plus tard », elle devient `heureMiseAuLit` et
+  // le repère se demande à part. Une correction relit la nuit dans ce sens. Une
+  // ligne d'avant la mise au lit (v1, sans `extinctionImmediate`) ne dit pas
+  // l'heure du coucher : son `heureCoucher` est une extinction, on ne la
+  // préremplit pas comme coucher.
+  const [heureAuLit, setHeureAuLit] = useState<string | undefined>(
+    initial?.extinctionImmediate === false
+      ? initial.heureMiseAuLit
+      : initial?.extinctionImmediate === true
+        ? initial.heureCoucher
+        : undefined,
+  );
+  const [heureRepere, setHeureRepere] = useState<string | undefined>(
+    initial?.extinctionImmediate === false ? initial.heureCoucher : undefined,
+  );
   const [heureLever, setHeureLever] = useState<string | undefined>(initial?.heureLever);
   const [latence, setLatence] = useState<ClasseLatence | Inconnu | undefined>(initial?.latence);
   const [qualite, setQualite] = useState<number | undefined>(initial?.qualite);
@@ -360,7 +377,6 @@ export function SaisieNuitForm({
   const [extinctionImmediate, setExtinctionImmediate] = useState<boolean | undefined>(
     initial?.extinctionImmediate,
   );
-  const [heureMiseAuLit, setHeureMiseAuLit] = useState<string | undefined>(initial?.heureMiseAuLit);
   const [leverImmediat, setLeverImmediat] = useState<boolean | undefined>(initial?.leverImmediat);
   const [heureReveilFinal, setHeureReveilFinal] = useState<string | undefined>(
     initial?.heureReveilFinal,
@@ -402,12 +418,12 @@ export function SaisieNuitForm({
   // sont requises que si leur question l'appelle : sinon elles n'existent pas,
   // elles ne valent pas zéro.
   const manquants: { bloc: Bloc; libelle: string }[] = [];
-  if (heureCoucher === undefined) {
-    manquants.push({ bloc: 'extinction', libelle: mots.manquant });
-  }
-  if (extinctionImmediate === undefined) manquants.push({ bloc: 'coucher', libelle: 'le coucher' });
-  if (extinctionImmediate === false && heureMiseAuLit === undefined) {
+  if (heureAuLit === undefined) {
     manquants.push({ bloc: 'miseAuLit', libelle: 'l’heure du coucher 🛏️' });
+  }
+  if (extinctionImmediate === undefined) manquants.push({ bloc: 'coucher', libelle: mots.moment });
+  if (extinctionImmediate === false && heureRepere === undefined) {
+    manquants.push({ bloc: 'extinction', libelle: mots.manquant });
   }
   if (latence === undefined) manquants.push({ bloc: 'latence', libelle: 'l’endormissement' });
   if (dureeReveils === undefined) manquants.push({ bloc: 'nuit', libelle: 'la nuit' });
@@ -480,7 +496,7 @@ export function SaisieNuitForm({
   function majCoucher(immediate: boolean) {
     setErreurOrdre('');
     setExtinctionImmediate(immediate);
-    if (immediate) setHeureMiseAuLit(undefined);
+    if (immediate) setHeureRepere(undefined);
   }
 
   function majLever(immediat: boolean) {
@@ -508,7 +524,7 @@ export function SaisieNuitForm({
       return;
     }
     const reponses: NuitReponses = {
-      heureCoucher: heureCoucher!,
+      heureCoucher: extinctionImmediate ? heureAuLit! : heureRepere!,
       heureLever: heureLever!,
       latence: latence!,
       qualite: qualite!,
@@ -520,7 +536,7 @@ export function SaisieNuitForm({
       extinctionImmediate: extinctionImmediate!,
       leverImmediat: leverImmediat!,
     };
-    if (extinctionImmediate === false) reponses.heureMiseAuLit = heureMiseAuLit!;
+    if (extinctionImmediate === false) reponses.heureMiseAuLit = heureAuLit!;
     if (leverImmediat === false) reponses.heureReveilFinal = heureReveilFinal!;
     if (forme !== undefined) reponses.forme = forme;
     if (sieste !== undefined) reponses.siesteVeille = sieste;
@@ -575,20 +591,20 @@ export function SaisieNuitForm({
               heure ne se confirme que là où le patient la voit (arbitrage du
               responsable du 2026-10-08). Le garde-fou de la v2 tient : un geste
               explicite, l'heure écrite sur le bouton, rien d'autre repris. */}
-          {suggestionsPersonnelles && heureCoucher === undefined && (
+          {suggestionsPersonnelles && heureAuLit === undefined && (
             <ConfirmerHabituel
-              heure={horairesHabituels.extinction}
-              onConfirmer={() => majHeure(setHeureCoucher)(horairesHabituels.extinction)}
+              heure={horairesHabituels.coucher}
+              onConfirmer={() => majHeure(setHeureAuLit)(horairesHabituels.coucher)}
             />
           )}
 
-          <div ref={ancre('extinction')} tabIndex={-1} className={classeBloc('extinction')}>
+          <div ref={ancre('miseAuLit')} tabIndex={-1} className={classeBloc('miseAuLit')}>
             <SelecteurHeure
-              id="agenda-heure-extinction"
-              label={`🌑 ${mots.repere} à`}
-              valeur={heureCoucher}
+              id="agenda-heure-mise-au-lit"
+              label={`🛏️ ${LABEL_MISE_AU_LIT} à`}
+              valeur={heureAuLit}
               heureDebut={18}
-              onChange={majHeure(setHeureCoucher)}
+              onChange={majHeure(setHeureAuLit)}
             />
           </div>
 
@@ -616,13 +632,13 @@ export function SaisieNuitForm({
           </div>
 
           {extinctionImmediate === false && (
-            <div ref={ancre('miseAuLit')} tabIndex={-1} className={classeBloc('miseAuLit')}>
+            <div ref={ancre('extinction')} tabIndex={-1} className={classeBloc('extinction')}>
               <SelecteurHeure
-                id="agenda-heure-mise-au-lit"
-                label={`🛏️ ${LABEL_MISE_AU_LIT} à`}
-                valeur={heureMiseAuLit}
+                id="agenda-heure-extinction"
+                label={`🌑 ${mots.repere} à`}
+                valeur={heureRepere}
                 heureDebut={18}
-                onChange={majHeure(setHeureMiseAuLit)}
+                onChange={majHeure(setHeureRepere)}
               />
             </div>
           )}

@@ -279,7 +279,7 @@ describe('AgendaSommeilJournal — le formulaire suit le contrat de l’agenda (
     fetchMock.mockImplementation(() => reponse({ ...sansNuitDuJour, contrat: 'agenda-sommeil-v3' }));
     render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
     await waitFor(() => expect(screen.getByText('Votre nuit passée')).toBeTruthy());
-    expect(screen.getByLabelText(/éteint la lumière à/)).toBeTruthy();
+    expect(screen.getByText('Une fois couché·e, vous avez éteint la lumière…')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Je ne sais pas' })).toBeNull();
   });
 
@@ -287,7 +287,7 @@ describe('AgendaSommeilJournal — le formulaire suit le contrat de l’agenda (
     fetchMock.mockImplementation(() => reponse({ ...sansNuitDuJour, contrat: 'agenda-sommeil-v4' }));
     render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
     await waitFor(() => expect(screen.getByText('Votre nuit passée')).toBeTruthy());
-    expect(screen.getByLabelText(/essayé de dormir à/)).toBeTruthy();
+    expect(screen.getByText('Une fois couché·e, vous avez essayé de dormir…')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Je ne sais pas' })).toBeTruthy();
   });
 });

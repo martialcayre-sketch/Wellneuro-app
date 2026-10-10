@@ -242,7 +242,7 @@ export function ensureNuitReponses(
     throw new TypeError('Heure de mise au lit incompatible avec une extinction immédiate.');
   }
   if (out.extinctionImmediate === false && out.heureMiseAuLit === undefined) {
-    throw new TypeError('Indiquez l’heure à laquelle vous vous êtes mis·e au lit.');
+    throw new TypeError('Indiquez l’heure à laquelle vous vous êtes couché·e.');
   }
   if (out.leverImmediat === true && out.heureReveilFinal !== undefined) {
     throw new TypeError('Réveil final incompatible avec un lever immédiat.');
@@ -267,7 +267,7 @@ export function ensureNuitReponses(
     const depuisOrigine = (h: string) => dureeMinutes(origine, h);
     const versLever = depuisOrigine(out.heureLever);
     if (out.heureMiseAuLit !== undefined && depuisOrigine(out.heureCoucher) > versLever) {
-      throw new TypeError(`${majuscule(mots.article)} doit suivre la mise au lit.`);
+      throw new TypeError(`${majuscule(mots.article)} doit suivre l’heure du coucher.`);
     }
     if (out.heureReveilFinal !== undefined && depuisOrigine(out.heureReveilFinal) > versLever) {
       throw new TypeError('Le réveil doit se situer avant la sortie du lit.');

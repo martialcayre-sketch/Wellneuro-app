@@ -267,17 +267,21 @@ function derivee(nuit: NuitAgregable): NuitDerivee {
   };
 }
 
-// Horaires habituels du patient — proposés au formulaire par « Confirmer ces
-// horaires ». C'est une SUGGESTION, jamais une valeur enregistrée : elle ne
+// Horaires habituels du patient — proposés au formulaire par « Comme
+// d'habitude ». C'est une SUGGESTION, jamais une valeur enregistrée : elle ne
 // compte qu'au geste du patient (cf. `SaisieNuitForm`).
+//
+// `coucher` est l'heure où le patient se couche, première heure de l'écran du
+// soir depuis le LOT-09 : la mise au lit quand il a éteint (ou essayé de
+// dormir) plus tard, sinon le repère du soir, qui tombe alors au même instant.
 //
 // Médiane et non moyenne : une nuit blanche ne doit pas déplacer le repère de
 // tout le monde. Calcul ancré à midi (`minutesDepuisMidi`), sans quoi 23:45 et
 // 00:15 se médianiseraient vers midi au lieu de minuit.
 export function horairesHabituels(
   nuits: NuitAgregable[],
-  defauts: { extinction: string; sortie: string } = { extinction: '23:00', sortie: '07:00' },
-): { extinction: string; sortie: string } {
+  defauts: { coucher: string; sortie: string } = { coucher: '23:00', sortie: '07:00' },
+): { coucher: string; sortie: string } {
   const plausibles = nuits.filter(estPlausible);
   if (plausibles.length === 0) return defauts;
   const versHeure = (depuisMidi: number): string => {
@@ -286,8 +290,12 @@ export function horairesHabituels(
     return `${p(Math.floor(m / 60))}:${p(m % 60)}`;
   };
   return {
-    extinction: versHeure(
-      mediane(plausibles.map((n) => minutesDepuisMidi(n.reponses.heureCoucher))),
+    coucher: versHeure(
+      mediane(
+        plausibles.map((n) =>
+          minutesDepuisMidi(n.reponses.heureMiseAuLit ?? n.reponses.heureCoucher),
+        ),
+      ),
     ),
     sortie: versHeure(mediane(plausibles.map((n) => minutesDepuisMidi(n.reponses.heureLever)))),
   };

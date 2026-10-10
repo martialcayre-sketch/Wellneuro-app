@@ -369,10 +369,11 @@ describe('refus d’ordre des repères — tournure reconnue par le formulaire',
     expect(refus(v)).toMatch(/doit (suivre|se situer)/);
   });
 
-  // Le formulaire renvoie à l'écran du SOIR le refus qui dit « doit suivre la
-  // mise au lit » — sous les deux contrats, dont les mots du repère diffèrent.
+  // Le formulaire renvoie à l'écran du SOIR le refus qui dit « doit suivre
+  // l'heure du coucher » — sous les deux contrats, dont les mots du repère
+  // diffèrent.
   it.each([['agenda-sommeil-v3'], ['agenda-sommeil-v4']] as const)(
-    'le refus du soir garde « doit suivre la mise au lit » (%s)',
+    'le refus du soir garde « doit suivre l’heure du coucher » (%s)',
     (contrat) => {
       let message = '';
       try {
@@ -383,7 +384,7 @@ describe('refus d’ordre des repères — tournure reconnue par le formulaire',
       } catch (e) {
         message = (e as Error).message;
       }
-      expect(message).toMatch(/doit suivre la mise au lit/);
+      expect(message).toMatch(/doit suivre l’heure du coucher/);
     },
   );
 });

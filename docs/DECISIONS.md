@@ -428,6 +428,14 @@ demandé : « Essai de dormir » ou « Extinction » dans le chronogramme, « Au
 avant d'essayer de dormir » ou « avant extinction » dans les tuiles.
 Fragment : `changelog.d/2026-10-08-agenda-sommeil-contrat-v4.md`.
 
+*Précision du 2026-10-10 (LOT-09, arbitrage du responsable sur question
+fermée, après une recette sur téléphone)* : l'écran du soir suit l'ordre
+vécu — l'heure du coucher d'abord, puis la question de coucher, qui se lit
+désormais « Une fois couché·e, vous avez essayé de dormir… au même moment /
+plus tard », puis l'heure du repère seulement s'il est venu plus tard. Mêmes
+champs, même sens, même contrat `agenda-sommeil-v4` ; aucun seuil ni barème
+touché. Fragment : `changelog.d/2026-10-10-agenda-sommeil-soir-ordre-vecu.md`.
+
 ### D-271 — Agenda du sommeil : « Je ne sais pas » est une réponse pour l'endormissement et la durée des réveils, et pour eux seuls
 
 - Date : 2026-10-08

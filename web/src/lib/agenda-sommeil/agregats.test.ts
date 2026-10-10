@@ -4,6 +4,7 @@ import {
   compterNuitsPlausibles,
   couvertureSuffisante,
   dureeMinutes,
+  horairesHabituels,
   minutesDepuisMidi,
   type NuitAgregable,
 } from './agregats';
@@ -210,6 +211,32 @@ describe('éveil du matin au lit (TWAK)', () => {
     expect(a.AGD_NB_NUITS_TWAK).toBe(6);
     expect(a.AGD_NB_NUITS_TST).toBe(6);
     expect(a.AGD_NB_NUITS).toBe(7); // toujours comptée ailleurs
+  });
+});
+
+// « Comme d'habitude » propose l'heure du COUCHER, première heure de l'écran du
+// soir depuis le LOT-09 : la mise au lit quand le repère est venu plus tard,
+// sinon le repère lui-même, tombé au même instant.
+describe('horairesHabituels — l’heure habituelle du coucher', () => {
+  it('« plus tard » : la mise au lit, pas le repère', () => {
+    const h = horairesHabituels(serie(3, { extinctionImmediate: false, heureMiseAuLit: '22:30' }));
+    expect(h).toEqual({ coucher: '22:30', sortie: '07:00' });
+  });
+
+  it('« au même moment » : le repère, qui est l’heure du coucher', () => {
+    expect(horairesHabituels(serie(3, { heureCoucher: '23:15' }))).toEqual({ coucher: '23:15', sortie: '07:00' });
+  });
+
+  it('les deux mêlés : la médiane des heures de coucher', () => {
+    const nuits = [
+      ...serie(2, { extinctionImmediate: false, heureMiseAuLit: '22:00', heureCoucher: '23:30' }),
+      ...serie(1, { heureCoucher: '22:45' }, decale(LUNDI, 2)),
+    ];
+    expect(horairesHabituels(nuits).coucher).toBe('22:00');
+  });
+
+  it('sans nuit plausible : les défauts', () => {
+    expect(horairesHabituels([])).toEqual({ coucher: '23:00', sortie: '07:00' });
   });
 });
 

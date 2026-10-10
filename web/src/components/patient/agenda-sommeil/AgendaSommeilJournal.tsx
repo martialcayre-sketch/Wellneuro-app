@@ -78,7 +78,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
   // Les horaires sont-ils ceux du patient, ou les défauts faute de nuit
   // plausible ? Un défaut vide le dit sans toucher à `horairesHabituels`.
   const habituelsPersonnels = useMemo(
-    () => horairesHabituels(data?.nuits ?? [], { extinction: '', sortie: '' }).extinction !== '',
+    () => horairesHabituels(data?.nuits ?? [], { coucher: '', sortie: '' }).coucher !== '',
     [data],
   );
 
