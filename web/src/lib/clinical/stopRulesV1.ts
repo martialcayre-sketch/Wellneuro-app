@@ -129,9 +129,14 @@ export const STOP_RULES_V1: StopRule[] = [
     // des trois manque n'éteint rien — un déclencheur non atteint sur un
     // instrument absent, jamais une absence lue comme une normalité (`DC-24`).
     //
-    // L'AXE `D` DU DASS N'ENTRE PAS. C'est l'axe humeur ; l'exiger reviendrait à
-    // faire dépendre l'extinction du stress d'un axe que cette règle n'éteint
-    // pas, et rapprocherait la règle du HAD auquel `D-053` renonce.
+    // L'AXE `D` DU DASS ENTRE DEPUIS [[D-278]] §2 (lot de sécurité 11A). Il
+    // avait été écarté à l'écriture — l'axe humeur, qu'une règle du stress
+    // n'éteint pas. L'effet était un motif rassurant servi devant une
+    // dépression « Très sévère » : « les explorations de l'axe stress n'ont
+    // pas d'objet ». Exiger `D` en « Normal », comme `A` et `S`, rend
+    // l'extinction plus RARE, jamais plus fréquente — le même fail-closed que
+    // ci-dessus. Aucun seuil neuf : la bande est celle que publie
+    // `questions.ts`. La règle n'éteint toujours que l'axe stress.
     //
     // UNE IMPRÉCISION DE LA SOURCE, DITE PLUTÔT QUE LISSÉE. Le catalogue note
     // sur `Q_STR_01` que « les seuils 4 et 15 ne sont pas explicitement couverts
@@ -150,6 +155,7 @@ export const STOP_RULES_V1: StopRule[] = [
       { type: 'zone', idQuestionnaire: 'Q_STR_01', zone: { type: 'interpretation', labels: ['Oriente vers les conseils de vie antistress'] } },
       { type: 'zone', idQuestionnaire: 'Q_STR_04', sousScore: 'S', zone: { type: 'interpretation', labels: ['Normal'] } },
       { type: 'zone', idQuestionnaire: 'Q_STR_04', sousScore: 'A', zone: { type: 'interpretation', labels: ['Normal'] } },
+      { type: 'zone', idQuestionnaire: 'Q_STR_04', sousScore: 'D', zone: { type: 'interpretation', labels: ['Normal'] } },
       { type: 'zone', idQuestionnaire: 'Q_STR_03', zone: { type: 'interpretation', labels: ['Niveau de stress très bas'] } },
     ],
     // TROIS RÈGLES, ET LE CRITÈRE N'EST PAS L'AXE — c'est ce qui les déclenche.
@@ -176,7 +182,7 @@ export const STOP_RULES_V1: StopRule[] = [
     // pas éteinte non plus.
     reglesEteintes: ['R2-STR-01', 'R2-STR-02', 'R2-STR-03'],
     motif:
-      'Le questionnaire SIIN situe le stress dans la bande qui relève des conseils de vie antistress, et le DASS-21 (anxiété, stress) comme le Cungi sont dans leur bande la plus favorable. Les explorations complémentaires de l’axe stress n’ont pas d’objet en l’état.',
+      'Le questionnaire SIIN situe le stress dans la bande qui relève des conseils de vie antistress, et le DASS-21 (dépression, anxiété, stress) comme le Cungi sont dans leur bande la plus favorable. Les explorations complémentaires de l’axe stress n’ont pas d’objet en l’état.',
     justificationClaims: [
       { claimId: 'WN-CL-0051-019', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0051-030', versionClaim: 'v1.0' },
@@ -259,13 +265,16 @@ export const STOP_RULES_METADATA: StopRulesMetadata = {
   // « une contradiction ouverte interdit l'extinction » ([[D-053]] §5) ne mord
   // que si les contradictions sont actives. Voir l'avertissement en tête de
   // fichier, point 2.
+  //
+  // RE-SIGNÉE le 2026-10-10 ([[D-278]] §2) : STOP-STR exige aussi l'axe `D`
+  // du DASS-21 en « Normal », et son motif nomme les trois sous-échelles.
   validationExterne: true,
-  dateValidation: '2026-08-15T00:00:00.000Z',
+  dateValidation: '2026-10-10T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]) : la chaîne hex que `STOP_RULES_SHA256`
   // valait à la relecture, recopiée telle quelle — jamais la constante
-  // (déclarée après cet objet ; comparaison tautologique sinon). Le contenu
-  // n'a pas bougé depuis la signature du 2026-08-15 : la date reste.
-  shaPerimetre: 'f9ccf688d6beae301df3cbea3279e863a09870cc6020656302ede86496d8fa01',
+  // (déclarée après cet objet ; comparaison tautologique sinon). Reposé à la
+  // re-signature du 2026-10-10 ([[D-278]] §2).
+  shaPerimetre: '1db9a002eeac4efe784f7884db96a13d8aada2b143757a8ec19d5eb1dac6501a',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat — dans les deux sens.

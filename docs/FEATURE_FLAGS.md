@@ -276,7 +276,8 @@ clinique**. Ne pas forcer la métadonnée de validation pour « voir » la featu
 **Les règles d'arrêt n'ont PAS de drapeau à elles** ([[D-053]], LOT-03 du
 2026-08-12) — mais depuis [[D-065]], **elles héritent de celui des
 contradictions**. `stopRulesV1.ts` est **signée depuis le 2026-08-15**
-([[D-061]]), et le verrou `tableArretExploitable()` d'`orientationService.ts`
+([[D-061]]), **re-signée le 2026-10-10** ([[D-278]] §2 : l'axe D du DASS-21
+entre dans STOP-STR), et le verrou `tableArretExploitable()` d'`orientationService.ts`
 exige la signature ET `contradictionsActives()` avant de livrer les deux
 effets de la table — l'extinction des recommandations et l'exclusion des
 instruments déjà renseignés de façon exploitable. L'histoire qui a imposé ce
@@ -325,7 +326,7 @@ CI ; une table signée neuve absente du tableau aussi.
 |---|---|---|
 | `clinical/orientationRulesV1.ts` | `true` | `2026-09-14T00:00:00.000Z` |
 | `clinical/contradictionsV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
-| `clinical/stopRulesV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
+| `clinical/stopRulesV1.ts` | `true` | `2026-10-10T00:00:00.000Z` |
 | `biology-library/indicationsBiologieV1.ts` | `true` | `2026-09-16T00:00:00.000Z` |
 | `clinical/corpusSyntheseV1.ts` | `true` | `2026-08-22T00:00:00.000Z` |
 | `clinical/priorityRulesV1.ts` | `true` | `2026-08-28T00:00:00.000Z` |
