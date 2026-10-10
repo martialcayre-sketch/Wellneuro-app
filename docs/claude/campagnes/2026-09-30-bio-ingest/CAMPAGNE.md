@@ -1,10 +1,10 @@
 ---
 id: "2026-09-30-bio-ingest"
 titre: "BIO-INGEST — acquisition des résultats biologiques"
-statut: "en_cours (ouverte le 2026-09-30 — LOT-00, LOT-01, LOT-02, LOT-03, LOT-06, LOT-07, LOT-04, LOT-08, LOT-09 et LOT-10 terminés ; LOT-05 courant, en attente du laboratoire)"
+statut: "en_cours (ouverte le 2026-09-30 — LOT-00, LOT-01, LOT-02, LOT-03, LOT-06, LOT-07, LOT-04, LOT-08, LOT-09 et LOT-10 terminés ; LOT-05 transféré le 2026-10-10 ; LOT-11 courant)"
 créée_le: "2026-09-30"
 mise_à_jour: "2026-10-10"
-lot_courant: "LOT-05"
+lot_courant: "LOT-11"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -77,17 +77,19 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 | LOT-02 | Staging d'import, extraction PDF par IA vision, écran de validation | terminé (2026-10-03) | **oui, confirmation obligatoire** | LOT-01, amendement RGPD/TRUST |
 | LOT-03 | Photo ou scan : même pipeline, seul l'extracteur change | terminé (2026-10-04, #1310, #1312) ; « Relancer la lecture » non livré, déplacé au LOT-09 | non | LOT-02 |
 | LOT-04 | Transmission depuis le portail patient | terminé (2026-10-07, #1350, #1352, #1355, #1357 ; `D-269`) ; 0 transmission au 2026-10-10 | **oui, confirmation obligatoire** | LOT-02, consentement RGPD à jour, LOT-07, BP-10 (BIO-PARCOURS, `D-266` §15) |
-| LOT-05 | Adaptateur laboratoire (pilote Barbier Metz) | à_faire | selon le format reçu | LOT-02, format réel reçu |
+| LOT-05 | Adaptateur laboratoire (pilote Barbier Metz) | transféré le 2026-10-10 vers une campagne propre (FILE_ATTENTE) | selon le format reçu | LOT-02, format réel reçu |
 | LOT-06 | Catalogue étendu aux analyses d'un compte rendu courant | terminé (2026-10-04, D-261, D-263, D-264) | **oui, confirmation obligatoire** | LOT-02 |
 | LOT-07 | Faits du laboratoire : intervalle et marquage imprimés, transcrits avant la purge (ajouté par `D-266` §15) ; avancé avant LOT-04 | terminé (2026-10-06, #1326, #1328, #1332, #1333, #1334 ; D-267) | **oui, confirmation obligatoire** | LOT-02, BP-00 et BP-01 (BIO-PARCOURS) |
 | LOT-08 | Durcissement : borne totale de l'appel d'extraction (flux compris) et délai explicite de la transaction des lignes | terminé (2026-10-05) | non | LOT-02 |
 | LOT-09 | « Relancer la lecture » d'un compte rendu sans ligne validée, jamais destructive | terminé (2026-10-06) | non | LOT-02, LOT-07 |
 | LOT-10 | Décimales exactes de bout en bout, toutes voies (cadrage LOT-05 du 2026-10-07) | terminé (2026-10-07) | non | LOT-01, LOT-02 |
+| LOT-11 | Preuves de la transmission patient : E2E portail, accessibilité, plafond concurrent (réserve du LOT-04) | à_faire | non | LOT-04 |
 
-**Lot courant : LOT-05** (adaptateur laboratoire), après la clôture du
-LOT-04 le 2026-10-10. Il attend la réponse écrite du laboratoire pilote sur
-le canal, le profil CDA et les rectificatifs (cadrage du 2026-10-07). Aucun
-code n'est écrit sans un format réel.
+**Lot courant : LOT-11** (preuves de la transmission patient), déclaré le
+2026-10-10, après la clôture du LOT-04. **Suite arbitrée le 2026-10-10** :
+LOT-11, puis la contre-revue adverse de campagne, puis le lot de clôture. Le
+LOT-05 attend le laboratoire sans date. Il est transféré vers une campagne
+propre, ce qui permet de clôturer BIO-INGEST sans lui.
 
 **Clôture d'un lot** : avec le handoff, mettre à jour le suivi BioFlow du
 responsable (page hors dépôt, créée le 2026-10-05) : état du lot, lots

@@ -9771,3 +9771,17 @@ documentaire.
 
 **Questions ouvertes.** Lot d'accueil pour l'E2E portail et
 l'accessibilité ; constat à rejouer à la première transmission.
+
+## 2026-10-10 — BIO-INGEST : LOT-11 ouvert, LOT-05 transféré
+
+**Décidé (responsable).** LOT-11 neuf : E2E portail, accessibilité
+(relecture manuelle et axe-core sur la page), banc de concurrence au plafond.
+LOT-05 transféré en campagne propre (FILE_ATTENTE). Ordre : LOT-11,
+contre-revue adverse, clôture.
+
+**Écarté.** E2E dans le lot de clôture (régression invisible pendant des
+semaines) ; contre-revue après le LOT-05 (date inconnue).
+
+**Prochaine action.** LOT-11 en session neuve, mode Plan.
+
+**Questions ouvertes.** Aucune.

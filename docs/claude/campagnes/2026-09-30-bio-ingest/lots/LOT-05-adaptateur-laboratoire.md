@@ -1,11 +1,18 @@
 ---
 id: "LOT-05"
 titre: "Adaptateur laboratoire (pilote Barbier Metz)"
-statut: "à_faire"
+statut: "abandonné dans cette campagne — TRANSFÉRÉ le 2026-10-10 vers une campagne propre (FILE_ATTENTE, à cadrer)"
 dépend_de: "LOT-02, format réel reçu"
 ---
 
 # LOT-05 — Adaptateur laboratoire (pilote Barbier Metz)
+
+> **Transféré le 2026-10-10** (arbitrage du responsable) : le lot attend une
+> réponse écrite du laboratoire pilote, sans date. Il sort de BIO-INGEST, qui
+> peut se clôturer sans lui. Il reprendra comme campagne propre, inscrite « à
+> cadrer » dans `FILE_ATTENTE.md`. Le cadrage du 2026-10-07
+> (`CADRAGE_LOT05_ADAPTATEUR_2026-10-07.md`) et cette fiche restent la
+> référence.
 
 ## But
 
