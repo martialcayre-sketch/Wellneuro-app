@@ -1,7 +1,7 @@
 ---
 id: "2026-09-30-bio-ingest"
 titre: "BIO-INGEST — acquisition des résultats biologiques"
-statut: "terminée (2026-10-10 — douze lots terminés, LOT-05 transféré ; contre-revue adverse faite AVANT la clôture (C2 confirmée et corrigée, B2 affaiblie, C3 résiste) ; usage constaté au conteneur : 60 résultats sur 2 dossiers, premières transmissions patient le 2026-10-10. Le créneau primaire s'ouvre ; son attribution reste un geste du responsable.)"
+statut: "terminée (2026-10-10 — douze lots terminés, LOT-05 transféré ; contre-revue adverse faite AVANT la clôture (C2 confirmée et corrigée, B2 affaiblie, C3 résiste) ; usage constaté au conteneur : 60 résultats sur 2 dossiers, premières transmissions patient le 2026-10-10. BIO-PARCOURS, première campagne parallèle, est promue primaire selon le contrat de l'outil ; une autre attribution reste un geste du responsable.)"
 créée_le: "2026-09-30"
 mise_à_jour: "2026-10-10"
 lot_courant: "LOT-12"

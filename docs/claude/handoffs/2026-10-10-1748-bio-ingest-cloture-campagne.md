@@ -26,8 +26,11 @@ fiches sur le code, verser le constat d'usage et clore la campagne.
   séparée. Il a validé le texte court, sans affirmation sur le chiffrement ni
   sur le lieu. Résultat : `donnees_confidentialite` **v14**, avec accusé
   (motif de la v10). Précision datée sous `D-258`, sans nouvelle D-xxx.
-- État machine : `idle`. Le créneau primaire est libre ; son attribution
-  revient au responsable. Les campagnes parallèles sont inchangées.
+- État machine : BIO-PARCOURS (LOT-26) est promue primaire, selon le contrat
+  de `deactivateCampaign` : la première parallèle est promue. AGENDA-SOMMEIL
+  reste parallèle. Un premier jet à `idle` a été corrigé sur constat Copilot :
+  il annonçait un projet inactif alors que deux campagnes restaient actives.
+  Une autre attribution reste un geste du responsable.
 
 ## Fichiers modifiés
 

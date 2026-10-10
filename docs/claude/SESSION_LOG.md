@@ -9872,7 +9872,7 @@ omission, les sauvegardes. Rétention établie (12 mois, politique Scalingo
 Business, CLI concordante) et déclarée par `donnees_confidentialite` v14,
 texte court validé par le responsable, accusé exigé. Fiches LOT-02/07
 réalignées (v3, 145 entrées). Usage : 60 résultats sur 2 dossiers ; 3
-transmissions patient ce jour. État `idle`.
+transmissions patient ce jour. BIO-PARCOURS promue primaire.
 
 **Écarté.** Suite séparée pour la v14 ; mention du chiffrement ou de l'HDS
 dans le texte.

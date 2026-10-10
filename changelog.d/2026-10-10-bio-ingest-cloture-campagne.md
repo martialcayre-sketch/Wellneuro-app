@@ -11,4 +11,4 @@
   sous sa forme exacte. Les fiches sont réalignées sur le code (procédé
   `bio-extraction-v3`, resolver à 145 entrées). Le constat d'usage est versé
   en agrégats.
-- La campagne BIO-INGEST est close ; le créneau primaire est libre.
+- La campagne BIO-INGEST est close ; BIO-PARCOURS devient la campagne primaire.
