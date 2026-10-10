@@ -2,18 +2,12 @@
 
 ## Activité primaire
 
-**Campagne** : 2026-09-30-bio-ingest
-**Titre** : BIO-INGEST — acquisition des résultats biologiques
-**Statut** : active
-**Lot actif** : LOT-11
-
-## Activités parallèles
-
-### 2026-10-04-bio-parcours
-
+**Campagne** : 2026-10-04-bio-parcours
 **Titre** : BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout
 **Statut** : active
 **Lot actif** : LOT-26
+
+## Activités parallèles
 
 ### 2026-10-07-agenda-sommeil-adhesion
 

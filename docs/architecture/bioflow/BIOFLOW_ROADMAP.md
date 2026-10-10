@@ -12,7 +12,7 @@ décisions vont au registre `D-xxx`.
 BIOFLOW
 │
 ├── Track A — BIO-INGEST
-│   ├── lot courant   : LOT-09 terminé (#1335, relancer la lecture) ; LOT-07 terminé (#1326 → #1334, `bio-extraction-v3` depuis #1336)
+│   ├── lot courant   : aucun — campagne CLOSE le 2026-10-10 (LOT-12, clôture) ; LOT-05 (adaptateur laboratoire) transféré en FILE_ATTENTE
 │   ├── prochain gate : G2 levé ; G3 (asynchrone durable) DIFFÉRÉ par le responsable le 2026-10-06 — la réconciliation des imports fantômes partira avec lui ; purge du compte rendu v1 non purgé : redéposer suffit, pas de lot
 │   └── objectif      : une donnée biologique fiable
 │

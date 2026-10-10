@@ -1,10 +1,10 @@
 ---
 id: "2026-09-30-bio-ingest"
 titre: "BIO-INGEST — acquisition des résultats biologiques"
-statut: "en_cours (ouverte le 2026-09-30 — LOT-00, LOT-01, LOT-02, LOT-03, LOT-06, LOT-07, LOT-04, LOT-08, LOT-09, LOT-10 et LOT-11 terminés ; LOT-05 transféré le 2026-10-10 ; suite : contre-revue adverse, puis lot de clôture)"
+statut: "terminée (2026-10-10 — douze lots terminés, LOT-05 transféré ; contre-revue adverse faite AVANT la clôture (C2 confirmée et corrigée, B2 affaiblie, C3 résiste) ; usage constaté au conteneur : 60 résultats sur 2 dossiers, premières transmissions patient le 2026-10-10. BIO-PARCOURS, première campagne parallèle, est promue primaire selon le contrat de l'outil ; une autre attribution reste un geste du responsable.)"
 créée_le: "2026-09-30"
 mise_à_jour: "2026-10-10"
-lot_courant: "LOT-11"
+lot_courant: "LOT-12"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -84,6 +84,14 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 | LOT-09 | « Relancer la lecture » d'un compte rendu sans ligne validée, jamais destructive | terminé (2026-10-06) | non | LOT-02, LOT-07 |
 | LOT-10 | Décimales exactes de bout en bout, toutes voies (cadrage LOT-05 du 2026-10-07) | terminé (2026-10-07) | non | LOT-01, LOT-02 |
 | LOT-11 | Preuves de la transmission patient : E2E portail, accessibilité, plafond concurrent (réserve du LOT-04) | terminé (2026-10-10) | non | LOT-04 |
+| LOT-12 | Clôture : B2 sous sa forme exacte, D4 et dossier RGPD (sauvegardes déclarées, `donnees_confidentialite` v14), écarts fiche/code, constat d'usage | terminé (2026-10-10) | non | LOT-11, contre-revue adverse |
+
+**Campagne close le 2026-10-10 par le LOT-12** (`lots/LOT-12-cloture.md`).
+B2 y est inscrite sous sa forme exacte. D4 est constatée : la rétention des
+sauvegardes est établie (12 mois au plus après la purge) et déclarée au
+patient par `donnees_confidentialite` v14, texte validé par le responsable.
+Les fiches LOT-02 et LOT-07 sont réalignées sur le code, et le constat
+d'usage est versé. Le LOT-05 reste transféré (FILE_ATTENTE).
 
 **LOT-11 terminé le 2026-10-10** (preuves de la transmission patient : E2E
 portail, accessibilité, banc du plafond ; réserve du LOT-04 levée). Il reste
@@ -129,9 +137,11 @@ qu'une ligne a été validée.
 
 ## Done de campagne
 
-- [ ] LOT-01 à LOT-04 livrés. LOT-05 livré, ou transféré par arbitrage s'il
-      n'y a toujours pas de format réel.
+- [x] LOT-01 à LOT-04 livrés. LOT-05 livré, ou transféré par arbitrage s'il
+      n'y a toujours pas de format réel (transféré le 2026-10-10).
 - [x] Contre-revue adverse lancée AVANT le lot de clôture (2026-10-10).
-- [ ] Constat d'usage au conteneur, par identifiant (`D-125`) : nombre de
-      lignes dans `resultats_biologiques` après le LOT-01.
-- [ ] Documentation canonique et dossier RGPD à jour ; handoff final produit.
+- [x] Constat d'usage au conteneur, par identifiant (`D-125`) : nombre de
+      lignes dans `resultats_biologiques` après le LOT-01 — 60 lignes sur 2
+      dossiers au 2026-10-10, en agrégats (`lots/LOT-12-cloture.md` §4).
+- [x] Documentation canonique et dossier RGPD à jour ; handoff final produit
+      (2026-10-10, LOT-12).

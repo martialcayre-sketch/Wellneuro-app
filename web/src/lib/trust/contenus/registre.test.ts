@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les vingt-quatre documents attendus', () => {
+  it('expose les vingt-cinq documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -50,6 +50,8 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v12',
       // `D-269` — le compte rendu déposé par le patient, et son écart.
       'donnees_confidentialite@v13',
+      // `D-258` — les sauvegardes du compte rendu purgé, déclarées une fois leur durée établie.
+      'donnees_confidentialite@v14',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -111,7 +113,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v13');
+    expect(courant.version).toBe('v14');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -410,8 +412,8 @@ describe('registre des documents TRUST', () => {
     expect(v6.requiresAcknowledgement).toBe(false);
 
     const v12 = getVersion('donnees_confidentialite', 'v12');
-    const v13 = getDocumentCourant('donnees_confidentialite');
-    expect(v13.version).toBe('v13');
+    const v13 = getVersion('donnees_confidentialite', 'v13');
+    if (!v13) throw new Error('v13 absente du registre');
     const texte = v13.sections.flatMap(s => s.paragraphes).join(' ');
     expect(texte).toContain(
       'les éléments de votre situation que vous décrivez, les comptes rendus d’analyses que vous déposez dans votre espace, vos signalements et vos choix.',
@@ -428,6 +430,29 @@ describe('registre des documents TRUST', () => {
     expect(apres.filter((p, i) => p !== avant[i])).toHaveLength(2);
     // Même motif que les v10 à v12 : sans accusé, celui de la v12 encore dû s'effaçait.
     expect(v13.requiresAcknowledgement).toBe(true);
+  });
+
+  it('`D-258` : la v14 dit les sauvegardes du compte rendu purgé, mot pour mot comme validée, et rien d’autre', () => {
+    // TEXTE VALIDÉ PAR LE RESPONSABLE LE 2026-10-10 (`DOSSIER_RGPD.md`,
+    // rubrique 8). D-258 différait l'annonce jusqu'à ce que la rétention des
+    // sauvegardes soit établie : 12 mois, sauvegardes mensuelles de l'hébergeur.
+    const v13 = getVersion('donnees_confidentialite', 'v13');
+    const v14 = getDocumentCourant('donnees_confidentialite');
+    expect(v14.version).toBe('v14');
+    const texte = v14.sections.flatMap(s => s.paragraphes).join(' ');
+    expect(texte).toContain(
+      'et au plus tard 30 jours après son dépôt. Des copies peuvent en subsister jusqu’à 12 mois après sa suppression dans les sauvegardes de notre hébergeur, qui ne servent qu’à rétablir le service en cas d’incident ; elles s’effacent ensuite d’elles-mêmes. Les valeurs validées restent dans votre dossier.',
+    );
+    // UN SEUL PARAGRAPHE CHANGE, dans une seule section ; le reste est la v13.
+    const titre = 'Quelles données sont recueillies ?';
+    expect(v14.sections.filter(s => s.titre !== titre)).toEqual(v13?.sections.filter(s => s.titre !== titre));
+    const avant = v13?.sections.find(s => s.titre === titre)?.paragraphes ?? [];
+    const apres = v14.sections.find(s => s.titre === titre)?.paragraphes ?? [];
+    expect(apres).toHaveLength(avant.length);
+    expect(apres.filter((p, i) => p !== avant[i])).toHaveLength(1);
+    expect((v14.publieLe ?? '') > (v13?.publieLe ?? '')).toBe(true);
+    // Même motif que les v10 à v13 : sans accusé, celui de la v13 encore dû s'effaçait.
+    expect(v14.requiresAcknowledgement).toBe(true);
   });
 
   it('la v9 RETIRE la promesse que le logiciel ne tenait pas, et NOMME l’exception', () => {

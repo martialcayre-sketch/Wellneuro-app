@@ -9863,3 +9863,20 @@ journaux étendu au portail, à la saisie et au cron de purge (`signature()`
 neutraliseur) ; `decisions/route.test.ts`, 11 cas. B2 et C3 inchangées.
 Constat d'usage en agrégats pris pour le lot de clôture. Ouvert : M1-M11 et
 M15 sans résultat. Suite : merge, puis lot de clôture en session neuve.
+
+## 2026-10-10 — BIO-INGEST : lot de clôture (LOT-12), campagne close
+
+**Fait.** B2 sous sa forme exacte (périmé au-delà de 5 min, clos au geste
+suivant ou à l'échéance, supprimé par un retrait). D4 constatée : seule
+omission, les sauvegardes. Rétention établie (12 mois, politique Scalingo
+Business, CLI concordante) et déclarée par `donnees_confidentialite` v14,
+texte court validé par le responsable, accusé exigé. Fiches LOT-02/07
+réalignées (v3, 145 entrées). Usage : 60 résultats sur 2 dossiers ; 3
+transmissions patient ce jour. BIO-PARCOURS promue primaire.
+
+**Écarté.** Suite séparée pour la v14 ; mention du chiffrement ou de l'HDS
+dans le texte.
+
+**Prochaine action.** PR, merge, constat de la v14 servie.
+
+**Ouvert.** Rétention chez Anthropic ; durée de la trace d'import (2026-10-21).

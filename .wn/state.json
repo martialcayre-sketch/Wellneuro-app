@@ -5,9 +5,9 @@
     "name": "Wellneuro"
   },
   "status": "active",
-  "active_campaign": "2026-09-30-bio-ingest",
-  "active_lot": "LOT-11",
-  "last_completed_lot": "2026-09-30-bio-ingest/LOT-11 — terminé le 2026-10-10 : preuves de la transmission patient (E2E portail, axe-core, banc du plafond concurrent) ; correctifs d'accessibilité (succès annoncé, contraste du bandeau de succès patient) ; relecture VoiceOver 8/8. Précédent : BIO-INGEST LOT-04 (2026-10-10, livré le 2026-10-07).",
+  "active_campaign": "2026-10-04-bio-parcours",
+  "active_lot": "LOT-26",
+  "last_completed_lot": "2026-09-30-bio-ingest/LOT-12 — terminé le 2026-10-10 : lot de clôture de BIO-INGEST. B2 inscrite sous sa forme exacte (réputé abandonné au-delà de 5 min, clos au geste suivant ou à l'échéance, supprimé par un retrait) ; D4 constatée, rétention des sauvegardes établie (12 mois au plus après la purge) et déclarée par donnees_confidentialite v14 (accusé, texte validé par le responsable) ; écarts fiche/code soldés (procédé v3, resolver 145 entrées) ; constat d'usage versé en agrégats. CAMPAGNE CLOSE. Précédent : BIO-INGEST LOT-11 (2026-10-10).",
   "validation": {
     "overall_status": "passed",
     "last_checked_at": "2026-10-06T08:09:00Z",
@@ -22,7 +22,8 @@
     }
   },
   "next_action": [
-    "CAMPAGNE ACTIVE : 2026-09-30-bio-ingest. LOT-11 (preuves de la transmission patient) TERMINÉ le 2026-10-10 : E2E portail (lien magique → « En attente », clavier seul, Chromium + WebKit), axe-core WCAG 2.1 A/AA sur trois états (0 violation), banc du plafond de 3 sur base réelle (CI + T3, deux mutations rouges) ; correctifs : succès annoncé (role=status), contraste du bandeau de succès patient (4,39 → texte courant, six écrans) ; relecture VoiceOver du responsable 8/8 OK ; T3 complet vert deux fois (259 E2E après intégration de #1379). Réserve du LOT-04 levée. SUITE : contre-revue adverse de campagne (affirmations à réfuter, AVANT le lot de clôture), puis lot de clôture de BIO-INGEST (fiche à créer) ; lot_courant reste LOT-11 jusque-là. LOT-05 transféré (FILE_ATTENTE).\n\nCAMPAGNE PARALLÈLE 2026-10-04-bio-parcours : voir parallel_campaigns. BP-26 attend toujours le responsable.",
+    "CAMPAGNE PRIMAIRE : 2026-10-04-bio-parcours (LOT-26, BP-26 attend toujours le responsable), promue à la clôture de 2026-09-30-bio-ingest le 2026-10-10 (LOT-12), selon le contrat de deactivateCampaign (la première parallèle est promue) ; une autre attribution reste un geste du responsable. Reste du lot de clôture BIO-INGEST, après merge : constater le déploiement et l'empreinte de donnees_confidentialite v14 servie (D-248). LOT-05 (adaptateur laboratoire) transféré en FILE_ATTENTE, attend le format réel du laboratoire.\n\nCAMPAGNE PARALLÈLE : 2026-10-07-agenda-sommeil-adhesion (voir parallel_campaigns).",
+    "[trace 2026-10-10 — ancienne tête remplacée à la CLÔTURE de BIO-INGEST] CAMPAGNE ACTIVE : 2026-09-30-bio-ingest. LOT-11 (preuves de la transmission patient) TERMINÉ le 2026-10-10 : E2E portail (lien magique → « En attente », clavier seul, Chromium + WebKit), axe-core WCAG 2.1 A/AA sur trois états (0 violation), banc du plafond de 3 sur base réelle (CI + T3, deux mutations rouges) ; correctifs : succès annoncé (role=status), contraste du bandeau de succès patient (4,39 → texte courant, six écrans) ; relecture VoiceOver du responsable 8/8 OK ; T3 complet vert deux fois (259 E2E après intégration de #1379). Réserve du LOT-04 levée. SUITE : contre-revue adverse de campagne (affirmations à réfuter, AVANT le lot de clôture), puis lot de clôture de BIO-INGEST (fiche à créer) ; lot_courant reste LOT-11 jusque-là. LOT-05 transféré (FILE_ATTENTE).\n\nCAMPAGNE PARALLÈLE 2026-10-04-bio-parcours : voir parallel_campaigns. BP-26 attend toujours le responsable.",
     "[trace 2026-10-10 — ancienne tête remplacée à la clôture du LOT-11] CAMPAGNE ACTIVE : 2026-09-30-bio-ingest. LOT-04 TERMINÉ le 2026-10-10 (#1377) ; 0 transmission patient au constat du jour. ARBITRAGES DU 2026-10-10 : (1) LOT-11 neuf, lot courant : E2E portail sur fixture (lien magique → statut « reçu »), accessibilité par relecture manuelle tracée + @axe-core/playwright limité à la page (dépendance de dev acceptée), banc Postgres local de deux dépôts simultanés au plafond de 3 ; tests seuls, sans migration. (2) LOT-05 TRANSFÉRÉ hors campagne (statut « abandonné dans cette campagne — TRANSFÉRÉ », vocabulaire de isClosedStatus), inscrit à cadrer dans FILE_ATTENTE. SUITE : LOT-11 en session neuve, puis contre-revue adverse de campagne (affirmations à réfuter, AVANT le lot de clôture), puis lot de clôture de BIO-INGEST ; le créneau primaire se libère ensuite, attribution au responsable.\n\nCAMPAGNE PARALLÈLE 2026-10-04-bio-parcours : voir parallel_campaigns. BP-26 attend toujours le responsable.",
     "[trace 2026-10-10 — ancienne tête remplacée par l'arbitrage LOT-11 / transfert LOT-05] CAMPAGNE ACTIVE : 2026-09-30-bio-ingest. LOT-04 (transmission du compte rendu par le patient) TERMINÉ le 2026-10-10 : livré et allumé le 2026-10-07 (#1350, #1352, #1355, #1357, D-269). Constat d'usage du 2026-10-10 au conteneur (one-off-8148) : 0 transmission patient, 3 dépôts praticien ; à rejouer à la première transmission. Réserve, sans lot d'accueil : E2E portail sur fixture et contrôle d'accessibilité non livrés.\n\nLOT COURANT : LOT-05 (adaptateur laboratoire), seul lot restant. Il attend la réponse écrite du laboratoire pilote (canal, profil CDA, rectificatifs ; CADRAGE_LOT05_ADAPTATEUR_2026-10-07.md). Aucun code sans format réel. Done de campagne : LOT-05 livré ou transféré par arbitrage, contre-revue adverse AVANT le lot de clôture.\n\nCAMPAGNE PARALLÈLE 2026-10-04-bio-parcours : voir parallel_campaigns. BP-26 attend toujours le responsable.",
     "[trace 2026-10-10 — ancienne tête remplacée à la clôture du LOT-04] CAMPAGNE ACTIVE : 2026-09-30-bio-ingest LOT-04 (transmission depuis le portail patient), ouvert le 2026-10-07 : D-269 et registre RGPD mergés (#1350, textes v6/v13 validés) ; migration bio_ingest_transmission_patient_v1 mergée (#1352), appliquée par release-db le 2026-10-07 à 11:35 UTC et CONSTATÉE par conteneur (one-off-4793). SUITE : PR 3, code sous WN_BIO_PORTAIL_ENABLED éteint (routes portail et écart, carte du Fil, écrans, textes Trust v6/v13, précision de D-269 : un document patient purgé sans écart reste « reçu », le plafond ne compte que les non purgés) ; puis allumage. Plan : D-269 §8.\n\nBIO-INGEST LOT-05 (adaptateur laboratoire) : réponse du laboratoire pilote reçue (HPRIM, HL7, CDA, PDF ; canal automatisé possible) ; flux automatisé visé. Architecture arrêtée le 2026-10-07 (CADRAGE_LOT05_ADAPTATEUR_2026-10-07.md, #1356) ; questions et fichiers d’exemple fictifs demandés par écrit — canal, profil CDA et rectificatifs attendent la réponse. LOT-10 (décimales exactes de bout en bout) ouvert à_faire, indépendant du laboratoire, à mener en session à part.\n\nCAMPAGNE PARALLÈLE 2026-10-04-bio-parcours : BP-10 TERMINÉ le 2026-10-07 (constat d'usage, CONSTAT_USAGE_BP10_2026-10-07.md). Réserve : effectif de masquage des agrégats (D-266 §14) à chiffrer par le responsable. BP-26 attend toujours le responsable.",
@@ -95,13 +96,8 @@
     "D-271"
   ],
   "last_session": null,
-  "updated_at": "2026-10-10T15:07:29Z",
+  "updated_at": "2026-10-10T16:03:48Z",
   "parallel_campaigns": [
-    {
-      "campaign_id": "2026-10-04-bio-parcours",
-      "active_lot": "LOT-26",
-      "status": "active"
-    },
     {
       "campaign_id": "2026-10-07-agenda-sommeil-adhesion",
       "active_lot": "LOT-02",

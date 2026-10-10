@@ -1526,6 +1526,15 @@ l'instant est posé par la base.
 appliquée et constatée, code consommateur déployé, premier passage du cron
 constaté — et la v12 servie.
 
+**Précision du 2026-10-10 (lot de clôture de BIO-INGEST) : la rétention des
+sauvegardes est établie, et déclarée.** Elle est de 12 mois au plus après la
+purge, d'après la politique publiée de l'hébergeur pour le plan Business :
+sauvegardes mensuelles gardées 12 mois. Le constat du même jour par la CLI
+concorde. La déclaration différée ci-dessus est faite par
+**`donnees_confidentialite` v14**, avec accusé, texte validé par le
+responsable le 2026-10-10 (`docs/DOSSIER_RGPD.md`, rubrique 8). La règle de
+purge ne change pas.
+
 ### D-257 — Un signal d'alerte adressé cesse de bloquer : la lettre consignée lève l'abstention signal par signal, et l'orientation devient la première action du protocole
 
 - Date : 2026-10-02
