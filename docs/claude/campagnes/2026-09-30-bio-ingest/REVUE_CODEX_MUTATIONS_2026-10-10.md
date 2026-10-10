@@ -64,8 +64,11 @@ purge, hors de `src/`. `signature()` (`saisieMessages.ts`, nom et code Prisma)
 rejoint `classeEtCode` comme neutraliseur. Rejouées après : les trois
 mutations, et l'erreur nue dans `bilan`, rougissent.
 
-Limite connue : le script de purge prend son erreur dans `.catch(err => …)`,
-pas dans un `catch`. Le garde y voit `.message` et `.stack`, pas l'erreur nue.
+Le script de purge prend son erreur dans `.catch(err => …)`, pas dans un
+`catch`. La première version du garde n'y voyait que `.message` et `.stack`
+(revue Copilot de la PR). Le paramètre du rappel d'un `.catch` compte
+désormais comme l'erreur d'un `catch` : `err`, `String(err)` et
+`JSON.stringify(err)` y rougissent aussi.
 
 ### M18 — la route des décisions n'avait aucun banc — `CONFIRMÉE`, corrigée
 
@@ -75,8 +78,10 @@ Correctif : `import/decisions/route.test.ts`, 11 cas. L'e-mail vient de la
 session, jamais du corps. Chaque drapeau éteint rend 503, sans session 401,
 autre praticien 403, introuvable 404, dossier clos ou désactivé 409, corps ou
 extraction mal formés 400 : à chaque fois, aucune décision. Un refus métier
-rend son statut et ses lignes ; une exception, un 500 sans détail. Rejouée
-après : 7 cas sur 11 rougissent.
+rend son statut et ses lignes ; une exception, un 500 dont la réponse est
+comparée en entier (revue Copilot de la PR). Rejouées après : la garde
+retirée fait rougir 7 cas sur 11, et le détail de l'erreur versé dans la
+réponse les fait rougir aussi.
 
 ## 4. Ce qui reste
 

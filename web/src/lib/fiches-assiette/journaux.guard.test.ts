@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import {
-  createSourceFile, isBinaryExpression, isCallExpression, isCatchClause, isIdentifier,
-  isPropertyAccessExpression, isPropertyAssignment, isTypeOfExpression, ScriptKind, ScriptTarget,
+  createSourceFile, isArrowFunction, isBinaryExpression, isCallExpression, isCatchClause, isFunctionExpression,
+  isIdentifier, isPropertyAccessExpression, isPropertyAssignment, isTypeOfExpression, ScriptKind, ScriptTarget,
   SyntaxKind, type Identifier, type Node, type SourceFile,
 } from 'typescript';
 import { describe, expect, it } from 'vitest';
@@ -45,8 +45,8 @@ const PERIMETRE = [
   'app/api/praticien/biologie/resultats',
 ];
 // Hors de `src/` : le cron de purge à l'échéance (même contre-revue, M16). Son
-// erreur vient d'un `.catch(err => …)`, pas d'un `catch` : seuls `.message` et
-// `.stack` y sont vus, pas l'erreur nue.
+// erreur vient d'un `.catch(err => …)` : le paramètre du rappel compte comme
+// celui d'un `catch` (revue Copilot de #1388).
 const FICHIERS_HORS_SRC = [path.join(process.cwd(), 'scripts', 'purgeComptesRendusEcheance.ts')];
 const JOURNAL = /^(?:console\.(?:error|warn|log|info|debug)|logger\.(?:error|warn|info|debug|security|fatal))$/;
 // `signature` (saisieMessages.ts) : nom et code Prisma, comme `classeEtCode`.
@@ -100,9 +100,15 @@ type Appel = { ligne: number; texte: string; fautes: string[] };
 function appelsDeJournal(chemin: string, source: string): Appel[] {
   const arbre = arbreDe(chemin, source);
   const tous = noeuds(arbre);
+  // L'erreur d'un `catch`, et celle du rappel d'un `.catch(…)` de promesse.
+  const rappelsCatch = tous
+    .filter(isCallExpression)
+    .filter(a => isPropertyAccessExpression(a.expression) && a.expression.name.text === 'catch')
+    .map(a => a.arguments[0])
+    .filter(f => f !== undefined && (isArrowFunction(f) || isFunctionExpression(f)))
+    .map(f => (f as { parameters: readonly { name: Node }[] }).parameters[0]?.name);
   const erreurs = new Set(
-    tous.filter(isCatchClause)
-      .map(c => c.variableDeclaration?.name)
+    [...tous.filter(isCatchClause).map(c => c.variableDeclaration?.name), ...rappelsCatch]
       .filter((n): n is Identifier => n !== undefined && isIdentifier(n))
       .map(n => n.text),
   );
@@ -165,6 +171,12 @@ describe('Journaux des fiches d’assiette — classe et code, jamais le message
     // Ce qui ne recopie rien.
     expect(fautes('try {} catch (err) { console.error(\'x\', ...classeEtCode(err)); }')).toEqual([]);
     expect(fautes('try {} catch (err) { console.error(\'x\', signature(err)); }')).toEqual([]);
+    // Le rappel d'un `.catch` de promesse, forme du cron de purge (revue de #1388).
+    for (const fuite of ['err', 'String(err)', '`${err}`', 'JSON.stringify(err)']) {
+      expect(fautes(`main().catch(err => { console.error('x', ${fuite}); });`)).not.toEqual([]);
+    }
+    expect(fautes('main().catch(function (e) { console.error(\'x\', e); });')).not.toEqual([]);
+    expect(fautes('main().catch(err => { console.error(\'x\', ...classeEtCode(err)); });')).toEqual([]);
     expect(fautes('try {} catch (err) { console.error(\'x\', err instanceof Error ? err.name : typeof err, code); }')).toEqual([]);
     expect(fautes('try {} catch (erreur) { logger.error({ event: E, metadata: { erreur: classeEtCode(erreur) } }); }')).toEqual([]);
     expect(fautes('try {} catch (error) { console.error(\'x\', resultat.error, { error: 1 }); }')).toEqual([]);

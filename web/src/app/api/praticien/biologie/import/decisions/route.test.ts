@@ -103,6 +103,6 @@ describe('POST /api/praticien/biologie/import/decisions (D-256 A3/A5)', () => {
     deciderLignes.mockRejectedValueOnce(new Error('valeur 12,4 du dossier pat_jennifer'));
     res = await POST(requete(CORPS));
     expect(res.status).toBe(500);
-    expect(JSON.stringify(await res.json())).not.toContain('pat_jennifer');
+    expect(await res.json()).toEqual({ ok: false, reason: 'server_error', error: 'Erreur technique.' });
   });
 });

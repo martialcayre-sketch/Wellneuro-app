@@ -44,8 +44,8 @@ corriger les trous de banc confirmés avant le lot de clôture.
 ## Problèmes ouverts
 
 - M1 à M11 et M15 : aucun résultat de mutation versé par le contre-relecteur.
-- Garde des journaux : le cron de purge prend son erreur par `.catch(err =>…)`,
-  l'erreur nue n'y est pas vue (seuls `.message`/`.stack`).
+- (Fermé dans la PR, revue Copilot : le garde voit aussi le paramètre d'un
+  `.catch(err => …)` ; le 500 de la route des décisions est comparé en entier.)
 
 ## Prochaine action exacte
 
