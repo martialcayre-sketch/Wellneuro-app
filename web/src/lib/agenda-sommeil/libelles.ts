@@ -115,21 +115,25 @@ export const ARIA_LEVER_IMMEDIAT = 'Au même moment que mon réveil';
 export const ARIA_LEVER_DIFFERE = 'Plus tard que mon réveil';
 export const LABEL_REVEIL_FINAL = 'Je me suis réveillé·e';
 
-// Mode de coucher, symétrique du précédent. La seconde réponse ouvre l'heure
-// de mise au lit — sans elle, le temps passé au lit sans chercher à dormir est
-// invisible, et l'efficacité se calcule sur une fenêtre trop courte, donc
-// flatteuse.
+// Mode de coucher, symétrique du précédent. Le soir se remonte dans l'ordre
+// vécu (arbitrage du responsable du 2026-10-10, LOT-09) : l'heure du coucher
+// d'abord, puis cette question, et seulement « plus tard » l'heure du repère —
+// sans elle, le temps passé au lit sans chercher à dormir est invisible, et
+// l'efficacité se calcule sur une fenêtre trop courte, donc flatteuse.
+// « Couché·e » partout côté patient : « coucher » et « mise au lit » nommaient
+// le même instant de deux façons. Les libellés praticien gardent « mise au
+// lit », terme du temps au lit.
 // Même construction : « après un moment au lit » laissait « un moment » à
 // l'appréciation du patient.
-export const QUESTION_EXTINCTION = 'Par rapport à votre coucher, vous avez éteint la lumière…';
+export const QUESTION_EXTINCTION = 'Une fois couché·e, vous avez éteint la lumière…';
 export const LABEL_EXTINCTION_IMMEDIATE = 'Au même moment';
 export const LABEL_EXTINCTION_DIFFEREE = 'Plus tard';
 export const ARIA_EXTINCTION_IMMEDIATE = 'Au même moment que mon coucher';
 export const ARIA_EXTINCTION_DIFFEREE = 'Plus tard que mon coucher';
-export const LABEL_MISE_AU_LIT = 'Je me suis mis·e au lit';
+export const LABEL_MISE_AU_LIT = 'Je me suis couché·e';
 // v4 ([[D-272]]) : le repère du soir devient l'heure où le patient a ESSAYÉ DE
 // DORMIR, et la question de coucher s'y rapporte. Les tuiles ne changent pas.
-export const QUESTION_ESSAI_DORMIR = 'Par rapport à votre coucher, vous avez essayé de dormir…';
+export const QUESTION_ESSAI_DORMIR = 'Une fois couché·e, vous avez essayé de dormir…';
 
 export const LABEL_SIESTE: Record<ClasseSieste, string> = {
   aucune: 'Aucune',
@@ -190,6 +194,9 @@ export function motsDuSoir(contrat: ContratEcriture): {
   repere: string;
   question: string;
   latence: string;
+  // Ce qui manque, nommé : la question de coucher (`moment`), puis l'heure du
+  // repère quand elle est demandée (`manquant`).
+  moment: string;
   manquant: string;
 } {
   return contrat === 'agenda-sommeil-v4'
@@ -197,12 +204,14 @@ export function motsDuSoir(contrat: ContratEcriture): {
         repere: LABEL_ESSAI_DORMIR,
         question: QUESTION_ESSAI_DORMIR,
         latence: 'Une fois que vous avez essayé de dormir, vous vous êtes endormi·e…',
+        moment: 'le moment où vous avez essayé de dormir',
         manquant: 'l’heure où vous avez essayé de dormir 🌑',
       }
     : {
         repere: LABEL_EXTINCTION,
         question: QUESTION_EXTINCTION,
         latence: 'Une fois la lumière éteinte, vous vous êtes endormi·e…',
+        moment: 'l’extinction de la lumière',
         manquant: 'l’heure où vous avez éteint 🌑',
       };
 }

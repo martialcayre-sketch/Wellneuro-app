@@ -12,7 +12,8 @@
 // écrire, les « je ne sais pas » du contrat v4 ([[D-271]]), le rappel proposé
 // après la première nuit et son fichier (LOT-05, LOT-06), et l'agenda commencé
 // en v3 qui s'y termine ([[D-272]] §3). Le projet « iPhone 13 » les rejoue dans
-// WebKit, le moteur de Safari.
+// WebKit, le moteur de Safari. Depuis le LOT-09, le soir se note dans l'ordre
+// vécu : l'heure du coucher, puis le repère par rapport à lui.
 //
 // Patient fictif Michel Dogné (PAT_SEED_03), autorisé. `workers: 1` et
 // `fullyParallel: false` : aucun autre spec ne tourne pendant celui-ci.
@@ -115,7 +116,7 @@ test.describe('agenda du sommeil — saisie d’une nuit', () => {
     // Le soir. Un agenda neuf s'ouvre sous le contrat v4 ([[D-271]], [[D-272]]) :
     // le repère est l'heure où le patient a essayé de dormir, et « je ne sais
     // pas » est une réponse que le serveur accepte.
-    await page.getByLabel(/essayé de dormir à/).selectOption('23:00');
+    await page.getByLabel(/couché·e à/).selectOption('23:00');
     await page.getByRole('button', { name: 'Au même moment que mon coucher' }).click();
     await page.getByRole('button', { name: 'Je ne sais pas' }).click();
     await page.getByRole('button', { name: 'Continuer' }).click();
@@ -143,23 +144,24 @@ test.describe('agenda du sommeil — saisie d’une nuit', () => {
     await ouvrirAgenda(page);
 
     // Une liste vierge dit « Choisir », et re-choisir « Choisir » ne pose
-    // aucune heure (LOT-03).
-    const essai = page.getByLabel(/essayé de dormir à/);
-    await expect(essai).toHaveValue('');
-    await expect(essai.locator('option').first()).toHaveText('Choisir');
-    await essai.selectOption('');
-    await expect(essai).toHaveValue('');
-    await expect(page.getByText('Par rapport à votre coucher, vous avez essayé de dormir…')).toBeVisible();
+    // aucune heure (LOT-03). Le soir s'ouvre sur l'heure du coucher (LOT-09).
+    const coucher = page.getByLabel(/couché·e à/);
+    await expect(coucher).toHaveValue('');
+    await expect(coucher.locator('option').first()).toHaveText('Choisir');
+    await coucher.selectOption('');
+    await expect(coucher).toHaveValue('');
+    await expect(page.getByText('Une fois couché·e, vous avez essayé de dormir…')).toBeVisible();
+    await expect(page.getByLabel(/essayé de dormir à/)).toHaveCount(0);
 
     // « Je ne sais pas » : une seule tuile au soir (l'endormissement)…
     await expect(jeNeSaisPas(page)).toHaveCount(1);
 
-    // Essai de dormir AVANT la mise au lit : l'ordre est impossible.
-    await essai.selectOption('23:00');
+    // Essai de dormir AVANT le coucher : l'ordre est impossible.
+    await coucher.selectOption('23:30');
     await page.getByRole('button', { name: 'Plus tard que mon coucher' }).click();
-    const miseAuLit = page.getByLabel(/mis·e au lit à/);
-    await expect(miseAuLit).toHaveValue('');
-    await miseAuLit.selectOption('23:30');
+    const essai = page.getByLabel(/essayé de dormir à/);
+    await expect(essai).toHaveValue('');
+    await essai.selectOption('23:00');
     await jeNeSaisPas(page).click();
     await page.getByRole('button', { name: 'Continuer' }).click();
 
@@ -184,12 +186,12 @@ test.describe('agenda du sommeil — saisie d’une nuit', () => {
     // L'envoi ramène au soir, dit pourquoi, et rien n'est écrit.
     await expect(page.getByRole('heading', { name: 'Le soir' })).toBeVisible();
     await expect(
-      page.getByRole('alert').filter({ hasText: 'L’heure où vous avez essayé de dormir doit suivre la mise au lit.' }),
+      page.getByRole('alert').filter({ hasText: 'L’heure où vous avez essayé de dormir doit suivre l’heure du coucher.' }),
     ).toBeVisible();
     expect(await lireNuitsAgendaSommeil(PATIENT.idPatient)).toEqual([]);
 
     // Corrigée, la nuit part : les réponses des écrans suivants sont gardées.
-    await miseAuLit.selectOption('22:30');
+    await coucher.selectOption('22:30');
     await page.getByRole('button', { name: 'Continuer' }).click();
     await expect(page.getByRole('heading', { name: 'Pendant la nuit' })).toBeVisible();
     await page.getByRole('button', { name: 'Continuer' }).click();
@@ -216,7 +218,7 @@ test.describe('agenda du sommeil — saisie d’une nuit', () => {
   }) => {
     await ouvrirAgenda(page);
 
-    await page.getByLabel(/essayé de dormir à/).selectOption('23:00');
+    await page.getByLabel(/couché·e à/).selectOption('23:00');
     await page.getByRole('button', { name: 'Au même moment que mon coucher' }).click();
     await page.getByRole('button', { name: 'En moins de 15 min' }).click();
     await page.getByRole('button', { name: 'Continuer' }).click();
@@ -273,7 +275,7 @@ test.describe('agenda du sommeil — saisie d’une nuit', () => {
   test('dès la deuxième nuit, la phrase s’efface et la carte du rappel revient sous la frise', async ({ page }) => {
     await ouvrirAgenda(page, 'agenda-sommeil-v4');
 
-    await page.getByLabel(/essayé de dormir à/).selectOption('23:00');
+    await page.getByLabel(/couché·e à/).selectOption('23:00');
     await page.getByRole('button', { name: 'Au même moment que mon coucher' }).click();
     await page.getByRole('button', { name: 'En moins de 15 min' }).click();
     await page.getByRole('button', { name: 'Continuer' }).click();
@@ -290,15 +292,17 @@ test.describe('agenda du sommeil — saisie d’une nuit', () => {
   test('un agenda commencé en v3 s’y termine : extinction de la lumière, sans « je ne sais pas »', async ({ page }) => {
     await ouvrirAgenda(page, 'agenda-sommeil-v3');
 
-    // Les mots du soir restent ceux de la v3 ([[D-272]] §3).
-    const extinction = page.getByLabel(/J’ai éteint la lumière à/);
-    await expect(extinction).toBeVisible();
-    await expect(page.getByText('Par rapport à votre coucher, vous avez éteint la lumière…')).toBeVisible();
+    // Les mots du soir restent ceux de la v3 ([[D-272]] §3), dans l'ordre vécu
+    // (LOT-09) : le coucher, puis l'extinction par rapport à lui.
+    await expect(page.getByText('Une fois couché·e, vous avez éteint la lumière…')).toBeVisible();
     await expect(page.getByText(/essayé de dormir/)).toHaveCount(0);
     await expect(jeNeSaisPas(page)).toHaveCount(0);
+    await page.getByRole('button', { name: 'Plus tard que mon coucher' }).click();
+    await expect(page.getByLabel(/J’ai éteint la lumière à/)).toBeVisible();
 
-    await extinction.selectOption('23:00');
+    await page.getByLabel(/couché·e à/).selectOption('23:00');
     await page.getByRole('button', { name: 'Au même moment que mon coucher' }).click();
+    await expect(page.getByLabel(/J’ai éteint la lumière à/)).toHaveCount(0);
     await page.getByRole('button', { name: 'En moins de 15 min' }).click();
     await page.getByRole('button', { name: 'Continuer' }).click();
     await expect(page.getByRole('heading', { name: 'Pendant la nuit' })).toBeVisible();

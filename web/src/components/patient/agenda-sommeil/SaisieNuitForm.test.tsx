@@ -11,7 +11,7 @@ import { SaisieNuitForm } from './SaisieNuitForm';
 // choisissent dans des listes au quart d'heure et la saisie tient en trois
 // écrans : le soir, la nuit, le matin.
 
-const HABITUELS = { extinction: '23:00', sortie: '07:00' };
+const HABITUELS = { coucher: '23:00', sortie: '07:00' };
 
 function rendre(props: Partial<Parameters<typeof SaisieNuitForm>[0]> = {}) {
   const onSubmit = vi.fn();
@@ -48,7 +48,7 @@ function envoiRefuse(onSubmit: ReturnType<typeof vi.fn>): boolean {
 }
 
 function soirMinimum() {
-  choisir(/essayé de dormir à/, '23:00');
+  choisir(/couché·e à/, '23:00');
   clic('Au même moment que mon coucher');
   clic('En moins de 15 min');
 }
@@ -90,16 +90,16 @@ describe('saisie sans clavier à taper', () => {
 
   it('revenir sur « Choisir » ne vide pas une heure déjà donnée', () => {
     rendre();
-    choisir(/essayé de dormir à/, '23:00');
-    choisir(/essayé de dormir à/, '');
-    expect(liste(/essayé de dormir à/).value).toBe('23:00');
+    choisir(/couché·e à/, '23:00');
+    choisir(/couché·e à/, '');
+    expect(liste(/couché·e à/).value).toBe('23:00');
   });
 
   it('les heures sont des listes au quart d’heure, ouvertes sur « Choisir »', () => {
     rendre();
-    const extinction = liste(/essayé de dormir à/);
-    expect(extinction.value).toBe('');
-    const valeurs = Array.from(extinction.options)
+    const coucher = liste(/couché·e à/);
+    expect(coucher.value).toBe('');
+    const valeurs = Array.from(coucher.options)
       .map((o) => o.value)
       .filter(Boolean);
     expect(valeurs).toHaveLength(96);
@@ -129,7 +129,7 @@ describe('trois écrans — rien ne passe sans geste, et ce qui manque est nomm�
     continuer();
     expect(titre()).toBe('Le soir');
     expect(reste()!.textContent).toBe(
-      'Il reste à renseigner : l’heure où vous avez essayé de dormir 🌑, le coucher et l’endormissement.',
+      'Il reste à renseigner : l’heure du coucher 🛏️, le moment où vous avez essayé de dormir et l’endormissement.',
     );
   });
 
@@ -144,7 +144,7 @@ describe('trois écrans — rien ne passe sans geste, et ce qui manque est nomm�
 
   it('« Continuer » incomplet ramène le focus sur le premier contrôle sans réponse', () => {
     rendre();
-    choisir(/essayé de dormir à/, '23:00');
+    choisir(/couché·e à/, '23:00');
     clic('Au même moment que mon coucher');
     continuer();
     expect(document.activeElement?.textContent).toBe('En moins de 15 min');
@@ -157,7 +157,7 @@ describe('trois écrans — rien ne passe sans geste, et ce qui manque est nomm�
     expect(titre()).toBe('Pendant la nuit');
     retour();
     expect(titre()).toBe('Le soir');
-    expect(liste(/essayé de dormir à/).value).toBe('23:00');
+    expect(liste(/couché·e à/).value).toBe('23:00');
     expect(
       screen.getByRole('button', { name: 'En moins de 15 min' }).getAttribute('aria-pressed'),
     ).toBe('true');
@@ -189,7 +189,7 @@ describe('trois écrans — rien ne passe sans geste, et ce qui manque est nomm�
         leverImmediat: true,
       },
     });
-    expect(liste(/essayé de dormir à/).value).toBe('00:15');
+    expect(liste(/couché·e à/).value).toBe('00:15');
     continuer();
     continuer();
     expect(envoiRefuse(onSubmit)).toBe(false);
@@ -321,19 +321,44 @@ describe('réveil final', () => {
   });
 });
 
-describe('mise au lit', () => {
-  it('la liste du coucher n’apparaît qu’après « plus tard »', () => {
+// LOT-09 : le soir se remonte dans l'ordre vécu — le coucher, puis le repère
+// par rapport à lui, puis son heure s'il est venu plus tard. Les champs envoyés
+// ne changent pas : c'est le formulaire qui range les heures.
+describe('le soir dans l’ordre vécu — coucher, puis repère', () => {
+  const avant = (a: Element, b: Element) =>
+    Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('l’heure du coucher vient d’abord, la question du repère ensuite, son heure en dernier', () => {
     rendre();
-    expect(screen.queryByLabelText(/mis·e au lit à/)).toBeNull();
     clic('Plus tard que mon coucher');
-    expect(screen.getByLabelText(/mis·e au lit à/)).toBeTruthy();
+    const coucher = liste(/couché·e à/);
+    const question = screen.getByText('Une fois couché·e, vous avez essayé de dormir…');
+    const repere = liste(/essayé de dormir à/);
+    expect(avant(coucher, question)).toBe(true);
+    expect(avant(question, repere)).toBe(true);
   });
 
-  it('transmet l’heure quand le patient est resté au lit avant d’éteindre', () => {
-    const { onSubmit } = rendre();
-    choisir(/essayé de dormir à/, '23:00');
+  it('la liste du repère n’apparaît qu’après « plus tard »', () => {
+    rendre();
+    expect(screen.queryByLabelText(/essayé de dormir à/)).toBeNull();
     clic('Plus tard que mon coucher');
-    choisir(/mis·e au lit à/, '22:30');
+    expect(screen.getByLabelText(/essayé de dormir à/)).toBeTruthy();
+  });
+
+  it('« au même moment » : l’heure du coucher est le repère, rien d’autre ne part', () => {
+    const { onSubmit } = rendre();
+    completerLeMinimum();
+    fireEvent.click(cta());
+    expect(onSubmit.mock.calls[0][0].heureCoucher).toBe('23:00');
+    expect(onSubmit.mock.calls[0][0].extinctionImmediate).toBe(true);
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('heureMiseAuLit');
+  });
+
+  it('« plus tard » : l’heure du coucher part en mise au lit, le repère en repère', () => {
+    const { onSubmit } = rendre();
+    choisir(/couché·e à/, '22:30');
+    clic('Plus tard que mon coucher');
+    choisir(/essayé de dormir à/, '23:00');
     clic('En moins de 15 min');
     continuer();
     nuitMinimum();
@@ -341,17 +366,50 @@ describe('mise au lit', () => {
     matinMinimum();
     fireEvent.click(cta());
     expect(onSubmit.mock.calls[0][0].heureMiseAuLit).toBe('22:30');
+    expect(onSubmit.mock.calls[0][0].heureCoucher).toBe('23:00');
     expect(onSubmit.mock.calls[0][0].extinctionImmediate).toBe(false);
   });
 
-  it('revenir à « au même moment » efface l’heure du coucher', () => {
+  it('« plus tard » sans l’heure du repère : elle est nommée dans ce qui manque', () => {
+    rendre();
+    choisir(/couché·e à/, '22:30');
+    clic('Plus tard que mon coucher');
+    clic('En moins de 15 min');
+    continuer();
+    expect(titre()).toBe('Le soir');
+    expect(reste()!.textContent).toBe('Il reste à renseigner : l’heure où vous avez essayé de dormir 🌑.');
+  });
+
+  it('revenir à « au même moment » efface l’heure du repère, et le coucher redevient le repère', () => {
     const { onSubmit } = rendre();
     clic('Plus tard que mon coucher');
-    choisir(/mis·e au lit à/, '22:30');
+    choisir(/essayé de dormir à/, '23:45');
     completerLeMinimum();
     fireEvent.click(cta());
+    expect(onSubmit.mock.calls[0][0].heureCoucher).toBe('23:00');
     expect(onSubmit.mock.calls[0][0].heureMiseAuLit).toBeUndefined();
     expect(onSubmit.mock.calls[0][0].extinctionImmediate).toBe(true);
+  });
+
+  it('une nuit « plus tard » corrigée se relit dans l’ordre vécu et repart à l’identique', () => {
+    const nuit = {
+      heureCoucher: '23:15',
+      heureMiseAuLit: '22:30',
+      heureLever: '07:00',
+      latence: 'lt15' as const,
+      qualite: 4,
+      reveils: { dureeTotale: 'aucun' as const, nombre: 0 },
+      aideSommeil: 'aucune' as const,
+      extinctionImmediate: false,
+      leverImmediat: true,
+    };
+    const { onSubmit } = rendre({ initial: nuit });
+    expect(liste(/couché·e à/).value).toBe('22:30');
+    expect(liste(/essayé de dormir à/).value).toBe('23:15');
+    continuer();
+    continuer();
+    fireEvent.click(cta());
+    expect(onSubmit).toHaveBeenCalledWith(nuit);
   });
 
   it('la question de latence porte explicitement sur l’après-essai de dormir (v4)', () => {
@@ -435,15 +493,17 @@ describe('« comme d’habitude » — un bouton par écran, pour l’heure qu�
     expect(bouton()).toBeNull();
   });
 
-  it('le soir, ne confirme que l’extinction, et rien d’autre', () => {
+  it('le soir, ne confirme que l’heure du coucher, et rien d’autre', () => {
     rendre({ suggestionsPersonnelles: true });
     expect(bouton()?.textContent).toBe('Comme d’habitude : 23:00');
     fireEvent.click(bouton()!);
-    expect(liste(/essayé de dormir à/).value).toBe('23:00');
+    expect(liste(/couché·e à/).value).toBe('23:00');
     expect(bouton()).toBeNull();
     // Aucune autre réponse n'est reprise : l'écran du soir reste incomplet.
     continuer();
-    expect(reste()!.textContent).toBe('Il reste à renseigner : le coucher et l’endormissement.');
+    expect(reste()!.textContent).toBe(
+      'Il reste à renseigner : le moment où vous avez essayé de dormir et l’endormissement.',
+    );
     clic('Au même moment que mon coucher');
     clic('En moins de 15 min');
     continuer();
@@ -458,7 +518,7 @@ describe('« comme d’habitude » — un bouton par écran, pour l’heure qu�
 
   it('masqué dès que l’heure de l’écran est choisie à la main', () => {
     rendre({ suggestionsPersonnelles: true });
-    choisir(/essayé de dormir à/, '22:45');
+    choisir(/couché·e à/, '22:45');
     expect(bouton()).toBeNull();
   });
 });
@@ -502,11 +562,11 @@ describe('ordre des heures — refusé avant tout envoi, sur l’écran à corri
     expect(envoiRefuse(onSubmit)).toBe(false);
   });
 
-  it('une extinction avant le coucher ramène à l’écran du soir', async () => {
+  it('un essai de dormir avant le coucher ramène à l’écran du soir', async () => {
     const { onSubmit } = rendre();
-    choisir(/essayé de dormir à/, '23:00');
+    choisir(/couché·e à/, '23:30');
     clic('Plus tard que mon coucher');
-    choisir(/mis·e au lit à/, '23:30');
+    choisir(/essayé de dormir à/, '23:00');
     clic('En moins de 15 min');
     continuer();
     nuitMinimum();
@@ -518,7 +578,7 @@ describe('ordre des heures — refusé avant tout envoi, sur l’écran à corri
     expect(onSubmit).not.toHaveBeenCalled();
     expect(titre()).toBe('Le soir');
     expect(screen.getByRole('alert').textContent).toBe(
-      'L’heure où vous avez essayé de dormir doit suivre la mise au lit. Ajustez les heures.',
+      'L’heure où vous avez essayé de dormir doit suivre l’heure du coucher. Ajustez les heures.',
     );
   });
 });
@@ -588,7 +648,7 @@ describe('libellés visibles', () => {
 describe('contrat v4 — « je ne sais pas » et repère « essayé de dormir »', () => {
   it('« je ne sais pas » est proposé pour l’endormissement et pour la nuit, et part tel quel', () => {
     const { onSubmit } = rendre();
-    choisir(/essayé de dormir à/, '23:00');
+    choisir(/couché·e à/, '23:00');
     clic('Au même moment que mon coucher');
     clic('Je ne sais pas');
     continuer();
@@ -626,11 +686,13 @@ describe('contrat v4 — « je ne sais pas » et repère « essayé de dormir »
 describe('contrat v3 — un agenda ouvert avant la v4 s’y termine', () => {
   it('garde l’extinction de la lumière et ne propose pas « je ne sais pas »', () => {
     rendre({ contrat: 'agenda-sommeil-v3' });
-    expect(liste(/éteint la lumière à/).value).toBe('');
-    expect(screen.getByText(/vous avez éteint la lumière…/)).toBeTruthy();
+    expect(screen.getByText('Une fois couché·e, vous avez éteint la lumière…')).toBeTruthy();
     expect(screen.getByText(/une fois la lumière éteinte/i)).toBeTruthy();
+    expect(screen.queryByText(/essayé de dormir/)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Je ne sais pas' })).toBeNull();
-    choisir(/éteint la lumière à/, '23:00');
+    clic('Plus tard que mon coucher');
+    expect(liste(/éteint la lumière à/).value).toBe('');
+    choisir(/couché·e à/, '23:00');
     clic('Au même moment que mon coucher');
     clic('En moins de 15 min');
     continuer();
@@ -641,7 +703,11 @@ describe('contrat v3 — un agenda ouvert avant la v4 s’y termine', () => {
     rendre({ contrat: 'agenda-sommeil-v3' });
     continuer();
     expect(reste()?.textContent).toBe(
-      'Il reste à renseigner : l’heure où vous avez éteint 🌑, le coucher et l’endormissement.',
+      'Il reste à renseigner : l’heure du coucher 🛏️, l’extinction de la lumière et l’endormissement.',
+    );
+    clic('Plus tard que mon coucher');
+    expect(reste()?.textContent).toBe(
+      'Il reste à renseigner : l’heure du coucher 🛏️, l’heure où vous avez éteint 🌑 et l’endormissement.',
     );
   });
 });
