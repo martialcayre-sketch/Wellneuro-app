@@ -9845,6 +9845,15 @@ mutations (geste du responsable), puis le lot de clôture.
 
 **Ouvert.** M16 à M18, signalés d'avance comme probablement sans banc qui morde.
 
+## 2026-10-10 — AGENDA-SOMMEIL : clôture du LOT-10
+
+**Fait.** LOT-10 (#1386, clôture → PDF `AGD_LAT_MED`) → terminé ; recette sur
+appareil faite (#1387). Plus rien ne retient l'annonce aux patients du nouvel agenda.
+
+**Prochaine action.** Annonce (responsable) ; lecture LOT-02 le 2026-10-29, en datant
+l'annonce dans la fenêtre mesurée ; seconde le 2026-11-12.
+
+**Ouvert.** Sonnerie et messagerie sur un vrai iPhone, inconnues.
 ## 2026-10-10 — BIO-INGEST : passe des mutations de la contre-revue
 
 Codex : M12, M13, M17 mordent, M14 non vérifiable, C2 retirée sur `cc3f2f30`.
