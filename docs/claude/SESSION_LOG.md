@@ -9880,3 +9880,17 @@ dans le texte.
 **Prochaine action.** PR, merge, constat de la v14 servie.
 
 **Ouvert.** Rétention chez Anthropic ; durée de la trace d'import (2026-10-21).
+
+## 2026-10-10 — BIO-PARCOURS : BP-26 clos (D-276)
+
+**Fait.** `D-276` : aucune fonction retirée ni réduite, qualification différée
+à l'aboutissement (au plus tard avant toute offre commerciale), sans conclure
+au hors champ. `D-266` §2 amendé : l'étage assistant ouvre au fil de sa
+livraison, derrière drapeau. LOT-26 terminé, G4 levé, campagne en pause selon
+l'ordre arrêté. Case de déploiement de BIO-INGEST LOT-12 versée.
+
+**Écarté.** Détail par module au dépôt (public) ; campagne « en cours » sans
+lot courant (refusé par l'audit).
+
+**Prochaine action.** Merge ; puis 10A : `D-275` le couvre déjà, faire dire
+au responsable ce qui manque, sinon lots 11A.

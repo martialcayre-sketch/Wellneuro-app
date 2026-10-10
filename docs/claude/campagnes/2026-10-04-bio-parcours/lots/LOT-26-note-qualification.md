@@ -1,7 +1,7 @@
 ---
 id: "LOT-26"
 titre: "BP-26 — Note de qualification par fonction"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-00"
 ---
 
@@ -51,8 +51,9 @@ LOT-00 (BP-00).
 ## Étapes
 
 - [x] Préparer une trame par fonction (`TRAME_QUALIFICATION_BP26.md`, 2026-10-05).
-- [ ] Faire statuer le responsable fonction par fonction.
-- [ ] Consigner la conclusion au dépôt.
+- [x] Faire statuer le responsable fonction par fonction (2026-10-10, dossier
+  hors dépôt).
+- [x] Consigner la conclusion au dépôt (`D-276`).
 
 ## Tests
 
@@ -64,4 +65,10 @@ Note datée et signée ; une ligne par fonction, existant compris.
 
 ## Résultats
 
-À compléter à la clôture.
+Clos le 2026-10-10 par `D-276`. Le dossier de décision par module est tenu
+hors dépôt par le responsable. Chaque fonction, celles déjà servies comprises,
+porte la même ligne : « qualification différée à l'aboutissement du produit ;
+usage du praticien ». Aucune fonction n'est retirée ni réduite. La porte de
+`D-266` §2 est amendée : l'étage assistant ouvre au fil de sa livraison,
+derrière drapeau, sur ses preuves propres. Les défauts de sécurité relevés en
+marge deviennent des lots de sécurité, le premier étant `D-275`.

@@ -77,8 +77,8 @@
 - Éviter par conception la qualification dispositif médical : finalité
   bien-être/suivi, validation praticien systématique de tout contenu
   généré par IA avant diffusion au patient. Pour BIO-PARCOURS (`D-266` §2) :
-  vrai de l'étage outil ; l'étage assistant ouvre fonction par fonction
-  (BP-26).
+  vrai de l'étage outil ; l'étage assistant ouvre fonction par fonction,
+  derrière drapeau ; qualification différée à l'aboutissement (`D-276`).
 - HDS obligatoire avant tout stockage de données de santé réelles
   (résultats biologiques notamment).
 - Discipline de livraison : 1 tâche = 1 branche courte = 1 PR = 1 périmètre.

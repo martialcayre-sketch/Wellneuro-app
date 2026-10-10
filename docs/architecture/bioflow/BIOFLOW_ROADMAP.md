@@ -17,8 +17,8 @@ BIOFLOW
 │   └── objectif      : une donnée biologique fiable
 │
 ├── Track B — BIO-PARCOURS
-│   ├── lot courant   : LOT-26 (BP-26), note de qualification, en attente du responsable ; BP-23 terminé (#1342, relecture réelle) ; BP-10 décidé (`D-268`, #1343), registre RGPD à valider (#1344), puis migration sur confirmation distincte
-│   ├── prochain gate : G4, BP-26 avant toute assistance
+│   ├── lot courant   : aucun — LOT-26 (BP-26) terminé le 2026-10-10 (`D-276`, qualification différée à l'aboutissement, aucune fonction retirée) ; les lots de sécurité qu'il a relevés passent en tête de file
+│   ├── prochain gate : G4 levé (`D-276`) ; l'assistance ouvre au fil de sa livraison, derrière drapeau
 │   └── objectif      : l'exploitation longitudinale de la donnée validée
 │
 ├── Track C — BIO-PRESCRIPTION
@@ -35,7 +35,7 @@ BIOFLOW
 │   G1  BP-01 (levé, #1314) + D-267 (levé, #1325)       → code LOT-07
 │   G2  LOT-07 livré (levé, #1333)                      → purge, réconciliation des imports
 │   G3  traitement asynchrone durable livré             → montée en charge de l'ingestion
-│   G4  ligne BP-26 statuée                             → toute assistance clinique
+│   G4  ligne BP-26 statuée (levé, D-276)               → toute assistance clinique
 │
 └── BIOFLOW PLATFORM
     statut : NON OUVERTE (API, SaaS, multi-tenant, connecteurs)

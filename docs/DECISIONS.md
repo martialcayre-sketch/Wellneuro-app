@@ -4,6 +4,57 @@
 
 ## Décisions actives
 
+### D-276 — BP-26 : aucune fonction retirée ni réduite ; la qualification réglementaire est différée à l'aboutissement du produit, et la porte de `D-266` §2 est amendée
+
+- Date : 2026-10-10
+- Statut : accepté. Arbitrages du responsable du 2026-10-10, rendus sur le
+  dossier de qualification par module (hors dépôt), puis confirmés le même
+  jour sur trois points reformulés : les évolutions retenues sont des ajouts,
+  la porte de [[D-266]] §2 est amendée, cette décision publique reste sobre.
+- Domaine : gouvernance réglementaire, frontières. Lot LOT-26 (BP-26) de la
+  campagne `2026-10-04-bio-parcours`, qu'elle clôt.
+- Amende : [[D-266]] §2 (la règle « sa ligne avant ouverture ») et la phrase
+  de son §4 sur l'étage assistant. Aligne `REGISTRE_FRONTIERES.md` §1 et
+  `ROADMAP_PRODUIT.md`.
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune dose, aucune
+  migration, aucun drapeau, aucun texte servi au patient. N'allège aucune
+  preuve propre à un lot : signature d'une table ([[D-195]]), constat en
+  production ([[D-125]]), revue proportionnée au risque.
+
+**§1 — Aucune fonction retirée ni réduite.** L'instruction BP-26 a examiné
+les fonctions du produit module par module, celles déjà servies comprises.
+Aucune n'est retirée, réduite ni masquée au praticien : elles restent servies
+telles quelles. Les évolutions retenues à la suite de l'instruction sont des
+ajouts, et chacune passe par son propre lot.
+
+**§2 — Qualification différée.** Chaque fonction reçoit la même ligne :
+« qualification différée à l'aboutissement du produit ; usage du praticien ».
+La qualification au sens des règlements MDR et IVDR, et la décision d'un
+éventuel marquage, se reprennent quand le produit sera abouti, et au plus tard
+avant toute offre commerciale. **Cette décision ne conclut pas qu'une fonction
+échappe au champ des dispositifs médicaux** : elle diffère la question. Le
+détail par module reste dans le dossier de décision BP-26 du responsable,
+hors dépôt ; le dépôt, public, n'en porte que cette conclusion et sa date.
+La question nommée par [[D-266]] §4 (la tenue de [[D-037]] face au mot
+« prescription ») est différée avec le reste.
+
+**§3 — Amendement de [[D-266]] §2.** La phrase « chaque fonction n'ouvre
+qu'après sa ligne de la note de qualification signée (BP-26) » devient :
+**chaque fonction de l'étage assistant ouvre au fil de sa livraison, derrière
+son drapeau et sur ses preuves propres ; sa ligne BP-26 est celle du §2.**
+La séparation en deux étages demeure comme discipline de livraison : l'étage
+assistant reste derrière drapeau. Elle ne repose plus sur une lecture
+réglementaire, et la phrase « La lecture MDR/IVDR qui fonde cette séparation
+est une hypothèse de travail que seule la note BP-26 assume » ne vaut plus.
+Les fonctions déjà servies qui proposent d'après le dossier
+(`indicationsBiologieV1`, orientation) sont statuées : gardées (§1). Le §4 de
+[[D-266]] se lit de même : l'étage assistant ouvre fonction par fonction, au
+fil de sa livraison.
+
+**§4 — Les défauts de sécurité ne dépendent pas de la qualification.** Ceux
+que l'instruction a relevés en marge se traitent comme des lots de sécurité,
+en tête de file, chacun sous sa décision. [[D-275]] est le premier.
+
 ### D-275 — Idées suicidaires : un encart d'urgence toujours visible, un constat de sécurité tiré des questionnaires, une carte au Fil
 
 - Date : 2026-10-09
