@@ -9806,3 +9806,16 @@ nettoyés par l'écart praticien. Contraste corrigé par le jeton global
 lot de clôture.
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-10 — Lettre d'adressage remise au patient : constat du drapeau
+
+**Décidé.** `WN_LETTRE_ADRESSAGE_PATIENT` consigné « constaté par le
+comportement » sur `PAT011`, sur déclaration du responsable.
+
+**Écarté.** Inventer comptes ou horodatages non transmis : ils restent à
+relire par conteneur si une preuve datée est requise.
+
+**Prochaine action.** Campagne D-262 close côté pose.
+
+**Questions ouvertes.** Date UTC de la lettre ; e-mail si révocation pendant
+la remise ; export d'accès sans les remises.
