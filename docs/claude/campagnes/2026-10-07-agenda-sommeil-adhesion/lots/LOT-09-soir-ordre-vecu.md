@@ -1,7 +1,7 @@
 ---
 id: "LOT-09"
 titre: "Le soir dans l’ordre vécu — le coucher d’abord"
-statut: "en_cours (2026-10-10)"
+statut: "terminé (2026-10-10, #1381) — lecture du 2026-10-29 : compter les deux textes du refus d’ordre"
 dépend_de: "LOT-04"
 ---
 
