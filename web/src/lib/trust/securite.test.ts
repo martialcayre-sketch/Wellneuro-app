@@ -1,18 +1,37 @@
 import { describe, expect, it } from 'vitest';
 import { orienterEffetIndesirable, projeterChoixCourants, REGLE_ORIENTATION_EI } from './securite';
 
-describe('règle d’orientation effet indésirable v1 (G-TRUST-05)', () => {
+describe('règle d’orientation effet indésirable v2 (G-TRUST-05, D-278 §1)', () => {
   it('mappe la sévérité déclarée vers une orientation fixe', () => {
     expect(orienterEffetIndesirable('severe').orientation).toBe('urgence_conseillee');
     expect(orienterEffetIndesirable('moderee').orientation).toBe('contact_medical_conseille');
     expect(orienterEffetIndesirable('legere').orientation).toBe('revue_praticien');
-    expect(orienterEffetIndesirable('incertaine').orientation).toBe('revue_praticien');
+    expect(orienterEffetIndesirable('incertaine').orientation).toBe('urgence_ou_contact_conseille');
+  });
+
+  it('D-278 §1 : « incertaine » ne reçoit jamais le message le moins protecteur', () => {
+    const incertaine = orienterEffetIndesirable('incertaine').messagePatient;
+    expect(incertaine).not.toBe(orienterEffetIndesirable('legere').messagePatient);
+    expect(incertaine).not.toContain('prochaine revue');
+    expect(incertaine).toContain('15 (SAMU) ou le 112');
+    expect(incertaine).toContain('parlez-en rapidement à votre médecin traitant ou à votre praticien');
+    expect(incertaine).toContain('sans garantie de délai');
+  });
+
+  it('D-278 §1 : le texte signé de « incertaine » est servi mot pour mot', () => {
+    expect(orienterEffetIndesirable('incertaine').messagePatient).toBe(
+      'Votre signalement a bien été enregistré. Si vous ressentez en ce moment des symptômes graves ' +
+        'ou inquiétants, contactez immédiatement le 15 (SAMU) ou le 112. Sinon, parlez-en rapidement à ' +
+        'votre médecin traitant ou à votre praticien, et ne modifiez pas un traitement prescrit sans ' +
+        'l’accord du prescripteur. Wellneuro n’est pas un service d’urgence : votre signalement sera ' +
+        'examiné par votre praticien, sans garantie de délai.',
+    );
   });
 
   it('trace la règle et sa version sur chaque orientation', () => {
     const resultat = orienterEffetIndesirable('severe');
     expect(resultat.regleId).toBe(REGLE_ORIENTATION_EI.id);
-    expect(resultat.regleVersion).toBe('v1');
+    expect(resultat.regleVersion).toBe('v2');
   });
 
   it('ne promet jamais de réponse rapide et cite les urgences quand il le faut', () => {

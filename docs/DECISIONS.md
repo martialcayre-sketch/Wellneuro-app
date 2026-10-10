@@ -4,6 +4,72 @@
 
 ## Décisions actives
 
+### D-278 — Lots de sécurité 11A : un effet indésirable « incertain » reçoit les numéros d'urgence, la dépression du DASS-21 empêche l'extinction du stress, les commentaires du laboratoire sont recopiés
+
+- Date : 2026-10-10
+- Statut : accepté. Arbitrages du responsable du 2026-10-10, posés sur
+  scénario ; le texte du §1 est **signé** le même jour.
+- Domaine : sécurité patient. Lots 11A, issus de l'instruction BP-26
+  ([[D-276]] §4), à la suite du lot 10A ([[D-277]]).
+- Livraison : une PR par paragraphe, dans l'ordre §1, §2, §3 ; le §3 passe par
+  une migration relue et une `release-db` approuvée avant son code
+  consommateur.
+- **Ne touche pas** : aucun seuil, aucune borne de bande, aucun score. Les
+  bandes citées sont celles que le catalogue publie déjà (`DC-19`, `DC-20`).
+
+**§1 — Effet indésirable de sévérité « incertaine ».** La règle d'orientation
+`orientation-effet-indesirable` passe en **v2**. En v1, le patient qui
+répondait « Je ne sais pas » à la gravité lisait le message d'un effet léger
+(« examiné lors de sa prochaine revue ») : celui qui ne sait pas juger était
+traité comme un cas bénin. En v2, il reçoit une orientation propre,
+`urgence_ou_contact_conseille`, et ce texte signé :
+
+> Votre signalement a bien été enregistré. Si vous ressentez en ce moment des
+> symptômes graves ou inquiétants, contactez immédiatement le 15 (SAMU) ou le
+> 112. Sinon, parlez-en rapidement à votre médecin traitant ou à votre
+> praticien, et ne modifiez pas un traitement prescrit sans l'accord du
+> prescripteur. Wellneuro n'est pas un service d'urgence : votre signalement
+> sera examiné par votre praticien, sans garantie de délai.
+
+Les trois autres sévérités gardent leur message mot pour mot. La règle reste
+une correspondance figée entre la sévérité déclarée et un message, sans
+analyse du texte des symptômes ni du produit. Écartés : le message de la
+sévérité « modérée » (il tait le 15 et le 112 à un patient qui ne peut exclure
+la gravité) et celui de la sévérité « sévère » (il alarme un patient dont
+l'effet est peut-être bénin). Les signalements déjà enregistrés gardent leur
+orientation et leur version v1.
+
+**§2 — La dépression du DASS-21 dans l'extinction du stress.** La règle
+d'arrêt `STOP-STR` exige désormais, en plus de ses quatre conditions, que la
+sous-échelle **D** (dépression) du DASS-21 soit dans sa bande « Normal » : une
+dépression « Léger » ou au-delà laisse les explorations du stress proposées.
+Avant, un DASS-21 dont la dépression était « Très sévère » n'empêchait pas
+d'afficher « Les explorations complémentaires de l'axe stress n'ont pas
+d'objet en l'état ». Le motif servi cite le DASS-21 sur ses trois
+sous-échelles. L'exclusion de l'axe D, choisie à l'écriture de la règle pour
+ne pas faire dépendre l'extinction du stress d'un axe qu'elle n'éteint pas,
+est levée : l'extinction devient plus rare, jamais plus fréquente — c'est le
+sens du fail-closed. Écartés : bloquer dès « Modéré » ou dès « Sévère » (un
+patient à dépression « Léger » ou « Modéré » aurait vu le stress s'éteindre
+sous un motif rassurant). La table des règles d'arrêt est **re-signée** à la
+date de ce lot, sur son nouveau SHA.
+
+**§3 — Les commentaires du laboratoire.** Le relevé d'un compte rendu
+recopiait la valeur, l'unité, l'intervalle et la marque, mais aucun
+commentaire : une mention de valeur critique, d'hémolyse ou de contrôle
+souhaité disparaissait du dossier à la purge du document ([[D-258]]). Désormais
+les commentaires imprimés par le laboratoire sont **recopiés tels
+qu'imprimés**, sans les compléter, les reformuler ni en rien conclure — ceux
+qui portent sur un résultat avec ce résultat, ceux qui portent sur le compte
+rendu entier avec l'import. Le praticien les voit à la validation, et ils
+restent au dossier après la purge. Comme pour [[D-267]], un commentaire trop
+long pour sa borne technique n'est jamais tronqué : il est signalé « non
+transcrit ». Cela demande une migration (relue, puis `release-db` approuvée),
+une nouvelle version du procédé d'extraction, et une nouvelle version du texte
+d'information sur l'usage de l'IA présenté aux patients. Écarté : signaler
+seulement leur présence (le texte n'aurait plus existé que chez le
+laboratoire après la purge).
+
 ### D-277 — Idées suicidaires (lot 10A) : un message au patient dès sa réponse positive, et un courriel neutre au praticien à la transmission
 
 - Date : 2026-10-10
