@@ -9806,3 +9806,14 @@ nettoyés par l'écart praticien. Contraste corrigé par le jeton global
 lot de clôture.
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-10 — AGENDA-SOMMEIL : clôture de rattrapage LOT-06 à LOT-09
+
+**Fait.** Fiches LOT-06 à 09 → terminé (LOT-07 observé en production) ;
+CAMPAGNE.md : lot courant LOT-02 ; campagne inscrite à la main en
+`parallel_campaigns` (`--appliquer` n'inscrit rien). T1 et audit de campagne verts.
+
+**Prochaine action.** Lecture LOT-02 le 2026-10-29 (deux textes du refus
+d'ordre), seconde le 2026-11-12.
+
+**Ouvert.** Recette Android 2-5, iOS 6-9 ; trou E2E clôture → PDF (`AGD_LAT_MED`).

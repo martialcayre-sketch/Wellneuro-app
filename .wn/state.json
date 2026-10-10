@@ -95,11 +95,16 @@
     "D-271"
   ],
   "last_session": null,
-  "updated_at": "2026-10-10T10:30:00Z",
+  "updated_at": "2026-10-10T12:06:33Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-10-04-bio-parcours",
       "active_lot": "LOT-26",
+      "status": "active"
+    },
+    {
+      "campaign_id": "2026-10-07-agenda-sommeil-adhesion",
+      "active_lot": "LOT-02",
       "status": "active"
     }
   ]

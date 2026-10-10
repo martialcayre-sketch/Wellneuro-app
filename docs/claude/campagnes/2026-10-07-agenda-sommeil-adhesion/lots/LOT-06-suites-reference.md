@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Suites de la mesure de référence — rappel après la première nuit, clôture courte, export"
-statut: "en_cours (2026-10-09)"
+statut: "terminé (2026-10-09, #1372) — effet lu avec le LOT-02 le 2026-10-29"
 dépend_de: "LOT-02"
 ---
 
