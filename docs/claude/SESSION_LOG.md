@@ -9844,3 +9844,13 @@ mutation rouge, T2 vert). B2 affaiblie (formulation), C3 résiste (essai Node).
 mutations (geste du responsable), puis le lot de clôture.
 
 **Ouvert.** M16 à M18, signalés d'avance comme probablement sans banc qui morde.
+
+## 2026-10-10 — BIO-INGEST : passe des mutations de la contre-revue
+
+Codex : M12, M13, M17 mordent, M14 non vérifiable, C2 retirée sur `cc3f2f30`.
+Joué ensuite par l'auteur : M14 mord sur PostgreSQL local ; M16 (journaux hors
+`import/`) et M18 (route des décisions) survivaient. Bancs ajoutés : garde des
+journaux étendu au portail, à la saisie et au cron de purge (`signature()`
+neutraliseur) ; `decisions/route.test.ts`, 11 cas. B2 et C3 inchangées.
+Constat d'usage en agrégats pris pour le lot de clôture. Ouvert : M1-M11 et
+M15 sans résultat. Suite : merge, puis lot de clôture en session neuve.
