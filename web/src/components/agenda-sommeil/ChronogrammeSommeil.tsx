@@ -109,14 +109,21 @@ export function portionsBarre(
 
 // Barre d'une nuit : portions claires aux deux extrémités (endormissement en
 // tête, éveil au lit du matin en pied), sommeil estimé entre les deux.
-function BarreNuit(props: unknown) {
-  const { x, y, width, height, payload } = props as {
+// Exportée pour le banc : recharts ne la rend pas en jsdom.
+export function BarreNuit(props: unknown) {
+  const { x, y: yRecu, width, height: hauteurRecue, payload } = props as {
     x: number;
     y: number;
     width: number;
     height: number;
     payload: Point;
   };
+  // Axe des heures INVERSÉ (le soir en haut) : recharts rend la barre
+  // d'intervalle avec une hauteur NÉGATIVE, `y` posé au pied. Écartée telle
+  // quelle, aucune nuit n'était dessinée (constaté en recette le 2026-10-10).
+  // On remet le rectangle à l'endroit : `y` en tête, hauteur positive.
+  const y = hauteurRecue < 0 ? yRecu + hauteurRecue : yRecu;
+  const height = Math.abs(hauteurRecue);
   if (!payload.plage || height <= 0) return null;
   const [debut, fin] = payload.plage;
   const { hLatence, hEveilMatin } = portionsBarre(
