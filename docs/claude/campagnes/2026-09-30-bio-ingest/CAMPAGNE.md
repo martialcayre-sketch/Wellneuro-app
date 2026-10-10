@@ -92,9 +92,10 @@ arbitrée le 2026-10-10** : la contre-revue adverse de campagne, lancée AVANT
 le lot de clôture, puis le lot de clôture. Ses deux énoncés (affirmations à
 réfuter, mutations des bancs) sont versés le 2026-10-10 dans ce dossier,
 `PROMPT_CONTRE_REVUE_CODEX_*2026-10-10.md`. La passe sur lecture est jouée
-le même jour (`REVUE_CODEX_ADVERSE_2026-10-10.md`) : trois réfutations, dont
-une confirmée (C2, dossier clos pendant l'envoi du patient), à corriger en PR
-séparée. La passe des mutations reste à jouer. Le
+le même jour (`REVUE_CODEX_ADVERSE_2026-10-10.md`) : trois réfutations
+annoncées. Après vérification, C2 est confirmée (dossier clos pendant l'envoi
+du patient), à corriger par la PR #1385. B2 est affaiblie (formulation), et C3
+résiste. La passe des mutations reste à jouer. Le
 LOT-05 attend le laboratoire sans date. Il est transféré vers une campagne
 propre, ce qui permet de clôturer BIO-INGEST sans lui.
 

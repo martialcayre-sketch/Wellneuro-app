@@ -1,4 +1,4 @@
-# Handoff — BIO-INGEST : énoncés de la contre-revue adverse de campagne
+# Handoff — 2026-10-10 — BIO-INGEST : contre-revue adverse de campagne, énoncés et passe sur lecture
 
 ## Branche et état Git
 
@@ -24,7 +24,7 @@ de campagne : affirmations à réfuter + mutations des bancs.
   décisions sans `route.test.ts`).
 - Piste adverse C2 : le dossier clos n'est jugé qu'avant le verrou du dépôt
   (`transmission.ts`) — non re-jugé sous lui.
-- Pas d'entrée SESSION_LOG (conflit avec #1382 ; sur demande seulement).
+- Entrée SESSION_LOG ajoutée à la revue Copilot de #1384 (#1382 mergée entre-temps, plus de conflit).
 
 ## Fichiers modifiés
 
@@ -32,6 +32,8 @@ de campagne : affirmations à réfuter + mutations des bancs.
 - `docs/claude/campagnes/2026-09-30-bio-ingest/PROMPT_CONTRE_REVUE_CODEX_MUTATIONS_2026-10-10.md` (neuf)
 - `docs/claude/campagnes/2026-09-30-bio-ingest/CAMPAGNE.md` (pointeur)
 - `changelog.d/2026-10-10-bio-ingest-enonce-contre-revue.md`
+- `docs/claude/campagnes/2026-09-30-bio-ingest/REVUE_CODEX_ADVERSE_2026-10-10.md` (neuf)
+- `docs/claude/SESSION_LOG.md` (entrée du jour)
 
 ## Validations exécutées
 
@@ -48,7 +50,7 @@ de campagne : affirmations à réfuter + mutations des bancs.
 ## Prochaine action exacte
 
 La passe sur lecture est jouée et traitée (`REVUE_CODEX_ADVERSE_2026-10-10.md` :
-C2 confirmée, B2 et C3 écartées avec motif). Ensuite : le correctif C2 en PR
+C2 confirmée, B2 affaiblie et trouvaille écartée, C3 résiste). Ensuite : le correctif C2 en PR
 séparée (relecture `FOR SHARE` du dossier sous le verrou du dépôt, avec un
 banc qui rougit sans elle). Puis le responsable lance la passe des mutations
 (`REVUE_CODEX_MUTATIONS_2026-10-10.md`), et vient le lot de clôture.

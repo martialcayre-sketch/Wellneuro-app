@@ -9830,3 +9830,17 @@ relire par conteneur si une preuve datée est requise.
 
 **Questions ouvertes.** Date UTC de la lettre ; e-mail si révocation pendant
 la remise ; export d'accès sans les remises.
+
+## 2026-10-10 — BIO-INGEST : contre-revue adverse de campagne
+
+**Fait.** Énoncés versés (21 affirmations, 18 mutations). Passe Codex sur
+lecture jouée et vérifiée dans l'arbre : C2 confirmée (dossier clos pendant
+l'envoi du patient), corrigée par #1385 (relecture `FOR SHARE` sous le verrou,
+mutation rouge, T2 vert). B2 affaiblie (formulation), C3 résiste (essai Node).
+
+**Écarté.** Balayage périodique des imports périmés : rien d'observable.
+
+**Prochaine action.** Merger #1384 puis #1385, puis lancer la passe des
+mutations (geste du responsable), puis le lot de clôture.
+
+**Ouvert.** M16 à M18, signalés d'avance comme probablement sans banc qui morde.

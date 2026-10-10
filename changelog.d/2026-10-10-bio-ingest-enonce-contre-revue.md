@@ -17,7 +17,8 @@
 - **`REVUE_CODEX_ADVERSE_2026-10-10.md`**, même dossier : la passe sur lecture,
   jouée le même jour (NO-GO, trois réfutations, aucun P0), et la vérification
   de chaque trouvaille dans l'arbre. C2 est confirmée : un dossier clos pendant
-  l'envoi du patient reçoit le document. Elle est corrigée en PR séparée. B2
-  est écartée (péremption paresseuse, tenue par tous les lecteurs). C3 est
-  écartée par l'expérience : Node ne lit jamais plus que le `Content-Length`
-  annoncé.
+  l'envoi du patient reçoit le document. Elle **reste à corriger**, par une PR
+  séparée (#1385). B2 est affaiblie : la colonne reste `en_cours`, mais tous
+  les lecteurs traitent l'import périmé comme interrompu, et sa trouvaille P1
+  est écartée. C3 résiste à l'expérience : Node ne lit jamais plus que le
+  `Content-Length` annoncé.

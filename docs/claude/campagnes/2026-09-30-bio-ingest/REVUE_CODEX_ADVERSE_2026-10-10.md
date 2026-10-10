@@ -12,8 +12,10 @@ aucune écriture de résultat sans geste humain. **Aucune mutation n'a été
 jouée** : la passe est restée en lecture seule. Les bancs restent à éprouver
 par la seconde passe (`PROMPT_CONTRE_REVUE_CODEX_MUTATIONS_2026-10-10.md`).
 
-**Après vérification : une trouvaille confirmée (C2), deux écartées (B2,
-C3).**
+**Après vérification : C2 est réfutée et sa trouvaille confirmée, à corriger
+(PR #1385). B2 est AFFAIBLIE : l'affirmation est fausse sur la colonne, juste
+sur le sens. Sa trouvaille P1 est écartée. C3 résiste : sa trouvaille est
+écartée par l'expérience.**
 
 ## 1. Tableau des verdicts (contre-relecteur)
 
@@ -69,7 +71,7 @@ courante est une constante du registre, fixe pendant la vie du processus, et
 un accusé n'est jamais retiré. Aucune écriture concurrente ne peut
 l'invalider pendant l'envoi.
 
-### P1-1 (B2) — import abandonné durablement `en_cours` — `ÉCARTÉE` (affirmation trop forte, fond tenu)
+### P1-1 (B2) — import abandonné durablement `en_cours` — affirmation `AFFAIBLIE`, trouvaille P1 `ÉCARTÉE`
 
 **Contre-relecteur.** Un conteneur tué laisse l'import `en_cours`. Sans
 relance, seul le cron le clôt, à l'échéance de 30 jours. L'état affiché
@@ -96,11 +98,17 @@ lecture active :
 Les deux garanties qui comptent tiennent. Aucune extraction ne se superpose à
 une autre : la borne de 240 s et la transaction de 20 s restent sous les
 5 min. Le document se purge au plus tard à 30 jours (`D-258`), import
-abandonné ou non. **C'est la formulation de B2 dans l'énoncé qui était trop
-forte** : « ne reste jamais `en_cours` » visait le sens, pas la colonne. Un
-balayage périodique n'ajouterait rien d'observable. Pas de correctif.
+abandonné ou non. **B2 est donc `AFFAIBLIE`, et non réfutée ni intacte.** Sa
+branche « ne reste jamais `en_cours` au-delà de la péremption » est fausse pour
+la colonne, comme l'admet la vérification ci-dessus. Le fond tient : aucun
+lecteur ne prend l'import périmé pour une lecture active. La faute est dans la
+formulation de l'énoncé. La trouvaille P1 (« l'état affiché reste en cours »)
+est écartée : l'écran affiche l'inverse. Un balayage périodique n'ajouterait
+rien d'observable. Pas de correctif. Au lot de clôture, la garantie s'inscrit
+sous sa forme exacte : « réputé abandonné au-delà de 5 min, clos au geste
+suivant ou à l'échéance ».
 
-### P1-3 (C3) — `Content-Length` mensonger, corps de plus de 10 Mo en mémoire — `ÉCARTÉE` (réfutée par l'expérience)
+### P1-3 (C3) — `Content-Length` mensonger, corps de plus de 10 Mo en mémoire — `ÉCARTÉE` (réfutée par l'expérience) ; C3 `RÉSISTE`
 
 **Contre-relecteur.** Un client annonce une petite longueur et envoie un corps
 bien plus grand. `req.formData()` le matérialise avant le contrôle de
@@ -134,8 +142,8 @@ Le constat relève du lot de clôture, avec la mise à jour du dossier RGPD.
 
 ## 3. Ce qui reste
 
-- **Correctif C2** : PR séparée, avec un banc qui rougit sans la relecture
-  verrouillée.
+- **Correctif C2** : PR #1385, ouverte et non mergée à l'écriture de ce
+  fichier. Son banc rougit sans la relecture verrouillée (mutation jouée).
 - **Seconde passe (mutations)** : non jouée. Elle seule dira si les bancs
   mordent. Les trois lignes signalées d'avance (M16 à M18) restent ouvertes.
 - **Lot de clôture** : après la seconde passe et le correctif.
