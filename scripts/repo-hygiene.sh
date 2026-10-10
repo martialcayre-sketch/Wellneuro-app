@@ -34,6 +34,20 @@ log() {
   printf '[repo-hygiene] %s\n' "$*"
 }
 
+# rg absent (macOS sans ripgrep) : repli sur grep, sinon les references ne sont
+# jamais trouvees — apply-safe deplacerait sans reecrire les liens.
+search_fixed() {
+  local mode="$1" needle="$2"
+  if command -v rg >/dev/null 2>&1; then
+    rg "$mode" --fixed-strings "$needle" "$ROOT" \
+      -g '!**/.git/**' -g '!**/node_modules/**' -g '!**/.next/**'
+  else
+    grep -r "$mode" -F --exclude-dir=.git --exclude-dir=node_modules \
+      --exclude-dir=.next --exclude-dir='.repo-hygiene*' \
+      --exclude-dir=worktrees -- "$needle" "$ROOT"
+  fi
+}
+
 abs_path() {
   local p="$1"
   if [[ "$p" = /* ]]; then
@@ -101,7 +115,7 @@ run_audit_only() {
     git -C "$ROOT" status --short || true
     echo
     echo "## TOP DOSSIERS (taille)"
-    du -h --max-depth=2 "$ROOT" 2>/dev/null | sort -h | tail -n 120
+    du -h -d 2 "$ROOT" 2>/dev/null | sort -h | tail -n 120
     echo
     echo "## DOCS VOLUMINEUSES (.md > 200KB)"
     find "$ROOT" -type f -name '*.md' -size +200k \
@@ -111,7 +125,7 @@ run_audit_only() {
     echo "## SCRIPTS POTENTIELLEMENT DORMANTS (heuristique)"
     if [[ -d "$ROOT/scripts" ]]; then
       while IFS= read -r file; do
-        refs="$({ rg -n --fixed-strings "$file" "$ROOT" 2>/dev/null || true; } | wc -l | tr -d ' ')"
+        refs="$({ search_fixed -n "$file" 2>/dev/null || true; } | wc -l | tr -d ' ')"
         if [[ "${refs:-0}" -le 1 ]]; then
           printf '%s\n' "$file"
         fi
@@ -143,7 +157,7 @@ run_audit_only() {
   find "$ROOT" -type f \
     -not -path '*/.git/*' \
     -not -path '*/node_modules/*' \
-    -printf '%f|%p\n' | sort > "${ROOT}/${OUT_DIR}/by-basename.txt"
+    -print | awk -F'/' '{print $NF "|" $0}' | sort > "${ROOT}/${OUT_DIR}/by-basename.txt"
 
   awk -F'|' '
   {n[$1]++; paths[$1]=paths[$1] "\n" $2}
@@ -182,8 +196,7 @@ replace_path_refs() {
   local dry_run="$3"
 
   local targets
-  targets="$(rg -l --fixed-strings "$old_rel" "$ROOT" \
-    -g '!**/.git/**' -g '!**/node_modules/**' -g '!**/.next/**' || true)"
+  targets="$(search_fixed -l "$old_rel" || true)"
 
   if [[ -z "$targets" ]]; then
     return 0
@@ -196,7 +209,7 @@ replace_path_refs() {
     else
       old_esc="$(printf '%s' "$old_rel" | sed 's/[.[\\*^$()+?{|]/\\\\&/g')"
       new_esc="$(printf '%s' "$new_rel" | sed 's/[&/]/\\\\&/g')"
-      sed -i "s/${old_esc}/${new_esc}/g" "$file"
+      sed -i.bak "s/${old_esc}/${new_esc}/g" "$file" && rm -f "$file.bak"
     fi
   done <<< "$targets"
 }
