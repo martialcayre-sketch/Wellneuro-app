@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Le rappel du matin, posé par le patient sur son téléphone"
-statut: "terminé (2026-10-08, #1364) — recette sur appareil après merge, avant annonce"
+statut: "terminé (2026-10-08, #1364) — recette sur appareil faite le 2026-10-10 (Android, simulateur iOS)"
 dépend_de: "LOT-03"
 ---
 
@@ -50,6 +50,20 @@ qu'un fichier « à ouvrir », et la recette tranche :
   téléphone sans (Google Agenda seul). Google Agenda n'ouvre pas toujours un
   `.ics` téléchargé et ignore souvent l'alarme du fichier : si la recette le
   confirme, le texte d'aide doit le dire avant l'annonce.
+
+**Faite le 2026-10-10** par le responsable, sur un dossier de test en
+production (observé, au sens de `D-125`) ; liste de recette tenue hors dépôt.
+
+- **Android** : le fichier s'ajoute à Samsung Agenda et sonne ; sur un
+  téléphone sans Samsung, Google Agenda l'ouvre et sonne ; depuis le navigateur
+  intégré d'une messagerie, le fichier arrive. La crainte sur Google Agenda
+  n'est pas confirmée : le texte d'aide reste tel quel.
+- **Simulateur iOS du Mac**, faute d'iPhone : « Télécharger ? » puis l'ajout au
+  Calendrier, l'alerte « Rappel du matin » à l'heure choisie, et le même essai
+  depuis l'icône posée sur l'écran d'accueil.
+- **Non couvert, inconnu faute de preuve** : la sonnerie sur un vrai iPhone (le
+  simulateur montre l'alerte, il ne prouve pas la sonnerie) et le
+  téléchargement depuis le navigateur d'une messagerie sur iPhone.
 
 Relecture `wn-reviewer` : GO conditionnel, P1 (révocation trop tôt, promesse
 d'ouverture) et P2 corrigés dans la PR (PRODID neutre, repli d'identifiant,
