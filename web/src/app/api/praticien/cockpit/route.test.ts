@@ -894,7 +894,7 @@ describe('/api/praticien/cockpit — chaîne C1 rebranchée, table signée', () 
   // chaîne la consomme, et la réponse la sert à côté de la carte.
   describe('levée par adressage (D-257, LOT-04)', () => {
     const SIGNAL = 'Douleur thoracique / oppression';
-    const idConstat = () => construireSafetyFindings([SIGNAL]).findings[0].findingId;
+    const idConstat = () => construireSafetyFindings([SIGNAL], [], []).findings[0].findingId;
 
     beforeEach(() => {
       prisma.consultation.findFirst.mockResolvedValue({

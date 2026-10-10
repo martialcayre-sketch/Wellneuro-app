@@ -588,6 +588,7 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
             patientContext: inputs.patientContext,
             responses: inputs.responses,
             signauxAlerte: inputs.signauxAlerte,
+            reponsesSecurite: inputs.reponsesSecurite,
             etatPopulation: inputs.etatPopulation,
             effetsIndesirables: await lireEffetsIndesirables(idPatient),
             couverturesAdressage,
@@ -905,6 +906,7 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
       patientContext: inputs.patientContext,
       responses: inputs.responses,
       signauxAlerte: inputs.signauxAlerte,
+      reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
       // Lus par la fonction PARTAGÉE avec `verifierChaineC1` ([[D-101]]) : ce
       // POST émet la carte que le vérificateur recalculera, et deux lectures

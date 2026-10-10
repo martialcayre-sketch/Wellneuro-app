@@ -142,6 +142,7 @@ describe('construireChaineC1Tolerante', () => {
       patientContext: inputs.patientContext,
       responses: inputs.responses,
       signauxAlerte: inputs.signauxAlerte,
+      reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
     };
   }

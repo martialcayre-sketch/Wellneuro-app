@@ -192,6 +192,7 @@ export async function refusChaineC1(
       // Un signal lu ici et pas dans le cockpit — ou l'inverse — ferait diverger
       // la revue recalculée et rendrait 409 sur une carte honnête.
       signauxAlerte: inputs.signauxAlerte,
+      reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
       effetsIndesirables,
       couverturesAdressage,

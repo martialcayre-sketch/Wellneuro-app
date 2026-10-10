@@ -3,7 +3,15 @@ import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
 import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 import { contientTermePrescriptif } from '@/lib/documents/vocabulaire';
 import { SAFETY_SIGNAL_CONDUITES, SAFETY_SIGNALS_V1 } from './safetySignalsV1';
-import { rendreCourrierAdressageFige, genererCourrierAdressage, VERSION_ANCRAGE_ADRESSAGE } from './courrierAdressage';
+import {
+  rendreCourrierAdressageFige,
+  genererCourrierAdressage,
+  SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE,
+  VERSION_ANCRAGE_ADRESSAGE,
+  VERSION_ANCRAGE_ADRESSAGE_QUESTIONNAIRE,
+} from './courrierAdressage';
+import { reponsesSecuriteDeclarees } from '@/lib/clinical-engine/safetyFindings';
+import { SAFETY_QUESTIONNAIRE_V1 } from './safetyQuestionnaireV1';
 
 // Un signal de chaque rang, pris DANS la table signée — jamais inventé ici : un
 // libellé de fixture qui n'existe pas dans la table éprouverait le cas « hors
@@ -16,6 +24,7 @@ function entree(signaux: string[], surcharge: Record<string, unknown> = {}) {
   return {
     patientId: 'PAT_TEST',
     signaux,
+    reponses: [],
     tableSha256: 'sha-fixture',
     dateCourrier: '2026-09-16T00:00:00.000Z',
     ...surcharge,
@@ -190,5 +199,90 @@ describe('La lettre remise, rendue pour l’impression (D-262, LOT-03b)', () => 
 
   it('un texte qui ne passe plus la garde du chokepoint : rien n’est rendu, aucun rendu contourné', () => {
     expect(rendreCourrierAdressageFige({ ...ENTREE, texte: 'Docteur, merci de prescrire un traitement.' })).toBeNull();
+  });
+});
+
+// [[D-275]] §2 — la lettre qui cite une réponse de questionnaire. Les réponses
+// viennent du MÊME lecteur que le producteur ; leurs libellés de la table.
+function reponsesDe(rawAnswers: Record<string, unknown>, idQuestionnaire = 'Q_NEU_01') {
+  return reponsesSecuriteDeclarees([{
+    idReponse: 'REP-1',
+    idQuestionnaire,
+    dateReponse: new Date('2026-10-01T09:00:00.000Z'),
+    scoresJson: { rawAnswers },
+  }]);
+}
+const PLANS = SAFETY_QUESTIONNAIRE_V1[0].options[2].l;
+
+describe('lettre — réponses de questionnaire ([[D-275]] §2)', () => {
+  it('questionnaire seul : la réponse est citée, l’anamnèse n’est pas évoquée', () => {
+    const resultat = genererCourrierAdressage(entree([], { reponses: reponsesDe({ B7: 2 }) }));
+    if (!resultat.ok) throw new Error('refus inattendu');
+    const texte = resultat.courrier.texte;
+    expect(texte).toContain(`— BDI, passation du 2026-10-01 : « ${PLANS} »`);
+    expect(texte).toContain('ses réponses à un ou plusieurs questionnaires');
+    expect(texte).not.toContain('Signaux déclarés par le patient');
+    expect(texte).not.toContain('Ils ne proviennent d’aucune passation');
+    expect(texte).not.toContain('lors de son anamnèse');
+    expect(contientTermePrescriptif(texte)).toBe(false);
+  });
+
+  it('une réponse « non » seule ne fait pas de lettre', () => {
+    expect(genererCourrierAdressage(entree([], { reponses: reponsesDe({ B7: 0 }) }))).toEqual({
+      ok: false, raison: 'aucun_signal_adressage',
+    });
+  });
+
+  it('lettre mixte : les deux listes, la phrase mixte, l’ancrage des deux tables', () => {
+    const resultat = genererCourrierAdressage(entree([ADRESSAGE], { reponses: reponsesDe({ B7: 2 }) }));
+    if (!resultat.ok) throw new Error('refus inattendu');
+    const texte = resultat.courrier.texte;
+    expect(texte).toContain(`— « ${ADRESSAGE} »`);
+    expect(texte).toContain(`« ${PLANS} »`);
+    expect(texte).toContain('son anamnèse et ses réponses');
+    expect(texte).not.toContain('Ils ne proviennent d’aucune passation');
+    const provenance = resultat.courrier.document.blocs[0].provenance;
+    expect(provenance.version).toBe(VERSION_ANCRAGE_ADRESSAGE_QUESTIONNAIRE);
+    expect(provenance.version.startsWith('safety-signals-')).toBe(true);
+    expect(provenance.ancrageHash).toBe(SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE);
+    expect(provenance.source).toBe('signaux_securite_questionnaires');
+  });
+
+  it('valeur hors options : citée comme telle, jamais recopiée, et expliquée', () => {
+    const resultat = genererCourrierAdressage(entree([], { reponses: reponsesDe({ Q010: 'xyz' }, 'Q_NEU_02') }));
+    if (!resultat.ok) throw new Error('refus inattendu');
+    expect(resultat.courrier.texte).toContain('valeur hors des options de la question (‡)');
+    expect(resultat.courrier.texte).toContain('aucune option de la question');
+    expect(resultat.courrier.texte).not.toContain('xyz');
+  });
+
+  it('chaque option positive des quatre questions passe la garde non prescriptive', () => {
+    for (const question of SAFETY_QUESTIONNAIRE_V1) {
+      for (const option of question.options.slice(1)) {
+        const resultat = genererCourrierAdressage(entree([], {
+          reponses: reponsesDe({ [question.idQuestion]: option.v }, question.idQuestionnaire),
+        }));
+        expect(resultat.ok, `${question.idQuestionnaire} = ${option.v}`).toBe(true);
+      }
+    }
+  });
+
+  it('anamnèse seule : texte et ancrage d’avant le lot, au caractère près', () => {
+    const avec = genererCourrierAdressage(entree([ADRESSAGE], { reponses: reponsesDe({ B7: 0 }) }));
+    const sans = genererCourrierAdressage(entree([ADRESSAGE]));
+    if (!avec.ok || !sans.ok) throw new Error('refus inattendu');
+    expect(avec.courrier.texte).toBe(sans.courrier.texte);
+    expect(avec.courrier.document.blocs[0].provenance.version).toBe(VERSION_ANCRAGE_ADRESSAGE);
+  });
+
+  it('la lettre figée se rend avec la source de sa version', () => {
+    const html = rendreCourrierAdressageFige({
+      patientId: 'PAT_TEST',
+      texte: 'Docteur,',
+      dateCourrier: '2026-10-10T00:00:00.000Z',
+      ancrageSha256: SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE,
+      ancrageVersion: VERSION_ANCRAGE_ADRESSAGE_QUESTIONNAIRE,
+    });
+    expect(html).not.toBeNull();
   });
 });

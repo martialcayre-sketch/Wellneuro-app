@@ -331,6 +331,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/priorityRulesV1.ts` | `true` | `2026-08-28T00:00:00.000Z` |
 | `clinical/safetySignalsV1.ts` | `true` | `2026-08-23T00:00:00.000Z` |
 | `clinical/safetyEffetIndesirableV1.ts` | `false` | `null` |
+| `clinical/safetyQuestionnaireV1.ts` | `true` | `2026-10-10T00:00:00.000Z` |
 | `clinical/gatePopulationV1.ts` | `false` | `null` |
 | `clinical/conflitsSourcesV1.ts` | `true` | `2026-08-24T00:00:00.000Z` |
 | `clinical/baremeChargeV1.ts` | `true` | `2026-10-08T00:00:00.000Z` |

@@ -4,7 +4,7 @@ import type { JalonMomentum } from '../equilibre/types';
 import { proposeAssessmentEpisode } from './assessmentEpisode';
 import { canonicalSha256 } from './canonical';
 import { lireEtatPopulation, type EtatPopulation } from '../consultation/etatPopulation';
-import { signauxDeclares } from './safetyFindings';
+import { reponsesSecuriteDeclarees, signauxDeclares, type ReponseSecurite } from './safetyFindings';
 import type {
   PatientContext,
   ProposedAssessmentEpisode,
@@ -50,6 +50,13 @@ export type RuntimeInputs = {
    * de sécurité lu d'un côté seulement produirait exactement cela.
    */
   signauxAlerte: string[];
+  /**
+   * Les réponses aux questions sur le suicide ([[D-275]] §2) — LUES ICI pour
+   * la raison de `signauxAlerte` : le cockpit et le vérificateur traversent
+   * tous deux cette fonction. Calculées sur TOUTES les lignes reçues (A1),
+   * jamais sur les seules réponses de l'épisode.
+   */
+  reponsesSecurite: ReponseSecurite[];
   /**
    * L'état de population déclaré par le patient ([[D-101]], LOT-05).
    *
@@ -136,6 +143,7 @@ export function adaptRuntimeInputs(
     responses,
     patientContext,
     signauxAlerte: signauxDeclares(anamnese),
+    reponsesSecurite: reponsesSecuriteDeclarees(responseRows),
     etatPopulation: lireEtatPopulation(anamnese),
   };
 }

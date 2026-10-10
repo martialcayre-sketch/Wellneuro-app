@@ -937,6 +937,17 @@ describe('cartesSignalSecurite — constat de sécurité ouvert (D-275 §3)', ()
     expect(carte.nbElements).toBeUndefined();
   });
 
+  it('une réponse de questionnaire est nommée comme telle, jamais citée (D-275 §2)', () => {
+    const [carte] = cartesSignalSecurite(
+      [{ idPatient: 'P-JENNIFER', findingIds: [ANAM_1, 'safety:questionnaire:0123456789abcdef'], depuis: null }],
+      NOMS,
+    );
+    expect(carte.pourquoi).toBe(
+      'Anamnèse : 1 signal d’alerte non adressé · Questionnaire : 1 réponse de sécurité non adressée.'
+      + ' Priorité et protocole restent suspendus.',
+    );
+  });
+
   it('un identifiant qu’aucun producteur connu ne revendique est compté, pas tu', () => {
     const [carte] = cartesSignalSecurite(
       [{ idPatient: 'P-MICHEL', findingIds: ['safety:inconnu:1'], depuis: null }],
