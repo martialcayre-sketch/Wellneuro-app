@@ -1178,6 +1178,18 @@ jobs:
           WN_BIO_LECTURE_BANC_BASE: wellneuro_ci
         run: node prisma/runWithAlias.js scripts/banc-ecrivain-lecture-deux-requetes.test.ts
 
+      # Le plafond des transmissions patient (D-269 §5, BIO-INGEST LOT-11) : le
+      # VRAI écrivain (`deposerTransmission`) contre PostgreSQL, deux dépôts
+      # simultanés pour la dernière place, la course FORCÉE par le verrou
+      # consultatif du dossier tenu par une troisième session — un dépôt et un
+      # `plafond_en_attente`, jamais un 4e document.
+      - name: Transmission patient cap bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_PORTAIL_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-plafond-transmission-deux-depots.test.ts
+
       # Lettres d'adressage remises au patient (D-262, LOT-01). Ce que le drift
       # check ne voit pas : la remise porte sur une approbation du même dossier
       # dont le protocole s'ouvre sur l'orientation réservée, une lettre
@@ -1385,6 +1397,8 @@ jobs:
           WN_CE_QUI_COMPTE: 'true'
           WN_COMPREHENSION: 'true'
           WN_DOSSIER_DEUX_VOIX: 'true'
+          WN_BIO_INGEST_ENABLED: 'true'
+          WN_BIO_PORTAIL_ENABLED: 'true'
         run: npm run build
 
       # Installation des navigateurs placée juste avant les E2E, et non en tête

@@ -529,6 +529,11 @@ grep -q 'banc-ecrivain-lecture-deux-requetes.test.ts' "$ROOT/.github/workflows/c
   || die "ci.yml ne lance plus le banc de l'écrivain des actes de lecture."
 WN_BIO_LECTURE_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-ecrivain-lecture-deux-requetes.test.ts > /dev/null < /dev/null \
   || die "banc de l'écrivain en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-ecrivain-lecture-deux-requetes.test.ts\`, depuis web/)."
+# Le plafond des transmissions patient (D-269 §5, LOT-11), même discipline.
+grep -q 'banc-plafond-transmission-deux-depots.test.ts' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc du plafond des transmissions patient."
+WN_BIO_PORTAIL_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-plafond-transmission-deux-depots.test.ts > /dev/null < /dev/null \
+  || die "banc du plafond des transmissions en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-plafond-transmission-deux-depots.test.ts\`, depuis web/)."
 
 step "Seed (patients fictifs uniquement)"
 npm run prisma:seed
@@ -575,6 +580,7 @@ step "Build"
 # traverse ne soit pas muet.
 WN_CB_ENABLED=true WN_CB_PROPOSITION=true WN_CB_RESULTS_ENABLED=true \
   WN_CE_QUI_COMPTE=true WN_COMPREHENSION=true WN_DOSSIER_DEUX_VOIX=true \
+  WN_BIO_INGEST_ENABLED=true WN_BIO_PORTAIL_ENABLED=true \
   npm run build
 # E2E contre le build de production tout juste produit : plus rapide (pas de
 # compilation à la demande), stable, et fidèle au déploiement Vercel.

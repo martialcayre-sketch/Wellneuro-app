@@ -1299,3 +1299,36 @@ export async function sonderUniciteSelectionPriorite(
     await prisma.decisionPrioritySelection.deleteMany({ where: { idPatient, decisionCardId } });
   }
 }
+
+// ---------------------------------------------------------------------------
+// Transmission du compte rendu par le patient ([[D-269]], BIO-INGEST LOT-04,
+// preuves au LOT-11).
+//
+// AUCUN NETTOYAGE PAR SUPPRESSION : `staging.guard.test.ts` n'admet que deux
+// auteurs de DELETE sur `comptes_rendus_biologiques` (l'effacement nommé et le
+// retrait d'un dépôt praticien), E2E compris. Le spec retire donc ses dépôts
+// par le geste réel du praticien, « Écarter ce document », qui les purge et
+// les sort du plafond de 3. Ces helpers ne font que LIRE.
+
+/** Les documents transmis par le patient et non purgés — ceux qu'il reste à écarter. */
+export async function transmissionsNonPurgees(idPatient: string): Promise<string[]> {
+  const documents = await prisma.compteRenduBiologique.findMany({
+    where: { idPatient, origine: 'patient', purgeLe: null },
+    select: { id: true },
+  });
+  return documents.map(d => d.id);
+}
+
+/**
+ * Le nombre de dépôts du patient sur 24 h glissantes, horloge de la base —
+ * la même lecture que le plafond de 10 (`transmission.ts`). Un écart ne les
+ * retire pas de ce compte : une base locale réutilisée peut l'atteindre.
+ */
+export async function transmissionsSur24h(idPatient: string): Promise<number> {
+  const [{ n }] = await prisma.$queryRaw<{ n: number }[]>`
+    SELECT count(*)::int AS n FROM comptes_rendus_biologiques
+    WHERE id_patient = ${idPatient}
+      AND origine = 'patient'
+      AND depose_le > (clock_timestamp() AT TIME ZONE 'UTC') - interval '24 hours'`;
+  return n;
+}

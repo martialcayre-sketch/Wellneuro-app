@@ -157,9 +157,20 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
           lancer la lecture.
         </p>
 
+        {/* Le succès s'ANNONCE (LOT-11, relecture d'accessibilité) : une région
+            `status` présente dès le premier rendu — un lecteur d'écran ne lit
+            pas une région live insérée en même temps que son texte. L'erreur
+            garde son `role="alert"` (`PatientInlineMessage`). */}
+        <div role="status">
+          {info && (
+            <div className="mt-6">
+              <PatientInlineMessage tone="success">{info}</PatientInlineMessage>
+            </div>
+          )}
+        </div>
+
         <div className="mt-6 space-y-4">
           {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
-          {info && <PatientInlineMessage tone="success">{info}</PatientInlineMessage>}
 
           {!dossierOuvert ? (
             <p className="text-base text-foreground">{MESSAGES_TRANSMISSION.dossier_cloture}</p>

@@ -9785,3 +9785,24 @@ semaines) ; contre-revue après le LOT-05 (date inconnue).
 **Prochaine action.** LOT-11 en session neuve, mode Plan.
 
 **Questions ouvertes.** Aucune.
+
+## 2026-10-10 — BIO-INGEST : LOT-11, preuves de la transmission patient
+
+**Décidé (responsable).** L'E2E s'arrête sur « En attente » : « Reçu »
+suppose une lecture, donc l'IA. L'écoute VoiceOver est faite par le
+responsable sur une grille (8/8 OK). Le contraste du bandeau de succès est
+corrigé dans les six écrans patient, praticien non touché. #1379 est
+intégrée en avance rapide.
+
+**Livré.** E2E portail au clavier (Chromium et WebKit), axe-core sur trois
+états, banc du plafond (deux mutations rouges). Succès annoncé
+(`role="status"`). Drapeaux `WN_BIO_*` posés en E2E. T3 vert deux fois.
+
+**Écarté.** Supprimer les dépôts en E2E (garde du staging) : ils sont
+nettoyés par l'écart praticien. Contraste corrigé par le jeton global
+(praticien touché).
+
+**Prochaine action.** PR, CI, merge. Ensuite, contre-revue adverse avant le
+lot de clôture.
+
+**Questions ouvertes.** Aucune.

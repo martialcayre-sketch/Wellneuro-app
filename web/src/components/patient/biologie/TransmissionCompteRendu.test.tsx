@@ -59,10 +59,15 @@ describe('TransmissionCompteRendu', () => {
     const { container } = render(<TransmissionCompteRendu token="TOK" />);
     const bouton = (await screen.findByRole('button', { name: 'Envoyer à mon praticien' })) as HTMLButtonElement;
     expect(bouton.disabled).toBe(true);
+    // La région qui annonce le succès existe AVANT lui, vide (LOT-11).
+    const annonce = screen.getByRole('status');
+    expect(annonce.textContent).toBe('');
     const champ = container.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(champ, { target: { files: [new File(['%PDF-1.7'], 'cr.pdf', { type: 'application/pdf' })] } });
     fireEvent.click(bouton);
     expect(await screen.findByText('Votre compte rendu a été transmis à votre praticien.')).toBeTruthy();
+    expect(screen.getByRole('status')).toBe(annonce);
+    expect(annonce.textContent).toBe('Votre compte rendu a été transmis à votre praticien.');
     expect(await screen.findByText('En attente')).toBeTruthy();
     const envoi = fetchMock.mock.calls.find(([u, init]) => String(u) === '/api/portail/comptes-rendus' && init?.method === 'POST');
     expect(envoi?.[1]?.body).toBeInstanceOf(FormData);

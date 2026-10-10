@@ -219,6 +219,14 @@ export default defineConfig({
       WN_CE_QUI_COMPTE: 'true',
       WN_COMPREHENSION: 'true',
       WN_DOSSIER_DEUX_VOIX: 'true',
+      // Transmission du compte rendu PAR LE PATIENT ([[D-269]], BIO-INGEST
+      // LOT-04, preuves au LOT-11). `isBioPortailEnabled` exige AUSSI
+      // l'import (`WN_BIO_INGEST_ENABLED`). Posés en production depuis le
+      // 2026-10-07 : le banc s'aligne. Même portée que ci-dessus — ici et la
+      // seule commande `npm run build`, jamais le runner : la page portail lit
+      // le drapeau au rendu serveur (`notFound()` s'il est éteint).
+      WN_BIO_INGEST_ENABLED: 'true',
+      WN_BIO_PORTAIL_ENABLED: 'true',
       // « aucun secret posé » ci-dessus n'est vrai que si on l'IMPOSE : le
       // `...process.env` plus haut fait fuiter le vrai client patient présent
       // dans `web/.env.local` (nécessaire à `npm run dev`), et la route
