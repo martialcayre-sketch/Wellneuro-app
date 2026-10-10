@@ -34,6 +34,15 @@ log() {
   printf '[repo-hygiene] %s\n' "$*"
 }
 
+# Sans rg, le comptage des références et la réécriture des liens rendaient
+# vide en silence (`|| true`) : un apply-safe déplaçait sans réécrire.
+require_rg() {
+  command -v rg >/dev/null 2>&1 || {
+    printf 'rg (ripgrep) introuvable : installez ripgrep puis relancez.\n' >&2
+    exit 1
+  }
+}
+
 abs_path() {
   local p="$1"
   if [[ "$p" = /* ]]; then
@@ -90,6 +99,17 @@ ensure_out_dir() {
 }
 
 run_audit_only() {
+  require_rg
+  # sha256sum manque aux macOS anciens ; shasum -a 256 a la même sortie.
+  local -a SHA256
+  if command -v sha256sum >/dev/null 2>&1; then
+    SHA256=(sha256sum)
+  elif command -v shasum >/dev/null 2>&1; then
+    SHA256=(shasum -a 256)
+  else
+    printf 'Ni sha256sum ni shasum : impossible de chercher les doublons.\n' >&2
+    exit 1
+  fi
   ensure_out_dir
 
   log "Inventaire git + volumetrie -> ${OUT_DIR}/inventory.txt"
@@ -101,7 +121,7 @@ run_audit_only() {
     git -C "$ROOT" status --short || true
     echo
     echo "## TOP DOSSIERS (taille)"
-    du -h --max-depth=2 "$ROOT" 2>/dev/null | sort -h | tail -n 120
+    du -h -d 2 "$ROOT" 2>/dev/null | sort -h | tail -n 120
     echo
     echo "## DOCS VOLUMINEUSES (.md > 200KB)"
     find "$ROOT" -type f -name '*.md' -size +200k \
@@ -127,7 +147,7 @@ run_audit_only() {
     -not -path '*/dist/*' \
     -not -path '*/build/*' \
     -print0 \
-    | xargs -0 sha256sum | sort > "${ROOT}/${OUT_DIR}/all-hashes.txt"
+    | xargs -0 "${SHA256[@]}" | sort > "${ROOT}/${OUT_DIR}/all-hashes.txt"
 
   awk '
   {h=$1; $1=""; p=substr($0,2); a[h]=a[h] ? a[h] "\n" p : p; c[h]++}
@@ -143,7 +163,7 @@ run_audit_only() {
   find "$ROOT" -type f \
     -not -path '*/.git/*' \
     -not -path '*/node_modules/*' \
-    -printf '%f|%p\n' | sort > "${ROOT}/${OUT_DIR}/by-basename.txt"
+    -print | awk '{f=$0; sub(/.*\//, "", f); print f "|" $0}' | sort > "${ROOT}/${OUT_DIR}/by-basename.txt"
 
   awk -F'|' '
   {n[$1]++; paths[$1]=paths[$1] "\n" $2}
@@ -196,12 +216,13 @@ replace_path_refs() {
     else
       old_esc="$(printf '%s' "$old_rel" | sed 's/[.[\\*^$()+?{|]/\\\\&/g')"
       new_esc="$(printf '%s' "$new_rel" | sed 's/[&/]/\\\\&/g')"
-      sed -i "s/${old_esc}/${new_esc}/g" "$file"
+      sed -i.bak "s/${old_esc}/${new_esc}/g" "$file" && rm -f "${file}.bak"
     fi
   done <<< "$targets"
 }
 
 run_apply_safe() {
+  require_rg
   local dry_run="0"
 
   while [[ ${#REM_ARGS[@]} -gt 0 ]]; do
