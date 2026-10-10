@@ -13,6 +13,11 @@
 // confirmation et « Laisser l’agenda ouvert » ne ferme rien ; à sept, il agrège
 // sans rien demander.
 //
+// De la clôture au dossier exporté (trou nommé au LOT-08, fermé au LOT-10) :
+// sept nuits « je ne sais pas » pour l'endormissement, clôturées, puis le PDF
+// lu tel qu'il est dessiné — l'endormissement y est « Non calculé », jamais 0 ;
+// et le témoin, sept nuits à endormissement connu, qui doit y paraître chiffré.
+//
 // Patient fictif Michel Dogné (PAT_SEED_03), autorisé. Les nuits sont posées en
 // base (`poserNuitsAgendaSommeil`, validées par le validateur de la route).
 import { test, expect, type Page } from '@playwright/test';
@@ -23,6 +28,7 @@ import {
   poserNuitsAgendaSommeil,
   lireStatutAssignation,
 } from './helpers/db';
+import { lignesPdf } from './helpers/textePdf';
 import { dateJourParis } from '../src/lib/dateParis';
 import { decalerDate } from '../src/lib/agenda-sommeil/nuit';
 import type { NuitReponses } from '../src/lib/agenda-sommeil/types';
@@ -202,4 +208,53 @@ test.describe('agenda du sommeil — panneau praticien', () => {
     await expect(page.getByText(/^Clôturé · 7 nuits notées/)).toBeVisible();
     expect(await lireStatutAssignation(idAssignation)).toBe('Complété');
   });
+
+  // Aucune nuit n'a d'endormissement connu : la médiane n'a rien à porter. Les
+  // deux versions de l'export, puisque le masqueur de la version « IA externe »
+  // ne touche que les textes libres.
+  //
+  // « Non calculé » s'écrit aussi pour un agrégat qui MANQUE (clôture repliée
+  // sur le seul nombre de nuits, clé perdue en route) : la qualité moyenne, que
+  // ces nuits renseignent, prouve que la même clôture a bien agrégé.
+  test('sept nuits « je ne sais pas », clôturées : le dossier exporté écrit l’endormissement « Non calculé », jamais 0', async ({ page }) => {
+    await ouvrirPanneau(page, Array.from({ length: 7 }, () => ({ ...NUIT, latence: 'inconnu' as const })));
+    await cloturerDepuisLePanneau(page);
+
+    for (const version of ['ia-externe', 'complete'] as const) {
+      const texte = await texteDuDossier(page, version);
+      expect(texte.match(/Latence d'endormissement médiane :/g) ?? []).toHaveLength(1);
+      expect(texte).toContain("Latence d'endormissement médiane : Non calculé : données insuffisantes");
+      expect(texte).not.toMatch(/Latence d'endormissement médiane : 0/);
+      expect(texte).toMatch(/Qualité subjective moyenne : 4\b/);
+    }
+  });
+
+  // Le témoin : un endormissement connu (« en moins de 15 min », centre de
+  // classe 8 min) passe jusqu'au dossier. Sans lui, une médiane toujours
+  // « Non calculé » laisserait le test du dessus vert.
+  test('sept nuits « en moins de 15 min », clôturées : le dossier exporté écrit la médiane chiffrée', async ({ page }) => {
+    await ouvrirPanneau(page, Array.from({ length: 7 }, () => NUIT));
+    await cloturerDepuisLePanneau(page);
+
+    for (const version of ['ia-externe', 'complete'] as const) {
+      const texte = await texteDuDossier(page, version);
+      expect(texte).toContain("Latence d'endormissement médiane : 8 min");
+      expect(texte).not.toContain("Latence d'endormissement médiane : Non calculé");
+    }
+  });
 });
+
+async function cloturerDepuisLePanneau(page: Page): Promise<void> {
+  const reponseAttendue = page.waitForResponse((r) => new URL(r.url()).pathname.endsWith('/agenda-sommeil/cloture'));
+  await page.getByRole('button', { name: 'Clôturer et agréger' }).click();
+  expect((await reponseAttendue).status()).toBe(200);
+  await expect(page.getByText(/^Clôturé · 7 nuits notées/)).toBeVisible();
+}
+
+// Le dossier exporté, lignes jointes : un champ trop long se replie sur deux
+// lignes dessinées.
+async function texteDuDossier(page: Page, version: 'ia-externe' | 'complete'): Promise<string> {
+  const pdf = await page.request.get(`/api/praticien/export-dossier?idPatient=${PATIENT.idPatient}&version=${version}`);
+  expect(pdf.status()).toBe(200);
+  return (await lignesPdf(await pdf.body())).join(' ').replace(/\s+/g, ' ');
+}
