@@ -9715,3 +9715,22 @@ même définition d'« ouvert » que la chaîne C1.
 **Prochaine action.** CI, Codex, merge ; puis LOT-2 (migration) en session neuve.
 
 **Questions ouvertes.** Aucune sur ce lot.
+
+## 2026-10-09 — D-275 §2 : trigger élargi aux constats de questionnaire (LOT-2/3)
+
+**Décidé.** Migration seule : le trigger d'`adressages_signal_alerte` accepte
+`safety:(anamnese|questionnaire):` + 16 hexadécimaux ; effet indésirable toujours
+refusé. Tri de la porteuse départagé par `id`, comme l'application. Acceptés :
+un constat de questionnaire sans porteuse n'a pas de levée tant qu'elle n'existe
+pas ; une nouvelle anamnèse rebloque aussi ses couvertures (A6).
+
+**Écarté.** Regex seule (la base pouvait refuser une lettre que la route venait
+de consigner) ; rejouer la fonction v1 en retour arrière (perdrait le départage).
+
+**Prochaine action.** CI, Codex, merge, déploiement constaté ; `release-db`
+approuvée ; constat par conteneur (migration appliquée, `pg_proc`). Aucun
+producteur avant. Puis LOT-3 en session neuve.
+
+**Questions ouvertes.** LOT-3 : `couverturesRetenues` (`.every`) écarte une
+ligne mixte, à élargir avec tests `questionnaire` ; commentaire
+`schema.prisma:1599`.
