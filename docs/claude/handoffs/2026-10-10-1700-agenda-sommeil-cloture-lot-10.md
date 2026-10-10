@@ -1,4 +1,4 @@
-# Handoff — AGENDA-SOMMEIL : clôture du LOT-10, annonce aux patients libérée
+# Handoff — 2026-10-10 — AGENDA-SOMMEIL : clôture du LOT-10, annonce aux patients libérée
 
 ## Branche et état Git
 
