@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Transmission depuis le portail patient"
-statut: "en_cours"
+statut: "terminé"
 dépend_de: "LOT-02, consentement RGPD à jour, LOT-07, BIO-PARCOURS BP-10"
 ---
 
@@ -90,4 +90,26 @@ Transmission ouverte après le consentement à jour ; aucun résultat écrit san
 
 ## Résultats
 
-À compléter à la clôture.
+**Terminé le 2026-10-10** (clôture administrative ; livraison du
+2026-10-07). Quatre PR : #1350 (`D-269` et registre RGPD), #1352 (migration
+`bio_ingest_transmission_patient_v1`, appliquée et constatée `one-off-4793`),
+#1355 (code sous drapeau éteint, textes v6 et v13), #1357 (constat des
+textes servis, allumage). `WN_BIO_PORTAIL_ENABLED` est posé depuis le
+2026-10-07 à 17:53 UTC.
+
+Critères de done : la transmission s'est ouverte après le consentement à
+jour (v6 et v13 constatées avant l'allumage). Aucun résultat ne s'écrit sans
+validation praticien, car un document patient entre dans le même écran de
+validation que celui du LOT-02.
+
+**Constat d'usage du 2026-10-10** (conteneur `one-off-8148`, agrégats
+seuls, `D-125`) : **0 compte rendu transmis par un patient** depuis
+l'allumage. Les 3 comptes rendus en base sont des dépôts praticien (du
+2026-10-03 au 2026-10-07). La voie est ouverte mais n'a pas encore servi :
+aucun comportement réel n'est constaté. Le constat est à rejouer à la
+première transmission.
+
+**Réserve** : les tests livrés sont unitaires et de route (jeton, dossier
+d'autrui, type, plafonds, écart, statut). L'**E2E portail sur fixture** et
+le **contrôle d'accessibilité** prévus à la section Tests ne sont pas
+livrés.
