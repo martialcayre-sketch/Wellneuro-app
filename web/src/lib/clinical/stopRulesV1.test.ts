@@ -529,6 +529,30 @@ describe('STOP-STR de bout en bout — calculateScore réel, table réelle, conf
     }
   });
 
+  it('D-278 §2 : la frontière tient — dépression à 4, haut de « Normal », éteint encore', () => {
+    // Miroir du cas à 5 : un déplacement de bande qui ferait de 4 un « Léger »
+    // rougirait ici, au lieu de rendre l'extinction muette sans rien casser.
+    const dass = { ...reponsesAZero(ITEMS_DASS), Q003: 3, Q005: 1 };
+    const entree = dossierSansPss10(passation('Q_STR_01', reponsesAZero(ITEMS_STR_01)));
+    entree.reponses = entree.reponses.map(reponse =>
+      reponse.idQuestionnaire === 'Q_STR_04' ? passation('Q_STR_04', dass) : reponse,
+    );
+    const lignesEteintes = evaluerOrientation(entree).filter(reco => reco.extinction);
+    expect(lignesEteintes.map(cible).sort()).toEqual(['Q_STR_02', 'Q_STR_05']);
+  });
+
+  it('D-278 §2 : un DASS-21 amputé d’un item de l’axe D n’éteint rien', () => {
+    // La garde lit l'axe visé : 20 items sur 21, l'axe D est incomplet, sa
+    // bande n'existe pas — jamais une absence lue comme « Normal » (DC-24).
+    const dassAmpute = reponsesAZero(ITEMS_DASS);
+    delete (dassAmpute as Record<string, unknown>).Q003;
+    const entree = dossierSansPss10(passation('Q_STR_01', reponsesAZero(ITEMS_STR_01)));
+    entree.reponses = entree.reponses.map(reponse =>
+      reponse.idQuestionnaire === 'Q_STR_04' ? passation('Q_STR_04', dassAmpute) : reponse,
+    );
+    expect(evaluerOrientation(entree).every(reco => !reco.extinction)).toBe(true);
+  });
+
   it('un DASS-21 amputé d’un item de l’axe S n’éteint rien — la garde lit l’axe visé', () => {
     // Le second verrou du lot, trouvé par CE banc : le DASS est un moteur
     // `subscore`, sans compte racine. Une garde qui ne lirait que la racine
