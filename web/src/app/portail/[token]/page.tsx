@@ -6,8 +6,13 @@ import type { PortailSessionResponse, PortailConsultationState } from '@/app/api
 import { MOTIFS_CONSULTATION } from '@/lib/consultation/motifs';
 import { FICHE_SECTIONS, FICHE_CHAMPS_REQUIS } from '@/lib/consultation/fiche';
 import { ANAMNESE_SECTIONS, ANAMNESE_CHAMP_REQUIS } from '@/lib/consultation/anamnese';
-import { SECTION_ANAMNESE_SIGNAUX } from '@/lib/securite/urgenceSuicide';
+import {
+  CHAMP_ANAMNESE_SIGNAUX,
+  SECTION_ANAMNESE_SIGNAUX,
+  anamneseSignaleIdeesSuicidaires,
+} from '@/lib/securite/urgenceSuicide';
 import { EncartUrgenceSuicide } from '@/components/patient/EncartUrgenceSuicide';
+import { MessageReponseSuicide } from '@/components/patient/MessageReponseSuicide';
 import type { AnamneseChamp, AnamneseValeurs } from '@/lib/consultation/anamnese';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
@@ -469,6 +474,10 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
             requis={champ.id === ANAMNESE_CHAMP_REQUIS}
           />
         ))}
+        {/* [[D-277]] §1 : tant que la case « Idées noires ou suicidaires » est cochée. */}
+        {section.id === SECTION_ANAMNESE_SIGNAUX && anamneseSignaleIdeesSuicidaires(valeurs[CHAMP_ANAMNESE_SIGNAUX]) && (
+          <MessageReponseSuicide />
+        )}
 
         {(section.groupes ?? []).map(groupe => (
           <div key={groupe.id} className="space-y-3">

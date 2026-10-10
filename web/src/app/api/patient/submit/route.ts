@@ -12,6 +12,10 @@ import { createPublicId } from '@/lib/ids';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
+import {
+  notifierPraticienSignalSecurite,
+  transmissionAppelleAlerteSecurite,
+} from '@/lib/securite/alerteSecuritePraticien';
 import { getGabarit, rendreGabarit, rendreSegment } from '@/lib/correspondance/registreGabarits';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -347,7 +351,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     // Accusé de réception email best-effort. La promesse est attendue pour que
     // le runtime serverless ne coupe ni l'envoi ni sa trace après la réponse.
-    await sendAck(idPatient, idReponse, emailPatient, titre).catch(e =>
+    const accuse = sendAck(idPatient, idReponse, emailPatient, titre).catch(e =>
       logger.error({
         event: EVENT_CODES.QUESTIONNAIRE_ACK_EMAIL_FAILED,
         domain: 'EMAIL',
@@ -356,6 +360,26 @@ export async function POST(req: Request): Promise<NextResponse> {
         error: e,
       })
     );
+    // [[D-277]] §2 : une réponse suicidaire prévient le praticien, exactement
+    // quand elle produit un constat `SAF-QUEST-01`. La réponse est déjà
+    // enregistrée : rien ici ne peut la faire échouer. EN PARALLÈLE de
+    // l'accusé, pas à sa suite : deux envois SMTP bornés chacun à ~20 s
+    // dépasseraient les 30 s du routeur, et le patient lirait « Erreur
+    // réseau » sur une transmission réussie — précisément sur cette réponse.
+    const alerte = transmissionAppelleAlerteSecurite(idQuestionnaire, answers)
+      ? alerterPraticien(idPatient, idReponse).then(resultat => {
+        if (resultat.statut === 'Erreur') {
+          logger.error({
+            event: EVENT_CODES.SECURITE_ALERTE_PRATICIEN_EMAIL_FAILED,
+            domain: 'EMAIL',
+            message: 'Échec du courriel au praticien sur une réponse suicidaire (carte du Fil seule)',
+            context: finalizeLogContext(requestContext, { retryable: false }),
+            error: resultat.erreur,
+          });
+        }
+      }).catch(() => undefined)
+      : Promise.resolve();
+    await Promise.all([accuse, alerte]);
 
     return withCorrelationHeader(NextResponse.json({ ok: true, titre }), requestContext);
   } catch (err) {
@@ -368,6 +392,21 @@ export async function POST(req: Request): Promise<NextResponse> {
     });
     return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique lors de la soumission.' }, { status: 500 }), requestContext);
   }
+}
+
+async function alerterPraticien(idPatient: string, idReponse: string) {
+  let praticienEmail: string | null = null;
+  try {
+    const patient = await prisma.patient.findUnique({ where: { idPatient }, select: { praticienEmail: true } });
+    praticienEmail = patient?.praticienEmail ?? null;
+  } catch {
+    // Sans adresse, l'envoi est tracé « Non envoyé » : la carte du Fil reste.
+  }
+  return notifierPraticienSignalSecurite({
+    idPatient,
+    praticienEmail,
+    source: { type: 'reponse_questionnaire', id: idReponse },
+  });
 }
 
 async function sendAck(

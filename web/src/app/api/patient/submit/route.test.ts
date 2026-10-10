@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, after } = vi.hoisted(() => ({
+const { prisma, after, sendMailAck } = vi.hoisted(() => ({
+  sendMailAck: vi.fn().mockResolvedValue({}),
   // `after` EXIGE UN CONTEXTE DE REQUÊTE NEXT, que ce banc n'a pas : il appelle
   // le handler directement. Le mock EXÉCUTE la tâche au lieu de la planifier —
   // c'est ce qui rendrait un travail de fond observable ici. IL EST CONSERVÉ
@@ -30,11 +31,21 @@ vi.mock('next/server', async (importOriginal) => ({
 vi.mock('@/lib/observability/logger', () => ({
   logger: { warn: vi.fn(), security: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
+// [[D-277]] §2 : la règle « positive » reste réelle (c'est elle qu'on câble) ;
+// seul l'envoi est observé — il a son propre banc.
+vi.mock('@/lib/securite/alerteSecuritePraticien', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/lib/securite/alerteSecuritePraticien')>()),
+  notifierPraticienSignalSecurite: vi.fn(),
+}));
 vi.mock('nodemailer', () => ({
-  default: { createTransport: () => ({ sendMail: vi.fn().mockResolvedValue({}) }) },
+  default: { createTransport: () => ({ sendMail: sendMailAck }) },
 }));
 
 import { signPatientSession } from '@/lib/patient-session';
+import { notifierPraticienSignalSecurite } from '@/lib/securite/alerteSecuritePraticien';
+import { logger } from '@/lib/observability/logger';
+import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import { questionSecuriteDe } from '@/lib/clinical/safetyQuestionnaireV1';
 import { POST as postSubmit } from './route';
 
 const assignation = {
@@ -666,5 +677,130 @@ describe('POST /api/patient/submit — aucune génération automatique', () => {
     expect(prisma.assignation.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ statut: 'Complété' }) }),
     );
+  });
+});
+
+describe('POST /api/patient/submit — réponse suicidaire : le praticien est prévenu ([[D-277]] §2)', () => {
+  const question = questionSecuriteDe('Q_NEU_03')!;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.assignation.findUnique.mockResolvedValue(assignation);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient,
+      actif: true,
+      email: assignation.emailPatient,
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+      praticienEmail: 'praticien@wellneuro.fr',
+    });
+    prisma.assignation.update.mockResolvedValue(assignation);
+    prisma.questionnaireReponse.create.mockResolvedValue({});
+    vi.mocked(notifierPraticienSignalSecurite).mockResolvedValue({ statut: 'Envoye' });
+    sendMailAck.mockResolvedValue({});
+  });
+
+  function soumettre(valeur: unknown): Request {
+    const cookie = signPatientSession({ idPatient: assignation.idPatient, email: assignation.emailPatient });
+    return new Request('http://localhost/api/patient/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookie)}` },
+      body: JSON.stringify({
+        idAssignation: assignation.idAssignation,
+        idQuestionnaire: assignation.idQuestionnaire,
+        answers: { NEU3_Q001: 2, [question.idQuestion]: valeur },
+      }),
+    });
+  }
+
+  it('une réponse autre que « non » prévient le praticien du dossier, APRÈS l’enregistrement', async () => {
+    const res = await postSubmit(soumettre(question.options[1].v));
+    expect(res.status).toBe(200);
+    expect(notifierPraticienSignalSecurite).toHaveBeenCalledWith({
+      idPatient: assignation.idPatient,
+      praticienEmail: 'praticien@wellneuro.fr',
+      source: { type: 'reponse_questionnaire', id: expect.any(String) },
+    });
+    expect(prisma.questionnaireReponse.create.mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(notifierPraticienSignalSecurite).mock.invocationCallOrder[0]);
+  });
+
+  it('« non » ne prévient personne', async () => {
+    const res = await postSubmit(soumettre(question.options[0].v));
+    expect(res.status).toBe(200);
+    expect(notifierPraticienSignalSecurite).not.toHaveBeenCalled();
+  });
+
+  it('une adresse introuvable n’empêche ni l’envoi tracé ni la réponse', async () => {
+    prisma.patient.findUnique
+      .mockResolvedValueOnce({
+        idPatient: assignation.idPatient, actif: true, email: assignation.emailPatient,
+        accessTokenRevoked: false, sessionsInvalidesAvant: null,
+      })
+      .mockRejectedValueOnce(new Error('base indisponible'));
+    const res = await postSubmit(soumettre(question.options[1].v));
+    expect(res.status).toBe(200);
+    expect(notifierPraticienSignalSecurite).toHaveBeenCalledWith(expect.objectContaining({ praticienEmail: null }));
+  });
+});
+
+describe('POST /api/patient/submit — alerte et accusé : en parallèle, échec tracé ([[D-277]] §2-§3)', () => {
+  const question = questionSecuriteDe('Q_NEU_03')!;
+  const smtpOrigine = process.env.SMTP_URL;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    process.env.SMTP_URL = 'smtp://test';
+    prisma.assignation.findUnique.mockResolvedValue(assignation);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient, actif: true, email: assignation.emailPatient,
+      accessTokenRevoked: false, sessionsInvalidesAvant: null, praticienEmail: 'praticien@wellneuro.fr',
+    });
+    prisma.assignation.update.mockResolvedValue(assignation);
+    prisma.questionnaireReponse.create.mockResolvedValue({});
+    sendMailAck.mockResolvedValue({});
+  });
+  afterEach(() => {
+    if (smtpOrigine === undefined) delete process.env.SMTP_URL; else process.env.SMTP_URL = smtpOrigine;
+  });
+
+  function soumettrePositive(): Request {
+    const cookie = signPatientSession({ idPatient: assignation.idPatient, email: assignation.emailPatient });
+    return new Request('http://localhost/api/patient/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookie)}` },
+      body: JSON.stringify({
+        idAssignation: assignation.idAssignation,
+        idQuestionnaire: assignation.idQuestionnaire,
+        answers: { NEU3_Q001: 2, [question.idQuestion]: question.options[1].v },
+      }),
+    });
+  }
+
+  // Deux envois SMTP à la suite dépasseraient le délai du routeur (revue
+  // wn-reviewer, P2-1). Si l'accusé attendait l'alerte, il ne partirait
+  // jamais tant que l'alerte reste suspendue : ce banc expirerait.
+  it('l’accusé part pendant que l’alerte est encore en vol', async () => {
+    let liberer: (() => void) | undefined;
+    vi.mocked(notifierPraticienSignalSecurite).mockImplementation(
+      () => new Promise(resolve => { liberer = () => resolve({ statut: 'Envoye' }); }),
+    );
+    const enCours = postSubmit(soumettrePositive());
+    await vi.waitFor(() => {
+      expect(liberer).toBeDefined();
+      expect(sendMailAck).toHaveBeenCalled();
+    });
+    liberer!();
+    expect((await enCours).status).toBe(200);
+  });
+
+  it('un courriel d’alerte en échec est journalisé en exploitation, la réponse reste 200', async () => {
+    vi.mocked(notifierPraticienSignalSecurite).mockResolvedValue({ statut: 'Erreur', erreur: new Error('SMTP') });
+    const res = await postSubmit(soumettrePositive());
+    expect(res.status).toBe(200);
+    expect(vi.mocked(logger.error).mock.calls.map(([payload]) => payload.event))
+      .toContain(EVENT_CODES.SECURITE_ALERTE_PRATICIEN_EMAIL_FAILED);
   });
 });
