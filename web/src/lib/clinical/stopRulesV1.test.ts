@@ -29,7 +29,7 @@ describe('stopRulesV1 — statut de signature', () => {
   // supprimée : une dé-signature accidentelle reste attrapée.
   it('la table est signée, et sa signature est bien formée', () => {
     expect(STOP_RULES_METADATA.validationExterne).toBe(true);
-    expect(STOP_RULES_METADATA.dateValidation).toBe('2026-08-15T00:00:00.000Z');
+    expect(STOP_RULES_METADATA.dateValidation).toBe('2026-10-10T00:00:00.000Z');
     const d = STOP_RULES_METADATA.dateValidation as string;
     expect(new Date(d).toISOString()).toBe(d);
     // Cinquième terme ([[D-067]]) : le littéral concorde avec le contenu
@@ -355,7 +355,8 @@ describe('stopRulesV1 — verrou de contenu', () => {
   // bougent ensemble : comparer l'une à l'autre ne garde rien. C'est ce
   // littéral-ci qui rougit quand une règle est retouchée, et la sortie de
   // secours est de RE-SIGNER — jamais de mettre le sha à jour en silence.
-  const SHA_CONTENU_2026_08_12 = 'f9ccf688d6beae301df3cbea3279e863a09870cc6020656302ede86496d8fa01';
+  // Re-signé le 2026-10-10 ([[D-278]] §2) : l'axe D du DASS-21 entre dans STOP-STR.
+  const SHA_CONTENU_2026_10_10 = '1db9a002eeac4efe784f7884db96a13d8aada2b143757a8ec19d5eb1dac6501a';
 
   it('le sha publié correspond au contenu de la table', () => {
     expect(STOP_RULES_SHA256).toBe(sha256(JSON.stringify(STOP_RULES_V1)));
@@ -363,7 +364,7 @@ describe('stopRulesV1 — verrou de contenu', () => {
 
   it('le contenu de la table est exactement celui qui a été relu', () => {
     expect(STOP_RULES_V1.length).toBe(1);
-    expect(STOP_RULES_SHA256).toBe(SHA_CONTENU_2026_08_12);
+    expect(STOP_RULES_SHA256).toBe(SHA_CONTENU_2026_10_10);
   });
 
   it('le libellé d’extinction est une phrase française stable', () => {
@@ -470,8 +471,8 @@ describe('STOP-STR de bout en bout — calculateScore réel, table réelle, conf
       expect(ligne.extinction?.stopRuleId).toBe('STOP-STR');
       expect(ligne.extinction?.motif).toContain('conseils de vie antistress');
       expect(ligne.extinction?.claims.length).toBeGreaterThan(0);
-      // Chaque condition affichée nomme un des quatre déclencheurs lus.
-      expect(ligne.extinction?.conditions.length).toBe(4);
+      // Chaque condition affichée nomme un des cinq déclencheurs lus.
+      expect(ligne.extinction?.conditions.length).toBe(5);
       // Une ligne éteinte n'est motivée QUE par des règles que STOP-STR nomme.
       for (const motif of ligne.motifs) {
         expect(['R2-STR-01', 'R2-STR-02', 'R2-STR-03']).toContain(motif.regleId);
@@ -506,6 +507,26 @@ describe('STOP-STR de bout en bout — calculateScore réel, table réelle, conf
     const recos = evaluerOrientation(dossierSansPss10(passation('Q_STR_01', { A1: 0, B8: 0, C15: 0 })));
     expect(recos.length).toBeGreaterThan(0);
     expect(recos.every(reco => !reco.extinction)).toBe(true);
+  });
+
+  it('D-278 §2 : une dépression DASS-21 « Léger » ou au-delà n’éteint rien, anxiété et stress restant « Normal »', () => {
+    // Le défaut du lot 11A : avant, l'axe D n'était pas lu, et une dépression
+    // « Très sévère » laissait servir « les explorations de l'axe stress n'ont
+    // pas d'objet ». Items de l'axe D seuls relevés : A et S restent à 0.
+    const scenarios: Array<[string, Record<string, number>]> = [
+      ['Léger (5)', { Q003: 3, Q005: 2 }],
+      ['Très sévère (21)', { Q003: 3, Q005: 3, Q010: 3, Q013: 3, Q016: 3, Q017: 3, Q021: 3 }],
+    ];
+    for (const [, axeD] of scenarios) {
+      const dass = { ...reponsesAZero(ITEMS_DASS), ...axeD };
+      const entree = dossierSansPss10(passation('Q_STR_01', reponsesAZero(ITEMS_STR_01)));
+      entree.reponses = entree.reponses.map(reponse =>
+        reponse.idQuestionnaire === 'Q_STR_04' ? passation('Q_STR_04', dass) : reponse,
+      );
+      const recos = evaluerOrientation(entree);
+      expect(recos.length).toBeGreaterThan(0);
+      expect(recos.every(reco => !reco.extinction)).toBe(true);
+    }
   });
 
   it('un DASS-21 amputé d’un item de l’axe S n’éteint rien — la garde lit l’axe visé', () => {
