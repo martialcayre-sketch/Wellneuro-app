@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
-import { ChronogrammeSommeil, portionsBarre } from './ChronogrammeSommeil';
+import { BarreNuit, ChronogrammeSommeil, portionsBarre } from './ChronogrammeSommeil';
 import type { NuitRow } from '@/lib/agenda-sommeil/types';
 
 // Constat B4 de la revue du 2026-07-28 : la barre s'arrêtait au réveil final au
@@ -71,6 +71,54 @@ describe('portions de la barre', () => {
     const p = portionsBarre(H(100), 0, 0.5, 0.5);
     expect(Number.isFinite(p.hLatence)).toBe(true);
     expect(p.hSommeil).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('barre d’une nuit', () => {
+  // recharts 3 rend une barre d'intervalle sur l'axe inversé avec une hauteur
+  // NÉGATIVE et `y` au pied (mesuré dans un vrai navigateur : y 129, hauteur
+  // −88 pour 23:00 → 07:00). La forme écartait toute hauteur ≤ 0 : le
+  // chronogramme ne dessinait aucune nuit.
+  const point = (latence: 'lt15' | 'inconnu') => ({
+    label: 'Nuit 1',
+    plage: [3, 11] as [number, number],
+    latenceH: latence === 'inconnu' ? 0 : 7.5 / 60,
+    eveilMatinH: 0,
+    semaine: 0,
+    weekend: false,
+    nuit: nuit({ latence }).reponses,
+    essaiDeDormir: true,
+    latenceInconnue: latence === 'inconnu',
+  });
+  const dessiner = (hauteur: number, y: number, latence: 'lt15' | 'inconnu' = 'lt15') =>
+    render(
+      // Appelée comme recharts l'appelle : une fonction qui reçoit ses props.
+      <svg>{BarreNuit({ x: 10, y, width: 20, height: hauteur, payload: point(latence) })}</svg>,
+    ).container;
+
+  it('une hauteur négative (axe inversé) dessine la barre, en tête à y + hauteur', () => {
+    const rect = dessiner(-88, 129).querySelector('rect');
+    expect(rect).not.toBeNull();
+    // Le sommeil commence sous la portion d'endormissement, en tête de barre.
+    expect(Number(rect!.getAttribute('y'))).toBeGreaterThanOrEqual(41);
+    expect(Number(rect!.getAttribute('y'))).toBeLessThan(129);
+    expect(Number(rect!.getAttribute('height'))).toBeGreaterThan(0);
+  });
+
+  it('une hauteur positive reste dessinée à l’identique', () => {
+    const rect = dessiner(88, 41).querySelector('rect');
+    expect(Number(rect!.getAttribute('y'))).toBeGreaterThanOrEqual(41);
+    expect(Number(rect!.getAttribute('height'))).toBeGreaterThan(0);
+  });
+
+  it('« je ne sais pas » : le tiret gris se pose en tête de barre', () => {
+    const tiret = dessiner(-88, 129, 'inconnu').querySelector('line[stroke-dasharray="2 2"]');
+    expect(tiret).not.toBeNull();
+    expect(Number(tiret!.getAttribute('y1'))).toBe(41);
+  });
+
+  it('une hauteur nulle ne dessine rien', () => {
+    expect(dessiner(0, 129).querySelector('rect')).toBeNull();
   });
 });
 
