@@ -15,6 +15,12 @@
 **Statut** : active
 **Lot actif** : LOT-26
 
+### 2026-10-07-agenda-sommeil-adhesion
+
+**Titre** : AGENDA-SOMMEIL — adhésion : une nuit qu'on peut noter jusqu'au bout
+**Statut** : active
+**Lot actif** : LOT-02
+
 **Statut global** : active
 **Mise à jour** : 2026-10-10
 

@@ -1,7 +1,7 @@
 ---
 id: "LOT-08"
 titre: "La recette locale versée au dépôt — E2E du patient et du praticien"
-statut: "en_cours (2026-10-10)"
+statut: "terminé (2026-10-10, #1379) — CI WebKit verte 9/9 ; trou nommé : clôture → PDF (AGD_LAT_MED)"
 dépend_de: "LOT-07"
 ---
 
@@ -66,7 +66,8 @@ iPhone 13.
   (`agregats.test.ts`), rendu « Non calculé » d'une mesure d'agenda nulle
   (`sectionQuestionnaires.test.ts`, sur les réveils seulement), préambule
   (`libellesAgendas.test.ts`). **Trou nommé** : aucun test ne relie la
-  clôture au rendu du dossier pour la médiane d'endormissement.
+  clôture au rendu du dossier pour la médiane d'endormissement
+  (`AGD_LAT_MED`).
 - **Les gestes propres au téléphone** : la roue native de l'iPhone, l'ouverture
   du fichier de rappel par Calendrier, Samsung Agenda ou Google Agenda, et sa
   sonnerie. Ils restent à la recette sur appareil.

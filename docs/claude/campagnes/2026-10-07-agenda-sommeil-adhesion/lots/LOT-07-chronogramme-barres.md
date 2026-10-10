@@ -1,7 +1,7 @@
 ---
 id: "LOT-07"
 titre: "Chronogramme praticien — les nuits redessinées"
-statut: "en_cours (2026-10-10)"
+statut: "terminé (2026-10-10, #1376) — observé en production le 2026-10-10"
 dépend_de: "LOT-04"
 ---
 
@@ -20,9 +20,10 @@ recharts transmet à la forme d'une barre d'intervalle une hauteur **négative**
 hauteur ≤ 0 et ne dessinait donc rien.
 
 Le filtre et l'axe inversé sont là depuis la création du chronogramme (#427,
-2026-07-28). Statut au sens de `D-125` : *démontré dans le code et dans un vrai
-navigateur* ; la production porte le même code et la même version de recharts,
-mais l'écran de production n'a pas été observé depuis cette session.
+2026-07-28). Statut au sens de `D-125` : *observé en production* — le
+responsable a vu les barres sur un dossier de test le 2026-10-10, après le
+déploiement de #1376 (point 1 de la recette sur appareil). Avant, *démontré
+dans le code et dans un vrai navigateur*.
 
 ## Correctif
 
