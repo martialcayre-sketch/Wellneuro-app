@@ -51,8 +51,9 @@
   médicament ; la biologie part en demande d'examens contresignée par un
   médecin, hors de l'outil. Le programme suit la **règle des deux étages**
   ([[D-266]] §2) : « par conception » reste vrai de l'**étage outil** ;
-  l'**étage assistant** n'ouvre que fonction par fonction, après sa ligne de
-  la note de qualification signée (BP-26). La phrase sur les diplômes de
+  l'**étage assistant** ouvre fonction par fonction, au fil de sa livraison,
+  derrière son drapeau et sur ses preuves propres ; la qualification
+  réglementaire est différée à l'aboutissement du produit ([[D-276]]). La phrase sur les diplômes de
   l'opérateur est conservée telle quelle. Les textes TRUST servis au patient
   ne changent pas ici : BP-24 les amende par une nouvelle version.
 - Aucune modification de logique clinique, seuil, cotation ou interprétation
@@ -61,8 +62,9 @@
 - Éviter par conception la qualification dispositif médical : finalité
   bien-être/suivi, validation praticien systématique de tout contenu généré
   par IA avant diffusion. *Pour BIO-PARCOURS ([[D-266]] §2) : vrai de
-  l'étage outil ; l'étage assistant n'ouvre que fonction par fonction, après
-  sa ligne de la note de qualification (BP-26).*
+  l'étage outil ; l'étage assistant ouvre fonction par fonction, au fil de
+  sa livraison, derrière drapeau. Qualification différée à l'aboutissement
+  du produit ([[D-276]]), sans conclure qu'une fonction est hors champ.*
 - HDS obligatoire avant tout stockage de données de santé réelles. **Écart
   constaté et assumé depuis le 2026-07-21** : Supabase et Vercel sont **absents
   de l'annuaire ANS des hébergeurs certifiés** (404 hébergeurs recensés ;

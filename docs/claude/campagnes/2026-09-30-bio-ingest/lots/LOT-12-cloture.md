@@ -136,4 +136,6 @@ fait, campagne close, LOT-05 transféré.
 - [x] Écarts fiche/code soldés (LOT-02, LOT-07).
 - [x] Constat d'usage versé.
 - [x] Suivi BioFlow mis à jour.
-- [ ] Après merge : déploiement constaté, empreinte de la v14 servie.
+- [x] Après merge : déploiement constaté, empreinte de la v14 servie
+      (déploiement de `f3bb761d` le 2026-10-10 à 16:23 UTC, constat par
+      conteneur `one-off-6075`).

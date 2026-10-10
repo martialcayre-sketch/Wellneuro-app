@@ -1,10 +1,10 @@
 ---
 id: "2026-10-04-bio-parcours"
 titre: "BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout"
-statut: "en_cours (ouverte le 2026-10-04 en parallèle de BIO-INGEST — LOT-00, LOT-01 et LOT-02 terminés ; LOT-26 courant, arbitré le 2026-10-05)"
+statut: "en_pause (ouverte le 2026-10-04 — LOT-00, LOT-01, LOT-02, LOT-10, LOT-23, LOT-25 et LOT-26 terminés ; reprend après les lots de sécurité issus de BP-26, puis la priorité libre et la source des seuils du sommeil ; prochain lot du chemin critique : BP-07)"
 créée_le: "2026-10-04"
-mise_à_jour: "2026-10-07"
-lot_courant: "LOT-26"
+mise_à_jour: "2026-10-10"
+lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -88,9 +88,13 @@ programme, après deux contre-revues Codex et une contre-revue d'architecture.
 
 Les fiches portent l'identifiant `LOT-nn` qu'exige l'audit ; les documents
 disent `BP-nn` (`D-266` §15). BP-06 est absorbé par BP-05 : `LOT-06` n'est pas
-attribué. **Lot courant : LOT-26 (BP-26)**, après BP-02 (terminé le 2026-10-05,
-`CONSTAT_USAGE_2026-10-05.md`), et BP-23 terminé le 2026-10-06 en marge ; BP-26 était arbitré en parallèle de BP-02, et toute assistance reste bloquée sans
-lui (gate G4 de `BIOFLOW_ROADMAP.md`). Les fiches ne sont écrites que pour la phase 0 ; celles des autres
+attribué. **Campagne en pause, aucun lot
+courant.** BP-26 est terminé le 2026-10-10 (`D-276`) : qualification différée
+à l'aboutissement du produit, aucune fonction retirée ni réduite, porte de
+`D-266` §2 amendée. Ordre arrêté par le responsable le même jour : les lots de
+sécurité relevés par BP-26, puis la priorité posée par le praticien, puis la
+source des seuils de l'agenda du sommeil et de « Mon équilibre ». La campagne
+reprend ensuite par BP-07, tête du chemin critique. Les fiches ne sont écrites que pour la phase 0 ; celles des autres
 lots s'écrivent quand ils arrivent.
 
 **Clôture d'un lot** : avec le handoff, mettre à jour le suivi BioFlow du
@@ -102,7 +106,7 @@ nouveaux, décisions acceptées.
 | — | — | Préalable hors campagne : décision du 2026-10-21 (`D-265`) | terminé (PR #1305) | non | — |
 | **Phase 0** | | **Destination, gouvernance, gardes** | | | |
 | BP-00 | LOT-00 | Décision-cadre `D-266`, ouverture de la campagne | terminé (2026-10-04) | non | — |
-| BP-26 | LOT-26 | Note de qualification par fonction, existant compris | à_faire | non | BP-00 |
+| BP-26 | LOT-26 | Note de qualification par fonction, existant compris | terminé (2026-10-10, D-276) | non | BP-00 |
 | BP-01 | LOT-01 | Gardes avant surface | terminé (2026-10-04) | non | BP-00 |
 | BP-02 | LOT-02 | Constat d'usage et ligne de base, en agrégats | terminé (2026-10-05) | non | — (lecture seule) |
 | BP-25 | LOT-25 | Plafond d'actions porté à 7 | terminé (2026-10-08, D-273) | non | BP-00 |
@@ -135,7 +139,7 @@ nouveaux, décisions acceptées.
 | **Phase 4** | | **Étage assistant** (derrière drapeau) | | | |
 | BP-27 | LOT-27 | Évaluateur par marqueur (propose, ne pose jamais) | à_faire | **oui** | BP-03, BP-05, BP-12a, BP-13, BIO-INGEST LOT-07 |
 | BP-19 | LOT-19 | Stratégie proposée d'après le dossier | à_faire | **oui** (journal) | BP-13, BP-15, BP-17, BP-20 |
-| — | — | Étage 2 du résultat préoccupant ; marches 2 à 4 du suivi ; proposition de bilan d'après le dossier — une fonction par lot, chacune sous sa `D-xxx` et sa ligne de BP-26 | à_faire | selon | BP-27 selon le cas |
+| — | — | Étage 2 du résultat préoccupant ; marches 2 à 4 du suivi ; proposition de bilan d'après le dossier — une fonction par lot, chacune sous sa `D-xxx`, derrière drapeau (`D-276` §3) | à_faire | selon | BP-27 selon le cas |
 | **Phase 5** | | **Extension** : B12 et folates, contre-épreuve sommeil, puis par situation | à_faire | selon | BP-21b |
 
 **Chemin critique de l'étage outil** : BP-00 → BP-07 → BP-12a → BP-12b →
@@ -163,7 +167,8 @@ migration), BP-22 ; puis BP-05, BP-27, BP-19.
 ## Done de campagne
 
 - [ ] BP-21a et BP-21b décidés et ouverts, sur des critères écrits avant eux.
-- [ ] Chaque fonction ouverte a sa ligne de la note de qualification (BP-26).
+- [x] Chaque fonction ouverte a sa ligne de la note de qualification (BP-26) :
+      la même pour toutes, qualification différée (`D-276`).
 - [ ] Contre-revue adverse lancée AVANT le lot de clôture.
 - [ ] Constat d'usage au conteneur, en agrégats : au moins un cycle réel
       arrivé au jalon de fin.
