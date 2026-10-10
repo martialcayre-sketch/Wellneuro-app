@@ -85,7 +85,9 @@ d'envoi, ou d'adresse) est inscrit au journal des correspondances du dossier
 (type `alerte_securite_praticien`), que le praticien lit dans le panneau
 « Correspondance » du dossier : « Échec d'envoi » ou « Non envoyé ». Il n'y a pas de nouvelle tentative : la carte du Fil
 ([[D-275]] §3) reste le filet. Une transmission ne produit qu'une ligne de
-journal (clé de source unique).
+journal et un seul courriel : la ligne (clé de source unique) est **réservée
+avant l'envoi**, et une réservation déjà prise n'envoie rien ; si le registre
+est en panne, le courriel part quand même et la trace est retentée après.
 
 **LIMITE CONNUE.** La carte du Fil ne vaut que pour un dossier actif dont le
 suivi est ouvert ([[D-275]] §3). Sur un dossier clos, le courriel part quand
@@ -102,6 +104,16 @@ suite dépassaient le délai du routeur, et le patient aurait lu « Erreur
 réseau » sur une transmission réussie) ; un échec d'envoi est aussi journalisé
 en exploitation (`EMAIL.ALERTE_SECURITE_PRATICIEN.SEND_FAILED`) ; le verrou non lu
 est écrit ci-dessus.
+
+**Revue Copilot de la PR #1393, deux remarques.** *Corrigée* : le courriel
+partait avant l'écriture de la ligne unique, et deux validations concurrentes
+d'une même anamnèse envoyaient deux courriels — d'où la réservation du §3.
+*Hors du lot* : deux transmissions concurrentes d'un même questionnaire
+peuvent créer deux réponses (course **antérieure** à ce lot, dans
+l'enregistrement des réponses, que l'unicité de la source ne peut couvrir
+puisque chaque réponse a son identifiant) ; elles produisent alors deux
+courriels. Consignée au handoff du lot, à traiter dans l'écriture des
+réponses, pas ici.
 
 ### D-276 — BP-26 : aucune fonction retirée ni réduite ; la qualification réglementaire est différée à l'aboutissement du produit, et la porte de `D-266` §2 est amendée
 

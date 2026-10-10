@@ -26,6 +26,9 @@ la transmission, pour les quatre questions sur le suicide et la case
   `D-277`, avec celle du dossier clos (la carte du Fil n'y existe pas).
 - Revue `wn-reviewer` : GO, trois P2 corrigés (envois en parallèle, échec
   journalisé `EMAIL.ALERTE_SECURITE_PRATICIEN.SEND_FAILED`, verrou documenté).
+- Revue Copilot #1393 : ligne de journal réservée avant l'envoi (un seul
+  courriel par source, même en concurrence) ; la course sur les réponses,
+  antérieure, est routée ci-dessous.
 - Fins de ligne : les deux routes étaient en CRLF à HEAD ; `.gitattributes`
   (`eol=lf`) les normalise à l'indexation. Diff réel : 62 lignes (`?w=1`).
 
@@ -57,6 +60,12 @@ la transmission, pour les quatre questions sur le suicide et la case
 - Après déploiement : constater par conteneur, en agrégats, les lignes
   `alerte_securite_praticien` du journal (attendu : 0 tant qu'aucune réponse
   positive n'arrive).
+- **Course antérieure, routée hors lot (revue Copilot #1393)** : deux
+  transmissions concurrentes d'un même questionnaire passent toutes deux la
+  vérification de `statutReponses` dans `api/patient/submit` et créent deux
+  réponses (`idAssignation` seulement indexé), donc deux courriels. Correctif
+  attendu dans l'écriture des réponses (transaction + `SELECT … FOR UPDATE`
+  sur l'assignation, comme `lib/agenda-sommeil/cloture.ts`) — lot à cadrer.
 - Restes de `D-275` non cadrés : geste de lettre sans consultation porteuse ;
   date « depuis » du Fil.
 

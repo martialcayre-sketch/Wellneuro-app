@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { sendMail, journaliser } = vi.hoisted(() => ({ sendMail: vi.fn(), journaliser: vi.fn() }));
+const { sendMail, journaliser, prisma } = vi.hoisted(() => ({
+  sendMail: vi.fn(),
+  journaliser: vi.fn(),
+  prisma: { correspondancePatient: { create: vi.fn(), update: vi.fn() } },
+}));
 vi.mock('@/lib/email/transportSmtp', () => ({ creerTransportSmtp: () => ({ sendMail }) }));
+vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/correspondance/patient', async importOriginal => {
   const actual = await importOriginal<typeof import('@/lib/correspondance/patient')>();
   return { ...actual, journaliserCorrespondancePatient: journaliser };
@@ -19,7 +24,9 @@ const ENTREE = {
 describe('courriel au praticien sur une réponse suicidaire', () => {
   const envOrigine = { ...process.env };
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    prisma.correspondancePatient.create.mockResolvedValue({ id: 'RES_1' });
+    prisma.correspondancePatient.update.mockResolvedValue({});
     process.env.SMTP_URL = 'smtp://test';
     process.env.NEXTAUTH_URL = 'https://app.exemple.test/';
   });
@@ -46,20 +53,57 @@ describe('courriel au praticien sur une réponse suicidaire', () => {
     for (const fuite of ['PAT_SEED_01', 'REP_TEST_1', 'BDI', 'suicid']) {
       expect(`${message.subject}\n${message.text}`, fuite).not.toContain(fuite);
     }
-    expect(journaliser).toHaveBeenCalledWith(expect.objectContaining({
-      idPatient: 'PAT_SEED_01',
-      type: 'alerte_securite_praticien',
-      statut: 'Envoye',
-      sourceType: 'alerte_securite_praticien',
-      sourceId: 'reponse_questionnaire:REP_TEST_1',
+    // La ligne est réservée AVANT l'envoi, puis passée « Envoyé ».
+    expect(prisma.correspondancePatient.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        idPatient: 'PAT_SEED_01',
+        type: 'alerte_securite_praticien',
+        statut: 'Non_envoye',
+        sourceType: 'alerte_securite_praticien',
+        sourceId: 'reponse_questionnaire:REP_TEST_1',
+      }),
     }));
+    expect(prisma.correspondancePatient.create.mock.invocationCallOrder[0]).toBeLessThan(sendMail.mock.invocationCallOrder[0]);
+    expect(prisma.correspondancePatient.update).toHaveBeenCalledWith({ where: { id: 'RES_1' }, data: { statut: 'Envoye', erreurCourte: undefined } });
+    expect(journaliser).not.toHaveBeenCalled();
+  });
+
+  it('revue Copilot #1393 : deux transmissions concurrentes, un seul courriel — la réservation déjà prise n’envoie rien', async () => {
+    sendMail.mockResolvedValue({});
+    // La contrainte d'unicité `(sourceType, sourceId)`, simulée.
+    const prises = new Set<string>();
+    prisma.correspondancePatient.create.mockImplementation(async ({ data }: { data: { sourceType: string; sourceId: string } }) => {
+      const cle = `${data.sourceType}|${data.sourceId}`;
+      if (prises.has(cle)) throw Object.assign(new Error('unique'), { code: 'P2002' });
+      prises.add(cle);
+      return { id: 'RES_1' };
+    });
+    const [premier, second] = await Promise.all([
+      notifierPraticienSignalSecurite(ENTREE),
+      notifierPraticienSignalSecurite(ENTREE),
+    ]);
+    expect(premier).toEqual({ statut: 'Envoye' });
+    expect(second).toEqual({ statut: 'Non_envoye', dejaReserve: true });
+    expect(sendMail).toHaveBeenCalledTimes(1);
+  });
+
+  it('registre en panne : le courriel part quand même, et la trace est retentée au journal', async () => {
+    sendMail.mockResolvedValue({});
+    prisma.correspondancePatient.create.mockRejectedValue(new Error('P1001'));
+    await expect(notifierPraticienSignalSecurite(ENTREE)).resolves.toEqual({ statut: 'Envoye' });
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    expect(journaliser).toHaveBeenCalledWith(expect.objectContaining({ statut: 'Envoye' }));
   });
 
   it('un échec d’envoi est tracé « Erreur » et ne lève pas — aucune nouvelle tentative', async () => {
     sendMail.mockRejectedValue(new Error('SMTP indisponible'));
     await expect(notifierPraticienSignalSecurite(ENTREE)).resolves.toMatchObject({ statut: 'Erreur' });
     expect(sendMail).toHaveBeenCalledTimes(1);
-    expect(journaliser).toHaveBeenCalledWith(expect.objectContaining({ statut: 'Erreur' }));
+    // La réservation reste, passée « Erreur » : aucune nouvelle tentative.
+    expect(prisma.correspondancePatient.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'RES_1' },
+      data: expect.objectContaining({ statut: 'Erreur' }),
+    }));
   });
 
   it('sans configuration d’envoi ou sans adresse, rien ne part et c’est tracé « Non envoyé »', async () => {
@@ -68,7 +112,9 @@ describe('courriel au praticien sur une réponse suicidaire', () => {
     process.env.SMTP_URL = 'smtp://test';
     await notifierPraticienSignalSecurite({ ...ENTREE, praticienEmail: '  ' });
     expect(sendMail).not.toHaveBeenCalled();
-    expect(journaliser).toHaveBeenCalledTimes(2);
-    for (const appel of journaliser.mock.calls) expect(appel[0].statut).toBe('Non_envoye');
+    // La réservation porte déjà « Non envoyé » : rien d'autre à écrire.
+    expect(prisma.correspondancePatient.create).toHaveBeenCalledTimes(2);
+    for (const appel of prisma.correspondancePatient.create.mock.calls) expect(appel[0].data.statut).toBe('Non_envoye');
+    expect(prisma.correspondancePatient.update).not.toHaveBeenCalled();
   });
 });
