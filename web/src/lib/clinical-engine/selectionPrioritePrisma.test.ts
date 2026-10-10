@@ -124,8 +124,8 @@ describe('construireChaineC1Tolerante', () => {
     const inputs = adaptRuntimeInputs(
       { idPatient: 'PAT_1', createdAt: DATE_RIDEAU_FIXTURE },
       passationsC1Fixture(),
-      anamnese,
-    );
+      anamnese, [],
+);
     const { proposal } = proposeRuntimeEpisode(inputs, 'T0');
     const episode = confirmAssessmentEpisode(
       proposal,
@@ -142,6 +142,7 @@ describe('construireChaineC1Tolerante', () => {
       patientContext: inputs.patientContext,
       responses: inputs.responses,
       signauxAlerte: inputs.signauxAlerte,
+      reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
     };
   }

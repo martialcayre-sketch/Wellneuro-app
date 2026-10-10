@@ -21,7 +21,10 @@ import type { CouvertureAdressage } from './safetyFindingSource';
 // Tout écart écarte la couverture. Fail-closed : un constat qu'on ne sait pas
 // couvert reste ouvert, il ne se lève jamais par défaut.
 
-const FINDING_ID_ANAMNESE = /^safety:anamnese:[0-9a-f]{16}$/;
+// Les deux producteurs qu'une lettre peut couvrir — la regex du trigger
+// depuis la migration `adressages_signal_alerte_constats_questionnaire_v1`
+// ([[D-275]] §2). Une ligne mixte est retenue entière.
+const FINDING_ID_ADRESSABLE = /^safety:(anamnese|questionnaire):[0-9a-f]{16}$/;
 const PREFIXE_ANCRAGE = 'safety-signals-';
 
 /**
@@ -117,7 +120,8 @@ type LigneCouverture = {
 /**
  * Le filtre par ligne, partagé par les deux lectures : la lettre est relue
  * (dossier, sens, ancrage) et les constats couverts doivent tous être des
- * constats d'anamnèse. Tout écart écarte la couverture — fail-closed.
+ * constats d'anamnèse ou de questionnaire. Tout écart écarte la couverture —
+ * fail-closed.
  */
 function couverturesRetenues(lignes: LigneCouverture[], idPatient: string): CouvertureAdressage[] {
   const couvertures: CouvertureAdressage[] = [];
@@ -127,7 +131,7 @@ function couverturesRetenues(lignes: LigneCouverture[], idPatient: string): Couv
     if (lettre.idPatient !== idPatient || lettre.sens !== 'sortant') continue;
     if (!lettre.ancrageVersion?.startsWith(PREFIXE_ANCRAGE)) continue;
     const findingIds = Array.isArray(ligne.findingIds) ? ligne.findingIds : [];
-    if (findingIds.length === 0 || !findingIds.every(id => FINDING_ID_ANAMNESE.test(id))) continue;
+    if (findingIds.length === 0 || !findingIds.every(id => FINDING_ID_ADRESSABLE.test(id))) continue;
     couvertures.push({
       idAdressage: ligne.id,
       idCorrespondance: ligne.idCorrespondance,

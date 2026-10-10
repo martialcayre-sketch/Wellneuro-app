@@ -4,7 +4,12 @@ import type { JalonMomentum } from '../equilibre/types';
 import { proposeAssessmentEpisode } from './assessmentEpisode';
 import { canonicalSha256 } from './canonical';
 import { lireEtatPopulation, type EtatPopulation } from '../consultation/etatPopulation';
-import { signauxDeclares } from './safetyFindings';
+import {
+  reponsesSecuriteDeclarees,
+  signauxDeclares,
+  type PassationSecuriteRow,
+  type ReponseSecurite,
+} from './safetyFindings';
 import type {
   PatientContext,
   ProposedAssessmentEpisode,
@@ -50,6 +55,14 @@ export type RuntimeInputs = {
    * de sécurité lu d'un côté seulement produirait exactement cela.
    */
   signauxAlerte: string[];
+  /**
+   * Les réponses aux questions sur le suicide ([[D-275]] §2) — LUES ICI pour
+   * la raison de `signauxAlerte` : le cockpit et le vérificateur traversent
+   * tous deux cette fonction. Calculées sur `passationsSecurite` — toutes les
+   * passations, même en lecture datée (A1) —, jamais sur les seules réponses
+   * de l'épisode.
+   */
+  reponsesSecurite: ReponseSecurite[];
   /**
    * L'état de population déclaré par le patient ([[D-101]], LOT-05).
    *
@@ -107,6 +120,15 @@ export function adaptRuntimeInputs(
   patient: RuntimePatientRow,
   responseRows: RuntimeResponseRow[],
   consultation: RuntimeConsultationRow,
+  /**
+   * TOUTES les passations du dossier, ni tronquées ni filtrées ([[D-275]] §2,
+   * A1) — la source de `reponsesSecurite`. Distinctes de `responseRows` parce
+   * que le cockpit tronque celles-ci en lecture datée : un signal de sécurité
+   * ne se lit pas « au passé », comme l'anamnèse qui reste celle de la porteuse
+   * courante (revue Codex de #1375). OBLIGATOIRE : chaque appelant dit ce qu'il
+   * a lu.
+   */
+  passationsSecurite: readonly PassationSecuriteRow[],
 ): RuntimeInputs {
   const responses = responseRows
     .map((row): QuestionnaireResponseInput => ({
@@ -136,6 +158,7 @@ export function adaptRuntimeInputs(
     responses,
     patientContext,
     signauxAlerte: signauxDeclares(anamnese),
+    reponsesSecurite: reponsesSecuriteDeclarees(passationsSecurite),
     etatPopulation: lireEtatPopulation(anamnese),
   };
 }

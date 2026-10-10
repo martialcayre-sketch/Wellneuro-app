@@ -91,6 +91,8 @@ export async function entreesRuntime(idPatient: string) {
       { idPatient, createdAt: new Date(0) },
       filtrerPassationsExploitables(responses),
       consultation,
+      // Toutes les passations ([[D-275]] §2) : la même source que le cockpit.
+      responses,
     ),
     idConsultationPorteuse: consultation?.id ?? null,
   };
@@ -192,6 +194,7 @@ export async function refusChaineC1(
       // Un signal lu ici et pas dans le cockpit — ou l'inverse — ferait diverger
       // la revue recalculée et rendrait 409 sur une carte honnête.
       signauxAlerte: inputs.signauxAlerte,
+      reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
       effetsIndesirables,
       couverturesAdressage,

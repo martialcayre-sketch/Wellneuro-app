@@ -5,12 +5,14 @@
 // bundle du navigateur (`bundleClient.guard.test.ts`), et `safetyFindings.ts`
 // importe la table signée, donc `crypto` et le référentiel entier.
 //
-// POURQUOI IL EXISTE. `review.safetyFindings` mélange DEUX producteurs : les
-// signaux d'alerte déclarés à l'anamnèse ([[D-099]]) et les signalements d'effet
-// indésirable rattachés à un protocole ([[D-101]]). Ils inhibent la décision de
+// POURQUOI IL EXISTE. `review.safetyFindings` mélange TROIS producteurs : les
+// signaux d'alerte déclarés à l'anamnèse ([[D-099]]), les signalements d'effet
+// indésirable rattachés à un protocole ([[D-101]]) et les réponses aux questions
+// sur le suicide des questionnaires ([[D-275]] §2). Ils inhibent la décision de
 // la même façon, mais ils n'appellent pas le même geste — la lettre d'adressage
-// ([[D-218]]) ne sait écrire que les premiers. Offrir le geste sur un dossier qui
-// ne porte que des seconds, c'était offrir un bouton dont la route répond 409.
+// ([[D-218]]) sait écrire le premier et le troisième, jamais le second. Offrir le
+// geste sur un dossier qui ne porte que des effets indésirables, c'était offrir
+// un bouton dont la route répond 409.
 //
 // Le préfixe EST le contrat du producteur : il le compose ici, l'écran le lit
 // ici, et une seule constante les tient ensemble.
@@ -21,6 +23,9 @@ export const PREFIXE_FINDING_ANAMNESE = 'safety:anamnese:';
 /** Préfixe des constats issus d'un signalement d'effet indésirable. */
 export const PREFIXE_FINDING_EFFET_INDESIRABLE = 'safety:effet-indesirable:';
 
+/** Préfixe des constats issus d'une réponse à une question sur le suicide ([[D-275]] §2). */
+export const PREFIXE_FINDING_QUESTIONNAIRE = 'safety:questionnaire:';
+
 /**
  * `true` si ce constat vient d'un signal d'alerte déclaré à l'anamnèse.
  *
@@ -30,6 +35,20 @@ export const PREFIXE_FINDING_EFFET_INDESIRABLE = 'safety:effet-indesirable:';
  */
 export function estFindingAnamnese(findingId: unknown): boolean {
   return typeof findingId === 'string' && findingId.startsWith(PREFIXE_FINDING_ANAMNESE);
+}
+
+/** `true` si ce constat vient d'une réponse de questionnaire ([[D-275]] §2). */
+export function estFindingQuestionnaire(findingId: unknown): boolean {
+  return typeof findingId === 'string' && findingId.startsWith(PREFIXE_FINDING_QUESTIONNAIRE);
+}
+
+/**
+ * `true` si une lettre d'adressage peut couvrir ce constat : anamnèse ou
+ * questionnaire. Même règle que l'éligibilité — elle ne se PRÉSUME pas, un
+ * producteur neuf vient s'inscrire ici.
+ */
+export function estFindingAdressable(findingId: unknown): boolean {
+  return estFindingAnamnese(findingId) || estFindingQuestionnaire(findingId);
 }
 
 /**

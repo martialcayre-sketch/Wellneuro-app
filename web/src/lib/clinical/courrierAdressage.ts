@@ -4,7 +4,10 @@ import { MODELE_COURRIER_ADRESSAGE } from '@/lib/documents/modele';
 import { renderDocumentHtml } from '@/lib/documents/rendu';
 import type { Bloc, DocumentComposite } from '@/lib/documents/types';
 import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
-import { SAFETY_SIGNAL_CONDUITES, rangDuSignal } from './safetySignalsV1';
+import { sha256 } from './corpusSyntheseV1';
+import { SAFETY_SIGNALS_SHA256, SAFETY_SIGNAL_CONDUITES, rangDuSignal } from './safetySignalsV1';
+import { SAFETY_QUESTIONNAIRE_SHA256 } from './safetyQuestionnaireV1';
+import { reponsesSecuriteAdressees, type ReponseSecurite } from '@/lib/clinical-engine/safetyFindings';
 
 // Lettre d'adressage — la SEULE raison cliniquement obligatoire d'écrire à un
 // médecin, et elle n'avait aucun chemin ([[D-099]], cadrage du 2026-09-16).
@@ -44,6 +47,26 @@ import { SAFETY_SIGNAL_CONDUITES, rangDuSignal } from './safetySignalsV1';
  */
 export const VERSION_ANCRAGE_ADRESSAGE = 'safety-signals-nnpp2-v1';
 
+/**
+ * L'estampille d'une lettre qui cite AU MOINS UNE réponse de questionnaire
+ * ([[D-275]] §2). Une lettre sans réponse de questionnaire garde la version
+ * d'avant, au caractère près : les lettres déjà consignées ne changent pas de
+ * verdict, et la lettre d'anamnèse seule ne change pas de texte.
+ *
+ * PRÉFIXE `safety-signals-` CONSERVÉ : le trigger d'`adressages_signal_alerte`
+ * et `couverturesRetenues` l'exigent — une autre version serait écartée en
+ * silence, et le constat ne se lèverait jamais.
+ */
+export const VERSION_ANCRAGE_ADRESSAGE_QUESTIONNAIRE = 'safety-signals-questionnaire-v1';
+
+/**
+ * Le SHA VIVANT d'une lettre qui cite une réponse de questionnaire : celui des
+ * DEUX tables qu'elle recopie. Que l'une bouge, et la lettre se lit périmée.
+ */
+export const SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE = sha256(
+  JSON.stringify({ anamnese: SAFETY_SIGNALS_SHA256, questionnaire: SAFETY_QUESTIONNAIRE_SHA256 }),
+);
+
 export type EntreeCourrierAdressage = {
   patientId: string;
   /**
@@ -52,6 +75,14 @@ export type EntreeCourrierAdressage = {
    * rien d'autre.
    */
   signaux: string[];
+  /**
+   * Les réponses aux questions sur le suicide ([[D-275]] §2), telles que
+   * `reponsesSecuriteDeclarees` les rend. Le module retient celles que le
+   * producteur retient (`reponsesSecuriteAdressees`) ; il n'en dérive rien.
+   * L'appelant passe `[]` quand `SAF-QUEST-01` n'est pas signée : la lettre
+   * ne doit pas citer ce que le moteur ne bloque pas.
+   */
+  reponses: ReponseSecurite[];
   /** SHA VIVANT de la table de sécurité au moment du rendu (provenance). */
   tableSha256: string;
   /** ISO 8601 — date du courrier, posée par l'appelant (jamais l'horloge ici). */
@@ -65,7 +96,7 @@ export type EntreeCourrierAdressage = {
 };
 
 export type RefusCourrierAdressage =
-  /** Aucun signal n'appelle un adressage : il n'y a pas de lettre à écrire. */
+  /** Aucun signal ni aucune réponse n'appelle un adressage : il n'y a pas de lettre à écrire. */
   | 'aucun_signal_adressage'
   /** La garde non prescriptive a levé au rendu. */
   | 'terme_prescriptif'
@@ -116,6 +147,24 @@ const PHRASE_HORS_COTATION =
   + 'de signaux relue et signée par le cabinet : faute de rang connu, ils sont '
   + 'traités comme un adressage plutôt qu’ignorés.';
 
+// [[D-275]] §2 — textes des lettres qui citent une réponse de questionnaire.
+// Une lettre d'anamnèse seule n'en porte aucun : son texte est inchangé.
+const PHRASE_DECLARE_QUESTIONNAIRE =
+  'Ces réponses proviennent de questionnaires que le patient a remplis lui-même. '
+  + 'Elles n’ont fait l’objet d’aucun examen de ma part, et ne constituent ni un '
+  + 'diagnostic ni une hypothèse diagnostique.';
+
+const PHRASE_DECLARE_MIXTE =
+  'Les signaux d’alerte ci-dessus sont DÉCLARÉS par le patient lors de son '
+  + 'anamnèse ; les réponses citées proviennent de questionnaires qu’il a remplis '
+  + 'lui-même. Aucun de ces éléments n’a fait l’objet d’un examen de ma part, et '
+  + 'ils ne constituent ni un diagnostic ni une hypothèse diagnostique.';
+
+const PHRASE_HORS_OPTIONS =
+  'Pour une ou plusieurs des réponses ci-dessus (‡), la valeur enregistrée ne '
+  + 'correspond à aucune option de la question : faute de savoir ce qu’elle dit, '
+  + 'elle est traitée comme un adressage plutôt qu’ignorée.';
+
 const PHRASE_ABSTENTION =
   'Dans l’attente de votre appréciation, je n’ai formulé aucune proposition '
   + 'de priorité ni d’accompagnement pour ce dossier.';
@@ -129,28 +178,51 @@ export function genererCourrierAdressage(
   entree: EntreeCourrierAdressage,
 ): PreparationCourrierAdressage {
   const retenus = signauxAdresses(entree.signaux);
-  if (retenus.length === 0) {
+  const reponses = reponsesSecuriteAdressees(entree.reponses);
+  if (retenus.length === 0 && reponses.length === 0) {
     return { ok: false, raison: 'aucun_signal_adressage' };
   }
 
   const dateLisible = entree.dateCourrier.slice(0, 10);
   const horsCotation = retenus.some(signal => !signal.cote);
+  const horsOptions = reponses.some(reponse => reponse.lecture.kind === 'hors_options');
+  const avecQuestionnaire = reponses.length > 0;
+  // La source, dite au médecin : anamnèse seule (texte d'avant [[D-275]] §2,
+  // au caractère près), questionnaires seuls, ou les deux.
+  const origine = !avecQuestionnaire
+    ? 'son anamnèse porte un ou plusieurs signaux d’alerte'
+    : retenus.length === 0
+      ? 'ses réponses à un ou plusieurs questionnaires portent un ou plusieurs signaux d’alerte'
+      : 'son anamnèse et ses réponses à un ou plusieurs questionnaires portent des signaux d’alerte';
   const paragraphes = [
     'Docteur,',
     'Dans le cadre d’un accompagnement en neuronutrition, je vous adresse ce '
-    + 'patient : son anamnèse porte un ou plusieurs signaux d’alerte pour '
+    + `patient : ${origine} pour `
     + 'lesquels un avis médical me paraît devoir précéder toute proposition de '
     + 'ma part. L’appréciation de ces éléments, comme la conduite à tenir, vous '
     + 'appartiennent pleinement.',
-    'Signaux déclarés par le patient :\n'
-    + retenus
-      .map(signal => `— « ${signal.libelle} »${signal.cote ? '' : ' (†)'}`)
-      .join('\n'),
+    ...(retenus.length > 0
+      ? ['Signaux déclarés par le patient :\n'
+        + retenus
+          .map(signal => `— « ${signal.libelle} »${signal.cote ? '' : ' (†)'}`)
+          .join('\n')]
+      : []),
+    ...(avecQuestionnaire
+      ? ['Réponses du patient à la question sur les idées de mort ou de suicide :\n'
+        + reponses
+          .map(reponse => `— ${reponse.instrument}, passation du ${reponse.date} : ${
+            reponse.lecture.kind === 'option'
+              ? `« ${reponse.lecture.libelle} »`
+              : 'valeur hors des options de la question (‡)'
+          }`)
+          .join('\n')]
+      : []),
     // RECOPIÉ, jamais reformulé : ce texte est celui du rang `adressage` de la
     // table signée. Le réécrire en ferait un contenu clinique sans provenance.
     SAFETY_SIGNAL_CONDUITES.adressage,
-    PHRASE_DECLARE,
+    !avecQuestionnaire ? PHRASE_DECLARE : retenus.length === 0 ? PHRASE_DECLARE_QUESTIONNAIRE : PHRASE_DECLARE_MIXTE,
     ...(horsCotation ? [PHRASE_HORS_COTATION] : []),
+    ...(horsOptions ? [PHRASE_HORS_OPTIONS] : []),
     PHRASE_ABSTENTION,
     `Avec mes remerciements pour votre lecture. Courrier préparé le ${dateLisible}.`,
     SIGNATURE_PRATICIEN,
@@ -161,11 +233,17 @@ export function genererCourrierAdressage(
     id: `courrier-adressage-${entree.patientId}-${dateLisible}`,
     type: 'narratif',
     regime: 'statique_valide',
-    provenance: {
-      source: 'signaux_securite_anamnese',
-      ancrageHash: entree.tableSha256,
-      version: VERSION_ANCRAGE_ADRESSAGE,
-    },
+    provenance: avecQuestionnaire
+      ? {
+        source: 'signaux_securite_questionnaires',
+        ancrageHash: SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE,
+        version: VERSION_ANCRAGE_ADRESSAGE_QUESTIONNAIRE,
+      }
+      : {
+        source: 'signaux_securite_anamnese',
+        ancrageHash: entree.tableSha256,
+        version: VERSION_ANCRAGE_ADRESSAGE,
+      },
     contenu: {
       praticien: texte,
       medecin: texte,
@@ -235,7 +313,10 @@ export function rendreCourrierAdressageFige(entree: {
     type: 'narratif',
     regime: 'statique_valide',
     provenance: {
-      source: 'signaux_securite_anamnese',
+      // La source se lit sur la version que la lettre a consignée.
+      source: entree.ancrageVersion === VERSION_ANCRAGE_ADRESSAGE_QUESTIONNAIRE
+        ? 'signaux_securite_questionnaires'
+        : 'signaux_securite_anamnese',
       ancrageHash: entree.ancrageSha256,
       version: entree.ancrageVersion,
     },

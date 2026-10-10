@@ -280,7 +280,9 @@ async function loadRuntimeInputs(idPatient: string, emailPraticien: string, asOf
   // runtime clinique SEULEMENT : les repères as-of, eux, restent calculés sur
   // la liste complète — un repère est un fait administratif, pas une mesure.
   return {
-    ...adaptRuntimeInputs(patient, filtrerPassationsExploitables(tronquerA(responses, asOf)), consultation),
+    // Les réponses de sécurité, elles, ne se tronquent pas ([[D-275]] §2) :
+    // toutes les passations, comme le vérificateur et le Fil.
+    ...adaptRuntimeInputs(patient, filtrerPassationsExploitables(tronquerA(responses, asOf)), consultation, responses),
     idConsultationPorteuse: consultation?.id ?? null,
     asOf: asOf ? asOf.toISOString() : null,
   };
@@ -588,6 +590,7 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
             patientContext: inputs.patientContext,
             responses: inputs.responses,
             signauxAlerte: inputs.signauxAlerte,
+            reponsesSecurite: inputs.reponsesSecurite,
             etatPopulation: inputs.etatPopulation,
             effetsIndesirables: await lireEffetsIndesirables(idPatient),
             couverturesAdressage,
@@ -905,6 +908,7 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
       patientContext: inputs.patientContext,
       responses: inputs.responses,
       signauxAlerte: inputs.signauxAlerte,
+      reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
       // Lus par la fonction PARTAGÉE avec `verifierChaineC1` ([[D-101]]) : ce
       // POST émet la carte que le vérificateur recalculera, et deux lectures

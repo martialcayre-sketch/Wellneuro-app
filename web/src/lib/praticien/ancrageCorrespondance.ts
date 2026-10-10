@@ -1,5 +1,6 @@
 import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
 import { SAFETY_SIGNALS_SHA256 } from '@/lib/clinical/safetySignalsV1';
+import { SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE } from '@/lib/clinical/courrierAdressage';
 import type { VerdictAncre } from './correspondanceMedecin';
 
 // Verdict d'ancrage d'une lettre de correspondance médecin ([[D-073]]).
@@ -75,6 +76,9 @@ const SHA_ATTENDU_PAR_VERSION: ReadonlyMap<string, string> = new Map([
   // chaque lettre d'adressage lirait `reference_inconnue` dans le fil — et,
   // sous le verdict en dur d'avant [[D-215]], « ancrage périmé ».
   ['safety-signals-nnpp2-v1', SAFETY_SIGNALS_SHA256],
+  // La lettre qui cite une réponse de questionnaire ([[D-275]] §2) : le SHA
+  // des deux tables qu'elle recopie.
+  ['safety-signals-questionnaire-v1', SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE],
 ]);
 
 export function verdictAncrage(sha: string | null, version: string | null): VerdictAncrage {

@@ -12,6 +12,7 @@ import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import {
   PREFIXE_FINDING_EFFET_INDESIRABLE,
   estFindingAnamnese,
+  estFindingQuestionnaire,
 } from '@/lib/clinical-engine/safetyFindingSource';
 import {
   LIBELLES_CODE_REVOCATION,
@@ -284,11 +285,15 @@ export function cartesSignalSecurite(
       || (a.idPatient < b.idPatient ? -1 : a.idPatient > b.idPatient ? 1 : 0))
     .map(l => {
       const anamnese = l.findingIds.filter(id => estFindingAnamnese(id)).length;
+      const questionnaires = l.findingIds.filter(id => estFindingQuestionnaire(id)).length;
       const effets = l.findingIds.filter(id => id.startsWith(PREFIXE_FINDING_EFFET_INDESIRABLE)).length;
-      const autres = l.findingIds.length - anamnese - effets;
+      const autres = l.findingIds.length - anamnese - questionnaires - effets;
       const parties = [
         ...(anamnese > 0
           ? [`Anamnèse : ${pluriel(anamnese, 'signal d’alerte non adressé', 'signaux d’alerte non adressés')}`]
+          : []),
+        ...(questionnaires > 0
+          ? [`Questionnaire : ${pluriel(questionnaires, 'réponse de sécurité non adressée', 'réponses de sécurité non adressées')}`]
           : []),
         ...(effets > 0
           ? [`Effet indésirable : ${pluriel(effets, 'signalement non traité', 'signalements non traités')}`]

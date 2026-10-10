@@ -11,7 +11,7 @@ describe('la source d’un constat de sécurité se lit dans son identifiant', (
     // Le défaut que ce banc ferme : deux littéraux, l'un au producteur, l'autre
     // à l'écran. Ils auraient dérivé en silence, et l'éligibilité au geste
     // d'adressage se serait mise à rendre `false` partout.
-    const { findings } = construireSafetyFindings(['Douleur thoracique / oppression']);
+    const { findings } = construireSafetyFindings(['Douleur thoracique / oppression'], [], []);
     expect(findings.length).toBeGreaterThan(0);
     expect(findings[0].findingId.startsWith(PREFIXE_FINDING_ANAMNESE)).toBe(true);
     expect(estFindingAnamnese(findings[0].findingId)).toBe(true);

@@ -63,7 +63,7 @@ describe('état LIVRÉ — la production ne change pas au merge', () => {
   });
 
   it('non signée, aucun constat n’est produit — même sur un signalement rattaché', () => {
-    const { findings, rules } = construireSafetyFindings([], [RATTACHE]);
+    const { findings, rules } = construireSafetyFindings([], [RATTACHE], []);
     expect(findings.filter(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)).toHaveLength(0);
     const regle = rules.find(r => r.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE);
     expect(regle?.lifecycle).toBe('candidate');
@@ -109,7 +109,7 @@ describe('l’ordre des deux gestes — capturer avant d’inhiber', () => {
 describe('table signée — l’interruption mord, et elle parle', () => {
   it('un signalement rattaché et non traité produit un constat qui inhibe', () => {
     simulerSignature();
-    const { findings } = construireSafetyFindings([], [RATTACHE]);
+    const { findings } = construireSafetyFindings([], [RATTACHE], []);
     const constat = findings.find(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE);
     expect(constat).toBeDefined();
     // `disposition` est ce que `decisionCard` lit pour bloquer : un constat de
@@ -120,7 +120,7 @@ describe('table signée — l’interruption mord, et elle parle', () => {
 
   it('un signalement CLOS n’inhibe rien', () => {
     simulerSignature();
-    const { findings, limitations } = construireSafetyFindings([], [CLOS]);
+    const { findings, limitations } = construireSafetyFindings([], [CLOS], []);
     expect(findings.filter(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)).toHaveLength(0);
     expect(limitations).toHaveLength(0);
   });
@@ -130,7 +130,7 @@ describe('table signée — l’interruption mord, et elle parle', () => {
   // praticien, et deviner un protocole serait l'inférence interdite.
   it('un signalement non rattaché n’inhibe pas, mais se dit', () => {
     simulerSignature();
-    const { findings, limitations } = construireSafetyFindings([], [SANS_RATTACHEMENT]);
+    const { findings, limitations } = construireSafetyFindings([], [SANS_RATTACHEMENT], []);
     expect(findings.filter(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)).toHaveLength(0);
     expect(limitations.join(' ')).toMatch(/rattachés à aucun/);
   });
@@ -141,7 +141,7 @@ describe('table signée — l’interruption mord, et elle parle', () => {
       SANS_RATTACHEMENT,
       { id: 'AER-4', protocolDraftId: null, statutTraitement: 'recu' },
       { id: 'AER-5', protocolDraftId: null, statutTraitement: 'clos' },
-    ]);
+    ], []);
     expect(limitations.join(' ')).toContain('2 signalement(s)');
   });
 
@@ -150,8 +150,8 @@ describe('table signée — l’interruption mord, et elle parle', () => {
   it('l’ordre des signalements ne change pas les constats produits', () => {
     simulerSignature();
     const deux = [RATTACHE, { ...RATTACHE, id: 'AER-0' }];
-    const ordreA = construireSafetyFindings([], deux).findings.map(f => f.findingId);
-    const ordreB = construireSafetyFindings([], [...deux].reverse()).findings.map(f => f.findingId);
+    const ordreA = construireSafetyFindings([], deux, []).findings.map(f => f.findingId);
+    const ordreB = construireSafetyFindings([], [...deux].reverse(), []).findings.map(f => f.findingId);
     expect(ordreA).toEqual(ordreB);
   });
 });
@@ -163,7 +163,7 @@ describe('le constat ne transporte ni les mots du patient, ni de gravité', () =
   // ci-dessous vérifie à l'exécution sur l'objet réellement produit.
   it('aucun champ du constat ne cite un texte libre du signalement', () => {
     simulerSignature();
-    const { findings } = construireSafetyFindings([], [RATTACHE]);
+    const { findings } = construireSafetyFindings([], [RATTACHE], []);
     const constat = findings.find(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)!;
     const serialise = JSON.stringify(constat);
     expect(serialise).toContain('AER-1');
@@ -172,18 +172,18 @@ describe('le constat ne transporte ni les mots du patient, ni de gravité', () =
 
   it('`confidence` est FIGÉ et ne varie avec rien (`DC-23`)', () => {
     simulerSignature();
-    const un = construireSafetyFindings([], [RATTACHE]).findings;
+    const un = construireSafetyFindings([], [RATTACHE], []).findings;
     const trois = construireSafetyFindings([], [
       RATTACHE,
       { ...RATTACHE, id: 'AER-6' },
       { ...RATTACHE, id: 'AER-7' },
-    ]).findings;
+    ], []).findings;
     for (const constat of [...un, ...trois]) expect(constat.confidence).toBe('à_documenter');
   });
 
   it('aucun constat ne porte de champ numérique de gravité, sous quelque nom', () => {
     simulerSignature();
-    const { findings } = construireSafetyFindings([], [RATTACHE]);
+    const { findings } = construireSafetyFindings([], [RATTACHE], []);
     for (const constat of findings) {
       for (const valeur of Object.values(constat as unknown as Record<string, unknown>)) {
         expect(typeof valeur).not.toBe('number');

@@ -13,8 +13,12 @@ import {
   ORDRE_CONSULTATION_PORTEUSE,
   whereConsultationPorteuse,
 } from '@/lib/consultation/consultationPorteuse';
-import { construireSafetyFindings, signauxDeclares } from '@/lib/clinical-engine/safetyFindings';
-import { estFindingAnamnese } from '@/lib/clinical-engine/safetyFindingSource';
+import {
+  construireSafetyFindings,
+  reponsesSecuriteDeclarees,
+  signauxDeclares,
+} from '@/lib/clinical-engine/safetyFindings';
+import { estFindingAdressable } from '@/lib/clinical-engine/safetyFindingSource';
 import { genererCourrierAdressage } from '@/lib/clinical/courrierAdressage';
 import {
   isAdressageCourrierEnabled,
@@ -24,6 +28,10 @@ import {
   SAFETY_SIGNALS_SHA256,
   tableSignauxSecuriteSignee,
 } from '@/lib/clinical/safetySignalsV1';
+import {
+  QUESTIONNAIRES_SECURITE,
+  tableSecuriteQuestionnaireSignee,
+} from '@/lib/clinical/safetyQuestionnaireV1';
 
 // Lettre d'adressage sur signal d'alerte ([[D-218]], LOT-04) — la seule raison
 // cliniquement obligatoire d'écrire à un médecin, et elle n'avait aucun chemin.
@@ -90,6 +98,9 @@ const MESSAGES_REFUS_COURRIER: Record<string, string> = {
   bloc_non_diffuse:
     'Le rendu médecin n’est pas diffusable : le texte jugé par la garde est absent. Rien n’est consigné.',
   provenance_absente: 'Lettre sans provenance : rien n’est consigné.',
+  sans_consultation_porteuse:
+    'Ce dossier n’a pas encore de consultation validée : une lettre d’adressage ne pourra couvrir'
+    + ' ses constats qu’une fois l’anamnèse validée. Rien n’est consigné.',
 };
 
 const MESSAGES_REFUS_CONSIGNATION: Record<string, string> = {
@@ -244,10 +255,27 @@ export async function POST(req: Request) {
         // différentes des signaux déclarés feraient diverger la lettre du
         // blocage qu'elle est censée porter.
         const signaux = signauxDeclares(consultation?.anamnese);
+        // Les réponses aux questions sur le suicide ([[D-275]] §2) : la MÊME
+        // fonction que la chaîne, sur toutes les passations non invalidées
+        // (A1). Table non signée ⇒ aucune : le moteur ne bloque rien sur
+        // elles, et la lettre ne doit pas affirmer le contraire.
+        const reponses = tableSecuriteQuestionnaireSignee()
+          ? reponsesSecuriteDeclarees(await tx.questionnaireReponse.findMany({
+            where: { idPatient, idQuestionnaire: { in: [...QUESTIONNAIRES_SECURITE] } },
+            select: {
+              idReponse: true,
+              idQuestionnaire: true,
+              dateReponse: true,
+              scoresJson: true,
+              statutValidite: true,
+            },
+          }))
+          : [];
 
         const genere = genererCourrierAdressage({
           patientId: idPatient,
           signaux,
+          reponses,
           // Le SHA VIVANT de la table, recalculé à l'import depuis les signaux
           // réellement publiés — jamais le littéral figé de la signature, qui
           // dirait ce qui a été relu, pas ce qui a servi.
@@ -288,13 +316,20 @@ export async function POST(req: Request) {
         }
 
         // Les constats couverts : ceux que le producteur de sécurité tire des
-        // MÊMES signaux — rang `adressage` et libellés hors cotation, exactement
-        // ceux que la lettre imprime ([[D-218]] §4). Jamais un constat d'effet
-        // indésirable : la base le refuserait, et le préfixe est filtré ici
-        // pour que le refus ne soit pas le seul rempart.
-        const findingIds = construireSafetyFindings(signaux).findings
+        // MÊMES signaux et des MÊMES réponses — rang `adressage`, libellés hors
+        // cotation, réponses autres que « non » —, exactement ceux que la
+        // lettre imprime ([[D-218]] §4, [[D-275]] §2). Jamais un constat
+        // d'effet indésirable : la base le refuserait, et le préfixe est
+        // filtré ici pour que le refus ne soit pas le seul rempart.
+        const findingIds = construireSafetyFindings(signaux, [], reponses).findings
           .map(finding => finding.findingId)
-          .filter(estFindingAnamnese);
+          .filter(estFindingAdressable);
+        if (!consultation && findingIds.length > 0) {
+          // Un constat de questionnaire existe sans consultation porteuse
+          // ([[D-275]] §2, conséquence acceptée) : la base refuserait la
+          // couverture. Le refus dit la vraie cause, pas « aucun signal ».
+          return { ok: false, reason: 'sans_consultation_porteuse', status: 409 } satisfies Resultat;
+        }
         if (!consultation || findingIds.length === 0) {
           // Un générateur qui rend une lettre sans constat à couvrir dirait un
           // adressage que le moteur ne pose pas : refus fermé, rien d'écrit.

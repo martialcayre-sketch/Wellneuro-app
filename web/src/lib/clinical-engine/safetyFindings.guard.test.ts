@@ -80,7 +80,7 @@ describe('cotation — elle ne dérive pas des libellés servis au patient', () 
 
 describe('le rang commande la production', () => {
   it('les six signaux d’adressage produisent six constats', () => {
-    const { findings } = construireSafetyFindings([...ADRESSAGE].sort());
+    const { findings } = construireSafetyFindings([...ADRESSAGE].sort(), [], []);
     expect(findings).toHaveLength(6);
     expect(findings.every(f => f.kind === 'safety')).toBe(true);
     expect(findings.every(f => f.disposition === 'requires_practitioner_review')).toBe(true);
@@ -96,13 +96,13 @@ describe('le rang commande la production', () => {
     // Ce n'est pas un oubli, c'est l'arbitrage [[D-099]] : ces signaux
     // continuent de remonter par `extraireVigilanceDeterministe`, qui ne filtre
     // rien et que ce lot ne touche pas.
-    expect(construireSafetyFindings([...VIGILANCE].sort()).findings).toEqual([]);
+    expect(construireSafetyFindings([...VIGILANCE].sort(), [], []).findings).toEqual([]);
   });
 
   it('les douze ensemble n’en produisent toujours que six', () => {
     const { findings } = construireSafetyFindings(
       SAFETY_SIGNALS_V1.map(s => s.libelle).sort()
-    );
+    , [], []);
     expect(findings).toHaveLength(6);
   });
 
@@ -112,26 +112,26 @@ describe('le rang commande la production', () => {
   // d'ordre est réel, mais il est porté par `signauxDeclares` (qui trie) ; c'est
   // donc là qu'il se garde, et le producteur, lui, préserve l'ordre reçu.
   it('identifiants uniques, et c’est `signauxDeclares` qui fixe l’ordre', () => {
-    const endroit = construireSafetyFindings([...ADRESSAGE].sort()).findings;
+    const endroit = construireSafetyFindings([...ADRESSAGE].sort(), [], []).findings;
     expect(new Set(endroit.map(f => f.findingId)).size).toBe(6);
 
     // Le producteur PRÉSERVE l'ordre reçu — dit et vérifié, plutôt que masqué
     // par un tri dans l'assertion.
-    const envers = construireSafetyFindings([...ADRESSAGE].sort().reverse()).findings;
+    const envers = construireSafetyFindings([...ADRESSAGE].sort().reverse(), [], []).findings;
     expect(envers.map(f => f.findingId)).toEqual([...endroit].map(f => f.findingId).reverse());
 
     // Et l'ordre servi à la production est celui de `signauxDeclares`, identique
     // quel que soit l'ordre de stockage du JSON : c'est CETTE composition que
     // traversent le cockpit et le vérificateur, et dont dépendent les empreintes.
     const brut = [...ADRESSAGE].sort().reverse();
-    expect(construireSafetyFindings(signauxDeclares({ signaux_alerte: brut })).findings.map(f => f.findingId))
+    expect(construireSafetyFindings(signauxDeclares({ signaux_alerte: brut }), [], []).findings.map(f => f.findingId))
       .toEqual(endroit.map(f => f.findingId));
   });
 });
 
 describe('fail-closed — un signal qu’on ne sait pas coter n’est jamais effacé', () => {
   it('un libellé hors cotation produit un constat, et dit pourquoi', () => {
-    const { findings } = construireSafetyFindings(['Libellé réécrit hors cotation']);
+    const { findings } = construireSafetyFindings(['Libellé réécrit hors cotation'], [], []);
     expect(findings).toHaveLength(1);
     expect(findings[0].limitations.some(l => l.includes('n’appartient pas à la cotation signée'))).toBe(true);
   });
@@ -178,7 +178,7 @@ describe('aucune mesure sur l’objet de sécurité (`DC-23`)', () => {
     // de gravité déguisée.
     const surLesDouze = construireSafetyFindings(
       [...SAFETY_SIGNALS_V1.map(s => s.libelle), 'Libellé hors cotation']
-    ).findings;
+    , [], []).findings;
     expect(surLesDouze.length).toBeGreaterThan(0);
     expect(new Set(surLesDouze.map(f => f.confidence))).toEqual(new Set(['à_documenter']));
   });
@@ -187,7 +187,7 @@ describe('aucune mesure sur l’objet de sécurité (`DC-23`)', () => {
     // Dans l'autre sens que la liste de noms interdits : on inspecte les VALEURS
     // produites. Un champ de points, de gravité ou de rang, quel que soit son
     // nom, serait un nombre — et il n'y en a aucun.
-    const { findings } = construireSafetyFindings([...ADRESSAGE]);
+    const { findings } = construireSafetyFindings([...ADRESSAGE], [], []);
     const nombres: string[] = [];
     const visiter = (valeur: unknown, chemin: string): void => {
       if (typeof valeur === 'number') nombres.push(chemin);
@@ -224,7 +224,7 @@ describe('verrou de signature — son sens est INVERSE des autres tables', () =>
     // et `buildClinicalReview` en tire tout seul la limitation servie au
     // praticien (« Règle candidate inactive : SAF-ANAM-01. »).
     SAFETY_SIGNALS_METADATA.validationExterne = false;
-    const { findings, rules } = construireSafetyFindings([...ADRESSAGE]);
+    const { findings, rules } = construireSafetyFindings([...ADRESSAGE], [], []);
     expect(findings).toEqual([]);
     // LE SECOND PRODUCTEUR JOINT SA PROPRE RÈGLE depuis [[D-101]] (LOT-05,
     // `DC-42`), elle aussi en `candidate` tant qu'elle n'est pas signée. Ce cas

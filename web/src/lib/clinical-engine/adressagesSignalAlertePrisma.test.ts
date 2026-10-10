@@ -12,6 +12,7 @@ import { lireCouverturesAdressage } from './adressagesSignalAlertePrisma';
 
 const ID_A = 'safety:anamnese:aaaaaaaaaaaaaaaa';
 const ID_B = 'safety:anamnese:bbbbbbbbbbbbbbbb';
+const ID_Q = 'safety:questionnaire:cccccccccccccccc';
 
 function ligne(surcharge: Record<string, unknown> = {}) {
   return {
@@ -69,6 +70,11 @@ describe('lireCouverturesAdressage — D-257, LOT-04', () => {
     }]);
   });
 
+  it('une ligne mixte anamnèse + questionnaire est retenue entière ([[D-275]] §2)', async () => {
+    prisma.adressageSignalAlerte.findMany.mockResolvedValue([ligne({ findingIds: [ID_Q, ID_A] })]);
+    expect((await lireCouverturesAdressage('PAT1', 'cons_1'))?.[0]?.findingIds).toEqual([ID_A, ID_Q]);
+  });
+
   it.each([
     ['lettre d’un autre dossier', { correspondance: { idPatient: 'PAT2', sens: 'sortant', ancrageVersion: 'safety-signals-v1' } }],
     ['lettre entrante', { correspondance: { idPatient: 'PAT1', sens: 'entrant', ancrageVersion: 'safety-signals-v1' } }],
@@ -79,6 +85,8 @@ describe('lireCouverturesAdressage — D-257, LOT-04', () => {
     ['aucun constat', { findingIds: [] }],
     ['constat malformé', { findingIds: [ID_A, 'safety:anamnese:XYZ'] }],
     ['constat d’effet indésirable', { findingIds: ['safety:effet-indesirable:ei_1'] }],
+    ['ligne mixte avec un effet indésirable', { findingIds: [ID_Q, 'safety:effet-indesirable:ei_1'] }],
+    ['constat de questionnaire malformé', { findingIds: ['safety:questionnaire:XYZ'] }],
   ])('%s : couverture écartée (fail-closed)', async (_cas, surcharge) => {
     prisma.adressageSignalAlerte.findMany.mockResolvedValue([ligne(surcharge)]);
     expect(await lireCouverturesAdressage('PAT1', 'cons_1')).toEqual([]);

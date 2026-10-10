@@ -104,8 +104,8 @@ function chaine(options: {
         ...(options.signaux ? { signaux_alerte: options.signaux } : {}),
         ...(options.etat ?? {}),
       },
-    },
-  );
+    }, [],
+);
   const { proposal } = proposeRuntimeEpisode(inputs, 'T0');
   const exclus = new Set(options.exclure ?? []);
   const episode = confirmAssessmentEpisode(
@@ -124,6 +124,7 @@ function chaine(options: {
     responses: inputs.responses,
     selectionPraticien: null,
     signauxAlerte: inputs.signauxAlerte,
+    reponsesSecurite: inputs.reponsesSecurite,
     etatPopulation: inputs.etatPopulation,
     ...(options.couvertures !== undefined ? { couverturesAdressage: options.couvertures } : {}),
   });
@@ -511,7 +512,7 @@ describe('chaîne C1 — levée par adressage (D-257, LOT-04)', () => {
     // normalise (par identifiant) ; le Fil trie ses identifiants de même.
     const parId = (a: { findingId: string }, b: { findingId: string }) => a.findingId.localeCompare(b.findingId);
     const declares = signauxDeclares({ signaux_alerte: signaux });
-    expect(constatsSecuriteOuverts(declares, undefined, couvertures).sort(parId))
+    expect(constatsSecuriteOuverts(declares, undefined, [], couvertures).sort(parId))
       .toEqual([...review.safetyFindings].sort(parId));
   });
 

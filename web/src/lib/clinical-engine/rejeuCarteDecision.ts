@@ -160,6 +160,7 @@ export async function rejouerCarteDecision(input: {
       patientContext: inputs.patientContext,
       responses: inputs.responses,
       signauxAlerte: inputs.signauxAlerte,
+      reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
       effetsIndesirables: await lireEffetsIndesirables(input.idPatient),
       // Même lecture que le cockpit ([[D-257]], LOT-04) : une révocation

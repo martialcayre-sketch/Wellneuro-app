@@ -17,6 +17,7 @@ import {
   partitionnerConstatsAdresses,
   type CouvertureAdressage,
   type EffetIndesirableRuntime,
+  type ReponseSecurite,
 } from './safetyFindings';
 import type {
   AbstentionAssessment,
@@ -137,6 +138,15 @@ export type EntreeChaineC1 = {
    * liste vide que `signauxDeclares` rend sur une anamnèse absente.
    */
   signauxAlerte: string[];
+  /**
+   * Les réponses aux questions sur le suicide de TOUTES les passations non
+   * invalidées du dossier ([[D-275]] §2, A1), telles que
+   * `reponsesSecuriteDeclarees` les rend (appelé par `adaptRuntimeInputs`).
+   *
+   * OBLIGATOIRE, pour le motif de `signauxAlerte`. Distinct de `responses` :
+   * celles-ci sont bornées à l'épisode par le snapshot, et A1 ne l'est pas.
+   */
+  reponsesSecurite: ReponseSecurite[];
   /**
    * L'état de population déclaré par le patient ([[D-101]], LOT-05).
    *
@@ -425,7 +435,7 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
   // était posé en dur ici, et le JSDoc d'`evaluerAbstention` documentait sa
   // branche `> 0` comme inatteignable : les deux affirmations tombent avec cette
   // ligne. Le chemin n'est plus câblé « pour le jour où », il est alimenté.
-  const securite = construireSafetyFindings(input.signauxAlerte, input.effetsIndesirables);
+  const securite = construireSafetyFindings(input.signauxAlerte, input.effetsIndesirables, input.reponsesSecurite);
   // LA LEVÉE PAR ADRESSAGE ([[D-257]], LOT-04) : un constat couvert par une
   // lettre consignée cesse d'inhiber, et reste porté. Sans couverture lue, la
   // partition est l'identité — tout reste ouvert.

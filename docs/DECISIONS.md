@@ -113,6 +113,30 @@ responsable).**
   2026-10-09) : une seule passation existe sur les quatre questionnaires, et
   elle répond « non ». Le §2, une fois livré, ne bloquera donc aucun dossier
   existant.
+- **LOT-3, producteur et lettre (2026-10-10).** Table `SAF-QUEST-01`
+  (`safetyQuestionnaireV1.ts`) **signée le 2026-10-10** sur déclaration de
+  conformité du responsable, après lecture de
+  `docs/claude/campagnes/SURFACE_RELECTURE_SAF_QUEST_01_2026-10-10.md`
+  ([[D-195]]). Son SHA couvre les options des quatre questions, lues dans le
+  catalogue, et la conduite `adressage` déjà signée : aucun texte de conduite
+  ni aucun seuil neuf. Le fichier signé ne porte que des codes : les textes
+  vivent à part (`safetyQuestionnaireTextes.ts`), comme l'exige BP-01
+  ([[D-251]]), et le SHA attesté est resté identique au bit près. Un
+  constat est identifié par passation, question et valeur. La lettre peut le
+  couvrir ; une lettre qui cite une réponse porte la version d'ancrage
+  `safety-signals-questionnaire-v1`, et une lettre d'anamnèse seule ne change
+  pas d'un caractère. **La règle n'entre dans la revue que sur un dossier qui
+  porte une réponse positive** : joindre la règle à toutes les revues aurait
+  changé l'empreinte de chaque carte diffusée. Le rejeu patient aurait alors
+  éteint tous les écrans protocole au déploiement. Accepté par le responsable
+  le même jour : une réponse illisible (A2) ajoutée après la diffusion entre
+  dans la revue et interrompt aussi l'écran protocole du patient jusqu'à une
+  nouvelle décision. Constat du 2026-10-10 : toujours une seule passation,
+  réponse « non ». **Revue Codex de #1375** : A1 est appliquée à la lettre.
+  Seul le statut `INVALID` retire une passation, que le drapeau de validité
+  soit allumé ou non ; `HISTORICAL_ONLY` et `SUPERSEDED` ne sont pas des
+  invalidations. Les réponses de sécurité se lisent sur toutes les passations,
+  jamais tronquées par une lecture datée.
 
 ### D-274 — Mini-synthèse : « Très sévère » (`dark`) et « Léger » (`info`) sont des rubriques perturbées, nommées par ordre de gravité
 

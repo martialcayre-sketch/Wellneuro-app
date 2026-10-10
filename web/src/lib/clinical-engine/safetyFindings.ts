@@ -12,10 +12,23 @@ import {
   STATUTS_EI_NON_TRAITES,
   regleEffetIndesirableValidee,
 } from '@/lib/clinical/safetyEffetIndesirableV1';
+import {
+  CONDUITE_SECURITE_QUESTIONNAIRE,
+  LIMITATION_QUESTIONNAIRE_HORS_OPTIONS,
+  LIMITATION_QUESTIONNAIRE_ILLISIBLE,
+  LIMITATION_QUESTIONNAIRE_PROVENANCE,
+  REGLE_SECURITE_QUESTIONNAIRE,
+  SAFETY_QUESTIONNAIRE_METADATA,
+  SAFETY_QUESTIONNAIRE_V1,
+  questionSecuriteDe,
+  regleSecuriteQuestionnaireValidee,
+} from '@/lib/clinical/safetyQuestionnaireV1';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import {
   PREFIXE_FINDING_ANAMNESE,
   PREFIXE_FINDING_EFFET_INDESIRABLE,
+  PREFIXE_FINDING_QUESTIONNAIRE,
+  estFindingAdressable,
   type CouvertureAdressage,
 } from './safetyFindingSource';
 import type { ClinicalRuleRef, SafetyFinding } from './types';
@@ -194,6 +207,227 @@ function construireFindingsEffetIndesirable(effetsIndesirables: EffetIndesirable
 }
 
 /**
+ * Une passation telle que la base la rend — les cinq champs que le troisième
+ * producteur lit, et eux seuls. Le cockpit, le vérificateur, le Fil et la
+ * route de la lettre les sélectionnent déjà.
+ */
+export type PassationSecuriteRow = {
+  idReponse: string;
+  idQuestionnaire: string;
+  dateReponse: Date;
+  scoresJson: unknown;
+  statutValidite?: string | null;
+};
+
+/**
+ * La réponse d'une passation à la question sur le suicide de son instrument
+ * ([[D-275]] §2), lue sans être cotée.
+ *
+ * TROIS LECTURES, ET AUCUNE N'EST UN ZÉRO IMPLICITE (`DC-24`) :
+ *   — `option` : la valeur est celle d'une option ; `non` dit si c'est la
+ *     première ;
+ *   — `hors_options` : une valeur est présente, qu'aucune option ne connaît ;
+ *   — `illisible` : aucune réponse lisible (clé absente, nulle, vide).
+ */
+export type ReponseSecurite = {
+  idReponse: string;
+  idQuestionnaire: string;
+  idQuestion: string;
+  instrument: string;
+  /** Jour de la passation, `AAAA-MM-JJ` (UTC). */
+  date: string;
+  lecture:
+    | { kind: 'option'; v: number; libelle: string; non: boolean }
+    | { kind: 'hors_options'; cle: string }
+    | { kind: 'illisible' };
+};
+
+function lireValeurBrute(valeur: unknown): { kind: 'illisible' } | { kind: 'nombre'; n: number } | { kind: 'autre'; cle: string } {
+  if (valeur === undefined || valeur === null) return { kind: 'illisible' };
+  if (typeof valeur === 'number') {
+    return Number.isFinite(valeur) ? { kind: 'nombre', n: valeur } : { kind: 'autre', cle: String(valeur) };
+  }
+  if (typeof valeur === 'string') {
+    const texte = valeur.trim();
+    if (!texte) return { kind: 'illisible' };
+    // Chaîne numérique : `rawAnswers` en porte (la saisie stocke parfois `'2'`).
+    // Rien d'autre n'est converti — `Number('abc')` rendrait `NaN`, et
+    // `Number(true)` un `1` qui ferait passer un booléen pour une option.
+    return /^-?\d+(\.\d+)?$/.test(texte) ? { kind: 'nombre', n: Number(texte) } : { kind: 'autre', cle: JSON.stringify(texte) };
+  }
+  return { kind: 'autre', cle: JSON.stringify(valeur) ?? typeof valeur };
+}
+
+/**
+ * Les réponses aux questions sur le suicide, sur TOUTES les passations non
+ * invalidées du dossier (A1 de [[D-275]] §2) — pas seulement celles de
+ * l'épisode, pas seulement la dernière.
+ *
+ * SEULE L'INVALIDATION RETIRE UNE PASSATION, ET TOUJOURS — le contrat de
+ * [[D-275]] §2 (A1), écrit tel quel. PAS `filtrerPassationsExploitables` (revue
+ * Codex de #1375) : il retire aussi `SUPERSEDED` et `HISTORICAL_ONLY`, qui ne
+ * sont pas des invalidations praticien, et il ne retire RIEN drapeau éteint —
+ * une invalidation rendue resterait alors sans effet. Un statut `INVALID` est
+ * un acte praticien ; c'est la seconde sortie, assumée.
+ *
+ * `rawAnswers` EST LU BRUT, PAS PAR `rawAnswersFrom` : celle-ci rend `null`
+ * pour l'objet entier dès qu'UNE valeur n'est pas numérique. Une réponse de
+ * sécurité ne doit pas disparaître parce qu'une autre question est mal
+ * formée — ce serait un repli fail-open.
+ *
+ * Trié par identifiant de passation : l'ordre de la base n'est pas stable, et
+ * deux ordres feraient deux empreintes de carte pour un même dossier.
+ */
+export function reponsesSecuriteDeclarees(rows: readonly PassationSecuriteRow[]): ReponseSecurite[] {
+  const reponses: ReponseSecurite[] = [];
+  for (const row of rows.filter(passation => passation.statutValidite !== 'INVALID')) {
+    const question = questionSecuriteDe(row.idQuestionnaire);
+    if (!question) continue;
+    const scores = row.scoresJson !== null && typeof row.scoresJson === 'object' && !Array.isArray(row.scoresJson)
+      ? row.scoresJson as Record<string, unknown>
+      : {};
+    const brutes = scores.rawAnswers !== null && typeof scores.rawAnswers === 'object' && !Array.isArray(scores.rawAnswers)
+      ? scores.rawAnswers as Record<string, unknown>
+      : {};
+    const valeur = lireValeurBrute(Object.hasOwn(brutes, question.idQuestion) ? brutes[question.idQuestion] : undefined);
+    let lecture: ReponseSecurite['lecture'];
+    if (valeur.kind === 'illisible') {
+      lecture = { kind: 'illisible' };
+    } else if (valeur.kind === 'autre') {
+      lecture = { kind: 'hors_options', cle: valeur.cle };
+    } else {
+      const index = question.options.findIndex(option => option.v === valeur.n);
+      lecture = index === -1
+        ? { kind: 'hors_options', cle: String(valeur.n) }
+        : { kind: 'option', v: valeur.n, libelle: question.options[index].l, non: index === 0 };
+    }
+    reponses.push({
+      idReponse: row.idReponse,
+      idQuestionnaire: row.idQuestionnaire,
+      idQuestion: question.idQuestion,
+      instrument: question.instrument,
+      date: row.dateReponse.toISOString().slice(0, 10),
+      lecture,
+    });
+  }
+  return reponses.sort((gauche, droite) => (
+    gauche.idReponse < droite.idReponse ? -1 : gauche.idReponse > droite.idReponse ? 1 : 0
+  ));
+}
+
+/**
+ * Les réponses qui appellent un adressage : toute réponse autre que « non »,
+ * hors options comprises. MÊME RÈGLE pour le producteur et pour la lettre —
+ * la lettre doit porter exactement ce qui suspend la décision.
+ */
+export function reponsesSecuriteAdressees(reponses: readonly ReponseSecurite[]): ReponseSecurite[] {
+  return reponses.filter(reponse => (
+    reponse.lecture.kind === 'hors_options' || (reponse.lecture.kind === 'option' && !reponse.lecture.non)
+  ));
+}
+
+/**
+ * L'identifiant d'un constat de questionnaire : la passation, la question ET
+ * la valeur. Une nouvelle passation positive est un nouveau constat, donc une
+ * nouvelle lettre (A1) ; une valeur qui changerait sur la même passation est
+ * un autre constat — une lettre ne couvre que ce qu'elle a cité.
+ */
+export function findingIdQuestionnaire(reponse: ReponseSecurite): string {
+  const valeur = reponse.lecture.kind === 'option'
+    ? String(reponse.lecture.v)
+    : reponse.lecture.kind === 'hors_options' ? `hors:${reponse.lecture.cle}` : 'illisible';
+  return `${PREFIXE_FINDING_QUESTIONNAIRE}${sha256(`${reponse.idReponse}|${reponse.idQuestion}|${valeur}`).slice(0, 16)}`;
+}
+
+/**
+ * Les constats du TROISIÈME producteur ([[D-275]] §2, `SAF-QUEST-01`).
+ *
+ * QUATRE SORTIES, ET AUCUNE N'EST « NE RIEN FAIRE EN SILENCE » :
+ *   1. réponse autre que « non » ⇒ un constat de rang `adressage` ;
+ *   2. valeur hors options ⇒ un constat aussi (fail-closed), qui le dit ;
+ *   3. réponse illisible ⇒ aucun constat, une limitation par instrument (A2) ;
+ *   4. table non signée ⇒ aucun constat, la règle jointe en `candidate`.
+ *
+ * LA RÈGLE N'EST JOINTE QUE SI UNE RÉPONSE L'APPELLE, ET C'EST UNE GARDE.
+ * `review.rules` entre dans l'empreinte de la revue, donc dans celle de chaque
+ * carte de décision. Joindre `SAF-QUEST-01` à toutes les revues changerait
+ * l'empreinte de toutes les cartes diffusées le jour du déploiement : le rejeu
+ * patient (`rejeuCarteDecision`) les dirait toutes dérivées et éteindrait
+ * chaque écran protocole. Le patron est celui de `safetyFindingsAdresses`,
+ * absent quand vide. Un dossier sans réponse positive NI illisible garde donc
+ * l'empreinte d'avant ce lot, signée ou non. Un dossier qui porte une réponse
+ * positive change d'empreinte — c'est voulu : elle interrompt ce qui est
+ * servi. Une réponse illisible aussi, par sa limitation (A2) : conséquence
+ * acceptée par le responsable le 2026-10-10 ([[D-275]], LOT-3).
+ *
+ * `provenance` VIDE, comme pour l'anamnèse : A1 lit des passations hors de
+ * l'épisode, absentes du snapshot, et `validateProvenance` jetterait la revue
+ * sur une réponse citée qu'il ne connaît pas. La passation est nommée dans la
+ * `rationale`, par son identifiant ; son origine est dite en limitation.
+ */
+function construireFindingsQuestionnaire(reponses: ReponseSecurite[]): {
+  findings: SafetyFinding[];
+  rules: ClinicalRuleRef[];
+  limitations: string[];
+} {
+  const adressees = reponsesSecuriteAdressees(reponses);
+  const regle = regleSecuriteQuestionnaireValidee();
+  if (!regle) {
+    // Aucune limitation propre : la revue tire seule « Règle candidate
+    // inactive : SAF-QUEST-01. » du `lifecycle` — sur les seuls dossiers
+    // qu'une réponse concerne.
+    return {
+      findings: [],
+      // Une réponse illisible appelle aussi la règle : sans elle, une table
+      // désignée laisserait le dossier muet (revue Codex de #1375, P2).
+      rules: adressees.length > 0 || reponses.some(reponse => reponse.lecture.kind === 'illisible')
+        ? [{
+          ruleId: REGLE_SECURITE_QUESTIONNAIRE,
+          version: SAFETY_QUESTIONNAIRE_METADATA.version,
+          lifecycle: 'candidate',
+        }]
+        : [],
+      limitations: [],
+    };
+  }
+
+  const findings: SafetyFinding[] = adressees.map(reponse => {
+    const citee = reponse.lecture.kind === 'option'
+      ? `« ${reponse.lecture.libelle} »`
+      : 'valeur hors des options de la question';
+    return {
+      findingId: findingIdQuestionnaire(reponse),
+      kind: 'safety' as const,
+      disposition: 'requires_practitioner_review' as const,
+      // FIGÉ, pour le motif exact du premier producteur (`DC-23`).
+      confidence: 'à_documenter' as const,
+      rationale: `${CONDUITE_SECURITE_QUESTIONNAIRE} Réponse au ${reponse.instrument} du ${reponse.date} : ${citee}.`
+        + ` Passation : ${reponse.idReponse}.`,
+      ruleId: regle.ruleId,
+      provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
+      limitations: reponse.lecture.kind === 'hors_options'
+        ? [LIMITATION_QUESTIONNAIRE_PROVENANCE, LIMITATION_QUESTIONNAIRE_HORS_OPTIONS]
+        : [LIMITATION_QUESTIONNAIRE_PROVENANCE],
+    };
+  });
+
+  // A2 : une limitation par instrument, dans l'ordre de la table — l'ordre
+  // de la base n'entre pas dans l'empreinte.
+  const limitations: string[] = [];
+  for (const question of SAFETY_QUESTIONNAIRE_V1) {
+    const n = reponses.filter(
+      reponse => reponse.idQuestionnaire === question.idQuestionnaire && reponse.lecture.kind === 'illisible',
+    ).length;
+    if (n > 0) {
+      limitations.push(
+        LIMITATION_QUESTIONNAIRE_ILLISIBLE.replace('{n}', String(n)).replace('{instrument}', question.instrument),
+      );
+    }
+  }
+  return { findings, rules: findings.length > 0 ? [regle] : [], limitations };
+}
+
+/**
  * Les constats de sécurité d'un dossier, et les règles à joindre à la revue.
  *
  * TROIS CAS, ET AUCUN N'EST « NE RIEN FAIRE EN SILENCE » :
@@ -235,17 +469,26 @@ export function construireSafetyFindings(
    * chemin-là est allumé.
    */
   effetsIndesirables: EffetIndesirableRuntime[] = [],
+  /**
+   * Les réponses aux questions sur le suicide ([[D-275]] §2), telles que
+   * `reponsesSecuriteDeclarees` les rend.
+   *
+   * OBLIGATOIRE, POUR LE MOTIF DE `signauxAlerte` (`DC-24`) : ce chemin est
+   * allumé, et un défaut `[]` ferait passer « pas lu » pour « aucune réponse ».
+   */
+  reponsesSecurite: ReponseSecurite[],
 ): {
   findings: SafetyFinding[];
   rules: ClinicalRuleRef[];
-  /** Ce que le second producteur n'a pas pu conclure, dit plutôt que tu. */
+  /** Ce que le second et le troisième producteur n'ont pas pu conclure, dit plutôt que tu. */
   limitations: string[];
 } {
   const securiteEI = construireFindingsEffetIndesirable(effetsIndesirables);
+  const securiteQuestionnaire = construireFindingsQuestionnaire(reponsesSecurite);
   const regle = regleSecuriteValidee();
   if (!regle) {
     return {
-      findings: securiteEI.findings,
+      findings: [...securiteEI.findings, ...securiteQuestionnaire.findings],
       rules: [
         {
           ruleId: REGLE_SECURITE_ANAMNESE,
@@ -253,8 +496,9 @@ export function construireSafetyFindings(
           lifecycle: 'candidate',
         },
         ...securiteEI.rules,
+        ...securiteQuestionnaire.rules,
       ],
-      limitations: securiteEI.limitations,
+      limitations: [...securiteEI.limitations, ...securiteQuestionnaire.limitations],
     };
   }
 
@@ -288,10 +532,12 @@ export function construireSafetyFindings(
         : [LIMITATION_PROVENANCE],
     });
   }
+  // Le troisième producteur À LA FIN : les dossiers sans réponse positive ni
+  // illisible gardent l'ordre — donc l'empreinte — d'avant [[D-275]] §2.
   return {
-    findings: [...findings, ...securiteEI.findings],
-    rules: [regle, ...securiteEI.rules],
-    limitations: securiteEI.limitations,
+    findings: [...findings, ...securiteEI.findings, ...securiteQuestionnaire.findings],
+    rules: [regle, ...securiteEI.rules, ...securiteQuestionnaire.rules],
+    limitations: [...securiteEI.limitations, ...securiteQuestionnaire.limitations],
   };
 }
 
@@ -302,9 +548,10 @@ export function construireSafetyFindings(
  * nourrir l'abstention et le blocage de la carte, et reste porté par la revue,
  * donc par son empreinte, et par l'écran.
  *
- * SEUL UN CONSTAT D'ANAMNÈSE SE LÈVE. Un effet indésirable ([[D-101]]) a sa
- * propre sortie ; une lettre d'adressage ne le couvre jamais, même si son
- * identifiant figurait — par erreur ou par forge — dans une couverture.
+ * SEULS LES CONSTATS D'ANAMNÈSE ET DE QUESTIONNAIRE ([[D-275]] §2) SE LÈVENT.
+ * Un effet indésirable ([[D-101]]) a sa propre sortie ; une lettre d'adressage
+ * ne le couvre jamais, même si son identifiant figurait — par erreur ou par
+ * forge — dans une couverture.
  *
  * AUCUN POINT, DANS AUCUN SENS (`DC-23`) : la partition ne lit aucun score,
  * seulement des identifiants. L'ordre d'entrée est conservé dans chaque liste.
@@ -317,7 +564,7 @@ export function partitionnerConstatsAdresses(
   const ouverts: SafetyFinding[] = [];
   const adresses: SafetyFinding[] = [];
   for (const finding of findings) {
-    if (finding.findingId.startsWith(PREFIXE_FINDING_ANAMNESE) && couverts.has(finding.findingId)) {
+    if (estFindingAdressable(finding.findingId) && couverts.has(finding.findingId)) {
       adresses.push(finding);
     } else {
       ouverts.push(finding);
@@ -341,10 +588,11 @@ export function partitionnerConstatsAdresses(
 export function constatsSecuriteOuverts(
   signauxAlerte: string[],
   effetsIndesirables: EffetIndesirableRuntime[] | undefined,
+  reponsesSecurite: ReponseSecurite[],
   couvertures: CouvertureAdressage[] | undefined,
 ): SafetyFinding[] {
   return partitionnerConstatsAdresses(
-    construireSafetyFindings(signauxAlerte, effetsIndesirables ?? []).findings,
+    construireSafetyFindings(signauxAlerte, effetsIndesirables ?? [], reponsesSecurite).findings,
     couvertures ?? [],
   ).ouverts;
 }

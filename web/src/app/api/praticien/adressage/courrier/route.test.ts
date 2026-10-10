@@ -16,12 +16,14 @@ const {
   // racine restent présentes pour PROUVER qu'elles ne sont pas appelées.
   tx: {
     consultation: { findFirst: vi.fn() },
+    questionnaireReponse: { findMany: vi.fn() },
     correspondanceMedecin: { create: vi.fn() },
     adressageSignalAlerte: { create: vi.fn() },
   },
   prisma: {
     patient: { findUnique: vi.fn() },
     consultation: { findFirst: vi.fn() },
+    questionnaireReponse: { findMany: vi.fn() },
     // PRÉSENT POUR PROUVER QU'IL N'EST PAS LU. La garde de consentement ferme
     // le courrier de biologie et la consignation depuis le 2026-09-17 ; cette
     // route en est l'exception, et une exception non éprouvée se referme au
@@ -50,7 +52,15 @@ vi.mock('@/lib/clinical/safetySignalsV1', async (importOriginal) => ({
 }));
 
 import { GET, POST } from './route';
-import { construireSafetyFindings, signauxDeclares } from '@/lib/clinical-engine/safetyFindings';
+import {
+  construireSafetyFindings,
+  reponsesSecuriteDeclarees,
+  signauxDeclares,
+} from '@/lib/clinical-engine/safetyFindings';
+import {
+  SAFETY_QUESTIONNAIRE_METADATA,
+  SAFETY_QUESTIONNAIRE_SHA256,
+} from '@/lib/clinical/safetyQuestionnaireV1';
 
 const URL_BASE = 'http://localhost/api/praticien/adressage/courrier';
 const PRATICIEN = 'praticien@wellneuro.fr';
@@ -95,6 +105,7 @@ beforeEach(() => {
     id: 'cons_porteuse',
     anamnese: { signaux_alerte: ['Douleur thoracique / oppression'] },
   });
+  tx.questionnaireReponse.findMany.mockResolvedValue([]);
   tx.correspondanceMedecin.create.mockResolvedValue({ id: 'lettre_1' });
   tx.adressageSignalAlerte.create.mockResolvedValue({ id: 'adr_1' });
   prisma.$transaction.mockImplementation(async (fn: (client: typeof tx) => unknown) => fn(tx));
@@ -373,7 +384,7 @@ describe('l’EXCEPTION d’adressage — D-219 §3 amendé (2026-09-17)', () =>
 // sur les mêmes signaux, et ne s'écrit jamais sans sa lettre.
 describe('couverture — D-257, LOT-03', () => {
   const constatsAttendus = (signaux: string[]) =>
-    construireSafetyFindings(signaux).findings.map(finding => finding.findingId);
+    construireSafetyFindings(signaux, [], []).findings.map(finding => finding.findingId);
 
   it('écrit la lettre ET sa couverture dans la même transaction', async () => {
     const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
@@ -469,5 +480,63 @@ describe('transaction — ce que la route ne fait JAMAIS hors de `tx` (P1-2)', (
     expect(prisma.consultation.findFirst).not.toHaveBeenCalled();
     expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
     expect(prisma.adressageSignalAlerte.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('réponses de questionnaire — D-275 §2, LOT-3', () => {
+  const ETAT_LIVRE = { ...SAFETY_QUESTIONNAIRE_METADATA };
+  const PASSATION = {
+    idReponse: 'REP-1',
+    idQuestionnaire: 'Q_NEU_01',
+    dateReponse: new Date('2026-10-01T09:00:00.000Z'),
+    scoresJson: { rawAnswers: { B7: 2 } },
+    statutValidite: 'VALID',
+  };
+  function simulerSignature(): void {
+    SAFETY_QUESTIONNAIRE_METADATA.validationExterne = true;
+    SAFETY_QUESTIONNAIRE_METADATA.dateValidation = '2026-10-10T00:00:00.000Z';
+    SAFETY_QUESTIONNAIRE_METADATA.sourceReference = 'Signature simulée par le banc.';
+    SAFETY_QUESTIONNAIRE_METADATA.shaPerimetre = SAFETY_QUESTIONNAIRE_SHA256;
+  }
+  afterEach(() => {
+    Object.assign(SAFETY_QUESTIONNAIRE_METADATA, ETAT_LIVRE);
+  });
+
+  it('table signée : lit les passations DANS la transaction, et couvre le constat de questionnaire', async () => {
+    simulerSignature();
+    tx.questionnaireReponse.findMany.mockResolvedValue([PASSATION]);
+    tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: {} });
+    const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(res.status).toBe(201);
+    expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();
+    expect(tx.questionnaireReponse.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { idPatient: 'PAT1', idQuestionnaire: { in: ['Q_NEU_01', 'Q_NEU_02', 'Q_NEU_03', 'Q_NEU_12'] } },
+    }));
+    const reponses = reponsesSecuriteDeclarees([PASSATION]);
+    expect(genererCourrierAdressage).toHaveBeenCalledWith(expect.objectContaining({ reponses }));
+    const { findingIds } = tx.adressageSignalAlerte.create.mock.calls[0][0].data;
+    expect(findingIds).toEqual(construireSafetyFindings([], [], reponses).findings.map(f => f.findingId));
+    expect(findingIds).toHaveLength(1);
+    expect(findingIds[0]).toMatch(/^safety:questionnaire:[0-9a-f]{16}$/);
+  });
+
+  it('table non signée : aucune passation lue, aucune réponse citée', async () => {
+    SAFETY_QUESTIONNAIRE_METADATA.validationExterne = false;
+    tx.questionnaireReponse.findMany.mockResolvedValue([PASSATION]);
+    await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(tx.questionnaireReponse.findMany).not.toHaveBeenCalled();
+    expect(genererCourrierAdressage).toHaveBeenCalledWith(expect.objectContaining({ reponses: [] }));
+  });
+
+  it('sans consultation porteuse, une réponse positive ne fait pas de lettre (aucune levée possible)', async () => {
+    simulerSignature();
+    tx.questionnaireReponse.findMany.mockResolvedValue([PASSATION]);
+    tx.consultation.findFirst.mockResolvedValue(null);
+    const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(res.status).toBe(409);
+    const corps = await res.json();
+    expect(corps.reason).toBe('sans_consultation_porteuse');
+    expect(corps.error).toContain('consultation validée');
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 });

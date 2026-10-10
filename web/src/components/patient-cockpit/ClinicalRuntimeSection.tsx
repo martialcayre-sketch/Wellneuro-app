@@ -42,7 +42,7 @@ import {
 } from './ArbitrageBiologiquePanel';
 import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
 import { appliquerArbitrages } from '@/lib/biology-library/revision';
-import { estFindingAnamnese } from '@/lib/clinical-engine/safetyFindingSource';
+import { estFindingAdressable } from '@/lib/clinical-engine/safetyFindingSource';
 import {
   ACTION_ID_ORIENTATION,
   actionOrientation,
@@ -1889,12 +1889,13 @@ export function ClinicalRuntimeSection({
   //    y ajoute les constats d'effet indésirable ([[D-101]]). Un dossier qui n'a
   //    QUE ceux-là voyait le geste offert, et la route répondait 409 « aucun
   //    signal d'adressage » — un bouton qui ne peut pas aboutir. L'éligibilité
-  //    se lit donc sur la SOURCE du constat, que son identifiant porte.
+  //    se lit donc sur la SOURCE du constat, que son identifiant porte :
+  //    anamnèse ou questionnaire ([[D-275]] §2).
   // 3. Le drapeau se remet à `false` quand le dossier cesse d'être éligible :
   //    sans cela, naviguer d'un dossier éligible vers un autre laissait le
   //    geste armé.
   const decisionSuspendueParSignal = (review?.safetyFindings ?? []).some(
-    (constat) => estFindingAnamnese(constat.findingId),
+    (constat) => estFindingAdressable(constat.findingId),
   );
   useEffect(() => {
     if (fixture || !decisionSuspendueParSignal) {

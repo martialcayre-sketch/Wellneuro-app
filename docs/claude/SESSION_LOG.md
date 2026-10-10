@@ -9734,3 +9734,22 @@ producteur avant. Puis LOT-3 en session neuve.
 **Questions ouvertes.** LOT-3 : `couverturesRetenues` (`.every`) écarte une
 ligne mixte, à élargir avec tests `questionnaire` ; commentaire
 `schema.prisma:1599`.
+
+## 2026-10-10 — D-275 §2 : producteur SAF-QUEST-01 et lettre étendue (LOT-3/3)
+
+**Décidé.** Table `SAF-QUEST-01` signée sur déclaration du responsable (surface
+produite avant la demande). Fichier signé en codes seuls (BP-01) : options lues
+au catalogue, textes à part, SHA identique au bit près. Règle jointe à la revue
+seulement sur réponse positive, pour ne pas éteindre les écrans patients au
+déploiement. A2 maintenu : une réponse illisible change aussi l'empreinte.
+Lettre : version d'ancrage `safety-signals-questionnaire-v1`, lettre
+d'anamnèse seule inchangée.
+
+**Écarté.** Joindre la règle à toute revue (toutes cartes dérivées) ; limitation
+illisible hors empreinte (bloc d'affichage à synchroniser).
+
+**Prochaine action.** CI, Codex, merge, déploiement constaté ; constat par
+conteneur (attendu : 0 dossier).
+
+**Questions ouvertes.** Geste de lettre offert sans porteuse (refus désormais
+explicite) ; `depuis` du Fil pour un constat de questionnaire seul.

@@ -23,7 +23,9 @@ export type SourceBloc =
   /** Proposition de bilan biologique dérivée de la table d'indications signée (LOT-06). */
   | 'biologie_proposition'
   /** Signaux d'alerte DÉCLARÉS à l'anamnèse, cotés par [[D-099]] — lettre d'adressage ([[D-218]]). */
-  | 'signaux_securite_anamnese';
+  | 'signaux_securite_anamnese'
+  /** Réponses aux questions sur le suicide, avec ou sans signaux d'anamnèse ([[D-275]] §2). */
+  | 'signaux_securite_questionnaires';
 
 /**
  * Régime de contenu — jamais mélangés dans un rendu diffusé :

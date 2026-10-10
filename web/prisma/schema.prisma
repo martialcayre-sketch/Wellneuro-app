@@ -1596,7 +1596,7 @@ model AdressageSignalAlerte {
   idCorrespondance   String?   @map("id_correspondance")
   /// Adressage seul : la consultation porteuse des signaux couverts.
   idConsultation     String?   @map("id_consultation")
-  /// Adressage seul : `safety:anamnese:` + 16 hexadécimaux, au moins un.
+  /// Adressage seul : `safety:anamnese:` ou `safety:questionnaire:` + 16 hexadécimaux, au moins un.
   findingIds         String[]  @map("finding_ids")
   /// Révocation seule : l'adressage révoqué.
   idAdressageRevoque String?   @map("id_adressage_revoque")

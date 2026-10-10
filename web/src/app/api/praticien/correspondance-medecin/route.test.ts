@@ -23,6 +23,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { GET, POST } from './route';
 import { SAFETY_SIGNALS_SHA256 } from '@/lib/clinical/safetySignalsV1';
+import { SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE } from '@/lib/clinical/courrierAdressage';
 // LE GÉNÉRATEUR RÉEL, jamais une copie de sa provenance : c'est lui qui écrit
 // l'ancre consignée. Le banc de concordance ci-dessous épingle ainsi la
 // constante de version de la route sur la source qui la produit — recopier la
@@ -424,6 +425,20 @@ describe('/api/praticien/correspondance-medecin', () => {
         ancrageVersion: 'safety-signals-nnpp2-v1',
       }),
     ).toBe('concordante');
+    // La lettre qui cite une réponse de questionnaire ([[D-275]] §2) concorde
+    // sur le SHA des deux tables qu'elle recopie.
+    expect(
+      await ancrageServi({
+        ancrageSha256: SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE,
+        ancrageVersion: 'safety-signals-questionnaire-v1',
+      }),
+    ).toBe('concordante');
+    expect(
+      await ancrageServi({
+        ancrageSha256: SAFETY_SIGNALS_SHA256,
+        ancrageVersion: 'safety-signals-questionnaire-v1',
+      }),
+    ).toBe('perimee');
     // Et « périmée » y garde son sens : la table est identifiée, son contenu a
     // bougé depuis que la lettre est partie.
     expect(

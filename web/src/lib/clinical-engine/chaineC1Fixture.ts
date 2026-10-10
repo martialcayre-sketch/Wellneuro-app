@@ -7,6 +7,7 @@ import {
   reponsesRuntimeRideauT0,
 } from './dossierT0Fixture';
 import { adaptRuntimeInputs, proposeRuntimeEpisode } from './runtimeFromPrisma';
+import type { PassationSecuriteRow } from './safetyFindings';
 import type { ConfirmedAssessmentEpisode, DecisionPrioritySelection } from './types';
 
 /**
@@ -220,15 +221,26 @@ export function chaineC1DeReference(options: {
    * carte entière.
    */
   anamnese?: typeof ANAMNESE_C1_FIXTURE;
+  /**
+   * Passations SUPPLÉMENTAIRES lues par le seul producteur de sécurité
+   * ([[D-275]] §2) — hors épisode, donc hors snapshot. Défaut : aucune.
+   */
+  passationsSecurite?: PassationSecuriteRow[];
 } = {}): ChaineC1Fixture {
   assertBanc();
   const idPatient = options.idPatient ?? 'PAT_1';
-  const inputs = adaptRuntimeInputs(
-    { idPatient, createdAt: DATE_RIDEAU_FIXTURE },
-    passationsC1Fixture(),
-    options.anamnese ?? ANAMNESE_C1_FIXTURE,
+  const passations = passationsC1Fixture();
+  // L'épisode est proposé AVANT les passations qu'un banc ajoute ([[D-275]]
+  // §2, A1) : elles arrivent après sa confirmation, donc hors de lui. La chaîne
+  // les lit ensuite comme le cockpit — dans les réponses ET chez le producteur
+  // de sécurité.
+  const toutes = [...passations, ...(options.passationsSecurite ?? [])];
+  const anamnese = options.anamnese ?? ANAMNESE_C1_FIXTURE;
+  const { proposal } = proposeRuntimeEpisode(
+    adaptRuntimeInputs({ idPatient, createdAt: DATE_RIDEAU_FIXTURE }, passations, anamnese, passations),
+    'T0',
   );
-  const { proposal } = proposeRuntimeEpisode(inputs, 'T0');
+  const inputs = adaptRuntimeInputs({ idPatient, createdAt: DATE_RIDEAU_FIXTURE }, toutes, anamnese, toutes);
   const episode = options.episode ?? confirmAssessmentEpisode(
     proposal,
     proposal.inWindowResponseIds,
@@ -255,6 +267,7 @@ export function chaineC1DeReference(options: {
       responses: inputs.responses,
       selectionPraticien,
       signauxAlerte: inputs.signauxAlerte,
+      reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
     }),
   };
