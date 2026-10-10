@@ -1,7 +1,7 @@
 ---
 id: "2026-09-30-bio-ingest"
 titre: "BIO-INGEST — acquisition des résultats biologiques"
-statut: "en_cours (ouverte le 2026-09-30 — LOT-00, LOT-01, LOT-02, LOT-03, LOT-06, LOT-07, LOT-04, LOT-08, LOT-09 et LOT-10 terminés ; LOT-05 transféré le 2026-10-10 ; LOT-11 courant)"
+statut: "en_cours (ouverte le 2026-09-30 — LOT-00, LOT-01, LOT-02, LOT-03, LOT-06, LOT-07, LOT-04, LOT-08, LOT-09, LOT-10 et LOT-11 terminés ; LOT-05 transféré le 2026-10-10 ; suite : contre-revue adverse, puis lot de clôture)"
 créée_le: "2026-09-30"
 mise_à_jour: "2026-10-10"
 lot_courant: "LOT-11"
@@ -83,11 +83,13 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 | LOT-08 | Durcissement : borne totale de l'appel d'extraction (flux compris) et délai explicite de la transaction des lignes | terminé (2026-10-05) | non | LOT-02 |
 | LOT-09 | « Relancer la lecture » d'un compte rendu sans ligne validée, jamais destructive | terminé (2026-10-06) | non | LOT-02, LOT-07 |
 | LOT-10 | Décimales exactes de bout en bout, toutes voies (cadrage LOT-05 du 2026-10-07) | terminé (2026-10-07) | non | LOT-01, LOT-02 |
-| LOT-11 | Preuves de la transmission patient : E2E portail, accessibilité, plafond concurrent (réserve du LOT-04) | à_faire | non | LOT-04 |
+| LOT-11 | Preuves de la transmission patient : E2E portail, accessibilité, plafond concurrent (réserve du LOT-04) | terminé (2026-10-10) | non | LOT-04 |
 
-**Lot courant : LOT-11** (preuves de la transmission patient), déclaré le
-2026-10-10, après la clôture du LOT-04. **Suite arbitrée le 2026-10-10** :
-LOT-11, puis la contre-revue adverse de campagne, puis le lot de clôture. Le
+**LOT-11 terminé le 2026-10-10** (preuves de la transmission patient : E2E
+portail, accessibilité, banc du plafond ; réserve du LOT-04 levée). Il reste
+le pointeur `lot_courant` jusqu'à l'ouverture du lot de clôture. **Suite
+arbitrée le 2026-10-10** : la contre-revue adverse de campagne, lancée AVANT
+le lot de clôture, puis le lot de clôture. Le
 LOT-05 attend le laboratoire sans date. Il est transféré vers une campagne
 propre, ce qui permet de clôturer BIO-INGEST sans lui.
 
