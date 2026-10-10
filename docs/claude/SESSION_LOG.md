@@ -9753,3 +9753,21 @@ conteneur (attendu : 0 dossier).
 
 **Questions ouvertes.** Geste de lettre offert sans porteuse (refus désormais
 explicite) ; `depuis` du Fil pour un constat de questionnaire seul.
+
+## 2026-10-10 — BIO-INGEST : clôture du LOT-04 (transmission patient)
+
+**Décidé.** LOT-04 terminé : la fiche, la campagne et l'état du cycle sont
+alignés sur la livraison du 2026-10-07 (#1350, #1352, #1355, #1357). Le
+LOT-05 devient le lot courant.
+
+**Constaté.** Au conteneur (`one-off-8148`, agrégats seuls) : 0
+transmission patient depuis l'allumage ; 3 dépôts praticien.
+
+**Écarté.** Ajouter l'E2E dans cette PR : c'est du code dans une clôture
+documentaire.
+
+**Prochaine action.** Merger, puis attendre le format du laboratoire
+(LOT-05).
+
+**Questions ouvertes.** Lot d'accueil pour l'E2E portail et
+l'accessibilité ; constat à rejouer à la première transmission.
