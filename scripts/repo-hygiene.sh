@@ -35,18 +35,26 @@ log() {
 }
 
 # rg absent (macOS sans ripgrep) : repli sur grep, sinon les references ne sont
-# jamais trouvees — apply-safe deplacerait sans reecrire les liens.
+# jamais trouvees — apply-safe deplacerait sans reecrire les liens. Le repli
+# s'en tient, comme rg, aux fichiers texte suivis ou non ignores.
 search_fixed() {
   local mode="$1" needle="$2"
   if command -v rg >/dev/null 2>&1; then
     rg "$mode" --fixed-strings "$needle" "$ROOT" \
       -g '!**/.git/**' -g '!**/node_modules/**' -g '!**/.next/**'
   else
-    grep -r "$mode" -F --exclude-dir=.git --exclude-dir=node_modules \
-      --exclude-dir=.next --exclude-dir='.repo-hygiene*' \
-      --exclude-dir=worktrees -- "$needle" "$ROOT"
+    git -C "$ROOT" ls-files -z --cached --others --exclude-standard \
+      | (cd "$ROOT" && xargs -0 grep -I "$mode" -F -- "$needle" 2>/dev/null) \
+      | sed "s#^#${ROOT}/#"
   fi
 }
+
+# macOS anterieur a 14 n'a que shasum.
+if command -v sha256sum >/dev/null 2>&1; then
+  SHA256_CMD=(sha256sum)
+else
+  SHA256_CMD=(shasum -a 256)
+fi
 
 abs_path() {
   local p="$1"
@@ -141,7 +149,7 @@ run_audit_only() {
     -not -path '*/dist/*' \
     -not -path '*/build/*' \
     -print0 \
-    | xargs -0 sha256sum | sort > "${ROOT}/${OUT_DIR}/all-hashes.txt"
+    | xargs -0 "${SHA256_CMD[@]}" | sort > "${ROOT}/${OUT_DIR}/all-hashes.txt"
 
   awk '
   {h=$1; $1=""; p=substr($0,2); a[h]=a[h] ? a[h] "\n" p : p; c[h]++}
@@ -207,8 +215,8 @@ replace_path_refs() {
     if [[ "$dry_run" == "1" ]]; then
       printf 'REPLACE %s in %s\n' "$old_rel" "${file#${ROOT}/}"
     else
-      old_esc="$(printf '%s' "$old_rel" | sed 's/[.[\\*^$()+?{|]/\\\\&/g')"
-      new_esc="$(printf '%s' "$new_rel" | sed 's/[&/]/\\\\&/g')"
+      old_esc="$(printf '%s' "$old_rel" | sed 's/[][\.*^$/]/\\&/g')"
+      new_esc="$(printf '%s' "$new_rel" | sed 's/[&/\]/\\&/g')"
       sed -i.bak "s/${old_esc}/${new_esc}/g" "$file" && rm -f "$file.bak"
     fi
   done <<< "$targets"
