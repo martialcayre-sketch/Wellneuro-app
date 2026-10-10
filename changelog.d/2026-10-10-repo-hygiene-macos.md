@@ -9,3 +9,5 @@
   vide en silence : un `apply-safe` aurait déplacé des documents sans
   réécrire leurs liens. `audit-only` et `apply-safe` refusent désormais de
   tourner sans `rg`, en le nommant.
+- Empreintes : `sha256sum` quand il existe, sinon `shasum -a 256` (macOS
+  anciens), refus explicite sans l'un ni l'autre.

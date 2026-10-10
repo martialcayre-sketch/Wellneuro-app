@@ -38,7 +38,7 @@ log() {
 # vide en silence (`|| true`) : un apply-safe déplaçait sans réécrire.
 require_rg() {
   command -v rg >/dev/null 2>&1 || {
-    printf 'rg (ripgrep) introuvable : brew install ripgrep\n' >&2
+    printf 'rg (ripgrep) introuvable : installez ripgrep puis relancez.\n' >&2
     exit 1
   }
 }
@@ -100,6 +100,16 @@ ensure_out_dir() {
 
 run_audit_only() {
   require_rg
+  # sha256sum manque aux macOS anciens ; shasum -a 256 a la même sortie.
+  local -a SHA256
+  if command -v sha256sum >/dev/null 2>&1; then
+    SHA256=(sha256sum)
+  elif command -v shasum >/dev/null 2>&1; then
+    SHA256=(shasum -a 256)
+  else
+    printf 'Ni sha256sum ni shasum : impossible de chercher les doublons.\n' >&2
+    exit 1
+  fi
   ensure_out_dir
 
   log "Inventaire git + volumetrie -> ${OUT_DIR}/inventory.txt"
@@ -137,7 +147,7 @@ run_audit_only() {
     -not -path '*/dist/*' \
     -not -path '*/build/*' \
     -print0 \
-    | xargs -0 sha256sum | sort > "${ROOT}/${OUT_DIR}/all-hashes.txt"
+    | xargs -0 "${SHA256[@]}" | sort > "${ROOT}/${OUT_DIR}/all-hashes.txt"
 
   awk '
   {h=$1; $1=""; p=substr($0,2); a[h]=a[h] ? a[h] "\n" p : p; c[h]++}
