@@ -20,6 +20,8 @@ import { ficheSourceDeLAssiette } from '../../src/lib/fiches-assiette/appariemen
 import { lireContenuFiche } from '../../src/lib/fiches-assiette/contrat';
 import { controlerFiche } from '../../src/lib/fiches-assiette/invariants';
 import { clesSecuriteDeLAssiette } from '../../src/lib/fiches-assiette/securite';
+import { ensureNuitReponses } from '../../src/lib/agenda-sommeil/nuit';
+import type { ContratEcriture, NuitReponses } from '../../src/lib/agenda-sommeil/types';
 // Dossier de référence qui PASSE les préconditions T0. RÉUTILISÉ, jamais
 // recopié : son en-tête dit pourquoi il existe — « sans lui, chacune [des
 // routes] décrirait un dossier confirmable à sa façon, et une condition qui
@@ -376,6 +378,58 @@ export async function nettoyerReprise(idPatient: string): Promise<void> {
 
 export async function closePrisma(): Promise<void> {
   await prisma.$disconnect();
+}
+
+// ---------------------------------------------------------------------------
+// Agenda du sommeil (`Q_SOM_09`) — nuits déjà notées, pour les specs qui
+// partent d'un agenda en cours (campagne 2026-10-07-agenda-sommeil-adhesion,
+// LOT-08).
+//
+// Écrites en base parce que la route n'accepte que la nuit du jour ou celle de
+// la veille (`estDateSaisissable`) : un agenda de sept nuits ne se fabrique pas
+// autrement. Chaque nuit passe d'abord par le validateur de la route,
+// `ensureNuitReponses`, sous le contrat demandé — une fixture que la route
+// refuserait n'entre pas en base. Le JSON porte `contractVersion` comme
+// `saveNuit` l'écrit.
+// ---------------------------------------------------------------------------
+
+export async function poserNuitsAgendaSommeil(
+  idPatient: string,
+  idAssignation: string,
+  contrat: ContratEcriture,
+  nuits: { dateNuit: string; reponses: NuitReponses }[],
+): Promise<void> {
+  for (const { dateNuit, reponses } of nuits) {
+    const validees = ensureNuitReponses(reponses, { exigerObligatoires: true, contrat });
+    await prisma.agendaSommeilNuit.create({
+      data: {
+        idPatient,
+        idAssignation,
+        dateNuit,
+        reponses: { contractVersion: contrat, ...validees },
+        soumisLe: new Date(`${dateNuit}T06:30:00Z`),
+      },
+    });
+  }
+}
+
+export async function lireNuitsAgendaSommeil(
+  idPatient: string,
+): Promise<{ dateNuit: string; reponses: Record<string, unknown> }[]> {
+  const lignes = await prisma.agendaSommeilNuit.findMany({
+    where: { idPatient },
+    orderBy: { dateNuit: 'asc' },
+    select: { dateNuit: true, reponses: true },
+  });
+  return lignes.map((l) => ({ dateNuit: l.dateNuit, reponses: l.reponses as Record<string, unknown> }));
+}
+
+export async function lireStatutAssignation(idAssignation: string): Promise<string> {
+  const a = await prisma.assignation.findUniqueOrThrow({
+    where: { idAssignation },
+    select: { statut: true },
+  });
+  return a.statut;
 }
 
 // ---------------------------------------------------------------------------

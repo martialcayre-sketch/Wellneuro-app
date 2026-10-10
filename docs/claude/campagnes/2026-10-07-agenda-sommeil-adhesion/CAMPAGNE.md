@@ -1,10 +1,10 @@
 ---
 id: "2026-10-07-agenda-sommeil-adhesion"
 titre: "AGENDA-SOMMEIL — adhésion : une nuit qu'on peut noter jusqu'au bout"
-statut: "en_cours (ouverte le 2026-10-07 — LOT-01, LOT-03, LOT-05, LOT-04, LOT-06 mergés ; LOT-02 en attente de lecture, LOT-07 courant)"
+statut: "en_cours (ouverte le 2026-10-07 — LOT-01, LOT-03, LOT-05, LOT-04, LOT-06, LOT-07 mergés ; LOT-02 en attente de lecture, LOT-08 courant)"
 créée_le: "2026-10-07"
 mise_à_jour: "2026-10-10"
-lot_courant: "LOT-07"
+lot_courant: "LOT-08"
 branche_campagne: "aucune"
 branche_lot_courant: "ccr-6dd6bb64-2sku9o"
 cible_pr_lot: "main"
@@ -40,7 +40,7 @@ entérinée par le responsable le 2026-10-07.
 
 ## Lots
 
-LOT-01 est mergé (#1359, 2026-10-07), LOT-03 (#1363), LOT-05 (#1364) et LOT-04 (#1365, [[D-271]], [[D-272]]) aussi, le 2026-10-08 (recette sur appareil après merge). LOT-02 — la re-mesure — est en cours : requête prête ([`REMESURE_ADHESION.sql`](REMESURE_ADHESION.sql)), première lecture au 2026-10-29 ; la mesure de référence a été jouée le 2026-10-09. LOT-06 agit sur ses constats (#1372, 2026-10-09). LOT-07 redessine les nuits du chronogramme praticien, absentes depuis sa création — trouvé en recette locale le 2026-10-10. L'ordre courant découle des arbitrages
+LOT-01 est mergé (#1359, 2026-10-07), LOT-03 (#1363), LOT-05 (#1364) et LOT-04 (#1365, [[D-271]], [[D-272]]) aussi, le 2026-10-08 (recette sur appareil après merge). LOT-02 — la re-mesure — est en cours : requête prête ([`REMESURE_ADHESION.sql`](REMESURE_ADHESION.sql)), première lecture au 2026-10-29 ; la mesure de référence a été jouée le 2026-10-09. LOT-06 agit sur ses constats (#1372, 2026-10-09). LOT-07 redessine les nuits du chronogramme praticien, absentes depuis sa création — trouvé en recette locale le 2026-10-10 (#1376). LOT-08 verse cette recette au dépôt en E2E, WebKit compris, pour que le défaut ne revienne pas en silence. L'ordre courant découle des arbitrages
 du responsable du 2026-10-07, consignés dans la synthèse (§ « Arbitrages du
 responsable ») : LOT-00 (mesure), LOT-03 (cadran remplacé), LOT-05 (rappel
 côté appareil), LOT-04 (deux `D-xxx`, contrat v4), puis LOT-02 (re-mesure).
