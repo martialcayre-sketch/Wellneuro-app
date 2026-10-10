@@ -2581,6 +2581,11 @@ model ImportBiologique {
   termineLe     DateTime? @map("termine_le")
   /// Le laboratoire tel que lu sur l'en-tête (A5), posé à la terminaison.
   laboratoireLu String?   @map("laboratoire_lu")
+  /// Les commentaires du laboratoire sur le compte rendu ENTIER, tels
+  /// qu'imprimés ([[D-278]] §3), posés à la terminaison ; NULL si aucun.
+  /// Plus longs que la borne technique : NULL, et le signal le dit.
+  commentairesLus            String?  @map("commentaires_lus")
+  commentairesNonTranscrits  Boolean  @default(false) @map("commentaires_non_transcrits")
 
   patient     Patient                    @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
   compteRendu CompteRenduBiologique      @relation(fields: [idCompteRendu, idPatient], references: [id, idPatient], onDelete: Restrict)
@@ -2620,6 +2625,10 @@ model LigneBiologiqueCandidate {
   /// ligne le dit à la validation ([[D-267]] §10). Jamais tronqué.
   intervalleNonTranscrit Boolean @default(false) @map("intervalle_non_transcrit")
   marquageNonTranscrit   Boolean @default(false) @map("marquage_non_transcrit")
+  /// Le commentaire du laboratoire sur CE résultat, tel qu'imprimé
+  /// ([[D-278]] §3) : figé avec ce qui a été lu, jamais tronqué.
+  commentaireLu           String? @map("commentaire_lu")
+  commentaireNonTranscrit Boolean @default(false) @map("commentaire_non_transcrit")
   /// Posé par le resolver signé SEUL, jamais par le modèle — `ambigu` compris.
   analytePropose String?   @map("analyte_propose")
   statutMapping  String    @map("statut_mapping") // resolu | ambigu | inconnu (CHECK migration)

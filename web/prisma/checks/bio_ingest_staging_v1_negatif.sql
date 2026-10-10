@@ -104,15 +104,21 @@ DECLARE
     'contenu', 'depose_le', 'depose_par', 'ecarte_le', 'ecarte_par', 'empreinte_sha256', 'id', 'id_patient',
     'motif_ecart', 'motif_purge', 'origine', 'purge_le', 'type_mime'
   ];
+  -- `commentaires_*` : les commentaires du compte rendu ([[D-278]] §3), tenus
+  -- par `bio_ingest_commentaires_laboratoire_v1_negatif.sql`.
   COLS_IMPORT CONSTANT text[] := ARRAY[
-    'id', 'id_compte_rendu', 'id_patient', 'laboratoire_lu', 'lance_le', 'lance_par', 'modele', 'motif_echec',
-    'statut', 'termine_le', 'version_prompt'
+    'commentaires_lus', 'commentaires_non_transcrits', 'id', 'id_compte_rendu', 'id_patient',
+    'laboratoire_lu', 'lance_le', 'lance_par', 'modele', 'motif_echec', 'statut', 'termine_le',
+    'version_prompt'
   ];
   -- `intervalle_lu` et `marquage_lu` : les faits du laboratoire ([[D-267]]),
   -- tenus par `bio_ingest_faits_laboratoire_v1_negatif.sql` ; leurs signaux
   -- `*_non_transcrit` (§10), par `bio_ingest_faits_non_transcrits_v1_negatif.sql`.
+  -- `commentaire_*` : le commentaire du résultat ([[D-278]] §3), par
+  -- `bio_ingest_commentaires_laboratoire_v1_negatif.sql`.
   COLS_LIGNE CONSTANT text[] := ARRAY[
-    'analyte_propose', 'heure_lue', 'id', 'id_import', 'id_patient', 'id_resultat', 'intervalle_lu',
+    'analyte_propose', 'commentaire_lu', 'commentaire_non_transcrit', 'heure_lue', 'id', 'id_import',
+    'id_patient', 'id_resultat', 'intervalle_lu',
     'intervalle_non_transcrit', 'libelle_lu', 'marquage_lu', 'marquage_non_transcrit', 'motif_ecart',
     'page', 'preleve_le_lu', 'rang', 'statut', 'statut_mapping', 'traite_le', 'traite_par',
     'unite_lue', 'valeur_lue'
