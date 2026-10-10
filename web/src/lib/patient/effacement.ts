@@ -37,6 +37,14 @@ export type ResultatEffacement = {
  */
 export async function effacerDossier(idPatient: string): Promise<ResultatEffacement> {
   return prisma.$transaction(async (tx) => {
+    // LA LIGNE DU DOSSIER EST VERROUILLÉE EN PREMIER, avant toute suppression.
+    // Un écrivain concurrent qui la verrouille en partage avant d'écrire un
+    // enfant (dépôt du patient, diffusion des fiches) attend alors la fin de
+    // l'effacement, puis ne trouve plus le dossier. Sans ce verrou, l'ordre
+    // « enfants puis patient » croisait l'ordre « patient puis enfant » de ces
+    // écrivains : interblocage, ou effacement en échec sur une ligne insérée
+    // après le passage de sa table (revue Copilot de la PR #1385).
+    await tx.$queryRaw`SELECT 1 FROM patients WHERE id_patient = ${idPatient} FOR UPDATE`;
     const patient = await tx.patient.findUnique({
       where: { idPatient },
       select: { nom: true, dateNaissance: true },

@@ -11,3 +11,12 @@
   d'en-tête (409 `dossier_cloture`), et rien n'est écrit.
 - Bancs : quatre cas neufs, rouges quand on retire la relecture (mutation
   jouée).
+- **Effacement d'un dossier** (revue Copilot de la PR) : `effacerDossier`
+  verrouille désormais la ligne du patient `FOR UPDATE` avant toute
+  suppression. L'ordre « enfants puis patient » de l'effacement ne croise
+  plus l'ordre « patient puis enfant » des écrivains qui verrouillent le
+  dossier en partage (dépôt du patient, diffusion des fiches). Il n'y a plus
+  d'interblocage possible, et l'effacement n'échoue plus sur une ligne
+  insérée après le passage de sa table : l'écrivain attend la fin de
+  l'effacement, puis ne trouve plus le dossier. Le banc rougit si l'on retire
+  le verrou.
