@@ -190,6 +190,11 @@ describe('la réponse commande la production', () => {
     expect(construireSafetyFindings([], [], reponses).findings).toHaveLength(1);
   });
 
+  it('un booléen n’est jamais lu comme une option (Number(true) vaudrait 1)', () => {
+    const [reponse] = reponsesSecuriteDeclarees([passation('REP-T', 'Q_NEU_01', { B7: true })]);
+    expect(reponse.lecture.kind).toBe('hors_options');
+  });
+
   it('un questionnaire hors table est ignoré', () => {
     expect(reponsesSecuriteDeclarees([passation('REP-X', 'Q_STR_04', { B7: 3 })])).toEqual([]);
   });
@@ -203,6 +208,12 @@ describe('A1 — toute passation non invalidée compte', () => {
     expect(new Set(ids).size).toBe(2);
   });
 
+  it('deux passations portant la MÊME réponse font deux constats', () => {
+    simulerSignature();
+    const reponses = reponsesSecuriteDeclarees([BDI_PLANS, passation('REP-B2', 'Q_NEU_01', { B7: 2 })]);
+    expect(new Set(construireSafetyFindings([], [], reponses).findings.map(f => f.findingId)).size).toBe(2);
+  });
+
   it('un « non » ultérieur ne lève rien', () => {
     simulerSignature();
     const plusTard = { ...BDI_NON, dateReponse: new Date('2026-10-09T09:00:00.000Z') };
@@ -210,13 +221,18 @@ describe('A1 — toute passation non invalidée compte', () => {
     expect(findings).toHaveLength(1);
   });
 
-  it('une passation invalidée sort ; contre-épreuve : drapeau éteint, elle reste', () => {
+  it('une passation invalidée sort, drapeau de validité allumé ou non ; aucun autre statut ne retire', () => {
     simulerSignature();
     const invalide = { ...BDI_PLANS, statutValidite: 'INVALID' };
-    process.env.WN_ENABLE_VALIDITE_PASSATIONS = '1';
-    expect(construireSafetyFindings([], [], reponsesSecuriteDeclarees([invalide])).findings).toHaveLength(0);
-    delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
-    expect(construireSafetyFindings([], [], reponsesSecuriteDeclarees([invalide])).findings).toHaveLength(1);
+    for (const drapeau of ['1', undefined]) {
+      if (drapeau) process.env.WN_ENABLE_VALIDITE_PASSATIONS = drapeau;
+      else delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+      expect(construireSafetyFindings([], [], reponsesSecuriteDeclarees([invalide])).findings).toHaveLength(0);
+      for (const statut of ['VALID', 'AMBIGUOUS', 'SUPERSEDED', 'HISTORICAL_ONLY', null]) {
+        const ligne = { ...BDI_PLANS, statutValidite: statut };
+        expect(construireSafetyFindings([], [], reponsesSecuriteDeclarees([ligne])).findings, `${statut}`).toHaveLength(1);
+      }
+    }
   });
 
   it('l’identifiant ne dépend pas de l’ordre de la base', () => {
@@ -259,8 +275,12 @@ describe('A2 — illisible : limitation sans blocage ; hors options : constat', 
       );
       expect(findings, JSON.stringify(valeur)).toHaveLength(1);
       expect(findings[0].limitations.some(l => l.includes('aucune option'))).toBe(true);
-      // La valeur brute n'est jamais recopiée dans la rationale.
+      // La valeur brute n'est jamais recopiée — ni rationale, ni limitations.
       expect(findings[0].rationale).toContain('valeur hors des options');
+      const canari = construireSafetyFindings(
+        [], [], reponsesSecuriteDeclarees([passation('REP-K', 'Q_NEU_02', { Q010: 'CANARI-7f3' })]),
+      ).findings[0];
+      expect(JSON.stringify(canari)).not.toContain('CANARI');
     }
   });
 });

@@ -57,6 +57,22 @@ d'adressage qui le couvre.
 - Production (conteneur, agrégats) : une seule passation sur les quatre
   questionnaires, valide, réponse « non ». Aucun dossier bloqué ni dérivé.
 
+## Revue Codex (première passe) — NO GO levé par trois corrections
+
+- P1-1 : réponses de sécurité tronquées en lecture datée. C'était sans effet
+  observable : la chaîne n'est pas construite en lecture datée. Corrigé quand
+  même : `adaptRuntimeInputs` reçoit toutes les passations en quatrième
+  argument, obligatoire.
+- P1-2 : filtre propre à la sécurité. Seul `INVALID` retire, quel que soit le
+  drapeau (`WN_ENABLE_VALIDITE_PASSATIONS=1` relu en production).
+- P1-3 : nouveau banc `safetyQuestionnaire.integration.test.ts` (adaptateur,
+  positif hors épisode, interruption de la carte, parité avec le vérificateur
+  par `refusChaineC1`), plus des cas pour le rejeu et pour le Fil. Les huit
+  mutations de Codex rougissent désormais.
+- P2 : table non signée et réponse illisible joignent la règle candidate.
+- Fixture : `chaineC1DeReference({ passationsSecurite })` ajoute des passations
+  hors épisode, lues comme le cockpit.
+
 ## Problèmes ouverts
 
 - P2-3 : le geste reste proposé sans porteuse. Le refus est désormais juste,

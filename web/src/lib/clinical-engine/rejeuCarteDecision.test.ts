@@ -84,6 +84,13 @@ describe('rejouerCarteDecision', () => {
   // L'HORODATAGE DE LA CONFIRMATION, JAMAIS L'HEURE COURANTE : il entre dans les
   // trois empreintes. Rejouer « maintenant » ferait diverger toute carte honnête
   // dès la première seconde.
+  it('transmet au moteur les réponses de sécurité lues par la lecture partagée (D-275 §2)', async () => {
+    const reponsesSecurite = [{ idReponse: 'REP_BDI', marqueur: 'lu-par-entreesRuntime' }];
+    entreesRuntime.mockResolvedValue({ ...entrees(), reponsesSecurite });
+    await appel();
+    expect(construireChaineC1Tolerante.mock.calls[0][0].reponsesSecurite).toBe(reponsesSecurite);
+  });
+
   it('rejoue à l’horodatage de confirmation de l’épisode', async () => {
     await appel();
     expect(construireChaineC1Tolerante).toHaveBeenCalledWith(

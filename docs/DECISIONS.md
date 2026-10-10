@@ -132,7 +132,11 @@ responsable).**
   le même jour : une réponse illisible (A2) ajoutée après la diffusion entre
   dans la revue et interrompt aussi l'écran protocole du patient jusqu'à une
   nouvelle décision. Constat du 2026-10-10 : toujours une seule passation,
-  réponse « non ».
+  réponse « non ». **Revue Codex de #1375** : A1 est appliquée à la lettre.
+  Seul le statut `INVALID` retire une passation, que le drapeau de validité
+  soit allumé ou non ; `HISTORICAL_ONLY` et `SUPERSEDED` ne sont pas des
+  invalidations. Les réponses de sécurité se lisent sur toutes les passations,
+  jamais tronquées par une lecture datée.
 
 ### D-274 — Mini-synthèse : « Très sévère » (`dark`) et « Léger » (`info`) sont des rubriques perturbées, nommées par ordre de gravité
 

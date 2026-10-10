@@ -91,6 +91,8 @@ export async function entreesRuntime(idPatient: string) {
       { idPatient, createdAt: new Date(0) },
       filtrerPassationsExploitables(responses),
       consultation,
+      // Toutes les passations ([[D-275]] §2) : la même source que le cockpit.
+      responses,
     ),
     idConsultationPorteuse: consultation?.id ?? null,
   };

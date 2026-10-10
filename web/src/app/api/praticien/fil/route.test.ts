@@ -45,7 +45,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { GET } from './route';
-import { construireSafetyFindings } from '@/lib/clinical-engine/safetyFindings';
+import { construireSafetyFindings, reponsesSecuriteDeclarees } from '@/lib/clinical-engine/safetyFindings';
 import { ORDRE_CONSULTATION_PORTEUSE } from '@/lib/consultation/consultationPorteuse';
 import { bornesJourParis } from '@/lib/fil/fuseau';
 
@@ -644,6 +644,60 @@ describe('GET /api/praticien/fil — signal de sécurité ouvert (D-275 §3)', (
     expect(payload.cartes[0].type).toBe('signal_securite');
     expect(JSON.stringify(payload)).not.toContain('Idées noires');
     expect(JSON.stringify(payload)).not.toContain(ID_CONSTAT);
+  });
+
+  describe('réponses de questionnaire (D-275 §2, LOT-3)', () => {
+    const POSITIVE = {
+      idPatient: 'PAT_SEED_01',
+      idReponse: 'REP_BDI',
+      idQuestionnaire: 'Q_NEU_01',
+      dateReponse: new Date('2026-10-05T09:00:00.000Z'),
+      scoresJson: { rawAnswers: { B7: 2 } },
+      statutValidite: 'VALID',
+    };
+    const ID_QUESTIONNAIRE = construireSafetyFindings([], [], reponsesSecuriteDeclarees([POSITIVE]))
+      .findings[0].findingId;
+    // Seule la lecture du producteur de sécurité filtre sur `idQuestionnaire` :
+    // les autres lectures du Fil restent vides.
+    function passations(rows: unknown[]) {
+      prisma.questionnaireReponse.findMany.mockImplementation(
+        async (args: { where?: { idQuestionnaire?: unknown } }) => (args?.where?.idQuestionnaire ? rows : []),
+      );
+    }
+
+    it('un positif, même hors épisode et sans signal d’anamnèse, ouvre la carte et se nomme', async () => {
+      prisma.consultation.findMany.mockResolvedValue([{ ...PORTEUSE, anamnese: { signaux_alerte: [] } }]);
+      passations([POSITIVE]);
+      const payload = await (await GET()).json();
+      expect(payload.cartes[0]).toMatchObject({ type: 'signal_securite', cle: 'signal_securite:PAT_SEED_01' });
+      expect(payload.cartes[0].pourquoi).toContain('Questionnaire : 1 réponse de sécurité non adressée');
+      expect(JSON.stringify(payload)).not.toContain('plans précis');
+    });
+
+    it('sans consultation porteuse, le positif ouvre quand même la carte', async () => {
+      prisma.consultation.findMany.mockResolvedValue([]);
+      passations([POSITIVE]);
+      const payload = await (await GET()).json();
+      expect(payload.cartes[0]?.type).toBe('signal_securite');
+    });
+
+    it('la lettre qui le couvre éteint la carte — même identifiant que la chaîne', async () => {
+      prisma.consultation.findMany.mockResolvedValue([{ ...PORTEUSE, anamnese: { signaux_alerte: [] } }]);
+      passations([POSITIVE]);
+      prisma.adressageSignalAlerte.findMany.mockResolvedValue([{
+        ...lettre([ID_QUESTIONNAIRE]),
+        correspondance: { idPatient: 'PAT_SEED_01', sens: 'sortant', ancrageVersion: 'safety-signals-questionnaire-v1' },
+      }]);
+      const payload = await (await GET()).json();
+      expect(payload.cartes.filter((c: { type: string }) => c.type === 'signal_securite')).toEqual([]);
+    });
+
+    it('une passation invalidée ne rouvre rien', async () => {
+      prisma.consultation.findMany.mockResolvedValue([{ ...PORTEUSE, anamnese: { signaux_alerte: [] } }]);
+      passations([{ ...POSITIVE, statutValidite: 'INVALID' }]);
+      const payload = await (await GET()).json();
+      expect(payload.cartes.filter((c: { type: string }) => c.type === 'signal_securite')).toEqual([]);
+    });
   });
 
   it('la lecture groupée des couvertures a le where de la lecture unitaire, à la portée près', async () => {

@@ -24,7 +24,6 @@ import {
   regleSecuriteQuestionnaireValidee,
 } from '@/lib/clinical/safetyQuestionnaireV1';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
-import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import {
   PREFIXE_FINDING_ANAMNESE,
   PREFIXE_FINDING_EFFET_INDESIRABLE,
@@ -264,8 +263,12 @@ function lireValeurBrute(valeur: unknown): { kind: 'illisible' } | { kind: 'nomb
  * invalidées du dossier (A1 de [[D-275]] §2) — pas seulement celles de
  * l'épisode, pas seulement la dernière.
  *
- * MÊME FILTRE DE VALIDITÉ QUE LA CHAÎNE (`filtrerPassationsExploitables`) :
- * une passation déclarée invalide sort ; c'est la seconde sortie, assumée.
+ * SEULE L'INVALIDATION RETIRE UNE PASSATION, ET TOUJOURS — le contrat de
+ * [[D-275]] §2 (A1), écrit tel quel. PAS `filtrerPassationsExploitables` (revue
+ * Codex de #1375) : il retire aussi `SUPERSEDED` et `HISTORICAL_ONLY`, qui ne
+ * sont pas des invalidations praticien, et il ne retire RIEN drapeau éteint —
+ * une invalidation rendue resterait alors sans effet. Un statut `INVALID` est
+ * un acte praticien ; c'est la seconde sortie, assumée.
  *
  * `rawAnswers` EST LU BRUT, PAS PAR `rawAnswersFrom` : celle-ci rend `null`
  * pour l'objet entier dès qu'UNE valeur n'est pas numérique. Une réponse de
@@ -277,7 +280,7 @@ function lireValeurBrute(valeur: unknown): { kind: 'illisible' } | { kind: 'nomb
  */
 export function reponsesSecuriteDeclarees(rows: readonly PassationSecuriteRow[]): ReponseSecurite[] {
   const reponses: ReponseSecurite[] = [];
-  for (const row of filtrerPassationsExploitables(rows)) {
+  for (const row of rows.filter(passation => passation.statutValidite !== 'INVALID')) {
     const question = questionSecuriteDe(row.idQuestionnaire);
     if (!question) continue;
     const scores = row.scoresJson !== null && typeof row.scoresJson === 'object' && !Array.isArray(row.scoresJson)
@@ -375,7 +378,9 @@ function construireFindingsQuestionnaire(reponses: ReponseSecurite[]): {
     // qu'une réponse concerne.
     return {
       findings: [],
-      rules: adressees.length > 0
+      // Une réponse illisible appelle aussi la règle : sans elle, une table
+      // désignée laisserait le dossier muet (revue Codex de #1375, P2).
+      rules: adressees.length > 0 || reponses.some(reponse => reponse.lecture.kind === 'illisible')
         ? [{
           ruleId: REGLE_SECURITE_QUESTIONNAIRE,
           version: SAFETY_QUESTIONNAIRE_METADATA.version,

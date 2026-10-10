@@ -16,7 +16,7 @@ describe('runtime clinique depuis Prisma', () => {
         attentes: ['Sommeil', 'Énergie', 'Sommeil'],
         contraintes: ['champ non canonique'],
       },
-    });
+    }, []);
 
     expect(result.responses.map(response => response.responseId)).toEqual(['REP_1', 'REP_2']);
     expect(result.responses[1]).toMatchObject({ scoresJson, scoreVersion: null });
@@ -30,7 +30,7 @@ describe('runtime clinique depuis Prisma', () => {
     const inputs = adaptRuntimeInputs(patient, [
       { idReponse: 'REP_T0', idQuestionnaire: 'Q_1', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: {} },
       { idReponse: 'REP_J21', idQuestionnaire: 'Q_2', dateReponse: new Date('2026-01-22T00:00:00.000Z'), scoresJson: {} },
-    ], null);
+    ], null, []);
 
     const first = proposeRuntimeEpisode(inputs, 'J21');
     const second = proposeRuntimeEpisode(inputs, 'J21');
@@ -50,7 +50,7 @@ describe('runtime clinique depuis Prisma', () => {
       // Second rideau, assigné après la synthèse : 40 jours plus tard, très
       // au-delà des ±8 j.
       { idReponse: 'REP_RIDEAU_2', idQuestionnaire: 'Q_2', dateReponse: new Date('2026-02-10T00:00:00.000Z'), scoresJson: {} },
-    ], null);
+    ], null, []);
 
     it('`T0` embarque le second rideau sans réinclusion manuelle', () => {
       const { proposal } = proposeRuntimeEpisode(inputs, 'T0');
@@ -105,7 +105,7 @@ describe('runtime clinique depuis Prisma', () => {
   describe('identifiant d’épisode', () => {
     const inputs = adaptRuntimeInputs(patient, [
       { idReponse: 'REP_1', idQuestionnaire: 'Q_1', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: {} },
-    ], null);
+    ], null, []);
 
     it('distingue deux cycles sur un même jalon de mesure', () => {
       const cycle0 = proposeRuntimeEpisode(inputs, 'J21', { ancre: 'T0', confirmedAt: '2026-01-01T00:00:00.000Z', jourZero: null });
@@ -135,7 +135,7 @@ describe('runtime clinique depuis Prisma', () => {
   });
 
   it('autorise une proposition vide stable sans transformer la date dossier en mesure', () => {
-    const inputs = adaptRuntimeInputs(patient, [], null);
+    const inputs = adaptRuntimeInputs(patient, [], null, []);
     const result = proposeRuntimeEpisode(inputs, 'T0');
     expect(result.proposal.candidateResponses).toEqual([]);
     expect(result.proposal.sourceDateRange).toBeNull();

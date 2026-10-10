@@ -104,8 +104,8 @@ function chaine(options: {
         ...(options.signaux ? { signaux_alerte: options.signaux } : {}),
         ...(options.etat ?? {}),
       },
-    },
-  );
+    }, [],
+);
   const { proposal } = proposeRuntimeEpisode(inputs, 'T0');
   const exclus = new Set(options.exclure ?? []);
   const episode = confirmAssessmentEpisode(

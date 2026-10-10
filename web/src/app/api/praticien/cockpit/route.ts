@@ -280,7 +280,9 @@ async function loadRuntimeInputs(idPatient: string, emailPraticien: string, asOf
   // runtime clinique SEULEMENT : les repères as-of, eux, restent calculés sur
   // la liste complète — un repère est un fait administratif, pas une mesure.
   return {
-    ...adaptRuntimeInputs(patient, filtrerPassationsExploitables(tronquerA(responses, asOf)), consultation),
+    // Les réponses de sécurité, elles, ne se tronquent pas ([[D-275]] §2) :
+    // toutes les passations, comme le vérificateur et le Fil.
+    ...adaptRuntimeInputs(patient, filtrerPassationsExploitables(tronquerA(responses, asOf)), consultation, responses),
     idConsultationPorteuse: consultation?.id ?? null,
     asOf: asOf ? asOf.toISOString() : null,
   };
