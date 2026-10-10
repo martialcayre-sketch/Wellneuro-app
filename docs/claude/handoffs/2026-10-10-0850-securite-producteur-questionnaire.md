@@ -73,6 +73,12 @@ d'adressage qui le couvre.
 - Fixture : `chaineC1DeReference({ passationsSecurite })` ajoute des passations
   hors épisode, lues comme le cockpit.
 
+## Revue Codex (passe de correction) — quatre findings FERMÉS, CONFIRMÉS
+
+Les huit mutations rougissent. Seule réserve : le correctif P2 n'était couvert
+par aucun banc permanent. Le cas est ajouté au banc de garde (table désignée +
+réponse illisible ⇒ règle candidate), et il rougit sous l'ancienne condition.
+
 ## Problèmes ouverts
 
 - P2-3 : le geste reste proposé sans porteuse. Le refus est désormais juste,

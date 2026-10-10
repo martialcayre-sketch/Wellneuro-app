@@ -144,6 +144,18 @@ describe('verrou de signature — sens inverse, comme SAF-ANAM-01', () => {
     expect(negatif.rules.some(r => r.ruleId === REGLE_SECURITE_QUESTIONNAIRE)).toBe(false);
   });
 
+  it('table désignée : une réponse illisible seule joint aussi la règle candidate (revue Codex de #1375, P2)', () => {
+    designerTable();
+    const { findings, rules, limitations } = construireSafetyFindings(
+      [], [], reponsesSecuriteDeclarees([passation('REP-I', 'Q_NEU_01', {})]),
+    );
+    expect(findings).toEqual([]);
+    expect(limitations).toEqual([]);
+    expect(rules.filter(r => r.ruleId === REGLE_SECURITE_QUESTIONNAIRE)).toEqual([
+      expect.objectContaining({ lifecycle: 'candidate' }),
+    ]);
+  });
+
   it('un sha périmé referme le verrou', () => {
     simulerSignature();
     expect(tableSecuriteQuestionnaireSignee()).toBe(true);
