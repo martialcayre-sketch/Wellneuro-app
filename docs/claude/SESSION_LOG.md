@@ -9817,3 +9817,16 @@ CAMPAGNE.md : lot courant LOT-02 ; campagne inscrite à la main en
 d'ordre), seconde le 2026-11-12.
 
 **Ouvert.** Recette Android 2-5, iOS 6-9 ; trou E2E clôture → PDF (`AGD_LAT_MED`).
+
+## 2026-10-10 — Lettre d'adressage remise au patient : constat du drapeau
+
+**Décidé.** `WN_LETTRE_ADRESSAGE_PATIENT` consigné « constaté par le
+comportement » sur un dossier de test, sur déclaration du responsable.
+
+**Écarté.** Inventer comptes ou horodatages non transmis : ils restent à
+relire par conteneur si une preuve datée est requise.
+
+**Prochaine action.** Campagne D-262 close côté pose.
+
+**Questions ouvertes.** Date UTC de la lettre ; e-mail si révocation pendant
+la remise ; export d'accès sans les remises.
