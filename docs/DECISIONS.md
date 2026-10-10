@@ -4,6 +4,105 @@
 
 ## Décisions actives
 
+### D-277 — Idées suicidaires (lot 10A) : un message au patient dès sa réponse positive, et un courriel neutre au praticien à la transmission
+
+- Date : 2026-10-10
+- Statut : accepté. Arbitrages du responsable du 2026-10-10, posés sur
+  scénario : courriel au praticien **et** message au patient ; les deux
+  valent aussi pour la case « Idées noires ou suicidaires » de l'anamnèse ;
+  un courriel en échec est tracé, sans nouvelle tentative. Les deux textes
+  ci-dessous sont **signés** par le responsable le même jour, dans la forme
+  « vos réponses » retenue pour couvrir l'anamnèse.
+- Domaine : sécurité patient. Lot 10A, issu de l'instruction BP-26
+  ([[D-276]] §4).
+- Complète : [[D-275]]. **Amende son §1 sur un seul point** : l'encart restait
+  « sans aucun calcul » et n'ajoutait « aucun triage » ; un message calculé
+  sur la réponse s'y ajoute désormais. L'encart, lui, ne change pas : toujours
+  visible, il ne dépend d'aucune réponse.
+- S'appuie sur : [[D-275]] §2 (table `SAF-QUEST-01`) et §3 (carte du Fil),
+  [[D-257]], `DC-12`, `DC-23`.
+- **Ne touche pas** : la table `SAF-QUEST-01` et sa signature, le constat, le
+  blocage, la levée par lettre, la carte du Fil ; aucun seuil, aucun score,
+  aucune migration.
+
+**Ce qui déclenche.** Exactement ce que reconnaît déjà [[D-275]] :
+
+- aux quatre questions de l'encart (BDI `B7`, MADRS `Q010`, SIGH-SAD-SA
+  `SIGH_Q019`, IDTAS-AE `IA9`), toute réponse autre que la première option du
+  catalogue — celle qui dit « non » ; la plus légère compte ;
+- à l'anamnèse, la case « Idées noires ou suicidaires » cochée.
+
+Aucune gradation entre réponses positives, aucun seuil neuf.
+
+**§1 — Le message au patient.** Il apparaît sous la question dès qu'une
+réponse positive est choisie, tant qu'elle reste choisie, et de nouveau sur
+l'écran récapitulatif avant transmission. À l'anamnèse, qui n'a pas d'écran
+récapitulatif, il apparaît sous la liste des signaux tant que la case est
+cochée. Il est annoncé aux lecteurs d'écran (`role="alert"`). Texte signé :
+
+> **Vous venez d'indiquer des idées de mort ou de suicide.**
+> Vous pouvez en parler dès maintenant, gratuitement, 24 h sur 24 : appelez
+> le 3114.
+> Si vous pensez passer à l'acte ou si vous êtes en danger, appelez le 15 ou
+> le 112.
+> Votre praticien sera prévenu de cette réponse quand vous transmettrez vos
+> réponses, mais il ne pourra pas vous répondre immédiatement.
+
+Il se calcule dans le navigateur, depuis la liste des questions de l'encart
+et les options du catalogue : il ne dépend ni du verrou de signature, ni du
+serveur, ni du courriel. Un banc confronte, option par option sur les quatre
+questions, cette règle à celle du serveur (§2) : le patient ne peut pas lire
+« votre praticien sera prévenu » sans qu'un courriel soit appelé. Un défaut de calcul le ferait manquer ; l'encart
+permanent reste le filet, et c'est pourquoi il demeure.
+
+**§2 — Le courriel au praticien.** À la transmission d'un questionnaire ou
+d'une anamnèse qui porte une réponse positive, un courriel part à l'adresse
+du praticien du dossier, après l'enregistrement de la réponse. Pour un
+questionnaire, la décision est la lecture même du producteur signé
+(`reponsesSecuriteDeclarees`) : le courriel part exactement quand un constat
+`SAF-QUEST-01` naît — valeur hors options comprise, réponse illisible exclue.
+Texte signé :
+
+> **Objet :** Signal de sécurité à évaluer — Wellneuro
+>
+> Bonjour,
+>
+> Un patient vient de transmettre une réponse qui appelle une évaluation de
+> sécurité. Elle figure en tête de votre Fil du jour, sous « Signal de
+> sécurité à évaluer ».
+>
+> Connectez-vous à Wellneuro pour la consulter : {lien vers le Fil}
+>
+> Cet e-mail ne contient volontairement aucun détail.
+
+Ni nom, ni réponse, ni questionnaire, ni identifiant de dossier : le lien mène
+au Fil (`/dashboard`). Un courriel par transmission positive, y compris quand une
+transmission antérieure l'était déjà (A1 de [[D-275]] : chaque passation
+compte). L'envoi ne conditionne jamais l'enregistrement de la réponse.
+
+**§3 — Un courriel qui ne part pas.** L'échec (ou l'absence de configuration
+d'envoi, ou d'adresse) est inscrit au journal des correspondances du dossier
+(type `alerte_securite_praticien`), que le praticien lit dans le panneau
+« Correspondance » du dossier : « Échec d'envoi » ou « Non envoyé ». Il n'y a pas de nouvelle tentative : la carte du Fil
+([[D-275]] §3) reste le filet. Une transmission ne produit qu'une ligne de
+journal (clé de source unique).
+
+**LIMITE CONNUE.** La carte du Fil ne vaut que pour un dossier actif dont le
+suivi est ouvert ([[D-275]] §3). Sur un dossier clos, le courriel part quand
+même — un courriel de trop vaut mieux qu'un signal tu —, mais la phrase « Elle
+figure en tête de votre Fil du jour » y est fausse. Le constat, lui, existe :
+il se lit dans le dossier. Même chose si une retouche du catalogue refermait
+le verrou de signature de `SAF-QUEST-01` : le constat et sa carte se
+tairaient, le courriel partirait encore — le verrou n'est pas lu, à dessein.
+*Démontré dans le code, sans occurrence observée* (`D-125`).
+
+**Revue `wn-reviewer` (GO, aucun P0/P1), trois P2 corrigés dans le lot** :
+l'alerte et l'accusé de réception partent en parallèle (deux envois SMTP à la
+suite dépassaient le délai du routeur, et le patient aurait lu « Erreur
+réseau » sur une transmission réussie) ; un échec d'envoi est aussi journalisé
+en exploitation (`EMAIL.ALERTE_SECURITE_PRATICIEN.SEND_FAILED`) ; le verrou non lu
+est écrit ci-dessus.
+
 ### D-276 — BP-26 : aucune fonction retirée ni réduite ; la qualification réglementaire est différée à l'aboutissement du produit, et la porte de `D-266` §2 est amendée
 
 - Date : 2026-10-10

@@ -9894,3 +9894,16 @@ lot courant (refusé par l'audit).
 
 **Prochaine action.** Merge ; puis 10A : `D-275` le couvre déjà, faire dire
 au responsable ce qui manque, sinon lots 11A.
+
+## 2026-10-10 — Lot 10A : idées suicidaires, message et courriel (D-277)
+
+**Fait.** `D-275` couvrait déjà encart, constat et carte. Complément arbitré
+et signé : message au patient dès la réponse positive (quatre questions et
+case d'anamnèse), courriel neutre au praticien à la transmission, échec tracé
+sans retry. Revue `wn-reviewer` GO, trois P2 corrigés (envois parallèles,
+échec journalisé, verrou documenté).
+
+**Écarté.** Courriel conditionné au verrou de signature ; nouvelle tentative
+d'envoi ; lien vers le dossier dans le courriel.
+
+**Prochaine action.** PR, merge, constat ; puis lots 11A.

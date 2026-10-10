@@ -16,6 +16,9 @@ const { prisma } = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
+// [[D-277]] §2 : l'envoi lui-même a son banc (`alerteSecuritePraticien.test.ts`) ;
+// ici, seul le câblage — qui l'appelle, et quand.
+vi.mock('@/lib/securite/alerteSecuritePraticien', () => ({ notifierPraticienSignalSecurite: vi.fn() }));
 vi.mock('@/lib/observability/logger', () => ({
   logger: { warn: vi.fn(), info: vi.fn(), security: vi.fn(), error: vi.fn() },
 }));
@@ -34,6 +37,7 @@ import { signPatientSession } from '@/lib/patient-session';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
+import { notifierPraticienSignalSecurite } from '@/lib/securite/alerteSecuritePraticien';
 import { POST } from './route';
 
 // `assignBasePack` et `packRegistry` sont VOLONTAIREMENT réels : c'est le
@@ -345,5 +349,63 @@ describe('POST /api/portail/valider — repli par nom du pack de base', () => {
       .find(args => args.where.parDefaut !== true);
     expect(appelParNom).toBeDefined();
     expect(appelParNom?.orderBy).toBeDefined();
+  });
+});
+
+describe('POST /api/portail/valider — case « Idées noires ou suicidaires » ([[D-277]] §2)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.patient.findUnique.mockResolvedValue({ ...compte, praticienEmail: 'praticien@wellneuro.fr' });
+    vi.mocked(notifierPraticienSignalSecurite).mockResolvedValue({ statut: 'Envoye' });
+    prisma.consultation.findFirst.mockResolvedValue(consultation);
+    prisma.consultation.update.mockResolvedValue({});
+    prisma.assignation.create.mockResolvedValue({});
+    prisma.questionnairePack.findUnique.mockResolvedValue(null);
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
+    prisma.$transaction.mockImplementation(
+      (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
+    prisma.pack.findFirst.mockResolvedValue({
+      idPack: 'PACK_BASE', nom: 'BASE DE CONSULTATION', qids: ['Q_SOM_06'], parDefaut: true, actif: true,
+    });
+  });
+
+  function valider(signaux: string[]): Request {
+    return new Request('http://localhost/api/portail/valider', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        cookie: `wn_portail=${encodeURIComponent(signPatientSession(PATIENT))}`,
+      },
+      body: JSON.stringify({ anamnese: { motif_principal: 'Fatigue persistante depuis six mois.', signaux_alerte: signaux } }),
+    });
+  }
+
+  it('cochée : le praticien du dossier est prévenu, APRÈS l’enregistrement de l’anamnèse', async () => {
+    const response = await POST(valider(['Idées noires ou suicidaires']));
+    expect(response.status).toBe(200);
+    expect(notifierPraticienSignalSecurite).toHaveBeenCalledWith({
+      idPatient: PATIENT.idPatient,
+      praticienEmail: 'praticien@wellneuro.fr',
+      source: { type: 'anamnese', id: 'CONS_TEST' },
+    });
+    expect(prisma.consultation.update.mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(notifierPraticienSignalSecurite).mock.invocationCallOrder[0]);
+  });
+
+  it('un envoi en échec, ou qui lève, ne change pas la réponse 200 et se journalise', async () => {
+    vi.mocked(notifierPraticienSignalSecurite).mockRejectedValueOnce(new Error('inattendu'));
+    const response = await POST(valider(['Idées noires ou suicidaires']));
+    expect(response.status).toBe(200);
+    expect(vi.mocked(logger.error).mock.calls.map(([payload]) => payload.event))
+      .toContain(EVENT_CODES.SECURITE_ALERTE_PRATICIEN_EMAIL_FAILED);
+  });
+
+  it('un autre signal coché, ou aucun : personne n’est prévenu', async () => {
+    await POST(valider(['Fièvre prolongée / sueurs nocturnes']));
+    await POST(valider([]));
+    expect(notifierPraticienSignalSecurite).not.toHaveBeenCalled();
   });
 });

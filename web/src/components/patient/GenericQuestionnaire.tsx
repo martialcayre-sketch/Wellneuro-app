@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { AssignationInfo } from '@/app/api/patient/questionnaire/route';
 import type { PatientSubmitResponse } from '@/app/api/patient/submit/route';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
@@ -14,7 +14,12 @@ import {
 } from '@/lib/questionnaire-draft';
 import { QuestionField } from './QuestionField';
 import { EncartUrgenceSuicide } from './EncartUrgenceSuicide';
-import { afficheEncartUrgence } from '@/lib/securite/urgenceSuicide';
+import { MessageReponseSuicide } from './MessageReponseSuicide';
+import {
+  afficheEncartUrgence,
+  estReponseSuicidePositive,
+  questionnairePorteReponseSuicidePositive,
+} from '@/lib/securite/urgenceSuicide';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
@@ -206,6 +211,12 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
           </p>
           {/* Le résumé est un écran à part : l'encart doit y être aussi ([[D-275]]). */}
           {afficheEncartUrgence(assignation.idQuestionnaire) && <EncartUrgenceSuicide className="mt-3" />}
+          {/* [[D-277]] §1 : le message revient sur le résumé avant transmission. */}
+          {questionnairePorteReponseSuicidePositive(
+            assignation.idQuestionnaire,
+            answers,
+            idQuestion => questionsById.get(idQuestion)?.options,
+          ) && <MessageReponseSuicide className="mt-3" />}
         </div>
 
         <ol className="space-y-3" aria-label="Parties du questionnaire">
@@ -320,14 +331,19 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
       )}
 
       {activeQuestions.map(q => (
-        <QuestionField
-          key={q.id}
-          question={q}
-          value={answers[q.id] ?? ''}
-          onChange={val => setAnswers(a => ({ ...a, [q.id]: val }))}
-          displaySelectAsRadioCards={isMicroBatch || estGrille}
-          optionLayout={estGrille ? 'grille' : 'cartes'}
-        />
+        <Fragment key={q.id}>
+          <QuestionField
+            question={q}
+            value={answers[q.id] ?? ''}
+            onChange={val => setAnswers(a => ({ ...a, [q.id]: val }))}
+            displaySelectAsRadioCards={isMicroBatch || estGrille}
+            optionLayout={estGrille ? 'grille' : 'cartes'}
+          />
+          {/* [[D-277]] §1 : dès qu'une réponse positive est choisie, tant qu'elle le reste. */}
+          {estReponseSuicidePositive(assignation.idQuestionnaire, q.id, answers[q.id], q.options) && (
+            <MessageReponseSuicide />
+          )}
+        </Fragment>
       ))}
 
       {isMicroBatch && !sectionAnswered && (

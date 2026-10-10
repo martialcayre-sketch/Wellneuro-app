@@ -8,6 +8,8 @@ import {
   FINALITE_CONSENTEMENT,
 } from '@/lib/consultation/portail';
 import { normaliserAnamnese, ANAMNESE_CHAMP_REQUIS } from '@/lib/consultation/anamnese';
+import { CHAMP_ANAMNESE_SIGNAUX, anamneseSignaleIdeesSuicidaires } from '@/lib/securite/urgenceSuicide';
+import { notifierPraticienSignalSecurite } from '@/lib/securite/alerteSecuritePraticien';
 import { assignPackToPatient, echeancePackBase, qidsConsultation, qidsSuspendus } from '@/lib/consultation/assignBasePack';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { isMotifValide } from '@/lib/consultation/motifs';
@@ -206,6 +208,25 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
         finaliteConsentement: consultation.finaliteConsentement ?? FINALITE_CONSENTEMENT,
       },
     });
+
+    // [[D-277]] §2 : la case « Idées noires ou suicidaires » prévient le
+    // praticien. L'anamnèse est déjà enregistrée, et l'envoi ne lève pas.
+    if (anamneseSignaleIdeesSuicidaires(anamnese[CHAMP_ANAMNESE_SIGNAUX])) {
+      const alerte = await notifierPraticienSignalSecurite({
+        idPatient: patient.idPatient,
+        praticienEmail: patient.praticienEmail,
+        source: { type: 'anamnese', id: consultation.idConsultation },
+      }).catch(erreur => ({ statut: 'Erreur' as const, erreur }));
+      if (alerte.statut === 'Erreur') {
+        logger.error({
+          event: EVENT_CODES.SECURITE_ALERTE_PRATICIEN_EMAIL_FAILED,
+          domain: 'EMAIL',
+          message: 'Échec du courriel au praticien sur une réponse suicidaire (carte du Fil seule)',
+          context: finalizeLogContext(requestContext, { retryable: false }),
+          error: alerte.erreur,
+        });
+      }
+    }
 
     return NextResponse.json({ ok: true, premiereAssignation: cree[0]?.idAssignation ?? null, count: cree.length });
   } catch (err) {
