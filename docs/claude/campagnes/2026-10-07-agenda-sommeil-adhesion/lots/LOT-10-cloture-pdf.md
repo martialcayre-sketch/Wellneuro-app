@@ -1,7 +1,7 @@
 ---
 id: "LOT-10"
 titre: "De la clôture au dossier exporté — l’endormissement « Non calculé », jamais 0"
-statut: "en_cours (2026-10-10)"
+statut: "terminé (2026-10-10, #1386)"
 dépend_de: "LOT-08"
 ---
 
