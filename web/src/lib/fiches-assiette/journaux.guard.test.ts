@@ -38,9 +38,19 @@ const PERIMETRE = [
   // Prisma y recopierait un libellé ou une valeur lue — même règle, même banc.
   'lib/biology-library/import',
   'app/api/praticien/biologie/import',
+  // Contre-revue adverse du 2026-10-10 (M16) : les autres écrivains et
+  // lecteurs de la biologie journalisaient hors du banc — la transmission du
+  // patient, la saisie du praticien, unitaire et groupée.
+  'app/api/portail/comptes-rendus',
+  'app/api/praticien/biologie/resultats',
 ];
+// Hors de `src/` : le cron de purge à l'échéance (même contre-revue, M16). Son
+// erreur vient d'un `.catch(err => …)`, pas d'un `catch` : seuls `.message` et
+// `.stack` y sont vus, pas l'erreur nue.
+const FICHIERS_HORS_SRC = [path.join(process.cwd(), 'scripts', 'purgeComptesRendusEcheance.ts')];
 const JOURNAL = /^(?:console\.(?:error|warn|log|info|debug)|logger\.(?:error|warn|info|debug|security|fatal))$/;
-const NEUTRALISEURS = new Set(['classeEtCode']);
+// `signature` (saisieMessages.ts) : nom et code Prisma, comme `classeEtCode`.
+const NEUTRALISEURS = new Set(['classeEtCode', 'signature']);
 
 function fichiersSources(depart: string): string[] {
   if (!existsSync(depart)) return [];
@@ -116,6 +126,7 @@ function appelsDeJournal(chemin: string, source: string): Appel[] {
 describe('Journaux des fiches d’assiette — classe et code, jamais le message (D-251, P1-1)', () => {
   const appels = PERIMETRE
     .flatMap(dossier => fichiersSources(path.join(RACINE, dossier)))
+    .concat(FICHIERS_HORS_SRC)
     .flatMap(fichier => appelsDeJournal(fichier, readFileSync(fichier, 'utf8'))
       .map(a => ({ ...a, fichier: path.relative(RACINE, fichier) })));
 
@@ -127,6 +138,9 @@ describe('Journaux des fiches d’assiette — classe et code, jamais le message
     expect(appels.some(a => a.texte.startsWith('logger.'))).toBe(true);
     expect(appels.some(a => a.fichier.includes(path.join('biologie', 'import')))).toBe(true);
     expect(appels.some(a => a.fichier.includes(path.join('biology-library', 'import')))).toBe(true);
+    for (const lieu of [['portail', 'comptes-rendus'], ['biologie', 'resultats', 'bilan'], ['scripts', 'purgeComptesRendusEcheance']]) {
+      expect(appels.some(a => a.fichier.includes(path.join(...lieu)))).toBe(true);
+    }
   });
 
   it('aucun console.* ni logger.* ne recopie le message, la pile ou l’objet d’une erreur', () => {
@@ -150,6 +164,7 @@ describe('Journaux des fiches d’assiette — classe et code, jamais le message
     expect(fautes('try {} catch (err) { console.warn(\'x\', JSON.stringify(err)); }')).not.toEqual([]);
     // Ce qui ne recopie rien.
     expect(fautes('try {} catch (err) { console.error(\'x\', ...classeEtCode(err)); }')).toEqual([]);
+    expect(fautes('try {} catch (err) { console.error(\'x\', signature(err)); }')).toEqual([]);
     expect(fautes('try {} catch (err) { console.error(\'x\', err instanceof Error ? err.name : typeof err, code); }')).toEqual([]);
     expect(fautes('try {} catch (erreur) { logger.error({ event: E, metadata: { erreur: classeEtCode(erreur) } }); }')).toEqual([]);
     expect(fautes('try {} catch (error) { console.error(\'x\', resultat.error, { error: 1 }); }')).toEqual([]);
