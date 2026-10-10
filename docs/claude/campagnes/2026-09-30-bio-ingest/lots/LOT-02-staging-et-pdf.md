@@ -113,7 +113,7 @@ signature du resolver (#1289), puis la PR de clôture. Décisions : [[D-256]] (a
   extraction ; le compte rendu part entier (v4, v12) ; 202 puis `after()`, l'écran relit l'issue.
 - **Purge** ([[D-258]]) : à la dernière décision, au plus tard 30 jours après le dépôt (cron horaire).
   Premier passage constaté le 2026-10-03 à 00:15.
-- **Resolver signé** ([[D-259]], re-signé par [[D-260]]) : 101 entrées, 43 analytes ; « µg/L » ≡
+- **Resolver signé** ([[D-259]], re-signé par [[D-260]]) : 101 entrées, 43 analytes (**depuis [[D-263]] : 145 entrées, 79 analytes**, constat du lot de clôture) ; « µg/L » ≡
   « ng/mL » (notation, liste fermée) ; « Valider » pré-positionné sur les lignes rapprochées sans écart.
 - **Drapeau `WN_BIO_INGEST_ENABLED` posé** par le responsable le 2026-10-03 (06:30 UTC), effectif au
   redémarrage de 08:53 UTC. v4 et v12 servies, constatées en conteneur et relues contre le comportement

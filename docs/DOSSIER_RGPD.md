@@ -929,10 +929,24 @@ reste dans le trou ci-dessus.
   conditions que la purge s'appliquent : aucune ligne validée, et aucune
   extraction en cours.
 - **Ce que la purge n'efface pas** : les copies du document dans les
-  sauvegardes de l'hébergeur, jusqu'à expiration de leur rétention — **durée à
-  établir**, et à déclarer au patient une fois établie, pas avant.
+  sauvegardes de l'hébergeur, jusqu'à expiration de leur rétention. **Durée
+  établie le 2026-10-10 : 12 mois au plus après la purge.** Source : la
+  politique publiée par Scalingo pour le plan Business de la base
+  (`postgresql-business-512`). Elle garde une sauvegarde quotidienne 7 jours,
+  une hebdomadaire 8 semaines et une mensuelle 12 mois. La restauration à un
+  instant donné couvre 7 à 14 jours. Le constat par la CLI du même jour concorde :
+  une sauvegarde quotidienne sur les 8 derniers jours, puis une par dimanche
+  depuis le 2026-08-23, la première après le cutover. Une copie prise avant la
+  purge s'éteint donc au plus tard 12 mois après celle-ci. La borne mensuelle
+  n'est pas encore observable sur une base ouverte le 2026-08-22.
 - **Déclarée au patient** par « Vos données personnelles » **v12** (accusé
-  exigé), qui remplace « conservé dans votre dossier ».
+  exigé), qui remplace « conservé dans votre dossier ». **Les sauvegardes sont
+  déclarées par la v14 du 2026-10-10** (accusé exigé, motif de la v10). Le
+  texte a été validé par le responsable le même jour, au lot de clôture de
+  BIO-INGEST : « Des copies peuvent en subsister jusqu'à 12 mois après sa
+  suppression dans les sauvegardes de notre hébergeur, qui ne servent qu'à
+  rétablir le service en cas d'incident ; elles s'effacent ensuite
+  d'elles-mêmes. » Le reste de la v13 est inchangé.
 - **État** : migration appliquée et constatée par conteneur le 2026-10-02
   (PR 1, #1286) ; la décision qui purge, la relance refusée et le cron
   (`npm run bio:purge-echeance`, chaque heure) arrivent avec le code

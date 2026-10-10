@@ -149,4 +149,7 @@ Le constat relève du lot de clôture, avec la mise à jour du dossier RGPD.
 - **Seconde passe (mutations)** : jouée le 2026-10-10,
   `REVUE_CODEX_MUTATIONS_2026-10-10.md`. M16 et M18 survivaient ; leurs
   bancs sont ajoutés.
-- **Lot de clôture** : ouvert ensuite.
+- **Lot de clôture** : LOT-12, 2026-10-10 (`lots/LOT-12-cloture.md`). B2 y
+  est inscrite sous sa forme exacte (§1). D4 y est constatée, et la rétention
+  des sauvegardes établie puis déclarée par `donnees_confidentialite` v14
+  (§2).

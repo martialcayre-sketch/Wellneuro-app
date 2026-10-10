@@ -1370,6 +1370,46 @@ const DONNEES_CONFIDENTIALITE_V13: VersionDocumentTrust = {
   hash: 'afbb91c9319c5ab1572476de4078294fb16401d6b417e0e262018587bcdb5f48',
 };
 
+/*
+ * v14 du 2026-10-10 — LES SAUVEGARDES DU COMPTE RENDU PURGÉ ([[D-258]]).
+ * Texte validé par le responsable le 2026-10-10 (`DOSSIER_RGPD.md`,
+ * rubrique 8). La purge n'efface pas les copies que portent les sauvegardes de
+ * l'hébergeur ; D-258 en différait l'annonce jusqu'à ce que leur durée soit
+ * établie. Elle l'est : sauvegardes mensuelles gardées 12 mois (politique
+ * publiée par Scalingo pour le plan Business, constat concordant du
+ * 2026-10-10). Une phrase s'ajoute après celle de la purge, et rien d'autre.
+ *
+ * UN ACCUSÉ, POUR LE MOTIF DE LA v10 : une v14 sans accusé effacerait celui de
+ * la v13, encore dû.
+ */
+const DONNEES_CONFIDENTIALITE_V14: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v14',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V13.sections.map(section =>
+    section.titre === 'Quelles données sont recueillies ?'
+      ? {
+          ...section,
+          paragraphes: section.paragraphes.map(paragraphe =>
+            paragraphe.replace(
+              'et au plus tard 30 jours après son dépôt.',
+              'et au plus tard 30 jours après son dépôt. Des copies peuvent en subsister jusqu’à 12 mois après sa suppression dans les sauvegardes de notre hébergeur, qui ne servent qu’à rétablir le service en cas d’incident ; elles s’effacent ensuite d’elles-mêmes.',
+            ),
+          ),
+        }
+      : section,
+  ),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Le compte rendu d’analyses déposé reste supprimé au plus tard 30 jours après son dépôt. Des copies peuvent en subsister jusqu’à 12 mois dans les sauvegardes de notre hébergeur, qui ne servent qu’à rétablir le service en cas d’incident. Le reste ne change pas.',
+  publieLe: '2026-10-10',
+  requiresAcknowledgement: true,
+  hash: '3b6bbc909573171dae18ccae94b32374664dee242f2d70335cc36f5e4da41ed5',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1387,6 +1427,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V11,
   DONNEES_CONFIDENTIALITE_V12,
   DONNEES_CONFIDENTIALITE_V13,
+  DONNEES_CONFIDENTIALITE_V14,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,

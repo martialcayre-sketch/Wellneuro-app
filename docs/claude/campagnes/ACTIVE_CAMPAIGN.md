@@ -2,10 +2,7 @@
 
 ## Activité primaire
 
-**Campagne** : 2026-09-30-bio-ingest
-**Titre** : BIO-INGEST — acquisition des résultats biologiques
-**Statut** : active
-**Lot actif** : LOT-11
+Aucune campagne primaire active.
 
 ## Activités parallèles
 
@@ -21,7 +18,7 @@
 **Statut** : active
 **Lot actif** : LOT-02
 
-**Statut global** : active
+**Statut global** : idle
 **Mise à jour** : 2026-10-10
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.

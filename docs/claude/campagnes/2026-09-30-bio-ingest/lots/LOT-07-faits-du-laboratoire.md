@@ -126,3 +126,8 @@ laboratoire.
   mêmes conditions (texte brut seul) ; `D-267` §6 précisé.
 - Reste à constater après déploiement : une extraction réelle porte
   `version_prompt = 'bio-extraction-v2'` et des faits non nuls.
+  **Soldé au lot de clôture (2026-10-10)** : le procédé est passé en
+  `bio-extraction-v3` dès le 2026-10-06 (#1336 : NUL retiré, prompt et schéma
+  de la v2 inchangés), si bien qu'aucune extraction de production ne porte
+  `v2`. Les extractions `v3` réussies portent 38 intervalles lus sur 57
+  lignes, et aucune marque lue (`LOT-12-cloture.md` §3).

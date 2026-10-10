@@ -17,6 +17,11 @@ réussie ou en échec, avant la péremption d'un import en cours (5 min).
 Un appel dont le flux ne finit jamais est clos `delai_depasse` avant la
 péremption, au lieu de laisser l'import `en_cours` sans terme.
 
+**Portée (contre-revue B2, 2026-10-10)** : cela vaut tant que le processus
+vit. Un conteneur tué laisse l'import `en_cours` en base. Il est réputé
+abandonné au-delà de 5 min, puis clos au geste suivant ou à l'échéance de
+purge. Forme exacte : `LOT-12-cloture.md` §1.
+
 ## Cause
 
 L'option `timeout` du SDK Anthropic (0.107.0) n'arme son minuteur qu'autour du
