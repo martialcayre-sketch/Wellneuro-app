@@ -32,7 +32,9 @@
 --      fonction d'insertion est reprise de `bio_ingest_purge_compte_rendu_v1`,
 --      le refus du laboratoire pré-posé s'étend aux deux colonnes. Une fois
 --      l'extraction terminée, l'import est déjà figé tout entier
---      (`bio_ingest_import_avant_modification`, inchangée).
+--      (`bio_ingest_import_avant_modification`, inchangée) ;
+--   6. une extraction en ÉCHEC n'en porte aucun : ce que lit une réponse jugée
+--      invalide ne survit pas à la purge (revue de la PR #1397).
 --
 -- La purge ([[D-258]]) ne vide que `comptes_rendus_biologiques.contenu` : les
 -- commentaires survivent avec les lignes et l'import. Les lignes et imports
@@ -59,7 +61,9 @@ ALTER TABLE "imports_biologiques"
   ADD CONSTRAINT "imports_biologiques_commentaires_lus_check"
     CHECK ("commentaires_lus" ~ '\S' AND char_length("commentaires_lus") <= 4000),
   ADD CONSTRAINT "imports_biologiques_commentaires_non_transcrits_check"
-    CHECK (NOT "commentaires_non_transcrits" OR "commentaires_lus" IS NULL);
+    CHECK (NOT "commentaires_non_transcrits" OR "commentaires_lus" IS NULL),
+  ADD CONSTRAINT "imports_biologiques_commentaires_echec_check"
+    CHECK ("statut" <> 'echec' OR ("commentaires_lus" IS NULL AND NOT "commentaires_non_transcrits"));
 
 -- ── L'IMPORT : LES COMMENTAIRES SONT LUS, PAS POSÉS AVANT L'EXTRACTION ──────
 --
@@ -174,6 +178,6 @@ $$;
 --     Prisma sans `select` échoue dès les colonnes supprimées ;
 --  2. la migration compensatrice reprend les deux fonctions de
 --     `bio_ingest_transmission_patient_v1` et de
---     `bio_ingest_purge_compte_rendu_v1`, puis supprime les quatre CHECK et les
+--     `bio_ingest_purge_compte_rendu_v1`, puis supprime les cinq CHECK et les
 --     quatre colonnes. Les commentaires recopiés sont alors perdus : ils ne se
 --     restaurent pas, le document étant purgé.

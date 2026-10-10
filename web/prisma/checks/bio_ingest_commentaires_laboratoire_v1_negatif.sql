@@ -13,8 +13,8 @@
 --      intacts ;
 --   5. sur l'import, lus et jamais pré-posés : une insertion qui les porte est
 --      refusée ; la terminaison les pose ; un import terminé ne les change
---      plus.
--- Plus la structure (types, nullabilité, défauts, quatre CHECK).
+--      plus ; une extraction en échec n'en porte aucun.
+-- Plus la structure (types, nullabilité, défauts, cinq CHECK).
 --
 -- CHAQUE REFUS EST ISOLÉ ET RECONNU : `pg_temp.refus` exige le SQLSTATE
 -- attendu ET la contrainte (ou le message du trigger) visée.
@@ -142,8 +142,38 @@ BEGIN
 
   -- ── 5b. L'import : la terminaison les pose, et ses CHECK mordent ─────────
   PERFORM pg_temp.refus('commentaires d''import vides à la terminaison',
+    $q$UPDATE imports_biologiques SET statut = 'extrait', commentaires_lus = '' WHERE id = 'imp_c'$q$,
+    '23514', 'imports_biologiques_commentaires_lus_check');
+  PERFORM pg_temp.refus('commentaires d''import blancs à la terminaison',
     $q$UPDATE imports_biologiques SET statut = 'extrait', commentaires_lus = ' ' WHERE id = 'imp_c'$q$,
     '23514', 'imports_biologiques_commentaires_lus_check');
+  -- L'échec se joue sur un import SANS ligne : une extraction en échec qui en
+  -- laisserait serait refusée par le trigger, pour un autre motif.
+  INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
+  VALUES ('imp_e', 'PAT_CONTRAT_CL1', 'cr_c', 'modele-contrat', 'bio-extraction-v4', 'praticien@wellneuro.fr');
+  PERFORM pg_temp.refus('extraction en échec qui porte des commentaires',
+    $q$UPDATE imports_biologiques SET statut = 'echec', motif_echec = 'reponse_invalide',
+         commentaires_lus = 'Prélèvement hémolysé.' WHERE id = 'imp_e'$q$,
+    '23514', 'imports_biologiques_commentaires_echec_check');
+  PERFORM pg_temp.refus('extraction en échec qui porte le signal non transcrit',
+    $q$UPDATE imports_biologiques SET statut = 'echec', motif_echec = 'reponse_invalide',
+         commentaires_non_transcrits = true WHERE id = 'imp_e'$q$,
+    '23514', 'imports_biologiques_commentaires_echec_check');
+  -- Et l'échec sans commentaire passe : la contrainte ne refuse pas l'échec lui-même.
+  UPDATE imports_biologiques SET statut = 'echec', motif_echec = 'reponse_invalide' WHERE id = 'imp_e';
+  -- Le signal seul, commentaire NULL, est admis à la terminaison (cohérent) —
+  -- sur un second import, terminé et laissé tel quel.
+  INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
+  VALUES ('imp_s', 'PAT_CONTRAT_CL1', 'cr_c', 'modele-contrat', 'bio-extraction-v4', 'praticien@wellneuro.fr');
+  BEGIN
+    UPDATE imports_biologiques SET statut = 'extrait', commentaires_non_transcrits = true WHERE id = 'imp_s';
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION 'COMMENTAIRES: un import au signal « non transcrit » seul a été refusé (%)', SQLERRM;
+  END;
+  PERFORM pg_temp.refus('import terminé dont on retire le signal non transcrit',
+    $q$UPDATE imports_biologiques SET commentaires_non_transcrits = false WHERE id = 'imp_s'$q$,
+    'P0001', 'import figé');
   PERFORM pg_temp.refus('commentaires d''import au-delà de 4 000 caractères',
     $q$UPDATE imports_biologiques SET statut = 'extrait', commentaires_lus = repeat('x', 4001) WHERE id = 'imp_c'$q$,
     '23514', 'imports_biologiques_commentaires_lus_check');
@@ -232,9 +262,10 @@ BEGIN
     AND con.conname IN ('lignes_biologiques_candidates_commentaire_lu_check',
                         'lignes_biologiques_candidates_commentaire_non_transcrit_check',
                         'imports_biologiques_commentaires_lus_check',
-                        'imports_biologiques_commentaires_non_transcrits_check');
-  IF nb <> 4 THEN
-    RAISE EXCEPTION 'COMMENTAIRES: % CHECK présent(s) sur 4.', nb;
+                        'imports_biologiques_commentaires_non_transcrits_check',
+                        'imports_biologiques_commentaires_echec_check');
+  IF nb <> 5 THEN
+    RAISE EXCEPTION 'COMMENTAIRES: % CHECK présent(s) sur 5.', nb;
   END IF;
 
   -- Rien sur `resultats_biologiques` ([[D-256]] A5).
@@ -251,7 +282,7 @@ BEGIN
   DELETE FROM comptes_rendus_biologiques WHERE id_patient = 'PAT_CONTRAT_CL1';
   DELETE FROM patients WHERE id_patient = 'PAT_CONTRAT_CL1';
 
-  RAISE NOTICE 'COMMENTAIRES: absents par défaut (ligne, import) ; pré-pose à l''insertion refusée (2) ; vide, blanc, hors borne refusés et bornes admises (ligne 3 refus, import 2) ; signal seulement à côté de NULL (2 refus) ; terminaison qui pose, import terminé figé ; ligne figée à la décision (5 refus, décision passée commentaire intact) ; structure et A5 tenus.';
+  RAISE NOTICE 'COMMENTAIRES: absents par défaut (ligne, import) ; pré-pose à l''insertion refusée (2) ; vide, blanc, hors borne refusés et bornes admises (ligne 3 refus, import 3) ; signal seulement à côté de NULL (2 refus) ; terminaison qui pose, signal seul admis, import terminé figé (2 refus), échec sans commentaires (2 refus) ; ligne figée à la décision (5 refus, décision passée commentaire intact) ; structure et A5 tenus.';
 END $$;
 
 ROLLBACK;
