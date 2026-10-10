@@ -62,7 +62,8 @@ export type SafetyEffetIndesirableMetadata = {
 //      seul axe concerné n'existe pas — et l'inventer aurait supposé de relier
 //      un protocole à un axe candidat, ce que rien ne fait aujourd'hui.
 //   2. LA SÉVÉRITÉ DÉCLARÉE N'ENTRE PAS. Elle oriente déjà le MESSAGE PATIENT
-//      (`REGLE_ORIENTATION_EI`, v1, propriétaire praticien) ; la reprendre ici
+//      (`REGLE_ORIENTATION_EI`, v2 depuis [[D-278]] §1 — « incertaine » y a
+//      son propre message —, propriétaire praticien) ; la reprendre ici
 //      en ferait un second usage, gradué, d'une déclaration que rien ne vérifie
 //      — c'est-à-dire une gravité chiffrée déguisée (`DC-23`).
 //   3. LE VERROU A LE SENS INVERSE DES AUTRES, comme celui du LOT-04 : le

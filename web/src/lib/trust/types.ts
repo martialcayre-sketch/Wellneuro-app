@@ -77,6 +77,7 @@ export type SeveriteDeclaree = 'legere' | 'moderee' | 'severe' | 'incertaine';
 export type OrientationEI =
   | 'urgence_conseillee'
   | 'contact_medical_conseille'
+  | 'urgence_ou_contact_conseille'
   | 'revue_praticien';
 
 export type ActionPriseDeclaree = 'aucune' | 'reduit' | 'arrete' | 'ne_sait_pas';

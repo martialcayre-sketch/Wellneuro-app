@@ -63,7 +63,7 @@ describe('POST /api/portail/trust/signalement', () => {
       data: expect.objectContaining({
         orientation: 'urgence_conseillee',
         regleId: 'orientation-effet-indesirable',
-        regleVersion: 'v1',
+        regleVersion: 'v2',
         severiteDeclaree: 'severe',
       }),
     });
