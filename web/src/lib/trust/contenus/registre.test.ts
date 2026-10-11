@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les vingt-cinq documents attendus', () => {
+  it('expose les vingt-six documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -63,6 +63,8 @@ describe('registre des documents TRUST', () => {
       'usage_ia@v5',
       // `D-269` §6 — le patient peut déposer lui-même ; rien n'est relevé avant la lecture.
       'usage_ia@v6',
+      // `D-278` §3 — le relevé recopie aussi les commentaires imprimés.
+      'usage_ia@v7',
       'droits_patient@v1',
       'consentement_suivi@v2',
       // Même correction, dans le texte du consentement lui-même — l'occurrence
@@ -266,7 +268,7 @@ describe('registre des documents TRUST', () => {
     // ENTIER, identité comprise (arbitrage du 2026-10-01). Une mutation qui
     // retire « vous identifient » de l'un des deux textes rougit ici.
     const usageIa = getDocumentCourant('usage_ia');
-    expect(usageIa.version).toBe('v6');
+    expect(usageIa.version).toBe('v7');
     const texteIa = usageIa.sections.flatMap(s => s.paragraphes).join(' ');
     expect(texteIa).toContain('compte rendu que vous lui avez remis');
     expect(texteIa).toContain('aucune n’entre à votre dossier sans cette validation');
@@ -287,6 +289,7 @@ describe('registre des documents TRUST', () => {
     expect(jamais('v4')).toEqual(jamais('v3'));
     expect(jamais('v5')).toEqual(jamais('v3'));
     expect(jamais('v6')).toEqual(jamais('v3'));
+    expect(jamais('v7')).toEqual(jamais('v3'));
     expect(usageIa.requiresAcknowledgement).toBe(false);
 
     const donnees = getDocumentCourant('donnees_confidentialite');
@@ -383,8 +386,8 @@ describe('registre des documents TRUST', () => {
     // Une reformulation, même juste, rougit ici : ce qui est servi est ce qui a
     // été validé.
     const v5 = getVersion('usage_ia', 'v5');
-    const v6 = getDocumentCourant('usage_ia');
-    expect(v6.version).toBe('v6');
+    const v6 = getVersion('usage_ia', 'v6');
+    if (!v6) throw new Error('v6 absente du registre');
     const releve = (doc: typeof v5) =>
       (doc?.sections.find(s => s.titre === 'Où l’IA intervient')?.paragraphes ?? []).find(p =>
         p.startsWith('Le relevé des résultats'),
@@ -453,6 +456,52 @@ describe('registre des documents TRUST', () => {
     expect((v14.publieLe ?? '') > (v13?.publieLe ?? '')).toBe(true);
     // Même motif que les v10 à v13 : sans accusé, celui de la v13 encore dû s'effaçait.
     expect(v14.requiresAcknowledgement).toBe(true);
+  });
+
+  it('`D-278` §3 : la v7 déclare les commentaires recopiés et conservés, mot pour mot comme validée, et rien d’autre', () => {
+    // TEXTE VALIDÉ PAR LE RESPONSABLE LE 2026-10-11. DÉCLARER AVANT DE
+    // RELEVER : `bio-extraction-v4` ne se déploie qu'une fois cette version
+    // servie et constatée. Une reformulation, même juste, rougit ici.
+    const v6 = getVersion('usage_ia', 'v6');
+    const v7 = getDocumentCourant('usage_ia');
+    expect(v7.version).toBe('v7');
+    const releve = (doc: typeof v6) =>
+      (doc?.sections.find(s => s.titre === 'Où l’IA intervient')?.paragraphes ?? []).find(p =>
+        p.startsWith('Le relevé des résultats'),
+      ) ?? '';
+    const texte = releve(v7);
+    // LE PARAGRAPHE ENTIER, littéral indépendant du registre (revue Copilot de
+    // #1398) : une insertion ou une reformulation ailleurs rougit ici.
+    expect(texte).toBe(
+      'Le relevé des résultats de vos analyses biologiques : lorsque votre praticien dépose dans votre dossier le compte rendu que vous lui avez remis, ou que vous l’y déposez vous-même depuis votre espace, l’outil en relève les valeurs, leurs unités et la date du prélèvement, ainsi que l’intervalle de référence, la marque d’anomalie et les commentaires tels que le laboratoire les a imprimés, et les lui propose. Si vous le déposez vous-même, rien n’en est relevé tant que votre praticien n’a pas lancé la lecture : il vérifie d’abord qu’il s’agit bien de votre compte rendu. Votre praticien les relit et les valide : aucune n’entre à votre dossier sans cette validation. Ces mentions du laboratoire sont recopiées sans être complétées ni reformulées ; les commentaires restent dans votre dossier, même après la suppression du compte rendu. L’outil ne déclare lui-même aucune valeur normale ou anormale et n’en tire aucune conclusion. Pour cela, le compte rendu est transmis en entier, y compris votre nom et les autres mentions qui vous identifient.',
+    );
+    // Le résumé du changement montré au patient, validé avec le texte.
+    expect(v7.changeSummary).toBe(
+      'Le relevé des comptes rendus de vos analyses biologiques s’étend : l’outil recopie aussi les commentaires imprimés par le laboratoire, sans les compléter ni les reformuler. Votre praticien les voit quand il relit les résultats, et ils restent dans votre dossier après la suppression du compte rendu. L’outil ne déclare toujours lui-même aucune valeur normale ou anormale et n’en tire aucune conclusion. Rien d’autre ne change.',
+    );
+    expect(texte).toContain(
+      'ainsi que l’intervalle de référence, la marque d’anomalie et les commentaires tels que le laboratoire les a imprimés,',
+    );
+    expect(texte).toContain(
+      'Ces mentions du laboratoire sont recopiées sans être complétées ni reformulées ; les commentaires restent dans votre dossier, même après la suppression du compte rendu.',
+    );
+    expect(texte).not.toContain('Ces deux mentions');
+    // Ce qui était déclaré le reste : conclusion refusée, validation, dépôt, identité.
+    expect(texte).toContain('L’outil ne déclare lui-même aucune valeur normale ou anormale et n’en tire aucune conclusion');
+    expect(texte).toContain('aucune n’entre à votre dossier sans cette validation');
+    expect(texte).toContain('rien n’en est relevé tant que votre praticien n’a pas lancé la lecture');
+    expect(texte).toContain('y compris votre nom et les autres mentions qui vous identifient');
+    // Seul le paragraphe du relevé change.
+    const autres = (doc: typeof v6) =>
+      doc?.sections.map(s =>
+        s.titre === 'Où l’IA intervient'
+          ? { ...s, paragraphes: s.paragraphes.filter(p => !p.startsWith('Le relevé des résultats')) }
+          : s,
+      );
+    expect(autres(v7)).toEqual(autres(v6));
+    expect(v7.publieLe > (v6?.publieLe ?? '')).toBe(true);
+    // L'accusé se recueille sur l'écran de dépôt, comme pour la v6.
+    expect(v7.requiresAcknowledgement).toBe(false);
   });
 
   it('la v9 RETIRE la promesse que le logiciel ne tenait pas, et NOMME l’exception', () => {
