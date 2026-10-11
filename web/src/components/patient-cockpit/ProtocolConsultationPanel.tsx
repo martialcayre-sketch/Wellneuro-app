@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { apercuContenuPatient } from '@/lib/clinical-engine/contenuPatientProtocole';
+import { libellePrioriteRetenue } from '@/lib/clinical-engine/prioriteLibre';
 import type { DecisionCard, ProtocolDraft } from '@/lib/clinical-engine/types';
 import { ApercuPatientProtocole } from './ApercuPatientProtocole';
 
@@ -59,9 +60,9 @@ export function ProtocolConsultationPanel({
     );
   }
 
-  const selected = decisionCard.priorityCandidates.find(
-    candidate => candidate.candidateId === decisionCard.selectedMainPriority?.candidateId
-  );
+  // Le libellé du candidat retenu, ou celui de la priorité posée par le
+  // praticien ([[D-279]]).
+  const libelleRetenu = libellePrioriteRetenue(decisionCard);
   // LE CONTRAT TRANCHE, l'écran n'ajoute aucune condition. Un refus porte son
   // motif, et c'est ce motif qui est rendu au praticien.
   const apercu = apercuContenuPatient({ decisionCard, protocolDraft });
@@ -80,7 +81,7 @@ export function ProtocolConsultationPanel({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h3 id="consultation-close-title" className="text-sm font-semibold text-foreground">Résumé de clôture praticien</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{selected?.label ?? 'Priorité praticien indisponible'}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{libelleRetenu ?? 'Priorité praticien indisponible'}</p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-full border border-border px-2 py-1">{protocolDraft.status === 'practitioner_reviewed' ? 'Relu par le praticien' : 'Brouillon'}</span>

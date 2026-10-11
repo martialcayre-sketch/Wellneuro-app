@@ -218,11 +218,23 @@ describe('assembler — une proposition par candidat signé, jamais plus de troi
     ]);
   });
 
-  it('SANS CANDIDAT, AUCUNE PROPOSITION — même avec une anamnèse pleine', () => {
-    // Table non signée, abstention requise, aucune règle déclenchée : la
-    // machine n'a rien de signé à citer. Assembler sur la seule anamnèse
-    // ferait de Wellneuro l'auteur d'une proposition que rien ne fonde.
-    expect(assemblerPropositions(entrees({ candidats: [] }))).toEqual([]);
+  // D-279 §4, QUI AMENDE D-094 : sans candidat citable, UNE proposition faite
+  // des seuls mots du patient — ni règle, ni plainte, aucune phrase générée.
+  it('SANS CANDIDAT, UNE SEULE PROPOSITION : les mots du patient, rien d’autre', () => {
+    const [seule, ...reste] = assemblerPropositions(entrees({ candidats: [] }));
+    expect(reste).toEqual([]);
+    expect(seule.fragments.length).toBeGreaterThan(0);
+    expect(seule.fragments.every((fragment) => fragment.source.nature === 'anamnese')).toBe(true);
+  });
+
+  it('SANS CANDIDAT, sa caducité ne suit pas la plainte qu’elle ne cite pas', () => {
+    const [avec] = assemblerPropositions(entrees({ candidats: [] }));
+    const [sans] = assemblerPropositions(entrees({ candidats: [], plainte: null }));
+    expect(sans.hashSources).toBe(avec.hashSources);
+  });
+
+  it('SANS CANDIDAT NI ANAMNÈSE CITABLE, AUCUNE PROPOSITION', () => {
+    expect(assemblerPropositions(entrees({ candidats: [], anamnese: null }))).toEqual([]);
   });
 
   it('SANS SHA DE PÉRIMÈTRE, AUCUNE PROPOSITION', () => {

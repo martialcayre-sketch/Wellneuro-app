@@ -5,7 +5,15 @@ import { prisma } from '@/lib/prisma';
 import { RAISON_DIVERGENCE, refusChaineC1 } from '@/lib/clinical-engine/verifierChaineC1';
 import { teteDuFil } from '@/lib/clinical-engine/selectionPrioritePrisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import {
+  LIBELLE_PRIORITE_LIBRE_MAX,
+  estDomainePrioriteLibre,
+  normaliserLibellePrioriteLibre,
+  type PrioriteLibre,
+} from '@/lib/clinical-engine/prioriteLibre';
+import { identifiantPrioriteLibre } from '@/lib/clinical-engine/prioriteLibreServeur';
 import type { ConfirmedAssessmentEpisode, DecisionCard } from '@/lib/clinical-engine/types';
+import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 
 // SÉLECTION PRATICIEN D'UNE PRIORITÉ — [[D-127]].
 //
@@ -43,6 +51,8 @@ type PostBody = {
   episode?: ConfirmedAssessmentEpisode;
   decisionCard?: DecisionCard;
   candidateId?: string;
+  /** La priorité POSÉE PAR LE PRATICIEN ([[D-279]]) — exclusive de `candidateId`. */
+  prioriteLibre?: { domaine?: unknown; libelle?: unknown };
   rationale?: string;
 };
 
@@ -86,8 +96,12 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     if (!estChaineNonVide(episode.patientId) || !estChaineNonVide(decisionCard.decisionCardId)) {
       return echec('invalid', 'Identifiants de contrat manquants.', 400);
     }
-    if (!estChaineNonVide(body.candidateId)) {
-      return echec('invalid', 'candidateId est requis.', 400);
+    // DEUX FORMES, EXCLUSIVES ([[D-279]]) : un candidat du moteur, ou une
+    // priorité posée par le praticien. Les deux à la fois, c'est ne pas savoir
+    // ce que le praticien a choisi ; ni l'une ni l'autre, rien à écrire.
+    const formeLibre = body.prioriteLibre !== undefined && body.prioriteLibre !== null;
+    if (formeLibre === estChaineNonVide(body.candidateId)) {
+      return echec('invalid', 'Une priorité est requise : un candidat ou une priorité posée, pas les deux.', 400);
     }
 
     // LE MOTIF EST LA DÉCISION, pas une note facultative : c'est ce que la
@@ -125,38 +139,73 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       return echec(RAISON_DIVERGENCE, refusChaine, 409);
     }
 
-    // Le candidat doit être RÉELLEMENT classé par la carte que le serveur vient
-    // de recalculer. `buildDecisionCard` le re-vérifiera au prochain rendu de
-    // carte et jetterait sinon ; le dire ici rend le refus lisible plutôt que de
-    // laisser le cockpit tomber en « proposition servie » au tour suivant.
-    const candidatConnu = decisionCard.priorityCandidates.some(
-      candidat => candidat.candidateId === body.candidateId,
-    );
-    if (!candidatConnu) {
-      return echec(
-        'candidat_inconnu',
-        'Cette priorité ne figure pas parmi les candidates de la décision. Rechargez le cockpit.',
-        422,
-      );
-    }
-
-    // Une décision BLOQUÉE ne se tranche pas : abstention requise ou constat de
-    // sécurité ouvert. `buildDecisionCard` remet de toute façon la sélection à
-    // néant dans ce cas — écrire une ligne que le moteur ignorerait ferait
-    // croire au praticien qu'il a décidé.
-    if (decisionCard.abstention.status !== 'not_required') {
-      return echec(
-        'decision_bloquee',
-        'La revue demande une abstention : il n’y a pas de priorité à retenir tant qu’elle n’est pas levée.',
-        422,
-      );
-    }
+    // UN CONSTAT DE SÉCURITÉ BLOQUE TOUT, priorité posée comprise ([[D-279]]
+    // §2). `buildDecisionCard` écarterait de toute façon la sélection — écrire
+    // une ligne que le moteur ignorerait ferait croire au praticien qu'il a
+    // décidé.
     if (decisionCard.safetyFindingIds.length > 0) {
       return echec(
         'decision_bloquee',
         'Des constats de sécurité sont ouverts : ils se revoient avant de retenir une priorité.',
         422,
       );
+    }
+
+    let candidateId: string;
+    let libre: PrioriteLibre | null = null;
+    if (formeLibre) {
+      // LA PRIORITÉ POSÉE : domaine de la liste fermée, libellé normalisé —
+      // tout blanc Unicode replié, largeur nulle retirée (revue #1402, P2-4) —
+      // non vide, borné, et sans registre anxiogène : c'est l'intitulé que le
+      // patient lira seul en tête de son protocole. L'identifiant se dérive
+      // ICI, jamais à l'écran.
+      const { domaine, libelle } = body.prioriteLibre ?? {};
+      if (!estDomainePrioriteLibre(domaine)) {
+        return echec('domaine_inconnu', 'Choisissez un domaine dans la liste.', 422);
+      }
+      const libelleNormalise = typeof libelle === 'string' ? normaliserLibellePrioriteLibre(libelle) : '';
+      if (libelleNormalise === '') {
+        return echec('libelle_requis', 'Écrivez la priorité telle que le patient la lira.', 422);
+      }
+      if (libelleNormalise.length > LIBELLE_PRIORITE_LIBRE_MAX) {
+        return echec('libelle_trop_long', 'La priorité est trop longue (200 caractères maximum).', 422);
+      }
+      const terme = termeAnxiogene(libelleNormalise);
+      if (terme !== null) {
+        return echec(
+          'libelle_anxiogene',
+          `La priorité emploie « ${terme} ». Ce texte est lu seul par votre patient : reformulez-le.`,
+          422,
+        );
+      }
+      libre = { domaine, libelle: libelleNormalise };
+      candidateId = identifiantPrioriteLibre(libre);
+    } else {
+      candidateId = body.candidateId as string;
+      // Le candidat doit être RÉELLEMENT classé par la carte que le serveur
+      // vient de recalculer. `buildDecisionCard` le re-vérifiera au prochain
+      // rendu de carte et jetterait sinon ; le dire ici rend le refus lisible
+      // plutôt que de laisser le cockpit tomber en « proposition servie » au
+      // tour suivant.
+      const candidatConnu = decisionCard.priorityCandidates.some(
+        candidat => candidat.candidateId === candidateId,
+      );
+      if (!candidatConnu) {
+        return echec(
+          'candidat_inconnu',
+          'Cette priorité ne figure pas parmi les candidates de la décision. Rechargez le cockpit.',
+          422,
+        );
+      }
+      // Une abstention requise ne se tranche pas par un candidat : `DC-12`
+      // retire les candidats, la règle de [[D-127]] est inchangée.
+      if (decisionCard.abstention.status !== 'not_required') {
+        return echec(
+          'decision_bloquee',
+          'La revue demande une abstention : il n’y a pas de candidat à retenir tant qu’elle n’est pas levée.',
+          422,
+        );
+      }
     }
 
     // Le fil de cette carte, borné au patient. La tête est la ligne que rien ne
@@ -194,8 +243,9 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           // celle du dossier — mais elle rend le désaccord DISABLE le jour où
           // le dossier aura bougé.
           decisionCardInputHash: decisionCard.inputHash,
-          candidateId: body.candidateId,
+          candidateId,
           rationale,
+          ...(libre ? { domaineLibre: libre.domaine, libelleLibre: libre.libelle } : {}),
           // `selectedAt` reste le défaut de la base : le client ne date pas son
           // propre acte.
           selectedByEmail: emailPraticien(session) ?? '',

@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
-import { isDecisionBloquee, isSelectionPrioriteDue } from '@/lib/clinical-engine/decisionGuards';
+import { isSelectionPrioriteDue } from '@/lib/clinical-engine/decisionGuards';
+import { isPrioriteLibreOuverte } from '@/lib/clinical-engine/prioriteLibre';
 import type { ProtocolSaveState, RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import { EpisodeConfirmationPanel, type ContournementSaisi } from './EpisodeConfirmationPanel';
 import { recoupementsContradictions } from './recoupementContradictions';
@@ -13,6 +14,7 @@ import { MissingDataPanel } from './MissingDataPanel';
 import { DecisionSummaryCard } from './DecisionSummaryCard';
 import {
   SelectionPrioritePanel,
+  type ChoixPriorite,
   type EtatSelectionPriorite,
 } from './SelectionPrioritePanel';
 import { ProtocolMiniBuilder } from './ProtocolMiniBuilder';
@@ -188,8 +190,8 @@ export type EtatRuntimeClinique = {
   // `jalons[].mesure` déjà produits par lib/protocol/trajectoire (A8-2). Un T0
   // confirmé seul ouvre un cycle mais ne constitue PAS une réévaluation.
   reevaluationMesuree: boolean;
-  // Vrai quand aucun protocole ne peut être proposé (abstention non levée ou
-  // finding de sécurité). Remonté pour que la fiche puisse le signaler hors de
+  // Vrai quand aucun protocole ne peut être proposé — depuis [[D-279]], un
+  // constat de sécurité ouvert ; l'abstention seule ne ferme plus le protocole. Remonté pour que la fiche puisse le signaler hors de
   // la phase Actions : le panneau qui le détaille y est masqué par défaut, et
   // un bloqueur invisible est un bloqueur ignoré.
   decisionBloquee: boolean;
@@ -1537,7 +1539,12 @@ export function ClinicalRuntimeSection({
   // toujours par se contredire. Elles se lisent maintenant l'une sous l'autre.
   const sourceRefsEpisode = fixture?.snapshot.sourceRefs
     ?? (runtime?.status === 'ready' ? runtime.snapshot?.sourceRefs ?? [] : []);
-  const decisionBloquee = isDecisionBloquee(decisionCard);
+  // « AUCUN PROTOCOLE NE PEUT ÊTRE PROPOSÉ » — depuis [[D-279]], seul un constat
+  // de sécurité le dit : sans candidat, ou sous abstention pour recueil
+  // incomplet, la priorité posée par le praticien ouvre encore le protocole, et
+  // c'est `selectionPrioriteDue` qui conduit au geste. Avant, ces dossiers
+  // affichaient « Protocole bloqué ».
+  const decisionBloquee = decisionCard !== null && !isPrioriteLibreOuverte(decisionCard);
   // `null` quand la carte n'est pas lisible — jamais `false`, qui affirmerait
   // qu'il n'y a rien à faire. Voir la doctrine sur le champ du même nom.
   const selectionPrioriteDue = decisionCard === null ? null : isSelectionPrioriteDue(decisionCard);
@@ -1641,7 +1648,7 @@ export function ClinicalRuntimeSection({
   // état local ferait diverger l'écran de ce que le serveur servira au prochain
   // GET, et le POST de version suivant partirait sur une carte que
   // `refusChaineC1` rejetterait en 409.
-  const retenirPriorite = async (candidateId: string, motif: string) => {
+  const retenirPriorite = async (choix: ChoixPriorite, motif: string) => {
     if (fixture || !runtime || runtime.status !== 'ready') return;
     setSelectionState('saving');
     setSelectionError(null);
@@ -1652,7 +1659,9 @@ export function ClinicalRuntimeSection({
         body: JSON.stringify({
           episode: runtime.snapshot.assessmentEpisode,
           decisionCard: runtime.decisionCard,
-          candidateId,
+          // Un candidat, ou une priorité posée ([[D-279]]) — exclusifs, la
+          // route refuse les deux à la fois.
+          ...choix,
           rationale: motif,
         }),
       });
@@ -2248,7 +2257,7 @@ export function ClinicalRuntimeSection({
           selectionEcartee={runtime?.status === 'ready' && runtime.selectionEcartee === true}
           etat={selectionState}
           erreur={selectionError}
-          onRetenir={(candidateId, motif) => { void retenirPriorite(candidateId, motif); }}
+          onRetenir={(choix, motif) => { void retenirPriorite(choix, motif); }}
         />
       )}
       {/* CONSTATS DE CRITÈRES ([[D-138]]) — juste après le geste de priorité,

@@ -1,8 +1,8 @@
 import { MAX_ACTIONS_PROTOCOLE_21J } from './types';
 import { ACTION_ID_ORIENTATION, estActionOrientation, orientationRequise } from './orientationAdressage';
+import { estSelectionLibre } from './prioriteLibre';
 import type {
   DecisionCard,
-  DecisionPriorityCandidate,
   PatientProtocolAction,
   ProtocolDraft,
   ProtocolInterventionStatus,
@@ -87,17 +87,29 @@ export type ContenuPatientProtocole = {
 export function garderCoherencePatient(input: {
   decisionCard: DecisionCard;
   protocolDraft: ProtocolDraft;
-}): { selectedPriorityId: string; candidate: DecisionPriorityCandidate; reviewedAt: string } {
+}): { selectedPriorityId: string; priorityLabel: string; reviewedAt: string } {
   const { decisionCard, protocolDraft } = input;
-  if (decisionCard.abstention.status !== 'not_required') {
-    throw new TypeError('L’aperçu patient exige une décision sans abstention requise.');
-  }
   if (decisionCard.safetyFindingIds.length > 0) {
     throw new TypeError('Les constats de sécurité bloquent la validation pour diffusion.');
   }
   const selected = decisionCard.selectedMainPriority;
-  const candidate = selected && decisionCard.priorityCandidates.find(item => item.candidateId === selected.candidateId);
-  if (!selected || !candidate) throw new TypeError('Une priorité praticien valide est requise.');
+  // LA PRIORITÉ POSÉE PAR LE PRATICIEN ([[D-279]] §2) passe sous abstention
+  // pour recueil incomplet ; son intitulé est le libellé qu'il a écrit — texte
+  // praticien, gardé contre le vocabulaire anxiogène à l'écriture. Un candidat
+  // du moteur exige toujours une décision sans abstention, et son intitulé
+  // reste celui de la règle signée.
+  let priorityLabel: string;
+  if (estSelectionLibre(selected)) {
+    priorityLabel = selected.libre.libelle;
+  } else {
+    if (decisionCard.abstention.status !== 'not_required') {
+      throw new TypeError('L’aperçu patient exige une décision sans abstention requise.');
+    }
+    const candidate = selected && decisionCard.priorityCandidates.find(item => item.candidateId === selected.candidateId);
+    if (!selected || !candidate) throw new TypeError('Une priorité praticien valide est requise.');
+    priorityLabel = candidate.label;
+  }
+  if (!selected) throw new TypeError('Une priorité praticien valide est requise.');
   if (protocolDraft.status !== 'practitioner_reviewed' || !protocolDraft.review) {
     throw new TypeError('Le protocole doit être relu par le praticien avant diffusion.');
   }
@@ -116,7 +128,7 @@ export function garderCoherencePatient(input: {
     : porteOrientation) {
     throw new TypeError('L’orientation vers le médecin ne correspond pas aux signaux adressés de la décision.');
   }
-  return { selectedPriorityId: selected.candidateId, candidate, reviewedAt: protocolDraft.review.reviewedAt };
+  return { selectedPriorityId: selected.candidateId, priorityLabel, reviewedAt: protocolDraft.review.reviewedAt };
 }
 
 /**
@@ -126,10 +138,10 @@ export function garderCoherencePatient(input: {
  */
 export function projeterContenuPatient(input: {
   protocolDraft: ProtocolDraft;
-  candidate: DecisionPriorityCandidate;
+  priorityLabel: string;
   patientLimitations?: string[];
 }): ContenuPatientProtocole {
-  const { protocolDraft, candidate } = input;
+  const { protocolDraft } = input;
   // L'orientation vers le médecin ([[D-257]] §8) est HORS BORNE : la borne porte
   // sur les interventions. Le moteur l'a déjà exigée en tête, au
   // texte signé, quand la carte porte un constat adressé.
@@ -164,7 +176,7 @@ export function projeterContenuPatient(input: {
   }
 
   return {
-    priorityLabel: nonEmpty(candidate.label, 'libellé de priorité'),
+    priorityLabel: nonEmpty(input.priorityLabel, 'libellé de priorité'),
     purpose: nonEmpty(protocolDraft.purpose, 'raison d’être'),
     followUpCriterion: nonEmpty(protocolDraft.followUpCriterion, 'critère observable à J21'),
     adviceSheetRef: protocolDraft.adviceSheetRef?.trim() || null,
@@ -186,10 +198,10 @@ export function buildContenuPatientProtocole(input: {
   protocolDraft: ProtocolDraft;
   patientLimitations?: string[];
 }): ContenuPatientProtocole {
-  const { candidate } = garderCoherencePatient(input);
+  const { priorityLabel } = garderCoherencePatient(input);
   return projeterContenuPatient({
     protocolDraft: input.protocolDraft,
-    candidate,
+    priorityLabel,
     patientLimitations: input.patientLimitations,
   });
 }

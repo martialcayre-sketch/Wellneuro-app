@@ -1,4 +1,5 @@
 import { canonicalSha256 } from './canonical';
+import { estSelectionLibre } from './prioriteLibre';
 import { assertRefAssietteDIndication } from '../food-compass/plates';
 import {
   ACTION_ID_ORIENTATION,
@@ -65,11 +66,19 @@ function uniqueSorted(values: string[]): string[] {
 }
 
 function validateDecisionCard(card: DecisionCard): string {
-  if (card.abstention.status !== 'not_required') {
-    throw new TypeError('Le protocole exige une évaluation explicite sans abstention requise.');
-  }
+  // LE CONSTAT DE SÉCURITÉ D'ABORD, et pour toute priorité ([[D-279]] §2).
   if (card.safetyFindingIds.length > 0) {
     throw new TypeError('Les constats de sécurité doivent être revus avant de préparer le protocole.');
+  }
+  // LA PRIORITÉ POSÉE PAR LE PRATICIEN ne dépend d'aucun candidat ni de la
+  // mesure dont l'absence suspend leur proposition : elle suffit au protocole,
+  // abstention pour recueil incomplet comprise. `buildDecisionCard` l'a déjà
+  // vérifiée contre elle-même avant de la laisser entrer dans la carte.
+  if (estSelectionLibre(card.selectedMainPriority)) {
+    return card.selectedMainPriority.candidateId;
+  }
+  if (card.abstention.status !== 'not_required') {
+    throw new TypeError('Le protocole exige une évaluation explicite sans abstention requise.');
   }
   const selectedId = card.selectedMainPriority?.candidateId;
   if (!selectedId || !card.priorityCandidates.some(candidate => candidate.candidateId === selectedId)) {

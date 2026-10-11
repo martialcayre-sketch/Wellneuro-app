@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef } from 'react';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
+import { estSelectionLibre, libelleDomainePrioriteLibre } from '@/lib/clinical-engine/prioriteLibre';
 import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 import { dateDePassation, passationsDuCandidat } from './passationsDuCandidat';
 import { ATTESTATION_CLASSEMENT, PORTEE_ATTESTATION, attestationValide } from '@/lib/clinical/perimetreClassementV1';
@@ -108,7 +109,13 @@ export function DecisionSummaryCard({
   const selected = decisionCard.priorityCandidates.find(
     candidate => candidate.candidateId === decisionCard.selectedMainPriority?.candidateId
   );
-  const current = selected ?? proposed ?? null;
+  // LA PRIORITÉ POSÉE PAR LE PRATICIEN ([[D-279]]) n'est pas un candidat : la
+  // carte ne la remplace pas par la proposition du moteur, et n'affiche sous
+  // elle ni motif de règle ni passations — elle n'en a pas.
+  const selectionLibre = estSelectionLibre(decisionCard.selectedMainPriority)
+    ? decisionCard.selectedMainPriority.libre
+    : null;
+  const current = selectionLibre ? null : selected ?? proposed ?? null;
   // LE MOTIF DU BLOCAGE EST NOMMÉ, PAS SEULEMENT LE BLOCAGE ([[D-099]], C1 de
   // la revue). Deux motifs d'abstention existent et ils appellent des gestes
   // opposés : un signal d'alerte déclaré appelle un adressage médical, un canal
@@ -122,11 +129,13 @@ export function DecisionSummaryCard({
   const passations = current
     ? passationsDuCandidat({ responseIds: current.provenance.responseIds, sourceRefs })
     : [];
-  const status = decisionCard.abstention.status === 'required'
-    ? bloqueParSecurite
-      ? 'Décision suspendue — signal d’alerte déclaré, avis médical à évaluer en priorité'
-      : 'Décision suspendue — revue praticien requise'
-    : current ? current.label : 'Aucune priorité proposée';
+  const status = decisionCard.abstention.status === 'required' && bloqueParSecurite
+    ? 'Décision suspendue — signal d’alerte déclaré, avis médical à évaluer en priorité'
+    : selectionLibre
+      ? selectionLibre.libelle
+      : decisionCard.abstention.status === 'required'
+        ? 'Décision suspendue — revue praticien requise'
+        : current ? current.label : 'Aucune priorité proposée';
   // DEUX GROUPES, PAR PROVENANCE — arbitrage du responsable, 2026-09-10, sur le
   // bilan descriptif du classement (2026-09-09).
   //
@@ -202,6 +211,12 @@ export function DecisionSummaryCard({
         summary={(
           <div>
             <p className="text-base font-semibold">{status}</p>
+            {selectionLibre && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Priorité posée par le praticien — {libelleDomainePrioriteLibre(selectionLibre.domaine)}
+                {decisionCard.abstention.status === 'required' ? ' · aucun axe proposé (recueil incomplet)' : ''}
+              </p>
+            )}
             {current && <p className="mt-1 font-mono text-xs text-muted-foreground">Statut : {current.confidence}</p>}
           </div>
         )}

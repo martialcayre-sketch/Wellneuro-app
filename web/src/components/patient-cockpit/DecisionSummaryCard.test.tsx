@@ -293,3 +293,31 @@ describe('DecisionSummaryCard — le motif de la gate atteint l’écran', () =>
   });
 
 });
+
+// D-279 — LA PRIORITÉ POSÉE PAR LE PRATICIEN est le titre de la carte : jamais
+// remplacée par la proposition du moteur, et dite telle.
+describe('DecisionSummaryCard — priorité posée par le praticien (D-279)', () => {
+  const selection = {
+  candidateId: 'libre:sommeil:0123456789abcdef', selectedAt: '2026-01-01T00:00:00.000Z',
+  selectedBy: 'practitioner' as const, rationale: 'Aucun axe proposé.',
+  libre: { domaine: 'sommeil' as const, libelle: 'Retrouver un sommeil réparateur' },
+};
+
+  it('titre la carte du libellé du praticien, avec son domaine', () => {
+    const { decisionCard } = buildValidationErgoC1Fixture();
+    render(<DecisionSummaryCard decisionCard={{ ...decisionCard, selectedMainPriority: selection }} />);
+    expect(screen.getByText('Retrouver un sommeil réparateur')).toBeTruthy();
+    expect(screen.getByText(/Priorité posée par le praticien — Sommeil \/ insomnie/)).toBeTruthy();
+    expect(screen.queryByText(decisionCard.priorityCandidates[0].label)).toBeNull();
+  });
+
+  it('sous recueil incomplet, dit qu’aucun axe n’est proposé', () => {
+    const { decisionCard } = buildValidationErgoC1Fixture();
+    render(<DecisionSummaryCard decisionCard={{
+      ...decisionCard, priorityCandidates: [], proposedMainPriorityId: null, selectedMainPriority: selection,
+      abstention: { status: 'required', ruleIds: ['R'], limitations: [] }, safetyFindingIds: [],
+    }} />);
+    expect(screen.getByText('Retrouver un sommeil réparateur')).toBeTruthy();
+    expect(screen.getByText(/aucun axe proposé \(recueil incomplet\)/)).toBeTruthy();
+  });
+});

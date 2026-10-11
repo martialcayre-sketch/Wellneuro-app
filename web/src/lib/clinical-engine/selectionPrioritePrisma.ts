@@ -1,5 +1,6 @@
 import { prisma } from '../prisma';
 import { construireChaineC1, type ChaineC1, type EntreeChaineC1 } from './chaineC1';
+import type { DomainePrioriteLibre } from './prioriteLibre';
 import type { DecisionPrioritySelection } from './types';
 
 // LECTURE DE LA SÉLECTION PRATICIEN D'UNE PRIORITÉ — [[D-127]].
@@ -28,6 +29,8 @@ const CHAMPS = {
   id: true,
   candidateId: true,
   rationale: true,
+  domaineLibre: true,
+  libelleLibre: true,
   selectedAt: true,
   supersedesSelectionId: true,
 } as const;
@@ -36,6 +39,8 @@ type LigneSelection = {
   id: string;
   candidateId: string;
   rationale: string;
+  domaineLibre?: string | null;
+  libelleLibre?: string | null;
   selectedAt: Date;
   supersedesSelectionId: string | null;
 };
@@ -142,5 +147,14 @@ export async function lireSelectionPriorite(
     selectedAt: tete.selectedAt.toISOString(),
     selectedBy: 'practitioner',
     rationale: tete.rationale,
+    // LA PRIORITÉ POSÉE PAR LE PRATICIEN ([[D-279]]) : clé `libre` posée
+    // seulement quand la ligne en porte une. Absente sinon — une clé de plus
+    // sur un candidat du moteur changerait l'empreinte de chaque carte déjà
+    // ancrée. Un domaine hors liste ne peut pas sortir de la base (CHECK) ;
+    // s'il en sortait, `buildDecisionCard` le refuserait et la sélection
+    // serait écartée, jamais servie.
+    ...(tete.domaineLibre && tete.libelleLibre
+      ? { libre: { domaine: tete.domaineLibre as DomainePrioriteLibre, libelle: tete.libelleLibre } }
+      : {}),
   };
 }

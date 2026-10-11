@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildProtocolDraft, reviseProtocolDraft } from './protocolDraft';
 import { actionOrientation, ACTION_ID_ORIENTATION } from './orientationAdressage';
 import { projeterContenuPatient } from './contenuPatientProtocole';
+import { identifiantPrioriteLibre } from './prioriteLibreServeur';
 import { MAX_ACTIONS_PROTOCOLE_21J, type DecisionCard, type ProtocolAction } from './types';
 
 function card(overrides: Partial<DecisionCard> = {}): DecisionCard {
@@ -73,6 +74,32 @@ describe('ProtocolDraft', () => {
     expect(() => build({ decisionCard: card({ selectedMainPriority: null }) })).toThrow('priorité sélectionnée');
     expect(() => build({ decisionCard: card({ abstention: { status: 'required', ruleIds: ['R'], limitations: [] } }) })).toThrow('abstention');
     expect(() => build({ decisionCard: card({ safetyFindingIds: ['safety-1'] }) })).toThrow('sécurité');
+  });
+
+  // D-279 §2 — LA PRIORITÉ POSÉE PAR LE PRATICIEN suffit au protocole : sans
+  // candidat, et sous abstention pour recueil incomplet. Un constat de
+  // sécurité la refuse comme il refuse tout.
+  it('construit le protocole sur une priorité posée par le praticien, sans candidat ni sous recueil incomplet', () => {
+    const libre = { domaine: 'sommeil' as const, libelle: 'Retrouver un sommeil réparateur' };
+    const selection = {
+      candidateId: identifiantPrioriteLibre(libre), selectedAt: '2026-01-01T00:00:00.000Z',
+      selectedBy: 'practitioner' as const, rationale: 'Aucun axe proposé.', libre,
+    };
+    const sansCandidat = build({ decisionCard: card({ priorityCandidates: [], proposedMainPriorityId: null, selectedMainPriority: selection }) });
+    expect(sansCandidat.selectedPriorityId).toBe(selection.candidateId);
+    const recueilIncomplet = build({ decisionCard: card({
+      priorityCandidates: [], proposedMainPriorityId: null, selectedMainPriority: selection,
+      abstention: { status: 'required', ruleIds: ['R'], limitations: [] },
+    }) });
+    expect(recueilIncomplet.selectedPriorityId).toBe(selection.candidateId);
+    expect(() => build({ decisionCard: card({
+      priorityCandidates: [], proposedMainPriorityId: null, selectedMainPriority: selection, safetyFindingIds: ['safety-1'],
+    }) })).toThrow('sécurité');
+  });
+
+  it('un identifiant `libre:` sans libellé n’ouvre rien : il retombe sur la règle des candidats', () => {
+    const selection = { candidateId: 'libre:sommeil:0123456789abcdef', selectedAt: '2026-01-01T00:00:00.000Z', selectedBy: 'practitioner' as const, rationale: 'Forgé.' };
+    expect(() => build({ decisionCard: card({ selectedMainPriority: selection }) })).toThrow('priorité sélectionnée');
   });
 
   it('interdit produit, forme, marque ou dose dans une intention de complément', () => {
@@ -149,7 +176,7 @@ describe('ProtocolDraft — orientation sur signal adressé', () => {
 
   it('l’aperçu patient porte l’orientation en tête, hors borne', () => {
     const draft = build({ decisionCard: ADRESSEE, actions: avecOrientation(action('a1'), action('a2'), action('a3')) });
-    const contenu = projeterContenuPatient({ protocolDraft: draft, candidate: ADRESSEE.priorityCandidates[0] });
+    const contenu = projeterContenuPatient({ protocolDraft: draft, priorityLabel: ADRESSEE.priorityCandidates[0].label });
     expect(contenu.actions.map(a => a.actionId)).toEqual([ACTION_ID_ORIENTATION, 'a1', 'a2', 'a3']);
     expect(contenu.actions[0]).toEqual({
       actionId: ACTION_ID_ORIENTATION, type: 'medical_referral', title: 'Consulter votre médecin',

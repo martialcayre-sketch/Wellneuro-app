@@ -97,12 +97,15 @@ type Options = {
   // où un bouton d'assignation peut exister — donc la seule où le garde
   // d'identité du destinataire est observable.
   orientation?: 'inactif' | 'actif';
-  // « bloquee » = abstention clinique non levée : aucun protocole proposable.
+  // « bloquee » = constat de sécurité ouvert : aucun protocole proposable —
+  // depuis [[D-279]], le seul cas qui ferme tout geste.
+  // `recueil_incomplet` : abstention sans constat de sécurité, aucun candidat —
+  // la priorité posée par le praticien reste offerte.
   // `sans_priorite` : épisode confirmé, aucune priorité retenue par le
   // praticien — l'état de six dossiers réels sur sept au 2026-09-13.
-  // `sans_candidat` : la table des priorités n'est pas signée, donc aucun geste
-  // n'est offert en phase Décision.
-  decision?: 'actionnable' | 'bloquee' | 'sans_priorite' | 'sans_candidat';
+  // `sans_candidat` : la table des priorités n'est pas signée, aucun candidat —
+  // depuis [[D-279]], la priorité posée reste due.
+  decision?: 'actionnable' | 'bloquee' | 'recueil_incomplet' | 'sans_priorite' | 'sans_candidat';
   /** L'état de la phase 3 servi par `objectifs/etat-phase` (`D-161` §10). */
   phase3?: 'complete' | 'vide' | 'sans-synthese' | 'erreur' | 'demande-en-attente';
   reponses?:
@@ -459,7 +462,16 @@ function stubFetch(options: Options = {}) {
   const trajectoire = options.trajectoire ?? 'ok';
   const carte =
     options.decision === 'bloquee'
-      ? decisionCard({ abstention: { status: 'required', ruleIds: ['R'], limitations: [] } })
+      ? decisionCard({
+        abstention: { status: 'required', ruleIds: ['R'], limitations: [] },
+        selectedMainPriority: null, priorityCandidates: [], proposedMainPriorityId: null,
+        safetyFindingIds: ['SAFETY_1'],
+      })
+      : options.decision === 'recueil_incomplet'
+        ? decisionCard({
+          abstention: { status: 'required', ruleIds: ['R'], limitations: [] },
+          selectedMainPriority: null, priorityCandidates: [], proposedMainPriorityId: null,
+        })
       : options.decision === 'sans_priorite'
         ? decisionCard({ selectedMainPriority: null })
         : options.decision === 'sans_candidat'
@@ -1219,13 +1231,20 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(screen.getByText(/Protocole bloqué/i)).toBeTruthy();
   });
 
-  it('statut Décision : sans candidat classé, aucun geste n’est dû — le rail ne l’invente pas', async () => {
-    await rendreFiche({ runtime: 'ready', decision: 'sans_candidat' });
+  // D-279 : SANS CANDIDAT, OU SOUS RECUEIL INCOMPLET, LA PRIORITÉ POSÉE EST
+  // DUE. Avant, le rail disait « renseignée » et la fiche « Protocole bloqué » :
+  // le dossier restait sans protocole, sans geste pour en sortir.
+  it.each(['sans_candidat', 'recueil_incomplet'] as const)(
+    'statut Décision : %s — la priorité à poser est due, rien n’est « bloqué »',
+    async (decision) => {
+      await rendreFiche({ runtime: 'ready', decision });
 
-    const onglet = screen.getByRole('tab', { name: /Décision 21 j/i });
-    await waitFor(() => expect(onglet.textContent).toContain('renseignée'));
-    expect(screen.queryByText(/Priorité non retenue/i)).toBeNull();
-  });
+      const onglet = screen.getByRole('tab', { name: /Décision 21 j/i });
+      await waitFor(() => expect(onglet.textContent).toContain('à traiter'));
+      expect(await screen.findByText(/Priorité non retenue/i)).toBeTruthy();
+      expect(screen.queryByText(/Protocole bloqué/i)).toBeNull();
+    },
+  );
 
   it('statut Réévaluation : un T0 confirmé sans jalon mesuré ne vaut pas « renseignée »', async () => {
     await rendreFiche({ runtime: 'ready', trajectoire: 'cycleT0Seul' });

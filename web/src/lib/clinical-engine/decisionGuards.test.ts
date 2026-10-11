@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   isDecisionBloquee,
+  isGesteCandidatDisponible,
   isSelectionPrioriteDue,
   type DecisionBloquanteLisible,
   type SelectionPrioriteLisible,
@@ -76,17 +77,35 @@ describe('isSelectionPrioriteDue', () => {
     }))).toBe(false);
   });
 
-  // LES DEUX CAS OÙ LE PANNEAU SE RETIRE. Les réclamer serait envoyer le
-  // praticien sur une phase muette — le cul-de-sac déplacé d'un cran.
-  it('n’est pas dû quand la décision est bloquée : le geste n’est pas offert', () => {
-    expect(isSelectionPrioriteDue(carteSelection({
-      abstention: { status: 'required', ruleIds: ['RULE_A'], limitations: [] },
-    }))).toBe(false);
+  // UN CONSTAT DE SÉCURITÉ RETIRE TOUT GESTE ([[D-279]] §2) : ni candidat, ni
+  // priorité posée. Le réclamer serait envoyer le praticien sur une phase
+  // muette — le cul-de-sac déplacé d'un cran.
+  it('n’est pas dû quand un constat de sécurité est ouvert : aucun geste n’est offert', () => {
     expect(isSelectionPrioriteDue(carteSelection({ safetyFindingIds: ['SAFETY_1'] }))).toBe(false);
+    expect(isSelectionPrioriteDue(carteSelection({ safetyFindingIds: ['SAFETY_1'], priorityCandidates: [] }))).toBe(false);
   });
 
-  it('n’est pas dû quand aucun candidat n’est classé — table de priorités non signée', () => {
-    expect(isSelectionPrioriteDue(carteSelection({ priorityCandidates: [] }))).toBe(false);
+  // D-279 : SANS CANDIDAT, OU SOUS RECUEIL INCOMPLET, LE GESTE RESTE DÛ — la
+  // priorité posée par le praticien l'est. Avant, ces deux dossiers restaient
+  // sans protocole.
+  it('reste dû sans candidat classé : la priorité posée par le praticien est offerte', () => {
+    expect(isSelectionPrioriteDue(carteSelection({ priorityCandidates: [] }))).toBe(true);
+  });
+
+  it('reste dû sous abstention pour recueil incomplet, sans constat de sécurité', () => {
+    expect(isSelectionPrioriteDue(carteSelection({
+      abstention: { status: 'required', ruleIds: ['RULE_A'], limitations: [] },
+      priorityCandidates: [],
+    }))).toBe(true);
+  });
+
+  it('le choix d’un CANDIDAT reste fermé sous abstention ou sans candidat (règle de D-127 inchangée)', () => {
+    expect(isGesteCandidatDisponible(carteSelection())).toBe(true);
+    expect(isGesteCandidatDisponible(carteSelection({
+      abstention: { status: 'required', ruleIds: ['RULE_A'], limitations: [] },
+    }))).toBe(false);
+    expect(isGesteCandidatDisponible(carteSelection({ priorityCandidates: [] }))).toBe(false);
+    expect(isGesteCandidatDisponible(carteSelection({ safetyFindingIds: ['SAFETY_1'] }))).toBe(false);
   });
 
   // Même discipline que la garde sœur : une absence de carte ne se lit pas.

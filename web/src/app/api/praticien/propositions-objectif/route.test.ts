@@ -304,8 +304,9 @@ describe('/api/praticien/propositions-objectif', () => {
   });
 
   it('n’écrit rien, et ne rend rien, sans candidat ni SHA de périmètre', async () => {
-    // Table non signée, abstention requise, aucune règle déclenchée : la
-    // machine n'a rien de signé à citer.
+    // Sans SHA de périmètre, rien n'est assemblé (fail-closed de `D-115`). Sans
+    // candidat, rien non plus ICI parce que l'anamnèse simulée est vide : avec
+    // une anamnèse, [[D-279]] §4 assemble les mots du patient (banc suivant).
     for (const corps of [corpsAssembler({ candidats: [] }), corpsAssembler({ shaPerimetre: '' })]) {
       vi.clearAllMocks();
       prisma.propositionObjectif.findMany.mockResolvedValue([]);
@@ -315,6 +316,25 @@ describe('/api/praticien/propositions-objectif', () => {
       expect(await corpsDe(reponse)).toMatchObject({ propositions: [] });
       expect(prisma.propositionObjectif.createMany).not.toHaveBeenCalled();
     }
+  });
+
+  // D-279 §4 : sans candidat, UNE proposition faite des seuls mots du patient.
+  it('sans candidat, assemble les seuls mots du patient', async () => {
+    prisma.consultation.findFirst.mockResolvedValue({
+      anamnese: {
+        motif_principal: 'Je me réveille à trois heures.',
+        objectif_prioritaire: 'Dormir d’une traite.',
+        attentes: ['Comprendre pourquoi'],
+      },
+      dateValidation: new Date('2026-08-20T09:00:00.000Z'),
+      createdAt: new Date('2026-08-19T09:00:00.000Z'),
+    });
+    const reponse = await POST(postRequest(corpsAssembler({ candidats: [] })));
+    expect(reponse.status).toBe(200);
+    const { data } = prisma.propositionObjectif.createMany.mock.calls[0][0];
+    expect(data).toHaveLength(1);
+    const natures = data[0].fragments.map((f: { source: { nature: string } }) => f.source.nature);
+    expect(natures).toEqual(['anamnese', 'anamnese', 'anamnese']);
   });
 
   it('refuse un SHA de périmètre malformé', async () => {

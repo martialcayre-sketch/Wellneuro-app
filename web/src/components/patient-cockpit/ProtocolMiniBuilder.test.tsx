@@ -41,6 +41,26 @@ describe('ProtocolMiniBuilder', () => {
     expect(within(container).queryByRole('button', { name: 'Ajouter une action' })).toBeNull();
   });
 
+  // D-279 §2 — UNE PRIORITÉ POSÉE PAR LE PRATICIEN ouvre le constructeur sans
+  // candidat, et sous abstention pour recueil incomplet ; un constat de
+  // sécurité le referme.
+  it('s’ouvre sur une priorité posée par le praticien, recueil incomplet compris', () => {
+    const selection = {
+  candidateId: 'libre:sommeil:0123456789abcdef', selectedAt: '2026-01-01T00:00:00.000Z',
+  selectedBy: 'practitioner' as const, rationale: 'Aucun axe proposé.',
+  libre: { domaine: 'sommeil' as const, libelle: 'Retrouver un sommeil réparateur' },
+};
+    const recueil = {
+      ...card(), priorityCandidates: [], proposedMainPriorityId: null, selectedMainPriority: selection,
+      abstention: { status: 'required' as const, ruleIds: ['R'], limitations: [] },
+    };
+    const ouvert = render(<ProtocolMiniBuilder decisionCard={recueil} />);
+    expect(within(ouvert.container).getByRole('button', { name: 'Ajouter une action' })).toBeTruthy();
+    const ferme = render(<ProtocolMiniBuilder decisionCard={{ ...recueil, safetyFindingIds: ['S1'] }} />);
+    expect(ferme.container.textContent).toContain('Protocole indisponible — bloqueurs décisionnels à revoir');
+    expect(within(ferme.container).queryByRole('button', { name: 'Ajouter une action' })).toBeNull();
+  });
+
   // [[D-253]] — SANS CARTE, ON NE SAIT RIEN DE LA PRIORITÉ. Le motif « priorité
   // non sélectionnée » s'affichait sur un dossier réel dont la priorité était
   // retenue : la carte n'était simplement pas servie (J21 proposé).

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { apercuContenuPatient, buildContenuPatientProtocole } from './contenuPatientProtocole';
 import { buildPatientProtocolView } from './patientProtocolView';
 import { actionOrientation } from './orientationAdressage';
+import { identifiantPrioriteLibre } from './prioriteLibreServeur';
 import {
   MAX_ACTIONS_PROTOCOLE_21J,
   type DecisionCard,
@@ -169,3 +170,38 @@ describe('ContenuPatientProtocole — orientation contre la carte', () => {
     })).toThrow('signaux adressés');
   });
 });
+
+// D-279 — LE PATIENT LIT LE LIBELLÉ DU PRATICIEN quand la priorité est posée
+// par lui ; sous recueil incomplet aussi, jamais sous constat de sécurité.
+describe('ContenuPatientProtocole — priorité posée par le praticien (D-279)', () => {
+  const libre = { domaine: 'autre' as const, libelle: 'Reprendre une activité choisie' };
+  const selection = {
+    candidateId: identifiantPrioriteLibre(libre), selectedAt: '2026-01-01T00:00:00.000Z',
+    selectedBy: 'practitioner' as const, rationale: 'Choix interne.', libre,
+  };
+  const carteLibre = (overrides: Partial<DecisionCard> = {}) => card({
+    priorityCandidates: [], proposedMainPriorityId: null, selectedMainPriority: selection, ...overrides,
+  });
+  const protocoleLibre = () => protocol({ selectedPriorityId: selection.candidateId });
+
+  it('sert le libellé du praticien, à l’aperçu comme à la diffusion', () => {
+    const contenu = buildContenuPatientProtocole({ decisionCard: carteLibre(), protocolDraft: protocoleLibre() });
+    const vue = buildPatientProtocolView({ decisionCard: carteLibre(), protocolDraft: protocoleLibre(), approval: approval() });
+    expect(contenu.priorityLabel).toBe('Reprendre une activité choisie');
+    expect(vue.priorityLabel).toBe('Reprendre une activité choisie');
+    expect(vue.selectedPriorityId).toBe(selection.candidateId);
+  });
+
+  it('passe sous abstention pour recueil incomplet, jamais sous constat de sécurité', () => {
+    const recueil = carteLibre({ abstention: { status: 'required', ruleIds: [], limitations: [] } });
+    expect(apercuContenuPatient({ decisionCard: recueil, protocolDraft: protocoleLibre() }).ok).toBe(true);
+    expect(apercuContenuPatient({
+      decisionCard: carteLibre({ safetyFindingIds: ['safety-1'] }), protocolDraft: protocoleLibre(),
+    }).ok).toBe(false);
+  });
+
+  it('refuse un protocole qui ne cite pas la priorité posée', () => {
+    expect(apercuContenuPatient({ decisionCard: carteLibre(), protocolDraft: protocol() }).ok).toBe(false);
+  });
+});
+

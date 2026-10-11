@@ -105,12 +105,16 @@ function fragmentsAnamnese(anamnese: AnamneseCitable | null): FragmentSource[] {
 /**
  * Assemble les propositions — UNE PAR CANDIDAT SIGNÉ, au plus trois.
  *
- * SANS CANDIDAT, AUCUNE PROPOSITION, et ce n'est pas un manque à combler.
- * Table des priorités non signée, abstention requise, canal de plainte non
- * mesurable : dans les trois cas le cockpit ne sert aucun candidat, et la
- * machine n'a alors rien de signé à citer. Assembler quand même, sur la seule
- * anamnèse, ferait de Wellneuro l'auteur d'une proposition que rien ne fonde —
- * exactement ce que `D-094` interdit.
+ * SANS CANDIDAT CITABLE, UNE SEULE PROPOSITION : LES MOTS DU PATIENT
+ * ([[D-279]] §4, qui amende `D-094`). Abstention requise, canal de plainte non
+ * mesurable, aucune plainte assez haute : le cockpit ne sert aucun candidat, et
+ * le praticien pose alors lui-même la priorité. La proposition ne juxtapose
+ * que ce que le patient a écrit à l'anamnèse — motif principal, objectif
+ * prioritaire, attentes —, sans fragment de règle ni de plainte : elle reste
+ * une CITATION, aucune phrase n'est générée, et rien n'y est choisi pour le
+ * patient. Sans anamnèse citable, rien. Le SHA du périmètre reste exigé : un
+ * cockpit qui ne revendique aucun périmètre signé n'assemble toujours rien
+ * (fail-closed de `D-115`, inchangé).
  *
  * L'ORDRE D'ENTRÉE EST CONSERVÉ, JAMAIS INTERPRÉTÉ. Ce module ne trie pas, ne
  * numérote pas et n'expose aucune position : `D-094` §3 interdit jusqu'à la
@@ -149,6 +153,17 @@ export function assemblerPropositions(entrees: EntreesAssemblage): PropositionAs
     reglesVues.add(candidat.regle);
     citables.push(candidat);
     if (citables.length === MAX_PROPOSITIONS) break;
+  }
+
+  if (citables.length === 0) {
+    if (communs.length === 0) return [];
+    // L'EMPREINTE PORTE L'ANAMNÈSE SEULE (et le périmètre) : ni plainte, ni
+    // règle — une plainte qui bouge ne rend pas caduque une proposition qui
+    // ne la cite pas.
+    return [{
+      fragments: communs,
+      hashSources: empreinte({ anamnese: entrees.anamnese, regle: null, shaPerimetre: sha }),
+    }];
   }
 
   return citables.flatMap((candidat) => {

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
+import { estSelectionLibre, isPrioriteLibreOuverte } from '@/lib/clinical-engine/prioriteLibre';
 import {
   TEXTE_ORIENTATION,
   actionOrientation,
@@ -259,7 +260,12 @@ export function ProtocolMiniBuilder({
   const [nextActionId, setNextActionId] = useState(1);
   const [editedSinceSave, setEditedSinceSave] = useState(false);
 
-  const decisionBlocked = isDecisionBloquee(decisionCard);
+  // UNE PRIORITÉ POSÉE PAR LE PRATICIEN ([[D-279]] §2) n'est bloquée que par un
+  // constat de sécurité — pas par l'abstention pour recueil incomplet, qui ne
+  // retire que les candidats. Même partage que le moteur (`validateDecisionCard`).
+  const decisionBlocked = estSelectionLibre(decisionCard?.selectedMainPriority)
+    ? !isPrioriteLibreOuverte(decisionCard)
+    : isDecisionBloquee(decisionCard);
   if (!decisionCard?.selectedMainPriority || decisionBlocked) {
     return (
       <section aria-labelledby="protocol-builder-title">
