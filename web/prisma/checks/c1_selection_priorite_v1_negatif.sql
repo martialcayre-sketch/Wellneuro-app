@@ -119,8 +119,23 @@ DECLARE
         VALUES ('t18', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L8', repeat('ab', 32), 'libre:sommeil:XYZ', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur')$q$],
     ['candidat du moteur qui porterait un libellé libre',
      $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre)
-        VALUES ('t19', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L9', repeat('ab', 32), 'priority:REGLE_CONTRAT', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur')$q$]
+        VALUES ('t19', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L9', repeat('ab', 32), 'priority:REGLE_CONTRAT', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur')$q$],
+    -- Chaque moitié de la seconde branche mord seule (revue de la PR #1402).
+    ['candidat du moteur qui porterait un libellé libre seul',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, libelle_libre)
+        VALUES ('t20', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L10', repeat('ab', 32), 'priority:REGLE_CONTRAT', 'Motif de contrat.', 'praticien@wellneuro.fr', 'Retrouver un sommeil réparateur')$q$],
+    ['candidat du moteur qui porterait un domaine libre seul',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre)
+        VALUES ('t21', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L11', repeat('ab', 32), 'priority:REGLE_CONTRAT', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil')$q$]
   ];
+
+  -- La liste fermée, valeur par valeur, et la borne du libellé à 200 pile :
+  -- une liste amputée ou une borne passée en `< 200` doit rougir ici.
+  DOMAINES CONSTANT text[] := ARRAY[
+    'fatigue', 'douleurs', 'digestion', 'surpoids',
+    'sommeil', 'moral', 'mobilite', 'autre'
+  ];
+  d text;
 BEGIN
   -- ── 0. Fixture — patient fictif autorisé ─────────────────────────────────
   INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updated_at)
@@ -176,6 +191,22 @@ BEGIN
         'D-279: une priorité LIBRE valide, ou sa correction par un candidat, a été refusée (SQLSTATE %) — une contrainte est trop serrée, la route échouerait en production.',
         SQLSTATE;
   END;
+
+  FOREACH d IN ARRAY DOMAINES LOOP
+    BEGIN
+      INSERT INTO decision_priority_selections
+        (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre)
+      VALUES ('libre_' || d, 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_DOMAINE_' || d, EMPREINTE,
+              'libre:' || d || ':0123456789abcdef', 'Motif de contrat.',
+              'praticien@wellneuro.fr', d,
+              CASE WHEN d = 'autre' THEN repeat('x', 200) ELSE 'Libellé de contrat' END);
+    EXCEPTION
+      WHEN others THEN
+        RAISE EXCEPTION
+          'D-279: le domaine « % » de la liste fermée (ou un libellé de 200 caractères) a été refusé (SQLSTATE %) — la liste a-t-elle été amputée, la borne resserrée ?',
+          d, SQLSTATE;
+    END;
+  END LOOP;
 
   -- ── 2. DEUX RACINES sur la même carte : refusées ─────────────────────────
   accepte := false;

@@ -15,16 +15,23 @@
 - Livraison : une PR de migration, relue puis appliquée par `release-db`
   approuvée et constatée par conteneur ; puis la PR du code consommateur.
 - **Ne touche pas** : les quatre règles de priorité signées, leur classement,
-  la gate de population, la procédure d'abstention et ses textes ; aucun
+  la gate de population, les textes de la procédure d'abstention ; aucun
   seuil, aucune borne. Les candidats d'axe restent calculés, servis et
-  choisis exactement comme avant.
+  choisis exactement comme avant. La procédure d'abstention garde son effet
+  sur les candidats ; seul l'effet du motif « recueil incomplet » sur le
+  protocole change (§2).
 
 **§1 — La priorité posée par le praticien.** En plus des candidats d'axe, le
 praticien peut poser une priorité qu'il formule lui-même : un **domaine**, pris
 dans une liste fermée et identique pour tous — les sept domaines de « Mes
 plaintes actuelles » (fatigue, douleurs, digestion, surpoids, sommeil, moral,
 mobilité) et « autre » —, et un **libellé** qu'il écrit (200 caractères au
-plus). Le motif reste obligatoire, comme pour un candidat. Rien n'est calculé :
+plus). La liste reprend les sept domaines tels que le patient les cote, y
+compris ceux qu'aucune règle ne propose (fatigue, moral, mobilité) : une règle
+écartée renonce à proposer d'elle-même un axe — pour la mobilité, parce
+qu'elle appelle plutôt un adressage —, alors que ranger le choix d'un
+praticien ne propose rien. Le motif reste obligatoire, comme pour un
+candidat. Rien n'est calculé :
 le domaine range, il ne déclenche rien — ni besoins visés, ni repassation
 ciblée, ni hiérarchie des assiettes ([[D-254]]), qui restent attachés aux
 seuls candidats. Le libellé est l'intitulé de priorité que le patient lit en
@@ -34,7 +41,11 @@ tête de son protocole.
 impossible : la priorité posée par le praticien suffit à le construire, le
 relire et le diffuser. Elle est aussi offerte quand la décision est suspendue
 pour **recueil incomplet** (« Mes plaintes actuelles » non mesurable) : aucun
-axe n'est alors proposé, mais le praticien n'en a pas besoin. **Un constat de
+axe n'est alors proposé, mais le praticien n'en a pas besoin. Ce n'est pas
+conclure d'une donnée absente (`DC-24`, `DC-25`) : le motif « recueil
+incomplet » porte sur l'outil, qui ne peut rien proposer sans la mesure, et il
+continue de retirer les candidats ; la priorité libre ne lit pas cette mesure,
+elle est un acte du praticien sous son motif écrit. **Un constat de
 sécurité bloque toujours tout**, priorité libre comprise — `DC-12` et la
 procédure d'abstention sont inchangés pour ce motif, et l'orientation exigée
 en tête de protocole ([[D-257]]) aussi.
@@ -55,6 +66,8 @@ citation — aucune phrase générée — et le praticien la reprend ou l'écart
 les autres.
 
 **Amende** : [[D-127]] (une sélection n'est plus forcément un candidat classé) ;
+l'effet bloquant du motif d'abstention `ABST-CAN-01` sur le protocole, quand la
+priorité est posée par le praticien (§2) ;
 [[D-094]] (« sans candidat, aucune proposition » devient « sans candidat, une
 proposition faite des seuls mots du patient ») ; le principe d'un intitulé de
 priorité toujours tiré du registre signé, qui ne vaut plus que pour les
