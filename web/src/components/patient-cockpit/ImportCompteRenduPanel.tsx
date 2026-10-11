@@ -895,6 +895,7 @@ export function ImportCompteRenduPanel({
                       analytes={analytes}
                       mesures={mesures}
                       disabled={occupe}
+                      documentEfface={Boolean(detail?.purgeLe)}
                       onModifier={patch => modifier(ligne.id, patch)}
                     />
                   ))}
@@ -924,6 +925,7 @@ export function ImportCompteRenduPanel({
                         analytes={analytes}
                         mesures={mesures}
                         disabled={occupe}
+                        documentEfface={Boolean(detail?.purgeLe)}
                         onModifier={patch => modifier(ligne.id, patch)}
                       />
                     ))}
@@ -952,6 +954,7 @@ export function ImportCompteRenduPanel({
                         analytes={analytes}
                         mesures={mesures}
                         disabled={occupe}
+                        documentEfface={Boolean(detail?.purgeLe)}
                         onModifier={patch => modifier(ligne.id, patch)}
                       />
                     ))}
@@ -982,6 +985,7 @@ export function ImportCompteRenduPanel({
                         analytes={analytes}
                         mesures={mesures}
                         disabled={occupe}
+                        documentEfface={Boolean(detail?.purgeLe)}
                         onModifier={patch => modifier(ligne.id, patch)}
                       />
                     ))}
@@ -1038,6 +1042,7 @@ function LigneImport({
   analytes,
   mesures,
   disabled,
+  documentEfface,
   onModifier,
 }: {
   ligne: LigneLue;
@@ -1046,6 +1051,8 @@ function LigneImport({
   analytes: AnalyteChoix[];
   mesures: MesureAuDossier[];
   disabled: boolean;
+  /** Le document est purgé : un fait non transcrit se lit sur l'original du laboratoire. */
+  documentEfface: boolean;
   onModifier: (patch: Partial<Saisie>) => void;
 }) {
   const lue = `${ligne.libelleLu} : ${ligne.valeurLue}${ligne.uniteLue ? ` ${ligne.uniteLue}` : ''}`;
@@ -1068,6 +1075,7 @@ function LigneImport({
           marquageNonTranscrit={ligne.marquageNonTranscrit}
           commentaire={ligne.commentaireLu}
           commentaireNonTranscrit={ligne.commentaireNonTranscrit}
+          documentEfface={documentEfface}
         />
       </li>
     );
@@ -1100,6 +1108,7 @@ function LigneImport({
         marquageNonTranscrit={ligne.marquageNonTranscrit}
         commentaire={ligne.commentaireLu}
         commentaireNonTranscrit={ligne.commentaireNonTranscrit}
+        documentEfface={documentEfface}
       />
       {ligne.preMarquage && (
         <p className="mt-1 text-xs text-muted-foreground">Signalé : {LIBELLES_MOTIF[ligne.preMarquage]}</p>

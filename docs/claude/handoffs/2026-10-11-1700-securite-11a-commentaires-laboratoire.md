@@ -63,8 +63,9 @@ du stress, §3 commentaires du laboratoire (migration, texte patient, relevé).
 
 ## Problèmes ouverts
 
-- Le message « trop long pour être transcrit » de l'intervalle et de la
-  marque renvoie au compte rendu même effacé (défaut antérieur à 11A).
+- (Corrigé dans cette PR, revue Copilot) Le message « trop long pour être
+  transcrit » renvoyait au compte rendu même effacé, intervalle et marque
+  compris : il renvoie désormais à « l'original du laboratoire ».
 - Le texte de l'acte de lecture (`LectureImportBiologique.tsx`, `D-268`) ne
   nomme pas les commentaires : à faire arbitrer par le responsable.
 - Les commentaires ne sont visibles qu'à l'écran d'import, pas dans la série

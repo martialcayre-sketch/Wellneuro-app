@@ -166,6 +166,23 @@ describe('Commentaires du laboratoire — modules épinglés ([[D-278]] §3)', (
     ).toEqual([...COMMENTAIRES_ADMIS].sort());
   });
 
+  // Le lecteur rend TOUT le compte rendu, commentaires compris : un appelant
+  // neuf qui sérialiserait son résultat ne contient aucun nom de colonne et
+  // passerait le banc ci-dessus (revue Copilot de #1400). Ses appelants sont
+  // donc épinglés à leur tour — la seule route praticien, aujourd'hui.
+  it('seule la route praticien du compte rendu appelle `lireCompteRendu`', () => {
+    const appelants = fichiersSource()
+      .filter(chemin => !estUnTest(chemin))
+      .filter(chemin => chemin !== 'web/src/lib/biology-library/import/lecture.ts')
+      .filter(chemin => /\blireCompteRendu\b/.test(retirerLignesDeCommentaire(lire(chemin))))
+      .sort();
+    expect(
+      appelants,
+      'appelant neuf du lecteur de compte rendu (commentaires du laboratoire compris) : '
+        + 'l\'inscrire ici par un diff relu, praticien seulement',
+    ).toEqual(['web/src/app/api/praticien/biologie/import/compte-rendu/route.ts']);
+  });
+
   it('le pipeline voit les deux colonnes et leurs signaux, ignore la prose et les tests', () => {
     const lus = lecteursDesCommentaires([
       { chemin: 'web/src/lib/neuf/a.ts', source: 'select: { commentaireLu: true },' },

@@ -27,6 +27,7 @@ export function FaitsDuLaboratoire({
   marquageNonTranscrit = false,
   commentaire = null,
   commentaireNonTranscrit = false,
+  documentEfface = false,
 }: {
   intervalle: string | null;
   marquage: string | null;
@@ -34,6 +35,8 @@ export function FaitsDuLaboratoire({
   marquageNonTranscrit?: boolean;
   commentaire?: string | null;
   commentaireNonTranscrit?: boolean;
+  /** Le compte rendu est purgé : il ne se relit plus, on renvoie à l'original du laboratoire. */
+  documentEfface?: boolean;
 }) {
   const nonTranscrits = [
     ...(intervalleNonTranscrit ? ['l’intervalle de référence'] : []),
@@ -67,7 +70,7 @@ export function FaitsDuLaboratoire({
       )}
       {nonTranscrits.length > 0 && (
         <p className="mt-1 text-xs text-muted-foreground">
-          Imprimé mais trop long pour être transcrit : {[nonTranscrits.slice(0, -1).join(', '), nonTranscrits.at(-1)].filter(Boolean).join(' et ')}. À lire sur le compte rendu.
+          Imprimé mais trop long pour être transcrit : {[nonTranscrits.slice(0, -1).join(', '), nonTranscrits.at(-1)].filter(Boolean).join(' et ')}. À lire sur {documentEfface ? 'l’original du laboratoire' : 'le compte rendu'}.
         </p>
       )}
     </>

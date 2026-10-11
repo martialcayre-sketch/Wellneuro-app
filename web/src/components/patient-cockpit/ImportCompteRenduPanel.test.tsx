@@ -365,6 +365,7 @@ describe('ImportCompteRenduPanel — décisions', () => {
       detail: () => ({
         ...compteRendu('extrait', [
           ligne({ id: 'l1', libelleLu: 'Fer sérique', valeurLue: '17,2', statut: 'validee', commentaireLu: 'Sérum hémolysé' }),
+          ligne({ id: 'l2', libelleLu: 'Ferritine', valeurLue: '48', statut: 'validee', commentaireNonTranscrit: true }),
         ], false, { commentairesLus: 'Résultats téléphonés au prescripteur', commentairesNonTranscrits: false }),
         purgeLe: '2026-11-01T02:15:00.000Z', motifPurge: 'echeance',
       }),
@@ -374,6 +375,11 @@ describe('ImportCompteRenduPanel — décisions', () => {
     await screen.findByText(/Fer sérique : 17,2/);
     expect(screen.getByText('Sérum hémolysé').getAttribute('data-fait-laboratoire')).toBe('commentaire');
     expect(screen.getByText('Résultats téléphonés au prescripteur').getAttribute('data-fait-laboratoire')).toBe('commentaire');
+    // Le document ne se relit plus : le signal d'une ligne renvoie à l'original (revue Copilot #1400).
+    expect(ligneAffichee(/Ferritine : 48/).getByText(
+      'Imprimé mais trop long pour être transcrit : le commentaire. À lire sur l’original du laboratoire.',
+    )).toBeTruthy();
+    expect(screen.queryByText(/À lire sur le compte rendu/)).toBeNull();
   });
 
   it('document effacé, lecture antérieure à v4 : on renvoie à l’original, pas au document effacé', async () => {
