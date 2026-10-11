@@ -22,6 +22,11 @@ Arbitrages du responsable, le 2026-10-11 :
 - 5A démarre dans une session neuve ;
 - le suivi BioFlow (hors dépôt) inscrit 11A comme fait.
 
+Revue Copilot #1401 : sur un import antérieur à v4, l'acte ne nomme pas les
+commentaires (corrigé, texte conditionnel). Un commentaire signalé trop long
+reste couvert : la restitution renvoie à l'original, comme pour un intervalle
+non transcrit depuis `D-268` (écarté).
+
 Le texte n'est ni versionné ni haché : les lectures déjà consignées gardent
 le sens du texte en vigueur à leur date.
 
