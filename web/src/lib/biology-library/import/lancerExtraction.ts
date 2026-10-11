@@ -200,6 +200,10 @@ export async function poursuivreExtraction(params: {
               marquageLu: ligne.marquage,
               intervalleNonTranscrit: ligne.intervalleNonTranscrit,
               marquageNonTranscrit: ligne.marquageNonTranscrit,
+              // Le commentaire du laboratoire sur CE résultat ([[D-278]] §3),
+              // même régime : trop long, NULL et signalé.
+              commentaireLu: ligne.commentaire,
+              commentaireNonTranscrit: ligne.commentaireNonTranscrit,
               analytePropose: resolution.code,
               statutMapping: resolution.statut,
             };
@@ -208,7 +212,14 @@ export async function poursuivreExtraction(params: {
       }
       await tx.importBiologique.update({
         where: { id: idImport },
-        data: { statut: 'extrait', laboratoireLu: resultat.laboratoire },
+        // Les commentaires du compte rendu ENTIER se posent avec la terminaison,
+        // jamais avant (le trigger d'insertion le refuse) ni après (figés).
+        data: {
+          statut: 'extrait',
+          laboratoireLu: resultat.laboratoire,
+          commentairesLus: resultat.commentaires,
+          commentairesNonTranscrits: resultat.commentairesNonTranscrits,
+        },
       });
       return true;
     }, { timeout: DELAI_TRANSACTION_LIGNES_MS });

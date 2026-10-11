@@ -1,5 +1,6 @@
 // La sentinelle biologie exempte la marque et l'intervalle imprimés par le
-// laboratoire, et eux seuls ([[D-267]] §6, précision du 2026-10-06). Ce spec
+// laboratoire ([[D-267]] §6, précision du 2026-10-06), et depuis [[D-278]] §3
+// son commentaire, recopié tel qu'imprimé — eux seuls. Ce spec
 // exerce le VRAI helper sur un DOM minimal : les faits passent, le même mot
 // hors de leurs éléments rougit, un élément exempté qui porterait autre chose
 // que le texte brut (enfant, classe, style) rougit.
@@ -29,9 +30,18 @@ test.describe('Sentinelle biologie — faits imprimés par le laboratoire', () =
     await expect(r.locator('[data-fait-laboratoire="intervalle"]')).toHaveText('anormal au-delà de la borne, risque élevé');
   });
 
+  test('le commentaire imprimé est exempté ([[D-278]] §3), et rendu intact après la lecture', async ({ page }) => {
+    await page.setContent(region(
+      '<p>Commentaire du laboratoire : <span data-fait-laboratoire="commentaire">Valeur anormale, contrôle souhaité</span></p>',
+    ));
+    const r = page.getByRole('region', { name: 'Région' });
+    await assertSentinelleBiologie(r);
+    await expect(r.locator('[data-fait-laboratoire="commentaire"]')).toHaveText('Valeur anormale, contrôle souhaité');
+  });
+
   test('un autre marqueur de fait n’est pas exempté', async ({ page }) => {
     await page.setContent(region(
-      '<p>Imprimé par le laboratoire : <span data-fait-laboratoire="commentaire">Anormal</span></p>',
+      '<p>Imprimé par le laboratoire : <span data-fait-laboratoire="interpretation">Anormal</span></p>',
     ));
     await expect(assertSentinelleBiologie(page.getByRole('region', { name: 'Région' }))).rejects.toThrow(/anormal/);
   });
@@ -51,6 +61,9 @@ test.describe('Sentinelle biologie — faits imprimés par le laboratoire', () =
     ['un enfant (intervalle)', '<span data-fait-laboratoire="intervalle"><b>30 – 400</b></span>'],
     ['une classe (intervalle)', '<span data-fait-laboratoire="intervalle" class="font-bold">30 – 400</span>'],
     ['un style (intervalle)', '<span data-fait-laboratoire="intervalle" style="color:red">30 – 400</span>'],
+    ['un enfant (commentaire)', '<span data-fait-laboratoire="commentaire"><b>Sérum hémolysé</b></span>'],
+    ['une classe (commentaire)', '<span data-fait-laboratoire="commentaire" class="text-red-600">Sérum hémolysé</span>'],
+    ['un style (commentaire)', '<span data-fait-laboratoire="commentaire" style="color:red">Sérum hémolysé</span>'],
   ] as const) {
     test(`un élément exempté qui porte ${cas} rougit`, async ({ page }) => {
       await page.setContent(region(`<p>Marque ${marque}</p>`));

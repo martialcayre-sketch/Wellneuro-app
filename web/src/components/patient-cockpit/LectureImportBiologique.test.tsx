@@ -17,6 +17,7 @@ function ligne(statut: string, id = `l_${statut}`): LigneLue {
   return {
     id, rang: 1, page: 1, libelleLu: 'Libellé', valeurLue: '1', uniteLue: null, preleveLeLu: null, heureLue: false,
     intervalleLu: null, marquageLu: null, intervalleNonTranscrit: false, marquageNonTranscrit: false,
+    commentaireLu: null, commentaireNonTranscrit: false,
     analytePropose: null, statutMapping: 'inconnu', statut, motifEcart: null, idResultat: null, preMarquage: null,
   };
 }
@@ -24,7 +25,8 @@ function ligne(statut: string, id = `l_${statut}`): LigneLue {
 function importLu(lignes: LigneLue[]): ImportLu {
   return {
     id: 'imp_1', statut: 'extrait', motifEchec: null, modele: 'modele', versionPrompt: 'bio-extraction-v3',
-    laboratoireLu: null, lanceLe: '2026-10-06T08:00:00.000Z', termineLe: '2026-10-06T08:01:00.000Z',
+    laboratoireLu: null, commentairesLus: null, commentairesNonTranscrits: false, commentairesReleves: false,
+    lanceLe: '2026-10-06T08:00:00.000Z', termineLe: '2026-10-06T08:01:00.000Z',
     courant: true, perime: false, lignes,
   };
 }

@@ -33,9 +33,13 @@ export const MODELE_EXTRACTION = process.env.WN_BIO_INGEST_MODEL?.trim() || 'cla
  * LITTÉRAL à incrémenter à la main dès que l'un des trois change — c'est elle
  * que l'import enregistre. v3 (2026-10-06) : prompt et schéma de la v2
  * ([[D-267]]) inchangés ; règle de lecture nouvelle, un NUL se retire aussi du
- * libellé, de la valeur, de l'unité et du laboratoire (`texteBorne`).
+ * libellé, de la valeur, de l'unité et du laboratoire (`texteBorne`). v4
+ * (2026-10-11, [[D-278]] §3) : prompt et schéma recopient les commentaires du
+ * laboratoire, sur la ligne et sur le compte rendu entier. Un import d'une
+ * version antérieure n'en a relevé aucun : son « pas de commentaire » ne dit
+ * pas qu'il n'y en avait pas.
  */
-export const VERSION_PROCEDE_EXTRACTION = 'bio-extraction-v3';
+export const VERSION_PROCEDE_EXTRACTION = 'bio-extraction-v4';
 
 /**
  * Délai d'attente des EN-TÊTES (ms), SANS nouvelle tentative : technique, sans
@@ -85,14 +89,31 @@ export type LigneExtraite = {
    */
   intervalleNonTranscrit: boolean;
   marquageNonTranscrit: boolean;
+  /**
+   * Le commentaire que le laboratoire a imprimé SUR CE RÉSULTAT, tel
+   * qu'imprimé ([[D-278]] §3) — absent ⇒ `null`. Texte libre qui peut nommer
+   * un tiers : jamais journalisé, jamais servi au portail.
+   */
+  commentaire: string | null;
+  commentaireNonTranscrit: boolean;
 };
 
 /** Bornes techniques des faits — celles des CHECK de la base (`intervalle_lu`, `marquage_lu`). */
 export const LONGUEUR_MAX_INTERVALLE = 300;
 export const LONGUEUR_MAX_MARQUAGE = 50;
+/** Bornes techniques des commentaires ([[D-278]] §3) — celles des CHECK (`commentaire_lu`, `commentaires_lus`). */
+export const LONGUEUR_MAX_COMMENTAIRE_LIGNE = 1000;
+export const LONGUEUR_MAX_COMMENTAIRES_IMPORT = 4000;
 
 export type ResultatExtraction =
-  | { ok: true; laboratoire: string | null; lignes: LigneExtraite[] }
+  | {
+      ok: true;
+      laboratoire: string | null;
+      /** Les commentaires du compte rendu ENTIER, tels qu'imprimés ([[D-278]] §3). */
+      commentaires: string | null;
+      commentairesNonTranscrits: boolean;
+      lignes: LigneExtraite[];
+    }
   | { ok: false; motif: MotifEchec };
 
 const CONSIGNE = [
@@ -103,7 +124,10 @@ const CONSIGNE = [
   'N’interprète rien : ne dis jamais si une valeur est normale, basse, haute ou pathologique.',
   'Pour chaque résultat, recopie tels qu’imprimés, sans les compléter ni les reformuler, l’intervalle de référence et la marque d’anomalie que le laboratoire lui a apposée (par exemple « H », « * », une flèche), ou null s’ils ne sont pas imprimés.',
   'Ne déduis jamais une marque d’anomalie en comparant la valeur à l’intervalle : seule celle qu’a imprimée le laboratoire se recopie.',
-  'Ne recopie aucun commentaire.',
+  'Pour chaque résultat, recopie tel qu’imprimé le commentaire que le laboratoire a écrit sur ce résultat (par exemple une mention d’hémolyse, de valeur critique ou de contrôle souhaité), ou null s’il n’y en a pas.',
+  'Recopie aussi, dans commentaires, ceux que le laboratoire a écrits sur le compte rendu entier ou sur plusieurs résultats à la fois (par exemple sous un groupe d’analyses, ou en note de bas de page), dans leur ordre et séparés par un saut de ligne, ou null s’il n’y en a pas.',
+  'Un commentaire se recopie sans être complété, reformulé ni résumé, et tu n’en tires aucune conclusion. N’écris jamais un commentaire que le laboratoire n’a pas imprimé.',
+  'Ne sont pas des commentaires : les mentions administratives (adresse, horaires, accréditation, signature), la technique ou la méthode d’analyse, l’identité du patient ou du prescripteur.',
   'Ne rattache aucun résultat à un code ou à un nom d’analyte : recopie le libellé imprimé.',
   'Pour chaque résultat, la date du prélèvement au format AAAA-MM-JJ et son heure au format HH:MM si elles sont imprimées, sinon null.',
   'Le nom du laboratoire tel qu’imprimé en en-tête, ou null.',
@@ -113,10 +137,12 @@ const CONSIGNE = [
 const SCHEMA_SORTIE = {
   type: 'object',
   additionalProperties: false,
-  required: ['lisible', 'laboratoire', 'lignes'],
+  // AUCUNE `maxLength` sur les commentaires, pour le motif des faits ([[D-278]] §3).
+  required: ['lisible', 'laboratoire', 'commentaires', 'lignes'],
   properties: {
     lisible: { type: 'boolean' },
     laboratoire: { type: ['string', 'null'] },
+    commentaires: { type: ['string', 'null'] },
     lignes: {
       type: 'array',
       items: {
@@ -126,7 +152,7 @@ const SCHEMA_SORTIE = {
         // et le signal « non transcrit » ne se poserait jamais ([[D-267]] §10).
         required: [
           'page', 'libelle', 'valeur', 'unite', 'date_prelevement', 'heure_prelevement',
-          'intervalle_reference', 'marquage',
+          'intervalle_reference', 'marquage', 'commentaire',
         ],
         properties: {
           page: { type: 'integer' },
@@ -137,6 +163,7 @@ const SCHEMA_SORTIE = {
           heure_prelevement: { type: ['string', 'null'] },
           intervalle_reference: { type: ['string', 'null'] },
           marquage: { type: ['string', 'null'] },
+          commentaire: { type: ['string', 'null'] },
         },
       },
     },
@@ -261,6 +288,10 @@ export function analyserSortieExtraction(texte: string): ResultatExtraction {
 
   const laboratoire = texteBorne(sortie.laboratoire, 200);
   if (laboratoire === undefined) return invalide;
+  // Les commentaires se lisent comme un fait du laboratoire : trop longs, ni
+  // tronqués ni bloquants — `null` signalé ([[D-278]] §3).
+  const commentaires = lireFaitLaboratoire(sortie.commentaires, LONGUEUR_MAX_COMMENTAIRES_IMPORT);
+  if (!commentaires) return invalide;
 
   const lignes: LigneExtraite[] = [];
   for (const l of sortie.lignes as unknown[]) {
@@ -278,14 +309,20 @@ export function analyserSortieExtraction(texte: string): ResultatExtraction {
     const preleveLe = lireDatePrelevement(date, heure);
     const intervalle = lireFaitLaboratoire(ligne.intervalle_reference, LONGUEUR_MAX_INTERVALLE);
     const marquage = lireFaitLaboratoire(ligne.marquage, LONGUEUR_MAX_MARQUAGE);
-    if (!intervalle || !marquage) return invalide;
+    const commentaire = lireFaitLaboratoire(ligne.commentaire, LONGUEUR_MAX_COMMENTAIRE_LIGNE);
+    if (!intervalle || !marquage || !commentaire) return invalide;
     lignes.push({
       page: ligne.page, libelle, valeur, unite, preleveLe, heureLue: preleveLe !== null && heureLisible(heure),
       intervalle: intervalle.texte, marquage: marquage.texte,
       intervalleNonTranscrit: intervalle.nonTranscrit, marquageNonTranscrit: marquage.nonTranscrit,
+      commentaire: commentaire.texte, commentaireNonTranscrit: commentaire.nonTranscrit,
     });
   }
-  return { ok: true, laboratoire, lignes };
+  return {
+    ok: true, laboratoire,
+    commentaires: commentaires.texte, commentairesNonTranscrits: commentaires.nonTranscrit,
+    lignes,
+  };
 }
 
 /** Le motif d'échec d'une erreur d'appel — jamais son message. */

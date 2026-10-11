@@ -104,10 +104,12 @@ describe('extraireCompteRendu — borne totale, sur le vrai client du SDK', () =
   });
 
   it('un flux complet est lu, et aucun minuteur ne lui survit', async () => {
-    faux.fetch = fluxComplet(JSON.stringify({ lisible: true, laboratoire: null, lignes: [] }));
+    faux.fetch = fluxComplet(JSON.stringify({ lisible: true, laboratoire: null, commentaires: null, lignes: [] }));
     const issue = extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf');
     await vi.advanceTimersByTimeAsync(0);
-    expect(await issue).toEqual({ ok: true, laboratoire: null, lignes: [] });
+    expect(await issue).toEqual({
+      ok: true, laboratoire: null, commentaires: null, commentairesNonTranscrits: false, lignes: [],
+    });
     expect(vi.getTimerCount()).toBe(0);
   });
 });

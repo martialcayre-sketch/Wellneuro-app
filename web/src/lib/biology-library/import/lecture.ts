@@ -25,6 +25,12 @@ export type LigneLue = {
   /** Imprimé mais trop long pour être transcrit : à lire sur le document (§10). */
   intervalleNonTranscrit: boolean;
   marquageNonTranscrit: boolean;
+  /**
+   * Le commentaire du laboratoire sur ce résultat, tel qu'imprimé ([[D-278]]
+   * §3). Texte libre qui peut nommer un tiers : servi au seul praticien.
+   */
+  commentaireLu: string | null;
+  commentaireNonTranscrit: boolean;
   analytePropose: string | null;
   statutMapping: string;
   statut: string;
@@ -41,6 +47,15 @@ export type ImportLu = {
   modele: string;
   versionPrompt: string;
   laboratoireLu: string | null;
+  /** Les commentaires du compte rendu ENTIER, tels qu'imprimés ([[D-278]] §3). */
+  commentairesLus: string | null;
+  commentairesNonTranscrits: boolean;
+  /**
+   * Le procédé de cette extraction relevait-il les commentaires ? Avant
+   * `bio-extraction-v4`, aucun ne l'était : leur absence ne dit pas que le
+   * laboratoire n'en avait pas imprimé.
+   */
+  commentairesReleves: boolean;
   lanceLe: string;
   termineLe: string | null;
   /** L'extraction courante — la seule dont les lignes se décident (arbitrage du 2026-10-02). */
@@ -102,6 +117,16 @@ export async function listerComptesRendus(idPatient: string) {
   }));
 }
 
+/**
+ * Les commentaires ne sont relevés que depuis `bio-extraction-v4` ([[D-278]]
+ * §3). Une version illisible est jugée NON relevante : dire « non relevés » à
+ * tort coûte une relecture du document, dire « aucun » à tort en fait perdre un.
+ */
+export function procedeReleveCommentaires(versionPrompt: string): boolean {
+  const v = /^bio-extraction-v(\d+)$/.exec(versionPrompt);
+  return v !== null && Number(v[1]) >= 4;
+}
+
 /** Un compte rendu, ses extractions et leurs lignes, avec le pré-marquage. `null` s'il n'est pas de ce dossier. */
 export async function lireCompteRendu(
   idPatient: string,
@@ -123,13 +148,15 @@ export async function lireCompteRendu(
         orderBy: { lanceLe: 'desc' },
         select: {
           id: true, statut: true, motifEchec: true, modele: true, versionPrompt: true,
-          laboratoireLu: true, lanceLe: true, termineLe: true,
+          laboratoireLu: true, commentairesLus: true, commentairesNonTranscrits: true,
+          lanceLe: true, termineLe: true,
           lignes: {
             orderBy: { rang: 'asc' },
             select: {
               id: true, rang: true, page: true, libelleLu: true, valeurLue: true, uniteLue: true,
               preleveLeLu: true, heureLue: true, intervalleLu: true, marquageLu: true,
               intervalleNonTranscrit: true, marquageNonTranscrit: true,
+              commentaireLu: true, commentaireNonTranscrit: true,
               analytePropose: true, statutMapping: true, statut: true,
               motifEcart: true, idResultat: true,
             },
@@ -165,6 +192,9 @@ export async function lireCompteRendu(
       modele: i.modele,
       versionPrompt: i.versionPrompt,
       laboratoireLu: i.laboratoireLu,
+      commentairesLus: i.commentairesLus,
+      commentairesNonTranscrits: i.commentairesNonTranscrits,
+      commentairesReleves: procedeReleveCommentaires(i.versionPrompt),
       lanceLe: i.lanceLe.toISOString(),
       termineLe: i.termineLe?.toISOString() ?? null,
       courant: i.id === idCourant,

@@ -747,6 +747,33 @@ export function ImportCompteRenduPanel({
             )}
           </div>
 
+          {/* LES COMMENTAIRES DU COMPTE RENDU ENTIER ([[D-278]] §3), tels
+              qu'imprimés, attribués au laboratoire, sans rien en conclure.
+              Une lecture antérieure à `bio-extraction-v4` n'en a relevé
+              aucun : son silence ne dit pas qu'il n'y en avait pas. Le
+              document effacé ne se relit plus : on renvoie à l'original. */}
+          {courant && courant.statut === 'extrait' && (
+            !courant.commentairesReleves ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Les commentaires du laboratoire n’ont pas été relevés par cette lecture : à lire sur {detail.purgeLe ? 'l’original du laboratoire' : 'le compte rendu'}.
+              </p>
+            ) : (
+              <>
+                {courant.commentairesLus !== null && (
+                  <p className="mt-1 whitespace-pre-line text-xs text-muted-foreground">
+                    Commentaires du laboratoire sur le compte rendu :{' '}
+                    <span data-fait-laboratoire="commentaire">{courant.commentairesLus}</span>
+                  </p>
+                )}
+                {courant.commentairesNonTranscrits && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Commentaires du laboratoire imprimés mais trop longs pour être transcrits : à lire sur {detail.purgeLe ? 'l’original du laboratoire' : 'le compte rendu'}.
+                  </p>
+                )}
+              </>
+            )
+          )}
+
           {ecartArme && (
             <fieldset className="mt-2 rounded-lg border border-border/60 p-2">
               <legend className="px-1 text-xs text-muted-foreground">
@@ -868,6 +895,7 @@ export function ImportCompteRenduPanel({
                       analytes={analytes}
                       mesures={mesures}
                       disabled={occupe}
+                      documentEfface={Boolean(detail?.purgeLe)}
                       onModifier={patch => modifier(ligne.id, patch)}
                     />
                   ))}
@@ -897,6 +925,7 @@ export function ImportCompteRenduPanel({
                         analytes={analytes}
                         mesures={mesures}
                         disabled={occupe}
+                        documentEfface={Boolean(detail?.purgeLe)}
                         onModifier={patch => modifier(ligne.id, patch)}
                       />
                     ))}
@@ -925,6 +954,7 @@ export function ImportCompteRenduPanel({
                         analytes={analytes}
                         mesures={mesures}
                         disabled={occupe}
+                        documentEfface={Boolean(detail?.purgeLe)}
                         onModifier={patch => modifier(ligne.id, patch)}
                       />
                     ))}
@@ -955,6 +985,7 @@ export function ImportCompteRenduPanel({
                         analytes={analytes}
                         mesures={mesures}
                         disabled={occupe}
+                        documentEfface={Boolean(detail?.purgeLe)}
                         onModifier={patch => modifier(ligne.id, patch)}
                       />
                     ))}
@@ -1011,6 +1042,7 @@ function LigneImport({
   analytes,
   mesures,
   disabled,
+  documentEfface,
   onModifier,
 }: {
   ligne: LigneLue;
@@ -1019,6 +1051,8 @@ function LigneImport({
   analytes: AnalyteChoix[];
   mesures: MesureAuDossier[];
   disabled: boolean;
+  /** Le document est purgé : un fait non transcrit se lit sur l'original du laboratoire. */
+  documentEfface: boolean;
   onModifier: (patch: Partial<Saisie>) => void;
 }) {
   const lue = `${ligne.libelleLu} : ${ligne.valeurLue}${ligne.uniteLue ? ` ${ligne.uniteLue}` : ''}`;
@@ -1039,6 +1073,9 @@ function LigneImport({
           marquage={ligne.marquageLu}
           intervalleNonTranscrit={ligne.intervalleNonTranscrit}
           marquageNonTranscrit={ligne.marquageNonTranscrit}
+          commentaire={ligne.commentaireLu}
+          commentaireNonTranscrit={ligne.commentaireNonTranscrit}
+          documentEfface={documentEfface}
         />
       </li>
     );
@@ -1069,6 +1106,9 @@ function LigneImport({
         marquage={ligne.marquageLu}
         intervalleNonTranscrit={ligne.intervalleNonTranscrit}
         marquageNonTranscrit={ligne.marquageNonTranscrit}
+        commentaire={ligne.commentaireLu}
+        commentaireNonTranscrit={ligne.commentaireNonTranscrit}
+        documentEfface={documentEfface}
       />
       {ligne.preMarquage && (
         <p className="mt-1 text-xs text-muted-foreground">Signalé : {LIBELLES_MOTIF[ligne.preMarquage]}</p>

@@ -24,12 +24,19 @@ import { estUnTest, fichiersSource, lire, specificateursImportes } from './balay
 // juge alors si l'exemption tient encore.
 const EXEMPTES = ['web/src/lib/biology-library/import/extraction.ts'];
 const CHAMPS_SORTIE_EXTRACTION = [
-  'lisible', 'laboratoire', 'lignes', 'items',
+  'lisible', 'laboratoire',
+  // [[D-278]] §3 : les commentaires du compte rendu entier, RECOPIÉS tels
+  // qu'imprimés, nullables, jamais rédigés ni résumés — l'exemption tient : ils
+  // ne sont servis qu'au praticien, à la validation, attribués au laboratoire.
+  'commentaires',
+  'lignes', 'items',
   'page', 'libelle', 'valeur', 'unite', 'date_prelevement', 'heure_prelevement',
   // [[D-267]] (LOT-07, jugé à la revue) : deux faits RECOPIÉS tels qu'imprimés,
   // nullables, jamais rédigés — l'exemption tient : ils sont validés ligne à
   // ligne avec la valeur, et restitués attribués au laboratoire.
   'intervalle_reference', 'marquage',
+  // [[D-278]] §3 : le commentaire du laboratoire sur ce résultat, même régime.
+  'commentaire',
 ];
 
 function appelleUnLlm(specs: readonly string[]): boolean {
