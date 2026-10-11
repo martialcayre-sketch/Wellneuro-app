@@ -1153,6 +1153,12 @@ model DecisionPrioritySelection {
   // relit six semaines plus tard (CHECK : non vide, ≤ 2000, borne de
   // `note_courte` sur `arbitrages_biologiques` — même nature, même borne).
   rationale             String   @map("rationale")
+  // La priorité POSÉE PAR LE PRATICIEN ([[D-279]]) : NULL pour un candidat du
+  // moteur, les deux présentes pour un `candidate_id` en `libre:<domaine>:…`.
+  // Domaine dans une liste fermée (les sept de Q_MOD_03 + `autre`), libellé
+  // non vide ≤ 200 — l'intitulé que le patient lira (CHECK migration).
+  domaineLibre          String?  @map("domaine_libre")
+  libelleLibre          String?  @map("libelle_libre")
   selectedAt            DateTime @default(now()) @map("selected_at")
   // E-mail de session, posé CÔTÉ SERVEUR (patron `arbitre_par`) : l'écran ne
   // transmet ni auteur ni horodatage. À NE PAS CONFONDRE avec le `selectedBy`

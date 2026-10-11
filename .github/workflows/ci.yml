@@ -778,8 +778,14 @@ jobs:
       # praticiens croyant chacun avoir décidé). Les CHECK doivent MORDRE
       # (motif vide/blanc/trop long, candidat vide, auteur vide ou trop long,
       # empreinte de carte hors SHA-256 canonique, ligne qui se supplante
-      # elle-même) ; dix colonnes exactes en liste blanche ; six colonnes
-      # porteuses NOT NULL ; FK patients en ON DELETE RESTRICT ; RLS deny-all
+      # elle-même). Priorité posée par le praticien (D-279) : une ligne
+      # `libre:` valide est ACCEPTÉE pour chaque domaine de la liste fermée,
+      # libellé de 200 caractères pile compris, et un candidat peut lui
+      # succéder ; les CHECK mordent sur un domaine hors liste, un libellé
+      # vide/blanc/trop long, une ligne `libre:` sans domaine ou sans libellé
+      # ou dont l'identifiant ne reprend pas le domaine, un candidat du moteur
+      # qui porterait l'un des deux. Douze colonnes exactes en liste
+      # blanche ; six colonnes porteuses NOT NULL ; FK patients en ON DELETE RESTRICT ; RLS deny-all
       # active et sans policy ; et la FORME des deux index, qu'un `@@unique`
       # redéclaré au schéma rendrait totaux sans faire rougir la dérive.
       - name: C1 selection priorite negative tests
