@@ -470,6 +470,15 @@ describe('registre des documents TRUST', () => {
         p.startsWith('Le relevé des résultats'),
       ) ?? '';
     const texte = releve(v7);
+    // LE PARAGRAPHE ENTIER, littéral indépendant du registre (revue Copilot de
+    // #1398) : une insertion ou une reformulation ailleurs rougit ici.
+    expect(texte).toBe(
+      'Le relevé des résultats de vos analyses biologiques : lorsque votre praticien dépose dans votre dossier le compte rendu que vous lui avez remis, ou que vous l’y déposez vous-même depuis votre espace, l’outil en relève les valeurs, leurs unités et la date du prélèvement, ainsi que l’intervalle de référence, la marque d’anomalie et les commentaires tels que le laboratoire les a imprimés, et les lui propose. Si vous le déposez vous-même, rien n’en est relevé tant que votre praticien n’a pas lancé la lecture : il vérifie d’abord qu’il s’agit bien de votre compte rendu. Votre praticien les relit et les valide : aucune n’entre à votre dossier sans cette validation. Ces mentions du laboratoire sont recopiées sans être complétées ni reformulées ; les commentaires restent dans votre dossier, même après la suppression du compte rendu. L’outil ne déclare lui-même aucune valeur normale ou anormale et n’en tire aucune conclusion. Pour cela, le compte rendu est transmis en entier, y compris votre nom et les autres mentions qui vous identifient.',
+    );
+    // Le résumé du changement montré au patient, validé avec le texte.
+    expect(v7.changeSummary).toBe(
+      'Le relevé des comptes rendus de vos analyses biologiques s’étend : l’outil recopie aussi les commentaires imprimés par le laboratoire, sans les compléter ni les reformuler. Votre praticien les voit quand il relit les résultats, et ils restent dans votre dossier après la suppression du compte rendu. L’outil ne déclare toujours lui-même aucune valeur normale ou anormale et n’en tire aucune conclusion. Rien d’autre ne change.',
+    );
     expect(texte).toContain(
       'ainsi que l’intervalle de référence, la marque d’anomalie et les commentaires tels que le laboratoire les a imprimés,',
     );
