@@ -249,7 +249,18 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
   Information du patient : une **nouvelle version** de « L'intelligence
   artificielle dans Wellneuro », servie et constatée **avant** le déploiement
   du procédé qui les relève (`bio-extraction-v4`), sur le patron de
-  [[D-267]] §8-§9.
+  [[D-267]] §8-§9. Migration **appliquée** en production le 2026-10-11
+  (constat par conteneur). **`usage_ia` v7, texte validé par le responsable
+  le 2026-10-11** : dans le paragraphe du relevé, « l'intervalle de
+  référence et la marque d'anomalie tels que le laboratoire les a
+  imprimés » devient « l'intervalle de référence, la marque d'anomalie et
+  les commentaires tels que le laboratoire les a imprimés », et « Ces deux
+  mentions du laboratoire sont recopiées sans être complétées ni
+  reformulées. » devient « Ces mentions du laboratoire sont recopiées sans
+  être complétées ni reformulées ; les commentaires restent dans votre
+  dossier, même après la suppression du compte rendu. » Sans accusé dans la
+  séquence ; l'accusé de la version courante reste exigé à l'écran de dépôt
+  ([[D-269]] §6).
 - **Acte de lecture clinique d'un import validé ([[D-268]], BIO-PARCOURS
   BP-10) — déclaré le 2026-10-06, avant la table.** Une table neuve,
   `LectureImportBiologique` (`lectures_imports_biologiques`, créée par la

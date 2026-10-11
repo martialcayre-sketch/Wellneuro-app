@@ -1410,6 +1410,56 @@ const DONNEES_CONFIDENTIALITE_V14: VersionDocumentTrust = {
   hash: '3b6bbc909573171dae18ccae94b32374664dee242f2d70335cc36f5e4da41ed5',
 };
 
+/*
+ * v7 du 2026-10-11 — LE RELEVÉ RECOPIE AUSSI LES COMMENTAIRES DU LABORATOIRE
+ * ([[D-278]] §3). Texte validé par le responsable le 2026-10-11. Deux
+ * changements dans le paragraphe du relevé, et rien d'autre : les commentaires
+ * rejoignent l'intervalle et la marque « tels que le laboratoire les a
+ * imprimés », et la phrase de la recopie dit qu'ils restent au dossier après
+ * la suppression du compte rendu ([[D-258]]).
+ *
+ * DÉCLARER AVANT DE RELEVER, comme la v5 : la v7 est servie et constatée AVANT
+ * le déploiement de `bio-extraction-v4` ; d'ici là elle déclare un peu plus que
+ * ce qui a lieu, le sens sûr.
+ *
+ * SANS ACCUSÉ DANS LA SÉQUENCE, comme les v1 à v6 : l'accusé de CETTE version
+ * se recueille sur l'écran de dépôt ([[D-269]] §6).
+ */
+const USAGE_IA_V7: VersionDocumentTrust = {
+  key: 'usage_ia',
+  type: 'ai_transparency',
+  version: 'v7',
+  titre: 'L’intelligence artificielle dans Wellneuro',
+  resume:
+    'Où l’IA intervient, ce qu’elle fait, ce qu’elle ne fait jamais, et comment contester un contenu.',
+  sections: USAGE_IA_V6.sections.map(section =>
+    section.titre === 'Où l’IA intervient'
+      ? {
+          ...section,
+          paragraphes: section.paragraphes.map(paragraphe =>
+            paragraphe.startsWith('Le relevé des résultats')
+              ? paragraphe
+                  .replace(
+                    'ainsi que l’intervalle de référence et la marque d’anomalie tels que le laboratoire les a imprimés,',
+                    'ainsi que l’intervalle de référence, la marque d’anomalie et les commentaires tels que le laboratoire les a imprimés,',
+                  )
+                  .replace(
+                    'Ces deux mentions du laboratoire sont recopiées sans être complétées ni reformulées.',
+                    'Ces mentions du laboratoire sont recopiées sans être complétées ni reformulées ; les commentaires restent dans votre dossier, même après la suppression du compte rendu.',
+                  )
+              : paragraphe,
+          ),
+        }
+      : section,
+  ),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Le relevé des comptes rendus de vos analyses biologiques s’étend : l’outil recopie aussi les commentaires imprimés par le laboratoire, sans les compléter ni les reformuler. Votre praticien les voit quand il relit les résultats, et ils restent dans votre dossier après la suppression du compte rendu. L’outil ne déclare toujours lui-même aucune valeur normale ou anormale et n’en tire aucune conclusion. Rien d’autre ne change.',
+  publieLe: '2026-10-11',
+  requiresAcknowledgement: false,
+  hash: '62a8345c507bff04e7141cf2753614b86819e8b0c8f55fa23cf0b09043739698',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1434,6 +1484,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   USAGE_IA_V4,
   USAGE_IA_V5,
   USAGE_IA_V6,
+  USAGE_IA_V7,
   DROITS_PATIENT_V1,
   CONSENTEMENT_SUIVI_V2,
   CONSENTEMENT_SUIVI_V3,
