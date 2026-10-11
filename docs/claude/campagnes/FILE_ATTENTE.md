@@ -602,6 +602,14 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   entre « recopier une phrase du corpus » et « nommer une borne que le corpus
   partage avec la littérature ». *(Adresse : à écrire dans la règle G6
   elle-même, avant la prochaine attestation qui citerait un chiffre.)*
+- **La minute d'après affiche l'identifiant brut de la priorité** — relevé par la
+  revue du code du lot 5A ([[D-279]]), le 2026-10-12. `ClotureMinuteApresPanel`
+  rend `selectedPriorityId` tel quel : « priority:PRIO-PON-01 » pour un axe
+  depuis toujours, « libre:sommeil:3fa2… » pour une priorité posée depuis
+  [[D-279]]. Ni lisible ni français ; aucun risque clinique (écran praticien,
+  rien n'en dépend). Le correctif rend le libellé (registre signé ou libellé
+  du praticien) au lieu de l'identifiant. *(Adresse : petit lot d'écran, hors
+  campagne, à prendre avec le prochain passage sur le copilote.)*
 
 ## Écarté à cet arbitrage — et pourquoi
 

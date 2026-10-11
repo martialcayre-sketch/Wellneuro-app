@@ -1,4 +1,11 @@
 import { canonicalSha256 } from './canonical';
+import {
+  LIBELLE_PRIORITE_LIBRE_MAX,
+  estDomainePrioriteLibre,
+  estIdentifiantPrioriteLibre,
+  normaliserLibellePrioriteLibre,
+} from './prioriteLibre';
+import { identifiantPrioriteLibre } from './prioriteLibreServeur';
 import { VERSION_DECISION_CARD } from './types';
 import type {
   ClinicalFindingProvenance,
@@ -121,9 +128,35 @@ export function buildDecisionCard(input: {
     if (selectedMainPriority.selectedBy !== 'practitioner') {
       throw new TypeError('La priorité sélectionnée appartient au praticien.');
     }
-    if (blocked) throw new TypeError('Une priorité ne peut être sélectionnée avant la levée des bloqueurs.');
-    if (!candidatesById.has(selectedMainPriority.candidateId)) {
-      throw new TypeError('La priorité sélectionnée doit appartenir aux candidats classés.');
+    if (estIdentifiantPrioriteLibre(selectedMainPriority.candidateId)) {
+      // LA PRIORITÉ POSÉE PAR LE PRATICIEN ([[D-279]]) n'est pas un candidat :
+      // elle ne se vérifie pas contre le classement, mais contre elle-même —
+      // domaine de la liste fermée, libellé normalisé non vide, identifiant
+      // qui en dérive. Seul un constat de sécurité la refuse (§2) : ni
+      // l'absence de candidat, ni l'abstention pour recueil incomplet.
+      if (input.review.safetyFindings.length > 0) {
+        throw new TypeError('Une priorité ne peut être posée avant la revue des constats de sécurité.');
+      }
+      const libre = selectedMainPriority.libre;
+      if (!libre || !estDomainePrioriteLibre(libre.domaine)) {
+        throw new TypeError('Une priorité posée par le praticien exige un domaine de la liste fermée.');
+      }
+      if (libre.libelle !== normaliserLibellePrioriteLibre(libre.libelle)
+        || libre.libelle === ''
+        || libre.libelle.length > LIBELLE_PRIORITE_LIBRE_MAX) {
+        throw new TypeError('Le libellé d’une priorité posée par le praticien est vide, trop long ou non normalisé.');
+      }
+      if (selectedMainPriority.candidateId !== identifiantPrioriteLibre(libre)) {
+        throw new TypeError('L’identifiant de la priorité posée ne correspond pas à son domaine et à son libellé.');
+      }
+    } else {
+      if (selectedMainPriority.libre !== undefined) {
+        throw new TypeError('Un candidat du moteur ne porte pas de libellé libre.');
+      }
+      if (blocked) throw new TypeError('Une priorité ne peut être sélectionnée avant la levée des bloqueurs.');
+      if (!candidatesById.has(selectedMainPriority.candidateId)) {
+        throw new TypeError('La priorité sélectionnée doit appartenir aux candidats classés.');
+      }
     }
     canonicalIso(selectedMainPriority.selectedAt, 'selectedAt');
     nonEmpty(selectedMainPriority.rationale, 'justification de sélection');

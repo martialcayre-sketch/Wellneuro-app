@@ -71,16 +71,55 @@ describe('SelectionPrioritePanel', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('ne rend rien quand une abstention est requise', () => {
+  // D-279 §2 — UN CONSTAT DE SÉCURITÉ RETIRE TOUT GESTE, et lui seul.
+  it('ne rend rien quand un constat de sécurité est ouvert', () => {
     const { container } = rendre({
-      abstention: { status: 'required', ruleIds: ['ABST-CAN-01'], limitations: ['Canal non mesurable.'] },
+      abstention: { status: 'required', ruleIds: ['ABST-SEC-01'], limitations: ['Signal déclaré.'] },
+      safetyFindingIds: ['SAFETY_1'],
     });
     expect(container.innerHTML).toBe('');
   });
 
-  it('ne rend rien quand aucun candidat n’est classé (table non signée)', () => {
-    const { container } = rendre({ priorityCandidates: [], proposedMainPriorityId: null });
-    expect(container.innerHTML).toBe('');
+  // D-279 : SANS CANDIDAT, OU SOUS RECUEIL INCOMPLET, le panneau ne se tait
+  // plus — la priorité posée par le praticien est le seul geste, pré-choisi.
+  it.each([
+    ['aucun candidat classé (table non signée)', { priorityCandidates: [], proposedMainPriorityId: null }],
+    ['abstention pour recueil incomplet', {
+      priorityCandidates: [], proposedMainPriorityId: null,
+      abstention: { status: 'required' as const, ruleIds: ['ABST-CAN-01'], limitations: ['Canal non mesurable.'] },
+    }],
+  ])('offre de poser la priorité : %s', (_cas, over) => {
+    const { ecran, onRetenir } = rendre(over);
+    expect(ecran.getByText(/Aucun axe n’est proposé pour ce dossier/)).toBeTruthy();
+    expect(ecran.queryByRole('radio')).toBeNull();
+    fireEvent.change(ecran.getByLabelText(/Domaine/), { target: { value: 'sommeil' } });
+    fireEvent.change(ecran.getByLabelText(/Libellé de la priorité/), { target: { value: 'Retrouver un sommeil réparateur' } });
+    fireEvent.change(ecran.getByLabelText(/Pourquoi cette priorité/), { target: { value: '  Le patient le place en tête.  ' } });
+    fireEvent.click(ecran.getByRole('button', { name: 'Retenir cette priorité' }));
+    expect(onRetenir).toHaveBeenCalledWith(
+      { prioriteLibre: { domaine: 'sommeil', libelle: 'Retrouver un sommeil réparateur' } },
+      'Le patient le place en tête.',
+    );
+  });
+
+  it('ferme le bouton tant que domaine et libellé manquent à une priorité posée', () => {
+    const { ecran } = rendre({ priorityCandidates: [], proposedMainPriorityId: null });
+    fireEvent.change(ecran.getByLabelText(/Pourquoi cette priorité/), { target: { value: 'Motif.' } });
+    const bouton = ecran.getByRole('button', { name: 'Retenir cette priorité' }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(true);
+    fireEvent.change(ecran.getByLabelText(/Domaine/), { target: { value: 'autre' } });
+    fireEvent.change(ecran.getByLabelText(/Libellé de la priorité/), { target: { value: '\u00A0\u200B' } });
+    expect(bouton.disabled).toBe(true);
+  });
+
+  it('à côté des candidats, propose aussi de poser une autre priorité', () => {
+    const { ecran, onRetenir } = rendre();
+    fireEvent.click(ecran.getByLabelText('Poser une autre priorité'));
+    fireEvent.change(ecran.getByLabelText(/Domaine/), { target: { value: 'moral' } });
+    fireEvent.change(ecran.getByLabelText(/Libellé de la priorité/), { target: { value: 'Apaiser les soirées' } });
+    fireEvent.change(ecran.getByLabelText(/Pourquoi cette priorité/), { target: { value: 'Motif.' } });
+    fireEvent.click(ecran.getByRole('button', { name: 'Retenir cette priorité' }));
+    expect(onRetenir).toHaveBeenCalledWith({ prioriteLibre: { domaine: 'moral', libelle: 'Apaiser les soirées' } }, 'Motif.');
   });
 
   it('dit ce qui manque, et pourquoi cela bloque le protocole', () => {
@@ -120,7 +159,7 @@ describe('SelectionPrioritePanel', () => {
       target: { value: '  Réveils nocturnes au premier plan.  ' },
     });
     fireEvent.click(ecran.getByRole('button', { name: 'Retenir cette priorité' }));
-    expect(onRetenir).toHaveBeenCalledWith('priority:P2', 'Réveils nocturnes au premier plan.');
+    expect(onRetenir).toHaveBeenCalledWith({ candidateId: 'priority:P2' }, 'Réveils nocturnes au premier plan.');
   });
 
   it('ferme le bouton pendant l’enregistrement et le dit', () => {
@@ -162,12 +201,14 @@ describe('SelectionPrioritePanel', () => {
       expect(ecran.queryByLabelText(/Pourquoi cette priorité/)).toBeNull();
     });
 
-    it('parle même quand plus aucun candidat n’est classé', () => {
+    // Depuis D-279, sans candidat le geste reste offert, et la phrase parle
+    // au-dessus du formulaire de la priorité posée.
+    it('parle quand plus aucun candidat n’est classé, au-dessus de la priorité à poser', () => {
       const { ecran } = rendre(
         { priorityCandidates: [], proposedMainPriorityId: null }, vi.fn(), 'idle', null, true,
       );
       expect(ecran.getByRole('status').textContent).toMatch(PHRASE_PEREMPTION);
-      expect(ecran.queryByRole('button')).toBeNull();
+      expect(ecran.getByLabelText(/Domaine/)).toBeTruthy();
     });
 
     // Sans carte, il n'y a pas de réponse `ready`, donc pas de drapeau — et le
@@ -218,6 +259,37 @@ describe('SelectionPrioritePanel', () => {
       fireEvent.click(ecran.getByRole('button', { name: 'Annuler' }));
       expect(ecran.queryByLabelText(/Pourquoi cette priorité/)).toBeNull();
       expect(onRetenir).not.toHaveBeenCalled();
+    });
+  });
+
+  // D-279 — UNE PRIORITÉ POSÉE DÉJÀ RETENUE se relit avec son domaine, et se
+  // change en repartant de ce que le praticien avait écrit.
+  describe('quand une priorité posée par le praticien est retenue', () => {
+    const libre = { domaine: 'sommeil' as const, libelle: 'Retrouver un sommeil réparateur' };
+    const retenue = {
+      priorityCandidates: [],
+      proposedMainPriorityId: null,
+      selectedMainPriority: {
+        candidateId: 'libre:sommeil:0123456789abcdef',
+        selectedAt: '2026-01-02T00:00:00.000Z',
+        selectedBy: 'practitioner' as const,
+        rationale: 'Le patient le place en tête.',
+        libre,
+      },
+    };
+
+    it('montre son libellé, son domaine et son motif', () => {
+      const { ecran } = rendre(retenue);
+      expect(ecran.getByText('Retrouver un sommeil réparateur')).toBeTruthy();
+      expect(ecran.getByText(/Priorité posée par le praticien — Sommeil \/ insomnie/)).toBeTruthy();
+      expect(ecran.getByText('Le patient le place en tête.')).toBeTruthy();
+    });
+
+    it('la changer repart du domaine et du libellé écrits', () => {
+      const { ecran } = rendre(retenue);
+      fireEvent.click(ecran.getByRole('button', { name: 'Retenir une autre priorité' }));
+      expect((ecran.getByLabelText(/Domaine/) as HTMLSelectElement).value).toBe('sommeil');
+      expect((ecran.getByLabelText(/Libellé de la priorité/) as HTMLInputElement).value).toBe('Retrouver un sommeil réparateur');
     });
   });
 });

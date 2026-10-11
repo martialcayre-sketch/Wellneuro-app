@@ -1,5 +1,6 @@
 import type { JalonMomentum, NiveauPreuveBesoin, StrateCode } from '../equilibre/types';
 import type { FoodCompassActionRef, RecommendedPlateRef } from '../food-compass/types';
+import type { PrioriteLibre } from './prioriteLibre';
 
 export const VERSION_SCHEMA_CLINICAL_SNAPSHOT = 'c1-clinical-snapshot-v1' as const;
 // v1 → v2 (2026-07-28) : le besoin 3 « Rythme alimentaire » gagne une source.
@@ -368,6 +369,14 @@ export type DecisionPrioritySelection = {
   selectedAt: string;
   selectedBy: 'practitioner';
   rationale: string;
+  /**
+   * La priorité POSÉE PAR LE PRATICIEN ([[D-279]]) — présente si et seulement
+   * si `candidateId` est en `libre:<domaine>:<16 hex>`. CLÉ ABSENTE pour un
+   * candidat du moteur, jamais `undefined` posé ni `null` : la sélection entre
+   * dans l'empreinte de la carte, et une clé de plus changerait l'empreinte de
+   * chaque carte déjà ancrée par une version de protocole.
+   */
+  libre?: PrioriteLibre;
 };
 
 export type DecisionCounterfactual = {

@@ -12,6 +12,7 @@ import {
   CANDIDAT_RANG_1,
   HORODATAGE_C1_FIXTURE,
   MOTIF_SELECTION_FIXTURE,
+  designerTablePriorites,
   passationsC1Fixture,
   retablirTablePriorites,
   signerTablePriorites,
@@ -21,6 +22,7 @@ import { proposeRuntimeEpisode } from './runtimeFromPrisma';
 import { confirmAssessmentEpisode } from './assessmentEpisode';
 import { DATE_RIDEAU_FIXTURE } from './dossierT0Fixture';
 import { construireChaineC1Tolerante, lireSelectionPriorite, teteDuFil } from './selectionPrioritePrisma';
+import { identifiantPrioriteLibre } from './prioriteLibreServeur';
 
 // Le fil d'une carte est STRICTEMENT LINÉAIRE en base (`D-127` §3bis) : deux
 // index le garantissent, et le contrat SQL `c1_selection_priorite_v1_negatif`
@@ -107,6 +109,20 @@ describe('lireSelectionPriorite', () => {
     expect(args.where).toEqual({ idPatient: 'PAT_1', decisionCardId: 'CARTE' });
   });
 
+  // D-279 : une ligne `libre:` rend sa clé `libre` ; une ligne de candidat n'en
+  // porte AUCUNE — une clé de plus changerait l'empreinte des cartes ancrées.
+  it('rend la priorité posée par le praticien, et rien de plus pour un candidat', async () => {
+    const libre = { domaine: 'sommeil' as const, libelle: 'Retrouver un sommeil réparateur' };
+    prisma.decisionPrioritySelection.findMany.mockResolvedValue([{
+      ...ligne(), candidateId: identifiantPrioriteLibre(libre), domaineLibre: libre.domaine, libelleLibre: libre.libelle,
+    }]);
+    const selection = await lireSelectionPriorite('PAT_1', 'CARTE');
+    expect(selection?.libre).toEqual(libre);
+
+    prisma.decisionPrioritySelection.findMany.mockResolvedValue([{ ...ligne(), domaineLibre: null, libelleLibre: null }]);
+    expect(Object.keys((await lireSelectionPriorite('PAT_1', 'CARTE')) ?? {})).not.toContain('libre');
+  });
+
   it('rend null quand le dossier ne porte aucune sélection', async () => {
     prisma.decisionPrioritySelection.findMany.mockResolvedValue([]);
     expect(await lireSelectionPriorite('PAT_1', 'CARTE')).toBeNull();
@@ -176,6 +192,26 @@ describe('construireChaineC1Tolerante', () => {
     expect(chaine.decisionCard.selectedMainPriority).toBeNull();
     // La chaîne est SERVIE, pas perdue : c'est tout l'objet.
     expect(chaine.decisionCard.decisionCardId).toBe('runtime-decision-T0-fixture');
+  });
+
+  // D-279 : LA PRIORITÉ POSÉE TIENT SANS CANDIDAT — table des priorités non
+  // signée, aucun axe classé — et n'est écartée que par un constat de sécurité.
+  const libre = { domaine: 'autre' as const, libelle: 'Reprendre une activité choisie' };
+  const selectionLibre = { ...selection, candidateId: identifiantPrioriteLibre(libre), libre };
+
+  it('sert la priorité posée par le praticien sans aucun candidat', () => {
+    designerTablePriorites();
+    const { chaine, selectionEcartee } = construireChaineC1Tolerante(entree(ANAMNESE_C1_FIXTURE), selectionLibre);
+    expect(chaine.decisionCard.priorityCandidates).toEqual([]);
+    expect(selectionEcartee).toBe(false);
+    expect(chaine.decisionCard.selectedMainPriority?.libre).toEqual(libre);
+  });
+
+  it('écarte la priorité posée quand un signal d’alerte est apparu', () => {
+    signerTablePriorites();
+    const { chaine, selectionEcartee } = construireChaineC1Tolerante(entree(ANAMNESE_C1_FIXTURE_AVEC_SIGNAL), selectionLibre);
+    expect(selectionEcartee).toBe(true);
+    expect(chaine.decisionCard.selectedMainPriority).toBeNull();
   });
 
   // LE REPLI N'EST PAS UN AVALEUR D'ERREURS. Sans sélection à écarter, une

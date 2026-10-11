@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildDecisionCard } from './decisionCard';
+import { identifiantPrioriteLibre } from './prioriteLibreServeur';
 import type { ClinicalReview, ClinicalSnapshot, DecisionPriorityCandidate } from './types';
 
 function snapshot(): ClinicalSnapshot {
@@ -106,5 +107,92 @@ describe('DecisionCard', () => {
       decisionCardId: 'card-1', createdAt: '2026-01-04T00:00:00.000Z', snapshot: snapshot(),
       review: review({ status: 'required', ruleIds: ['RULE_VALIDATED'], limitations: [] }), candidates: [candidate()], selectedMainPriority: selection,
     })).toThrow('bloqueurs');
+  });
+});
+
+// D-279 — LA PRIORITÉ POSÉE PAR LE PRATICIEN. Elle ne se vérifie pas contre le
+// classement mais contre elle-même ; seul un constat de sécurité la refuse.
+describe('DecisionCard — priorité posée par le praticien (D-279)', () => {
+  const libre = { domaine: 'sommeil' as const, libelle: 'Retrouver un sommeil réparateur' };
+  const selectionLibre = {
+    candidateId: identifiantPrioriteLibre(libre), selectedAt: '2026-01-04T00:00:00.000Z',
+    selectedBy: 'practitioner' as const, rationale: 'Aucun axe proposé ; le patient place le sommeil en tête.', libre,
+  };
+  const base = { decisionCardId: 'card-1', createdAt: '2026-01-04T00:00:00.000Z', snapshot: snapshot() };
+  const avecConstat = (): ClinicalReview => ({
+    ...review(),
+    safetyFindings: [{ findingId: 'SAFETY_1' }] as unknown as ClinicalReview['safetyFindings'],
+  });
+
+  it('est acceptée sans aucun candidat classé', () => {
+    const card = buildDecisionCard({ ...base, review: review(), candidates: [], selectedMainPriority: selectionLibre });
+    expect(card.priorityCandidates).toEqual([]);
+    expect(card.selectedMainPriority).toEqual(selectionLibre);
+  });
+
+  it('est acceptée aux côtés des candidats, qui restent servis', () => {
+    const card = buildDecisionCard({ ...base, review: review(), candidates: [candidate()], selectedMainPriority: selectionLibre });
+    expect(card.priorityCandidates.map(item => item.candidateId)).toEqual(['candidate-1']);
+    expect(card.selectedMainPriority?.libre).toEqual(libre);
+  });
+
+  it('est acceptée sous abstention pour recueil incomplet — les candidats, eux, restent retirés', () => {
+    const card = buildDecisionCard({
+      ...base, review: review({ status: 'required', ruleIds: ['RULE_VALIDATED'], limitations: [] }),
+      candidates: [], selectedMainPriority: selectionLibre,
+    });
+    expect(card.selectedMainPriority?.candidateId).toBe(selectionLibre.candidateId);
+    expect(card.proposedMainPriorityId).toBeNull();
+  });
+
+  it('est refusée dès qu’un constat de sécurité est ouvert', () => {
+    expect(() => buildDecisionCard({ ...base, review: avecConstat(), candidates: [], selectedMainPriority: selectionLibre }))
+      .toThrow('constats de sécurité');
+  });
+
+  it('refuse un identifiant qui ne dérive pas du domaine et du libellé', () => {
+    expect(() => buildDecisionCard({
+      ...base, review: review(), selectedMainPriority: { ...selectionLibre, libre: { ...libre, libelle: 'Autre libellé' } },
+    })).toThrow('identifiant');
+    expect(() => buildDecisionCard({
+      ...base, review: review(), selectedMainPriority: { ...selectionLibre, libre: { ...libre, domaine: 'digestion' } },
+    })).toThrow('identifiant');
+  });
+
+  it('refuse un domaine hors liste, un libellé vide ou non normalisé, une forme libre sans libellé', () => {
+    const avec = (l: { domaine: string; libelle: string }) => ({
+      ...selectionLibre,
+      candidateId: identifiantPrioriteLibre(l as typeof libre),
+      libre: l as typeof libre,
+    });
+    expect(() => buildDecisionCard({ ...base, review: review(), selectedMainPriority: avec({ domaine: 'anxiete', libelle: 'X' }) }))
+      .toThrow('liste fermée');
+    expect(() => buildDecisionCard({ ...base, review: review(), selectedMainPriority: avec({ domaine: 'sommeil', libelle: '' }) }))
+      .toThrow('libellé');
+    expect(() => buildDecisionCard({ ...base, review: review(), selectedMainPriority: avec({ domaine: 'sommeil', libelle: '  Dormir  ' }) }))
+      .toThrow('libellé');
+    expect(() => buildDecisionCard({ ...base, review: review(), selectedMainPriority: avec({ domaine: 'sommeil', libelle: 'x'.repeat(201) }) }))
+      .toThrow('libellé');
+    const { libre: _retire, ...sansLibre } = selectionLibre;
+    expect(() => buildDecisionCard({ ...base, review: review(), selectedMainPriority: sansLibre })).toThrow('liste fermée');
+  });
+
+  it('refuse un candidat du moteur qui porterait un libellé libre', () => {
+    expect(() => buildDecisionCard({
+      ...base, review: review(), candidates: [candidate()],
+      selectedMainPriority: { ...selectionLibre, candidateId: 'candidate-1' },
+    })).toThrow('candidat du moteur');
+  });
+
+  // L'EMPREINTE DES CARTES DÉJÀ ANCRÉES NE BOUGE PAS : une sélection de
+  // candidat ne porte AUCUNE clé `libre`, et une clé `undefined` ne compte pas.
+  it('laisse inchangée l’empreinte d’une carte à candidat retenu', () => {
+    const selection = { candidateId: 'candidate-1', selectedAt: '2026-01-04T00:00:00.000Z', selectedBy: 'practitioner' as const, rationale: 'Choix fixture.' };
+    const card = buildDecisionCard({ ...base, review: review(), candidates: [candidate()], selectedMainPriority: selection });
+    expect(Object.keys(card.selectedMainPriority ?? {})).not.toContain('libre');
+    const indefinie = buildDecisionCard({
+      ...base, review: review(), candidates: [candidate()], selectedMainPriority: { ...selection, libre: undefined },
+    });
+    expect(indefinie.inputHash).toBe(card.inputHash);
   });
 });

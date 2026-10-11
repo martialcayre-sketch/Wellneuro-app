@@ -32,7 +32,7 @@ export function buildPatientProtocolView(input: {
   patientLimitations?: string[];
 }): PatientProtocolView {
   const { decisionCard, protocolDraft, approval } = input;
-  const { selectedPriorityId, candidate, reviewedAt } = garderCoherencePatient({ decisionCard, protocolDraft });
+  const { selectedPriorityId, priorityLabel, reviewedAt } = garderCoherencePatient({ decisionCard, protocolDraft });
   if (approval.approvedBy !== 'practitioner'
     || approval.confirmation !== 'content_approved_for_diffusion') {
     throw new TypeError('La validation pour diffusion doit être confirmée par le praticien.');
@@ -48,7 +48,7 @@ export function buildPatientProtocolView(input: {
 
   const contenu = projeterContenuPatient({
     protocolDraft,
-    candidate,
+    priorityLabel,
     patientLimitations: input.patientLimitations,
   });
 

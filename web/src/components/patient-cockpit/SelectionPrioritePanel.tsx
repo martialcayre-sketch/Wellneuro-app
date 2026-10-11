@@ -1,7 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
+import { isGesteCandidatDisponible } from '@/lib/clinical-engine/decisionGuards';
+import {
+  DOMAINES_PRIORITE_LIBRE,
+  LIBELLE_PRIORITE_LIBRE_MAX,
+  estSelectionLibre,
+  isPrioriteLibreOuverte,
+  libelleDomainePrioriteLibre,
+  libellePrioriteRetenue,
+  normaliserLibellePrioriteLibre,
+  type DomainePrioriteLibre,
+  type PrioriteLibre,
+} from '@/lib/clinical-engine/prioriteLibre';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 
 // LE GESTE QUI MANQUAIT — [[D-127]].
@@ -25,6 +36,16 @@ import type { DecisionCard } from '@/lib/clinical-engine/types';
 
 export type EtatSelectionPriorite = 'idle' | 'saving' | 'error';
 
+/**
+ * Ce que l'écran transmet : un candidat du moteur, OU une priorité posée par le
+ * praticien ([[D-279]]) — domaine et libellé, jamais l'identifiant, que seul le
+ * serveur dérive.
+ */
+export type ChoixPriorite = { candidateId: string } | { prioriteLibre: PrioriteLibre };
+
+/** Valeur du bouton radio « poser une autre priorité » — jamais un `candidateId`. */
+const CHOIX_LIBRE = '__priorite_libre__';
+
 export function SelectionPrioritePanel({
   decisionCard,
   selectionEcartee = false,
@@ -42,19 +63,21 @@ export function SelectionPrioritePanel({
   selectionEcartee?: boolean;
   etat: EtatSelectionPriorite;
   erreur: string | null;
-  onRetenir: (candidateId: string, motif: string) => void;
+  onRetenir: (choix: ChoixPriorite, motif: string) => void;
 }) {
   const dejaRetenu = decisionCard?.selectedMainPriority ?? null;
   const [ouvert, setOuvert] = useState(false);
   const [candidatChoisi, setCandidatChoisi] = useState<string | null>(null);
+  const [domaineLibre, setDomaineLibre] = useState<DomainePrioriteLibre | ''>('');
+  const [libelleLibre, setLibelleLibre] = useState('');
   const [motif, setMotif] = useState('');
 
   // TROIS SILENCES, ET CHACUN A SON PROPRIÉTAIRE AILLEURS. Pas de carte : la
   // phase n'est pas ouverte. Décision bloquée : « Priorité et limites » l'a déjà
   // dit, avec le motif signé — un second bloc répéterait sans ajouter, et
-  // proposerait un choix que `buildDecisionCard` refuserait. Aucun candidat : la
-  // table des règles n'est pas signée, il n'y a rien à retenir et la carte le
-  // dit déjà (« Aucune priorité proposée »).
+  // proposerait un choix que `buildDecisionCard` refuserait. Depuis [[D-279]],
+  // « aucun candidat » n'est plus un silence : la priorité posée par le
+  // praticien reste offerte, et seul un constat de sécurité retire tout geste.
   //
   // ILS PORTENT SUR LE GESTE, JAMAIS SUR LE CONSTAT ([[D-127]] §11). « Il n'y a
   // rien à retenir » et « ce que vous aviez retenu n'est plus servi » sont deux
@@ -66,21 +89,29 @@ export function SelectionPrioritePanel({
   // l'essentiel.
   if (!decisionCard) return null;
 
-  // Le geste est offert tant que la décision n'est pas bloquée et qu'un
-  // candidat est classé — que le praticien ait déjà retenu une priorité ou
-  // non, puisque ce panneau sert aussi à la CHANGER. `isSelectionPrioriteDue`
-  // répond à la question voisine (« reste-t-il à faire ? ») et sert le statut
-  // de la phase : les deux lisent les mêmes champs, depuis le même module.
-  const gesteDisponible =
-    !isDecisionBloquee(decisionCard) && decisionCard.priorityCandidates.length > 0;
+  // DEUX GESTES, DEUX OUVERTURES ([[D-279]]). Choisir un CANDIDAT : décision
+  // non bloquée et au moins un candidat classé, la règle de [[D-127]]. Poser
+  // une priorité : ouverte tant qu'aucun constat de sécurité n'est présent —
+  // sans candidat, et sous abstention pour recueil incomplet. Offerts que le
+  // praticien ait déjà retenu une priorité ou non, puisque ce panneau sert
+  // aussi à la CHANGER. `isSelectionPrioriteDue` répond à la question voisine
+  // (« reste-t-il à faire ? ») depuis les mêmes gardes.
+  const gesteCandidat = isGesteCandidatDisponible(decisionCard);
+  const gesteLibre = isPrioriteLibreOuverte(decisionCard);
+  const gesteDisponible = gesteCandidat || gesteLibre;
   if (!gesteDisponible && !selectionEcartee) return null;
 
-  const candidatRetenu = dejaRetenu
-    ? decisionCard.priorityCandidates.find(c => c.candidateId === dejaRetenu.candidateId) ?? null
-    : null;
+  const libelleRetenu = libellePrioriteRetenue(decisionCard);
+  const retenuLibre = estSelectionLibre(dejaRetenu) ? dejaRetenu.libre : null;
   const formulaireVisible = gesteDisponible && (ouvert || dejaRetenu === null);
   const motifRenseigne = motif.trim() !== '';
   const enregistrement = etat === 'saving';
+  // Sans candidat à choisir, la priorité posée est le seul geste : elle est
+  // pré-choisie, le praticien n'a pas à cocher une option unique.
+  const choixCourant = gesteCandidat ? candidatChoisi : CHOIX_LIBRE;
+  const libreChoisi = choixCourant === CHOIX_LIBRE;
+  const libreRenseigne = domaineLibre !== '' && normaliserLibellePrioriteLibre(libelleLibre) !== '';
+  const choixComplet = libreChoisi ? libreRenseigne : choixCourant !== null;
 
   return (
     <section aria-labelledby="selection-priorite-title" className="mt-4">
@@ -117,8 +148,15 @@ export function SelectionPrioritePanel({
         {gesteDisponible && (dejaRetenu !== null ? (
           <div>
             <p className="text-base font-semibold text-foreground">
-              {candidatRetenu?.label ?? 'Priorité retenue'}
+              {libelleRetenu ?? 'Priorité retenue'}
             </p>
+            {/* La priorité POSÉE se dit telle : son domaine, et qu'elle vient du
+                praticien — jamais confondue avec un axe classé par le moteur. */}
+            {retenuLibre && (
+              <p className="text-sm text-muted-foreground">
+                Priorité posée par le praticien — {libelleDomainePrioriteLibre(retenuLibre.domaine)}
+              </p>
+            )}
             {/* LE MOTIF EST RE-AFFICHÉ, jamais seulement stocké : c'est la
                 moitié de l'acte, et le praticien qui rouvre le dossier six
                 semaines plus tard vient d'abord lire pourquoi. */}
@@ -128,7 +166,9 @@ export function SelectionPrioritePanel({
                 type="button"
                 onClick={() => {
                   setOuvert(true);
-                  setCandidatChoisi(dejaRetenu.candidateId);
+                  setCandidatChoisi(retenuLibre ? CHOIX_LIBRE : dejaRetenu.candidateId);
+                  setDomaineLibre(retenuLibre?.domaine ?? '');
+                  setLibelleLibre(retenuLibre?.libelle ?? '');
                   setMotif('');
                 }}
                 className="mt-3 min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
@@ -138,9 +178,16 @@ export function SelectionPrioritePanel({
             )}
           </div>
         ) : (
-          <p className="text-base text-foreground">
-            Aucune priorité n’est retenue pour l’instant : le protocole 21 jours attend ce choix.
-          </p>
+          <div>
+            <p className="text-base text-foreground">
+              Aucune priorité n’est retenue pour l’instant : le protocole 21 jours attend ce choix.
+            </p>
+            {!gesteCandidat && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Aucun axe n’est proposé pour ce dossier : posez vous-même la priorité.
+              </p>
+            )}
+          </div>
         ))}
 
         {formulaireVisible && (
@@ -148,15 +195,20 @@ export function SelectionPrioritePanel({
             className="mt-3 space-y-3"
             onSubmit={event => {
               event.preventDefault();
-              if (candidatChoisi === null || !motifRenseigne || enregistrement) return;
-              onRetenir(candidatChoisi, motif.trim());
+              if (!choixComplet || !motifRenseigne || enregistrement) return;
+              onRetenir(
+                libreChoisi
+                  ? { prioriteLibre: { domaine: domaineLibre as DomainePrioriteLibre, libelle: libelleLibre } }
+                  : { candidateId: choixCourant as string },
+                motif.trim(),
+              );
             }}
           >
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium text-foreground">
                 Priorité à retenir
               </legend>
-              {decisionCard.priorityCandidates.map(candidat => (
+              {gesteCandidat && decisionCard.priorityCandidates.map(candidat => (
                 <label
                   key={candidat.candidateId}
                   className="flex min-h-11 items-start gap-2 rounded-lg border border-border p-3"
@@ -181,6 +233,52 @@ export function SelectionPrioritePanel({
                   </span>
                 </label>
               ))}
+              {gesteCandidat && gesteLibre && (
+                <label className="flex min-h-11 items-start gap-2 rounded-lg border border-border p-3">
+                  <input
+                    type="radio"
+                    name="priorite-candidate"
+                    value={CHOIX_LIBRE}
+                    checked={candidatChoisi === CHOIX_LIBRE}
+                    onChange={() => setCandidatChoisi(CHOIX_LIBRE)}
+                    className="mt-1"
+                  />
+                  <span className="block text-sm font-medium text-foreground">Poser une autre priorité</span>
+                </label>
+              )}
+              {/* LA PRIORITÉ POSÉE ([[D-279]]) : un domaine pris dans une liste
+                  fermée — il range, il ne déclenche rien — et le libellé que le
+                  patient lira en tête de son protocole. */}
+              {gesteLibre && libreChoisi && (
+                <div className="space-y-3 rounded-lg border border-border p-3">
+                  <label className="block text-sm font-medium text-foreground">
+                    Domaine
+                    <select
+                      value={domaineLibre}
+                      onChange={event => setDomaineLibre(event.target.value as DomainePrioriteLibre | '')}
+                      className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground"
+                    >
+                      <option value="">Choisir un domaine</option>
+                      {DOMAINES_PRIORITE_LIBRE.map(domaine => (
+                        <option key={domaine.id} value={domaine.id}>{domaine.libelle}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-sm font-medium text-foreground">
+                    Libellé de la priorité
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      Le patient lira ce texte en tête de son protocole.
+                    </span>
+                    <input
+                      type="text"
+                      value={libelleLibre}
+                      onChange={event => setLibelleLibre(event.target.value)}
+                      maxLength={LIBELLE_PRIORITE_LIBRE_MAX}
+                      className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground"
+                    />
+                  </label>
+                </div>
+              )}
             </fieldset>
 
             {/* Étiquette ENVELOPPANTE, patron `ArbitrageBiologiquePanel` : le
@@ -210,7 +308,7 @@ export function SelectionPrioritePanel({
             <div className="flex flex-wrap gap-2">
               <button
                 type="submit"
-                disabled={candidatChoisi === null || !motifRenseigne || enregistrement}
+                disabled={!choixComplet || !motifRenseigne || enregistrement}
                 className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
               >
                 {enregistrement ? 'Enregistrement…' : 'Retenir cette priorité'}

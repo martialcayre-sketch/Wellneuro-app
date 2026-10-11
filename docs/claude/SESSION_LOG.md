@@ -9933,3 +9933,17 @@ commentaires, et l'acte ne les aurait pas couverts.
 
 **Prochaine action.** Merger, puis `/clear` ; 5A s'ouvre sur le constat v4,
 puis sur sa décision `D-xxx` en mode plan.
+
+## 2026-10-12 — Lot 5A : la priorité posée par le praticien (D-279)
+
+**Fait.** Constat v4 : aucun import neuf. `D-279` et la migration mergées
+(#1402), appliquées par release-db approuvée, constatées par conteneur. Code :
+domaine (liste fermée) + libellé, offerts sans candidat et sous recueil
+incomplet ; un constat de sécurité bloque tout ; le patient lit le libellé ;
+objectif dans les seuls mots du patient. Revue `wn-reviewer` GO, quatre P2
+corrigés, un routé. T3 vert.
+
+**Écarté.** Texte seul ou liste seule ; garder le blocage sous recueil
+incomplet ; rattacher le libellé à l'objectif négocié pour éviter la migration.
+
+**Prochaine action.** PR, merge, constat ; puis lot 8B.

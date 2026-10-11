@@ -22,14 +22,17 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 import { SECOND_RIDEAU_RENDU_FIXTURE, SYNTHESE_VALIDEE_FIXTURE } from '@/lib/clinical-engine/dossierT0Fixture';
 import {
   ANAMNESE_C1_FIXTURE,
+  ANAMNESE_C1_FIXTURE_AVEC_SIGNAL,
   CANDIDAT_RANG_1,
   CANDIDAT_RANG_2,
   chaineC1DeReference,
+  designerTablePriorites,
   ligneSelectionDeFixture,
   passationsC1Fixture,
   retablirTablePriorites,
   signerTablePriorites,
 } from '@/lib/clinical-engine/chaineC1Fixture';
+import { identifiantPrioriteLibre } from '@/lib/clinical-engine/prioriteLibreServeur';
 import { POST } from './route';
 
 // UNE CHAÎNE C1 RÉELLE, jamais une carte forgée ([[D-054]] arbitrage 5) : cette
@@ -42,6 +45,9 @@ import { POST } from './route';
 signerTablePriorites();
 const reference = chaineC1DeReference({ selection: null });
 const referenceAvecSelection = chaineC1DeReference({ selection: CANDIDAT_RANG_1 });
+const referenceAvecSignal = chaineC1DeReference({ selection: null, anamnese: ANAMNESE_C1_FIXTURE_AVEC_SIGNAL });
+designerTablePriorites();
+const referenceSansCandidat = chaineC1DeReference({ selection: null });
 retablirTablePriorites();
 
 const episode = reference.episode;
@@ -221,4 +227,77 @@ describe('POST /api/praticien/cockpit/priorite', () => {
     expect(await res.json()).toMatchObject({ reason: 'fil_illisible' });
     expect(prisma.decisionPrioritySelection.create).not.toHaveBeenCalled();
   });
+
+  // ── D-279 : LA PRIORITÉ POSÉE PAR LE PRATICIEN ─────────────────────────────
+  function corpsLibre(prioriteLibre: Record<string, unknown>, over: Record<string, unknown> = {}) {
+    const { candidateId: _retire, ...sansCandidat } = corps();
+    return { ...sansCandidat, prioriteLibre, ...over };
+  }
+
+  it('consigne une priorité posée : libellé normalisé, identifiant dérivé au serveur', async () => {
+    const res = await POST(postRequest(corpsLibre({ domaine: 'sommeil', libelle: '  Retrouver\u00A0un   sommeil réparateur ' })));
+    expect(res.status).toBe(200);
+    const data = prisma.decisionPrioritySelection.create.mock.calls[0][0].data;
+    const libre = { domaine: 'sommeil' as const, libelle: 'Retrouver un sommeil réparateur' };
+    expect(data).toMatchObject({
+      candidateId: identifiantPrioriteLibre(libre),
+      domaineLibre: 'sommeil',
+      libelleLibre: 'Retrouver un sommeil réparateur',
+      selectedByEmail: 'praticien@wellneuro.fr',
+    });
+  });
+
+  it('consigne une priorité posée quand aucun candidat n’est classé', async () => {
+    designerTablePriorites();
+    expect(referenceSansCandidat.decisionCard.priorityCandidates).toEqual([]);
+    const res = await POST(postRequest(corpsLibre(
+      { domaine: 'autre', libelle: 'Reprendre une activité choisie' },
+      { episode: referenceSansCandidat.episode, decisionCard: referenceSansCandidat.decisionCard },
+    )));
+    expect(res.status).toBe(200);
+    expect(prisma.decisionPrioritySelection.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('un candidat reste refusé quand aucun n’est classé', async () => {
+    designerTablePriorites();
+    const res = await POST(postRequest(corps({
+      episode: referenceSansCandidat.episode, decisionCard: referenceSansCandidat.decisionCard,
+    })));
+    expect(res.status).toBe(422);
+    expect(prisma.decisionPrioritySelection.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse les deux formes à la fois, et l’absence des deux (400)', async () => {
+    const deux = await POST(postRequest(corps({ prioriteLibre: { domaine: 'sommeil', libelle: 'Dormir' } })));
+    expect(deux.status).toBe(400);
+    const aucune = await POST(postRequest(corps({ candidateId: undefined })));
+    expect(aucune.status).toBe(400);
+    expect(prisma.decisionPrioritySelection.create).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['domaine hors liste', { domaine: 'anxiete', libelle: 'Dormir' }, 'domaine_inconnu'],
+    ['libellé vide', { domaine: 'sommeil', libelle: '' }, 'libelle_requis'],
+    ['libellé d’espaces insécables et de largeur nulle', { domaine: 'sommeil', libelle: '\u00A0\u200B\u202F' }, 'libelle_requis'],
+    ['libellé au-delà de 200', { domaine: 'sommeil', libelle: 'x'.repeat(201) }, 'libelle_trop_long'],
+    ['registre anxiogène', { domaine: 'sommeil', libelle: 'Traiter en urgence le sommeil' }, 'libelle_anxiogene'],
+  ])('refuse une priorité posée : %s (422)', async (_cas, prioriteLibre, raison) => {
+    const res = await POST(postRequest(corpsLibre(prioriteLibre)));
+    expect(res.status).toBe(422);
+    expect(await res.json()).toMatchObject({ ok: false, reason: raison });
+    expect(prisma.decisionPrioritySelection.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse une priorité posée sous constat de sécurité (422)', async () => {
+    prisma.consultation.findFirst.mockResolvedValue(ANAMNESE_C1_FIXTURE_AVEC_SIGNAL);
+    expect(referenceAvecSignal.decisionCard.safetyFindingIds.length).toBeGreaterThan(0);
+    const res = await POST(postRequest(corpsLibre(
+      { domaine: 'sommeil', libelle: 'Dormir' },
+      { episode: referenceAvecSignal.episode, decisionCard: referenceAvecSignal.decisionCard },
+    )));
+    expect(res.status).toBe(422);
+    expect(await res.json()).toMatchObject({ reason: 'decision_bloquee' });
+    expect(prisma.decisionPrioritySelection.create).not.toHaveBeenCalled();
+  });
 });
+
