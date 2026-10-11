@@ -17,7 +17,11 @@
 --      (tabulations comprises) ou au-delà de 2000 ; candidat vide ; auteur
 --      vide ou au-delà de 320 ; empreinte de carte qui n'est pas un SHA-256
 --      canonique ; ligne qui se supplante elle-même ;
---   5. la table porte EXACTEMENT dix colonnes, liste blanche — un
+--      Et depuis [[D-279]] (priorité posée par le praticien) : domaine hors
+--      liste fermée ; libellé vide, réduit à des blancs ou au-delà de 200 ;
+--      ligne `libre:` sans domaine ou sans libellé, ou dont l'identifiant ne
+--      reprend pas le domaine ; candidat du moteur qui porterait l'un des deux ;
+--   5. la table porte EXACTEMENT douze colonnes, liste blanche — un
 --      `commentaire` ou un `verdict` arrivé sans arbitrage se verrait ici ;
 --   6. la clé étrangère vers `patients` est en ON DELETE RESTRICT : la
 --      suppression nommée reste celle de `patient/effacement.ts`, jamais une
@@ -43,9 +47,13 @@ DECLARE
 
   COLONNES_ATTENDUES CONSTANT text[] := ARRAY[
     'candidate_id', 'created_at', 'decision_card_id',
-    'decision_card_input_hash', 'id', 'id_patient', 'rationale',
-    'selected_at', 'selected_by_email', 'supersedes_selection_id'
+    'decision_card_input_hash', 'domaine_libre', 'id', 'id_patient',
+    'libelle_libre', 'rationale', 'selected_at', 'selected_by_email',
+    'supersedes_selection_id'
   ];
+
+  -- Identifiant libre bien formé : `libre:<domaine>:<16 hex>`.
+  ID_LIBRE CONSTANT text := 'libre:sommeil:0123456789abcdef';
 
   -- Chaque entrée : une insertion qui DOIT échouer sur un CHECK. Toutes visent
   -- le patient de fixture : le CHECK est alors le SEUL motif de rejet
@@ -83,7 +91,35 @@ DECLARE
     -- tête de fil — la sélection disparaîtrait sans que rien ne le signale.
     ['une ligne qui se supplante elle-même',
      $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, supersedes_selection_id)
-        VALUES ('t10', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT', repeat('ab', 32), 'priority:REGLE_CONTRAT', 'Motif de contrat.', 'praticien@wellneuro.fr', 't10')$q$]
+        VALUES ('t10', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT', repeat('ab', 32), 'priority:REGLE_CONTRAT', 'Motif de contrat.', 'praticien@wellneuro.fr', 't10')$q$],
+    -- ── Priorité posée par le praticien ([[D-279]]) ──
+    ['domaine hors liste fermée',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre)
+        VALUES ('t11', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L1', repeat('ab', 32), 'libre:anxiete:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'anxiete', 'Retrouver un sommeil réparateur')$q$],
+    ['libellé vide',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre)
+        VALUES ('t12', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L2', repeat('ab', 32), 'libre:sommeil:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', '')$q$],
+    ['libellé réduit à des blancs, tabulations comprises',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre)
+        VALUES ('t13', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L3', repeat('ab', 32), 'libre:sommeil:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', E' \t\r\n')$q$],
+    ['libellé au-delà de 200 caractères',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre)
+        VALUES ('t14', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L4', repeat('ab', 32), 'libre:sommeil:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', repeat('x', 201))$q$],
+    ['ligne libre sans libellé',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre)
+        VALUES ('t15', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L5', repeat('ab', 32), 'libre:sommeil:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil')$q$],
+    ['ligne libre sans domaine',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, libelle_libre)
+        VALUES ('t16', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L6', repeat('ab', 32), 'libre:sommeil:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'Retrouver un sommeil réparateur')$q$],
+    ['identifiant libre qui ne reprend pas le domaine de la ligne',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre)
+        VALUES ('t17', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L7', repeat('ab', 32), 'libre:digestion:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur')$q$],
+    ['identifiant libre sans empreinte hexadécimale de 16 caractères',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre)
+        VALUES ('t18', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L8', repeat('ab', 32), 'libre:sommeil:XYZ', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur')$q$],
+    ['candidat du moteur qui porterait un libellé libre',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre)
+        VALUES ('t19', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L9', repeat('ab', 32), 'priority:REGLE_CONTRAT', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur')$q$]
   ];
 BEGIN
   -- ── 0. Fixture — patient fictif autorisé ─────────────────────────────────
@@ -117,6 +153,27 @@ BEGIN
     WHEN others THEN
       RAISE EXCEPTION
         'D-127: la CORRECTION chaînée d''une sélection a été refusée (SQLSTATE %) — l''unicité est-elle devenue TOTALE ? Le praticien ne pourrait plus changer d''avis.',
+        SQLSTATE;
+  END;
+
+  -- Une priorité POSÉE PAR LE PRATICIEN ([[D-279]]) est une sélection comme
+  -- une autre : acceptée en racine d'une autre carte, et un candidat du moteur
+  -- peut lui succéder (les colonnes libres restent alors NULL).
+  BEGIN
+    INSERT INTO decision_priority_selections
+      (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre)
+    VALUES ('libre_racine', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_LIBRE', EMPREINTE,
+            ID_LIBRE, 'Aucun axe proposé ; le patient place le sommeil en tête.',
+            'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur');
+    INSERT INTO decision_priority_selections
+      (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, supersedes_selection_id)
+    VALUES ('libre_corr', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_LIBRE', EMPREINTE,
+            'priority:REGLE_CONTRAT', 'Un axe est désormais proposé.',
+            'praticien@wellneuro.fr', 'libre_racine');
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION
+        'D-279: une priorité LIBRE valide, ou sa correction par un candidat, a été refusée (SQLSTATE %) — une contrainte est trop serrée, la route échouerait en production.',
         SQLSTATE;
   END;
 
@@ -197,7 +254,7 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- ── 5. Dix colonnes exactes, liste blanche ───────────────────────────────
+  -- ── 5. Douze colonnes exactes, liste blanche ─────────────────────────────
   -- `column_name` est un `sql_identifier`, pas un `text` : sans la conversion,
   -- la comparaison avec `COLONNES_ATTENDUES` ne porte pas sur le même type.
   SELECT array_agg(c.column_name::text ORDER BY c.column_name) INTO colonnes
@@ -281,7 +338,7 @@ BEGIN
       'D-127: `c1_selection_priorite_supersedes_unique` est absent, invalide ou devenu partiel — la fourche redeviendrait représentable.';
   END IF;
 
-  RAISE NOTICE 'SELECTION PRIORITE: racine acceptée, correction chaînée acceptée, racine d''une autre carte acceptée, seconde racine refusée, fourche refusée, % cas rejetants dont un CHECK de non-réflexivité, 10 colonnes exactes, 6 NOT NULL, 1 FK RESTRICT, deux gardes sous leur forme attendue, RLS deny-all.',
+  RAISE NOTICE 'SELECTION PRIORITE: racine acceptée, correction chaînée acceptée, racine d''une autre carte acceptée, priorité libre acceptée et corrigée par un candidat, seconde racine refusée, fourche refusée, % cas rejetants dont un CHECK de non-réflexivité, 12 colonnes exactes, 6 NOT NULL, 1 FK RESTRICT, deux gardes sous leur forme attendue, RLS deny-all.',
     array_length(cas, 1);
 END $$;
 

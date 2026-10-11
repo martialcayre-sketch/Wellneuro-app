@@ -4,6 +4,69 @@
 
 ## Décisions actives
 
+### D-279 — Lot 5A : le praticien peut poser lui-même la priorité, et l'absence de candidat ne bloque plus le protocole
+
+- Date : 2026-10-11
+- Statut : accepté. Arbitrages du responsable du 2026-10-10 (5A se lit comme
+  un **ajout**) et du 2026-10-11 (forme, portée, migration autorisée).
+- Domaine : décision C1 (priorité, protocole 21 jours, objectif). Lot 5A,
+  issu de l'instruction BP-26 ([[D-276]]), à la suite des lots 10A
+  ([[D-277]]) et 11A ([[D-278]]).
+- Livraison : une PR de migration, relue puis appliquée par `release-db`
+  approuvée et constatée par conteneur ; puis la PR du code consommateur.
+- **Ne touche pas** : les quatre règles de priorité signées, leur classement,
+  la gate de population, la procédure d'abstention et ses textes ; aucun
+  seuil, aucune borne. Les candidats d'axe restent calculés, servis et
+  choisis exactement comme avant.
+
+**§1 — La priorité posée par le praticien.** En plus des candidats d'axe, le
+praticien peut poser une priorité qu'il formule lui-même : un **domaine**, pris
+dans une liste fermée et identique pour tous — les sept domaines de « Mes
+plaintes actuelles » (fatigue, douleurs, digestion, surpoids, sommeil, moral,
+mobilité) et « autre » —, et un **libellé** qu'il écrit (200 caractères au
+plus). Le motif reste obligatoire, comme pour un candidat. Rien n'est calculé :
+le domaine range, il ne déclenche rien — ni besoins visés, ni repassation
+ciblée, ni hiérarchie des assiettes ([[D-254]]), qui restent attachés aux
+seuls candidats. Le libellé est l'intitulé de priorité que le patient lit en
+tête de son protocole.
+
+**§2 — Ce qui ne bloque plus.** Sans candidat, le protocole n'est plus
+impossible : la priorité posée par le praticien suffit à le construire, le
+relire et le diffuser. Elle est aussi offerte quand la décision est suspendue
+pour **recueil incomplet** (« Mes plaintes actuelles » non mesurable) : aucun
+axe n'est alors proposé, mais le praticien n'en a pas besoin. **Un constat de
+sécurité bloque toujours tout**, priorité libre comprise — `DC-12` et la
+procédure d'abstention sont inchangés pour ce motif, et l'orientation exigée
+en tête de protocole ([[D-257]]) aussi.
+
+**§3 — Forme technique.** La sélection reste une ligne du fil append-only de
+[[D-127]] ; deux colonnes neuves portent domaine et libellé. Son identifiant
+vaut `libre:<domaine>:<empreinte>`, l'empreinte étant tirée du libellé
+normalisé, au serveur. Changer le libellé change donc la priorité, et c'est un
+**pivot** au sens de [[D-255]] ; changer le seul motif ne l'est pas. Le
+libellé, texte du praticien servi au patient, passe à l'écriture la garde de
+vocabulaire anxiogène qui tient déjà les autres textes praticien du portail.
+
+**§4 — L'objectif dans les mots du patient.** Quand aucun candidat n'est
+citable, la proposition d'objectif n'est plus vide : une proposition unique
+juxtapose les seuls mots du patient à l'anamnèse (motif principal, objectif
+prioritaire, attentes), sans fragment de règle ni de plainte. Elle reste une
+citation — aucune phrase générée — et le praticien la reprend ou l'écarte comme
+les autres.
+
+**Amende** : [[D-127]] (une sélection n'est plus forcément un candidat classé) ;
+[[D-094]] (« sans candidat, aucune proposition » devient « sans candidat, une
+proposition faite des seuls mots du patient ») ; le principe d'un intitulé de
+priorité toujours tiré du registre signé, qui ne vaut plus que pour les
+candidats.
+
+**Écarté** : la seule liste de domaines, sans texte (le patient lirait un
+rangement, pas une priorité) ; le texte seul, sans domaine (aucun regroupement
+possible au constat) ; garder le blocage sous recueil incomplet (un patient qui
+n'a pas rempli ce questionnaire resterait sans protocole) ; rattacher le
+libellé à l'objectif négocié pour éviter une migration (chemin détourné, et
+l'objectif n'est lié ni à la sélection ni au protocole).
+
 ### D-278 — Lots de sécurité 11A : un effet indésirable « incertain » reçoit les numéros d'urgence, la dépression du DASS-21 empêche l'extinction du stress, les commentaires du laboratoire sont recopiés
 
 - Date : 2026-10-10
