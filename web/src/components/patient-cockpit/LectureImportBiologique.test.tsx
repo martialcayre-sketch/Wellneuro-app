@@ -67,6 +67,15 @@ describe('LectureImportBiologique', () => {
     render(<LectureImportBiologique idPatient="PAT_SOPHIE" imp={importLu([ligne('validee')])} actes={[]} onActe={async () => {}} />);
     expect(screen.getByText(/n’est pas un filet de sécurité/)).toBeTruthy();
     expect(screen.getByText(/Le document lui-même n’est pas affiché/)).toBeTruthy();
+    // Import antérieur à bio-extraction-v4 : aucun commentaire relevé, l'acte ne les nomme pas (D-278 §3).
+    expect(screen.getByText(/intervalles et marquages tels qu’imprimés par le laboratoire/)).toBeTruthy();
+    expect(screen.queryByText(/commentaires tels qu’imprimés/)).toBeNull();
+  });
+
+  it('commentaires relevés : l’acte les nomme dans la restitution lue (D-278 §3)', () => {
+    const imp = { ...importLu([ligne('validee')]), versionPrompt: 'bio-extraction-v4', commentairesReleves: true };
+    render(<LectureImportBiologique idPatient="PAT_SOPHIE" imp={imp} actes={[]} onActe={async () => {}} />);
+    expect(screen.getByText(/intervalles, marquages et commentaires tels qu’imprimés par le laboratoire/)).toBeTruthy();
   });
 
   it('consigne la lecture, puis relit', async () => {

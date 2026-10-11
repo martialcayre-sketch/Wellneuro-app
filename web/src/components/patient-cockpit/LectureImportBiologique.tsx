@@ -105,8 +105,10 @@ export function LectureImportBiologique({
       <h5 className="text-sm font-medium text-foreground">Lecture clinique du compte rendu</h5>
       <p className="mt-1 text-xs text-muted-foreground">
         Valider des lignes n’est pas lire le compte rendu. Consigner votre lecture dit que vous avez lu la restitution
-        ci-dessus : lignes lues, intervalles et marquages tels qu’imprimés par le laboratoire, résultats validés. Le
-        document lui-même n’est pas affiché : il est effacé après la dernière décision. La lecture ne bloque ni
+        ci-dessus : lignes lues, intervalles
+        {/* D-278 §3 : un import lu avant bio-extraction-v4 n'a pas de commentaires relevés — l'acte ne les nomme pas. */}
+        {imp.commentairesReleves ? ', marquages et commentaires' : ' et marquages'} tels qu’imprimés par le
+        laboratoire, résultats validés. Le document lui-même n’est pas affiché : il est effacé après la dernière décision. La lecture ne bloque ni
         n’autorise aucun geste.
       </p>
       <p className="mt-1 text-xs text-muted-foreground">{MENTION_PAS_UN_FILET}</p>
