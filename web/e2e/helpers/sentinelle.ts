@@ -85,6 +85,8 @@ export function assertTexteSentinelle(texte: string, options: OptionsSentinelle 
  */
 export const SELECTEUR_MARQUAGE_LABORATOIRE = '[data-fait-laboratoire="marquage"]';
 export const SELECTEUR_INTERVALLE_LABORATOIRE = '[data-fait-laboratoire="intervalle"]';
+/** Le commentaire du laboratoire ([[D-278]] §3), même régime : ses mots, pas les nôtres. */
+export const SELECTEUR_COMMENTAIRE_LABORATOIRE = '[data-fait-laboratoire="commentaire"]';
 
 /** Sentinelle sur une région rendue : texte visible, champs, couleurs, badges. */
 export async function assertSentinelleBiologie(region: Locator, options: OptionsSentinelle = {}): Promise<void> {
@@ -103,7 +105,7 @@ export async function assertSentinelleBiologie(region: Locator, options: Options
     const texte = (racine as HTMLElement).innerText;
     noeuds.forEach((n, i) => { n.textContent = textes[i]; });
     return { visible: texte, marques: lues };
-  }, `${SELECTEUR_MARQUAGE_LABORATOIRE}, ${SELECTEUR_INTERVALLE_LABORATOIRE}`);
+  }, `${SELECTEUR_MARQUAGE_LABORATOIRE}, ${SELECTEUR_INTERVALLE_LABORATOIRE}, ${SELECTEUR_COMMENTAIRE_LABORATOIRE}`);
   expect(
     marques.filter(m => m.enfants > 0 || m.attributs.length > 0),
     'sentinelle biologie (BP-01) : un fait exempté ne porte que le texte imprimé',

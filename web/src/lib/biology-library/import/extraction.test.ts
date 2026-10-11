@@ -16,6 +16,8 @@ import {
   heureLisible,
   lireDatePrelevement,
   lireFaitLaboratoire,
+  LONGUEUR_MAX_COMMENTAIRE_LIGNE,
+  LONGUEUR_MAX_COMMENTAIRES_IMPORT,
   LONGUEUR_MAX_INTERVALLE,
   LONGUEUR_MAX_MARQUAGE,
   MODELE_EXTRACTION,
@@ -28,14 +30,15 @@ import { DELAI_TRANSACTION_LIGNES_MS, PEREMPTION_EN_COURS_MS } from './verrou';
 const SORTIE = {
   lisible: true,
   laboratoire: 'Laboratoire de fixture',
+  commentaires: null,
   lignes: [
     {
       page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', date_prelevement: '2026-09-15', heure_prelevement: '08:30',
-      intervalle_reference: null, marquage: null,
+      intervalle_reference: null, marquage: null, commentaire: null,
     },
     {
       page: 2, libelle: 'CRP ultrasensible', valeur: '<0,5', unite: 'mg/L', date_prelevement: '2026-09-15', heure_prelevement: null,
-      intervalle_reference: null, marquage: null,
+      intervalle_reference: null, marquage: null, commentaire: null,
     },
   ],
 };
@@ -92,12 +95,15 @@ describe('heure lue (D-258) — une heure imprimée « 00:00 » n’est pas une 
 describe('analyserSortieExtraction — schéma fermé aux bornes des CHECK', () => {
   it('relève valeur, unité, page et DATE DU PRÉLÈVEMENT (promesse de la v4)', () => {
     const r = analyserSortieExtraction(JSON.stringify(SORTIE));
-    expect(r).toMatchObject({ ok: true, laboratoire: 'Laboratoire de fixture' });
+    expect(r).toMatchObject({
+      ok: true, laboratoire: 'Laboratoire de fixture', commentaires: null, commentairesNonTranscrits: false,
+    });
     if (!r.ok) throw new Error('attendu ok');
     expect(r.lignes).toHaveLength(2);
     expect(r.lignes[0]).toEqual({
       page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', preleveLe: new Date('2026-09-15T06:30:00.000Z'),
       heureLue: true, intervalle: null, marquage: null, intervalleNonTranscrit: false, marquageNonTranscrit: false,
+      commentaire: null, commentaireNonTranscrit: false,
     });
     // Date sans heure : minuit de Paris, et l'heure n'est PAS dite lue.
     expect(r.lignes[1]).toMatchObject({ preleveLe: new Date('2026-09-14T22:00:00.000Z'), heureLue: false });
@@ -118,7 +124,7 @@ describe('analyserSortieExtraction — schéma fermé aux bornes des CHECK', () 
   });
 
   it('un document illisible rend `document_illisible`', () => {
-    expect(analyserSortieExtraction(JSON.stringify({ lisible: false, laboratoire: null, lignes: [] })))
+    expect(analyserSortieExtraction(JSON.stringify({ lisible: false, laboratoire: null, commentaires: null, lignes: [] })))
       .toEqual({ ok: false, motif: 'document_illisible' });
   });
 
@@ -149,6 +155,12 @@ describe('analyserSortieExtraction — schéma fermé aux bornes des CHECK', () 
       avec({ intervalle_reference: 5 }),
       avec({ marquage: true }),
       avec({ unite: undefined }),
+      // Les commentaires ([[D-278]] §3) : mêmes règles, sur la ligne et à la racine.
+      avec({ commentaire: undefined }),
+      avec({ commentaire: 3 }),
+      avec({ commentaire: '\uDC00' }),
+      JSON.stringify({ ...SORTIE, commentaires: undefined }),
+      JSON.stringify({ ...SORTIE, commentaires: ['un', 'deux'] }),
       JSON.stringify({ ...SORTIE, laboratoire: 'x'.repeat(201) }),
       JSON.stringify({ ...SORTIE, lignes: Array.from({ length: 201 }, () => SORTIE.lignes[0]) }),
     ]) {
@@ -226,6 +238,54 @@ describe('faits du laboratoire (D-267) — recopiés tels qu’imprimés, jamais
   });
 });
 
+describe('commentaires du laboratoire (D-278 §3) — recopiés tels qu’imprimés, jamais tronqués', () => {
+  const avec = (patch: Record<string, unknown>, racine: Record<string, unknown> = {}) =>
+    JSON.stringify({ ...SORTIE, ...racine, lignes: [{ ...SORTIE.lignes[0], ...patch }] });
+
+  it('recopie le commentaire d’une ligne et ceux du compte rendu, rognés, sauts de ligne gardés', () => {
+    const r = analyserSortieExtraction(avec(
+      { commentaire: '  Sérum hémolysé : contrôle souhaité ' },
+      { commentaires: ' Résultats téléphonés au prescripteur\nÉchantillon reçu à 14 h ' },
+    ));
+    if (!r.ok) throw new Error('attendu ok');
+    expect(r.lignes[0]).toMatchObject({ commentaire: 'Sérum hémolysé : contrôle souhaité', commentaireNonTranscrit: false });
+    expect(r.commentaires).toBe('Résultats téléphonés au prescripteur\nÉchantillon reçu à 14 h');
+    expect(r.commentairesNonTranscrits).toBe(false);
+  });
+
+  it('absents ou sans caractère visible : null, sans signal', () => {
+    for (const vide of [null, '', '   ', '\u0000', '\u200b']) {
+      const r = analyserSortieExtraction(avec({ commentaire: vide }, { commentaires: vide }));
+      if (!r.ok) throw new Error('attendu ok');
+      expect(r.lignes[0]).toMatchObject({ commentaire: null, commentaireNonTranscrit: false });
+      expect(r).toMatchObject({ commentaires: null, commentairesNonTranscrits: false });
+    }
+  });
+
+  it('au-delà de leur borne : null signalé, ni troncature ni échec ; la borne elle-même est admise', () => {
+    const trop = analyserSortieExtraction(avec(
+      { commentaire: 'c'.repeat(LONGUEUR_MAX_COMMENTAIRE_LIGNE + 1) },
+      { commentaires: 'C'.repeat(LONGUEUR_MAX_COMMENTAIRES_IMPORT + 1) },
+    ));
+    if (!trop.ok) throw new Error('attendu ok : un commentaire trop long ne fait pas échouer l’import');
+    expect(trop.lignes[0]).toMatchObject({ commentaire: null, commentaireNonTranscrit: true });
+    expect(trop).toMatchObject({ commentaires: null, commentairesNonTranscrits: true });
+    const juste = analyserSortieExtraction(avec(
+      { commentaire: 'c'.repeat(LONGUEUR_MAX_COMMENTAIRE_LIGNE) },
+      { commentaires: 'C'.repeat(LONGUEUR_MAX_COMMENTAIRES_IMPORT) },
+    ));
+    if (!juste.ok) throw new Error('attendu ok');
+    expect(juste.lignes[0].commentaire).toHaveLength(LONGUEUR_MAX_COMMENTAIRE_LIGNE);
+    expect(juste.commentaires).toHaveLength(LONGUEUR_MAX_COMMENTAIRES_IMPORT);
+    expect(juste.commentairesNonTranscrits).toBe(false);
+  });
+
+  it('les bornes sont celles des CHECK de la base (migration 20261010220000)', () => {
+    expect(LONGUEUR_MAX_COMMENTAIRE_LIGNE).toBe(1000);
+    expect(LONGUEUR_MAX_COMMENTAIRES_IMPORT).toBe(4000);
+  });
+});
+
 describe('extraireCompteRendu — l’appel', () => {
   beforeEach(() => create.mockReset());
 
@@ -246,24 +306,31 @@ describe('extraireCompteRendu — l’appel', () => {
     expect(options).toMatchObject({ timeout: 180_000, maxRetries: 0, signal: expect.any(AbortSignal) });
   });
 
-  it('`bio-extraction-v2` : la consigne amendée par D-267 §4, le schéma sans borne sur les faits (§10)', async () => {
+  it('`bio-extraction-v4` : la consigne amendée par D-267 §4 puis D-278 §3, le schéma sans borne sur les faits (§10)', async () => {
     create.mockResolvedValue(reponse(JSON.stringify(SORTIE)));
     await extraireCompteRendu(Buffer.from('%PDF-1.7 fixture'), 'application/pdf');
     const [params] = create.mock.calls[0];
-    // v3 : mêmes prompt et schéma que la v2, règle de lecture du NUL en plus.
-    expect(VERSION_PROCEDE_EXTRACTION).toBe('bio-extraction-v3');
+    // v4 : les commentaires du laboratoire entrent dans le prompt et le schéma.
+    expect(VERSION_PROCEDE_EXTRACTION).toBe('bio-extraction-v4');
     // La phrase de D-256 amendée ne survit pas ; « n'interprète rien » reste.
     expect(params.system).not.toContain('ne recopie ni les valeurs de référence');
     expect(params.system).toContain('N’interprète rien');
     expect(params.system).toContain('tels qu’imprimés, sans les compléter ni les reformuler');
     expect(params.system).toContain('Ne déduis jamais une marque d’anomalie en comparant la valeur à l’intervalle');
-    expect(params.system).toContain('Ne recopie aucun commentaire');
-    const items = params.output_config.format.schema.properties.lignes.items;
-    expect(items.required).toEqual(expect.arrayContaining(['intervalle_reference', 'marquage']));
+    // La phrase de la v3 qui taisait les commentaires ne survit pas.
+    expect(params.system).not.toContain('Ne recopie aucun commentaire');
+    expect(params.system).toContain('recopie tel qu’imprimé le commentaire que le laboratoire a écrit sur ce résultat');
+    expect(params.system).toContain('ceux que le laboratoire a écrits sur le compte rendu entier');
+    expect(params.system).toContain('sans être complété, reformulé ni résumé, et tu n’en tires aucune conclusion');
+    const schema = params.output_config.format.schema;
+    const items = schema.properties.lignes.items;
+    expect(items.required).toEqual(expect.arrayContaining(['intervalle_reference', 'marquage', 'commentaire']));
+    expect(schema.required).toEqual(expect.arrayContaining(['commentaires']));
     // Une `maxLength` ferait tronquer le modèle lui-même : le signal ne se poserait jamais.
-    for (const cle of ['intervalle_reference', 'marquage']) {
+    for (const cle of ['intervalle_reference', 'marquage', 'commentaire']) {
       expect(items.properties[cle]).toEqual({ type: ['string', 'null'] });
     }
+    expect(schema.properties.commentaires).toEqual({ type: ['string', 'null'] });
   });
 
   it('envoie une photo ENTIÈRE en bloc image, sous la même consigne (LOT-03)', async () => {

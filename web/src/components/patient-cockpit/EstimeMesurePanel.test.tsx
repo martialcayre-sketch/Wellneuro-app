@@ -6,7 +6,11 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CbFeatureProvider } from './CbFeatureProvider';
 import { EstimeMesurePanel } from './EstimeMesurePanel';
-import { SELECTEUR_INTERVALLE_LABORATOIRE, SELECTEUR_MARQUAGE_LABORATOIRE } from './FaitsDuLaboratoire';
+import {
+  SELECTEUR_COMMENTAIRE_LABORATOIRE,
+  SELECTEUR_INTERVALLE_LABORATOIRE,
+  SELECTEUR_MARQUAGE_LABORATOIRE,
+} from './FaitsDuLaboratoire';
 
 afterEach(() => {
   cleanup();
@@ -983,6 +987,7 @@ describe('EstimeMesurePanel — la plage sourcée juxtaposée ([[D-157]])', () =
     const helper = readFileSync(resolve(__dirname, '../../../e2e/helpers/sentinelle.ts'), 'utf8');
     expect(helper).toContain(`SELECTEUR_MARQUAGE_LABORATOIRE = '${SELECTEUR_MARQUAGE_LABORATOIRE}'`);
     expect(helper).toContain(`SELECTEUR_INTERVALLE_LABORATOIRE = '${SELECTEUR_INTERVALLE_LABORATOIRE}'`);
+    expect(helper).toContain(`SELECTEUR_COMMENTAIRE_LABORATOIRE = '${SELECTEUR_COMMENTAIRE_LABORATOIRE}'`);
   });
 
   it('sans fait (saisie praticien) : rien ne s’affiche', async () => {

@@ -64,9 +64,11 @@ const PARAMS = { idPatient: 'pat_sophie', idCompteRendu: 'cr_1', lancePar: 'prat
 
 const LIGNES = [
   { page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', preleveLe: new Date('2026-09-15T06:30:00.000Z'), heureLue: true,
-    intervalle: '30 – 300', marquage: null, intervalleNonTranscrit: false, marquageNonTranscrit: false },
+    intervalle: '30 – 300', marquage: null, intervalleNonTranscrit: false, marquageNonTranscrit: false,
+    commentaire: 'Sérum hémolysé', commentaireNonTranscrit: false },
   { page: 2, libelle: 'CRP ultrasensible', valeur: '<0,5', unite: 'mg/L', preleveLe: null, heureLue: false,
-    intervalle: null, marquage: null, intervalleNonTranscrit: true, marquageNonTranscrit: false },
+    intervalle: null, marquage: null, intervalleNonTranscrit: true, marquageNonTranscrit: false,
+    commentaire: null, commentaireNonTranscrit: true },
 ];
 
 let espions: Array<ReturnType<typeof vi.spyOn>>;
@@ -80,7 +82,10 @@ beforeEach(() => {
   });
   extraire.mockImplementation(async () => {
     journal.push('appel');
-    return { ok: true, laboratoire: 'Laboratoire de fixture', lignes: LIGNES };
+    return {
+      ok: true, laboratoire: 'Laboratoire de fixture',
+      commentaires: 'Résultats téléphonés au prescripteur', commentairesNonTranscrits: false, lignes: LIGNES,
+    };
   });
   espions = (['error', 'warn', 'log', 'info', 'debug'] as const).map(m => vi.spyOn(console, m).mockImplementation(() => {}));
 });
@@ -145,7 +150,10 @@ describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transac
     const terminaison = argument<{ data: Record<string, unknown> }>(prisma.importBiologique.update);
     expect(terminaison).toEqual({
       where: { id: 'imp_1' },
-      data: { statut: 'extrait', laboratoireLu: 'Laboratoire de fixture' },
+      data: {
+        statut: 'extrait', laboratoireLu: 'Laboratoire de fixture',
+        commentairesLus: 'Résultats téléphonés au prescripteur', commentairesNonTranscrits: false,
+      },
     });
     expect(terminaison.data).not.toHaveProperty('lignes');
   });
@@ -170,6 +178,21 @@ describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transac
     expect(data[1]).toMatchObject({
       intervalleLu: null, marquageLu: null, intervalleNonTranscrit: true, marquageNonTranscrit: false,
     });
+  });
+
+  it('commentaires du laboratoire ([[D-278]] §3) : sur la ligne, tels que lus, signal compris', async () => {
+    await lancerExtraction(PARAMS);
+    const { data } = argument<Lignes>(prisma.ligneBiologiqueCandidate.createMany);
+    expect(data[0]).toMatchObject({ commentaireLu: 'Sérum hémolysé', commentaireNonTranscrit: false });
+    expect(data[1]).toMatchObject({ commentaireLu: null, commentaireNonTranscrit: true });
+  });
+
+  it('commentaires du laboratoire : jamais journalisés, même quand les lignes échouent', async () => {
+    prisma.ligneBiologiqueCandidate.createMany.mockRejectedValueOnce(new Error('Sérum hémolysé'));
+    await lancerExtraction(PARAMS);
+    const journalise = espions.flatMap(e => e.mock.calls).map(c => JSON.stringify(c)).join('\n');
+    expect(journalise).not.toContain('hémolysé');
+    expect(journalise).not.toContain('téléphonés');
   });
 
   it('resolver signé ([[D-259]]) : la table réelle propose l’analyte du libellé lu', async () => {

@@ -34,6 +34,7 @@ function ligne(partiel: Partial<LigneLue> & { id: string; libelleLu: string; val
   return {
     rang: 1, page: 1, uniteLue: 'ng/mL', preleveLeLu: A_0830, heureLue: true, analytePropose: null, statutMapping: 'inconnu',
     intervalleLu: null, marquageLu: null, intervalleNonTranscrit: false, marquageNonTranscrit: false,
+    commentaireLu: null, commentaireNonTranscrit: false,
     statut: 'proposee', motifEcart: null, idResultat: null, preMarquage: null, ...partiel,
   };
 }
@@ -45,14 +46,20 @@ const LIGNES: LigneLue[] = [
   ligne({ id: 'l4', libelleLu: 'Fer sérique', valeurLue: '17,2', uniteLue: 'mg/L' }),
 ];
 
-function compteRendu(statut: string, lignes: LigneLue[] = LIGNES, perime = false): CompteRenduLu {
+function compteRendu(
+  statut: string,
+  lignes: LigneLue[] = LIGNES,
+  perime = false,
+  imp: Partial<CompteRenduLu['imports'][number]> = {},
+): CompteRenduLu {
   return {
     id: 'cr_1', typeMime: 'application/pdf', origine: 'praticien', deposePar: 'praticien@wellneuro.fr', deposeLe: '2026-10-02T09:00:00.000Z',
     purgeLe: null, motifPurge: null, motifEcart: null,
     imports: [{
-      id: 'imp_1', statut, motifEchec: null, modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v1',
-      laboratoireLu: 'Laboratoire fixture', lanceLe: new Date().toISOString(), termineLe: null, courant: true, perime,
-      lignes: statut === 'extrait' ? lignes : [],
+      id: 'imp_1', statut, motifEchec: null, modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v4',
+      laboratoireLu: 'Laboratoire fixture', commentairesLus: null, commentairesNonTranscrits: false, commentairesReleves: true,
+      lanceLe: new Date().toISOString(), termineLe: null, courant: true, perime,
+      lignes: statut === 'extrait' ? lignes : [], ...imp,
     }],
   };
 }
@@ -287,6 +294,107 @@ describe('ImportCompteRenduPanel — décisions', () => {
     serveur({});
     await rendreEtOuvrir();
     expect(screen.queryByText(/Imprimé par le laboratoire|trop long pour être transcrit/)).toBeNull();
+    expect(screen.queryByText(/Commentaires? du laboratoire/)).toBeNull();
+  });
+
+  // COMMENTAIRES DU LABORATOIRE ([[D-278]] §3) : recopiés, attribués, dans un
+  // élément qui ne porte qu'eux — sur les DEUX branches de rendu d'une ligne.
+  it('le commentaire d’une ligne s’affiche attribué, à décider comme déjà décidée', async () => {
+    serveur({
+      detail: () => compteRendu('extrait', [
+        ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48', analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu',
+          commentaireLu: 'Sérum hémolysé, contrôle souhaité' }),
+        ligne({ id: 'l2', libelleLu: 'Fer sérique', valeurLue: '17,2', statut: 'validee',
+          commentaireLu: 'Résultat vérifié' }),
+      ]),
+    });
+    await rendreEtOuvrir();
+    const ferritine = ligneAffichee(/Ferritine : 48/);
+    expect(ferritine.getByText(/Commentaire du laboratoire/)).toBeTruthy();
+    const span = ferritine.getByText('Sérum hémolysé, contrôle souhaité');
+    expect(span.getAttribute('data-fait-laboratoire')).toBe('commentaire');
+    expect(span.children).toHaveLength(0);
+    // Le commentaire ne change pas le choix proposé.
+    expect((ferritine.getByLabelText('Valider') as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByText('Résultat vérifié').getAttribute('data-fait-laboratoire')).toBe('commentaire');
+  });
+
+  it('un commentaire de ligne trop long se DIT, avec les autres faits non transcrits', async () => {
+    serveur({
+      detail: () => compteRendu('extrait', [
+        ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48', analytePropose: 'BIO_FERRITINE', statutMapping: 'resolu',
+          intervalleNonTranscrit: true, marquageNonTranscrit: true, commentaireNonTranscrit: true }),
+      ]),
+    });
+    await rendreEtOuvrir();
+    expect(ligneAffichee(/Ferritine : 48/).getByText(
+      'Imprimé mais trop long pour être transcrit : l’intervalle de référence, la marque d’anomalie et le commentaire. À lire sur le compte rendu.',
+    )).toBeTruthy();
+  });
+
+  it('les commentaires du compte rendu entier s’affichent attribués, et leur signal se dit', async () => {
+    serveur({
+      detail: () => compteRendu('extrait', LIGNES, false, {
+        commentairesLus: 'Résultats téléphonés au prescripteur', commentairesNonTranscrits: false,
+      }),
+    });
+    await rendreEtOuvrir();
+    expect(screen.getByText(/Commentaires du laboratoire sur le compte rendu/)).toBeTruthy();
+    expect(screen.getByText('Résultats téléphonés au prescripteur').getAttribute('data-fait-laboratoire')).toBe('commentaire');
+    expect(screen.queryByText(/n’ont pas été relevés/)).toBeNull();
+  });
+
+  it('des commentaires du compte rendu trop longs se DISENT, sans texte', async () => {
+    serveur({ detail: () => compteRendu('extrait', LIGNES, false, { commentairesNonTranscrits: true }) });
+    await rendreEtOuvrir();
+    expect(screen.getByText(/Commentaires du laboratoire imprimés mais trop longs pour être transcrits/)).toBeTruthy();
+    expect(screen.queryByText(/Commentaires du laboratoire sur le compte rendu/)).toBeNull();
+  });
+
+  it('une lecture antérieure à bio-extraction-v4 dit que les commentaires n’ont pas été relevés', async () => {
+    serveur({ detail: () => compteRendu('extrait', LIGNES, false, { commentairesReleves: false }) });
+    await rendreEtOuvrir();
+    expect(screen.getByText(
+      'Les commentaires du laboratoire n’ont pas été relevés par cette lecture : à lire sur le compte rendu.',
+    )).toBeTruthy();
+  });
+
+  // LA PROMESSE DE D-278 §3 : les commentaires survivent à la purge du document.
+  it('document effacé : les commentaires restent affichés, et l’on renvoie à l’original du laboratoire', async () => {
+    serveur({
+      detail: () => ({
+        ...compteRendu('extrait', [
+          ligne({ id: 'l1', libelleLu: 'Fer sérique', valeurLue: '17,2', statut: 'validee', commentaireLu: 'Sérum hémolysé' }),
+        ], false, { commentairesLus: 'Résultats téléphonés au prescripteur', commentairesNonTranscrits: false }),
+        purgeLe: '2026-11-01T02:15:00.000Z', motifPurge: 'echeance',
+      }),
+    });
+    render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    await screen.findByText(/Fer sérique : 17,2/);
+    expect(screen.getByText('Sérum hémolysé').getAttribute('data-fait-laboratoire')).toBe('commentaire');
+    expect(screen.getByText('Résultats téléphonés au prescripteur').getAttribute('data-fait-laboratoire')).toBe('commentaire');
+  });
+
+  it('document effacé, lecture antérieure à v4 : on renvoie à l’original, pas au document effacé', async () => {
+    serveur({
+      detail: () => ({
+        ...compteRendu('extrait', LIGNES, false, { commentairesReleves: false }),
+        purgeLe: '2026-11-01T02:15:00.000Z', motifPurge: 'echeance',
+      }),
+    });
+    await rendreEtOuvrir();
+    expect(screen.getByText(
+      'Les commentaires du laboratoire n’ont pas été relevés par cette lecture : à lire sur l’original du laboratoire.',
+    )).toBeTruthy();
+  });
+
+  it('lecture en cours : ni commentaire, ni « non relevés »', async () => {
+    serveur({ detail: () => compteRendu('en_cours', LIGNES, false, { commentairesReleves: false }) });
+    render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    await screen.findByText(/Lecture en cours/);
+    expect(screen.queryByText(/Commentaires? du laboratoire/)).toBeNull();
   });
 
   it('une ligne déjà décidée s’affiche sans aucun geste', async () => {

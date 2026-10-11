@@ -125,3 +125,59 @@ describe('Faits du laboratoire — modules épinglés champ par champ (BP-01, [[
     ]);
   });
 });
+
+// [[D-278]] §3 — LES COMMENTAIRES DU LABORATOIRE : texte libre, qui peut nommer
+// un tiers, conservé après la purge. Ils ne sortent pas de l'écran de
+// validation du praticien : ni restitution, ni portail, ni courriel, ni
+// journal, ni export. Ce troisième banc épingle leurs écrivains et leurs
+// lecteurs ; un module neuf qui les touche s'inscrit ici par un diff relu.
+// Restent hors de vue, comme pour les faits, et relèvent de la revue : un
+// `include` ou un `SELECT *` sur la ligne ou l'import lus.
+const COMMENTAIRES_ADMIS = [
+  // Relevé : schéma, consigne et parseur à clés exactes (`bio-extraction-v4`).
+  'web/src/lib/biology-library/import/extraction.ts',
+  // Écriture, avec la ligne et à la terminaison de l'import.
+  'web/src/lib/biology-library/import/lancerExtraction.ts',
+  // Lecture du compte rendu pour l'écran de validation.
+  'web/src/lib/biology-library/import/lecture.ts',
+  // Écran de validation : commentaires du compte rendu entier.
+  'web/src/components/patient-cockpit/ImportCompteRenduPanel.tsx',
+  // Rendu attribué du commentaire d'une ligne, et son signal.
+  'web/src/components/patient-cockpit/FaitsDuLaboratoire.tsx',
+];
+
+const MOTIF_COMMENTAIRES = /\bcommentaires?(?:Lus?|_lus?|NonTranscrits?|_non_transcrits?)\b/;
+
+export function lecteursDesCommentaires(fichiers: readonly { chemin: string; source: string }[]): string[] {
+  return fichiers
+    .filter(f => !estUnTest(f.chemin))
+    .filter(f => MOTIF_COMMENTAIRES.test(retirerLignesDeCommentaire(f.source)))
+    .map(f => f.chemin)
+    .sort();
+}
+
+describe('Commentaires du laboratoire — modules épinglés ([[D-278]] §3)', () => {
+  it('aucun module neuf ne lit ni n\'écrit un commentaire du laboratoire sans s\'inscrire ici', () => {
+    const lus = lecteursDesCommentaires(fichiersSource().map(chemin => ({ chemin, source: lire(chemin) })));
+    expect(
+      lus,
+      'accès neuf aux commentaires du laboratoire : l\'inscrire ici par un diff relu, avec son motif ; '
+        + 'entrée qui n\'y accède plus : la retirer',
+    ).toEqual([...COMMENTAIRES_ADMIS].sort());
+  });
+
+  it('le pipeline voit les deux colonnes et leurs signaux, ignore la prose et les tests', () => {
+    const lus = lecteursDesCommentaires([
+      { chemin: 'web/src/lib/neuf/a.ts', source: 'select: { commentaireLu: true },' },
+      { chemin: 'web/src/lib/neuf/b.ts', source: 'await prisma.$queryRaw`SELECT commentaires_lus FROM x`;' },
+      { chemin: 'web/src/lib/neuf/c.ts', source: 'if (i.commentairesNonTranscrits) {}' },
+      { chemin: 'web/src/lib/neuf/d.ts', source: 'WHERE commentaire_non_transcrit' },
+      { chemin: 'web/src/lib/neuf/e.ts', source: '// lit `commentaire_lu` ailleurs' },
+      { chemin: 'web/src/lib/neuf/f.test.ts', source: 'commentaireLu: null,' },
+      { chemin: 'web/src/lib/neuf/g.ts', source: 'const commentaire = "libre";' },
+    ]);
+    expect(lus).toEqual([
+      'web/src/lib/neuf/a.ts', 'web/src/lib/neuf/b.ts', 'web/src/lib/neuf/c.ts', 'web/src/lib/neuf/d.ts',
+    ]);
+  });
+});
