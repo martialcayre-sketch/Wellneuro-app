@@ -9920,3 +9920,16 @@ Revue `wn-reviewer` du relevé : GO, un P1 corrigé (commentaire portant sur plu
 **Écarté.** Signaler seulement la présence d'un commentaire ; rattraper les imports antérieurs.
 
 **Prochaine action.** Constater les premiers imports v4 ; puis lots 5A, puis 8B.
+
+## 2026-10-11 — Lots 11A : l'acte de lecture nomme les commentaires (D-278 §3)
+
+**Arbitré par le responsable.** Le texte de l'acte de lecture (`D-268`)
+nomme les commentaires du laboratoire. Le constat des premiers imports v4
+se fait à l'ouverture du prochain lot, en agrégats. 5A démarre dans une
+session neuve, et le suivi BioFlow inscrit 11A comme fait.
+
+**Écarté.** Laisser le texte tel quel : la restitution montre les
+commentaires, et l'acte ne les aurait pas couverts.
+
+**Prochaine action.** Merger, puis `/clear` ; 5A s'ouvre sur le constat v4,
+puis sur sa décision `D-xxx` en mode plan.

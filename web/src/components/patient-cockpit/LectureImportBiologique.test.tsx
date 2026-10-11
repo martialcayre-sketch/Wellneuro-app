@@ -67,6 +67,8 @@ describe('LectureImportBiologique', () => {
     render(<LectureImportBiologique idPatient="PAT_SOPHIE" imp={importLu([ligne('validee')])} actes={[]} onActe={async () => {}} />);
     expect(screen.getByText(/n’est pas un filet de sécurité/)).toBeTruthy();
     expect(screen.getByText(/Le document lui-même n’est pas affiché/)).toBeTruthy();
+    // D-278 §3 : les commentaires du laboratoire font partie de la restitution lue.
+    expect(screen.getByText(/intervalles, marquages et commentaires tels qu’imprimés par le laboratoire/)).toBeTruthy();
   });
 
   it('consigne la lecture, puis relit', async () => {
