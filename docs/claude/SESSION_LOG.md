@@ -9907,3 +9907,16 @@ sans retry. Revue `wn-reviewer` GO, trois P2 corrigés (envois parallèles,
 d'envoi ; lien vers le dossier dans le courriel.
 
 **Prochaine action.** PR, merge, constat ; puis lots 11A.
+
+## 2026-10-11 — Lots 11A : EI incertain, DASS dépression, commentaires du laboratoire (D-278)
+
+**Fait.** Quatre PR mergées, trois paragraphes de `D-278`.
+- **§1 :** l'effet indésirable « incertain » reçoit un texte signé avec le 15 et le 112.
+- **§2 :** STOP-STR exige la dépression du DASS-21 en « Normal » (table re-signée).
+- **§3 :** migration appliquée par release-db et constatée par conteneur ; `usage_ia` v7 validée et déployée ; puis `bio-extraction-v4` et l'affichage à la validation.
+
+Revue `wn-reviewer` du relevé : GO, un P1 corrigé (commentaire portant sur plusieurs résultats).
+
+**Écarté.** Signaler seulement la présence d'un commentaire ; rattraper les imports antérieurs.
+
+**Prochaine action.** Constater les premiers imports v4 ; puis lots 5A, puis 8B.
