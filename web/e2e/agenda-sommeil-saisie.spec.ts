@@ -269,7 +269,13 @@ test.describe('agenda du sommeil — saisie d’une nuit', () => {
       'END:VEVENT',
       'END:VCALENDAR',
     ]);
-    await expect(page.getByText(/Le fichier « rappel-du-matin\.ics » est prêt/)).toBeVisible();
+    // La consigne nomme le geste de l'appareil, lu dans son user-agent : le
+    // gabarit iPhone 13 se dit iPhone, le bureau reçoit celle de l'ordinateur.
+    await expect(page.locator('#agenda-rappel-message')).toHaveText(
+      /iPhone/.test(test.info().project.use.userAgent ?? '')
+        ? /^Touchez « Télécharger » si on vous le demande, puis confirmez l’ajout au Calendrier\./
+        : /^Le fichier « rappel-du-matin\.ics » est prêt : ouvrez-le pour l’ajouter à votre agenda\./,
+    );
   });
 
   test('dès la deuxième nuit, la phrase s’efface et la carte du rappel revient sous la frise', async ({ page }) => {

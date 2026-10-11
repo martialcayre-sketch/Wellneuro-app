@@ -21,6 +21,23 @@ import { SelecteurHeure } from './SelecteurHeure';
 // bruit. 40 s, comme FileSaver.js.
 export const DELAI_REVOCATION_MS = 40_000;
 
+// Ce qu'il reste à toucher une fois le fichier fabriqué. Aucune page web ne peut
+// écrire dans l'agenda : le téléphone demande toujours une confirmation, et
+// Android passe d'abord par son message de téléchargement (« Ouvrir »), que la
+// page ne peut pas sauter. On nomme donc le geste du téléphone, sans promettre
+// une ouverture automatique. L'iPad se présente comme un Mac : seul l'écran
+// tactile le trahit.
+export function consigneApresTelechargement(userAgent: string, pointsTactiles: number): string {
+  const ios = /iPhone|iPad|iPod/.test(userAgent) || (/Macintosh/.test(userAgent) && pointsTactiles > 1);
+  const consigne = ios
+    ? 'Touchez « Télécharger » si on vous le demande, puis confirmez l’ajout au Calendrier. Si rien ne s’ouvre, le fichier « rappel-du-matin.ics » est dans l’app Fichiers : touchez-le.'
+    : /Android/.test(userAgent)
+      ? 'Touchez « Ouvrir » dans le message de téléchargement, puis confirmez l’ajout dans votre agenda. Si le message a disparu, le fichier « rappel-du-matin.ics » est dans vos téléchargements : touchez-le.'
+      : // Ailleurs, c'est un ordinateur : son agenda ne sonne pas forcément sur le téléphone.
+        'Le fichier « rappel-du-matin.ics » est prêt : ouvrez-le pour l’ajouter à votre agenda. Pour qu’il sonne sur votre téléphone, ajoutez-le plutôt depuis votre téléphone.';
+  return `${consigne} Le télécharger une seconde fois ajouterait un second rappel.`;
+}
+
 // `crypto.randomUUID` manque avant Safari 15.4 / Chrome 92 et hors HTTPS. L'UID
 // n'a qu'à être unique pour le calendrier du patient : un tirage suffit.
 function identifiant(): string {
@@ -68,10 +85,7 @@ export function RappelDuMatin({
       return;
     }
     setFait(true);
-    // On ne promet pas l'ouverture automatique : elle dépend du téléphone.
-    setMessage(
-      'Le fichier « rappel-du-matin.ics » est prêt : ouvrez-le pour l’ajouter à l’agenda de votre téléphone. Le télécharger une seconde fois ajouterait un second rappel.',
-    );
+    setMessage(consigneApresTelechargement(navigator.userAgent, navigator.maxTouchPoints ?? 0));
   }
 
   return (
