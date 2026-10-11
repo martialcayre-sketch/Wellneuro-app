@@ -44,6 +44,17 @@ describe('prioriteLibre (D-279)', () => {
     expect(normaliserLibellePrioriteLibre('Dor\u202Emir')).toBe('Dormir');
   });
 
+  // Revue Copilot de la PR #1403 : une liste fermée laissait passer ceux-ci.
+  it('retire toute la catégorie Cf, les sélecteurs de variante et le blanc braille', () => {
+    expect(normaliserLibellePrioriteLibre('\u061C')).toBe('');
+    expect(normaliserLibellePrioriteLibre('\uFE0F')).toBe('');
+    expect(normaliserLibellePrioriteLibre('\u2800')).toBe('');
+    expect(normaliserLibellePrioriteLibre('\u{E0041}\u{E0100}')).toBe('');
+    expect(normaliserLibellePrioriteLibre('Dor\u061Cm\uFE0Fi\u2800r')).toBe('Dormir');
+    expect(normaliserLibellePrioriteLibre('Do\uFEFFrmir')).toBe('Dormir');
+    expect(normaliserLibellePrioriteLibre('Réduire les écarts')).toBe('Réduire les écarts');
+  });
+
   it('dérive un identifiant `libre:<domaine>:<16 hex>`, stable et propre au libellé', () => {
     const id = identifiantPrioriteLibre({ domaine: 'sommeil', libelle: 'Dormir' });
     expect(id).toMatch(/^libre:sommeil:[0-9a-f]{16}$/);

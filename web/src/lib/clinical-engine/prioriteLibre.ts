@@ -56,12 +56,17 @@ export function estIdentifiantPrioriteLibre(candidateId: string): boolean {
  * nulle, trait d'union conditionnel, contrôles bidirectionnels qui
  * réordonneraient ce que le patient lit, remplissages) disparaissent, les
  * blancs se replient : ce qui reste vide est vide. (Revue du code du lot, P2-3.)
+ * La catégorie Unicode Cf entière, pas une liste : une liste en oubliait
+ * (U+061C, étiquettes), et chaque oubli rendait un libellé invisible non vide
+ * ou scindait un terme anxiogène sous `termeAnxiogene`. S'y ajoutent ce que Cf
+ * ne contient pas : sélecteurs de variante, blanc braille, remplissages, CGJ.
+ * (Revue Copilot de la PR #1403.)
  */
 export function normaliserLibellePrioriteLibre(texte: string): string {
   return texte
     .normalize('NFC')
-    .replace(/[\u00AD\u034F\u115F\u1160\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\u3164\uFEFF\uFFA0]/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(/[\p{Cf}\u034F\u115F\u1160\u2800\u3164\uFE00-\uFE0F\uFFA0\u{E0100}-\u{E01EF}]/gu, '')
+    .replace(/\s+/gu, ' ')
     .trim();
 }
 

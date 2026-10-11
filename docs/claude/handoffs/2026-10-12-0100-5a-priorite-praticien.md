@@ -75,9 +75,10 @@ seuls mots du patient.
 
 ## Problèmes ouverts
 
-- Le refus de la route sous abstention `required` (recueil incomplet) n'est
-  éprouvé qu'aux niveaux unitaires (carte, protocole, contenu patient) : la
-  fixture de chaîne de la route ne sait pas retirer Q_MOD_03.
+- L'acceptation par la route d'une priorité posée sous abstention
+  `required` (recueil incomplet) n'est éprouvée qu'aux niveaux unitaires
+  (carte, protocole, contenu patient) : la fixture de chaîne de la route ne
+  sait pas retirer Q_MOD_03.
 - 8B reste à faire : seuils de 540 min et de 80 % de l'agenda du sommeil,
   paliers 70/40 de « Mon équilibre », tous sans provenance.
 - Constat v4 à reprendre au premier import réel.
