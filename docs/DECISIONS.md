@@ -4,6 +4,104 @@
 
 ## Décisions actives
 
+### D-281 — Effet indésirable : le patient désigne un élément du programme, cet élément passe en pause, et le praticien valide l'implication avant toute diffusion (SAF-EI-01 amendée, signée en fin de chantier)
+
+- Date : 2026-10-12
+- Statut : accepté. Arbitrages du responsable rendus en session le
+  2026-10-12, sur scénarios datés, en quatre séries (seize réponses), après un
+  banc de vingt cas fictifs joué localement sur la règle livrée. Les deux
+  textes patient du §4 sont **signés** le même jour.
+- Domaine : sécurité patient, `DC-42`. Amende le mécanisme de [[D-101]]
+  (LOT-05) avant sa signature ; ne touche pas à l'orientation du message
+  patient ([[D-278]] §1, v2 inchangée).
+- Livraison : plusieurs lots, dans l'ordre de §6. Une migration relue puis une
+  `release-db` approuvée précèdent tout code consommateur.
+- **Ne touche pas** : aucun seuil, aucune borne de durée, aucun score, aucune
+  gravité chiffrée (`DC-19`, `DC-23`) ; aucune déduction de causalité
+  (`DC-27`).
+
+**§1 — Le constat.** La règle livrée par [[D-101]] n'a jamais été signée ; la
+production compte **zéro signalement** d'effet indésirable depuis l'origine
+(lecture en conteneur du 2026-10-12, agrégats). Faute de cas réels, vingt cas
+fictifs l'ont éprouvée localement, sur la route de dépôt, les constats et la
+chaîne de décision réelles. Ils montrent quatre comportements, tous voulus par
+le texte de la règle :
+- le blocage est **total** : un signalement rattaché et non traité retire tous
+  les candidats du dossier et empêche tout protocole, quelle que soit la
+  priorité, même posée par le praticien ([[D-279]] §2) ;
+- le rattachement porte sur le **programme entier**, jamais sur l'élément en
+  cause, et un « oui » rattache même quand le produit nommé n'y figure pas ;
+- « Je ne sais pas » ne rattache rien : la machine poursuit ;
+- la levée tient au passage du signalement à « traité » ou « clos », sans
+  motif ni trace de la requalification que `DC-42` exige.
+
+Le responsable écarte le blocage total : « l'effet secondaire est lié
+probablement à un élément du protocole et pas à tout le protocole ».
+Aménager, pas bloquer.
+
+**§2 — Le rattachement.** Quand un programme est diffusé, le patient attribue
+l'effet à **un élément** de ce programme, choisi dans sa liste, ou répond
+« Je ne sais pas », ou « un autre produit ». « Un autre produit » est traité
+comme « Je ne sais pas » : le patient peut se tromper, et une interaction avec
+le programme reste possible. Sans programme diffusé, rien ne se rattache, et
+le signalement reste examiné sur la surface des signalements. La gravité
+déclarée ne change rien à ce qui suit ; elle ne règle que le message
+d'orientation. **Aucun délai** entre le début de la prise et celui des
+symptômes ne fait sortir un signalement de la règle : aucune source ne le fixe
+(`DC-19`), les deux dates restent affichées au praticien.
+
+**§3 — En attendant la validation.** Au portail, l'élément désigné s'affiche
+**en pause** ; pour « Je ne sais pas » et « un autre produit », ce sont
+**tous les compléments** du programme. L'alimentation, les routines et les
+autres éléments continuent. Pour le dossier, **aucune nouvelle version du
+programme, et aucun autre programme**, quelle que soit la priorité, ne se
+diffuse avant la validation du praticien. Un signalement survit au
+remplacement du programme : il attend sa validation quelle que soit la
+version en cours.
+
+**§4 — Les textes de la pause, signés.** Élément désigné :
+
+> Vous nous avez signalé un effet que vous associez à cet élément. Il est en
+> pause en attendant l'avis de votre praticien : ne le reprenez pas avant sa
+> réponse. Le reste de votre programme continue.
+
+Compléments en attente :
+
+> Vous nous avez signalé un effet sans pouvoir l'associer à un élément précis.
+> Vos compléments sont en pause en attendant l'avis de votre praticien : ne les
+> reprenez pas avant sa réponse. Votre alimentation et vos routines continuent.
+
+**§5 — La validation du praticien.** Elle se rend sur le signalement : élément
+**impliqué** ou **non impliqué** ; pour « Je ne sais pas » et « un autre
+produit », le praticien désigne l'élément en cause, ou aucun. Impliqué : le
+praticien choisit l'aménagement — retirer, différer ou réduire —, et l'élément
+ne repart **jamais à l'identique ni augmenté** (`DC-42`, « ni augmenter ni
+poursuivre »). Non impliqué : la pause est levée. La validation est datée et
+nominative. **Le statut ne lève rien** (tranché par le responsable le
+2026-10-12, sur scénario, à la relecture de cette décision) : passer un
+signalement rattaché à « traité » ou « clos » sans verdict laisse la pause et
+l'attente en place ; seul le verdict « impliqué » ou « non impliqué » lève.
+
+**§6 — Ordre et signature.** (1) cette décision ; (2) la migration —
+l'élément désigné, le mode de rattachement, la validation —, relue puis
+`release-db` approuvée et constatée ; (3) le formulaire du portail et
+l'affichage de la pause ; (4) la surface de validation et la règle amendée,
+avec un banc de cas fictifs refait sur elle ; (5) la **signature** : quatre
+champs, nouvelle version de la règle, `sourceReference` « Constitution
+clinique `DC-42` ; arbitrage du praticien consigné en [[D-281]] du
+2026-10-12 ». D'ici là, la règle livrée reste **non armée** : les signalements
+sont capturés et notifiés, rien ne s'interrompt. Écarté : signer la règle
+livrée comme filet pendant le chantier (elle appliquerait le blocage total
+écarté au §1).
+
+**Écartés.** Avertir sans rien bloquer (contraire à `DC-42`) ; graduer selon la
+gravité déclarée (une déclaration non vérifiée réglerait l'interruption) ;
+laisser le praticien confirmer le rattachement avant toute mesure (la machine
+poursuivrait d'ici là) ; éteindre un signalement avec la version qu'il visait
+(un oubli disparaîtrait en silence) ; imposer le retrait de l'élément impliqué
+(l'aménagement appartient au praticien) ; « en pause » limité à l'élément
+désigné quand le patient ne sait pas lequel.
+
 ### D-280 — Lot 8B : la restriction de sommeil suit le critère publié, et « Peu couvert » suit le seuil d'effondrement signé
 
 - Date : 2026-10-12

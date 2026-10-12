@@ -9972,3 +9972,13 @@ afficher les drapeaux du sommeil, et les filtrer ou les décrire au prompt.
 **Prochaine action.** Merger #1405 après CI ; supprimer les worktrees `hygiene-archivage` et `hygiene-apply-safe`.
 
 **Ouvert.** Liens externes au dépôt vers les 15 chemins non relus ; #1394 mergée sans clôture.
+
+## 2026-10-12 — Constat S-1 et SAF-EI-01 amendée (D-281)
+
+**Fait.** Constat S-1 en conteneur : zéro signalement d'effet indésirable, aucun import v4, zéro accusé IA v7, tête de `main` déployée. Banc de 20 cas fictifs (Codex) relu. Seize arbitrages, plus un à la relecture, consignés en `D-281` (PR #1406).
+
+**Écarté.** Blocage total du dossier ; gradation par gravité ; délai prise→symptômes ; signer la règle livrée comme filet.
+
+**Prochaine action.** Merger #1406 ; lot 2 = migration.
+
+**Ouvert.** Copie principale sur la branche de test de Codex.
