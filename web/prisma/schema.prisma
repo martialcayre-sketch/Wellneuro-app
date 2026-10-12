@@ -1090,6 +1090,7 @@ model TrustAdverseEffectVerdict {
 
   @@unique([supersedesVerdictId], map: "trust_aev_supersedes_unique")
   @@index([reportId, renduLe], map: "trust_aev_report_idx")
+  @@index([idPatient], map: "trust_aev_patient_idx")
   @@map("trust_adverse_effect_verdicts")
 }
 

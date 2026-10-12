@@ -48,6 +48,9 @@ mode de rattachement et le verdict du praticien, avant tout code (lot 3).
 - Revue `wn-reviewer` : GO sous réserve, P1 (programme re-pointable) corrigé,
   P2-1/2/5 couverts au contrat, P2-3 consigné en commentaire, P2-4 (renommage
   d'identifiant bloqué par le gel) accepté.
+- Revue Copilot #1408 : deux constats réels, corrigés après arbitrage du
+  responsable — patient d'un signalement rattaché figé, index `id_patient`
+  sur les verdicts ; contrat et T3 rejoués.
 
 ## Problèmes ouverts
 

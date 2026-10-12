@@ -154,6 +154,16 @@ BEGIN
     'UPDATE trust_adverse_effect_reports SET protocol_draft_id = ''pd_aev1_brouillon'' WHERE id = ''aer_element''');
   PERFORM pg_temp.refuse('programme re-pointé vers un autre patient', 'P0001',
     'UPDATE trust_adverse_effect_reports SET protocol_draft_id = ''pd_aev2'' WHERE id = ''aer_nsp''');
+  PERFORM pg_temp.refuse('signalement rattaché passé à un autre patient', 'P0001',
+    'UPDATE trust_adverse_effect_reports SET id_patient = ''PAT_CONTRAT_AEV2'' WHERE id = ''aer_nsp''');
+
+  -- Index de la clé vers `patients` : l'effacement supprime par `id_patient`.
+  IF NOT EXISTS (SELECT 1 FROM pg_indexes
+                  WHERE schemaname = 'public' AND tablename = 'trust_adverse_effect_verdicts'
+                    AND indexname = 'trust_aev_patient_idx'
+                    AND indexdef LIKE '%(id_patient)') THEN
+    RAISE EXCEPTION 'CONTRAT : index trust_aev_patient_idx (id_patient) absent';
+  END IF;
 
   -- ── 2b. CHECK DU VERDICT (23514) ─────────────────────────────────────────
   PERFORM pg_temp.refuse('verdict hors liste', '23514',

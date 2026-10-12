@@ -89,6 +89,13 @@ BEGIN
        AND NEW.protocol_draft_id IS DISTINCT FROM OLD.protocol_draft_id THEN
       RAISE EXCEPTION '% : le programme visé par un signalement rattaché est figé (D-281).', TG_TABLE_NAME;
     END IF;
+    -- Le patient aussi (revue Copilot #1408) : changé, il laisserait le
+    -- signalement pointer le programme de l'ancien dossier, et ses verdicts
+    -- porter un autre patient que lui — chaque clé resterait valide seule.
+    IF OLD.rattachement IS NOT NULL
+       AND NEW.id_patient IS DISTINCT FROM OLD.id_patient THEN
+      RAISE EXCEPTION '% : le patient d''un signalement rattaché est figé (D-281).', TG_TABLE_NAME;
+    END IF;
     RETURN NEW;
   END IF;
 
@@ -159,6 +166,11 @@ CREATE TABLE "trust_adverse_effect_verdicts" (
 
 -- CreateIndex — index de LECTURE : le fil entier d'un signalement.
 CREATE INDEX "trust_aev_report_idx" ON "trust_adverse_effect_verdicts"("report_id", "rendu_le");
+
+-- CreateIndex — index de la clé vers `patients` (revue Copilot #1408) :
+-- l'effacement IDP2 supprime par `id_patient`, et la suppression d'un patient
+-- sonde cette clé ; sans lui, les deux parcourent toute la table.
+CREATE INDEX "trust_aev_patient_idx" ON "trust_adverse_effect_verdicts"("id_patient");
 
 -- CreateIndex — AU PLUS UN SUCCESSEUR PAR LIGNE (patron
 -- `c1_selection_priorite_supersedes_unique`). Avec la racine unique

@@ -6,7 +6,7 @@
 - **Le signalement** gagne `rattachement` (`element`, `ne_sait_pas`,
   `autre_produit`) et `element_action_id`. À l'insertion, la base exige un
   programme du patient, approuvé pour diffusion, qui contient l'élément
-  désigné ; le rattachement est ensuite figé.
+  désigné ; le rattachement est ensuite figé, avec le programme visé et le patient.
 - **Le verdict** vit dans `trust_adverse_effect_verdicts` : « impliqué »
   (élément et aménagement — retirer, différer, réduire — obligatoires) ou
   « non impliqué », daté et nominatif. **Correction tracée** (arbitrage du
