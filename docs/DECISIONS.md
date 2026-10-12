@@ -59,7 +59,13 @@ au-delà de 30 min » nommait une « convention de recherche » sans la citer. I
 la cite : Lichstein et al., « Quantitative criteria for insomnia », *Behav Res
 Ther* 2003;41(4):427-45, PMID 12643966 (résumé relevé par PubMed le
 2026-10-12 : endormissement ou éveil **≥ 31 min**, **≥ 3 nuits par semaine**).
-Seuil inchangé : « plus de 30 min » en minutes entières vaut ≥ 31.
+Seuil inchangé. **Ce n'est pas le seuil publié appliqué
+exactement, c'est son approximation par classes** (revue Copilot de #1404) :
+endormissement et durée des réveils sont recueillis en classes, et la classe
+« 30 à 60 min » est comptée au-delà de 30 (`agenda-sommeil/agregats.ts`,
+`AU_DELA_DE_30`). Une réponse qui veut dire « exactement 30 min » peut donc
+lever le drapeau, quand Lichstein exige ≥ 31. Distinguer 30 de 31 demanderait
+de changer le recueil, ce que ce lot ne fait pas.
 
 **§4 — « Peu couvert » suit le seuil d'effondrement signé.** Le palier bas
 passe de 40 à **34**, la valeur de `SEUIL_EFFONDREMENT` (0,34) validée par

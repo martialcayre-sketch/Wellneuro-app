@@ -3995,7 +3995,10 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // recherche est NOMMÉE, jamais conclue — on rapporte, on ne diagnostique pas.
     // Source ([[D-280]]) : Lichstein et al., « Quantitative criteria for
     // insomnia », Behav Res Ther 2003;41(4):427-45, PMID 12643966 —
-    // endormissement ou éveil ≥ 31 min, ≥ 3 nuits par semaine.
+    // endormissement ou éveil ≥ 31 min, ≥ 3 nuits par semaine. APPROXIMATION
+    // PAR CLASSES : la classe « 30 à 60 min » compte au-delà de 30, donc une
+    // réponse à exactement 30 min peut lever le drapeau ; le recueil en classes
+    // ne distingue pas 30 de 31.
     const freq = getVal('AGD_FREQ_CRITERE_SEM');
     if (freq !== null && freq >= 3) {
       drapeaux.push(
