@@ -129,10 +129,10 @@ impose notamment :
   amendement de `D-251`).
 - **Une contre-revue adverse** a examiné la chaîne le 2026-09-29 : aucun
   défaut bloquant, et ses quatre constats de second rang ont été corrigés ou
-  bornés (`docs/claude/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`).
+  bornés (`docs/archive/contextes/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`).
   Une seconde passe, le 2026-09-30, a éprouvé les tests par mutation : chaque
   garantie a au moins un test qui échoue quand on la casse
-  (`docs/claude/REVUE_CODEX_MUTATIONS_FICHES_ASSIETTE_2026-09-30.md`).
+  (`docs/archive/contextes/REVUE_CODEX_MUTATIONS_FICHES_ASSIETTE_2026-09-30.md`).
 
 ## Signaler une erreur
 

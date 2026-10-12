@@ -334,7 +334,7 @@ L’état initial, recontrôlé avant rédaction du résultat, était :
 
 ```text
 $ git status --short
-?? docs/claude/PROMPT_CONTRE_REVUE_CODEX_AUDIT_PARCOURS_2026-09-05.md
+?? docs/archive/contextes/PROMPT_CONTRE_REVUE_CODEX_AUDIT_PARCOURS_2026-09-05.md
 ```
 
 Ce fichier de prompt préexistait à la passe. Le présent résultat est le seul fichier ajouté par la contre-revue.

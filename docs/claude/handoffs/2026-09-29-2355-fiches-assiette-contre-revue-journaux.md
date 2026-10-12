@@ -37,7 +37,7 @@ motif. C'est la troisième condition du §10, désormais tenue.
 - `route.test.ts` de la diffusion (deux tests), de l'ingestion (un test, et
   le journal lu par `String` au lieu de `JSON.stringify`), des lectures (un
   test).
-- `docs/claude/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`,
+- `docs/archive/contextes/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`,
   `docs/DECISIONS.md` (amendement), changelog, ce handoff, SESSION_LOG.
 
 ## 5. Validations exécutées

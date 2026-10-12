@@ -2663,7 +2663,7 @@ fournisseur, son transfert hors UE et l'information des patients.
 >    commencer » une fois. Arbitrage du responsable. Le dossier RGPD décrit
 >    désormais le flux Anthropic de [[D-168]], qui y manquait.
 > 3. **La seconde passe adverse, par mutation, est jouée**
->    (`docs/claude/REVUE_CODEX_MUTATIONS_FICHES_ASSIETTE_2026-09-30.md`) : les
+>    (`docs/archive/contextes/REVUE_CODEX_MUTATIONS_FICHES_ASSIETTE_2026-09-30.md`) : les
 >    seize invariants ont chacun au moins un banc qui mord. Sa seule trouvaille
 >    (M7a) est écartée avec motif : l'invariant est gardé par
 >    `route.test.ts:608`, et c'est l'énoncé qui omettait ce banc. **La
@@ -2673,7 +2673,7 @@ fournisseur, son transfert hors UE et l'information des patients.
 >
 > **AMENDEMENT DU 2026-09-29 (NUIT) — LA CONTRE-REVUE ADVERSE : CE QUE LA BASE
 > GARANTIT, CE QUE SEULE LA ROUTE GARANTIT.** Contre-revue Codex jouée le
-> 2026-09-29 (`docs/claude/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`) :
+> 2026-09-29 (`docs/archive/contextes/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`) :
 > aucun P0, quatre P1. Arbitrage du responsable : **borner, sans migration.**
 >
 > 1. **La base refuse**, quel que soit l'écrivain : une remise vers un autre

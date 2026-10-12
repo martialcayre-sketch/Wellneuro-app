@@ -9962,3 +9962,13 @@ consigné.
 
 **Prochaine action.** PR, merge, constat ; puis une question produit :
 afficher les drapeaux du sommeil, et les filtrer ou les décrire au prompt.
+
+## 2026-10-12 — Hygiène : archivage des contextes datés
+
+**Fait.** `repo-hygiene.sh` rendu portable macOS (#1394, repli `grep`, échappement `sed` corrigé), #1390 fermée comme remplacée. `apply-safe` réel joué en worktree : 15 documents vers `docs/archive/{contextes,reprise}/`, 14 références réécrites (PR #1405). Revue Copilot : handoff du 2026-09-09 laissé à son chemin d origine (état passé), clôture ajoutée.
+
+**Écarté.** `apply-safe` en copie principale ; réécrire les constats d état des handoffs passés.
+
+**Prochaine action.** Merger #1405 après CI ; supprimer les worktrees `hygiene-archivage` et `hygiene-apply-safe`.
+
+**Ouvert.** Liens externes au dépôt vers les 15 chemins non relus ; #1394 mergée sans clôture.

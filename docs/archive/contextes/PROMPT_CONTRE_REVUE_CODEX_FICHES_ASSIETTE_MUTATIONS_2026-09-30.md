@@ -2,7 +2,7 @@
 
 > Énoncé versé au dépôt AVANT d'être joué. Lancé manuellement par le
 > responsable. Première passe (sur lecture, sans mutation) :
-> `docs/claude/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`.
+> `docs/archive/contextes/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`.
 
 ## 0. Ta mission
 

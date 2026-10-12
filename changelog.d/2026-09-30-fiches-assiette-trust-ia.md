@@ -12,7 +12,7 @@
   après relecture intégrale.
 - **Seconde passe adverse, par mutation** : les seize invariants de `D-251`
   ont chacun au moins un banc qui mord. Sa seule trouvaille est écartée avec
-  motif (`docs/claude/REVUE_CODEX_MUTATIONS_FICHES_ASSIETTE_2026-09-30.md`).
+  motif (`docs/archive/contextes/REVUE_CODEX_MUTATIONS_FICHES_ASSIETTE_2026-09-30.md`).
   La condition « contre-revue adverse » du §10 est tenue.
 - **Décidé** : le document du portail « L'intelligence artificielle dans
   Wellneuro » passera en v3. Il est faux aujourd'hui sur trois points : il
