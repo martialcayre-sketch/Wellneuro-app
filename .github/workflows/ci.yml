@@ -793,6 +793,17 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/c1_selection_priorite_v1_negatif.sql
 
+      # Effet indésirable rattaché à un élément et verdict du praticien (D-281) :
+      # formes valides ACCEPTÉES, correction chaînée comprise ; chaque CHECK
+      # mord sous son PROPRE nom ; triggers (programme du patient, approuvé pour
+      # diffusion, élément présent ; rattachement figé ; verdict cohérent avec le
+      # signalement ; ni UPDATE ni TRUNCATE) ; une racine et un successeur ;
+      # RESTRICT vers le signalement ; colonnes en liste blanche ; RLS deny-all.
+      - name: SAF-EI rattachement et verdict negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/trust_aer_rattachement_verdict_v1_negatif.sql
+
       # Dossier à deux voix (Alliance 6.0-A LOT-01) : une écriture valide par
       # table doit être ACCEPTÉE ; les CHECK doivent MORDRE (praticien
       # vide/espaces/trop long, textes porteurs vides, `sens` hors taxonomie) ;

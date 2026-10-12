@@ -81,6 +81,9 @@ nominative. **Le statut ne lève rien** (tranché par le responsable le
 2026-10-12, sur scénario, à la relecture de cette décision) : passer un
 signalement rattaché à « traité » ou « clos » sans verdict laisse la pause et
 l'attente en place ; seul le verdict « impliqué » ou « non impliqué » lève.
+**Un verdict se corrige** (tranché par le responsable le 2026-10-12, sur
+scénario, à l'ouverture du lot 2) : un verdict erroné est supplanté par un
+nouveau verdict, l'ancien reste lisible ; le dernier de la chaîne fait foi.
 
 **§6 — Ordre et signature.** (1) cette décision ; (2) la migration —
 l'élément désigné, le mode de rattachement, la validation —, relue puis

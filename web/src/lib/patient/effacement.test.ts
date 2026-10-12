@@ -35,7 +35,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'adressageSignalAlerte',
     'syntheseIA', 'questionnaireReponse',
     'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',
-    'trustChoiceEvent', 'trustAdverseEffectReport', 'trustPrivacyIncident',
+    'trustChoiceEvent', 'trustAdverseEffectVerdict', 'trustAdverseEffectReport', 'trustPrivacyIncident',
     'trustRightsRequest', 'filCardRejection', 'filCardLecture',
     'portailLecturePatient',
     'relectureNote', 'portailMagicLink',
@@ -124,6 +124,14 @@ describe('effacerDossier', () => {
     await effacerDossier('PAT_SEED_03');
     expect(appels).toContain('ecartementProposition');
     expect(appels.indexOf('ecartementProposition')).toBeLessThan(appels.indexOf('patient'));
+  });
+
+  // Verdicts sur un signalement ([[D-281]] §5) : FK RESTRICT vers le
+  // signalement. Déplacés après lui, ils feraient échouer tout l'effacement.
+  it('supprime les verdicts d’effet indésirable avant les signalements', async () => {
+    await effacerDossier('PAT_SEED_03');
+    expect(appels).toContain('trustAdverseEffectVerdict');
+    expect(appels.indexOf('trustAdverseEffectVerdict')).toBeLessThan(appels.indexOf('trustAdverseEffectReport'));
   });
 
   // Nuits d'agenda du sommeil : FK RESTRICT vers patients ET assignations. Si

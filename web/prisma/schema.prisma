@@ -67,6 +67,7 @@ model Patient {
   trustAcknowledgements     TrustAcknowledgement[]
   trustChoiceEvents         TrustChoiceEvent[]
   trustAdverseEffectReports TrustAdverseEffectReport[]
+  trustAdverseEffectVerdicts TrustAdverseEffectVerdict[]
   trustPrivacyIncidents     TrustPrivacyIncident[]
   trustRightsRequests       TrustRightsRequest[]
 
@@ -1029,12 +1030,67 @@ model TrustAdverseEffectReport {
   debutPriseLe         DateTime? @map("debut_prise_le")
   debutSymptomesLe     DateTime? @map("debut_symptomes_le")
 
-  patient       Patient        @relation(fields: [idPatient], references: [idPatient])
-  protocolDraft ProtocolDraft? @relation(fields: [protocolDraftId], references: [id])
+  // RATTACHEMENT À UN ÉLÉMENT — [[D-281]] §2 (SAF-EI-01 amendée).
+  //
+  // Le patient attribue l'effet à UN élément du programme diffusé
+  // (`element`, avec l'`actionId` de cet élément), ou répond « Je ne sais
+  // pas » (`ne_sait_pas`) ou « un autre produit » (`autre_produit`) — ces
+  // deux-là valent tous les compléments. NULL : signalement antérieur, ou
+  // déposé sans programme diffusé — rien n'est rattaché. La base vérifie à
+  // l'insertion que le programme est celui du patient, qu'il a été diffusé, et
+  // que l'élément y figure ; les deux colonnes sont ensuite FIGÉES (trigger) :
+  // c'est la parole du patient.
+  rattachement         String?   @map("rattachement") // element | ne_sait_pas | autre_produit
+  elementActionId      String?   @map("element_action_id")
+
+  patient       Patient                     @relation(fields: [idPatient], references: [idPatient])
+  protocolDraft ProtocolDraft?              @relation(fields: [protocolDraftId], references: [id])
+  verdicts      TrustAdverseEffectVerdict[]
 
   @@index([statutTraitement], map: "trust_aer_statut_idx")
   @@index([idPatient, statutTraitement], map: "trust_aer_patient_statut_idx")
   @@map("trust_adverse_effect_reports")
+}
+
+// Verdict du praticien sur un signalement rattaché — [[D-281]] §5.
+//
+// SEUL LE VERDICT LÈVE la pause et l'attente, jamais le statut de traitement.
+// `implique` : l'élément en cause (celui du patient s'il en a désigné un, celui
+// que le praticien désigne sinon) et l'aménagement choisi — retirer, différer
+// ou réduire ; jamais « à l'identique ». `non_implique` : ni élément ni
+// aménagement, la pause est levée.
+//
+// APPEND-ONLY CHAÎNÉ (arbitrage du responsable du 2026-10-12) : un verdict
+// erroné se CORRIGE par un nouveau verdict qui le supplante, l'ancien reste
+// lisible. Une racine par signalement, au plus un successeur par ligne (index
+// partiels portés par la migration seule), aucun UPDATE (trigger). La
+// cohérence avec le signalement — même patient, signalement rattaché, élément
+// existant dans le programme visé — est vérifiée par la base à l'insertion.
+//
+// Table fille de `patients` et des signalements : effacée par la transaction
+// IDP2 avant eux. Entre le déploiement de cette PR et l'approbation de
+// `release-db`, un effacement de dossier échoue FERMÉ sur la table absente
+// (précédent `panels_biologie_documentes`).
+model TrustAdverseEffectVerdict {
+  id                  String   @id @default(cuid())
+  idPatient           String   @map("id_patient")
+  reportId            String   @map("report_id")
+  verdict             String   @map("verdict") // implique | non_implique (CHECK migration)
+  elementActionId     String?  @map("element_action_id") // requis si `implique`, absent sinon
+  amenagement         String?  @map("amenagement") // retirer | differer | reduire — requis si `implique`
+  // E-mail de session, posé CÔTÉ SERVEUR (patron `arbitre_par`).
+  renduPar            String   @map("rendu_par")
+  renduLe             DateTime @default(now()) @map("rendu_le")
+  // Référence SOUPLE, sans clé étrangère (patron `supersedes_selection_id`) ;
+  // le trigger d'insertion vérifie qu'elle vise un verdict du même signalement.
+  supersedesVerdictId String?  @map("supersedes_verdict_id")
+
+  patient Patient                  @relation(fields: [idPatient], references: [idPatient])
+  report  TrustAdverseEffectReport @relation(fields: [reportId], references: [id])
+
+  @@unique([supersedesVerdictId], map: "trust_aev_supersedes_unique")
+  @@index([reportId, renduLe], map: "trust_aev_report_idx")
+  @@map("trust_adverse_effect_verdicts")
 }
 
 // Incident de confidentialité signalé par le patient.
