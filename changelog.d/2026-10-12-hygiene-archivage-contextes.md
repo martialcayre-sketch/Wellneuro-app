@@ -5,8 +5,8 @@
   contextes datés, énoncés et revues Codex des contre-revues parcours,
   objectif négocié et fiches d'assiette) et `docs/archive/reprise/` (4 :
   snapshots de reprise du 2026-07-09).
-- **15 références réécrites** (chemin seul, aucun autre mot touché) dans
-  `docs/DECISIONS.md`, `docs/TRUST_IA_FICHES_ASSIETTE.md`, cinq handoffs,
+- **14 références réécrites** (chemin seul, aucun autre mot touché) dans
+  `docs/DECISIONS.md`, `docs/TRUST_IA_FICHES_ASSIETTE.md`, quatre handoffs (celui du 2026-09-09 garde son chemin d'origine : il décrit un état passé),
   quatre fragments de changelog et deux des documents déplacés.
   `CHANGELOG.md` et `SESSION_LOG.md` n'en portaient aucune.
 - Vérifié : aucune mention restante des 15 noms hors `docs/archive/` ;
