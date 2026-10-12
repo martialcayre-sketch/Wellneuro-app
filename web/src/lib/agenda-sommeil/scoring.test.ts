@@ -146,6 +146,28 @@ describe('drapeau clinique — jamais des points', () => {
     expect(r.drapeaux.some((d: string) => d.includes('restriction de sommeil'))).toBe(false);
   });
 
+  it('sept nuits suffisent (borne incluse)', () => {
+    const r = calculateScore(
+      AGENDA_SOMMEIL_ID,
+      agregats({ AGD_EFF_MOY: 70, AGD_NB_NUITS_EFF: 7 }),
+    );
+    expect(r.drapeaux.some((d: string) => d.includes('restriction de sommeil'))).toBe(true);
+  });
+
+  it('un agenda d’avant les compteurs lève le drapeau sur son efficacité', () => {
+    // Compteur absent = agenda ancien, couvert par construction (≥ 14 nuits).
+    const r = calculateScore(
+      AGENDA_SOMMEIL_ID,
+      agregats({ AGD_EFF_MOY: 80, AGD_NB_NUITS_EFF: null }),
+    );
+    expect(r.drapeaux.some((d: string) => d.includes('restriction de sommeil'))).toBe(true);
+  });
+
+  it('la variante « personne âgée » est nommée, jamais appliquée par un âge inventé', () => {
+    const r = calculateScore(AGENDA_SOMMEIL_ID, agregats({ AGD_EFF_MOY: 82 }));
+    expect(r.drapeaux[0]).toContain('< 80 % chez la personne âgée');
+  });
+
   it('temps au lit long avec bonne efficacité ne lève aucun drapeau', () => {
     const r = calculateScore(
       AGENDA_SOMMEIL_ID,

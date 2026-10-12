@@ -3972,10 +3972,12 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // Treatments for Sleep Disorders, Elsevier 2011, « Specific indication »,
     // doi:10.1016/B978-0-12-381522-4.00001-8) — sans condition de temps au lit.
     // La variante « < 80 % chez la personne âgée » n'est PAS appliquée : la
-    // source ne fixe aucun âge, et en poser un serait une borne inventée. Le
-    // plancher d'axe (`minNuitsAxe`, 7 nuits) tient lieu de « une semaine ».
+    // source ne fixe aucun âge, et en poser un serait une borne inventée. Elle
+    // est NOMMÉE dans le texte, pour que le lecteur l'applique (`DC-14`). Le
+    // plancher d'axe (`minNuitsAxe`) est le plancher TECHNIQUE existant, pas un
+    // seuil de la source : une efficacité non couverte ne fonde aucune conduite.
     if (eff !== null && couvertEff && eff < 85) {
-      drapeaux.push('Efficacité du sommeil inférieure à 85 % — restriction de sommeil à discuter (critère de Spielman, 2011).');
+      drapeaux.push('Efficacité du sommeil inférieure à 85 % — restriction de sommeil à discuter (critère de Spielman, 2011 ; < 80 % chez la personne âgée).');
     }
     // L'aide au sommeil n'entre PAS dans le total : c'est une exposition, pas un
     // résultat, et la scorer répéterait l'erreur de catégorie consistant à

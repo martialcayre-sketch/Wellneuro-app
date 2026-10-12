@@ -40,12 +40,17 @@ peut exister pour eux.
 
 **§2 — Le drapeau de restriction suit le critère publié.** Il se lève quand
 l'efficacité moyenne est **inférieure à 85 %**, quel que soit le temps au lit,
-et seulement si l'axe d'efficacité est couvert (`minNuitsAxe`, 7 nuits — la
-« semaine » de la source ; une efficacité non couverte ne fonde aucune
-conduite). Le texte cite la source : « Efficacité du sommeil inférieure à
-85 % — restriction de sommeil à discuter (critère de Spielman, 2011). » **La
-variante « < 80 % chez la personne âgée » n'est pas appliquée** : la source ne
-fixe aucun âge, et en poser un serait une borne inventée (`DC-19`). Le drapeau
+et seulement si l'axe d'efficacité est couvert. Ce plancher (`minNuitsAxe`,
+7 nuits) est le plancher **technique** déjà en place, pas un seuil de la
+source : une efficacité non couverte ne fonde aucune conduite. Un agenda
+d'avant les compteurs reste couvert par construction (14 nuits au moins).
+L'efficacité est comparée telle qu'elle est servie au praticien, arrondie à
+l'entier : 84,5 % s'affiche et se juge 85. **La variante « < 80 % chez la
+personne âgée » n'est pas appliquée** : la source ne fixe aucun âge, et en
+poser un serait une borne inventée (`DC-19`). Elle est en revanche **nommée
+dans le texte**, pour que le critère ne se lise pas plus large qu'il n'est
+(`DC-14`) : « Efficacité du sommeil inférieure à 85 % — restriction de sommeil
+à discuter (critère de Spielman, 2011 ; < 80 % chez la personne âgée). » Le drapeau
 s'élargit — conformément à la directive « aucune régression » de [[D-276]] — et
 reste un drapeau : il ne retire aucun point.
 
@@ -58,8 +63,9 @@ Seuil inchangé : « plus de 30 min » en minutes entières vaut ≥ 31.
 
 **§4 — « Peu couvert » suit le seuil d'effondrement signé.** Le palier bas
 passe de 40 à **34**, la valeur de `SEUIL_EFFONDREMENT` (0,34) validée par
-[[D-106]] décision 3. Le palier de **70** reste un **repère du cabinet signé
-par le praticien**, identifié comme tel (`DC-20`). La valeur est recopiée dans
+[[D-106]] décision 3. Le palier de **70** est conservé comme **repère
+d'affichage du cabinet**, sans source, identifié comme tel (`DC-20`) ; l'option
+arbitrée le 2026-10-12 le disait (« le palier de 70 reste un repère »). La valeur est recopiée dans
 le composant patient (qui ne doit pas embarquer les tables cliniques) et un
 banc garde l'égalité avec `SEUIL_EFFONDREMENT`. La comparaison porte sur la
 couverture servie, arrondie à l'entier : un besoin à 0,335 lit « Couverture
@@ -71,7 +77,15 @@ couvert » à « Couverture partielle ».
 drapeaux calculés à leur clôture (`agenda-sommeil/cloture.ts`, seul écrivain ;
 aucune lecture ne les recalcule). Leur seul lecteur est la synthèse IA, qui
 reçoit le score stocké tel quel ; aucun écran praticien, ni le PDF, ni le
-portail ne les affiche — constat du 2026-10-12, qui n'est pas tranché ici. Aucune migration. Le patient ne voit toujours
+portail ne les affiche — constat du 2026-10-12, qui n'est pas tranché ici.
+Le texte du drapeau de restriction arrive donc au modèle sous la clé
+`drapeaux`, que `scoresPourPrompt` ne filtre pas et que la consigne système ne
+décrit pas. Ce chemin existait avant ce lot : le lot élargit le déclenchement,
+il n'ouvre pas le chemin. Sur les agendas scorés en production, le nouveau
+critère n'aurait levé aucun drapeau. La synthèse est un brouillon praticien,
+publié au patient seulement après relecture. Filtrer, étiqueter ou décrire ces
+drapeaux dans la consigne est un lot à part, avec sa version de consigne ; il
+est inscrit en suivi, avec la question de leur affichage. Aucune migration. Le patient ne voit toujours
 aucun chiffre. Fragment : `changelog.d/2026-10-12-8b-seuils-provenance.md`.
 
 ### D-279 — Lot 5A : le praticien peut poser lui-même la priorité, et l'absence de candidat ne bloque plus le protocole
