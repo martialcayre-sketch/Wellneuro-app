@@ -55,8 +55,6 @@ mode de rattachement et le verdict du praticien, avant tout code (lot 3).
   fermé (précédent `panels_biologie_documentes`).
 - Lot 3 : exclure l'action d'orientation médecin de la liste proposée au
   patient ? (question de la revue, non tranchée).
-- Deux modèles d'ordonnance biologique déposés en session : usage à préciser
-  par le responsable ; rien n'en entre au dépôt.
 
 ## Prochaine action exacte
 

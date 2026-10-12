@@ -9991,4 +9991,4 @@ afficher les drapeaux du sommeil, et les filtrer ou les décrire au prompt.
 
 **Prochaine action.** CI, merge, `release-db` approuvée, constat ; puis lot 3.
 
-**Ouvert.** Orientation médecin dans la liste du patient ; usage des deux modèles d'ordonnance déposés.
+**Ouvert.** Orientation médecin dans la liste du patient.
