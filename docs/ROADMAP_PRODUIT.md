@@ -299,8 +299,8 @@ logique de PatientsPanel.
 - **Rituel du soir** (arbitrage du responsable du 2026-10-12, LOT-12 de la
   campagne `2026-10-07-agenda-sommeil-adhesion`) : pas de question « rituel »
   dans l'agenda du sommeil (`Q_SOM_09`). Elle ne s'envisage que pour un
-  patient dont le protocole recommande un rituel d'hygiène du sommeil —
-  chantier à part. Préalables : le rituel défini par le praticien et sa source, puis
+  patient à qui le praticien a recommandé un programme d'hygiène du
+  sommeil — chantier à part. Préalables : le rituel défini par le praticien et sa source, puis
   un `D-xxx` ; un contrat versionné si la question entre dans l'agenda.
 - Coaching V1 réaliste : tips quotidiens issus des fiches corpus liées au
   protocole + check-in hebdomadaire structuré avec alerte praticien si
