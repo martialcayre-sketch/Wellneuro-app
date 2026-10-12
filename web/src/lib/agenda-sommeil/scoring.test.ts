@@ -104,7 +104,7 @@ describe('durée : aucune pénalité au-delà de 9 h', () => {
 });
 
 describe('drapeau clinique — jamais des points', () => {
-  it('temps au lit long + efficacité basse lève un drapeau sans retrancher de points', () => {
+  it('une efficacité basse lève un drapeau sans retrancher de points', () => {
     // 10 h au lit pour 8 h de sommeil : efficacité 78 %, cible d'une restriction
     // de sommeil. Le drapeau le dit ; le total ne le confond pas avec un manque
     // de sommeil, qui appellerait la conduite inverse.
@@ -114,7 +114,36 @@ describe('drapeau clinique — jamais des points', () => {
     );
     expect(r.drapeaux).toHaveLength(1);
     expect(r.drapeaux[0]).toContain('restriction de sommeil');
+    expect(r.drapeaux[0]).toContain('Spielman');
     expect(axe(r, 'DUREE').total).toBe(25);
+  });
+
+  // D-280 : critère publié (Spielman 2011) — efficacité < 85 %, sans condition
+  // de temps au lit. Avant, le drapeau exigeait aussi ≥ 9 h au lit et < 80 %.
+  it('le seuil est 85 % : 84 lève le drapeau, 85 non', () => {
+    const a = calculateScore(AGENDA_SOMMEIL_ID, agregats({ AGD_EFF_MOY: 84 }));
+    const b = calculateScore(AGENDA_SOMMEIL_ID, agregats({ AGD_EFF_MOY: 85 }));
+    expect(a.drapeaux.some((d: string) => d.includes('restriction de sommeil'))).toBe(true);
+    expect(b.drapeaux.some((d: string) => d.includes('restriction de sommeil'))).toBe(false);
+  });
+
+  it('un temps au lit court ne retient plus le drapeau', () => {
+    // 7 h 30 au lit, 82 % : aucune condition de temps au lit dans la source.
+    const r = calculateScore(
+      AGENDA_SOMMEIL_ID,
+      agregats({ AGD_TIB_MOY: 450, AGD_TST_MOY: 369, AGD_EFF_MOY: 82 }),
+    );
+    expect(r.drapeaux.some((d: string) => d.includes('restriction de sommeil'))).toBe(true);
+  });
+
+  it('une efficacité non couverte (moins de 7 nuits) ne lève aucun drapeau', () => {
+    // La source juge sur un agenda d'une à deux semaines : une efficacité tirée
+    // de trop peu de nuits ne fonde aucune conduite.
+    const r = calculateScore(
+      AGENDA_SOMMEIL_ID,
+      agregats({ AGD_EFF_MOY: 70, AGD_NB_NUITS_EFF: 6 }),
+    );
+    expect(r.drapeaux.some((d: string) => d.includes('restriction de sommeil'))).toBe(false);
   });
 
   it('temps au lit long avec bonne efficacité ne lève aucun drapeau', () => {
@@ -151,6 +180,7 @@ describe('ce qui n’entre PAS dans l’indice', () => {
     const r = calculateScore(AGENDA_SOMMEIL_ID, agregats({ AGD_FREQ_CRITERE_SEM: 4 }));
     const drapeau = r.drapeaux.find((d: string) => d.includes('nuits/semaine'));
     expect(drapeau).toContain('convention de recherche');
+    expect(drapeau).toContain('Lichstein 2003');
     // Le drapeau rapporte un nombre et sa convention, il ne pose aucun diagnostic.
     expect(drapeau).not.toMatch(/insomnie|trouble|pathologi/i);
   });

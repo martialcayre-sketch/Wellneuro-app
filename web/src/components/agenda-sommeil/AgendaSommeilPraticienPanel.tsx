@@ -150,7 +150,7 @@ function Frequences({ a }: { a: AgregatsAgenda }) {
         ))}
       </p>
       <p className="text-2xs text-muted-foreground">
-        Convention de recherche : ≥ 3 nuits/semaine.
+        Convention de recherche (Lichstein, 2003) : ≥ 3 nuits/semaine.
         {partiel
           ? ' Une nuit sort d’un calcul quand sa grandeur n’y est pas classable : bornes d’avant la refonte, ou « je ne sais pas ».'
           : ''}

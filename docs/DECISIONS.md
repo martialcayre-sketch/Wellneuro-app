@@ -4,6 +4,76 @@
 
 ## Décisions actives
 
+### D-280 — Lot 8B : la restriction de sommeil suit le critère publié, et « Peu couvert » suit le seuil d'effondrement signé
+
+- Date : 2026-10-12
+- Statut : accepté. Arbitrages du responsable rendus en session le 2026-10-12
+  sur questions fermées (« Critère publié », « « Peu couvert » sous 34 »),
+  après le constat de provenance ci-dessous. Suite de [[D-276]] : 8B garde les
+  drapeaux de l'agenda du sommeil et en établit la source.
+- Domaine : clinique. Drapeaux de l'agenda du sommeil (`Q_SOM_09`) et libellés
+  de couverture de « Mon équilibre » côté patient. **Aucun barème, aucun axe,
+  aucune pondération de l'indice /100 modifiés ; aucun calcul de « Mon
+  équilibre » modifié.**
+
+**§1 — Le constat.** Trois chiffres étaient servis sans provenance :
+- le drapeau « restriction de sommeil à discuter » exigeait **au moins 540 min
+  au lit ET une efficacité inférieure à 80 %** ;
+- le patient lisait « Bien couvert » à 70 et plus, « Couverture partielle » de
+  40 à 69, « Peu couvert » sous 40 (introduits par #183, comme équivalent texte
+  de l'opacité, pour les lecteurs d'écran).
+
+La source de référence de la restriction de sommeil — Spielman, Yang &
+Glovinsky, « Sleep Restriction Therapy », in *Behavioral Treatments for Sleep
+Disorders*, Elsevier 2011, doi:10.1016/B978-0-12-381522-4.00001-8, section
+« Specific indication », lue dans son texte — pose : *« SRT is indicated for
+sleep difficulties in which the subjective sleep efficiency […], based on a 1-
+to 2-week sleep log or retrospective report, is less than 85 percent (or less
+than 80 percent in older individuals). »* **Aucune condition de temps au
+lit** ; le même chapitre ajoute que des dormeurs à efficacité élevée peuvent
+en relever. Les 540 min n'ont aucune source ; les 80 % ne sont que la variante
+« personne âgée ». En production le 2026-10-12, par conteneur : 11 agendas,
+aucun drapeau jamais émis, aucun temps au lit moyen ≥ 540 min.
+
+Les paliers 70/40 sont une construction WellNeuro : aucune source externe ne
+peut exister pour eux.
+
+**§2 — Le drapeau de restriction suit le critère publié.** Il se lève quand
+l'efficacité moyenne est **inférieure à 85 %**, quel que soit le temps au lit,
+et seulement si l'axe d'efficacité est couvert (`minNuitsAxe`, 7 nuits — la
+« semaine » de la source ; une efficacité non couverte ne fonde aucune
+conduite). Le texte cite la source : « Efficacité du sommeil inférieure à
+85 % — restriction de sommeil à discuter (critère de Spielman, 2011). » **La
+variante « < 80 % chez la personne âgée » n'est pas appliquée** : la source ne
+fixe aucun âge, et en poser un serait une borne inventée (`DC-19`). Le drapeau
+s'élargit — conformément à la directive « aucune régression » de [[D-276]] — et
+reste un drapeau : il ne retire aucun point.
+
+**§3 — Le critère de fréquence est attribué.** Le drapeau « ≥ 3 nuits/semaine
+au-delà de 30 min » nommait une « convention de recherche » sans la citer. Il
+la cite : Lichstein et al., « Quantitative criteria for insomnia », *Behav Res
+Ther* 2003;41(4):427-45, PMID 12643966 (résumé relevé par PubMed le
+2026-10-12 : endormissement ou éveil **≥ 31 min**, **≥ 3 nuits par semaine**).
+Seuil inchangé : « plus de 30 min » en minutes entières vaut ≥ 31.
+
+**§4 — « Peu couvert » suit le seuil d'effondrement signé.** Le palier bas
+passe de 40 à **34**, la valeur de `SEUIL_EFFONDREMENT` (0,34) validée par
+[[D-106]] décision 3. Le palier de **70** reste un **repère du cabinet signé
+par le praticien**, identifié comme tel (`DC-20`). La valeur est recopiée dans
+le composant patient (qui ne doit pas embarquer les tables cliniques) et un
+banc garde l'égalité avec `SEUIL_EFFONDREMENT`. La comparaison porte sur la
+couverture servie, arrondie à l'entier : un besoin à 0,335 lit « Couverture
+partielle » quand le praticien le voit sous le seuil — écart d'un demi-point,
+invisible côté patient, nommé ici. Effet : un besoin de 34 à 39 passe de « Peu
+couvert » à « Couverture partielle ».
+
+**§5 — Ce qui ne change pas.** Les résultats déjà enregistrés gardent les
+drapeaux calculés à leur clôture (`agenda-sommeil/cloture.ts`, seul écrivain ;
+aucune lecture ne les recalcule). Leur seul lecteur est la synthèse IA, qui
+reçoit le score stocké tel quel ; aucun écran praticien, ni le PDF, ni le
+portail ne les affiche — constat du 2026-10-12, qui n'est pas tranché ici. Aucune migration. Le patient ne voit toujours
+aucun chiffre. Fragment : `changelog.d/2026-10-12-8b-seuils-provenance.md`.
+
 ### D-279 — Lot 5A : le praticien peut poser lui-même la priorité, et l'absence de candidat ne bloque plus le protocole
 
 - Date : 2026-10-11

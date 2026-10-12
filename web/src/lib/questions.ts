@@ -3906,7 +3906,6 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const eff = getVal('AGD_EFF_MOY');
     const regEct = getVal('AGD_REG_ECT');
     const qual = getVal('AGD_QUAL_MOY');
-    const tibMoy = getVal('AGD_TIB_MOY');
 
     // PLANCHER DE COUVERTURE PAR AXE. Le seuil de `minNuits` porte sur le
     // nombre de nuits du recueil, pas sur celui des nuits qui alimentent CHAQUE
@@ -3965,14 +3964,18 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
     // Drapeaux cliniques, JAMAIS des points.
     const drapeaux: string[] = [];
-    // Un temps au lit long associé à une efficacité basse est la cible de la
-    // restriction de sommeil. Le retrancher du total le confondrait avec un
-    // sommeil insuffisant, qui appelle exactement la conduite inverse. Le temps
-    // au lit court désormais de la MISE AU LIT au lever : le drapeau attrape
-    // donc aussi le patient qui passe une heure au lit avant d'éteindre, ce qui
-    // est précisément la conduite visée.
-    if (tibMoy !== null && tibMoy >= 540 && eff !== null && eff < 80) {
-      drapeaux.push('Temps au lit long avec efficacité basse — restriction de sommeil à discuter.');
+    // Une efficacité basse est la cible de la restriction de sommeil. La
+    // retrancher du total la confondrait avec un sommeil insuffisant, qui
+    // appelle exactement la conduite inverse. Critère PUBLIÉ ([[D-280]]) :
+    // efficacité subjective < 85 % sur un agenda d'une à deux semaines
+    // (Spielman, Yang & Glovinsky, « Sleep Restriction Therapy », in Behavioral
+    // Treatments for Sleep Disorders, Elsevier 2011, « Specific indication »,
+    // doi:10.1016/B978-0-12-381522-4.00001-8) — sans condition de temps au lit.
+    // La variante « < 80 % chez la personne âgée » n'est PAS appliquée : la
+    // source ne fixe aucun âge, et en poser un serait une borne inventée. Le
+    // plancher d'axe (`minNuitsAxe`, 7 nuits) tient lieu de « une semaine ».
+    if (eff !== null && couvertEff && eff < 85) {
+      drapeaux.push('Efficacité du sommeil inférieure à 85 % — restriction de sommeil à discuter (critère de Spielman, 2011).');
     }
     // L'aide au sommeil n'entre PAS dans le total : c'est une exposition, pas un
     // résultat, et la scorer répéterait l'erreur de catégorie consistant à
@@ -3988,10 +3991,13 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // Fréquence : le critère clinique usuel est un nombre de nuits par semaine
     // au-dessus de 30 minutes, que les moyennes effacent. La convention de
     // recherche est NOMMÉE, jamais conclue — on rapporte, on ne diagnostique pas.
+    // Source ([[D-280]]) : Lichstein et al., « Quantitative criteria for
+    // insomnia », Behav Res Ther 2003;41(4):427-45, PMID 12643966 —
+    // endormissement ou éveil ≥ 31 min, ≥ 3 nuits par semaine.
     const freq = getVal('AGD_FREQ_CRITERE_SEM');
     if (freq !== null && freq >= 3) {
       drapeaux.push(
-        `${freq} nuits/semaine avec plus de 30 min d’endormissement ou d’éveil (convention de recherche : ≥ 3).`,
+        `${freq} nuits/semaine avec plus de 30 min d’endormissement ou d’éveil (convention de recherche, Lichstein 2003 : ≥ 3).`,
       );
     }
 
