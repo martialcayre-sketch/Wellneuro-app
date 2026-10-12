@@ -4,6 +4,96 @@
 
 ## Décisions actives
 
+### D-280 — Lot 8B : la restriction de sommeil suit le critère publié, et « Peu couvert » suit le seuil d'effondrement signé
+
+- Date : 2026-10-12
+- Statut : accepté. Arbitrages du responsable rendus en session le 2026-10-12
+  sur questions fermées (« Critère publié », « « Peu couvert » sous 34 »),
+  après le constat de provenance ci-dessous. Suite de [[D-276]] : 8B garde les
+  drapeaux de l'agenda du sommeil et en établit la source.
+- Domaine : clinique. Drapeaux de l'agenda du sommeil (`Q_SOM_09`) et libellés
+  de couverture de « Mon équilibre » côté patient. **Aucun barème, aucun axe,
+  aucune pondération de l'indice /100 modifiés ; aucun calcul de « Mon
+  équilibre » modifié.**
+
+**§1 — Le constat.** Trois chiffres étaient servis sans provenance :
+- le drapeau « restriction de sommeil à discuter » exigeait **au moins 540 min
+  au lit ET une efficacité inférieure à 80 %** ;
+- le patient lisait « Bien couvert » à 70 et plus, « Couverture partielle » de
+  40 à 69, « Peu couvert » sous 40 (introduits par #183, comme équivalent texte
+  de l'opacité, pour les lecteurs d'écran).
+
+La source de référence de la restriction de sommeil — Spielman, Yang &
+Glovinsky, « Sleep Restriction Therapy », in *Behavioral Treatments for Sleep
+Disorders*, Elsevier 2011, doi:10.1016/B978-0-12-381522-4.00001-8, section
+« Specific indication », lue dans son texte — pose : *« SRT is indicated for
+sleep difficulties in which the subjective sleep efficiency […], based on a 1-
+to 2-week sleep log or retrospective report, is less than 85 percent (or less
+than 80 percent in older individuals). »* **Aucune condition de temps au
+lit** ; le même chapitre ajoute que des dormeurs à efficacité élevée peuvent
+en relever. Les 540 min n'ont aucune source ; les 80 % ne sont que la variante
+« personne âgée ». En production le 2026-10-12, par conteneur : 11 agendas,
+aucun drapeau jamais émis, aucun temps au lit moyen ≥ 540 min.
+
+Les paliers 70/40 sont une construction WellNeuro : aucune source externe ne
+peut exister pour eux.
+
+**§2 — Le drapeau de restriction suit le critère publié.** Il se lève quand
+l'efficacité moyenne est **inférieure à 85 %**, quel que soit le temps au lit,
+et seulement si l'axe d'efficacité est couvert. Ce plancher (`minNuitsAxe`,
+7 nuits) est le plancher **technique** déjà en place, pas un seuil de la
+source : une efficacité non couverte ne fonde aucune conduite. Un agenda
+d'avant les compteurs reste couvert par construction (14 nuits au moins).
+L'efficacité est comparée telle qu'elle est servie au praticien, arrondie à
+l'entier : 84,5 % s'affiche et se juge 85. **La variante « < 80 % chez la
+personne âgée » n'est pas appliquée** : la source ne fixe aucun âge, et en
+poser un serait une borne inventée (`DC-19`). Elle est en revanche **nommée
+dans le texte**, pour que le critère ne se lise pas plus large qu'il n'est
+(`DC-14`) : « Efficacité du sommeil inférieure à 85 % — restriction de sommeil
+à discuter (critère de Spielman, 2011 ; < 80 % chez la personne âgée). » Le drapeau
+s'élargit — conformément à la directive « aucune régression » de [[D-276]] — et
+reste un drapeau : il ne retire aucun point.
+
+**§3 — Le critère de fréquence est attribué.** Le drapeau « ≥ 3 nuits/semaine
+au-delà de 30 min » nommait une « convention de recherche » sans la citer. Il
+la cite : Lichstein et al., « Quantitative criteria for insomnia », *Behav Res
+Ther* 2003;41(4):427-45, PMID 12643966 (résumé relevé par PubMed le
+2026-10-12 : endormissement ou éveil **≥ 31 min**, **≥ 3 nuits par semaine**).
+Seuil inchangé. **Ce n'est pas le seuil publié appliqué
+exactement, c'est son approximation par classes** (revue Copilot de #1404) :
+endormissement et durée des réveils sont recueillis en classes, et la classe
+« 30 à 60 min » est comptée au-delà de 30 (`agenda-sommeil/agregats.ts`,
+`AU_DELA_DE_30`). Une réponse qui veut dire « exactement 30 min » peut donc
+lever le drapeau, quand Lichstein exige ≥ 31. Distinguer 30 de 31 demanderait
+de changer le recueil, ce que ce lot ne fait pas.
+
+**§4 — « Peu couvert » suit le seuil d'effondrement signé.** Le palier bas
+passe de 40 à **34**, la valeur de `SEUIL_EFFONDREMENT` (0,34) validée par
+[[D-106]] décision 3. Le palier de **70** est conservé comme **repère
+d'affichage du cabinet**, sans source, identifié comme tel (`DC-20`) ; l'option
+arbitrée le 2026-10-12 le disait (« le palier de 70 reste un repère »). La valeur est recopiée dans
+le composant patient (qui ne doit pas embarquer les tables cliniques) et un
+banc garde l'égalité avec `SEUIL_EFFONDREMENT`. La comparaison porte sur la
+couverture servie, arrondie à l'entier : un besoin à 0,335 lit « Couverture
+partielle » quand le praticien le voit sous le seuil — écart d'un demi-point,
+invisible côté patient, nommé ici. Effet : un besoin de 34 à 39 passe de « Peu
+couvert » à « Couverture partielle ».
+
+**§5 — Ce qui ne change pas.** Les résultats déjà enregistrés gardent les
+drapeaux calculés à leur clôture (`agenda-sommeil/cloture.ts`, seul écrivain ;
+aucune lecture ne les recalcule). Leur seul lecteur est la synthèse IA, qui
+reçoit le score stocké tel quel ; aucun écran praticien, ni le PDF, ni le
+portail ne les affiche — constat du 2026-10-12, qui n'est pas tranché ici.
+Le texte du drapeau de restriction arrive donc au modèle sous la clé
+`drapeaux`, que `scoresPourPrompt` ne filtre pas et que la consigne système ne
+décrit pas. Ce chemin existait avant ce lot : le lot élargit le déclenchement,
+il n'ouvre pas le chemin. Sur les agendas scorés en production, le nouveau
+critère n'aurait levé aucun drapeau. La synthèse est un brouillon praticien,
+publié au patient seulement après relecture. Filtrer, étiqueter ou décrire ces
+drapeaux dans la consigne est un lot à part, avec sa version de consigne ; il
+est inscrit en suivi, avec la question de leur affichage. Aucune migration. Le patient ne voit toujours
+aucun chiffre. Fragment : `changelog.d/2026-10-12-8b-seuils-provenance.md`.
+
 ### D-279 — Lot 5A : le praticien peut poser lui-même la priorité, et l'absence de candidat ne bloque plus le protocole
 
 - Date : 2026-10-11

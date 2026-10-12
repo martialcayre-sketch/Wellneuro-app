@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MonEquilibreDetail } from './MonEquilibreDetail';
+import { MonEquilibreDetail, PALIER_PEU_COUVERT, libelleCouverture } from './MonEquilibreDetail';
+import { SEUIL_EFFONDREMENT } from '@/lib/equilibre/constants';
 
 const REPONSE = {
   indiceGlobal: 60,
@@ -65,5 +66,21 @@ describe('MonEquilibreDetail — accessibilité de « Mes 12 besoins »', () => 
     const bouton = screen.getByText('Sommeil').closest('button') as HTMLButtonElement;
     fireEvent.focus(bouton);
     expect(bouton.className).toContain('bg-primary/10');
+  });
+});
+
+// D-280 : « Peu couvert » suit le seuil d'effondrement signé (D-106), recopié
+// dans le composant client. Ce banc échoue si l'un bouge sans l'autre.
+describe('paliers de couverture (D-280)', () => {
+  it('« Peu couvert » commence sous le seuil d’effondrement signé', () => {
+    expect(PALIER_PEU_COUVERT).toBe(Math.round(SEUIL_EFFONDREMENT * 100));
+  });
+
+  it('33 est « Peu couvert », 34 « Couverture partielle », 70 « Bien couvert »', () => {
+    expect(libelleCouverture(33)).toBe('Peu couvert');
+    expect(libelleCouverture(34)).toBe('Couverture partielle');
+    expect(libelleCouverture(69)).toBe('Couverture partielle');
+    expect(libelleCouverture(70)).toBe('Bien couvert');
+    expect(libelleCouverture(null)).toBe('Pas encore de données');
   });
 });

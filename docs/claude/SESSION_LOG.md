@@ -9947,3 +9947,18 @@ corrigés, un routé. T3 vert.
 incomplet ; rattacher le libellé à l'objectif négocié pour éviter la migration.
 
 **Prochaine action.** PR, merge, constat ; puis lot 8B.
+
+## 2026-10-12 — Lot 8B : des seuils dont la source est écrite (D-280)
+
+**Fait.** Provenance établie sur la source primaire. Spielman 2011 retient une
+efficacité < 85 %, ou < 80 % chez la personne âgée, sans condition de temps au
+lit ; les 540 min n'ont aucune source. Lichstein 2003 fonde le « ≥ 3 nuits ».
+Le drapeau de restriction suit maintenant le critère publié, et nomme la
+variante âgée. « Peu couvert » commence sous 34, le seuil d'effondrement de
+`D-106`. T2 vert ; revue `wn-reviewer` GO sous réserve, P1-1 corrigé, P1-2
+consigné.
+
+**Écarté.** Garder 540/80 sous signature ; poser un âge pour la variante âgée.
+
+**Prochaine action.** PR, merge, constat ; puis une question produit :
+afficher les drapeaux du sommeil, et les filtrer ou les décrire au prompt.

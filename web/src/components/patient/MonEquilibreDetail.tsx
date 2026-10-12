@@ -14,10 +14,20 @@ const LEGENDE_STRATE: { strate: string; label: string; couleur: string }[] = [
 
 // Équivalent texte de la couverture : le cercle ne la porte que par l'opacité
 // de sa couleur, qui n'est ni lisible au clavier ni par un lecteur d'écran.
-function libelleCouverture(couverture: number | null): string {
+//
+// Paliers ([[D-280]]) : « Peu couvert » sous 34, le seuil d'effondrement déjà
+// signé (`SEUIL_EFFONDREMENT`, [[D-106]] décision 3) — recopié ici plutôt
+// qu'importé, pour ne pas embarquer les tables cliniques dans un composant
+// client ; un banc garde l'égalité. 70 est un repère du cabinet signé par le
+// praticien, sans source externe : c'est une construction WellNeuro. La
+// comparaison porte sur la valeur servie, arrondie à l'entier.
+export const PALIER_BIEN_COUVERT = 70;
+export const PALIER_PEU_COUVERT = 34;
+
+export function libelleCouverture(couverture: number | null): string {
   if (couverture === null) return 'Pas encore de données';
-  if (couverture >= 70) return 'Bien couvert';
-  if (couverture >= 40) return 'Couverture partielle';
+  if (couverture >= PALIER_BIEN_COUVERT) return 'Bien couvert';
+  if (couverture >= PALIER_PEU_COUVERT) return 'Couverture partielle';
   return 'Peu couvert';
 }
 
