@@ -9992,3 +9992,22 @@ afficher les drapeaux du sommeil, et les filtrer ou les décrire au prompt.
 **Prochaine action.** CI, merge, `release-db` approuvée, constat ; puis lot 3.
 
 **Ouvert.** Orientation médecin dans la liste du patient.
+
+## 2026-10-12 — Agenda du sommeil : maquette « nouveau design », LOT-12 arbitré
+
+**Fait.** Maquette confrontée au dépôt (30 éléments, revue adverse). Quatre
+arbitrages : latence gardée en durée (pictogrammes), un indice par agenda
+(indices successifs côte à côte, praticien), libellés des facteurs inchangés
+(icônes), rituel du soir reporté hors de l'agenda (roadmap §5). Fiche LOT-12
+`à_faire` ; #1407 mergée après revue adverse et revue Copilot.
+
+**Écarté.** Saisie sans heures (`D-271`), réveils en classes (`D-091`), score
+par nuit pondéré et cinq bandes (`DC-19`, `DC-21`, `DC-49`), score, « bravo »
+et tendances côté patient, conseil automatique, corrélations, « Insights IA »
+causaux.
+
+**Prochaine action.** Lecture du LOT-02 le 2026-10-29, puis cadrage du LOT-12.
+
+**Ouvert.** Proposés sans arbitrage : durée d'éveil, couleurs neutres, écrans
+plus courts, frise par semaine, deux décomptes praticien. Visages de la
+qualité inchangés (item de l'indice).
