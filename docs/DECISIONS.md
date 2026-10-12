@@ -77,9 +77,10 @@ produit », le praticien désigne l'élément en cause, ou aucun. Impliqué : le
 praticien choisit l'aménagement — retirer, différer ou réduire —, et l'élément
 ne repart **jamais à l'identique ni augmenté** (`DC-42`, « ni augmenter ni
 poursuivre »). Non impliqué : la pause est levée. La validation est datée et
-nominative. *Conséquence déduite des réponses, à confirmer par le responsable
-à la relecture de cette décision :* le passage du statut à « traité » ou « clos » ne lève plus
-rien pour un signalement rattaché ; seule la validation lève.
+nominative. **Le statut ne lève rien** (tranché par le responsable le
+2026-10-12, sur scénario, à la relecture de cette décision) : passer un
+signalement rattaché à « traité » ou « clos » sans verdict laisse la pause et
+l'attente en place ; seul le verdict « impliqué » ou « non impliqué » lève.
 
 **§6 — Ordre et signature.** (1) cette décision ; (2) la migration —
 l'élément désigné, le mode de rattachement, la validation —, relue puis

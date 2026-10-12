@@ -729,8 +729,8 @@ inhiberait sur une colonne que personne n'a encore remplie. La règle ne bascule
 donc pas : elle n'a mordu sur aucun dossier.*
 
 ***Amendée avant signature ([[D-281]], 2026-10-12).** Le drapeau est posé, la
-signature ne l'est pas, et zéro signalement n'a été déposé. Éprouvée sur vingt
-cas fictifs, la règle livrée bloque le dossier entier ; le responsable l'écarte.
+signature ne l'est pas, et la production ne compte aucun signalement
+(agrégats du 2026-10-12). Éprouvée localement sur vingt cas fictifs, la règle livrée bloque le dossier entier ; le responsable l'écarte.
 La règle amendée vise un **élément** du programme, désigné par le patient (ou
 tous les compléments s'il ne sait pas) : cet élément passe en pause au portail,
 aucun programme ne se diffuse avant la validation de l'implication par le
