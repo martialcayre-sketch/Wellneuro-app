@@ -2,7 +2,7 @@
 
 - **Contre-revue Codex jouée** sur les lots 1 à 11 : aucun P0, quatre P1.
   Résultat et vérification de chaque trouvaille :
-  `docs/claude/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`.
+  `docs/archive/contextes/REVUE_CODEX_ADVERSE_FICHES_ASSIETTE_2026-09-29.md`.
 - **Corrigé : huit journaux recopiaient le message d'une erreur**, qui peut
   porter les arguments d'un appel Prisma (route de diffusion, ingestion des
   fiches, route des lectures du portail — le `logger` garde le message). Ils

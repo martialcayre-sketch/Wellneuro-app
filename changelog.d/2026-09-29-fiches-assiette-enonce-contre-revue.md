@@ -1,6 +1,6 @@
 ### Fiches d'assiette : l'énoncé de la contre-revue adverse versé au dépôt (D-251) (2026-09-29)
 
-- **`docs/claude/PROMPT_CONTRE_REVUE_CODEX_FICHES_ASSIETTE_2026-09-29.md`** :
+- **`docs/archive/contextes/PROMPT_CONTRE_REVUE_CODEX_FICHES_ASSIETTE_2026-09-29.md`** :
   19 affirmations absolues à réfuter sur la chaîne des lots 1 à 11 (rien d'une
   fiche ne fuit, émission, lecture patient, e-mail, base et droit), versées
   **avant** que la contre-revue soit jouée, pour qu'on puisse en relire la

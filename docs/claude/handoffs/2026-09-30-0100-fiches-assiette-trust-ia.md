@@ -44,7 +44,7 @@ les deux ferment une condition du §10.
 ## 4. Fichiers modifiés
 
 - `docs/TRUST_IA_FICHES_ASSIETTE.md` : nouveau.
-- `docs/claude/REVUE_CODEX_MUTATIONS_FICHES_ASSIETTE_2026-09-30.md` : nouveau.
+- `docs/archive/contextes/REVUE_CODEX_MUTATIONS_FICHES_ASSIETTE_2026-09-30.md` : nouveau.
 - `docs/DECISIONS.md` : amendement.
 - Changelog, ce handoff, SESSION_LOG.
 

@@ -33,7 +33,7 @@ décidée par le responsable le 2026-09-29 : éprouver par mutation les bancs de
 
 ## 4. Fichiers modifiés
 
-- `docs/claude/PROMPT_CONTRE_REVUE_CODEX_FICHES_ASSIETTE_MUTATIONS_2026-09-30.md`.
+- `docs/archive/contextes/PROMPT_CONTRE_REVUE_CODEX_FICHES_ASSIETTE_MUTATIONS_2026-09-30.md`.
 - `changelog.d/2026-09-30-fiches-assiette-enonce-mutations.md`, ce handoff,
   `docs/claude/SESSION_LOG.md`.
 

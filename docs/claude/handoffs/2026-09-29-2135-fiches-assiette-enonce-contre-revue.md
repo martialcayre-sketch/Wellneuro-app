@@ -30,7 +30,7 @@ conditions restantes du §10.
 
 ## 4. Fichiers modifiés
 
-- `docs/claude/PROMPT_CONTRE_REVUE_CODEX_FICHES_ASSIETTE_2026-09-29.md` :
+- `docs/archive/contextes/PROMPT_CONTRE_REVUE_CODEX_FICHES_ASSIETTE_2026-09-29.md` :
   l'énoncé (19 affirmations, en cinq surfaces).
 - `changelog.d/2026-09-29-fiches-assiette-enonce-contre-revue.md`, ce handoff,
   `docs/claude/SESSION_LOG.md`.
