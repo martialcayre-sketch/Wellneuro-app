@@ -296,6 +296,12 @@ logique de PatientsPanel.
 - Outils de suivi : frise longitudinale par axe, radar interactif cliquable
   vers fiches corpus, carnet de bord quotidien < 15 s (2-3 questions),
   check-list de protocole 21 j avec progression visuelle sans points/niveaux.
+- **Rituel du soir** (arbitrage du responsable du 2026-10-12, LOT-12 de la
+  campagne `2026-10-07-agenda-sommeil-adhesion`) : pas de question « rituel »
+  dans l'agenda du sommeil (`Q_SOM_09`). Elle ne s'envisage que pour un
+  patient à qui le praticien a recommandé un programme d'hygiène du
+  sommeil — chantier à part. Préalables : le rituel défini par le praticien et sa source, puis
+  un `D-xxx` ; un contrat versionné si la question entre dans l'agenda.
 - Coaching V1 réaliste : tips quotidiens issus des fiches corpus liées au
   protocole + check-in hebdomadaire structuré avec alerte praticien si
   dégradation. Le chatbot conversationnel complet (ancré au protocole
