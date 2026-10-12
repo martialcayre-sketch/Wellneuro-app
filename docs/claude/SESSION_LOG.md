@@ -9982,3 +9982,13 @@ afficher les drapeaux du sommeil, et les filtrer ou les décrire au prompt.
 **Prochaine action.** Merger #1406 ; lot 2 = migration.
 
 **Ouvert.** Copie principale sur la branche de test de Codex.
+
+## 2026-10-13 — SAF-EI-01 : la migration (D-281, lot 2)
+
+**Fait.** Accord du responsable pour le schéma. Rattachement (élément, « Je ne sais pas », « un autre produit ») sur le signalement, figé avec son programme ; verdicts du praticien en table append-only chaînée. Contrat SQL neuf, qui a attrapé un CHECK évalué à NULL. T3 vert ; `wn-reviewer` GO sous réserve, P1 corrigé.
+
+**Écarté.** Verdict définitif (le responsable veut la correction tracée) ; CHECK « rattaché ⇒ programme » (casserait l'effacement).
+
+**Prochaine action.** CI, merge, `release-db` approuvée, constat ; puis lot 3.
+
+**Ouvert.** Orientation médecin dans la liste du patient.

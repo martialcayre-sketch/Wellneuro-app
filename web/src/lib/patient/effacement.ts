@@ -151,6 +151,12 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     //    `dossiers_effaces` écrite plus bas en devient l'unique trace.
     supprimees.trustAcknowledgements = (await tx.trustAcknowledgement.deleteMany({ where: par })).count;
     supprimees.trustChoiceEvents = (await tx.trustChoiceEvent.deleteMany({ where: par })).count;
+    // Verdicts du praticien sur un signalement ([[D-281]] §5) : FK RESTRICT
+    // vers le signalement, ils partent AVANT lui. Une seule instruction pour
+    // tout le fil : la correction est une référence souple, sans clé.
+    supprimees.trustAdverseEffectVerdicts = (
+      await tx.trustAdverseEffectVerdict.deleteMany({ where: par })
+    ).count;
     supprimees.trustAdverseEffectReports = (
       await tx.trustAdverseEffectReport.deleteMany({ where: par })
     ).count;
