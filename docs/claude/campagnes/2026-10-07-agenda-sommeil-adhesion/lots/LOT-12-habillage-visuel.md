@@ -31,7 +31,7 @@ un vérificateur adverse. Elle mêle trois choses :
 | Saisie sans heures de coucher ni de lever | Obligatoires ([[D-271]] §3) ; sans elles tombent trois des quatre axes de l’indice et le critère d’efficacité de [[D-280]]. |
 | Réveils en classes (1-2, 3-5, > 5) | Réintroduit le plafond retiré par [[D-091]] ; perd la durée cumulée d’éveil, seule grandeur obligatoire. |
 | Score par nuit sur 100, pondéré 40/20/20/10/10 | Poids sans provenance (`DC-19`, `DC-21`) ; l’indice se lit sur l’agenda, jamais sur une nuit (`DC-49`) ; les facteurs sont des expositions, pas un résultat — leur entrée dans l’indice a été écartée à la refonte du 2026-07-28 (`docs/claude/SESSION_LOG.md:1324`). |
-| Cinq bandes de 0 à 100 et répartition en anneau | Contredisent les trois paliers validés (`web/src/lib/questionnaires/sommeil.ts:266`). |
+| Cinq bandes de 0 à 100 et répartition en anneau | Contredisent les trois paliers validés (`web/src/lib/questionnaires/sommeil.ts:267-269`). |
 | Score « 72/100 » montré au patient | « Zéro score chiffré patient » (`docs/claude/REGISTRE_FRONTIERES.md:920`). |
 | « Bravo ! », « Chaque petit pas compte », étoile, tendances ↗ ↓ | Récompenser ou comparer à soi-même hier est proscrit (`REGISTRE_FRONTIERES.md:285`) ; « bravo » fait échouer `web/src/lib/gamification-patient.guard.test.ts`. |
 | Dégradé rouge → vert côté patient | « Jamais du rouge » (`FriseNuits.tsx:11`) ; « aucune couleur » (`AgendaSommeilJournal.tsx:297`) ; une valeur portée par la seule couleur manque WCAG 1.4.1. |
@@ -59,8 +59,7 @@ Aucun `D-xxx`, aucun contrat `agenda-sommeil-v5`, aucune migration.
 
 ## Ce qui changera — arbitré
 
-- Pictogrammes sur les classes de latence et de durée d’éveil, à côté de
-  leurs libellés.
+- Pictogrammes sur les classes de latence, à côté de leurs libellés.
 - Une icône ajoutée à chaque facteur, libellés actuels gardés.
 - Côté praticien, les indices des agendas successifs côte à côte. Un agenda
   clôturé sous la couverture minimale n’a pas d’indice : il s’affiche
@@ -70,6 +69,8 @@ Aucun `D-xxx`, aucun contrat `agenda-sommeil-v5`, aucune migration.
 
 Issus de la confrontation, sans question posée au responsable :
 
+- pictogrammes sur les classes de durée d’éveil, sur le modèle de la latence,
+  libellés gardés ;
 - couleurs neutres ;
 - forme au réveil sortie de « Ajouter des détails », toujours facultative ;
 - écrans plus courts, si chaque champ obligatoire du contrat v4 garde sa
@@ -86,14 +87,14 @@ Points à trancher au cadrage :
 
 - **Les visages de la qualité restent tels quels.** L’item porte le
   sous-indice « qualité vécue » (`sommeil.ts:265`), et le code interdit de
-  toucher à son stimulus (`SaisieNuitForm.tsx:120-123`) : le changer
+  toucher à son stimulus (`SaisieNuitForm.tsx:121-124`) : le changer
   demanderait une décision. La forme au réveil, hors indice, garde aussi ses
   visages tant que le cadrage n’en a pas décidé.
 - Les deux décomptes praticien se calculent à l’affichage, sans seuil, hors
   des agrégats `AGD_*` et hors de l’indice. S’ils devaient entrer au
   catalogue, ils changeraient de nature et demanderaient une décision.
 - L’indice vit dans la `QuestionnaireReponse` `Q_SOM_09`, affichée par le
-  tableau des réponses standard (`AgendaSommeilPraticienPanel.tsx:9-12`) ; la
+  tableau des réponses standard (`AgendaSommeilPraticienPanel.tsx:8-11`) ; la
   route du tiroir n’en renvoie que les agrégats. Les montrer côte à côte dans
   le tiroir demande une lecture de plus.
 
