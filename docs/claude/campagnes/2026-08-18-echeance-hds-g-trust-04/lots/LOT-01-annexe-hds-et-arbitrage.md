@@ -1,6 +1,6 @@
 ---
 id: "LOT-01"
-statut: "en cours — l'arbitrage est rendu (D-078) ; la demande est tracée (2026-08-20) ; reste l'annexe à recevoir, signer et archiver"
+statut: "terminé (2026-08-30, annexe signée, D-121)"
 ---
 
 # LOT-01 — Annexe HDS obtenue et signée ; arbitrage migrer/reconduire posé

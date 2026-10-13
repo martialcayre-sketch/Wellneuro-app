@@ -1,10 +1,10 @@
 ---
 id: "2026-08-10-chaine-alimentaire"
 titre: "La chaîne alimentaire reliée — de l'agenda au protocole suivi"
-statut: "en cours (2026-08-10)"
+statut: "abandonnée (2026-10-13, LOT-00 et LOT-01 livrés ; barème transféré au plan et gelé ; LOT-03 abandonné ; LOT-04 doublon de D-251)"
 créée_le: "2026-08-10"
-mise_à_jour: "2026-08-10"
-lot_courant: "LOT-02"
+mise_à_jour: "2026-10-13"
+lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "claude/post-pr-631-5rmwr7"
 cible_pr_lot: "main"
@@ -100,18 +100,56 @@ recopie pas, elle l'exécute.
 | LOT-03 | Moteur de propositions de parcours alimentaire — règles claims-tracées, objet parcours (migration séparée), bloc de synthèse dédié | à faire (décisions cliniques par règle) | enrichi par LOT-00/01/02 |
 | LOT-04 | Rayon fiches conseils — cadrage (nouveau rayon, distinct de C3 et du rayon compléments) | à cadrer | LOT-03 pour la diffusion |
 
+## État au 2026-10-13 — abandonnée (D-285)
+
+LOT-00 et LOT-01 sont livrés (2026-08-10, `D-039`, `D-040`). Le LOT-02
+(barème et indice agenda) est abandonné dans cette campagne et transféré au
+plan, gelé sous la porte des 21 jours ; le LOT-03 (moteur de propositions de
+parcours) est abandonné par écrit au plan (§7) ; les quatre règles retenues
+par `D-045` et le dossier des candidates (`DOSSIER_REGLES_LOT-03.md`) restent
+en référence ; le LOT-04 (rayon fiches conseils) est un doublon
+de `D-251`. Les fiches `lots/` portent les statuts ; la table ci-dessus reste
+telle qu'elle a été écrite.
+
 ## Done de campagne
 
 À cocher sur preuve relue, jamais sur la prose d'un lot.
 
 - [ ] Une clôture d'agenda produit une `QuestionnaireReponse` lisible en
       fiche et en synthèse, idempotente, prouvée par banc + mutation.
-- [ ] La liste des pseudo-items transmis est celle du domaine, vérifiée par
+      **2026-10-13 : non cochée. Le banc de clôture (création non cotée,
+      idempotence, concurrence), l'E2E jusqu'à la fiche et la mutation
+      consignée au fragment du LOT-00 tiennent ; la lisibilité en synthèse
+      n'est pas établie : la synthèse relit chaque item contre la définition
+      du catalogue et Q_ALI_09 ne déclare aucun pseudo-item, ses valeurs y
+      arrivent non résolues (dette nommée, à verser au plan).**
+- [x] La liste des pseudo-items transmis est celle du domaine, vérifiée par
       un garde (aucune curation silencieuse possible).
-- [ ] La discordance déclaré/observé rend `null` sous la forme courte,
+      **Cochée le 2026-10-13 sur preuve relue : la production dérive les
+      pseudo-items de l'objet du domaine (cloture.ts) et le banc de clôture
+      les confronte dans les deux sens à la liste D-039 écrite à la main
+      (cloture.test.ts).**
+- [x] La discordance déclaré/observé rend `null` sous la forme courte,
       prouvé dans les deux positions du drapeau.
+      **Cochée le 2026-10-13 sur preuve relue : le banc de la discordance est
+      joué par le CI dans les deux positions du drapeau et la forme courte
+      rend « non mesurable » (discordanceRythme.test.ts ; D-040, D-033).**
 - [ ] Aucun barème n'est entré au dépôt avant la porte des 21 jours — le
       LOT-02 ne s'ouvre que sur relecture datée du recueil réel.
+      **2026-10-13 : non cochée en entier. Aucun barème ni indice n'est au
+      dépôt (scorer agenda_alimentaire vide, Q_ALI_09 reste un journal) ; le
+      LOT-02 n'a livré que le squelette du scorer (2026-08-10, sans axe, après
+      une relecture datée du recueil arrêté au premier jour), sa calibration
+      ne s'est pas ouverte, transférée au plan et gelée ; les deux seuils
+      arbitrés du drapeau de discordance (D-040) ont été posés sans
+      distribution réelle, le troisième (jeûne) est porté par la source.**
 - [ ] Chaque règle de proposition livrée porte son claim et sa décision ;
       l'objet parcours a voyagé en PR séparée de sa migration.
+      **2026-10-13 : sans objet. Le LOT-03 est abandonné au plan ; aucun
+      moteur de propositions ni objet parcours alimentaire n'existe au code ;
+      les quatre règles retenues par D-045 et le dossier des candidates
+      restent en référence.**
 - [ ] T2 avant chaque commit UI/API ; anti-secrets ; changelog par fragments.
+      **2026-10-13 : non cochée. Les fragments des LOT-00, LOT-01 et LOT-02
+      existent ; le passage de T2 et de l'anti-secrets avant chaque commit
+      n'est pas vérifiable rétroactivement, le CI les joue depuis.**

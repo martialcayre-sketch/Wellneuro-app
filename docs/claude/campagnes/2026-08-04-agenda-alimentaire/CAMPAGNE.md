@@ -1,10 +1,10 @@
 ---
 id: "2026-08-04-agenda-alimentaire"
 titre: "Agenda alimentaire 21 jours (Q_ALI_09)"
-statut: "en_cours"
+statut: "terminée (2026-10-13, huit lots livrés ; barème transféré au plan, gelé sous la porte des 21 jours)"
 créée_le: "2026-08-04"
-mise_à_jour: "2026-08-05"
-lot_courant: "LOT-08"
+mise_à_jour: "2026-10-13"
+lot_courant: "aucun"
 ---
 
 # Agenda alimentaire 21 jours (Q_ALI_09)
@@ -150,3 +150,11 @@ lecteur avant de poser un seuil sur ce qu'il lit.
 Passer en mode Plan avant toute modification de code sur les lots de cette
 campagne. `LOT-06` ne s'ouvre qu'après un recueil suffisant pour calibrer, pas
 après la seule première journée qui a débloqué `LOT-05`.
+
+## État au 2026-10-13 — terminée (D-285)
+
+Huit lots livrés (LOT-00 à LOT-05, LOT-07, LOT-08). Le LOT-06 (barème et
+indice) n'a pas de fiche et n'en aura pas dans cette campagne : il est
+transféré au plan (`docs/claude/PLAN_WELLNEURO.md`, §6), gelé sous la porte
+des 21 jours ; la relance du recueil reste un geste du responsable (H45). La
+table « Lots » ci-dessus reste telle qu'elle a été écrite.

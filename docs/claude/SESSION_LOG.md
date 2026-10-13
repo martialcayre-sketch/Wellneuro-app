@@ -10100,3 +10100,15 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, merge, déploiement constaté ; base locale `wn_g3_restes_banc` à supprimer sur accord ; puis l'identité retirée avant l'envoi à Anthropic (`D-284`).
 
 **Ouvert.** Rien du G3.
+
+## 2026-10-14 — Plan unique WellNeuro 6.0 : clôtures des campagnes, gabarits vides, audit régénéré (PR 2 du versement)
+
+**Fait.** Depuis un worktree sur `origin/main` 57ab15ed (PR 1 déployée) : frontmatter de onze campagnes (neuf statuts, deux `lot_courant` seuls) et statuts de sept fiches de lots posés selon le plan §9 (cinq fermées, deux mots de statut, quatre formes), `lot_courant` « aucun », cinq gabarits de compléments clean label supprimés, `AUDIT_REGLES_CAMPAGNES.md` régénéré, fragment. Quinze cases « Done » instruites sur pièces par lecteurs et contre-lecteurs : quatre cochées, onze annotées. Trois statuts corrigés après contre-lecture (PR C4 #330 à #353 ; `D-045` nommée au LOT-03 de la chaîne alimentaire ; LOT-00 du rayon refermé, non livré). T1 complet vert, audit CI vert, anti-secrets OK.
+
+**Écarté.** Toucher au plan, à `.wn/state.json` ou au README des campagnes (PR 3) ; réécrire les tables de lots (lignes datées à la place) ; retirer les champs git de la chaîne alimentaire.
+
+**Prochaine action.** CI, revue, merge, déploiement constaté ; puis PR 3 (pilotage).
+
+**Arbitrages du 2026-10-14** (questions à options). `origin/main` (#1418) fusionné dans la branche sur accord ; cc compte comme une place de la file C ; la porte 15 vaut pour le code de bf (instruction au rang 0) ; les trois constats ci-dessous vont au plan seulement, aucun code pendant le versement.
+
+**Ouvert.** À reporter à la prochaine version du plan : synthèse IA aveugle aux pseudo-items `AGA_*` ; banc de vocabulaire du LOT-04 biologie exploitée troué (« élevé », « bas ») ; `D-045` sans sort au plan §7.

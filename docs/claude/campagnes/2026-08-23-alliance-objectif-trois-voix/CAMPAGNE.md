@@ -3,8 +3,8 @@ id: "2026-08-23-alliance-objectif-trois-voix"
 titre: "Alliance 6.0-B — l'objectif à trois voix"
 statut: "terminée (2026-09-14 — sept lots sur sept livrés ; le BILAN du 2026-08-26, relu en production le 2026-09-12, REFUSE de signer le classement et constate zéro usage de l'appareil livré (D-112). Le créneau primaire s'ouvre ; prochaine campagne : 2026-09-14-protocole-assiste.)"
 créée_le: "2026-08-23"
-mise_à_jour: "2026-09-14"
-lot_courant: "LOT-06"
+mise_à_jour: "2026-10-13"
+lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -201,6 +201,10 @@ clôture et jamais après ([[D-112]] §4).
 non `aucun` : l'audit des campagnes refuse qu'une campagne en cours ne nomme
 aucun lot (`inflight_without_active_lot`, code bloquant en CI). Le champ dit
 « le lot dont dépend la suite », pas « le lot en cours d'écriture ».
+
+**2026-10-13 : close le 2026-09-14** (statut en tête de ce fichier). Les deux
+paragraphes ci-dessus décrivent l'état du 2026-08-27 ; `lot_courant` passe à
+`aucun` par la PR 2 de `D-285`, la campagne étant fermée.
 
 1. ~~**Passe Codex du LOT-05**~~ (classe P0, surface patient) — **jouée**,
    fusionnée dans la passe unique.

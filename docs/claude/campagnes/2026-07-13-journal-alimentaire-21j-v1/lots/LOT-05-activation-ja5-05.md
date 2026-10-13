@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Activation JA5-05"
-statut: "en_cours"
+statut: "abandonné dans cette campagne, TRANSFÉRÉ le 2026-10-13 au plan (J2-alim)"
 ---
 
 # LOT-05 — Activation JA5-05

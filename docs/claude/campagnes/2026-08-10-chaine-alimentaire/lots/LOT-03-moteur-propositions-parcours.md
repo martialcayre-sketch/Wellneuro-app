@@ -1,6 +1,6 @@
 ---
 id: "LOT-03"
-statut: "à faire"
+statut: "abandonné le 2026-10-13 (moteur de propositions abandonné par écrit au plan ; les quatre règles retenues par D-045 et le dossier des candidates restent en référence)"
 ---
 
 # LOT-03 — Moteur de propositions de parcours alimentaire

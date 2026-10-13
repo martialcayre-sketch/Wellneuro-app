@@ -1,9 +1,9 @@
 ---
 id: "2026-08-02-rayon-complements-alimentaires"
 titre: "Rayon compléments alimentaires — consolidation C4"
-statut: "clos"
+statut: "terminée (2026-08-03 ; LOT-01 à LOT-05 livrés, LOT-00 refermé sans objet le 2026-08-06)"
 créée_le: "2026-08-02"
-mise_à_jour: "2026-08-03"
+mise_à_jour: "2026-10-13"
 lot_courant: "LOT-05"
 ---
 
@@ -90,6 +90,10 @@ Un périmètre unique de campagne capable de :
 | LOT-03 | Ingestion, gouvernance et référentiel de produits | fait | LOT-00 |
 | LOT-04 | Validation E2E, documentation et handoff | fait | LOT-01, LOT-02, LOT-03 |
 | LOT-05 | Contrat de corpus et maturité du rayon compléments | fait | LOT-02 |
+
+**2026-10-13 :** la table ci-dessus n'a pas suivi LOT-00 et LOT-01, restés
+« en cours » ; les fiches `lots/` font foi : LOT-01 à LOT-05 `fait`, LOT-00
+refermé le 2026-08-06 (la branche de campagne dédiée n'a pas servi).
 
 ## Done de campagne
 

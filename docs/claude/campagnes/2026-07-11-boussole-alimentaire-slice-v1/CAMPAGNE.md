@@ -1,9 +1,9 @@
 ---
 id: "2026-07-11-boussole-alimentaire-slice-v1"
 titre: "C5 — Boussole alimentaire WellNeuro 5.0"
-statut: "terminée — 8/8, trois verdicts émis, activation production demandée"
+statut: "terminée ; 8/8, trois verdicts émis ; activation en production constatée (WN_C5_ENABLED à true)"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-18"
+mise_à_jour: "2026-10-13"
 lot_courant: "aucun"
 ---
 
@@ -102,6 +102,10 @@ le go/no-go final reste découpé entre C5A, C5B praticien et C5B patient.
 - **Activation production** : demandée par le responsable (Martial CAYRE, session
   2026-07-18). Mécanique : `WN_C5_ENABLED=true` dans Vercel Production + redéploiement
   (`ACTIVATION_RUNBOOK_C5.md`). Rollback = flag `false` (non destructif, aucun DROP/DELETE).
+- **2026-10-13 : activation constatée** : `WN_C5_ENABLED` mesuré actif en
+  production le 2026-07-21 (`docs/claude/REGISTRE_FRONTIERES.md`) et laissé à
+  `true` après la bascule Scalingo (`D-250` §3) ; Vercel est décommissionné
+  depuis (`D-120`).
 
 ## Références exécutables
 

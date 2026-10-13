@@ -1,6 +1,6 @@
 ---
 id: "LOT-04"
-statut: "recentré (D-078) — la levée est consignée ; reste la revue du 2026-10-21"
+statut: "abandonné le 2026-10-13 (contredit par D-121 et D-265)"
 ---
 
 # LOT-04 — G-TRUST-04 change d'état, avec sa preuve
