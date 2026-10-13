@@ -10,6 +10,8 @@ import { describe, expect, it } from 'vitest';
 //    coupe faute de liaison sur le bon port.
 //  - le Procfile porte un `postdeploy` qui applique les migrations, sans quoi la
 //    base Scalingo démarrerait sur un schéma en retard, silencieusement.
+//  - le Procfile porte le `worker` de la file des lectures ([[D-282]]) : sans
+//    lui, `scale worker:1` n'a rien à lancer et une lecture demandée attend.
 
 const WEB = join(__dirname, '..', '..');
 const pkg = JSON.parse(readFileSync(join(WEB, 'package.json'), 'utf8')) as {
@@ -34,5 +36,10 @@ describe('Échafaudage de release Scalingo (structurel)', () => {
   it('le Procfile démarre via start:scalingo et migre en postdeploy', () => {
     expect(procfile).toMatch(/^web:\s*npm run start:scalingo\s*$/m);
     expect(procfile).toMatch(/^postdeploy:\s*npm run db:deploy\s*$/m);
+  });
+
+  it('le Procfile déclare le processus de fond de la file des lectures ([[D-282]] lot 4)', () => {
+    expect(procfile).toMatch(/^worker:\s*npm run bio:worker-extraction\s*$/m);
+    expect(pkg.scripts['bio:worker-extraction']).toContain('bioExtractionWorker.ts');
   });
 });

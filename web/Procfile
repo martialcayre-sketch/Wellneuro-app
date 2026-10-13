@@ -1,2 +1,3 @@
 web: npm run start:scalingo
+worker: npm run bio:worker-extraction
 postdeploy: npm run db:deploy
