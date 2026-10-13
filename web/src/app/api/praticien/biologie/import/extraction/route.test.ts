@@ -88,6 +88,13 @@ describe('POST /api/praticien/biologie/import/extraction — file durable (D-282
     expect((await res.json()).reason).toBe('extraction_en_cours');
   });
 
+  it('un dossier clos entre la lecture du dossier et la demande rend le refus du dossier clos (D-282 §9)', async () => {
+    demanderExtraction.mockResolvedValueOnce({ ok: false, reason: 'dossier_clos' });
+    const res = await POST(requete(CORPS));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('dossier_cloture');
+  });
+
   it('un compte rendu d’un autre dossier rend 404', async () => {
     demanderExtraction.mockResolvedValueOnce({ ok: false, reason: 'compte_rendu_introuvable' });
     expect((await POST(requete(CORPS))).status).toBe(404);

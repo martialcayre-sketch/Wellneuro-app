@@ -1,7 +1,14 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
+import {
+  aucuneLectureDemandee,
+  DELAI_TRANSACTION_CLOTURE_MS,
+  MESSAGE_LECTURE_EN_COURS,
+  RAISON_LECTURE_EN_COURS,
+} from '@/lib/biology-library/import/lectureDemandee';
 import { emailPraticien, filtrePatientsDuPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
 import { jourCourantLocal } from '@/lib/patient-access';
@@ -170,6 +177,8 @@ export type PatchPatientResponse = {
     | 'patient_not_found'
     | 'forbidden'
     | 'duplicate_email'
+    // Désactivation retenue par une lecture de compte rendu ([[D-282]] §9).
+    | 'lecture_en_cours'
     | 'exception';
 };
 
@@ -934,21 +943,21 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
     // fait foi. Filtrer sur `emailPatient: ancien.email` aurait laissé sur place
     // toute ligne dont la copie avait déjà dérivé — exactement les lignes qu'il
     // faut réparer.
-    const reecrituresEmail = emailChange
+    const reecrituresEmailPar = (client: Prisma.TransactionClient) => emailChange
       ? [
-          prisma.consultation.updateMany({
+          client.consultation.updateMany({
             where: { idPatient },
             data: { emailPatient: email as string },
           }),
-          prisma.assignation.updateMany({
+          client.assignation.updateMany({
             where: { idPatient },
             data: { emailPatient: email as string },
           }),
-          prisma.questionnaireReponse.updateMany({
+          client.questionnaireReponse.updateMany({
             where: { idPatient },
             data: { emailPatient: email as string },
           }),
-          prisma.syntheseIA.updateMany({
+          client.syntheseIA.updateMany({
             where: { idPatient },
             data: { emailPatient: email as string },
           }),
@@ -994,15 +1003,27 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
       // révocation (`api/praticien/token` DELETE : `patient`, puis
       // `portailMagicLink`). Deux gestes concurrents sur le même dossier
       // prennent donc leurs verrous dans le même sens — pas d'interblocage.
-      await prisma.$transaction([
-        prisma.patient.update({ where: { idPatient }, data: donneesPatient }),
-        ...reecrituresEmail,
-        prisma.portailMagicLink.updateMany({
+      //
+      // DÉSACTIVER ATTEND L'ISSUE D'UNE LECTURE DEMANDÉE ([[D-282]] §9) : le
+      // dossier verrouillé d'abord (`aucuneLectureDemandee`), toujours avant
+      // `portailMagicLink` — l'ordre ci-dessus tient.
+      const lectureEnCours = await prisma.$transaction(async tx => {
+        if (!(await aucuneLectureDemandee(tx, idPatient))) return true;
+        await tx.patient.update({ where: { idPatient }, data: donneesPatient });
+        for (const reecriture of reecrituresEmailPar(tx)) await reecriture;
+        await tx.portailMagicLink.updateMany({
           where: { idPatient, consommeLe: null, expireLe: { gt: maintenant } },
           data: { expireLe: maintenant },
-        }),
-      ]);
-    } else if (reecrituresEmail.length > 0) {
+        });
+        return false;
+      }, { timeout: DELAI_TRANSACTION_CLOTURE_MS });
+      if (lectureEnCours) {
+        return NextResponse.json(
+          { success: false, reason: RAISON_LECTURE_EN_COURS, error: MESSAGE_LECTURE_EN_COURS },
+          { status: 409 }
+        );
+      }
+    } else if (emailChange) {
       // MÊME EXIGENCE DE TRANSACTION, POUR UNE AUTRE RAISON. Ici rien ne se
       // ferme ; ce qui compte est qu'aucun lecteur ne voie le dossier porter la
       // nouvelle adresse pendant que ses réponses portent encore l'ancienne.
@@ -1012,7 +1033,7 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
       // mauvais moment.
       await prisma.$transaction([
         prisma.patient.update({ where: { idPatient }, data: donneesPatient }),
-        ...reecrituresEmail,
+        ...reecrituresEmailPar(prisma),
       ]);
     } else {
       // Réactivation, ou champs du dossier seuls : l'écriture d'origine,

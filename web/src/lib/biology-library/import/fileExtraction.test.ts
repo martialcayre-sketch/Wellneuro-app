@@ -21,6 +21,25 @@ describe('demanderExtraction', () => {
       .toEqual({ ok: false, reason: 'lecture_demandee' });
   });
 
+  it('un dossier clos entre la route et la demande refuse `dossier_clos`, avant tout verrou du compte rendu (D-282 §9)', async () => {
+    prisma.$transaction.mockImplementationOnce(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
+    prisma.$queryRaw.mockResolvedValueOnce([{ actif: true, suivi_cloture_le: new Date('2026-10-13T10:00:00Z') }]);
+    expect(await demanderExtraction({ idPatient: 'pat_sophie', idCompteRendu: 'cr_1', demandePar: 'praticien@wellneuro.fr' }))
+      .toEqual({ ok: false, reason: 'dossier_clos' });
+    const sql = (prisma.$queryRaw.mock.calls[0][0] as TemplateStringsArray).join('?');
+    expect(sql).toContain('FOR KEY SHARE');
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('un dossier désactivé, ou effacé, refuse de même', async () => {
+    for (const lignes of [[{ actif: false, suivi_cloture_le: null }], []]) {
+      prisma.$transaction.mockImplementationOnce(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
+      prisma.$queryRaw.mockResolvedValueOnce(lignes);
+      expect(await demanderExtraction({ idPatient: 'pat_sophie', idCompteRendu: 'cr_1', demandePar: 'praticien@wellneuro.fr' }))
+        .toEqual({ ok: false, reason: 'dossier_clos' });
+    }
+  });
+
   it('toute autre erreur remonte — jamais un refus inventé', async () => {
     prisma.$transaction.mockRejectedValueOnce(Object.assign(new Error('coupure'), { code: 'P1001' }));
     await expect(demanderExtraction({ idPatient: 'pat_sophie', idCompteRendu: 'cr_1', demandePar: 'praticien@wellneuro.fr' }))

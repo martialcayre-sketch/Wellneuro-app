@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { getServerSession, prisma, verifierAppartenancePatient, effacerDossier, logger } = vi.hoisted(
   () => ({
     getServerSession: vi.fn(),
-    prisma: { patient: { updateMany: vi.fn() } },
+    prisma: {
+      patient: { updateMany: vi.fn() },
+      travailExtractionBiologique: { count: vi.fn() },
+      $queryRaw: vi.fn(),
+      $transaction: vi.fn(),
+    },
     verifierAppartenancePatient: vi.fn(),
     effacerDossier: vi.fn(),
     logger: { security: vi.fn(), error: vi.fn() },
@@ -37,6 +42,9 @@ beforeEach(() => {
   getServerSession.mockResolvedValue({ user: { email: 'martial@wellneuro.fr' } });
   verifierAppartenancePatient.mockResolvedValue('accessible');
   prisma.patient.updateMany.mockResolvedValue({ count: 1 });
+  prisma.travailExtractionBiologique.count.mockResolvedValue(0);
+  prisma.$queryRaw.mockResolvedValue([]);
+  prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
   effacerDossier.mockResolvedValue({
     supprimees: { patient: 1, assignations: 2 },
     residu: { anneeNaissance: 1975, initialesNom: 'DOG' },
@@ -105,6 +113,27 @@ describe('POST /api/praticien/patients/cycle-de-vie', () => {
 
     // Une clôture n'efface jamais rien : c'est toute la distinction du lot.
     expect(effacerDossier).not.toHaveBeenCalled();
+  });
+
+  it('une lecture de compte rendu demandée retient la clôture : 409, rien n’est écrit (D-282 §9)', async () => {
+    prisma.travailExtractionBiologique.count.mockResolvedValueOnce(1);
+    const res = await POST(requete({ idPatient: 'PAT_SEED_03', action: 'cloture' }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({
+      success: false,
+      reason: 'lecture_en_cours',
+      error: 'Une lecture de compte rendu est demandée ou en cours : attendez son issue, quelques minutes, puis recommencez.',
+    });
+    expect(prisma.patient.updateMany).not.toHaveBeenCalled();
+    // Le dossier verrouillé AVANT de compter : une demande en vol est attendue.
+    const sql = (prisma.$queryRaw.mock.calls[0][0] as TemplateStringsArray).join('?');
+    expect(sql).toContain('FOR UPDATE');
+  });
+
+  it('la reprise n’attend aucune lecture', async () => {
+    prisma.travailExtractionBiologique.count.mockResolvedValue(1);
+    expect((await POST(requete({ idPatient: 'PAT_SEED_03', action: 'reprise' }))).status).toBe(200);
+    expect(prisma.patient.updateMany).toHaveBeenCalledOnce();
   });
 
   it('une action inconnue est refusée', async () => {

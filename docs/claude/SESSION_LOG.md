@@ -10091,6 +10091,16 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Rangs [Hypothese] à confirmer au cadrage ; cc compte-t-elle comme une place ; porte 15 pour le code de bf.
 
+## 2026-10-13 — G3 de BioFlow : les deux restes (D-282 §9)
+
+**Fait.** Deux arbitrages sur scénarios : la clôture et la désactivation attendent l'issue d'une lecture demandée (409), la demande rejuge le dossier sous verrou ; l'enregistrement des lignes prend le dossier en partage d'abord. Banc : cas 8 et 9, témoins rouges sans les verrous (dont `40P01`).
+
+**Écarté.** Abandonner la lecture à la réclamation (migration) ; accepter l'un ou l'autre.
+
+**Prochaine action.** CI, merge, déploiement constaté ; base locale `wn_g3_restes_banc` à supprimer sur accord ; puis l'identité retirée avant l'envoi à Anthropic (`D-284`).
+
+**Ouvert.** Rien du G3.
+
 ## 2026-10-14 — Plan unique WellNeuro 6.0 : clôtures des campagnes, gabarits vides, audit régénéré (PR 2 du versement)
 
 **Fait.** Depuis un worktree sur `origin/main` 57ab15ed (PR 1 déployée) : frontmatter de onze campagnes (neuf statuts, deux `lot_courant` seuls) et statuts de sept fiches de lots posés selon le plan §9 (cinq fermées, deux mots de statut, quatre formes), `lot_courant` « aucun », cinq gabarits de compléments clean label supprimés, `AUDIT_REGLES_CAMPAGNES.md` régénéré, fragment. Quinze cases « Done » instruites sur pièces par lecteurs et contre-lecteurs : quatre cochées, onze annotées. Trois statuts corrigés après contre-lecture (PR C4 #330 à #353 ; `D-045` nommée au LOT-03 de la chaîne alimentaire ; LOT-00 du rayon refermé, non livré). T1 complet vert, audit CI vert, anti-secrets OK.
