@@ -64,8 +64,7 @@ label supprimés, deux mots de statut, quatre corrections de forme, cases
 - `bash scripts/check_no_secrets.sh` : OK ; aucun `.env*` ; aucun tiret
   cadratin dans un statut posé ; aucun e-mail, aucun « vous » dans les ajouts.
 - Contre-lecture sur pièces : dix cases déclarées prouvées, six réfutées ;
-  douze faits de statut, deux infirmés et deux réfutés à la portée (les trois
-  corrections ci-dessus).
+  douze faits, deux infirmés et deux réfutés à la portée (corrections ci-dessus).
 - Relecture adverse du diff final par quatre lecteurs, chaque constat soumis
   à deux contre-lecteurs : résultat au corps de la PR.
 - T2 non joué : aucun écran, aucune route, aucun code touché.
@@ -87,16 +86,18 @@ label supprimés, deux mots de statut, quatre corrections de forme, cases
   prochaine version du plan. `docs/claude/campagnes/README.md:35` dit REPRISE « ouverte » : PR 3
   (qui ne prévoit que la ligne 5). Les textes périmés des corps (HDS
   « Questions ouvertes », table des lots du rayon) : traces datées, PR 6.
-- Deux lectures encore à confirmer par le responsable, héritées de la PR 1 :
-  cc compte-t-elle comme une place de la file C ; la porte 15 vaut-elle pour
-  le code de bf.
+- Deux lectures à confirmer par le responsable (héritées de la PR 1) : cc
+  compte-t-elle comme une place de la file C ; porte 15 pour le code de bf.
 
 ## Prochaine action exacte
 
-1. CI (`node scripts/wn-attendre-ci.mjs <N>` en tâche de fond, code 0 seul),
-   commentaires en ligne lus
-   (`gh api repos/{owner}/{repo}/pulls/<N>/comments`), un verdict chacun,
-   merge, déploiement constaté.
+1. PR #1419 déclarée en conflit par GitHub (`SESSION_LOG.md`, deux entrées en
+   fin de fichier, #1418 arrivé pendant la construction) : sur accord du
+   responsable, fusionner `origin/main` dans la branche en gardant les deux
+   entrées (#1418 puis celle-ci), pousser ; puis CI
+   (`node scripts/wn-attendre-ci.mjs 1419`, code 0 seul), commentaires en
+   ligne lus (`gh api repos/{owner}/{repo}/pulls/1419/comments`), un verdict
+   chacun, merge, déploiement constaté.
 2. PR 3 (pilotage) depuis un worktree neuf sur `origin/main` :
    `.wn/state.json` (tête de `next_action`, `blocking_issues`, `active_lot` à
    la main) puis `node scripts/wn-cycle.mjs --appliquer` ; fiches LOT-11 et
@@ -115,5 +116,4 @@ label supprimés, deux mots de statut, quatre corrections de forme, cases
   ne se pousse pas tel quel.
 - La copie principale est restée sur `0763e48c` : `git pull` humain avant
   toute édition, le garde de fraîcheur la bloque sinon.
-- Aucune identité, aucun constat de production hors agrégat déjà au
-  registre, aucun texte du responsable non signé.
+- Aucune identité, aucun constat de production hors agrégat, aucun texte non signé.
