@@ -10011,3 +10011,13 @@ causaux.
 **Ouvert.** Proposés sans arbitrage : durée d'éveil, couleurs neutres, écrans
 plus courts, frise par semaine, deux décomptes praticien. Visages de la
 qualité inchangés (item de l'indice).
+
+## 2026-10-13 — G3 de BioFlow ouvert (D-282)
+
+**Fait.** Le responsable lève le report du G3 et le veut complet. Architecture instruite par `wn-fable` : file de travaux en PostgreSQL (`SKIP LOCKED`) et processus `worker` au `Procfile`. Quatre arbitrages : reprise automatique une fois, `after()` retiré après constat, travaux purgés à 30 jours, fantômes réconciliés en continu. Conservation de la trace d'import tranchée (B) : elle ira avec les décisions RGPD du jour.
+
+**Écarté.** pg-boss et graphile-worker (DDL hors `release-db`) ; les imports comme file ; une tâche planifiée à la minute.
+
+**Prochaine action.** Merger `D-282` ; puis lot 2, la migration seule.
+
+**Ouvert.** Les trous RGPD à trancher aujourd'hui (instruction en cours).

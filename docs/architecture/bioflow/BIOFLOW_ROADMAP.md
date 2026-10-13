@@ -13,7 +13,7 @@ BIOFLOW
 │
 ├── Track A — BIO-INGEST
 │   ├── lot courant   : aucun — campagne CLOSE le 2026-10-10 (LOT-12, clôture) ; LOT-05 (adaptateur laboratoire) transféré en FILE_ATTENTE
-│   ├── prochain gate : G2 levé ; G3 (asynchrone durable) DIFFÉRÉ par le responsable le 2026-10-06 — la réconciliation des imports fantômes partira avec lui ; purge du compte rendu v1 non purgé : redéposer suffit, pas de lot
+│   ├── prochain gate : G2 levé ; G3 (asynchrone durable) OUVERT le 2026-10-13 par `D-282` (file en base + processus de fond, reprise automatique, fantômes réconciliés en continu) — lot courant : la décision ; purge du compte rendu v1 non purgé : redéposer suffit, pas de lot
 │   └── objectif      : une donnée biologique fiable
 │
 ├── Track B — BIO-PARCOURS
