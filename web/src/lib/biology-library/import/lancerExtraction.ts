@@ -6,6 +6,7 @@ import {
   MODELE_EXTRACTION,
   VERSION_PROCEDE_EXTRACTION,
   type MotifEchec,
+  type ResultatExtraction,
 } from './extraction';
 import { estTypeCompteRendu } from './depot';
 import { resoudreLigne } from './resolverLibellesV1';
@@ -176,59 +177,7 @@ export async function poursuivreExtraction(params: {
 
   // TEMPS 3 — les lignes, PUIS la terminaison, dans une seule transaction.
   try {
-    const encoreOuvert = await prisma.$transaction(async tx => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
-      // Sous le verrou qui sert aussi à clore les imports périmés : la relecture fait foi.
-      if ((await tx.importBiologique.count({ where: { id: idImport, statut: 'en_cours' } })) === 0) return false;
-      if (resultat.lignes.length > 0) {
-        // Les unités du catalogue départagent un libellé ambigu ([[D-263]]).
-        const unitesCatalogue = new Map(
-          (await tx.biologyAnalyte.findMany({ select: { code: true, unite: true } }))
-            .map(a => [a.code, a.unite] as const),
-        );
-        await tx.ligneBiologiqueCandidate.createMany({
-          data: resultat.lignes.map((ligne, i) => {
-            // Le resolver signé, SEUL, propose l'analyte — `ambigu` n'en propose aucun.
-            const resolution = resoudreLigne(ligne.libelle, ligne.unite, unitesCatalogue);
-            return {
-              idPatient,
-              idImport,
-              rang: i + 1,
-              page: ligne.page,
-              libelleLu: ligne.libelle,
-              valeurLue: ligne.valeur,
-              uniteLue: ligne.unite,
-              preleveLeLu: ligne.preleveLe,
-              heureLue: ligne.heureLue,
-              // Faits du laboratoire, tels qu'imprimés ([[D-267]]) ; un fait trop
-              // long reste NULL et la ligne le dit (§10).
-              intervalleLu: ligne.intervalle,
-              marquageLu: ligne.marquage,
-              intervalleNonTranscrit: ligne.intervalleNonTranscrit,
-              marquageNonTranscrit: ligne.marquageNonTranscrit,
-              // Le commentaire du laboratoire sur CE résultat ([[D-278]] §3),
-              // même régime : trop long, NULL et signalé.
-              commentaireLu: ligne.commentaire,
-              commentaireNonTranscrit: ligne.commentaireNonTranscrit,
-              analytePropose: resolution.code,
-              statutMapping: resolution.statut,
-            };
-          }),
-        });
-      }
-      await tx.importBiologique.update({
-        where: { id: idImport },
-        // Les commentaires du compte rendu ENTIER se posent avec la terminaison,
-        // jamais avant (le trigger d'insertion le refuse) ni après (figés).
-        data: {
-          statut: 'extrait',
-          laboratoireLu: resultat.laboratoire,
-          commentairesLus: resultat.commentaires,
-          commentairesNonTranscrits: resultat.commentairesNonTranscrits,
-        },
-      });
-      return true;
-    }, { timeout: DELAI_TRANSACTION_LIGNES_MS });
+    const encoreOuvert = await consignerLignes({ idPatient, idCompteRendu, idImport }, resultat);
     if (!encoreOuvert) return { ok: false, reason: 'import_clos' };
   } catch (err) {
     // La réponse a produit des lignes que la base refuse (une contrainte, une
@@ -247,4 +196,75 @@ export async function poursuivreExtraction(params: {
     return { ok: false, reason: 'server_error' };
   }
   return { ok: true, idImport, statut: 'extrait', lignes: resultat.lignes.length };
+}
+
+/**
+ * TEMPS 3 — les lignes, PUIS la terminaison, dans une seule transaction.
+ * `false` : l'import n'est plus `en_cours` (clos entre-temps, ou effacé avec
+ * son dossier). Exportée pour le banc à deux sessions ([[D-282]] §9).
+ */
+export async function consignerLignes(
+  params: { idPatient: string; idCompteRendu: string; idImport: string },
+  resultat: Extract<ResultatExtraction, { ok: true }>,
+): Promise<boolean> {
+  const { idPatient, idCompteRendu, idImport } = params;
+  return prisma.$transaction(async tx => {
+    // LE DOSSIER D'ABORD, EN PARTAGE ([[D-282]] §9) : l'ordre de l'effacement
+    // (dossier `FOR UPDATE`, puis ses lignes) et de la réclamation. Sans lui,
+    // les clés de ces lignes vers le dossier se verrouillaient APRÈS l'import,
+    // et un effacement concurrent s'interbloquait avec cette transaction.
+    // Dossier effacé entre-temps : l'import n'existe plus, la relecture le dit.
+    await tx.$queryRaw`SELECT 1 FROM patients WHERE id_patient = ${idPatient} FOR KEY SHARE`;
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
+    // Sous le verrou qui sert aussi à clore les imports périmés : la relecture fait foi.
+    if ((await tx.importBiologique.count({ where: { id: idImport, statut: 'en_cours' } })) === 0) return false;
+    if (resultat.lignes.length > 0) {
+      // Les unités du catalogue départagent un libellé ambigu ([[D-263]]).
+      const unitesCatalogue = new Map(
+        (await tx.biologyAnalyte.findMany({ select: { code: true, unite: true } }))
+          .map(a => [a.code, a.unite] as const),
+      );
+      await tx.ligneBiologiqueCandidate.createMany({
+        data: resultat.lignes.map((ligne, i) => {
+          // Le resolver signé, SEUL, propose l'analyte — `ambigu` n'en propose aucun.
+          const resolution = resoudreLigne(ligne.libelle, ligne.unite, unitesCatalogue);
+          return {
+            idPatient,
+            idImport,
+            rang: i + 1,
+            page: ligne.page,
+            libelleLu: ligne.libelle,
+            valeurLue: ligne.valeur,
+            uniteLue: ligne.unite,
+            preleveLeLu: ligne.preleveLe,
+            heureLue: ligne.heureLue,
+            // Faits du laboratoire, tels qu'imprimés ([[D-267]]) ; un fait trop
+            // long reste NULL et la ligne le dit (§10).
+            intervalleLu: ligne.intervalle,
+            marquageLu: ligne.marquage,
+            intervalleNonTranscrit: ligne.intervalleNonTranscrit,
+            marquageNonTranscrit: ligne.marquageNonTranscrit,
+            // Le commentaire du laboratoire sur CE résultat ([[D-278]] §3),
+            // même régime : trop long, NULL et signalé.
+            commentaireLu: ligne.commentaire,
+            commentaireNonTranscrit: ligne.commentaireNonTranscrit,
+            analytePropose: resolution.code,
+            statutMapping: resolution.statut,
+          };
+        }),
+      });
+    }
+    await tx.importBiologique.update({
+      where: { id: idImport },
+      // Les commentaires du compte rendu ENTIER se posent avec la terminaison,
+      // jamais avant (le trigger d'insertion le refuse) ni après (figés).
+      data: {
+        statut: 'extrait',
+        laboratoireLu: resultat.laboratoire,
+        commentairesLus: resultat.commentaires,
+        commentairesNonTranscrits: resultat.commentairesNonTranscrits,
+      },
+    });
+    return true;
+  }, { timeout: DELAI_TRANSACTION_LIGNES_MS });
 }

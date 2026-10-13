@@ -4,6 +4,12 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { effacerDossier } from '@/lib/patient/effacement';
+import {
+  aucuneLectureDemandee,
+  DELAI_TRANSACTION_CLOTURE_MS,
+  MESSAGE_LECTURE_EN_COURS,
+  RAISON_LECTURE_EN_COURS,
+} from '@/lib/biology-library/import/lectureDemandee';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
@@ -110,10 +116,24 @@ export async function POST(req: Request): Promise<NextResponse<CycleDeVieRespons
       return NextResponse.json({ success: true, action, lignesSupprimees });
     }
 
-    await prisma.patient.updateMany({
-      where: { idPatient },
-      data: { suiviClotureLe: action === 'cloture' ? new Date() : null },
-    });
+    // CLÔTURER ATTEND L'ISSUE D'UNE LECTURE DEMANDÉE ([[D-282]] §9) : sinon
+    // elle partirait après la clôture, document compris. Dans la même
+    // transaction que l'écriture, sous le verrou du dossier. La reprise, elle,
+    // ne rouvre rien qui se lise : elle n'attend pas.
+    const lectureEnCours = await prisma.$transaction(async tx => {
+      if (action === 'cloture' && !(await aucuneLectureDemandee(tx, idPatient))) return true;
+      await tx.patient.updateMany({
+        where: { idPatient },
+        data: { suiviClotureLe: action === 'cloture' ? new Date() : null },
+      });
+      return false;
+    }, { timeout: DELAI_TRANSACTION_CLOTURE_MS });
+    if (lectureEnCours) {
+      return NextResponse.json(
+        { success: false, reason: RAISON_LECTURE_EN_COURS, error: MESSAGE_LECTURE_EN_COURS },
+        { status: 409 },
+      );
+    }
 
     logger.security({
       event: EVENT_CODES.DOSSIER_SUIVI_CLOTURE,

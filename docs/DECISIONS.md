@@ -445,6 +445,27 @@ d'un import `en_cours` à l'ouverture se juge à l'horloge de la base (revue
 dossier clos pendant l'attente n'est pas rejugé à la réclamation ; la
 transaction des lignes (TEMPS 3) n'est pas ordonnée face à l'effacement.
 
+**§9 — Les deux restes, arbitrés par le responsable (2026-10-13, sur
+scénarios).** Démontrés dans le code, sans occurrence connue.
+
+1. **Un dossier clos ne reçoit plus de lecture : la clôture attend.** Clôturer
+   le suivi ou désactiver le dossier est refusé (409, « Une lecture de compte
+   rendu est demandée ou en cours : attendez son issue, quelques minutes, puis
+   recommencez. ») tant qu'un
+   travail est ouvert. Le dossier y est verrouillé `FOR UPDATE`, et la demande
+   le tient en partage puis le rejuge (`dossier_clos`) : chacune attend
+   l'autre. L'effacement n'attend pas. Aucune migration. Le refus peut durer
+   plus d'une minute : une lecture qui lève garde son travail jusqu'à
+   l'échéance de sa réservation (6 min) avant sa reprise, et sans processus de
+   fond vivant il dure jusqu'au redémarrage (l'alerte du §7 le signale) ; le
+   message dit « quelques minutes » (revue). **Écartés** :
+   abandonner la lecture à la réclamation (un motif neuf, donc une migration) ;
+   accepter.
+2. **L'enregistrement des lignes prend le dossier en partage d'abord**, dans
+   l'ordre de l'effacement et de la réclamation. Témoin joué le 2026-10-13 :
+   sans ce verrou, l'enregistrement meurt en interblocage (`40P01`) face à un
+   effacement réel. **Écarté** : accepter (un effacement à refaire).
+
 ### D-281 — Effet indésirable : le patient désigne un élément du programme, cet élément passe en pause, et le praticien valide l'implication avant toute diffusion (SAF-EI-01 amendée, signée en fin de chantier)
 
 - Date : 2026-10-12
