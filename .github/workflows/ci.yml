@@ -1226,6 +1226,21 @@ jobs:
           WN_BIO_PORTAIL_BANC_BASE: wellneuro_ci
         run: node prisma/runWithAlias.js scripts/banc-plafond-transmission-deux-depots.test.ts
 
+      # La file durable des lectures (D-282, G3 lot 3) : le VRAI code de la file
+      # contre PostgreSQL — deux demandes, deux réclamations (courses FORCÉES
+      # par le verrou du compte rendu tenu par une troisième session), la
+      # reprise, l'épuisement, la purge à 30 jours, et l'effacement réel du
+      # dossier contre une réclamation en vol, sans interblocage.
+      - name: Bio extraction queue bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_FILE_BANC_BASE: wellneuro_ci
+          # Prisma 7 écrit `now()` côté client, la file date en SQL : le banc se
+          # joue dans le fuseau du cabinet (revue du lot 2, P2-6).
+          TZ: Europe/Paris
+        run: node prisma/runWithAlias.js scripts/banc-file-extraction-deux-sessions.test.ts
+
       # Lettres d'adressage remises au patient (D-262, LOT-01). Ce que le drift
       # check ne voit pas : la remise porte sur une approbation du même dossier
       # dont le protocole s'ouvre sur l'orientation réservée, une lettre

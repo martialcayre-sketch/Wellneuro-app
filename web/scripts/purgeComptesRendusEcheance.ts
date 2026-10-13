@@ -1,16 +1,25 @@
-// Purge à l'échéance des comptes rendus biologiques déposés ([[D-258]]).
+// Purge à l'échéance des comptes rendus biologiques déposés ([[D-258]]),
+// puis des travaux de la file terminés depuis 30 jours ([[D-282]] §5.3).
 // Lancé chaque heure par le cron Scalingo (`web/cron.json`) :
 //   npm run bio:purge-echeance
-// Rend 1 si un compte rendu a été refusé par la base — le journal du
-// conteneur le montre ; le suivant le retentera.
+// Rend 1 si un compte rendu a été refusé par la base, ou si la purge des
+// travaux a échoué — le journal du conteneur le montre ; le suivant le
+// retentera.
 import { prisma } from '@/lib/prisma';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 import { purgerAEcheance } from '@/lib/biology-library/import/purge';
+import { purgerTravauxTermines } from '@/lib/biology-library/import/fileExtraction';
 
 async function main() {
   const bilan = await purgerAEcheance();
   console.log(`[bio-ingest purge échéance] ${JSON.stringify(bilan)}`);
   if (bilan.echecs > 0) process.exitCode = 1;
+  try {
+    console.log(`[bio-ingest purge échéance] ${JSON.stringify({ travauxPurges: await purgerTravauxTermines() })}`);
+  } catch (err) {
+    console.error('[bio-ingest purge échéance] travaux de la file :', ...classeEtCode(err));
+    process.exitCode = 1;
+  }
 }
 
 main()

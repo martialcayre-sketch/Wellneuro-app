@@ -33,6 +33,7 @@ beforeEach(() => {
     typeMime: 'application/pdf',
     deposePar: 'praticien@wellneuro.fr',
     deposeLe: new Date('2026-10-02T09:00:00.000Z'),
+    travaux: [],
     imports: [{
       id: 'imp_1', statut: 'extrait', motifEchec: null, modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v1',
       laboratoireLu: null, lanceLe: new Date('2026-10-02T09:01:00.000Z'), termineLe: new Date('2026-10-02T09:02:00.000Z'),
@@ -80,6 +81,16 @@ describe('GET /api/praticien/biologie/import/compte-rendu', () => {
     prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce({ ...base, imports: [enCours(6), enCours(1)] });
     const corps = await (await GET(new Request(URL_GET))).json();
     expect(corps.compteRendu.imports.map((i: { perime: boolean }) => i.perime)).toEqual([true, false]);
+  });
+
+  it('dit qu’une lecture est demandée à la file tant qu’un travail est ouvert (D-282)', async () => {
+    const corps = await (await GET(new Request(URL_GET))).json();
+    expect(corps.compteRendu.lectureDemandee).toBe(false);
+    const { select } = prisma.compteRenduBiologique.findFirst.mock.calls[0][0];
+    expect(select.travaux).toEqual({ where: { statut: { in: ['en_attente', 'en_cours'] } }, select: { id: true }, take: 1 });
+    const base = await prisma.compteRenduBiologique.findFirst();
+    prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce({ ...base, travaux: [{ id: 'trv_1' }] });
+    expect((await (await GET(new Request(URL_GET))).json()).compteRendu.lectureDemandee).toBe(true);
   });
 
   it('ne lit jamais le contenu du document', async () => {

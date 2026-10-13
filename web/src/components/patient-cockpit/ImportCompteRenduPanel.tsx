@@ -337,8 +337,12 @@ export function ImportCompteRenduPanel({
   }, [chargerListe]);
 
   const courant = detail?.imports.find(i => i.courant) ?? null;
-  const enCours = courant?.statut === 'en_cours';
-  const interrompu = enCours && courant.perime;
+  // Une lecture demandée à la file ([[D-282]]) court, même sans import encore
+  // ouvert ou avec un import périmé : le processus de fond la reprend. Elle
+  // n'est jamais « interrompue » tant que le travail est ouvert.
+  const lectureDemandee = detail?.lectureDemandee === true;
+  const enCours = lectureDemandee || courant?.statut === 'en_cours';
+  const interrompu = !lectureDemandee && courant?.statut === 'en_cours' && courant.perime;
 
   // Relecture tant que la lecture court ; un import abandonné (processus mort)
   // n'est plus relu : la péremption le clora à la prochaine tentative. Une
@@ -624,8 +628,8 @@ export function ImportCompteRenduPanel({
   // écarts restent consignés ; seules les lignes de la nouvelle se décident.
   const aUneLigneValidee = detail?.imports.some(i => i.lignes.some(l => l.statut === 'validee')) ?? false;
   const transmisParLePatient = detail?.origine === 'patient';
-  const peutLancer = detail !== null && !detail.purgeLe && (courant === null || interrompu) && !aUneLigneValidee;
-  const peutRelancer = detail !== null && !detail.purgeLe && courant?.statut === 'extrait' && !aUneLigneValidee;
+  const peutLancer = detail !== null && !detail.purgeLe && !lectureDemandee && (courant === null || interrompu) && !aUneLigneValidee;
+  const peutRelancer = detail !== null && !detail.purgeLe && !lectureDemandee && courant?.statut === 'extrait' && !aUneLigneValidee;
   const lignesProposees = courant?.statut === 'extrait' ? courant.lignes.filter(l => l.statut === 'proposee') : [];
   const lignesDecidees = courant?.statut === 'extrait' ? courant.lignes.filter(l => l.statut !== 'proposee') : [];
   // Deux repliés (demande du responsable, 2026-10-07) : seules les lignes à

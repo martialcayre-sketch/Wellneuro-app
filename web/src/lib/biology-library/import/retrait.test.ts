@@ -12,6 +12,7 @@ const { prisma, journal } = vi.hoisted(() => {
     compteRenduBiologique: { findFirst: vi.fn(), delete: trace('compteRendu.delete', {}) },
     importBiologique: { count: vi.fn(), deleteMany: trace('imports.deleteMany', { count: 1 }) },
     ligneBiologiqueCandidate: { count: vi.fn(), deleteMany: trace('lignes.deleteMany', { count: 2 }) },
+    travailExtractionBiologique: { count: vi.fn(), deleteMany: trace('travaux.deleteMany', { count: 1 }) },
   };
   return { prisma, journal };
 });
@@ -27,14 +28,15 @@ beforeEach(() => {
   prisma.compteRenduBiologique.findFirst.mockResolvedValue({ id: 'cr_1', origine: 'praticien' });
   prisma.ligneBiologiqueCandidate.count.mockResolvedValue(0);
   prisma.importBiologique.count.mockResolvedValue(0);
+  prisma.travailExtractionBiologique.count.mockResolvedValue(0);
 });
 
 afterEach(() => vi.clearAllMocks());
 
 describe('retirerCompteRendu — retrait d’un dépôt erroné', () => {
-  it('supprime sous verrou les lignes, puis les imports, puis le document', async () => {
+  it('supprime sous verrou les travaux de la file, les lignes, puis les imports, puis le document', async () => {
     expect(await retirerCompteRendu(PARAMS)).toEqual({ ok: true });
-    expect(journal).toEqual(['verrou', 'lignes.deleteMany', 'imports.deleteMany', 'compteRendu.delete']);
+    expect(journal).toEqual(['verrou', 'travaux.deleteMany', 'lignes.deleteMany', 'imports.deleteMany', 'compteRendu.delete']);
     // Les lignes visées ne sont jamais des lignes validées.
     expect(prisma.ligneBiologiqueCandidate.deleteMany).toHaveBeenCalledWith({
       where: { idPatient: 'pat_sophie', statut: { not: 'validee' }, import: { idCompteRendu: 'cr_1' } },
@@ -56,6 +58,15 @@ describe('retirerCompteRendu — retrait d’un dépôt erroné', () => {
   it('est refusé pendant une extraction en cours', async () => {
     prisma.importBiologique.count.mockResolvedValueOnce(1);
     expect(await retirerCompteRendu(PARAMS)).toEqual({ ok: false, reason: 'extraction_en_cours' });
+    expect(journal).toEqual(['verrou']);
+  });
+
+  it('est refusé tant qu’une lecture est demandée à la file, en attente ou en reprise (D-282)', async () => {
+    prisma.travailExtractionBiologique.count.mockResolvedValueOnce(1);
+    expect(await retirerCompteRendu(PARAMS)).toEqual({ ok: false, reason: 'extraction_en_cours' });
+    expect(prisma.travailExtractionBiologique.count).toHaveBeenCalledWith({
+      where: { idCompteRendu: 'cr_1', idPatient: 'pat_sophie', statut: { in: ['en_attente', 'en_cours'] } },
+    });
     expect(journal).toEqual(['verrou']);
   });
 
