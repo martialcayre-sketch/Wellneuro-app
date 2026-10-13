@@ -10070,3 +10070,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, merge, déploiement constaté ; le responsable crée la surveillance (60 s, tolérance 6 min), pose l'adresse, `scale worker:1`, constat du signal, PUIS pose le drapeau ; constat sur un dossier de test lu par identifiant.
 
 **Ouvert.** Dossier clos pendant l'attente ; TEMPS 3 face à l'effacement ; horloge client de l'ouverture (lot 5).
+
+## 2026-10-13 — Plan unique WellNeuro 6.0 : D-285 et le plan en forme opaque (PR 1 du versement)
+
+**Fait.** `D-285` (lettre cq) au registre : un seul fichier de plan, forme opaque, file d'attente supprimée (adresse de routage = le plan), archivage par déplacement avec bandeau, gels sous déclencheur nommé, abandons datés, six PR un merge à la fois. `docs/claude/PLAN_WELLNEURO.md` généré par script depuis le plan privé : 30 portes, 162 fiches réduites à six champs, file C, gestes par rang, gelés, abandonnés, 64 dettes, clôtures et PR à venir. Fragment de changelog. #1416 (G3 clos) intégré : F42 et F43 closes, lot (j) de D-284 au rang 1. T1 complet vert, anti-secrets OK, trois relectures adverses à quatre lecteurs.
+
+**Écarté.** Verser l'objet détaillé des fiches, les coûts, les notes de version telles quelles, les constats chiffrés hors registre, les phrases patient non signées (ch) et les déclencheurs de ci.
+
+**Prochaine action.** CI, revue, merge, déploiement constaté ; puis PR 2 (clôtures des campagnes, gabarits vides, audit régénéré).
+
+**Ouvert.** Rangs [Hypothese] à confirmer au cadrage ; cc compte-t-elle comme une place ; porte 15 pour le code de bf.

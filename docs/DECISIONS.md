@@ -4,6 +4,105 @@
 
 ## Décisions actives
 
+### D-285 — Plan unique WellNeuro 6.0 : une seule feuille de route au dépôt, en forme opaque ; la file d'attente et les feuilles de route antérieures deviennent de l'historique (lettre cq)
+
+- Date : 2026-10-13
+- Statut : accepté. Décision de forme, texte rédigé dans le lot et accepté par
+  le responsable. Les arbitrages qu'elle applique ont été rendus en session par
+  le responsable le 2026-10-13, sur questions à options, après un bilan de
+  chaque campagne passée ou en cours et de chaque reste sans porteur, établi en
+  lecture seule du dépôt.
+- Domaine : pilotage et documentation (`docs/claude/PLAN_WELLNEURO.md`,
+  `docs/claude/campagnes/`, `docs/archive/`, `.wn/state.json`).
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucun code, aucune
+  migration, aucun drapeau. Aucune release-db.
+- Livraison : cette décision, le plan et un fragment de changelog dans la
+  première de six PR (§7) ; les cinq suivantes exécutent les clôtures,
+  l'archivage et les corrections que le plan écrit.
+
+**§1 — Un seul fichier de plan.** `docs/claude/PLAN_WELLNEURO.md` est la seule
+feuille de route du dépôt. Il remplace `docs/ROADMAP_PRODUIT.md`,
+`docs/claude/campagnes/PROGRAMME_WELLNEURO_3_0.md`,
+`docs/claude/campagnes/PROGRAMME_WELLNEURO_5_0.md`,
+`docs/claude/ROADMAP_AGENT_PLAN.md`, `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
+(ses dettes vivantes passent au plan) et la file d'attente
+`docs/claude/campagnes/FILE_ATTENTE.md`. Il absorbe la feuille de route BioFlow
+(`docs/architecture/bioflow/BIOFLOW_ROADMAP.md`), qui reste en place pour ses
+règles de parallélisme ; ses gates G1 à G3 sont levés (G3 par #1416, [[D-282]]
+§8). `docs/ROADMAP_TECHNIQUE.md` reste une
+photographie d'architecture, non une feuille de route. Les campagnes et leurs
+fiches de lots (`docs/claude/campagnes/*/CAMPAGNE.md`, `lots/`) restent le
+lieu d'exécution ; le plan dit l'ordre, la campagne dit le travail.
+
+**§2 — Forme opaque.** Le dépôt est public. Le plan ne porte que des
+identifiants (lettres, lots BP-nn, portes 1 à 30, rangs, places de la file C,
+fiches Fnn et Hnn), des mécanismes et des renvois `D-xxx`. Chaque fiche y est
+réduite à six champs : identifiant et piste ; rang ; portes et préalables ;
+migration et release-db ; décisions et textes, par leurs identifiants ;
+critère de fin. N'entrent jamais au dépôt : l'objet détaillé d'un lot, un
+texte du responsable non encore signé (il n'entre qu'avec sa `D-xxx`), un
+coût, une identité, un constat de production autre qu'en agrégat déjà publié
+dans ce registre. Précédent : le cadrage BIO-PARCOURS versé en identifiants et
+mécanismes ([[D-265]], [[D-266]]).
+
+**§3 — Lecture du plan.** L'ordre conduit, le calendrier suit : les rangs et
+les portes font foi, une date n'est qu'un repère (arbitrage du 2026-10-12).
+Rang 0 : aucun préalable ; rang n : tous les préalables sont de rang
+strictement inférieur. Une porte de geste se lève par le responsable et compte
+au rang 0 ; une porte de constat s'ouvre au fait constaté. Une ligne « si
+migration » passe au rang 4 au plus tôt, sauf BP-09. Dans un rang, la
+hiérarchie départage : sécurité et vérité de l'affichage, consultation,
+patient, cabinet, confort. Un texte du responsable, et la PR de textes qui le
+porte, comptent au rang 0 même s'ils suivent un autre texte de rang 0 ; l'ordre
+des PR départage. Dans la file C, une activation à la fois, un constat entre
+chacune (porte 18) ; les places 1 à 5 ne se permutent jamais ; au-delà de la
+place 11, la conduite passe devant, puis l'ordre de préparation. Les rangs
+marqués [Hypothese] ne sont pas acquis : ils se confirment au cadrage de
+chaque rang.
+
+**§4 — La file d'attente est supprimée.** Le texte reste dans l'historique Git.
+Ses dettes vivantes entrent au plan sans rang propre (§8 du plan) ; ses
+entrées gelées rejoignent les gelés du plan ; ses entrées terminées ou
+obsolètes disparaissent. L'adresse de routage d'un commentaire de revue
+« routé » ([[D-214]]) devient le plan : la règle
+`.claude/rules/pr-revue-et-release-db.md` et le skill `wn-merge` sont
+réécrits en conséquence (PR 5). D'ici là, un commentaire routé se consigne au
+plan dans la PR qui le reçoit.
+
+**§5 — Archivage par déplacement, avec bandeau daté.** Les feuilles de route,
+programmes, cadrages et photographies remplacés sont déplacés sous
+`docs/archive/` avec un bandeau daté en tête, et les liens des documents
+vivants sont réécrits. Un document cité par ce registre reste à sa place,
+bandeau daté en tête. Seuls disparaissent les doublons vides, les quatre
+dossiers de briefs gelés (sauf la pièce de transfert de la curation signée) et
+le gabarit vide de nutrition référentielle ; leur texte reste dans l'historique
+Git. Les handoffs, les fragments, `SESSION_LOG.md` et ce registre, append-only,
+ne bougent pas.
+
+**§6 — Gels et abandons.** Un reste sans porteur est gelé sous un déclencheur
+nommé, le fait qui le rouvre ; faute de nom, le déclencheur proposé porte
+[Hypothese] et se tranche au cadrage. Un abandon est daté et dit où reste sa
+référence. Les campagnes closes ou absorbées reçoivent leur statut au sens de
+`scripts/wn-campaign-audit.mjs` : lots fermés d'abord, lot courant « aucun »,
+puis statut de la campagne, dans un même commit.
+
+**§7 — Six PR, un merge à la fois.** (1) cette décision, le plan, le fragment ;
+(2) clôtures des campagnes et des lots, gabarits vides supprimés, audit des
+campagnes régénéré ; (3) pilotage (`.wn/state.json`, fiches de lots,
+`BIOFLOW_ROADMAP.md`, renvois au plan) ; (4) archivage par déplacement, briefs
+compris, liens réécrits ; (5) suppression de la file, règle et skill réécrits ;
+(6) contexte, dettes et lignes datées des textes périmés. Chaque PR attend le
+merge et le déploiement constaté de la précédente ; aucune ne touche
+`schema.prisma`, une migration, une règle clinique ou un seuil ; jamais
+d'auto-merge. Le détail de chacune est au §9 et au §11 du plan.
+
+**§8 — Ce qui ne change pas.** [[D-087]] (une migration en vol, release-db
+humaine), [[D-248]] (un merge à la fois, déploiement constaté), [[D-276]] et
+[[D-266]] (vocabulaire et qualification), [[D-125]] (une fixture prouve un
+mécanisme), la constitution clinique. Le plan se met à jour par PR, comme tout
+document du dépôt : une version datée remplace la précédente ; ce qui a été
+livré sort des rangs et entre dans la table « Livré » du plan.
+
 ### D-284 — RGPD : l'avis reçu le 2026-10-13 amende D-283 — NIR retiré, âge demandé avant toute fonction de santé, mineur jusqu'à 18 ans, identité retirée avant l'envoi à Anthropic
 
 - Date : 2026-10-13
