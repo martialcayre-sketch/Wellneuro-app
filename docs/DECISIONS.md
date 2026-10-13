@@ -4,6 +4,119 @@
 
 ## Décisions actives
 
+### D-283 — RGPD : les trous du dossier tranchés le 2026-10-13 — conservation, qualifications, mineurs, droits, sécurité
+
+- Date : 2026-10-13
+- Statut : accepté. Arbitrages du responsable de traitement rendus en session
+  le 2026-10-13, sur questions à options, après un état réel de chaque trou
+  établi en lecture seule (dépôt et pièces privées des séances des 2026-10-11
+  et 2026-10-12).
+- Domaine : `docs/DOSSIER_RGPD.md` (rubriques 1, 4, 5, 8, 9, 10, 11, 12, 14).
+  Ne remplace pas l'avis d'un conseil là où il reste requis (§9).
+- **Ne touche pas** : aucune règle clinique, aucun seuil. Les durées
+  ci-dessous sont des durées de conservation, sourcées (§2).
+- Livraison : cette décision et le dossier, **sans code**. Ce qui exige du
+  code ou un texte patient part en lots distincts (§10) ; le texte patient
+  reste « en cours de formalisation » jusqu'à la signature du sien.
+
+**§1 — Statut.** Le responsable **n'exerce pas** comme professionnel de santé
+au sens du Code de la santé publique. Les référentiels des professionnels de
+santé (CNIL « cabinets médicaux et paramédicaux », 20 ans) ne s'appliquent
+donc pas. La durée se fixe d'après la finalité, puis d'après une durée de
+preuve.
+
+**§2 — Durées de conservation des données du dossier.**
+- **Base active** : le temps de l'accompagnement. Il finit à la **clôture du
+  dossier** par le praticien, à la demande du patient, ou à défaut **5 ans
+  après le dernier contact**. Ces 5 ans reprennent la durée active du
+  référentiel CNIL des cabinets, **par analogie** seulement.
+- **Archivage intermédiaire** (support séparé, accès restreint) : **10 ans**
+  après la fin de l'accompagnement. C'est la prescription de l'action en
+  responsabilité pour dommage corporel, qui court à compter de la consolidation
+  (Code civil, art. 2226). Elle correspond au risque d'une activité qui
+  conseille des compléments. Ensuite, effacement.
+- **Trace d'une lecture de compte rendu biologique** (empreinte, lectures,
+  lignes lues, vos décisions), une fois le document purgé ([[D-258]]) : la trace
+  des **lignes validées** suit le dossier, car elle prouve un résultat. Les
+  lignes **écartées ou jamais décidées** s'effacent **30 jours** après le
+  dépôt, comme le document.
+- Travaux de lecture de la file du G3 : 30 jours ([[D-282]] §5.3).
+- Inchangés : journal d'accès 12 mois, traces d'identité Google 12 mois,
+  compte rendu 30 jours, sauvegardes 12 mois au plus après suppression.
+
+**§3 — Qualifications (art. 9).** Classées en **catégorie particulière** :
+les six tables restées sans qualification depuis le 2026-09-09 (questionnaires
+assignés, critères constatés, validations pour diffusion, packs proposés,
+file d'envoi, rendez-vous), parce que chacune associe un patient nommé à un
+geste de soin, selon la règle de [[D-251]] §9. Également en catégorie
+particulière : les deux tables de gestes motivés (écartement d'une
+proposition, sélection d'une priorité). Le **lien patient ↔ médecin traitant**
+est une donnée de santé du patient. Les coordonnées professionnelles du
+médecin sont des données ordinaires, et le médecin est **informé à la première
+lettre** qui lui est adressée (une phrase au gabarit, à signer).
+
+**§4 — NIR.** Le responsable **garde** son recueil. Sa base légale et son
+motif restent à établir avec un conseil, puis à déclarer au patient. Le trou
+reste ouvert sous ce libellé.
+
+**§5 — Mineurs.** Ils sont **encadrés**, non exclus (séances des 2026-10-11 et
+2026-10-12). Cet encadrement passe par le consentement du titulaire de
+l'autorité parentale, des textes dédiés, une garde d'âge et un circuit des
+droits adapté. **Aucune surface neuve** n'est ouverte à un mineur avant ce
+consentement ; les surfaces déjà en service restent ouvertes. **Âge inconnu**
+: le dossier est traité comme celui d'un mineur pour toute fonction neuve, sauf
+la **fiche signalétique**, qui reste ouverte pour saisir la date de naissance.
+Le seuil d'âge (majorité civile ou seuil de la loi Informatique et Libertés)
+relève d'un conseil.
+
+**§6 — Droits.** Délai annoncé : celui de la loi, un mois, prolongeable dans
+les cas qu'elle prévoit (RGPD art. 12.3). **Identité** : une demande faite
+depuis le portail est réputée identifiée par la session. Une demande reçue par
+e-mail reçoit une réponse qui la renvoie au portail. Aucune pièce d'identité
+n'est collectée. Circuit : le responsable reçoit, trace et répond. La
+procédure écrite suit, sans autre arbitrage.
+
+**§7 — Sécurité et hébergement.**
+- La revue externe automatisée du 2026-08-22 (D-089) suffit à ce stade. Un
+  **test d'intrusion humain** devient obligatoire avant toute offre
+  commerciale ou tout second compte praticien.
+- **HDS suffit** : la réserve de D-006 sur SecNumCloud est close, la
+  couverture HDS d'`osc-fr1` ayant été écrite par Scalingo le 2026-08-11.
+- **DPO** : aucun n'a été désigné, et le point de contact est le responsable.
+  La mention « confirmé par le DPO le 2026-07-27 » de D-005 se lit désormais
+  « avis relayé par le responsable » (registre append-only : D-005 n'est pas
+  réécrite). Savoir si une désignation est obligatoire relève d'un conseil.
+
+**§8 — Information des personnes.**
+- Les trois lignes sur l'écart d'hébergement sont **closes**. L'écart l'est
+  depuis le 2026-09-01, annoncé dans « Vos données personnelles » v2 et v3 et
+  repris jusqu'à la v14, avec accusé. L'information orale donnée avant le
+  2026-08-22 est consignée comme non datée.
+- Le dossier resté à la v8 de « Vos données personnelles » (un seul au
+  2026-10-13, lu en agrégats par conteneur) reçoit la correction de la v9 **par
+  le praticien lui-même**, geste daté à consigner en rubrique 11.
+
+**§9 — Restent ouverts, avec leur porteur.** Identité juridique (fait du
+responsable) ; DPA de Scalingo, de Google Workspace et de Sentry, à archiver
+(gestes) ; Anthropic : date d'acceptation des conditions commerciales, copie
+datée, localisation de l'inférence et rétention (fait, geste, relance) ;
+mécanisme de transfert pour Google et Sentry (conseil) ; NIR (§4, conseil) ;
+seuil d'âge des mineurs (conseil) ; obligation de DPO (conseil) ; critères de
+l'AIPD, à cocher par le responsable lui-même. Ils gardent l'échéance du
+2027-06-30 ([[D-265]]).
+
+**§10 — Lots qui en découlent, sans arbitrage neuf.** (a) Le texte patient des
+durées, nouvelle version de « Vos données personnelles », accusé exigé,
+**proposé par l'assistant et signé par le responsable**. (b) La clôture
+automatique après 5 ans sans contact et l'archivage intermédiaire (code et
+migration). (c) La purge à 30 jours des lignes de lecture non validées. (d) La
+garde d'âge pour les fonctions neuves. (e) La phrase d'information du médecin
+au gabarit de lettre. (f) La procédure écrite des droits.
+
+**Clos sans question, par constat** : registre des violations (D-085 §3) ;
+preuve fonctionnelle de la piste d'audit (D-085 §2) ; renouvellement de
+l'information après D-078 (v2 et v3).
+
 ### D-282 — G3 de BioFlow : la lecture d'un compte rendu biologique passe par une file durable en base et un processus de fond, avec une reprise automatique
 
 - Date : 2026-10-13

@@ -10021,3 +10021,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merger `D-282` ; puis lot 2, la migration seule.
 
 **Ouvert.** Les trous RGPD à trancher aujourd'hui (instruction en cours).
+
+## 2026-10-13 — RGPD : les trous tranchés (D-283)
+
+**Fait.** État réel de chaque trou établi en lecture seule, puis quatorze arbitrages du responsable : durées (active jusqu'à clôture ou 5 ans sans contact, archive 10 ans, art. 2226 C. civ.), conservation B de la trace d'import, six tables et gestes motivés en art. 9, médecin traitant, NIR gardé, mineurs, droits, test d'intrusion différé avec déclencheur, HDS suffit, aucun DPO, écart HDS clos. Un seul dossier encore à la v8 (agrégats).
+
+**Écarté.** Référentiel des soignants (20 ans) : non applicable ; archive à 5 ou à 15 ans ; pièce d'identité ; SecNumCloud.
+
+**Prochaine action.** Merger `D-283` ; puis lot 2 du G3 (migration). Lots RGPD (texte patient signé, clôture après 5 ans, archive, purge des lignes non validées) à ordonner.
+
+**Ouvert.** Identité juridique, DPA à archiver, date d'acceptation des conditions Anthropic, NIR (conseil), seuil d'âge (conseil), obligation de DPO (conseil).

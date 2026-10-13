@@ -65,14 +65,11 @@ const DOSSIER = path.join(RACINE, 'docs', 'DOSSIER_RGPD.md');
  * vérifié nom par nom contre la rubrique —, et leur qualification appartient
  * toujours au responsable de traitement.
  */
-const NON_DECLARES_AU_2026_09_09: readonly string[] = Object.freeze([
-  'Assignation',
-  'CritereDossierConstate',
-  'ProtocolDiffusionApproval',
-  'PackProposition',
-  'EnvoiBrouillon',
-  'RendezVous',
-]);
+//
+// SOLDÉE le 2026-10-13 ([[D-283]] §3) : le responsable a classé les six en
+// catégorie particulière. La liste est vide et le reste — toute table neuve se
+// déclare avant de naître.
+const NON_DECLARES_AU_2026_09_09: readonly string[] = Object.freeze([]);
 
 /** Les modèles Prisma qui portent une relation vers `Patient` — les tables du dossier. */
 function modelesFilsDePatient(): string[] {
