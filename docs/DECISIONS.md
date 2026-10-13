@@ -14,7 +14,7 @@
 - Amende : [[D-283]] §4 (NIR), §5 (mineurs, âge inconnu), §9 (restes ouverts)
   et §10 (lots).
 - Domaine : `docs/DOSSIER_RGPD.md`.
-- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune durée.
+- **Ne touche pas** : aucune règle clinique, aucun seuil clinique, aucune durée de conservation. Le seuil de 18 ans du §4 est un seuil juridique d'âge.
 - Livraison : cette décision et le dossier, **sans code**. Chaque geste part en
   lot (§7).
 - **Portée de l'avis** : il renvoie lui-même deux points à un avocat
