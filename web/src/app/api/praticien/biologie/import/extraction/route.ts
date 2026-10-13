@@ -63,6 +63,8 @@ export async function POST(req: Request) {
     if (!patient || !accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
 
     const demande = await demanderExtraction({ idPatient, idCompteRendu, demandePar: garde.email });
+    // Clôturé entre la lecture ci-dessus et la demande ([[D-282]] §9).
+    if (!demande.ok && demande.reason === 'dossier_clos') return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
     if (!demande.ok) {
       const status = demande.reason === 'compte_rendu_introuvable' ? 404 : 409;
       return echec(demande.reason, MESSAGES[demande.reason], status);

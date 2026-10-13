@@ -10090,3 +10090,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, revue, merge, déploiement constaté ; puis PR 2 (clôtures des campagnes, gabarits vides, audit régénéré).
 
 **Ouvert.** Rangs [Hypothese] à confirmer au cadrage ; cc compte-t-elle comme une place ; porte 15 pour le code de bf.
+
+## 2026-10-13 — G3 de BioFlow : les deux restes (D-282 §9)
+
+**Fait.** Deux arbitrages sur scénarios : la clôture et la désactivation attendent l'issue d'une lecture demandée (409), la demande rejuge le dossier sous verrou ; l'enregistrement des lignes prend le dossier en partage d'abord. Banc : cas 8 et 9, témoins rouges sans les verrous (dont `40P01`).
+
+**Écarté.** Abandonner la lecture à la réclamation (migration) ; accepter l'un ou l'autre.
+
+**Prochaine action.** CI, merge, déploiement constaté ; base locale `wn_g3_restes_banc` à supprimer sur accord ; puis l'identité retirée avant l'envoi à Anthropic (`D-284`).
+
+**Ouvert.** Rien du G3.

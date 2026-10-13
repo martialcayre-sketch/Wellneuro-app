@@ -25,6 +25,12 @@
 //   7. L'EFFACEMENT RÉEL DU DOSSIER contre une réclamation qui tient son
 //      travail et crée l'import — sans interblocage : la réclamation verrouille
 //      le dossier en partage AVANT le travail, l'ordre même de l'effacement.
+//   8. LA CLÔTURE ET LA DEMANDE ([[D-282]] §9) : une clôture en vol → la
+//      demande l'attend puis refuse `dossier_clos` ; une demande en vol → la
+//      clôture l'attend puis la voit et refuse ;
+//   9. L'EFFACEMENT RÉEL contre l'ENREGISTREMENT DES LIGNES d'une lecture
+//      (§9) — sans interblocage : l'enregistrement verrouille lui aussi le
+//      dossier en partage d'abord.
 //
 // LA COURSE EST FORCÉE, PAS ESPÉRÉE. Une session tient le verrou consultatif
 // du compte rendu ; le banc constate les attentes (`pg_stat_activity`, depuis
@@ -145,6 +151,8 @@ async function expirer(c: pg.Client, id: string) {
 
 async function main() {
   const file = await import('@/lib/biology-library/import/fileExtraction');
+  const { aucuneLectureDemandee } = await import('@/lib/biology-library/import/lectureDemandee');
+  const { consignerLignes } = await import('@/lib/biology-library/import/lancerExtraction');
   const { effacerDossier } = await import('@/lib/patient/effacement');
   const { prisma } = await import('@/lib/prisma');
   const verrou = new pg.Client({ connectionString: URL_BASE });
@@ -282,8 +290,43 @@ async function main() {
     //    ordre : l'effacement attendrait le travail, la réclamation le dossier
     //    — interblocage (`40P01`). Témoin joué à la main le 2026-10-13 : la
     //    ligne `FOR KEY SHARE` retirée, ce cas rougit.
-    const derniere = await file.demanderExtraction(demande);
-    assert.ok(derniere.ok, JSON.stringify(derniere));
+    // 8. La clôture et la demande, dans les deux sens ([[D-282]] §9).
+    //    a) Une clôture TIENT le dossier (`FOR UPDATE`) quand la demande part :
+    //       la demande l'attend, puis lit le dossier clos et refuse.
+    await verrou.query('BEGIN');
+    await verrou.query('SELECT 1 FROM patients WHERE id_patient = $1 FOR UPDATE', [PATIENT]);
+    await verrou.query(`UPDATE patients SET suivi_cloture_le = clock_timestamp() AT TIME ZONE 'UTC' WHERE id_patient = $1`, [PATIENT]);
+    const apresCloture = file.demanderExtraction(demande);
+    apresCloture.catch(() => {}); // lue plus bas ; un témoin rouge ne doit pas tuer le banc avant son nettoyage
+    try {
+      await attendreBloquees(observateur, 'FOR KEY SHARE', 1);
+    } finally {
+      await verrou.query('COMMIT');
+    }
+    assert.deepEqual(await apresCloture, { ok: false, reason: 'dossier_clos' });
+    await verrou.query('UPDATE patients SET suivi_cloture_le = NULL WHERE id_patient = $1', [PATIENT]);
+    //    b) Une demande TIENT le dossier (en partage, retenue sur le verrou du
+    //       compte rendu) quand la clôture part : la clôture l'attend, puis
+    //       compte son travail et refuse.
+    const [retenue, clotureAutorisee] = await (async () => {
+      await verrou.query('SELECT pg_advisory_lock(hashtext($1))', [CLE_VERROU]);
+      const enVolDemande = file.demanderExtraction(demande);
+      enVolDemande.catch(() => {});
+      let enVolCloture: Promise<boolean> | null = null;
+      try {
+        await attendreBloquees(observateur, 'pg_advisory_xact_lock', 1);
+        enVolCloture = prisma.$transaction(tx => aucuneLectureDemandee(tx, PATIENT));
+        await attendreBloquees(observateur, 'FOR UPDATE', 1);
+      } finally {
+        await verrou.query('SELECT pg_advisory_unlock(hashtext($1))', [CLE_VERROU]);
+      }
+      return Promise.all([enVolDemande, enVolCloture]);
+    })();
+    assert.ok(retenue.ok, JSON.stringify(retenue));
+    assert.equal(clotureAutorisee, false, 'la clôture a attendu la demande, puis vu son travail');
+    console.log('ok 8 — clôture et demande : chacune attend l’autre sur le dossier ; ni lecture après clôture, ni clôture sur lecture demandée');
+
+    // 7 (suite). Le travail de 8 b) est celui que la réclamation tient.
     debutEffacement = (await verrou.query(`SELECT clock_timestamp() AT TIME ZONE 'UTC' AS t`)).rows[0].t;
     await verrou.query('BEGIN');
     await verrou.query('SELECT id FROM comptes_rendus_biologiques WHERE id = $1 FOR UPDATE', [COMPTE_RENDU]);
@@ -308,6 +351,50 @@ async function main() {
     const { rows } = await verrou.query('SELECT count(*)::int AS n FROM patients WHERE id_patient = $1', [PATIENT]);
     assert.equal(rows[0].n, 0, 'le dossier est effacé, travaux et imports avec lui');
     console.log('ok 7 — effacement réel contre réclamation en vol : les deux aboutissent, sans interblocage');
+
+    // 9. L'effacement réel contre l'enregistrement des lignes ([[D-282]] §9).
+    //    La session `verrou` tient le dossier (`FOR UPDATE`) : l'effacement s'y
+    //    met en file EN PREMIER, l'enregistrement ensuite. Le dossier relâché,
+    //    l'effacement passe, puis l'enregistrement trouve l'import parti et le
+    //    dit (`false`). Sans le verrou du dossier en tête de l'enregistrement,
+    //    celui-ci tenait déjà l'import par les clés de ses lignes quand
+    //    l'effacement venait le supprimer — interblocage (`40P01`).
+    await poserFixtures(verrou);
+    const IMPORT_LIGNES = `imp_banc_file_lignes_${RUN}`;
+    await verrou.query(
+      `INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
+       VALUES ($1, $2, $3, 'modele-banc', 'bio-extraction-v4', $4)`,
+      [IMPORT_LIGNES, PATIENT, COMPTE_RENDU, PRATICIEN],
+    );
+    const LIGNE = {
+      page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', preleveLe: null, heureLue: false,
+      intervalle: null, marquage: null, intervalleNonTranscrit: false, marquageNonTranscrit: false,
+      commentaire: null, commentaireNonTranscrit: false,
+    };
+    await verrou.query('BEGIN');
+    await verrou.query('SELECT 1 FROM patients WHERE id_patient = $1 FOR UPDATE', [PATIENT]);
+    const enVolLignes: Promise<unknown>[] = [];
+    try {
+      enVolLignes.push(effacerDossier(PATIENT));
+      await attendreBloquees(observateur, 'FOR UPDATE', 1);
+      enVolLignes.push(consignerLignes(
+        { idPatient: PATIENT, idCompteRendu: COMPTE_RENDU, idImport: IMPORT_LIGNES },
+        { ok: true, laboratoire: null, commentaires: null, commentairesNonTranscrits: false, lignes: [LIGNE] },
+      ));
+      await attendreBloquees(observateur, '', 2);
+    } finally {
+      await verrou.query('COMMIT');
+    }
+    const issuesLignes = await Promise.allSettled(enVolLignes);
+    assert.deepEqual(
+      issuesLignes.map(i => i.status),
+      ['fulfilled', 'fulfilled'],
+      `effacement et enregistrement doivent aboutir tous deux : ${JSON.stringify(issuesLignes.map(i => (i.status === 'rejected' ? String(i.reason) : 'ok')))}`,
+    );
+    assert.equal((issuesLignes[1] as PromiseFulfilledResult<boolean>).value, false, 'l’import parti avec le dossier : rien n’est enregistré');
+    const reste = await verrou.query('SELECT count(*)::int AS n FROM patients WHERE id_patient = $1', [PATIENT]);
+    assert.equal(reste.rows[0].n, 0, 'le dossier est effacé');
+    console.log('ok 9 — effacement réel contre enregistrement des lignes : les deux aboutissent, sans interblocage');
   } finally {
     try {
       await verrou.query('SELECT pg_advisory_unlock_all()').catch(() => {});

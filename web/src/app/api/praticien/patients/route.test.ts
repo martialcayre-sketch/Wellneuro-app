@@ -6,6 +6,10 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     patient: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     portailMagicLink: { updateMany: vi.fn() },
     $transaction: vi.fn(),
+    // La désactivation verrouille le dossier et compte les lectures demandées
+    // ([[D-282]] §9) : aucune par défaut.
+    $queryRaw: vi.fn(async (..._args: unknown[]) => [] as unknown[]),
+    travailExtractionBiologique: { count: vi.fn(async (..._args: unknown[]) => 0) },
     assignation: { findMany: vi.fn(), count: vi.fn(), updateMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn(), updateMany: vi.fn() },
     agendaAlimentaireJour: { findMany: vi.fn() },
@@ -569,7 +573,7 @@ describe('PATCH /api/praticien/patients', () => {
     // Forme TABLEAU : Prisma reçoit le résultat des constructeurs, déjà
     // évalués. Les deux écritures sont donc bien appelées pour bâtir le
     // tableau, et les compteurs d'appel des bancs existants restent justes.
-    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+    prisma.$transaction.mockImplementation(async (arg: unknown) => (typeof arg === 'function' ? arg(prisma) : arg));
   });
 
   it('désactiver ferme les liens encore en vol, dans la même transaction', async () => {
@@ -605,6 +609,42 @@ describe('PATCH /api/praticien/patients', () => {
     for (const [appel] of prisma.portailMagicLink.updateMany.mock.calls) {
       expect(appel.data).not.toHaveProperty('consommeLe');
     }
+  });
+
+  it('une lecture de compte rendu demandée retient la désactivation : 409, rien n’est écrit (D-282 §9)', async () => {
+    prisma.travailExtractionBiologique.count.mockResolvedValueOnce(1);
+    const res = await PATCH(patch({ idPatient: 'PAT001', actif: 'NON' }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('lecture_en_cours');
+    expect(prisma.patient.update).not.toHaveBeenCalled();
+    expect(prisma.portailMagicLink.updateMany).not.toHaveBeenCalled();
+    const sql = (prisma.$queryRaw.mock.calls[0][0] as unknown as TemplateStringsArray).join('?');
+    expect(sql).toContain('FOR UPDATE');
+  });
+
+  it('désactiver en changeant l’e-mail réécrit les quatre copies DANS la transaction ; un e-mail pris rend 409', async () => {
+    prisma.patient.findUnique
+      .mockResolvedValueOnce({ idPatient: 'PAT001', praticienEmail: 'p@wellneuro.fr' })
+      .mockResolvedValueOnce({ email: 'ancien@fictif.wellneuro.fr' })
+      .mockResolvedValueOnce(null);
+    const res = await PATCH(patch({ idPatient: 'PAT001', actif: 'NON', email: 'nouveau@fictif.wellneuro.fr' }));
+    expect(res.status).toBe(200);
+    for (const table of [prisma.consultation, prisma.assignation, prisma.questionnaireReponse, prisma.syntheseIA]) {
+      expect(table.updateMany).toHaveBeenCalledWith({
+        where: { idPatient: 'PAT001' },
+        data: { emailPatient: 'nouveau@fictif.wellneuro.fr' },
+      });
+    }
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(typeof prisma.$transaction.mock.calls[0][0]).toBe('function');
+
+    prisma.patient.findUnique
+      .mockResolvedValueOnce({ idPatient: 'PAT001', praticienEmail: 'p@wellneuro.fr' })
+      .mockResolvedValueOnce({ email: 'ancien@fictif.wellneuro.fr' })
+      .mockResolvedValueOnce(null);
+    prisma.$transaction.mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }));
+    const doublon = await PATCH(patch({ idPatient: 'PAT001', actif: 'NON', email: 'nouveau@fictif.wellneuro.fr' }));
+    expect(doublon.status).toBe(409);
   });
 
   it('réactiver et corriger un téléphone ne touchent aucun lien', async () => {
@@ -693,7 +733,7 @@ describe('PATCH — le dossier administratif', () => {
     prisma.assignation.updateMany.mockResolvedValue({ count: 0 });
     prisma.questionnaireReponse.updateMany.mockResolvedValue({ count: 0 });
     prisma.syntheseIA.updateMany.mockResolvedValue({ count: 0 });
-    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+    prisma.$transaction.mockImplementation(async (arg: unknown) => (typeof arg === 'function' ? arg(prisma) : arg));
   });
 
   it('accepte les champs qui n’étaient plus modifiables après la création', async () => {
@@ -784,7 +824,7 @@ describe('PATCH — le NIR est refusé sur sa CLÉ, pas seulement sur sa forme',
       email: 'ancien@fictif.wellneuro.fr',
     });
     prisma.patient.update.mockResolvedValue({});
-    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+    prisma.$transaction.mockImplementation(async (arg: unknown) => (typeof arg === 'function' ? arg(prisma) : arg));
   });
 
   it('★ un numéro BIEN FORMÉ mais de clé fausse est refusé, et rien n’est écrit', async () => {
@@ -823,7 +863,7 @@ describe('PATCH — changer l’e-mail sans rendre les réponses muettes', () =>
     prisma.assignation.updateMany.mockResolvedValue({ count: 0 });
     prisma.questionnaireReponse.updateMany.mockResolvedValue({ count: 0 });
     prisma.syntheseIA.updateMany.mockResolvedValue({ count: 0 });
-    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+    prisma.$transaction.mockImplementation(async (arg: unknown) => (typeof arg === 'function' ? arg(prisma) : arg));
   });
 
   // Appartenance, puis ancienne adresse, puis contrôle d'unicité : trois
@@ -943,7 +983,7 @@ describe('PATCH — un payload mal typé est une requête invalide, pas une pann
       email: 'ancien@fictif.wellneuro.fr',
     });
     prisma.patient.update.mockResolvedValue({});
-    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+    prisma.$transaction.mockImplementation(async (arg: unknown) => (typeof arg === 'function' ? arg(prisma) : arg));
   });
 
   it('★ une valeur non textuelle rend 400, jamais 500', async () => {
@@ -980,7 +1020,7 @@ describe('PATCH — une adresse trop longue est REFUSÉE, jamais tronquée', () 
       praticienEmail: 'p@wellneuro.fr',
     });
     prisma.patient.update.mockResolvedValue({});
-    prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+    prisma.$transaction.mockImplementation(async (arg: unknown) => (typeof arg === 'function' ? arg(prisma) : arg));
   });
 
   it('★ tronquer fabriquerait une adresse fausse — et ces champs servent à écrire aux gens', async () => {

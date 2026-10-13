@@ -76,8 +76,8 @@ let espions: Array<ReturnType<typeof vi.spyOn>>;
 beforeEach(() => {
   journal.length = 0;
   prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
-  prisma.$queryRaw.mockImplementation(async () => {
-    journal.push('import.enCours');
+  prisma.$queryRaw.mockImplementation(async (...args: unknown[]) => {
+    journal.push((args[0] as TemplateStringsArray).join('?').includes('FROM patients') ? 'dossier.partage' : 'import.enCours');
     return [];
   });
   extraire.mockImplementation(async () => {
@@ -146,7 +146,9 @@ describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transac
     // La seconde a un délai explicite, compté dans le pire cas sous la péremption.
     expect(prisma.$transaction.mock.calls[1][1]).toEqual({ timeout: DELAI_TRANSACTION_LIGNES_MS });
     const apres = journal.slice(journal.indexOf('appel'));
-    expect(apres).toEqual(['appel', 'verrou', 'import.count', 'analytes.findMany', 'lignes.createMany', 'import.update']);
+    // Le dossier en partage AVANT le verrou du compte rendu : l'ordre de
+    // l'effacement et de la réclamation ([[D-282]] §9).
+    expect(apres).toEqual(['appel', 'dossier.partage', 'verrou', 'import.count', 'analytes.findMany', 'lignes.createMany', 'import.update']);
     const terminaison = argument<{ data: Record<string, unknown> }>(prisma.importBiologique.update);
     expect(terminaison).toEqual({
       where: { id: 'imp_1' },

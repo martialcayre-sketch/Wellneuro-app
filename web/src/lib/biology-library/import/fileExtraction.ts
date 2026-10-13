@@ -1,6 +1,8 @@
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
+import { accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import { OUVERTS } from './lectureDemandee';
 import { estTypeCompteRendu } from './depot';
 import { ouvrirExtractionDans, poursuivreExtraction, type IssueExtraction } from './lancerExtraction';
 import { cleVerrouCompteRendu, DELAI_TRANSACTION_LIGNES_MS, PEREMPTION_EN_COURS_MS } from './verrou';
@@ -53,13 +55,18 @@ export const TENTATIVES_MAX = 2;
 /** Les travaux terminés partent à 30 jours, par la purge horaire ([[D-282]] §5.3). */
 export const CONSERVATION_TRAVAUX_JOURS = 30;
 
-const OUVERTS = ['en_attente', 'en_cours'];
 
 export type IssueDemande =
   | { ok: true; idTravail: string }
   | {
     ok: false;
-    reason: 'compte_rendu_introuvable' | 'extraction_en_cours' | 'lecture_demandee' | 'document_purge' | 'ligne_validee';
+    reason:
+      | 'compte_rendu_introuvable'
+      | 'extraction_en_cours'
+      | 'lecture_demandee'
+      | 'document_purge'
+      | 'ligne_validee'
+      | 'dossier_clos';
   };
 
 /**
@@ -76,6 +83,16 @@ export async function demanderExtraction(params: {
   const { idPatient, idCompteRendu, demandePar } = params;
   try {
     return await prisma.$transaction(async tx => {
+      // LE DOSSIER D'ABORD, EN PARTAGE, ET REJUGÉ ICI ([[D-282]] §9). La route
+      // l'a lu ouvert, hors transaction ; une clôture a pu passer depuis. Le
+      // verrou ordonne la demande et la clôture (`FOR UPDATE`) : la clôture
+      // passée, la demande lit le dossier clos et refuse ; la demande passée,
+      // la clôture voit le travail et refuse (`aucuneLectureDemandee`).
+      const [dossier] = await tx.$queryRaw<{ actif: boolean; suivi_cloture_le: Date | null }[]>`
+        SELECT actif, suivi_cloture_le FROM patients WHERE id_patient = ${idPatient} FOR KEY SHARE`;
+      if (!dossier || !accepteNouvelEnvoi({ actif: dossier.actif, suiviClotureLe: dossier.suivi_cloture_le })) {
+        return { ok: false as const, reason: 'dossier_clos' as const };
+      }
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
       const compteRendu = await tx.compteRenduBiologique.findFirst({
         where: { id: idCompteRendu, idPatient },

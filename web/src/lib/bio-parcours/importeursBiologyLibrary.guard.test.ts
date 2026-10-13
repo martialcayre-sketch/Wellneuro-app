@@ -51,6 +51,11 @@ const IMPORTEURS_ADMIS = [
   // version tant qu'un arbitrage biologique est ouvert.
   'web/src/app/api/praticien/cockpit/route.ts',
   'web/src/app/api/praticien/fil/route.ts',
+  // Clôture et désactivation d'un dossier ([[D-282]] §9) : le module
+  // `lectureDemandee` seul, qui compte les travaux de lecture ouverts —
+  // aucune valeur, aucun libellé lu.
+  'web/src/app/api/praticien/patients/cycle-de-vie/route.ts',
+  'web/src/app/api/praticien/patients/route.ts',
   'web/src/app/api/praticien/protocoles/versions/route.ts',
   // Pages et composants praticien.
   'web/src/app/dashboard/bibliotheque/page.tsx',
