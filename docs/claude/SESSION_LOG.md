@@ -10070,3 +10070,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, merge, déploiement constaté ; le responsable crée la surveillance (60 s, tolérance 6 min), pose l'adresse, `scale worker:1`, constat du signal, PUIS pose le drapeau ; constat sur un dossier de test lu par identifiant.
 
 **Ouvert.** Dossier clos pendant l'attente ; TEMPS 3 face à l'effacement ; horloge client de l'ouverture (lot 5).
+
+## 2026-10-13 — G3 de BioFlow : mise en service constatée, `after()` retiré (D-282, lots 4-5)
+
+**Fait.** Lot 4 (#1415) déployé ; surveillance du signal de vie créée (1 min, tolérance 6 min, e-mail) et au vert ; `scale worker:1` ; drapeau posé, web relancés. Première lecture par la file constatée par conteneur sur un dossier de test. Lot 5 : route sur la seule file, drapeau retiré du code, fraîcheur jugée en SQL à l'ouverture ; G3 levé (`D-282` §8).
+
+**Écarté.** Garder `after()` en secours (§5.2 : drapeau de mise en service, pas de secours).
+
+**Prochaine action.** CI, merge, déploiement constaté ; retirer la variable `WN_BIO_EXTRACTION_ASYNC` de Scalingo (geste du responsable, sans effet) ; puis l'identité retirée avant l'envoi à Anthropic (`D-284`).
+
+**Ouvert.** Dossier clos pendant l'attente ; TEMPS 3 face à l'effacement.

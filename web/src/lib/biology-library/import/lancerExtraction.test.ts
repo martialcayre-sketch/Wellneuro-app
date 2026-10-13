@@ -9,12 +9,13 @@ const { prisma, extraire, journal, resoudre } = vi.hoisted(() => {
     });
   const prisma = {
     $executeRaw: trace('verrou', 1),
+    // Les imports `en_cours` du compte rendu et leur fraîcheur, jugée en SQL.
+    $queryRaw: trace('import.enCours', []),
     compteRenduBiologique: {
       findFirst: trace('compteRendu.findFirst', { id: 'cr_1', typeMime: 'application/pdf', purgeLe: null }),
       findUnique: trace('compteRendu.findUnique', { contenu: new Uint8Array([37, 80, 68, 70, 45]), typeMime: 'application/pdf' }),
     },
     importBiologique: {
-      findMany: trace('import.findMany', []),
       create: trace('import.create', { id: 'imp_1' }),
       update: trace('import.update', {}),
       updateMany: trace('import.updateMany', { count: 1 }),
@@ -59,8 +60,7 @@ function argument<T>(fn: { mock: { calls: unknown[][] } }, rang = 0): T {
 }
 type Lignes = { data: Array<Record<string, unknown>> };
 
-const MAINTENANT = new Date('2026-10-02T10:00:00.000Z');
-const PARAMS = { idPatient: 'pat_sophie', idCompteRendu: 'cr_1', lancePar: 'praticien@wellneuro.fr', maintenant: MAINTENANT };
+const PARAMS = { idPatient: 'pat_sophie', idCompteRendu: 'cr_1', lancePar: 'praticien@wellneuro.fr' };
 
 const LIGNES = [
   { page: 1, libelle: 'Ferritine', valeur: '48', unite: 'ng/mL', preleveLe: new Date('2026-09-15T06:30:00.000Z'), heureLue: true,
@@ -76,8 +76,8 @@ let espions: Array<ReturnType<typeof vi.spyOn>>;
 beforeEach(() => {
   journal.length = 0;
   prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
-  prisma.importBiologique.findMany.mockImplementation(async () => {
-    journal.push('import.findMany');
+  prisma.$queryRaw.mockImplementation(async () => {
+    journal.push('import.enCours');
     return [];
   });
   extraire.mockImplementation(async () => {
@@ -228,10 +228,15 @@ describe('lancerExtraction — les lignes, puis la terminaison, dans UNE transac
 });
 
 describe('lancerExtraction — imports en cours', () => {
+  it('juge la fraîcheur à l’horloge de la base, jamais à celle du processus', async () => {
+    await lancerExtraction(PARAMS);
+    const sql = (prisma.$queryRaw.mock.calls[0][0] as TemplateStringsArray).join('?');
+    expect(sql).toContain("clock_timestamp() AT TIME ZONE 'UTC'");
+    expect(sql).toContain("statut = 'en_cours'");
+  });
+
   it('clôt `delai_depasse` un import en cours périmé, puis relance', async () => {
-    prisma.importBiologique.findMany.mockResolvedValueOnce([
-      { id: 'imp_vieux', lanceLe: new Date(MAINTENANT.getTime() - 6 * 60_000) },
-    ]);
+    prisma.$queryRaw.mockResolvedValueOnce([{ id: 'imp_vieux', frais: false }]);
     await lancerExtraction(PARAMS);
     expect(prisma.importBiologique.update).toHaveBeenCalledWith({
       where: { id: 'imp_vieux' },
@@ -241,9 +246,7 @@ describe('lancerExtraction — imports en cours', () => {
   });
 
   it('refuse une seconde extraction pendant qu’une première est en cours', async () => {
-    prisma.importBiologique.findMany.mockResolvedValueOnce([
-      { id: 'imp_frais', lanceLe: new Date(MAINTENANT.getTime() - 60_000) },
-    ]);
+    prisma.$queryRaw.mockResolvedValueOnce([{ id: 'imp_frais', frais: true }]);
     expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'extraction_en_cours' });
     expect(prisma.importBiologique.create).not.toHaveBeenCalled();
     expect(extraire).not.toHaveBeenCalled();
@@ -272,9 +275,7 @@ describe('lancerExtraction — imports en cours', () => {
   });
 
   it('une ligne validée n’empêche pas de clore un import périmé : il ne reste pas « courant »', async () => {
-    prisma.importBiologique.findMany.mockResolvedValueOnce([
-      { id: 'imp_mort', lanceLe: new Date(MAINTENANT.getTime() - 6 * 60_000) },
-    ]);
+    prisma.$queryRaw.mockResolvedValueOnce([{ id: 'imp_mort', frais: false }]);
     prisma.ligneBiologiqueCandidate.count.mockResolvedValueOnce(1);
     expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'ligne_validee' });
     expect(prisma.importBiologique.update).toHaveBeenCalledWith({

@@ -92,8 +92,8 @@ export async function demanderExtraction(params: {
         where: { idCompteRendu, idPatient, statut: { in: OUVERTS } },
       });
       if (ouverts > 0) return { ok: false as const, reason: 'lecture_demandee' as const };
-      // Une lecture lancée par l'ancien chemin (`after()`), le temps de la
-      // bascule. Fraîcheur jugée par l'horloge de la BASE, celle qui a écrit
+      // Un import `en_cours` sans travail ouvert : l'ancien chemin (`after()`,
+      // retiré au lot 5), le temps que le balayage le clôture. Fraîcheur jugée par l'horloge de la BASE, celle qui a écrit
       // `lance_le` (trigger) — jamais par celle du processus web (revue #1414).
       const [{ n: enCours }] = await tx.$queryRaw<{ n: number }[]>`
         SELECT count(*)::int AS n FROM imports_biologiques
