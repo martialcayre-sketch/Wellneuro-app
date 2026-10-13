@@ -142,7 +142,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 23 | Signature des contenus de BP-12a, BP-12b, BP-17 | le responsable, dans le lot, avant son merge | non levée |
 | 24 | Palier 1 sorti, BP-26 clos, garde K-19 verte | J2-base (rang 4) : H59 | en partie : BP-26 clos (D-276, #1392) ; palier 1 non sorti |
 | 25 | Constats sans item (analyte à deux dates, règle NU, PH-0, signal H3) | au fait | fermée ; ces branches restent fermées |
-| 26 | Accord M2-2, séance de constats | acquis | levée |
+| 26 | Accord du responsable sur la séance de constats | acquis | levée |
 | 27 | À chaque PR : CI vert (code 0), commentaires en ligne lus, clôture avant la PR | chaque PR | règle permanente |
 | 28 | Préalables hors liste : avis d'un conseil (aucun DPO désigné ; obligation close à cette échelle par D-284 §6, reste une analyse datée d'une page à revoir à tout changement d'échelle), K-26 volet 2, R-151, fiche BP-09, fiches relues, règle signée et C4, « sa D-xxx », conseil sur la durée | le responsable (rang 0) : H09 | non levée ; fiche BP-09 non écrite [A verifier] |
 | 29 | Format réel du laboratoire pilote : réponse écrite | réponse du laboratoire ; relance écrite, geste de rang 0 : F41 | gelée, déclencheur nommé ; flux laboratoire fermé |
