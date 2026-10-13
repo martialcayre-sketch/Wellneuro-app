@@ -1,9 +1,9 @@
 ---
 id: "2026-07-11-suivi-j7-j14-j21-et-persistance"
 titre: "C2 — Points d'étape et persistance (C2A/C2B)"
-statut: "terminée — C2A + C2B livrés en prod (gate migration levé) ; gate modèle multi-cycles différé (cadrage ouvert)"
+statut: "terminée ; C2A et C2B livrés en production ; gate multi-cycles levé (G2 du 2026-07-19, puis D-113)"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-18"
+mise_à_jour: "2026-10-13"
 lot_courant: "LOT-09"
 ---
 

@@ -1,6 +1,6 @@
 ---
 id: "LOT-02"
-statut: "en cours — recette staging faite, prod provisionnée, données migrées (2026-08-22 03:24) et CUTOVER FAIT (2026-08-22 matin) ; reste le décommissionnement, programmé au 2026-09-01 par D-080 (annexe signée ou non), avec preuve d'effacement"
+statut: "terminé (2026-09-01, décommissionnement, D-120)"
 ---
 
 # LOT-02 — Exécution du runbook Scalingo — CONFIRMATION OBLIGATOIRE

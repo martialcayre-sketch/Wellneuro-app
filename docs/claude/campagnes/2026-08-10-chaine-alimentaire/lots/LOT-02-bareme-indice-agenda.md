@@ -1,6 +1,6 @@
 ---
 id: "LOT-02"
-statut: "squelette livré (2026-08-10) — calibration gatée (porte des 21 jours)"
+statut: "abandonné dans cette campagne, TRANSFÉRÉ le 2026-10-13 au plan (barème de l'agenda alimentaire, gelé)"
 ---
 
 # LOT-02 — Barème et indice agenda (gaté)

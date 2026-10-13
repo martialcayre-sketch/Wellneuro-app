@@ -1,6 +1,6 @@
 ---
 id: "LOT-04"
-statut: "à cadrer"
+statut: "abandonné le 2026-10-13 (doublon de D-251)"
 ---
 
 # LOT-04 — Rayon fiches conseils (cadrage)

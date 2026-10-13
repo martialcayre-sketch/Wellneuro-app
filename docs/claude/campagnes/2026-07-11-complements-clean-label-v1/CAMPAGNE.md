@@ -1,10 +1,10 @@
 ---
 id: "2026-07-11-complements-clean-label-v1"
 titre: "C4 — Compléments clean label (C4A/C4B)"
-statut: "non commencée — retournée en file d'attente le 2026-09-16 (0/5 lots, tous `à_faire` ; dernier geste au dossier le 2026-07-24, une étude de faisabilité de corpus). Elle n'a jamais été ouverte : la porter comme « en cours » deux mois durant a fait compter une campagne active de plus dans chaque état de session."
+statut: "abandonnée (2026-10-13, objet livré par les PR C4 #330 à #353 puis consolidé par 2026-08-02-rayon-complements-alimentaires ; restes au plan sous R:ao (F78) : couche de décision et chemin produits ; scan code-barres et interactions exhaustives abandonnés)"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-09-16"
-lot_courant: "LOT-00"
+mise_à_jour: "2026-10-13"
+lot_courant: "aucun"
 ---
 
 # C4 — Compléments clean label
@@ -104,3 +104,16 @@ Décisions du praticien du 2026-07-24 :
 Le LOT-00 est exécuté le 2026-07-24 : audit des sources open data, modèle de
 fiche produit et contrat de données — livrable `LOT-00-AUDIT-SOURCES.md` (même
 dossier). Aucune décision actée ci-dessus n'est modifiée par ce lancement.
+
+## État au 2026-10-13 — abandonnée (D-285)
+
+Les fiches de lots n'ont jamais été remplies : l'objet a été livré par les
+PR C4 #330 à #353 (juillet 2026), puis consolidé par
+`2026-08-02-rayon-complements-alimentaires`. Les cinq fiches
+`lots/LOT-00` à `LOT-04`, gabarits jamais remplis, sont supprimées par la PR 2
+de `D-285` (leur texte reste dans l'historique Git) ; les cinq documents de
+travail à la racine du dossier (`LOT-00-AUDIT-SOURCES.md`,
+`LOT-01-SCHEMA-CATALOGUE.md`, `LOT-02b`, `LOT-03b`, `LOT-04-SUITE`) restent.
+Les restes vivent au plan (`docs/claude/PLAN_WELLNEURO.md`) : la couche de
+décision et le chemin produits sous `R:ao` (F78) ; le scan code-barres et les
+interactions médicamenteuses exhaustives sont abandonnés (§7 du plan).

@@ -1,9 +1,9 @@
 ---
 id: "2026-08-04-reprise-chantiers-en-suspens"
 titre: "Reprise des chantiers en suspens — travail sauvé de worktrees orphelins"
-statut: "close"
+statut: "terminée (2026-08-05, travail sauvé de worktrees orphelins livré)"
 créée_le: "2026-08-04"
-mise_à_jour: "2026-08-05"
+mise_à_jour: "2026-10-13"
 lot_courant: "LOT-03"
 ---
 

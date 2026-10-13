@@ -1,10 +1,10 @@
 ---
 id: "2026-07-13-journal-alimentaire-21j-v1"
 titre: "JA — Ma spirale alimentaire (journal alimentaire recadré 5.0)"
-statut: "suspendue (2026-09-16 — 5 lots sur 6 terminés ; le LOT-05 « activation protocole JA sans migration » est RÉELLEMENT inachevé et sans porteur depuis le 2026-07-18. Il est nommé en dette à `FILE_ATTENTE.md` plutôt que laissé sous un statut « en cours » que plus rien n'alimentait : une campagne qui se dit vivante sans l'être fait lire du travail en cours à chaque session qui passe.)"
+statut: "abandonnée (2026-10-13, transférée au plan : J2-alim, rang 2)"
 créée_le: "2026-07-13"
-mise_à_jour: "2026-09-16"
-lot_courant: "LOT-05"
+mise_à_jour: "2026-10-13"
+lot_courant: "aucun"
 ---
 
 # JA — Ma spirale alimentaire
@@ -138,3 +138,12 @@ profil observationnel pèse dans les décisions cliniques).
 
 - Patient « Ma spirale alimentaire » : **séquentiel** (question du jour, une étape à la fois), **aucun score**, langage de construction ; praticien « Trajectoire alimentaire » consultable en **instrument** depuis le poste de pilotage. Arbitrages A7 (trois régimes, quatre lectures) **inchangés**.
 - Canvas **sable** patient / ardoise praticien — différés au lot d'implémentation, sans migration.
+
+## État au 2026-10-13 — abandonnée, transférée au plan (D-285)
+
+Cinq lots sur six sont fermés (LOT-00 à LOT-04). Le LOT-05 (activation du
+protocole JA, JA5-05), inachevé et sans porteur depuis le 2026-07-18, est
+abandonné dans cette campagne et transféré au plan sous l'identifiant
+`J2-alim` (rang 2, fiche H45 de `docs/claude/PLAN_WELLNEURO.md`). La table
+« Lots à compiler » ci-dessus reste telle qu'elle a été écrite ; la fiche
+`lots/LOT-05-activation-ja5-05.md` porte le statut de transfert.

@@ -1,10 +1,10 @@
 ---
 id: "2026-08-18-echeance-hds-g-trust-04"
 titre: "Échéance HDS — lever ou reconduire G-TRUST-04 avant le 2026-10-21"
-statut: "en_cours (ouverte 2026-08-19 — D-078 a rendu l'arbitrage du LOT-01 par anticipation)"
+statut: "terminée (2026-10-13, objectif atteint : annexe signée le 2026-08-30, D-121 ; gate clos ; archivages et confirmation d'effacement : gestes du responsable au registre RGPD)"
 créée_le: "2026-08-18"
-mise_à_jour: "2026-08-19"
-lot_courant: "LOT-01"
+mise_à_jour: "2026-10-13"
+lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -172,21 +172,41 @@ Les réserves (3), (4), (5) de `D-006` sont inchangées.
 | LOT-03 | Dossier RGPD à l'état réel + rattrapage de l'information des personnes | **terminé (2026-08-19)** — information consignée, §6/§12/§14 réconciliés avec `D-078`, support v2 préparé (publication = lot TRUST distinct) | — |
 | LOT-04 | ~~G-TRUST-04 change d'état~~ (fait par `D-078`) — reste la revue du 2026-10-21 | recentré | LOT-01, et LOT-02 si la bascule est faite |
 
+## État au 2026-10-13 — terminée (D-285)
+
+L'objectif est atteint : l'annexe HDS est signée le 2026-08-30 (`D-121`),
+G-TRUST-04 est définitivement clos, le décommissionnement est exécuté le
+2026-09-01 (`D-120`). LOT-01 et LOT-02 sont terminés ; le LOT-04 (revue du
+2026-10-21) est abandonné, contredit par `D-121` et `D-265`. L'archivage du
+document signé, le DPA et la confirmation d'effacement sont des gestes du
+responsable, suivis au `docs/DOSSIER_RGPD.md` (§14, rubrique 6, pour
+l'archivage et le DPA ; rubrique 12 pour la confirmation d'effacement), non
+par un lot. Les fiches `lots/` portent les statuts ; la table ci-dessus reste
+telle qu'elle a été écrite.
+
 ## Done de campagne
 
 À cocher sur preuve relue, jamais sur la prose d'un lot.
 
 - [ ] L'annexe HDS et le DPA sont **archivés signés**, ou leur absence est
       écrite et datée au dossier RGPD.
+      **2026-10-13 : non cochée. L'annexe HDS est signée le 2026-08-30
+      (D-121) ; l'archivage du document signé et le DPA restent dus, ce qui n'est pas
+      une absence constatée : ils vivent au dossier RGPD (§14, rubrique 6,
+      échéance 2027-06-30), gestes du responsable.**
 - [x] ~~Un `D-xxx` du responsable de traitement tranche migrer ou
       reconduire.~~ **Fait — `D-078` (2026-08-19) : migrer, sans attendre
       l'annexe.**
-- [ ] ~~Si « migrer » : aucune donnée réelle n'a atteint Scalingo avant que
+- [x] ~~Si « migrer » : aucune donnée réelle n'a atteint Scalingo avant que
       (a) soit effectivement levée~~ — ordre écarté par `D-078` §4 ; le
       critère devient : **la chronologie réelle des deux événements (bascule
       des données, signature de l'annexe) est consignée avec ses dates** —
       c'est elle qui borne la fenêtre de moindre couverture — et **aucun
       décommissionnement n'a eu lieu avant la signature**.
+      **Cochée le 2026-10-13 sur la chronologie consignée au dossier RGPD
+      (rubrique 12) : bascule des données le 2026-08-22, annexe signée le
+      2026-08-30 (D-121), suppressions le 2026-09-01 (D-120, D-080) ; aucun
+      décommissionnement avant la signature.**
 - [x] Le tableau §14 de `docs/DOSSIER_RGPD.md` ne porte plus de ligne dont
       l'échéance est passée sans mention — **LOT-03, 2026-08-19** : rubrique
       11 (« au plus tôt », échue) consignée, son renouvellement indexé sur la
@@ -206,5 +226,13 @@ Les réserves (3), (4), (5) de `D-006` sont inchangées.
       TRUST distinct).
 - [ ] La checklist du gate porte l'état neuf, **daté et signé**, et
       `.wn/state.json` le reflète.
+      **2026-10-13 : non cochée. La checklist porte encore l'état antérieur à
+      D-121, hors une mention incidente dans sa reconduction du 2026-10-04 ;
+      elle s'archive avec un bandeau « contredit par D-121 » (D-285, PR 4) ;
+      .wn/state.json se réaligne en PR 3.**
 - [ ] Aucun secret n'a transité par l'assistant ; anti-secrets vert ; changelog
       par fragments.
+      **2026-10-13 : non cochée. Le changelog par fragments est établi (D-078,
+      D-120, D-121, bascule) ; l'absence de transit de secret et le passage de
+      l'anti-secrets pendant le chantier ne sont pas vérifiables
+      rétroactivement ; le CI joue l'anti-secrets à chaque PR depuis.**
