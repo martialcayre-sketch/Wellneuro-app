@@ -1,15 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { after, garderImport, ouvrirExtraction, poursuivreExtraction, prisma } = vi.hoisted(() => ({
+const { after, garderImport, ouvrirExtraction, poursuivreExtraction, demanderExtraction, prisma } = vi.hoisted(() => ({
   after: vi.fn(),
   garderImport: vi.fn(),
   ouvrirExtraction: vi.fn(),
   poursuivreExtraction: vi.fn(),
+  demanderExtraction: vi.fn(),
   prisma: { patient: { findUnique: vi.fn() } },
 }));
 vi.mock('next/server', async importOriginal => ({ ...(await importOriginal<typeof import('next/server')>()), after }));
 vi.mock('@/lib/biology-library/import/garde', () => ({ garderImport }));
 vi.mock('@/lib/biology-library/import/lancerExtraction', () => ({ ouvrirExtraction, poursuivreExtraction }));
+vi.mock('@/lib/biology-library/import/fileExtraction', () => ({ demanderExtraction }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { POST } from './route';
@@ -31,7 +33,10 @@ beforeEach(() => {
   poursuivreExtraction.mockResolvedValue({ ok: true, idImport: 'imp_1', statut: 'extrait', lignes: 3 });
 });
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  vi.unstubAllEnvs();
+});
 
 describe('POST /api/praticien/biologie/import/extraction — asynchrone', () => {
   it('rend 202 avec l’import ouvert, sans attendre l’appel au fournisseur', async () => {
@@ -111,5 +116,52 @@ describe('POST /api/praticien/biologie/import/extraction — asynchrone', () => 
     garderImport.mockResolvedValueOnce({ ok: false, reason: 'bio_ingest_desactive', error: 'x', status: 503 });
     expect((await POST(requete(CORPS))).status).toBe(503);
     expect(ouvrirExtraction).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/praticien/biologie/import/extraction — file durable (D-282, drapeau allumé)', () => {
+  beforeEach(() => {
+    vi.stubEnv('WN_BIO_EXTRACTION_ASYNC', 'true');
+    demanderExtraction.mockResolvedValue({ ok: true, idTravail: 'trv_1' });
+  });
+
+  it('demande la lecture à la file et rend 202 — ni import ouvert, ni after()', async () => {
+    const res = await POST(requete(CORPS));
+    expect(res.status).toBe(202);
+    expect(await res.json()).toEqual({ ok: true, idTravail: 'trv_1', statut: 'en_attente' });
+    expect(demanderExtraction).toHaveBeenCalledWith({
+      idPatient: 'pat_sophie', idCompteRendu: 'cr_1', demandePar: 'praticien@wellneuro.fr',
+    });
+    expect(ouvrirExtraction).not.toHaveBeenCalled();
+    expect(after).not.toHaveBeenCalled();
+  });
+
+  it('une lecture déjà demandée rend 409 `lecture_demandee`, et le dit', async () => {
+    demanderExtraction.mockResolvedValueOnce({ ok: false, reason: 'lecture_demandee' });
+    const res = await POST(requete(CORPS));
+    expect(res.status).toBe(409);
+    const corps = await res.json();
+    expect(corps.reason).toBe('lecture_demandee');
+    expect(corps.error).toContain('déjà demandée');
+  });
+
+  it('un compte rendu introuvable rend 404, les autres refus 409', async () => {
+    demanderExtraction.mockResolvedValueOnce({ ok: false, reason: 'compte_rendu_introuvable' });
+    expect((await POST(requete(CORPS))).status).toBe(404);
+    demanderExtraction.mockResolvedValueOnce({ ok: false, reason: 'ligne_validee' });
+    expect((await POST(requete(CORPS))).status).toBe(409);
+  });
+
+  it('un dossier clos refuse avant toute demande', async () => {
+    prisma.patient.findUnique.mockResolvedValueOnce({ actif: false, suiviClotureLe: null });
+    expect((await POST(requete(CORPS))).status).toBe(409);
+    expect(demanderExtraction).not.toHaveBeenCalled();
+  });
+
+  it('toute autre valeur du drapeau garde l’ancien chemin (fail-closed)', async () => {
+    vi.stubEnv('WN_BIO_EXTRACTION_ASYNC', '1');
+    expect((await POST(requete(CORPS))).status).toBe(202);
+    expect(demanderExtraction).not.toHaveBeenCalled();
+    expect(ouvrirExtraction).toHaveBeenCalledTimes(1);
   });
 });

@@ -64,8 +64,16 @@ export async function retirerCompteRendu(params: {
       where: { idCompteRendu, idPatient, statut: 'en_cours', lanceLe: { gte: limite } },
     });
     if (enCours > 0) return { ok: false as const, reason: 'extraction_en_cours' as const };
+    // Une lecture demandée à la file ([[D-282]], G3), en attente ou en reprise,
+    // attend son issue : la retirer sous elle la ferait échouer sans motif.
+    const travauxOuverts = await tx.travailExtractionBiologique.count({
+      where: { idCompteRendu, idPatient, statut: { in: ['en_attente', 'en_cours'] } },
+    });
+    if (travauxOuverts > 0) return { ok: false as const, reason: 'extraction_en_cours' as const };
 
-    // L'ordre des FK RESTRICT : lignes, puis imports, puis le document.
+    // L'ordre des FK RESTRICT : les travaux de la file (ils désignent le
+    // document et l'import courant), les lignes, les imports, le document.
+    await tx.travailExtractionBiologique.deleteMany({ where: { idCompteRendu, idPatient } });
     await tx.ligneBiologiqueCandidate.deleteMany({
       where: { idPatient, statut: { not: 'validee' }, import: { idCompteRendu } },
     });

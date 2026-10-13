@@ -10050,3 +10050,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merger `D-284` ; ordonner les lots (g) à (j).
 
 **Ouvert.** La fin de l'avis (durées) ; les 15–17 ans et la durée probatoire, à faire valider par un avocat.
+
+## 2026-10-13 — G3 de BioFlow : le processus de fond, drapeau éteint (D-282, lot 3)
+
+**Fait.** File durable (`fileExtraction.ts`) : demande sans import, réclamation en une transaction (dossier en partage, verrou du compte rendu, travail), reprise une fois sans relire une lecture aboutie, épuisement, fantômes, purge à 30 jours. Processus `bio:worker-extraction` (hors `Procfile`). Route sous `WN_BIO_EXTRACTION_ASYNC` éteint ; retrait refusé si lecture demandée ; l'écran montre une lecture demandée. Banc à deux sessions (8 cas, témoin `40P01`), T1 complet et T2 verts, revue sans P0/P1.
+
+**Écarté.** Relire à la reprise une lecture qui a répondu ; juger la péremption à l'horloge du client ; P2-5 (ancien chemin, retiré au lot 5).
+
+**Prochaine action.** CI, merge ; arbitrer P2-2 et P2-6 ; lot 4 (`Procfile`, `scale`, drapeau).
+
+**Ouvert.** Travail sans processus vivant (P2-2) ; lignes décidables pendant l'attente (P2-6) ; TEMPS 3 préexistant face à l'effacement.

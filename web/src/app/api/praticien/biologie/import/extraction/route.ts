@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { garderImport } from '@/lib/biology-library/import/garde';
 import { ouvrirExtraction, poursuivreExtraction } from '@/lib/biology-library/import/lancerExtraction';
+import { demanderExtraction } from '@/lib/biology-library/import/fileExtraction';
+import { isBioExtractionAsync } from '@/lib/biology-library/featureFlag';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // Lance l'extraction d'un compte rendu déposé (BIO-INGEST LOT-02, [[D-256]]
@@ -14,6 +16,12 @@ import { classeEtCode } from '@/lib/observability/classeEtCode';
 // par la péremption). Une nouvelle extraction du même document crée un nouvel
 // import ; les précédents restent. Elle est refusée dès qu'une ligne d'un
 // import de ce compte rendu est validée (LOT-09, `ligne_validee`, 409).
+//
+// LA FILE DURABLE ([[D-282]], G3), drapeau `WN_BIO_EXTRACTION_ASYNC` allumé :
+// la route DEMANDE la lecture (un travail `en_attente`, sans import) et rend
+// 202 ; le processus de fond la réclame, ouvre l'import et lit. Mêmes refus,
+// jugés avant d'enfiler, et un de plus : `lecture_demandee` (409), une lecture
+// déjà en file ou en reprise. Drapeau éteint : `after()`, inchangé.
 
 export const runtime = 'nodejs';
 
@@ -22,6 +30,8 @@ const ID = /^[A-Za-z0-9_-]{1,64}$/;
 const MESSAGES: Record<string, string> = {
   compte_rendu_introuvable: 'Ce compte rendu est introuvable dans ce dossier.',
   extraction_en_cours: 'Une extraction est déjà en cours sur ce compte rendu.',
+  lecture_demandee:
+    'Une lecture de ce compte rendu est déjà demandée, en attente ou en reprise : l’écran en suit l’issue.',
   document_purge: 'Le document de ce compte rendu a été effacé : il ne peut plus être relu.',
   ligne_validee:
     'Une ligne de ce compte rendu a déjà été validée : il ne peut plus être relu, rien de ce qui est enregistré n’est remplacé.',
@@ -54,6 +64,15 @@ export async function POST(req: Request) {
       select: { actif: true, suiviClotureLe: true },
     });
     if (!patient || !accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+
+    if (isBioExtractionAsync()) {
+      const demande = await demanderExtraction({ idPatient, idCompteRendu, demandePar: garde.email });
+      if (!demande.ok) {
+        const status = demande.reason === 'compte_rendu_introuvable' ? 404 : 409;
+        return echec(demande.reason, MESSAGES[demande.reason], status);
+      }
+      return NextResponse.json({ ok: true, idTravail: demande.idTravail, statut: 'en_attente' }, { status: 202 });
+    }
 
     const ouverture = await ouvrirExtraction({ idPatient, idCompteRendu, lancePar: garde.email });
     if (!ouverture.ok) {

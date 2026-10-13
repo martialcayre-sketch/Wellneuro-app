@@ -534,6 +534,11 @@ grep -q 'banc-plafond-transmission-deux-depots.test.ts' "$ROOT/.github/workflows
   || die "ci.yml ne lance plus le banc du plafond des transmissions patient."
 WN_BIO_PORTAIL_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-plafond-transmission-deux-depots.test.ts > /dev/null < /dev/null \
   || die "banc du plafond des transmissions en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-plafond-transmission-deux-depots.test.ts\`, depuis web/)."
+# La file durable des lectures (D-282, G3 lot 3), même discipline.
+grep -q 'banc-file-extraction-deux-sessions.test.ts' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc de la file des lectures."
+WN_BIO_FILE_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-file-extraction-deux-sessions.test.ts > /dev/null < /dev/null \
+  || die "banc de la file des lectures en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-file-extraction-deux-sessions.test.ts\`, depuis web/)."
 
 step "Seed (patients fictifs uniquement)"
 npm run prisma:seed

@@ -54,7 +54,7 @@ function compteRendu(
 ): CompteRenduLu {
   return {
     id: 'cr_1', typeMime: 'application/pdf', origine: 'praticien', deposePar: 'praticien@wellneuro.fr', deposeLe: '2026-10-02T09:00:00.000Z',
-    purgeLe: null, motifPurge: null, motifEcart: null,
+    purgeLe: null, motifPurge: null, motifEcart: null, lectureDemandee: false,
     imports: [{
       id: 'imp_1', statut, motifEchec: null, modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v4',
       laboratoireLu: 'Laboratoire fixture', commentairesLus: null, commentairesNonTranscrits: false, commentairesReleves: true,
@@ -699,6 +699,31 @@ describe('ImportCompteRenduPanel — relecture robuste', () => {
     expect(screen.queryByText(/Lecture en cours/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Lancer la lecture' }));
     expect(await screen.findByText('Une extraction est déjà en cours sur ce compte rendu.')).toBeTruthy();
+  });
+
+  it('une lecture demandée à la file, sans import encore ouvert, se dit en cours et se suit (D-282)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let etat: CompteRenduLu = { ...compteRendu('extrait'), imports: [], lectureDemandee: true };
+    serveur({ detail: () => etat });
+    render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    expect(await screen.findByText(/Lecture en cours/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Lancer la lecture' })).toBeNull();
+    expect((screen.getByRole('button', { name: 'Retirer ce dépôt' }) as HTMLButtonElement).disabled).toBe(true);
+    etat = compteRendu('extrait');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000);
+    });
+    expect(await screen.findByText(/Ferritine : 48/)).toBeTruthy();
+  });
+
+  it('une reprise en cours — import périmé, lecture encore demandée — ne se dit pas interrompue (D-282)', async () => {
+    serveur({ detail: () => ({ ...compteRendu('en_cours', LIGNES, true), lectureDemandee: true }) });
+    render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    expect(await screen.findByText(/Lecture en cours/)).toBeTruthy();
+    expect(screen.queryByText(/La lecture semble interrompue/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Lancer la lecture' })).toBeNull();
   });
 
   it('une relecture qui échoue n’arrête pas le suivi', async () => {

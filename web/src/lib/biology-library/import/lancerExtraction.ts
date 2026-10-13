@@ -1,3 +1,4 @@
+import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 import {
@@ -81,56 +82,66 @@ export async function lancerExtraction(params: ParamsExtraction): Promise<IssueE
  * la fenêtre de 30 s du routeur Scalingo. L'écran relit ensuite l'import.
  */
 export async function ouvrirExtraction(params: ParamsExtraction): Promise<IssueOuverture> {
+  // TEMPS 1 — l'import en cours, commité avant l'appel.
+  return prisma.$transaction(tx => ouvrirExtractionDans(tx, params));
+}
+
+/**
+ * TEMPS 1 dans une transaction FOURNIE : la réclamation d'un travail de la
+ * file ([[D-282]], G3) ouvre l'import ET met le travail à jour d'un seul
+ * tenant — sinon un import neuf, commité seul, bloquerait la relance pendant
+ * la péremption (revue du lot 2). Mêmes refus, même ordre.
+ */
+export async function ouvrirExtractionDans(
+  tx: Prisma.TransactionClient,
+  params: ParamsExtraction,
+): Promise<IssueOuverture> {
   const { idPatient, idCompteRendu, lancePar } = params;
   const maintenant = params.maintenant ?? new Date();
-
-  // TEMPS 1 — l'import en cours, commité avant l'appel.
-  return prisma.$transaction(async tx => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
-    const compteRendu = await tx.compteRenduBiologique.findFirst({
-      where: { id: idCompteRendu, idPatient },
-      select: { id: true, typeMime: true, purgeLe: true },
-    });
-    if (!compteRendu || !estTypeCompteRendu(compteRendu.typeMime)) {
-      return { ok: false as const, reason: 'compte_rendu_introuvable' as const };
-    }
-    // Sous le verrou que prend aussi la purge : la base refuserait l'import
-    // (P0001, une 500 opaque) ; on le dit avant (revue de la migration).
-    if (compteRendu.purgeLe) return { ok: false as const, reason: 'document_purge' as const };
-    const enCours = await tx.importBiologique.findMany({
-      where: { idCompteRendu, idPatient, statut: 'en_cours' },
-      select: { id: true, lanceLe: true },
-    });
-    const limite = maintenant.getTime() - PEREMPTION_EN_COURS_MS;
-    if (enCours.some(i => i.lanceLe.getTime() >= limite)) {
-      return { ok: false as const, reason: 'extraction_en_cours' as const };
-    }
-    for (const perime of enCours) {
-      await tx.importBiologique.update({
-        where: { id: perime.id },
-        data: { statut: 'echec', motifEchec: 'delai_depasse' },
-      });
-    }
-    // Une ligne validée a créé un résultat : relire ce document en produirait
-    // un second jeu. Jamais de relance destructive (LOT-09). Après la clôture
-    // des imports périmés : un import mort ne doit pas rester « courant » et
-    // bloquer la décision des lignes encore proposées (revue, P2).
-    const validees = await tx.ligneBiologiqueCandidate.count({
-      where: { idPatient, statut: 'validee', import: { idCompteRendu } },
-    });
-    if (validees > 0) return { ok: false as const, reason: 'ligne_validee' as const };
-    const cree = await tx.importBiologique.create({
-      data: {
-        idPatient,
-        idCompteRendu,
-        modele: MODELE_EXTRACTION,
-        versionPrompt: VERSION_PROCEDE_EXTRACTION,
-        lancePar,
-      },
-      select: { id: true },
-    });
-    return { ok: true as const, idImport: cree.id };
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
+  const compteRendu = await tx.compteRenduBiologique.findFirst({
+    where: { id: idCompteRendu, idPatient },
+    select: { id: true, typeMime: true, purgeLe: true },
   });
+  if (!compteRendu || !estTypeCompteRendu(compteRendu.typeMime)) {
+    return { ok: false as const, reason: 'compte_rendu_introuvable' as const };
+  }
+  // Sous le verrou que prend aussi la purge : la base refuserait l'import
+  // (P0001, une 500 opaque) ; on le dit avant (revue de la migration).
+  if (compteRendu.purgeLe) return { ok: false as const, reason: 'document_purge' as const };
+  const enCours = await tx.importBiologique.findMany({
+    where: { idCompteRendu, idPatient, statut: 'en_cours' },
+    select: { id: true, lanceLe: true },
+  });
+  const limite = maintenant.getTime() - PEREMPTION_EN_COURS_MS;
+  if (enCours.some(i => i.lanceLe.getTime() >= limite)) {
+    return { ok: false as const, reason: 'extraction_en_cours' as const };
+  }
+  for (const perime of enCours) {
+    await tx.importBiologique.update({
+      where: { id: perime.id },
+      data: { statut: 'echec', motifEchec: 'delai_depasse' },
+    });
+  }
+  // Une ligne validée a créé un résultat : relire ce document en produirait
+  // un second jeu. Jamais de relance destructive (LOT-09). Après la clôture
+  // des imports périmés : un import mort ne doit pas rester « courant » et
+  // bloquer la décision des lignes encore proposées (revue, P2).
+  const validees = await tx.ligneBiologiqueCandidate.count({
+    where: { idPatient, statut: 'validee', import: { idCompteRendu } },
+  });
+  if (validees > 0) return { ok: false as const, reason: 'ligne_validee' as const };
+  const cree = await tx.importBiologique.create({
+    data: {
+      idPatient,
+      idCompteRendu,
+      modele: MODELE_EXTRACTION,
+      versionPrompt: VERSION_PROCEDE_EXTRACTION,
+      lancePar,
+    },
+    select: { id: true },
+  });
+  return { ok: true as const, idImport: cree.id };
 }
 
 /** TEMPS 2 et 3, sur un import ouvert par `ouvrirExtraction`. */

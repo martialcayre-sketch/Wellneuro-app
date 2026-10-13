@@ -81,6 +81,14 @@ export type CompteRenduLu = {
   motifPurge: string | null;
   /** L'écart d'un document transmis par le patient ([[D-269]] §3) : `illisible` | `document_non_conforme`. */
   motifEcart: string | null;
+  /**
+   * Une lecture est DEMANDÉE à la file ([[D-282]], G3) — en attente, en cours
+   * ou en reprise. L'import n'existe qu'à la réclamation : sans ce signal,
+   * l'écran ne verrait rien pendant l'attente, ni pendant une reprise dont
+   * l'import est périmé mais la réservation encore vive. Toujours `false`
+   * drapeau `WN_BIO_EXTRACTION_ASYNC` éteint : aucun travail n'existe.
+   */
+  lectureDemandee: boolean;
   imports: ImportLu[];
 };
 
@@ -144,6 +152,7 @@ export async function lireCompteRendu(
       purgeLe: true,
       motifPurge: true,
       motifEcart: true,
+      travaux: { where: { statut: { in: ['en_attente', 'en_cours'] } }, select: { id: true }, take: 1 },
       imports: {
         orderBy: { lanceLe: 'desc' },
         select: {
@@ -185,6 +194,7 @@ export async function lireCompteRendu(
     purgeLe: c.purgeLe?.toISOString() ?? null,
     motifPurge: c.motifPurge,
     motifEcart: c.motifEcart,
+    lectureDemandee: c.travaux.length > 0,
     imports: c.imports.map(i => ({
       id: i.id,
       statut: i.statut,
