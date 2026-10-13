@@ -449,6 +449,20 @@ Un dossier sans âge connu est traité comme celui d'un mineur pour toute
 fonction neuve, sauf la fiche signalétique. **Reste ouvert** : le seuil d'âge
 (majorité civile ou seuil de la loi Informatique et Libertés), avec un conseil.
 
+**Amendé le 2026-10-13 ([[D-284]] §3-4), sur l'avis reçu le même jour.**
+- **Seuil : 18 ans.** Le seuil de 15 ans de la loi Informatique et Libertés
+  (art. 45) ne fait basculer aucun dossier.
+- **Entrée validée par un titulaire de l'autorité parentale.** Un seul suffit,
+  l'autre étant présumé d'accord.
+- **Désaccord connu entre les titulaires : traitement manuel.**
+- **Âge inconnu.** Toutes les fonctions de santé sont concernées, pas les
+  seules fonctions neuves. La date de naissance est demandée à la prochaine
+  connexion, avant tout autre geste. Tant qu'elle manque, les questionnaires
+  et la biologie sont en pause.
+- **Dossiers concernés au constat du 2026-10-13** (agrégats) : 15 sans date de
+  naissance sur 32, aucun de moins de 21 ans.
+- **Reste à faire valider par un avocat** : les 15–17 ans (renvoi de l'avis).
+
 *Antérieurement :* le traitement de données de **mineurs** n'était ni exclu ni
 encadré (point resté « à valider » dans
 `docs/claude/campagnes/2026-07-15-trust-information-patient-droits-v1/SOURCES_ET_VALIDATIONS.md`).
@@ -464,7 +478,7 @@ personnelles se répartissent ainsi :
 | Catégorie | Modèles | Nature |
 |---|---|---|
 | Identité et contact | `Patient` (email, prénom, nom, date de naissance, téléphone, **adresse postale** depuis le 2026-09-16) | Données ordinaires |
-| **Identifiant de sécurité sociale (NIR)** | `Patient.nir` — recueilli depuis le **2026-09-16**, sur demande du responsable | **Recueil maintenu par le responsable le 2026-10-13 ([[D-283]] §4) ; base légale et motif à établir avec un conseil, puis à déclarer au patient.** CE N'EST PAS UNE DONNÉE ORDINAIRE, et sa qualification appartient au responsable de traitement — ce dossier la DÉCLARE et ne la pose pas, comme il ne la pose pas pour les deux tables de gestes praticien motivés ci-dessous. Trois faits qui bornent ce qu'elle est : c'est un **NIR déclaré**, saisi par le praticien et **jamais qualifié par téléservice** (ce n'est donc pas une INS au sens du référentiel national) ; il **ne sert d'identifiant à rien** — l'identité du dossier reste `id_patient`, l'unicité reste portée par `email` — et aucun appariement n'est fait sur lui ; il n'est **ni chiffré au repos ni masqué**, comme le reste du dossier (rubrique 10), ce qui est un choix daté du 2026-09-16 et non un oubli. Déclaré au patient par le document « Vos données personnelles » **v8, avec accusé de réception exigé** |
+| **Identifiant de sécurité sociale (NIR)** | `Patient.nir` — recueilli du **2026-09-16** au **2026-10-13** (recueil cessé par [[D-284]] §2 ; le champ reste à l'écran jusqu'à son retrait au lot (g)), sur demande du responsable | **Recueil CESSÉ le 2026-10-13 ([[D-284]] §2)** : pour un responsable qui n'est pas professionnel de santé, et pour cette finalité, le NIR n'a pas de fondement (loi Informatique et Libertés, art. 30, et décret cadre NIR). **Aucun numéro n'était enregistré** au constat du 2026-10-13 (agrégats), il n'y a donc rien à purger. Le champ est retiré de la fiche par un lot, et la colonne vide attend une migration de retrait. *Antérieurement : le recueil avait été maintenu le 2026-10-13 ([[D-283]] §4), sous réserve d'un conseil.* CE N'EST PAS UNE DONNÉE ORDINAIRE, et sa qualification appartient au responsable de traitement — ce dossier la DÉCLARE et ne la pose pas, comme il ne la pose pas pour les deux tables de gestes praticien motivés ci-dessous. Trois faits qui bornent ce qu'elle est : c'est un **NIR déclaré**, saisi par le praticien et **jamais qualifié par téléservice** (ce n'est donc pas une INS au sens du référentiel national) ; il **ne sert d'identifiant à rien** — l'identité du dossier reste `id_patient`, l'unicité reste portée par `email` — et aucun appariement n'est fait sur lui ; il n'est **ni chiffré au repos ni masqué**, comme le reste du dossier (rubrique 10), ce qui est un choix daté du 2026-09-16 et non un oubli. Déclaré au patient par le document « Vos données personnelles » **v8, avec accusé de réception exigé** |
 | Médecin traitant du dossier | `Patient.medecinTraitantNom`, `Patient.medecinTraitantCoordonnees` — recueillis depuis le **2026-09-16** | **Qualifié le 2026-10-13 ([[D-283]] §3) : le lien patient ↔ médecin est une donnée de santé du patient (art. 9) ; les coordonnées professionnelles du médecin sont ordinaires, et il est informé à la première lettre adressée.** Données d'un TIERS — un professionnel de santé qui n'est pas la personne concernée. *Avant le 2026-10-13, il n'était pas informé et la qualification n'était pas posée.* **Distinct de `CorrespondanceMedecin.medecinLibelle`**, texte libre saisi par courrier et non attaché au dossier : ces deux colonnes-ci disent « le médecin traitant de ce patient », l'autre disait « le destinataire de cette lettre » |
 | **Santé (art. 9)** | `Consultation`, `QuestionnaireReponse`, `SyntheseIA`, `AssessmentEpisode`, `ProtocolDraft`, `ProtocolCheckin`, `AgendaSommeilNuit`, `AgendaAlimentaireJour`, `CorrespondanceMedecin`, `CorrespondancePatient`, `BookletEnvoi`, `RelectureNote`, `TrustAdverseEffectReport`, `TrustAdverseEffectVerdict` ; et depuis le 2026-10-13 ([[D-283]] §3) `Assignation`, `CritereDossierConstate`, `ProtocolDiffusionApproval`, `PackProposition`, `EnvoiBrouillon`, `RendezVous` — chacune associe un patient nommé à un geste de soin | **Catégorie particulière** |
 | **Santé — exploration biologique (art. 9)** | `ArbitrageBiologique`, `PanelBiologieDocumente`, `DocumentPatientBiologie`, `ResultatBiologique` | **Catégorie particulière** — voir le paragraphe ci-dessous |
@@ -907,12 +921,26 @@ ouverte.
   d'une copie datée, la date d'opposabilité et la couverture des traitements
   antérieurs (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`). La réserve sur la
   localisation de l'inférence et la rétention n'est pas levée.
+  **[[D-284]] §5 (2026-10-13)** : l'identité est retirée du document avant
+  l'envoi (nom, prénom, adresse, identifiants, coordonnées, métadonnées
+  nominatives). Le lot passe juste après la clôture du G3. D'ici là, le flux
+  reste nominatif : l'exposition est assumée et datée. L'analyse d'impact du
+  transfert (TIA) est à rédiger.
 
 - **Google** — connexion du praticien seul.
 
 **TROU.** Le **mécanisme de transfert invoqué** (clauses contractuelles types,
 annexe d'un DPA, décision d'adéquation) n'est écrit nulle part, pour aucun de
 ces flux. Ne rien affirmer avant vérification contractuelle.
+
+**Avis reçu le 2026-10-13 ([[D-284]] §5-6).**
+- **Anthropic** : clauses contractuelles types de ses Conditions commerciales,
+  avec une TIA à rédiger.
+- **Google Workspace et Sentry** : le cadre de protection des données
+  UE–États-Unis, s'il couvre l'entité et le flux. Sa preuve datée s'archive
+  avec le DPA ; à défaut, les clauses contractuelles types et une TIA
+  s'appliquent.
+- **Reste** : les pièces à archiver, et les TIA.
 
 ## 8. Durées de conservation
 
@@ -1302,9 +1330,9 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | # | Rubrique | Ce qui manque | Porteur | Échéance | Où la réponse se consignera |
 |---|---|---|---|---|---|
 | 1 | Responsable | Identité juridique exacte | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 1 |
-| 1 | Responsable | **2026-10-13 ([[D-283]] §7) : aucun DPO désigné, le responsable est le point de contact ; reste l'obligation de désignation (conseil).** Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | 2027-06-30 (était 2026-10-21) | `docs/DECISIONS.md` |
+| 1 | Responsable | **Clos le 2026-10-13 ([[D-284]] §6) : pas d'obligation de désigner un DPO à cette échelle, selon l'avis reçu ; analyse datée à revoir à chaque changement d'échelle.** *Historique :* aucun DPO désigné, le responsable est le point de contact ([[D-283]] §7). Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | fermé | `docs/DECISIONS.md` |
 | 3 | Base légale | ~~Qualification, non rédigée à ce jour~~ — **qualifiée le 2026-10-04** par déclaration du responsable ([[D-265]] §3) | Responsable | fermé | ici, rubrique 3 |
-| 4 | Personnes | **2026-10-13 ([[D-283]] §5) : encadrés, non exclus ; reste le seuil d'âge (conseil).** Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
+| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; reste la validation des 15–17 ans par un avocat.** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
 | 5 | Catégories | **Soldé le 2026-10-13 ([[D-283]] §3) : les six classées en catégorie particulière, la liste du banc est vide.** *Historique — constat d'origine :* **Six tables filles de `patients` ne sont pas déclarées** — dix-sept au 2026-09-09, mesuré en comparant `schema.prisma` à cette rubrique (38 modèles portaient alors une relation vers `Patient`, 21 y étaient cités ; ils sont 46 et 40 au 2026-09-13). ONZE noms sont sortis de la liste depuis, dont dix le 2026-09-13 : `DecisionPrioritySelection`, déclarée avec `EcartementProposition` sous une même entrée ; et neuf **dettes périmées** — déjà déclarées depuis le rattrapage `D-167`, mais laissées dans la liste, donc DISPENSÉES de vérification alors qu'elles n'en avaient plus besoin. Les qualifier (art. 9 ou non) reste un acte juridique, pas une écriture de code ; la liste vit dans `rubrique5.modeles.test.ts`, qui **rougit sur toute table ajoutée après cette date** et, depuis la purge, sur toute déclaration retirée pour l'une des dix — le passif est ouvert, la récidive est fermée | Responsable + conseil | fermé | ici, rubrique 5 |
 | 5 | Catégories | ~~Catégorie « résultats biologiques » absente~~ — **déclarée le 2026-09-09** (quatre tables du rayon), mais **après** la pose de `WN_CB_RESULTS_ENABLED` que la rubrique 2 posait comme conditionnée à cette déclaration préalable. Écart daté en rubrique 2 ; portée nulle sur les données (0 ligne au constat) | — | fermé | ici, rubriques 2 et 5 |
 | 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais ~~**signature et archivage non faits**~~ — **annexe HDS signée le 2026-08-30** (déclaration du responsable, consignée le 2026-08-31, `D-121`) ; **restent dus : l'archivage du document signé, et la signature + archivage du DPA** | Responsable | 2027-06-30 (était : ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19 — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6 ; **signée le 2026-08-30**) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) ; archivage dû **avant la revue du 2026-10-21**) | `CHECKLIST_FINALISATION.md` §F |
@@ -1312,7 +1340,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 6 | Sous-traitants | ~~Fournisseur SMTP réel non identifié~~ — **identifié le 2026-08-22 : Google Workspace** (rubrique 6, TROU 2 — SPF/MX/DKIM du domaine + expéditeur du code) ; **restent dus** : localisation du traitement et couverture DPA | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 6 |
 | 6 | Sous-traitants | ~~Sentry non déclaré au patient~~ — **déclaré le 2026-09-07** dans `donnees_confidentialite@v5` (`D-141`), résidence UE rendue invariante par `sentryRegion.ts` ; **reste dû : le DPA Sentry** | Responsable | 2027-06-30 (était 2026-10-21, DPA seul) | `contenus/registre.ts`, rubrique 6 |
 | 6 | Destinataires | **Correspondance médecin — la voie d'EXCEPTION, maintenue ([[D-265]] §2)** — ~~n'a aucune justification écrite~~. Le traitement est inventorié depuis `D-222` et ses quatre termes sont posés ; ce qui manque est la qualification de la seule route non gardée, `api/praticien/adressage/courrier`, qui transmet une donnée de santé à un tiers **malgré un refus exprimé** — les deux autres routes sont fail-closed sur refus, retrait et silence. Les deux voies ne peuvent pas reposer sur la même justification. ~~Sa justification s'écrit dans la trame de la rubrique 3~~ — **base déclarée le 2026-10-04** : 6.1.d + 9.2.h | Responsable | fermé | ici, rubrique 3 |
-| 7 | Transferts | Mécanisme invoqué (CCT/DPA) | Conseil qualifié | 2027-06-30 (était 2026-10-21) | ici, rubrique 7 |
+| 7 | Transferts | **2026-10-13 ([[D-284]] §5-6) : CCT pour Anthropic, cadre UE–États-Unis pour Google et Sentry s'il les couvre ; restent les preuves à archiver et les TIA.** Mécanisme invoqué (CCT/DPA) | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 7 |
 | 7 | Transferts | ~~**Demande de DPA à Anthropic non envoyée**~~ — **envoyée le 2026-10-01 à 17:34 UTC (19:34 heure de Paris)** (date établie par capture du message envoyé). La condition de pose du drapeau du LOT-02 est tenue. ~~**Restent dus : la réponse, puis la signature et l'archivage du DPA**~~ — **réponse reçue le 2026-10-02 à 22:23 UTC** : DPA et CCT intégrés aux Conditions commerciales, aucune signature distincte. **Restent dus** : l'archivage d'une copie datée, la date d'opposabilité, la couverture des traitements antérieurs | Responsable | 2027-06-30 (était 2026-10-21, DPA) | `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md` (tableau « Trace à tenir »), puis rubriques 6 et 7 |
 | 8 | Conservation | **2026-10-13 ([[D-283]] §2) : durées fixées (active jusqu'à clôture ou 5 ans sans contact, archive 10 ans) ; restent le texte patient signé et la mise en œuvre (§10).** Durées des données de santé — hors le document des comptes rendus biologiques déposés, fixé par [[D-258]] | Responsable + conseil | 2027-06-30 (était 2026-10-21) | ici, rubrique 8 puis `gouvernance.ts` |
 | 9 | Droits | **Tranché le 2026-10-13 ([[D-283]] §6) ; reste la procédure écrite, sans arbitrage.** *Historique — constat d'origine :* Délai, vérification d'identité, circuit interne | Responsable | fermé | ici, rubrique 9 |
