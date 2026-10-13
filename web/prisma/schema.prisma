@@ -87,6 +87,8 @@ model Patient {
   lignesImportBiologique     LigneBiologiqueCandidate[]
   // Actes de lecture clinique d'un import validé (D-268, BP-10).
   lecturesImportsBiologiques LectureImportBiologique[]
+  // File durable des lectures (D-282, G3).
+  travauxExtractionBiologique TravailExtractionBiologique[]
   relectureNotes             RelectureNote[]
   filCardRejections          FilCardRejection[]
   filCardLectures            FilCardLecture[]
@@ -2619,6 +2621,7 @@ model CompteRenduBiologique {
 
   patient Patient            @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
   imports ImportBiologique[]
+  travaux TravailExtractionBiologique[]
 
   @@unique([idPatient, empreinteSha256], map: "comptes_rendus_biologiques_patient_empreinte_key")
   @@unique([id, idPatient], map: "comptes_rendus_biologiques_id_patient_key")
@@ -2654,11 +2657,51 @@ model ImportBiologique {
   compteRendu CompteRenduBiologique      @relation(fields: [idCompteRendu, idPatient], references: [id, idPatient], onDelete: Restrict)
   lignes      LigneBiologiqueCandidate[]
   lectures    LectureImportBiologique[]
+  travaux     TravailExtractionBiologique[]
 
   @@unique([id, idPatient], map: "imports_biologiques_id_patient_key")
   @@index([idCompteRendu], map: "imports_biologiques_compte_rendu_idx")
   @@index([idPatient], map: "imports_biologiques_patient_idx")
   @@map("imports_biologiques")
+}
+
+// File durable des lectures de comptes rendus — [[D-282]] (G3 de BioFlow).
+//
+// Un TRAVAIL dit « cette lecture est demandée, et voici où elle en est ». Il
+// survit à la mort du processus qui la lit : un processus `worker` le réclame
+// (`FOR UPDATE SKIP LOCKED`), sous une réservation de 6 minutes. Expirée, la
+// réservation rend le travail réclamable, et la lecture reprend UNE fois par
+// le chemin de relance existant (LOT-09). Deux tentatives au plus.
+//
+// TECHNIQUE, PAS UNE TRACE : la provenance d'un résultat reste dans
+// `imports_biologiques` et ses lignes. Un travail terminé est purgé à 30 jours
+// ([[D-282]] §5.3). Toute comparaison de temps se fait en SQL (`now()`).
+//
+// La base tient : statuts fermés et cohérents avec la réservation et la fin ;
+// un seul travail ouvert par compte rendu (index partiel, migration seule) ;
+// l'import courant appartient au même compte rendu et au même patient ; un
+// travail terminé est figé ; RLS deny-all. Table fille de `patients`, effacée
+// par IDP2 avant les imports et les comptes rendus.
+model TravailExtractionBiologique {
+  id              String    @id @default(cuid())
+  idPatient       String    @map("id_patient")
+  idCompteRendu   String    @map("id_compte_rendu")
+  idImportCourant String?   @map("id_import_courant") // ouvert à la réclamation, jamais à la demande (CHECK migration)
+  demandePar      String    @map("demande_par") // email praticien, posé côté serveur
+  statut          String    @default("en_attente") @map("statut") // en_attente | en_cours | termine | echec (CHECK migration)
+  tentatives      Int       @default(0) @map("tentatives") // 0 à 2 (CHECK migration)
+  reserveJusqua   DateTime? @map("reserve_jusqua")
+  motifEchec      String?   @map("motif_echec") // liste fermée, requis si `echec` (CHECK migration)
+  creeLe          DateTime  @default(now()) @map("cree_le")
+  termineLe       DateTime? @map("termine_le")
+
+  patient       Patient               @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  compteRendu   CompteRenduBiologique @relation(fields: [idCompteRendu, idPatient], references: [id, idPatient], onDelete: Restrict)
+  importCourant ImportBiologique?     @relation(fields: [idImportCourant, idPatient], references: [id, idPatient], onDelete: Restrict)
+
+  @@index([idPatient], map: "travaux_extraction_bio_patient_idx")
+  @@index([idImportCourant], map: "travaux_extraction_bio_import_idx")
+  @@map("travaux_extraction_biologique")
 }
 
 /// Une ligne lue par une extraction. Ce qui a été LU est figé ; seule la

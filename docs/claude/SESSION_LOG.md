@@ -10031,3 +10031,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merger `D-283` ; puis lot 2 du G3 (migration). Lots RGPD (texte patient signé, clôture après 5 ans, archive, purge des lignes non validées) à ordonner.
 
 **Ouvert.** Identité juridique, DPA à archiver, date d'acceptation des conditions Anthropic, NIR (conseil), seuil d'âge (conseil), obligation de DPO (conseil).
+
+## 2026-10-13 — G3 de BioFlow : la migration (D-282, lot 2)
+
+**Fait.** `D-283` mergée (#1411). Migration seule de la file durable : table `travaux_extraction_biologique`, cohérence en `CASE`, un travail ouvert par compte rendu (unicité partielle), trigger (même compte rendu, identité et fin figées), `RESTRICT`, RLS. Effacement IDP2 et registre RGPD mis à jour. Contrat SQL vert, parité schéma vérifiée, T1 vert.
+
+**Écarté.** Unicité au schéma Prisma (la rendrait totale) ; `CASCADE` (la suppression reste nommée).
+
+**Prochaine action.** CI, revue, merge au créneau, `release-db` approuvée par le responsable, constat ; puis lot 3 (processus de fond sous drapeau éteint).
+
+**Ouvert.** Base locale en retard sur `D-281` (index recréé en local).

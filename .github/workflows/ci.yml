@@ -1180,6 +1180,16 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/lectures_imports_biologiques_v1_negatif.sql
 
+      # La file durable des lectures (D-282, G3) : statut fermé et sa cohérence
+      # en CASE, deux tentatives au plus, un seul travail ouvert par compte
+      # rendu (unicité PARTIELLE), import courant du même compte rendu, identité
+      # et travail terminé figés, clés RESTRICT, onze colonnes, RLS deny-all.
+      # Transaction annulée.
+      - name: Travaux extraction biologique negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/g3_travaux_extraction_biologique_v1_negatif.sql
+
       # Le même acte, À DEUX SESSIONS (D-268, BP-10) : le contrat ci-dessus voit
       # le verrou de l'import, pas qu'il sérialise. Deux lectures concurrentes,
       # le témoin REPEATABLE READ, une lecture contre la dernière décision
