@@ -18,7 +18,8 @@
 --      cohérence avec la réservation, la fin et le motif d'échec ;
 --   2. deux tentatives au plus — chiffre TECHNIQUE (`DC-20`, [[D-282]] §4) ;
 --   3. UN SEUL travail ouvert par compte rendu (index unique partiel) ;
---   4. l'import courant appartient au même patient (clé composite) ET au même
+--   4. l'import courant n'existe qu'à partir de la RÉCLAMATION — jamais à la
+--      demande —, et il appartient au même patient (clé composite) ET au même
 --      compte rendu (trigger) ;
 --   5. l'identité d'un travail est figée, et un travail terminé ne bouge plus ;
 --   6. RLS deny-all (posture D-005).
@@ -32,7 +33,7 @@ CREATE TABLE "travaux_extraction_biologique" (
     "id" TEXT NOT NULL,
     "id_patient" TEXT NOT NULL,
     "id_compte_rendu" TEXT NOT NULL,
-    "id_import_courant" TEXT NOT NULL,
+    "id_import_courant" TEXT,
     "demande_par" TEXT NOT NULL,
     "statut" TEXT NOT NULL DEFAULT 'en_attente',
     "tentatives" INTEGER NOT NULL DEFAULT 0,
@@ -86,21 +87,33 @@ ALTER TABLE "travaux_extraction_biologique"
     CHECK ("tentatives" BETWEEN 0 AND 2),
   ADD CONSTRAINT "travaux_extraction_bio_demande_par_check"
     CHECK ("demande_par" ~ '\S' AND char_length("demande_par") <= 320),
+  -- Liste FERMÉE : un texte libre pourrait recopier une valeur lue dans le
+  -- compte rendu (revue du lot 2). Les quatre refus de l'ouverture d'une
+  -- lecture, et l'épuisement des tentatives.
   ADD CONSTRAINT "travaux_extraction_bio_motif_echec_check"
-    CHECK ("motif_echec" ~ '\S' AND char_length("motif_echec") <= 100),
+    CHECK ("motif_echec" IN ('tentatives_epuisees', 'compte_rendu_introuvable',
+                             'document_purge', 'extraction_en_cours', 'ligne_validee')),
   ADD CONSTRAINT "travaux_extraction_bio_coherence_check"
     CHECK (
       CASE "statut"
-        WHEN 'en_attente' THEN "reserve_jusqua" IS NULL AND "termine_le" IS NULL AND "motif_echec" IS NULL
-        WHEN 'en_cours'   THEN "reserve_jusqua" IS NOT NULL AND "termine_le" IS NULL AND "motif_echec" IS NULL AND "tentatives" >= 1
-        WHEN 'termine'    THEN "reserve_jusqua" IS NULL AND "termine_le" IS NOT NULL AND "motif_echec" IS NULL
+        WHEN 'en_attente' THEN "id_import_courant" IS NULL AND "tentatives" = 0
+                           AND "reserve_jusqua" IS NULL AND "termine_le" IS NULL AND "motif_echec" IS NULL
+        WHEN 'en_cours'   THEN "id_import_courant" IS NOT NULL AND "tentatives" >= 1
+                           AND "reserve_jusqua" IS NOT NULL AND "termine_le" IS NULL AND "motif_echec" IS NULL
+        WHEN 'termine'    THEN "id_import_courant" IS NOT NULL
+                           AND "reserve_jusqua" IS NULL AND "termine_le" IS NOT NULL AND "motif_echec" IS NULL
+        -- Un échec peut naître à la réclamation, avant tout import (document
+        -- purgé, ligne validée…) : l'import y reste facultatif.
         WHEN 'echec'      THEN "reserve_jusqua" IS NULL AND "termine_le" IS NOT NULL AND "motif_echec" IS NOT NULL
         ELSE TRUE
       END
     );
 
 -- ── L'IMPORT COURANT, ET CE QUI EST FIGÉ ────────────────────────────────────
--- La clé composite garantit le même PATIENT ; le même COMPTE RENDU ne se dit
+-- L'import ne s'ouvre qu'à la RÉCLAMATION : sa péremption de 5 min se compte
+-- depuis sa création, et un import ouvert à la demande perdrait le temps passé
+-- dans la file (revue du lot 2, arbitrage du responsable du 2026-10-13). La
+-- clé composite garantit le même PATIENT ; le même COMPTE RENDU ne se dit
 -- qu'en lisant l'import. Une reprise change l'import courant (nouvel import de
 -- la relance) : c'est la seule colonne d'identité qui bouge, et toujours vers un
 -- import du même compte rendu.
@@ -123,9 +136,12 @@ BEGIN
     IF NEW.tentatives < OLD.tentatives THEN
       RAISE EXCEPTION '% : le compte des tentatives ne recule pas.', TG_TABLE_NAME;
     END IF;
+    IF OLD.id_import_courant IS NOT NULL AND NEW.id_import_courant IS NULL THEN
+      RAISE EXCEPTION '% : un import courant posé ne se retire pas.', TG_TABLE_NAME;
+    END IF;
   END IF;
 
-  IF NOT EXISTS (
+  IF NEW.id_import_courant IS NOT NULL AND NOT EXISTS (
     SELECT 1 FROM imports_biologiques i
     WHERE i.id = NEW.id_import_courant AND i.id_compte_rendu = NEW.id_compte_rendu
   ) THEN

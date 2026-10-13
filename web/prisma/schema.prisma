@@ -2686,18 +2686,18 @@ model TravailExtractionBiologique {
   id              String    @id @default(cuid())
   idPatient       String    @map("id_patient")
   idCompteRendu   String    @map("id_compte_rendu")
-  idImportCourant String    @map("id_import_courant")
+  idImportCourant String?   @map("id_import_courant") // ouvert à la réclamation, jamais à la demande (CHECK migration)
   demandePar      String    @map("demande_par") // email praticien, posé côté serveur
   statut          String    @default("en_attente") @map("statut") // en_attente | en_cours | termine | echec (CHECK migration)
   tentatives      Int       @default(0) @map("tentatives") // 0 à 2 (CHECK migration)
   reserveJusqua   DateTime? @map("reserve_jusqua")
-  motifEchec      String?   @map("motif_echec") // requis si `echec` (CHECK migration)
+  motifEchec      String?   @map("motif_echec") // liste fermée, requis si `echec` (CHECK migration)
   creeLe          DateTime  @default(now()) @map("cree_le")
   termineLe       DateTime? @map("termine_le")
 
   patient       Patient               @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
   compteRendu   CompteRenduBiologique @relation(fields: [idCompteRendu, idPatient], references: [id, idPatient], onDelete: Restrict)
-  importCourant ImportBiologique      @relation(fields: [idImportCourant, idPatient], references: [id, idPatient], onDelete: Restrict)
+  importCourant ImportBiologique?     @relation(fields: [idImportCourant, idPatient], references: [id, idPatient], onDelete: Restrict)
 
   @@index([idPatient], map: "travaux_extraction_bio_patient_idx")
   @@index([idImportCourant], map: "travaux_extraction_bio_import_idx")

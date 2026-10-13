@@ -5,7 +5,9 @@
   lit avant la `release-db` et son constat. La lecture d'un compte rendu ne
   change pas.
 - **Ce que la base tient** : statut fermé et sa cohérence (réservation, fin,
-  motif d'échec) ; deux tentatives au plus ; un seul travail ouvert par compte
+  motif d'échec pris dans une liste fermée) ; la lecture ne s'ouvre qu'à son
+  tour, jamais à la demande, pour que l'attente dans la file ne mange pas
+  ses 5 minutes ; deux tentatives au plus ; un seul travail ouvert par compte
   rendu (unicité partielle) ; import courant du même patient et du même compte
   rendu ; identité figée, travail terminé figé ; clés `RESTRICT` ; RLS
   deny-all.

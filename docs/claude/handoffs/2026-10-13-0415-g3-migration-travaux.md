@@ -23,6 +23,14 @@ effacement IDP2 et sa déclaration RGPD — sans code consommateur.
   admise.
 - Clés `RESTRICT` : le lot 3 supprime les travaux avant tout retrait de
   document.
+- **Arbitrages du responsable sur la revue (2026-10-13)** :
+  - l'import ne s'ouvre qu'à la **réclamation**, jamais à la demande. Sinon
+    sa péremption de 5 min, comptée depuis sa création, mangerait le temps
+    passé dans la file (P1 de `wn-reviewer`, confirmé dans
+    `lancerExtraction.ts:104-106`). `id_import_courant` est nul en attente
+    et requis en cours et terminé ; un import posé ne se retire pas ;
+  - le motif d'échec est une **liste fermée** : les quatre refus de
+    l'ouverture et `tentatives_epuisees`.
 
 ## Fichiers modifiés
 
@@ -40,9 +48,33 @@ effacement IDP2 et sa déclaration RGPD — sans code consommateur.
 - La base locale portait l'ancienne version de la migration `D-281` (sans
   `trust_aev_patient_idx`) : index recréé en local seulement. La production a
   ses cinq index (constat du lot 2 de `D-281`).
-- T1 complet vert (`npm run check`).
+- T1 complet vert (`npm run check`). T3 complet vert sur la première forme, puis
+  rejoué vert après la correction (base neuve, contrat joué, *No
+  difference detected*).
+- Revue `wn-reviewer` : P1 corrigé (arbitrage) ; P2-1 à P2-3 corrigés, le
+  contrat couvre chaque branche de la cohérence, `termine` figé, la relance
+  après un échec, de vrais `DELETE` sous `RESTRICT` et les quatre index ;
+  P2-4 corrigé (liste fermée).
 
 ## Problèmes ouverts
+
+Routés au lot 3, constats de la revue :
+
+- P2-5 : le retrait d'un document échouera dès qu'un travail existe, même
+  terminé. La suppression des travaux arrive dans la même PR que le premier
+  code qui écrit la table.
+- P2-6 : écrire `reserve_jusqua` et `termine_le` en SQL
+  (`clock_timestamp() AT TIME ZONE 'UTC'`) et jouer le banc sous
+  Europe/Paris.
+- Une reprise ouvre l'import puis met le travail à jour : le worker doit le
+  faire dans UNE transaction, sinon l'import neuf bloque la relance
+  pendant 5 min.
+- Possible interblocage entre l'effacement et le worker : le banc à deux
+  sessions doit le jouer.
+- À la création d'un travail, pas d'`upsert` : intercepter `P2002`
+  (l'unicité partielle n'est pas au schéma).
+- La base de dev locale garde la première forme de la migration : la garde
+  refuse le `DROP`. Base neuve à prendre avant le lot 3.
 
 - Relance manuelle entre 5 et 6 min : la route dira « reprise en cours » au
   lot 3.
