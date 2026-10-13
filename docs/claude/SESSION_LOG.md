@@ -10109,4 +10109,6 @@ qualité inchangés (item de l'indice).
 
 **Prochaine action.** CI, revue, merge, déploiement constaté ; puis PR 3 (pilotage).
 
-**Ouvert.** Synthèse IA aveugle aux pseudo-items `AGA_*` ; banc de vocabulaire du LOT-04 biologie exploitée troué (« élevé », « bas ») ; `D-045` sans sort au plan ; cc place de la file C ; porte 15 pour bf.
+**Arbitrages du 2026-10-14** (questions à options). `origin/main` (#1418) fusionné dans la branche sur accord ; cc compte comme une place de la file C ; la porte 15 vaut pour le code de bf (instruction au rang 0) ; les trois constats ci-dessous vont au plan seulement, aucun code pendant le versement.
+
+**Ouvert.** À reporter à la prochaine version du plan : synthèse IA aveugle aux pseudo-items `AGA_*` ; banc de vocabulaire du LOT-04 biologie exploitée troué (« élevé », « bas ») ; `D-045` sans sort au plan §7.
