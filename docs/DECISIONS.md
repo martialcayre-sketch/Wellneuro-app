@@ -4,6 +4,102 @@
 
 ## Décisions actives
 
+### D-284 — RGPD : l'avis reçu le 2026-10-13 amende D-283 — NIR retiré, âge demandé avant toute fonction de santé, mineur jusqu'à 18 ans, identité retirée avant l'envoi à Anthropic
+
+- Date : 2026-10-13
+- Statut : accepté. Avis écrit reçu par le responsable le 2026-10-13, en
+  réponse à la note au conseil du même jour. Les arbitrages du responsable ont
+  été rendus en session sur questions à options, après un constat en agrégats
+  par conteneur.
+- Amende : [[D-283]] §4 (NIR), §5 (mineurs, âge inconnu), §9 (restes ouverts)
+  et §10 (lots).
+- Domaine : `docs/DOSSIER_RGPD.md`.
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune durée.
+- Livraison : cette décision et le dossier, **sans code**. Chaque geste part en
+  lot (§7).
+- **Portée de l'avis** : il renvoie lui-même deux points à un avocat
+  spécialisé, les 15–17 ans et la durée probatoire en cas de dommage corporel.
+  Il est arrivé **incomplet** : le texte s'arrête au point 5.1, sur les durées.
+
+**§1 — Constat du 2026-10-13 (agrégats, conteneur `scalingo run -d`).**
+32 dossiers. **Aucun NIR enregistré.** 17 dates de naissance, toutes au format
+date, et aucun dossier de moins de 21 ans. **15 dossiers sans date de
+naissance.**
+
+**§2 — NIR (amende [[D-283]] §4).** Pour un responsable qui n'est pas
+professionnel de santé, et pour cette finalité, le recueil du NIR n'a pas de
+fondement : la loi Informatique et Libertés (art. 30) et le décret cadre NIR
+réservent son traitement à des catégories de responsables et à des finalités
+énumérées. Le consentement du patient n'y supplée pas. **Le recueil cesse** :
+le champ est retiré de la fiche patient. Aucun numéro n'est enregistré (§1),
+il n'y a donc **rien à purger**. La colonne vide reste en base jusqu'à une
+migration de retrait, à ordonner. Ce trou est clos.
+
+**§3 — Âge inconnu (amende [[D-283]] §5).** Une fonction déjà en service qui
+continue de collecter ou d'enrichir des données de santé reste un traitement
+en cours. Fermer les seules fonctions neuves ne suffit donc pas. Un dossier
+sans date de naissance se voit **demander sa date à la prochaine connexion,
+avant tout autre geste**. Tant qu'elle manque, **ses questionnaires et sa
+biologie sont en pause**. La fiche signalétique reste ouverte pour la saisir.
+Dès que la date est donnée, tout se rouvre si le patient est majeur, et le
+circuit des mineurs (§4) s'applique s'il ne l'est pas. Au §1, cela concerne
+15 dossiers.
+
+**§4 — Mineurs : seuil à 18 ans (clôt le seuil laissé ouvert par [[D-283]]
+§5).** Le seuil de 15 ans de la loi Informatique et Libertés (art. 45) vise le
+consentement à un service en ligne. Ce n'est pas une majorité en matière de
+données de santé, et il **ne fait basculer aucun dossier**. **Jusqu'à 18
+ans**, le dossier est celui d'un mineur :
+- l'entrée est validée par un titulaire de l'autorité parentale ;
+- l'accord d'un seul titulaire suffit, l'autre étant présumé d'accord et
+  pouvant s'y opposer ;
+- en cas de **désaccord connu** entre les titulaires ou d'autorité parentale
+  restreinte, le dossier passe en **traitement manuel** ;
+- le jeune est associé à la décision selon son âge et sa maturité.
+
+On ne promet au mineur **aucun secret opposable** à ses parents. Au §1, aucun
+dossier n'est concerné.
+
+**§5 — Envoi à Anthropic : l'identité retirée.** Le compte rendu part
+aujourd'hui en entier, nom du patient compris. Le nom n'apporte rien à la
+lecture d'un bilan. Avant l'envoi, on retire donc l'identité du document :
+- nom, prénom et adresse ;
+- identifiants et coordonnées ;
+- métadonnées nominatives.
+
+Restent seulement les éléments utiles à la lecture.
+
+Ce chantier passe **juste après la clôture du G3** ([[D-282]]). D'ici là,
+chaque nouveau bilan part encore nominatif. Cette exposition est assumée et
+datée. Le transfert repose sur les clauses contractuelles types des conditions
+commerciales d'Anthropic. L'**analyse d'impact du transfert** (TIA) est à
+rédiger. Le praticien garde la relecture de chaque ligne.
+
+**§6 — Ce que l'avis confirme sans changer [[D-283]].**
+- **DPO** : pas d'obligation, faute de grande échelle. Une analyse d'une page,
+  datée, se revoit avant toute ouverture à plusieurs praticiens, tout partage
+  systématique de dossiers ou tout changement d'échelle. Ce trou est clos.
+- **Google Workspace et Sentry** : le cadre de protection des données
+  UE–États-Unis suffit s'il couvre l'entité et le flux. Il faut archiver la
+  preuve datée de la certification, avec le DPA. À défaut, les clauses
+  contractuelles types et une TIA s'appliquent. Les e-mails restent neutres.
+- **Durées** : l'avis est arrivé incomplet. [[D-283]] §2 reste inchangé, et
+  **rien ne s'efface** sur la règle des 10 ans avant la réponse sur son point
+  de départ.
+
+**§7 — Lots qui en découlent.** Ils complètent [[D-283]] §10, dont le lot (d)
+est **remplacé** par le lot (h).
+- (g) Retrait du champ NIR de la fiche patient.
+- (h) Date de naissance demandée à la connexion, et pause des questionnaires
+  et de la biologie tant qu'elle manque.
+- (i) Circuit des mineurs jusqu'à 18 ans : validation parentale et traitement
+  manuel en cas de désaccord.
+- (j) Identité retirée avant l'envoi à Anthropic, après le G3, avec sa TIA.
+
+**Restent ouverts** : les 15–17 ans et la durée probatoire, à faire valider
+par un avocat (renvoi de l'avis) ; la suite du point 5 de l'avis ; et les
+faits et gestes de [[D-283]] §9, NIR, seuil d'âge et DPO mis à part.
+
 ### D-283 — RGPD : les trous du dossier tranchés le 2026-10-13 — conservation, qualifications, mineurs, droits, sécurité
 
 - Date : 2026-10-13

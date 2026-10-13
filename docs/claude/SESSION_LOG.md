@@ -10041,3 +10041,12 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, revue, merge au créneau, `release-db` approuvée par le responsable, constat ; puis lot 3 (processus de fond sous drapeau éteint).
 
 **Ouvert.** Base locale en retard sur `D-281` (index recréé en local).
+## 2026-10-13 — RGPD : l'avis reçu amende D-283 (D-284)
+
+**Fait.** Avis écrit reçu sur la note au conseil, arrivé incomplet (coupé au point 5.1). Constat en agrégats : 0 NIR, 15 dossiers sur 32 sans date de naissance. Arbitrages : NIR retiré, âge demandé à la connexion avec pause des questionnaires et de la biologie, mineur jusqu'à 18 ans, identité retirée avant l'envoi à Anthropic juste après le G3.
+
+**Écarté.** Suspension stricte des 15 dossiers ; maintien de D-283 sur l'âge inconnu ; envoi sans identité avant la fin du G3.
+
+**Prochaine action.** Merger `D-284` ; ordonner les lots (g) à (j).
+
+**Ouvert.** La fin de l'avis (durées) ; les 15–17 ans et la durée probatoire, à faire valider par un avocat.
