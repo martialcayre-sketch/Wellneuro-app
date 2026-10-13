@@ -206,6 +206,11 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.lecturesImportsBiologiques = (
       await tx.lectureImportBiologique.deleteMany({ where: par })
     ).count;
+    // File durable des lectures ([[D-282]], G3) : FK RESTRICT vers l'import
+    // courant et le compte rendu — les travaux partent AVANT eux.
+    supprimees.travauxExtractionBiologique = (
+      await tx.travailExtractionBiologique.deleteMany({ where: par })
+    ).count;
     supprimees.lignesBiologiquesCandidates = (
       await tx.ligneBiologiqueCandidate.deleteMany({ where: par })
     ).count;

@@ -41,7 +41,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'relectureNote', 'portailMagicLink',
     'packProposition', 'envoiBrouillon', 'portailConnexionGoogle',
     'correspondanceMedecin', 'correspondancePatient', 'documentPatientBiologie',
-    'lectureImportBiologique',
+    'lectureImportBiologique', 'travailExtractionBiologique',
     'ligneBiologiqueCandidate', 'importBiologique', 'compteRenduBiologique',
     'resultatBiologique',
     'rendezVous', 'journalAccesDossier',
@@ -215,6 +215,16 @@ describe('effacerDossier', () => {
     const rang = (nom: string) => appels.indexOf(nom);
     expect(rang('lectureImportBiologique')).toBeGreaterThanOrEqual(0);
     expect(rang('lectureImportBiologique')).toBeLessThan(rang('importBiologique'));
+  });
+
+  // File durable des lectures (D-282) : FK RESTRICT vers l'import courant et
+  // le compte rendu. Déplacée après eux, elle ferait échouer l'effacement.
+  it('supprime les travaux de lecture avant les imports et les comptes rendus', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('travailExtractionBiologique')).toBeGreaterThanOrEqual(0);
+    expect(rang('travailExtractionBiologique')).toBeLessThan(rang('importBiologique'));
+    expect(rang('travailExtractionBiologique')).toBeLessThan(rang('compteRenduBiologique'));
   });
 
   // Revue Copilot de la PR #1385 : un écrivain qui verrouille le dossier en
