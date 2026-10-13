@@ -11,8 +11,9 @@
 --      cohérence, et la liste fermée des motifs ;
 --   3. le trigger refuse (P0001) : import courant d'un autre compte rendu, à
 --      l'insertion comme à la reprise ; import courant retiré ; travail
---      terminé ou en échec modifié ; identité changée (demandeur, compte rendu,
---      date de création) ; tentatives qui reculent ;
+--      terminé ou en échec modifié ; identité changée (clé, demandeur, compte
+--      rendu, date de création) ; tentatives qui reculent ; import neuf qui ne
+--      consomme pas exactement une tentative ;
 --   4. un seul travail ouvert par compte rendu (23505, sous le nom de l'index) ;
 --   5. les clés : compte rendu d'un autre patient (23503) ; import et compte
 --      rendu NON supprimables sous un travail (RESTRICT, par un vrai DELETE) ;
@@ -119,31 +120,34 @@ BEGIN
   -- échec ne ferme pas la file de son document.
   INSERT INTO travaux_extraction_biologique (id, id_patient, id_compte_rendu, demande_par)
   VALUES ('tr_b2', 'PAT_CONTRAT_G3A', 'cr_g3_b', 'praticien@wellneuro.fr');
-  -- Un échec après une tentative, import conservé.
+  -- Une tentative, import ouvert.
   UPDATE travaux_extraction_biologique
      SET statut = 'en_cours', id_import_courant = 'imp_g3_b1', tentatives = 1,
          reserve_jusqua = now() + interval '6 minutes'
    WHERE id = 'tr_b2';
+  -- Réclamé à nouveau, le document est purgé : échec, import conservé.
   UPDATE travaux_extraction_biologique
-     SET statut = 'echec', tentatives = 2, reserve_jusqua = NULL,
-         motif_echec = 'tentatives_epuisees', termine_le = now()
+     SET statut = 'echec', reserve_jusqua = NULL,
+         motif_echec = 'document_purge', termine_le = now()
    WHERE id = 'tr_b2';
 
   -- ── 2. CHECK (23514), chacun sous son nom ────────────────────────────────
   PERFORM pg_temp.refuse('statut hors liste', '23514',
     pg_temp.travail('annule', 0, NULL, false, NULL, false), 'travaux_extraction_bio_statut_check');
   PERFORM pg_temp.refuse('trois tentatives', '23514',
-    pg_temp.travail('echec', 3, NULL, false, 'tentatives_epuisees', true), 'travaux_extraction_bio_tentatives_check');
+    pg_temp.travail('echec', 3, 'imp_g3_c1', false, 'tentatives_epuisees', true), 'travaux_extraction_bio_tentatives_check');
+  -- Aucun statut n'admet un compte négatif : la cohérence, évaluée avant par
+  -- ordre alphabétique des noms, le refuse la première.
   PERFORM pg_temp.refuse('tentatives négatives', '23514',
-    pg_temp.travail('echec', -1, NULL, false, 'tentatives_epuisees', true), 'travaux_extraction_bio_tentatives_check');
+    pg_temp.travail('echec', -1, 'imp_g3_c1', false, 'tentatives_epuisees', true));
   PERFORM pg_temp.refuse('demandeur réduit à des tabulations', '23514',
     pg_temp.travail('en_attente', 0, NULL, false, NULL, false, E'\t'), 'travaux_extraction_bio_demande_par_check');
   PERFORM pg_temp.refuse('demandeur au-delà de 320', '23514',
     pg_temp.travail('en_attente', 0, NULL, false, NULL, false, repeat('a', 321)), 'travaux_extraction_bio_demande_par_check');
   PERFORM pg_temp.refuse('motif hors liste', '23514',
-    pg_temp.travail('echec', 1, NULL, false, 'autre', true), 'travaux_extraction_bio_motif_echec_check');
+    pg_temp.travail('echec', 0, NULL, false, 'autre', true), 'travaux_extraction_bio_motif_echec_check');
   PERFORM pg_temp.refuse('motif qui recopie une valeur lue', '23514',
-    pg_temp.travail('echec', 1, NULL, false, 'K+ 5,2 mmol/L', true), 'travaux_extraction_bio_motif_echec_check');
+    pg_temp.travail('echec', 0, NULL, false, 'K+ 5,2 mmol/L', true), 'travaux_extraction_bio_motif_echec_check');
 
   -- Cohérence, branche par branche.
   PERFORM pg_temp.refuse('en attente avec un import', '23514',
@@ -168,6 +172,8 @@ BEGIN
     pg_temp.travail('en_cours', 1, 'imp_g3_c1', true, 'ligne_validee', false), coh);
   PERFORM pg_temp.refuse('terminé sans import', '23514',
     pg_temp.travail('termine', 1, NULL, false, NULL, true), coh);
+  PERFORM pg_temp.refuse('terminé sans tentative', '23514',
+    pg_temp.travail('termine', 0, 'imp_g3_c1', false, NULL, true), coh);
   PERFORM pg_temp.refuse('terminé sans date de fin', '23514',
     pg_temp.travail('termine', 1, 'imp_g3_c1', false, NULL, false), coh);
   PERFORM pg_temp.refuse('terminé encore réservé', '23514',
@@ -175,11 +181,15 @@ BEGIN
   PERFORM pg_temp.refuse('terminé avec un motif', '23514',
     pg_temp.travail('termine', 1, 'imp_g3_c1', false, 'ligne_validee', true), coh);
   PERFORM pg_temp.refuse('échec sans motif', '23514',
-    pg_temp.travail('echec', 1, NULL, false, NULL, true), coh);
+    pg_temp.travail('echec', 0, NULL, false, NULL, true), coh);
   PERFORM pg_temp.refuse('échec sans date de fin', '23514',
-    pg_temp.travail('echec', 1, NULL, false, 'ligne_validee', false), coh);
+    pg_temp.travail('echec', 0, NULL, false, 'ligne_validee', false), coh);
   PERFORM pg_temp.refuse('échec encore réservé', '23514',
-    pg_temp.travail('echec', 1, NULL, true, 'ligne_validee', true), coh);
+    pg_temp.travail('echec', 0, NULL, true, 'ligne_validee', true), coh);
+  PERFORM pg_temp.refuse('échec sans import après une tentative', '23514',
+    pg_temp.travail('echec', 1, NULL, false, 'ligne_validee', true), coh);
+  PERFORM pg_temp.refuse('échec avec un import sans tentative', '23514',
+    pg_temp.travail('echec', 0, 'imp_g3_c1', false, 'ligne_validee', true), coh);
 
   -- ── 3. TRIGGER (P0001) ───────────────────────────────────────────────────
   PERFORM pg_temp.refuse('import courant d''un autre compte rendu, à l''insertion', 'P0001',
@@ -195,7 +205,11 @@ BEGIN
          reserve_jusqua = now() + interval '6 minutes'
    WHERE id = 'tr_a2';
   PERFORM pg_temp.refuse('reprise sur l''import d''un autre compte rendu', 'P0001',
-    'UPDATE travaux_extraction_biologique SET id_import_courant = ''imp_g3_b1'' WHERE id = ''tr_a2''');
+    'UPDATE travaux_extraction_biologique SET id_import_courant = ''imp_g3_b1'', tentatives = 2 WHERE id = ''tr_a2''');
+  PERFORM pg_temp.refuse('import changé sans consommer de tentative', 'P0001',
+    'UPDATE travaux_extraction_biologique SET id_import_courant = ''imp_g3_a1'' WHERE id = ''tr_a2''');
+  PERFORM pg_temp.refuse('clé primaire changée', 'P0001',
+    'UPDATE travaux_extraction_biologique SET id = ''tr_autre'' WHERE id = ''tr_a2''');
   PERFORM pg_temp.refuse('import courant retiré', 'P0001',
     'UPDATE travaux_extraction_biologique SET id_import_courant = NULL WHERE id = ''tr_a2''');
   PERFORM pg_temp.refuse('demandeur changé', 'P0001',

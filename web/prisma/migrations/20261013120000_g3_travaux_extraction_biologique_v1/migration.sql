@@ -100,11 +100,14 @@ ALTER TABLE "travaux_extraction_biologique"
                            AND "reserve_jusqua" IS NULL AND "termine_le" IS NULL AND "motif_echec" IS NULL
         WHEN 'en_cours'   THEN "id_import_courant" IS NOT NULL AND "tentatives" >= 1
                            AND "reserve_jusqua" IS NOT NULL AND "termine_le" IS NULL AND "motif_echec" IS NULL
-        WHEN 'termine'    THEN "id_import_courant" IS NOT NULL
+        WHEN 'termine'    THEN "id_import_courant" IS NOT NULL AND "tentatives" >= 1
                            AND "reserve_jusqua" IS NULL AND "termine_le" IS NOT NULL AND "motif_echec" IS NULL
         -- Un échec peut naître à la réclamation, avant tout import (document
-        -- purgé, ligne validée…) : l'import y reste facultatif.
+        -- purgé, ligne validée…) : l'import y reste facultatif, mais l'import
+        -- et le compte des tentatives vont ensemble (revue Copilot #1412).
         WHEN 'echec'      THEN "reserve_jusqua" IS NULL AND "termine_le" IS NOT NULL AND "motif_echec" IS NOT NULL
+                           AND CASE WHEN "id_import_courant" IS NULL THEN "tentatives" = 0
+                                    ELSE "tentatives" >= 1 END
         ELSE TRUE
       END
     );
@@ -127,7 +130,8 @@ BEGIN
     IF OLD.statut IN ('termine', 'echec') THEN
       RAISE EXCEPTION '% : un travail terminé est figé (%).', TG_TABLE_NAME, OLD.statut;
     END IF;
-    IF NEW.id_patient IS DISTINCT FROM OLD.id_patient
+    IF NEW.id IS DISTINCT FROM OLD.id
+       OR NEW.id_patient IS DISTINCT FROM OLD.id_patient
        OR NEW.id_compte_rendu IS DISTINCT FROM OLD.id_compte_rendu
        OR NEW.demande_par IS DISTINCT FROM OLD.demande_par
        OR NEW.cree_le IS DISTINCT FROM OLD.cree_le THEN
@@ -138,6 +142,12 @@ BEGIN
     END IF;
     IF OLD.id_import_courant IS NOT NULL AND NEW.id_import_courant IS NULL THEN
       RAISE EXCEPTION '% : un import courant posé ne se retire pas.', TG_TABLE_NAME;
+    END IF;
+    -- Chaque import ouvert consomme UNE tentative : sans cela, la borne de
+    -- deux ne bornerait pas les lectures (revue Copilot #1412).
+    IF NEW.id_import_courant IS DISTINCT FROM OLD.id_import_courant
+       AND NEW.tentatives <> OLD.tentatives + 1 THEN
+      RAISE EXCEPTION '% : un import neuf consomme exactement une tentative.', TG_TABLE_NAME;
     END IF;
   END IF;
 
