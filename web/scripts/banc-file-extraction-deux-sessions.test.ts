@@ -6,6 +6,8 @@
 // (`fileExtraction.ts`, client Prisma et adaptateur `pg` de production) et les
 // courses que la décision a renvoyées à un banc à deux sessions :
 //
+//   0. UNE LECTURE DE L'ANCIEN CHEMIN (`after()`) en vol → la demande est
+//      refusée `extraction_en_cours`, fraîcheur jugée par l'horloge de la base ;
 //   1. DEUX DEMANDES simultanées → un travail, un `lecture_demandee` ;
 //   2. DEUX RÉCLAMATIONS simultanées → une lecture, un rien ; la réservation
 //      de 6 min est datée par la BASE ;
@@ -155,6 +157,20 @@ async function main() {
   let initialesEffacees: string | null = null;
   try {
     await poserFixtures(verrou);
+
+    // 0. Une lecture lancée par l'ancien chemin, encore fraîche.
+    const ANCIEN_CHEMIN = `imp_banc_file_after_${RUN}`;
+    await verrou.query(
+      `INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
+       VALUES ($1, $2, $3, 'modele-banc', 'bio-extraction-v4', $4)`,
+      [ANCIEN_CHEMIN, PATIENT, COMPTE_RENDU, PRATICIEN],
+    );
+    assert.deepEqual(await file.demanderExtraction(demande), { ok: false, reason: 'extraction_en_cours' });
+    await verrou.query(
+      `UPDATE imports_biologiques SET statut = 'echec', motif_echec = 'erreur_fournisseur' WHERE id = $1`,
+      [ANCIEN_CHEMIN],
+    );
+    console.log('ok 0 — une lecture de l’ancien chemin en vol : la demande est refusée « extraction_en_cours »');
 
     // 1. Deux demandes.
     const demandes = await course(verrou, observateur, 2, () => [

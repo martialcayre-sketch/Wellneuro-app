@@ -57,7 +57,9 @@ avant le retrait d'un document, la purge à 30 jours, les bancs à deux sessions
   correctifs de revue ; ceux-ci ne touchent ni l'écran ni les routes
   (internes de la réclamation, banc, CI) et sont couverts par T1 et le banc
   rejoué.
-- Banc rejoué seul sur la base de T2 : 8 cas verts sous `TZ=Europe/Paris`
+- Revue Copilot #1414 : fraîcheur de la demande jugée en SQL (corrigé, cas 0
+  du banc ajouté).
+- Banc rejoué seul sur la base de T2 : 9 cas verts (0 à 7 et 5 bis) sous `TZ=Europe/Paris`
   et sous `TZ=UTC` ; rejouable (fixtures et résidu d'effacement nettoyés).
 - Témoin du cas 7 : `FOR KEY SHARE` retiré → l'effacement meurt en `40P01` ;
   remis → vert.
@@ -80,6 +82,13 @@ avant le retrait d'un document, la purge à 30 jours, les bancs à deux sessions
 
 Routés ou écartés :
 
+- **Horloge client dans `ouvrirExtractionDans`** (revue Copilot #1414) :
+  le refus `extraction_en_cours` du LOT-09 juge encore la fraîcheur d'un import
+  à l'horloge du processus. Corrigé dans la demande (SQL) ; laissé dans
+  l'ouverture, que `D-282` interdit de toucher, et dont la reprise ne dépend
+  plus (elle clôt son propre import). Reste exposé : un import de l'ancien
+  chemin, pendant la seule bascule, sous un décalage d'horloge — à reprendre
+  au lot 5, quand `after()` disparaît.
 - **P2-5** écarté : drapeau rééteint, l'ancien chemin ignore la file ; la
   base reste cohérente (le travail échoue `extraction_en_cours`) et `after()`
   disparaît au lot 5.

@@ -72,10 +72,8 @@ export async function demanderExtraction(params: {
   idPatient: string;
   idCompteRendu: string;
   demandePar: string;
-  maintenant?: Date;
 }): Promise<IssueDemande> {
   const { idPatient, idCompteRendu, demandePar } = params;
-  const maintenant = params.maintenant ?? new Date();
   try {
     return await prisma.$transaction(async tx => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
@@ -94,11 +92,13 @@ export async function demanderExtraction(params: {
         where: { idCompteRendu, idPatient, statut: { in: OUVERTS } },
       });
       if (ouverts > 0) return { ok: false as const, reason: 'lecture_demandee' as const };
-      // Une lecture lancée par l'ancien chemin (`after()`), le temps de la bascule.
-      const limite = new Date(maintenant.getTime() - PEREMPTION_EN_COURS_MS);
-      const enCours = await tx.importBiologique.count({
-        where: { idCompteRendu, idPatient, statut: 'en_cours', lanceLe: { gte: limite } },
-      });
+      // Une lecture lancée par l'ancien chemin (`after()`), le temps de la
+      // bascule. Fraîcheur jugée par l'horloge de la BASE, celle qui a écrit
+      // `lance_le` (trigger) — jamais par celle du processus web (revue #1414).
+      const [{ n: enCours }] = await tx.$queryRaw<{ n: number }[]>`
+        SELECT count(*)::int AS n FROM imports_biologiques
+        WHERE id_compte_rendu = ${idCompteRendu} AND id_patient = ${idPatient} AND statut = 'en_cours'
+          AND lance_le >= (clock_timestamp() AT TIME ZONE 'UTC') - ${`${PEREMPTION_EN_COURS_MS} milliseconds`}::interval`;
       if (enCours > 0) return { ok: false as const, reason: 'extraction_en_cours' as const };
       const validees = await tx.ligneBiologiqueCandidate.count({
         where: { idPatient, statut: 'validee', import: { idCompteRendu } },
