@@ -54,15 +54,15 @@ label supprimés, deux mots de statut, quatre corrections de forme, cases
   `LOT-04` (gabarits « À compléter ») ; les cinq documents à la racine restent.
 - Régénéré : `docs/claude/campagnes/AUDIT_REGLES_CAMPAGNES.md` (51 campagnes,
   0 erreur, 1 warning préexistant `duplicate_lot_ordinal`).
-- Neufs : `changelog.d/2026-10-14-plan-unique-pr2-clotures.md`,
-  `docs/claude/SESSION_LOG.md` (entrée), ce handoff.
+- Neufs : `changelog.d/2026-10-14-plan-unique-pr2-clotures.md`, ce handoff ;
+  modifié : `docs/claude/SESSION_LOG.md` (une entrée ajoutée en fin).
 
 ## Validations exécutées
 
 - `npm ci` et `npx prisma generate` dans le worktree, sans lien externe.
 - T1 complet (`cd web && npm run check`) : vert, code 0, dont
   `campaign-audit-check`, `decisions-check`, `ancres-check`, `hooks-check` et
-  les deux passes anti-secrets.
+  les deux passes anti-secrets. T2 non joué : aucun code touché.
 - `node scripts/wn-campaign-audit.mjs --fail-on-warning-codes …` (commande
   de la CI) : code 0 après les statuts, rejoué code 0 après les corrections.
 - `bash scripts/check_no_secrets.sh` : OK ; aucun `.env*` ; aucun tiret
@@ -70,8 +70,8 @@ label supprimés, deux mots de statut, quatre corrections de forme, cases
 - Contre-lecture sur pièces : dix cases déclarées prouvées, six réfutées ;
   douze faits, deux infirmés et deux réfutés à la portée (corrections ci-dessus).
 - Relecture adverse du diff final par quatre lecteurs, chaque constat soumis
-  à deux contre-lecteurs : résultat au corps de la PR.
-- T2 non joué : aucun écran, aucune route, aucun code touché.
+  à trois contre-lecteurs : 19 constats, 16 retenus, tous corrigés avant le
+  commit (détail au corps de la PR).
 
 ## Problèmes ouverts
 
