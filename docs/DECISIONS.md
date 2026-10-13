@@ -317,6 +317,22 @@ G3 levé dans la feuille de route.
 (LOT-09), la purge du document ([[D-258]]), l'écran praticien, la voie
 patient.
 
+**§7 — Deux arbitrages du responsable avant la mise en service (2026-10-13,
+lot 4).** Posés sur scénarios après la revue du lot 3.
+
+1. **Processus arrêté (P2-2) : une alerte, pas un état d'écran.** Sans
+   processus vivant, une lecture demandée attend et l'écran reste « Lecture en
+   cours » ; elle part d'elle-même au redémarrage. Le processus se signale à
+   une surveillance externe après chaque balayage réussi
+   (`WN_BIO_WORKER_SIGNAL_URL`) ; son silence prévient le responsable par
+   e-mail. **Écarté** : un message d'écran après 10 min (une relance ne sert à
+   rien tant que le processus est arrêté), les deux, rien.
+2. **Validation pendant l'attente d'une relance (P2-6) : acceptée.** Une
+   ligne de l'ancienne lecture validée dans la fenêtre (~2 s, processus
+   vivant) fait échouer la relance sans message ; rien n'est perdu et c'est
+   déjà la règle du LOT-09. **Écarté** : griser les décisions pendant
+   l'attente, afficher le refus.
+
 ### D-281 — Effet indésirable : le patient désigne un élément du programme, cet élément passe en pause, et le praticien valide l'implication avant toute diffusion (SAF-EI-01 amendée, signée en fin de chantier)
 
 - Date : 2026-10-12

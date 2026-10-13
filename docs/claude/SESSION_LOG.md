@@ -10060,3 +10060,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, merge ; arbitrer P2-2 et P2-6 ; lot 4 (`Procfile`, `scale`, drapeau).
 
 **Ouvert.** Travail sans processus vivant (P2-2) ; lignes décidables pendant l'attente (P2-6) ; TEMPS 3 préexistant face à l'effacement.
+
+## 2026-10-13 — G3 de BioFlow : la mise en service (D-282, lot 4)
+
+**Fait.** P2-2 et P2-6 arbitrés (`D-282` §7) : alerte e-mail sur le silence du processus, fenêtre de 2 s acceptée. `worker` au `Procfile` (garde structurelle étendue) ; signal de vie après chaque balayage réussi (`WN_BIO_WORKER_SIGNAL_URL`, borné, ne lève jamais, adresse non journalisée). Variable documentée.
+
+**Écarté.** Message d'écran après 10 min (une relance ne sert à rien sans processus) ; griser les décisions ou afficher le refus pendant l'attente.
+
+**Prochaine action.** CI, merge, déploiement constaté ; le responsable crée la surveillance (60 s, tolérance 6 min), pose l'adresse, `scale worker:1`, constat du signal, PUIS pose le drapeau ; constat sur un dossier de test lu par identifiant.
+
+**Ouvert.** Dossier clos pendant l'attente ; TEMPS 3 face à l'effacement ; horloge client de l'ouverture (lot 5).
