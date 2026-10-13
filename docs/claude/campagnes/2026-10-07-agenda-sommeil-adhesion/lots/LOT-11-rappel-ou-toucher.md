@@ -1,7 +1,7 @@
 ---
 id: "LOT-11"
 titre: "Le rappel dit où toucher — une consigne par téléphone"
-statut: "en_cours (2026-10-11)"
+statut: "terminé (2026-10-11, #1399)"
 dépend_de: "LOT-05"
 ---
 

@@ -20,7 +20,9 @@ couverture de la table de repli sont à jour, et les gardes de saisie vertes à
 
 ## Périmètre
 
-- Barème de charge (`D-198`) et table de repli, re-signés à cinq termes.
+- Barème de charge (`D-198`) et table de repli, re-signés à quatre termes
+  (patron `D-198`/`D-223` ; le cinquième terme de `D-067`, celui des claims,
+  ne s'applique pas à ces deux tables : `D-273`, point 6).
 - `seuilsLitterauxMotives.guard.test.ts`, `tableRepliV1.guard.test.ts`.
 - Gardes de saisie rejouées.
 
@@ -36,7 +38,7 @@ relue), qui suit les fiches.
 ## Interdits
 
 - `D-xxx` amendant `D-105` d'abord, avec son fragment `changelog.d/`.
-- Signature à cinq termes avec `shaPerimetre` littéral ; passe Codex
+- Signature à quatre termes avec `shaPerimetre` littéral (`D-273`) ; passe Codex
   obligatoire (module clinique signé).
 - Pas de secret, pas de donnée patient réelle.
 
@@ -46,9 +48,9 @@ LOT-00 (BP-00).
 
 ## Étapes
 
-- [ ] Rédiger la décision amendant `D-105`.
-- [ ] Re-signer les deux tables.
-- [ ] Mettre à jour les gardes.
+- [x] Rédiger la décision amendant `D-105` (`D-273`).
+- [x] Re-signer les deux tables (`D-273`, point 6).
+- [x] Mettre à jour les gardes.
 
 ## Tests
 
@@ -56,13 +58,15 @@ T3 (module clinique signé).
 
 ## Critères de done
 
-Signatures à cinq termes ; gardes vertes à 7.
+Signatures à quatre termes (`D-273`, point 6 : le critère « cinq termes »
+ne s'applique pas, ces deux tables n'ont aucun claim) ; gardes vertes à 7.
 
 ## Résultats
 
-À compléter à la clôture.
+Fiche corrigée le 2026-10-14 (plan §9, fiche F14) : « quatre termes » à la
+place de « cinq termes », cases cochées sur la preuve de `D-273`, doublon
+de rubrique retiré.
 
-## Résultats
 
 - `MAX_ACTIONS_PROTOCOLE_21J` vaut 7 (`D-273`, amende `D-105`) ; refus du
   moteur, aperçu patient et constructeur disent « sept ».

@@ -1,5 +1,10 @@
 # BIOFLOW — roadmap de coordination
 
+> **2026-10-13 (`D-285` §1)** : le plan unique `docs/claude/PLAN_WELLNEURO.md`
+> absorbe cette feuille de route ; elle reste en place pour ses règles de
+> parallélisme (reprises au plan §5). L'ordre des lots est au plan ; l'arbre
+> ci-dessous se tient à jour quand un lot courant change.
+
 BioFlow est le nom produit de l'ensemble formé par `biology-library`,
 BIO-INGEST et BIO-PARCOURS. **Ce n'est ni une campagne, ni un moteur, ni un
 backlog.**
@@ -12,18 +17,18 @@ décisions vont au registre `D-xxx`.
 BIOFLOW
 │
 ├── Track A — BIO-INGEST
-│   ├── lot courant   : aucun — campagne CLOSE le 2026-10-10 (LOT-12, clôture) ; LOT-05 (adaptateur laboratoire) transféré en FILE_ATTENTE
-│   ├── prochain gate : G2 levé ; G3 LEVÉ le 2026-10-13 (`D-282`, cinq lots : file en base, processus de fond surveillé, reprise automatique ; première lecture par la file constatée, `after()` retiré) ; purge du compte rendu v1 non purgé : redéposer suffit, pas de lot
+│   ├── lot courant   : aucun — campagne TERMINÉE le 2026-10-10 (LOT-12, clôture) ; LOT-05 (adaptateur du laboratoire) transféré au plan le 2026-10-13, gelé sous la porte 29 (fiche F41)
+│   ├── prochain gate : aucun — G3 LEVÉ le 2026-10-13 (`D-282` §8, #1416 : file en base, processus de fond surveillé, reprise automatique, première lecture par la file constatée, `after()` retiré) ; purge du compte rendu v1 non purgé : redéposer suffit, pas de lot
 │   └── objectif      : une donnée biologique fiable
 │
 ├── Track B — BIO-PARCOURS
-│   ├── lot courant   : aucun — LOT-26 (BP-26) terminé le 2026-10-10 (`D-276`, qualification différée à l'aboutissement, aucune fonction retirée) ; les lots de sécurité qu'il a relevés passent en tête de file
-│   ├── prochain gate : G4 levé (`D-276`) ; l'assistance ouvre au fil de sa livraison, derrière drapeau
+│   ├── lot courant   : aucun — campagne EN PAUSE ; LOT-26 (BP-26) terminé le 2026-10-10 (`D-276`, qualification différée à l'aboutissement, aucune fonction retirée) ; les lots de sécurité qu'il a relevés sont LIVRÉS (10A, 11A, 5A, 8B, `D-281` lots 1 et 2) ; reprend par BP-07, rang 1 du plan
+│   ├── prochain gate : aucun — G4 levé (`D-276`) ; l'assistance ouvre au fil de sa livraison, derrière drapeau ; l'ordre est au plan (`docs/claude/PLAN_WELLNEURO.md` §2)
 │   └── objectif      : l'exploitation longitudinale de la donnée validée
 │
-├── Track C — BIO-PRESCRIPTION
-│   ├── statut        : cadrage (audit du 2026-10-05), non ouverte
-│   ├── articulation  : BP-04, BP-16 et BP-18 de BIO-PARCOURS, sans les dupliquer
+├── Track C — lots de BIO-PARCOURS, étapes av à az (ex-« BIO-PRESCRIPTION »)
+│   ├── statut        : cadrage (audit du 2026-10-05), non ouverte ; au plan : av (F33), aw (F34), ax (F35), ay (F36), az (F37)
+│   ├── articulation  : BP-04, BP-16 et BP-18 de BIO-PARCOURS, sans les dupliquer ; à ne pas confondre avec la file C des activations patient (plan §3)
 │   └── objectif      : une exploration hiérarchisée, décidée par le praticien, soumise au médecin
 │
 ├── Socle terminologique — existant, à préserver (audit §3.4)
@@ -31,11 +36,11 @@ BIOFLOW
 │   ├── remboursement dérivé (remboursable.ts), correspondances signées
 │   └── LOINC [futur] : en complément de la NABM, jamais à sa place
 │
-├── CROSS-TRACK GATES
-│   G1  BP-01 (levé, #1314) + D-267 (levé, #1325)       → code LOT-07
-│   G2  LOT-07 livré (levé, #1333)                      → purge, réconciliation des imports
-│   G3  traitement asynchrone durable livré (levé, D-282) → montée en charge de l'ingestion
-│   G4  ligne BP-26 statuée (levé, D-276)               → toute assistance clinique
+├── CROSS-TRACK GATES — tous levés, gardés en historique
+│   G1  BP-01 (levé, #1314) + D-267 (levé, #1325)       → code LOT-07 (livré, #1333)
+│   G2  LOT-07 livré (levé, #1333)                      → purge et réconciliation des imports (livrées : LOT-09 #1335, D-282 §5.4)
+│   G3  = porte 30 du plan, « décision asynchrone durable » : levée le 2026-10-13 par `D-282` (#1410), lots 2 à 5 mergés le même jour (#1412, #1414, #1415, #1416), G3 levé (`D-282` §8) → montée en charge de l'ingestion
+│   G4  ligne BP-26 statuée (levé, D-276)               → toute assistance clinique, fonction par fonction, derrière drapeau
 │
 └── BIOFLOW PLATFORM
     statut : NON OUVERTE (API, SaaS, multi-tenant, connecteurs)
@@ -44,7 +49,8 @@ BIOFLOW
 Le lot courant fait foi dans le `lot_courant` de chaque campagne :
 [BIO-INGEST](../../claude/campagnes/2026-09-30-bio-ingest/CAMPAGNE.md) et
 [BIO-PARCOURS](../../claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md).
-L'arbre ci-dessus se met à jour quand un lot courant change.
+L'arbre ci-dessus se met à jour quand un lot courant change ; l'ordre des
+lots, les portes et les rangs sont au plan unique (`D-285` §1).
 
 ## Parallélisme
 

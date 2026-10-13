@@ -1,9 +1,9 @@
 ---
 id: "2026-10-04-bio-parcours"
 titre: "BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout"
-statut: "en_pause (ouverte le 2026-10-04 — LOT-00, LOT-01, LOT-02, LOT-10, LOT-23, LOT-25 et LOT-26 terminés ; reprend après les lots de sécurité issus de BP-26, puis la priorité libre et la source des seuils du sommeil ; prochain lot du chemin critique : BP-07)"
+statut: "en_pause (ouverte le 2026-10-04 ; LOT-00, LOT-01, LOT-02, LOT-10, LOT-23, LOT-25 et LOT-26 terminés ; lots de sécurité issus de BP-26 livrés : 10A, 11A, 5A, 8B, D-281 lots 1 et 2 ; reprend par BP-07, rang 1 du plan docs/claude/PLAN_WELLNEURO.md)"
 créée_le: "2026-10-04"
-mise_à_jour: "2026-10-10"
+mise_à_jour: "2026-10-14"
 lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
@@ -91,11 +91,15 @@ disent `BP-nn` (`D-266` §15). BP-06 est absorbé par BP-05 : `LOT-06` n'est pas
 attribué. **Campagne en pause, aucun lot
 courant.** BP-26 est terminé le 2026-10-10 (`D-276`) : qualification différée
 à l'aboutissement du produit, aucune fonction retirée ni réduite, porte de
-`D-266` §2 amendée. Ordre arrêté par le responsable le même jour : les lots de
-sécurité relevés par BP-26, puis la priorité posée par le praticien, puis la
-source des seuils de l'agenda du sommeil et de « Mon équilibre ». La campagne
-reprend ensuite par BP-07, tête du chemin critique. Les fiches ne sont écrites que pour la phase 0 ; celles des autres
-lots s'écrivent quand ils arrivent.
+`D-266` §2 amendée. Les lots de sécurité relevés par BP-26 sont livrés (10A,
+11A, 5A, 8B, `D-281` lots 1 et 2 ; lignes datées de la table ci-dessous),
+ainsi que la priorité posée par le praticien (5A) et les seuils sourcés de
+l'agenda du sommeil (8B). La campagne reprend par BP-07, rang 1 du plan
+unique (`docs/claude/PLAN_WELLNEURO.md` §2, fiche F02) ; elle passe
+`en_cours` dans la PR qui écrit la fiche `lots/LOT-07`. L'ordre des lots est
+celui du plan, la campagne dit le travail (`D-285` §1). Les fiches ne sont
+écrites que pour la phase 0 ; celles des autres lots s'écrivent quand ils
+arrivent.
 
 **Clôture d'un lot** : avec le handoff, mettre à jour le suivi BioFlow du
 responsable (page hors dépôt, créée le 2026-10-05) : état du lot, lots
@@ -112,6 +116,11 @@ nouveaux, décisions acceptées.
 | BP-25 | LOT-25 | Plafond d'actions porté à 7 | terminé (2026-10-08, D-273) | non | BP-00 |
 | BP-23 | LOT-23 | Relecture réelle (`D-213` §1) | terminé (2026-10-06) | non | BP-01 |
 | BP-10 | LOT-10 | Sécurité biologique, étage 1 | terminé (2026-10-07) | **oui** | BP-02, BIO-INGEST LOT-07 |
+| — | — | 10A, sans fiche : encart d'urgence, Fil du jour, lettre d'adressage, message au patient et courriel au praticien (`D-275`, `D-277`) | terminé (2026-10-10 ; #1370, #1373, #1374, #1375, #1393) | **oui** (`D-275` §2, constatée le 2026-10-10) | BP-26 |
+| — | — | 11A, sans fiche : effet indésirable « incertain », stress et DASS-21, commentaires du laboratoire (`D-278`) | terminé (2026-10-11 ; #1395 à #1398, #1400, #1401) | **oui** (`D-278` §3, constatée le 2026-10-11) | BP-26 |
+| — | — | 5A, sans fiche : la priorité posée par le praticien (`D-279`) | terminé (2026-10-12 ; #1402, #1403) | **oui** (constatée le 2026-10-11) | BP-26 |
+| — | — | 8B, sans fiche : seuils sourcés de l'agenda du sommeil et de « Peu couvert » (`D-280`) | terminé (2026-10-12 ; #1404) | non | BP-26 |
+| — | — | `D-281` lots 1 et 2, sans fiche : SAF-EI-01 amendée, migration ; le lot 3 (portail) est au plan, rang 1 | terminé (2026-10-13 ; #1406, #1408) | **oui** (constatée le 2026-10-13) | BP-26 |
 | **Phase 1** | | **Fondations** | | | |
 | BP-09 | LOT-09 | Annulation d'un résultat, ajout seul | à_faire | **oui** | BP-00 |
 | BP-07 | LOT-07 | Dossier de preuve remis à Curation signée | à_faire | non | BP-00 |
@@ -145,9 +154,12 @@ nouveaux, décisions acceptées.
 **Chemin critique de l'étage outil** : BP-00 → BP-07 → BP-12a → BP-12b →
 BP-17 → BP-18a → BP-18b → BP-24 → BP-21b. **Branche J1** : BP-12a → BP-11 →
 BP-16 → BP-20 → BP-21a. Le rythme est fixé par les signatures de BP-07.
-Ordre des `release-db`, une à la fois : BIO-INGEST LOT-07, BP-10, BP-09,
-BP-12a, BP-11, BP-12b, BP-13, BP-14, BP-15, BP-18a, BP-18b (s'il porte une
-migration), BP-22 ; puis BP-05, BP-27, BP-19.
+Ordre des `release-db`, une à la fois, arrêté par le plan unique (§5
+« Ce qui ne s'accélère jamais ») : faites, BIO-INGEST LOT-07, BP-10, `D-281`
+lot 2, `D-282` lot 2 ; puis BP-09 (rang 3), l'essai de restauration (porte 8),
+le rang 4 (BP-12a, BP-11, BP-13, BP-15, avec les autres lignes du plan), le
+rang 5 (BP-12b, BP-14, BP-18a, BP-18b s'il porte une migration, BP-05), BP-27
+(rang 6), BP-19 (rang 7), BP-22 (rang 8). Le plan fait foi.
 
 ## Hors périmètre, nommé
 

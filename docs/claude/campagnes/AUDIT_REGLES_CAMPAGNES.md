@@ -1,6 +1,6 @@
 # Audit de conformité des campagnes
 
-- Date: 2026-10-13T22:08:42.772Z
+- Date: 2026-10-13T23:26:49.757Z
 - Campagnes auditées: 51
 - Erreurs: 0
 - Warnings: 1
@@ -71,6 +71,6 @@
 - 2026-09-14-protocole-assiste | terminée (2026-09-16 — neuf lots livrés, contre-revue adverse faite AVANT la clôture (6 réfutations sur 26), et usage MESURÉ au conteneur : zéro version de protocole C1 en production. Le créneau primaire s'ouvre ; son attribution reste un geste du responsable.) | lot_courant=LOT-08 | lots=9 | docs/claude/campagnes/2026-09-14-protocole-assiste/CAMPAGNE.md
 - 2026-09-16-rayon-patients | terminée (2026-09-17 — huit lots livrés, D-220 et D-221 ; contre-revue adverse faite AVANT la clôture, deux affirmations du cadrage réfutées. Le constat d'usage sur dossiers réels reste à faire après déploiement, D-112.) | lot_courant=LOT-07 | lots=8 | docs/claude/campagnes/2026-09-16-rayon-patients/CAMPAGNE.md
 - 2026-09-17-promesse-tenue-partage-medecin | terminée (2026-09-17 — un lot, livré et déployé ; migration appliquée et constatée, drapeau posé) | lot_courant=LOT-00 | lots=1 | docs/claude/campagnes/2026-09-17-promesse-tenue-partage-medecin/CAMPAGNE.md
-- 2026-09-30-bio-ingest | terminée (2026-10-10 — douze lots terminés, LOT-05 transféré ; contre-revue adverse faite AVANT la clôture (C2 confirmée et corrigée, B2 affaiblie, C3 résiste) ; usage constaté au conteneur : 60 résultats sur 2 dossiers, premières transmissions patient le 2026-10-10. BIO-PARCOURS, première campagne parallèle, est promue primaire selon le contrat de l'outil ; une autre attribution reste un geste du responsable.) | lot_courant=LOT-12 | lots=13 | docs/claude/campagnes/2026-09-30-bio-ingest/CAMPAGNE.md
-- 2026-10-04-bio-parcours | en_pause (ouverte le 2026-10-04 — LOT-00, LOT-01, LOT-02, LOT-10, LOT-23, LOT-25 et LOT-26 terminés ; reprend après les lots de sécurité issus de BP-26, puis la priorité libre et la source des seuils du sommeil ; prochain lot du chemin critique : BP-07) | lot_courant=aucun | lots=7 | docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md
-- 2026-10-07-agenda-sommeil-adhesion | en_cours (ouverte le 2026-10-07 — LOT-01, LOT-03 à LOT-10 mergés, recette sur appareil faite ; LOT-02 en attente de lecture le 2026-10-29) | lot_courant=LOT-02 | lots=12 | docs/claude/campagnes/2026-10-07-agenda-sommeil-adhesion/CAMPAGNE.md
+- 2026-09-30-bio-ingest | terminée (2026-10-10 — douze lots terminés, LOT-05 transféré ; contre-revue adverse faite AVANT la clôture (C2 confirmée et corrigée, B2 affaiblie, C3 résiste) ; usage constaté au conteneur : 60 résultats sur 2 dossiers, premières transmissions patient le 2026-10-10. BIO-PARCOURS, première campagne parallèle, est promue primaire selon le contrat de l'outil ; une autre attribution reste un geste du responsable.) | lot_courant=aucun | lots=13 | docs/claude/campagnes/2026-09-30-bio-ingest/CAMPAGNE.md
+- 2026-10-04-bio-parcours | en_pause (ouverte le 2026-10-04 ; LOT-00, LOT-01, LOT-02, LOT-10, LOT-23, LOT-25 et LOT-26 terminés ; lots de sécurité issus de BP-26 livrés : 10A, 11A, 5A, 8B, D-281 lots 1 et 2 ; reprend par BP-07, rang 1 du plan docs/claude/PLAN_WELLNEURO.md) | lot_courant=aucun | lots=7 | docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md
+- 2026-10-07-agenda-sommeil-adhesion | en_cours (ouverte le 2026-10-07 ; LOT-01, LOT-03 à LOT-11 mergés, recette sur appareil faite ; LOT-12 transféré au plan le 2026-10-13 ; LOT-02 en attente de lecture le 2026-10-29) | lot_courant=LOT-02 | lots=12 | docs/claude/campagnes/2026-10-07-agenda-sommeil-adhesion/CAMPAGNE.md

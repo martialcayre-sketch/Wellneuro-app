@@ -16,6 +16,6 @@
 **Lot actif** : LOT-02
 
 **Statut global** : active
-**Mise à jour** : 2026-10-10
+**Mise à jour** : 2026-10-13
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.
