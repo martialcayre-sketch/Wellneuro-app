@@ -1778,7 +1778,7 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 | 2 | E-mail neutre à la diffusion | H75 | t le classe hors relance, sinon il sort de la file ; J3-base | texte de l'e-mail relu | 6 |
 | 3 | « Mes échanges » en lecture | H76 | u, ai, J3-base ; durée de D-283 §2 | encart d'urgence étendu ; lecture datée | 7 |
 | 4 | Dépôt de documents | H77 | porte 17 (levée), registre, J3-collecte, J2-conf | texte de collecte (G-11) | 8 |
-| 5 | Textes des mineurs | H78 | z, J2-conf, puis J3-mineurs | textes des mineurs (G-11) ; constat par lecture consignée | 9 |
+| 5 | Textes des mineurs | H78 | z, J2-conf | textes des mineurs (G-11) ; constat par lecture consignée | 9 |
 | 6 | Fiche signalétique (date de naissance, invitation au dépôt) | F45 | z, k, texte accusé ; seule surface neuve permise à un dossier sans date (D-283 §5) | texte patient | 10 |
 | 7 | Invitation d'autoévaluation au 21e jour | H80 | k, t, texte patient | texte patient | 10 |
 | 8 | Fiche compléments | F78 | J3-bio (porte 19), règle signée et C4 (porte 28), ACT-1 | texte de la fiche | 10 |
@@ -1982,13 +1982,13 @@ Un gel n'a pas de rang : il prend un rang au déclencheur posé, par la règle. 
 - **Critère de fin** : banc rejouable en CI ; écart mesuré par modèle.
 
 #### F72 · P1 : industrialisation du cœur
-- **Identifiant, piste** : jobs durables, worker, reprise et idempotence, gold dataset, observabilité, métriques de qualité, coût réel par document (`docs/claude/campagnes/AUDIT_BIOFLOW_2026-10-04.md:730-740`) ; plateforme.
-- **Rang** : gelé, déclencheur proposé [Hypothese] : l'ouverture par le responsable de P1, au plus tard avant tout changement du modèle d'extraction ; si ouvert, banc sur fixtures au rang 1 au plus tôt, worker au rang 4 au plus tôt (F42) [Hypothese]. Le worker suit la porte 30.
-- **Portes, préalables** : P0 (fiabilité) tenu par la clôture de BIO-INGEST ; fixtures seules.
-- **Migration, release-db** : selon (worker).
-- **Décisions, textes** : D-xxx de P1 à l'ouverture ; ck pour le worker. La dette « banc à base réelle » du LOT-02 de biologie-exploitee y est candidate, à trancher.
+- **Identifiant, piste** : jeu de référence (gold dataset), observabilité, métriques de qualité, coût réel par document (`docs/claude/campagnes/AUDIT_BIOFLOW_2026-10-04.md:730-740`) ; plateforme. Les jobs durables, le processus de fond, la reprise et l'idempotence sont livrés (D-282, F42).
+- **Rang** : gelé, déclencheur proposé [Hypothese] : l'ouverture par le responsable de P1, au plus tard avant tout changement du modèle d'extraction ; si ouvert, banc sur fixtures au rang 1 au plus tôt [Hypothese].
+- **Portes, préalables** : P0 (fiabilité) tenu par la clôture de BIO-INGEST ; G3 clos (D-282 §8) ; fixtures seules.
+- **Migration, release-db** : non a priori.
+- **Décisions, textes** : D-xxx de P1 à l'ouverture. La dette « banc à base réelle » du LOT-02 de biologie-exploitee y est candidate, à trancher.
 - **Critère de fin** : gold dataset rejouable en CI ; coût par document mesuré ; jamais un dossier réel.
-- **Mise à jour (2026-10-13)** : « ck pour le worker » se lit « D-282 pour le worker » (porte 30 levée le 2026-10-13) ; le processus de fond du G3 est livré et le G3 clos (#1415, #1416 ; F42, close) : F72 ne porte plus que le jeu de référence et les mesures de P1.
+- **Mise à jour (2026-10-13)** : le processus de fond du G3 (jobs durables, reprise, idempotence) est livré et le G3 clos (#1415, #1416 ; F42, close) : F72 ne porte plus que le jeu de référence et les mesures de P1 ; ses champs sont réécrits en conséquence (revue de #1417).
 
 #### F73 · P2 : préparation à l'externalisation
 - **Identifiant, piste** : frontières de domaine, organisation et tenant, isolation, API versionnée, terminologies versionnées, LOINC si besoin démontré, en complément de la NABM (`docs/claude/campagnes/AUDIT_BIOFLOW_2026-10-04.md:742-756`) ; plateforme.

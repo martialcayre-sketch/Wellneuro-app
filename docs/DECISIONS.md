@@ -66,8 +66,10 @@ entrées gelées rejoignent les gelés du plan ; ses entrées terminées ou
 obsolètes disparaissent. L'adresse de routage d'un commentaire de revue
 « routé » ([[D-214]]) devient le plan : la règle
 `.claude/rules/pr-revue-et-release-db.md` et le skill `wn-merge` sont
-réécrits en conséquence (PR 5). D'ici là, un commentaire routé se consigne au
-plan dans la PR qui le reçoit.
+réécrits en conséquence (PR 5). D'ici là, la règle et le skill en vigueur font
+foi : un commentaire routé va encore à `docs/claude/campagnes/FILE_ATTENTE.md`
+ou à une dette nommée, et la PR 5 reporte au plan ce qui y sera entré
+entre-temps.
 
 **§5 — Archivage par déplacement, avec bandeau daté.** Les feuilles de route,
 programmes, cadrages et photographies remplacés sont déplacés sous
