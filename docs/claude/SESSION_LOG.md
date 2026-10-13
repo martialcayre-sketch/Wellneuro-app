@@ -10112,3 +10112,13 @@ qualité inchangés (item de l'indice).
 **Arbitrages du 2026-10-14** (questions à options). `origin/main` (#1418) fusionné dans la branche sur accord ; cc compte comme une place de la file C ; la porte 15 vaut pour le code de bf (instruction au rang 0) ; les trois constats ci-dessous vont au plan seulement, aucun code pendant le versement.
 
 **Ouvert.** À reporter à la prochaine version du plan : synthèse IA aveugle aux pseudo-items `AGA_*` ; banc de vocabulaire du LOT-04 biologie exploitée troué (« élevé », « bas ») ; `D-045` sans sort au plan §7.
+
+## 2026-10-14 — Plan unique WellNeuro 6.0 : le pilotage renvoie au plan (PR 3 du versement)
+
+**Fait.** Depuis un worktree sur `origin/main` 09bd86b1 (PR 2 déployée) : `.wn/state.json` renvoie au plan (tête neuve, ancienne tête en trace, 23 entrées de dettes versées au §8 et retirées, `blocking_issues` vide, validation du jour), `wn-cycle --appliquer` (D-285 à D-281, vue régénérée) ; BIO-PARCOURS, sommeil et BIO-INGEST réalignés (LOT-11 terminé, LOT-12 et LOT-05 transférés au plan, `lot_courant` « aucun ») ; fiche LOT-25 « quatre termes » ; `BIOFLOW_ROADMAP.md` (G3 levé, piste C av à az, porte 30) ; `PROJET_CONTEXTE.md` et `campagnes/README.md` renvoient au plan ; audit régénéré. T1 complet vert, audit CI vert, bancs d'état 89/89, relecture adverse : 5 constats, 1 corrigé.
+
+**Écarté.** Poser `status` « en_pause » (vocabulaire de l'outillage : active/idle) ; réécrire la table du README des campagnes (PR 6) ; toucher à la ligne 80 de BIO-INGEST (PR 6).
+
+**Prochaine action.** CI, commentaires lus, merge, déploiement constaté ; puis PR 4 (archivage), PR 5, PR 6, en autonomie (mandat du 2026-10-14).
+
+**Ouvert.** Pagination, PDF natif, coaching autonome, RAG SIIN plein : non nommés par le plan, à verser à sa prochaine version.

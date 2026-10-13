@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Adaptateur laboratoire (pilote Barbier Metz)"
-statut: "abandonné dans cette campagne — TRANSFÉRÉ le 2026-10-10 vers une campagne propre (FILE_ATTENTE, à cadrer)"
+statut: "abandonné dans cette campagne, TRANSFÉRÉ le 2026-10-13 au plan (adaptateur du laboratoire, gelé sous la porte 29)"
 dépend_de: "LOT-02, format réel reçu"
 ---
 
@@ -13,6 +13,11 @@ dépend_de: "LOT-02, format réel reçu"
 > cadrer » dans `FILE_ATTENTE.md`. Le cadrage du 2026-10-07
 > (`CADRAGE_LOT05_ADAPTATEUR_2026-10-07.md`) et cette fiche restent la
 > référence.
+>
+> **Le 2026-10-13**, la file d'attente est supprimée par `D-285` : le lot est
+> gelé au plan unique (`docs/claude/PLAN_WELLNEURO.md` §6, fiche F41) sous la
+> porte 29, « réponse écrite et format réel du laboratoire pilote » ; la
+> relance écrite du laboratoire est un geste du responsable de rang 0 (h3).
 
 ## But
 

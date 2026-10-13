@@ -1,10 +1,13 @@
 # Campagnes WellNeuro — index
 
-> Mis à jour le 2026-08-02. Les frontières, invariants et arbitrages sont
-> dans `docs/claude/REGISTRE_FRONTIERES.md` (source normative). La séquence
-> active est dans **`PROGRAMME_WELLNEURO_5_0.md`** (qui réintègre les
-> campagnes cadrées du programme 3.2 sans les dupliquer). Statuts « cadrée »
-> = décisions et frontières figées, lots détaillés compilés en N+1.
+> Mis à jour le 2026-08-02 ; renvoi posé le 2026-10-14. Les frontières,
+> invariants et arbitrages sont dans `docs/claude/REGISTRE_FRONTIERES.md`
+> (source normative). La séquence est dans **`docs/claude/PLAN_WELLNEURO.md`**
+> (plan unique, `D-285`) ; les programmes 3.2 et 5.0 sont de l'historique. La
+> table ci-dessous est une photographie du 2026-08-02 : le statut qui fait foi
+> est le frontmatter de chaque `CAMPAGNE.md`, contrôlé par
+> `scripts/wn-campaign-audit.mjs` (`AUDIT_REGLES_CAMPAGNES.md`). Statuts
+> « cadrée » = décisions et frontières figées, lots détaillés compilés en N+1.
 
 | Ordre | Campagne | Statut | Dépendance | Lots |
 |---|---|---|---|---|

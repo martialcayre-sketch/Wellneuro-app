@@ -1,11 +1,17 @@
 ---
 id: "LOT-12"
 titre: "Habillage visuel de l’agenda — la forme d’une maquette, sans son instrument"
-statut: "à_faire (quatre questions arbitrées le 2026-10-12, le reste à confirmer au cadrage ; ouverture après la lecture du LOT-02 du 2026-10-29)"
+statut: "abandonné dans cette campagne, TRANSFÉRÉ le 2026-10-13 au plan (cc, cf)"
 dépend_de: "LOT-02"
 ---
 
 # LOT-12 — Habillage visuel de l’agenda
+
+> **Transféré au plan le 2026-10-13** (`D-285`) : l’habillage de la saisie suit
+> la lettre cc (fiche H48) et les indices de clôture côte à côte la lettre cf
+> (fiche H66), dans `docs/claude/PLAN_WELLNEURO.md`. Cette fiche reste la
+> référence des arbitrages du 2026-10-12 ; la condition d’ouverture (lecture
+> du LOT-02 le 2026-10-29) est reprise par le plan.
 
 ## Constat
 

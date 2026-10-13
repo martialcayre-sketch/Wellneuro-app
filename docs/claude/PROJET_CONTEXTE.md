@@ -186,20 +186,19 @@ décision fait rougir le banc en CI — la dette se voit le jour où elle naît.
 biologie fonctionnelle** — 987 actes NABM en base depuis le 2026-07-26 et
 **aucun appelant hors de son propre répertoire**.
 
-## Ce qui reste ouvert (hors périmètre sauf demande explicite)
+## Ce qui reste ouvert
 
-- ~~R6 / R8 techniques~~ — **livrés** (R0→R10 clos, voir
-  `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`) ; ces deux puces sont restées ici
-  périmées jusqu'au 2026-08-21.
-- Calendrier de décommission de `packs.qids` : statut « surveillance », pas de date fixée (R10).
-- Curation de `QuestionnaireDefinition.niveau` / `.publicCible` : statut « surveillance », pas d'usage applicatif à ce jour (R10).
-- Pagination patients/assignations si le volume dépasse ~100 lignes.
-- RAG SIIN complet (le prompt système utilise un mini-corpus non validé, pas
-  le corpus plein). Le registre sanitaire des 391 notices n'est pas
-  activable ; gates G0–G6 obligatoires.
-- Génération PDF native (actuellement HTML + impression navigateur), signature électronique du booklet.
-- Coaching patient autonome, SSO praticien multi-établissement.
-- Séquencement : la roadmap de reprise **R0 → R10 est intégralement soldée** (`docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`) — elle ne séquence plus rien, elle s'archive.
+Depuis le 2026-10-13, ce qui reste ouvert se lit dans le plan unique
+`docs/claude/PLAN_WELLNEURO.md` (`D-285`, lettre cq) : portes et rangs (§1,
+§2), limites et fermetures (§5), gelés sous déclencheur (§6), abandonnés
+datés (§7), dettes sans rang (§8). De la liste que portait cette section, le
+plan nomme le SSO multi-établissement et le RAG dynamique (fermés, §5),
+`packs.qids` (gelé, §6) et la curation de `niveau` / `publicCible` (§8) ; il
+ne nomme pas la pagination au-delà de ~100 lignes, la génération PDF native
+avec signature du booklet, le coaching patient autonome ni le RAG SIIN plein :
+ils n'étaient pas en cours (« hors périmètre sauf demande explicite ») et
+restent à verser à la prochaine version du plan. Le texte d'avant reste
+lisible dans l'historique Git.
 
 ## Où regarder pour aller plus loin
 
