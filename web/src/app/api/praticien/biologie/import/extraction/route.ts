@@ -1,27 +1,24 @@
-import { after, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { garderImport } from '@/lib/biology-library/import/garde';
-import { ouvrirExtraction, poursuivreExtraction } from '@/lib/biology-library/import/lancerExtraction';
 import { demanderExtraction } from '@/lib/biology-library/import/fileExtraction';
-import { isBioExtractionAsync } from '@/lib/biology-library/featureFlag';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
-// Lance l'extraction d'un compte rendu déposé (BIO-INGEST LOT-02, [[D-256]]
-// A4) : le document part ENTIER chez Anthropic. ASYNCHRONE : la réponse
-// (202) rend l'import ouvert `en_cours`, l'appel se poursuit dans `after()` —
-// trois pages durent ~36 s (mesure du 2026-10-02), au-delà de la fenêtre de
-// 30 s du routeur Scalingo. L'écran relit le compte rendu jusqu'à l'issue
-// (`extrait`, ou `echec` et son motif fermé ; un processus mort est rattrapé
-// par la péremption). Une nouvelle extraction du même document crée un nouvel
-// import ; les précédents restent. Elle est refusée dès qu'une ligne d'un
-// import de ce compte rendu est validée (LOT-09, `ligne_validee`, 409).
+// Demande la lecture d'un compte rendu déposé (BIO-INGEST LOT-02, [[D-256]]
+// A4) : le document part ENTIER chez Anthropic. PAR LA FILE DURABLE
+// ([[D-282]], G3) : la route écrit un travail `en_attente` (sans import) et
+// rend 202 ; le processus de fond le réclame, ouvre l'import et lit — trois
+// pages durent ~36 s (mesure du 2026-10-02), au-delà de la fenêtre de 30 s du
+// routeur Scalingo. L'écran relit le compte rendu jusqu'à l'issue. Une
+// nouvelle lecture du même document crée un nouvel import ; les précédents
+// restent. Refus jugés avant d'enfiler : `ligne_validee` dès qu'une ligne d'un
+// import de ce compte rendu est validée (LOT-09), `lecture_demandee` pour une
+// lecture déjà en file ou en reprise (409).
 //
-// LA FILE DURABLE ([[D-282]], G3), drapeau `WN_BIO_EXTRACTION_ASYNC` allumé :
-// la route DEMANDE la lecture (un travail `en_attente`, sans import) et rend
-// 202 ; le processus de fond la réclame, ouvre l'import et lit. Mêmes refus,
-// jugés avant d'enfiler, et un de plus : `lecture_demandee` (409), une lecture
-// déjà en file ou en reprise. Drapeau éteint : `after()`, inchangé.
+// Le chemin `after()` dans le processus web est retiré au lot 5 de [[D-282]],
+// après une première lecture réussie par la file (2026-10-13) : il n'en reste
+// qu'un, et le drapeau de bascule `WN_BIO_EXTRACTION_ASYNC` n'est plus lu.
 
 export const runtime = 'nodejs';
 
@@ -65,30 +62,12 @@ export async function POST(req: Request) {
     });
     if (!patient || !accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
 
-    if (isBioExtractionAsync()) {
-      const demande = await demanderExtraction({ idPatient, idCompteRendu, demandePar: garde.email });
-      if (!demande.ok) {
-        const status = demande.reason === 'compte_rendu_introuvable' ? 404 : 409;
-        return echec(demande.reason, MESSAGES[demande.reason], status);
-      }
-      return NextResponse.json({ ok: true, idTravail: demande.idTravail, statut: 'en_attente' }, { status: 202 });
+    const demande = await demanderExtraction({ idPatient, idCompteRendu, demandePar: garde.email });
+    if (!demande.ok) {
+      const status = demande.reason === 'compte_rendu_introuvable' ? 404 : 409;
+      return echec(demande.reason, MESSAGES[demande.reason], status);
     }
-
-    const ouverture = await ouvrirExtraction({ idPatient, idCompteRendu, lancePar: garde.email });
-    if (!ouverture.ok) {
-      const status = ouverture.reason === 'compte_rendu_introuvable' ? 404 : 409;
-      return echec(ouverture.reason, MESSAGES[ouverture.reason], status);
-    }
-    const { idImport } = ouverture;
-    after(async () => {
-      try {
-        await poursuivreExtraction({ idPatient, idCompteRendu, idImport });
-      } catch (err) {
-        // L'import reste `en_cours` : la péremption le clora `delai_depasse`.
-        console.error('[praticien/biologie/import/extraction] suite interrompue :', ...classeEtCode(err));
-      }
-    });
-    return NextResponse.json({ ok: true, idImport, statut: 'en_cours' }, { status: 202 });
+    return NextResponse.json({ ok: true, idTravail: demande.idTravail, statut: 'en_attente' }, { status: 202 });
   } catch (err) {
     console.error('[praticien/biologie/import/extraction POST] refus :', ...classeEtCode(err));
     return echec('server_error', 'Erreur technique.', 500);

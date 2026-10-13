@@ -133,19 +133,3 @@ export function isBioPortailEnabled(
 ): boolean {
   return isBioIngestEnabled(valueImport, valueResultats, valueRayon) && value === 'true';
 }
-
-/**
- * La lecture d'un compte rendu passe par la FILE DURABLE ([[D-282]], G3) au
- * lieu d'`after()` dans le processus web. Drapeau de MISE EN SERVICE, pas de
- * secours durable (§5.2) : `after()` est retiré au lot 5, après une première
- * lecture réussie par la file.
- *
- * Il ne garde QUE la route qui lance une lecture. Le processus de fond, lui,
- * traite la file et balaie les fantômes drapeau éteint aussi : un drapeau
- * rééteint ne doit pas laisser des travaux déjà demandés sans personne pour
- * les lire. Le responsable ajoute le conteneur AVANT de poser le drapeau
- * (§6.4). Absent = éteint (fail-closed).
- */
-export function isBioExtractionAsync(value = process.env.WN_BIO_EXTRACTION_ASYNC): boolean {
-  return value === 'true';
-}

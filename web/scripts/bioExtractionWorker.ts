@@ -1,13 +1,13 @@
 // Processus de fond de la file des lectures de comptes rendus biologiques
 // ([[D-282]], G3, lot 3) :
 //   npm run bio:worker-extraction
-// Au `Procfile` depuis le lot 4 ; le responsable ajoute le conteneur
-// (`scale worker:1`) PUIS pose `WN_BIO_EXTRACTION_ASYNC` (§6.4).
+// Au `Procfile` depuis le lot 4 (`scale worker:1`, constaté le 2026-10-13) ;
+// seul lecteur depuis le lot 5, qui retire `after()` de la route.
 //
 // UNE BOUCLE, UN TRAVAIL À LA FOIS. Chaque tour réclame le plus ancien travail
 // réclamable, le lit, le termine ; la file vide, il attend 2 s. Toutes les
-// minutes, il balaie les FANTÔMES (§5.4) — drapeau éteint aussi : les imports
-// laissés `en_cours` par un `after()` mort sont clos sans attendre un geste.
+// minutes, il balaie les FANTÔMES (§5.4) : les imports laissés `en_cours` par
+// un processus mort sont clos sans attendre un geste.
 //
 // LE SIGNAL DE VIE (lot 4, P2-2) : après chaque balayage RÉUSSI — la boucle
 // tourne ET la base répond —, un appel à `WN_BIO_WORKER_SIGNAL_URL`. Une

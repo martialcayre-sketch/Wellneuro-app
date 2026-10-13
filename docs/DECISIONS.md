@@ -333,6 +333,17 @@ lot 4).** Posés sur scénarios après la revue du lot 3.
    déjà la règle du LOT-09. **Écarté** : griser les décisions pendant
    l'attente, afficher le refus.
 
+**§8 — Mise en service et clôture (2026-10-13, lots 4 et 5).** Lot 4 (#1415)
+déployé ; surveillance du signal de vie créée et au vert ; `scale worker:1` ;
+drapeau posé, conteneurs web relancés. Première lecture par la file sur un
+dossier de test, constatée par conteneur : travail `termine` à la première
+tentative, import `extrait`, aucun fantôme. Lot 5 : `after()` retiré de la
+route, qui demande toujours à la file ; le drapeau n'est plus lu ; la fraîcheur
+d'un import `en_cours` à l'ouverture se juge à l'horloge de la base (revue
+#1414). **G3 levé** dans `BIOFLOW_ROADMAP.md`. Restent ouverts, hors G3 : un
+dossier clos pendant l'attente n'est pas rejugé à la réclamation ; la
+transaction des lignes (TEMPS 3) n'est pas ordonnée face à l'effacement.
+
 ### D-281 — Effet indésirable : le patient désigne un élément du programme, cet élément passe en pause, et le praticien valide l'implication avant toute diffusion (SAF-EI-01 amendée, signée en fin de chantier)
 
 - Date : 2026-10-12
