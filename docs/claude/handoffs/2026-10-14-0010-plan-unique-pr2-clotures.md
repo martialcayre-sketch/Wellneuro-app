@@ -38,12 +38,10 @@ label supprimés, deux mots de statut, quatre corrections de forme, cases
   manque.
 - Dates : statuts, lignes datées et `mise_à_jour` portent le 2026-10-13, date
   de `D-285` ; la PR est construite dans la nuit du 13 au 14.
-- Arbitrages du responsable du 2026-10-14, sur questions à options : cc
-  compte comme une place de la file C (constat sur un vrai dossier, après
-  l'encart) ; la porte 15 vaut pour le code de bf, son instruction reste au
-  rang 0 ; les trois constats ci-dessous vont au plan seulement (deux dettes,
-  une correction du §7), aucun code pendant le versement ; `origin/main`
-  fusionné dans la branche. À reporter à la prochaine version du plan.
+- Arbitrages du responsable du 2026-10-14 (questions à options) : cc = place
+  de la file C ; porte 15 pour le code de bf, instruction au rang 0 ; les
+  trois constats ci-dessous au plan seulement, aucun code pendant le
+  versement ; `origin/main` fusionné dans la branche. À reporter au plan.
 
 ## Fichiers modifiés
 
