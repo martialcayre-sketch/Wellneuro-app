@@ -193,12 +193,13 @@ Depuis le 2026-10-13, ce qui reste ouvert se lit dans le plan unique
 §2), limites et fermetures (§5), gelés sous déclencheur (§6), abandonnés
 datés (§7), dettes sans rang (§8). De la liste que portait cette section, le
 plan nomme le SSO multi-établissement et le RAG dynamique (fermés, §5),
-`packs.qids` (gelé, §6) et la curation de `niveau` / `publicCible` (§8) ; il
-ne nomme pas la pagination au-delà de ~100 lignes, la génération PDF native
-avec signature du booklet, le coaching patient autonome ni le RAG SIIN plein :
-ils n'étaient pas en cours (« hors périmètre sauf demande explicite ») et
-restent à verser à la prochaine version du plan. Le texte d'avant reste
-lisible dans l'historique Git.
+`packs.qids` (gelé, §6) et la curation de `niveau` / `publicCible` (§8) ; la
+pagination au-delà de ~100 lignes y est nommée (§9, renvoi au constat S-1 et
+au §8) sans qu'aucune fiche ni ligne du §8 ne la porte ; la génération PDF
+native avec signature du booklet, le coaching patient autonome et le RAG SIIN
+plein n'y figurent pas. Ces quatre sujets n'étaient pas en cours (« hors
+périmètre sauf demande explicite ») et restent à verser à la prochaine version
+du plan. Le texte d'avant reste lisible dans l'historique Git.
 
 ## Où regarder pour aller plus loin
 

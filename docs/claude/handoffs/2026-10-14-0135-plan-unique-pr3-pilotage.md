@@ -77,11 +77,12 @@ BIO-PARCOURS, LOT-05 de BIO-INGEST ; `BIOFLOW_ROADMAP.md` ;
 ## Problèmes ouverts
 
 - À reporter à la prochaine version du plan : la pagination au-delà de
-  ~100 lignes, la génération PDF native avec signature du booklet, le
-  coaching patient autonome et le RAG SIIN plein ne sont pas nommés par le
-  plan (le §5 ne ferme SSO et RAG dynamique que par renvoi à
-  `HISTORIQUE_CHANTIERS_TECHNIQUES.md:82-93`, qui part en archive en PR 4 ;
-  la pagination citée au §9 « au §8 » n'y figure pas).
+  ~100 lignes est nommée au §9 (renvoi à S-1 et au §8) mais portée par aucune
+  fiche ni ligne du §8 ; la génération PDF native avec signature du booklet,
+  le coaching patient autonome et le RAG SIIN plein ne sont pas nommés (le §5
+  ne ferme SSO et RAG dynamique que par renvoi à
+  `HISTORIQUE_CHANTIERS_TECHNIQUES.md:82-93`, qui part en archive en PR 4).
+  Remarque Copilot sur #1420 : corrigée.
 - Restent de la PR 2 : pseudo-items `AGA_*`, banc « élevé / bas », `D-045`
   sans sort au §7, « restes a et b sous R:ao ».
 - La table des lots de BIO-INGEST (`CAMPAGNE.md:80`) dit encore
