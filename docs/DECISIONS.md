@@ -4,6 +4,105 @@
 
 ## Décisions actives
 
+### D-282 — G3 de BioFlow : la lecture d'un compte rendu biologique passe par une file durable en base et un processus de fond, avec une reprise automatique
+
+- Date : 2026-10-13
+- Statut : accepté. Le responsable lève son report du 2026-10-06 (« G3
+  différé ») et demande le G3 **complet** : il accepte un conteneur de fond
+  facturé, une migration et plusieurs jours de travail. Architecture instruite
+  par l'agent architecte (lecture seule), puis quatre arbitrages du responsable
+  rendus le même jour sur scénarios.
+- Domaine : BIO-INGEST (campagne close le 2026-10-10), gate G3 de
+  `BIOFLOW_ROADMAP.md`. **Aucune règle clinique, aucun seuil** : les chiffres
+  ci-dessous sont techniques (`DC-20`).
+- Livraison : cinq lots, dans l'ordre du §6. Pas de campagne neuve : ce
+  registre et les handoffs portent le suivi.
+
+**§1 — Le constat.** Seul le praticien déclenche une lecture
+(`api/praticien/biologie/import/extraction`). La voie patient dépose, elle ne
+lit pas ([[D-269]] §1). La route ouvre l'import `en_cours` sous verrou, rend
+202, puis confie l'appel à l'IA à `after()` **dans le processus web**. L'appel
+est borné en totalité (240 s, signal d'abandon, LOT-08), et la transaction des
+lignes (20 s) le suit, sous la péremption de 5 min. **Si le processus meurt**
+(redéploiement, panne, mémoire), l'import reste `en_cours` en base : un
+fantôme. Il n'est clos `delai_depasse` qu'au geste suivant ou par la purge
+horaire. L'écran le montre déjà comme interrompu et rouvre la relance (garantie
+B2, `LOT-12-cloture.md` §1). La lecture n'est donc durable ni dans son
+résultat, ni dans son état en base.
+
+**§2 — L'architecture retenue.** Une **table de travaux** dans PostgreSQL,
+réclamée par `FOR UPDATE SKIP LOCKED`, et un **processus `worker`** au
+`Procfile`, lancé par le même exécuteur que la purge horaire. Même dépôt, même
+image, même base : ni service séparé, ni Redis, ni autre langage. L'écran ne
+change pas, puisqu'il interroge déjà l'état tant qu'il est `en_cours`.
+La lecture elle-même (`poursuivreExtraction`, sa borne, sa garde) est
+**inchangée** : le processus de fond l'appelle au lieu d'`after()`.
+
+**Écartés.** Une bibliothèque de file (pg-boss, graphile-worker) : elle crée
+et migre son propre schéma à l'exécution, donc écrit en production hors de la
+`release-db` ([[D-087]]), et ferait dériver la parité schéma ↔ migrations.
+Faire des imports eux-mêmes la file : une reprise crée un import neuf, un
+« travail » s'étalerait sur plusieurs lignes d'une trace auditée. Une tâche
+planifiée à la minute : latence et démarrage d'un conteneur devant un
+praticien qui attend.
+
+**§3 — Le modèle.** Un travail porte le dossier, le compte rendu, l'import de
+sa tentative courante, le praticien qui l'a demandé, un statut fermé
+(`en_attente`, `en_cours`, `termine`, `echec`), un nombre de tentatives, une
+**échéance de réservation**, et ses dates. Un seul travail ouvert par compte
+rendu (index unique partiel), RLS deny-all, effacement IDP2. Toute comparaison
+de temps se fait **en SQL** (`now()`), jamais côté client. La forme exacte
+(colonnes, CHECK, index) est fixée par la migration et son contrat SQL, relus
+au lot 2.
+
+**§4 — Les chiffres techniques.** Réservation de **6 minutes** : plus longue
+que la péremption d'un import (5 min), elle-même plus longue que la lecture
+bornée (240 s + 20 s). Aucun battement de cœur n'est donc nécessaire, car un
+travail vivant finit toujours avant que sa réservation n'expire. **Deux
+tentatives au plus.** La borne de 240 s et le signal d'abandon du LOT-08 ne
+bougent pas.
+
+**§5 — Les quatre arbitrages du responsable (2026-10-13).**
+
+1. **Reprise automatique, une fois.** Si le processus de fond meurt pendant
+   une lecture, le travail redevient réclamable à l'échéance de sa
+   réservation. L'import fantôme est clos `delai_depasse`, puis la lecture est
+   **relancée une fois** par le chemin de relance existant (LOT-09) : rien
+   n'est effacé, et le refus `ligne_validee` tient. La relance garde le
+   praticien d'origine comme demandeur. Coût assumé : la lecture est alors
+   facturée deux fois par l'IA. Après la seconde tentative, le travail passe en
+   `echec` et l'écran rouvre la relance manuelle, comme aujourd'hui. Chaque
+   déploiement redémarre le processus de fond : c'est le cas nominal de cette
+   reprise.
+2. **L'ancien chemin est retiré après constat.** Le drapeau
+   `WN_BIO_EXTRACTION_ASYNC` (éteint par défaut) bascule de l'`after()` vers la
+   file. Il sert la mise en service, pas un secours durable. Après une première
+   lecture réussie en production par la file, `after()` est retiré du code au
+   lot 5 : il ne reste qu'un chemin.
+3. **Les travaux terminés sont purgés à 30 jours**, par la purge horaire
+   existante, comme le document. La trace qui prouve un résultat (import,
+   lignes, décisions) n'est pas dans cette table et ne bouge pas. Les travaux
+   partent aussi avec le dossier.
+4. **Les fantômes sont réconciliés en continu.** Le processus de fond balaie
+   les imports `en_cours` au-delà de la péremption et les clôt
+   `delai_depasse`, comme le font déjà la relance, l'écart et la purge. Les
+   imports historiques ne reçoivent **aucun** travail rétroactif.
+
+**§6 — Ordre et gestes humains.**
+(1) Cette décision. (2) La migration seule, contrat SQL compris, relue puis
+`release-db` **approuvée par le responsable** et constatée par conteneur.
+(3) Le processus de fond et la bascule de la route sous drapeau éteint, avec un
+banc à deux sessions sur la réservation concurrente et un banc de reprise.
+(4) La mise en service : `worker` ajouté au `Procfile`. Le responsable
+**ajoute le conteneur** (`scale worker:1`, facturé) puis pose le drapeau ; le
+processus balaie déjà les fantômes drapeau éteint. Constat sur un dossier de
+test, lu par identifiant. (5) Le constat, le retrait d'`after()`, la clôture et
+G3 levé dans la feuille de route.
+
+**Ne touche pas** : la lecture et sa borne (LOT-08), la relance et ses refus
+(LOT-09), la purge du document ([[D-258]]), l'écran praticien, la voie
+patient.
+
 ### D-281 — Effet indésirable : le patient désigne un élément du programme, cet élément passe en pause, et le praticien valide l'implication avant toute diffusion (SAF-EI-01 amendée, signée en fin de chantier)
 
 - Date : 2026-10-12
