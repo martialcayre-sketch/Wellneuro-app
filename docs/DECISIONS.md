@@ -34,7 +34,12 @@ preuve.
   après la fin de l'accompagnement. C'est la prescription de l'action en
   responsabilité pour dommage corporel, qui court à compter de la consolidation
   (Code civil, art. 2226). Elle correspond au risque d'une activité qui
-  conseille des compléments. Ensuite, effacement.
+  conseille des compléments. Ensuite, effacement. **Le point de départ reste à
+  valider avant toute mise en œuvre (§10 b)** : la prescription court à
+  compter de la consolidation du dommage, qui peut survenir après la fin de
+  l'accompagnement. La question est posée au conseil (note du 2026-10-13,
+  question 5.3), et rien ne s'efface sur cette règle avant sa réponse
+  (revue Copilot #1411).
 - **Trace d'une lecture de compte rendu biologique** (empreinte, lectures,
   lignes lues, vos décisions), une fois le document purgé ([[D-258]]) : la trace
   des **lignes validées** suit le dossier, car elle prouve un résultat. Les
