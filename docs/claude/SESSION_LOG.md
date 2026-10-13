@@ -10080,3 +10080,12 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, revue, merge, déploiement constaté ; puis PR 2 (clôtures des campagnes, gabarits vides, audit régénéré).
 
 **Ouvert.** Rangs [Hypothese] à confirmer au cadrage ; cc compte-t-elle comme une place ; porte 15 pour le code de bf.
+## 2026-10-13 — G3 de BioFlow : mise en service constatée, `after()` retiré (D-282, lots 4-5)
+
+**Fait.** Lot 4 (#1415) déployé ; surveillance du signal de vie créée (1 min, tolérance 6 min, e-mail) et au vert ; `scale worker:1` ; drapeau posé, web relancés. Première lecture par la file constatée par conteneur sur un dossier de test. Lot 5 : route sur la seule file, drapeau retiré du code, fraîcheur jugée en SQL à l'ouverture ; G3 levé (`D-282` §8).
+
+**Écarté.** Garder `after()` en secours (§5.2 : drapeau de mise en service, pas de secours).
+
+**Prochaine action.** CI, merge, déploiement constaté ; retirer la variable `WN_BIO_EXTRACTION_ASYNC` de Scalingo (geste du responsable, sans effet) ; puis l'identité retirée avant l'envoi à Anthropic (`D-284`).
+
+**Ouvert.** Dossier clos pendant l'attente ; TEMPS 3 face à l'effacement.

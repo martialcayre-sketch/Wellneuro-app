@@ -85,8 +85,7 @@ export type CompteRenduLu = {
    * Une lecture est DEMANDÉE à la file ([[D-282]], G3) — en attente, en cours
    * ou en reprise. L'import n'existe qu'à la réclamation : sans ce signal,
    * l'écran ne verrait rien pendant l'attente, ni pendant une reprise dont
-   * l'import est périmé mais la réservation encore vive. Toujours `false`
-   * drapeau `WN_BIO_EXTRACTION_ASYNC` éteint : aucun travail n'existe.
+   * l'import est périmé mais la réservation encore vive.
    */
   lectureDemandee: boolean;
   imports: ImportLu[];

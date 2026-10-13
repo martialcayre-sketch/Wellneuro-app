@@ -13,7 +13,7 @@ BIOFLOW
 │
 ├── Track A — BIO-INGEST
 │   ├── lot courant   : aucun — campagne CLOSE le 2026-10-10 (LOT-12, clôture) ; LOT-05 (adaptateur laboratoire) transféré en FILE_ATTENTE
-│   ├── prochain gate : G2 levé ; G3 (asynchrone durable) OUVERT le 2026-10-13 par `D-282` (file en base + processus de fond, reprise automatique, fantômes réconciliés en continu) — lot courant : la décision ; purge du compte rendu v1 non purgé : redéposer suffit, pas de lot
+│   ├── prochain gate : G2 levé ; G3 LEVÉ le 2026-10-13 (`D-282`, cinq lots : file en base, processus de fond surveillé, reprise automatique ; première lecture par la file constatée, `after()` retiré) ; purge du compte rendu v1 non purgé : redéposer suffit, pas de lot
 │   └── objectif      : une donnée biologique fiable
 │
 ├── Track B — BIO-PARCOURS
@@ -34,7 +34,7 @@ BIOFLOW
 ├── CROSS-TRACK GATES
 │   G1  BP-01 (levé, #1314) + D-267 (levé, #1325)       → code LOT-07
 │   G2  LOT-07 livré (levé, #1333)                      → purge, réconciliation des imports
-│   G3  traitement asynchrone durable livré             → montée en charge de l'ingestion
+│   G3  traitement asynchrone durable livré (levé, D-282) → montée en charge de l'ingestion
 │   G4  ligne BP-26 statuée (levé, D-276)               → toute assistance clinique
 │
 └── BIOFLOW PLATFORM

@@ -66,21 +66,16 @@ type ParamsExtraction = {
   idPatient: string;
   idCompteRendu: string;
   lancePar: string;
-  maintenant?: Date;
 };
 
-/** Les trois temps d'affilée — la route, elle, rend la main après le premier (voir `ouvrirExtraction`). */
+/** Les trois temps d'affilée, hors file — le processus de fond, lui, ouvre dans sa réclamation (`ouvrirExtractionDans`). */
 export async function lancerExtraction(params: ParamsExtraction): Promise<IssueExtraction> {
   const ouverture = await ouvrirExtraction(params);
   if (!ouverture.ok) return ouverture;
   return poursuivreExtraction({ ...params, idImport: ouverture.idImport });
 }
 
-/**
- * TEMPS 1 seul. La route y rend la main (202) et confie la suite à `after()` :
- * une extraction de trois pages dure ~36 s (mesure du 2026-10-02), au-delà de
- * la fenêtre de 30 s du routeur Scalingo. L'écran relit ensuite l'import.
- */
+/** TEMPS 1 seul, dans sa propre transaction. */
 export async function ouvrirExtraction(params: ParamsExtraction): Promise<IssueOuverture> {
   // TEMPS 1 — l'import en cours, commité avant l'appel.
   return prisma.$transaction(tx => ouvrirExtractionDans(tx, params));
@@ -97,7 +92,6 @@ export async function ouvrirExtractionDans(
   params: ParamsExtraction,
 ): Promise<IssueOuverture> {
   const { idPatient, idCompteRendu, lancePar } = params;
-  const maintenant = params.maintenant ?? new Date();
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
   const compteRendu = await tx.compteRenduBiologique.findFirst({
     where: { id: idCompteRendu, idPatient },
@@ -109,12 +103,13 @@ export async function ouvrirExtractionDans(
   // Sous le verrou que prend aussi la purge : la base refuserait l'import
   // (P0001, une 500 opaque) ; on le dit avant (revue de la migration).
   if (compteRendu.purgeLe) return { ok: false as const, reason: 'document_purge' as const };
-  const enCours = await tx.importBiologique.findMany({
-    where: { idCompteRendu, idPatient, statut: 'en_cours' },
-    select: { id: true, lanceLe: true },
-  });
-  const limite = maintenant.getTime() - PEREMPTION_EN_COURS_MS;
-  if (enCours.some(i => i.lanceLe.getTime() >= limite)) {
+  // Fraîcheur jugée par l'horloge de la BASE, celle qui a écrit `lance_le`
+  // (trigger) — jamais par celle du processus ([[D-282]] lot 5, revue #1414).
+  const enCours = await tx.$queryRaw<{ id: string; frais: boolean }[]>`
+    SELECT id, lance_le >= (clock_timestamp() AT TIME ZONE 'UTC') - ${`${PEREMPTION_EN_COURS_MS} milliseconds`}::interval AS frais
+      FROM imports_biologiques
+     WHERE id_compte_rendu = ${idCompteRendu} AND id_patient = ${idPatient} AND statut = 'en_cours'`;
+  if (enCours.some(i => i.frais)) {
     return { ok: false as const, reason: 'extraction_en_cours' as const };
   }
   for (const perime of enCours) {
