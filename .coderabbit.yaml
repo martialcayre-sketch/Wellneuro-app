@@ -1,0 +1,248 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# Configuration de CodeRabbit, bot de revue des PR depuis D-290 (2026-10-14).
+# CodeRabbit REVOIT, l'assistant MERGE. Règles d'interaction (trois sorties à
+# lire, verdicts, attente) : `.claude/rules/pr-revue-et-release-db.md` §1.
+# Chaque clé est validée sur le schéma officiel ci-dessus — aucune n'est
+# inventée. Ce qui n'est pas écrit ici reste au défaut du schéma.
+
+language: fr-FR
+tone_instructions: >-
+  Français, concis. Chaque remarque cite fichier:ligne et sa gravité P0, P1 ou
+  P2 au sens de docs/claude/POLITIQUE_REVUE.md. Signaler un défaut, ne jamais
+  proposer de valeur clinique.
+
+reviews:
+  profile: chill
+  # Pas d'approbation automatique : le merge appartient à l'assistant.
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  sequence_diagrams: false
+  suggested_labels: false
+  auto_apply_labels: false
+  suggested_reviewers: false
+  auto_assign_reviewers: false
+  in_progress_fortune: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+    # Revue à chaque push — l'inverse de Copilot, qui ne revoyait qu'une fois.
+    auto_incremental_review: true
+    # 0 = jamais de pause : une pause silencieuse après N commits referait le
+    # piège de Copilot (un correctif poussé tard que personne ne relit).
+    auto_pause_after_reviewed_commits: 0
+
+  # Rien de ce qui COMMITE sur la branche ou ouvre une PR empilée. Un commit
+  # de bot peut geler le run `pull_request` en `action_required`, `verify` ne
+  # tournant plus : constaté avec Copilot, non observé avec CodeRabbit
+  # (`.claude/rules/pr-revue-et-release-db.md`, règle 1.5).
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false
+
+  pre_merge_checks:
+    # Le dépôt n'a pas de politique de couverture de docstrings : un
+    # avertissement à chaque PR serait du bruit, et pousserait vers la
+    # génération désactivée ci-dessus.
+    docstrings:
+      mode: "off"
+
+  path_filters:
+    - "!CHANGELOG.md"
+    - "!archive/**"
+    - "!docs/archive/**"
+    - "!**/package-lock.json"
+    - "!skills-lock.json"
+    - "!web/src/generated/**"
+
+  path_instructions:
+    # Chemins cliniques : les `paths:` de `.claude/rules/clinique-scoring.md`.
+    - path: "web/src/lib/questions*"
+      instructions: &clinique |
+        Chemin clinique (`.claude/rules/clinique-scoring.md`). Aucun seuil,
+        dose, poids ou borne sans provenance certifiée (DC-01, DC-19, DC-20).
+        Un changement de logique clinique ou de seuil exige une décision D-xxx
+        au registre `docs/DECISIONS.md` et un fragment `changelog.d/` : leur
+        absence est un constat. Une donnée absente n'est jamais zéro ni
+        normale (DC-24). Signaler le défaut ; ne JAMAIS proposer de valeur
+        clinique de remplacement — la valeur relève d'une décision signée.
+    - path: "web/src/lib/questionnaires/**"
+      instructions: *clinique
+    - path: "web/src/lib/scoring/**"
+      instructions: *clinique
+    - path: "web/src/lib/clinical/**"
+      instructions: *clinique
+    - path: "web/src/lib/clinical-engine/**"
+      instructions: *clinique
+    - path: "web/src/lib/equilibre/**"
+      instructions: *clinique
+    - path: "web/src/lib/consultation/**"
+      instructions: *clinique
+    - path: "web/src/lib/instruments.ts"
+      instructions: *clinique
+    - path: "web/src/lib/bibliotheque.ts"
+      instructions: *clinique
+    - path: "web/src/lib/echelles-cabinet.ts"
+      instructions: *clinique
+    - path: "web/src/lib/questionnaires-catalog.ts"
+      instructions: *clinique
+    - path: "web/src/lib/plaintes.ts"
+      instructions: *clinique
+    - path: "web/src/lib/*.guard.test.ts"
+      instructions: *clinique
+    - path: "prompts/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/synthese/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/booklet/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/cockpit/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/orientation/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/equilibre/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/besoins/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/trajectoire/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/reponses/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/inbox-questionnaires/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/protocoles/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/correspondance-medecin/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/biologie/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/copilote/**"
+      instructions: *clinique
+    - path: "web/src/app/api/praticien/corpus/**"
+      instructions: *clinique
+    - path: "web/src/app/api/patient/equilibre/**"
+      instructions: *clinique
+    - path: "web/src/app/api/patient/submit/**"
+      instructions: *clinique
+    - path: "web/src/app/api/portail/**"
+      instructions: *clinique
+    - path: "web/src/app/api/internal/rag/**"
+      instructions: *clinique
+
+    - path: "web/prisma/**"
+      instructions: |
+        Base et migrations (`.claude/rules/db-prisma.md`,
+        `.claude/rules/pr-revue-et-release-db.md` §3). Une migration reste
+        seule dans sa PR avec son bloc `schema.prisma`, son contrat SQL et son
+        fragment ; le code consommateur part dans une seconde PR (D-087).
+        Signaler tout SQL destructif (DROP, TRUNCATE, DELETE sans WHERE).
+        Signaler tout reformatage de `schema.prisma` hors des lignes du
+        changement. Un CHECK « non vide » écrit avec `btrim` à un seul
+        argument ne retire que l'espace ASCII et laisse passer les
+        tabulations.
+
+    # Authentification et portail patient : le périmètre de l'exception de
+    # `docs/claude/REGLES_PR_MERGE.md` (et de `.claude/rules/auth-securite.md`).
+    - path: "web/src/lib/auth.ts"
+      instructions: &auth |
+        Périmètre de l'exception authentification de
+        `docs/claude/REGLES_PR_MERGE.md` : session praticien, lien magique,
+        cookie de session, `patients.access_token`. Autoriser avant de lire
+        les données ; valider côté serveur. Signaler toute journalisation de
+        jeton, cookie, e-mail patient complet ou chaîne de connexion. Signaler
+        aussi ce que le changement NE FAIT PAS (révocation, backfill,
+        expiration) — c'est la classe de défaut qu'une revue de diff manque.
+    - path: "web/src/lib/patient-session.ts"
+      instructions: *auth
+    - path: "web/src/lib/patient-access.ts"
+      instructions: *auth
+    - path: "web/src/lib/portail/**"
+      instructions: *auth
+    - path: "web/src/middleware.ts"
+      instructions: *auth
+    - path: "web/src/app/api/auth/**"
+      instructions: *auth
+
+    - path: "web/src/app/**"
+      instructions: &ui |
+        Interface (`.claude/rules/frontend-ui.md`). Tout texte visible par
+        l'utilisateur est en français. Seules les identités de fixture Sophie
+        Nicola, Jennifer Martin et Michel Dogné sont permises ; toute autre
+        identité de personne est un constat.
+    - path: "web/src/components/**"
+      instructions: *ui
+
+    - path: "docs/**"
+      instructions: &docs |
+        Le dépôt est PUBLIC. Signaler toute identité de personne réelle (nom,
+        e-mail), tout constat de production sur un dossier hors agrégat
+        (identifiant accompagné de mesures), et tout texte clinique privé
+        versé en clair : un document privé se verse en forme opaque —
+        identifiants et mécanismes (D-285).
+    - path: "changelog.d/**"
+      instructions: *docs
+
+  tools:
+    # Doublonnent le CI (`npm run lint` dans `verify`) ou ne sont pas les
+    # linters du dépôt : leurs règles contrediraient les conventions.
+    eslint:
+      enabled: false
+    biome:
+      enabled: false
+    oxc:
+      enabled: false
+    # Bruyants sur une documentation française de plusieurs milliers de pages.
+    markdownlint:
+      enabled: false
+    languagetool:
+      enabled: false
+    # Gardé explicitement : détecteur de secrets.
+    gitleaks:
+      enabled: true
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      # Une chaîne ne vaut que pour le répertoire du fichier et ses
+      # sous-répertoires : CLAUDE.md et AGENTS.md, à la racine, couvrent tout.
+      - "CLAUDE.md"
+      - "AGENTS.md"
+      - files: ".github/copilot-instructions.md"
+        applyTo: "**"
+      # Chaque règle sur ses propres `paths:` (frontmatter de la règle).
+      - files: ".claude/rules/auth-securite.md"
+        applyTo: "web/src/lib/auth.ts,web/src/lib/patient-session.ts,web/src/lib/patient-access.ts,web/src/lib/portail/**"
+      - files: ".claude/rules/clinique-scoring.md"
+        applyTo: "web/src/lib/questions*,web/src/lib/questionnaires/**,web/src/lib/scoring/**,web/src/lib/clinical/**,web/src/lib/clinical-engine/**,web/src/lib/equilibre/**,web/src/lib/consultation/**,web/src/lib/instruments.ts,web/src/lib/bibliotheque.ts,web/src/lib/echelles-cabinet.ts,web/src/lib/questionnaires-catalog.ts,web/src/lib/plaintes.ts,web/src/lib/*.guard.test.ts,prompts/**,web/src/app/api/praticien/synthese/**,web/src/app/api/praticien/booklet/**,web/src/app/api/praticien/cockpit/**,web/src/app/api/praticien/orientation/**,web/src/app/api/praticien/equilibre/**,web/src/app/api/praticien/besoins/**,web/src/app/api/praticien/trajectoire/**,web/src/app/api/praticien/reponses/**,web/src/app/api/praticien/inbox-questionnaires/**,web/src/app/api/praticien/protocoles/**,web/src/app/api/praticien/correspondance-medecin/**,web/src/app/api/praticien/biologie/**,web/src/app/api/praticien/copilote/**,web/src/app/api/praticien/corpus/**,web/src/app/api/patient/equilibre/**,web/src/app/api/patient/submit/**,web/src/app/api/portail/**,web/src/app/api/internal/rag/**"
+      - files: ".claude/rules/db-prisma.md"
+        applyTo: "web/prisma/**,supabase/**,web/src/lib/prisma.ts,web/src/app/api/**"
+      - files: ".claude/rules/docs-changelog.md"
+        applyTo: "docs/**,changelog.d/**,CHANGELOG.md,*.md,.wn/state.json"
+      - files: ".claude/rules/frontend-ui.md"
+        applyTo: "web/src/app/**,web/src/components/**,web/src/**/*.css"
+      - files: ".claude/rules/hooks-garde-fous.md"
+        applyTo: ".claude/hooks/**,.claude/settings.json"
+      - files: ".claude/rules/pr-revue-et-release-db.md"
+        applyTo: ".github/**,web/prisma/**"
+      - files: ".claude/rules/tests-validation.md"
+        applyTo: "web/e2e/**,**/*.test.ts,**/*.test.tsx,web/playwright.config.*,scripts/wn-test-worktree.sh"
+      - files: "docs/claude/doctrine/CONSTITUTION_CLINIQUE.md"
+        applyTo: "web/src/lib/questions*,web/src/lib/questionnaires/**,web/src/lib/scoring/**,web/src/lib/clinical/**,web/src/lib/clinical-engine/**,web/src/lib/equilibre/**,web/src/lib/consultation/**,web/src/lib/instruments.ts,web/src/lib/bibliotheque.ts,web/src/lib/echelles-cabinet.ts,web/src/lib/questionnaires-catalog.ts,web/src/lib/plaintes.ts,prompts/**,web/src/app/api/praticien/synthese/**,web/src/app/api/praticien/booklet/**,web/src/app/api/praticien/cockpit/**,web/src/app/api/praticien/orientation/**,web/src/app/api/praticien/equilibre/**,web/src/app/api/praticien/besoins/**,web/src/app/api/praticien/trajectoire/**,web/src/app/api/praticien/reponses/**,web/src/app/api/praticien/inbox-questionnaires/**,web/src/app/api/praticien/protocoles/**,web/src/app/api/praticien/correspondance-medecin/**,web/src/app/api/praticien/biologie/**,web/src/app/api/praticien/copilote/**,web/src/app/api/praticien/corpus/**,web/src/app/api/patient/equilibre/**,web/src/app/api/patient/submit/**,web/src/app/api/portail/**,web/src/app/api/internal/rag/**"

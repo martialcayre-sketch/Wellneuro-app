@@ -21,12 +21,15 @@ remplace pas — il pose ce qui manquait aux deux, et ne réarbitre ni `D-087` n
 ## 1. Avant de merger — les commentaires de revue
 
 **1.1 Les lire est un geste distinct du CI.** Un `verify` vert et un
-`mergeStateStatus: CLEAN` ne disent rien des commentaires. Deux lectures, pas
-une :
+`mergeStateStatus: CLEAN` ne disent rien des commentaires. Le bot de revue est
+**CodeRabbit** depuis `D-290` (2026-10-14) ; il écrit à **trois endroits**, et
+chacun se lit :
 
 ```bash
-gh pr view <N> --json reviews,comments
-gh api --paginate --slurp repos/{owner}/{repo}/pulls/<N>/comments > revue.json   # puis relire le fichier
+gh pr view <N> --json comments > synthese.json    # commentaire de synthèse (issues/<N>/comments)
+gh pr view <N> --json reviews  > revues.json      # .reviews[].body : « Nitpick », « Outside diff range »
+gh api --paginate --slurp repos/{owner}/{repo}/pulls/<N>/comments > en-ligne.json
+# puis relire chaque fichier
 ```
 
 Les commentaires **en ligne** — attachés à une ligne de diff — n'apparaissent
@@ -34,14 +37,14 @@ Les commentaires **en ligne** — attachés à une ligne de diff — n'apparaiss
 le plus fréquent, et le plus coûteux. Écrire la sortie dans un fichier puis la
 relire : le `--jq` avec interpolation est refusé par l'isolation de worktree.
 
-**Le CORPS de chaque revue se lit, pas seulement son état.** Copilot peut
-conclure « Approval recommended » avec `comments generated: 0` et loger son
-constat dans un bloc « Suppressed comments » **de son propre corps de revue** :
+**Le CORPS de chaque revue se lit, pas seulement son état.** Un bot de revue
+peut loger un constat dans le corps de sa revue plutôt qu'en ligne :
 `pulls/<N>/comments` rend alors `[]`, et une lecture qui s'arrête au `state` de
-la revue ne voit rien. Constaté sur la PR #1161 (2026-09-16), où le constat ainsi
-logé était réel — trois rubriques manquantes au gabarit de handoff.
-`gh pr view <N> --json reviews` rend ce corps : **lire `.reviews[].body`**. Lire
-l'état d'une revue n'est pas lire la revue.
+la revue ne voit rien. Copilot le faisait dans un bloc « Suppressed comments »
+— constaté sur la PR #1161 (2026-09-16), où le constat ainsi logé était réel,
+trois rubriques manquantes au gabarit de handoff. CodeRabbit y range ses
+remarques « Nitpick » et « Outside diff range ». **Lire `.reviews[].body`** :
+lire l'état d'une revue n'est pas lire la revue.
 
 **`--paginate` n'est pas un ornement.** L'endpoint rend **30 éléments par
 page** : sans lui, une PR qui porte plus de 30 commentaires en ligne en laisse
@@ -90,12 +93,18 @@ donnait pas** et sur une **portée de correctif surestimée** dans un sujet de
 commit (« cesse de lire tout l'historique », faux sans index : il cesse de le
 *charger*). Aucun test ne rattrape cette classe-là.
 
-**1.5 Copilot pousse sur la branche, et ça bloque le merge.** Quand
-`copilot-swe-agent[bot]` commite (observé le 2026-09-14 et sur la PR #1115) : la
-tête change, `statusCheckRollup` devient **vide**, `gh pr merge` refuse (« the
-base branch policy prohibits the merge »). Le rollup vide est le symptôme, pas
-la cause — `gh api repos/{owner}/{repo}/commits/<tête>/check-runs` montre
-`verify | success` sur le commit précédent.
+**1.5 Un bot qui commite sur la branche bloque le merge.** Quand
+`copilot-swe-agent[bot]` a poussé — observé le 2026-09-14 et sur la PR #1115,
+PR du dépôt et non d'un fork —, la tête a changé, `statusCheckRollup` est
+devenu **vide**, et `gh pr merge` a refusé (« the base branch policy prohibits
+the merge »). Le rollup vide est le symptôme, pas la cause — `gh api
+repos/{owner}/{repo}/commits/<tête>/check-runs` montrait `verify | success` sur
+le commit précédent. GitHub documente deux causes d'un run `pull_request` en
+attente d'approbation — une PR créée ou mise à jour avec le `GITHUB_TOKEN`
+d'un workflow, ou une PR issue d'un fork — : c'est le jeton qui pousse qui
+compte, pas l'auteur affiché. **Avec CodeRabbit, non observé** : toute
+génération qui commite est coupée par `.coderabbit.yaml` (`D-290`) ; si un
+commit de bot gèle malgré tout le run, la réparation est la même.
 
 - **Toujours recomparer** le `head=` du SNAPSHOT de `wn-attendre-ci` à la tête
   réelle de la PR : un vert peut porter sur un commit qui n'est plus la tête.
@@ -103,20 +112,30 @@ la cause — `gh api repos/{owner}/{repo}/commits/<tête>/check-runs` montre
   commit vide, jamais en relançant le merge à l'aveugle, jamais en relançant le
   CI.
 
-**1.6 Copilot revoit UNE FOIS, à l'ouverture — il ne relit pas vos correctifs.**
-Constaté sur la PR #1159 (2026-09-16) : revue automatique sur le premier push,
-**aucune** sur les deux suivants, y compris celui qui répondait à ses quatre
-constats. Sa propre conclusion le dit (« Get a fresh assessment by requesting
-another Copilot review »), et le `POST` REST sur `requested_reviewers` **ne
-l'enregistre pas** — la demande passe par le bouton de l'interface, donc par le
-responsable. Ne jamais compter sur un second passage pour rattraper un correctif
-écrit à la hâte : le premier verdict est le seul garanti. (Ce qui reçoit bien une
-revue neuve, c'est une **nouvelle PR** — d'où la revue de la PR de reprise du
-2026-09-16.)
+**1.6 Savoir quand le bot relit — et ne jamais le supposer.** Copilot revoyait
+**une fois**, à l'ouverture : constaté sur la PR #1159 (2026-09-16), aucune
+revue sur les deux pushs suivants, y compris celui qui répondait à ses quatre
+constats, et le `POST` REST sur `requested_reviewers` ne l'enregistrait pas.
+CodeRabbit est configuré à l'inverse — revue incrémentale **à chaque push**,
+sans pause (`auto_incremental_review`, `auto_pause_after_reviewed_commits: 0`).
+Ce qui fait foi n'est pas la configuration mais la revue constatée : **pas de
+merge avant qu'une revue de `coderabbitai[bot]` porte sur le sha de tête** (le
+`commit_id` de la revue, ou le sha que nomme le commentaire de synthèse). **Une
+revue incrémentale sans remarque ne crée aucun objet revue** : constaté sur
+#1440, la seule trace est la synthèse mise à jour — « No actionable comments »,
+bloc « Recent review info » dont la plage de commits finit sur la tête, et
+« Merge Risk … up to `<sha>` ». Lire `reviews` seul ferait conclure à tort que
+la tête n'a pas été relue. Un
+correctif poussé après la dernière revue n'est pas relu tant qu'une revue
+neuve ne le dit pas.
 
-**1.7 Ce que Copilot a poussé se relit, toujours.** Il peut avoir aligné le
+**1.7 Ce qu'un bot a poussé se relit, toujours.** Il peut avoir aligné le
 littéral d'un banc sur le code plutôt que l'inverse. Un banc ainsi « réparé » est
-vert et **ne mesure plus rien**.
+vert et **ne mesure plus rien**. **CodeRabbit ne commite jamais** : ni
+« Commit suggestion », ni « Generate unit tests », ni case « Autofix » cochée
+depuis l'interface — un correctif se vérifie contre le code (1.3) puis se pousse
+comme un commit du lot. Si un commit de bot apparaît malgré tout, 1.5
+s'applique.
 
 **1.8 Clinique, signature de périmètre, migration : pas de correction dans la
 foulée.** Un commentaire qui touche à l'un des trois remonte en **arbitrage**.
@@ -126,12 +145,55 @@ Corriger pour obtenir un vert ferait du vert la raison du changement.
 de revue : ils s'écrivent sur la branche vivante. Ce qui s'écrit après le squash
 coûte une seconde PR (`.claude/rules/docs-changelog.md`).
 
+**1.10 CodeRabbit : ce qui lui est propre** (`D-290`, configuration
+`.coderabbit.yaml`).
+
+- **Son statut n'est pas sa revue.** Il publie sur le commit de tête un statut
+  de commit nommé `CodeRabbit` (`pending` « Review in progress » pendant la
+  revue) ; sur #1438 (2026-10-14), ce statut était `success` avec la
+  description « Review skipped » — **aucune revue n'avait eu lieu**. Le statut
+  dit qu'il a fini, pas qu'il a relu. Il n'est pas un check obligatoire de
+  `main` (geste du responsable s'il le devient) ; la condition de merge reste
+  1.6.
+- **Il lit la configuration de la branche de la PR**, pas celle de `main` :
+  constaté sur #1440, qui créait `.coderabbit.yaml` — synthèse en français,
+  sans poème ni diagramme, sans contrôle de docstrings. Une PR qui modifie
+  `.coderabbit.yaml` est donc revue sous sa propre configuration.
+- **La case « Autofix » de la synthèse reste affichée** (bloc « autopilot »)
+  alors que `autofix`, `fix_ci` et `resolve_merge_conflict` sont coupés, et
+  aucune clé du schéma ne la retire. **Ne jamais la cocher** : elle annonce
+  des commits sur la branche (1.5). La retirer relève des réglages de
+  l'interface CodeRabbit, geste du responsable.
+- **L'attente ne se sonde pas.** Pendant le CI (`wn-attendre-ci` en fond), la
+  revue arrive d'ordinaire ; à la notification, lire les trois sorties (1.1)
+  une fois. Revue absente sur la tête : la demander, pas boucler sur
+  `gh pr checks` (refusé par les gardes).
+- **Demander une revue** : elle part seule au push ; sinon
+  `gh pr comment <N> --body "@coderabbitai review"` (incrémentale) ou
+  `"@coderabbitai full review"` (tout le diff). Si une garde refuse ce
+  commentaire, le signaler au lieu de la contourner.
+- **Verdicts dans son fil.** Chaque remarque reçoit son verdict (1.2). Une
+  remarque **en ligne** le reçoit **en réponse dans son fil** : CodeRabbit
+  apprend de ces réponses (`knowledge_base.learnings`). Une remarque logée dans
+  le **corps** d'une revue (« Nitpick », « Outside diff range ») ou dans la
+  synthèse n'a pas de fil auquel répondre : son verdict va dans **un
+  commentaire de PR distinct**, qui la cite et mentionne `@coderabbitai`. Les
+  nitpicks sont triés, jamais appliqués d'office. Une remarque qui touche au
+  clinique, à une migration ou à une signature de périmètre remonte en
+  arbitrage (1.8), même formulée en suggestion prête à copier.
+- **Il n'approuve pas, il ne merge pas.** `request_changes_workflow: false` :
+  aucune approbation automatique, et son approbation n'est pas requise. Le
+  merge reste à l'assistant (`docs/claude/REGLES_PR_MERGE.md`).
+- **Le barème ne change pas.** CodeRabbit s'ajoute à `POLITIQUE_REVUE.md` sans
+  remplacer aucune ligne : `/code-review medium` en P2, `wn-reviewer` en P1,
+  Codex manuel obligatoire en P0.
+
 ## 2. Merger
 
 | Règle | Le défaut qu'elle ferme |
 |---|---|
 | `--base main`, toujours | Une PR empilée sur une autre branche meurt au merge de sa base |
-| `gh pr merge <N> --squash --delete-branch --subject "<sujet>"` | Le sujet du squash vient du **commit**, pas du titre de la PR : trois `D-NNN` faux sur `main` (#943, #949, #950) |
+| `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu> --subject "<sujet>"` | Le sujet du squash vient du **commit**, pas du titre de la PR : trois `D-NNN` faux sur `main` (#943, #949, #950). Et sans `--match-head-commit`, un push arrivé après la revue part au merge sans revue — le statut `CodeRabbit` n'étant pas un check obligatoire, rien d'autre ne l'arrête (revue CodeRabbit de #1440) |
 | `node scripts/wn-attendre-ci.mjs <N>`, un seul appel bloquant | `gh pr checks` en boucle ; et **jamais dans un tube** — un tube rend le code de `tail`, pas celui du script : un feu vert de merge fabriqué |
 | Comparer le `head=` du SNAPSHOT à la tête réelle | Enchaîné à un push, le script peut juger la tête **précédente** et rendre `0` |
 | Après un échec de `gh`, **constater l'état** | « main is already used by worktree » est trompeur : la PR est mergée quand même. Vérifier, jamais relancer |

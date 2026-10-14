@@ -182,12 +182,14 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   sonder (`gh pr checks`, `gh run`, `sleep` : un garde les refuse). L'attente
   sert au fragment, au handoff ou à la relecture du lot en cours.
   **`0` est le seul code de sortie qui autorise à annoncer une PR prête.**
-- Revue, merge et suppression des branches appartiennent à Copilot, sauf
-  autorisation transitoire en cours. Détail :
-  `docs/claude/REGLES_PR_MERGE.md`.
+- **CodeRabbit revoit, l'assistant merge** (`D-290`) : merge et suppression
+  des branches par délégation du responsable. Pas de merge avant une revue de
+  `coderabbitai[bot]` sur le sha de tête — son statut `success` n'en est pas
+  une. Détail : `docs/claude/REGLES_PR_MERGE.md`.
 - **Lire les commentaires de revue avant de merger — ce n'est pas un check.**
-  Les commentaires *en ligne* ne sont ni dans le rollup, ni dans
-  `gh pr view --comments` : `gh api repos/{owner}/{repo}/pulls/<N>/comments`.
+  Trois sorties : synthèse, **corps** des revues (nitpicks), et commentaires
+  *en ligne*, absents du rollup et de `gh pr view --comments` :
+  `gh api --paginate --slurp repos/{owner}/{repo}/pulls/<N>/comments`.
   Trois verdicts, aucun commentaire sans l'un d'eux : corrigé, écarté **avec
   motif**, routé **avec adresse**. Et **merger une migration ne l'applique
   pas** — `release-db` approuvée, sentinelle, constat par conteneur, puis

@@ -36,18 +36,21 @@ dernière session.
    vérifie que les checks obligatoires ont *réellement tourné*, pas seulement
    que rien n'est en attente — c'est ce que l'idiome remplacé ne savait pas
    faire. **`2` = `verify` n'a pas tourné** : le script nomme toutes les causes
-   applicables (PR en conflit, branche squashée, commit de tête Copilot gelant
+   applicables (PR en conflit, branche squashée, commit de tête d'un bot gelant
    le run en `action_required`). **`5` = les checks sont verts mais la PR est en
    conflit** — le vert porte alors sur un commit qui n'est pas le résultat
    fusionné ; fusionner la base et relancer. **`4` = indéterminé**, y compris
    quand la liste des checks obligatoires n'a pas pu être lue. Aucun de ces
-   codes ne se débloque en forçant le merge ; le cas Copilot se débloque en
-   poussant un commit sous le compte du dépôt.
+   codes ne se débloque en forçant le merge ; le cas du commit de bot se
+   débloque en poussant un commit sous le compte du dépôt. **Le statut
+   `CodeRabbit` n'est pas une revue** : il passe à `success` même quand la
+   revue est sautée — la revue se lit à l'étape 6.
 4. **Déduire le régime courant** du texte chargé ci-dessus :
-   - la section « Période transitoire » y est toujours présente et décrit une
-     autorisation active → cycle complet possible (étapes 8-9) ;
+   - la section « Cycle PR complet côté assistant » y est toujours présente et
+     décrit une délégation active (`D-290` : CodeRabbit revoit, l'assistant
+     merge) → cycle complet possible (étapes 8-9) ;
    - elle a été retirée ou remplacée → s'arrêter après l'étape 3, annoncer
-     l'état du CI, laisser la revue et le merge à Copilot.
+     l'état du CI, laisser le merge au responsable.
 5. **Exception migration ou authentification** — si le diff touche
    `prisma/schema.prisma`, `prisma/migrations/`, `supabase/migrations/`, ou
    l'authentification — praticien (`web/src/lib/auth.ts`, routes `api/auth`)
@@ -70,18 +73,28 @@ dernière session.
      migration ne pourrait être mergée. Ordre complet :
      `.claude/rules/pr-revue-et-release-db.md` §3.
 
-   Les deux s'appliquent même en régime transitoire ; ne jamais les sauter sur
+   Les deux s'appliquent même quand l'assistant merge ; ne jamais les sauter sur
    ce périmètre.
 6. **Lire les commentaires de revue — geste distinct du CI, et bloquant.** Un
-   `verify` vert ne dit rien d'eux. Deux lectures : `gh pr view <N> --json
-   reviews,comments`, **et** `gh api --paginate --slurp
-   repos/{owner}/{repo}/pulls/<N>/comments` redirigé vers un fichier puis relu —
+   `verify` vert ne dit rien d'eux. **Pas de merge avant qu'une revue de
+   `coderabbitai[bot]` porte sur le sha de tête** (`commit_id` de la revue, ou
+   commentaire de synthèse qui le nomme). CodeRabbit écrit à **trois** endroits,
+   chacun redirigé vers un fichier puis relu : le commentaire de synthèse
+   (`gh pr view <N> --json comments`), le **corps** de chaque revue —
+   `.reviews[].body`, où logent « Nitpick » et « Outside diff range » —
+   (`gh pr view <N> --json reviews`), **et** `gh api --paginate --slurp
+   repos/{owner}/{repo}/pulls/<N>/comments` —
    les commentaires **en ligne** n'apparaissent dans aucune des deux autres vues.
    **La pagination n'est pas optionnelle** : l'endpoint rend 30 éléments par
    défaut, et une page manquée ferait annoncer « chaque commentaire a son
    verdict » sur une liste tronquée. `--slurp` rend un tableau **de pages** :
    l'aplatir à la lecture. Chaque commentaire reçoit un
-   verdict écrit dans la PR : **corrigé** (le commit qui le répare est nommé),
+   verdict écrit dans la PR — en réponse dans son fil pour une remarque en
+   ligne (CodeRabbit apprend de ces réponses) ; dans un commentaire de PR
+   distinct, qui la cite, pour une remarque du corps (« Nitpick », « Outside
+   diff range ») ou de la synthèse, qui n'ont pas de fil. Les nitpicks sont
+   triés, jamais appliqués d'office :
+   **corrigé** (le commit qui le répare est nommé),
    **écarté avec motif** (sur pièces — ligne, banc, `D-xxx` ; « non pertinent »
    seul n'en est pas un), ou **routé** (vers le plan unique
    `docs/claude/PLAN_WELLNEURO.md`, dette nommée du §8 ou fiche, avec son
@@ -112,9 +125,11 @@ dernière session.
    si tout commentaire de revue
    porte son verdict (étape 6) et si l'étape 7 est satisfaite :
    ```bash
-   gh pr merge <N> --squash --delete-branch
+   gh pr merge <N> --squash --delete-branch --match-head-commit <sha>
    ```
-   puis nettoyer le worktree rattaché (`ExitWorktree` avec `action: "remove"`,
+   où `<sha>` est le `head=` du SNAPSHOT de l'étape 2, celui que la revue de
+   l'étape 6 a lu : si la tête a bougé depuis, GitHub refuse le merge, et les
+   étapes 2 et 6 se rejouent sur la nouvelle tête. Puis nettoyer le worktree rattaché (`ExitWorktree` avec `action: "remove"`,
    ou `git worktree remove`), et repartir de `main` — jamais de la branche
    squashée — pour le lot suivant. **Le merge vient de faire avancer
    `origin/main`** : tant que le worktree reste sur la branche squashée, le
@@ -130,8 +145,8 @@ contourner.
 ## Sortie
 
 1. Numéro de PR et état CI (checks passés, `verify` présent ou non).
-2. Régime déduit (cycle complet assistant / ressort Copilot) avec la phrase de
-   `CLAUDE.md` qui le justifie.
+2. Régime déduit (cycle complet assistant / merge laissé au responsable) avec
+   la phrase de `CLAUDE.md` qui le justifie.
 3. Exception migration/auth : applicable ou non ; si oui, revue adversariale
    déjà faite ou restant à faire.
 4. **Commentaires de revue** : leur nombre, et pour chacun son verdict — corrigé

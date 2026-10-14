@@ -89,30 +89,38 @@ pour les rouges WebKit du CI : ceux-là ne se relancent jamais du tout (`D-155`)
 Gabarit de corps de PR et check-list complète : le skill `/wn-pr` (invocation
 manuelle ; ces idiomes valent pour **toute** ouverture de PR, `/wn-pr` invoqué ou non). <!-- mention-seule: wn-pr -->
 
-## Revue, merge et suppression des branches — le ressort de Copilot
+## Revue par CodeRabbit, merge par l'assistant (`D-290`)
 
-**Décision du 2026-07-21.** La revue de code, le merge des PR et la suppression
-des branches appartiennent à **Copilot**. L'assistant ouvre la PR, vérifie que le
-CI est vert, annonce l'état — et s'arrête là.
+**Régime en vigueur depuis le 2026-10-14 (`D-290`).** La revue de code appartient
+à **CodeRabbit** (`coderabbitai[bot]`, configuré par `.coderabbit.yaml` à la
+racine) ; le merge des PR et la suppression des branches appartiennent à
+**l'assistant**, par la délégation du responsable du 2026-09-30, selon l'idiome
+« Cycle PR complet côté assistant » plus bas. CodeRabbit n'approuve pas et ne
+merge pas : son approbation n'est pas requise. Comment lire ce qu'il écrit,
+l'attendre et rendre les verdicts : `.claude/rules/pr-revue-et-release-db.md` §1.
 
-Deux raisons, données ensemble : un **regard différent** sur le code (une revue
-par l'agent qui vient de l'écrire est une relecture, pas une revue), et le **coût
-en tokens** — suivre un CI, relancer, merger puis nettoyer consomme des
-allers-retours pour un travail qu'un autre outil fait sans eux.
+La raison de fond tient toujours, et c'est elle qui fait garder un bot de revue
+plutôt que d'en reprendre la charge : un **regard différent** sur le code — une
+revue par l'agent qui vient de l'écrire est une relecture, pas une revue.
 
-En pratique : pas de `gh pr merge`, pas de `git push origin --delete`, pas de
-suppression de worktree rattaché à une PR ouverte. Le nettoyage post-merge n'est
-pas une tâche en attente côté assistant.
+**Historique — décision du 2026-07-21, amendée par `D-290`.** La revue, le
+merge et la suppression des branches appartenaient alors à **Copilot** ;
+l'assistant ouvrait la PR, vérifiait le CI, annonçait l'état et s'arrêtait là.
+Deux raisons : le regard différent, et le **coût en tokens** du suivi de CI et
+du merge. Le merge est passé à l'assistant le 2026-09-30 ; la revue a quitté
+Copilot le 2026-10-14, son quota épuisé.
 
-**Effet de bord à connaître.** Quand le commit de tête d'une PR est attribué au
-bot Copilot (un merge de `main` résolu par lui, par exemple), GitHub met le run
+**Effet de bord à connaître.** Quand le commit de tête d'une PR a été poussé
+par le bot Copilot (un merge de `main` résolu par lui, par exemple, sur une PR
+du dépôt et non d'un fork — non observé avec CodeRabbit, dont les générations
+qui commitent sont coupées par `.coderabbit.yaml`), GitHub a mis le run
 `pull_request` en `action_required` et **n'exécute rien** sans approbation
 humaine. `gh pr checks` n'affiche alors que les checks Vercel, **sans `verify`** :
 la PR paraît verte alors que la vérification n'a jamais tourné. Vérifier la
 présence de `verify`, et débloquer en poussant un commit sous le compte du dépôt
 — `POST /actions/runs/{id}/approve` ne s'applique qu'aux PR issues de forks.
 
-### Quand une autorisation transitoire permet de merger : le sujet est à poser
+### Quand l'assistant merge : le sujet est à poser
 
 **Le sujet du commit de squash vient du COMMIT de branche, pas du titre de la
 PR.** Réglage du dépôt : `squash_merge_commit_title = COMMIT_OR_PR_TITLE` —
@@ -132,7 +140,7 @@ Poser le sujet explicitement, ce qui ne demande aucun `force`-push
 (contrairement à un `commit --amend`) :
 
 ```bash
-gh pr merge <N> --squash --delete-branch --subject "<sujet exact>"
+gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu> --subject "<sujet exact>"
 ```
 
 Une PR gelée ne peut pas être mergée pour autant : `verify` est un **check
@@ -148,17 +156,23 @@ le remettre. Ce geste doit rester visible et rare.
 imposerait une resynchronisation et un nouveau CI à chaque merge concurrent —
 friction quotidienne pour un incident rare.
 
-### Période transitoire — cycle PR complet côté assistant (idiome de merge)
+### Cycle PR complet côté assistant (idiome de merge)
 
-Tant qu'une autorisation en cours confie le suivi du CI, le merge et le nettoyage
-à l'assistant (retour au ressort Copilot ci-dessus prévu à l'échéance), cet idiome
-**prime sur le « pas de `gh pr merge` » plus haut**. Une fois le CI vert lu (idiome
-d'attente ci-dessus), enchaîner en un minimum d'allers-retours :
+La délégation du responsable (2026-09-30) confie le suivi du CI, le merge et le
+nettoyage à l'assistant ; `D-290` en fait le régime en vigueur, la revue restant
+à CodeRabbit. Si le responsable retire cette délégation, cette section se retire
+avec elle, et `/wn-merge` s'arrête à l'annonce du CI. Une fois le CI vert lu
+(idiome d'attente ci-dessus) **et la revue de CodeRabbit lue sur le sha de tête,
+chaque remarque tranchée** (`.claude/rules/pr-revue-et-release-db.md` §1),
+enchaîner en un minimum d'allers-retours :
 
 1. **Vérifier que `verify` a réellement tourné**, pas seulement les checks Vercel
-   (effet de bord `action_required` décrit plus haut) ; sans `verify`, ne pas merger.
-2. `gh pr merge <N> --squash --delete-branch` — merge et suppression de la branche
-   distante en un geste.
+   ou le statut `CodeRabbit` (effet de bord `action_required` décrit plus haut) ;
+   sans `verify`, ne pas merger.
+2. `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu>` —
+   merge et suppression de la branche distante en un geste, **lié au sha que la
+   revue et le CI ont vu** : si la tête a bougé depuis, GitHub refuse, et les
+   contrôles se rejouent sur la nouvelle tête.
 3. Supprimer le worktree rattaché une fois la PR fermée (`ExitWorktree`, ou
    `git worktree remove`).
 4. **Repartir de `main` pour le lot suivant**, jamais de la branche squashée :
@@ -171,7 +185,7 @@ de migration ou d'authentification, appliquer d'abord l'exception ci-dessous.
 
 ### L'exception : migration ou authentification
 
-Copilot revoit et merge **aussi** ces PR. Mais avant de lui passer la main, sur
+CodeRabbit revoit et l'assistant merge **aussi** ces PR. Mais avant le merge, sur
 une PR qui porte une migration ou touche l'authentification — praticien
 (`web/src/lib/auth.ts`, routes `api/auth`) ou portail patient
 (`web/src/middleware.ts`, lien magique, cookie de session,

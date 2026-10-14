@@ -126,5 +126,7 @@ est le plus petit coût de revue donnant une confiance suffisante.
 Les classes et paliers vivent dans `wn-lot` ; l'exception migration/auth et
 la vérification base après merge dans `wn-merge`/`REGLES_PR_MERGE.md` ; les
 contrôles cliniques opposables dans `.claude/rules/clinique-scoring.md` ; la
-revue Copilot reste le régime de merge. Ce document n'ajoute aucun reviewer :
+revue de CodeRabbit précède le merge par l'assistant (`D-290`, qui a pris la
+suite de Copilot le 2026-10-14) ; elle s'ajoute au barème ci-dessus sans en
+remplacer aucune ligne. Ce document n'ajoute aucun reviewer :
 il fixe **quand** chacun s'engage et quand il ne s'engage pas.
