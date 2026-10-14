@@ -25,6 +25,9 @@
 5. Les parents **peuvent demander** le contenu du dossier (droit d'accès) ;
    aucun accès parent au portail n'est promis.
 6. Le **119** figure au texte 2B, à côté du 15 et du 112.
+7. Revue CodeRabbit (#1441), correction validée par le responsable le
+   2026-10-14 : le texte 1 dit à qui le **114** est réservé, comme « Limites
+   et sécurité ».
 
 ## Restent ouverts
 
@@ -49,7 +52,7 @@ Le document est rangé dans votre dossier, et seul votre praticien peut le consu
 
 **Ce n'est pas une messagerie**
 
-Déposer un document n'ouvre pas de conversation : vous ne recevrez pas de réponse ici, et votre praticien ne le lit pas dès son arrivée. En cas de symptôme grave ou inquiétant, n'attendez pas : appelez le 15 (SAMU), le 112 (numéro d'urgence européen) ou le 114 (par SMS ou application).
+Déposer un document n'ouvre pas de conversation : vous ne recevrez pas de réponse ici, et votre praticien ne le lit pas dès son arrivée. En cas de symptôme grave ou inquiétant, n'attendez pas : appelez le 15 (SAMU), le 112 (numéro d'urgence européen) ou le 114 (par SMS ou application, pour les personnes sourdes, malentendantes, sourdaveugles ou aphasiques).
 
 **Vos analyses biologiques**
 
