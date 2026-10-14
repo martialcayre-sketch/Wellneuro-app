@@ -5,7 +5,7 @@
 > revue). Chaque question est développée (options, arguments, risques),
 > puis tranchée — décisions utilisateur recueillies le 2026-07-15.
 > Les décisions sont actées au registre (`REGISTRE_FRONTIERES.md`, A6)
-> et engagent le programme `campagnes/PROGRAMME_WELLNEURO_5_0.md`.
+> et engagent le programme `docs/archive/roadmap-updates/PROGRAMME_WELLNEURO_5_0.md`.
 
 ## 1. Time-travel : lecture seule ou annotation rétrospective ?
 

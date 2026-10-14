@@ -1,5 +1,9 @@
 # Surface de relecture — les trois premières lignes du catalogue de conduites
 
+> **Figé le 2026-10-14** (`D-285` §5) : document livré ou soldé, gardé à sa place
+> parce que le registre `docs/DECISIONS.md` le cite ; il ne décrit pas l'état
+> courant, l'ordre du travail est au plan `docs/claude/PLAN_WELLNEURO.md`. Surface attestée ; les signatures vivent dans le code et au registre.
+
 *Écrite le 2026-09-16, LOT-01 de `D-206`. **Ce document ne signe rien.** Il
 présente au praticien ce qu'il aurait à attester, et ce qui a été écarté.*
 

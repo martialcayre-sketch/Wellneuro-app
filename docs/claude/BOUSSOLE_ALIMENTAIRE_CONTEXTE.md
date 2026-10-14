@@ -1,6 +1,11 @@
 # Boussole alimentaire & Nutrition Lab — Contexte consolidé
 # Complète ROADMAP_AGENT_PLAN.md et PROJET_CONTEXTE.md
 
+> **2026-10-14** : `ROADMAP_AGENT_PLAN.md` et `PROGRAMME_WELLNEURO_5_0.md`,
+> cités ci-dessous, sont archivés sous `docs/archive/roadmap-updates/`
+> (`D-285`) ; la feuille de route est le plan unique
+> `docs/claude/PLAN_WELLNEURO.md`.
+
 > **Amendement WellNeuro 5.0 — 2026-07-18.** Ce document est conservé comme
 > blueprint historique. En cas de conflit, REGISTRE_FRONTIERES.md,
 > PROGRAMME_WELLNEURO_5_0.md et la campagne C5 à huit lots prévalent. Pour C5

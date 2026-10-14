@@ -1,5 +1,9 @@
 # BP-25 — Surface de relecture ([[D-195]] §2)
 
+> **Figé le 2026-10-14** (`D-285` §5) : document livré ou soldé, gardé à sa place
+> parce que le registre `docs/DECISIONS.md` le cite ; il ne décrit pas l'état
+> courant, l'ordre du travail est au plan `docs/claude/PLAN_WELLNEURO.md`. Surface attestée ; les signatures vivent dans le code et au registre.
+
 Produite AVANT la demande de déclaration de conformité. Arbitrages du
 responsable du 2026-10-08 (échelle B du barème, table du repli à deux lignes,
 correctif du comptage pendant la composition), puis table du repli en

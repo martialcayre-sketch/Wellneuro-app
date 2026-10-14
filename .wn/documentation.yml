@@ -3,7 +3,8 @@ version: 1
 sources_of_truth:
   project_state: docs/PROJECT_STATE.md
   roadmap_technique: docs/ROADMAP_TECHNIQUE.md
-  roadmap_produit: docs/ROADMAP_PRODUIT.md
+  roadmap_produit: docs/archive/roadmap-updates/ROADMAP_PRODUIT.md
+  plan: docs/claude/PLAN_WELLNEURO.md
   decisions: docs/DECISIONS.md
   runbook: docs/RUNBOOK.md
   quality_gate: docs/QUALITY_GATE.md
@@ -18,7 +19,7 @@ maintained_documents:
 
   ROADMAP.md:
     mode: archived
-    note: "Remplacé par ROADMAP_TECHNIQUE.md et ROADMAP_PRODUIT.md (voir WN-Doc-Assainissement)"
+    note: "Remplacé par ROADMAP_TECHNIQUE.md et ROADMAP_PRODUIT.md (voir WN-Doc-Assainissement) ; ROADMAP_PRODUIT.md archivé le 2026-10-14 sous docs/archive/roadmap-updates/, plan unique docs/claude/PLAN_WELLNEURO.md (D-285)"
 
   AGENTS.md:
     mode: canonical

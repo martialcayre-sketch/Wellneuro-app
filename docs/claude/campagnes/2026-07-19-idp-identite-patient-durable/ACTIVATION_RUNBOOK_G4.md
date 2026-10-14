@@ -110,7 +110,7 @@ consigner comme celle-ci.
 ## Ouverture du canal public de redemande (2026-07-21)
 
 Décision du responsable, consignée dans
-`campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`.
+`docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md`.
 
 1. **Poser la variable** dans Vercel **Production seule** — jamais Preview, qui
    lit la base de production :

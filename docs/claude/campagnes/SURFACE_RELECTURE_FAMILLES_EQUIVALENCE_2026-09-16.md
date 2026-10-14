@@ -1,5 +1,10 @@
 # Surface de relecture — les familles d'équivalence entre assiettes
 
+> **Figé le 2026-10-14** (`D-285` §5) : document livré ou soldé, gardé à sa place
+> parce que le registre `docs/DECISIONS.md` le cite ; il ne décrit pas l'état
+> courant, l'ordre du travail est au plan `docs/claude/PLAN_WELLNEURO.md`. Table des replis vide et non signée (`D-242`) ; les familles attendent
+> le texte du responsable (plan §6, rang de la lettre ah).
+
 *Écrite le 2026-09-16 en exécution de `D-213` §11, **corrigée le même jour**.
 **Ce document ne signe rien.** Il présente au praticien ce qu'il aurait à
 attester.*

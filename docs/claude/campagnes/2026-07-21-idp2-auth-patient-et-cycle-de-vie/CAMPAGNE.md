@@ -29,7 +29,7 @@ quatorze relations y pendent, dont certaines en `onDelete: Restrict`.
 
 Un droit annoncé et non exécutable est un engagement en défaut. C'est d'autant
 plus sensible que la dérogation d'hébergement du 2026-07-21
-(`campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`)
+(`docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md`)
 s'appuie en partie sur la liberté des participants — laquelle suppose de
 pouvoir partir.
 
@@ -197,7 +197,7 @@ tableau de bord.
 
 - Campagne précédente : `2026-07-19-idp-identite-patient-durable` (G4, livré et
   activé le 2026-07-21).
-- Gate : `2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`,
+- Gate : `docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md`,
   exigences 2 et 4.
 - Invariants : `docs/claude/REGISTRE_FRONTIERES.md` §1.
 

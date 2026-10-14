@@ -45,7 +45,7 @@ actent, pas par la vérification) ; `.wn/state.json`.
 ## Fichiers probables
 
 - `docs/ai/AUDIT_UX_CONVERGENCE_SPIRALE_5-0.md` (encart en tête)
-- `docs/claude/propositions/2026-07-18-gate-modele-multi-cycles/BRAINSTORM_GATE_MULTI_CYCLES.md` (mention en tête)
+- `docs/archive/cadrages/2026-07-18-gate-modele-multi-cycles/BRAINSTORM_GATE_MULTI_CYCLES.md` (mention en tête)
 - `docs/claude/campagnes/README.md` (ligne C2B)
 - `docs/claude/campagnes/2026-07-22-sp-conv-trajectoire-partagee/maquettes/*.html` (créés)
 

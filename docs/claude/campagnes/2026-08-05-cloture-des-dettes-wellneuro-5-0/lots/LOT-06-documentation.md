@@ -18,7 +18,7 @@ travail à côté.
 |---|---|
 | « onze notices manquantes » | **10** instruments en `statutBibliographique: a_completer` |
 | « escalade SIIN du 2026-07-25, sans réponse » | **l'escalade existe et reste ouverte** — `web/src/lib/questionnaires/gerontologie.ts:49` et l'entrée `Q_GEO_04` du registre l'écrivent. Ce qui est introuvable, c'est sa **trace datée** : aucune pièce ne porte la démarche du 2026-07-25 ni de relance. Elle porte les **bandes HAS 2011**, pas les droits — la réserve de droits, distincte, porte sur **PAR** (MMSE/GRECO). Et Q_GEO_04 a été **arbitré le 2026-08-03** : verrou maintenu, catalogue inactif, aperçu praticien autorisé |
-| `docs/claude/CHECKLIST_ACTIVATION_G_TRUST_04.md` | chemin faux → `docs/claude/campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md` |
+| `docs/claude/CHECKLIST_ACTIVATION_G_TRUST_04.md` | chemin faux → `docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md` |
 | test à créer : « aucune notice vide sans raison » | **existe déjà** — `scripts/lib/verifier_registre_instruments.js` refuse un `a_completer` dont le `motifBibliographique` fait moins de 40 caractères |
 | gate « arbitré le 2026-07-22 » | décision du responsable datée du **2026-07-21**, bornée au 2026-10-21 |
 | exigences 5, 6, 7 « à avancer » | leur **chantier de code est livré**, mais le tableau du gate les porte toujours **⚠️ partielles**, réserves non levées. Le seul trou que *ce lot* pouvait combler est le **dossier RGPD** ; l'exigence 7 (pentest, revue externe) reste entière |
@@ -101,7 +101,7 @@ entière et hors de portée d'un lot : elle attend un prestataire.
 ## Fichiers probables
 
 - `docs/DOSSIER_RGPD.md` (neuf)
-- `docs/claude/campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`
+- `docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md`
 - `docs/claude/corpus/README.md`
 - `docs/securite_rgpd.md`, `README.md`, `AGENTS.md`, `docs/ROADMAP_TECHNIQUE.md` (renvois)
 - `changelog.d/2026-08-07-lot06-dossier-rgpd.md`

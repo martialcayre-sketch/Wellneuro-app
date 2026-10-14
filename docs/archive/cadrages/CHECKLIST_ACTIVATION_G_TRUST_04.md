@@ -1,0 +1,515 @@
+# Checklist d'activation — Gate G-TRUST-04 (sécurité et hébergement)
+
+> **Archivé le 2026-10-14** (`D-285` §5, PR 4 du versement du plan unique). Ancien
+> chemin : `docs/claude/campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`. Le plan `docs/claude/PLAN_WELLNEURO.md` le remplace ; ce
+> document est conservé tel quel pour l'historique, seuls ses liens relatifs
+> ont été réécrits vers sa nouvelle place. **Contredit par `D-121`** : le gate G-TRUST-04 est définitivement clos depuis
+> la signature de l'annexe HDS du 2026-08-30 ; le registre `docs/DECISIONS.md`
+> cite ce document sous son ancien chemin.
+
+> Rédigée le 2026-07-20, en clôture de la Vague 2. **Ce document ne lève rien.**
+> Il dit, pour chacune des sept exigences du gate, ce qui existe aujourd'hui,
+> ce qui manque, et où le vérifier. ~~Le gate reste **non levé**~~ — **le gate
+> a été levé le 2026-08-22, sous réserve unique** (signature de l'annexe HDS,
+> décision du responsable `D-089` — statut porté par `GATES_GO_NO_GO.md:11`).
+> Ce document reste ce qu'il a toujours été : le dossier de preuve.
+
+## Pourquoi ce document existe
+
+La question posée en Vague 2 était : peut-on faire tester l'application par de
+**vraies personnes**, en qualifiant leurs dossiers de « patients de test » ?
+
+La réponse tient en une phrase : **un patient « réel de test » reste une
+personne réelle**, et ses réponses à un questionnaire de santé sont des données
+de santé dès la première soumission. Le caractère expérimental de l'essai ne
+change ni la qualification juridique de la donnée, ni le risque pour la
+personne. Les deux invariants du dépôt s'appliquent donc pleinement :
+
+- `REGISTRE_FRONTIERES.md:31` — « **HDS obligatoire avant tout stockage de
+  données de santé réelles.** »
+- `REGISTRE_FRONTIERES.md:19-20` — « Patients fictifs exclusifs : Sophie Nicola,
+  Jennifer Martin, Michel Dogné. **Aucune donnée patient réelle, jamais.** »
+
+Ces deux lignes ne sont pas des précautions d'ingénierie : elles recopient le
+droit applicable. En France, héberger des données de santé à caractère personnel
+pour le compte d'un tiers impose de recourir à un **hébergeur certifié HDS**.
+
+Le premier point à instruire n'est donc pas applicatif.
+
+## Le point bloquant, à instruire avant tout travail de code
+
+**L'hébergement.** Les données patient vivent aujourd'hui sur **Supabase**
+(projet `ohnbmypinamzzfhqymlt`, région `eu-central-1`), l'application sur
+**Vercel**. À notre connaissance, **aucun des deux n'est hébergeur certifié
+HDS** — cette affirmation doit être **vérifiée auprès des fournisseurs**, pas
+supposée, et la réponse consignée ici avec sa date.
+
+Tant que ce point n'est pas tranché, les six autres exigences sont sans effet :
+elles peuvent toutes être satisfaites sans que le stockage devienne licite.
+
+Localisation de l'affirmation en production : le workflow GitHub Actions
+`release-db` applique `prisma migrate deploy` sur la base Supabase de production,
+hors du build Vercel (`web/scripts/vercel-build.sh` n'écrit plus) — c'est bien
+cette base qui reçoit les données.
+
+## Les sept exigences, une par une
+
+| # | Exigence | État | Preuve |
+|---|---|---|---|
+| 1 | Architecture d'hébergement adaptée | ⚠️ **Partiel — depuis le cutover du 2026-08-22** (la rédaction précédente bornait elle-même son ❌ « jusqu'au cutover » : il est fait) | Depuis le 2026-08-22 : données réelles chargées sur Scalingo `osc-fr1` `--hds-resource` à 03:24 CEST, **cutover DNS ~04:05** (`app.wellneuro.fr` → Scalingo) — **service ET données sont rendus par l'hébergeur certifié HDS** (certificat LNE 38436), schéma vérifié sur conteneur prod (`migrate status` : 56 migrations, à jour — one-off-602, 11:44 CEST). Reste, et la ligne ne dit pas plus que les faits : **l'annexe HDS n'est toujours pas signée** (le point accepté sciemment de `D-078` demeure — l'option HDS n'est pas contractuellement active) et **Vercel/Supabase restent chauds jusqu'au décommissionnement du 2026-09-01** (`D-080`, inconditionnel, avec preuve d'effacement) — la résidence n'est pas encore exclusive |
+| 2 | Contrôle d'accès centralisé | ⚠️ **Partiel — amélioré depuis la rédaction** | Praticien : NextAuth + OAuth Google restreint à `@wellneuro.fr` (`web/src/lib/auth.ts`). Patient : ~~jeton d'accès **permanent**, pas de compte~~ — **le jeton permanent n'est plus un credential depuis #397** (le cookie de session signé `wn_portail` est l'unique credential, cf. `CHECKLIST_FINALISATION.md` §C) ; les entrées sont le lien magique G4 (24 h, usage unique) et **Google patient G5, constaté actif en production par le comportement le 2026-08-22**. ~~Reste partiel : les colonnes dormantes `access_token*` subsistent en base~~ — **purge appliquée et vérifiée le 2026-08-22** ([[D-085]] §5, protocole §C complet) : migration `20260822140000_purge_access_token_dormant` appliquée sur **les deux bases** (Supabase par `release-db`, Scalingo par le `postdeploy` du commit de purge), sonde §C en one-off sur la production — colonnes `access_token`/`access_token_created_at` **absentes**, index unique emporté, `access_token_revoked` (drapeau vivant) conservé, migration en une tentative, aucune orpheline. **Résidu restant, nommé et daté** : les valeurs en clair survivent dans la copie de migration et les sauvegardes Supabase — effacement au décommissionnement du **2026-09-01** ([[D-080]], avec preuve écrite). La révocation de remplacement **existe** (`sessionsInvalidesAvant`, coupe-circuit branché sur les trois entrées portail — constat du 2026-08-22) |
+| 3 | Isolation multi-praticien | **— Sans objet** (arbitrage `D-085`, 2026-08-22) | WellNeuro est **mono-praticien de fait et de choix** : un seul compte praticien (le responsable). **Condition de réouverture écrite** ([[D-085]]) : l'exigence se rouvre telle quelle, et redevient bloquante, avant toute création d'un second compte — avec le test d'isolation réel. La garde 30/33 routes (cf. tableau ci-dessous) reste en défense en profondeur ; fait structurel du cutover : plus d'API de données managée chez Scalingo, le vecteur visé par la posture A (`D-005`) n'existe plus |
+| 4 | Gestion des sessions et révocations | ⚠️ **Partiel — amélioré le 2026-07-21** | Cookie portail signé, durée bornée. **G4 activé en production** : lien haché en base, 24 h, usage unique, rejeu refusé et tracé. ~~Mais le **jeton permanent subsiste et ne se périme toujours pas** — la coexistence des deux chemins est voulue pendant la bascule.~~ **La coexistence a pris fin avec #397** : le jeton permanent n'est plus relu ni reconstruit en URL, le cookie de session signé est l'unique credential (vérifié en prod post-merge, `CHECKLIST_FINALISATION.md` §C). ~~L'exigence reste partielle pour un résidu nommé : les **valeurs en clair dormantes subsistent en base**~~ — **purgées et vérifiées le 2026-08-22** ([[D-085]] §5, sonde §C sur la production : colonnes absentes des deux bases, cf. ligne 2). **Résidu restant** : copie de migration et sauvegardes Supabase, effacées au **2026-09-01** ([[D-080]]). ~~La révocation de remplacement n'existe pas encore~~ — **elle existe** : `sessionsInvalidesAvant` (coupe-circuit, constat du 2026-08-22 sur les trois entrées portail) |
+| 5 | Journalisation | ✅ **Tenue pour satisfaite le 2026-08-22** (preuve produite + arbitrage [[D-085]]) | La piste d'audit des accès légitimes existe : table `journal_acces_dossiers` (#273 — RLS deny-all, sans FK, effacée nommément avec le dossier, rétention 12 mois GD-2) et écriture branchée sur les **22 routes GET « dossier nommé »** (12 routes A/B en #278, 10 routes C/D au lot de clôture, dont un correctif de scoping sur le GET `booklet`). « Qui a lu quel dossier, quand » répond par une lecture `execute_sql` (requête type GD-3, consignée au lot). Limites écrites : liste vide sur dossier possédé non journalisée, POST exclus (leur écriture laisse sa propre trace, GD-1), versant patient déjà tracé (`portail_connexions_google`, `portail_magic_links`). ~~Preuve fonctionnelle en production toujours due~~ — **produite le 2026-08-22** (revue reprise) : sonde lecture seule sur la production Scalingo, agrégats sans identité — **947 accès journalisés, 14 dossiers distincts, 27 routes distinctes**, du 2026-07-23 08:45 UTC au 2026-08-22 11:12 UTC, **dont 99 depuis la bascule** : l'historique a été porté intact ET le journal continue d'écrire après le cutover. La question GD-3 (« qui a lu quel dossier, quand ») répond par le même canal. **Tenue pour satisfaite le 2026-08-22** (arbitrage [[D-085]]) : l'absence d'écran de consultation est un choix documenté (GD-3), pas un manque |
+| 6 | Réponse aux incidents | ✅ **Réglée le 2026-08-22** (arbitrage [[D-085]] §3, dernier livrable — le runbook Scalingo — livré le jour même ; procédure écrite et exercée sur table le 2026-07-22) | `docs/RUNBOOK.md` couvre Vercel/DNS, OAuth, Supabase/Prisma, fuite de secret, révocation d'un accès patient. **La procédure de violation de données existe et a été exercée** (`docs/PROCEDURE_VIOLATION_DONNEES.md` ; exercice sur table #281, scénario fictif Michel Dogné, fiche 2026-EX1, constats EX-1/EX-2/EX-3, §8 réécrit). **Arbitrages du 2026-08-22** ([[D-085]]) : la confirmation par un conseil qualifié **sort du gate** (dette `D-TRUST-10`, échéance 2026-T4) ; le **registre physique des violations est ouvert** ce jour, tenu hors dépôt par le responsable (EX-3 soldé). ~~Reste un livrable commandé : le runbook réécrit pour Scalingo~~ — **livré le 2026-08-22** : `docs/RUNBOOK.md` réécrit pour l'ère Scalingo (one-off, `env-get`/piège `env-set`, tunnel, rollback recadré [[D-080]]/[[D-087]], incidents plateforme/OAuth/base, révocation recalée post-purge). **L'exigence est réglée aux termes mêmes de [[D-085]] §3** |
+| 7 | Tests de sécurité documentés | ✅ **Réglée le 2026-08-22** (revue jouée + constats triés et corrigés, aux termes de [[D-085]] §4) | Tests d'autorisation par route (`web/src/app/api/**/route.test.ts`), garde structurelle SP-MET, refus d'écriture en lecture passée (SP-TT). **Revue Codex jouée le 2026-08-22** (pilotée par le responsable — sa nature est dite : revue automatisée par un second modèle, pas un test d'intrusion humain externe) : **0 H, 2 M, 1 L, tous corrigés le jour même** — plafond des liens magiques rendu atomique (verrou par patient), anti-injection de prompt des champs libres (neutralisation + délimitation, consigne `synthese-v28`), envoi SMTP sorti du chemin temporellement mesuré. Périmètre négatif consigné : aucun contournement réaliste de l'auth `@wellneuro.fr`, des sessions patient, de l'usage unique des liens, de l'isolation, du SQL, des appels sortants ni des redirections OAuth. Détail : fragment `2026-08-22-revue-codex-triage-durcissements` |
+
+~~Aucune ligne n'est ✅.~~ *(Constat du 2026-08-21, dépassé le jour suivant :
+les lignes 5, 6 et 7 sont ✅ et la 3 sans objet — le tableau ci-dessus fait
+foi, les notes datées ci-dessous portent les preuves.)* Le gate ne peut pas
+être levé par un arbitrage partiel : c'est un ET, pas un OU.
+
+> **Revue reprise le 2026-08-22, après le cutover.** L'état passe de « une ❌,
+> six partielles » (vrai à la date de `D-078`, et la section de cette décision
+> le dit toujours à sa date) à **« sept partielles, zéro ❌, zéro ✅ »** : la
+> ligne 1 a franchi son propre seuil (« ❌ jusqu'au cutover »), la ligne 5 a
+> reçu sa preuve fonctionnelle. Les chemins vers ✅ sont désormais tous nommés
+> et datés : annexe HDS + décommissionnement du 2026-09-01 (ligne 1), purge
+> des colonnes dormantes + révocation (lignes 2/4), test multi-praticien
+> (ligne 3), conseil qualifié + registre physique + runbook Scalingo
+> (ligne 6), ~~pentest externe~~ revue de sécurité (ligne 7 — l'arbitrage
+> [[D-085]] §4, rendu quelques heures après cette note, a substitué la revue
+> Codex au pentest ; elle a été jouée et triée le jour même). *(« Sept
+> partielles, zéro ✅ » décrit le matin du 2026-08-22 — l'exécution du cap,
+> plus bas, l'a dépassé le jour même.)*
+
+> **Arbitrages du responsable, même jour** ([[D-085]]) : la **ligne 5 est ✅**
+> (preuve + arbitrage), la **ligne 3 est sans objet** (mono-praticien,
+> condition de réouverture écrite), la **ligne 6** n'attend plus que le
+> runbook Scalingo (conseil qualifié → dette `D-TRUST-10` ; registre ouvert),
+> les **lignes 2/4** n'attendent plus que la migration de purge (ordonnée, en
+> cours), la **ligne 7** attend sa revue Codex (jouée et triée). **Cap fixé :
+> il ne doit rester que l'exigence 1**, dont la fermeture est datée (annexe +
+> décommissionnement 2026-09-01). Le gate ne se lèvera en conformité qu'à ce
+> moment-là — et ce sera une levée-conformité, pas une reconduction d'écart.
+
+> **Exécution du cap, fin de journée du 2026-08-22.** La **purge est
+> appliquée et vérifiée** sur les deux bases (sonde §C en one-off — lignes
+> 2/4) ; le **runbook Scalingo est livré** (ligne 6 réglée aux termes de
+> [[D-085]] §3). Les lignes 2/4 ne portent plus qu'un résidu qui **fusionne
+> avec la ligne 1** : l'effacement de la copie Supabase au 2026-09-01
+> ([[D-080]]). Restent donc ouvertes : **l'exigence 1** (annexe HDS +
+> décommissionnement, datée) et **l'exigence 7** (revue Codex — bloc de
+> paramètres prêt, lancement par le responsable). Constat annexe du même
+> jour, hors gate mais sur son chemin d'écriture : l'incident
+> `MIGRATE_DATABASE_URL` (release-db migrait Supabase) est corrigé par
+> [[D-087]] — l'approbation humaine redevient l'unique porte du schéma.
+
+> **Levée du gate, même jour au soir ([[D-089]]).** Le responsable lève
+> `G-TRUST-04` **techniquement, au vu de l'état du code**, avec une
+> **réserve unique** : la signature de l'annexe HDS — une question de jours,
+> à constater levée au plus tard au 2026-09-01 ([[D-080]]) ; à défaut, le
+> 2026-10-21 redevient point de contrôle. La ligne 1 reste le siège de la
+> réserve ; pendant qu'elle court, aucune affirmation contractuelle
+> d'hébergement HDS face au patient. Tout le reste est fonctionnel — la
+> dérogation de juillet est remplacée, l'écart n'est plus compté comme tel.
+> (La phrase « levée-conformité » de la note du matin visait une levée sans
+> réserve ; le responsable a arbitré une levée technique AVEC réserve nommée
+> — c'est elle qui fait foi.)
+
+## Mise à jour du 2026-07-21 — état constaté, et ce qu'il ne change pas
+
+### Ce qui est désormais établi de la base de production
+
+Relevé en lecture seule (MCP Supabase, agrégats sans donnée nominative) :
+**17 patients, dont 3 graines fictives**, et **13 accès portail ouverts**.
+Interrogé sur la qualification des 14 dossiers restants, le responsable a
+répondu qu'ils correspondent **au moins en partie à de vraies personnes**, et
+que celles-ci **ont donné leur consentement pour une phase de test**.
+
+La question posée en Vague 2 — « peut-on faire tester par de vraies
+personnes ? » — n'était donc pas prospective : **c'est déjà le cas**.
+
+### Le consentement recueilli, et sa portée exacte
+
+Le consentement est une **pièce réelle du dossier RGPD** : il documente la base
+légale du traitement et l'information des participants, tous deux listés comme
+manquants au point 7 de « Ce qu'il resterait à faire ». **À consigner
+formellement** ici par le responsable : date, forme, contenu de l'information
+délivrée, modalité de retrait.
+
+**Il ne satisfait pas l'exigence 1**, et ce point mérite d'être écrit
+explicitement parce que l'intuition inverse est naturelle :
+
+- le **consentement** (RGPD) porte sur la **licéité du traitement** — la
+  personne peut y consentir, c'est son droit ;
+- la **certification HDS** (CSP, art. L1111-8) porte sur **qui héberge** les
+  données et sous quelles garanties. C'est une obligation qui pèse sur le
+  responsable et sur l'hébergeur, **pas un droit dont la personne dispose** :
+  elle ne peut donc pas y renoncer pour eux.
+
+Nuance qui explique probablement l'intuition : **l'ancienne rédaction de
+L1111-8 exigeait effectivement le consentement exprès de la personne pour
+l'hébergement par un tiers.** Cette mention a été supprimée lors de la réforme
+de 2018 — précisément parce que le consentement n'était pas le bon instrument.
+
+> Ce paragraphe est une **alerte, pas un avis juridique**. Il est rédigé par
+> l'assistant, dont la connaissance a une date de coupure et qui n'est pas
+> juriste. **À faire confirmer par un conseil qualifié** avant toute décision
+> qui s'en réclamerait.
+
+### Exigence 1 : maintenue ouverte
+
+Elle reste ❌. Le consentement n'y change rien, et rien d'autre n'a bougé : la
+réponse écrite de Supabase et de Vercel sur leur certification HDS **n'a pas
+été demandée**. C'est toujours le premier point à instruire, et il reste
+préalable aux six autres.
+
+> **Dépassé le 2026-07-21** par la section « Instruction de l'hébergement »
+> ci-dessous. Le paragraphe est conservé tel quel : il date l'état de la
+> connaissance au moment où il a été écrit.
+
+### Ce que l'activation de G4 fait, et ne fait pas
+
+**G4 a été activé en production le 2026-07-21** (`WN_G4_LIEN_MAGIQUE=true`,
+Production seule ; runbook et contrôles dans
+`campagnes/2026-07-19-idp-identite-patient-durable/ACTIVATION_RUNBOOK_G4.md`).
+
+- **Ce qu'il fait** : il substitue, pour les personnes déjà en base, un lien
+  haché expirant en 24 h et à usage unique au lien permanent stocké en clair.
+  C'est une amélioration de l'exigence 4, et elle profite immédiatement aux
+  13 accès ouverts.
+- **Ce qu'il ne fait pas** : il ne déplace pas une donnée, ne change pas
+  l'hébergeur, et **ne régularise rien**. Présenter son activation comme une
+  mise en conformité serait faux.
+- **Ce qui reste fermé** : le canal public de redemande
+  (`WN_G4_REDEMANDE_PATIENT`, non posé), tant que deux résidus de la revue de
+  sécurité ne sont pas traités — temps de réponse non égalisé, absence de
+  limitation par IP. Sur des adresses de personnes réelles, ces résidus ne sont
+  plus théoriques.
+
+### Correction de fait : il n'existe pas de préproduction
+
+Le registre porte pour G4 la mention « livrable en préproduction ». **Aucune
+préproduction n'existe** : il n'y a qu'un projet Supabase, et le seul chemin de
+migration (le workflow `release-db`) ne vise que la production. Les déploiements
+Preview lisent donc la base de production.
+
+Conséquence pratique, constatée le 2026-07-21 : `WN_G4_LIEN_MAGIQUE` avait été
+posée sur **Preview et Production**, ce qui aurait permis d'émettre des liens
+vers de vrais dossiers depuis n'importe quelle URL de prévisualisation. Corrigé
+le jour même. À garder en tête pour tout drapeau ultérieur.
+
+**Règle arbitrée le 2026-07-22 (GD-6, campagne G-TRUST-04 durcissement) :
+jamais de drapeau `WN_*` posé sur l'environnement Preview.** Les Previews
+elles-mêmes sont conservées (vérification visuelle des PR, décision #258) —
+le vecteur de l'incident était le drapeau, pas la Preview. Arbitrage par
+défaut, révocable par le responsable du traitement.
+
+> Cette section constate, elle ne décide pas. **La levée du gate reste une
+> décision du responsable du traitement**, à écrire plus bas avec sa date, ses
+> pièces et son périmètre.
+
+### Détail de l'exigence 3 — isolation multi-praticien
+
+État au 2026-07-21, sur les **33** routes de `web/src/app/api/praticien/`.
+*Correction* : le compte « 13 sur 31 » ci-dessus datait du 2026-07-20 avant
+`main`, était déjà dépassé par #167 (12 routes fermées le jour même) et
+comptait deux routes en trop peu — l'audit de conformité 5.0 du 2026-07-20
+(E9) avait relevé que `consultations` et `patients` y figuraient à tort parmi
+les gardées, et `besoins` à tort en « sans objet ». Les trois ont depuis été
+fermées pour de bon (2026-07-21) ; le tableau ci-dessous reflète l'état réel.
+
+**Gardées (30)** — la totalité des routes portant de la donnée patient. Via la
+garde factorisée `web/src/lib/praticien/appartenance.ts`
+(`filtrePatientsDuPraticien`, `verifierAppartenancePatient`) : `apercu-patient/reponses`,
+`assignations`, `besoins`, `booklet`, `cockpit`, `consultations`,
+`copilote/cloture`, `copilote/prevol`, `documents`, `equilibre`, `fil`,
+`fil/refus`, `metrics`, `packs/assign`, `patients`, `patients-pg`,
+`protocoles`, `protocoles/checkins`, `relecture-notes`, `reperes`, `reponses`,
+`synthese`, `token`, `trajectoire`, `trust`. Via une vérification inline
+équivalente, antérieure à l'extraction de la garde commune : `boussole`,
+`ja/activation`, `ja/observations`, `protocoles/diffusion`,
+`protocoles/versions`.
+
+**Sans objet (3)** — `packs`, `questionnaires`, `questionnaires/registry` :
+catalogues et référentiels globaux, sans `idPatient` ni donnée patient.
+
+Le filtrage reste aujourd'hui un **no-op fonctionnel** : les patients de
+production appartiennent tous au même praticien. La fermeture des 33 routes ne
+lève pas à elle seule l'exigence 3 : elle n'a pas été éprouvée par un test
+d'isolation multi-praticien réel (deux comptes, deux portefeuilles de
+patients), et rien ne remplace encore l'absence de contrainte au niveau de la
+base (RLS ou équivalent) si la garde applicative était un jour contournée.
+
+## Ce qui a été livré en Vague 2 et compte pour ce gate
+
+- **Isolation multi-praticien, premières routes** (#156) — le mécanisme et
+  13 routes.
+- **Refus d'écriture en lecture passée** (#158) — `POST /api/praticien/cockpit`
+  refuse tout `asOf` **avant toute lecture** ; la garantie est portée par le
+  serveur, pas par l'écran.
+- **Journalisation assainie** — `sanitizeLogData.ts` empêche qu'une donnée
+  patient parte dans un log.
+
+## Ce qu'il resterait à faire, dans l'ordre
+
+1. **Instruire l'hébergement.** Obtenir des fournisseurs une réponse écrite sur
+   la certification HDS. Si négative — l'hypothèse la plus probable —, aucune
+   suite applicative n'a de sens sans migration vers un hébergeur certifié.
+2. ~~Fermer les routes restantes.~~ Fait le 2026-07-21 (`besoins`,
+   `consultations`, `patients`) : les 30 routes portant de la donnée patient
+   sont désormais gardées. Reste, pour que l'exigence 3 soit tenue pour
+   satisfaite : un test d'isolation multi-praticien réel, et une décision sur
+   une contrainte au niveau base.
+3. **Livrer G4 / IDP.** Jeton haché, expirant, à consommation unique, rejeu
+   refusé et tracé — c'est l'exigence 4, et la campagne IDP porte déjà la
+   décision « **livrable en préproduction ; activation avec données réelles =
+   décision distincte, aujourd'hui NO-GO** » (`REGISTRE_FRONTIERES.md:619-621`).
+4. ~~Ajouter une piste d'audit des accès légitimes.~~ Fait les 2026-07-22/23
+   (migration #273, routes A/B #278, routes C/D au lot de clôture).
+   ~~Reste : la preuve fonctionnelle en production.~~ **Produite le
+   2026-08-22** (voir la ligne 5 du tableau : 947 accès, 14 dossiers,
+   27 routes, 99 écritures post-bascule — sonde lecture seule sur la
+   production Scalingo). L'exigence 5 n'a plus pour résidu que l'absence
+   d'écran de consultation, qui est un choix (GD-3).
+5. ~~Écrire la procédure de violation de données.~~ Fait le 2026-07-22
+   (`docs/PROCEDURE_VIOLATION_DONNEES.md`), **exercée sur table le même jour**
+   (#281, fiche 2026-EX1). Reste, pour que l'exigence 6 soit tenue pour
+   satisfaite : la confirmation par un conseil qualifié (dette
+   `DETTE_TRUST.md`) et le registre physique des violations (EX-3).
+   > Note (LOT-06, 2026-08-07) : la confirmation par un conseil qualifié est
+   > une **action externe en attente**, pas un chantier de code. Aucun conseil
+   > n'est nommément engagé à ce jour. Le registre physique des violations,
+   > lui, reste à ouvrir par le responsable.
+6. **Faire réaliser une revue de sécurité externe** (exigence 7).
+   > Note (LOT-06, 2026-08-07) : **action externe en attente** — engager un
+   > prestataire de revue de sécurité. Aucun prestataire n'est nommément engagé
+   > à ce jour, et aucun lot ne peut produire ce livrable.
+7. **Constituer le dossier RGPD de l'expérimentation** : base légale,
+   information des participants, DPA signés avec chaque sous-traitant réel
+   (Vercel, Supabase, Anthropic, SMTP, Google) — la liste est déjà établie en
+   `GATES_GO_NO_GO.md:9`.
+   > Note (LOT-06, 2026-08-07) : **la partie documentaire est produite** —
+   > `docs/DOSSIER_RGPD.md` recense responsable, finalité, catégories de
+   > personnes et de données, destinataires, transferts, conservation, droits,
+   > mesures de sécurité et information des participants, chaque rubrique étant
+   > soit sourcée dans le dépôt, soit marquée comme trou avec porteur et
+   > échéance. **Ce qui reste est externe** : la qualification de la base légale
+   > par un conseil qualifié, l'AIPD, et la signature des DPA. Le dossier ne
+   > lève pas ce gate et ne s'y substitue pas.
+   > Trois trous y sont apparus à l'écriture, et méritent d'être vus d'ici :
+   > l'information délivrée **sur l'écart d'hébergement** n'est consignée nulle
+   > part (recommandation 1 de la décision du 2026-07-21) ; le **fournisseur
+   > SMTP réel** n'est toujours pas identifié ; **Sentry** est un sous-traitant
+   > de fait absent de la liste montrée aux personnes.
+
+## Instruction de l'hébergement — établie le 2026-07-21
+
+Le point 1 de la liste ci-dessus est **instruit**. Il ne dit plus « non
+vérifié » : il dit « vérifié, et négatif ».
+
+### Ce qui est établi
+
+- **Ni Supabase ni Vercel ne figurent à l'annuaire des hébergeurs certifiés
+  HDS** publié par l'Agence du Numérique en Santé, qui recense 404 hébergeurs.
+  L'absence de deux acteurs de cette taille n'est pas une lacune documentaire.
+- **Supabase n'a jamais répondu.** La question — prévoyez-vous une
+  certification HDS pour la France ? — lui a été posée publiquement le
+  2024-11-29 (discussion GitHub 30734), relancée par cinq utilisateurs
+  jusqu'en février 2026, dont un demandant « une réponse claire sur ce point
+  crucial ». La discussion est toujours marquée **non répondue**. La
+  documentation santé de Supabase ne traite que du HIPAA américain.
+- **Vercel est certifié SOC 2 Type II, ISO 27001:2022, HIPAA et PCI DSS** — et
+  pas HDS. Ce sont des cadres réels ; aucun ne se substitue à une certification
+  exigée par le code de la santé publique français.
+- **Le référentiel HDS v2.0 est pleinement en vigueur depuis le 2026-05-16**,
+  avec une exigence de souveraineté restreignant le stockage au territoire de
+  l'EEE. Le projet Supabase est en `eu-central-1` (Francfort), donc dans l'EEE :
+  cela règle la localisation, **pas** la certification, qui est distincte.
+- **Il existe des équivalents certifiés.** Scalingo (certificat 38436, LNE,
+  valable jusqu'au 2028-09-11) et Clever Cloud sont certifiés **sur les six
+  activités** en référentiel v2.0, avec PaaS *et* PostgreSQL managé sous le même
+  certificat, datacenters en France. Une migration réunirait donc chez un seul
+  hébergeur certifié ce qui est aujourd'hui réparti entre deux qui ne le sont
+  pas.
+
+### Coût technique d'un déplacement, mesuré le 2026-07-21
+
+Inventaire du dépôt : **aucune dépendance bloquante à Vercel**. Pas de
+`vercel.json`, pas de `@vercel/*`, pas d'Edge Runtime, pas de middleware, pas de
+Cron, pas d'ISR, pas d'import de `next/image` dans le code applicatif. Les variables `VERCEL_*` lues dans le code
+ont toutes un repli déjà écrit. Aucun SDK `@supabase/*` au runtime : Supabase ne
+sert que de PostgreSQL managé, et Prisma parle à n'importe quel PostgreSQL.
+
+Restent : le script de build à renommer et sa condition `VERCEL_ENV` à remplacer,
+une dizaine de variables à reporter, l'URI de redirection OAuth à ajouter, et
+`max: 1` dans `web/src/lib/prisma.ts` à relever (dimensionné pour le serverless).
+Un poste de cette liste est **déjà fait** : `prisma migrate deploy` a été sorti du
+build vers un chemin de post-déploiement — le workflow GitHub Actions `release-db`
+(gaté par l'environnement protégé `release-db`) —, ce qui aligne d'avance le
+déploiement sur le modèle attendu d'un autre hébergeur.
+**Le poste lourd n'est pas le code : c'est le transfert de la base et la fenêtre
+de bascule**, sur des dossiers de personnes réelles.
+
+À traiter au passage : `web/src/lib/postgres.ts` renvoie
+`rejectUnauthorized: false` pour tout hôte non local — contournement du
+certificat Supabase qui annulerait une partie du bénéfice s'il était conservé.
+
+> Ces constats sont **factuels et sourcés**, mais rédigés par l'assistant, qui
+> n'est pas juriste. La qualification de la situation et les suites à donner
+> relèvent d'un conseil qualifié ou d'un DPO.
+
+## Décision du responsable du traitement — 2026-08-19 : le gate est LEVÉ par arbitrage
+
+> **Cette section prime sur l'en-tête de ce document**, qui date du 2026-07-20 et
+> annonçait « le gate reste non levé ». Il ne l'est plus — non parce que les
+> exigences ont été satisfaites, mais parce que le responsable a arbitré de
+> passer outre. Registre : [[D-078]].
+
+**Décision rendue** par le responsable du traitement le **2026-08-19**, motif
+invoqué : le gate bloque trop le développement.
+
+### Ce qui est autorisé
+
+- L'**activation des fonctionnalités** que le gate retenait : étage 2 du rayon
+  biologie (résultats réels, `WN_CB_RESULTS_ENABLED`) et messagerie D5.
+- La **migration totale vers Scalingo**, sans attendre la signature de l'annexe
+  HDS — condition (a) de `D-006`, demandée le 2026-08-12 et relancée le
+  2026-08-19, toujours sans réponse.
+
+### Ce que l'état des sept exigences devient
+
+**Rien.** Le tableau ci-dessus n'est pas modifié par cette décision et continue
+de dire le vrai : une exigence ❌, six partielles, aucune ✅. Le gate est levé
+**malgré** cet état, pas à cause d'un changement de cet état. Toute lecture
+ultérieure de ce document doit garder les deux faits ensemble.
+
+### Le point accepté sciemment
+
+Scalingo écrit le 2026-08-11 que « l'annexe HDS distincte doit être signée
+séparément pour activer l'option HDS ; l'acceptation des conditions générales
+seule ne suffit pas ». Entre la bascule et cette signature, les données réelles
+ne sont couvertes **ni** par la dérogation en vigueur — qui vise l'implantation
+Vercel — **ni** par une option HDS active. Le responsable en a été informé
+avant de trancher.
+
+### Date de revue — inchangée : 2026-10-21
+
+Elle n'est pas repoussée. Un écart sans terme cesse d'être un écart borné.
+
+---
+
+## Décision du responsable du traitement — 2026-07-21
+
+**Décision rendue** par le responsable du traitement (`G-TRUST-02` : le
+praticien, `martialcayre@wellneuro.fr`), en connaissance des constats ci-dessus,
+qui lui ont été présentés le jour même.
+
+### Ce qui est autorisé
+
+Une **phase de test avec des personnes réelles**, incluant l'**enregistrement de
+nouveaux dossiers**. Motifs invoqués par le responsable : le caractère
+pré-opérationnel de la phase, l'**information des participants** — qui savent que
+l'hébergement n'est pas certifié HDS — et la **gratuité** du service.
+
+**Date de revue : 2026-10-21.** À cette échéance, soit l'hébergement a été
+déplacé, soit la décision est **reconduite explicitement**, datée et signée ici.
+Sans reconduction écrite, la règle du dépôt reprend : patients fictifs seuls.
+
+### Ce que cette décision n'est pas
+
+Elle est un **écart assumé, borné et daté** — pas une mise en conformité. La
+distinction n'est pas rhétorique, elle est ce qui la rend défendable : elle
+établit que le responsable savait, qu'il a borné, et depuis quand.
+
+En particulier, et il faut l'écrire parce que les deux arguments avancés sont
+naturels :
+
+- **La gratuité n'exonère pas.** L'article L1111-8 s'attache à l'hébergement de
+  données de santé pour une finalité de soin ou de suivi. Il ne comporte pas de
+  seuil de chiffre d'affaires ni d'exception pour service gratuit.
+- **L'information des participants ne décharge pas.** Elle est nécessaire au
+  RGPD — transparence, loyauté — et elle est à son crédit. Mais l'obligation de
+  recourir à un hébergeur certifié pèse sur le responsable et l'hébergeur ; ce
+  n'est pas un droit dont la personne dispose, donc pas un droit auquel elle
+  puisse renoncer pour eux. C'est le même raisonnement que pour le consentement,
+  développé plus haut.
+
+Cette décision **ne lève pas** les exigences 2 à 7, qui restent partielles et
+suivies dans ce document. Elle ne vaut pas non plus validation juridique : la
+dette « revue juridique / DPO externe » (`DETTE_TRUST.md`) reste ouverte, et son
+règlement est le premier point qui pourrait invalider ou confirmer ce qui
+précède.
+
+### Ce que l'assistant recommande d'y attacher — à confirmer par le responsable
+
+Ces points ne sont **pas** des décisions rendues : ils sont proposés, et
+n'engagent rien tant que le responsable ne les a pas écrits ici.
+
+1. **Tracer l'information délivrée** : date, forme et contenu exact de ce qui a
+   été dit aux participants sur l'hébergement, ainsi que la modalité de retrait.
+   Aujourd'hui cette information existe, mais n'est **consignée nulle part** —
+   or c'est elle qui porte la moitié de l'argumentaire de la décision.
+2. **Minimiser tant que dure l'écart** : ne pas collecter ce dont la phase de
+   test n'a pas besoin. Chaque donnée non collectée est une donnée qui n'est pas
+   hébergée hors cadre.
+3. **Effacement à la demande, sans condition ni délai d'instruction.**
+4. **Rester hors résultats biologiques réels** (Phase C du programme 5.0), déjà
+   la règle, et qui le devient d'autant plus ici.
+5. **Instruire la migration sans attendre la date de revue** : le coût technique
+   est faible, le délai réel est celui du transfert de base et du contrat.
+
+### Extension de périmètre constatée — 2026-07-22
+
+Le **fil de correspondance médecin** (C3 LOT-06, PR #252 + #255, livré le
+2026-07-22) ajoute une catégorie de donnée de santé au périmètre hébergé : le
+**texte d'une correspondance clinique**, donnée de santé même sans pièce
+jointe. La décision est rendue avec son cadrage
+(`../2026-07-11-fiches-conseils-contextuelles-v1/CADRAGE_FIL_MEDECIN_5_0.md`) :
+toute utilisation du fil avec de vraies personnes vit sous la **même dérogation
+bornée au 2026-10-21** et se réexamine avec elle. La bascule C → A du fil —
+lien signé ouvrant une surface côté médecin, sur l'infra G4 — reste déclenchée
+par un **constat d'usage** (volume de correspondance réel), pas par une
+échéance : si elle survient avant la date de revue, elle s'instruit dans ce
+même cadre, pas à côté. Le modèle livré sert la recommandation 2 ci-dessus
+(minimisation) : texte seul par construction, aucune adresse e-mail ni RPPS
+médecin, effacement du dossier = effacement du fil, nommément testé.
+
+## Reconduction du responsable — [[D-265]]
+
+La décision du 2026-07-21 exigeait, à sa date de revue, qu'elle soit
+« reconduite explicitement, datée et signée ici ». **Elle est reconduite sans
+terme.** La reconduction couvre la phase avec des personnes réelles en
+production, l'ouverture du portail G4 et le fil de correspondance médecin
+placé sous la même dérogation le 2026-07-22. La voie d'exception de ce fil est
+maintenue ([[D-265]] §2).
+
+La condition d'hébergement est tenue depuis [[D-121]] (annexe HDS signée le
+2026-08-30). La base légale et l'AIPD sont posées par le responsable lui-même
+(`docs/DOSSIER_RGPD.md`, rubriques 3 et 13).
+
+- Date de la reconduction : **2026-10-04**
+- Responsable du traitement : **reconduite par déclaration du responsable du
+  traitement (`G-TRUST-02` : le praticien), rendue en session le 2026-10-04 et
+  consignée par l'assistant**
+
+## Qui lève ce gate
+
+**Pas l'assistant.** La levée est une décision du responsable du traitement
+(`G-TRUST-02` : le praticien), consignée ici avec sa date, ses pièces
+justificatives et le périmètre exact de ce qu'elle autorise.
+
+**Statut au 2026-07-21** : le gate n'est **pas levé** — les sept exigences ne
+sont pas satisfaites, et l'exigence 1 est désormais négative de façon établie.
+Ce qui est écrit ci-dessus est autre chose : une **dérogation datée et bornée**
+par laquelle le responsable autorise la phase de test malgré l'écart. La règle
+du dépôt — patients fictifs exclusivement — est suspendue dans ce périmètre et
+jusqu'au **2026-10-21**, pas abrogée.
+
+## Raccordement
+
+- Gate : `GATES_GO_NO_GO.md:11` (G-TRUST-04, non levé).
+- Dette : `DETTE_TRUST.md`, D-TRUST-03.
+- Invariants : `docs/claude/REGISTRE_FRONTIERES.md:19-20`, `:31`.
+- Campagne dépendante : `2026-07-19-idp-identite-patient-durable` (G4).

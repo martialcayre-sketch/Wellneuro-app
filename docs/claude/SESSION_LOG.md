@@ -10122,3 +10122,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, commentaires lus, merge, déploiement constaté ; puis PR 4 (archivage), PR 5, PR 6, en autonomie (mandat du 2026-10-14).
 
 **Ouvert.** Pagination, PDF natif, coaching autonome, RAG SIIN plein : non nommés par le plan, à verser à sa prochaine version.
+
+## 2026-10-14 — Plan unique WellNeuro 6.0 : archivage par déplacement, briefs sortis (PR 4 du versement)
+
+**Fait.** Depuis un worktree sur `origin/main` d671945b (PR 3 déployée) : cinq feuilles de route sous `docs/archive/roadmap-updates/`, neuf photographies et cadrages remplacés et deux dossiers (gate multi-cycles, nutrition référentielle) sous `docs/archive/cadrages/`, bandeaux « Archivé » datés ; douze documents cités par le registre figés en place ; quatre dossiers de briefs d'août supprimés (pièce de transfert gardée) ; liens et chemins réécrits dans les documents vivants, traces intactes ; `.wn/documentation.yml` reçoit la clé `plan` ; fins de ligne CRLF d'origine préservées. Contrôle des anciens chemins vide, audit CI vert, T1 complet vert, anti-secrets OK, relecture adverse jouée.
+
+**Écarté.** Supprimer le gate multi-cycles (§7 disait « historique Git », §9 « déplacement » : déplacé) ; réécrire les traces (handoffs, fragments, registre, `web/`) ; corriger les chemins du plan lui-même (prochaine version).
+
+**Prochaine action.** CI, commentaires lus, merge après déploiement constaté de d671945b, déploiement constaté ; puis PR 5 (file supprimée), PR 6 (contexte et dettes), en autonomie (mandat du 2026-10-14).
+
+**Ouvert.** Le plan cite des chemins périmés (§1, §8, §11, `AUDIT_PANELS` et `AUDIT_BIOFLOW` sous un chemin déjà faux) : à corriger à sa prochaine version avec les reports des PR 2 et 3.

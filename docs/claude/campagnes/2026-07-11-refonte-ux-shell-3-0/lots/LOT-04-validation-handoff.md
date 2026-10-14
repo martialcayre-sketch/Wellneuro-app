@@ -38,7 +38,7 @@ nouveau shell.
 - `docs/design-system-d1.md`
 - `docs/checklist_tests_end_to_end.md`
 - `docs/claude/campagnes/2026-07-11-refonte-ux-shell-3-0/CAMPAGNE.md`
-- `docs/claude/campagnes/PROGRAMME_WELLNEURO_3_0.md` (mise à jour du statut C0-UX si besoin)
+- `docs/archive/roadmap-updates/PROGRAMME_WELLNEURO_3_0.md` (mise à jour du statut C0-UX si besoin)
 
 ## Interdits
 
@@ -83,7 +83,7 @@ confirmant l'absence de défilement horizontal et la cohérence visuelle des tro
 dédié « mobile bottom navigation ») repassée avec succès. Entrée ajoutée à
 `docs/checklist_tests_end_to_end.md` (section « Navigation du shell praticien — campagne C0-UX »).
 Verdict **GO** pour C1 rédigé dans `CAMPAGNE.md`. `docs/design-system-d1.md` vérifié exact sans
-besoin de correction (déjà à jour depuis LOT-03). `docs/claude/campagnes/PROGRAMME_WELLNEURO_3_0.md`
+besoin de correction (déjà à jour depuis LOT-03). `docs/archive/roadmap-updates/PROGRAMME_WELLNEURO_3_0.md`
 vérifié : le tableau des campagnes n'encode pas de statut littéral à mettre à jour, aucune
 modification nécessaire.
 

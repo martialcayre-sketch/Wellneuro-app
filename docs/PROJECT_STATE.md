@@ -52,6 +52,7 @@
 - Architecture technique : `docs/claude/PROJET_CONTEXTE.md`
 - Règles de travail : `docs/claude/REGLES_CRITIQUES.md`
 - Architecture technique système : `docs/ROADMAP_TECHNIQUE.md`
-- Historique des chantiers techniques : `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
-- Roadmap produit : `docs/ROADMAP_PRODUIT.md`
+- Plan unique (`D-285`) : `docs/claude/PLAN_WELLNEURO.md`
+- Historique des chantiers techniques, archivé : `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
+- Roadmap produit, archivée le 2026-10-14 : `docs/archive/roadmap-updates/ROADMAP_PRODUIT.md`
 - Historique sessions : `docs/claude/SESSION_LOG.md`

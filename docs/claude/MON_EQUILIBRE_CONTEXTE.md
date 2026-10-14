@@ -1,6 +1,10 @@
 # Mon équilibre — Contexte consolidé
 # Complète ROADMAP_AGENT_PLAN.md et PROJET_CONTEXTE.md
 
+> **2026-10-14** : `ROADMAP_AGENT_PLAN.md` et `ROADMAP_PRODUIT.md`, cités
+> ci-dessous, sont archivés sous `docs/archive/roadmap-updates/` (`D-285`) ;
+> la feuille de route est le plan unique `docs/claude/PLAN_WELLNEURO.md`.
+
 > Rédigé à partir d'une session d'exploration (D0) sur l'indicateur patient
 > anciennement désigné "NeuroScore" / "NeuroBody Score" / "Score d'Équilibre
 > Neuro-Corporel". Terminologie définitivement abandonnée au profit de
@@ -9,7 +13,7 @@
 > En cas de conflit : PROJET_CONTEXTE.md fait foi sur l'architecture
 > technique globale, ce fichier fait foi sur les décisions produit de
 > cette fonctionnalité jusqu'à intégration dans ROADMAP_AGENT_PLAN.md
-> (mise à jour R9 déjà appliquée dans `docs/ROADMAP_PRODUIT.md` §R9 ;
+> (mise à jour R9 déjà appliquée dans `docs/archive/roadmap-updates/ROADMAP_PRODUIT.md` §R9 ;
 > texte d'origine archivé dans
 > `docs/archive/roadmap-updates/ROADMAP_R9_UPDATE_2026-07-11.md`).
 

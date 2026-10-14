@@ -1,5 +1,9 @@
 # Cadrage — La Boussole alimentaire : l'assiette, l'aliment, et lequel devient une action
 
+> **Figé le 2026-10-14** (`D-285` §5) : document livré ou soldé, gardé à sa place
+> parce que le registre `docs/DECISIONS.md` le cite ; il ne décrit pas l'état
+> courant, l'ordre du travail est au plan `docs/claude/PLAN_WELLNEURO.md`. Reste ouvert : B3, les familles d'équivalence, gelé au plan §6.
+
 *Rédigé le 2026-09-16. Cadrage, pas ouverture.*
 
 Ce document cadre une réflexion posée en session le 2026-09-16, sans véhicule

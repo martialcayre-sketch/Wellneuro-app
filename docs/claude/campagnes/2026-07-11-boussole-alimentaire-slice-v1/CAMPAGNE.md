@@ -112,7 +112,7 @@ le go/no-go final reste découpé entre C5A, C5B praticien et C5B patient.
 - AUDIT_CONFORMITE_5_0.md
 - SPEC_SLICE_BESOIN_1_LOT-00.md, amendée par le contrat 5.0
 - docs/claude/REGISTRE_FRONTIERES.md
-- docs/claude/campagnes/PROGRAMME_WELLNEURO_5_0.md
+- docs/archive/roadmap-updates/PROGRAMME_WELLNEURO_5_0.md
 - docs/claude/propositions/2026-07-16-journal-alimentaire-5-0/ARBITRAGES_JA_5_0.md
 
 ## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)

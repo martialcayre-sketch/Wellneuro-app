@@ -90,8 +90,9 @@ Contrôle OAuth Google Cloud Console (production) :
 
 - Contexte projet et état actuel : `docs/claude/PROJET_CONTEXTE.md`
 - Architecture technique système : `docs/ROADMAP_TECHNIQUE.md`
-- Historique des chantiers techniques (lots R0→R10) : `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
-- Roadmap produit (séries D/R/E) : `docs/ROADMAP_PRODUIT.md`
+- Plan unique (`D-285`) : `docs/claude/PLAN_WELLNEURO.md`
+- Historique des chantiers techniques (lots R0→R10), archivé : `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
+- Roadmap produit (séries D/R/E), archivée le 2026-10-14 : `docs/archive/roadmap-updates/ROADMAP_PRODUIT.md`
 - Sécurité RGPD (hygiène du dépôt) : `docs/securite_rgpd.md`
 - Dossier RGPD de l'expérimentation (rubriques et trous datés) : `docs/DOSSIER_RGPD.md`
 - Checklist de validation end-to-end : `docs/checklist_tests_end_to_end.md`

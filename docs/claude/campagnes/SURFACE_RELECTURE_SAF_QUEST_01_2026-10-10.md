@@ -1,5 +1,9 @@
 # Surface de relecture — `SAF-QUEST-01` (D-275 §2, LOT-3)
 
+> **Figé le 2026-10-14** (`D-285` §5) : document livré ou soldé, gardé à sa place
+> parce que le registre `docs/DECISIONS.md` le cite ; il ne décrit pas l'état
+> courant, l'ordre du travail est au plan `docs/claude/PLAN_WELLNEURO.md`. Surface attestée ; les signatures vivent dans le code et au registre.
+
 Produite le 2026-10-10, **avant** la demande d'attestation ([[D-195]] §2).
 Table : `web/src/lib/clinical/safetyQuestionnaireV1.ts`, version
 `safety-questionnaire-nnpp2-v1`, livrée **non signée**.

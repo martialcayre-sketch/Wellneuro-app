@@ -1,5 +1,9 @@
 # Surface de relecture — resolver libellé → analyte (BIO-INGEST LOT-02)
 
+> **Figé le 2026-10-14** (`D-285` §5) : document livré ou soldé, gardé à sa place
+> parce que le registre `docs/DECISIONS.md` le cite ; il ne décrit pas l'état
+> courant, l'ordre du travail est au plan `docs/claude/PLAN_WELLNEURO.md`. Surface attestée ; les signatures vivent dans le code et au registre.
+
 Préparée le 2026-10-03 pour la signature de `resolverLibellesV1.ts`
 (étape 3 des arbitrages du 2026-10-02, fiche
 `2026-09-30-bio-ingest/lots/LOT-02-staging-et-pdf.md`). Le responsable

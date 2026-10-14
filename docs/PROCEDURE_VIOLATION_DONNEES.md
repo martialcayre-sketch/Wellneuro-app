@@ -2,7 +2,7 @@
 
 > Écrite le 2026-07-22 pour fermer le manque relevé par l'exigence 6 de
 > G-TRUST-04 (« Aucune procédure de violation de données ») —
-> `docs/claude/campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`.
+> `docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md`.
 >
 > **Alerte, pas avis juridique.** Ce document est rédigé par l'assistant, dont
 > la connaissance a une date de coupure et qui n'est pas juriste. Les articles

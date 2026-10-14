@@ -1,5 +1,9 @@
 # Cadrage — acquisition multicanale des résultats biologiques (BIO-INGEST)
 
+> **Figé le 2026-10-14** (`D-285` §5) : document livré ou soldé, gardé à sa place
+> parce que le registre `docs/DECISIONS.md` le cite ; il ne décrit pas l'état
+> courant, l'ordre du travail est au plan `docs/claude/PLAN_WELLNEURO.md`.
+
 > Posé le 2026-09-30. Chantier ouvert par l'audit adverse BIO-INGEST (cette
 > session, agent `wn-fable`, lecture seule, aucun code touché). Ce document
 > est le LOT-00 : il ne livre aucun code, aucune migration.

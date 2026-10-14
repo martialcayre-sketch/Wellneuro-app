@@ -8,7 +8,7 @@ Transformer le journal alimentaire 21 jours existant en **Ma spirale alimentaire
 
 ## Sources à lire avant tout code
 
-1. `docs/claude/campagnes/PROGRAMME_WELLNEURO_5_0.md`
+1. `docs/archive/roadmap-updates/PROGRAMME_WELLNEURO_5_0.md`
 2. `docs/claude/propositions/2026-07-15-wellneuro-5-0-spirale/BRAINSTORM_SPIRALE.md`
 3. `docs/claude/propositions/2026-07-15-wellneuro-5-0-spirale/ARBITRAGES_QUESTIONS_OUVERTES.md`
 4. la campagne JA existante ;

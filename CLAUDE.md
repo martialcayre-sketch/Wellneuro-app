@@ -200,8 +200,9 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   courant) · `REGLES_CRITIQUES.md` (sécurité/clinique) ·
   `WORKFLOW_DEVELOPPEMENT.md` · handoffs : `docs/claude/handoffs/README.md`
 - `docs/ROLES_MACHINES.md` (machines, worktrees, E2E) ·
-  `docs/ROADMAP_TECHNIQUE.md` · `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` ·
-  `docs/ROADMAP_PRODUIT.md`
+  `docs/ROADMAP_TECHNIQUE.md` (photographie d'architecture) ·
+  `docs/claude/PLAN_WELLNEURO.md` (plan unique, `D-285`) ; feuilles de route
+  antérieures archivées sous `docs/archive/roadmap-updates/`
 - **Le préfixe `R` désigne trois séries sans rapport** (technique, produit,
   réserves d'audit) : toujours qualifier la série, un `R6` nu est ambigu.
 

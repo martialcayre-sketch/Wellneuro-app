@@ -1,7 +1,7 @@
 # Dossier RGPD de l'expérimentation Wellneuro
 
 > Écrit le 2026-08-07 pour l'item 7 de « Ce qu'il resterait à faire » de
-> `docs/claude/campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`.
+> `docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md`.
 >
 > **Alerte, pas avis juridique.** Ce document est rédigé par l'assistant, dont la
 > connaissance a une date de coupure et qui n'est pas juriste. Il doit être
@@ -1372,5 +1372,5 @@ ouvert ; la date d'origine reste lisible ([[D-265]] §4).
 
 Voir aussi : `docs/PROCEDURE_VIOLATION_DONNEES.md` (violations),
 `docs/securite_rgpd.md` (hygiène du dépôt),
-`docs/claude/campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`
+`docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md`
 (gate et exigences).

@@ -61,11 +61,11 @@ lots, les portes et les rangs sont au plan unique (`D-285` §1).
 
 ## Référence
 
-[`AUDIT_BIOFLOW_2026-10-04.md`](AUDIT_BIOFLOW_2026-10-04.md) : l'état des
+[`AUDIT_BIOFLOW_2026-10-04.md`](../../archive/cadrages/AUDIT_BIOFLOW_2026-10-04.md) : l'état des
 lieux du 2026-10-04, figé. C'est une photographie datée, pas un backlog ni
 l'état courant.
 
-[`AUDIT_PANELS_BIOLOGIE_2026-10-05.md`](AUDIT_PANELS_BIOLOGIE_2026-10-05.md) :
+[`AUDIT_PANELS_BIOLOGIE_2026-10-05.md`](../../archive/cadrages/AUDIT_PANELS_BIOLOGIE_2026-10-05.md) :
 l'audit des panels (cadrage directeur, première mission). On y trouve les
 mesures de production, la classification, la cible et les trois prochaines
 PR. Lui aussi est figé. **Règle immédiate du responsable (2026-10-05)** :

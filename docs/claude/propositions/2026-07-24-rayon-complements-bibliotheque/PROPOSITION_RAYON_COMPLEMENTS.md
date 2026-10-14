@@ -16,7 +16,7 @@ cette proposition tient dans leur convergence.
 ### Plan A — La campagne C4, cadrée et dormante
 
 Le module R2 produit (« Bibliothèque de compléments clean »,
-`docs/ROADMAP_PRODUIT.md:136-144`) correspond à la campagne **C4** (correspondance
+`docs/archive/roadmap-updates/ROADMAP_PRODUIT.md:136-144`) correspond à la campagne **C4** (correspondance
 actée, `docs/claude/REGISTRE_FRONTIERES.md`), cadrée le 2026-07-12 et jamais
 démarrée (`lot_courant: "aucun"`). Sa scission est actée :
 
@@ -395,7 +395,7 @@ matérialisation **avant** la question d'observance.
 | Ce document | Référence |
 |-------------|-----------|
 | Campagne | C4 « Compléments clean label » (`docs/claude/campagnes/2026-07-11-complements-clean-label-v1/`) |
-| Module roadmap | R2 produit (`docs/ROADMAP_PRODUIT.md:136-144`) ; E1 « squelette bibliothèque compléments » |
+| Module roadmap | R2 produit (`docs/archive/roadmap-updates/ROADMAP_PRODUIT.md:136-144`) ; E1 « squelette bibliothèque compléments » |
 | Registre | `docs/claude/REGISTRE_FRONTIERES.md` (entrée C4 ; correspondance R2 → C4) |
 | Schéma dormant | `web/prisma/schema.prisma:404-584` + `docs/claude/MOTEUR_INTENTION_CLINIQUE_CONTEXTE.md` |
 | Corpus | `docs/RAG_PGVECTOR_PRODUCTION.md` (notebook 10) ; Atelier corpus (D-004) ; barrière D-003 |

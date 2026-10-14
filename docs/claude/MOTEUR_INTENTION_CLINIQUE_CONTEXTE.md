@@ -1,5 +1,9 @@
 # Moteur d'intention clinique — Contexte consolidé
 
+> **2026-10-14** : `ROADMAP_AGENT_PLAN.md`, cité ci-dessous, est archivé sous
+> `docs/archive/roadmap-updates/` (`D-285`) ; la feuille de route est le plan
+> unique `docs/claude/PLAN_WELLNEURO.md`.
+
 > Complète `ROADMAP_AGENT_PLAN.md` et `PROJET_CONTEXTE.md`. Recoupe R2
 > (bibliothèque compléments) et R4/E6 (protocole builder), non encore
 > officialisé comme lot de roadmap (à faire une fois ce schéma V1 validé

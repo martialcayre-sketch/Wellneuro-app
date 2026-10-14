@@ -67,6 +67,6 @@
 
 - **Dette reprise** : report « persistance option (b) » du **handoff C3 LOT-04**.
 - **Précédent** : régime de gate C2A (persistance minimale) et cadrage du gate
-  modèle multi-cycles (`propositions/2026-07-18-gate-modele-multi-cycles/`).
+  modèle multi-cycles (`docs/archive/cadrages/2026-07-18-gate-modele-multi-cycles/`).
 - **Promotion registre différée** : aucune entrée normative tant que le gate n'est pas
   ouvert et tranché.

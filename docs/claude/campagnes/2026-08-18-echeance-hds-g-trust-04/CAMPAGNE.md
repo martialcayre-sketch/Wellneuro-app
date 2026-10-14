@@ -75,7 +75,7 @@ Les réserves (3), (4), (5) de `D-006` sont inchangées.
 - **Les sept exigences du gate : aucune n'est ✅.** Une est ❌ (architecture
   d'hébergement), six sont partielles. La checklist le dit sans détour :
   « c'est un ET, pas un OU »
-  (`campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`).
+  (`docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md`).
 - **L'information des personnes est déjà échue** : son échéance au tableau §14
   de `docs/DOSSIER_RGPD.md` est « **au plus tôt** », pas le 2026-10-21. C'est un
   rattrapage, pas une échéance à tenir.

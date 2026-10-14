@@ -1,5 +1,9 @@
 # Cadrage — la sortie du blocage par signal d'alerte : l'adressage devient la première action du protocole
 
+> **Figé le 2026-10-14** (`D-285` §5) : document livré ou soldé, gardé à sa place
+> parce que le registre `docs/DECISIONS.md` le cite ; il ne décrit pas l'état
+> courant, l'ordre du travail est au plan `docs/claude/PLAN_WELLNEURO.md`.
+
 > Posé le 2026-10-02. Ouvert par la réserve de [[D-218]] §12 (« si l'abstention
 > doit pouvoir se lever sur preuve d'adressage, c'est un arbitrage clinique
 > distinct, qui touche la chaîne C1 — il n'est pas rendu »). Ce document est le
