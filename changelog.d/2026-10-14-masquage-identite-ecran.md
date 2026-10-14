@@ -26,3 +26,10 @@
     page se juge.
   - P2 : fond blanc des PNG transparents, pdf.js sans XFA, dossier RGPD
     ramené à ce que le masquage manuel garantit.
+- **Revue Copilot de #1428** :
+  - chaque page part avec son jugement, que le serveur rejuge ;
+  - le masquage verrouille le dossier avant le compte rendu, comme la
+    demande de lecture et l'effacement ;
+  - le tracé se fait aussi au clavier ;
+  - le déploiement se fait worker arrêté ;
+  - la mémoire de l'écran à 20 pages est routée au plan.

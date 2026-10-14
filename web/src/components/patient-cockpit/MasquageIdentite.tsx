@@ -1,6 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type PointerEvent as EvenementPointeur } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as EvenementClavier,
+  type PointerEvent as EvenementPointeur,
+} from 'react';
 import {
   echelleRendu,
   PAGES_MAX,
@@ -27,10 +33,18 @@ import {
 // l'en-tête du laboratoire répète souvent l'identité. Une page sans zone doit
 // être déclarée « sans identité », une à une (revue `wn-reviewer` du lot 2).
 // La case du document entier reste réservée au document sans aucune zone.
+// Le serveur rejuge : chaque page part avec son jugement (revue Copilot de
+// #1428).
+//
+// AU CLAVIER AUSSI : une page prend le focus, les flèches déplacent un
+// curseur (Maj : plus vite), Entrée pose chaque coin, Échap abandonne. Sans
+// cela, un praticien sans souris ne pourrait que déclarer « aucune
+// identité » à tort (revue Copilot de #1428).
 
 type Page = { source: HTMLCanvasElement; largeur: number; hauteur: number };
 type ZonePlacee = { page: number; zone: Zone };
 type Trace = { page: number; depart: { x: number; y: number }; courant: { x: number; y: number } };
+type Clavier = { page: number; point: { x: number; y: number }; depart: { x: number; y: number } | null };
 
 const BOUTON = 'min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50';
 const BOUTON_PRIMAIRE =
@@ -84,8 +98,14 @@ async function rendreImage(octets: ArrayBuffer, typeMime: string): Promise<Page[
   return [{ source, largeur: source.width, hauteur: source.height }];
 }
 
-/** La page et ses zones, noircies — ce qui s'affiche, et ce qui part. */
-function dessiner(cible: HTMLCanvasElement, page: Page, zones: Zone[], apercu: Zone | null) {
+/** La page et ses zones, noircies — ce qui s'affiche, et ce qui part (sans aperçu ni curseur). */
+function dessiner(
+  cible: HTMLCanvasElement,
+  page: Page,
+  zones: Zone[],
+  apercu: Zone | null,
+  curseur: { x: number; y: number } | null = null,
+) {
   const ctx = cible.getContext('2d');
   if (!ctx) return;
   ctx.drawImage(page.source, 0, 0);
@@ -95,6 +115,14 @@ function dessiner(cible: HTMLCanvasElement, page: Page, zones: Zone[], apercu: Z
     ctx.globalAlpha = 0.6;
     ctx.fillRect(apercu.x, apercu.y, apercu.largeur, apercu.hauteur);
     ctx.globalAlpha = 1;
+  }
+  if (curseur) {
+    // Une croix rouge : le curseur du clavier, jamais dans la page envoyée.
+    const epaisseur = Math.max(2, Math.round(page.largeur / 300));
+    const bras = Math.round(page.largeur / 40);
+    ctx.fillStyle = '#d00';
+    ctx.fillRect(curseur.x - bras, curseur.y - epaisseur / 2, 2 * bras, epaisseur);
+    ctx.fillRect(curseur.x - epaisseur / 2, curseur.y - bras, epaisseur, 2 * bras);
   }
 }
 
@@ -122,6 +150,7 @@ export function MasquageIdentite({
   const [pages, setPages] = useState<Page[]>([]);
   const [zones, setZones] = useState<ZonePlacee[]>([]);
   const [trace, setTrace] = useState<Trace | null>(null);
+  const [clavier, setClavier] = useState<Clavier | null>(null);
   const [aucuneIdentite, setAucuneIdentite] = useState(false);
   /** Pages déclarées une à une sans identité (sans zone à tracer). */
   const [pagesSansIdentite, setPagesSansIdentite] = useState<ReadonlySet<number>>(new Set());
@@ -155,17 +184,19 @@ export function MasquageIdentite({
     };
   }, [urlDocument, typeMime]);
 
-  const apercuDe = useCallback((t: Trace | null, n: number): Zone | null => {
-    if (!t || t.page !== n) return null;
-    return zoneEntre(t.depart, t.courant, pages[n]);
-  }, [pages]);
-
   useEffect(() => {
     pages.forEach((page, n) => {
       const cible = affichages.current[n];
-      if (cible) dessiner(cible, page, zones.filter(z => z.page === n).map(z => z.zone), apercuDe(trace, n));
+      if (!cible) return;
+      const apercu = trace?.page === n
+        ? zoneEntre(trace.depart, trace.courant, page)
+        : clavier?.page === n && clavier.depart
+          ? zoneEntre(clavier.depart, clavier.point, page)
+          : null;
+      const curseur = clavier?.page === n ? clavier.point : null;
+      dessiner(cible, page, zones.filter(z => z.page === n).map(z => z.zone), apercu, curseur);
     });
-  }, [pages, zones, trace, apercuDe]);
+  }, [pages, zones, trace, clavier]);
 
   function point(e: EvenementPointeur<HTMLCanvasElement>, n: number) {
     const cadre = e.currentTarget.getBoundingClientRect();
@@ -191,6 +222,52 @@ export function MasquageIdentite({
     setTrace(null);
   }
 
+  function centre(n: number): Clavier {
+    return { page: n, point: { x: Math.round(pages[n].largeur / 2), y: Math.round(pages[n].hauteur / 2) }, depart: null };
+  }
+
+  function toucheClavier(e: EvenementClavier<HTMLCanvasElement>, n: number) {
+    if (aucuneIdentite || envoi) return;
+    const page = pages[n];
+    const courant = clavier?.page === n ? clavier : centre(n);
+    const pas = Math.round(Math.max(page.largeur, page.hauteur) * (e.shiftKey ? 0.1 : 0.02));
+    const borne = (v: number, max: number) => Math.min(max, Math.max(0, v));
+    const { x, y } = courant.point;
+    let suivant: Clavier;
+    switch (e.key) {
+      case 'ArrowLeft':
+        suivant = { ...courant, point: { x: borne(x - pas, page.largeur), y } };
+        break;
+      case 'ArrowRight':
+        suivant = { ...courant, point: { x: borne(x + pas, page.largeur), y } };
+        break;
+      case 'ArrowUp':
+        suivant = { ...courant, point: { x, y: borne(y - pas, page.hauteur) } };
+        break;
+      case 'ArrowDown':
+        suivant = { ...courant, point: { x, y: borne(y + pas, page.hauteur) } };
+        break;
+      case 'Enter':
+      case ' ': {
+        if (!courant.depart) {
+          suivant = { ...courant, depart: courant.point };
+          break;
+        }
+        const zone = zoneEntre(courant.depart, courant.point, page);
+        if (zone) setZones(prev => [...prev, { page: n, zone }]);
+        suivant = { ...courant, depart: null };
+        break;
+      }
+      case 'Escape':
+        suivant = { ...courant, depart: null };
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+    setClavier(suivant);
+  }
+
   async function enregistrer() {
     setEnvoi(true);
     setErreur(null);
@@ -210,6 +287,8 @@ export function MasquageIdentite({
           return;
         }
         total += jpeg.size;
+        const zonesPage = zones.filter(z => z.page === n).length;
+        form.append('jugement', zonesPage > 0 ? String(zonesPage) : 'aucune');
         form.append('page', jpeg, `page-${n + 1}.jpg`);
       }
       if (total > TOTAL_MAX_OCTETS) {
@@ -252,7 +331,8 @@ export function MasquageIdentite({
       <p className="mt-1 text-xs text-muted-foreground">
         Tracez un rectangle sur chaque mention qui identifie le patient, sur chaque page : nom, prénom, date de
         naissance, adresse, téléphone, e-mail, numéros de dossier ou de sécurité sociale. Seules les pages ainsi
-        masquées sont transmises au service de lecture (Anthropic), jamais le document d’origine.
+        masquées sont transmises au service de lecture (Anthropic), jamais le document d’origine. Au clavier :
+        placez-vous sur une page, déplacez le curseur avec les flèches et posez chaque coin avec Entrée.
       </p>
 
       {etat === 'chargement' && (
@@ -286,12 +366,16 @@ export function MasquageIdentite({
                   }}
                   width={page.largeur}
                   height={page.hauteur}
-                  aria-label={`Page ${n + 1} du compte rendu : tracez un rectangle sur chaque mention d’identité`}
+                  aria-label={`Page ${n + 1} du compte rendu : tracez un rectangle sur chaque mention d’identité (au clavier : flèches pour déplacer le curseur, Maj pour aller plus vite, Entrée pour poser chaque coin, Échap pour abandonner)`}
+                  tabIndex={0}
+                  onKeyDown={e => toucheClavier(e, n)}
+                  onFocus={() => setClavier(c => (c?.page === n ? c : centre(n)))}
+                  onBlur={() => setClavier(null)}
                   onPointerDown={e => commencer(e, n)}
                   onPointerMove={e => suivre(e, n)}
                   onPointerUp={e => finir(e, n)}
                   onPointerCancel={() => setTrace(null)}
-                  className={`mt-1 h-auto w-full rounded border border-border ${aucuneIdentite ? '' : 'cursor-crosshair'}`}
+                  className={`mt-1 h-auto w-full rounded border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${aucuneIdentite ? '' : 'cursor-crosshair'}`}
                   style={{ touchAction: aucuneIdentite ? 'auto' : 'none' }}
                 />
               </li>

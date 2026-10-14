@@ -2098,6 +2098,8 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | Instrument terminal suspendu encore déclaré certifié au catalogue | next_action[47] | constat au premier S-1 (H06) |
 | 113 fichiers en CRLF contre `.gitattributes` | next_action[48] | une PR d'hygiène dédiée [Hypothese] |
 | Invariant de `packs_registre_coherence_v1` à ne pas affaiblir | next_action[49] | règle |
+| Écran de masquage de l'identité : deux canevas pleine résolution par page, gardés en mémoire (≈ 280 Mio à 20 pages A4), risque d'épuisement sur Safari mobile | revue Copilot de #1428 ; `web/src/components/patient-cockpit/MasquageIdentite.tsx` | rendre la page courante seule et rerendre à l'envoi ; au premier compte rendu de plus de 6 pages, ou au premier usage sur téléphone [Hypothese] |
+| Masquage lu par une lecture non tracé : l'import ne garde pas l'identifiant du masquage envoyé | revue `wn-reviewer` du lot 2 de D-284 §5 (P2-5) ; `lancerExtraction.ts` | une colonne, donc une migration ; question au responsable, avec le lot 3 du masquage |
 | Agenda alimentaire : LOT-06 gaté, recueil arrêté au premier jour | next_action[50-54] | barème gelé (§6) ; relance du recueil, geste du responsable (H45) |
 | « Suspendu » est un état de drapeau, pas une propriété de l'instrument (D-033) | next_action[55] | règle de lecture, gardée |
 | Couverture E2E de l'envoi bornée : une règle, une cible, envoi du courriel non asséré (SMTP vide sur le banc) | next_action[56] | note de banc ; à étendre au premier lot qui touche l'envoi [Hypothese] |

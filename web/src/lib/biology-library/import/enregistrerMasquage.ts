@@ -1,8 +1,9 @@
 import { PDFDocument } from 'pdf-lib';
 import { prisma } from '@/lib/prisma';
+import { accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import { estTypeCompteRendu, preparerImage } from './depot';
 import { OUVERTS } from './lectureDemandee';
-import { declarationValide, PAGES_MAX, TOTAL_MAX_OCTETS } from './masquage';
+import { jugementsValides, PAGES_MAX, TOTAL_MAX_OCTETS, type JugementPage } from './masquage';
 import { cleVerrouCompteRendu, DELAI_TRANSACTION_LIGNES_MS, PEREMPTION_EN_COURS_MS } from './verrou';
 
 // ENREGISTRER LE MASQUAGE DE L'IDENTITÉ ([[D-284]] §5, lot (j)).
@@ -22,6 +23,7 @@ export type IssueMasquage =
   | {
     ok: false;
     reason:
+      | 'dossier_clos'
       | 'compte_rendu_introuvable'
       | 'document_purge'
       | 'lecture_demandee'
@@ -87,17 +89,29 @@ export async function enregistrerMasquage(params: {
   idCompteRendu: string;
   posePar: string;
   pages: Buffer[];
+  /** Un jugement par page, dans l'ordre des pages. */
+  jugements: readonly JugementPage[];
   zonesMasquees: number;
   aucuneIdentite: boolean;
 }): Promise<IssueMasquage> {
   const { idPatient, idCompteRendu, posePar, zonesMasquees, aucuneIdentite } = params;
-  if (!declarationValide(zonesMasquees, aucuneIdentite)) {
+  if (!jugementsValides(params.jugements, params.pages.length, zonesMasquees, aucuneIdentite)) {
     return { ok: false, reason: 'declaration_invalide', status: 400 };
   }
   const preparees = await preparerPages(params.pages);
   if (!preparees.ok) return preparees;
 
   return prisma.$transaction(async (tx): Promise<IssueMasquage> => {
+    // LE DOSSIER D'ABORD, EN PARTAGE, puis le compte rendu : l'ordre de la
+    // demande de lecture (`fileExtraction.ts`) et de l'effacement. Dans
+    // l'ordre inverse, un effacement concurrent tiendrait le dossier en
+    // attendant le compte rendu, et ce masquage l'inverse (revue Copilot de
+    // #1428). Rejugé ici : la route l'a lu ouvert, hors transaction.
+    const [dossier] = await tx.$queryRaw<{ actif: boolean; suivi_cloture_le: Date | null }[]>`
+      SELECT actif, suivi_cloture_le FROM patients WHERE id_patient = ${idPatient} FOR KEY SHARE`;
+    if (!dossier || !accepteNouvelEnvoi({ actif: dossier.actif, suiviClotureLe: dossier.suivi_cloture_le })) {
+      return { ok: false, reason: 'dossier_clos', status: 409 };
+    }
     // Le verrou que prennent la demande de lecture, sa réclamation et la
     // décision : un masquage et une lecture ne se croisent pas.
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;

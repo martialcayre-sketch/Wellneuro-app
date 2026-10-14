@@ -44,6 +44,25 @@ pages, jamais le document d'origine.
       praticien ; le flux n'est plus nominatif quand le masquage est
       complet » ;
     - un test du PDF que pdf-lib ne sait pas compter.
+- **Revue Copilot de #1428** : cinq constats.
+  - Quatre sont corrigés dans la PR.
+    - **Déploiement** : constater la file vide juste avant le merge ne
+      suffit pas. L'ancien web peut encore enfiler une lecture, que l'ancien
+      worker enverrait sans masque. Procédure durable, ci-dessous : worker à
+      0, file vide constatée, merge et déploiement, puis worker à 1. Le
+      nouveau code échoue fermé (`masquage_absent`) sur tout travail enfilé
+      dans la fenêtre.
+    - **Ordre des verrous** : le dossier se verrouille d'abord
+      (`FOR KEY SHARE`), puis le compte rendu, comme la demande de lecture
+      et l'effacement. Le dossier clos est rejugé dans la transaction.
+    - **Jugement par page, côté serveur** : un champ `jugement` par page
+      (nombre de zones ou `aucune`) ; `jugementsValides` le rejuge. La
+      base garde le compte global.
+    - **Clavier** : la page prend le focus, les flèches déplacent un
+      curseur, Entrée pose chaque coin, Échap abandonne.
+  - Le cinquième est routé au plan §8 : mémoire de l'écran à 20 pages,
+    avec son déclencheur. La traçabilité du masquage lu y est aussi
+    routée.
 
 ## Fichiers modifiés
 
@@ -81,13 +100,17 @@ pages, jamais le document d'origine.
 
 ## Problèmes ouverts
 
-- **Au déploiement** : un travail réclamé par un conteneur encore sur
-  l'ancien code enverrait le document entier. Il faut constater par
-  conteneur, juste avant le merge, qu'aucun travail n'est `en_attente` ni
-  `en_cours`.
-- **Traçabilité du masquage envoyé** (P2-5 de la revue) : l'import ne garde
-  pas l'identifiant du masquage lu. Une colonne demanderait une migration.
-  C'est une question pour le responsable.
+- **Au déploiement**, procédure durable (revue Copilot de #1428) :
+  1. `scalingo --app wellneuro scale worker:0` ;
+  2. constater par conteneur qu'aucun travail n'est `en_cours`. Un travail
+     `en_attente` peut rester : le nouveau code le fera échouer fermé ;
+  3. merger, puis constater le déploiement de la tête ;
+  4. `scalingo --app wellneuro scale worker:1` ;
+  5. constater qu'aucun import `bio-extraction-v4` n'est né après le merge.
+  La surveillance du signal de vie (Better Stack) peut alerter pendant la
+  fenêtre : c'est attendu.
+- **Traçabilité du masquage envoyé** (P2-5 de la revue) : routée au plan §8,
+  comme question pour le responsable.
 - **pdf-lib et pdf.js pourraient ne pas compter les mêmes pages** : on
   obtiendrait `pages_incompletes` en boucle. Ce cas n'a pas été observé.
 - La TIA reste de la main du responsable.
@@ -95,9 +118,9 @@ pages, jamais le document d'origine.
 ## Prochaine action exacte
 
 1. Constater la release-db du lot 1 par conteneur, puis le déploiement.
-2. Ouvrir la PR du lot 2, attendre le CI, lire les commentaires.
-3. Constater par conteneur que la file est vide, merger, puis constater le
-   déploiement.
+2. PR #1428 : CI, puis commentaires (cinq Copilot, chacun avec son
+   verdict).
+3. Déployer selon la procédure ci-dessus (worker à 0, puis à 1).
 4. Constat sur un dossier de test, par identifiant : dépôt, masquage,
    lecture. Par conteneur : un masquage, un import `bio-extraction-v5`.
 5. Lot 3 : textes `usage_ia` v8 et `donnees_confidentialite` v15, à signer

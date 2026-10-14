@@ -154,6 +154,8 @@ describe('MasquageIdentite (D-284 §5)', () => {
     expect(form.get('aucuneIdentite')).toBeNull();
     const pages = form.getAll('page') as File[];
     expect(pages.map(p => p.name)).toEqual(['page-1.jpg', 'page-2.jpg']);
+    // Le jugement de chaque page part avec elle : le serveur le rejuge.
+    expect(form.getAll('jugement')).toEqual(['1', '1']);
     expect(pages.every(p => p.type === 'image/jpeg')).toBe(true);
   });
 
@@ -193,6 +195,34 @@ describe('MasquageIdentite (D-284 §5)', () => {
     expect(traces[1].op).toBe('drawImage');
     // Une seule page : pas de déclaration page par page.
     expect(screen.queryByRole('checkbox', { name: /Aucune identité sur la page/ })).toBeNull();
+  });
+
+  it('au clavier aussi : la page prend le focus, flèches et Entrée tracent une zone, Échap abandonne', async () => {
+    const fetchMock = serveur();
+    rendre();
+    const [p1] = await screen.findAllByLabelText(/Page \d du compte rendu/);
+    expect((p1 as HTMLCanvasElement).tabIndex).toBe(0);
+    fireEvent.focus(p1);
+    fireEvent.keyDown(p1, { key: 'Enter' });
+    fireEvent.keyDown(p1, { key: 'ArrowRight', shiftKey: true });
+    fireEvent.keyDown(p1, { key: 'ArrowDown' });
+    fireEvent.keyDown(p1, { key: 'Enter' });
+    expect(await screen.findByText(/^1 zone\(s\) masquée\(s\)\. Page\(s\) 2/)).toBeTruthy();
+    // Un coin posé puis abandonné : aucune zone de plus.
+    fireEvent.keyDown(p1, { key: 'Enter' });
+    fireEvent.keyDown(p1, { key: 'ArrowLeft', shiftKey: true });
+    fireEvent.keyDown(p1, { key: 'Escape' });
+    fireEvent.keyDown(p1, { key: 'Enter' });
+    fireEvent.keyDown(p1, { key: 'Enter' });
+    expect(screen.getByText(/^1 zone\(s\) masquée\(s\)\./)).toBeTruthy();
+    // La page 2 déclarée, l'envoi part : la croix du curseur n'est jamais dans la page envoyée.
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Aucune identité sur la page 2' }));
+    fireEvent.blur(p1);
+    traces.length = 0;
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le masquage' }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/import/masquage'))).toBe(true));
+    const [, init] = fetchMock.mock.calls.find(([u]) => String(u).includes('/import/masquage'))!;
+    expect((init!.body as FormData).getAll('jugement')).toEqual(['1', 'aucune']);
   });
 
   it('un document illisible se dit', async () => {

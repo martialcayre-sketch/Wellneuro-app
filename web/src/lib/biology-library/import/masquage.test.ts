@@ -3,6 +3,7 @@ import {
   COTE_RENDU_PX,
   declarationValide,
   echelleRendu,
+  jugementsValides,
   PAGES_MAX,
   pointDansPage,
   TAILLE_MAX_PAGE_OCTETS,
@@ -67,5 +68,21 @@ describe('declarationValide — des zones OU « aucune identité », jamais les 
     [1.5, false, false],
   ])('%s zone(s), case %s ⇒ %s', (zones, aucune, attendu) => {
     expect(declarationValide(zones, aucune)).toBe(attendu);
+  });
+});
+
+describe('jugementsValides — chaque page jugée, le serveur ne croit pas l’écran', () => {
+  it.each([
+    ['une zone par page', [2, 1], 2, 3, false, true],
+    ['une page déclarée sans identité', [3, 'aucune'], 2, 3, false, true],
+    ['la case du document : toutes « aucune »', ['aucune', 'aucune'], 2, 0, true, true],
+    ['une page sans jugement', [3], 2, 3, false, false],
+    ['un jugement de trop', [1, 1, 1], 2, 3, false, false],
+    ['la somme ne fait pas le compte déclaré', [2, 2], 2, 3, false, false],
+    ['zéro zone n’est pas un jugement', [3, 0], 2, 3, false, false],
+    ['la case du document avec une page à zones', [1, 'aucune'], 2, 0, true, false],
+    ['aucune zone sans la case', ['aucune', 'aucune'], 2, 0, false, false],
+  ] as const)('%s', (_cas, jugements, pages, zones, aucune, attendu) => {
+    expect(jugementsValides(jugements, pages, zones, aucune)).toBe(attendu);
   });
 });

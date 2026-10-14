@@ -20,13 +20,14 @@ const PAGE = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
 
 /** Une requête multipart réelle, avec la longueur qu'un navigateur annonce (ou une autre). */
 async function requete(
-  champs: { idCompteRendu?: string; zones?: string; aucuneIdentite?: string; pages?: number },
+  champs: { idCompteRendu?: string; zones?: string; aucuneIdentite?: string; pages?: number; jugements?: string[] },
   opts: { longueur?: string | null } = {},
 ) {
   const form = new FormData();
   if (champs.idCompteRendu !== undefined) form.set('idCompteRendu', champs.idCompteRendu);
   if (champs.zones !== undefined) form.set('zones', champs.zones);
   if (champs.aucuneIdentite !== undefined) form.set('aucuneIdentite', champs.aucuneIdentite);
+  for (const j of champs.jugements ?? []) form.append('jugement', j);
   for (let i = 0; i < (champs.pages ?? 0); i++) form.append('page', new Blob([PAGE], { type: 'image/jpeg' }), `page-${i + 1}.jpg`);
   const enveloppe = new Response(form);
   const corps = new Uint8Array(await enveloppe.arrayBuffer());
@@ -38,7 +39,7 @@ async function requete(
   });
 }
 
-const VALIDE = { idCompteRendu: 'cr_1', zones: '3', pages: 2 };
+const VALIDE = { idCompteRendu: 'cr_1', zones: '3', pages: 2, jugements: ['2', '1'] };
 
 beforeEach(() => {
   process.env.WN_CB_ENABLED = 'true';
@@ -66,12 +67,13 @@ describe('POST /api/praticien/biologie/import/masquage (D-284 §5)', () => {
       idPatient: 'pat_sophie', idCompteRendu: 'cr_1', posePar: 'praticien@wellneuro.fr', zonesMasquees: 3, aucuneIdentite: false,
     });
     expect(params.pages).toHaveLength(2);
+    expect(params.jugements).toEqual([2, 1]);
     expect([...params.pages[0]]).toEqual([...PAGE]);
   });
 
   it('« aucune identité » se transmet, sans zone', async () => {
-    await POST(await requete({ idCompteRendu: 'cr_1', zones: '0', aucuneIdentite: '1', pages: 1 }));
-    expect(enregistrer.mock.calls[0][0]).toMatchObject({ zonesMasquees: 0, aucuneIdentite: true });
+    await POST(await requete({ idCompteRendu: 'cr_1', zones: '0', aucuneIdentite: '1', pages: 1, jugements: ['aucune'] }));
+    expect(enregistrer.mock.calls[0][0]).toMatchObject({ zonesMasquees: 0, aucuneIdentite: true, jugements: ['aucune'] });
   });
 
   it('drapeau éteint : 503, rien n’est lu', async () => {
@@ -105,6 +107,9 @@ describe('POST /api/praticien/biologie/import/masquage (D-284 §5)', () => {
     ['zones absentes', { idCompteRendu: 'cr_1', pages: 1 }],
     ['zones non entières', { ...VALIDE, zones: '2.5' }],
     ['case autre que « 1 »', { ...VALIDE, aucuneIdentite: 'oui' }],
+    ['aucun jugement de page', { ...VALIDE, jugements: [] }],
+    ['un jugement de moins que de pages', { ...VALIDE, jugements: ['3'] }],
+    ['un jugement mal formé', { ...VALIDE, jugements: ['2', 'rien'] }],
   ])('%s : 400', async (_cas, champs) => {
     expect((await POST(await requete(champs))).status).toBe(400);
     expect(enregistrer).not.toHaveBeenCalled();
@@ -114,6 +119,13 @@ describe('POST /api/praticien/biologie/import/masquage (D-284 §5)', () => {
     expect((await POST(await requete({ ...VALIDE, pages: 0 }))).status).toBe(400);
     expect((await POST(await requete({ ...VALIDE, pages: 21 }))).status).toBe(413);
     expect(enregistrer).not.toHaveBeenCalled();
+  });
+
+  it('un dossier clos pendant l’envoi se dit comme celui de la route (409)', async () => {
+    enregistrer.mockResolvedValueOnce({ ok: false, reason: 'dossier_clos', status: 409 });
+    const r = await POST(await requete(VALIDE));
+    expect(r.status).toBe(409);
+    expect((await r.json()).error).toBeTruthy();
   });
 
   it('un refus de l’enregistrement se dit en français, sous son motif', async () => {

@@ -88,6 +88,33 @@ export function declarationValide(zonesMasquees: number, aucuneIdentite: boolean
   return aucuneIdentite ? zonesMasquees === 0 : zonesMasquees > 0;
 }
 
+/** Le jugement d'UNE page : ses zones masquées (au moins une), ou « aucune » identité déclarée. */
+export type JugementPage = number | 'aucune';
+
+/**
+ * Chaque page est-elle jugée, et l'ensemble répond-il à la déclaration ? Un
+ * jugement par page ; la somme des zones est le compte déclaré ; la case du
+ * document veut toutes les pages « aucune ». L'écran l'exige déjà, mais le
+ * navigateur ne fait pas foi : le serveur rejuge (revue Copilot de #1428).
+ */
+export function jugementsValides(
+  jugements: readonly JugementPage[],
+  nombrePages: number,
+  zonesMasquees: number,
+  aucuneIdentite: boolean,
+): boolean {
+  if (!declarationValide(zonesMasquees, aucuneIdentite)) return false;
+  if (jugements.length !== nombrePages) return false;
+  let somme = 0;
+  for (const j of jugements) {
+    if (j === 'aucune') continue;
+    if (!Number.isInteger(j) || j < 1 || j > ZONES_MAX) return false;
+    somme += j;
+  }
+  if (aucuneIdentite) return jugements.every(j => j === 'aucune');
+  return somme === zonesMasquees;
+}
+
 export const MESSAGES_MASQUAGE: Record<string, string> = {
   compte_rendu_introuvable: 'Ce compte rendu est introuvable dans ce dossier.',
   document_purge: 'Le document de ce compte rendu a été effacé : il ne peut plus être masqué.',
@@ -104,5 +131,5 @@ export const MESSAGES_MASQUAGE: Record<string, string> = {
   page_trop_grande: 'Une page masquée dépasse 8 000 pixels de côté.',
   page_trop_lourde: 'Une page masquée dépasse 3,75 Mo.',
   declaration_invalide:
-    'Masquez au moins une zone, ou cochez « aucune identité sur ce document » — jamais les deux.',
+    'Chaque page doit porter une zone masquée, ou la déclaration « aucune identité » ; la case du document exclut toute zone.',
 };
