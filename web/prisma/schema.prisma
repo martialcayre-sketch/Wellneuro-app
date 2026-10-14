@@ -2559,20 +2559,23 @@ model ResultatBiologique {
   // série d'un analyte dans un dossier (estimé ↔ mesuré), avec une mesure par
   // analyte et date de prélèvement.
   //
-  // L'UNICITÉ EST PARTIELLE et vit dans la migration seule — Prisma ne sait
-  // pas exprimer un index partiel (même situation que
-  // `biology_reference_ranges`) : `cb_resultat_bio_patient_analyte_idx`, qui
-  // garde son nom d'origine, est UNIQUE sur (patient, analyte, date)
-  // `WHERE supersedes_resultat_id IS NULL`. Une saisie NEUVE reste donc
-  // soumise à l'unicité — le 409 `doublon_mesure` est un `P2002` et ne bouge
-  // pas — pendant qu'une CORRECTION, qui porte un `supersedes` non nul, en
-  // sort. Ne pas redéclarer ici un `@@unique` : il recréerait l'index TOTAL
-  // et rendrait toute correction impossible. Ce commentaire N'EST PAS une
-  // garde — c'est le contrat `cb_resultats_biologiques_v1_negatif.sql` qui
-  // tient la régression, par sa forme d'index et par le cas de la fourche.
+  // L'UNICITÉ vit dans la migration seule, et ce n'est plus un index ([[D-292]]
+  // amende [[D-124]] §2) : le trigger `resultats_biologiques_unicite_mesure`
+  // refuse une saisie NEUVE (`supersedes_resultat_id` nul) sur une clé
+  // (patient, analyte, date) qui porte déjà une racine dont le fil n'est pas
+  // annulé — un résultat annulé libère sa place, ce qu'un index ne sait pas
+  // faire. Le refus garde la forme d'une violation d'unicité (23505, nom
+  // `cb_resultat_bio_patient_analyte_idx`) : le 409 `doublon_mesure` est un
+  // `P2002` et ne bouge pas. Une CORRECTION, qui porte un `supersedes` non
+  // nul, n'y est pas soumise. Ne pas redéclarer ici un `@@unique` : il
+  // recréerait une unicité TOTALE, tuerait toute correction et toute place
+  // libérée. Ce commentaire N'EST PAS une garde — ce sont les contrats
+  // `cb_resultats_biologiques_v1_negatif.sql` et
+  // `annulations_resultats_biologiques_v1_negatif.sql` qui tiennent la
+  // régression.
   //
   // `cb_resultat_bio_serie_idx` sert la lecture de la série ENTIÈRE,
-  // corrections comprises — la garde partielle ne couvre que les têtes.
+  // corrections comprises — et la clé que lit la garde anti-doublon.
   @@index([idPatient, analyteCode, preleveLe], map: "cb_resultat_bio_serie_idx")
   @@index([supersedesResultatId], map: "cb_resultat_bio_supersedes_idx")
   @@map("resultats_biologiques")
@@ -2833,14 +2836,15 @@ model LectureImportBiologique {
   @@map("lectures_imports_biologiques")
 }
 
-/// L'annulation d'un résultat de biologie saisi par erreur ([[D-291]], BP-09),
+/// L'annulation d'un résultat de biologie saisi par erreur ([[D-292]], BP-09),
 /// ou la révocation de cette annulation. Ajout seul (UPDATE et TRUNCATE
 /// refusés par trigger), aucune valeur recopiée, aucun texte libre. Elle
-/// retire le FIL entier — les lignes de la clé (dossier, analyte, date de
-/// prélèvement) — de toute lecture de calcul ; seule la fiche du praticien le
-/// montre, marqué « annulé ». Les refus vivent en base (migration
-/// `annulations_resultats_biologiques_v1`) : résultat de ce dossier, praticien
-/// du dossier, tête de fil, une annulation active par fil.
+/// retire le FIL entier — les lignes qui descendent de la même racine de
+/// chaîne — de toute lecture de calcul, et libère sa place (dossier, analyte,
+/// date) ; seule la fiche du praticien le montre, marqué « annulé ». Les refus
+/// vivent en base (migration `annulations_resultats_biologiques_v1`) :
+/// résultat de ce dossier, praticien du dossier, tête de fil, une annulation
+/// active par fil, pas de révocation sur une place reprise.
 model AnnulationResultatBiologique {
   id                   String   @id @default(cuid()) @map("id")
   /// Clé d'ordre monotone, posée par la base (trigger).

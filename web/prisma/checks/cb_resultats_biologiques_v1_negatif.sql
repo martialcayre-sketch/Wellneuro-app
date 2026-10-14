@@ -36,17 +36,19 @@
 --      des définitions, le motif IN n'existant pas dans pg_get_constraintdef) ;
 --   7. la RLS deny-all est active et sans policy (posture D-005) — la table
 --      porte des DONNÉES DE SANTÉ nominatives ;
---   8. la FORME de l'index, pas seulement son comportement : la garde est un
---      index UNIQUE À PRÉDICAT et porte toujours son nom d'origine, et
---      l'index de série n'est PAS unique. Le point 1 dit ce que la base
---      fait ; celui-ci dit ce qu'elle est — un `@@unique` redéclaré au schéma
---      rendrait l'index total sans que la dérive schéma ↔ migrations rougisse,
---      puisque l'état serait cohérent. CHOIX DOCUMENTÉ : ce point n'épingle
---      ni les COLONNES de la garde ni le CONTENU du prédicat, parce que le
---      comportement les tient déjà — un unique partiel sur `(id_patient)`
---      seul ferait rougir `ok2`, un prédicat `WHERE valeur > 0` ferait rougir
---      `corr1`. Épingler le texte du prédicat le rendrait fragile au
---      formatage de PostgreSQL sans rien fermer de plus.
+--   8. la FORME de la garde, pas seulement son comportement. Depuis `D-292`
+--      (BP-09), la garde n'est plus un index unique partiel mais le trigger
+--      `resultats_biologiques_unicite_mesure` — AFTER INSERT OR UPDATE, par
+--      ligne, à prédicat (saisies neuves seules) —, parce qu'un résultat
+--      annulé doit libérer sa place et qu'un index ne lit pas la table des
+--      annulations. Son refus garde le nom `cb_resultat_bio_patient_analyte_idx`
+--      et la forme 23505 : le point 1 n'a pas bougé. Ce point dit ce que la
+--      base EST : la garde est ce trigger, AUCUN index unique hors clé
+--      primaire ne subsiste — un `@@unique` redéclaré au schéma rendrait
+--      l'unicité totale (corrections et places libérées impossibles) sans que
+--      la dérive schéma ↔ migrations rougisse —, et l'index de série n'est
+--      PAS unique. La libération de la place et ses refus sont éprouvés par
+--      `annulations_resultats_biologiques_v1_negatif.sql` (cas 16 à 19).
 --
 -- Comme les autres tables patient du rayon, la table est VOLONTAIREMENT hors
 -- de `tables_cb` du contrat structurel catalogue : elle porte `id_patient`
@@ -353,27 +355,35 @@ BEGIN
     RAISE EXCEPTION 'RESULTATS BIO: policy inattendue (deny-all attendu)';
   END IF;
 
-  -- ── 8. La FORME de l'index, pas seulement son comportement (D-124) ───────
+  -- ── 8. La FORME de la garde, pas seulement son comportement (D-124, D-292)
   -- Les cas 1 et 1 bis prouvent ce que la base FAIT ; ceci prouve ce qu'elle
-  -- EST. Deux régressions distinctes sont visées : un `@@unique` redéclaré au
-  -- schéma (l'index redeviendrait TOTAL, et la dérive schéma ↔ migrations
-  -- resterait verte puisque l'état serait cohérent), et le recyclage du nom
-  -- historique pour un index de lecture — le nom désigne la GARDE depuis la
-  -- création de la table, et un audit par nom doit continuer de la trouver.
-  -- `indrelid` verrouille schéma ET table d'un coup : sans lui, un index
-  -- homonyme ailleurs pourrait compter à la place de celui qu'on vise.
-  -- `indisvalid` écarte un index invalide, qui compterait pour un.
+  -- EST. Deux régressions sont visées : un `@@unique` redéclaré au schéma
+  -- (l'unicité redeviendrait TOTALE, et la dérive schéma ↔ migrations
+  -- resterait verte puisque l'état serait cohérent), et la garde retirée ou
+  -- désactivée — `tgenabled = 'O'` écarte un trigger mis hors service.
   SELECT count(*) INTO nb
-  FROM pg_index i
-  JOIN pg_class ix ON ix.oid = i.indexrelid
-  WHERE ix.relname = 'cb_resultat_bio_patient_analyte_idx'
-    AND i.indrelid = 'public.resultats_biologiques'::regclass
-    AND i.indisvalid
-    AND i.indisunique
-    AND i.indpred IS NOT NULL;
+  FROM pg_trigger t
+  WHERE t.tgrelid = 'public.resultats_biologiques'::regclass
+    AND t.tgname = 'resultats_biologiques_unicite_mesure'
+    AND t.tgenabled = 'O'
+    AND (t.tgtype & 1) = 1          -- ROW
+    AND (t.tgtype & 2) = 0          -- AFTER
+    AND (t.tgtype & 4) = 4          -- INSERT
+    AND (t.tgtype & 16) = 16        -- UPDATE
+    AND t.tgqual IS NOT NULL;
   IF nb <> 1 THEN
     RAISE EXCEPTION
-      'D-124: `cb_resultat_bio_patient_analyte_idx` n''est plus un index UNIQUE À PRÉDICAT. Soit l''unicité est redevenue totale (aucune correction n''est plus possible), soit le nom de la garde a été donné à autre chose (un audit par nom conclurait que la garde a sauté).';
+      'D-292: la garde anti-doublon `resultats_biologiques_unicite_mesure` n''est plus un trigger AFTER INSERT OR UPDATE à prédicat actif.';
+  END IF;
+
+  SELECT count(*) INTO nb
+  FROM pg_index i
+  WHERE i.indrelid = 'public.resultats_biologiques'::regclass
+    AND i.indisunique
+    AND NOT i.indisprimary;
+  IF nb <> 0 THEN
+    RAISE EXCEPTION
+      'D-292: % index unique(s) sur resultats_biologiques hors clé primaire — l''unicité est-elle redevenue un index ? La place d''une mesure annulée ne se libérerait plus, et une unicité totale tuerait toute correction.', nb;
   END IF;
 
   SELECT count(*) INTO nb
@@ -388,7 +398,7 @@ BEGIN
       'D-124: `cb_resultat_bio_serie_idx` (lecture de la série ENTIÈRE, corrections comprises) est absent ou devenu unique — une correction ne serait plus lisible avec ce qu''elle corrige.';
   END IF;
 
-  RAISE NOTICE 'RESULTATS BIO: série de deux mesures acceptée, fil de correction à trois maillons accepté, fourche acceptée, chaîne orpheline acceptée (référence souple), doublon de saisie neuve toujours refusé, garde unique À PRÉDICAT sous son nom d''origine (D-124), % cas rejetants dont un CHECK de non-réflexivité, 11 colonnes exactes, 6 NOT NULL, 2 FK RESTRICT, vocabulaire d''unités aligné sur le catalogue, RLS deny-all.',
+  RAISE NOTICE 'RESULTATS BIO: série de deux mesures acceptée, fil de correction à trois maillons accepté, fourche acceptée, chaîne orpheline acceptée (référence souple), doublon de saisie neuve toujours refusé, garde anti-doublon par trigger à prédicat et aucun index unique hors clé primaire (D-124, D-292), % cas rejetants dont un CHECK de non-réflexivité, 11 colonnes exactes, 6 NOT NULL, 2 FK RESTRICT, vocabulaire d''unités aligné sur le catalogue, RLS deny-all.',
     array_length(cas, 1);
 END $$;
 

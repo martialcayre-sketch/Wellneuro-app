@@ -4,27 +4,32 @@
 
 ## Décisions actives
 
-### D-292 — Annuler un résultat de biologie saisi par erreur : un acte en ajout seul, à motif fermé, qui retire le fil entier des calculs ; révocable une fois (BP-09, amende D-124 §3)
+### D-292 — Annuler un résultat de biologie saisi par erreur : un acte en ajout seul, à motif fermé, qui retire le fil entier des calculs et libère sa place ; révocable une fois (BP-09, amende D-124 §2 et §3)
 
 - Date : 2026-10-14
 - Statut : accepté. Arbitrages du responsable du 2026-10-14, consignés dans
   la fiche LOT-09 (#1442) : motifs d'annulation en liste fermée, révocation
-  une fois par annulation, motif obligatoire ; motifs de révocation tranchés
-  en session le même jour (trois motifs, §4). Migration demandée
+  une fois par annulation, motif obligatoire ; tranchés en session le même
+  jour : les trois motifs de révocation (§4), et la **place libérée** (§3) —
+  sur un constat de la revue `wn-reviewer` du lot de migration : la fiche
+  laissait la ligne annulée occuper sa clé, si bien que la vraie mesure d'un
+  analyte mal rattaché à l'import ne pouvait plus entrer. Migration demandée
   explicitement en session le 2026-10-14.
 - Domaine : rayon biologie fonctionnelle, étage 2 (résultats réels, `D-122`
   §2). **Aucune borne clinique, aucun seuil, aucune qualification de
   valeur** : l'annulation dit qu'une saisie est fausse, jamais qu'une valeur
   est anormale (`DC-19`/`DC-20` inchangés).
 - **Amende** [[D-124]] §3 : « la suppression est hors périmètre et
-  n'existera pas sans décision propre » — la voici, en ajout seul.
+  n'existera pas sans décision propre » — la voici, en ajout seul. **Amende**
+  [[D-124]] §2 : l'unicité d'une saisie neuve n'est plus portée par l'index
+  unique partiel mais par un trigger (§3), même refus, même 409.
 - Porte sur : [[D-087]] et [[D-266]] §11 (migration seule, puis code),
   [[D-257]] §6 (patron de révocation), [[D-268]] (patron de table d'actes),
   [[D-289]] §1 (BP-09 n'attend pas l'essai de restauration), plan unique
   fiche F03.
-- **Ne touche pas** : `resultats_biologiques` (ni colonne ni trigger ; sa
-  liste blanche reste intacte), la correction de valeur et d'unité
-  ([[D-124]] §1-2), le portail patient, aucun drapeau.
+- **Ne touche pas** : les colonnes de `resultats_biologiques` (sa liste
+  blanche reste intacte), la correction de valeur et d'unité ([[D-124]] §1),
+  le portail patient, aucun drapeau.
 
 **§1 — Le régime : un acte en ajout seul, rien ne s'efface.** Une table
 neuve, `annulations_resultats_biologiques`, porte deux actes : `annulation`
@@ -39,24 +44,44 @@ analyte, ni date, et ne porte aucun texte libre.
 d'unité reste une correction ([[D-124]]). Un motif neuf exige une décision et
 une migration.
 
-**§3 — La cible et le fil.** L'annulation vise la tête courante d'un fil de
-correction — une ligne qu'aucune autre ne supplante — et retire le **fil
-entier**. Le fil d'un résultat est l'ensemble des lignes de sa clé (dossier,
-analyte, date de prélèvement) : une correction hérite de la clé de sa cible,
-et l'index unique partiel de [[D-124]] §2 n'admet qu'une racine par clé.
-**Un fil est annulé dès qu'une de ses lignes porte une annulation non
-révoquée**, quelle que soit la ligne visée : une correction concurrente ne
-le ressuscite pas. Au plus une annulation active par fil (refus en base,
-sous verrou du fil). La correction d'un résultat annulé est refusée par la
-route. La ligne annulée garde sa clé : un résultat annulé à tort ne se
-ressaisit pas, il se révoque.
+**§3 — La cible, le fil, la place.** L'annulation vise la tête courante d'un
+fil de correction — une ligne qu'aucune autre ne supplante — et retire le
+**fil entier**. Le fil d'un résultat est l'ensemble des lignes qui
+descendent de la même **racine de chaîne** (la définition de
+`filCorrection.ts`). **Un fil est annulé dès qu'une de ses lignes porte une
+annulation non révoquée**, quelle que soit la ligne visée : une correction
+concurrente ne le ressuscite pas. Au plus une annulation active par fil
+(refus en base). La correction d'un résultat annulé est refusée par la route.
+
+**La place se libère** (arbitrage du 2026-10-14) : un fil annulé ne retient
+plus sa clé (dossier, analyte, date de prélèvement), et une mesure neuve
+peut l'occuper — la vraie ferritine après l'annulation de la ligne « Fer »
+qu'un import y avait rattachée. L'index unique partiel de [[D-124]] §2 ne
+sait pas regarder une annulation : la garde devient un trigger, qui refuse
+une saisie neuve sur une clé portant déjà une racine non annulée, sous le
+même nom (`cb_resultat_bio_patient_analyte_idx`) et dans la même forme
+(violation d'unicité, donc `P2002` et 409 `doublon_mesure` inchangés). Ses
+verrous — le dossier, puis la clé — tiennent les courses que l'index tenait
+par construction ; un banc à deux sessions les éprouve. Une clé peut dès lors
+porter un fil annulé et un fil vivant : les lecteurs groupent par racine,
+jamais par clé. **Une révocation est refusée si la place a été reprise** —
+le fil revenu ferait deux mesures courantes pour un même analyte à une même
+date.
+
+L'équivalence « un fil tient dans sa clé » — une correction hérite de
+l'analyte et de la date de sa cible — n'est tenue que par la route de
+correction, qui les relit sur la cible ; la base ne l'impose pas (référence
+souple, [[D-124]]). Les gardes en base s'en servent pour borner leur
+recherche aux lignes de la clé : un écrivain futur qui corrigerait en
+changeant de clé les mettrait en défaut, et doit passer par une décision.
 
 **§4 — La révocation** : une fois par annulation (index unique partiel),
 motif obligatoire pris dans une liste fermée — `mauvais_resultat_annule`
 (l'annulation visait un autre résultat), `resultat_verifie_exact`
 (vérification faite, le résultat était juste), `motif_annulation_errone` (on
 révoque pour ré-annuler sous le bon motif). Révoqué, le fil revient dans les
-séries ; une nouvelle annulation est alors admise.
+séries ; une nouvelle annulation est alors admise. Révocation refusée sur une
+place reprise (§3).
 
 **§5 — Résultat saisi dans le mauvais dossier.** La valeur reste lisible
 dans le dossier qui l'a reçue, **côté praticien seul**, marquée annulée ;
@@ -66,25 +91,27 @@ elle n'est **jamais** montrée côté patient. Elle suit le sort de ce dossier
 **§6 — Qui voit l'annulation.** Tout lecteur de calcul exclut les fils
 annulés non révoqués : élection de tête, derniers résultats, portes
 biologiques, contrôle de doublon, résultats existants avant validation d'un
-import (liste close au 2026-10-14, fiche LOT-09). La **fiche du praticien**
+import (liste close au 2026-10-14, fiche LOT-09). Les deux contrôles de
+doublon applicatifs suivent ainsi la garde en base (§3), qui fait foi. La **fiche du praticien**
 est la seule exception : elle affiche le résultat annulé, marqué « annulé »,
 avec son motif, son auteur et sa date. Les lecteurs à naître (`serieParAnalyte`
 et le jour n de BP-03, les réveils de BP-04) naîtront en excluant
 l'annulation.
 
-**§7 — Le séquencement.** PR 1 : migration seule (table, contrat négatif,
-registre RGPD, cette décision), et le seul code qui l'accompagne,
-l'effacement nommé du dossier — les annulations partent avant les résultats
-que leurs clés RESTRICT retiennent ; le banc de complétude de l'effacement
-l'exige de toute table qui porte `id_patient`, et `lectures_imports_biologiques`
-a suivi le même chemin. Entre le déploiement du code et la release-db, un
-effacement de dossier échoue sur la table absente, transaction annulée, rien
-d'effacé : la release-db s'approuve dans la foulée du merge. Release-db
-approuvée par le responsable, sentinelle, constat par conteneur. PR 2 : code
-consommateur (lecteurs, route, fiche praticien). Jusque-là, la table reste
-vide : rien ne retient l'effacement d'un dossier. La condition « premier import » sort des
-préalables de BP-09 (plan unique, F03) : le constat S-1 reste un constat, pas
-une porte de ce lot.
+**§7 — Le séquencement.** PR 1 : migration seule (table, garde anti-doublon
+par trigger, contrats négatifs, banc à deux sessions, registre RGPD, cette
+décision), et le seul code qui l'accompagne, l'effacement nommé du dossier —
+les annulations partent avant les résultats que leurs clés RESTRICT
+retiennent ; le banc de complétude de l'effacement l'exige de toute table
+qui porte `id_patient`, et `lectures_imports_biologiques` a suivi le même
+chemin. Entre le déploiement du code et la release-db, un effacement de
+dossier échoue sur la table absente, transaction annulée, rien d'effacé : la
+release-db s'approuve dans la foulée du merge. Release-db approuvée par le
+responsable, sentinelle, constat par conteneur. PR 2 : code consommateur
+(lecteurs, route, fiche praticien) ; jusqu'à elle, aucune annulation ne
+s'écrit, la table reste vide et ses clés RESTRICT ne retiennent aucun
+résultat. La condition « premier import » sort des préalables de BP-09 (plan
+unique, F03) : le constat S-1 reste un constat, pas une porte de ce lot.
 
 ### D-291 — Arbitrages de clôture de D-290 : CodeRabbit reste hors des checks obligatoires, une PR qui modifie sa configuration est P1
 

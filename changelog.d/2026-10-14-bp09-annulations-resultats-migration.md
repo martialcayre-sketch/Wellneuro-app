@@ -1,4 +1,4 @@
-### Biologie : annuler un résultat saisi par erreur, la migration seule (BP-09, D-291, 2026-10-14)
+### Biologie : annuler un résultat saisi par erreur, la migration seule (BP-09, D-292, 2026-10-14)
 
 PR 1 du lot BP-09 (fiche LOT-09) : migration seule. Rien n'écrit ni ne lit
 encore la table ; le seul code qui l'accompagne est l'effacement nommé du
@@ -15,13 +15,26 @@ PR 2, après la release-db approuvée et constatée par conteneur.
   valeur, aucun analyte, aucune date recopiés ; aucun texte libre.
 - **Refus en base** : résultat d'un autre dossier, acte d'un autre praticien
   que celui du dossier, annulation d'une ligne déjà corrigée, seconde
-  annulation active sur un même fil (fourche comprise), révocation qui ne
-  vise pas une annulation de ce résultat ou qui vise une annulation déjà
-  révoquée ; UPDATE et TRUNCATE refusés ; instant et ordre posés par la base.
+  annulation active sur un même fil (fourche comprise ; le fil est celui de
+  la racine de chaîne), révocation qui ne vise pas une annulation de ce
+  résultat, qui vise une annulation déjà révoquée, ou dont la place a été
+  reprise ; UPDATE et TRUNCATE refusés ; instant et ordre posés par la base.
   RLS activée sans politique ; clés RESTRICT vers le dossier et le résultat.
-- **`resultats_biologiques` intacte** : ni colonne, ni trigger.
-- **Contrat négatif** `annulations_resultats_biologiques_v1_negatif.sql`
-  (quinze promesses), branché au CI ; six mutations du trigger le font
-  échouer, chacune au cas qu'elle vise.
-- **D-291** amende D-124 §3 ; registre RGPD (rubriques 2 ter et 5) mis à jour
-  avant la table.
+- **La place d'un résultat annulé se libère** (arbitrage du 2026-10-14) : la
+  garde anti-doublon de `resultats_biologiques` quitte l'index unique partiel
+  pour un trigger AFTER qui ignore les fils annulés. Même nom de garde, même
+  refus `23505` : le client Prisma de l'application le rend toujours en
+  `P2002`, le 409 `doublon_mesure` ne bouge pas (constaté). Ses verrous — le
+  dossier `FOR KEY SHARE`, puis un verrou consultatif sur la clé — sont pris
+  dans le même ordre que l'effacement : pas d'interblocage. Aucune colonne
+  neuve sur `resultats_biologiques`.
+- **Contrats** : `annulations_resultats_biologiques_v1_negatif.sql` (dix-neuf
+  promesses), branché au CI ; `cb_resultats_biologiques_v1_negatif.sql`
+  amendé (la garde est le trigger, aucun index unique hors clé primaire).
+  Onze mutations des fonctions font échouer le contrat.
+- **Banc à deux sessions** `banc-annulations-resultats-deux-sessions.test.mjs`
+  (CI et T3) : deux saisies neuves concurrentes, témoin REPEATABLE READ, deux
+  annulations concurrentes, saisie contre révocation, effacement contre
+  annulation.
+- **D-292** amende D-124 §2 et §3 ; registre RGPD (rubriques 2 ter et 5) mis
+  à jour avant la table.

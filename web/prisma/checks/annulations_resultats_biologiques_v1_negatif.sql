@@ -1,7 +1,8 @@
--- Contrat des annulations de résultats biologiques ([[D-291]], BIO-PARCOURS
+-- Contrat des annulations de résultats biologiques ([[D-292]], BIO-PARCOURS
 -- BP-09).
 --
--- La table promet QUINZE choses, et ce fichier les éprouve TOUTES :
+-- La table et la garde anti-doublon qu'elle amende promettent DIX-NEUF
+-- choses, et ce fichier les éprouve TOUTES :
 --   1. une annulation valide s'écrit et se relit ;
 --   2. l'instant et l'`ordre` sont posés par la BASE, pas par l'appelant —
 --      l'instant en UTC, même sous une session en Europe/Paris ; une date
@@ -30,14 +31,26 @@
 --      (RESTRICT) ;
 --  13. les FK ont la règle annoncée (RESTRICT vers patient et résultat, NO
 --      ACTION sur la clé interne), les CHECK, l'index unique partiel et les
---      index ordinaires sont présents, comme le verrou du fil et le
---      `search_path` épinglé des deux fonctions (présence relue : une session
---      seule n'éprouve pas la concurrence) ;
+--      index ordinaires sont présents, comme les deux verrous (dossier puis
+--      clé), le trigger de garde AFTER à prédicat, la disparition de l'index
+--      unique remplacé, et le `search_path` épinglé des six fonctions
+--      (présence relue : la concurrence s'éprouve au banc à deux sessions) ;
 --  14. la table porte EXACTEMENT ses dix colonnes (liste blanche) : aucune
 --      valeur, aucun analyte, aucune date recopiée, aucun texte libre — toute
 --      colonne neuve s'arbitre ;
 --  15. la RLS deny-all est active et sans policy (posture `D-005`), et aucune
---      des deux fonctions n'est exécutable par PUBLIC.
+--      des six fonctions n'est exécutable par PUBLIC ;
+--  16. LA PLACE SE LIBÈRE : une saisie neuve sur la clé d'une mesure courante
+--      est refusée en violation d'unicité — SQLSTATE 23505, contrainte
+--      `cb_resultat_bio_patient_analyte_idx`, détail `Key (…)` que
+--      l'adaptateur Prisma lit pour rendre P2002 —, et passe une fois cette
+--      mesure annulée ; une troisième est de nouveau refusée ;
+--  17. une révocation est refusée quand la place a été reprise ;
+--  18. le fil est celui de la RACINE, pas de la clé : la mesure neuve s'annule
+--      à son tour malgré l'annulation active de l'ancienne sur la même clé ;
+--      sa place libérée, l'ancienne se révoque et redevient courante ;
+--  19. deux saisies neuves de la même clé dans UNE instruction sont refusées,
+--      et un UPDATE qui pose une ligne sur une clé occupée aussi.
 --
 -- CHAQUE REFUS EST ISOLÉ : le cas refusé passerait si l'on retirait la seule
 -- règle qu'il éprouve. Chaque refus du trigger est reconnu à son MESSAGE, pas
@@ -83,7 +96,7 @@ $$;
 -- Dossier A (praticien@wellneuro.fr), un fil par date de prélèvement :
 --   `res_a1` seul ; `res_a2` corrigé par `res_a2_corr` ; `res_a3` corrigé
 --   DEUX fois en parallèle (`res_a3_f1`, `res_a3_f2` : la fourche que
---   [[D-124]] tolère) ; `res_a4`, `res_a5` seuls.
+--   [[D-124]] tolère) ; `res_a4`, `res_a5`, `res_a6` seuls.
 -- Dossier B, d'un AUTRE praticien : `res_b` seul.
 
 INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updated_at) VALUES
@@ -102,6 +115,7 @@ INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, 
   ('res_a3_f2', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 3, 'mg/L', TIMESTAMP '2026-09-03 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'res_a3'),
   ('res_a4', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 1, 'mg/L', TIMESTAMP '2026-09-04 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', NULL),
   ('res_a5', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 1, 'mg/L', TIMESTAMP '2026-09-05 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', NULL),
+  ('res_a6', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 1, 'mg/L', TIMESTAMP '2026-09-06 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', NULL),
   ('res_b', 'PAT_CONTRAT_ANN_B', 'BIO_CONTRAT_ANN', 1, 'mg/L', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'autre.praticien@wellneuro.fr', NULL);
 
 DO $$
@@ -110,6 +124,9 @@ DECLARE
   nb integer;
   ecart interval;
   colonnes text[];
+  recu_code text;
+  recu_detail text;
+  recu_contrainte text;
 BEGIN
   -- ── 1 et 2. Une annulation valide, instant et ordre posés par la base ────
   INSERT INTO annulations_resultats_biologiques (id, ordre, id_patient, id_resultat, acte, motif_annulation, praticien_email, acte_le)
@@ -267,6 +284,64 @@ BEGIN
     $q$TRUNCATE annulations_resultats_biologiques$q$,
     'P0001', 'un acte d''annulation est figé');
 
+  -- ── 16. La place se libère ───────────────────────────────────────────────
+  -- Le refus d'une saisie neuve sur une clé occupée garde la forme exacte
+  -- d'une violation d'unicité : c'est elle que l'adaptateur Prisma rend en
+  -- P2002, et le 409 `doublon_mesure` des écrivains en dépend.
+  recu_code := NULL;
+  BEGIN
+    INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par)
+    VALUES ('res_a6_bis', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 2, 'mg/L', TIMESTAMP '2026-09-06 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr');
+  EXCEPTION WHEN OTHERS THEN
+    GET STACKED DIAGNOSTICS recu_code = RETURNED_SQLSTATE, recu_detail = PG_EXCEPTION_DETAIL,
+                            recu_contrainte = CONSTRAINT_NAME;
+  END;
+  IF recu_code IS DISTINCT FROM '23505'
+     OR recu_contrainte IS DISTINCT FROM 'cb_resultat_bio_patient_analyte_idx'
+     OR recu_detail NOT LIKE 'Key (id_patient, analyte_code, preleve_le)%' THEN
+    RAISE EXCEPTION 'CONTRAT — 16 : le doublon d''une mesure courante n''a pas été refusé en violation d''unicité lisible par Prisma (% / % / %).',
+      recu_code, recu_contrainte, recu_detail;
+  END IF;
+  INSERT INTO annulations_resultats_biologiques (id, id_patient, id_resultat, acte, motif_annulation, praticien_email)
+  VALUES ('ann_a6', 'PAT_CONTRAT_ANN_A', 'res_a6', 'annulation', 'mauvais_analyte', 'praticien@wellneuro.fr');
+  INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par)
+  VALUES ('res_a6_bis', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 2, 'mg/L', TIMESTAMP '2026-09-06 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr');
+  PERFORM pg_temp.refuse('16 troisième saisie sur la place reprise',
+    $q$INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par)
+       VALUES ('x16', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 3, 'mg/L', TIMESTAMP '2026-09-06 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr')$q$,
+    '23505', 'doublon de mesure');
+
+  -- ── 17. Révocation refusée quand la place est reprise ────────────────────
+  PERFORM pg_temp.refuse('17 révocation sur une place reprise',
+    $q$INSERT INTO annulations_resultats_biologiques (id, id_patient, id_resultat, acte, id_annulation_revoquee, motif_revocation, praticien_email)
+       VALUES ('x17', 'PAT_CONTRAT_ANN_A', 'res_a6', 'revocation', 'ann_a6', 'resultat_verifie_exact', 'praticien@wellneuro.fr')$q$,
+    'P0001', 'a repris la place');
+
+  -- ── 18. Le fil est celui de la racine ────────────────────────────────────
+  -- `ann_a6` est active sur la même clé, mais sur un AUTRE fil : la mesure
+  -- neuve s'annule. Une règle « une annulation active par clé » la refuserait.
+  INSERT INTO annulations_resultats_biologiques (id, id_patient, id_resultat, acte, motif_annulation, praticien_email)
+  VALUES ('ann_a6_bis', 'PAT_CONTRAT_ANN_A', 'res_a6_bis', 'annulation', 'mauvaise_date_prelevement', 'praticien@wellneuro.fr');
+  -- La place est de nouveau libre : l'ancienne annulation se révoque, et
+  -- l'ancienne mesure redevient courante — une saisie neuve est refusée.
+  INSERT INTO annulations_resultats_biologiques (id, id_patient, id_resultat, acte, id_annulation_revoquee, motif_revocation, praticien_email)
+  VALUES ('rev_a6', 'PAT_CONTRAT_ANN_A', 'res_a6', 'revocation', 'ann_a6', 'resultat_verifie_exact', 'praticien@wellneuro.fr');
+  PERFORM pg_temp.refuse('18 saisie neuve après le retour de l''ancienne mesure',
+    $q$INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par)
+       VALUES ('x18', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 3, 'mg/L', TIMESTAMP '2026-09-06 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr')$q$,
+    '23505', 'doublon de mesure');
+
+  -- ── 19. Une instruction, et l'UPDATE ─────────────────────────────────────
+  PERFORM pg_temp.refuse('19 deux saisies neuves de la même clé dans un seul INSERT',
+    $q$INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par) VALUES
+         ('x19a', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 1, 'mg/L', TIMESTAMP '2026-09-07 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr'),
+         ('x19b', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 2, 'mg/L', TIMESTAMP '2026-09-07 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr')$q$,
+    '23505', 'doublon de mesure');
+  -- `res_a1` est courante (sa dernière annulation est révoquée au cas 9).
+  PERFORM pg_temp.refuse('19 UPDATE qui pose une ligne sur une clé occupée',
+    $q$UPDATE resultats_biologiques SET preleve_le = TIMESTAMP '2026-09-01 08:00:00' WHERE id = 'res_a5'$q$,
+    '23505', 'doublon de mesure');
+
   -- ── 12. L'effacement nommé ───────────────────────────────────────────────
   PERFORM pg_temp.refuse('12 résultat effacé avant ses annulations',
     $q$DELETE FROM resultats_biologiques WHERE id = 'res_a1'$q$,
@@ -309,18 +384,52 @@ BEGIN
   IF nb <> 2 THEN
     RAISE EXCEPTION 'CONTRAT — 13 : % clause(s) de garde résiduelle sur 2 sont présentes.', nb;
   END IF;
-  -- Le verrou qui sérialise les actes sur un fil, et le `search_path` épinglé
-  -- des deux fonctions : une session seule n'éprouve pas la concurrence, elle
-  -- relit au moins leur présence.
-  IF position('FOR NO KEY UPDATE' IN pg_get_functiondef('public.annulations_resultats_biologiques_avant_insertion()'::regprocedure)) = 0 THEN
-    RAISE EXCEPTION 'CONTRAT — 13 : le trigger d''insertion ne verrouille plus le fil.';
+  -- Les deux verrous, dans l'ordre (dossier, puis clé), et leur emploi par
+  -- les deux triggers ; le `search_path` épinglé des six fonctions. Une
+  -- session seule n'éprouve pas la concurrence (c'est le banc à deux
+  -- sessions) : elle relit au moins leur présence.
+  IF pg_get_functiondef('public.resultats_biologiques_verrouiller_cle(text, text, timestamp)'::regprocedure)
+       !~ 'FOR KEY SHARE[^$]*pg_advisory_xact_lock' THEN
+    RAISE EXCEPTION 'CONTRAT — 13 : le verrou du dossier ne précède plus le verrou de clé.';
   END IF;
   SELECT count(*) INTO nb FROM pg_proc p
   WHERE p.oid IN ('public.annulations_resultats_biologiques_avant_insertion()'::regprocedure,
-                  'public.annulations_resultats_biologiques_figee()'::regprocedure)
-    AND p.proconfig @> ARRAY['search_path=public, pg_temp'];
+                  'public.resultats_biologiques_unicite_mesure()'::regprocedure)
+    AND position('resultats_biologiques_verrouiller_cle' IN pg_get_functiondef(p.oid)) > 0;
   IF nb <> 2 THEN
-    RAISE EXCEPTION 'CONTRAT — 13 : % fonction(s) sur 2 ont le search_path épinglé.', nb;
+    RAISE EXCEPTION 'CONTRAT — 13 : % trigger(s) sur 2 prennent les verrous de clé.', nb;
+  END IF;
+  SELECT count(*) INTO nb FROM pg_proc p
+  WHERE p.oid IN ('public.annulations_resultats_biologiques_avant_insertion()'::regprocedure,
+                  'public.annulations_resultats_biologiques_figee()'::regprocedure,
+                  'public.resultats_biologiques_unicite_mesure()'::regprocedure,
+                  'public.resultats_biologiques_verrouiller_cle(text, text, timestamp)'::regprocedure,
+                  'public.resultats_biologiques_racine(text)'::regprocedure,
+                  'public.resultats_biologiques_racine_annulee(text, text, text, timestamp)'::regprocedure)
+    AND p.proconfig @> ARRAY['search_path=public, pg_temp'];
+  IF nb <> 6 THEN
+    RAISE EXCEPTION 'CONTRAT — 13 : % fonction(s) sur 6 ont le search_path épinglé.', nb;
+  END IF;
+  -- La garde anti-doublon : un trigger AFTER INSERT OR UPDATE, par ligne, à
+  -- prédicat (les saisies neuves seules), actif ; et plus d'index unique
+  -- sous son nom, qui reprendrait la place d'une mesure annulée.
+  SELECT count(*) INTO nb FROM pg_trigger t
+  WHERE t.tgrelid = 'public.resultats_biologiques'::regclass
+    AND t.tgname = 'resultats_biologiques_unicite_mesure'
+    AND t.tgenabled = 'O'
+    AND (t.tgtype & 1) = 1          -- ROW
+    AND (t.tgtype & 2) = 0          -- AFTER
+    AND (t.tgtype & 4) = 4          -- INSERT
+    AND (t.tgtype & 16) = 16        -- UPDATE
+    AND t.tgqual IS NOT NULL;
+  IF nb <> 1 THEN
+    RAISE EXCEPTION 'CONTRAT — 13 : la garde anti-doublon n''est plus un trigger AFTER INSERT OR UPDATE à prédicat actif.';
+  END IF;
+  SELECT count(*) INTO nb FROM pg_index i
+  WHERE i.indrelid = 'public.resultats_biologiques'::regclass
+    AND i.indisunique AND NOT i.indisprimary;
+  IF nb <> 0 THEN
+    RAISE EXCEPTION 'CONTRAT — 13 : % index unique(s) sur resultats_biologiques hors clé primaire — la place d''une mesure annulée ne se libérerait plus.', nb;
   END IF;
   SELECT count(*) INTO nb FROM pg_indexes
   WHERE tablename = 'annulations_resultats_biologiques'
@@ -357,13 +466,15 @@ BEGIN
     RAISE EXCEPTION 'CONTRAT — 15 : % policy(ies) présente(s), deny-all attendu.', nb;
   END IF;
   SELECT count(*) INTO nb FROM pg_proc p
-  WHERE p.proname IN ('annulations_resultats_biologiques_figee', 'annulations_resultats_biologiques_avant_insertion')
+  WHERE p.proname IN ('annulations_resultats_biologiques_figee', 'annulations_resultats_biologiques_avant_insertion',
+                      'resultats_biologiques_unicite_mesure', 'resultats_biologiques_verrouiller_cle',
+                      'resultats_biologiques_racine', 'resultats_biologiques_racine_annulee')
     AND has_function_privilege('public', p.oid, 'EXECUTE');
   IF nb <> 0 THEN
     RAISE EXCEPTION 'CONTRAT — 15 : % fonction(s) exécutable(s) par PUBLIC.', nb;
   END IF;
 
-  RAISE NOTICE 'Contrat annulations_resultats_biologiques_v1 : quinze promesses tenues.';
+  RAISE NOTICE 'Contrat annulations_resultats_biologiques_v1 : dix-neuf promesses tenues.';
 END;
 $$;
 

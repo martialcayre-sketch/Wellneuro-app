@@ -1,5 +1,5 @@
 -- ANNULATION D'UN RÉSULTAT DE BIOLOGIE SAISI PAR ERREUR, EN AJOUT SEUL
--- ([[D-291]], BIO-PARCOURS BP-09, fiche LOT-09).
+-- ([[D-292]], BIO-PARCOURS BP-09, fiche LOT-09).
 --
 -- Migration demandée explicitement par le responsable le 2026-10-14 (« PR 1,
 -- la migration seule »), après la déclaration au registre RGPD (même PR).
@@ -19,7 +19,7 @@
 --   B. la garde anti-doublon de `resultats_biologiques`, qui cesse d'être un
 --      index unique partiel pour devenir un trigger : un résultat annulé doit
 --      LIBÉRER sa place (dossier, analyte, date) — arbitrage du responsable du
---      2026-10-14, [[D-291]] §3 —, et un index ne sait pas regarder une autre
+--      2026-10-14, [[D-292]] §3 —, et un index ne sait pas regarder une autre
 --      table.
 --
 -- ── CE QU'UNE LIGNE DIT ────────────────────────────────────────────────────
@@ -27,11 +27,11 @@
 -- Deux actes, dans une seule table en ajout seul :
 --
 --  - `annulation` : « ce résultat a été saisi par erreur », avec un motif pris
---    dans une liste FERMÉE ([[D-291]] §2) : `mauvais_dossier`,
+--    dans une liste FERMÉE ([[D-292]] §2) : `mauvais_dossier`,
 --    `mauvaise_date_prelevement`, `mauvais_analyte`. Une erreur de valeur ou
 --    d'unité reste une CORRECTION ([[D-124]]), jamais une annulation.
 --  - `revocation` : « cette annulation-là était une erreur », avec un motif
---    pris dans une liste FERMÉE ([[D-291]] §4) : `mauvais_resultat_annule`,
+--    pris dans une liste FERMÉE ([[D-292]] §4) : `mauvais_resultat_annule`,
 --    `resultat_verifie_exact`, `motif_annulation_errone`. Le résultat revient
 --    alors dans les séries parce qu'une ligne s'ajoute.
 --
@@ -41,7 +41,7 @@
 --
 -- ── LE FIL : SA RACINE DE CHAÎNE ───────────────────────────────────────────
 --
--- L'annulation retire le FIL de correction entier, pas une ligne ([[D-291]]
+-- L'annulation retire le FIL de correction entier, pas une ligne ([[D-292]]
 -- §3). Le fil d'un résultat est l'ensemble des lignes qui descendent de la
 -- même RACINE (la ligne au `supersedes_resultat_id` nul que l'on atteint en
 -- remontant la chaîne) — la définition de `filCorrection.ts`. Ce n'est plus la
@@ -303,14 +303,24 @@ BEGIN
             CONSTRAINT = 'cb_resultat_bio_patient_analyte_idx',
             DETAIL = 'Key (id_patient, analyte_code, preleve_le) already exists.';
   END IF;
-  RETURN NEW;
+  RETURN NULL;
 END;
 $$;
 
 -- Le trigger d'abord, l'index ensuite : la transaction de la migration ne
 -- laisse aucune fenêtre sans garde.
+--
+-- AFTER, et non BEFORE : l'index refusait APRÈS les CHECK, et une ligne à la
+-- fois invalide et en doublon doit garder son refus de forme (23514) — le
+-- contrat `cb_resultats_biologiques_v1_negatif.sql` y tient. Les triggers
+-- AFTER d'une table se déclenchent par ordre de nom : ceux des clés
+-- étrangères (`RI_ConstraintTrigger_…`) passent avant celui-ci, si bien qu'un
+-- dossier inexistant reste un refus de clé (23503), et que le `FOR KEY SHARE`
+-- du dossier est déjà pris quand le verrou de clé l'est — l'ordre « dossier,
+-- puis clé » tient. Les lignes d'une même instruction s'y voient toutes : deux
+-- saisies neuves de la même clé dans un seul INSERT se refusent.
 CREATE TRIGGER resultats_biologiques_unicite_mesure
-  BEFORE INSERT OR UPDATE ON public.resultats_biologiques
+  AFTER INSERT OR UPDATE ON public.resultats_biologiques
   FOR EACH ROW
   WHEN (NEW.supersedes_resultat_id IS NULL)
   EXECUTE FUNCTION public.resultats_biologiques_unicite_mesure();

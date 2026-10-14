@@ -1,7 +1,7 @@
 ---
 id: "LOT-09"
 titre: "BP-09 — Annulation d'un résultat, ajout seul"
-statut: "à_faire"
+statut: "en_cours (2026-10-14) — PR 1, migration seule"
 dépend_de: "LOT-00"
 ---
 
@@ -30,9 +30,14 @@ séries. Rien ne s'efface.
   (`D-124`). Aucun texte libre. Un motif nouveau exige une décision et une
   migration.
 - **Révocation** : oui, une fois par annulation, motif obligatoire (patron
-  `D-257` §6). Sans elle, un résultat annulé à tort ne pourrait pas être
-  ressaisi : la ligne annulée occupe toujours la clé (dossier, analyte, date)
-  de l'index unique partiel de `D-124` §2.
+  `D-257` §6). Motifs, liste fermée (tranchés en session le même jour) :
+  mauvais résultat annulé, résultat vérifié exact, motif d'annulation erroné.
+- **La place se libère** (tranché en session le même jour, sur constat de la
+  revue du lot de migration ; amende la phrase d'origine « la ligne annulée
+  occupe toujours la clé ») : un fil annulé ne retient plus sa clé (dossier,
+  analyte, date). La garde anti-doublon de `D-124` §2 devient un trigger qui
+  ignore les fils annulés ; une révocation est refusée si la place a été
+  reprise. Décision : `D-292`.
 
 ## Constat de production (2026-10-14, `one-off-6164`, lecture seule)
 
@@ -81,6 +86,11 @@ BP-11. Toute qualification de valeur.
 - `docs/DECISIONS.md` : `D-xxx` amendant `D-124` §3 (annulation en ajout
   seul, motifs, révocation, cible, mauvais dossier) ; elle dit que la
   condition « premier import » sort des préalables (plan, F03)
+- Ajoutés à la livraison (`D-292`) : la garde anti-doublon par trigger et
+  l'amendement du contrat `cb_resultats_biologiques_v1_negatif.sql` ; le banc
+  `web/scripts/banc-annulations-resultats-deux-sessions.test.mjs` (CI et T3) ;
+  `web/src/lib/patient/effacement.ts`, avancé de la PR 2 — le banc de
+  complétude de l'effacement l'exige avec la table
 
 **PR 2 — code consommateur, après release-db constatée**
 - `web/src/lib/biology-library/filCorrection.ts` (élection de tête)
@@ -93,8 +103,8 @@ BP-11. Toute qualification de valeur.
 - `web/src/lib/biology-library/import/decisions.ts` et
   `web/src/app/api/praticien/biologie/import/decisions/route.ts`
   (résultats existants avant validation)
-- `web/src/lib/patient/effacement.ts` (la table neuve entre dans
-  l'effacement nommé)
+- les commentaires qui disent encore « une racine par clé »
+  (`filCorrection.ts`, routes de saisie) : faux depuis `D-292`
 - `web/src/components/patient-cockpit/EstimeMesurePanel.tsx` (geste et
   marquage « annulé »)
 - tests de chacun ; `scripts/wn-matrice-consommation.mjs` si la matrice change
@@ -108,6 +118,9 @@ BP-11. Toute qualification de valeur.
 - Registre RGPD mis à jour avant la table.
 - Effacement : vérifier, avant la release-db, que la clé étrangère de la table
   neuve ne bloque pas l'effacement nommé tant que la PR 2 n'est pas déployée.
+  L'effacement étant livré avec la migration (`D-292` §7), le risque est
+  l'inverse : entre le merge et la release-db, un effacement de dossier
+  échoue sur la table absente (rien d'effacé) — approuver dans la foulée.
 - Aucune lecture ni qualification de valeur ; aucun texte libre ; pas de
   donnée patient réelle dans le dépôt.
 

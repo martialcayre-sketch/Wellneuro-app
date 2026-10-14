@@ -530,6 +530,13 @@ grep -q 'banc-lectures-imports-deux-sessions.test.mjs' "$ROOT/.github/workflows/
   || die "ci.yml ne lance plus le banc à deux sessions des actes de lecture."
 WN_BIO_LECTURE_BANC_BASE=wellneuro_ci node scripts/banc-lectures-imports-deux-sessions.test.mjs > /dev/null < /dev/null \
   || die "banc à deux sessions en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-lectures-imports-deux-sessions.test.mjs\`, depuis web/)."
+# Banc à deux sessions des annulations et de la garde anti-doublon (D-292,
+# BP-09) : même discipline.
+step "Banc à deux sessions (annulations de résultats, garde anti-doublon)"
+grep -q 'banc-annulations-resultats-deux-sessions.test.mjs' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc à deux sessions des annulations de résultats."
+WN_BIO_ANNULATION_BANC_BASE=wellneuro_ci node scripts/banc-annulations-resultats-deux-sessions.test.mjs > /dev/null < /dev/null \
+  || die "banc des annulations en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-annulations-resultats-deux-sessions.test.mjs\`, depuis web/)."
 # Le vrai écrivain contre la base (même discipline) — après `prisma generate`,
 # fait plus haut : il charge le client Prisma.
 grep -q 'banc-ecrivain-lecture-deux-requetes.test.ts' "$ROOT/.github/workflows/ci.yml" \
