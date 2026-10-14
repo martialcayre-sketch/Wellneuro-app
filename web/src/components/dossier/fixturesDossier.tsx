@@ -29,7 +29,6 @@ export const PATIENT = {
   // production. Une fixture amputée du DTO ment sur ce que la route sert.
   dateNaissance: null as string | null,
   adresse: '',
-  nir: '',
   medecinTraitantNom: '',
   medecinTraitantCoordonnees: '',
 };
@@ -49,7 +48,6 @@ export const AUTRE_PATIENT = {
   // production. Une fixture amputée du DTO ment sur ce que la route sert.
   dateNaissance: null as string | null,
   adresse: '',
-  nir: '',
   medecinTraitantNom: '',
   medecinTraitantCoordonnees: '',
 };

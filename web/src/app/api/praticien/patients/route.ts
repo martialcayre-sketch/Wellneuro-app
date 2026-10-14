@@ -12,7 +12,6 @@ import {
 import { emailPraticien, filtrePatientsDuPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
 import { jourCourantLocal } from '@/lib/patient-access';
-import { messageNirInvalide, verifierNir } from '@/lib/patient/nir';
 
 const MAX_ASSIGNATIONS = 40;
 
@@ -73,13 +72,11 @@ type Patient = {
   // `dateNaissance`, servie `null`, parce qu'une date vide n'est pas une date
   // et qu'un champ date ne sait pas afficher « ».
   //
-  // `nir` EST SERVI EN CLAIR, comme toute autre donnée du dossier : arbitrage
-  // du responsable, 2026-09-16. Ce qui le protège est ce qui protège le reste —
-  // RLS deny-all, garde d'appartenance, journal des accès —, pas un masquage
-  // d'affichage qui n'aurait trompé que le praticien.
+  // LE NIR N'EST PLUS SERVI (D-284 §2, lot g) : son recueil n'a pas de
+  // fondement pour ce responsable. La colonne vide reste en base jusqu'à sa
+  // migration de retrait ; aucune route ne la lit ni ne l'écrit.
   dateNaissance: string | null;
   adresse: string;
-  nir: string;
   medecinTraitantNom: string;
   medecinTraitantCoordonnees: string;
 };
@@ -405,7 +402,6 @@ function patientToDto(p: {
   accessTokenRevoked: boolean;
   dateNaissance: string | null;
   adresse: string | null;
-  nir: string | null;
   medecinTraitantNom: string | null;
   medecinTraitantCoordonnees: string | null;
 }): Patient {
@@ -426,7 +422,6 @@ function patientToDto(p: {
     // d'un jour. `null` quand elle manque, jamais '' — voir le DTO.
     dateNaissance: p.dateNaissance,
     adresse: p.adresse ?? '',
-    nir: p.nir ?? '',
     medecinTraitantNom: p.medecinTraitantNom ?? '',
     medecinTraitantCoordonnees: p.medecinTraitantCoordonnees ?? '',
   };
@@ -619,7 +614,6 @@ export async function POST(req: Request): Promise<NextResponse<CreatePatientResp
         // deviner s'il manque parce que c'est vide ou parce que la route est
         // ancienne.
         adresse: '',
-        nir: '',
         medecinTraitantNom: '',
         medecinTraitantCoordonnees: '',
       },
@@ -650,7 +644,6 @@ type PatchPatientPayload = {
   dateNaissance?: string;
   telephone?: string;
   adresse?: string;
-  nir?: string;
   medecinTraitantNom?: string;
   medecinTraitantCoordonnees?: string;
   actif?: 'OUI' | 'NON';
@@ -726,7 +719,6 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
     'dateNaissance',
     'telephone',
     'adresse',
-    'nir',
     'medecinTraitantNom',
     'medecinTraitantCoordonnees',
   ] as const;
@@ -756,7 +748,6 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
   const email =
     brut.email === undefined ? undefined : brut.email.trim().toLowerCase().slice(0, 254);
   const dateNaissance = brut.dateNaissance === undefined ? undefined : brut.dateNaissance.trim();
-  const nirSaisi = brut.nir === undefined ? undefined : brut.nir.trim();
 
   // PRÉNOM ET NOM NE S'EFFACENT PAS. Le modèle les porte en `String` non
   // nullable, et un dossier sans nom n'est plus un dossier : il faudrait alors
@@ -790,8 +781,7 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
   // `POST` tronque prénom, nom et téléphone, et ce choix se défend là-bas. Ici
   // il ne se défend plus : une adresse postale coupée à 500 caractères reste
   // une adresse — lisible, plausible, et incomplète —, et ces champs servent à
-  // ÉCRIRE AUX GENS. On ne peut pas refuser un NIR douteux au nom de « jamais
-  // une donnée fausse » et rogner une adresse dans la même route.
+  // ÉCRIRE AUX GENS.
   //
   // La borne est celle du `CHECK` de la base : refuser ici rend un message que
   // le praticien comprend, là où la base rendrait une erreur technique.
@@ -806,27 +796,6 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
         },
         { status: 400 }
       );
-    }
-  }
-
-  // LE NIR EST REFUSÉ SUR SA CLÉ, PAS SEULEMENT SUR SA FORME — et c'est tout
-  // l'intérêt. La base garde la forme ; un numéro bien formé et faux passerait,
-  // et finirait sur un courrier ou une demande de prise en charge. Le message
-  // distingue les deux motifs : le praticien doit savoir s'il a mal compté les
-  // chiffres ou mal recopié la clé.
-  let nir: string | null | undefined;
-  if (nirSaisi !== undefined) {
-    if (!nirSaisi) {
-      nir = null;
-    } else {
-      const verdict = verifierNir(nirSaisi);
-      if (!verdict.valide) {
-        return NextResponse.json(
-          { success: false, reason: 'invalid_payload', error: messageNirInvalide(verdict.motif) },
-          { status: 400 }
-        );
-      }
-      nir = verdict.nir;
     }
   }
 
@@ -875,7 +844,6 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
       ...(payload.adresse !== undefined && {
         adresse: videVautNull(payload.adresse),
       }),
-      ...(nir !== undefined && { nir }),
       ...(payload.medecinTraitantNom !== undefined && {
         medecinTraitantNom: videVautNull(payload.medecinTraitantNom),
       }),

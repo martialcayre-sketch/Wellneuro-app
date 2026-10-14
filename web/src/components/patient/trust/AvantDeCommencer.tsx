@@ -159,9 +159,10 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
           </p>
           <p>
             Votre praticien tient aussi, dans votre dossier, des renseignements administratifs
-            qu’il saisit lui-même : votre adresse postale, votre numéro de sécurité sociale, et le
-            nom et les coordonnées de votre médecin traitant. Aucun n’est obligatoire, et noter le
-            nom de votre médecin traitant ne veut pas dire lui écrire.
+            qu’il saisit lui-même : votre adresse postale, et le nom et les coordonnées de votre
+            médecin traitant. Votre numéro de sécurité sociale, lui, n’est pas recueilli. Aucun
+            n’est obligatoire, et noter le nom de votre médecin traitant ne veut pas dire lui
+            écrire.
           </p>
           {/*
             CE PARAGRAPHE EST LA CONTREPARTIE DE L'ACCUSÉ DEMANDÉ PLUS LOIN.

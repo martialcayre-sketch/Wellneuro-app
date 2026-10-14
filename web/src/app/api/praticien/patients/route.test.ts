@@ -713,9 +713,9 @@ describe('DELETE /api/praticien/patients', () => {
 //
 // Jusqu'ici `PATCH` n'acceptait que `telephone` et `actif` : une faute de
 // frappe sur un nom saisi à la création était DÉFINITIVE. Ce qui suit garde les
-// trois choses qui peuvent mal tourner quand on ouvre l'écriture — un NIR faux
-// qui part sur un courrier, un e-mail qui rend les réponses muettes, et un
-// formulaire qui efface ce qu'il ne touche pas.
+// choses qui peuvent mal tourner quand on ouvre l'écriture — un e-mail qui
+// rend les réponses muettes, et un formulaire qui efface ce qu'il ne touche
+// pas. Le NIR, ouvert au LOT-05, n'est plus recueilli (D-284 §2, lot g).
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe('PATCH — le dossier administratif', () => {
@@ -755,19 +755,17 @@ describe('PATCH — le dossier administratif', () => {
     });
   });
 
-  it('écrit les quatre renseignements du dossier administratif', async () => {
+  it('écrit les trois renseignements du dossier administratif', async () => {
     await PATCH(
       patch({
         idPatient: 'PAT001',
         adresse: '12 rue des Fictifs, 75000 Paris',
-        nir: '184017511600144',
         medecinTraitantNom: 'Dr Martin',
         medecinTraitantCoordonnees: '01 02 03 04 05',
       }),
     );
     expect(prisma.patient.update.mock.calls[0][0].data).toMatchObject({
       adresse: '12 rue des Fictifs, 75000 Paris',
-      nir: '184017511600144',
       medecinTraitantNom: 'Dr Martin',
       medecinTraitantCoordonnees: '01 02 03 04 05',
     });
@@ -799,10 +797,9 @@ describe('PATCH — le dossier administratif', () => {
     // Le `CHECK` de la base refuse `''` mais accepte `NULL` : sans cette
     // traduction, vider un champ deviendrait une erreur technique — et retirer
     // une adresse saisie par erreur serait impossible.
-    await PATCH(patch({ idPatient: 'PAT001', adresse: '', nir: '', medecinTraitantNom: '   ' }));
+    await PATCH(patch({ idPatient: 'PAT001', adresse: '', medecinTraitantNom: '   ' }));
     expect(prisma.patient.update.mock.calls[0][0].data).toMatchObject({
       adresse: null,
-      nir: null,
       medecinTraitantNom: null,
     });
   });
@@ -814,7 +811,7 @@ describe('PATCH — le dossier administratif', () => {
   });
 });
 
-describe('PATCH — le NIR est refusé sur sa CLÉ, pas seulement sur sa forme', () => {
+describe('PATCH — le NIR n’est plus recueilli (D-284 §2, lot g)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
@@ -827,30 +824,22 @@ describe('PATCH — le NIR est refusé sur sa CLÉ, pas seulement sur sa forme',
     prisma.$transaction.mockImplementation(async (arg: unknown) => (typeof arg === 'function' ? arg(prisma) : arg));
   });
 
-  it('★ un numéro BIEN FORMÉ mais de clé fausse est refusé, et rien n’est écrit', async () => {
-    // LA BASE NE VOIT QUE LA FORME (`patients_nir_forme`). Ce numéro-ci la
-    // satisfait : quinze caractères, chiffres. Sa clé ne correspond pas aux
-    // treize premiers, et il finirait sur un courrier ou une demande de prise
-    // en charge si seule la base gardait.
-    const res = await PATCH(patch({ idPatient: 'PAT001', nir: '184017511600145' }));
-    expect(res.status).toBe(400);
-    const body = (await res.json()) as { error?: string };
-    expect(body.error).toContain('clé de contrôle');
-    expect(prisma.patient.update).not.toHaveBeenCalled();
-  });
-
-  it('dit CE QUI ne va pas : la forme et la clé ne rendent pas le même message', async () => {
-    const forme = await PATCH(patch({ idPatient: 'PAT001', nir: '1840175116' }));
-    const messageForme = ((await forme.json()) as { error?: string }).error ?? '';
-    expect(forme.status).toBe(400);
-    expect(messageForme).toContain('15 caractères');
-    expect(messageForme).not.toContain('clé de contrôle');
-  });
-
-  it('accepte le numéro tel qu’il est imprimé sur la carte, et le stocke normalisé', async () => {
-    const res = await PATCH(patch({ idPatient: 'PAT001', nir: '1 84 01 75 116 001 44' }));
+  it('★ un numéro envoyé par un ancien écran est ignoré : rien n’est écrit dans la colonne', async () => {
+    // La colonne reste en base jusqu'à sa migration de retrait. Un onglet
+    // ouvert avant le déploiement enverrait encore le champ : la route ne le
+    // lit plus, le reste du formulaire s'enregistre.
+    const res = await PATCH(patch({ idPatient: 'PAT001', nir: '184017511600144', adresse: '1 rue des Fictifs' }));
     expect(res.status).toBe(200);
-    expect(prisma.patient.update.mock.calls[0][0].data.nir).toBe('184017511600144');
+    const data = prisma.patient.update.mock.calls[0][0].data;
+    expect(data).not.toHaveProperty('nir');
+    expect(data).toMatchObject({ adresse: '1 rue des Fictifs' });
+  });
+
+  it('la fiche servie ne porte plus le champ', async () => {
+    const res = await PATCH(patch({ idPatient: 'PAT001', adresse: '1 rue des Fictifs' }));
+    expect(res.status).toBe(200);
+    const corps = JSON.stringify(await res.json());
+    expect(corps).not.toContain('"nir"');
   });
 });
 
@@ -992,7 +981,7 @@ describe('PATCH — un payload mal typé est une requête invalide, pas une pann
     // « le serveur est en panne » alors qu'il ne l'était pas.
     for (const corps of [
       { idPatient: 'PAT001', adresse: 42 },
-      { idPatient: 'PAT001', nir: { valeur: '1' } },
+      { idPatient: 'PAT001', medecinTraitantNom: { valeur: '1' } },
       { idPatient: 'PAT001', prenom: ['Sophie'] },
       { idPatient: 123 },
     ]) {

@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les vingt-huit documents attendus', () => {
+  it('expose les vingt-neuf documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -54,6 +54,8 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v14',
       // `D-284` §5 — l'identité masquée avant l'envoi : le compte rendu ne part plus entier.
       'donnees_confidentialite@v15',
+      // `D-284` §2 — le numéro de sécurité sociale n'est plus recueilli.
+      'donnees_confidentialite@v16',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -119,7 +121,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v15');
+    expect(courant.version).toBe('v16');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -535,7 +537,7 @@ describe('registre des documents TRUST', () => {
     expect(v8.requiresAcknowledgement).toBe(false);
 
     const v14 = getVersion('donnees_confidentialite', 'v14');
-    const v15 = getDocumentCourant('donnees_confidentialite');
+    const v15 = getVersion('donnees_confidentialite', 'v15')!;
     expect(v15.version).toBe('v15');
     const titre = 'Quelles données sont recueillies ?';
     const avant = v14?.sections.find(s => s.titre === titre)?.paragraphes ?? [];
@@ -602,12 +604,12 @@ describe('registre des documents TRUST', () => {
     expect(getDocumentCourant('consentement_suivi').requiresAcknowledgement).toBe(false);
   });
 
-  it('la v8 NOMME les trois renseignements, et dit qu’ils sont facultatifs', () => {
+  it('la v8 NOMMAIT les trois renseignements, et disait qu’ils sont facultatifs', () => {
     // UN ACCUSÉ SUR UN TEXTE QUI NE DIT PAS CE QUI CHANGE N'EST QU'UNE
     // FORMALITÉ. Le patient doit lire les trois données en toutes lettres, et
     // lire aussi qu'il peut les refuser — sans quoi « exiger un accusé »
     // revient à faire cliquer sur une porte fermée.
-    const paragraphes = getDocumentCourant('donnees_confidentialite').sections.flatMap(
+    const paragraphes = (getVersion('donnees_confidentialite', 'v8')?.sections ?? []).flatMap(
       s => s.paragraphes ?? [],
     );
     const texte = paragraphes.join(' ');
@@ -617,6 +619,32 @@ describe('registre des documents TRUST', () => {
     expect(texte).toContain('n’est obligatoire');
     // Noter un médecin n'est pas lui écrire : la confusion serait grave.
     expect(texte).toContain('ne veut pas dire lui écrire');
+  });
+
+  it('`D-284` §2 : la v16 dit le numéro de sécurité sociale non recueilli, mot pour mot, et rien d’autre', () => {
+    // LE CHAMP A QUITTÉ LA FICHE DU PRATICIEN (lot g). Le texte servi au
+    // patient ne peut plus dire que son praticien le tient. Une seule section
+    // change ; une reformulation rougit ici.
+    const v15 = getVersion('donnees_confidentialite', 'v15')!;
+    const v16 = getDocumentCourant('donnees_confidentialite');
+    expect(v16.version).toBe('v16');
+    const titre = 'Quelles données sont recueillies ?';
+    const avant = v15.sections.find(s => s.titre === titre)?.paragraphes ?? [];
+    const apres = v16.sections.find(s => s.titre === titre)?.paragraphes ?? [];
+    expect(apres).toHaveLength(avant.length);
+    expect(apres.filter((p, i) => p !== avant[i])).toHaveLength(2);
+    const texte = apres.join(' ');
+    expect(texte).toContain(
+      'des renseignements administratifs qu’il saisit lui-même : votre adresse postale, et le nom et les coordonnées de votre médecin traitant. Votre numéro de sécurité sociale, lui, n’est pas recueilli.',
+    );
+    expect(texte).toContain('Aucun de ces renseignements n’est obligatoire');
+    expect(texte).not.toContain('votre numéro de sécurité sociale, et le nom');
+    expect(texte).not.toContain('trois renseignements');
+    expect(v16.sections.filter(s => s.titre !== titre)).toEqual(v15.sections.filter(s => s.titre !== titre));
+    // Seule la version courante réclame un accusé : sans le sien, celui de la
+    // v15, dû par tous les dossiers actifs, s'effaçait.
+    expect(v16.requiresAcknowledgement).toBe(true);
+    expect(v16.publieLe >= v15.publieLe).toBe(true);
   });
 
   it('la v6 nomme les résultats d’analyses ET dit ce qui n’en est pas fait', () => {

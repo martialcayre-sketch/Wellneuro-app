@@ -952,7 +952,6 @@ describe('assemblerDossierExport — document', () => {
       'Nicola',
       'sophie.nicola@example.test',
       '06 12 34 56 78',
-      '299999999999999',
       '12 rue des Lilas, 69003 Lyon',
       '14/03/1985',
       'Dr Jennifer Martin',
@@ -961,6 +960,9 @@ describe('assemblerDossierExport — document', () => {
       expect(joint, valeur).toContain(valeur);
     }
     expect(joint).not.toContain(MARQUE_MASQUE);
+    // D-284 §2 : une valeur ancienne restée dans la colonne n'est plus servie.
+    expect(joint).not.toContain('299999999999999');
+    expect(joint).not.toContain('Numéro de sécurité sociale');
   });
 
   it('le document assemblé se rend en PDF valide, dans les deux versions', async () => {

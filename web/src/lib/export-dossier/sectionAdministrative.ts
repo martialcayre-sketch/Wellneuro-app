@@ -90,8 +90,6 @@ export function sectionAdministrative(
     champ('Adresse e-mail', valeurOuAbsence(patient.email)),
     champ('Téléphone', valeurOuAbsence(patient.telephone)),
     champ('Adresse postale', valeurOuAbsence(patient.adresse)),
-    { type: 'titre', niveau: 2, texte: 'Sécurité sociale' },
-    champ('Numéro de sécurité sociale', valeurOuAbsence(patient.nir)),
     { type: 'titre', niveau: 2, texte: 'Médecin traitant' },
     champ('Nom du médecin', valeurOuAbsence(patient.medecinTraitantNom)),
     champ('Coordonnées', valeurOuAbsence(patient.medecinTraitantCoordonnees)),

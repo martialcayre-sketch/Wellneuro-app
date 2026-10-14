@@ -450,7 +450,6 @@ const DOSSIER_ADMINISTRATIF = {
   accesRevoque: false,
   dateNaissance: '1984-01-17',
   adresse: '12 rue des Fictifs, 75000 Paris',
-  nir: '184017511600144',
   medecinTraitantNom: 'Dr Martin',
   medecinTraitantCoordonnees: '01 02 03 04 05',
 };
@@ -2411,14 +2410,13 @@ describe('Cockpit — phase Patient : la fiche du dossier', () => {
 
   it('★ affiche les renseignements que le cockpit ne montrait NULLE PART', async () => {
     await rendreFiche({ phaseDemandee: 'patient' });
-    // Les quatre champs ouverts par la migration, et la date de naissance, qui
+    // Les champs ouverts par la migration, et la date de naissance, qui
     // était saisie à la création et invisible ensuite.
     expect((await screen.findByLabelText(/adresse postale/i) as HTMLInputElement).value).toBe(
       '12 rue des Fictifs, 75000 Paris',
     );
-    expect((screen.getByLabelText(/numéro de sécurité sociale/i) as HTMLInputElement).value).toBe(
-      '184017511600144',
-    );
+    // D-284 §2 : le NIR n'est plus proposé.
+    expect(screen.queryByLabelText(/numéro de sécurité sociale/i)).toBeNull();
     expect((screen.getByLabelText(/nom du médecin/i) as HTMLInputElement).value).toBe('Dr Martin');
     expect((screen.getByLabelText(/date de naissance/i) as HTMLInputElement).value).toBe(
       '1984-01-17',

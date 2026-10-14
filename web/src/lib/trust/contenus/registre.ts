@@ -1533,6 +1533,48 @@ const DONNEES_CONFIDENTIALITE_V15: VersionDocumentTrust = {
   hash: '91a00f8235d24cfbbf5674320e9957ab8498ed05412bb23756f5c3b864cee23c',
 };
 
+// LA v16 RETIRE UNE DONNÉE, ET C'EST POURTANT ELLE QUI EXIGE L'ACCUSÉ.
+//
+// Ce qu'elle change : le numéro de sécurité sociale n'est plus recueilli
+// (D-284 §2, lot g) — le champ a quitté la fiche du praticien, aucun numéro
+// n'était enregistré. Seule, elle se serait dispensée d'accusé, comme les v3 à
+// v7 : rien de neuf n'entre au dossier.
+//
+// Mais seule la version COURANTE réclame un accusé (`avantDeCommencer.ts`).
+// Une v16 sans accusé aurait effacé celui de la v15, publiée le même jour et
+// accusée par AUCUN des 31 dossiers actifs (constat par conteneur du
+// 2026-10-14) : le masquage du compte rendu n'aurait été reconnu par personne.
+// Même motif que la v10 envers la v9. Arbitrage du responsable, 2026-10-14.
+const DONNEES_CONFIDENTIALITE_V16: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v16',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V15.sections.map(section =>
+    section.titre === 'Quelles données sont recueillies ?'
+      ? {
+          ...section,
+          paragraphes: section.paragraphes.map(paragraphe =>
+            paragraphe
+              .replace(
+                'des renseignements administratifs qu’il saisit lui-même : votre adresse postale, votre numéro de sécurité sociale, et le nom et les coordonnées de votre médecin traitant.',
+                'des renseignements administratifs qu’il saisit lui-même : votre adresse postale, et le nom et les coordonnées de votre médecin traitant. Votre numéro de sécurité sociale, lui, n’est pas recueilli.',
+              )
+              .replace('Aucun de ces trois renseignements n’est obligatoire', 'Aucun de ces renseignements n’est obligatoire'),
+          ),
+        }
+      : section,
+  ),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Votre numéro de sécurité sociale n’est plus recueilli dans votre dossier. Cette version reprend aussi le changement précédent : le compte rendu de vos analyses biologiques n’est plus transmis en entier, votre praticien masque d’abord à l’écran votre nom et les autres mentions qui vous identifient. Le reste ne change pas.',
+  publieLe: '2026-10-14',
+  requiresAcknowledgement: true,
+  hash: '1577577e799d09f0d9346fee9c428aa4227a7e77506b3e0f592679130c119108',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1552,6 +1594,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V13,
   DONNEES_CONFIDENTIALITE_V14,
   DONNEES_CONFIDENTIALITE_V15,
+  DONNEES_CONFIDENTIALITE_V16,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,

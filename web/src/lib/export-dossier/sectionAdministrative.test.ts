@@ -44,8 +44,6 @@ describe('sectionAdministrative — version complète', () => {
       { type: 'champ', libelle: 'Adresse e-mail', valeur: 'sophie.nicola@example.test' },
       { type: 'champ', libelle: 'Téléphone', valeur: '06 12 34 56 78' },
       { type: 'champ', libelle: 'Adresse postale', valeur: '12 rue des Lilas, 75011 Paris' },
-      { type: 'titre', niveau: 2, texte: 'Sécurité sociale' },
-      { type: 'champ', libelle: 'Numéro de sécurité sociale', valeur: '1 99 99 99 999 999 99' },
       { type: 'titre', niveau: 2, texte: 'Médecin traitant' },
       { type: 'champ', libelle: 'Nom du médecin', valeur: 'Dr Michel Dogné' },
       { type: 'champ', libelle: 'Coordonnées', valeur: 'Cabinet du parc, 01 23 45 67 89' },
@@ -77,12 +75,13 @@ describe('sectionAdministrative — version complète', () => {
       'Adresse e-mail',
       'Téléphone',
       'Adresse postale',
-      'Numéro de sécurité sociale',
       'Nom du médecin',
       'Coordonnées',
     ]) {
       expect(valeurDe(blocs, libelle)).toBe(NON_RENSEIGNE);
     }
+    // D-284 §2 : le NIR n'est plus recueilli, sa ligne a quitté la fiche.
+    expect(valeurDe(blocs, 'Numéro de sécurité sociale')).toBeUndefined();
     expect(valeurDe(blocs, 'Nom')).toBe('Nicola');
   });
 
