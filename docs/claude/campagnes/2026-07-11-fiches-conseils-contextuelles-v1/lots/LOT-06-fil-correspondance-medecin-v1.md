@@ -83,7 +83,7 @@ stricte :
 
 - **Tout accès médecin** (lien signé = V2 / FM-1 option A ; déclenchée par un
   constat d'usage, pas une échéance).
-  2026-10-14 : la V2 par lien signé n'est plus prévue : l'envoi direct au médecin est fermé, le médecin reçoit une remise tracée (arbitrage du 2026-10-11, plan unique §5 « Fermetures ») ; D-219 §1 n'est pas amendée, toute réouverture passe par une D-xxx.
+  2026-10-14 : la V2 par lien signé est abandonnée (plan unique §7) : la lettre est remise au patient, remise tracée, rien ne part vers un tiers (arbitrage du 2026-10-11) ; l'envoi direct au médecin reste fermé, gelé sous F75 avec son déclencheur, un volume réel de correspondance constaté (D-219 §1, plan §5 « Fermetures ») ; D-219 §1 n'est pas amendée, toute levée passe par une D-xxx.
 - **Toute visibilité patient** du fil (décision distincte, non prise).
 - **Tout envoi automatique** vers le médecin (l'envoi reste un geste hors
   application en V1 ; l'app consigne, elle n'expédie pas).

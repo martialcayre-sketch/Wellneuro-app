@@ -34,7 +34,7 @@ Aucune migration, aucune règle clinique, aucun drapeau.
   réserve déjà ouverte au dossier RGPD (rubrique 7), non levée ici.
 - La durée de conservation de la trace d'import (empreinte, extractions,
   lignes lues) : trou de la rubrique 8, échéance du 2026-10-21.
-  2026-10-14 : durée fixée par D-283 §2 ; le trou de la rubrique 8 est fermé, la borne du 2026-10-21 levée par D-265 §4.
+  2026-10-14 : durée de cette trace fixée par D-283 §2 ; la rubrique 8 garde ses restes (point de départ des 10 ans à valider, D-283 §2 et D-284 §6 ; texte patient et code, D-283 §10) ; la borne du 2026-10-21 levée par D-265 §4.
 - La rétention des sauvegardes pour les autres données du dossier : seul le
   compte rendu purgé portait une promesse de suppression datée.
 - M1 à M11 et M15 de la passe des mutations : aucun résultat versé, aucune

@@ -999,7 +999,7 @@ document source, lui, a désormais une règle ([[D-258]], ci-dessous).
 Porteur : responsable, avec conseil qualifié. Échéance
 proposée : **2026-10-21**, date de revue de la dérogation.
 
-2026-10-14 : durées fixées par [[D-283]] §1-2 (ci-dessus) ; borne levée par [[D-265]] ; restes de la rubrique (texte patient signé, mise en œuvre) à échéance du 2027-06-30 ([[D-265]] §4).
+2026-10-14 : durées fixées par [[D-283]] §1-2 (ci-dessus) ; borne levée par [[D-265]] ; restes de la rubrique : point de départ des 10 ans à valider par le conseil avant toute mise en œuvre, rien ne s'efface sur cette règle avant sa réponse ([[D-283]] §2, [[D-284]] §6) ; texte patient signé et mise en œuvre ([[D-283]] §10) ; échéance du 2027-06-30 ([[D-265]] §4).
 
 **Compte rendu biologique déposé : purgé ([[D-258]], arbitrages du responsable
 du 2026-10-02).** Le document est purgé dès que toutes les lignes de son

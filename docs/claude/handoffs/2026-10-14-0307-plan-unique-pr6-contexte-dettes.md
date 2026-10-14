@@ -64,6 +64,11 @@ des textes périmés du §9) : `docs/claude/PROJET_CONTEXTE.md`,
   fichier ; `bash scripts/check_no_secrets.sh
   --staged` : OK. T2 non joué : aucun code touché.
 - Relecture adverse du diff : quatre lecteurs (faits, mandat, forme, outillage) puis trois contre-lecteurs par constat ; neuf constats, cinq retenus et corrigés avant le commit (ROADMAP_TECHNIQUE : l'appelant de la route d'ingestion RAG existe, `tools/corpus/ingest/ingest.mjs`, la ligne le nomme ; trois lignes datées rattachées à la puce qu'elles corrigent : registre des frontières, dossier RGPD rubrique 6, régime remboursé du rayon CB ; renvoi `LOT-12-cloture.md:119` suivant le décalage introduit par la PR), quatre écartés (marqueurs du handoff remplis au commit ; « signée en fin de chantier » reprend le titre de D-281 ; D-265 §4 est bien le paragraphe qui retire l'échéance aux trous ; `:185-187` est l'adresse du passage périmé donnée par le plan).
+- Revue Copilot (#1423) : quatre commentaires, tous corrigés par le second
+  commit : le point de départ des 10 ans reste à valider par le conseil
+  (`D-283` §2, `D-284` §6) et rejoint les restes de la rubrique 8 (dossier
+  RGPD, D-TRUST-06, LOT-12 de BIO-INGEST) ; la lettre est remise au patient
+  (lien signé abandonné au plan §7, envoi direct gelé sous F75, `D-219` §1).
 
 ## Problèmes ouverts
 
