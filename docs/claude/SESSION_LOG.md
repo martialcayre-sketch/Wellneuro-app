@@ -10261,3 +10261,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merge, constat de l'image, puis lot (h).
 
 **Ouvert.** Migration de retrait de la colonne (rang 4).
+
+## 2026-10-14 — BP-07 clos (LOT-07)
+
+**Fait.** Sources WN-SRC-0508 à 0511 au registre, extraits ingérés sur approbation (#1433, #1436). Positions P1 à P8 : v0.2 signée au dossier privé (#1435). Claims WN-CL-0508-001 (précaution) et WN-CL-0511-001 (claim fidèle au règlement) déposés puis signés. Rejetés par le responsable dans l'atelier : 0061-008, 0061-011, 0359-031. Lignes « à relire » et 0031-025 tranchées ; fiche, campagne et cycle clos. Aucun texte clinique au dépôt.
+
+**Écarté.** Garder 0359-031 : il ne rend pas fidèlement le règlement ; un claim fidèle le remplace.
+
+**Prochaine action.** Merge après le déploiement de #1436 constaté ; puis BP-12b (positions versionnées) et BP-17 (règle C4, précaution affichée à côté des doses).
+
+**Ouvert.** WN-SRC-0241, 0062 et 0358 en quarantaine au registre ; 0508 à 0511 non relues. Promotion proposée : une recherche par identifiant dans l'atelier (confusion 0061-011/0061-008).
