@@ -4,13 +4,15 @@
 
 ## Décisions actives
 
-### D-295 — Droits des personnes : sans accès au portail, l'adresse du dossier vérifie l'identité ; les courriels de demande suivent la durée du dossier ; « traité » exige une réponse ; ai date la première lecture
+### D-295 — Droits des personnes : sans accès au portail, la demande s'instruit à sa confirmation depuis l'adresse du dossier ; les courriels de demande suivent la durée du dossier ; « traité » exige une réponse ; ai date la première lecture
 
 - Date : 2026-10-14
 - Statut : accepté. Quatre arbitrages du responsable du 2026-10-14 sur
   questions à options, posées après le merge de #1446, sur les dettes que la
   revue CodeRabbit de cette PR avait fait inscrire au plan unique (§8,
-  « Information des patients et droits »).
+  « Information des patients et droits »). §1 et §2 révisés le même jour par
+  le responsable, avant le merge, sur la revue CodeRabbit de #1453 :
+  l'adresse d'expédition d'un courriel se falsifie.
 - Domaine : procédure d'exercice des droits (`docs/DOSSIER_RGPD.md`,
   rubrique 9) ; lettre ai (fiche H51).
 - Amende : [[D-283]] §6 (renvoi au portail d'une demande par e-mail) ;
@@ -18,19 +20,23 @@
 - **Ne touche pas** : aucune règle clinique, aucun seuil, aucune migration,
   aucun texte patient servi.
 
-**§1 — Sans accès au portail, l'adresse du dossier vérifie l'identité.** Une
-personne qui n'a plus accès au portail et qui écrit pour exercer un droit
-n'est pas renvoyée au portail. Si son courriel vient de l'adresse e-mail
-enregistrée à son dossier, la demande est instruite directement, sans pièce
-d'identité. Sinon, la réponse part à l'adresse du dossier, et la demande
-s'instruit à sa confirmation. Le renvoi au portail de [[D-283]] §6 reste la
-règle pour la personne qui y a accès. Limite assumée : une boîte e-mail
-partagée ou compromise passerait ce contrôle.
+**§1 — Sans accès au portail, la confirmation depuis l'adresse du dossier
+vérifie l'identité.** Une personne qui n'a plus accès au portail et qui écrit
+pour exercer un droit n'est pas renvoyée au portail. La réponse part
+toujours à l'adresse e-mail enregistrée à son dossier, et la demande ne
+s'instruit qu'à sa confirmation depuis cette boîte, quelle que soit
+l'adresse d'expédition du premier courriel : celle-ci se falsifie, et un
+effacement ou une rectification sur un faux courriel serait fait à l'insu du
+titulaire. Aucune pièce d'identité. Le renvoi au portail de [[D-283]] §6
+reste la règle pour la personne qui y a accès. Limite assumée : une boîte
+e-mail partagée ou compromise passerait ce contrôle.
 
 **§2 — Les courriels de demande et de réponse suivent la durée du dossier.**
 Gardés dans la boîte du responsable comme preuve, ils se conservent la durée
-du dossier ([[D-283]] §2). Après un effacement, ils restent la seule trace de
-la demande.
+du dossier ([[D-283]] §2). Après un effacement, le dossier n'existe plus : ils
+restent la seule trace de la demande et se conservent **5 ans après la
+réponse**, la réponse valant dernier contact au sens de [[D-283]] §2, puis
+sont supprimés de la boîte par le responsable.
 
 **§3 — « Traité » exige une réponse.** Une garde de code, sans migration :
 le statut `traite` d'une demande de droit est refusé tant que le texte de la
@@ -45,9 +51,11 @@ Les lectures du portail ne portent pas de date aujourd'hui : la migration se
 confirme à l'écriture de la lettre ai.
 
 - Options écartées : renvoyer un accès au portail à une personne qui n'en a
-  plus ; l'avis du conseil sur l'identité et la durée (porte 28) ; une date
-  d'envoi en base (migration, rang 4) ; aucune garde de code ; dater chaque
-  ouverture.
+  plus ; instruire directement un courriel venu de l'adresse du dossier
+  (première rédaction de §1, révisée avant le merge), ou seulement pour
+  l'accès et l'information ; l'avis du conseil sur l'identité et la durée
+  (porte 28) ; effacer les courriels avec le dossier ; une date d'envoi en
+  base (migration, rang 4) ; aucune garde de code ; dater chaque ouverture.
 
 ### D-294 — Annuler un résultat de biologie saisi par erreur : un acte en ajout seul, à motif fermé, qui retire le fil entier des calculs et libère sa place ; révocable une fois (BP-09, amende D-124 §2 et §3)
 

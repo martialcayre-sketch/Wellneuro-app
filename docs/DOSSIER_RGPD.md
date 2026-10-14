@@ -1155,9 +1155,10 @@ ci-dessous (2026-10-14).
    portail (carte « Signaler un problème », choix « Je souhaite exercer un
    droit ») : cette confirmation vaut vérification d'identité (RGPD
    art. 12.6), sans pièce d'identité. Une personne qui n'a plus accès au
-   portail ([[D-295]] §1) : si le courriel vient de l'adresse e-mail
-   enregistrée à son dossier, la demande est instruite directement ; sinon,
-   la réponse part à l'adresse du dossier, pour confirmation.
+   portail ([[D-295]] §1) : la réponse part toujours à l'adresse e-mail
+   enregistrée à son dossier, et la demande ne s'instruit qu'à sa
+   confirmation depuis cette boîte, quelle que soit l'adresse d'expédition
+   (celle-ci se falsifie).
 2. **Délai.** Un mois à compter de la réception, quel que soit le canal (RGPD
    art. 12.3). Prolongeable de deux mois si la demande est complexe ou si les
    demandes sont nombreuses : le patient en est informé dans le premier mois,
@@ -1182,7 +1183,8 @@ ci-dessous (2026-10-14).
    l'examen, et la preuve de l'envoi est le courriel envoyé, gardé dans la
    boîte du responsable. Les courriels de demande et de réponse se
    conservent la durée du dossier ([[D-283]] §2 ; [[D-295]] §2) ; après un
-   effacement, ils restent la seule trace de la demande. Puis `clos` quand
+   effacement, ils restent la seule trace de la demande et se conservent
+   5 ans après la réponse, puis sont supprimés de la boîte. Puis `clos` quand
    plus rien n'est attendu. Aucune demande n'est supprimée, sauf par
    l'effacement du dossier. Le code n'empêche pas encore de passer à `traite`
    sans réponse : une garde sans migration est décidée ([[D-295]] §3).

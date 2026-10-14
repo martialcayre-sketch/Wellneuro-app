@@ -14,10 +14,11 @@ revue CodeRabbit de #1446, et le geste clé de la lettre ai.
 
 ## Décisions prises
 
-- D-295 §1 : sans accès au portail, un courriel venu de l'adresse du dossier
-  est instruit directement ; sinon, réponse à l'adresse du dossier pour
-  confirmation. Amende D-283 §6.
-- §2 : courriels de demande et de réponse à la durée du dossier.
+- D-295 §1 : sans accès au portail, réponse toujours à l'adresse du dossier,
+  instruction à la seule confirmation depuis cette boîte (l'expéditeur se
+  falsifie ; révisé sur la revue de #1453). Amende D-283 §6.
+- §2 : courriels de demande et de réponse à la durée du dossier ; 5 ans après
+  la réponse si le dossier est effacé.
 - §3 : garde de code sans migration, `traite` refusé si la réponse est vide.
 - §4 : ai date la seule première lecture.
 
@@ -40,9 +41,10 @@ revue CodeRabbit de #1446, et le geste clé de la lettre ai.
 
 ## Prochaine action exacte
 
-1. Après le merge de #1448 : rebase (accord du responsable), T1 complet vert,
-   push, PR (`--body-file`), CI en fond, revue CodeRabbit lue, merge.
-2. Lot de garde « traité » (file A, sans migration) ; lettre ai.
+1. #1453 : CI en fond sur la tête poussée, revue CodeRabbit lue (trois
+   sorties, un verdict par remarque), merge.
+2. Lettre ai (H51) : sa D-xxx avant la place 3, migration probable. La garde
+   « traité » est mergée (#1451).
 
 ## Interdits encore actifs
 
