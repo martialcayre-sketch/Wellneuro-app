@@ -6,9 +6,11 @@ import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // LE DOCUMENT DÉPOSÉ, MONTRÉ AU PRATICIEN ([[D-269]] §1, BIO-INGEST LOT-04) :
 // le regard qui précède la lecture. Un patient peut transmettre le compte rendu
-// d'un tiers ; la lecture l'enverrait ENTIER chez Anthropic. Le praticien
+// d'un tiers ; la lecture en enverrait les pages chez Anthropic. Le praticien
 // vérifie d'abord ici, sans rien envoyer à personne (revue `wn-reviewer` de la
-// PR 3, P1 : jusque-là, seule l'extraction lisait le contenu).
+// PR 3, P1 : jusque-là, seule l'extraction lisait le contenu). C'est aussi ce
+// document que l'écran de masquage rend, page par page, pour que le praticien
+// en noircisse l'identité avant toute lecture ([[D-284]] §5).
 //
 // Paramètres : `idPatient`, `idCompteRendu`. Lecture d'un dossier : l'accès est
 // journalisé (GD-1) par la garde. Un document purgé ([[D-258]]) n'existe plus :
@@ -21,7 +23,9 @@ import { classeEtCode } from '@/lib/observability/classeEtCode';
 // - une image (réencodée au dépôt) est servie sous `sandbox` ;
 // - un PDF ne l'est pas : le lecteur PDF du navigateur refuse de s'ouvrir dans
 //   un document sandboxé. Il reste un `application/pdf` vérifié (`%PDF-`),
-//   rendu par le lecteur isolé du navigateur, jamais interprété comme HTML ;
+//   rendu par le lecteur isolé du navigateur, jamais interprété comme HTML.
+//   L'écran de masquage ([[D-284]] §5) l'analyse aussi par pdf.js dans la
+//   page du praticien, sans formulaire XFA ;
 // - aucun nom de fichier (il n'est pas gardé), aucun cache, aucun référent.
 
 export const runtime = 'nodejs';

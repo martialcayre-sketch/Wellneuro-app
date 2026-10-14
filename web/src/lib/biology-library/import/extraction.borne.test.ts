@@ -82,14 +82,14 @@ afterEach(() => {
 describe('extraireCompteRendu — borne totale, sur le vrai client du SDK', () => {
   it('un flux dont le corps ne finit jamais est clos `delai_depasse` avant la péremption', async () => {
     faux.fetch = fluxSansFin();
-    const issue = extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf');
+    const issue = extraireCompteRendu([Buffer.from([0xff, 0xd8, 0xff, 0xe0])]);
     await vi.advanceTimersByTimeAsync(PEREMPTION_EN_COURS_MS);
     expect(await Promise.race([issue, Promise.resolve(EN_ATTENTE)])).toEqual({ ok: false, motif: 'delai_depasse' });
   });
 
   it('la borne tombe à `DUREE_TOTALE_EXTRACTION_MS`, ni avant ni après', async () => {
     faux.fetch = fluxSansFin();
-    const issue = extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf');
+    const issue = extraireCompteRendu([Buffer.from([0xff, 0xd8, 0xff, 0xe0])]);
     await vi.advanceTimersByTimeAsync(DUREE_TOTALE_EXTRACTION_MS - 1);
     expect(await Promise.race([issue, Promise.resolve(EN_ATTENTE)])).toBe(EN_ATTENTE);
     await vi.advanceTimersByTimeAsync(1);
@@ -98,14 +98,14 @@ describe('extraireCompteRendu — borne totale, sur le vrai client du SDK', () =
 
   it('un fournisseur muet (aucun en-tête) est clos `delai_depasse` avant la péremption', async () => {
     faux.fetch = sansEnTetes();
-    const issue = extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf');
+    const issue = extraireCompteRendu([Buffer.from([0xff, 0xd8, 0xff, 0xe0])]);
     await vi.advanceTimersByTimeAsync(PEREMPTION_EN_COURS_MS);
     expect(await Promise.race([issue, Promise.resolve(EN_ATTENTE)])).toEqual({ ok: false, motif: 'delai_depasse' });
   });
 
   it('un flux complet est lu, et aucun minuteur ne lui survit', async () => {
     faux.fetch = fluxComplet(JSON.stringify({ lisible: true, laboratoire: null, commentaires: null, lignes: [] }));
-    const issue = extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf');
+    const issue = extraireCompteRendu([Buffer.from([0xff, 0xd8, 0xff, 0xe0])]);
     await vi.advanceTimersByTimeAsync(0);
     expect(await issue).toEqual({
       ok: true, laboratoire: null, commentaires: null, commentairesNonTranscrits: false, lignes: [],

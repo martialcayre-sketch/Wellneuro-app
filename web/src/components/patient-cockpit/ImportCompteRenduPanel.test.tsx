@@ -12,6 +12,19 @@ import {
   type MesureAuDossier,
 } from './ImportCompteRenduPanel';
 
+// Le masquage rend des pages dans des canevas (pdf.js) : jsdom n'en a pas. Il
+// est simulé ici ; son propre banc l'éprouve (`MasquageIdentite.test.tsx`).
+vi.mock('./MasquageIdentite', () => ({
+  MasquageIdentite: (props: { onEnregistre: () => void; onAnnuler?: () => void; urlEnregistrement: string }) => (
+    <section aria-label="Masquer l’identité du patient" data-url={props.urlEnregistrement}>
+      <button type="button" onClick={() => void props.onEnregistre()}>Simuler l’enregistrement</button>
+      {props.onAnnuler && <button type="button" onClick={props.onAnnuler}>Annuler le masquage</button>}
+    </section>
+  ),
+}));
+
+const MASQUE = { poseLe: '2026-10-02T09:05:00.000Z', zonesMasquees: 2, aucuneIdentite: false };
+
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
@@ -55,6 +68,8 @@ function compteRendu(
   return {
     id: 'cr_1', typeMime: 'application/pdf', origine: 'praticien', deposePar: 'praticien@wellneuro.fr', deposeLe: '2026-10-02T09:00:00.000Z',
     purgeLe: null, motifPurge: null, motifEcart: null, lectureDemandee: false,
+    // Masqué par défaut : la lecture n'est possible qu'ainsi (D-284 §5).
+    masquage: MASQUE,
     imports: [{
       id: 'imp_1', statut, motifEchec: null, modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v4',
       laboratoireLu: 'Laboratoire fixture', commentairesLus: null, commentairesNonTranscrits: false, commentairesReleves: true,
@@ -623,7 +638,7 @@ describe('ImportCompteRenduPanel — relancer la lecture (LOT-09)', () => {
     await rendreEtOuvrir();
     fireEvent.click(screen.getByRole('button', { name: 'Relancer la lecture' }));
     expect(appels(fetchMock, '/import/extraction')).toHaveLength(0);
-    expect(screen.getByText(/transmis à nouveau au service de lecture/)).toBeTruthy();
+    expect(screen.getByText(/pages masquées sont transmises à nouveau au service de lecture/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer la relance' }));
     await waitFor(() => expect(appels(fetchMock, '/import/extraction')).toHaveLength(1));
     expect(JSON.parse(String(appels(fetchMock, '/import/extraction')[0][1]?.body))).toEqual({ idPatient: 'pat_sophie', idCompteRendu: 'cr_1' });
@@ -899,7 +914,7 @@ describe('ImportCompteRenduPanel — document transmis par le patient (D-269)', 
     await ouvrir();
     expect(screen.queryByRole('button', { name: 'Retirer ce dépôt' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Écarter ce document' })).toBeTruthy();
-    expect(screen.getByText(/vérifiez qu’il s’agit bien de son compte\s+rendu avant de lancer la lecture/)).toBeTruthy();
+    expect(screen.getByText(/vérifiez qu’il s’agit bien de son compte\s+rendu avant d’en masquer l’identité et de lancer la lecture/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Lancer la lecture' })).toBeTruthy();
     // Le regard d'abord (§1) : le document s'ouvre sans rien envoyer.
     expect(screen.getByRole('link', { name: 'Voir le document' }).getAttribute('href')).toBe(
@@ -929,5 +944,70 @@ describe('ImportCompteRenduPanel — document transmis par le patient (D-269)', 
     expect(screen.queryByRole('button', { name: 'Retirer ce dépôt' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Voir le document' })).toBeNull();
     expect(screen.getByText(/Document effacé le .*, écarté \(illisible\)/)).toBeTruthy();
+  });
+});
+
+describe('ImportCompteRenduPanel — l’identité masquée avant la lecture (D-284 §5)', () => {
+  const sansImport = (partiel: Partial<CompteRenduLu> = {}): CompteRenduLu => ({ ...compteRendu('extrait'), imports: [], ...partiel });
+
+  it('sans masquage, pas de lecture : l’étape de masquage s’ouvre, puis la lecture se lance', async () => {
+    let etat = sansImport({ masquage: null });
+    serveur({ detail: () => etat });
+    render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    const etape = await screen.findByRole('region', { name: 'Masquer l’identité du patient' });
+    expect(etape.getAttribute('data-url')).toBe('/api/praticien/biologie/import/masquage?idPatient=pat_sophie');
+    expect(screen.queryByRole('button', { name: 'Lancer la lecture' })).toBeNull();
+    // Premier masquage : rien à annuler, il n'y a pas de masquage antérieur.
+    expect(screen.queryByRole('button', { name: 'Annuler le masquage' })).toBeNull();
+
+    etat = sansImport();
+    fireEvent.click(screen.getByRole('button', { name: 'Simuler l’enregistrement' }));
+    expect(await screen.findByRole('button', { name: 'Lancer la lecture' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Masquer l’identité du patient' })).toBeNull();
+    expect(screen.getByText(/Identité masquée le .* \(2 zone\(s\)\) : seules les pages masquées partent/)).toBeTruthy();
+  });
+
+  it('un masquage posé se refait, et l’annulation rend la lecture', async () => {
+    serveur({ detail: () => sansImport() });
+    render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Refaire le masquage' }));
+    expect(screen.getByRole('region', { name: 'Masquer l’identité du patient' })).toBeTruthy();
+    // Pendant qu'on masque, on ne lance pas : la lecture partirait sur l'ancien masquage.
+    expect(screen.queryByRole('button', { name: 'Lancer la lecture' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler le masquage' }));
+    expect(screen.getByRole('button', { name: 'Lancer la lecture' })).toBeTruthy();
+  });
+
+  it('la déclaration « aucune identité » se dit telle quelle', async () => {
+    serveur({ detail: () => sansImport({ masquage: { ...MASQUE, zonesMasquees: 0, aucuneIdentite: true } }) });
+    render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    expect(await screen.findByText(/Aucune identité déclarée sur ce document le .* jamais le document d’origine/)).toBeTruthy();
+  });
+
+  it('sans masquage, la relance d’une lecture aboutie est fermée aussi', async () => {
+    serveur({ detail: () => ({ ...compteRendu('extrait'), masquage: null }) });
+    render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    expect(await screen.findByRole('region', { name: 'Masquer l’identité du patient' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Relancer la lecture' })).toBeNull();
+  });
+
+  it('une lecture demandée ou une ligne validée ferment le masquage', async () => {
+    serveur({ detail: () => sansImport({ masquage: null, lectureDemandee: true }) });
+    render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    expect(await screen.findByText(/Lecture en cours/)).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Masquer l’identité du patient' })).toBeNull();
+    cleanup();
+
+    const validee = compteRendu('extrait', [ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48', statut: 'validee' })]);
+    serveur({ detail: () => validee });
+    render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    await screen.findByText(/Identité masquée le/);
+    expect(screen.queryByRole('button', { name: 'Refaire le masquage' })).toBeNull();
   });
 });

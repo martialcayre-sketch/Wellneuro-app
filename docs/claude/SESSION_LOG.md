@@ -10181,6 +10181,24 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Où vivent les fiches de lots de la file A : aucune campagne ne les porte, le plan fait fiche (à confirmer au cadrage du rang 0).
 
+## 2026-10-14 — BioFlow : seules les pages masquées partent au service de lecture (D-284 §5, lot j, lot 2)
+
+- Décisions :
+  - le praticien noircit l'identité page par page à l'écran (pdf.js) ;
+  - la route consigne des JPEG réencodés ;
+  - le processus de fond n'envoie que le dernier masquage
+    (`bio-extraction-v5`), jamais le document ;
+  - `masquage_absent` est refusé à la demande et à l'ouverture.
+- Revue `wn-reviewer` : deux P1 corrigés.
+  - Chaque page se juge (zone ou « aucune identité sur la page »).
+  - Le verrou `FOR UPDATE` du lot 1 a été fusionné.
+- Validations : T1 complet et T3 complet verts.
+- Prochaine action :
+  - constater la release-db du lot 1 ;
+  - ouvrir la PR ;
+  - constater que la file est vide avant le merge.
+- Question ouverte : tracer quel masquage chaque import a lu, ce qui
+  demanderait une migration.
 ## 2026-10-14 — H03 : « Wellneuro » au menu du cockpit (R:Graphie)
 
 **Fait.** Fiche H03 du plan (rang 0, file A, le plan fait fiche) : une ligne du rail, « WellNeuro » devient « Wellneuro » ; aucun banc ni E2E n'épinglait l'ancienne graphie ; les commentaires qui nomment la maquette « WellNeuro 5.0 » restent. Fragment. Bancs du rail verts, T1 complet, T2.

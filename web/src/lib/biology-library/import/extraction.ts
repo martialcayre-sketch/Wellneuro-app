@@ -1,12 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { anthropic } from '@/lib/anthropic';
-import type { TypeMimeCompteRendu } from './depot';
 
 // EXTRACTION D'UN COMPTE RENDU PAR IA VISION (BIO-INGEST LOT-02, [[D-256]] A4).
 //
-// Le compte rendu part ENTIER chez Anthropic, identité comprise : la v4 de
-// `usage_ia` et la v11 de `donnees_confidentialite` le déclarent, et aucun
-// masquage n'est promis (arbitrage du 2026-10-01, §2 ter du dossier RGPD).
+// CE QUI PART CHEZ ANTHROPIC ([[D-284]] §5, lot (j)) : les PAGES MASQUÉES du
+// compte rendu, et elles seules — une image JPEG par page, l'identité du
+// patient noircie par le praticien (ou sa déclaration « aucune identité »),
+// réencodée sans métadonnées. Le document d'origine ne part plus jamais :
+// jusqu'au 2026-10-14, il partait ENTIER, identité comprise.
 //
 // LE MODÈLE RELÈVE, IL N'INTERPRÈTE PAS. Il recopie libellé, valeur, unité,
 // page, date du prélèvement et laboratoire TELS QU'ILS SONT ÉCRITS — et, depuis
@@ -37,9 +38,12 @@ export const MODELE_EXTRACTION = process.env.WN_BIO_INGEST_MODEL?.trim() || 'cla
  * (2026-10-11, [[D-278]] §3) : prompt et schéma recopient les commentaires du
  * laboratoire, sur la ligne et sur le compte rendu entier. Un import d'une
  * version antérieure n'en a relevé aucun : son « pas de commentaire » ne dit
- * pas qu'il n'y en avait pas.
+ * pas qu'il n'y en avait pas. v5 (2026-10-14, [[D-284]] §5) : l'entrée devient
+ * les pages masquées, une image numérotée par page, et la consigne nomme les
+ * zones noircies ; schéma et règles de lecture inchangés. Un import v5 n'a
+ * jamais vu l'identité du patient.
  */
-export const VERSION_PROCEDE_EXTRACTION = 'bio-extraction-v4';
+export const VERSION_PROCEDE_EXTRACTION = 'bio-extraction-v5';
 
 /**
  * Délai d'attente des EN-TÊTES (ms), SANS nouvelle tentative : technique, sans
@@ -118,6 +122,8 @@ export type ResultatExtraction =
 
 const CONSIGNE = [
   'Tu relèves les résultats d’un compte rendu d’analyses de biologie médicale.',
+  'Le compte rendu t’est donné page par page, en images, chacune précédée de son numéro de page.',
+  'Des zones noircies y masquent l’identité du patient : ne cherche pas à les lire et ne les décris pas.',
   'Recopie chaque résultat mesuré TEL QU’IL EST ÉCRIT : libellé, valeur, unité, numéro de page (1 pour la première).',
   'La valeur se recopie caractère pour caractère, signes compris (« 12,5 », « <0,5 », « positif »).',
   'L’unité se recopie telle qu’imprimée, ou null si aucune n’est écrite. Ne convertis jamais une unité.',
@@ -334,19 +340,22 @@ export function motifDErreur(err: unknown): MotifEchec {
 }
 
 /**
- * Appelle le modèle sur un compte rendu entier — PDF, ou image (LOT-03) — et
- * rend ses lignes relevées, ou un motif d'échec. Seul le bloc d'entrée change
- * avec le format : consigne, schéma et règles de lecture sont les mêmes.
+ * Les blocs d'entrée : pour chaque page masquée, son numéro puis son image
+ * JPEG. Pure : testable sans appel.
  */
-export async function extraireCompteRendu(
-  document: Buffer,
-  typeMime: TypeMimeCompteRendu,
-): Promise<ResultatExtraction> {
-  const data = document.toString('base64');
-  const entree: Anthropic.ContentBlockParam =
-    typeMime === 'application/pdf'
-      ? { type: 'document', source: { type: 'base64', media_type: typeMime, data } }
-      : { type: 'image', source: { type: 'base64', media_type: typeMime, data } };
+export function blocsDesPages(pages: Buffer[]): Anthropic.ContentBlockParam[] {
+  return pages.flatMap((page, i): Anthropic.ContentBlockParam[] => [
+    { type: 'text', text: `Page ${i + 1}` },
+    { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: page.toString('base64') } },
+  ]);
+}
+
+/**
+ * Appelle le modèle sur les PAGES MASQUÉES d'un compte rendu ([[D-284]] §5) et
+ * rend ses lignes relevées, ou un motif d'échec. Jamais le document d'origine.
+ */
+export async function extraireCompteRendu(pages: Buffer[]): Promise<ResultatExtraction> {
+  if (pages.length === 0) return { ok: false, motif: 'erreur_fournisseur' };
   let reponse: Anthropic.Message;
   const borne = new AbortController();
   const minuteur = setTimeout(() => borne.abort(), DUREE_TOTALE_EXTRACTION_MS);
@@ -365,7 +374,7 @@ export async function extraireCompteRendu(
           {
             role: 'user',
             content: [
-              entree,
+              ...blocsDesPages(pages),
               { type: 'text', text: 'Relève les résultats de ce compte rendu.' },
             ],
           },

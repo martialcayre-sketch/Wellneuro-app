@@ -88,6 +88,11 @@ export type CompteRenduLu = {
    * l'import est périmé mais la réservation encore vive.
    */
   lectureDemandee: boolean;
+  /**
+   * Le dernier masquage de l'identité, non purgé ([[D-284]] §5) — ce que la
+   * lecture enverra. `null` : la lecture est bloquée. Jamais ses pages.
+   */
+  masquage: { poseLe: string; zonesMasquees: number; aucuneIdentite: boolean } | null;
   imports: ImportLu[];
 };
 
@@ -152,6 +157,13 @@ export async function lireCompteRendu(
       motifPurge: true,
       motifEcart: true,
       travaux: { where: { statut: { in: ['en_attente', 'en_cours'] } }, select: { id: true }, take: 1 },
+      // Le résumé seul : les pages (jusqu'à 20 Mio) ne se chargent qu'à la lecture.
+      masquages: {
+        where: { purgeLe: null },
+        orderBy: [{ poseLe: 'desc' }, { id: 'desc' }],
+        take: 1,
+        select: { poseLe: true, zonesMasquees: true, aucuneIdentite: true },
+      },
       imports: {
         orderBy: { lanceLe: 'desc' },
         select: {
@@ -194,6 +206,13 @@ export async function lireCompteRendu(
     motifPurge: c.motifPurge,
     motifEcart: c.motifEcart,
     lectureDemandee: c.travaux.length > 0,
+    masquage: c.masquages[0]
+      ? {
+        poseLe: c.masquages[0].poseLe.toISOString(),
+        zonesMasquees: c.masquages[0].zonesMasquees,
+        aucuneIdentite: c.masquages[0].aucuneIdentite,
+      }
+      : null,
     imports: c.imports.map(i => ({
       id: i.id,
       statut: i.statut,

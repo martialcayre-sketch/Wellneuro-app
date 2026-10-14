@@ -9,6 +9,7 @@ import { FaitsDuLaboratoire } from './FaitsDuLaboratoire';
 import type { ActeLectureLu } from '@/lib/biology-library/import/acteLecture';
 import { useBioLectureEnabled } from './CbFeatureProvider';
 import { LectureImportBiologique } from './LectureImportBiologique';
+import { MasquageIdentite } from './MasquageIdentite';
 
 type MotifEcartDocument = 'illisible' | 'document_non_conforme';
 
@@ -252,6 +253,8 @@ export function ImportCompteRenduPanel({
   const [ecartArme, setEcartArme] = useState(false);
   const [motifEcartDocument, setMotifEcartDocument] = useState<MotifEcartDocument | null>(null);
   const [relanceArmee, setRelanceArmee] = useState(false);
+  /** Refaire le masquage de l'identité alors qu'un masquage existe déjà ([[D-284]] §5). */
+  const [remasquage, setRemasquage] = useState(false);
   /** Remonte le champ fichier natif, qui garde sinon le nom d'un fichier déjà déposé. */
   const [cleFichier, setCleFichier] = useState(0);
   /** Fait avancer la relecture même quand une relecture échoue (sans nouveau détail). */
@@ -376,6 +379,7 @@ export function ImportCompteRenduPanel({
       setEcartArme(false);
       setMotifEcartDocument(null);
       setRelanceArmee(false);
+      setRemasquage(false);
       setSaisies({});
       await chargerDetail(idCompteRendu);
     },
@@ -628,8 +632,17 @@ export function ImportCompteRenduPanel({
   // écarts restent consignés ; seules les lignes de la nouvelle se décident.
   const aUneLigneValidee = detail?.imports.some(i => i.lignes.some(l => l.statut === 'validee')) ?? false;
   const transmisParLePatient = detail?.origine === 'patient';
-  const peutLancer = detail !== null && !detail.purgeLe && !lectureDemandee && (courant === null || interrompu) && !aUneLigneValidee;
-  const peutRelancer = detail !== null && !detail.purgeLe && !lectureDemandee && courant?.statut === 'extrait' && !aUneLigneValidee;
+  // L'IDENTITÉ MASQUÉE AVANT TOUTE LECTURE ([[D-284]] §5) : seules les pages
+  // masquées partent ; sans masquage, ni lecture ni relance. Le masquage se
+  // fait (ou se refait) tant qu'aucune lecture ne court et qu'aucune ligne
+  // n'est validée.
+  const masque = detail?.masquage ?? null;
+  const peutMasquer = detail !== null && !detail.purgeLe && !lectureDemandee && (!enCours || interrompu) && !aUneLigneValidee;
+  const masquageOuvert = peutMasquer && (masque === null || remasquage);
+  const peutLancer = detail !== null && !detail.purgeLe && !lectureDemandee && (courant === null || interrompu) && !aUneLigneValidee
+    && masque !== null && !masquageOuvert;
+  const peutRelancer = detail !== null && !detail.purgeLe && !lectureDemandee && courant?.statut === 'extrait' && !aUneLigneValidee
+    && masque !== null && !masquageOuvert;
   const lignesProposees = courant?.statut === 'extrait' ? courant.lignes.filter(l => l.statut === 'proposee') : [];
   const lignesDecidees = courant?.statut === 'extrait' ? courant.lignes.filter(l => l.statut !== 'proposee') : [];
   // Deux repliés (demande du responsable, 2026-10-07) : seules les lignes à
@@ -661,7 +674,8 @@ export function ImportCompteRenduPanel({
     <div ref={racineRef} className="mt-4 rounded-lg border border-border p-3">
       <h4 className="text-sm font-medium text-foreground">Importer un compte rendu de laboratoire</h4>
       <p className="mt-1 text-xs text-muted-foreground">
-        Le document est transmis entier au service de lecture (Anthropic) ; une photo, sans ses métadonnées. Les lignes lues vous sont proposées : rien
+        Avant la lecture, vous masquez l’identité du patient sur chaque page : seules les pages masquées sont
+        transmises au service de lecture (Anthropic), jamais le document d’origine. Les lignes lues vous sont proposées : rien
         n’entre au dossier sans votre validation, ligne par ligne. Dates et heures en heure de Paris.
       </p>
 
@@ -820,7 +834,7 @@ export function ImportCompteRenduPanel({
           {transmisParLePatient && !detail.purgeLe && detail.imports.length === 0 && (
             <p className="mt-2 text-xs text-muted-foreground">
               Transmis par le patient : ouvrez-le (« Voir le document ») et vérifiez qu’il s’agit bien de son compte
-              rendu avant de lancer la lecture, qui l’envoie entier au service de lecture. Sinon, écartez-le.
+              rendu avant d’en masquer l’identité et de lancer la lecture. Sinon, écartez-le.
             </p>
           )}
 
@@ -857,6 +871,35 @@ export function ImportCompteRenduPanel({
               La lecture semble interrompue : relancez-la.
             </p>
           )}
+          {masque !== null && !masquageOuvert && !detail.purgeLe && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {masque.aucuneIdentite
+                ? `Aucune identité déclarée sur ce document le ${formatDateHeure(masque.poseLe)} : ses pages partent telles quelles, jamais le document d’origine.`
+                : `Identité masquée le ${formatDateHeure(masque.poseLe)} (${masque.zonesMasquees} zone(s)) : seules les pages masquées partent au service de lecture.`}
+              {peutMasquer && (
+                <>
+                  {' '}
+                  <button type="button" onClick={() => setRemasquage(true)} disabled={occupe} className="underline">
+                    Refaire le masquage
+                  </button>
+                </>
+              )}
+            </p>
+          )}
+          {masquageOuvert && (
+            <MasquageIdentite
+              key={`${detail.id}-${masque?.poseLe ?? 'aucun'}`}
+              urlDocument={`/api/praticien/biologie/import/document?${urlDossier}&idCompteRendu=${encodeURIComponent(detail.id)}`}
+              typeMime={detail.typeMime}
+              urlEnregistrement={`/api/praticien/biologie/import/masquage?${urlDossier}`}
+              idCompteRendu={detail.id}
+              onEnregistre={async () => {
+                setRemasquage(false);
+                await chargerDetail(detail.id);
+              }}
+              onAnnuler={masque !== null ? () => setRemasquage(false) : undefined}
+            />
+          )}
           {peutLancer && (
             <button type="button" onClick={() => void lancerLecture()} disabled={occupe} className={`${BOUTON_PRIMAIRE} mt-2`}>
               Lancer la lecture
@@ -865,7 +908,7 @@ export function ImportCompteRenduPanel({
           {peutRelancer && (relanceArmee ? (
             <div className="mt-2">
               <p className="text-xs text-muted-foreground">
-                Le document est transmis à nouveau au service de lecture. Si la nouvelle lecture aboutit, les lignes
+                Les pages masquées sont transmises à nouveau au service de lecture. Si la nouvelle lecture aboutit, les lignes
                 de la lecture actuelle ne se décideront plus ; celles déjà écartées restent consignées.
               </p>
               <span className="mt-2 flex gap-2">

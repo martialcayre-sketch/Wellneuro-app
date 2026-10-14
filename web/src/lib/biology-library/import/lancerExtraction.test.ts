@@ -25,6 +25,13 @@ const { prisma, extraire, journal, resoudre } = vi.hoisted(() => {
       createMany: trace('lignes.createMany', { count: 0 }),
       count: trace('lignes.count', 0),
     },
+    // L'identité masquée (D-284 §5) : un masquage non purgé, deux pages JPEG.
+    masquageCompteRendu: {
+      count: trace('masquage.count', 1),
+      findFirst: trace('masquage.findFirst', {
+        pages: [new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1]), new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 2])],
+      }),
+    },
     biologyAnalyte: {
       findMany: trace('analytes.findMany', [
         { code: 'BIO_FERRITINE', unite: 'ng/mL' },
@@ -96,12 +103,36 @@ afterEach(() => {
 });
 
 describe('lancerExtraction — modèle et version enregistrés à chaque fois (v4)', () => {
-  it('une photo passe à l’extracteur avec son type, par le même pipeline (LOT-03)', async () => {
-    const octets = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
-    prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce({ id: 'cr_1', typeMime: 'image/jpeg', purgeLe: null });
-    prisma.compteRenduBiologique.findUnique.mockResolvedValueOnce({ contenu: octets, typeMime: 'image/jpeg' });
+  it('les pages MASQUÉES passent à l’extracteur, jamais le document d’origine (D-284 §5)', async () => {
     await lancerExtraction(PARAMS);
-    expect(extraire).toHaveBeenCalledWith(Buffer.from(octets), 'image/jpeg');
+    expect(extraire).toHaveBeenCalledWith([
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1]),
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0, 2]),
+    ]);
+    expect(prisma.compteRenduBiologique.findUnique).not.toHaveBeenCalled();
+    // Le DERNIER masquage non purgé du compte rendu, `id` en départage.
+    expect(prisma.masquageCompteRendu.findFirst).toHaveBeenCalledWith({
+      where: { idCompteRendu: 'cr_1', idPatient: 'pat_sophie', purgeLe: null },
+      orderBy: [{ poseLe: 'desc' }, { id: 'desc' }],
+      select: { pages: true },
+    });
+  });
+
+  it('sans masquage, l’ouverture refuse `masquage_absent` : aucun import, aucun appel', async () => {
+    prisma.masquageCompteRendu.count.mockResolvedValueOnce(0);
+    expect(await lancerExtraction(PARAMS)).toEqual({ ok: false, reason: 'masquage_absent' });
+    expect(prisma.importBiologique.create).not.toHaveBeenCalled();
+    expect(extraire).not.toHaveBeenCalled();
+    expect(prisma.masquageCompteRendu.count).toHaveBeenCalledWith({
+      where: { idCompteRendu: 'cr_1', idPatient: 'pat_sophie', purgeLe: null },
+    });
+  });
+
+  it('le masquage disparu à la suite : échec consigné, aucun appel, aucun repli sur le document', async () => {
+    prisma.masquageCompteRendu.findFirst.mockResolvedValueOnce(null);
+    expect(await lancerExtraction(PARAMS)).toEqual({ ok: true, idImport: 'imp_1', statut: 'echec', motif: 'erreur_fournisseur' });
+    expect(extraire).not.toHaveBeenCalled();
+    expect(prisma.compteRenduBiologique.findUnique).not.toHaveBeenCalled();
   });
 
   it('crée l’import en cours avec le modèle et la version AVANT l’appel', async () => {
