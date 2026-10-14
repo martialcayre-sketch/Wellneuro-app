@@ -238,7 +238,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | aa | courrier de remboursement | geste | aucune | non | F55 |
 | ab | EF-0 : trancher Q3 | geste | aucune | non | H14 |
 | w | guide des 12 besoins réécrit sur sources | geste | aucune | non | H15 |
-| S-7 | liste des 8 analytes NABM partagés | geste | 10 | non | F54 |
+| S-7 | liste des 8 analytes NABM partagés (fait le 2026-10-15, F54) | geste | 10 | non | F54 |
 | k | CGU unique ; usage_ia v7 (version à l'origine de la fiche ; la v1 des conditions reprend la version en vigueur à l'activation, v8 au 2026-10-14) ; fait, D-292 du 2026-10-14 | geste | 13 | non | F77 |
 | h | Boussole retirée ; exception à D-276 §1 | geste | aucune | non | H16 |
 | av | contenu biologique du document au médecin | geste | aucune | non | F33 |
@@ -474,6 +474,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non pour le code qui passe la carte ; véhicule d'écriture des liaisons à préciser (`docs/archive/cadrages/AUDIT_PANELS_BIOLOGIE_2026-10-05.md:188-189`).
 - **Décisions, textes** : lettre f ; « BF-3 désigne la façade A ; les correspondances NABM prennent un autre nom, sous D-f ».
 - **Critère de fin** : 8 liaisons signées en base, puis la liste étendue ; une liaison signée sort de « non évalué » pour elle seule [A verifier].
+- **Mise à jour (2026-10-15, S-7 fait)** : les 8 analytes les plus partagés, comptés en panels actifs, par conteneur en lecture seule le 2026-10-14 vers 22:55 UTC (catalogue seul, aucune donnée de patient ; égal à la migration `20260817090000_catalogue_biologie_niveau_1_donnees`) : 15 panels actifs, 78 items, 35 analytes, 0 liaison analyte ↔ acte, 0 signée. Rang : `BIO_VITAMINE_D_25OH` et `BIO_FERRITINE` (8 panels), `BIO_ZINC_PLASMATIQUE` et `BIO_CRP_US` (6), `BIO_MAGNESIUM_ERYTHROCYTAIRE` (5), `BIO_CAR` et `BIO_AG_ERYTHROCYTAIRES` (4), `BIO_HOMOCYSTEINE` (3) ; le suivant est à 2, la coupure est nette. Aucun candidat d'acte n'est proposé : l'analyte ne porte ni code d'acte ni LOINC, et un rapprochement par libellé est exclu (arbitrage du 2026-10-05, `schema.prisma`, modèle `BiologyAnalyteNabm`). Pour M-3, le responsable lit lui-même la nomenclature importée (`biology_nabm_actes`, 987 actes V105) et signe chaque couple avec sa nature (`isole`, `groupe_et`, `groupe_ou`) ; plusieurs des 8 peuvent relever d'un acte de groupe. Deux trous, routés ici : (1) **aucun véhicule d'écriture** des liaisons n'existe (ni route, ni script, ni migration de données) ; M-3 en demande un, migration de données relue puis release-db (D-087) ou outil praticien, à décider avant la signature ; (2) la proposition ne passe pas la carte des remboursements au moteur (`web/src/lib/biology-library/propositionService.ts:222`) : une liaison signée ne sort de « non évalué » que dans le catalogue, pas dans la proposition, sans code à écrire (critère de fin ci-dessus).
 
 #### F77 · Lettre k : « L'IA dans Wellneuro » v7 dans les CGU
 - **Identifiant, piste** : lettre k ; trust.
@@ -1872,7 +1873,7 @@ Table par rang : rang d'abord, hiérarchie ensuite. Un geste qui a une fiche n'a
 | 0 | h1 | conduire le premier constat S-1, biologie et hors biologie, en agrégats, par conteneur | F40, H06 | porte 1 ; vérifications renvoyées |
 | 0 | h2 | lettres j, q, s, aa, ab, av ; guide w ; ca ; bg | F63, F38, F57, F55, H14, F33, H15, H17, H18 | palier 1, BioFlow, aperçu médecin, onglet Biologie, BF-8, EF-0, 12 besoins, agenda du sommeil |
 | 0 | h2 | K-05a et D4 (porte 5) | F46 | R:Drive, ag, ah, an, at, ay, bg |
-| 0 | h2 | liste des 8 analytes NABM (S-7) ; lecture des écarts d'unité textuels ; copie datée de l'accord d'Anthropic | F54, F60, F47 | M-3 ; deux unités ; registre |
+| 0 | h2 | liste des 8 analytes NABM (S-7, fait le 2026-10-15) ; lecture des écarts d'unité textuels ; copie datée de l'accord d'Anthropic | F54, F60, F47 | M-3 ; deux unités ; registre |
 | 0 | h2 | effectif de masquage ; cj ; ci (fait le 2026-10-14 : D-286, #1425) ; co ; comportement voulu de la charge | F25, F49, F67, F68, F76 | constats sur plusieurs dossiers ; packs ; levées ; AIPD ; correctif |
 | 0 | h2 | accepter la lettre cq : fait (D-285, PR 1 du versement, #1417) | H04 | PR 1 du versement |
 | 0 | h2 | compter les dossiers bloqués avant T0, en conteneur | H07 | délai avant T0 |
@@ -1924,7 +1925,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h1 | sources de fidélité (G-10) | H13, porte 11 | v |
 | h1 | sources restantes de la porte 4 : poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes | H08 | c, am, al, cm, seuils_points |
 | h2 | K-05a et D4 ; bg | F46, porte 5 ; H18 | at, R:Drive, ag, ah, an, ay |
-| h2 | liste des 8 analytes NABM (S-7) | F54, porte 10 | M-3, f, G-3 |
+| h2 | liste des 8 analytes NABM (S-7) : fait le 2026-10-15 (F54) ; M-3 attend un véhicule d'écriture | F54, porte 10 | M-3, f, G-3 |
 | h2 | lettres j, q, s, aa, ab, av ; guide w ; ca | F63, F38, F57, F55, H14, F33, H15, H17 | porte 12 ; ba ; ad et bc ; aw et az ; cb |
 | h2 | cj (D-296 rédigée et acceptée, D/7) ; co | F49, F68 | cm ; AIPD |
 | h2 | lecture des écarts d'unité textuels ; comportement voulu de la charge | F60, F76 | deux unités ; correctif |
@@ -1960,7 +1961,9 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 |---|---|---|
 | c, d, puis M-2 | F59, H32 | S-2 (H01, file A) ; porte 4 pour c |
 | v | H13 | G-10 |
-| M-3, f, G-3 | F54 | S-7 |
+| M-3 | F54 | véhicule d'écriture des liaisons (S-7 fait le 2026-10-15) |
+| f | F54 | M-3 |
+| G-3 | F54 | f |
 | cb ; illustrations de cc ; cd | H39, H48, H54 | ca (H17) ; porte 16 pour cc ; porte 15 pour cd |
 | ad et bc | H34 | j |
 | ba | H35 | q |
