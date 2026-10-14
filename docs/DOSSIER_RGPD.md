@@ -1,5 +1,7 @@
 # Dossier RGPD de l'expérimentation Wellneuro
 
+**Restes versés au plan le 2026-10-14** : les restes à faire nommés dans ce document sont tenus au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4), qui en porte l'ordre et le sort ; ce document reste tenu à jour.
+
 > Écrit le 2026-08-07 pour l'item 7 de « Ce qu'il resterait à faire » de
 > `docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md`.
 >

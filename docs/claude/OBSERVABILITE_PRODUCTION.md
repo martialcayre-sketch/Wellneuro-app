@@ -1,5 +1,7 @@
 # Observabilité Production WellNeuro
 
+**Restes versés au plan le 2026-10-14** : les restes à faire nommés dans ce document sont tenus au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4), qui en porte l'ordre et le sort ; ce document reste tenu à jour.
+
 ## Objectif
 
 WellNeuro utilise une journalisation JSON structurée vers stdout/stderr, relue par `scalingo --app wellneuro logs` (hébergement HDS, depuis le cutover du 2026-08-22).

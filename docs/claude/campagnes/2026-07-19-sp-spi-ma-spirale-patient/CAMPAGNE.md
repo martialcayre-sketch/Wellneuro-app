@@ -9,6 +9,8 @@ lot_courant: "LOT-01"
 
 # SP-SPI — « Ma spirale » et reprise patient
 
+**Versé au plan le 2026-10-14** : les dettes vivantes de ce registre sont tenues au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4) ; le plan fait foi, ce fichier n'est plus mis à jour.
+
 ## Objectif
 
 Donner au patient un point d'arrivée qui **raconte son parcours** plutôt que de

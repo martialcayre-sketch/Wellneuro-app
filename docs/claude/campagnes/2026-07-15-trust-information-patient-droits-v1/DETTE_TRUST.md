@@ -1,5 +1,7 @@
 # Dettes TRUST V1 — propriétaires et échéances
 
+**Versé au plan le 2026-10-14** : les dettes vivantes de ce registre sont tenues au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4) ; le plan fait foi, ce fichier n'est plus mis à jour.
+
 > Ouvertes à la clôture de campagne (2026-07-16). Chaque dette a un
 > propriétaire et une échéance de revue ; aucune n'est bloquante pour le
 > périmètre V1 mis en production.

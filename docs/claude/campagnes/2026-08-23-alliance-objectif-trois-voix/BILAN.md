@@ -1,5 +1,7 @@
 # Bilan — Alliance 6.0-B, « l'objectif à trois voix »
 
+**Versé au plan le 2026-10-14** : les dettes vivantes de ce registre sont tenues au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4) ; le plan fait foi, ce fichier n'est plus mis à jour.
+
 *Constaté le 2026-08-26. Chaque affirmation chiffrée vient d'une lecture de
 production par conteneur one-off, par identifiants seuls.*
 

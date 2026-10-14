@@ -7,6 +7,8 @@ dépend_de: "LOT-07"
 
 # LOT-08 — Ce que la contre-revue adverse a trouvé
 
+**Versé au plan le 2026-10-14** : les dettes vivantes de ce registre sont tenues au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4) ; le plan fait foi, ce fichier n'est plus mis à jour.
+
 ## D'où vient ce lot
 
 **Il n'était pas au cadrage.** Il naît de la contre-revue adverse de campagne du
