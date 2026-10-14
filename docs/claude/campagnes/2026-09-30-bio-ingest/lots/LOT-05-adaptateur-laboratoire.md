@@ -1,11 +1,11 @@
 ---
 id: "LOT-05"
-titre: "Adaptateur laboratoire (pilote Barbier Metz)"
+titre: "Adaptateur laboratoire (laboratoire pilote)"
 statut: "abandonné dans cette campagne, TRANSFÉRÉ le 2026-10-13 au plan (adaptateur du laboratoire, gelé sous la porte 29)"
 dépend_de: "LOT-02, format réel reçu"
 ---
 
-# LOT-05 — Adaptateur laboratoire (pilote Barbier Metz)
+# LOT-05 — Adaptateur laboratoire (laboratoire pilote)
 
 > **Transféré le 2026-10-10** (arbitrage du responsable) : le lot attend une
 > réponse écrite du laboratoire pilote, sans date. Il sort de BIO-INGEST, qui

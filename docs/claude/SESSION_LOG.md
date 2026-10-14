@@ -10376,3 +10376,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Release-db de BP-09 hors usage, constat par conteneur, puis PR 2.
 
 **Ouvert.** Verdict de la seconde passe Codex non consigné au dépôt.
+
+## 2026-10-14 — File D : ménage documentaire, BP-09 consignée
+
+**Fait.** #1452 mergée (deux remarques routées ici). Release-db de BP-09 relue par conteneur : base à jour, M-5 (2/2) consigné. Huit lignes D/n levées (état de pilotage, adresses mortes, F67, CB-07, REPRISE, textes Vercel, procédure du worker, barème du §6). Nom du laboratoire pilote retiré des campagnes, sur arbitrage.
+
+**Écarté.** Corriger #1452 sur sa branche : il aurait fallu y fusionner main.
+
+**Prochaine action.** Merge de cette PR ; cj (D-296) poussée après #1453.
+
+**Ouvert.** Archive d'audit qui garde le nom du laboratoire (figée). Sort de la ligne du barème au §6.
