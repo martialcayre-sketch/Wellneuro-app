@@ -10199,3 +10199,12 @@ qualité inchangés (item de l'indice).
   - constater que la file est vide avant le merge.
 - Question ouverte : tracer quel masquage chaque import a lu, ce qui
   demanderait une migration.
+## 2026-10-14 — H03 : « Wellneuro » au menu du cockpit (R:Graphie)
+
+**Fait.** Fiche H03 du plan (rang 0, file A, le plan fait fiche) : une ligne du rail, « WellNeuro » devient « Wellneuro » ; aucun banc ni E2E n'épinglait l'ancienne graphie ; les commentaires qui nomment la maquette « WellNeuro 5.0 » restent. Fragment. Bancs du rail verts, T1 complet, T2.
+
+**Écarté.** Toucher à « Horizon 5.0 » sous le nom (hors H03) ; renommer la maquette dans les commentaires.
+
+**Prochaine action.** CI (comparaison au pixel sur Linux : régénérer les bases par `visual-baselines` si elle rougit), commentaires lus, merge après #1425 et déploiement constaté ; puis le geste « synthèse validée sans protocole » dans la minute d'après, puis S-3.
+
+**Ouvert.** Rien.
