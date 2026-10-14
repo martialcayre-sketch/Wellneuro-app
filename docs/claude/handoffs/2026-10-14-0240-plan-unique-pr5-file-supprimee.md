@@ -29,10 +29,19 @@ de routage d'un commentaire de revue (`.claude/rules/pr-revue-et-release-db.md`,
   rayon-biologie-cb reçoivent leur ligne datée en PR 6.
 - Le plan cite encore la file (§1 `:10`, §8, §11) : adresses d'historique, à
   réécrire à sa prochaine version avec les reports des PR 2 à 4.
+- Revue Copilot : une dette vivante de la file manquait au plan. Les seize
+  entrées que le plan ne cite pas par ligne ont été instruites (lecteur et
+  deux vérificateurs chacune) : sept portées par le plan, six closes ou
+  périmées, trois perdues, ajoutées au §8 « Dettes techniques vivantes » en
+  lignes datées (`patientLimitations` servi vide, D-191 et D-200 §3 ; constat
+  de la proposition de bilan sur dossier réel ; identifiant brut de la
+  priorité dans la minute d'après, D-279). Le plan privé qui génère
+  `PLAN_WELLNEURO.md` doit les absorber : geste du responsable.
 
 ## Fichiers modifiés
 
 - Supprimé : `docs/claude/campagnes/FILE_ATTENTE.md`.
+- `docs/claude/PLAN_WELLNEURO.md` : trois lignes ajoutées au §8.
 - Modifiés : `.claude/rules/pr-revue-et-release-db.md` (verdict « Routé »),
   `.claude/skills/wn-merge/SKILL.md` (étape 6, verdict « routé »).
 - Neufs : `changelog.d/2026-10-14-plan-unique-pr5-file-supprimee.md`, ce
@@ -53,7 +62,8 @@ de routage d'un commentaire de revue (`.claude/rules/pr-revue-et-release-db.md`,
 ## Problèmes ouverts
 
 - À reporter à la prochaine version du plan : ses propres citations de la
-  file ; les anciens chemins de la PR 4 ; les reports des PR 2 et 3.
+  file ; les anciens chemins de la PR 4 ; les reports des PR 2 et 3 ; les
+  trois lignes du §8 ajoutées ici, à porter dans le plan privé source.
 - PR 6 : `PROJET_CONTEXTE.md`, `DETTE_TRUST.md`, lignes datées du §9.
 
 ## Prochaine action exacte

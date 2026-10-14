@@ -12,5 +12,10 @@
   `docs/claude/PLAN_WELLNEURO.md`, avec son adresse » ; la dette nommée de
   `docs/ROADMAP_TECHNIQUE.md` cesse d'être une adresse (son historique est
   archivé depuis la PR 4).
+- Trois dettes vivantes que la file portait seule (`patientLimitations` servi
+  vide, constat de la proposition de bilan sur dossier réel, identifiant brut
+  de la priorité dans la minute d'après) sont ajoutées au plan §8 en lignes
+  datées ; le plan privé qui génère le fichier doit les absorber (revue
+  Copilot #1422, puis vérification des seize entrées non citées par le plan).
 - Les mentions de la file dans les handoffs, fragments, fiches de campagnes,
   le registre et `.wn/state.json` restent comme traces datées (plan §11).
