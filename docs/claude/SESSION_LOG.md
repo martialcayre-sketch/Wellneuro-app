@@ -10350,6 +10350,15 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** La lettre cj, non poussée, porte D-291 : elle prend D-294. Durées de conservation (D-283 §10 a) ; circuit des droits des mineurs.
 
+## 2026-10-14 — D-281 étape 4, PR 1 : verdict du praticien
+
+**Fait.** Cadrage en quatre arbitrages du responsable, consignés en D-281 §3 à §5 : deux PR ; l'attente bloque la diffusion seule ; texte de l'avis rendu signé ; « jamais à l'identique » consigné, sans contrôle machine (dette au plan). PR 1 : route d'avis praticien, chaîne de correction, écran dans la file des signalements. Revue `wn-reviewer` : GO, trois P2 corrigés.
+
+**Écarté.** Une seule PR ; préparation entière arrêtée ; contrôle partiel par intitulé.
+
+**Prochaine action.** PR 1 : CI, revue, merge. Puis PR 2 : règle amendée, garde de diffusion, banc de cas fictifs, texte de l'avis rendu au portail.
+
+**Ouvert.** Compteur `nonTraites` du panneau compté par statut ; accès au signalement peu visible au portail.
 ## 2026-10-14 — Plan unique : la file D, plus aucune dette hors du plan
 
 **Fait.** File D créée (arbitrage du responsable) : §0 points 5, 6, 8 ; §4 devenu « La file D », photographie D.1 à D.5, D/1 à D/50 ; 20 dettes de code au §8 ; 18 registres « versés au plan », 4 documents tenus à jour avec renvoi ; tête de `.wn/state.json` réalignée. 338 entrées lues sur sept sources, contre-lecture.

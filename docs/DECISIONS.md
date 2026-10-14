@@ -1186,7 +1186,12 @@ autres éléments continuent. Pour le dossier, **aucune nouvelle version du
 programme, et aucun autre programme**, quelle que soit la priorité, ne se
 diffuse avant la validation du praticien. Un signalement survit au
 remplacement du programme : il attend sa validation quelle que soit la
-version en cours.
+version en cours. **L'attente bloque la diffusion, et elle seule** (tranché
+par le responsable le 2026-10-14, sur scénarios, au cadrage de l'étape 4) :
+le praticien garde ses propositions et peut préparer la version suivante ;
+seule la diffusion au patient est refusée, par un message qui nomme le
+signalement en attente. La règle livrée, qui retire tous les candidats du
+dossier, sera remplacée par cette garde (étape 4, seconde PR).
 
 **§4 — Les textes de la pause, signés.** Élément désigné :
 
@@ -1199,6 +1204,13 @@ Compléments en attente :
 > Vous nous avez signalé un effet sans pouvoir l'associer à un élément précis.
 > Vos compléments sont en pause en attendant l'avis de votre praticien : ne les
 > reprenez pas avant sa réponse. Votre alimentation et vos routines continuent.
+
+Avis rendu, élément impliqué (retenu et signé par le responsable le
+2026-10-14, au cadrage de l'étape 4, entre trois propositions ; il ne dit
+rien d'une cause, `DC-27`) :
+
+> Votre praticien a examiné votre signalement : cet élément reste en pause. Ne
+> le reprenez pas ; votre programme va être adapté.
 
 **§5 — La validation du praticien.** Elle se rend sur le signalement : élément
 **impliqué** ou **non impliqué** ; pour « Je ne sais pas » et « un autre
@@ -1213,6 +1225,14 @@ l'attente en place ; seul le verdict « impliqué » ou « non impliqué » lèv
 **Un verdict se corrige** (tranché par le responsable le 2026-10-12, sur
 scénario, à l'ouverture du lot 2) : un verdict erroné est supplanté par un
 nouveau verdict, l'ancien reste lisible ; le dernier de la chaîne fait foi.
+**« Jamais à l'identique » est consigné, pas contrôlé par la machine**
+(tranché par le responsable le 2026-10-14, au cadrage de l'étape 4) : le
+verdict enregistre l'aménagement choisi, et le praticien répond de la version
+suivante. Un contrôle automatique serait peu fiable — les identifiants
+d'action sont positionnels d'une version à l'autre et les doses sont du texte
+libre ; il est routé au plan comme dette. L'étape 4 se livre en deux PR : la
+surface du verdict d'abord, puis la règle amendée, la garde de diffusion, le
+banc de cas fictifs et le texte de l'avis rendu.
 
 **§6 — Ordre et signature.** (1) cette décision ; (2) la migration —
 l'élément désigné, le mode de rattachement, la validation —, relue puis

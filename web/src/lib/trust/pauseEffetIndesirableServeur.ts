@@ -107,3 +107,31 @@ export async function pausesServies(
     actions,
   });
 }
+
+/**
+ * Les éléments désignables de chaque programme VISÉ par un signalement — la
+ * version figée avec le rattachement, pas la version en cours (D-281 §2 a) :
+ * c'est sur elle que le patient a désigné, et sur elle que le praticien
+ * désigne pour « Je ne sais pas » (§5). `null` pour un programme absent ou dont
+ * l'intégrité ne se vérifie pas : aucun élément plutôt qu'une liste qu'on ne
+ * sait pas garantir.
+ */
+export async function elementsDesProgrammesVises(
+  protocolDraftIds: readonly string[],
+): Promise<Map<string, { actionId: string; title: string }[] | null>> {
+  const ids = [...new Set(protocolDraftIds)];
+  const resultat = new Map<string, { actionId: string; title: string }[] | null>(ids.map(id => [id, null]));
+  if (ids.length === 0) return resultat;
+  const rows = await prisma.protocolDraft.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, payload: true, inputHash: true },
+  });
+  for (const row of rows) {
+    try {
+      resultat.set(row.id, elementsDesignables(reconstructProtocolDraft(row.payload, row.inputHash).actions));
+    } catch {
+      resultat.set(row.id, null);
+    }
+  }
+  return resultat;
+}

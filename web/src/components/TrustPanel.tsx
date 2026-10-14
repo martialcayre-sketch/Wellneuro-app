@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { SignalementPraticien, TrustPraticienResponse } from '@/app/api/praticien/trust/route';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
+import { ValidationEffetIndesirable } from '@/components/ValidationEffetIndesirable';
 
 const LIBELLE_STATUT: Record<string, string> = {
   recu: 'Reçu',
@@ -98,6 +99,16 @@ export function TrustPanel() {
             <p className="text-xs text-muted-foreground mt-1">
               Orientation donnée au patient : {s.orientation}
             </p>
+          )}
+          {s.validation && (
+            <ValidationEffetIndesirable
+              reportId={s.id}
+              validation={s.validation}
+              debutPriseLe={s.debutPriseLe ?? null}
+              debutSymptomesLe={s.debutSymptomesLe ?? null}
+              pauseServie={data.pauseServie}
+              onEnregistre={charger}
+            />
           )}
           <div className="mt-3 flex items-center gap-2">
             <label className="text-xs text-muted-foreground" htmlFor={`statut-${s.id}`}>

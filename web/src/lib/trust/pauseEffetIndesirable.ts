@@ -71,6 +71,8 @@ export type VerdictEffetIndesirable = {
   reportId: string;
   verdict: 'implique' | 'non_implique';
   elementActionId: string | null;
+  /** L'aménagement choisi — lu par la surface praticien, pas par le calcul de la pause. */
+  amenagement?: string | null;
   supersedesVerdictId: string | null;
 };
 
@@ -88,7 +90,7 @@ export type ElementEnPause = { actionId: string; texte: 'element' | 'complements
  * qu'aucun autre ne supplante (D-281 §5, « un verdict se corrige »). `null`
  * quand le praticien n'a encore rien rendu.
  */
-function verdictCourant(reportId: string, verdicts: readonly VerdictEffetIndesirable[]): VerdictEffetIndesirable | null {
+export function verdictCourant(reportId: string, verdicts: readonly VerdictEffetIndesirable[]): VerdictEffetIndesirable | null {
   const chaine = verdicts.filter(v => v.reportId === reportId);
   const supplantes = new Set(chaine.map(v => v.supersedesVerdictId).filter((id): id is string => id !== null));
   const tetes = chaine.filter(v => !supplantes.has(v.id));
