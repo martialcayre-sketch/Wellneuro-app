@@ -170,6 +170,83 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
    run dépassé qui conclut vert pourrait réveiller l'auto-déploiement d'un
    vieux commit (incident 1).
 
+## Essai de restauration (G-7)
+
+Portée et procédure : [[D-289]]. Une sauvegarde de l'hébergeur est restaurée
+dans une base **temporaire**, dans la même région que la production, puis
+contrôlée et détruite le jour même. Jamais de restauration sur place, jamais
+sur le poste de travail : l'archive ne quitte pas l'hébergeur (elle se
+télécharge dans le conteneur, pas sur le Mac).
+
+**Avant** : approbation du responsable (l'essai crée une ressource et
+manipule une copie de données de santé). Le téléchargement de l'archive
+exige une authentification **dans** le conteneur : le responsable crée un
+jeton API temporaire (tableau de bord Scalingo, profil, jetons API, nom
+`g7-essai-AAAA-MM-JJ`) et le révoque à la fin. Le jeton ne s'écrit ni dans
+le dépôt ni dans une commande visible : il se saisit masqué (`read -rs`).
+
+1. **Sauvegarde** : relever l'identifiant et l'heure (UTC) de la dernière
+   sauvegarde `done`.
+
+   ```bash
+   scalingo --app wellneuro --region osc-fr1 --addon postgresql backups
+   ```
+
+2. **Base temporaire**, depuis un répertoire **hors du dépôt** (`create`
+   ajoute sinon un remote Git) :
+
+   ```bash
+   cd /tmp && scalingo --region osc-fr1 create wellneuro-g7-essai
+   scalingo --app wellneuro-g7-essai --region osc-fr1 addons-add postgresql postgresql-starter-1024
+   scalingo --app wellneuro-g7-essai --region osc-fr1 addons   # attendre « running »
+   ```
+
+3. **Conteneur interactif** de `wellneuro`, script téléversé (le
+   téléversement exige le mode interactif : `--detached` et `--file` ne se
+   combinent pas) :
+
+   ```bash
+   scalingo --app wellneuro --region osc-fr1 run --file scripts/wn-g7-restauration.sh bash
+   ```
+
+4. **Dans le conteneur** (remplacer `<ID>` et `<HEURE_UTC>` par les valeurs
+   de l'étape 1) :
+
+   ```bash
+   install-scalingo-cli
+   read -rs JETON && scalingo login --api-token "$JETON" && unset JETON
+   scalingo --app wellneuro --region osc-fr1 --addon postgresql backups-download --backup <ID> --output /tmp/g7.tar.gz
+   export CIBLE_URL="$(scalingo --app wellneuro-g7-essai --region osc-fr1 env-get SCALINGO_POSTGRESQL_URL)"
+   SAUVEGARDE_A='<HEURE_UTC>' bash /tmp/uploads/wn-g7-restauration.sh /tmp/g7.tar.gz
+   exit
+   ```
+
+   Le script refuse une cible égale à la production ou non vide ; il écrit
+   dans la seule cible et lit la production en lecture seule. Il rend :
+   code et durée de `pg_restore`, nombre d'erreurs (ligne d'erreur seule,
+   jamais DETAIL ni CONTEXT) ; dernière migration de la copie contre celle de
+   la production à l'heure de la sauvegarde ; tables présentes ; comptes de
+   lignes rapprochés table par table (un écart se lit contre les écritures
+   postérieures à la sauvegarde). Il efface l'archive et ses fichiers de
+   travail ; le conteneur est détruit à la sortie.
+
+5. **Fin, le jour même** :
+
+   ```bash
+   scalingo --region osc-fr1 destroy wellneuro-g7-essai   # confirmation par le nom
+   scalingo --region osc-fr1 apps | grep g7-essai          # doit être vide
+   ```
+
+   Puis révoquer le jeton `g7-essai-AAAA-MM-JJ` au tableau de bord.
+
+6. **Verdict** : réussi si `pg_restore` finit sans erreur, si les deux
+   migrations sont égales, si aucune table ne manque et si chaque écart de
+   comptes s'explique par une écriture postérieure à la sauvegarde.
+   Consignation au handoff du lot G-7 et au plan (fiche F04) : date,
+   sauvegarde employée, durée, verdict, **en agrégats** — ni identité, ni
+   compte rattaché à un dossier ([[D-298]]). Échec : la porte 8 reste
+   fermée et le défaut s'instruit avant un nouvel essai ([[D-289]] §2.6).
+
 ## Incident : Scalingo / DNS / Configuration
 
 - `scalingo --app wellneuro --region osc-fr1 deployments` puis
