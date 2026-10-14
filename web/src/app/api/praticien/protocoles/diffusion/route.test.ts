@@ -219,15 +219,23 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
     }
   });
 
-  it('règle non signée : aucune lecture des signalements, rien ne s’interrompt (D-281 §6)', async () => {
-    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
-    prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
-    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
-    prisma.protocolDiffusionApproval.create.mockResolvedValue({ id: 'APP_1' });
+  // L'ÉTAT DE LA PRODUCTION : drapeau posé, règle non signée — par le VRAI
+  // verrou (revue CodeRabbit de #1457), pas par un `false` forcé.
+  it('règle non signée, drapeau posé : aucune lecture des signalements, rien ne s’interrompt (D-281 §6)', async () => {
+    eiActive.valeur = null;
+    process.env.WN_EI_INTERRUPTION = '1';
+    try {
+      getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+      prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+      prisma.protocolDiffusionApproval.create.mockResolvedValue({ id: 'APP_1' });
 
-    const res = await POST(postRequest(body));
-    expect(res.status).toBe(200);
-    expect(signalementsEnAttenteDuDossier).not.toHaveBeenCalled();
+      const res = await POST(postRequest(body));
+      expect(res.status).toBe(200);
+      expect(signalementsEnAttenteDuDossier).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.WN_EI_INTERRUPTION;
+    }
   });
 
   it('règle signée, aucun signalement en attente : la diffusion passe', async () => {
