@@ -7,9 +7,9 @@
 ### D-289 — Un essai de restauration réussi précède toute migration qui suit celle de BP-09 ; sa procédure (lettre g)
 
 - Date : 2026-10-14
-- Statut : proposé. Texte rédigé dans le lot S-3 à partir des arbitrages
-  acquis, soumis au responsable en brouillon ; il ne devient « accepté » que
-  de sa main, avant le merge. Arbitrages : séance du 2026-10-11 (essai de
+- Statut : accepté. Texte rédigé dans le lot S-3 à partir des arbitrages
+  acquis, soumis au responsable en brouillon (#1430) et accepté par lui le
+  2026-10-14, tel quel, avant le merge. Arbitrages : séance du 2026-10-11 (essai de
   restauration accordé) ; portée acquise au plan unique (fiche F04, §5
   « Ce qui ne s'accélère jamais ») : l'essai précède toute migration qui suit
   BP-09, et BP-09 ne l'attend pas.
@@ -65,9 +65,9 @@ l'applique pas.
 ### D-288 — Une activation patient à la fois, un constat entre chacune ; le second compte praticien reste fermé un an (lettre b)
 
 - Date : 2026-10-14
-- Statut : proposé. Texte rédigé dans le lot S-3 à partir des arbitrages
-  acquis, soumis au responsable en brouillon ; il ne devient « accepté » que
-  de sa main, avant le merge. Arbitrages : séance du 2026-10-11 (« une
+- Statut : accepté. Texte rédigé dans le lot S-3 à partir des arbitrages
+  acquis, soumis au responsable en brouillon (#1430) et accepté par lui le
+  2026-10-14, tel quel, avant le merge. Arbitrages : séance du 2026-10-11 (« une
   ouverture à la fois » maintenue pour l'activation ; second praticien : non,
   pas avant un an, chantier fermé) ; séances du 2026-10-13, matin (formulaire
   de sécurité de [[D-281]] hors file) et soir (au-delà de la place 11, la
@@ -125,9 +125,9 @@ laboratoire) restent entières.
 ### D-287 — Décisions d'ordre : deux files de code en parallèle, sans collision ; l'ordre se lit au plan unique (lettre a)
 
 - Date : 2026-10-14
-- Statut : proposé. Texte rédigé dans le lot S-3 à partir des arbitrages
-  acquis, soumis au responsable en brouillon ; il ne devient « accepté » que
-  de sa main, avant le merge. Arbitrages : séance du 2026-10-11 (files
+- Statut : accepté. Texte rédigé dans le lot S-3 à partir des arbitrages
+  acquis, soumis au responsable en brouillon (#1430) et accepté par lui le
+  2026-10-14, tel quel, avant le merge. Arbitrages : séance du 2026-10-11 (files
   cosmétique et biologie en parallèle) ; arbitrage du 2026-10-12 (l'ordre
   conduit, le calendrier suit) ; mandat du 2026-10-13 ([[D-285]]).
 - Domaine : gouvernance du développement. Lettre a du plan unique (fiche F01,

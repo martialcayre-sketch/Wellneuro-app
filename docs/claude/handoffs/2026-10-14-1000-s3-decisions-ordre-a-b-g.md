@@ -3,7 +3,7 @@
 ## Branche et état Git
 
 - Branche `docs/s3-decisions-ordre-a-b-g`, partie d'`origin/main` a6b4153c
-  (merge de #1429). PR S-3 ouverte en brouillon.
+  (merge de #1429). PR S-3 #1430.
 
 ## Objectif
 
@@ -13,12 +13,12 @@ une seule PR S-3 ; elles lèvent la porte 2 une fois acceptées et mergées.
 ## Décisions prises
 
 - Trois décisions distinctes, une par lettre (comme ci = D-286) : D-287 (a),
-  D-288 (b), D-289 (g), statut « proposé » : textes de la main du responsable,
-  rédigés sur les arbitrages acquis (séances des 2026-10-11, 12, 13, 14).
+  D-288 (b), D-289 (g) : rédigées sur les arbitrages acquis (séances des 2026-10-11, 12, 13, 14), acceptées telles quelles par le
+  responsable le 2026-10-14 (statut « accepté »).
 - a : les textes que cite F01 sont déjà réalignés par #1420 ; aucune ligne de
   l'état du cycle ni des campagnes n'est touchée.
 - b : terme du second compte daté au 2027-10-11 (un an après la séance).
-- g : procédure proposée (base temporaire HDS, jamais production ni poste,
+- g : procédure acceptée (base temporaire HDS, jamais production ni poste,
   contrôles en agrégats, suppression le jour même) ; commandes au RUNBOOK au
   lot G-7.
 - Plan non retouché (patron de D-286) : porte 2 et registre des lettres à
@@ -36,13 +36,12 @@ une seule PR S-3 ; elles lèvent la porte 2 une fois acceptées et mergées.
 
 ## Problèmes ouverts
 
-- Acceptation des trois textes par le responsable ; à confirmer : le terme
-  2027-10-11 et la procédure de g.
+- Aucun : textes acceptés tels quels, terme 2027-10-11 et procédure de g
+  compris.
 
 ## Prochaine action exacte
 
-Sur acceptation : passer les trois statuts à « accepté » (date, mode
-d'acceptation), sortir la PR du brouillon, CI code 0, commentaires en ligne
+PR sortie du brouillon : CI code 0, commentaires en ligne
 lus, merge squash, déploiement constaté ; puis BP-07 (file B).
 
 ## Interdits encore actifs

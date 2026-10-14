@@ -3,8 +3,8 @@
 - **Documentation seule, aucun code** : la production ne change pas ; aucune
   migration, aucun drapeau, aucune règle clinique ni seuil, aucune activation,
   aucun compte ouvert.
-- `docs/DECISIONS.md` : trois décisions du plan unique, au statut « proposé »
-  jusqu'à leur acceptation par le responsable, portées ensemble par la PR S-3
+- `docs/DECISIONS.md` : trois décisions du plan unique, acceptées par le
+  responsable le 2026-10-14, telles quelles, et portées ensemble par la PR S-3
   (rang 0) ; elles lèvent la porte 2.
 - D-287 (lettre a, fiche F01) : deux files de code en parallèle (A cosmétique
   et noyau, B biologie structurelle), sous une règle de non-collision ; l'ordre
