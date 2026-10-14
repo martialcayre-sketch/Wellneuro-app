@@ -10359,3 +10359,11 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR de doc, revue CodeRabbit, merge.
 
 **Ouvert.** Collision D-292 sur la branche de #1448 (D/7) ; PR de pilotage pour `.wn/state.json` (D/9) ; deux lignes du §8 [A verifier].
+
+## 2026-10-14 — Plan : BP-09 migration mergée (D-294)
+
+**Fait.** Plan à jour après #1448 : F03, table du rang 2, porte 9 ; M-5 (2/2) en D.1 ; D/7 soldée pour BP-09 (reste cj, D-295 au plus tôt) ; D/8 soldée (seconde passe Codex faite par le responsable).
+
+**Prochaine action.** Release-db de BP-09 hors usage, constat par conteneur, puis PR 2.
+
+**Ouvert.** Verdict de la seconde passe Codex non consigné au dépôt.
