@@ -1180,6 +1180,19 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/lectures_imports_biologiques_v1_negatif.sql
 
+      # Annulations de résultats biologiques (D-294, BP-09). Une ligne
+      # `annulation` RETIRE un fil de correction des séries : ce que le drift
+      # check ne voit pas, ce sont les refus qui l'empêchent d'en retirer un à
+      # tort — résultat de CE dossier, praticien DU dossier, tête de fil, une
+      # annulation active par FIL (fourche comprise), révocation à motif fermé
+      # d'une annulation de CE résultat, motifs fermés, aucune colonne valeur,
+      # l'acte figé, l'effacement nommé en une instruction, et la RLS
+      # deny-all. Transaction annulée.
+      - name: Annulations resultats biologiques negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/annulations_resultats_biologiques_v1_negatif.sql
+
       # La file durable des lectures (D-282, G3) : statut fermé et sa cohérence
       # en CASE, deux tentatives au plus, un seul travail ouvert par compte
       # rendu (unicité PARTIELLE), import courant du même compte rendu, identité
@@ -1234,6 +1247,32 @@ jobs:
         env:
           WN_BIO_LECTURE_BANC_BASE: wellneuro_ci
         run: node prisma/runWithAlias.js scripts/banc-ecrivain-lecture-deux-requetes.test.ts
+
+      # Annulations de résultats et garde anti-doublon À DEUX SESSIONS (D-294,
+      # BP-09) : l'index unique retiré était sûr face aux courses, le trigger
+      # qui le remplace ne l'est que par ses verrous. Deux saisies neuves
+      # concurrentes (refus lisible par Prisma), le témoin REPEATABLE READ, deux
+      # annulations concurrentes, une saisie contre une révocation, l'effacement
+      # contre une annulation. Commet ses fixtures puis les efface : la base
+      # doit être nommée. `node` et non `node --test`, comme le banc des
+      # lectures.
+      - name: Annulations resultats biologiques two-session bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_ANNULATION_BANC_BASE: wellneuro_ci
+        run: node scripts/banc-annulations-resultats-deux-sessions.test.mjs
+
+      # Le VRAI client Prisma contre la garde anti-doublon (D-294, BP-09) :
+      # le 23505 du trigger doit arriver en P2002 (le 409 `doublon_mesure` des
+      # écrivains en dépend), la place annulée se reprend, REPEATABLE READ est
+      # refusé. Commet ses fixtures puis les efface : base nommée.
+      - name: Unicite mesure Prisma bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_ANNULATION_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-unicite-mesure-prisma.test.ts
 
       # Le plafond des transmissions patient (D-269 §5, BIO-INGEST LOT-11) : le
       # VRAI écrivain (`deposerTransmission`) contre PostgreSQL, deux dépôts
