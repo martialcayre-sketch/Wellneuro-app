@@ -4,6 +4,66 @@
 
 ## Décisions actives
 
+### D-293 — Patient Hub : « Mes échanges » est un journal daté, en lecture, de ce qui a été remis et transmis ; l'encart d'urgence s'étend au dépôt et à « Mes échanges » (lettre u)
+
+- Date : 2026-10-14
+- Statut : accepté. Trois arbitrages du responsable du 2026-10-14 sur
+  questions à options (périmètre, encart, lecture datée), après un inventaire
+  en lecture seule de ce que le dépôt trace déjà des échanges. Texte : premier
+  jet de l'assistant, validé tel quel le même jour
+  (`docs/claude/propositions/2026-10-14-u-patient-hub/README.md`).
+- Domaine : portail patient, collecte documentaire et « Mes échanges ».
+  Lettre u du plan unique (`docs/claude/PLAN_WELLNEURO.md`, fiche H37, rang 1,
+  geste du responsable). Lève la part u de la porte 13.
+- S'appuie sur : [[D-292]] (lettre k) ; [[D-283]] §2 (une seule durée, celle
+  du dossier) ; [[D-275]] §1 (encart d'urgence) ; le texte de collecte de G-11
+  (`docs/claude/propositions/2026-10-14-g11-textes-patient/`).
+- Consommée par : ai (H51), J3-collecte (H62), J3-base, ACT-3 (H76),
+  ACT-4 (H77).
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucun code, aucune
+  migration, aucun drapeau. Rien n'est servi au patient avant ACT-3 et ACT-4.
+
+**§1 — « Mes échanges » est un journal, pas une messagerie.** Une liste
+datée, en lecture, de ce que le praticien a remis au patient (bilan et sa
+note, fiches, courrier pour le médecin, protocole) et de ce que le patient a
+transmis (questionnaires, comptes rendus d'analyses, signalements avec leur
+statut). Chaque ligne renvoie à la page du portail où l'élément se trouve
+déjà : le journal ne montre aucun contenu qui ne soit déjà servi ailleurs.
+Le patient n'y écrit rien. Tout ce qu'il liste est déjà en base, sans table
+neuve.
+
+**§2 — Ce qui n'y entre pas.** La liste des e-mails envoyés : la base n'en
+garde que le type, l'objet et la date, et un objet affiché au portail
+deviendrait un texte patient à relire. La réponse du praticien à une demande
+de droit et l'issue d'un effet indésirable : elles relèvent du circuit des
+droits ([[D-283]] §6, §10 f) et de [[D-281]], non de cette lettre. Aucune
+conversation, aucun message libre.
+
+**§3 — L'encart d'urgence s'étend.** L'encart de [[D-275]] §1 s'affiche, mot
+pour mot, à l'écran de dépôt d'un document et dans « Mes échanges ». Seul le
+sujet de sa phrase finale s'adapte : « Vos documents sont transmis… » au
+dépôt, « Ce que vous transmettez est transmis… il ne le lit pas… » dans
+« Mes échanges ». Le texte de collecte de G-11 reste tel quel ; il reçoit le
+3114 par l'encart, non par une réécriture. La garde de [[D-275]] §1 ne couvre
+que les questionnaires : l'encart de ces deux écrans se garde par leurs
+propres tests.
+
+**§4 — La lecture est datée et remonte au praticien.** Le texte le dit avant
+l'ouverture : la date de lecture d'un document ouvert depuis « Mes échanges »
+est enregistrée et vue du praticien ; elle ne déclenche aucune relance et ne
+dit pas quand le patient est connecté. Le code qui la date est celui de ai
+(H51) ; tant qu'il n'existe pas, « Mes échanges » ne s'ouvre pas.
+
+**§5 — Une seule durée, aucun tiers.** Le journal est conservé avec le
+dossier ([[D-283]] §2) ; aucun prestataire supplémentaire n'intervient,
+aucune intelligence artificielle ne le lit. Les droits s'exercent par
+« Signaler un problème ».
+
+- Options écartées : les e-mails reçus dans le journal ; les réponses du
+  praticien (circuit des droits, rang 3) ; l'encart de [[D-275]] sans
+  adaptation (« vos réponses » ne désigne rien au dépôt) ; la phrase de G-11
+  seule au dépôt, sans 3114.
+
 ### D-292 — Les quatre textes d'information du portail deviennent un seul document, les « Conditions d'utilisation de votre espace Wellneuro », accusé une fois puis à chaque version par un lien envoyé par e-mail (lettre k)
 
 - Date : 2026-10-14

@@ -133,7 +133,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 10 | NABM signée : 8 analytes, puis liste étendue | S-7 (0), M-3 (1), f (2), G-3 (3) : F54 | non levée : 0 liaison signée |
 | 11 | Bandes de bruit signées, instrument par instrument | G-10 (0), v (1) : H13 | non levée |
 | 12 | D2 mergée | j (rang 0) : F63 | non levée |
-| 13 | Textes communs : CGU, registre, circuit des droits, Patient Hub | k (0) : F77 ; l, écrite pour l'essentiel par D-283 (§2 durées, §6 droits) ; u (1) : H37 ; G-8 (2) : H50 | non levée : k faite (D-292, 2026-10-14) ; u, G-8 à faire ; restes de l en H26 |
+| 13 | Textes communs : CGU, registre, circuit des droits, Patient Hub | k (0) : F77 ; l, écrite pour l'essentiel par D-283 (§2 durées, §6 droits) ; u (1) : H37 ; G-8 (2) : H50 | non levée : k faite (D-292, 2026-10-14) ; u faite (D-293, 2026-10-14) ; G-8 à faire ; restes de l en H26 |
 | 14 | Accusé de lecture daté décidé (renverse) | ai (rang 2) : H51 | non levée |
 | 15 | K-02 servi : premier check-in sur un protocole approuvé | constat, rang 2 au plus tôt, après d | fermée au 2026-10-13 ; lecture « porte 15 pour le code de bf » confirmée par le responsable le 2026-10-14, instruction au rang 0 (handoff de la PR 2, #1419) |
 | 16 | Clôture du LOT-02 de l'agenda du sommeil | campagne, rang 1 au plus tôt : H27 | fermée : lectures repères 2026-10-29 puis 2026-11-12 |
@@ -658,7 +658,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | ad, bc | un cycle, pas un programme ; ajouts datés | geste | aucune | non | H34 |
 | ba | mention « validé par votre praticien » | geste | aucune | non | H35 |
 | R:Drive | extraction du Drive de formation | geste | 5 | non | H36 |
-| u | Patient Hub : collecte et « Mes échanges » | geste | 13 | non | H37 |
+| u | Patient Hub : collecte et « Mes échanges » ; fait, D-293 du 2026-10-14 | geste | 13 | non | H37 |
 | cb | textes de l'écran de fin du sommeil | geste | 18 | non | H39 |
 | E31 | seuils_points de Q_ALI_01, décision sourcée | geste | 4 | non | H40 |
 | E32 | règles orphelines : trois restes réécrits | geste | aucune | non | H41 |
@@ -869,6 +869,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre u, de la main du responsable, fragment.
 - **Critère de fin** : texte accepté avant toute activation.
+- **Mise à jour (2026-10-14)** : u écrite par D-293, textes validés tels quels : `docs/claude/propositions/2026-10-14-u-patient-hub/README.md`. « Mes échanges » est un journal daté, en lecture, de ce qui a été remis et transmis, renvoyant aux pages existantes ; sans e-mails ni réponses du praticien. L'encart de D-275 §1 s'étend au dépôt et à « Mes échanges ». La lecture datée est dite au patient ; son code est ai (H51).
 
 #### H39 · cb : textes de l'écran de fin du sommeil
 - **Identifiant, piste** : lettre cb ; jeu d'illustrations accepté ; sommeil ; geste du responsable.
