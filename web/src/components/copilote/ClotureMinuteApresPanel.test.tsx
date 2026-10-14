@@ -36,6 +36,14 @@ const syntheseSeule = construireCloture({
   syntheses: [{ statut: 'Validee_Praticien', dateValidation: new Date('2026-07-01T12:00:00.000Z') }],
 });
 
+// Aucun protocole enregistré, mais une synthèse validée : la chaîne n'a pas
+// d'objet, le document, si.
+const sansProtocole = construireCloture({
+  versionActive: null,
+  approbationActive: null,
+  syntheses: [{ statut: 'Validee_Praticien', dateValidation: new Date('2026-07-01T12:00:00.000Z') }],
+});
+
 const bloquee = construireCloture({
   versionActive: {
     inputHash: 'hash-v2',
@@ -97,6 +105,18 @@ describe('ClotureMinuteApresPanel', () => {
 
     await waitFor(() => expect(screen.getByText(/Rien ne peut être diffusé en l’état/i)).toBeTruthy());
     expect(screen.getByRole('link', { name: /Composer le document/i })).toBeTruthy();
+    expect(screen.queryByText(/Les trois étapes sont franchies/i)).toBeNull();
+  });
+
+  it('sans protocole mais avec une synthèse validée : le lien « Composer le document » est là', async () => {
+    repondre(sansProtocole);
+    render(<ClotureMinuteApresPanel idPatient="PAT_SEED_03" />);
+
+    await waitFor(() => expect(screen.getByText(/Aucune décision enregistrée/i)).toBeTruthy());
+    expect(screen.getByRole('link', { name: /Composer le document/i }).getAttribute('href')).toBe(
+      '/dashboard/documents?idPatient=PAT_SEED_03',
+    );
+    expect(screen.getByText(/Rien ne peut être diffusé en l’état/i)).toBeTruthy();
     expect(screen.queryByText(/Les trois étapes sont franchies/i)).toBeNull();
   });
 

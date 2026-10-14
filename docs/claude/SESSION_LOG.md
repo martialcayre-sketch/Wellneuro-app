@@ -10171,3 +10171,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, commentaires lus, merge, déploiement constaté ; puis R:Graphie (H03) ou S-2 (H01) selon la frontière libre ; la PR de ci (D-286) court en parallèle.
 
 **Ouvert.** Où vivent les fiches de lots de la file A : aucune campagne ne les porte, le plan fait fiche (à confirmer au cadrage du rang 0).
+
+## 2026-10-14 — Minute d'après : le document se calcule même sans protocole (suite de S-4)
+
+**Fait.** Geste à part décidé le 2026-10-14 (commentaire Copilot sur #1424, écarté puis tranché « ouvrir ») : `construireCloture` calcule l'étape « Document validé praticien » sur la synthèse même sans protocole enregistré ; relecture et approbation restent « Sans objet », un seul blocage (le protocole), chaîne jamais prête. Le lien « Composer le document » de la minute d'après suit donc la synthèse seule. Bancs : module (deux cas) et panneau (un cas) ; 31 verts. Fragment. T1 complet, T2. Le plan fait fiche (séance du 2026-10-14) ; pas de D-xxx : règle d'écran, aucune règle clinique.
+
+**Écarté.** Afficher le document « à faire » comme un blocage de plus (le blocage reste la cause réelle, le protocole) ; toucher à la fiche.
+
+**Prochaine action.** CI, commentaires lus, merge après #1427 (H03) et déploiement constaté ; puis S-3 (a, b, g), de la main du responsable.
+
+**Ouvert.** Rien.

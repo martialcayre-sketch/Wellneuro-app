@@ -85,7 +85,9 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
   }
 
   // « Document validé praticien » est l'étape qui dit s'il y a quelque chose à
-  // composer ; elle seule conditionne le lien, pas l'état des deux autres.
+  // composer ; elle seule conditionne le lien, pas l'état des deux autres —
+  // ni l'existence d'un protocole : sans protocole, l'étape se calcule
+  // encore sur la synthèse (`construireCloture`).
   const documentDiffusable = cloture.etapes.some(
     (etape) => etape.cle === 'document_diffusable' && etape.statut === 'faite',
   );
