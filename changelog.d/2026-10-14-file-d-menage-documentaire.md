@@ -17,3 +17,8 @@
   `docs/FEATURE_FLAGS.md`, `docs/claude/OBSERVABILITE_PRODUCTION.md` et
   `docs/DOSSIER_RGPD.md`.
 - `docs/claude/campagnes/README.md` : REPRISE terminée le 2026-08-05 (D/15).
+- Campagne BIO-INGEST et son cadrage : le nom du laboratoire pilote devient
+  « laboratoire pilote » (D/13, arbitrage du responsable du 2026-10-14).
+- Plan : release-db de BP-09 consignée (M-5 (2/2) fait : run vert, sentinelle,
+  constat par conteneur ; seconde passe Codex « accepter ») ; F03 datée au
+  passé (remarques de revue de #1452, routées ici).

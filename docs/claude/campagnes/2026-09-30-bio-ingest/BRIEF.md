@@ -10,7 +10,7 @@ Améliorer l'acquisition et la saisie des résultats biologiques dans les
 dossiers patients. Toutes les voies d'entrée doivent aboutir au même résultat
 validé : saisie praticien unitaire et groupée, PDF, photo ou scan, dictée,
 transmission par le patient depuis son portail, e-mail, import direct d'un
-laboratoire (pilote envisagé : Laboratoire Barbier Metz), plus tard des formats
+laboratoire (pilote envisagé : le laboratoire pilote, nom retiré le 2026-10-14), plus tard des formats
 structurés (CDA, HPRIM, HL7).
 
 ## Ce que l'audit en a retenu

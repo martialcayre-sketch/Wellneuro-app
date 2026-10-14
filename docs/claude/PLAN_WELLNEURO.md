@@ -135,7 +135,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 6 | Doctrine du cockpit chiffré et de l'adhésion signée | M-2, G-4 (rang 2), sur c et d (rang 1) : F59, H32 | non levée |
 | 7 | SAF-EI-01 signée, puis déploiement constaté | M-1 (rang 3), puis J1-sécu (rang 4) : F66 | non levée ; lots 1 et 2 de D-281 sur main (#1406, #1408) ; portail, validation, signature à faire ; se lève au rang 4 |
 | 8 | Essai de restauration réussi | K-18a (0), G-7 (1) : F04 | non levée ; préalable de toute migration après BP-09 ; BP-09 ne l'attend pas ; portée et procédure écrites par D-289 (#1430) ; G-7 non joué |
-| 9 | release-db approuvée, sentinelle, constat, une à une | le responsable, à chaque migration | constatée pour #1397 (2026-10-11) et pour le lot 2 de D-281 (2026-10-13) ; à venir pour BP-09 (rang 3 ; migration mergée le 2026-10-14, #1448, release-db à approuver) ; migration de D-284 lot (j) mergée le 2026-10-14 (#1426), release-db non consignée [A verifier] |
+| 9 | release-db approuvée, sentinelle, constat, une à une | le responsable, à chaque migration | constatée pour #1397 (2026-10-11) et pour le lot 2 de D-281 (2026-10-13) ; constatée pour BP-09 le 2026-10-14 (#1448 : release-db approuvée hors usage, run 38612283121 vert, sentinelle liée, constat par conteneur one-off-204, base à jour relue par one-off-4921) ; migration de D-284 lot (j) mergée le 2026-10-14 (#1426), release-db non consignée [A verifier] |
 | 10 | NABM signée : 8 analytes, puis liste étendue | S-7 (0), M-3 (1), f (2), G-3 (3) : F54 | non levée : 0 liaison signée |
 | 11 | Bandes de bruit signées, instrument par instrument | G-10 (0), v (1) : H13 | non levée |
 | 12 | D2 mergée | j (rang 0) : F63 | non levée |
@@ -996,8 +996,9 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : oui ; première migration de biologie ; sa release-db suit celle de D-281, mergée le 2026-10-13 (#1408) : ce fait amende « BP-09 d'abord » de G-6.
 - **Décisions, textes** : D-xxx du lot amendant D-124 §3 (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:375`) ; elle dit que la condition « premier import » sort des préalables.
 - **Critère de fin** : release-db constatée par conteneur ; résultat annulé exclu des élections, séries et réveils ; puis code consommateur.
-- **Mise à jour (2026-10-14)** : fiche du lot écrite, fichiers listés, validée par le responsable (`lots/LOT-09-annulation-resultat.md`, #1442) : préalable « fiche BP-09 » de la porte 28 tenu. Le lot part en deux PR, migration seule puis code. Aucune migration ni aucun code au 2026-10-14 : le lot reste à faire, release-db au rang 3 (porte 9).
+- **Mise à jour (2026-10-14)** : fiche du lot écrite, fichiers listés, validée par le responsable (`lots/LOT-09-annulation-resultat.md`, #1442) : préalable « fiche BP-09 » de la porte 28 tenu. Le lot part en deux PR, migration seule puis code. Avant le merge de #1448, le 2026-10-14, aucune migration ni aucun code n'existaient : le lot restait à faire, release-db au rang 3 (porte 9).
 - **Mise à jour (2026-10-14, migration)** : PR 1 (migration seule) mergée le 2026-10-14 sous D-294 (#1448), après deux passes Codex (la seconde sur la tête finale, faite par le responsable) et la revue CodeRabbit ; release-db à approuver hors usage, dans la foulée du merge (tant qu'elle n'est pas appliquée, un effacement de dossier échoue sur la table absente, sans rien effacer à moitié), puis constat par conteneur, puis PR 2 (code consommateur).
+- **Mise à jour (2026-10-14, release-db)** : seconde passe Codex sur la tête finale de #1448 rendue « accepter » ; release-db approuvée hors usage, run 38612283121 vert, sentinelle liée ; constat par conteneur : migration appliquée en une tentative, aucune non aboutie, table présente sous RLS, triggers `resultats_biologiques_unicite_mesure` et `resultats_biologiques_correction_avant_insertion` présents, ancien index retiré (one-off-204) ; base à jour sur l'image 39a1d1d3 (`migrate status`, one-off-4921). M-5 (2/2) fait ; l'effacement d'un dossier retrouve sa table. Suite : PR 2, code consommateur.
 
 #### F14 · Fiche LOT-25 : « quatre termes »
 - **Identifiant, piste** : correction de la fiche LOT-25 de BIO-PARCOURS ; parcours.
@@ -1048,7 +1049,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | J3-bandes | 1 à 3 instruments de plus | A | 11 | non | H13, rang 0 |
 | J1-cockpit | la provenance sous chaque chiffre | A | 6 | non | F59, rang 1 |
 | D-281, M-1 | signature de SAF-EI-01 amendée | geste | 7 | non | F66, rang 1 |
-| M-5 (2/2) | release-db de BP-09 approuvée, constatée | geste | 9 | oui | F03, rang 2 |
+| M-5 (2/2) | release-db de BP-09 approuvée, constatée (fait le 2026-10-14) | geste | 9 | oui | F03, rang 2 |
 | G-3 | liste NABM étendue | geste | 10 | non | F54, rang 0 |
 | y | comptes du cabinet sous un effectif de cinq | geste | 6 | non | H58 |
 | al | axes alimentaires sourcés, bande par axe | geste | 4, 28 | non | H57 |
@@ -1889,7 +1890,7 @@ Table par rang : rang d'abord, hiérarchie ensuite. Un geste qui a une fiche n'a
 | 2 | h3 | G-8 (fait le 2026-10-14, #1446) ; ai | H50, H51 | ACT-1, ACT-3 |
 | 2 | h3 | intitulés des trois plans (bb) ; jeu d'illustrations de la saisie du sommeil (cc) | H49, H48 | lecture des trois plans ; habillage |
 | 3 | h1 | M-1, signature de SAF-EI-01 amendée ; préalables de D-281 §2 : garde de diffusion, texte de l'avis rendu, producteur de la règle livrée remplacé (§8, D.3) | F66 | porte 7 au rang 4 |
-| 3 | h2 | M-5 (2/2), approbation de la release-db de BP-09 ; G-3 | F03, F54 | toute migration suivante ; BF-7, BF-8 |
+| 3 | h2 | M-5 (2/2), approbation de la release-db de BP-09 (fait le 2026-10-14) ; G-3 | F03, F54 | toute migration suivante ; BF-7, BF-8 |
 | 3 | h3 | al ; y | H57, H58 | marques alimentaires ; J3-cabinet |
 | 3 | h3 | échelle du rituel du soir (cd) ; dire si la synthèse publiée au patient décrit les drapeaux du sommeil, et sous quelle forme | H54, H56 | rituel ; au |
 | 4 | h1 | approuver, une à une, les release-db du rang 4 (EF-3b, BP-12a, BP-11, BP-13, BP-15, CC-8, axes, BF-8, collecte, D-283 b, retrait du NIR) | fiches du rang 4 | codes consommateurs |
@@ -1910,7 +1911,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 
 | h | geste | fiche, lettre ou porte | ce qu'il débloque |
 |---|---|---|---|
-| h1 | M-5 (2/2) : approuver la release-db de BP-09 hors usage, dans la foulée du merge (#1448, D-294 ; seconde passe Codex faite), puis constat par conteneur | F03, porte 9 | effacement de dossier (en échec tant qu'elle manque) ; PR 2 de BP-09 ; toute migration suivante (après G-7) |
+| h1 | M-5 (2/2) : fait le 2026-10-14 — release-db de BP-09 approuvée hors usage, sentinelle liée, constat par conteneur (#1448, D-294 ; seconde passe Codex « accepter ») ; suite : PR 2 | F03, porte 9 | effacement de dossier (en échec tant qu'elle manque) ; PR 2 de BP-09 ; toute migration suivante (après G-7) |
 | h1 | effectif de masquage des agrégats (sa D-xxx) | F25 | S-1 sur plusieurs dossiers, H07, y, BP-21a |
 | h1 | essai de restauration G-7 (portée écrite par D-289, #1430 ; essai non joué) | F04, porte 8 | toute migration après BP-09 |
 | h1 | lettres m, n, ac, z | H10, H11, H12, F45 | NF-7, EF-3b, radar, garde d'âge |
@@ -1987,7 +1988,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | D/10 | adresses mortes citées par le plan : `next_action[40..62]` (vidé par la PR 3) ; `docs/claude/campagnes/FILE_ATTENTE.md` (supprimé, PR 5) ; `HISTORIQUE_CHANTIERS_TECHNIQUES.md`, `AUDIT_PANELS_*`, `AUDIT_BIOFLOW_*` (déplacés sous `docs/archive/`, PR 4) | handoffs 2026-10-14-0210 et 2026-10-14-0307 ; SESSION_LOG (PR 4, PR 5) | mention « historique Git » ou chemin d'archive, par une PR de plan ; fait le 2026-10-14 (PR de ménage de la file D) : chemins sous `docs/archive/`, numéros d'avant l'archivage (lus sur aaf73324^, le chemin `docs/claude/campagnes/AUDIT_*` cité était déjà faux) ; « historique Git » devant chaque citation de la file et de `next_action[40..62]` ; les lignes qui décrivent la suppression elle-même restent |
 | D/11 | S-5, préalable de F03 et de H43 (« S-5 (F02) »), défini nulle part | F03, H43 ; handoff 2026-10-14-1745 | S-5 défini, ou remplacé par F02 (BP-07 clos, #1438) |
 | D/12 | ligne « Identifiant » de F67 : « D-276 §1 » au lieu du §2 (l'écart est dit par la mise à jour de F67) | handoff 2026-10-14-1745 | ligne corrigée au prochain passage sur le plan ; fait le 2026-10-14 (PR de ménage de la file D) |
-| D/13 | référence « D-129, #900 » de CB-07 (§8, soldées), D-129 portant sur la re-confirmation de persistance ; nom du laboratoire pilote dans la fiche BIO-INGEST, à relire en forme opaque | SESSION_LOG (PR 6) ; `docs/DECISIONS.md` (D-129) | relecture ; ligne datée ; fait le 2026-10-14 (PR de ménage de la file D) pour CB-07 : la référence est D-130 (#900) ; reste le nom du laboratoire pilote en clair dans la campagne BIO-INGEST (`BRIEF.md:13`, `CAMPAGNE.md:80`, `lots/LOT-05-adaptateur-laboratoire.md:3`, :8), forme opaque à trancher par le responsable |
+| D/13 | référence « D-129, #900 » de CB-07 (§8, soldées), D-129 portant sur la re-confirmation de persistance ; nom du laboratoire pilote dans la fiche BIO-INGEST, à relire en forme opaque | SESSION_LOG (PR 6) ; `docs/DECISIONS.md` (D-129) | relecture ; ligne datée ; fait le 2026-10-14 (PR de ménage de la file D) pour CB-07 : la référence est D-130 (#900) ; nom du laboratoire pilote remplacé par « laboratoire pilote » sur arbitrage du responsable du 2026-10-14 (campagne BIO-INGEST : `BRIEF.md:13`, `CAMPAGNE.md:80`, `lots/LOT-05-adaptateur-laboratoire.md:3`, :8 ; `CADRAGE_BIO_INGEST_2026-09-30.md:114`) ; l'historique Git le garde, l'audit archivé `docs/archive/cadrages/AUDIT_BIOFLOW_2026-10-04.md:548` aussi (archive figée) |
 | D/14 | trois lignes du §8 ajoutées par la PR 5, à reporter au plan privé source, hors dépôt | handoff 2026-10-14-0240 | geste du responsable, hors dépôt |
 | D/15 | ligne REPRISE de `docs/claude/campagnes/README.md` : « ouverte », alors que la campagne est terminée le 2026-08-05 | handoff 2026-10-14-0010 | ligne datée, PR de documentation ; fait le 2026-10-14 (PR de ménage de la file D) |
 | D/16 | textes périmés hors de la liste du §9 : Vercel et Supabase « tièdes », échéance du 2026-10-21, `vercel.json` (`docs/RUNBOOK.md:10-11`, :133, :161-162 ; `docs/claude/OBSERVABILITE_PRODUCTION.md:139` ; `docs/FEATURE_FLAGS.md:32`, :300-306, :388-389) ; « RUNBOOK périmé » (`docs/DOSSIER_RGPD.md:1197-1198`) | D-080, D-120, D-265 | lignes datées, sans effacement, comme la PR 6 ; fait le 2026-10-14 (PR de ménage de la file D) : lignes datées dans `docs/RUNBOOK.md`, `docs/claude/OBSERVABILITE_PRODUCTION.md`, `docs/FEATURE_FLAGS.md`, `docs/DOSSIER_RGPD.md` |
@@ -2578,7 +2579,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | M-2 | doctrine du cockpit chiffré (porte 6) | 2 | F59 |
 | M-3 | 8 liaisons NABM | 1 | F54 |
 | M-5 (1/2) | signatures de BP-07 (posées dans le lot, #1435, #1438) | 2 | F02 |
-| M-5 (2/2) | approbation de la release-db de BP-09 | 3 | F03 |
+| M-5 (2/2) | approbation de la release-db de BP-09 (fait le 2026-10-14) | 3 | F03 |
 | liens analyte-axe | signés claim par claim | 5 [Hypothese] | F79 |
 | release-db | chaque migration, approuvée par le responsable, une à la fois | selon la fiche | §2 |
 | G-3 | liste NABM étendue | 3 | F54 |
