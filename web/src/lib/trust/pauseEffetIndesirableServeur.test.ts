@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma, resolveProtocoleDiffuse, refusSaisieSantePour, reconstructProtocolDraft, signee } = vi.hoisted(() => ({
   prisma: {
-    protocolDraft: { findUnique: vi.fn() },
+    protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
     trustAdverseEffectReport: { findMany: vi.fn() },
     trustAdverseEffectVerdict: { findMany: vi.fn() },
   },
@@ -24,7 +24,7 @@ vi.mock('@/lib/clinical/safetyEffetIndesirableV1', () => ({
 
 import { actionOrientation } from '@/lib/clinical-engine/orientationAdressage';
 import type { ProtocolAction } from '@/lib/clinical-engine/types';
-import { designationPour, pausesServies, programmeDiffuse } from './pauseEffetIndesirableServeur';
+import { designationPour, elementsDesProgrammesVises, pausesServies, programmeDiffuse } from './pauseEffetIndesirableServeur';
 
 const MAGNESIUM = { actionId: 'a-magnesium', type: 'supplement_exploration', title: 'Magnésium le soir' };
 // Le module ne lit que l'identifiant, le type et l'intitulé d'une action.
@@ -100,6 +100,30 @@ describe('pauseEffetIndesirableServeur', () => {
     it('règle signée : un signalement d’une autre version ne met rien en pause', async () => {
       signee.valeur = true;
       expect(await pausesServies('PAT_TEST', 'draft-2', ACTIONS)).toEqual([]);
+    });
+  });
+
+  describe('elementsDesProgrammesVises (étape 4)', () => {
+    it('chaque programme visé : ses éléments désignables ; absent ou illisible : null', async () => {
+      prisma.protocolDraft.findMany.mockResolvedValue([
+        { id: 'draft-1', payload: {}, inputHash: 'h1' },
+        { id: 'draft-2', payload: {}, inputHash: 'h2' },
+      ]);
+      reconstructProtocolDraft.mockImplementation((_payload: unknown, hash: string) => {
+        if (hash === 'h2') throw new Error('intégrité');
+        // Orientation ET prise de sang : ni l'une ni l'autre n'est désignable.
+        return { actions: [...ACTIONS, { actionId: 'a-bilan', type: 'biological_exploration', title: 'Bilan sanguin' }] };
+      });
+      const resultat = await elementsDesProgrammesVises(['draft-1', 'draft-2', 'draft-3', 'draft-1']);
+      expect(prisma.protocolDraft.findMany.mock.calls[0][0].where).toEqual({ id: { in: ['draft-1', 'draft-2', 'draft-3'] } });
+      expect(resultat.get('draft-1')).toEqual([{ actionId: MAGNESIUM.actionId, title: MAGNESIUM.title }]);
+      expect(resultat.get('draft-2')).toBeNull();
+      expect(resultat.get('draft-3')).toBeNull();
+    });
+
+    it('aucun programme : aucune lecture', async () => {
+      expect((await elementsDesProgrammesVises([])).size).toBe(0);
+      expect(prisma.protocolDraft.findMany).not.toHaveBeenCalled();
     });
   });
 });

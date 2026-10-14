@@ -10349,3 +10349,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR unique, merge ; puis ai (H51, accusé daté), qui attend u et k.
 
 **Ouvert.** La lettre cj, non poussée, porte D-291 : elle prend D-294. Durées de conservation (D-283 §10 a) ; circuit des droits des mineurs.
+
+## 2026-10-14 — D-281 étape 4, PR 1 : verdict du praticien
+
+**Fait.** Cadrage en quatre arbitrages du responsable, consignés en D-281 §3 à §5 : deux PR ; l'attente bloque la diffusion seule ; texte de l'avis rendu signé ; « jamais à l'identique » consigné, sans contrôle machine (dette au plan). PR 1 : route d'avis praticien, chaîne de correction, écran dans la file des signalements. Revue `wn-reviewer` : GO, trois P2 corrigés.
+
+**Écarté.** Une seule PR ; préparation entière arrêtée ; contrôle partiel par intitulé.
+
+**Prochaine action.** PR 1 : CI, revue, merge. Puis PR 2 : règle amendée, garde de diffusion, banc de cas fictifs, texte de l'avis rendu au portail.
+
+**Ouvert.** Compteur `nonTraites` du panneau compté par statut ; accès au signalement peu visible au portail.

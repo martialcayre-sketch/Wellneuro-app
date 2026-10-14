@@ -4,6 +4,33 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import type { StatutTraitementSignalement } from '@/lib/trust/types';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { interruptionEffetIndesirableActive } from '@/lib/clinical/safetyEffetIndesirableV1';
+import { type Rattachement, verdictCourant, type VerdictEffetIndesirable } from '@/lib/trust/pauseEffetIndesirable';
+import { elementsDesProgrammesVises } from '@/lib/trust/pauseEffetIndesirableServeur';
+
+/**
+ * Ce que le praticien lit pour rendre son avis sur un signalement RATTACHÉ
+ * ([[D-281]] §5) — absent d'un signalement sans rattachement.
+ */
+export type ValidationEffetIndesirable = {
+  rattachement: Rattachement;
+  /** L'élément que le patient a désigné, avec son intitulé quand le programme visé se lit. */
+  elementDesigne: { actionId: string; title: string | null } | null;
+  /** Les éléments que le praticien peut désigner pour « Je ne sais pas » ; `null` si le programme ne se lit pas. */
+  elements: { actionId: string; title: string }[] | null;
+  /** La chaîne entière, dans l'ordre où elle a été rendue — l'avis corrigé reste lisible. */
+  verdicts: {
+    id: string;
+    verdict: VerdictEffetIndesirable['verdict'];
+    elementActionId: string | null;
+    amenagement: string | null;
+    renduPar: string;
+    renduLe: string;
+    supersedesVerdictId: string | null;
+  }[];
+  /** L'avis qui fait foi : la tête de chaîne, ou `null` si rien n'est rendu. */
+  verdictCourantId: string | null;
+};
 
 export type SignalementPraticien = {
   kind: 'effet_indesirable' | 'incident_confidentialite' | 'demande_droit';
@@ -16,10 +43,20 @@ export type SignalementPraticien = {
   statutTraitement: string;
   soumisLe: string;
   examineLe: string | null;
+  /** Les deux dates déclarées, affichées au praticien (D-281 §2 : aucune borne entre elles). */
+  debutPriseLe?: string | null;
+  debutSymptomesLe?: string | null;
+  validation?: ValidationEffetIndesirable;
 };
 
 export type TrustPraticienResponse =
-  | { ok: true; signalements: SignalementPraticien[]; nonTraites: number }
+  | {
+    ok: true;
+    signalements: SignalementPraticien[];
+    nonTraites: number;
+    /** La pause est-elle servie au portail ? Faux tant que la règle amendée n'est pas signée (D-281 §6). */
+    pauseServie: boolean;
+  }
   | { ok: false; error: string };
 
 // GET /api/praticien/trust — files des signalements et demandes (TRUST).
@@ -48,6 +85,47 @@ export async function GET(): Promise<NextResponse<TrustPraticienResponse>> {
         select: { idPatient: true, prenom: true, nom: true },
       }),
     ]);
+    // LA VALIDATION, pour les seuls signalements rattachés : la chaîne des avis
+    // et les éléments du programme visé — la version figée, pas la courante.
+    const rattaches = effets.filter(e => e.rattachement !== null);
+    const [verdicts, programmes] = await Promise.all([
+      rattaches.length === 0
+        ? Promise.resolve([])
+        : prisma.trustAdverseEffectVerdict.findMany({
+          where: { reportId: { in: rattaches.map(e => e.id) } },
+          orderBy: { renduLe: 'asc' },
+          select: {
+            id: true, reportId: true, verdict: true, elementActionId: true, amenagement: true,
+            renduPar: true, renduLe: true, supersedesVerdictId: true,
+          },
+        }),
+      elementsDesProgrammesVises(rattaches.flatMap(e => (e.protocolDraftId ? [e.protocolDraftId] : []))),
+    ]);
+    const validationDe = (e: (typeof effets)[number]): ValidationEffetIndesirable | undefined => {
+      if (e.rattachement === null) return undefined;
+      const chaine = verdicts
+        .filter(v => v.reportId === e.id)
+        .map(v => ({ ...v, verdict: v.verdict as VerdictEffetIndesirable['verdict'] }));
+      const elements = e.protocolDraftId ? programmes.get(e.protocolDraftId) ?? null : null;
+      return {
+        rattachement: e.rattachement as Rattachement,
+        elementDesigne: e.elementActionId
+          ? { actionId: e.elementActionId, title: elements?.find(x => x.actionId === e.elementActionId)?.title ?? null }
+          : null,
+        elements,
+        verdicts: chaine.map(v => ({
+          id: v.id,
+          verdict: v.verdict,
+          elementActionId: v.elementActionId,
+          amenagement: v.amenagement,
+          renduPar: v.renduPar,
+          renduLe: v.renduLe.toISOString(),
+          supersedesVerdictId: v.supersedesVerdictId,
+        })),
+        verdictCourantId: verdictCourant(e.id, chaine)?.id ?? null,
+      };
+    };
+
     const noms = new Map(patients.map(p => [p.idPatient, `${p.prenom} ${p.nom}`.trim()]));
     const nom = (idPatient: string) => noms.get(idPatient) ?? 'Patient';
 
@@ -63,6 +141,9 @@ export async function GET(): Promise<NextResponse<TrustPraticienResponse>> {
         statutTraitement: e.statutTraitement,
         soumisLe: e.soumisLe.toISOString(),
         examineLe: e.examineLe?.toISOString() ?? null,
+        debutPriseLe: e.debutPriseLe?.toISOString() ?? null,
+        debutSymptomesLe: e.debutSymptomesLe?.toISOString() ?? null,
+        validation: validationDe(e),
       })),
       ...incidents.map(i => ({
         kind: 'incident_confidentialite' as const,
@@ -92,6 +173,7 @@ export async function GET(): Promise<NextResponse<TrustPraticienResponse>> {
       ok: true,
       signalements,
       nonTraites: signalements.filter(s => s.statutTraitement === 'recu' || s.statutTraitement === 'en_cours').length,
+      pauseServie: interruptionEffetIndesirableActive(),
     });
   } catch (err) {
     console.error('[praticien/trust GET]', err instanceof Error ? err.message : String(err));

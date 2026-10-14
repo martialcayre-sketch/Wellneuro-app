@@ -714,6 +714,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : textes de la pause signés le 2026-10-12 (`docs/DECISIONS.md:62`) ; signature des quatre champs, nouvelle version, sourceReference « DC-42 ; D-281 » ; lettre e. Écarté : signer la règle livrée comme filet (`docs/DECISIONS.md:85-95`). Le banc local non suivi vise la règle livrée : caduc, à ne pas compter.
 - **Critère de fin** : release-db de #1408 constatée (fait, 2026-10-13) ; signature posée, déploiement constaté ; d'ici là, capture et notification seulement.
 - **Mise à jour (2026-10-13)** : D-281 est au registre (#1406, lot 1 ; #1408, lot 2, migration appliquée). Question du lot 3 tranchée par le responsable le 2026-10-14 : toute orientation vers le médecin et toute prise de sang sont exclues de la liste proposée au patient (D-281 §2).
+- **Mise à jour (2026-10-14)** : étape 3 mergée (#1447) et constatée sur un dossier de test. Étape 4 cadrée le même jour (D-281 §3 à §5) : deux PR. La première livre la surface du verdict praticien (élément désigné, deux dates, impliqué ou non impliqué, aménagement, correction par chaîne), écrite dès maintenant, sans effet au portail avant la signature. La seconde livre la règle amendée (l'attente bloque la diffusion seule), la garde de diffusion, le banc de cas fictifs réécrit et le texte de l'avis rendu, signé le 2026-10-14 (D-281 §4).
 
 **File B**
 
@@ -2167,6 +2168,8 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | Le banc de vocabulaire de verdict du LOT-04 de biologie exploitée laisse passer « élevé » et « bas » | `EstimeMesurePanel.test.tsx:932-933` ; handoff 2026-10-14-0010 (PR 2, #1419) | au plan seulement (arbitrage du 2026-10-14) ; sort à écrire [A verifier] ; ligne ajoutée le 2026-10-14 |
 | Pagination au-delà d'environ 100 lignes : nommée au §9 (renvoi à S-1 et au §8), portée par aucune fiche ni ligne du §8 | handoff 2026-10-14-0135 (PR 3, #1420) | sans porteur ; sort à écrire [A verifier] ; ligne ajoutée le 2026-10-14 |
 | Génération PDF native avec signature du booklet, coaching patient autonome, RAG SIIN plein : nommés par aucune ligne du plan ; le §5 ne ferme SSO et RAG dynamique que par renvoi à l'historique archivé | handoff 2026-10-14-0135 (PR 3, #1420) ; `HISTORIQUE_CHANTIERS_TECHNIQUES.md:82-93`, archivé sous `docs/archive/roadmap-updates/` (PR 4, #1421) | sans porteur ; sort à écrire [A verifier] ; ligne ajoutée le 2026-10-14 |
+| « Jamais à l'identique ni augmenté » : après un verdict « impliqué », la version suivante n'est pas contrôlée par la machine ; l'aménagement est seulement consigné | D-281 §5 (arbitrage du 2026-10-14, étape 4) | contrôle à concevoir sur un identifiant d'action stable entre versions et une dose structurée ; sans rang [Hypothese] |
+| « Signaler un problème » au portail : atteint seulement par le pied de page, ou par l'accueil quand un programme est diffusé ; le bandeau n'est pas cliquable | constat du responsable du 2026-10-14, étape 3 de D-281 | « à voir plus tard » (responsable) ; à reprendre avant la signature (étape 5, F66) [Hypothese] |
 
 ### Soldées, constatées au dépôt (disparaissent avec la file), et verdicts CL
 
