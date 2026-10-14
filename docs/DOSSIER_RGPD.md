@@ -212,6 +212,7 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
   l'identité du patient à l'écran sur chaque page (ou déclare qu'il n'y en a
   aucune, déclaration tracée) ; seules ces pages, en JPEG réencodées sans
   métadonnées, partent chez Anthropic. Sans masquage, aucune lecture ne part.
+  Le masquage est manuel : il vaut ce que vaut le geste du praticien.
   Les valeurs du document, elles, partent toujours toutes. Les textes patient
   qui disent encore « le document entier » se corrigent au lot 3, à signer.
 - **Une photo ou un scan (LOT-03)** part entier lui aussi, mais **sans ses
@@ -938,9 +939,12 @@ ouverte.
   nominatives). Le lot passe juste après la clôture du G3. D'ici là, le flux
   reste nominatif : l'exposition est assumée et datée. L'analyse d'impact du
   transfert (TIA) est à rédiger.
-  **Mise en œuvre (2026-10-14)** : masquage par le praticien, page par page,
-  avant toute lecture ; seules les pages masquées partent (§2 ter). Le flux
-  cesse d'être nominatif au déploiement du lot 2. La TIA reste à rédiger.
+  **Mise en œuvre (2026-10-14)** : masquage manuel par le praticien, sous sa
+  responsabilité, page par page, avant toute lecture ; seules les pages
+  masquées partent (§2 ter). Chaque page porte une zone ou une déclaration
+  « sans identité » : aucune ne part sans avoir été jugée. Le flux n'est plus
+  nominatif quand le masquage est complet ; une mention oubliée (code-barres,
+  numéro de dossier) partirait. La TIA reste à rédiger.
 
 - **Google** — connexion du praticien seul.
 

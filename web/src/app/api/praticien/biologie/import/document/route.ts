@@ -23,7 +23,9 @@ import { classeEtCode } from '@/lib/observability/classeEtCode';
 // - une image (réencodée au dépôt) est servie sous `sandbox` ;
 // - un PDF ne l'est pas : le lecteur PDF du navigateur refuse de s'ouvrir dans
 //   un document sandboxé. Il reste un `application/pdf` vérifié (`%PDF-`),
-//   rendu par le lecteur isolé du navigateur, jamais interprété comme HTML ;
+//   rendu par le lecteur isolé du navigateur, jamais interprété comme HTML.
+//   L'écran de masquage ([[D-284]] §5) l'analyse aussi par pdf.js dans la
+//   page du praticien, sans formulaire XFA ;
 // - aucun nom de fichier (il n'est pas gardé), aucun cache, aucun référent.
 
 export const runtime = 'nodejs';

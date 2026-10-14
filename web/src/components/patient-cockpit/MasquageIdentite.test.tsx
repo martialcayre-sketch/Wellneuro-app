@@ -98,6 +98,8 @@ describe('MasquageIdentite (D-284 §5)', () => {
     expect(page.render).toHaveBeenCalledTimes(2);
     expect(pdfjs.GlobalWorkerOptions.workerSrc).toMatch(/pdf\.worker\.min\.mjs$/);
     expect(pdfjs.destroy).toHaveBeenCalled();
+    // Un PDF transmis par le patient : pas de formulaire XFA.
+    expect(pdfjs.getDocument).toHaveBeenCalledWith(expect.objectContaining({ enableXfa: false }));
   });
 
   it('« Enregistrer » reste fermé sans zone ni case ; la case se ferme dès qu’une zone existe', async () => {
@@ -110,9 +112,14 @@ describe('MasquageIdentite (D-284 §5)', () => {
     expect(screen.getByText(/La lecture reste bloquée tant qu’aucune zone n’est masquée/)).toBeTruthy();
 
     tracer(p1, [10, 5], [60, 15]);
-    expect(await screen.findByText('1 zone(s) masquée(s).')).toBeTruthy();
-    expect(enregistrer.disabled).toBe(false);
+    // Une zone sur la page 1 ne dit rien de la page 2 : elle doit être jugée.
+    expect(await screen.findByText(/1 zone\(s\) masquée\(s\)\. Page\(s\) 2 : masquez l’identité/)).toBeTruthy();
+    expect(enregistrer.disabled).toBe(true);
     expect(caseAucune.disabled).toBe(true);
+    expect(screen.queryByRole('checkbox', { name: 'Aucune identité sur la page 1' })).toBeNull();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Aucune identité sur la page 2' }));
+    expect(screen.getByText('1 zone(s) masquée(s).')).toBeTruthy();
+    expect(enregistrer.disabled).toBe(false);
 
     fireEvent.click(screen.getByRole('button', { name: 'Annuler la dernière zone' }));
     expect(enregistrer.disabled).toBe(true);
@@ -166,6 +173,26 @@ describe('MasquageIdentite (D-284 §5)', () => {
     rendre();
     expect(await screen.findByText('Un compte rendu de plus de 20 pages ne peut pas être masqué ni lu.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Enregistrer le masquage' })).toBeNull();
+  });
+
+  it('une photo transparente part sur fond blanc, jamais noir', async () => {
+    serveur();
+    vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 800, height: 600, close: vi.fn() })));
+    render(
+      <MasquageIdentite
+        urlDocument="/api/praticien/biologie/import/document?idPatient=pat_sophie&idCompteRendu=cr_2"
+        typeMime="image/png"
+        urlEnregistrement="/api/praticien/biologie/import/masquage?idPatient=pat_sophie"
+        idCompteRendu="cr_2"
+        onEnregistre={vi.fn()}
+      />,
+    );
+    await screen.findAllByLabelText(/Page \d du compte rendu/);
+    // Le premier geste sur la page source : un fond plein, avant l'image.
+    expect(traces[0]).toEqual({ op: 'fillRect', args: [0, 0, 800, 600] });
+    expect(traces[1].op).toBe('drawImage');
+    // Une seule page : pas de déclaration page par page.
+    expect(screen.queryByRole('checkbox', { name: /Aucune identité sur la page/ })).toBeNull();
   });
 
   it('un document illisible se dit', async () => {

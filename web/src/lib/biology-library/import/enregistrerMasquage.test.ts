@@ -101,6 +101,13 @@ describe('enregistrerMasquage', () => {
     expect(prisma.masquageCompteRendu.create).not.toHaveBeenCalled();
   });
 
+  it('un PDF que le serveur ne sait pas compter : les pages rendues à l’écran font foi, bornées à 20 par la base', async () => {
+    prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce({
+      typeMime: 'application/pdf', purgeLe: null, contenu: new Uint8Array(Buffer.from('%PDF-1.7 tronqué')),
+    });
+    expect(await enregistrerMasquage({ ...PARAMS, pages: [await jpeg()] })).toEqual({ ok: true, idMasquage: 'mq_1' });
+  });
+
   it.each([
     ['document purgé', () => prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce({ typeMime: 'application/pdf', purgeLe: new Date(), contenu: null }), 'document_purge'],
     ['compte rendu d’un autre dossier', () => prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce(null), 'compte_rendu_introuvable'],

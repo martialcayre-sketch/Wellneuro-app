@@ -22,6 +22,11 @@ import {
 // Un PDF se rend ici (pdf.js, chargé à la demande, travailleur servi par le
 // même domaine) ; une photo se dessine telle quelle. Le grand côté d'une page
 // est porté à `COTE_RENDU_PX` : c'est ce que le fournisseur lit de toute façon.
+//
+// CHAQUE PAGE se juge : une zone sur la première ne dit rien des suivantes, où
+// l'en-tête du laboratoire répète souvent l'identité. Une page sans zone doit
+// être déclarée « sans identité », une à une (revue `wn-reviewer` du lot 2).
+// La case du document entier reste réservée au document sans aucune zone.
 
 type Page = { source: HTMLCanvasElement; largeur: number; hauteur: number };
 type ZonePlacee = { page: number; zone: Zone };
@@ -42,7 +47,9 @@ async function rendrePdf(octets: ArrayBuffer): Promise<Page[] | 'trop_de_pages'>
   const pdfjs = await import('pdfjs-dist');
   pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
   // La TÂCHE porte `destroy()` : elle libère le document et son travailleur.
-  const tache = pdfjs.getDocument({ data: new Uint8Array(octets) });
+  // Le PDF peut venir du patient et s'analyse dans la session du praticien :
+  // pas de formulaire XFA (pdf.js 6 n'évalue plus de code de police).
+  const tache = pdfjs.getDocument({ data: new Uint8Array(octets), enableXfa: false });
   try {
     const document_ = await tache.promise;
     if (document_.numPages > PAGES_MAX) return 'trop_de_pages';
@@ -65,7 +72,14 @@ async function rendreImage(octets: ArrayBuffer, typeMime: string): Promise<Page[
   const image = await createImageBitmap(new Blob([octets], { type: typeMime }));
   const echelle = echelleRendu(image.width, image.height, false);
   const source = canevas(Math.round(image.width * echelle), Math.round(image.height * echelle));
-  source.getContext('2d')?.drawImage(image, 0, 0, source.width, source.height);
+  const ctx = source.getContext('2d');
+  // Fond blanc d'abord : la transparence d'un PNG deviendrait noire en JPEG,
+  // et la page partirait illisible.
+  if (ctx) {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, source.width, source.height);
+    ctx.drawImage(image, 0, 0, source.width, source.height);
+  }
   image.close();
   return [{ source, largeur: source.width, hauteur: source.height }];
 }
@@ -109,6 +123,8 @@ export function MasquageIdentite({
   const [zones, setZones] = useState<ZonePlacee[]>([]);
   const [trace, setTrace] = useState<Trace | null>(null);
   const [aucuneIdentite, setAucuneIdentite] = useState(false);
+  /** Pages déclarées une à une sans identité (sans zone à tracer). */
+  const [pagesSansIdentite, setPagesSansIdentite] = useState<ReadonlySet<number>>(new Set());
   const [envoi, setEnvoi] = useState(false);
   const affichages = useRef<Array<HTMLCanvasElement | null>>([]);
 
@@ -214,7 +230,21 @@ export function MasquageIdentite({
     }
   }
 
-  const peutEnregistrer = etat === 'pret' && !envoi && (aucuneIdentite ? zones.length === 0 : zones.length > 0);
+  // Les pages qui n'ont ni zone ni déclaration — celles qu'on aurait oubliées.
+  const pagesNonJugees = aucuneIdentite
+    ? []
+    : pages.map((_, n) => n).filter(n => !zones.some(z => z.page === n) && !pagesSansIdentite.has(n));
+  const peutEnregistrer = etat === 'pret' && !envoi
+    && (aucuneIdentite ? zones.length === 0 : zones.length > 0 && pagesNonJugees.length === 0);
+
+  function declarerPage(n: number, sansIdentite: boolean) {
+    setPagesSansIdentite(prev => {
+      const suivant = new Set(prev);
+      if (sansIdentite) suivant.add(n);
+      else suivant.delete(n);
+      return suivant;
+    });
+  }
 
   return (
     <section aria-label="Masquer l’identité du patient" className="mt-2 rounded-lg border border-border/60 p-3">
@@ -239,6 +269,17 @@ export function MasquageIdentite({
                   Page {n + 1} sur {pages.length}
                   {zones.some(z => z.page === n) && ` — ${zones.filter(z => z.page === n).length} zone(s) masquée(s)`}
                 </p>
+                {pages.length > 1 && !aucuneIdentite && !zones.some(z => z.page === n) && (
+                  <label className="flex min-h-11 items-center gap-2 text-sm text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={pagesSansIdentite.has(n)}
+                      onChange={e => declarerPage(n, e.target.checked)}
+                      disabled={envoi}
+                    />
+                    Aucune identité sur la page {n + 1}
+                  </label>
+                )}
                 <canvas
                   ref={el => {
                     affichages.current[n] = el;
@@ -281,7 +322,9 @@ export function MasquageIdentite({
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {zones.length > 0
-              ? `${zones.length} zone(s) masquée(s).`
+              ? pagesNonJugees.length > 0
+                ? `${zones.length} zone(s) masquée(s). Page(s) ${pagesNonJugees.map(n => n + 1).join(', ')} : masquez l’identité, ou déclarez qu’elle n’y figure pas.`
+                : `${zones.length} zone(s) masquée(s).`
               : aucuneIdentite
                 ? 'Vous déclarez qu’aucune mention n’identifie le patient : les pages partiront telles quelles.'
                 : 'La lecture reste bloquée tant qu’aucune zone n’est masquée, ou que vous n’avez pas coché « Aucune identité sur ce document ».'}
