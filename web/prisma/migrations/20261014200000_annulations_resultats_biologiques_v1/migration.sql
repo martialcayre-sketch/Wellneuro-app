@@ -49,8 +49,8 @@
 -- recevoir une mesure neuve, et la clé porte alors deux fils, l'annulé et le
 -- vivant. Un fil est annulé dès qu'UNE de ses lignes porte une annulation non
 -- révoquée : une correction concurrente qui ferait naître une tête nouvelle ne
--- le ressuscite pas. La remontée vit dans `resultats_biologiques_racine` ; un
--- cycle (irréalisable par la route) la fait échouer bruyamment.
+-- le ressuscite pas. La remontée vit dans `resultats_biologiques_racine`, qui
+-- suit `filCorrection.ts` jusque sur les chaînes orphelines et les cycles.
 --
 -- ── LA GARDE ANTI-DOUBLON, DEVENUE TRIGGER (amende [[D-124]] §2) ───────────
 --
@@ -77,14 +77,21 @@
 --   2. un verrou consultatif de transaction sur la clé (espace 291,
 --      `hashtext` de la clé) : deux saisies neuves de la même clé, ou une
 --      saisie et un acte d'annulation, se sérialisent — une saisie neuve
---      n'a aucune ligne existante à verrouiller. Une collision de hachage ne
---      fait que sérialiser deux clés sans rapport.
+--      n'a aucune ligne existante à verrouiller. Une collision de hachage
+--      sérialise deux clés sans rapport.
 -- Saisie neuve, annulation et révocation prennent ce même couple. Le
 -- verrou consultatif n'entre en conflit avec aucun verrou de ligne.
+-- CE QUE L'ORDRE GARANTIT, ET CE QU'IL NE GARANTIT PAS : pas d'interblocage
+-- avec l'effacement. Deux transactions qui saisissent les mêmes clés dans
+-- un ordre croisé s'interbloquent, comme elles le faisaient avec l'index —
+-- et, cas neuf, deux clés sans rapport dont les hachages se rencontrent.
+-- Postgres tue alors l'une des deux ; aucune n'écrit à tort.
 -- CONDITION POUR LES ÉCRIVAINS (même règle que `lectures_imports_biologiques`) :
--- rester en READ COMMITTED (ou SERIALIZABLE), jamais en REPEATABLE READ —
--- l'instantané de transaction y masquerait la ligne que le verrou vient de
--- laisser commettre. Le banc à deux sessions
+-- rester en READ COMMITTED, jamais en REPEATABLE READ — l'instantané de
+-- transaction y masquerait la ligne que le verrou vient de laisser commettre.
+-- En SERIALIZABLE l'intégrité tient aussi, mais la course finit en échec de
+-- sérialisation (40001, `P2034` côté Prisma), pas en 409 `doublon_mesure`.
+-- Le banc à deux sessions
 -- (`scripts/banc-annulations-resultats-deux-sessions.test.mjs`) éprouve les
 -- courses ; le contrat relit la présence des verrous.
 --
@@ -214,13 +221,25 @@ SET search_path = public, pg_temp
 AS $$
 BEGIN
   PERFORM 1 FROM public.patients p WHERE p.id_patient = p_patient FOR KEY SHARE;
-  PERFORM pg_advisory_xact_lock(291, hashtext(p_patient || '|' || p_analyte || '|' || p_preleve::text));
+  -- `to_char` à format fixe, jamais `::text` : la conversion suit le
+  -- `DateStyle` de la session, et deux sessions aux réglages différents
+  -- hacheraient la même clé différemment — elles ne se sérialiseraient plus
+  -- (contre-revue du lot, P2-2).
+  PERFORM pg_advisory_xact_lock(291, hashtext(
+    p_patient || '|' || p_analyte || '|' || to_char(p_preleve, 'YYYY-MM-DD"T"HH24:MI:SS.MS')
+  ));
 END;
 $$;
 
--- La racine du fil d'un résultat : on remonte `supersedes_resultat_id` tant
--- que la cible existe. Une cible absente (référence souple, chaîne orpheline)
--- arrête la remontée sur la dernière ligne trouvée. Un cycle échoue.
+-- La racine du fil d'un résultat : on remonte `supersedes_resultat_id`. La
+-- règle est celle de `filCorrection.ts` (`racine`), à l'identique, pour que la
+-- base et l'écran voient les mêmes fils (contre-revue du lot, P2-1) :
+--   - une cible ABSENTE (référence souple, chaîne orpheline) fait racine —
+--     deux orphelines qui visent la même ligne absente forment un seul fil ;
+--   - un CYCLE (irréalisable par la route) rend le plus petit identifiant du
+--     cycle, en ordre binaire (`COLLATE "C"`, l'ordre de `sort()` en
+--     JavaScript sur des identifiants ASCII) — un représentant canonique,
+--     sans échec : une saisie neuve sur la clé ne tombe pas en 500.
 CREATE OR REPLACE FUNCTION public.resultats_biologiques_racine(p_id text)
 RETURNS text
 LANGUAGE plpgsql
@@ -230,20 +249,25 @@ DECLARE
   courante text := p_id;
   amont text;
   vues text[] := ARRAY[p_id];
+  rang integer;
 BEGIN
   LOOP
     SELECT r.supersedes_resultat_id INTO amont
     FROM public.resultats_biologiques r
     WHERE r.id = courante;
-    EXIT WHEN amont IS NULL
-      OR NOT EXISTS (SELECT 1 FROM public.resultats_biologiques r WHERE r.id = amont);
-    IF amont = ANY (vues) THEN
-      RAISE EXCEPTION 'fil de correction abîmé : la chaîne de % boucle sur elle-même.', p_id;
+    IF amont IS NULL OR amont = '' THEN
+      RETURN courante;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM public.resultats_biologiques r WHERE r.id = amont) THEN
+      RETURN amont;
+    END IF;
+    rang := array_position(vues, amont);
+    IF rang IS NOT NULL THEN
+      RETURN (SELECT min(v COLLATE "C") FROM unnest(vues[rang:]) AS v);
     END IF;
     vues := vues || amont;
     courante := amont;
   END LOOP;
-  RETURN courante;
 END;
 $$;
 

@@ -26,12 +26,12 @@ PR 2, après la release-db approuvée et constatée par conteneur.
   refus `23505` : le client Prisma de l'application le rend toujours en
   `P2002`, le 409 `doublon_mesure` ne bouge pas (constaté). Ses verrous — le
   dossier `FOR KEY SHARE`, puis un verrou consultatif sur la clé — sont pris
-  dans le même ordre que l'effacement : pas d'interblocage. Aucune colonne
+  dans le même ordre que l'effacement : pas d'interblocage avec lui. Aucune colonne
   neuve sur `resultats_biologiques`.
-- **Contrats** : `annulations_resultats_biologiques_v1_negatif.sql` (dix-neuf
+- **Contrats** : `annulations_resultats_biologiques_v1_negatif.sql` (vingt
   promesses), branché au CI ; `cb_resultats_biologiques_v1_negatif.sql`
   amendé (la garde est le trigger, aucun index unique hors clé primaire).
-  Onze mutations des fonctions font échouer le contrat.
+  Treize mutations des fonctions font échouer le contrat.
 - **Banc à deux sessions** `banc-annulations-resultats-deux-sessions.test.mjs`
   (CI et T3) : deux saisies neuves concurrentes, témoin REPEATABLE READ, deux
   annulations concurrentes, saisie contre révocation, effacement contre

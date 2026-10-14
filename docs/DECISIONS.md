@@ -91,8 +91,8 @@ elle n'est **jamais** montrée côté patient. Elle suit le sort de ce dossier
 **§6 — Qui voit l'annulation.** Tout lecteur de calcul exclut les fils
 annulés non révoqués : élection de tête, derniers résultats, portes
 biologiques, contrôle de doublon, résultats existants avant validation d'un
-import (liste close au 2026-10-14, fiche LOT-09). Les deux contrôles de
-doublon applicatifs suivent ainsi la garde en base (§3), qui fait foi. La **fiche du praticien**
+import (liste close au 2026-10-14, fiche LOT-09). À la PR 2, les deux contrôles de
+doublon applicatifs suivront ainsi la garde en base (§3), qui fait foi ; d'ici là, aucune annulation ne s'écrit. La **fiche du praticien**
 est la seule exception : elle affiche le résultat annulé, marqué « annulé »,
 avec son motif, son auteur et sa date. Les lecteurs à naître (`serieParAnalyte`
 et le jour n de BP-03, les réveils de BP-04) naîtront en excluant

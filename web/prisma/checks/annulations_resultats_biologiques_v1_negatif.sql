@@ -1,7 +1,7 @@
 -- Contrat des annulations de résultats biologiques ([[D-292]], BIO-PARCOURS
 -- BP-09).
 --
--- La table et la garde anti-doublon qu'elle amende promettent DIX-NEUF
+-- La table et la garde anti-doublon qu'elle amende promettent VINGT
 -- choses, et ce fichier les éprouve TOUTES :
 --   1. une annulation valide s'écrit et se relit ;
 --   2. l'instant et l'`ordre` sont posés par la BASE, pas par l'appelant —
@@ -50,7 +50,10 @@
 --      à son tour malgré l'annulation active de l'ancienne sur la même clé ;
 --      sa place libérée, l'ancienne se révoque et redevient courante ;
 --  19. deux saisies neuves de la même clé dans UNE instruction sont refusées,
---      et un UPDATE qui pose une ligne sur une clé occupée aussi.
+--      et un UPDATE qui pose une ligne sur une clé occupée aussi ;
+--  20. la racine suit `filCorrection.ts` : deux orphelines visant la même
+--      ligne absente forment un seul fil, et un cycle rend le plus petit
+--      identifiant du cycle, sans échec.
 --
 -- CHAQUE REFUS EST ISOLÉ : le cas refusé passerait si l'on retirait la seule
 -- règle qu'il éprouve. Chaque refus du trigger est reconnu à son MESSAGE, pas
@@ -342,6 +345,30 @@ BEGIN
     $q$UPDATE resultats_biologiques SET preleve_le = TIMESTAMP '2026-09-01 08:00:00' WHERE id = 'res_a5'$q$,
     '23505', 'doublon de mesure');
 
+  -- ── 20. La racine suit `filCorrection.ts` ────────────────────────────────
+  -- Deux orphelines qui visent la même ligne absente forment UN fil (la cible
+  -- absente fait racine) : la seconde ne s'annule pas pendant que la première
+  -- l'est. Un cycle rend le plus petit identifiant du cycle, sans échec.
+  INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id) VALUES
+    ('res_a8_o1', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 1, 'mg/L', TIMESTAMP '2026-09-08 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'res_absente'),
+    ('res_a8_o2', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 2, 'mg/L', TIMESTAMP '2026-09-08 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'res_absente');
+  IF resultats_biologiques_racine('res_a8_o1') IS DISTINCT FROM 'res_absente' THEN
+    RAISE EXCEPTION 'CONTRAT — 20 : la racine d''une orpheline n''est pas sa cible absente.';
+  END IF;
+  INSERT INTO annulations_resultats_biologiques (id, id_patient, id_resultat, acte, motif_annulation, praticien_email)
+  VALUES ('ann_a8', 'PAT_CONTRAT_ANN_A', 'res_a8_o1', 'annulation', 'mauvais_dossier', 'praticien@wellneuro.fr');
+  PERFORM pg_temp.refuse('20 annulation de l''orpheline sœur',
+    $q$INSERT INTO annulations_resultats_biologiques (id, id_patient, id_resultat, acte, motif_annulation, praticien_email)
+       VALUES ('x20', 'PAT_CONTRAT_ANN_A', 'res_a8_o2', 'annulation', 'mauvais_dossier', 'praticien@wellneuro.fr')$q$,
+    'P0001', 'porte déjà une annulation active');
+  INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id) VALUES
+    ('res_a9_y', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 1, 'mg/L', TIMESTAMP '2026-09-09 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'res_a9_x'),
+    ('res_a9_x', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 2, 'mg/L', TIMESTAMP '2026-09-09 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'res_a9_y'),
+    ('res_a9_z', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 3, 'mg/L', TIMESTAMP '2026-09-09 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'res_a9_y');
+  IF resultats_biologiques_racine('res_a9_z') IS DISTINCT FROM 'res_a9_x' THEN
+    RAISE EXCEPTION 'CONTRAT — 20 : la racine d''une chaîne qui boucle n''est pas le plus petit identifiant du cycle.';
+  END IF;
+
   -- ── 12. L'effacement nommé ───────────────────────────────────────────────
   PERFORM pg_temp.refuse('12 résultat effacé avant ses annulations',
     $q$DELETE FROM resultats_biologiques WHERE id = 'res_a1'$q$,
@@ -474,7 +501,7 @@ BEGIN
     RAISE EXCEPTION 'CONTRAT — 15 : % fonction(s) exécutable(s) par PUBLIC.', nb;
   END IF;
 
-  RAISE NOTICE 'Contrat annulations_resultats_biologiques_v1 : dix-neuf promesses tenues.';
+  RAISE NOTICE 'Contrat annulations_resultats_biologiques_v1 : vingt promesses tenues.';
 END;
 $$;
 

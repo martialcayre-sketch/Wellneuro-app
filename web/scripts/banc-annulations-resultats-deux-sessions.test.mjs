@@ -25,7 +25,12 @@
 //   5. L'EFFACEMENT CONTRE UNE ANNULATION : l'effacement prend le dossier
 //      `FOR UPDATE` en premier ; l'annulation, qui prend le dossier avant tout
 //      autre verrou, l'attend au lieu de croiser ses verrous (pas
-//      d'interblocage), puis passe quand l'effacement est annulé.
+//      d'interblocage), puis passe quand l'effacement est annulé. PORTÉE
+//      (contre-revue du lot, P2-5) : la course prouve qu'aucun verrou du fil
+//      n'est pris avant le dossier ; elle passerait aussi sans le
+//      `FOR KEY SHARE` explicite, que la clé étrangère des annulations vers
+//      le dossier prend d'elle-même — sa présence est tenue par le contrat
+//      (cas 13). L'effacement qui COMMET n'est pas joué.
 // Chaque course constate d'abord que la seconde session est BLOQUÉE sur un
 // verrou (`pg_stat_activity`) : sans ce constat, une course « gagnée » ne
 // prouverait rien — elle aurait pu se jouer en série.
