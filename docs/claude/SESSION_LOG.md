@@ -10403,4 +10403,12 @@ qualité inchangés (item de l'indice).
 
 **Prochaine action.** Merge de #1440 (D-290), rebase, PR, merge ; n03 à passer « fait ».
 
+## 2026-10-14 — File D : arbitrages du barème et de l'archive
+
+**Fait.** Deux arbitrages du responsable : gel du barème de charge retiré du §6, daté au §7 (sans objet, D-273) ; nom du laboratoire pilote retiré aussi de l'audit archivé, exception au figement dite dans le bandeau.
+
+**Écarté.** Geler une recherche de source pour les bornes du barème.
+
+**Prochaine action.** cj (D-296) après le merge de #1453.
+
 **Ouvert.** Aucun.
