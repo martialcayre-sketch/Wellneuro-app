@@ -544,6 +544,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre cj, de la main du responsable ; aucune D-xxx n'existe.
 - **Critère de fin** : décision mergée ; gel levé ou maintenu par écrit.
+- **Mise à jour (2026-10-14)** : D-296 rédigée : analyte unité canonique, quinze panels classés (neuf axes cliniques, un gabarit optionnel, trois indications ou populations, deux motifs « non indiqué »), gel rendu permanent ; aucune conversion avant F53. Ouvre F50 et F51.
 
 #### F60 · Série par analyte : commentaires du laboratoire, deux unités
 - **Identifiant, piste** : commentaires du laboratoire aussi sous la série ; socle.
@@ -1921,7 +1922,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h2 | K-05a et D4 ; bg | F46, porte 5 ; H18 | at, R:Drive, ag, ah, an, ay |
 | h2 | liste des 8 analytes NABM (S-7) | F54, porte 10 | M-3, f, G-3 |
 | h2 | lettres j, q, s, aa, ab, av ; guide w ; ca | F63, F38, F57, F55, H14, F33, H15, H17 | porte 12 ; ba ; ad et bc ; aw et az ; cb |
-| h2 | cj (numéro à prendre, D/7) ; co | F49, F68 | cm ; AIPD |
+| h2 | cj (D-296 rédigée et acceptée, D/7) ; co | F49, F68 | cm ; AIPD |
 | h2 | lecture des écarts d'unité textuels ; comportement voulu de la charge | F60, F76 | deux unités ; correctif |
 | h1, h2 | signatures des grilles de la table d'arrêt (E64) et des règles orphelines (E32) | H42, H41 | table d'arrêt complète ; axes |
 | h3 | h, la Boussole retirée | H16 | J1-alim ; D-C5-01 à 04 |
@@ -1983,7 +1984,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | D/4 | copie principale restée sur la branche de bancs fictifs (`check:rapide` rouge faute de `prisma generate` après #1397 ; fichier non suivi des cas fictifs, caduc) | handoff 2026-10-12-2130 ; §11 | retour sur main constaté ; le banc se refait à l'étape 4 de D-281 (F66) |
 | D/5 | outil MCP de l'ancienne base Supabase encore branché, neutralisé seulement par les refus de `.claude/settings.json` (D-120) | `CLAUDE.md` ; `.claude/rules/db-prisma.md` | retrait ou maintien décidé par le responsable |
 | D/6 | quatre branches distantes non mergées ou à supprimer : `docs/bp26-relecture-mdcg` (D/26), `docs/k-conditions-utilisation` (#1446, mergée par squash le 2026-10-14 : branche à supprimer), `feat/bp09-annulation-migration` (#1448, BP-09), `fix/repo-hygiene-du-macos` (outillage, fragment du 2026-10-10) | `git branch -r` sur 85b95dcc | merge, abandon écrit ou suppression de chacune |
-| D/7 | collision de numéro : soldée pour BP-09, mergée sous D-294 (#1448, 2026-10-14) ; reste cj, commit local non poussé, qui prend le numéro libre suivant (D-295 au plus tôt) | `docs/DECISIONS.md` sur 39a1d1d3 ; handoff 2026-10-14-1930 | cj au numéro libre suivant, renvois du plan compris |
+| D/7 | collision de numéro : soldée pour BP-09, mergée sous D-294 (#1448, 2026-10-14) ; reste cj, commit local non poussé, qui prend le numéro libre suivant (D-295 au plus tôt) | `docs/DECISIONS.md` sur 39a1d1d3 ; handoff 2026-10-14-1930 | cj au numéro libre suivant, renvois du plan compris ; fait le 2026-10-14 : cj sous D-296, D-295 étant prise par #1453 |
 | D/8 | seconde passe Codex sur la tête finale de #1448 : faite par le responsable le 2026-10-14 ; P2 assumés (verrous de migration, d'où une approbation hors usage ; `ON UPDATE CASCADE` face au trigger de figement) | PR #1448 | soldée (2026-10-14) |
 | D/9 | `.wn/state.json` en retard sur main : tête « PR 4 à 6 à suivre », `recent_decision_ids` arrêté à D-289 (D-290 à D-293 sur main), `validation` du 2026-10-13, `corpus_registry` « inchangé » malgré WN-SRC-0508 à 0511 ; les traces de `next_action` sont de l'historique, comme les handoffs, et leurs mentions de dettes sont tenues ici | `.wn/state.json` ; §9 (pilotage, PR 3) | PR de pilotage : tête, décisions et validation remises à l'heure ; fait le 2026-10-14 (PR de ménage de la file D) : tête neuve, ancienne tête en trace, `recent_decision_ids` D-290 à D-294, validation et `corpus_registry` du jour |
 | D/10 | adresses mortes citées par le plan : `next_action[40..62]` (vidé par la PR 3) ; `docs/claude/campagnes/FILE_ATTENTE.md` (supprimé, PR 5) ; `HISTORIQUE_CHANTIERS_TECHNIQUES.md`, `AUDIT_PANELS_*`, `AUDIT_BIOFLOW_*` (déplacés sous `docs/archive/`, PR 4) | handoffs 2026-10-14-0210 et 2026-10-14-0307 ; SESSION_LOG (PR 4, PR 5) | mention « historique Git » ou chemin d'archive, par une PR de plan ; fait le 2026-10-14 (PR de ménage de la file D) : chemins sous `docs/archive/`, numéros d'avant l'archivage (lus sur aaf73324^, le chemin `docs/claude/campagnes/AUDIT_*` cité était déjà faux) ; « historique Git » devant chaque citation de la file et de `next_action[40..62]` ; les lignes qui décrivent la suppression elle-même restent |
@@ -2068,7 +2069,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 ### Règles de BioFlow
 
 - Au plus une PR structurelle par campagne à la fois ; jamais deux PR simultanées sur les mêmes modèles Prisma ou la même frontière biologique ; un merge à la fois (D-248) et une migration à la fois (D-087) (`docs/architecture/bioflow/BIOFLOW_ROADMAP.md:51-54`).
-- Aucun nouveau pack biologique clinique tant que la décision de rationalisation (cj, F49) n'est pas prise (`BIOFLOW_ROADMAP.md:65-68`).
+- Aucun nouveau pack biologique clinique : règle permanente depuis D-296 §3 (cj, F49) ; un besoin s'exprime en analytes, axes, règles signées ou propositions patient (`BIOFLOW_ROADMAP.md:71-77`).
 - Interdits de construction jusqu'à l'ouverture de P2 : multi-tenant, API publique, LOINC, facturation, SDK, OAuth, microservice, Python ; le processus de fond du G3 reste dans l'application (D-282 §2).
 
 ### Fermetures

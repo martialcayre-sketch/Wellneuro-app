@@ -71,4 +71,6 @@ mesures de production, la classification, la cible et les trois prochaines
 PR. Lui aussi est figé. **Règle immédiate du responsable (2026-10-05)** :
 aucun nouveau pack biologique clinique tant que la décision de
 rationalisation n'est pas prise ; un besoin s'exprime en analytes, axes,
-règles ou propositions patient.
+règles ou propositions patient. **Depuis `D-296` §3 (lettre cj)**, la règle
+est permanente : plus aucun pack clinique ne se crée, et seule une décision
+qui amende `D-296` peut rouvrir la création d'un pack.

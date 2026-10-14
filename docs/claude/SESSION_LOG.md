@@ -10395,3 +10395,12 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merge de #1453 (#1451, la garde « traité », est mergée) ; puis la lettre ai.
 
 **Ouvert.** La lettre cj (non poussée) porte D-291 : elle prend D-296.
+## 2026-10-14 — lettre cj : D-296, rationalisation des packs biologiques
+
+**Fait.** Constat par conteneur identique à l'audit du 2026-10-05. D-296 rédigée puis acceptée telle quelle : l'analyse devient l'unité de base, les quinze panels sont classés, plus aucun pack ne se crée. Pour la page BioFlow : f02 et f04 recalées (D-286 fait).
+
+**Écarté.** Gel jusqu'aux indications v2. Priorité « conditionnel » de l'audit, absente du code.
+
+**Prochaine action.** Merge de #1440 (D-290), rebase, PR, merge ; n03 à passer « fait ».
+
+**Ouvert.** Aucun.
