@@ -4,8 +4,8 @@
 
 `docs/droits-sans-portail-ai`, dans le worktree
 `.claude/worktrees/droits-sans-portail`, partie d'`origin/main` 85b95dcc
-(#1446). Un commit de doc, aucun code. PR à ouvrir après le merge de #1448,
-qui tient D-294 : D-295 n'est contiguë qu'ensuite.
+(#1446). Un commit de doc, aucun code. Rebasée sur `origin/main` après le merge
+de #1448 (D-294).
 
 ## Objectif
 
@@ -30,9 +30,8 @@ revue CodeRabbit de #1446, et le geste clé de la lettre ai.
 
 ## Validations exécutées
 
-- T1 complet : rouge attendu sur la seule numérotation des décisions (D-294
-  absente de main tant que #1448 n'est pas mergée) ; le reste est à rejouer
-  après rebase.
+- Après rebase sur #1448 (D-294) : T1 complet (`npm run check`) vert, code 0.
+  Lot de doc : pas de T2.
 
 ## Problèmes ouverts
 
