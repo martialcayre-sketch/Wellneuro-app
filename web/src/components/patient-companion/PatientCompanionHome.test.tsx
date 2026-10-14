@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_ELEMENT } from '@/lib/trust/pauseEffetIndesirable';
 import { PatientCompanionHome } from './PatientCompanionHome';
 
 // TROIS ACTIONS, dont une RETENUE : la fixture n'en portait qu'une, et le
@@ -110,6 +111,79 @@ describe('PatientCompanionHome', () => {
     // proposée.
     expect(screen.getByText(/Si vous le pouvez aujourd’hui : Trois matins cette semaine/)).toBeTruthy();
     expect(screen.queryByText(/Si vous le pouvez aujourd’hui : Rien à faire/)).toBeNull();
+  });
+
+  // LA PAUSE SUR EFFET INDÉSIRABLE ([[D-281]] §3-4) : textes signés, servis tels quels.
+  describe('pause sur effet indésirable', () => {
+    const checkinVide = { ok: true, protocoleDiffuse: true, pointEtapeOuvert: null, points: [] };
+    const actionsFermes = [
+      { actionId: 'a4', type: 'supplement_exploration', title: 'Magnésium le soir', minimalPlan: 'Un comprimé au dîner' },
+      vue.actions[0],
+    ];
+
+    it('l’élément désigné porte « En pause » et le texte signé de l’élément', async () => {
+      mockFetch(
+        { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: { ...vue, actions: actionsFermes }, pauses: [{ actionId: 'a4', texte: 'element' }] },
+        checkinVide,
+      );
+      render(<PatientCompanionHome token="TOK" />);
+      expect(await screen.findByText(TEXTE_PAUSE_ELEMENT)).toBeTruthy();
+      expect(screen.getAllByText('En pause')).toHaveLength(1);
+      expect(screen.queryByText(TEXTE_PAUSE_COMPLEMENTS)).toBeNull();
+    });
+
+    it('les compléments en pause : le texte signé une fois, chaque complément marqué', async () => {
+      mockFetch(
+        { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: { ...vue, actions: actionsFermes }, pauses: [{ actionId: 'a4', texte: 'complements' }] },
+        checkinVide,
+      );
+      render(<PatientCompanionHome token="TOK" />);
+      expect(await screen.findByText(TEXTE_PAUSE_COMPLEMENTS)).toBeTruthy();
+      expect(screen.getAllByText('En pause')).toHaveLength(1);
+      expect(screen.queryByText(TEXTE_PAUSE_ELEMENT)).toBeNull();
+    });
+
+    it('le jour difficile ne propose jamais un élément en pause', async () => {
+      mockFetch(
+        { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: { ...vue, actions: actionsFermes }, pauses: [{ actionId: 'a4', texte: 'element' }] },
+        checkinVide,
+      );
+      render(<PatientCompanionHome token="TOK" />);
+      fireEvent.click(await screen.findByText(/Jour difficile/i));
+      expect(screen.getByText(/Si vous le pouvez aujourd’hui : Trois matins cette semaine/)).toBeTruthy();
+      expect(screen.queryByText(/Si vous le pouvez aujourd’hui : Un comprimé au dîner/)).toBeNull();
+    });
+
+    it('avis rendu (« impliqué ») : le marqueur seul, aucun texte d’attente', async () => {
+      mockFetch(
+        { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: { ...vue, actions: actionsFermes }, pauses: [{ actionId: 'a4', texte: 'avis_rendu' }] },
+        checkinVide,
+      );
+      render(<PatientCompanionHome token="TOK" />);
+      expect(await screen.findByText('En pause')).toBeTruthy();
+      expect(screen.queryByText(TEXTE_PAUSE_ELEMENT)).toBeNull();
+      expect(screen.queryByText(TEXTE_PAUSE_COMPLEMENTS)).toBeNull();
+    });
+
+    it('le jour difficile ne propose aucun complément en pause', async () => {
+      mockFetch(
+        { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: { ...vue, actions: actionsFermes }, pauses: [{ actionId: 'a4', texte: 'complements' }] },
+        checkinVide,
+      );
+      render(<PatientCompanionHome token="TOK" />);
+      fireEvent.click(await screen.findByText(/Jour difficile/i));
+      expect(screen.getByText(/Si vous le pouvez aujourd’hui : Trois matins cette semaine/)).toBeTruthy();
+    });
+
+    it('sans pause servie (règle non signée), rien n’est marqué', async () => {
+      mockFetch(
+        { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: { ...vue, actions: actionsFermes }, pauses: [] },
+        checkinVide,
+      );
+      render(<PatientCompanionHome token="TOK" />);
+      expect(await screen.findByText('Magnésium le soir')).toBeTruthy();
+      expect(screen.queryByText('En pause')).toBeNull();
+    });
   });
 
   it('intègre le résumé Boussole qualitatif du protocole approuvé', async () => {

@@ -694,7 +694,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : oui (étape 2), mergée (#1408) ; release-db approuvée et constatée (lecture de production du 2026-10-13 par conteneur one-off, `prisma migrate status` : 104 migrations, schéma à jour, la dernière étant celle du lot 2) ; elle est passée avant celle de BP-09 ; plus aucune migration en vol.
 - **Décisions, textes** : textes de la pause signés le 2026-10-12 (`docs/DECISIONS.md:62`) ; signature des quatre champs, nouvelle version, sourceReference « DC-42 ; D-281 » ; lettre e. Écarté : signer la règle livrée comme filet (`docs/DECISIONS.md:85-95`). Le banc local non suivi vise la règle livrée : caduc, à ne pas compter.
 - **Critère de fin** : release-db de #1408 constatée (fait, 2026-10-13) ; signature posée, déploiement constaté ; d'ici là, capture et notification seulement.
-- **Mise à jour (2026-10-13)** : D-281 est au registre (#1406, lot 1 ; #1408, lot 2, migration appliquée). Question ouverte du lot 3, à trancher dans le lot par le responsable : exclure ou non l'action d'orientation médecin de la liste proposée au patient.
+- **Mise à jour (2026-10-13)** : D-281 est au registre (#1406, lot 1 ; #1408, lot 2, migration appliquée). Question du lot 3 tranchée par le responsable le 2026-10-14 : toute orientation vers le médecin et toute prise de sang sont exclues de la liste proposée au patient (D-281 §2).
 
 **File B**
 
@@ -2354,7 +2354,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | K-05a et D4 | liste fermée et déclaration des sites IA (porte 5) | la main du responsable | 0 | F46 |
 | échelle E4 | échelle E4 de l'adhésion, tranchée avec la signature M-2 | la main du responsable | 2 | H32 |
 | de produit pour la frise | frise de J3-base | la main du responsable | 4 [Hypothese] | H61 |
-| du lot 3 de D-281 | exclure ou non l'action d'orientation médecin de la liste proposée au patient | la main du responsable | 1 | F66 |
+| du lot 3 de D-281 | exclure ou non l'action d'orientation médecin de la liste proposée au patient — **tranchée le 2026-10-14 : exclue, avec toute orientation vers le médecin et toute prise de sang** | la main du responsable | 1 | F66 |
 | du repère du 2027-06-30 | statut de repère légal pour J3-mineurs, à confirmer | la main du responsable | 10 [Hypothese] | H79 |
 
 ### Signatures et approbations

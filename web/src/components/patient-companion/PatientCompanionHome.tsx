@@ -9,6 +9,11 @@ import type { PointEtape } from '@/lib/protocol/checkinDomain';
 import { ProtocolCheckinTrend, type PointEtat } from './ProtocolCheckinTrend';
 import { PatientFoodCompassSummary } from '@/components/patient-food-compass/PatientFoodCompassSummary';
 import type { VuePatientSurLeFil } from '@/lib/protocol/vuePatientSurLeFil';
+import {
+  TEXTE_PAUSE_COMPLEMENTS,
+  TEXTE_PAUSE_ELEMENT,
+  type ElementEnPause,
+} from '@/lib/trust/pauseEffetIndesirable';
 
 // Accueil compagnon du PROTOCOLE ACTIF (C2A LOT-05), borné R8-lite. Ce que le
 // patient doit savoir en ~10 s : sa raison, son action du jour, l'accès à sa
@@ -28,6 +33,8 @@ type ProtocoleResponse =
       vue: VuePatientSurLeFil | null;
       /** Un protocole est diffusé et ne peut pas être servi — distinct d'une attente. */
       indisponible?: boolean;
+      /** Éléments en pause sur effet indésirable ([[D-281]] §3) ; vide avant la signature. */
+      pauses?: ElementEnPause[];
     }
   | { ok: false };
 type CheckinResponse =
@@ -135,11 +142,15 @@ export function PatientCompanionHome({ token }: { token: string }) {
   }
 
   const { vue, finDeCycle } = protocole;
+  // LA PAUSE SUR EFFET INDÉSIRABLE ([[D-281]] §3-4) : les textes SIGNÉS, jamais
+  // reformulés. Celui des compléments se lit une fois, au-dessus des actions.
+  const pauseDe = new Map((protocole.pauses ?? []).map((p) => [p.actionId, p.texte]));
+  const complementsEnPause = [...pauseDe.values()].includes('complements');
   // LE JOUR DIFFICILE PROPOSE UN SEUL PAS, ET JAMAIS UN PAS SUSPENDU. Une action
   // en attente de bilan porte sa phrase d'attente : la proposer « si vous le
   // pouvez aujourd'hui » dirait au patient le contraire de ce que son praticien
-  // a posé. La première action FERME, ou rien.
-  const actionFerme = vue.actions.find((item) => !item.interventionStatus) ?? null;
+  // a posé. Un élément en pause non plus. La première action FERME, ou rien.
+  const actionFerme = vue.actions.find((item) => !item.interventionStatus && !pauseDe.has(item.actionId)) ?? null;
   const pointOuvert = checkin?.pointEtapeOuvert ?? null;
   const dejaRenseigne = pointOuvert
     ? (checkin?.points.find((p) => p.pointEtape === pointOuvert)?.renseigne ?? false)
@@ -180,13 +191,24 @@ export function PatientCompanionHome({ token }: { token: string }) {
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
             {vue.actions.length > 1 ? 'Vos actions' : 'Votre action'}
           </p>
+          {complementsEnPause && (
+            <p role="status" className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground">
+              {TEXTE_PAUSE_COMPLEMENTS}
+            </p>
+          )}
           {vue.actions.map((action) => (
             <div
               key={action.actionId}
               className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3"
             >
               <p className="text-base font-medium text-foreground">{action.title}</p>
+              {pauseDe.has(action.actionId) && (
+                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-foreground">En pause</p>
+              )}
               <p className="mt-1 text-sm text-muted-foreground">{action.minimalPlan}</p>
+              {pauseDe.get(action.actionId) === 'element' && (
+                <p className="mt-2 text-sm text-foreground border-t border-primary/20 pt-2">{TEXTE_PAUSE_ELEMENT}</p>
+              )}
               {/* UNE INTERVENTION NON FERME NE SE LIT JAMAIS COMME UN CONSEIL.
                   La phrase vient du contrat, jamais de la cible d'attente du
                   praticien : « ferritine » est son vocabulaire, « votre bilan »

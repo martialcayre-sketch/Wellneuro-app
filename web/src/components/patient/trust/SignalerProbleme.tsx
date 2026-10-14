@@ -53,9 +53,32 @@ const ACTIONS_PRISES = [
   { valeur: 'ne_sait_pas', libelle: 'Je ne sais pas' },
 ];
 
-export function SignalerProbleme({ token, onEnvoye, associationDisponible = false }: {
+/** Valeur de la liste de désignation : un élément, ou l'une des deux réponses sans élément. */
+const PREFIXE_ELEMENT = 'element:';
+
+/** Le corps envoyé pour une désignation choisie ([[D-281]] §2). */
+function corpsDesignation(valeur: string): { rattachement: string; elementActionId?: string } {
+  if (valeur.startsWith(PREFIXE_ELEMENT)) {
+    return { rattachement: 'element', elementActionId: valeur.slice(PREFIXE_ELEMENT.length) };
+  }
+  return { rattachement: valeur };
+}
+
+export function SignalerProbleme({
+  token, onEnvoye, associationDisponible = false, elementsProgramme = null, versionProgramme = null,
+}: {
   token: string;
   onEnvoye: () => void;
+  /**
+   * Les éléments du programme diffusé que le patient peut désigner
+   * ([[D-281]] §2), servis par `GET /api/portail/trust/etat` — l'orientation
+   * vers le médecin n'y figure jamais. Présents, ils remplacent la question
+   * « fait-il partie du programme ? » ; `null` (dossier mineur ou sans date,
+   * aucun programme diffusé), le formulaire reste celui d'avant.
+   */
+  elementsProgramme?: { actionId: string; title: string }[] | null;
+  /** La version du programme dont viennent ces éléments, renvoyée telle quelle au dépôt. */
+  versionProgramme?: string | null;
   /**
    * Le rattachement au programme et les dates de prise peuvent-ils être
    * demandés ? ([[D-101]], servi par `GET /api/portail/trust/etat`)
@@ -81,6 +104,10 @@ export function SignalerProbleme({ token, onEnvoye, associationDisponible = fals
   // Défaut « je ne sais pas », jamais « non » ([[D-101]], `DC-24`) : un champ
   // laissé tel quel ne doit pas déclarer une absence de rattachement.
   const [rattacheAuProgramme, setRattacheAuProgramme] = useState('ne_sait_pas');
+  // Aucune désignation par défaut : le patient choisit, et le champ est requis.
+  // Un défaut « Je ne sais pas » mettrait tous ses compléments en pause sur une
+  // réponse qu'il n'a pas donnée.
+  const [designation, setDesignation] = useState('');
   const [debutPriseLe, setDebutPriseLe] = useState('');
   const [debutSymptomesLe, setDebutSymptomesLe] = useState('');
   // Champs incident / droit.
@@ -94,6 +121,7 @@ export function SignalerProbleme({ token, onEnvoye, associationDisponible = fals
     setSymptomes('');
     setSeverite('');
     setActionPrise('ne_sait_pas');
+    setDesignation('');
     setCategorieIncident('');
     setTypeDroit('');
     setDescription('');
@@ -160,6 +188,7 @@ export function SignalerProbleme({ token, onEnvoye, associationDisponible = fals
   }
 
   if (parcours === 'effet_indesirable') {
+    const designationDemandee = associationDisponible && (elementsProgramme?.length ?? 0) > 0;
     return (
       <form
         className="space-y-3"
@@ -174,9 +203,11 @@ export function SignalerProbleme({ token, onEnvoye, associationDisponible = fals
             // Rien n'est envoyé quand les champs ne sont pas affichés : sinon
             // le défaut « ne_sait_pas » partirait comme une réponse que le
             // patient n'a jamais donnée.
-            ...(associationDisponible
-              ? { rattacheAuProgramme, debutPriseLe, debutSymptomesLe }
-              : {}),
+            ...(designationDemandee
+              ? { ...corpsDesignation(designation), versionProgramme, debutPriseLe, debutSymptomesLe }
+              : associationDisponible
+                ? { rattacheAuProgramme, debutPriseLe, debutSymptomesLe }
+                : {}),
           });
         }}
       >
@@ -214,17 +245,40 @@ export function SignalerProbleme({ token, onEnvoye, associationDisponible = fals
             précisément sur ce « non » supposé que la machine s'autoriserait à
             poursuivre. Le serveur ne rattache que sur un « oui » explicite, et
             c'est LUI qui résout de quel protocole il s'agit. */}
-        <PatientField label="Ce produit fait-il partie du programme qui vous a été transmis ?">
-          <select
-            value={rattacheAuProgramme}
-            onChange={e => setRattacheAuProgramme(e.target.value)}
-            className={patientInputClassName}
-          >
-            <option value="ne_sait_pas">Je ne sais pas</option>
-            <option value="oui">Oui</option>
-            <option value="non">Non</option>
-          </select>
-        </PatientField>
+        {designationDemandee ? (
+          /* LA DÉSIGNATION ([[D-281]] §2) : UN élément du programme, ou
+             « Je ne sais pas », ou « Un autre produit ». Le patient ne nomme
+             jamais un programme : le serveur résout celui qui lui a été
+             transmis, et refuse un élément qui n'y figure pas. */
+          <PatientField label="À quel élément de votre programme associez-vous cet effet ? *">
+            <select
+              value={designation}
+              onChange={e => setDesignation(e.target.value)}
+              required
+              aria-label="À quel élément de votre programme associez-vous cet effet ?"
+              className={patientInputClassName}
+            >
+              <option value="">Choisir…</option>
+              {elementsProgramme!.map(e => (
+                <option key={e.actionId} value={`${PREFIXE_ELEMENT}${e.actionId}`}>{e.title}</option>
+              ))}
+              <option value="ne_sait_pas">Je ne sais pas</option>
+              <option value="autre_produit">Un autre produit</option>
+            </select>
+          </PatientField>
+        ) : (
+          <PatientField label="Ce produit fait-il partie du programme qui vous a été transmis ?">
+            <select
+              value={rattacheAuProgramme}
+              onChange={e => setRattacheAuProgramme(e.target.value)}
+              className={patientInputClassName}
+            >
+              <option value="ne_sait_pas">Je ne sais pas</option>
+              <option value="oui">Oui</option>
+              <option value="non">Non</option>
+            </select>
+          </PatientField>
+        )}
         <PatientField label="Depuis quand le prenez-vous ?">
           <input
             type="date"

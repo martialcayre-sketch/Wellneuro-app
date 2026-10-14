@@ -9,6 +9,8 @@ import { calendrierDuProtocoleDiffuse } from '@/lib/protocol/calendriersPersiste
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
 import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
 import { vuePatientOuRefus } from '@/lib/protocol/servirAuPatient';
+import type { ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
+import { pausesServies } from '@/lib/trust/pauseEffetIndesirableServeur';
 import type { ProtocolDiffusionApproval } from '@/lib/clinical-engine/types';
 import {
   LONGUEUR_CYCLE_REF,
@@ -90,6 +92,13 @@ type GetResponse =
        */
       indisponible: boolean;
       calibrage: AncreCalibrage | null;
+      /**
+       * LES ÉLÉMENTS EN PAUSE sur effet indésirable ([[D-281]] §3), HORS de la
+       * vue signée (`c1-patient-protocol-view-v2`, inchangée). Vide tant que
+       * la règle amendée n'est pas signée : d'ici là, capture et notification
+       * seulement (§6).
+       */
+      pauses?: ElementEnPause[];
     }
   | ErrorResponse;
 
@@ -215,8 +224,10 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       debutCycle: jourZero.toISOString(),
     });
 
+    const pauses = await pausesServies(auth.idPatient, diffuse.protocolDraftId, draft.actions);
+
     return NextResponse.json({
-      ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null,
+      ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses,
     });
   } catch (err) {
     if (err instanceof ProtocolPayloadIntegrityError) {
