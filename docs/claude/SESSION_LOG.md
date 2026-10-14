@@ -10404,3 +10404,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merge de #1440 (D-290), rebase, PR, merge ; n03 à passer « fait ».
 
 **Ouvert.** Aucun.
+
+## 2026-10-14 — Lettre ai : D-297, lecture datée
+
+**Fait.** Trois arbitrages du responsable : première ouverture datée d'où qu'elle vienne, jour seul en base (heure de Paris), « Lu, date non enregistrée » pour l'historique. D-297 écrite, porte 14 levée, registre déclaré avant la migration, plan H51 à jour.
+
+**Écarté.** Dater depuis « Mes échanges » seul ; « Lu avant le … » ; horodatage gardé en base.
+
+**Prochaine action.** Validation mot pour mot du texte patient du §4 ; PR de doc, revue, merge. Code de ai après G-7 (porte 8).
+
+**Ouvert.** G-7 non joué : la migration de ai l'attend.
