@@ -12,6 +12,8 @@ Il absorbe la feuille de route BioFlow
 (`docs/architecture/bioflow/BIOFLOW_ROADMAP.md`, fiches Fnn), qui garde ses
 règles de parallélisme ; ses gates G1 à G3 sont levés.
 
+**Mise à jour (2026-10-14)** : état reporté au 2026-10-14 sur `origin/main` 474e9d67 (#1444), par lignes datées ; le reste du texte vaut au 2026-10-13. Les chemins ci-dessus sont ceux d'avant le versement : les cinq feuilles de route sont sous `docs/archive/roadmap-updates/`, bandeau « Archivé le 2026-10-14 » (PR 4, #1421) ; la file d'attente est supprimée, son texte reste dans l'historique Git (PR 5, #1422). Les citations de la file et des anciens chemins que le plan garde (§6, §8, §11) sont des adresses d'historique.
+
 **Forme opaque.** Le dépôt est public : ce plan ne porte que des identifiants
 (lettres a à cq, lots BP-nn, portes 1 à 30, rangs, places de la file C, fiches
 Fnn et Hnn), des mécanismes et des renvois `D-xxx`. L'objet détaillé de chaque
@@ -93,6 +95,7 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
   D-xxx de lot ou de fonction en biologie, 20 D-xxx hors biologie,
   10 signatures et approbations. Lettre neuve : aucune.
 - Versement : six PR (§11).
+- **Mise à jour (2026-10-14)** : décompte du 2026-10-13, non recompté. Depuis : quatre lettres écrites (ci par D-286, #1425 ; a, b, g par D-287, D-288, D-289, #1430), gardées dans « Lettres à écrire » avec leur marque et ajoutées à « Lettres déjà écrites » (§10) ; les six PR du versement mergées (§11) ; neuf lignes ajoutées au §8 (trois par la PR 5, deux par D-290, #1440, quatre reports datés du 2026-10-14).
 
 ### La base
 
@@ -110,6 +113,7 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
   absente de main.
 - Acquis non reposés : les arbitrages du responsable rendus en séance les
   2026-10-11, 2026-10-12 et 2026-10-13 ; D-282 à D-284.
+- **Mise à jour (2026-10-14)** : `origin/main` = 474e9d67 (#1444). Dernière décision au registre : D-291 (gouvernance des PR, #1440, #1444). Lettres écrites depuis ce plan : ci (D-286, #1425), a (D-287), b (D-288), g (D-289) (#1430) ; prochaine lettre libre : cr. Une migration mergée depuis : D-284 lot (j), #1426 ; sa release-db n'est consignée nulle part sur main [A verifier] (porte 9). Acquis non reposés : s'y ajoutent les arbitrages du responsable du 2026-10-14, consignés par D-286 à D-289 et aux handoffs du jour.
 
 ## §1 Les portes
 
@@ -117,24 +121,24 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 
 | n° | objet | levée par | état au 2026-10-13 |
 |---|---|---|---|
-| 1 | Constat initial en conteneur, en agrégats | S-1, Q-1 (rang 0) : F40, H06 | levée en partie le 2026-10-12 ; restent le premier import v4 commenté et le premier accusé usage_ia v7, au fait |
-| 2 | Décisions d'ordre mergées : deux files, une activation à la fois, restauration | a, b, g par la PR S-3 (rang 0) : F01, H05, F04 | non levée : S-3 à faire |
+| 1 | Constat initial en conteneur, en agrégats | S-1, Q-1 (rang 0) : F40, H06 | levée en partie le 2026-10-12 ; restent le premier import v4 commenté et le premier accusé usage_ia v7, au fait ; [A verifier] : la lecture est en `bio-extraction-v5` depuis #1428 et `usage_ia` en v8 depuis #1431, le critère nomme encore v4 et v7 |
+| 2 | Décisions d'ordre mergées : deux files, une activation à la fois, restauration | a, b, g par la PR S-3 (rang 0) : F01, H05, F04 | levée le 2026-10-14 : a, b, g écrites par D-287, D-288, D-289, mergées par la PR S-3 (#1430) |
 | 3 | Radar sans zéro décidé | M-6, ac (rang 0) : H12 | non levée : texte à écrire ; fond acquis |
 | 4 | Sources à fournir : poids égal, seuils, fidélité, quantités, axes | le responsable (rang 0) : H08 | en partie : D-280 source les seuils de 8B ; règle du milieu levée ; restent poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes |
 | 5 | K-05a et D4 : liste fermée et déclaration des sites IA | le responsable (rang 0) : F46 | non levée |
 | 6 | Doctrine du cockpit chiffré et de l'adhésion signée | M-2, G-4 (rang 2), sur c et d (rang 1) : F59, H32 | non levée |
 | 7 | SAF-EI-01 signée, puis déploiement constaté | M-1 (rang 3), puis J1-sécu (rang 4) : F66 | non levée ; lots 1 et 2 de D-281 sur main (#1406, #1408) ; portail, validation, signature à faire ; se lève au rang 4 |
-| 8 | Essai de restauration réussi | K-18a (0), G-7 (1) : F04 | non levée ; préalable de toute migration après BP-09 ; BP-09 ne l'attend pas |
-| 9 | release-db approuvée, sentinelle, constat, une à une | le responsable, à chaque migration | constatée pour #1397 (2026-10-11) et pour le lot 2 de D-281 (2026-10-13) ; à venir pour BP-09 (rang 3) |
+| 8 | Essai de restauration réussi | K-18a (0), G-7 (1) : F04 | non levée ; préalable de toute migration après BP-09 ; BP-09 ne l'attend pas ; portée et procédure écrites par D-289 (#1430) ; G-7 non joué |
+| 9 | release-db approuvée, sentinelle, constat, une à une | le responsable, à chaque migration | constatée pour #1397 (2026-10-11) et pour le lot 2 de D-281 (2026-10-13) ; à venir pour BP-09 (rang 3) ; migration de D-284 lot (j) mergée le 2026-10-14 (#1426), release-db non consignée [A verifier] |
 | 10 | NABM signée : 8 analytes, puis liste étendue | S-7 (0), M-3 (1), f (2), G-3 (3) : F54 | non levée : 0 liaison signée |
 | 11 | Bandes de bruit signées, instrument par instrument | G-10 (0), v (1) : H13 | non levée |
 | 12 | D2 mergée | j (rang 0) : F63 | non levée |
 | 13 | Textes communs : CGU, registre, circuit des droits, Patient Hub | k (0) : F77 ; l, écrite pour l'essentiel par D-283 (§2 durées, §6 droits) ; u (1) : H37 ; G-8 (2) : H50 | non levée : k, u, G-8 à faire ; restes de l en H26 |
 | 14 | Accusé de lecture daté décidé (renverse) | ai (rang 2) : H51 | non levée |
-| 15 | K-02 servi : premier check-in sur un protocole approuvé | constat, rang 2 au plus tôt, après d | fermée au 2026-10-13 ; la lecture « porte 15 pour le code de bf » est proposée, à confirmer |
+| 15 | K-02 servi : premier check-in sur un protocole approuvé | constat, rang 2 au plus tôt, après d | fermée au 2026-10-13 ; lecture « porte 15 pour le code de bf » confirmée par le responsable le 2026-10-14, instruction au rang 0 (handoff de la PR 2, #1419) |
 | 16 | Clôture du LOT-02 de l'agenda du sommeil | campagne, rang 1 au plus tôt : H27 | fermée : lectures repères 2026-10-29 puis 2026-11-12 |
 | 17 | Durée du dossier patient fixée | le responsable, sur conseil (porte 28) | **levée le 2026-10-13 par D-283 §2 (#1411)** pour la base active (jusqu'à la clôture, ou 5 ans après le dernier contact) et l'archive intermédiaire (10 ans) ; le point de départ de l'archive reste à valider par un conseil avant toute mise en œuvre (D-283 §2, §10 b) |
-| 18 | Texte patient accepté, puis activation précédente constatée | b (rang 0), à chaque activation : H05 | critère : un premier vrai dossier servi, sans anomalie, constaté par identifiant en conteneur, jamais une fixture ; pour une ouverture qui ne vise que certains dossiers : lecture consignée du texte en ligne ; aucune activation faite ; places 12 et suivantes : l'encart bd dès qu'il est prêt, puis l'ordre de préparation |
+| 18 | Texte patient accepté, puis activation précédente constatée | b (rang 0), à chaque activation : H05 | critère : un premier vrai dossier servi, sans anomalie, constaté par identifiant en conteneur, jamais une fixture ; pour une ouverture qui ne vise que certains dossiers : lecture consignée du texte en ligne ; aucune activation faite ; places 12 et suivantes : l'encart bd dès qu'il est prêt, puis l'ordre de préparation ; règle écrite par D-288 (#1430) |
 | 19 | BP-18a puis BP-18b livrés | campagne, J3-bio (rang 5) : F12, F13 | non levée |
 | 20 | K-11 : premier écran qui compare deux passations du même instrument | revue de PR, après J2-mom (rang 2), donc rang 3 au plus tôt | fermée ; tient cf et la phrase de tendance ch (H72) |
 | 21 | K-22 : premier lecteur d'épisode hors domaine | revue de PR, au fait | fermée |
@@ -150,7 +154,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 
 ## §2 La séquence par rang
 
-Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, gestes). Les rangs des fiches Fnn sont ceux de la feuille de route BioFlow, ajustés par les arbitrages acquis ; les rangs des fiches Hnn suivent les arbitrages acquis, sinon ils portent [Hypothese]. Le chemin critique : rang 0, ci (sa PR propre, avant le merge de b), puis a et S-3 → rang 1, BP-07 et portail de D-281 → rang 2, signatures de BP-07, BP-09, validation de D-281 → rang 3, release-db de BP-09, signature M-1 → rang 4, BP-12a, BP-11, BP-13, BP-15, J1-sécu (porte 7) → rang 5, J3-bio → rang 6, BP-24 → rang 8, BP-21b.
+Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, gestes). Les rangs des fiches Fnn sont ceux de la feuille de route BioFlow, ajustés par les arbitrages acquis ; les rangs des fiches Hnn suivent les arbitrages acquis, sinon ils portent [Hypothese]. Le chemin critique : rang 0, ci (sa PR propre, avant le merge de b ; fait, #1425), puis a et S-3 (fait, #1430) → rang 1, BP-07 (clos le 2026-10-14, #1438) et portail de D-281 → rang 2, signatures de BP-07 (posées dans le lot, #1435, #1438), BP-09 (fiche validée, #1442), validation de D-281 → rang 3, release-db de BP-09, signature M-1 → rang 4, BP-12a, BP-11, BP-13, BP-15, J1-sécu (porte 7) → rang 5, J3-bio → rang 6, BP-24 → rang 8, BP-21b.
 
 ### Livré au 2026-10-13 (sans fiche)
 
@@ -189,6 +193,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : lettre ck : quoi part en file, où attend le document, combien de temps, qui reprend ; clause « une charge utile en file conserve un document de santé, D-258 ne la couvre pas » [A verifier]. Aucun microservice, aucun Python.
 - **Critère de fin** : un import tué en cours se clôt seul ; invariant testé ; constat en agrégats.
 - **Mise à jour (2026-10-13)** : G3 clos. Porte 30 levée par D-282 (#1410), qui tient lieu de ck ; cinq lots mergés le 2026-10-13 (#1412, #1414, #1415, #1416) : migration appliquée, processus de fond surveillé (`worker` au `Procfile`, signal de vie), mise en service constatée par conteneur sur un dossier de test, puis `after()` retiré : la route demande toujours à la file (D-282 §8). Le drapeau `WN_BIO_EXTRACTION_ASYNC` n'est plus lu ; le retirer de Scalingo est un geste du responsable, sans effet. Restent, hors G3, au §8 : dossier clos pendant l'attente, TEMPS 3, bancs hérités du lot 3. Suite nommée par D-282 §8 : lot (j) de D-284 (H26).
+- **Mise à jour (2026-10-14)** : deux restes hors G3 soldés par #1418 (D-282 §9), sans migration : une lecture demandée retient la clôture du dossier ; l'enregistrement des lignes s'ordonne avec l'effacement (TEMPS 3). Restent hors G3 : les bancs hérités du lot 3 et la base locale. Le critère de fin vaut tel quel.
 
 #### F43 · Réconciliation des imports fantômes
 - **Identifiant, piste** : imports restés « en cours » ; ingest.
@@ -264,6 +269,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune.
 - **Critère de fin** : banc `cartes.test.ts` vert, T2.
+- **Mise à jour (2026-10-14)** : fait par #1424 : « Relire » porte l'identifiant du dossier, banc `cartes.test.ts` réécrit ; « Composer le document » dans la minute d'après ; T1 complet et T2 verts. Suite par #1429 (arbitrage du 2026-10-14 sur un commentaire de revue de #1424) : sans version active du protocole, la minute d'après propose aussi « Composer le document » ; `pretPourDiffusion` reste faux. Aucune migration, aucune décision, aucune règle clinique.
 
 #### H03 · R:Graphie : le nom au menu
 - **Identifiant, piste** : R:Graphie ; cockpit ; file A.
@@ -272,6 +278,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune.
 - **Critère de fin** : menu changé, constaté.
+- **Mise à jour (2026-10-14)** : menu changé par #1427 (une ligne du rail ; bases visuelles Desktop régénérées) ; T1 complet vert ; aucune décision, aucune migration, aucun drapeau. Le constat du menu en service n'est pas consigné sur main [A verifier].
 
 **Gestes du responsable**
 
@@ -282,6 +289,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : D-285 au registre, fragment `changelog.d/` ; texte rédigé dans le lot, accepté par le responsable ; fichier `docs/claude/PLAN_WELLNEURO.md`.
 - **Critère de fin** : PR 1 du versement mergée (§11), CI code 0, commentaires en ligne lus, plan au dépôt sous forme opaque.
+- **Mise à jour (2026-10-14)** : PR 1 mergée (57ab15ed, #1417), quatre remarques de revue corrigées ; PR 2 à 6 mergées (#1419 à #1423) : la lettre cq n'a plus de reste au versement (§10, §11).
 
 #### F01 · Lettre a et PR S-3 : pilotage réaligné
 - **Identifiant, piste** : D-a et S-3 ; parcours.
@@ -291,6 +299,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : lettre a ; textes de `docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:4`, :6, :91-98, `.wn/state.json` et `docs/architecture/bioflow/BIOFLOW_ROADMAP.md:15-21` corrigés ; forme du plan unique à confirmer.
 - **Critère de fin** : PR mergée, T1 complet vert, BP-07 désigné prochain lot dans l'état du cycle.
 - **Mise à jour (2026-10-13)** : forme du plan unique tranchée par D-285 (cq, H04) : un seul fichier, file supprimée, archivage par déplacement. La PR S-3 suit la PR de ci (F67).
+- **Mise à jour (2026-10-14)** : lettre a écrite : D-287 (#1430), acceptée par le responsable, après ci (D-286, #1425) ; porte 2 levée avec b et g. Les textes de pilotage que la fiche désigne étaient déjà réalignés par la PR 3 du versement (#1420), BP-07 désigné prochain lot dans l'état du cycle (D-287 §4).
 
 #### H05 · b : une activation à la fois, et les règles de la file C
 - **Identifiant, piste** : lettre b (D-b, R:b, T-5) ; file C ; geste du responsable.
@@ -299,6 +308,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre b, de la main du responsable.
 - **Critère de fin** : lettre mergée par S-3 ; porte 2 levée avec a et g.
+- **Mise à jour (2026-10-14)** : lettre b écrite : D-288 (#1430), après ci (D-286, #1425) ; porte 2 levée avec a et g. Elle pose la règle de la porte 18 (§1-2), l'ordre des places (§3 : cc compte comme une place, après l'encart bd), le formulaire de D-281 hors file (§4), et ferme le second compte praticien jusqu'au 2027-10-11, levée par une D-xxx seulement, précédée d'un test d'intrusion humain (§5). Aucune activation faite (§6).
 
 #### F04 · G-7 : essai de restauration
 - **Identifiant, piste** : K-18a, D-g, G-7 ; parcours (porte commune).
@@ -307,6 +317,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non ; préalable de toute migration après BP-09 (porte 8). D-g écrit « essai de restauration avant toute migration » ; sa portée est acquise : l'essai précède toute migration qui suit BP-09 ; #1408 (D-281 lot 2) et #1412 (D-282 lot 2) ont mergé sans essai, par le fait, sous cette lecture.
 - **Décisions, textes** : lettre g, qui écrit la portée acquise : essai de restauration réussi avant toute migration suivant BP-09 ; rien n'y reste à trancher.
 - **Critère de fin** : restauration réussie, constatée.
+- **Mise à jour (2026-10-14)** : lettre g écrite : D-289 (#1430) : portée (§1) et procédure (§2) ; commandes exactes au `docs/RUNBOOK.md` dans le lot G-7. D-289 §1 compte aussi #1426 (D-284 lot j), avec #1408 et #1412, parmi les migrations mergées avant l'essai, par le fait. G-7 n'est pas joué ; porte 8 non levée.
 
 #### F40 · S-1 : premier import v4, accusés v7, mutations versées
 - **Identifiant, piste** : S-1 (reste) ; verser les constats des mutations de BIO-INGEST ; ingest.
@@ -315,6 +326,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non ; la release-db de #1397 est appliquée et constatée depuis le 2026-10-11.
 - **Décisions, textes** : aucune.
 - **Critère de fin** : constat versé en agrégats, sans identifiant couplé à des métriques : commentaires relevés, signaux « non transcrit », imports en échec par motif, accusés v7 ; porte 1 levée en entier.
+- **Mise à jour (2026-10-14)** : [A verifier] le titre et le critère nomment l'import v4 et les accusés v7 ; depuis #1428 la lecture est de procédé `bio-extraction-v5`, sans repli sur le document, et #1431 publie `usage_ia` v8 (accusé recueilli au dépôt, comme v6 et v7). Le constat attendu au premier usage réel porte sur un masquage puis un import v5 ; la vérification qu'aucun import v4 n'est né après le merge de #1428 n'est pas consignée. Critère à relire par le responsable ; rien n'est réécrit ici.
 
 #### H06 · S-1, part hors biologie : vérifications versées au premier constat
 - **Identifiant, piste** : S-1, part hors biologie.
@@ -348,6 +360,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : ligne de déclaration du site d'extraction, à écrire dans K-05a (D-256 A4, usage_ia v7 ; fournisseur ; périmètre du document).
 - **Critère de fin** : liste fermée et déclaration mergées.
 - **Mise à jour (2026-10-13)** : « document entier, identité comprise » se lit daté : D-284 §5 impose le retrait de l'identité du document avant l'envoi, lot (j) de H26 ; le G3 est clos (#1416), (j) est libre ; d'ici là le flux reste nominatif, exposition assumée et datée.
+- **Mise à jour (2026-10-14)** : depuis le lot 2 du masquage (#1428), seules les pages masquées par le praticien partent, jamais le document d'origine ; `usage_ia` v8 le dit au patient (#1431) ; le masquage est manuel. Déploiement du lot 2 non consigné sur main [A verifier]. La ligne de K-05a reste à écrire, son périmètre par le responsable.
 
 #### H09 · Porte 28 : préalables hors liste
 - **Identifiant, piste** : porte 28 ; confiance et outillage ; geste du responsable.
@@ -463,6 +476,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre k, de la main du responsable. Fait : la v7 a été validée le 2026-10-11 sans nouvel accusé demandé ; k dit si la CGU change cela.
 - **Critère de fin** : k mergée ; un accusé demandé se constate en agrégats dans S-1 (F40).
+- **Mise à jour (2026-10-14)** : [A verifier] le titre de la fiche dit v7 ; `usage_ia` v8 est publiée par #1431 (une phrase change, accusé recueilli au dépôt). Quelle version k vise est au responsable.
 
 #### H16 · h et J1-alim : la Boussole retirée
 - **Identifiant, piste** : lettre h (M-4, G-5, D-h, R:h), puis J1-alim (FC-4) ; Boussole alimentaire retirée du portail ; exception nommée à D-276 §1 ; amende D-250 ; dettes D-C5-01 à D-C5-04 rattachées ; alimentation ; geste du responsable (h), puis file A (J1-alim).
@@ -514,6 +528,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : archiver une copie datée ; relancer sur la date d'opposabilité et les traitements antérieurs (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md:121-127`) ; réécrire le trou 1 du §6 de `docs/DOSSIER_RGPD.md` et la ligne 14 de sa rubrique 6. Ne jamais écrire « signé ».
 - **Critère de fin** : copie au registre ; réserve sur la localisation de l'inférence et la rétention instruite ou maintenue par écrit.
 - **Mise à jour (2026-10-13)** : D-284 §5 et §6 : clauses contractuelles types ; la copie datée s'accompagne d'une analyse d'impact du transfert, à rédiger (lot (j), H26).
+- **Mise à jour (2026-10-14)** : le code du lot (j) est mergé (#1426, #1428, #1431) ; l'analyse d'impact du transfert n'est pas versée : elle reste de la main du responsable, archivée avec la copie datée.
 
 #### F49 · Décision de rationalisation des packs biologiques
 - **Identifiant, piste** : PR 1 de l'audit ; panels.
@@ -539,6 +554,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : lettre ci, de la main du responsable ; ligne alignée au registre des frontières §1 ; signaler le même flou dans D-265 sans l'amender ; chaque décision neuve de l'étage assistant porte sa ligne « qualification différée ; usage du praticien ».
 - **Critère de fin** : D-xxx mergée.
 - **Mise à jour (2026-10-13)** : ci précède b, x et les levées de F75 ; elle part dans sa PR propre, au rang 0, avant le merge de la PR S-3, qui n'est pas élargie ; geste du responsable, elle compte au rang 0. Un test d'intrusion humain précède toute offre commerciale et tout second compte (D-283 §7).
+- **Mise à jour (2026-10-14)** : lettre ci écrite : D-286 (#1425), acceptée par le responsable, mergée avant la PR S-3 (#1430). Cinq événements déclencheurs (§2) : offre commerciale ; second compte praticien ; première clé d'API ; premier consommateur de BioFlow hors du cabinet, ou tiers qui en lit la sortie ; tout envoi direct vers un tiers. Elle amende D-276 §2, non §1 comme l'écrit la ligne « Identifiant » ; `REGISTRE_FRONTIERES.md` §1 aligné ; le même flou de D-265 §3 est signalé, non amendé, et se tranche à F68 (§5). Rien n'est levé ni ouvert.
 
 #### F68 · Réexamen de l'AIPD
 - **Identifiant, piste** : « non requise à ce stade » (D-265 §3), réexamen « à l'achèvement du produit », sans date ni critère renseigné (`docs/DOSSIER_RGPD.md:1217-1252`) ; trust.
@@ -581,6 +597,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : selon (4 si le contrat du point d'étape se versionne) [A verifier].
 - **Décisions, textes** : une D-xxx clinique et son fragment par indicateur, de la main du responsable ; aucune échelle proposée par l'assistant ; nouvelle version du contrat du point d'étape [A verifier : migration].
 - **Critère de fin** : instruction : décisions signées ; code : réponses constatées en agrégats ; ouverture constatée.
+- **Mise à jour (2026-10-14)** : lecture « porte 15 » du code de bf confirmée par le responsable : porte 15 pour le code, instruction au rang 0 (handoff de la PR 2, #1419). Les [A verifier] sur la migration du contrat du point d'étape restent.
 
 #### H20 · Gestes RGPD consignés au registre
 - **Identifiant, piste** : archivage de l'annexe d'hébergement signée et de l'accord de sous-traitance de l'hébergeur ; confiance ; geste du responsable.
@@ -598,6 +615,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : deux textes, de la main du responsable.
 - **Critère de fin** : textes acceptés ; ACT-4 et ACT-5 les consomment.
 - **Mise à jour (2026-10-14)** : textes acceptés. Premier jet de l'assistant, six arbitrages du responsable sur questions à options, puis validation telle quelle le 2026-10-14 : `docs/claude/propositions/2026-10-14-g11-textes-patient/README.md`. Non publiés : le texte de collecte part avec J3-collecte (H62) et ACT-4 (H77), les textes des mineurs avec J3-mineurs (H79) et ACT-5 (H78). Restent ouverts : les 15–17 ans (avocat, D-284), la version de « Vos données personnelles » à l'ouverture de la collecte (lettre l), le circuit des droits des mineurs (D-283 §5).
+- **Mise à jour (2026-10-14, #1443)** : une correction de forme du texte de dépôt, après revue de #1441, validée par le responsable le même jour ; rien d'autre ne change, les textes restent non publiés.
 
 ### Rang 1
 
@@ -612,14 +630,14 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | af | référence de fiche conseil sur l'action | A | 28 | non | H24 |
 | ag | rédaction assistée des zones du protocole | A | 5, 28 | non | H25 |
 | D-281, étape 3 | portail et pause, hors file C | A | 9 (fait) | non | F66 |
-| D-284 (g) écran, (h), (i) | NIR retiré de la fiche patient ; date de naissance demandée à la connexion, questionnaires et biologie en pause tant qu'elle manque ; validation par un titulaire de l'autorité parentale, désaccord connu = manuel | A | aucune ; (i) avec G-11 (H38) | non | H26 |
-| BP-07 | dossier de preuve remis à la curation signée | B | 2, 27 | non | F02 |
+| D-284 (g) écran, (h), (i) | NIR retiré de la fiche patient ; date de naissance demandée à la connexion, questionnaires et biologie en pause tant qu'elle manque ; validation par un titulaire de l'autorité parentale, désaccord connu = manuel (2026-10-14 : (g) écran livré, #1434 ; (h) livré, #1437 ; (i) fondu dans J3-mineurs, H79, #1439) | A | aucune ; (i) avec G-11 (H38) | non | H26 |
+| BP-07 | dossier de preuve remis à la curation signée (clos le 2026-10-14, #1438) | B | 2, 27 | non | F02 |
 | PR 2 de l'audit | vue dédoublonnée par analyte | B | aucune | non | F50 |
 | J2-med | aperçu médecin tracé au Fil | B | 27 ; 9 si migration | selon | F38, rang 0 |
 | J3-bioflow | premier lecteur hors biologie du module | B | 12 | non | F63, rang 0 |
 | correctif de la charge | « Reprendre cette charge » ne fige plus | B | 28 | non | F76, rang 0 |
 | trace d'import, code | empreinte, lectures, décisions ; purge à 30 jours (D-283 §10 c) | B | 17, 13 | non | F44, rang 0 |
-| D-284 (j) | identité retirée du document avant l'envoi à Anthropic ; analyse d'impact du transfert | B | aucune ; G3 clos (#1416) | non | H26 |
+| D-284 (j) | identité retirée du document avant l'envoi à Anthropic ; analyse d'impact du transfert (code mergé : #1426, #1428, #1431 ; analyse d'impact non versée, F47) | B | aucune ; G3 clos (#1416) | oui (#1426), release-db non consignée [A verifier] | H26 |
 | G-7 | essai de restauration réussi | geste | lève 8 | non | F04, rang 0 |
 | v | bandes de bruit par instrument | geste | 11 | non | H13, rang 0 |
 | M-3 | signature des 8 liaisons NABM | geste | 10 | non | F54, rang 0 |
@@ -705,6 +723,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:117`).
 - **Décisions, textes** : aucune D-xxx propre (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:376`) ; signature claim par claim, de la main du responsable.
 - **Critère de fin** : dossier remis, les signatures du responsable posées ; aucun texte clinique au dépôt.
+- **Mise à jour (2026-10-14)** : BP-07 clos (LOT-07 terminé, #1438). Dossier de preuve remis hors dépôt (#1432) ; sources WN-SRC-0508 à 0511 au registre du corpus, notices titre seul (#1433, #1436) ; positions d'expert P1 à P8 signées au dossier privé, aucun texte, seuil ni délai au dépôt (#1435) ; signatures du responsable posées dans le lot, donc M-5 (1/2), prévue au rang 2, est faite. Aucun code, aucune migration ; campagne repassée en pause, sans lot courant. Suite au plan : BP-12b (F09, positions versionnées) et BP-17 (F11).
 
 #### F50 · Vue dédoublonnée par analyte
 - **Identifiant, piste** : PR 2 ; une ligne par analyte avec ses panels et règles ; courrier et document patient inchangés ; panels.
@@ -759,6 +778,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Mise à jour (2026-10-14)** : (g) écran livré : champ retiré de la fiche, de la route et de l'export, `donnees_confidentialite` v16 avec accusé (pour ne pas effacer celui de la v15, accusée par aucun dossier actif) ; 0 NIR au constat du même jour ; reste la migration de retrait de la colonne (rang 4). Suite : (h), pause limitée aux questionnaires (agendas compris) et à la biologie (arbitrage du 2026-10-14).
 - **Mise à jour (2026-10-14, suite)** : (g) déployé et constaté (#1434 : v16 dans l'image, champ absent, 0 NIR). (h) livré dans sa PR : date demandée au portail après « Avant de commencer », confirmée, jamais écrasée ; pause tenue par les routes (questionnaires, anamnèse, agendas, dépôt biologique) ; mineur en pause jusqu'à (i) ; `donnees_confidentialite` v17 avec accusé. Critère de fin restant : pause constatée sur un dossier de test.
 - **Mise à jour (2026-10-14, clôture de (h))** : (h) mergé (#1437) et déployé (90743acf) ; constaté dans l'image (v17, refus `date_naissance_requise` et `circuit_mineur_requis`, route de saisie) ; parcours essayé au portail par le responsable ; au constat par conteneur, aucune date encore enregistrée par le portail (31 dossiers ouverts, 15 sans date, 0 mineur). Import et lecture de biologie par le praticien restent ouverts pour un dossier sans date ou mineur (arbitrage du 2026-10-14). (i) fondu dans J3-mineurs (H79, rang 10), avec le consentement complet ; d'ici là, un mineur reste en pause et se traite à la main (arbitrage du 2026-10-14). Textes de G-11 (H38) : premier jet à proposer par l'assistant (non commencé), puis à corriger et valider par le responsable (arbitrage du 2026-10-14).
+- **Mise à jour (2026-10-14, (j))** : trois lots de (j) mergés : migration `bio_ingest_masquage_identite_v1` (#1426) ; écran de masquage et lecture des seules pages masquées, `bio-extraction-v5`, sans repli sur le document (#1428) ; `usage_ia` v8 et `donnees_confidentialite` v15 (#1431), cette dernière remplacée depuis par v16 (#1434) puis v17 (#1437). Le code a mergé avant l'analyse d'impact que la ligne « Rang » plaçait avant (j) [A verifier]. Restent : l'analyse d'impact (F47) ; la release-db du lot 1 et le déploiement du lot 2, non consignés sur main [A verifier] ; le critère « identité absente du document envoyé, constaté sur un import » (premier masquage réel puis import v5, par conteneur, sur un dossier de test, par identifiant). Les textes de G-11 sont acceptés depuis (H38, #1441).
 
 #### H27 · LOT-02 de l'agenda du sommeil : la re-mesure (porte 16)
 - **Identifiant, piste** : LOT-02 de la campagne 2026-10-07-agenda-sommeil-adhesion : re-mesure de l'adhésion par cohortes avant et après, en agrégats ; sa clôture lève la porte 16 ; sommeil ; geste du responsable (constat).
@@ -783,6 +803,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : J3-api : [A verifier].
 - **Décisions, textes** : lettre x, de la main du responsable ; l'ouverture d'une API reste fermée (F75).
 - **Critère de fin** : posture mergée ; rôles posés, aucune clé.
+- **Mise à jour (2026-10-14)** : le préalable ci est écrit : D-286 (#1425). La première clé d'API émise est l'événement 3 de son §2 ; aucune clé n'est émise, x reste à écrire.
 
 #### H30 · o et J2-mom : Momentum à remesure libre
 - **Identifiant, piste** : lettre o (D-o, R:o, T-2, T-3, RK-3), puis J2-mom ; J21, J42, J90 inchangés ; douze mini-courbes, motifs d'absence ; valeurs aux points après la porte 22 ; cockpit ; geste du responsable (o), puis file A (J2-mom).
@@ -889,17 +910,17 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | J2-alim | journal alimentaire de 21 jours | A | 9 si migration | selon | H45 |
 | ML-2 à ML-4, ML-6 | suites de l'aperçu médecin | A | aucune | selon | H46 |
 | be | gestes communs au catalogue d'actions | A | 5, 28 | non | H47 |
-| cc, LOT-12 | habillage de la saisie du sommeil | A | 16 ; 18 si place | non | H48 |
+| cc, LOT-12 | habillage de la saisie du sommeil | A | 16 ; 18 (place de la file C : D-288 §3, #1430) | non | H48 |
 | J2-mom | Momentum par paires, douze mini-courbes | A | 22 pour les points | non | H30, rang 1 |
 | J2-bandes | bandes : alimentation et humeur d'abord | A | 11 | non | H13, rang 0 |
 | J3-api | rôles de connexion, aucune clé | A | 9 si migration | selon | H29, rang 1 |
 | D-281, étape 4 | validation de l'implication ; banc de cas fictifs refait | A | aucune | non | F66, rang 1 |
-| BP-09 | annulation d'un résultat, ajout seul | B | 28 ; 9 | oui | F03 |
+| BP-09 | annulation d'un résultat, ajout seul (fiche du lot validée le 2026-10-14, #1442) | B | 28 ; 9 | oui | F03 |
 | fiche LOT-25 | « quatre termes », cases corrigées | B | aucune | non | F14 |
 | J2-conf | garde d'âge ; registre des droits | B | aucune | non | F45, rang 0 |
 | F50, étape courrier | courrier regroupé par analyte | B | aucune | non | F50, rang 1 |
 | bb | lecture des trois plans par le patient | C | 18 | non | H49 |
-| M-5 (1/2) | signatures de BP-07 | geste | 23 | non | F02, rang 1 |
+| M-5 (1/2) | signatures de BP-07 (posées dans le lot, #1435, #1438) | geste | 23 | non | F02, rang 1 |
 | f | NABM : 8 liaisons, puis liste étendue | geste | 10 | non | F54, rang 0 |
 | M-2 | signature de la doctrine du cockpit (porte 6) | geste | lève 6 | non | F59, rang 1 |
 | G-8 | préalables communs prêts, rien d'activé | geste | 13 | non | H50 |
@@ -954,6 +975,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non ; aucun contrat v5 (`LOT-12-habillage-visuel.md:58`).
 - **Décisions, textes** : aucune D-xxx hors ca ; statut du LOT-12 posé en §9.
 - **Critère de fin** : saisie servie après le texte accepté ; constat sur un vrai dossier si c'est une place.
+- **Mise à jour (2026-10-14)** : cc compte comme une place de la file C, après l'encart bd : arbitrage du responsable du 2026-10-14 (handoff de la PR 2, #1419), écrit par D-288 §3 (#1430) ; la porte 18 s'applique (« 18 si place »). Rang et préalables inchangés.
 
 **File B**
 
@@ -964,6 +986,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : oui ; première migration de biologie ; sa release-db suit celle de D-281, mergée le 2026-10-13 (#1408) : ce fait amende « BP-09 d'abord » de G-6.
 - **Décisions, textes** : D-xxx du lot amendant D-124 §3 (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:375`) ; elle dit que la condition « premier import » sort des préalables.
 - **Critère de fin** : release-db constatée par conteneur ; résultat annulé exclu des élections, séries et réveils ; puis code consommateur.
+- **Mise à jour (2026-10-14)** : fiche du lot écrite, fichiers listés, validée par le responsable (`lots/LOT-09-annulation-resultat.md`, #1442) : préalable « fiche BP-09 » de la porte 28 tenu. Le lot part en deux PR, migration seule puis code. Aucune migration ni aucun code au 2026-10-14 : le lot reste à faire, release-db au rang 3 (porte 9).
 
 #### F14 · Fiche LOT-25 : « quatre termes »
 - **Identifiant, piste** : correction de la fiche LOT-25 de BIO-PARCOURS ; parcours.
@@ -1742,7 +1765,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 | J1-total, J2-total, J3-total | sommes, ordres de grandeur | toutes | aucune | non | règle, §5 |
 | G-6, N-7 | release-db une à une, une migration en vol | A et B | 9 | règle | règle, §5 |
 | G-12 | contre-revues P0 : diff collé, commentaires lus | toutes | 27 | non | règle, §5 |
-| N-1, N-2 | chemins propres ; fichiers de BP-09 dans sa fiche | A et B | 28 | non | règle, §5 |
+| N-1, N-2 | chemins propres ; fichiers de BP-09 dans sa fiche (listés le 2026-10-14, #1442) | A et B | 28 | non | règle, §5 |
 | T-4, N-4, RK-1 | frontière commune : une PR à la fois | A et B | aucune | non | règle, §5 |
 | N-3 | L5 jamais pendant une PR BIO-PARCOURS | A | aucune | non | règle, §5 |
 | N-5 | numéro D-xxx réservé dans main ; merge un à un | toutes | aucune | non | règle, §5 |
@@ -1782,8 +1805,8 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 | 1 | CGU unique | H70 | k, l (D-283), J2-base, J2-cc8 | CGU ; lecture datée si elle la porte | 5 |
 | 2 | E-mail neutre à la diffusion | H75 | t le classe hors relance, sinon il sort de la file ; J3-base | texte de l'e-mail relu | 6 |
 | 3 | « Mes échanges » en lecture | H76 | u, ai, J3-base ; durée de D-283 §2 | encart d'urgence étendu ; lecture datée | 7 |
-| 4 | Dépôt de documents | H77 | porte 17 (levée), registre, J3-collecte, J2-conf | texte de collecte (G-11) | 8 |
-| 5 | Textes des mineurs | H78 | z, J2-conf | textes des mineurs (G-11) ; constat par lecture consignée | 9 |
+| 4 | Dépôt de documents | H77 | porte 17 (levée), registre, J3-collecte, J2-conf | texte de collecte (G-11, accepté le 2026-10-14, #1441) | 8 |
+| 5 | Textes des mineurs | H78 | z, J2-conf | textes des mineurs (G-11, acceptés le 2026-10-14, #1441) ; constat par lecture consignée | 9 |
 | 6 | Fiche signalétique (date de naissance, invitation au dépôt) | F45 | z, k, texte accusé ; seule surface neuve permise à un dossier sans date (D-283 §5) | texte patient | 10 |
 | 7 | Invitation d'autoévaluation au 21e jour | H80 | k, t, texte patient | texte patient | 10 |
 | 8 | Fiche compléments | F78 | J3-bio (porte 19), règle signée et C4 (porte 28), ACT-1 | texte de la fiche | 10 |
@@ -1793,14 +1816,14 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 
 ### Ouvertures sans place numérotée
 
-Chacune prend une place avec son constat, servie après la place 5 au moins, sauf l'imprimable du protocole : il est la page déjà servie, imprimée, et suit les ajouts de contenu. Leur ordre au-delà de la place 11 est tranché : la conduite passe devant. Dès que l'encart « quand ralentir ou demander avis » (bd, H71) est prêt, il prend la place suivante avant toute autre ; les autres (bb, cc si elle compte comme une place, cg, bf, et toute ouverture sans place numérotée) s'ouvrent dans l'ordre où elles sont prêtes, une à la fois, le constat de la précédente avant (porte 18). C'est la règle de b (H05) pour les places 12 et suivantes.
+Chacune prend une place avec son constat, servie après la place 5 au moins, sauf l'imprimable du protocole : il est la page déjà servie, imprimée, et suit les ajouts de contenu. Leur ordre au-delà de la place 11 est tranché : la conduite passe devant. Dès que l'encart « quand ralentir ou demander avis » (bd, H71) est prêt, il prend la place suivante avant toute autre ; les autres (bb, cc, qui compte comme une place (D-288 §3, #1430), cg, bf, et toute ouverture sans place numérotée) s'ouvrent dans l'ordre où elles sont prêtes, une à la fois, le constat de la précédente avant (porte 18). C'est la règle de b (H05) pour les places 12 et suivantes.
 
 | ouverture | fiche | rang au plus tôt | condition |
 |---|---|---|---|
 | Bloc « Protocole » du document médecin, sans la charge déclarée | F39 | 5 | J2-med, p ; « avant le premier check-in » reste une visée que la file peut mettre en défaut |
 | Encart « quand ralentir ou demander avis » | H71 | 5 [Hypothese] | porte 7 (rang 4) ; passe devant dès qu'il est prêt |
 | Lecture patient des trois plans | H49 | 2 [Hypothese], servie après la place 11 | ba ; ordre de préparation après l'encart |
-| Nouvelle saisie du sommeil, si elle compte comme une place | H48 | 2 [Hypothese] | ca, cb, porte 16 ; ordre de préparation après l'encart ; compte-t-elle comme une place : [A verifier] |
+| Nouvelle saisie du sommeil, si elle compte comme une place | H48 | 2 [Hypothese] | ca, cb, porte 16 ; ordre de préparation après l'encart ; compte-t-elle comme une place : oui (arbitrage du 2026-10-14, D-288 §3, #1430) |
 | Ses nuits par semaine | H63 | 4 | porte 16, N-8 ; ordre de préparation après l'encart |
 | Indicateurs de la semaine, au point d'étape | H19 | 3 au plus tôt [Hypothese] pour le code | une D-xxx par indicateur ; moment : au point d'étape ; ordre : après l'encart |
 | Remise du bilan au patient | F37 | 7 [Hypothese] | porte 18 |
@@ -1821,7 +1844,7 @@ Rang d'abord, hiérarchie ensuite. Un geste n'a pas d'autre adresse que sa fiche
 
 | rang | h | geste | fiche | ce qu'il débloque |
 |---|---|---|---|---|
-| 0 | h1 | signer les décisions d'ordre a, b, g (PR S-3) | F01, H05, F04 | chaîne biologie, file C, restauration |
+| 0 | h1 | signer les décisions d'ordre a, b, g (PR S-3) ; fait le 2026-10-14 : D-287, D-288, D-289 (#1430) | F01, H05, F04 | chaîne biologie, file C, restauration |
 | 0 | h1 | fournir les sources de la porte 4 | H08 | c, am, al, cm, seuils_points |
 | 0 | h1 | sources de fidélité (G-10) | H13 | v, bandes, mots qui jugent |
 | 0 | h1 | lettres de sécurité m, n, z, ac | H10, H11, F45, H12 | NF-7, EF-3b, garde d'âge, radar |
@@ -1829,11 +1852,11 @@ Rang d'abord, hiérarchie ensuite. Un geste n'a pas d'autre adresse que sa fiche
 | 0 | h2 | lettres j, q, s, aa, ab, av ; guide w ; ca ; bg | F63, F38, F57, F55, H14, F33, H15, H17, H18 | palier 1, BioFlow, aperçu médecin, onglet Biologie, BF-8, EF-0, 12 besoins, agenda du sommeil |
 | 0 | h2 | K-05a et D4 (porte 5) | F46 | R:Drive, ag, ah, an, at, ay, bg |
 | 0 | h2 | liste des 8 analytes NABM (S-7) ; lecture des écarts d'unité textuels ; copie datée de l'accord d'Anthropic | F54, F60, F47 | M-3 ; deux unités ; registre |
-| 0 | h2 | effectif de masquage ; cj ; ci ; co ; comportement voulu de la charge | F25, F49, F67, F68, F76 | constats sur plusieurs dossiers ; packs ; levées ; AIPD ; correctif |
+| 0 | h2 | effectif de masquage ; cj ; ci (fait le 2026-10-14 : D-286, #1425) ; co ; comportement voulu de la charge | F25, F49, F67, F68, F76 | constats sur plusieurs dossiers ; packs ; levées ; AIPD ; correctif |
 | 0 | h2 | accepter la lettre cq (D-285, fait) | H04 | PR 1 du versement |
 | 0 | h2 | compter les dossiers bloqués avant T0, en conteneur | H07 | délai avant T0 |
 | 0 | h3 | k ; l (trace d'import) ; h ; instruction de bf | F77, F44, H16, H19 | CGU, trace, Boussole, indicateurs |
-| 0 | h3 | G-11 : textes patient de la collecte et des mineurs (l écrite) | H38 | collecte, mineurs, lots (h) et (i) de D-284 |
+| 0 | h3 | G-11 : textes patient de la collecte et des mineurs (l écrite) ; fait le 2026-10-14 (#1441) | H38 | collecte, mineurs, lots (h) et (i) de D-284 |
 | 0 | h3 | archiver l'annexe d'hébergement et les accords de sous-traitance (hébergeur, Google Workspace, Sentry) ; relancer par écrit la confirmation d'effacement ; informer tout dossier resté sur une version antérieure du texte ; faits attendus (identité juridique, copie signée) | H20 | registre RGPD à jour (D-283 §8-9) |
 | 0 | h3 | relancer par écrit le laboratoire pilote | F41 | porte 29 |
 | 0 | h3 | lettre cp : ranger chaque trou restant sous son lot | F69 | revue RGPD avant le 2027-06-30 |
@@ -1848,7 +1871,7 @@ Rang d'abord, hiérarchie ensuite. Un geste n'a pas d'autre adresse que sa fiche
 | 1 | h2 | lire les deux comptes du LOT-02 du sommeil | H27 | porte 16 |
 | 1 | h3 | u, cb ; textes (a), (e), (f) de D-283 | H37, H39, H26 | Patient Hub, écran de fin, durées |
 | 1 | h4 | r, x | H28, H29 | J2-conf, J3-api |
-| 2 | h2 | M-2 (doctrine du cockpit, porte 6) ; M-5 (1/2), signatures de BP-07 ; f | F59, F02, F54 | J1-cockpit, Jour N, cabinet ; BP-07 mergé ; G-3 |
+| 2 | h2 | M-2 (doctrine du cockpit, porte 6) ; M-5 (1/2), signatures de BP-07 (posées dans le lot, #1438) ; f | F59, F02, F54 | J1-cockpit, Jour N, cabinet ; BP-07 mergé (clos le 2026-10-14, #1438) ; G-3 |
 | 2 | h3 | G-8 ; ai | H50, H51 | ACT-1, ACT-3 |
 | 2 | h3 | intitulés des trois plans (bb) ; jeu d'illustrations de la saisie du sommeil (cc) | H49, H48 | lecture des trois plans ; habillage |
 | 3 | h1 | M-1, signature de SAF-EI-01 amendée | F66 | porte 7 au rang 4 |
@@ -1870,9 +1893,9 @@ Rang d'abord, hiérarchie ensuite. Un geste n'a pas d'autre adresse que sa fiche
 ### Fronts parallèles dès le rang 0, sous la règle de non-collision
 
 1. Constats : S-1 (F40, H06) et le comptage avant T0 (H07) ; lecture seule en conteneur, agrégats, par identifiant ; K-18a écrite.
-2. Textes courts : S-2, ci puis S-3, cq, puis les lettres sans préalable ; un merge à la fois ; numéro D-xxx réservé dans main (N-5).
+2. Textes courts : S-2, ci puis S-3 (faits le 2026-10-14, #1425, #1430), cq, puis les lettres sans préalable ; un merge à la fois ; numéro D-xxx réservé dans main (N-5).
 3. Cosmétique sans migration (file A) : S-4, la graphie, puis les parts de J1-base sans préalable, hors frontière occupée.
-4. Biologie (file B) : BP-07 dès a mergée, puis BP-09, seule migration en vol, puis sa release-db constatée avant toute autre migration. La migration du lot 2 de D-281 est passée en tête par le fait, constatée le 2026-10-13. La migration du lot 2 de D-282 (file du G3) est passée ensuite, le même jour, par le fait (#1412, release-db approuvée et constatée, attestation du handoff 2026-10-13-0500) : la collision envisagée avant ces deux migrations ne s'est pas produite. Le plan tient l'ordre acquis pour la suite : release-db de BP-09 au rang 3, puis l'essai de restauration, puis le rang 4. Une seule migration en vol (D-087) : la session parallèle lit le plan avant d'ouvrir toute migration ; le versement (PR 1) le lui donne.
+4. Biologie (file B) : BP-07 dès a mergée (clos le 2026-10-14, #1438), puis BP-09, seule migration en vol, puis sa release-db constatée avant toute autre migration. La migration du lot 2 de D-281 est passée en tête par le fait, constatée le 2026-10-13. La migration du lot 2 de D-282 (file du G3) est passée ensuite, le même jour, par le fait (#1412, release-db approuvée et constatée, attestation du handoff 2026-10-13-0500) : la collision envisagée avant ces deux migrations ne s'est pas produite. Le plan tient l'ordre acquis pour la suite : release-db de BP-09 au rang 3, puis l'essai de restauration, puis le rang 4. Une seule migration en vol (D-087) : la session parallèle lit le plan avant d'ouvrir toute migration ; le versement (PR 1) le lui donne.
 5. Paquets du responsable : CGU, Patient Hub, mineurs, sources de fidélité, sources de la porte 4 ; préparés en parallèle, rien ne s'active.
 6. Le nombre de fronts est borné par l'attention du responsable, relecteur unique, pas par le code. Quand le code avance plus vite, on prend le rang suivant dont les portes sont levées.
 
@@ -1881,7 +1904,7 @@ Rang d'abord, hiérarchie ensuite. Un geste n'a pas d'autre adresse que sa fiche
 - Une activation patient à la fois, un constat entre chacune ; places 1 à 5 jamais permutées ; le formulaire de sécurité de D-281 hors file, seul, constaté avant l'ouverture suivante.
 - release-db humaine, une à une ; merger une migration ne l'applique pas ; un merge à la fois ; **jamais d'auto-merge sur une PR de lot** (D-087 ; D-248) ; une seule migration en vol sur `schema.prisma` ; déploiement constaté avant le merge suivant (G-6, N-7).
 - Ordre des release-db : (1) D-281 lot 2, fait ; (2) D-282 lot 2, fait (#1412) ; (3) BP-09 au rang 3 ; (4) essai de restauration réussi (porte 8) avant toute migration suivante ; (5) le rang 4, selon la hiérarchie : EF-3b, BP-12a, BP-11, BP-13, BP-15, CC-8, axes [Hypothese], BF-8, collecte, D-283 (b) [Hypothese], retrait de la colonne NIR (D-284 lot g) [Hypothese], et selon les cas J2-med, statut posé, ai, J1-alim, J2-alim, J3-api, J3-cabinet ; (6) le rang 5 : BP-12b, BP-14, BP-18a, BP-18b s'il migre, BP-05 [Hypothese], selon F79 ; (7) rang 6 : BP-27 [Hypothese], selon ax et indications v2 ; rang 7 : BP-19 [Hypothese] ; rang 8 : BP-22 [Hypothese] ; rang 10 : J3-mineurs ; (8) gelées : adaptateur du laboratoire (porte 29), selon F41.
-- Lecture de la porte 8 : BP-09 ne l'attend pas ; G-7 peut se jouer dès le rang 1 ; toute autre migration l'attend. D-g s'écrit dans la lettre g avec la portée acquise (F04) ; deux migrations sont passées avant l'essai par le fait (D-281 lot 2, D-282 lot 2), ce qui rend G-7 plus pressant sans changer son rang.
+- Lecture de la porte 8 : BP-09 ne l'attend pas ; G-7 peut se jouer dès le rang 1 ; toute autre migration l'attend. D-g s'écrit dans la lettre g avec la portée acquise (F04) ; écrite le 2026-10-14 par D-289 (#1430), dont le §1 compte aussi #1426 (D-284 lot j) parmi les migrations passées avant l'essai ; deux migrations sont passées avant l'essai par le fait (D-281 lot 2, D-282 lot 2), ce qui rend G-7 plus pressant sans changer son rang.
 - Texte accepté, puis registre, puis drapeau, avant toute surface patient neuve ; aucune IA sur les documents déposés ; un registre avant chaque table et chaque site IA (F70).
 - Aucune règle clinique sans signature : ni seuil, ni poids, ni borne, ni dose inventés ; D-xxx et fragment `changelog.d/`.
 - Toute table neuve qui associe un patient nommé à un geste de soin est de catégorie particulière (D-251 §9) : D-283 §3 y reclasse six tables et les deux tables de gestes motivés, et fait du lien patient ↔ médecin traitant une donnée de santé ; la liste de dispense du banc de la rubrique 5 est vide (#1411) ; registre avant chaque table (F70).
@@ -1898,7 +1921,7 @@ Rang d'abord, hiérarchie ensuite. Un geste n'a pas d'autre adresse que sa fiche
 
 ### Fermetures
 
-- Second compte (fermé un an), API et recherche, flux laboratoire, envoi direct au médecin : fermés. Toute levée passe par une D-xxx, après l'amendement de D-276 à cinq déclencheurs (ci, F67) ; le flux laboratoire attend en plus la porte 29 (F75, F41).
+- Second compte (fermé un an), API et recherche, flux laboratoire, envoi direct au médecin : fermés. Toute levée passe par une D-xxx, après l'amendement de D-276 à cinq déclencheurs (ci, F67 ; écrit par D-286, #1425) ; le flux laboratoire attend en plus la porte 29 (F75, F41).
 - Un test d'intrusion humain devient obligatoire avant toute offre commerciale ou tout second compte praticien (D-283 §7). HDS suffit : la réserve SecNumCloud de D-006 est close ; aucun DPO n'est désigné, le point de contact est le responsable, et l'obligation de désigner relève d'un conseil (D-283 §7).
 - Différés fermes de C2, jamais repris : analyse émotionnelle libre, score de décrochage, notifications proactives, pourcentage d'observance au patient (campagne suivi-j7, `CAMPAGNE.md:70-77`).
 - Messagerie de santé hors de portée : aucun canal sortant, aucun sous-traitant de plus (D-222 §4). La messagerie du portail est une collecte documentaire seule, sans conversation.
@@ -2003,6 +2026,7 @@ Un gel n'a pas de rang : il prend un rang au déclencheur posé, par la règle. 
 - **Décisions, textes** : une D-xxx par levée.
 - **Critère de fin** : sans objet tant que rien n'est levé.
 - **Mise à jour (2026-10-13)** : « avis DPO (porte 28) » se lit « avis d'un conseil » : aucun DPO n'est désigné, obligation close à cette échelle (D-284 §6) ; l'analyse datée d'une page se revoit avant toute ouverture à plusieurs praticiens. Un test d'intrusion humain précède toute offre commerciale et tout second compte praticien (D-283 §7). Chaque D-xxx de levée est en §10.
+- **Mise à jour (2026-10-14)** : ci est écrite (D-286, #1425) et b aussi (D-288, #1430) ; x reste à écrire. Le second compte praticien reste fermé jusqu'au 2027-10-11 (D-288 §5). Rien n'est levé.
 
 #### F74 · P3 et P4 : SaaS pilote, montée en charge
 - **Identifiant, piste** : API publique, sandbox, facturation, premier client externe, puis OAuth, SDK, interopérabilité (`docs/claude/campagnes/AUDIT_BIOFLOW_2026-10-04.md:758-777`) ; ouvrir BioFlow à d'autres cabinets ; plateforme.
@@ -2021,6 +2045,7 @@ Un gel n'a pas de rang : il prend un rang au déclencheur posé, par la règle. 
 - **Décisions, textes** : une D-xxx par levée ; lettres b, x, q.
 - **Critère de fin** : sans objet tant que rien ne se lève.
 - **Mise à jour (2026-10-13)** : la levée du second compte attend aussi un test d'intrusion humain (D-283 §7). Ces fermetures sont gelées ici, non abandonnées (§7).
+- **Mise à jour (2026-10-14)** : ci est écrite (D-286, #1425) : second compte, API et envoi direct sont les événements 2, 3 et 5 de son §2. Le second compte ne s'ouvre pas avant le 2027-10-11 ; sa levée exige une D-xxx et un test d'intrusion humain (D-288 §5, #1430). Rien n'est levé (D-286 §2, D-288 §6).
 
 ## §7 Abandonnés
 
@@ -2028,7 +2053,7 @@ Date d'abandon : 2026-10-13 pour toutes les lignes, sauf mention. L'historique G
 
 | objet | motif | où reste la référence |
 |---|---|---|
-| Moteur de propositions de parcours alimentaire (LOT-03 de la chaîne alimentaire) | jamais commencé, aucune D-xxx ; recouvre D-235 à D-237 | `DOSSIER_REGLES_LOT-03.md`, règles candidates gardées en référence |
+| Moteur de propositions de parcours alimentaire (LOT-03 de la chaîne alimentaire) | jamais commencé, aucune D-xxx ; recouvre D-235 à D-237 ; [A verifier] motif contredit par D-045 (accepté le 2026-08-11 : quatre règles de parcours pour ce moteur), statut du LOT-03 posé par la PR 2 : « règles retenues par D-045, dossier des candidates en référence » (#1419) | `DOSSIER_REGLES_LOT-03.md`, règles candidates gardées en référence |
 | Scan code-barres patient (reste d de C4) | différé sans porteur | C4 `CAMPAGNE.md`, « Frontières, Différés » |
 | Interactions exhaustives des compléments (reste d de C4) | différé sans porteur | historique Git |
 | Campagne C4 compléments clean label | objet livré par le rayon compléments (PR #332 à #353, #493, #585) | restes a et b sous R:ao (F78) |
@@ -2126,14 +2151,18 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | D-C5-01 à D-C5-04 ; D-JA-01 à D-JA-03 | `DETTE_C5.md:10-13` ; `DETTE_JA.md:16-18` | dans H16 et H45 |
 | Curation de `QuestionnaireDefinition.niveau` et `.publicCible` : statut « surveillance », aucun usage applicatif (R10, 2026-07-10) | `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md:78` ; `docs/claude/PROJET_CONTEXTE.md:195` | surveillance, sans action ni échéance ; se solde au premier usage applicatif ou au retrait des champs [Hypothese] |
 | D-TRUST-05 passe réelle d'accessibilité | `DETTE_TRUST.md:13` | portée par H64 (rang 4) |
-| Lecture par la file (G3) : un dossier clos pendant l'attente n'est pas rejugé par la réclamation (un motif neuf demanderait une migration) | handoff 2026-10-13-1110:80-81 | hors G3 (D-282 §8) : lot à cadrer, file B, avec TEMPS 3 [Hypothese] |
-| TEMPS 3 : la transaction des lignes insère sous des clés vers le dossier sans le verrouiller d'abord, interblocage possible face à l'effacement, ancien et nouveau chemin | handoff 2026-10-13-1110:94-97 | hors périmètre de D-282 (lecture intouchée) ; lot à cadrer, file B, h1 [Hypothese] |
+| Lecture par la file (G3) : un dossier clos pendant l'attente n'est pas rejugé par la réclamation (un motif neuf demanderait une migration) | handoff 2026-10-13-1110:80-81 | soldée le 2026-10-14 par #1418 (D-282 §9.1), sans migration ; la ligne reste pour les renvois |
+| TEMPS 3 : la transaction des lignes insère sous des clés vers le dossier sans le verrouiller d'abord, interblocage possible face à l'effacement, ancien et nouveau chemin | handoff 2026-10-13-1110:94-97 | soldée le 2026-10-14 par #1418 (D-282 §9.2) ; la ligne reste pour les renvois |
 | Bancs manquants du processus de fond : `reconcilierFantomes`, refus à la réclamation et à la reprise, boucle du processus ; base locale `wn_g3_lot3_banc` à supprimer sur accord | handoff 2026-10-13-1110:98-101 | hors G3 (D-282 §8, handoff du lot 5) : tests `reconcilierFantomes` et boucle du processus, lot à cadrer avec TEMPS 3 [Hypothese] ; base locale : geste du responsable, sur son accord |
 | `patientLimitations` du contrat de vue patient du protocole : vide chez tous les appelants de production, aucun écran ne le rend ; le servir exige un texte patient signé, jamais la recopie des limites écrites pour le praticien | `docs/claude/campagnes/FILE_ATTENTE.md:522-526` (historique Git) ; D-191, D-200 §3 | sans porteur ; avec la première surface qui rend ce champ (même geste qu'af, H24), texte signé du responsable avant tout écran ; ligne ajoutée le 2026-10-14 à la suppression de la file (PR 5, revue #1422) |
 | Constat de la proposition de bilan servie au cockpit sur un dossier réel, par identifiant et en conteneur (preuve terminale de la chaîne T0, jamais consignée ; `WN_CB_PROPOSITION` posé en production) | `docs/claude/campagnes/FILE_ATTENTE.md:540-541` (historique Git) ; handoffs du 2026-08-18 | geste du responsable, à verser avec le prochain constat sur dossier réel (H06), avant le code de ax (F35) ; ligne ajoutée le 2026-10-14 (PR 5, revue #1422) |
 | La minute d'après affiche l'identifiant brut de la priorité retenue au lieu de son libellé (registre signé ou libellé du praticien) ; écran praticien, aucun risque clinique | `docs/claude/campagnes/FILE_ATTENTE.md:605-612` (historique Git) ; D-279 (revue du lot 5A, 2026-10-12) ; `web/src/components/copilote/ClotureMinuteApresPanel.tsx:104` | petit lot d'écran, au prochain passage sur le copilote ; ligne ajoutée le 2026-10-14 (PR 5, revue #1422) |
 | Passe `wn-reviewer` de l'exception migration/authentification non liée au sha final (« obligatoire si elle n'a pas déjà eu lieu ») ; défaut antérieur à D-290 | revue CodeRabbit de #1440 (synthèse, « Security Architecture Review ») ; `.claude/skills/wn-merge/SKILL.md` étape 5 | la lier au sha revu, comme `--match-head-commit` (D-290), au prochain lot qui touche `/wn-merge` [Hypothese] |
 | `.coderabbit.yaml` lu sur la branche de la PR : une PR peut affaiblir sa propre revue | D-290 §5 ; revue CodeRabbit de #1440 (synthèse) | tranché par le responsable le 2026-10-14 (D-291) : ces PR sont P1, `wn-reviewer` avant le merge (règle `.claude/rules/pr-revue-et-release-db.md` 1.10) ; ni `CODEOWNERS` ni approbation imposée. Garde-fou déclaratif : la ligne reste ouverte tant qu'aucun verrou ne la ferme |
+| La synthèse IA ne lit pas les pseudo-items `AGA_*` de `Q_ALI_09` : relus contre un catalogue qui n'en déclare aucun, ils sont rendus non résolus | `web/src/lib/scoring/reponsesLisibles.ts`, `web/src/lib/synthese/generation.ts` ; handoff 2026-10-14-0010 (PR 2, #1419) | au plan seulement, aucun code pendant le versement (arbitrage du 2026-10-14) ; sort à écrire [A verifier] ; ligne ajoutée le 2026-10-14 |
+| Le banc de vocabulaire de verdict du LOT-04 de biologie exploitée laisse passer « élevé » et « bas » | `EstimeMesurePanel.test.tsx:932-933` ; handoff 2026-10-14-0010 (PR 2, #1419) | au plan seulement (arbitrage du 2026-10-14) ; sort à écrire [A verifier] ; ligne ajoutée le 2026-10-14 |
+| Pagination au-delà d'environ 100 lignes : nommée au §9 (renvoi à S-1 et au §8), portée par aucune fiche ni ligne du §8 | handoff 2026-10-14-0135 (PR 3, #1420) | sans porteur ; sort à écrire [A verifier] ; ligne ajoutée le 2026-10-14 |
+| Génération PDF native avec signature du booklet, coaching patient autonome, RAG SIIN plein : nommés par aucune ligne du plan ; le §5 ne ferme SSO et RAG dynamique que par renvoi à l'historique archivé | handoff 2026-10-14-0135 (PR 3, #1420) ; `HISTORIQUE_CHANTIERS_TECHNIQUES.md:82-93`, archivé sous `docs/archive/roadmap-updates/` (PR 4, #1421) | sans porteur ; sort à écrire [A verifier] ; ligne ajoutée le 2026-10-14 |
 
 ### Soldées, constatées au dépôt (disparaissent avec la file), et verdicts CL
 
@@ -2173,6 +2202,8 @@ Règles de l'audit (`scripts/wn-campaign-audit.mjs`) : un statut est fermé s'il
 
 Corps des campagnes fermées, dans la même PR : les cases « Done » contradictoires se cochent sur preuve ou reçoivent une ligne datée (échéance HDS `CAMPAGNE.md:179-210` ; chaîne alimentaire `CAMPAGNE.md:103-117`, six cases). `AUDIT_REGLES_CAMPAGNES.md` (2026-07-21, 20 campagnes) se régénère après les statuts : `node scripts/wn-campaign-audit.mjs --no-fail --format markdown --write docs/claude/campagnes/AUDIT_REGLES_CAMPAGNES.md` (`scripts/README.md:129`).
 
+- **Mise à jour (2026-10-14)** : PR 2 mergée (09bd86b1, #1419). Statuts posés, datés du 2026-10-13, `lot_courant` « aucun », cinq gabarits LOT-00 à LOT-04 supprimés, `AUDIT_REGLES_CAMPAGNES.md` régénéré (51 campagnes, 0 erreur, 1 avertissement préexistant `duplicate_lot_ordinal`). Trois statuts diffèrent du tableau après contre-lecture sur pièces : compléments clean label « objet livré par les PR C4 #330 à #353 » ; LOT-03 de la chaîne alimentaire : règles retenues par D-045, candidates en référence (voir §7) ; rayon compléments : LOT-00 refermé sans objet le 2026-08-06. Quinze cases « Done » instruites : quatre cochées sur preuve, onze annotées d'une ligne datée.
+
 ### Campagnes maintenues (PR 3)
 
 | campagne | geste |
@@ -2188,6 +2219,7 @@ Corps des campagnes fermées, dans la même PR : les cases « Done » contradict
 - `docs/architecture/bioflow/BIOFLOW_ROADMAP.md` : `:15` (« transféré en FILE_ATTENTE ») et `:20` (« les lots de sécurité passent en tête de file », livrés) corrigés ; Track C réécrite « lots de BIO-PARCOURS, étapes av à az » ; la porte 30 du plan (la décision, levée par D-282) y est nommée ; G3 levé par #1416 (`:16` et `:37` déjà réécrits) ; G1, G2, G4 en historique ; les règles de parallélisme gardées (reprises au §5 et en PR 4).
 - `docs/claude/PROJET_CONTEXTE.md:189-202` (« Ce qui reste ouvert ») : remplacé par un renvoi au plan.
 - `docs/claude/campagnes/README.md:5` : renvoi au plan au lieu de `PROGRAMME_WELLNEURO_5_0.md`.
+- **Mise à jour (2026-10-14)** : PR 3 mergée (d671945b, #1420), « Campagnes maintenues » comprises. `.wn/state.json` : tête neuve renvoyant au plan, ancienne tête gardée en trace datée, 23 entrées de dettes retirées (versées au §8), `blocking_issues` vide, `wn-cycle --appliquer` joué. Les deux [A verifier] sont instruits : `status` gardé « active » (vocabulaire de l'outillage ; la pause est le statut de la campagne) ; `validation` posée à la main, aucun script ne l'écrit. LOT-11 du sommeil terminé, LOT-12 et LOT-05 de BIO-INGEST transférés au plan ; `BIOFLOW_ROADMAP.md`, `PROJET_CONTEXTE.md` et `campagnes/README.md` renvoient au plan. Reports au §8 (lignes du 2026-10-14).
 
 ### Archivés par déplacement, avec bandeau daté (PR 4)
 
@@ -2199,12 +2231,14 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 - Photographies figées, déplacées (aucune citée par le registre) : AUDIT_CONFORMITE_5_0, AUDIT UX 5.0, AUDIT_BIOFLOW, AUDIT_PANELS, MESURE_RAYON_CORRESPONDANCE_2026-09-17, SURFACE_RELECTURE_ECART_DE_PLAN, SURFACE_RELECTURE_TEXTES_PARTAGE. Les SURFACE_RELECTURE sont huit : deux déplacées ci-dessus, et six autres (BP25, CATALOGUE_ASSIETTES, CATALOGUE_CONDUITES, FAMILLES_EQUIVALENCE, RESOLVER_LIBELLES, SAF_QUEST_01) sont citées par le registre et reçoivent leur bandeau en place.
 - CADRAGE_BIO_PARCOURS_2026-10-04 (v1) ; proposition 2026-07-18-gate-modele-multi-cycles et ARBITRAGES_GATE_MULTI_CYCLES.md.
 - Restent en place : CADRAGE_BIO_PARCOURS_v3, `2026-09-30-bio-ingest/CADRAGE_LOT05_ADAPTATEUR_2026-10-07.md` (porte 29), CADRAGE_CHAINE_DOCUMENTAIRE, CADRAGE_PROTOCOLE_DEPUIS_LE_CORPUS, CADRAGE_CURATION_SIGNEE, CADRAGE_EXCLUSIONS_INTERVENTIONS, `AUDIT_REGLES_CAMPAGNES.md` (régénéré par script en PR 2), les cadrages et photographies cités par le registre (bandeau en place), `ROADMAP_TECHNIQUE.md` (photo d'architecture), `ACTIVE_CAMPAIGN.md` (généré), `.wn/state.json`, chaque `CAMPAGNE.md` et ses `lots/`, le registre, `DOSSIER_RGPD.md`, `CHANGELOG.md`, les handoffs et `SESSION_LOG.md`.
+- **Mise à jour (2026-10-14)** : PR 4 mergée (aaf73324, #1421). Destinations [Hypothese] confirmées : feuilles de route sous `docs/archive/roadmap-updates/`, photographies, cadrages et les dossiers du gate multi-cycles et de nutrition référentielle sous `docs/archive/cadrages/`, bandeau « Archivé le 2026-10-14 » ; douze documents cités par le registre figés en place, bandeau « Figé le 2026-10-14 ». Gate multi-cycles (« historique Git » au §7, « déplacement » ici) : déplacé. « AUDIT UX 5.0 » = `AUDIT_CONFORMITE_UX_5_0_2026-07-18.md`. La pièce de transfert de la curation signée reste, citée par `lots/LOT-02:11-13` de doctrine exécutable (le §9 dit `:3`). `.wn/documentation.yml` reçoit la clé `plan` ; le relevé des anciens chemins hors traces datées est vide.
 
 ### Supprimés
 
 - `docs/claude/campagnes/FILE_ATTENTE.md` (PR 5 ; le texte reste dans l'historique Git).
 - `2026-07-11-complements-clean-label-v1/lots/LOT-00` à `LOT-04` : cinq gabarits vides, après `lot_courant` « aucun » (PR 2).
 - Les quatre dossiers de briefs (`2026-08-18-curation-signee`, `2026-08-21-charge-et-capacite`, `2026-08-21-recit-du-parcours`, `2026-08-21-jumeau-de-comprehension`), `CAMPAIGN_DRAFT.md` compris : ils sortent du dépôt (effet accepté : « les dossiers d'origine sortent du dépôt ») ; chaque `CAMPAIGN_DRAFT.md` est un gabarit généré par `scripts/wn-campaign.mjs` (2 à 5 lignes d'écart avec le gabarit : titre, date), accompagné d'un `BRIEF_COMPILED.md`, d'un `CAMPAIGN_META.json` et d'une source ; le texte reste dans l'historique Git, les chemins sont cités au §6 (PR 4). `2026-08-18-nutrition-referentielle` n'est pas un brief (R1 livré par C5A, R2 = R:ao, R3 = R:ah, recettes gelées) : seul son `CAMPAIGN_DRAFT.md`, gabarit vide, est supprimé ; `BRIEF_COMPILED.md`, `CAMPAIGN_META.json` et sa source s'archivent par déplacement avec bandeau [Hypothese]. Reste en place : `2026-08-18-curation-signee/sources/2026-08-23-transfert-migration-axes-claim.md`, citée par doctrine-executable `lots/LOT-02:3`. L'audit des campagnes se rejoue dans la même PR [A verifier : codes `missing_in_mirror`, `extra_in_mirror`].
+- **Mise à jour (2026-10-14)** : fait. Gabarits LOT-00 à LOT-04 supprimés après `lot_courant` « aucun » (PR 2, #1419) ; quatre dossiers de briefs sortis, pièce de transfert gardée, gabarit vide de nutrition référentielle supprimé (PR 4, #1421) ; `FILE_ATTENTE.md` supprimé (PR 5, #1422). Audit des campagnes vert aux PR 2, 3 et 4 (un avertissement préexistant, `duplicate_lot_ordinal`).
 
 ### Textes périmés corrigés par ligne datée, sans effacement (PR 6)
 
@@ -2226,6 +2260,8 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | `CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:480-484`, :489-497 | §6.5 questions 2 à 5 ouvertes ; §6.6 périmé (borne du 2026-10-21, entrée de FILE_ATTENTE) | « 2026-10-13 : questions gelées au plan ; §6.6 remplacé par le plan » |
 | `docs/DOSSIER_RGPD.md` (DEMANDE_DPA « envoyée »), `CONSTITUTION_CLINIQUE` (revue DC-42 au 2026-08-30), `FEATURE_FLAGS.md` (WN_EI_INTERRUPTION), `DETTE_TRUST.md` (règle EI « v1 »), fiches-conseils (lien signé vers le médecin), cadrage LOT-04 (absorbé par BP-27) | périmés | une ligne datée chacun |
 
+- **Mise à jour (2026-10-14)** : PR 6 mergée (7c4eeab2, #1423) ; lignes datées posées sans effacement, datées du 2026-10-14, jour de leur écriture (le tableau écrit 2026-10-13). `PROJET_CONTEXTE.md` : 102 modèles au compte du jour ; `DETTE_TRUST.md` : échéances alignées sur le 2027-06-30. Signalés hors périmètre, non corrigés : `2026-08-02-rayon-biologie-cb/CAMPAGNE.md` :30, :55, :120-122 ; `AUDIT_DOCTRINE_CHAINE_T0.md` :166, :632 ; en-tête de `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`. `consommation_decisions.json` : réexamen du rayon CORPUS biologie daté du 2026-10-01, échu, à constater [A verifier].
+
 ## §10 Décisions et textes à écrire, consolidés
 
 « La main du responsable » : texte ou signature du responsable. « Registre » : texte rédigé dans le lot et accepté par le responsable, sans contenu clinique neuf. Chaque D-xxx se réserve dans main au moment de l'écrire ; le prochain numéro libre se lit en tête de `docs/DECISIONS.md`. Ce plan ne prend aucune lettre : toutes les lignes ci-dessous ont une lettre existante ou sont des D-xxx de lot. La seule lettre neuve envisagée est cr, pour le délai des dossiers bloqués avant T0, et seulement après le comptage (H07).
@@ -2238,19 +2274,23 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | ck | D-282 (#1410), porte 30 levée | rien : lots 2 à 5 mergés (#1412 à #1416), G3 levé (D-282 §8) | F42 |
 | l | D-283 §2 à §9 (#1411) | les six lots de D-283 §10 ; point de départ de l'archive à valider par conseil | F44, H26 |
 | cp | D-283 §9 (#1411) | les restes de §9, échéance 2027-06-30 | F69 |
-| cq | D-285 (ce plan) | les PR 2 à 6 du versement (§11) | H04 |
+| cq | D-285 (ce plan) | rien : PR 2 à 6 du versement mergées (#1419 à #1423) | H04 |
+| ci | D-286 (#1425), 2026-10-14 | rien ; le déclencheur du réexamen de l'AIPD se tranche à F68, lettre co (D-286 §5) | F67 |
+| a | D-287 (#1430), 2026-10-14 | rien ; ordre au plan (D-287 §3) | F01 |
+| b | D-288 (#1430), 2026-10-14 | les textes patient de chaque place, un par un (§6) ; toute levée du second compte par une D-xxx, pas avant le 2027-10-11 (§5) | H05 |
+| g | D-289 (#1430), 2026-10-14 | l'essai G-7 (rang 1), ses commandes au `docs/RUNBOOK.md` ; porte 8 | F04 |
 
 ### Lettres à écrire
 
 | lettre | objet | de qui | rang | fiche |
 |---|---|---|---|---|
-| a | décisions d'ordre ; pilotage réaligné | la main du responsable | 0 | F01 |
-| b | une activation à la fois ; second compte fermé un an | la main du responsable | 0 | H05 |
+| a | décisions d'ordre ; pilotage réaligné (écrite : D-287, #1430) | la main du responsable | 0 | F01 |
+| b | une activation à la fois ; second compte fermé un an (écrite : D-288, #1430) | la main du responsable | 0 | H05 |
 | c | cockpit chiffré sous provenance | la main du responsable | 1 ; M-2 au rang 2 | F59 |
 | d | doctrine d'adhésion | la main du responsable | 1 | H32 |
 | e | signature de SAF-EI-01 amendée | la main du responsable | M-1 au rang 3, J1-sécu au rang 4 | F66 |
 | f | NABM : 8 liaisons, puis liste étendue | la main du responsable | 2 | F54 |
-| g | essai de restauration, procédure et portée | la main du responsable | 0 | F04 |
+| g | essai de restauration, procédure et portée (écrite : D-289, #1430) | la main du responsable | 0 | F04 |
 | h | Boussole retirée ; exception à D-276 §1 | la main du responsable | 0 | H16 |
 | j | D2, règle de dépendance ; module publié | registre | 0 | F63 |
 | k | CGU unique ; texte de l'IA v7 | la main du responsable | 0 | F77 |
@@ -2309,7 +2349,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | cf | indices de clôture côte à côte | registre | 4 [Hypothese] | H66 |
 | cg | ses nuits par semaine, avec la frise | registre | 4 | H63 |
 | ch | tendance non chiffrée de ses nuits : une phrase en fin d'agenda | la main du responsable | 5 au plus tôt [Hypothese] | H72 |
-| ci | amendement de D-276 : cinq déclencheurs | la main du responsable | 0 [Hypothese] | F67 |
+| ci | amendement de D-276 : cinq déclencheurs (écrite : D-286, #1425) | la main du responsable | 0 [Hypothese] | F67 |
 | cj | rationalisation des packs biologiques | la main du responsable | 0 [Hypothese] | F49 |
 | cl | cadrage de l'adaptateur du laboratoire | registre ; rôles RGPD de la main du responsable | gelé ; 0 dès la porte 29 | F41 |
 | cm | axes biologiques, liste fermée | la main du responsable | 1 [Hypothese] | F51 |
@@ -2364,7 +2404,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | M-1 | signature de SAF-EI-01 amendée | 3 | F66 |
 | M-2 | doctrine du cockpit chiffré (porte 6) | 2 | F59 |
 | M-3 | 8 liaisons NABM | 1 | F54 |
-| M-5 (1/2) | signatures de BP-07 | 2 | F02 |
+| M-5 (1/2) | signatures de BP-07 (posées dans le lot, #1435, #1438) | 2 | F02 |
 | M-5 (2/2) | approbation de la release-db de BP-09 | 3 | F03 |
 | liens analyte-axe | signés claim par claim | 5 [Hypothese] | F79 |
 | release-db | chaque migration, approuvée par le responsable, une à la fois | selon la fiche | §2 |
@@ -2389,6 +2429,8 @@ Le dépôt est public. Il reçoit des identifiants (lettres, BP-nn, portes 1 à 
 | 4 | archivage | déplacements avec bandeau daté (feuilles de route, `HISTORIQUE_CHANTIERS_TECHNIQUES.md`, cadrages et photographies que le registre ne cite pas) ; bandeau en place pour ceux qu'il cite ; suppression des quatre dossiers de briefs, sauf la pièce de transfert, et du gabarit vide de nutrition référentielle, dont le reste s'archive ; liens réécrits dans les documents vivants, `CLAUDE.md:203-204` et `.wn/documentation.yml:5-6`, :21 compris ; `git grep` des anciens chemins (§9) | PR 3 mergée |
 | 5 | suppression de la file | `docs/claude/campagnes/FILE_ATTENTE.md` supprimé ; les deux adresses de routage de `.claude/rules/pr-revue-et-release-db.md:60-62` (la file, et « dette nommée de `docs/ROADMAP_TECHNIQUE.md` », dont le §12, :214-217, renvoie à l'historique archivé en PR 4) réécrites vers le plan, de même `.claude/skills/wn-merge/SKILL.md:86` ; ses dettes vivantes sont déjà au plan (§8) | PR 4 mergée |
 | 6 | contexte et dettes | `docs/claude/PROJET_CONTEXTE.md`, `DETTE_TRUST.md` (sous la campagne TRUST), lignes datées des textes périmés (§9) | PR 5 mergée |
+
+- **Mise à jour (2026-10-14)** : versement terminé, aucune migration ni release-db. PR 1 : 57ab15ed (#1417) ; PR 2 : 09bd86b1 (#1419) ; PR 3 : d671945b (#1420) ; PR 4 : aaf73324 (#1421) ; PR 5 : 069db0d1 (#1422) ; PR 6 : 7c4eeab2 (#1423). Reports vers ce plan : mises à jour du §9 et lignes datées du §8.
 
 Notes de contenu :
 

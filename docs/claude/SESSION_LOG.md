@@ -10330,3 +10330,12 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR, merge, constat sur un dossier de test ; puis étape 4.
 
 **Ouvert.** Trois préalables à la signature (D-281 §2) : garde de diffusion, texte de l'avis rendu, producteur de la règle livrée.
+## 2026-10-14 — Plan unique : état reporté au 2026-10-14
+
+**Fait.** Lots hors files A et B recensés (gestes du responsable surtout ; file C sans activation possible). Plan mis à jour contre `main` (6fc65160) : 66 éditions d'état, chacune citée par sa PR ou sa décision, aucune règle ni aucun rang touché. Audit à six lecteurs, relecture contradictoire.
+
+**Écarté.** Recompter le décompte du §0 ; corriger la ligne « Identifiant » de F67 (§1 au lieu du §2) ; réécrire les critères v4/v7 ; trancher le motif d'abandon du moteur de propositions (D-045).
+
+**Prochaine action.** PR de doc, revue, merge.
+
+**Ouvert.** Release-db de la migration du lot (j) à constater ; analyse d'impact du transfert à verser ; critères de la porte 1, de F40 et de F77 à relire ; S-5, préalable de F03 et H43, non défini.
