@@ -8,9 +8,8 @@
 
 - Date : 2026-10-14
 - Statut : accepté. Trois arbitrages du responsable du 2026-10-14 sur
-  questions à options, qui précisent [[D-295]] §4. Le texte patient du §4 est
-  proposé ici et doit être validé par le responsable, mot pour mot, avant le
-  code de ai.
+  questions à options, qui précisent [[D-295]] §4. Le texte patient du §4 a
+  été validé tel quel par le responsable le 2026-10-14.
 - Domaine : portail patient, accusé de lecture (`PortailLecturePatient`) ;
   lettre ai (fiche H51). Lève la porte 14.
 - Précise : [[D-295]] §4. Amende : [[D-293]] §4 (périmètre de la phrase
@@ -42,7 +41,7 @@ enregistrée ». Il n'y a aucun rattrapage.
 par [[D-293]] §4 ne datait que l'ouverture depuis « Mes échanges ». Il
 s'étend à toute page de document remis (bilan, synthèse, fiche d'assiette,
 lettre pour le médecin) et à « Mes échanges », où il remplace la phrase
-actuelle. Texte proposé :
+actuelle. Texte validé tel quel par le responsable le 2026-10-14 :
 
 > **Votre lecture est datée**
 >

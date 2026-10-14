@@ -140,7 +140,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 11 | Bandes de bruit signées, instrument par instrument | G-10 (0), v (1) : H13 | non levée |
 | 12 | D2 mergée | j (rang 0) : F63 | non levée |
 | 13 | Textes communs : CGU, registre, circuit des droits, Patient Hub | k (0) : F77 ; l, écrite pour l'essentiel par D-283 (§2 durées, §6 droits) ; u (1) : H37 ; G-8 (2) : H50 | **levée le 2026-10-14** : k (D-292), u (D-293), G-8 (procédure des droits écrite, `docs/DOSSIER_RGPD.md` rubrique 9) ; restes de l en H26 |
-| 14 | Accusé de lecture daté décidé (renverse) | ai (rang 2) : H51 | **levée le 2026-10-14 par D-297** (texte patient du §4 à valider mot pour mot avant le code) |
+| 14 | Accusé de lecture daté décidé (renverse) | ai (rang 2) : H51 | **levée le 2026-10-14 par D-297** (texte patient du §4 validé tel quel) |
 | 15 | K-02 servi : premier check-in sur un protocole approuvé | constat, rang 2 au plus tôt, après d | fermée au 2026-10-13 ; lecture « porte 15 pour le code de bf » confirmée par le responsable le 2026-10-14, instruction au rang 0 (handoff de la PR 2, #1419) |
 | 16 | Clôture du LOT-02 de l'agenda du sommeil | campagne, rang 1 au plus tôt : H27 | fermée : lectures repères 2026-10-29 puis 2026-11-12 |
 | 17 | Durée du dossier patient fixée | le responsable, sur conseil (porte 28) | **levée le 2026-10-13 par D-283 §2 (#1411)** pour la base active (jusqu'à la clôture, ou 5 ans après le dernier contact) et l'archive intermédiaire (10 ans) ; le point de départ de l'archive reste à valider par un conseil avant toute mise en œuvre (D-283 §2, §10 b) |
@@ -1038,7 +1038,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : lettre ai, de la main du responsable ; sa D-xxx avant la place 3 ; lève la porte 14.
 - **Critère de fin** : décision mergée ; lecture datée constatée côté praticien.
 - **Mise à jour (2026-10-14)** : arbitrage du responsable — seule la première lecture d'un document de « Mes échanges » est datée (« lu le … ») ; pas chaque ouverture, conformément au texte validé par D-293 §4. Les lectures du portail ne portent pas de date aujourd'hui : migration probable, à confirmer à l'écriture de la lettre.
-- **Mise à jour (2026-10-14, D-297)** : décision écrite, trois arbitrages du responsable. La première ouverture d'une version remise est datée d'où qu'elle vienne (page du document, fil du jour ou « Mes échanges ») ; le jour seul en base, en heure de Paris ; « Lu, date non enregistrée » pour les lectures antérieures, sans rattrapage. La phrase « Votre lecture est datée » s'étend à toute page de document remis : texte proposé au §4, à valider avant le code. Porte 14 levée ; reste le code, au rang 4 au plus tôt, après G-7.
+- **Mise à jour (2026-10-14, D-297)** : décision écrite, trois arbitrages du responsable. La première ouverture d'une version remise est datée d'où qu'elle vienne (page du document, fil du jour ou « Mes échanges ») ; le jour seul en base, en heure de Paris ; « Lu, date non enregistrée » pour les lectures antérieures, sans rattrapage. La phrase « Votre lecture est datée » s'étend à toute page de document remis : texte du §4 validé tel quel par le responsable. Porte 14 levée ; reste le code, au rang 4 au plus tôt, après G-7.
 
 ### Rang 3
 

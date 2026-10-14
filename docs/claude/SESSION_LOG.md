@@ -10411,6 +10411,6 @@ qualité inchangés (item de l'indice).
 
 **Écarté.** Dater depuis « Mes échanges » seul ; « Lu avant le … » ; horodatage gardé en base.
 
-**Prochaine action.** Validation mot pour mot du texte patient du §4 ; PR de doc, revue, merge. Code de ai après G-7 (porte 8).
+**Prochaine action.** Texte patient du §4 validé tel quel ; PR de doc après le merge de #1458 (cj, D-296), revue, merge. Code de ai après G-7 (porte 8).
 
 **Ouvert.** G-7 non joué : la migration de ai l'attend.

@@ -5,5 +5,5 @@ d'une version remise par le praticien sera datée d'où qu'elle vienne (page du
 document, fil du jour ou « Mes échanges »), au jour seul et sans heure ; les
 lectures antérieures resteront « Lu, date non enregistrée ». La phrase
 « Votre lecture est datée » s'étendra à toute page de document remis (texte
-proposé, à valider). Porte 14 levée. Aucun code ; la migration suivra l'essai
+validé tel quel). Porte 14 levée. Aucun code ; la migration suivra l'essai
 de restauration (porte 8).
