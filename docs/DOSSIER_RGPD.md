@@ -883,6 +883,13 @@ Reçue par courriel (Jennifer, Scalingo), en réponse aux questions posées le
   Vercel/Supabase (seul geste irréversible) et constituent la sortie « par le
   haut » de la revue du 2026-10-21.
   2026-10-14 : annexe HDS signée le 2026-08-30 ([[D-121]]) ; décommissionnement exécuté le 2026-09-01 ([[D-080]], [[D-120]]) ; revue du 2026-10-21 sans objet, borne levée par [[D-265]] ; reste dû l'archivage du document signé, échéance 2027-06-30 ([[D-265]] §4, [[D-283]] §9).
+- **Écart du 2026-10-14 (essai de restauration G-7, [[D-289]]).** L'application
+  temporaire qui a reçu la copie restaurée a été créée sans `--hds-resource`,
+  donc hors du périmètre ci-dessus ; la copie y a séjourné 13 minutes au plus
+  (21:25 à 21:38 UTC), sur le seul compte du responsable, même fournisseur,
+  même région, puis a été détruite. Qualifié par le responsable le 2026-10-15 :
+  pas une violation au sens de l'art. 4.12 (ni accès, ni altération, ni
+  perte), noté au registre hors dépôt ; le RUNBOOK impose désormais l'option.
 - **Sous-traitant ultérieur.** OUTSCALE, opérateur d'infrastructure, France
   (région Paris), certifié HDS pour les six activités ; l'intégralité des
   données reste dans ses datacenters français.
