@@ -202,10 +202,12 @@ figure pas, d'où sa durée de vie limitée à l'essai.
    `docs/DOSSIER_RGPD.md`) : c'est l'écart du premier essai, le 2026-10-14.
    Chaque commande ne part que si la précédente a réussi ; `HDS` doit lire
    `true` avant d'aller plus loin.
+   La création se fait depuis `/tmp`, hors du dépôt, dans un sous-shell :
+   le terminal reste à la racine du dépôt pour l'étape 3.
 
    ```bash
    APP=wellneuro-g7-$(date -u +%Y%m%d)
-   cd /tmp && scalingo --region osc-fr1 create --hds-resource "$APP" \
+   ( cd /tmp && scalingo --region osc-fr1 create --hds-resource "$APP" ) \
      && scalingo --app "$APP" --region osc-fr1 apps-info | grep -i hds \
      && scalingo --app "$APP" --region osc-fr1 addons-add postgresql postgresql-starter-1024
    scalingo --app "$APP" --region osc-fr1 addons   # attendre « running »

@@ -7,7 +7,8 @@
   même, consignation en agrégats.
 - `scripts/wn-g7-restauration.sh` : se joue dans un one-off interactif ;
   refuse une cible égale à la production ou non vide ; lit la production en
-  lecture seule ; rend code, durée et erreurs de `pg_restore` (ligne d'erreur
-  seule), migrations comparées à l'heure de la sauvegarde, tables présentes,
-  comptes de lignes rapprochés.
+  lecture seule ; rend code, durée, nombre d'erreurs de `pg_restore` et leur
+  nature (texte avant le premier « : », regroupée et comptée, vingt au plus,
+  jamais la suite de la ligne), migrations comparées à l'heure de la
+  sauvegarde, tables présentes, comptes de lignes rapprochés.
 - Aucun code applicatif, aucune migration, aucun drapeau.
