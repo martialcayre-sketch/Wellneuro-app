@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les trente documents attendus', () => {
+  it('expose les trente et un documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -58,6 +58,8 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v16',
       // `D-284` §3 et §4 — la date de naissance demandée, et ce que son absence suspend.
       'donnees_confidentialite@v17',
+      // D4 (`D-299`) — OpenAI nommé parmi les prestataires.
+      'donnees_confidentialite@v18',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -123,7 +125,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v17');
+    expect(courant.version).toBe('v18');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -652,7 +654,7 @@ describe('registre des documents TRUST', () => {
   it('`D-284` §3 et §4 : la v17 nomme la date de naissance et la pause, mot pour mot, et rien d’autre', () => {
     // UN SEUL PARAGRAPHE AJOUTÉ, juste après les renseignements administratifs.
     const v16 = getVersion('donnees_confidentialite', 'v16')!;
-    const v17 = getDocumentCourant('donnees_confidentialite');
+    const v17 = getVersion('donnees_confidentialite', 'v17')!;
     expect(v17.version).toBe('v17');
     const titre = 'Quelles données sont recueillies ?';
     const avant = v16.sections.find(s => s.titre === titre)?.paragraphes ?? [];
@@ -667,6 +669,29 @@ describe('registre des documents TRUST', () => {
     // Même motif que la v16 : sans le sien, l'accusé de la v16 s'effaçait.
     expect(v17.requiresAcknowledgement).toBe(true);
     expect(v17.publieLe >= v16.publieLe).toBe(true);
+  });
+
+  it('D4 (`D-299`) : la v18 nomme OpenAI après Anthropic, mot pour mot, et rien d’autre', () => {
+    // UNE SEULE LIGNE AJOUTÉE à la liste des prestataires. Elle dit ce que le
+    // flux reçoit réellement (`rag/embeddings.ts`) : le texte de la recherche et
+    // celui des références à indexer, jamais le dossier.
+    const v17 = getVersion('donnees_confidentialite', 'v17')!;
+    const v18 = getDocumentCourant('donnees_confidentialite');
+    expect(v18.version).toBe('v18');
+    const titre = 'Quels prestataires techniques interviennent ?';
+    const avant = v17.sections.find(s => s.titre === titre)?.points ?? [];
+    const apres = v18.sections.find(s => s.titre === titre)?.points ?? [];
+    expect(apres).toHaveLength(avant.length + 1);
+    const i = apres.findIndex(p => p.startsWith('Anthropic — '));
+    expect(i).toBeGreaterThanOrEqual(0);
+    expect(apres[i + 1]).toBe(
+      'OpenAI — aide à la recherche de votre praticien dans sa bibliothèque de références scientifiques : ce service reçoit le texte de la recherche que votre praticien saisit et le texte des références à indexer ; votre dossier, vos réponses et vos documents ne lui sont jamais transmis',
+    );
+    expect([...apres.slice(0, i + 1), ...apres.slice(i + 2)]).toEqual(avant);
+    expect(v18.sections.filter(s => s.titre !== titre)).toEqual(v17.sections.filter(s => s.titre !== titre));
+    // Même motif que la v17 : sans le sien, l'accusé de la v17 s'effaçait.
+    expect(v18.requiresAcknowledgement).toBe(true);
+    expect(v18.publieLe >= v17.publieLe).toBe(true);
   });
 
   it('la v6 nomme les résultats d’analyses ET dit ce qui n’en est pas fait', () => {

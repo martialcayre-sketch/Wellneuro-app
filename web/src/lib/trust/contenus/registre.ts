@@ -1609,6 +1609,42 @@ const DONNEES_CONFIDENTIALITE_V17: VersionDocumentTrust = {
   hash: '03052dd4d769e399be8cbebe92b49bcc3491f75b43f0b416972d26dba45198e4',
 };
 
+// LA v18 NOMME OPENAI (D4, D-299), destinataire armé en production depuis le
+// 2026-08-22 et constaté non déclaré le 2026-09-07 : la recherche de corpus du
+// praticien lui envoie le texte de la recherche et celui des références à
+// indexer. Une ligne ajoutée, juste après celle d'Anthropic, rien d'autre.
+// Accusé EXIGÉ pour le motif de la v17 : seule la version courante en réclame
+// un, et celui de la v17 n'est pas encore posé partout.
+const DONNEES_CONFIDENTIALITE_V18: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v18',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V17.sections.map(section =>
+    section.titre === 'Quels prestataires techniques interviennent ?'
+      ? {
+          ...section,
+          points: (section.points ?? []).flatMap(point =>
+            point.startsWith('Anthropic — ')
+              ? [
+                  point,
+                  'OpenAI — aide à la recherche de votre praticien dans sa bibliothèque de références scientifiques : ce service reçoit le texte de la recherche que votre praticien saisit et le texte des références à indexer ; votre dossier, vos réponses et vos documents ne lui sont jamais transmis',
+                ]
+              : [point],
+          ),
+        }
+      : section,
+  ),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Un prestataire technique est ajouté à la liste : OpenAI, qui aide votre praticien à chercher dans sa bibliothèque de références scientifiques ; il ne reçoit que le texte de ses recherches, jamais votre dossier. Cette version reprend aussi les changements précédents : votre date de naissance peut vous être demandée à votre connexion, votre numéro de sécurité sociale n’est plus recueilli, et le compte rendu de vos analyses n’est plus transmis en entier.',
+  publieLe: '2026-10-15',
+  requiresAcknowledgement: true,
+  hash: 'ac3b9a4adfd570d9ae94ea4528c19f5c3c4c287aacabe0a1913597ad8c1213e8',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1630,6 +1666,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V15,
   DONNEES_CONFIDENTIALITE_V16,
   DONNEES_CONFIDENTIALITE_V17,
+  DONNEES_CONFIDENTIALITE_V18,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,

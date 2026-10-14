@@ -131,7 +131,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 2 | Décisions d'ordre mergées : deux files, une activation à la fois, restauration | a, b, g par la PR S-3 (rang 0) : F01, H05, F04 | levée le 2026-10-14 : a, b, g écrites par D-287, D-288, D-289, mergées par la PR S-3 (#1430) |
 | 3 | Radar sans zéro décidé | M-6, ac (rang 0) : H12 | non levée : texte à écrire ; fond acquis |
 | 4 | Sources à fournir : poids égal, seuils, fidélité, quantités, axes | le responsable (rang 0) : H08 | en partie : D-280 source les seuils de 8B ; règle du milieu levée ; restent poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes |
-| 5 | K-05a et D4 : liste fermée et déclaration des sites IA | le responsable (rang 0) : F46 | non levée |
+| 5 | K-05a et D4 : liste fermée et déclaration des sites IA | le responsable (rang 0) : F46 | non levée ; D4 fait le 2026-10-15 (D-299) ; reste K-05a |
 | 6 | Doctrine du cockpit chiffré et de l'adhésion signée | M-2, G-4 (rang 2), sur c et d (rang 1) : F59, H32 | non levée |
 | 7 | SAF-EI-01 signée, puis déploiement constaté | M-1 (rang 3), puis J1-sécu (rang 4) : F66 | non levée ; lots 1 et 2 de D-281 sur main (#1406, #1408) ; portail, validation, signature à faire ; se lève au rang 4 |
 | 8 | Essai de restauration réussi | K-18a (0), G-7 (1) : F04 | non levée ; préalable de toute migration après BP-09 ; BP-09 ne l'attend pas ; portée et procédure écrites par D-289 (#1430) ; G-7 non joué |
@@ -367,6 +367,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Critère de fin** : liste fermée et déclaration mergées.
 - **Mise à jour (2026-10-13)** : « document entier, identité comprise » se lit daté : D-284 §5 impose le retrait de l'identité du document avant l'envoi, lot (j) de H26 ; le G3 est clos (#1416), (j) est libre ; d'ici là le flux reste nominatif, exposition assumée et datée.
 - **Mise à jour (2026-10-14)** : depuis le lot 2 du masquage (#1428), seules les pages masquées par le praticien partent, jamais le document d'origine ; `usage_ia` v8 le dit au patient (#1431) ; le masquage est manuel. Déploiement du lot 2 non consigné sur main [A verifier]. La ligne de K-05a reste à écrire, son périmètre par le responsable.
+- **Mise à jour (2026-10-15)** : arbitrages du responsable du 2026-10-14 : K-05a est un banc à liste fermée sur **tous** les sites d'appel IA de `web/src` (sept au 2026-10-14), chacun rattaché à une ligne de `docs/DOSSIER_RGPD.md`, un site non déclaré rougit la CI ; D4 passe d'abord. D4 fait : D-299, OpenAI déclaré au registre et dans « Vos données personnelles » v18 (accusé exigé), flux inchangé. Reste K-05a, PR propre ; la ligne de l'extraction de biologie y lit l'état courant (pages masquées, `usage_ia` v8), non la formule v7.
 
 #### H09 · Porte 28 : préalables hors liste
 - **Identifiant, piste** : porte 28 ; confiance et outillage ; geste du responsable.
