@@ -74,7 +74,9 @@ type Patient = {
   //
   // LE NIR N'EST PLUS SERVI (D-284 §2, lot g) : son recueil n'a pas de
   // fondement pour ce responsable. La colonne vide reste en base jusqu'à sa
-  // migration de retrait ; aucune route ne la lit ni ne l'écrit.
+  // migration de retrait. Cette route ne l'écrit plus et ne la sert plus ; les
+  // requêtes sans `select` la remontent encore jusqu'au processus, sans
+  // l'exposer — la migration de retrait clora ce reste (0 valeur enregistrée).
   dateNaissance: string | null;
   adresse: string;
   medecinTraitantNom: string;

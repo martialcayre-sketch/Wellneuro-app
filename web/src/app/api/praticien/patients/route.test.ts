@@ -1062,6 +1062,36 @@ describe('GET — `idPatient` restreint aussi la liste des dossiers (LOT-06)', (
     });
   });
 
+  it('★ une valeur restée dans la colonne NIR n’est pas servie (D-284 §2, lot g)', async () => {
+    // La colonne existe jusqu'à sa migration de retrait, et une requête sans
+    // `select` la remonte : c'est le DTO qui ne la sert plus. Le banc PATCH ne
+    // le prouvait pas — sa réponse ne porte aucune fiche (constat de revue).
+    prisma.patient.findMany.mockResolvedValue([
+      {
+        idPatient: 'PAT_SEED_03',
+        email: 'michel.dogne@fictif.wellneuro.fr',
+        prenom: 'Michel',
+        nom: 'Dogné',
+        telephone: null,
+        actif: true,
+        suiviClotureLe: null,
+        accessTokenRevoked: false,
+        dateNaissance: null,
+        adresse: null,
+        nir: '184017511600144',
+        medecinTraitantNom: null,
+        medecinTraitantCoordonnees: null,
+      },
+    ]);
+    prisma.patient.count.mockResolvedValue(1);
+    const res = await GET(get('idPatient=PAT_SEED_03'));
+    expect(res.status).toBe(200);
+    const corps = (await res.json()) as { patients: Record<string, unknown>[] };
+    expect(corps.patients).toHaveLength(1);
+    expect(corps.patients[0]).not.toHaveProperty('nir');
+    expect(JSON.stringify(corps)).not.toContain('184017511600144');
+  });
+
   it('sans `idPatient`, la liste complète reste servie — les sélecteurs en vivent', async () => {
     await GET(get());
     expect(prisma.patient.findMany).toHaveBeenCalledWith({
