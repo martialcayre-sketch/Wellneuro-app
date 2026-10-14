@@ -10321,6 +10321,15 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Passe `wn-reviewer` de l'exception non liée au sha final (plan §8).
 
+## 2026-10-14 — D-281 étape 3 : désignation au portail, pause construite
+
+**Fait.** Fiche BP-09 écrite et validée (#1442), lot rendu à la file B. File A : le patient désigne l'élément du programme (liste, « Je ne sais pas », « Un autre produit ») ; pause construite, servie à la signature seulement. Revue wn-reviewer et contre-revue : P1 corrigés.
+
+**Écarté.** Pause reportée d'une version à l'autre (identifiants positionnels) ; texte d'attente après l'avis.
+
+**Prochaine action.** PR, merge, constat sur un dossier de test ; puis étape 4.
+
+**Ouvert.** Trois préalables à la signature (D-281 §2) : garde de diffusion, texte de l'avis rendu, producteur de la règle livrée.
 ## 2026-10-14 — Plan unique : état reporté au 2026-10-14
 
 **Fait.** Lots hors files A et B recensés (gestes du responsable surtout ; file C sans activation possible). Plan mis à jour contre `main` (6fc65160) : 66 éditions d'état, chacune citée par sa PR ou sa décision, aucune règle ni aucun rang touché. Audit à six lecteurs, relecture contradictoire.

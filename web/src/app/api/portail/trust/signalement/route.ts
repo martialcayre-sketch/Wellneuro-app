@@ -5,6 +5,8 @@ import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { orienterEffetIndesirable } from '@/lib/trust/securite';
 import { notifierPraticienSignalement } from '@/lib/trust/notification';
+import { RATTACHEMENTS, elementsDesignables, type Rattachement } from '@/lib/trust/pauseEffetIndesirable';
+import { designationOuverte, programmeDiffuse } from '@/lib/trust/pauseEffetIndesirableServeur';
 import type {
   ActionPriseDeclaree,
   CategorieIncidentConfidentialite,
@@ -39,6 +41,17 @@ type PayloadEffetIndesirable = {
    * lot interdit.
    */
   rattacheAuProgramme?: string;
+  /**
+   * LA DÉSIGNATION ([[D-281]] §2) : le patient attribue l'effet à UN élément
+   * du programme diffusé (`elementActionId`), ou répond « Je ne sais pas », ou
+   * « un autre produit ». Le programme, lui, reste résolu par le serveur.
+   * Absente, la route suit le chemin d'avant (`rattacheAuProgramme`) — celui
+   * d'un dossier mineur ou sans date, qui garde le formulaire d'avant.
+   */
+  rattachement?: string;
+  elementActionId?: string;
+  /** La version du programme sur laquelle le patient a choisi (servie par `etat`). */
+  versionProgramme?: string;
   /** Dates TYPÉES, à côté des deux champs libres qui restent. */
   debutPriseLe?: string;
   debutSymptomesLe?: string;
@@ -136,6 +149,8 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
         protocolDraftId?: string | null;
         debutPriseLe?: Date | null;
         debutSymptomesLe?: Date | null;
+        rattachement?: Rattachement | null;
+        elementActionId?: string | null;
       } = {};
       if (associationEffetIndesirableDisponible()) {
         const debutPriseLe = dateDeclaree(payload.debutPriseLe);
@@ -153,17 +168,79 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
             { status: 400 },
           );
         }
-        // `resolveProtocoleDiffuse` rend `null` quand aucun protocole n'est
-        // diffusé : le patient a beau déclarer « oui », il n'y a rien à
-        // rattacher, et inventer un identifiant serait pire que l'absence.
-        const diffuse = payload.rattacheAuProgramme === 'oui'
-          ? await resolveProtocoleDiffuse(patient.idPatient)
-          : null;
-        association = {
-          protocolDraftId: diffuse?.protocolDraftId ?? null,
-          debutPriseLe,
-          debutSymptomesLe,
-        };
+        // Les lectures de la désignation ne font JAMAIS perdre un signalement :
+        // en échec, il est capturé sans rattachement, et le praticien l'examine.
+        let ouverte = false;
+        let programme: Awaited<ReturnType<typeof programmeDiffuse>> = null;
+        let lectureEchouee = false;
+        if (payload.rattachement !== undefined) {
+          try {
+            ouverte = await designationOuverte(patient.idPatient);
+            if (ouverte) programme = await programmeDiffuse(patient.idPatient);
+          } catch (err) {
+            console.warn('[trust/signalement POST] désignation illisible, capture sans rattachement :',
+              err instanceof Error ? err.message : String(err));
+            lectureEchouee = true;
+          }
+        }
+        if (lectureEchouee) {
+          association = { protocolDraftId: null, debutPriseLe, debutSymptomesLe };
+        } else if (ouverte) {
+          // LA DÉSIGNATION ([[D-281]] §2), vérifiée ICI avant la base : son
+          // trigger refuserait un élément absent, mais en rendant une erreur
+          // technique à un patient en train de signaler un effet indésirable.
+          const rattachement = payload.rattachement as Rattachement;
+          if (!RATTACHEMENTS.includes(rattachement)) {
+            return NextResponse.json(
+              { ok: false, reason: 'invalid_payload', error: 'Indiquez à quoi vous associez cet effet.' },
+              { status: 400 },
+            );
+          }
+          const elementActionId = rattachement === 'element' ? tronque(payload.elementActionId, 200) : '';
+          // Un ÉLÉMENT choisi, deux refus, un seul message. (1) La version : les
+          // identifiants d'action sont positionnels, un choix fait sur une
+          // version remplacée désignerait une autre action de la nouvelle.
+          // (2) L'élément : absent, ou d'un type non désignable — orientation
+          // vers le médecin, prise de sang (arbitrages du 2026-10-14).
+          // « Je ne sais pas » et « un autre produit » ne nomment aucune action :
+          // ils se rattachent au programme courant, sans refus.
+          if (programme && rattachement === 'element' && (
+            payload.versionProgramme !== programme.version
+            || !elementsDesignables(programme.actions).some(e => e.actionId === elementActionId)
+          )) {
+            return NextResponse.json(
+              {
+                ok: false,
+                reason: 'invalid_payload',
+                error: 'Cet élément ne figure plus dans votre programme. Rechargez la page et choisissez de nouveau.',
+              },
+              { status: 400 },
+            );
+          }
+          // Sans programme diffusé, rien ne se rattache (§2) : le signalement
+          // est capturé sans rattachement, et le praticien l'examine.
+          association = programme
+            ? {
+                protocolDraftId: programme.protocolDraftId,
+                rattachement,
+                elementActionId: rattachement === 'element' ? elementActionId : null,
+                debutPriseLe,
+                debutSymptomesLe,
+              }
+            : { protocolDraftId: null, debutPriseLe, debutSymptomesLe };
+        } else {
+          // `resolveProtocoleDiffuse` rend `null` quand aucun protocole n'est
+          // diffusé : le patient a beau déclarer « oui », il n'y a rien à
+          // rattacher, et inventer un identifiant serait pire que l'absence.
+          const diffuse = payload.rattacheAuProgramme === 'oui'
+            ? await resolveProtocoleDiffuse(patient.idPatient)
+            : null;
+          association = {
+            protocolDraftId: diffuse?.protocolDraftId ?? null,
+            debutPriseLe,
+            debutSymptomesLe,
+          };
+        }
       }
       const orientation = orienterEffetIndesirable(severite);
       await prisma.trustAdverseEffectReport.create({

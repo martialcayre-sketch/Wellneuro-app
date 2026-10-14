@@ -4,6 +4,7 @@ import { associationEffetIndesirableDisponible } from '@/lib/clinical/safetyEffe
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { avantDeCommencerRequis as calculerAvantDeCommencerRequis } from '@/lib/trust/avantDeCommencer';
 import { projeterChoixCourants } from '@/lib/trust/securite';
+import { designationPour } from '@/lib/trust/pauseEffetIndesirableServeur';
 
 export type AccuseEtat = {
   documentKey: string;
@@ -52,6 +53,15 @@ export type TrustEtatResponse =
        * pour empêcher ailleurs.
        */
       associationEffetIndesirable: boolean;
+      /**
+       * Les éléments du programme diffusé que le patient peut désigner
+       * ([[D-281]] §2), sans l'orientation vers le médecin. `null` quand la
+       * désignation est fermée — drapeau absent, dossier mineur ou sans date,
+       * aucun programme diffusé : le formulaire garde alors sa question d'avant.
+       */
+      elementsProgramme: { actionId: string; title: string }[] | null;
+      /** La version du programme dont viennent ces éléments, renvoyée au dépôt. */
+      versionProgramme: string | null;
     }
   | { ok: false; reason: string; error: string };
 
@@ -123,9 +133,15 @@ export async function GET(req: Request): Promise<NextResponse<TrustEtatResponse>
       documentVersion: e.documentVersion,
     }));
 
+    // Une lecture en échec rend `null` : le formulaire d'avant, jamais
+    // l'espace TRUST fermé au patient qui veut signaler un effet.
+    const designation = await designationPour(patient.idPatient).catch(() => null);
+
     return NextResponse.json({
       ok: true,
       associationEffetIndesirable: associationEffetIndesirableDisponible(),
+      elementsProgramme: designation?.elements ?? null,
+      versionProgramme: designation?.version ?? null,
       avantDeCommencerRequis,
       accuses: accuses.map(a => ({
         documentKey: a.documentKey,

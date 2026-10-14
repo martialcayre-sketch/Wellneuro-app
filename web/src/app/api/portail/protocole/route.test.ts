@@ -173,6 +173,9 @@ describe('GET /api/portail/protocole', () => {
     expect(res.status).toBe(200);
     expect(json.protocoleDiffuse).toBe(true);
     expect(json.indisponible).toBe(false);
+    // RÈGLE AMENDÉE NON SIGNÉE ([[D-281]] §6) : aucune pause servie. Le double
+    // de Prisma n'a pas de table des signalements : une lecture aurait levé.
+    expect((json as unknown as { pauses: unknown[] }).pauses).toEqual([]);
     expect(json.finDeCycle).toBe(false);
 
     expect(json.vue.actions).toHaveLength(3);

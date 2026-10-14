@@ -146,6 +146,8 @@ export default function InformationsPage() {
           token={token}
           onEnvoye={() => void charger()}
           associationDisponible={etat.associationEffetIndesirable}
+          elementsProgramme={etat.elementsProgramme ?? null}
+          versionProgramme={etat.versionProgramme ?? null}
         />
         {etat.signalements.length > 0 && (
           <div className="pt-2">

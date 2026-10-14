@@ -894,7 +894,24 @@ le signalement reste examiné sur la surface des signalements. La gravité
 déclarée ne change rien à ce qui suit ; elle ne règle que le message
 d'orientation. **Aucun délai** entre le début de la prise et celui des
 symptômes ne fait sortir un signalement de la règle : aucune source ne le fixe
-(`DC-19`), les deux dates restent affichées au praticien.
+(`DC-19`), les deux dates restent affichées au praticien. **Ni une orientation
+vers le médecin — la réservée comme celle qu'écrit le praticien —, ni une prise
+de sang ne sont désignables** (tranché par le responsable le 2026-10-14, sur
+scénarios, à l'étape 3) : les mettre en pause afficherait « ne le reprenez pas
+avant sa réponse » sur une consultation ou un bilan ; elles restent actives
+quoi qu'il arrive. Un dossier mineur ou sans date de naissance garde le
+formulaire d'avant, sans désignation ([[D-283]] §5, [[D-284]]). Deux règles
+tranchées par le responsable le même jour, sur scénarios, à la revue de
+l'étape 3 : (a) la pause ne vise que la **version du programme désignée** —
+les identifiants d'action sont positionnels d'une version à l'autre, et la
+version qui suit un verdict « impliqué » est l'aménagement du praticien ;
+(b) après ce verdict, l'élément reste marqué « en pause » **sans texte** — les
+deux textes du §4 disent l'attente, celui de l'avis rendu se rédige et se
+signe à l'étape 4. **Préalables à la signature (étape 5)** : la garde de
+diffusion du §3 (sans elle, (a) ferait disparaître en silence une pause en
+attente), le texte de l'avis rendu, et le remplacement du producteur de la
+règle livrée, qui bloquerait tout dossier dont un signalement vise un
+programme.
 
 **§3 — En attendant la validation.** Au portail, l'élément désigné s'affiche
 **en pause** ; pour « Je ne sais pas » et « un autre produit », ce sont
