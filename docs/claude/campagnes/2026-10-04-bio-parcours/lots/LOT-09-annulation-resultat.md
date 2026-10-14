@@ -55,8 +55,11 @@ double parmi les têtes. `WN_CB_ENABLED` et `WN_CB_RESULTS_ENABLED` sont à
 - **Aucune colonne neuve sur `resultats_biologiques`** : le contrat négatif
   `cb_resultats_biologiques_v1_negatif.sql` et sa liste blanche restent
   intacts.
-- **Lecteurs** : tout lecteur de résultats exclut les fils annulés et non
-  révoqués (liste close au 2026-10-14, ci-dessous).
+- **Lecteurs de calcul** (élection de tête, derniers résultats, portes,
+  contrôle de doublon, import) : excluent les fils annulés et non révoqués
+  (liste close au 2026-10-14, ci-dessous).
+- **Fiche praticien** : seule exception, elle affiche le résultat annulé,
+  marqué « annulé », avec son motif, son auteur et sa date.
 - **Mauvais dossier** : la valeur reste lisible dans le dossier qui l'a reçue,
   côté praticien seul, marquée annulée ; jamais côté patient. La `D-xxx` le
   dit.
