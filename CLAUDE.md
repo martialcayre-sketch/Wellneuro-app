@@ -189,7 +189,7 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - **Lire les commentaires de revue avant de merger — ce n'est pas un check.**
   Trois sorties : synthèse, **corps** des revues (nitpicks), et commentaires
   *en ligne*, absents du rollup et de `gh pr view --comments` :
-  `gh api repos/{owner}/{repo}/pulls/<N>/comments`.
+  `gh api --paginate --slurp repos/{owner}/{repo}/pulls/<N>/comments`.
   Trois verdicts, aucun commentaire sans l'un d'eux : corrigé, écarté **avec
   motif**, routé **avec adresse**. Et **merger une migration ne l'applique
   pas** — `release-db` approuvée, sentinelle, constat par conteneur, puis

@@ -38,21 +38,26 @@ handoff.
 ## Validations exécutées
 
 - Schéma : `.coderabbit.yaml` VALIDE, 0 clé hors schéma, `tone_instructions`
-  181 caractères (max 250).
-- T1 complet et `check_no_secrets` : voir le corps de la PR.
+  181 caractères (max 250), revalidé après les correctifs de revue.
+- T1 complet vert à chaque commit (`check_no_secrets` compris).
+- Épreuve sur #1440 : revue automatique sur une PR vers `main` (l'hypothèse
+  du saut de #1438 tient) ; configuration lue = celle de la branche ; statut
+  `CodeRabbit` `pending` puis `success` « Review completed » ; six remarques
+  en ligne, toutes retenues (`D-290` §5).
 
 ## Problèmes ouverts
 
-- Cause du saut de revue sur #1438 : hypothèse (passage à l'installation),
-  tranchée par l'épreuve de la PR de ce lot (`D-290` §5).
+- La case « Autofix » (bloc « autopilot ») reste affichée dans la synthèse :
+  aucune clé du schéma ne la retire. Règle : ne jamais la cocher ; retrait par
+  l'interface CodeRabbit, geste du responsable.
 - Questions au responsable : CodeRabbit check obligatoire de `main` ?
   Copilot retiré de `.vscode/extensions.json` ?
 
 ## Prochaine action exacte
 
-Lire les trois sorties de CodeRabbit sur la PR, rendre les verdicts dans son
-fil, compléter `D-290` §5, merger après une revue sur le sha de tête, constater
-le déploiement.
+Merger #1440 après une revue de CodeRabbit sur le sha de tête
+(`--match-head-commit`), verdicts rendus ; constater le déploiement ; mettre à
+jour la mémoire `autorisation-github-copilot-assistant`.
 
 ## Interdits encore actifs
 

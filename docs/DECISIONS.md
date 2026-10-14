@@ -33,8 +33,9 @@ niveau, sans poème, diagrammes, labels ni relecteurs suggérés. Revue
 automatique sur `main`, brouillons exclus, **incrémentale à chaque push et sans
 pause** — l'inverse de Copilot, qui ne revoyait qu'une fois. **Tout ce qui
 commite sur la branche est coupé** (docstrings, tests unitaires, simplification,
-correction des remarques, du CI et des conflits) : un commit de bot gèle le run
-en `action_required` et `verify` ne tourne plus. Fichiers générés et archivés
+correction des remarques, du CI et des conflits) : un commit de Copilot avait
+gelé le run en `action_required`, `verify` ne tournant plus (non observé avec
+CodeRabbit). Fichiers générés et archivés
 exclus ; consignes par chemin recopiées des règles du dépôt (clinique, base,
 authentification, UI, docs), sans en inventer ; nos règles comme lignes
 directrices, la constitution clinique sur les seuls chemins cliniques ;
@@ -63,7 +64,25 @@ l'installation doit être revue. Constat utile au
 passage : CodeRabbit a posé sur la tête un statut de commit `CodeRabbit` à
 `success` (« Review skipped ») — **un statut vert sans revue**.
 
-**§5 — L'épreuve.** _(rempli sur la PR de cette décision)_
+**§5 — L'épreuve** (PR #1440, qui crée `.coderabbit.yaml`). Ouverte après
+l'installation, elle a été revue automatiquement : l'hypothèse du §4 tient. La
+configuration lue est **celle de la branche** — synthèse en français, sans
+poème ni diagramme, sans contrôle de docstrings, tous réglages absents des
+défauts. Le statut `CodeRabbit` passe à `pending` (« Review in progress »)
+pendant la revue. **Reste ouvert** : la case « Autofix » (bloc « autopilot »)
+s'affiche toujours dans la synthèse, aucune clé du schéma ne la retire ; règle
+posée — ne jamais la cocher —, et son retrait relève de l'interface
+CodeRabbit (geste du responsable).
+
+Sa première revue (environ onze minutes) a laissé six remarques en ligne, toutes
+retenues après vérification : pagination manquante dans `CLAUDE.md` ; verdict
+hors fil pour les remarques du corps de revue, qui n'ont pas de fil ; merge lié
+au sha revu (`--match-head-commit`), faute de quoi un push tardif part sans
+revue ; règles de `.claude/rules/` rendues sur leurs propres chemins (une
+chaîne de `filePatterns` ne vaut que pour le répertoire du fichier) ;
+« tranchée » remplacé par le constat dans le handoff ; `action_required`
+ramené au cas observé (Copilot), la cause documentée par GitHub étant le jeton
+qui pousse, pas l'auteur.
 
 ### D-289 — Un essai de restauration réussi précède toute migration qui suit celle de BP-09 ; sa procédure (lettre g)
 

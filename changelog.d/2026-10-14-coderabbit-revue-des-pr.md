@@ -7,7 +7,7 @@ dépôt. **CodeRabbit revoit, l'assistant merge.**
 - **`.coderabbit.yaml`** à la racine, chaque clé validée sur le schéma
   officiel : français, profil `chill`, revue automatique sur `main` et
   incrémentale à chaque push sans pause, brouillons exclus ; tout ce qui
-  commite sur la branche coupé (un commit de bot gèle `verify`) ; fichiers
+  commite sur la branche coupé (un commit de Copilot avait gelé `verify`) ; fichiers
   générés et archivés exclus ; consignes par chemin recopiées des règles du
   dépôt (clinique, base, authentification, UI, docs) ; nos règles comme
   lignes directrices ; détecteur de secrets gardé, linters doublonnant le CI

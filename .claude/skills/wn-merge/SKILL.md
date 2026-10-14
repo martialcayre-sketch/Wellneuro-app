@@ -89,8 +89,11 @@ dernière session.
    défaut, et une page manquée ferait annoncer « chaque commentaire a son
    verdict » sur une liste tronquée. `--slurp` rend un tableau **de pages** :
    l'aplatir à la lecture. Chaque commentaire reçoit un
-   verdict écrit dans la PR, en réponse dans le fil de CodeRabbit (qui apprend
-   de ces réponses) ; les nitpicks sont triés, jamais appliqués d'office :
+   verdict écrit dans la PR — en réponse dans son fil pour une remarque en
+   ligne (CodeRabbit apprend de ces réponses) ; dans un commentaire de PR
+   distinct, qui la cite, pour une remarque du corps (« Nitpick », « Outside
+   diff range ») ou de la synthèse, qui n'ont pas de fil. Les nitpicks sont
+   triés, jamais appliqués d'office :
    **corrigé** (le commit qui le répare est nommé),
    **écarté avec motif** (sur pièces — ligne, banc, `D-xxx` ; « non pertinent »
    seul n'en est pas un), ou **routé** (vers le plan unique
@@ -122,9 +125,11 @@ dernière session.
    si tout commentaire de revue
    porte son verdict (étape 6) et si l'étape 7 est satisfaite :
    ```bash
-   gh pr merge <N> --squash --delete-branch
+   gh pr merge <N> --squash --delete-branch --match-head-commit <sha>
    ```
-   puis nettoyer le worktree rattaché (`ExitWorktree` avec `action: "remove"`,
+   où `<sha>` est le `head=` du SNAPSHOT de l'étape 2, celui que la revue de
+   l'étape 6 a lu : si la tête a bougé depuis, GitHub refuse le merge, et les
+   étapes 2 et 6 se rejouent sur la nouvelle tête. Puis nettoyer le worktree rattaché (`ExitWorktree` avec `action: "remove"`,
    ou `git worktree remove`), et repartir de `main` — jamais de la branche
    squashée — pour le lot suivant. **Le merge vient de faire avancer
    `origin/main`** : tant que le worktree reste sur la branche squashée, le

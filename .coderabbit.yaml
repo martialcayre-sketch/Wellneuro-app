@@ -36,9 +36,10 @@ reviews:
     # piège de Copilot (un correctif poussé tard que personne ne relit).
     auto_pause_after_reviewed_commits: 0
 
-  # Rien de ce qui COMMITE sur la branche ou ouvre une PR empilée : un commit
-  # de bot met le run `pull_request` en `action_required`, et `verify` ne
-  # tourne plus (`REGLES_PR_MERGE.md`, règle 1.5).
+  # Rien de ce qui COMMITE sur la branche ou ouvre une PR empilée. Un commit
+  # de bot peut geler le run `pull_request` en `action_required`, `verify` ne
+  # tournant plus : constaté avec Copilot, non observé avec CodeRabbit
+  # (`.claude/rules/pr-revue-et-release-db.md`, règle 1.5).
   finishing_touches:
     docstrings:
       enabled: false
@@ -220,9 +221,28 @@ knowledge_base:
   code_guidelines:
     enabled: true
     filePatterns:
+      # Une chaîne ne vaut que pour le répertoire du fichier et ses
+      # sous-répertoires : CLAUDE.md et AGENTS.md, à la racine, couvrent tout.
       - "CLAUDE.md"
       - "AGENTS.md"
-      - ".github/copilot-instructions.md"
-      - ".claude/rules/*.md"
+      - files: ".github/copilot-instructions.md"
+        applyTo: "**"
+      # Chaque règle sur ses propres `paths:` (frontmatter de la règle).
+      - files: ".claude/rules/auth-securite.md"
+        applyTo: "web/src/lib/auth.ts,web/src/lib/patient-session.ts,web/src/lib/patient-access.ts,web/src/lib/portail/**"
+      - files: ".claude/rules/clinique-scoring.md"
+        applyTo: "web/src/lib/questions*,web/src/lib/questionnaires/**,web/src/lib/scoring/**,web/src/lib/clinical/**,web/src/lib/clinical-engine/**,web/src/lib/equilibre/**,web/src/lib/consultation/**,web/src/lib/instruments.ts,web/src/lib/bibliotheque.ts,web/src/lib/echelles-cabinet.ts,web/src/lib/questionnaires-catalog.ts,web/src/lib/plaintes.ts,web/src/lib/*.guard.test.ts,prompts/**,web/src/app/api/praticien/synthese/**,web/src/app/api/praticien/booklet/**,web/src/app/api/praticien/cockpit/**,web/src/app/api/praticien/orientation/**,web/src/app/api/praticien/equilibre/**,web/src/app/api/praticien/besoins/**,web/src/app/api/praticien/trajectoire/**,web/src/app/api/praticien/reponses/**,web/src/app/api/praticien/inbox-questionnaires/**,web/src/app/api/praticien/protocoles/**,web/src/app/api/praticien/correspondance-medecin/**,web/src/app/api/praticien/biologie/**,web/src/app/api/praticien/copilote/**,web/src/app/api/praticien/corpus/**,web/src/app/api/patient/equilibre/**,web/src/app/api/patient/submit/**,web/src/app/api/portail/**,web/src/app/api/internal/rag/**"
+      - files: ".claude/rules/db-prisma.md"
+        applyTo: "web/prisma/**,supabase/**,web/src/lib/prisma.ts,web/src/app/api/**"
+      - files: ".claude/rules/docs-changelog.md"
+        applyTo: "docs/**,changelog.d/**,CHANGELOG.md,*.md,.wn/state.json"
+      - files: ".claude/rules/frontend-ui.md"
+        applyTo: "web/src/app/**,web/src/components/**,web/src/**/*.css"
+      - files: ".claude/rules/hooks-garde-fous.md"
+        applyTo: ".claude/hooks/**,.claude/settings.json"
+      - files: ".claude/rules/pr-revue-et-release-db.md"
+        applyTo: ".github/**,web/prisma/**"
+      - files: ".claude/rules/tests-validation.md"
+        applyTo: "web/e2e/**,**/*.test.ts,**/*.test.tsx,web/playwright.config.*,scripts/wn-test-worktree.sh"
       - files: "docs/claude/doctrine/CONSTITUTION_CLINIQUE.md"
         applyTo: "web/src/lib/questions*,web/src/lib/questionnaires/**,web/src/lib/scoring/**,web/src/lib/clinical/**,web/src/lib/clinical-engine/**,web/src/lib/equilibre/**,web/src/lib/consultation/**,web/src/lib/instruments.ts,web/src/lib/bibliotheque.ts,web/src/lib/echelles-cabinet.ts,web/src/lib/questionnaires-catalog.ts,web/src/lib/plaintes.ts,prompts/**,web/src/app/api/praticien/synthese/**,web/src/app/api/praticien/booklet/**,web/src/app/api/praticien/cockpit/**,web/src/app/api/praticien/orientation/**,web/src/app/api/praticien/equilibre/**,web/src/app/api/praticien/besoins/**,web/src/app/api/praticien/trajectoire/**,web/src/app/api/praticien/reponses/**,web/src/app/api/praticien/inbox-questionnaires/**,web/src/app/api/praticien/protocoles/**,web/src/app/api/praticien/correspondance-medecin/**,web/src/app/api/praticien/biologie/**,web/src/app/api/praticien/copilote/**,web/src/app/api/praticien/corpus/**,web/src/app/api/patient/equilibre/**,web/src/app/api/patient/submit/**,web/src/app/api/portail/**,web/src/app/api/internal/rag/**"

@@ -110,9 +110,10 @@ Deux raisons : le regard différent, et le **coût en tokens** du suivi de CI et
 du merge. Le merge est passé à l'assistant le 2026-09-30 ; la revue a quitté
 Copilot le 2026-10-14, son quota épuisé.
 
-**Effet de bord à connaître.** Quand le commit de tête d'une PR est attribué à
-un bot (Copilot hier ; CodeRabbit si une génération partait de son interface —
-toutes désactivées par `.coderabbit.yaml`), GitHub met le run
+**Effet de bord à connaître.** Quand le commit de tête d'une PR a été poussé
+par le bot Copilot (un merge de `main` résolu par lui, par exemple, sur une PR
+du dépôt et non d'un fork — non observé avec CodeRabbit, dont les générations
+qui commitent sont coupées par `.coderabbit.yaml`), GitHub a mis le run
 `pull_request` en `action_required` et **n'exécute rien** sans approbation
 humaine. `gh pr checks` n'affiche alors que les checks Vercel, **sans `verify`** :
 la PR paraît verte alors que la vérification n'a jamais tourné. Vérifier la
@@ -168,8 +169,10 @@ enchaîner en un minimum d'allers-retours :
 1. **Vérifier que `verify` a réellement tourné**, pas seulement les checks Vercel
    ou le statut `CodeRabbit` (effet de bord `action_required` décrit plus haut) ;
    sans `verify`, ne pas merger.
-2. `gh pr merge <N> --squash --delete-branch` — merge et suppression de la branche
-   distante en un geste.
+2. `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu>` —
+   merge et suppression de la branche distante en un geste, **lié au sha que la
+   revue et le CI ont vu** : si la tête a bougé depuis, GitHub refuse, et les
+   contrôles se rejouent sur la nouvelle tête.
 3. Supprimer le worktree rattaché une fois la PR fermée (`ExitWorktree`, ou
    `git worktree remove`).
 4. **Repartir de `main` pour le lot suivant**, jamais de la branche squashée :
