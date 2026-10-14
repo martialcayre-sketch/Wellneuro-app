@@ -71,6 +71,7 @@ LOT-00 (BP-00). Lettre a mergée (`D-287`, porte 2).
 - [x] Verdicts du responsable posés au dossier (2026-10-14).
 - [x] Brouillons retenus déposés « en attente » (envoi approuvé le 2026-10-14).
 - [x] Brouillons signés dans l'atelier du corpus (2026-10-14, constaté).
+- [x] Sources externes WN-SRC-0508 à 0510 : notices au registre, extraits ciblés ingérés (lot `LOT_016_2026-10-14`) sur approbation de l'envoi (2026-10-14, constaté).
 - [ ] Les 17 claims « à relire » et WN-CL-0031-025 tranchés.
 - [ ] Positions d'expert P1 à P8 rédigées et signées (versionnées en BP-12b).
 
@@ -149,4 +150,9 @@ responsable, jamais ici.
   exigée) alors que leurs claims sont `VALIDE` ; aucune source citée n'a de
   relecture clinique au registre. La signature de BP-07 tient lieu de cette
   relecture pour les claims signés ; le registre n'est pas modifié ici.
-- **Sources externes à ingérer avant usage** : trois, nommées au dossier.
+- **Sources externes** (arbitrage du 2026-10-14) : trois notices au registre,
+  WN-SRC-0508 à 0510 (corpus `SOURCES_EXTERNES`, titre seul). Seuls des
+  extraits ciblés, mot pour mot, entrent au corpus : WN-CH-0508-001 à -004,
+  WN-CH-0509-001 à -004 et WN-CH-0510-001 à -003, ingérés le 2026-10-14 en un
+  lot sur approbation du responsable (réponse 200, test de récupération 11/11),
+  constatés actifs en base, empreintes conformes à l'envoi.

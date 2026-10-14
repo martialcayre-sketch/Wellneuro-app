@@ -119,7 +119,7 @@ tâche, avec des rôles disjoints :
   cette lecture passe par un conteneur `scalingo run -d` — voir
   « Lire la base de production » dans `.claude/rules/db-prisma.md`), registre de certification
   (`docs/claude/corpus/instrument_registry.json`, 65 instruments — pas
-  `source_registry.json`, qui est un registre disjoint de 507 sources
+  `source_registry.json`, qui est un registre disjoint de 510 sources
   bibliographiques du corpus clinique), PR ouvertes via `gh`, worktrees et
   branches, routes patient/portail présentes. **Il n'écrit jamais rien.**
   Il en **confronte trois** — et la distinction compte, elle est la dette 6 de
