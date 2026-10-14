@@ -10152,3 +10152,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, commentaires lus, merge après déploiement constaté de 069db0d1, déploiement constaté ; puis prochaine version du plan avec les reports des PR 2 à 6.
 
 **Ouvert.** Reports à la prochaine version du plan : chemins anciens cités (§1, §8, §11), file citée, pagination, PDF natif, coaching autonome, RAG SIIN plein, `AGA_*`, banc « élevé / bas », `D-045`, restes a et b sous R:ao, référence « D-129, #900 » de la clôture de CB-07 (paraît fausse), nom du laboratoire pilote dans la fiche BIO-INGEST (forme opaque).
+
+## 2026-10-14 — BioFlow : l'identité masquée avant l'envoi à Anthropic, migration (D-284 §5, lot j, lot 1)
+
+**Fait.** Constat en agrégats : les comptes rendus déposés sont des scans ou des photos, sans couche texte. Arbitrages du responsable : le praticien noircit l'identité à l'écran, seules les pages masquées partent ; lecture bloquée sans zone, sauf la case « aucune identité », tracée. Migration `bio_ingest_masquage_identite_v1` (pages figées, purgées par la base avec leur document), contrat, banc à deux sessions, effacement et retrait étendus. Revue `wn-reviewer` : P1 (course masquage contre purge) corrigé par un `FOR SHARE`, prouvé par mutation. T1 et T3 verts.
+
+**Écarté.** Masquage automatique par OCR (une photo floue ferait partir l'identité sans que personne le voie) ; envoi du texte seul (aucune couche texte) ; colonne sur le compte rendu (elle aurait touché son trigger figé).
+
+**Prochaine action.** PR, CI, revue, merge, `release-db`, constat ; puis lot 2 (écran, route, lecture des seules pages masquées).
+
+**Ouvert.** TIA de la main du responsable ; textes patient à signer au lot 3 ; un compte rendu de plus de 20 pages ne peut pas être masqué.
