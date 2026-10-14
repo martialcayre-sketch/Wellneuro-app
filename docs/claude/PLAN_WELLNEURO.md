@@ -1961,7 +1961,9 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 |---|---|---|
 | c, d, puis M-2 | F59, H32 | S-2 (H01, file A) ; porte 4 pour c |
 | v | H13 | G-10 |
-| M-3, f, G-3 | F54 | S-7 |
+| M-3 | F54 | véhicule d'écriture des liaisons (S-7 fait le 2026-10-15) |
+| f | F54 | M-3 |
+| G-3 | F54 | f |
 | cb ; illustrations de cc ; cd | H39, H48, H54 | ca (H17) ; porte 16 pour cc ; porte 15 pour cd |
 | ad et bc | H34 | j |
 | ba | H35 | q |
