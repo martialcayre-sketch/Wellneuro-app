@@ -10132,3 +10132,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, commentaires lus, merge après déploiement constaté de d671945b, déploiement constaté ; puis PR 5 (file supprimée), PR 6 (contexte et dettes), en autonomie (mandat du 2026-10-14).
 
 **Ouvert.** Le plan cite des chemins périmés (§1, §8, §11, `AUDIT_PANELS` et `AUDIT_BIOFLOW` sous un chemin déjà faux) : à corriger à sa prochaine version avec les reports des PR 2 et 3.
+
+## 2026-10-14 — Plan unique WellNeuro 6.0 : la file d'attente est supprimée (PR 5 du versement)
+
+**Fait.** Depuis un worktree sur `origin/main` aaf73324 (PR 4 déployée) : `docs/claude/campagnes/FILE_ATTENTE.md` supprimé (dettes au plan §8, campagnes et gels aux §6 et §9, texte dans l'historique Git) ; les deux adresses de routage d'un commentaire de revue (règle de revue, skill de merge) réécrites vers le plan unique, la dette nommée de `ROADMAP_TECHNIQUE.md` cesse d'être une adresse. Vérifié : aucun script, crochet ni lien Markdown ne lisait la file. Revue Copilot : une dette vivante manquait au plan ; les seize entrées non citées par le plan instruites (7 portées, 6 closes, 3 perdues), les trois perdues ajoutées au plan §8 en lignes datées, à porter dans le plan privé source. T1 complet vert (hooks-check et skills-check compris), anti-secrets OK.
+
+**Écarté.** Réécrire les mentions de la file dans les handoffs, fragments, fiches de campagnes, registre et `.wn/state.json` (traces datées, plan §11) ; la ligne 80 de BIO-INGEST et la campagne rayon-biologie-cb (PR 6).
+
+**Prochaine action.** CI, commentaires lus, merge après déploiement constaté de aaf73324, déploiement constaté ; puis PR 6 (contexte et dettes), en autonomie (mandat du 2026-10-14).
+
+**Ouvert.** Le plan cite la file à son §1 (`:10`), §8 et §11 : adresses d'historique, à réécrire à sa prochaine version.

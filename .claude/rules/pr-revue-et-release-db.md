@@ -57,10 +57,11 @@ un tableau **de pages** (`[[…],[…]]`) : l'aplatir à la lecture.
 - **Écarté avec motif** — le commentaire se trompe, et la réponse dit *pourquoi*,
   sur pièces : ligne de code, banc, décision `D-xxx`. « Non pertinent » seul
   n'est pas un motif.
-- **Routé** — le défaut est réel mais hors périmètre du lot ; il part en entrée
-  de `docs/claude/campagnes/FILE_ATTENTE.md` ou en dette nommée de
-  `docs/ROADMAP_TECHNIQUE.md`, **avec son adresse**. Un « on verra » n'est pas
-  un routage.
+- **Routé** — le défaut est réel mais hors périmètre du lot ; il part au plan
+  unique `docs/claude/PLAN_WELLNEURO.md` (dette nommée du §8, ou fiche qui le
+  porte), **avec son adresse**. Un « on verra » n'est pas un routage. Depuis
+  `D-285` (2026-10-14), la file d'attente est supprimée et l'historique de
+  `docs/ROADMAP_TECHNIQUE.md` est archivé : le plan est la seule adresse.
 
 Un commentaire sans verdict au merge disparaît du champ de vision : le squash
 efface la branche, et personne ne relit une PR fermée.
