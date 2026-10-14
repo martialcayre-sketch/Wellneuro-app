@@ -127,7 +127,7 @@ Arbitrage C2B tranché (revue utilisateur du 2026-07-18) et acté au registre so
 |---|---|---|
 | LOT-07 | Score du résumé J21 — branchement momentum (lève dette LOT-04) | **livré en prod** (2026-07-18, sans migration ; PR #112 mergée) |
 | LOT-08 | Ancrage T0 par épisode (prérequis comparateur) | **livré en prod** (2026-07-18, sans migration ; PR #113 mergée) |
-| LOT-09 | Comparateur multi-épisodes (Spirale-index praticien) | **livré en prod** (2026-07-18, réalisation read-only, sans migration ; PR #114 mergée). Report assumé : vraie comparaison ≥ 2 cycles → gate modèle multi-cycles, cadrage ouvert (`propositions/2026-07-18-gate-modele-multi-cycles/`, PR #115). |
+| LOT-09 | Comparateur multi-épisodes (Spirale-index praticien) | **livré en prod** (2026-07-18, réalisation read-only, sans migration ; PR #114 mergée). Report assumé : vraie comparaison ≥ 2 cycles → gate modèle multi-cycles, cadrage ouvert (`docs/archive/cadrages/2026-07-18-gate-modele-multi-cycles/`, PR #115). |
 
 Décisions de compilation (registre A8) :
 

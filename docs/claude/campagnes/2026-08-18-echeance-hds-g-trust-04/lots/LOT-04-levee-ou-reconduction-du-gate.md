@@ -35,7 +35,7 @@ réels, par ordre d'autorité :
 
 | Porteur | Rôle |
 |---|---|
-| `campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md` | **Source.** C'est là que la décision du responsable du 2026-07-21 est consignée, et là qu'une reconduction doit être « datée et signée ici ». Les sept exigences y sont tenues une par une. |
+| `docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md` | **Source.** C'est là que la décision du responsable du 2026-07-21 est consignée, et là qu'une reconduction doit être « datée et signée ici ». Les sept exigences y sont tenues une par une. |
 | `docs/DECISIONS.md` | Le `D-xxx` du responsable. |
 | `.wn/state.json` (`blocking_issues`) | Vue machine. Se met à jour **après** la source, jamais à sa place. |
 | `docs/claude/REGISTRE_FRONTIERES.md` | Ne porte qu'un **renvoi** — à corriger seulement s'il devient faux. |

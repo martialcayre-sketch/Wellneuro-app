@@ -1,5 +1,9 @@
 # Cadrage — La lettre d'adressage remise au patient par son portail (2026-10-03)
 
+> **Figé le 2026-10-14** (`D-285` §5) : document livré ou soldé, gardé à sa place
+> parce que le registre `docs/DECISIONS.md` le cite ; il ne décrit pas l'état
+> courant, l'ordre du travail est au plan `docs/claude/PLAN_WELLNEURO.md`.
+
 > Campagne née de la mise en service de la levée par adressage ([[D-257]],
 > drapeau `WN_LEVEE_ADRESSAGE` posé le 2026-10-03). Décision : [[D-262]].
 

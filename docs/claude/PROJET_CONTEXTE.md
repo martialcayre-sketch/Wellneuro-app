@@ -206,6 +206,6 @@ du plan. Le texte d'avant reste lisible dans l'historique Git.
 - Règles de travail détaillées : `docs/claude/REGLES_CRITIQUES.md`, `docs/claude/WORKFLOW_DEVELOPPEMENT.md`
 - Templates de prompts : `docs/claude/TEMPLATES_PROMPTS.md`
 - Architecture technique système : `docs/ROADMAP_TECHNIQUE.md`
-- Historique des chantiers et dette technique : `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
+- Historique des chantiers et dette technique : `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
 - Checklist de test manuel E2E : `docs/checklist_tests_end_to_end.md`
 - Historique des changements fonctionnels : `CHANGELOG.md`

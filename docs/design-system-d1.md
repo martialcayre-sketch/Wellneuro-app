@@ -1,7 +1,11 @@
 # Design system D1 — Wellneuro NNPP2
 
+> **2026-10-14** : `ROADMAP_AGENT_PLAN.md`, cité ci-dessous, est archivé sous
+> `docs/archive/roadmap-updates/` (`D-285`) ; la feuille de route est le plan
+> unique `docs/claude/PLAN_WELLNEURO.md`.
+
 Référence des tokens et composants livrés par la série D1
-(`docs/claude/ROADMAP_AGENT_PLAN.md`, section 3). Complète
+(`docs/archive/roadmap-updates/ROADMAP_AGENT_PLAN.md`, section 3). Complète
 `docs/claude/PROJET_CONTEXTE.md` (qui fait foi sur l'état technique
 courant) — ce document se concentre sur le design system lui-même.
 

@@ -7,7 +7,7 @@
 > spécification détaillée — dès qu'un sujet exige du détail, c'est que la
 > campagne concernée doit être compilée (règle N+1, cf. §2).
 >
-> `ROADMAP_AGENT_PLAN.md` est gelé en vision historique / backlog. Ses
+> `ROADMAP_AGENT_PLAN.md` (archivé sous `docs/archive/roadmap-updates/` le 2026-10-14, `D-285`) est gelé en vision historique / backlog. Ses
 > invariants (ex-section 2) et consignes agent (ex-section 8) migrent ici
 > (§1) et restent pleinement normatifs.
 
@@ -22,7 +22,7 @@
   entière et sans dérogation.
   **Suspendu pour la base de production seule** depuis le 2026-07-21, par
   décision datée du responsable du traitement autorisant une phase de test
-  avec des personnes réelles (`campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`,
+  avec des personnes réelles (`docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md`,
   § « Décision du responsable »), **reconduite sans terme** par [[D-265]]
   (même checklist, § « Reconduction du responsable »). Le terme initial du
   2026-10-21 ne s'applique plus.
@@ -218,7 +218,7 @@
 - La **disposition** 5.0 (Fil du jour, fiche-trajectoire/Spirale, copilote,
   correspondance, « Ma spirale » patient) devient la cible UX des deux
   fronts, livrée **par campagnes** selon
-  `campagnes/PROGRAMME_WELLNEURO_5_0.md` (qui succède à la file restante du
+  `docs/archive/roadmap-updates/PROGRAMME_WELLNEURO_5_0.md` (qui succède à la file restante du
   programme 3.2 et réintègre C2A/C2B/C3/C4/C5/JA sans les dupliquer).
   Phasage identité-d'abord confirmé ; la Spirale est un objet de
   **navigation, jamais un graphe**.

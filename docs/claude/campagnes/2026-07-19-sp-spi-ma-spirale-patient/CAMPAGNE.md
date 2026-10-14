@@ -67,7 +67,7 @@ repose sur un lien permanent, ce que la campagne refuse. C2A ✓.
 
 ## Dette héritée — E11 (audit de conformité 5.0, 2026-07-20)
 
-`docs/claude/campagnes/AUDIT_CONFORMITE_5_0_2026-07-20.md:127` relève un hub
+`docs/archive/cadrages/AUDIT_CONFORMITE_5_0_2026-07-20.md:127` relève un hub
 empilé sur les deux surfaces patient, contre le principe séquentiel du
 registre (A6-R1 : « une étape à la fois, pas de hub empilé »,
 `docs/claude/REGISTRE_FRONTIERES.md:215-216`) :

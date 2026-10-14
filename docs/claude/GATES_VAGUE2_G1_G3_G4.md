@@ -417,5 +417,5 @@ désormais le lien une fois puis navigue au cookie, et un test dédié
 
 - Gate appliqué en exemple : `campagnes/2026-07-11-suivi-j7-j14-j21-et-persistance/GATE_G2_IDENTITE_CYCLE.md`.
 - Gate TRUST bloquant pour l'activation réelle :
-  `campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`.
+  `docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md`.
 - Registre : `docs/claude/REGISTRE_FRONTIERES.md`.

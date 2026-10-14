@@ -50,7 +50,7 @@ complément de maturité, pas une source clinique. En cas d'écart, ils ne
 remplacent pas :
 
 - `docs/claude/REGISTRE_FRONTIERES.md` ;
-- `docs/claude/campagnes/PROGRAMME_WELLNEURO_3_0.md` ;
+- `docs/archive/roadmap-updates/PROGRAMME_WELLNEURO_3_0.md` ;
 - les `CAMPAGNE.md` actifs ;
 - `docs/claude/PROJET_CONTEXTE.md` ;
 - les règles cliniques et le scoring présents dans le code.

@@ -1,5 +1,9 @@
 # Cadrage — la porte biologique d'une indication d'assiette (chantier 6)
 
+> **Figé le 2026-10-14** (`D-285` §5) : document livré ou soldé, gardé à sa place
+> parce que le registre `docs/DECISIONS.md` le cite ; il ne décrit pas l'état
+> courant, l'ordre du travail est au plan `docs/claude/PLAN_WELLNEURO.md`. Reste ouvert : LOT-04, absorbé par BP-27 au plan.
+
 > Posé le 2026-09-23. Chantier ouvert par [[D-236]] §4 (« ce qui manque est un
 > mécanisme, pas un claim »), nommé « chantier 6 » depuis [[D-237]]. Ce document
 > est le LOT-00 : il ne livre aucun code.

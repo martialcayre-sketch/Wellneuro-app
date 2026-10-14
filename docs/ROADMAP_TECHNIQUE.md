@@ -7,10 +7,10 @@
 >
 > **Ce qu'il n'est pas** :
 >
-> - priorités et fonctionnalités produit → `docs/ROADMAP_PRODUIT.md` ;
+> - priorités et fonctionnalités produit → `docs/archive/roadmap-updates/ROADMAP_PRODUIT.md` ;
 > - architecture clinique **cible** (C1→C5B) → `docs/claude/ARCHITECTURE_CLINIQUE_3_2.md` ;
 > - relation praticien/patient et frontières fonctionnelles → `docs/RELATION_PRATICIEN_PATIENT_SOURCE.md` ;
-> - historique des chantiers et lots de consolidation R0→R10 → `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` ;
+> - historique des chantiers et lots de consolidation R0→R10 → `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md` ;
 > - état courant condensé pour reprise rapide → `docs/claude/PROJET_CONTEXTE.md` (qui renvoie ici pour le détail).
 >
 > Mis à jour le 2026-09-07. Ce document décrit l'état constaté au moment de la
@@ -196,10 +196,10 @@ Les gates vivent dans le code (`lib/*/featureFlag.ts`). Détail complet :
 | Sujet | Document qui fait foi |
 |---|---|
 | État courant condensé, onboarding | `docs/claude/PROJET_CONTEXTE.md` |
-| Priorités et fonctionnalités produit | `docs/ROADMAP_PRODUIT.md` |
+| Priorités et fonctionnalités produit | `docs/archive/roadmap-updates/ROADMAP_PRODUIT.md` |
 | Architecture clinique cible (C1→C5B) | `docs/claude/ARCHITECTURE_CLINIQUE_3_2.md` |
 | Relation praticien/patient | `docs/RELATION_PRATICIEN_PATIENT_SOURCE.md` |
-| Historique des chantiers R0→R10 | `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` |
+| Historique des chantiers R0→R10 | `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md` |
 | Infra RAG/pgvector (chunks) | `docs/RAG_PGVECTOR_PRODUCTION.md` |
 | Validation des claims | `docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md` |
 | Release DB (migrations/imports hors build) | `docs/DEPLOIEMENT_RELEASE_DB.md` |
@@ -214,4 +214,4 @@ Les gates vivent dans le code (`lib/*/featureFlag.ts`). Détail complet :
 ## 12. Historique des chantiers techniques
 
 L'historique des lots de migration et de reprise (R0→R10) ainsi que la dette
-technique close est archivé dans `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`.
+technique close est archivé dans `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md`.

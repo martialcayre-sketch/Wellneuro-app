@@ -69,7 +69,7 @@
 La source d'état machine est `.wn/state.json` ; voir sa vue
 [`campagnes/ACTIVE_CAMPAIGN.md`](campagnes/ACTIVE_CAMPAIGN.md),
 [`ARCHITECTURE_CLINIQUE_3_2.md`](ARCHITECTURE_CLINIQUE_3_2.md) et
-[`campagnes/PROGRAMME_WELLNEURO_3_0.md`](campagnes/PROGRAMME_WELLNEURO_3_0.md).
+[`docs/archive/roadmap-updates/PROGRAMME_WELLNEURO_3_0.md`](../archive/roadmap-updates/PROGRAMME_WELLNEURO_3_0.md).
 
 ### Où chercher
 
@@ -79,5 +79,5 @@ La source d'état machine est `.wn/state.json` ; voir sa vue
 | Bug incident Vercel | [`CONTEXTE_SESSION_VERCEL_2026-07-01.md`](CONTEXTE_SESSION_VERCEL_2026-07-01.md) |
 | Workflow code/test/livraison | [`WORKFLOW_DEVELOPPEMENT.md`](WORKFLOW_DEVELOPPEMENT.md) |
 | Histoique décisions | [`SESSION_LOG.md`](SESSION_LOG.md) |
-| Programme produit (priorités) | [`ROADMAP_AGENT_PLAN.md`](ROADMAP_AGENT_PLAN.md) |
+| Programme produit (priorités) | [`ROADMAP_AGENT_PLAN.md`](../archive/roadmap-updates/ROADMAP_AGENT_PLAN.md) |
 | Config IA + caching | [`PROMPT_CACHING.md`](PROMPT_CACHING.md) |

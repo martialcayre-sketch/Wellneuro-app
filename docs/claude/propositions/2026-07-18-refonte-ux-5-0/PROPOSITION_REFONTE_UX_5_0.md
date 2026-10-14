@@ -1,7 +1,7 @@
 # Proposition de refonte UX 5.0 — « le poste de pilotage clinique »
 
 Date : 2026-07-18 · Statut : proposition (documentaire, aucun code applicatif)
-Livrables associés : `maquette-cible-ux-5-0.html` (ce dossier) · audit `campagnes/AUDIT_CONFORMITE_UX_5_0_2026-07-18.md`
+Livrables associés : `maquette-cible-ux-5-0.html` (ce dossier) · audit `docs/archive/cadrages/AUDIT_CONFORMITE_UX_5_0_2026-07-18.md`
 Normatif : à acter au registre — **A5-R2** (canvas mid-tone) et **A6-R1** (poste de pilotage). Voir `REGISTRE_FRONTIERES.md`.
 
 ## 1. Contexte & intention

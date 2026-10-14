@@ -51,7 +51,7 @@ Quatre questions fermées, posées en session :
 
 1. **Rituel du soir** : plus tard, et seulement si le praticien a recommandé
    un programme d’hygiène du sommeil. Hors de l’agenda ; inscrit à
-   `docs/ROADMAP_PRODUIT.md` §5.
+   `docs/archive/roadmap-updates/ROADMAP_PRODUIT.md` §5.
 2. **Endormissement** : la latence reste une durée estimée en classes, avec
    « Je ne sais pas » ([[D-271]]) ; des pictogrammes s’y posent, libellés
    gardés.

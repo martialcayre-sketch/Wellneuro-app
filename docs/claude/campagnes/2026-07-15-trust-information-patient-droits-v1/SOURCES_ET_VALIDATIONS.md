@@ -17,7 +17,7 @@ Les textes destinés au patient doivent être validés avant production.
 
 - `docs/RELATION_PRATICIEN_PATIENT_SOURCE.md`
 - `docs/claude/REGISTRE_FRONTIERES.md`
-- `docs/claude/campagnes/PROGRAMME_WELLNEURO_3_0.md`
+- `docs/archive/roadmap-updates/PROGRAMME_WELLNEURO_3_0.md`
 - campagne HC-F ;
 - campagne QX ;
 - campagne C1 ;

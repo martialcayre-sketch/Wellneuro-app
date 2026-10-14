@@ -7,7 +7,7 @@ Ce dossier fournit les fichiers Markdown nécessaires pour donner à Claude IA u
 **[Voir structure des campagnes autonomes](campagnes/README.md)** — programme de développement par lots atomiques.
 
 - Campagne active : [ACTIVE_CAMPAIGN.md](campagnes/ACTIVE_CAMPAIGN.md)
-- Programme complet : [PROGRAMME_WELLNEURO_3_0.md](campagnes/PROGRAMME_WELLNEURO_3_0.md)
+- Plan unique (`D-285`) : [PLAN_WELLNEURO.md](PLAN_WELLNEURO.md) ; programmes 3.2 et 5.0 archivés : [PROGRAMME_WELLNEURO_3_0.md](../archive/roadmap-updates/PROGRAMME_WELLNEURO_3_0.md), [PROGRAMME_WELLNEURO_5_0.md](../archive/roadmap-updates/PROGRAMME_WELLNEURO_5_0.md)
 - Navigation rapide : `node scripts/wn-campaign.mjs next` ou `/wn-campaign next`
 
 ## Fichiers de contexte IA
@@ -18,7 +18,7 @@ Ce dossier fournit les fichiers Markdown nécessaires pour donner à Claude IA u
 - `TEMPLATES_PROMPTS.md` : prompts réutilisables pour les tâches courantes.
 - `PROMPT_CACHING.md` : stratégie de cache des prompts pour l'API Claude (synthèse IA).
 - `CONTEXTE_SESSION_VERCEL_2026-07-01.md` : runbook de l'incident 404/DNS production — référence en cas de nouvel incident de routage ou de domaine.
-- `ROADMAP_AGENT_PLAN.md` : feuille de route produit consolidée (séries D/R/E, priorités) — fait foi sur les priorités produit, `PROJET_CONTEXTE.md` fait foi sur l'état technique courant.
+- `PLAN_WELLNEURO.md` : plan unique (`D-285`) — fait foi sur l'ordre du travail ; `ROADMAP_AGENT_PLAN.md` est archivé sous `../archive/roadmap-updates/` ; `PROJET_CONTEXTE.md` fait foi sur l'état technique courant.
 - `SESSION_LOG.md` : historique des résumés de fin de session (décisions, options écartées, prochaine action).
 
 ## Comment utiliser
@@ -31,7 +31,7 @@ Ce dossier fournit les fichiers Markdown nécessaires pour donner à Claude IA u
 ## Autres documents utiles du dépôt (hors ce dossier)
 
 - `docs/ROADMAP_TECHNIQUE.md` : architecture technique système.
-- `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` : lots livrés et dette technique (R0→R10).
+- `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md` : lots livrés et dette technique (R0→R10), archivé le 2026-10-14 ; dettes vivantes au plan §8.
 - `docs/securite_rgpd.md` : exigences RGPD et secrets.
 - `docs/checklist_tests_end_to_end.md` : validation manuelle E2E.
 - `CHANGELOG.md` : historique des évolutions fonctionnelles.

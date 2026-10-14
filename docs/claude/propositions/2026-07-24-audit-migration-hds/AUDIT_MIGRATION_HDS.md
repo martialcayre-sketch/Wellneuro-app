@@ -311,7 +311,7 @@ Le critère de succès de l'audit est explicitement : au 2026-10-21, écrire
 - OVHcloud : compliance HDS, « Représentation des garanties », support levels ;
   Scaleway : page HDS officielle
 - Dépôt : `docs/claude/REGISTRE_FRONTIERES.md` (invariant + dérogation),
-  `docs/claude/campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`
+  `docs/archive/cadrages/CHECKLIST_ACTIVATION_G_TRUST_04.md`
   (instruction du 2026-07-21), `web/prisma/schema.prisma`,
   `web/src/app/api/praticien/synthese/route.ts`,
   `web/src/lib/consultation/email.ts`, `web/scripts/vercel-build.sh`
