@@ -372,7 +372,12 @@ export function cartesSynthesesAValider(
       titre: `${nb} relecture${nb > 1 ? 's' : ''} en attente`,
       pourquoi: `Dernière synthèse générée le ${formatDateFr(dateRef)} — rien n'est diffusé sans votre validation.`,
       date: dateRef.toISOString(),
-      href: '/dashboard/synthese',
+      // Le lien porte le dossier : la page de synthèse présélectionne ce
+      // patient (`SynthesePanel`, `initialPatientId`) — un geste au lieu de
+      // deux à chaque relecture (plan 6.0, S-4). Sans l'identifiant, « Relire »
+      // ouvrait la page sur le dernier dossier sélectionné, pas sur celui de
+      // la carte.
+      href: `/dashboard/synthese?idPatient=${encodeURIComponent(idPatient)}`,
       actionLabel: 'Relire',
       cle: cleCarte('synthese_a_valider', `agregat:${idPatient}:${dateRef.toISOString()}`),
       nbElements: nb,

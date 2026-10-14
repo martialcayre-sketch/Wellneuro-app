@@ -22,6 +22,20 @@ const complete = construireCloture({
   syntheses: [{ statut: 'Validee_Praticien', dateValidation: new Date('2026-07-01T12:00:00.000Z') }],
 });
 
+// Synthèse validée mais protocole non relu : il y a un document à composer,
+// même si la chaîne n'est pas franchie — le lien suit la synthèse seule.
+const syntheseSeule = construireCloture({
+  versionActive: {
+    inputHash: 'hash-v2',
+    selectedPriorityId: 'PRIO_SOMMEIL',
+    status: 'draft',
+    reviewedAt: null,
+    createdAt: new Date('2026-07-01T09:00:00.000Z'),
+  },
+  approbationActive: null,
+  syntheses: [{ statut: 'Validee_Praticien', dateValidation: new Date('2026-07-01T12:00:00.000Z') }],
+});
+
 const bloquee = construireCloture({
   versionActive: {
     inputHash: 'hash-v2',
@@ -61,6 +75,38 @@ describe('ClotureMinuteApresPanel', () => {
 
     await waitFor(() => expect(screen.getByText(/Les trois étapes sont franchies/i)).toBeTruthy());
     expect(screen.getByText(/il ne part pas d’ici/i)).toBeTruthy();
+    expect(screen.getByText(/depuis la page Synthèse ou la page Documents/i)).toBeTruthy();
+  });
+
+  it('synthèse validée : le lien « Composer le document » ouvre la page Documents du dossier', async () => {
+    repondre(complete);
+    render(<ClotureMinuteApresPanel idPatient="PAT_SEED_03" />);
+
+    await waitFor(() => expect(screen.getByText('Protocole relu')).toBeTruthy());
+    const lien = screen.getByRole('link', { name: /Composer le document/i });
+    expect(lien.getAttribute('href')).toBe('/dashboard/documents?idPatient=PAT_SEED_03');
+    // Le poste de pilotage reste accessible à côté, sur le même dossier.
+    expect(screen.getByRole('link', { name: /Ouvrir le poste de pilotage/i }).getAttribute('href')).toBe(
+      '/dashboard/patients/PAT_SEED_03',
+    );
+  });
+
+  it('le lien « Composer » suit la synthèse validée, pas l’état des autres étapes', async () => {
+    repondre(syntheseSeule);
+    render(<ClotureMinuteApresPanel idPatient="PAT_SEED_03" />);
+
+    await waitFor(() => expect(screen.getByText(/Rien ne peut être diffusé en l’état/i)).toBeTruthy());
+    expect(screen.getByRole('link', { name: /Composer le document/i })).toBeTruthy();
+    expect(screen.queryByText(/Les trois étapes sont franchies/i)).toBeNull();
+  });
+
+  it('sans synthèse validée : aucun lien « Composer le document »', async () => {
+    repondre(bloquee);
+    render(<ClotureMinuteApresPanel idPatient="PAT_SEED_03" />);
+
+    await waitFor(() => expect(screen.getByText(/Rien ne peut être diffusé en l’état/i)).toBeTruthy());
+    expect(screen.queryByRole('link', { name: /Composer le document/i })).toBeNull();
+    expect(screen.getByRole('link', { name: /Ouvrir le poste de pilotage/i })).toBeTruthy();
   });
 
   it('aucun bouton de cet écran ne peut déclencher un envoi', async () => {

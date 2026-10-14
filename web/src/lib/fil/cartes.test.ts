@@ -28,7 +28,7 @@ const NOMS = new Map([
 const MAINTENANT = new Date('2026-07-15T10:00:00');
 
 describe('cartesSynthesesAValider', () => {
-  it('trie par date décroissante et pointe vers la page synthèse', () => {
+  it('trie par date décroissante et pointe vers la synthèse du dossier de la carte', () => {
     const cartes = cartesSynthesesAValider(
       [
         { idSynthese: 'SYN_1', idPatient: 'P-SOPHIE', dateGeneration: new Date('2026-07-10T09:00:00') },
@@ -37,7 +37,9 @@ describe('cartesSynthesesAValider', () => {
       NOMS,
     );
     expect(cartes.map(c => c.patient)).toEqual(['Jennifer Martin', 'Sophie Nicola']);
-    expect(cartes[0].href).toBe('/dashboard/synthese');
+    // Le bon dossier au clic : l'identifiant est dans le lien, jamais la page nue.
+    expect(cartes[0].href).toBe('/dashboard/synthese?idPatient=P-JENNIFER');
+    expect(cartes[1].href).toBe('/dashboard/synthese?idPatient=P-SOPHIE');
     expect(cartes[0].pourquoi).toContain('validation');
   });
 
