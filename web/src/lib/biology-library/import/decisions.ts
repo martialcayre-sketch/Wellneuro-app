@@ -2,6 +2,7 @@ import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 import { validerSaisieResultat } from '@/lib/biology-library/resultats';
+import { cleMesure, clesOccupees } from '@/lib/biology-library/annulations';
 import { cleVerrouCompteRendu } from './verrou';
 import { lireValeurQuantitative, MOTIFS_ECART, unitesConcordent, type MotifEcart } from './valeurLue';
 
@@ -257,20 +258,13 @@ export async function deciderLignes(params: {
     });
   });
 
-  // PRÉFLIGHT, ÉTAGE 3 — les doublons au dossier, même clé que l'unicité
-  // partielle en base. Le P2002 de la transaction reste le filet d'une course.
+  // PRÉFLIGHT, ÉTAGE 3 — les doublons au dossier, même règle que la garde en
+  // base : un fil annulé libère sa place ([[D-294]] §3). Le P2002 de la
+  // transaction reste le filet d'une course.
   if (validations.length > 0) {
-    const existants = await prisma.resultatBiologique.findMany({
-      where: {
-        idPatient,
-        supersedesResultatId: null,
-        OR: validations.map(v => ({ analyteCode: v.analyteCode, preleveLe: v.preleveLe })),
-      },
-      select: { analyteCode: true, preleveLe: true },
-    });
-    const pris = new Set(existants.map(e => `${e.analyteCode}|${e.preleveLe.toISOString()}`));
+    const pris = await clesOccupees(prisma, idPatient, validations);
     for (const v of validations) {
-      if (pris.has(`${v.analyteCode}|${v.preleveLe.toISOString()}`)) refuser(v.index, v.idLigne, 'doublon_mesure');
+      if (pris.has(cleMesure(v.analyteCode, v.preleveLe))) refuser(v.index, v.idLigne, 'doublon_mesure');
     }
   }
 

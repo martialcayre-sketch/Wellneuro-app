@@ -48,6 +48,9 @@ const IMPORTEURS_ADMIS = [
   'web/src/app/api/praticien/biologie/proposition/courrier/route.ts',
   'web/src/app/api/praticien/biologie/proposition/document-patient/route.ts',
   'web/src/app/api/praticien/biologie/proposition/route.ts',
+  // L'annulation d'un résultat saisi par erreur ([[D-294]], BP-09) : actes en
+  // ajout seul, motif fermé ; lit le fil, ne qualifie aucune valeur.
+  'web/src/app/api/praticien/biologie/resultats/annulations/route.ts',
   'web/src/app/api/praticien/biologie/resultats/bilan/route.ts',
   'web/src/app/api/praticien/biologie/resultats/route.ts',
   // Routes praticien hors biologie : cockpit, fil, et refus de résolution d'une
@@ -69,8 +72,11 @@ const IMPORTEURS_ADMIS = [
   'web/src/components/patient-cockpit/ArbitrageBiologiquePanel.tsx',
   'web/src/components/patient-cockpit/ClinicalRuntimeSection.tsx',
   // La saisie d'une valeur (BIO-INGEST LOT-10) : le module PUR
-  // `valeurDecimale` seul, qui met en forme ce que le praticien tape — aucune
-  // donnée lue, aucune qualification.
+  // `valeurDecimale`, qui met en forme ce que le praticien tape — aucune
+  // donnée lue, aucune qualification. Et les libellés des motifs
+  // d'annulation ([[D-294]]), module PUR `annulationMotifs`, avec le geste
+  // qui les propose (`ActeAnnulationResultat`).
+  'web/src/components/patient-cockpit/ActeAnnulationResultat.tsx',
   'web/src/components/patient-cockpit/EstimeMesurePanel.tsx',
   'web/src/components/patient-cockpit/ImportCompteRenduPanel.tsx',
   // L'écran de l'acte de lecture ([[D-268]], BP-10) : codes et états, sans valeur.

@@ -1,4 +1,4 @@
-import { correctionsParLigne, type MaillonFil } from './filCorrection';
+import { annulationParLigne, correctionsParLigne, type MaillonFil } from './filCorrection';
 
 // LE DERNIER RÉSULTAT QUI FAIT FOI, PAR ANALYTE ([[D-245]] §1, LOT-03 du
 // chantier 6) — résolution PURE, testable sans base.
@@ -10,6 +10,11 @@ import { correctionsParLigne, type MaillonFil } from './filCorrection';
 // PRÉLÈVEMENT : c'est la date clinique, celle que le praticien lit. Élire sur
 // la date de saisie montrerait la mesure la plus récemment TAPÉE, qui peut être
 // la plus ancienne.
+//
+// UN FIL ANNULÉ NE CONCOURT PAS ([[D-294]] §6). `annulations` est OBLIGATOIRE,
+// et c'est voulu : un lecteur qui l'oublierait ferait foi d'une saisie
+// reconnue fausse. Il porte les annulations ACTIVES du dossier, indexées par
+// la ligne qui les porte ; une table vide dit « aucune », jamais « non lu ».
 //
 // AUCUNE INTERPRÉTATION. Cette fonction choisit une ligne ; elle ne la compare
 // à rien. La valeur reste celle de la base, sans arrondi ni conversion.
@@ -28,11 +33,15 @@ function plusRecente<T extends LigneResultatDatee>(a: T, b: T): T {
   return a.id > b.id ? a : b;
 }
 
-export function derniersResultatsParAnalyte<T extends LigneResultatDatee>(lignes: T[]): Map<string, T> {
+export function derniersResultatsParAnalyte<T extends LigneResultatDatee>(
+  lignes: T[],
+  annulations: ReadonlyMap<string, unknown>,
+): Map<string, T> {
   const corrigees = correctionsParLigne(lignes);
+  const annulees = annulationParLigne(lignes, annulations);
   const derniers = new Map<string, T>();
   for (const ligne of lignes) {
-    if (corrigees.has(ligne.id)) continue;
+    if (corrigees.has(ligne.id) || annulees.has(ligne.id)) continue;
     const actuelle = derniers.get(ligne.analyteCode);
     derniers.set(ligne.analyteCode, actuelle ? plusRecente(actuelle, ligne) : ligne);
   }

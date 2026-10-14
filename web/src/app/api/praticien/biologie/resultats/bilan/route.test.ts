@@ -12,6 +12,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     patient: { findUnique: vi.fn() },
     biologyAnalyte: { findMany: vi.fn() },
     resultatBiologique: { findMany: vi.fn(), create: vi.fn() },
+    annulationResultatBiologique: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn() },
     $transaction: vi.fn(),
   },
@@ -27,6 +28,14 @@ import { POST } from './route';
 const URL_BILAN = 'http://localhost/api/praticien/biologie/resultats/bilan';
 const PRATICIEN = 'praticien@wellneuro.fr';
 const PRELEVE_LE = '2026-09-01T08:00:00.000Z';
+/** Une mesure courante de `BIO_A1` au même horodatage. */
+const RACINE_A1 = {
+  id: 'r_a1',
+  analyteCode: 'BIO_A1',
+  preleveLe: new Date(PRELEVE_LE),
+  supersedesResultatId: null,
+  saisiLe: new Date('2026-09-01T09:00:00.000Z'),
+};
 
 function postRequest(body: unknown): Request {
   return new Request(URL_BILAN, {
@@ -68,6 +77,7 @@ beforeEach(() => {
   );
   // Par défaut : aucune mesure déjà consignée à cet horodatage.
   prisma.resultatBiologique.findMany.mockResolvedValue([]);
+  prisma.annulationResultatBiologique.findMany.mockResolvedValue([]);
   // `create` rend une promesse-témoin : la transaction tableau les reçoit.
   prisma.resultatBiologique.create.mockImplementation((args: unknown) => ({ args }));
   prisma.$transaction.mockImplementation(async (ops: unknown[]) => ops.map((_, i) => ({ id: `r${i}` })));
@@ -209,7 +219,7 @@ describe('bilan — ce que le serveur pose, et lui seul', () => {
 
 describe('bilan — refus par ligne', () => {
   it('doublon EN BASE (même analyte, même horodatage) : 409, la ligne est nommée', async () => {
-    prisma.resultatBiologique.findMany.mockResolvedValueOnce([{ analyteCode: 'BIO_A1' }]);
+    prisma.resultatBiologique.findMany.mockResolvedValueOnce([RACINE_A1]);
     const response = await POST(postRequest(bilan(DEUX_LIGNES)));
     expect(response.status).toBe(409);
     const payload = await response.json();
@@ -219,16 +229,45 @@ describe('bilan — refus par ligne', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it('la recherche de doublon vise la clé de l’unicité partielle — et le seul dossier', async () => {
+  it('la recherche de doublon lit les fils ENTIERS des clés du bilan — et le seul dossier', async () => {
     await POST(postRequest(bilan(DEUX_LIGNES)));
     expect(prisma.resultatBiologique.findMany).toHaveBeenCalledWith({
       where: {
         idPatient: 'PAT1',
-        preleveLe: new Date(PRELEVE_LE),
-        analyteCode: { in: ['BIO_A0', 'BIO_A1'] },
-        supersedesResultatId: null,
+        OR: [
+          { analyteCode: 'BIO_A0', preleveLe: new Date(PRELEVE_LE) },
+          { analyteCode: 'BIO_A1', preleveLe: new Date(PRELEVE_LE) },
+        ],
       },
-      select: { analyteCode: true },
+      select: { id: true, analyteCode: true, preleveLe: true, supersedesResultatId: true, saisiLe: true },
+    });
+  });
+
+  // [[D-294]] §3 : un résultat annulé libère sa place — la garde en base
+  // l'admet, le préflight ne doit pas la refuser.
+  it('une mesure ANNULÉE à la même clé ne fait plus doublon : la place est libre', async () => {
+    prisma.resultatBiologique.findMany.mockResolvedValueOnce([RACINE_A1]);
+    prisma.annulationResultatBiologique.findMany.mockResolvedValueOnce([
+      {
+        id: 'ann1',
+        idResultat: 'r_a1',
+        motifAnnulation: 'mauvais_analyte',
+        praticienEmail: PRATICIEN,
+        acteLe: new Date('2026-09-02T08:00:00.000Z'),
+      },
+    ]);
+    const response = await POST(postRequest(bilan(DEUX_LIGNES)));
+    expect(response.status).toBe(201);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('la place n’est libérée que par une annulation ACTIVE : la lecture exclut les révoquées', async () => {
+    prisma.resultatBiologique.findMany.mockResolvedValueOnce([RACINE_A1]);
+    await POST(postRequest(bilan(DEUX_LIGNES)));
+    expect(prisma.annulationResultatBiologique.findMany.mock.calls[0][0].where).toMatchObject({
+      idPatient: 'PAT1',
+      acte: 'annulation',
+      revocations: { none: {} },
     });
   });
 

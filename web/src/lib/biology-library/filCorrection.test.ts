@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { correctionsParLigne, type MaillonFil } from './filCorrection';
+import { annulationParLigne, correctionsParLigne, type MaillonFil } from './filCorrection';
 
 function maillon(id: string, supersedesResultatId: string | null, saisiLe: string): MaillonFil {
   return { id, supersedesResultatId, saisiLe };
@@ -198,5 +198,43 @@ describe('correctionsParLigne — le fil de correction d’une mesure (D-124)', 
     const copie = JSON.parse(JSON.stringify(lignes));
     correctionsParLigne(lignes);
     expect(lignes).toEqual(copie);
+  });
+});
+
+describe('annulationParLigne — le fil annulé (D-294 §3)', () => {
+  const lignes = [
+    maillon('a', null, '2026-09-01T08:00:00.000Z'),
+    maillon('b', 'a', '2026-09-02T08:00:00.000Z'),
+    maillon('c', 'b', '2026-09-03T08:00:00.000Z'),
+    // Même clé, autre racine : la mesure neuve qui a repris la place.
+    maillon('n', null, '2026-09-04T08:00:00.000Z'),
+  ];
+
+  it('aucune annulation : aucune ligne marquée', () => {
+    expect(annulationParLigne(lignes, new Map()).size).toBe(0);
+  });
+
+  it('une annulation sur la tête marque le fil ENTIER, et lui seul', () => {
+    const rendu = annulationParLigne(lignes, new Map([['c', 'A1']]));
+    expect([...rendu.keys()].sort()).toEqual(['a', 'b', 'c']);
+    expect(rendu.get('a')).toBe('A1');
+    expect(rendu.has('n')).toBe(false);
+  });
+
+  it('portée par une ligne intermédiaire (correction concurrente), le fil reste annulé', () => {
+    const rendu = annulationParLigne(lignes, new Map([['b', 'A1']]));
+    expect([...rendu.keys()].sort()).toEqual(['a', 'b', 'c']);
+  });
+
+  it('une annulation hors série ne marque rien', () => {
+    expect(annulationParLigne(lignes, new Map([['absente', 'A1']])).size).toBe(0);
+  });
+
+  it('orphelines visant la même cible absente : un seul fil, annulé ensemble', () => {
+    const orphelines = [
+      maillon('o1', 'disparue', '2026-09-01T08:00:00.000Z'),
+      maillon('o2', 'disparue', '2026-09-02T08:00:00.000Z'),
+    ];
+    expect(annulationParLigne(orphelines, new Map([['o2', 'A1']])).size).toBe(2);
   });
 });

@@ -1034,3 +1034,160 @@ describe('EstimeMesurePanel — import de comptes rendus (BIO-INGEST LOT-02)', (
     expect(await screen.findByText('Importer un compte rendu de laboratoire')).toBeTruthy();
   });
 });
+
+describe('EstimeMesurePanel — annuler un résultat saisi par erreur (D-294)', () => {
+  const COURANTE = {
+    id: 'r1',
+    analyteCode: 'BIO_FERRITINE',
+    analyteLibelle: 'Ferritine',
+    valeur: '42.5',
+    unite: 'µg/L',
+    uniteCatalogue: 'µg/L',
+    preleveLe: '2026-09-01T08:00:00.000Z',
+    source: 'saisie_praticien',
+    saisiLe: '2026-09-01T09:00:00.000Z',
+    supersedesResultatId: null,
+    corrigeeParId: null,
+    annulation: null,
+  };
+  const ANNULATION = {
+    id: 'ann1',
+    idResultatVise: 'r1',
+    motif: 'mauvais_analyte',
+    par: 'praticien@wellneuro.fr',
+    le: '2026-09-03T10:00:00.000Z',
+  };
+
+  function monterAvec(
+    resultats: unknown[],
+    reponsePost?: { ok: boolean; status: number; error?: string },
+    plagesParAnalyte: Record<string, unknown[]> = {},
+  ) {
+    const corps: Array<{ url: string; corps: unknown }> = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (entree: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(entree);
+        if (url.includes('/api/praticien/biologie/catalogue')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ ok: true, analytes: [{ code: 'BIO_FERRITINE', libelle: 'Ferritine', unite: 'µg/L' }] }),
+          } as Response;
+        }
+        if (init?.method === 'POST') {
+          corps.push({ url, corps: JSON.parse(String(init.body)) });
+          const r = reponsePost ?? { ok: true, status: 201 };
+          return { ok: r.ok, status: r.status, json: async () => ({ ok: r.ok, error: r.error }) } as Response;
+        }
+        return { ok: true, status: 200, json: async () => ({ ok: true, resultats, plagesParAnalyte }) } as Response;
+      }),
+    );
+    render(
+      <CbFeatureProvider enabled resultsEnabled>
+        <EstimeMesurePanel idPatient="PAT1" />
+      </CbFeatureProvider>,
+    );
+    return { corps };
+  }
+
+  const PLAGE = {
+    borneMin: 30,
+    borneMax: 100,
+    unite: 'µg/L',
+    population: 'adulte',
+    claimId: 'C1',
+    versionClaim: 'v1',
+    niveauPreuve: 'B',
+  };
+
+  it('PLACE REPRISE : la révocation n’est pas offerte, et l’écran dit pourquoi', async () => {
+    monterAvec([
+      { ...COURANTE, annulation: ANNULATION },
+      { ...COURANTE, id: 'r2', valeur: '80', saisiLe: '2026-09-04T09:00:00.000Z' },
+    ]);
+    expect(await screen.findByText(/une autre mesure a pris sa place/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Révoquer l’annulation/ })).toBeNull();
+  });
+
+  it('une mesure annulée dans une AUTRE unité ne tait pas la plage des mesures valides', async () => {
+    monterAvec(
+      [
+        { ...COURANTE, id: 'r0', unite: 'mg/L', preleveLe: '2026-08-01T08:00:00.000Z', annulation: { ...ANNULATION, idResultatVise: 'r0' } },
+        COURANTE,
+      ],
+      undefined,
+      { BIO_FERRITINE: [PLAGE] },
+    );
+    expect(await screen.findByText(/Plage fonctionnelle 30 – 100 µg\/L/)).toBeTruthy();
+  });
+
+  it('une série dont la seule mesure est annulée n’affiche aucune plage', async () => {
+    monterAvec([{ ...COURANTE, annulation: ANNULATION }], undefined, { BIO_FERRITINE: [PLAGE] });
+    await screen.findByText(/annulé le/);
+    expect(screen.queryByText(/Plage fonctionnelle/)).toBeNull();
+  });
+
+  it('un résultat annulé RESTE à l’écran, barré, avec motif, auteur et date — sans « Corriger »', async () => {
+    monterAvec([{ ...COURANTE, annulation: ANNULATION }]);
+    const marque = await screen.findByText(/annulé le .* par praticien@wellneuro\.fr — motif : mauvais analyte/);
+    expect(marque).toBeTruthy();
+    expect(screen.getByText('42.5 µg/L').className).toContain('line-through');
+    expect(screen.queryByRole('button', { name: /Corriger la mesure/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Annuler le résultat/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /Révoquer l’annulation/ })).toBeTruthy();
+  });
+
+  it('le geste d’annulation exige un motif de la liste, puis poste l’acte — sans texte libre', async () => {
+    const { corps } = monterAvec([COURANTE]);
+    fireEvent.click(await screen.findByRole('button', { name: /Annuler le résultat du/ }));
+    const consigner = screen.getByRole('button', { name: 'Consigner l’annulation' }) as HTMLButtonElement;
+    expect(consigner.disabled).toBe(true);
+    // Liste fermée : trois choix, aucun champ libre dans le geste.
+    const motifs = screen.getByRole('group', { name: 'Motif' });
+    expect(motifs.querySelectorAll('input[type="radio"]')).toHaveLength(3);
+    expect(motifs.querySelectorAll('input:not([type="radio"]), textarea')).toHaveLength(0);
+    fireEvent.click(screen.getByLabelText('mauvaise date de prélèvement'));
+    fireEvent.click(consigner);
+    await waitFor(() => expect(corps).toHaveLength(1));
+    expect(corps[0]).toEqual({
+      url: '/api/praticien/biologie/resultats/annulations',
+      corps: { idPatient: 'PAT1', acte: 'annulation', idResultat: 'r1', motif: 'mauvaise_date_prelevement' },
+    });
+  });
+
+  it('la révocation vise l’annulation, avec son propre motif', async () => {
+    const { corps } = monterAvec([{ ...COURANTE, annulation: ANNULATION }]);
+    fireEvent.click(await screen.findByRole('button', { name: /Révoquer l’annulation/ }));
+    fireEvent.click(screen.getByLabelText('vérification faite, le résultat était exact'));
+    fireEvent.click(screen.getByRole('button', { name: 'Consigner la révocation' }));
+    await waitFor(() => expect(corps).toHaveLength(1));
+    expect(corps[0].corps).toEqual({
+      idPatient: 'PAT1',
+      acte: 'revocation',
+      idAnnulation: 'ann1',
+      motif: 'resultat_verifie_exact',
+    });
+  });
+
+  it('un refus se dit tel que le serveur le formule, et le choix reste ouvert', async () => {
+    monterAvec([{ ...COURANTE, annulation: ANNULATION }], {
+      ok: false,
+      status: 409,
+      error: 'Une autre mesure a pris la place.',
+    });
+    fireEvent.click(await screen.findByRole('button', { name: /Révoquer l’annulation/ }));
+    fireEvent.click(screen.getByLabelText('vérification faite, le résultat était exact'));
+    fireEvent.click(screen.getByRole('button', { name: 'Consigner la révocation' }));
+    expect(await screen.findByText('Une autre mesure a pris la place.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Consigner la révocation' })).toBeTruthy();
+  });
+
+  it('réponse d’une version antérieure (sans le champ) : aucun geste d’annulation offert', async () => {
+    const { annulation: _absent, ...ancienne } = COURANTE;
+    void _absent;
+    monterAvec([ancienne]);
+    await screen.findByText('42.5 µg/L');
+    expect(screen.queryByRole('button', { name: /Annuler le résultat/ })).toBeNull();
+  });
+});

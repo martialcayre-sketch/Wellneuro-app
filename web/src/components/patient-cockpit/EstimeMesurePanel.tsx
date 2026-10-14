@@ -7,6 +7,8 @@ import { useBioIngestEnabled, useCbResultsEnabled } from './CbFeatureProvider';
 import { ImportCompteRenduPanel } from './ImportCompteRenduPanel';
 import { SaisieBilan, type AnalyteChoix, type IssueBilan } from './SaisieBilan';
 import { FaitsDuLaboratoire } from './FaitsDuLaboratoire';
+import { ActeAnnulationResultat } from './ActeAnnulationResultat';
+import { LIBELLES_MOTIF_ANNULATION, estMotifAnnulation } from '@/lib/biology-library/annulationMotifs';
 
 // « Estimé ↔ mesuré » (maquette 5.0, écran Fiche-trajectoire) — étage 2 du
 // rayon biologie (CB-09, [[D-122]] §2), derrière `isCbResultsEnabled` (posé
@@ -48,6 +50,19 @@ type ResultatAffiche = {
    * avec ses silences (§5). Absent d'une réponse antérieure : rien ne s'affiche.
    */
   faitsLaboratoire?: { intervalle: string | null; marquage: string | null } | null;
+  /**
+   * L'annulation ACTIVE qui retire le fil de cette ligne ([[D-294]]), posée
+   * par le SERVEUR sur toutes les lignes du fil. Absente d'une réponse
+   * antérieure : rien n'est annulé à l'écran, aucun geste d'annulation n'est
+   * offert — on n'affirme rien qu'on n'a pas lu.
+   */
+  annulation?: {
+    id: string;
+    idResultatVise: string;
+    motif: string;
+    par: string;
+    le: string;
+  } | null;
 };
 
 /**
@@ -285,6 +300,9 @@ export function EstimeMesurePanel({
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
   /** Identifiant de la mesure en cours de correction — une seule à la fois. */
   const [correctionDe, setCorrectionDe] = useState<string | null>(null);
+  /** L'annulation ou la révocation en cours — exclusive de la correction. */
+  const [acteDe, setActeDe] = useState<{ id: string; acte: 'annulation' | 'revocation' } | null>(null);
+  const secondTempsOuvert = correctionDe !== null || acteDe !== null;
   const actif = resultsEnabled && typeof idPatient === 'string' && idPatient !== '';
 
   const chargerResultats = useCallback(async () => {
@@ -372,6 +390,35 @@ export function EstimeMesurePanel({
         return true;
       } catch {
         setErreur('La mesure n’a pas pu être consignée.');
+        return false;
+      } finally {
+        setEnvoiEnCours(false);
+      }
+    },
+    [idPatient, chargerResultats],
+  );
+
+  // ANNULATION ET RÉVOCATION ([[D-294]]) : même discipline que la correction —
+  // `true` au succès seulement, le refus se dit et laisse le choix en place.
+  const consignerActe = useCallback(
+    async (corps: Record<string, string>): Promise<boolean> => {
+      setEnvoiEnCours(true);
+      setErreur(null);
+      try {
+        const response = await fetch('/api/praticien/biologie/resultats/annulations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idPatient, ...corps }),
+        });
+        const payload = (await response.json()) as { ok: boolean; error?: string };
+        if (!response.ok || !payload.ok) {
+          setErreur(payload.error ?? 'Le geste n’a pas pu être consigné.');
+          return false;
+        }
+        await chargerResultats();
+        return true;
+      } catch {
+        setErreur('Le geste n’a pas pu être consigné.');
         return false;
       } finally {
         setEnvoiEnCours(false);
@@ -496,7 +543,10 @@ export function EstimeMesurePanel({
                   de la SÉRIE et non de chaque mesure — la plage décrit
                   l'analyte, la répéter sous chaque ligne en ferait un commentaire
                   de la valeur. */}
-              {plagesAfficheesPourSerie(serie, plagesParAnalyte[code]).map(plage => (
+              {/* Les mesures ANNULÉES ne comptent pas ([[D-294]] §6) : une
+                  ligne « mauvais analyte » dans une autre unité tairait la
+                  plage des mesures valides ; seule, elle l'afficherait. */}
+              {plagesAfficheesPourSerie(serie.filter(m => !m.annulation), plagesParAnalyte[code]).map(plage => (
                 <p
                   key={`${plage.claimId}-${plage.versionClaim}-${plage.population}`}
                   className="mt-1 text-xs text-muted-foreground"
@@ -517,9 +567,30 @@ export function EstimeMesurePanel({
                   // passerait pour « corrigée » — l'écran barrerait une mesure
                   // que personne n'a corrigée, et cacherait son geste.
                   const corrigee = Boolean(mesure.corrigeeParId);
+                  // Même discipline : `Boolean`, un champ absent n'annule rien.
+                  const annulation = mesure.annulation ?? null;
+                  const annulee = Boolean(annulation);
+                  // Le geste n'est offert qu'au vu d'une réponse qui PORTE le
+                  // champ : sur une version antérieure, on ne sait pas si le
+                  // fil est déjà annulé.
+                  const annulable = !corrigee && !annulee && mesure.annulation !== undefined;
+                  const visee = annulation !== null && annulation.idResultatVise === mesure.id;
+                  // PLACE REPRISE ([[D-294]] §3) : une mesure vivante, d'un autre
+                  // fil, à la même date de prélèvement — la révocation serait
+                  // refusée ; l'écran ne la propose pas et dit pourquoi.
+                  const placeReprise =
+                    visee
+                    && serie.some(
+                      m =>
+                        m.supersedesResultatId === null
+                        && m.preleveLe === mesure.preleveLe
+                        && !m.annulation
+                        && m.id !== mesure.id,
+                    );
+                  const description = `${formatValeur(mesure)} du ${formatDateHeure(mesure.preleveLe)}`;
                   return (
                     <li key={mesure.id} className="text-xs text-muted-foreground">
-                      <span className={corrigee ? 'line-through' : undefined}>
+                      <span className={corrigee || annulee ? 'line-through' : undefined}>
                         {formatValeur(mesure)}
                       </span>{' '}
                       — prélevé le {formatDateHeure(mesure.preleveLe)} (
@@ -555,6 +626,21 @@ export function EstimeMesurePanel({
                             : ''}
                         </span>
                       )}
+                      {annulation && (
+                        // ANNULÉE, JAMAIS EFFACÉE ([[D-294]] §6) : la fiche est le
+                        // seul lecteur qui la montre — motif, auteur, date sur la
+                        // ligne visée ; les autres lignes du fil le rappellent.
+                        <span className="ml-1 font-medium text-status-warning">
+                          · annulé
+                          {visee
+                            ? ` le ${formatDateHeure(annulation.le)} par ${annulation.par} — motif : ${
+                                estMotifAnnulation(annulation.motif)
+                                  ? LIBELLES_MOTIF_ANNULATION[annulation.motif]
+                                  : annulation.motif
+                              }`
+                            : ' (avec tout son fil)'}
+                        </span>
+                      )}
                       {/* Après les marqueurs DC-30 : ils restent sur la ligne de la valeur. */}
                       {mesure.faitsLaboratoire && (
                         <FaitsDuLaboratoire
@@ -570,19 +656,19 @@ export function EstimeMesurePanel({
                           rature à la main. Le cas est latent — aucune ligne
                           d'import n'existe encore — mais l'affordance, elle,
                           était déjà là. */}
-                      {!corrigee && mesure.source !== 'saisie_praticien' && (
+                      {!corrigee && !annulee && mesure.source !== 'saisie_praticien' && (
                         <span className="ml-2 text-xs text-muted-foreground">
                           · mesure de laboratoire — elle ne se corrige pas par une saisie praticien
                         </span>
                       )}
-                      {!corrigee && correctionDe !== mesure.id && mesure.source === 'saisie_praticien' && (
+                      {!corrigee && !annulee && correctionDe !== mesure.id && mesure.source === 'saisie_praticien' && (
                         <button
                           type="button"
                           // Désactivé tant qu'un autre second temps est ouvert :
                           // en changer démonterait le formulaire et jetterait
                           // la valeur en cours de frappe, alors qu'on protège
                           // soigneusement cette même saisie contre un refus.
-                          disabled={envoiEnCours || correctionDe !== null}
+                          disabled={envoiEnCours || secondTempsOuvert}
                           // Un nom accessible DATÉ : sans lui, n boutons
                           // « Corriger » sont indiscernables au lecteur d'écran.
                           aria-label={`Corriger la mesure du ${formatDateHeure(mesure.preleveLe)}`}
@@ -594,6 +680,57 @@ export function EstimeMesurePanel({
                         >
                           Corriger
                         </button>
+                      )}
+                      {annulable && acteDe?.id !== mesure.id && correctionDe !== mesure.id && (
+                        <button
+                          type="button"
+                          disabled={envoiEnCours || secondTempsOuvert}
+                          aria-label={`Annuler le résultat du ${formatDateHeure(mesure.preleveLe)}`}
+                          onClick={() => {
+                            setErreur(null);
+                            setActeDe({ id: mesure.id, acte: 'annulation' });
+                          }}
+                          className="ml-2 min-h-11 rounded-lg border border-border px-2 py-1 text-xs text-foreground disabled:opacity-50"
+                        >
+                          Annuler ce résultat
+                        </button>
+                      )}
+                      {placeReprise && (
+                        <span className="ml-1">
+                          · une autre mesure a pris sa place : l’annulation ne se révoque plus
+                        </span>
+                      )}
+                      {visee && !placeReprise && acteDe?.id !== mesure.id && (
+                        <button
+                          type="button"
+                          disabled={envoiEnCours || secondTempsOuvert}
+                          aria-label={`Révoquer l’annulation du résultat du ${formatDateHeure(mesure.preleveLe)}`}
+                          onClick={() => {
+                            setErreur(null);
+                            setActeDe({ id: mesure.id, acte: 'revocation' });
+                          }}
+                          className="ml-2 min-h-11 rounded-lg border border-border px-2 py-1 text-xs text-foreground disabled:opacity-50"
+                        >
+                          Révoquer l’annulation
+                        </button>
+                      )}
+                      {acteDe?.id === mesure.id && (
+                        <ActeAnnulationResultat
+                          acte={acteDe.acte}
+                          idLigne={mesure.id}
+                          description={description}
+                          disabled={envoiEnCours}
+                          onFermer={() => setActeDe(null)}
+                          onConsigner={async motif => {
+                            const ok = await consignerActe(
+                              acteDe.acte === 'annulation'
+                                ? { acte: 'annulation', idResultat: mesure.id, motif }
+                                : { acte: 'revocation', idAnnulation: annulation?.id ?? '', motif },
+                            );
+                            if (ok) setActeDe(null);
+                            return ok;
+                          }}
+                        />
                       )}
                       {correctionDe === mesure.id && (
                         <CorrectionMesure

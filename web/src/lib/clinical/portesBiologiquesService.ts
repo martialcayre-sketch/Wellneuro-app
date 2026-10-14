@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
 import { derniersResultatsParAnalyte } from '@/lib/biology-library/derniersResultats';
+import { annulationsActives } from '@/lib/biology-library/annulations';
 import { signature } from '@/lib/biology-library/saisieMessages';
 import { getRecommendedPlate } from '@/lib/food-compass/plates';
 import { claimsValidesAuCorpus } from '@/lib/rag/claims/validite';
@@ -163,6 +164,9 @@ export async function evaluerPortesBiologiquesPourPatient(idPatient: string): Pr
     }),
   ]);
   const libelles = new Map(analytes.map(a => [a.code, a.libelle]));
+  // Un fil ANNULÉ ne donne pas le dernier résultat d'un marqueur ([[D-294]]
+  // §6) : la mesure d'avant revient, ou le silence.
+  const annulations = await annulationsActives(prisma, idPatient, resultats.map(r => r.id));
   const derniers = derniersResultatsParAnalyte(
     resultats.map(r => ({
       id: r.id,
@@ -174,6 +178,7 @@ export async function evaluerPortesBiologiquesPourPatient(idPatient: string): Pr
       saisiLe: r.saisiLe.toISOString(),
       supersedesResultatId: r.supersedesResultatId,
     })),
+    annulations,
   );
 
   const portes: PorteBiologiqueLue[] = avecTextes.map(ligne => ({
