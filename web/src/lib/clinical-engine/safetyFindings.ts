@@ -145,11 +145,13 @@ export type EffetIndesirableRuntime = {
  *      celui de la LIVRAISON, et sa sortie est celle d'avant l'amendement — les
  *      empreintes des cartes ne bougent pas.
  *   2. Table signée ⇒ la règle validée, et une LIMITATION pour les signalements
- *      encore ouverts SANS rattachement : aucun programme diffusé, formulaire
- *      d'avant (dossier mineur ou sans date de naissance), désignation
- *      illisible (§2). Rien n'y est en pause ; se taire les ferait disparaître
- *      de la vue du praticien (`DC-35`). Leur statut, ici, ne sert qu'à
- *      compter la file ; l'attente ne le lit pas (§5).
+ *      encore ouverts SANS rattachement NI programme : aucun programme diffusé,
+ *      « non » au programme, désignation illisible (§2). Rien n'y est en
+ *      pause, et aucun avis ne s'y rend ; se taire les ferait disparaître de
+ *      la vue du praticien (`DC-35`). Le formulaire d'avant, lui, porte un
+ *      programme : il attend l'avis et bloque la diffusion (§5, arbitrage du
+ *      2026-10-14 ; `recoitUnAvis`), il n'est donc pas hors règle. Leur statut,
+ *      ici, ne sert qu'à compter la file ; l'attente ne le lit pas (§5).
  */
 function construireFindingsEffetIndesirable(effetsIndesirables: EffetIndesirableRuntime[]): {
   findings: SafetyFinding[];
@@ -173,7 +175,7 @@ function construireFindingsEffetIndesirable(effetsIndesirables: EffetIndesirable
   }
 
   const horsRegle = effetsIndesirables.filter(
-    signalement => signalement.rattachement === null
+    signalement => signalement.rattachement === null && signalement.protocolDraftId === null
       && (STATUTS_EI_NON_TRAITES as readonly string[]).includes(signalement.statutTraitement),
   ).length;
 

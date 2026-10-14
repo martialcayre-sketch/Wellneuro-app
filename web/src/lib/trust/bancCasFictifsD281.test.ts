@@ -46,6 +46,9 @@ type Cas = {
 const sig = (id: string, over: Partial<SignalementRattache> = {}): SignalementRattache => ({
   id, rattachement: 'element', elementActionId: MAGNESIUM.actionId, protocolDraftId: V1, ...over,
 });
+/** Le formulaire d'avant : « oui » au programme, sans élément désigné (D-281 §5). */
+const avant = (id: string, over: Partial<SignalementRattache> = {}): SignalementRattache =>
+  sig(id, { rattachement: null, elementActionId: null, ...over });
 const avis = (id: string, reportId: string, over: Partial<VerdictEffetIndesirable> = {}): VerdictEffetIndesirable => ({
   id, reportId, verdict: 'non_implique', elementActionId: null, supersedesVerdictId: null, ...over,
 });
@@ -170,6 +173,49 @@ const CAS: Cas[] = [
     pauses: {},
     diffusionRefusee: false,
   },
+  // LE FORMULAIRE D'AVANT (D-281 §5, arbitrage du 2026-10-14) : « oui » au
+  // programme sans élément désigné. Il attend l'avis comme les autres ; rien
+  // n'est mis en pause au portail, faute d'élément désigné.
+  {
+    nom: '24 — formulaire d’avant, sans avis : rien en pause, diffusion refusée',
+    signalements: [avant('s1')],
+    pauses: {},
+    diffusionRefusee: true,
+  },
+  {
+    nom: '25 — formulaire d’avant, le praticien désigne « aucun » : diffusion rouverte',
+    signalements: [avant('s1')],
+    verdicts: [avis('v1', 's1')],
+    pauses: {},
+    diffusionRefusee: false,
+  },
+  {
+    nom: '26 — formulaire d’avant, le praticien désigne un complément : rien en pause, diffusion rouverte',
+    signalements: [avant('s1')],
+    verdicts: [avis('v1', 's1', { verdict: 'implique', elementActionId: MAGNESIUM.actionId, amenagement: 'differer' })],
+    pauses: {},
+    diffusionRefusee: false,
+  },
+  {
+    nom: '27 — formulaire d’avant sur la version remplacée : la diffusion reste refusée',
+    signalements: [avant('s1')],
+    version: V2,
+    pauses: {},
+    diffusionRefusee: true,
+  },
+  {
+    nom: '28 — formulaire d’avant et élément désigné : l’élément seul en pause, diffusion refusée',
+    signalements: [avant('s1'), sig('s2', { elementActionId: OMEGA.actionId })],
+    pauses: { [OMEGA.actionId]: 'element' },
+    diffusionRefusee: true,
+  },
+  {
+    nom: '29 — formulaire d’avant sans avis, élément désigné avec avis : la diffusion reste refusée',
+    signalements: [avant('s1'), sig('s2')],
+    verdicts: [avis('v1', 's2')],
+    pauses: {},
+    diffusionRefusee: true,
+  },
 ];
 
 describe('banc de cas fictifs — D-281, règle amendée', () => {
@@ -192,15 +238,14 @@ describe('ce que la règle amendée ne regarde pas', () => {
   // attend toujours.
   it.each(['recu', 'en_cours', 'traite', 'clos'])('18 — statut %o sans avis : l’attente tient', (statutTraitement) => {
     expect(signalementsEnAttente([{ ...sig('s1'), statutTraitement }], [])).toHaveLength(1);
+    expect(signalementsEnAttente([{ ...avant('s2'), statutTraitement }], [])).toHaveLength(1);
   });
 
-  // §2 : sans élément désigné, rien n'attend ici — aucun avis ne s'y rend
-  // aujourd'hui. Le formulaire d'avant qui répond « oui » au programme
-  // bloquera la diffusion (D-281 §5, arbitrage du 2026-10-14) quand une
-  // migration y aura ouvert l'avis : préalable de la signature. Ce cas
-  // s'inversera alors pour lui.
-  it('19 — signalement sans rattachement : rien n’attend (en l’état)', () => {
-    expect(signalementsEnAttente([{ id: 's1', rattachement: null }], [])).toHaveLength(0);
+  // §2 : sans programme visé — aucun programme diffusé, « non » au programme,
+  // désignation illisible —, aucun avis ne s'y rend, et rien n'attend :
+  // compter une attente qu'aucun geste ne lève enfermerait le dossier.
+  it('19 — signalement sans rattachement ni programme : rien n’attend', () => {
+    expect(signalementsEnAttente([{ id: 's1', rattachement: null, protocolDraftId: null }], [])).toHaveLength(0);
   });
 });
 
@@ -220,6 +265,7 @@ describe('la carte n’est jamais touchée — règle signée simulée', () => {
       { id: 's1', protocolDraftId: V1, rattachement: 'element', statutTraitement: 'recu' },
       { id: 's2', protocolDraftId: V1, rattachement: 'ne_sait_pas', statutTraitement: 'traite' },
       { id: 's3', protocolDraftId: V1, rattachement: 'autre_produit', statutTraitement: 'clos' },
+      { id: 's4', protocolDraftId: V1, rattachement: null, statutTraitement: 'recu' },
     ], []);
     expect(findings.filter(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)).toEqual([]);
   });

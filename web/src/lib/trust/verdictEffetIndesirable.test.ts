@@ -68,6 +68,22 @@ describe('validerDemandeVerdict', () => {
     })).toMatchObject({ ok: false, status: 400 });
   });
 
+  // D-281 §5, arbitrage du 2026-10-14 : « oui » au programme sans élément.
+  it('formulaire d’avant suit « Je ne sais pas » : le praticien désigne l’élément, ou aucun', () => {
+    const avant = { ...NE_SAIT_PAS, rattachement: null };
+    expect(validerDemandeVerdict({
+      signalement: avant, verdicts: [], elements: ELEMENTS,
+      demande: { verdict: 'implique', amenagement: 'retirer', elementActionId: 'a-magnesium' },
+    })).toMatchObject({ ok: true, aEcrire: { elementActionId: 'a-magnesium', amenagement: 'retirer' } });
+    expect(validerDemandeVerdict({
+      signalement: avant, verdicts: [], elements: ELEMENTS,
+      demande: { verdict: 'implique', amenagement: 'retirer' },
+    })).toMatchObject({ ok: false, status: 400 });
+    expect(validerDemandeVerdict({
+      signalement: avant, verdicts: [], elements: null, demande: { verdict: 'non_implique' },
+    })).toMatchObject({ ok: true, aEcrire: { verdict: 'non_implique', elementActionId: null } });
+  });
+
   it('« Je ne sais pas » sur un programme illisible : aucun élément désignable, 409', () => {
     expect(validerDemandeVerdict({
       signalement: NE_SAIT_PAS, verdicts: [], elements: null,
