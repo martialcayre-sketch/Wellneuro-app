@@ -83,8 +83,9 @@ dernière session.
    l'aplatir à la lecture. Chaque commentaire reçoit un
    verdict écrit dans la PR : **corrigé** (le commit qui le répare est nommé),
    **écarté avec motif** (sur pièces — ligne, banc, `D-xxx` ; « non pertinent »
-   seul n'en est pas un), ou **routé** (`FILE_ATTENTE.md` ou dette nommée, avec
-   son adresse). Aucun commentaire sans verdict ne passe le merge : le squash
+   seul n'en est pas un), ou **routé** (vers le plan unique
+   `docs/claude/PLAN_WELLNEURO.md`, dette nommée du §8 ou fiche, avec son
+   adresse ; `D-285`). Aucun commentaire sans verdict ne passe le merge : le squash
    efface la branche. Un constat touchant au clinique, à une signature de
    périmètre ou à une migration **remonte en arbitrage**, il ne se corrige pas
    dans la foulée. Détail et précédents :
