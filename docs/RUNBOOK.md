@@ -240,8 +240,10 @@ le dépôt ni dans une commande visible : il se saisit masqué (`read -rs`).
    Puis révoquer le jeton `g7-essai-AAAA-MM-JJ` au tableau de bord.
 
 6. **Verdict** : réussi si `pg_restore` finit sans erreur, si les deux
-   migrations sont égales, si aucune table ne manque et si chaque écart de
-   comptes s'explique par une écriture postérieure à la sauvegarde.
+   migrations sont égales, si aucune table ne manque hors celles que crée une
+   migration finie après la sauvegarde (`_prisma_migrations`, `finished_at`
+   postérieur, lu en lecture seule) et si chaque écart de comptes s'explique
+   par une écriture postérieure à la sauvegarde.
    Consignation au handoff du lot G-7 et au plan (fiche F04) : date,
    sauvegarde employée, durée, verdict, **en agrégats** — ni identité, ni
    compte rattaché à un dossier ([[D-298]]). Échec : la porte 8 reste
