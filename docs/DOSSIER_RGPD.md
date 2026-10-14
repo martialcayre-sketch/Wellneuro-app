@@ -1237,6 +1237,8 @@ dont 99 écritures après la bascule Scalingo — historique porté, journal
 vivant post-cutover (sonde lecture seule, agrégats sans identité). Trou
 nouveau relevé le même jour : **`docs/RUNBOOK.md` est périmé depuis le
 cutover** (chapitres infra Vercel/Supabase), à réécrire pour Scalingo.
+**2026-10-14** : `docs/RUNBOOK.md` décrit Scalingo ; ses derniers renvois
+datés à Vercel et Supabase portent une ligne datée du même jour ([[D-120]]).
 
 ## 11. Information des participants
 

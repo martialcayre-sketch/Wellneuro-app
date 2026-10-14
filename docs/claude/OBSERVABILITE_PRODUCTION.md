@@ -139,6 +139,9 @@ Ce que le câblage a coûté de corriger, et qu'il ne faut pas défaire :
 personnes (`docs/DOSSIER_RGPD.md:194` — la liste des prestataires de
 `donnees_confidentialite` ne le cite pas), signer le DPA et vérifier la
 résidence UE (`docs/DOSSIER_RGPD.md:614`, échéance 2026-10-21).
+**2026-10-14** : l'échéance du 2026-10-21 est levée ; la revue RGPD a une
+échéance unique au 2027-06-30 ([[D-265]] §4, [[D-283]] §9). La pose des DSN
+reste à consigner (plan, file D, D/32).
 
 ## Surveillance de disponibilité
 

@@ -11,6 +11,8 @@
 > par la plateforme (one-off, tunnel), jamais par une URL publique.
 > Vercel/Supabase restent tièdes jusqu'au décommissionnement du 2026-09-01
 > ([[D-080]]) : plus un chemin d'exploitation, seulement un filet daté.
+> **2026-10-14** : périmé — Vercel et Supabase sont décommissionnés depuis le
+> 2026-09-01 ([[D-120]]) ; il n'existe plus de filet hors Scalingo.
 
 ## Vérification rapide production
 
@@ -94,6 +96,21 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
    retenue `release-db` et l'attente du calme. Dernier recours, workflow
    indisponible : aucun build en vol, aucun run `release-db` non conclu au
    vert sur la tête.
+7. **Merge qui change ce que le processus de fond envoie ou exige** (file
+   durable de [[D-282]] ; procédure tirée de la revue de #1428, versée le
+   2026-10-14). Constater la file vide juste avant le merge ne suffit pas :
+   l'ancien web peut encore enfiler un travail, que l'ancien worker
+   traiterait selon l'ancien contrat.
+   1. `scalingo --app wellneuro scale worker:0` ;
+   2. constater par conteneur qu'aucun travail n'est `en_cours` (un travail
+      `en_attente` peut rester : le nouveau code doit le faire échouer
+      fermé) ;
+   3. merger, puis constater le déploiement de la tête ;
+   4. `scalingo --app wellneuro scale worker:1` ;
+   5. constater par conteneur qu'aucun travail de l'ancienne version n'est
+      né après le merge (pour #1428 : aucun import `bio-extraction-v4`).
+   La surveillance du signal de vie du worker peut alerter pendant la
+   fenêtre : c'est attendu.
 
 ## Contrôle post-déploiement
 
@@ -134,7 +151,8 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
      DROP appliquée ne se défait que par **restauration de base**
      (sauvegardes Scalingo ; la copie Supabase n'est un filet que jusqu'au
      2026-09-01, [[D-080]]). Décision du responsable, jamais un geste par
-     défaut.
+     défaut. **2026-10-14** : la copie Supabase n'existe plus ([[D-120]]) ;
+     seules restent les sauvegardes Scalingo.
 5. **Revenir à l'auto-déploiement** (retour arrière de la bascule
    [[D-248]], décision du responsable) — l'ordre symétrique de la bascule,
    sans aucun autre merge entre les gestes :
@@ -162,6 +180,8 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
 - Statut plateforme : <https://scalingostatus.com>
 - (Jusqu'au 2026-09-01 seulement : l'ancienne pile Vercel existe encore —
   `docs/claude/CONTEXTE_SESSION_VERCEL_2026-07-01.md` pour l'historique.)
+  **2026-10-14** : échéance passée, la pile Vercel est décommissionnée
+  ([[D-120]]).
 
 ## Incident : OAuth Google
 
