@@ -10152,3 +10152,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, commentaires lus, merge après déploiement constaté de 069db0d1, déploiement constaté ; puis prochaine version du plan avec les reports des PR 2 à 6.
 
 **Ouvert.** Reports à la prochaine version du plan : chemins anciens cités (§1, §8, §11), file citée, pagination, PDF natif, coaching autonome, RAG SIIN plein, `AGA_*`, banc « élevé / bas », `D-045`, restes a et b sous R:ao, référence « D-129, #900 » de la clôture de CB-07 (paraît fausse), nom du laboratoire pilote dans la fiche BIO-INGEST (forme opaque).
+
+## 2026-10-14 — D-286 (lettre ci) : « l'aboutissement du produit » reçoit cinq événements déclencheurs, D-276 §2 amendée (brouillon)
+
+**Fait.** Depuis un worktree sur `origin/main` 7c4eeab2, en parallèle du lot S-4 : brouillon de D-286 en tête du registre (fiche F67, rang 0, geste du responsable, PR propre), texte des cinq événements repris de la révision de BP-26 du 2026-10-12 (hors dépôt) : offre commerciale ; compte d'un second praticien ; première clé d'API ; premier consommateur ou tiers lecteur de BioFlow hors du cabinet ; tout envoi direct vers un tiers. Comptes internes et lecteur interne de BioFlow restent « usage du praticien ». Même flou de D-265 §3 signalé, non amendé (F68). Registre des frontières §1 aligné à ses deux mentions. Fragment. Relecture adverse par workflow (5 lecteurs, 3 juges par constat) : 15 constats, 9 retenus (quatre défauts distincts, corrigés : renvoi à D-282 §2 pour les interdits de construction, citation composite de D-276 §2, provenance « séance », fermeture affirmée pour les événements 1 et 4), 6 écartés. T1 complet vert.
+
+**Écarté.** Amender D-265 ; marquer D-276 dans son propre texte (registre append-only) ; aligner les campagnes closes et handoffs qui citent « aboutissement ».
+
+**Prochaine action.** Lecture du responsable : statut « brouillon soumis » à passer en « accepté » de sa main avant le merge ; numéro D-286 à relire sur `origin/main` juste avant le merge ; puis S-3 (a, b, g), que ci précède.
+
+**Ouvert.** La fiche F67 du plan écrit « amendement de D-276 §1 » : c'est le §2 ; report à la prochaine version du plan.

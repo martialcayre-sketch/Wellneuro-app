@@ -4,6 +4,93 @@
 
 ## Décisions actives
 
+### D-286 — Qualification réglementaire : « l'aboutissement du produit » désigne le premier de cinq événements d'usage ; `D-276` §2 est amendée (lettre ci)
+
+- Date : 2026-10-14
+- Statut : **brouillon soumis au responsable** (texte rédigé dans le lot, de
+  sa main : il passe « accepté » à sa lecture, avant le merge de la PR qui le
+  porte). Faits d'usage acquis aux séances des 2026-10-11 et 2026-10-12 ;
+  formulation des cinq événements proposée par la révision de BP-26 du
+  2026-10-12 (hors dépôt), sur le constat que « aboutissement » n'avait ni
+  date ni critère, et soumise au responsable par cette décision.
+- Domaine : gouvernance réglementaire, frontières (`REGISTRE_FRONTIERES.md`
+  §1). Lettre ci du plan unique (`docs/claude/PLAN_WELLNEURO.md`, fiche F67,
+  rang 0, geste du responsable, PR propre).
+- Amende : [[D-276]] §2 — sa phrase « quand le produit sera abouti, et au
+  plus tard avant toute offre commerciale » et sa ligne par fonction
+  « qualification différée à l'aboutissement du produit ; usage du
+  praticien ». Aligne `REGISTRE_FRONTIERES.md` §1 (deux mentions). Signale,
+  sans l'amender, le même flou dans [[D-265]] §3.
+- Précède, par le plan : la lettre b (second compte, H05), la lettre x (API,
+  H29) et toute levée d'une fermeture (second compte, API, envoi direct ;
+  F75) — chacune touche un des événements du §2.
+- **Ne touche pas** : aucune fonction ([[D-276]] §1 demeure : rien n'est
+  retiré, réduit ni masqué), aucune règle clinique, aucun seuil, aucune dose,
+  aucune migration, aucun drapeau, aucun texte servi au patient, aucun code.
+  N'ouvre ni second compte, ni clé d'API, ni envoi direct, ni flux
+  laboratoire : ces fermetures restent entières ([[D-283]] §7 ; plan §5
+  « Fermetures »). N'allège aucune preuve propre à un lot.
+
+**§1 — Le flou d'origine.** [[D-276]] §2 diffère la qualification « quand le
+produit sera abouti, et au plus tard avant toute offre commerciale ». Le mot
+« abouti » n'a reçu ni date ni critère, et aucun n'existe ailleurs : le
+calendrier du plan est indicatif, l'ordre conduit (arbitrage du 2026-10-12).
+Une porte sans date ni critère ne s'ouvre jamais d'elle-même ; seuls des faits
+d'usage peuvent la rouvrir. Cette décision les nomme.
+
+**§2 — Cinq événements déclencheurs.** La qualification au sens des règlements
+MDR et IVDR, et la décision d'un éventuel marquage, se reprennent au premier de
+ces événements :
+
+1. une offre commerciale ;
+2. le compte d'un second praticien ;
+3. la première clé d'API émise ;
+4. le premier consommateur de BioFlow hors du cabinet, ou le premier tiers qui
+   en lit la sortie ;
+5. tout envoi direct vers un tiers.
+
+« Aboutissement » ne désigne ni une date ni un critère : dans [[D-276]] §2,
+« quand le produit sera abouti » et, dans la ligne par fonction, « à
+l'aboutissement du produit » se lisent désormais « au premier des cinq
+événements du §2 de D-286 ». Les comptes internes du cabinet et un lecteur
+interne de BioFlow restent un usage du praticien et ne déclenchent rien. Un
+test d'intrusion humain précède toute offre commerciale et tout second compte
+praticien ([[D-283]] §7) : il précède les événements 1 et 2, il ne les
+remplace pas. Les événements 2, 3 et 5 correspondent à des fermetures du plan
+(§5 « Fermetures » : second compte, API, envoi direct), chacune close jusqu'à
+une décision qui la lève ; l'événement 1 n'a d'autre préalable écrit que le
+test d'intrusion ; l'événement 4 n'a pas de fermeture au plan, il déclenche
+seulement. Cette décision ne lève rien et n'ouvre rien.
+
+**§3 — Chaque fonction neuve de l'étage assistant porte sa ligne.** Toute
+décision qui ouvre une fonction de l'étage assistant ([[D-266]] §2, amendée par
+[[D-276]] §3) écrit la ligne « qualification différée ; usage du praticien » et
+renvoie au §2 ci-dessus. L'ouverture reste conditionnée à son drapeau et à ses
+preuves propres ; la ligne ne les remplace pas, et cette décision n'ouvre rien.
+
+**§4 — La ligne du registre des frontières.** `REGISTRE_FRONTIERES.md` §1, à
+ses deux mentions de [[D-276]], renvoie ici : « différée à l'aboutissement du
+produit » se lit « différée au premier des cinq événements de [[D-286]] §2 ».
+La phrase « sans conclure qu'une fonction est hors champ » est conservée telle
+quelle.
+
+**§5 — Le même flou dans [[D-265]], signalé sans amendement.** [[D-265]] §3
+réexamine l'AIPD « à l'achèvement du produit » (dossier RGPD, rubrique 13). Le
+mot porte le même flou, et cette décision ne l'amende pas : le réexamen de
+l'AIPD a sa propre fiche au plan (F68, lettre co), et c'est là que son
+déclencheur se tranche — qu'il reprenne les cinq événements du §2 ou en
+nomme d'autres.
+
+**§6 — Ce qui ne change pas.** [[D-276]] §1 (aucune fonction retirée ni
+réduite ; la lettre h, H16, en précisera la portée face au retrait de la
+Boussole patient), §3 et §4 ; [[D-266]] §2 et §4 ; [[D-283]] §7 ; les
+interdits de construction du plan unique jusqu'à l'ouverture de P2 (§5
+« Règles de BioFlow » : multi-tenant, API publique, LOINC, facturation, SDK,
+OAuth, microservice, Python) et le processus de fond qui reste dans
+l'application ([[D-282]] §2). Le détail par module reste dans le dossier de décision
+BP-26 du responsable, hors dépôt ; le dépôt, public, ne porte que la liste des
+cinq événements.
+
 ### D-285 — Plan unique WellNeuro 6.0 : une seule feuille de route au dépôt, en forme opaque ; la file d'attente et les feuilles de route antérieures deviennent de l'historique (lettre cq)
 
 - Date : 2026-10-13
