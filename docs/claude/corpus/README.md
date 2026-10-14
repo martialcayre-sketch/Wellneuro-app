@@ -1,8 +1,10 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 507 notices normalisées : 391 issues du pack WN
-Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), et 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`). Il s'agit d'un inventaire documentaire, pas d'un
+`source_registry.json` contient 510 notices normalisées : 391 issues du pack WN
+Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
+(`INSTRUMENTS_CABINET`), et 3 sources externes (`SOURCES_EXTERNES`, BP-07 :
+avis d'agence, recommandation, essai — `WN-SRC-0508` à `0510`), dont seuls des
+extraits ciblés sont ingérés. Il s'agit d'un inventaire documentaire, pas d'un
 corpus runtime.
 
 ## Politique de publication
@@ -14,7 +16,8 @@ corpus runtime.
   restent aussi `rightsStatus: to_verify`, sauf celles dont la source a été
   ingérée. Au 2026-09-27, sept notices sont `verified` : les Fiches MY dont la
   version adaptée est déposée (`WN-SRC-0297`, `0299`, `0300`, `0301`, `0302`,
-  `0303`, `0305` ; `D-251` §2).
+  `0303`, `0305` ; `D-251` §2) ; au 2026-10-14, une huitième : l'avis EFSA
+  `WN-SRC-0508`, licence CC BY-ND, dont les extraits sont ingérés (BP-07).
 - `contentHash` reste nul tant que le contenu probant n'a pas été obtenu,
   vérifié et autorisé.
 - Aucune notice ne peut alimenter un prompt, un RAG, une règle, un document
