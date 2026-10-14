@@ -35,8 +35,8 @@ Verser les quatre réponses du responsable aux questions de clôture de D-290.
 
 ## Problèmes ouverts
 
-- Case « Autofix » : sa disparition reste à constater sur la synthèse de la
-  PR suivante (celle-ci, si le responsable l'a déjà coupée).
+- Case « Autofix » : toujours affichée sur la synthèse de #1444 ; sa
+  disparition reste à constater après le geste du responsable.
 - Plan §8 : passe `wn-reviewer` de l'exception non liée au sha final ;
   `.coderabbit.yaml` protégé par une règle, pas par un verrou.
 

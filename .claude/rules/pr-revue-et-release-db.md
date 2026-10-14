@@ -162,7 +162,8 @@ coûte une seconde PR (`.claude/rules/docs-changelog.md`).
 - **Une PR qui modifie `.coderabbit.yaml` est P1** (`D-291`) : passe
   `Agent(subagent_type: "wn-reviewer")` **avant le merge**, avec une mission
   nommée — la PR affaiblit-elle la revue ? Le relecteur compare la
-  configuration de la branche à celle de `main` : `path_filters` élargis,
+  configuration de la branche à celle de `main` : `path_filters` qui réduisent
+  le périmètre de revue (exclusions élargies ou inclusions restreintes),
   `auto_review` coupée ou restreinte, `path_instructions` ou lignes
   directrices retirées, outils de secrets coupés, générations qui commitent
   réactivées. Tout affaiblissement non demandé en conversation est un
