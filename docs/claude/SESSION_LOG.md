@@ -10162,3 +10162,12 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Lecture du responsable : statut « brouillon soumis » à passer en « accepté » de sa main avant le merge ; numéro D-286 à relire sur `origin/main` juste avant le merge ; puis S-3 (a, b, g), que ci précède.
 
 **Ouvert.** La fiche F67 du plan écrit « amendement de D-276 §1 » : c'est le §2 ; report à la prochaine version du plan.
+## 2026-10-14 — S-4 : « Relire » ouvre le bon dossier, « Composer le document » dans la minute d'après (premier lot de code du plan)
+
+**Fait.** Fiche H02 du plan unique (rang 0, file A, frontière commune du Fil), sans fiche de campagne : le plan tient lieu de fiche. L1 : la carte « N relectures en attente » porte l'identifiant du dossier dans son lien (`lib/fil/cartes.ts`), banc réécrit (il épinglait le lien nu). L3 : lien « Composer le document » vers la page Documents du dossier dans la minute d'après, visible seulement avec une synthèse validée praticien ; phrase de fin corrigée (l'envoi part de la page Synthèse ou de la page Documents, pas de la fiche) ; trois cas de banc ajoutés, l'écran reste sans bouton ni formulaire. Fragment. Bancs ciblés verts, T1 complet vert, T2 vert (12 349 cas, 271 E2E). Relecture adverse par workflow (4 lecteurs, 3 juges par constat) : 7 constats, 2 retenus et corrigés (la phrase nommait la fiche à tort ; fichier non suivi d'une autre session à ne pas indexer).
+
+**Écarté.** « Planifier le bilan » présélectionné (L6) ; libellé aligné sur « Composer un document » de la fiche (la spécification dit « le document ») ; banc d'intégration du Fil sur le href (le banc de `cartes.ts` le porte).
+
+**Prochaine action.** CI, commentaires lus, merge, déploiement constaté ; puis R:Graphie (H03) ou S-2 (H01) selon la frontière libre ; la PR de ci (D-286) court en parallèle.
+
+**Ouvert.** Où vivent les fiches de lots de la file A : aucune campagne ne les porte, le plan fait fiche (à confirmer au cadrage du rang 0).

@@ -84,6 +84,12 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
     );
   }
 
+  // « Document validé praticien » est l'étape qui dit s'il y a quelque chose à
+  // composer ; elle seule conditionne le lien, pas l'état des deux autres.
+  const documentDiffusable = cloture.etapes.some(
+    (etape) => etape.cle === 'document_diffusable' && etape.statut === 'faite',
+  );
+
   return (
     <section
       id="panneau-cloture"
@@ -145,16 +151,31 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
       {cloture.pretPourDiffusion && (
         <p className="mt-3 rounded-lg border border-status-success/40 bg-status-success/10 p-3 text-base text-status-success">
           Les trois étapes sont franchies sur la version active. L’envoi reste une action distincte, à déclencher
-          depuis la fiche du patient — il ne part pas d’ici.
+          depuis la page Synthèse ou la page Documents — il ne part pas d’ici.
         </p>
       )}
 
-      <Link
-        href={`/dashboard/patients/${encodeURIComponent(idPatient)}`}
-        className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-border px-3 py-1 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-      >
-        Ouvrir le poste de pilotage →
-      </Link>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {documentDiffusable && (
+          // Continuité vers la composition du document, comme depuis la fiche
+          // (`FichePatientPanel`) : la page Documents accepte `?idPatient=`.
+          // Le lien n'apparaît qu'avec une synthèse validée praticien — sans
+          // elle, il n'y a rien à composer, et le montrer inviterait à
+          // contourner l'étape. Il ouvre une page ; il n'envoie rien.
+          <Link
+            href={`/dashboard/documents?idPatient=${encodeURIComponent(idPatient)}`}
+            className="inline-flex min-h-11 items-center rounded-lg border border-border px-3 py-1 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            Composer le document →
+          </Link>
+        )}
+        <Link
+          href={`/dashboard/patients/${encodeURIComponent(idPatient)}`}
+          className="inline-flex min-h-11 items-center rounded-lg border border-border px-3 py-1 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+          Ouvrir le poste de pilotage →
+        </Link>
+      </div>
     </section>
   );
 }
