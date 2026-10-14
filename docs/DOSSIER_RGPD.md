@@ -1154,8 +1154,10 @@ ci-dessous (2026-10-14).
    réponse, dans le délai, invite la personne à la confirmer depuis le
    portail (carte « Signaler un problème », choix « Je souhaite exercer un
    droit ») : cette confirmation vaut vérification d'identité (RGPD
-   art. 12.6), sans pièce d'identité. Le cas d'une personne qui n'a plus accès
-   au portail reste à trancher (plan unique, §8).
+   art. 12.6), sans pièce d'identité. Une personne qui n'a plus accès au
+   portail ([[D-295]] §1) : si le courriel vient de l'adresse e-mail
+   enregistrée à son dossier, la demande est instruite directement ; sinon,
+   la réponse part à l'adresse du dossier, pour confirmation.
 2. **Délai.** Un mois à compter de la réception, quel que soit le canal (RGPD
    art. 12.3). Prolongeable de deux mois si la demande est complexe ou si les
    demandes sont nombreuses : le patient en est informé dans le premier mois,
@@ -1178,11 +1180,12 @@ ci-dessous (2026-10-14).
    le portail ne sert pas encore la réponse. Le statut passe à `traite` une
    fois la réponse envoyée, avec son texte (`reponse`) ; `examine_le` date
    l'examen, et la preuve de l'envoi est le courriel envoyé, gardé dans la
-   boîte du responsable ; la durée de conservation de ces courriels n'est pas
-   fixée (plan unique, §8). Puis `clos` quand plus rien n'est attendu. Aucune
-   demande n'est supprimée, sauf par l'effacement du dossier. Le code
-   n'empêche pas aujourd'hui de passer à `traite` sans réponse (plan unique,
-   §8).
+   boîte du responsable. Les courriels de demande et de réponse se
+   conservent la durée du dossier ([[D-283]] §2 ; [[D-295]] §2) ; après un
+   effacement, ils restent la seule trace de la demande. Puis `clos` quand
+   plus rien n'est attendu. Aucune demande n'est supprimée, sauf par
+   l'effacement du dossier. Le code n'empêche pas encore de passer à `traite`
+   sans réponse : une garde sans migration est décidée ([[D-295]] §3).
 6. **Refus ou réponse partielle.** Motivés par écrit. La réponse indique la
    possibilité d'introduire une réclamation auprès de la CNIL et de former un
    recours juridictionnel (RGPD art. 12.4).

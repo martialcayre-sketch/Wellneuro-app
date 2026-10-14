@@ -4,6 +4,51 @@
 
 ## Décisions actives
 
+### D-295 — Droits des personnes : sans accès au portail, l'adresse du dossier vérifie l'identité ; les courriels de demande suivent la durée du dossier ; « traité » exige une réponse ; ai date la première lecture
+
+- Date : 2026-10-14
+- Statut : accepté. Quatre arbitrages du responsable du 2026-10-14 sur
+  questions à options, posées après le merge de #1446, sur les dettes que la
+  revue CodeRabbit de cette PR avait fait inscrire au plan unique (§8,
+  « Information des patients et droits »).
+- Domaine : procédure d'exercice des droits (`docs/DOSSIER_RGPD.md`,
+  rubrique 9) ; lettre ai (fiche H51).
+- Amende : [[D-283]] §6 (renvoi au portail d'une demande par e-mail) ;
+  précise [[D-283]] §2 pour les courriels de demande.
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune migration,
+  aucun texte patient servi.
+
+**§1 — Sans accès au portail, l'adresse du dossier vérifie l'identité.** Une
+personne qui n'a plus accès au portail et qui écrit pour exercer un droit
+n'est pas renvoyée au portail. Si son courriel vient de l'adresse e-mail
+enregistrée à son dossier, la demande est instruite directement, sans pièce
+d'identité. Sinon, la réponse part à l'adresse du dossier, et la demande
+s'instruit à sa confirmation. Le renvoi au portail de [[D-283]] §6 reste la
+règle pour la personne qui y a accès. Limite assumée : une boîte e-mail
+partagée ou compromise passerait ce contrôle.
+
+**§2 — Les courriels de demande et de réponse suivent la durée du dossier.**
+Gardés dans la boîte du responsable comme preuve, ils se conservent la durée
+du dossier ([[D-283]] §2). Après un effacement, ils restent la seule trace de
+la demande.
+
+**§3 — « Traité » exige une réponse.** Une garde de code, sans migration :
+le statut `traite` d'une demande de droit est refusé tant que le texte de la
+réponse est vide. La preuve d'envoi reste le courriel ; aucune date d'envoi
+n'entre en base. Lot de file A, rang 1 [Hypothese], sans porte de migration.
+
+**§4 — ai date la première lecture.** Pour la lettre ai (H51), seule la
+première ouverture d'un document depuis « Mes échanges » est datée ; le
+praticien lit « lu le … ». Chaque ouverture n'est pas datée : le texte validé
+par [[D-293]] §4 promet que la date « ne dit pas quand vous êtes connecté ».
+Les lectures du portail ne portent pas de date aujourd'hui : la migration se
+confirme à l'écriture de la lettre ai.
+
+- Options écartées : renvoyer un accès au portail à une personne qui n'en a
+  plus ; l'avis du conseil sur l'identité et la durée (porte 28) ; une date
+  d'envoi en base (migration, rang 4) ; aucune garde de code ; dater chaque
+  ouverture.
+
 ### D-294 — Annuler un résultat de biologie saisi par erreur : un acte en ajout seul, à motif fermé, qui retire le fil entier des calculs et libère sa place ; révocable une fois (BP-09, amende D-124 §2 et §3)
 
 - Date : 2026-10-14

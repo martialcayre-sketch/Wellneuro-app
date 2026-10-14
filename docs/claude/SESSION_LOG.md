@@ -10386,3 +10386,12 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merge de cette PR ; cj (D-296) poussée après #1453.
 
 **Ouvert.** Archive d'audit qui garde le nom du laboratoire (figée). Sort de la ligne du barème au §6.
+## 2026-10-14 — D-295 : droits sans portail, durée des courriels, garde « traité », lecture datée de ai
+
+**Fait.** #1446 mergée (porte 13 levée), après deux cycles de revue CodeRabbit. Quatre questions posées sur les dettes §8 qu'elle avait ouvertes et sur ai ; réponses : adresse du dossier, durée du dossier, garde sans migration, première lecture. D-295 écrite, rubrique 9 et plan à jour.
+
+**Écarté.** Renvoyer un accès au portail ; avis du conseil ; date d'envoi en base ; dater chaque ouverture.
+
+**Prochaine action.** PR après le merge de #1448 (D-294) ; puis le lot de garde « traité » (file A) et la lettre ai.
+
+**Ouvert.** La lettre cj (non poussée) porte D-291 : elle prend D-296.
