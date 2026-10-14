@@ -41,6 +41,9 @@ const IMPORTEURS_ADMIS = [
   'web/src/app/api/praticien/biologie/import/extraction/route.ts',
   // L'acte de lecture d'un import validé ([[D-268]], BP-10).
   'web/src/app/api/praticien/biologie/import/lecture/route.ts',
+  // Le masquage de l'identité avant la lecture ([[D-284]] §5, lot j) : des
+  // pages noircies, réencodées et consignées — aucune valeur lue.
+  'web/src/app/api/praticien/biologie/import/masquage/route.ts',
   'web/src/app/api/praticien/biologie/import/route.ts',
   'web/src/app/api/praticien/biologie/proposition/courrier/route.ts',
   'web/src/app/api/praticien/biologie/proposition/document-patient/route.ts',
@@ -72,6 +75,9 @@ const IMPORTEURS_ADMIS = [
   'web/src/components/patient-cockpit/ImportCompteRenduPanel.tsx',
   // L'écran de l'acte de lecture ([[D-268]], BP-10) : codes et états, sans valeur.
   'web/src/components/patient-cockpit/LectureImportBiologique.tsx',
+  // L'écran du masquage ([[D-284]] §5, lot j) : le module PUR `masquage`
+  // seul (bornes, géométrie des zones) — aucune valeur lue.
+  'web/src/components/patient-cockpit/MasquageIdentite.tsx',
   'web/src/components/patient-cockpit/PropositionBilanPanel.tsx',
   // Même motif (LOT-10) : `valeurDecimale` seul.
   'web/src/components/patient-cockpit/SaisieBilan.tsx',
