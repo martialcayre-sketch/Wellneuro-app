@@ -1200,6 +1200,17 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/bio_ingest_masquage_identite_v1_negatif.sql
 
+      # Le même masquage, À DEUX SESSIONS (D-284 §5, lot j) : le contrat
+      # ci-dessus voit le verrou FOR SHARE du trigger, pas qu'il sérialise le
+      # masquage et la purge du document. Deux courses et leurs témoins annulés.
+      # Commet ses fixtures puis les efface : la base doit être nommée.
+      - name: Masquage identite two-session bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_MASQUAGE_BANC_BASE: wellneuro_ci
+        run: node scripts/banc-masquage-purge-deux-sessions.test.mjs
+
       # Le même acte, À DEUX SESSIONS (D-268, BP-10) : le contrat ci-dessus voit
       # le verrou de l'import, pas qu'il sérialise. Deux lectures concurrentes,
       # le témoin REPEATABLE READ, une lecture contre la dernière décision

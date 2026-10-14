@@ -14,9 +14,11 @@
 -- praticien déclare « aucune identité sur ce document » : la déclaration est
 -- tracée ici, par son auteur et sa date.
 --
--- MIGRATION SEULE : aucun code n'écrit cette table avant la `release-db` et son
--- constat. L'effacement IDP2 et le retrait d'un document la vident dès cette
--- PR (RESTRICT partout, comme la file du G3).
+-- MIGRATION SEULE : aucun code n'y insère ni ne la lit avant la `release-db` et
+-- son constat. L'effacement IDP2 et le retrait d'un document la vident dès
+-- cette PR (RESTRICT partout, comme la file du G3) : entre le déploiement et
+-- l'approbation, ces deux gestes échouent sans rien perdre (table absente),
+-- comme pour #1408 et #1412 — approuver dans la foulée du merge.
 --
 -- CE QUE LA BASE TIENT :
 --   1. un masquage porte ses pages JPEG (1 à 20), chacune bornée, leur total
@@ -66,8 +68,10 @@ ALTER TABLE "masquages_comptes_rendus" ADD CONSTRAINT "masquages_comptes_rendus_
 -- CHECK porte UN motif ; les cohérences s'écrivent en `CASE` (une disjonction
 -- sur une colonne nullable s'évalue à NULL, et un CHECK à NULL passe).
 ALTER TABLE "masquages_comptes_rendus"
-  -- Chiffre TECHNIQUE : au-delà de 20 images, le fournisseur réduit chacune à
-  -- 2 000 pixels de côté.
+  -- Chiffre TECHNIQUE : au-delà de 20 images par requête, le fournisseur
+  -- refuse toute image de plus de 2 000 pixels de côté. En deçà, sa borne est
+  -- de 8 000 pixels : la base ne lit pas les dimensions, la route les tient au
+  -- réencodage.
   ADD CONSTRAINT "masquages_comptes_rendus_nombre_pages_check"
     CHECK ("nombre_pages" BETWEEN 1 AND 20),
   ADD CONSTRAINT "masquages_comptes_rendus_zones_check"
@@ -93,6 +97,7 @@ AS $$
 DECLARE
   page bytea;
   total bigint := 0;
+  document_purge boolean;
 BEGIN
   IF NEW.purge_le IS NOT NULL THEN
     RAISE EXCEPTION 'masquage refusé : il naît avec ses pages, jamais purgé.';
@@ -117,10 +122,15 @@ BEGIN
   IF total > 20971520 THEN
     RAISE EXCEPTION 'masquage refusé : les pages dépassent 20 Mio au total.';
   END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM public.comptes_rendus_biologiques c
-    WHERE c.id = NEW.id_compte_rendu AND c.contenu IS NOT NULL
-  ) THEN
+  -- FOR SHARE : la purge du document (FOR NO KEY UPDATE) et ce masquage se
+  -- SÉRIALISENT. Sans ce verrou, une purge concurrente validée avant le
+  -- masquage ne verrait pas ses pages, et rien ne les purgerait plus (revue du
+  -- lot 1, P1). Même verrou que l'ouverture d'un import (`bio_ingest_purge_v1`).
+  SELECT c.contenu IS NULL INTO document_purge
+  FROM public.comptes_rendus_biologiques c
+  WHERE c.id = NEW.id_compte_rendu
+  FOR SHARE;
+  IF document_purge THEN
     RAISE EXCEPTION 'masquage refusé : le document de ce compte rendu est purgé.';
   END IF;
   IF EXISTS (

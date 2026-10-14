@@ -3,12 +3,14 @@
 --
 -- Ce fichier éprouve TOUTES les promesses de la migration :
 --   1. le valide est ACCEPTÉ : un masquage à zones, une déclaration « aucune
---      identité », horodatés par la base ; un travail en échec
---      `masquage_absent` ;
+--      identité », horodatés par la base ; une page à sa borne exacte ; le
+--      parcours « lecture refusée `masquage_absent`, masquage, redemande » ;
+--      un masquage qui repasse une fois la lecture ouverte finie ;
 --   2. chaque CHECK mord (23514) sous son PROPRE nom : déclaration (case ET
 --      zones, ni l'une ni les autres), nombre de pages, zones, auteur, pages
 --      en nombre différent de celui déclaré, aucune page ;
---   3. le trigger d'insertion refuse (P0001) : page non JPEG, page vide, page
+--   3. le trigger d'insertion refuse (P0001, chaque refus sous son MESSAGE) :
+--      aucune page, page non JPEG, page vide, page
 --      trop lourde, page absente, liste à deux dimensions, total trop lourd,
 --      masquage né purgé, document purgé, lecture demandée, import en cours ;
 --   4. figé : modification hors purge refusée, purge refusée tant que le
@@ -25,6 +27,9 @@ BEGIN;
 
 -- Rejoue `sql` et exige un refus de code `etat` — et, si nommée, de la
 -- contrainte attendue : deux CHECK de la même table rendent le même code.
+-- Pour un refus du trigger (P0001), `contrainte` porte un fragment du MESSAGE
+-- attendu, exigé : le code seul passerait pour une mauvaise raison (revue du
+-- lot 1).
 CREATE FUNCTION pg_temp.refuse(cas text, etat text, sql text, contrainte text DEFAULT NULL) RETURNS void
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -36,6 +41,12 @@ BEGIN
     GET STACKED DIAGNOSTICS nom = CONSTRAINT_NAME;
     IF SQLSTATE <> etat THEN
       RAISE EXCEPTION 'CONTRAT « % » : refusé pour une autre raison (% : %), % attendu', cas, SQLSTATE, SQLERRM, etat;
+    END IF;
+    IF etat = 'P0001' THEN
+      IF contrainte IS NULL OR position(contrainte IN SQLERRM) = 0 THEN
+        RAISE EXCEPTION 'CONTRAT « % » : refusé par « % », « % » attendu', cas, SQLERRM, contrainte;
+      END IF;
+      RETURN;
     END IF;
     IF contrainte IS NOT NULL AND nom IS DISTINCT FROM contrainte THEN
       RAISE EXCEPTION 'CONTRAT « % » : refusé par %, % attendue', cas, nom, contrainte;
@@ -108,9 +119,19 @@ BEGIN
   VALUES ('mq_a2', 'PAT_CONTRAT_MQA', 'cr_mq_a', ARRAY[pg_temp.jpeg()], 1, 0, true, 'praticien@wellneuro.fr');
   INSERT INTO masquages_comptes_rendus (id, id_patient, id_compte_rendu, pages, nombre_pages, zones_masquees, aucune_identite, pose_par)
   VALUES ('mq_p1', 'PAT_CONTRAT_MQA', 'cr_mq_p', ARRAY[pg_temp.jpeg()], 1, 1, false, 'praticien@wellneuro.fr');
-  -- La file connaît le refus d'une lecture sans masquage.
+  -- Une page à sa borne exacte (3,75 Mio) passe.
+  INSERT INTO masquages_comptes_rendus (id, id_patient, id_compte_rendu, pages, nombre_pages, zones_masquees, aucune_identite, pose_par)
+  VALUES ('mq_a3', 'PAT_CONTRAT_MQA', 'cr_mq_a', ARRAY[pg_temp.jpeg(3932157)], 1, 1, false, 'praticien@wellneuro.fr');
+  -- Le parcours normal : la file refuse une lecture sans masquage
+  -- (`masquage_absent`), le praticien masque, puis redemande.
   INSERT INTO travaux_extraction_biologique (id, id_patient, id_compte_rendu, demande_par, statut, motif_echec, termine_le)
   VALUES ('tr_mq_echec', 'PAT_CONTRAT_MQB', 'cr_mq_b', 'praticien@wellneuro.fr', 'echec', 'masquage_absent', now());
+  INSERT INTO masquages_comptes_rendus (id, id_patient, id_compte_rendu, pages, nombre_pages, zones_masquees, aucune_identite, pose_par)
+  VALUES ('mq_b1', 'PAT_CONTRAT_MQB', 'cr_mq_b', ARRAY[pg_temp.jpeg()], 1, 2, false, 'praticien@wellneuro.fr');
+  INSERT INTO travaux_extraction_biologique (id, id_patient, id_compte_rendu, demande_par)
+  VALUES ('tr_mq_b2', 'PAT_CONTRAT_MQB', 'cr_mq_b', 'praticien@wellneuro.fr');
+  -- Retiré : la clé « autre patient » (§6) se juge sur `cr_mq_b` sans lecture ouverte.
+  DELETE FROM travaux_extraction_biologique WHERE id = 'tr_mq_b2';
 
   -- ── 2. LES CHECK, CHACUN SOUS SON NOM ────────────────────────────────────
   PERFORM pg_temp.refuse('case et zones', '23514', pg_temp.masquage('cr_mq_a', une, 1, 2, true), decl);
@@ -129,39 +150,46 @@ BEGIN
 
   -- ── 3. LE TRIGGER D'INSERTION ────────────────────────────────────────────
   PERFORM pg_temp.refuse('aucune page', 'P0001',
-    pg_temp.masquage('cr_mq_a', '''{}''::bytea[]', 1, 1, false));
+    pg_temp.masquage('cr_mq_a', '''{}''::bytea[]', 1, 1, false), 'liste simple');
   PERFORM pg_temp.refuse('page non JPEG', 'P0001',
-    pg_temp.masquage('cr_mq_a', 'ARRAY[convert_to(''%PDF-1.7 page'', ''UTF8'')]', 1, 1, false));
+    pg_temp.masquage('cr_mq_a', 'ARRAY[convert_to(''%PDF-1.7 page'', ''UTF8'')]', 1, 1, false), 'pas une image JPEG');
   PERFORM pg_temp.refuse('page vide', 'P0001',
-    pg_temp.masquage('cr_mq_a', 'ARRAY[''\xffd8ff''::bytea]', 1, 1, false));
+    pg_temp.masquage('cr_mq_a', 'ARRAY[''\xffd8ff''::bytea]', 1, 1, false), 'vide ou dépasse');
   PERFORM pg_temp.refuse('page trop lourde', 'P0001',
-    pg_temp.masquage('cr_mq_a', 'ARRAY[pg_temp.jpeg(3932158)]', 1, 1, false));
+    pg_temp.masquage('cr_mq_a', 'ARRAY[pg_temp.jpeg(3932158)]', 1, 1, false), 'vide ou dépasse');
   PERFORM pg_temp.refuse('page absente', 'P0001',
-    pg_temp.masquage('cr_mq_a', 'ARRAY[pg_temp.jpeg(), NULL]', 2, 1, false));
+    pg_temp.masquage('cr_mq_a', 'ARRAY[pg_temp.jpeg(), NULL]', 2, 1, false), 'page est absente');
   PERFORM pg_temp.refuse('liste à deux dimensions', 'P0001',
-    pg_temp.masquage('cr_mq_a', 'ARRAY[ARRAY[pg_temp.jpeg()], ARRAY[pg_temp.jpeg()]]', 2, 1, false));
+    pg_temp.masquage('cr_mq_a', 'ARRAY[ARRAY[pg_temp.jpeg()], ARRAY[pg_temp.jpeg()]]', 2, 1, false), 'liste simple');
   PERFORM pg_temp.refuse('total trop lourd', 'P0001',
-    pg_temp.masquage('cr_mq_a', 'array_fill(pg_temp.jpeg(3700000), ARRAY[6])', 6, 1, false));
-  PERFORM pg_temp.refuse('né purgé', 'P0001', pg_temp.masquage('cr_mq_a', une, 1, 1, false, 'p@w.fr', true));
-  PERFORM pg_temp.refuse('document purgé', 'P0001', pg_temp.masquage('cr_mq_x', une, 1, 1, false));
+    pg_temp.masquage('cr_mq_a', 'array_fill(pg_temp.jpeg(3700000), ARRAY[6])', 6, 1, false), '20 Mio au total');
+  PERFORM pg_temp.refuse('né purgé', 'P0001', pg_temp.masquage('cr_mq_a', une, 1, 1, false, 'p@w.fr', true), 'jamais purgé');
+  PERFORM pg_temp.refuse('document purgé', 'P0001', pg_temp.masquage('cr_mq_x', une, 1, 1, false), 'document de ce compte rendu est purgé');
 
   INSERT INTO travaux_extraction_biologique (id, id_patient, id_compte_rendu, demande_par)
   VALUES ('tr_mq_l', 'PAT_CONTRAT_MQA', 'cr_mq_l', 'praticien@wellneuro.fr');
-  PERFORM pg_temp.refuse('lecture demandée', 'P0001', pg_temp.masquage('cr_mq_l', une, 1, 1, false));
+  PERFORM pg_temp.refuse('lecture demandée', 'P0001', pg_temp.masquage('cr_mq_l', une, 1, 1, false), 'demandée ou en cours');
   INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
   VALUES ('imp_mq_i', 'PAT_CONTRAT_MQA', 'cr_mq_i', 'modele-contrat', 'releve-v1', 'praticien@wellneuro.fr');
-  PERFORM pg_temp.refuse('import en cours', 'P0001', pg_temp.masquage('cr_mq_i', une, 1, 1, false));
+  PERFORM pg_temp.refuse('import en cours', 'P0001', pg_temp.masquage('cr_mq_i', une, 1, 1, false), 'demandée ou en cours');
+  -- Le travail fini, le masquage repasse : le refus visait la lecture ouverte,
+  -- pas le compte rendu.
+  UPDATE travaux_extraction_biologique
+     SET statut = 'echec', motif_echec = 'masquage_absent', termine_le = now()
+   WHERE id = 'tr_mq_l';
+  INSERT INTO masquages_comptes_rendus (id, id_patient, id_compte_rendu, pages, nombre_pages, zones_masquees, aucune_identite, pose_par)
+  VALUES ('mq_l1', 'PAT_CONTRAT_MQA', 'cr_mq_l', ARRAY[pg_temp.jpeg()], 1, 1, false, 'praticien@wellneuro.fr');
 
   -- ── 4. FIGÉ, SAUF LA PURGE ───────────────────────────────────────────────
   PERFORM pg_temp.refuse('zones modifiées', 'P0001',
-    'UPDATE masquages_comptes_rendus SET zones_masquees = 9 WHERE id = ''mq_a1''');
+    'UPDATE masquages_comptes_rendus SET zones_masquees = 9 WHERE id = ''mq_a1''', 'seule la purge de ses pages');
   PERFORM pg_temp.refuse('pages remplacées', 'P0001',
-    'UPDATE masquages_comptes_rendus SET pages = ARRAY[pg_temp.jpeg(20), pg_temp.jpeg(20)] WHERE id = ''mq_a1''');
+    'UPDATE masquages_comptes_rendus SET pages = ARRAY[pg_temp.jpeg(20), pg_temp.jpeg(20)] WHERE id = ''mq_a1''', 'seule la purge de ses pages');
   PERFORM pg_temp.refuse('purge avec un autre changement', 'P0001',
-    'UPDATE masquages_comptes_rendus SET pages = ''{}'', pose_par = ''autre@w.fr'' WHERE id = ''mq_a1''');
+    'UPDATE masquages_comptes_rendus SET pages = ''{}'', pose_par = ''autre@w.fr'' WHERE id = ''mq_a1''', 'n''efface que les pages');
   PERFORM pg_temp.refuse('purge avant celle du document', 'P0001',
-    'UPDATE masquages_comptes_rendus SET pages = ''{}'' WHERE id = ''mq_a1''');
-  PERFORM pg_temp.refuse('TRUNCATE', 'P0001', 'TRUNCATE masquages_comptes_rendus');
+    'UPDATE masquages_comptes_rendus SET pages = ''{}'' WHERE id = ''mq_a1''', 'n''est pas purgé');
+  PERFORM pg_temp.refuse('TRUNCATE', 'P0001', 'TRUNCATE masquages_comptes_rendus', 'ligne figée');
 
   -- ── 5. LA PURGE DU DOCUMENT EMPORTE SES MASQUAGES ────────────────────────
   UPDATE comptes_rendus_biologiques
@@ -177,7 +205,7 @@ BEGIN
     RAISE EXCEPTION 'CONTRAT : la purge d''un document ne touche pas les masquages d''un autre';
   END IF;
   PERFORM pg_temp.refuse('masquage purgé figé', 'P0001',
-    'UPDATE masquages_comptes_rendus SET pages = ''{}'' WHERE id = ''mq_p1''');
+    'UPDATE masquages_comptes_rendus SET pages = ''{}'' WHERE id = ''mq_p1''', 'déjà purgées');
 
   -- ── 6. LES CLÉS ──────────────────────────────────────────────────────────
   PERFORM pg_temp.refuse('compte rendu d''un autre patient', '23503', pg_temp.masquage('cr_mq_b', une, 1, 1, false));
