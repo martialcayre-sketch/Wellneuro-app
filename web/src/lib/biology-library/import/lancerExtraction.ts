@@ -42,6 +42,12 @@ import { cleVerrouCompteRendu, DELAI_TRANSACTION_LIGNES_MS, PEREMPTION_EN_COURS_
 // ouverture, et la décision refuse alors les lignes de l'ancien
 // (`import_remplace`). Si la relance échoue, l'ancien redevient le courant.
 //
+// L'IDENTITÉ MASQUÉE ([[D-284]] §5, lot (j)) : la lecture envoie le DERNIER
+// masquage non purgé du compte rendu — ses pages, jamais `contenu`. Sans
+// masquage, l'ouverture refuse (`masquage_absent`) et aucun appel ne part. Un
+// masquage est figé, et la base en refuse un nouveau pendant une lecture
+// ouverte : celui que lit la suite est celui qui existait à l'ouverture.
+//
 // JOURNAUX : la classe et le code d'une erreur, jamais son message — il peut
 // recopier un libellé ou une valeur lue.
 
@@ -55,13 +61,17 @@ export type IssueExtraction =
       | 'extraction_en_cours'
       | 'document_purge'
       | 'ligne_validee'
+      | 'masquage_absent'
       | 'import_clos'
       | 'server_error';
   };
 
 export type IssueOuverture =
   | { ok: true; idImport: string }
-  | { ok: false; reason: 'compte_rendu_introuvable' | 'extraction_en_cours' | 'document_purge' | 'ligne_validee' };
+  | {
+    ok: false;
+    reason: 'compte_rendu_introuvable' | 'extraction_en_cours' | 'document_purge' | 'ligne_validee' | 'masquage_absent';
+  };
 
 type ParamsExtraction = {
   idPatient: string;
@@ -127,6 +137,10 @@ export async function ouvrirExtractionDans(
     where: { idPatient, statut: 'validee', import: { idCompteRendu } },
   });
   if (validees > 0) return { ok: false as const, reason: 'ligne_validee' as const };
+  // Rien ne part sans l'identité masquée ([[D-284]] §5) : jamais d'import, donc
+  // jamais d'appel, sur un compte rendu que le praticien n'a pas masqué.
+  const masquages = await tx.masquageCompteRendu.count({ where: { idCompteRendu, idPatient, purgeLe: null } });
+  if (masquages === 0) return { ok: false as const, reason: 'masquage_absent' as const };
   const cree = await tx.importBiologique.create({
     data: {
       idPatient,
@@ -148,15 +162,19 @@ export async function poursuivreExtraction(params: {
 }): Promise<IssueExtraction> {
   const { idPatient, idCompteRendu, idImport } = params;
 
-  const document = await prisma.compteRenduBiologique.findUnique({
-    where: { id: idCompteRendu },
-    select: { contenu: true, typeMime: true },
+  // Le DERNIER masquage non purgé — ses pages seules, jamais le document
+  // d'origine ([[D-284]] §5). `id` départage deux masquages de même instant.
+  const masquage = await prisma.masquageCompteRendu.findFirst({
+    where: { idCompteRendu, idPatient, purgeLe: null },
+    orderBy: [{ poseLe: 'desc' }, { id: 'desc' }],
+    select: { pages: true },
   });
 
-  // TEMPS 2 — l'appel, hors transaction. Un document purgé ([[D-258]]) ne
-  // devrait jamais arriver ici : la base refuse d'ouvrir un import sur lui.
-  const resultat = document?.contenu && estTypeCompteRendu(document.typeMime)
-    ? await extraireCompteRendu(Buffer.from(document.contenu), document.typeMime)
+  // TEMPS 2 — l'appel, hors transaction. Sans masquage (purgé avec un document
+  // purgé, ce que la base refuse pendant un import), AUCUN appel : l'échec se
+  // consigne, aucun repli sur le document entier.
+  const resultat = masquage && masquage.pages.length > 0
+    ? await extraireCompteRendu(masquage.pages.map(p => Buffer.from(p)))
     : ({ ok: false, motif: 'erreur_fournisseur' } as const);
 
   // Chaque terminaison est GARDÉE par `statut: 'en_cours'` : une suite qui

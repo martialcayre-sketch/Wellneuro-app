@@ -869,7 +869,7 @@ export function cartesComptesRendusTransmis(
       patient: nomPatient(noms, ligne.idPatient),
       titre: 'Compte rendu transmis par le patient',
       // LA VÉRIFICATION D'ABORD (§1) : un patient peut déposer le document d'un
-      // tiers, et la lecture l'enverrait entier chez Anthropic.
+      // tiers, et la lecture en enverrait les pages chez Anthropic.
       pourquoi:
         `Transmis le ${formatDateFr(ligne.deposeLe)} : aucune lecture n’est lancée. `
         + 'Vérifiez qu’il s’agit bien de son compte rendu avant de la lancer, ou écartez-le.',

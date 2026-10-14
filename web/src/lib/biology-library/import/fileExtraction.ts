@@ -66,6 +66,7 @@ export type IssueDemande =
       | 'lecture_demandee'
       | 'document_purge'
       | 'ligne_validee'
+      | 'masquage_absent'
       | 'dossier_clos';
   };
 
@@ -121,6 +122,10 @@ export async function demanderExtraction(params: {
         where: { idPatient, statut: 'validee', import: { idCompteRendu } },
       });
       if (validees > 0) return { ok: false as const, reason: 'ligne_validee' as const };
+      // L'identité masquée d'abord ([[D-284]] §5) : sans masquage, rien ne
+      // s'enfile — la réclamation le rejugerait et échouerait de même.
+      const masquages = await tx.masquageCompteRendu.count({ where: { idCompteRendu, idPatient, purgeLe: null } });
+      if (masquages === 0) return { ok: false as const, reason: 'masquage_absent' as const };
       const cree = await tx.travailExtractionBiologique.create({
         data: { idPatient, idCompteRendu, demandePar },
         select: { id: true },

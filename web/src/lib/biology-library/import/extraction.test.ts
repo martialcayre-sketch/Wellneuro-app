@@ -289,29 +289,41 @@ describe('commentaires du laboratoire (D-278 §3) — recopiés tels qu’imprim
 describe('extraireCompteRendu — l’appel', () => {
   beforeEach(() => create.mockReset());
 
-  it('envoie le PDF ENTIER au modèle enregistré, en sortie structurée, sans bascule de modèle', async () => {
+  it('envoie les PAGES MASQUÉES au modèle enregistré, en sortie structurée, sans bascule de modèle (D-284 §5)', async () => {
     create.mockResolvedValue(reponse(JSON.stringify(SORTIE)));
-    const pdf = Buffer.from('%PDF-1.7 fixture');
-    const r = await extraireCompteRendu(pdf, 'application/pdf');
+    const p1 = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1]);
+    const p2 = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 2]);
+    const r = await extraireCompteRendu([p1, p2]);
     expect(r.ok).toBe(true);
     const [params, options] = create.mock.calls[0];
     expect(params.model).toBe(MODELE_EXTRACTION);
     expect(params.model).toBe('claude-sonnet-5-5');
     expect(params.output_config.format.type).toBe('json_schema');
     expect(params).not.toHaveProperty('fallbacks');
-    expect(params.messages[0].content[0]).toEqual({
-      type: 'document',
-      source: { type: 'base64', media_type: 'application/pdf', data: pdf.toString('base64') },
-    });
+    // Chaque page : son numéro, puis son image JPEG — jamais un bloc `document`.
+    expect(params.messages[0].content).toEqual([
+      { type: 'text', text: 'Page 1' },
+      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: p1.toString('base64') } },
+      { type: 'text', text: 'Page 2' },
+      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: p2.toString('base64') } },
+      { type: 'text', text: 'Relève les résultats de ce compte rendu.' },
+    ]);
     expect(options).toMatchObject({ timeout: 180_000, maxRetries: 0, signal: expect.any(AbortSignal) });
   });
 
-  it('`bio-extraction-v4` : la consigne amendée par D-267 §4 puis D-278 §3, le schéma sans borne sur les faits (§10)', async () => {
+  it('aucune page : aucun appel (jamais de lecture sans masquage)', async () => {
+    expect(await extraireCompteRendu([])).toEqual({ ok: false, motif: 'erreur_fournisseur' });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('`bio-extraction-v5` : la consigne amendée par D-267 §4, D-278 §3 puis D-284 §5, le schéma sans borne sur les faits (§10)', async () => {
     create.mockResolvedValue(reponse(JSON.stringify(SORTIE)));
-    await extraireCompteRendu(Buffer.from('%PDF-1.7 fixture'), 'application/pdf');
+    await extraireCompteRendu([Buffer.from([0xff, 0xd8, 0xff, 0xe0])]);
     const [params] = create.mock.calls[0];
-    // v4 : les commentaires du laboratoire entrent dans le prompt et le schéma.
-    expect(VERSION_PROCEDE_EXTRACTION).toBe('bio-extraction-v4');
+    // v5 : l'entrée devient les pages masquées, et la consigne nomme les zones noircies.
+    expect(VERSION_PROCEDE_EXTRACTION).toBe('bio-extraction-v5');
+    expect(params.system).toContain('page par page, en images, chacune précédée de son numéro de page');
+    expect(params.system).toContain('Des zones noircies y masquent l’identité du patient');
     // La phrase de D-256 amendée ne survit pas ; « n'interprète rien » reste.
     expect(params.system).not.toContain('ne recopie ni les valeurs de référence');
     expect(params.system).toContain('N’interprète rien');
@@ -333,17 +345,17 @@ describe('extraireCompteRendu — l’appel', () => {
     expect(schema.properties.commentaires).toEqual({ type: ['string', 'null'] });
   });
 
-  it('envoie une photo ENTIÈRE en bloc image, sous la même consigne (LOT-03)', async () => {
+  it('une photo masquée part comme une page : son numéro, son image (LOT-03, D-284 §5)', async () => {
     create.mockResolvedValue(reponse(JSON.stringify(SORTIE)));
     const photo = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
-    const r = await extraireCompteRendu(photo, 'image/jpeg');
+    const r = await extraireCompteRendu([photo]);
     expect(r.ok).toBe(true);
     const [params] = create.mock.calls[0];
-    expect(params.messages[0].content[0]).toEqual({
+    expect(params.messages[0].content).toHaveLength(3);
+    expect(params.messages[0].content[1]).toEqual({
       type: 'image',
       source: { type: 'base64', media_type: 'image/jpeg', data: photo.toString('base64') },
     });
-    expect(params.messages[0].content[1]).toEqual({ type: 'text', text: 'Relève les résultats de ce compte rendu.' });
   });
 
   it('le pire cas d’une extraction reste sous la péremption d’un import en cours', () => {
@@ -358,13 +370,13 @@ describe('extraireCompteRendu — l’appel', () => {
 
   it('classe les échecs en motifs fermés', async () => {
     create.mockRejectedValueOnce(new Anthropic.APIConnectionTimeoutError());
-    expect(await extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf')).toEqual({ ok: false, motif: 'delai_depasse' });
+    expect(await extraireCompteRendu([Buffer.from([0xff, 0xd8, 0xff, 0xe0])])).toEqual({ ok: false, motif: 'delai_depasse' });
     create.mockRejectedValueOnce(new Error('panne'));
-    expect(await extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf')).toEqual({ ok: false, motif: 'erreur_fournisseur' });
+    expect(await extraireCompteRendu([Buffer.from([0xff, 0xd8, 0xff, 0xe0])])).toEqual({ ok: false, motif: 'erreur_fournisseur' });
     create.mockResolvedValueOnce(reponse('', 'refusal'));
-    expect(await extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf')).toEqual({ ok: false, motif: 'erreur_fournisseur' });
+    expect(await extraireCompteRendu([Buffer.from([0xff, 0xd8, 0xff, 0xe0])])).toEqual({ ok: false, motif: 'erreur_fournisseur' });
     create.mockResolvedValueOnce(reponse('{"lisible":', 'max_tokens'));
-    expect(await extraireCompteRendu(Buffer.from('%PDF-'), 'application/pdf')).toEqual({ ok: false, motif: 'reponse_invalide' });
+    expect(await extraireCompteRendu([Buffer.from([0xff, 0xd8, 0xff, 0xe0])])).toEqual({ ok: false, motif: 'reponse_invalide' });
   });
 
   it('motifDErreur ne lit jamais le message', () => {

@@ -6,7 +6,8 @@ import { demanderExtraction } from '@/lib/biology-library/import/fileExtraction'
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // Demande la lecture d'un compte rendu déposé (BIO-INGEST LOT-02, [[D-256]]
-// A4) : le document part ENTIER chez Anthropic. PAR LA FILE DURABLE
+// A4) : ses PAGES MASQUÉES partent chez Anthropic, jamais le document entier
+// ([[D-284]] §5) — sans masquage, refus `masquage_absent`. PAR LA FILE DURABLE
 // ([[D-282]], G3) : la route écrit un travail `en_attente` (sans import) et
 // rend 202 ; le processus de fond le réclame, ouvre l'import et lit — trois
 // pages durent ~36 s (mesure du 2026-10-02), au-delà de la fenêtre de 30 s du
@@ -32,6 +33,7 @@ const MESSAGES: Record<string, string> = {
   document_purge: 'Le document de ce compte rendu a été effacé : il ne peut plus être relu.',
   ligne_validee:
     'Une ligne de ce compte rendu a déjà été validée : il ne peut plus être relu, rien de ce qui est enregistré n’est remplacé.',
+  masquage_absent: 'Masquez l’identité du patient sur le document avant de lancer la lecture.',
 };
 
 function echec(reason: string, error: string, status: number) {

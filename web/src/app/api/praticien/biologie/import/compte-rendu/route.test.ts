@@ -34,6 +34,7 @@ beforeEach(() => {
     deposePar: 'praticien@wellneuro.fr',
     deposeLe: new Date('2026-10-02T09:00:00.000Z'),
     travaux: [],
+    masquages: [],
     imports: [{
       id: 'imp_1', statut: 'extrait', motifEchec: null, modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v1',
       laboratoireLu: null, lanceLe: new Date('2026-10-02T09:01:00.000Z'), termineLe: new Date('2026-10-02T09:02:00.000Z'),

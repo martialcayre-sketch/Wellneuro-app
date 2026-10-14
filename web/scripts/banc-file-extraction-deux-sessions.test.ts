@@ -79,6 +79,13 @@ async function poserFixtures(c: pg.Client) {
      VALUES ($1, $2, convert_to($3, 'UTF8'), 'application/pdf', encode(sha256(convert_to($3, 'UTF8')), 'hex'), $4)`,
     [COMPTE_RENDU, PATIENT, `banc ${RUN}`, PRATICIEN],
   );
+  // L'identité masquée (D-284 §5) : sans masquage, aucune lecture ne s'enfile.
+  await c.query(
+    `INSERT INTO masquages_comptes_rendus
+       (id, id_patient, id_compte_rendu, pages, nombre_pages, zones_masquees, aucune_identite, pose_par)
+     VALUES ($1, $2, $3, ARRAY['\\xffd8ff00000000'::bytea], 1, 1, false, $4)`,
+    [`mq_banc_file_${RUN}`, PATIENT, COMPTE_RENDU, PRATICIEN],
+  );
   await c.query('COMMIT');
 }
 
@@ -89,6 +96,7 @@ async function effacerFixtures(c: pg.Client) {
   await c.query('DELETE FROM travaux_extraction_biologique WHERE id_patient = $1', par);
   await c.query('DELETE FROM lignes_biologiques_candidates WHERE id_patient = $1', par);
   await c.query('DELETE FROM imports_biologiques WHERE id_patient = $1', par);
+  await c.query('DELETE FROM masquages_comptes_rendus WHERE id_patient = $1', par);
   await c.query('DELETE FROM comptes_rendus_biologiques WHERE id_patient = $1', par);
   await c.query('DELETE FROM patients WHERE id_patient = $1', par);
   await c.query('COMMIT');

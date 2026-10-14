@@ -40,6 +40,27 @@ describe('demanderExtraction', () => {
     }
   });
 
+  it('sans masquage de l’identité, rien ne s’enfile : `masquage_absent` (D-284 §5)', async () => {
+    const creer = vi.fn();
+    const tx = {
+      ...prisma,
+      $queryRaw: vi.fn()
+        .mockResolvedValueOnce([{ actif: true, suivi_cloture_le: null }])
+        .mockResolvedValueOnce([{ n: 0 }]),
+      compteRenduBiologique: { findFirst: vi.fn().mockResolvedValue({ typeMime: 'application/pdf', purgeLe: null }) },
+      travailExtractionBiologique: { count: vi.fn().mockResolvedValue(0), create: creer },
+      ligneBiologiqueCandidate: { count: vi.fn().mockResolvedValue(0) },
+      masquageCompteRendu: { count: vi.fn().mockResolvedValue(0) },
+    };
+    prisma.$transaction.mockImplementationOnce(async (cb: (t: typeof tx) => unknown) => cb(tx));
+    expect(await demanderExtraction({ idPatient: 'pat_sophie', idCompteRendu: 'cr_1', demandePar: 'praticien@wellneuro.fr' }))
+      .toEqual({ ok: false, reason: 'masquage_absent' });
+    expect(tx.masquageCompteRendu.count).toHaveBeenCalledWith({
+      where: { idCompteRendu: 'cr_1', idPatient: 'pat_sophie', purgeLe: null },
+    });
+    expect(creer).not.toHaveBeenCalled();
+  });
+
   it('toute autre erreur remonte — jamais un refus inventé', async () => {
     prisma.$transaction.mockRejectedValueOnce(Object.assign(new Error('coupure'), { code: 'P1001' }));
     await expect(demanderExtraction({ idPatient: 'pat_sophie', idCompteRendu: 'cr_1', demandePar: 'praticien@wellneuro.fr' }))
