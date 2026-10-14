@@ -23,6 +23,10 @@ import { describe, expect, it } from 'vitest';
 // [[D-269]] §3, l'écart d'un document transmis par le patient
 // (`import/ecart.ts`), dont la purge porte le motif `ecarte`.
 //
+// LE MASQUAGE ([[D-284]] §5, lot j) : les pages masquées d'un compte rendu
+// suivent les mêmes deux auteurs de suppression. AUCUN code ne les modifie :
+// leur purge est écrite par la base, dans l'instruction qui purge le document.
+//
 // PORTÉE : le code de l'application, mais aussi les scripts, le dossier
 // Prisma (seed) et les E2E (un nettoyage Playwright) — un script qui
 // supprimerait du staging n'en serait pas moins un auteur (revue
@@ -68,16 +72,23 @@ function occurrences(motif: RegExp): { fichier: string; n: number }[] {
 }
 
 const SUPPRIMER =
-  /\.(?:compteRenduBiologique|importBiologique|ligneBiologiqueCandidate)\s*\.\s*(?:delete|deleteMany)\s*\(/;
+  /\.(?:compteRenduBiologique|importBiologique|ligneBiologiqueCandidate|masquageCompteRendu)\s*\.\s*(?:delete|deleteMany)\s*\(/;
 const MODIFIER_COMPTE_RENDU = /\.compteRenduBiologique\s*\.\s*(?:update|updateMany|upsert)\s*\(/;
 const SQL_MODIFIER_COMPTE_RENDU = /UPDATE\s+(?:public\.)?"?comptes_rendus_biologiques\b/i;
+const MODIFIER_MASQUAGE = /\.masquageCompteRendu\s*\.\s*(?:update|updateMany|upsert)\s*\(/;
+const SQL_MODIFIER_MASQUAGE = /UPDATE\s+(?:public\.)?"?masquages_comptes_rendus\b/i;
 const SQL_BRUT =
-  /(?:DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+(?:public\.)?"?(?:comptes_rendus_biologiques|imports_biologiques|lignes_biologiques_candidates)\b/i;
+  /(?:DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+(?:public\.)?"?(?:comptes_rendus_biologiques|imports_biologiques|lignes_biologiques_candidates|masquages_comptes_rendus)\b/i;
 
 describe('Staging d’import biologique — qui supprime (D-256, LOT-02)', () => {
   it('seuls l’effacement nommé du dossier et le retrait d’un dépôt erroné suppriment, une fois par table', () => {
     const auteurs = occurrences(SUPPRIMER).sort((a, b) => a.fichier.localeCompare(b.fichier));
-    expect(auteurs).toEqual([{ fichier: RETRAIT, n: 3 }, { fichier: EFFACEMENT, n: 3 }]);
+    expect(auteurs).toEqual([{ fichier: RETRAIT, n: 4 }, { fichier: EFFACEMENT, n: 4 }]);
+  });
+
+  it('aucun code ne modifie un masquage : sa purge est écrite par la base (D-284 §5)', () => {
+    expect(occurrences(MODIFIER_MASQUAGE)).toEqual([]);
+    expect(occurrences(SQL_MODIFIER_MASQUAGE)).toEqual([]);
   });
 
   it('aucun code ne supprime le staging en SQL brut', () => {
@@ -97,6 +108,9 @@ describe('Staging d’import biologique — qui supprime (D-256, LOT-02)', () =>
     expect(SQL_MODIFIER_COMPTE_RENDU.test('update public."comptes_rendus_biologiques" set')).toBe(true);
     expect(SUPPRIMER.test('tx.ligneBiologiqueCandidate.deleteMany({ where: par })')).toBe(true);
     expect(SUPPRIMER.test('prisma.compteRenduBiologique.delete({ where: { id } })')).toBe(true);
+    expect(SUPPRIMER.test('tx.masquageCompteRendu.deleteMany({ where: par })')).toBe(true);
+    expect(MODIFIER_MASQUAGE.test('tx.masquageCompteRendu.updateMany({ where })')).toBe(true);
+    expect(MODIFIER_MASQUAGE.test('prisma.masquageCompteRendu.findFirst({')).toBe(false);
     expect(SUPPRIMER.test('prisma.importBiologique.findMany({')).toBe(false);
     expect(SQL_BRUT.test('DELETE FROM public.comptes_rendus_biologiques WHERE')).toBe(true);
     expect(SQL_BRUT.test('truncate table "lignes_biologiques_candidates"')).toBe(true);

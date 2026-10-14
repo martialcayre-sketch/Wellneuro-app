@@ -217,6 +217,11 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.importsBiologiques = (
       await tx.importBiologique.deleteMany({ where: par })
     ).count;
+    // Pages masquées avant l'envoi ([[D-284]] §5, lot j) : FK RESTRICT vers le
+    // compte rendu — elles partent AVANT lui.
+    supprimees.masquagesComptesRendus = (
+      await tx.masquageCompteRendu.deleteMany({ where: par })
+    ).count;
     supprimees.comptesRendusBiologiques = (
       await tx.compteRenduBiologique.deleteMany({ where: par })
     ).count;

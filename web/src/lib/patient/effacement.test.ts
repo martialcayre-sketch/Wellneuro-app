@@ -42,7 +42,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'packProposition', 'envoiBrouillon', 'portailConnexionGoogle',
     'correspondanceMedecin', 'correspondancePatient', 'documentPatientBiologie',
     'lectureImportBiologique', 'travailExtractionBiologique',
-    'ligneBiologiqueCandidate', 'importBiologique', 'compteRenduBiologique',
+    'ligneBiologiqueCandidate', 'importBiologique', 'masquageCompteRendu', 'compteRenduBiologique',
     'resultatBiologique',
     'rendezVous', 'journalAccesDossier',
     'agendaSommeilNuit', 'agendaAlimentaireJour',
@@ -225,6 +225,14 @@ describe('effacerDossier', () => {
     expect(rang('travailExtractionBiologique')).toBeGreaterThanOrEqual(0);
     expect(rang('travailExtractionBiologique')).toBeLessThan(rang('importBiologique'));
     expect(rang('travailExtractionBiologique')).toBeLessThan(rang('compteRenduBiologique'));
+  });
+
+  // Pages masquées avant l'envoi (D-284 §5) : FK RESTRICT vers le compte rendu.
+  it('supprime les pages masquées avant les comptes rendus', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('masquageCompteRendu')).toBeGreaterThanOrEqual(0);
+    expect(rang('masquageCompteRendu')).toBeLessThan(rang('compteRenduBiologique'));
   });
 
   // Revue Copilot de la PR #1385 : un écrivain qui verrouille le dossier en

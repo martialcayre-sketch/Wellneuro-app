@@ -72,12 +72,14 @@ export async function retirerCompteRendu(params: {
     if (travauxOuverts > 0) return { ok: false as const, reason: 'extraction_en_cours' as const };
 
     // L'ordre des FK RESTRICT : les travaux de la file (ils désignent le
-    // document et l'import courant), les lignes, les imports, le document.
+    // document et l'import courant), les lignes, les imports, les pages
+    // masquées ([[D-284]] §5), le document.
     await tx.travailExtractionBiologique.deleteMany({ where: { idCompteRendu, idPatient } });
     await tx.ligneBiologiqueCandidate.deleteMany({
       where: { idPatient, statut: { not: 'validee' }, import: { idCompteRendu } },
     });
     await tx.importBiologique.deleteMany({ where: { idCompteRendu, idPatient } });
+    await tx.masquageCompteRendu.deleteMany({ where: { idCompteRendu, idPatient } });
     await tx.compteRenduBiologique.delete({ where: { id: idCompteRendu } });
     return { ok: true as const };
   }, { timeout: 20_000 });
