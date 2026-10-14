@@ -3,6 +3,7 @@
 ## Branche et état Git
 
 - `ccr-6dd6bb64-2sku9o`, avancée rapide sur `origin/main` 6fc65160 (#1440), autorisée par le responsable ; aucun commit propre avant ce lot.
+- Conflit avec #1444 (D-291) résolu par merge de `origin/main` 474e9d67, sur arbitrage du responsable : ligne `.coderabbit.yaml` du §8 prise de D-291, les quatre lignes du lot à sa suite ; dernière décision passée à D-291.
 - Phase `travail` ; PR à ouvrir. Documentation seule : aucun code, aucune migration, aucun drapeau.
 
 ## Objectif

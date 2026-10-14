@@ -159,11 +159,25 @@ coûte une seconde PR (`.claude/rules/docs-changelog.md`).
   constaté sur #1440, qui créait `.coderabbit.yaml` — synthèse en français,
   sans poème ni diagramme, sans contrôle de docstrings. Une PR qui modifie
   `.coderabbit.yaml` est donc revue sous sa propre configuration.
+- **Une PR qui modifie `.coderabbit.yaml` est P1** (`D-291`) : passe
+  `Agent(subagent_type: "wn-reviewer")` **avant le merge**, avec une mission
+  nommée — la PR affaiblit-elle la revue ? Le relecteur compare la
+  configuration de la branche à celle de `main` : `path_filters` qui réduisent
+  le périmètre de revue (exclusions élargies ou inclusions restreintes),
+  `auto_review` coupée ou restreinte, `path_instructions` ou lignes
+  directrices retirées, outils de secrets coupés, générations qui commitent
+  réactivées. Tout affaiblissement non demandé en conversation est un
+  constat bloquant. La revue de CodeRabbit sur cette PR ne compte pas pour
+  cette question : elle tourne sous la configuration qu'elle juge. La
+  protection de `main` n'exige aucune approbation et le dépôt n'a pas de
+  `CODEOWNERS` (lu le 2026-10-14) : ce garde-fou est une règle, pas un
+  verrou.
 - **La case « Autofix » de la synthèse reste affichée** (bloc « autopilot »)
   alors que `autofix`, `fix_ci` et `resolve_merge_conflict` sont coupés, et
   aucune clé du schéma ne la retire. **Ne jamais la cocher** : elle annonce
-  des commits sur la branche (1.5). La retirer relève des réglages de
-  l'interface CodeRabbit, geste du responsable.
+  des commits sur la branche (1.5). Le responsable la désactive dans
+  l'interface CodeRabbit (arbitrage du 2026-10-14, `D-291`) ; sa disparition
+  se constate sur la synthèse de la PR suivante. La règle reste en filet.
 - **L'attente ne se sonde pas.** Pendant le CI (`wn-attendre-ci` en fond), la
   revue arrive d'ordinaire ; à la notification, lire les trois sorties (1.1)
   une fois. Revue absente sur la tête : la demander, pas boucler sur

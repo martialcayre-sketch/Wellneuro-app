@@ -3,8 +3,8 @@
 - **Documentation seule, aucun code** : la production ne change pas ; aucune
   migration, aucun drapeau, aucune règle clinique ni seuil ; aucun critère,
   rang ni décision du plan n'est modifié, l'état seul est constaté.
-- `docs/claude/PLAN_WELLNEURO.md` : l'état de `main` au 2026-10-14 (6fc65160,
-  #1440) est reporté par cellules d'état et lignes « Mise à jour (2026-10-14) »,
+- `docs/claude/PLAN_WELLNEURO.md` : l'état de `main` au 2026-10-14 (474e9d67,
+  #1444) est reporté par cellules d'état et lignes « Mise à jour (2026-10-14) »,
   chaque fait cité par sa PR ou sa décision. Porte 2 levée (D-287 à D-289,
   #1430) ; ci écrite (D-286, #1425) ; BP-07 clos et M-5 (1/2) posée dans le lot
   (#1438) ; fiche BP-09 validée (#1442) ; S-4 et R:Graphie livrés (#1424,
