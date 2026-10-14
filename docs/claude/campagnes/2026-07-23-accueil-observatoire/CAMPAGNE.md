@@ -40,6 +40,8 @@ J21, consultation prévue), le bandeau « Vues rapides », le modèle
 la messagerie patient (différée, HDS), les notifications et récurrences de
 rendez-vous.
 
+2026-10-14 : la messagerie patient est une collecte documentaire seule, sans conversation (arbitrage du 2026-10-11, plan unique §5 « Fermetures » et §7) ; le motif HDS ne vaut plus, l'hébergement HDS est acquis (D-121).
+
 ## Décisions actées (propriétaire, 2026-07-23)
 
 - L'inbox questionnaires **remplace** les cartes « Reçu » du fil (vue par

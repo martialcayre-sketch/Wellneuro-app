@@ -10142,3 +10142,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, commentaires lus, merge après déploiement constaté de aaf73324, déploiement constaté ; puis PR 6 (contexte et dettes), en autonomie (mandat du 2026-10-14).
 
 **Ouvert.** Le plan cite la file à son §1 (`:10`), §8 et §11 : adresses d'historique, à réécrire à sa prochaine version.
+
+## 2026-10-14 — Plan unique WellNeuro 6.0 : contexte, dettes TRUST et lignes datées (PR 6 du versement)
+
+**Fait.** Depuis un worktree sur `origin/main` 069db0d1 (PR 5 déployée) : `PROJET_CONTEXTE.md` (102 modèles au compte du jour, biologie branchée depuis le 2026-09-01), `DETTE_TRUST.md` (cinq dettes datées : échéances alignées sur le 2027-06-30, durées fixées, DPO clos, règle EI en v2), et des lignes datées sans effacement sur les textes périmés du plan §9 : dossier RGPD, registre des frontières, roadmap technique, drapeaux, constitution clinique (revue `DC-42`), campagnes rayon-biologie-cb, BIO-INGEST, 21 jours, accueil-observatoire, runbook C5, cadrage BIO-PARCOURS v3, fiches-conseils, porte biologique. Chaque ligne a été vérifiée sur le registre et le code avant d'être écrite (lecteurs et contre-lecteurs). T1 complet vert (ancres de doctrine et audit des campagnes compris), anti-secrets OK, relecture adverse jouée. Le versement des six PR de `D-285` §7 est terminé.
+
+**Écarté.** Réécrire ou effacer les textes périmés (lignes datées seulement) ; toucher aux frontmatters ; traiter les passages que le plan ne cite pas (CB:55, CB:120-122, CB:30, `AUDIT_DOCTRINE_CHAINE_T0.md:166` et :632, en-tête de `DEMANDE_DPA_ANTHROPIC.md`) : signalés, non corrigés.
+
+**Prochaine action.** CI, commentaires lus, merge après déploiement constaté de 069db0d1, déploiement constaté ; puis prochaine version du plan avec les reports des PR 2 à 6.
+
+**Ouvert.** Reports à la prochaine version du plan : chemins anciens cités (§1, §8, §11), file citée, pagination, PDF natif, coaching autonome, RAG SIIN plein, `AGA_*`, banc « élevé / bas », `D-045`, restes a et b sous R:ao, référence « D-129, #900 » de la clôture de CB-07 (paraît fausse), nom du laboratoire pilote dans la fiche BIO-INGEST (forme opaque).

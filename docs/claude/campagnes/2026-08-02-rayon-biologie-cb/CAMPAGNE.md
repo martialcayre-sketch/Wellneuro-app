@@ -33,6 +33,8 @@ tranché ici. Requalification fiche par fiche :
 | LOT-03 (CB-06) | **Recouvert** — courrier médecin ancré (D-073, PR #710) ; document patient (décision F) livré par D-122 §1 (PR #828/#848). |
 | LOT-04 (CB-07) | **Non livré, transféré** — seul contenu encore éventuellement dû ; `BiologyCatalogRef` se réexamine AVEC le producteur d'intentions `conditionnelle_biologie` (entrée « à cadrer » de FILE_ATTENTE). |
 
+2026-10-14 : CB-07 clos, absorbé par BP-04 (plan unique, fiche F16) ; la file d'attente est supprimée (D-285).
+
 La suite du rayon est cadrée le même jour : campagne
 `2026-09-04-biologie-exploitee/` (exploitation de l'existant, quatre lots
 courts) ; les chantiers à décision (mesuré→moteur, import laboratoire,
@@ -63,10 +65,12 @@ gate HDS n'est pas levé — l'étage 2 (résultats réels).
   (régime remboursé), soit un document remis au patient (régime non
   remboursé) — jamais les deux mêmes valeurs biologiques, jamais de résultat
   réel stocké avant l'étage 2.
+  2026-10-14 : aucune mention de remboursement sans liaison NABM signée (porte 10 du plan, non levée : 0 liaison signée ; D-122 §1, tout remboursement sort « non évalué »).
 - Le rayon biologie apparaît dans la bibliothèque et sur la fiche patient,
   avec les deux référentiels de valeurs (laboratoire / fonctionnel) toujours
   distincts.
 - `WN_CB_RESULTS_ENABLED` reste `false` jusqu'à l'attestation HDS.
+  2026-10-14 : contredit par D-121 (annexe HDS signée le 2026-08-30, G-TRUST-04 clos) ; drapeau posé avec l'étage 2 (D-122), à `true` en production (`docs/FEATURE_FLAGS.md`).
 
 ## Contraintes non négociables
 
@@ -112,6 +116,7 @@ gate HDS n'est pas levé — l'étage 2 (résultats réels).
 - Le gate HDS (G-TRUST-04) reste non levé ; l'échéance de la phase de test est
   bornée au 2026-10-21. CB-09 reste fermé tant que ce gate n'est pas explicitement
   levé par le responsable du traitement.
+  2026-10-14 : contredit par D-121 (G-TRUST-04 définitivement clos) ; borne du 2026-10-21 levée par D-265 §1 ; CB-09 ouvert et livré par D-122 (LOT-06, 2026-09-03).
 
 ## Dépendances
 
@@ -147,9 +152,9 @@ et ne sont pas des lots de cette campagne.
 | LOT-01 | CB-04 : Compilateur `tools/corpus/biologie/compile.mjs` | **recouvert (clôture 2026-09-04)** — transcription signée D-069 | LOT-00 + claims validés |
 | LOT-02 | CB-05 : Migration + machine à états `BiologyExplorationProposal`/`Item` | **caduc (clôture 2026-09-04)** — jamais construite, proposition recalculée | CB-01, LOT-00 |
 | LOT-03 | CB-06 : Régimes de diffusion (courrier médecin / document patient) | **recouvert (clôture 2026-09-04)** — D-073 puis D-122 §1 | LOT-02 |
-| LOT-04 | CB-07 : Contrat protocole V4 `BiologyCatalogRef` | **non livré, transféré (clôture 2026-09-04)** — FILE_ATTENTE, avec le producteur d'intentions | LOT-02 |
+| LOT-04 | CB-07 : Contrat protocole V4 `BiologyCatalogRef` | **non livré, transféré (clôture 2026-09-04)** — FILE_ATTENTE, avec le producteur d'intentions ; 2026-10-14 : CB-07 clos, absorbé par BP-04 (F16), file supprimée (D-285) | LOT-02 |
 | LOT-05 | CB-08 : UI : rayon bibliothèque, fiche analyte, encart patient, cartes du fil | **terminé (2026-09-01)** — rayon + fiches livrés dans la Bibliothèque ; encart patient et cartes du fil constatés déjà livrés hors campagne (`D-070`/`D-071`), dépendances LOT-02/LOT-03 caduques (CB-05 jamais construite, proposition recalculée — chaîne `D-068`→`D-073`). Détail : `lots/LOT-05-ui-rayon-biologie-cb08.md` | ~~LOT-02, LOT-03~~ caduques |
-| LOT-06 | CB-09 : Étage 2 : `BiologyResult`, saisie/import, estimé↔mesuré | **hors périmètre — gate dur HDS** | HDS obtenu |
+| LOT-06 | CB-09 : Étage 2 : `BiologyResult`, saisie/import, estimé↔mesuré | **hors périmètre — gate dur HDS** ; 2026-10-14 : contredit par D-121, étage 2 livré le 2026-09-03 (D-122, PR #838/#854) | HDS obtenu |
 
 ## Done de campagne
 
@@ -159,6 +164,7 @@ Coché à la clôture du 2026-09-04, sur preuves relues.
       LOT-06 (2026-09-03, PR #838/#854) ; LOT-00→LOT-04 requalifiés non
       requis à la clôture (table ci-dessus), le seul reste éventuel (CB-07)
       étant transféré en FILE_ATTENTE.
+      2026-10-14 : CB-07 clos, absorbé par BP-04 (F16) ; la file d'attente est supprimée (D-285).
 - [x] Les validations sont documentées — fiches LOT-05/LOT-06 (revues
       adverses, T1/T2, constats par conteneur des deux migrations).
 - [x] La documentation canonique est à jour — FEATURE_FLAGS.md §A/§D,

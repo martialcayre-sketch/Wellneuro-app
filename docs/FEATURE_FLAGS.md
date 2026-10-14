@@ -42,6 +42,8 @@ datée **par feature**.
 | `RAG_PGVECTOR_ENABLED` | `true` | RAG de production — exige aussi `RAG_INTERNAL_SECRET` + clés OpenAI | throw / fermé |
 | `WN_ENABLE_VALIDITE_PASSATIONS` | `1` | filtre de validité des passations (LOT-00 chaîne T0) : `INVALID`/`SUPERSEDED`/`HISTORICAL_ONLY` sortent du raisonnement, et la route d'invalidation praticien répond (sinon **503**) | filtre **inerte** — la colonne `statut_validite` existe et vaut `VALID` par défaut de migration sur **toutes** les lignes ; ce `VALID` n'est donc pas un jugement clinique ([[D-052]]) — état **antérieur** au 2026-08-19. **POSÉ (`1`) en Production le 2026-08-19** ([[D-077]], arbitrage praticien en session, redéploiement porteur) : la route d'invalidation s'ouvre, aucun calcul ne change (111 passations, toutes `VALID`). ⚠️ [[D-050]] et [[D-052]] disent encore « éteint » : elles décrivent la vérification du 2026-08-12 et n'ont pas été révisées. **RELU SUR SCALINGO LE 2026-09-07** (`env-get`) : la variable y est bien posée. |
 
+2026-10-14 : `WN_EI_INTERRUPTION` vaut `1` depuis le 2026-08-24 au plus tard ([[D-107]], décision 1) ; la capture tourne, l'interruption reste fermée tant que `SAF-EI-01` n'est pas signée, signature posée en fin de chantier ([[D-281]] §6).
+
 ## B. Chemins d'accès patient — `'true'`, défaut OFF
 
 ON en dev (données **fictives**). En prod, chaque activation est une décision

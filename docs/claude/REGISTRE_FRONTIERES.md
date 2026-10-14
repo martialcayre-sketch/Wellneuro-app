@@ -81,6 +81,7 @@
   certificat LNE n° 38436-2, six activités, valable jusqu'au 2028-09-11). Elle
   n'est pas exécutée pour autant, et l'écart ci-dessus court **inchangé
   jusqu'au 2026-10-21**.
+  2026-10-14 : écart clos, annexe HDS signée le 2026-08-30 et G-TRUST-04 définitivement clos ([[D-121]]) ; migration exécutée le 2026-08-22 ; borne du 2026-10-21 levée par [[D-265]] ; échéance des trous ouverts 2027-06-30 ([[D-283]] §9).
 - 1 tâche = 1 branche courte = 1 PR = 1 périmètre. Jamais de mélange
   design / clinique / IA / corpus / infra dans une même PR.
 - Aucune migration Prisma/SQL et aucune écriture Supabase sans demande

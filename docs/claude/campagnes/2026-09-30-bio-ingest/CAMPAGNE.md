@@ -76,8 +76,8 @@ geste par valeur) est déjà jugée trop coûteuse pour un bilan complet (A1).
 | LOT-01 | Saisie groupée praticien, route batch transactionnelle | terminé (2026-10-01) | non | LOT-00 |
 | LOT-02 | Staging d'import, extraction PDF par IA vision, écran de validation | terminé (2026-10-03) | **oui, confirmation obligatoire** | LOT-01, amendement RGPD/TRUST |
 | LOT-03 | Photo ou scan : même pipeline, seul l'extracteur change | terminé (2026-10-04, #1310, #1312) ; « Relancer la lecture » non livré, déplacé au LOT-09 | non | LOT-02 |
-| LOT-04 | Transmission depuis le portail patient | terminé (2026-10-07, #1350, #1352, #1355, #1357 ; `D-269`) ; 0 transmission au 2026-10-10 | **oui, confirmation obligatoire** | LOT-02, consentement RGPD à jour, LOT-07, BP-10 (BIO-PARCOURS, `D-266` §15) |
-| LOT-05 | Adaptateur laboratoire (pilote Barbier Metz) | transféré le 2026-10-10 vers une campagne propre (FILE_ATTENTE) | selon le format reçu | LOT-02, format réel reçu |
+| LOT-04 | Transmission depuis le portail patient | terminé (2026-10-07, #1350, #1352, #1355, #1357 ; `D-269`) ; 0 transmission au 2026-10-10 ; 2026-10-14 : périmé, voir le constat de clôture (`lots/LOT-12-cloture.md:119`, 3 transmissions patient le 2026-10-10) | **oui, confirmation obligatoire** | LOT-02, consentement RGPD à jour, LOT-07, BP-10 (BIO-PARCOURS, `D-266` §15) |
+| LOT-05 | Adaptateur laboratoire (pilote Barbier Metz) | transféré le 2026-10-10 vers une campagne propre (FILE_ATTENTE) ; 2026-10-14 : file supprimée (D-285), LOT-05 gelé sous la porte 29 du plan (réponse écrite du laboratoire pilote sur son format réel, F41) | selon le format reçu | LOT-02, format réel reçu |
 | LOT-06 | Catalogue étendu aux analyses d'un compte rendu courant | terminé (2026-10-04, D-261, D-263, D-264) | **oui, confirmation obligatoire** | LOT-02 |
 | LOT-07 | Faits du laboratoire : intervalle et marquage imprimés, transcrits avant la purge (ajouté par `D-266` §15) ; avancé avant LOT-04 | terminé (2026-10-06, #1326, #1328, #1332, #1333, #1334 ; D-267) | **oui, confirmation obligatoire** | LOT-02, BP-00 et BP-01 (BIO-PARCOURS) |
 | LOT-08 | Durcissement : borne totale de l'appel d'extraction (flux compris) et délai explicite de la transaction des lignes | terminé (2026-10-05) | non | LOT-02 |
@@ -92,6 +92,8 @@ sauvegardes est établie (12 mois au plus après la purge) et déclarée au
 patient par `donnees_confidentialite` v14, texte validé par le responsable.
 Les fiches LOT-02 et LOT-07 sont réalignées sur le code, et le constat
 d'usage est versé. Le LOT-05 reste transféré (FILE_ATTENTE).
+
+2026-10-14 : la file d'attente est supprimée (D-285) ; le LOT-05 est gelé sous la porte 29 du plan (F41).
 
 **LOT-11 terminé le 2026-10-10** (preuves de la transmission patient : E2E
 portail, accessibilité, banc du plafond ; réserve du LOT-04 levée). Il reste

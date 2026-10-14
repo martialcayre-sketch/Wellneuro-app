@@ -34,7 +34,7 @@ Production : `https://app.wellneuro.fr` (Scalingo `osc-fr1`, app
 - `web/src/lib/questions.ts` — catalogue des questionnaires (65, portés depuis `Questions.gs`) et moteur de scoring
 - `web/src/lib/auth.ts` — configuration NextAuth
 - `web/src/lib/prisma.ts` — client Prisma
-- `web/prisma/schema.prisma` — schéma de données (40 modèles au 2026-07-21 ; `grep -c '^model ' web/prisma/schema.prisma` pour un compte à jour plutôt qu'une énumération qui périme à chaque migration)
+- `web/prisma/schema.prisma` — schéma de données (40 modèles au 2026-07-21 ; `grep -c '^model ' web/prisma/schema.prisma` pour un compte à jour plutôt qu'une énumération qui périme à chaque migration) ; 2026-10-14 : 102 modèles au compte du jour, le grep fait foi (plan unique `docs/claude/PLAN_WELLNEURO.md`, D-285 §7)
 - `archive/gas-legacy/` — ancien code Google Apps Script (`Code.gs`, `Questions.gs`, `index.html`, `appsscript.json`), gelé, référence historique uniquement
 
 ## État de la migration
@@ -185,6 +185,8 @@ décision fait rougir le banc en CI — la dette se voit le jour où elle naît.
 État au 2026-08-05 : 19 sources, 6 dormantes, dont la **bibliothèque de
 biologie fonctionnelle** — 987 actes NABM en base depuis le 2026-07-26 et
 **aucun appelant hors de son propre répertoire**.
+
+2026-10-14 : constat du 2026-08-05 périmé. La bibliothèque de biologie est branchée depuis le 2026-09-01 (rayon CB-08) et appelée hors de son répertoire (tableau de bord, `api/praticien/biologie/*`, `api/portail/comptes-rendus`) ; seul le rayon CORPUS biologie reste `dormante` dans `docs/claude/corpus/consommation_decisions.json`. L'état courant se lit dans le plan unique (D-285 §7).
 
 ## Ce qui reste ouvert
 
