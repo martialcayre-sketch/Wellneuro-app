@@ -119,6 +119,8 @@ compléments (C4) ; contenu alimentaire (C5) ; toute migration Prisma sans
 confirmation distincte (si le protocole exige un modèle, lot dédié
 `bloqué_confirmation`).
 
+2026-10-14 : abandonné, aucun lot ne porte le statut `bloqué_confirmation` (plan unique, D-285).
+
 ## Definition of Done
 
 - [ ] Flux complet comprendre → décider → 3 actions → prévisualiser → valider

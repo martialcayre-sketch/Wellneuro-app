@@ -38,6 +38,7 @@ par une dérogation datée du 2026-07-21, bornée au **2026-10-21**.
 > D-037 (2026-08-09) la confirme. Les deux dates ci-dessus restent vraies comme
 > évènements ; la conséquence « n'instruire aucune migration HDS » ne l'est
 > plus. **La dérogation, elle, court inchangée jusqu'au 2026-10-21.**
+> 2026-10-14 : borne levée par [[D-265]] (reconduction sans terme, §1) ; G-TRUST-04 clos par [[D-121]] ; échéance des trous ouverts 2027-06-30 ([[D-265]] §4, [[D-283]] §9).
 
 ---
 
@@ -349,6 +350,7 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
 
     La DPA Anthropic est déjà demandée (2026-10-01) : aucun sous-traitant
     nouveau.
+    2026-10-14 : réponse reçue le 2026-10-02, DPA et CCT intégrés aux Conditions commerciales (rubrique 7) ; restent copie datée, date d'acceptation, localisation de l'inférence et rétention, échéance 2027-06-30 ([[D-283]] §9).
 
 **Information du patient, publiée par le même geste** : « L'intelligence
 artificielle dans Wellneuro » **v4** et « Vos données personnelles » **v11**
@@ -526,6 +528,8 @@ rubrique 5 de la table des dettes énonce déjà pour les tables non déclarées
 les deux tables sont DÉCRITES, champ par champ, et rapprochées pour que la
 question se pose UNE fois. Les traiter séparément aurait produit deux réponses
 possiblement divergentes sur une même nature d'objet.
+
+2026-10-14 : rubrique 5 soldée, les deux tables classées en catégorie particulière ([[D-283]] §3) ; l'échéance du 2026-10-21 est sans objet (borne levée par [[D-265]]).
 
 **Ce qui ne dépend pas de cette qualification, et qui est déjà tenu** : les deux
 tables entrent dans la transaction d'effacement IDP2, portent la RLS, et ne
@@ -808,6 +812,7 @@ Reçue par courriel (Jennifer, Scalingo), en réponse aux questions posées le
   restent **dus** ; ils conditionnent désormais le **décommissionnement** de
   Vercel/Supabase (seul geste irréversible) et constituent la sortie « par le
   haut » de la revue du 2026-10-21.
+  2026-10-14 : annexe HDS signée le 2026-08-30 ([[D-121]]) ; décommissionnement exécuté le 2026-09-01 ([[D-080]], [[D-120]]) ; revue du 2026-10-21 sans objet, borne levée par [[D-265]] ; reste dû l'archivage du document signé, échéance 2027-06-30 ([[D-265]] §4, [[D-283]] §9).
 - **Sous-traitant ultérieur.** OUTSCALE, opérateur d'infrastructure, France
   (région Paris), certifié HDS pour les six activités ; l'intégralité des
   données reste dans ses datacenters français.
@@ -994,6 +999,8 @@ document source, lui, a désormais une règle ([[D-258]], ci-dessous).
 Porteur : responsable, avec conseil qualifié. Échéance
 proposée : **2026-10-21**, date de revue de la dérogation.
 
+2026-10-14 : durées fixées par [[D-283]] §1-2 (ci-dessus) ; borne levée par [[D-265]] ; restes de la rubrique (texte patient signé, mise en œuvre) à échéance du 2027-06-30 ([[D-265]] §4).
+
 **Compte rendu biologique déposé : purgé ([[D-258]], arbitrages du responsable
 du 2026-10-02).** Le document est purgé dès que toutes les lignes de son
 extraction courante sont décidées (validées ou écartées), et **au plus tard 30
@@ -1166,6 +1173,8 @@ personnes réelles, **décision datée du 2026-07-21**, **bornée au 2026-10-21*
 (`CHECKLIST_ACTIVATION_G_TRUST_04.md`, relayée par
 `docs/claude/REGISTRE_FRONTIERES.md` §1).
 
+2026-10-14 : reconduite sans terme par [[D-265]] ; la borne du 2026-10-21 ne s'applique plus ; échéance des trous ouverts 2027-06-30 ([[D-265]] §4, [[D-283]] §9).
+
 Une migration vers **Scalingo** (certifié HDS) est décidée (D-006, 2026-07-28 ;
 confirmée par D-037, 2026-08-09) ~~et non exécutée~~ — **exécutée pour les
 données le 2026-08-22** (bloc « État au 2026-08-22 » ci-dessous) ; cutover DNS
@@ -1197,6 +1206,7 @@ caduc :**
   qu'avant la migration**. Le **décommissionnement** de Vercel/Supabase reste
   subordonné à la signature (seul geste irréversible). **La date de revue est
   inchangée : 2026-10-21.**
+  2026-10-14 : borne levée par [[D-265]] ; échéance des trous ouverts 2027-06-30 ([[D-283]] §9).
 
 **État au 2026-08-22 — la bascule des données a eu lieu.** Le chargement des
 données réelles vers Scalingo (app `wellneuro`, région `osc-fr1`,
@@ -1212,6 +1222,8 @@ Elle se ferme par la signature de l'annexe HDS (pendante — demandée le
 la revue du 2026-10-21. ~~Le **cutover DNS n'est pas fait** — le service aux
 personnes reste rendu par Vercel/Supabase — et le **décommissionnement reste
 interdit** jusqu'à la signature.~~
+
+2026-10-14 : fenêtre fermée le 2026-08-30 ([[D-121]], ci-dessous) ; revue du 2026-10-21 sans objet, borne levée par [[D-265]] ; échéance des trous ouverts 2027-06-30 ([[D-283]] §9).
 
 **Cutover fait le 2026-08-22 au matin.** La bascule DNS
 (`app.wellneuro.fr` → `wellneuro.osc-fr1.scalingo.io`, TTL 300 s) est

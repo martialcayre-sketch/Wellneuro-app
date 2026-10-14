@@ -481,12 +481,15 @@ Le premier parcours est abouti quand, dans l'étage outil, le praticien peut par
 3. **Instrument de fatigue.** Énergie des check-ins ou instrument sourcé (candidat au Claude Doc) ? *Recommandé : instrument sourcé, présenté comme repère (D-034).*
 4. **Vue patient.** Options, bénéfices et risques sans chiffres d'abord (NG197 1.4 face aux gardes de vocabulaire), décision séparée ensuite ? *Recommandé : oui.*
 5. **Évaluateur indépendant de l'étage assistant.** Qui, quand, sur quels critères ? *Recommandé : extérieur à l'équipe, avant l'ouverture de la première fonction de l'étage assistant.*
+   2026-10-14 : questions 2 à 5 gelées au plan unique (§6 « Gelés », déclencheur : ouverture du lot BP qui les consomme ; la question 5 au plus tard avant la première fonction de l'étage assistant).
 6. **Constantes produit** (BP-00) — *tranchée par D-266 §14 : nommées, chiffrées par le lot consommateur* : plafond de questions ouvertes, fiches validées par séance, seuil d'usage réel avant ouverture, effectif minimal pour masquer un agrégat, cadence de revue des sources.
 7. **Rang.** *Tranchée par D-266 §15 : campagne parallèle, LOT-07 avant LOT-04.* Une campagne BP ; BIO-INGEST LOT-03 continue, LOT-07 (faits du laboratoire, nouveau) avancé avant LOT-04 ; Curation signée et C4 consommées, pas rouvertes. *Recommandé : oui.*
 
 **Question ajoutée par la révision 3.1** (elle conditionne BP-26, pas BP-00) : le sort des fonctions déjà servies qui proposent d'après le dossier (`indicationsBiologieV1`, orientation) — exemption, régularisation ou réduction. À trancher fonction par fonction dans la note BP-26.
 
 ### 6.6 Prochaine action
+
+2026-10-14 : le §6.6 est remplacé par le plan unique (D-285) ; la borne du 2026-10-21 est levée par D-265 §4, la file d'attente est supprimée, et le LOT-05 de BIO-INGEST est gelé sous la porte 29.
 
 1. *Au versement : fait (D-265, #1305).* **Premier lot, hors campagne, avant le 2026-10-21** : la décision qui pérennise les données réelles en production et le portail G4, fait poser base légale et AIPD par le responsable (trame à compléter) et maintient la voie d'exception — une PR de documentation, sans code fonctionnel.
 2. Épreuve documentaire des cas Jennifer Martin et Michel Dogné contre cette v3.1.

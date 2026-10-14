@@ -1143,6 +1143,7 @@ banc qui tourne dans la suite du CI, un statut basculé :
   ne l'est pas. `DC-42` attend une revue au **2026-08-30** ; `DC-43` n'a pas de
   **sujet** — les 95 interventions portent `neCouvrePas` à `null` sur les 95 —
   et a reçu un **porteur**, la curation des exclusions rouverte ([[D-107]]).
+  2026-10-14 : la revue du 2026-08-30 ([[D-107]]) est échue sans signature ; `SAF-EI-01` est amendée par [[D-281]] et se signe en fin de chantier (§6) ; d'ici là, la règle reste non armée.
 - **`DC-58`** : instruite, sans contre-exemple au dépôt, et **sans méthode
   fondée**. Reste proposition **avec sa mesure**.
 - **Les quatre non armées** (`DC-05`, `DC-08`, `DC-52`, `DC-53`) : leur

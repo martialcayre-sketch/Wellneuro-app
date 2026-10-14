@@ -11,6 +11,8 @@ imports (section 3) : les migrations passent par le workflow `release-db`
 `VERCEL_ENV` demanderait d'abord un refactor. La ligne « `MIGRATE_DATABASE_URL`
 présente dans Vercel Production (migration au build) » ci-dessous est **caduque**.
 
+**Mise à jour (2026-10-14)** : Vercel est décommissionné (D-080, D-120), la production est sur Scalingo. L'activation est faite : `WN_C5_ENABLED` est à `true` en production (`docs/FEATURE_FLAGS.md`). Les mentions de Vercel Production et du drapeau à `false` ci-dessous sont historiques ; un retour arrière passerait par les variables d'environnement Scalingo.
+
 ## Prérequis (à confirmer avant activation)
 
 - [ ] PR LOT-07 mergée dans `main`, CI verte (Vercel, verify, devcontainer-smoke).

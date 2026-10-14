@@ -15,6 +15,7 @@
 >
 > Mis à jour le 2026-09-07. Ce document décrit l'état constaté au moment de la
 > rédaction — en cas de doute, le code fait foi, pas ce texte.
+> 2026-10-14 : lignes datées ajoutées par la PR 6 du versement du plan unique (D-285 §7) ; le reste du texte date du 2026-09-07.
 
 ## 1. Vue d'ensemble
 
@@ -82,12 +83,14 @@ page, lui, a été retiré le 2026-08-08.
 | `api/praticien/*` | Le gros du back-office (~40 sous-dossiers) : `orientation`, `packs`, `protocoles`, `regles`, `bibliotheque`, `corpus`, `copilote`, `cockpit`, `synthese`, `trajectoire(s)`, `complements`, `boussole`, `fil`, `documents`, `correspondance-medecin`, `metrics`… |
 | `api/internal/*` | Jobs internes non exposés praticien : `rag/{ingest,search,health,claims/ingest}`, `supplements/{ingest,referentiel}` |
 
+2026-10-14 : routes absentes du tableau : `api/dev/validation-ergo` ; `api/internal/fiches-assiette` ; sous `api/portail/` : agenda-alimentaire, assignations, bilan, ce-qui-compte, comprehension, comptes-rendus, consentement, deconnexion, dossier, fiche, fiches-assiette, lectures, lettre-adressage, lien, protocole ; `api/praticien` compte 52 sous-dossiers. Le disque fait foi (D-285 §7).
+
 ## 4. Modèle de données
 
 ### 4.1 Domaines Prisma
 
 `web/prisma/schema.prisma` fait foi ; ne pas figer de compte en dur — vérifier
-avec `grep -c '^model ' web/prisma/schema.prisma` (66 au 2026-08-03). Domaines
+avec `grep -c '^model ' web/prisma/schema.prisma` (66 au 2026-08-03 ; 2026-10-14 : 102 au compte du jour, D-285 §7). Domaines
 principaux :
 
 | Domaine | Modèles clés |
@@ -134,6 +137,8 @@ et `lib/rag/claims/store.ts`. Détail complet : `docs/RAG_PGVECTOR_PRODUCTION.md
 | Portail patient (`/portail/[token]`) | Token révocable + cookie signé HMAC (`lib/patient-session.ts`), indépendant de NextAuth |
 | Legacy (`/patient/[idAssignation]`) | **Retiré le 2026-08-08** : plus de page, seule subsiste une redirection 307 vers `/portail/connexion`. `lib/patient-access.ts` reste utilisé par les routes `api/patient/*` |
 
+2026-10-14 : la redirection est toujours en place (`web/src/middleware.ts`, matcher `/patient/:path*`) et n'a pas d'échéance de retrait ; elle est inscrite en dette au plan unique (§8), à trancher au constat du premier S-1, fiche H06 (D-285 §7).
+
 ## 7. Pipeline RAG et corpus clinique
 
 Flux résumé :
@@ -148,6 +153,8 @@ NotebookLM (rédaction/validation) → statut MATERIALISE_RAG_MD
   → logique métier claims (tirage, revue praticien, recherche) exposée via
     api/praticien/corpus/claims/*
 ```
+
+2026-10-14 : l'étape Apps Script était transitoire (D-004 : elle s'éteint à l'ouverture de l'Atelier corpus, `dashboard/corpus`) ; le flux vivant part de `tools/corpus/ingest/ingest.mjs`, qui POSTe vers `/api/internal/rag/ingest` (D-285 §7).
 
 Renvois différenciés — ne pas confondre les deux documents :
 
@@ -185,6 +192,8 @@ Secrets uniquement en variables d'environnement (jamais en dur), garde-fous
 Le **dossier RGPD de l'expérimentation** — responsable, finalité, catégories de
 données, sous-traitants, transferts, conservation, droits, et le tableau daté de
 ce qui manque — est `docs/DOSSIER_RGPD.md`. Il ne lève pas le gate G-TRUST-04.
+
+2026-10-14 : G-TRUST-04 est définitivement clos depuis le 2026-08-31 (D-121, qui lève la réserve unique de D-089).
 
 ## 10. Feature flags et quality gate
 

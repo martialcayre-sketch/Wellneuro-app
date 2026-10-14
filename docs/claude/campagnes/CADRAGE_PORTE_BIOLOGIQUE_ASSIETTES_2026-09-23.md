@@ -125,7 +125,7 @@ servies aussi.
 | LOT-01 | **Migration seule** : `BIO_INDEX_OMEGA3` (`%`) et `BIO_RATIO_AA_EPA` (`ratio`), sur le patron des ratios existants | `release-db` approuvée, constat par conteneur |
 | LOT-02 | Module signé `portesBiologiquesAssiettesV1` : lignes, verrou, banc de fraîcheur des claims épinglés (TS **et** contrat SQL), surface de relecture | **Ta signature**, claim par claim |
 | LOT-03 | Lecture du dernier résultat par analyte (append-only, tête de chaîne), route et section de carte ; lexique interdit ; E2E | Relecture à l'écran |
-| LOT-04 | Bilan d'usage au conteneur, par identifiant (`D-125`) — puis, seulement là, la décision sur la porte automatique | Toi |
+| LOT-04 | Bilan d'usage au conteneur, par identifiant (`D-125`) — puis, seulement là, la décision sur la porte automatique | Toi ; 2026-10-14 : absorbé par BP-27, évaluateur par marqueur (plan unique, F27) ; ce lot ne s'ouvre plus ici |
 
 ## 6. Sélection du responsable, rendue le 2026-09-23
 
