@@ -1460,6 +1460,79 @@ const USAGE_IA_V7: VersionDocumentTrust = {
   hash: '62a8345c507bff04e7141cf2753614b86819e8b0c8f55fa23cf0b09043739698',
 };
 
+/*
+ * v8 et v15 du 2026-10-14 — L'IDENTITÉ MASQUÉE AVANT L'ENVOI ([[D-284]] §5,
+ * lot (j)). Textes validés par le responsable le 2026-10-14. Le compte rendu
+ * ne part plus entier : le praticien masque l'identité à l'écran, page par
+ * page, et seules les pages masquées partent chez Anthropic
+ * (`bio-extraction-v5`). Une phrase change dans chacun des deux documents, et
+ * rien d'autre.
+ *
+ * DÉCLARER CE QUI A LIEU : publiées APRÈS le déploiement constaté de l'écran
+ * de masquage (#1428) ; avant, elles auraient promis un masquage absent.
+ *
+ * ACCUSÉS : la v8 se recueille sur l'écran de dépôt, comme les v6 et v7 ; la
+ * v15 en demande un, pour le motif de la v10 (sans lui, celui de la v14
+ * encore dû s'effacerait).
+ */
+const USAGE_IA_V8: VersionDocumentTrust = {
+  key: 'usage_ia',
+  type: 'ai_transparency',
+  version: 'v8',
+  titre: 'L’intelligence artificielle dans Wellneuro',
+  resume:
+    'Où l’IA intervient, ce qu’elle fait, ce qu’elle ne fait jamais, et comment contester un contenu.',
+  sections: USAGE_IA_V7.sections.map(section =>
+    section.titre === 'Où l’IA intervient'
+      ? {
+          ...section,
+          paragraphes: section.paragraphes.map(paragraphe =>
+            paragraphe.startsWith('Le relevé des résultats')
+              ? paragraphe.replace(
+                  'Pour cela, le compte rendu est transmis en entier, y compris votre nom et les autres mentions qui vous identifient.',
+                  'Pour cela, votre praticien masque d’abord à l’écran, sur chaque page, votre nom et les autres mentions qui vous identifient : seules les pages ainsi masquées sont transmises, jamais le compte rendu d’origine. Ce masquage est fait à la main, par votre praticien.',
+                )
+              : paragraphe,
+          ),
+        }
+      : section,
+  ),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Le compte rendu de vos analyses biologiques n’est plus transmis en entier : votre praticien masque d’abord à l’écran votre nom et les autres mentions qui vous identifient, et seules les pages ainsi masquées sont transmises pour en relever les valeurs. Le reste ne change pas.',
+  publieLe: '2026-10-14',
+  requiresAcknowledgement: false,
+  hash: '284c3ab2b74146425a93f64fcfb04dd8eebf626e42e70432d5a12ae3bc5a26ff',
+};
+
+const DONNEES_CONFIDENTIALITE_V15: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v15',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V14.sections.map(section =>
+    section.titre === 'Quelles données sont recueillies ?'
+      ? {
+          ...section,
+          paragraphes: section.paragraphes.map(paragraphe =>
+            paragraphe.replace(
+              'Pour en relever les valeurs, le compte rendu est transmis en entier, y compris votre nom et les autres mentions qui vous identifient, à Anthropic, prestataire nommé plus bas.',
+              'Pour en relever les valeurs, des images de ses pages sont transmises à Anthropic, prestataire nommé plus bas, après que votre praticien y a masqué à l’écran votre nom et les autres mentions qui vous identifient ; le compte rendu d’origine n’est jamais transmis.',
+            ),
+          ),
+        }
+      : section,
+  ),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Le compte rendu de vos analyses biologiques n’est plus transmis en entier : votre praticien masque d’abord à l’écran votre nom et les autres mentions qui vous identifient, et seules les pages ainsi masquées sont transmises pour en relever les valeurs. Le reste ne change pas.',
+  publieLe: '2026-10-14',
+  requiresAcknowledgement: true,
+  hash: '91a00f8235d24cfbbf5674320e9957ab8498ed05412bb23756f5c3b864cee23c',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1478,6 +1551,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V12,
   DONNEES_CONFIDENTIALITE_V13,
   DONNEES_CONFIDENTIALITE_V14,
+  DONNEES_CONFIDENTIALITE_V15,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,
@@ -1485,6 +1559,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   USAGE_IA_V5,
   USAGE_IA_V6,
   USAGE_IA_V7,
+  USAGE_IA_V8,
   DROITS_PATIENT_V1,
   CONSENTEMENT_SUIVI_V2,
   CONSENTEMENT_SUIVI_V3,

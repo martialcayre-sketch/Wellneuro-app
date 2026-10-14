@@ -213,8 +213,14 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
   aucune, déclaration tracée) ; seules ces pages, en JPEG réencodées sans
   métadonnées, partent chez Anthropic. Sans masquage, aucune lecture ne part.
   Le masquage est manuel : il vaut ce que vaut le geste du praticien.
-  Les valeurs du document, elles, partent toujours toutes. Les textes patient
-  qui disent encore « le document entier » se corrigent au lot 3, à signer.
+  Les valeurs du document, elles, partent toujours toutes. **Information du
+  patient (lot 3, textes validés par le responsable le 2026-10-14)** :
+  `usage_ia` v8 et `donnees_confidentialite` v15, publiées après le
+  déploiement constaté de l'écran de masquage. Dans chacune, la phrase « le
+  compte rendu est transmis en entier, y compris votre nom… » devient celle
+  du masquage à l'écran : seules les pages masquées partent, jamais le
+  compte rendu d'origine. L'accusé suit le régime des versions précédentes :
+  il est recueilli au dépôt pour la v8, et exigé pour la v15.
 - **Une photo ou un scan (LOT-03)** part entier lui aussi, mais **sans ses
   métadonnées** : l'image est réencodée au dépôt, avant d'être consignée, et ses
   données EXIF — dont la position GPS d'une photo de téléphone — ne sont ni
@@ -944,7 +950,9 @@ ouverte.
   masquées partent (§2 ter). Chaque page porte une zone ou une déclaration
   « sans identité » : aucune ne part sans avoir été jugée. Le flux n'est plus
   nominatif quand le masquage est complet ; une mention oubliée (code-barres,
-  numéro de dossier) partirait. La TIA reste à rédiger.
+  numéro de dossier) partirait. L'exposition nominative datée est **close au
+  déploiement du lot 2** (#1428), et le patient en est informé par les v8 et
+  v15 (§2 ter). La TIA reste à rédiger.
 
 - **Google** — connexion du praticien seul.
 
