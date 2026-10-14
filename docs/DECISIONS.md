@@ -7,9 +7,9 @@
 ### D-286 — Qualification réglementaire : « l'aboutissement du produit » désigne le premier de cinq événements d'usage ; `D-276` §2 est amendée (lettre ci)
 
 - Date : 2026-10-14
-- Statut : **brouillon soumis au responsable** (texte rédigé dans le lot, de
-  sa main : il passe « accepté » à sa lecture, avant le merge de la PR qui le
-  porte). Faits d'usage acquis aux séances des 2026-10-11 et 2026-10-12 ;
+- Statut : accepté. Texte rédigé dans le lot, soumis au responsable en
+  brouillon et accepté par lui le 2026-10-14, sur question à options, avant
+  le merge. Faits d'usage acquis aux séances des 2026-10-11 et 2026-10-12 ;
   formulation des cinq événements proposée par la révision de BP-26 du
   2026-10-12 (hors dépôt), sur le constat que « aboutissement » n'avait ni
   date ni critère, et soumise au responsable par cette décision.
