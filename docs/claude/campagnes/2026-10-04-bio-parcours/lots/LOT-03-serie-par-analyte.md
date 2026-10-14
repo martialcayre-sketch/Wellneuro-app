@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "BP-03 — Série par analyte, jour n, trois dates"
-statut: "en_cours (2026-10-14) — fiche validée ; lecture des 14 écarts d'unité avant le code"
+statut: "en_cours (2026-10-14) — fiche validée ; 14 écarts d'unité lus, toutes des graphies ; code à écrire"
 dépend_de: "LOT-01, LOT-09"
 ---
 
@@ -69,6 +69,15 @@ verdict.
    tranche chacun : graphie ou vraie divergence. Quel qu'en soit le verdict,
    la série compare les unités à l'identique : une table d'équivalence de
    graphies serait une décision à part (F60, deux unités, rang 5).
+   **Lecture faite le 2026-10-14** (`one-off-5504`, lecture seule, agrégats
+   sans dossier) : 14 paires (analyte, unité imprimée, unité enregistrée),
+   22 lignes d'import validées. L'unité enregistrée est celle du catalogue
+   dans tous les cas : U/L ↔ UI/L (ALAT, ASAT, GGT), G/L ↔ 10^9/L (leucocytes,
+   cinq sous-populations et plaquettes), T/L ↔ 10^12/L (hématies), µg/L ↔ ng/mL
+   (ferritine), fl ↔ fL (VPM), écriture du DFG CKD-EPI. Aucun analyte ne
+   porte deux unités en base (60 résultats, 2 dossiers). **Verdict du
+   responsable : toutes des graphies**, aucune valeur enregistrée dans une
+   unité fausse. Le code peut partir.
 2. **Jour n depuis la diffusion en vigueur à la date du prélèvement**, avec
    sa date affichée : un prélèvement antérieur à un pivot se date par la
    diffusion qui ouvrait alors le calendrier. `calendrierDuCycle` ne garde
@@ -162,7 +171,8 @@ verdict.
 
 ## Critères de done
 
-Les 14 écarts d'unité sont lus et tranchés par le responsable avant le code.
+Les 14 écarts d'unité sont lus et tranchés par le responsable avant le code
+(fait le 2026-10-14 : toutes des graphies).
 La série tourne sur les trois fixtures en banc, sans aucun delta. L'intervalle
 de chaque laboratoire apparaît verbatim, sans conversion (F15). Un fil annulé
 est absent de la série. T2 est vert. Après le déploiement, la série est
