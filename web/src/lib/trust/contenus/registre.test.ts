@@ -685,7 +685,7 @@ describe('registre des documents TRUST', () => {
     const i = apres.findIndex(p => p.startsWith('Anthropic — '));
     expect(i).toBeGreaterThanOrEqual(0);
     expect(apres[i + 1]).toBe(
-      'OpenAI — aide à la recherche de votre praticien dans sa bibliothèque de références scientifiques : ce service reçoit le texte de la recherche que votre praticien saisit et le texte des références à indexer ; votre dossier, vos réponses et vos documents ne lui sont jamais transmis',
+      'OpenAI — aide à la recherche de votre praticien dans sa bibliothèque de références scientifiques : ce service reçoit le texte de la recherche que votre praticien saisit et le texte des références à indexer ; l’application ne lui envoie ni votre dossier, ni vos réponses, ni vos documents : seul ce que votre praticien écrit dans sa recherche lui parvient',
     );
     expect([...apres.slice(0, i + 1), ...apres.slice(i + 2)]).toEqual(avant);
     expect(v18.sections.filter(s => s.titre !== titre)).toEqual(v17.sections.filter(s => s.titre !== titre));

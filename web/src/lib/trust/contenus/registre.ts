@@ -1630,7 +1630,7 @@ const DONNEES_CONFIDENTIALITE_V18: VersionDocumentTrust = {
             point.startsWith('Anthropic — ')
               ? [
                   point,
-                  'OpenAI — aide à la recherche de votre praticien dans sa bibliothèque de références scientifiques : ce service reçoit le texte de la recherche que votre praticien saisit et le texte des références à indexer ; votre dossier, vos réponses et vos documents ne lui sont jamais transmis',
+                  'OpenAI — aide à la recherche de votre praticien dans sa bibliothèque de références scientifiques : ce service reçoit le texte de la recherche que votre praticien saisit et le texte des références à indexer ; l’application ne lui envoie ni votre dossier, ni vos réponses, ni vos documents : seul ce que votre praticien écrit dans sa recherche lui parvient',
                 ]
               : [point],
           ),
@@ -1642,7 +1642,7 @@ const DONNEES_CONFIDENTIALITE_V18: VersionDocumentTrust = {
     'Un prestataire technique est ajouté à la liste : OpenAI, qui aide votre praticien à chercher dans sa bibliothèque de références scientifiques ; il ne reçoit que le texte de ses recherches, jamais votre dossier. Cette version reprend aussi les changements précédents : votre date de naissance peut vous être demandée à votre connexion, votre numéro de sécurité sociale n’est plus recueilli, et le compte rendu de vos analyses n’est plus transmis en entier.',
   publieLe: '2026-10-15',
   requiresAcknowledgement: true,
-  hash: 'ac3b9a4adfd570d9ae94ea4528c19f5c3c4c287aacabe0a1913597ad8c1213e8',
+  hash: '41f60179bdf710480deb91c9a609ec4dfa843a049b36280cc9f90ed42747961d',
 };
 
 /** Toutes les versions, les plus récentes en premier par clé. */

@@ -10,8 +10,9 @@
 - Statut : accepté. Option A de D4 prise par le responsable le 2026-10-10
   (déclarer les flux OpenAI, flux inchangé) ; ordre arbitré le 2026-10-14
   (D4 d'abord, en PR propre, puis K-05a) ; texte patient rédigé par
-  l'assistant et validé tel quel par le responsable le 2026-10-15, sur
-  question à options (pays non nommé, comme pour Anthropic).
+  l'assistant et validé par le responsable le 2026-10-15, sur question à
+  options (pays non nommé, comme pour Anthropic), puis amendé par lui le même
+  jour sur la revue de la PR (§2).
 - Domaine : registre RGPD (rubrique 6), document patient
   `donnees_confidentialite` ; fiche F46 du plan (porte 5, avec K-05a).
 - **Ne touche pas** : aucun flux, aucun drapeau, aucune migration, aucune
@@ -26,8 +27,11 @@ patient ne le nommait pas.
 **§2 — La déclaration.** OpenAI entre au tableau de la rubrique 6 et dans
 « Vos données personnelles et leur confidentialité » v18, juste après
 Anthropic : il reçoit le texte de la recherche que le praticien saisit et le
-texte des références à indexer ; le dossier, les réponses et les documents ne
-lui sont jamais transmis. Le banc qui tient les deux listes ensemble
+texte des références à indexer ; l'application ne lui envoie ni le dossier,
+ni les réponses, ni les documents : seul ce que le praticien écrit dans sa
+recherche lui parvient. La recherche est un champ libre : une promesse
+« jamais transmis » ne se tiendrait pas (revue CodeRabbit de la PR, texte
+amendé par le responsable le 2026-10-15). Le banc qui tient les deux listes ensemble
 (`registre.dossier.test.ts`) vérifie qu'elles nomment les mêmes tiers.
 
 **§3 — L'accusé.** La v18 exige un accusé, pour le motif de la v17 : seule la

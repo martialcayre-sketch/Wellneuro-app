@@ -630,7 +630,7 @@ les pages du portail — **v5 depuis le 2026-09-07** (`D-141`).
 |---|---|
 | Scalingo | hébergement de l'application et de la base de données (HDS, France) |
 | Anthropic | assistance d'IA pour la préparation des synthèses, **pour la proposition de formulation de la priorité d'un objectif** (`D-167`), **pour la proposition d'un premier jet de « Ce que j'ai compris de vous »** (`D-168`) **et pour le relevé des valeurs des comptes rendus d'analyses biologiques** (`D-256` A4, déclaré le 2026-10-01 avant activation — §2 ter) |
-| OpenAI | aide à la recherche du praticien dans sa bibliothèque de références scientifiques : reçoit le texte de la recherche saisie et celui des références à indexer, jamais le dossier, les réponses ni les documents (D4, [[D-299]], déclaré le 2026-10-15) |
+| OpenAI | aide à la recherche du praticien dans sa bibliothèque de références scientifiques : reçoit le texte de la recherche saisie et celui des références à indexer ; l'application ne lui envoie ni le dossier, ni les réponses, ni les documents, seul ce que le praticien écrit dans sa recherche lui parvient (D4, [[D-299]], déclaré le 2026-10-15) |
 | Google Workspace | acheminement des e-mails Wellneuro, **y compris les documents adressés au patient** (bilan, comptes rendus) |
 | Google | connexion du praticien, **et du patient s'il la choisit** (seule l'adresse e-mail est transmise) |
 | Sentry | détection des erreurs techniques, région européenne — jamais les réponses, les documents ni l'identité |
