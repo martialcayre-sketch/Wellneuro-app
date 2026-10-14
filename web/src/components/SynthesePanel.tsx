@@ -123,7 +123,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   // cet effet : choisir un AUTRE patient relançait donc l'effet, la garde ne
   // renvoyait plus tôt puisque la sélection différait de l'URL, et la sélection
   // revenait de force au dossier de l'URL. Verrou déterministe à 100 %, sur les
-  // trois portes d'entrée qui posent `?idPatient=` — et les actions cliniques de
+  // portes d'entrée qui posent `?idPatient=` (fiche, cartes du Fil) — et les actions cliniques de
   // cet écran prennent leur identifiant dans la sélection que le verrou
   // désynchronisait.
   //
