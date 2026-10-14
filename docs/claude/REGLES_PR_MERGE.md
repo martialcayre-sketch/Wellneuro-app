@@ -140,7 +140,7 @@ Poser le sujet explicitement, ce qui ne demande aucun `force`-push
 (contrairement à un `commit --amend`) :
 
 ```bash
-gh pr merge <N> --squash --delete-branch --subject "<sujet exact>"
+gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu> --subject "<sujet exact>"
 ```
 
 Une PR gelée ne peut pas être mergée pour autant : `verify` est un **check
