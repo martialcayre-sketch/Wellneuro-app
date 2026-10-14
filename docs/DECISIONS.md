@@ -4,6 +4,173 @@
 
 ## Décisions actives
 
+### D-289 — Un essai de restauration réussi précède toute migration qui suit celle de BP-09 ; sa procédure (lettre g)
+
+- Date : 2026-10-14
+- Statut : accepté. Texte rédigé dans le lot S-3 à partir des arbitrages
+  acquis, soumis au responsable en brouillon (#1430) et accepté par lui le
+  2026-10-14, tel quel, avant le merge. Arbitrages : séance du 2026-10-11 (essai de
+  restauration accordé) ; portée acquise au plan unique (fiche F04, §5
+  « Ce qui ne s'accélère jamais ») : l'essai précède toute migration qui suit
+  BP-09, et BP-09 ne l'attend pas.
+- Domaine : exploitation de la base de production, release-db. Lettre g du
+  plan unique (`docs/claude/PLAN_WELLNEURO.md`, fiche F04, rang 0, geste du
+  responsable), portée par la PR S-3 avec a ([[D-287]]) et b ([[D-288]]) ;
+  lève avec elles la porte 2. L'essai lui-même est G-7 (rang 1) ; constaté,
+  il lève la porte 8.
+- **Ne touche pas** : aucune migration, aucune écriture en production, aucun
+  code, aucun drapeau. Cette décision ne joue pas l'essai : elle en fixe la
+  portée et la procédure.
+
+**§1 — Portée.** Un essai de restauration réussi et constaté précède la
+release-db de toute migration qui suit celle de BP-09. BP-09 ne l'attend pas ;
+l'essai peut se jouer dès le rang 1. L'ordre des release-db du plan en découle :
+BP-09 au rang 3, puis l'essai, puis le rang 4. Par le fait, des migrations ont
+mergé avant l'essai sous cette lecture (`D-281` lot 2, #1408 ; `D-282` lot 2,
+#1412 ; `D-284` §5 lot j, #1426) : cela ne se reprend pas, rend l'essai plus
+pressant et ne change pas son rang.
+
+**§2 — Procédure.**
+
+1. **Source** : une sauvegarde de la base de production prise par
+   l'hébergeur (plan Business : quotidienne 7 jours, hebdomadaire 8 semaines,
+   mensuelle 12 mois ; `docs/DOSSIER_RGPD.md`, constat du 2026-10-10).
+2. **Cible** : une base distincte et temporaire, dans le périmètre HDS de
+   l'hébergeur. Jamais la base de production : aucune restauration sur place.
+   Jamais le poste de travail ni un service hors HDS : la sauvegarde porte des
+   données de santé.
+3. **Contrôles**, en lecture, depuis un conteneur, en agrégats : la
+   restauration se termine sans erreur ; la dernière migration appliquée de la
+   copie est celle de la production à l'heure de la sauvegarde ; chaque table
+   du schéma est présente ; le compte de lignes par table est rapproché de
+   celui de la production, aux écritures postérieures à la sauvegarde près ;
+   la durée de la restauration est relevée.
+4. **Fin** : la base temporaire est supprimée le jour même, et sa suppression
+   constatée.
+5. **Consignation** : date, sauvegarde employée, durée, verdict, au handoff
+   du lot G-7, en agrégats, sans identité ni mesure attachée à un dossier.
+6. **Échec** : la porte 8 reste fermée, aucune release-db d'une migration qui
+   suit BP-09 ne part, et le défaut s'instruit avant un nouvel essai.
+
+Les commandes exactes s'écrivent au `docs/RUNBOOK.md` dans le lot G-7 et se
+relisent avant d'être jouées. L'essai crée une ressource chez l'hébergeur et
+manipule une copie de données de santé : le responsable l'approuve avant qu'il
+parte, et consigne la levée de la porte 8.
+
+**§3 — Ce qui ne change pas.** [[D-087]] (l'écriture du schéma de production
+passe par un one-off approuvé) ; [[D-248]] (un merge à la fois, déploiement
+constaté) ; la release-db reste humaine, une à une ; merger une migration ne
+l'applique pas.
+
+### D-288 — Une activation patient à la fois, un constat entre chacune ; le second compte praticien reste fermé un an (lettre b)
+
+- Date : 2026-10-14
+- Statut : accepté. Texte rédigé dans le lot S-3 à partir des arbitrages
+  acquis, soumis au responsable en brouillon (#1430) et accepté par lui le
+  2026-10-14, tel quel, avant le merge. Arbitrages : séance du 2026-10-11 (« une
+  ouverture à la fois » maintenue pour l'activation ; second praticien : non,
+  pas avant un an, chantier fermé) ; séances du 2026-10-13, matin (formulaire
+  de sécurité de [[D-281]] hors file) et soir (au-delà de la place 11, la
+  conduite passe devant) ; séance du 2026-10-14 (la nouvelle saisie du sommeil,
+  cc, compte comme une place).
+- Domaine : activations patient, comptes. Lettre b du plan unique (fiche H05,
+  rang 0, geste du responsable), portée par la PR S-3 avec a ([[D-287]]) et
+  g ([[D-289]]) ; lève avec elles la porte 2, et pose la règle de la porte 18.
+  Précédée par [[D-286]] (lettre ci, #1425), parce que le second compte est
+  l'événement 2 de son §2.
+- **Ne touche pas** : aucune activation n'est faite ni avancée, aucun
+  drapeau, aucun texte servi au patient, aucun compte ouvert, aucun code.
+
+**§1 — Une activation à la fois.** La file C ordonne toute surface patient
+neuve. Une seule s'ouvre à la fois ; la suivante attend le constat de la
+précédente (porte 18). Avant toute surface neuve : texte patient accepté,
+puis registre, puis drapeau. Le rang d'une fiche de la file C est un rang au
+plus tôt, pas une place.
+
+**§2 — Le constat.** Un premier vrai dossier servi, sans anomalie, constaté
+par son identifiant depuis un conteneur, jamais une fixture ([[D-125]]) ;
+consigné par le responsable, en agrégats, sans mesure attachée à
+l'identifiant. Pour une ouverture qui ne vise que certains dossiers : la
+lecture consignée du texte en ligne par le responsable.
+
+**§3 — Les places.** Les places 1 à 5 ne se permutent jamais, et rien ne
+s'insère avant les places 2 à 5. Les places 6 à 11 suivent l'ordre proposé au
+plan, sauf si l'une est prête avant une autre ; la porte 18 reste la seule
+contrainte entre elles. Au-delà de la place 11, la conduite passe devant :
+l'encart « quand ralentir ou demander avis » (bd, H71) prend la place suivante
+dès qu'il est prêt ; les autres ouvertures s'ouvrent ensuite dans l'ordre où
+elles sont prêtes, une à la fois, le constat de la précédente avant. La
+nouvelle saisie du sommeil (cc) compte comme une place, après l'encart.
+
+**§4 — Hors file.** Le formulaire de sécurité de [[D-281]] (étape 3) s'ouvre
+hors de la file C, seul ouvert à ce moment, constaté avant l'ouverture
+suivante ; les places 1 à 5 restent intactes. Une nouvelle version d'un texte
+déjà accusé n'est pas une surface neuve : elle se sert par son accusé, hors
+file (précédent de la v7 du texte de l'IA). Les mineurs suivent [[D-283]] §5,
+amendée par [[D-284]] : aucune surface patient neuve pour un dossier mineur ou
+d'âge inconnu avant le consentement du titulaire de l'autorité parentale.
+
+**§5 — Le second compte praticien reste fermé un an.** Aucun compte d'un
+second praticien ne s'ouvre avant le 2027-10-11, un an après la séance qui l'a
+fermé. Passé ce terme, rien ne s'ouvre de soi-même : la levée exige une
+D-xxx, déclenche la qualification ([[D-286]] §2, événement 2), et un test
+d'intrusion humain la précède ([[D-283]] §7). Les comptes internes du cabinet
+ne sont pas des seconds comptes praticien.
+
+**§6 — Ce qui ne change pas.** Aucune activation n'est faite à la date de
+cette décision (plan §3). Les textes patient de chaque place restent à
+accepter un par un. Les autres fermetures du plan (API, envoi direct, flux
+laboratoire) restent entières.
+
+### D-287 — Décisions d'ordre : deux files de code en parallèle, sans collision ; l'ordre se lit au plan unique (lettre a)
+
+- Date : 2026-10-14
+- Statut : accepté. Texte rédigé dans le lot S-3 à partir des arbitrages
+  acquis, soumis au responsable en brouillon (#1430) et accepté par lui le
+  2026-10-14, tel quel, avant le merge. Arbitrages : séance du 2026-10-11 (files
+  cosmétique et biologie en parallèle) ; arbitrage du 2026-10-12 (l'ordre
+  conduit, le calendrier suit) ; mandat du 2026-10-13 ([[D-285]]).
+- Domaine : gouvernance du développement. Lettre a du plan unique (fiche F01,
+  rang 0, geste du responsable), portée par la PR S-3 avec b ([[D-288]]) et
+  g ([[D-289]]) ; lève avec elles la porte 2.
+- **Ne touche pas** : aucun code, aucune migration, aucun drapeau, aucune
+  règle clinique, aucun texte servi au patient ; aucune ligne de l'état du
+  cycle ni des fiches de campagne.
+
+**§1 — Deux files de code, en parallèle.** File A : cosmétique et noyau,
+c'est-à-dire tout le code hors biologie. File B : biologie structurelle
+(BIO-PARCOURS, BIO-INGEST, panels, Track C de BioFlow). Elles avancent en
+parallèle. La file C n'est pas une file de code : elle ordonne les
+activations patient ([[D-288]]). « Track C » n'est pas « file C ».
+
+**§2 — Sans collision.** Les deux files ne touchent jamais la même frontière
+en même temps : au plus une PR structurelle par campagne ; jamais deux PR
+simultanées sur les mêmes modèles Prisma ou la même frontière biologique ;
+une seule migration en vol ([[D-087]]) ; un merge à la fois, le déploiement
+constaté avant le merge suivant ([[D-248]]) ; jamais d'auto-merge sur une PR
+de lot ; un numéro D-xxx se réserve dans `main`. Le nombre de fronts ouverts
+est borné par l'attention du responsable, relecteur unique, non par le code.
+
+**§3 — L'ordre se lit au plan.** Les rangs et les portes du plan unique
+([[D-285]]) font foi ; une date n'est qu'un repère. Un rang ne s'ouvre que
+ses préalables levés ; dans un rang, la hiérarchie départage (h1 sécurité et
+vérité de l'affichage, h2 consultation, h3 patient, h4 cabinet, h5 confort).
+Quand le code avance plus vite que prévu, on prend le rang suivant dont les
+portes sont levées.
+
+**§4 — Le pilotage renvoie au plan.** L'état du cycle (`.wn/state.json`), les
+fiches de campagne et les feuilles de route de piste disent le travail en
+cours et renvoient au plan pour l'ordre ([[D-285]] §1). Constat à l'ouverture
+de S-3 : les textes que la fiche F01 désigne (la fiche de campagne de
+BIO-PARCOURS, l'état du cycle, `docs/architecture/bioflow/BIOFLOW_ROADMAP.md`)
+ont été réalignés par la PR 3 du versement (#1420) ; BIO-PARCOURS, en pause,
+reprend par BP-07, désigné prochain lot dans l'état du cycle. La file B
+s'ouvre par BP-07 dès cette lettre mergée.
+
+**§5 — Ce qui ne change pas.** [[D-285]] (forme du plan unique) ; les règles
+de BioFlow du plan §5 ; les fermetures du plan §5 ; les preuves propres à
+chaque lot.
+
 ### D-286 — Qualification réglementaire : « l'aboutissement du produit » désigne le premier de cinq événements d'usage ; `D-276` §2 est amendée (lettre ci)
 
 - Date : 2026-10-14

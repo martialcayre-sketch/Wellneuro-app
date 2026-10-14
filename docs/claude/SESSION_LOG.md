@@ -10198,3 +10198,13 @@ qualité inchangés (item de l'indice).
 **Écarté.** Afficher le document « à faire » comme un blocage de plus (le blocage reste la cause réelle, le protocole) ; toucher à la fiche.
 
 **Prochaine action.** CI, commentaires lus, merge après #1427 (H03) et déploiement constaté ; puis S-3 (a, b, g), de la main du responsable.
+
+## 2026-10-14 — S-3 : décisions d'ordre a, b, g (D-287, D-288, D-289)
+
+**Fait.** #1429 (geste « sans protocole ») mergée en squash (a6b4153c) après CI code 0 et le seul commentaire Copilot corrigé. PR S-3 : trois décisions rédigées sur les arbitrages acquis, acceptées telles quelles par le responsable : D-287 (a, deux files sans collision, l'ordre au plan), D-288 (b, une activation à la fois, second compte fermé jusqu'au 2027-10-11), D-289 (g, essai de restauration avant toute migration après BP-09, procédure en base HDS temporaire). Fragment. T1.
+
+**Écarté.** Retoucher l'état du cycle et les fiches de campagne : déjà réalignés par #1420.
+
+**Prochaine action.** Merge et déploiement constaté ; ensuite BP-07 (file B).
+
+**Ouvert.** Rien : le terme du second compte (2027-10-11) et la procédure de g sont acceptés avec les textes.
