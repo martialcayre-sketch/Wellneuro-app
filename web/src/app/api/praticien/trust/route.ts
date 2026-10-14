@@ -47,7 +47,13 @@ export type SignalementPraticien = {
   debutPriseLe?: string | null;
   debutSymptomesLe?: string | null;
   validation?: ValidationEffetIndesirable;
+  /** Demande de droit seulement : texte de la réponse envoyée (D-295 §3). */
+  reponse?: string | null;
 };
+
+/** Refus du passage à « Traité » d'une demande de droit sans réponse écrite (D-295 §3). */
+const ERREUR_TRAITE_SANS_REPONSE =
+  'Une réponse écrite est requise avant de passer une demande de droit à « Traité ».';
 
 export type TrustPraticienResponse =
   | {
@@ -166,6 +172,7 @@ export async function GET(): Promise<NextResponse<TrustPraticienResponse>> {
         statutTraitement: d.statutTraitement,
         soumisLe: d.soumisLe.toISOString(),
         examineLe: d.examineLe?.toISOString() ?? null,
+        reponse: d.reponse ?? null,
       })),
     ].sort((a, b) => b.soumisLe.localeCompare(a.soumisLe));
 
@@ -203,6 +210,9 @@ export async function PATCH(req: Request): Promise<NextResponse<TrustPatchRespon
   }
 
   const { kind, id } = payload;
+  if (payload.reponse !== undefined && typeof payload.reponse !== 'string') {
+    return NextResponse.json({ ok: false, error: 'Paramètres invalides.' }, { status: 400 });
+  }
   const statutTraitement = payload.statutTraitement as StatutTraitementSignalement;
   if (!id || !STATUTS.includes(statutTraitement)) {
     return NextResponse.json({ ok: false, error: 'Paramètres invalides.' }, { status: 400 });
@@ -230,9 +240,24 @@ export async function PATCH(req: Request): Promise<NextResponse<TrustPatchRespon
         where: { id, ...duPraticien }, data: donnees,
       }));
     } else if (kind === 'demande_droit') {
+      const reponse = (payload.reponse ?? '').trim().slice(0, 2000);
+      // « Traité » exige une réponse écrite (D-295 §3) : celle de la requête,
+      // ou celle déjà enregistrée lors d'un passage précédent.
+      if (statutTraitement === 'traite' && !reponse) {
+        const existante = await prisma.trustRightsRequest.findFirst({
+          where: { id, ...duPraticien },
+          select: { reponse: true },
+        });
+        if (!existante) {
+          return NextResponse.json({ ok: false, error: 'Signalement introuvable.' }, { status: 404 });
+        }
+        if (!existante.reponse?.trim()) {
+          return NextResponse.json({ ok: false, error: ERREUR_TRAITE_SANS_REPONSE }, { status: 400 });
+        }
+      }
       ({ count: touchees } = await prisma.trustRightsRequest.updateMany({
         where: { id, ...duPraticien },
-        data: { ...donnees, reponse: (payload.reponse ?? '').trim().slice(0, 2000) || undefined },
+        data: { ...donnees, reponse: reponse || undefined },
       }));
     } else {
       return NextResponse.json({ ok: false, error: 'Type inconnu.' }, { status: 400 });

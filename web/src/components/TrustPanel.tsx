@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { SignalementPraticien, TrustPraticienResponse } from '@/app/api/praticien/trust/route';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { ValidationEffetIndesirable } from '@/components/ValidationEffetIndesirable';
+import { Button } from '@/components/ui/Button';
 
 const LIBELLE_STATUT: Record<string, string> = {
   recu: 'Reçu',
@@ -31,6 +32,10 @@ const formatDate = (iso: string) =>
 export function TrustPanel() {
   const [data, setData] = useState<TrustPraticienResponse | null>(null);
   const [enCours, setEnCours] = useState<string | null>(null);
+  // Demandes de droit : brouillon de la réponse envoyée, et refus du serveur
+  // (« Traité » exige une réponse écrite, D-295 §3), par signalement.
+  const [brouillons, setBrouillons] = useState<Record<string, string>>({});
+  const [erreurs, setErreurs] = useState<Record<string, string>>({});
 
   const charger = useCallback(async () => {
     try {
@@ -45,15 +50,39 @@ export function TrustPanel() {
     void charger();
   }, [charger]);
 
+  const reponseDe = (s: SignalementPraticien) => brouillons[s.id] ?? s.reponse ?? '';
+
   const changerStatut = async (signalement: SignalementPraticien, statutTraitement: string) => {
     setEnCours(signalement.id);
+    setErreurs(e => ({ ...e, [signalement.id]: '' }));
     try {
-      await fetch('/api/praticien/trust', {
+      const res = await fetch('/api/praticien/trust', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: signalement.kind, id: signalement.id, statutTraitement }),
+        body: JSON.stringify({
+          kind: signalement.kind,
+          id: signalement.id,
+          statutTraitement,
+          // Seul un brouillon saisi ici part : renvoyer le texte du dernier
+          // chargement écraserait une réponse enregistrée entre-temps ailleurs.
+          ...(signalement.kind === 'demande_droit' && brouillons[signalement.id] !== undefined
+            ? { reponse: brouillons[signalement.id] }
+            : {}),
+        }),
+      });
+      const corps = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      if (!res.ok || !corps?.ok) {
+        setErreurs(e => ({ ...e, [signalement.id]: corps?.error ?? 'Erreur technique.' }));
+        return;
+      }
+      setBrouillons(b => {
+        const reste = { ...b };
+        delete reste[signalement.id];
+        return reste;
       });
       await charger();
+    } catch {
+      setErreurs(e => ({ ...e, [signalement.id]: 'Erreur réseau. Réessayez.' }));
     } finally {
       setEnCours(null);
     }
@@ -126,6 +155,37 @@ export function TrustPanel() {
               ))}
             </select>
           </div>
+          {s.kind === 'demande_droit' && (
+            <div className="mt-3 flex flex-col gap-2">
+              <label className="text-xs text-muted-foreground" htmlFor={`reponse-${s.id}`}>
+                Réponse envoyée au patient (requise pour « Traité »)
+              </label>
+              <textarea
+                id={`reponse-${s.id}`}
+                value={reponseDe(s)}
+                onChange={e => setBrouillons(b => ({ ...b, [s.id]: e.target.value }))}
+                rows={3}
+                maxLength={2000}
+                disabled={enCours === s.id}
+                placeholder="Recopiez ici la réponse envoyée par e-mail."
+                className="bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              />
+              <div>
+                <Button
+                  variant="outline"
+                  disabled={enCours === s.id}
+                  onClick={() => void changerStatut(s, s.statutTraitement)}
+                >
+                  Enregistrer la réponse
+                </Button>
+              </div>
+            </div>
+          )}
+          {erreurs[s.id] && (
+            <p role="alert" className="mt-2 text-sm text-status-danger">
+              {erreurs[s.id]}
+            </p>
+          )}
         </article>
       ))}
     </div>
