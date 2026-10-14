@@ -193,7 +193,7 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
           </span>
           {!collapsed && (
             <span className="min-w-0">
-              <span className="block truncate font-display text-lg font-bold text-rail-foreground">WellNeuro</span>
+              <span className="block truncate font-display text-lg font-bold text-rail-foreground">Wellneuro</span>
               <span className="block truncate text-2xs text-rail-muted-foreground">Horizon 5.0</span>
             </span>
           )}
