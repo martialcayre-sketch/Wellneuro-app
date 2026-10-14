@@ -1101,7 +1101,8 @@ trou de la rubrique 3.
 les cas prévus (RGPD art. 12.3). Identité : une demande faite depuis le portail
 est réputée identifiée par la session ; une demande par e-mail est renvoyée au
 portail ; aucune pièce d'identité n'est collectée. Circuit : le responsable
-reçoit, trace et répond. Reste à écrire la procédure, sans autre arbitrage.
+reçoit, trace et répond. La procédure, à écrire sans autre arbitrage, l'est
+ci-dessous (2026-10-14).
 
 **Procédure (écrite le 2026-10-14, G-8 ; [[D-283]] §6, §10 f).**
 
@@ -1136,7 +1137,8 @@ reçoit, trace et répond. Reste à écrire la procédure, sans autre arbitrage.
    le portail ne sert pas encore la réponse. Le statut passe à `traite` une
    fois la réponse envoyée, avec son texte (`reponse`) ; `examine_le` date
    l'examen, et la preuve de l'envoi est le courriel envoyé, gardé dans la
-   boîte du responsable. Puis `clos` quand plus rien n'est attendu. Aucune
+   boîte du responsable ; la durée de conservation de ces courriels n'est pas
+   fixée (plan unique, §8). Puis `clos` quand plus rien n'est attendu. Aucune
    demande n'est supprimée, sauf par l'effacement du dossier. Le code
    n'empêche pas aujourd'hui de passer à `traite` sans réponse (plan unique,
    §8).
