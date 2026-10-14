@@ -305,9 +305,10 @@ Playwright la pose** — `webServer.env` dans `web/playwright.config.ts` arme
 réel de production plutôt que de le simuler. Le risque de désalignement entre
 scopes Vercel (Production, Preview, Development) et `.env.local` de poste reste
 entier, lui, et rien côté CI ne le couvre.
-**2026-10-14** : Vercel est décommissionné ([[D-120]]) ; les scopes à vérifier
-sont la variable de l'application Scalingo (`env-get`) et les `.env.local` de
-poste.
+**2026-10-14** : la consigne « trois scopes Vercel » ci-dessus est périmée et
+remplacée par celle-ci (Vercel décommissionné, [[D-120]]) : avant de considérer
+la route comme fermée, vérifier la variable de l'application Scalingo
+(`env-get`) et les `.env.local` de poste.
 
 Débloquer ces deux-là = **valider le contenu clinique** (décision clinique,
 documentée au `CHANGELOG`), pas flipper un flag.
