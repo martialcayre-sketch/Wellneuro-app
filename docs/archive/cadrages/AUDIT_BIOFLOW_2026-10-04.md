@@ -4,7 +4,7 @@
 > chemin : `docs/architecture/bioflow/AUDIT_BIOFLOW_2026-10-04.md`. Le plan `docs/claude/PLAN_WELLNEURO.md` le remplace ; ce
 > document est conservé tel quel pour l'historique, seuls ses liens relatifs
 > ont été réécrits vers sa nouvelle place. Photographie figée, non citée par le registre ; les règles de parallélisme
-> vivent dans `docs/architecture/bioflow/BIOFLOW_ROADMAP.md`.
+> vivent dans `docs/architecture/bioflow/BIOFLOW_ROADMAP.md`. **2026-10-14** : seule exception au figement, le nom du laboratoire pilote est remplacé par « laboratoire pilote » (arbitrage du responsable, plan D/13).
 
 > **Snapshot historique du 2026-10-04 : ne pas l'utiliser comme état courant
 > sans vérifier `main`.** Ce document est une photographie datée, versée
@@ -545,7 +545,7 @@ Exemples de sources représentatives :
 
 - Biogroup ;
 - Synlab ;
-- Barbier ;
+- laboratoire pilote ;
 - autres laboratoires ;
 - PDF natifs ;
 - scans ;
