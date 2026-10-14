@@ -1,10 +1,10 @@
 ---
 id: "2026-10-04-bio-parcours"
 titre: "BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout"
-statut: "en_cours (ouverte le 2026-10-04 ; LOT-00, LOT-01, LOT-02, LOT-10, LOT-23, LOT-25 et LOT-26 terminés ; lots de sécurité issus de BP-26 livrés : 10A, 11A, 5A, 8B, D-281 lots 1 et 2 ; reprise le 2026-10-14 par LOT-07 (BP-07), rang 1 du plan docs/claude/PLAN_WELLNEURO.md)"
+statut: "en_pause (ouverte le 2026-10-04 ; LOT-00, LOT-01, LOT-02, LOT-10, LOT-23, LOT-25 et LOT-26 terminés ; lots de sécurité issus de BP-26 livrés : 10A, 11A, 5A, 8B, D-281 lots 1 et 2 ; LOT-07 (BP-07) terminé le 2026-10-14 ; suite au plan docs/claude/PLAN_WELLNEURO.md)"
 créée_le: "2026-10-04"
 mise_à_jour: "2026-10-14"
-lot_courant: "LOT-07"
+lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -88,15 +88,16 @@ programme, après deux contre-revues Codex et une contre-revue d'architecture.
 
 Les fiches portent l'identifiant `LOT-nn` qu'exige l'audit ; les documents
 disent `BP-nn` (`D-266` §15). BP-06 est absorbé par BP-05 : `LOT-06` n'est pas
-attribué. **Campagne en cours, lot courant
-LOT-07 (BP-07), ouvert le 2026-10-14.** BP-26 est terminé le 2026-10-10 (`D-276`) : qualification différée
+attribué. **Campagne en pause ; LOT-07 (BP-07), ouvert et
+terminé le 2026-10-14.** BP-26 est terminé le 2026-10-10 (`D-276`) : qualification différée
 à l'aboutissement du produit, aucune fonction retirée ni réduite, porte de
 `D-266` §2 amendée. Les lots de sécurité relevés par BP-26 sont livrés (10A,
 11A, 5A, 8B, `D-281` lots 1 et 2 ; lignes datées de la table ci-dessous),
 ainsi que la priorité posée par le praticien (5A) et les seuils sourcés de
-l'agenda du sommeil (8B). La campagne reprend par BP-07, rang 1 du plan
-unique (`docs/claude/PLAN_WELLNEURO.md` §2, fiche F02) ; elle est passée
-`en_cours` dans la PR qui écrit la fiche `lots/LOT-07` (2026-10-14). L'ordre des lots est
+l'agenda du sommeil (8B). La campagne a repris par BP-07, rang 1 du plan
+unique (`docs/claude/PLAN_WELLNEURO.md` §2, fiche F02) ; passée
+`en_cours` dans la PR qui écrit la fiche `lots/LOT-07`, elle repasse
+`en_pause` à sa clôture (2026-10-14), jusqu'au lot suivant du plan. L'ordre des lots est
 celui du plan, la campagne dit le travail (`D-285` §1). Les fiches ne sont
 écrites que pour la phase 0 ; celles des autres lots s'écrivent quand ils
 arrivent.
@@ -123,7 +124,7 @@ nouveaux, décisions acceptées.
 | — | — | `D-281` lots 1 et 2, sans fiche : SAF-EI-01 amendée, migration ; le lot 3 (portail) est au plan, rang 1 | terminé (2026-10-13 ; #1406, #1408) | **oui** (constatée le 2026-10-13) | BP-26 |
 | **Phase 1** | | **Fondations** | | | |
 | BP-09 | LOT-09 | Annulation d'un résultat, ajout seul | à_faire | **oui** | BP-00 |
-| BP-07 | LOT-07 | Dossier de preuve remis à Curation signée | en_cours (dossier remis, brouillons signés le 2026-10-14 ; relectures et positions d'expert restantes) | non | BP-00 |
+| BP-07 | LOT-07 | Dossier de preuve remis à Curation signée | terminé (2026-10-14) | non | BP-00 |
 | BP-12a | LOT-12 | Fiches d'usage (structure signée, texte en base) | à_faire | **oui** | BP-07 |
 | BP-12b | LOT-28 | Positions d'expert signées ; arbitrage de conflit persisté | à_faire | **oui** | BP-12a |
 | BP-13 | LOT-13 | Données physiologiques, traitements et compléments en cours | à_faire | **oui** | BP-00 |

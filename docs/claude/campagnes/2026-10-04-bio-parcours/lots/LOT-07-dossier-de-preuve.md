@@ -1,7 +1,7 @@
 ---
 id: "LOT-07"
 titre: "BP-07 — Dossier de preuve remis à Curation signée"
-statut: "en_cours (ouvert le 2026-10-14 ; dossier remis, signatures du responsable attendues au rang 2)"
+statut: "terminé"
 dépend_de: "LOT-00"
 ---
 
@@ -72,7 +72,7 @@ LOT-00 (BP-00). Lettre a mergée (`D-287`, porte 2).
 - [x] Brouillons retenus déposés « en attente » (envoi approuvé le 2026-10-14).
 - [x] Brouillons signés dans l'atelier du corpus (2026-10-14, constaté).
 - [x] Sources externes WN-SRC-0508 à 0510 : notices au registre, extraits ciblés ingérés (lot `LOT_016_2026-10-14`) sur approbation de l'envoi (2026-10-14, constaté).
-- [ ] Les 17 claims « à relire » et WN-CL-0031-025 tranchés.
+- [x] Les 17 lignes « à relire » et WN-CL-0031-025 tranchées (2026-10-14).
 - [x] Positions d'expert P1 à P8 rédigées et signées (versionnées en BP-12b) — v0.2 signée le 2026-10-14.
 
 ## Tests
@@ -165,3 +165,19 @@ responsable, jamais ici.
   entre le même jour (passage WN-CH-0511-001, lot `LOT_017_2026-10-14`,
   constaté) ; WN-CL-0359-031 est rejeté par le responsable et un claim fidèle
   au texte, WN-CL-0511-001, est rédigé.
+- **Lignes « à relire » et claim sans verdict** (2026-10-14) : des 17 lignes,
+  15 claims sont tranchés par le responsable ; WN-CL-0154-051 et une ligne
+  sans claim sont réglés par la v0.2 signée des positions. Il en rejette
+  deux dans l'atelier (WN-CL-0061-008 et WN-CL-0359-031) et en garde trois
+  dans le parcours (WN-CL-0003-007, WN-CL-0061-018 et WN-CL-0241-008). Il en
+  garde dix hors parcours, sans aucun geste en base, de même que
+  WN-CL-0031-025. Le claim fidèle WN-CL-0511-001 est déposé « en attente »
+  puis signé ; il est constaté `VALIDE`. WN-CL-0061-011, qui n'était pas
+  parmi ces lignes, est rejeté à part. Une confusion entre deux claims
+  voisins dans l'atelier a été relevée puis levée : les deux rejets de la
+  série 0061 sont confirmés par le responsable et constatés en base.
+- **Clos le 2026-10-14.** Les signatures du responsable sont posées, et
+  aucun texte clinique n'est entré au dépôt. Restent pour la suite : le
+  versionnement des positions (BP-12b), la règle C4 et l'affichage de la
+  précaution à côté des doses (décision de premier usage prescriptif,
+  BP-17).
