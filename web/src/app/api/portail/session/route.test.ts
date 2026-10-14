@@ -68,6 +68,26 @@ describe('POST /api/portail/session', () => {
     expect(prisma.patient.findUnique).toHaveBeenCalledWith({ where: { idPatient: patient.idPatient } });
   });
 
+  it('★ dit au portail le statut d’âge du dossier (D-284 §3 et §4)', async () => {
+    const quinzeAns = new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    for (const [dateNaissance, attendu] of [
+      [undefined, 'date_manquante'],
+      ['1985-02-31', 'date_manquante'],
+      [quinzeAns, 'mineur'],
+      ['1985-03-12', 'majeur'],
+    ] as const) {
+      prisma.patient.findUnique.mockResolvedValueOnce({ ...patient, dateNaissance });
+      const corps = (await (await POST(request(cookieValide()))).json()) as { statutAge?: string };
+      expect(corps.statutAge, String(dateNaissance)).toBe(attendu);
+    }
+  });
+
+  it('dit au portail si le dossier recueille encore : un dossier clos ne se voit rien demander', async () => {
+    prisma.patient.findUnique.mockResolvedValueOnce({ ...patient, suiviClotureLe: new Date('2026-10-01T00:00:00Z') });
+    const corps = (await (await POST(request(cookieValide()))).json()) as { dossierOuvert?: boolean };
+    expect(corps.dossierOuvert).toBe(false);
+  });
+
   it('sans cookie : 401, aucune lecture en base', async () => {
     const response = await POST(request());
     expect(response.status).toBe(401);

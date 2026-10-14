@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { refusSaisieSante, statutAge } from '@/lib/patient/gardeAge';
 import { prisma } from '@/lib/prisma';
 import { readPatientSession } from '@/lib/patient-session';
 import {
@@ -92,6 +93,12 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
     const patient = await resolvePortailPatientFromSession(session);
     if (!patient) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Accès non reconnu ou révoqué.' }, { status: 403 });
+    }
+    // D-284 §3 : l'anamnèse et le pack de base sont des questionnaires — en
+    // pause tant que le patient n'est pas majeur. Refus AVANT toute écriture.
+    const refusAge = refusSaisieSante(statutAge(patient.dateNaissance, Date.now()));
+    if (refusAge) {
+      return NextResponse.json({ ok: false, ...refusAge }, { status: 409 });
     }
     const consultation = await consultationCourante(patient.idPatient);
     if (!consultation) {

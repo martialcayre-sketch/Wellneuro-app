@@ -10271,3 +10271,12 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merge après le déploiement de #1436 constaté ; puis BP-12b (positions versionnées) et BP-17 (règle C4, précaution affichée à côté des doses).
 
 **Ouvert.** WN-SRC-0241, 0062 et 0358 en quarantaine au registre ; 0508 à 0511 non relues. Promotion proposée : une recherche par identifiant dans l'atelier (confusion 0061-011/0061-008).
+## 2026-10-14 — D-284 lot (h) : date de naissance, pause des questionnaires et de la biologie
+
+**Fait.** Lot (g) déployé et constaté (v16, champ absent, 0 NIR). Lot (h) : garde d'âge unique, saisie patient sans écrasement, gardes serveur (questionnaires, anamnèse, agendas, dépôt biologique), étape date au portail, mineur en pause, v17 avec accusé ; textes validés. Revue wn-reviewer GO, deux P2 corrigés.
+
+**Écarté.** Garder la réponse à une proposition de réévaluation (aucune assignation) ; demander la date à un dossier clos.
+
+**Prochaine action.** PR, merge, constat sur un dossier de test ; puis lot (i).
+
+**Ouvert.** Origine de la date non tracée ; biologie côté praticien ouverte.

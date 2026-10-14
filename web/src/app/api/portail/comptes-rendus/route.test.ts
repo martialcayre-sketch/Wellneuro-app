@@ -32,6 +32,8 @@ const patient = {
   suiviClotureLe: null as Date | null,
   accessTokenRevoked: false,
   praticienEmail: 'praticien@wellneuro.fr',
+  // Majeure : la garde d'âge (D-284 §3) laisse passer.
+  dateNaissance: '1979-07-28' as string | null,
 };
 
 function cookie(avecSession: boolean): Record<string, string> {
@@ -134,6 +136,26 @@ describe('POST /api/portail/comptes-rendus — l’ordre des gardes (D-269 §5)'
     expect(lecture).not.toHaveBeenCalled();
   });
 
+  it('★ date de naissance manquante : 409, biologie en pause, corps non lu (D-284 §3)', async () => {
+    prisma.patient.findUnique.mockResolvedValueOnce({ ...patient, dateNaissance: null });
+    const { req, lecture } = await requete();
+    const res = await POST(req);
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('date_naissance_requise');
+    expect(lecture).not.toHaveBeenCalled();
+    expect(prisma.compteRenduBiologique.create).not.toHaveBeenCalled();
+  });
+
+  it('★ patient mineur : 409, pause maintenue jusqu’au circuit des mineurs (D-284 §4)', async () => {
+    const quinzeAns = new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    prisma.patient.findUnique.mockResolvedValueOnce({ ...patient, dateNaissance: quinzeAns });
+    const { req, lecture } = await requete();
+    const res = await POST(req);
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('circuit_mineur_requis');
+    expect(lecture).not.toHaveBeenCalled();
+  });
+
   it('plafond de 3 en attente, ou de 10 en 24 h : 429, corps non lu', async () => {
     prisma.compteRenduBiologique.count.mockResolvedValueOnce(3);
     let { req, lecture } = await requete();
@@ -227,6 +249,7 @@ describe('GET /api/portail/comptes-rendus (D-269 §4)', () => {
       documents: [{ deposeLe: '2026-10-07T09:00:00.000Z', statut: 'illisible' }],
       accuseRequis: true,
       dossierOuvert: true,
+      statutAge: 'majeur',
       plafond: null,
     });
     expect(prisma.compteRenduBiologique.findMany.mock.calls[0][0].where).toEqual({ idPatient: 'PAT_JENNIFER', origine: 'patient' });

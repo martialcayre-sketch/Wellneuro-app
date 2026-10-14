@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { isSessionValideForPatient, readPatientSession } from '@/lib/patient-session';
 import { mapAssignationPatient, type AssignationPatient } from '@/lib/consultation/mapAssignation';
 import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
+import { statutAge, type StatutAge } from '@/lib/patient/gardeAge';
+import { accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import { consultationCourante } from '@/lib/consultation/portail';
 import { AGENDA_SOMMEIL_ID } from '@/lib/agenda-sommeil/types';
 import { calculerFenetreDepuisDates } from '@/lib/agenda-sommeil/fenetre';
@@ -25,6 +27,11 @@ export type PortailAssignationsResponse =
       // traces locales du hub sans y recopier le jeton d'accès.
       patient: { idPatient: string; prenom: string; nom: string };
       assignations: AssignationPatient[];
+      // D-284 §3 : hors `majeur`, le hub demande la date (ou annonce le circuit
+      // des mineurs) au lieu d'ouvrir les questionnaires — que les routes
+      // d'écriture refusent de toute façon.
+      statutAge: StatutAge;
+      dossierOuvert: boolean;
       // Date de la dernière réponse transmise (ISO), `null` si le patient n'a
       // jamais répondu. Alimente l'accueil de reprise (SP-SPI / LOT-01) et
       // reprend **la même horloge que le Fil praticien** — `max(dateReponse)`,
@@ -118,6 +125,8 @@ export async function GET(req: Request): Promise<NextResponse> {
         actif: true,
         accessTokenRevoked: true,
         sessionsInvalidesAvant: true,
+        dateNaissance: true,
+        suiviClotureLe: true,
       },
     });
     // Le patient doit toujours être actif et non révoqué, même avec un cookie valide.
@@ -318,6 +327,8 @@ export async function GET(req: Request): Promise<NextResponse> {
       ok: true,
       patient: { idPatient: session.idPatient, prenom: patient.prenom, nom: patient.nom },
       assignations,
+      statutAge: statutAge(patient.dateNaissance, Date.now()),
+      dossierOuvert: accepteNouvelEnvoi(patient),
       agendas,
       agendasAlimentaires,
       derniereReponseLe: derniereReponse._max.dateReponse?.toISOString() ?? null,

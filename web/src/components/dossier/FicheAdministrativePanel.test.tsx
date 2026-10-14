@@ -180,3 +180,32 @@ describe('FicheAdministrativePanel — ce que l’écran DIT au praticien', () =
     expect(screen.queryByLabelText(/état du dossier/i)).toBeNull();
   });
 });
+
+describe('FicheAdministrativePanel — la garde d’âge dite au praticien (D-284 §3 et §4)', () => {
+  function rendre(dateNaissance: string | null) {
+    stub();
+    render(
+      <FicheAdministrativePanel
+        patient={{ ...DOSSIER, dateNaissance } as PatientDossier}
+        onEnregistre={() => {}}
+        onFermer={() => {}}
+      />,
+    );
+  }
+
+  it('date manquante : dit la pause côté patient, et qu’elle peut se saisir ici', () => {
+    rendre(null);
+    expect(screen.getByText(/Date de naissance manquante : questionnaires et dépôt de biologie sont en pause/)).toBeTruthy();
+  });
+
+  it('dossier d’un mineur : dit la pause et le circuit attendu', () => {
+    const quinzeAns = new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    rendre(quinzeAns);
+    expect(screen.getByText(/Dossier d’un mineur/)).toBeTruthy();
+  });
+
+  it('dossier d’un majeur : aucune mention', () => {
+    rendre('1984-01-17');
+    expect(screen.queryByText(/en pause côté patient/)).toBeNull();
+  });
+});

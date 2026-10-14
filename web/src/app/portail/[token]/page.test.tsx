@@ -1,11 +1,18 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
+// LE ROUTEUR EST STABLE, comme celui de Next : un objet neuf à chaque rendu
+// relancerait l'effet de session à chaque rendu, et la page referait sa
+// séquence d'accueil en boucle (constaté au lot (h) de D-284 : le banc de la
+// date épuisait la mémoire).
+const { replace, routeur } = vi.hoisted(() => {
+  const replace = vi.fn();
+  return { replace, routeur: { replace } };
+});
 vi.mock('next/navigation', () => ({
   useParams: () => ({ token: 'PAT_TEST' }),
-  useRouter: () => ({ replace }),
+  useRouter: () => routeur,
 }));
 
 import PortailPage from './page';
@@ -76,5 +83,90 @@ describe('PortailPage — restauration de session', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/portail/connexion'));
     // Le champ e-mail du gate n'existe plus.
     expect(screen.queryByPlaceholderText('votre@email.fr')).toBeNull();
+  });
+});
+
+// D-284 §3 et §4, lot (h) : la date de naissance se demande avant tout autre
+// geste, se fait confirmer, et un mineur reste en pause.
+describe('PortailPage — garde d’âge', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    replace.mockClear();
+  });
+
+  function stubPortail(statutAge: string, reponseDate: Record<string, unknown>) {
+    const postes: { url: string; corps: unknown }[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.body) postes.push({ url, corps: JSON.parse(String(init.body)) });
+      const corps = url.startsWith('/api/portail/session')
+        ? {
+            ok: true,
+            patient: { idPatient: 'PAT_TEST', prenom: 'Sophie', nom: 'Nicola', email: 'sophie.nicola@example.test' },
+            consultation: null,
+            premiereAssignation: null,
+            statutAge,
+          }
+        : url.startsWith('/api/portail/trust/etat')
+          ? { ok: true, avantDeCommencerRequis: false }
+          : reponseDate;
+      return { ok: true, json: async () => corps };
+    }));
+    return postes;
+  }
+
+  it('★ date manquante : la date est demandée, confirmée, puis le parcours reprend', async () => {
+    const postes = stubPortail('date_manquante', { ok: true, statutAge: 'majeur' });
+    render(<PortailPage />);
+
+    await waitFor(() => expect(screen.getByText('Votre date de naissance')).not.toBeNull());
+    expect(screen.queryByText('Merci !')).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Date de naissance'), { target: { value: '1985-03-12' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
+    expect(screen.getByText('12 mars 1985')).not.toBeNull();
+    expect(postes.filter(p => p.url === '/api/portail/date-naissance')).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'C’est exact, enregistrer' }));
+    await waitFor(() => expect(screen.getByText('Merci !')).not.toBeNull());
+    expect(postes.find(p => p.url === '/api/portail/date-naissance')?.corps).toEqual({ dateNaissance: '1985-03-12' });
+  });
+
+  it('« Corriger » revient à la saisie sans rien envoyer', async () => {
+    const postes = stubPortail('date_manquante', { ok: true, statutAge: 'majeur' });
+    render(<PortailPage />);
+    await waitFor(() => expect(screen.getByText('Votre date de naissance')).not.toBeNull());
+    fireEvent.change(screen.getByLabelText('Date de naissance'), { target: { value: '1985-03-12' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Corriger' }));
+    expect(screen.getByLabelText('Date de naissance')).not.toBeNull();
+    expect(postes.filter(p => p.url === '/api/portail/date-naissance')).toHaveLength(0);
+  });
+
+  it('★ une date de mineur laisse la pause en place, et le parcours accessible', async () => {
+    stubPortail('date_manquante', { ok: true, statutAge: 'mineur' });
+    render(<PortailPage />);
+    await waitFor(() => expect(screen.getByText('Votre date de naissance')).not.toBeNull());
+    fireEvent.change(screen.getByLabelText('Date de naissance'), { target: { value: '2012-05-01' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'C’est exact, enregistrer' }));
+    await waitFor(() =>
+      expect(screen.getByText('Votre praticien va reprendre contact avec vous')).not.toBeNull(),
+    );
+    expect(screen.queryByText('Merci !')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Accéder à mon parcours' }).getAttribute('href')).toBe(
+      '/portail/PAT_TEST/questionnaires',
+    );
+  });
+
+  it('le refus de la route s’affiche, et la saisie reste possible', async () => {
+    stubPortail('date_manquante', { ok: false, reason: 'invalid_payload', error: 'Cette date n’est pas valide.' });
+    render(<PortailPage />);
+    await waitFor(() => expect(screen.getByText('Votre date de naissance')).not.toBeNull());
+    fireEvent.change(screen.getByLabelText('Date de naissance'), { target: { value: '1985-03-12' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'C’est exact, enregistrer' }));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('pas valide'));
+    expect(screen.getByLabelText('Date de naissance')).not.toBeNull();
   });
 });
