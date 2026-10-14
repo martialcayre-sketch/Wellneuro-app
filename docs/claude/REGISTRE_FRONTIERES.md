@@ -1,5 +1,7 @@
 # Registre de frontières — Programme WellNeuro 3.0
 
+**Restes versés au plan le 2026-10-14** : les restes à faire nommés dans ce document sont tenus au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4), qui en porte l'ordre et le sort ; ce document reste tenu à jour.
+
 > Créé le 2026-07-12 à l'issue du brainstorm d'arbitrage (audit PR #31 +
 > audit croisé des campagnes). Ce document est la **source normative unique
 > d'exécution** : il consigne, pour chaque campagne, ce qu'elle possède, ce

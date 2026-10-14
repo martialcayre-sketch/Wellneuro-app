@@ -1,5 +1,7 @@
 # LOT-03 — la mesure, rapportée avant le banc
 
+**Versé au plan le 2026-10-14** : les dettes vivantes de ce registre sont tenues au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4) ; le plan fait foi, ce fichier n'est plus mis à jour.
+
 > Étape 3 de la fiche : « Rapporter la mesure avant d'écrire le banc — c'est
 > elle qui dit si le garde a un sujet. » Elle a dit non, et elle a dit pourquoi.
 > Décision : `D-105`.

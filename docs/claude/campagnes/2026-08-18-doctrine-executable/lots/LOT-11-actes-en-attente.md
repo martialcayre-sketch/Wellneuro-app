@@ -6,6 +6,8 @@ dépend_de: "LOT-04, LOT-05, LOT-06 (livrés) — et le LOT-08 dépend de LUI"
 
 # LOT-11 — Les actes en attente : deux signatures, six arbitrages, neuf dettes
 
+**Versé au plan le 2026-10-14** : les dettes vivantes de ce registre sont tenues au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4) ; le plan fait foi, ce fichier n'est plus mis à jour.
+
 > **LIVRÉ le 2026-08-24 — `D-107`.** Une signature **reportée** au 2026-08-30
 > avec son motif, deux campagnes **routées** en file d'attente (curation des
 > exclusions, dix orphelines), une borne **déclarée** après descente négative

@@ -10349,3 +10349,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR unique, merge ; puis ai (H51, accusé daté), qui attend u et k.
 
 **Ouvert.** La lettre cj, non poussée, porte D-291 : elle prend D-294. Durées de conservation (D-283 §10 a) ; circuit des droits des mineurs.
+
+## 2026-10-14 — Plan unique : la file D, plus aucune dette hors du plan
+
+**Fait.** File D créée (arbitrage du responsable) : §0 points 5, 6, 8 ; §4 devenu « La file D », photographie D.1 à D.5, D/1 à D/50 ; 20 dettes de code au §8 ; 18 registres « versés au plan », 4 documents tenus à jour avec renvoi ; tête de `.wn/state.json` réalignée. 338 entrées lues sur sept sources, contre-lecture.
+
+**Écarté.** Lettre D pour les lignes (confusion avec D-xxx, D2, D4) : « D/n » ; retrait des traces de `next_action` (historique) ; recompte du §0.
+
+**Prochaine action.** PR de doc, revue CodeRabbit, merge.
+
+**Ouvert.** Collision D-292 sur la branche de #1448 (D/7) ; PR de pilotage pour `.wn/state.json` (D/9) ; deux lignes du §8 [A verifier].

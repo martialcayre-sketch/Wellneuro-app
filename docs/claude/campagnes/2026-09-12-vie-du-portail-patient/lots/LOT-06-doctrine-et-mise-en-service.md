@@ -7,6 +7,8 @@ dépend_de: "LOT-05"
 
 # LOT-06 — Doctrine, journal, handoff, et la demande de mise en service
 
+**Versé au plan le 2026-10-14** : les dettes vivantes de ce registre sont tenues au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4) ; le plan fait foi, ce fichier n'est plus mis à jour.
+
 ## But
 
 Clore la campagne par écrit, et poser la seule question qui reste : faut-il

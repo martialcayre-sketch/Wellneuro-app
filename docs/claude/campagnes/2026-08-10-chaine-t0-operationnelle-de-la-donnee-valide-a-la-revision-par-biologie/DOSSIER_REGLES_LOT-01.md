@@ -1,5 +1,7 @@
 # Dossier de règles candidates — LOT-01, moteur de discordances
 
+**Versé au plan le 2026-10-14** : les dettes vivantes de ce registre sont tenues au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4) ; le plan fait foi, ce fichier n'est plus mis à jour.
+
 > **Instruction.** Ce dossier a instruit la question d'ouverture du LOT-01
 > (« les trois règles de discordance, prédicat par prédicat »). Il propose ; il
 > ne décide pas. Aucun code, aucune migration.
