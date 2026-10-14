@@ -210,6 +210,9 @@ export async function PATCH(req: Request): Promise<NextResponse<TrustPatchRespon
   }
 
   const { kind, id } = payload;
+  if (payload.reponse !== undefined && typeof payload.reponse !== 'string') {
+    return NextResponse.json({ ok: false, error: 'Paramètres invalides.' }, { status: 400 });
+  }
   const statutTraitement = payload.statutTraitement as StatutTraitementSignalement;
   if (!id || !STATUTS.includes(statutTraitement)) {
     return NextResponse.json({ ok: false, error: 'Paramètres invalides.' }, { status: 400 });
