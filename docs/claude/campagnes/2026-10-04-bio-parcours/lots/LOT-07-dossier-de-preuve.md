@@ -161,3 +161,7 @@ responsable, jamais ici.
   WN-CH-0509-001 à -004 et WN-CH-0510-001 à -003, ingérés le 2026-10-14 en un
   lot sur approbation du responsable (réponse 200, test de récupération 11/11),
   constatés actifs en base, empreintes conformes à l'envoi.
+  Une quatrième source, WN-SRC-0511 (règlement (UE) n° 432/2012, annexe : fer),
+  entre le même jour (passage WN-CH-0511-001, lot `LOT_017_2026-10-14`,
+  constaté) ; WN-CL-0359-031 est rejeté par le responsable et un claim fidèle
+  au texte, WN-CL-0511-001, est rédigé.
