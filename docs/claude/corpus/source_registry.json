@@ -13609,5 +13609,31 @@
     "requiredAction": "Extraits ciblés ingérés (BP-07, lot LOT_016_2026-10-14) ; claims à extraire",
     "comment": "Source externe, droits de l'éditeur. Extraits courts à usage interne.",
     "auditDate": "2026-10-14"
+  },
+  {
+    "sourceId": "WN-SRC-0511",
+    "title": "Règlement (UE) n° 432/2012 de la Commission du 16 mai 2012 — allégations de santé autorisées (annexe, fer)",
+    "corpus": "SOURCES_EXTERNES",
+    "documentType": "Texte réglementaire",
+    "format": "Texte web",
+    "mimeType": "text/html",
+    "language": "fr",
+    "jurisdiction": "EU",
+    "authorityClass": "EXTERNAL_REGULATION",
+    "audienceOriginal": "Praticien",
+    "importance": "canonical",
+    "prescriptive": false,
+    "primaryNotebook": "10 — Micronutrition et compléments",
+    "secondaryNotebooks": [],
+    "sourceVersion": null,
+    "contentHash": null,
+    "rightsStatus": "verified",
+    "clinicalReviewStatus": "not_reviewed",
+    "practitionerReviewRequired": true,
+    "lifecycleStatus": "raw",
+    "vigilance": "Élevée",
+    "requiredAction": "Extrait ciblé ingéré (BP-07, lot LOT_017_2026-10-14) ; claims à extraire",
+    "comment": "Source externe, texte réglementaire de l'Union (réutilisation autorisée). Extrait mot pour mot, sans adaptation.",
+    "auditDate": "2026-10-14"
   }
 ]
