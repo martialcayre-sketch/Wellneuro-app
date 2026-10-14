@@ -5,7 +5,7 @@
 **Campagne** : 2026-10-04-bio-parcours
 **Titre** : BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout
 **Statut** : active
-**Lot actif** : aucun
+**Lot actif** : LOT-07
 
 ## Activités parallèles
 
@@ -16,6 +16,6 @@
 **Lot actif** : LOT-02
 
 **Statut global** : active
-**Mise à jour** : 2026-10-13
+**Mise à jour** : 2026-10-14
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.

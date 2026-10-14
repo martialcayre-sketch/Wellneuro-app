@@ -10241,3 +10241,13 @@ qualité inchangés (item de l'indice).
 - Validations : T1 et T3 verts.
 - Prochaine action : constater le premier masquage réel.
 - Question ouverte : la TIA.
+
+## 2026-10-14 — BP-07 : dossier de preuve remis (LOT-07)
+
+**Fait.** Campagne bio-parcours repassée en cours, lot courant LOT-07. Corpus lu en production (267 claims dans le champ de la question) ; dossier privé remis : 92 claims cités, 84 à signer, 9 brouillons vérifiés mot pour mot, 6 conflits (C4 de sécurité, tranché), 8 positions d'expert. Contre-revue P0 : omissions et une précaution manquée corrigées. Verdicts posés ; 9 brouillons déposés en attente puis signés, constatés VALIDE. Revue Copilot : fiche et handoff réécrits en forme opaque. T1 complet vert.
+
+**Écarté.** Déposer les brouillons en base dès l'extraction ; réécrire les tableaux après les premiers verdicts.
+
+**Prochaine action.** Merge de #1432 ; puis 17 relectures, un claim sans verdict, positions P1 à P8.
+
+**Ouvert.** Sources en quarantaine au registre.

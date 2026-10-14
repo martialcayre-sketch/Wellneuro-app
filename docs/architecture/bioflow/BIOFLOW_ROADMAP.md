@@ -22,7 +22,7 @@ BIOFLOW
 │   └── objectif      : une donnée biologique fiable
 │
 ├── Track B — BIO-PARCOURS
-│   ├── lot courant   : aucun — campagne EN PAUSE ; LOT-26 (BP-26) terminé le 2026-10-10 (`D-276`, qualification différée à l'aboutissement, aucune fonction retirée) ; les lots de sécurité qu'il a relevés sont LIVRÉS (10A, 11A, 5A, 8B, `D-281` lots 1 et 2) ; reprend par BP-07, rang 1 du plan
+│   ├── lot courant   : LOT-07 (BP-07), campagne EN COURS depuis le 2026-10-14 — dossier de preuve remis au responsable, signatures au rang 2 ; LOT-26 (BP-26) terminé le 2026-10-10 (`D-276`, qualification différée à l'aboutissement, aucune fonction retirée) ; les lots de sécurité qu'il a relevés sont LIVRÉS (10A, 11A, 5A, 8B, `D-281` lots 1 et 2)
 │   ├── prochain gate : aucun — G4 levé (`D-276`) ; l'assistance ouvre au fil de sa livraison, derrière drapeau ; l'ordre est au plan (`docs/claude/PLAN_WELLNEURO.md` §2)
 │   └── objectif      : l'exploitation longitudinale de la donnée validée
 │
