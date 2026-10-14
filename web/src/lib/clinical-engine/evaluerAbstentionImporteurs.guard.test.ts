@@ -49,9 +49,11 @@ const IMPORTEURS_ATTENDUS = [
   // (une branche utile restée sans producteur). Inscrites ici plutôt que
   // contournées en reformulant : le banc « mention seule » ci-dessous les
   // rattrape si l'une d'elles se met un jour à importer réellement.
+  // La règle d'effet indésirable en est SORTIE ([[D-281]], étape 4) : amendée,
+  // elle ne produit plus de constat et ne fait plus passer l'abstention en
+  // `required` — sa prose ne le dit donc plus.
   'web/src/lib/clinical/gatePopulationV1.ts',
   'web/src/lib/clinical/gatePopulationV1.guard.test.ts',
-  'web/src/lib/clinical/safetyEffetIndesirableV1.ts',
   // MENTION NEUVE ([[D-218]], lettre d'adressage). Le générateur décrit dans
   // sa prose l'effet de ce qui l'appelle — « `evaluerAbstention` passe en
   // `required` » —, parce que c'est ce blocage-là qui fonde l'existence de la
@@ -67,7 +69,6 @@ const MENTIONS_SEULES = [
   'web/src/lib/clinical-engine/chaineC1.test.ts',
   'web/src/lib/clinical/gatePopulationV1.ts',
   'web/src/lib/clinical/gatePopulationV1.guard.test.ts',
-  'web/src/lib/clinical/safetyEffetIndesirableV1.ts',
   'web/src/lib/clinical/courrierAdressage.ts',
 ];
 

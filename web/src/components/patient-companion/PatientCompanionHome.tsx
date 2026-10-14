@@ -10,6 +10,7 @@ import { ProtocolCheckinTrend, type PointEtat } from './ProtocolCheckinTrend';
 import { PatientFoodCompassSummary } from '@/components/patient-food-compass/PatientFoodCompassSummary';
 import type { VuePatientSurLeFil } from '@/lib/protocol/vuePatientSurLeFil';
 import {
+  TEXTE_PAUSE_AVIS_RENDU,
   TEXTE_PAUSE_COMPLEMENTS,
   TEXTE_PAUSE_ELEMENT,
   type ElementEnPause,
@@ -208,6 +209,9 @@ export function PatientCompanionHome({ token }: { token: string }) {
               <p className="mt-1 text-sm text-muted-foreground">{action.minimalPlan}</p>
               {pauseDe.get(action.actionId) === 'element' && (
                 <p className="mt-2 text-sm text-foreground border-t border-primary/20 pt-2">{TEXTE_PAUSE_ELEMENT}</p>
+              )}
+              {pauseDe.get(action.actionId) === 'avis_rendu' && (
+                <p className="mt-2 text-sm text-foreground border-t border-primary/20 pt-2">{TEXTE_PAUSE_AVIS_RENDU}</p>
               )}
               {/* UNE INTERVENTION NON FERME NE SE LIT JAMAIS COMME UN CONSEIL.
                   La phrase vient du contrat, jamais de la cible d'attente du

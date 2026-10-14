@@ -10,6 +10,7 @@ import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
 import {
   elementsDesignables,
   elementsEnPause,
+  signalementsEnAttente,
   type ElementEnPause,
   type Rattachement,
   type VerdictEffetIndesirable,
@@ -106,6 +107,35 @@ export async function pausesServies(
     protocolDraftId,
     actions,
   });
+}
+
+/**
+ * Les signalements du dossier qui attendent l'avis du praticien (D-281 §3) —
+ * la garde de la diffusion. Le calcul est `signalementsEnAttente` ; ici, la
+ * lecture. Tous les signalements rattachés du dossier, QUELLE QUE SOIT la
+ * version visée : un signalement survit au remplacement du programme.
+ *
+ * L'appelant lit le verrou `interruptionEffetIndesirableActive()` avant :
+ * d'ici la signature, rien ne s'interrompt (D-281 §6).
+ */
+export async function signalementsEnAttenteDuDossier(
+  idPatient: string,
+): Promise<{ id: string; soumisLe: Date }[]> {
+  const [signalements, verdicts] = await Promise.all([
+    prisma.trustAdverseEffectReport.findMany({
+      where: { idPatient, rattachement: { not: null } },
+      select: { id: true, rattachement: true, soumisLe: true },
+      orderBy: { soumisLe: 'asc' },
+    }),
+    prisma.trustAdverseEffectVerdict.findMany({
+      where: { idPatient },
+      select: { id: true, reportId: true, verdict: true, elementActionId: true, supersedesVerdictId: true },
+    }),
+  ]);
+  return signalementsEnAttente(
+    signalements,
+    verdicts.map(v => ({ ...v, verdict: v.verdict as VerdictEffetIndesirable['verdict'] })),
+  ).map(({ id, soumisLe }) => ({ id, soumisLe }));
 }
 
 /**

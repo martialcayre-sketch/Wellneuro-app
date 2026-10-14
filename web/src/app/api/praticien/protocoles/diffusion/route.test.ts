@@ -3,8 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   getServerSession, prisma, rejouerCarteDecision, reconstructProtocolDraft, vuePatientOuRefus,
   apercuFichesDuProtocole, remettreFiches, annoncerDocumentRemis,
+  signalementsEnAttenteDuDossier, eiActive,
 } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
+  // LA GARDE D'EFFET INDÉSIRABLE ([[D-281]] §3) : le calcul de l'attente a ses
+  // bancs (`bancCasFictifsD281.test.ts`, `pauseEffetIndesirableServeur.test.ts`) ;
+  // ce banc juge le câblage — verrou, refus, rien d'écrit.
+  signalementsEnAttenteDuDossier: vi.fn(),
+  eiActive: { valeur: false },
   // L'E-MAIL NEUTRE ([[D-251]] §9, lot 11) : seul l'envoi est simulé. La règle
   // « est-il dû ? » (`annonceDue`) est la vraie, lue sur le drapeau.
   annoncerDocumentRemis: vi.fn(),
@@ -40,6 +46,11 @@ vi.mock('@/lib/clinical-engine/rejeuCarteDecision', () => ({ rejouerCarteDecisio
 vi.mock('@/lib/protocol/fromPrisma', () => ({ reconstructProtocolDraft }));
 vi.mock('@/lib/protocol/servirAuPatient', () => ({ vuePatientOuRefus }));
 vi.mock('@/lib/fiches-assiette/remise', () => ({ apercuFichesDuProtocole, remettreFiches }));
+vi.mock('@/lib/trust/pauseEffetIndesirableServeur', () => ({ signalementsEnAttenteDuDossier }));
+vi.mock('@/lib/clinical/safetyEffetIndesirableV1', async orig => ({
+  ...(await orig<typeof import('@/lib/clinical/safetyEffetIndesirableV1')>()),
+  interruptionEffetIndesirableActive: () => eiActive.valeur,
+}));
 vi.mock('@/lib/fiches-assiette/annonce', async orig => ({
   ...(await orig<typeof import('@/lib/fiches-assiette/annonce')>()),
   annoncerDocumentRemis,
@@ -87,6 +98,7 @@ const body = { idPatient: 'PAT_1', decisionCardId: 'DEC_1', protocolDraftInputHa
 describe('POST /api/praticien/protocoles/diffusion', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    eiActive.valeur = false;
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr' });
     rejouerCarteDecision.mockResolvedValue(carteSansBloqueur());
   });
@@ -133,6 +145,71 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
     expect(json.error).toContain('2 constat');
     expect(json.error).not.toContain('safety-1');
     expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+  });
+
+  // ── UN EFFET INDÉSIRABLE QUI ATTEND L'AVIS ([[D-281]] §3) ────────────────
+  //
+  // LA DIFFUSION SEULE : la carte rejouée est sans bloqueur — la règle amendée
+  // ne la touche plus —, et c'est la diffusion qui est refusée.
+
+  it('règle signée, un signalement attend l’avis : diffusion refusée (409), le signalement nommé, rien d’écrit', async () => {
+    eiActive.valeur = true;
+    signalementsEnAttenteDuDossier.mockResolvedValue([{ id: 'AER_1', soumisLe: new Date('2026-10-12T10:00:00.000Z') }]);
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+
+    const res = await POST(postRequest(body));
+    const json = (await res.json()) as { reason: string; error: string };
+    expect(res.status).toBe(409);
+    expect(json.reason).toBe('effet_indesirable_en_attente');
+    expect(json.error).toContain('déposé le 12/10/2026');
+    expect(signalementsEnAttenteDuDossier).toHaveBeenCalledWith('PAT_1');
+    expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // LA BRANCHE DES FICHES ([[D-251]] §7) écrit dans une transaction : le refus
+  // doit tomber avant elle, et avant le contrôle du jeton d'aperçu.
+  it('règle signée, drapeau des fiches ouvert : le refus tombe avant la transaction', async () => {
+    process.env.WN_FICHES_ASSIETTE = 'true';
+    try {
+      eiActive.valeur = true;
+      signalementsEnAttenteDuDossier.mockResolvedValue([{ id: 'AER_1', soumisLe: new Date('2026-10-12T10:00:00.000Z') }]);
+      getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+      prisma.protocolDraft.findUnique.mockResolvedValue({ ...versionRow, payload: {} });
+
+      const res = await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
+      expect(res.status).toBe(409);
+      expect(((await res.json()) as { reason: string }).reason).toBe('effet_indesirable_en_attente');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.WN_FICHES_ASSIETTE;
+    }
+  });
+
+  it('règle non signée : aucune lecture des signalements, rien ne s’interrompt (D-281 §6)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.create.mockResolvedValue({ id: 'APP_1' });
+
+    const res = await POST(postRequest(body));
+    expect(res.status).toBe(200);
+    expect(signalementsEnAttenteDuDossier).not.toHaveBeenCalled();
+  });
+
+  it('règle signée, aucun signalement en attente : la diffusion passe', async () => {
+    eiActive.valeur = true;
+    signalementsEnAttenteDuDossier.mockResolvedValue([]);
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.create.mockResolvedValue({ id: 'APP_1' });
+
+    const res = await POST(postRequest(body));
+    expect(res.status).toBe(200);
+    expect(prisma.protocolDiffusionApproval.create).toHaveBeenCalled();
   });
 
   // UN PROTOCOLE APPROUVÉ ICI EST UN PROTOCOLE QUE LE PORTAIL SAURA SERVIR.

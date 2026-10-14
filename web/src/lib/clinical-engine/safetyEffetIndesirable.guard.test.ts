@@ -1,29 +1,36 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  CONDUITE_EFFET_INDESIRABLE,
   REGLE_SECURITE_EFFET_INDESIRABLE,
   SAFETY_EI_METADATA,
   SAFETY_EI_SHA256,
+  STATUTS_EI_NON_TRAITES,
   associationEffetIndesirableDisponible,
   interruptionEffetIndesirableActive,
   tableEffetIndesirableSignee,
 } from '@/lib/clinical/safetyEffetIndesirableV1';
+import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
+import {
+  TEXTE_PAUSE_AVIS_RENDU,
+  TEXTE_PAUSE_COMPLEMENTS,
+  TEXTE_PAUSE_ELEMENT,
+} from '@/lib/trust/pauseEffetIndesirable';
 import { construireSafetyFindings, type EffetIndesirableRuntime } from './safetyFindings';
 
-// LOT-05 « Doctrine exécutable » — le banc du SECOND producteur de l'objet de
-// sécurité ([[D-101]], `DC-42`). Quatre propriétés, chacune avec sa
-// contre-épreuve :
+// Le banc du SECOND producteur de l'objet de sécurité ([[D-101]] amendée par
+// [[D-281]], `DC-42`). Quatre propriétés, chacune avec sa contre-épreuve :
 //
 //   1. table non signée ⇒ aucun constat, et la règle jointe en `candidate` —
 //      c'est l'état LIVRÉ, et la production ne change pas au merge ;
-//   2. un signalement RATTACHÉ et non traité produit un constat qui inhibe ;
-//   3. un signalement non traité SANS rattachement n'inhibe pas, mais se DIT
-//      (`DC-35`) — la machine ne devine pas à quel protocole il se rapporte ;
-//   4. le constat ne transporte AUCUN mot du patient, et aucune gravité.
+//   2. table signée ⇒ AUCUN constat non plus : un signalement rattaché ne
+//      retire plus les candidats du dossier — la règle amendée bloque la
+//      diffusion seule, et sa garde vit dans la route de diffusion (D-281 §3) ;
+//   3. un signalement ouvert HORS RÈGLE (sans rattachement) se DIT (`DC-35`) ;
+//   4. le verrou couvre la conduite et les trois textes patient signés.
 //
-// La table est livrée NON SIGNÉE : les propriétés 2 à 4 seraient inatteignables
-// sans simulation. La signature est donc simulée puis restaurée, exactement
-// comme le banc de la chaîne C1 simule celle des priorités.
+// La table est livrée NON SIGNÉE : la signature est simulée puis restaurée,
+// exactement comme le banc de la chaîne C1 simule celle des priorités.
 
 const ETAT_LIVRE = { ...SAFETY_EI_METADATA };
 
@@ -42,18 +49,28 @@ function simulerSignature(): void {
 const RATTACHE: EffetIndesirableRuntime = {
   id: 'AER-1',
   protocolDraftId: 'DRAFT-1',
+  rattachement: 'element',
   statutTraitement: 'recu',
 };
 const SANS_RATTACHEMENT: EffetIndesirableRuntime = {
   id: 'AER-2',
   protocolDraftId: null,
+  rattachement: null,
   statutTraitement: 'en_cours',
 };
-const CLOS: EffetIndesirableRuntime = {
+// Le formulaire d'avant (dossier mineur ou sans date, ou ancien formulaire) :
+// le patient a répondu « oui » au programme, sans désigner d'élément. Il
+// bloquera la diffusion une fois l'avis ouvert par migration (D-281 §5) ; ce
+// producteur, lui, n'en fait jamais un constat.
+const FORMULAIRE_D_AVANT: EffetIndesirableRuntime = {
   id: 'AER-3',
   protocolDraftId: 'DRAFT-1',
-  statutTraitement: 'clos',
+  rattachement: null,
+  statutTraitement: 'recu',
 };
+
+const constatsEI = (effets: EffetIndesirableRuntime[]) =>
+  construireSafetyFindings([], effets, []).findings.filter(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE);
 
 describe('état LIVRÉ — la production ne change pas au merge', () => {
   it('la table n’est pas signée et le drapeau est absent', () => {
@@ -62,11 +79,11 @@ describe('état LIVRÉ — la production ne change pas au merge', () => {
     expect(interruptionEffetIndesirableActive()).toBe(false);
   });
 
-  it('non signée, aucun constat n’est produit — même sur un signalement rattaché', () => {
-    const { findings, rules } = construireSafetyFindings([], [RATTACHE], []);
-    expect(findings.filter(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)).toHaveLength(0);
-    const regle = rules.find(r => r.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE);
-    expect(regle?.lifecycle).toBe('candidate');
+  it('non signée : aucun constat, la règle en `candidate`, aucune limitation', () => {
+    const { findings, rules, limitations } = construireSafetyFindings([], [RATTACHE, SANS_RATTACHEMENT], []);
+    expect(findings).toHaveLength(0);
+    expect(rules.find(r => r.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)?.lifecycle).toBe('candidate');
+    expect(limitations).toHaveLength(0);
   });
 
   // CONTRE-ÉPREUVE DU VERROU. Les cinq termes doivent tenir ENSEMBLE : un
@@ -84,7 +101,25 @@ describe('état LIVRÉ — la production ne change pas au merge', () => {
   });
 });
 
-describe('l’ordre des deux gestes — capturer avant d’inhiber', () => {
+describe('le périmètre signé — la conduite et les trois textes patient', () => {
+  // Le SHA est recalculé ici depuis les textes servis : un texte retouché au
+  // portail sans nouvelle signature changerait l'empreinte, donc fermerait le
+  // verrou — le patient ne lit jamais un texte que le praticien n'a pas signé.
+  it('l’empreinte couvre la conduite, les textes de D-281 §4 et les statuts ouverts, et rien d’autre', () => {
+    expect(SAFETY_EI_SHA256).toBe(sha256(JSON.stringify({
+      conduite: CONDUITE_EFFET_INDESIRABLE,
+      textes: [TEXTE_PAUSE_ELEMENT, TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_AVIS_RENDU],
+      statuts: STATUTS_EI_NON_TRAITES,
+    })));
+  });
+
+  it('la conduite dit le blocage de la diffusion et que le statut ne lève rien', () => {
+    expect(CONDUITE_EFFET_INDESIRABLE).toMatch(/aucun programme ne se diffuse/);
+    expect(CONDUITE_EFFET_INDESIRABLE).toMatch(/Le statut ne lève rien/);
+  });
+});
+
+describe('l’ordre des deux gestes — capturer avant d’interrompre', () => {
   it('le drapeau seul ouvre la CAPTURE, jamais l’interruption', () => {
     process.env.WN_EI_INTERRUPTION = '1';
     expect(associationEffetIndesirableDisponible()).toBe(true);
@@ -106,88 +141,66 @@ describe('l’ordre des deux gestes — capturer avant d’inhiber', () => {
   );
 });
 
-describe('table signée — l’interruption mord, et elle parle', () => {
-  it('un signalement rattaché et non traité produit un constat qui inhibe', () => {
+describe('table signée — la règle amendée ne retire plus rien de la carte', () => {
+  // LE CŒUR DE L'AMENDEMENT (D-281 §1, §3). La règle livrée faisait de ce
+  // signalement un constat qui inhibait tout le dossier ; la garde est
+  // désormais à la diffusion, et la carte reste entière.
+  it.each(['recu', 'en_cours', 'traite', 'clos'])(
+    'un signalement rattaché (statut %o) ne produit aucun constat',
+    (statutTraitement) => {
+      simulerSignature();
+      expect(constatsEI([{ ...RATTACHE, statutTraitement }])).toHaveLength(0);
+    },
+  );
+
+  it.each(['ne_sait_pas', 'autre_produit'])(
+    '« %s » ne produit aucun constat',
+    (rattachement) => {
+      simulerSignature();
+      expect(constatsEI([{ ...RATTACHE, rattachement }])).toHaveLength(0);
+    },
+  );
+
+  it('la règle validée est jointe à la revue', () => {
     simulerSignature();
-    const { findings } = construireSafetyFindings([], [RATTACHE], []);
-    const constat = findings.find(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE);
-    expect(constat).toBeDefined();
-    // `disposition` est ce que `decisionCard` lit pour bloquer : un constat de
-    // sécurité présent suffit, quel qu'il soit.
-    expect(constat?.disposition).toBe('requires_practitioner_review');
-    expect(findings.length).toBeGreaterThan(0);
+    const { rules } = construireSafetyFindings([], [RATTACHE], []);
+    expect(rules.find(r => r.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)?.lifecycle).toBe('clinically_validated');
   });
 
-  it('un signalement CLOS n’inhibe rien', () => {
+  it('un signalement rattaché n’entre pas dans la limitation : il a sa file d’avis', () => {
     simulerSignature();
-    const { findings, limitations } = construireSafetyFindings([], [CLOS], []);
-    expect(findings.filter(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)).toHaveLength(0);
-    expect(limitations).toHaveLength(0);
+    expect(construireSafetyFindings([], [RATTACHE], []).limitations).toHaveLength(0);
   });
 
-  // `DC-35` — LE CŒUR DU CAS. Sans rattachement, la machine ne peut pas
-  // conclure ; se taire ferait disparaître un signalement OUVERT de la vue du
-  // praticien, et deviner un protocole serait l'inférence interdite.
-  it('un signalement non rattaché n’inhibe pas, mais se dit', () => {
+  // `DC-35` — hors règle, la machine ne peut rien conclure ; se taire ferait
+  // disparaître un signalement ouvert de la vue du praticien.
+  it('un signalement ouvert sans rattachement se dit', () => {
     simulerSignature();
-    const { findings, limitations } = construireSafetyFindings([], [SANS_RATTACHEMENT], []);
-    expect(findings.filter(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)).toHaveLength(0);
-    expect(limitations.join(' ')).toMatch(/rattachés à aucun/);
+    const { limitations } = construireSafetyFindings([], [SANS_RATTACHEMENT], []);
+    expect(limitations.join(' ')).toMatch(/rattachés à aucun élément/);
   });
 
-  it('le compte annoncé est celui des signalements OUVERTS non rattachés', () => {
+  it('le formulaire d’avant (programme sans élément désigné) est hors règle, et se dit', () => {
+    simulerSignature();
+    expect(constatsEI([FORMULAIRE_D_AVANT])).toHaveLength(0);
+    expect(construireSafetyFindings([], [FORMULAIRE_D_AVANT], []).limitations.join(' ')).toContain('1 signalement(s)');
+  });
+
+  it('le compte annoncé est celui des signalements OUVERTS hors règle', () => {
     simulerSignature();
     const { limitations } = construireSafetyFindings([], [
+      RATTACHE,
       SANS_RATTACHEMENT,
-      { id: 'AER-4', protocolDraftId: null, statutTraitement: 'recu' },
-      { id: 'AER-5', protocolDraftId: null, statutTraitement: 'clos' },
+      FORMULAIRE_D_AVANT,
+      { ...SANS_RATTACHEMENT, id: 'AER-5', statutTraitement: 'clos' },
     ], []);
     expect(limitations.join(' ')).toContain('2 signalement(s)');
   });
 
-  // DÉTERMINISME : deux ordres de lecture doivent produire les mêmes constats,
-  // sans quoi la carte recalculée diverge de la carte émise (409).
-  it('l’ordre des signalements ne change pas les constats produits', () => {
+  it('la limitation ne cite ni identifiant, ni programme, ni mot du patient', () => {
     simulerSignature();
-    const deux = [RATTACHE, { ...RATTACHE, id: 'AER-0' }];
-    const ordreA = construireSafetyFindings([], deux, []).findings.map(f => f.findingId);
-    const ordreB = construireSafetyFindings([], [...deux].reverse(), []).findings.map(f => f.findingId);
-    expect(ordreA).toEqual(ordreB);
-  });
-});
-
-describe('le constat ne transporte ni les mots du patient, ni de gravité', () => {
-  // LA GARDE EST STRUCTURELLE : `EffetIndesirableRuntime` ne porte NI
-  // `produitLibelle`, NI `symptomes`. Le banc le dit à la compilation en
-  // refusant de construire un objet qui les porterait — ce que la ligne
-  // ci-dessous vérifie à l'exécution sur l'objet réellement produit.
-  it('aucun champ du constat ne cite un texte libre du signalement', () => {
-    simulerSignature();
-    const { findings } = construireSafetyFindings([], [RATTACHE], []);
-    const constat = findings.find(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)!;
-    const serialise = JSON.stringify(constat);
-    expect(serialise).toContain('AER-1');
-    expect(serialise).not.toContain('DRAFT-1');
-  });
-
-  it('`confidence` est FIGÉ et ne varie avec rien (`DC-23`)', () => {
-    simulerSignature();
-    const un = construireSafetyFindings([], [RATTACHE], []).findings;
-    const trois = construireSafetyFindings([], [
-      RATTACHE,
-      { ...RATTACHE, id: 'AER-6' },
-      { ...RATTACHE, id: 'AER-7' },
-    ], []).findings;
-    for (const constat of [...un, ...trois]) expect(constat.confidence).toBe('à_documenter');
-  });
-
-  it('aucun constat ne porte de champ numérique de gravité, sous quelque nom', () => {
-    simulerSignature();
-    const { findings } = construireSafetyFindings([], [RATTACHE], []);
-    for (const constat of findings) {
-      for (const valeur of Object.values(constat as unknown as Record<string, unknown>)) {
-        expect(typeof valeur).not.toBe('number');
-      }
-    }
+    const texte = construireSafetyFindings([], [SANS_RATTACHEMENT, FORMULAIRE_D_AVANT], []).limitations.join(' ');
+    expect(texte).not.toContain('AER-');
+    expect(texte).not.toContain('DRAFT-1');
   });
 });

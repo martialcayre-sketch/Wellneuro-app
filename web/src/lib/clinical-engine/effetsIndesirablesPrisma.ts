@@ -37,7 +37,7 @@ export async function lireEffetsIndesirables(
   if (!interruptionEffetIndesirableActive()) return undefined;
   return prisma.trustAdverseEffectReport.findMany({
     where: { idPatient },
-    select: { id: true, protocolDraftId: true, statutTraitement: true },
+    select: { id: true, protocolDraftId: true, rattachement: true, statutTraitement: true },
     orderBy: { id: 'asc' },
   });
 }
@@ -58,7 +58,7 @@ export async function lireEffetsIndesirablesGroupes(
   const parDossier = new Map<string, EffetIndesirableRuntime[]>();
   const lignes = await prisma.trustAdverseEffectReport.findMany({
     where: { patient: dossiers },
-    select: { id: true, idPatient: true, protocolDraftId: true, statutTraitement: true },
+    select: { id: true, idPatient: true, protocolDraftId: true, rattachement: true, statutTraitement: true },
     orderBy: { id: 'asc' },
   });
   for (const { idPatient, ...signalement } of lignes) {

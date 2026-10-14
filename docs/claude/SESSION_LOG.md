@@ -10422,3 +10422,12 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Texte patient du §4 validé tel quel ; PR de doc après le merge de #1458 (cj, D-296), revue, merge. Code de ai après G-7 (porte 8).
 
 **Ouvert.** G-7 non joué : la migration de ai l'attend.
+## 2026-10-14 — D-281 étape 4, PR 2 : la garde de diffusion
+
+**Fait.** La règle livrée ne produit plus de constat : la carte reste entière, seule la diffusion est refusée tant qu'un signalement rattaché attend l'avis (statut ignoré). Texte de l'avis rendu servi au portail ; compteur `nonTraites` par l'attente ; banc de cas fictifs suivi. Revue `wn-reviewer` : GO.
+
+**Écarté.** Laisser le formulaire d'avant hors règle ; le bloquer sans avis possible ; corriger le Fil dans ce lot.
+
+**Prochaine action.** CI, revue CodeRabbit, merge. Puis migration du formulaire d'avant, sur demande.
+
+**Ouvert.** Formulaire d'avant (migration avant signature) ; désignation illisible au dépôt ; Fil et prévol comptés par statut.

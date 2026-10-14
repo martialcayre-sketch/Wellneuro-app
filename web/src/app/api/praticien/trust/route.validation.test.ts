@@ -97,4 +97,26 @@ describe('GET /api/praticien/trust — validation', () => {
     prisma.trustAdverseEffectReport.findMany.mockResolvedValue([]);
     expect((await (await GET()).json()).pauseServie).toBe(true);
   });
+
+  // D-281 §5, « le statut ne lève rien » : un signalement rattaché reste non
+  // traité tant qu'aucun avis n'est rendu, et l'est dès qu'il l'est, quel que
+  // soit son statut. Les autres se comptent par statut.
+  it('nonTraites : un rattaché compte tant qu’il attend l’avis, quel que soit son statut', async () => {
+    prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
+      effet({ id: 's1', protocolDraftId: 'draft-1', rattachement: 'element', elementActionId: 'a-magnesium', statutTraitement: 'traite' }),
+      effet({ id: 's2', protocolDraftId: 'draft-1', rattachement: 'ne_sait_pas', statutTraitement: 'clos' }),
+      effet({ id: 's3', protocolDraftId: 'draft-1', rattachement: 'element', elementActionId: 'a-magnesium', statutTraitement: 'recu' }),
+      effet({ id: 's4', statutTraitement: 'en_cours' }),
+      effet({ id: 's5', statutTraitement: 'traite' }),
+    ]);
+    // s3 a son avis : il sort du compte, même au statut « reçu ».
+    prisma.trustAdverseEffectVerdict.findMany.mockResolvedValue([
+      { id: 'v1', reportId: 's3', verdict: 'non_implique', elementActionId: null, amenagement: null, renduPar: 'a@wellneuro.fr', renduLe: new Date('2026-10-13T10:00:00Z'), supersedesVerdictId: null },
+    ]);
+    prisma.trustRightsRequest.findMany.mockResolvedValue([
+      { id: 'd1', idPatient: 'PAT_TEST', type: 'acces', description: null, statutTraitement: 'recu', soumisLe: new Date('2026-10-11T10:00:00Z'), examineLe: null },
+    ]);
+    // s1 et s2 (attente), s4 (statut ouvert, hors règle), d1 (demande reçue).
+    expect((await (await GET()).json()).nonTraites).toBe(4);
+  });
 });

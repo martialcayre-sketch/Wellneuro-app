@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { actionOrientation } from '@/lib/clinical-engine/orientationAdressage';
 import {
+  TEXTE_PAUSE_AVIS_RENDU,
   TEXTE_PAUSE_COMPLEMENTS,
   TEXTE_PAUSE_ELEMENT,
   elementsDesignables,
@@ -44,6 +45,7 @@ describe('textes signés de la pause', () => {
     const aplati = section.replace(/\n>\s?/g, ' ').replace(/\s+/g, ' ');
     expect(aplati).toContain(TEXTE_PAUSE_ELEMENT);
     expect(aplati).toContain(TEXTE_PAUSE_COMPLEMENTS);
+    expect(aplati).toContain(TEXTE_PAUSE_AVIS_RENDU);
   });
 });
 

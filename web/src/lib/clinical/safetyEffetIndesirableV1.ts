@@ -1,41 +1,55 @@
 import type { ValidatedClinicalRuleRef } from '@/lib/clinical-engine/types';
+import {
+  TEXTE_PAUSE_AVIS_RENDU,
+  TEXTE_PAUSE_COMPLEMENTS,
+  TEXTE_PAUSE_ELEMENT,
+} from '@/lib/trust/pauseEffetIndesirable';
 import { sha256 } from './corpusSyntheseV1';
 
-// RÈGLE D'INTERRUPTION SUR EFFET INDÉSIRABLE — [[D-101]], LOT-05, `DC-42`.
+// RÈGLE D'INTERRUPTION SUR EFFET INDÉSIRABLE — [[D-101]] amendée par
+// [[D-281]], `DC-42`.
 //
-// CE QUE LA RÈGLE DIT : « un effet indésirable déclaré par le patient, rattaché
-// par lui à un protocole en cours, et que le praticien n'a pas encore traité,
-// interrompt la préparation automatique de la décision — requalification, puis
-// validation ». Elle ne dit RIEN de la causalité : le patient a rattaché, la
-// machine ne conclut pas qu'il a raison. `DC-27` reste entière — association
-// n'est pas causalité, et le mot « associé » de `DC-42` est temporel.
+// CE QUE LA RÈGLE DIT (D-281 §2 à §5) : le patient attribue l'effet à UN
+// élément de son programme diffusé, ou répond « Je ne sais pas » / « un autre
+// produit ». L'élément désigné — ou tous les compléments — passe en pause au
+// portail, et AUCUN programme ne se diffuse pour le dossier tant que le
+// praticien n'a pas rendu son avis : impliqué (l'élément reste en pause et ne
+// repart ni à l'identique ni augmenté) ou non impliqué (la pause est levée).
+// Elle ne dit RIEN de la causalité : le patient a rattaché, la machine ne
+// conclut pas qu'il a raison (`DC-27`).
 //
-// LE SECOND PRODUCTEUR DE L'OBJET DE SÉCURITÉ. Le premier est la cotation des
-// signaux d'anamnèse ([[D-099]], LOT-04) ; celui-ci partage son consommateur —
-// `evaluerAbstention` passe en `required`, la table des priorités se tait, la
-// carte est bloquée, aucun protocole n'est diffusable. L'inhibition RETIRE,
-// elle ne s'affiche pas à côté.
+// LA DIFFUSION SEULE EST BLOQUÉE. La règle livrée par [[D-101]] produisait un
+// constat de sécurité qui retirait tous les candidats du dossier ; le
+// responsable l'a écartée (D-281 §1, « aménager, pas bloquer »). La carte, les
+// propositions et la préparation restent ouvertes : la garde vit dans la route
+// de diffusion (`signalementsEnAttente`), la pause dans la route du programme.
 //
-// L'ASSOCIATION EST DÉCLARÉE, JAMAIS DÉDUITE. Elle vient de la colonne
-// `protocol_draft_id`, que le patient renseigne au portail en désignant le
-// protocole qu'il suit. Rapprocher un libellé de produit d'une ligne de
-// protocole par ressemblance serait une déduction, et l'interdit du lot la
-// nomme. Un signalement SANS association ne produit donc aucun constat — mais
-// il ne disparaît pas pour autant : `construireSafetyFindings` en fait une
-// limitation servie au praticien (`DC-35`).
+// LE STATUT NE LÈVE RIEN (§5) : seul le verdict en tête de chaîne lève
+// l'attente. Le rattachement est DÉCLARÉ, jamais déduit ; un signalement sans
+// rattachement ne met rien en pause et reste examiné sur la surface des
+// signalements — `construireSafetyFindings` le dit au praticien (`DC-35`).
+// Celui qui répond « oui » au programme sans élément (formulaire d'avant)
+// bloquera la diffusion comme les autres (D-281 §5, arbitrage du 2026-10-14)
+// dès qu'une migration y aura ouvert l'avis — préalable de la signature.
 //
 // AUCUNE BORNE DE DURÉE. « Combien de jours après la prise un symptôme reste
 // associé » est un seuil clinique qu'aucune source du dépôt ne fixe (`DC-19`).
 // La contrainte SQL dit l'ORDRE des deux dates ; la règle ne dit rien de leur
 // écart, et n'en lit aucun.
 
-/** Statuts de traitement qui laissent le signalement OUVERT. */
+/**
+ * Statuts de traitement qui laissent le signalement OUVERT. L'attente ne les
+ * lit plus (D-281 §5) : ils ne servent qu'à compter, pour la dire au
+ * praticien, la file des signalements sans rattachement — une sortie de la
+ * règle signée, d'où leur place dans l'empreinte.
+ */
 export const STATUTS_EI_NON_TRAITES = ['recu', 'en_cours'] as const;
 
 export const CONDUITE_EFFET_INDESIRABLE =
-  'Effet indésirable déclaré par le patient et rattaché par lui à un protocole en cours :'
-  + ' la préparation automatique s’interrompt. Ni augmentation ni poursuite sans'
-  + ' requalification, puis validation du praticien.';
+  'Effet indésirable que le patient associe à un élément de son programme, ou sans pouvoir le'
+  + ' préciser : l’élément désigné, ou ses compléments, est en pause, et aucun programme ne se'
+  + ' diffuse pour ce dossier avant l’avis du praticien. Impliqué : l’élément ne repart ni à'
+  + ' l’identique ni augmenté. Non impliqué : la pause est levée. Le statut ne lève rien.';
 
 export type SafetyEffetIndesirableMetadata = {
   version: string;
@@ -48,19 +62,16 @@ export type SafetyEffetIndesirableMetadata = {
 // ─────────────────────────────────────────────────────────────────────────────
 // À LIRE AVANT DE SIGNER
 //
-// CE QUE LE SHA COUVRE : `STATUTS_EI_NON_TRAITES` et
-// `CONDUITE_EFFET_INDESIRABLE`. Ajouter un statut à la liste des « non
-// traités », ou retoucher le texte de conduite, referme le verrou.
+// CE QUE LE SHA COUVRE : `CONDUITE_EFFET_INDESIRABLE`, les trois textes
+// patient signés de D-281 §4 et `STATUTS_EI_NON_TRAITES`. Retoucher l'un
+// d'eux referme le verrou.
 //
 // CE QUE LA SIGNATURE ASSUMERA, ET QU'IL FAUT AVOIR EXPOSÉ AVANT ELLE :
 //
-//   1. L'INHIBITION EST TOTALE, PAS GRADUÉE. Un signalement rattaché et non
-//      traité retire TOUS les candidats du dossier, quel que soit le protocole
-//      visé et quelle que soit la sévérité déclarée. `DC-42` dit « interdit
-//      d'augmenter ou de poursuivre » ; le seul levier que le dépôt possède est
-//      l'objet de sécurité, et il est binaire. Une inhibition ciblée sur le
-//      seul axe concerné n'existe pas — et l'inventer aurait supposé de relier
-//      un protocole à un axe candidat, ce que rien ne fait aujourd'hui.
+//   1. LA DIFFUSION EST BLOQUÉE POUR TOUT LE DOSSIER. Un signalement rattaché
+//      sans avis refuse la diffusion de tout programme, quelle que soit la
+//      version visée, la priorité ou la sévérité déclarée (D-281 §3) ; seuls
+//      l'élément désigné, ou les compléments, sont en pause au portail.
 //   2. LA SÉVÉRITÉ DÉCLARÉE N'ENTRE PAS. Elle oriente déjà le MESSAGE PATIENT
 //      (`REGLE_ORIENTATION_EI`, v2 depuis [[D-278]] §1 — « incertaine » y a
 //      son propre message —, propriétaire praticien) ; la reprendre ici
@@ -94,7 +105,11 @@ export const SAFETY_EI_METADATA: SafetyEffetIndesirableMetadata = {
 };
 
 export const SAFETY_EI_SHA256 = sha256(
-  JSON.stringify({ statuts: STATUTS_EI_NON_TRAITES, conduite: CONDUITE_EFFET_INDESIRABLE }),
+  JSON.stringify({
+    conduite: CONDUITE_EFFET_INDESIRABLE,
+    textes: [TEXTE_PAUSE_ELEMENT, TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_AVIS_RENDU],
+    statuts: STATUTS_EI_NON_TRAITES,
+  }),
 );
 
 /** Identifiant unique de la règle d'interruption sur effet indésirable. */
@@ -144,7 +159,7 @@ export function interruptionEffetIndesirableActive(): boolean {
  *   2. la règle est signée ⇒ l'association commence à INTERROMPRE.
  *
  * Les inverser inhiberait sur une colonne que personne n'a encore remplie : le
- * premier signalement rattaché serait aussi le premier à retirer les candidats
+ * premier signalement rattaché serait aussi le premier à bloquer la diffusion
  * d'un dossier, sans qu'aucun signalement antérieur n'ait pu l'être. La capture
  * précède l'inhibition, et l'écart entre les deux est du temps d'observation.
  */
@@ -156,10 +171,9 @@ export function associationEffetIndesirableDisponible(): boolean {
  * La règle en `ValidatedClinicalRuleRef`, ou `null` quand elle n'est pas signée.
  *
  * UNE SEULE RÈGLE POUR TOUS LES SIGNALEMENTS : l'arbitrage est un, sa date sera
- * une, sa source sera une. Le signalement concerné est identifié dans la
- * `rationale` du constat — par son identifiant, jamais par les mots du patient,
- * qui décrivent des symptômes et n'ont rien à faire dans un objet haché puis
- * servi hors du dossier.
+ * une, sa source sera une. Elle est jointe à la revue clinique, qui ne porte
+ * aucun constat d'effet indésirable (D-281 §3) : les signalements en attente
+ * sont nommés par le refus de diffusion, jamais par les mots du patient.
  */
 export function regleEffetIndesirableValidee(): ValidatedClinicalRuleRef | null {
   if (!tableEffetIndesirableSignee()) return null;
