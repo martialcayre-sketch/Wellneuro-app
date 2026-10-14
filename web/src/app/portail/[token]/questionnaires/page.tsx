@@ -19,6 +19,8 @@ import {
 } from '@/lib/portail/hubQuestionnaires';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
+import { DateNaissanceEcran, EcranCircuitMineur } from '@/components/patient/DateNaissanceEcran';
+import type { StatutAge } from '@/lib/patient/gardeAge';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
 import { LienFichesRemises } from '@/components/patient-companion/LienFichesRemises';
@@ -43,6 +45,9 @@ export default function QuestionnairesHubPage() {
   const [state, setState] = useState<{ status: 'loading' | 'ready' | 'error'; error?: string }>({ status: 'loading' });
   const [patient, setPatient] = useState<{ idPatient: string; prenom: string; nom: string } | null>(null);
   const [assignations, setAssignations] = useState<AssignationPatient[]>([]);
+  // D-284 §3 et §4. `majeur` par défaut : ce n'est qu'un choix d'écran — les
+  // routes d'écriture refusent de toute façon un dossier qui ne l'est pas.
+  const [statut, setStatut] = useState<StatutAge>('majeur');
   // Agendas du sommeil en cours : compte de nuits et position dans la fenêtre,
   // rien d'autre. En cas d'échec de lecture, tableau vide — le hub retombe sur
   // son comportement d'avant, jamais sur une supposition.
@@ -200,9 +205,15 @@ export default function QuestionnairesHubPage() {
         return;
       }
       setPatient(data.patient);
-      setAssignations(data.assignations);
-      setAgendas(data.agendas ?? []);
-      setAgendasAli(data.agendasAlimentaires ?? []);
+      // Un patient mineur garde son parcours (protocole, documents remis), mais
+      // ses questionnaires et agendas sont en pause : ils ne sont pas proposés.
+      // Un dossier clos ne recueille plus rien : aucune date ne lui est demandée.
+      const statutServi = data.dossierOuvert === false ? 'majeur' : (data.statutAge ?? 'majeur');
+      setStatut(statutServi);
+      const enPause = statutServi !== 'majeur';
+      setAssignations(enPause ? [] : data.assignations);
+      setAgendas(enPause ? [] : (data.agendas ?? []));
+      setAgendasAli(enPause ? [] : (data.agendasAlimentaires ?? []));
       setDerniereReponseLe(data.derniereReponseLe);
       setSignauxParcours(
         data.parcours ?? { consultationStatut: null, bookletEnvoye: false, bilanConsultable: false },
@@ -262,6 +273,16 @@ export default function QuestionnairesHubPage() {
     return (
       <div className="w-full max-w-2xl space-y-4">
         <AvantDeCommencer token={token} onDone={() => setAvantRequis(false)} />
+      </div>
+    );
+  }
+
+  // D-284 §3 : la date se demande avant tout autre geste, y compris ici — le
+  // hub s'atteint par son adresse sans passer par l'accueil.
+  if (statut === 'date_manquante') {
+    return (
+      <div className="w-full max-w-md space-y-4">
+        <DateNaissanceEcran onEnregistree={() => void charger()} />
       </div>
     );
   }
@@ -331,6 +352,8 @@ export default function QuestionnairesHubPage() {
       {/* Étapes 5-6 pilotées par le contrat (SP-CONV LOT-04) — jamais
           rétrogrades : les signaux sous-jacents ne reculent pas. */}
       <PatientJourneyProgress steps={buildJourneySteps(etatParcours?.journeyCurrentId ?? 4)} />
+
+      {statut === 'mineur' && <EcranCircuitMineur />}
 
       <MonParcoursAccueil
         token={token}

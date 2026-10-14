@@ -11,6 +11,7 @@ import {
 import { createPublicId } from '@/lib/ids';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
+import { refusSaisieSantePour } from '@/lib/patient/gardeAgeServeur';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import {
   notifierPraticienSignalSecurite,
@@ -186,6 +187,20 @@ export async function POST(req: Request): Promise<NextResponse> {
         { ok: false, reason: RAISON_QUESTIONNAIRE_SUSPENDU, error: MESSAGE_QUESTIONNAIRE_SUSPENDU },
         { status: 409 }
       ), requestContext);
+    }
+
+    // D-284 §3 : questionnaires en pause tant que le patient n'est pas majeur
+    // (date de naissance manquante, ou mineur en attente de son circuit).
+    // Refus AVANT tout calcul et toute écriture, comme ci-dessus.
+    const refusAge = await refusSaisieSantePour(idPatient);
+    if (refusAge) {
+      logger.warn({
+        event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_UNAVAILABLE,
+        domain: 'QUESTIONNAIRE',
+        message: 'Soumission refusée : garde d’âge',
+        context: finalizeLogContext(requestContext, { statusCode: 409, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json({ ok: false, ...refusAge }, { status: 409 }), requestContext);
     }
 
     // Calculer le score — resolver commun catalogue/cabinet en mode

@@ -48,6 +48,8 @@ function mockOwner(): void {
     email: OWNER.email,
     accessTokenRevoked: false,
     sessionsInvalidesAvant: null,
+    // Majeur : la garde d'âge (D-284 §3) laisse passer.
+    dateNaissance: '1985-03-14',
   });
 }
 
@@ -115,6 +117,23 @@ describe('POST /api/portail/agenda-sommeil', () => {
     const json = (await res.json()) as { reason?: string };
     expect(res.status).toBe(409);
     expect(json.reason).toBe('locked');
+    expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
+  });
+
+  it('★ date de naissance manquante : 409, agenda en pause, aucune écriture (D-284 §3)', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: OWNER.idPatient,
+      actif: true,
+      email: OWNER.email,
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+      dateNaissance: null,
+    });
+    const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses } }));
+    const json = (await res.json()) as { reason?: string };
+    expect(res.status).toBe(409);
+    expect(json.reason).toBe('date_naissance_requise');
     expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
   });
 

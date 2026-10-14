@@ -164,6 +164,8 @@ beforeEach(() => {
     email: OWNER.email,
     accessTokenRevoked: false,
     sessionsInvalidesAvant: null,
+    // Majeur : la garde d'âge (D-284 §3) laisse passer.
+    dateNaissance: '1985-03-14',
   });
   prisma.agendaAlimentaireJour.findMany.mockResolvedValue([]);
   prisma.agendaAlimentaireJour.create.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
@@ -920,6 +922,22 @@ describe('POST /api/portail/agenda-alimentaire', () => {
       req('POST', cookieFor(), { body: corpsPost({ reponses: { aucunePrise: true } }) }),
     );
     expect(sansPrise.status).toBe(201);
+  });
+
+  it('★ date de naissance manquante : 409, aucune journée écrite (D-284 §3)', async () => {
+    const { POST } = await chargerRoute('true');
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: OWNER.idPatient,
+      actif: true,
+      email: OWNER.email,
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+      dateNaissance: null,
+    });
+    const res = await POST(req('POST', cookieFor(), { body: corpsPost() }));
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { reason?: string }).reason).toBe('date_naissance_requise');
+    expect(prisma.agendaAlimentaireJour.create).not.toHaveBeenCalled();
   });
 
   it('enregistre la journée du jour (201) avec l’idPatient de la SESSION et la version de contrat', async () => {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { refusSaisieSantePour } from '@/lib/patient/gardeAgeServeur';
 import { dateJourParis } from '@/lib/dateParis';
 import {
   authorizeAgendaAlimentairePortail,
@@ -638,6 +639,10 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     if (ass.statutReponses === 'verrouille' || ass.statutReponses === 'modification_demandee') {
       return refuserEcriture('locked', 'Cet agenda est clôturé.', 409, requestContext);
     }
+    // D-284 §3 : questionnaires en pause tant que le patient n'est pas majeur
+    // (date de naissance manquante, ou mineur en attente de son circuit).
+    const refusAge = await refusSaisieSantePour(auth.idPatient);
+    if (refusAge) return refuserEcriture(refusAge.reason, refusAge.error, 409, requestContext);
 
     // 4 — DATE LIMITE : PLUS ICI. Elle a déménagé dans la barrière « 7 bis » de
     // `authorizeAgendaAlimentairePortail`, armée par `verifierDateLimite`

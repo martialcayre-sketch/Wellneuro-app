@@ -10261,3 +10261,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merge, constat de l'image, puis lot (h).
 
 **Ouvert.** Migration de retrait de la colonne (rang 4).
+
+## 2026-10-14 — D-284 lot (h) : date de naissance, pause des questionnaires et de la biologie
+
+**Fait.** Lot (g) déployé et constaté (v16, champ absent, 0 NIR). Lot (h) : garde d'âge unique, saisie patient sans écrasement, gardes serveur (questionnaires, anamnèse, agendas, dépôt biologique), étape date au portail, mineur en pause, v17 avec accusé ; textes validés. Revue wn-reviewer GO, deux P2 corrigés.
+
+**Écarté.** Garder la réponse à une proposition de réévaluation (aucune assignation) ; demander la date à un dossier clos.
+
+**Prochaine action.** PR, merge, constat sur un dossier de test ; puis lot (i).
+
+**Ouvert.** Origine de la date non tracée ; biologie côté praticien ouverte.

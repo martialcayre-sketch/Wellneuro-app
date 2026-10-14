@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { refusSaisieSantePour } from '@/lib/patient/gardeAgeServeur';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import {
   authorizeAgendaPortail,
@@ -175,6 +176,10 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     if (ass.statutReponses === 'verrouille') {
       return refuserEcriture('locked', 'Cet agenda est clôturé.', 409, requestContext);
     }
+    // D-284 §3 : questionnaires en pause tant que le patient n'est pas majeur
+    // (date de naissance manquante, ou mineur en attente de son circuit).
+    const refusAge = await refusSaisieSantePour(auth.idPatient);
+    if (refusAge) return refuserEcriture(refusAge.reason, refusAge.error, 409, requestContext);
     // Date limite (facultative) : bloque la saisie une fois dépassée, jamais la
     // consultation d'un agenda déjà clôturé (déjà géré ci-dessus).
     if (isDeadlineExpired(ass.dateLimite)) {

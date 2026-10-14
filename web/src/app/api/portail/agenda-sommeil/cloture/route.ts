@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { refusSaisieSantePour } from '@/lib/patient/gardeAgeServeur';
 import { authorizeAgendaPortail, dateJourParis } from '@/lib/agenda-sommeil/portail';
 import { cloturerAgenda } from '@/lib/agenda-sommeil/cloture';
 import { calculerFenetre, listNuits, resolveNuitsActives } from '@/lib/agenda-sommeil/persistence';
@@ -23,6 +24,10 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
 
     const auth = await authorizeAgendaPortail(req, idAssignation);
     if ('ok' in auth) return NextResponse.json(auth, { status: auth.status });
+    // D-284 §3 : questionnaires en pause tant que le patient n'est pas majeur
+    // (date de naissance manquante, ou mineur en attente de son circuit).
+    const refusAge = await refusSaisieSantePour(auth.idPatient);
+    if (refusAge) return NextResponse.json({ ok: false, ...refusAge }, { status: 409 });
 
     const nuitsActives = resolveNuitsActives(
       await listNuits(auth.idPatient, auth.assignation.idAssignation),

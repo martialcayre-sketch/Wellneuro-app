@@ -31,7 +31,7 @@ function cookie(idPatient = OWNER.idPatient): string {
 function mockOwner(): void {
   prisma.patient.findUnique.mockResolvedValue({
     idPatient: OWNER.idPatient, actif: true, email: OWNER.email,
-    accessTokenRevoked: false, sessionsInvalidesAvant: null,
+    accessTokenRevoked: false, sessionsInvalidesAvant: null, dateNaissance: '1985-03-14',
   });
 }
 function post(c: string | undefined, body: unknown): Request {
@@ -77,6 +77,19 @@ describe('POST /api/portail/agenda-sommeil/cloture', () => {
     const json = (await res.json()) as { reason?: string };
     expect(res.status).toBe(409);
     expect(json.reason).toBe('trop_tot');
+    expect(cloturerAgenda).not.toHaveBeenCalled();
+  });
+
+  it('★ date de naissance manquante : 409, l’agenda ne se clôture pas (D-284 §3)', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(ASS);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: OWNER.idPatient, actif: true, email: OWNER.email,
+      accessTokenRevoked: false, sessionsInvalidesAvant: null, dateNaissance: null,
+    });
+    prisma.agendaSommeilNuit.findMany.mockResolvedValue([nuit('2026-06-25'), nuit('2026-07-15')]);
+    const res = await POST(post(cookie(), { idAssignation: 'ASS_AGD' }));
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { reason?: string }).reason).toBe('date_naissance_requise');
     expect(cloturerAgenda).not.toHaveBeenCalled();
   });
 

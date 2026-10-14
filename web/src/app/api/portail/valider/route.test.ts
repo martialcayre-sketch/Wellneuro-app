@@ -54,6 +54,8 @@ const compte = {
   email: PATIENT.email,
   accessTokenRevoked: false,
   sessionsInvalidesAvant: null,
+  // Majeur : la garde d'âge (D-284 §3) laisse passer.
+  dateNaissance: '1985-03-14',
 };
 
 const consultation = {
@@ -134,6 +136,15 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
   // réarme « Florence 1 », qui recommence donc à envoyer le MFI-20 à chaque
   // validation de consultation. C'est cohérent — l'instrument est réparé — mais
   // c'est un effet de la réactivation, pas une décision distincte.
+  it('★ date de naissance manquante : 409, ni anamnèse ni pack, rien n’est écrit (D-284 §3)', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ ...compte, dateNaissance: null });
+    const response = await POST(post(['Q_NEU_03']));
+    expect(response.status).toBe(409);
+    expect(((await response.json()) as { reason: string }).reason).toBe('date_naissance_requise');
+    expect(prisma.consultation.update).not.toHaveBeenCalled();
+    expect(prisma.assignation.create).not.toHaveBeenCalled();
+  });
+
   it('écarte l’instrument suspendu et n’en assigne pas l’assignation', async () => {
     const response = await POST(post(['Q_NEU_03', 'Q_FIB_03']));
     expect(response.status).toBe(200);

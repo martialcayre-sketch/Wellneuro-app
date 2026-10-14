@@ -479,6 +479,21 @@ fonction neuve, sauf la fiche signalétique. **Reste ouvert** : le seuil d'âge
   naissance sur 32, aucun de moins de 21 ans.
 - **Reste à faire valider par un avocat** : les 15–17 ans (renvoi de l'avis).
 
+**Mise en œuvre du lot (h), 2026-10-14.** Au portail, la date se demande juste
+après « Avant de commencer » et avant tout le reste. Elle se fait confirmer,
+s'enregistre seulement si celle du dossier manque ou est illisible, et ne se
+corrige ensuite que par le praticien. La pause est tenue par les **routes**,
+pas par l'écran : soumission d'un questionnaire, anamnèse, agendas du sommeil
+et alimentaire, dépôt d'un compte rendu biologique. Périmètre arbitré par le
+responsable le 2026-10-14 : questionnaires (agendas compris) et biologie
+seulement. Le suivi du protocole, l'alliance, le signalement d'un effet
+indésirable et les demandes de droits restent ouverts. **Un mineur reste en
+pause** tant que son circuit (lot (i)) n'existe pas : fail-closed. Il garde
+l'accès à son parcours. Le praticien voit l'état sur la fiche administrative.
+Information du patient : « Vos données personnelles » v17, accusé exigé.
+Constat du 2026-10-14 (agrégats) : 15 dossiers actifs sans date de naissance
+sur 31.
+
 *Antérieurement :* le traitement de données de **mineurs** n'était ni exclu ni
 encadré (point resté « à valider » dans
 `docs/claude/campagnes/2026-07-15-trust-information-patient-droits-v1/SOURCES_ET_VALIDATIONS.md`).
