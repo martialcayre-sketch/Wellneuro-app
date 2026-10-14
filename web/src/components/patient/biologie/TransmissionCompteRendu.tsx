@@ -14,6 +14,8 @@ import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
+import { DateNaissanceEcran } from '@/components/patient/DateNaissanceEcran';
+import { MESSAGE_CIRCUIT_MINEUR } from '@/lib/patient/gardeAge';
 
 // Le patient transmet le compte rendu de ses analyses à son praticien
 // ([[D-269]], BIO-INGEST LOT-04). La route garde l'accès, le drapeau, l'accusé,
@@ -146,6 +148,13 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
   }
 
   const { documents, accuseRequis, dossierOuvert, plafond } = etat.donnees;
+  // D-284 §3 : la date se demande avant le dépôt. `majeur` par défaut : choix
+  // d'écran seulement, la route refuse de toute façon.
+  const statutAge = etat.donnees.statutAge ?? 'majeur';
+
+  if (dossierOuvert && statutAge === 'date_manquante') {
+    return <DateNaissanceEcran onEnregistree={() => void charger()} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -174,6 +183,8 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
 
           {!dossierOuvert ? (
             <p className="text-base text-foreground">{MESSAGES_TRANSMISSION.dossier_cloture}</p>
+          ) : statutAge === 'mineur' ? (
+            <p className="text-base text-foreground">{MESSAGE_CIRCUIT_MINEUR}</p>
           ) : accuseRequis ? (
             <section aria-labelledby="accuse-usage-ia" className="space-y-4">
               <h2 id="accuse-usage-ia" className="text-lg font-semibold text-foreground">

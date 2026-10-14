@@ -92,6 +92,7 @@ describe('POST /api/patient/submit — aucun score renvoyé au patient', () => {
       email: assignation.emailPatient,
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
+      dateNaissance: '1985-03-14',
     });
     prisma.assignation.update.mockResolvedValue(assignation);
     prisma.questionnaireReponse.create.mockResolvedValue({});
@@ -113,6 +114,38 @@ describe('POST /api/patient/submit — aucun score renvoyé au patient', () => {
     // sans qu'aucune donnée n'ait fuité.
     const { titre: _titre, ...horsTitre } = corps;
     expect(JSON.stringify(horsTitre)).not.toMatch(/score|interpretation|total/i);
+  });
+
+  it('★ date de naissance manquante : 409, questionnaire en pause, rien n’est écrit (D-284 §3)', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient,
+      actif: true,
+      email: assignation.emailPatient,
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+      dateNaissance: null,
+    });
+    const res = await postSubmit(requeteSoumission());
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { reason: string }).reason).toBe('date_naissance_requise');
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
+
+  it('★ patient mineur : 409, pause maintenue jusqu’au circuit des mineurs (D-284 §4)', async () => {
+    const quinzeAns = new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient,
+      actif: true,
+      email: assignation.emailPatient,
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+      dateNaissance: quinzeAns,
+    });
+    const res = await postSubmit(requeteSoumission());
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { reason: string }).reason).toBe('circuit_mineur_requis');
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
   });
 
   it('calcule et persiste le score malgré tout', async () => {
@@ -240,6 +273,7 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
       email: assignationCabinet.emailPatient,
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
+      dateNaissance: '1985-03-14',
     });
     prisma.assignation.update.mockResolvedValue(assignationCabinet);
     prisma.questionnaireReponse.create.mockResolvedValue({});
@@ -363,6 +397,7 @@ describe('POST /api/patient/submit — EVA sans interprétation (D-088)', () => 
       email: assignationEva.emailPatient,
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
+      dateNaissance: '1985-03-14',
     });
     prisma.assignation.update.mockResolvedValue(assignationEva);
     prisma.questionnaireReponse.create.mockResolvedValue({});
@@ -454,6 +489,7 @@ describe('POST /api/patient/submit — bornes des saisies chiffrées', () => {
       email: assignation.emailPatient,
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
+      dateNaissance: '1985-03-14',
     });
     prisma.assignation.update.mockResolvedValue(assignation);
     prisma.questionnaireReponse.create.mockResolvedValue({});
@@ -522,6 +558,7 @@ describe('POST /api/patient/submit — questionnaires fonctionnels sans définit
       email: assignationFonctionnelle.emailPatient,
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
+      dateNaissance: '1985-03-14',
     });
     prisma.assignation.update.mockResolvedValue(assignationFonctionnelle);
     prisma.questionnaireReponse.create.mockResolvedValue({});
@@ -590,6 +627,7 @@ describe('POST /api/patient/submit — les agendas ne se soumettent pas ici', ()
       email: agenda.emailPatient,
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
+      dateNaissance: '1985-03-14',
     });
 
     const cookie = signPatientSession({ idPatient: agenda.idPatient, email: agenda.emailPatient });
@@ -641,6 +679,7 @@ describe('POST /api/patient/submit — aucune génération automatique', () => {
       email: assignation.emailPatient,
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
+      dateNaissance: '1985-03-14',
     });
     prisma.assignation.update.mockResolvedValue(assignation);
     prisma.questionnaireReponse.create.mockResolvedValue({});
@@ -693,6 +732,7 @@ describe('POST /api/patient/submit — réponse suicidaire : le praticien est pr
       email: assignation.emailPatient,
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
+      dateNaissance: '1985-03-14',
       praticienEmail: 'praticien@wellneuro.fr',
     });
     prisma.assignation.update.mockResolvedValue(assignation);
@@ -736,8 +776,10 @@ describe('POST /api/patient/submit — réponse suicidaire : le praticien est pr
     prisma.patient.findUnique
       .mockResolvedValueOnce({
         idPatient: assignation.idPatient, actif: true, email: assignation.emailPatient,
-        accessTokenRevoked: false, sessionsInvalidesAvant: null,
+        accessTokenRevoked: false, sessionsInvalidesAvant: null, dateNaissance: '1985-03-14',
       })
+      // Garde d'âge (D-284 §3) : un patient majeur passe.
+      .mockResolvedValueOnce({ dateNaissance: '1985-03-14' })
       .mockRejectedValueOnce(new Error('base indisponible'));
     const res = await postSubmit(soumettre(question.options[1].v));
     expect(res.status).toBe(200);
@@ -756,7 +798,7 @@ describe('POST /api/patient/submit — alerte et accusé : en parallèle, échec
     prisma.assignation.findUnique.mockResolvedValue(assignation);
     prisma.patient.findUnique.mockResolvedValue({
       idPatient: assignation.idPatient, actif: true, email: assignation.emailPatient,
-      accessTokenRevoked: false, sessionsInvalidesAvant: null, praticienEmail: 'praticien@wellneuro.fr',
+      accessTokenRevoked: false, sessionsInvalidesAvant: null, dateNaissance: '1985-03-14', praticienEmail: 'praticien@wellneuro.fr',
     });
     prisma.assignation.update.mockResolvedValue(assignation);
     prisma.questionnaireReponse.create.mockResolvedValue({});

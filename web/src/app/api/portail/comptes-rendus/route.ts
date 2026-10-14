@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { accepteNouvelEnvoi, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
+import { refusSaisieSante, statutAge, type StatutAge } from '@/lib/patient/gardeAge';
 import { isBioPortailEnabled } from '@/lib/biology-library/featureFlag';
 import { jugerFichier, MESSAGES_DEPOT, preparerImage, TAILLE_MAX_OCTETS } from '@/lib/biology-library/import/depot';
 import {
@@ -36,6 +37,9 @@ export type PortailComptesRendusResponse =
       documents: DocumentTransmisLu[];
       accuseRequis: boolean;
       dossierOuvert: boolean;
+      // D-284 §3 : hors `majeur`, le dépôt est en pause (date manquante, ou
+      // mineur en attente de son circuit).
+      statutAge: StatutAge;
       plafond: 'plafond_en_attente' | 'plafond_24h' | null;
     }
   | { ok: false; reason: string; error: string };
@@ -62,6 +66,7 @@ export async function GET(req: Request) {
       documents,
       accuseRequis: !accuse,
       dossierOuvert: accepteNouvelEnvoi(auth.patient),
+      statutAge: statutAge(auth.patient.dateNaissance, Date.now()),
       plafond: plafonds.ok ? null : plafonds.reason,
     } satisfies PortailComptesRendusResponse);
   } catch (err) {
@@ -81,6 +86,9 @@ export async function POST(req: Request) {
       return echec('accuse_requis', MESSAGES_TRANSMISSION.accuse_requis, 403);
     }
     if (!accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, MESSAGES_TRANSMISSION.dossier_cloture, 409);
+    // D-284 §3 : biologie en pause tant que le patient n'est pas majeur.
+    const refusAge = refusSaisieSante(statutAge(patient.dateNaissance, Date.now()));
+    if (refusAge) return echec(refusAge.reason, refusAge.error, 409);
     const plafonds = await jugerPlafonds(patient.idPatient);
     if (!plafonds.ok) return echec(plafonds.reason, MESSAGES_TRANSMISSION[plafonds.reason], 429);
 

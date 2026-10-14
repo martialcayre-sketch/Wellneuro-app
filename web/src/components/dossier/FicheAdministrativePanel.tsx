@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { PatchPatientResponse, PatientsApiResponse } from '@/app/api/praticien/patients/route';
 import { erreurLisible } from '@/lib/praticien/messagesDossier';
+import { statutAge } from '@/lib/patient/gardeAge';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 
@@ -178,6 +179,20 @@ export function FicheAdministrativePanel({
         Fiche administrative{' '}
         <span className="font-normal text-muted-foreground">{patient.idPatient}</span>
       </h3>
+
+      {/* D-284 §3 et §4 : ce que la garde d'âge fait au portail, dit au
+          praticien — lu sur le dossier ENREGISTRÉ, pas sur la saisie en cours. */}
+      {(() => {
+        const statut = statutAge(patient.dateNaissance, Date.now());
+        if (statut === 'majeur') return null;
+        return (
+          <p className="text-13 text-foreground bg-accent/40 rounded-md px-3 py-2">
+            {statut === 'date_manquante'
+              ? 'Date de naissance manquante : questionnaires et dépôt de biologie sont en pause côté patient. Elle lui sera demandée à sa prochaine connexion ; vous pouvez aussi la saisir ici.'
+              : 'Dossier d’un mineur : questionnaires et dépôt de biologie restent en pause côté patient, en attente du circuit des mineurs (validation par un titulaire de l’autorité parentale).'}
+          </p>
+        );
+      })()}
 
       {GROUPES.map(groupe => (
         <fieldset key={groupe.titre} className="space-y-2">

@@ -22,6 +22,8 @@ import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { SaveStatusIndicator, type SaveError } from '@/components/patient/SaveStatusIndicator';
 import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/PatientJourneyProgress';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
+import { DateNaissanceEcran, EcranCircuitMineur } from '@/components/patient/DateNaissanceEcran';
+import type { StatutAge } from '@/lib/patient/gardeAge';
 import { DocumentTrust } from '@/components/patient/trust/DocumentTrust';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 
@@ -569,12 +571,23 @@ function DoneScreen({ token, premiereAssignation }: { token: string; premiereAss
 type Step =
   | { name: 'loading' }
   | { name: 'avant' } // séquence TRUST « Avant de commencer », avant tout recueil
+  | { name: 'date' } // D-284 §3 : date de naissance manquante, avant tout autre geste
+  | { name: 'mineur' } // D-284 §4 : circuit des mineurs, pause maintenue (lot i)
   | { name: 'consent' }
   | { name: 'fiche' }
   | { name: 'anamnese' }
   | { name: 'done'; premiereAssignation: string | null };
 
-function prochaineEtape(c: PortailConsultationState | null, premiere: string | null): Step {
+// LA GARDE D'ÂGE PASSE EN TÊTE, juste après « Avant de commencer » : l'information
+// précède le recueil, et la date précède tout le reste (D-284 §3). Un dossier
+// déjà onboardé la rencontre aussi — c'est le cas des dossiers existants sans date.
+function prochaineEtape(
+  c: PortailConsultationState | null,
+  premiere: string | null,
+  statut: StatutAge,
+): Step {
+  if (statut === 'date_manquante') return { name: 'date' };
+  if (statut === 'mineur') return { name: 'mineur' };
   if (!c || c.statut === 'validee') return { name: 'done', premiereAssignation: premiere };
   if (!c.consentementDonne) return { name: 'consent' };
   if (!c.ficheRemplie) return { name: 'fiche' };
@@ -592,12 +605,16 @@ export default function PortailPage() {
   const [idPatient, setIdPatient] = useState('');
   const [consultation, setConsultation] = useState<PortailConsultationState | null>(null);
   const [premiere, setPremiere] = useState<string | null>(null);
+  const [statut, setStatut] = useState<StatutAge>('date_manquante');
 
   const appliquerSession = useCallback((data: Extract<PortailSessionResponse, { ok: true }>) => {
     setEmail(data.patient.email.toLowerCase());
     setIdPatient(data.patient.idPatient);
     setConsultation(data.consultation);
     setPremiere(data.premiereAssignation);
+    // Un dossier clos ne recueille plus rien : aucune date ne lui est demandée.
+    const statutAffiche: StatutAge = data.dossierOuvert === false ? 'majeur' : data.statutAge;
+    setStatut(statutAffiche);
     // Séquence TRUST « Avant de commencer » : requise tant qu'un des documents
     // exigeant un accusé n'en a pas un sur sa version courante (patients
     // existants inclus, une fois). La règle n'est plus « le cadre » depuis le
@@ -623,7 +640,7 @@ export default function PortailPage() {
         }
         await new Promise(resolve => setTimeout(resolve, 300 * (essai + 1)));
       }
-      setStep(prochaineEtape(data.consultation, data.premiereAssignation));
+      setStep(prochaineEtape(data.consultation, data.premiereAssignation, statutAffiche));
     })();
   }, [token]);
 
@@ -662,8 +679,29 @@ export default function PortailPage() {
       <div className="w-full max-w-2xl space-y-4">
         <AvantDeCommencer
           token={token}
-          onDone={() => setStep(prochaineEtape(consultation, premiere))}
+          onDone={() => setStep(prochaineEtape(consultation, premiere, statut))}
         />
+      </div>
+    );
+  }
+
+  if (step.name === 'date') {
+    return (
+      <div className="w-full max-w-md space-y-4">
+        <DateNaissanceEcran
+          onEnregistree={nouveau => {
+            setStatut(nouveau);
+            setStep(prochaineEtape(consultation, premiere, nouveau));
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (step.name === 'mineur') {
+    return (
+      <div className="w-full max-w-md space-y-4">
+        <EcranCircuitMineur lienParcours={`/portail/${token}/questionnaires`} />
       </div>
     );
   }
@@ -678,7 +716,7 @@ export default function PortailPage() {
           onAccepted={() => {
             const next = consultation ? { ...consultation, consentementDonne: true } : null;
             setConsultation(next);
-            setStep(prochaineEtape(next, premiere));
+            setStep(prochaineEtape(next, premiere, statut));
           }}
         />
       </div>
@@ -696,7 +734,7 @@ export default function PortailPage() {
           onDone={() => {
             const next = consultation ? { ...consultation, ficheRemplie: true } : null;
             setConsultation(next);
-            setStep(prochaineEtape(next, premiere));
+            setStep(prochaineEtape(next, premiere, statut));
           }}
         />
       </div>

@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les vingt-neuf documents attendus', () => {
+  it('expose les trente documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -56,6 +56,8 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v15',
       // `D-284` §2 — le numéro de sécurité sociale n'est plus recueilli.
       'donnees_confidentialite@v16',
+      // `D-284` §3 et §4 — la date de naissance demandée, et ce que son absence suspend.
+      'donnees_confidentialite@v17',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -121,7 +123,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v16');
+    expect(courant.version).toBe('v17');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -626,7 +628,7 @@ describe('registre des documents TRUST', () => {
     // patient ne peut plus dire que son praticien le tient. Une seule section
     // change ; une reformulation rougit ici.
     const v15 = getVersion('donnees_confidentialite', 'v15')!;
-    const v16 = getDocumentCourant('donnees_confidentialite');
+    const v16 = getVersion('donnees_confidentialite', 'v16')!;
     expect(v16.version).toBe('v16');
     const titre = 'Quelles données sont recueillies ?';
     const avant = v15.sections.find(s => s.titre === titre)?.paragraphes ?? [];
@@ -645,6 +647,26 @@ describe('registre des documents TRUST', () => {
     // v15, dû par tous les dossiers actifs, s'effaçait.
     expect(v16.requiresAcknowledgement).toBe(true);
     expect(v16.publieLe >= v15.publieLe).toBe(true);
+  });
+
+  it('`D-284` §3 et §4 : la v17 nomme la date de naissance et la pause, mot pour mot, et rien d’autre', () => {
+    // UN SEUL PARAGRAPHE AJOUTÉ, juste après les renseignements administratifs.
+    const v16 = getVersion('donnees_confidentialite', 'v16')!;
+    const v17 = getDocumentCourant('donnees_confidentialite');
+    expect(v17.version).toBe('v17');
+    const titre = 'Quelles données sont recueillies ?';
+    const avant = v16.sections.find(s => s.titre === titre)?.paragraphes ?? [];
+    const apres = v17.sections.find(s => s.titre === titre)?.paragraphes ?? [];
+    expect(apres).toHaveLength(avant.length + 1);
+    const i = apres.findIndex(p => p.startsWith('Votre praticien tient aussi'));
+    expect(apres[i + 1]).toBe(
+      'Votre dossier porte aussi votre date de naissance. Si elle manque, elle vous est demandée à votre connexion : elle sert à vérifier votre âge, car jusqu’à 18 ans l’accompagnement suit un cadre particulier. Tant qu’elle n’est pas indiquée, vos questionnaires et l’envoi de vos analyses biologiques sont en pause. Une fois enregistrée, seul votre praticien peut la corriger.',
+    );
+    expect([...apres.slice(0, i + 1), ...apres.slice(i + 2)]).toEqual(avant);
+    expect(v17.sections.filter(s => s.titre !== titre)).toEqual(v16.sections.filter(s => s.titre !== titre));
+    // Même motif que la v16 : sans le sien, l'accusé de la v16 s'effaçait.
+    expect(v17.requiresAcknowledgement).toBe(true);
+    expect(v17.publieLe >= v16.publieLe).toBe(true);
   });
 
   it('la v6 nomme les résultats d’analyses ET dit ce qui n’en est pas fait', () => {

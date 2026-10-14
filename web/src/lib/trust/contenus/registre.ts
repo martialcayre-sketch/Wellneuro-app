@@ -1575,6 +1575,40 @@ const DONNEES_CONFIDENTIALITE_V16: VersionDocumentTrust = {
   hash: '1577577e799d09f0d9346fee9c428aa4227a7e77506b3e0f592679130c119108',
 };
 
+// LA v17 NOMME LA DATE DE NAISSANCE, que le document ne citait nulle part, et
+// dit ce que son absence suspend (D-284 §3 et §4, lot h). Accusé EXIGÉ pour le
+// même motif que la v16 : seule la version courante en réclame un, et celui de
+// la v16 n'aurait pas encore été posé par la plupart des dossiers.
+const DONNEES_CONFIDENTIALITE_V17: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v17',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V16.sections.map(section =>
+    section.titre === 'Quelles données sont recueillies ?'
+      ? {
+          ...section,
+          paragraphes: section.paragraphes.flatMap(paragraphe =>
+            paragraphe.startsWith('Votre praticien tient aussi, dans votre dossier, des renseignements administratifs')
+              ? [
+                  paragraphe,
+                  'Votre dossier porte aussi votre date de naissance. Si elle manque, elle vous est demandée à votre connexion : elle sert à vérifier votre âge, car jusqu’à 18 ans l’accompagnement suit un cadre particulier. Tant qu’elle n’est pas indiquée, vos questionnaires et l’envoi de vos analyses biologiques sont en pause. Une fois enregistrée, seul votre praticien peut la corriger.',
+                ]
+              : [paragraphe],
+          ),
+        }
+      : section,
+  ),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Votre date de naissance peut vous être demandée à votre connexion : elle sert à vérifier votre âge. Tant qu’elle manque, vos questionnaires et l’envoi de vos analyses biologiques sont en pause. Cette version reprend aussi les changements précédents : votre numéro de sécurité sociale n’est plus recueilli, et le compte rendu de vos analyses n’est plus transmis en entier.',
+  publieLe: '2026-10-14',
+  requiresAcknowledgement: true,
+  hash: '03052dd4d769e399be8cbebe92b49bcc3491f75b43f0b416972d26dba45198e4',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1595,6 +1629,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V14,
   DONNEES_CONFIDENTIALITE_V15,
   DONNEES_CONFIDENTIALITE_V16,
+  DONNEES_CONFIDENTIALITE_V17,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,

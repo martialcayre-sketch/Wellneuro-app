@@ -10,6 +10,8 @@ import {
   signPatientSession,
   readPatientSession,
 } from '@/lib/patient-session';
+import { statutAge, type StatutAge } from '@/lib/patient/gardeAge';
+import { accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -36,6 +38,12 @@ export type PortailSessionResponse =
       patient: { idPatient: string; prenom: string; nom: string; email: string };
       consultation: PortailConsultationState | null;
       premiereAssignation: string | null;
+      // D-284 §3 : tant qu'il n'est pas `majeur`, le portail demande la date
+      // (ou annonce le circuit des mineurs) avant tout autre geste.
+      statutAge: StatutAge;
+      // Un dossier clos ne recueille plus rien : le portail ne lui demande pas
+      // sa date (constat de revue du lot h).
+      dossierOuvert: boolean;
     }
   | { ok: false; reason: string; error: string };
 
@@ -94,6 +102,8 @@ export async function POST(req: Request): Promise<NextResponse> {
           }
         : null,
       premiereAssignation: premiere?.idAssignation ?? null,
+      statutAge: statutAge(patient.dateNaissance, Date.now()),
+      dossierOuvert: accepteNouvelEnvoi(patient),
     });
 
     // Rafraîchit le cookie (session glissante) : réémet l'identité déjà vérifiée
