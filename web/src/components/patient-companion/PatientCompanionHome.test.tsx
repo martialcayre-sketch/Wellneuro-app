@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_ELEMENT } from '@/lib/trust/pauseEffetIndesirable';
+import { TEXTE_PAUSE_AVIS_RENDU, TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_ELEMENT } from '@/lib/trust/pauseEffetIndesirable';
 import { PatientCompanionHome } from './PatientCompanionHome';
 
 // TROIS ACTIONS, dont une RETENUE : la fixture n'en portait qu'une, et le
@@ -154,13 +154,14 @@ describe('PatientCompanionHome', () => {
       expect(screen.queryByText(/Si vous le pouvez aujourd’hui : Un comprimé au dîner/)).toBeNull();
     });
 
-    it('avis rendu (« impliqué ») : le marqueur seul, aucun texte d’attente', async () => {
+    it('avis rendu (« impliqué ») : le marqueur et le texte signé de l’avis, aucun texte d’attente', async () => {
       mockFetch(
         { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: { ...vue, actions: actionsFermes }, pauses: [{ actionId: 'a4', texte: 'avis_rendu' }] },
         checkinVide,
       );
       render(<PatientCompanionHome token="TOK" />);
       expect(await screen.findByText('En pause')).toBeTruthy();
+      expect(screen.getByText(TEXTE_PAUSE_AVIS_RENDU)).toBeTruthy();
       expect(screen.queryByText(TEXTE_PAUSE_ELEMENT)).toBeNull();
       expect(screen.queryByText(TEXTE_PAUSE_COMPLEMENTS)).toBeNull();
     });

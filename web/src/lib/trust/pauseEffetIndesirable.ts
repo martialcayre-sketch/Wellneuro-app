@@ -12,13 +12,17 @@ import type { ProtocolActionType } from '@/lib/clinical-engine/types';
 // `interruptionEffetIndesirableActive()` avant de servir le résultat.
 
 /**
- * Les deux textes de la pause, SIGNÉS le 2026-10-12 (D-281 §4) et recopiés au
- * caractère près : un banc relit la décision et rougit au premier écart.
+ * Les trois textes de la pause, SIGNÉS (D-281 §4 : les deux de l'attente le
+ * 2026-10-12, celui de l'avis rendu le 2026-10-14) et recopiés au caractère
+ * près : un banc relit la décision et rougit au premier écart.
  */
 export const TEXTE_PAUSE_ELEMENT =
   "Vous nous avez signalé un effet que vous associez à cet élément. Il est en pause en attendant l'avis de votre praticien : ne le reprenez pas avant sa réponse. Le reste de votre programme continue.";
 export const TEXTE_PAUSE_COMPLEMENTS =
   "Vous nous avez signalé un effet sans pouvoir l'associer à un élément précis. Vos compléments sont en pause en attendant l'avis de votre praticien : ne les reprenez pas avant sa réponse. Votre alimentation et vos routines continuent.";
+/** L'avis rendu, élément impliqué : il ne dit rien d'une cause (`DC-27`). */
+export const TEXTE_PAUSE_AVIS_RENDU =
+  'Votre praticien a examiné votre signalement : cet élément reste en pause. Ne le reprenez pas ; votre programme va être adapté.';
 
 export type Rattachement = 'element' | 'ne_sait_pas' | 'autre_produit';
 export const RATTACHEMENTS: readonly Rattachement[] = ['element', 'ne_sait_pas', 'autre_produit'];
@@ -77,11 +81,9 @@ export type VerdictEffetIndesirable = {
 };
 
 /**
- * `element` et `complements` : les deux états d'attente, chacun avec son texte
- * signé (D-281 §4). `avis_rendu` : le praticien a rendu « impliqué » — l'élément
- * ne repart pas à l'identique (§5), mais AUCUN texte signé ne dit cet état (les
- * deux du §4 disent « en attendant l'avis ») : seul le marqueur « En pause »
- * s'affiche, jusqu'à ce qu'une décision en signe un.
+ * `element` et `complements` : les deux états d'attente. `avis_rendu` : le
+ * praticien a rendu « impliqué » — l'élément ne repart pas à l'identique (§5).
+ * Chacun a son texte signé (D-281 §4).
  */
 export type ElementEnPause = { actionId: string; texte: 'element' | 'complements' | 'avis_rendu' };
 
@@ -101,6 +103,31 @@ export function verdictCourant(reportId: string, verdicts: readonly VerdictEffet
 }
 
 /**
+ * Les signalements qui ATTENDENT l'avis du praticien (D-281 §3, §5) : rattachés
+ * — un élément, « Je ne sais pas » ou « un autre produit » — et sans verdict en
+ * tête de chaîne. Tant qu'il en reste un, aucun programme ne se diffuse pour le
+ * dossier, quelle que soit la version qu'il vise.
+ *
+ * LE STATUT N'Y ENTRE PAS (§5, « le statut ne lève rien ») : un signalement
+ * passé à « traité » ou « clos » sans verdict attend toujours. Un signalement
+ * SANS rattachement (aucun programme diffusé, formulaire d'avant, désignation
+ * illisible) n'attend rien ICI : la base n'y accepte aucun avis, et compter
+ * une attente qu'aucun geste ne lève enfermerait le dossier. Le formulaire
+ * d'avant qui répond « oui » au programme rejoindra l'attente quand une
+ * migration y aura ouvert l'avis (D-281 §5, arbitrage du 2026-10-14) —
+ * préalable de la signature. Une chaîne à deux têtes n'élit aucun verdict : le
+ * signalement attend — fail-closed, comme la pause.
+ *
+ * Ordre d'entrée conservé.
+ */
+export function signalementsEnAttente<S extends { id: string; rattachement: string | null }>(
+  signalements: readonly S[],
+  verdicts: readonly VerdictEffetIndesirable[],
+): S[] {
+  return signalements.filter(s => s.rattachement !== null && verdictCourant(s.id, verdicts) === null);
+}
+
+/**
  * Ce qui est en pause dans la version COURANTE du programme.
  *
  * - Sans verdict : l'élément désigné, ou TOUS les compléments pour « Je ne sais
@@ -115,8 +142,8 @@ export function verdictCourant(reportId: string, verdicts: readonly VerdictEffet
  * mettrait en pause un élément sans rapport ; et la version qui suit un verdict
  * « impliqué » EST l'aménagement du praticien. Le signalement, lui, survit au
  * remplacement (§3) : il attend son verdict côté praticien, et aucune nouvelle
- * version ne se diffuse avant (garde de l'étape 4). Une orientation ou une
- * prise de sang n'est jamais en pause.
+ * version ne se diffuse avant (`signalementsEnAttente`, garde de la
+ * diffusion). Une orientation ou une prise de sang n'est jamais en pause.
  */
 export function elementsEnPause(input: {
   signalements: readonly SignalementRattache[];
@@ -158,4 +185,24 @@ export function elementsEnPause(input: {
   return designables
     .filter(action => pauses.has(action.actionId))
     .map(action => ({ actionId: action.actionId, texte: pauses.get(action.actionId)! }));
+}
+
+const DATE_PARIS = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', year: 'numeric',
+});
+
+/**
+ * Le refus de diffusion (D-281 §3) : il NOMME le ou les signalements en
+ * attente, par leur date de dépôt — celle que la file des signalements affiche.
+ * Aucun mot du patient : ni produit, ni symptôme.
+ */
+export function messageDiffusionEnAttente(enAttente: readonly { soumisLe: Date }[]): string {
+  // Une date par jour : deux signalements du même jour ne la répètent pas.
+  const dates = [...new Set(enAttente.map(s => DATE_PARIS.format(s.soumisLe)))];
+  const liste = dates.length > 1 ? `${dates.slice(0, -1).join(', le ')} et le ${dates[dates.length - 1]}` : dates[0];
+  const sujet = enAttente.length > 1
+    ? `${enAttente.length} signalements d’effet indésirable, déposés le ${liste}, attendent`
+    : `Un signalement d’effet indésirable, déposé le ${liste}, attend`;
+  return `${sujet} votre avis : aucun programme ne peut être diffusé à ce patient avant que vous l’ayez rendu,`
+    + ' dans la file des signalements. Vos propositions et la version en préparation restent disponibles.';
 }

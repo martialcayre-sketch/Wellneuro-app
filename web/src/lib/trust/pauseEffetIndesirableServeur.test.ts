@@ -24,7 +24,13 @@ vi.mock('@/lib/clinical/safetyEffetIndesirableV1', () => ({
 
 import { actionOrientation } from '@/lib/clinical-engine/orientationAdressage';
 import type { ProtocolAction } from '@/lib/clinical-engine/types';
-import { designationPour, elementsDesProgrammesVises, pausesServies, programmeDiffuse } from './pauseEffetIndesirableServeur';
+import {
+  designationPour,
+  elementsDesProgrammesVises,
+  pausesServies,
+  programmeDiffuse,
+  signalementsEnAttenteDuDossier,
+} from './pauseEffetIndesirableServeur';
 
 const MAGNESIUM = { actionId: 'a-magnesium', type: 'supplement_exploration', title: 'Magnésium le soir' };
 // Le module ne lit que l'identifiant, le type et l'intitulé d'une action.
@@ -124,6 +130,42 @@ describe('pauseEffetIndesirableServeur', () => {
     it('aucun programme : aucune lecture', async () => {
       expect((await elementsDesProgrammesVises([])).size).toBe(0);
       expect(prisma.protocolDraft.findMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('signalementsEnAttenteDuDossier (étape 4, garde de diffusion)', () => {
+    it('tous les signalements rattachés du dossier, quelle que soit la version ; seuls ceux sans avis', async () => {
+      prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
+        { id: 's1', rattachement: 'element', soumisLe: new Date('2026-10-10T10:00:00Z') },
+        { id: 's2', rattachement: 'ne_sait_pas', soumisLe: new Date('2026-10-11T10:00:00Z') },
+      ]);
+      prisma.trustAdverseEffectVerdict.findMany.mockResolvedValue([
+        { id: 'v1', reportId: 's1', verdict: 'non_implique', elementActionId: null, supersedesVerdictId: null },
+      ]);
+      expect(await signalementsEnAttenteDuDossier('PAT_TEST')).toEqual([
+        { id: 's2', soumisLe: new Date('2026-10-11T10:00:00Z') },
+      ]);
+      // Aucun filtre de version ni de statut : le signalement survit au
+      // remplacement du programme (§3), et le statut ne lève rien (§5).
+      expect(prisma.trustAdverseEffectReport.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { idPatient: 'PAT_TEST', rattachement: { not: null } },
+      }));
+      expect(prisma.trustAdverseEffectVerdict.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { idPatient: 'PAT_TEST' },
+      }));
+    });
+
+    it('fail-closed : deux avis racines, ou l’avis d’un autre signalement, laissent l’attente', async () => {
+      prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
+        { id: 's1', rattachement: 'element', soumisLe: new Date('2026-10-10T10:00:00Z') },
+        { id: 's2', rattachement: 'element', soumisLe: new Date('2026-10-11T10:00:00Z') },
+      ]);
+      prisma.trustAdverseEffectVerdict.findMany.mockResolvedValue([
+        { id: 'v1', reportId: 's1', verdict: 'non_implique', elementActionId: null, supersedesVerdictId: null },
+        { id: 'v2', reportId: 's1', verdict: 'non_implique', elementActionId: null, supersedesVerdictId: null },
+        { id: 'v3', reportId: 's9', verdict: 'non_implique', elementActionId: null, supersedesVerdictId: null },
+      ]);
+      expect((await signalementsEnAttenteDuDossier('PAT_TEST')).map(s => s.id)).toEqual(['s1', 's2']);
     });
   });
 });

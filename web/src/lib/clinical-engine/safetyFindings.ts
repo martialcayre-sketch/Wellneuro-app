@@ -6,7 +6,6 @@ import {
   regleSecuriteValidee,
 } from '@/lib/clinical/safetySignalsV1';
 import {
-  CONDUITE_EFFET_INDESIRABLE,
   REGLE_SECURITE_EFFET_INDESIRABLE,
   SAFETY_EI_METADATA,
   STATUTS_EI_NON_TRAITES,
@@ -26,7 +25,6 @@ import {
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import {
   PREFIXE_FINDING_ANAMNESE,
-  PREFIXE_FINDING_EFFET_INDESIRABLE,
   PREFIXE_FINDING_QUESTIONNAIRE,
   estFindingAdressable,
   type CouvertureAdressage,
@@ -108,16 +106,12 @@ const LIMITATION_HORS_COTATION =
   'Ce libellé n’appartient pas à la cotation signée du 2026-08-23 : faute de rang connu,'
   + ' il est traité comme un adressage plutôt qu’ignoré.';
 
-const LIMITATION_EI_PROVENANCE =
-  'Ce constat provient d’un signalement déposé au portail patient, qui n’est pas une'
-  + ' passation : il ne cite aucune réponse de questionnaire.';
-
 /**
  * Un signalement d'effet indésirable, tel que la chaîne C1 le reçoit.
  *
  * NI LES SYMPTÔMES NI LE LIBELLÉ DU PRODUIT N'Y FIGURENT, et c'est une garde,
  * pas un oubli. Ce type traverse `construireSafetyFindings`, dont la sortie
- * entre dans la `rationale` d'un constat, puis dans l'empreinte de la carte de
+ * entre dans les limitations de la revue, puis dans l'empreinte de la carte de
  * décision, puis dans le corps d'une réponse HTTP. Les mots que le patient a
  * écrits sur ses symptômes n'ont rien à faire sur ce trajet ; le praticien les
  * lit sur la surface des signalements, à leur place.
@@ -126,27 +120,36 @@ export type EffetIndesirableRuntime = {
   id: string;
   /** Le protocole que le patient a DÉSIGNÉ, ou `null` — jamais déduit. */
   protocolDraftId: string | null;
+  /** `element` | `ne_sait_pas` | `autre_produit`, ou `null` sans rattachement ([[D-281]] §2). */
+  rattachement: string | null;
   /** `recu` | `en_cours` | `traite` | `clos`, tel que la base le porte. */
   statutTraitement: string;
 };
 
 /**
- * Les constats produits par le SECOND producteur ([[D-101]], `DC-42`).
+ * Le SECOND producteur ([[D-101]] amendée par [[D-281]], `DC-42`) — il ne
+ * produit plus AUCUN constat.
  *
- * TROIS SORTIES, ET AUCUNE N'EST « NE RIEN FAIRE EN SILENCE » :
+ * LA RÈGLE LIVRÉE EST REMPLACÉE (D-281 §3, arbitrage du 2026-10-14). Elle
+ * faisait d'un signalement rattaché et non traité un constat de sécurité, qui
+ * retirait tous les candidats du dossier et bloquait la carte. La règle amendée
+ * bloque la DIFFUSION SEULE : la carte, les propositions et la préparation de
+ * la version suivante restent ouvertes, et la garde vit dans la route de
+ * diffusion (`signalementsEnAttente`), qui lit les verdicts — ce producteur ne
+ * les lit pas, et n'a donc rien à décider de l'attente.
  *
- *   1. Signalement RATTACHÉ à un protocole et non traité ⇒ un constat. Il
- *      inhibe, exactement comme un signal d'anamnèse de rang `adressage`.
- *   2. Signalement non traité SANS rattachement ⇒ aucun constat, et une
- *      LIMITATION qui le dit. Le patient n'a désigné aucun protocole ; en
- *      deviner un serait la déduction que le lot interdit, et se taire ferait
- *      disparaître un signalement ouvert de la vue du praticien (`DC-35`).
- *   3. Table non signée ⇒ aucun constat, et la règle jointe en `candidate` :
- *      `buildClinicalReview` en tire seul la limitation « Règle candidate
- *      inactive ». Ce cas est celui de la LIVRAISON.
+ * DEUX SORTIES :
  *
- * L'IDENTIFIANT DU SIGNALEMENT EST CITÉ, ET RIEN D'AUTRE. Il permet au
- * praticien de retrouver la ligne ; il ne transporte aucun contenu clinique.
+ *   1. Table non signée ⇒ la règle jointe en `candidate` : `buildClinicalReview`
+ *      en tire seul la limitation « Règle candidate inactive ». Ce cas est
+ *      celui de la LIVRAISON, et sa sortie est celle d'avant l'amendement — les
+ *      empreintes des cartes ne bougent pas.
+ *   2. Table signée ⇒ la règle validée, et une LIMITATION pour les signalements
+ *      encore ouverts SANS rattachement : aucun programme diffusé, formulaire
+ *      d'avant (dossier mineur ou sans date de naissance), désignation
+ *      illisible (§2). Rien n'y est en pause ; se taire les ferait disparaître
+ *      de la vue du praticien (`DC-35`). Leur statut, ici, ne sert qu'à
+ *      compter la file ; l'attente ne le lit pas (§5).
  */
 function construireFindingsEffetIndesirable(effetsIndesirables: EffetIndesirableRuntime[]): {
   findings: SafetyFinding[];
@@ -169,38 +172,19 @@ function construireFindingsEffetIndesirable(effetsIndesirables: EffetIndesirable
     };
   }
 
-  const ouverts = effetsIndesirables.filter(
-    signalement => (STATUTS_EI_NON_TRAITES as readonly string[]).includes(signalement.statutTraitement),
-  );
-  // Tri par identifiant : l'ordre de la base n'est pas stable, et deux ordres
-  // produiraient deux empreintes de carte pour un même dossier — donc un 409
-  // sur une carte honnête.
-  const rattaches = ouverts
-    .filter(signalement => signalement.protocolDraftId !== null)
-    .sort((gauche, droite) => (gauche.id < droite.id ? -1 : gauche.id > droite.id ? 1 : 0));
-  const sansRattachement = ouverts.length - rattaches.length;
+  const horsRegle = effetsIndesirables.filter(
+    signalement => signalement.rattachement === null
+      && (STATUTS_EI_NON_TRAITES as readonly string[]).includes(signalement.statutTraitement),
+  ).length;
 
   return {
-    findings: rattaches.map(signalement => ({
-      findingId: `${PREFIXE_FINDING_EFFET_INDESIRABLE}${signalement.id}`,
-      kind: 'safety' as const,
-      disposition: 'requires_practitioner_review' as const,
-      // FIGÉ, pour le motif exact du premier producteur : faire varier
-      // `confidence` avec la sévérité déclarée en ferait une gravité chiffrée.
-      confidence: 'à_documenter' as const,
-      rationale: `${CONDUITE_EFFET_INDESIRABLE} Signalement : ${signalement.id}.`,
-      ruleId: regle.ruleId,
-      // VIDE ET VALIDE : le snapshot est bâti sur les passations, et un
-      // signalement de portail n'en est pas une.
-      provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
-      limitations: [LIMITATION_EI_PROVENANCE],
-    })),
+    findings: [],
     rules: [regle],
-    limitations: sansRattachement > 0
+    limitations: horsRegle > 0
       ? [
-        `${sansRattachement} signalement(s) d’effet indésirable non traité(s) ne sont rattachés à aucun`
-        + ' protocole : le patient n’en a désigné aucun, et la machine n’en déduit pas.'
-        + ' Ils n’interrompent donc rien et restent à examiner sur la surface des signalements.',
+        `${horsRegle} signalement(s) d’effet indésirable non traité(s) ne sont rattachés à aucun`
+        + ' élément d’un programme diffusé : rien n’y est en pause, et la machine n’en déduit pas.'
+        + ' Ils restent à examiner sur la surface des signalements.',
       ]
       : [],
   };

@@ -466,9 +466,10 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
       safetyFindings: ouverts,
       ...(adresses.length > 0 ? { safetyFindingsAdresses: adresses } : {}),
     },
-    // Ce que le second producteur a lu sans pouvoir conclure ([[D-101]]) : un
-    // signalement ouvert que le patient n'a rattaché à aucun protocole. La
-    // revue le porte, la carte le reprend, l'écran le rend.
+    // Ce que le second producteur a lu sans pouvoir conclure ([[D-101]],
+    // [[D-281]]) : un signalement ouvert que le patient n'a rattaché à aucun
+    // élément d'un programme diffusé. La revue le porte, la carte le reprend,
+    // l'écran le rend.
     limitations: securite.limitations,
   });
 

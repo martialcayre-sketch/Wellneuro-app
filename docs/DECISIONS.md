@@ -1394,7 +1394,8 @@ les identifiants d'action sont positionnels d'une version à l'autre, et la
 version qui suit un verdict « impliqué » est l'aménagement du praticien ;
 (b) après ce verdict, l'élément reste marqué « en pause » **sans texte** — les
 deux textes du §4 disent l'attente, celui de l'avis rendu se rédige et se
-signe à l'étape 4. **Préalables à la signature (étape 5)** : la garde de
+signe à l'étape 4 (fait : signé le 2026-10-14, §4, servi par la seconde PR
+de l'étape 4). **Préalables à la signature (étape 5)** : la garde de
 diffusion du §3 (sans elle, (a) ferait disparaître en silence une pause en
 attente), le texte de l'avis rendu, et le remplacement du producteur de la
 règle livrée, qui bloquerait tout dossier dont un signalement vise un
@@ -1453,7 +1454,25 @@ suivante. Un contrôle automatique serait peu fiable — les identifiants
 d'action sont positionnels d'une version à l'autre et les doses sont du texte
 libre ; il est routé au plan comme dette. L'étape 4 se livre en deux PR : la
 surface du verdict d'abord, puis la règle amendée, la garde de diffusion, le
-banc de cas fictifs et le texte de l'avis rendu.
+banc de cas fictifs et le texte de l'avis rendu. La seconde retire le constat
+de sécurité de la règle livrée : la carte de décision n'est plus touchée, et
+l'attente se lit à la diffusion seule. **Le formulaire d'avant bloque aussi
+la diffusion** (tranché par le responsable le 2026-10-14, sur scénario, à la
+revue de cette seconde PR) : un signalement qui répond « oui » au programme
+sans désigner d'élément — dossier mineur ou sans date de naissance, ou
+adulte resté sur l'ancien formulaire — attend l'avis du praticien comme les
+autres ; rien n'est mis en pause au portail, faute d'élément désigné, et le
+praticien désigne l'élément en cause, ou aucun. La base refuse aujourd'hui
+tout avis sur un signalement sans rattachement (migration du lot 2) : ce
+blocage n'est donc posé qu'avec la migration qui y ouvre l'avis, en PR
+séparée, puis le code qui le consomme — **préalable de la signature**
+(étape 5). Écarté : bloquer sans avis possible (le dossier resterait
+enfermé), laisser ces signalements hors de la règle. Sans programme
+diffusé, rien ne se rattache ni ne bloque (§2) : le signalement reste
+examiné sur la surface des signalements, que la revue clinique signale au
+praticien. Une désignation illisible au dépôt (lecture du programme en
+échec, signalement capturé sans programme) ne bloque rien non plus en
+l'état ; ce cas n'est pas tranché et reste à trancher avant la signature.
 
 **§6 — Ordre et signature.** (1) cette décision ; (2) la migration —
 l'élément désigné, le mode de rattachement, la validation —, relue puis

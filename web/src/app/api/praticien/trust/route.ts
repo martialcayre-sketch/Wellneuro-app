@@ -5,7 +5,12 @@ import { prisma } from '@/lib/prisma';
 import type { StatutTraitementSignalement } from '@/lib/trust/types';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { interruptionEffetIndesirableActive } from '@/lib/clinical/safetyEffetIndesirableV1';
-import { type Rattachement, verdictCourant, type VerdictEffetIndesirable } from '@/lib/trust/pauseEffetIndesirable';
+import {
+  type Rattachement,
+  signalementsEnAttente,
+  verdictCourant,
+  type VerdictEffetIndesirable,
+} from '@/lib/trust/pauseEffetIndesirable';
 import { elementsDesProgrammesVises } from '@/lib/trust/pauseEffetIndesirableServeur';
 
 /**
@@ -176,10 +181,21 @@ export async function GET(): Promise<NextResponse<TrustPraticienResponse>> {
       })),
     ].sort((a, b) => b.soumisLe.localeCompare(a.soumisLe));
 
+    // NON TRAITÉ : un signalement RATTACHÉ l'est tant qu'il attend l'avis du
+    // praticien, quel que soit son statut — passé à « traité » sans verdict, il
+    // attend toujours (D-281 §5, « le statut ne lève rien »). Les autres
+    // signalements et les demandes se comptent par statut.
+    const enAttente = new Set(signalementsEnAttente(effets, verdicts.map(v => ({
+      ...v, verdict: v.verdict as VerdictEffetIndesirable['verdict'],
+    }))).map(e => e.id));
+    const nonTraite = (s: SignalementPraticien) => (s.validation
+      ? enAttente.has(s.id)
+      : s.statutTraitement === 'recu' || s.statutTraitement === 'en_cours');
+
     return NextResponse.json({
       ok: true,
       signalements,
-      nonTraites: signalements.filter(s => s.statutTraitement === 'recu' || s.statutTraitement === 'en_cours').length,
+      nonTraites: signalements.filter(nonTraite).length,
       pauseServie: interruptionEffetIndesirableActive(),
     });
   } catch (err) {

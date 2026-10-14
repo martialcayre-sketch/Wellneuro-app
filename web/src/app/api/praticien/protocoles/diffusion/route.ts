@@ -35,6 +35,9 @@ import {
   type ApercuLettreAdressage,
 } from '@/lib/correspondance/lettreAdressageRemise';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
+import { interruptionEffetIndesirableActive } from '@/lib/clinical/safetyEffetIndesirableV1';
+import { messageDiffusionEnAttente } from '@/lib/trust/pauseEffetIndesirable';
+import { signalementsEnAttenteDuDossier } from '@/lib/trust/pauseEffetIndesirableServeur';
 
 // Validation « pour diffusion » du protocole (C2A LOT-03 Part B). Persiste
 // l'approbation praticien (contrat ProtocolDiffusionApproval), distincte de la
@@ -300,6 +303,27 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         },
         { status: 409 },
       );
+    }
+
+    // ── UN EFFET INDÉSIRABLE QUI ATTEND L'AVIS DU PRATICIEN ([[D-281]] §3) ───
+    //
+    // LA DIFFUSION SEULE EST BLOQUÉE : la carte, les propositions et la
+    // préparation de la version suivante restent ouvertes — la règle livrée,
+    // qui retirait tous les candidats du dossier, est remplacée par cette garde.
+    // Tout programme, toute version, quelle que soit la priorité : la pause ne
+    // vise que la version désignée, et diffuser la suivante la ferait
+    // disparaître en silence. Le statut du signalement ne lève rien (§5).
+    //
+    // Sous le verrou de la règle : d'ici sa signature (§6, étape 5), rien ne
+    // s'interrompt et aucune requête neuve n'est émise.
+    if (interruptionEffetIndesirableActive()) {
+      const enAttente = await signalementsEnAttenteDuDossier(idPatient);
+      if (enAttente.length > 0) {
+        return NextResponse.json(
+          { ok: false, reason: 'effet_indesirable_en_attente', error: messageDiffusionEnAttente(enAttente) },
+          { status: 409 },
+        );
+      }
     }
 
     // ── LES FICHES D'ASSIETTE, DRAPEAU OUVERT ([[D-251]] §7) ─────────────────
