@@ -130,7 +130,7 @@ nouveaux, décisions acceptées.
 | BP-12b | LOT-28 | Positions d'expert signées ; arbitrage de conflit persisté | à_faire | **oui** | BP-12a |
 | BP-13 | LOT-13 | Données physiologiques, traitements et compléments en cours | à_faire | **oui** | BP-00 |
 | BP-14 | LOT-14 | Identité d'auteur séparée du rôle | à_faire | **oui** | BP-00 |
-| BP-03 | LOT-03 | Série par analyte, jour n, trois dates | en_cours (fiche validée le 2026-10-14 ; 14 écarts d'unité lus, toutes des graphies ; code à écrire) | non | BP-01, BP-09 |
+| BP-03 | LOT-03 | Série par analyte, jour n, trois dates | en_cours (fiche validée le 2026-10-14 ; 14 écarts d'unité lus, toutes des graphies ; code livré le 2026-10-15, constat après déploiement restant) | non | BP-01, BP-09 |
 | BP-04 | LOT-04 | Attente typée sur les deux véhicules | à_faire | non | BP-01, BP-09 |
 | BP-05 | LOT-05 | Contexte de prélèvement typé (absorbe BP-06) | à_faire | **oui** | BP-00, BP-03 |
 | **Phase 2** | | **Premier parcours, étage outil** | | | |

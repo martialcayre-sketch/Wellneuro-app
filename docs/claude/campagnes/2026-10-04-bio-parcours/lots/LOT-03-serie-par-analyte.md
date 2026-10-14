@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "BP-03 — Série par analyte, jour n, trois dates"
-statut: "en_cours (2026-10-14) — fiche validée ; 14 écarts d'unité lus, toutes des graphies ; code à écrire"
+statut: "en_cours (2026-10-15) — code livré en une PR, sans migration ; reste le constat après déploiement, sur un dossier réel lu par identifiant"
 dépend_de: "LOT-01, LOT-09"
 ---
 

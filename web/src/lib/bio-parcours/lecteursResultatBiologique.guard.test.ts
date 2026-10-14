@@ -151,9 +151,17 @@ const COMMENTAIRES_ADMIS = [
   'web/src/components/patient-cockpit/ImportCompteRenduPanel.tsx',
   // Rendu attribué du commentaire d'une ligne, et son signal.
   'web/src/components/patient-cockpit/FaitsDuLaboratoire.tsx',
+  // BP-03, arbitrage 4 du 2026-10-14 : le commentaire d'un résultat est
+  // recopié sous sa valeur, dans la série de la fiche — la route le lit sur la
+  // ligne qui a créé le résultat, l'écran le transmet au rendu attribué.
+  // Praticien seulement ; ceux du compte rendu entier restent à l'import.
+  'web/src/app/api/praticien/biologie/resultats/route.ts',
+  'web/src/components/patient-cockpit/EstimeMesurePanel.tsx',
 ];
 
-const MOTIF_COMMENTAIRES = /\bcommentaires?(?:Lus?|_lus?|NonTranscrits?|_non_transcrits?)\b/;
+// `commentaireLaboratoire` : la charge de la route des résultats (BP-03),
+// suivie comme `faitsLaboratoire` l'est plus haut.
+const MOTIF_COMMENTAIRES = /\bcommentaires?(?:Lus?|_lus?|NonTranscrits?|_non_transcrits?|Laboratoire)\b/;
 
 export function lecteursDesCommentaires(fichiers: readonly { chemin: string; source: string }[]): string[] {
   return fichiers
@@ -199,9 +207,11 @@ describe('Commentaires du laboratoire — modules épinglés ([[D-278]] §3)', (
       { chemin: 'web/src/lib/neuf/e.ts', source: '// lit `commentaire_lu` ailleurs' },
       { chemin: 'web/src/lib/neuf/f.test.ts', source: 'commentaireLu: null,' },
       { chemin: 'web/src/lib/neuf/g.ts', source: 'const commentaire = "libre";' },
+      { chemin: 'web/src/lib/neuf/h.tsx', source: 'const t = r.commentaireLaboratoire?.texte;' },
     ]);
     expect(lus).toEqual([
       'web/src/lib/neuf/a.ts', 'web/src/lib/neuf/b.ts', 'web/src/lib/neuf/c.ts', 'web/src/lib/neuf/d.ts',
+      'web/src/lib/neuf/h.tsx',
     ]);
   });
 });

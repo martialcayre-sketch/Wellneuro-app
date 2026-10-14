@@ -5,6 +5,8 @@ import {
   calendriersParCycle,
   cycleDeLaDiffusion,
   estDiffusionRecevable,
+  joursZeroSuccessifs,
+  ouverturesDuCycle,
   type AncreDeRattachement,
   type DiffusionHistorique,
   type EpisodeDeRattachement,
@@ -248,5 +250,70 @@ describe('calendriersParCycle', () => {
     const { parCycle, nonRattachees } = calendriersParCycle([orpheline], ANCRES);
     expect(parCycle.size).toBe(0);
     expect(nonRattachees).toEqual(['a']);
+  });
+});
+
+// BP-03, arbitrage 2 : les jours 0 SUCCESSIFS, pour dater une mesure par le
+// calendrier en vigueur à son prélèvement. La fonction existante n'en garde
+// que le dernier ; les deux ne doivent jamais diverger.
+describe('ouverturesDuCycle — les jours 0 successifs (BP-03)', () => {
+  const CAS: Array<[string, DiffusionHistorique[]]> = [
+    ['une seule diffusion', [diffusion('a', 10, 'PRIO-A')]],
+    ['rediffusion sans pivot', [diffusion('a', 10, 'PRIO-A'), diffusion('b', 20, 'PRIO-A')]],
+    ['un pivot', [diffusion('a', 10, 'PRIO-A'), diffusion('b', 20, 'PRIO-B')]],
+    ['pivot puis retour', [diffusion('a', 10, 'PRIO-A'), diffusion('b', 20, 'PRIO-B'), diffusion('c', 30, 'PRIO-A')]],
+    ['désordre et même instant', [diffusion('z', 20, 'PRIO-B'), diffusion('b', 10, 'PRIO-A'), diffusion('a', 10, 'PRIO-C')]],
+  ];
+
+  it.each(CAS)('%s : le dernier jour 0 est celui de calendrierDuCycle', (_, diffusions) => {
+    const ouvertures = ouverturesDuCycle('ep-T0', diffusions);
+    const calendrier = calendrierDuCycle('ep-T0', diffusions);
+    expect(ouvertures.at(-1)?.jourZero).toEqual(calendrier?.jourZero);
+    expect(ouvertures.at(-1)?.approbationId).toBe(calendrier?.approbationId);
+    expect(ouvertures.length > 1).toBe(calendrier?.relance);
+  });
+
+  it('rend la première diffusion puis chaque pivot, et rien d’autre', () => {
+    const ouvertures = ouverturesDuCycle('ep-T0', [
+      diffusion('a', 10, 'PRIO-A'),
+      diffusion('b', 15, 'PRIO-A'),
+      diffusion('c', 20, 'PRIO-B'),
+      diffusion('d', 30, 'PRIO-A'),
+    ]);
+    expect(ouvertures.map(o => [o.approbationId, o.jourZero])).toEqual([
+      ['a', jour(10)],
+      ['c', jour(20)],
+      ['d', jour(30)],
+    ]);
+  });
+
+  it('sans diffusion, aucun jour 0', () => {
+    expect(ouverturesDuCycle('ep-T0', [])).toEqual([]);
+  });
+});
+
+describe('joursZeroSuccessifs — cycles confondus, rattachement inchangé', () => {
+  it('fond les cycles dans l’ordre chronologique', () => {
+    const jours = joursZeroSuccessifs(
+      [diffusion('t1', 70, 'PRIO-C', T1), diffusion('a', 10, 'PRIO-A'), diffusion('b', 20, 'PRIO-B')],
+      ANCRES,
+    );
+    expect(jours.map(o => [o.cycleId, o.approbationId])).toEqual([
+      ['ep-T0', 'a'],
+      ['ep-T0', 'b'],
+      ['ep-T1', 't1'],
+    ]);
+  });
+
+  it('une diffusion non recevable ou non rattachée ne date rien', () => {
+    const jours = joursZeroSuccessifs(
+      [
+        diffusion('a', 10, 'PRIO-A', T0, { confirmation: 'autre' }),
+        // Aucune ancre avant le jour -5 : non rattachée.
+        diffusion('b', -5, 'PRIO-A', null),
+      ],
+      ANCRES,
+    );
+    expect(jours).toEqual([]);
   });
 });

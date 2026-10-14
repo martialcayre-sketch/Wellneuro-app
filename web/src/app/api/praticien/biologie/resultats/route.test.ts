@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getServerSession, prisma } = vi.hoisted(() => ({
+const { getServerSession, prisma, lireJoursZeroSuccessifs } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
+  lireJoursZeroSuccessifs: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
     biologyAnalyte: { findUnique: vi.fn() },
@@ -17,6 +18,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
 vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
+vi.mock('@/lib/protocol/calendriersPersistes', () => ({ lireJoursZeroSuccessifs }));
 
 import { Prisma } from '@/generated/prisma';
 import { GET, POST } from './route';
@@ -35,6 +37,13 @@ function postRequest(body: unknown): Request {
     body: JSON.stringify(body),
   });
 }
+
+/** Ce que la ligne lue porte en plus des faits : ni commentaire, ni laboratoire lu. */
+const SANS_COMMENTAIRE = {
+  commentaireLu: null,
+  commentaireNonTranscrit: false,
+  import: { laboratoireLu: null },
+};
 
 const LIGNE_CONSIGNEE = {
   id: 'res1',
@@ -91,6 +100,8 @@ beforeEach(() => {
   // La transaction de la correction rejoue ses lectures sur le même client.
   prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) => fn(prisma));
   prisma.$executeRaw.mockResolvedValue(1);
+  // Par défaut AUCUNE diffusion : aucun jour n.
+  lireJoursZeroSuccessifs.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -150,6 +161,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
         supersedesResultatId: null,
         corrigeeParId: null,
         faitsLaboratoire: null,
+        commentaireLaboratoire: null,
         annulation: null,
       },
     ]);
@@ -179,7 +191,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
     const IMPORTEE = {
       ...LIGNE_CONSIGNEE,
       source: 'import_labo',
-      ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'µg/L', valeurLue: '42,5' },
+      ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'µg/L', valeurLue: '42,5', ...SANS_COMMENTAIRE },
     };
 
     it('une mesure importée rend les faits de SA ligne lue, tels quels', async () => {
@@ -190,7 +202,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
 
     it('un seul des deux faits imprimé : l’autre reste `null`, jamais complété', async () => {
       prisma.resultatBiologique.findMany.mockResolvedValue([
-        { ...IMPORTEE, ligneCandidate: { intervalleLu: null, marquageLu: '*', uniteLue: 'µg/L', valeurLue: '42,5' } },
+        { ...IMPORTEE, ligneCandidate: { intervalleLu: null, marquageLu: '*', uniteLue: 'µg/L', valeurLue: '42,5', ...SANS_COMMENTAIRE } },
       ]);
       const payload = await (await GET(getRequest('PAT1'))).json();
       expect(payload.resultats[0].faitsLaboratoire).toEqual({ intervalle: null, marquage: '*' });
@@ -198,7 +210,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
 
     it('ligne lue sans aucun fait : silence (`null`), pas un objet vide', async () => {
       prisma.resultatBiologique.findMany.mockResolvedValue([
-        { ...IMPORTEE, ligneCandidate: { intervalleLu: null, marquageLu: null, uniteLue: 'µg/L', valeurLue: '42,5' } },
+        { ...IMPORTEE, ligneCandidate: { intervalleLu: null, marquageLu: null, uniteLue: 'µg/L', valeurLue: '42,5', ...SANS_COMMENTAIRE } },
       ]);
       const payload = await (await GET(getRequest('PAT1'))).json();
       expect(payload.resultats[0].faitsLaboratoire).toBeNull();
@@ -206,7 +218,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
 
     it('unité lue DISCORDANTE de l’unité du résultat : silence — l’intervalle d’une autre unité trompe', async () => {
       prisma.resultatBiologique.findMany.mockResolvedValue([
-        { ...IMPORTEE, ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'mg/L', valeurLue: '42,5' } },
+        { ...IMPORTEE, ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'mg/L', valeurLue: '42,5', ...SANS_COMMENTAIRE } },
       ]);
       const payload = await (await GET(getRequest('PAT1'))).json();
       expect(payload.resultats[0].faitsLaboratoire).toBeNull();
@@ -224,7 +236,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
 
     it('valeur CORRIGÉE à la validation (48 lu, 4,8 validé) : silence — la marque portait sur 48', async () => {
       prisma.resultatBiologique.findMany.mockResolvedValue([
-        { ...IMPORTEE, valeur: new Prisma.Decimal('4.8'), ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'µg/L', valeurLue: '48' } },
+        { ...IMPORTEE, valeur: new Prisma.Decimal('4.8'), ligneCandidate: { intervalleLu: '30 – 300', marquageLu: 'H', uniteLue: 'µg/L', valeurLue: '48', ...SANS_COMMENTAIRE } },
       ]);
       const payload = await (await GET(getRequest('PAT1'))).json();
       expect(payload.resultats[0].faitsLaboratoire).toBeNull();
@@ -233,7 +245,15 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
     it('la relation lue porte les deux faits, l’unité et la valeur lues, et rien d’autre de la ligne', async () => {
       await GET(getRequest('PAT1'));
       expect(prisma.resultatBiologique.findMany.mock.calls[0][0].select.ligneCandidate).toEqual({
-        select: { intervalleLu: true, marquageLu: true, uniteLue: true, valeurLue: true },
+        select: {
+          intervalleLu: true,
+          marquageLu: true,
+          uniteLue: true,
+          valeurLue: true,
+          commentaireLu: true,
+          commentaireNonTranscrit: true,
+          import: { select: { laboratoireLu: true } },
+        },
       });
     });
   });
@@ -935,5 +955,124 @@ describe('GET — les plages fonctionnelles servies avec la série', () => {
     const response = await GET(new Request(`${URL_BASE}?idPatient=PAT1`));
     const data = await response.json();
     expect(data.resultats).toHaveLength(2);
+  });
+});
+
+describe('GET — la série par analyte (BP-03)', () => {
+  const IMPORT_LABO = {
+    ...LIGNE_CONSIGNEE,
+    id: 'imp1',
+    source: 'import_labo',
+    preleveLe: new Date('2026-09-10T06:00:00.000Z'),
+    saisiLe: new Date('2026-09-12T09:00:00.000Z'),
+    ligneCandidate: {
+      intervalleLu: '30 – 300',
+      marquageLu: null,
+      uniteLue: 'µg/L',
+      valeurLue: '42,5',
+      commentaireLu: 'Contrôle à prévoir.',
+      commentaireNonTranscrit: false,
+      import: { laboratoireLu: 'Laboratoire A' },
+    },
+  };
+
+  it('ne sert que les têtes de fil, avec les trois dates, et reste cohérente avec les lignes', async () => {
+    prisma.resultatBiologique.findMany.mockResolvedValue([LIGNE_CONSIGNEE, LIGNE_CORRECTION, IMPORT_LABO]);
+    const payload = await (await GET(getRequest('PAT1'))).json();
+    expect(payload.resultats).toHaveLength(3);
+    expect(payload.series).toEqual([
+      {
+        analyteCode: 'BIO_FERRITINE',
+        // Une saisie praticien et un seul laboratoire lu.
+        motifs: ['laboratoire_non_identifie', 'contexte_non_renseigne'],
+        points: [
+          {
+            idResultat: 'res2',
+            valeur: '45.5',
+            unite: 'µg/L',
+            laboratoire: null,
+            preleveLe: '2026-09-01T08:00:00.000Z',
+            entreeLe: '2026-09-01T09:00:00.000Z',
+            correctionLe: '2026-09-02T09:00:00.000Z',
+            position: { type: 'aucune_diffusion' },
+          },
+          {
+            idResultat: 'imp1',
+            valeur: '42.5',
+            unite: 'µg/L',
+            laboratoire: 'Laboratoire A',
+            preleveLe: '2026-09-10T06:00:00.000Z',
+            entreeLe: '2026-09-12T09:00:00.000Z',
+            correctionLe: null,
+            position: { type: 'aucune_diffusion' },
+          },
+        ],
+      },
+    ]);
+    // Chaque point désigne une ligne servie, qui fait foi.
+    const parId = new Map(payload.resultats.map((r: { id: string }) => [r.id, r]));
+    for (const point of payload.series[0].points) {
+      expect(parId.get(point.idResultat)).toMatchObject({ corrigeeParId: null, annulation: null });
+    }
+  });
+
+  it('un fil annulé est absent de la série, mais présent dans les lignes, marqué', async () => {
+    prisma.resultatBiologique.findMany.mockResolvedValue([LIGNE_CONSIGNEE, IMPORT_LABO]);
+    prisma.annulationResultatBiologique.findMany.mockResolvedValue([
+      {
+        id: 'ann1',
+        idResultat: 'res1',
+        motifAnnulation: 'mauvaise_date_prelevement',
+        praticienEmail: PRATICIEN,
+        acteLe: new Date('2026-09-04T10:00:00.000Z'),
+      },
+    ]);
+    const payload = await (await GET(getRequest('PAT1'))).json();
+    expect(payload.resultats.find((r: { id: string }) => r.id === 'res1').annulation).toMatchObject({ id: 'ann1' });
+    expect(payload.series[0].points.map((p: { idResultat: string }) => p.idResultat)).toEqual(['imp1']);
+    expect(payload.series[0].motifs).toEqual(['point_unique', 'contexte_non_renseigne']);
+  });
+
+  it('le jour n se compte depuis les jours 0 du dossier, lus pour CE dossier', async () => {
+    lireJoursZeroSuccessifs.mockResolvedValue([
+      { cycleId: 'c', jourZero: new Date('2026-09-05T10:00:00.000Z'), prioriteId: 'P', approbationId: 'a' },
+    ]);
+    prisma.resultatBiologique.findMany.mockResolvedValue([LIGNE_CONSIGNEE, IMPORT_LABO]);
+    const payload = await (await GET(getRequest('PAT1'))).json();
+    expect(lireJoursZeroSuccessifs).toHaveBeenCalledWith('PAT1');
+    expect(payload.series[0].points.map((p: { position: unknown }) => p.position)).toEqual([
+      { type: 'anterieur', jourZero: '2026-09-05T10:00:00.000Z' },
+      { type: 'jour', jour: 5, jourZero: '2026-09-05T10:00:00.000Z' },
+    ]);
+  });
+
+  it('le commentaire de la ligne lue est servi tel quel ; « non transcrit » sans texte', async () => {
+    prisma.resultatBiologique.findMany.mockResolvedValue([
+      IMPORT_LABO,
+      {
+        ...IMPORT_LABO,
+        id: 'imp2',
+        preleveLe: new Date('2026-09-20T06:00:00.000Z'),
+        ligneCandidate: { ...IMPORT_LABO.ligneCandidate, commentaireLu: null, commentaireNonTranscrit: true },
+      },
+    ]);
+    const payload = await (await GET(getRequest('PAT1'))).json();
+    expect(payload.resultats.map((r: { commentaireLaboratoire: unknown }) => r.commentaireLaboratoire)).toEqual([
+      { texte: 'Contrôle à prévoir.', nonTranscrit: false },
+      { texte: null, nonTranscrit: true },
+    ]);
+  });
+
+  it('drapeau résultats éteint : 503, ni série ni jours 0 lus', async () => {
+    delete process.env.WN_CB_RESULTS_ENABLED;
+    const response = await GET(getRequest('PAT1'));
+    expect(response.status).toBe(503);
+    expect(lireJoursZeroSuccessifs).not.toHaveBeenCalled();
+  });
+
+  it('aucune mesure : une liste de séries VIDE, jamais un champ absent', async () => {
+    prisma.resultatBiologique.findMany.mockResolvedValue([]);
+    const payload = await (await GET(getRequest('PAT1'))).json();
+    expect(payload.series).toEqual([]);
   });
 });

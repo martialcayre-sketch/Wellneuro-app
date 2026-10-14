@@ -51,6 +51,11 @@ type ResultatAffiche = {
    */
   faitsLaboratoire?: { intervalle: string | null; marquage: string | null } | null;
   /**
+   * Le commentaire du laboratoire sur ce résultat, tel qu'imprimé ([[D-278]]
+   * §3) — recopié sous la valeur dans la série, jamais ailleurs.
+   */
+  commentaireLaboratoire?: { texte: string | null; nonTranscrit: boolean } | null;
+  /**
    * L'annulation ACTIVE qui retire le fil de cette ligne ([[D-294]]), posée
    * par le SERVEUR sur toutes les lignes du fil. Absente d'une réponse
    * antérieure : rien n'est annulé à l'écran, aucun geste d'annulation n'est
@@ -64,6 +69,110 @@ type ResultatAffiche = {
     le: string;
   } | null;
 };
+
+/**
+ * La série d'un analyte telle que la route la sert (BP-03) : les seules
+ * mesures qui font foi, dans l'ordre du prélèvement. Tout y est posé par le
+ * SERVEUR — l'écran ne rejoue ni l'élection des fils, ni le jour n.
+ */
+type SerieAffichee = {
+  analyteCode: string;
+  points: Array<{
+    idResultat: string;
+    valeur: string;
+    unite: string | null;
+    laboratoire: string | null;
+    preleveLe: string;
+    entreeLe: string;
+    correctionLe: string | null;
+    position:
+      | { type: 'jour'; jour: number; jourZero: string }
+      | { type: 'anterieur'; jourZero: string }
+      | { type: 'aucune_diffusion' };
+  }>;
+  motifs: string[];
+};
+
+const LIBELLES_MOTIF_NON_COMPARABILITE: Record<string, string> = {
+  point_unique: 'point unique',
+  unites_differentes: 'unités différentes',
+  laboratoire_non_identifie: 'laboratoire non identifié',
+  laboratoires_differents: 'laboratoires différents',
+  contexte_non_renseigne: 'contexte de prélèvement non renseigné',
+};
+
+/** Le jour de la diffusion, au calendrier de Paris — celui du jour n. */
+function formatJourParis(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
+}
+
+function formatPosition(position: SerieAffichee['points'][number]['position']): string {
+  if (position.type === 'jour') return `jour ${position.jour} depuis la diffusion du ${formatJourParis(position.jourZero)}`;
+  if (position.type === 'anterieur') return `antérieur à la diffusion du ${formatJourParis(position.jourZero)}`;
+  return 'aucune diffusion';
+}
+
+// LA SÉRIE QUI FAIT FOI (BP-03), au-dessus de la liste des saisies. Elle
+// JUXTAPOSE : aucun écart, aucune flèche, aucune couleur, aucune position par
+// rapport à un intervalle. Trois dates distinctes, la position dans le suivi,
+// puis le nombre de points et les motifs connus de non-comparabilité.
+function SerieQuiFaitFoi({
+  serie,
+  parId,
+}: {
+  serie: SerieAffichee | undefined;
+  parId: ReadonlyMap<string, ResultatAffiche>;
+}) {
+  if (!serie || serie.points.length === 0) {
+    return (
+      <p className="mt-2 text-xs text-muted-foreground">
+        Aucune mesure ne fait foi pour cet analyte : toutes sont annulées.
+      </p>
+    );
+  }
+  const nombre = serie.points.length;
+  return (
+    <div role="group" aria-label="Mesures qui font foi" className="mt-2 rounded-md border border-border/60 p-2">
+      <p className="text-xs font-medium text-foreground">Mesures qui font foi, dans l’ordre du prélèvement</p>
+      <ol className="mt-1 space-y-2">
+        {serie.points.map(point => {
+          const ligne = parId.get(point.idResultat);
+          const commentaire = ligne?.commentaireLaboratoire ?? null;
+          return (
+            <li key={point.idResultat} className="text-xs text-muted-foreground">
+              <span className="text-foreground">{formatValeur(point)}</span>
+              {point.laboratoire !== null && <> · {point.laboratoire}</>}
+              {/* L'intervalle et le commentaire, pas la marque : la série ne
+                  situe aucune valeur par rapport à un intervalle (fiche
+                  LOT-03, interdits). La marque reste sur la liste des saisies. */}
+              <FaitsDuLaboratoire
+                intervalle={ligne?.faitsLaboratoire?.intervalle ?? null}
+                marquage={null}
+                commentaire={commentaire?.texte ?? null}
+                commentaireNonTranscrit={commentaire?.nonTranscrit ?? false}
+              />
+              <p className="mt-1">
+                Prélevé le {formatDateHeure(point.preleveLe)} · entré au dossier le{' '}
+                {formatDateHeure(point.entreeLe)}
+                {point.correctionLe !== null && <> · corrigé le {formatDateHeure(point.correctionLe)}</>}
+              </p>
+              <p>{formatPosition(point.position)}</p>
+            </li>
+          );
+        })}
+      </ol>
+      <p className="mt-2 text-xs text-muted-foreground">
+        {nombre} {nombre > 1 ? 'points' : 'point'}
+        {serie.motifs.length > 0 &&
+          ` — non comparables en l’état : ${serie.motifs
+            .map(motif => LIBELLES_MOTIF_NON_COMPARABILITE[motif] ?? motif)
+            .join(', ')}`}
+      </p>
+    </div>
+  );
+}
 
 /**
  * Une plage fonctionnelle sourcée, telle que la route la sert ([[D-157]]).
@@ -289,6 +398,12 @@ export function EstimeMesurePanel({
    * corpus posée au milieu d'un dossier.
    */
   const [plagesParAnalyte, setPlagesParAnalyte] = useState<Record<string, PlageAffichee[]>>({});
+  /**
+   * Les séries qui font foi (BP-03). `null` : réponse d'une version
+   * antérieure, sans le champ — rien ne s'affiche, on n'affirme pas qu'aucune
+   * mesure ne fait foi.
+   */
+  const [series, setSeries] = useState<SerieAffichee[] | null>(null);
   // ÉCHEC DE LECTURE ≠ ABSENCE DE MESURE (DC-24, même règle que le runtime
   // clinique deux panneaux plus haut) : l'état vide ne s'affirme qu'après une
   // lecture ABOUTIE — jamais pendant le chargement, jamais sur une panne.
@@ -315,6 +430,7 @@ export function EstimeMesurePanel({
         ok: boolean;
         resultats?: ResultatAffiche[];
         plagesParAnalyte?: Record<string, PlageAffichee[]>;
+        series?: SerieAffichee[];
       };
       if (response.ok && payload.ok) {
         setResultats(payload.resultats ?? []);
@@ -322,6 +438,7 @@ export function EstimeMesurePanel({
         // version antérieure ne porte pas ce champ, et garder les plages d'une
         // lecture d'avant les juxtaposerait à des mesures qui ont pu changer.
         setPlagesParAnalyte(payload.plagesParAnalyte ?? {});
+        setSeries(payload.series ?? null);
         setLecture('ok');
       } else {
         setLecture('erreur');
@@ -557,6 +674,9 @@ export function EstimeMesurePanel({
                   Niveau de preuve : {plage.niveauPreuve}
                 </p>
               ))}
+              {series !== null && (
+                <SerieQuiFaitFoi serie={series.find(s => s.analyteCode === code)} parId={parId} />
+              )}
               <ul className="mt-1 space-y-1">
                 {serie.map(mesure => {
                   const correction = mesure.corrigeeParId

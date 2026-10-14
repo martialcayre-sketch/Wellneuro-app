@@ -169,8 +169,13 @@ test.describe('Saisie de résultats biologiques — série, doublon, panne de le
     // prouvait rien — il fallait celui du titre de groupe, dont le texte est
     // exactement le libellé.
     await expect(panneau.getByText(ANALYTE_LIBELLE, { exact: true })).toHaveCount(1);
-    await expect(panneau.getByText(`${VALEUR_MATIN} ${ANALYTE_UNITE}`)).toBeVisible();
-    await expect(panneau.getByText(`${VALEUR_SOIR} ${ANALYTE_UNITE}`)).toBeVisible();
+    // Chaque valeur deux fois, exactement : dans la série qui fait foi (BP-03)
+    // et dans la liste des saisies, qui reste en dessous, entière.
+    const serie = panneau.getByRole('group', { name: 'Mesures qui font foi' });
+    for (const valeur of [VALEUR_MATIN, VALEUR_SOIR]) {
+      await expect(serie.getByText(`${valeur} ${ANALYTE_UNITE}`, { exact: true })).toBeVisible();
+      await expect(panneau.getByText(`${valeur} ${ANALYTE_UNITE}`, { exact: true })).toHaveCount(2);
+    }
 
     // L'unité affichée VIENT DU CATALOGUE : elle n'a été saisie nulle part.
     // Si un jour la saisie se mettait à la fournir, cette assertion tiendrait
@@ -231,8 +236,9 @@ test.describe('Saisie de résultats biologiques — série, doublon, panne de le
     expect(reponse.status(), `bilan refusé — corps : ${await reponse.text()}`).toBe(201);
     expect(await reponse.json()).toEqual({ ok: true, nombre: 2 });
 
-    await expect(panneau.getByText(`60.1 ${ANALYTE_UNITE}`)).toBeVisible();
-    await expect(panneau.getByText(`14.2 ${ZINC_UNITE}`)).toBeVisible();
+    // Deux fois chacune : la série qui fait foi (BP-03), puis la liste des saisies.
+    await expect(panneau.getByText(`60.1 ${ANALYTE_UNITE}`, { exact: true })).toHaveCount(2);
+    await expect(panneau.getByText(`14.2 ${ZINC_UNITE}`, { exact: true })).toHaveCount(2);
     await expect(panneau.getByText(ZINC_LIBELLE, { exact: true })).toHaveCount(1);
   });
 
@@ -270,7 +276,7 @@ test.describe('Saisie de résultats biologiques — série, doublon, panne de le
     // pas seulement de l'état local du composant.
     await page.reload();
     const relu = page.getByRole('region', { name: 'Estimé et mesuré' });
-    await expect(relu.getByText(`14.2 ${ZINC_UNITE}`)).toBeVisible();
+    await expect(relu.getByText(`14.2 ${ZINC_UNITE}`, { exact: true })).toHaveCount(2);
     await expect(relu.getByText(`9.9 ${ZINC_UNITE}`)).toHaveCount(0);
     await expect(relu.getByText(`33.3 ${ANALYTE_UNITE}`)).toHaveCount(0);
   });
