@@ -10180,3 +10180,22 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, commentaires lus, merge, déploiement constaté ; puis R:Graphie (H03) ou S-2 (H01) selon la frontière libre ; la PR de ci (D-286) court en parallèle.
 
 **Ouvert.** Où vivent les fiches de lots de la file A : aucune campagne ne les porte, le plan fait fiche (à confirmer au cadrage du rang 0).
+
+## 2026-10-14 — BioFlow : seules les pages masquées partent au service de lecture (D-284 §5, lot j, lot 2)
+
+- Décisions :
+  - le praticien noircit l'identité page par page à l'écran (pdf.js) ;
+  - la route consigne des JPEG réencodés ;
+  - le processus de fond n'envoie que le dernier masquage
+    (`bio-extraction-v5`), jamais le document ;
+  - `masquage_absent` est refusé à la demande et à l'ouverture.
+- Revue `wn-reviewer` : deux P1 corrigés.
+  - Chaque page se juge (zone ou « aucune identité sur la page »).
+  - Le verrou `FOR UPDATE` du lot 1 a été fusionné.
+- Validations : T1 complet et T3 complet verts.
+- Prochaine action :
+  - constater la release-db du lot 1 ;
+  - ouvrir la PR ;
+  - constater que la file est vide avant le merge.
+- Question ouverte : tracer quel masquage chaque import a lu, ce qui
+  demanderait une migration.
