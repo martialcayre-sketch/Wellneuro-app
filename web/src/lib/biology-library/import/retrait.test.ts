@@ -13,6 +13,7 @@ const { prisma, journal } = vi.hoisted(() => {
     importBiologique: { count: vi.fn(), deleteMany: trace('imports.deleteMany', { count: 1 }) },
     ligneBiologiqueCandidate: { count: vi.fn(), deleteMany: trace('lignes.deleteMany', { count: 2 }) },
     travailExtractionBiologique: { count: vi.fn(), deleteMany: trace('travaux.deleteMany', { count: 1 }) },
+    masquageCompteRendu: { deleteMany: trace('masquages.deleteMany', { count: 1 }) },
   };
   return { prisma, journal };
 });
@@ -36,7 +37,7 @@ afterEach(() => vi.clearAllMocks());
 describe('retirerCompteRendu — retrait d’un dépôt erroné', () => {
   it('supprime sous verrou les travaux de la file, les lignes, puis les imports, puis le document', async () => {
     expect(await retirerCompteRendu(PARAMS)).toEqual({ ok: true });
-    expect(journal).toEqual(['verrou', 'travaux.deleteMany', 'lignes.deleteMany', 'imports.deleteMany', 'compteRendu.delete']);
+    expect(journal).toEqual(['verrou', 'travaux.deleteMany', 'lignes.deleteMany', 'imports.deleteMany', 'masquages.deleteMany', 'compteRendu.delete']);
     // Les lignes visées ne sont jamais des lignes validées.
     expect(prisma.ligneBiologiqueCandidate.deleteMany).toHaveBeenCalledWith({
       where: { idPatient: 'pat_sophie', statut: { not: 'validee' }, import: { idCompteRendu: 'cr_1' } },

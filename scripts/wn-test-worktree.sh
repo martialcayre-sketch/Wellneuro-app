@@ -515,6 +515,13 @@ grep -q 'banc-ecart-validation-deux-sessions.test.mjs' "$ROOT/.github/workflows/
   || die "ci.yml ne lance plus le banc à deux sessions de l'écart contre la validation."
 WN_BIO_ECART_BANC_BASE=wellneuro_ci node scripts/banc-ecart-validation-deux-sessions.test.mjs > /dev/null < /dev/null \
   || die "banc écart contre validation en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-ecart-validation-deux-sessions.test.mjs\`, depuis web/)."
+# Banc à deux sessions du masquage contre la purge (D-284 §5, lot j), même
+# discipline.
+step "Banc à deux sessions (masquage de l'identité contre purge du document)"
+grep -q 'banc-masquage-purge-deux-sessions.test.mjs' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc à deux sessions du masquage contre la purge."
+WN_BIO_MASQUAGE_BANC_BASE=wellneuro_ci node scripts/banc-masquage-purge-deux-sessions.test.mjs > /dev/null < /dev/null \
+  || die "banc masquage contre purge en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-masquage-purge-deux-sessions.test.mjs\`, depuis web/)."
 # Banc à deux sessions des actes de lecture (D-268, BP-10) : lancé par `node`
 # et non `node --test` (l'extraction plus haut le jouerait avant la base). Le
 # CI doit le lancer aussi — sinon ce palier serait seul à le jouer.

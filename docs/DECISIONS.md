@@ -289,6 +289,18 @@ est **remplacé** par le lot (h).
 par un avocat (renvoi de l'avis) ; la suite du point 5 de l'avis ; et les
 faits et gestes de [[D-283]] §9, NIR, seuil d'âge et DPO mis à part.
 
+**Mise en œuvre du lot (j) (2026-10-14).** Constat en agrégats du même jour :
+les comptes rendus déposés sont des scans ou des photos, sans couche texte —
+l'identité ne se repère pas par le texte. Arbitrages du responsable, sur
+questions à options : (1) **le praticien masque** lui-même l'identité à
+l'écran avant la lecture, par des zones noircies ; seules les pages masquées,
+en images, partent chez Anthropic, jamais plus le document d'origine ; (2) la
+lecture reste **bloquée** tant qu'aucune zone n'est masquée, sauf la case
+« aucune identité sur ce document », tracée. Migration
+`bio_ingest_masquage_identite_v1` (pages figées, purgées par la base avec le
+document), puis le code consommateur, puis les textes patient à signer. La TIA
+reste de la main du responsable.
+
 ### D-283 — RGPD : les trous du dossier tranchés le 2026-10-13 — conservation, qualifications, mineurs, droits, sécurité
 
 - Date : 2026-10-13

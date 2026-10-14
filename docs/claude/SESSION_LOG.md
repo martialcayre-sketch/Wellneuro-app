@@ -10153,6 +10153,15 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Reports à la prochaine version du plan : chemins anciens cités (§1, §8, §11), file citée, pagination, PDF natif, coaching autonome, RAG SIIN plein, `AGA_*`, banc « élevé / bas », `D-045`, restes a et b sous R:ao, référence « D-129, #900 » de la clôture de CB-07 (paraît fausse), nom du laboratoire pilote dans la fiche BIO-INGEST (forme opaque).
 
+## 2026-10-14 — BioFlow : l'identité masquée avant l'envoi à Anthropic, migration (D-284 §5, lot j, lot 1)
+
+**Fait.** Constat en agrégats : les comptes rendus déposés sont des scans ou des photos, sans couche texte. Arbitrages du responsable : le praticien noircit l'identité à l'écran, seules les pages masquées partent ; lecture bloquée sans zone, sauf la case « aucune identité », tracée. Migration `bio_ingest_masquage_identite_v1` (pages figées, purgées par la base avec leur document), contrat, banc à deux sessions, effacement et retrait étendus. Revue `wn-reviewer` : P1 (course masquage contre purge) corrigé par un `FOR SHARE`, prouvé par mutation. T1 et T3 verts.
+
+**Écarté.** Masquage automatique par OCR (une photo floue ferait partir l'identité sans que personne le voie) ; envoi du texte seul (aucune couche texte) ; colonne sur le compte rendu (elle aurait touché son trigger figé).
+
+**Prochaine action.** PR, CI, revue, merge, `release-db`, constat ; puis lot 2 (écran, route, lecture des seules pages masquées).
+
+**Ouvert.** TIA de la main du responsable ; textes patient à signer au lot 3 ; un compte rendu de plus de 20 pages ne peut pas être masqué.
 ## 2026-10-14 — D-286 (lettre ci) : « l'aboutissement du produit » reçoit cinq événements déclencheurs, D-276 §2 amendée (brouillon)
 
 **Fait.** Depuis un worktree sur `origin/main` 7c4eeab2, en parallèle du lot S-4 : brouillon de D-286 en tête du registre (fiche F67, rang 0, geste du responsable, PR propre), texte des cinq événements repris de la révision de BP-26 du 2026-10-12 (hors dépôt) : offre commerciale ; compte d'un second praticien ; première clé d'API ; premier consommateur ou tiers lecteur de BioFlow hors du cabinet ; tout envoi direct vers un tiers. Comptes internes et lecteur interne de BioFlow restent « usage du praticien ». Même flou de D-265 §3 signalé, non amendé (F68). Registre des frontières §1 aligné à ses deux mentions. Fragment. Relecture adverse par workflow (5 lecteurs, 3 juges par constat) : 15 constats, 9 retenus (quatre défauts distincts, corrigés : renvoi erroné à D-282 §2 pour les interdits de construction, qui viennent du plan §5, citation composite de D-276 §2, provenance « séance », fermeture affirmée pour les événements 1 et 4), 6 écartés. T1 complet vert.

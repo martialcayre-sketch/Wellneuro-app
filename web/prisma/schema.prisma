@@ -89,6 +89,8 @@ model Patient {
   lecturesImportsBiologiques LectureImportBiologique[]
   // File durable des lectures (D-282, G3).
   travauxExtractionBiologique TravailExtractionBiologique[]
+  // Pages masquées avant l'envoi à Anthropic (D-284 §5, lot j).
+  masquagesComptesRendus     MasquageCompteRendu[]
   relectureNotes             RelectureNote[]
   filCardRejections          FilCardRejection[]
   filCardLectures            FilCardLecture[]
@@ -2622,6 +2624,7 @@ model CompteRenduBiologique {
   patient Patient            @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
   imports ImportBiologique[]
   travaux TravailExtractionBiologique[]
+  masquages MasquageCompteRendu[]
 
   @@unique([idPatient, empreinteSha256], map: "comptes_rendus_biologiques_patient_empreinte_key")
   @@unique([id, idPatient], map: "comptes_rendus_biologiques_id_patient_key")
@@ -2702,6 +2705,41 @@ model TravailExtractionBiologique {
   @@index([idPatient], map: "travaux_extraction_bio_patient_idx")
   @@index([idImportCourant], map: "travaux_extraction_bio_import_idx")
   @@map("travaux_extraction_biologique")
+}
+
+// L'identité masquée avant l'envoi à Anthropic — [[D-284]] §5, lot (j).
+//
+// Un MASQUAGE est l'acte du praticien qui, avant la lecture, noircit
+// l'identité du patient sur chaque page du compte rendu — ou déclare qu'il n'y
+// en a aucune. Le navigateur rend les pages et y brûle les zones ; le serveur
+// les réencode en JPEG, sans métadonnées. Le processus de fond envoie le
+// DERNIER masquage non purgé, jamais le document d'origine ; sans masquage,
+// la file refuse la lecture (`masquage_absent`).
+//
+// La base tient : 1 à 20 pages JPEG bornées, zones OU déclaration (jamais les
+// deux), horodaté par la base et figé ; ses pages sont purgées par la base
+// dans la même instruction que le document ([[D-258]]) ; ni masquage d'un
+// document purgé, ni masquage pendant une lecture ; RLS deny-all. Table fille
+// de `patients`, effacée par IDP2 avant les comptes rendus.
+model MasquageCompteRendu {
+  id             String    @id @default(cuid())
+  idPatient      String    @map("id_patient")
+  idCompteRendu  String    @map("id_compte_rendu")
+  /// Une image JPEG par page, dans l'ordre. Liste VIDE une fois purgé.
+  pages          Bytes[]   @map("pages")
+  nombrePages    Int       @map("nombre_pages") // 1 à 20 (CHECK migration)
+  zonesMasquees  Int       @map("zones_masquees") // > 0, sauf déclaration (CHECK migration)
+  aucuneIdentite Boolean   @map("aucune_identite") // « aucune identité sur ce document »
+  posePar        String    @map("pose_par") // email praticien, posé côté serveur
+  poseLe         DateTime  @default(now()) @map("pose_le") // posé par la base
+  purgeLe        DateTime? @map("purge_le") // posé par la base
+
+  patient     Patient               @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  compteRendu CompteRenduBiologique @relation(fields: [idCompteRendu, idPatient], references: [id, idPatient], onDelete: Restrict)
+
+  @@index([idPatient], map: "masquages_comptes_rendus_patient_idx")
+  @@index([idCompteRendu, poseLe], map: "masquages_comptes_rendus_compte_rendu_idx")
+  @@map("masquages_comptes_rendus")
 }
 
 /// Une ligne lue par une extraction. Ce qui a été LU est figé ; seule la
