@@ -27,7 +27,7 @@ Lot G-7 (fiche F04) : écrire les commandes exactes de D-289 §2, jouer l'essai 
 - `scripts/wn-g7-restauration.sh` : script de contrôle.
   - Gardes : la cible n'est pas la production, la cible est vide.
   - La production n'est lue qu'en lecture seule.
-  - Les erreurs s'affichent sans DETAIL ni CONTEXT.
+  - Des erreurs, seule la nature s'affiche, comptée (jamais le texte de la ligne, ni DETAIL ni CONTEXT).
 - `docs/claude/PLAN_WELLNEURO.md` :
   - porte 8 levée, F04, rang 1, D.1, ordre des release-db ;
   - D.2 : migration de #1426 finie à 07:30 UTC.

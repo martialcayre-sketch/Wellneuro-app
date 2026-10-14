@@ -237,8 +237,9 @@ figure pas, d'où sa durée de vie limitée à l'essai.
 
    Le script refuse une cible égale à la production ou non vide ; il écrit
    dans la seule cible et lit la production en lecture seule. Il rend :
-   code et durée de `pg_restore`, nombre d'erreurs (ligne d'erreur seule,
-   jamais DETAIL ni CONTEXT) ; dernière migration de la copie contre celle de
+   code et durée de `pg_restore`, nombre d'erreurs et leur nature comptée
+   (jamais le texte de la ligne, ni DETAIL ni CONTEXT, qui peuvent citer une
+   valeur) ; dernière migration de la copie contre celle de
    la production à l'heure de la sauvegarde ; tables présentes ; comptes de
    lignes rapprochés table par table (un écart se lit contre les écritures
    postérieures à la sauvegarde). Il efface l'archive et ses fichiers de

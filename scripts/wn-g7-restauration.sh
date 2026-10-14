@@ -6,8 +6,9 @@
 #
 # Écrit dans la seule base cible (CIBLE_URL) ; lit la production en
 # transactions en lecture seule. Sortie : agrégats seuls — aucune ligne,
-# aucune colonne d'identité ; des messages d'erreur, seule la ligne
-# `pg_restore: error:` (jamais DETAIL ni CONTEXT, qui peuvent citer une valeur).
+# aucune colonne d'identité ; des messages d'erreur, la seule nature (le texte
+# avant le premier « : » qui suit `pg_restore: error:`), comptée — jamais la
+# suite de la ligne, ni DETAIL ni CONTEXT, qui peuvent citer une valeur.
 #
 # Usage : CIBLE_URL=… SAUVEGARDE_A=AAAA-MM-JJTHH:MM:SSZ \
 #           bash /tmp/uploads/wn-g7-restauration.sh /tmp/g7.tar.gz
@@ -55,7 +56,7 @@ set -e
 duree=$(( $(date +%s) - debut ))
 n_erreurs=$(grep -c '^pg_restore: error:' "$TRAVAIL/restauration.err" || true)
 echo "restauration : code=$code ; durée=${duree} s ; erreurs=$n_erreurs"
-grep '^pg_restore: error:' "$TRAVAIL/restauration.err" | cut -c1-200 | head -20 || true
+sed -n 's/^pg_restore: error: \([^:]*\).*/\1/p' "$TRAVAIL/restauration.err" | sort | uniq -c | head -20 || true
 
 # Contrôle 1 : dernière migration de la copie = celle de la production à
 # l'heure de la sauvegarde.
