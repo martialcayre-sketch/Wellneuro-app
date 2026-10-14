@@ -1186,8 +1186,8 @@ ci-dessous (2026-10-14).
    effacement, ils restent la seule trace de la demande et se conservent
    5 ans après la réponse, puis sont supprimés de la boîte. Puis `clos` quand
    plus rien n'est attendu. Aucune demande n'est supprimée, sauf par
-   l'effacement du dossier. Le code n'empêche pas encore de passer à `traite`
-   sans réponse : une garde sans migration est décidée ([[D-295]] §3).
+   l'effacement du dossier. Le code refuse `traite` sans réponse écrite,
+   saisie à l'écran ou déjà enregistrée ([[D-295]] §3, #1451).
 6. **Refus ou réponse partielle.** Motivés par écrit. La réponse indique la
    possibilité d'introduire une réclamation auprès de la CNIL et de former un
    recours juridictionnel (RGPD art. 12.4).
