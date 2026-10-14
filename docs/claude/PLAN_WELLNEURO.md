@@ -1032,11 +1032,12 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 
 #### H51 · ai : accusé de lecture daté de « Mes échanges »
 - **Identifiant, piste** : lettre ai (R:ai).
-- **Rang** : 2 ; code au rang 4 au plus tôt si la migration se confirme.
-- **Portes, préalables** : u (H37) ; k (F77) ; texte patient ; si migration : G-7, porte 9.
+- **Rang** : 2 (décision, faite) ; code au rang 4 au plus tôt, après G-7 (porte 8).
+- **Portes, préalables** : u (H37) ; k (F77) ; texte patient ; G-7 (porte 8), porte 9.
 - **Migration, release-db** : oui (D-297 §6) : une colonne de type date, vide par défaut, sur `portail_lectures_patient` ; après G-7 (porte 8), puis porte 9.
 - **Décisions, textes** : lettre ai, de la main du responsable ; sa D-xxx avant la place 3 ; lève la porte 14.
 - **Critère de fin** : décision mergée ; lecture datée constatée côté praticien.
+- **Contenu du lot de code** (D-297 §1 à §6) : la migration (une colonne de type date, vide par défaut) ; l'écriture du jour de la première lecture, en heure de Paris ; la phrase validée du §4 sur chaque page de document remis ; « lu le … » au dossier du praticien, « Lu, date non enregistrée » pour l'historique ; l'amendement du banc de garde qui interdit aujourd'hui toute lecture de la table côté praticien, seule la surface « lu le » y étant admise (§5).
 - **Mise à jour (2026-10-14)** : arbitrage du responsable — seule la première lecture d'un document de « Mes échanges » est datée (« lu le … ») ; pas chaque ouverture, conformément au texte validé par D-293 §4. Les lectures du portail ne portent pas de date aujourd'hui : migration probable, à confirmer à l'écriture de la lettre.
 - **Mise à jour (2026-10-14, D-297)** : décision écrite, trois arbitrages du responsable. La première ouverture d'une version remise est datée d'où qu'elle vienne (page du document, fil du jour ou « Mes échanges ») ; le jour seul en base, en heure de Paris ; « Lu, date non enregistrée » pour les lectures antérieures, sans rattrapage. La phrase « Votre lecture est datée » s'étend à toute page de document remis : texte du §4 validé tel quel par le responsable. Porte 14 levée ; reste le code, au rang 4 au plus tôt, après G-7.
 
@@ -1119,7 +1120,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 
 ### Rang 4 : première vague de migrations après BP-09
 
-L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a, BP-11, BP-13, BP-15, CC-8, axes [Hypothese], BF-8, la collecte, D-283 (b) [Hypothese], le retrait de la colonne NIR (D-284 lot g) [Hypothese], selon les cas J2-med et le statut posé ; une à la fois, sentinelle, constat par conteneur, déploiement constaté avant le merge suivant. La file du G3 (D-282 lot 2) est passée le 2026-10-13 (#1412), avant BP-09 et avant l'essai, par le fait.
+L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a, BP-11, BP-13, BP-15, CC-8, axes [Hypothese], BF-8, la collecte, D-283 (b) [Hypothese], le retrait de la colonne NIR (D-284 lot g) [Hypothese], ai (D-297 §6), selon les cas J2-med et le statut posé ; une à la fois, sentinelle, constat par conteneur, déploiement constaté avant le merge suivant. La file du G3 (D-282 lot 2) est passée le 2026-10-13 (#1412), avant BP-09 et avant l'essai, par le fait.
 
 | identifiant | objet | file | portes | migration | fiche |
 |---|---|---|---|---|---|
@@ -1134,7 +1135,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 | J3-cabinet | page des comptes du cabinet, masquée sous cinq | A | 6 ; 9 si migration | selon | H58, rang 3 |
 | D-281, J1-sécu | commit de signature, déploiement constaté | A | lève 7 | non | F66, rang 1 |
 | D-283 (b) | clôture après 5 ans sans contact, archive | A | 28, 8, 9 | oui | H26, rang 1 |
-| ai, code | lecture datée, si migration | A | 8, 9 | selon | H51, rang 2 |
+| ai, code | lecture datée : migration, écriture du jour, phrase sur chaque page, « lu le » au praticien, banc de garde amendé | A | 8, 9 | oui | H51 |
 | D-284 (g) migration | retrait de la colonne NIR (0 NIR enregistré, D-284 §3) | A | 8, 9 | oui | H26, rang 1 |
 | BP-12a | fiches d'usage | B | 8, 9, 23 | oui | F05 |
 | BP-11 | constats du praticien | B | 8, 9 | oui | F06 |
@@ -1929,7 +1930,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h3 | h, la Boussole retirée | H16 | J1-alim ; D-C5-01 à 04 |
 | h3 | instruction de bf | H19 | indicateurs hebdomadaires |
 | h3 | textes (a) et (e) de D-283 ((f) fait : G-8, #1446) | H26 | durées, information du médecin |
-| h3 | ai, accusé de lecture daté de « Mes échanges » (préalables u et k levés, #1446 ; migration probable) | H51 | porte 14 ; « Mes échanges » ne s'ouvre pas sans lui (D-293 §4) |
+| h3 | ai, accusé de lecture daté de « Mes échanges » (décision faite : D-297, #1459 ; porte 14 levée ; code au rang 4, après G-7) | H51 | porte 14 ; « Mes échanges » ne s'ouvre pas sans lui (D-293 §4) |
 | h3 | analyse d'impact du transfert et copie datée de l'accord d'Anthropic | F47 | registre RGPD ; critère du lot (j) |
 | h3 | gestes RGPD : archivages, relance d'effacement, dossier resté sur une version antérieure du texte | H20 | registre RGPD à jour |
 | h3 | relance écrite du laboratoire pilote | F41 | porte 29 |
@@ -2057,7 +2058,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 
 - Une activation patient à la fois, un constat entre chacune ; places 1 à 5 jamais permutées ; le formulaire de sécurité de D-281 hors file, seul, constaté avant l'ouverture suivante.
 - release-db humaine, une à une ; merger une migration ne l'applique pas ; un merge à la fois ; **jamais d'auto-merge sur une PR de lot** (D-087 ; D-248) ; une seule migration en vol sur `schema.prisma` ; déploiement constaté avant le merge suivant (G-6, N-7).
-- Ordre des release-db : (1) D-281 lot 2, fait ; (2) D-282 lot 2, fait (#1412) ; (3) BP-09 au rang 3 ; (4) essai de restauration réussi (porte 8) avant toute migration suivante ; (5) le rang 4, selon la hiérarchie : EF-3b, BP-12a, BP-11, BP-13, BP-15, CC-8, axes [Hypothese], BF-8, collecte, D-283 (b) [Hypothese], retrait de la colonne NIR (D-284 lot g) [Hypothese], et selon les cas J2-med, statut posé, ai, J1-alim, J2-alim, J3-api, J3-cabinet ; (6) le rang 5 : BP-12b, BP-14, BP-18a, BP-18b s'il migre, BP-05 [Hypothese], selon F79 ; (7) rang 6 : BP-27 [Hypothese], selon ax et indications v2 ; rang 7 : BP-19 [Hypothese] ; rang 8 : BP-22 [Hypothese] ; rang 10 : J3-mineurs ; (8) gelées : adaptateur du laboratoire (porte 29), selon F41.
+- Ordre des release-db : (1) D-281 lot 2, fait ; (2) D-282 lot 2, fait (#1412) ; (3) BP-09 au rang 3 ; (4) essai de restauration réussi (porte 8) avant toute migration suivante ; (5) le rang 4, selon la hiérarchie : EF-3b, BP-12a, BP-11, BP-13, BP-15, CC-8, axes [Hypothese], BF-8, collecte, D-283 (b) [Hypothese], retrait de la colonne NIR (D-284 lot g) [Hypothese], ai (D-297 §6), et selon les cas J2-med, statut posé, J1-alim, J2-alim, J3-api, J3-cabinet ; (6) le rang 5 : BP-12b, BP-14, BP-18a, BP-18b s'il migre, BP-05 [Hypothese], selon F79 ; (7) rang 6 : BP-27 [Hypothese], selon ax et indications v2 ; rang 7 : BP-19 [Hypothese] ; rang 8 : BP-22 [Hypothese] ; rang 10 : J3-mineurs ; (8) gelées : adaptateur du laboratoire (porte 29), selon F41.
 - Lecture de la porte 8 : BP-09 ne l'attend pas ; G-7 peut se jouer dès le rang 1 ; toute autre migration l'attend. D-g s'écrit dans la lettre g avec la portée acquise (F04) ; écrite le 2026-10-14 par D-289 (#1430), dont le §1 compte aussi #1426 (D-284 lot j) parmi les migrations passées avant l'essai ; deux migrations sont passées avant l'essai par le fait (D-281 lot 2, D-282 lot 2), ce qui rend G-7 plus pressant sans changer son rang.
 - Texte accepté, puis registre, puis drapeau, avant toute surface patient neuve ; aucune IA sur les documents déposés ; un registre avant chaque table et chaque site IA (F70).
 - Aucune règle clinique sans signature : ni seuil, ni poids, ni borne, ni dose inventés ; D-xxx et fragment `changelog.d/`.
