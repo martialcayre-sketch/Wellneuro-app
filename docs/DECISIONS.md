@@ -95,7 +95,11 @@ avec une information.
 
 **§2 — Un accusé, à chaque version.** Le patient accuse le document par
 « J'en ai pris connaissance », un accusé `pris_connaissance` sur sa version
-courante. Chaque version en demande un : le régime « à chaque version » est
+courante, sous une clé neuve du registre TRUST, une seule pour le document
+(son nom relève du code d'ACT-1). Les accusés posés sur les quatre textes
+d'origine restent en base et datés, mais ne valent pas accusé des
+conditions : ils dispensent seulement le patient suivi du mur d'accueil (§3),
+et il accuse la v1 par le lien de l'e-mail ou au filet du dépôt. Chaque version en demande un : le régime « à chaque version » est
 maintenu (arbitrage du 2026-10-10). Cela répond à la question laissée par F77
 : le texte de l'IA, servi en v7 puis en v8 sans nouvel accusé, est accusé
 dès ACT-1 comme partie des conditions. Conséquence : une correction de forme

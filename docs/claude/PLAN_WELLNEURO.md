@@ -2107,6 +2107,7 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | Accords de sous-traitance de l'hébergeur, de Google Workspace, de Sentry à archiver ; copie datée de l'accord d'Anthropic, avec l'analyse d'impact du transfert (D-284 §5, lot j) | D-283 §9 ; D-284 §5-6 ; `DOSSIER_RGPD.md:1338-1344` sur f3ddbd3d | gestes (H20, F47) ; 2027-06-30 |
 | Pentest ; registre physique EX-3 ; piste d'audit | `DOSSIER_RGPD.md` §14 | test d'intrusion humain avant toute offre commerciale ou second compte (D-283 §7) ; registre des violations et piste d'audit clos par constat (D-283, fin) |
 | Information du médecin à la première lettre | D-283 §3 | lot (e) (H26) |
+| Demandes de droits : le passage à `traite` n'exige ni réponse ni date d'envoi ; une demande reçue par e-mail d'une personne qui n'a plus accès au portail n'a pas de circuit | revue CodeRabbit de #1446 ; `DOSSIER_RGPD.md` rubrique 9 | code et migration au premier lot qui touche les demandes de droits [Hypothese], rang 4 au plus tôt ; le cas sans accès au portail, à trancher par le responsable ; 2027-06-30 |
 | Confirmation d'effacement des sauvegardes de l'ancien hébergeur | `DOSSIER_RGPD.md:1214`, :1246 ; `.wn/state.json` blocking_issues | relance, geste du responsable (H20) |
 
 ### Dettes techniques vivantes

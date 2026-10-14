@@ -1108,8 +1108,12 @@ reçoit, trace et répond. Reste à écrire la procédure, sans autre arbitrage.
 1. **Réception.** Au portail, la demande est enregistrée en
    `TrustRightsRequest`, statut `recu`, datée (`soumis_le`). Une carte du Fil
    du jour la signale tant qu'elle est `recu` ou `en_cours`. Par e-mail : la
-   demande n'est pas instruite, la réponse renvoie au portail, carte « Signaler
-   un problème », choix « Je souhaite exercer un droit ».
+   demande est datée à sa réception, et le courriel reçu est gardé. La
+   réponse, dans le délai, invite la personne à la confirmer depuis le
+   portail (carte « Signaler un problème », choix « Je souhaite exercer un
+   droit ») : cette confirmation vaut vérification d'identité (RGPD
+   art. 12.6), sans pièce d'identité. Le cas d'une personne qui n'a plus accès
+   au portail reste à trancher (plan unique, §8).
 2. **Délai.** Un mois à compter de la réception, quel que soit le canal (RGPD
    art. 12.3). Prolongeable de deux mois si la demande est complexe ou si les
    demandes sont nombreuses : le patient en est informé dans le premier mois,
@@ -1129,10 +1133,13 @@ reçoit, trace et répond. Reste à écrire la procédure, sans autre arbitrage.
    - limitation, opposition, information : une réponse écrite, motivée au
      regard du cadre du traitement concerné.
 5. **Réponse.** Par e-mail, depuis l'adresse du responsable, dans le délai :
-   le portail ne sert pas encore la réponse (étape PH-3, plan unique). Le
-   statut passe à `traite`, avec le texte de la réponse (`reponse`) et sa
-   date (`examine_le`) ; puis à `clos` quand plus rien n'est attendu. Aucune
-   demande n'est supprimée, sauf par l'effacement du dossier.
+   le portail ne sert pas encore la réponse. Le statut passe à `traite` une
+   fois la réponse envoyée, avec son texte (`reponse`) ; `examine_le` date
+   l'examen, et la preuve de l'envoi est le courriel envoyé, gardé dans la
+   boîte du responsable. Puis `clos` quand plus rien n'est attendu. Aucune
+   demande n'est supprimée, sauf par l'effacement du dossier. Le code
+   n'empêche pas aujourd'hui de passer à `traite` sans réponse (plan unique,
+   §8).
 6. **Refus ou réponse partielle.** Motivés par écrit. La réponse indique la
    possibilité d'introduire une réclamation auprès de la CNIL et de former un
    recours juridictionnel (RGPD art. 12.4).
