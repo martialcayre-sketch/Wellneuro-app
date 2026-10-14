@@ -4,6 +4,89 @@
 
 ## Décisions actives
 
+### D-292 — Les quatre textes d'information du portail deviennent un seul document, les « Conditions d'utilisation de votre espace Wellneuro », accusé une fois puis à chaque version par un lien envoyé par e-mail (lettre k)
+
+- Date : 2026-10-14
+- Statut : accepté. Arbitrages du responsable du 2026-10-10 (document
+  unique, validation à l'accueil pour un nouveau patient, par e-mail pour un
+  patient suivi, filet au dépôt, e-mail jamais automatique) et du 2026-10-14
+  (nom, durées gardées en l'état), sur questions à options. Texte : premier
+  jet de l'assistant, validé tel quel par le responsable le 2026-10-14
+  (`docs/claude/propositions/2026-10-14-k-conditions-utilisation/README.md`).
+- Domaine : information du patient au portail (régime TRUST,
+  `web/src/lib/trust/`), dépôt d'un compte rendu par le patient ([[D-269]]).
+  Lettre k du plan unique (`docs/claude/PLAN_WELLNEURO.md`, fiche F77, rang 0,
+  geste du responsable). Lève la part k de la porte 13 ; u et G-8 restent.
+- Consommée par : ACT-1 (H70), place 1 de la file C ([[D-288]]).
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucun code, aucune
+  migration, aucun drapeau. Rien n'est servi au patient avant ACT-1 : jusque-là,
+  les quatre textes et leurs accusés restent tels quels.
+
+**§1 — Un seul document.** « Le cadre de votre accompagnement », « Limites et
+sécurité médicale », « Vos données personnelles et leur confidentialité » et
+« L'intelligence artificielle dans Wellneuro » deviennent les quatre premières
+parties d'un document unique, les « Conditions d'utilisation de votre espace
+Wellneuro ». Elles sont reprises mot pour mot, avec un seul renvoi corrigé ;
+une cinquième partie, neuve, dit comment le document évolue. Le mot
+« générales » est écarté : le document reste de l'information, avec un accusé
+de lecture, et non un contrat ni un consentement. « Vos droits et vos choix »
+et « Consentement au suivi » restent à part : un consentement ne se groupe pas
+avec une information.
+
+**§2 — Un accusé, à chaque version.** Le patient accuse le document par
+« J'en ai pris connaissance », un accusé `pris_connaissance` sur sa version
+courante. Chaque version en demande un : le régime « à chaque version » est
+maintenu (arbitrage du 2026-10-10). Cela répond à la question laissée par F77
+: le texte de l'IA, servi en v7 puis en v8 sans nouvel accusé, est accusé
+dès ACT-1 comme partie des conditions. Conséquence : une correction de forme
+coûte un e-mail à chaque patient suivi. Les corrections de forme se regroupent
+donc avec la version suivante qui change le fond.
+
+**§3 — Où l'accusé se recueille.**
+- **Nouveau patient** : à sa première connexion, avant d'accéder à son
+  espace. La séquence « Avant de commencer » présente les conditions seules.
+  Elle s'impose à un patient qui n'a accusé aucun des textes d'information.
+- **Patient suivi** : aucun mur dans le portail, ni à ACT-1 ni à une version
+  suivante. Il reçoit un e-mail portant un lien personnel. Le lien ouvre une
+  page qui affiche le texte et un bouton : l'accusé se pose par une requête
+  POST, **jamais sur un GET** (les scanners de liens des messageries
+  l'ouvriraient). Ouvrir le lien ne valide rien.
+- **E-mail** : préparé par l'assistant, sans donnée de santé et sans nom,
+  destiné aux dossiers en cours avec un accès au portail. Le responsable le
+  relit, puis l'envoie en une fois sur son feu vert. Jamais automatique.
+
+**§4 — Le filet au dépôt ; [[D-269]] §6 est amendée.** Aujourd'hui, la route
+de dépôt du patient exige un accusé de la version courante de `usage_ia`. Dès
+ACT-1, elle exige celui de la version courante des conditions. Un patient qui
+ne l'a pas posé voit, juste avant de déposer, le texte et le bouton. Il n'est
+jamais bloqué : il accuse sur place, et le serveur continue d'exiger l'accusé.
+
+**§5 — Avant et après ACT-1.**
+- Avant ACT-1, rien ne change. Les quatre textes gardent leurs versions et
+  leurs accusés. Une version publiée entre-temps a été validée par le
+  responsable : elle entre telle quelle dans l'assemblage, sans revalider la
+  fusion. La partie 5, le titre et le résumé, eux, ne changent pas sans
+  nouvelle validation.
+- Après ACT-1, toute modification d'une partie est une nouvelle version des
+  conditions. Les quatre textes restent au registre, immuables, avec
+  l'historique de leurs accusés ; aucun n'est effacé.
+- La règle des mineurs ([[D-283]] §5, amendée par [[D-284]]) s'applique à
+  ACT-1 comme à toute place de la file C. Cette décision ne la tranche pas.
+
+**§6 — Ce qui reste ouvert.** Les durées de conservation de [[D-283]] §2 : la
+v1 garde la phrase en vigueur, « en cours de formalisation ». Elles entrent
+par une version suivante, avec leur lot ([[D-283]] §10 a), quand la clôture
+après cinq ans et l'archivage existent ([[D-283]] §10 b) et que le conseil a
+répondu sur le point de départ de l'archive. La durée de validité du lien et
+sa forme relèvent du code d'ACT-1, sans migration selon sa fiche. Si le code
+en exige une, la fiche change, au rang 4 au plus tôt.
+
+- Options écartées : « Conditions générales d'utilisation » (registre du
+  contrat) ; les durées dès la v1 (le texte annoncerait une clôture qu'aucun
+  code n'applique) ; un mur d'accueil à chaque version pour les patients
+  suivis (arbitrage du 2026-10-10) ; une validation sur simple ouverture du
+  lien.
+
 ### D-291 — Arbitrages de clôture de D-290 : CodeRabbit reste hors des checks obligatoires, une PR qui modifie sa configuration est P1
 
 - Date : 2026-10-14

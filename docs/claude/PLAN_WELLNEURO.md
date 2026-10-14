@@ -133,7 +133,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 10 | NABM signée : 8 analytes, puis liste étendue | S-7 (0), M-3 (1), f (2), G-3 (3) : F54 | non levée : 0 liaison signée |
 | 11 | Bandes de bruit signées, instrument par instrument | G-10 (0), v (1) : H13 | non levée |
 | 12 | D2 mergée | j (rang 0) : F63 | non levée |
-| 13 | Textes communs : CGU, registre, circuit des droits, Patient Hub | k (0) : F77 ; l, écrite pour l'essentiel par D-283 (§2 durées, §6 droits) ; u (1) : H37 ; G-8 (2) : H50 | non levée : k, u, G-8 à faire ; restes de l en H26 |
+| 13 | Textes communs : CGU, registre, circuit des droits, Patient Hub | k (0) : F77 ; l, écrite pour l'essentiel par D-283 (§2 durées, §6 droits) ; u (1) : H37 ; G-8 (2) : H50 | non levée : k faite (D-292, 2026-10-14) ; u, G-8 à faire ; restes de l en H26 |
 | 14 | Accusé de lecture daté décidé (renverse) | ai (rang 2) : H51 | non levée |
 | 15 | K-02 servi : premier check-in sur un protocole approuvé | constat, rang 2 au plus tôt, après d | fermée au 2026-10-13 ; lecture « porte 15 pour le code de bf » confirmée par le responsable le 2026-10-14, instruction au rang 0 (handoff de la PR 2, #1419) |
 | 16 | Clôture du LOT-02 de l'agenda du sommeil | campagne, rang 1 au plus tôt : H27 | fermée : lectures repères 2026-10-29 puis 2026-11-12 |
@@ -233,7 +233,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | ab | EF-0 : trancher Q3 | geste | aucune | non | H14 |
 | w | guide des 12 besoins réécrit sur sources | geste | aucune | non | H15 |
 | S-7 | liste des 8 analytes NABM partagés | geste | 10 | non | F54 |
-| k | CGU unique ; usage_ia v7 | geste | 13 | non | F77 |
+| k | CGU unique ; usage_ia v7 ; fait, D-292 du 2026-10-14 | geste | 13 | non | F77 |
 | h | Boussole retirée ; exception à D-276 §1 | geste | aucune | non | H16 |
 | av | contenu biologique du document au médecin | geste | aucune | non | F33 |
 | l, trace d'import | trace d'import conservée comme le dossier | geste | 17, 13 | non | F44 |
@@ -477,6 +477,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : lettre k, de la main du responsable. Fait : la v7 a été validée le 2026-10-11 sans nouvel accusé demandé ; k dit si la CGU change cela.
 - **Critère de fin** : k mergée ; un accusé demandé se constate en agrégats dans S-1 (F40).
 - **Mise à jour (2026-10-14)** : [A verifier] le titre de la fiche dit v7 ; `usage_ia` v8 est publiée par #1431 (une phrase change, accusé recueilli au dépôt). Quelle version k vise est au responsable.
+- **Mise à jour (2026-10-14)** : k écrite par D-292, texte validé tel quel par le responsable : `docs/claude/propositions/2026-10-14-k-conditions-utilisation/README.md`. Les quatre textes d'information deviennent les « Conditions d'utilisation de votre espace Wellneuro », accusées à chaque version ; le texte de l'IA est donc accusé dès ACT-1 (H70), qui seul les sert. D-269 §6 amendée : le filet au dépôt exige l'accusé des conditions. Durées de D-283 §2 renvoyées à une version suivante. Version visée (question ci-dessus) : chaque texte entre dans sa version en vigueur au jour de l'activation (D-292 §5), soit `usage_ia` v8 au 2026-10-14.
 
 #### H16 · h et J1-alim : la Boussole retirée
 - **Identifiant, piste** : lettre h (M-4, G-5, D-h, R:h), puis J1-alim (FC-4) ; Boussole alimentaire retirée du portail ; exception nommée à D-276 §1 ; amende D-250 ; dettes D-C5-01 à D-C5-04 rattachées ; alimentation ; geste du responsable (h), puis file A (J1-alim).

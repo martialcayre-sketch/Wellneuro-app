@@ -10330,3 +10330,12 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR de doc, revue, merge.
 
 **Ouvert.** Release-db de la migration du lot (j) à constater ; analyse d'impact du transfert à verser ; critères de la porte 1, de F40 et de F77 à relire ; S-5, préalable de F03 et H43, non défini.
+## 2026-10-14 — lettre k : D-292, les conditions d'utilisation de l'espace patient
+
+**Fait.** File C : aucune place codable (ACT-1 attend k, G-8, J2-base, J2-cc8). Premier jet de k : les quatre textes d'information fusionnés mot pour mot, partie 5 neuve, e-mail aux patients suivis ; deux arbitrages, validation telle quelle. D-292 écrite (amende D-269 §6), plan mis à jour.
+
+**Écarté.** « Conditions générales » ; durées de D-283 §2 dès la v1 ; coder ACT-1 avant son texte.
+
+**Prochaine action.** Merge de #1444, rebase, PR de doc, merge ; puis u (H37) et G-8 (H50), qui attendaient k.
+
+**Ouvert.** D-291 tenue par #1444 (publiée) ; D-292 ici, contiguë au merge de #1444 ; la lettre cj, non poussée, prend D-293. Durées de conservation, version suivante.
