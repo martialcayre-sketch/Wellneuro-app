@@ -4,6 +4,190 @@
 
 ## Décisions actives
 
+### D-304 — Garde de dose du corpus : une dose écrite en nombre et unité, par jour, par prise ou par kilo, part en relecture une à une (lettre n, EF-3b)
+
+- Date : 2026-10-15
+- Statut : accepté. Arbitrage du responsable du 2026-10-15, sur question à
+  options (« Nombre + unité », recommandé, contre « Aussi sans nombre » et
+  « Plus tard ») ; texte rédigé par l'assistant à partir de cette réponse.
+  Aucune valeur de dose n'est proposée ni fixée.
+- Domaine : fonction SQL `public.rag_claim_porte_seuil`
+  (`web/prisma/migrations/20260727140000_rag_claim_garde_seuils_v1`),
+  appelée par `web/src/lib/rag/claims/revue.ts` et le trigger du journal ;
+  fiche H11 du plan unique.
+- Nature : garde de relecture du corpus. Elle ne juge aucune dose ; elle
+  décide seulement qu'une affirmation ne se valide pas par lot.
+- **Ne touche pas** : aucun code ni migration dans ce lot.
+
+**§1 — Le constat.** La garde ferme la validation par lot aux affirmations
+qui portent une borne (unité de concentration, seuil, comparaison, optimum,
+intervalle). Une dose écrite en toutes lettres, « 200 mg par jour », n'en
+fait pas partie : elle peut être validée par lot sans avoir été lue seule,
+puis servie dans une fiche.
+
+**§2 — La règle.** La garde reconnaît aussi un nombre suivi d'une unité de
+dose (mg, µg, g, UI, ml…), puis d'une fréquence ou d'un poids : par jour,
+par prise, par kilo, quotidien, matin ou soir. Une telle affirmation
+part en relecture une à une, comme une borne. La sur-capture est assumée.
+
+**§3 — Hors règle.** Les posologies sans nombre (« une cuillère », « une
+gélule matin et soir ») ne sont pas visées.
+
+**§4 — Exécution.** EF-3b : migration de la fonction, relue puis release-db
+([[D-087]]), avec ses cas positifs et négatifs ; avant elle, relevé par
+conteneur, en comptes, des affirmations déjà validées par lot dont le texte
+porte une dose ; elles sont signalées au responsable, jamais dévalidées en
+silence.
+
+### D-303 — Instruments du cabinet : la publication exige de déclarer s'ils posent une question sur le suicide ; « oui » leur donne l'encart d'urgence signé (lettre m, NF-7)
+
+- Date : 2026-10-15
+- Statut : accepté. Arbitrage du responsable du 2026-10-15, sur question à
+  options (« Déclaré à la publication », recommandé, contre « Toujours
+  affiché » et « Plus tard ») ; texte rédigé par l'assistant à partir de
+  cette réponse.
+- Domaine : instruments créés par le cabinet (`CAB_`, table
+  `cabinet_instruments`, publication = passage de `statut_relecture` à
+  `valide`, `web/src/app/api/praticien/instruments/route.ts`) ; encart
+  d'urgence de [[D-275]] et message sur réponse positive de [[D-277]]
+  (`web/src/lib/securite/urgenceSuicide.ts`) ; fiche H10 du plan unique.
+- Nature : garde de sécurité. Aucun seuil, aucune règle de score.
+- **Ne touche pas** : aucun code dans ce lot ; le texte de l'encart signé
+  ne change pas.
+
+**§1 — Le constat.** L'encart d'urgence s'affiche sur les quatre
+questionnaires du catalogue qui posent une question sur le suicide. Un
+instrument du cabinet n'est couvert par rien : aucun banc ne peut lire ses
+questions, écrites en base par le praticien
+(`web/src/lib/clinical/safetyQuestionnaireV1.ts:35-36`). Au 2026-10-14, la
+production ne compte aucun instrument du cabinet (lecture par conteneur).
+
+**§2 — La règle.** À la publication d'un instrument du cabinet, le praticien
+répond obligatoirement : « Ce questionnaire pose-t-il une question sur le
+suicide ou les idées de mort : oui / non ». Sans réponse, l'instrument ne
+se publie pas. Une modification de ses questions redemande la réponse.
+
+**§3 — L'effet du « oui ».** L'encart signé de [[D-275]] s'affiche, mot pour
+mot, sur chacun des écrans de l'instrument, comme pour le catalogue. Le
+message sur réponse positive de [[D-277]] demande en plus la désignation de
+la question concernée ; il relève du lot d'exécution, sous le même texte
+signé.
+
+**§4 — Exécution.** NF-7, servi dans J2-base (H59), après D2 mergée
+(porte 12). La déclaration se conserve avec l'instrument ; un banc tient
+qu'aucun instrument `valide` n'est sans déclaration.
+
+### D-302 — Âge : seuil et garde acquis par D-284 ; la date de naissance devient obligatoire à la création d'un dossier (lettre z)
+
+- Date : 2026-10-15
+- Statut : accepté. Fond : séance du 2026-10-12, question 16 « Âge inconnu »,
+  réponse « rendre le champ obligatoire » ; [[D-283]] §5, [[D-284]] §3-4.
+  Texte rédigé par l'assistant, accepté par le responsable le 2026-10-15, sur
+  question à options (« Date obligatoire », contre « Entériner seulement »).
+- Domaine : fiche F45 ; création d'un dossier par le praticien
+  (`web/src/app/api/praticien/patients/route.ts`, où la date est facultative
+  au 2026-10-15).
+
+**§1 — Acquis, entérinés.** Seuil des mineurs à 18 ans ([[D-284]] §4). Âge
+inconnu : date demandée à la prochaine connexion, questionnaires et biologie
+en pause tant qu'elle manque ([[D-284]] §3) ; garde livrée (lot (h)).
+
+**§2 — Neuf.** Un dossier créé par le praticien ne s'enregistre plus sans
+date de naissance valide. Aujourd'hui le champ est facultatif. Les dossiers
+existants sans date restent sous [[D-284]] §3 ; le praticien peut aussi la
+saisir dans la fiche.
+
+**§3 — Hors z.** La date lue au dépôt et la fiche signalétique modifiable
+(as), la date transmise au relevé (at), le circuit des mineurs (lot (i) de
+[[D-284]]).
+
+**§4 — Exécution.** Un lot de code (création du dossier, formulaire et
+serveur), sans migration : la colonne reste facultative pour les dossiers
+anciens.
+
+### D-301 — Radar des besoins : un besoin non mesuré est un trou nommé « non mesuré », jamais un zéro (lettre ac, DC-24)
+
+- Date : 2026-10-15
+- Statut : accepté. Fond tranché par le responsable le 2026-10-12 (séance,
+  question 1 « Radar », réponse « Corriger dès maintenant ») ; texte rédigé
+  par l'assistant, accepté tel quel par le responsable le 2026-10-15, sur
+  question à options.
+- Domaine : radar des douze besoins de l'écran praticien
+  (`web/src/components/DetailBesoinsPanel.tsx:58`) ; fiche H12, porte 3.
+- Nature : correction d'un écart à DC-24 (« une donnée absente n'est jamais
+  zéro ni normale ») ; aucune règle clinique neuve, aucun seuil, aucun calcul
+  de couverture modifié.
+
+**§1 — La règle.** Un besoin dont la couverture n'est pas calculée n'est pas
+tracé à zéro. Son axe reste sur le radar, sans point, et il est nommé « non
+mesuré ». Le tableau de la même page, qui affiche déjà « — », ne change pas.
+
+**§2 — Pourquoi.** Aujourd'hui l'absence est tracée à zéro : un besoin que
+rien ne mesure se lit comme un besoin effondré.
+
+**§3 — Exécution.** Lot J2-radar (rang 1) : le radar accepte une valeur
+absente ; un banc tient la règle ; critère de fin, « non mesuré » constaté à
+l'écran. Lève la porte 3.
+
+### D-300 — Agenda du sommeil : la refonte touche la présentation seule ; heures, classes, fenêtre de 21 nuits, compte exact et « je ne sais pas » restent ; ce qui est écarté est écrit (lettre ca)
+
+- Date : 2026-10-15
+- Statut : accepté. Brouillon rédigé par l'assistant à partir de la réponse
+  du responsable du 2026-10-13 (troisième séance, question 1 sur la planche
+  « Agenda de sommeil, nouveau design » remise le 2026-10-12 : « Garder les
+  heures »), soumis au responsable et accepté par lui le 2026-10-15, tel quel, sur
+  question à options.
+- Domaine : instrument `Q_SOM_09`, agenda du sommeil de 21 nuits
+  (`web/src/lib/agenda-sommeil/`, contrat `agenda-sommeil-v4`) ; fiche H17
+  du plan unique (`docs/claude/PLAN_WELLNEURO.md`, rang 0, geste du
+  responsable).
+- Nature : cadrage de produit. Aucune règle clinique, aucun seuil, aucun
+  poids.
+- **Ne touche pas** : aucun code, aucune migration, aucun contrat, aucun
+  texte servi au patient. Les lettres cb à cg gardent leurs préalables et
+  leur rang.
+
+**§1 — Ce que la refonte change : la présentation.** La saisie peut
+s'illustrer : images des classes existantes, pictogrammes des facteurs,
+écran de fin, accès du patient à ses nuits, forme au réveil visible sans
+dépli. Mêmes réponses, mêmes bornes, même ordre vécu (le soir, la nuit, le
+matin). Les textes du patient relèvent de cb, la saisie de cc.
+
+**§2 — Ce qui reste.** Les heures de coucher, d'essai de sommeil et de lever,
+au quart d'heure, sans clavier ; les classes qualitatives ; la fenêtre de 21
+nuits ; le compte exact des réveils ([[D-091]]) ; « Je ne sais pas » là où
+[[D-271]] l'admet ; le contrat d'une nuit fixé à la première ([[D-272]] §3) ;
+les agrégats et l'indice produits à la clôture seulement, jamais renvoyés au
+patient ; les drapeaux de [[D-280]]. Aucun contrat v5 pour la présentation,
+aucune exception à [[D-276]] §1 : aucune fonction n'est retirée ni réduite.
+
+**§3 — Ce qui est écarté.** De la planche du 2026-10-12, ne se prennent pas :
+1. l'abandon des heures : il ferait tomber l'indice, tous les agrégats, les
+   mesures de [[D-280]], le chronogramme et la frise ; déjà écarté le
+   2026-07-28 ;
+2. les réveils en tranches : recul sur le compte exact ([[D-091]]) ;
+3. le score de nuit à poids 40/20/20/10/10 : poids sans provenance (DC-19,
+   DC-21) ; aucun score de nuit (séance du 2026-10-13, question 3) ;
+4. les chiffres, le « Bravo » et le conseil automatique au patient : le
+   portail ne montre aucun chiffre calculé, le merci porte sur l'acte de
+   noter, jamais sur la nuit déclarée (même séance, question 4) ; aucun
+   conseil sans règle signée (DC-01) ;
+5. les corrélations : aucune méthode signée ;
+6. les « Insights IA » comme interprétation : ni cause ni conduite par un
+   modèle (DC-02, DC-27, DC-31, DC-32) ;
+7. les cinq classes d'excellence : seuils sans provenance (DC-19, DC-20) ;
+8. la note libre : retirée en v2.
+
+**§4 — Ce qui suit, sous ses propres décisions.** cb (textes du patient et
+critère des illustrations, qui ne dépendent jamais de la nuit déclarée) ; cc
+(saisie illustrée), livrée après la seconde lecture de la re-mesure
+d'adhésion, pour que chaque changement se mesure seul ; cd (contrat v5 :
+rituel du soir posé seulement si le protocole en porte un, échelle fixée par
+le responsable) ; ce et cf (écran praticien : comptes avec dénominateur,
+indices de clôture côte à côte selon les règles de comparaison acquises) ;
+cg (ses nuits par semaine, sans chiffre) ; ch (tendance non chiffrée, sur
+exception écrite).
+
 ### D-299 — D4 : OpenAI est déclaré au registre et au document patient, le flux inchangé ; « Vos données personnelles » v18, accusé exigé
 
 - Date : 2026-10-15

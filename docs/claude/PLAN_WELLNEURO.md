@@ -129,7 +129,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 |---|---|---|---|
 | 1 | Constat initial en conteneur, en agrégats | S-1, Q-1 (rang 0) : F40, H06 | levée en partie le 2026-10-12 ; restent le premier import v4 commenté et le premier accusé usage_ia v7, au fait ; [A verifier] : la lecture est en `bio-extraction-v5` depuis #1428 et `usage_ia` en v8 depuis #1431, le critère nomme encore v4 et v7 |
 | 2 | Décisions d'ordre mergées : deux files, une activation à la fois, restauration | a, b, g par la PR S-3 (rang 0) : F01, H05, F04 | levée le 2026-10-14 : a, b, g écrites par D-287, D-288, D-289, mergées par la PR S-3 (#1430) |
-| 3 | Radar sans zéro décidé | M-6, ac (rang 0) : H12 | non levée : texte à écrire ; fond acquis |
+| 3 | Radar sans zéro décidé | M-6, ac (rang 0) : H12 | non levée : texte écrit le 2026-10-15 (D-301) ; se lève au constat de J2-radar |
 | 4 | Sources à fournir : poids égal, seuils, fidélité, quantités, axes | le responsable (rang 0) : H08 | en partie : D-280 source les seuils de 8B ; règle du milieu levée ; restent poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes |
 | 5 | K-05a et D4 : liste fermée et déclaration des sites IA | le responsable (rang 0) : F46 | levée le 2026-10-15 : D4 (D-299, #1467) puis K-05a, liste fermée des neuf fichiers IA de `web/src` (`web/src/lib/sitesAppelIa.guard.test.ts`), chacun rattaché à `docs/DOSSIER_RGPD.md` |
 | 6 | Doctrine du cockpit chiffré et de l'adhésion signée | M-2, G-4 (rang 2), sur c et d (rang 1) : F59, H32 | non levée |
@@ -227,10 +227,10 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | porte 4 | sources à fournir | geste | lève 4 | non | H08 |
 | K-05a, D4 | liste fermée des sites IA | geste | lève 5 | non | F46 |
 | porte 28 | avis, fiches et règles hors liste | geste | lève 28 | non | H09 |
-| m | encart de sécurité sur les CAB_ | geste | aucune | non | H10 |
-| n | garde de dose resserrée | geste | aucune | non | H11 |
-| z | mineurs, garde d'âge, date de naissance | geste | aucune | non | F45 |
-| ac | radar sans zéro | geste | lève 3 | non | H12 |
+| m | encart de sécurité sur les CAB_ (fait le 2026-10-15 : D-303) | geste | aucune | non | H10 |
+| n | garde de dose resserrée (fait le 2026-10-15 : D-304) | geste | aucune | non | H11 |
+| z | mineurs, garde d'âge, date de naissance (fait le 2026-10-15 : D-302) | geste | aucune | non | F45 |
+| ac | radar sans zéro (fait le 2026-10-15 : D-301) | geste | lève 3 | non | H12 |
 | G-10 | sources de fidélité, une par instrument | geste | 11 | non | H13 |
 | j | D2, règle de dépendance | geste | lève 12 | non | F63 |
 | q | aperçu médecin sous garde, remise tracée | geste | 27 | non | F38 |
@@ -251,7 +251,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | ci | amendement de D-276 : cinq déclencheurs | geste | aucune | non | F67 |
 | co | réexamen de l'AIPD | geste | aucune | non | F68 |
 | cp | revue des trous RGPD (écrite par D-283) | geste | aucune | non | F69 |
-| ca | cadrage de la refonte de l'agenda du sommeil | geste | aucune | non | H17 |
+| ca | cadrage de la refonte de l'agenda du sommeil (fait le 2026-10-15 : D-300) | geste | aucune | non | H17 |
 | bg | flux de l'export vers l'assistant externe du responsable | geste | avec 5 | non | H18 |
 | bf, instruction | une décision par indicateur hebdomadaire | geste | aucune | non | H19 |
 | gestes RGPD | archivages, relance d'effacement, dossier v8 | geste | aucune | non | H20 |
@@ -386,6 +386,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre m, de la main du responsable.
 - **Critère de fin** : lettre mergée ; NF-7 servi dans J2-base.
+- **Mise à jour (2026-10-15)** : m écrite par D-303 sur arbitrage du responsable : à la publication d'un instrument du cabinet, déclaration obligatoire « pose une question sur le suicide : oui / non » ; oui ⇒ encart signé de D-275 sur chacun de ses écrans ; sans réponse, pas de publication. Aucun instrument du cabinet en production au 2026-10-14 (conteneur). Reste NF-7 (J2-base, après la porte 12).
 
 #### H11 · n : garde de dose resserrée
 - **Identifiant, piste** : lettre n (D-n) ; garde de dose resserrée (EF-3b) ; sécurité ; geste du responsable.
@@ -394,6 +395,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non pour la lettre ; EF-3b porte la migration de J2-base, en tête du rang 4 par la hiérarchie h1.
 - **Décisions, textes** : lettre n, de la main du responsable ; aucune valeur de dose proposée par l'assistant.
 - **Critère de fin** : lettre mergée ; EF-3b servi dans J2-base, release-db constatée.
+- **Mise à jour (2026-10-15)** : n écrite par D-304 sur arbitrage du responsable : la garde reconnaît aussi « nombre + unité + par jour, par prise, par kilo » (aujourd'hui « 200 mg par jour » se valide par lot) ; posologies sans nombre non visées ; aucune valeur de dose. Reste EF-3b : relevé par conteneur des affirmations déjà validées par lot qui portent une dose, puis migration de la fonction et release-db.
 
 #### F45 · Date de naissance au dépôt et garde d'âge
 - **Identifiant, piste** : lettres z, as, at ; J2-conf ; ingest.
@@ -404,6 +406,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Critère de fin** : garde jouée en banc sur fixtures, puis constat par identifiant ; rubrique « Cas des mineurs » renseignée (`docs/DOSSIER_RGPD.md:1274`).
 - **Mise à jour (2026-10-13)** : D-283 §5 puis D-284 §3, §4 et §7 : seuil des mineurs à 18 ans, acquis ; un dossier sans date de naissance se voit demander sa date à la prochaine connexion, questionnaires et biologie en pause tant qu'elle manque (lot (h) de H26, qui remplace (d)) ; la fiche signalétique reste ouverte pour la saisir ; la lettre z garde son objet, son seuil est acquis. Rubrique « Cas des mineurs » : `docs/DOSSIER_RGPD.md:1307` sur 36f82cf1.
 - **Mise à jour (2026-10-14)** : lot (h) codé (garde d'âge `lib/patient/gardeAge.ts`, étape date au portail, gardes serveur) ; la garde d'âge de z existe donc pour les surfaces en service ; as, at et J2-conf inchangés.
+- **Mise à jour (2026-10-15)** : z écrite par D-302 sur arbitrage du responsable : D-284 §3-4 entérinés ; la date de naissance devient obligatoire à la création d'un dossier par le praticien (facultative au code aujourd'hui) ; lot de code sans migration à placer ; as, at, J2-conf et le circuit des mineurs inchangés.
 
 #### H12 · ac et J2-radar : radar sans zéro
 - **Identifiant, piste** : lettre ac (M-6, D-ac, R:ac), puis J2-radar.
@@ -412,6 +415,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre ac, de la main du responsable.
 - **Critère de fin** : « non mesuré » constaté à l'écran ; banc de `DetailBesoinsPanel.tsx:58`.
+- **Mise à jour (2026-10-15)** : ac écrite par D-301 (texte accepté tel quel) : un besoin non mesuré est un axe sans point, nommé « non mesuré » ; constat au code : `DetailBesoinsPanel.tsx:58` trace `couverture ?? 0`. Reste J2-radar (rang 1), qui lève la porte 3.
 
 #### H13 · G-10, v, J2-bandes, J3-bandes : fidélité et bandes de bruit
 - **Identifiant, piste** : G-10.
@@ -594,6 +598,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : D-xxx de cadrage, de la main du responsable, fragment `changelog.d/`.
 - **Critère de fin** : texte mergé.
+- **Mise à jour (2026-10-15)** : ca écrite par D-300 (texte accepté tel quel) : présentation seule ; heures, classes, 21 nuits, compte exact, « je ne sais pas » gardés ; huit éléments de la planche écartés. Suite : cb, puis cc après la seconde lecture de la re-mesure.
 
 #### H18 · bg : flux de l'export vers l'assistant externe du responsable
 - **Identifiant, piste** : lettre bg ; confiance ; geste du responsable.
@@ -1873,9 +1878,9 @@ Table par rang : rang d'abord, hiérarchie ensuite. Un geste qui a une fiche n'a
 | 0 | h1 | signer les décisions d'ordre a, b, g (PR S-3) ; fait le 2026-10-14 : D-287, D-288, D-289 (#1430) | F01, H05, F04 | chaîne biologie, file C, restauration |
 | 0 | h1 | fournir les sources de la porte 4 | H08 | c, am, al, cm, seuils_points |
 | 0 | h1 | sources de fidélité (G-10) | H13 | v, bandes, mots qui jugent |
-| 0 | h1 | lettres de sécurité m, n, z, ac | H10, H11, F45, H12 | NF-7, EF-3b, garde d'âge, radar |
+| 0 | h1 | lettres de sécurité m, n, z, ac (faites le 2026-10-15 : D-303, D-304, D-302, D-301) | H10, H11, F45, H12 | NF-7, EF-3b, garde d'âge, radar |
 | 0 | h1 | conduire le premier constat S-1, biologie et hors biologie, en agrégats, par conteneur | F40, H06 | porte 1 ; vérifications renvoyées |
-| 0 | h2 | lettres j, q, s, aa, ab, av ; guide w ; ca ; bg | F63, F38, F57, F55, H14, F33, H15, H17, H18 | palier 1, BioFlow, aperçu médecin, onglet Biologie, BF-8, EF-0, 12 besoins, agenda du sommeil |
+| 0 | h2 | lettres j, q, s, aa, ab, av ; guide w ; ca (fait le 2026-10-15 : D-300) ; bg | F63, F38, F57, F55, H14, F33, H15, H17, H18 | palier 1, BioFlow, aperçu médecin, onglet Biologie, BF-8, EF-0, 12 besoins, agenda du sommeil |
 | 0 | h2 | K-05a et D4 (porte 5) : faits le 2026-10-15 (D-299, liste fermée) | F46 | R:Drive, ag, ah, an, at, ay, bg |
 | 0 | h2 | liste des 8 analytes NABM (S-7, fait le 2026-10-15) ; lecture des écarts d'unité textuels ; copie datée de l'accord d'Anthropic | F54, F60, F47 | M-3 ; deux unités ; registre |
 | 0 | h2 | effectif de masquage ; cj ; ci (fait le 2026-10-14 : D-286, #1425) ; co ; comportement voulu de la charge | F25, F49, F67, F68, F76 | constats sur plusieurs dossiers ; packs ; levées ; AIPD ; correctif |
@@ -1925,12 +1930,12 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h1 | M-5 (2/2) : fait le 2026-10-14 — release-db de BP-09 approuvée hors usage, sentinelle liée, constat par conteneur (#1448, D-294 ; seconde passe Codex « accepter ») ; suite : PR 2 | F03, porte 9 | effacement de dossier (en échec tant qu'elle manque) ; PR 2 de BP-09 ; toute migration suivante (après G-7) |
 | h1 | effectif de masquage des agrégats (D-298 rédigée et acceptée : cinq dossiers distincts) | F25 | S-1 sur plusieurs dossiers, H07, y, BP-21a |
 | h1 | essai de restauration G-7 : fait le 2026-10-14, réussi, porte 8 levée (#1462 ; portée écrite par D-289, #1430) | F04, porte 8 | toute migration après BP-09 |
-| h1 | lettres m, n, ac, z | H10, H11, H12, F45 | NF-7, EF-3b, radar, garde d'âge |
+| h1 | lettres m, n, ac, z : faites le 2026-10-15 (D-303, D-304, D-301, D-302) | H10, H11, H12, F45 | NF-7, EF-3b, radar, garde d'âge |
 | h1 | sources de fidélité (G-10) | H13, porte 11 | v |
 | h1 | sources restantes de la porte 4 : poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes | H08 | c, am, al, cm, seuils_points |
 | h2 | K-05a et D4 (faits le 2026-10-15 : D-299, liste fermée ; porte 5 levée) ; bg | F46, porte 5 ; H18 | at, R:Drive, ag, ah, an, ay |
 | h2 | liste des 8 analytes NABM (S-7) : fait le 2026-10-15 (F54) ; M-3 attend un véhicule d'écriture | F54, porte 10 | M-3, f, G-3 |
-| h2 | lettres j, q, s, aa, ab, av ; guide w ; ca | F63, F38, F57, F55, H14, F33, H15, H17 | porte 12 ; ba ; ad et bc ; aw et az ; cb |
+| h2 | lettres j, q, s, aa, ab, av ; guide w ; ca (fait le 2026-10-15 : D-300) | F63, F38, F57, F55, H14, F33, H15, H17 | porte 12 ; ba ; ad et bc ; aw et az ; cb |
 | h2 | cj (D-296 rédigée et acceptée, D/7) ; co | F49, F68 | cm ; AIPD |
 | h2 | lecture des écarts d'unité textuels ; comportement voulu de la charge | F60, F76 | deux unités ; correctif |
 | h1, h2 | signatures des grilles de la table d'arrêt (E64) et des règles orphelines (E32) | H42, H41 | table d'arrêt complète ; axes |
@@ -1968,7 +1973,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | M-3 | F54 | véhicule d'écriture des liaisons (S-7 fait le 2026-10-15) |
 | f | F54 | M-3 |
 | G-3 | F54 | f |
-| cb ; illustrations de cc ; cd | H39, H48, H54 | ca (H17) ; porte 16 pour cc ; porte 15 pour cd |
+| cb ; illustrations de cc ; cd | H39, H48, H54 | ca fait le 2026-10-15 (D-300) ; porte 16 pour cc ; porte 15 pour cd |
 | ad et bc | H34 | j |
 | ba | H35 | q |
 | aw ; texte de az | F34, F37 | av |
@@ -2485,8 +2490,8 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | h | Boussole retirée ; exception à D-276 §1 | la main du responsable | 0 | H16 |
 | j | D2, règle de dépendance ; module publié | registre | 0 | F63 |
 | k | CGU unique ; texte de l'IA v7 | la main du responsable | 0 | F77 |
-| m | encart de sécurité sur les CAB_ | la main du responsable | 0 | H10 |
-| n | garde de dose resserrée | la main du responsable | 0 | H11 |
+| m | encart de sécurité sur les CAB_ ; fait le 2026-10-15 (D-303) | la main du responsable | 0 | H10 |
+| n | garde de dose resserrée ; fait le 2026-10-15 (D-304) | la main du responsable | 0 | H11 |
 | o | Momentum à remesure libre | la main du responsable | 1 | H30 |
 | p | journal de lecture du protocole | registre | 4 (migration) | H60 |
 | q | aperçu médecin tracé, remise au patient | la main du responsable | 0 | F38 |
@@ -2498,10 +2503,10 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | w | guide des 12 besoins sur sources | la main du responsable | 0 | H15 |
 | x | posture d'API, aucune clé | la main du responsable | 1 ; après ci | H29 |
 | y | comptes du cabinet | la main du responsable | 3 | H58 |
-| z | mineurs, garde d'âge (seuil 18 ans acquis par D-284 §4 ; garde = date demandée à la connexion, lot (h) de H26) | la main du responsable | 0 | F45 |
+| z | mineurs, garde d'âge (seuil 18 ans acquis par D-284 §4 ; garde = date demandée à la connexion, lot (h) de H26) ; fait le 2026-10-15 (D-302 : date obligatoire à la création) | la main du responsable | 0 | F45 |
 | aa | courrier de remboursement | la main du responsable | 0 | F55 |
 | ab | EF-0, trancher Q3 | la main du responsable | 0 | H14 |
-| ac | radar sans zéro | la main du responsable | 0 | H12 |
+| ac | radar sans zéro ; fait le 2026-10-15 (D-301) | la main du responsable | 0 | H12 |
 | ad, bc | un cycle, pas un programme ; ajouts par version datée | registre | 1 | H34 |
 | ae | bloc Protocole du document médecin | la main du responsable | 5 | F39 |
 | af | référence de fiche conseil sur l'action | la main du responsable | 1 | H24 |
@@ -2532,7 +2537,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | bf | indicateurs hebdomadaires, au point d'étape | la main du responsable | instruction 0 ; code 3 au plus tôt, 4 si le contrat du point d'étape migre [Hypothese] | H19 |
 | bg | flux de l'export vers l'assistant externe | la main du responsable | 0 | H18 |
 | bh | rendu imprimable du protocole | registre | 5 au plus tôt [Hypothese] | H69 |
-| ca | cadrage de la refonte du sommeil | la main du responsable | 0 | H17 |
+| ca | cadrage de la refonte du sommeil ; fait le 2026-10-15 (D-300) | la main du responsable | 0 | H17 |
 | cb | textes de l'écran de fin | la main du responsable | 1 [Hypothese] | H39 |
 | cc | habillage de la saisie du sommeil | la main du responsable (jeu d'illustrations) | 2 au plus tôt [Hypothese] | H48 |
 | cd | rituel du soir rattaché au protocole | la main du responsable (échelle) | 3 au plus tôt, 4 si migration [Hypothese] | H54 |
