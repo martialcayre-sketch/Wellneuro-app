@@ -4,6 +4,37 @@
 
 ## Décisions actives
 
+### D-291 — Arbitrages de clôture de D-290 : CodeRabbit reste hors des checks obligatoires, une PR qui modifie sa configuration est P1
+
+- Date : 2026-10-14
+- Statut : accepté — **arbitrages du responsable**, rendus en conversation le
+  2026-10-14 sur les quatre questions posées à la clôture de [[D-290]].
+- Domaine : gouvernance des PR.
+- **Ne touche pas** : la protection de `main` (inchangée : `verify` obligatoire,
+  `enforce_admins`, aucune approbation de PR, lu le 2026-10-14) ; aucun code
+  applicatif ; aucun hook ; `.coderabbit.yaml` inchangé.
+
+**§1 — CodeRabbit n'est pas un check obligatoire de `main`.** La condition de
+merge reste la règle écrite : une revue de `coderabbitai[bot]` lue sur le sha
+de tête (`.claude/rules/pr-revue-et-release-db.md` 1.6). Motif : son statut
+passe au vert même quand il saute la revue (#1438), et une panne ou un quota
+épuisé (dix revues par heure) bloquerait tous les merges.
+
+**§2 — Copilot reste dans les extensions recommandées.** La recommandation ne
+vise que l'éditeur ; `.github/copilot-instructions.md` reste, CodeRabbit le lit.
+
+**§3 — La case « Autofix » se désactive dans l'interface de CodeRabbit**, geste
+du responsable ; sa disparition se constate sur la synthèse de la PR suivante.
+La règle « ne jamais la cocher » reste en filet.
+
+**§4 — Une PR qui modifie `.coderabbit.yaml` est P1** : passe `wn-reviewer`
+avant le merge, mission nommée — la PR affaiblit-elle la revue ? —, la revue de
+CodeRabbit ne comptant pas pour cette question puisqu'elle tourne sous la
+configuration qu'elle juge (`D-290` §5). Écartés : `CODEOWNERS` et approbation
+imposée — avec un seul relecteur, chacune de ces PR attendrait le responsable.
+Le garde-fou est déclaratif ; la dette du plan §8 reste ouverte tant qu'aucun
+verrou ne la ferme.
+
 ### D-290 — La revue des PR passe de Copilot à CodeRabbit ; l'assistant merge
 
 - Date : 2026-10-14

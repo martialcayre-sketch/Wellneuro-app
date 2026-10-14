@@ -16,8 +16,9 @@ documentaire reste P2. Les classes de `wn-lot` (§ table) donnent le défaut :
 - **P2 — courant** : Docs, UI ordinaire, tests simples, correction localisée,
   CRUD sans surface sensible, scripts de dev à faible risque.
 - **P1 — sensible** : permissions, Prisma sans migration, orchestration
-  CI/GitHub, hooks, logique métier importante, transverse modéré, bug
-  difficile à risque de régression.
+  CI/GitHub, hooks, configuration du bot de revue (`.coderabbit.yaml`,
+  `D-291`), logique métier importante, transverse modéré, bug difficile à
+  risque de régression.
 - **P0 — critique** : sécurité, auth/autorisation (périmètre de l'exception
   `wn-merge` : `lib/auth.ts`, middleware portail, lien magique, cookie de
   session, `patients.access_token`, tout chemin session/token), migration,

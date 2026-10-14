@@ -10310,3 +10310,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Épreuve sur la PR, verdicts, merge, constat du déploiement.
 
 **Ouvert.** CodeRabbit check obligatoire ? Copilot retiré des extensions recommandées ?
+
+## 2026-10-14 — CodeRabbit : arbitrages de clôture (D-291)
+
+**Fait.** #1440 mergée (6fc65160), déploiement constaté. Quatre arbitrages du responsable versés en D-291 : pas de check obligatoire, Copilot gardé dans l'éditeur, case « Autofix » coupée par lui dans l'interface, PR qui modifie `.coderabbit.yaml` classée P1 (règle 1.10, POLITIQUE_REVUE, plan §8).
+
+**Écarté.** CODEOWNERS + approbation imposée : un seul relecteur, chaque PR de configuration l'attendrait.
+
+**Prochaine action.** Constater la disparition de la case « Autofix » sur la synthèse de la prochaine PR.
+
+**Ouvert.** Passe `wn-reviewer` de l'exception non liée au sha final (plan §8).
