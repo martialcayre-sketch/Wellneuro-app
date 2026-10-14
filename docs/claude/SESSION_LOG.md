@@ -10331,11 +10331,12 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Release-db de la migration du lot (j) à constater ; analyse d'impact du transfert à verser ; critères de la porte 1, de F40 et de F77 à relire ; S-5, préalable de F03 et H43, non défini.
 ## 2026-10-14 — lettre k : D-292, les conditions d'utilisation de l'espace patient
+## 2026-10-14 — porte 13 levée : k (D-292), u (D-293), G-8
 
-**Fait.** File C : aucune place codable (ACT-1 attend k, G-8, J2-base, J2-cc8). Premier jet de k : les quatre textes d'information fusionnés mot pour mot, partie 5 neuve, e-mail aux patients suivis ; deux arbitrages, validation telle quelle. D-292 écrite (amende D-269 §6), plan mis à jour.
+**Fait.** File C : aucune place codable ; ses préalables de texte faits. k : les quatre textes d'information fusionnés mot pour mot en « Conditions d'utilisation », accusées à chaque version par lien e-mail (amende D-269 §6). u : « Mes échanges » journal daté en lecture, encart de D-275 étendu au dépôt, lecture datée dite. G-8 : procédure des droits écrite (rubrique 9). Tout validé tel quel ; rien d'activé.
 
-**Écarté.** « Conditions générales » ; durées de D-283 §2 dès la v1 ; coder ACT-1 avant son texte.
+**Écarté.** « Conditions générales » ; durées dès la v1 ; e-mails et réponses du praticien dans « Mes échanges ».
 
-**Prochaine action.** Merge de #1444, rebase, PR de doc, merge ; puis u (H37) et G-8 (H50), qui attendaient k.
+**Prochaine action.** PR unique, merge ; puis ai (H51, accusé daté), qui attend u et k.
 
-**Ouvert.** D-291 tenue par #1444 (publiée) ; D-292 ici, contiguë au merge de #1444 ; la lettre cj, non poussée, prend D-293. Durées de conservation, version suivante.
+**Ouvert.** La lettre cj, non poussée, porte D-291 : elle prend D-294. Durées de conservation (D-283 §10 a) ; circuit des droits des mineurs.

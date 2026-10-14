@@ -133,7 +133,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 10 | NABM signée : 8 analytes, puis liste étendue | S-7 (0), M-3 (1), f (2), G-3 (3) : F54 | non levée : 0 liaison signée |
 | 11 | Bandes de bruit signées, instrument par instrument | G-10 (0), v (1) : H13 | non levée |
 | 12 | D2 mergée | j (rang 0) : F63 | non levée |
-| 13 | Textes communs : CGU, registre, circuit des droits, Patient Hub | k (0) : F77 ; l, écrite pour l'essentiel par D-283 (§2 durées, §6 droits) ; u (1) : H37 ; G-8 (2) : H50 | non levée : k faite (D-292, 2026-10-14) ; u faite (D-293, 2026-10-14) ; G-8 à faire ; restes de l en H26 |
+| 13 | Textes communs : CGU, registre, circuit des droits, Patient Hub | k (0) : F77 ; l, écrite pour l'essentiel par D-283 (§2 durées, §6 droits) ; u (1) : H37 ; G-8 (2) : H50 | **levée le 2026-10-14** : k (D-292), u (D-293), G-8 (procédure des droits écrite, `docs/DOSSIER_RGPD.md` rubrique 9) ; restes de l en H26 |
 | 14 | Accusé de lecture daté décidé (renverse) | ai (rang 2) : H51 | non levée |
 | 15 | K-02 servi : premier check-in sur un protocole approuvé | constat, rang 2 au plus tôt, après d | fermée au 2026-10-13 ; lecture « porte 15 pour le code de bf » confirmée par le responsable le 2026-10-14, instruction au rang 0 (handoff de la PR 2, #1419) |
 | 16 | Clôture du LOT-02 de l'agenda du sommeil | campagne, rang 1 au plus tôt : H27 | fermée : lectures repères 2026-10-29 puis 2026-11-12 |
@@ -647,7 +647,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | az, texte | notice patient du bilan | geste | aucune | non | F37 |
 | at | date de naissance lue par l'extraction | geste | 5 | non | F45, rang 0 |
 | cm | axes biologiques, liste fermée | geste | aucune | non | F51 |
-| D-283 (a), (e), (f) | texte des durées ; phrase au médecin ; procédure des droits | geste | aucune | non | H26 |
+| D-283 (a), (e), (f) | texte des durées ; phrase au médecin ; procédure des droits ((f) faite le 2026-10-14, G-8) | geste | aucune | non | H26 |
 | LOT-02 du sommeil | re-mesure ; sa clôture lève la porte 16 | geste | lève 16 | non | H27 |
 | r | droits d'usage des instruments servis | geste | 1 | non | H28 |
 | x | posture d'API, aucune clé | geste | 28 | non | H29 |
@@ -925,7 +925,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | M-5 (1/2) | signatures de BP-07 (posées dans le lot, #1435, #1438) | geste | 23 | non | F02, rang 1 |
 | f | NABM : 8 liaisons, puis liste étendue | geste | 10 | non | F54, rang 0 |
 | M-2 | signature de la doctrine du cockpit (porte 6) | geste | lève 6 | non | F59, rang 1 |
-| G-8 | préalables communs prêts, rien d'activé | geste | 13 | non | H50 |
+| G-8 | préalables communs prêts, rien d'activé ; fait le 2026-10-14 | geste | 13 | non | H50 |
 | ai | accusé de lecture daté de « Mes échanges » | geste | lève 14 ; 9 si migration | selon | H51 |
 
 **File A**
@@ -1017,6 +1017,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : textes de la main du responsable.
 - **Critère de fin** : textes prêts, rien d'activé ; ACT-1 et ACT-3 les consomment ; lève la porte 13 avec k et u.
+- **Mise à jour (2026-10-14)** : fait. Les trois préalables communs sont prêts : CGU (k, D-292), Patient Hub (u, D-293), circuit des droits (procédure écrite et validée par le responsable, `docs/DOSSIER_RGPD.md` rubrique 9, qui ferme aussi le lot (f) de H26). La durée est celle de D-283 §2 ; la ligne de registre suit chaque lot (F70). Rien d'activé. Porte 13 levée.
 
 #### H51 · ai : accusé de lecture daté de « Mes échanges »
 - **Identifiant, piste** : lettre ai (R:ai).
