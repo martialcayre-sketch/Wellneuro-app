@@ -133,7 +133,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 10 | NABM signée : 8 analytes, puis liste étendue | S-7 (0), M-3 (1), f (2), G-3 (3) : F54 | non levée : 0 liaison signée |
 | 11 | Bandes de bruit signées, instrument par instrument | G-10 (0), v (1) : H13 | non levée |
 | 12 | D2 mergée | j (rang 0) : F63 | non levée |
-| 13 | Textes communs : CGU, registre, circuit des droits, Patient Hub | k (0) : F77 ; l, écrite pour l'essentiel par D-283 (§2 durées, §6 droits) ; u (1) : H37 ; G-8 (2) : H50 | non levée : k, u, G-8 à faire ; restes de l en H26 |
+| 13 | Textes communs : CGU, registre, circuit des droits, Patient Hub | k (0) : F77 ; l, écrite pour l'essentiel par D-283 (§2 durées, §6 droits) ; u (1) : H37 ; G-8 (2) : H50 | **levée le 2026-10-14** : k (D-292), u (D-293), G-8 (procédure des droits écrite, `docs/DOSSIER_RGPD.md` rubrique 9) ; restes de l en H26 |
 | 14 | Accusé de lecture daté décidé (renverse) | ai (rang 2) : H51 | non levée |
 | 15 | K-02 servi : premier check-in sur un protocole approuvé | constat, rang 2 au plus tôt, après d | fermée au 2026-10-13 ; lecture « porte 15 pour le code de bf » confirmée par le responsable le 2026-10-14, instruction au rang 0 (handoff de la PR 2, #1419) |
 | 16 | Clôture du LOT-02 de l'agenda du sommeil | campagne, rang 1 au plus tôt : H27 | fermée : lectures repères 2026-10-29 puis 2026-11-12 |
@@ -233,7 +233,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | ab | EF-0 : trancher Q3 | geste | aucune | non | H14 |
 | w | guide des 12 besoins réécrit sur sources | geste | aucune | non | H15 |
 | S-7 | liste des 8 analytes NABM partagés | geste | 10 | non | F54 |
-| k | CGU unique ; usage_ia v7 | geste | 13 | non | F77 |
+| k | CGU unique ; usage_ia v7 (version à l'origine de la fiche ; la v1 des conditions reprend la version en vigueur à l'activation, v8 au 2026-10-14) ; fait, D-292 du 2026-10-14 | geste | 13 | non | F77 |
 | h | Boussole retirée ; exception à D-276 §1 | geste | aucune | non | H16 |
 | av | contenu biologique du document au médecin | geste | aucune | non | F33 |
 | l, trace d'import | trace d'import conservée comme le dossier | geste | 17, 13 | non | F44 |
@@ -477,6 +477,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : lettre k, de la main du responsable. Fait : la v7 a été validée le 2026-10-11 sans nouvel accusé demandé ; k dit si la CGU change cela.
 - **Critère de fin** : k mergée ; un accusé demandé se constate en agrégats dans S-1 (F40).
 - **Mise à jour (2026-10-14)** : [A verifier] le titre de la fiche dit v7 ; `usage_ia` v8 est publiée par #1431 (une phrase change, accusé recueilli au dépôt). Quelle version k vise est au responsable.
+- **Mise à jour (2026-10-14)** : k écrite par D-292, texte validé tel quel par le responsable : `docs/claude/propositions/2026-10-14-k-conditions-utilisation/README.md`. Les quatre textes d'information deviennent les « Conditions d'utilisation de votre espace Wellneuro », accusées à chaque version ; le texte de l'IA est donc accusé dès ACT-1 (H70), qui seul les sert. D-269 §6 amendée : le filet au dépôt exige l'accusé des conditions. Durées de D-283 §2 renvoyées à une version suivante. Version visée (question ci-dessus) : chaque texte entre dans sa version en vigueur au jour de l'activation (D-292 §5), soit `usage_ia` v8 au 2026-10-14.
 
 #### H16 · h et J1-alim : la Boussole retirée
 - **Identifiant, piste** : lettre h (M-4, G-5, D-h, R:h), puis J1-alim (FC-4) ; Boussole alimentaire retirée du portail ; exception nommée à D-276 §1 ; amende D-250 ; dettes D-C5-01 à D-C5-04 rattachées ; alimentation ; geste du responsable (h), puis file A (J1-alim).
@@ -646,7 +647,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | az, texte | notice patient du bilan | geste | aucune | non | F37 |
 | at | date de naissance lue par l'extraction | geste | 5 | non | F45, rang 0 |
 | cm | axes biologiques, liste fermée | geste | aucune | non | F51 |
-| D-283 (a), (e), (f) | texte des durées ; phrase au médecin ; procédure des droits | geste | aucune | non | H26 |
+| D-283 (a), (e), (f) | texte des durées ; phrase au médecin ; procédure des droits ((f) faite le 2026-10-14, G-8) | geste | aucune | non | H26 |
 | LOT-02 du sommeil | re-mesure ; sa clôture lève la porte 16 | geste | lève 16 | non | H27 |
 | r | droits d'usage des instruments servis | geste | 1 | non | H28 |
 | x | posture d'API, aucune clé | geste | 28 | non | H29 |
@@ -657,7 +658,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | ad, bc | un cycle, pas un programme ; ajouts datés | geste | aucune | non | H34 |
 | ba | mention « validé par votre praticien » | geste | aucune | non | H35 |
 | R:Drive | extraction du Drive de formation | geste | 5 | non | H36 |
-| u | Patient Hub : collecte et « Mes échanges » | geste | 13 | non | H37 |
+| u | Patient Hub : collecte et « Mes échanges » ; fait, D-293 du 2026-10-14 | geste | 13 | non | H37 |
 | cb | textes de l'écran de fin du sommeil | geste | 18 | non | H39 |
 | E31 | seuils_points de Q_ALI_01, décision sourcée | geste | 4 | non | H40 |
 | E32 | règles orphelines : trois restes réécrits | geste | aucune | non | H41 |
@@ -868,6 +869,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre u, de la main du responsable, fragment.
 - **Critère de fin** : texte accepté avant toute activation.
+- **Mise à jour (2026-10-14)** : u écrite par D-293, textes validés tels quels : `docs/claude/propositions/2026-10-14-u-patient-hub/README.md`. « Mes échanges » est un journal daté, en lecture, de ce qui a été remis et transmis, renvoyant aux pages existantes ; sans e-mails ni réponses du praticien. L'encart de D-275 §1 s'étend au dépôt et à « Mes échanges ». La lecture datée est dite au patient ; son code est ai (H51).
 
 #### H39 · cb : textes de l'écran de fin du sommeil
 - **Identifiant, piste** : lettre cb ; jeu d'illustrations accepté ; sommeil ; geste du responsable.
@@ -923,7 +925,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | M-5 (1/2) | signatures de BP-07 (posées dans le lot, #1435, #1438) | geste | 23 | non | F02, rang 1 |
 | f | NABM : 8 liaisons, puis liste étendue | geste | 10 | non | F54, rang 0 |
 | M-2 | signature de la doctrine du cockpit (porte 6) | geste | lève 6 | non | F59, rang 1 |
-| G-8 | préalables communs prêts, rien d'activé | geste | 13 | non | H50 |
+| G-8 | préalables communs prêts, rien d'activé ; fait le 2026-10-14 | geste | 13 | non | H50 |
 | ai | accusé de lecture daté de « Mes échanges » | geste | lève 14 ; 9 si migration | selon | H51 |
 
 **File A**
@@ -1015,6 +1017,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : textes de la main du responsable.
 - **Critère de fin** : textes prêts, rien d'activé ; ACT-1 et ACT-3 les consomment ; lève la porte 13 avec k et u.
+- **Mise à jour (2026-10-14)** : fait. Les trois préalables communs sont prêts : CGU (k, D-292), Patient Hub (u, D-293), circuit des droits (procédure écrite et validée par le responsable, `docs/DOSSIER_RGPD.md` rubrique 9, qui ferme aussi le lot (f) de H26). La durée est celle de D-283 §2 ; la ligne de registre suit chaque lot (F70). Rien d'activé. Porte 13 levée ; elle ne couvre pas la demande reçue par e-mail d'une personne qui n'a plus accès au portail, renvoyée en dette au §8.
 
 #### H51 · ai : accusé de lecture daté de « Mes échanges »
 - **Identifiant, piste** : lettre ai (R:ai).
@@ -2104,6 +2107,7 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | Accords de sous-traitance de l'hébergeur, de Google Workspace, de Sentry à archiver ; copie datée de l'accord d'Anthropic, avec l'analyse d'impact du transfert (D-284 §5, lot j) | D-283 §9 ; D-284 §5-6 ; `DOSSIER_RGPD.md:1338-1344` sur f3ddbd3d | gestes (H20, F47) ; 2027-06-30 |
 | Pentest ; registre physique EX-3 ; piste d'audit | `DOSSIER_RGPD.md` §14 | test d'intrusion humain avant toute offre commerciale ou second compte (D-283 §7) ; registre des violations et piste d'audit clos par constat (D-283, fin) |
 | Information du médecin à la première lettre | D-283 §3 | lot (e) (H26) |
+| Demandes de droits : le passage à `traite` n'exige ni réponse ni date d'envoi ; une demande reçue par e-mail d'une personne qui n'a plus accès au portail n'a pas de circuit ; aucune durée n'est fixée pour les courriels de demande et de réponse gardés dans la boîte du responsable | revue CodeRabbit de #1446 ; `DOSSIER_RGPD.md` rubrique 9 | code et migration au premier lot qui touche les demandes de droits [Hypothese], rang 4 au plus tôt ; le cas sans accès au portail et la durée des courriels, à trancher par le responsable ; 2027-06-30 |
 | Confirmation d'effacement des sauvegardes de l'ancien hébergeur | `DOSSIER_RGPD.md:1214`, :1246 ; `.wn/state.json` blocking_issues | relance, geste du responsable (H20) |
 
 ### Dettes techniques vivantes
