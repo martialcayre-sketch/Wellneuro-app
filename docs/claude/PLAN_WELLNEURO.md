@@ -245,7 +245,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | bf, instruction | une décision par indicateur hebdomadaire | geste | aucune | non | H19 |
 | gestes RGPD | archivages, relance d'effacement, dossier v8 | geste | aucune | non | H20 |
 | relance du laboratoire | relance écrite du laboratoire pilote | geste | 29 | non | F41, en §6 |
-| G-11 | textes patient de la collecte et des mineurs (l écrite par D-283) | geste | aucune | non | H38 |
+| G-11 | textes patient de la collecte et des mineurs (l écrite par D-283) ; fait, validés le 2026-10-14 | geste | aucune | non | H38 |
 
 **File A**
 
@@ -597,6 +597,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : deux textes, de la main du responsable.
 - **Critère de fin** : textes acceptés ; ACT-4 et ACT-5 les consomment.
+- **Mise à jour (2026-10-14)** : textes acceptés. Premier jet de l'assistant, six arbitrages du responsable sur questions à options, puis validation telle quelle le 2026-10-14 : `docs/claude/propositions/2026-10-14-g11-textes-patient/README.md`. Non publiés : le texte de collecte part avec J3-collecte (H62) et ACT-4 (H77), les textes des mineurs avec J3-mineurs (H79) et ACT-5 (H78). Restent ouverts : les 15–17 ans (avocat, D-284), la version de « Vos données personnelles » à l'ouverture de la collecte (lettre l), le circuit des droits des mineurs (D-283 §5).
 
 ### Rang 1
 

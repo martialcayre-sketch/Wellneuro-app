@@ -10290,3 +10290,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Premier jet des textes G-11 (H38), nouvelle session.
 
 **Ouvert.** Aucune date encore enregistrée par le portail au constat (15 dossiers sans date) ; origine de la date non tracée.
+
+## 2026-10-14 — G-11 : textes patient de la collecte et des mineurs
+
+**Fait.** Premier jet des deux textes (dépôt de documents ; avant 18 ans, 2A titulaire et 2B jeune), six arbitrages rendus, validation telle quelle par le responsable. Textes consignés sous `docs/claude/propositions/2026-10-14-g11-textes-patient/`, H38 close au plan.
+
+**Écarté.** Suppression d'un dépôt par le patient ; accusé avant le premier dépôt ; accès parent au portail ; 15 et 112 seuls pour le jeune (le 119 est ajouté).
+
+**Prochaine action.** PR de doc ; textes publiés avec J3-collecte/ACT-4 et J3-mineurs/ACT-5.
+
+**Ouvert.** 15–17 ans (avocat) ; « Vos données personnelles » à l'ouverture de la collecte ; circuit des droits des mineurs ; constat de la date de naissance du dossier d'essai, identifiant attendu.
