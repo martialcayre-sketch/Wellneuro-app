@@ -37,7 +37,7 @@ séries. Rien ne s'efface.
   occupe toujours la clé ») : un fil annulé ne retient plus sa clé (dossier,
   analyte, date). La garde anti-doublon de `D-124` §2 devient un trigger qui
   ignore les fils annulés ; une révocation est refusée si la place a été
-  reprise. Décision : `D-292`.
+  reprise. Décision : `D-294`.
 
 ## Constat de production (2026-10-14, `one-off-6164`, lecture seule)
 
@@ -86,7 +86,7 @@ BP-11. Toute qualification de valeur.
 - `docs/DECISIONS.md` : `D-xxx` amendant `D-124` §3 (annulation en ajout
   seul, motifs, révocation, cible, mauvais dossier) ; elle dit que la
   condition « premier import » sort des préalables (plan, F03)
-- Ajoutés à la livraison (`D-292`) : la garde anti-doublon par trigger et
+- Ajoutés à la livraison (`D-294`) : la garde anti-doublon par trigger et
   l'amendement du contrat `cb_resultats_biologiques_v1_negatif.sql` ; le banc
   `web/scripts/banc-annulations-resultats-deux-sessions.test.mjs` (CI et T3) ;
   `web/src/lib/patient/effacement.ts`, avancé de la PR 2 — le banc de
@@ -104,7 +104,7 @@ BP-11. Toute qualification de valeur.
   `web/src/app/api/praticien/biologie/import/decisions/route.ts`
   (résultats existants avant validation)
 - les commentaires qui disent encore « une racine par clé »
-  (`filCorrection.ts`, routes de saisie) : faux depuis `D-292`
+  (`filCorrection.ts`, routes de saisie) : faux depuis `D-294`
 - `web/src/components/patient-cockpit/EstimeMesurePanel.tsx` (geste et
   marquage « annulé »)
 - tests de chacun ; `scripts/wn-matrice-consommation.mjs` si la matrice change
@@ -118,7 +118,7 @@ BP-11. Toute qualification de valeur.
 - Registre RGPD mis à jour avant la table.
 - Effacement : vérifier, avant la release-db, que la clé étrangère de la table
   neuve ne bloque pas l'effacement nommé tant que la PR 2 n'est pas déployée.
-  L'effacement étant livré avec la migration (`D-292` §7), le risque est
+  L'effacement étant livré avec la migration (`D-294` §7), le risque est
   l'inverse : entre le merge et la release-db, un effacement de dossier
   échoue sur la table absente (rien d'effacé) — approuver dans la foulée.
 - Aucune lecture ni qualification de valeur ; aucun texte libre ; pas de

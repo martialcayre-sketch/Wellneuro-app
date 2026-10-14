@@ -1,4 +1,4 @@
--- Contrat des annulations de résultats biologiques ([[D-292]], BIO-PARCOURS
+-- Contrat des annulations de résultats biologiques ([[D-294]], BIO-PARCOURS
 -- BP-09).
 --
 -- La table et la garde anti-doublon qu'elle amende promettent VINGT

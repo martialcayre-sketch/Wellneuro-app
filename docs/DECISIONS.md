@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-292 — Annuler un résultat de biologie saisi par erreur : un acte en ajout seul, à motif fermé, qui retire le fil entier des calculs et libère sa place ; révocable une fois (BP-09, amende D-124 §2 et §3)
+### D-294 — Annuler un résultat de biologie saisi par erreur : un acte en ajout seul, à motif fermé, qui retire le fil entier des calculs et libère sa place ; révocable une fois (BP-09, amende D-124 §2 et §3)
 
 - Date : 2026-10-14
 - Statut : accepté. Arbitrages du responsable du 2026-10-14, consignés dans

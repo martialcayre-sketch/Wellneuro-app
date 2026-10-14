@@ -2559,7 +2559,7 @@ model ResultatBiologique {
   // série d'un analyte dans un dossier (estimé ↔ mesuré), avec une mesure par
   // analyte et date de prélèvement.
   //
-  // L'UNICITÉ vit dans la migration seule, et ce n'est plus un index ([[D-292]]
+  // L'UNICITÉ vit dans la migration seule, et ce n'est plus un index ([[D-294]]
   // amende [[D-124]] §2) : le trigger `resultats_biologiques_unicite_mesure`
   // refuse une saisie NEUVE (`supersedes_resultat_id` nul) sur une clé
   // (patient, analyte, date) qui porte déjà une racine dont le fil n'est pas
@@ -2836,7 +2836,7 @@ model LectureImportBiologique {
   @@map("lectures_imports_biologiques")
 }
 
-/// L'annulation d'un résultat de biologie saisi par erreur ([[D-292]], BP-09),
+/// L'annulation d'un résultat de biologie saisi par erreur ([[D-294]], BP-09),
 /// ou la révocation de cette annulation. Ajout seul (UPDATE et TRUNCATE
 /// refusés par trigger), aucune valeur recopiée, aucun texte libre. Elle
 /// retire le FIL entier — les lignes qui descendent de la même racine de

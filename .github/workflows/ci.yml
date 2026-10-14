@@ -1180,7 +1180,7 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/lectures_imports_biologiques_v1_negatif.sql
 
-      # Annulations de résultats biologiques (D-292, BP-09). Une ligne
+      # Annulations de résultats biologiques (D-294, BP-09). Une ligne
       # `annulation` RETIRE un fil de correction des séries : ce que le drift
       # check ne voit pas, ce sont les refus qui l'empêchent d'en retirer un à
       # tort — résultat de CE dossier, praticien DU dossier, tête de fil, une
@@ -1248,7 +1248,7 @@ jobs:
           WN_BIO_LECTURE_BANC_BASE: wellneuro_ci
         run: node prisma/runWithAlias.js scripts/banc-ecrivain-lecture-deux-requetes.test.ts
 
-      # Annulations de résultats et garde anti-doublon À DEUX SESSIONS (D-292,
+      # Annulations de résultats et garde anti-doublon À DEUX SESSIONS (D-294,
       # BP-09) : l'index unique retiré était sûr face aux courses, le trigger
       # qui le remplace ne l'est que par ses verrous. Deux saisies neuves
       # concurrentes (refus lisible par Prisma), le témoin REPEATABLE READ, deux
@@ -1263,7 +1263,7 @@ jobs:
           WN_BIO_ANNULATION_BANC_BASE: wellneuro_ci
         run: node scripts/banc-annulations-resultats-deux-sessions.test.mjs
 
-      # Le VRAI client Prisma contre la garde anti-doublon (D-292, BP-09) :
+      # Le VRAI client Prisma contre la garde anti-doublon (D-294, BP-09) :
       # le 23505 du trigger doit arriver en P2002 (le 409 `doublon_mesure` des
       # écrivains en dépend), la place annulée se reprend, REPEATABLE READ est
       # refusé. Commet ses fixtures puis les efface : base nommée.

@@ -217,7 +217,7 @@ describe('effacerDossier', () => {
     expect(rang('lectureImportBiologique')).toBeLessThan(rang('importBiologique'));
   });
 
-  // Annulations de résultats (D-292, BP-09) : FK RESTRICT vers le résultat.
+  // Annulations de résultats (D-294, BP-09) : FK RESTRICT vers le résultat.
   // Une ligne déplacée après lui rendrait l'effacement impossible pour tout
   // dossier qui porte une annulation.
   it('supprime les annulations de résultats avant les résultats', async () => {

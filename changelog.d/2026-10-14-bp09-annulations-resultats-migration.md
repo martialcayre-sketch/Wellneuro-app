@@ -1,4 +1,4 @@
-### Biologie : annuler un résultat saisi par erreur, la migration seule (BP-09, D-292, 2026-10-14)
+### Biologie : annuler un résultat saisi par erreur, la migration seule (BP-09, D-294, 2026-10-14)
 
 PR 1 du lot BP-09 (fiche LOT-09) : migration seule. Rien n'écrit ni ne lit
 encore la table ; le seul code qui l'accompagne est l'effacement nommé du
@@ -43,5 +43,5 @@ PR 2, après la release-db approuvée et constatée par conteneur.
 - **Banc du client Prisma** `banc-unicite-mesure-prisma.test.ts` (CI et T3) :
   le vrai client de l'application rend le doublon en `P2002`, reprend la
   place annulée, échoue en REPEATABLE READ.
-- **D-292** amende D-124 §2 et §3 ; registre RGPD (rubriques 2 ter et 5) mis
+- **D-294** amende D-124 §2 et §3 ; registre RGPD (rubriques 2 ter et 5) mis
   à jour avant la table.

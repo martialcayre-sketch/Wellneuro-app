@@ -228,7 +228,7 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     // Les résultats biologiques (étage 2 du rayon, D-122 §2) sont des données
     // de santé nominatives en FK RESTRICT : subsistant, ils feraient échouer
     // la suppression du patient. Ils partent avec le dossier, nommément.
-    // Les annulations de résultats ([[D-292]], BP-09) : FK RESTRICT vers le
+    // Les annulations de résultats ([[D-294]], BP-09) : FK RESTRICT vers le
     // patient et le résultat — elles partent AVANT les résultats. Une seule
     // instruction pour les deux actes, révocations comprises (éprouvé par le
     // contrat `annulations_resultats_biologiques_v1_negatif.sql`, cas 12).

@@ -1,5 +1,5 @@
 // BANC À DEUX SESSIONS — l'annulation d'un résultat et la garde anti-doublon
-// devenue trigger ([[D-292]], BIO-PARCOURS BP-09, migration
+// devenue trigger ([[D-294]], BIO-PARCOURS BP-09, migration
 // `annulations_resultats_biologiques_v1`).
 //
 // POURQUOI CE FICHIER EXISTE. L'index unique partiel que la migration retire
@@ -170,7 +170,7 @@ after(async () => {
   }
 });
 
-describe('Annulations de résultats et garde anti-doublon — deux sessions (D-292, BP-09)', () => {
+describe('Annulations de résultats et garde anti-doublon — deux sessions (D-294, BP-09)', () => {
   it('1. deux saisies neuves concurrentes de la même clé : la seconde attend, puis est refusée comme un doublon', async () => {
     const a = await session();
     const b = await session();

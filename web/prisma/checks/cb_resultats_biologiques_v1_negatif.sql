@@ -36,7 +36,7 @@
 --      des définitions, le motif IN n'existant pas dans pg_get_constraintdef) ;
 --   7. la RLS deny-all est active et sans policy (posture D-005) — la table
 --      porte des DONNÉES DE SANTÉ nominatives ;
---   8. la FORME de la garde, pas seulement son comportement. Depuis `D-292`
+--   8. la FORME de la garde, pas seulement son comportement. Depuis `D-294`
 --      (BP-09), la garde n'est plus un index unique partiel mais le trigger
 --      `resultats_biologiques_unicite_mesure` — AFTER INSERT OR UPDATE, par
 --      ligne, à prédicat (saisies neuves seules) —, parce qu'un résultat
@@ -355,7 +355,7 @@ BEGIN
     RAISE EXCEPTION 'RESULTATS BIO: policy inattendue (deny-all attendu)';
   END IF;
 
-  -- ── 8. La FORME de la garde, pas seulement son comportement (D-124, D-292)
+  -- ── 8. La FORME de la garde, pas seulement son comportement (D-124, D-294)
   -- Les cas 1 et 1 bis prouvent ce que la base FAIT ; ceci prouve ce qu'elle
   -- EST. Deux régressions sont visées : un `@@unique` redéclaré au schéma
   -- (l'unicité redeviendrait TOTALE, et la dérive schéma ↔ migrations
@@ -373,7 +373,7 @@ BEGIN
     AND t.tgqual IS NOT NULL;
   IF nb <> 1 THEN
     RAISE EXCEPTION
-      'D-292: la garde anti-doublon `resultats_biologiques_unicite_mesure` n''est plus un trigger AFTER INSERT OR UPDATE à prédicat actif.';
+      'D-294: la garde anti-doublon `resultats_biologiques_unicite_mesure` n''est plus un trigger AFTER INSERT OR UPDATE à prédicat actif.';
   END IF;
 
   SELECT count(*) INTO nb
@@ -383,7 +383,7 @@ BEGIN
     AND NOT i.indisprimary;
   IF nb <> 0 THEN
     RAISE EXCEPTION
-      'D-292: % index unique(s) sur resultats_biologiques hors clé primaire — l''unicité est-elle redevenue un index ? La place d''une mesure annulée ne se libérerait plus, et une unicité totale tuerait toute correction.', nb;
+      'D-294: % index unique(s) sur resultats_biologiques hors clé primaire — l''unicité est-elle redevenue un index ? La place d''une mesure annulée ne se libérerait plus, et une unicité totale tuerait toute correction.', nb;
   END IF;
 
   SELECT count(*) INTO nb
@@ -398,7 +398,7 @@ BEGIN
       'D-124: `cb_resultat_bio_serie_idx` (lecture de la série ENTIÈRE, corrections comprises) est absent ou devenu unique — une correction ne serait plus lisible avec ce qu''elle corrige.';
   END IF;
 
-  RAISE NOTICE 'RESULTATS BIO: série de deux mesures acceptée, fil de correction à trois maillons accepté, fourche acceptée, chaîne orpheline acceptée (référence souple), doublon de saisie neuve toujours refusé, garde anti-doublon par trigger à prédicat et aucun index unique hors clé primaire (D-124, D-292), % cas rejetants dont un CHECK de non-réflexivité, 11 colonnes exactes, 6 NOT NULL, 2 FK RESTRICT, vocabulaire d''unités aligné sur le catalogue, RLS deny-all.',
+  RAISE NOTICE 'RESULTATS BIO: série de deux mesures acceptée, fil de correction à trois maillons accepté, fourche acceptée, chaîne orpheline acceptée (référence souple), doublon de saisie neuve toujours refusé, garde anti-doublon par trigger à prédicat et aucun index unique hors clé primaire (D-124, D-294), % cas rejetants dont un CHECK de non-réflexivité, 11 colonnes exactes, 6 NOT NULL, 2 FK RESTRICT, vocabulaire d''unités aligné sur le catalogue, RLS deny-all.',
     array_length(cas, 1);
 END $$;
 
