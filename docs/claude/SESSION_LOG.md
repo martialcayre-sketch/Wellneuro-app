@@ -10330,7 +10330,7 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR de doc, revue, merge.
 
 **Ouvert.** Release-db de la migration du lot (j) à constater ; analyse d'impact du transfert à verser ; critères de la porte 1, de F40 et de F77 à relire ; S-5, préalable de F03 et H43, non défini.
-## 2026-10-14 — lettre k : D-292, les conditions d'utilisation de l'espace patient
+
 ## 2026-10-14 — porte 13 levée : k (D-292), u (D-293), G-8
 
 **Fait.** File C : aucune place codable ; ses préalables de texte faits. k : les quatre textes d'information fusionnés mot pour mot en « Conditions d'utilisation », accusées à chaque version par lien e-mail (amende D-269 §6). u : « Mes échanges » journal daté en lecture, encart de D-275 étendu au dépôt, lecture datée dite. G-8 : procédure des droits écrite (rubrique 9). Tout validé tel quel ; rien d'activé.
