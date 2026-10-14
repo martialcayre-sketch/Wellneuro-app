@@ -4,10 +4,14 @@
 // POURQUOI CE FICHIER EXISTE. Le contrat SQL
 // (`prisma/checks/bio_ingest_masquage_identite_v1_negatif.sql`) joue une seule
 // session : il éprouve la purge PUIS le masquage refusé, l'un après l'autre. Il
-// ne prouve pas que le `FOR SHARE` du trigger d'insertion SÉRIALISE les deux
+// ne prouve pas que le `FOR UPDATE` du trigger d'insertion SÉRIALISE les
 // écritures. Sans lui, une purge validée pendant qu'un masquage est en vol ne
 // verrait pas ses pages, et rien ne les purgerait plus (revue `wn-reviewer` du
-// lot 1, P1). Les courses jouées ici, en READ COMMITTED :
+// lot 1, P1) ; et une lecture demandée, ou un import ouvert, pendant qu'un
+// masquage est en vol laisserait poser des pages sous une lecture déjà partie
+// (revue Copilot de #1426 : un `FOR SHARE` ne gênait ni le `FOR SHARE` de
+// l'import, ni le `FOR KEY SHARE` de la clé étrangère du travail). Les
+// courses jouées ici, en READ COMMITTED :
 //
 //   1. PURGE D'ABORD : le masquage ATTEND la purge en vol, puis est refusé —
 //      le document est purgé ;
@@ -16,7 +20,15 @@
 //   3. TÉMOIN de 1 : la purge en vol est ANNULÉE — le masquage attend, puis
 //      passe, ses pages intactes ;
 //   4. TÉMOIN de 2 : le masquage en vol est ANNULÉ — la purge attend, puis
-//      passe, sans aucun masquage.
+//      passe, sans aucun masquage ;
+//   5. LECTURE DEMANDÉE D'ABORD : le masquage ATTEND la demande en vol, puis
+//      est refusé — aucun masquage pendant une lecture ;
+//   6. IMPORT OUVERT D'ABORD : le masquage ATTEND l'import en vol, puis est
+//      refusé ;
+//   7. MASQUAGE D'ABORD : la demande ATTEND le masquage en vol, puis passe —
+//      masquer, puis demander, est le parcours normal ;
+//   8. TÉMOIN de 5 : la demande en vol est ANNULÉE — le masquage attend, puis
+//      passe.
 // Chaque course constate d'abord que la seconde session est BLOQUÉE sur un
 // verrou (`pg_stat_activity`) : sans ce constat, une course « gagnée » ne
 // prouverait rien. Et chacune finit sur l'état de la base : jamais une page
@@ -58,7 +70,10 @@ const PRATICIEN = 'praticien@wellneuro.fr';
 const id = nom => `${nom}_${RUN}`;
 
 /** Une course par document, chacun transmis par le patient : l'écart le purge sans délai. */
-const COURSES = ['purge_dabord', 'masquage_dabord', 'purge_annulee', 'masquage_annule'];
+const COURSES = [
+  'purge_dabord', 'masquage_dabord', 'purge_annulee', 'masquage_annule',
+  'demande_dabord', 'import_dabord', 'masquage_avant_demande', 'demande_annulee',
+];
 
 /** Une session : un client dédié, jamais un pool — l'ordre des instructions est le banc. */
 async function session() {
@@ -80,6 +95,18 @@ const masquage = course => ({
            (id, id_patient, id_compte_rendu, pages, nombre_pages, zones_masquees, aucune_identite, pose_par)
          VALUES ($1, $2, $3, ARRAY['\\xffd8ff00000000'::bytea], 1, 1, false, $4)`,
   values: [id(`mq_${course}`), PATIENT, id(`cr_${course}`), PRATICIEN],
+});
+
+const demande = course => ({
+  text: `INSERT INTO travaux_extraction_biologique (id, id_patient, id_compte_rendu, demande_par)
+         VALUES ($1, $2, $3, $4)`,
+  values: [id(`tr_${course}`), PATIENT, id(`cr_${course}`), PRATICIEN],
+});
+
+const ouvertureImport = course => ({
+  text: `INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
+         VALUES ($1, $2, $3, 'modele-banc', 'bio-extraction-v5', $4)`,
+  values: [id(`imp_${course}`), PATIENT, id(`cr_${course}`), PRATICIEN],
 });
 
 /** Attend que la session `pid` soit bloquée sur un verrou — sinon la course n'en est pas une. */
@@ -105,6 +132,17 @@ async function etat(observateur, course) {
               WHERE m.id_compte_rendu = c.id AND cardinality(m.pages) > 0) AS pages_vivantes
      FROM comptes_rendus_biologiques c
      WHERE c.id = $1`,
+    [id(`cr_${course}`)],
+  );
+  return rows[0];
+}
+
+/** Masquages et lectures (travaux, imports) d'une course. */
+async function lectures(observateur, course) {
+  const { rows } = await observateur.query(
+    `SELECT (SELECT count(*)::int FROM masquages_comptes_rendus WHERE id_compte_rendu = $1) AS masquages,
+            (SELECT count(*)::int FROM travaux_extraction_biologique WHERE id_compte_rendu = $1) AS travaux,
+            (SELECT count(*)::int FROM imports_biologiques WHERE id_compte_rendu = $1) AS imports`,
     [id(`cr_${course}`)],
   );
   return rows[0];
@@ -143,6 +181,8 @@ after(async () => {
   const par = [PATIENT];
   try {
     await observateur.query('BEGIN');
+    await observateur.query('DELETE FROM travaux_extraction_biologique WHERE id_patient = $1', par);
+    await observateur.query('DELETE FROM imports_biologiques WHERE id_patient = $1', par);
     await observateur.query('DELETE FROM masquages_comptes_rendus WHERE id_patient = $1', par);
     await observateur.query('DELETE FROM comptes_rendus_biologiques WHERE id_patient = $1', par);
     await observateur.query('DELETE FROM patients WHERE id_patient = $1', par);
@@ -193,5 +233,31 @@ describe('Masquage contre purge du document — deux sessions (D-284 §5, lot j)
     const refus = await course({ premiere: masquage('masquage_annule'), seconde: purge('masquage_annule'), issueA: 'ROLLBACK' });
     assert.equal(refus, null, `la purge a été refusée sur un masquage annulé (${refus?.message}).`);
     assert.deepEqual(await etat(observateur, 'masquage_annule'), { document_purge: true, masquages: 0, pages_vivantes: 0 });
+  });
+
+  it('5. lecture demandée d’abord : le masquage attend la demande, puis est refusé', async () => {
+    const refus = await course({ premiere: demande('demande_dabord'), seconde: masquage('demande_dabord'), issueA: 'COMMIT' });
+    assert.ok(refus, 'un masquage est passé pendant qu’une lecture naissait.');
+    assert.match(refus.message, /demandée ou en cours/);
+    assert.deepEqual(await lectures(observateur, 'demande_dabord'), { masquages: 0, travaux: 1, imports: 0 });
+  });
+
+  it('6. import ouvert d’abord : le masquage attend l’import, puis est refusé', async () => {
+    const refus = await course({ premiere: ouvertureImport('import_dabord'), seconde: masquage('import_dabord'), issueA: 'COMMIT' });
+    assert.ok(refus, 'un masquage est passé pendant qu’un import s’ouvrait.');
+    assert.match(refus.message, /demandée ou en cours/);
+    assert.deepEqual(await lectures(observateur, 'import_dabord'), { masquages: 0, travaux: 0, imports: 1 });
+  });
+
+  it('7. masquage d’abord : la demande attend le masquage, puis passe', async () => {
+    const refus = await course({ premiere: masquage('masquage_avant_demande'), seconde: demande('masquage_avant_demande'), issueA: 'COMMIT' });
+    assert.equal(refus, null, `la demande a été refusée derrière un masquage (${refus?.message}).`);
+    assert.deepEqual(await lectures(observateur, 'masquage_avant_demande'), { masquages: 1, travaux: 1, imports: 0 });
+  });
+
+  it('8. TÉMOIN : la demande en vol est annulée — le masquage attend, puis passe', async () => {
+    const refus = await course({ premiere: demande('demande_annulee'), seconde: masquage('demande_annulee'), issueA: 'ROLLBACK' });
+    assert.equal(refus, null, `le masquage a été refusé sur une demande annulée (${refus?.message}).`);
+    assert.deepEqual(await lectures(observateur, 'demande_annulee'), { masquages: 1, travaux: 0, imports: 0 });
   });
 });

@@ -10162,6 +10162,15 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR, CI, revue, merge, `release-db`, constat ; puis lot 2 (écran, route, lecture des seules pages masquées).
 
 **Ouvert.** TIA de la main du responsable ; textes patient à signer au lot 3 ; un compte rendu de plus de 20 pages ne peut pas être masqué.
+## 2026-10-14 — D-286 (lettre ci) : « l'aboutissement du produit » reçoit cinq événements déclencheurs, D-276 §2 amendée (brouillon)
+
+**Fait.** Depuis un worktree sur `origin/main` 7c4eeab2, en parallèle du lot S-4 : brouillon de D-286 en tête du registre (fiche F67, rang 0, geste du responsable, PR propre), texte des cinq événements repris de la révision de BP-26 du 2026-10-12 (hors dépôt) : offre commerciale ; compte d'un second praticien ; première clé d'API ; premier consommateur ou tiers lecteur de BioFlow hors du cabinet ; tout envoi direct vers un tiers. Comptes internes et lecteur interne de BioFlow restent « usage du praticien ». Même flou de D-265 §3 signalé, non amendé (F68). Registre des frontières §1 aligné à ses deux mentions. Fragment. Relecture adverse par workflow (5 lecteurs, 3 juges par constat) : 15 constats, 9 retenus (quatre défauts distincts, corrigés : renvoi erroné à D-282 §2 pour les interdits de construction, qui viennent du plan §5, citation composite de D-276 §2, provenance « séance », fermeture affirmée pour les événements 1 et 4), 6 écartés. T1 complet vert.
+
+**Écarté.** Amender D-265 ; marquer D-276 dans son propre texte (registre append-only) ; aligner les campagnes closes et handoffs qui citent « aboutissement ».
+
+**Prochaine action.** Lecture du responsable : statut « brouillon soumis » à passer en « accepté » de sa main avant le merge ; numéro D-286 à relire sur `origin/main` juste avant le merge ; puis S-3 (a, b, g), que ci précède.
+
+**Ouvert.** La fiche F67 du plan écrit « amendement de D-276 §1 » : c'est le §2 ; report à la prochaine version du plan.
 ## 2026-10-14 — S-4 : « Relire » ouvre le bon dossier, « Composer le document » dans la minute d'après (premier lot de code du plan)
 
 **Fait.** Fiche H02 du plan unique (rang 0, file A, frontière commune du Fil), sans fiche de campagne : le plan tient lieu de fiche. L1 : la carte « N relectures en attente » porte l'identifiant du dossier dans son lien (`lib/fil/cartes.ts`), banc réécrit (il épinglait le lien nu). L3 : lien « Composer le document » vers la page Documents du dossier dans la minute d'après, visible seulement avec une synthèse validée praticien ; phrase de fin corrigée (l'envoi part de la page Synthèse ou de la page Documents, pas de la fiche) ; trois cas de banc ajoutés, l'écran reste sans bouton ni formulaire. Fragment. Bancs ciblés verts, T1 complet vert, T2 vert (12 349 cas, 271 E2E). Relecture adverse par workflow (4 lecteurs, 3 juges par constat) : 7 constats, 2 retenus et corrigés (la phrase nommait la fiche à tort ; fichier non suivi d'une autre session à ne pas indexer).

@@ -36,7 +36,12 @@ les pages.
   - refusée sur un document purgé ou pendant une lecture.
 - Motif `masquage_absent` ajouté à la liste fermée de la file (`D-282`).
 - Revue `wn-reviewer` : un P1, corrigé. La course masquage contre purge est
-  fermée par un verrou `FOR SHARE`, sur le patron de l'import.
+  fermée par un verrou sur le document.
+- Revue Copilot de #1426 : un `FOR SHARE` ne gênait ni l'ouverture d'un
+  import (`FOR SHARE`) ni la demande d'une lecture (`FOR KEY SHARE` de la clé
+  étrangère). Le verrou passe à `FOR UPDATE`, et le banc couvre ces deux
+  courses. Corrigé. Tous les écrivains du document prennent d'abord le verrou
+  consultatif : pas d'interblocage.
 
 ## Fichiers modifiés
 
@@ -61,8 +66,9 @@ les pages.
   (colonne restée NOT NULL) : dérive locale seulement, sans rapport avec ce
   lot.
 - Contrats masquage, G3, purge et staging verts sur base neuve.
-- Banc à deux sessions : 4 cas sur 4 verts. **Mutation** : sans le
-  `FOR SHARE`, les 4 échouent.
+- Banc à deux sessions : 8 cas sur 8 verts. **Mutation** : sans verrou, les
+  cas de purge échouent ; avec un `FOR SHARE`, les courses contre la lecture
+  (5 à 8) échouent : aucune attente.
 - T1 complet vert, deux fois. T3 complet vert deux fois (5 min 21 s, puis
   5 min 17 s), contrats, bancs, build et E2E compris.
 
