@@ -53,7 +53,13 @@
   ([[D-266]] §2) : « par conception » reste vrai de l'**étage outil** ;
   l'**étage assistant** ouvre fonction par fonction, au fil de sa livraison,
   derrière son drapeau et sur ses preuves propres ; la qualification
-  réglementaire est différée à l'aboutissement du produit ([[D-276]]). La phrase sur les diplômes de
+  réglementaire est différée à l'aboutissement du produit ([[D-276]]).
+  **Amendé le 2026-10-14 par [[D-286]] §2** : « aboutissement » désigne le
+  premier de cinq événements d'usage — offre commerciale ; compte d'un second
+  praticien ; première clé d'API émise ; premier consommateur de BioFlow hors
+  du cabinet, ou premier tiers qui en lit la sortie ; tout envoi direct vers un
+  tiers. Les comptes internes du cabinet et un lecteur interne de BioFlow
+  restent un usage du praticien. La phrase sur les diplômes de
   l'opérateur est conservée telle quelle. Les textes TRUST servis au patient
   ne changent pas ici : BP-24 les amende par une nouvelle version.
 - Aucune modification de logique clinique, seuil, cotation ou interprétation
@@ -64,7 +70,8 @@
   par IA avant diffusion. *Pour BIO-PARCOURS ([[D-266]] §2) : vrai de
   l'étage outil ; l'étage assistant ouvre fonction par fonction, au fil de
   sa livraison, derrière drapeau. Qualification différée à l'aboutissement
-  du produit ([[D-276]]), sans conclure qu'une fonction est hors champ.*
+  du produit ([[D-276]] ; « aboutissement » = premier des cinq événements de
+  [[D-286]] §2), sans conclure qu'une fonction est hors champ.*
 - HDS obligatoire avant tout stockage de données de santé réelles. **Écart
   constaté et assumé depuis le 2026-07-21** : Supabase et Vercel sont **absents
   de l'annuaire ANS des hébergeurs certifiés** (404 hébergeurs recensés ;
