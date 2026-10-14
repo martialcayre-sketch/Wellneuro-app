@@ -10152,3 +10152,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI, commentaires lus, merge après déploiement constaté de 069db0d1, déploiement constaté ; puis prochaine version du plan avec les reports des PR 2 à 6.
 
 **Ouvert.** Reports à la prochaine version du plan : chemins anciens cités (§1, §8, §11), file citée, pagination, PDF natif, coaching autonome, RAG SIIN plein, `AGA_*`, banc « élevé / bas », `D-045`, restes a et b sous R:ao, référence « D-129, #900 » de la clôture de CB-07 (paraît fausse), nom du laboratoire pilote dans la fiche BIO-INGEST (forme opaque).
+
+## 2026-10-14 — S-4 : « Relire » ouvre le bon dossier, « Composer le document » dans la minute d'après (premier lot de code du plan)
+
+**Fait.** Fiche H02 du plan unique (rang 0, file A, frontière commune du Fil), sans fiche de campagne : le plan tient lieu de fiche. L1 : la carte « N relectures en attente » porte l'identifiant du dossier dans son lien (`lib/fil/cartes.ts`), banc réécrit (il épinglait le lien nu). L3 : lien « Composer le document » vers la page Documents du dossier dans la minute d'après, visible seulement avec une synthèse validée praticien ; phrase de fin corrigée (l'envoi part de la page Synthèse ou de la page Documents, pas de la fiche) ; trois cas de banc ajoutés, l'écran reste sans bouton ni formulaire. Fragment. Bancs ciblés verts, T1 complet vert, T2 vert (12 349 cas, 271 E2E). Relecture adverse par workflow (4 lecteurs, 3 juges par constat) : 7 constats, 2 retenus et corrigés (la phrase nommait la fiche à tort ; fichier non suivi d'une autre session à ne pas indexer).
+
+**Écarté.** « Planifier le bilan » présélectionné (L6) ; libellé aligné sur « Composer un document » de la fiche (la spécification dit « le document ») ; banc d'intégration du Fil sur le href (le banc de `cartes.ts` le porte).
+
+**Prochaine action.** CI, commentaires lus, merge, déploiement constaté ; puis R:Graphie (H03) ou S-2 (H01) selon la frontière libre ; la PR de ci (D-286) court en parallèle.
+
+**Ouvert.** Où vivent les fiches de lots de la file A : aucune campagne ne les porte, le plan fait fiche (à confirmer au cadrage du rang 0).
