@@ -12,8 +12,15 @@
 -- `id_patient`. Entre le déploiement du code et l'approbation de la
 -- release-db, un effacement de dossier échouerait donc sur la table absente —
 -- transaction annulée, rien d'effacé ; d'où l'approbation dans la foulée du
--- merge. Jusqu'à la PR 2, la table reste vide : ses clés RESTRICT ne
--- retiennent rien.
+-- merge.
+--
+-- Deux objets, dans une seule transaction :
+--   A. la table des actes d'annulation (neuve) ;
+--   B. la garde anti-doublon de `resultats_biologiques`, qui cesse d'être un
+--      index unique partiel pour devenir un trigger : un résultat annulé doit
+--      LIBÉRER sa place (dossier, analyte, date) — arbitrage du responsable du
+--      2026-10-14, [[D-291]] §3 —, et un index ne sait pas regarder une autre
+--      table.
 --
 -- ── CE QU'UNE LIGNE DIT ────────────────────────────────────────────────────
 --
@@ -32,55 +39,77 @@
 -- date, et ne porte aucun texte libre (contrat négatif, liste blanche des
 -- colonnes). Un motif neuf passe par une décision, puis une migration.
 --
--- ── LE FIL, ET POURQUOI IL SE LIT PAR SA CLÉ ───────────────────────────────
+-- ── LE FIL : SA RACINE DE CHAÎNE ───────────────────────────────────────────
 --
 -- L'annulation retire le FIL de correction entier, pas une ligne ([[D-291]]
--- §3). Une correction hérite de l'analyte et de la date de sa cible ([[D-124]],
--- relu par la route), et l'index unique partiel
--- `cb_resultat_bio_patient_analyte_idx` n'admet qu'une racine par clé : le fil
--- d'un résultat est donc exactement l'ensemble des lignes de sa clé (dossier,
--- analyte, date de prélèvement) — la même équivalence que tient
--- `filCorrection.ts`. Un fil est annulé dès qu'UNE de ses lignes porte une
--- annulation non révoquée, quelle que soit la ligne visée : une correction
--- concurrente qui ferait naître une tête nouvelle ne ressuscite pas le fil.
+-- §3). Le fil d'un résultat est l'ensemble des lignes qui descendent de la
+-- même RACINE (la ligne au `supersedes_resultat_id` nul que l'on atteint en
+-- remontant la chaîne) — la définition de `filCorrection.ts`. Ce n'est plus la
+-- clé (dossier, analyte, date) : une place libérée par une annulation peut
+-- recevoir une mesure neuve, et la clé porte alors deux fils, l'annulé et le
+-- vivant. Un fil est annulé dès qu'UNE de ses lignes porte une annulation non
+-- révoquée : une correction concurrente qui ferait naître une tête nouvelle ne
+-- le ressuscite pas. La remontée vit dans `resultats_biologiques_racine` ; un
+-- cycle (irréalisable par la route) la fait échouer bruyamment.
 --
--- `resultats_biologiques` ne reçoit RIEN : ni colonne (sa liste blanche,
--- `cb_resultats_biologiques_v1_negatif.sql`, reste intacte), ni trigger.
+-- ── LA GARDE ANTI-DOUBLON, DEVENUE TRIGGER (amende [[D-124]] §2) ───────────
 --
--- ── CE QUE LA BASE REFUSE, ET POURQUOI ICI PLUTÔT QUE DANS LA ROUTE ────────
+-- Une saisie NEUVE (`supersedes_resultat_id` nul) est refusée si la clé porte
+-- déjà une racine dont le fil n'est pas annulé. Sans annulation, c'est très
+-- exactement ce que faisait l'index partiel ; la production (60 résultats,
+-- 0 correction, 0 clé en double parmi les têtes au 2026-10-14) le satisfait
+-- déjà. Le refus garde la forme d'une violation d'unicité — SQLSTATE 23505,
+-- contrainte `cb_resultat_bio_patient_analyte_idx` (le nom de la garde depuis
+-- la création de la table), détail `Key (id_patient, analyte_code,
+-- preleve_le) already exists.` — si bien que l'adaptateur Prisma le rend en
+-- `P2002` et que le 409 `doublon_mesure` des trois écrivains (saisie, bilan,
+-- import) ne bouge pas. Le trigger vise aussi l'UPDATE, que l'index couvrait.
+--
+-- ── LES VERROUS, ET LEUR ORDRE ─────────────────────────────────────────────
+--
+-- Un index unique était sûr face aux courses ; un trigger ne l'est que par
+-- ses verrous. `resultats_biologiques_verrouiller_cle` prend, dans cet ordre :
+--   1. `FOR KEY SHARE` sur la ligne du dossier — le verrou que prendrait la
+--      clé étrangère, mais AVANT tout le reste : l'effacement nommé prend le
+--      dossier `FOR UPDATE` en premier, et l'ordre « dossier, puis le reste »
+--      est alors le même partout (pas d'interblocage avec lui — revue
+--      `wn-reviewer` du lot, P1-2) ;
+--   2. un verrou consultatif de transaction sur la clé (espace 291,
+--      `hashtext` de la clé) : deux saisies neuves de la même clé, ou une
+--      saisie et un acte d'annulation, se sérialisent — une saisie neuve
+--      n'a aucune ligne existante à verrouiller. Une collision de hachage ne
+--      fait que sérialiser deux clés sans rapport.
+-- Saisie neuve, annulation et révocation prennent ce même couple. Le
+-- verrou consultatif n'entre en conflit avec aucun verrou de ligne.
+-- CONDITION POUR LES ÉCRIVAINS (même règle que `lectures_imports_biologiques`) :
+-- rester en READ COMMITTED (ou SERIALIZABLE), jamais en REPEATABLE READ —
+-- l'instantané de transaction y masquerait la ligne que le verrou vient de
+-- laisser commettre. Le banc à deux sessions
+-- (`scripts/banc-annulations-resultats-deux-sessions.test.mjs`) éprouve les
+-- courses ; le contrat relit la présence des verrous.
+--
+-- ── CE QUE LA BASE REFUSE SUR LES ACTES ────────────────────────────────────
 --
 --  1. LE RÉSULTAT APPARTIENT AU DOSSIER : refus nommé par le trigger. La clé
 --     étrangère vers `resultats_biologiques(id)` est simple — une clé
---     composite exigerait un index unique neuf sur une table qu'on ne touche
---     pas.
+--     composite exigerait un index unique neuf sur `resultats_biologiques`.
 --  2. L'ACTE EST CELUI DU PRATICIEN DU DOSSIER : l'e-mail de l'acte égale, sans
 --     égard à la casse, celui que porte le dossier — la règle de
 --     `filtrePatientsDuPraticien`. La route le vérifiera ; la base est la
 --     garde qui reste si une route l'oubliait.
 --  3. UNE ANNULATION VISE UNE TÊTE DE FIL : une ligne qu'aucune autre ne
---     supplante. Annuler une ligne déjà corrigée viserait une valeur qui ne
---     fait plus foi. Sur une fourche (deux corrections concurrentes, que
+--     supplante. Sur une fourche (deux corrections concurrentes, que
 --     [[D-124]] tolère), les deux branches sont des têtes : l'une ou l'autre
 --     annule le fil, et l'élection fine reste celle de la route.
---  4. AU PLUS UNE ANNULATION ACTIVE PAR FIL : une annulation que n'a révoquée
---     aucune révocation, sur n'importe quelle ligne de la clé. Après
---     révocation, une nouvelle annulation est admise. Le trigger prend un
---     verrou `FOR NO KEY UPDATE` sur les lignes du fil, dans l'ordre des
---     identifiants : deux actes concurrents sur un même fil se sérialisent.
---     Ce verrou n'entre pas en conflit avec le `FOR KEY SHARE` que prend la
---     clé étrangère d'une ligne d'import vers son résultat.
---     CONDITION POUR L'ÉCRIVAIN (même règle que `lectures_imports_biologiques`) :
---     rester en READ COMMITTED (ou SERIALIZABLE), jamais en REPEATABLE READ —
---     l'instantané de transaction y masquerait l'annulation que le verrou
---     vient de laisser commettre, et deux annulations actives passeraient.
---     Le contrat à une session vérifie la présence du verrou ; la concurrence
---     s'éprouvera avec la route.
+--  4. AU PLUS UNE ANNULATION ACTIVE PAR FIL (par racine, pas par clé). Après
+--     révocation, une nouvelle annulation est admise.
 --  5. UNE RÉVOCATION VISE UNE ANNULATION DU MÊME RÉSULTAT, une fois (index
---     unique partiel).
+--     unique partiel), et elle est REFUSÉE si la place a été reprise : une
+--     autre racine vivante sur la même clé ferait, une fois le fil revenu,
+--     deux mesures courantes pour un même analyte à une même date.
 --
--- La correction d'un fil annulé, elle, est refusée par la route (PR 2) : la
--- base n'en a pas besoin, puisque le fil reste annulé quelle que soit sa tête
--- (« Le fil », ci-dessus).
+-- La correction d'un fil annulé est refusée par la route (PR 2) : la base n'en
+-- a pas besoin, le fil restant annulé quelle que soit sa tête.
 --
 -- ── FIGÉE, MAIS EFFAÇABLE ──────────────────────────────────────────────────
 --
@@ -94,6 +123,8 @@
 -- `acte_le` en `clock_timestamp() AT TIME ZONE 'UTC'` (convention de Prisma :
 -- un `now()` nu suit le fuseau de session), et `ordre` tiré à l'insertion :
 -- ni l'un ni l'autre ne s'antidate.
+
+-- ═══ A. LA TABLE DES ACTES ═══════════════════════════════════════════════════
 
 -- CreateTable
 CREATE TABLE "annulations_resultats_biologiques" (
@@ -134,7 +165,7 @@ CREATE UNIQUE INDEX "annulations_resultats_biologiques_une_revocation_par_annula
 
 -- AddForeignKey
 -- ON DELETE RESTRICT vers le patient et le résultat : l'effacement d'un
--- dossier est une suppression NOMMÉE, qui passera par les annulations avant
+-- dossier est une suppression NOMMÉE, qui passe par les annulations avant
 -- les résultats. En CASCADE, elles partiraient en silence.
 ALTER TABLE "annulations_resultats_biologiques" ADD CONSTRAINT "annulations_resultats_biologiques_id_patient_fkey" FOREIGN KEY ("id_patient") REFERENCES "patients"("id_patient") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -171,6 +202,127 @@ ALTER TABLE "annulations_resultats_biologiques"
   ADD CONSTRAINT "annulations_resultats_biologiques_praticien_non_vide"
     CHECK ("praticien_email" ~ '\S' AND char_length("praticien_email") <= 320);
 
+-- ═══ LES TROIS FONCTIONS PARTAGÉES ═══════════════════════════════════════════
+
+-- Le couple de verrous, dans l'ordre (en-tête, « Les verrous »).
+CREATE OR REPLACE FUNCTION public.resultats_biologiques_verrouiller_cle(
+  p_patient text, p_analyte text, p_preleve timestamp(3)
+)
+RETURNS void
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  PERFORM 1 FROM public.patients p WHERE p.id_patient = p_patient FOR KEY SHARE;
+  PERFORM pg_advisory_xact_lock(291, hashtext(p_patient || '|' || p_analyte || '|' || p_preleve::text));
+END;
+$$;
+
+-- La racine du fil d'un résultat : on remonte `supersedes_resultat_id` tant
+-- que la cible existe. Une cible absente (référence souple, chaîne orpheline)
+-- arrête la remontée sur la dernière ligne trouvée. Un cycle échoue.
+CREATE OR REPLACE FUNCTION public.resultats_biologiques_racine(p_id text)
+RETURNS text
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  courante text := p_id;
+  amont text;
+  vues text[] := ARRAY[p_id];
+BEGIN
+  LOOP
+    SELECT r.supersedes_resultat_id INTO amont
+    FROM public.resultats_biologiques r
+    WHERE r.id = courante;
+    EXIT WHEN amont IS NULL
+      OR NOT EXISTS (SELECT 1 FROM public.resultats_biologiques r WHERE r.id = amont);
+    IF amont = ANY (vues) THEN
+      RAISE EXCEPTION 'fil de correction abîmé : la chaîne de % boucle sur elle-même.', p_id;
+    END IF;
+    vues := vues || amont;
+    courante := amont;
+  END LOOP;
+  RETURN courante;
+END;
+$$;
+
+-- Le fil de racine `p_racine`, sur la clé donnée, porte-t-il une annulation
+-- non révoquée ? Les annulations candidates sont celles des lignes de la
+-- clé : un fil tient entier dans sa clé (une correction hérite de l'analyte
+-- et de la date de sa cible, relus par la route).
+CREATE OR REPLACE FUNCTION public.resultats_biologiques_racine_annulee(
+  p_racine text, p_patient text, p_analyte text, p_preleve timestamp(3)
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1
+    FROM public.annulations_resultats_biologiques a
+    JOIN public.resultats_biologiques r ON r.id = a.id_resultat
+    WHERE a.id_patient = p_patient
+      AND a.acte = 'annulation'
+      AND r.id_patient = p_patient
+      AND r.analyte_code = p_analyte
+      AND r.preleve_le = p_preleve
+      AND NOT EXISTS (
+        SELECT 1 FROM public.annulations_resultats_biologiques v
+        WHERE v.acte = 'revocation' AND v.id_annulation_revoquee = a.id
+      )
+      AND public.resultats_biologiques_racine(a.id_resultat) = p_racine
+  );
+END;
+$$;
+
+-- ═══ B. LA GARDE ANTI-DOUBLON DE `resultats_biologiques` ═════════════════════
+
+CREATE OR REPLACE FUNCTION public.resultats_biologiques_unicite_mesure()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  PERFORM public.resultats_biologiques_verrouiller_cle(NEW.id_patient, NEW.analyte_code, NEW.preleve_le);
+  IF EXISTS (
+    SELECT 1 FROM public.resultats_biologiques r
+    WHERE r.id_patient = NEW.id_patient
+      AND r.analyte_code = NEW.analyte_code
+      AND r.preleve_le = NEW.preleve_le
+      AND r.supersedes_resultat_id IS NULL
+      AND r.id <> NEW.id
+      AND NOT public.resultats_biologiques_racine_annulee(r.id, NEW.id_patient, NEW.analyte_code, NEW.preleve_le)
+  ) THEN
+    -- La forme d'une violation d'unicité, pour que le 409 `doublon_mesure`
+    -- des écrivains ne bouge pas : l'adaptateur Prisma rend 23505 en P2002 et
+    -- lit les champs dans `Key (…)`.
+    RAISE EXCEPTION 'doublon de mesure : ce dossier porte déjà une mesure courante de cet analyte à cette date de prélèvement.'
+      USING ERRCODE = 'unique_violation',
+            CONSTRAINT = 'cb_resultat_bio_patient_analyte_idx',
+            DETAIL = 'Key (id_patient, analyte_code, preleve_le) already exists.';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+-- Le trigger d'abord, l'index ensuite : la transaction de la migration ne
+-- laisse aucune fenêtre sans garde.
+CREATE TRIGGER resultats_biologiques_unicite_mesure
+  BEFORE INSERT OR UPDATE ON public.resultats_biologiques
+  FOR EACH ROW
+  WHEN (NEW.supersedes_resultat_id IS NULL)
+  EXECUTE FUNCTION public.resultats_biologiques_unicite_mesure();
+
+-- DropIndex — la garde quitte l'index pour le trigger ci-dessus. Pas
+-- d'`IF EXISTS` : si l'état divergeait, la migration doit échouer bruyamment.
+-- La lecture de la clé reste servie par `cb_resultat_bio_serie_idx`, sur les
+-- mêmes colonnes.
+DROP INDEX "cb_resultat_bio_patient_analyte_idx";
+
+-- ═══ LES TRIGGERS DE LA TABLE DES ACTES ══════════════════════════════════════
+
 -- ── FIGÉE : NI UPDATE NI TRUNCATE ──────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION public.annulations_resultats_biologiques_figee()
@@ -202,6 +354,7 @@ DECLARE
   cible_id text;
   cible_analyte text;
   cible_preleve timestamp(3);
+  racine text;
   praticien_dossier text;
   vise_resultat text;
   vise_acte text;
@@ -213,15 +366,9 @@ BEGIN
     RAISE EXCEPTION 'acte d''annulation refusé : % n''est pas un résultat de ce dossier.', NEW.id_resultat;
   END IF;
 
-  -- Le verrou du FIL : tout ce qui suit se lit après les actes concurrents
-  -- sur la même clé (dossier, analyte, date).
-  PERFORM 1
-  FROM public.resultats_biologiques r
-  WHERE r.id_patient = NEW.id_patient
-    AND r.analyte_code = cible_analyte
-    AND r.preleve_le = cible_preleve
-  ORDER BY r.id
-  FOR NO KEY UPDATE;
+  -- Les verrous d'abord : tout ce qui suit se lit après les saisies et les
+  -- actes concurrents sur la même clé.
+  PERFORM public.resultats_biologiques_verrouiller_cle(NEW.id_patient, cible_analyte, cible_preleve);
 
   SELECT p.praticien_email INTO praticien_dossier
   FROM public.patients p
@@ -230,6 +377,8 @@ BEGIN
     RAISE EXCEPTION 'acte d''annulation refusé : seul le praticien du dossier annule ou révoque.';
   END IF;
 
+  racine := public.resultats_biologiques_racine(NEW.id_resultat);
+
   IF NEW.acte = 'annulation' THEN
     IF EXISTS (
       SELECT 1 FROM public.resultats_biologiques s
@@ -237,20 +386,7 @@ BEGIN
     ) THEN
       RAISE EXCEPTION 'annulation refusée : % a été corrigé ; seule la tête du fil s''annule.', NEW.id_resultat;
     END IF;
-    IF EXISTS (
-      SELECT 1
-      FROM public.annulations_resultats_biologiques a
-      JOIN public.resultats_biologiques r ON r.id = a.id_resultat
-      WHERE a.id_patient = NEW.id_patient
-        AND a.acte = 'annulation'
-        AND r.id_patient = NEW.id_patient
-        AND r.analyte_code = cible_analyte
-        AND r.preleve_le = cible_preleve
-        AND NOT EXISTS (
-          SELECT 1 FROM public.annulations_resultats_biologiques v
-          WHERE v.acte = 'revocation' AND v.id_annulation_revoquee = a.id
-        )
-    ) THEN
+    IF public.resultats_biologiques_racine_annulee(racine, NEW.id_patient, cible_analyte, cible_preleve) THEN
       RAISE EXCEPTION 'annulation refusée : le fil de % porte déjà une annulation active.', NEW.id_resultat;
     END IF;
   ELSIF NEW.acte = 'revocation' THEN
@@ -260,6 +396,17 @@ BEGIN
     IF vise_resultat IS DISTINCT FROM NEW.id_resultat
        OR vise_acte IS DISTINCT FROM 'annulation' THEN
       RAISE EXCEPTION 'révocation refusée : % n''est pas une annulation de ce résultat.', NEW.id_annulation_revoquee;
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM public.resultats_biologiques r
+      WHERE r.id_patient = NEW.id_patient
+        AND r.analyte_code = cible_analyte
+        AND r.preleve_le = cible_preleve
+        AND r.supersedes_resultat_id IS NULL
+        AND r.id <> racine
+        AND NOT public.resultats_biologiques_racine_annulee(r.id, NEW.id_patient, cible_analyte, cible_preleve)
+    ) THEN
+      RAISE EXCEPTION 'révocation refusée : une autre mesure a repris la place de % (même analyte, même date).', NEW.id_resultat;
     END IF;
   END IF;
   -- Un acte inconnu passe ici sans refus : le CHECK `acte_check` le refuse
@@ -276,19 +423,27 @@ CREATE TRIGGER annulations_resultats_biologiques_avant_insertion
   FOR EACH ROW EXECUTE FUNCTION public.annulations_resultats_biologiques_avant_insertion();
 
 -- Hygiène d'exécution : ces fonctions ne servent qu'aux triggers.
+REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_verrouiller_cle(text, text, timestamp) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_racine(text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_racine_annulee(text, text, text, timestamp) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_unicite_mesure() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.annulations_resultats_biologiques_figee() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.annulations_resultats_biologiques_avant_insertion() FROM PUBLIC;
 
 DO $$
+DECLARE
+  role_nom text;
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
-    REVOKE EXECUTE ON FUNCTION public.annulations_resultats_biologiques_figee() FROM anon;
-    REVOKE EXECUTE ON FUNCTION public.annulations_resultats_biologiques_avant_insertion() FROM anon;
-  END IF;
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
-    REVOKE EXECUTE ON FUNCTION public.annulations_resultats_biologiques_figee() FROM authenticated;
-    REVOKE EXECUTE ON FUNCTION public.annulations_resultats_biologiques_avant_insertion() FROM authenticated;
-  END IF;
+  FOREACH role_nom IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = role_nom) THEN
+      EXECUTE format('REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_verrouiller_cle(text, text, timestamp) FROM %I', role_nom);
+      EXECUTE format('REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_racine(text) FROM %I', role_nom);
+      EXECUTE format('REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_racine_annulee(text, text, text, timestamp) FROM %I', role_nom);
+      EXECUTE format('REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_unicite_mesure() FROM %I', role_nom);
+      EXECUTE format('REVOKE EXECUTE ON FUNCTION public.annulations_resultats_biologiques_figee() FROM %I', role_nom);
+      EXECUTE format('REVOKE EXECUTE ON FUNCTION public.annulations_resultats_biologiques_avant_insertion() FROM %I', role_nom);
+    END IF;
+  END LOOP;
 END $$;
 
 -- Posture `D-005` : deny-all, aucune policy. L'accès passe par l'application.
@@ -297,6 +452,11 @@ ALTER TABLE "public"."annulations_resultats_biologiques" ENABLE ROW LEVEL SECURI
 -- RETOUR ARRIÈRE : par une migration compensatrice relue et approuvée
 -- (`release-db`), jamais à la main — `migrate resolve --rolled-back` ne vise
 -- que les migrations échouées (précédent BIO-INGEST, P3012). Tant qu'aucune
--- ligne n'existe : déployer d'abord le code sans l'effacement des
--- annulations et sans le modèle `AnnulationResultatBiologique`, puis DROP
--- TABLE et DROP FUNCTION des deux fonctions ci-dessus.
+-- annulation n'existe : recréer l'index unique partiel
+-- `cb_resultat_bio_patient_analyte_idx` (forme de 20260905074500) AVANT de
+-- retirer le trigger `resultats_biologiques_unicite_mesure`, dans la même
+-- transaction ; déployer d'abord le code sans l'effacement des annulations et
+-- sans le modèle `AnnulationResultatBiologique` ; puis DROP TABLE et DROP
+-- FUNCTION des six fonctions ci-dessus. Après une annulation suivie d'une
+-- saisie neuve sur la même clé, l'index ne se recrée plus : le retour arrière
+-- devient une décision.
