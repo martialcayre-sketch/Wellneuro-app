@@ -15,7 +15,11 @@
 //      champs `id_patient, analyte_code, preleve_le` ;
 //   2. la mesure annulée, la même saisie passe — la place est libérée ;
 //   3. une saisie dans une transaction REPEATABLE READ échoue, et pas en
-//      `P2002` : ce niveau est refusé par la base (passe Codex, P0-1).
+//      `P2002` : ce niveau est refusé par la base (passe Codex, P0-1) ;
+//   4. les lecteurs de la PR 2 (`lib/biology-library/annulations.ts`), par le
+//      même client : le verrou de clé pris par `$executeRaw` (ligne trouvée
+//      ou non), les seules annulations ACTIVES (une révoquée n'y est plus),
+//      et la clé libérée puis reprise telle que le préflight la voit.
 //
 // ÉCRIT EN BASE ET COMMET : base NOMMÉE (`WN_BIO_ANNULATION_BANC_BASE`) et
 // LOCALE, fixtures effacées à la fin. Lancé par
@@ -104,6 +108,40 @@ async function main() {
     assert.notEqual(refus.code, 'P2002');
     assert.match(refus.message, /écriture refusée en REPEATABLE READ/);
     console.log('ok 3 - une saisie en REPEATABLE READ est refusée par la base');
+
+    // 4. Les lecteurs de la PR 2, sur la vraie base.
+    const { annulationsActives, clesOccupees, verrouillerCleDuResultat } = await import(
+      '@/lib/biology-library/annulations'
+    );
+    const [trouvee, absente] = await prisma.$transaction(async tx => [
+      await verrouillerCleDuResultat(tx, PATIENT, premiere.id),
+      await verrouillerCleDuResultat(tx, PATIENT, `absente_${RUN}`),
+    ]);
+    assert.equal(trouvee, true, '4 : le verrou de clé ne trouve pas un résultat du dossier.');
+    assert.equal(absente, false, '4 : le verrou de clé prétend avoir trouvé un résultat absent.');
+    // Jour 1 : `premiere` annulée, la mesure 3 a repris la place — occupée.
+    const jour1 = mesure(0, 1).preleveLe;
+    assert.equal((await clesOccupees(prisma, PATIENT, [{ analyteCode: ANALYTE, preleveLe: jour1 }])).size, 1);
+    // Jour 3 : une mesure annulée seule — la place est libre ; révoquée, elle revient.
+    const troisieme = await prisma.resultatBiologique.create({ data: mesure(5, 3), select: { id: true } });
+    await c.query(
+      `INSERT INTO annulations_resultats_biologiques (id, id_patient, id_resultat, acte, motif_annulation, praticien_email)
+       VALUES ($1, $2, $3, 'annulation', 'mauvaise_date_prelevement', $4)`,
+      [`ann3_banc_uni_${RUN}`, PATIENT, troisieme.id, PRATICIEN],
+    );
+    const jour3 = [{ analyteCode: ANALYTE, preleveLe: mesure(0, 3).preleveLe }];
+    assert.equal((await clesOccupees(prisma, PATIENT, jour3)).size, 0, '4 : une mesure annulée tient encore sa place.');
+    let actives = await annulationsActives(prisma, PATIENT);
+    assert.deepEqual([...actives.keys()].sort(), [premiere.id, troisieme.id].sort());
+    await c.query(
+      `INSERT INTO annulations_resultats_biologiques (id, id_patient, id_resultat, acte, id_annulation_revoquee, motif_revocation, praticien_email)
+       VALUES ($1, $2, $3, 'revocation', $4, 'resultat_verifie_exact', $5)`,
+      [`rev3_banc_uni_${RUN}`, PATIENT, troisieme.id, `ann3_banc_uni_${RUN}`, PRATICIEN],
+    );
+    actives = await annulationsActives(prisma, PATIENT);
+    assert.deepEqual([...actives.keys()], [premiere.id], '4 : une annulation révoquée est encore lue active.');
+    assert.equal((await clesOccupees(prisma, PATIENT, jour3)).size, 1, '4 : révoquée, la mesure ne reprend pas sa place.');
+    console.log('ok 4 - verrou de clé, annulations actives et place libérée, par le vrai client');
   } finally {
     // L'ordre de l'effacement nommé du dossier, en une transaction.
     try {

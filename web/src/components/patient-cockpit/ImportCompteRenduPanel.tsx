@@ -53,6 +53,8 @@ export type MesureAuDossier = {
   preleveLe: string;
   /** `null` ⇒ cette mesure fait foi (non corrigée). */
   corrigeeParId: string | null;
+  /** Fil annulé ([[D-294]]) : la mesure ne tient plus sa place. */
+  annulation?: unknown;
 };
 
 type CompteRenduListe = {
@@ -1137,6 +1139,7 @@ function LigneImport({
           m =>
             m.analyteCode === analyte.code &&
             m.corrigeeParId === null &&
+            !m.annulation &&
             champsDepuisInstant(m.preleveLe).date === saisie.date,
         )
       : [];

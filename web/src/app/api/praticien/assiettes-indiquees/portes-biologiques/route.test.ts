@@ -7,6 +7,7 @@ const { getServerSession, prisma, mockCorpus } = vi.hoisted(() => ({
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     biologyAnalyte: { findMany: vi.fn() },
     resultatBiologique: { findMany: vi.fn() },
+    annulationResultatBiologique: { findMany: vi.fn() },
     $queryRaw: vi.fn(),
   },
   mockCorpus: { claimsValidesAuCorpus: vi.fn() },
@@ -70,6 +71,7 @@ describe('GET /api/praticien/assiettes-indiquees/portes-biologiques', () => {
     prisma.journalAccesDossier.deleteMany.mockResolvedValue({ count: 0 });
     prisma.biologyAnalyte.findMany.mockResolvedValue([{ code: 'BIO_CRP_US', libelle: 'CRP ultrasensible' }]);
     prisma.resultatBiologique.findMany.mockResolvedValue([]);
+    prisma.annulationResultatBiologique.findMany.mockResolvedValue([]);
     prisma.$queryRaw.mockResolvedValue(corpusComplet());
     mockCorpus.claimsValidesAuCorpus.mockResolvedValue(new Set(CLAIMS.map(cleClaim)));
   });
@@ -143,6 +145,41 @@ describe('GET /api/praticien/assiettes-indiquees/portes-biologiques', () => {
       analyteCode: 'BIO_CRP_US',
       libelle: 'CRP ultrasensible',
       dernier: { valeur: '3.15', unite: 'mg/L', preleveLe: '2026-09-01T00:00:00.000Z', source: 'saisie_praticien' },
+    });
+  });
+
+  // [[D-294]] §6 : un fil annulé ne donne plus le dernier résultat ; la
+  // mesure d'avant revient — ou le silence, jamais la valeur annulée.
+  it('un fil ANNULÉ sort : le prélèvement précédent revient, correction comprise', async () => {
+    prisma.resultatBiologique.findMany.mockResolvedValue([
+      resultat({ id: 'r1', analyteCode: 'BIO_CRP_US', valeur: '1.8', preleveLe: '2026-06-01T00:00:00.000Z' }),
+      resultat({ id: 'r2', analyteCode: 'BIO_CRP_US', valeur: '3.10', preleveLe: '2026-09-01T00:00:00.000Z' }),
+      resultat({
+        id: 'r3',
+        analyteCode: 'BIO_CRP_US',
+        valeur: '3.15',
+        preleveLe: '2026-09-01T00:00:00.000Z',
+        saisiLe: '2026-09-02T00:00:00.000Z',
+        supersedesResultatId: 'r2',
+      }),
+    ]);
+    prisma.annulationResultatBiologique.findMany.mockResolvedValue([
+      {
+        id: 'ann1',
+        idResultat: 'r3',
+        motifAnnulation: 'mauvaise_date_prelevement',
+        praticienEmail: 'p@wellneuro.fr',
+        acteLe: new Date('2026-09-03T00:00:00.000Z'),
+      },
+    ]);
+    const c = await corps(await GET(requete()));
+    if (!c.ok || !c.actif) throw new Error('réponse inattendue');
+    const crp = c.portes.find(p => p.ligneId === 'PB-SEROTONINERGIQUE')?.marqueurs.find(m => m.analyteCode === 'BIO_CRP_US');
+    expect(crp?.dernier).toEqual({
+      valeur: '1.8',
+      unite: 'mg/L',
+      preleveLe: '2026-06-01T00:00:00.000Z',
+      source: 'saisie_praticien',
     });
   });
 

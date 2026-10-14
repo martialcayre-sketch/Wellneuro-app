@@ -8,6 +8,9 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     resultatBiologique: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
     biologyFunctionalRange: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
+    annulationResultatBiologique: { findMany: vi.fn() },
+    $transaction: vi.fn(),
+    $executeRaw: vi.fn(),
   },
 }));
 
@@ -83,6 +86,11 @@ beforeEach(() => {
   // Par défaut : aucune cible de correction, aucune ligne supplantée.
   prisma.resultatBiologique.findFirst.mockResolvedValue(null);
   prisma.resultatBiologique.create.mockResolvedValue(LIGNE_CONSIGNEE);
+  // Par défaut AUCUNE annulation ([[D-294]]) — l'état de la production.
+  prisma.annulationResultatBiologique.findMany.mockResolvedValue([]);
+  // La transaction de la correction rejoue ses lectures sur le même client.
+  prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) => fn(prisma));
+  prisma.$executeRaw.mockResolvedValue(1);
 });
 
 afterEach(() => {
@@ -142,6 +150,7 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
         supersedesResultatId: null,
         corrigeeParId: null,
         faitsLaboratoire: null,
+        annulation: null,
       },
     ]);
   });
@@ -478,6 +487,63 @@ describe('POST — la correction d’une mesure (D-124) : une ligne de plus, jam
     prisma.resultatBiologique.create.mockResolvedValue(LIGNE_CORRECTION);
   }
 
+  /** L'annulation active, telle que la table la rend ([[D-294]]). */
+  const ANNULATION_RES1 = {
+    id: 'ann1',
+    idResultat: 'res1',
+    motifAnnulation: 'mauvais_analyte',
+    praticienEmail: PRATICIEN,
+    acteLe: new Date('2026-09-03T10:00:00.000Z'),
+  };
+
+  it('un fil ANNULÉ ne se corrige plus : 409 nommé, rien n’est consigné (D-294 §3)', async () => {
+    cibleCorrigible();
+    prisma.annulationResultatBiologique.findMany.mockResolvedValue([ANNULATION_RES1]);
+    const response = await POST(postRequest(CORRECTION));
+    expect(response.status).toBe(409);
+    expect((await response.json()).reason).toBe('correction_resultat_annule');
+    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+  });
+
+  it('annulation commise ENTRE la lecture et l’écriture : relue sous les verrous, 409 et pas de 500', async () => {
+    cibleCorrigible();
+    // Première lecture (sans verrou) : rien ; seconde (sous verrou) : l'annulation.
+    prisma.annulationResultatBiologique.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([ANNULATION_RES1]);
+    const response = await POST(postRequest(CORRECTION));
+    expect(response.status).toBe(409);
+    expect((await response.json()).reason).toBe('correction_resultat_annule');
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+  });
+
+  it('une ligne DÉPASSÉE d’un fil annulé reçoit le refus qui dit pourquoi : « annulé »', async () => {
+    cibleCorrigible();
+    // res1 a été corrigée par res2, et le fil annulé sur res2.
+    prisma.resultatBiologique.findMany.mockResolvedValue([LIGNE_CONSIGNEE, LIGNE_CORRECTION]);
+    prisma.annulationResultatBiologique.findMany.mockResolvedValue([{ ...ANNULATION_RES1, idResultat: 'res2' }]);
+    const response = await POST(postRequest(CORRECTION));
+    expect((await response.json()).reason).toBe('correction_resultat_annule');
+  });
+
+  it('la correction s’écrit DANS la transaction, après les verrous de la garde', async () => {
+    cibleCorrigible();
+    await POST(postRequest(CORRECTION));
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.resultatBiologique.create.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('une saisie NEUVE ne prend pas de transaction : la garde en base s’en charge', async () => {
+    await POST(
+      postRequest({ idPatient: 'PAT1', analyteCode: 'BIO_FERRITINE', valeur: '42,5', preleveLe: '2026-09-01T08:00:00.000Z' }),
+    );
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.resultatBiologique.create).toHaveBeenCalledTimes(1);
+  });
+
   it('consigne une LIGNE chaînée — la route n’expose ni update ni delete', async () => {
     cibleCorrigible();
     const response = await POST(postRequest(CORRECTION));
@@ -764,6 +830,52 @@ describe('POST — la correction d’une mesure (D-124) : une ligne de plus, jam
 });
 
 // LA PLAGE SOURCÉE SERVIE AVEC LA SÉRIE ([[D-157]]).
+describe('GET — un fil annulé reste sur la fiche, marqué (D-294 §6)', () => {
+  const NEUVE = {
+    ...LIGNE_CONSIGNEE,
+    id: 'res3',
+    valeur: new Prisma.Decimal('80'),
+    saisiLe: new Date('2026-09-05T09:00:00.000Z'),
+  };
+
+  it('le fil ENTIER porte l’annulation — motif, auteur, date — et la mesure neuve aucune', async () => {
+    // res1 → res2 (correction), annulé sur res2 ; res3 a repris la place.
+    prisma.resultatBiologique.findMany.mockResolvedValue([LIGNE_CONSIGNEE, LIGNE_CORRECTION, NEUVE]);
+    prisma.annulationResultatBiologique.findMany.mockResolvedValue([
+      {
+        id: 'ann1',
+        idResultat: 'res2',
+        motifAnnulation: 'mauvaise_date_prelevement',
+        praticienEmail: PRATICIEN,
+        acteLe: new Date('2026-09-04T10:00:00.000Z'),
+      },
+    ]);
+    const payload = await (await GET(getRequest('PAT1'))).json();
+    const parId = new Map(payload.resultats.map((r: { id: string }) => [r.id, r]));
+    const attendue = {
+      id: 'ann1',
+      idResultatVise: 'res2',
+      motif: 'mauvaise_date_prelevement',
+      par: PRATICIEN,
+      le: '2026-09-04T10:00:00.000Z',
+    };
+    expect(parId.get('res1')).toMatchObject({ annulation: attendue });
+    expect(parId.get('res2')).toMatchObject({ annulation: attendue });
+    expect(parId.get('res3')).toMatchObject({ annulation: null, corrigeeParId: null });
+    // Rien n'est filtré : les trois lignes sont rendues.
+    expect(payload.resultats).toHaveLength(3);
+  });
+
+  it('seules les annulations ACTIVES sont lues — une révoquée laisse le fil revenir', async () => {
+    await GET(getRequest('PAT1'));
+    expect(prisma.annulationResultatBiologique.findMany.mock.calls[0][0].where).toEqual({
+      idPatient: 'PAT1',
+      acte: 'annulation',
+      revocations: { none: {} },
+    });
+  });
+});
+
 describe('GET — les plages fonctionnelles servies avec la série', () => {
   const PLAGE = {
     analyteCode: 'BIO_FERRITINE',

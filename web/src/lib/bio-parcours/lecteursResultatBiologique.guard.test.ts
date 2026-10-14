@@ -19,6 +19,13 @@ const ACCES_ADMIS = [
   // Saisie, lecture et correction praticien.
   'web/src/app/api/praticien/biologie/resultats/route.ts',
   'web/src/app/api/praticien/biologie/resultats/bilan/route.ts',
+  // Annulation et révocation ([[D-294]]) : lit le fil de la clé visée, sous
+  // les verrous de la garde ; n'écrit que dans la table des actes.
+  'web/src/app/api/praticien/biologie/resultats/annulations/route.ts',
+  // Les annulations actives et les clés occupées ([[D-294]] §3, §6) : relit
+  // les fils (identité, chaînage, clé) et prend le verrou de clé en SQL —
+  // aucune valeur lue.
+  'web/src/lib/biology-library/annulations.ts',
   // Seul chemin d'un import vers les résultats : la décision du praticien.
   'web/src/lib/biology-library/import/decisions.ts',
   // Portes biologiques des assiettes ([[D-245]]).

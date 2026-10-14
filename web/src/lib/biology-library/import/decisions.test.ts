@@ -10,6 +10,7 @@ const { prisma, journal } = vi.hoisted(() => {
     ligneBiologiqueCandidate: { findMany: vi.fn(), updateMany: vi.fn(), findFirst: vi.fn(), count: vi.fn() },
     biologyAnalyte: { findMany: vi.fn() },
     resultatBiologique: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn() },
+    annulationResultatBiologique: { findMany: vi.fn(async () => [] as unknown[]) },
   };
   return { prisma, journal };
 });
@@ -23,6 +24,14 @@ const BASE = { idPatient: 'pat_sophie', idImport: 'imp_1', traitePar: 'praticien
 const PRELEVE = '2026-09-15T06:30:00.000Z';
 
 const LU = new Date(PRELEVE); // 08:30 à Paris : heure lue
+/** Une mesure courante de ferritine au même horodatage. */
+const EXISTANTE = {
+  id: 'r_exist',
+  analyteCode: 'BIO_FERRITINE',
+  preleveLe: new Date(PRELEVE),
+  supersedesResultatId: null,
+  saisiLe: new Date('2026-09-16T08:00:00.000Z'),
+};
 const MINUIT_PARIS = '2026-09-14T22:00:00.000Z'; // l'extraction n'a lu que la date
 const LIGNES = [
   { id: 'l1', statut: 'proposee', valeurLue: '48', uniteLue: 'ng/mL', preleveLeLu: LU, heureLue: true },
@@ -251,9 +260,26 @@ describe('deciderLignes — refus du préflight, tout ou rien', () => {
   });
 
   it('une mesure déjà au dossier au même horodatage est refusée au préflight', async () => {
-    prisma.resultatBiologique.findMany.mockResolvedValueOnce([{ analyteCode: 'BIO_FERRITINE', preleveLe: new Date(PRELEVE) }]);
+    prisma.resultatBiologique.findMany.mockResolvedValueOnce([EXISTANTE]);
     expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] }))
       .toMatchObject({ ok: false, status: 409, lignes: [{ reason: 'doublon_mesure' }] });
+  });
+
+  // [[D-294]] §3 : la mesure annulée libère sa place — « la vraie ferritine
+  // après l'annulation de la ligne qu'un import y avait rattachée ».
+  it('une mesure ANNULÉE au même horodatage ne fait plus doublon', async () => {
+    prisma.resultatBiologique.findMany.mockResolvedValueOnce([EXISTANTE]);
+    prisma.annulationResultatBiologique.findMany.mockResolvedValueOnce([
+      {
+        id: 'ann1',
+        idResultat: 'r_exist',
+        motifAnnulation: 'mauvais_analyte',
+        praticienEmail: 'praticien@wellneuro.fr',
+        acteLe: new Date('2026-09-20T08:00:00.000Z'),
+      },
+    ]);
+    expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] })).toMatchObject({ ok: true });
+    expect(prisma.resultatBiologique.create).toHaveBeenCalledTimes(1);
   });
 });
 

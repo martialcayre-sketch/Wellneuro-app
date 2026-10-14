@@ -11,13 +11,15 @@
 // supplantées », l'écran offrait deux fois le geste, et deux valeurs
 // concurrentes faisaient foi pour la même mesure.
 //
-// CE QUI REMPLACE LE GROUPEMENT PAR (analyte, date). Le raisonnement qui le
-// jugeait inutile était juste, mais incomplet : une correction hérite bien de
-// l'analyte et de la date de sa cible, si bien que toute ligne d'une clé
-// descend d'une seule racine — l'index partiel n'en tolère qu'une. Le groupe
-// se délimite donc par la RACINE DE CHAÎNE, ce qui est exactement équivalent
-// et ne demande ni analyte ni date. Mais il faut encore y élire une tête, et
-// c'est ce qui manquait.
+// CE QUI REMPLACE LE GROUPEMENT PAR (analyte, date). Le groupe se délimite
+// par la RACINE DE CHAÎNE, jamais par la clé — et depuis [[D-294]] §3 ce
+// n'est plus une commodité mais une nécessité : un résultat annulé libère sa
+// place, si bien qu'une clé (dossier, analyte, date) peut porter DEUX
+// racines, le fil annulé et la mesure neuve qui l'a remplacé. Grouper par la
+// clé les fondrait en un seul fil. Une correction hérite toujours de
+// l'analyte et de la date de sa cible : un fil tient donc dans sa clé, mais
+// une clé ne tient plus dans un fil. Reste à élire une tête dans chaque fil,
+// et c'est ce qui manquait.
 //
 // LA FOURCHE EXISTE EN BASE, ET ELLE EST VOULUE. La route refuse de corriger
 // une ligne déjà corrigée, mais la base l'accepte — le contrat SQL le prouve
@@ -72,6 +74,41 @@ export function correctionsParLigne<T extends MaillonFil>(lignes: T[]): Map<stri
     }
   }
   return corrections;
+}
+
+/**
+ * Les lignes des fils ANNULÉS ([[D-294]] §3), chacune avec l'annulation qui
+ * retire son fil.
+ *
+ * `annulations` est indexé par la ligne qui PORTE l'annulation active (non
+ * révoquée) ; un fil est annulé dès qu'UNE de ses lignes en porte une, quelle
+ * qu'elle soit — une correction concurrente ne le ressuscite pas. Même règle
+ * de racine que l'élection, à l'identique de `resultats_biologiques_racine`
+ * en base : la base et l'écran voient les mêmes fils.
+ *
+ * Une ligne absente de la table rendue n'est pas annulée. Tout lecteur de
+ * calcul l'exclut ; la fiche du praticien, seule, l'affiche marquée (§6).
+ */
+export function annulationParLigne<T extends MaillonFil, A>(
+  lignes: T[],
+  annulations: ReadonlyMap<string, A>,
+): Map<string, A> {
+  const rendu = new Map<string, A>();
+  if (annulations.size === 0) return rendu;
+  const parId = new Map<string, T>();
+  for (const ligne of lignes) parId.set(ligne.id, ligne);
+  const memo = new Map<string, string>();
+  const parRacine = new Map<string, A>();
+  for (const ligne of lignes) {
+    const annulation = annulations.get(ligne.id);
+    if (annulation !== undefined) parRacine.set(racine(ligne, parId, memo), annulation);
+  }
+  if (parRacine.size === 0) return rendu;
+  for (const ligne of lignes) {
+    const annulation = parRacine.get(racine(ligne, parId, memo));
+    if (annulation !== undefined) rendu.set(ligne.id, annulation);
+  }
+  return rendu;
 }
 
 /**

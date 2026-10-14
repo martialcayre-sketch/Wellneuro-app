@@ -1,7 +1,7 @@
 ---
 id: "LOT-09"
 titre: "BP-09 — Annulation d'un résultat, ajout seul"
-statut: "en_cours (2026-10-14) — PR 1, migration seule"
+statut: "en_cours (2026-10-14) — PR 1 mergée (#1448), release-db constatée ; PR 2, code consommateur"
 dépend_de: "LOT-00"
 ---
 

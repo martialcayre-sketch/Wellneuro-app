@@ -33,6 +33,11 @@ export const MESSAGES_REFUS_SAISIE: Record<string, string> = {
   correction_deja_corrigee:
     'Cette mesure ne fait plus foi : c’est la version courante qui se corrige, '
     + 'jamais une version dépassée. Relisez la série.',
+  // Annulation d'un résultat ([[D-294]]) : la base le refuse aussi, la route
+  // en donne le message.
+  correction_resultat_annule:
+    'Ce résultat est annulé : il ne se corrige plus. Révoquez d’abord l’annulation si elle '
+    + 'était une erreur.',
   // Saisie groupée d'un bilan (LOT-01).
   bilan_vide: 'Le bilan ne contient aucune mesure.',
   bilan_trop_long: 'Le bilan contient trop de lignes pour un seul enregistrement.',
@@ -42,6 +47,28 @@ export const MESSAGES_REFUS_SAISIE: Record<string, string> = {
   correction_hors_bilan:
     'Un bilan ne corrige aucune mesure : une valeur à reprendre se corrige depuis la série.',
   lignes_invalides: 'Rien n’a été enregistré : reprenez les lignes signalées.',
+};
+
+/**
+ * Refus des actes d'annulation et de révocation ([[D-294]]). Chaque refus
+ * nommé ici l'est aussi par la base, qui fait foi ; la route le dit avant,
+ * sous les mêmes verrous.
+ */
+export const MESSAGES_REFUS_ANNULATION: Record<string, string> = {
+  acte_invalide: 'Le geste demandé est illisible.',
+  cible_invalide: 'Le résultat visé est mal désigné. Reprenez le geste depuis la série.',
+  motif_invalide: 'Choisissez un motif dans la liste.',
+  annulation_cible_inconnue:
+    'Le résultat à annuler est introuvable dans ce dossier. Relisez la série.',
+  annulation_pas_tete:
+    'Ce résultat ne fait plus foi : c’est la version courante du fil qui s’annule. Relisez la série.',
+  annulation_deja_active: 'Ce résultat est déjà annulé.',
+  revocation_cible_inconnue:
+    'L’annulation à révoquer est introuvable dans ce dossier. Relisez la série.',
+  revocation_deja_faite: 'Cette annulation a déjà été révoquée : une annulation ne se révoque qu’une fois.',
+  revocation_place_reprise:
+    'Une autre mesure du même analyte, à la même date de prélèvement, a pris la place de ce '
+    + 'résultat : le rétablir ferait deux mesures courantes. La révocation est refusée.',
 };
 
 /**

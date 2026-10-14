@@ -9,6 +9,7 @@ import {
 import { garderResultats } from '@/lib/biology-library/gardeResultats';
 import { validerDatePrelevement, validerSaisieResultat } from '@/lib/biology-library/resultats';
 import { MESSAGES_REFUS_SAISIE, signature } from '@/lib/biology-library/saisieMessages';
+import { cleMesure, clesOccupees } from '@/lib/biology-library/annulations';
 
 // Saisie GROUPÉE d'un bilan (BIO-INGEST LOT-01, A1 et A3 de [[D-256]]) : une
 // date de prélèvement commune, N analytes, UNE validation. Sœur de la route
@@ -163,14 +164,15 @@ export async function POST(req: Request) {
     });
     const analyteParCode = new Map(analytes.map(a => [a.code, a]));
 
-    // Doublon = même clé que l'unicité partielle en base (patient, analyte,
-    // horodatage, `WHERE supersedes_resultat_id IS NULL`). Le P2002 de la
-    // transaction reste le filet d'une course entre deux saisies.
-    const existants = codes.length === 0 ? [] : await prisma.resultatBiologique.findMany({
-      where: { idPatient, preleveLe, analyteCode: { in: codes }, supersedesResultatId: null },
-      select: { analyteCode: true },
-    });
-    const codesExistants = new Set(existants.map(e => e.analyteCode));
+    // Doublon = même règle que la garde en base (patient, analyte, horodatage,
+    // racine dont le fil n'est pas annulé — [[D-294]] §3) : un résultat annulé
+    // libère sa place. Le P2002 de la transaction reste le filet d'une course
+    // entre deux saisies.
+    const occupees = await clesOccupees(
+      prisma,
+      idPatient,
+      codes.map(analyteCode => ({ analyteCode, preleveLe })),
+    );
 
     const aEcrire: Array<{ analyteCode: string; valeur: string; unite: string | null }> = [];
     for (const ligne of lignes) {
@@ -179,7 +181,7 @@ export async function POST(req: Request) {
         refuser(ligne.index, 'analyte_inconnu');
       } else if (!analyte.actif) {
         refuser(ligne.index, 'analyte_inactif');
-      } else if (codesExistants.has(ligne.analyteCode)) {
+      } else if (occupees.has(cleMesure(ligne.analyteCode, preleveLe))) {
         refuser(ligne.index, 'doublon_mesure');
       } else {
         // L'unité de l'ANALYTE, relue à l'instant de la saisie — jamais celle du client.

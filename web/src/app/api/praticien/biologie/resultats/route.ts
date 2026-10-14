@@ -8,7 +8,12 @@ import {
 } from '@/lib/patient/cycleDeVie';
 import { garderResultats, type VerdictGardeResultats } from '@/lib/biology-library/gardeResultats';
 import { validerSaisieResultat } from '@/lib/biology-library/resultats';
-import { correctionsParLigne } from '@/lib/biology-library/filCorrection';
+import { annulationParLigne, correctionsParLigne } from '@/lib/biology-library/filCorrection';
+import {
+  annulationsActives,
+  verrouillerCleDuResultat,
+  type AnnulationActive,
+} from '@/lib/biology-library/annulations';
 import { lireValeurQuantitative, unitesConcordent } from '@/lib/biology-library/import/valeurLue';
 import { MESSAGES_REFUS_SAISIE, signature } from '@/lib/biology-library/saisieMessages';
 
@@ -29,13 +34,14 @@ import { MESSAGES_REFUS_SAISIE, signature } from '@/lib/biology-library/saisieMe
 // patron maison des chaînes `supersedes_*`, esprit `DC-30` : une erreur se
 // signale, elle ne disparaît pas. Le POST porte donc deux gestes :
 //
-//   • `supersedesResultatId` ABSENT  → saisie neuve. Soumise à l'unicité
-//     (partielle, `WHERE supersedes_resultat_id IS NULL`) : le 409
-//     `doublon_mesure` est un `P2002` et n'a pas bougé d'un pouce.
-//   • `supersedesResultatId` PRÉSENT → correction. La ligne sort de l'index
-//     parce que sa chaîne n'est pas nulle — et c'est précisément pourquoi la
-//     validation de la cible N'EST PAS FACULTATIVE : une chaîne acceptée sans
-//     contrôle contournerait la garde anti-doublon autant de fois qu'on veut.
+//   • `supersedesResultatId` ABSENT  → saisie neuve. Soumise à la garde
+//     anti-doublon (trigger `resultats_biologiques_unicite_mesure` depuis
+//     [[D-294]] §3, qui ignore les fils annulés) : le 409 `doublon_mesure`
+//     est un `P2002` et n'a pas bougé d'un pouce.
+//   • `supersedesResultatId` PRÉSENT → correction. La ligne échappe à la
+//     garde parce que sa chaîne n'est pas nulle — et c'est précisément
+//     pourquoi la validation de la cible N'EST PAS FACULTATIVE : une chaîne
+//     acceptée sans contrôle contournerait la garde autant de fois qu'on veut.
 //
 // LES QUATRE CONTRÔLES DUS, et comment ils sont tenus. `D-124` en exigeait
 // quatre : cible existante, même dossier, même analyte, même date de
@@ -50,7 +56,9 @@ import { MESSAGES_REFUS_SAISIE, signature } from '@/lib/biology-library/saisieMe
 // PÉRIMÈTRE V1 : valeur et unité seulement. L'unité se corrige comme elle se
 // pose — relue sur l'analyte au catalogue, le client n'a aucune autorité
 // dessus. Corriger l'analyte ou la date serait ANNULER une mesure et en
-// saisir une autre : la suppression reste hors périmètre.
+// saisir une autre : c'est l'acte d'annulation de [[D-294]], en ajout seul,
+// servi par `./annulations/route.ts`. Un fil ANNULÉ ne se corrige plus — la
+// base le refuse, la route le dit (`correction_resultat_annule`).
 
 const ROUTE_JOURNAL = '/api/praticien/biologie/resultats';
 
@@ -90,6 +98,24 @@ export type ResultatConsigne = {
    * rien), aucun fait imprimé, ou unité du résultat différente de l'unité lue.
    */
   faitsLaboratoire: { intervalle: string | null; marquage: string | null } | null;
+  /**
+   * L'annulation ACTIVE qui retire le fil de cette ligne ([[D-294]]), `null`
+   * si le fil n'est pas annulé. Posée sur TOUTES les lignes du fil, calculée
+   * au serveur avec la même racine que la base. La fiche du praticien est le
+   * seul lecteur qui montre un fil annulé (§6) — marqué, jamais filtré.
+   */
+  annulation: AnnulationAffichee | null;
+};
+
+/** Ce que la fiche montre d'une annulation : motif, auteur, date (LOT-09). */
+export type AnnulationAffichee = {
+  id: string;
+  /** La ligne que l'annulation a visée — la tête du fil au moment du geste. */
+  idResultatVise: string;
+  motif: AnnulationActive['motif'];
+  par: string;
+  /** Posé par la base, ISO. */
+  le: string;
 };
 
 /**
@@ -172,7 +198,11 @@ function faitsDeLaLigne(ligne: LigneLue): ResultatConsigne['faitsLaboratoire'] {
   return { intervalle: lue.intervalleLu, marquage: lue.marquageLu };
 }
 
-function versConsigne(ligne: LigneLue, corrigeeParId: string | null = null): ResultatConsigne {
+function versConsigne(
+  ligne: LigneLue,
+  corrigeeParId: string | null = null,
+  annulation: AnnulationActive | null = null,
+): ResultatConsigne {
   return {
     id: ligne.id,
     analyteCode: ligne.analyteCode,
@@ -186,6 +216,15 @@ function versConsigne(ligne: LigneLue, corrigeeParId: string | null = null): Res
     supersedesResultatId: ligne.supersedesResultatId,
     corrigeeParId,
     faitsLaboratoire: faitsDeLaLigne(ligne),
+    annulation: annulation
+      ? {
+          id: annulation.id,
+          idResultatVise: annulation.idResultat,
+          motif: annulation.motif,
+          par: annulation.praticienEmail,
+          le: annulation.acteLe,
+        }
+      : null,
   };
 }
 
@@ -222,14 +261,16 @@ export async function GET(req: Request) {
 
     // LA SÉRIE EST RENDUE ENTIÈRE, corrections ET corrigées : une erreur se
     // signale, elle ne disparaît pas (`DC-30`). C'est le marquage qui dit
-    // laquelle fait foi — pas un filtre, qui effacerait la trace.
-    const corrections = correctionsParLigne(
-      lignes.map(l => ({
-        id: l.id,
-        supersedesResultatId: l.supersedesResultatId,
-        saisiLe: l.saisiLe.toISOString(),
-      })),
-    );
+    // laquelle fait foi — pas un filtre, qui effacerait la trace. Les fils
+    // ANNULÉS aussi sont rendus, marqués ([[D-294]] §6) : la fiche est le seul
+    // lecteur qui les montre.
+    const maillons = lignes.map(l => ({
+      id: l.id,
+      supersedesResultatId: l.supersedesResultatId,
+      saisiLe: l.saisiLe.toISOString(),
+    }));
+    const corrections = correctionsParLigne(maillons);
+    const annulations = annulationParLigne(maillons, await annulationsActives(prisma, idPatient));
 
     // Les plages fonctionnelles des SEULS analytes présents au dossier
     // ([[D-157]]). Pas le catalogue entier : une route qui sert des données de
@@ -273,7 +314,9 @@ export async function GET(req: Request) {
 
     return NextResponse.json<ResultatsGetResponse>({
       ok: true,
-      resultats: lignes.map(l => versConsigne(l, corrections.get(l.id)?.id ?? null)),
+      resultats: lignes.map(l =>
+        versConsigne(l, corrections.get(l.id)?.id ?? null, annulations.get(l.id) ?? null),
+      ),
       plagesParAnalyte,
     });
   } catch (err) {
@@ -282,6 +325,47 @@ export async function GET(req: Request) {
     console.error('[praticien/biologie/resultats GET] lecture refusée :', signature(err));
     return echecGet('server_error', 'Erreur technique.', 500);
   }
+}
+
+/**
+ * LE FIL DE LA CIBLE SE CORRIGE-T-IL ? Deux refus, lus sur le FIL ENTIER :
+ *
+ * - `correction_deja_corrigee` — TÊTE DE FIL, DÉFINIE EXACTEMENT COMME À LA
+ *   LECTURE. La base ACCEPTE la fourche (le contrat SQL le prouve exprès), la
+ *   route la refuse : on corrige la version qui fait foi, pas une version déjà
+ *   dépassée. La garde relit le FIL ENTIER, pas le seul successeur DIRECT. Sur
+ *   une fourche préexistante, la branche perdante n'est supplantée par
+ *   personne au sens du chaînage : elle passait la garde alors qu'elle ne fait
+ *   pas foi, et la corriger faisait basculer l'autorité en silence vers la
+ *   branche qui avait perdu (contre-revue du 2026-09-06, m13).
+ * - `correction_resultat_annule` — le fil porte une annulation active
+ *   ([[D-294]] §3) ; la base le refuse aussi.
+ *
+ * Le fil tient ENTIER dans la clé de la cible : une correction hérite de
+ * l'analyte et de la date de sa cible — servie par `cb_resultat_bio_serie_idx`.
+ * La clé peut porter d'AUTRES fils (une place libérée par une annulation) :
+ * la racine les sépare, jamais la clé.
+ */
+async function refusDuFil(
+  client: Prisma.TransactionClient | typeof prisma,
+  idPatient: string,
+  cible: { id: string; analyteCode: string; preleveLe: Date },
+): Promise<'correction_deja_corrigee' | 'correction_resultat_annule' | null> {
+  const fil = await client.resultatBiologique.findMany({
+    where: { idPatient, analyteCode: cible.analyteCode, preleveLe: cible.preleveLe },
+    select: { id: true, supersedesResultatId: true, saisiLe: true },
+  });
+  const maillons = fil.map(l => ({
+    id: l.id,
+    supersedesResultatId: l.supersedesResultatId,
+    saisiLe: l.saisiLe.toISOString(),
+  }));
+  // L'annulation d'abord : sur un fil annulé, toute ligne — tête ou non —
+  // reçoit le refus qui dit pourquoi (contre-revue du lot, P2-3).
+  const actives = await annulationsActives(client, idPatient, fil.map(l => l.id));
+  if (annulationParLigne(maillons, actives).has(cible.id)) return 'correction_resultat_annule';
+  if (correctionsParLigne(maillons).has(cible.id)) return 'correction_deja_corrigee';
+  return null;
 }
 
 type PostBody = {
@@ -383,42 +467,11 @@ export async function POST(req: Request) {
       );
     }
     if (cible) {
-      // TÊTE DE FIL — DÉFINIE EXACTEMENT COMME À LA LECTURE. La base ACCEPTE
-      // la fourche (le contrat SQL le prouve exprès), la route la refuse : on
-      // corrige la version qui fait foi, pas une version déjà dépassée.
-      //
-      // La garde relit le FIL ENTIER, pas le seul successeur DIRECT. Sur une
-      // fourche préexistante, la branche perdante n'est supplantée par
-      // personne au sens du chaînage : elle passait la garde alors qu'elle ne
-      // fait pas foi, et la corriger faisait basculer l'autorité en silence
-      // vers la branche qui avait perdu — la route permettait précisément ce
-      // que son refus dit interdire (contre-revue du 2026-09-06, m13).
-      //
-      // Le fil tient ENTIER dans cette lecture : une correction hérite de
-      // l'analyte et de la date de sa cible, donc toute ligne du fil porte la
-      // clé de la cible — servie par `cb_resultat_bio_serie_idx`. Détection
-      // applicative, donc même portée que la garde du document patient
-      // (`D-123`) : elle ferme le cas séquentiel, pas la course de deux
-      // corrections simultanées, que l'élection du fil rend inoffensive à
-      // l'affichage.
-      const fil = await prisma.resultatBiologique.findMany({
-        where: { idPatient, analyteCode: cible.analyteCode, preleveLe: cible.preleveLe },
-        select: { id: true, supersedesResultatId: true, saisiLe: true },
-      });
-      const deja = correctionsParLigne(
-        fil.map(l => ({
-          id: l.id,
-          supersedesResultatId: l.supersedesResultatId,
-          saisiLe: l.saisiLe.toISOString(),
-        })),
-      ).has(cible.id);
-      if (deja) {
-        return echecPost(
-          'correction_deja_corrigee',
-          MESSAGES_REFUS_SAISIE.correction_deja_corrigee,
-          409,
-        );
-      }
+      // Tête de fil et fil non annulé (`refusDuFil`). Lecture sans verrou :
+      // elle nomme le refus avant la validation de la valeur ; l'écriture la
+      // rejoue sous les verrous de la garde.
+      const refus = await refusDuFil(prisma, idPatient, cible);
+      if (refus) return echecPost(refus, MESSAGES_REFUS_SAISIE[refus], 409);
     }
 
     // L'ANALYTE EST RELU SUR LA CIBLE en correction : le client n'a aucune
@@ -460,7 +513,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      const ligne = await prisma.resultatBiologique.create({
+      const ecrire = (client: Prisma.TransactionClient | typeof prisma) => client.resultatBiologique.create({
         data: {
           idPatient,
           analyteCode: analyte.code,
@@ -479,8 +532,24 @@ export async function POST(req: Request) {
         },
         select: CHAMPS_LUS,
       });
+      // UNE CORRECTION S'ÉCRIT SOUS LES VERROUS DE LA GARDE ([[D-294]] §3) :
+      // le dossier, puis la clé de la cible — ceux que prend l'acte
+      // d'annulation. Le fil se RELIT dessous : une annulation commise entre
+      // la lecture ci-dessus et l'écriture se dit `correction_resultat_annule`,
+      // pas une 500. La base refuserait de toute façon (trigger
+      // `resultats_biologiques_correction_avant_insertion`), elle fait foi.
+      const issue = cible
+        ? await prisma.$transaction(async tx => {
+            await verrouillerCleDuResultat(tx, idPatient, cible.id);
+            const refus = await refusDuFil(tx, idPatient, cible);
+            return refus ? { refus, ligne: null } : { refus: null, ligne: await ecrire(tx) };
+          })
+        : { refus: null, ligne: await ecrire(prisma) };
+      if (issue.refus !== null) {
+        return echecPost(issue.refus, MESSAGES_REFUS_SAISIE[issue.refus], 409);
+      }
       return NextResponse.json<ResultatsPostResponse>(
-        { ok: true, resultat: versConsigne(ligne) },
+        { ok: true, resultat: versConsigne(issue.ligne) },
         { status: 201 },
       );
     } catch (err) {
