@@ -4,10 +4,12 @@
 
 `feat/cloture-document-sans-protocole`, worktree
 `.claude/worktrees/cloture-sans-protocole`, partie de `origin/main`
-`60938090` (#1425, D-286 déployée et constatée). Code seul : module pur de
+`60938090` (#1425, D-286 déployée et constatée) ; `origin/main` `5f7e2f16`
+(#1426 masquage d'identité, #1427 H03) fusionné avant la PR, sans conflit.
+Code seul : module pur de
 clôture, son banc, le banc du panneau, un commentaire du panneau. Aucune
 migration, aucun drapeau, aucune décision. PR ouverte avec ce handoff ; se
-merge après #1427 (H03), un merge à la fois.
+merge après le déploiement constaté de #1427 (H03), un merge à la fois.
 
 ## Objectif
 
@@ -37,8 +39,9 @@ composable depuis la minute d'après, comme depuis la fiche.
 
 - Bancs ciblés : 31 cas verts (module et panneau).
 - T1 complet (`npm run check`) dans le worktree (node_modules lié, client
-  Prisma copié) : voir la PR.
-- T2 : voir la PR.
+  Prisma copié) : vert.
+- T2 (`test:worktree --fast`) : vert, 271 E2E (Chromium + WebKit), joué
+  sur `60938090` avant la fusion de #1426 et #1427 (aucun fichier commun).
 - Anti-secrets : dans T1.
 
 ## Problèmes ouverts
@@ -49,7 +52,7 @@ composable depuis la minute d'après, comme depuis la fiche.
 ## Prochaine action exacte
 
 `node scripts/wn-attendre-ci.mjs <N>` ; commentaires en ligne lus ; merge
-après #1427 et son déploiement constaté ; déploiement constaté ; puis S-3
+après le déploiement constaté de #1427 ; déploiement constaté ; puis S-3
 (a, b, g).
 
 ## Interdits encore actifs
