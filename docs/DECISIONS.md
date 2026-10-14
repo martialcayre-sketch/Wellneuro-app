@@ -28,8 +28,9 @@
   retiré, réduit ni masqué), aucune règle clinique, aucun seuil, aucune dose,
   aucune migration, aucun drapeau, aucun texte servi au patient, aucun code.
   N'ouvre ni second compte, ni clé d'API, ni envoi direct, ni flux
-  laboratoire : ces fermetures restent entières ([[D-283]] §7 ; plan §5
-  « Fermetures »). N'allège aucune preuve propre à un lot.
+  laboratoire : ces fermetures restent entières (plan §5 « Fermetures » ;
+  le test d'intrusion de [[D-283]] §7 précède offre commerciale et second
+  compte). N'allège aucune preuve propre à un lot.
 
 **§1 — Le flou d'origine.** [[D-276]] §2 diffère la qualification « quand le
 produit sera abouti, et au plus tard avant toute offre commerciale ». Le mot
