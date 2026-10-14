@@ -101,7 +101,7 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
   10 signatures et approbations. Lettre neuve : aucune.
 - Versement : six PR (§11).
 - **Mise à jour (2026-10-14)** : décompte du 2026-10-13, non recompté. Depuis : quatre lettres écrites (ci par D-286, #1425 ; a, b, g par D-287, D-288, D-289, #1430), gardées dans « Lettres à écrire » avec leur marque et ajoutées à « Lettres déjà écrites » (§10) ; les six PR du versement mergées (§11) ; neuf lignes ajoutées au §8 (trois par la PR 5, deux par D-290, #1440, quatre reports datés du 2026-10-14).
-- **Mise à jour (2026-10-14, file D)** : la file D entre au plan (§0, points 5, 6 et 8 ; arbitrage du responsable du 2026-10-14). Le §4 devient « La file D » : sa table par rang garde sa forme (cq, M-5 (1/2), k, u, G-8 et le texte (f) de D-283 marqués faits ; préalables de M-1 nommés) et il reçoit à sa fin cinq sous-tables : D.1 faisables (21 lignes), D.2 constats en attente (9), D.3 bloqués (20), D.4 sans rang (D/1 à D/50), D.5 échéances et gelés (7). Vingt lignes ajoutées au §8 (dix-huit dettes techniques, deux au titre de l'information des patients), trois lignes du §8 précisées (D-TRUST-05, 07, 08). Les sept intertitres « Gestes du responsable » des rangs deviennent « File D : gestes du responsable » ; F66 reçoit l'étape 3 (#1447). Dix-huit registres hors plan portent une ligne « Versé au plan le 2026-10-14 », quatre documents tenus à jour une ligne de renvoi ; les numéros de ligne que le plan cite dans ces vingt-deux fichiers se lisent sur 85b95dcc. Le reste n'est pas recompté.
+- **Mise à jour (2026-10-14, file D)** : la file D entre au plan (§0, points 5, 6 et 8 ; arbitrage du responsable du 2026-10-14). Le §4 devient « La file D » : sa table par rang garde sa forme (cq, M-5 (1/2), k, u, G-8 et le texte (f) de D-283 marqués faits ; préalables de M-1 nommés) et il reçoit à sa fin cinq sous-tables : D.1 faisables (21 lignes, 22 depuis #1448), D.2 constats en attente (9), D.3 bloqués (20, 19 depuis #1448), D.4 sans rang (D/1 à D/50), D.5 échéances et gelés (7). Vingt lignes ajoutées au §8 (dix-huit dettes techniques, deux au titre de l'information des patients), trois lignes du §8 précisées (D-TRUST-05, 07, 08). Les sept intertitres « Gestes du responsable » des rangs deviennent « File D : gestes du responsable » ; F66 reçoit l'étape 3 (#1447). Dix-huit registres hors plan portent une ligne « Versé au plan le 2026-10-14 », quatre documents tenus à jour une ligne de renvoi ; les numéros de ligne que le plan cite dans ces vingt-deux fichiers se lisent sur 85b95dcc. Le reste n'est pas recompté.
 
 ### La base
 
@@ -119,7 +119,7 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
   absente de main.
 - Acquis non reposés : les arbitrages du responsable rendus en séance les
   2026-10-11, 2026-10-12 et 2026-10-13 ; D-282 à D-284.
-- **Mise à jour (2026-10-14)** : `origin/main` = 474e9d67 (#1444). Dernière décision au registre : D-291 (gouvernance des PR, #1440, #1444). Lettres écrites depuis ce plan : ci (D-286, #1425), a (D-287), b (D-288), g (D-289) (#1430) ; prochaine lettre libre : cr. Une migration mergée depuis : D-284 lot (j), #1426 ; sa release-db n'est consignée nulle part sur main [A verifier] (porte 9). Acquis non reposés : s'y ajoutent les arbitrages du responsable du 2026-10-14, consignés par D-286 à D-289 et aux handoffs du jour.
+- **Mise à jour (2026-10-14)** : `origin/main` = 474e9d67 (#1444). Dernière décision au registre : D-291 (gouvernance des PR, #1440, #1444) ; depuis, D-292 et D-293 (#1446), D-294 (BP-09, #1448). Lettres écrites depuis ce plan : ci (D-286, #1425), a (D-287), b (D-288), g (D-289) (#1430) ; prochaine lettre libre : cr. Une migration mergée depuis : D-284 lot (j), #1426 ; sa release-db n'est consignée nulle part sur main [A verifier] (porte 9). Acquis non reposés : s'y ajoutent les arbitrages du responsable du 2026-10-14, consignés par D-286 à D-289 et aux handoffs du jour.
 
 ## §1 Les portes
 
@@ -135,7 +135,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 6 | Doctrine du cockpit chiffré et de l'adhésion signée | M-2, G-4 (rang 2), sur c et d (rang 1) : F59, H32 | non levée |
 | 7 | SAF-EI-01 signée, puis déploiement constaté | M-1 (rang 3), puis J1-sécu (rang 4) : F66 | non levée ; lots 1 et 2 de D-281 sur main (#1406, #1408) ; portail, validation, signature à faire ; se lève au rang 4 |
 | 8 | Essai de restauration réussi | K-18a (0), G-7 (1) : F04 | non levée ; préalable de toute migration après BP-09 ; BP-09 ne l'attend pas ; portée et procédure écrites par D-289 (#1430) ; G-7 non joué |
-| 9 | release-db approuvée, sentinelle, constat, une à une | le responsable, à chaque migration | constatée pour #1397 (2026-10-11) et pour le lot 2 de D-281 (2026-10-13) ; à venir pour BP-09 (rang 3) ; migration de D-284 lot (j) mergée le 2026-10-14 (#1426), release-db non consignée [A verifier] |
+| 9 | release-db approuvée, sentinelle, constat, une à une | le responsable, à chaque migration | constatée pour #1397 (2026-10-11) et pour le lot 2 de D-281 (2026-10-13) ; à venir pour BP-09 (rang 3 ; migration mergée le 2026-10-14, #1448, release-db à approuver) ; migration de D-284 lot (j) mergée le 2026-10-14 (#1426), release-db non consignée [A verifier] |
 | 10 | NABM signée : 8 analytes, puis liste étendue | S-7 (0), M-3 (1), f (2), G-3 (3) : F54 | non levée : 0 liaison signée |
 | 11 | Bandes de bruit signées, instrument par instrument | G-10 (0), v (1) : H13 | non levée |
 | 12 | D2 mergée | j (rang 0) : F63 | non levée |
@@ -925,7 +925,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | J2-bandes | bandes : alimentation et humeur d'abord | A | 11 | non | H13, rang 0 |
 | J3-api | rôles de connexion, aucune clé | A | 9 si migration | selon | H29, rang 1 |
 | D-281, étape 4 | validation de l'implication ; banc de cas fictifs refait | A | aucune | non | F66, rang 1 |
-| BP-09 | annulation d'un résultat, ajout seul (fiche du lot validée le 2026-10-14, #1442) | B | 28 ; 9 | oui | F03 |
+| BP-09 | annulation d'un résultat, ajout seul (fiche du lot validée le 2026-10-14, #1442 ; migration mergée sous D-294, #1448) | B | 28 ; 9 | oui | F03 |
 | fiche LOT-25 | « quatre termes », cases corrigées | B | aucune | non | F14 |
 | J2-conf | garde d'âge ; registre des droits | B | aucune | non | F45, rang 0 |
 | F50, étape courrier | courrier regroupé par analyte | B | aucune | non | F50, rang 1 |
@@ -997,6 +997,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : D-xxx du lot amendant D-124 §3 (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:375`) ; elle dit que la condition « premier import » sort des préalables.
 - **Critère de fin** : release-db constatée par conteneur ; résultat annulé exclu des élections, séries et réveils ; puis code consommateur.
 - **Mise à jour (2026-10-14)** : fiche du lot écrite, fichiers listés, validée par le responsable (`lots/LOT-09-annulation-resultat.md`, #1442) : préalable « fiche BP-09 » de la porte 28 tenu. Le lot part en deux PR, migration seule puis code. Aucune migration ni aucun code au 2026-10-14 : le lot reste à faire, release-db au rang 3 (porte 9).
+- **Mise à jour (2026-10-14, migration)** : PR 1 (migration seule) mergée le 2026-10-14 sous D-294 (#1448), après deux passes Codex (la seconde sur la tête finale, faite par le responsable) et la revue CodeRabbit ; release-db à approuver hors usage, dans la foulée du merge (tant qu'elle n'est pas appliquée, un effacement de dossier échoue sur la table absente, sans rien effacer à moitié), puis constat par conteneur, puis PR 2 (code consommateur).
 
 #### F14 · Fiche LOT-25 : « quatre termes »
 - **Identifiant, piste** : correction de la fiche LOT-25 de BIO-PARCOURS ; parcours.
@@ -1909,6 +1910,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 
 | h | geste | fiche, lettre ou porte | ce qu'il débloque |
 |---|---|---|---|
+| h1 | M-5 (2/2) : approuver la release-db de BP-09 hors usage, dans la foulée du merge (#1448, D-294 ; seconde passe Codex faite), puis constat par conteneur | F03, porte 9 | effacement de dossier (en échec tant qu'elle manque) ; PR 2 de BP-09 ; toute migration suivante (après G-7) |
 | h1 | effectif de masquage des agrégats (sa D-xxx) | F25 | S-1 sur plusieurs dossiers, H07, y, BP-21a |
 | h1 | essai de restauration G-7 (portée écrite par D-289, #1430 ; essai non joué) | F04, porte 8 | toute migration après BP-09 |
 | h1 | lettres m, n, ac, z | H10, H11, H12, F45 | NF-7, EF-3b, radar, garde d'âge |
@@ -1964,7 +1966,6 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | comptage T0 en conteneur | H07 | effectif de masquage (F25) |
 | texte de l'avis rendu au patient après verdict (D-281 §2 b) : signé le 2026-10-14 (D-281 §4), servi au portail par la seconde PR de l'étape 4 ; d'ici là, marqueur « En pause » seul | F66 | étape 4 de D-281 |
 | M-1, signature de SAF-EI-01 amendée | F66 | étape 4 de D-281 et les trois préalables de D-281 §2 (§8) |
-| M-5 (2/2), release-db de BP-09, approuvée hors usage | F03 | merge de la migration (#1448 ouverte, à renuméroter, D/7) ; seconde passe Codex (D/8) |
 | al ; y ; au | H57, H58, H56 | porte 4 et J2-alim (al) ; d, porte 6 et F25 (y) ; porte 16, c et porte 6 (au) |
 | contenus de BP-12a, BP-12b, BP-17 (porte 23) ; indications v2 ; liens analyte-axe | F05, F09, F11, F53, F79 | lots de la file B |
 | ch ; texte de bd ; ah | H72, H71, H68 | rang 5 |
@@ -1980,8 +1981,8 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | D/4 | copie principale restée sur la branche de bancs fictifs (`check:rapide` rouge faute de `prisma generate` après #1397 ; fichier non suivi des cas fictifs, caduc) | handoff 2026-10-12-2130 ; §11 | retour sur main constaté ; le banc se refait à l'étape 4 de D-281 (F66) |
 | D/5 | outil MCP de l'ancienne base Supabase encore branché, neutralisé seulement par les refus de `.claude/settings.json` (D-120) | `CLAUDE.md` ; `.claude/rules/db-prisma.md` | retrait ou maintien décidé par le responsable |
 | D/6 | quatre branches distantes non mergées ou à supprimer : `docs/bp26-relecture-mdcg` (D/26), `docs/k-conditions-utilisation` (#1446, mergée par squash le 2026-10-14 : branche à supprimer), `feat/bp09-annulation-migration` (#1448, BP-09), `fix/repo-hygiene-du-macos` (outillage, fragment du 2026-10-10) | `git branch -r` sur 85b95dcc | merge, abandon écrit ou suppression de chacune |
-| D/7 | collision de numéro : D-292 et D-293 sont prises sur main par #1446 (k, u) ; la branche de #1448 porte encore D-292 pour BP-09 ; cj, commit local non poussé, porte D-291 | `docs/DECISIONS.md` sur 85b95dcc et sur la branche de #1448 ; handoff 2026-10-14-1930 | #1448 renumérotée avant son merge (D-294 au plus tôt), cj au numéro libre suivant, renvois du plan compris |
-| D/8 | seconde passe Codex sur la tête finale de #1448 ; P2 assumés (verrous de migration, d'où une approbation hors usage ; `ON UPDATE CASCADE` face au trigger de figement) | PR #1448 | geste manuel du responsable, avant M-5 (2/2) |
+| D/7 | collision de numéro : soldée pour BP-09, mergée sous D-294 (#1448, 2026-10-14) ; reste cj, commit local non poussé, qui prend le numéro libre suivant (D-295 au plus tôt) | `docs/DECISIONS.md` sur 39a1d1d3 ; handoff 2026-10-14-1930 | cj au numéro libre suivant, renvois du plan compris |
+| D/8 | seconde passe Codex sur la tête finale de #1448 : faite par le responsable le 2026-10-14 ; P2 assumés (verrous de migration, d'où une approbation hors usage ; `ON UPDATE CASCADE` face au trigger de figement) | PR #1448 | soldée (2026-10-14) |
 | D/9 | `.wn/state.json` en retard sur main : tête « PR 4 à 6 à suivre », `recent_decision_ids` arrêté à D-289 (D-290 à D-293 sur main), `validation` du 2026-10-13, `corpus_registry` « inchangé » malgré WN-SRC-0508 à 0511 ; les traces de `next_action` sont de l'historique, comme les handoffs, et leurs mentions de dettes sont tenues ici | `.wn/state.json` ; §9 (pilotage, PR 3) | PR de pilotage : tête, décisions et validation remises à l'heure |
 | D/10 | adresses mortes citées par le plan : `next_action[40..62]` (vidé par la PR 3) ; `docs/claude/campagnes/FILE_ATTENTE.md` (supprimé, PR 5) ; `HISTORIQUE_CHANTIERS_TECHNIQUES.md`, `AUDIT_PANELS_*`, `AUDIT_BIOFLOW_*` (déplacés sous `docs/archive/`, PR 4) | handoffs 2026-10-14-0210 et 2026-10-14-0307 ; SESSION_LOG (PR 4, PR 5) | mention « historique Git » ou chemin d'archive, par une PR de plan |
 | D/11 | S-5, préalable de F03 et de H43 (« S-5 (F02) »), défini nulle part | F03, H43 ; handoff 2026-10-14-1745 | S-5 défini, ou remplacé par F02 (BP-07 clos, #1438) |
