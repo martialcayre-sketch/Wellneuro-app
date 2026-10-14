@@ -144,7 +144,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 25 | Constats sans item (analyte à deux dates, règle NU, PH-0, signal H3) | au fait | fermée ; ces branches restent fermées |
 | 26 | Accord du responsable sur la séance de constats | acquis | levée |
 | 27 | À chaque PR : CI vert (code 0), commentaires en ligne lus, clôture avant la PR | chaque PR | règle permanente |
-| 28 | Préalables hors liste : avis d'un conseil (aucun DPO désigné ; obligation close à cette échelle par D-284 §6, reste une analyse datée d'une page à revoir à tout changement d'échelle), K-26 volet 2, R-151, fiche BP-09, fiches relues, règle signée et C4, « sa D-xxx », conseil sur la durée | le responsable (rang 0) : H09 | non levée ; fiche BP-09 non écrite [A verifier] |
+| 28 | Préalables hors liste : avis d'un conseil (aucun DPO désigné ; obligation close à cette échelle par D-284 §6, reste une analyse datée d'une page à revoir à tout changement d'échelle), K-26 volet 2, R-151, fiche BP-09, fiches relues, règle signée et C4, « sa D-xxx », conseil sur la durée | le responsable (rang 0) : H09 | non levée ; fiche BP-09 écrite, fichiers listés, validée par le responsable le 2026-10-14 (`lots/LOT-09-annulation-resultat.md`) |
 | 29 | Format réel du laboratoire pilote : réponse écrite | réponse du laboratoire ; relance écrite, geste de rang 0 : F41 | gelée, déclencheur nommé ; flux laboratoire fermé |
 | 30 | Décision asynchrone durable (worker, réconciliation ; ex-« G3 ») | le responsable | **levée le 2026-10-13 par D-282 (#1410)**, porte de geste (la décision) : file durable en base, processus de fond, reprise automatique une fois, fantômes réconciliés en continu ; lots 2 à 5 mergés le même jour (#1412, #1414, #1415, #1416) ; mise en service constatée et G3 levé (D-282 §8) ; fiches closes F42 et F43 |
 
@@ -245,7 +245,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | bf, instruction | une décision par indicateur hebdomadaire | geste | aucune | non | H19 |
 | gestes RGPD | archivages, relance d'effacement, dossier v8 | geste | aucune | non | H20 |
 | relance du laboratoire | relance écrite du laboratoire pilote | geste | 29 | non | F41, en §6 |
-| G-11 | textes patient de la collecte et des mineurs (l écrite par D-283) | geste | aucune | non | H38 |
+| G-11 | textes patient de la collecte et des mineurs (l écrite par D-283) ; fait, validés le 2026-10-14 | geste | aucune | non | H38 |
 
 **File A**
 
@@ -597,6 +597,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : deux textes, de la main du responsable.
 - **Critère de fin** : textes acceptés ; ACT-4 et ACT-5 les consomment.
+- **Mise à jour (2026-10-14)** : textes acceptés. Premier jet de l'assistant, six arbitrages du responsable sur questions à options, puis validation telle quelle le 2026-10-14 : `docs/claude/propositions/2026-10-14-g11-textes-patient/README.md`. Non publiés : le texte de collecte part avec J3-collecte (H62) et ACT-4 (H77), les textes des mineurs avec J3-mineurs (H79) et ACT-5 (H78). Restent ouverts : les 15–17 ans (avocat, D-284), la version de « Vos données personnelles » à l'ouverture de la collecte (lettre l), le circuit des droits des mineurs (D-283 §5).
 
 ### Rang 1
 
