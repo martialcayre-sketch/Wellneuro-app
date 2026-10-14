@@ -4,6 +4,67 @@
 
 ## Décisions actives
 
+### D-290 — La revue des PR passe de Copilot à CodeRabbit ; l'assistant merge
+
+- Date : 2026-10-14
+- Statut : accepté — **demande du responsable**, rendue en conversation le
+  2026-10-14, après l'épuisement du quota de Copilot et l'installation par lui
+  de l'application GitHub CodeRabbit sur le dépôt (public).
+- Domaine : gouvernance des PR.
+- **Amende** la décision du 2026-07-21 (« le ressort de Copilot »,
+  `docs/claude/REGLES_PR_MERGE.md` ; non numérotée au registre — elle précède
+  la consignation des décisions de gouvernance) et les règles 1.5 à 1.7 de
+  [[D-214]], généralisées au bot de revue.
+- **Ne touche pas** : la protection de `main`, `enforce_admins`, les checks
+  obligatoires (gestes du responsable) ; aucun hook de garde ; aucun code
+  applicatif ; le barème de `docs/claude/POLITIQUE_REVUE.md`.
+
+**§1 — Le partage.** CodeRabbit (`coderabbitai[bot]`) revoit ; l'assistant
+merge et supprime les branches, par la délégation du responsable du
+2026-09-30, désormais régime en vigueur et non plus « période transitoire ».
+CodeRabbit n'approuve pas (`request_changes_workflow: false`) et son
+approbation n'est pas requise. Le barème ne change pas : `/code-review medium`
+en P2, `wn-reviewer` en P1, Codex manuel obligatoire en P0 ; la revue de
+CodeRabbit s'y ajoute, elle n'en remplace aucune ligne.
+
+**§2 — La configuration** (`.coderabbit.yaml`, chaque clé validée sur le
+schéma officiel `schema.v2.json`). Français, profil `chill`, résumé de haut
+niveau, sans poème, diagrammes, labels ni relecteurs suggérés. Revue
+automatique sur `main`, brouillons exclus, **incrémentale à chaque push et sans
+pause** — l'inverse de Copilot, qui ne revoyait qu'une fois. **Tout ce qui
+commite sur la branche est coupé** (docstrings, tests unitaires, simplification,
+correction des remarques, du CI et des conflits) : un commit de bot gèle le run
+en `action_required` et `verify` ne tourne plus. Fichiers générés et archivés
+exclus ; consignes par chemin recopiées des règles du dépôt (clinique, base,
+authentification, UI, docs), sans en inventer ; nos règles comme lignes
+directrices, la constitution clinique sur les seuls chemins cliniques ;
+détecteur de secrets gardé, linters qui doublonnent le CI coupés.
+
+**§3 — L'interaction.** CodeRabbit écrit à trois endroits — synthèse, corps des
+revues (nitpicks, hors diff), commentaires en ligne — et les trois se lisent.
+Pas de merge avant qu'une revue de `coderabbitai[bot]` porte sur le sha de tête.
+Chaque remarque reçoit son verdict (corrigé, écarté avec motif, routé avec
+adresse) en réponse dans son fil ; les nitpicks se trient, ils ne s'appliquent
+pas d'office ; clinique, migration et signature de périmètre remontent en
+arbitrage. Détail : `.claude/rules/pr-revue-et-release-db.md` §1.
+
+**§4 — Pourquoi #1438 n'a pas été revue.** Le message « Auto reviews are
+disabled on base/target branches other than the default branch » visait une PR
+dont la base était `main`, branche par défaut. Le commentaire est arrivé à
+13 h 13 UTC, quinze minutes après le dernier push et trente-six secondes avant
+le merge, sans aucun événement de PR entre les deux (frise de la PR) : ni
+l'ouverture ni un push ne l'ont déclenché. Avec les réglages par défaut
+(`base_branches: []`), une PR sur la branche par défaut est revue ; la
+configuration ne l'explique donc pas. Hypothèse la plus simple, **non
+constatée** (l'heure d'installation de l'application n'est pas lisible avec le
+jeton du dépôt) : le passage de l'application sur les PR déjà ouvertes au
+moment de son installation. L'épreuve (§5) la tranche : une PR ouverte après
+l'installation doit être revue. Constat utile au
+passage : CodeRabbit a posé sur la tête un statut de commit `CodeRabbit` à
+`success` (« Review skipped ») — **un statut vert sans revue**.
+
+**§5 — L'épreuve.** _(rempli sur la PR de cette décision)_
+
 ### D-289 — Un essai de restauration réussi précède toute migration qui suit celle de BP-09 ; sa procédure (lettre g)
 
 - Date : 2026-10-14

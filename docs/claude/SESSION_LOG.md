@@ -10280,3 +10280,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR, merge, constat sur un dossier de test ; puis lot (i).
 
 **Ouvert.** Origine de la date non tracée ; biologie côté praticien ouverte.
+
+## 2026-10-14 — Gouvernance : CodeRabbit revoit, l'assistant merge (D-290)
+
+**Fait.** `.coderabbit.yaml` validé sur le schéma officiel (aucune clé inconnue) : revue à chaque push sans pause, tout ce qui commite coupé, consignes par chemin recopiées des règles. D-290 au registre ; règles réalignées (CLAUDE.md, REGLES_PR_MERGE, POLITIQUE_REVUE, pr-revue 1.1, 1.5-1.7, 1.10, wn-merge). Constat : sur #1438, statut `CodeRabbit` vert sans revue.
+
+**Écarté.** Exclure PLAN_WELLNEURO.md : écrit à la main, pas généré. Garder eslint côté CodeRabbit : `verify` le joue déjà.
+
+**Prochaine action.** Épreuve sur la PR, verdicts, merge, constat du déploiement.
+
+**Ouvert.** CodeRabbit check obligatoire ? Copilot retiré des extensions recommandées ?
