@@ -4,6 +4,104 @@
 
 ## Décisions actives
 
+### D-296 — Packs biologiques : l'analyte devient l'unité canonique, les quinze panels sont classés, et plus aucun pack clinique ne se crée (lettre cj)
+
+- Date : 2026-10-14
+- Statut : accepté. Brouillon rédigé par l'assistant à partir de l'audit des
+  panels du 2026-10-05 et des arbitrages du même jour, soumis au responsable
+  et accepté par lui le 2026-10-14, tel quel, sur question à options (gel
+  permanent plutôt que gel jusqu'aux indications v2), avant le merge.
+- Domaine : catalogue biologique, panels (`biology_panels`,
+  `biology_panel_items`) et table signée `indicationsBiologieV1`. Lettre cj du
+  plan unique (`docs/claude/PLAN_WELLNEURO.md`, fiche F49, rang 0, file A,
+  geste du responsable, PR propre). C'est la PR 1 de l'audit
+  `docs/archive/cadrages/AUDIT_PANELS_BIOLOGIE_2026-10-05.md` (§6).
+- Précède, par le plan : la vue dédoublonnée par analyte (F50) et la décision
+  des axes biologiques (lettre cm, F51), toutes deux « après cj » ; par elles,
+  la migration du référentiel d'axes (F52), les liens analyte-axe signés (F79)
+  et les indications v2 (F53).
+- **Ne touche pas** : aucune règle d'indication, aucun seuil, aucune
+  composition de panel, aucun panel désactivé, aucune migration, aucun code,
+  aucun drapeau, aucun texte servi au patient. Le courrier au médecin et le
+  document patient restent tels quels. La table `indicationsBiologieV1`
+  garde ses quinze règles signées, une par panel. Cette décision classe et
+  fixe une direction : elle ne convertit rien.
+
+**§1 — Constat (lecture par conteneur, 2026-10-14, agrégats en transaction
+en lecture seule).** Les mesures de l'audit tiennent sans écart : 15 panels,
+tous actifs ; 78 items sur 35 analytes distincts ; 85 analytes au catalogue ;
+0 correspondance analyte ↔ acte NABM ; 0 lien analyte ↔ besoin, axe ou
+nutriment ; 0 panel déclaré « déjà exploré » ; 0 arbitrage biologique ;
+3 brouillons de protocole, dont 0 avec une action `biological_exploration`.
+Dans le code, les 15 règles de `indicationsBiologieV1` visent chacune un
+panel, et la référence au catalogue prévue en CB-07 n'existe pas. Aucune
+donnée patient ne s'est accrochée aux panels : la rationalisation peut se
+faire avant qu'une donnée ne s'y accroche.
+
+**§2 — L'analyte est l'unité canonique.** Ce qui se propose, se justifie, se
+décide et se suit en biologie, c'est un analyte du catalogue
+(`BiologyAnalyte`), pas un panel. Un analyte cité par plusieurs panels est
+une seule analyse, avec plusieurs justifications. Le panel cesse d'être une
+unité de décision : il devient, jusqu'à sa conversion, un regroupement
+hérité qui porte une justification. La priorité d'une analyse et son axe
+restent deux dimensions séparées.
+
+**§3 — Plus aucun pack biologique clinique ne se crée.** La règle immédiate
+du 2026-10-05 (« aucun nouveau pack tant que la décision de rationalisation
+n'est pas prise ») devient permanente : aucun `BiologyPanel` clinique
+nouveau, ni par migration, ni par seed, ni par code. Un besoin clinique
+nouveau s'exprime en analytes, en axes (après la lettre cm), en règles
+signées ou en propositions patient. Seule une décision qui amende celle-ci
+peut rouvrir la création d'un pack.
+
+**§4 — Classification des quinze panels.** Chaque panel reçoit un type et
+un devenir. Le devenir s'exécute plus tard, par les lots qui le portent
+(§5), jamais par cette décision.
+
+| Type | Panels | Devenir |
+|---|---|---|
+| Axe clinique (9) | `PANEL_HUMEUR_1`, `PANEL_ANXIETE_1`, `PANEL_STRESS_1`, `PANEL_SOMMEIL_1`, `PANEL_MEMOIRE_1`, `PANEL_DIGESTIF_1`, `PANEL_FATIGUE_1`, `PANEL_NEURODEG_1`, `PANEL_METABOLIQUE_1` | convertir : son indication visera des axes ou des analytes |
+| Gabarit optionnel (1) | `PANEL_METABOLIQUE_OPT` | déprécier : la signature des indications v2 dira si sa règle (BIO-MET-02) garde un équivalent, et à quelle priorité ; rien n'est fixé ici |
+| Indication ou population (3) | `PANEL_SJSR`, `PANEL_POP_FEMME`, `PANEL_POP_AGEE` | convertir en indication portant sur des analytes |
+| Motif « non indiqué » (2) | `PANEL_MG_PLASMATIQUE`, `PANEL_CORTISOL_ISOLE` | conserver tels quels : ils portent le motif de non-indication |
+
+Aucun panel technique n'existe comme `BiologyPanel` : NFS, profil lipidique,
+bilan hépatique et ionogramme sont des analytes « blocs ». La correspondance
+d'un panel à un axe nommé (par exemple stress et axe corticotrope, digestif
+et intestin) n'est pas fixée ici : elle relève de la lettre cm, et chaque
+lien analyte-axe se signe ensuite, claim par claim.
+
+**§5 — Comment les panels changent, et quand.** Un panel converti ou
+déprécié passe **inactif** quand la table d'indications v2, signée, ne le
+vise plus (F53) ; il n'est jamais supprimé, par règle de cette décision.
+La clé `Restrict` de `panels_biologie_documentes` ne protège que le panel
+qu'un panel documenté référence déjà : elle n'interdit pas, à elle seule, de
+supprimer les autres. Jusque-là, les quinze panels restent actifs et
+servis tels quels. Ordre, par le plan : vue dédoublonnée par analyte (F50,
+code seul, aucune règle changée) ; décision des axes (cm, F51) ; migration
+du référentiel d'axes (F52) ; liens analyte-axe signés (F79) ; indications v2
+re-signées (F53, avec sa propre D-xxx et son fragment de changelog).
+
+**§6 — Les axes : ce qui est déjà arbitré.** Le référentiel d'axes
+biologiques est une liste fermée neuve, distincte de `NeuroAxis`
+(arbitrage du 2026-10-05). Son contenu, sa provenance et sa forme en base
+relèvent de la lettre cm (F51) : cette décision n'en nomme aucun.
+
+**§7 — La Track C : sa place est déjà arbitrée.** La Track C (ex-« BIO-
+PRESCRIPTION ») n'est pas une campagne : ce sont des lots de BIO-PARCOURS,
+étapes av à az du plan (F33 à F37), branchés sur BP-04, BP-16 et BP-18 sans
+les dupliquer (arbitrage du 2026-10-05, déjà reporté dans
+`docs/architecture/bioflow/BIOFLOW_ROADMAP.md`). Elle n'est pas la file C des
+activations patient ([[D-288]]).
+
+**§8 — Ce qui ne change pas.** Les correspondances NABM restent à signer
+une à une par le responsable, en commençant par les 8 analytes les plus
+partagés (S-7, F54) ; tant qu'aucune n'est signée, `non_evalue` reste la
+seule réponse vraie de la proposition. La règle de constitution clinique
+s'applique à chaque étape du §5 : aucune règle sans provenance certifiée,
+aucune borne inventée, aucun lien sans claim. Les règles de parallélisme de
+BioFlow (plan §5) restent entières.
+
 ### D-295 — Droits des personnes : sans accès au portail, la demande s'instruit à sa confirmation depuis l'adresse du dossier ; les courriels de demande suivent la durée du dossier ; « traité » exige une réponse ; ai date la première lecture
 
 - Date : 2026-10-14
