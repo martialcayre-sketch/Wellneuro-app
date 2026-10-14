@@ -36,12 +36,15 @@ change, le patient ne voit rien changer).
   comparaison au pixel (baselines Linux seulement).
 - Anti-secrets : dans T1.
 
+- Comparaison au pixel du CI (`visual.spec.ts`, tolérance 100 pixels) :
+  rouge au premier run sur les trois bases Desktop de la fiche (264 pixels,
+  le nom au rail) ; bases régénérées par le workflow `visual-baselines`
+  (run 38526573078, Ubuntu, vert) et committées : les trois Desktop
+  seulement, les bases iPhone passaient et restent.
+
 ## Problèmes ouverts
 
-- Comparaison au pixel du CI (`visual.spec.ts`, tolérance 100 pixels) : les
-  bases de la fiche capturent le rail avec le nom ; si elle rougit,
-  régénérer par le workflow manuel `visual-baselines` et committer les bases
-  dans ce lot.
+- Aucun.
 
 ## Prochaine action exacte
 
