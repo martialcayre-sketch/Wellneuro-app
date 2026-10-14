@@ -18,6 +18,8 @@ Lot G-7 (fiche F04) : écrire les commandes exactes de D-289 §2, jouer l'essai 
   - L'assistant ne manipule aucun jeton.
 - Archive téléchargée dans un one-off de `wellneuro`, jamais sur le poste. Cible : `wellneuro-g7-essai`, PostgreSQL Starter 1G, osc-fr1.
 - Critère du RUNBOOK précisé après coup : une table absente se justifie si une migration finie après la sauvegarde la crée.
+- Écart à D-289 §2.2, de l'assistant : l'application temporaire a été créée sans `--hds-resource` (hors du périmètre du certificat) ; copie présente 13 minutes au plus (21:25 à 21:38 UTC). Arbitrage du responsable du 2026-10-15 : pas une violation (art. 4.12), écart consigné (plan F04, `DOSSIER_RGPD.md`), noté à son registre hors dépôt, essai retenu, porte 8 levée.
+- Revue CodeRabbit de #1462 : script (nettoyage en sortie, code non nul sur échec), RUNBOOK (`--hds-resource` contrôlé, nom propre à l'essai, arrêt si la création échoue, destruction de la seule application créée), journal d'audit du conteneur signalé pour le jeton, mise à jour périmée de F04 marquée.
 
 ## Fichiers modifiés
 
@@ -43,14 +45,14 @@ Lot G-7 (fiche F04) : écrire les commandes exactes de D-289 §2, jouer l'essai 
 
 ## Problèmes ouverts
 
-- Révocation du jeton API `g7-essai-2026-10-14` : geste du responsable, non constaté.
+- Soldé : jeton API `g7-essai-2026-10-14` révoqué par le responsable à 21:52 UTC (constaté au journal d'activité de l'hébergeur).
 - Release-db de #1426 (porte 9, lot j de D-284) : la migration est appliquée (07:30 UTC). La sentinelle et le constat restent à consigner.
 
 ## Prochaine action exacte
 
 1. Revue CodeRabbit de #1461, merge, déploiement constaté.
 2. Revue de #1462, merge, déploiement constaté.
-3. Puis K-05a et D4 (F46).
+3. Puis D4 (texte patient v18 validé le 2026-10-15, PR propre), ensuite K-05a sur tous les sites d'appel IA (F46).
 
 ## Interdits encore actifs
 

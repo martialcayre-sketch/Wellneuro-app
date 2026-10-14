@@ -182,8 +182,11 @@ télécharge dans le conteneur, pas sur le Mac).
 manipule une copie de données de santé). Le téléchargement de l'archive
 exige une authentification **dans** le conteneur : le responsable crée un
 jeton API temporaire (tableau de bord Scalingo, profil, jetons API, nom
-`g7-essai-AAAA-MM-JJ`) et le révoque à la fin. Le jeton ne s'écrit ni dans
-le dépôt ni dans une commande visible : il se saisit masqué (`read -rs`).
+`g7-essai-AAAA-MM-JJ`) et le révoque **dès la fin** de l'essai. Le jeton ne
+s'écrit ni dans le dépôt ni dans une commande visible : il se saisit masqué
+(`read -rs`). Le journal d'audit d'un conteneur Scalingo enregistre ses
+entrées et ses sorties : la saisie masquée ne garantit pas que le jeton n'y
+figure pas, d'où sa durée de vie limitée à l'essai.
 
 1. **Sauvegarde** : relever l'identifiant et l'heure (UTC) de la dernière
    sauvegarde `done`.
@@ -192,14 +195,25 @@ le dépôt ni dans une commande visible : il se saisit masqué (`read -rs`).
    scalingo --app wellneuro --region osc-fr1 --addon postgresql backups
    ```
 
-2. **Base temporaire**, depuis un répertoire **hors du dépôt** (`create`
-   ajoute sinon un remote Git) :
+2. **Base temporaire**, **ressource HDS**, au nom propre à l'essai, depuis
+   un répertoire **hors du dépôt** (`create` ajoute sinon un remote Git).
+   Sans `--hds-resource`, la ressource sort du périmètre couvert par le
+   certificat du fournisseur (réponse écrite du 2026-08-11,
+   `docs/DOSSIER_RGPD.md`) : c'est l'écart du premier essai, le 2026-10-14.
+   Chaque commande ne part que si la précédente a réussi ; `HDS` doit lire
+   `true` avant d'aller plus loin.
 
    ```bash
-   cd /tmp && scalingo --region osc-fr1 create wellneuro-g7-essai
-   scalingo --app wellneuro-g7-essai --region osc-fr1 addons-add postgresql postgresql-starter-1024
-   scalingo --app wellneuro-g7-essai --region osc-fr1 addons   # attendre « running »
+   APP=wellneuro-g7-$(date -u +%Y%m%d)
+   cd /tmp && scalingo --region osc-fr1 create --hds-resource "$APP" \
+     && scalingo --app "$APP" --region osc-fr1 apps-info | grep -i hds \
+     && scalingo --app "$APP" --region osc-fr1 addons-add postgresql postgresql-starter-1024
+   scalingo --app "$APP" --region osc-fr1 addons   # attendre « running »
    ```
+
+   Si `create` échoue (nom déjà pris, par exemple), **s'arrêter** : une
+   application de ce nom qui n'a pas été créée par cet essai ne se détruit
+   pas.
 
 3. **Conteneur interactif** de `wellneuro`, script téléversé (le
    téléversement exige le mode interactif : `--detached` et `--file` ne se
@@ -209,14 +223,14 @@ le dépôt ni dans une commande visible : il se saisit masqué (`read -rs`).
    scalingo --app wellneuro --region osc-fr1 run --file scripts/wn-g7-restauration.sh bash
    ```
 
-4. **Dans le conteneur** (remplacer `<ID>` et `<HEURE_UTC>` par les valeurs
-   de l'étape 1) :
+4. **Dans le conteneur** (remplacer `<ID>`, `<HEURE_UTC>` et `<APP>` par les
+   valeurs des étapes 1 et 2) :
 
    ```bash
    install-scalingo-cli
    read -rs JETON && scalingo login --api-token "$JETON" && unset JETON
    scalingo --app wellneuro --region osc-fr1 --addon postgresql backups-download --backup <ID> --output /tmp/g7.tar.gz
-   export CIBLE_URL="$(scalingo --app wellneuro-g7-essai --region osc-fr1 env-get SCALINGO_POSTGRESQL_URL)"
+   export CIBLE_URL="$(scalingo --app <APP> --region osc-fr1 env-get SCALINGO_POSTGRESQL_URL)"
    SAUVEGARDE_A='<HEURE_UTC>' bash /tmp/uploads/wn-g7-restauration.sh /tmp/g7.tar.gz
    exit
    ```
@@ -228,16 +242,19 @@ le dépôt ni dans une commande visible : il se saisit masqué (`read -rs`).
    la production à l'heure de la sauvegarde ; tables présentes ; comptes de
    lignes rapprochés table par table (un écart se lit contre les écritures
    postérieures à la sauvegarde). Il efface l'archive et ses fichiers de
-   travail ; le conteneur est détruit à la sortie.
+   travail à toute sortie, et sort en code non nul si la restauration a
+   échoué ; le conteneur est détruit à la sortie.
 
-5. **Fin, le jour même** :
+5. **Fin, le jour même**, sur la seule application créée à l'étape 2 :
 
    ```bash
-   scalingo --region osc-fr1 destroy wellneuro-g7-essai   # confirmation par le nom
-   scalingo --region osc-fr1 apps | grep g7-essai          # doit être vide
+   scalingo --region osc-fr1 destroy "$APP"   # confirmation par le nom
+   scalingo --region osc-fr1 apps | grep "$APP"   # doit être vide
    ```
 
-   Puis révoquer le jeton `g7-essai-AAAA-MM-JJ` au tableau de bord.
+   Puis révoquer le jeton `g7-essai-AAAA-MM-JJ` au tableau de bord, et
+   constater création, destruction et révocation dans
+   `scalingo --region osc-fr1 user-timeline`.
 
 6. **Verdict** : réussi si `pg_restore` finit sans erreur, si les deux
    migrations sont égales, si aucune table ne manque hors celles que crée une

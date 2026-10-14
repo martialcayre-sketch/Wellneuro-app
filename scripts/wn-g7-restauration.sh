@@ -41,6 +41,8 @@ echo "cible : $(lire_cible "select 'PostgreSQL ' || current_setting('server_vers
 
 TRAVAIL=/tmp/g7
 rm -rf "$TRAVAIL" && mkdir -p "$TRAVAIL"
+# L'archive et ses fichiers de travail s'effacent à toute sortie, échec compris.
+trap 'rm -rf "$TRAVAIL" "$ARCHIVE"' EXIT
 tar -xzf "$ARCHIVE" -C "$TRAVAIL"
 DUMP=$(find "$TRAVAIL" -type f | head -1)
 echo "archive : $(du -h "$ARCHIVE" | cut -f1) ; vidage : $(du -h "$DUMP" | cut -f1)"
@@ -83,6 +85,10 @@ while read -r t; do
   fi
 done < <(comm -12 "$TRAVAIL/tables.source" "$TRAVAIL/tables.cible")
 echo "lignes : tables égales=$egales ; tables en écart=$ecarts"
+echo "fin : fichiers de travail effacés à la sortie ; reste à détruire l'application temporaire (RUNBOOK)."
 
-rm -rf "$TRAVAIL" "$ARCHIVE"
-echo "fin : fichiers de travail effacés ; reste à détruire l'application temporaire (RUNBOOK)."
+# Une restauration en échec ou en erreur ne sort jamais en code nul : les
+# contrôles ci-dessus restent lisibles, le verdict reste au RUNBOOK.
+if [ "$code" != 0 ] || [ "$n_erreurs" != 0 ]; then
+  exit 1
+fi
