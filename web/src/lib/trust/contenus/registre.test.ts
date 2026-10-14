@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les vingt-six documents attendus', () => {
+  it('expose les vingt-huit documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -52,6 +52,8 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v13',
       // `D-258` — les sauvegardes du compte rendu purgé, déclarées une fois leur durée établie.
       'donnees_confidentialite@v14',
+      // `D-284` §5 — l'identité masquée avant l'envoi : le compte rendu ne part plus entier.
+      'donnees_confidentialite@v15',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -65,6 +67,8 @@ describe('registre des documents TRUST', () => {
       'usage_ia@v6',
       // `D-278` §3 — le relevé recopie aussi les commentaires imprimés.
       'usage_ia@v7',
+      // `D-284` §5 — seules les pages masquées partent.
+      'usage_ia@v8',
       'droits_patient@v1',
       'consentement_suivi@v2',
       // Même correction, dans le texte du consentement lui-même — l'occurrence
@@ -115,7 +119,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v14');
+    expect(courant.version).toBe('v15');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -262,13 +266,14 @@ describe('registre des documents TRUST', () => {
     expect(courant.requiresAcknowledgement).toBe(false);
   });
 
-  it('`D-256` A4 : les deux documents servis déclarent le compte rendu biologique transmis ENTIER à Anthropic', () => {
+  it('`D-256` A4 : les v7 et v14 déclaraient le compte rendu biologique transmis ENTIER à Anthropic (jusqu’à `D-284` §5)', () => {
     // LA CONDITION DE SORTIE DU LOT-02 DE BIO-INGEST : l'envoi d'un compte rendu
     // au sous-traitant IA est déclaré AVANT toute activation, et le document
     // ENTIER, identité comprise (arbitrage du 2026-10-01). Une mutation qui
     // retire « vous identifient » de l'un des deux textes rougit ici.
-    const usageIa = getDocumentCourant('usage_ia');
-    expect(usageIa.version).toBe('v7');
+    // Ces versions ont été servies du 2026-10-11 au 2026-10-14 ; le banc de
+    // `D-284` §5, plus bas, garde les versions COURANTES.
+    const usageIa = getVersion('usage_ia', 'v7')!;
     const texteIa = usageIa.sections.flatMap(s => s.paragraphes).join(' ');
     expect(texteIa).toContain('compte rendu que vous lui avez remis');
     expect(texteIa).toContain('aucune n’entre à votre dossier sans cette validation');
@@ -292,7 +297,7 @@ describe('registre des documents TRUST', () => {
     expect(jamais('v7')).toEqual(jamais('v3'));
     expect(usageIa.requiresAcknowledgement).toBe(false);
 
-    const donnees = getDocumentCourant('donnees_confidentialite');
+    const donnees = getVersion('donnees_confidentialite', 'v14')!;
     const texteDonnees = donnees.sections.flatMap(s => s.paragraphes).join(' ');
     // La phrase de la v6 qui devenait fausse ne survit pas.
     expect(texteDonnees).not.toContain('Ces résultats sont saisis par votre praticien');
@@ -440,8 +445,7 @@ describe('registre des documents TRUST', () => {
     // rubrique 8). D-258 différait l'annonce jusqu'à ce que la rétention des
     // sauvegardes soit établie : 12 mois, sauvegardes mensuelles de l'hébergeur.
     const v13 = getVersion('donnees_confidentialite', 'v13');
-    const v14 = getDocumentCourant('donnees_confidentialite');
-    expect(v14.version).toBe('v14');
+    const v14 = getVersion('donnees_confidentialite', 'v14')!;
     const texte = v14.sections.flatMap(s => s.paragraphes).join(' ');
     expect(texte).toContain(
       'et au plus tard 30 jours après son dépôt. Des copies peuvent en subsister jusqu’à 12 mois après sa suppression dans les sauvegardes de notre hébergeur, qui ne servent qu’à rétablir le service en cas d’incident ; elles s’effacent ensuite d’elles-mêmes. Les valeurs validées restent dans votre dossier.',
@@ -463,8 +467,7 @@ describe('registre des documents TRUST', () => {
     // RELEVER : `bio-extraction-v4` ne se déploie qu'une fois cette version
     // servie et constatée. Une reformulation, même juste, rougit ici.
     const v6 = getVersion('usage_ia', 'v6');
-    const v7 = getDocumentCourant('usage_ia');
-    expect(v7.version).toBe('v7');
+    const v7 = getVersion('usage_ia', 'v7')!;
     const releve = (doc: typeof v6) =>
       (doc?.sections.find(s => s.titre === 'Où l’IA intervient')?.paragraphes ?? []).find(p =>
         p.startsWith('Le relevé des résultats'),
@@ -502,6 +505,59 @@ describe('registre des documents TRUST', () => {
     expect(v7.publieLe > (v6?.publieLe ?? '')).toBe(true);
     // L'accusé se recueille sur l'écran de dépôt, comme pour la v6.
     expect(v7.requiresAcknowledgement).toBe(false);
+  });
+
+  it('`D-284` §5 : les v8 et v15 disent l’identité masquée avant l’envoi, mot pour mot comme validées, et rien d’autre', () => {
+    // TEXTES VALIDÉS PAR LE RESPONSABLE LE 2026-10-14, publiés après le
+    // déploiement constaté de l'écran de masquage (#1428). Une phrase change
+    // dans chacun des deux documents ; une reformulation rougit ici.
+    const v7 = getVersion('usage_ia', 'v7');
+    const v8 = getDocumentCourant('usage_ia');
+    expect(v8.version).toBe('v8');
+    const releve = (doc: typeof v7) =>
+      (doc?.sections.find(s => s.titre === 'Où l’IA intervient')?.paragraphes ?? []).find(p =>
+        p.startsWith('Le relevé des résultats'),
+      ) ?? '';
+    expect(releve(v8)).toBe(releve(v7).replace(
+      'Pour cela, le compte rendu est transmis en entier, y compris votre nom et les autres mentions qui vous identifient.',
+      'Pour cela, votre praticien masque d’abord à l’écran, sur chaque page, votre nom et les autres mentions qui vous identifient : seules les pages ainsi masquées sont transmises, jamais le compte rendu d’origine. Ce masquage est fait à la main, par votre praticien.',
+    ));
+    expect(releve(v8)).not.toContain('transmis en entier');
+    expect(releve(v8).endsWith('Pour cela, votre praticien masque d’abord à l’écran, sur chaque page, votre nom et les autres mentions qui vous identifient : seules les pages ainsi masquées sont transmises, jamais le compte rendu d’origine. Ce masquage est fait à la main, par votre praticien.')).toBe(true);
+    const autresIa = (doc: typeof v7) =>
+      doc?.sections.map(s =>
+        s.titre === 'Où l’IA intervient'
+          ? { ...s, paragraphes: s.paragraphes.filter(p => !p.startsWith('Le relevé des résultats')) }
+          : s,
+      );
+    expect(autresIa(v8)).toEqual(autresIa(v7));
+    expect(v8.publieLe > (v7?.publieLe ?? '')).toBe(true);
+    expect(v8.requiresAcknowledgement).toBe(false);
+
+    const v14 = getVersion('donnees_confidentialite', 'v14');
+    const v15 = getDocumentCourant('donnees_confidentialite');
+    expect(v15.version).toBe('v15');
+    const titre = 'Quelles données sont recueillies ?';
+    const avant = v14?.sections.find(s => s.titre === titre)?.paragraphes ?? [];
+    const apres = v15.sections.find(s => s.titre === titre)?.paragraphes ?? [];
+    expect(apres).toEqual(avant.map(p => p.replace(
+      'Pour en relever les valeurs, le compte rendu est transmis en entier, y compris votre nom et les autres mentions qui vous identifient, à Anthropic, prestataire nommé plus bas.',
+      'Pour en relever les valeurs, des images de ses pages sont transmises à Anthropic, prestataire nommé plus bas, après que votre praticien y a masqué à l’écran votre nom et les autres mentions qui vous identifient ; le compte rendu d’origine n’est jamais transmis.',
+    )));
+    expect(apres.filter((p, i) => p !== avant[i])).toHaveLength(1);
+    expect(apres.join(' ')).toContain('Pour en relever les valeurs, des images de ses pages sont transmises à Anthropic, prestataire nommé plus bas, après que votre praticien y a masqué à l’écran votre nom et les autres mentions qui vous identifient ; le compte rendu d’origine n’est jamais transmis.');
+    expect(apres.join(' ')).not.toContain('transmis en entier');
+    expect(v15.sections.filter(s => s.titre !== titre)).toEqual(v14?.sections.filter(s => s.titre !== titre));
+    expect(v15.publieLe > (v14?.publieLe ?? '')).toBe(true);
+    // Même motif que les v10 à v14 : sans accusé, celui de la v14 encore dû s'effaçait.
+    expect(v15.requiresAcknowledgement).toBe(true);
+
+    // Le résumé montré au patient, validé avec les textes.
+    for (const doc of [v8, v15]) {
+      expect(doc.changeSummary).toBe(
+        'Le compte rendu de vos analyses biologiques n’est plus transmis en entier : votre praticien masque d’abord à l’écran votre nom et les autres mentions qui vous identifient, et seules les pages ainsi masquées sont transmises pour en relever les valeurs. Le reste ne change pas.',
+      );
+    }
   });
 
   it('la v9 RETIRE la promesse que le logiciel ne tenait pas, et NOMME l’exception', () => {

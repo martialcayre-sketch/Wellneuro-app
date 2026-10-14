@@ -10226,3 +10226,18 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merge et déploiement constaté ; ensuite BP-07 (file B).
 
 **Ouvert.** Rien : le terme du second compte (2027-10-11) et la procédure de g sont acceptés avec les textes.
+
+## 2026-10-14 — BioFlow : les textes patient du masquage (D-284 §5, lot j, lot 3)
+
+- Décisions :
+  - `usage_ia` v8 et `donnees_confidentialite` v15, validées telles quelles
+    par le responsable ;
+  - une phrase change dans chaque document : seules les pages masquées
+    partent, jamais le compte rendu d'origine ;
+  - publication après le déploiement constaté du lot 2.
+- Lot 2 (#1428) : revue Copilot, cinq constats. Quatre corrigés (jugement de
+  chaque page rejugé par le serveur, dossier verrouillé d'abord, clavier,
+  déploiement worker arrêté) ; un routé au plan (mémoire de l'écran).
+- Validations : T1 et T3 verts.
+- Prochaine action : constater le premier masquage réel.
+- Question ouverte : la TIA.
