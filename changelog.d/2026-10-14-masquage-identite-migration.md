@@ -21,10 +21,11 @@
 - **Contrat** : `bio_ingest_masquage_identite_v1_negatif.sql`, joué au CI,
   chaque refus vérifié sous son message ; le contrat du staging compte
   désormais dix fonctions `bio_ingest_*`.
-- **Course masquage contre purge** (revue `wn-reviewer`, P1) : le trigger
-  d'insertion verrouille le document `FOR SHARE`, comme l'ouverture d'un
-  import. Banc à deux sessions `banc-masquage-purge-deux-sessions.test.mjs`
-  (deux courses, deux témoins), au CI et en T3 ; sans le verrou, ses quatre
-  cas échouent.
+- **Courses du masquage** : le trigger d'insertion verrouille le document
+  `FOR UPDATE`. Ce verrou le sérialise avec la purge (revue `wn-reviewer`,
+  P1), avec l'ouverture d'un import et avec la demande d'une lecture (revue
+  Copilot de #1426 : un `FOR SHARE` ne les gênait pas). Banc à deux sessions
+  `banc-masquage-purge-deux-sessions.test.mjs` (cinq courses, trois témoins),
+  au CI et en T3.
 - **Suite** : écran de masquage, route d'enregistrement, lecture des seules
   pages masquées (lot 2), puis textes patient à signer (lot 3).

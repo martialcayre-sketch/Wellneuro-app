@@ -122,14 +122,22 @@ BEGIN
   IF total > 20971520 THEN
     RAISE EXCEPTION 'masquage refusé : les pages dépassent 20 Mio au total.';
   END IF;
-  -- FOR SHARE : la purge du document (FOR NO KEY UPDATE) et ce masquage se
-  -- SÉRIALISENT. Sans ce verrou, une purge concurrente validée avant le
-  -- masquage ne verrait pas ses pages, et rien ne les purgerait plus (revue du
-  -- lot 1, P1). Même verrou que l'ouverture d'un import (`bio_ingest_purge_v1`).
+  -- FOR UPDATE : ce masquage se SÉRIALISE avec tout ce qui touche le document.
+  --   · la purge (FOR NO KEY UPDATE) : sans cela, une purge validée avant le
+  --     masquage ne verrait pas ses pages, et rien ne les purgerait plus
+  --     (revue `wn-reviewer` du lot 1, P1) ;
+  --   · l'ouverture d'un import (FOR SHARE, `bio_ingest_purge_v1`) et la
+  --     demande d'une lecture (FOR KEY SHARE de la clé étrangère du travail) :
+  --     un FOR SHARE leur serait compatible, et les deux vérifications
+  --     ci-dessous passeraient pendant qu'une lecture naît (revue Copilot de
+  --     #1426).
+  -- Le code prend d'abord le verrou consultatif du compte rendu, comme la
+  -- purge, l'écart, la décision et la demande : l'ordre des verrous est le même
+  -- partout, aucun interblocage n'est introduit.
   SELECT c.contenu IS NULL INTO document_purge
   FROM public.comptes_rendus_biologiques c
   WHERE c.id = NEW.id_compte_rendu
-  FOR SHARE;
+  FOR UPDATE;
   IF document_purge THEN
     RAISE EXCEPTION 'masquage refusé : le document de ce compte rendu est purgé.';
   END IF;
