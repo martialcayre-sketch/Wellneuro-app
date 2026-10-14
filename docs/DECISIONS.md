@@ -1467,10 +1467,12 @@ tout avis sur un signalement sans rattachement (migration du lot 2) : ce
 blocage n'est donc posé qu'avec la migration qui y ouvre l'avis, en PR
 séparée, puis le code qui le consomme — **préalable de la signature**
 (étape 5). Écarté : bloquer sans avis possible (le dossier resterait
-enfermé), laisser ces signalements hors de la règle. Un signalement sans
-programme désigné (aucun programme diffusé, désignation illisible au dépôt)
-ne bloque rien et reste examiné sur la surface des signalements, que la
-revue clinique signale au praticien.
+enfermé), laisser ces signalements hors de la règle. Sans programme
+diffusé, rien ne se rattache ni ne bloque (§2) : le signalement reste
+examiné sur la surface des signalements, que la revue clinique signale au
+praticien. Une désignation illisible au dépôt (lecture du programme en
+échec, signalement capturé sans programme) ne bloque rien non plus en
+l'état ; ce cas n'est pas tranché et reste à trancher avant la signature.
 
 **§6 — Ordre et signature.** (1) cette décision ; (2) la migration —
 l'élément désigné, le mode de rattachement, la validation —, relue puis

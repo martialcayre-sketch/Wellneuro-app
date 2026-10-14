@@ -10,7 +10,7 @@ const {
   // bancs (`bancCasFictifsD281.test.ts`, `pauseEffetIndesirableServeur.test.ts`) ;
   // ce banc juge le câblage — verrou, refus, rien d'écrit.
   signalementsEnAttenteDuDossier: vi.fn(),
-  eiActive: { valeur: false },
+  eiActive: { valeur: false as boolean | null },
   // L'E-MAIL NEUTRE ([[D-251]] §9, lot 11) : seul l'envoi est simulé. La règle
   // « est-il dû ? » (`annonceDue`) est la vraie, lue sur le drapeau.
   annoncerDocumentRemis: vi.fn(),
@@ -47,10 +47,15 @@ vi.mock('@/lib/protocol/fromPrisma', () => ({ reconstructProtocolDraft }));
 vi.mock('@/lib/protocol/servirAuPatient', () => ({ vuePatientOuRefus }));
 vi.mock('@/lib/fiches-assiette/remise', () => ({ apercuFichesDuProtocole, remettreFiches }));
 vi.mock('@/lib/trust/pauseEffetIndesirableServeur', () => ({ signalementsEnAttenteDuDossier }));
-vi.mock('@/lib/clinical/safetyEffetIndesirableV1', async orig => ({
-  ...(await orig<typeof import('@/lib/clinical/safetyEffetIndesirableV1')>()),
-  interruptionEffetIndesirableActive: () => eiActive.valeur,
-}));
+// `eiActive.valeur === null` rend le VRAI verrou : un cas éprouve le câblage
+// signature + drapeau jusqu'au POST (revue CodeRabbit de #1457).
+vi.mock('@/lib/clinical/safetyEffetIndesirableV1', async orig => {
+  const original = await orig<typeof import('@/lib/clinical/safetyEffetIndesirableV1')>();
+  return {
+    ...original,
+    interruptionEffetIndesirableActive: () => eiActive.valeur ?? original.interruptionEffetIndesirableActive(),
+  };
+});
 vi.mock('@/lib/fiches-assiette/annonce', async orig => ({
   ...(await orig<typeof import('@/lib/fiches-assiette/annonce')>()),
   annoncerDocumentRemis,
@@ -166,6 +171,32 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
     expect(signalementsEnAttenteDuDossier).toHaveBeenCalledWith('PAT_1');
     expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('le VRAI verrou — signature simulée et drapeau posé — fait mordre la garde', async () => {
+    const { SAFETY_EI_METADATA, SAFETY_EI_SHA256 } = await import('@/lib/clinical/safetyEffetIndesirableV1');
+    const livre = { ...SAFETY_EI_METADATA };
+    eiActive.valeur = null;
+    process.env.WN_EI_INTERRUPTION = '1';
+    Object.assign(SAFETY_EI_METADATA, {
+      validationExterne: true,
+      dateValidation: '2026-10-14T00:00:00.000Z',
+      sourceReference: 'Signature simulée par le banc — jamais servie en production.',
+      shaPerimetre: SAFETY_EI_SHA256,
+    });
+    try {
+      signalementsEnAttenteDuDossier.mockResolvedValue([{ id: 'AER_1', soumisLe: new Date('2026-10-12T10:00:00.000Z') }]);
+      getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+      prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+
+      const res = await POST(postRequest(body));
+      expect(res.status).toBe(409);
+      expect(((await res.json()) as { reason: string }).reason).toBe('effet_indesirable_en_attente');
+      expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+    } finally {
+      Object.assign(SAFETY_EI_METADATA, livre);
+      delete process.env.WN_EI_INTERRUPTION;
+    }
   });
 
   // LA BRANCHE DES FICHES ([[D-251]] §7) écrit dans une transaction : le refus
