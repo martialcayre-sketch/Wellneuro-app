@@ -1,5 +1,7 @@
 # Contre-revue adverse — BIO-INGEST, passe des mutations (2026-10-10)
 
+**Versé au plan le 2026-10-14** : les dettes vivantes de ce registre sont tenues au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4) ; le plan fait foi, ce fichier n'est plus mis à jour.
+
 Date : 2026-10-10. Cible : `cc3f2f30` (après #1385), copie jetable et propre.
 Énoncé : `PROMPT_CONTRE_REVUE_CODEX_MUTATIONS_2026-10-10.md`, dans ce dossier.
 Jouée par Codex, lancée par le responsable. Ce fichier reproduit son verdict.

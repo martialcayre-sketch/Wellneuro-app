@@ -1,5 +1,7 @@
 # Dettes ouvertes — C5 (Boussole alimentaire)
 
+**Versé au plan le 2026-10-14** : les dettes vivantes de ce registre sont tenues au plan (docs/claude/PLAN_WELLNEURO.md, §8 et file D au §4) ; le plan fait foi, ce fichier n'est plus mis à jour.
+
 > Dettes consignées à la clôture du LOT-07 (2026-07-18). Non bloquantes pour
 > l'activation autorisée par le responsable, mais **non maquillées comme
 > résolues**. Chaque dette a un propriétaire et une échéance de revue. Le volet
