@@ -37,11 +37,13 @@ documents vivants.
   handoffs, `changelog.d/`, `CHANGELOG.md`, `SESSION_LOG.md`, `DECISIONS.md`,
   `docs/archive/`, `.wn/state.json`, `.wn/campaigns/archive/`, `web/` (le
   commentaire `web/src/lib/clinical/tableRepliV1.ts:144` : module clinique
-  signé, non touché), et le plan lui-même.
-- Fins de ligne : six documents en CRLF gardent leurs octets d'origine sur
-  les lignes inchangées ; `ROADMAP_AGENT_PLAN.md` passe en LF à sa nouvelle
-  place (normalisation `.gitattributes` sur un chemin neuf), diff entier,
-  contenu identique hors bandeau.
+  signé, non touché), le plan lui-même, et, après la revue Copilot, quatre
+  fiches de lots clos qui consignent un diff relu ou la liste des fichiers du
+  lot (chemins de l'époque gardés) ; le prompt R9 de
+  `PROMPTS_MON_EQUILIBRE.md` garde son chemin d'origine sous une note datée.
+- Fins de ligne : six documents CRLF gardent leurs octets sur les lignes
+  inchangées ; `ROADMAP_AGENT_PLAN.md` passe en LF à sa nouvelle place
+  (`.gitattributes`, chemin neuf) : diff entier, contenu identique.
 
 ## Fichiers modifiés
 
@@ -94,10 +96,9 @@ documents vivants.
 
 ## Prochaine action exacte
 
-1. `node scripts/wn-attendre-ci.mjs <N>` en tâche de fond (code 0 seul),
-   commentaires en ligne lus (`gh api repos/{owner}/{repo}/pulls/<N>/comments`,
-   un verdict chacun), merge squash après le déploiement constaté de
-   `d671945b`, puis déploiement de cette PR constaté
+1. `node scripts/wn-attendre-ci.mjs <N>` en fond (code 0 seul), commentaires
+   en ligne lus, un verdict chacun ; merge squash après le déploiement
+   constaté de `d671945b`, puis déploiement de cette PR constaté
    (`node scripts/wn-deploiement-observation.mjs`).
 2. PR 5 depuis une branche neuve sur `origin/main` : suppression de
    `docs/claude/campagnes/FILE_ATTENTE.md`, adresses de routage de

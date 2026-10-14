@@ -73,7 +73,7 @@ Un handoff court : état confirmé, dettes actives, fichiers canoniques et autor
 
 **Clôturé le 2026-07-11.**
 
-**Diff relu** : 10 fichiers `.md` modifiés sur toute la campagne (LOT-00→03) — `docs/ROADMAP_TECHNIQUE.md`, `docs/roadmap.md`, `docs/archive/roadmap-updates/ROADMAP_PRODUIT.md`, `docs/archive/roadmap-updates/ROADMAP_AGENT_PLAN.md`, `docs/claude/SESSION_LOG.md`, `CAMPAGNE.md`, les 4 fichiers `lots/LOT-0X-*.md`, `docs/claude/campagnes/ACTIVE_CAMPAIGN.md`. Aucun fichier de code applicatif, schéma Prisma ou route API touché.
+**Diff relu** : 10 fichiers `.md` modifiés sur toute la campagne (LOT-00→03) — `docs/ROADMAP_TECHNIQUE.md`, `docs/roadmap.md`, `docs/ROADMAP_PRODUIT.md`, `docs/claude/ROADMAP_AGENT_PLAN.md`, `docs/claude/SESSION_LOG.md`, `CAMPAGNE.md`, les 4 fichiers `lots/LOT-0X-*.md`, `docs/claude/campagnes/ACTIVE_CAMPAIGN.md`. Aucun fichier de code applicatif, schéma Prisma ou route API touché.
 
 **Commandes exécutées** :
 - `bash scripts/check_no_secrets.sh` → `OK: aucun secret évident détecté.`
