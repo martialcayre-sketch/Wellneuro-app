@@ -5,7 +5,7 @@
 **Campagne** : 2026-10-04-bio-parcours
 **Titre** : BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout
 **Statut** : active
-**Lot actif** : aucun
+**Lot actif** : LOT-03
 
 ## Activités parallèles
 
