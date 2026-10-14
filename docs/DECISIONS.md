@@ -73,8 +73,10 @@ lien analyte-axe se signe ensuite, claim par claim.
 
 **§5 — Comment les panels changent, et quand.** Un panel converti ou
 déprécié passe **inactif** quand la table d'indications v2, signée, ne le
-vise plus (F53) ; il n'est jamais supprimé (`panels_biologie_documentes` le
-référence en `Restrict`). Jusque-là, les quinze panels restent actifs et
+vise plus (F53) ; il n'est jamais supprimé, par règle de cette décision.
+La clé `Restrict` de `panels_biologie_documentes` ne protège que le panel
+qu'un panel documenté référence déjà : elle n'interdit pas, à elle seule, de
+supprimer les autres. Jusque-là, les quinze panels restent actifs et
 servis tels quels. Ordre, par le plan : vue dédoublonnée par analyte (F50,
 code seul, aucune règle changée) ; décision des axes (cm, F51) ; migration
 du référentiel d'axes (F52) ; liens analyte-axe signés (F79) ; indications v2
