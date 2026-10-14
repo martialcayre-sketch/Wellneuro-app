@@ -73,11 +73,16 @@ et le jour n de BP-03, les réveils de BP-04) naîtront en excluant
 l'annulation.
 
 **§7 — Le séquencement.** PR 1 : migration seule (table, contrat négatif,
-registre RGPD, cette décision). Release-db approuvée par le responsable,
-sentinelle, constat par conteneur. PR 2 : code consommateur, effacement
-nommé compris (les annulations partent avant les résultats que leurs clés
-RESTRICT retiennent). Entre les deux, la table reste vide : rien ne retient
-l'effacement d'un dossier. La condition « premier import » sort des
+registre RGPD, cette décision), et le seul code qui l'accompagne,
+l'effacement nommé du dossier — les annulations partent avant les résultats
+que leurs clés RESTRICT retiennent ; le banc de complétude de l'effacement
+l'exige de toute table qui porte `id_patient`, et `lectures_imports_biologiques`
+a suivi le même chemin. Entre le déploiement du code et la release-db, un
+effacement de dossier échoue sur la table absente, transaction annulée, rien
+d'effacé : la release-db s'approuve dans la foulée du merge. Release-db
+approuvée par le responsable, sentinelle, constat par conteneur. PR 2 : code
+consommateur (lecteurs, route, fiche praticien). Jusque-là, la table reste
+vide : rien ne retient l'effacement d'un dossier. La condition « premier import » sort des
 préalables de BP-09 (plan unique, F03) : le constat S-1 reste un constat, pas
 une porte de ce lot.
 

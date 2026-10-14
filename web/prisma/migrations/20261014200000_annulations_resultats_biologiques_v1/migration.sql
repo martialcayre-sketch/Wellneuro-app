@@ -4,11 +4,16 @@
 -- Migration demandée explicitement par le responsable le 2026-10-14 (« PR 1,
 -- la migration seule »), après la déclaration au registre RGPD (même PR).
 -- MIGRATION SEULE ([[D-087]], [[D-266]] §11) : aucun code n'écrit encore
--- d'annulation, aucun code ne la lit. Les lecteurs de calcul, la route et
--- l'effacement nommé du dossier viendront dans la PR 2 du lot, après
--- l'application CONSTATÉE par conteneur. Tant qu'elle n'est pas déployée, la
--- table reste vide : ses clés RESTRICT ne retiennent rien, et l'effacement
--- nommé d'un dossier passe comme avant.
+-- d'annulation, aucun code ne la lit. Les lecteurs de calcul et la route
+-- viendront dans la PR 2 du lot, après l'application CONSTATÉE par conteneur.
+-- Le seul code qui l'accompagne est l'effacement nommé du dossier
+-- (`patient/effacement.ts`), comme pour `lectures_imports_biologiques` : le
+-- banc de complétude de l'effacement l'exige de toute table qui porte
+-- `id_patient`. Entre le déploiement du code et l'approbation de la
+-- release-db, un effacement de dossier échouerait donc sur la table absente —
+-- transaction annulée, rien d'effacé ; d'où l'approbation dans la foulée du
+-- merge. Jusqu'à la PR 2, la table reste vide : ses clés RESTRICT ne
+-- retiennent rien.
 --
 -- ── CE QU'UNE LIGNE DIT ────────────────────────────────────────────────────
 --
@@ -81,8 +86,8 @@
 --
 -- UPDATE et TRUNCATE sont refusés par trigger. DELETE ne l'est PAS, comme
 -- pour `lectures_imports_biologiques` : chaque ligne est une donnée patient,
--- et l'effacement du dossier la supprimera NOMMÉMENT (PR 2), avant les
--- résultats que ses clés RESTRICT retiennent.
+-- et l'effacement du dossier la supprime NOMMÉMENT, avant les résultats que
+-- ses clés RESTRICT retiennent.
 --
 -- ── L'INSTANT ET L'ORDRE SONT POSÉS PAR LA BASE ────────────────────────────
 --
@@ -292,6 +297,6 @@ ALTER TABLE "public"."annulations_resultats_biologiques" ENABLE ROW LEVEL SECURI
 -- RETOUR ARRIÈRE : par une migration compensatrice relue et approuvée
 -- (`release-db`), jamais à la main — `migrate resolve --rolled-back` ne vise
 -- que les migrations échouées (précédent BIO-INGEST, P3012). Tant qu'aucune
--- ligne n'existe : déployer d'abord le code sans le modèle
--- `AnnulationResultatBiologique`, puis DROP TABLE et DROP FUNCTION des deux
--- fonctions ci-dessus.
+-- ligne n'existe : déployer d'abord le code sans l'effacement des
+-- annulations et sans le modèle `AnnulationResultatBiologique`, puis DROP
+-- TABLE et DROP FUNCTION des deux fonctions ci-dessus.

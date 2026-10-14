@@ -1,9 +1,11 @@
 ### Biologie : annuler un résultat saisi par erreur, la migration seule (BP-09, D-291, 2026-10-14)
 
-PR 1 du lot BP-09 (fiche LOT-09) : migration seule, aucun code applicatif.
-Rien n'écrit ni ne lit encore la table ; le code consommateur (lecteurs de
-calcul, route, fiche praticien, effacement nommé) viendra dans la PR 2, après
-la release-db approuvée et constatée par conteneur.
+PR 1 du lot BP-09 (fiche LOT-09) : migration seule. Rien n'écrit ni ne lit
+encore la table ; le seul code qui l'accompagne est l'effacement nommé du
+dossier (les annulations avant les résultats), exigé par le banc de
+complétude de l'effacement, comme pour `lectures_imports_biologiques`. Le code
+consommateur (lecteurs de calcul, route, fiche praticien) viendra dans la
+PR 2, après la release-db approuvée et constatée par conteneur.
 
 - **Table neuve `annulations_resultats_biologiques`** (migration
   `20261014200000_annulations_resultats_biologiques_v1`), en ajout seul : deux

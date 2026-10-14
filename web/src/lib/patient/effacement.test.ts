@@ -43,7 +43,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'correspondanceMedecin', 'correspondancePatient', 'documentPatientBiologie',
     'lectureImportBiologique', 'travailExtractionBiologique',
     'ligneBiologiqueCandidate', 'importBiologique', 'masquageCompteRendu', 'compteRenduBiologique',
-    'resultatBiologique',
+    'annulationResultatBiologique', 'resultatBiologique',
     'rendezVous', 'journalAccesDossier',
     'agendaSommeilNuit', 'agendaAlimentaireJour',
     'objectifNegocie', 'entreeCeQuiCompte', 'syntheseComprehension',
@@ -215,6 +215,16 @@ describe('effacerDossier', () => {
     const rang = (nom: string) => appels.indexOf(nom);
     expect(rang('lectureImportBiologique')).toBeGreaterThanOrEqual(0);
     expect(rang('lectureImportBiologique')).toBeLessThan(rang('importBiologique'));
+  });
+
+  // Annulations de résultats (D-291, BP-09) : FK RESTRICT vers le résultat.
+  // Une ligne déplacée après lui rendrait l'effacement impossible pour tout
+  // dossier qui porte une annulation.
+  it('supprime les annulations de résultats avant les résultats', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('annulationResultatBiologique')).toBeGreaterThanOrEqual(0);
+    expect(rang('annulationResultatBiologique')).toBeLessThan(rang('resultatBiologique'));
   });
 
   // File durable des lectures (D-282) : FK RESTRICT vers l'import courant et
