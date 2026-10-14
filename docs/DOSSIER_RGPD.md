@@ -1140,7 +1140,53 @@ trou de la rubrique 3.
 les cas prévus (RGPD art. 12.3). Identité : une demande faite depuis le portail
 est réputée identifiée par la session ; une demande par e-mail est renvoyée au
 portail ; aucune pièce d'identité n'est collectée. Circuit : le responsable
-reçoit, trace et répond. Reste à écrire la procédure, sans autre arbitrage.
+reçoit, trace et répond. La procédure, à écrire sans autre arbitrage, l'est
+ci-dessous (2026-10-14).
+
+**Procédure (écrite le 2026-10-14, G-8 ; [[D-283]] §6, §10 f).**
+
+1. **Réception.** Au portail, la demande est enregistrée en
+   `TrustRightsRequest`, statut `recu`, datée (`soumis_le`). Une carte du Fil
+   du jour la signale tant qu'elle est `recu` ou `en_cours`. Par e-mail : la
+   demande est datée à sa réception, et le courriel reçu est gardé. La
+   réponse, dans le délai, invite la personne à la confirmer depuis le
+   portail (carte « Signaler un problème », choix « Je souhaite exercer un
+   droit ») : cette confirmation vaut vérification d'identité (RGPD
+   art. 12.6), sans pièce d'identité. Le cas d'une personne qui n'a plus accès
+   au portail reste à trancher (plan unique, §8).
+2. **Délai.** Un mois à compter de la réception, quel que soit le canal (RGPD
+   art. 12.3). Prolongeable de deux mois si la demande est complexe ou si les
+   demandes sont nombreuses : le patient en est informé dans le premier mois,
+   avec le motif.
+3. **Identité.** Une demande faite au portail est réputée identifiée par la
+   session. Aucune pièce d'identité n'est demandée ni conservée.
+4. **Instruction.** Le statut passe à `en_cours`. Selon le type :
+   - accès et portabilité : l'export du dossier
+     (`api/praticien/export-dossier`), remis au patient ;
+   - rectification : la correction dans le dossier ;
+   - effacement : l'effacement du dossier, tout ou rien
+     (`lib/patient/effacement.ts`), qui efface aussi la demande ; rien n'est
+     retenu au titre de l'archive intermédiaire tant que son point de départ
+     n'est pas validé ([[D-283]] §2) ;
+   - retrait d'une autorisation : le retrait dans « Mes choix et
+     autorisations », s'il n'a pas été fait par le patient lui-même ;
+   - limitation, opposition, information : une réponse écrite, motivée au
+     regard du cadre du traitement concerné.
+5. **Réponse.** Par e-mail, depuis l'adresse du responsable, dans le délai :
+   le portail ne sert pas encore la réponse. Le statut passe à `traite` une
+   fois la réponse envoyée, avec son texte (`reponse`) ; `examine_le` date
+   l'examen, et la preuve de l'envoi est le courriel envoyé, gardé dans la
+   boîte du responsable ; la durée de conservation de ces courriels n'est pas
+   fixée (plan unique, §8). Puis `clos` quand plus rien n'est attendu. Aucune
+   demande n'est supprimée, sauf par l'effacement du dossier. Le code
+   n'empêche pas aujourd'hui de passer à `traite` sans réponse (plan unique,
+   §8).
+6. **Refus ou réponse partielle.** Motivés par écrit. La réponse indique la
+   possibilité d'introduire une réclamation auprès de la CNIL et de former un
+   recours juridictionnel (RGPD art. 12.4).
+7. **Mineurs.** Le circuit adapté reste à écrire ([[D-283]] §5 ; arbitrage 5
+   de G-11 : les titulaires de l'autorité parentale exercent les droits sur
+   les données de l'enfant).
 
 *Antérieurement :* le **délai de réponse** annoncé, la **procédure de
 vérification d'identité** du demandeur, et le **circuit interne de traitement**
@@ -1431,7 +1477,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 7 | Transferts | **2026-10-13 ([[D-284]] §5-6) : CCT pour Anthropic, cadre UE–États-Unis pour Google et Sentry s'il les couvre ; restent les preuves à archiver et les TIA.** Mécanisme invoqué (CCT/DPA) | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 7 |
 | 7 | Transferts | ~~**Demande de DPA à Anthropic non envoyée**~~ — **envoyée le 2026-10-01 à 17:34 UTC (19:34 heure de Paris)** (date établie par capture du message envoyé). La condition de pose du drapeau du LOT-02 est tenue. ~~**Restent dus : la réponse, puis la signature et l'archivage du DPA**~~ — **réponse reçue le 2026-10-02 à 22:23 UTC** : DPA et CCT intégrés aux Conditions commerciales, aucune signature distincte. **Restent dus** : l'archivage d'une copie datée, la date d'opposabilité, la couverture des traitements antérieurs | Responsable | 2027-06-30 (était 2026-10-21, DPA) | `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md` (tableau « Trace à tenir »), puis rubriques 6 et 7 |
 | 8 | Conservation | **2026-10-13 ([[D-283]] §2) : durées fixées (active jusqu'à clôture ou 5 ans sans contact, archive 10 ans) ; restent le texte patient signé et la mise en œuvre (§10).** Durées des données de santé — hors le document des comptes rendus biologiques déposés, fixé par [[D-258]] | Responsable + conseil | 2027-06-30 (était 2026-10-21) | ici, rubrique 8 puis `gouvernance.ts` |
-| 9 | Droits | **Tranché le 2026-10-13 ([[D-283]] §6) ; reste la procédure écrite, sans arbitrage.** *Historique — constat d'origine :* Délai, vérification d'identité, circuit interne | Responsable | fermé | ici, rubrique 9 |
+| 9 | Droits | **Tranché le 2026-10-13 ([[D-283]] §6) ; procédure écrite le 2026-10-14 (G-8) ; reste le circuit des mineurs.** *Historique — constat d'origine :* Délai, vérification d'identité, circuit interne | Responsable | fermé | ici, rubrique 9 |
 | 10 | Sécurité | **Clos le 2026-10-13 ([[D-283]] §7) : la revue du 2026-08-22 suffit ; test d'intrusion humain obligatoire avant toute offre commerciale ou second compte praticien.** *Historique — constat d'origine :* Pentest / revue externe | Prestataire à engager | fermé | checklist du gate, exigence 7 |
 | 10 | Sécurité | **Clos par constat : ouvert hors dépôt le 2026-08-22 (D-085 §3).** *Historique — constat d'origine :* Registre physique des violations (EX-3) | Responsable | fermé | `PROCEDURE_VIOLATION_DONNEES.md` |
 | 10 | Sécurité | **Clos par constat : produite le 2026-08-22 (D-085 §2).** *Historique — constat d'origine :* Preuve fonctionnelle de la piste d'audit | Responsable | fermé | checklist du gate, item 4 |
