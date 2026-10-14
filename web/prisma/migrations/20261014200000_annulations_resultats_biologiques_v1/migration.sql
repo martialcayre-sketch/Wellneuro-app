@@ -120,8 +120,17 @@
 --     autre racine vivante sur la même clé ferait, une fois le fil revenu,
 --     deux mesures courantes pour un même analyte à une même date.
 --
--- La correction d'un fil annulé est refusée par la route (PR 2) : la base n'en
--- a pas besoin, le fil restant annulé quelle que soit sa tête.
+-- Et, sur `resultats_biologiques` :
+--
+--  6. UNE CORRECTION NE S'AJOUTE PAS À UN FIL ANNULÉ (relecture CodeRabbit du
+--     lot) : trigger BEFORE INSERT `resultats_biologiques_correction_avant_insertion`,
+--     sur les seules lignes à `supersedes_resultat_id` non nul. Il prend les
+--     mêmes verrous que la saisie et l'acte — le dossier, puis la clé de la
+--     cible — et refuse si le fil de la cible porte une annulation active.
+--     Sans lui, une annulation et une correction concurrentes laissaient un
+--     fil annulé avec une correction dessous, retirée des calculs sans que
+--     personne l'ait voulu : la route (PR 2) vérifie aussi, mais avant
+--     d'écrire, sans verrou.
 --
 -- ── FIGÉE, MAIS EFFAÇABLE ──────────────────────────────────────────────────
 --
@@ -365,6 +374,46 @@ CREATE TRIGGER resultats_biologiques_unicite_mesure
   WHEN (NEW.supersedes_resultat_id IS NULL)
   EXECUTE FUNCTION public.resultats_biologiques_unicite_mesure();
 
+-- Promesse 6 : une correction ne s'ajoute pas à un fil annulé. La clé verrouillée
+-- est celle de la CIBLE, où vit le fil et où l'acte prend son verrou : une
+-- annulation et une correction concurrentes se sérialisent, et la seconde voit
+-- la première. Une cible absente ou d'un autre dossier passe ici sans refus :
+-- la clé étrangère et la route la refusent, le trigger ne double pas leur
+-- garde.
+CREATE OR REPLACE FUNCTION public.resultats_biologiques_correction_avant_insertion()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  cible_analyte text;
+  cible_preleve timestamp(3);
+BEGIN
+  SELECT r.analyte_code, r.preleve_le INTO cible_analyte, cible_preleve
+  FROM public.resultats_biologiques r
+  WHERE r.id = NEW.supersedes_resultat_id AND r.id_patient = NEW.id_patient;
+  IF cible_analyte IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  PERFORM public.resultats_biologiques_verrouiller_cle(NEW.id_patient, cible_analyte, cible_preleve);
+
+  IF public.resultats_biologiques_racine_annulee(
+       public.resultats_biologiques_racine(NEW.supersedes_resultat_id),
+       NEW.id_patient, cible_analyte, cible_preleve
+     ) THEN
+    RAISE EXCEPTION 'correction refusée : le fil de % porte une annulation active.', NEW.supersedes_resultat_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER resultats_biologiques_correction_avant_insertion
+  BEFORE INSERT ON public.resultats_biologiques
+  FOR EACH ROW
+  WHEN (NEW.supersedes_resultat_id IS NOT NULL)
+  EXECUTE FUNCTION public.resultats_biologiques_correction_avant_insertion();
+
 -- DropIndex — la garde quitte l'index pour le trigger ci-dessus. Pas
 -- d'`IF EXISTS` : si l'état divergeait, la migration doit échouer bruyamment.
 -- La lecture de la clé reste servie par `cb_resultat_bio_serie_idx`, sur les
@@ -477,6 +526,7 @@ REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_verrouiller_cle(text, te
 REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_racine(text) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_racine_annulee(text, text, text, timestamp) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_unicite_mesure() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_correction_avant_insertion() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.annulations_resultats_biologiques_figee() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.annulations_resultats_biologiques_avant_insertion() FROM PUBLIC;
 
@@ -490,6 +540,7 @@ BEGIN
       EXECUTE format('REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_racine(text) FROM %I', role_nom);
       EXECUTE format('REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_racine_annulee(text, text, text, timestamp) FROM %I', role_nom);
       EXECUTE format('REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_unicite_mesure() FROM %I', role_nom);
+      EXECUTE format('REVOKE EXECUTE ON FUNCTION public.resultats_biologiques_correction_avant_insertion() FROM %I', role_nom);
       EXECUTE format('REVOKE EXECUTE ON FUNCTION public.annulations_resultats_biologiques_figee() FROM %I', role_nom);
       EXECUTE format('REVOKE EXECUTE ON FUNCTION public.annulations_resultats_biologiques_avant_insertion() FROM %I', role_nom);
     END IF;
@@ -504,9 +555,10 @@ ALTER TABLE "public"."annulations_resultats_biologiques" ENABLE ROW LEVEL SECURI
 -- que les migrations échouées (précédent BIO-INGEST, P3012). Tant qu'aucune
 -- annulation n'existe : recréer l'index unique partiel
 -- `cb_resultat_bio_patient_analyte_idx` (forme de 20260905074500) AVANT de
--- retirer le trigger `resultats_biologiques_unicite_mesure`, dans la même
+-- retirer les triggers `resultats_biologiques_unicite_mesure` et
+-- `resultats_biologiques_correction_avant_insertion`, dans la même
 -- transaction ; déployer d'abord le code sans l'effacement des annulations et
 -- sans le modèle `AnnulationResultatBiologique` ; puis DROP TABLE et DROP
--- FUNCTION des six fonctions ci-dessus. Après une annulation suivie d'une
+-- FUNCTION des sept fonctions ci-dessus. Après une annulation suivie d'une
 -- saisie neuve sur la même clé, l'index ne se recrée plus : le retour arrière
 -- devient une décision.

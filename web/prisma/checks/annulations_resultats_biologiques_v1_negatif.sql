@@ -2,7 +2,7 @@
 -- BP-09).
 --
 -- La table et la garde anti-doublon qu'elle amende promettent VINGT
--- choses, et ce fichier les éprouve TOUTES :
+-- ET UNE choses, et ce fichier les éprouve TOUTES :
 --   1. une annulation valide s'écrit et se relit ;
 --   2. l'instant et l'`ordre` sont posés par la BASE, pas par l'appelant —
 --      l'instant en UTC, même sous une session en Europe/Paris ; une date
@@ -33,13 +33,14 @@
 --      ACTION sur la clé interne), les CHECK, l'index unique partiel et les
 --      index ordinaires sont présents, comme les deux verrous (dossier puis
 --      clé), le trigger de garde AFTER à prédicat, la disparition de l'index
---      unique remplacé, et le `search_path` épinglé des six fonctions
+--      unique remplacé, le trigger BEFORE des corrections, et le
+--      `search_path` épinglé des sept fonctions
 --      (présence relue : la concurrence s'éprouve au banc à deux sessions) ;
 --  14. la table porte EXACTEMENT ses dix colonnes (liste blanche) : aucune
 --      valeur, aucun analyte, aucune date recopiée, aucun texte libre — toute
 --      colonne neuve s'arbitre ;
 --  15. la RLS deny-all est active et sans policy (posture `D-005`), et aucune
---      des six fonctions n'est exécutable par PUBLIC ;
+--      des sept fonctions n'est exécutable par PUBLIC ;
 --  16. LA PLACE SE LIBÈRE : une saisie neuve sur la clé d'une mesure courante
 --      est refusée en violation d'unicité — SQLSTATE 23505, contrainte
 --      `cb_resultat_bio_patient_analyte_idx`, détail `Key (…)` que
@@ -53,7 +54,9 @@
 --      et un UPDATE qui pose une ligne sur une clé occupée aussi ;
 --  20. la racine suit `filCorrection.ts` : deux orphelines visant la même
 --      ligne absente forment un seul fil, et un cycle rend le plus petit
---      identifiant du cycle, sans échec.
+--      identifiant du cycle, sans échec ;
+--  21. une correction ne s'ajoute pas à un fil annulé (relecture CodeRabbit) ;
+--      celle d'un fil dont l'annulation est révoquée passe.
 --
 -- CHAQUE REFUS EST ISOLÉ : le cas refusé passerait si l'on retirait la seule
 -- règle qu'il éprouve. Chaque refus du trigger est reconnu à son MESSAGE, pas
@@ -369,6 +372,24 @@ BEGIN
     RAISE EXCEPTION 'CONTRAT — 20 : la racine d''une chaîne qui boucle n''est pas le plus petit identifiant du cycle.';
   END IF;
 
+  -- ── 21. Pas de correction sous un fil annulé ─────────────────────────────
+  -- `res_a6_bis` porte `ann_a6_bis`, active : une correction ne passe pas la
+  -- garde d'unicité (elle n'est pas une saisie neuve), seule la promesse 6 de
+  -- la migration la refuse.
+  PERFORM pg_temp.refuse('21 correction d''un fil annulé',
+    $q$INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id)
+       VALUES ('x21', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 4, 'mg/L', TIMESTAMP '2026-09-06 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'res_a6_bis')$q$,
+    'P0001', 'porte une annulation active');
+  -- Le fil se juge à sa RACINE : `res_a2_corr`, tête annulée (`ann_a2`), n'est
+  -- pas la racine de son fil (`res_a2`).
+  PERFORM pg_temp.refuse('21 correction d''une tête annulée qui n''est pas la racine',
+    $q$INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id)
+       VALUES ('x21b', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 4, 'mg/L', TIMESTAMP '2026-09-02 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'res_a2_corr')$q$,
+    'P0001', 'porte une annulation active');
+  -- `res_a1` : ses deux annulations sont révoquées, sa correction passe.
+  INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id)
+  VALUES ('res_a1_corr', 'PAT_CONTRAT_ANN_A', 'BIO_CONTRAT_ANN', 2, 'mg/L', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'res_a1');
+
   -- ── 12. L'effacement nommé ───────────────────────────────────────────────
   PERFORM pg_temp.refuse('12 résultat effacé avant ses annulations',
     $q$DELETE FROM resultats_biologiques WHERE id = 'res_a1'$q$,
@@ -412,7 +433,7 @@ BEGIN
     RAISE EXCEPTION 'CONTRAT — 13 : % clause(s) de garde résiduelle sur 2 sont présentes.', nb;
   END IF;
   -- Les deux verrous, dans l'ordre (dossier, puis clé), et leur emploi par
-  -- les deux triggers ; le `search_path` épinglé des six fonctions. Une
+  -- les trois triggers ; le `search_path` épinglé des sept fonctions. Une
   -- session seule n'éprouve pas la concurrence (c'est le banc à deux
   -- sessions) : elle relit au moins leur présence.
   IF pg_get_functiondef('public.resultats_biologiques_verrouiller_cle(text, text, timestamp)'::regprocedure)
@@ -428,21 +449,23 @@ BEGIN
   END IF;
   SELECT count(*) INTO nb FROM pg_proc p
   WHERE p.oid IN ('public.annulations_resultats_biologiques_avant_insertion()'::regprocedure,
-                  'public.resultats_biologiques_unicite_mesure()'::regprocedure)
+                  'public.resultats_biologiques_unicite_mesure()'::regprocedure,
+                  'public.resultats_biologiques_correction_avant_insertion()'::regprocedure)
     AND position('resultats_biologiques_verrouiller_cle' IN pg_get_functiondef(p.oid)) > 0;
-  IF nb <> 2 THEN
-    RAISE EXCEPTION 'CONTRAT — 13 : % trigger(s) sur 2 prennent les verrous de clé.', nb;
+  IF nb <> 3 THEN
+    RAISE EXCEPTION 'CONTRAT — 13 : % trigger(s) sur 3 prennent les verrous de clé.', nb;
   END IF;
   SELECT count(*) INTO nb FROM pg_proc p
   WHERE p.oid IN ('public.annulations_resultats_biologiques_avant_insertion()'::regprocedure,
                   'public.annulations_resultats_biologiques_figee()'::regprocedure,
                   'public.resultats_biologiques_unicite_mesure()'::regprocedure,
+                  'public.resultats_biologiques_correction_avant_insertion()'::regprocedure,
                   'public.resultats_biologiques_verrouiller_cle(text, text, timestamp)'::regprocedure,
                   'public.resultats_biologiques_racine(text)'::regprocedure,
                   'public.resultats_biologiques_racine_annulee(text, text, text, timestamp)'::regprocedure)
     AND p.proconfig @> ARRAY['search_path=public, pg_temp'];
-  IF nb <> 6 THEN
-    RAISE EXCEPTION 'CONTRAT — 13 : % fonction(s) sur 6 ont le search_path épinglé.', nb;
+  IF nb <> 7 THEN
+    RAISE EXCEPTION 'CONTRAT — 13 : % fonction(s) sur 7 ont le search_path épinglé.', nb;
   END IF;
   -- La garde anti-doublon : un trigger AFTER INSERT OR UPDATE, par ligne, à
   -- prédicat (les saisies neuves seules), actif ; et plus d'index unique
@@ -458,6 +481,19 @@ BEGIN
     AND t.tgqual IS NOT NULL;
   IF nb <> 1 THEN
     RAISE EXCEPTION 'CONTRAT — 13 : la garde anti-doublon n''est plus un trigger AFTER INSERT OR UPDATE à prédicat actif.';
+  END IF;
+  -- La garde des corrections : un trigger BEFORE INSERT, par ligne, à
+  -- prédicat (les corrections seules), actif.
+  SELECT count(*) INTO nb FROM pg_trigger t
+  WHERE t.tgrelid = 'public.resultats_biologiques'::regclass
+    AND t.tgname = 'resultats_biologiques_correction_avant_insertion'
+    AND t.tgenabled = 'O'
+    AND (t.tgtype & 1) = 1          -- ROW
+    AND (t.tgtype & 2) = 2          -- BEFORE
+    AND (t.tgtype & 4) = 4          -- INSERT
+    AND t.tgqual IS NOT NULL;
+  IF nb <> 1 THEN
+    RAISE EXCEPTION 'CONTRAT — 13 : la garde des corrections n''est plus un trigger BEFORE INSERT à prédicat actif.';
   END IF;
   SELECT count(*) INTO nb FROM pg_index i
   WHERE i.indrelid = 'public.resultats_biologiques'::regclass
@@ -502,13 +538,14 @@ BEGIN
   SELECT count(*) INTO nb FROM pg_proc p
   WHERE p.proname IN ('annulations_resultats_biologiques_figee', 'annulations_resultats_biologiques_avant_insertion',
                       'resultats_biologiques_unicite_mesure', 'resultats_biologiques_verrouiller_cle',
-                      'resultats_biologiques_racine', 'resultats_biologiques_racine_annulee')
+                      'resultats_biologiques_racine', 'resultats_biologiques_racine_annulee',
+                      'resultats_biologiques_correction_avant_insertion')
     AND has_function_privilege('public', p.oid, 'EXECUTE');
   IF nb <> 0 THEN
     RAISE EXCEPTION 'CONTRAT — 15 : % fonction(s) exécutable(s) par PUBLIC.', nb;
   END IF;
 
-  RAISE NOTICE 'Contrat annulations_resultats_biologiques_v1 : vingt promesses tenues.';
+  RAISE NOTICE 'Contrat annulations_resultats_biologiques_v1 : vingt et une promesses tenues.';
 END;
 $$;
 

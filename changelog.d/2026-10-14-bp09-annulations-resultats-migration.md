@@ -28,10 +28,13 @@ PR 2, après la release-db approuvée et constatée par conteneur.
   dossier `FOR KEY SHARE`, puis un verrou consultatif sur la clé — sont pris
   dans le même ordre que l'effacement : pas d'interblocage avec lui. Aucune colonne
   neuve sur `resultats_biologiques`.
-- **Contrats** : `annulations_resultats_biologiques_v1_negatif.sql` (vingt
-  promesses), branché au CI ; `cb_resultats_biologiques_v1_negatif.sql`
+- **Une correction ne s'ajoute pas à un fil annulé**, refus en base
+  (relecture CodeRabbit) : trigger avant insertion des corrections, mêmes
+  verrous que la saisie et l'acte.
+- **Contrats** : `annulations_resultats_biologiques_v1_negatif.sql` (vingt et
+  une promesses), branché au CI ; `cb_resultats_biologiques_v1_negatif.sql`
   amendé (la garde est le trigger, aucun index unique hors clé primaire).
-  Treize mutations des fonctions font échouer le contrat.
+  Seize mutations des fonctions font échouer le contrat.
 - **REPEATABLE READ refusé en base** (passe Codex, P0-1) : sous ce niveau,
   l'instantané laisserait passer deux mesures courantes, là où l'index ne
   dépendait d'aucun réglage. READ COMMITTED rend le 23505, SERIALIZABLE un
@@ -39,7 +42,8 @@ PR 2, après la release-db approuvée et constatée par conteneur.
 - **Banc à deux sessions** `banc-annulations-resultats-deux-sessions.test.mjs`
   (CI et T3) : deux saisies neuves concurrentes, REPEATABLE READ refusé, la
   même course en SERIALIZABLE (une seule mesure), deux annulations
-  concurrentes, saisie contre révocation, effacement contre annulation.
+  concurrentes, saisie contre révocation, effacement contre annulation,
+  annulation contre correction dans les deux ordres.
 - **Banc du client Prisma** `banc-unicite-mesure-prisma.test.ts` (CI et T3) :
   le vrai client de l'application rend le doublon en `P2002`, reprend la
   place annulée, échoue en REPEATABLE READ.

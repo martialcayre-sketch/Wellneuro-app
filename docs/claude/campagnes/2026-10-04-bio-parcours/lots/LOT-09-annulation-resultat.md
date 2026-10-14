@@ -133,7 +133,8 @@ BP-11. Toute qualification de valeur.
 - Lecteurs : un fil annulé sort de la tête, des derniers résultats et des
   portes ; révoqué, il revient.
 - Route : seul le praticien du dossier annule ; correction d'un annulé
-  refusée.
+  refusée (la base la refuse déjà depuis la PR 1 ; la route en donne le
+  message).
 - Palier T3 (migration).
 
 ## Critères de done

@@ -32,7 +32,10 @@
 //      n'est pris avant le dossier ; elle passerait aussi sans le
 //      `FOR KEY SHARE` explicite, que la clé étrangère des annulations vers
 //      le dossier prend d'elle-même — sa présence est tenue par le contrat
-//      (cas 13). L'effacement qui COMMET n'est pas joué.
+//      (cas 13). L'effacement qui COMMET n'est pas joué ;
+//   7. UNE ANNULATION CONTRE UNE CORRECTION du même fil (relecture CodeRabbit
+//      du lot), dans les deux ordres : la seconde attend la première, puis est
+//      refusée — jamais un fil annulé avec une correction dessous.
 // Chaque course constate d'abord que la seconde session est BLOQUÉE sur un
 // verrou (`pg_stat_activity`) : sans ce constat, une course « gagnée » ne
 // prouverait rien — elle aurait pu se jouer en série.
@@ -96,6 +99,12 @@ const annulation = (nom, resultat) => ({
   values: [id(nom), PATIENT, id(resultat), PRATICIEN],
 });
 
+const correction = (nom, cible, jour) => ({
+  text: `INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id)
+         VALUES ($1, $2, $3, 2, 'mg/L', $4::timestamp, 'saisie_praticien', $5, $6)`,
+  values: [id(nom), PATIENT, ANALYTE, date(jour), PRATICIEN, id(cible)],
+});
+
 const revocation = (nom, resultat, annulee) => ({
   text: `INSERT INTO annulations_resultats_biologiques (id, id_patient, id_resultat, acte, id_annulation_revoquee, motif_revocation, praticien_email)
          VALUES ($1, $2, $3, 'revocation', $4, 'resultat_verifie_exact', $5)`,
@@ -145,6 +154,8 @@ before(async () => {
     await observateur.query(saisie('res_course3', 3));
     await observateur.query(saisie('res_course4', 4));
     await observateur.query(saisie('res_course5', 5));
+    await observateur.query(saisie('res_course7a', 7));
+    await observateur.query(saisie('res_course7b', 8));
     // Course 4 : la place est libérée avant la course.
     await observateur.query(annulation('ann_course4', 'res_course4'));
     await observateur.query('COMMIT');
@@ -240,6 +251,42 @@ describe('Annulations de résultats et garde anti-doublon — deux sessions (D-2
       assert.ok(refus, 'en SERIALIZABLE, les deux saisies ont été commises.');
       assert.ok(['40001', '23505'].includes(refus.code), `refus inattendu : ${refus.code} ${refus.message}`);
       assert.equal(await courantesALaDate(observateur, 6), 1);
+    } finally {
+      await a.client.end();
+      await b.client.end();
+    }
+  });
+
+  it('7a. une annulation puis une correction concurrente du même fil : la correction attend, puis est refusée', async () => {
+    const a = await session();
+    const b = await session();
+    try {
+      await a.client.query('BEGIN');
+      await a.client.query(annulation('ann_course7a', 'res_course7a'));
+      const enVol = b.client.query(correction('cor_course7a', 'res_course7a', 7)).then(() => null, err => err);
+      await attendreBloquee(observateur, b.pid);
+      await a.client.query('COMMIT');
+      const refus = await enVol;
+      assert.ok(refus, 'la correction est passée sous un fil annulé.');
+      assert.match(refus.message, /correction refusée : le fil de .* porte une annulation active/);
+    } finally {
+      await a.client.end();
+      await b.client.end();
+    }
+  });
+
+  it('7b. une correction puis une annulation concurrente de la même tête : l’annulation attend, puis est refusée', async () => {
+    const a = await session();
+    const b = await session();
+    try {
+      await a.client.query('BEGIN');
+      await a.client.query(correction('cor_course7b', 'res_course7b', 8));
+      const enVol = b.client.query(annulation('ann_course7b', 'res_course7b')).then(() => null, err => err);
+      await attendreBloquee(observateur, b.pid);
+      await a.client.query('COMMIT');
+      const refus = await enVol;
+      assert.ok(refus, 'l’annulation d’une ligne que la correction concurrente supplante est passée.');
+      assert.match(refus.message, /seule la tête du fil s'annule/);
     } finally {
       await a.client.end();
       await b.client.end();

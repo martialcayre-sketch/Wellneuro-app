@@ -51,7 +51,12 @@ descendent de la même **racine de chaîne** (la définition de
 `filCorrection.ts`). **Un fil est annulé dès qu'une de ses lignes porte une
 annulation non révoquée**, quelle que soit la ligne visée : une correction
 concurrente ne le ressuscite pas. Au plus une annulation active par fil
-(refus en base). La correction d'un résultat annulé est refusée par la route.
+(refus en base). **La correction d'un résultat annulé est refusée en base**
+(relecture CodeRabbit du lot) : un trigger avant chaque correction prend les
+verrous de la saisie et de l'acte — le dossier, puis la clé de la cible — et
+refuse si le fil porte une annulation active. Une annulation et une correction
+concurrentes se sérialisent : jamais un fil annulé avec une correction
+dessous. La route le vérifie aussi, pour son message.
 
 **La place se libère** (arbitrage du 2026-10-14) : un fil annulé ne retient
 plus sa clé (dossier, analyte, date de prélèvement), et une mesure neuve
