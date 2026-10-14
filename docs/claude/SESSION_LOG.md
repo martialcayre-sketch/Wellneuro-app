@@ -10181,13 +10181,6 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Où vivent les fiches de lots de la file A : aucune campagne ne les porte, le plan fait fiche (à confirmer au cadrage du rang 0).
 
-## 2026-10-14 — Minute d'après : le document se calcule même sans protocole (suite de S-4)
-
-**Fait.** Geste à part décidé le 2026-10-14 (commentaire Copilot sur #1424, écarté puis tranché « ouvrir ») : `construireCloture` calcule l'étape « Document validé praticien » sur la synthèse même sans protocole enregistré ; relecture et approbation restent « Sans objet », un seul blocage (le protocole), chaîne jamais prête. Le lien « Composer le document » de la minute d'après suit donc la synthèse seule. Bancs : module (deux cas) et panneau (un cas) ; 31 verts. Fragment. T1 complet, T2. Le plan fait fiche (séance du 2026-10-14) ; pas de D-xxx : règle d'écran, aucune règle clinique.
-
-**Écarté.** Afficher le document « à faire » comme un blocage de plus (le blocage reste la cause réelle, le protocole) ; toucher à la fiche.
-
-**Prochaine action.** CI, commentaires lus, merge après #1427 (H03) et déploiement constaté ; puis S-3 (a, b, g), de la main du responsable.
 ## 2026-10-14 — H03 : « Wellneuro » au menu du cockpit (R:Graphie)
 
 **Fait.** Fiche H03 du plan (rang 0, file A, le plan fait fiche) : une ligne du rail, « WellNeuro » devient « Wellneuro » ; aucun banc ni E2E n'épinglait l'ancienne graphie ; les commentaires qui nomment la maquette « WellNeuro 5.0 » restent. Fragment. Bancs du rail verts, T1 complet, T2.
@@ -10197,3 +10190,11 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI (comparaison au pixel sur Linux : régénérer les bases par `visual-baselines` si elle rougit), commentaires lus, merge après #1425 et déploiement constaté ; puis le geste « synthèse validée sans protocole » dans la minute d'après, puis S-3.
 
 **Ouvert.** Rien.
+
+## 2026-10-14 — Minute d'après : le document se calcule même sans protocole (suite de S-4)
+
+**Fait.** Geste à part décidé le 2026-10-14 (commentaire Copilot sur #1424, écarté puis tranché « ouvrir ») : `construireCloture` calcule l'étape « Document validé praticien » sur la synthèse même sans protocole enregistré ; relecture et approbation restent « Sans objet », un seul blocage (le protocole), chaîne jamais prête. Le lien « Composer le document » de la minute d'après suit donc la synthèse seule. Bancs : module (deux cas) et panneau (un cas) ; 31 verts. Fragment. T1 complet, T2. Le plan fait fiche (séance du 2026-10-14) ; pas de D-xxx : règle d'écran, aucune règle clinique.
+
+**Écarté.** Afficher le document « à faire » comme un blocage de plus (le blocage reste la cause réelle, le protocole) ; toucher à la fiche.
+
+**Prochaine action.** CI, commentaires lus, merge après #1427 (H03) et déploiement constaté ; puis S-3 (a, b, g), de la main du responsable.
