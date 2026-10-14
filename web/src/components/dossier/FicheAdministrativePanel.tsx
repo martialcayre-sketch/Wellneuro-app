@@ -40,7 +40,6 @@ type Formulaire = {
   email: string;
   telephone: string;
   adresse: string;
-  nir: string;
   medecinTraitantNom: string;
   medecinTraitantCoordonnees: string;
 };
@@ -75,17 +74,6 @@ const GROUPES: { titre: string; note?: string; champs: Champ[] }[] = [
     ],
   },
   {
-    titre: 'Sécurité sociale',
-    champs: [
-      {
-        cle: 'nir',
-        libelle: 'Numéro de sécurité sociale',
-        max: 21,
-        aide: 'Recopiable tel qu’il est imprimé, espaces compris. La clé de contrôle est vérifiée : un numéro mal recopié est refusé plutôt qu’enregistré.',
-      },
-    ],
-  },
-  {
     titre: 'Médecin traitant',
     // LA PHRASE QUI ÉVITE UNE CONFUSION GRAVE, et c'est la même que celle
     // servie au patient dans « Vos données personnelles » : noter un médecin
@@ -109,7 +97,6 @@ function formulaireDepuis(p: PatientDossier): Formulaire {
     email: p.email,
     telephone: p.telephone,
     adresse: p.adresse,
-    nir: p.nir,
     medecinTraitantNom: p.medecinTraitantNom,
     medecinTraitantCoordonnees: p.medecinTraitantCoordonnees,
   };
@@ -144,8 +131,7 @@ export function FicheAdministrativePanel({
       // ON N'ENVOIE QUE CE QUI A CHANGÉ, et ce n'est pas une optimisation. La
       // route lit `undefined` comme « ne touche pas » : envoyer tout le
       // formulaire à chaque fois ferait réécrire les quatre copies de l'e-mail
-      // dès qu'on corrige un téléphone, et ferait repasser le NIR par sa
-      // validation alors qu'il n'a pas bougé.
+      // dès qu'on corrige un téléphone.
       const initial = formulaireDepuis(patient);
       const modifie: Partial<Formulaire> & { idPatient: string } = { idPatient: patient.idPatient };
       for (const cle of Object.keys(form) as (keyof Formulaire)[]) {
@@ -166,7 +152,7 @@ export function FicheAdministrativePanel({
       const json = (await r.json()) as PatchPatientResponse;
       if (!r.ok || !json.success) {
         // LE REFUS QUI FAIT FOI EST CELUI DE LA ROUTE. Le message vient d'elle
-        // — clé de NIR fausse, adresse déjà prise — et non d'une validation
+        // — date illisible, adresse déjà prise — et non d'une validation
         // recopiée ici, qui dériverait de la sienne au premier changement.
         setRetour({ ok: false, msg: erreurLisible(json.reason, json.error) });
         return;

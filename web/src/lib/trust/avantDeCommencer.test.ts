@@ -126,7 +126,7 @@ describe('avantDeCommencer — la liste et les écrans ne divergent pas', () => 
 });
 
 describe('avantDeCommencer — un texte n’exige rien pour des champs qui n’existent pas', () => {
-  it('« Vos données personnelles » ne peut EXIGER un accusé que si le dossier sait tenir les trois renseignements', () => {
+  it('« Vos données personnelles » ne peut EXIGER un accusé que si le dossier sait tenir les renseignements qu’il nomme', () => {
     // CE BANC EXISTE POUR UN CONSTAT DE REVUE DU 2026-09-16, et il vaut mieux
     // qu'une note dans une PR — une note ne bloque personne.
     //
@@ -143,8 +143,11 @@ describe('avantDeCommencer — un texte n’exige rien pour des champs qui n’e
     // renseignements, elle doit trouver les colonnes ET la route qui les écrit.
     const courant = getDocumentCourant('donnees_confidentialite');
     const texte = courant.sections.flatMap(s => s.paragraphes ?? []).join(' ');
+    // Depuis la v16 (D-284 §2), le texte nomme l'adresse et le médecin
+    // traitant, et dit le NIR NON recueilli : il n'engage plus que deux
+    // colonnes et leur écriture.
     const nommeLeDossierAdministratif =
-      texte.includes('adresse postale') && texte.includes('numéro de sécurité sociale');
+      texte.includes('adresse postale') && texte.includes('médecin traitant');
 
     if (!courant.requiresAcknowledgement || !nommeLeDossierAdministratif) return;
 
@@ -154,7 +157,7 @@ describe('avantDeCommencer — un texte n’exige rien pour des champs qui n’e
     const schema = readFileSync(path.resolve(__dirname, '../../../prisma/schema.prisma'), 'utf8');
     const blocPatient = /\nmodel Patient \{([\s\S]*?)\n\}/.exec(schema)?.[1] ?? '';
     expect(blocPatient, 'modèle Patient introuvable dans schema.prisma').not.toBe('');
-    for (const colonne of ['adresse', 'nir', 'medecinTraitantNom', 'medecinTraitantCoordonnees']) {
+    for (const colonne of ['adresse', 'medecinTraitantNom', 'medecinTraitantCoordonnees']) {
       expect(blocPatient, `colonne ${colonne} absente du modèle Patient`).toContain(colonne);
     }
 
@@ -162,8 +165,29 @@ describe('avantDeCommencer — un texte n’exige rien pour des champs qui n’e
       path.resolve(__dirname, '../../app/api/praticien/patients/route.ts'),
       'utf8',
     );
-    for (const champ of ['adresse', 'nir', 'medecinTraitantNom']) {
+    for (const champ of ['adresse', 'medecinTraitantNom']) {
       expect(patch, `le praticien ne peut pas saisir ${champ}`).toContain(champ);
     }
+  });
+
+  it('★ un texte qui dit le NIR non recueilli ne cohabite pas avec un écran qui le recueille (D-284 §2)', () => {
+    // LE BANC INVERSE. Faire accuser « n'est pas recueilli » pendant qu'un
+    // champ le recueille serait le même défaut que celui du banc précédent,
+    // retourné.
+    const texte = getDocumentCourant('donnees_confidentialite')
+      .sections.flatMap(s => s.paragraphes ?? [])
+      .join(' ');
+    if (!texte.includes('Votre numéro de sécurité sociale, lui, n’est pas recueilli.')) return;
+
+    const route = readFileSync(
+      path.resolve(__dirname, '../../app/api/praticien/patients/route.ts'),
+      'utf8',
+    );
+    expect(route).not.toMatch(/'nir'|\bnir\s*[:?]|\.nir\b|verifierNir/);
+    const ecran = readFileSync(
+      path.resolve(__dirname, '../../components/dossier/FicheAdministrativePanel.tsx'),
+      'utf8',
+    );
+    expect(ecran).not.toMatch(/cle: 'nir'|sécurité sociale/i);
   });
 });

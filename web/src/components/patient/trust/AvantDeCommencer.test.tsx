@@ -7,7 +7,8 @@ import { documentsRequerantAccuse } from '@/lib/trust/avantDeCommencer';
 
 // CE BANC EXISTE POUR UN CONSTAT DE REVUE DU 2026-09-16.
 //
-// Le registre asserte que la v8 NOMME l'adresse, le NIR et le médecin traitant.
+// Le registre asserte que la v8 NOMMAIT l'adresse, le NIR et le médecin traitant
+// (la v16 dit le NIR non recueilli, D-284 §2).
 // Rien n'assertait que l'ÉCRAN les montre. Le paragraphe pouvait donc être
 // retiré d'ici sans qu'un seul banc ne rougisse : le patient aurait accusé
 // réception d'un texte dont l'écran ne disait plus ce qui change.
@@ -41,14 +42,16 @@ afterEach(() => {
 });
 
 describe('AvantDeCommencer — l’écran DIT ce qui change', () => {
-  it('★ le troisième écran NOMME les trois renseignements administratifs', () => {
+  it('★ le troisième écran NOMME les renseignements administratifs, et dit le NIR non recueilli', () => {
     render(<AvantDeCommencer token="t" onDone={() => {}} />);
     jusquAuxConfirmations();
 
-    const ecran = screen.getByText(/renseignements administratifs/i).textContent ?? '';
+    const ecran = (screen.getByText(/renseignements administratifs/i).textContent ?? '').replace(/\s+/g, ' ');
     expect(ecran).toContain('adresse postale');
-    expect(ecran).toContain('numéro de sécurité sociale');
     expect(ecran).toContain('médecin traitant');
+    // D-284 §2 : mot pour mot comme `donnees_confidentialite@v16`.
+    expect(ecran).toContain('Votre numéro de sécurité sociale, lui, n’est pas recueilli.');
+    expect(ecran).not.toContain('votre numéro de sécurité sociale, et le');
   });
 
   it('★ dit qu’aucun n’est obligatoire, et que noter un médecin n’est pas lui écrire', () => {

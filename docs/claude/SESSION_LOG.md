@@ -10251,3 +10251,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merge de #1432 ; puis 17 relectures, un claim sans verdict, positions P1 à P8.
 
 **Ouvert.** Sources en quarantaine au registre.
+
+## 2026-10-14 — D-284 lot (g) : NIR retiré de la fiche patient
+
+**Fait.** Index mémoire compacté (23,6 → 14,1 Ko). Constat conteneur : 0 NIR, 15 dossiers actifs sans date de naissance. Champ retiré de la fiche, de la route, de l'export ; module de clé retiré ; « Vos données personnelles » v16 validée par le responsable, accusé exigé. T1 complet vert, revue medium sans défaut.
+
+**Écarté.** v16 sans accusé : elle effaçait l'accusé de la v15, posé par aucun dossier actif.
+
+**Prochaine action.** Merge, constat de l'image, puis lot (h).
+
+**Ouvert.** Migration de retrait de la colonne (rang 4).
