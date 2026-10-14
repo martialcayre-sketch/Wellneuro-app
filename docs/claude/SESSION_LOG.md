@@ -10290,3 +10290,12 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Épreuve sur la PR, verdicts, merge, constat du déploiement.
 
 **Ouvert.** CodeRabbit check obligatoire ? Copilot retiré des extensions recommandées ?
+## 2026-10-14 — D-284 lot (h) clos
+
+**Fait.** #1437 mergé, déployé (90743acf), constaté dans l'image ; parcours essayé au portail par le responsable. Arbitrages : biologie côté praticien ouverte ; lot (i) fondu dans J3-mineurs (rang 10) ; textes G-11 en premier jet de l'assistant.
+
+**Écarté.** Circuit minimal des mineurs tout de suite : migration avant d'autres lots, pour 0 mineur.
+
+**Prochaine action.** Premier jet des textes G-11 (H38), nouvelle session.
+
+**Ouvert.** Aucune date encore enregistrée par le portail au constat (15 dossiers sans date) ; origine de la date non tracée.
