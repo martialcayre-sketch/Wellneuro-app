@@ -73,7 +73,7 @@ LOT-00 (BP-00). Lettre a mergée (`D-287`, porte 2).
 - [x] Brouillons signés dans l'atelier du corpus (2026-10-14, constaté).
 - [x] Sources externes WN-SRC-0508 à 0510 : notices au registre, extraits ciblés ingérés (lot `LOT_016_2026-10-14`) sur approbation de l'envoi (2026-10-14, constaté).
 - [ ] Les 17 claims « à relire » et WN-CL-0031-025 tranchés.
-- [ ] Positions d'expert P1 à P8 rédigées et signées (versionnées en BP-12b).
+- [x] Positions d'expert P1 à P8 rédigées et signées (versionnées en BP-12b) — v0.2 signée le 2026-10-14.
 
 ## Tests
 
@@ -136,8 +136,13 @@ responsable, jamais ici.
   responsable le 2026-10-14. Sa règle reste au dossier privé ; elle demeure
   fermée tant que la position P8 n'est pas signée, et se porte par la
   décision de premier usage prescriptif (BP-17), pas par ce lot.
-- **Positions d'expert** : huit à rédiger (P1 à P8), de la main du
-  responsable.
+- **Positions d'expert** : P1 à P8, v0.2 signée par le responsable le
+  2026-10-14, au dossier privé (texte, seuils et délais hors dépôt). La v0.1,
+  brouillon externe, a été signée comme base de rédaction ; la v0.2 porte ses
+  arbitrages. Elles s'appuient sur les claims signés du corpus, dont la
+  précaution WN-CL-0508-001 (déposée et signée le 2026-10-14) ; WN-CL-0061-011
+  a été remis en attente puis rejeté le même jour par le responsable dans
+  l'atelier. Versionnement en BP-12b.
 - **Contre-revue P0** (`wn-reviewer`, onze affirmations à réfuter) : neuf
   confirmées, deux réfutées et corrigées au dossier (des claims omis ; une
   précaution déclarée absente alors que le corpus la porte). Vérification des
