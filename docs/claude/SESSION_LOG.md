@@ -10190,3 +10190,11 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** CI (comparaison au pixel sur Linux : régénérer les bases par `visual-baselines` si elle rougit), commentaires lus, merge après #1425 et déploiement constaté ; puis le geste « synthèse validée sans protocole » dans la minute d'après, puis S-3.
 
 **Ouvert.** Rien.
+
+## 2026-10-14 — Minute d'après : le document se calcule même sans protocole (suite de S-4)
+
+**Fait.** Geste à part décidé le 2026-10-14 (commentaire Copilot sur #1424, écarté puis tranché « ouvrir ») : `construireCloture` calcule l'étape « Document validé praticien » sur la synthèse même sans protocole enregistré ; relecture et approbation restent « Sans objet », un seul blocage (le protocole), chaîne jamais prête. Le lien « Composer le document » de la minute d'après suit donc la synthèse seule. Bancs : module (deux cas) et panneau (un cas) ; 31 verts. Fragment. T1 complet, T2. Le plan fait fiche (séance du 2026-10-14) ; pas de D-xxx : règle d'écran, aucune règle clinique.
+
+**Écarté.** Afficher le document « à faire » comme un blocage de plus (le blocage reste la cause réelle, le protocole) ; toucher à la fiche.
+
+**Prochaine action.** CI, commentaires lus, merge après #1427 (H03) et déploiement constaté ; puis S-3 (a, b, g), de la main du responsable.

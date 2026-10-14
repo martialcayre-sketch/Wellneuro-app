@@ -180,8 +180,13 @@ export function construireCloture(entrees: EntreesCloture): Cloture {
   const { versionActive, approbationActive, syntheses } = entrees;
 
   if (versionActive === null) {
-    // Sans protocole enregistré, les trois étapes n'ont pas d'objet — les
-    // afficher « à faire » laisserait croire qu'il suffit de cocher.
+    // Sans protocole enregistré, la relecture et l'approbation n'ont pas
+    // d'objet — les afficher « à faire » laisserait croire qu'il suffit de
+    // cocher. Le document, lui, se calcule : il tient à la synthèse validée,
+    // qui existe ou non indépendamment du protocole (arbitrage du
+    // 2026-10-14, après le lot S-4 : une synthèse validée sans protocole est
+    // composable depuis la minute d'après comme depuis la fiche). La chaîne
+    // reste bloquée, et le blocage désigne la cause réelle : le protocole.
     return {
       decision: null,
       etapes: [
@@ -195,11 +200,7 @@ export function construireCloture(entrees: EntreesCloture): Cloture {
           'Validé pour diffusion',
           'Sans protocole enregistré, aucune approbation de diffusion n’a d’objet.',
         ),
-        etapeIndisponible(
-          'document_diffusable',
-          'Document validé praticien',
-          'Sans protocole enregistré, aucun document de clôture n’est composé.',
-        ),
+        composerDocument(syntheses),
       ],
       blocages: ['Enregistrer un protocole pour ce patient avant de clôturer la consultation.'],
       pretPourDiffusion: false,

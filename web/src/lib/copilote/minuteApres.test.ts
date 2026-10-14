@@ -150,12 +150,22 @@ describe('construireCloture — une approbation ancrée ailleurs est caduque, pa
 describe('construireCloture — sans protocole enregistré', () => {
   const cloture = construireCloture(entrees({ versionActive: null }));
 
-  it('les étapes sont indisponibles, jamais « à faire »', () => {
-    expect(cloture.etapes.map((e) => e.statut)).toEqual([
-      'indisponible',
-      'indisponible',
-      'indisponible',
-    ]);
+  it('relecture et approbation sont indisponibles, jamais « à faire »', () => {
+    expect(cloture.etapes.map((e) => e.statut).slice(0, 2)).toEqual(['indisponible', 'indisponible']);
+  });
+
+  it('le document suit la synthèse, pas le protocole : faite si une synthèse est validée', () => {
+    // Sans protocole, une synthèse validée reste composable : l'étape le dit
+    // (et la minute d'après peut mener à la composition) sans que la chaîne
+    // soit prête pour autant.
+    expect(cloture.etapes[2]).toMatchObject({ cle: 'document_diffusable', statut: 'faite' });
+    expect(cloture.pretPourDiffusion).toBe(false);
+  });
+
+  it('le document est « à faire », jamais « indisponible », quand aucune synthèse n’est validée', () => {
+    const sans = construireCloture(entrees({ versionActive: null, syntheses: [] }));
+    expect(sans.etapes[2].statut).toBe('a_faire');
+    expect(sans.blocages).toHaveLength(1);
   });
 
   it('aucune décision n’est inventée', () => {
