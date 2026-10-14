@@ -209,3 +209,68 @@ export function calendriersParCycle(
 export function joursZeroParCycle(parCycle: ReadonlyMap<string, CalendrierSuivi>): Map<string, Date> {
   return new Map([...parCycle].map(([cycleId, calendrier]) => [cycleId, calendrier.jourZero]));
 }
+
+/** Une ouverture de calendrier : la diffusion qui a posé un jour 0. */
+export type OuvertureCalendrier = {
+  cycleId: string;
+  jourZero: Date;
+  prioriteId: string;
+  approbationId: string;
+};
+
+/**
+ * Les jours 0 SUCCESSIFS d'un cycle : la première diffusion, puis chaque pivot.
+ *
+ * Même tri et même règle de pivot que `calendrierDuCycle`, qui n'en garde que
+ * le dernier — un banc vérifie qu'ils ne divergent pas. Sert à dater une
+ * mesure par le calendrier EN VIGUEUR à son prélèvement (BP-03, arbitrage 2) :
+ * un prélèvement antérieur à un pivot se compte depuis la diffusion qui
+ * ouvrait alors le calendrier, pas depuis le pivot.
+ */
+export function ouverturesDuCycle(
+  cycleId: string,
+  diffusions: readonly DiffusionHistorique[],
+): OuvertureCalendrier[] {
+  const ouvertures: OuvertureCalendrier[] = [];
+  let ouvrante: DiffusionHistorique | null = null;
+  for (const diffusion of [...diffusions].sort(chronologique)) {
+    if (ouvrante && diffusion.version.selectedPriorityId === ouvrante.version.selectedPriorityId) continue;
+    ouvrante = diffusion;
+    ouvertures.push({
+      cycleId,
+      jourZero: diffusion.approuveLe,
+      prioriteId: diffusion.version.selectedPriorityId,
+      approbationId: diffusion.approbationId,
+    });
+  }
+  return ouvertures;
+}
+
+/**
+ * Tous les jours 0 d'un dossier, cycles confondus, dans l'ordre chronologique.
+ *
+ * Le rattachement au cycle est celui de `calendriersParCycle`, repris tel
+ * quel (`cycleParDiffusion`) : une diffusion non recevable ou non rattachée ne
+ * date rien ici non plus.
+ */
+export function joursZeroSuccessifs(
+  diffusions: readonly DiffusionHistorique[],
+  ancres: readonly AncreDeRattachement[],
+): OuvertureCalendrier[] {
+  const { cycleParDiffusion } = calendriersParCycle(diffusions, ancres);
+  const groupes = new Map<string, DiffusionHistorique[]>();
+  for (const diffusion of diffusions) {
+    const cycleId = cycleParDiffusion.get(diffusion.approbationId);
+    if (cycleId === undefined) continue;
+    const groupe = groupes.get(cycleId);
+    if (groupe) groupe.push(diffusion);
+    else groupes.set(cycleId, [diffusion]);
+  }
+  return [...groupes]
+    .flatMap(([cycleId, groupe]) => ouverturesDuCycle(cycleId, groupe))
+    .sort((gauche, droite) => {
+      const delta = gauche.jourZero.getTime() - droite.jourZero.getTime();
+      if (delta !== 0) return delta;
+      return gauche.approbationId < droite.approbationId ? -1 : gauche.approbationId > droite.approbationId ? 1 : 0;
+    });
+}

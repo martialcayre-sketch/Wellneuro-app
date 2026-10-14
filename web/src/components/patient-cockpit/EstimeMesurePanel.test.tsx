@@ -1191,3 +1191,178 @@ describe('EstimeMesurePanel — annuler un résultat saisi par erreur (D-294)', 
     expect(screen.queryByRole('button', { name: /Annuler le résultat/ })).toBeNull();
   });
 });
+
+describe('EstimeMesurePanel — la série qui fait foi (BP-03)', () => {
+  const ORIGINE = {
+    id: 'r1',
+    analyteCode: 'BIO_FERRITINE',
+    analyteLibelle: 'Ferritine',
+    valeur: '42.5',
+    unite: 'µg/L',
+    uniteCatalogue: 'µg/L',
+    preleveLe: '2026-09-01T08:00:00.000Z',
+    source: 'saisie_praticien',
+    saisiLe: '2026-09-01T09:00:00.000Z',
+    supersedesResultatId: null,
+    corrigeeParId: 'r2',
+    faitsLaboratoire: null,
+    commentaireLaboratoire: null,
+    annulation: null,
+  };
+  const CORRECTION = {
+    ...ORIGINE,
+    id: 'r2',
+    valeur: '45.5',
+    saisiLe: '2026-09-03T09:00:00.000Z',
+    supersedesResultatId: 'r1',
+    corrigeeParId: null,
+  };
+  const IMPORTEE = {
+    ...ORIGINE,
+    id: 'r3',
+    valeur: '0.30000000000000004',
+    preleveLe: '2026-09-20T08:00:00.000Z',
+    source: 'import_labo',
+    saisiLe: '2026-09-22T09:00:00.000Z',
+    corrigeeParId: null,
+    faitsLaboratoire: { intervalle: '30 – 400', marquage: 'H' },
+    commentaireLaboratoire: { texte: 'Contrôle sur nouveau prélèvement.', nonTranscrit: false },
+  };
+  const SERIE = {
+    analyteCode: 'BIO_FERRITINE',
+    motifs: ['laboratoire_non_identifie', 'contexte_non_renseigne'],
+    points: [
+      {
+        idResultat: 'r2',
+        valeur: '45.5',
+        unite: 'µg/L',
+        laboratoire: null,
+        preleveLe: '2026-09-01T08:00:00.000Z',
+        entreeLe: '2026-09-01T09:00:00.000Z',
+        correctionLe: '2026-09-03T09:00:00.000Z',
+        position: { type: 'anterieur', jourZero: '2026-09-05T10:00:00.000Z' },
+      },
+      {
+        idResultat: 'r3',
+        valeur: '0.30000000000000004',
+        unite: 'µg/L',
+        laboratoire: 'Laboratoire A',
+        preleveLe: '2026-09-20T08:00:00.000Z',
+        entreeLe: '2026-09-22T09:00:00.000Z',
+        correctionLe: null,
+        position: { type: 'jour', jour: 15, jourZero: '2026-09-05T10:00:00.000Z' },
+      },
+    ],
+  };
+
+  function monter(resultats: unknown[], series: unknown) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (entree: RequestInfo | URL) => {
+        const url = String(entree);
+        if (url.includes('/api/praticien/biologie/catalogue')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ ok: true, analytes: [{ code: 'BIO_FERRITINE', libelle: 'Ferritine', unite: 'µg/L' }] }),
+          } as Response;
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ ok: true, resultats, plagesParAnalyte: {}, series }),
+        } as Response;
+      }),
+    );
+    render(
+      <CbFeatureProvider enabled resultsEnabled>
+        <EstimeMesurePanel idPatient="PAT1" />
+      </CbFeatureProvider>,
+    );
+  }
+
+  async function bloc(): Promise<HTMLElement> {
+    return screen.findByRole('group', { name: 'Mesures qui font foi' });
+  }
+
+  it('les points, dans l’ordre servi, avec la valeur telle quelle et le laboratoire', async () => {
+    monter([ORIGINE, CORRECTION, IMPORTEE], [SERIE]);
+    const items = (await bloc()).querySelectorAll('ol > li');
+    expect(items).toHaveLength(2);
+    expect(items[0].textContent).toContain('45.5 µg/L');
+    expect(items[1].textContent).toContain('0.30000000000000004 µg/L · Laboratoire A');
+  });
+
+  it('les trois dates sont libellées distinctement ; « corrigé le » seulement pour une correction', async () => {
+    monter([ORIGINE, CORRECTION, IMPORTEE], [SERIE]);
+    const items = (await bloc()).querySelectorAll('ol > li');
+    expect(items[0].textContent).toMatch(/Prélevé le .+ · entré au dossier le .+ · corrigé le /);
+    expect(items[1].textContent).toMatch(/Prélevé le .+ · entré au dossier le /);
+    expect(items[1].textContent).not.toMatch(/corrigé le/);
+  });
+
+  it('la position dans le suivi, et la date de la diffusion', async () => {
+    monter([ORIGINE, CORRECTION, IMPORTEE], [SERIE]);
+    const items = (await bloc()).querySelectorAll('ol > li');
+    expect(items[0].textContent).toContain('antérieur à la diffusion du 05/09/2026');
+    expect(items[1].textContent).toContain('jour 15 depuis la diffusion du 05/09/2026');
+  });
+
+  it('l’intervalle imprimé et le commentaire sous la valeur, tels quels ; la marque n’y est pas reprise', async () => {
+    monter([ORIGINE, CORRECTION, IMPORTEE], [SERIE]);
+    const item = (await bloc()).querySelectorAll('ol > li')[1];
+    expect(item.querySelector(SELECTEUR_INTERVALLE_LABORATOIRE)?.textContent).toBe('30 – 400');
+    expect(item.querySelector(SELECTEUR_COMMENTAIRE_LABORATOIRE)?.textContent).toBe('Contrôle sur nouveau prélèvement.');
+    expect(item.querySelector(SELECTEUR_MARQUAGE_LABORATOIRE)).toBeNull();
+  });
+
+  it('un commentaire non transcrit est dit tel, sans texte', async () => {
+    monter(
+      [{ ...IMPORTEE, commentaireLaboratoire: { texte: null, nonTranscrit: true } }],
+      [{ ...SERIE, points: [SERIE.points[1]] }],
+    );
+    const item = (await bloc()).querySelector('ol > li');
+    expect(item?.querySelector(SELECTEUR_COMMENTAIRE_LABORATOIRE)).toBeNull();
+    expect(item?.textContent).toMatch(/trop long pour être transcrit : le commentaire/);
+  });
+
+  it('le nombre de points et les motifs de non-comparabilité', async () => {
+    monter([ORIGINE, CORRECTION, IMPORTEE], [SERIE]);
+    expect((await bloc()).textContent).toContain(
+      '2 points — non comparables en l’état : laboratoire non identifié, contexte de prélèvement non renseigné',
+    );
+  });
+
+  it('la liste des saisies reste en dessous, entière', async () => {
+    monter([ORIGINE, CORRECTION, IMPORTEE], [SERIE]);
+    await bloc();
+    expect(screen.getByText(/remplacée/)).toBeTruthy();
+    expect(screen.getAllByText(/42\.5 µg\/L/).length).toBeGreaterThan(0);
+  });
+
+  it('aucun mot qui juge sur le rendu, faits imprimés exceptés', async () => {
+    monter([ORIGINE, CORRECTION, IMPORTEE], [SERIE]);
+    await bloc();
+    const copie = screen.getByRole('region', { name: 'Estimé et mesuré' }).cloneNode(true) as HTMLElement;
+    copie.querySelectorAll('[data-fait-laboratoire]').forEach(e => e.remove());
+    const texte = copie.textContent ?? '';
+    for (const mot of [
+      /amélior/i, /aggrav/i, /(?<!\p{L})effets?(?!\p{L})/iu, /(?<!\p{L})hausse/iu, /(?<!\p{L})baisse/iu,
+      /évolution/i, /tendance/i, /normal/i, /[↑↓→]/,
+    ]) {
+      expect(mot.test(texte), `mot interdit trouvé : ${mot}`).toBe(false);
+    }
+  });
+
+  it('un analyte dont toutes les mesures sont annulées le dit', async () => {
+    monter([{ ...ORIGINE, corrigeeParId: null, annulation: { id: 'a', idResultatVise: 'r1', motif: 'mauvais_analyte', par: 'p', le: '2026-09-03T10:00:00.000Z' } }], []);
+    expect(await screen.findByText(/Aucune mesure ne fait foi pour cet analyte/)).toBeTruthy();
+  });
+
+  it('réponse d’une version antérieure (sans le champ) : aucun bloc de série', async () => {
+    monter([CORRECTION], undefined);
+    await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
+    expect(screen.queryByRole('group', { name: 'Mesures qui font foi' })).toBeNull();
+    expect(screen.queryByText(/Aucune mesure ne fait foi/)).toBeNull();
+  });
+});

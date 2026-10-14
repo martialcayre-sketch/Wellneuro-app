@@ -3,6 +3,7 @@ import { ancreCourante, lireAncresPersistees, type AncrePersistee } from './ancr
 import {
   calendriersParCycle,
   joursZeroParCycle,
+  joursZeroSuccessifs,
   type AncreDeRattachement,
   type DiffusionHistorique,
 } from './calendrierSuivi';
@@ -89,6 +90,18 @@ export async function lireCalendriersSuivi(
     ancresDejaLues ?? lireAncresPersistees(idPatient, avantOuA),
   ]);
   return calendriersParCycle(versDiffusions(approbations, idPatient), ancres);
+}
+
+/**
+ * Tous les jours 0 du dossier, cycles confondus, pivots compris (BP-03) : de
+ * quoi dater une mesure par le calendrier en vigueur à son prélèvement.
+ */
+export async function lireJoursZeroSuccessifs(idPatient: string): Promise<ReturnType<typeof joursZeroSuccessifs>> {
+  const [approbations, ancres] = await Promise.all([
+    prisma.protocolDiffusionApproval.findMany({ where: { idPatient }, select: SELECTION_APPROBATION }),
+    lireAncresPersistees(idPatient),
+  ]);
+  return joursZeroSuccessifs(versDiffusions(approbations, idPatient), ancres);
 }
 
 /**

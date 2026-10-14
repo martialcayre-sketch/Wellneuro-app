@@ -16,6 +16,12 @@ import {
 } from '@/lib/biology-library/annulations';
 import { lireValeurQuantitative, unitesConcordent } from '@/lib/biology-library/import/valeurLue';
 import { MESSAGES_REFUS_SAISIE, signature } from '@/lib/biology-library/saisieMessages';
+import {
+  serieParAnalyte,
+  type MotifNonComparabilite,
+  type PositionDansLeSuivi,
+} from '@/lib/biology-library/serieParAnalyte';
+import { lireJoursZeroSuccessifs } from '@/lib/protocol/calendriersPersistes';
 
 // Résultats biologiques réels du dossier (étage 2, CB-09, [[D-122]] §2) —
 // derrière `isCbResultsEnabled` (posé AVEC ce code, geste daté `D-081`).
@@ -99,6 +105,13 @@ export type ResultatConsigne = {
    */
   faitsLaboratoire: { intervalle: string | null; marquage: string | null } | null;
   /**
+   * Le commentaire du laboratoire sur CE résultat, tel qu'imprimé ([[D-278]]
+   * §3, BP-03 arbitrage 4), lu sur la ligne qui l'a créé. `texte: null` avec
+   * `nonTranscrit` : imprimé mais trop long, jamais tronqué. `null` : saisie
+   * praticien, correction (elle n'a pas de ligne lue), ou aucun commentaire.
+   */
+  commentaireLaboratoire: { texte: string | null; nonTranscrit: boolean } | null;
+  /**
    * L'annulation ACTIVE qui retire le fil de cette ligne ([[D-294]]), `null`
    * si le fil n'est pas annulé. Posée sur TOUTES les lignes du fil, calculée
    * au serveur avec la même racine que la base. La fiche du praticien est le
@@ -139,8 +152,35 @@ export type PlageFonctionnelleAffichee = {
   niveauPreuve: string;
 };
 
+/**
+ * Un point de la série d'un analyte (BP-03) : une mesure qui fait foi. Les
+ * faits et le commentaire du laboratoire se lisent sur la ligne `idResultat`
+ * de `resultats`, qui les porte déjà avec leurs silences.
+ */
+export type PointDeSerieServi = {
+  idResultat: string;
+  valeur: string;
+  unite: string | null;
+  laboratoire: string | null;
+  preleveLe: string;
+  entreeLe: string;
+  correctionLe: string | null;
+  position: PositionDansLeSuivi;
+};
+
+export type SerieServie = {
+  analyteCode: string;
+  points: PointDeSerieServi[];
+  motifs: MotifNonComparabilite[];
+};
+
 export type ResultatsGetResponse =
-  | { ok: true; resultats: ResultatConsigne[]; plagesParAnalyte: Record<string, PlageFonctionnelleAffichee[]> }
+  | {
+      ok: true;
+      resultats: ResultatConsigne[];
+      plagesParAnalyte: Record<string, PlageFonctionnelleAffichee[]>;
+      series: SerieServie[];
+    }
   | { ok: false; reason: string; error: string };
 
 export type ResultatsPostResponse =
@@ -184,8 +224,18 @@ type LigneLue = {
     marquageLu: string | null;
     uniteLue: string | null;
     valeurLue: string;
+    commentaireLu: string | null;
+    commentaireNonTranscrit: boolean;
+    import: { laboratoireLu: string | null };
   } | null;
 };
+
+/** Le commentaire de la ligne lue, ou le silence. */
+function commentaireDeLaLigne(ligne: LigneLue): ResultatConsigne['commentaireLaboratoire'] {
+  const lue = ligne.ligneCandidate;
+  if (!lue || (lue.commentaireLu === null && !lue.commentaireNonTranscrit)) return null;
+  return { texte: lue.commentaireLu, nonTranscrit: lue.commentaireNonTranscrit };
+}
 
 /** Les faits de la ligne lue, ou le silence ([[D-267]] §5). */
 function faitsDeLaLigne(ligne: LigneLue): ResultatConsigne['faitsLaboratoire'] {
@@ -216,6 +266,7 @@ function versConsigne(
     supersedesResultatId: ligne.supersedesResultatId,
     corrigeeParId,
     faitsLaboratoire: faitsDeLaLigne(ligne),
+    commentaireLaboratoire: commentaireDeLaLigne(ligne),
     annulation: annulation
       ? {
           id: annulation.id,
@@ -243,7 +294,20 @@ const CHAMPS_LUS = {
   analyte: { select: { libelle: true, unite: true } },
   // Les faits du laboratoire ([[D-267]]) : lus par la relation, jamais copiés
   // sur le résultat (A5). Une saisie praticien n'a pas de ligne : `null`.
-  ligneCandidate: { select: { intervalleLu: true, marquageLu: true, uniteLue: true, valeurLue: true } },
+  // Le commentaire de la ligne et le laboratoire de l'import (BP-03) : le
+  // premier recopié sous la valeur ([[D-278]] §3), le second pour les motifs
+  // de non-comparabilité de la série.
+  ligneCandidate: {
+    select: {
+      intervalleLu: true,
+      marquageLu: true,
+      uniteLue: true,
+      valeurLue: true,
+      commentaireLu: true,
+      commentaireNonTranscrit: true,
+      import: { select: { laboratoireLu: true } },
+    },
+  },
 } as const;
 
 export async function GET(req: Request) {
@@ -270,7 +334,42 @@ export async function GET(req: Request) {
       saisiLe: l.saisiLe.toISOString(),
     }));
     const corrections = correctionsParLigne(maillons);
-    const annulations = annulationParLigne(maillons, await annulationsActives(prisma, idPatient));
+    const [actives, joursZero] = await Promise.all([
+      annulationsActives(prisma, idPatient),
+      lireJoursZeroSuccessifs(idPatient),
+    ]);
+    const annulations = annulationParLigne(maillons, actives);
+
+    // LA SÉRIE PAR ANALYTE (BP-03) : les seules mesures qui font foi, mêmes
+    // lignes et mêmes annulations actives que ci-dessus — la fiche ne peut
+    // pas raconter deux histoires du même dossier.
+    const series: SerieServie[] = serieParAnalyte(
+      lignes.map(l => ({
+        id: l.id,
+        supersedesResultatId: l.supersedesResultatId,
+        saisiLe: l.saisiLe.toISOString(),
+        analyteCode: l.analyteCode,
+        preleveLe: l.preleveLe.toISOString(),
+        valeur: l.valeur.toFixed(),
+        unite: l.unite,
+        laboratoire: l.ligneCandidate?.import.laboratoireLu ?? null,
+      })),
+      actives,
+      joursZero,
+    ).map(serie => ({
+      analyteCode: serie.analyteCode,
+      motifs: serie.motifs,
+      points: serie.points.map(point => ({
+        idResultat: point.ligne.id,
+        valeur: point.ligne.valeur,
+        unite: point.ligne.unite,
+        laboratoire: point.ligne.laboratoire,
+        preleveLe: point.ligne.preleveLe,
+        entreeLe: point.entreeLe,
+        correctionLe: point.correctionLe,
+        position: point.position,
+      })),
+    }));
 
     // Les plages fonctionnelles des SEULS analytes présents au dossier
     // ([[D-157]]). Pas le catalogue entier : une route qui sert des données de
@@ -318,6 +417,7 @@ export async function GET(req: Request) {
         versConsigne(l, corrections.get(l.id)?.id ?? null, annulations.get(l.id) ?? null),
       ),
       plagesParAnalyte,
+      series,
     });
   } catch (err) {
     // JAMAIS `err.message` : un `PrismaClientValidationError` rend ses
