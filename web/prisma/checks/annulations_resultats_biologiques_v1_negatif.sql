@@ -419,6 +419,13 @@ BEGIN
        !~ 'FOR KEY SHARE[^$]*pg_advisory_xact_lock' THEN
     RAISE EXCEPTION 'CONTRAT — 13 : le verrou du dossier ne précède plus le verrou de clé.';
   END IF;
+  -- Le refus de REPEATABLE READ, avant tout verrou (passe Codex, P0-1) : une
+  -- transaction ne change pas d'isolation en cours de route, le contrat ne
+  -- peut que le relire — le banc à deux sessions l'éprouve (course 2).
+  IF pg_get_functiondef('public.resultats_biologiques_verrouiller_cle(text, text, timestamp)'::regprocedure)
+       !~ 'transaction_isolation''\) = ''repeatable read''[^$]*FOR KEY SHARE' THEN
+    RAISE EXCEPTION 'CONTRAT — 13 : le verrou de clé ne refuse plus REPEATABLE READ avant de verrouiller.';
+  END IF;
   SELECT count(*) INTO nb FROM pg_proc p
   WHERE p.oid IN ('public.annulations_resultats_biologiques_avant_insertion()'::regprocedure,
                   'public.resultats_biologiques_unicite_mesure()'::regprocedure)

@@ -32,9 +32,16 @@ PR 2, après la release-db approuvée et constatée par conteneur.
   promesses), branché au CI ; `cb_resultats_biologiques_v1_negatif.sql`
   amendé (la garde est le trigger, aucun index unique hors clé primaire).
   Treize mutations des fonctions font échouer le contrat.
+- **REPEATABLE READ refusé en base** (passe Codex, P0-1) : sous ce niveau,
+  l'instantané laisserait passer deux mesures courantes, là où l'index ne
+  dépendait d'aucun réglage. READ COMMITTED rend le 23505, SERIALIZABLE un
+  échec de sérialisation.
 - **Banc à deux sessions** `banc-annulations-resultats-deux-sessions.test.mjs`
-  (CI et T3) : deux saisies neuves concurrentes, témoin REPEATABLE READ, deux
-  annulations concurrentes, saisie contre révocation, effacement contre
-  annulation.
+  (CI et T3) : deux saisies neuves concurrentes, REPEATABLE READ refusé, la
+  même course en SERIALIZABLE (une seule mesure), deux annulations
+  concurrentes, saisie contre révocation, effacement contre annulation.
+- **Banc du client Prisma** `banc-unicite-mesure-prisma.test.ts` (CI et T3) :
+  le vrai client de l'application rend le doublon en `P2002`, reprend la
+  place annulée, échoue en REPEATABLE READ.
 - **D-292** amende D-124 §2 et §3 ; registre RGPD (rubriques 2 ter et 5) mis
   à jour avant la table.

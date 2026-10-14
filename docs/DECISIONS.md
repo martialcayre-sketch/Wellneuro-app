@@ -62,7 +62,12 @@ une saisie neuve sur une clé portant déjà une racine non annulée, sous le
 même nom (`cb_resultat_bio_patient_analyte_idx`) et dans la même forme
 (violation d'unicité, donc `P2002` et 409 `doublon_mesure` inchangés). Ses
 verrous — le dossier, puis la clé — tiennent les courses que l'index tenait
-par construction ; un banc à deux sessions les éprouve. Une clé peut dès lors
+par construction ; un banc à deux sessions les éprouve. L'index ne dépendait
+d'aucun niveau d'isolation, le trigger si : **REPEATABLE READ est refusé en
+base** pour toute saisie et tout acte (passe Codex du lot, P0-1) — son
+instantané laisserait passer deux mesures courantes ; READ COMMITTED (le
+régime de l'application, constaté en production) rend le 23505, SERIALIZABLE
+un échec de sérialisation, jamais deux mesures. Une clé peut dès lors
 porter un fil annulé et un fil vivant : les lecteurs groupent par racine,
 jamais par clé. **Une révocation est refusée si la place a été reprise** —
 le fil revenu ferait deux mesures courantes pour un même analyte à une même

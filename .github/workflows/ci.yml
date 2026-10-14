@@ -1263,6 +1263,17 @@ jobs:
           WN_BIO_ANNULATION_BANC_BASE: wellneuro_ci
         run: node scripts/banc-annulations-resultats-deux-sessions.test.mjs
 
+      # Le VRAI client Prisma contre la garde anti-doublon (D-292, BP-09) :
+      # le 23505 du trigger doit arriver en P2002 (le 409 `doublon_mesure` des
+      # écrivains en dépend), la place annulée se reprend, REPEATABLE READ est
+      # refusé. Commet ses fixtures puis les efface : base nommée.
+      - name: Unicite mesure Prisma bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_ANNULATION_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-unicite-mesure-prisma.test.ts
+
       # Le plafond des transmissions patient (D-269 §5, BIO-INGEST LOT-11) : le
       # VRAI écrivain (`deposerTransmission`) contre PostgreSQL, deux dépôts
       # simultanés pour la dernière place, la course FORCÉE par le verrou

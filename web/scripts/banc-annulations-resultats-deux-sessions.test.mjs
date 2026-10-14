@@ -14,10 +14,12 @@
 //      régime des écrivains Prisma) : la seconde ATTEND la première, puis est
 //      refusée en violation d'unicité lisible par l'adaptateur Prisma — ce que
 //      faisait l'index ;
-//   2. TÉMOIN : la même course sous REPEATABLE READ laisse passer DEUX
-//      mesures courantes. C'est la raison pour laquelle les écrivains restent
-//      en READ COMMITTED, et la preuve que la course 1 est réellement
-//      concurrente ;
+//   2. REPEATABLE READ REFUSÉ PAR LA BASE (passe Codex du lot, P0-1) : sous
+//      ce niveau, l'instantané masquerait la ligne que le verrou laisse
+//      commettre et la garde passerait deux mesures ; une saisie comme un acte
+//      y échouent, et une seule mesure reste ;
+//   6. LA MÊME COURSE EN SERIALIZABLE : une seule mesure est commise (conflit
+//      de sérialisation ou doublon) ;
 //   3. DEUX ANNULATIONS CONCURRENTES du même fil : la seconde attend, puis est
 //      refusée — une seule annulation active ;
 //   4. UNE SAISIE NEUVE CONTRE UNE RÉVOCATION sur une place libérée : la
@@ -193,19 +195,51 @@ describe('Annulations de résultats et garde anti-doublon — deux sessions (D-2
     }
   });
 
-  it('2. TÉMOIN : la même course sous REPEATABLE READ laisse passer deux mesures — les écrivains restent en READ COMMITTED', async () => {
+  it('2. REPEATABLE READ est refusé par la base : la course qui y créerait deux mesures n’a pas lieu', async () => {
+    // Sous REPEATABLE READ, l'instantané masquerait la ligne que le verrou
+    // laisse commettre : la garde passerait deux mesures (passe Codex, P0-1).
+    // La base refuse donc ce niveau, pour une saisie comme pour un acte.
     const a = await session();
     const b = await session();
     try {
       await a.client.query('BEGIN');
       await a.client.query(saisie('res_course2_a', 2));
       await b.client.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
-      const enVol = b.client.query(saisie('res_course2_b', 2)).then(() => null, err => err);
+      const refus = await b.client.query(saisie('res_course2_b', 2)).then(() => null, err => err);
+      assert.ok(refus, 'une saisie en REPEATABLE READ est passée.');
+      assert.match(refus.message, /écriture refusée en REPEATABLE READ/);
+      await b.client.query('ROLLBACK');
+      await b.client.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
+      const refusActe = await b.client.query(annulation('ann_course2', 'res_course3')).then(() => null, err => err);
+      assert.ok(refusActe, 'un acte d’annulation en REPEATABLE READ est passé.');
+      assert.match(refusActe.message, /écriture refusée en REPEATABLE READ/);
+      await b.client.query('ROLLBACK');
+      await a.client.query('COMMIT');
+      assert.equal(await courantesALaDate(observateur, 2), 1);
+    } finally {
+      await a.client.end();
+      await b.client.end();
+    }
+  });
+
+  it('6. la même course en SERIALIZABLE : une seule mesure est commise', async () => {
+    const a = await session();
+    const b = await session();
+    try {
+      await a.client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
+      await a.client.query(saisie('res_course6_a', 6));
+      await b.client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
+      const enVol = b.client.query(saisie('res_course6_b', 6)).then(() => null, err => err);
       await attendreBloquee(observateur, b.pid);
       await a.client.query('COMMIT');
-      assert.equal(await enVol, null, 'sous REPEATABLE READ, la seconde saisie devait passer (instantané d’avant le verrou).');
-      await b.client.query('COMMIT');
-      assert.equal(await courantesALaDate(observateur, 2), 2);
+      // L'échec peut tomber à l'insertion ou au COMMIT : 40001 (conflit de
+      // sérialisation) ou 23505 — jamais deux mesures.
+      let refus = await enVol;
+      if (!refus) refus = await b.client.query('COMMIT').then(() => null, err => err);
+      else await b.client.query('ROLLBACK');
+      assert.ok(refus, 'en SERIALIZABLE, les deux saisies ont été commises.');
+      assert.ok(['40001', '23505'].includes(refus.code), `refus inattendu : ${refus.code} ${refus.message}`);
+      assert.equal(await courantesALaDate(observateur, 6), 1);
     } finally {
       await a.client.end();
       await b.client.end();

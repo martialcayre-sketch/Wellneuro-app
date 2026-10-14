@@ -86,11 +86,16 @@
 -- un ordre croisé s'interbloquent, comme elles le faisaient avec l'index —
 -- et, cas neuf, deux clés sans rapport dont les hachages se rencontrent.
 -- Postgres tue alors l'une des deux ; aucune n'écrit à tort.
--- CONDITION POUR LES ÉCRIVAINS (même règle que `lectures_imports_biologiques`) :
--- rester en READ COMMITTED, jamais en REPEATABLE READ — l'instantané de
--- transaction y masquerait la ligne que le verrou vient de laisser commettre.
--- En SERIALIZABLE l'intégrité tient aussi, mais la course finit en échec de
--- sérialisation (40001, `P2034` côté Prisma), pas en 409 `doublon_mesure`.
+-- L'ISOLATION, TENUE EN BASE (passe Codex du lot, P0-1) : l'index retiré
+-- garantissait l'unicité sous tout niveau d'isolation ; un trigger qui lit
+-- sous instantané ne la garantit pas en REPEATABLE READ — l'instantané
+-- masquerait la ligne que le verrou vient de laisser commettre. Ce niveau
+-- est donc REFUSÉ par `resultats_biologiques_verrouiller_cle` : une écriture
+-- en REPEATABLE READ échoue, elle ne crée pas deux mesures courantes. En
+-- READ COMMITTED (le régime de l'application), le refus est un 23505 ; en
+-- SERIALIZABLE, l'intégrité tient par la détection de conflit de PostgreSQL
+-- et la course finit en échec de sérialisation (40001, `P2034` côté
+-- Prisma), pas en 409 `doublon_mesure`.
 -- Le banc à deux sessions
 -- (`scripts/banc-annulations-resultats-deux-sessions.test.mjs`) éprouve les
 -- courses ; le contrat relit la présence des verrous.
@@ -220,6 +225,17 @@ LANGUAGE plpgsql
 SET search_path = public, pg_temp
 AS $$
 BEGIN
+  -- REPEATABLE READ refusé, en base (passe Codex du lot, P0-1) : son
+  -- instantané de transaction masquerait la ligne que le verrou de clé vient
+  -- de laisser commettre, et deux mesures courantes passeraient — l'index
+  -- retiré, lui, ne dépendait d'aucun réglage. READ COMMITTED relit après
+  -- l'attente ; SERIALIZABLE détecte le conflit lecture/écriture et annule
+  -- l'une des deux. Aucun écrivain de l'application n'emploie REPEATABLE READ
+  -- au 2026-10-14 ; un écrivain futur qui l'emploierait échoue, il n'écrit
+  -- pas à tort.
+  IF current_setting('transaction_isolation') = 'repeatable read' THEN
+    RAISE EXCEPTION 'écriture refusée en REPEATABLE READ : la garde anti-doublon des résultats biologiques exige READ COMMITTED ou SERIALIZABLE.';
+  END IF;
   PERFORM 1 FROM public.patients p WHERE p.id_patient = p_patient FOR KEY SHARE;
   -- `to_char` à format fixe, jamais `::text` : la conversion suit le
   -- `DateStyle` de la session, et deux sessions aux réglages différents
