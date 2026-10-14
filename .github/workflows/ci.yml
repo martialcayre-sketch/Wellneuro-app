@@ -1180,6 +1180,19 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/lectures_imports_biologiques_v1_negatif.sql
 
+      # Annulations de résultats biologiques (D-291, BP-09). Une ligne
+      # `annulation` RETIRE un fil de correction des séries : ce que le drift
+      # check ne voit pas, ce sont les refus qui l'empêchent d'en retirer un à
+      # tort — résultat de CE dossier, praticien DU dossier, tête de fil, une
+      # annulation active par FIL (fourche comprise), révocation à motif fermé
+      # d'une annulation de CE résultat, motifs fermés, aucune colonne valeur,
+      # l'acte figé, l'effacement nommé en une instruction, et la RLS
+      # deny-all. Transaction annulée.
+      - name: Annulations resultats biologiques negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/annulations_resultats_biologiques_v1_negatif.sql
+
       # La file durable des lectures (D-282, G3) : statut fermé et sa cohérence
       # en CASE, deux tentatives au plus, un seul travail ouvert par compte
       # rendu (unicité PARTIELLE), import courant du même compte rendu, identité

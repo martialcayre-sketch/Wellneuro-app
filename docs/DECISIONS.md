@@ -4,6 +4,83 @@
 
 ## Décisions actives
 
+### D-292 — Annuler un résultat de biologie saisi par erreur : un acte en ajout seul, à motif fermé, qui retire le fil entier des calculs ; révocable une fois (BP-09, amende D-124 §3)
+
+- Date : 2026-10-14
+- Statut : accepté. Arbitrages du responsable du 2026-10-14, consignés dans
+  la fiche LOT-09 (#1442) : motifs d'annulation en liste fermée, révocation
+  une fois par annulation, motif obligatoire ; motifs de révocation tranchés
+  en session le même jour (trois motifs, §4). Migration demandée
+  explicitement en session le 2026-10-14.
+- Domaine : rayon biologie fonctionnelle, étage 2 (résultats réels, `D-122`
+  §2). **Aucune borne clinique, aucun seuil, aucune qualification de
+  valeur** : l'annulation dit qu'une saisie est fausse, jamais qu'une valeur
+  est anormale (`DC-19`/`DC-20` inchangés).
+- **Amende** [[D-124]] §3 : « la suppression est hors périmètre et
+  n'existera pas sans décision propre » — la voici, en ajout seul.
+- Porte sur : [[D-087]] et [[D-266]] §11 (migration seule, puis code),
+  [[D-257]] §6 (patron de révocation), [[D-268]] (patron de table d'actes),
+  [[D-289]] §1 (BP-09 n'attend pas l'essai de restauration), plan unique
+  fiche F03.
+- **Ne touche pas** : `resultats_biologiques` (ni colonne ni trigger ; sa
+  liste blanche reste intacte), la correction de valeur et d'unité
+  ([[D-124]] §1-2), le portail patient, aucun drapeau.
+
+**§1 — Le régime : un acte en ajout seul, rien ne s'efface.** Une table
+neuve, `annulations_resultats_biologiques`, porte deux actes : `annulation`
+et `revocation`. UPDATE et TRUNCATE y sont refusés par trigger ; DELETE est
+réservé à l'effacement nommé du dossier. L'instant et l'ordre sont posés par
+la base, inantidatables ; l'auteur est l'e-mail de session, et la base refuse
+tout autre que le praticien du dossier. La table ne recopie ni valeur, ni
+analyte, ni date, et ne porte aucun texte libre.
+
+**§2 — Les motifs d'annulation, liste fermée** : `mauvais_dossier`,
+`mauvaise_date_prelevement`, `mauvais_analyte`. Une erreur de valeur ou
+d'unité reste une correction ([[D-124]]). Un motif neuf exige une décision et
+une migration.
+
+**§3 — La cible et le fil.** L'annulation vise la tête courante d'un fil de
+correction — une ligne qu'aucune autre ne supplante — et retire le **fil
+entier**. Le fil d'un résultat est l'ensemble des lignes de sa clé (dossier,
+analyte, date de prélèvement) : une correction hérite de la clé de sa cible,
+et l'index unique partiel de [[D-124]] §2 n'admet qu'une racine par clé.
+**Un fil est annulé dès qu'une de ses lignes porte une annulation non
+révoquée**, quelle que soit la ligne visée : une correction concurrente ne
+le ressuscite pas. Au plus une annulation active par fil (refus en base,
+sous verrou du fil). La correction d'un résultat annulé est refusée par la
+route. La ligne annulée garde sa clé : un résultat annulé à tort ne se
+ressaisit pas, il se révoque.
+
+**§4 — La révocation** : une fois par annulation (index unique partiel),
+motif obligatoire pris dans une liste fermée — `mauvais_resultat_annule`
+(l'annulation visait un autre résultat), `resultat_verifie_exact`
+(vérification faite, le résultat était juste), `motif_annulation_errone` (on
+révoque pour ré-annuler sous le bon motif). Révoqué, le fil revient dans les
+séries ; une nouvelle annulation est alors admise.
+
+**§5 — Résultat saisi dans le mauvais dossier.** La valeur reste lisible
+dans le dossier qui l'a reçue, **côté praticien seul**, marquée annulée ;
+elle n'est **jamais** montrée côté patient. Elle suit le sort de ce dossier
+(effacée avec lui) ; le bon résultat se saisit dans le bon dossier.
+
+**§6 — Qui voit l'annulation.** Tout lecteur de calcul exclut les fils
+annulés non révoqués : élection de tête, derniers résultats, portes
+biologiques, contrôle de doublon, résultats existants avant validation d'un
+import (liste close au 2026-10-14, fiche LOT-09). La **fiche du praticien**
+est la seule exception : elle affiche le résultat annulé, marqué « annulé »,
+avec son motif, son auteur et sa date. Les lecteurs à naître (`serieParAnalyte`
+et le jour n de BP-03, les réveils de BP-04) naîtront en excluant
+l'annulation.
+
+**§7 — Le séquencement.** PR 1 : migration seule (table, contrat négatif,
+registre RGPD, cette décision). Release-db approuvée par le responsable,
+sentinelle, constat par conteneur. PR 2 : code consommateur, effacement
+nommé compris (les annulations partent avant les résultats que leurs clés
+RESTRICT retiennent). Entre les deux, la table reste vide : rien ne retient
+l'effacement d'un dossier. La condition « premier import » sort des
+préalables de BP-09 (plan unique, F03) : le constat S-1 reste un constat, pas
+une porte de ce lot.
+
 ### D-291 — Arbitrages de clôture de D-290 : CodeRabbit reste hors des checks obligatoires, une PR qui modifie sa configuration est P1
 
 - Date : 2026-10-14

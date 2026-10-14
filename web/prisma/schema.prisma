@@ -87,6 +87,8 @@ model Patient {
   lignesImportBiologique     LigneBiologiqueCandidate[]
   // Actes de lecture clinique d'un import validé (D-268, BP-10).
   lecturesImportsBiologiques LectureImportBiologique[]
+  // Annulations de résultats biologiques et leurs révocations (BP-09).
+  annulationsResultatsBiologiques AnnulationResultatBiologique[]
   // File durable des lectures (D-282, G3).
   travauxExtractionBiologique TravailExtractionBiologique[]
   // Pages masquées avant l'envoi à Anthropic (D-284 §5, lot j).
@@ -2549,6 +2551,10 @@ model ResultatBiologique {
   // modèle ne reçoit aucune colonne. Au plus une ligne par résultat.
   ligneCandidate LigneBiologiqueCandidate?
 
+  // Relation inverse SEULE (BP-09) : l'annulation désigne le résultat ; ce
+  // modèle ne reçoit aucune colonne.
+  annulations AnnulationResultatBiologique[]
+
   // L'index commence par `idPatient` puis `analyteCode` : la lecture est la
   // série d'un analyte dans un dossier (estimé ↔ mesuré), avec une mesure par
   // analyte et date de prélèvement.
@@ -2825,6 +2831,47 @@ model LectureImportBiologique {
   @@index([idImport, ordre], map: "lectures_imports_biologiques_import_ordre_idx")
   @@index([idLectureRevoquee], map: "lectures_imports_biologiques_lecture_revoquee_idx")
   @@map("lectures_imports_biologiques")
+}
+
+/// L'annulation d'un résultat de biologie saisi par erreur ([[D-291]], BP-09),
+/// ou la révocation de cette annulation. Ajout seul (UPDATE et TRUNCATE
+/// refusés par trigger), aucune valeur recopiée, aucun texte libre. Elle
+/// retire le FIL entier — les lignes de la clé (dossier, analyte, date de
+/// prélèvement) — de toute lecture de calcul ; seule la fiche du praticien le
+/// montre, marqué « annulé ». Les refus vivent en base (migration
+/// `annulations_resultats_biologiques_v1`) : résultat de ce dossier, praticien
+/// du dossier, tête de fil, une annulation active par fil.
+model AnnulationResultatBiologique {
+  id                   String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (trigger).
+  ordre                BigInt   @default(autoincrement()) @map("ordre")
+  idPatient            String   @map("id_patient")
+  /// Le résultat visé : la tête du fil à l'annulation, recopiée par la révocation.
+  idResultat           String   @map("id_resultat")
+  /// `annulation` | `revocation` (CHECK).
+  acte                 String   @map("acte")
+  /// Annulation seule, liste fermée (CHECK) : `mauvais_dossier` |
+  /// `mauvaise_date_prelevement` | `mauvais_analyte`.
+  motifAnnulation      String?  @map("motif_annulation")
+  /// Révocation seule : l'annulation révoquée.
+  idAnnulationRevoquee String?  @map("id_annulation_revoquee")
+  /// Révocation seule, liste fermée (CHECK) : `mauvais_resultat_annule` |
+  /// `resultat_verifie_exact` | `motif_annulation_errone`.
+  motifRevocation      String?  @map("motif_revocation")
+  praticienEmail       String   @map("praticien_email")
+  /// Posé par la base (trigger), en UTC.
+  acteLe               DateTime @default(now()) @map("acte_le")
+
+  patient            Patient                        @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  resultat           ResultatBiologique             @relation(fields: [idResultat], references: [id], onDelete: Restrict)
+  annulationRevoquee AnnulationResultatBiologique?  @relation("RevocationAnnulation", fields: [idAnnulationRevoquee], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  revocations        AnnulationResultatBiologique[] @relation("RevocationAnnulation")
+
+  @@unique([ordre], map: "annulations_resultats_biologiques_ordre_key")
+  @@index([idPatient, ordre], map: "annulations_resultats_biologiques_patient_ordre_idx")
+  @@index([idResultat, ordre], map: "annulations_resultats_biologiques_resultat_ordre_idx")
+  @@index([idAnnulationRevoquee], map: "annulations_resultats_biologiques_annulation_revoquee_idx")
+  @@map("annulations_resultats_biologiques")
 }
 
 // ───────────────────────────────────────────────────────────────────────────
