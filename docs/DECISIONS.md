@@ -4,6 +4,76 @@
 
 ## Décisions actives
 
+### D-297 — Lettre ai : la première ouverture d'un document remis est datée du jour, d'où qu'elle vienne ; les lectures antérieures restent sans date ; le praticien lit « lu le … » (H51)
+
+- Date : 2026-10-14
+- Statut : accepté. Trois arbitrages du responsable du 2026-10-14 sur
+  questions à options, qui précisent [[D-295]] §4. Le texte patient du §4 a
+  été validé tel quel par le responsable le 2026-10-14.
+- Domaine : portail patient, accusé de lecture (`PortailLecturePatient`) ;
+  lettre ai (fiche H51). Lève la porte 14.
+- Précise : [[D-295]] §4. Amende : [[D-293]] §4 (périmètre de la phrase
+  « Votre lecture est datée »). Renverse : le principe « aucune date » de la
+  table d'accusés de lecture (LOT-08), et le banc de garde qui interdit à
+  toute surface praticien de la lire.
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune relance.
+  Aucune migration n'est écrite par cette décision (§6).
+
+**§1 — La première ouverture est datée, d'où qu'elle vienne.** Chaque version
+remise porte au plus une date, celle de sa première ouverture par le patient,
+que le document soit ouvert depuis sa propre page, depuis le fil du jour ou
+depuis « Mes échanges ». Les ouvertures suivantes ne sont ni datées ni
+comptées : la ligne d'accusé existe déjà, rien ne s'écrit. La table reste en
+création seule, et c'est ce qui rend « première » structurel : la date s'écrit
+avec la ligne et n'est jamais mise à jour.
+
+**§2 — Le jour seul, en base.** La colonne garde le jour, en heure de Paris,
+sans heure ni minute. Le texte promet que la date « ne dit pas quand vous êtes
+connecté » : cette promesse tient jusque dans la donnée, y compris pour une
+lecture par conteneur. Le jour est posé à l'écriture de la ligne, côté base,
+sans horloge du client.
+
+**§3 — Aucune date inventée pour l'historique.** Les lectures enregistrées
+avant la migration gardent une date vide, et le praticien y lit « Lu, date non
+enregistrée ». Il n'y a aucun rattrapage.
+
+**§4 — Le patient en est averti sur chaque page qui date.** Le texte validé
+par [[D-293]] §4 ne datait que l'ouverture depuis « Mes échanges ». Il
+s'étend à toute page de document remis (bilan, synthèse, fiche d'assiette,
+lettre pour le médecin) et à « Mes échanges », où il remplace la phrase
+actuelle. Texte validé tel quel par le responsable le 2026-10-14 :
+
+> **Votre lecture est datée**
+>
+> La première fois que vous ouvrez un document remis par votre praticien, le
+> jour de cette lecture est enregistré et votre praticien le voit. Les
+> ouvertures suivantes ne sont pas enregistrées. Cela ne déclenche aucune
+> relance et ne dit pas quand vous êtes connecté.
+
+Invariant : aucune date ne s'écrit depuis une page qui ne sert pas cette
+phrase. Le texte et l'écriture de la date sont livrés ensemble.
+
+**§5 — Ce que lit le praticien, et rien d'autre.** Pour chaque version remise,
+au dossier : « Lu le JJ/MM/AAAA », « Lu, date non enregistrée » ou rien.
+Aucun compte d'ouvertures, aucune alerte, aucune relance, aucune carte du fil
+du jour fondée sur cette date ; aucune intelligence artificielle ne la lit
+([[D-293]] §5). Le banc de garde est amendé en conséquence : seule la
+surface « lu le » du praticien peut lire la table.
+
+**§6 — Migration, portes, registre.** Le code de ai ajoute une colonne de
+type date, vide par défaut, à `portail_lectures_patient`. Cette migration
+suit l'essai de restauration (porte 8, G-7), puis la release-db approuvée et
+constatée (porte 9). Le traitement est déclaré ici, avant la migration
+(`docs/DOSSIER_RGPD.md`) : le jour de première lecture est conservé avec le
+dossier ([[D-283]] §2) et effacé avec lui.
+
+- Options écartées : dater seulement l'ouverture depuis « Mes échanges »,
+  car un document déjà ouvert depuis sa page resterait « lu » sans date et le
+  praticien en verrait rarement une ; afficher « Lu avant le … » pour
+  l'historique, car une date apparaîtrait sans être celle de la lecture ;
+  garder l'horodatage en base et n'afficher que le jour ; dater chaque
+  ouverture ([[D-295]] §4).
+
 ### D-296 — Packs biologiques : l'analyte devient l'unité canonique, les quinze panels sont classés, et plus aucun pack clinique ne se crée (lettre cj)
 
 - Date : 2026-10-14
