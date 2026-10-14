@@ -658,8 +658,10 @@ BEGIN
   SELECT count(*) INTO nb
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname LIKE 'bio\_ingest\_%';
-  IF nb <> 7 THEN
-    RAISE EXCEPTION 'STAGING BIO: 7 fonctions bio_ingest_* attendues, % trouvée(s).', nb;
+  -- Dix depuis le masquage de l'identité (D-284 §5, lot j) : insertion et
+  -- purge d'un masquage, purge couplée au document.
+  IF nb <> 10 THEN
+    RAISE EXCEPTION 'STAGING BIO: 10 fonctions bio_ingest_* attendues, % trouvée(s).', nb;
   END IF;
 
   SELECT count(*) INTO nb
