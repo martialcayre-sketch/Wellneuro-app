@@ -50,6 +50,9 @@ handoff.
 - La case « Autofix » (bloc « autopilot ») reste affichée dans la synthèse :
   aucune clé du schéma ne la retire. Règle : ne jamais la cocher ; retrait par
   l'interface CodeRabbit, geste du responsable.
+- Routés au plan §8 (« Dettes techniques vivantes ») depuis la synthèse de
+  CodeRabbit : passe `wn-reviewer` non liée au sha final ; `.coderabbit.yaml`
+  lu sur la branche (une PR peut affaiblir sa propre revue).
 - Questions au responsable : CodeRabbit check obligatoire de `main` ?
   Copilot retiré de `.vscode/extensions.json` ?
 

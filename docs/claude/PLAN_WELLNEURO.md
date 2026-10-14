@@ -2138,6 +2138,8 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 |---|---|---|
 | Finalités de « Mes choix » versionnées | `docs/claude/campagnes/FILE_ATTENTE.md:441-459` | colonne `formulation_version` présente (`schema.prisma:985`, relevé du 2026-10-13) |
 | Lot d'exposition des indications d'assiette | `docs/claude/campagnes/FILE_ATTENTE.md:121-186` | WN_ASSIETTES_INDIQUEES à true au registre des drapeaux (`docs/FEATURE_FLAGS.md:36`, relu sur 26706d17) ; « livré éteint » (`docs/claude/campagnes/FILE_ATTENTE.md:127`) datait d'avant l'activation, le registre des drapeaux fait foi |
+| Passe `wn-reviewer` de l'exception migration/authentification non liée au sha final (« obligatoire si elle n'a pas déjà eu lieu ») ; défaut antérieur à D-290 | revue CodeRabbit de #1440 (synthèse, « Security Architecture Review ») ; `.claude/skills/wn-merge/SKILL.md` étape 5 | la lier au sha revu, comme `--match-head-commit` (D-290), au prochain lot qui touche `/wn-merge` [Hypothese] |
+| `.coderabbit.yaml` lu sur la branche de la PR : une PR peut affaiblir sa propre revue | D-290 §5 ; revue CodeRabbit de #1440 (synthèse) | protéger le fichier (propriétaire de code, approbation requise) relève de la protection de branche, geste du responsable ; question posée à la clôture de D-290 |
 | Catalogue C5B ; régime alimentaire pas un drapeau ; conflits de sources ; NUL dans le libellé ; carte « compte rendu à lire » | `docs/claude/campagnes/FILE_ATTENTE.md:271-347` | acquittées ou livrées |
 | D-TRUST-03, gate G-TRUST-04 | `DETTE_TRUST.md:11` | refermée par D-089 puis D-121 |
 | CB-07, contrat V4 | constat au dépôt | clos : contrat V4 demandable (D-129, #900) ; absorbé par BP-04 (F16) |

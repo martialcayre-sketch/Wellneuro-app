@@ -120,7 +120,12 @@ CodeRabbit est configuré à l'inverse — revue incrémentale **à chaque push*
 sans pause (`auto_incremental_review`, `auto_pause_after_reviewed_commits: 0`).
 Ce qui fait foi n'est pas la configuration mais la revue constatée : **pas de
 merge avant qu'une revue de `coderabbitai[bot]` porte sur le sha de tête** (le
-`commit_id` de la revue, ou le sha que nomme le commentaire de synthèse). Un
+`commit_id` de la revue, ou le sha que nomme le commentaire de synthèse). **Une
+revue incrémentale sans remarque ne crée aucun objet revue** : constaté sur
+#1440, la seule trace est la synthèse mise à jour — « No actionable comments »,
+bloc « Recent review info » dont la plage de commits finit sur la tête, et
+« Merge Risk … up to `<sha>` ». Lire `reviews` seul ferait conclure à tort que
+la tête n'a pas été relue. Un
 correctif poussé après la dernière revue n'est pas relu tant qu'une revue
 neuve ne le dit pas.
 

@@ -82,7 +82,13 @@ revue ; règles de `.claude/rules/` rendues sur leurs propres chemins (une
 chaîne de `filePatterns` ne vaut que pour le répertoire du fichier) ;
 « tranchée » remplacé par le constat dans le handoff ; `action_required`
 ramené au cas observé (Copilot), la cause documentée par GitHub étant le jeton
-qui pousse, pas l'auteur.
+qui pousse, pas l'auteur. Sa revue incrémentale du correctif n'a laissé aucune
+remarque et **n'a créé aucun objet revue** : seule la synthèse, mise à jour,
+nomme la tête relue (règle 1.6). Deux remarques de sa synthèse (« Security
+Architecture Review ») sont routées au plan §8 : la passe `wn-reviewer` de
+l'exception n'est pas liée au sha final (défaut antérieur à cette décision) ;
+`.coderabbit.yaml` étant lu sur la branche, une PR peut affaiblir sa propre
+revue — le protéger relève de la protection de branche.
 
 ### D-289 — Un essai de restauration réussi précède toute migration qui suit celle de BP-09 ; sa procédure (lettre g)
 
