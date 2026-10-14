@@ -4,6 +4,84 @@
 
 ## Décisions actives
 
+### D-298 — Effectif de masquage des agrégats : cinq dossiers distincts, partout ; l'effectif reste affiché, la répartition et la statistique se masquent (F25)
+
+- Date : 2026-10-14
+- Statut : accepté. Brouillon rédigé par l'assistant à partir des arbitrages
+  acquis, soumis au responsable et accepté par lui le 2026-10-14, tel quel,
+  sur question à options (constats écrits compris, plutôt que les seuls
+  écrans), avant le merge.
+  Arbitrages : séance du 2026-10-12, réponse 3 (« Cinq partout, motivé » :
+  tout compte du cabinet masqué sous cinq dossiers, effectif toujours
+  affiché) et réponse 4 (niveau médian d'adhésion masqué sous cinq). La
+  réponse 3 est postérieure à la lettre d du plan arrêté du 2026-10-11, qui
+  écrivait « cinq cycles » : l'écart se règle ici, en dossiers.
+- Domaine : constante produit de [[D-266]] §14 (« effectif minimal en
+  dessous duquel un agrégat est masqué »), chiffrée ici ; fiche F25 du plan
+  unique (`docs/claude/PLAN_WELLNEURO.md`, rang 0, geste du responsable).
+  Consommée par : S-1 sur plusieurs dossiers (H06), comptage T0 (H07),
+  niveau médian d'adhésion (lettre d, H32), comptes du cabinet (lettre y et
+  J3-cabinet, H58), BP-21a ; et déjà par le repère de cabinet servi (§5).
+- Nature : constante produit, pas un seuil clinique ([[D-266]] §14 ; DC-20,
+  nature `technical`).
+- **Ne touche pas** : aucun code, aucune migration, aucun drapeau, aucun
+  seuil clinique, aucun texte servi au patient. Le repère de cabinet garde
+  son comportement jusqu'à son lot de code (§5). Les autres constantes de
+  [[D-266]] §14 restent sans valeur.
+
+**§1 — La valeur et l'unité.** Cinq dossiers patients distincts. Un agrégat
+calculé sur moins de cinq dossiers distincts est masqué. L'unité est le
+dossier, jamais le cycle, l'épisode, la passation ni la réponse : cinq cycles
+d'un même patient décrivent un seul patient. Quand un agrégat a aussi son
+propre effectif d'objets (le repère de cabinet compte des cycles
+comparables), les deux conditions valent ensemble.
+
+**§2 — Ce qui se masque, ce qui reste.** L'effectif reste toujours affiché.
+Sous cinq dossiers distincts se masquent toute répartition (par état,
+niveau, catégorie ou jalon), toute statistique (médiane, niveau médian,
+proportion, moyenne) et tout écart. Un compte nul n'est pas masqué : il ne
+décrit personne.
+
+**§3 — Partout.** La même valeur vaut pour :
+- tout écran praticien qui agrège plusieurs dossiers : repère de cabinet,
+  comptes du cabinet (y), niveau médian d'adhésion (d), et toute surface
+  agrégée à venir, BP-21a compris ;
+- tout constat par conteneur versé dans un fichier durable (handoff,
+  `SESSION_LOG`, fiche, décision, constat d'usage) quand il décrit des
+  dossiers patients : sous cinq dossiers distincts, il écrit l'effectif et
+  « répartition masquée (moins de cinq dossiers) ». La règle s'ajoute à
+  celle de l'identifiant de dossier sans métrique ; un compte d'objets qui
+  ne décrit aucun dossier (panels, analytes, règles, migrations) n'y est pas
+  soumis.
+
+Le portail ne montre aucun agrégat : rien n'y change.
+
+**§4 — Motivation.** Un seul praticien, une patientèle réduite, des dossiers
+de test réels en production ([[D-075]]) : sous cinq dossiers, une médiane ou
+une répartition se lit comme la situation d'un patient reconnaissable, et
+une statistique sur deux ou trois dossiers n'a pas la stabilité d'un repère
+descriptif (constat F1-bis de l'audit du 2026-07-27 : cinq cycles sans
+réponse après T0 franchissaient le seuil du repère). Cinq est la valeur que
+sert déjà `SEUIL_COHORTE_CABINET` depuis l'arbitrage A6-2 du 2026-07-15 :
+elle est étendue, pas inventée. Compter en dossiers ferme le cas où un seul
+patient, à plusieurs cycles, franchit seul le seuil. C'est une règle de
+prudence interne au cabinet, pas une anonymisation : les agrégats restent
+des données de santé internes, jamais publiées (lettre y).
+
+**§5 — Le repère de cabinet servi.** `calculerMedianesCabinet`
+(`web/src/lib/protocol/cabinet.ts:12` et `:65`), servi au praticien par
+`/api/praticien/cabinet-momentum`, masque sous cinq **cycles** comparables,
+pas sous cinq dossiers distincts. Écart démontré dans le code, sans
+occurrence observée ([[D-125]]). Il se corrige par un lot de code, file A,
+avant y (H58) : masquer aussi sous cinq dossiers distincts, l'effectif servi
+restant affiché, la constante gardant sa valeur. Dette inscrite au §8 du
+plan.
+
+**§6 — Ce qui ne change pas.** [[D-266]] §14 (chaque autre constante produit
+est chiffrée par le lot qui la consomme, sans valeur par défaut) ; cockpit
+chiffré sous provenance, portail sans chiffre ; la règle de l'identifiant de
+dossier sans métrique (arbitrage du 2026-10-05).
+
 ### D-297 — Lettre ai : la première ouverture d'un document remis est datée du jour, d'où qu'elle vienne ; les lectures antérieures restent sans date ; le praticien lit « lu le … » (H51)
 
 - Date : 2026-10-14

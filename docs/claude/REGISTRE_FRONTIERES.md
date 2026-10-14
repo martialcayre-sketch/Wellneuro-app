@@ -362,7 +362,9 @@
   avec `n=` **toujours affiché** et repère **masqué sous n < 5 cycles
   comparables** (A6-2 conservé ; constante applicative
   `SEUIL_COHORTE_CABINET`, ajustable). Un repère, jamais une prédiction, ni
-  un objectif, ni un classement de patients.
+  un objectif, ni un classement de patients. **Précisé le 2026-10-14** (`D-298`) : l'effectif
+  de masquage de tout agrégat est de cinq dossiers distincts ; le repère
+  masque aussi sous cinq dossiers, par un lot de code à venir.
 - « Estimé ↔ mesuré » : le panneau **existe en état « second temps »**
   ~~(badge « HDS requis »)~~ — **amendé le 2026-09-04** : depuis `D-122` §2
   (2026-09-03), l'étage 2 est **livré** (table `resultats_biologiques`,

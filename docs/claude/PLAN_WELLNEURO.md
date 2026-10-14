@@ -337,7 +337,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 #### H06 · S-1, part hors biologie : vérifications versées au premier constat
 - **Identifiant, piste** : S-1, part hors biologie.
 - **Rang** : 0 ; fait en partie le 2026-10-12.
-- **Portes, préalables** : porte 1 ; applique l'effectif de masquage de cinq, acquis ; sa D-xxx (F25), geste de rang 0, se merge avant le premier compte sur plusieurs dossiers.
+- **Portes, préalables** : porte 1 ; applique l'effectif de masquage de cinq, acquis ; sa décision (F25), geste de rang 0, se merge avant le premier compte sur plusieurs dossiers : D-298 (cinq dossiers distincts, répartition masquée en dessous, constats écrits compris).
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune ; un reste que le code ne permet pas de vérifier passe au bloc des gelés (§6) avec son déclencheur.
 - **Critère de fin** : chaque vérification versée en agrégats, par identifiant, jamais par nom ; lecture seule par conteneur.
@@ -345,7 +345,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 #### H07 · R:Comptage T0 : dossiers bloqués avant T0
 - **Identifiant, piste** : R:Comptage T0 ; protocole ; geste du responsable (constat).
 - **Rang** : 0.
-- **Portes, préalables** : aucun ; effectif de masquage acquis ; sa D-xxx (F25), geste de rang 0, se merge avant le comptage.
+- **Portes, préalables** : aucun ; effectif de masquage acquis ; sa décision (F25), geste de rang 0, se merge avant le comptage : D-298.
 - **Migration, release-db** : non.
 - **Décisions, textes** : une D-xxx du délai, après le comptage ; sa lettre se prend alors, cr si aucune ne couvre l'objet.
 - **Critère de fin** : un nombre agrégé versé ; aucune carte avant le délai décidé.
@@ -526,6 +526,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : D-xxx de l'effectif, reprise du texte de d et y ; l'écart « cinq cycles » contre « cinq dossiers » se règle dans ce texte.
 - **Critère de fin** : D-xxx mergée ; comptes masqués sous cinq en banc.
+- **Mise à jour (2026-10-14)** : D-298 rédigée et acceptée : cinq dossiers distincts, jamais cinq cycles (séance du 2026-10-12, réponse 3) ; l'effectif reste affiché, répartitions et statistiques masquées en dessous ; écrans praticien et constats écrits dans le dépôt. Le repère de cabinet servi compte encore des cycles : lot de code au §8, file A, avant y (H58). Le banc « sous cinq » vient avec ce lot et avec y.
 
 #### F47 · DPA Anthropic : copie datée
 - **Identifiant, piste** : DPA et clauses types intégrés aux Conditions commerciales, sans signature distincte ; ingest et trust.
@@ -1116,7 +1117,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Rang** : y au rang 3 ; J3-cabinet au rang 4.
 - **Portes, préalables** : y : d (H32), porte 6 (F59), effectif (F25) ; J3-cabinet : y ; si migration : G-7, porte 9.
 - **Migration, release-db** : J3-cabinet : [A verifier].
-- **Décisions, textes** : lettre y, de la main du responsable ; « cinq dossiers » ou « cinq cycles » se règle dans F25.
+- **Décisions, textes** : lettre y, de la main du responsable ; « cinq dossiers » ou « cinq cycles » se règle dans F25 : cinq dossiers distincts (D-298).
 - **Critère de fin** : page masquée en banc sous cinq.
 
 ### Rang 4 : première vague de migrations après BP-09
@@ -1917,7 +1918,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h | geste | fiche, lettre ou porte | ce qu'il débloque |
 |---|---|---|---|
 | h1 | M-5 (2/2) : fait le 2026-10-14 — release-db de BP-09 approuvée hors usage, sentinelle liée, constat par conteneur (#1448, D-294 ; seconde passe Codex « accepter ») ; suite : PR 2 | F03, porte 9 | effacement de dossier (en échec tant qu'elle manque) ; PR 2 de BP-09 ; toute migration suivante (après G-7) |
-| h1 | effectif de masquage des agrégats (sa D-xxx) | F25 | S-1 sur plusieurs dossiers, H07, y, BP-21a |
+| h1 | effectif de masquage des agrégats (D-298 rédigée et acceptée : cinq dossiers distincts) | F25 | S-1 sur plusieurs dossiers, H07, y, BP-21a |
 | h1 | essai de restauration G-7 (portée écrite par D-289, #1430 ; essai non joué) | F04, porte 8 | toute migration après BP-09 |
 | h1 | lettres m, n, ac, z | H10, H11, H12, F45 | NF-7, EF-3b, radar, garde d'âge |
 | h1 | sources de fidélité (G-10) | H13, porte 11 | v |
@@ -2345,6 +2346,7 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | D-281, désignation illisible au dépôt : quand la lecture du programme échoue, le signalement est capturé sans programme (`protocol_draft_id` nul) et ne bloque rien, même si le patient avait désigné un élément | revue `wn-reviewer` de l'étape 4, PR 2 | file A, dans F66, à trancher avant M-1 (rang 3) [Hypothese] ; ligne ajoutée le 2026-10-14 |
 | « Jamais à l'identique ni augmenté » : après un verdict « impliqué », la version suivante n'est pas contrôlée par la machine ; l'aménagement est seulement consigné | D-281 §5 (arbitrage du 2026-10-14, étape 4) | contrôle à concevoir sur un identifiant d'action stable entre versions et une dose structurée ; sans rang [Hypothese] |
 | « Signaler un problème » au portail : atteint seulement par le pied de page, ou par l'accueil quand un programme est diffusé ; le bandeau n'est pas cliquable | constat du responsable du 2026-10-14, étape 3 de D-281 | « à voir plus tard » (responsable) ; à reprendre avant la signature (étape 5, F66) [Hypothese] |
+| Repère de cabinet masqué sous cinq **cycles** comparables, pas sous cinq dossiers distincts : un patient à cinq cycles franchit seul le seuil (écart démontré dans le code, sans occurrence observée) | D-298 §5 ; `web/src/lib/protocol/cabinet.ts:12`, `:65` | file A, lot de code avant y (H58) : masquer aussi sous cinq dossiers distincts, effectif servi affiché, banc « sous cinq » ; ligne ajoutée le 2026-10-14 |
 
 ### Soldées, constatées au dépôt (disparaissent avec la file), et verdicts CL
 
@@ -2542,7 +2544,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 
 | D-xxx | objet | rang | fiche |
 |---|---|---|---|
-| de l'effectif | effectif de masquage, motivé (valeur fixée par sa D-xxx) | 0 [Hypothese] | F25 |
+| de l'effectif | effectif de masquage, motivé (valeur fixée par D-298 : cinq dossiers distincts) | 0 [Hypothese] | F25 |
 | de BP-09 | amende D-124 §3 ; la condition « premier import » sort des préalables | 2 | F03 |
 | de BP-12a, BP-11, BP-13, BP-15, BP-04 | fiches d'usage ; constats ; données physiologiques ; décisions de parcours ; attente typée | 4 | F05, F06, F07, F08, F16 |
 | de BP-12b, BP-14, BP-17, BP-18a, BP-18b, BP-05, BP-16 | positions signées ; identité d'auteur ; bibliothèque ; niveau 3 figé ; protocole personnalisé ; contexte de prélèvement ; boucle d'exploration | 5 | F09, F10, F11, F12, F13, F20, F17 |
