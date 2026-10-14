@@ -63,7 +63,11 @@ export function TrustPanel() {
           kind: signalement.kind,
           id: signalement.id,
           statutTraitement,
-          ...(signalement.kind === 'demande_droit' ? { reponse: reponseDe(signalement) } : {}),
+          // Seul un brouillon saisi ici part : renvoyer le texte du dernier
+          // chargement écraserait une réponse enregistrée entre-temps ailleurs.
+          ...(signalement.kind === 'demande_droit' && brouillons[signalement.id] !== undefined
+            ? { reponse: brouillons[signalement.id] }
+            : {}),
         }),
       });
       const corps = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
@@ -71,6 +75,11 @@ export function TrustPanel() {
         setErreurs(e => ({ ...e, [signalement.id]: corps?.error ?? 'Erreur technique.' }));
         return;
       }
+      setBrouillons(b => {
+        const reste = { ...b };
+        delete reste[signalement.id];
+        return reste;
+      });
       await charger();
     } catch {
       setErreurs(e => ({ ...e, [signalement.id]: 'Erreur réseau. Réessayez.' }));

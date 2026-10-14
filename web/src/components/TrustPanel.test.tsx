@@ -55,7 +55,28 @@ describe('TrustPanel — réponse à une demande de droit (D-295 §3)', () => {
     await screen.findByText(/Demande d'exercice de droit/);
     fireEvent.change(screen.getAllByLabelText('Statut de traitement')[0], { target: { value: 'traite' } });
     expect((await screen.findByRole('alert')).textContent).toBe(REFUS);
-    expect(corpsPatch).toMatchObject({ kind: 'demande_droit', statutTraitement: 'traite', reponse: '' });
+    expect(corpsPatch).toMatchObject({ kind: 'demande_droit', statutTraitement: 'traite' });
+    expect(corpsPatch).not.toHaveProperty('reponse');
+  });
+
+  it("ne renvoie pas la réponse chargée quand elle n'a pas été modifiée ici", async () => {
+    const dejaRepondue = { ...DEMANDE, reponse: 'Réponse enregistrée ailleurs.' };
+    (global.fetch as ReturnType<typeof vi.fn>).mockImplementation((_url: string | URL | Request, init?: RequestInit) => {
+      if (init?.method === 'PATCH') {
+        corpsPatch = JSON.parse(String(init.body));
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) } as Response);
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ ok: true, signalements: [dejaRepondue], nonTraites: 1 }),
+      } as Response);
+    });
+    render(<TrustPanel />);
+    expect(((await screen.findByLabelText(/Réponse envoyée au patient/)) as HTMLTextAreaElement).value)
+      .toBe('Réponse enregistrée ailleurs.');
+    fireEvent.change(screen.getByLabelText('Statut de traitement'), { target: { value: 'traite' } });
+    await waitFor(() => expect(corpsPatch).toMatchObject({ statutTraitement: 'traite' }));
+    expect(corpsPatch).not.toHaveProperty('reponse');
   });
 
   it('envoie la réponse saisie avec le changement de statut', async () => {

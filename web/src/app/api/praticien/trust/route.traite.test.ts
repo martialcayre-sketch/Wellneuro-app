@@ -71,6 +71,13 @@ describe('PATCH /api/praticien/trust — « Traité » exige une réponse (D-295
     expect(updateMany).not.toHaveBeenCalled();
   });
 
+  it('refuse une réponse non textuelle en 400, sans planter', async () => {
+    const res = await patch({ statutTraitement: 'traite', reponse: {} });
+    expect(res.status).toBe(400);
+    expect(findFirst).not.toHaveBeenCalled();
+    expect(updateMany).not.toHaveBeenCalled();
+  });
+
   it('laisse passer « En cours » sans réponse', async () => {
     const res = await patch({ statutTraitement: 'en_cours' });
     expect(res.status).toBe(200);
