@@ -11,6 +11,7 @@ import type {
 } from '@/app/api/praticien/biologie/nabm/correspondances/route';
 import type {
   ActeNabmAffiche,
+  CandidatsNabmAffiches,
   CorrespondanceAffichee,
   EtatCorrespondance,
   NatureNabm,
@@ -20,9 +21,11 @@ import { formatDate } from './FicheAnalytePanel';
 // Signature des correspondances analyte ↔ acte NABM (M-3, F54), dans la fiche
 // analyte. Le praticien lit la nomenclature, tape le CODE de l'acte qu'il a
 // choisi, vérifie l'acte rendu par le serveur dans le millésime courant, pose
-// la nature, puis signe. Aucun acte n'est proposé : pas de recherche par
-// libellé (arbitrage du 2026-10-05). Signataire et date sont posés par le
-// serveur ; l'écran envoie l'état qu'il a vu (`etatAttendu`).
+// la nature, puis signe. L'écran ne cherche rien par libellé ; il affiche les
+// candidats de la liste relue (M-3b, arbitrage du 2026-10-15), résolus par le
+// serveur au millésime courant, nature présélectionnée, à signer en un clic
+// par le même POST. Signataire et date sont posés par le serveur ; l'écran
+// envoie l'état qu'il a vu (`etatAttendu`).
 //
 // Les types sont importés en `import type` seulement : la lib serveur importe
 // Prisma, qui ne doit pas entrer dans le paquet client.
@@ -44,6 +47,13 @@ const NATURES: { valeur: NatureNabm; libelle: string; aide: string }[] = [
 const LABEL_NATURE: Record<string, string> = Object.fromEntries(
   NATURES.map(n => [n.valeur, n.libelle]),
 );
+
+/** Pourquoi rien n'est à signer, selon la situation de la liste préparée. */
+const SANS_ACTE: Record<string, string> = {
+  aucun_acte: 'aucun acte de la nomenclature ne nomme cet analyte',
+  valeur_calculee: 'valeur calculée, qui ne se cote pas elle-même',
+  regroupement: 'analyte de regroupement, coté par ses composants',
+};
 
 /** La nature stockée d'une proposition, si elle est l'une des trois. */
 function natureConnue(nature: string): NatureNabm | '' {
@@ -109,6 +119,8 @@ export function CorrespondancesNabmSection({
 }) {
   const [correspondances, setCorrespondances] = useState<CorrespondanceAffichee[] | null>(null);
   const [millesime, setMillesime] = useState<string | null>(null);
+  const [candidats, setCandidats] = useState<CandidatsNabmAffiches | null>(null);
+  const [naturesCandidats, setNaturesCandidats] = useState<Record<string, NatureNabm>>({});
   const [messageEchec, setMessageEchec] = useState<string | null>(null);
   const [enCours, setEnCours] = useState(false);
 
@@ -140,6 +152,7 @@ export function CorrespondancesNabmSection({
       }
       setCorrespondances(json.correspondances);
       setMillesime(json.millesime);
+      setCandidats(json.candidats ?? null);
     } catch {
       if (jeton !== sequence.current) return;
       setMessageEchec('Impossible de lire les correspondances.');
@@ -153,7 +166,9 @@ export function CorrespondancesNabmSection({
     // encore en vol ne doit pas tenir les boutons de B désactivés.
     setEnCours(false);
     setNaturesPropositions({});
+    setNaturesCandidats({});
     setCorrespondances(null);
+    setCandidats(null);
     setMessageEchec(null);
     setCodeSaisi('');
     setActeLu(null);
@@ -365,6 +380,69 @@ export function CorrespondancesNabmSection({
             </li>
           ))}
         </ul>
+      )}
+
+      {correspondances !== null && candidats && candidats.propositions.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-lg border border-border p-3">
+          <div>
+            <p className="text-xs font-semibold text-foreground">Propositions à signer</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Préparées sur le millésime {candidats.millesimeListe} à partir des libellés de la
+              nomenclature. Rien ne compte avant votre signature : vérifiez l’acte et sa nature.
+            </p>
+          </div>
+          <ul className="flex flex-col gap-2">
+            {candidats.propositions.map(p => {
+              const nature = naturesCandidats[p.codeActe] ?? p.nature;
+              return (
+                <li
+                  key={p.codeActe}
+                  className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3"
+                >
+                  <DetailActe acte={p.acte} />
+                  {candidats.situation === 'a_juger' && (
+                    <span>
+                      <Badge variant="warning">À juger</Badge>
+                    </span>
+                  )}
+                  <p className="text-xs text-muted-foreground">{p.motif}</p>
+                  <ChoixNature
+                    nom={`nature-candidat-${p.codeActe}`}
+                    valeur={nature}
+                    onChange={choisie => setNaturesCandidats(prev => ({ ...prev, [p.codeActe]: choisie }))}
+                  />
+                  <div>
+                    <Button
+                      disabled={enCours}
+                      onClick={() =>
+                        void decider({
+                          codeActe: p.codeActe,
+                          decision: 'signer',
+                          etatAttendu: 'absente',
+                          nature,
+                        })
+                      }
+                    >
+                      Signer cette proposition
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {/* Une correspondance déjà en base (posée à la main) fait foi : la
+          mention de la liste la contredirait. */}
+      {correspondances !== null && correspondances.length === 0 && candidats && SANS_ACTE[candidats.situation] && (
+        <div className="flex flex-col gap-1 rounded-lg border border-border p-3">
+          <p className="text-sm text-foreground">
+            Rien à signer : {SANS_ACTE[candidats.situation]} (liste préparée sur le millésime{' '}
+            {candidats.millesimeListe}).
+          </p>
+          {candidats.motif && <p className="text-xs text-muted-foreground">{candidats.motif}</p>}
+        </div>
       )}
 
       {correspondances !== null && (
