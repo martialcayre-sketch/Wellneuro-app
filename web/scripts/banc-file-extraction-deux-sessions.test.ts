@@ -413,7 +413,11 @@ async function main() {
     //    PREMIER et tient le dossier en partage ; la session `verrou` le
     //    retient sur le verrou du compte rendu. L'effacement s'y met en file
     //    ensuite. Relâché, l'enregistrement écrit ses lignes et rend `true` ;
-    //    l'effacement passe après lui et emporte tout.
+    //    l'effacement passe après lui et emporte tout. `verrou` tient aussi le
+    //    dossier en partage (compatible avec l'enregistrement) : l'effacement
+    //    attend encore une fois l'enregistrement fini, le temps de constater sa
+    //    ligne écrite — sans quoi `true` et zéro ligne passeraient sans
+    //    insertion.
     await poserFixtures(verrou);
     const IMPORT_LIGNES_BIS = `imp_banc_file_lignes_bis_${RUN}`;
     await verrou.query(
@@ -429,10 +433,19 @@ async function main() {
         { ok: true, laboratoire: null, commentaires: null, commentairesNonTranscrits: false, lignes: [LIGNE] },
       ));
       await attendreBloquees(observateur, 'pg_advisory_xact_lock', 1);
+      await verrou.query('BEGIN');
+      await verrou.query('SELECT 1 FROM patients WHERE id_patient = $1 FOR KEY SHARE', [PATIENT]);
       enVolBis.push(effacerDossier(PATIENT));
       await attendreBloquees(observateur, 'FOR UPDATE', 1);
+      await verrou.query('SELECT pg_advisory_unlock(hashtext($1))', [CLE_VERROU]);
+      await enVolBis[0];
+      const ecrites = await observateur.query(
+        'SELECT count(*)::int AS n FROM lignes_biologiques_candidates WHERE id_patient = $1', [PATIENT],
+      );
+      assert.equal(ecrites.rows[0].n, 1, 'l’enregistrement fini, sa ligne est écrite avant l’effacement');
     } finally {
       await verrou.query('SELECT pg_advisory_unlock(hashtext($1))', [CLE_VERROU]);
+      await verrou.query('COMMIT');
     }
     const issuesBis = await Promise.allSettled(enVolBis);
     assert.deepEqual(
