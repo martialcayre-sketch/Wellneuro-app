@@ -1,6 +1,7 @@
 ### BP-12a : la migration des fiches d'usage — quatre tables en ajout seul, un acte par rubrique ; D-314 amendée (LOT-12, 2026-10-16)
 
-- Migration seule (`20261015200000_fiches_usage_v1`), aucun code consommateur :
+- Migration seule (`20261016090000_fiches_usage_v1`, horodatée après celle de
+  CC-8, appliquée après elle), aucun code consommateur :
   les versions du texte d'une fiche d'usage et leurs actes par rubrique ; les
   libellés du vocabulaire signé (hypothèses et populations d'usage) et leurs
   actes. Aucune donnée patient, aucune valeur clinique ; le texte ne touche
