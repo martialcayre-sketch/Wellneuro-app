@@ -630,9 +630,12 @@ les pages du portail — **v5 depuis le 2026-09-07** (`D-141`).
 |---|---|
 | Scalingo | hébergement de l'application et de la base de données (HDS, France) |
 | Anthropic | assistance d'IA pour la préparation des synthèses, **pour la proposition de formulation de la priorité d'un objectif** (`D-167`), **pour la proposition d'un premier jet de « Ce que j'ai compris de vous »** (`D-168`) **et pour le relevé des valeurs des comptes rendus d'analyses biologiques** (`D-256` A4, déclaré le 2026-10-01 avant activation — §2 ter) |
+| OpenAI | aide à la recherche du praticien dans sa bibliothèque de références scientifiques : reçoit le texte de la recherche saisie et celui des références à indexer ; l'application ne lui envoie ni le dossier, ni les réponses, ni les documents ; tout ce que le praticien saisit ou colle dans sa recherche lui parvient, une donnée de patient comprise (D4, [[D-299]], déclaré le 2026-10-15) |
 | Google Workspace | acheminement des e-mails Wellneuro, **y compris les documents adressés au patient** (bilan, comptes rendus) |
 | Google | connexion du praticien, **et du patient s'il la choisit** (seule l'adresse e-mail est transmise) |
 | Sentry | détection des erreurs techniques, région européenne — jamais les réponses, les documents ni l'identité |
+
+**Déclaré le 2026-10-15 (D4, [[D-299]]) :** OpenAI figure au tableau ci-dessus et dans « Vos données personnelles » v18, accusé exigé ; le flux est inchangé. La contre-lecture des fiches d'assiette par OpenAI s'exécute hors de l'application, sur le seul texte des fiches, sans donnée personnelle : elle est déclarée par `docs/TRUST_IA_FICHES_ASSIETTE.md` et n'est pas un sous-traitant de données patient. Le constat d'origine suit, inchangé.
 
 **DESTINATAIRE NON DÉCLARÉ, CONSTATÉ LE 2026-09-07 — OpenAI.** Le chemin
 d'embeddings du corpus (`web/src/lib/rag/embeddings.ts:20-34`) envoie à

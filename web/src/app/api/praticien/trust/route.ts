@@ -7,6 +7,7 @@ import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appar
 import { interruptionEffetIndesirableActive } from '@/lib/clinical/safetyEffetIndesirableV1';
 import {
   type Rattachement,
+  recoitUnAvis,
   signalementsEnAttente,
   verdictCourant,
   type VerdictEffetIndesirable,
@@ -14,11 +15,13 @@ import {
 import { elementsDesProgrammesVises } from '@/lib/trust/pauseEffetIndesirableServeur';
 
 /**
- * Ce que le praticien lit pour rendre son avis sur un signalement RATTACHÉ
- * ([[D-281]] §5) — absent d'un signalement sans rattachement.
+ * Ce que le praticien lit pour rendre son avis sur un signalement RATTACHÉ, ou
+ * du formulaire d'avant ([[D-281]] §5) — absent d'un signalement qui ne reçoit
+ * aucun avis (`recoitUnAvis`).
  */
 export type ValidationEffetIndesirable = {
-  rattachement: Rattachement;
+  /** `null` : le formulaire d'avant, « oui » au programme sans élément désigné. */
+  rattachement: Rattachement | null;
   /** L'élément que le patient a désigné, avec son intitulé quand le programme visé se lit. */
   elementDesigne: { actionId: string; title: string | null } | null;
   /** Les éléments que le praticien peut désigner pour « Je ne sais pas » ; `null` si le programme ne se lit pas. */
@@ -96,9 +99,10 @@ export async function GET(): Promise<NextResponse<TrustPraticienResponse>> {
         select: { idPatient: true, prenom: true, nom: true },
       }),
     ]);
-    // LA VALIDATION, pour les seuls signalements rattachés : la chaîne des avis
-    // et les éléments du programme visé — la version figée, pas la courante.
-    const rattaches = effets.filter(e => e.rattachement !== null);
+    // LA VALIDATION, pour les seuls signalements qui reçoivent un avis —
+    // rattachés, ou du formulaire d'avant : la chaîne des avis et les éléments
+    // du programme visé — la version figée, pas la courante.
+    const rattaches = effets.filter(recoitUnAvis);
     const [verdicts, programmes] = await Promise.all([
       rattaches.length === 0
         ? Promise.resolve([])
@@ -113,13 +117,13 @@ export async function GET(): Promise<NextResponse<TrustPraticienResponse>> {
       elementsDesProgrammesVises(rattaches.flatMap(e => (e.protocolDraftId ? [e.protocolDraftId] : []))),
     ]);
     const validationDe = (e: (typeof effets)[number]): ValidationEffetIndesirable | undefined => {
-      if (e.rattachement === null) return undefined;
+      if (!recoitUnAvis(e)) return undefined;
       const chaine = verdicts
         .filter(v => v.reportId === e.id)
         .map(v => ({ ...v, verdict: v.verdict as VerdictEffetIndesirable['verdict'] }));
       const elements = e.protocolDraftId ? programmes.get(e.protocolDraftId) ?? null : null;
       return {
-        rattachement: e.rattachement as Rattachement,
+        rattachement: e.rattachement as Rattachement | null,
         elementDesigne: e.elementActionId
           ? { actionId: e.elementActionId, title: elements?.find(x => x.actionId === e.elementActionId)?.title ?? null }
           : null,
@@ -181,10 +185,11 @@ export async function GET(): Promise<NextResponse<TrustPraticienResponse>> {
       })),
     ].sort((a, b) => b.soumisLe.localeCompare(a.soumisLe));
 
-    // NON TRAITÉ : un signalement RATTACHÉ l'est tant qu'il attend l'avis du
-    // praticien, quel que soit son statut — passé à « traité » sans verdict, il
-    // attend toujours (D-281 §5, « le statut ne lève rien »). Les autres
-    // signalements et les demandes se comptent par statut.
+    // NON TRAITÉ : un signalement qui reçoit un avis — rattaché, ou du
+    // formulaire d'avant — l'est tant qu'il l'attend, quel que soit son statut :
+    // passé à « traité » sans verdict, il attend toujours (D-281 §5, « le statut
+    // ne lève rien »). Les autres signalements et les demandes se comptent par
+    // statut.
     const enAttente = new Set(signalementsEnAttente(effets, verdicts.map(v => ({
       ...v, verdict: v.verdict as VerdictEffetIndesirable['verdict'],
     }))).map(e => e.id));

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
-import type { Rattachement, VerdictEffetIndesirable } from '@/lib/trust/pauseEffetIndesirable';
+import { type Rattachement, recoitUnAvis, type VerdictEffetIndesirable } from '@/lib/trust/pauseEffetIndesirable';
 import { elementsDesProgrammesVises } from '@/lib/trust/pauseEffetIndesirableServeur';
 import { type DemandeVerdict, validerDemandeVerdict } from '@/lib/trust/verdictEffetIndesirable';
 
@@ -11,7 +11,9 @@ export type VerdictResponse = { ok: true; id: string } | { ok: false; error: str
 
 // POST /api/praticien/trust/verdict — le praticien rend son avis sur
 // l'implication de l'élément désigné ([[D-281]] §5, étape 4) : « impliqué »
-// avec l'aménagement, ou « non impliqué ». Un avis se CORRIGE par un nouvel
+// avec l'aménagement, ou « non impliqué ». Le formulaire d'avant (« oui » au
+// programme, sans élément) reçoit le même avis : le praticien y désigne
+// l'élément en cause, ou aucun. Un avis se CORRIGE par un nouvel
 // avis qui le supplante ; l'ancien reste lisible. Rien ne se modifie ni ne se
 // supprime ici.
 //
@@ -44,7 +46,7 @@ export async function POST(req: Request): Promise<NextResponse<VerdictResponse>>
     if (!signalement) {
       return NextResponse.json({ ok: false, error: 'Signalement introuvable.' }, { status: 404 });
     }
-    if (signalement.rattachement === null) {
+    if (!recoitUnAvis(signalement)) {
       return NextResponse.json(
         { ok: false, error: 'Ce signalement n’est rattaché à aucun programme : il ne reçoit pas d’avis d’implication.' },
         { status: 409 },
@@ -62,7 +64,7 @@ export async function POST(req: Request): Promise<NextResponse<VerdictResponse>>
     const resultat = validerDemandeVerdict({
       signalement: {
         id: signalement.id,
-        rattachement: signalement.rattachement as Rattachement,
+        rattachement: signalement.rattachement as Rattachement | null,
         elementActionId: signalement.elementActionId,
       },
       verdicts: verdicts.map(v => ({ ...v, verdict: v.verdict as VerdictEffetIndesirable['verdict'] })),

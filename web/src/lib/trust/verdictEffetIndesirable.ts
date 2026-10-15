@@ -4,11 +4,13 @@ import {
   verdictCourant,
 } from './pauseEffetIndesirable';
 
-// LE VERDICT DU PRATICIEN SUR UN SIGNALEMENT RATTACHÉ — [[D-281]] §5, étape 4.
+// LE VERDICT DU PRATICIEN SUR UN SIGNALEMENT RATTACHÉ, OU DU FORMULAIRE D'AVANT
+// — [[D-281]] §5, étape 4.
 //
 // MODULE PUR, LISIBLE PAR LE NAVIGATEUR : la route le joue avant d'écrire, le
 // formulaire en tire ses libellés. La base tient les mêmes règles par trigger
-// (migration `20261012230000_saf_ei_rattachement_verdict_v1`) ; les rejouer ici
+// (migrations `20261012230000_saf_ei_rattachement_verdict_v1` et
+// `20261014230000_saf_ei_verdict_formulaire_avant_v1`) ; les rejouer ici
 // rend au praticien un message qu'il comprend plutôt qu'une erreur technique,
 // et la base reste le dernier mot.
 //
@@ -69,7 +71,8 @@ export type ResultatVerdict =
  *   racine par signalement, un successeur par verdict).
  */
 export function validerDemandeVerdict(input: {
-  signalement: { id: string; rattachement: Rattachement; elementActionId: string | null };
+  /** `rattachement` nul : le formulaire d'avant (`recoitUnAvis`), que la route seule laisse passer. */
+  signalement: { id: string; rattachement: Rattachement | null; elementActionId: string | null };
   verdicts: readonly VerdictEffetIndesirable[];
   elements: readonly { actionId: string }[] | null;
   demande: DemandeVerdict;
@@ -121,9 +124,9 @@ export function validerDemandeVerdict(input: {
     }
     elementActionId = signalement.elementActionId;
   } else {
-    // « Je ne sais pas » ou « un autre produit » : le praticien désigne
-    // l'élément en cause (D-281 §5), parmi ceux que le patient aurait pu
-    // désigner.
+    // « Je ne sais pas », « un autre produit » ou le formulaire d'avant : le
+    // praticien désigne l'élément en cause (D-281 §5), parmi ceux que le
+    // patient aurait pu désigner.
     if (input.elements === null) {
       return { ok: false, status: 409, error: 'Le programme visé par ce signalement ne se lit pas : aucun élément ne peut être désigné.' };
     }

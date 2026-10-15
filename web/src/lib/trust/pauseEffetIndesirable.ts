@@ -64,7 +64,8 @@ export function versionProgramme(protocolDraftInputHash: string): string {
 
 export type SignalementRattache = {
   id: string;
-  rattachement: Rattachement;
+  /** `null` : le formulaire d'avant — il attend l'avis, rien n'est jamais en pause pour lui. */
+  rattachement: Rattachement | null;
   elementActionId: string | null;
   /** Le programme visé, figé avec le rattachement. */
   protocolDraftId: string | null;
@@ -103,28 +104,43 @@ export function verdictCourant(reportId: string, verdicts: readonly VerdictEffet
 }
 
 /**
- * Les signalements qui ATTENDENT l'avis du praticien (D-281 §3, §5) : rattachés
- * — un élément, « Je ne sais pas » ou « un autre produit » — et sans verdict en
- * tête de chaîne. Tant qu'il en reste un, aucun programme ne se diffuse pour le
- * dossier, quelle que soit la version qu'il vise.
+ * Le signalement reçoit-il l'avis du praticien (D-281 §5) ? Rattaché — un
+ * élément, « Je ne sais pas » ou « un autre produit » —, ou FORMULAIRE D'AVANT :
+ * « oui » au programme sans élément désigné (dossier mineur ou sans date de
+ * naissance, adulte resté sur l'ancien formulaire), qui porte alors le
+ * programme diffusé au dépôt sans rattachement. La base tient la même règle
+ * (migration `20261014230000_saf_ei_verdict_formulaire_avant_v1`).
+ *
+ * Sans l'un ni l'autre — aucun programme diffusé, « non » au programme,
+ * désignation illisible —, aucun avis : la base le refuserait.
+ */
+export function recoitUnAvis(signalement: { rattachement: string | null; protocolDraftId: string | null }): boolean {
+  return signalement.rattachement !== null || signalement.protocolDraftId !== null;
+}
+
+/**
+ * Les signalements qui ATTENDENT l'avis du praticien (D-281 §3, §5) : ceux qui
+ * en reçoivent un (`recoitUnAvis`), sans verdict en tête de chaîne. Tant qu'il
+ * en reste un, aucun programme ne se diffuse pour le dossier, quelle que soit
+ * la version qu'il vise.
  *
  * LE STATUT N'Y ENTRE PAS (§5, « le statut ne lève rien ») : un signalement
- * passé à « traité » ou « clos » sans verdict attend toujours. Un signalement
- * SANS rattachement (aucun programme diffusé, formulaire d'avant, désignation
- * illisible) n'attend rien ICI : la base n'y accepte aucun avis, et compter
- * une attente qu'aucun geste ne lève enfermerait le dossier. Le formulaire
- * d'avant qui répond « oui » au programme rejoindra l'attente quand une
- * migration y aura ouvert l'avis (D-281 §5, arbitrage du 2026-10-14) —
- * préalable de la signature. Une chaîne à deux têtes n'élit aucun verdict : le
+ * passé à « traité » ou « clos » sans verdict attend toujours. Le FORMULAIRE
+ * D'AVANT attend comme les autres (arbitrage du 2026-10-14) ; rien n'y est en
+ * pause au portail, faute d'élément désigné. Un signalement qui ne reçoit
+ * aucun avis n'attend rien : compter une attente qu'aucun geste ne lève
+ * enfermerait le dossier. Une chaîne à deux têtes n'élit aucun verdict : le
  * signalement attend — fail-closed, comme la pause.
  *
  * Ordre d'entrée conservé.
  */
-export function signalementsEnAttente<S extends { id: string; rattachement: string | null }>(
+export function signalementsEnAttente<
+  S extends { id: string; rattachement: string | null; protocolDraftId: string | null },
+>(
   signalements: readonly S[],
   verdicts: readonly VerdictEffetIndesirable[],
 ): S[] {
-  return signalements.filter(s => s.rattachement !== null && verdictCourant(s.id, verdicts) === null);
+  return signalements.filter(s => recoitUnAvis(s) && verdictCourant(s.id, verdicts) === null);
 }
 
 /**
@@ -144,6 +160,8 @@ export function signalementsEnAttente<S extends { id: string; rattachement: stri
  * remplacement (§3) : il attend son verdict côté praticien, et aucune nouvelle
  * version ne se diffuse avant (`signalementsEnAttente`, garde de la
  * diffusion). Une orientation ou une prise de sang n'est jamais en pause.
+ * Le formulaire d'avant (sans rattachement) n'y met rien, avis rendu ou non :
+ * aucun élément n'a été désigné au portail (D-281 §5).
  */
 export function elementsEnPause(input: {
   signalements: readonly SignalementRattache[];
@@ -168,6 +186,7 @@ export function elementsEnPause(input: {
   };
 
   for (const signalement of input.signalements) {
+    if (signalement.rattachement === null) continue;
     if (signalement.protocolDraftId !== input.protocolDraftId) continue;
     const verdict = verdictCourant(signalement.id, input.verdicts);
     if (verdict?.verdict === 'non_implique') continue;
