@@ -2,7 +2,9 @@
 -- lettre n, EF-3b). Exécuté après `prisma migrate deploy` ; aucune écriture.
 --
 -- Ce banc épingle la SIXIÈME famille du garde : la dose écrite en nombre,
--- unité et fréquence. Les cinq familles d'origine restent épinglées par
+-- unité et fréquence, dans les deux ordres (6a : fréquence après l'unité ;
+-- 6b : fréquence avant le nombre, amendement du 2026-10-15). Les cinq
+-- familles d'origine restent épinglées par
 -- rag_claim_garde_seuils_v1.sql, joué lui aussi : ses négatifs prouvent que la
 -- famille dose n'a rien fermé de ce qu'ils laissent ouvert.
 --
@@ -80,6 +82,33 @@ BEGIN
       (true,  'fréq-matin',      'La tyrosine se prend à 500 mg le matin.'),
       (true,  'fréq-par-kg',     'La glutamine se donne à 0,3 g par kg de poids.'),
       (true,  'fréq-par-prise',  'Le tryptophane se donne à 400 mg par prise.'),
+      -- `/ ?24 ?h` : pour mg, µg et mcg, la famille 1 le couvre déjà
+      -- (`g ?/ ?24 ?h`) ; pour UI et ml, la famille 6 est seule.
+      (true,  'fréq-24h-ui',     'La vitamine D se donne à 1000 UI/24 h.'),
+      (true,  'fréq-24h-ml',     'Le sirop se donne à 5 ml/24h.'),
+      -- La borne de la fenêtre, au caractère près : quarante entre l'unité et
+      -- la fréquence passent (le négatif à quarante et un est plus bas).
+      (true,  'fenêtre-40',      'Le zinc est dosé à 15 mg associée à la vitamine C, et au cuivre par jour.'),
+
+      -- Amendement du 2026-10-15 : les fréquences et poids ajoutés au §2.
+      (true,  'fréq-par-kilogramme', 'La glutamine se donne à 0,3 g par kilogramme de poids.'),
+      (true,  'fréq-par-semaine',    'La vitamine D se donne à 1000 UI par semaine.'),
+      (true,  'fréq-par-mois',       'La vitamine D se donne à 50 000 UI par mois.'),
+      (true,  'fréq-par-24h',        'Le sirop se donne à 5 ml par 24 h.'),
+      (true,  'fréq-journalier',     'Le magnésium se donne à 300 mg en apport journalier.'),
+      (true,  'fréq-hebdomadaire',   'La vitamine D se donne à 25000 UI en prise hebdomadaire.'),
+      (true,  'fréq-mensuel',        'La vitamine D se donne à 100000 UI en dose mensuelle.'),
+      (true,  'fréq-chaque-jour',    'Le magnésium se donne à 300 mg chaque jour.'),
+      (true,  'fréq-coucher',        'Le 5-HTP se donne à 200 mg au coucher.'),
+
+      -- Amendement du 2026-10-15, §2 bis : la fréquence AVANT la dose (6b).
+      -- Aucune de ces sondes n'a de fréquence après l'unité : 6b est leur seule
+      -- porte d'entrée.
+      (true,  'avant-chaque-jour',   'Chaque jour, 200 mg de magnésium sont recommandés.'),
+      (true,  'avant-quotidien',     'Un apport quotidien de 250 mg d''EPA est recommandé.'),
+      (true,  'avant-par-semaine',   'Par semaine, 25000 UI de vitamine D suffisent.'),
+      (true,  'avant-soir',          'Le soir, 2 mg de mélatonine aident à l''endormissement.'),
+      (true,  'avant-fenêtre-40',    'Chaque jour, associé à la vitamine C et au cuivre, 5 mg de zinc suffisent.'),
 
       -- ═══ NÉGATIFS — la voie rapide leur reste ouverte ══════════════════
 
@@ -95,6 +124,15 @@ BEGIN
       (false, 'fin-de-phrase',       'Le comprimé contient 20 mg. Il se prend le matin.'),
       -- Ni plus de quarante caractères entre l'unité et la fréquence.
       (false, 'fenêtre-dépassée',    'Le zinc est dosé à 15 mg, associé à de la vitamine C, du cuivre et du sélénium organique, par jour.'),
+      (false, 'fenêtre-41',          'Le zinc est dosé à 15 mg associée à la vitamine C, et au cuivre, par jour.'),
+      -- `;` et `:` coupent la fenêtre comme le point.
+      (false, 'point-virgule',       'Le comprimé contient 20 mg ; il se prend le matin.'),
+      (false, 'deux-points',         'Le comprimé contient 20 mg : il se prend le matin.'),
+      -- 6b tient les mêmes frontières : nombre, fenêtre, fin de phrase.
+      (false, 'avant-sans-nombre',   'Chaque jour, une gélule au cours du repas.'),
+      (false, 'avant-unité-nue',     'Chaque jour, la dose s''exprime en mg sur l''étiquette.'),
+      (false, 'avant-fenêtre-41',    'Chaque jour, associés à la vitamine C et au cuivre, 5 mg de zinc suffisent.'),
+      (false, 'avant-fin-de-phrase', 'Chaque jour compte. Le comprimé contient 20 mg.'),
       -- Un poids corporel n'est pas une unité de dose.
       (false, 'poids-corporel',      'Un adulte de 70 kg pratique une marche le matin.')
     ) AS t(attendu, ref, texte)
