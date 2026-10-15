@@ -58,9 +58,18 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     );
   }
 
+  // Une session sans e-mail ne désigne aucun praticien : refusée, comme le
+  // panneau TRUST, plutôt qu'un repli sur une adresse vide qui irait filtrer.
+  const email = emailPraticien(session);
+  if (!email) {
+    return NextResponse.json(
+      { cartes: [], unavailable: true, error: 'Non authentifié.' },
+      { status: 401 },
+    );
+  }
+
   try {
     const maintenant = new Date();
-    const email = emailPraticien(session) ?? '';
     // Fenêtre du jour civil de PARIS (le cabinet) pour les consultations
     // prévues (LOT-04) — le serveur tourne en UTC sur Vercel.
     const { debut: debutJour, fin: finJour } = bornesJourParis(maintenant);

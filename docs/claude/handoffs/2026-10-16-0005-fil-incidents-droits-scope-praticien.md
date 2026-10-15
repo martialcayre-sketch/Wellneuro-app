@@ -24,6 +24,9 @@ scope n'arrivait qu'après. Un autre praticien, ou un patient inactif, pouvait
 - Ordre : plus ANCIENS d'abord (revue P2-1) — délai légal de 72 h pour un
   incident, d'un mois pour une demande de droit. Les effets indésirables
   (#1483) restent plus récents d'abord.
+- Revue CodeRabbit (sur d361558b) : une session sans e-mail est refusée en
+  401, comme au panneau TRUST, au lieu du repli `?? ''` ; test ajouté (ferme
+  aussi le P2-2 de wn-reviewer).
 
 ## Fichiers modifiés
 
@@ -41,8 +44,6 @@ scope n'arrivait qu'après. Un autre praticien, ou un patient inactif, pouvait
 
 ## Problèmes ouverts
 
-- Revue P2-2 : aucun test d'une session sans e-mail sur ces lectures
-  (aucun risque aujourd'hui : `equals: ''`, `praticienEmail` obligatoire).
 - Revue de #1483, P2-3 : panneau TRUST borné à 100, Fil et prévol sans borne.
 
 ## Prochaine action exacte

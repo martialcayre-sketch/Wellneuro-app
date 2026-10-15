@@ -10,3 +10,5 @@
   anciens d'abord : les deux portent un délai légal (72 h pour un incident,
   un mois pour une demande de droit). Le statut reste leur règle. Aucune
   migration.
+- Une session sans e-mail est refusée (401, Fil indisponible), comme au
+  panneau TRUST, au lieu d'un repli sur une adresse vide (revue CodeRabbit).

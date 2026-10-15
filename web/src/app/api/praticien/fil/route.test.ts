@@ -93,6 +93,15 @@ describe('GET /api/praticien/fil', () => {
     expect(prisma.assignation.findMany).not.toHaveBeenCalled();
   });
 
+  it('session sans e-mail : 401 et `unavailable`, sans aucune lecture', async () => {
+    getServerSession.mockResolvedValue({ user: {} });
+    const res = await GET();
+    expect(res.status).toBe(401);
+    expect((await res.json()).unavailable).toBe(true);
+    expect(prisma.trustPrivacyIncident.findMany).not.toHaveBeenCalled();
+    expect(prisma.patient.findMany).not.toHaveBeenCalled();
+  });
+
   it('aucune matière : 200 avec un fil vide et sans drapeau d’indisponibilité', async () => {
     const res = await GET();
     expect(res.status).toBe(200);
