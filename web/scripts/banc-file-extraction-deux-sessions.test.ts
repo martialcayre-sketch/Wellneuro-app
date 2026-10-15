@@ -31,6 +31,11 @@
 //   9. L'EFFACEMENT RÉEL contre l'ENREGISTREMENT DES LIGNES d'une lecture
 //      (§9) — sans interblocage : l'enregistrement verrouille lui aussi le
 //      dossier en partage d'abord.
+//   9 bis. LE MÊME, DANS L'AUTRE ORDRE : l'enregistrement tient déjà le
+//      dossier quand l'effacement part — il écrit ses lignes, puis
+//      l'effacement les emporte avec le dossier ;
+//  10. LA DÉSACTIVATION ET LA DEMANDE (§9), dans les deux sens : même verrou
+//      que la clôture (cas 8), lu cette fois sur `actif`.
 //
 // LA COURSE EST FORCÉE, PAS ESPÉRÉE. Une session tient le verrou consultatif
 // du compte rendu ; le banc constate les attentes (`pg_stat_activity`, depuis
@@ -403,6 +408,107 @@ async function main() {
     const reste = await verrou.query('SELECT count(*)::int AS n FROM patients WHERE id_patient = $1', [PATIENT]);
     assert.equal(reste.rows[0].n, 0, 'le dossier est effacé');
     console.log('ok 9 — effacement réel contre enregistrement des lignes : les deux aboutissent, sans interblocage');
+
+    // 9 bis. L'autre ordre (revue du 2026-10-13) : l'enregistrement part le
+    //    PREMIER et tient le dossier en partage ; la session `verrou` le
+    //    retient sur le verrou du compte rendu. L'effacement s'y met en file
+    //    ensuite. Relâché, l'enregistrement écrit ses lignes et rend `true` ;
+    //    l'effacement passe après lui et emporte tout. `verrou` tient aussi le
+    //    dossier en partage (compatible avec l'enregistrement) : l'effacement
+    //    attend encore une fois l'enregistrement fini, le temps de constater sa
+    //    ligne écrite — sans quoi `true` et zéro ligne passeraient sans
+    //    insertion.
+    await poserFixtures(verrou);
+    const IMPORT_LIGNES_BIS = `imp_banc_file_lignes_bis_${RUN}`;
+    await verrou.query(
+      `INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
+       VALUES ($1, $2, $3, 'modele-banc', 'bio-extraction-v4', $4)`,
+      [IMPORT_LIGNES_BIS, PATIENT, COMPTE_RENDU, PRATICIEN],
+    );
+    await verrou.query('SELECT pg_advisory_lock(hashtext($1))', [CLE_VERROU]);
+    const enVolBis: Promise<unknown>[] = [];
+    try {
+      enVolBis.push(consignerLignes(
+        { idPatient: PATIENT, idCompteRendu: COMPTE_RENDU, idImport: IMPORT_LIGNES_BIS },
+        { ok: true, laboratoire: null, commentaires: null, commentairesNonTranscrits: false, lignes: [LIGNE] },
+      ));
+      await attendreBloquees(observateur, 'pg_advisory_xact_lock', 1);
+      await verrou.query('BEGIN');
+      await verrou.query('SELECT 1 FROM patients WHERE id_patient = $1 FOR KEY SHARE', [PATIENT]);
+      enVolBis.push(effacerDossier(PATIENT));
+      await attendreBloquees(observateur, 'FOR UPDATE', 1);
+      await verrou.query('SELECT pg_advisory_unlock(hashtext($1))', [CLE_VERROU]);
+      await enVolBis[0];
+      const ecrites = await observateur.query(
+        'SELECT count(*)::int AS n FROM lignes_biologiques_candidates WHERE id_patient = $1', [PATIENT],
+      );
+      assert.equal(ecrites.rows[0].n, 1, 'l’enregistrement fini, sa ligne est écrite avant l’effacement');
+    } finally {
+      await verrou.query('SELECT pg_advisory_unlock(hashtext($1))', [CLE_VERROU]);
+      await verrou.query('COMMIT');
+    }
+    const issuesBis = await Promise.allSettled(enVolBis);
+    assert.deepEqual(
+      issuesBis.map(i => i.status),
+      ['fulfilled', 'fulfilled'],
+      `enregistrement et effacement doivent aboutir tous deux : ${JSON.stringify(issuesBis.map(i => (i.status === 'rejected' ? String(i.reason) : 'ok')))}`,
+    );
+    assert.equal((issuesBis[0] as PromiseFulfilledResult<boolean>).value, true, 'l’enregistrement, arrivé le premier, a écrit ses lignes');
+    const resteBis = await verrou.query(
+      `SELECT (SELECT count(*)::int FROM patients WHERE id_patient = $1) AS dossiers,
+              (SELECT count(*)::int FROM lignes_biologiques_candidates WHERE id_patient = $1) AS lignes`,
+      [PATIENT],
+    );
+    assert.deepEqual(resteBis.rows[0], { dossiers: 0, lignes: 0 }, 'le dossier est effacé, les lignes écrites avec lui');
+    console.log('ok 9 bis — enregistrement des lignes contre effacement réel : les lignes écrites, puis emportées avec le dossier');
+
+    // 10. La désactivation et la demande ([[D-282]] §9), dans les deux sens.
+    //    La désactivation est jouée telle que la route l'écrit : le dossier
+    //    verrouillé par `aucuneLectureDemandee`, puis `actif` posé à faux.
+    await poserFixtures(verrou);
+    const desactiver = () =>
+      prisma.$transaction(async tx => {
+        if (!(await aucuneLectureDemandee(tx, PATIENT))) return 'refusee' as const;
+        await tx.patient.update({ where: { idPatient: PATIENT }, data: { actif: false } });
+        return 'desactive' as const;
+      });
+    //    a) Une désactivation TIENT le dossier quand la demande part : la
+    //       demande l'attend, puis lit le dossier inactif et refuse.
+    await verrou.query('BEGIN');
+    await verrou.query('SELECT 1 FROM patients WHERE id_patient = $1 FOR UPDATE', [PATIENT]);
+    await verrou.query('UPDATE patients SET actif = false WHERE id_patient = $1', [PATIENT]);
+    const apresDesactivation = file.demanderExtraction(demande);
+    apresDesactivation.catch(() => {});
+    try {
+      await attendreBloquees(observateur, 'FOR KEY SHARE', 1);
+    } finally {
+      await verrou.query('COMMIT');
+    }
+    assert.deepEqual(await apresDesactivation, { ok: false, reason: 'dossier_clos' });
+    await verrou.query('UPDATE patients SET actif = true WHERE id_patient = $1', [PATIENT]);
+    //    b) Une demande TIENT le dossier (retenue sur le verrou du compte
+    //       rendu) quand la désactivation part : la désactivation l'attend,
+    //       puis compte son travail et refuse ; le dossier reste actif.
+    const [demandeRetenue, desactivation] = await (async () => {
+      await verrou.query('SELECT pg_advisory_lock(hashtext($1))', [CLE_VERROU]);
+      const enVolDemande = file.demanderExtraction(demande);
+      enVolDemande.catch(() => {});
+      let enVolDesactivation: Promise<'refusee' | 'desactive'> | null = null;
+      try {
+        await attendreBloquees(observateur, 'pg_advisory_xact_lock', 1);
+        enVolDesactivation = desactiver();
+        enVolDesactivation.catch(() => {});
+        await attendreBloquees(observateur, 'FOR UPDATE', 1);
+      } finally {
+        await verrou.query('SELECT pg_advisory_unlock(hashtext($1))', [CLE_VERROU]);
+      }
+      return Promise.all([enVolDemande, enVolDesactivation]);
+    })();
+    assert.ok(demandeRetenue.ok, JSON.stringify(demandeRetenue));
+    assert.equal(desactivation, 'refusee', 'la désactivation a attendu la demande, puis vu son travail');
+    const actif = await verrou.query('SELECT actif FROM patients WHERE id_patient = $1', [PATIENT]);
+    assert.equal(actif.rows[0].actif, true, 'le dossier reste actif');
+    console.log('ok 10 — désactivation et demande : chacune attend l’autre sur le dossier ; ni lecture sur dossier inactif, ni désactivation sur lecture demandée');
   } finally {
     try {
       await verrou.query('SELECT pg_advisory_unlock_all()').catch(() => {});
