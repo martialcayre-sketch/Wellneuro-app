@@ -1,7 +1,7 @@
 -- FICHES D'USAGE — LE TEXTE ET LE VOCABULAIRE, EN BASE, VALIDÉS PAR ACTE ([[D-314]], BP-12a).
 --
 -- Migration autorisée explicitement par le responsable le 2026-10-15 (D-314,
--- amendée le même jour : quatre tables neuves, aucune table existante
+-- amendée le 2026-10-16, §8 : quatre tables neuves, aucune table existante
 -- modifiée). MIGRATION SEULE ([[D-087]], [[D-266]] §11) : aucun code ne
 -- consomme encore ces tables. La structure signée, l'ingestion et l'écran de
 -- validation viennent dans la seconde PR du lot, après l'application constatée
@@ -325,6 +325,11 @@ BEGIN
   SELECT v.contenu ->> NEW.rubrique INTO texte
   FROM public.fiches_usage_versions v
   WHERE v.id = NEW.id_version;
+  -- Le trigger passe avant la FK : une cible inconnue se dit telle, au lieu
+  -- de se lire « rubrique absente » (revue CodeRabbit, #1488).
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'acte refusé : version % inconnue.', NEW.id_version;
+  END IF;
   IF texte IS NULL THEN
     RAISE EXCEPTION 'acte refusé : la version % ne porte pas de rubrique « % ».', NEW.id_version, NEW.rubrique;
   END IF;
@@ -376,6 +381,9 @@ BEGIN
   SELECT l.libelle_sha256 INTO attendue
   FROM public.fiches_usage_libelles l
   WHERE l.id = NEW.id_libelle;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'acte refusé : libellé % inconnu.', NEW.id_libelle;
+  END IF;
   IF attendue IS DISTINCT FROM NEW.empreinte THEN
     RAISE EXCEPTION 'acte refusé : l''empreinte recopiée ne correspond pas au libellé %.', NEW.id_libelle;
   END IF;

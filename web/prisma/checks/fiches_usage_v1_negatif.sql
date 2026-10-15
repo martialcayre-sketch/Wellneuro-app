@@ -21,7 +21,7 @@
 --      NULL compris ;
 --  10. l'empreinte d'un acte est celle du texte EXACT visé, recalculée par la
 --      base pour une rubrique ; une rubrique absente de la version ne se
---      valide pas ;
+--      valide pas ; une cible inconnue est refusée sous son nom ;
 --  11. `ordre` est posé par la base et départage deux actes successifs ;
 --  12. UPDATE, DELETE et TRUNCATE sont refusés sur les quatre tables — et
 --      chaque table porte son PROPRE trigger TRUNCATE (un TRUNCATE … CASCADE
@@ -497,6 +497,31 @@ BEGIN
   END;
   IF NOT refuse THEN
     RAISE EXCEPTION 'FICHES USAGE: un acte portant l''empreinte d''un AUTRE libellé a été accepté.';
+  END IF;
+
+  -- Une cible inconnue est refusée PAR LE TRIGGER, sous son nom (il passe
+  -- avant la FK) : le message doit dire « inconnue », pas « absente » ni
+  -- « empreinte » (revue CodeRabbit, #1488).
+  refuse := false;
+  BEGIN
+    INSERT INTO fiches_usage_actes (id, id_version, rubrique, acte, empreinte, validateur, relecture_integrale)
+    VALUES ('fua_inconnue', 'fuv_inexistante', 'question', 'validee', H_Q, 'praticien@wellneuro.fr', true);
+  EXCEPTION
+    WHEN raise_exception THEN refuse := SQLERRM LIKE '%version fuv_inexistante inconnue%';
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION 'FICHES USAGE: un acte sur une version inconnue n''a pas été refusé comme tel.';
+  END IF;
+
+  refuse := false;
+  BEGIN
+    INSERT INTO fiches_usage_libelles_actes (id, id_libelle, acte, empreinte, validateur, relecture_integrale)
+    VALUES ('fula_inconnu', 'ful_inexistant', 'validee', H_L1, 'praticien@wellneuro.fr', true);
+  EXCEPTION
+    WHEN raise_exception THEN refuse := SQLERRM LIKE '%libellé ful_inexistant inconnu%';
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION 'FICHES USAGE: un acte sur un libellé inconnu n''a pas été refusé comme tel.';
   END IF;
 
   -- ── 11. `ordre` posé par la base ─────────────────────────────────────────
