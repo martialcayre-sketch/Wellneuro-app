@@ -43,6 +43,9 @@ export function RayonBiologiePanel() {
   const [recherche, setRecherche] = useState('');
   const [prelevement, setPrelevement] = useState('');
   const [ficheOuverte, setFicheOuverte] = useState<FicheAnalyte | null>(null);
+  // Relecture du catalogue après une signature NABM (M-3) : le remboursement
+  // se dérive côté serveur, seul un rechargement le met à jour.
+  const [rechargement, setRechargement] = useState(0);
 
   // Seule la DERNIÈRE requête émise écrit à l'écran (patron C4).
   const sequence = useRef(0);
@@ -70,6 +73,8 @@ export function RayonBiologiePanel() {
           return;
         }
         setCatalogue(json);
+        // La fiche ouverte suit le catalogue relu, sans fermer le tiroir.
+        setFicheOuverte(fiche => (fiche ? (json.analytes.find(a => a.code === fiche.code) ?? null) : null));
       } catch {
         if (perimee()) return;
         setMessageEchec('Impossible de charger le catalogue.');
@@ -83,7 +88,7 @@ export function RayonBiologiePanel() {
       // montage suivant.
       sequence.current += 1;
     };
-  }, []);
+  }, [rechargement]);
 
   const prelevements = useMemo(() => {
     if (!catalogue) return [] as string[];
@@ -296,7 +301,12 @@ export function RayonBiologiePanel() {
         open={ficheOuverte !== null}
         onOpenChange={o => !o && setFicheOuverte(null)}
       >
-        {ficheOuverte && <FicheAnalytePanel fiche={ficheOuverte} />}
+        {ficheOuverte && (
+          <FicheAnalytePanel
+            fiche={ficheOuverte}
+            onCorrespondancesModifiees={() => setRechargement(n => n + 1)}
+          />
+        )}
       </PanneauSuperpose>
     </div>
   );

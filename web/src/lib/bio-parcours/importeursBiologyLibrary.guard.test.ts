@@ -45,6 +45,10 @@ const IMPORTEURS_ADMIS = [
   // pages noircies, réencodées et consignées — aucune valeur lue.
   'web/src/app/api/praticien/biologie/import/masquage/route.ts',
   'web/src/app/api/praticien/biologie/import/route.ts',
+  // La signature des correspondances analyte ↔ acte NABM (M-3, F54) : la
+  // nomenclature et le catalogue, globaux au cabinet — aucune donnée patient.
+  'web/src/app/api/praticien/biologie/nabm/acte/route.ts',
+  'web/src/app/api/praticien/biologie/nabm/correspondances/route.ts',
   'web/src/app/api/praticien/biologie/proposition/courrier/route.ts',
   'web/src/app/api/praticien/biologie/proposition/document-patient/route.ts',
   'web/src/app/api/praticien/biologie/proposition/route.ts',
@@ -67,6 +71,8 @@ const IMPORTEURS_ADMIS = [
   'web/src/app/dashboard/bibliotheque/page.tsx',
   'web/src/app/dashboard/biologie/page.tsx',
   'web/src/app/dashboard/patients/[idPatient]/page.tsx',
+  // Même motif (M-3) : l'écran de signature, en `import type` seul.
+  'web/src/components/biologie/CorrespondancesNabmSection.tsx',
   'web/src/components/biologie/FicheAnalytePanel.tsx',
   'web/src/components/biologie/RayonBiologiePanel.tsx',
   'web/src/components/patient-cockpit/ArbitrageBiologiquePanel.tsx',
