@@ -4,6 +4,8 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
     trustAdverseEffectReport: { findMany: vi.fn() },
+    // La chaîne des avis (D-281 §5), lue pour les seuls signalements qui en reçoivent un.
+    trustAdverseEffectVerdict: { findMany: vi.fn() },
     trustPrivacyIncident: { findMany: vi.fn() },
     trustRightsRequest: { findMany: vi.fn() },
     syntheseIA: { findMany: vi.fn(), groupBy: vi.fn() },
@@ -787,5 +789,105 @@ describe('GET /api/praticien/fil — signal de sécurité ouvert (D-275 §3)', (
     const payload = await res.json();
     expect(payload.signauxSecuriteIndisponibles).toBe(true);
     expect(payload.cartes.map((c: { type: string }) => c.type)).toEqual(['synthese_a_valider']);
+  });
+});
+
+describe('GET /api/praticien/fil — effet indésirable non traité par l’attente d’avis (D-281 §5)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    for (const table of [
+      prisma.trustAdverseEffectReport, prisma.trustAdverseEffectVerdict, prisma.trustPrivacyIncident,
+      prisma.trustRightsRequest, prisma.syntheseIA, prisma.bookletEnvoi, prisma.assignation,
+      prisma.ratificationObjectif, prisma.amendementObjectif, prisma.reponseJalonObjectif, prisma.finObjectif,
+      prisma.questionnaireReponse, prisma.protocolCheckin, prisma.assessmentEpisode, prisma.rendezVous,
+      prisma.filCardRejection, prisma.filCardLecture, prisma.consultation, prisma.adressageSignalAlerte,
+    ]) table.findMany.mockResolvedValue([]);
+    prisma.syntheseIA.groupBy.mockResolvedValue([]);
+    prisma.questionnaireReponse.groupBy.mockResolvedValue([]);
+    prisma.questionnaireLecturePraticien.groupBy.mockResolvedValue([]);
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SOPHIE', prenom: 'Sophie', nom: 'Nicola', suiviClotureLe: null },
+    ]);
+  });
+
+  const effet = (id: string, champs: { statutTraitement: string; rattachement: string | null; protocolDraftId: string | null }) => ({
+    id, idPatient: 'PAT_SOPHIE', soumisLe: new Date('2026-10-14T09:00:00Z'), ...champs,
+  });
+  const clesSignalement = async () => {
+    const payload = await (await GET()).json();
+    return payload.cartes
+      .filter((c: { type: string }) => c.type === 'signalement_trust')
+      .map((c: { cle: string }) => c.cle);
+  };
+
+  it('lit aussi, quel que soit leur statut, les signalements qui reçoivent un avis — sur les patients actifs du praticien, sans borne SQL', async () => {
+    await GET();
+    const appel = prisma.trustAdverseEffectReport.findMany.mock.calls[0][0];
+    // La borne de dix s'applique APRÈS la sélection : en SQL, des signalements
+    // déjà jugés évinceraient celui qui attend.
+    expect(appel.take).toBeUndefined();
+    expect(prisma.trustAdverseEffectReport.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        AND: [
+          { patient: { actif: true, praticienEmail: { equals: 'p@wellneuro.fr', mode: 'insensitive' } } },
+          {
+            OR: [
+              { statutTraitement: { in: ['recu', 'en_cours'] } },
+              { rattachement: { not: null } },
+              { protocolDraftId: { not: null } },
+            ],
+          },
+        ],
+      },
+    }));
+  });
+
+  it('rattaché, passé à « traité » sans avis : la carte reste', async () => {
+    prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
+      effet('aer_rattache', { statutTraitement: 'traite', rattachement: 'element', protocolDraftId: 'pd_1' }),
+      effet('aer_avant', { statutTraitement: 'clos', rattachement: null, protocolDraftId: 'pd_1' }),
+    ]);
+    expect(await clesSignalement()).toEqual([
+      'signalement_trust:effet_indesirable:aer_rattache',
+      'signalement_trust:effet_indesirable:aer_avant',
+    ]);
+  });
+
+  it('avis en tête de chaîne : plus de carte, même au statut « reçu »', async () => {
+    prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
+      effet('aer_rattache', { statutTraitement: 'recu', rattachement: 'ne_sait_pas', protocolDraftId: 'pd_1' }),
+    ]);
+    prisma.trustAdverseEffectVerdict.findMany.mockResolvedValue([
+      { id: 'v_1', reportId: 'aer_rattache', verdict: 'non_implique', elementActionId: null, supersedesVerdictId: null },
+    ]);
+    expect(await clesSignalement()).toEqual([]);
+    expect(prisma.trustAdverseEffectVerdict.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { reportId: { in: ['aer_rattache'] } },
+    }));
+  });
+
+  it('dix signalements déjà jugés, plus récents, n’évincent pas celui qui attend', async () => {
+    const juges = Array.from({ length: 10 }, (_, i) => ({
+      ...effet(`aer_juge_${i}`, { statutTraitement: 'traite', rattachement: 'element', protocolDraftId: 'pd_1' }),
+      soumisLe: new Date(`2026-10-14T1${i}:00:00Z`),
+    }));
+    prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
+      ...juges.reverse(),
+      effet('aer_attend', { statutTraitement: 'traite', rattachement: 'element', protocolDraftId: 'pd_1' }),
+    ]);
+    prisma.trustAdverseEffectVerdict.findMany.mockResolvedValue(juges.map((j, i) => ({
+      id: `v_${i}`, reportId: j.id, verdict: 'non_implique', elementActionId: null, supersedesVerdictId: null,
+    })));
+    expect(await clesSignalement()).toEqual(['signalement_trust:effet_indesirable:aer_attend']);
+  });
+
+  it('sans avis à recevoir : compté par statut, sans lire de verdict', async () => {
+    prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
+      effet('aer_ouvert', { statutTraitement: 'en_cours', rattachement: null, protocolDraftId: null }),
+      effet('aer_traite', { statutTraitement: 'traite', rattachement: null, protocolDraftId: null }),
+    ]);
+    expect(await clesSignalement()).toEqual(['signalement_trust:effet_indesirable:aer_ouvert']);
+    expect(prisma.trustAdverseEffectVerdict.findMany).not.toHaveBeenCalled();
   });
 });

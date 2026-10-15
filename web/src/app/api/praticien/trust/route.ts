@@ -6,9 +6,10 @@ import type { StatutTraitementSignalement } from '@/lib/trust/types';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { interruptionEffetIndesirableActive } from '@/lib/clinical/safetyEffetIndesirableV1';
 import {
+  effetsNonTraites,
   type Rattachement,
   recoitUnAvis,
-  signalementsEnAttente,
+  STATUTS_NON_TRAITES,
   verdictCourant,
   type VerdictEffetIndesirable,
 } from '@/lib/trust/pauseEffetIndesirable';
@@ -189,13 +190,13 @@ export async function GET(): Promise<NextResponse<TrustPraticienResponse>> {
     // formulaire d'avant — l'est tant qu'il l'attend, quel que soit son statut :
     // passé à « traité » sans verdict, il attend toujours (D-281 §5, « le statut
     // ne lève rien »). Les autres signalements et les demandes se comptent par
-    // statut.
-    const enAttente = new Set(signalementsEnAttente(effets, verdicts.map(v => ({
+    // statut. La règle est `effetsNonTraites`, la même au Fil et au prévol.
+    const effetsOuverts = new Set(effetsNonTraites(effets, verdicts.map(v => ({
       ...v, verdict: v.verdict as VerdictEffetIndesirable['verdict'],
     }))).map(e => e.id));
-    const nonTraite = (s: SignalementPraticien) => (s.validation
-      ? enAttente.has(s.id)
-      : s.statutTraitement === 'recu' || s.statutTraitement === 'en_cours');
+    const nonTraite = (s: SignalementPraticien) => (s.kind === 'effet_indesirable'
+      ? effetsOuverts.has(s.id)
+      : (STATUTS_NON_TRAITES as readonly string[]).includes(s.statutTraitement));
 
     return NextResponse.json({
       ok: true,
