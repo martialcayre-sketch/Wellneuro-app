@@ -348,6 +348,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/replisAssietteV1.ts` | `false` | `null` |
 | `clinical/portesBiologiquesAssiettesV1.ts` | `true` | `2026-09-24T06:44:55.000Z` |
 | `biology-library/import/resolverLibellesV1.ts` | `true` | `2026-10-03T20:18:43.000Z` |
+| `fiches-usage/ficheUsageBesoin2V1.ts` | `false` | `null` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
