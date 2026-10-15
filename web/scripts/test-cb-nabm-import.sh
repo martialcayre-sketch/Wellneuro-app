@@ -92,7 +92,16 @@ const {Client} = require("pg");
 (async () => {
   const c = new Client({connectionString: process.env.DATABASE_URL});
   await c.connect();
+  // M-3c : supprimer une ligne signée exige, dans la même transaction, la
+  // ligne de journal qui recopie la signature effacée.
+  await c.query("BEGIN");
+  await c.query(`INSERT INTO biology_analyte_nabm_journal
+      (id, analyte_code, acte, code_acte, nature, praticien_email, efface_par, efface_le)
+    SELECT gen_random_uuid()::text, n.analyte_code, $1, n.code_acte, n.nature, $2, n.verifie_par, n.verifie_le
+    FROM biology_analyte_nabm n WHERE n.verifie_par IS NOT NULL`,
+    ["retrait_signature","banc@wellneuro.fr"]);
   await c.query("DELETE FROM biology_analyte_nabm");
+  await c.query("COMMIT");
   await c.query("DELETE FROM biology_catalog_versions_courantes");
   await c.query("DELETE FROM biology_source_snapshots");
   await c.query("DELETE FROM biology_nabm_actes");
@@ -152,10 +161,20 @@ const {Client} = require("pg");
       (id, code, libelle, type_prelevement, source_provenance, niveau_completude, updated_at)
     VALUES ($1,$2,$3,$4,$5,$6,now()) ON CONFLICT DO NOTHING`,
     ["cb-test-ferritine","BIO_FERRITINE","Ferritine","sang","saisie_praticien","partielle"]);
+  // Depuis M-3c, une signature sans ligne de journal de la même transaction
+  // est refusée au COMMIT : le banc journalise la sienne, au millésime
+  // courant (V105 après le cas 5).
+  await c.query("BEGIN");
+  await c.query(`INSERT INTO biology_analyte_nabm_journal
+      (id, analyte_code, acte, code_acte, nature, millesime, praticien_email)
+    SELECT gen_random_uuid()::text, $1, $2, $3, $4, v.version_source, $5
+    FROM biology_catalog_versions_courantes v WHERE v.source_provenance = $6`,
+    ["BIO_FERRITINE","signature","1213","isole","praticien@wellneuro.fr","nabm_smt_ans"]);
   await c.query(`INSERT INTO biology_analyte_nabm
       (id, analyte_code, code_acte, nature, verifie_par, verifie_le)
     VALUES ($1,$2,$3,$4,$5,now()) ON CONFLICT DO NOTHING`,
     ["cb-test-corresp","BIO_FERRITINE","1213","isole","praticien@wellneuro.fr"]);
+  await c.query("COMMIT");
   await c.end();
 })().catch(e => { console.error(e); process.exit(1); });'
 echec_attendu "import qui orphelinerait une signature" "ne se résoudraient plus" \
@@ -331,7 +350,16 @@ const {Client} = require("pg");
 (async () => {
   const c = new Client({connectionString: process.env.DATABASE_URL});
   await c.connect();
+  // M-3c : supprimer une ligne signée exige, dans la même transaction, la
+  // ligne de journal qui recopie la signature effacée.
+  await c.query("BEGIN");
+  await c.query(`INSERT INTO biology_analyte_nabm_journal
+      (id, analyte_code, acte, code_acte, nature, praticien_email, efface_par, efface_le)
+    SELECT gen_random_uuid()::text, n.analyte_code, $1, n.code_acte, n.nature, $2, n.verifie_par, n.verifie_le
+    FROM biology_analyte_nabm n WHERE n.verifie_par IS NOT NULL`,
+    ["retrait_signature","banc@wellneuro.fr"]);
   await c.query("DELETE FROM biology_analyte_nabm");
+  await c.query("COMMIT");
   await c.query("DELETE FROM biology_catalog_versions_courantes");
   await c.query("DELETE FROM biology_source_snapshots");
   await c.query("DELETE FROM biology_nabm_actes");
