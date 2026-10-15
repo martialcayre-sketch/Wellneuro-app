@@ -93,6 +93,15 @@ describe('GET /api/praticien/fil', () => {
     expect(prisma.assignation.findMany).not.toHaveBeenCalled();
   });
 
+  it('session sans e-mail : 401 et `unavailable`, sans aucune lecture', async () => {
+    getServerSession.mockResolvedValue({ user: {} });
+    const res = await GET();
+    expect(res.status).toBe(401);
+    expect((await res.json()).unavailable).toBe(true);
+    expect(prisma.trustPrivacyIncident.findMany).not.toHaveBeenCalled();
+    expect(prisma.patient.findMany).not.toHaveBeenCalled();
+  });
+
   it('aucune matière : 200 avec un fil vide et sans drapeau d’indisponibilité', async () => {
     const res = await GET();
     expect(res.status).toBe(200);
@@ -841,6 +850,23 @@ describe('GET /api/praticien/fil — effet indésirable non traité par l’atte
         ],
       },
     }));
+  });
+
+  // Même éviction, même remède pour les incidents et les demandes de droit :
+  // scope avant la borne. Plus anciens d'abord, à cause de leur délai légal.
+  // Le statut reste leur règle.
+  it('incidents et demandes de droit : patients actifs du praticien, plus anciens d’abord, avant la borne de dix', async () => {
+    await GET();
+    for (const table of [prisma.trustPrivacyIncident, prisma.trustRightsRequest]) {
+      expect(table.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: {
+          statutTraitement: { in: ['recu', 'en_cours'] },
+          patient: { actif: true, praticienEmail: { equals: 'p@wellneuro.fr', mode: 'insensitive' } },
+        },
+        orderBy: { soumisLe: 'asc' },
+        take: 10,
+      }));
+    }
   });
 
   it('rattaché, passé à « traité » sans avis : la carte reste', async () => {
