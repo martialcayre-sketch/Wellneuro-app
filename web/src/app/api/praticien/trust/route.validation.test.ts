@@ -85,7 +85,20 @@ describe('GET /api/praticien/trust — validation', () => {
     expect(parId.s2.validation.elements).toBeNull();
   });
 
-  it('signalement sans rattachement : aucune validation, aucune lecture de verdicts', async () => {
+  // D-281 §5 : « oui » au programme sans élément. Il reçoit l'avis comme
+  // « Je ne sais pas » : la liste du programme visé, sans élément désigné.
+  it('formulaire d’avant : validation servie, rattachement nul, liste du programme visé', async () => {
+    prisma.trustAdverseEffectReport.findMany.mockResolvedValue([effet({ id: 's1', protocolDraftId: 'draft-1' })]);
+    prisma.trustAdverseEffectVerdict.findMany.mockResolvedValue([]);
+    const corps = await (await GET()).json();
+    expect(corps.signalements[0].validation).toMatchObject({
+      rattachement: null, elementDesigne: null,
+      elements: [{ actionId: 'a-magnesium', title: 'Magnésium le soir' }], verdictCourantId: null,
+    });
+    expect(prisma.trustAdverseEffectVerdict.findMany.mock.calls[0][0].where).toEqual({ reportId: { in: ['s1'] } });
+  });
+
+  it('signalement sans rattachement ni programme : aucune validation, aucune lecture de verdicts', async () => {
     prisma.trustAdverseEffectReport.findMany.mockResolvedValue([effet({ id: 's1' })]);
     const corps = await (await GET()).json();
     expect(corps.signalements[0].validation).toBeUndefined();
@@ -108,6 +121,8 @@ describe('GET /api/praticien/trust — validation', () => {
       effet({ id: 's3', protocolDraftId: 'draft-1', rattachement: 'element', elementActionId: 'a-magnesium', statutTraitement: 'recu' }),
       effet({ id: 's4', statutTraitement: 'en_cours' }),
       effet({ id: 's5', statutTraitement: 'traite' }),
+      // Formulaire d'avant : passé à « traité » sans avis, il attend toujours.
+      effet({ id: 's6', protocolDraftId: 'draft-1', statutTraitement: 'traite' }),
     ]);
     // s3 a son avis : il sort du compte, même au statut « reçu ».
     prisma.trustAdverseEffectVerdict.findMany.mockResolvedValue([
@@ -116,7 +131,7 @@ describe('GET /api/praticien/trust — validation', () => {
     prisma.trustRightsRequest.findMany.mockResolvedValue([
       { id: 'd1', idPatient: 'PAT_TEST', type: 'acces', description: null, statutTraitement: 'recu', soumisLe: new Date('2026-10-11T10:00:00Z'), examineLe: null },
     ]);
-    // s1 et s2 (attente), s4 (statut ouvert, hors règle), d1 (demande reçue).
-    expect((await (await GET()).json()).nonTraites).toBe(4);
+    // s1, s2 et s6 (attente), s4 (statut ouvert, hors règle), d1 (demande reçue).
+    expect((await (await GET()).json()).nonTraites).toBe(5);
   });
 });

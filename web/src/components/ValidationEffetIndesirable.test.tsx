@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ValidationEffetIndesirable as Validation } from '@/app/api/praticien/trust/route';
 import { ValidationEffetIndesirable } from './ValidationEffetIndesirable';
 
-// L'AVIS DU PRATICIEN SUR UN SIGNALEMENT RATTACHÉ ([[D-281]] §5, étape 4).
+// L'AVIS DU PRATICIEN SUR UN SIGNALEMENT RATTACHÉ, OU DU FORMULAIRE D'AVANT
+// ([[D-281]] §5, étape 4).
 
 const ELEMENTS = [
   { actionId: 'a-magnesium', title: 'Magnésium le soir' },
@@ -111,6 +112,26 @@ describe('ValidationEffetIndesirable', () => {
     afficher(PAR_ELEMENT, undefined, true);
     expect(screen.getByText(/« non impliqué » lève la pause au portail, « impliqué » la maintient/)).toBeTruthy();
     expect(screen.queryByText(/pas encore signée/)).toBeNull();
+  });
+
+  // D-281 §5, arbitrage du 2026-10-14 : « oui » au programme sans élément.
+  it('formulaire d’avant : le dit, et le praticien désigne l’élément en cause ou aucun', async () => {
+    afficher({ ...PAR_ELEMENT, rattachement: null, elementDesigne: null });
+    expect(screen.getByText(/associe cet effet à son programme, sans désigner d’élément \(formulaire d’avant\)/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Un élément du programme est en cause'));
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'a-magnesium' } });
+    fireEvent.click(screen.getByLabelText('Retirer'));
+    fireEvent.submit(screen.getByText('Enregistrer l’avis').closest('form')!);
+    await waitFor(() => expect(corps).not.toBeNull());
+    expect(corps).toEqual({
+      reportId: 's1', verdict: 'implique', amenagement: 'retirer', elementActionId: 'a-magnesium', supersedesVerdictId: null,
+    });
+  });
+
+  it('formulaire d’avant, règle signée : rien en pause au portail, seul l’avis lève l’attente', () => {
+    afficher({ ...PAR_ELEMENT, rattachement: null, elementDesigne: null }, undefined, true);
+    expect(screen.getByText(/rien n’est mis en pause au portail\. Seul votre avis met fin à l’attente/)).toBeTruthy();
+    expect(screen.queryByText(/lève la pause au portail/)).toBeNull();
   });
 
   it('programme lisible sans élément désignable : le message le dit, sans le dire illisible', () => {
