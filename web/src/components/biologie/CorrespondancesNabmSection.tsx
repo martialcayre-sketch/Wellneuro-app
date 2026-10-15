@@ -120,6 +120,10 @@ export function CorrespondancesNabmSection({
 
   // Seule la DERNIÈRE lecture émise écrit à l'écran (patron du rayon).
   const sequence = useRef(0);
+  // Le tiroir garde ce composant monté d'un analyte à l'autre : une lecture
+  // d'acte ou une décision lancée sur l'analyte A ne doit rien écrire sur la
+  // fiche de B — sinon l'acte lu pour A se signerait sous B (revue CodeRabbit).
+  const generation = useRef(0);
 
   const charger = useCallback(async () => {
     const jeton = ++sequence.current;
@@ -143,6 +147,7 @@ export function CorrespondancesNabmSection({
   }, [analyteCode]);
 
   useEffect(() => {
+    generation.current += 1;
     setCorrespondances(null);
     setMessageEchec(null);
     setCodeSaisi('');
@@ -163,16 +168,19 @@ export function CorrespondancesNabmSection({
       setMessageEchec('Un code d’acte compte quatre chiffres.');
       return;
     }
+    const perimee = (gen => () => gen !== generation.current)(generation.current);
     setEnCours(true);
     try {
       const res = await fetch(`/api/praticien/biologie/nabm/acte?code=${code}`, { cache: 'no-store' });
       const json = (await res.json()) as ActeNabmApiResponse;
+      if (perimee()) return;
       if (!res.ok || !json.ok) {
         setMessageEchec(!json.ok && json.error ? json.error : 'Impossible de lire cet acte.');
         return;
       }
       setActeLu({ code, acte: json.acte });
     } catch {
+      if (perimee()) return;
       setMessageEchec('Impossible de lire cet acte.');
     } finally {
       setEnCours(false);
@@ -186,6 +194,7 @@ export function CorrespondancesNabmSection({
     nature?: NatureNabm;
     verifieLeVu?: string;
   }) {
+    const perimee = (gen => () => gen !== generation.current)(generation.current);
     setMessageEchec(null);
     setEnCours(true);
     try {
@@ -195,6 +204,12 @@ export function CorrespondancesNabmSection({
         body: JSON.stringify({ analyteCode, ...corps }),
       });
       const json = (await res.json()) as DecisionCorrespondanceNabmApiResponse;
+      if (perimee()) {
+        // La fiche a changé d'analyte : rien à écrire ici, mais le catalogue
+        // se relit si l'écriture a eu lieu.
+        if (res.ok && json.ok) onModifie?.();
+        return;
+      }
       if (!res.ok || !json.ok) {
         setMessageEchec(!json.ok && json.error ? json.error : 'Le geste n’a pas été enregistré.');
         // L'état a pu bouger ailleurs : on relit ce que la base porte.
@@ -208,9 +223,13 @@ export function CorrespondancesNabmSection({
       await charger();
       onModifie?.();
     } catch {
-      setMessageEchec('Le geste n’a pas été enregistré.');
-      // Une réponse perdue ne dit pas si l'écriture a eu lieu : relire.
-      await charger();
+      // Une réponse perdue ne dit pas si l'écriture a eu lieu : relire la
+      // liste, et le catalogue, dont le remboursement a pu changer.
+      if (!perimee()) {
+        setMessageEchec('Le geste n’a pas été enregistré.');
+        await charger();
+      }
+      onModifie?.();
     } finally {
       setEnCours(false);
     }

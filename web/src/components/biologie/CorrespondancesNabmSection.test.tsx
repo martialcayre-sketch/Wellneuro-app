@@ -153,4 +153,49 @@ describe('CorrespondancesNabmSection — signature M-3', () => {
     expect(lectures.length).toBe(2);
     expect(onModifie).not.toHaveBeenCalled();
   });
+
+  it('un acte lu pour un analyte ne s’affiche pas sur la fiche de l’analyte suivant', async () => {
+    let livrerActe: (valeur: unknown) => void = () => {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (String(url).includes('/nabm/acte')) {
+          return new Promise(resolve => {
+            livrerActe = resolve;
+          });
+        }
+        return { ok: true, status: 200, json: async () => vide.json };
+      }),
+    );
+    const { rerender } = render(<CorrespondancesNabmSection analyteCode="BIO_FERRITINE" />);
+    await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+    fireEvent.change(screen.getByLabelText(/Code de l’acte/), { target: { value: '1208' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lire l’acte' }));
+
+    rerender(<CorrespondancesNabmSection analyteCode="BIO_ZINC_PLASMATIQUE" />);
+    await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+    livrerActe({ ok: true, status: 200, json: async () => ({ ok: true, millesime: 'V105', acte: ACTE }) });
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(screen.queryByText(/Libellé de l’acte 1208/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Signer la correspondance' })).toBeNull();
+  });
+
+  it('réponse perdue après une signature : liste ET catalogue relus', async () => {
+    const onModifie = vi.fn();
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') throw new TypeError('réseau');
+      return { ok: true, status: 200, json: async () => signee.json };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<CorrespondancesNabmSection analyteCode="BIO_FERRITINE" onModifie={onModifie} />);
+    await waitFor(() => expect(screen.getByText(/signée par/)).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Retirer la signature' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le retrait' }));
+
+    await waitFor(() => expect(onModifie).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('alert').textContent).toMatch(/n’a pas été enregistré/);
+    const lectures = fetchMock.mock.calls.filter(([, init]) => !init?.method);
+    expect(lectures.length).toBe(2);
+  });
 });
