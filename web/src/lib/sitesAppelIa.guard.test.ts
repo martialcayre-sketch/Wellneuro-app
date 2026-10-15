@@ -19,10 +19,13 @@ import { estUnTest, fichiersSource, lire, retirerLignesDeCommentaire } from './b
 //   — constante : l'adresse d'un fournisseur écrite en dur.
 // Le banc reconnaît le site d'appel ET ce qui le permet : un nouveau SDK, une
 // nouvelle adresse rougissent avant même leur premier appel.
-// LIMITE, dite pour ne pas sur-promettre : un appel dont la cible ne nomme
-// aucun fournisseur (une URL lue d'une variable au nom neutre) échappe au
-// balayage et relève de la revue. `tools/` et `scripts/` sont hors du banc :
-// ils ne tournent pas dans l'application.
+// LIMITES, dites pour ne pas sur-promettre. La garantie couvre les seuls
+// fournisseurs et SDK que nomment `NOMS_FOURNISSEUR`, `ADRESSES_IA` et
+// `SDK_IA` : un fournisseur absent de ces listes échappe au banc, et
+// l'y ajouter est le geste de la revue qui l'introduit. Un appel dont la cible
+// ne nomme aucun fournisseur (une URL lue d'une variable au nom neutre)
+// échappe aussi et relève de la revue. `tools/` et `scripts/` sont hors du
+// banc : ils ne tournent pas dans l'application.
 //
 // RATTACHEMENT. Un flux d'un sous-traitant se déclare sur la ligne de son
 // fournisseur au tableau de la rubrique 6 — celle que le patient lit, tenue

@@ -1978,7 +1978,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | ba | H35 | q |
 | aw ; texte de az | F34, F37 | av |
 | cm | F51 | cj |
-| at ; R:Drive | F45, H36 | K-05a (F46) |
+| at ; R:Drive | F45, H36 | K-05a (F46) : levé le 2026-10-15 avec D4 (D-299) et la liste fermée ; à reporter en D.1 à la prochaine photographie |
 | am ; seuils_points (E31) | H33, H40 | porte 4 |
 | x | H29 | porte 28 |
 | r, o, t | H28, H30, H31 | S-1 (H06) |

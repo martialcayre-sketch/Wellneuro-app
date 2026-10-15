@@ -19,3 +19,6 @@
 - Aucun code, aucune migration, aucun texte servi au patient modifiés : les
   exécutions suivent sous leurs lots (J2-radar, NF-7, EF-3b, cb et cc, lot
   de création du dossier).
+- Report du dernier correctif de la revue de K-05a (#1472), mergée avant
+  lui. Le banc dit que sa garantie couvre les seuls fournisseurs et SDK qu'il
+  nomme. La ligne D.3 « at ; R:Drive » est datée comme levée.

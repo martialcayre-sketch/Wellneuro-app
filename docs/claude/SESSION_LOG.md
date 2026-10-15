@@ -10433,10 +10433,10 @@ qualité inchangés (item de l'indice).
 **Ouvert.** Formulaire d'avant (migration avant signature) ; désignation illisible au dépôt ; Fil et prévol comptés par statut.
 ## 2026-10-15 — File D : F25, G-7, D4, K-05a, S-7, lettres ca, ac, z, m, n, porte 9
 
-**Fait.** D-298 et G-7 mergées et déployées. D4 (D-299, #1467) a le texte patient amendé sur la revue. K-05a ferme la liste des neuf sites IA et déclare l'atelier du corpus. S-7 compte les 8 analytes en production. Les lettres ca, ac, z, m et n deviennent D-300 à D-304. La release-db du lot (j) est consignée (porte 9).
+**Fait.** D-298, G-7, D4 (D-299, #1467) et K-05a (#1472) mergées. D4 a le texte patient amendé sur la revue. K-05a ferme la liste des neuf sites IA et déclare l'atelier du corpus. S-7 compte les 8 analytes en production. Les lettres ca, ac, z, m et n deviennent D-300 à D-304. La release-db du lot (j) est consignée (porte 9).
 
 **Écarté.** Proposer des actes NABM par libellé ; la promesse « jamais transmis » ; l'encart affiché par défaut sur les instruments du cabinet ; les posologies sans nombre dans la garde de dose.
 
-**Prochaine action.** Merger #1469, #1472, puis la PR des lettres, un à un, déploiement constaté.
+**Prochaine action.** Merger #1469, puis la PR des lettres, un à un, déploiement constaté (#1472 mergée par le responsable).
 
 **Ouvert.** Véhicule d'écriture NABM (M-3) ; exécutions J2-radar, z, NF-7, EF-3b ; re-mesure du sommeil le 2026-10-29.
