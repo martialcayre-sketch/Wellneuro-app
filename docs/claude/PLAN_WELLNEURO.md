@@ -1147,7 +1147,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 
 ### Rang 4 : première vague de migrations après BP-09
 
-L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a, BP-11, BP-13, BP-15, CC-8, axes [Hypothese], BF-8, la collecte, D-283 (b) [Hypothese], le retrait de la colonne NIR (D-284 lot g) [Hypothese], ai (D-297 §6), selon les cas J2-med et le statut posé ; une à la fois, sentinelle, constat par conteneur, déploiement constaté avant le merge suivant. La file du G3 (D-282 lot 2) est passée le 2026-10-13 (#1412), avant BP-09 et avant l'essai, par le fait.
+L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a, BP-11, BP-13, BP-15, CC-8, axes [Hypothese], BF-8, la collecte, D-283 (b) [Hypothese], le retrait de la colonne NIR (D-284 lot g) [Hypothese], ai (D-297 §6), selon les cas J2-med et le statut posé ; une à la fois, sentinelle, constat par conteneur, déploiement constaté avant le merge suivant. Amendé par D-314 §6-7 (2026-10-15) : CC-8 passe dès que sa migration est prête, sans attendre les migrations de la file B, quand aucune autre release-db n'est en vol ; elle précède ai, sur la même table. La file du G3 (D-282 lot 2) est passée le 2026-10-13 (#1412), avant BP-09 et avant l'essai, par le fait.
 
 | identifiant | objet | file | portes | migration | fiche |
 |---|---|---|---|---|---|
@@ -1186,6 +1186,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : 1 migration (EF-3b), en tête du rang 4 par la hiérarchie h1.
 - **Décisions, textes** : lettres j, m, n, g appliquées.
 - **Critère de fin** : palier 1 sorti (porte 24) ; release-db d'EF-3b constatée.
+- **Mise à jour (2026-10-15, D-314)** : état sur origin/main : j (D-306), g, k, l, m (D-303), n (D-304), s (D-308) écrites ; portes 8, 9, 12 levées ; release-db d'EF-3b constatée (H11). Restent : J1-cockpit pour CC-0 (chaîne S-2, puis c et d, puis M-2 et porte 6, porte 4 pour c ; S-2 non ouverte) ; porte 16 pour sommeil et hex (au plus tôt après le 2026-11-12) ; porte 21, constatée à la revue de la PR d'OF-2 elle-même ; f pour BF-3 (F57). ACT-1 n'attend plus J2-base (D-314 §5).
 
 #### H60 · p et J2-cc8 : journal de lecture du protocole
 - **Identifiant, piste** : lettre p (D-p), puis J2-cc8 ; journal de lecture du protocole (CC-8) ; amende le CHECK `portail_lectures_patient` ; protocole ; file A.
@@ -1194,6 +1195,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : oui, 1 ; au rang 4 de l'ordre des release-db, après EF-3b et BP-12a par la hiérarchie.
 - **Décisions, textes** : lettre p, registre.
 - **Critère de fin** : release-db constatée ; lecture tracée, constatée en conteneur.
+- **Mise à jour (2026-10-15)** : p écrite par D-314 sur arbitrages du responsable : la première ouverture du détail de chaque version diffusée du protocole (identifiant de la diffusion approuvée en vigueur) s'enregistre, sans date ; ni l'affichage de l'accueil ni la connexion ; le praticien lit « Lu le … » avec le code de ai (D-297 §5), constat par conteneur d'ici là ; aucun texte patient neuf (§4) ; espèce déclarée au registre (`docs/DOSSIER_RGPD.md`, rubrique 5). Ordre tranché (§6-7) : la release-db passe dès que la migration est prête, sans attendre BP-12a ni la file B, et avant ai. L'ouverture du détail et sa trace se servent avec ACT-1 (H70). Reste : la migration (une espèce au CHECK), sur demande, puis le code.
 
 #### H61 · J3-base, part hors biologie
 - **Identifiant, piste** : J3-base, part hors biologie ; BF-7 et BF-8 sont F55 ; protocole, cockpit, sommeil ; file A.
@@ -1450,6 +1452,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune neuve.
 - **Critère de fin** : accusé constaté sur un premier vrai dossier servi, sans anomalie, par identifiant en conteneur.
+- **Mise à jour (2026-10-15, D-314 §5)** : préalables amendés sur arbitrage du responsable : k, l, G-8, J2-cc8 (release-db constatée), porte 18 ; J2-base n'en est plus. CC-0, OF-1, OF-2 et la part sommeil restent à J2-base ; porte 24 fermée.
 
 #### F39 · R:ae : bloc « Protocole » du document médecin
 - **Identifiant, piste** : lettre ae ; trackc (document partagé avec av).
@@ -1847,7 +1850,7 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 
 | place | activation | fiche | préalables techniques | texte accusé | rang au plus tôt |
 |---|---|---|---|---|---|
-| 1 | CGU unique | H70 | k, l (D-283), J2-base, J2-cc8 | CGU ; lecture datée si elle la porte | 5 |
+| 1 | CGU unique | H70 | k, l (D-283), J2-cc8 (J2-base retiré par D-314 §5) | CGU ; lecture datée si elle la porte | 5 |
 | 2 | E-mail neutre à la diffusion | H75 | t le classe hors relance, sinon il sort de la file ; J3-base | texte de l'e-mail relu | 6 |
 | 3 | « Mes échanges » en lecture | H76 | u, ai, J3-base ; durée de D-283 §2 | encart d'urgence étendu ; lecture datée | 7 |
 | 4 | Dépôt de documents | H77 | porte 17 (levée), registre, J3-collecte, J2-conf | texte de collecte (G-11, accepté le 2026-10-14, #1441) | 8 |
@@ -1925,7 +1928,7 @@ Table par rang : rang d'abord, hiérarchie ensuite. Un geste qui a une fiche n'a
 | 3 | h2 | M-5 (2/2), approbation de la release-db de BP-09 (fait le 2026-10-14) ; G-3 | F03, F54 | toute migration suivante ; BF-7, BF-8 |
 | 3 | h3 | al ; y | H57, H58 | marques alimentaires ; J3-cabinet |
 | 3 | h3 | échelle du rituel du soir (cd) ; dire si la synthèse publiée au patient décrit les drapeaux du sommeil, et sous quelle forme | H54, H56 | rituel ; au |
-| 4 | h1 | approuver, une à une, les release-db du rang 4 (EF-3b, BP-12a, BP-11, BP-13, BP-15, CC-8, axes, BF-8, collecte, D-283 b, retrait du NIR) | fiches du rang 4 | codes consommateurs |
+| 4 | h1 | approuver, une à une, les release-db du rang 4 (EF-3b, BP-12a, BP-11, BP-13, BP-15, CC-8, axes, BF-8, collecte, D-283 b, retrait du NIR ; CC-8 dès qu'elle est prête, avant ai : D-314 §6-7) | fiches du rang 4 | codes consommateurs |
 | 4 à 10 | h1 à h3 | signer les contenus de BP-12a, BP-12b, BP-17 (porte 23) ; accepter chaque texte patient avant son activation ; consigner la lecture de chaque ouverture qui ne vise que certains dossiers | F05, F09, F11, §3 | J3-bio ; file C |
 | 5 | h1 | dire le sens d'« anomalie » au vu du premier constat d'activation | H05, §3 | porte 18 |
 | 5 | h3 | texte de l'encart (bd) ; propriétaire et sources du thème « respiration et apaisement » (ah) | H71, H68 | encart ; fiches par thème |
@@ -2510,7 +2513,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | m | encart de sécurité sur les CAB_ ; fait le 2026-10-15 (D-303) | la main du responsable | 0 | H10 |
 | n | garde de dose resserrée ; fait le 2026-10-15 (D-304) | la main du responsable | 0 | H11 |
 | o | Momentum à remesure libre | la main du responsable | 1 | H30 |
-| p | journal de lecture du protocole | registre | 4 (migration) | H60 |
+| p | journal de lecture du protocole ; fait le 2026-10-15 (D-314) | registre | 4 (migration) | H60 |
 | q | aperçu médecin tracé, remise au patient ; fait le 2026-10-15 (D-307) | la main du responsable | 0 | F38 |
 | r | droits d'usage des instruments | registre | 1 | H28 |
 | s | onglet Biologie, statut posé, deux marques ; fait le 2026-10-15 (D-308 ; la liste des statuts reste à écrire) | la main du responsable | 0 | F57 |

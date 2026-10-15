@@ -4,6 +4,83 @@
 
 ## Décisions actives
 
+### D-314 — Journal de lecture du protocole : la première ouverture du détail de chaque version diffusée est tracée, sans date ; ACT-1 n'attend que les conditions et ce journal ; sa migration passe dès qu'elle est prête, avant celle de ai (lettre p, CC-8)
+
+- Date : 2026-10-15
+- Statut : accepté. Fond acquis : séance du 2026-10-11, point 3.1
+  (« journal de lecture du protocole : tracer ; compte de protocoles lus »).
+  Sept arbitrages du responsable du 2026-10-15, sur questions à options,
+  tous conformes à la recommandation : trois d'ordre (§5 à §7), puis quatre
+  de contenu (§1 à §4). Texte rédigé par l'assistant à partir de ces réponses.
+- Domaine : portail patient, accusé de lecture (`PortailLecturePatient`) ;
+  protocole diffusé (`ProtocolDiffusionApproval`) ; fiches H60, H70, H59 du
+  plan unique. Précise : [[D-297]] (même table). Amende : le préalable
+  d'ACT-1 (H70) et l'ordre des release-db du rang 4.
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune relance,
+  aucune carte du fil du jour, aucun texte patient. Aucune migration n'est
+  écrite par cette décision : elle se fera sur demande explicite.
+
+**§1 — Ce qui compte comme lu.** Le protocole s'affiche aujourd'hui sur
+l'accueil du portail, à chaque visite, sans page propre ; un affichage n'est
+pas une lecture. L'accueil le montre replié, et c'est l'ouverture de son
+détail par le patient (le déplier, ou ouvrir sa page) qui s'enregistre. Ni
+l'affichage de l'accueil ni la connexion ne comptent. Aucun bouton « J'ai
+lu » : c'est une trace, pas un accusé.
+
+**§2 — Chaque version diffusée se lit.** Comme pour les documents remis,
+une ligne par version : l'objet lu est la diffusion approuvée en vigueur
+(identifiant de `ProtocolDiffusionApproval`, tête active de la chaîne). Une
+nouvelle diffusion repart à « non lu ». Le serveur n'accepte que
+l'identifiant de la diffusion actuellement servie à ce patient, comme pour
+les quatre espèces existantes. Les ouvertures suivantes n'écrivent rien : la
+ligne existe déjà (création seule, clé primaire).
+
+**§3 — Ce que voit le praticien.** Le régime de [[D-297]] §5, sans rien
+de plus : au dossier, pour la version en vigueur, « Lu le JJ/MM/AAAA »,
+« Lu, date non enregistrée » ou rien. Aucun compte d'ouvertures, aucune
+alerte, aucune relance, aucune intelligence artificielle. Cette surface
+vient avec le lot de code de ai, qui amende le banc de garde ; d'ici là,
+aucune surface praticien ne lit la table, et la lecture se constate par
+conteneur, en agrégats. Le « compte de protocoles lus » de la séance est un
+chiffre du cabinet : il prendra son propre lot, sous l'effectif de masquage
+de cinq (F25) et la doctrine du cockpit chiffré (porte 6).
+
+**§4 — Ce dont le patient est averti.** Rien de neuf dans ce lot : la
+trace ne porte aucune date et le praticien ne la voit pas, comme pour les
+quatre documents tracés aujourd'hui. La phrase validée de [[D-297]] §4
+(« Votre lecture est datée ») s'étend au détail du protocole quand la date
+arrive avec ai, sans texte neuf ; l'invariant de [[D-297]] §4 s'y applique
+(aucune date écrite depuis une page qui ne sert pas cette phrase).
+
+**§5 — ACT-1 n'attend que ce qu'il utilise.** Le préalable d'ACT-1 (place 1
+de la file C) devient : k (les conditions, [[D-292]]), l ([[D-283]]), G-8, ce
+journal (J2-cc8) livré et sa release-db constatée, puis la porte 18. Il
+n'attend plus le palier 1 entier (J2-base) : CC-0, OF-1, OF-2 et la part
+sommeil restent à J2-base, sur leurs propres portes, et la porte 24 reste
+fermée. L'ouverture du détail (§1) et sa trace se servent avec ACT-1, une
+activation, constatée sur un premier vrai dossier par identifiant en
+conteneur ([[D-288]]).
+
+**§6 — Sa migration passe dès qu'elle est prête.** Elle ajoute l'espèce
+`protocole` au CHECK de `portail_lectures_patient` et n'attend aucune
+migration de la biologie (fiches d'usage, constats, données physiologiques,
+décisions de parcours) : les deux files ne se touchent pas ([[D-287]]). Une
+release-db à la fois reste la règle : elle passe quand aucune autre n'est en
+vol, sentinelle, constat par conteneur, déploiement constaté avant le merge
+suivant ([[D-087]]). Ceci tranche la contradiction du plan entre la fiche
+H60 et l'introduction du rang 4.
+
+**§7 — Avant ai, en deux migrations.** Les deux touchent la même table :
+d'abord ce journal (une espèce), puis la date de première lecture de
+[[D-297]] §6 (une colonne). Deux release-db séparées, chacune constatée avant
+la suivante. Quand la colonne arrive, les lectures de protocole déjà tracées
+restent sans date ([[D-297]] §3).
+
+**§8 — Registre.** Le traitement est déclaré avant la migration
+(`docs/DOSSIER_RGPD.md`, rubrique 5, ligne « Journalisation ») : une espèce
+de plus dans `PortailLecturePatient`, mêmes colonnes, conservée avec le
+dossier ([[D-283]] §2) et effacée avec lui.
+
 ### D-313 — AIPD : réexamen déclenché par une liste d'événements et au plus tard le 2027-06-30 ; conclusion « non requise » maintenue au 2026-10-15 ; faits postérieurs à D-265 versés (lettre co)
 
 - Date : 2026-10-15
