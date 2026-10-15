@@ -26,11 +26,12 @@ import { sha256 } from './corpusSyntheseV1';
 //
 // LE STATUT NE LÈVE RIEN (§5) : seul le verdict en tête de chaîne lève
 // l'attente. Le rattachement est DÉCLARÉ, jamais déduit ; un signalement sans
-// rattachement ne met rien en pause et reste examiné sur la surface des
-// signalements — `construireSafetyFindings` le dit au praticien (`DC-35`).
-// Celui qui répond « oui » au programme sans élément (formulaire d'avant)
-// bloquera la diffusion comme les autres (D-281 §5, arbitrage du 2026-10-14)
-// dès qu'une migration y aura ouvert l'avis — préalable de la signature.
+// rattachement ni programme ne met rien en pause et reste examiné sur la
+// surface des signalements — `construireSafetyFindings` le dit au praticien
+// (`DC-35`). Celui qui répond « oui » au programme sans élément (formulaire d'avant)
+// bloque la diffusion comme les autres (D-281 §5, arbitrage du 2026-10-14),
+// sans rien mettre en pause : la migration
+// `20261014230000_saf_ei_verdict_formulaire_avant_v1` y a ouvert l'avis.
 //
 // AUCUNE BORNE DE DURÉE. « Combien de jours après la prise un symptôme reste
 // associé » est un seuil clinique qu'aucune source du dépôt ne fixe (`DC-19`).

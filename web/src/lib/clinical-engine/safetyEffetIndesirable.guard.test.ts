@@ -180,10 +180,12 @@ describe('table signée — la règle amendée ne retire plus rien de la carte',
     expect(limitations.join(' ')).toMatch(/rattachés à aucun élément/);
   });
 
-  it('le formulaire d’avant (programme sans élément désigné) est hors règle, et se dit', () => {
+  // D-281 §5, arbitrage du 2026-10-14 : le formulaire d'avant attend l'avis et
+  // bloque la diffusion. Le dire « hors règle » contredirait la garde.
+  it('le formulaire d’avant (programme sans élément désigné) n’est pas hors règle : il a sa file d’avis', () => {
     simulerSignature();
     expect(constatsEI([FORMULAIRE_D_AVANT])).toHaveLength(0);
-    expect(construireSafetyFindings([], [FORMULAIRE_D_AVANT], []).limitations.join(' ')).toContain('1 signalement(s)');
+    expect(construireSafetyFindings([], [FORMULAIRE_D_AVANT], []).limitations).toHaveLength(0);
   });
 
   it('le compte annoncé est celui des signalements OUVERTS hors règle', () => {
@@ -193,6 +195,7 @@ describe('table signée — la règle amendée ne retire plus rien de la carte',
       SANS_RATTACHEMENT,
       FORMULAIRE_D_AVANT,
       { ...SANS_RATTACHEMENT, id: 'AER-5', statutTraitement: 'clos' },
+      { ...SANS_RATTACHEMENT, id: 'AER-6' },
     ], []);
     expect(limitations.join(' ')).toContain('2 signalement(s)');
   });
