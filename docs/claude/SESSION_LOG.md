@@ -10440,3 +10440,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merger #1469, puis la PR des lettres, un à un, déploiement constaté (#1472 mergée par le responsable).
 
 **Ouvert.** Véhicule d'écriture NABM (M-3) ; exécutions J2-radar, z, NF-7, EF-3b ; re-mesure du sommeil le 2026-10-29.
+
+## 2026-10-15 — File D.1 : lettres j, q, s, aa, ab, av, w, co ; G-10, porte 4, M-3
+
+**Fait.** Huit lettres écrites sur questions à options (D-306 à D-313). Deux écarts : en s, statut posé en liste fermée ; en ab, entrée « Connaissances ». Pour co, « non requise » est maintenue contre la recommandation. Préparés : instruments de G-10 (quatre répétés + HADS), sources de la porte 4, véhicule de M-3 (écran praticien). « at ; R:Drive » reportés en D.1.
+
+**Écarté.** Migration de données pour la NABM ; texte libre pour le statut posé ; bilan composé dans av ; « à la charge du patient ».
+
+**Prochaine action.** PR, CI, revue, merge. Ensuite : lot de code de l'écran NABM (M-3), puis dossiers de preuve de w.
+
+**Ouvert.** Liste des statuts posés (s) et motifs des neuf critères de l'AIPD (co), de la main du responsable ; références test-retest (G-10) ; sources de la porte 4.
