@@ -3527,6 +3527,126 @@ model FicheAssietteRemise {
   @@map("fiches_assiette_remises")
 }
 
+// ─── Fiches d'usage (D-314, BP-12a) — le texte, en base, rubrique par rubrique ─
+//
+// La STRUCTURE d'une fiche d'usage est une table TS signée, faite
+// d'identifiants (`lib/fiches-usage/`). Son TEXTE et les libellés de son
+// vocabulaire vivent ici, en base HDS, et ne touchent jamais le dépôt, qui est
+// public (D-251 §4, étendu par D-314 §3). Quatre tables, append-only
+// (triggers), sans AUCUNE donnée patient : les versions du texte d'une fiche
+// et leurs actes — un acte valide ou retire UNE rubrique (arbitrage 5) —, les
+// libellés du vocabulaire (hypothèses et populations) et leurs actes. Texte
+// et libellés portent l'empreinte de la structure signée (arbitrage 10).
+// L'état se dérive des actes, au sens d'`ordre` ; rien n'est réécrit.
+
+/// Une version du texte d'une fiche d'usage. `contenu` : un objet dont chaque
+/// clé est une rubrique de la liste fermée (CHECK de la migration) et chaque
+/// valeur son texte. Append-only : une correction est une version NEUVE.
+model FicheUsageVersion {
+  id                  String   @id @default(cuid()) @map("id")
+  /// Identifiant de la fiche dans la structure signée (`FU_…`).
+  ficheId             String   @map("fiche_id")
+  numero              Int      @map("numero")
+  contenu             Json     @map("contenu")
+  /// Empreinte de la structure signée au dépôt : une structure re-signée rend
+  /// ce texte « à relire » jusqu'à un nouvel acte (D-314 §5, arbitrage 10).
+  structureSha256     String   @map("structure_sha256")
+  modeleRedaction     String   @map("modele_redaction")
+  modeleContreLecture String   @map("modele_contre_lecture")
+  versionConsigne     String   @map("version_consigne")
+  /// Posé par la base (trigger) : une version antidatable n'est pas une preuve.
+  creeLe              DateTime @default(now()) @map("cree_le")
+
+  actes FicheUsageActe[]
+
+  @@unique([ficheId, numero], map: "fiches_usage_versions_fiche_numero_key")
+  @@map("fiches_usage_versions")
+}
+
+/// Un acte du responsable sur UNE rubrique d'une version : la valider, ou la
+/// retirer. Append-only. Le dernier acte se lit par `ordre`, jamais par `le`.
+model FicheUsageActe {
+  id                 String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (séquence, réaffirmée par trigger).
+  ordre              BigInt   @default(autoincrement()) @map("ordre")
+  idVersion          String   @map("id_version")
+  /// Rubrique de la liste fermée (CHECK).
+  rubrique           String   @map("rubrique")
+  /// 'validee' | 'retiree' — fermé par un CHECK en base.
+  acte               String   @map("acte")
+  /// SHA-256 du texte de la rubrique, recalculé par trigger contre la version :
+  /// l'acte porte sur CE texte-là.
+  empreinte          String   @map("empreinte")
+  validateur         String   @map("validateur")
+  /// Déclaration de relecture intégrale de la rubrique — exigée pour valider.
+  relectureIntegrale Boolean  @map("relecture_integrale")
+  /// Obligatoire pour un retrait (CHECK).
+  motif              String?  @map("motif")
+  /// Posé par la base (trigger).
+  le                 DateTime @default(now()) @map("le")
+
+  version FicheUsageVersion @relation(fields: [idVersion], references: [id], onDelete: Restrict)
+
+  @@unique([ordre], map: "fiches_usage_actes_ordre_key")
+  @@index([idVersion, rubrique, ordre], map: "fiches_usage_actes_version_rubrique_ordre_idx")
+  @@map("fiches_usage_actes")
+}
+
+/// Un libellé du vocabulaire signé des fiches d'usage (D-314 §2-§3) : une
+/// hypothèse du parcours (`HYP_…`, arbitrage 3) ou une population d'usage
+/// (`POP_…`, arbitrage 7). Un libellé par terme, partagé par toutes les
+/// fiches. Append-only ; versionné comme une fiche.
+model FicheUsageLibelle {
+  id                  String   @id @default(cuid()) @map("id")
+  /// 'hypothese' | 'population' — tenue avec le préfixe du terme (CHECK).
+  nature              String   @map("nature")
+  /// Identifiant du terme dans la structure signée.
+  termeId             String   @map("terme_id")
+  numero              Int      @map("numero")
+  libelle             String   @map("libelle")
+  /// Tenue égale au SHA-256 du libellé par un CHECK.
+  libelleSha256       String   @map("libelle_sha256")
+  /// Empreinte de la structure signée : une re-signature rend le libellé « à
+  /// relire » jusqu'à un nouvel acte (arbitrage 10, étendu au vocabulaire).
+  structureSha256     String   @map("structure_sha256")
+  modeleRedaction     String   @map("modele_redaction")
+  modeleContreLecture String   @map("modele_contre_lecture")
+  versionConsigne     String   @map("version_consigne")
+  /// Posé par la base (trigger).
+  creeLe              DateTime @default(now()) @map("cree_le")
+
+  actes FicheUsageLibelleActe[]
+
+  @@unique([termeId, numero], map: "fiches_usage_libelles_terme_numero_key")
+  @@map("fiches_usage_libelles")
+}
+
+/// Un acte du responsable sur UN libellé : le valider, ou le retirer.
+/// Append-only. Le dernier acte se lit par `ordre`, jamais par `le`.
+model FicheUsageLibelleActe {
+  id                 String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (séquence, réaffirmée par trigger).
+  ordre              BigInt   @default(autoincrement()) @map("ordre")
+  idLibelle          String   @map("id_libelle")
+  /// 'validee' | 'retiree' — fermé par un CHECK en base.
+  acte               String   @map("acte")
+  /// Recopiée du libellé, et vérifiée égale par trigger.
+  empreinte          String   @map("empreinte")
+  validateur         String   @map("validateur")
+  /// Déclaration de relecture intégrale — exigée pour valider.
+  relectureIntegrale Boolean  @map("relecture_integrale")
+  /// Obligatoire pour un retrait (CHECK).
+  motif              String?  @map("motif")
+  /// Posé par la base (trigger).
+  le                 DateTime @default(now()) @map("le")
+
+  libelle FicheUsageLibelle @relation(fields: [idLibelle], references: [id], onDelete: Restrict)
+
+  @@unique([ordre], map: "fiches_usage_libelles_actes_ordre_key")
+  @@index([idLibelle, ordre], map: "fiches_usage_libelles_actes_libelle_ordre_idx")
+  @@map("fiches_usage_libelles_actes")
+}
+
 /// Lettre d'adressage mise à disposition du patient dans son portail ([[D-262]],
 /// LOT-01). Ajout seul : UPDATE et TRUNCATE refusés, DELETE réservé à
 /// l'effacement nommé. Le texte est un instantané figé, son empreinte tenue par

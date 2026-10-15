@@ -19,7 +19,8 @@
   `catalogueConduitesV1`), §9 (natures DC-20 et DC-47), §11 (une migration,
   deux PR) et §14 (constantes produit).
 - **Une migration autorisée** (demande du responsable du 2026-10-15) : trois
-  tables neuves, aucune table existante modifiée.
+  tables neuves, aucune table existante modifiée. **Amendée le 2026-10-16**
+  (§8) : quatre tables neuves.
 - **Ne touche pas** : le régime des fiches d'assiette ([[D-251]]), inchangé ;
   `catalogueConduitesV1`, aucun axe, aucun tableau clinique ([[D-206]]) ;
   la liste fermée des sites d'IA de l'application (K-05a, porte 5) ; aucune
@@ -104,8 +105,34 @@ Les positions d'expert versionnées et l'arbitrage de conflit (BP-12b). Les
 options par hypothèse (BP-17). Toute valeur et toute lecture de résultat
 (BP-27). Toute sélection d'une fiche d'après le dossier (étage assistant).
 
+**§8 — Amendement du 2026-10-16 : la forme de la migration.** Cinq
+arbitrages du responsable, rendus en écrivant la PR de migration (fiche
+LOT-12, arbitrages 11 à 15), précisent §2, §3 et §5 :
+
+- **Quatre tables, et non trois** (arbitrage 11) : les actes des libellés
+  ont leur propre table ; chaque table d'actes n'a qu'une cible. Les
+  versions du texte d'une fiche et leurs actes par rubrique ; les libellés
+  du vocabulaire et leurs actes.
+- **Les libellés des populations d'usage en base, avec ceux des
+  hypothèses** (arbitrage 12) : une table de vocabulaire, chaque libellé
+  rangé sous sa nature (hypothèse ou population), un libellé par terme,
+  partagé par toutes les fiches — la raison de l'arbitrage 3, étendue à
+  l'arbitrage 7.
+- **La liste des rubriques du texte est fermée par la base** (arbitrage 13) :
+  celle du cadrage v3, §3.2, sans « explication patient », que la base
+  refuse ; l'ajouter (BP-18b) est une migration.
+- **Les formats d'identifiants sont fixés par la base** (arbitrage 14) :
+  `FU_…` pour une fiche, `HYP_…` pour une hypothèse, `POP_…` pour une
+  population (majuscules, chiffres, soulignés) ; la structure signée s'y
+  conforme.
+- **Les libellés sont liés à l'empreinte de la structure** (arbitrage 15,
+  §5 étendu) : une structure re-signée rend texte ET libellés « à relire »
+  jusqu'à un nouvel acte.
+
 - Conséquences : fragment `changelog.d/2026-10-15-d314-fiches-usage.md` ;
-  fiche LOT-12 mise à jour ; puis la PR de migration seule.
+  fiche LOT-12 mise à jour ; puis la PR de migration seule. Amendement §8 :
+  fragment `changelog.d/2026-10-15-bp12a-migration-fiches-usage.md`, porté
+  par la PR de migration.
 
 ### D-313 — AIPD : réexamen déclenché par une liste d'événements et au plus tard le 2027-06-30 ; conclusion « non requise » maintenue au 2026-10-15 ; faits postérieurs à D-265 versés (lettre co)
 

@@ -1,7 +1,7 @@
 ---
 id: "LOT-12"
 titre: "BP-12a — Fiches d'usage : structure signée, texte en base"
-statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; migration seule après son merge)"
+statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; PR de migration seule ouverte, cinq arbitrages de forme rendus le 2026-10-16, D-314 §8)"
 dépend_de: "LOT-07, LOT-09"
 ---
 
@@ -253,6 +253,45 @@ réponse retenue suit, en **Rendu**.
       relectures, mais un texte peut survivre à un changement d'usage.
     - **Rendu : A**, texte lié à l'empreinte de la structure.
 
+### Arbitrages de la migration (rendus le 2026-10-16, D-314 §8)
+
+Posés en écrivant la PR de migration ; le onzième et le quinzième suivent
+la revue `wn-reviewer` de son premier jet.
+
+11. **Où vivent les actes des libellés.** D-314 disait trois tables.
+    - **A.** Une table d'actes partagée, à deux cibles exclusives : trois
+      tables, comme écrit.
+    - **B.** Une table d'actes propre aux libellés : quatre tables, chacune
+      à une seule cible ; D-314 amendée.
+    - **Rendu : B.**
+12. **Où vivent les libellés des populations d'usage.** D-314 §2 les met en
+    base sans dire où ; une population sert plusieurs fiches.
+    - **A.** Dans une table de vocabulaire, avec ceux des hypothèses, sous
+      leur nature : un libellé par population, validé une fois.
+    - **B.** Dans la rubrique « population » de chaque fiche : deux fiches,
+      deux libellés qui peuvent diverger.
+    - **Rendu : A.**
+13. **La liste des rubriques du texte.**
+    - **A.** Fermée par la base, « explication patient » refusée : l'ajouter
+      (BP-18b) est une migration.
+    - **B.** Fermée par le code seul : sans migration, mais l'arbitrage 6 ne
+      tient plus que par le code applicatif.
+    - **Rendu : A.**
+14. **Le format des identifiants.**
+    - **A.** Fixé par la base : `FU_…`, `HYP_…`, `POP_…` ; la structure s'y
+      conforme ; en changer est une migration.
+    - **B.** Forme générique sans préfixe : fiche et terme indistincts en
+      base.
+    - **Rendu : A.**
+15. **Les libellés et l'empreinte de la structure** (arbitrage 10 étendu).
+    Le vocabulaire est déclaré dans la structure signée ; un identifiant dont
+    le sens change sous le même nom laisserait son libellé validé.
+    - **A.** Liés : une re-signature rend tous les libellés « à relire »
+      jusqu'à un nouvel acte.
+    - **B.** Indépendants, sous la règle « un identifiant ne change jamais de
+      sens ».
+    - **Rendu : A.**
+
 ## Périmètre
 
 - La structure signée sous `web/src/lib/fiches-usage/` (identifiants
@@ -263,9 +302,11 @@ réponse retenue suit, en **Rendu**.
 - Le vocabulaire d'hypothèses (identifiants) et la liste fermée des
   populations d'usage (identifiants), signés dans la structure (7).
 - La migration : `FicheUsageVersion`, `FicheUsageActe` (un acte par
-  rubrique, 5) et la table versionnée des libellés d'hypothèse, avec ses
-  actes (3) ; ajout seul, triggers, CHECK fermés, contrat négatif propre,
-  joué au CI et par `wn-test-worktree.sh`.
+  rubrique, 5), `FicheUsageLibelle` (vocabulaire : hypothèses et
+  populations, 3, 12) et `FicheUsageLibelleActe` (11) ; texte et libellés
+  liés à l'empreinte de la structure (10, 15) ; ajout seul, triggers, CHECK
+  fermés (rubriques, 13 ; formats, 14), contrat négatif propre, joué au CI
+  et par `wn-test-worktree.sh`.
 - L'outil hors ligne de rédaction et de contre-lecture, sous `tools/`, sur
   le patron de `tools/corpus/fiches/` (4) ; son document TRUST et sa
   mention au dossier RGPD.

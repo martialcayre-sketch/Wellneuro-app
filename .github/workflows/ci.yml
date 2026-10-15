@@ -1058,6 +1058,17 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/fiches_assiette_remises_v1_negatif.sql
 
+      # Fiches d'usage (D-314, BP-12a). Le patron des fiches d'assiette, avec
+      # ses deux écarts arbitrés : un acte vaut pour UNE rubrique d'une version,
+      # dont la base recalcule elle-même l'empreinte, ou pour UN libellé
+      # d'hypothèse — une cible et une seule. La liste des rubriques est fermée
+      # et refuse « explication patient » (hors du lot). Les instants sont
+      # éprouvés sous un fuseau de session Europe/Paris. Transaction annulée.
+      - name: Fiches usage negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/fiches_usage_v1_negatif.sql
+
       # Staging d'import biologique (D-256 A2/A5, BIO-INGEST LOT-02). Ce que le
       # drift check ne voit pas : le document est ce qu'il dit être (type,
       # 10 Mo, empreinte recalculée), un seul dossier d'un bout à l'autre de la
