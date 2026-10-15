@@ -1,3 +1,4 @@
+import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import type { ProtocolAction } from '@/lib/clinical-engine/types';
 import {
@@ -8,9 +9,12 @@ import { refusSaisieSantePour } from '@/lib/patient/gardeAgeServeur';
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
 import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
 import {
+  effetsNonTraites,
   elementsDesignables,
   elementsEnPause,
+  recoitUnAvis,
   signalementsEnAttente,
+  STATUTS_NON_TRAITES,
   type ElementEnPause,
   type Rattachement,
   type VerdictEffetIndesirable,
@@ -139,6 +143,48 @@ export async function signalementsEnAttenteDuDossier(
     signalements,
     verdicts.map(v => ({ ...v, verdict: v.verdict as VerdictEffetIndesirable['verdict'] })),
   ).map(({ id, soumisLe }) => ({ id, soumisLe }));
+}
+
+/**
+ * Les signalements d'effet indésirable NON TRAITÉS parmi ceux que `where`
+ * retient — la lecture du Fil du jour et du prévol du copilote. La règle est
+ * `effetsNonTraites`, celle du panneau TRUST ; ici, la lecture : les
+ * signalements ouverts par statut, plus TOUS ceux qui reçoivent un avis, quel
+ * que soit leur statut — un signalement « traité » sans verdict attend
+ * toujours —, puis la chaîne des avis de ces derniers. Le plus récent d'abord.
+ *
+ * Aucun verrou, comme le compteur du panneau : actif dès le déploiement.
+ */
+export async function lireEffetsNonTraites(
+  where: Prisma.TrustAdverseEffectReportWhereInput,
+): Promise<{ id: string; idPatient: string; soumisLe: Date }[]> {
+  const candidats = await prisma.trustAdverseEffectReport.findMany({
+    where: {
+      AND: [
+        where,
+        {
+          OR: [
+            { statutTraitement: { in: [...STATUTS_NON_TRAITES] } },
+            { rattachement: { not: null } },
+            { protocolDraftId: { not: null } },
+          ],
+        },
+      ],
+    },
+    select: { id: true, idPatient: true, soumisLe: true, statutTraitement: true, rattachement: true, protocolDraftId: true },
+    orderBy: { soumisLe: 'desc' },
+  });
+  const avecAvis = candidats.filter(recoitUnAvis);
+  const verdicts = avecAvis.length === 0
+    ? []
+    : await prisma.trustAdverseEffectVerdict.findMany({
+      where: { reportId: { in: avecAvis.map(e => e.id) } },
+      select: { id: true, reportId: true, verdict: true, elementActionId: true, supersedesVerdictId: true },
+    });
+  return effetsNonTraites(
+    candidats,
+    verdicts.map(v => ({ ...v, verdict: v.verdict as VerdictEffetIndesirable['verdict'] })),
+  ).map(({ id, idPatient, soumisLe }) => ({ id, idPatient, soumisLe }));
 }
 
 /**

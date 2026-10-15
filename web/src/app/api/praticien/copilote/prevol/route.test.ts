@@ -12,6 +12,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     protocolDiffusionApproval: { findMany: vi.fn() },
     assignation: { findMany: vi.fn() },
     trustAdverseEffectReport: { findMany: vi.fn() },
+    trustAdverseEffectVerdict: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
@@ -39,6 +40,7 @@ describe('GET /api/praticien/copilote/prevol', () => {
     prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.trustAdverseEffectReport.findMany.mockResolvedValue([]);
+    prisma.trustAdverseEffectVerdict.findMany.mockResolvedValue([]);
   });
 
   // Les instantanés du carnet alimentaire partagent `protocol_drafts` : sans
@@ -140,6 +142,65 @@ describe('GET /api/praticien/copilote/prevol', () => {
     const res = await GET(request());
     const payload = await res.json();
     expect(payload.prevol.questionsSuggerees[0]).toMatch(/J14/);
+  });
+
+  // D-281 §5 : un signalement qui reçoit un avis reste non traité tant qu'il
+  // l'attend, quel que soit son statut — la règle du panneau TRUST.
+  describe('effet indésirable non traité par l’attente d’avis (D-281 §5)', () => {
+    const effet = (id: string, champs: { statutTraitement: string; rattachement: string | null; protocolDraftId: string | null }) => ({
+      id, idPatient: 'PAT_1', soumisLe: new Date('2026-02-10T00:00:00.000Z'), ...champs,
+    });
+    const signale = async () => {
+      const payload = await (await GET(request())).json();
+      return payload.prevol.faits.some((f: { source: string }) => f.source === 'signalement');
+    };
+
+    it('lit le dossier sur le statut ouvert OU un avis à recevoir', async () => {
+      await GET(request());
+      expect(prisma.trustAdverseEffectReport.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: {
+          AND: [
+            { idPatient: 'PAT_1' },
+            {
+              OR: [
+                { statutTraitement: { in: ['recu', 'en_cours'] } },
+                { rattachement: { not: null } },
+                { protocolDraftId: { not: null } },
+              ],
+            },
+          ],
+        },
+      }));
+    });
+
+    it('rattaché, passé à « traité » sans avis : compté', async () => {
+      prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
+        effet('aer_rattache', { statutTraitement: 'traite', rattachement: 'element', protocolDraftId: 'pd_1' }),
+      ]);
+      expect(await signale()).toBe(true);
+    });
+
+    it('avis en tête de chaîne : non compté, même au statut « reçu »', async () => {
+      prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
+        effet('aer_rattache', { statutTraitement: 'recu', rattachement: 'element', protocolDraftId: 'pd_1' }),
+      ]);
+      prisma.trustAdverseEffectVerdict.findMany.mockResolvedValue([
+        { id: 'v_1', reportId: 'aer_rattache', verdict: 'implique', elementActionId: 'action-1', supersedesVerdictId: null },
+      ]);
+      expect(await signale()).toBe(false);
+    });
+
+    it('sans avis à recevoir : compté par statut', async () => {
+      prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
+        effet('aer_traite', { statutTraitement: 'traite', rattachement: null, protocolDraftId: null }),
+      ]);
+      expect(await signale()).toBe(false);
+      prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
+        effet('aer_recu', { statutTraitement: 'recu', rattachement: null, protocolDraftId: null }),
+      ]);
+      expect(await signale()).toBe(true);
+      expect(prisma.trustAdverseEffectVerdict.findMany).not.toHaveBeenCalled();
+    });
   });
 
   it('erreur technique (500) sans détail interne', async () => {

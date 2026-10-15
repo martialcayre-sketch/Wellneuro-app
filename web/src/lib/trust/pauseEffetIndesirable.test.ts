@@ -6,6 +6,7 @@ import {
   TEXTE_PAUSE_AVIS_RENDU,
   TEXTE_PAUSE_COMPLEMENTS,
   TEXTE_PAUSE_ELEMENT,
+  effetsNonTraites,
   elementsDesignables,
   elementsEnPause,
   versionProgramme,
@@ -143,5 +144,38 @@ describe('elementsEnPause', () => {
       { actionId: MAGNESIUM.actionId, texte: 'element' },
       { actionId: OMEGA.actionId, texte: 'complements' },
     ]);
+  });
+});
+
+// UNE SEULE RÈGLE DU « NON TRAITÉ » — panneau TRUST, Fil du jour, prévol (D-281 §5).
+describe('effetsNonTraites', () => {
+  const effet = (id: string, statutTraitement: string, rattachement: string | null, protocolDraftId: string | null) =>
+    ({ id, statutTraitement, rattachement, protocolDraftId });
+  const verdict = (id: string, reportId: string, supersedesVerdictId: string | null = null): VerdictEffetIndesirable =>
+    ({ id, reportId, verdict: 'non_implique', elementActionId: null, supersedesVerdictId });
+
+  it('reçoit un avis : non traité tant qu’il l’attend, quel que soit son statut', () => {
+    const effets = [
+      effet('rattache_traite', 'traite', 'element', 'pd_1'),
+      effet('avant_clos', 'clos', null, 'pd_1'),
+      effet('rattache_avis', 'recu', 'ne_sait_pas', 'pd_1'),
+    ];
+    expect(effetsNonTraites(effets, [verdict('v_1', 'rattache_avis')]).map(e => e.id))
+      .toEqual(['rattache_traite', 'avant_clos']);
+  });
+
+  it('une chaîne à deux têtes n’élit aucun avis : le signalement reste non traité', () => {
+    const effets = [effet('deux_tetes', 'traite', 'element', 'pd_1')];
+    expect(effetsNonTraites(effets, [verdict('v_1', 'deux_tetes'), verdict('v_2', 'deux_tetes')])).toEqual(effets);
+  });
+
+  it('ne reçoit aucun avis : compté par statut, un verdict égaré n’y change rien', () => {
+    const effets = [
+      effet('recu', 'recu', null, null),
+      effet('en_cours', 'en_cours', null, null),
+      effet('traite', 'traite', null, null),
+      effet('clos', 'clos', null, null),
+    ];
+    expect(effetsNonTraites(effets, [verdict('v_1', 'recu')]).map(e => e.id)).toEqual(['recu', 'en_cours']);
   });
 });

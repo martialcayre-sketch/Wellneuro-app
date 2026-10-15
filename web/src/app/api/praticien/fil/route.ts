@@ -19,6 +19,7 @@ import { isBioIngestEnabled, isBioLectureEnabled, isCbEnabled } from '@/lib/biol
 import { importsALire, type ImportValideRow } from '@/lib/biology-library/import/lectureImport';
 import { momentumJalonsParPatient } from '@/lib/fil/momentumJ21';
 import { bornesJourParis } from '@/lib/fil/fuseau';
+import { lireEffetsNonTraites } from '@/lib/trust/pauseEffetIndesirableServeur';
 
 export type FilApiResponse = {
   cartes: CarteFil[];
@@ -101,7 +102,12 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       synthesesValidees,
       envoisBooklet,
     ] = await Promise.all([
-      prisma.trustAdverseEffectReport.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
+      // Un effet indésirable qui reçoit un avis est non traité tant qu'il
+      // l'attend, quel que soit son statut (D-281 §5) : la règle du panneau
+      // TRUST, lue sur les patients ACTIFS du praticien — le Fil écarte les
+      // autres, qui ne doivent pas prendre de place. La sélection d'attente se
+      // fait après lecture, la borne de dix aussi.
+      lireEffetsNonTraites({ patient: { actif: true, ...filtrePatientsDuPraticien(email) } }).then(e => e.slice(0, 10)),
       prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
       prisma.trustRightsRequest.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
       prisma.syntheseIA.findMany({
