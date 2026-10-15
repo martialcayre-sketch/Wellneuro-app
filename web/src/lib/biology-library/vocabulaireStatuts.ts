@@ -41,3 +41,22 @@ export type StatutPanel =
  */
 export const STATUTS_PROPOSES: ReadonlySet<string> =
   new Set(['recommande', 'a_repeter', 'optionnel', 'conditionnel']);
+
+/**
+ * LES LIGNES QUI OUVRENT UNE ATTENTE ([[D-190]] §3, tenue au serveur par
+ * [[D-305]] §4) : `recommande`, `a_repeter`, ou `conditionnel` à déclencheur
+ * REMPLI — jamais un conditionnel non rempli, jamais un optionnel. Plus étroit
+ * que `STATUTS_PROPOSES`, et c'est voulu : proposer un bilan au médecin n'est
+ * pas suspendre une action sur lui.
+ *
+ * Il vit ICI pour la même raison que le prédicat ci-dessus : l'écran qui offre
+ * les analytes et la route qui refuse les autres lisent le même — deux copies
+ * divergeraient, et l'écran offrirait ce que le serveur refuse.
+ */
+export function ligneOuvreUneAttente(ligne: {
+  statut: StatutPanel;
+  declencheurRempli: boolean | null;
+}): boolean {
+  if (ligne.statut === 'recommande' || ligne.statut === 'a_repeter') return true;
+  return ligne.statut === 'conditionnel' && ligne.declencheurRempli === true;
+}

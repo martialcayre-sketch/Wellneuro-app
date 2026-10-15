@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "BP-04 — Attente typée sur les deux véhicules"
-statut: "à_faire (fiche proposée le 2026-10-15 ; sept arbitrages rendus le 2026-10-15 ; décision de contrat D-305 écrite ; prêt à coder après son merge)"
+statut: "terminé (2026-10-15) — code de D-305 livré en une PR, sans migration ; aucun constat de production attendu, aucune attente n'y étant posée"
 dépend_de: "LOT-01, LOT-09"
 ---
 
@@ -199,6 +199,48 @@ réponse retenue suit, en **Rendu**.
 
 Bancs d'empreinte V4 et C4 verts ; attente ancienne lue « non typée » ; T2
 vert ; D-305 mergée avant le code.
+
+## Livraison (2026-10-15)
+
+Une PR, sans migration, sans drapeau, partie de `origin/main` après le merge
+de D-305 (#1471).
+
+- **Contrat** : `ProtocolWaitFor.analyteCodes`, exigé non vide à l'écriture
+  par `buildProtocolDraft` (dédupliqué, trié) ; lecteur tolérant
+  `estAttenteTypee` et libellé `LIBELLE_ATTENTE_NON_TYPEE` dans
+  `clinical-engine/types.ts`, communs aux deux véhicules.
+- **C4** : `lireConditionBiologique` lit le même champ ; présent mais
+  malformé, la condition est illisible. L'atelier refuse une condition qui
+  porte des codes (arbitrage 2 A).
+- **Serveur** : la route des versions juge les attentes que la soumission
+  pose (`biology-library/attentesBornees.ts`) — catalogue, puis proposition
+  re-dérivée à l'instant ; le prédicat des lignes ouvrantes,
+  `ligneOuvreUneAttente`, vit dans la feuille `vocabulaireStatuts.ts`, lu
+  aussi par l'écran.
+- **Lecture de l'arbitrage 6 retenue au code, à confirmer en revue** : une
+  action suspendue que la version active porte déjà, **identique en tout
+  point** (égalité canonique de l'action), n'est pas rejugée. Sans cela, le
+  bilan revenu (ligne passée « déjà documenté »), la révision qui applique
+  l'arbitrage d'une intention serait refusée pour une autre, restée en
+  attente et inchangée. Toute différence — code ajouté, cible, intitulé,
+  type — est un geste neuf, jugé : la contre-revue du 2026-10-15 a montré
+  qu'un identifiant seul ne suffit pas, le constructeur renumérotant ses
+  actions depuis `action-1`.
+- **Fenêtre résiduelle (contre-revue, P2)** : jusqu'au déploiement, le code
+  en production pose encore des attentes sans codes, que l'écrivain strict
+  refuserait ensuite à leur révision. Recompté par conteneur le 2026-10-15
+  à 13 h 01, en agrégats : 4 versions, aucune attente. À recompter juste
+  avant le merge.
+- **Écran** : le constructeur offre en cases à cocher les analytes des lignes
+  ouvrantes de la proposition servie ; sans proposition, il le dit et
+  n'offre rien. Le panneau d'arbitrage nomme les analytes attendus, ou dit
+  l'attente non typée.
+- **Bancs** : empreinte V4 (`protocolV4.test.ts`) et C4
+  (`attenteC4.empreinte.test.ts`, créé), valeurs mesurées sur le code d'avant
+  par une sonde jetable ; route (catalogue, quatre statuts refusés, deux
+  admis, proposition indisponible, attente inchangée non rejugée) ; atelier ;
+  écran. Le parcours E2E d'arbitrage lit son code d'analyte dans la
+  proposition servie au dossier de fixture.
 
 ## Dépendances
 

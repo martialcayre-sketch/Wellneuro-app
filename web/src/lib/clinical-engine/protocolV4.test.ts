@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildProtocolDraft } from './protocolDraft';
+import { reconstructProtocolDraft } from '../protocol/fromPrisma';
 import {
+  LIBELLE_ATTENTE_NON_TYPEE,
   VERSION_PROTOCOL_DRAFT,
   VERSION_PROTOCOL_DRAFT_V3,
   VERSION_PROTOCOL_DRAFT_V4,
+  estAttenteTypee,
 } from './types';
 import type { DecisionCard, ProtocolAction, ProtocolDraft, ProtocolPhase } from './types';
 
@@ -104,19 +107,24 @@ describe('Contrat V4 — attente biologique', () => {
   const conditionnelle = (overrides: Partial<ProtocolAction> = {}) => action({
     actionId: 'action-supp-1', type: 'supplement_exploration', title: 'Complément à explorer',
     interventionStatus: 'conditionnelle_biologie',
-    waitFor: { type: 'biologie', cible: 'ferritine' },
+    waitFor: { type: 'biologie', cible: 'ferritine', analyteCodes: ['BIO_FERRITINE'] },
     ...overrides,
   });
 
-  it('accepte une intention conditionnelle avec sa cible', () => {
+  it('accepte une intention conditionnelle avec sa cible et ses codes', () => {
     const draft = buildV4({ actions: [conditionnelle()] });
-    expect(draft.actions[0].waitFor).toEqual({ type: 'biologie', cible: 'ferritine' });
+    expect(draft.actions[0].waitFor).toEqual({
+      type: 'biologie', cible: 'ferritine', analyteCodes: ['BIO_FERRITINE'],
+    });
   });
 
   it('conserve une échéance ISO canonique', () => {
     const draft = buildV4({
       actions: [conditionnelle({
-        waitFor: { type: 'biologie', cible: 'ferritine', echeance: '2026-03-01T00:00:00.000Z' },
+        waitFor: {
+          type: 'biologie', cible: 'ferritine', echeance: '2026-03-01T00:00:00.000Z',
+          analyteCodes: ['BIO_FERRITINE'],
+        },
       })],
     });
     expect(draft.actions[0].waitFor?.echeance).toBe('2026-03-01T00:00:00.000Z');
@@ -156,9 +164,67 @@ describe('Contrat V4 — attente biologique', () => {
   it('refuse une échéance non canonique', () => {
     expect(() => buildV4({
       actions: [conditionnelle({
-        waitFor: { type: 'biologie', cible: 'ferritine', echeance: '2026-03-01' },
+        waitFor: {
+          type: 'biologie', cible: 'ferritine', echeance: '2026-03-01', analyteCodes: ['BIO_FERRITINE'],
+        },
       })],
     })).toThrow('échéance de l’attente doit être une date ISO canonique valide');
+  });
+});
+
+describe('Contrat V4 — l’attente nomme ses analytes (`D-305`)', () => {
+  const conditionnelle = (waitFor: ProtocolAction['waitFor']) => action({
+    actionId: 'action-supp-1', type: 'supplement_exploration', title: 'Complément à explorer',
+    interventionStatus: 'conditionnelle_biologie', waitFor,
+  });
+
+  it('refuse à l’écriture une attente sans codes (§2) — le lecteur, lui, la tolère', () => {
+    expect(() => buildV4({ actions: [conditionnelle({ type: 'biologie', cible: 'ferritine' })] }))
+      .toThrow('nommez au moins un analyte attendu');
+  });
+
+  it('refuse une liste vide (§3)', () => {
+    expect(() => buildV4({
+      actions: [conditionnelle({ type: 'biologie', cible: 'ferritine', analyteCodes: [] })],
+    })).toThrow('nommez au moins un analyte attendu');
+  });
+
+  it('refuse un code vide ou qui n’est pas une chaîne', () => {
+    expect(() => buildV4({
+      actions: [conditionnelle({ type: 'biologie', cible: 'ferritine', analyteCodes: ['BIO_FERRITINE', '  '] })],
+    })).toThrow('chaque analyte attendu est un code non vide');
+    expect(() => buildV4({
+      actions: [conditionnelle({ type: 'biologie', cible: 'ferritine', analyteCodes: [42] as never })],
+    })).toThrow('chaque analyte attendu est un code non vide');
+    expect(() => buildV4({
+      actions: [conditionnelle({ type: 'biologie', cible: 'ferritine', analyteCodes: 'BIO_FERRITINE' as never })],
+    })).toThrow('chaque analyte attendu est un code non vide');
+  });
+
+  it('déduplique et trie : la même liste rend la même empreinte, quel que soit l’ordre', () => {
+    const a = buildV4({
+      actions: [conditionnelle({ type: 'biologie', cible: 'bilan', analyteCodes: ['BIO_TSH', 'BIO_FERRITINE'] })],
+    });
+    const b = buildV4({
+      actions: [conditionnelle({
+        type: 'biologie', cible: 'bilan', analyteCodes: [' BIO_FERRITINE', 'BIO_TSH', 'BIO_FERRITINE'],
+      })],
+    });
+    expect(a.actions[0].waitFor?.analyteCodes).toEqual(['BIO_FERRITINE', 'BIO_TSH']);
+    expect(b.inputHash).toBe(a.inputHash);
+  });
+
+  it('aucun plafond de nombre (arbitrage 3)', () => {
+    const codes = Array.from({ length: 40 }, (_, i) => `BIO_${String(i).padStart(2, '0')}`);
+    const draft = buildV4({ actions: [conditionnelle({ type: 'biologie', cible: 'bilan', analyteCodes: codes })] });
+    expect(draft.actions[0].waitFor?.analyteCodes).toHaveLength(40);
+  });
+
+  it('la cible reste libre et peut ne pas nommer les mêmes analytes (§5)', () => {
+    const draft = buildV4({
+      actions: [conditionnelle({ type: 'biologie', cible: 'thyroïde', analyteCodes: ['BIO_FERRITINE'] })],
+    });
+    expect(draft.actions[0].waitFor?.cible).toBe('thyroïde');
   });
 });
 
@@ -170,7 +236,7 @@ describe('Contrat V4 — phases', () => {
         action({
           actionId: 'action-2', type: 'supplement_exploration', title: 'Complément à explorer',
           interventionStatus: 'conditionnelle_biologie',
-          waitFor: { type: 'biologie', cible: 'ferritine' },
+          waitFor: { type: 'biologie', cible: 'ferritine', analyteCodes: ['BIO_FERRITINE'] },
         }),
       ],
       phases: [
@@ -251,5 +317,70 @@ describe('Contrat V4 — les empreintes antérieures ne bougent pas', () => {
     expect(draft.version).toBe(VERSION_PROTOCOL_DRAFT);
     expect('interventionStatus' in draft.actions[0]).toBe(false);
     expect('phases' in draft).toBe(false);
+  });
+});
+
+// LE BANC D'EMPREINTE V4 DE [[D-305]] §2. Les valeurs sont MESURÉES sur le code
+// d'avant le champ `analyteCodes` (sonde jetable rejouée sur `origin/main` au
+// 2026-10-15, 7a5969c3) : une version V4 enregistrée sans le champ garde son
+// empreinte, et `reconstructProtocolDraft` la relit sans la refuser. Elles
+// rougissent si le champ fuit dans la sérialisation d'un payload qui ne le
+// porte pas — chaque version V4 déjà persistée serait relue comme altérée.
+describe('Contrat V4 — banc d’empreinte de l’attente typée (`D-305`)', () => {
+  const EMPREINTE_V4_SANS_ATTENTE = 'fdc2f2030a5152b81d114f4fc61f1be07e44a3fbb2ad81cbc1ec8683179081d8';
+  const EMPREINTE_V4_ATTENTE_NON_TYPEE = '352e0feda9ad8e4d9fef947fa6ed0ce14d3c9fd03793f31345d49f6a554720f2';
+
+  const attente = (waitFor: ProtocolAction['waitFor']) => action({
+    actionId: 'action-supp-1', type: 'supplement_exploration', title: 'Complément à explorer',
+    interventionStatus: 'conditionnelle_biologie', waitFor,
+  });
+
+  // Le payload qu'aurait persisté le code d'avant : une attente posée sans
+  // codes. Il ne se CONSTRUIT plus (l'écrivain exige les codes) — il se RELIT.
+  function payloadEnregistreAvant(): ProtocolDraft {
+    return {
+      protocolDraftId: 'protocol-1', decisionCardId: 'card-1', decisionCardInputHash: 'card-hash',
+      selectedPriorityId: 'priority-1', createdAt: '2026-01-02T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z', version: VERSION_PROTOCOL_DRAFT_V4, status: 'draft',
+      purpose: 'Raison fixture.', followUpCriterion: 'Critère observable fixture.', adviceSheetRef: null,
+      actions: [
+        { ...action(), interventionStatus: 'active' },
+        attente({ type: 'biologie', cible: 'ferritine', echeance: '2026-03-01T00:00:00.000Z' }),
+      ],
+      therapeuticLoad: { level: 'moderate', source: 'practitioner', justification: null },
+      review: null, limitations: [], inputHash: EMPREINTE_V4_ATTENTE_NON_TYPEE,
+    } as ProtocolDraft;
+  }
+
+  it('une version V4 sans attente garde son empreinte', () => {
+    expect(buildV4({ actions: [action({ interventionStatus: 'active' })] }).inputHash)
+      .toBe(EMPREINTE_V4_SANS_ATTENTE);
+  });
+
+  it('une version V4 enregistrée avec une attente sans codes se relit, empreinte intacte', () => {
+    const relue = reconstructProtocolDraft(payloadEnregistreAvant(), EMPREINTE_V4_ATTENTE_NON_TYPEE);
+    expect(relue.inputHash).toBe(EMPREINTE_V4_ATTENTE_NON_TYPEE);
+    expect('analyteCodes' in (relue.actions[1].waitFor ?? {})).toBe(false);
+  });
+
+  it('elle se lit « non typée : aucun résultat ne la réveille » (§8)', () => {
+    const relue = reconstructProtocolDraft(payloadEnregistreAvant(), EMPREINTE_V4_ATTENTE_NON_TYPEE);
+    expect(estAttenteTypee(relue.actions[1].waitFor!)).toBe(false);
+    expect(LIBELLE_ATTENTE_NON_TYPEE).toBe('Attente non typée : aucun résultat ne la réveille');
+  });
+
+  it('la même version, typée, change d’empreinte — et se lit typée', () => {
+    const typee = buildV4({
+      actions: [
+        action({ interventionStatus: 'active' }),
+        attente({
+          type: 'biologie', cible: 'ferritine', echeance: '2026-03-01T00:00:00.000Z',
+          analyteCodes: ['BIO_FERRITINE'],
+        }),
+      ],
+    });
+    expect(typee.inputHash).not.toBe(EMPREINTE_V4_ATTENTE_NON_TYPEE);
+    expect(estAttenteTypee(typee.actions[1].waitFor!)).toBe(true);
+    expect(reconstructProtocolDraft(typee, typee.inputHash).inputHash).toBe(typee.inputHash);
   });
 });

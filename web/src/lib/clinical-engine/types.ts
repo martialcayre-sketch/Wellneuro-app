@@ -448,12 +448,35 @@ export type ProtocolInterventionStatus =
  * Attente explicite qui suspend une intervention. Seule la biologie est
  * représentable en V1 du contrat ; `cible` nomme l'analyte attendu en clair et
  * `echeance`, quand elle est posée, est une date ISO canonique.
+ *
+ * `analyteCodes` ([[D-305]] §2) : les codes du catalogue biologique que
+ * l'attente attend — seuls eux pourront la réveiller (BP-16), la cible restant
+ * libre (§5). Extension ADDITIVE de V4 : facultatif au type, parce que le
+ * lecteur tolère une attente posée avant (§8) ; exigé non vide à l'ÉCRITURE
+ * par `buildProtocolDraft`. Une clé absente ne change aucune empreinte.
  */
 export type ProtocolWaitFor = {
   type: 'biologie';
   cible: string;
   echeance?: string;
+  analyteCodes?: string[];
 };
+
+/**
+ * Ce que dit une attente sans codes d'analytes ([[D-305]] §8, arbitrage 7) :
+ * elle se lit, elle n'est jamais refusée — mais aucun résultat ne la réveille.
+ */
+export const LIBELLE_ATTENTE_NON_TYPEE = 'Attente non typée : aucun résultat ne la réveille';
+
+/**
+ * LE LECTEUR TOLÉRANT, UN SEUL POUR LES DEUX VÉHICULES ([[D-305]] §2 et §6,
+ * [[D-142]]) : une attente d'action de protocole comme une attente née d'une
+ * règle de compléments est « typée » si et seulement si elle porte au moins un
+ * code. Absente, la liste ne se devine pas — `DC-24`.
+ */
+export function estAttenteTypee(waitFor: { analyteCodes?: readonly string[] }): boolean {
+  return (waitFor.analyteCodes?.length ?? 0) > 0;
+}
 
 /**
  * Référence opaque et gouvernée vers une sélection du catalogue de compléments

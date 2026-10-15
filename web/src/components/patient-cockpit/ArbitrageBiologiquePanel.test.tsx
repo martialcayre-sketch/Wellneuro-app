@@ -8,11 +8,14 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ArbitrageBiologiquePanel } from './ArbitrageBiologiquePanel';
 
-function intention(over: Partial<{ actionId: string; title: string; cible: string | null }> = {}) {
+function intention(
+  over: Partial<{ actionId: string; title: string; cible: string | null; analytes: string[] }> = {},
+) {
   return {
     actionId: over.actionId ?? 'act-1',
     title: over.title ?? 'Exploration martiale avant supplémentation',
     cible: over.cible === undefined ? 'Ferritine' : over.cible,
+    analytes: over.analytes ?? ['Ferritine sérique'],
   };
 }
 
@@ -43,10 +46,25 @@ describe('ArbitrageBiologiquePanel', () => {
     const ui = within(container);
     expect(ui.getByText('Exploration martiale avant supplémentation')).not.toBeNull();
     expect(ui.getByText(/En attente de biologie : Ferritine/)).not.toBeNull();
+    expect(ui.getByText('Analytes attendus : Ferritine sérique')).not.toBeNull();
 
     fireEvent.click(ui.getByRole('radio', { name: 'Confirmée par le bilan' }));
     fireEvent.click(ui.getByRole('button', { name: 'Consigner l’arbitrage' }));
     expect(onArbitrer).toHaveBeenCalledWith('act-1', 'confirme', '');
+  });
+
+  // [[D-305]] §8 : une attente posée avant le champ s'affiche — jamais
+  // refusée, jamais tue — et dit qu'aucun résultat ne la réveillera.
+  it('dit d’une attente sans codes qu’elle est non typée', () => {
+    const { container } = render(
+      <ArbitrageBiologiquePanel
+        intentions={[intention({ analytes: [] })]}
+        arbitrages={[]}
+        revisionPossible={false}
+        onArbitrer={vi.fn()}
+      />,
+    );
+    expect(within(container).getByText('Attente non typée : aucun résultat ne la réveille.')).not.toBeNull();
   });
 
   it('exige une note pour un verdict INFIRMÉ, et le dit dans l’étiquette', () => {

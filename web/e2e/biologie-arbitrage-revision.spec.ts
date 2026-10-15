@@ -59,6 +59,7 @@ import {
   nettoyerDossierBiologie,
   nettoyerProtocoleEtArbitrages,
 } from './helpers/db';
+import { ligneOuvreUneAttente, type StatutPanel } from '../src/lib/biology-library/vocabulaireStatuts';
 
 const PATIENT_ID = 'PAT_SEED_02';
 
@@ -85,9 +86,11 @@ function action(interventionStatus: 'conditionnelle_biologie' | 'active' | 'non_
     interventionStatus,
     // `waitFor` est requis SI ET SEULEMENT SI le statut est
     // `conditionnelle_biologie` : le contrat V4 refuse une attente sans cible,
-    // et refuse une cible sans attente.
+    // et refuse une cible sans attente. Elle nomme ses analytes ([[D-305]]),
+    // pris dans la proposition de bilan DU DOSSIER — la route refuse tout
+    // autre code.
     ...(interventionStatus === 'conditionnelle_biologie'
-      ? { waitFor: { type: 'biologie' as const, cible: 'Ferritine' } }
+      ? { waitFor: { type: 'biologie' as const, cible: 'Ferritine', analyteCodes: [analyteAttendu] } }
       : {}),
   };
 }
@@ -126,6 +129,13 @@ let episode: unknown;
 let decisionCard: CarteLue;
 /** L'identifiant de LIGNE de la version 1 : ce que l'arbitrage vise. */
 let versionUnId: string;
+/**
+ * Le code d'analyte que l'attente nomme ([[D-305]] §4) : LU dans la proposition
+ * de bilan servie pour ce dossier, sur une ligne qui ouvre une attente — par le
+ * prédicat même de la route. Jamais fabriqué : la route re-dérive la
+ * proposition et refuserait un code qui n'y est pas.
+ */
+let analyteAttendu: string;
 
 test.describe.configure({ mode: 'serial' });
 
@@ -253,6 +263,25 @@ test.describe('Arbitrage biologique → révision — la résolution suit le ver
       apres.decisionCard.selectedMainPriority?.candidateId,
       'le cockpit ne sert pas la sélection qui vient d’être posée',
     ).toBe(candidat.candidateId);
+
+    // L'ANALYTE ATTENDU EST LU, PAS FABRIQUÉ ([[D-305]] §4).
+    const reponseProposition = await page.request.get(
+      `/api/praticien/biologie/proposition?idPatient=${PATIENT_ID}`,
+    );
+    const corpsProposition = await reponseProposition.text();
+    expect(
+      reponseProposition.status(),
+      `la proposition de bilan n'est pas servie — corps : ${corpsProposition}`,
+    ).toBe(200);
+    const { lignes } = JSON.parse(corpsProposition) as {
+      lignes: { statut: StatutPanel; declencheurRempli: boolean | null; analytes: { code: string }[] }[];
+    };
+    const ouvrante = lignes.find(ligne => ligneOuvreUneAttente(ligne) && ligne.analytes.length > 0);
+    expect(
+      ouvrante,
+      `aucune ligne de la proposition n'ouvre une attente — statuts : ${lignes.map(l => l.statut).join(', ')}`,
+    ).toBeDefined();
+    analyteAttendu = ouvrante!.analytes[0].code;
 
     // VERSION 1 — l'intention est posée, en attente de biologie.
     const v1 = await poserVersion(page.request, 'conditionnelle_biologie', null);

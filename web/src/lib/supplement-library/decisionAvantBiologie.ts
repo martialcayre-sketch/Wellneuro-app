@@ -63,7 +63,12 @@ export type CauseRefus =
   | 'constat_critere_incoherent'
   | 'declencheur_insuffisant';
 
-export type WaitForBiologie = { type: 'biologie'; cible: string; echeance?: string };
+/**
+ * `analyteCodes` ([[D-305]] §6) : le même champ facultatif que l'attente d'une
+ * action de protocole, et le même lecteur tolérant. L'atelier des règles n'en
+ * saisit pas (arbitrage 2 A) : une attente née d'une règle reste « non typée ».
+ */
+export type WaitForBiologie = { type: 'biologie'; cible: string; echeance?: string; analyteCodes?: string[] };
 
 export type VerdictAvantBiologie =
   | {
@@ -159,14 +164,30 @@ export function lireConditionBiologique(
   if (condition.type !== 'biologie') return { forme: 'illisible' };
   const cible = condition.cible;
   if (typeof cible !== 'string' || !cible.trim()) return { forme: 'illisible' };
+  // LES CODES SONT LUS TOLÉRANTS ([[D-305]] §6) : absents, l'attente se lit
+  // « non typée », jamais illisible. PRÉSENTS, ils sont une liste non vide de
+  // codes non vides, ou la condition est illisible — une liste malformée lue
+  // comme absente ferait taire en silence ce que la règle voulait attendre.
+  // La clé n'est rendue que si elle est posée : la lecture d'une condition sans
+  // codes reste identique, octet pour octet, à celle d'avant ce champ.
+  const brut = condition.analyteCodes;
+  let analyteCodes: string[] | undefined;
+  if (brut !== undefined && brut !== null) {
+    if (!Array.isArray(brut) || brut.length === 0
+      || brut.some(code => typeof code !== 'string' || !code.trim())) {
+      return { forme: 'illisible' };
+    }
+    analyteCodes = [...new Set(brut.map(code => (code as string).trim()))].sort();
+  }
+  const avecCodes = analyteCodes === undefined ? {} : { analyteCodes };
   const echeance = condition.echeance;
   if (echeance === undefined || echeance === null) {
-    return { forme: 'biologie', waitFor: { type: 'biologie', cible: cible.trim() } };
+    return { forme: 'biologie', waitFor: { type: 'biologie', cible: cible.trim(), ...avecCodes } };
   }
   if (typeof echeance !== 'string') return { forme: 'illisible' };
   const date = new Date(echeance);
   if (Number.isNaN(date.getTime()) || date.toISOString() !== echeance) return { forme: 'illisible' };
-  return { forme: 'biologie', waitFor: { type: 'biologie', cible: cible.trim(), echeance } };
+  return { forme: 'biologie', waitFor: { type: 'biologie', cible: cible.trim(), echeance, ...avecCodes } };
 }
 
 /** Une borne de dose, prise individuellement, dépasse-t-elle le seuil haut ? */

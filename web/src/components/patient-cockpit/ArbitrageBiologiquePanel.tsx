@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
+// Import de VALEUR depuis `types.ts`, qui n'importe lui-même que des types.
+import { LIBELLE_ATTENTE_NON_TYPEE } from '@/lib/clinical-engine/types';
 
 // Arbitrage biologique sans valeurs (LOT-06, D-059 §4) — panneau présentationnel.
 //
@@ -21,6 +23,11 @@ export type IntentionBiologieAffichee = {
   title: string;
   /** Cible de l'attente (`waitFor.cible`), en clair. */
   cible: string | null;
+  /**
+   * Les analytes attendus (`waitFor.analyteCodes`, [[D-305]]), en libellés.
+   * Vide = attente NON TYPÉE, posée avant le champ : elle s'affiche, et le dit.
+   */
+  analytes: string[];
 };
 
 export type ArbitrageAffiche = {
@@ -171,6 +178,11 @@ export function ArbitrageBiologiquePanel({
               {intention.cible && (
                 <p className="text-xs text-muted-foreground">En attente de biologie : {intention.cible}</p>
               )}
+              <p className="text-xs text-muted-foreground">
+                {intention.analytes.length > 0
+                  ? `Analytes attendus : ${intention.analytes.join(', ')}`
+                  : `${LIBELLE_ATTENTE_NON_TYPEE}.`}
+              </p>
               {arbitrage ? (
                 <p className="mt-2 text-sm text-foreground">
                   {LIBELLES_VERDICT[arbitrage.verdict] ?? arbitrage.verdict} — arbitré le{' '}
