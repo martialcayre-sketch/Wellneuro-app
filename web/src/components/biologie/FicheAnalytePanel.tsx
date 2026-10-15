@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/Badge';
+import { CorrespondancesNabmSection } from '@/components/biologie/CorrespondancesNabmSection';
 import type { FicheAnalyte } from '@/lib/biology-library/catalogue';
 
 // Fiche d'analyte du rayon biologie (CB-08) — consultation documentaire.
@@ -83,7 +84,15 @@ function LigneDetail({ label, valeur }: { label: string; valeur: string }) {
   );
 }
 
-export function FicheAnalytePanel({ fiche }: { fiche: FicheAnalyte }) {
+export function FicheAnalytePanel({
+  fiche,
+  onCorrespondancesModifiees,
+}: {
+  fiche: FicheAnalyte;
+  /** Relit le catalogue après une signature NABM (M-3) : le remboursement est
+   *  dérivé côté serveur, la fiche ouverte ne le recalcule pas. */
+  onCorrespondancesModifiees?: () => void;
+}) {
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -191,6 +200,8 @@ export function FicheAnalytePanel({ fiche }: { fiche: FicheAnalyte }) {
           </p>
         )}
       </section>
+
+      <CorrespondancesNabmSection analyteCode={fiche.code} onModifie={onCorrespondancesModifiees} />
 
       <section aria-label="Conditions préanalytiques">
         <h5 className="text-sm font-semibold text-foreground">Préanalytique</h5>

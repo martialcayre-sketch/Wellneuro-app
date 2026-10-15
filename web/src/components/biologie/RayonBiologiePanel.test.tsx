@@ -85,11 +85,13 @@ const CATALOGUE = {
 };
 
 function mockFetch(payload: unknown, status = 200) {
-  const fetchMock = vi.fn().mockResolvedValue({
-    ok: status < 400,
-    status,
-    json: async () => payload,
-  });
+  // La fiche ouverte lit aussi ses correspondances NABM (M-3) : cette lecture
+  // reçoit une liste vide, le catalogue reçoit la charge du test.
+  const fetchMock = vi.fn().mockImplementation(async (url: string) =>
+    String(url).includes('/nabm/')
+      ? { ok: true, status: 200, json: async () => ({ ok: true, millesime: 'V105', correspondances: [] }) }
+      : { ok: status < 400, status, json: async () => payload },
+  );
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }

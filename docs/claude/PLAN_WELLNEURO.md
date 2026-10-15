@@ -491,6 +491,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Critère de fin** : 8 liaisons signées en base, puis la liste étendue ; une liaison signée sort de « non évalué » pour elle seule [A verifier].
 - **Mise à jour (2026-10-15, S-7 fait)** : les 8 analytes les plus partagés, comptés en panels actifs, par conteneur en lecture seule le 2026-10-14 vers 22:55 UTC (catalogue seul, aucune donnée de patient ; égal à la migration `20260817090000_catalogue_biologie_niveau_1_donnees`) : 15 panels actifs, 78 items, 35 analytes, 0 liaison analyte ↔ acte, 0 signée. Rang : `BIO_VITAMINE_D_25OH` et `BIO_FERRITINE` (8 panels), `BIO_ZINC_PLASMATIQUE` et `BIO_CRP_US` (6), `BIO_MAGNESIUM_ERYTHROCYTAIRE` (5), `BIO_CAR` et `BIO_AG_ERYTHROCYTAIRES` (4), `BIO_HOMOCYSTEINE` (3) ; le suivant est à 2, la coupure est nette. Aucun candidat d'acte n'est proposé : l'analyte ne porte ni code d'acte ni LOINC, et un rapprochement par libellé est exclu (arbitrage du 2026-10-05, `schema.prisma`, modèle `BiologyAnalyteNabm`). Pour M-3, le responsable lit lui-même la nomenclature importée (`biology_nabm_actes`, 987 actes V105) et signe chaque couple avec sa nature (`isole`, `groupe_et`, `groupe_ou`) ; plusieurs des 8 peuvent relever d'un acte de groupe. Deux trous, routés ici : (1) **aucun véhicule d'écriture** des liaisons n'existe (ni route, ni script, ni migration de données) ; M-3 en demande un, migration de données relue puis release-db (D-087) ou outil praticien, à décider avant la signature ; (2) la proposition ne passe pas la carte des remboursements au moteur (`web/src/lib/biology-library/propositionService.ts:222`) : une liaison signée ne sort de « non évalué » que dans le catalogue, pas dans la proposition, sans code à écrire (critère de fin ci-dessus).
 - **Mise à jour (2026-10-15)** : véhicule de M-3 arrêté par le responsable : un écran praticien (recherche de l'acte par son code dans la nomenclature importée, nature, signature et date posées par le serveur, patron de la route de décision des claims) ; pas de migration (la table existe, l'application contourne la RLS) ; lot de code en file A, rang 1, avant la signature des 8 ; réutilisable pour la liste étendue. Écarté : migration de données (release-db à chaque lot, adresse du signataire au dépôt public).
+- **Mise à jour (2026-10-15, lot de code de M-3 livré)** : écran dans la fiche d'analyte du rayon biologie (Bibliothèque), section « Correspondances à la nomenclature » : code de l'acte tapé (quatre chiffres), acte rendu par le serveur dans le millésime courant, nature choisie, signataire (e-mail de session) et date posés par le serveur, décision prise sur l'état vu (`etat_divergent` sinon) ; refus d'un acte absent ou inactif ; retrait confirmé qui rend la ligne à l'état de proposition, sans suppression ni journal (aucune table, migration exclue). Routes `nabm/acte` et `nabm/correspondances` sous `WN_CB_ENABLED` ; `web/src/lib/biology-library/correspondancesNabm.ts`. Reste à M-3 : la signature des 8, geste du responsable sur la production ; la porte 10 se constate ensuite par conteneur (lignes signées de `biology_analyte_nabm`). Le trou (2) ci-dessus reste à f. Réserves de la revue du lot (`wn-reviewer`, GO avec réserves) : **(R1) aucun journal** — un retrait ou une nouvelle signature efface le signataire précédent sans trace ; acceptable tant que la proposition ne lit pas les remboursements (`propositionService.ts:222`), mais brancher la carte des remboursements (f) suppose d'abord un journal en ajout seul, donc une migration ; (R2) course étroite entre la lecture du millésime et l'écriture, sans transaction, contre un import NABM concurrent ; (R3) la relecture du catalogue après signature (`RayonBiologiePanel.tsx`) n'a pas de banc.
 
 #### F77 · Lettre k : « L'IA dans Wellneuro » v7 dans les CGU
 - **Identifiant, piste** : lettre k ; trust.
@@ -669,7 +670,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | D-284 (j) | identité retirée du document avant l'envoi à Anthropic ; analyse d'impact du transfert (code mergé : #1426, #1428, #1431 ; analyse d'impact non versée, F47) | B | aucune ; G3 clos (#1416) | oui (#1426), release-db consignée (porte 9, 2026-10-15) | H26 |
 | G-7 | essai de restauration réussi | geste | lève 8 | non | F04, rang 0 |
 | v | bandes de bruit par instrument | geste | 11 | non | H13, rang 0 |
-| M-3 | signature des 8 liaisons NABM (véhicule arrêté le 2026-10-15 : écran praticien, F54) | geste | 10 | non | F54, rang 0 |
+| M-3 | signature des 8 liaisons NABM (écran praticien livré le 2026-10-15, F54) | geste | 10 | non | F54, rang 0 |
 | c | cockpit chiffré : provenance, formule, nature | geste | 4 | non | F59 |
 | aw | familles du bilan hiérarchisé | geste | aucune | non | F34 |
 | az, texte | notice patient du bilan | geste | aucune | non | F37 |
@@ -1909,7 +1910,7 @@ Table par rang : rang d'abord, hiérarchie ensuite. Un geste qui a une fiche n'a
 | 1 | h1 | lettres c, v, o, t, am | F59, H13, H30, H31, H33 | cockpit, bandes, Momentum, rappel, quantités |
 | 1 | h1 | grilles de la table d'arrêt (re-signature) | H42 | table d'arrêt complète |
 | 1 | h2 | d, ad et bc, ba, aw, texte de az, at, cm, seuils_points, règles orphelines | H32, H34, H35, F34, F37, F45, F51, H40, H41 | adhésion, protocole, Track C, axes |
-| 1 | h2 | M-3, signature des 8 liaisons NABM (véhicule arrêté le 2026-10-15 : écran praticien, lot de code d'abord) | F54 | f |
+| 1 | h2 | M-3, signature des 8 liaisons NABM (écran praticien livré le 2026-10-15 ; reste la signature) | F54 | f |
 | 1 | h2 | R:Drive : valider les références une à une | H36 | fiches conseils |
 | 1 | h2 | lire les deux comptes du LOT-02 du sommeil | H27 | porte 16 |
 | 1 | h3 | u (fait le 2026-10-14 : D-293, #1446), cb ; textes (a), (e), (f) de D-283 ((f) fait le 2026-10-14 : G-8, #1446) | H37, H39, H26 | Patient Hub, écran de fin, durées |
@@ -1947,7 +1948,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h1 | sources restantes de la porte 4 : poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes ; liste de ce qu'il faut fournir préparée le 2026-10-15 (H08) | H08 | c, am, al, cm, seuils_points |
 | h2 | K-05a et D4 (faits le 2026-10-15 : D-299, liste fermée ; porte 5 levée) ; bg | F46, porte 5 ; H18 | at, R:Drive, ag, ah, an, ay |
 | h2 | at, date de naissance lue par l'extraction (texte patient de la main du responsable) ; R:Drive, références du Drive de formation validées une à une : préalable K-05a levé le 2026-10-15 (D-299, liste fermée), reportés de D.3 le 2026-10-15 | F45, H36 | J2-conf (at) ; fiches conseils (R:Drive) |
-| h2 | liste des 8 analytes NABM (S-7) : fait le 2026-10-15 (F54) ; véhicule de M-3 arrêté le 2026-10-15 : écran praticien, lot de code (file A) avant la signature | F54, porte 10 | M-3, f, G-3 |
+| h2 | liste des 8 analytes NABM (S-7) : fait le 2026-10-15 (F54) ; véhicule de M-3 arrêté le 2026-10-15 : écran praticien, lot de code livré le 2026-10-15 ; reste la signature des 8 | F54, porte 10 | M-3, f, G-3 |
 | h2 | lettres j, q, s, aa, ab, av ; guide w ; ca (fait le 2026-10-15 : D-300) ; j, q, s, aa, ab, av faits le 2026-10-15 (D-306 à D-311) ; w : méthode écrite (D-312), dossiers de preuve par besoin puis guide de la main du responsable ; liste des statuts posés de s à écrire | F63, F38, F57, F55, H14, F33, H15, H17 | porte 12 ; ba ; ad et bc ; aw et az ; cb |
 | h2 | cj (D-296 rédigée et acceptée, D/7) ; co (fait le 2026-10-15 : D-313 ; neuf critères à cocher de la main du responsable) | F49, F68 | cm ; AIPD |
 | h2 | lecture des écarts d'unité textuels ; comportement voulu de la charge | F60, F76 | deux unités ; correctif |
@@ -1983,7 +1984,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 |---|---|---|
 | c, d, puis M-2 | F59, H32 | S-2 (H01, file A) ; porte 4 pour c |
 | v | H13 | G-10 |
-| M-3 | F54 | véhicule d'écriture des liaisons (S-7 fait le 2026-10-15) ; véhicule arrêté le 2026-10-15 (écran praticien) : attend son lot de code |
+| M-3 | F54 | véhicule d'écriture des liaisons (S-7 fait le 2026-10-15) ; écran praticien livré le 2026-10-15 : attend la signature des 8 par le responsable |
 | f | F54 | M-3 |
 | G-3 | F54 | f |
 | cb ; illustrations de cc ; cd | H39, H48, H54 | ca fait le 2026-10-15 (D-300) ; porte 16 pour cc ; porte 15 pour cd |
