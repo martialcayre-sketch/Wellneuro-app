@@ -1033,6 +1033,16 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/portail_lectures_patient_v1_negatif.sql
 
+      # Espèce `protocole` (CC-8, D-315). Une lecture par diffusion, doublon
+      # refusé ; les quatre espèces d'avant restent acceptées ; « accueil »,
+      # « connexion », la casse et un suffixe sont refusés : ni l'affichage de
+      # l'accueil ni la connexion ne comptent comme une lecture. Transaction
+      # annulée.
+      - name: Portail lectures protocole negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/portail_lectures_protocole_v1_negatif.sql
+
       # Catalogue des fiches d'assiette (D-251, lot 3). Ce que le drift check ne
       # voit pas, et qui fait toute la valeur des deux tables : l'append-only par
       # trigger, les instants posés par la base, le numéro de version contigu,
