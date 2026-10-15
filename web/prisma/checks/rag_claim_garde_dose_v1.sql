@@ -12,8 +12,12 @@
 -- identifiant `WN-CL-…` sont des textes RÉELS du corpus, validés
 -- individuellement, que les familles 1 à 5 laissaient passer (relevé par
 -- conteneur du 2026-10-15) ; les autres sont des SONDES construites, une par
--- unité et par fréquence, pour que retirer une alternative fasse rougir le
--- banc.
+-- unité et par fréquence dans chacun des deux ordres. Éprouvé le 2026-10-15
+-- par 73 mutations jouées en local — chaque alternative de 6a et de 6b
+-- retirée une à une, fenêtre à 39 et à 41, `.`, `;`, `:` retirés de la
+-- classe, nombre rendu facultatif, premier `\M` retiré, 6b retirée : toutes
+-- font rougir le banc. Ce qui ne le fait pas rougir élargit le garde (par
+-- exemple le `\M` après le groupe « par … » retiré) : côté sûr, non épinglé.
 --
 -- ERRCODE sentinelle WN001, jamais intercepté.
 BEGIN;
@@ -100,6 +104,11 @@ BEGIN
       (true,  'fréq-mensuel',        'La vitamine D se donne à 100000 UI en dose mensuelle.'),
       (true,  'fréq-chaque-jour',    'Le magnésium se donne à 300 mg chaque jour.'),
       (true,  'fréq-coucher',        'Le 5-HTP se donne à 200 mg au coucher.'),
+      (true,  'fréq-soir',           'La mélatonine se donne à 2 mg le soir.'),
+      (true,  'fréq-chaque-semaine', 'La vitamine D se donne à 25000 UI chaque semaine.'),
+      (true,  'fréq-chaque-mois',    'La vitamine D se donne à 100000 UI chaque mois.'),
+      (true,  'fréq-par-24-heures',  'Le sirop se donne à 5 ml par 24 heures.'),
+      (true,  'unité-singulier',     'La vitamine D se donne à 1 unité par jour.'),
 
       -- Amendement du 2026-10-15, §2 bis : la fréquence AVANT la dose (6b).
       -- Aucune de ces sondes n'a de fréquence après l'unité : 6b est leur seule
@@ -109,6 +118,28 @@ BEGIN
       (true,  'avant-par-semaine',   'Par semaine, 25000 UI de vitamine D suffisent.'),
       (true,  'avant-soir',          'Le soir, 2 mg de mélatonine aident à l''endormissement.'),
       (true,  'avant-fenêtre-40',    'Chaque jour, associé à la vitamine C et au cuivre, 5 mg de zinc suffisent.'),
+      -- 6b, une sonde par fréquence placée avant…
+      (true,  'avant-journalier',    'En apport journalier, 300 mg de magnésium suffisent.'),
+      (true,  'avant-hebdomadaire',  'En prise hebdomadaire, 25000 UI de vitamine D suffisent.'),
+      (true,  'avant-mensuel',       'En dose mensuelle, 100000 UI de vitamine D suffisent.'),
+      (true,  'avant-chaque-semaine','Chaque semaine, 25000 UI de vitamine D suffisent.'),
+      (true,  'avant-chaque-mois',   'Chaque mois, 100000 UI de vitamine D suffisent.'),
+      (true,  'avant-par-jour',      'Par jour, 300 mg de magnésium suffisent.'),
+      (true,  'avant-par-mois',      'Par mois, 100000 UI de vitamine D suffisent.'),
+      (true,  'avant-par-prise',     'Par prise, 400 mg de tryptophane suffisent.'),
+      (true,  'avant-matin',         'Le matin, 500 mg de tyrosine suffisent.'),
+      (true,  'avant-coucher',       'Au coucher, 2 mg de mélatonine suffisent.'),
+      -- … et une par unité.
+      (true,  'avant-g',             'Chaque jour, 30 g de fibres suffisent.'),
+      (true,  'avant-micro-b5',      'Chaque jour, 50 µg de sélénium suffisent.'),     -- U+00B5
+      (true,  'avant-micro-3bc',     'Chaque jour, 50 μg de sélénium suffisent.'),     -- U+03BC
+      (true,  'avant-ug',            'Chaque jour, 50 ug de sélénium suffisent.'),
+      (true,  'avant-mcg',           'Chaque jour, 500 mcg de vitamine B12 suffisent.'),
+      (true,  'avant-ui',            'Chaque jour, 1000 UI de vitamine D suffisent.'),
+      (true,  'avant-iu',            'Chaque jour, 400 IU de vitamine E suffisent.'),
+      (true,  'avant-ml',            'Chaque jour, 5 ml de sirop suffisent.'),
+      (true,  'avant-unités',        'Chaque jour, 2000 unités de vitamine D suffisent.'),
+      (true,  'avant-unité',         'Chaque jour, 1 unité de vitamine D suffit.'),
 
       -- ═══ NÉGATIFS — la voie rapide leur reste ouverte ══════════════════
 
@@ -133,6 +164,9 @@ BEGIN
       (false, 'avant-unité-nue',     'Chaque jour, la dose s''exprime en mg sur l''étiquette.'),
       (false, 'avant-fenêtre-41',    'Chaque jour, associés à la vitamine C et au cuivre, 5 mg de zinc suffisent.'),
       (false, 'avant-fin-de-phrase', 'Chaque jour compte. Le comprimé contient 20 mg.'),
+      (false, 'avant-point-virgule', 'Chaque jour compte ; le comprimé contient 20 mg.'),
+      (false, 'avant-deux-points',   'Chaque jour compte : le comprimé contient 20 mg.'),
+      (false, 'avant-gélules',       'Chaque jour, 2 gélules au cours du repas.'),
       -- Un poids corporel n'est pas une unité de dose.
       (false, 'poids-corporel',      'Un adulte de 70 kg pratique une marche le matin.')
     ) AS t(attendu, ref, texte)

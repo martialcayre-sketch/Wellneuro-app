@@ -27,7 +27,7 @@
 -- motif ne voit que ce qu'il décrit : les 66 de ces 150 qui portent un chiffre
 -- ont aussi été lus un à un — aucune posologie. Aucun claim n'est en attente :
 -- la famille 6 n'agit que sur les ingestions à venir. Sur les 8082 claims
--- validés individuellement, elle en aurait pris 393, dont 137 que les familles
+-- validés individuellement, elle en aurait pris 394, dont 137 que les familles
 -- 1 à 5 laissaient passer — des doses pour l'essentiel, et aussi des apports
 -- moyens d'enquête et des portions alimentaires.
 --
@@ -82,9 +82,12 @@ AS $$
     --    la locale de la production et du CI (en_US.utf8) comptant « é » parmi
     --    les lettres. « unité(s) » est l'UI écrite en toutes lettres (« vitamine
     --    D 2000 unités par jour »). Le micro a deux points de code (U+00B5 et
-    --    U+03BC) : les deux sont admis.
-    OR texte ~* '[0-9] ?(mg|µg|μg|ug|mcg|g|ui|iu|ml|unités?)\M[^.;:]{0,40}?((par|/) ?(jour|j|prise|kilo(gramme)?s?|kg|semaine|mois|24 ?h)\M|quotidien|journali|hebdomadaire|mensuel|chaque (jour|semaine|mois)|matin|soir|coucher)'
-    OR texte ~* '(quotidien|journali|hebdomadaire|mensuel|chaque (jour|semaine|mois)|par (jour|semaine|mois)|matin|soir|coucher)[^.;:]{0,40}?[0-9] ?(mg|µg|μg|ug|mcg|g|ui|iu|ml|unités?)\M'
+    --    U+03BC) : les deux sont admis. Entre le nombre et l'unité, seul
+    --    l'espace ASCII est admis, comme en famille 1 : le corpus ne compte
+    --    aucune espace insécable (U+00A0, U+202F ; conteneur, 2026-10-15, sur
+    --    8235 claims).
+    OR texte ~* '[0-9] ?(mg|µg|μg|ug|mcg|g|ui|iu|ml|unités?)\M[^.;:]{0,40}?((par|/) ?(jour|j|prise|kilo(gramme)?s?|kg|semaine|mois|24 ?h(eures?)?)\M|quotidien|journali|hebdomadaire|mensuel|chaque (jour|semaine|mois)|matin|soir|coucher)'
+    OR texte ~* '(quotidien|journali|hebdomadaire|mensuel|chaque (jour|semaine|mois)|par (jour|semaine|mois|prise)|matin|soir|coucher)[^.;:]{0,40}?[0-9] ?(mg|µg|μg|ug|mcg|g|ui|iu|ml|unités?)\M'
   );
 $$;
 

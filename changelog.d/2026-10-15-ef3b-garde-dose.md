@@ -24,8 +24,12 @@
   ANC, signalées au responsable, ni reprises ni dévalidées. Les 66 qui
   portent un chiffre ont aussi été lues une à une : aucune posologie. Aucune
   affirmation n'est en attente : la règle agit sur les ingestions à venir.
-- **Contrat SQL** `rag_claim_garde_dose_v1.sql`, branché au CI : sept textes
-  réels du corpus, une sonde par unité, par fréquence et par ordre, négatifs
-  de D-304 §3 (posologie sans nombre) et des frontières de la fenêtre
-  (quarante caractères au caractère près, `.`, `;`, `:`), dans les deux
-  ordres. Vingt-sept mutations du motif jouées en local, chacune attrapée.
+- **Contrat SQL** `rag_claim_garde_dose_v1.sql`, branché au CI, 81 cas : sept
+  textes réels du corpus, une sonde par unité et par fréquence dans chacun des
+  deux ordres, négatifs de D-304 §3 (posologie sans nombre) et des frontières
+  de la fenêtre (quarante caractères au caractère près, `.`, `;`, `:`).
+  73 mutations du motif jouées en local, chacune attrapée ; seules restent
+  vertes des mutations qui élargissent le garde.
+- **Limite connue** : entre le nombre et l'unité, seule l'espace ASCII est
+  admise, comme pour la famille 1. Le corpus ne compte aucune espace
+  insécable (conteneur, 8235 affirmations).
