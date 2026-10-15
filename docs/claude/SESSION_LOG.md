@@ -10450,3 +10450,22 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR, CI, revue, merge. Ensuite : lot de code de l'écran NABM (M-3), puis dossiers de preuve de w.
 
 **Ouvert.** Liste des statuts posés (s) et motifs des neuf critères de l'AIPD (co), de la main du responsable ; références test-retest (G-10) ; sources de la porte 4.
+## 2026-10-14 — Lettre ai : lot de code placé au rang 4
+
+**Fait.** Plan H51 : lot de code de ai décrit (migration, écriture du jour de lecture, phrase validée sur chaque page de document remis, « lu le » au dossier praticien, banc de garde amendé pour la seule surface « lu le ») et placé au rang 4, après G-7 (porte 8). Migration acquise (D-297 §6) dans les tables du rang 4 et l'ordre des release-db. PR #1460 mergée (77abc00b).
+
+**Écarté.** Laisser ai parmi les migrations « selon les cas ».
+
+**Prochaine action.** G-7 joué et réussi dans une autre session (#1462, porte 8 levée au merge) ; rang 4 ouvert : EF-3b en tête, ai dans l'ordre des release-db.
+
+**Ouvert.** Ordre de ai et de J2-cc8, qui touchent la même table.
+
+## 2026-10-15 — Audit des 12 besoins (lettre w, D-312)
+
+**Fait.** Audit publié en artefact privé (code 5a685055, prod lue par conteneur, agrégats) : 8/12 besoins nourris (2, 6, 7, 11 non évalués) ; aucun lien claim → besoin en base ; 28 règles de code citent un besoin et un claim pour 1, 3, 4, 5, 8, 9 ; BP-07 ne couvre que le fer ; les besoins ne pilotent ni protocole ni orientation ni IA. Huit arbitrages rendus et consignés (artefact §9, mémoire).
+
+**Écarté.** Cofacteurs hors liste (B6, B1-B3, cuivre, Q10, A/C/E, homocystéine) ; table dédiée claim → besoin ; motif 60/20/20 sans redéfinition ; fibres et probiotiques au besoin 2.
+
+**Prochaine action.** Désigner le premier micronutriment du besoin 2 (vit D, zinc ou Mg) ; décrire au plan le lot « clés besoins + rubrique à la signature » avant ce dossier.
+
+**Ouvert.** Aucun code écrit ; branche remise à niveau sur origin/main le 2026-10-16 avant commit.
