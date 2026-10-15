@@ -843,6 +843,23 @@ describe('GET /api/praticien/fil — effet indésirable non traité par l’atte
     }));
   });
 
+  // Même éviction, même remède pour les incidents et les demandes de droit :
+  // scope avant la borne. Plus anciens d'abord, à cause de leur délai légal.
+  // Le statut reste leur règle.
+  it('incidents et demandes de droit : patients actifs du praticien, plus anciens d’abord, avant la borne de dix', async () => {
+    await GET();
+    for (const table of [prisma.trustPrivacyIncident, prisma.trustRightsRequest]) {
+      expect(table.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: {
+          statutTraitement: { in: ['recu', 'en_cours'] },
+          patient: { actif: true, praticienEmail: { equals: 'p@wellneuro.fr', mode: 'insensitive' } },
+        },
+        orderBy: { soumisLe: 'asc' },
+        take: 10,
+      }));
+    }
+  });
+
   it('rattaché, passé à « traité » sans avis : la carte reste', async () => {
     prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
       effet('aer_rattache', { statutTraitement: 'traite', rattachement: 'element', protocolDraftId: 'pd_1' }),

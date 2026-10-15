@@ -65,7 +65,16 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     // prévues (LOT-04) — le serveur tourne en UTC sur Vercel.
     const { debut: debutJour, fin: finJour } = bornesJourParis(maintenant);
 
-    const filtreNonTraite = { statutTraitement: { in: ['recu', 'en_cours'] } };
+    // Incidents et demandes de droit : non traités par statut, sur les patients
+    // ACTIFS du praticien. Le scope s'applique AVANT la borne de dix : sans
+    // lui, les signalements d'un autre praticien, ou d'un patient inactif que
+    // le Fil écarte ensuite, prenaient les places. Les PLUS ANCIENS d'abord :
+    // les deux portent un délai légal (72 h pour un incident, un mois pour une
+    // demande de droit), et c'est le plus ancien qu'il ne faut pas perdre.
+    const filtreNonTraite = {
+      statutTraitement: { in: ['recu', 'en_cours'] },
+      patient: { actif: true, ...filtrePatientsDuPraticien(email) },
+    };
     // Les identifiants de ligne source sont sélectionnés pour que chaque carte
     // porte une identité stable (`cle`, cf. lib/fil/cartes.ts) : c'est ce qui
     // rendra un refus persistant désignable, sans quoi il porterait sur une
@@ -108,8 +117,8 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       // autres, qui ne doivent pas prendre de place. La sélection d'attente se
       // fait après lecture, la borne de dix aussi.
       lireEffetsNonTraites({ patient: { actif: true, ...filtrePatientsDuPraticien(email) } }).then(e => e.slice(0, 10)),
-      prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
-      prisma.trustRightsRequest.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
+      prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, orderBy: { soumisLe: 'asc' }, take: 10 }),
+      prisma.trustRightsRequest.findMany({ where: filtreNonTraite, select: selectSignalement, orderBy: { soumisLe: 'asc' }, take: 10 }),
       prisma.syntheseIA.findMany({
         where: { statut: { in: ['Brouillon_IA', 'Brouillon_Praticien'] } },
         orderBy: { dateGeneration: 'desc' },
