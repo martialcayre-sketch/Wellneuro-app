@@ -1203,6 +1203,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : lettre p, registre.
 - **Critère de fin** : release-db constatée ; lecture tracée, constatée en conteneur.
 - **Mise à jour (2026-10-15)** : p écrite par D-315 sur arbitrages du responsable : la première ouverture du détail de chaque version diffusée du protocole (identifiant de la diffusion approuvée en vigueur) s'enregistre, sans date ; ni l'affichage de l'accueil ni la connexion ; le praticien lit « Lu le … » avec le code de ai (D-297 §5), constat par conteneur d'ici là ; aucun texte patient neuf (§4) ; espèce déclarée au registre (`docs/DOSSIER_RGPD.md`, rubrique 5). Ordre tranché (§6-7) : la release-db passe dès que la migration est prête, sans attendre BP-12a ni la file B, et avant ai. L'ouverture du détail et sa trace se servent avec ACT-1 (H70). Reste : la migration (une espèce au CHECK), sur demande, puis le code.
+- **Mise à jour (2026-10-16)** : migration demandée par le responsable et écrite : `20261016080000_portail_lectures_protocole_v1` (espèce `protocole` au CHECK, une instruction), contrat `portail_lectures_protocole_v1_negatif.sql` au CI, en PR seule. Reste : merge, release-db approuvée, sentinelle, constat par conteneur ; puis le code (seconde PR).
 
 #### H61 · J3-base, part hors biologie
 - **Identifiant, piste** : J3-base, part hors biologie ; BF-7 et BF-8 sont F55 ; protocole, cockpit, sommeil ; file A.
