@@ -25,8 +25,10 @@ lignes 123, 175, 344, 382).
 
 ## Résultat observable
 
-Une attente posée après ce lot porte une liste de codes d'analytes. Une attente
-posée avant reste lisible et se dit « attente non typée : aucun résultat ne la
+Une attente posée après ce lot, en suspendant une action de protocole, porte
+une liste de codes d'analytes ; celle née d'une règle de compléments aussi
+selon 2 B, et reste « non typée » selon 2 A. Une attente posée avant reste
+lisible et se dit « attente non typée : aucun résultat ne la
 réveille ». Les empreintes des versions déjà enregistrées ne changent pas.
 Aucun réveil, aucun état dérivé, aucune carte au Fil dans ce lot (voir
 l'arbitrage 5).
