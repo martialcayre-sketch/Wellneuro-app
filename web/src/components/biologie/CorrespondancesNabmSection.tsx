@@ -148,6 +148,11 @@ export function CorrespondancesNabmSection({
 
   useEffect(() => {
     generation.current += 1;
+    // Tout l'état propre à l'analyte repart de zéro : un choix de nature fait
+    // sur A ne doit ni s'afficher ni s'envoyer sur B, et une requête de A
+    // encore en vol ne doit pas tenir les boutons de B désactivés.
+    setEnCours(false);
+    setNaturesPropositions({});
     setCorrespondances(null);
     setMessageEchec(null);
     setCodeSaisi('');
@@ -183,7 +188,7 @@ export function CorrespondancesNabmSection({
       if (perimee()) return;
       setMessageEchec('Impossible de lire cet acte.');
     } finally {
-      setEnCours(false);
+      if (!perimee()) setEnCours(false);
     }
   }
 
@@ -231,7 +236,7 @@ export function CorrespondancesNabmSection({
       }
       onModifie?.();
     } finally {
-      setEnCours(false);
+      if (!perimee()) setEnCours(false);
     }
   }
 

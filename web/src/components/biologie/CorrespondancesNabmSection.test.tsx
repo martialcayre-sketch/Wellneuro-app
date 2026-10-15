@@ -198,4 +198,52 @@ describe('CorrespondancesNabmSection — signature M-3', () => {
     const lectures = fetchMock.mock.calls.filter(([, init]) => !init?.method);
     expect(lectures.length).toBe(2);
   });
+
+  it('le choix de nature d’une proposition ne passe pas d’un analyte à l’autre', async () => {
+    const proposition = (nature: string) => ({
+      json: {
+        ok: true,
+        millesime: 'V105',
+        correspondances: [
+          { codeActe: '1208', nature, etat: 'proposition', verifiePar: null, verifieLe: null, acte: ACTE },
+        ],
+      },
+    });
+    let reponse = proposition('isole');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async () => ({ ok: true, status: 200, json: async () => reponse.json })),
+    );
+    const { rerender } = render(<CorrespondancesNabmSection analyteCode="BIO_FERRITINE" />);
+    await waitFor(() => expect(screen.getByText(/Proposition non signée/)).toBeTruthy());
+    fireEvent.click(screen.getByLabelText(/Groupe imposé/));
+    expect((screen.getByLabelText(/Groupe imposé/) as HTMLInputElement).checked).toBe(true);
+
+    reponse = proposition('groupe_ou');
+    rerender(<CorrespondancesNabmSection analyteCode="BIO_ZINC_PLASMATIQUE" />);
+    await waitFor(() => expect(screen.getByText(/Proposition non signée \(Groupe au choix\)/)).toBeTruthy());
+    expect((screen.getByLabelText(/Groupe au choix/) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText(/Groupe imposé/) as HTMLInputElement).checked).toBe(false);
+  });
+
+  it('une requête de l’analyte précédent encore en vol ne bloque pas les boutons du suivant', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) =>
+        String(url).includes('/nabm/acte')
+          ? new Promise(() => {})
+          : { ok: true, status: 200, json: async () => vide.json },
+      ),
+    );
+    const { rerender } = render(<CorrespondancesNabmSection analyteCode="BIO_FERRITINE" />);
+    await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+    fireEvent.change(screen.getByLabelText(/Code de l’acte/), { target: { value: '1208' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lire l’acte' }));
+    expect((screen.getByRole('button', { name: 'Lire l’acte' }) as HTMLButtonElement).disabled).toBe(true);
+
+    rerender(<CorrespondancesNabmSection analyteCode="BIO_ZINC_PLASMATIQUE" />);
+    await waitFor(() =>
+      expect((screen.getByRole('button', { name: 'Lire l’acte' }) as HTMLButtonElement).disabled).toBe(false),
+    );
+  });
 });
