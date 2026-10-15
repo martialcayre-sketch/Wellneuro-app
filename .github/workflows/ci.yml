@@ -823,6 +823,19 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/trust_aer_patient_fige_verdict_v1_negatif.sql
 
+      # L'avis contre la modification de son signalement, À DEUX SESSIONS
+      # (D-281 §5, passe Codex de #1474) : le contrat ci-dessus voit le refus
+      # en série, pas que le FOR SHARE du trigger de l'avis sérialise. Deux
+      # courses et leurs témoins annulés. Commet ses fixtures puis les efface :
+      # la base doit être nommée. `node` et non `node --test`, comme les autres
+      # bancs à deux sessions.
+      - name: SAF-EI avis contre signalement two-session bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_SAF_EI_AVIS_BANC_BASE: wellneuro_ci
+        run: node scripts/banc-avis-signalement-deux-sessions.test.mjs
+
       # Dossier à deux voix (Alliance 6.0-A LOT-01) : une écriture valide par
       # table doit être ACCEPTÉE ; les CHECK doivent MORDRE (praticien
       # vide/espaces/trop long, textes porteurs vides, `sens` hors taxonomie) ;

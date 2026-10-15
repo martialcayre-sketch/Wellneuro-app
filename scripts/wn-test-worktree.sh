@@ -515,6 +515,13 @@ grep -q 'banc-ecart-validation-deux-sessions.test.mjs' "$ROOT/.github/workflows/
   || die "ci.yml ne lance plus le banc à deux sessions de l'écart contre la validation."
 WN_BIO_ECART_BANC_BASE=wellneuro_ci node scripts/banc-ecart-validation-deux-sessions.test.mjs > /dev/null < /dev/null \
   || die "banc écart contre validation en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-ecart-validation-deux-sessions.test.mjs\`, depuis web/)."
+# Banc à deux sessions de l'avis contre la modification de son signalement
+# (D-281 §5, passe Codex de #1474), même discipline.
+step "Banc à deux sessions (avis contre modification du signalement)"
+grep -q 'banc-avis-signalement-deux-sessions.test.mjs' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc à deux sessions de l'avis contre le signalement."
+WN_SAF_EI_AVIS_BANC_BASE=wellneuro_ci node scripts/banc-avis-signalement-deux-sessions.test.mjs > /dev/null < /dev/null \
+  || die "banc avis contre signalement en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-avis-signalement-deux-sessions.test.mjs\`, depuis web/)."
 # Banc à deux sessions du masquage contre la purge (D-284 §5, lot j), même
 # discipline.
 step "Banc à deux sessions (masquage de l'identité contre purge du document)"
