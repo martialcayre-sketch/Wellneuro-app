@@ -363,6 +363,31 @@ conteneur, en comptes, des affirmations déjà validées par lot dont le texte
 porte une dose ; elles sont signalées au responsable, jamais dévalidées en
 silence.
 
+**Amendement du 2026-10-15 — LES FORMES DE DOSE LAISSÉES HORS DE §2.**
+Arbitrage du responsable du 2026-10-15, sur question à options, après la revue
+P1 d'EF-3b (« Amender D-304 et inclure » contre « Router au plan » recommandé
+et « Ne rien faire » ; « par kilogramme » : « Inclure », recommandé). La revue
+avait relevé des doses que la liste du §2 laissait signables par lot :
+« 50 000 UI par mois », « 1000 UI par semaine », « 200 mg au coucher »,
+« chaque jour, 200 mg », « un apport quotidien de 250 mg », « 15 mg par
+kilogramme ».
+
+- **§2 complété** : la fréquence ou le poids comprend aussi par semaine, par
+  mois, par kilogramme, par 24 h, hebdomadaire, mensuel, journalier, chaque
+  jour (semaine, mois) et au coucher.
+- **§2 bis — l'ordre** : une fréquence placée avant le nombre et l'unité
+  (« chaque jour, 200 mg » ; « apport quotidien de 250 mg ») part aussi en
+  relecture une à une.
+- **§3 inchangé** : les posologies sans nombre ne sont pas visées.
+- **§4, relevé refait sur la règle amendée** (conteneur, 2026-10-15) : sur
+  150 affirmations signées par lot, deux portent une dose que la garde
+  laissait passer. Ce sont deux références d'apport moyen quotidien, en EPA et
+  en DHA, rapportées à un ANC. Elles sont signalées au responsable et ne sont
+  pas dévalidées. Sur les affirmations validées une à une, la règle amendée en
+  prend 137 que les familles 1 à 5 laissaient passer, contre 113 sous la règle
+  initiale. La sur-capture est assumée : la règle prend aussi des apports
+  moyens d'enquête et des portions alimentaires.
+
 ### D-303 — Instruments du cabinet : la publication exige de déclarer s'ils posent une question sur le suicide ; « oui » leur donne l'encart d'urgence signé (lettre m, NF-7)
 
 - Date : 2026-10-15

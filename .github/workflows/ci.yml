@@ -556,6 +556,16 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_garde_seuils_v1.sql
 
+      # La sixième famille du même garde (20261015140000, D-304) : une dose
+      # écrite en nombre, unité et fréquence ferme elle aussi la signature par
+      # lot. Ce banc l'épingle sur des textes réels du corpus et une sonde par
+      # unité et par fréquence ; les négatifs tiennent D-304 §3 (posologie
+      # sans nombre) et les frontières de la fenêtre.
+      - name: RAG claim dose guard contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_claim_garde_dose_v1.sql
+
       # La migration de reprise (20260728090000) écrit des données de production
       # — elle efface des signatures praticien. Sur la base du CI, construite
       # vide, elle est un no-op : sans ce banc, le CI n'en prouverait rien. Il
