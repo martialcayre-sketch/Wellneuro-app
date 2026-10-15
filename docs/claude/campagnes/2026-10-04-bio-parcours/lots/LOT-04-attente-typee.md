@@ -217,7 +217,7 @@ de D-305 (#1471).
   re-dérivée à l'instant ; le prédicat des lignes ouvrantes,
   `ligneOuvreUneAttente`, vit dans la feuille `vocabulaireStatuts.ts`, lu
   aussi par l'écran.
-- **Lecture de l'arbitrage 6 retenue au code, à confirmer en revue** : une
+- **Lecture de l'arbitrage 6, confirmée par le responsable le 2026-10-15** : une
   action suspendue que la version active porte déjà, **identique en tout
   point** (égalité canonique de l'action), n'est pas rejugée. Sans cela, le
   bilan revenu (ligne passée « déjà documenté »), la révision qui applique

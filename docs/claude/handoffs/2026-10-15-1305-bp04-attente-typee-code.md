@@ -26,7 +26,7 @@ vérification au catalogue, borne de D-190 §3 tenue par le serveur, lecture
   la soumission ne pose aucune attente.
 - Prédicat `ligneOuvreUneAttente` dans la feuille `vocabulaireStatuts.ts`,
   lu par la route et par l'écran.
-- **Lecture de l'arbitrage 6, à faire confirmer par le responsable** : une
+- **Lecture de l'arbitrage 6, confirmée par le responsable le 2026-10-15** : une
   action suspendue identique en tout point (égalité canonique) à celle de la
   version active n'est pas rejugée — sinon la révision après arbitrage se
   bloque dès que le bilan revenu fait passer la ligne « déjà documenté ».
@@ -64,7 +64,6 @@ vérification au catalogue, borne de D-190 §3 tenue par le serveur, lecture
 
 ## Problèmes ouverts
 
-- Arbitrage du responsable sur la lecture de l'arbitrage 6 (ci-dessus).
 - Fenêtre résiduelle : le code en production pose encore des attentes sans
   codes jusqu'au déploiement ; recompter juste avant le merge.
 - `reviseProtocolDraft`, sans appelant de production, lèverait sur une V4 non
