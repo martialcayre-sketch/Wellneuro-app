@@ -4,6 +4,85 @@
 
 ## Décisions actives
 
+### D-305 — BP-04 : une attente biologique nomme ses analytes, en codes du catalogue pris dans la proposition de bilan ; extension additive de V4, sans migration (LOT-04)
+
+- Date : 2026-10-15
+- Statut : accepté. Sept arbitrages du responsable rendus le 2026-10-15 sur la
+  fiche LOT-04, par questions à options (faits, puis conséquence de chaque
+  réponse) ; les sept réponses sont consignées dans la fiche.
+- Domaine : clinique — contrat V4 du protocole (attente d'intervention) et
+  attente de la décision avant biologie (C4) ; campagne bio-parcours, LOT-04 ;
+  plan, fiche F16.
+- Amende : [[D-190]] §1, **dans un seul sens** : la cible d'attente se
+  complète d'une liste de codes d'analytes ; le geste reste celui de
+  suspendre. Applique [[D-142]] (un seul lecteur par véhicule) et le patron de
+  [[D-240]] §5 (extension du contrat courant, sans contrat V5).
+- **Ne touche pas** : [[D-190]] §5 (amendé par BP-18a) ; aucune migration,
+  aucun drapeau, aucune release-db ; aucune règle clinique, aucun seuil, aucun
+  plafond.
+
+**§1 — Le constat.** Une attente d'intervention porte un type (`biologie`),
+une cible en texte libre et une échéance facultative ; tout autre champ est
+refusé à la normalisation. Aucune ne dit **quels analytes** elle attend :
+aucun résultat ne peut donc jamais la réveiller, et BP-16 (boucle
+d'exploration), puis BP-20 et BP-21a, l'attendent. La borne de [[D-190]] §3
+n'est tenue qu'à l'écran : le serveur ne vérifie pas qu'une attente vient de
+la proposition de bilan. Comptés en production le 2026-10-15, par conteneur,
+en lecture seule et en agrégats : **aucune attente posée** (4 versions de
+protocole, aucune action « conditionnelle à la biologie ») et **aucune règle
+de compléments** (`clinical_rules` vide).
+
+**§2 — Le champ.** L'attente gagne une liste facultative de codes
+d'analytes ; son nom se fixe au code, et la liste des champs admis à la
+normalisation l'inscrit. **À l'écriture**, une attente posée en suspendant
+une action de protocole porte une liste **non vide** (arbitrage 3). **À la
+lecture**, une attente sans liste se lit « attente non typée : aucun résultat
+ne la réveille », jamais refusée : le lecteur tolérant précède l'écrivain
+(F16). Aucune empreinte enregistrée ne bouge : `canonicalJson` ignore les
+clés `undefined` ([[D-240]] §5). Un banc d'empreinte V4 l'épingle, et un banc
+d'empreinte C4, à créer, fait de même pour l'attente de règle. Le comptage du
+§1 établit qu'aucune version enregistrée ne porte d'attente que l'écriture
+stricte bloquerait à sa révision.
+
+**§3 — Le catalogue.** Chaque code est connu du catalogue biologique publié :
+un code inconnu est refusé à l'enregistrement, une liste vide aussi ; aucun
+plafond de nombre (arbitrage 3). Le précédent est la vérification des portes
+biologiques des assiettes contre ce même catalogue.
+
+**§4 — La borne de [[D-190]] §3, tenue par le serveur.** À l'enregistrement,
+le serveur re-dérive la proposition de bilan du dossier, telle qu'elle est à
+cet instant. Chaque code doit être un analyte d'une ligne de statut
+`recommande`, `a_repeter`, ou `conditionnel` à déclencheur rempli. Sinon,
+l'attente est refusée. Une proposition qui ne se dérive pas est un refus,
+jamais un passage (arbitrage 6). La référence est la dernière proposition, et
+non la dernière version diffusée au patient. Le patron est celui de la
+re-dérivation au serveur des actions alimentaires, et non celui, seulement
+structurel, des compléments.
+
+**§5 — La cible.** Elle reste libre et non vide, telle qu'aujourd'hui
+(arbitrage 4 ; [[D-056]], contrat V4). Elle peut ne pas nommer les mêmes
+analytes que les codes ; seuls les codes réveilleront l'attente (BP-16).
+
+**§6 — Le second véhicule ([[D-142]]).** L'attente née d'une règle de
+compléments (C4) gagne le même champ facultatif, avec le même lecteur
+tolérant ; l'atelier des règles n'en saisit pas. Une attente née d'une règle
+reste donc « non typée » (arbitrage 2). Aucun effet en production tant
+qu'aucune règle n'est posée (§1).
+
+**§7 — Ce qui sort de ce lot.** La date du contreseing de la demande
+d'examens, que BP-16 pose (arbitrage 1). L'état « à arbitrer », le réveil
+d'une attente par un résultat et la carte au Fil, qui relèvent de BP-16
+(arbitrage 5). Les deux règles de ce réveil y sont déjà posées : un résultat
+annulé ne réveille rien ([[D-294]] §6), et un contrôle se juge sur la date de
+prélèvement, jamais sur celle de saisie.
+
+**§8 — Les attentes déjà posées.** Elles se lisent « attente non typée :
+aucun résultat ne la réveille », là où l'attente s'affiche aujourd'hui
+(action suspendue). Le comptage du §1 n'en trouve aucune (arbitrage 7).
+
+- Conséquences : fragment `changelog.d/2026-10-15-d305-attente-typee.md` ;
+  fiche LOT-04 mise à jour ; le code part en une PR, sans migration.
+
 ### D-299 — D4 : OpenAI est déclaré au registre et au document patient, le flux inchangé ; « Vos données personnelles » v18, accusé exigé
 
 - Date : 2026-10-15

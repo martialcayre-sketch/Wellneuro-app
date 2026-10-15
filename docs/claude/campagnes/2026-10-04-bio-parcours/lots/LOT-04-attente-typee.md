@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "BP-04 — Attente typée sur les deux véhicules"
-statut: "à_faire (fiche proposée le 2026-10-15 ; sept arbitrages rendus le 2026-10-15 ; reste la décision de contrat avant le code)"
+statut: "à_faire (fiche proposée le 2026-10-15 ; sept arbitrages rendus le 2026-10-15 ; décision de contrat D-305 écrite ; prêt à coder après son merge)"
 dépend_de: "LOT-01, LOT-09"
 ---
 
@@ -9,8 +9,8 @@ dépend_de: "LOT-01, LOT-09"
 
 > **Fiche proposée la nuit du 2026-10-15, arbitrages rendus le même jour.**
 > Écrite sans le responsable, à partir des sources citées ; ses sept
-> arbitrages sont rendus (section « Arbitrages »). Rien ne se code avant la
-> décision de contrat qui les consigne.
+> arbitrages sont rendus (section « Arbitrages ») et consignés par la
+> décision de contrat D-305. Le code part après son merge.
 
 ## But
 
@@ -153,8 +153,8 @@ réponse retenue suit, en **Rendu**.
   du dossier (6).
 - Le libellé des attentes non typées (7).
 - Les bancs d'empreinte V4 et C4 (ce dernier à créer).
-- La décision de contrat (D-xxx, D-142) qui consigne les arbitrages ; son
-  numéro se réserve dans `main` au moment de l'écrire.
+- La décision de contrat D-305 (sur D-142), écrite avec cette fiche ; le
+  code la cite.
 
 ## Hors périmètre
 
@@ -176,7 +176,7 @@ réponse retenue suit, en **Rendu**.
 - Gardes de liste blanche : `importeursBiologyLibrary.guard.test.ts` pour tout
   importeur neuf du catalogue biologique (la garde annonce déjà « le lecteur
   d'attente C4 »).
-- `changelog.d/`, la décision de contrat, cette fiche et `CAMPAGNE.md`.
+- `changelog.d/`, cette fiche et `CAMPAGNE.md`.
 
 ## Interdits
 
@@ -198,7 +198,7 @@ réponse retenue suit, en **Rendu**.
 ## Critères de done
 
 Bancs d'empreinte V4 et C4 verts ; attente ancienne lue « non typée » ; T2
-vert ; décision de contrat mergée.
+vert ; D-305 mergée avant le code.
 
 ## Dépendances
 
