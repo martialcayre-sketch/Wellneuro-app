@@ -21,8 +21,10 @@ import { estUnTest, fichiersSource, lire, retirerLignesDeCommentaire } from './b
 // nouvelle adresse rougissent avant même leur premier appel.
 // LIMITES, dites pour ne pas sur-promettre. La garantie couvre les seuls
 // fournisseurs et SDK que nomment `NOMS_FOURNISSEUR`, `ADRESSES_IA` et
-// `SDK_IA` : un fournisseur absent de ces listes échappe au banc, et
-// l'y ajouter est le geste de la revue qui l'introduit. Un appel dont la cible
+// `SDK_IA` : un appel vers un fournisseur absent de ces listes échappe au
+// banc dès que ses motifs ne le reconnaissent pas (certains sont vus quand
+// même, par un nom de méthode ou de variable partagé), et ajouter le
+// fournisseur est le geste de la revue qui l'introduit. Un appel dont la cible
 // ne nomme aucun fournisseur (une URL lue d'une variable au nom neutre)
 // échappe aussi et relève de la revue. `tools/` et `scripts/` sont hors du
 // banc : ils ne tournent pas dans l'application.

@@ -21,7 +21,7 @@
 
 **§1 — Le constat.** La garde ferme la validation par lot aux affirmations
 qui portent une borne (unité de concentration, seuil, comparaison, optimum,
-intervalle). Une dose écrite en toutes lettres, « 200 mg par jour », n'en
+intervalle). Une dose mentionnée dans le texte, « 200 mg par jour », n'en
 fait pas partie : elle peut être validée par lot sans avoir été lue seule,
 puis servie dans une fiche.
 
