@@ -1,16 +1,16 @@
 ---
 id: "LOT-04"
 titre: "BP-04 — Attente typée sur les deux véhicules"
-statut: "à_faire (fiche proposée le 2026-10-15, non validée ; sept arbitrages du responsable à rendre avant le code)"
+statut: "à_faire (fiche proposée le 2026-10-15 ; sept arbitrages rendus le 2026-10-15 ; reste la décision de contrat avant le code)"
 dépend_de: "LOT-01, LOT-09"
 ---
 
 # LOT-04 (BP-04) — Attente typée sur les deux véhicules
 
-> **Fiche proposée, non validée.** Écrite la nuit du 2026-10-15, sans le
-> responsable, à partir des sources citées. Rien ne se code avant ses
-> arbitrages (section « Arbitrages à rendre ») et la décision de contrat qui
-> les consigne.
+> **Fiche proposée la nuit du 2026-10-15, arbitrages rendus le même jour.**
+> Écrite sans le responsable, à partir des sources citées ; ses sept
+> arbitrages sont rendus (section « Arbitrages »). Rien ne se code avant la
+> décision de contrat qui les consigne.
 
 ## But
 
@@ -26,12 +26,13 @@ lignes 123, 175, 344, 382).
 ## Résultat observable
 
 Une attente posée après ce lot, en suspendant une action de protocole, porte
-une liste de codes d'analytes ; celle née d'une règle de compléments aussi
-selon 2 B, et reste « non typée » selon 2 A. Une attente posée avant reste
-lisible et se dit « attente non typée : aucun résultat ne la
+une liste non vide de codes d'analytes, connus du catalogue et pris dans la
+dernière proposition de bilan du dossier ; celle née d'une règle de
+compléments reste « non typée » (arbitrage 2 A). Une attente posée avant
+reste lisible et se dit « attente non typée : aucun résultat ne la
 réveille ». Les empreintes des versions déjà enregistrées ne changent pas.
-Aucun réveil, aucun état dérivé, aucune carte au Fil dans ce lot (voir
-l'arbitrage 5).
+Aucun réveil, aucun état dérivé, aucune carte au Fil dans ce lot
+(arbitrage 5 A).
 
 ## Socle établi (ne se rediscute pas)
 
@@ -76,9 +77,10 @@ l'arbitrage 5).
   banc dédié trouvé — le critère de done du plan (« bancs d'empreinte V4 et
   C4 ») suppose de le créer.
 
-## Arbitrages à rendre (avant le code)
+## Arbitrages (rendus par le responsable le 2026-10-15)
 
-Chaque question donne les faits, puis la conséquence de chaque réponse.
+Chaque question donne les faits, puis la conséquence de chaque réponse ; la
+réponse retenue suit, en **Rendu**.
 
 1. **La date du contreseing de la demande d'examens.** Le cadrage la demande
    sans trancher sa forme (« fail-closed ou déclarative explicite »).
@@ -89,12 +91,14 @@ Chaque question donne les faits, puis la conséquence de chaque réponse.
      son geste.
    - **C.** Renvoyée à BP-16, qui pose la demande à contresigner. Ce lot ne
      porte que les codes.
+   - **Rendu : C.**
 2. **L'attente d'une règle de compléments.**
    - **A.** Même type, lu tolérant, sans saisie dans l'atelier : une attente
      née d'une règle reste « non typée » (cadrage v1).
    - **B.** Saisie typée dans l'atelier aussi (cadrage v3, « les deux
      véhicules ») : le lot touche l'atelier et la signature des règles, sans
      effet en production tant qu'aucune règle n'y est posée.
+   - **Rendu : A.**
 3. **Les codes contre le catalogue.**
    - **A.** Vérifiés à l'enregistrement : un code inconnu est refusé.
      Contrat plus sûr ; le moteur clinique dépend alors du catalogue
@@ -103,34 +107,51 @@ Chaque question donne les faits, puis la conséquence de chaque réponse.
      et l'attente ne serait jamais réveillée, sans que rien ne le dise.
    - Sous-question : liste non vide obligatoire ? Un plafond de nombre serait
      un chiffre à fournir par le responsable ; la fiche n'en propose pas.
+   - **Rendu : A**, liste non vide obligatoire pour une attente neuve, sans
+     plafond de nombre.
 4. **La cible en texte libre, à côté des codes.**
    - **A.** Libre, telle qu'aujourd'hui : le praticien peut écrire une cible
      qui ne dit pas les mêmes analytes que les codes.
    - **B.** Libre, avec un contrôle de cohérence affiché au praticien.
    - **C.** Dérivée des codes : plus de texte libre pour une attente neuve.
+   - **Rendu : A.**
 5. **L'état « à arbitrer » ou « à examiner ».** La v1 le mettait dans ce lot,
    jugé sur la date de prélèvement, avec l'arbitrage juxtaposé et sans carte
    au Fil ; la v3 et le plan le renvoient à BP-16.
    - **A.** Hors de ce lot : contrat seul, BP-16 porte l'état.
    - **B.** Dans ce lot : il lit les résultats, ce qui l'inscrit aux bancs des
      lecteurs de résultats biologiques.
+   - **Rendu : A.**
 6. **La borne de D-190 §3 au serveur.**
    - **A.** Oui : l'enregistrement refuse une attente dont les codes ne
      viennent pas des lignes « recommandé », « à répéter » ou « conditionnel
      à déclencheur rempli » de la proposition de bilan. Il faut alors dire
      quelle version de la proposition fait foi.
    - **B.** Non : la borne reste à l'écran, contre ce que demande la v3.
+   - **Rendu : A**, jugée contre la dernière proposition de bilan du dossier
+     au moment où l'attente est posée (et non contre la dernière version
+     diffusée).
 7. **Les attentes déjà posées.** Elles restent « non typées ».
    - Le libellé exact de cet état, et l'écran où il se dit.
    - Faut-il d'abord les compter en production, par conteneur et en
      agrégats ? Le constat de BP-02 les comptait ; il n'a pas été relu ici.
+   - **Rendu :** libellé retenu, « attente non typée : aucun résultat ne la
+     réveille », là où l'attente s'affiche aujourd'hui (action suspendue) ;
+     compter d'abord. **Compté le 2026-10-15** par conteneur, en lecture
+     seule et en agrégats : 4 versions de protocole en base, aucune action
+     « conditionnelle à la biologie », donc **aucune attente posée** ; aucune
+     n'est à retyper.
 
-## Périmètre (selon les arbitrages)
+## Périmètre
 
 - Le champ des codes sur les deux types d'attente, la normalisation, le
-  lecteur tolérant.
-- Selon 1, 3, 4, 6 : la date, la vérification au catalogue, la cible, la
-  borne au serveur.
+  lecteur tolérant ; la saisie des codes seulement en suspendant une action
+  de protocole (2 A).
+- La vérification des codes au catalogue et la liste non vide (3) ; la cible
+  libre inchangée (4).
+- La borne de D-190 §3 au serveur, contre la dernière proposition de bilan
+  du dossier (6).
+- Le libellé des attentes non typées (7).
 - Les bancs d'empreinte V4 et C4 (ce dernier à créer).
 - La décision de contrat (D-xxx, D-142) qui consigne les arbitrages ; son
   numéro se réserve dans `main` au moment de l'écrire.
@@ -138,7 +159,9 @@ Chaque question donne les faits, puis la conséquence de chaque réponse.
 ## Hors périmètre
 
 - Le réveil d'une attente par un résultat, l'état dérivé, la carte au Fil
-  (BP-16), sauf arbitrage 5 B.
+  (BP-16, arbitrage 5 A).
+- La date du contreseing de la demande d'examens (BP-16, arbitrage 1 C).
+- La saisie des codes dans l'atelier des règles de compléments (2 A).
 - L'amendement de D-190 §5 (BP-18a).
 - Toute règle clinique, tout seuil, tout plafond.
 - Le portail.
@@ -146,13 +169,13 @@ Chaque question donne les faits, puis la conséquence de chaque réponse.
 ## Fichiers probables (une PR, sans migration)
 
 - Les types et la normalisation de l'attente (moteur clinique, compléments).
-- La route des versions de protocole (borne serveur, selon 6).
+- La route des versions de protocole (borne serveur, 6).
 - L'écran de suspension d'une action (choix des analytes) et celui de
   l'arbitrage biologique.
 - Leurs tests ; `protocolV4.test.ts` ; un banc d'empreinte C4 neuf.
 - Gardes de liste blanche : `importeursBiologyLibrary.guard.test.ts` pour tout
   importeur neuf du catalogue biologique (la garde annonce déjà « le lecteur
-  d'attente C4 ») ; les bancs des lecteurs de résultats si 5 B.
+  d'attente C4 »).
 - `changelog.d/`, la décision de contrat, cette fiche et `CAMPAGNE.md`.
 
 ## Interdits
@@ -167,8 +190,9 @@ Chaque question donne les faits, puis la conséquence de chaque réponse.
 - Empreinte V4 : une version sans le champ garde son empreinte ; une version
   avec le champ en change. Même banc pour C4.
 - Lecteur tolérant : une attente ancienne se lit « non typée ».
-- Selon les arbitrages : code inconnu refusé (3 A) ; attente hors proposition
-  refusée au serveur (6 A) ; date absente refusée (1 B).
+- Code inconnu refusé, liste vide refusée (3) ; attente hors de la dernière
+  proposition refusée au serveur (6) ; attente née d'une règle lue « non
+  typée » (2 A).
 - Paliers : T1 à chaque édition, T2 avant le commit ; `/code-review medium`.
 
 ## Critères de done
