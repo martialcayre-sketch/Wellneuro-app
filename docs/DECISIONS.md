@@ -71,7 +71,10 @@ est joué au CI. La rubrique « explication patient » n'entre pas dans ce lot
 placé comme celui des fiches d'assiette sous `tools/` (arbitrage 4) : un
 modèle rédige, un second contre-lit, un désaccord exclut le bloc ; aucune
 donnée patient n'entre dans une consigne ; la sortie passe le vérificateur
-DC-03 ([[D-266]] §7). Hors de l'application, l'outil n'entre pas dans la
+DC-03 ([[D-266]] §7), et un verdict `ok: false` exclut le bloc. La garde de
+BP-01 ne balaye que `web/src` et n'y vérifie que l'import : sous `tools/`,
+l'exigence se tient par les bancs de l'outil et par la revue. Hors de
+l'application, l'outil n'entre pas dans la
 liste fermée de K-05a, dont le banc ne balaye ni `tools/` ni `scripts/`. Son
 flux, sans donnée patient par construction, se déclare comme celui des
 fiches d'assiette : un document TRUST, écrit avant le premier envoi, qui

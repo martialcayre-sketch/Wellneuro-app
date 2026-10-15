@@ -94,7 +94,9 @@ les fiches (BP-11, BP-16) ; aucune sélection d'après le dossier.
   - `catalogueConduitesSepare.guard.test.ts` refuse qu'un module de
     `fiches-usage/` importe le catalogue des conduites ;
   - `appelantsLlmBiologie.guard.test.ts` range `fiches-usage/` parmi les
-    chemins où tout rédacteur par modèle doit passer le vérificateur DC-03 ;
+    chemins où tout appelant d'un modèle doit **importer** `verifierDc03` ;
+    le banc ne garde que l'import, et seulement sous `web/src` : l'appel
+    effectif et le refus d'un verdict `ok: false` relèvent de la revue ;
   - `aucunePhraseStructureSignee.guard.test.ts` juge tout source qui déclare
     `validationExterne` (vrai ou faux), donc une structure neuve, sans
     réglage ;
@@ -190,8 +192,12 @@ réponse retenue suit, en **Rendu**.
      par construction, se déclare comme celui des fiches d'assiette : un
      document TRUST et la mention au dossier RGPD (rubrique 6, constat D4
      de D-299). Le vérificateur DC-03 s'applique à sa sortie (D-266 §7,
-     porteur BP-01). Un modèle rédige, un second contre-lit, un désaccord
-     exclut le bloc ; la voie d'ingestion ne crée que des brouillons.
+     porteur BP-01) ; l'option B le disait « exigé par la garde », ce qui
+     est faux sous `tools/` : la garde ne balaye que `web/src`, et n'y
+     vérifie que l'import. L'exigence reste contractuelle ; elle se tient
+     par les bancs de l'outil (verdict `ok: false` ⇒ bloc exclu) et par la
+     revue. Un modèle rédige, un second contre-lit, un désaccord exclut le
+     bloc ; la voie d'ingestion ne crée que des brouillons.
 5. **Le grain de la validation.** Le patron D-251 valide une version
    entière, relecture intégrale déclarée ; le cadrage dit « ligne à ligne
    (DC-16) ».
@@ -341,7 +347,9 @@ réponse retenue suit, en **Rendu**.
   depuis l'affichage refusé ; une version à une rubrique non validée n'est
   pas valide (arbitrage 5) ; un libellé d'hypothèse non validé ne sort pas.
 - Outil : désaccord des deux modèles ⇒ bloc exclu ; sortie passée au
-  vérificateur DC-03 ; aucune donnée patient dans la consigne.
+  vérificateur DC-03, un verdict `ok: false` excluant le bloc (banc propre
+  à l'outil : la garde de BP-01 ne balaye pas `tools/`) ; aucune donnée
+  patient dans la consigne.
 - Hook DC-17 : la structure déclenche « demande », verrou posé ou éteint ;
   mutation qui rougit.
 - Paliers : T1 à chaque édition ; T3 avant la PR de migration ; T2 avant la
