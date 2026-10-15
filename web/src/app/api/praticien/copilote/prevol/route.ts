@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { construirePreVol, type EntreesPreVol, type PreVol } from '@/lib/copilote/prevol';
 import { EXCLURE_INSTANTANES_JA } from '@/lib/food-observation/contract';
+import { lireEffetsNonTraites } from '@/lib/trust/pauseEffetIndesirableServeur';
 
 // GET /api/praticien/copilote/prevol?idPatient= — pré-vol T-10 min (SP-COP
 // LOT-01). LECTURE SEULE : aucune écriture, aucune persistance, aucun snapshot.
@@ -102,10 +103,9 @@ export async function GET(req: Request): Promise<NextResponse<PreVolApiResponse>
           where: { idPatient, correctionDemandeeDate: { not: null } },
           select: { correctionDemandeeDate: true },
         }),
-        prisma.trustAdverseEffectReport.findMany({
-          where: { idPatient, statutTraitement: { in: ['recu', 'en_cours'] } },
-          select: { soumisLe: true },
-        }),
+        // Non traité au sens du panneau TRUST (D-281 §5) : un signalement qui
+        // reçoit un avis le reste tant qu'il l'attend, quel que soit son statut.
+        lireEffetsNonTraites({ idPatient }).then(e => e.map(({ soumisLe }) => ({ soumisLe }))),
       ]);
 
     const entrees: EntreesPreVol = {

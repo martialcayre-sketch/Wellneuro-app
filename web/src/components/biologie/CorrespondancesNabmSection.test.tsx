@@ -247,3 +247,188 @@ describe('CorrespondancesNabmSection — signature M-3', () => {
     );
   });
 });
+
+describe('CorrespondancesNabmSection — propositions préparées (M-3b)', () => {
+  const ACTE_1211 = { ...ACTE, codeActe: '1211', libelle: 'Libellé de l’acte 1211', coefficientB: 35 };
+  const avecCandidats = (candidats: unknown) => ({
+    json: { ok: true, millesime: 'V105', correspondances: [], candidats },
+  });
+  const deuxPropositions = avecCandidats({
+    millesimeListe: 'V105',
+    situation: 'libelle_explicite',
+    motif: null,
+    propositions: [
+      { codeActe: '1208', nature: 'isole', motif: 'T.S.H. seule.', acte: ACTE },
+      { codeActe: '1211', nature: 'groupe_et', motif: 'T.S.H. + T4 libre.', acte: ACTE_1211 },
+    ],
+  });
+  const signeeOk = {
+    json: { ok: true, correspondance: { codeActe: '1208', etat: 'signee', verifiePar: PRATICIEN, verifieLe: '2026-10-15T10:00:00.000Z' } },
+  };
+
+  it('affiche l’acte proposé, nature présélectionnée, et signe en un clic par le POST existant', async () => {
+    const onModifie = vi.fn();
+    const fetchMock = mockApi({ lecture: [deuxPropositions, signee], decision: signeeOk });
+    render(<CorrespondancesNabmSection analyteCode="BIO_TSH_US" onModifie={onModifie} />);
+
+    await waitFor(() => expect(screen.getByText('Propositions à signer')).toBeTruthy());
+    expect(screen.getByText(/Libellé de l’acte 1208/)).toBeTruthy();
+    expect(screen.getByText('T.S.H. seule.')).toBeTruthy();
+    const radios = screen.getAllByRole('radio') as HTMLInputElement[];
+    expect(radios.filter(r => r.name === 'nature-candidat-1208' && r.checked).map(r => r.value)).toEqual(['isole']);
+    expect(radios.filter(r => r.name === 'nature-candidat-1211' && r.checked).map(r => r.value)).toEqual(['groupe_et']);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Signer cette proposition' })[0]);
+    await waitFor(() => expect(onModifie).toHaveBeenCalledTimes(1));
+    const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')!;
+    // Ni signataire ni date dans le corps : le serveur les pose.
+    expect(JSON.parse(post[1].body)).toEqual({
+      analyteCode: 'BIO_TSH_US',
+      codeActe: '1208',
+      decision: 'signer',
+      etatAttendu: 'absente',
+      nature: 'isole',
+    });
+  });
+
+  it('la nature changée avant la signature est celle qui part', async () => {
+    const fetchMock = mockApi({ lecture: [deuxPropositions, signee], decision: signeeOk });
+    render(<CorrespondancesNabmSection analyteCode="BIO_TSH_US" />);
+    await waitFor(() => expect(screen.getByText('Propositions à signer')).toBeTruthy());
+    const groupeAuChoix = (screen.getAllByRole('radio') as HTMLInputElement[]).find(
+      r => r.name === 'nature-candidat-1211' && r.value === 'groupe_ou',
+    )!;
+    fireEvent.click(groupeAuChoix);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Signer cette proposition' })[1]);
+    await waitFor(() => expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(true));
+    const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')!;
+    expect(JSON.parse(post[1].body)).toMatchObject({ codeActe: '1211', nature: 'groupe_ou', etatAttendu: 'absente' });
+  });
+
+  it('un candidat « à juger » le dit, avec son motif', async () => {
+    mockApi({
+      lecture: [
+        avecCandidats({
+          millesimeListe: 'V105',
+          situation: 'a_juger',
+          motif: null,
+          propositions: [{ codeActe: '1208', nature: 'groupe_et', motif: 'Le libellé ne tranche pas.', acte: ACTE }],
+        }),
+      ],
+    });
+    render(<CorrespondancesNabmSection analyteCode="BIO_FER_SERIQUE" />);
+    await waitFor(() => expect(screen.getByText('À juger')).toBeTruthy());
+    expect(screen.getByText('Le libellé ne tranche pas.')).toBeTruthy();
+  });
+
+  it('analyte sans acte ou calculé : une mention d’information, aucune signature', async () => {
+    for (const [situation, attendu] of [
+      ['aucun_acte', /aucun acte de la nomenclature ne nomme cet analyte/],
+      ['valeur_calculee', /valeur calculée/],
+      ['regroupement', /analyte de regroupement/],
+    ] as const) {
+      mockApi({
+        lecture: [avecCandidats({ millesimeListe: 'V105', situation, motif: 'Motif de la liste.', propositions: [] })],
+      });
+      render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+      await waitFor(() => expect(screen.getByText(attendu)).toBeTruthy());
+      expect(screen.getByText('Motif de la liste.')).toBeTruthy();
+      expect(screen.queryByText('Propositions à signer')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Signer cette proposition' })).toBeNull();
+      cleanup();
+    }
+  });
+
+  // CONTRE-ÉPREUVE : ce que le serveur ne rend pas, l'écran ne l'invente pas —
+  // ni candidat résolu (absent, inactif, déjà en base), ni liste.
+  it('sans proposition rendue par le serveur, aucun bouton de signature en un clic', async () => {
+    for (const candidats of [
+      null,
+      undefined,
+      { millesimeListe: 'V105', situation: 'libelle_explicite', motif: null, propositions: [] },
+    ]) {
+      mockApi({ lecture: [avecCandidats(candidats)] });
+      render(<CorrespondancesNabmSection analyteCode="BIO_FERRITINE" />);
+      await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+      expect(screen.queryByText('Propositions à signer')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Signer cette proposition' })).toBeNull();
+      expect(screen.queryByText(/Rien à signer/)).toBeNull();
+      cleanup();
+    }
+  });
+
+  it('une correspondance signée et un candidat encore à signer se côtoient', async () => {
+    mockApi({
+      lecture: [
+        {
+          json: {
+            ...signee.json,
+            candidats: {
+              millesimeListe: 'V105',
+              situation: 'libelle_explicite',
+              motif: null,
+              propositions: [{ codeActe: '1211', nature: 'groupe_et', motif: 'T.S.H. + T4 libre.', acte: ACTE_1211 }],
+            },
+          },
+        },
+      ],
+    });
+    render(<CorrespondancesNabmSection analyteCode="BIO_TSH_US" />);
+    await waitFor(() => expect(screen.getByText(/signée par praticien@wellneuro\.fr/)).toBeTruthy());
+    expect(screen.getByText(/Libellé de l’acte 1211/)).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Signer cette proposition' })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Retirer la signature' })).toBeTruthy();
+  });
+
+  it('une correspondance posée à la main fait taire la mention « rien à signer »', async () => {
+    mockApi({
+      lecture: [
+        {
+          json: {
+            ...signee.json,
+            candidats: { millesimeListe: 'V105', situation: 'aucun_acte', motif: 'Motif de la liste.', propositions: [] },
+          },
+        },
+      ],
+    });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+    await waitFor(() => expect(screen.getByText(/signée par/)).toBeTruthy());
+    expect(screen.queryByText(/Rien à signer/)).toBeNull();
+  });
+
+  it('signature d’un candidat refusée : le message du serveur, puis la liste relue', async () => {
+    const onModifie = vi.fn();
+    const fetchMock = mockApi({
+      lecture: [deuxPropositions, signee],
+      decision: {
+        status: 409,
+        json: { ok: false, reason: 'etat_divergent', error: 'La correspondance a changé depuis l’affichage — rechargez la fiche.' },
+      },
+    });
+    render(<CorrespondancesNabmSection analyteCode="BIO_TSH_US" onModifie={onModifie} />);
+    await waitFor(() => expect(screen.getByText('Propositions à signer')).toBeTruthy());
+    fireEvent.click(screen.getAllByRole('button', { name: 'Signer cette proposition' })[0]);
+
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/a changé depuis l’affichage/));
+    // La relecture rend l'état de la base : le candidat a disparu, la ligne signée paraît.
+    await waitFor(() => expect(screen.queryByText('Propositions à signer')).toBeNull());
+    expect(screen.getByText(/signée par/)).toBeTruthy();
+    const lectures = fetchMock.mock.calls.filter(([url, init]) => !init?.method && String(url).includes('/correspondances'));
+    expect(lectures.length).toBe(2);
+    expect(onModifie).not.toHaveBeenCalled();
+  });
+
+  it('les propositions d’un analyte ne restent pas sur la fiche du suivant', async () => {
+    let reponse: { json: unknown } = deuxPropositions;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async () => ({ ok: true, status: 200, json: async () => reponse.json })),
+    );
+    const { rerender } = render(<CorrespondancesNabmSection analyteCode="BIO_TSH_US" />);
+    await waitFor(() => expect(screen.getByText('Propositions à signer')).toBeTruthy());
+    reponse = vide;
+    rerender(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+    await waitFor(() => expect(screen.queryByText('Propositions à signer')).toBeNull());
+    expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy();
+  });
+});

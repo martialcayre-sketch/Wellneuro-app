@@ -46,7 +46,7 @@ beforeEach(() => {
     ok: true,
     correspondance: { codeActe: '1208', etat: 'signee', verifiePar: PRATICIEN, verifieLe: '2026-10-15T10:00:00.000Z' },
   });
-  lireCorrespondancesAnalyte.mockResolvedValue({ ok: true, millesime: 'V105', correspondances: [] });
+  lireCorrespondancesAnalyte.mockResolvedValue({ ok: true, millesime: 'V105', correspondances: [], candidats: null });
 });
 
 afterEach(() => {
@@ -155,6 +155,36 @@ describe('GET', () => {
 
   it('rend les correspondances lues', async () => {
     const reponse = await GET(new Request('http://localhost/x?analyte=BIO_FERRITINE'));
-    expect(await reponse.json()).toEqual({ ok: true, millesime: 'V105', correspondances: [] });
+    expect(await reponse.json()).toEqual({ ok: true, millesime: 'V105', correspondances: [], candidats: null });
+  });
+
+  it('rend les candidats résolus par le serveur (M-3b), sans rien écrire', async () => {
+    const candidats = {
+      millesimeListe: 'V105',
+      situation: 'libelle_explicite',
+      motif: null,
+      propositions: [
+        {
+          codeActe: '1208',
+          nature: 'isole',
+          motif: 'T.S.H. seule.',
+          acte: {
+            codeActe: '1208',
+            libelle: 'T.S.H.(SANG)',
+            coefficientB: 20,
+            inactif: false,
+            ententePrealable: null,
+            acteReserve: null,
+            remboursementTotal: null,
+          },
+        },
+      ],
+    };
+    lireCorrespondancesAnalyte.mockResolvedValue({ ok: true, millesime: 'V105', correspondances: [], candidats });
+    const reponse = await GET(new Request('http://localhost/x?analyte=BIO_TSH_US'));
+    expect(reponse.status).toBe(200);
+    expect((await reponse.json()).candidats).toEqual(candidats);
+    expect(lireCorrespondancesAnalyte).toHaveBeenCalledWith('BIO_TSH_US');
+    expect(deciderCorrespondance).not.toHaveBeenCalled();
   });
 });

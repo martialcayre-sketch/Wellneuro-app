@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-314 — Journal de lecture du protocole : la première ouverture du détail de chaque version diffusée est tracée, sans date ; ACT-1 n'attend que les conditions et ce journal ; sa migration passe dès qu'elle est prête, avant celle de ai (lettre p, CC-8)
+### D-315 — Journal de lecture du protocole : la première ouverture du détail de chaque version diffusée est tracée, sans date ; ACT-1 n'attend que les conditions et ce journal ; sa migration passe dès qu'elle est prête, avant celle de ai (lettre p, CC-8)
 
 - Date : 2026-10-15
 - Statut : accepté. Fond acquis : séance du 2026-10-11, point 3.1
@@ -80,6 +80,108 @@ restent sans date ([[D-297]] §3).
 (`docs/DOSSIER_RGPD.md`, rubrique 5, ligne « Journalisation ») : une espèce
 de plus dans `PortailLecturePatient`, mêmes colonnes, conservée avec le
 dossier ([[D-283]] §2) et effacée avec lui.
+### D-314 — BP-12a : les fiches d'usage du besoin 2, une structure signée faite d'identifiants et un texte en base validé rubrique par rubrique ; rédaction par IA hors ligne ; une migration, release-db au rang 4 après EF-3b (LOT-12)
+
+- Date : 2026-10-15
+- Statut : accepté. Dix arbitrages du responsable rendus le 2026-10-15 sur la
+  fiche LOT-12, par questions à options (faits, puis conséquence de chaque
+  réponse) ; les dix réponses sont consignées dans la fiche.
+- Domaine : clinique — fiches d'usage décisionnel du premier parcours
+  (« exploration du besoin 2 ») ; campagne bio-parcours, LOT-12 ; plan,
+  fiche F05.
+- Étend : [[D-251]] §4 (le texte ne touche jamais le dépôt) et §5 (régime
+  « adaptée par IA, validée ») aux fiches d'usage et aux libellés
+  d'hypothèse. Applique [[D-266]] §6 (module distinct de
+  `catalogueConduitesV1`), §9 (natures DC-20 et DC-47), §11 (une migration,
+  deux PR) et §14 (constantes produit).
+- **Une migration autorisée** (demande du responsable du 2026-10-15) : trois
+  tables neuves, aucune table existante modifiée.
+- **Ne touche pas** : le régime des fiches d'assiette ([[D-251]]), inchangé ;
+  `catalogueConduitesV1`, aucun axe, aucun tableau clinique ([[D-206]]) ;
+  la liste fermée des sites d'IA de l'application (K-05a, porte 5) ; aucune
+  règle clinique, aucun seuil, aucune dose, aucun plafond ; aucune surface
+  patient.
+
+**§1 — Le constat (2026-10-15).** Aucun module de fiches d'usage n'existe ;
+les gardes de BP-01 l'attendent déjà (module distinct du catalogue des
+conduites, vérificateur DC-03 pour tout rédacteur, aucune phrase dans une
+structure signable, liste blanche des importeurs du catalogue biologique). Le
+hook DC-17 reconnaît une structure **signée** à son marqueur, pas une
+structure au verrou éteint. Le contrat de fraîcheur des claims épinglés ne
+balaye que `web/src/lib/clinical/`. Le patron D-251 valide une version
+entière ; il n'a pas d'acte par rubrique.
+
+**§2 — La structure, au dépôt, sans phrase.** Une fiche par question
+clinique et par usage, pour **toutes** les fiches que le dossier de preuve
+de BP-07 permet d'écrire (arbitrage 1). La structure est une table TS signée
+à cinq termes ([[D-063]], [[D-067]]), sous `web/src/lib/fiches-usage/`, faite
+d'identifiants seulement : usage, question, codes d'analyte vérifiés au
+catalogue, besoins, claims `identifiant@version`, nature, statut d'usage,
+population, statut réglementaire, renvois aux précautions. Elle porte aussi
+le **vocabulaire d'hypothèses** (identifiants) que consomme BP-11, et une
+**liste fermée de populations d'usage**, propre aux fiches, dont chaque
+valeur est nommée et signée par le responsable (arbitrage 7 ; DC-14,
+[[D-095]]) : au dépôt, des identifiants ; leur libellé est en base. La
+population est obligatoire pour chaque usage. **Aucune valeur** : la
+structure déclare la nature attendue d'une valeur (seuil décisionnel
+documenté, cible thérapeutique) et le claim qui la porte, jamais la valeur,
+qui vient avec l'évaluateur par marqueur, BP-27 (arbitrage 8). Ses entrées
+décisionnelles sont tracées ; elle est déclarée à la matrice de
+consommation ; le hook DC-17 la couvre, verrou posé ou éteint. Sa signature
+valide l'**usage**, non le claim, qui reste à Curation signée.
+
+**§3 — Le texte, en base, validé rubrique par rubrique.** Trois tables, ajout
+seul, sur le patron de `FicheAssietteVersion` / `FicheAssietteActe` : les
+versions du texte d'une fiche (`FicheUsageVersion`), leurs actes
+(`FicheUsageActe`), et une table **propre** des libellés d'hypothèse,
+versionnés et validés par acte de la même façon (arbitrage 3). Un acte vaut
+pour **une rubrique** d'une version (arbitrage 5) : une version n'est valide
+que si toutes ses rubriques le sont, sur la même empreinte, ce que le serveur
+dérive ; une rubrique non validée ne sort pas. La validation est un acte
+distinct et daté du responsable ; la voie d'ingestion ne crée que des
+brouillons et refuse tout champ de validation. Un contrat SQL négatif propre
+est joué au CI. La rubrique « explication patient » n'entre pas dans ce lot
+(arbitrage 6) : elle viendra avec la première surface patient du parcours.
+
+**§4 — La rédaction, par IA, hors de l'application.** Un outil hors ligne,
+placé comme celui des fiches d'assiette sous `tools/` (arbitrage 4) : un
+modèle rédige, un second contre-lit, un désaccord exclut le bloc ; aucune
+donnée patient n'entre dans une consigne ; la sortie passe le vérificateur
+DC-03 ([[D-266]] §7), et un verdict `ok: false` exclut le bloc. La garde de
+BP-01 ne balaye que `web/src` et n'y vérifie que l'import : sous `tools/`,
+l'exigence se tient par les bancs de l'outil et par la revue. Hors de
+l'application, l'outil n'entre pas dans la
+liste fermée de K-05a, dont le banc ne balaye ni `tools/` ni `scripts/`. Son
+flux, sans donnée patient par construction, se déclare comme celui des
+fiches d'assiette : un document TRUST, écrit avant le premier envoi, qui
+nomme ses fournisseurs, et la mention au dossier RGPD (rubrique 6, patron du
+constat D4 de [[D-299]]). L'outil n'atteste jamais ([[D-195]] §1).
+
+**§5 — La fraîcheur.** Un claim remplacé rend la structure « à relire » :
+le contrat de fraîcheur des tables signées s'étend à `fiches-usage/`, au CI
+et au préflight de la release-db. Le texte validé est **lié à l'empreinte de
+la structure** (arbitrage 10) : une structure re-signée rend son texte « à
+relire » jusqu'à un nouvel acte. L'état se dérive à la lecture ; rien n'est
+réécrit.
+
+**§6 — La séquence et la porte 23.** Deux PR ([[D-266]] §11) : la migration
+seule, puis le code après release-db approuvée, sentinelle et constat par
+conteneur ([[D-087]]). La release-db est la suivante du rang 4, après celle
+d'EF-3b (constatée, #1478), une à la fois ([[D-248]]). La structure est
+signée par le responsable avant le merge de la PR de code ; les textes et les
+libellés sont validés en production après le déploiement ; le lot se clôt
+sur le constat de ces actes, par conteneur et en agrégats. BP-11 peut partir
+dès le merge du code, sans attendre ce constat (arbitrage 2).
+
+**§7 — Ce qui sort de ce lot.** Toute surface patient, tout envoi, toute
+remise. La constante « fiches validées par séance » ([[D-266]] §14), qui
+n'est pas lue : aucun plafond à l'écran, aucune valeur posée (arbitrage 9).
+Les positions d'expert versionnées et l'arbitrage de conflit (BP-12b). Les
+options par hypothèse (BP-17). Toute valeur et toute lecture de résultat
+(BP-27). Toute sélection d'une fiche d'après le dossier (étage assistant).
+
+- Conséquences : fragment `changelog.d/2026-10-15-d314-fiches-usage.md` ;
+  fiche LOT-12 mise à jour ; puis la PR de migration seule.
 
 ### D-313 — AIPD : réexamen déclenché par une liste d'événements et au plus tard le 2027-06-30 ; conclusion « non requise » maintenue au 2026-10-15 ; faits postérieurs à D-265 versés (lettre co)
 

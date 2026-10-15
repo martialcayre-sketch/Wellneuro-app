@@ -1,19 +1,21 @@
-# Handoff — lettre p (D-314), journal de lecture du protocole (CC-8)
+# Handoff — lettre p (D-315), journal de lecture du protocole (CC-8)
 
 ## Branche et état Git
 
 - Branche `docs/lettre-p-journal-protocole`, partie de `origin/main` 8b2ade90 (#1481).
-- Commit b83e71e8 (D-314, registre, plan, fragment), plus ce handoff.
+- Commit b83e71e8 (D-315, registre, plan, fragment), plus ce handoff.
 - `docs/claude/SESSION_LOG.md` porte une entrée locale (lettre ai, 2026-10-14)
   d'une autre session : hors du lot, laissée non indexée.
+- Numéro : écrite D-314, renumérotée D-315 à la fusion d'`origin/main`
+  (f660faf8), la D-314 ayant été prise entre-temps par BP-12a (#1482).
 
 ## Objectif
 
 Écrire la lettre p et trancher le chemin le plus court vers ACT-1 (H70).
 
-## Décisions prises (D-314, sept arbitrages du responsable)
+## Décisions prises (D-315, sept arbitrages du responsable)
 
-- Ordre : ACT-1 n'attend que k, l, G-8, J2-cc8 et la porte 18, plus J2-base ;
+- Ordre : ACT-1 n'attend que k, l, G-8, J2-cc8 et la porte 18 ; J2-base n'en est plus ;
   la release-db de CC-8 passe dès qu'elle est prête, sans attendre la file B ;
   CC-8 précède ai, en deux migrations séparées.
 - Contenu : est « lu » la première ouverture du détail (déplié ou page) de
@@ -29,7 +31,7 @@
 
 ## Fichiers modifiés
 
-- `docs/DECISIONS.md` (D-314)
+- `docs/DECISIONS.md` (D-315)
 - `docs/DOSSIER_RGPD.md` (rubrique 5, espèce `protocole` déclarée)
 - `docs/claude/PLAN_WELLNEURO.md` (intro du rang 4, H59, H60, H70, file C
   place 1, file D ligne 4, lettres)

@@ -8,6 +8,7 @@ import {
   deciderCorrespondance,
   estEtatCorrespondance,
   lireCorrespondancesAnalyte,
+  type CandidatsNabmAffiches,
   type CorrespondanceAffichee,
   type DeciderCorrespondanceResultat,
   type RaisonRefusCorrespondance,
@@ -28,7 +29,12 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export type CorrespondancesNabmApiResponse =
-  | { ok: true; millesime: string | null; correspondances: CorrespondanceAffichee[] }
+  | {
+      ok: true;
+      millesime: string | null;
+      correspondances: CorrespondanceAffichee[];
+      candidats: CandidatsNabmAffiches | null;
+    }
   | { ok: false; reason: string; error: string };
 
 export type DecisionCorrespondanceNabmApiResponse =
@@ -87,6 +93,7 @@ export async function GET(req: Request): Promise<NextResponse<CorrespondancesNab
       ok: true,
       millesime: resultat.millesime,
       correspondances: resultat.correspondances,
+      candidats: resultat.candidats,
     });
   } catch (err) {
     console.error('[praticien/biologie/nabm/correspondances GET]', signature(err));

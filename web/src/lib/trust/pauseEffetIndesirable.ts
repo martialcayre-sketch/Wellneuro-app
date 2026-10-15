@@ -143,6 +143,33 @@ export function signalementsEnAttente<
   return signalements.filter(s => recoitUnAvis(s) && verdictCourant(s.id, verdicts) === null);
 }
 
+/** Les deux statuts ouverts d'un signalement — la seule règle de ceux qui ne reçoivent aucun avis. */
+export const STATUTS_NON_TRAITES = ['recu', 'en_cours'] as const;
+
+/**
+ * Les signalements d'effet indésirable NON TRAITÉS — une seule règle pour le
+ * panneau TRUST, le Fil du jour et le prévol du copilote (D-281 §5). Celui qui
+ * reçoit un avis l'est tant qu'il l'attend (`signalementsEnAttente`), quel que
+ * soit son statut : passé à « traité » sans verdict, il ne sort d'aucun
+ * compteur (« le statut ne lève rien »). Les autres se comptent par statut.
+ *
+ * Aucun verrou : le compte est un affichage, actif dès le déploiement ; seule
+ * la garde de la diffusion attend la signature (D-281 §6).
+ *
+ * Ordre d'entrée conservé.
+ */
+export function effetsNonTraites<
+  S extends { id: string; statutTraitement: string; rattachement: string | null; protocolDraftId: string | null },
+>(
+  effets: readonly S[],
+  verdicts: readonly VerdictEffetIndesirable[],
+): S[] {
+  const enAttente = new Set(signalementsEnAttente(effets, verdicts).map(e => e.id));
+  return effets.filter(e => (recoitUnAvis(e)
+    ? enAttente.has(e.id)
+    : (STATUTS_NON_TRAITES as readonly string[]).includes(e.statutTraitement)));
+}
+
 /**
  * Ce qui est en pause dans la version COURANTE du programme.
  *

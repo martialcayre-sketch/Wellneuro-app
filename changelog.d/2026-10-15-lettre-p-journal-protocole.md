@@ -1,4 +1,4 @@
-### D-314 : lettre p, journal de lecture du protocole (CC-8), écrite sur arbitrages du responsable (2026-10-15)
+### D-315 : lettre p, journal de lecture du protocole (CC-8), écrite sur arbitrages du responsable (2026-10-15)
 
 - **Ce qui compte** : la première ouverture du détail de chaque version
   diffusée du protocole, sans date ; ni l'affichage de l'accueil ni la

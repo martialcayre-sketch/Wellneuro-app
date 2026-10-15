@@ -47,6 +47,8 @@ const IMPORTEURS_ADMIS = [
   'web/src/app/api/praticien/biologie/import/route.ts',
   // La signature des correspondances analyte ↔ acte NABM (M-3, F54) : la
   // nomenclature et le catalogue, globaux au cabinet — aucune donnée patient.
+  // Les candidats préparés (M-3b) passent par la même route, lus dans le
+  // module PUR `candidatsNabm` par la lib : aucun importeur neuf.
   'web/src/app/api/praticien/biologie/nabm/acte/route.ts',
   'web/src/app/api/praticien/biologie/nabm/correspondances/route.ts',
   'web/src/app/api/praticien/biologie/proposition/courrier/route.ts',
