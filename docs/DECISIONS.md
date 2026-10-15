@@ -4,6 +4,251 @@
 
 ## Décisions actives
 
+### D-313 — AIPD : réexamen déclenché par une liste d'événements et au plus tard le 2027-06-30 ; conclusion « non requise » maintenue au 2026-10-15 ; faits postérieurs à D-265 versés (lettre co)
+
+- Date : 2026-10-15
+- Statut : accepté. Arbitrages du responsable du 2026-10-15, sur questions à
+  options : déclencheur « événements + date » (recommandé) ; conclusion
+  « maintenir non requise », contre la recommandation « avis du conseil
+  d'abord » et contre « conduire l'AIPD ». Texte rédigé par l'assistant à
+  partir de ces réponses ; il ne vaut pas avis juridique.
+- Domaine : `docs/DOSSIER_RGPD.md`, rubrique 13 ; [[D-265]] §3 ;
+  [[D-286]] §5 ; fiche F68 du plan unique.
+- **Ne touche pas** : aucun code, aucun flux.
+
+**§1 — Faits versés au réexamen.** Depuis la conclusion du 2026-10-04 :
+commentaires du laboratoire recopiés et conservés après la purge du document
+([[D-278]] §3) ; seules les pages masquées par le praticien partent à
+l'extraction (#1428, `usage_ia` v8) ; OpenAI destinataire déclaré
+([[D-299]]) ; mineurs jusqu'à 18 ans et date de naissance demandée
+([[D-284]] §3-4, [[D-302]]) ; NIR retiré ([[D-284]] §2) ; file durable des
+extractions ([[D-282]]). Ils s'ajoutent à la note du 2026-10-05 ([[D-267]] §8).
+
+**§2 — Déclencheur.** « À l'achèvement du produit » est remplacé. L'AIPD se
+réexamine au premier de ces événements : les cinq de [[D-286]] §2 (offre
+commerciale ; second compte praticien ; première clé d'API ; premier
+consommateur de BioFlow hors du cabinet, ou tiers qui en lit la sortie ; tout
+envoi direct vers un tiers) ; l'ouverture de l'étage assistant ; tout nouveau
+destinataire ou toute nouvelle catégorie de données ; et au plus tard le
+2027-06-30 ([[D-265]] §4). Le flou signalé par [[D-286]] §5 est clos.
+
+**§3 — Conclusion.** Le responsable maintient « AIPD non requise » au
+2026-10-15, au vu des faits du §1. Les neuf critères de la rubrique 13 restent
+à cocher de sa main, chacun avec son motif ([[D-283]] §9) : c'est ce motif qui
+porte la conclusion. Fait de méthode consigné, sans avis : la grille du CEPD
+dit qu'un traitement qui remplit deux critères appelle en général une AIPD ;
+données de santé et usage innovant sont deux critères candidats.
+
+### D-312 — Guide des 12 besoins : réécrit besoin par besoin, sur un dossier de preuve par besoin, au modèle de celui du besoin 2 ; aucun contenu fourni par l'assistant (lettre w)
+
+- Date : 2026-10-15
+- Statut : accepté pour la méthode. Fond acquis : séance du 2026-10-11
+  (« guide des 12 besoins à réécrire par le responsable ») ; méthode choisie le
+  2026-10-15, sur question à options, réponse libre « trame + lecture et
+  dossier de preuve à l'instar de ce qui a été fait pour B2 fer ». Le contenu
+  du guide reste de la main du responsable.
+- Domaine : `docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md` (aucune source
+  citée au 2026-10-15) ; besoins de `web/src/lib/equilibre/constants.ts` ;
+  fiche H15 ; DC-01, DC-21.
+- **Ne touche pas** : aucune règle, aucune part, aucun seuil dans ce texte.
+
+**§1 — Trame.** Chaque besoin porte six champs, aucun prérempli : variables
+d'entrée (instrument ou analyte, par identifiant) ; références citées
+(identifiants du corpus, statut de revue) ; règle de décision (seuil,
+provenance, date) ; population visée ; « non évalué » tant qu'aucune source
+(aujourd'hui les besoins 2, 6, 7, 11 côté questionnaires) ; motif de la part
+de pondération.
+
+**§2 — Dossier de preuve.** Pour chaque besoin, un dossier hors dépôt, au
+modèle de celui du besoin 2 (BP-07, LOT-07) : claims du corpus lus en
+production par conteneur, rangés par rubrique, population et verdict proposé,
+conflits, claims douteux, positions d'expert là où rien ne chiffre. Le
+responsable signe, rejette ou renvoie à relire, claim par claim. Au dépôt :
+identifiants et mécanismes seulement ([[D-251]] §4).
+
+**§3 — Règles.** Les parts 60/20/20 ne se signent pas telles quelles :
+motif écrit ou parts redéfinies (DC-21) ; si elles changent, la version du
+score d'équilibre change. Le guide réécrit est une D-xxx clinique avec son
+fragment.
+
+**§4 — Exécution.** Dossiers un besoin à la fois ; J3-12b (onglet « Les 12
+besoins ») suit le guide signé.
+
+### D-311 — Document au médecin : la biologie y entre par le courrier existant seul (lettre av)
+
+- Date : 2026-10-15
+- Statut : accepté. Défaut écrit au plan (F33) ; les questions de la pièce
+  de cadrage écartées ne se reposent pas, leur objet se tranche ici. Validé
+  par le responsable le 2026-10-15, sur question à options (« Courrier seul »,
+  recommandé, contre « Ouvrir le bilan composé »).
+- Domaine : `web/src/lib/biology-library/courrier.ts` ; garde
+  `assertRenduMedecinNonPrescriptif` (`web/src/lib/documents/vocabulaire.ts`) ;
+  fiche F33 ; complète [[D-307]] (q) et ae.
+
+**§1 — La règle.** La biologie du document remis au médecin est le courrier
+existant : proposition d'explorations non prescriptive, gabarit sans IA,
+remise manuelle, aucun résultat, aucun score.
+
+**§2 — Ce qui suit d'ailleurs.** Les mentions de remboursement suivent
+[[D-309]] (aa). « Ordonnance » reste interdit partout, « prescription » sur
+toute surface patient (`docs/claude/REGISTRE_FRONTIERES.md`).
+
+**§3 — Hors av.** Un bilan composé à part (papier distinct) n'est pas ouvert
+ici : il reste au lot ax. Le rendu imprimable du protocole (bh) garde son
+propre gabarit.
+
+### D-310 — Menu praticien : l'atelier de validation des références reste après la Bibliothèque, sans « 4.0 » ; une entrée « Connaissances » sépare la lecture du corpus de sa signature (lettre ab, EF-0)
+
+- Date : 2026-10-15
+- Statut : accepté. Arbitrages du responsable du 2026-10-15, sur questions à
+  options : place « Après la Bibliothèque » (recommandé) ; entrée de lecture
+  « Oui, Connaissances », contre la recommandation « la lecture reste dans la
+  Bibliothèque ».
+- Domaine : rail du praticien (`SidebarRail.tsx`, entrée « Atelier corpus »,
+  étiquette « 4.0 ») ; E2E du libellé ; fiche H14, EF-0.
+- Nature : décision d'écran, non clinique.
+
+**§1 — L'atelier.** Il reste dans le premier groupe, juste après la
+Bibliothèque. L'étiquette « 4.0 » disparaît.
+
+**§2 — « Connaissances ».** Une entrée neuve du menu, « Connaissances », sert
+à lire et chercher dans le corpus. Lire et signer restent deux gestes
+distincts : rien ne se signe depuis « Connaissances ».
+
+**§3 — Exécution.** EF-0, dans J3-base : libellés, place, E2E à jour ;
+l'écran de lecture se cadre dans ce lot.
+
+### D-309 — Courrier de biologie : chaque ligne dit son état de remboursement, sans montant ; « non évalué » s'écrit ; toutes les lignes vont au médecin (lettre aa, BF-7, BF-8)
+
+- Date : 2026-10-15
+- Statut : accepté. Arbitrages du responsable du 2026-10-15, sur trois
+  questions à options, toutes sur la recommandation. Texte rédigé par
+  l'assistant à partir de ces réponses.
+- Domaine : `web/src/lib/biology-library/courrier.ts`,
+  `web/src/lib/biology-library/remboursable.ts` ; [[D-122]] §1 ; fiche F55.
+- **Ne touche pas** : aucune correspondance analyse ↔ acte (lettre f, M-3) ;
+  aucun code dans ce lot.
+
+**§1 — Par ligne.** Le courrier ne cite jamais un montant. Une analyse
+remboursable porte son code d'acte (BF-7). Une analyse cotée seulement dans
+un groupe imposé le dit en mots. Entente préalable, acte réservé et
+remboursement partiel s'écrivent en mots, sans changer l'état.
+
+**§2 — Non évalué.** Une analyse sans correspondance signée porte
+« remboursement non évalué ». Ce n'est pas « non remboursé ».
+
+**§3 — Hors nomenclature.** Une correspondance signée dont l'acte n'est pas
+actif dans le millésime courant porte « Hors nomenclature », seul. La mention
+« (à la charge du patient) » de `courrier.ts` est retirée : l'application
+n'affirme pas qui paie.
+
+**§4 — Qui reçoit quoi.** Le courrier au médecin garde toutes les analyses
+proposées, chacune avec sa mention. La règle `regimeDocumentaire` de
+`remboursable.ts` (seules les remboursables au médecin), jamais appelée, est
+retirée ; [[D-122]] §1 laissait ce choix au jour de la curation.
+
+**§5 — Exécution.** J3-base, après la signature des correspondances (f,
+G-3) ; banc sur les quatre états.
+
+### D-308 — Onglet « Biologie » de la fiche patient : écrans regroupés, statut posé pris dans une liste fermée du responsable, deux marques datées (lettre s)
+
+- Date : 2026-10-15
+- Statut : accepté. Fond acquis : séance du 2026-10-12, réponses 9 à 12.
+  Forme du statut posé choisie le 2026-10-15, sur question à options :
+  « Liste fermée de vos mots », contre la recommandation « texte libre
+  court ». La liste elle-même n'est pas écrite ici.
+- Domaine : fiche patient praticien (`web/src/lib/praticien/ongletsFiche.ts`) ;
+  écrans de biologie aujourd'hui sous « Trajectoire » et au protocole ;
+  fiches F57, F58, F60.
+
+**§1 — L'onglet.** Un onglet « Biologie » regroupe comptes rendus, état de
+chaque import et série par valeur. Les écrans de biologie y déménagent ; rien
+n'est dupliqué.
+
+**§2 — Statut posé.** Le praticien pose, près d'une valeur, un statut pris
+dans une liste fermée. Daté, à son écran seul, rien au portail, jamais
+calculé. La liste est écrite de la main du responsable, par sa propre D-xxx,
+avant le code de F58 ; l'assistant n'en propose aucun mot.
+
+**§3 — Deux marques.** Sur la carte du compte rendu, deux marques datées :
+« lignes validées » (date de la dernière ligne validée) et « lecture
+consignée » (un geste distinct, son bouton). Le « Validé » du portail garde
+son sens ([[D-269]] §4).
+
+**§4 — Commentaires du laboratoire.** Déjà servis sous la valeur par la série
+(BP-03) ; F60 ne garde que les deux unités.
+
+**§5 — Exécution.** Rang 4 avec J2-base, après la porte 12 ([[D-306]]) ;
+stockage du statut posé (migration ou non) tranché au cadrage de F58.
+
+### D-307 — Document pour le médecin : l'impression laisse une ligne datée au Fil ; le patient le remet lui-même ; rien ne part vers un tiers (lettre q)
+
+- Date : 2026-10-15
+- Statut : accepté. Fond acquis : séance du 2026-10-11 (« sous garde et
+  trace », « remise au patient tracée, aucun canal tiers ») ; geste tracé
+  choisi le 2026-10-15, sur question à options (« Impression seule »,
+  recommandé, contre « Aperçu et impression »).
+- Domaine : page Documents du praticien
+  (`web/src/components/patient-cockpit/DocumentsPanel.tsx`), rendu sous
+  `assertRenduMedecinNonPrescriptif` ; Fil de correspondance ; remise de la
+  lettre d'adressage ([[D-262]]) comme patron ; fiche F38.
+
+**§1 — Garde.** Le document pour le médecin reste sous la garde non
+prescriptive.
+
+**§2 — Trace.** « Imprimer » demande une confirmation, puis écrit au Fil
+« Document pour le médecin imprimé le … ». Ouvrir l'aperçu pour relire ne
+laisse pas de trace.
+
+**§3 — Remise.** Le patient télécharge « Pour votre médecin » dans son
+portail et le remet lui-même ; le téléchargement est journalisé, comme la
+lettre d'adressage. Rien ne part vers un tiers.
+
+**§4 — Portée.** La signature du praticien ne qualifie rien. Tout envoi
+direct vers un tiers est un déclencheur de [[D-286]] §2.
+
+**§5 — Exécution.** J2-med : rang 1 si la trace tient dans le Fil existant,
+sinon rang 4 avec sa migration.
+
+### D-306 — Règle de dépendance entre domaines (D2) ; un module publié a une entrée publiée, ses tables, ses drapeaux et un lecteur ; BioFlow d'abord, sous un banc à liste fermée (lettre j)
+
+- Date : 2026-10-15
+- Statut : accepté. Fond acquis : séance du 2026-10-11 (« biologie publiée »
+  = BioFlow comme brique publiée, D2 et un premier lecteur, rien de visible
+  pour le patient) ; garde choisie le 2026-10-15, sur question à options
+  (« Banc BioFlow seul », recommandé, contre « garde générale d'abord » et
+  « règle écrite seule »).
+- Domaine : modules de `web/src/lib` ; fiche F63, porte 12.
+- Nature : architecture, non clinique.
+
+**§1 — Module publié.** Un module est publié quand sont écrits : son entrée
+publiée (liste fermée des fichiers que les autres domaines peuvent importer) ;
+les tables dont il est propriétaire ; les drapeaux dont l'extinction le
+ferme ; et qu'un lecteur hors de son domaine passe par cette seule entrée. Un
+index consommé ne suffit pas.
+
+**§2 — Règle de dépendance.** Un domaine n'en lit un autre que par son entrée
+publiée. Les imports directs qui existent deviennent des dérogations datées,
+listées ; la liste ne peut que diminuer ; une dérogation neuve exige sa ligne
+datée.
+
+**§3 — Clauses.** PF-0 : couches nommées, liste fermée des domaines, table
+« primitive → dossiers existants », sans dossier neuf. CF-1 : le protocole ;
+ses dépendances croisées deviennent des dérogations datées ; il devient
+propriétaire de ses tables. NF-1 : les questionnaires, même traitement.
+NU-1 : les compléments, nommés et gelés, répertoire inchangé. DV-0 : aucun
+dérivé (API, cabinet hébergé) sans règle d'arrêt, avec [[D-286]] §2.
+
+**§4 — BioFlow.** Premier module visé. Son premier lecteur hors biologie est
+un importeur existant, converti à l'entrée publiée, choisi au cadrage de
+J3-bioflow. Rien de visible pour le patient.
+
+**§5 — Garde.** Avec J3-bioflow, un banc à liste fermée tient les imports de
+la biologie depuis l'extérieur : un import nouveau rougit la CI. La garde
+générale de tous les domaines (K-19) reste au palier 2 (porte 24).
+
+**§6 — Effet.** Lève la porte 12 au merge (NF-7, s).
+
 ### D-305 — BP-04 : une attente biologique nomme ses analytes, en codes du catalogue pris dans la proposition de bilan ; extension additive de V4, sans migration (LOT-04)
 
 - Date : 2026-10-15

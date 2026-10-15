@@ -1489,6 +1489,19 @@ conservée plus longtemps que le document qui la portait. La conclusion du
 2026-10-04 n'est pas rouverte ici : ce fait est porté au réexamen du
 responsable.
 
+**Réexamen du 2026-10-15 ([[D-313]]).** Faits versés depuis le 2026-10-04 :
+commentaires imprimés par le laboratoire recopiés et conservés après la purge
+du document ([[D-278]] §3) ; seules les pages masquées par le praticien partent
+à l'extraction (`usage_ia` v8) ; OpenAI destinataire ([[D-299]]) ; mineurs
+jusqu'à 18 ans et date de naissance demandée ([[D-284]] §3-4, [[D-302]]) ; NIR
+retiré ([[D-284]] §2) ; file durable des extractions ([[D-282]]). Le
+déclencheur « à l'achèvement du produit » est remplacé : réexamen au premier
+des cinq événements de [[D-286]] §2, à l'ouverture de l'étage assistant, à tout
+nouveau destinataire ou nouvelle catégorie de données, et au plus tard le
+2027-06-30. Conclusion du responsable maintenue au 2026-10-15 : **AIPD non
+requise**. Les neuf critères ci-dessus restent à cocher de sa main, chacun avec
+son motif ([[D-283]] §9) ; ce motif porte la conclusion.
+
 **B. Si elle est requise : l'AIPD elle-même**, en pièce dédiée.
 
 1. Description du traitement : finalités (rubrique 2), données (rubrique 5),
@@ -1530,7 +1543,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 11 | Information | **Clos le 2026-10-13 ([[D-283]] §8) : l'information orale est consignée comme non datée.** *Historique — constat d'origine :* **Date de délivrance non établie** et **modalité de retrait non consignée** — deux des quatre composantes du trou d'origine ; la période déclarée (« en continu depuis la souscription HDS ») ne fournit pas de point de départ tenu pour établi par le dépôt | Responsable | fermé | ici, rubrique 11 |
 | 11 | Information | **Clos le 2026-10-13 ([[D-283]] §8) : les accusés des versions écrites en tiennent lieu.** *Historique — constat d'origine :* **Aucune trace écrite par participant** de l'information sur l'écart HDS — aucun acquittement individuel ne la porte ; périmètre des personnes couvertes non établi | Responsable | fermé | ici, rubrique 11 |
 | 11 | Information | **2026-10-13 ([[D-283]] §8) : un seul dossier reste à la v8 (agrégats, conteneur) ; le praticien l'informe lui-même, geste daté à consigner.** **Deux patients ont accusé `donnees_confidentialite@v8` sans avoir vu `v9`**, qui corrige la promesse inexacte sur le partage. L'accusé de `v9` étant exigé **au portail**, il ne les atteindra qu'à leur prochaine visite — or la production dit qu'on y entre le jour même ou jamais. Deux personnes, mesurées le 2026-09-19 : ce n'est pas un mécanisme à construire mais un geste à décider. Ce qui part vers un patient reste un geste du responsable | Responsable | 2027-06-30 (était : **à fixer** — au plus tôt, en tout état de cause avant le 2026-10-21) | ici, rubrique 11 |
-| 13 | AIPD | ~~Absente~~ — **non requise à ce stade**, déclaration du responsable du 2026-10-04 ([[D-265]] §3), **critères du seuil non renseignés** ; à réexaminer à l'achèvement du produit | Responsable | réexamen à l'achèvement du produit (était 2026-10-21) | ici, rubrique 13 |
+| 13 | AIPD | ~~Absente~~ — **non requise à ce stade**, déclaration du responsable du 2026-10-04 ([[D-265]] §3), **critères du seuil non renseignés** ; à réexaminer à l'achèvement du produit ; **maintenue au 2026-10-15, déclencheur remplacé** ([[D-313]]) | Responsable | réexamen au premier événement de [[D-313]] §2, au plus tard 2027-06-30 (était : à l'achèvement du produit ; avant, 2026-10-21) | ici, rubrique 13 |
 
 Le **2026-10-21** était l'échéance par défaut, date de revue de la dérogation.
 La dérogation est reconduite sans terme ([[D-265]] §1) : le responsable a fixé
