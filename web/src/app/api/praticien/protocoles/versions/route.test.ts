@@ -1,8 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getServerSession, prisma } = vi.hoisted(() => ({
+const { getServerSession, prisma, deriverPropositionPourPatient } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
+  // La proposition de bilan re-dérivée à l'enregistrement d'une attente
+  // ([[D-305]] §4). Son moteur a ses propres bancs : ici, ce que la route fait
+  // de ce qu'il rend.
+  deriverPropositionPourPatient: vi.fn(),
   prisma: {
+    // Le catalogue biologique publié ([[D-305]] §3) : les codes d'une attente.
+    biologyAnalyte: { findMany: vi.fn() },
     patient: { findUnique: vi.fn() },
     ciqualNutrientValue: { findMany: vi.fn() },
     // Préconditions de confirmation T0 (D-052) : lues APRÈS la garde
@@ -31,6 +37,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
 vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
+vi.mock('@/lib/biology-library/propositionService', () => ({ deriverPropositionPourPatient }));
 
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
 import { VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
@@ -163,6 +170,25 @@ function c5Ref(): FoodCompassActionRef {
   return reference;
 }
 
+/** Une ligne de proposition de bilan, réduite à ce que la borne lit. */
+function lignePropose(statut: string, codes: string[], declencheurRempli: boolean | null = null) {
+  return {
+    panelCode: `PANEL_${statut}`, libelle: `Panel ${statut}`, niveau: '1', objectif: null,
+    statut, declencheurRempli, condition: null, motifs: [], justificationClaims: [], ratios: [],
+    analytes: codes.map(code => ({
+      code, libelle: code, validationMedicaleRequise: false, remboursement: { statut: 'non_evalue' },
+    })),
+  };
+}
+
+function propositionDe(...lignes: ReturnType<typeof lignePropose>[]) {
+  return {
+    ok: true,
+    proposition: { ok: true, lignes, declarationsIgnoreesHorsProposition: [] },
+    limites: [],
+  };
+}
+
 function postRequest(body: unknown): Request {
   return new Request('http://localhost/api/praticien/protocoles/versions', {
     method: 'POST',
@@ -189,6 +215,12 @@ describe('POST /api/praticien/protocoles/versions', () => {
     // Aucun arbitrage biologique par défaut : la garde LOT-06 ne mord que sur
     // une résolution d'intention `conditionnelle_biologie`.
     prisma.arbitrageBiologique.findMany.mockResolvedValue([]);
+    // Un dossier dont la proposition RECOMMANDE la ferritine, que le catalogue
+    // connaît : l'attente du banc V4 est posable ([[D-305]]).
+    prisma.biologyAnalyte.findMany.mockResolvedValue([{ code: 'BIO_FERRITINE' }]);
+    deriverPropositionPourPatient.mockResolvedValue(
+      propositionDe(lignePropose('recommande', ['BIO_FERRITINE'])),
+    );
     // LA SÉLECTION PRATICIEN EST PERSISTÉE (`D-127`), et le banc décrit
     // désormais un dossier où elle a réellement été posée. Depuis §1bis le
     // recalcul serveur ne réinjecte plus la sélection du corps de requête : il
@@ -806,7 +838,7 @@ describe('POST /api/praticien/protocoles/versions', () => {
     const actionV4: ProtocolAction = {
       ...action,
       interventionStatus: 'conditionnelle_biologie',
-      waitFor: { type: 'biologie', cible: 'Ferritine' },
+      waitFor: { type: 'biologie', cible: 'Ferritine', analyteCodes: ['BIO_FERRITINE'] },
     };
     const submissionV4 = {
       ...submission,
@@ -824,7 +856,162 @@ describe('POST /api/praticien/protocoles/versions', () => {
       // relisable, et c'est elle qui restait bloquée en V1.
       expect(create.contractVersion).toBe(VERSION_PROTOCOL_DRAFT_V4);
       expect(create.payload.actions[0].interventionStatus).toBe('conditionnelle_biologie');
-      expect(create.payload.actions[0].waitFor).toEqual({ type: 'biologie', cible: 'Ferritine' });
+      expect(create.payload.actions[0].waitFor).toEqual({
+        type: 'biologie', cible: 'Ferritine', analyteCodes: ['BIO_FERRITINE'],
+      });
+      // La borne a été jugée contre la proposition DU DOSSIER, à l'instant.
+      expect(deriverPropositionPourPatient).toHaveBeenCalledWith(episode.patientId, expect.any(String));
+    });
+
+    describe('l’attente nomme ses analytes, et le serveur les borne (`D-305`)', () => {
+      beforeEach(() => {
+        getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+        prisma.protocolDraft.findMany.mockResolvedValue([]);
+      });
+
+      async function poser(waitFor: ProtocolAction['waitFor']) {
+        const res = await POST(postRequest({
+          episode, decisionCard,
+          submission: { ...submissionV4, actions: [{ ...actionV4, waitFor }] },
+        }));
+        return { status: res.status, json: (await res.json()) as { reason: string; error: string } };
+      }
+
+      it('refuse une attente sans codes à l’écriture (§2) — avant toute lecture de la base', async () => {
+        const { status, json } = await poser({ type: 'biologie', cible: 'Ferritine' });
+        expect(status).toBe(400);
+        expect(json.reason).toBe('draft_invalid');
+        expect(json.error).toContain('au moins un analyte');
+        expect(prisma.biologyAnalyte.findMany).not.toHaveBeenCalled();
+        expect(deriverPropositionPourPatient).not.toHaveBeenCalled();
+      });
+
+      it('refuse une liste vide (§3)', async () => {
+        const { status, json } = await poser({ type: 'biologie', cible: 'Ferritine', analyteCodes: [] });
+        expect(status).toBe(400);
+        expect(json.error).toContain('au moins un analyte');
+      });
+
+      it('refuse un code inconnu du catalogue (422 analyte_inconnu, §3)', async () => {
+        prisma.biologyAnalyte.findMany.mockResolvedValue([]);
+        const { status, json } = await poser({
+          type: 'biologie', cible: 'Ferritine', analyteCodes: ['BIO_INVENTE'],
+        });
+        expect(status).toBe(422);
+        expect(json.reason).toBe('analyte_inconnu');
+        expect(json.error).toContain('BIO_INVENTE');
+        // Le catalogue PUBLIÉ : une fiche désactivée est inconnue, pas « hors proposition ».
+        expect(prisma.biologyAnalyte.findMany).toHaveBeenCalledWith({
+          where: { code: { in: ['BIO_INVENTE'] }, actif: true },
+          select: { code: true },
+        });
+        expect(prisma.$transaction).not.toHaveBeenCalled();
+      });
+
+      it.each([
+        ['optionnel', null],
+        ['conditionnel', false],
+        ['deja_documente', null],
+        ['non_indique_actuellement', null],
+      ] as const)('refuse un code d’une ligne « %s » (422 attente_hors_proposition, §4)', async (statut, rempli) => {
+        deriverPropositionPourPatient.mockResolvedValue(
+          propositionDe(lignePropose(statut, ['BIO_FERRITINE'], rempli)),
+        );
+        const { status, json } = await poser(actionV4.waitFor);
+        expect(status).toBe(422);
+        expect(json.reason).toBe('attente_hors_proposition');
+        expect(prisma.$transaction).not.toHaveBeenCalled();
+      });
+
+      it.each([
+        ['a_repeter', null],
+        ['conditionnel', true],
+      ] as const)('admet un code d’une ligne « %s » (déclencheur : %s)', async (statut, rempli) => {
+        deriverPropositionPourPatient.mockResolvedValue(
+          propositionDe(lignePropose(statut, ['BIO_FERRITINE'], rempli)),
+        );
+        const { status } = await poser(actionV4.waitFor);
+        expect(status).toBe(200);
+      });
+
+      it('refuse quand la proposition ne se dérive pas — un refus, jamais un passage (arbitrage 6)', async () => {
+        deriverPropositionPourPatient.mockResolvedValue({ ok: false, motif: 'Proposition désactivée.' });
+        const { status, json } = await poser(actionV4.waitFor);
+        expect(status).toBe(422);
+        expect(json.reason).toBe('proposition_indisponible');
+        expect(json.error).toContain('Proposition désactivée.');
+        expect(prisma.$transaction).not.toHaveBeenCalled();
+      });
+
+      it('un protocole qui ne suspend rien ne lit ni le catalogue ni la proposition', async () => {
+        const res = await POST(postRequest({
+          episode, decisionCard,
+          submission: {
+            ...submissionV4,
+            actions: [{ ...action, interventionStatus: 'active' }],
+          },
+        }));
+        expect(res.status).toBe(200);
+        expect(prisma.biologyAnalyte.findMany).not.toHaveBeenCalled();
+        expect(deriverPropositionPourPatient).not.toHaveBeenCalled();
+      });
+
+      // LA BORNE JUGE LE GESTE, PAS LE RÉENREGISTREMENT. Le bilan revenu, la
+      // ligne passe « déjà documenté » : la révision qui touche AUTRE CHOSE ne
+      // doit pas être refusée pour une attente posée avant et inchangée.
+      it('ne rejuge pas une attente inchangée de la version active ; juge un code ajouté', async () => {
+        const autre: ProtocolAction = {
+          ...action, actionId: 'action-2', title: 'Hydratation', type: 'hydration', interventionStatus: 'active',
+        };
+        const draftActif = buildProtocolDraft({
+          protocolDraftId: deriveProtocolDraftId(decisionCardId),
+          decisionCard,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+          purpose: submission.purpose,
+          followUpCriterion: submission.followUpCriterion,
+          therapeuticLoad: submission.therapeuticLoad,
+          actions: [actionV4, autre],
+          version: VERSION_PROTOCOL_DRAFT_V4,
+        });
+        const ligneActive = {
+          id: deriveVersionId(deriveProtocolDraftId(decisionCardId), draftActif.inputHash),
+          inputHash: draftActif.inputHash,
+          supersedesDraftId: null,
+          createdAt: new Date('2026-01-02T00:00:00.000Z'),
+          payload: draftActif,
+        };
+        prisma.protocolDraft.findMany.mockResolvedValue([ligneActive]);
+        deriverPropositionPourPatient.mockResolvedValue(
+          propositionDe(lignePropose('deja_documente', ['BIO_FERRITINE'])),
+        );
+        const res = await POST(postRequest({
+          episode, decisionCard,
+          submission: { ...submissionV4, actions: [actionV4, { ...autre, title: 'Hydratation du matin' }] },
+          baseVersionId: ligneActive.id,
+        }));
+        expect(res.status).toBe(200);
+        expect(deriverPropositionPourPatient).not.toHaveBeenCalled();
+
+        // Mais un code AJOUTÉ à cette même attente est un geste neuf : jugé.
+        prisma.biologyAnalyte.findMany.mockResolvedValue([{ code: 'BIO_FERRITINE' }, { code: 'BIO_TSH' }]);
+        const res2 = await POST(postRequest({
+          episode, decisionCard,
+          submission: {
+            ...submissionV4,
+            actions: [
+              {
+                ...actionV4,
+                waitFor: { type: 'biologie', cible: 'Ferritine', analyteCodes: ['BIO_FERRITINE', 'BIO_TSH'] },
+              },
+              autre,
+            ],
+          },
+          baseVersionId: ligneActive.id,
+        }));
+        expect(res2.status).toBe(422);
+        expect(((await res2.json()) as { reason: string }).reason).toBe('attente_hors_proposition');
+      });
     });
 
     it('PERSISTE LA BOUSSOLE ET L’ASSIETTE ENSEMBLE en V4 — le chemin de production', () => {

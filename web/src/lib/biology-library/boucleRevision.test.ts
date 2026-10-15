@@ -66,7 +66,7 @@ const ACTION_FER: ProtocolAction = {
   rescuePlan: 'r',
   limitations: [],
   interventionStatus: 'conditionnelle_biologie',
-  waitFor: { type: 'biologie', cible: 'ferritine' },
+  waitFor: { type: 'biologie', cible: 'ferritine', analyteCodes: ['BIO_FERRITINE'] },
 };
 
 function version(actions: ProtocolAction[], updatedAt: string) {

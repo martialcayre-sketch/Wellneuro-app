@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
@@ -71,6 +71,9 @@ import {
 } from '@/lib/biology-library/confirmationsDocument';
 import type { LimiteProposition } from '@/lib/biology-library/propositionService';
 import type { LignePanelProposition } from '@/lib/biology-library/statuts';
+// Import de VALEUR depuis la FEUILLE du vocabulaire des statuts, qui n'importe
+// rien : le prédicat de la borne suit sans tirer le moteur au paquet client.
+import { ligneOuvreUneAttente } from '@/lib/biology-library/vocabulaireStatuts';
 import type { ProtocolAction, TherapeuticLoad } from '@/lib/clinical-engine/types';
 import { VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
 import type { ProvenancePurpose, SourceCitablePurpose } from '@/lib/protocol/provenancePurpose';
@@ -1495,6 +1498,31 @@ export function ClinicalRuntimeSection({
   const assiettesIndiqueesDuDossier = assiettesIndiquees !== null && assiettesIndiquees.pour === idPatient
     ? assiettesIndiquees.liste
     : null;
+  /**
+   * LES ANALYTES SUR LESQUELS UNE ACTION PEUT ÊTRE SUSPENDUE ([[D-305]] §4,
+   * borne de [[D-190]] §3) : ceux des lignes de la proposition qui ouvrent une
+   * attente, par le prédicat MÊME que la route applique. `null` tant que la
+   * proposition n'est pas servie — le constructeur dit alors pourquoi il
+   * n'offre rien, plutôt que d'offrir ce que le serveur refuserait.
+   */
+  const analytesAttendables = useMemo(() => {
+    if (!propositionDisponible) return null;
+    const vus = new Map<string, { code: string; libelle: string; panel: string }>();
+    for (const ligne of propositionLignes.filter(ligneOuvreUneAttente)) {
+      for (const analyte of ligne.analytes) {
+        if (!vus.has(analyte.code)) vus.set(analyte.code, { code: analyte.code, libelle: analyte.libelle, panel: ligne.libelle });
+      }
+    }
+    return [...vus.values()];
+  }, [propositionDisponible, propositionLignes]);
+  /** Libellé d'un code d'analyte, lu dans la proposition servie ; le code à défaut. */
+  const libelleAnalyte = useCallback((code: string) => {
+    for (const ligne of propositionLignes) {
+      const trouve = ligne.analytes.find(analyte => analyte.code === code);
+      if (trouve) return trouve.libelle;
+    }
+    return code;
+  }, [propositionLignes]);
 
   // Remontée de l'état observable (rail des phases). Dépendances primitives
   // uniquement : aucune boucle de rendu. `reevaluationMesuree` ne fait que lire
@@ -2447,6 +2475,7 @@ export function ClinicalRuntimeSection({
           assietteSelection={assietteRetenue}
           onClearAssietteSelection={() => setAssietteSelection(null)}
           assiettesIndiquees={fixture ? null : assiettesIndiqueesDuDossier}
+          analytesAttendables={fixture ? null : analytesAttendables}
           sourcesCitables={fixture ? [] : sourcesCitables}
           provenancePurpose={fixture ? null : (contenuActif?.provenancePurpose ?? null)}
           baremeCharge={fixture ? [] : baremeCharge}
@@ -2561,6 +2590,8 @@ export function ClinicalRuntimeSection({
                   actionId: action.actionId,
                   title: action.title,
                   cible: action.waitFor?.cible ?? null,
+                  // Vide = attente NON TYPÉE ([[D-305]] §8) : le panneau le dit.
+                  analytes: (action.waitFor?.analyteCodes ?? []).map(libelleAnalyte),
                 }))}
               arbitrages={arbitrages
                 .filter(a => a.protocolDraftId === activeVersionId)

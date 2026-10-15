@@ -273,6 +273,21 @@ describe('/api/praticien/regles', () => {
       expect(prisma.clinicalRule.create).not.toHaveBeenCalled();
     });
 
+    // L'ATELIER NE SAISIT PAS DE CODES D'ANALYTES ([[D-305]] §6, arbitrage
+    // 2 A) : le lecteur les lit, aucun chemin d'ici ne les vérifie contre le
+    // catalogue. Une attente née d'une règle reste « non typée ».
+    it('refuse une condition biologique portant des codes d’analytes (D-305 §6)', async () => {
+      const reponse = await POST(requetePost({
+        ...CORPS_CREATION,
+        conditionBiologie: { type: 'biologie', cible: 'ferritine', analyteCodes: ['BIO_FERRITINE'] },
+      }));
+      expect(reponse.status).toBe(400);
+      const json = await reponse.json();
+      expect(json.reason).toBe('condition_biologie_invalide');
+      expect(json.error).toContain('non typée');
+      expect(prisma.clinicalRule.create).not.toHaveBeenCalled();
+    });
+
     it('accepte une règle sans aucune condition — les deux colonnes restent vides', async () => {
       await POST(requetePost(CORPS_CREATION));
       const { data } = prisma.clinicalRule.create.mock.calls[0][0];

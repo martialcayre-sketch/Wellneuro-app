@@ -32,7 +32,7 @@ const ACTION_TYPES = [
 const INTERVENTION_STATUSES = [
   'active', 'conditionnelle_biologie', 'differee', 'contre_indiquee', 'non_indiquee_actuellement',
 ] as const;
-const WAIT_FOR_FIELDS = ['type', 'cible', 'echeance'];
+const WAIT_FOR_FIELDS = ['type', 'cible', 'echeance', 'analyteCodes'];
 const PHASE_FIELDS = ['phaseId', 'duree', 'objectifs', 'actionIds', 'mesures', 'prerequis', 'reviewAt'];
 const LOAD_LEVELS = ['light', 'moderate', 'loaded', 'excessive'] as const;
 const FORBIDDEN_SUPPLEMENT_FIELDS = ['product', 'produit', 'form', 'forme', 'dose', 'brand', 'marque'];
@@ -100,8 +100,36 @@ function normalizeWaitFor(waitFor: ProtocolWaitFor): ProtocolWaitFor {
     throw new TypeError('Attente d’intervention : seul le type « biologie » est représentable.');
   }
   const cible = nonEmpty(waitFor.cible, 'cible de l’attente');
-  if (waitFor.echeance === undefined) return { type: 'biologie', cible };
-  return { type: 'biologie', cible, echeance: canonicalIso(waitFor.echeance, 'échéance de l’attente') };
+  const analyteCodes = normalizeAnalyteCodes(waitFor.analyteCodes);
+  if (waitFor.echeance === undefined) return { type: 'biologie', cible, analyteCodes };
+  return {
+    type: 'biologie',
+    cible,
+    echeance: canonicalIso(waitFor.echeance, 'échéance de l’attente'),
+    analyteCodes,
+  };
+}
+
+// LES CODES D'ANALYTES, EXIGÉS À L'ÉCRITURE ([[D-305]] §2, arbitrage 3) : une
+// attente posée en suspendant une action nomme au moins un analyte, sans
+// plafond de nombre. Ce module est le seul ÉCRIVAIN du contrat — la relecture
+// (`reconstructProtocolDraft`) ne repasse pas ici, et c'est ce qui laisse lire
+// « non typée » une attente posée avant. Ici, la FORME seulement : que chaque
+// code soit au catalogue et dans la proposition de bilan du dossier se juge au
+// serveur, contre la base (§3, §4). Dédupliqués et triés : la même liste rend
+// la même empreinte, quel que soit l'ordre des clics.
+function normalizeAnalyteCodes(codes: unknown): string[] {
+  if (codes === undefined) {
+    throw new TypeError('Attente d’intervention : nommez au moins un analyte attendu, en code du catalogue biologique.');
+  }
+  if (!Array.isArray(codes) || codes.some(code => typeof code !== 'string' || !code.trim())) {
+    throw new TypeError('Attente d’intervention : chaque analyte attendu est un code non vide.');
+  }
+  const normalized = uniqueSorted(codes.map(code => (code as string).trim()));
+  if (normalized.length === 0) {
+    throw new TypeError('Attente d’intervention : nommez au moins un analyte attendu, en code du catalogue biologique.');
+  }
+  return normalized;
 }
 
 // Le statut d'intervention ne se devine pas : requis sur toute action V4,

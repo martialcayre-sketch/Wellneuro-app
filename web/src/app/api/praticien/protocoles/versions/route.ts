@@ -38,6 +38,8 @@ import { buildPractitionerFoodCompassReference } from '@/lib/food-compass/practi
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
 import { refusResolutionSansArbitrage } from '@/lib/biology-library/revision';
+import { attentesAPoser, refusCodeInconnu, refusHorsProposition } from '@/lib/biology-library/attentesBornees';
+import { deriverPropositionPourPatient } from '@/lib/biology-library/propositionService';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { lireSelectionPriorite } from '@/lib/clinical-engine/selectionPrioritePrisma';
 import { resoudreRegleSignee } from '@/lib/praticien/sourceSigneeVerifiee';
@@ -558,6 +560,56 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       if (refusArbitrage) {
         return NextResponse.json(
           { ok: false, reason: 'resolution_sans_arbitrage', error: refusArbitrage },
+          { status: 422 },
+        );
+      }
+    }
+
+    // ── L'ATTENTE NOMME SES ANALYTES, ET LE SERVEUR LES BORNE ([[D-305]]) ───
+    //
+    // Le moteur a exigé la FORME — une liste non vide de codes (§2). Ici, ce
+    // que seule la base sait : chaque code est au catalogue (§3), et il est
+    // l'analyte d'une ligne de la proposition de bilan qui ouvre une attente
+    // (§4, la borne de [[D-190]] §3, jusqu'ici tenue à l'écran seulement).
+    //
+    // SEULES LES ATTENTES QUE CETTE SOUMISSION POSE sont jugées — voir
+    // `attentesAPoser`. Sans elles, rien n'est lu : un protocole qui ne suspend
+    // rien ne dépend ni du catalogue ni du drapeau de la proposition.
+    //
+    // UNE PROPOSITION QUI NE SE DÉRIVE PAS EST UN REFUS, JAMAIS UN PASSAGE
+    // (arbitrage 6) : drapeau éteint, table non signée, catalogue vide —
+    // l'attente ne peut pas être bornée, donc elle ne se pose pas.
+    const attentes = attentesAPoser(activeDraft?.actions ?? [], draft.actions);
+    if (attentes.length > 0) {
+      const codes = [...new Set(attentes.flatMap(attente => attente.analyteCodes))];
+      const connus = await prisma.biologyAnalyte.findMany({
+        // Le catalogue PUBLIÉ : une fiche désactivée n'y est plus.
+        where: { code: { in: codes }, actif: true },
+        select: { code: true },
+      });
+      const refusCatalogue = refusCodeInconnu(attentes, new Set(connus.map(analyte => analyte.code)));
+      if (refusCatalogue) {
+        return NextResponse.json(
+          { ok: false, reason: 'analyte_inconnu', error: refusCatalogue },
+          { status: 422 },
+        );
+      }
+      const proposition = await deriverPropositionPourPatient(idPatient, now);
+      if (!proposition.ok) {
+        return NextResponse.json(
+          {
+            ok: false,
+            reason: 'proposition_indisponible',
+            error: 'Une action ne se suspend que sur un bilan proposé, et la proposition de bilan '
+              + `de ce dossier ne se dérive pas : ${proposition.motif}`,
+          },
+          { status: 422 },
+        );
+      }
+      const refusBorne = refusHorsProposition(attentes, proposition.proposition.lignes);
+      if (refusBorne) {
+        return NextResponse.json(
+          { ok: false, reason: 'attente_hors_proposition', error: refusBorne },
           { status: 422 },
         );
       }

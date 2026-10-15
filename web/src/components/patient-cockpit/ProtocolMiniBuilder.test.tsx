@@ -497,10 +497,51 @@ describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
   // étages, et INDÉCLENCHABLE : `ArbitrageBiologiquePanel` n'apparaît que sur une
   // action `conditionnelle_biologie`, et aucune surface n'en posait.
 
+  // Ce que la proposition de bilan du dossier retient — calculé par
+  // l'appelant avec le prédicat de la route ([[D-305]] §4).
+  const ANALYTES = [
+    { code: 'BIO_FERRITINE', libelle: 'Ferritine sérique', panel: 'Statut martial' },
+    { code: 'BIO_TSH', libelle: 'TSH', panel: 'Thyroïde' },
+  ];
+
   it('suspend une action en attente d’un bilan, et demande V4 avec elle', () => {
     const onSaveVersion = vi.fn();
     const { container } = render(
-      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+      <ProtocolMiniBuilder
+        decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" analytesAttendables={ANALYTES}
+      />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    choisirCharge(container);
+    fireEvent.click(ui.getByRole('checkbox', { name: /En attente du bilan biologique/ }));
+    fireEvent.click(ui.getByRole('checkbox', { name: /Ferritine sérique/ }));
+    // La cible se tape APRÈS la coche : les codes survivent à la frappe.
+    fireEvent.change(ui.getByLabelText('Ce qu’on attend pour l’action 1'), { target: { value: 'Ferritine' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+
+    expect(onSaveVersion).toHaveBeenCalledTimes(1);
+    const soumission = onSaveVersion.mock.calls[0][0] as RelectureProtocoleSoumission;
+    // LE CONTRAT EST DEMANDÉ, JAMAIS DÉDUIT : sans lui la route retombe en V1,
+    // où `interventionStatus` est INTERDIT.
+    expect(soumission.version).toBe('c1-protocol-draft-v4');
+    expect(soumission.actions[0].interventionStatus).toBe('conditionnelle_biologie');
+    expect(soumission.actions[0].waitFor).toEqual({
+      type: 'biologie', cible: 'Ferritine', analyteCodes: ['BIO_FERRITINE'],
+    });
+  });
+
+  // [[D-305]] §2 : une attente posée nomme au moins un analyte. L'écran le dit
+  // avant la route, sur l'action concernée.
+  it('refuse une attente sans analyte coché, et le dit', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" analytesAttendables={ANALYTES}
+      />,
     );
     const ui = within(container);
     fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
@@ -511,14 +552,19 @@ describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
     fireEvent.click(ui.getByRole('checkbox', { name: /En attente du bilan biologique/ }));
     fireEvent.change(ui.getByLabelText('Ce qu’on attend pour l’action 1'), { target: { value: 'Ferritine' } });
     fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(onSaveVersion).not.toHaveBeenCalled();
+    expect(ui.getByRole('alert').textContent).toContain('sans cocher d’analyte');
+  });
 
-    expect(onSaveVersion).toHaveBeenCalledTimes(1);
-    const soumission = onSaveVersion.mock.calls[0][0] as RelectureProtocoleSoumission;
-    // LE CONTRAT EST DEMANDÉ, JAMAIS DÉDUIT : sans lui la route retombe en V1,
-    // où `interventionStatus` est INTERDIT.
-    expect(soumission.version).toBe('c1-protocol-draft-v4');
-    expect(soumission.actions[0].interventionStatus).toBe('conditionnelle_biologie');
-    expect(soumission.actions[0].waitFor).toEqual({ type: 'biologie', cible: 'Ferritine' });
+  it('sans proposition servie, n’offre aucun analyte et dit pourquoi', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fireEvent.click(ui.getByRole('checkbox', { name: /En attente du bilan biologique/ }));
+    expect(ui.getByText(/proposition de bilan de ce dossier n’est pas disponible/)).not.toBeNull();
+    expect(ui.queryByRole('checkbox', { name: /Ferritine/ })).toBeNull();
   });
 
   it('refuse une attente qui ne dit pas ce qu’elle attend', () => {
@@ -566,7 +612,9 @@ describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
   it('en V4, une action NON suspendue porte « active » — le contrat l’exige sur chacune', () => {
     const onSaveVersion = vi.fn();
     const { container } = render(
-      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+      <ProtocolMiniBuilder
+        decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" analytesAttendables={ANALYTES}
+      />,
     );
     const ui = within(container);
     fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
@@ -581,6 +629,7 @@ describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
     fireEvent.change(ui.getByLabelText('Plan de secours de l’action 2'), { target: { value: 'Secours' } });
     choisirCharge(container);
     fireEvent.click(ui.getAllByRole('checkbox', { name: /En attente du bilan biologique/ })[0]);
+    fireEvent.click(ui.getByRole('checkbox', { name: /^TSH/ }));
     fireEvent.change(ui.getByLabelText('Ce qu’on attend pour l’action 1'), { target: { value: 'TSH' } });
     fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
 

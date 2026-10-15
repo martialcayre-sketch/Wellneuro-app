@@ -135,6 +135,7 @@ export function ProtocolMiniBuilder({
   assietteSelection = null,
   onClearAssietteSelection,
   assiettesIndiquees = null,
+  analytesAttendables = null,
   sourcesCitables = [],
   provenancePurpose = null,
   baremeCharge = [],
@@ -179,6 +180,14 @@ export function ProtocolMiniBuilder({
    * entre pas plus qu'elle n'a de bouton sur la carte (`DC-24`).
    */
   assiettesIndiquees?: { plateCode: string; libelle: string }[] | null;
+  /**
+   * Les analytes sur lesquels une action peut être suspendue ([[D-305]] §4) :
+   * ceux des lignes de la proposition de bilan qui ouvrent une attente,
+   * calculés par l'appelant avec le prédicat de la route. `null` = proposition
+   * non servie (drapeau, lecture en échec, fixture) : rien n'est offert, et
+   * l'écran le dit. Jamais le catalogue entier — le serveur le refuserait.
+   */
+  analytesAttendables?: { code: string; libelle: string; panel: string }[] | null;
   /**
    * Les deux sources que la raison d'être a le droit de citer ([[D-193]]),
    * relues au serveur. Liste FERMÉE : ni le motif praticien de sélection, ni le
@@ -477,6 +486,16 @@ export function ProtocolMiniBuilder({
         ? `L’action ${rangs} attend un bilan sans dire lequel : nommez ce qu’on attend.`
         : `Les actions ${rangs} attendent un bilan sans dire lequel : nommez ce qu’on attend pour chacune.`);
     }
+    // Même patron pour les ANALYTES ([[D-305]] §2) : le moteur refuse une
+    // attente sans code ; l'écran le dit avant, sur l'action concernée.
+    const attenteSansAnalyte = actions.filter(action =>
+      action.interventionStatus === 'conditionnelle_biologie' && (action.waitFor?.analyteCodes ?? []).length === 0);
+    if (attenteSansAnalyte.length > 0) {
+      const rangs = attenteSansAnalyte.map(action => actions.indexOf(action) + 1).join(', ');
+      return refuser(attenteSansAnalyte.length === 1
+        ? `L’action ${rangs} attend un bilan sans cocher d’analyte : choisissez au moins un analyte de la proposition de bilan. Seuls eux pourront la réveiller.`
+        : `Les actions ${rangs} attendent un bilan sans cocher d’analyte : choisissez au moins un analyte de la proposition de bilan pour chacune.`);
+    }
     setErreur(null);
     const suspendues = actions.some(action => action.interventionStatus === 'conditionnelle_biologie');
     // UNE ASSIETTE EXIGE V4, ET LA DEMANDE DOIT SUIVRE — sans quoi le geste
@@ -723,7 +742,7 @@ export function ProtocolMiniBuilder({
                         className="mt-0.5"
                         checked={action.interventionStatus === 'conditionnelle_biologie'}
                         onChange={event => updateAction(action.actionId, event.target.checked
-                          ? { interventionStatus: 'conditionnelle_biologie', waitFor: { type: 'biologie', cible: '' } }
+                          ? { interventionStatus: 'conditionnelle_biologie', waitFor: { type: 'biologie', cible: '', analyteCodes: [] } }
                           // Le contrat refuse une attente sans statut ET un
                           // statut sans attente : les deux se lèvent ensemble.
                           : { interventionStatus: undefined, waitFor: undefined })}
@@ -746,12 +765,64 @@ export function ProtocolMiniBuilder({
                           aria-invalid={erreur !== null && !(action.waitFor?.cible ?? '').trim()}
                           value={action.waitFor?.cible ?? ''}
                           onChange={event => updateAction(action.actionId, {
-                            waitFor: { type: 'biologie', cible: event.target.value },
+                            // Les codes cochés survivent à la frappe : la
+                            // cible et les analytes sont deux champs (§5).
+                            waitFor: { type: 'biologie', cible: event.target.value, analyteCodes: action.waitFor?.analyteCodes ?? [] },
                           })}
                           placeholder="Ex. ferritine, TSH, 25-OH vitamine D"
                           className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger"
                         />
                       </label>
+                    )}
+                    {/*
+                      LES ANALYTES ATTENDUS ([[D-305]]) : seuls eux réveilleront
+                      l'attente, la cible restant libre. Offerts depuis la
+                      proposition de bilan, et elle seule — la route refuse tout
+                      code qui n'y est pas recommandé, à répéter, ou
+                      conditionnel à déclencheur rempli.
+                    */}
+                    {action.interventionStatus === 'conditionnelle_biologie' && (
+                      <fieldset
+                        className="mt-2 text-xs"
+                        aria-invalid={erreur !== null && (action.waitFor?.analyteCodes ?? []).length === 0}
+                      >
+                        <legend className="font-medium text-foreground">Analytes attendus</legend>
+                        {(analytesAttendables ?? []).length === 0 ? (
+                          <p className="mt-1 text-muted-foreground">
+                            {analytesAttendables === null
+                              ? 'La proposition de bilan de ce dossier n’est pas disponible : aucun analyte ne peut être choisi, et l’action ne peut pas être suspendue.'
+                              : 'La proposition de bilan de ce dossier ne retient aucun analyte : une action ne se suspend que sur un bilan proposé.'}
+                          </p>
+                        ) : (
+                          <div className="mt-1 grid gap-1">
+                            {(analytesAttendables ?? []).map(analyte => {
+                              const codes = action.waitFor?.analyteCodes ?? [];
+                              const coche = codes.includes(analyte.code);
+                              return (
+                                <label key={analyte.code} className="flex min-h-11 items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={coche}
+                                    onChange={event => updateAction(action.actionId, {
+                                      waitFor: {
+                                        type: 'biologie',
+                                        cible: action.waitFor?.cible ?? '',
+                                        analyteCodes: event.target.checked
+                                          ? [...codes, analyte.code]
+                                          : codes.filter(code => code !== analyte.code),
+                                      },
+                                    })}
+                                  />
+                                  <span>
+                                    {analyte.libelle}
+                                    <span className="text-muted-foreground"> — {analyte.panel}</span>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </fieldset>
                     )}
                   </div>
                   {(['title', 'idealPlan', 'minimalPlan', 'rescuePlan'] as const).map(field => {

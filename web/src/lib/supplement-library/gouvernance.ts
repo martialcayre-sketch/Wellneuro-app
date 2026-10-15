@@ -463,6 +463,20 @@ export function validerContenuRegle(body: {
           + 'Le moteur refuserait une condition illisible plutôt que de l’ignorer.',
       };
     }
+    // L'ATELIER NE SAISIT PAS DE CODES D'ANALYTES ([[D-305]] §6, arbitrage
+    // 2 A) : le lecteur les accepte, parce qu'il est le même pour les deux
+    // véhicules, mais aucun chemin de cet atelier ne les vérifie contre le
+    // catalogue (§3). Les laisser passer ferait persister un code que
+    // personne n'a contrôlé ; une attente née d'une règle reste « non typée ».
+    if (lue.waitFor.analyteCodes !== undefined) {
+      return {
+        ok: false,
+        reason: 'condition_biologie_invalide',
+        message:
+          'L’atelier des règles ne pose pas de codes d’analytes sur une condition biologique : '
+          + 'l’attente née d’une règle reste non typée.',
+      };
+    }
     conditionBiologie = lue.waitFor;
   }
 
