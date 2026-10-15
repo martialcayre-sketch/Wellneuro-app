@@ -14,14 +14,17 @@
 //    comme l'annulation d'un claim : il ne supprime rien.
 //
 // L'acte se cherche par son CODE, dans le millésime COURANT, et seulement
-// ainsi : aucun rapprochement par libellé n'est proposé (arbitrage du
-// 2026-10-05). Une signature ne se pose que sur un code qui se résout, actif,
+// ainsi : l'écran ne cherche rien par libellé. Les candidats proposés à la
+// signature viennent d'une liste relue, versée au code (`candidatsNabm.ts`,
+// M-3b — arbitrage du 2026-10-15, qui amende celui du 2026-10-05) ; ils
+// passent par la même signature. Une signature ne se pose que sur un code qui se résout, actif,
 // dans ce millésime — le contrat SQL `cb_biologie_catalogue_v1.sql` refuse
 // une correspondance signée qui ne s'y résout pas.
 //
 // Ce fichier n'écrit pas la dérivation du remboursement : elle reste, une
 // seule fois, dans `remboursable.ts`.
 import { prisma } from '@/lib/prisma';
+import { MILLESIME_LISTE_NABM, candidatsNabmPour, type SituationNabm } from './candidatsNabm';
 
 /** Pointeur de millésime de la nomenclature (même clé que `catalogue.ts`). */
 const SOURCE_NABM = 'nabm_smt_ans';
@@ -101,8 +104,35 @@ export async function chercherActeNabm(codeActe: string): Promise<ChercherActeRe
   return { ok: true, millesime, acte };
 }
 
+/** Un candidat de la liste préparée (M-3b), résolu au millésime courant —
+ *  une proposition à l'écran, jamais une ligne en base. */
+export type PropositionNabmAffichee = {
+  codeActe: string;
+  nature: NatureNabm;
+  motif: string;
+  acte: ActeNabmAffiche;
+};
+
+/** La situation de l'analyte dans la liste préparée, et ses candidats encore
+ *  à signer. `propositions` ne garde que les candidats présents et actifs au
+ *  millésime courant, et dont le couple n'a aucune ligne en base (ni signée,
+ *  ni proposition déjà listée). */
+export type CandidatsNabmAffiches = {
+  millesimeListe: string;
+  situation: SituationNabm;
+  /** Pourquoi rien n'est à signer (aucun acte, valeur calculée, regroupement). */
+  motif: string | null;
+  propositions: PropositionNabmAffichee[];
+};
+
 export type LireCorrespondancesResultat =
-  | { ok: true; millesime: string | null; correspondances: CorrespondanceAffichee[] }
+  | {
+      ok: true;
+      millesime: string | null;
+      correspondances: CorrespondanceAffichee[];
+      /** `null` : l'analyte n'est pas dans la liste préparée. */
+      candidats: CandidatsNabmAffiches | null;
+    }
   | { ok: false; raison: 'analyte_inconnu' };
 
 /** Les correspondances d'un analyte — signées ET propositions — avec leur
@@ -114,6 +144,7 @@ export async function lireCorrespondancesAnalyte(
     where: { code: analyteCode },
     select: {
       code: true,
+      actif: true,
       correspondancesNabm: {
         select: { codeActe: true, nature: true, verifiePar: true, verifieLe: true },
         orderBy: { codeActe: 'asc' },
@@ -123,7 +154,14 @@ export async function lireCorrespondancesAnalyte(
   if (!analyte) return { ok: false, raison: 'analyte_inconnu' };
 
   const millesime = await millesimeCourant();
-  const codes = analyte.correspondancesNabm.map(c => c.codeActe);
+  const liste = candidatsNabmPour(analyte.code);
+  // Un candidat dont le couple a déjà une ligne (signée ou proposition) n'est
+  // pas reproposé : la ligne existante porte seule son geste. Un analyte
+  // inactif n'en reçoit aucun : sa signature serait refusée (`analyte_inactif`).
+  const dejaEnBase = new Set(analyte.correspondancesNabm.map(c => c.codeActe));
+  const aProposer =
+    analyte.actif && liste && 'candidats' in liste ? liste.candidats.filter(c => !dejaEnBase.has(c.codeActe)) : [];
+  const codes = [...dejaEnBase, ...aProposer.map(c => c.codeActe)];
   const actes =
     millesime && codes.length > 0
       ? await prisma.biologyNabmActe.findMany({
@@ -133,9 +171,21 @@ export async function lireCorrespondancesAnalyte(
       : [];
   const parCode = new Map(actes.map(a => [a.codeActe, a]));
 
+  const candidats: CandidatsNabmAffiches | null = liste && {
+    millesimeListe: MILLESIME_LISTE_NABM,
+    situation: liste.situation,
+    motif: 'motif' in liste ? liste.motif : null,
+    // Absent ou inactif au millésime courant : rien à proposer.
+    propositions: aProposer.flatMap(c => {
+      const acte = parCode.get(c.codeActe);
+      return acte && !acte.inactif ? [{ codeActe: c.codeActe, nature: c.nature, motif: c.motif, acte }] : [];
+    }),
+  };
+
   return {
     ok: true,
     millesime,
+    candidats,
     correspondances: analyte.correspondancesNabm.map(c => ({
       codeActe: c.codeActe,
       nature: c.nature,

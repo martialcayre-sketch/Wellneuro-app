@@ -81,18 +81,20 @@ describe('lireCorrespondancesAnalyte', () => {
 
   it('distingue signée et proposition, résout l’acte au millésime courant', async () => {
     const le = new Date('2026-10-15T10:00:00Z');
+    // Un analyte hors de la liste préparée : aucun candidat ne s'y mêle.
     prisma.biologyAnalyte.findUnique.mockResolvedValue({
-      code: 'BIO_FERRITINE',
+      code: 'BIO_HORS_LISTE',
       correspondancesNabm: [
         { codeActe: '1208', nature: 'isole', verifiePar: PRATICIEN, verifieLe: le },
         { codeActe: '9999', nature: 'groupe_ou', verifiePar: null, verifieLe: null },
       ],
     });
     prisma.biologyNabmActe.findMany.mockResolvedValue([acte()]);
-    const resultat = await lireCorrespondancesAnalyte('BIO_FERRITINE');
+    const resultat = await lireCorrespondancesAnalyte('BIO_HORS_LISTE');
     expect(resultat).toEqual({
       ok: true,
       millesime: 'V105',
+      candidats: null,
       correspondances: [
         { codeActe: '1208', nature: 'isole', etat: 'signee', verifiePar: PRATICIEN, verifieLe: le.toISOString(), acte: acte() },
         { codeActe: '9999', nature: 'groupe_ou', etat: 'proposition', verifiePar: null, verifieLe: null, acte: null },
@@ -102,6 +104,81 @@ describe('lireCorrespondancesAnalyte', () => {
       versionSource: 'V105',
       codeActe: { in: ['1208', '9999'] },
     });
+  });
+});
+
+describe('lireCorrespondancesAnalyte — candidats de la liste préparée (M-3b)', () => {
+  const analyte = (code: string, correspondancesNabm: unknown[] = []) =>
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({ code, actif: true, correspondancesNabm });
+
+  it('rend le candidat résolu au millésime courant ; absent ou inactif, il ne s’affiche pas', async () => {
+    analyte('BIO_TSH_US');
+    // 1208 actif, 1211 inactif, 1212 absent du millésime.
+    prisma.biologyNabmActe.findMany.mockResolvedValue([
+      acte({ codeActe: '1208', libelle: 'T.S.H.(SANG)' }),
+      acte({ codeActe: '1211', inactif: true }),
+    ]);
+    const resultat = await lireCorrespondancesAnalyte('BIO_TSH_US');
+    expect(resultat.ok && resultat.candidats).toEqual({
+      millesimeListe: 'V105',
+      situation: 'libelle_explicite',
+      motif: null,
+      propositions: [
+        { codeActe: '1208', nature: 'isole', motif: 'T.S.H. seule.', acte: acte({ codeActe: '1208', libelle: 'T.S.H.(SANG)' }) },
+      ],
+    });
+    expect(prisma.biologyNabmActe.findMany.mock.calls[0][0].where).toEqual({
+      versionSource: 'V105',
+      codeActe: { in: ['1208', '1211', '1212'] },
+    });
+    // Rien n'est écrit : une proposition n'est pas une ligne en base.
+    expect(prisma.biologyAnalyteNabm.create).not.toHaveBeenCalled();
+    expect(prisma.biologyAnalyteNabm.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('un couple qui a déjà une ligne n’est pas reproposé ; les autres candidats le sont', async () => {
+    analyte('BIO_ALAT', [
+      { codeActe: '0516', nature: 'isole', verifiePar: PRATICIEN, verifieLe: new Date('2026-10-15T10:00:00Z') },
+    ]);
+    prisma.biologyNabmActe.findMany.mockResolvedValue([acte({ codeActe: '0516' }), acte({ codeActe: '0522' })]);
+    const resultat = await lireCorrespondancesAnalyte('BIO_ALAT');
+    expect(resultat.ok && resultat.candidats?.propositions.map(p => [p.codeActe, p.nature])).toEqual([
+      ['0522', 'groupe_et'],
+    ]);
+  });
+
+  it('une proposition non signée déjà en base n’est pas doublée par le candidat', async () => {
+    analyte('BIO_FERRITINE', [{ codeActe: '1213', nature: 'isole', verifiePar: null, verifieLe: null }]);
+    prisma.biologyNabmActe.findMany.mockResolvedValue([acte({ codeActe: '1213' })]);
+    const resultat = await lireCorrespondancesAnalyte('BIO_FERRITINE');
+    expect(resultat.ok && resultat.candidats?.propositions).toEqual([]);
+  });
+
+  it('analyte inactif : aucune proposition, sa signature serait refusée', async () => {
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({ code: 'BIO_TSH_US', actif: false, correspondancesNabm: [] });
+    const resultat = await lireCorrespondancesAnalyte('BIO_TSH_US');
+    expect(resultat.ok && resultat.candidats?.propositions).toEqual([]);
+    expect(prisma.biologyNabmActe.findMany).not.toHaveBeenCalled();
+  });
+
+  it('sans millésime courant : aucune proposition, aucune lecture d’acte', async () => {
+    analyte('BIO_TSH_US');
+    prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(null);
+    const resultat = await lireCorrespondancesAnalyte('BIO_TSH_US');
+    expect(resultat.ok && resultat.candidats?.propositions).toEqual([]);
+    expect(prisma.biologyNabmActe.findMany).not.toHaveBeenCalled();
+  });
+
+  it('analyte sans acte : la situation et son motif, rien à signer', async () => {
+    analyte('BIO_HOMOCYSTEINE');
+    const resultat = await lireCorrespondancesAnalyte('BIO_HOMOCYSTEINE');
+    expect(resultat.ok && resultat.candidats).toEqual({
+      millesimeListe: 'V105',
+      situation: 'aucun_acte',
+      motif: 'Aucun libellé de la V105 ne nomme cet analyte.',
+      propositions: [],
+    });
+    expect(prisma.biologyNabmActe.findMany).not.toHaveBeenCalled();
   });
 });
 
