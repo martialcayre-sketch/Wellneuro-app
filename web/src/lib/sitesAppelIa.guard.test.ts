@@ -26,8 +26,9 @@ import { estUnTest, fichiersSource, lire, retirerLignesDeCommentaire } from './b
 //
 // RATTACHEMENT. Un flux d'un sous-traitant se déclare sur la ligne de son
 // fournisseur au tableau de la rubrique 6 — celle que le patient lit, tenue
-// égale au document servi par `registre.dossier.test.ts`. Un flux sans donnée
-// personnelle se déclare en toutes lettres, avec son chemin et son motif.
+// égale au document servi par `registre.dossier.test.ts`. Un flux qui
+// n'envoie aucune donnée de patient par construction se déclare en toutes
+// lettres, avec son chemin, son motif et la limite de son champ libre.
 // L'appartenance au périmètre biologie ne dispense pas : `extraction.ts` est
 // listé ici, et `bio-parcours/appelantsLlmBiologie.guard.test.ts` garde, lui,
 // le vérificateur DC-03 — deux questions distinctes.
@@ -43,7 +44,7 @@ type Site = {
   /** `declaration` figure sur la ligne `| <fournisseur> |` de la rubrique 6. */
   | { rattachement: 'sous-traitant'; declaration: string; precisions?: readonly string[] }
   /** `declaration` figure dans le dossier, avec son motif. */
-  | { rattachement: 'sans donnée personnelle'; declaration: string }
+  | { rattachement: 'sans donnée de patient'; declaration: string }
 );
 
 export const SITES_APPEL_IA: readonly Site[] = [
@@ -103,15 +104,15 @@ export const SITES_APPEL_IA: readonly Site[] = [
     chemin: 'web/src/lib/rag/claims/evaluation.ts',
     fournisseur: 'Anthropic',
     roles: ['appel', 'constante'],
-    rattachement: 'sans donnée personnelle',
-    declaration: 'Atelier de validation du corpus (`rag/claims`) — aucun flux de donnée personnelle.',
+    rattachement: 'sans donnée de patient',
+    declaration: 'Atelier de validation du corpus (`rag/claims`) — aucune donnée de patient envoyée par l\'application.',
   },
   {
     chemin: 'web/src/lib/rag/claims/questionnaire.ts',
     fournisseur: 'Anthropic',
     roles: ['appel', 'constante'],
-    rattachement: 'sans donnée personnelle',
-    declaration: 'Atelier de validation du corpus (`rag/claims`) — aucun flux de donnée personnelle.',
+    rattachement: 'sans donnée de patient',
+    declaration: 'Atelier de validation du corpus (`rag/claims`) — aucune donnée de patient envoyée par l\'application.',
   },
 ];
 
@@ -134,6 +135,46 @@ const ADRESSES_IA: readonly { motif: RegExp; fournisseur: Fournisseur | 'inconnu
   { motif: /api\.mistral\.ai|generativelanguage\.googleapis\.com|api\.groq\.com|api\.cohere\.(ai|com)|api\.deepseek\.com|api\.perplexity\.ai|api-inference\.huggingface\.co/, fournisseur: 'inconnu' },
 ];
 
+/**
+ * Le premier argument d'un appel, de `debut` (juste après la parenthèse
+ * ouvrante) à la première virgule ou parenthèse fermante de même niveau :
+ * `fetch(new URL('/v1/x', config.openAiBaseUrl))` rend tout le `new URL(…)`.
+ */
+function premierArgument(code: string, debut: number): string {
+  let profondeur = 0;
+  for (let i = debut; i < code.length; i++) {
+    const c = code[i];
+    if (c === '(' || c === '[' || c === '{') profondeur++;
+    else if (c === ')' || c === ']' || c === '}') {
+      if (profondeur === 0) return code.slice(debut, i);
+      profondeur--;
+    } else if (c === ',' && profondeur === 0) return code.slice(debut, i);
+  }
+  return code.slice(debut);
+}
+
+/**
+ * Modules dont un fichier dépend À L'EXÉCUTION : import et réexportation de
+ * valeur, `import()` et `require()`. Les formes effacées par TypeScript ne
+ * comptent pas : `import type`, `export type`, et un import nommé dont chaque
+ * élément porte `type`.
+ */
+function modulesDeValeur(code: string): string[] {
+  const modules: string[] = [];
+  for (const m of code.matchAll(/^\s*(import|export)\s+([^;]*?)\s*\bfrom\s*['"]([^'"]+)['"]/gm)) {
+    const clause = m[2].trim();
+    if (/^type\b/.test(clause)) continue;
+    const nommes = clause.match(/^\{([^}]*)\}$/);
+    if (nommes) {
+      const elements = nommes[1].split(',').map(e => e.trim()).filter(Boolean);
+      if (elements.length > 0 && elements.every(e => /^type\s/.test(e))) continue;
+    }
+    modules.push(m[3]);
+  }
+  for (const m of code.matchAll(/\b(?:import|require)\s*\(\s*['"]([^'"]+)['"]/g)) modules.push(m[1]);
+  return modules;
+}
+
 type Detection = { chemin: string; fournisseur: Fournisseur | 'inconnu'; roles: Role[] };
 
 /** Ce que le source d'un fichier révèle de ses échanges avec un fournisseur d'IA. */
@@ -147,12 +188,13 @@ export function detecter(chemin: string, source: string): Detection[] {
 
   if (/\.messages\s*\.\s*(create|stream)\s*\(/.test(code)) noter('Anthropic', 'appel');
   if (/\.(chat\s*\.\s*completions|embeddings|responses)\s*\.\s*create\s*\(/.test(code)) noter('OpenAI', 'appel');
-  for (const m of code.matchAll(/\bfetch\s*\(\s*([^,)]*)/g)) {
-    for (const { fournisseur, motif } of NOMS_FOURNISSEUR) if (motif.test(m[1])) noter(fournisseur, 'appel');
-    for (const { fournisseur, motif } of ADRESSES_IA) if (motif.test(m[1])) noter(fournisseur, 'appel');
+  for (const m of code.matchAll(/\bfetch\s*\(/g)) {
+    const cible = premierArgument(code, m.index! + m[0].length);
+    for (const { fournisseur, motif } of NOMS_FOURNISSEUR) if (motif.test(cible)) noter(fournisseur, 'appel');
+    for (const { fournisseur, motif } of ADRESSES_IA) if (motif.test(cible)) noter(fournisseur, 'appel');
   }
-  for (const m of code.matchAll(/^\s*import\s+(?!type\b)[^;]*?\bfrom\s*['"]([^'"]+)['"]/gm)) {
-    const sdk = SDK_IA.find(s => s.motif.test(m[1]));
+  for (const specifiant of modulesDeValeur(code)) {
+    const sdk = SDK_IA.find(s => s.motif.test(specifiant));
     if (sdk) noter(sdk.fournisseur, 'client');
   }
   for (const { fournisseur, motif } of ADRESSES_IA) if (motif.test(code)) noter(fournisseur, 'constante');
@@ -189,9 +231,9 @@ describe('sites d\'appel IA de web/src — liste fermée, chacun déclaré au re
     }
   });
 
-  it('chaque flux sans donnée personnelle est déclaré en toutes lettres, avec son chemin', () => {
+  it('chaque flux sans donnée de patient est déclaré en toutes lettres, avec son chemin', () => {
     for (const site of SITES_APPEL_IA) {
-      if (site.rattachement !== 'sans donnée personnelle') continue;
+      if (site.rattachement !== 'sans donnée de patient') continue;
       expect(dossierAplati, `${site.chemin} : déclaration introuvable`).toContain(site.declaration);
       expect(dossierAplati, `${site.chemin} : chemin absent du dossier`).toContain(site.chemin.replace('web/src/lib/', ''));
     }
@@ -211,5 +253,16 @@ describe('sites d\'appel IA de web/src — liste fermée, chacun déclaré au re
     expect(vu("// anthropic.messages.create( est appelé ailleurs\n/* fetch(`${ANTHROPIC}`) */")).toEqual([]);
     expect(vu("import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';")).toEqual([]);
     expect(vu("await fetch(`/api/praticien/synthese`, {});")).toEqual([]);
+    // Revue de #1472 : une virgule DANS le premier argument ne l'ampute pas ;
+    // réexportation, `import()` et `require()` sont des dépendances de valeur ;
+    // un import nommé tout en `type` est effacé par TypeScript.
+    expect(vu("await fetch(new URL('/v1/embeddings', config.openAiBaseUrl), {});")).toEqual(['x.ts · OpenAI · appel']);
+    expect(vu("export * from '@anthropic-ai/sdk';")).toEqual(['x.ts · Anthropic · client']);
+    expect(vu("export { default } from 'openai';")).toEqual(['x.ts · OpenAI · client']);
+    expect(vu("const { default: A } = await import('@anthropic-ai/sdk');")).toEqual(['x.ts · Anthropic · client']);
+    expect(vu("const O = require('openai');")).toEqual(['x.ts · OpenAI · client']);
+    expect(vu("import { type MessageParam } from '@anthropic-ai/sdk/resources/messages';")).toEqual([]);
+    expect(vu("export type { MessageParam } from '@anthropic-ai/sdk/resources/messages';")).toEqual([]);
+    expect(vu("import { type A, B } from '@anthropic-ai/sdk';")).toEqual(['x.ts · Anthropic · client']);
   });
 });

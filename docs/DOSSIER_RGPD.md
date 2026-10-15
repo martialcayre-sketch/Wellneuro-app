@@ -641,7 +641,8 @@ les pages du portail — **v5 depuis le 2026-09-07** (`D-141`).
 `web/src` qui parle à un fournisseur d'IA (appel par SDK, appel direct, client,
 adresse en dur) figure dans la liste de
 `web/src/lib/sitesAppelIa.guard.test.ts`, rattaché à sa ligne au tableau
-ci-dessus ou, sans donnée personnelle, à sa déclaration en rubrique 7. Un
+ci-dessus ou, sans donnée de patient envoyée par l'application, à sa
+déclaration en rubrique 7. Un
 fichier nouveau, ou un fournisseur nouveau, rougit la CI tant qu'il n'est pas
 déclaré ici. Neuf fichiers au 2026-10-15 : Anthropic (client partagé,
 synthèse, priorité d'un objectif, « Ce que j'ai compris de vous », relevé des
@@ -997,7 +998,7 @@ ouverte.
   (contre-lecture) le texte d'une fiche, ses claims et les réserves de sécurité
   de l'assiette : aucune donnée d'un patient. Elle s'exécute en dehors de
   l'application (`docs/TRUST_IA_FICHES_ASSIETTE.md`).
-- **Atelier de validation du corpus (`rag/claims`) — aucun flux de donnée personnelle.**
+- **Atelier de validation du corpus (`rag/claims`) — aucune donnée de patient envoyée par l'application.**
   Déclaré le 2026-10-15 (K-05a) ; dans le code depuis le 2026-07-23
   (questionnaire, #307) et le 2026-07-24 (évaluation, #349), sans l'avoir été
   jusque-là. Deux appels à Anthropic, sur geste du praticien dans
@@ -1006,9 +1007,10 @@ ouverte.
   envoie la question, la réponse produite par l'outil externe et collée par le
   praticien, et les claims de référence, pour proposer un verdict que le
   praticien confirme. Ce sont des textes du corpus : aucune donnée d'un patient
-  **par construction**. La réponse collée est un champ libre ; comme la
-  recherche du corpus (rubrique 6), rien n'empêche techniquement d'y écrire une
-  situation clinique.
+  **par construction**. La réponse collée est un champ libre, envoyée telle
+  quelle, sans aucun retrait : une situation clinique ou une donnée
+  identifiante qu'un praticien y collerait partirait chez Anthropic, comme
+  pour la recherche du corpus (rubrique 6).
 - **Anthropic — quatrième flux, déclaré par `D-256` A4 le 2026-10-01, AVANT
   toute activation (§2 ter).** Le relevé des comptes rendus d'analyses
   biologiques envoie au même destinataire le **document entier** : l'en-tête
