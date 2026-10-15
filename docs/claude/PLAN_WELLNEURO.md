@@ -1197,7 +1197,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Identifiant, piste** : lettre p (D-p), puis J2-cc8 ; journal de lecture du protocole (CC-8) ; amende le CHECK `portail_lectures_patient` ; protocole ; file A.
 - **Rang** : 4.
 - **Portes, préalables** : G-7 (porte 8) ; porte 9 (BP-09 constaté).
-- **Migration, release-db** : oui, 1 ; au rang 4 de l'ordre des release-db, après EF-3b et BP-12a par la hiérarchie.
+- **Migration, release-db** : oui, 1 ; au rang 4, après EF-3b (constatée) ; dès qu'elle est prête, sans attendre BP-12a ni la file B, quand aucune autre release-db n'est en vol, et avant ai (D-315 §6-7).
 - **Décisions, textes** : lettre p, registre.
 - **Critère de fin** : release-db constatée ; lecture tracée, constatée en conteneur.
 - **Mise à jour (2026-10-15)** : p écrite par D-315 sur arbitrages du responsable : la première ouverture du détail de chaque version diffusée du protocole (identifiant de la diffusion approuvée en vigueur) s'enregistre, sans date ; ni l'affichage de l'accueil ni la connexion ; le praticien lit « Lu le … » avec le code de ai (D-297 §5), constat par conteneur d'ici là ; aucun texte patient neuf (§4) ; espèce déclarée au registre (`docs/DOSSIER_RGPD.md`, rubrique 5). Ordre tranché (§6-7) : la release-db passe dès que la migration est prête, sans attendre BP-12a ni la file B, et avant ai. L'ouverture du détail et sa trace se servent avec ACT-1 (H70). Reste : la migration (une espèce au CHECK), sur demande, puis le code.
@@ -1453,7 +1453,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### H70 · ACT-1 : place 1, CGU à accuser
 - **Identifiant, piste** : ACT-1 (J2-act) ; CGU à accuser, puis constat ; lecture du protocole journalisée ; jamais un chiffre ; confiance ; file C, place 1.
 - **Rang** : 5.
-- **Portes, préalables** : k (F77) ; l (D-283) ; J2-base (H59) ; J2-cc8 (H60) ; G-8 (H50) ; porte 18.
+- **Portes, préalables** : k (F77) ; l (D-283) ; J2-cc8 (H60) ; G-8 (H50) ; porte 18 ; J2-base (H59) retiré par D-315 §5.
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune neuve.
 - **Critère de fin** : accusé constaté sur un premier vrai dossier servi, sans anomalie, par identifiant en conteneur.
@@ -1855,7 +1855,7 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 
 | place | activation | fiche | préalables techniques | texte accusé | rang au plus tôt |
 |---|---|---|---|---|---|
-| 1 | CGU unique | H70 | k, l (D-283), J2-cc8 (J2-base retiré par D-315 §5) | CGU ; lecture datée si elle la porte | 5 |
+| 1 | CGU unique | H70 | k, l (D-283), G-8, J2-cc8 (J2-base retiré par D-315 §5) | CGU ; lecture datée si elle la porte | 5 |
 | 2 | E-mail neutre à la diffusion | H75 | t le classe hors relance, sinon il sort de la file ; J3-base | texte de l'e-mail relu | 6 |
 | 3 | « Mes échanges » en lecture | H76 | u, ai, J3-base ; durée de D-283 §2 | encart d'urgence étendu ; lecture datée | 7 |
 | 4 | Dépôt de documents | H77 | porte 17 (levée), registre, J3-collecte, J2-conf | texte de collecte (G-11, accepté le 2026-10-14, #1441) | 8 |

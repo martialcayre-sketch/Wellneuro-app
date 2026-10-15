@@ -8,8 +8,9 @@
   conteneur seulement. Le compte du cabinet prendra son propre lot.
 - **Patient** : aucun texte neuf ; la phrase de D-297 §4 couvrira le détail
   du protocole quand la date arrivera.
-- **Ordre** : ACT-1 n'attend plus le palier 1 entier, seulement les
-  conditions, G-8 et ce journal ; sa migration passe dès qu'elle est prête,
+- **Ordre** : ACT-1 n'attend plus le palier 1 entier, seulement k (les
+  conditions), l, G-8, ce journal livré avec sa release-db constatée, puis la
+  porte 18 ; sa migration passe dès qu'elle est prête,
   sans attendre la biologie, et avant celle de ai.
 - `docs/DOSSIER_RGPD.md` (rubrique 5, espèce `protocole` déclarée avant la
   migration) ; `docs/claude/PLAN_WELLNEURO.md` : fiches H59, H60, H70,
