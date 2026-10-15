@@ -78,7 +78,9 @@ export async function designationPour(
 /**
  * Ce qui est en pause dans les actions servies au patient — `[]` tant que la
  * règle amendée n'est pas signée (D-281 §6 : d'ici là, capture et
- * notification seulement, rien ne s'interrompt).
+ * notification seulement, rien ne s'interrompt). Les seuls signalements
+ * RATTACHÉS : celui du formulaire d'avant attend l'avis, mais rien n'est mis
+ * en pause au portail faute d'élément désigné (D-281 §5).
  */
 export async function pausesServies(
   idPatient: string,
@@ -112,8 +114,9 @@ export async function pausesServies(
 /**
  * Les signalements du dossier qui attendent l'avis du praticien (D-281 §3) —
  * la garde de la diffusion. Le calcul est `signalementsEnAttente` ; ici, la
- * lecture. Tous les signalements rattachés du dossier, QUELLE QUE SOIT la
- * version visée : un signalement survit au remplacement du programme.
+ * lecture. Tous les signalements du dossier qui reçoivent un avis — rattachés,
+ * ou du formulaire d'avant (`recoitUnAvis`) —, QUELLE QUE SOIT la version
+ * visée : un signalement survit au remplacement du programme.
  *
  * L'appelant lit le verrou `interruptionEffetIndesirableActive()` avant :
  * d'ici la signature, rien ne s'interrompt (D-281 §6).
@@ -123,8 +126,8 @@ export async function signalementsEnAttenteDuDossier(
 ): Promise<{ id: string; soumisLe: Date }[]> {
   const [signalements, verdicts] = await Promise.all([
     prisma.trustAdverseEffectReport.findMany({
-      where: { idPatient, rattachement: { not: null } },
-      select: { id: true, rattachement: true, soumisLe: true },
+      where: { idPatient, OR: [{ rattachement: { not: null } }, { protocolDraftId: { not: null } }] },
+      select: { id: true, rattachement: true, protocolDraftId: true, soumisLe: true },
       orderBy: { soumisLe: 'asc' },
     }),
     prisma.trustAdverseEffectVerdict.findMany({

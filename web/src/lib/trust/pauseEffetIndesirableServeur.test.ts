@@ -134,21 +134,24 @@ describe('pauseEffetIndesirableServeur', () => {
   });
 
   describe('signalementsEnAttenteDuDossier (étape 4, garde de diffusion)', () => {
-    it('tous les signalements rattachés du dossier, quelle que soit la version ; seuls ceux sans avis', async () => {
+    it('tous les signalements du dossier qui reçoivent un avis, quelle que soit la version ; seuls ceux sans avis', async () => {
       prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
-        { id: 's1', rattachement: 'element', soumisLe: new Date('2026-10-10T10:00:00Z') },
-        { id: 's2', rattachement: 'ne_sait_pas', soumisLe: new Date('2026-10-11T10:00:00Z') },
+        { id: 's1', rattachement: 'element', protocolDraftId: 'draft-1', soumisLe: new Date('2026-10-10T10:00:00Z') },
+        { id: 's2', rattachement: 'ne_sait_pas', protocolDraftId: 'draft-1', soumisLe: new Date('2026-10-11T10:00:00Z') },
+        // Le formulaire d'avant : « oui » au programme, sans élément (D-281 §5).
+        { id: 's3', rattachement: null, protocolDraftId: 'draft-1', soumisLe: new Date('2026-10-12T10:00:00Z') },
       ]);
       prisma.trustAdverseEffectVerdict.findMany.mockResolvedValue([
         { id: 'v1', reportId: 's1', verdict: 'non_implique', elementActionId: null, supersedesVerdictId: null },
       ]);
       expect(await signalementsEnAttenteDuDossier('PAT_TEST')).toEqual([
         { id: 's2', soumisLe: new Date('2026-10-11T10:00:00Z') },
+        { id: 's3', soumisLe: new Date('2026-10-12T10:00:00Z') },
       ]);
       // Aucun filtre de version ni de statut : le signalement survit au
       // remplacement du programme (§3), et le statut ne lève rien (§5).
       expect(prisma.trustAdverseEffectReport.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: { idPatient: 'PAT_TEST', rattachement: { not: null } },
+        where: { idPatient: 'PAT_TEST', OR: [{ rattachement: { not: null } }, { protocolDraftId: { not: null } }] },
       }));
       expect(prisma.trustAdverseEffectVerdict.findMany).toHaveBeenCalledWith(expect.objectContaining({
         where: { idPatient: 'PAT_TEST' },

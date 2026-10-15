@@ -4,6 +4,51 @@
 
 ## Décisions actives
 
+### D-299 — D4 : OpenAI est déclaré au registre et au document patient, le flux inchangé ; « Vos données personnelles » v18, accusé exigé
+
+- Date : 2026-10-15
+- Statut : accepté. Option A de D4 prise par le responsable le 2026-10-10
+  (déclarer les flux OpenAI, flux inchangé) ; ordre arbitré le 2026-10-14
+  (D4 d'abord, en PR propre, puis K-05a) ; texte patient rédigé par
+  l'assistant et validé par le responsable le 2026-10-15, sur question à
+  options (pays non nommé, comme pour Anthropic), puis amendé par lui le même
+  jour sur la revue de la PR (§2).
+- Domaine : registre RGPD (rubrique 6), document patient
+  `donnees_confidentialite` ; fiche F46 du plan (porte 5, avec K-05a).
+- **Ne touche pas** : aucun flux, aucun drapeau, aucune migration, aucune
+  règle clinique. La recherche de corpus reste armée telle quelle.
+
+**§1 — Le constat.** Depuis le 2026-08-22, la recherche de corpus du
+praticien envoie à OpenAI le texte de la recherche saisie et celui des
+références à indexer (`web/src/lib/rag/embeddings.ts`). Le dossier RGPD le
+consignait « destinataire non déclaré » depuis le 2026-09-07 ; le document
+patient ne le nommait pas.
+
+**§2 — La déclaration.** OpenAI entre au tableau de la rubrique 6 et dans
+« Vos données personnelles et leur confidentialité » v18, juste après
+Anthropic : il reçoit le texte de la recherche que le praticien saisit et le
+texte des références à indexer ; l'application ne lui envoie ni le dossier,
+ni les réponses, ni les documents : seul ce que le praticien écrit dans sa
+recherche lui parvient. La recherche est un champ libre : une promesse
+« jamais transmis » ne se tiendrait pas (revue CodeRabbit de la PR, texte
+amendé par le responsable le 2026-10-15). Le banc qui tient les deux listes ensemble
+(`registre.dossier.test.ts`) vérifie qu'elles nomment les mêmes tiers.
+
+**§3 — L'accusé.** La v18 exige un accusé, pour le motif de la v17 : seule la
+version courante en réclame un, et celui de la v17 (date de naissance) n'est
+pas encore posé partout. Son résumé reprend les changements précédents.
+
+**§4 — La contre-lecture des fiches d'assiette.** Elle s'exécute hors de
+l'application, sur le seul texte des fiches, sans donnée personnelle ; elle
+est déjà déclarée par `docs/TRUST_IA_FICHES_ASSIETTE.md`. Elle n'est pas un
+sous-traitant de données patient et n'entre pas au tableau.
+
+**§5 — Ce qui ne change pas.** Le pays des fournisseurs et les transferts hors
+de l'Union relèvent de l'analyse d'impact du transfert (F47). Les conditions
+d'utilisation uniques ([[D-292]]) reprendront la version de ce document en
+vigueur à leur activation. K-05a (banc à liste fermée des sites d'appel IA)
+suit, en PR propre.
+
 ### D-298 — Effectif de masquage des agrégats : cinq dossiers distincts, partout ; l'effectif reste affiché, la répartition et la statistique se masquent (F25)
 
 - Date : 2026-10-14

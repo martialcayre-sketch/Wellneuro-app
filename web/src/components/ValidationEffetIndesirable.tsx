@@ -21,11 +21,15 @@ const LIBELLE_RATTACHEMENT = {
   autre_produit: 'Le patient associe cet effet à un autre produit (traité comme « Je ne sais pas »).',
 } as const;
 
+/** Le formulaire d'avant : « oui » au programme, sans élément désigné (D-281 §5). */
+const LIBELLE_FORMULAIRE_AVANT =
+  'Le patient associe cet effet à son programme, sans désigner d’élément (formulaire d’avant).';
+
 /**
- * L'avis du praticien sur un signalement rattaché ([[D-281]] §5, étape 4) :
- * l'élément désigné par le patient, la chaîne des avis, et le formulaire qui
- * rend ou corrige l'avis. Seul l'avis lève la pause — jamais le statut de
- * traitement.
+ * L'avis du praticien sur un signalement rattaché, ou du formulaire d'avant
+ * ([[D-281]] §5, étape 4) : l'élément désigné par le patient, la chaîne des
+ * avis, et le formulaire qui rend ou corrige l'avis. Seul l'avis lève
+ * l'attente — jamais le statut de traitement.
  */
 export function ValidationEffetIndesirable({
   reportId,
@@ -43,6 +47,7 @@ export function ValidationEffetIndesirable({
   onEnregistre: () => Promise<void>;
 }) {
   const designeParPatient = validation.rattachement === 'element';
+  const formulaireAvant = validation.rattachement === null;
   const titreDe = (actionId: string | null) =>
     (actionId && validation.elements?.find(e => e.actionId === actionId)?.title)
     ?? (actionId && validation.elementDesigne?.actionId === actionId ? validation.elementDesigne.title : null)
@@ -100,7 +105,9 @@ export function ValidationEffetIndesirable({
       <p className="text-sm text-foreground">
         {designeParPatient
           ? <>Élément désigné par le patient : <strong>{titreDe(validation.elementDesigne?.actionId ?? null)}</strong></>
-          : LIBELLE_RATTACHEMENT[validation.rattachement as keyof typeof LIBELLE_RATTACHEMENT]}
+          : formulaireAvant
+            ? LIBELLE_FORMULAIRE_AVANT
+            : LIBELLE_RATTACHEMENT[validation.rattachement as keyof typeof LIBELLE_RATTACHEMENT]}
       </p>
       <p className="text-xs text-muted-foreground mt-1">
         Début de la prise : {debutPriseLe ? formatDate(debutPriseLe) : 'non renseigné'}
@@ -133,9 +140,11 @@ export function ValidationEffetIndesirable({
         </details>
       )}
       <p className="text-xs text-muted-foreground mt-2">
-        {pauseServie
-          ? 'Seul votre avis met fin à l’attente : « non impliqué » lève la pause au portail, « impliqué » la maintient. Le statut de traitement ne lève rien.'
-          : 'La règle amendée n’est pas encore signée : rien n’est mis en pause au portail pour l’instant. Votre avis est enregistré dès maintenant.'}
+        {!pauseServie
+          ? 'La règle amendée n’est pas encore signée : rien n’est mis en pause au portail pour l’instant. Votre avis est enregistré dès maintenant.'
+          : formulaireAvant
+            ? 'Aucun élément n’étant désigné, rien n’est mis en pause au portail. Seul votre avis met fin à l’attente : aucun programme ne se diffuse avant. Le statut de traitement ne lève rien.'
+            : 'Seul votre avis met fin à l’attente : « non impliqué » lève la pause au portail, « impliqué » la maintient. Le statut de traitement ne lève rien.'}
       </p>
 
       <form onSubmit={e => void enregistrer(e)} className="mt-3 flex flex-col gap-2">

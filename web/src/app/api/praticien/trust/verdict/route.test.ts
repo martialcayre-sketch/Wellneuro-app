@@ -54,11 +54,51 @@ describe('/api/praticien/trust/verdict', () => {
     expect(prisma.trustAdverseEffectVerdict.create).not.toHaveBeenCalled();
   });
 
-  it('un signalement sans rattachement ne reçoit pas d’avis : 409', async () => {
+  it('un signalement sans rattachement ni programme ne reçoit pas d’avis : 409', async () => {
     prisma.trustAdverseEffectReport.findFirst.mockResolvedValue({
       id: 's1', idPatient: 'PAT_TEST', rattachement: null, elementActionId: null, protocolDraftId: null,
     });
     expect((await post({ reportId: 's1', verdict: 'non_implique' })).status).toBe(409);
+    expect(prisma.trustAdverseEffectVerdict.create).not.toHaveBeenCalled();
+  });
+
+  // D-281 §5, arbitrage du 2026-10-14 : « oui » au programme sans élément. Le
+  // praticien désigne l'élément en cause dans le programme visé, ou aucun.
+  describe('formulaire d’avant (programme sans rattachement)', () => {
+    beforeEach(() => {
+      prisma.trustAdverseEffectReport.findFirst.mockResolvedValue({
+        id: 's1', idPatient: 'PAT_TEST', rattachement: null, elementActionId: null, protocolDraftId: 'draft-1',
+      });
+    });
+
+    it('« impliqué » : l’élément choisi dans le programme visé est écrit', async () => {
+      const res = await post({
+        reportId: 's1', verdict: 'implique', elementActionId: 'a-magnesium', amenagement: 'reduire', supersedesVerdictId: null,
+      });
+      expect(res.status).toBe(200);
+      expect(elementsDesProgrammesVises).toHaveBeenCalledWith(['draft-1']);
+      expect(prisma.trustAdverseEffectVerdict.create).toHaveBeenCalledWith({
+        data: {
+          idPatient: 'PAT_TEST', reportId: 's1', verdict: 'implique', elementActionId: 'a-magnesium',
+          amenagement: 'reduire', supersedesVerdictId: null, renduPar: EMAIL,
+        },
+        select: { id: true },
+      });
+    });
+
+    it('« aucun élément » : « non impliqué » est écrit', async () => {
+      const res = await post({ reportId: 's1', verdict: 'non_implique', supersedesVerdictId: null });
+      expect(res.status).toBe(200);
+      expect(prisma.trustAdverseEffectVerdict.create.mock.calls[0][0].data).toMatchObject({
+        verdict: 'non_implique', elementActionId: null, amenagement: null,
+      });
+    });
+
+    it('un élément hors du programme visé : 400, rien n’est écrit', async () => {
+      const res = await post({ reportId: 's1', verdict: 'implique', elementActionId: 'a-inconnu', amenagement: 'retirer' });
+      expect(res.status).toBe(400);
+      expect(prisma.trustAdverseEffectVerdict.create).not.toHaveBeenCalled();
+    });
   });
 
   it('★ l’auteur est l’e-mail de SESSION, jamais celui du corps', async () => {
