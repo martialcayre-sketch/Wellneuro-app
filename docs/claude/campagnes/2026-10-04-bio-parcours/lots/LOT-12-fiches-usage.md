@@ -1,7 +1,7 @@
 ---
 id: "LOT-12"
 titre: "BP-12a — Fiches d'usage : structure signée, texte en base"
-statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot à écrire, puis le code après son merge)"
+statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; migration seule après son merge)"
 dépend_de: "LOT-07, LOT-09"
 ---
 
@@ -9,8 +9,8 @@ dépend_de: "LOT-07, LOT-09"
 
 > **Fiche proposée le 2026-10-15, arbitrages rendus le même jour.** Écrite
 > sans le responsable, à partir des sources citées ; ses dix arbitrages sont
-> rendus (section « Arbitrages »). La décision du lot, qui étend D-251, les
-> consigne ; le code part après son merge. Dépôt public : cette fiche ne porte aucun texte de fiche
+> rendus (section « Arbitrages ») et consignés par D-314, qui étend D-251.
+> La migration part après son merge. Dépôt public : cette fiche ne porte aucun texte de fiche
 > d'usage, aucun contenu de claim, aucune population en clair, aucun seuil.
 
 ## But
@@ -270,8 +270,8 @@ réponse retenue suit, en **Rendu**.
   dérivé à la lecture (10).
 - Le hook DC-17 et ses bancs, étendus à la structure (critère de fin de
   F05), au verrou éteint compris.
-- La décision du lot, qui étend D-251 (§4, §5) aux fiches d'usage ; la
-  signature de la structure et la validation des textes (porte 23).
+- La décision du lot, D-314, qui étend D-251 (§4, §5) aux fiches d'usage ;
+  la signature de la structure et la validation des textes (porte 23).
 
 ## Hors périmètre
 
@@ -313,8 +313,8 @@ réponse retenue suit, en **Rendu**.
   `importeursBiologyLibrary.guard.test.ts` (importeur nommé) ;
   `.claude/hooks/protect-wellneuro-files.{mjs,test.mjs}` ; matrice de
   consommation.
-- `docs/DECISIONS.md` (décision du lot, PR propre avant le code),
-  `changelog.d/`, cette fiche, `CAMPAGNE.md`.
+- `changelog.d/`, cette fiche, `CAMPAGNE.md` (D-314 est écrite avec cette
+  fiche, avant la migration).
 
 ## Interdits
 
