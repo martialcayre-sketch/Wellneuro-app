@@ -10,6 +10,7 @@ import { getGabarit, rendreGabarit } from '@/lib/correspondance/registreGabarits
 import { CLE_CONDITIONS, conditionsUtilisationOuvertes } from '@/lib/trust/conditionsUtilisation';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 import { eligibleAnnonceConditions, referenceConditionsCourantes } from '@/lib/trust/envoiConditions';
+import { TEXTES_D_INFORMATION } from '@/lib/trust/avantDeCommencer';
 import {
   reserverAnnonceConditions,
   solderAnnonceConditions,
@@ -84,7 +85,12 @@ async function dossiersEligibles(emailSession: string, ids?: string[]) {
           sourceId: { not: null },
         },
       },
+      // Sans date, pas majeur : exclu ici. L'âge, lui, se calcule après la
+      // lecture (date stockée en texte) — c'est le seul tri qui reste en mémoire.
+      dateNaissance: { not: null },
       trustAcknowledgements: {
+        // Suivi : un accusé sur un texte d'information, toute version.
+        some: { type: 'pris_connaissance', documentKey: { in: [...TEXTES_D_INFORMATION] } },
         none: {
           documentKey: CLE_CONDITIONS,
           documentVersion: getDocumentCourant(CLE_CONDITIONS).version,

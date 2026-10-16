@@ -119,6 +119,15 @@ describe('GET /api/praticien/conditions-utilisation', () => {
       documentKey: 'conditions_utilisation',
       type: 'pris_connaissance',
     });
+    // Revue CodeRabbit de #1503 : le statut « suivi » et la date se filtrent
+    // AVANT le plafond — seul l'âge reste calculé après la lecture.
+    expect(where.dateNaissance).toEqual({ not: null });
+    expect(where.trustAcknowledgements.some).toEqual({
+      type: 'pris_connaissance',
+      documentKey: {
+        in: ['cadre_accompagnement', 'limites_securite', 'donnees_confidentialite', 'usage_ia', 'conditions_utilisation'],
+      },
+    });
   });
 
   it('plafond atteint : la liste le dit', async () => {

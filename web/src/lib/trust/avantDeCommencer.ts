@@ -73,7 +73,7 @@ export function avantDeCommencerRequis(accuses: readonly AccuseConnu[]): boolean
 // ACT-1 ni à une version suivante — il accuse par le lien de l'e-mail ou au
 // filet du dépôt. `usage_ia` en est : il ne s'accuse qu'au dépôt, après
 // l'accueil.
-const TEXTES_D_INFORMATION: readonly string[] = Object.freeze([
+export const TEXTES_D_INFORMATION: readonly string[] = Object.freeze([
   'cadre_accompagnement',
   'limites_securite',
   'donnees_confidentialite',
