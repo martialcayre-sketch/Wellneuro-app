@@ -1,7 +1,7 @@
 ---
 id: "LOT-12"
 titre: "BP-12a — Fiches d'usage : structure signée, texte en base"
-statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; cinq arbitrages de forme rendus le 2026-10-16, D-314 §8 ; migration mergée (#1488) et appliquée en production le 2026-10-16, constat par conteneur ; code consommateur écrit sur branche, douze arbitrages rendus le 2026-10-16)"
+statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; cinq arbitrages de forme rendus le 2026-10-16, D-314 §8 ; migration mergée (#1488) et appliquée en production le 2026-10-16, constat par conteneur ; code consommateur écrit sur branche, douze arbitrages rendus le 2026-10-16 ; code mergé (#1498) et déployé le 2026-10-16, structure vide ; validateur posé en production le 2026-10-16 ; première signature à quatre dossiers clos, arbitrage 28)"
 dépend_de: "LOT-07, LOT-09"
 ---
 
@@ -325,6 +325,20 @@ sauf au 24.
     affichage des états, version dépassée, bancs sur base réelle, retrait
     symétrique des libellés.
 27. **Bases locales d'essai.** Rendu : **supprimées**.
+
+### Arbitrage de la première signature (rendu le 2026-10-16, D-314 §10)
+
+Posé après le déploiement du code (#1498), structure vide. Fait établi :
+chaque fiche ajoutée change l'empreinte, et une re-signature rend texte et
+libellés « à relire » (arbitrage 15).
+
+28. **Quand écrire et signer la structure.** Options : le fer seul
+    maintenant (tout revalider à chaque dossier ajouté) ; fer et vitamine D ;
+    fer, vitamine D, zinc et magnésium ; les huit analytes du besoin 2 (rien
+    à l'écran avant le dernier dossier). Rendu : **fer, vitamine D, zinc,
+    magnésium érythrocytaire**, signés en une fois ; B9 et B12, iode et
+    sélénium par re-signature. Précise l'arbitrage 1. (Recommandé : fer et
+    vitamine D.)
 
 ## Périmètre
 

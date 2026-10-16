@@ -284,6 +284,26 @@ la base : la migration (#1488) reste telle qu'appliquée.
   et concurrence constatée sur le verrou).
 - **Les trois bases locales d'essai sont supprimées** (arbitrage 27).
 
+**§10 — Amendement du 2026-10-16 : la première signature attend quatre
+dossiers.** Arbitrage du responsable (fiche LOT-12, arbitrage 28), rendu
+après le déploiement du code (#1498), structure vide et verrou éteint. Il
+précise §2 (arbitrage 1) et §6 :
+
+- **La structure s'écrit et se signe en une fois, quand quatre dossiers de
+  preuve du besoin 2 sont clos : fer (BP-07), vitamine D, zinc, magnésium
+  érythrocytaire** — les quatre analytes du besoin 2 à panels actifs. Elle
+  ne se signe pas avec le seul dossier du fer.
+- **Raison** (§5, §8 arbitrage 15) : chaque fiche ajoutée change l'empreinte
+  de la structure ; la re-signature rend texte ET libellés « à relire ».
+  Signer le fer seul imposerait de tout revalider à chaque dossier ajouté.
+- **Les dossiers suivants** (B9 et B12, puis iode et sélénium,
+  [[D-312]]) entreront par re-signature, acceptée.
+- **Conséquences** : la rédaction, le dépôt et la validation des textes
+  attendent la signature ; BP-11 ne reçoit le vocabulaire d'hypothèses qu'à
+  cette signature ; le lot se clôt toujours sur le constat des actes (§6).
+  La phrase de §6 « signée avant le merge de la PR de code » est caduque :
+  le code est livré, structure vide (porte 23).
+
 - Conséquences : fragment `changelog.d/2026-10-15-d314-fiches-usage.md` ;
   fiche LOT-12 mise à jour ; puis la PR de migration seule. Amendement §8 :
   fragment `changelog.d/2026-10-15-bp12a-migration-fiches-usage.md`, porté
