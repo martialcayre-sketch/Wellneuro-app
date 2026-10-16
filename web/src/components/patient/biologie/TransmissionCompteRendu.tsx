@@ -26,7 +26,8 @@ import { MESSAGE_CIRCUIT_MINEUR } from '@/lib/patient/gardeAge';
 // L'ACCUSÉ AVANT LE PREMIER ENVOI (§6) : « L'intelligence artificielle dans
 // Wellneuro », version courante, est présentée ici ; « J'en ai pris
 // connaissance » l'accuse par la route existante, qui résout elle-même version
-// et hash. La route de dépôt le vérifie de son côté.
+// et hash. La route de dépôt le vérifie de son côté. Sous `WN_PORTAIL_CONDITIONS`,
+// ce sont les conditions d'utilisation qui la contiennent ([[D-292]] §4).
 //
 // LE PATIENT NE VOIT QUE DATE ET STATUT (§4) : jamais une valeur, un libellé lu
 // ou un marquage, et jamais les documents déposés par son praticien.
@@ -77,14 +78,14 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
     };
   }, [charger]);
 
-  async function accuser() {
+  async function accuser(documentKey: 'usage_ia' | 'conditions_utilisation') {
     setOccupe(true);
     setErreur(null);
     try {
       const res = await fetch('/api/portail/trust/lecture', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentKey: 'usage_ia', type: 'pris_connaissance' }),
+        body: JSON.stringify({ documentKey, type: 'pris_connaissance' }),
       });
       if (res.status === 401) {
         router.replace(`/portail/${token}`);
@@ -148,6 +149,10 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
   }
 
   const { documents, accuseRequis, dossierOuvert, plafond } = etat.donnees;
+  // Sous `WN_PORTAIL_CONDITIONS`, la route demande les conditions d'utilisation
+  // ([[D-292]] §4) : c'est elle qui le dit, jamais l'écran qui le suppose.
+  const documentAccuse = etat.donnees.documentAccuse ?? 'usage_ia';
+  const conditions = documentAccuse === 'conditions_utilisation';
   // D-284 §3 : la date se demande avant le dépôt. `majeur` par défaut : choix
   // d'écran seulement, la route refuse de toute façon.
   const statutAge = etat.donnees.statutAge ?? 'majeur';
@@ -188,11 +193,17 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
           ) : accuseRequis ? (
             <section aria-labelledby="accuse-usage-ia" className="space-y-4">
               <h2 id="accuse-usage-ia" className="text-lg font-semibold text-foreground">
-                Avant votre premier envoi
+                {conditions ? 'Avant votre envoi' : 'Avant votre premier envoi'}
               </h2>
-              <p className="text-base text-foreground">{MESSAGES_TRANSMISSION.accuse_requis}</p>
-              <DocumentTrust document={getDocumentCourant('usage_ia')} accordeons />
-              <PatientButton onClick={() => void accuser()} loading={occupe} loadingLabel="Enregistrement…">
+              <p className="text-base text-foreground">
+                {conditions ? MESSAGES_TRANSMISSION.accuse_conditions_requis : MESSAGES_TRANSMISSION.accuse_requis}
+              </p>
+              <DocumentTrust document={getDocumentCourant(documentAccuse)} accordeons />
+              <PatientButton
+                onClick={() => void accuser(documentAccuse)}
+                loading={occupe}
+                loadingLabel="Enregistrement…"
+              >
                 J’en ai pris connaissance
               </PatientButton>
             </section>

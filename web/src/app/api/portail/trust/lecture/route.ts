@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
+import { CLE_CONDITIONS, conditionsUtilisationOuvertes } from '@/lib/trust/conditionsUtilisation';
+import { statutAge } from '@/lib/patient/gardeAge';
 import type { TrustDocumentKey, TypeAccuse } from '@/lib/trust/types';
 
 export type TrustLectureResponse = { ok: true } | { ok: false; reason: string; error: string };
@@ -32,13 +34,25 @@ export async function POST(req: Request): Promise<NextResponse<TrustLectureRespo
 
   const documentKey = payload.documentKey as TrustDocumentKey;
   const type = payload.type as TypeAccuse;
-  if (!CLES_VALIDES.includes(documentKey) || !TYPES_VALIDES.includes(type)) {
+  // Les conditions d'utilisation ([[D-292]]) ne s'accusent que servies : un
+  // accusé sur un texte qu'aucun écran ne montre ne dirait rien de vrai.
+  const cleValide =
+    CLES_VALIDES.includes(documentKey) || (documentKey === CLE_CONDITIONS && conditionsUtilisationOuvertes());
+  if (!cleValide || !TYPES_VALIDES.includes(type)) {
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Document ou type inconnu.' }, { status: 400 });
   }
 
   const auth = await authentifierPatientPortail(req);
   if (auth.erreur) return auth.erreur as NextResponse<TrustLectureResponse>;
   const { patient } = auth;
+  // Même borne que la page : hors dossier majeur, les conditions attendent le
+  // circuit des mineurs (arbitrage du 2026-10-16).
+  if (documentKey === CLE_CONDITIONS && statutAge(patient.dateNaissance, Date.now()) !== 'majeur') {
+    return NextResponse.json(
+      { ok: false, reason: 'conditions_hors_majeur', error: 'Ce document ne vous est pas encore présenté.' },
+      { status: 409 },
+    );
+  }
 
   try {
     const version = getDocumentCourant(documentKey);

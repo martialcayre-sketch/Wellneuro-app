@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import type { VersionDocumentTrust } from '@/lib/trust/types';
 
 /**
@@ -9,18 +10,30 @@ import type { VersionDocumentTrust } from '@/lib/trust/types';
 export function DocumentTrust({
   document,
   accordeons = false,
+  partiesDepliees = [],
 }: {
   document: VersionDocumentTrust;
   accordeons?: boolean;
+  /** Parties d'un document assemblé dont les accordéons s'ouvrent d'office. */
+  partiesDepliees?: readonly string[];
 }) {
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
         Version {document.version} — publiée le {document.publieLe}
       </p>
-      {document.sections.map(section =>
-        accordeons ? (
-          <details key={section.titre} className="rounded-lg border border-border bg-surface">
+      {document.sections.map((section, index) => {
+        // Un document assemblé ([[D-292]]) titre chaque partie à sa première section.
+        const titrePartie =
+          section.partie && section.partie !== document.sections[index - 1]?.partie ? (
+            <h3 className="pt-2 text-base font-semibold text-foreground">{section.partie}</h3>
+          ) : null;
+        const cle = `${section.partie ?? ''}|${section.titre}`;
+        const bloc = accordeons ? (
+          <details
+            className="rounded-lg border border-border bg-surface"
+            open={section.partie !== undefined && partiesDepliees.includes(section.partie)}
+          >
             <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg">
               {section.titre}
             </summary>
@@ -29,12 +42,18 @@ export function DocumentTrust({
             </div>
           </details>
         ) : (
-          <section key={section.titre}>
+          <section>
             <h4 className="text-sm font-semibold text-foreground mb-1">{section.titre}</h4>
             <SectionCorps section={section} />
           </section>
-        ),
-      )}
+        );
+        return (
+          <Fragment key={cle}>
+            {titrePartie}
+            {bloc}
+          </Fragment>
+        );
+      })}
     </div>
   );
 }

@@ -19,6 +19,7 @@ import {
 } from '@/lib/portail/hubQuestionnaires';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
+import { AccueilConditions } from '@/components/patient/trust/ConditionsUtilisation';
 import { DateNaissanceEcran, EcranCircuitMineur } from '@/components/patient/DateNaissanceEcran';
 import type { StatutAge } from '@/lib/patient/gardeAge';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
@@ -115,6 +116,8 @@ export default function QuestionnairesHubPage() {
   // pas un sur sa version courante. La règle n'est plus « le cadre » depuis le
   // 2026-09-16 — la route la calcule, cette page ne fait que la lire. Jamais bloquante en cas d'erreur réseau.
   const [avantRequis, setAvantRequis] = useState(false);
+  // Sous `WN_PORTAIL_CONDITIONS`, l'accueil requis présente les conditions seules (D-292 §3).
+  const [accueilConditions, setAccueilConditions] = useState(false);
   // Garde-fou : ignorer une réponse tardive si le composant a été démonté
   // (navigation rapide) pendant que le fetch était en vol.
   const annuleRef = useRef(false);
@@ -128,8 +131,15 @@ export default function QuestionnairesHubPage() {
         try {
           const res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(token)}`);
           if (res.ok) {
-            const etat = (await res.json()) as { ok: boolean; avantDeCommencerRequis?: boolean };
-            if (!annuleRef.current && etat.ok && etat.avantDeCommencerRequis) setAvantRequis(true);
+            const etat = (await res.json()) as {
+              ok: boolean;
+              avantDeCommencerRequis?: boolean;
+              accueilConditions?: boolean;
+            };
+            if (!annuleRef.current && etat.ok && etat.avantDeCommencerRequis) {
+              setAccueilConditions(etat.accueilConditions === true);
+              setAvantRequis(true);
+            }
             return;
           }
         } catch {
@@ -272,7 +282,11 @@ export default function QuestionnairesHubPage() {
   if (avantRequis) {
     return (
       <div className="w-full max-w-2xl space-y-4">
-        <AvantDeCommencer token={token} onDone={() => setAvantRequis(false)} />
+        {accueilConditions ? (
+          <AccueilConditions onDone={() => setAvantRequis(false)} />
+        ) : (
+          <AvantDeCommencer token={token} onDone={() => setAvantRequis(false)} />
+        )}
       </div>
     );
   }

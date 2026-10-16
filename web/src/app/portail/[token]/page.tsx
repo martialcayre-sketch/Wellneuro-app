@@ -22,6 +22,7 @@ import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { SaveStatusIndicator, type SaveError } from '@/components/patient/SaveStatusIndicator';
 import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/PatientJourneyProgress';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
+import { AccueilConditions } from '@/components/patient/trust/ConditionsUtilisation';
 import { DateNaissanceEcran, EcranCircuitMineur } from '@/components/patient/DateNaissanceEcran';
 import type { StatutAge } from '@/lib/patient/gardeAge';
 import { DocumentTrust } from '@/components/patient/trust/DocumentTrust';
@@ -570,7 +571,9 @@ function DoneScreen({ token, premiereAssignation }: { token: string; premiereAss
 // ─── page principale ─────────────────────────────────────────────────────────
 type Step =
   | { name: 'loading' }
-  | { name: 'avant' } // séquence TRUST « Avant de commencer », avant tout recueil
+  // Séquence TRUST « Avant de commencer », avant tout recueil ; `conditions` :
+  // les conditions d'utilisation seules (D-292 §3, `WN_PORTAIL_CONDITIONS`).
+  | { name: 'avant'; conditions: boolean }
   | { name: 'date' } // D-284 §3 : date de naissance manquante, avant tout autre geste
   | { name: 'mineur' } // D-284 §4 : circuit des mineurs, pause maintenue (lot i)
   | { name: 'consent' }
@@ -628,9 +631,13 @@ export default function PortailPage() {
         try {
           const res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(String(token))}`);
           if (res.ok) {
-            const etat = (await res.json()) as { ok: boolean; avantDeCommencerRequis?: boolean };
+            const etat = (await res.json()) as {
+              ok: boolean;
+              avantDeCommencerRequis?: boolean;
+              accueilConditions?: boolean;
+            };
             if (etat.ok && etat.avantDeCommencerRequis) {
-              setStep({ name: 'avant' });
+              setStep({ name: 'avant', conditions: etat.accueilConditions === true });
               return;
             }
             break; // réponse saine : séquence non requise
@@ -677,10 +684,14 @@ export default function PortailPage() {
   if (step.name === 'avant') {
     return (
       <div className="w-full max-w-2xl space-y-4">
-        <AvantDeCommencer
-          token={token}
-          onDone={() => setStep(prochaineEtape(consultation, premiere, statut))}
-        />
+        {step.conditions ? (
+          <AccueilConditions onDone={() => setStep(prochaineEtape(consultation, premiere, statut))} />
+        ) : (
+          <AvantDeCommencer
+            token={token}
+            onDone={() => setStep(prochaineEtape(consultation, premiere, statut))}
+          />
+        )}
       </div>
     );
   }

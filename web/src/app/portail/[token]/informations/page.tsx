@@ -98,7 +98,13 @@ export default function InformationsPage() {
     return 'Version actuelle';
   };
 
-  const documentsListes = [cadre, limites, donnees, ia, droits];
+  // Les conditions d'utilisation ([[D-292]]) ne paraissent que servies
+  // (`WN_PORTAIL_CONDITIONS`) : ni carte, ni ligne, ni historique avant.
+  const conditions = etat.conditionsOuvertes ? getDocumentCourant('conditions_utilisation') : null;
+  const documentsListes = [...(conditions ? [conditions] : []), cadre, limites, donnees, ia, droits];
+  const historique = REGISTRE_DOCUMENTS_TRUST.filter(
+    doc => etat.conditionsOuvertes || doc.key !== 'conditions_utilisation',
+  );
 
   return (
     <div className="w-full max-w-2xl space-y-4">
@@ -111,6 +117,18 @@ export default function InformationsPage() {
           ← Mon espace
         </Link>
       </div>
+
+      {conditions && (
+        <CarteCentre id="conditions" titre={conditions.titre}>
+          <p className="text-sm text-muted-foreground">{conditions.resume}</p>
+          <p className="text-xs text-muted-foreground">
+            Version {conditions.version} — publiée le {conditions.publieLe}
+          </p>
+          <Link href={`/portail/${token}/conditions`} className="inline-block text-sm text-primary hover:underline">
+            Lire les conditions d’utilisation
+          </Link>
+        </CarteCentre>
+      )}
 
       <CarteCentre id="accompagnement" titre="Mon accompagnement">
         <DocumentTrust document={cadre} />
@@ -183,7 +201,7 @@ export default function InformationsPage() {
 
       <CarteCentre id="versions" titre="Historique des versions">
         <ul className="divide-y divide-border text-sm">
-          {REGISTRE_DOCUMENTS_TRUST.map(doc => (
+          {historique.map(doc => (
             <li key={`${doc.key}@${doc.version}`} className="py-2">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                 <span className="text-foreground">{doc.titre}</span>

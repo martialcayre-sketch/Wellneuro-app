@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma } = vi.hoisted(() => ({
   prisma: {
@@ -20,6 +20,7 @@ const patient = {
   actif: true,
   accessTokenRevoked: false,
   praticienEmail: 'praticien@wellneuro.fr',
+  dateNaissance: '1979-07-28' as string | null,
 };
 
 function request(body: object, avecSession = true): Request {
@@ -42,6 +43,10 @@ describe('POST /api/portail/trust/lecture', () => {
     process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
     prisma.patient.findUnique.mockResolvedValue(patient);
     prisma.trustAcknowledgement.create.mockResolvedValue({});
+  });
+
+  afterEach(() => {
+    delete process.env.WN_PORTAIL_CONDITIONS;
   });
 
   it('enregistre un accusé avec version et hash résolus côté serveur', async () => {
@@ -76,5 +81,33 @@ describe('POST /api/portail/trust/lecture', () => {
     expect(
       (await POST(request({ documentKey: 'usage_ia', type: 'presente' }, false))).status,
     ).toBe(401);
+  });
+
+  it('les conditions d’utilisation ne s’accusent que servies : 400 drapeau fermé, accusé de leur version ouvert (D-292)', async () => {
+    const corps = { documentKey: 'conditions_utilisation', type: 'pris_connaissance' };
+    expect((await POST(request(corps))).status).toBe(400);
+    expect(prisma.trustAcknowledgement.create).not.toHaveBeenCalled();
+
+    process.env.WN_PORTAIL_CONDITIONS = 'true';
+    expect((await POST(request(corps))).status).toBe(200);
+    const attendu = getDocumentCourant('conditions_utilisation');
+    expect(prisma.trustAcknowledgement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        documentKey: 'conditions_utilisation',
+        documentVersion: attendu.version,
+        contentHash: attendu.hash,
+        type: 'pris_connaissance',
+      }),
+    });
+  });
+
+  it('hors dossier majeur, les conditions ne s’accusent pas, drapeau ouvert (409)', async () => {
+    process.env.WN_PORTAIL_CONDITIONS = 'true';
+    for (const dateNaissance of [null, '2012-03-04']) {
+      prisma.patient.findUnique.mockResolvedValue({ ...patient, dateNaissance });
+      const res = await POST(request({ documentKey: 'conditions_utilisation', type: 'pris_connaissance' }));
+      expect(res.status, String(dateNaissance)).toBe(409);
+    }
+    expect(prisma.trustAcknowledgement.create).not.toHaveBeenCalled();
   });
 });

@@ -80,6 +80,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  delete process.env.WN_PORTAIL_CONDITIONS;
   for (const nom of DRAPEAUX) {
     if (avant[nom] === undefined) delete process.env[nom];
     else process.env[nom] = avant[nom];
@@ -123,6 +124,20 @@ describe('POST /api/portail/comptes-rendus — l’ordre des gardes (D-269 §5)'
     expect((await res.json()).reason).toBe('accuse_requis');
     expect(lecture).not.toHaveBeenCalled();
     expect(prisma.compteRenduBiologique.create).not.toHaveBeenCalled();
+    expect(prisma.trustAcknowledgement.count.mock.calls[0][0].where.documentKey).toBe('usage_ia');
+  });
+
+  it('★ sous `WN_PORTAIL_CONDITIONS` : l’accusé exigé est celui des conditions (D-292 §4)', async () => {
+    process.env.WN_PORTAIL_CONDITIONS = 'true';
+    prisma.trustAcknowledgement.count.mockResolvedValueOnce(0);
+    const { req, lecture } = await requete();
+    const res = await POST(req);
+    expect(res.status).toBe(403);
+    const corps = await res.json();
+    expect(corps.reason).toBe('accuse_requis');
+    expect(corps.error).toContain('Conditions d’utilisation');
+    expect(prisma.trustAcknowledgement.count.mock.calls[0][0].where.documentKey).toBe('conditions_utilisation');
+    expect(lecture).not.toHaveBeenCalled();
   });
 
   it('dossier clos : 409, message au patient, corps non lu', async () => {
@@ -248,10 +263,17 @@ describe('GET /api/portail/comptes-rendus (D-269 §4)', () => {
       ok: true,
       documents: [{ deposeLe: '2026-10-07T09:00:00.000Z', statut: 'illisible' }],
       accuseRequis: true,
+      documentAccuse: 'usage_ia',
       dossierOuvert: true,
       statutAge: 'majeur',
       plafond: null,
     });
     expect(prisma.compteRenduBiologique.findMany.mock.calls[0][0].where).toEqual({ idPatient: 'PAT_JENNIFER', origine: 'patient' });
+  });
+
+  it('sous `WN_PORTAIL_CONDITIONS` : dit que le texte à accuser est celui des conditions', async () => {
+    process.env.WN_PORTAIL_CONDITIONS = 'true';
+    const res = await GET(get());
+    expect((await res.json()).documentAccuse).toBe('conditions_utilisation');
   });
 });

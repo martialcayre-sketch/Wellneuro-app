@@ -1434,6 +1434,52 @@ en exige une, la fiche change, au rang 4 au plus tôt.
   suivis (arbitrage du 2026-10-10) ; une validation sur simple ouverture du
   lien.
 
+**Amendement (2026-10-16) — le code d'ACT-1.** Cinq arbitrages du
+responsable du 2026-10-16, sur questions à options, pour le lot de code
+(H70), livré en deux PR sous le drapeau neuf `WN_PORTAIL_CONDITIONS`, éteint
+à la livraison. Aucune migration : `document_key` de `trust_acknowledgements`
+est une chaîne libre, sans contrainte.
+
+- *Clé* (§2) : `conditions_utilisation`, au registre TRUST en code. La v1
+  reprend `cadre_accompagnement` v1, `limites_securite` v1,
+  `donnees_confidentialite` **v18** (et non v17 : la v18, publiée le
+  2026-10-15, y entre telle quelle par §5) et `usage_ia` v8, puis la
+  partie 5. Seule retouche de forme, outre l'apostrophe typographique du
+  registre : le renvoi de la partie 3. Un test compare chaque partie à la
+  version courante de son texte et tombe au premier écart d'ici
+  l'activation ; l'assemblage se refait alors.
+- *Mineurs* (§5) : un dossier mineur ou sans date de naissance garde
+  l'accueil en trois textes et ne reçoit pas l'e-mail ; ses conditions lui
+  seront servies avec le circuit des mineurs. D'ici là, ni carte, ni page,
+  et la route refuse leur accusé hors d'un dossier majeur.
+- *Sécurité à l'accueil* (arbitrage du 2026-10-16, sur constat de revue) :
+  l'accueil d'avant avait un écran « pas un service d'urgence » et une case à
+  cocher. À l'accueil des conditions, la partie « Limites et sécurité
+  médicale » s'ouvre d'office, numéros d'urgence visibles sans clic ; les
+  autres parties restent repliées. Aucun texte neuf, aucune case.
+- *Patient suivi* (§3) : un accusé `pris_connaissance` sur l'un des quatre
+  textes ou sur les conditions, quelle qu'en soit la version, dispense du
+  mur. Drapeau ouvert, un dossier majeur suivi ne revoit donc plus la
+  séquence en trois textes à une nouvelle version de l'un d'eux. **Aucun
+  rappel** dans l'espace : l'e-mail, la page depuis « Informations,
+  confidentialité et droits » et le filet au dépôt.
+- *Lien* (§3, §6) : le **lien magique existant** (24 h, une seule ouverture)
+  ouvre la page des conditions ; au-delà, connexion habituelle. Une phrase
+  est ajoutée à l'e-mail, après le lien : « Ce lien est valable 24 heures et
+  ne s'ouvre qu'une fois. Passé ce délai, connectez-vous à votre espace comme
+  d'habitude : le document vous attend dans « Informations, confidentialité
+  et droits ». » Le reste reste mot pour mot ; les réponses vont à l'adresse
+  du praticien du dossier.
+- *Envoi* (§3) : un **geste unique au cockpit** — liste des dossiers
+  éligibles (en cours, accès à l'espace, sans accusé), aperçu, envoi confirmé
+  en une fois, consigné au dossier.
+- *PR 1* (#1502) : le texte au registre ; l'accueil (conditions seules à un
+  nouveau patient majeur, rien à un patient suivi) ; la page des conditions
+  et son bouton, accusé par POST au clic, sans trace `presente` ; le filet au
+  dépôt (§4) ; la route de lecture refuse la clé tant que le drapeau est
+  fermé. *PR 2* : la destination du lien magique, l'envoi au cockpit, le
+  gabarit d'e-mail.
+
 ### D-291 — Arbitrages de clôture de D-290 : CodeRabbit reste hors des checks obligatoires, une PR qui modifie sa configuration est P1
 
 - Date : 2026-10-14

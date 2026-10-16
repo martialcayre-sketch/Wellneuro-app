@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { associationEffetIndesirableDisponible } from '@/lib/clinical/safetyEffetIndesirableV1';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
-import { avantDeCommencerRequis as calculerAvantDeCommencerRequis } from '@/lib/trust/avantDeCommencer';
+import { accueilRequis } from '@/lib/trust/avantDeCommencer';
+import { conditionsUtilisationOuvertes } from '@/lib/trust/conditionsUtilisation';
+import { statutAge } from '@/lib/patient/gardeAge';
 import { projeterChoixCourants } from '@/lib/trust/securite';
 import { designationPour } from '@/lib/trust/pauseEffetIndesirableServeur';
 
@@ -36,6 +38,12 @@ export type TrustEtatResponse =
        * le 2026-09-16 : la liste est `documentsRequerantAccuse()`, et c'est la
        * même que la séquence lit pour savoir quels accusés poser. */
       avantDeCommencerRequis: boolean;
+      /** L'accueil requis présente les conditions d'utilisation seules
+       * ([[D-292]] §3) au lieu de la séquence en trois textes. Toujours `false`
+       * drapeau fermé, et sur un dossier mineur ou sans date de naissance. */
+      accueilConditions: boolean;
+      /** `WN_PORTAIL_CONDITIONS` ouvert ET dossier majeur : page des conditions et leur accusé servis. */
+      conditionsOuvertes: boolean;
       accuses: AccuseEtat[];
       choixCourants: ChoixEtat[];
       historiqueChoix: ChoixEtat[];
@@ -124,7 +132,16 @@ export async function GET(req: Request): Promise<NextResponse<TrustEtatResponse>
     // la SÉQUENCE lit pour savoir quels accusés poser. Une seule liste pour les
     // deux : si la porte exigeait un accusé que la séquence n'enregistre pas,
     // le patient boucherait sans fin sur les quatre écrans.
-    const avantDeCommencerRequis = calculerAvantDeCommencerRequis(accuses);
+    //
+    // Sous `WN_PORTAIL_CONDITIONS` ([[D-292]] §3), la même porte choisit
+    // l'accueil : conditions seules au nouveau patient majeur, rien au patient
+    // suivi, l'accueil d'avant au dossier mineur ou sans date de naissance.
+    const age = statutAge(patient.dateNaissance, Date.now());
+    const accueil = accueilRequis(accuses, { conditionsOuvertes: conditionsUtilisationOuvertes(), statutAge: age });
+    // Les conditions ne se servent qu'à un dossier majeur : celles d'un dossier
+    // mineur ou sans date viendront avec le circuit des mineurs (arbitrage du
+    // 2026-10-16). Ni carte, ni page, ni accusé hors de lui.
+    const conditionsOuvertes = conditionsUtilisationOuvertes() && age === 'majeur';
 
     const historiqueChoix: ChoixEtat[] = evenementsChoix.map(e => ({
       finalite: e.finalite,
@@ -142,7 +159,9 @@ export async function GET(req: Request): Promise<NextResponse<TrustEtatResponse>
       associationEffetIndesirable: associationEffetIndesirableDisponible(),
       elementsProgramme: designation?.elements ?? null,
       versionProgramme: designation?.version ?? null,
-      avantDeCommencerRequis,
+      avantDeCommencerRequis: accueil !== null,
+      accueilConditions: accueil === 'conditions',
+      conditionsOuvertes,
       accuses: accuses.map(a => ({
         documentKey: a.documentKey,
         documentVersion: a.documentVersion,

@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import {
   getDocumentCourant,
   getVersion,
+  PARTIES_REPRISES_CONDITIONS_V1,
   REGISTRE_DOCUMENTS_TRUST,
+  sectionsDeLaPartie,
   VERSION_CONSENTEMENT_COURANTE,
 } from './registre';
 
@@ -21,7 +25,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les trente et un documents attendus', () => {
+  it('expose les trente-deux documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -80,6 +84,8 @@ describe('registre des documents TRUST', () => {
       // Même correction, dans le texte du consentement lui-même — l'occurrence
       // que `D-222` §3 n'avait pas vue.
       'consentement_suivi@v3',
+      // `D-292` — les quatre textes d'information réunis, servis avec ACT-1.
+      'conditions_utilisation@v1',
     ]);
   });
 
@@ -722,5 +728,90 @@ describe('registre des documents TRUST', () => {
     // deux phrases neuves s'insèrent AVANT elle, jamais après.
     const section = courant.sections.find(s => s.titre === 'Quelles données sont recueillies ?');
     expect(section?.paragraphes.at(-1)).toContain('uniquement les informations nécessaires');
+  });
+
+  describe('les conditions d’utilisation (D-292)', () => {
+    const conditions = getDocumentCourant('conditions_utilisation');
+
+    it('reprennent, dans l’ordre, les quatre textes d’information validés', () => {
+      expect(PARTIES_REPRISES_CONDITIONS_V1.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
+        'cadre_accompagnement@v1',
+        'limites_securite@v1',
+        'donnees_confidentialite@v18',
+        'usage_ia@v8',
+      ]);
+      expect([...new Set(conditions.sections.map(s => s.partie))]).toEqual([
+        'Le cadre de votre accompagnement',
+        'Limites et sécurité médicale',
+        'Vos données personnelles et leur confidentialité',
+        'L’intelligence artificielle',
+        'Quand ces conditions changent',
+      ]);
+    });
+
+    // LE TEST QUI SIGNALE TOUT ÉCART D'ICI L'ACTIVATION (D-292 §5). Un des
+    // quatre textes publié dans une nouvelle version : les conditions ne la
+    // portent pas. Avant ACT-1, refaire l'assemblage (nouvelle source, nouveau
+    // hash) ; après, publier une nouvelle version des conditions.
+    it('chaque partie reprise est la version COURANTE de son texte, mot pour mot', () => {
+      for (const { partie, source } of PARTIES_REPRISES_CONDITIONS_V1) {
+        const courant = getDocumentCourant(source.key);
+        expect(
+          courant.version,
+          `« ${courant.titre} » est passé en ${courant.version} ; les conditions reprennent la ${source.version}`,
+        ).toBe(source.version);
+        expect(conditions.sections.filter(s => s.partie === partie)).toEqual(sectionsDeLaPartie(partie, courant));
+      }
+    });
+
+    it('une seule retouche : le renvoi de la partie 3 nomme la partie sur l’IA', () => {
+      const texte = (sections: typeof conditions.sections) =>
+        sections.flatMap(s => [...s.paragraphes, ...(s.points ?? [])]).join('\n');
+      const donnees = getDocumentCourant('donnees_confidentialite');
+      expect(texte(donnees.sections)).toContain('(voir « L’intelligence artificielle dans Wellneuro »)');
+      expect(texte(conditions.sections)).not.toContain('(voir « L’intelligence artificielle dans Wellneuro »)');
+      expect(texte(conditions.sections).split('(voir la partie « L’intelligence artificielle »)')).toHaveLength(2);
+    });
+
+    // LE TEXTE NEUF FACE AU TEXTE VALIDÉ. Le test des parties reprises ne voit
+    // que les sources ; titre, résumé et partie 5 se lisent dans le README que le
+    // responsable a validé, à l'apostrophe typographique du registre près.
+    it('titre, résumé et partie 5 sont ceux du texte validé, mot pour mot', () => {
+      const readme = fs
+        .readFileSync(
+          path.resolve(__dirname, '../../../../../docs/claude/propositions/2026-10-14-k-conditions-utilisation/README.md'),
+          'utf8',
+        )
+        .replaceAll("'", '’');
+      const bloc = (debut: string, fin: string) => readme.slice(readme.indexOf(debut) + debut.length, readme.indexOf(fin));
+      const [titre, resume] = bloc('## Titre et résumé', '## Partie 5').trim().split(/\n\n+/);
+      expect(conditions.titre).toBe(titre);
+      expect(conditions.resume).toBe(resume);
+
+      const attendu = bloc('## Partie 5 — Quand ces conditions changent', '## E-mail')
+        .split('\n### ')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(s => {
+          const [entete, ...corps] = s.replace(/^### /, '').split(/\n\n+/);
+          return { titre: entete.trim(), paragraphes: corps.map(p => p.trim()) };
+        });
+      const partie5 = conditions.sections
+        .filter(s => s.partie === 'Quand ces conditions changent')
+        .map(s => ({ titre: s.titre, paragraphes: s.paragraphes }));
+      expect(partie5).toEqual(attendu);
+    });
+
+    it('réclament un accusé, et la partie 5 dit le bouton par son libellé', () => {
+      expect(conditions.requiresAcknowledgement).toBe(true);
+      expect(conditions.titre).toBe('Conditions d’utilisation de votre espace Wellneuro');
+      const partie5 = conditions.sections.filter(s => s.partie === 'Quand ces conditions changent');
+      expect(partie5.map(s => s.titre)).toEqual([
+        'Votre première connexion',
+        'Une nouvelle version',
+        'Ce que veut dire « J’en ai pris connaissance »',
+      ]);
+      expect(partie5[0].paragraphes[0]).toContain('« J’en ai pris connaissance »');
+    });
   });
 });

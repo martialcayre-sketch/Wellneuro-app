@@ -14,14 +14,18 @@ export type TrustDocumentKey =
   | 'donnees_confidentialite'
   | 'usage_ia'
   | 'droits_patient'
-  | 'consentement_suivi';
+  | 'consentement_suivi'
+  // Les quatre textes d'information réunis en un seul document ([[D-292]]),
+  // servi sous `WN_PORTAIL_CONDITIONS` (ACT-1, H70).
+  | 'conditions_utilisation';
 
 export type TrustDocumentType =
   | 'care_framework'
   | 'medical_safety'
   | 'privacy'
   | 'ai_transparency'
-  | 'patient_rights';
+  | 'patient_rights'
+  | 'terms_of_use';
 
 export type NiveauChangement =
   | 'editorial'
@@ -35,6 +39,9 @@ export type SectionDocument = {
   paragraphes: string[];
   /** Points listés après les paragraphes (rendu en liste). */
   points?: string[];
+  /** Titre de la partie qui porte la section, dans un document assemblé
+   * (« Conditions d'utilisation », [[D-292]]) ; absent ailleurs. */
+  partie?: string;
 };
 
 /** Une version publiée est immuable : toute évolution = nouvelle version. */

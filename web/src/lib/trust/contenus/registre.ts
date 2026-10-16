@@ -1,4 +1,4 @@
-import type { TrustDocumentKey, VersionDocumentTrust } from '../types';
+import type { SectionDocument, TrustDocumentKey, VersionDocumentTrust } from '../types';
 
 /**
  * TRUST V1 — registre des documents d'information normatifs (LOT-01).
@@ -1645,6 +1645,89 @@ const DONNEES_CONFIDENTIALITE_V18: VersionDocumentTrust = {
   hash: '41f60179bdf710480deb91c9a609ec4dfa843a049b36280cc9f90ed42747961d',
 };
 
+// LES CONDITIONS D'UTILISATION ([[D-292]], lettre k) : les quatre textes
+// d'information repris mot pour mot, dans leur version en vigueur au jour de
+// l'assemblage, puis une cinquième partie neuve. Texte validé par le
+// responsable le 2026-10-14
+// (`docs/claude/propositions/2026-10-14-k-conditions-utilisation/README.md`).
+// Une seule retouche de forme : le renvoi de la partie 3 vers le texte de
+// l'IA nomme la partie, et non plus le document.
+//
+// SERVIES SOUS `WN_PORTAIL_CONDITIONS`, ÉTEINT À LA LIVRAISON (ACT-1, H70).
+// Fermé, aucun écran ne les montre et la route de lecture en refuse l'accusé.
+//
+// L'ASSEMBLAGE SE REFAIT TANT QU'ELLES NE SONT PAS SERVIES ([[D-292]] §5) : une
+// version d'un des quatre textes publiée d'ici l'activation y entre telle
+// quelle. `registre.test.ts` compare chaque partie à la version courante de son
+// texte et tombe au premier écart. Après l'activation, une partie ne change
+// plus que par une nouvelle version des conditions.
+const RENVOI_IA_DU_TEXTE = '(voir « L’intelligence artificielle dans Wellneuro »)';
+const RENVOI_IA_DES_CONDITIONS = '(voir la partie « L’intelligence artificielle »)';
+
+/** Les quatre textes repris, dans l'ordre et la version de l'assemblage. */
+export const PARTIES_REPRISES_CONDITIONS_V1: readonly { partie: string; source: VersionDocumentTrust }[] =
+  Object.freeze([
+    { partie: 'Le cadre de votre accompagnement', source: CADRE_ACCOMPAGNEMENT_V1 },
+    { partie: 'Limites et sécurité médicale', source: LIMITES_SECURITE_V1 },
+    { partie: 'Vos données personnelles et leur confidentialité', source: DONNEES_CONFIDENTIALITE_V18 },
+    { partie: 'L’intelligence artificielle', source: USAGE_IA_V8 },
+  ]);
+
+/** Une partie reprise : les sections de son texte, renvoi à l'IA nommé en partie. */
+export function sectionsDeLaPartie(partie: string, source: VersionDocumentTrust): SectionDocument[] {
+  const corriger = (texte: string) => texte.replace(RENVOI_IA_DU_TEXTE, RENVOI_IA_DES_CONDITIONS);
+  return source.sections.map(section => ({
+    partie,
+    titre: section.titre,
+    paragraphes: section.paragraphes.map(corriger),
+    ...(section.points ? { points: section.points.map(corriger) } : {}),
+  }));
+}
+
+const PARTIE_5_CONDITIONS = 'Quand ces conditions changent';
+
+const CONDITIONS_UTILISATION_V1: VersionDocumentTrust = {
+  key: 'conditions_utilisation',
+  type: 'terms_of_use',
+  version: 'v1',
+  titre: 'Conditions d’utilisation de votre espace Wellneuro',
+  resume:
+    'Ce que cet espace est et n’est pas, que faire en cas d’urgence, vos données, l’intelligence artificielle, et comment ces conditions évoluent.',
+  sections: [
+    ...PARTIES_REPRISES_CONDITIONS_V1.flatMap(({ partie, source }) => sectionsDeLaPartie(partie, source)),
+    {
+      partie: PARTIE_5_CONDITIONS,
+      titre: 'Votre première connexion',
+      paragraphes: [
+        'À votre première connexion, ces conditions vous sont présentées avant que vous n’accédiez à votre espace. Vous les validez une fois, par le bouton « J’en ai pris connaissance ».',
+      ],
+    },
+    {
+      partie: PARTIE_5_CONDITIONS,
+      titre: 'Une nouvelle version',
+      paragraphes: [
+        'Chaque version de ces conditions est datée. Lorsqu’une nouvelle version paraît, nous vous l’annonçons par e-mail : le message contient un lien qui ouvre le texte, à lire puis à valider par le même bouton. Ouvrir le lien ne valide rien ; seul le bouton le fait.',
+        'Une nouvelle version n’interrompt jamais votre accompagnement : votre espace reste accessible, et ce que vous avez commencé, questionnaire ou agenda, se poursuit.',
+        'Si vous n’avez pas encore validé la version en vigueur lorsque vous déposez un document dans votre espace, elle vous est présentée juste avant le dépôt, avec le même bouton.',
+        'La version en vigueur reste consultable à tout moment depuis « Informations, confidentialité et droits ».',
+      ],
+    },
+    {
+      partie: PARTIE_5_CONDITIONS,
+      titre: 'Ce que veut dire « J’en ai pris connaissance »',
+      paragraphes: [
+        '« J’ai pris connaissance » signifie que l’information vous a été présentée et que vous l’avez lue. Ce n’est pas une autorisation.',
+        'Vos choix facultatifs se donnent et se retirent à part, dans « Mes choix et autorisations ». Les refuser ne bloque jamais votre accompagnement.',
+      ],
+    },
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary: 'Première version publiée.',
+  publieLe: '2026-10-16',
+  requiresAcknowledgement: true,
+  hash: '634fdc4312ee6d9621146d564425cae6fe68f88420418f3933bb157a6b32307b',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1678,6 +1761,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DROITS_PATIENT_V1,
   CONSENTEMENT_SUIVI_V2,
   CONSENTEMENT_SUIVI_V3,
+  CONDITIONS_UTILISATION_V1,
 ]);
 
 export function getDocumentCourant(key: TrustDocumentKey): VersionDocumentTrust {
