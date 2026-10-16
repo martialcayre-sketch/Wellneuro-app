@@ -31,6 +31,7 @@ function analyteBase(surcharge: Record<string, unknown> = {}) {
     plagesReference: [],
     plagesFonctionnelles: [],
     correspondancesNabm: [],
+    constatNabm: null,
     preanalytiques: [],
     itemsPanel: [],
     ...surcharge,
@@ -122,6 +123,33 @@ describe('remboursement — dérivé par remboursable.ts, jamais recalculé ici'
 
     expect(catalogue.analytes[0].remboursement.statut).toBe('non_evalue');
     expect(prisma.biologyNabmActe.findMany).not.toHaveBeenCalled();
+  });
+
+  it('constat « aucun acte » sur le millésime courant : hors_nomenclature ; sur un millésime antérieur : non_evalue (M-3c)', async () => {
+    const pointeur = { versionSource: 'V105', nombreEntrees: 987, importeLe: new Date('2026-07-26T00:00:00.000Z') };
+    prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(pointeur);
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteBase({ code: 'BIO_CAR', constatNabm: { millesime: 'V105' } }),
+      analyteBase({ code: 'BIO_HOMOCYSTEINE', constatNabm: { millesime: 'V104' } }),
+    ]);
+
+    const catalogue = await listerCatalogueBiologie();
+
+    expect(catalogue.analytes.map(a => [a.code, a.remboursement.statut])).toEqual([
+      ['BIO_CAR', 'hors_nomenclature'],
+      ['BIO_HOMOCYSTEINE', 'non_evalue'],
+    ]);
+    // Le constat se lit avec l'analyte : pas de requête des actes pour lui.
+    expect(prisma.biologyNabmActe.findMany).not.toHaveBeenCalled();
+    expect(prisma.biologyAnalyte.findMany.mock.calls[0][0].select.constatNabm).toEqual({ select: { millesime: true } });
+  });
+
+  it('constat « aucun acte » sans nomenclature importée (pas de pointeur) : non_evalue', async () => {
+    prisma.biologyAnalyte.findMany.mockResolvedValue([analyteBase({ constatNabm: { millesime: 'V105' } })]);
+
+    const catalogue = await listerCatalogueBiologie();
+
+    expect(catalogue.analytes[0].remboursement.statut).toBe('non_evalue');
   });
 
   it('correspondance signée mais source jamais importée (pas de pointeur) : hors_nomenclature', async () => {

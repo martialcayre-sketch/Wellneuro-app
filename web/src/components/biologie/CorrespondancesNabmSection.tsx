@@ -9,9 +9,11 @@ import type {
   CorrespondancesNabmApiResponse,
   DecisionCorrespondanceNabmApiResponse,
 } from '@/app/api/praticien/biologie/nabm/correspondances/route';
+import type { DecisionConstatNabmApiResponse } from '@/app/api/praticien/biologie/nabm/constats/route';
 import type {
   ActeNabmAffiche,
   CandidatsNabmAffiches,
+  ConstatAffiche,
   CorrespondanceAffichee,
   EtatCorrespondance,
   NatureNabm,
@@ -26,6 +28,12 @@ import { formatDate } from './FicheAnalytePanel';
 // serveur au millésime courant, nature présélectionnée, à signer en un clic
 // par le même POST. Signataire et date sont posés par le serveur ; l'écran
 // envoie l'état qu'il a vu (`etatAttendu`).
+//
+// Pour un analyte que la liste range « aucun acte », le praticien peut signer
+// le constat « aucun acte dans la nomenclature » sur le millésime affiché
+// (M-3c) : l'analyte passe « hors nomenclature ». Le constat ne vaut que pour
+// ce millésime ; périmé, il se retire puis se pose à nouveau. Signature et
+// constat s'excluent : le bouton n'est pas offert tant qu'une signature existe.
 //
 // Les types sont importés en `import type` seulement : la lib serveur importe
 // Prisma, qui ne doit pas entrer dans le paquet client.
@@ -129,6 +137,8 @@ export function CorrespondancesNabmSection({
   const [natureNouvelle, setNatureNouvelle] = useState<NatureNabm | ''>('');
   const [naturesPropositions, setNaturesPropositions] = useState<Record<string, NatureNabm | ''>>({});
   const [retraitAConfirmer, setRetraitAConfirmer] = useState<string | null>(null);
+  const [constat, setConstat] = useState<ConstatAffiche | null>(null);
+  const [retraitConstatAConfirmer, setRetraitConstatAConfirmer] = useState(false);
 
   // Seule la DERNIÈRE lecture émise écrit à l'écran (patron du rayon).
   const sequence = useRef(0);
@@ -153,6 +163,7 @@ export function CorrespondancesNabmSection({
       setCorrespondances(json.correspondances);
       setMillesime(json.millesime);
       setCandidats(json.candidats ?? null);
+      setConstat(json.constat ?? null);
     } catch {
       if (jeton !== sequence.current) return;
       setMessageEchec('Impossible de lire les correspondances.');
@@ -169,6 +180,8 @@ export function CorrespondancesNabmSection({
     setNaturesCandidats({});
     setCorrespondances(null);
     setCandidats(null);
+    setConstat(null);
+    setRetraitConstatAConfirmer(false);
     setMessageEchec(null);
     setCodeSaisi('');
     setActeLu(null);
@@ -214,16 +227,27 @@ export function CorrespondancesNabmSection({
     nature?: NatureNabm;
     verifieLeVu?: string;
   }) {
+    await envoyer('/api/praticien/biologie/nabm/correspondances', corps);
+  }
+
+  async function deciderConstat(
+    corps: { decision: 'constater'; millesimeVu: string } | { decision: 'retirer'; verifieLeVu: string },
+  ) {
+    await envoyer('/api/praticien/biologie/nabm/constats', corps);
+  }
+
+  /** Un geste (signature, retrait, constat) : POST, puis relecture. */
+  async function envoyer(url: string, corps: Record<string, unknown>) {
     const perimee = (gen => () => gen !== generation.current)(generation.current);
     setMessageEchec(null);
     setEnCours(true);
     try {
-      const res = await fetch('/api/praticien/biologie/nabm/correspondances', {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ analyteCode, ...corps }),
       });
-      const json = (await res.json()) as DecisionCorrespondanceNabmApiResponse;
+      const json = (await res.json()) as DecisionCorrespondanceNabmApiResponse | DecisionConstatNabmApiResponse;
       if (perimee()) {
         // La fiche a changé d'analyte : rien à écrire ici, mais le catalogue
         // se relit si l'écriture a eu lieu.
@@ -240,6 +264,7 @@ export function CorrespondancesNabmSection({
       setActeLu(null);
       setNatureNouvelle('');
       setRetraitAConfirmer(null);
+      setRetraitConstatAConfirmer(false);
       await charger();
       onModifie?.();
     } catch {
@@ -257,6 +282,9 @@ export function CorrespondancesNabmSection({
 
   const dejaListee =
     acteLu !== null && (correspondances ?? []).some(c => c.codeActe === acteLu.code);
+  const signee = (correspondances ?? []).some(c => c.etat === 'signee');
+  const constatPossible =
+    correspondances !== null && constat === null && !signee && millesime !== null && candidats?.situation === 'aucun_acte';
 
   return (
     <section aria-label="Correspondances à la nomenclature" className="flex flex-col gap-3">
@@ -442,6 +470,69 @@ export function CorrespondancesNabmSection({
             {candidats.millesimeListe}).
           </p>
           {candidats.motif && <p className="text-xs text-muted-foreground">{candidats.motif}</p>}
+        </div>
+      )}
+
+      {correspondances !== null && constat && (
+        <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+          {constat.perime ? (
+            <>
+              <p className="text-sm text-foreground">
+                Constat périmé ({constat.millesime})
+                {millesime ? ` — à renouveler au millésime ${millesime}` : ''}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Il ne vaut que pour le millésime constaté : l’analyte reste « non évalué » jusqu’à
+                un nouveau constat. Retirez-le, puis constatez à nouveau.
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-foreground">
+              Constat signé : aucun acte dans la nomenclature ({constat.millesime}) — l’analyte est
+              hors nomenclature.
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Signé par {constat.verifiePar} le {formatDate(constat.verifieLe)}
+          </p>
+          {retraitConstatAConfirmer ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-foreground">L’analyte repassera « non évalué ».</span>
+              <Button
+                variant="danger"
+                disabled={enCours}
+                onClick={() => void deciderConstat({ decision: 'retirer', verifieLeVu: constat.verifieLe })}
+              >
+                Confirmer le retrait
+              </Button>
+              <Button variant="outline" disabled={enCours} onClick={() => setRetraitConstatAConfirmer(false)}>
+                Annuler
+              </Button>
+            </div>
+          ) : (
+            <div>
+              <Button variant="outline" disabled={enCours} onClick={() => setRetraitConstatAConfirmer(true)}>
+                Retirer le constat
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {constatPossible && millesime && (
+        <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+          <p className="text-xs text-muted-foreground">
+            Constater, c’est attester avoir cherché cet analyte dans la nomenclature (millésime{' '}
+            {millesime}) sans y trouver d’acte. Le constat ne vaut que pour ce millésime.
+          </p>
+          <div>
+            <Button
+              disabled={enCours}
+              onClick={() => void deciderConstat({ decision: 'constater', millesimeVu: millesime })}
+            >
+              Constater : aucun acte dans la nomenclature ({millesime})
+            </Button>
+          </div>
         </div>
       )}
 

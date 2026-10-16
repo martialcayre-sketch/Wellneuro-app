@@ -1348,6 +1348,19 @@ jobs:
           WN_NABM_EXCLUSION_BANC_BASE: wellneuro_ci
         run: node scripts/banc-nabm-exclusion-deux-sessions.test.mjs
 
+      # Le VRAI écrivain NABM (`deciderCorrespondance`, `deciderConstat`,
+      # client Prisma de production) contre les triggers différés « pas sans
+      # journal » (M-3c, PR 2) : signature, retrait, constat et son retrait
+      # passent au COMMIT ; un refus n'écrit rien ; la date rendue est celle de
+      # la base ; un geste attend le verrou d'un import NABM. Contre-épreuve en
+      # tête : une signature brute sans journal est refusée.
+      - name: NABM writer bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_NABM_GESTES_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-nabm-gestes-prisma.test.ts
+
       # Le VRAI client Prisma contre la garde anti-doublon (D-294, BP-09) :
       # le 23505 du trigger doit arriver en P2002 (le 409 `doublon_mesure` des
       # écrivains en dépend), la place annulée se reprend, REPEATABLE READ est
