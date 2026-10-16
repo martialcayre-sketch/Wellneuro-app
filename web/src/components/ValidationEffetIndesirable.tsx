@@ -52,6 +52,9 @@ export function ValidationEffetIndesirable({
     (actionId && validation.elements?.find(e => e.actionId === actionId)?.title)
     ?? (actionId && validation.elementDesigne?.actionId === actionId ? validation.elementDesigne.title : null)
     ?? 'Élément sans intitulé lisible';
+  /** L'élément d'un avis « impliqué » : absent sur un programme illisible (D-281 §5, 2026-10-16). */
+  const elementDeLAvis = (actionId: string | null) =>
+    actionId === null ? 'élément non identifiable' : titreDe(actionId);
   const courant = validation.verdicts.find(v => v.id === validation.verdictCourantId) ?? null;
   const corriges = validation.verdicts.filter(v => v.id !== validation.verdictCourantId);
 
@@ -62,7 +65,10 @@ export function ValidationEffetIndesirable({
   const [erreur, setErreur] = useState<string | null>(null);
 
   const elementsChoisissables = validation.elements ?? [];
-  const impliqueImpossible = !designeParPatient && elementsChoisissables.length === 0;
+  const sansElement = validation.avisSansElement;
+  const impliqueImpossible = !designeParPatient && !sansElement && elementsChoisissables.length === 0;
+  /** L'explication de l'option « impliqué », annoncée avec le choix de l'avis (une seule des deux s'affiche). */
+  const idExplication = `explication-avis-${reportId}`;
 
   const enregistrer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +82,7 @@ export function ValidationEffetIndesirable({
           reportId,
           verdict,
           ...(verdict === 'implique'
-            ? { amenagement, ...(designeParPatient ? {} : { elementActionId }) }
+            ? { amenagement, ...(designeParPatient || sansElement ? {} : { elementActionId }) }
             : {}),
           supersedesVerdictId: validation.verdictCourantId,
         }),
@@ -98,7 +104,7 @@ export function ValidationEffetIndesirable({
   };
 
   const pret = verdict === 'non_implique'
-    || (verdict === 'implique' && amenagement !== '' && (designeParPatient || elementActionId !== ''));
+    || (verdict === 'implique' && amenagement !== '' && (designeParPatient || sansElement || elementActionId !== ''));
 
   return (
     <section className="mt-3 rounded-lg border border-border bg-muted/40 p-3" aria-label="Avis sur l’implication">
@@ -119,7 +125,7 @@ export function ValidationEffetIndesirable({
           ? <>
             Avis en vigueur : <strong>{LIBELLE_VERDICT[courant.verdict]}</strong>
             {courant.verdict === 'implique' && <>
-              {' — '}{titreDe(courant.elementActionId)}, aménagement : {LIBELLE_AMENAGEMENT[courant.amenagement as Amenagement] ?? courant.amenagement}
+              {' — '}{elementDeLAvis(courant.elementActionId)}, aménagement : {LIBELLE_AMENAGEMENT[courant.amenagement as Amenagement] ?? courant.amenagement}
             </>}
             <span className="text-xs text-muted-foreground"> (rendu le {formatHorodatage(courant.renduLe)} par {courant.renduPar})</span>
           </>
@@ -132,7 +138,7 @@ export function ValidationEffetIndesirable({
             {corriges.map(v => (
               <li key={v.id} className="text-xs text-muted-foreground">
                 {LIBELLE_VERDICT[v.verdict]}
-                {v.verdict === 'implique' && <> — {titreDe(v.elementActionId)}, {LIBELLE_AMENAGEMENT[v.amenagement as Amenagement] ?? v.amenagement}</>}
+                {v.verdict === 'implique' && <> — {elementDeLAvis(v.elementActionId)}, {LIBELLE_AMENAGEMENT[v.amenagement as Amenagement] ?? v.amenagement}</>}
                 {' '}(rendu le {formatHorodatage(v.renduLe)} par {v.renduPar})
               </li>
             ))}
@@ -148,7 +154,10 @@ export function ValidationEffetIndesirable({
       </p>
 
       <form onSubmit={e => void enregistrer(e)} className="mt-3 flex flex-col gap-2">
-        <fieldset className="flex flex-wrap gap-x-4 gap-y-1">
+        <fieldset
+          className="flex flex-wrap gap-x-4 gap-y-1"
+          aria-describedby={sansElement || impliqueImpossible ? idExplication : undefined}
+        >
           <legend className="text-xs text-muted-foreground mb-1">{courant ? 'Corriger l’avis' : 'Votre avis'}</legend>
           <label className="flex items-center gap-1 text-sm">
             <input
@@ -159,7 +168,11 @@ export function ValidationEffetIndesirable({
               disabled={impliqueImpossible}
               onChange={() => setVerdict('implique')}
             />
-            {designeParPatient ? 'Impliqué' : 'Un élément du programme est en cause'}
+            {designeParPatient
+              ? 'Impliqué'
+              : sansElement
+                ? 'Impliqué, élément non identifiable'
+                : 'Un élément du programme est en cause'}
           </label>
           <label className="flex items-center gap-1 text-sm">
             <input
@@ -172,15 +185,21 @@ export function ValidationEffetIndesirable({
             {designeParPatient ? 'Non impliqué' : 'Aucun élément du programme n’est en cause'}
           </label>
         </fieldset>
+        {sansElement && (
+          <p id={idExplication} className="text-xs text-muted-foreground">
+            Le programme visé ne se lit pas : aucun élément ne peut être désigné. Vous pouvez rendre « impliqué » sans
+            élément, avec un aménagement.
+          </p>
+        )}
         {impliqueImpossible && (
-          <p className="text-xs text-muted-foreground">
+          <p id={idExplication} className="text-xs text-muted-foreground">
             {validation.elements === null
               ? 'Le programme visé ne se lit pas : aucun élément ne peut être désigné.'
               : 'Le programme visé ne contient aucun élément désignable.'}
           </p>
         )}
 
-        {verdict === 'implique' && !designeParPatient && (
+        {verdict === 'implique' && !designeParPatient && !sansElement && (
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
             Élément en cause
             <select
@@ -199,7 +218,9 @@ export function ValidationEffetIndesirable({
         {verdict === 'implique' && (
           <fieldset className="flex flex-wrap gap-x-4 gap-y-1">
             <legend className="text-xs text-muted-foreground mb-1">
-              Aménagement — l’élément ne repart jamais à l’identique ni augmenté
+              {sansElement
+                ? 'Aménagement des compléments — à appliquer dans la prochaine version : aucun ne repart à l’identique ni augmenté'
+                : 'Aménagement — l’élément ne repart jamais à l’identique ni augmenté'}
             </legend>
             {AMENAGEMENTS.map(a => (
               <label key={a} className="flex items-center gap-1 text-sm">

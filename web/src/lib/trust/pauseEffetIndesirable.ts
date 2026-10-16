@@ -178,7 +178,9 @@ export function effetsNonTraites<
  * - Verdict « non impliqué » : la pause est levée (§5).
  * - Verdict « impliqué » : l'élément désigné par le praticien reste en pause —
  *   il ne repart jamais à l'identique (§5) ; l'aménagement passe par une
- *   nouvelle version du programme.
+ *   nouvelle version du programme. Sans élément (« élément non identifiable »,
+ *   programme illisible, arbitrage du 2026-10-16) : tous les compléments
+ *   restent en pause.
  *
  * SEULE LA VERSION VISÉE PAR LE SIGNALEMENT est mise en pause. Les
  * identifiants d'action étant positionnels, les appliquer à une autre version
@@ -219,6 +221,10 @@ export function elementsEnPause(input: {
     if (verdict?.verdict === 'non_implique') continue;
     if (verdict?.verdict === 'implique') {
       if (verdict.elementActionId) poser(verdict.elementActionId, 'avis_rendu');
+      // « Impliqué, élément non identifiable » (arbitrage du 2026-10-16) :
+      // aucun complément n'est disculpé, aucun ne repart à l'identique — la
+      // pause des compléments est MAINTENUE jusqu'à la nouvelle version.
+      else for (const actionId of complements) poser(actionId, 'avis_rendu');
       continue;
     }
     if (signalement.rattachement === 'element') {

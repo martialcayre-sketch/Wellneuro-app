@@ -6,8 +6,8 @@ import { validerDemandeVerdict } from './verdictEffetIndesirable';
 // avant d'écrire.
 
 const ELEMENTS = [{ actionId: 'a-magnesium' }, { actionId: 'a-marche' }];
-const PAR_ELEMENT = { id: 's1', rattachement: 'element' as const, elementActionId: 'a-magnesium' };
-const NE_SAIT_PAS = { id: 's1', rattachement: 'ne_sait_pas' as const, elementActionId: null };
+const PAR_ELEMENT = { id: 's1', rattachement: 'element' as const, elementActionId: 'a-magnesium', protocolDraftId: 'pd-1' };
+const NE_SAIT_PAS = { id: 's1', rattachement: 'ne_sait_pas' as const, elementActionId: null, protocolDraftId: 'pd-1' };
 
 const verdict = (v: Partial<VerdictEffetIndesirable> & { id: string }): VerdictEffetIndesirable => ({
   reportId: 's1', verdict: 'non_implique', elementActionId: null, amenagement: null, supersedesVerdictId: null, ...v,
@@ -84,11 +84,66 @@ describe('validerDemandeVerdict', () => {
     })).toMatchObject({ ok: true, aEcrire: { verdict: 'non_implique', elementActionId: null } });
   });
 
-  it('« Je ne sais pas » sur un programme illisible : aucun élément désignable, 409', () => {
-    expect(validerDemandeVerdict({
-      signalement: NE_SAIT_PAS, verdicts: [], elements: null,
-      demande: { verdict: 'implique', amenagement: 'retirer', elementActionId: 'a-magnesium' },
-    })).toMatchObject({ ok: false, status: 409 });
+  // D-281 §5, arbitrage du 2026-10-16 : « impliqué, élément non identifiable ».
+  describe('programme visé illisible : « impliqué » sans élément, aménagement exigé', () => {
+    it.each([
+      ['« Je ne sais pas »', NE_SAIT_PAS],
+      ['« un autre produit »', { ...NE_SAIT_PAS, rattachement: 'autre_produit' as const }],
+      ['le formulaire d’avant', { ...NE_SAIT_PAS, rattachement: null }],
+    ])('%s : accepté sans élément, avec l’aménagement', (_, signalement) => {
+      expect(validerDemandeVerdict({
+        signalement, verdicts: [], elements: null, demande: { verdict: 'implique', amenagement: 'retirer' },
+      })).toEqual({
+        ok: true,
+        aEcrire: { verdict: 'implique', elementActionId: null, amenagement: 'retirer', supersedesVerdictId: null },
+      });
+    });
+
+    it('sans aménagement : refusé', () => {
+      expect(validerDemandeVerdict({
+        signalement: NE_SAIT_PAS, verdicts: [], elements: null, demande: { verdict: 'implique' },
+      })).toMatchObject({ ok: false, status: 400 });
+    });
+
+    it('un élément envoyé quand rien ne se lit : refusé, 400', () => {
+      expect(validerDemandeVerdict({
+        signalement: NE_SAIT_PAS, verdicts: [], elements: null,
+        demande: { verdict: 'implique', amenagement: 'retirer', elementActionId: 'a-magnesium' },
+      })).toMatchObject({ ok: false, status: 400 });
+    });
+
+    it('jamais sur un programme lisible, même sans élément désignable : l’élément reste à désigner', () => {
+      for (const elements of [ELEMENTS, []]) {
+        expect(validerDemandeVerdict({
+          signalement: NE_SAIT_PAS, verdicts: [], elements, demande: { verdict: 'implique', amenagement: 'retirer' },
+        })).toMatchObject({ ok: false, status: 400 });
+      }
+    });
+
+    it('jamais sur un élément désigné par le patient : c’est le sien qui est impliqué', () => {
+      expect(validerDemandeVerdict({
+        signalement: PAR_ELEMENT, verdicts: [], elements: null, demande: { verdict: 'implique', amenagement: 'retirer' },
+      })).toMatchObject({ ok: true, aEcrire: { elementActionId: 'a-magnesium' } });
+    });
+
+    it('jamais sur un signalement délié de son programme (la base le refuserait) : 409', () => {
+      expect(validerDemandeVerdict({
+        signalement: { ...NE_SAIT_PAS, protocolDraftId: null }, verdicts: [], elements: null,
+        demande: { verdict: 'implique', amenagement: 'retirer' },
+      })).toMatchObject({ ok: false, status: 409 });
+    });
+
+    it('le même avis déjà en vigueur : refusé ; un autre aménagement : accepté', () => {
+      const racine = verdict({ id: 'v1', verdict: 'implique', elementActionId: null, amenagement: 'retirer' });
+      expect(validerDemandeVerdict({
+        signalement: NE_SAIT_PAS, verdicts: [racine], elements: null,
+        demande: { verdict: 'implique', amenagement: 'retirer', supersedesVerdictId: 'v1' },
+      })).toMatchObject({ ok: false, status: 400 });
+      expect(validerDemandeVerdict({
+        signalement: NE_SAIT_PAS, verdicts: [racine], elements: null,
+        demande: { verdict: 'implique', amenagement: 'reduire', supersedesVerdictId: 'v1' },
+      })).toMatchObject({ ok: true, aEcrire: { elementActionId: null, amenagement: 'reduire' } });
+    });
   });
 
   it('« Je ne sais pas » : « aucun élément » s’écrit « non impliqué », même programme illisible', () => {

@@ -175,7 +175,8 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
         // l'intégrité ne se vérifie pas — vise quand même le programme
         // diffusé, relu seul, comme le formulaire d'avant. Le signalement
         // attend alors l'avis du praticien, qui désigne l'élément en cause ou
-        // aucun — « aucun » seulement, si le programme lui-même est illisible ;
+        // aucun — sur un programme lui-même illisible, « impliqué, élément non
+        // identifiable » (arbitrage du 2026-10-16) ;
         // le choix du patient, lui, n'est pas conservé. Sans programme
         // diffusé, ou cette lecture en échec aussi, il est capturé sans
         // programme : rien ne bloque, il se compte par son statut.
