@@ -700,6 +700,16 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1_negatif.sql
 
+      # Journal des gestes NABM en ajout seul et constat « aucun acte » (M-3c,
+      # F54) : forme de chaque acte, journal figé, exclusion signature ↔
+      # constat, millésime vu vérifié, et aucune signature ni constat sans
+      # ligne de journal de la même transaction (triggers différés, jugés par
+      # `SET CONSTRAINTS … IMMEDIATE`). Transaction annulée.
+      - name: M-3c NABM journal and constats negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/nabm_journal_constats_v1_negatif.sql
+
       # Arbitrage biologique sans valeurs (LOT-06, D-059 §4) : les trois CHECK
       # de `arbitrages_biologiques` doivent MORDRE (verdict borné, note
       # obligatoire non vide sur « infirme », note ≤ 2000), et la table ne doit
@@ -1325,6 +1335,18 @@ jobs:
         env:
           WN_BIO_ANNULATION_BANC_BASE: wellneuro_ci
         run: node scripts/banc-annulations-resultats-deux-sessions.test.mjs
+
+      # Exclusion signature ↔ constat « aucun acte » NABM (M-3c, F54) : un
+      # constat et une signature concurrents sur le même analyte se
+      # sérialisent par le verrou consultatif de l'analyte, et le second est
+      # refusé. Commet ses fixtures (base nommée) ; ses analytes de banc et
+      # leur journal restent, rendus inactifs. `node` et non `node --test`.
+      - name: NABM exclusion two-session bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_NABM_EXCLUSION_BANC_BASE: wellneuro_ci
+        run: node scripts/banc-nabm-exclusion-deux-sessions.test.mjs
 
       # Le VRAI client Prisma contre la garde anti-doublon (D-294, BP-09) :
       # le 23505 du trigger doit arriver en P2002 (le 409 `doublon_mesure` des
