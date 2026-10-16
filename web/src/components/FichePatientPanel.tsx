@@ -80,6 +80,7 @@ import type {
 import { ObjectifNegociePanel } from '@/components/patient-cockpit/ObjectifNegociePanel';
 import { ComprehensionPanel } from '@/components/patient-cockpit/ComprehensionPanel';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
+import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePanel';
 import { CeQuiComptePanel } from '@/components/patient-cockpit/CeQuiComptePanel';
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
 import { AgendaAlimentairePraticienPanel } from '@/components/agenda-alimentaire/AgendaAlimentairePraticienPanel';
@@ -186,6 +187,7 @@ const ONGLETS: { id: OngletFiche; libelle: string }[] = [
   { id: 'besoins', libelle: 'Les 12 besoins' },
   { id: 'alimentation', libelle: 'Alimentation' },
   { id: 'trajectoire', libelle: 'Trajectoire' },
+  { id: 'biologie', libelle: 'Biologie' },
   { id: 'correspondance', libelle: 'Correspondance' },
 ];
 
@@ -2721,9 +2723,27 @@ export function FichePatientPanel({
               modeViePresent={modeViePresent}
               modeVieT0CycleCourant={modeVieT0CycleCourant}
               needIdsPriorite={etatRuntime?.needIdsPrioriteSelectionnee}
-              compteRenduDemande={compteRenduDemande}
             />
           ))}
+      </div>
+
+      {/* ONGLET « BIOLOGIE » ([[D-308]] §1, plan F57) : comptes rendus, état de
+          chaque import, série par valeur. L'encart des mesures y déménage
+          depuis « Trajectoire », sans doublon ; il ne dépend pas de la
+          trajectoire chargée. Monté à l'activation seulement, comme les autres
+          onglets : ses lectures journalisent l'accès (`G-TRUST-04`). Le
+          deep-link `?compteRendu=` (carte du Fil, [[D-268]]) l'ouvre ici. */}
+      <div
+        role="tabpanel"
+        id="panneau-biologie"
+        aria-labelledby="onglet-biologie"
+        hidden={ongletActif !== 'biologie'}
+        tabIndex={0}
+        className="lg:h-[calc(100dvh-11.75rem)] lg:min-h-[420px] lg:overflow-y-auto"
+      >
+        {ongletActif === 'biologie' && (
+          <EstimeMesurePanel idPatient={idPatient} compteRenduDemande={compteRenduDemande} />
+        )}
       </div>
     </div>
 

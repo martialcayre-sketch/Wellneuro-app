@@ -455,6 +455,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : lettre s, de la main du responsable, complétée par les arbitrages acquis (deux marques « validé »).
 - **Critère de fin** : onglet constaté par le responsable ; écrans de biologie regroupés ; aucun statut calculé en banc.
 - **Mise à jour (2026-10-15)** : s écrite par D-308 : onglet « Biologie », écrans déplacés depuis « Trajectoire » et le protocole, sans doublon ; statut posé pris dans une liste fermée écrite par le responsable (D-xxx propre, avant le code de F58 ; écart à la recommandation « texte libre ») ; deux marques datées ; commentaires du laboratoire déjà servis par la série (BP-03).
+- **Mise à jour (2026-10-17)** : PR 1 livrée sans migration : onglet « Biologie » (`?onglet=biologie`), encart « Estimé et mesuré » déménagé depuis « Trajectoire », sans doublon ; cartes du Fil (compte rendu à lire, transmis) redirigées vers l'onglet. Reste la PR 2 : proposition de bilan et arbitrage biologique, aujourd'hui sous la phase « Actions ». Statut posé et deux marques datées : F58.
 
 #### F55 · BF-7 et BF-8 : code d'acte et courrier de remboursement
 - **Identifiant, piste** : BF-7 (code d'acte ligne à ligne au courrier) et BF-8 (courrier de remboursement) ; panels.

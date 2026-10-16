@@ -828,12 +828,12 @@ export function cartesImportsALire(
         titre,
         pourquoi: `${pourquoi} ${MENTION_PAS_UN_FILET}`,
         date: date.toISOString(),
-        // Le cockpit biologie vit sous l'onglet Trajectoire : on y lit la
-        // restitution et on y pose l'acte — jamais depuis la carte. Le lien
+        // Le cockpit biologie vit sous l'onglet Biologie ([[D-308]] §1) : on y
+        // lit la restitution et on y pose l'acte — jamais depuis la carte. Le lien
         // ouvre le compte rendu désigné ; SANS marqueur `?fil=` : la carte ne
         // s'acquitte pas par lecture, seul l'acte la fait sortir.
         href:
-          `/dashboard/patients/${encodeURIComponent(ligne.idPatient)}?onglet=trajectoire`
+          `/dashboard/patients/${encodeURIComponent(ligne.idPatient)}?onglet=biologie`
           + `&compteRendu=${encodeURIComponent(ligne.idCompteRendu)}`,
         actionLabel: 'Ouvrir la biologie',
         cle: cleCarte('import_biologique_a_lire', ligne.idImport),
@@ -877,7 +877,7 @@ export function cartesComptesRendusTransmis(
       // Même destination que la carte « compte rendu à lire » : le cockpit
       // biologie, compte rendu désigné ouvert, SANS marqueur `?fil=`.
       href:
-        `/dashboard/patients/${encodeURIComponent(ligne.idPatient)}?onglet=trajectoire`
+        `/dashboard/patients/${encodeURIComponent(ligne.idPatient)}?onglet=biologie`
         + `&compteRendu=${encodeURIComponent(ligne.idCompteRendu)}`,
       actionLabel: 'Ouvrir le compte rendu',
       cle: cleCarte('compte_rendu_transmis', ligne.idCompteRendu),
