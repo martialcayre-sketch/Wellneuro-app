@@ -32,3 +32,7 @@ Bibliothèque disait déjà le vrai état.
   acte inactif, proposition non signée, sans nomenclature), limite, longueur
   recalibrée sur 35 analyses distinctes et son jumeau patient ; contre-épreuve,
   onze mutations rougissent.
+- **Cas écrit, règle inchangée** (D-316 §1) : une correspondance signée dont
+  l'acte a disparu du millésime courant reste « hors nomenclature » — à
+  revoir à l'import d'une V106. Marge de longueur et millésime absent de
+  l'ancre consignée : limites connues (D-316 §5).

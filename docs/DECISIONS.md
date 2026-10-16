@@ -26,7 +26,14 @@ l'état que `deriverRemboursement` rend, la même fonction que la fiche
 d'analyte de la Bibliothèque : correspondance signée vers un acte actif du
 millésime courant, sinon constat « aucun acte » du millésime courant, sinon
 « non évalué ». Une liaison signée sort de « non évalué » pour elle seule
-(critère de F54).
+(critère de F54). **Cas écrit sans changement** (arbitrage du 2026-10-17,
+sur la revue du lot) : une correspondance signée dont l'acte est absent ou
+inactif au millésime courant, ou signée sans nomenclature importée, reste
+« hors nomenclature », comme [[D-309]] §3 le retient pour le courrier ; le
+patient lit alors « Non remboursé par l'assurance maladie ». Inatteignable
+au 2026-10-17 (V105 en place, la base exige un acte actif à la signature) ;
+la question de l'aligner sur le constat périmé (« non évalué ») se pose à la
+relecture de la liste lors d'un import V106, qui seul l'atteint.
 
 **§2 — Document patient.** Trois états se disent, un seul se tait :
 « Remboursement par l'assurance maladie non vérifié à ce jour : … »,
@@ -56,7 +63,12 @@ au-delà de la borne de consignation (8 000 caractères) : 8 759 au banc du
 courrier. Mesure au catalogue réel (relu par conteneur le 2026-10-17 : 15
 panels actifs, 78 éléments, 35 analyses distinctes), les 13 panels
 proposables tous proposés et tout non évalué : 7 348 au courrier, 7 691 au
-document patient.
+document patient. **Limite connue** : environ 4 % de marge au document
+patient ; des analyses ajoutées à un panel proposable peuvent faire refuser
+la consignation (refus propre, « texte trop long »). Le banc de longueur ne
+protège que les dimensions du catalogue courant. Le texte consigné ne nomme
+pas le millésime NABM dont dépend son affirmation (l'ancre reste celle de la
+table d'indications) : question routée au rang 4, avec J3-base.
 
 **§6 — Exécution.** Lettre f, file A rang 2, une PR sans migration ; bancs
 sur les quatre états, contre-épreuve par mutations.

@@ -6,7 +6,9 @@
   avancée sans fusion sur 9377001f (#1506, avance rapide approuvée par le
   responsable, branche encore vide), dans le worktree
   `.claude/worktrees/file-d1-suite` (session concurrente, cycle en git/gh).
-- Un commit (code, bancs, docs), puis la PR de ce lot.
+- Commit 58ceab34 (code, bancs, docs), fusion de `origin/main` 38f53b62
+  (#1505, sans conflit, approuvée par le responsable), puis les suites de
+  revue ; PR de ce lot ouverte depuis cette branche.
 
 ## Objectif
 
@@ -49,11 +51,19 @@ migration.
   retirées ou « qui paie » remis au patient et au courrier, dédoublonnage,
   cockpit sans état, actes hors millésime) — toutes rougissent.
 - T1 `check:rapide` et `check` complets : verts.
-- T2 `test:worktree -- --fast` : [à compléter].
-- Revue `wn-reviewer` : [à compléter].
+- T2 `test:worktree -- --fast` (avant les suites de revue) : vert — Vitest
+  13 250 passés, 4 sautés ; E2E 271 passés, 3 sautés.
+- Revue `wn-reviewer` : GO avec réserves. P1 (signature orpheline → « Non
+  remboursé ») tranché par le responsable : écrit dans D-316 §1, règle
+  inchangée. P2 corrigés : fixture de la route à la nouvelle forme de
+  limite ; limite dédoublonnée par code (banc ajouté). Bancs ciblés verts
+  après correction ; T1 rapide rejoué après la fusion.
 
 ## Problèmes ouverts
 
+- À l'import d'une V106 : décider si une signature orpheline s'aligne sur le
+  constat périmé (« non évalué ») plutôt que « hors nomenclature » (D-316 §1).
+- Millésime NABM absent de l'ancre du texte consigné (D-316 §5) : rang 4.
 - Pire cas d'un document patient à 7 691 caractères pour une borne de 8 000 :
   marge mince si le catalogue s'allonge (refus propre, 409, au-delà).
 - `consommation_decisions.json` range encore la source `rayon:biologie`
