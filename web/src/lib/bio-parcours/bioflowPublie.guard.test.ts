@@ -23,6 +23,10 @@ import { RACINE, estUnTest, fichiersSource, lire, specificateursImportes } from 
 // reste au palier 2, porte 24.
 //
 // LIMITE, la même que BP-01 : le banc juge l'import DIRECT.
+// LIMITE des drapeaux : seule la forme `process.env.WN_…` est lue dans
+// `featureFlag.ts` ; une lecture par crochets ou par déstructuration
+// échapperait au banc, qui ne rougit alors que si un drapeau déclaré n'est
+// plus lu. La forme du fichier aujourd'hui est la seule qu'il emploie.
 
 /** Le domaine de la biologie, par chemin : ce qui est dedans n'a pas de frontière à passer. */
 const DOMAINE_BIOLOGIE = [
