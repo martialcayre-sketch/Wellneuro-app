@@ -11,7 +11,9 @@ import {
   INDICATIONS_BIOLOGIE_V1,
   GRILLES_INDICATIONS,
 } from './indicationsBiologieV1';
-import { deriverStatutsBiologie } from './statuts';
+import { SOURCE_NABM } from './catalogue';
+import { deriverRemboursement, type CorrespondanceNabm, type Remboursement } from './remboursable';
+import { deriverStatutsBiologie, STATUTS_PROPOSES } from './statuts';
 import type { PanelCatalogue, PanelDocumente, PropositionBilan } from './statuts';
 
 // Premier appelant de production de `deriverStatutsBiologie` ([[D-071]] §4).
@@ -36,7 +38,12 @@ import type { PanelCatalogue, PanelDocumente, PropositionBilan } from './statuts
  * présenter comme entière.
  */
 export type LimiteProposition =
-  | { type: 'remboursement_non_evalue' }
+  /**
+   * Analyses des lignes proposées dont personne n'a encore tranché le
+   * remboursement ([[D-316]] §4) : ni correspondance signée, ni constat
+   * valable au millésime courant. Absente quand il n'en reste aucune.
+   */
+  | { type: 'remboursement_non_evalue'; analytes: string[] }
   /**
    * Déclarations écartées par le moteur qu'AUCUNE ligne ne porte — panel
    * inactif, ou visé par aucune règle exploitable. Le moteur les remonte ;
@@ -157,6 +164,74 @@ async function chargerReponses(idPatient: string): Promise<ReponseOrientation[]>
 }
 
 /**
+ * Analytes du catalogue : validation médicale ET remboursement, en une lecture.
+ *
+ * Le remboursement n'est PAS calculé ici : `deriverRemboursement`
+ * (`remboursable.ts`) l'est une seule fois, et la fiche d'analyte de la
+ * Bibliothèque (`catalogue.ts`) le lit déjà de la même façon — correspondances
+ * signées vers un acte actif du millésime courant, sinon constat « aucun
+ * acte » du millésime courant ([[D-316]] §1, lettre f). Les actes ne sont
+ * chargés que pour les codes signés : sans pointeur ni signature, la requête
+ * ne part pas.
+ */
+async function chargerAnalytes(): Promise<{
+  validationMedicale: Set<string>;
+  remboursements: Map<string, Remboursement>;
+}> {
+  const [analytes, pointeurNabm] = await Promise.all([
+    prisma.biologyAnalyte.findMany({
+      select: {
+        code: true,
+        validationMedicaleRequise: true,
+        correspondancesNabm: { select: { codeActe: true, nature: true, verifiePar: true } },
+        constatNabm: { select: { millesime: true } },
+      },
+    }),
+    prisma.biologyCatalogVersionCourante.findUnique({
+      where: { sourceProvenance: SOURCE_NABM },
+      select: { versionSource: true },
+    }),
+  ]);
+
+  const codesActes = [
+    ...new Set(
+      analytes.flatMap(a =>
+        a.correspondancesNabm.filter(c => c.verifiePar !== null).map(c => c.codeActe),
+      ),
+    ),
+  ];
+  const actesCourants =
+    pointeurNabm && codesActes.length > 0
+      ? await prisma.biologyNabmActe.findMany({
+          where: { versionSource: pointeurNabm.versionSource, codeActe: { in: codesActes } },
+          select: {
+            codeActe: true,
+            inactif: true,
+            ententePrealable: true,
+            acteReserve: true,
+            remboursementTotal: true,
+          },
+        })
+      : [];
+
+  const millesimeCourant = pointeurNabm?.versionSource ?? null;
+  return {
+    validationMedicale: new Set(
+      analytes.filter(a => a.validationMedicaleRequise).map(a => a.code),
+    ),
+    remboursements: new Map(
+      analytes.map(a => [
+        a.code,
+        deriverRemboursement(a.correspondancesNabm as CorrespondanceNabm[], actesCourants, {
+          constat: a.constatNabm,
+          millesimeCourant,
+        }),
+      ]),
+    ),
+  };
+}
+
+/**
  * Dérive la proposition de bilan du dossier déjà stocké.
  *
  * Ne propose que des EXPLORATIONS : aucune assignation, aucune prescription,
@@ -183,7 +258,7 @@ export async function deriverPropositionPourPatient(
     };
   }
 
-  const [catalogue, documentes, reponses, consultation, analytesValidation] = await Promise.all([
+  const [catalogue, documentes, reponses, consultation, analytes] = await Promise.all([
     chargerPanels(),
     chargerDocumentes(idPatient),
     chargerReponses(idPatient),
@@ -195,10 +270,7 @@ export async function deriverPropositionPourPatient(
       select: { anamnese: true },
       orderBy: ORDRE_CONSULTATION_PORTEUSE,
     }),
-    prisma.biologyAnalyte.findMany({
-      where: { validationMedicaleRequise: true },
-      select: { code: true },
-    }),
+    chargerAnalytes(),
   ]);
 
   const proposition = deriverStatutsBiologie({
@@ -218,22 +290,35 @@ export async function deriverPropositionPourPatient(
       ? undefined
       : extraireDrapeauxAnamnese(consultation.anamnese),
     documentes,
-    validationMedicale: new Set(analytesValidation.map(analyte => analyte.code)),
-    // `remboursements` N'EST PAS PASSÉ, et la raison est plus précise que
-    // « les tables NABM sont vides » — elles ne le sont pas : la nomenclature
-    // porte 987 actes (lecture MCP du 2026-08-18). Ce qui est VIDE, c'est
-    // `biology_analyte_nabm`, l'appariement analyte ↔ acte, que le schéma
-    // exige MANUEL et SIGNÉ (jamais par rapprochement de libellés : le filtre
-    // de la source rend des faux négatifs silencieux). Sans lui, rien ne
-    // résout un analyte vers un acte. Le moteur pose déjà `non_evalue` par
-    // défaut ; construire une carte de `non_evalue` reviendrait à affirmer
-    // qu'on a évalué et conclu à rien.
+    validationMedicale: analytes.validationMedicale,
+    // Passé depuis la lettre f ([[D-316]] §1) : les correspondances sont
+    // signées une à une par le responsable (M-3, G-3) et les constats « aucun
+    // acte » journalisés (M-3c). Une analyse que personne n'a tranchée reste
+    // `non_evalue` — la dérivation le rend elle-même, la carte n'invente rien.
+    remboursements: analytes.remboursements,
     dateReference,
   });
 
   if (!proposition.ok) return { ok: false, motif: proposition.motif };
 
-  const limites: LimiteProposition[] = [{ type: 'remboursement_non_evalue' }];
+  const limites: LimiteProposition[] = [];
+  // Les analyses des lignes PROPOSÉES seulement — celles qui partent au
+  // courrier et au document patient. Dédupliquées PAR CODE, comme les mentions
+  // des documents (`mentionsRemboursement`) : une analyse présente dans deux
+  // bilans proposés ne se dit qu'une fois, et deux analyses de même libellé
+  // restent deux.
+  const nonEvaluees = [
+    ...new Map(
+      proposition.lignes
+        .filter(ligne => STATUTS_PROPOSES.has(ligne.statut))
+        .flatMap(ligne => ligne.analytes)
+        .filter(analyte => analyte.remboursement.statut === 'non_evalue')
+        .map(analyte => [analyte.code, analyte.libelle] as const),
+    ).values(),
+  ];
+  if (nonEvaluees.length > 0) {
+    limites.push({ type: 'remboursement_non_evalue', analytes: nonEvaluees });
+  }
   if (proposition.declarationsIgnoreesHorsProposition.length > 0) {
     limites.push({
       type: 'declaration_ecartee_hors_proposition',

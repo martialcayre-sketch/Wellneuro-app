@@ -6,6 +6,7 @@ import type { Bloc, DocumentComposite } from '@/lib/documents/types';
 import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 import { STATUTS_PROPOSES } from './statuts';
 import type { LignePanelProposition } from './statuts';
+import { mentionsRemboursement, type StatutRemboursement } from './remboursable';
 
 // Courrier médecin — proposition d'explorations biologiques (LOT-06, D-059 §6).
 // UN SEUL chemin de rendu : `renderDocumentHtml(document, 'medecin')`, donc
@@ -84,6 +85,22 @@ function libelleStatut(ligne: LignePanelProposition): string {
   }
 }
 
+// [[D-309]] §2 et §3, avancés par la lettre f ([[D-316]] §3) : « non évalué »
+// s'écrit (ce n'est pas « non remboursé ») ; « Hors nomenclature » seul —
+// l'application n'affirme pas qui paie. Le code d'acte par ligne et le groupe
+// dit en mots (§1) restent au rang 4. Une fois pour le courrier, pas par
+// ligne : voir `mentionsRemboursement`.
+const PHRASES_REMBOURSEMENT: ReadonlyArray<readonly [StatutRemboursement, string]> = [
+  ['non_evalue', 'Remboursement non évalué'],
+  ['hors_nomenclature', 'Hors nomenclature'],
+];
+
+/** Les mentions de remboursement, en un paragraphe — ou aucun. */
+function paragrapheRemboursement(proposees: LignePanelProposition[]): string[] {
+  const mentions = mentionsRemboursement(proposees.flatMap(ligne => ligne.analytes), PHRASES_REMBOURSEMENT);
+  return mentions.length > 0 ? [mentions.join(' ')] : [];
+}
+
 function paragrapheLigne(ligne: LignePanelProposition): string {
   const morceaux: string[] = [];
   morceaux.push(`${ligne.libelle} — ${libelleStatut(ligne)}.`);
@@ -103,14 +120,6 @@ function paragrapheLigne(ligne: LignePanelProposition): string {
     if (validation.length > 0) {
       morceaux.push(
         `Interprétation médicale requise pour : ${validation.map(a => a.libelle).join(', ')}.`,
-      );
-    }
-    const horsNomenclature = ligne.analytes.filter(
-      a => a.remboursement.statut === 'hors_nomenclature',
-    );
-    if (horsNomenclature.length > 0) {
-      morceaux.push(
-        `Hors nomenclature (à la charge du patient) : ${horsNomenclature.map(a => a.libelle).join(', ')}.`,
       );
     }
   }
@@ -138,6 +147,7 @@ export function genererCourrierBiologie(
     + 'utiles au vu du tableau clinique recueilli. La décision de les demander, '
     + 'comme leur interprétation, vous appartient pleinement.',
     ...proposees.map(paragrapheLigne),
+    ...paragrapheRemboursement(proposees),
     // La phrase suit l'ÉTAT RÉEL de l'outil (étage 2, D-122 §2) : promettre
     // au médecin qu'aucun résultat n'est conservé alors que la saisie existe
     // serait une fausse assurance sur le seul artefact qui quitte le cabinet.

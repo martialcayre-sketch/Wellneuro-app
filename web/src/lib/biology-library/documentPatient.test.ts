@@ -106,23 +106,51 @@ describe('genererDocumentPatientBiologie', () => {
     );
   });
 
-  it('dit au patient ce qui resterait à sa charge', () => {
+  // D-316 §1-§2 : trois états dits, la remboursable tue ; jamais qui paie.
+  function etat(statut: 'remboursable' | 'remboursable_si_groupe' | 'hors_nomenclature' | 'non_evalue') {
+    return { statut, conditions: [], codesActesRetenus: [] };
+  }
+
+  it('dit chaque état de remboursement au patient, sans dire qui paie (D-316)', () => {
     const resultat = genererDocumentPatientBiologie(entree([
       ligne({
         panelCode: 'PANEL_MICRO',
         libelle: 'Micronutrition',
-        analytes: [{
-          code: 'BIO_ZNC',
-          libelle: 'Zinc érythrocytaire',
-          validationMedicaleRequise: false,
-          remboursement: { statut: 'hors_nomenclature', conditions: [], codesActesRetenus: [] },
-        }],
+        analytes: [
+          { code: 'BIO_FER', libelle: 'Ferritine', validationMedicaleRequise: false, remboursement: etat('remboursable') },
+          { code: 'BIO_TSH', libelle: 'TSH', validationMedicaleRequise: false, remboursement: etat('remboursable_si_groupe') },
+          { code: 'BIO_HCY', libelle: 'Homocystéine', validationMedicaleRequise: false, remboursement: etat('hors_nomenclature') },
+          { code: 'BIO_FOL', libelle: 'Folates', validationMedicaleRequise: false, remboursement: etat('non_evalue') },
+        ],
       }),
     ]));
     expect(resultat.ok).toBe(true);
     if (!resultat.ok) return;
-    expect(resultat.documentPatient.texte).toContain('resterait à votre charge');
-    expect(resultat.documentPatient.texte).toContain('Zinc érythrocytaire');
+    const texte = resultat.documentPatient.texte;
+    expect(texte).toContain(
+      'Remboursement par l’assurance maladie non vérifié à ce jour : Folates. '
+      + 'Remboursé seulement s’il est demandé avec d’autres examens : TSH. '
+      + 'Non remboursé par l’assurance maladie : Homocystéine.',
+    );
+    // La remboursable n'a pas de mention : elle n'est nommée qu'à « ce qui serait analysé ».
+    expect(texte.match(/Ferritine/g)).toHaveLength(1);
+    expect(texte).not.toMatch(/à votre charge|pris en charge/);
+    expect(termeAnxiogene(texte)).toBeNull();
+  });
+
+  it('une ligne entièrement remboursable ne porte aucune mention de remboursement', () => {
+    const resultat = genererDocumentPatientBiologie(entree([
+      ligne({
+        panelCode: 'PANEL_FER',
+        libelle: 'Fer',
+        analytes: [
+          { code: 'BIO_FER', libelle: 'Ferritine', validationMedicaleRequise: false, remboursement: etat('remboursable') },
+        ],
+      }),
+    ]));
+    expect(resultat.ok).toBe(true);
+    if (!resultat.ok) return;
+    expect(resultat.documentPatient.texte).not.toMatch(/rembours/i);
   });
 
   it('nomme les rapports calculés, et comme des calculs (D-072)', () => {
@@ -170,5 +198,33 @@ describe('couplage rendu ↔ consigné (patron M1, D-073)', () => {
       ancrageHash: 'sha-fixture',
       version: 'indications-biologie-v1',
     });
+  });
+});
+
+describe('longueur au catalogue complet (D-316)', () => {
+  // Jumeau du banc du courrier (`courrier.test.ts`, revue B1), même borne de
+  // consignation (8 000, route du document patient) et mêmes dimensions : les
+  // mentions de remboursement se disent une fois, des analyses distinctes.
+  it('quinze panels proposés, tout non évalué, tiennent sous la borne', () => {
+    const lignes = Array.from({ length: 15 }, (_, i) =>
+      ligne({
+        panelCode: `PANEL_${i}`,
+        libelle: `Panel tableau clinique ${i}`.padEnd(30, 'x'),
+        statut: 'conditionnel',
+        declencheurRempli: false,
+        condition: 'Signes cliniques d’appel persistants au questionnaire dédié.',
+        analytes: Array.from({ length: 4 }, (_, j) => ({
+          code: `BIO_${(i * 4 + j) % 35}`,
+          libelle: `Analyte ${(i * 4 + j) % 35}`.padEnd(35, 'x'),
+          validationMedicaleRequise: j === 0,
+          remboursement: REMBOURSEMENT_NON_EVALUE,
+        })),
+        ratios: i < 2 ? [{ code: `RATIO_${i}`, libelle: `Rapport calculé ${i}` }] : [],
+      }));
+    const resultat = genererDocumentPatientBiologie(entree(lignes));
+    if (!resultat.ok) throw new Error('refus inattendu');
+    expect(resultat.documentPatient.texte.length).toBeLessThan(8000);
+    // Une seule mention, quelle que soit la répétition des analyses.
+    expect(resultat.documentPatient.texte.match(/non vérifié à ce jour/g)).toHaveLength(1);
   });
 });

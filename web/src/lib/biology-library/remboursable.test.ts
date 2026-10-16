@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   deriverRemboursement,
+  mentionsRemboursement,
   regimeDocumentaire,
   type ActeCourant,
   type CorrespondanceNabm,
@@ -165,5 +166,35 @@ describe('regimeDocumentaire', () => {
       expect(regimeDocumentaire({ statut, conditions: [], codesActesRetenus: [] }))
         .toBe('document_patient');
     }
+  });
+});
+
+describe('mentionsRemboursement — une fois par document (D-316)', () => {
+  const a = (code: string, libelle: string, statut: 'non_evalue' | 'hors_nomenclature' | 'remboursable') => ({
+    code,
+    libelle,
+    remboursement: { statut },
+  });
+  const phrases = [
+    ['non_evalue', 'Non évalué'],
+    ['hors_nomenclature', 'Hors nomenclature'],
+  ] as const;
+
+  it('une phrase par état, dans l’ordre des phrases ; analyses distinctes par code, ordre de première apparition', () => {
+    expect(
+      mentionsRemboursement(
+        [
+          a('B', 'Folates', 'non_evalue'),
+          a('H', 'Homocystéine', 'hors_nomenclature'),
+          a('C', 'Iode', 'non_evalue'),
+          a('B', 'Folates', 'non_evalue'),
+        ],
+        phrases,
+      ),
+    ).toEqual(['Non évalué : Folates, Iode.', 'Hors nomenclature : Homocystéine.']);
+  });
+
+  it('un état sans analyse ne dit rien, et un état sans phrase non plus', () => {
+    expect(mentionsRemboursement([a('F', 'Ferritine', 'remboursable')], phrases)).toEqual([]);
   });
 });

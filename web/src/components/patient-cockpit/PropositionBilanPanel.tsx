@@ -9,6 +9,7 @@ import type { LignePanelProposition, StatutPanel } from '@/lib/biology-library/s
 // navigateur portait donc la table d'orientation entière, ses seuils et
 // crypto-browserify. `vocabulaireStatuts` n'importe rien.
 import { STATUTS_PROPOSES } from '@/lib/biology-library/vocabulaireStatuts';
+import { LABEL_REMBOURSEMENT } from '@/lib/biology-library/libellesRemboursement';
 import type { StatutChoix } from '@/lib/trust/types';
 
 // Proposition de bilan biologique ([[D-071]]) — panneau présentationnel.
@@ -118,9 +119,9 @@ function Limite({ limite }: { limite: LimiteProposition }) {
   if (limite.type === 'remboursement_non_evalue') {
     return (
       <li>
-        Le remboursement est <strong>non évalué</strong> pour tous les analytes : la
-        correspondance à la nomenclature n’est pas encore renseignée. Cela ne veut pas
-        dire « non remboursé » — personne n’a tranché.
+        Le remboursement est <strong>non évalué</strong> pour : {limite.analytes.join(', ')}.
+        Ni correspondance à la nomenclature signée, ni constat « aucun acte » au
+        millésime courant. Cela ne veut pas dire « non remboursé » — personne n’a tranché.
       </li>
     );
   }
@@ -763,7 +764,11 @@ export function PropositionBilanPanel({
                 )}
                 {ligne.analytes.length > 0 && (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {ligne.analytes.map(analyte => analyte.libelle).join(' · ')}
+                    {/* État de remboursement par analyse ([[D-316]] §4), tel que
+                        la dérivation le rend — jamais recalculé ici. */}
+                    {ligne.analytes
+                      .map(analyte => `${analyte.libelle} (${LABEL_REMBOURSEMENT[analyte.remboursement.statut]})`)
+                      .join(' · ')}
                   </p>
                 )}
                 {ligne.ratios.length > 0 && (

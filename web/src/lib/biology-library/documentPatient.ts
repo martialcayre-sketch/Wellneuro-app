@@ -5,6 +5,7 @@ import { renderDocumentHtml } from '@/lib/documents/rendu';
 import type { Bloc, DocumentComposite } from '@/lib/documents/types';
 import { STATUTS_PROPOSES } from './statuts';
 import type { LignePanelProposition } from './statuts';
+import { mentionsRemboursement, type StatutRemboursement } from './remboursable';
 
 // Document patient — proposition d'explorations biologiques (décision F du
 // cadrage CB, [[D-122]] §1). Miroir de `courrier.ts` SANS le médecin : même
@@ -57,6 +58,16 @@ export type PreparationDocumentPatientBiologie =
   | { ok: true; documentPatient: DocumentPatientBiologieGenere }
   | { ok: false; raison: RefusDocumentPatientBiologie };
 
+// Trois états dits, un seul tu ([[D-316]] §2) : dès qu'une analyse est dite non
+// remboursée, le silence sur les autres se lirait « remboursé ». Il ne le dit
+// donc que de l'analyse remboursable. Jamais qui paie : le texte ne connaît ni
+// la mutuelle ni le laboratoire (même raison que [[D-309]] §3).
+const PHRASES_REMBOURSEMENT: ReadonlyArray<readonly [StatutRemboursement, string]> = [
+  ['non_evalue', 'Remboursement par l’assurance maladie non vérifié à ce jour'],
+  ['remboursable_si_groupe', 'Remboursé seulement s’il est demandé avec d’autres examens'],
+  ['hors_nomenclature', 'Non remboursé par l’assurance maladie'],
+];
+
 function phraseStatut(ligne: LignePanelProposition): string {
   switch (ligne.statut) {
     case 'recommande':
@@ -93,16 +104,14 @@ function paragrapheLigne(ligne: LignePanelProposition): string {
         `À interpréter avec un médecin : ${validation.map(a => a.libelle).join(', ')}.`,
       );
     }
-    const horsNomenclature = ligne.analytes.filter(
-      a => a.remboursement.statut === 'hors_nomenclature',
-    );
-    if (horsNomenclature.length > 0) {
-      morceaux.push(
-        `Non pris en charge par l’assurance maladie (resterait à votre charge) : ${horsNomenclature.map(a => a.libelle).join(', ')}.`,
-      );
-    }
   }
   return morceaux.join(' ');
+}
+
+/** Les mentions de remboursement, en un paragraphe — ou aucun. */
+function paragrapheRemboursement(proposees: LignePanelProposition[]): string[] {
+  const mentions = mentionsRemboursement(proposees.flatMap(ligne => ligne.analytes), PHRASES_REMBOURSEMENT);
+  return mentions.length > 0 ? [mentions.join(' ')] : [];
 }
 
 /**
@@ -126,6 +135,7 @@ export function genererDocumentPatientBiologie(
     + 'propose d’envisager, et pourquoi. Il a été préparé à partir des éléments '
     + 'recueillis lors de votre accompagnement.',
     ...proposees.map(paragrapheLigne),
+    ...paragrapheRemboursement(proposees),
     'Ce document n’est ni une ordonnance ni un diagnostic : la décision de '
     + 'réaliser ces explorations se prend avec votre praticien et, le cas échéant, '
     + 'avec votre médecin traitant, à qui leur interprétation revient.',
