@@ -85,6 +85,25 @@ describe('GET /api/praticien/trust — validation', () => {
     expect(parId.s2.validation.elements).toBeNull();
   });
 
+  // D-281 §5, arbitrage du 2026-10-16 : « impliqué, élément non identifiable »
+  // ouvert sur le seul programme visé illisible.
+  it('avisSansElement : vrai sur programme illisible, faux sur liste lisible vide et sur élément désigné', async () => {
+    prisma.trustAdverseEffectReport.findMany.mockResolvedValue([
+      effet({ id: 's1', protocolDraftId: 'draft-9', rattachement: 'ne_sait_pas' }),
+      effet({ id: 's2', protocolDraftId: 'draft-9' }),
+      effet({ id: 's3', protocolDraftId: 'draft-vide', rattachement: 'ne_sait_pas' }),
+      effet({ id: 's4', protocolDraftId: 'draft-9', rattachement: 'element', elementActionId: 'a-magnesium' }),
+    ]);
+    elementsDesProgrammesVises.mockResolvedValue(new Map([['draft-9', null], ['draft-vide', []]]));
+    prisma.trustAdverseEffectVerdict.findMany.mockResolvedValue([]);
+    const corps = await (await GET()).json();
+    const parId = Object.fromEntries(corps.signalements.map((s: { id: string }) => [s.id, s]));
+    expect(parId.s1.validation.avisSansElement).toBe(true);
+    expect(parId.s2.validation.avisSansElement).toBe(true);
+    expect(parId.s3.validation.avisSansElement).toBe(false);
+    expect(parId.s4.validation.avisSansElement).toBe(false);
+  });
+
   // D-281 §5 : « oui » au programme sans élément. Il reçoit l'avis comme
   // « Je ne sais pas » : la liste du programme visé, sans élément désigné.
   it('formulaire d’avant : validation servie, rattachement nul, liste du programme visé', async () => {

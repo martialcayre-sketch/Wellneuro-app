@@ -216,6 +216,21 @@ const CAS: Cas[] = [
     pauses: {},
     diffusionRefusee: true,
   },
+  // Arbitrage du 2026-10-16 : « impliqué, élément non identifiable ».
+  {
+    nom: '30 — « Je ne sais pas », impliqué sans élément : compléments en pause (avis rendu), diffusion rouverte',
+    signalements: [sig('s1', { rattachement: 'ne_sait_pas', elementActionId: null })],
+    verdicts: [avis('v1', 's1', { verdict: 'implique', elementActionId: null, amenagement: 'retirer' })],
+    pauses: { [MAGNESIUM.actionId]: 'avis_rendu', [OMEGA.actionId]: 'avis_rendu' },
+    diffusionRefusee: false,
+  },
+  {
+    nom: '31 — formulaire d’avant, impliqué sans élément : rien en pause, diffusion rouverte',
+    signalements: [avant('s1')],
+    verdicts: [avis('v1', 's1', { verdict: 'implique', elementActionId: null, amenagement: 'reduire' })],
+    pauses: {},
+    diffusionRefusee: false,
+  },
 ];
 
 describe('banc de cas fictifs — D-281, règle amendée', () => {

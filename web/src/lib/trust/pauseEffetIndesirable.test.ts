@@ -96,6 +96,17 @@ describe('elementsEnPause', () => {
     )).toEqual([{ actionId: OMEGA.actionId, texte: 'avis_rendu' }]);
   });
 
+  // D-281 §5, arbitrage du 2026-10-16 : « impliqué, élément non identifiable ».
+  it.each(['ne_sait_pas', 'autre_produit'] as const)('« %s », avis « impliqué » sans élément : tous les compléments restent en pause, texte de l’avis rendu', (rattachement) => {
+    expect(enPause(
+      [signalement({ rattachement, elementActionId: null })],
+      [verdict({ verdict: 'implique', elementActionId: null })],
+    )).toEqual([
+      { actionId: MAGNESIUM.actionId, texte: 'avis_rendu' },
+      { actionId: OMEGA.actionId, texte: 'avis_rendu' },
+    ]);
+  });
+
   it('un verdict corrigé : la tête de la chaîne fait foi', () => {
     const verdicts = [
       verdict({ id: 'v1', verdict: 'non_implique' }),

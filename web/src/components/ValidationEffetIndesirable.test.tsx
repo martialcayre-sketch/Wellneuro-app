@@ -15,6 +15,7 @@ const PAR_ELEMENT: Validation = {
   rattachement: 'element',
   elementDesigne: { actionId: 'a-magnesium', title: 'Magnésium le soir' },
   elements: ELEMENTS,
+  avisSansElement: false,
   verdicts: [],
   verdictCourantId: null,
 };
@@ -139,9 +140,36 @@ describe('ValidationEffetIndesirable', () => {
     expect(screen.getByText('Le programme visé ne contient aucun élément désignable.')).toBeTruthy();
   });
 
-  it('programme visé illisible et « Je ne sais pas » : seul « aucun élément » reste possible', () => {
+  it('signalement délié de son programme : seul « aucun élément » reste possible', () => {
     afficher({ ...PAR_ELEMENT, rattachement: 'autre_produit', elementDesigne: null, elements: null });
     expect((screen.getByLabelText('Un élément du programme est en cause') as HTMLInputElement).disabled).toBe(true);
     expect(screen.getByText(/aucun élément ne peut être désigné/)).toBeTruthy();
+  });
+
+  // D-281 §5, arbitrage du 2026-10-16 : « impliqué, élément non identifiable ».
+  it('programme visé illisible : « impliqué, élément non identifiable » + aménagement, sans élément envoyé', async () => {
+    afficher({ ...PAR_ELEMENT, rattachement: 'ne_sait_pas', elementDesigne: null, elements: null, avisSansElement: true });
+    expect(screen.getByText(/Vous pouvez rendre « impliqué » sans élément, avec un aménagement/)).toBeTruthy();
+    const bouton = screen.getByText('Enregistrer l’avis') as HTMLButtonElement;
+    fireEvent.click(screen.getByLabelText('Impliqué, élément non identifiable'));
+    expect(screen.queryByRole('combobox')).toBeNull();
+    expect(bouton.disabled).toBe(true);
+    fireEvent.click(screen.getByLabelText('Différer'));
+    expect(bouton.disabled).toBe(false);
+    fireEvent.submit(bouton.closest('form')!);
+    await waitFor(() => expect(corps).not.toBeNull());
+    expect(corps).toEqual({ reportId: 's1', verdict: 'implique', amenagement: 'differer', supersedesVerdictId: null });
+  });
+
+  it('avis « impliqué » sans élément en vigueur : dit « élément non identifiable »', () => {
+    afficher({
+      ...PAR_ELEMENT, rattachement: null, elementDesigne: null, elements: null, avisSansElement: true,
+      verdicts: [
+        { id: 'v1', verdict: 'implique', elementActionId: null, amenagement: 'retirer', renduPar: 'a@wellneuro.fr', renduLe: '2026-10-16T10:00:00.000Z', supersedesVerdictId: null },
+      ],
+      verdictCourantId: 'v1',
+    });
+    expect(screen.getByText(/élément non identifiable, aménagement : Retirer/)).toBeTruthy();
+    expect(screen.queryByText(/sans intitulé lisible/)).toBeNull();
   });
 });

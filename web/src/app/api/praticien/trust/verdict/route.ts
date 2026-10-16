@@ -66,6 +66,7 @@ export async function POST(req: Request): Promise<NextResponse<VerdictResponse>>
         id: signalement.id,
         rattachement: signalement.rattachement as Rattachement | null,
         elementActionId: signalement.elementActionId,
+        protocolDraftId: signalement.protocolDraftId,
       },
       verdicts: verdicts.map(v => ({ ...v, verdict: v.verdict as VerdictEffetIndesirable['verdict'] })),
       elements: signalement.protocolDraftId ? programmes.get(signalement.protocolDraftId) ?? null : null,

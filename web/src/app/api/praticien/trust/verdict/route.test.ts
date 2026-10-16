@@ -62,6 +62,41 @@ describe('/api/praticien/trust/verdict', () => {
     expect(prisma.trustAdverseEffectVerdict.create).not.toHaveBeenCalled();
   });
 
+  // D-281 §5, arbitrage du 2026-10-16 : « impliqué, élément non identifiable ».
+  describe('programme visé illisible', () => {
+    beforeEach(() => {
+      elementsDesProgrammesVises.mockResolvedValue(new Map([['draft-1', null]]));
+    });
+
+    it('« impliqué » sans élément, avec aménagement : écrit sans élément', async () => {
+      const res = await post({ reportId: 's1', verdict: 'implique', amenagement: 'differer', supersedesVerdictId: null });
+      expect(res.status).toBe(200);
+      expect(prisma.trustAdverseEffectVerdict.create.mock.calls[0][0].data).toMatchObject({
+        verdict: 'implique', elementActionId: null, amenagement: 'differer',
+      });
+    });
+
+    it('formulaire d’avant sur programme illisible : « impliqué » sans élément écrit', async () => {
+      prisma.trustAdverseEffectReport.findFirst.mockResolvedValue({
+        id: 's1', idPatient: 'PAT_TEST', rattachement: null, elementActionId: null, protocolDraftId: 'draft-1',
+      });
+      const res = await post({ reportId: 's1', verdict: 'implique', amenagement: 'retirer', supersedesVerdictId: null });
+      expect(res.status).toBe(200);
+      expect(prisma.trustAdverseEffectVerdict.create.mock.calls[0][0].data).toMatchObject({
+        verdict: 'implique', elementActionId: null, amenagement: 'retirer',
+      });
+    });
+
+    it('signalement délié de son programme : refusé avant la base, 409', async () => {
+      prisma.trustAdverseEffectReport.findFirst.mockResolvedValue({
+        id: 's1', idPatient: 'PAT_TEST', rattachement: 'ne_sait_pas', elementActionId: null, protocolDraftId: null,
+      });
+      const res = await post({ reportId: 's1', verdict: 'implique', amenagement: 'differer', supersedesVerdictId: null });
+      expect(res.status).toBe(409);
+      expect(prisma.trustAdverseEffectVerdict.create).not.toHaveBeenCalled();
+    });
+  });
+
   // D-281 §5, arbitrage du 2026-10-14 : « oui » au programme sans élément. Le
   // praticien désigne l'élément en cause dans le programme visé, ou aucun.
   describe('formulaire d’avant (programme sans rattachement)', () => {

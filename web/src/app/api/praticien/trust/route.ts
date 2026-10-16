@@ -14,6 +14,7 @@ import {
   type VerdictEffetIndesirable,
 } from '@/lib/trust/pauseEffetIndesirable';
 import { elementsDesProgrammesVises } from '@/lib/trust/pauseEffetIndesirableServeur';
+import { avisSansElementOuvert } from '@/lib/trust/verdictEffetIndesirable';
 
 /**
  * Ce que le praticien lit pour rendre son avis sur un signalement RATTACHÉ, ou
@@ -27,6 +28,8 @@ export type ValidationEffetIndesirable = {
   elementDesigne: { actionId: string; title: string | null } | null;
   /** Les éléments que le praticien peut désigner pour « Je ne sais pas » ; `null` si le programme ne se lit pas. */
   elements: { actionId: string; title: string }[] | null;
+  /** L'avis « impliqué, élément non identifiable » est ouvert (`avisSansElementOuvert`) : programme visé illisible. */
+  avisSansElement: boolean;
   /** La chaîne entière, dans l'ordre où elle a été rendue — l'avis corrigé reste lisible. */
   verdicts: {
     id: string;
@@ -129,6 +132,10 @@ export async function GET(): Promise<NextResponse<TrustPraticienResponse>> {
           ? { actionId: e.elementActionId, title: elements?.find(x => x.actionId === e.elementActionId)?.title ?? null }
           : null,
         elements,
+        avisSansElement: avisSansElementOuvert(
+          { rattachement: e.rattachement as Rattachement | null, protocolDraftId: e.protocolDraftId },
+          elements,
+        ),
         verdicts: chaine.map(v => ({
           id: v.id,
           verdict: v.verdict,

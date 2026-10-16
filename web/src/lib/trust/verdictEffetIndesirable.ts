@@ -10,7 +10,8 @@ import {
 // MODULE PUR, LISIBLE PAR LE NAVIGATEUR : la route le joue avant d'écrire, le
 // formulaire en tire ses libellés. La base tient les mêmes règles par trigger
 // (migrations `20261012230000_saf_ei_rattachement_verdict_v1` et
-// `20261014230000_saf_ei_verdict_formulaire_avant_v1`) ; les rejouer ici
+// `20261014230000_saf_ei_verdict_formulaire_avant_v1`,
+// `20261016110000_saf_ei_avis_implique_sans_element_v1`) ; les rejouer ici
 // rend au praticien un message qu'il comprend plutôt qu'une erreur technique,
 // et la base reste le dernier mot.
 //
@@ -53,6 +54,23 @@ export type VerdictAEcrire = {
   supersedesVerdictId: string | null;
 };
 
+/**
+ * L'avis « impliqué, élément non identifiable » est-il ouvert ? ([[D-281]] §5,
+ * arbitrage du 2026-10-16.) Seulement quand le praticien ne PEUT désigner
+ * aucun élément parce que le programme visé ne se lit pas : un signalement
+ * sans élément désigné par le patient, qui vise un programme (`protocolDraftId`
+ * non nul), dont l'intégrité ne se vérifie pas (`elements` à `null`). Jamais
+ * sur un élément désigné par le patient, jamais sur un programme lisible —
+ * même vide —, jamais sur un signalement délié de son programme (la base le
+ * refuserait). Une seule règle pour la route et pour l'écran.
+ */
+export function avisSansElementOuvert(
+  signalement: { rattachement: Rattachement | null; protocolDraftId: string | null },
+  elements: readonly { actionId: string }[] | null,
+): boolean {
+  return signalement.rattachement !== 'element' && signalement.protocolDraftId !== null && elements === null;
+}
+
 export type ResultatVerdict =
   | { ok: true; aEcrire: VerdictAEcrire }
   | { ok: false; status: 400 | 409; error: string };
@@ -72,7 +90,12 @@ export type ResultatVerdict =
  */
 export function validerDemandeVerdict(input: {
   /** `rattachement` nul : le formulaire d'avant (`recoitUnAvis`), que la route seule laisse passer. */
-  signalement: { id: string; rattachement: Rattachement | null; elementActionId: string | null };
+  signalement: {
+    id: string;
+    rattachement: Rattachement | null;
+    elementActionId: string | null;
+    protocolDraftId: string | null;
+  };
   verdicts: readonly VerdictEffetIndesirable[];
   elements: readonly { actionId: string }[] | null;
   demande: DemandeVerdict;
@@ -112,8 +135,16 @@ export function validerDemandeVerdict(input: {
   }
   const amenagement = demande.amenagement as Amenagement;
 
-  let elementActionId: string;
-  if (signalement.rattachement === 'element') {
+  let elementActionId: string | null;
+  if (avisSansElementOuvert(signalement, input.elements)) {
+    // Le programme visé ne se lit pas : aucun élément ne peut être désigné.
+    // « Impliqué » se rend sans élément, l'aménagement reste exigé (arbitrage
+    // du 2026-10-16) — plutôt que d'obliger à déclarer « non impliqué ».
+    if (demande.elementActionId != null) {
+      return { ok: false, status: 400, error: 'Le programme visé ne se lit pas : aucun élément ne peut être désigné.' };
+    }
+    elementActionId = null;
+  } else if (signalement.rattachement === 'element') {
     // L'élément impliqué est celui que le patient a désigné (trigger
     // `trust_aev_avant_insertion`) : le praticien ne le choisit pas.
     if (signalement.elementActionId === null) {
