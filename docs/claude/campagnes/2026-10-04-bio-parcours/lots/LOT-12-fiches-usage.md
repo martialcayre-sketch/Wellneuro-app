@@ -1,7 +1,7 @@
 ---
 id: "LOT-12"
 titre: "BP-12a — Fiches d'usage : structure signée, texte en base"
-statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; PR de migration seule ouverte, cinq arbitrages de forme rendus le 2026-10-16, D-314 §8)"
+statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; PR de migration seule ouverte, cinq arbitrages de forme rendus le 2026-10-16, D-314 §8 ; code consommateur écrit sur branche le 2026-10-16, en attente de la release-db de la migration)"
 dépend_de: "LOT-07, LOT-09"
 ---
 

@@ -123,6 +123,18 @@ export const SOURCES_DE_SAVOIR = [
     decisionProduite: 'Claims cités entiers et dernier résultat du dossier par marqueur, côte à côte et sans comparaison, sous la carte des assiettes indiquées.',
   },
   {
+    id: 'fiches-usage-besoin2',
+    libelle: 'Structure des fiches d’usage du besoin 2 (identifiants signés)',
+    module: 'web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts',
+    symboles: ['FICHES_USAGE_BESOIN2_V1', 'FICHES_USAGE_BESOIN2_METADATA'],
+    // ENTRÉE AVEC SON ÉCRAN ([[D-314]], BP-12a). La garde est dans le module
+    // même (`structureSignee`) : aucune validation de texte avant la signature.
+    // Rien ne sort vers un patient (§7) ; le texte, en base, n'est pas une
+    // source de ce dépôt.
+    modulesGardes: [{ chemin: 'web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts', noms: ['structureSignee'] }],
+    decisionProduite: 'Quelles fiches d’usage et quels termes se rédigent et se valident, rubrique par rubrique, à l’écran praticien.',
+  },
+  {
     id: 'contradictions-nnpp2',
     libelle: 'Table de contradictions NNPP2 (règles signées)',
     module: 'web/src/lib/clinical/contradictionsV1.ts',

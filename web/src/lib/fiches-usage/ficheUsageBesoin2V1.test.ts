@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   FICHES_USAGE_BESOIN2_METADATA,
@@ -69,6 +71,24 @@ describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
         expect(c.claimId, f.id).toMatch(/^WN-CL-\d{4}-\d{3}$/);
         expect(c.versionClaim, f.id).toMatch(/^v\d+\.\d+$/);
       }
+    }
+  });
+
+  it('chaque code d’analyte cité existe au catalogue que les migrations insèrent', () => {
+    // Patron de `candidatsNabm.test.ts` : le catalogue est en base, ses codes
+    // dans les migrations. Un code absent ferait une fiche sans analyte à l'écran.
+    const migrations = join(__dirname, '../../../prisma/migrations');
+    const catalogue = new Set<string>();
+    for (const dossier of readdirSync(migrations, { withFileTypes: true })) {
+      if (!dossier.isDirectory()) continue;
+      const sql = readFileSync(join(migrations, dossier.name, 'migration.sql'), 'utf8');
+      for (const bloc of sql.matchAll(/INSERT INTO "biology_analytes"[\s\S]*?;/g)) {
+        for (const m of bloc[0].matchAll(/'(BIO_[A-Z0-9_]+)'/g)) catalogue.add(m[1]);
+      }
+    }
+    expect(catalogue.size).toBeGreaterThan(0);
+    for (const f of FICHES_USAGE_BESOIN2_V1.fiches) {
+      for (const code of f.codesAnalyte) expect(catalogue.has(code), `${f.id} : ${code}`).toBe(true);
     }
   });
 });

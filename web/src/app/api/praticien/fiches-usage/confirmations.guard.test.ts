@@ -66,6 +66,19 @@ describe.each(VOIES)('Actes de $nom — ce que la route lit, l’écran l’envo
     expect(appelants.length).toBeGreaterThanOrEqual(1);
   });
 
+  // Une URL bâtie autrement (constante importée, concaténation) passerait sous
+  // le détecteur d'appelants : toute mention de la route hors d'un appelant lu
+  // rougit.
+  it('aucune mention de la route n’échappe au détecteur d’appelants', () => {
+    const chemin = voie.url.source.replace(/^\[[^\]]*\]\\\//, '').replace(/\[[^\]]*\]$/, '').replace(/\\\//g, '/');
+    const lus = new Set(appelants.map(a => a.fichier));
+    const echappes = SOURCES.filter(s => s.fichier !== voie.route && s.source.includes(chemin) && !lus.has(s.fichier)).map(s =>
+      path.relative(RACINE, s.fichier),
+    );
+    expect(chemin).toMatch(/^api\/praticien\/fiches-usage\/.*actes$/);
+    expect(echappes).toEqual([]);
+  });
+
   it('chaque appelant poste toutes les clés exigées, et la déclaration n’est jamais une constante', () => {
     for (const { fichier, source } of appelants) {
       const envois = corps(source).filter(c => c.includes(voie.cles[0]));

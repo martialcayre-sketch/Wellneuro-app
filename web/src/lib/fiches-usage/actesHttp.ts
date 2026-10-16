@@ -8,8 +8,8 @@ import type { ActeSerialise, EtatTexte } from './etat';
 import { estActeFicheUsage, type ActeFicheUsage } from './vocabulaire';
 
 // LA VOIE HTTP DES ACTES DU RESPONSABLE ([[D-314]] §3) — partagée par les deux
-// routes praticien (rubriques, libellés). Patron :
-// /api/praticien/fiches-assiette/actes.
+// routes praticien (rubriques, libellés). Patron : la route des actes des
+// fiches d'assiette ([[D-251]] §5).
 //
 // L'acte porte sur ce que l'écran a montré : l'empreinte du texte vu et le
 // jeton du dernier acte vu. S'ils ont bougé, rien n'est écrit (409). Valider
