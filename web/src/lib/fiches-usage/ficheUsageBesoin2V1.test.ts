@@ -6,11 +6,34 @@ import {
   FICHES_USAGE_BESOIN2_SHA256,
   FICHES_USAGE_BESOIN2_V1,
   ficheDeLaStructure,
+  incoherencesDeStructure,
   structureSignee,
   termeDeLaStructure,
+  type FicheUsageStructure,
   type StructureFichesUsage,
 } from './ficheUsageBesoin2V1';
-import { natureDuTerme, RE_FICHE_USAGE, RUBRIQUES_FICHE_USAGE } from './vocabulaire';
+
+/** Une fiche synthétique cohérente, à décliner cas par cas. */
+const FICHE: FicheUsageStructure = {
+  id: 'FU_SYNTH',
+  question: 'QC_SYNTH',
+  besoins: [2],
+  nature: 'mesure_directe',
+  usageDecisionnel: 'confirmer_hypothese',
+  securiteAdmissibilite: false,
+  statutUsage: 'etaye_valide',
+  population: 'POP_SYNTH',
+  hypotheses: ['HYP_SYNTH'],
+  codesAnalyte: [],
+  claims: [],
+  rubriques: ['question'],
+};
+const avec = (fiche: Partial<FicheUsageStructure>): StructureFichesUsage => ({
+  fiches: [{ ...FICHE, ...fiche }],
+  questions: ['QC_SYNTH'],
+  hypotheses: ['HYP_SYNTH'],
+  populations: ['POP_SYNTH'],
+});
 
 // La structure est livrée VIDE et verrou ÉTEINT (porte 23 : ses contenus sont
 // ceux du responsable). Ce banc épingle l'empreinte : toute fiche ajoutée la
@@ -19,7 +42,7 @@ import { natureDuTerme, RE_FICHE_USAGE, RUBRIQUES_FICHE_USAGE } from './vocabula
 
 describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
   it('épingle l’empreinte de la structure livrée', () => {
-    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('bba5e229dd7d37363ca7d136b1743c7d4b092ca02f3f5b74bde8d36e5f76ab66');
+    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('d1b994dd00ef9c9fbbc36de4f64763b72e1e6b7e4abbd4fd375f2ede524b5369');
   });
 
   it('est livrée vide, verrou éteint, sans signature : rien ne se valide ni ne se sert', () => {
@@ -37,13 +60,7 @@ describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
   });
 
   it('trouve une fiche et un terme dans une structure donnée', () => {
-    const structure: StructureFichesUsage = {
-      fiches: [
-        { id: 'FU_SYNTH', population: 'POP_SYNTH', hypotheses: ['HYP_SYNTH'], codesAnalyte: [], claims: [], rubriques: ['question'] },
-      ],
-      hypotheses: ['HYP_SYNTH'],
-      populations: ['POP_SYNTH'],
-    };
+    const structure = avec({});
     expect(ficheDeLaStructure('FU_SYNTH', structure)?.population).toBe('POP_SYNTH');
     expect(ficheDeLaStructure('FU_AUTRE', structure)).toBeNull();
     expect(termeDeLaStructure('HYP_SYNTH', structure)).toBe(true);
@@ -51,27 +68,65 @@ describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
     expect(termeDeLaStructure('HYP_AUTRE', structure)).toBe(false);
   });
 
-  // Les invariants que toute fiche signée devra tenir : ils s'appliquent à la
-  // structure du jour, vide aujourd'hui, et la garderont le jour où elle se
-  // remplit.
-  it('chaque fiche tient ses formats, sa population déclarée et ses rubriques fermées', () => {
-    const { fiches, hypotheses, populations } = FICHES_USAGE_BESOIN2_V1;
-    const ids = fiches.map(f => f.id);
-    expect(new Set(ids).size).toBe(ids.length);
-    for (const terme of hypotheses) expect(natureDuTerme(terme), terme).toBe('hypothese');
-    for (const terme of populations) expect(natureDuTerme(terme), terme).toBe('population');
-    for (const f of fiches) {
-      expect(f.id, f.id).toMatch(RE_FICHE_USAGE);
-      expect(populations, `${f.id} : population hors de la liste fermée`).toContain(f.population);
-      for (const h of f.hypotheses) expect(hypotheses, `${f.id} : ${h}`).toContain(h);
-      expect(f.rubriques.length, `${f.id} : aucune rubrique attendue`).toBeGreaterThan(0);
-      expect(new Set(f.rubriques).size, `${f.id} : rubrique en double`).toBe(f.rubriques.length);
-      for (const r of f.rubriques) expect(RUBRIQUES_FICHE_USAGE, `${f.id} : ${r}`).toContain(r);
+  // Les règles que toute structure signée devra tenir : elles s'appliquent à
+  // la structure du jour, vide aujourd'hui, et la garderont le jour où elle se
+  // remplit. Une structure incohérente ne se signe pas, même verrou posé.
+  it('la structure du jour est cohérente', () => {
+    expect(incoherencesDeStructure()).toEqual([]);
+    for (const f of FICHES_USAGE_BESOIN2_V1.fiches) {
       for (const c of f.claims) {
         expect(c.claimId, f.id).toMatch(/^WN-CL-\d{4}-\d{3}$/);
         expect(c.versionClaim, f.id).toMatch(/^v\d+\.\d+$/);
       }
     }
+  });
+
+  it('une fiche synthétique complète est cohérente', () => {
+    expect(incoherencesDeStructure(avec({}))).toEqual([]);
+    expect(incoherencesDeStructure(avec({ securiteAdmissibilite: true, besoins: [2, 4] }))).toEqual([]);
+  });
+
+  it.each([
+    ['format', { id: 'fu_minuscule' }, 'fu_minuscule:format'],
+    ['question non déclarée', { question: 'QC_AUTRE' }, 'FU_SYNTH:question'],
+    ['aucun besoin', { besoins: [] }, 'FU_SYNTH:besoins'],
+    ['besoin hors des 12', { besoins: [13] }, 'FU_SYNTH:besoins'],
+    ['besoin en double', { besoins: [2, 2] }, 'FU_SYNTH:besoins'],
+    ['population non déclarée', { population: 'POP_AUTRE' }, 'FU_SYNTH:population'],
+    ['hypothèse non déclarée', { hypotheses: ['HYP_AUTRE'] }, 'FU_SYNTH:hypotheses'],
+    ['nature inconnue', { nature: 'forte' as never }, 'FU_SYNTH:nature'],
+    ['usage inconnu', { usageDecisionnel: 'prescrire' as never }, 'FU_SYNTH:usage_decisionnel'],
+    ['statut inconnu', { statutUsage: 'valide' as never }, 'FU_SYNTH:statut_usage'],
+    ['aucune rubrique', { rubriques: [] }, 'FU_SYNTH:rubriques'],
+    ['rubrique hors liste', { rubriques: ['explication_patient' as never] }, 'FU_SYNTH:rubriques'],
+  ])('refuse : %s', (_cas, fiche, attendu) => {
+    expect(incoherencesDeStructure(avec(fiche))).toContain(attendu);
+  });
+
+  it('nature ↔ statut : une piste exploratoire ou un usage non étayé reste « non validé »', () => {
+    for (const nature of ['piste_exploratoire', 'usage_non_etaye'] as const) {
+      expect(incoherencesDeStructure(avec({ nature, statutUsage: 'non_valide' }))).toEqual([]);
+      for (const statutUsage of ['etaye_valide', 'preuves_limitees'] as const) {
+        expect(incoherencesDeStructure(avec({ nature, statutUsage }))).toEqual(['FU_SYNTH:nature_statut']);
+      }
+    }
+    for (const nature of ['mesure_directe', 'information_contributive'] as const) {
+      for (const statutUsage of ['etaye_valide', 'preuves_limitees', 'non_valide'] as const) {
+        expect(incoherencesDeStructure(avec({ nature, statutUsage }))).toEqual([]);
+      }
+    }
+  });
+
+  it('refuse les listes de la structure mal formées', () => {
+    expect(incoherencesDeStructure({ ...avec({}), questions: ['QC_SYNTH', 'question libre'] })).toContain('structure:questions');
+    expect(incoherencesDeStructure({ ...avec({}), hypotheses: ['HYP_SYNTH', 'POP_X'] })).toContain('structure:hypotheses');
+    expect(incoherencesDeStructure({ ...avec({}), populations: ['POP_SYNTH', 'POP_SYNTH'] })).toContain('structure:populations');
+  });
+
+  it('une structure incohérente ne se signe pas, même verrou posé sur son empreinte', () => {
+    const signee = { ...FICHES_USAGE_BESOIN2_METADATA, validationExterne: true, shaPerimetre: 'e'.repeat(64) };
+    expect(structureSignee(signee, 'e'.repeat(64), [])).toBe(true);
+    expect(structureSignee(signee, 'e'.repeat(64), ['FU_SYNTH:nature_statut'])).toBe(false);
   });
 
   it('chaque code d’analyte cité existe au catalogue que les migrations insèrent', () => {

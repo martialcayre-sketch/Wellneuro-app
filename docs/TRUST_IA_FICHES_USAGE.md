@@ -16,8 +16,9 @@
   aucune surface patient, aucun envoi, aucune remise (`D-314` §7).
 - Le **texte** de chaque fiche, et le **libellé** de chaque terme de son
   vocabulaire (hypothèses, populations d'usage), sont **rédigés avec l'aide
-  d'une intelligence artificielle**, puis **validés par le praticien,
-  rubrique par rubrique**, avant de pouvoir être lus comme validés.
+  d'une intelligence artificielle**, puis **validés par le responsable,
+  rubrique par rubrique**, avant de pouvoir être lus comme validés. Les
+  autres praticiens les lisent sans pouvoir les valider (`D-314` §9).
 - **L'IA n'a jamais accès à une donnée de patient.** Elle travaille sur des
   identifiants et des énoncés sourcés du corpus, une fois par version, en
   dehors de l'application.
@@ -41,7 +42,7 @@
 | Contre-lecture | GPT, d'**OpenAI** | Relit chaque rubrique dans le contexte des autres, et chaque libellé, contre les claims. Un désaccord ou un doute écarte la fiche entière. |
 | Vérificateur DC-03 | L'outil, sans IA | Refuse tout identifiant ou nombre absent de ce que le rédacteur a reçu (`D-266` §7). |
 | Contrat et structure | L'outil puis l'application, sans IA | Rubriques exactement attendues, structure du jour, aucun champ de validation. |
-| Validation | Le praticien | Relecture déclarée de chaque rubrique et de chaque libellé, puis acte daté. |
+| Validation | Le responsable seul | Relecture déclarée de chaque rubrique et de chaque libellé, puis acte daté, à son adresse. |
 
 Le nom des deux modèles et la version de la consigne sont enregistrés avec
 chaque version de fiche et chaque libellé : l'origine de chaque texte se
@@ -77,9 +78,9 @@ impose notamment :
 2. **Vérificateur DC-03**, bloquant.
 3. **Dépôt comme brouillon seulement**, sous secret interne. La voie de dépôt
    refuse tout champ de validation : une machine ne valide jamais (`DC-16`).
-4. **Validation humaine, distincte et datée, rubrique par rubrique**, après
-   une relecture déclarée au moment de valider ; refusée tant que la
-   structure n'est pas signée.
+4. **Validation humaine, distincte et datée, rubrique par rubrique**, par le
+   responsable seul, après une relecture déclarée au moment de valider ;
+   refusée tant que la structure n'est pas signée.
 5. **Le texte est lié à la structure qu'il rédige** : une structure re-signée
    le rend « à relire » jusqu'à un nouveau dépôt (`D-314` §5).
 6. **Retrait possible à tout moment**, avec un motif. Rien ne s'efface : la
@@ -101,11 +102,12 @@ impose notamment :
   dernière porte (`D-195` §1).
 - **La base enregistre la déclaration de relecture, pas la preuve d'un geste
   humain.** Cette garantie tient par l'application, qui n'accepte un acte que
-  d'un praticien connecté.
+  du responsable connecté, désigné par une liste d'adresses fermée par défaut
+  (`D-314` §9).
 
 ## Références
 
 - Décision : `D-314` (§3 validation rubrique par rubrique, §4 rédaction hors
-  ligne, §5 fraîcheur, §7 hors périmètre) ; `D-251` §4 (texte hors dépôt) ;
+  ligne, §5 fraîcheur, §7 hors périmètre, §9 le responsable seul valide) ; `D-251` §4 (texte hors dépôt) ;
   `D-266` §7 (DC-03). Principes : `DC-16`, `D-195` §1.
 - Outil : `tools/corpus/fiches-usage/README.md` et ses consignes.

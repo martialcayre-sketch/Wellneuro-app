@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { getServerSession, poserActeLibelle } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -31,8 +31,11 @@ function requete(body: unknown): Request {
 }
 
 describe('POST /api/praticien/fiches-usage/libelles/actes', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('WN_FICHES_USAGE_VALIDATEURS', 'praticien@exemple.fr');
     getServerSession.mockResolvedValue({ user: { email: 'praticien@exemple.fr' } });
     poserActeLibelle.mockResolvedValue({ issue: 'refusee', raison: 'etat_divergent' });
   });
@@ -47,6 +50,14 @@ describe('POST /api/praticien/fiches-usage/libelles/actes', () => {
       dernierActeVu: '3',
       validateur: 'praticien@exemple.fr',
     });
+  });
+
+  it('403 pour une session qui n’est pas celle du responsable — rien n’est posé', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'autre@exemple.fr' } });
+    const res = await POST(requete(CORPS));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'reserve_au_responsable' });
+    expect(poserActeLibelle).not.toHaveBeenCalled();
   });
 
   it('400 sur un identifiant de libellé hors format', async () => {

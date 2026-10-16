@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/Button';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { QuestionField } from '@/components/patient/QuestionField';
 import { RayonFichesConseilsPanel } from '@/components/fiches-assiette/RayonFichesConseilsPanel';
-import { RayonFichesUsagePanel } from '@/components/fiches-usage/RayonFichesUsagePanel';
 import { ECHELLES_NOMMEES, interditTouteBande, type EchelleNommee } from '@/lib/echelles-cabinet';
 import {
   LIBELLE_INSTRUMENT_CABINET,
@@ -31,7 +30,7 @@ import type {
 } from '@/app/api/praticien/file-envoi/route';
 import type { EnvoyerFileResponse } from '@/app/api/praticien/file-envoi/envoyer/route';
 
-type Rayon = 'questionnaires' | 'analyses' | 'conseils' | 'usage';
+type Rayon = 'questionnaires' | 'analyses' | 'conseils';
 
 type PatientOption = { email: string; prenom: string; nom: string };
 
@@ -353,9 +352,6 @@ export function BibliothequePanel({
         <BoutonRayon actif={rayon === 'conseils'} onClick={() => setRayon('conseils')}>
           Fiches conseils
         </BoutonRayon>
-        <BoutonRayon actif={rayon === 'usage'} onClick={() => setRayon('usage')}>
-          Fiches d’usage
-        </BoutonRayon>
       </div>
 
       {rayon === 'analyses' &&
@@ -382,7 +378,6 @@ export function BibliothequePanel({
           </BanniereDiffere>
         ))}
       {rayon === 'conseils' && <RayonFichesConseilsPanel />}
-      {rayon === 'usage' && <RayonFichesUsagePanel />}
 
       {rayon === 'questionnaires' && (
         <>

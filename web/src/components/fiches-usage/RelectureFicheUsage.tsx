@@ -15,14 +15,21 @@
 // rédigée hors ligne et déposée par la voie d'ingestion.
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import type { VersionFicheUsageApiResponse } from '@/app/api/praticien/fiches-usage/version/route';
 import type { ActeFicheUsageApiResponse } from '@/lib/fiches-usage/actesHttp';
 import type { DetailVersionUsage, RubriqueDetaillee } from '@/lib/fiches-usage/lecture';
 import type { ActeFicheUsage } from '@/lib/fiches-usage/vocabulaire';
 import { GesteTexte } from './GesteTexte';
-import { formatDateHeure, libelleEtatTexte, libelleEtatVersion, nomRubrique, obstacleDeVersion } from './libelles';
+import {
+  formatDateHeure,
+  libelleEtatRubrique,
+  libelleEtatVersion,
+  nomRubrique,
+  obstacleDeVersion,
+  RESERVE_AU_RESPONSABLE,
+} from './libelles';
 
 // Les refus après lesquels ce qui est affiché n'est plus l'état de la base.
 export const REFUS_A_RECHARGER = new Set([
@@ -35,12 +42,14 @@ export const REFUS_A_RECHARGER = new Set([
   'contenu_illisible',
   'introuvable',
   'rubrique_absente',
+  'reserve_au_responsable',
 ]);
 
 type Retour = { type: 'succes' | 'erreur'; texte: string };
 
 export function RelectureFicheUsage({ idVersion, onFermer }: { idVersion: string; onFermer: () => void }) {
   const [detail, setDetail] = useState<DetailVersionUsage | null>(null);
+  const [peutDecider, setPeutDecider] = useState(false);
   const [enCours, setEnCours] = useState(true);
   const [echec, setEchec] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
@@ -67,6 +76,7 @@ export function RelectureFicheUsage({ idVersion, onFermer }: { idVersion: string
         return null;
       }
       setDetail(json.version);
+      setPeutDecider(json.peutDecider === true);
       return json.version;
     } catch {
       if (!perimee()) {
@@ -116,7 +126,9 @@ export function RelectureFicheUsage({ idVersion, onFermer }: { idVersion: string
         const relue = await charger();
         setRetour({
           type: 'succes',
-          texte: relue ? `${fait} Version : ${libelleEtatVersion(relue.etat).texte.toLowerCase()}.` : fait,
+          texte: relue
+            ? `${fait} Version : ${libelleEtatVersion(relue.etat, relue.structureSignee).texte.toLowerCase()}.`
+            : fait,
         });
       } else {
         setRetour({ type: 'erreur', texte: json.error || 'Acte refusé.' });
@@ -192,7 +204,9 @@ export function RelectureFicheUsage({ idVersion, onFermer }: { idVersion: string
               <span className="font-mono">{detail.ficheId}</span>, v{detail.numero}
             </h3>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Badge variant={libelleEtatVersion(detail.etat).variante}>{libelleEtatVersion(detail.etat).texte}</Badge>
+              <Badge variant={libelleEtatVersion(detail.etat, detail.structureSignee).variante}>
+                {libelleEtatVersion(detail.etat, detail.structureSignee).texte}
+              </Badge>
               {enCours && (
                 <span role="status" className="text-xs text-muted-foreground">
                   Actualisation…
@@ -201,6 +215,7 @@ export function RelectureFicheUsage({ idVersion, onFermer }: { idVersion: string
             </div>
           </div>
 
+          {!peutDecider && <p className="text-sm text-muted-foreground">{RESERVE_AU_RESPONSABLE}</p>}
           <EtatDetaille detail={detail} />
           <Provenance detail={detail} />
 
@@ -209,7 +224,9 @@ export function RelectureFicheUsage({ idVersion, onFermer }: { idVersion: string
               <Rubrique
                 key={r.rubrique}
                 rubrique={r}
-                obstacle={obstacleDeVersion(detail.etat, detail.structureSignee)}
+                badge={libelleEtatRubrique(r.etat, detail.etat, detail.structureSignee)}
+                obstacle={obstacleDeVersion(detail.etat, detail.structureSignee, detail.depassee)}
+                peutDecider={peutDecider}
                 envoi={envoi || enCours}
                 onConfirmer={(acte, relecture, motif) => void poserActe(r, acte, relecture, motif)}
               />
@@ -235,6 +252,10 @@ function EtatDetaille({ detail }: { detail: DetailVersionUsage }) {
   if (etat.etat === 'illisible') lignes.push(`Rubriques à l’état illisible : ${etat.rubriques.map(nomRubrique).join(', ')}.`);
   if (etat.etat === 'a_relire') lignes.push('Cette version a été rédigée pour une autre structure que celle du jour.');
   if (etat.etat === 'hors_structure') lignes.push('La structure du jour ne déclare pas cette fiche.');
+  if (detail.depassee) lignes.push('Une version plus récente de cette fiche est déjà validée.');
+  if (etat.etat === 'validee' && !detail.structureSignee) {
+    lignes.push('Cette version a été validée, mais la structure n’est plus signée : elle ne fait pas foi.');
+  }
   if (lignes.length === 0) return null;
   return (
     <div className="flex flex-col gap-1 rounded-lg border border-status-warning/40 bg-status-warning/10 px-4 py-2.5 text-sm text-foreground">
@@ -262,16 +283,20 @@ function Provenance({ detail }: { detail: DetailVersionUsage }) {
 
 function Rubrique({
   rubrique,
+  badge,
   obstacle,
+  peutDecider,
   envoi,
   onConfirmer,
 }: {
   rubrique: RubriqueDetaillee;
+  badge: { texte: string; variante: BadgeVariant };
   obstacle: string | null;
+  peutDecider: boolean;
   envoi: boolean;
   onConfirmer: (acte: ActeFicheUsage, relecture: boolean, motif: string) => void;
 }) {
-  const { texte, variante } = libelleEtatTexte(rubrique.etat);
+  const { texte, variante } = badge;
   const etat = rubrique.etat;
   return (
     <li
@@ -296,6 +321,7 @@ function Rubrique({
         nomDuTexte="cette rubrique"
         etat={etat}
         obstacle={obstacle}
+        peutDecider={peutDecider}
         envoi={envoi}
         onConfirmer={onConfirmer}
       />

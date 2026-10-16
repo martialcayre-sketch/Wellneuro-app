@@ -121,9 +121,14 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   // Structure des fiches d'usage du besoin 2 ([[D-314]] §5). Entrée le jour où le
   // fichier est POSÉ, livré vide et verrou éteint — patron des indications
   // d'assiette ci-dessus : aucune paire au contrat SQL, donc aucune entrée dans
-  // `TABLE_EXIGE_PRESCRIPTIF` avant la première fiche. L'exigence de
-  // `prescriptif` de ses claims sera arbitrée ([[D-046]]) à la première fiche
-  // signée.
+  // `TABLE_EXIGE_PRESCRIPTIF` avant la première fiche (le banc refuse une table
+  // déclarée sans paire). SON RÉGIME EST ARBITRÉ (responsable, 2026-10-16,
+  // [[D-314]] §9, qui répond à la question que [[D-046]] réserve à chaque table
+  // nouvelle) : `fiches_usage: false`. Une fiche d'usage décrit ce qu'une mesure
+  // permet d'interpréter — préanalytique, interprétations permises et
+  // interdites, limites —, pas une conduite : ses claims tiennent le régime des
+  // contradictions (validé, actif, non remplacé), sans `prescriptif`. L'entrée
+  // se pose avec la première paire, à cette valeur-là.
   'ficheUsageBesoin2V1.ts': 'fiches_usage',
 };
 

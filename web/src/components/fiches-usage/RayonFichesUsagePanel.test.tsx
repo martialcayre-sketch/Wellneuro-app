@@ -1,12 +1,36 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { RayonFichesUsage } from '@/lib/fiches-usage/lecture';
+import type { LibelleDuRayon, RayonFichesUsage } from '@/lib/fiches-usage/lecture';
 import { RayonFichesUsagePanel } from './RayonFichesUsagePanel';
 
 // Identifiants et libellés synthétiques : aucun texte réel au dépôt (D-251 §4).
 const LE = '2026-10-16T02:00:00.000Z';
 const SHA = 'c'.repeat(64);
+
+function libelle(over: Partial<LibelleDuRayon> = {}): LibelleDuRayon {
+  return {
+    id: 'libellebanc001',
+    numero: 1,
+    libelle: 'Libellé synthétique.',
+    libelleSha256: SHA,
+    creeLe: LE,
+    etat: { etat: 'a_valider' },
+    etatTexte: { etat: 'a_valider' },
+    depasse: false,
+    dernierActe: null,
+    actes: [],
+    ...over,
+  };
+}
+
+const VALIDE = { etat: 'validee' as const, ordre: '2', le: LE, validateur: 'responsable@wellneuro.fr' };
+
+/** Le rayon, avec un seul terme dont on fixe les libellés. */
+function avecLibelles(signee: boolean, reference: string | null, libelles: LibelleDuRayon[]): RayonFichesUsage {
+  const r = rayon(signee);
+  return { ...r, termes: [{ ...r.termes[0], reference, libelles }] };
+}
 
 function rayon(signee: boolean): RayonFichesUsage {
   return {
@@ -30,9 +54,8 @@ function rayon(signee: boolean): RayonFichesUsage {
         termeId: 'HYP_BANC',
         nature: 'hypothese',
         declare: true,
-        libelles: [
-          { id: 'libellebanc001', numero: 1, libelle: 'Libellé synthétique.', libelleSha256: SHA, creeLe: LE, etat: { etat: 'a_valider' }, dernierActe: null, actes: [] },
-        ],
+        reference: null,
+        libelles: [libelle()],
       },
     ],
   };
@@ -49,7 +72,7 @@ afterEach(() => {
 
 describe('RayonFichesUsagePanel (D-314 §3)', () => {
   it('structure non signée : le dit, montre les fiches hors structure, et n’offre aucune validation de libellé', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, rayon: rayon(false) })));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, rayon: rayon(false), peutDecider: true })));
     render(<RayonFichesUsagePanel />);
     expect(await screen.findByText(/n’est pas encore signée/)).toBeTruthy();
     const a = within(screen.getByTestId('fiche-usage-FU_BANC_A'));
@@ -63,9 +86,9 @@ describe('RayonFichesUsagePanel (D-314 §3)', () => {
   it('structure signée : valider un libellé poste son identifiant, son empreinte, son jeton et la déclaration', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(reponse({ ok: true, rayon: rayon(true) }))
+      .mockResolvedValueOnce(reponse({ ok: true, rayon: rayon(true), peutDecider: true }))
       .mockResolvedValueOnce(reponse({ ok: true, acte: {}, etat: { etat: 'validee' } }))
-      .mockResolvedValueOnce(reponse({ ok: true, rayon: rayon(true) }));
+      .mockResolvedValueOnce(reponse({ ok: true, rayon: rayon(true), peutDecider: true }));
     vi.stubGlobal('fetch', fetchMock);
     render(<RayonFichesUsagePanel />);
     const terme = within(await screen.findByTestId('terme-HYP_BANC'));
@@ -89,11 +112,53 @@ describe('RayonFichesUsagePanel (D-314 §3)', () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(reponse({ ok: false, reason: 'exception', error: 'Erreur technique.' }, 500))
-      .mockResolvedValueOnce(reponse({ ok: true, rayon: rayon(false) }));
+      .mockResolvedValueOnce(reponse({ ok: true, rayon: rayon(false), peutDecider: true }));
     vi.stubGlobal('fetch', fetchMock);
     render(<RayonFichesUsagePanel />);
     expect((await screen.findByRole('alert')).textContent).toContain('Erreur technique.');
     fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
     expect(await screen.findByTestId('fiche-usage-FU_BANC_A')).toBeTruthy();
+  });
+
+  it('une session qui n’est pas celle du responsable lit le rayon sans aucun geste', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, rayon: rayon(true), peutDecider: false })));
+    render(<RayonFichesUsagePanel />);
+    const terme = within(await screen.findByTestId('terme-HYP_BANC'));
+    expect(terme.queryByRole('button')).toBeNull();
+    expect(terme.queryByRole('checkbox')).toBeNull();
+    expect(screen.getByText(/réservés au responsable/)).toBeTruthy();
+  });
+
+  it('le libellé validé le plus récent fait foi, les autres sont « remplacés »', async () => {
+    const r = avecLibelles(true, 'libellebanc002', [
+      libelle({ id: 'libellebanc001', numero: 1, etat: VALIDE, etatTexte: VALIDE, depasse: true, dernierActe: '2' }),
+      libelle({ id: 'libellebanc002', numero: 2, etat: VALIDE, etatTexte: VALIDE, dernierActe: '5' }),
+    ]);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, rayon: r, peutDecider: true })));
+    render(<RayonFichesUsagePanel />);
+    const terme = within(await screen.findByTestId('terme-HYP_BANC'));
+    expect(terme.getByText('v2 · Validé · référence')).toBeTruthy();
+    expect(terme.getByText('v1 · Remplacé')).toBeTruthy();
+  });
+
+  it('un libellé plus ancien qu’un libellé validé ne propose pas Valider', async () => {
+    const r = avecLibelles(true, 'libellebanc002', [
+      libelle({ id: 'libellebanc001', numero: 1, depasse: true }),
+      libelle({ id: 'libellebanc002', numero: 2, etat: VALIDE, etatTexte: VALIDE, dernierActe: '5' }),
+    ]);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, rayon: r, peutDecider: true })));
+    render(<RayonFichesUsagePanel />);
+    expect(await screen.findByText(/Un libellé plus récent de ce terme est déjà validé/)).toBeTruthy();
+    const terme = within(screen.getByTestId('terme-HYP_BANC'));
+    expect(terme.queryByRole('button', { name: 'Valider' })).toBeNull();
+  });
+
+  it('un libellé validé hors structure se retire, comme une rubrique', async () => {
+    const r = avecLibelles(true, null, [libelle({ etat: { etat: 'hors_structure' }, etatTexte: VALIDE, dernierActe: '2' })]);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, rayon: r, peutDecider: true })));
+    render(<RayonFichesUsagePanel />);
+    const terme = within(await screen.findByTestId('terme-HYP_BANC'));
+    expect(terme.getByRole('button', { name: 'Retirer' })).toBeTruthy();
+    expect(terme.queryByRole('button', { name: 'Valider' })).toBeNull();
   });
 });

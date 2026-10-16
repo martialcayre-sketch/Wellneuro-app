@@ -1,6 +1,7 @@
 'use client';
 
-// LE RAYON « FICHES D'USAGE » DE LA BIBLIOTHÈQUE ([[D-314]] §3) : les fiches
+// LE RAYON « FICHES D'USAGE » DE LA PAGE BIOLOGIE ([[D-314]] §3 ; placé près
+// du parcours biologique, arbitrage du 2026-10-16) : les fiches
 // du besoin 2 que déclare la structure signée, leurs versions déposées, et le
 // vocabulaire (libellés des hypothèses et des populations d'usage), chacun
 // validé par un acte du praticien.
@@ -26,10 +27,11 @@ import { GesteTexte } from './GesteTexte';
 import {
   NOM_NATURE,
   formatDateHeure,
-  libelleEtatTexte,
+  libelleEtatLibelle,
   libelleEtatVersion,
   nomRubrique,
   obstacleDeLibelle,
+  RESERVE_AU_RESPONSABLE,
 } from './libelles';
 import { REFUS_A_RECHARGER, RelectureFicheUsage } from './RelectureFicheUsage';
 
@@ -37,6 +39,7 @@ type Retour = { type: 'succes' | 'erreur'; texte: string };
 
 export function RayonFichesUsagePanel() {
   const [rayon, setRayon] = useState<RayonFichesUsage | null>(null);
+  const [peutDecider, setPeutDecider] = useState(false);
   const [enCours, setEnCours] = useState(true);
   const [echec, setEchec] = useState<string | null>(null);
   const [versionOuverte, setVersionOuverte] = useState<string | null>(null);
@@ -62,6 +65,7 @@ export function RayonFichesUsagePanel() {
         return;
       }
       setRayon(json.rayon);
+      setPeutDecider(json.peutDecider === true);
     } catch {
       if (!perimee()) setEchec('Impossible de charger les fiches d’usage.');
     } finally {
@@ -184,6 +188,7 @@ export function RayonFichesUsagePanel() {
       ) : (
         <>
           <Structure rayon={rayon} />
+          {!peutDecider && <p className="text-sm text-muted-foreground">{RESERVE_AU_RESPONSABLE}</p>}
           <section aria-labelledby="fiches-usage-fiches-titre" className="flex flex-col gap-3">
             <h4 id="fiches-usage-fiches-titre" className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
               Fiches
@@ -193,7 +198,12 @@ export function RayonFichesUsagePanel() {
             ) : (
               <ul aria-label="Fiches d’usage" className="flex flex-col gap-3">
                 {rayon.fiches.map(f => (
-                  <LigneFiche key={f.ficheId} fiche={f} onRelire={setVersionOuverte} />
+                  <LigneFiche
+                    key={f.ficheId}
+                    fiche={f}
+                    signee={rayon.structure.signee}
+                    onRelire={setVersionOuverte}
+                  />
                 ))}
               </ul>
             )}
@@ -214,6 +224,7 @@ export function RayonFichesUsagePanel() {
                     key={t.termeId}
                     terme={t}
                     signee={rayon.structure.signee}
+                    peutDecider={peutDecider}
                     envoi={envoi || enCours}
                     onConfirmer={(l, acte, relecture, motif) => void poserActeLibelle(l, acte, relecture, motif)}
                   />
@@ -250,7 +261,15 @@ function Structure({ rayon }: { rayon: RayonFichesUsage }) {
   );
 }
 
-function LigneFiche({ fiche, onRelire }: { fiche: FicheDuRayon; onRelire: (idVersion: string) => void }) {
+function LigneFiche({
+  fiche,
+  signee,
+  onRelire,
+}: {
+  fiche: FicheDuRayon;
+  signee: boolean;
+  onRelire: (idVersion: string) => void;
+}) {
   const versions = [...fiche.versions].sort((a, b) => b.numero - a.numero);
   const derniere = versions[0] ?? null;
   const reference = versions.find(v => v.id === fiche.reference) ?? null;
@@ -286,8 +305,8 @@ function LigneFiche({ fiche, onRelire }: { fiche: FicheDuRayon; onRelire: (idVer
       <div className="flex flex-wrap items-center gap-2">
         {derniere ? (
           <>
-            <Badge variant={libelleEtatVersion(derniere.etat).variante}>
-              v{derniere.numero} · {libelleEtatVersion(derniere.etat).texte}
+            <Badge variant={libelleEtatVersion(derniere.etat, signee).variante}>
+              v{derniere.numero} · {libelleEtatVersion(derniere.etat, signee).texte}
             </Badge>
             <Button type="button" variant="outline" className="min-h-11" onClick={() => onRelire(derniere.id)}>
               Relire la v{derniere.numero}
@@ -309,11 +328,13 @@ function LigneFiche({ fiche, onRelire }: { fiche: FicheDuRayon; onRelire: (idVer
 function LigneTerme({
   terme,
   signee,
+  peutDecider,
   envoi,
   onConfirmer,
 }: {
   terme: TermeDuRayon;
   signee: boolean;
+  peutDecider: boolean;
   envoi: boolean;
   onConfirmer: (l: LibelleDuRayon, acte: ActeFicheUsage, relecture: boolean, motif: string) => void;
 }) {
@@ -333,7 +354,7 @@ function LigneTerme({
       ) : (
         <ol className="flex flex-col gap-3">
           {libelles.map(l => {
-            const { texte, variante } = libelleEtatTexte(l.etat);
+            const { texte, variante } = libelleEtatLibelle(l.etat, terme.reference === l.id, signee);
             return (
               <li key={l.id} className="flex flex-col gap-2 border-t border-border pt-3 first:border-t-0 first:pt-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -346,8 +367,9 @@ function LigneTerme({
                 <GesteTexte
                   key={`${l.libelleSha256}:${l.dernierActe ?? ''}`}
                   nomDuTexte="ce libellé"
-                  etat={l.etat}
-                  obstacle={obstacleDeLibelle(l.etat, signee)}
+                  etat={l.etatTexte}
+                  obstacle={obstacleDeLibelle(l.etat, signee, l.depasse)}
+                  peutDecider={peutDecider}
                   envoi={envoi}
                   onConfirmer={(acte, relecture, motif) => onConfirmer(l, acte, relecture, motif)}
                 />

@@ -25,6 +25,7 @@ function detail(over: Partial<DetailVersionUsage> = {}): DetailVersionUsage {
     structureDuJour: true,
     structureSignee: true,
     etat: { etat: 'a_valider', validees: 0, attendues: 2 },
+    depassee: false,
     rubriques: [rubrique('question', SHA_Q), rubrique('limites', SHA_L, { dernierActe: '4' })],
     ...over,
   };
@@ -41,7 +42,7 @@ afterEach(() => {
 
 describe('RelectureFicheUsage — un acte par rubrique (D-314 §3)', () => {
   it('rend chaque rubrique avec son texte, son état et la provenance de la version', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, version: detail() })));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, version: detail(), peutDecider: true })));
     render(<RelectureFicheUsage idVersion="versionbanc0001" onFermer={() => undefined} />);
     expect(await screen.findByTestId('rubrique-question')).toBeTruthy();
     expect(screen.getByText('Texte synthétique de limites.')).toBeTruthy();
@@ -52,9 +53,9 @@ describe('RelectureFicheUsage — un acte par rubrique (D-314 §3)', () => {
   it('valider exige la case cochée, et le corps porte l’empreinte, le jeton et la déclaration de CETTE rubrique', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(reponse({ ok: true, version: detail() }))
+      .mockResolvedValueOnce(reponse({ ok: true, version: detail(), peutDecider: true }))
       .mockResolvedValueOnce(reponse({ ok: true, acte: {}, etat: { etat: 'validee' } }))
-      .mockResolvedValueOnce(reponse({ ok: true, version: detail() }));
+      .mockResolvedValueOnce(reponse({ ok: true, version: detail(), peutDecider: true }));
     vi.stubGlobal('fetch', fetchMock);
     render(<RelectureFicheUsage idVersion="versionbanc0001" onFermer={() => undefined} />);
     const bloc = within(await screen.findByTestId('rubrique-limites'));
@@ -78,7 +79,7 @@ describe('RelectureFicheUsage — un acte par rubrique (D-314 §3)', () => {
   });
 
   it('structure non signée : la relecture est possible, aucun bouton Valider', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, version: detail({ structureSignee: false }) })));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, version: detail({ structureSignee: false }), peutDecider: true })));
     render(<RelectureFicheUsage idVersion="versionbanc0001" onFermer={() => undefined} />);
     const bloc = within(await screen.findByTestId('rubrique-question'));
     expect(bloc.queryByRole('button', { name: 'Valider' })).toBeNull();
@@ -88,7 +89,7 @@ describe('RelectureFicheUsage — un acte par rubrique (D-314 §3)', () => {
   });
 
   it('une version à relire ne se valide pas, et le dit', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, version: detail({ etat: { etat: 'a_relire' }, structureDuJour: false }) })));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, version: detail({ etat: { etat: 'a_relire' }, structureDuJour: false }), peutDecider: true })));
     render(<RelectureFicheUsage idVersion="versionbanc0001" onFermer={() => undefined} />);
     const bloc = within(await screen.findByTestId('rubrique-question'));
     expect(bloc.queryByRole('button', { name: 'Valider' })).toBeNull();
@@ -98,9 +99,9 @@ describe('RelectureFicheUsage — un acte par rubrique (D-314 §3)', () => {
   it('un retrait exige un motif ; un refus « état divergent » recharge la relecture', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(reponse({ ok: true, version: detail() }))
+      .mockResolvedValueOnce(reponse({ ok: true, version: detail(), peutDecider: true }))
       .mockResolvedValueOnce(reponse({ ok: false, reason: 'etat_divergent', error: 'L’état a changé.' }, 409))
-      .mockResolvedValueOnce(reponse({ ok: true, version: detail() }));
+      .mockResolvedValueOnce(reponse({ ok: true, version: detail(), peutDecider: true }));
     vi.stubGlobal('fetch', fetchMock);
     render(<RelectureFicheUsage idVersion="versionbanc0001" onFermer={() => undefined} />);
     const bloc = within(await screen.findByTestId('rubrique-question'));
@@ -121,11 +122,56 @@ describe('RelectureFicheUsage — un acte par rubrique (D-314 §3)', () => {
     const illisible = rubrique('question', SHA_Q, { etat: { etat: 'illisible', raison: 'acte_inconnu' } });
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(reponse({ ok: true, version: detail({ etat: { etat: 'illisible', rubriques: ['question'] }, rubriques: [illisible] }) })),
+      vi.fn().mockResolvedValue(reponse({ ok: true, version: detail({ etat: { etat: 'illisible', rubriques: ['question'] }, rubriques: [illisible] }), peutDecider: true })),
     );
     render(<RelectureFicheUsage idVersion="versionbanc0001" onFermer={() => undefined} />);
     const bloc = within(await screen.findByTestId('rubrique-question'));
     expect(bloc.queryByRole('button')).toBeNull();
     expect(bloc.getByText(/aucun acte ne peut être posé/)).toBeTruthy();
+  });
+
+  it('une session qui n’est pas celle du responsable lit, sans aucun geste', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, version: detail(), peutDecider: false })));
+    render(<RelectureFicheUsage idVersion="versionbanc0001" onFermer={() => undefined} />);
+    const bloc = within(await screen.findByTestId('rubrique-question'));
+    expect(bloc.queryByRole('button')).toBeNull();
+    expect(bloc.queryByRole('checkbox')).toBeNull();
+    expect(screen.getByText(/réservés au responsable/)).toBeTruthy();
+  });
+
+  it('une version dépassée ne propose pas Valider, et le retrait reste ouvert', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reponse({ ok: true, version: detail({ depassee: true }), peutDecider: true })));
+    render(<RelectureFicheUsage idVersion="versionbanc0001" onFermer={() => undefined} />);
+    const bloc = within(await screen.findByTestId('rubrique-question'));
+    expect(bloc.queryByRole('button', { name: 'Valider' })).toBeNull();
+    expect(bloc.getByText(/Une version plus récente de cette fiche est déjà validée/)).toBeTruthy();
+    expect(bloc.getByRole('button', { name: 'Retirer' })).toBeTruthy();
+  });
+
+  it('une rubrique validée dans une version à relire n’affiche pas un « Validé » nu', async () => {
+    const validee = rubrique('question', SHA_Q, {
+      etat: { etat: 'validee', ordre: '3', le: LE, validateur: 'responsable@wellneuro.fr' },
+      dernierActe: '3',
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        reponse({ ok: true, version: detail({ etat: { etat: 'a_relire' }, structureDuJour: false, rubriques: [validee] }), peutDecider: true }),
+      ),
+    );
+    render(<RelectureFicheUsage idVersion="versionbanc0001" onFermer={() => undefined} />);
+    const bloc = within(await screen.findByTestId('rubrique-question'));
+    expect(bloc.getByText('Validé · version à relire')).toBeTruthy();
+    expect(bloc.queryByText('Validé')).toBeNull();
+  });
+
+  it('une version validée sous une structure qui n’est plus signée ne fait plus foi, et le badge le dit', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(reponse({ ok: true, version: detail({ etat: { etat: 'validee' }, structureSignee: false }), peutDecider: true })),
+    );
+    render(<RelectureFicheUsage idVersion="versionbanc0001" onFermer={() => undefined} />);
+    expect(await screen.findByText('Validée · structure non signée')).toBeTruthy();
+    expect(screen.getByText(/elle ne fait pas foi/)).toBeTruthy();
   });
 });

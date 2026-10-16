@@ -495,6 +495,16 @@ réussi des fantômes, soit chaque minute hors lecture. Surveillance réglée à
 60 s de période et 6 min de tolérance (une lecture en cours suspend le
 balayage jusqu'à la réservation). Absente = aucun appel, aucune alerte.
 
+**Qui décide sur le texte des fiches d'usage** ([[D-314]] §9, arbitrage du
+2026-10-16) : `WN_FICHES_USAGE_VALIDATEURS`, lu par
+`lib/fiches-usage/responsable.ts`. Adresses séparées par des virgules, casse
+indifférente : seules ces sessions valident ou retirent une rubrique ou un
+libellé (`POST /api/praticien/fiches-usage/actes`, `…/libelles/actes` ; 403
+sinon) ; les autres praticiens lisent l'écran sans geste. **Fermée par
+défaut** : absente ou vide, personne ne décide. À poser sur Scalingo (geste du
+responsable, puis conteneurs web recréés — un `env-set` seul ne change rien),
+jamais au dépôt.
+
 **Hors `web/src`** : `WN_MIGRATIONS_PAR_RELEASE_DB` (`web/scripts/db-deploy.sh`)
 sort les migrations du postdeploy pour les confier au workflow `release-db` —
 posée en production seule, décrite dans `docs/DEPLOIEMENT_RELEASE_DB.md`.

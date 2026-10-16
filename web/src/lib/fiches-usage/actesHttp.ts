@@ -5,6 +5,7 @@ import { emailPraticien } from '@/lib/praticien/appartenance';
 import type { AnomalieStructure } from './controle';
 import type { IssueActe, RaisonRefusActe } from './decision';
 import type { ActeSerialise, EtatTexte } from './etat';
+import { peutDeciderFichesUsage } from './responsable';
 import { estActeFicheUsage, type ActeFicheUsage } from './vocabulaire';
 
 // LA VOIE HTTP DES ACTES DU RESPONSABLE ([[D-314]] §3) — partagée par les deux
@@ -15,7 +16,8 @@ import { estActeFicheUsage, type ActeFicheUsage } from './vocabulaire';
 // jeton du dernier acte vu. S'ils ont bougé, rien n'est écrit (409). Valider
 // exige la déclaration de relecture intégrale, strictement `true` (422).
 // Retirer exige un motif. Le validateur est l'e-mail de la SESSION, jamais une
-// valeur du corps.
+// valeur du corps — et il doit être celui du responsable (`responsable.ts`,
+// 403 sinon).
 
 export const ID_RE = /^[a-z0-9]{8,64}$/i;
 const SHA256_RE = /^[0-9a-f]{64}$/;
@@ -74,6 +76,17 @@ export async function lireDemandeActe(
   // Un acte exige une identité : jamais de validateur vide en base.
   const validateur = emailPraticien(session);
   if (!validateur) return { echec: echec('unauthenticated', 'Session praticien sans e-mail.', 401) };
+  // Le responsable seul décide (arbitrage du 2026-10-16) — avant même de lire
+  // le corps.
+  if (!peutDeciderFichesUsage(validateur)) {
+    return {
+      echec: echec(
+        'reserve_au_responsable',
+        'La validation et le retrait des fiches d’usage sont réservés au responsable.',
+        403,
+      ),
+    };
+  }
 
   let brut: unknown;
   try {

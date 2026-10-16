@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ID_RE } from '@/lib/fiches-usage/actesHttp';
 import { lireVersionFicheUsage, type DetailVersionUsage } from '@/lib/fiches-usage/lecture';
+import { peutDeciderFichesUsage } from '@/lib/fiches-usage/responsable';
 import { emailPraticien } from '@/lib/praticien/appartenance';
 
 // Une version de fiche d'usage, rubrique par rubrique, pour la relecture
@@ -14,7 +15,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export type VersionFicheUsageApiResponse =
-  | { ok: true; version: DetailVersionUsage }
+  | { ok: true; version: DetailVersionUsage; /** La session peut valider et retirer (le responsable seul). */ peutDecider: boolean }
   | { ok: false; reason: string; error: string };
 
 function echec(reason: string, error: string, status: number) {
@@ -31,7 +32,7 @@ export async function GET(req: Request): Promise<NextResponse<VersionFicheUsageA
 
     const version = await lireVersionFicheUsage(id);
     if (!version) return echec('version_introuvable', 'Version introuvable.', 404);
-    return NextResponse.json({ ok: true, version });
+    return NextResponse.json({ ok: true, version, peutDecider: peutDeciderFichesUsage(emailPraticien(session)) });
   } catch (err) {
     const code = typeof err === 'object' && err !== null && 'code' in err ? String((err as { code: unknown }).code) : '';
     console.error('[praticien/fiches-usage/version GET]', err instanceof Error ? err.name : typeof err, code);

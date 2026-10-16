@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { RayonFichesUsagePanel } from '@/components/fiches-usage/RayonFichesUsagePanel';
 import { BanniereDiffere } from '@/components/ui/BanniereDiffere';
 import { getCbDisabledMessage, isCbEnabled, isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
 
@@ -53,6 +54,14 @@ export default function BiologiePage() {
           {getCbDisabledMessage()} Le catalogue documentaire s&apos;ouvrira dans la Bibliothèque.
         </div>
       )}
+
+      {/* Les fiches d'usage du besoin 2 (D-314, BP-12a) : leur écran de
+          validation vit ici, près du parcours biologique qui les lira
+          (arbitrage du 2026-10-16), et non dans la Bibliothèque. Sans
+          drapeau : la relecture n'émet rien, rien n'atteint un patient. */}
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
+        <RayonFichesUsagePanel />
+      </div>
 
       {/* L'affirmation suit l'ÉTAT RÉEL de l'étage 2 (D-122 §2) : « rien
           n'est stocké » deviendrait faux drapeau levé — sur la page même du

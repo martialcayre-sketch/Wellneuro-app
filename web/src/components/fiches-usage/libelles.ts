@@ -52,8 +52,48 @@ export function libelleEtatTexte(etat: EtatTexte | EtatLibelle): { texte: string
   }
 }
 
-/** L'état d'une version de fiche, dérivé de ses rubriques et de la structure. */
-export function libelleEtatVersion(etat: EtatVersionUsage): { texte: string; variante: BadgeVariant } {
+/**
+ * L'état d'une rubrique DANS sa version : « Validé » ne s'affiche tel quel que
+ * si la version rédige la structure du jour, signée. Sinon la validation est
+ * nommée avec ce qui la prive d'effet (revue de BP-12a) — jamais un « Validé »
+ * nu dans une version « à relire ».
+ */
+export function libelleEtatRubrique(
+  etat: EtatTexte,
+  etatVersion: EtatVersionUsage,
+  structureSignee: boolean,
+): { texte: string; variante: BadgeVariant } {
+  if (etat.etat !== 'validee') return libelleEtatTexte(etat);
+  if (etatVersion.etat === 'a_relire') return { texte: 'Validé · version à relire', variante: 'warning' };
+  if (etatVersion.etat === 'hors_structure') return { texte: 'Validé · hors structure', variante: 'warning' };
+  if (!structureSignee) return { texte: 'Validé · structure non signée', variante: 'warning' };
+  return libelleEtatTexte(etat);
+}
+
+/**
+ * L'état d'un libellé dans le rayon : parmi les libellés validés d'un terme,
+ * le plus récent fait foi (« référence ») et les autres sont « remplacés »
+ * (arbitrage du 2026-10-16) — sans qu'aucun acte ne soit posé pour autant.
+ */
+export function libelleEtatLibelle(
+  etat: EtatLibelle,
+  reference: boolean,
+  structureSignee: boolean,
+): { texte: string; variante: BadgeVariant } {
+  if (etat.etat !== 'validee') return libelleEtatTexte(etat);
+  if (!structureSignee) return { texte: 'Validé · structure non signée', variante: 'warning' };
+  return reference ? { texte: 'Validé · référence', variante: 'success' } : { texte: 'Remplacé', variante: 'neutral' };
+}
+
+/**
+ * L'état d'une version de fiche, dérivé de ses rubriques et de la structure.
+ * Une version validée sous une structure qui n'est plus signée (signature
+ * retirée sans changement d'empreinte) ne fait plus foi, et le badge le dit.
+ */
+export function libelleEtatVersion(
+  etat: EtatVersionUsage,
+  structureSignee = true,
+): { texte: string; variante: BadgeVariant } {
   switch (etat.etat) {
     case 'illisible':
       return { texte: 'Statut illisible', variante: 'danger' };
@@ -68,13 +108,16 @@ export function libelleEtatVersion(etat: EtatVersionUsage): { texte: string; var
     case 'a_valider':
       return { texte: `À valider · ${etat.validees}/${etat.attendues} rubriques`, variante: 'info' };
     case 'validee':
-      return { texte: 'Validée', variante: 'success' };
+      return structureSignee
+        ? { texte: 'Validée', variante: 'success' }
+        : { texte: 'Validée · structure non signée', variante: 'warning' };
   }
 }
 
 /** Pourquoi une version ne peut pas être validée, en une phrase — ou `null`. */
-export function obstacleDeVersion(etat: EtatVersionUsage, structureSignee: boolean): string | null {
+export function obstacleDeVersion(etat: EtatVersionUsage, structureSignee: boolean, depassee = false): string | null {
   if (!structureSignee) return 'La structure des fiches d’usage n’est pas signée : aucun texte ne se valide avant elle.';
+  if (depassee) return 'Une version plus récente de cette fiche est déjà validée : celle-ci ne se valide plus.';
   switch (etat.etat) {
     case 'illisible':
       return 'L’état d’une rubrique est illisible : aucune validation n’est possible.';
@@ -90,12 +133,17 @@ export function obstacleDeVersion(etat: EtatVersionUsage, structureSignee: boole
 }
 
 /** Pourquoi un libellé ne peut pas être validé, en une phrase — ou `null`. */
-export function obstacleDeLibelle(etat: EtatLibelle, structureSignee: boolean): string | null {
+export function obstacleDeLibelle(etat: EtatLibelle, structureSignee: boolean, depasse = false): string | null {
   if (!structureSignee) return 'La structure des fiches d’usage n’est pas signée : aucun texte ne se valide avant elle.';
   if (etat.etat === 'hors_structure') return 'Ce terme n’est pas déclaré par la structure signée.';
   if (etat.etat === 'a_relire') return 'Ce libellé a été déposé pour une autre structure : un nouveau libellé doit être déposé.';
+  if (depasse) return 'Un libellé plus récent de ce terme est déjà validé : celui-ci ne se valide plus.';
   return null;
 }
+
+/** Ce que voit un praticien qui n'est pas le responsable des fiches d'usage. */
+export const RESERVE_AU_RESPONSABLE =
+  'La validation et le retrait des fiches d’usage sont réservés au responsable : cet écran est en lecture.';
 
 export function formatDateHeure(iso: string): string {
   const date = new Date(iso);

@@ -49,7 +49,10 @@ export type FicheDuRayon = {
   declaree: boolean;
   population: string | null;
   rubriquesAttendues: readonly string[];
-  /** La version de référence : la plus récente validée, ou `null`. */
+  /**
+   * La version de référence : la plus récente validée, ou `null` — toujours
+   * `null` tant que la structure n'est pas signée (rien ne fait foi sans elle).
+   */
   reference: string | null;
   versions: ResumeVersion[];
 };
@@ -62,6 +65,14 @@ export type LibelleDuRayon = {
   libelleSha256: string;
   creeLe: string;
   etat: EtatLibelle;
+  /**
+   * L'état du texte au vu de ses seuls actes, sous l'état de structure : le
+   * retrait reste offert sur un libellé hors structure ou à relire, comme sur
+   * une rubrique.
+   */
+  etatTexte: EtatTexte;
+  /** Un libellé plus récent du même terme est validé : celui-ci ne se valide plus. */
+  depasse: boolean;
   dernierActe: string | null;
   actes: ActeSerialise[];
 };
@@ -70,6 +81,12 @@ export type TermeDuRayon = {
   termeId: string;
   nature: NatureLibelle | string;
   declare: boolean;
+  /**
+   * Le libellé qui fait foi : le plus récent validé (au sens du numéro), les
+   * autres validés sont « remplacés » — aucun acte n'est posé pour autant.
+   * `null` tant que la structure n'est pas signée.
+   */
+  reference: string | null;
   libelles: LibelleDuRayon[];
 };
 
@@ -132,7 +149,7 @@ export async function lireRayonFichesUsage(
       declaree: declaree !== null,
       population: declaree?.population ?? null,
       rubriquesAttendues: attendues ?? [],
-      reference: derniereVersionValidee(resumes)?.id ?? null,
+      reference: signee ? (derniereVersionValidee(resumes)?.id ?? null) : null,
       versions: resumes,
     };
   });
@@ -141,18 +158,26 @@ export async function lireRayonFichesUsage(
   const termeIds = [...new Set([...termesDeclares, ...libelles.map(l => l.termeId)])];
   const termes: TermeDuRayon[] = termeIds.map(termeId => {
     const declare = termesDeclares.includes(termeId);
-    const siens = libelles.filter(l => l.termeId === termeId);
+    const siens = libelles
+      .filter(l => l.termeId === termeId)
+      .map(l => ({ l, etat: etatDuLibelle(l, l.actes, { empreinteStructure: empreinte, termeDeclare: declare }) }));
+    const numerosValides = siens.filter(x => x.etat.etat === 'validee').map(x => x.l.numero);
+    const plusRecentValide = numerosValides.length > 0 ? Math.max(...numerosValides) : null;
+    const reference = siens.find(x => x.l.numero === plusRecentValide)?.l.id ?? null;
     return {
       termeId,
-      nature: siens[0]?.nature ?? (structure.hypotheses.includes(termeId) ? 'hypothese' : 'population'),
+      nature: siens[0]?.l.nature ?? (structure.hypotheses.includes(termeId) ? 'hypothese' : 'population'),
       declare,
-      libelles: siens.map(l => ({
+      reference: signee ? reference : null,
+      libelles: siens.map(({ l, etat }) => ({
         id: l.id,
         numero: l.numero,
         libelle: l.libelle,
         libelleSha256: l.libelleSha256,
         creeLe: l.creeLe.toISOString(),
-        etat: etatDuLibelle(l, l.actes, { empreinteStructure: empreinte, termeDeclare: declare }),
+        etat,
+        etatTexte: etatDuTexte(l.libelleSha256, l.actes),
+        depasse: plusRecentValide !== null && l.numero < plusRecentValide,
         dernierActe: jetonDernierActe(l.actes),
         actes: l.actes.map(serialiserActe),
       })),
@@ -184,6 +209,8 @@ export type DetailVersionUsage = {
   structureDuJour: boolean;
   structureSignee: boolean;
   etat: EtatVersionUsage;
+  /** Une version plus récente de la fiche est validée : celle-ci ne se valide plus. */
+  depassee: boolean;
   rubriques: RubriqueDetaillee[];
 };
 
@@ -210,6 +237,21 @@ export async function lireVersionFicheUsage(
     },
   });
   if (!v) return null;
+
+  // Le refus `version_depassee` de la décision, lu d'avance : l'écran ne
+  // propose pas un geste que le serveur refusera.
+  const attendues = rubriquesAttendues(v.ficheId, contexte);
+  const plusRecentes = await prisma.ficheUsageVersion.findMany({
+    where: { ficheId: v.ficheId, numero: { gt: v.numero } },
+    select: { contenu: true, structureSha256: true, actes: { select: { ...SELECTION_ACTE, rubrique: true } } },
+  });
+  const depassee = plusRecentes.some(
+    p =>
+      etatDeLaVersion(
+        { structureSha256: p.structureSha256, rubriques: rubriquesLues(p.contenu, p.actes) },
+        { empreinteStructure: contexte.empreinte, rubriquesAttendues: attendues },
+      ).etat === 'validee',
+  );
 
   const lues = rubriquesLues(v.contenu, v.actes);
   const contenu = v.contenu as Record<string, unknown>;
@@ -239,8 +281,9 @@ export async function lireVersionFicheUsage(
     structureSignee: signee,
     etat: etatDeLaVersion(
       { structureSha256: v.structureSha256, rubriques: lues },
-      { empreinteStructure: contexte.empreinte, rubriquesAttendues: rubriquesAttendues(v.ficheId, contexte) },
+      { empreinteStructure: contexte.empreinte, rubriquesAttendues: attendues },
     ),
+    depassee,
     rubriques,
   };
 }

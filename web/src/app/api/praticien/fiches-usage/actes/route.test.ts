@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { getServerSession, poserActeRubrique } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -30,8 +30,13 @@ function requete(body: unknown, brut?: string): Request {
 }
 
 describe('POST /api/praticien/fiches-usage/actes — un acte par rubrique (D-314 §3)', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   beforeEach(() => {
     vi.clearAllMocks();
+    // Le responsable seul décide (arbitrage du 2026-10-16) : la session des
+    // cas ci-dessous est la sienne.
+    vi.stubEnv('WN_FICHES_USAGE_VALIDATEURS', 'praticien@exemple.fr');
     getServerSession.mockResolvedValue({ user: { email: 'Praticien@Exemple.fr' } });
     poserActeRubrique.mockResolvedValue({
       issue: 'posee',
@@ -45,6 +50,17 @@ describe('POST /api/praticien/fiches-usage/actes — un acte par rubrique (D-314
     expect((await POST(requete(CORPS))).status).toBe(401);
     getServerSession.mockResolvedValue({ user: {} });
     expect((await POST(requete(CORPS))).status).toBe(401);
+    expect(poserActeRubrique).not.toHaveBeenCalled();
+  });
+
+  it('403 pour une session qui n’est pas celle du responsable — rien n’est lu ni posé', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'autre@exemple.fr' } });
+    const res = await POST(requete(CORPS));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'reserve_au_responsable' });
+    vi.stubEnv('WN_FICHES_USAGE_VALIDATEURS', '');
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@exemple.fr' } });
+    expect((await POST(requete(CORPS))).status).toBe(403);
     expect(poserActeRubrique).not.toHaveBeenCalled();
   });
 

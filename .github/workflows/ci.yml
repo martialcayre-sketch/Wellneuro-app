@@ -1089,6 +1089,21 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/fiches_usage_v1_negatif.sql
 
+      # Les mêmes tables, par les VRAIS chemins du code et sur base réelle
+      # (BP-12a, suites de la revue) : l'empreinte calculée en JS sur le texte
+      # relu du JSONB est celle que le trigger recalcule en SQL (accents
+      # composés, emoji, `\r\n`, espaces insécables…), et deux validations
+      # concurrentes du même état — constatées en attente du verrou — n'en
+      # posent qu'une. Commet ses lignes (ajout seul) : la base doit être
+      # NOMMÉE. Sauté partout ailleurs.
+      - name: Fiches usage real-database bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_FICHES_USAGE_BANC_BASE: wellneuro_ci
+          DB_POOL_MAX: '4'
+        run: npx vitest run src/lib/fiches-usage/baseReelle.pg.test.ts
+
       # Staging d'import biologique (D-256 A2/A5, BIO-INGEST LOT-02). Ce que le
       # drift check ne voit pas : le document est ce qu'il dit être (type,
       # 10 Mo, empreinte recalculée), un seul dossier d'un bout à l'autre de la

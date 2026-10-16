@@ -3,9 +3,10 @@
 Lot BP-12a (`D-314` §4), sur le patron de `tools/corpus/fiches/`. L'outil
 rédige le texte des fiches d'usage, rubrique par rubrique, et les libellés de
 leur vocabulaire (hypothèses, populations d'usage), puis les dépose en base
-comme **brouillons**. La validation reste un acte du praticien, rubrique par
-rubrique et libellé par libellé, posé dans l'application (rayon « Fiches
-d'usage » de la Bibliothèque), jamais ici (`DC-16`).
+comme **brouillons**. La validation reste un acte du responsable, rubrique
+par rubrique et libellé par libellé, posé dans l'application (rayon « Fiches
+d'usage » de la page « Biologie fonctionnelle », `D-314` §9), jamais ici
+(`DC-16`).
 
 **Aucun texte de fiche ni libellé n'entre au dépôt**, qui est public (`D-251`
 §4). Les sorties vivent sous `~/.wellneuro/corpus/fiches-usage/<identifiant>/`,

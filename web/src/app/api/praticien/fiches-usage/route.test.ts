@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { getServerSession, lireRayonFichesUsage } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -27,8 +27,12 @@ describe('GET /api/praticien/fiches-usage', () => {
     expect(lireRayonFichesUsage).not.toHaveBeenCalled();
   });
 
-  it('rend le rayon', async () => {
-    expect(await (await GET()).json()).toEqual({ ok: true, rayon: RAYON });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('rend le rayon, et dit si la session peut décider (responsable seul, fermé par défaut)', async () => {
+    expect(await (await GET()).json()).toEqual({ ok: true, rayon: RAYON, peutDecider: false });
+    vi.stubEnv('WN_FICHES_USAGE_VALIDATEURS', 'praticien@exemple.fr');
+    expect(await (await GET()).json()).toEqual({ ok: true, rayon: RAYON, peutDecider: true });
   });
 
   it('500 sans texte journalisé', async () => {

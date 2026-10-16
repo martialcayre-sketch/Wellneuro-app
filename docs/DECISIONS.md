@@ -205,10 +205,59 @@ LOT-12, arbitrages 11 à 15), précisent §2, §3 et §5 :
   §5 étendu) : une structure re-signée rend texte ET libellés « à relire »
   jusqu'à un nouvel acte.
 
+**§9 — Amendement du 2026-10-16 : la structure, le validateur, l'écran.**
+Douze arbitrages du responsable, rendus avant la PR du code consommateur
+(fiche LOT-12, arbitrages 16 à 27), précisent §2, §3 et §5. Aucun ne touche
+la base : la migration (#1488) reste telle qu'appliquée.
+
+- **La structure porte les trois axes de [[D-266]] §3, dès la v1**
+  (arbitrage 16) : nature du lien, usage décisionnel (plus le marqueur
+  sécurité / admissibilité), statut d'usage — une valeur par fiche, en
+  identifiants, aux valeurs de D-266 §3. Ajoutés tant que la structure est
+  vide : rien ne repasse « à relire ».
+- **Nature ↔ statut** (arbitrage 17, règle du cadrage v3 §3.1) : une piste
+  exploratoire ou un usage non étayé n'admet que « non validé » (espace de
+  réflexion, aucun déclenchement) ; une mesure directe ou une information
+  contributive admet les trois statuts. Une structure qui l'enfreint **ne se
+  signe pas** : `structureSignee()` exige une structure cohérente.
+- **Besoins** (arbitrage 18) : au moins un des 12 besoins du guide
+  ([[D-312]]), par son numéro.
+- **Question clinique** (arbitrage 19) : un identifiant `QC_…` d'une liste
+  fermée déclarée par la structure, en attendant la table signée du cadrage
+  v3 §3.3, qui reprendra ces identifiants. Son texte en clair est la rubrique
+  « question » de chaque version, en base.
+- **Statut réglementaire et renvois aux précautions : reportés à BP-17**
+  (arbitrage 20), où produits et précautions existent ; leur ajout changera
+  l'empreinte.
+- **`prescriptif` n'est pas exigé des claims des fiches d'usage** (arbitrage
+  21, la question que [[D-046]] réserve à chaque table nouvelle) : régime des
+  contradictions — validé, actif, non remplacé. L'entrée du contrat de
+  fraîcheur se pose avec la première paire, à `false`.
+- **Le responsable seul valide et retire** (arbitrage 22) : liste d'adresses
+  `WN_FICHES_USAGE_VALIDATEURS`, fermée par défaut (403 sinon) ; les autres
+  praticiens lisent l'écran sans geste. Précise §3 (« acte du responsable »).
+- **Libellé de référence** (arbitrage 23) : parmi les libellés validés d'un
+  terme, le plus récent fait foi ; les autres s'affichent « remplacé », sans
+  acte posé à la place du responsable. Rien ne fait foi tant que la structure
+  n'est pas signée.
+- **L'écran vit avec la biologie** (arbitrage 24), page « Biologie
+  fonctionnelle », et non dans la Bibliothèque.
+- **Le document TRUST et les deux consignes de l'outil se relisent avant le
+  merge du code** (arbitrage 25).
+- **Les quatre restes de la revue se corrigent avant la PR** (arbitrage 26) :
+  une validation privée d'effet se nomme comme telle (version à relire, hors
+  structure, structure non signée) ; « Valider » n'est plus offert sur une
+  version ou un libellé dépassé ; un libellé hors structure se retire comme
+  une rubrique ; deux bancs sur base réelle (empreinte JS ↔ SQL après JSONB,
+  et concurrence constatée sur le verrou).
+- **Les trois bases locales d'essai sont supprimées** (arbitrage 27).
+
 - Conséquences : fragment `changelog.d/2026-10-15-d314-fiches-usage.md` ;
   fiche LOT-12 mise à jour ; puis la PR de migration seule. Amendement §8 :
   fragment `changelog.d/2026-10-15-bp12a-migration-fiches-usage.md`, porté
-  par la PR de migration.
+  par la PR de migration. Amendement §9 : fragment
+  `changelog.d/2026-10-16-bp12a-code-fiches-usage.md`, porté par la PR du
+  code.
 
 ### D-313 — AIPD : réexamen déclenché par une liste d'événements et au plus tard le 2027-06-30 ; conclusion « non requise » maintenue au 2026-10-15 ; faits postérieurs à D-265 versés (lettre co)
 

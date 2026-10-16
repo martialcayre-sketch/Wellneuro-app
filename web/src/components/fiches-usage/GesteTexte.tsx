@@ -9,12 +9,21 @@
 // rechargement qui rend le même texte au même état. Elle vient d'une case
 // cochée, jamais d'une constante (D-195 §1).
 //
+// LE GESTE PORTE SUR L'ÉTAT DU TEXTE SEUL (ses actes) : ce qui empêche de
+// VALIDER — structure non signée, hors structure, à relire, version dépassée —
+// arrive en `obstacle`, et le RETRAIT reste offert dans tous ces cas, pour une
+// rubrique comme pour un libellé (le coupe-circuit, revue de BP-12a).
+//
+// RÉSERVÉ AU RESPONSABLE (arbitrage du 2026-10-16) : sans `peutDecider`, rien
+// ne s'affiche — le parent le dit une fois, en tête d'écran ; le serveur le
+// refuse de toute façon (403).
+//
 // Le corps de l'acte est écrit par le parent, à plat : la garde
 // `fiches-usage/confirmations.guard.test.ts` y lit les clés envoyées.
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import type { EtatLibelle, EtatTexte } from '@/lib/fiches-usage/etat';
+import type { EtatTexte } from '@/lib/fiches-usage/etat';
 import { MOTIF_MAX, type ActeFicheUsage } from '@/lib/fiches-usage/vocabulaire';
 import { RAISON_ILLISIBLE } from './libelles';
 
@@ -22,14 +31,18 @@ export function GesteTexte({
   nomDuTexte,
   etat,
   obstacle,
+  peutDecider,
   envoi,
   onConfirmer,
 }: {
   /** « cette rubrique », « ce libellé » : ce que la déclaration couvre. */
   nomDuTexte: string;
-  etat: EtatTexte | EtatLibelle;
+  /** L'état du texte au vu de ses seuls actes. */
+  etat: EtatTexte;
   /** Pourquoi la validation est impossible, ou `null`. Le retrait reste ouvert. */
   obstacle: string | null;
+  /** La session est celle du responsable : elle peut valider et retirer. */
+  peutDecider: boolean;
   envoi: boolean;
   onConfirmer: (acte: ActeFicheUsage, relectureIntegrale: boolean, motif: string) => void;
 }) {
@@ -53,6 +66,7 @@ export function GesteTexte({
     setMotif('');
   };
 
+  if (!peutDecider) return null;
   if (etat.etat === 'illisible') {
     return (
       <p className="text-sm text-status-danger">
@@ -60,10 +74,6 @@ export function GesteTexte({
       </p>
     );
   }
-  if (etat.etat === 'hors_structure' || etat.etat === 'a_relire') {
-    return obstacle ? <p className="text-sm text-muted-foreground">{obstacle}</p> : null;
-  }
-
   const peutValider = etat.etat === 'a_valider' || etat.etat === 'retiree';
   const peutRetirer = etat.etat === 'a_valider' || etat.etat === 'validee';
 
