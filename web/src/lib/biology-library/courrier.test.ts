@@ -109,7 +109,37 @@ describe('genererCourrierBiologie', () => {
     ]));
     expect(resultat.ok).toBe(true);
     if (!resultat.ok) return;
-    expect(resultat.courrier.texte).toContain('Hors nomenclature');
+    // D-309 §3, avancé par D-316 §3 : « Hors nomenclature » seul — le courrier
+    // n'affirme pas qui paie.
+    expect(resultat.courrier.texte).toContain('Hors nomenclature : Zinc érythrocytaire.');
+    expect(resultat.courrier.texte).not.toMatch(/charge du patient/);
+  });
+
+  it('écrit « remboursement non évalué », et seulement pour ce qui l’est (D-309 §2)', () => {
+    const resultat = genererCourrierBiologie(entree([
+      ligne({
+        panelCode: 'PANEL_MICRO',
+        libelle: 'Micronutrition',
+        analytes: [
+          {
+            code: 'BIO_FOL',
+            libelle: 'Folates',
+            validationMedicaleRequise: false,
+            remboursement: { statut: 'non_evalue', conditions: [], codesActesRetenus: [] },
+          },
+          {
+            code: 'BIO_FER',
+            libelle: 'Ferritine',
+            validationMedicaleRequise: false,
+            remboursement: { statut: 'remboursable', conditions: [], codesActesRetenus: ['1213'] },
+          },
+        ],
+      }),
+    ]));
+    expect(resultat.ok).toBe(true);
+    if (!resultat.ok) return;
+    expect(resultat.courrier.texte).toContain('Remboursement non évalué : Folates.');
+    expect(resultat.courrier.texte).not.toMatch(/non évalué : [^.]*Ferritine/);
   });
 
   it('refuse un courrier sans exploration proposée', () => {
@@ -228,6 +258,15 @@ describe('longueur au catalogue complet (revue B1)', () => {
   // (libellé de panel ≤ 30 caractères, d'analyte ≤ 35, 47 analytes — 49 depuis
   // D-245 §5, libellés neufs sous la même borne),
   // arrondies vers le haut.
+  //
+  // RECALIBRÉ PAR LA LETTRE F ([[D-316]]) : « remboursement non évalué » se
+  // dit, une fois par courrier, des analyses DISTINCTES. Le catalogue réel en
+  // compte 35 dans ses panels actifs (78 éléments, relu par conteneur le
+  // 2026-10-17) : les codes ci-dessous tirent dans un réservoir de 35, comme un
+  // bilan réel dont les panels partagent leurs analyses. Mesure au catalogue
+  // réel, les 13 panels proposables tous proposés, tout non évalué : 7 348
+  // caractères au courrier, 7 691 au document patient. Dites ligne à ligne,
+  // ces mentions faisaient 8 759 ici — refus de consignation.
   it('quinze panels proposés aux dimensions du catalogue tiennent sous la borne', () => {
     const lignes = Array.from({ length: 15 }, (_, i) =>
       ligne({
@@ -237,8 +276,8 @@ describe('longueur au catalogue complet (revue B1)', () => {
         declencheurRempli: false,
         condition: 'Signes cliniques d’appel persistants au questionnaire dédié.',
         analytes: Array.from({ length: 4 }, (_, j) => ({
-          code: `BIO_${i}_${j}`,
-          libelle: `Analyte ${i}-${j}`.padEnd(35, 'x'),
+          code: `BIO_${(i * 4 + j) % 35}`,
+          libelle: `Analyte ${(i * 4 + j) % 35}`.padEnd(35, 'x'),
           validationMedicaleRequise: j === 0,
           remboursement: { statut: 'non_evalue' as const, conditions: [], codesActesRetenus: [] },
         })),

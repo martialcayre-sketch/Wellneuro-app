@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/Badge';
 import { CorrespondancesNabmSection } from '@/components/biologie/CorrespondancesNabmSection';
 import type { FicheAnalyte } from '@/lib/biology-library/catalogue';
+import { LABEL_REMBOURSEMENT } from '@/lib/biology-library/libellesRemboursement';
 
 // Fiche d'analyte du rayon biologie (CB-08) — consultation documentaire.
 //
@@ -43,12 +44,9 @@ export const LABEL_COMPLETUDE: Record<string, string> = {
   lacunaire: 'Lacunaire',
 };
 
-export const LABEL_REMBOURSEMENT: Record<string, string> = {
-  non_evalue: 'Non évalué',
-  hors_nomenclature: 'Hors nomenclature courante',
-  remboursable: 'Remboursable',
-  remboursable_si_groupe: 'Remboursable en groupe d’actes',
-};
+// Libellés dans une feuille pure depuis [[D-316]] §4 (le cockpit les lit
+// aussi) ; réexportés ici pour le rayon biologie.
+export { LABEL_REMBOURSEMENT };
 
 const LABEL_CONDITION: Record<string, string> = {
   entente_prealable: 'Entente préalable requise',

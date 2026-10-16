@@ -50,7 +50,7 @@ beforeEach(() => {
   deriverPropositionPourPatient.mockResolvedValue({
     ok: true,
     proposition: { ok: true, lignes: [] },
-    limites: [{ type: 'remboursement_non_evalue' }],
+    limites: [{ type: 'remboursement_non_evalue', analytes: ['Folates'] }],
   });
 });
 
@@ -135,7 +135,7 @@ describe('GET — la proposition', () => {
     const payload = await response.json();
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
-    expect(payload.limites).toEqual([{ type: 'remboursement_non_evalue' }]);
+    expect(payload.limites).toEqual([{ type: 'remboursement_non_evalue', analytes: ['Folates'] }]);
     expect(payload.documentes[0].documenteLe).toBe('2026-08-01T00:00:00.000Z');
   });
 

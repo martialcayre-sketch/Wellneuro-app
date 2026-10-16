@@ -4,6 +4,63 @@
 
 ## Décisions actives
 
+### D-316 — La proposition de bilan lit les remboursements signés ; le document patient dit « non vérifié », « seulement en groupe » et « non remboursé », jamais qui paie ; le courrier reçoit D-309 §2-§3 dès maintenant (lettre f, F54)
+
+- Date : 2026-10-17
+- Statut : accepté. Quatre arbitrages du responsable du 2026-10-17, sur
+  questions à options, tous conformes à la recommandation. Texte rédigé par
+  l'assistant à partir de ces réponses ; une forme (§5) fixée sans question
+  par une mesure.
+- Domaine : `web/src/lib/biology-library/propositionService.ts`,
+  `documentPatient.ts`, `courrier.ts`, `remboursable.ts` ; proposition de
+  bilan du cockpit (`PropositionBilanPanel.tsx`) ; fiches F54 et F55.
+  Avance : [[D-309]] §2 et §3 (exécution prévue au rang 4).
+- **Ne touche pas** : aucune signature ni aucun constat (gestes du
+  responsable, M-3, M-3c, G-3) ; aucun schéma, aucune migration ; aucune
+  règle d'indication, aucun seuil ; [[D-309]] §1 (code d'acte par ligne,
+  groupe et conditions dits en mots) et §4 (retrait de
+  `regimeDocumentaire`) restent au rang 4, avec J3-base.
+
+**§1 — La proposition lit la dérivation.** Chaque analyse d'une ligne porte
+l'état que `deriverRemboursement` rend, la même fonction que la fiche
+d'analyte de la Bibliothèque : correspondance signée vers un acte actif du
+millésime courant, sinon constat « aucun acte » du millésime courant, sinon
+« non évalué ». Une liaison signée sort de « non évalué » pour elle seule
+(critère de F54).
+
+**§2 — Document patient.** Trois états se disent, un seul se tait :
+« Remboursement par l'assurance maladie non vérifié à ce jour : … »,
+« Remboursé seulement s'il est demandé avec d'autres examens : … »,
+« Non remboursé par l'assurance maladie : … ». Une analyse remboursable n'a
+pas de mention : dès qu'une analyse est dite non remboursée, le silence sur
+les autres se lirait « remboursé », il n'est donc laissé qu'à celle qui l'est.
+La mention « (resterait à votre charge) » est retirée : l'application ne
+connaît ni la mutuelle ni le laboratoire.
+
+**§3 — Courrier au médecin.** [[D-309]] §2 et §3 s'appliquent dès la lettre
+f, en mots seuls : « Remboursement non évalué : … » et « Hors nomenclature :
+… », sans « (à la charge du patient) ».
+
+**§4 — Écran du praticien.** Dans la proposition de bilan du cockpit, chaque
+analyse porte son état, aux libellés de la fiche d'analyte (« Remboursable »,
+« Remboursable en groupe d'actes », « Hors nomenclature courante », « Non
+évalué »). La limite « remboursement non évalué » ne s'affiche que s'il en
+reste parmi les lignes proposées, et les nomme ; elle garde « cela ne veut
+pas dire non remboursé ».
+
+**§5 — Une fois par document.** Courrier et document patient disent ces
+mentions une seule fois, après les lignes, chacune nommant les analyses
+distinctes de son état. Dites ligne à ligne, elles répétaient les libellés
+des analyses partagées entre bilans et faisaient passer un bilan complet
+au-delà de la borne de consignation (8 000 caractères) : 8 759 au banc du
+courrier. Mesure au catalogue réel (relu par conteneur le 2026-10-17 : 15
+panels actifs, 78 éléments, 35 analyses distinctes), les 13 panels
+proposables tous proposés et tout non évalué : 7 348 au courrier, 7 691 au
+document patient.
+
+**§6 — Exécution.** Lettre f, file A rang 2, une PR sans migration ; bancs
+sur les quatre états, contre-épreuve par mutations.
+
 ### D-315 — Journal de lecture du protocole : la première ouverture du détail de chaque version diffusée est tracée, sans date ; ACT-1 n'attend que les conditions et ce journal ; sa migration passe dès qu'elle est prête, avant celle de ai (lettre p, CC-8)
 
 - Date : 2026-10-15

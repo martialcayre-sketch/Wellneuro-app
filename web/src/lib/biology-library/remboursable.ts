@@ -163,3 +163,25 @@ export function regimeDocumentaire(
     ? 'courrier_medecin'
     : 'document_patient';
 }
+
+/**
+ * Mentions de remboursement d'un document, UNE FOIS pour tout le document
+ * ([[D-316]] §2-§3) : chaque phrase nomme les analyses distinctes (par code)
+ * de son état, dans l'ordre de première apparition. Dites ligne à ligne, elles
+ * répétaient les libellés et faisaient passer un bilan complet au-delà de la
+ * borne de consignation (8 000 caractères). Un état sans analyse ne dit rien.
+ */
+export function mentionsRemboursement(
+  analytes: ReadonlyArray<{ code: string; libelle: string; remboursement: Pick<Remboursement, 'statut'> }>,
+  phrases: ReadonlyArray<readonly [StatutRemboursement, string]>,
+): string[] {
+  return phrases.flatMap(([statut, phrase]) => {
+    const libelles = new Map<string, string>();
+    for (const analyte of analytes) {
+      if (analyte.remboursement.statut === statut && !libelles.has(analyte.code)) {
+        libelles.set(analyte.code, analyte.libelle);
+      }
+    }
+    return libelles.size > 0 ? [`${phrase} : ${[...libelles.values()].join(', ')}.`] : [];
+  });
+}

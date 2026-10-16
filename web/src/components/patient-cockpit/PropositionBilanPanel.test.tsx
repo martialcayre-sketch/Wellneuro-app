@@ -51,10 +51,40 @@ describe('ce que l’écran doit dire à voix haute', () => {
   });
 
   it('« non évalué » n’est jamais présenté comme « non remboursé »', () => {
-    rendre({ limites: [{ type: 'remboursement_non_evalue' }] });
+    rendre({ limites: [{ type: 'remboursement_non_evalue', analytes: ['Folates', 'Homocystéine'] }] });
     const texte = screen.getByText(/personne n’a tranché/i).textContent ?? '';
     expect(texte).toMatch(/non évalué/i);
     expect(texte).toMatch(/ne veut pas dire « non remboursé »/i);
+    // La limite nomme les analyses visées ([[D-316]] §4) : « tous les
+    // analytes » est faux dès qu'une correspondance est signée.
+    expect(texte).toContain('Folates, Homocystéine');
+    expect(texte).not.toMatch(/tous les analytes/i);
+  });
+
+  it('chaque analyse porte son état de remboursement, au libellé de la fiche d’analyte (D-316 §4)', () => {
+    const etat = (statut: 'remboursable' | 'hors_nomenclature' | 'non_evalue' | 'remboursable_si_groupe') => ({
+      statut,
+      conditions: [],
+      codesActesRetenus: [],
+    });
+    rendre({
+      lignes: [
+        ligne({
+          analytes: [
+            { code: 'A', libelle: 'Ferritine', validationMedicaleRequise: false, remboursement: etat('remboursable') },
+            { code: 'B', libelle: 'Homocystéine', validationMedicaleRequise: false, remboursement: etat('hors_nomenclature') },
+            { code: 'C', libelle: 'Folates', validationMedicaleRequise: false, remboursement: etat('non_evalue') },
+            { code: 'D', libelle: 'TSH', validationMedicaleRequise: false, remboursement: etat('remboursable_si_groupe') },
+          ],
+        }),
+      ],
+    });
+    expect(
+      screen.getByText(
+        'Ferritine (Remboursable) · Homocystéine (Hors nomenclature courante) · '
+        + 'Folates (Non évalué) · TSH (Remboursable en groupe d’actes)',
+      ),
+    ).toBeTruthy();
   });
 
   it('dit qu’un bilan non déclaré lui est inconnu', () => {

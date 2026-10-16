@@ -4,6 +4,8 @@ const { prisma, deriverStatutsBiologie } = vi.hoisted(() => ({
   prisma: {
     biologyPanel: { findMany: vi.fn() },
     biologyAnalyte: { findMany: vi.fn() },
+    biologyCatalogVersionCourante: { findUnique: vi.fn() },
+    biologyNabmActe: { findMany: vi.fn() },
     panelBiologieDocumente: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
     consultation: { findFirst: vi.fn() },
@@ -43,6 +45,8 @@ beforeEach(() => {
     panelDuCatalogue('PANEL_A', [{ analyte: { code: 'BIO_FER', libelle: 'Ferritine' }, ratio: null }]),
   ]);
   prisma.biologyAnalyte.findMany.mockResolvedValue([]);
+  prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(null);
+  prisma.biologyNabmActe.findMany.mockResolvedValue([]);
   prisma.panelBiologieDocumente.findMany.mockResolvedValue([]);
   prisma.questionnaireReponse.findMany.mockResolvedValue([]);
   prisma.consultation.findFirst.mockResolvedValue(null);
@@ -180,18 +184,144 @@ describe('composition du catalogue', () => {
   });
 });
 
-describe('remboursements et abstention', () => {
-  it('aucune carte de remboursement n’est construite — le défaut du moteur est l’aveu juste', async () => {
-    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
-    const entree = deriverStatutsBiologie.mock.calls[0][0];
-    // Passer une Map de `non_evalue` affirmerait qu'on a évalué et conclu à
-    // rien ; ne rien passer laisse le moteur poser son propre `non_evalue`.
-    expect(entree.remboursements).toBeUndefined();
+// Lettre f ([[D-316]] §1) : la proposition lit les correspondances signées et
+// les constats « aucun acte », par la dérivation unique de `remboursable.ts`.
+function analyteEnBase(
+  code: string,
+  partiel: {
+    validationMedicaleRequise?: boolean;
+    correspondancesNabm?: Array<{ codeActe: string; nature: string; verifiePar: string | null }>;
+    constatNabm?: { millesime: string } | null;
+  } = {},
+) {
+  return {
+    code,
+    validationMedicaleRequise: partiel.validationMedicaleRequise ?? false,
+    correspondancesNabm: partiel.correspondancesNabm ?? [],
+    constatNabm: partiel.constatNabm ?? null,
+  };
+}
+
+function acte(codeActe: string, inactif = false) {
+  return { codeActe, inactif, ententePrealable: false, acteReserve: false, remboursementTotal: true };
+}
+
+function analyteDeLigne(code: string, libelle: string, statut: string) {
+  return {
+    code,
+    libelle,
+    validationMedicaleRequise: false,
+    remboursement: { statut, conditions: [], codesActesRetenus: [] },
+  };
+}
+
+describe('remboursements — la carte passée au moteur (lettre f)', () => {
+  beforeEach(() => {
+    prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue({ versionSource: 'V105' });
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteEnBase('BIO_FER', {
+        correspondancesNabm: [{ codeActe: '1213', nature: 'isole', verifiePar: 'praticien@wellneuro.fr' }],
+      }),
+      analyteEnBase('BIO_HCY', { constatNabm: { millesime: 'V105' } }),
+      analyteEnBase('BIO_PERIME', { constatNabm: { millesime: 'V104' } }),
+      analyteEnBase('BIO_INACTIF', {
+        correspondancesNabm: [{ codeActe: '9999', nature: 'isole', verifiePar: 'praticien@wellneuro.fr' }],
+      }),
+      analyteEnBase('BIO_PROPOSE', {
+        correspondancesNabm: [{ codeActe: '0584', nature: 'isole', verifiePar: null }],
+      }),
+      analyteEnBase('BIO_VALID', { validationMedicaleRequise: true }),
+    ]);
+    prisma.biologyNabmActe.findMany.mockResolvedValue([acte('1213'), acte('9999', true)]);
   });
 
-  it('la limite « remboursement non évalué » est toujours dite', async () => {
+  it('chaque analyte sort de sa dérivation : signée, constat courant, constat périmé, acte inactif, proposition', async () => {
+    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    const carte = deriverStatutsBiologie.mock.calls[0][0].remboursements as Map<string, { statut: string }>;
+    expect(carte.get('BIO_FER')?.statut).toBe('remboursable');
+    expect(carte.get('BIO_HCY')?.statut).toBe('hors_nomenclature');
+    // Un constat d'un millésime antérieur ne vaut plus (arbitrage du 2026-10-16).
+    expect(carte.get('BIO_PERIME')?.statut).toBe('non_evalue');
+    expect(carte.get('BIO_INACTIF')?.statut).toBe('hors_nomenclature');
+    // Une ligne non signée est une proposition, pas une correspondance.
+    expect(carte.get('BIO_PROPOSE')?.statut).toBe('non_evalue');
+  });
+
+  it('les actes sont lus au millésime courant, pour les seuls codes signés', async () => {
+    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    expect(prisma.biologyCatalogVersionCourante.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { sourceProvenance: 'nabm_smt_ans' } }),
+    );
+    const requete = prisma.biologyNabmActe.findMany.mock.calls[0][0];
+    expect(requete.where.versionSource).toBe('V105');
+    expect([...requete.where.codeActe.in].sort()).toEqual(['1213', '9999']);
+  });
+
+  it('sans nomenclature importée : aucune requête d’actes, et aucun constat ne vaut', async () => {
+    prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(null);
+    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    expect(prisma.biologyNabmActe.findMany).not.toHaveBeenCalled();
+    const carte = deriverStatutsBiologie.mock.calls[0][0].remboursements as Map<string, { statut: string }>;
+    expect(carte.get('BIO_HCY')?.statut).toBe('non_evalue');
+    // Signée sans millésime courant : rien ne la résout, jamais « remboursable ».
+    expect(carte.get('BIO_FER')?.statut).toBe('hors_nomenclature');
+  });
+
+  it('la validation médicale se lit de la même requête, inchangée', async () => {
+    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    const entree = deriverStatutsBiologie.mock.calls[0][0];
+    expect([...entree.validationMedicale]).toEqual(['BIO_VALID']);
+  });
+});
+
+describe('remboursements — la limite « non évalué » nomme ce qui reste', () => {
+  it('nomme les analyses non évaluées des lignes proposées, sans doublon', async () => {
+    deriverStatutsBiologie.mockReturnValue({
+      ok: true,
+      lignes: [
+        { statut: 'recommande', analytes: [
+          analyteDeLigne('A', 'Ferritine', 'remboursable'),
+          analyteDeLigne('B', 'Folates', 'non_evalue'),
+        ] },
+        { statut: 'optionnel', analytes: [analyteDeLigne('B', 'Folates', 'non_evalue')] },
+        // Une ligne non proposée ne part ni au courrier ni au document : elle
+        // ne nourrit pas la limite.
+        { statut: 'non_indique_actuellement', analytes: [analyteDeLigne('C', 'Iode', 'non_evalue')] },
+      ],
+      declarationsIgnoreesHorsProposition: [],
+    });
     const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
-    expect(resultat.ok && resultat.limites).toContainEqual({ type: 'remboursement_non_evalue' });
+    expect(resultat.ok && resultat.limites).toEqual([
+      { type: 'remboursement_non_evalue', analytes: ['Folates'] },
+    ]);
+  });
+
+  it('dédoublonne par code, comme les documents : deux analyses de même libellé restent deux', async () => {
+    deriverStatutsBiologie.mockReturnValue({
+      ok: true,
+      lignes: [{ statut: 'recommande', analytes: [
+        analyteDeLigne('B12_TOTALE', 'Vitamine B12', 'non_evalue'),
+        analyteDeLigne('B12_ACTIVE', 'Vitamine B12', 'non_evalue'),
+      ] }],
+      declarationsIgnoreesHorsProposition: [],
+    });
+    const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    expect(resultat.ok && resultat.limites).toEqual([
+      { type: 'remboursement_non_evalue', analytes: ['Vitamine B12', 'Vitamine B12'] },
+    ]);
+  });
+
+  it('absente quand toutes les analyses proposées ont été tranchées', async () => {
+    deriverStatutsBiologie.mockReturnValue({
+      ok: true,
+      lignes: [{ statut: 'recommande', analytes: [
+        analyteDeLigne('A', 'Ferritine', 'remboursable'),
+        analyteDeLigne('B', 'Homocystéine', 'hors_nomenclature'),
+      ] }],
+      declarationsIgnoreesHorsProposition: [],
+    });
+    const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    expect(resultat.ok && resultat.limites).toEqual([]);
   });
 
   it('l’abstention du moteur remonte son motif, jamais une erreur technique', async () => {
@@ -222,7 +352,7 @@ describe('déclarations écartées hors proposition', () => {
 
   it('aucune limite quand le moteur n’a rien écarté hors proposition', async () => {
     const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
-    expect(resultat.ok && resultat.limites).toEqual([{ type: 'remboursement_non_evalue' }]);
+    expect(resultat.ok && resultat.limites).toEqual([]);
   });
 });
 

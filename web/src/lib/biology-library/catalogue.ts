@@ -23,7 +23,7 @@ import {
 } from './remboursable';
 
 /** Pointeur de millésime de la nomenclature, tel que l'import CB-02a l'écrit. */
-const SOURCE_NABM = 'nabm_smt_ans';
+export const SOURCE_NABM = 'nabm_smt_ans';
 
 export type PlageLaboratoire = {
   borneMin: number | null;
