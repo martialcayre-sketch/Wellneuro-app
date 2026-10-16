@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   DOCUMENTS_AVANT_DE_COMMENCER,
+  accueilRequis,
   avantDeCommencerRequis,
   documentsRequerantAccuse,
   type AccuseConnu,
@@ -189,5 +190,38 @@ describe('avantDeCommencer — un texte n’exige rien pour des champs qui n’e
       'utf8',
     );
     expect(ecran).not.toMatch(/cle: 'nir'|sécurité sociale/i);
+  });
+});
+
+describe('accueilRequis — l’accueil sous les conditions d’utilisation (D-292 §3)', () => {
+  const ouvert = { conditionsOuvertes: true, statutAge: 'majeur' as const };
+
+  it('drapeau fermé : exactement la porte d’avant', () => {
+    expect(accueilRequis([], { ...ouvert, conditionsOuvertes: false })).toBe('trois_textes');
+    const accuses = documentsRequerantAccuse().map(accuseSur);
+    expect(accueilRequis(accuses, { ...ouvert, conditionsOuvertes: false })).toBeNull();
+  });
+
+  it('dossier mineur ou sans date de naissance : la porte d’avant, drapeau ouvert ou non', () => {
+    for (const statutAge of ['mineur', 'date_manquante'] as const) {
+      expect(accueilRequis([], { conditionsOuvertes: true, statutAge })).toBe('trois_textes');
+    }
+  });
+
+  it('nouveau patient majeur : les conditions seules — et leur accusé termine l’accueil', () => {
+    expect(accueilRequis([], ouvert)).toBe('conditions');
+    expect(accueilRequis([accuseSur('conditions_utilisation')], ouvert)).toBeNull();
+  });
+
+  it('patient suivi : aucun accueil, quelle que soit la version accusée, ni à une version suivante', () => {
+    for (const cle of ['cadre_accompagnement', 'limites_securite', 'donnees_confidentialite', 'usage_ia', 'conditions_utilisation']) {
+      const perime: AccuseConnu = { documentKey: cle, documentVersion: 'v0-perimee', type: 'pris_connaissance' };
+      expect(accueilRequis([perime], ouvert), cle).toBeNull();
+    }
+  });
+
+  it('« présenté » ne fait pas un patient suivi', () => {
+    const presente: AccuseConnu = { ...accuseSur('cadre_accompagnement'), type: 'presente' };
+    expect(accueilRequis([presente], ouvert)).toBe('conditions');
   });
 });

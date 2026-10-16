@@ -4,8 +4,9 @@ import { refusSaisieSante, statutAge, type StatutAge } from '@/lib/patient/garde
 import { isBioPortailEnabled } from '@/lib/biology-library/featureFlag';
 import { jugerFichier, MESSAGES_DEPOT, preparerImage, TAILLE_MAX_OCTETS } from '@/lib/biology-library/import/depot';
 import {
-  aPrisConnaissanceUsageIa,
+  aPrisConnaissanceAuDepot,
   deposerTransmission,
+  documentExigeAuDepot,
   jugerPlafonds,
   listerTransmissions,
   type DocumentTransmisLu,
@@ -36,6 +37,8 @@ export type PortailComptesRendusResponse =
       ok: true;
       documents: DocumentTransmisLu[];
       accuseRequis: boolean;
+      /** Le texte à accuser avant le dépôt ([[D-292]] §4 sous `WN_PORTAIL_CONDITIONS`). */
+      documentAccuse: 'usage_ia' | 'conditions_utilisation';
       dossierOuvert: boolean;
       // D-284 §3 : hors `majeur`, le dépôt est en pause (date manquante, ou
       // mineur en attente de son circuit).
@@ -56,15 +59,17 @@ export async function GET(req: Request) {
     const auth = await authentifierPatientPortail(req);
     if (auth.erreur) return auth.erreur;
     const { idPatient } = auth.patient;
+    const documentAccuse = documentExigeAuDepot();
     const [documents, accuse, plafonds] = await Promise.all([
       listerTransmissions(idPatient),
-      aPrisConnaissanceUsageIa(idPatient),
+      aPrisConnaissanceAuDepot(idPatient, documentAccuse),
       jugerPlafonds(idPatient),
     ]);
     return NextResponse.json({
       ok: true,
       documents,
       accuseRequis: !accuse,
+      documentAccuse,
       dossierOuvert: accepteNouvelEnvoi(auth.patient),
       statutAge: statutAge(auth.patient.dateNaissance, Date.now()),
       plafond: plafonds.ok ? null : plafonds.reason,
@@ -82,8 +87,13 @@ export async function POST(req: Request) {
     if (auth.erreur) return auth.erreur;
     const { patient } = auth;
 
-    if (!(await aPrisConnaissanceUsageIa(patient.idPatient))) {
-      return echec('accuse_requis', MESSAGES_TRANSMISSION.accuse_requis, 403);
+    const documentAccuse = documentExigeAuDepot();
+    if (!(await aPrisConnaissanceAuDepot(patient.idPatient, documentAccuse))) {
+      const message =
+        documentAccuse === 'conditions_utilisation'
+          ? MESSAGES_TRANSMISSION.accuse_conditions_requis
+          : MESSAGES_TRANSMISSION.accuse_requis;
+      return echec('accuse_requis', message, 403);
     }
     if (!accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, MESSAGES_TRANSMISSION.dossier_cloture, 409);
     // D-284 §3 : biologie en pause tant que le patient n'est pas majeur.

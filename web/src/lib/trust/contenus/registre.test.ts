@@ -3,7 +3,9 @@ import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import {
   getDocumentCourant,
   getVersion,
+  PARTIES_REPRISES_CONDITIONS_V1,
   REGISTRE_DOCUMENTS_TRUST,
+  sectionsDeLaPartie,
   VERSION_CONSENTEMENT_COURANTE,
 } from './registre';
 
@@ -21,7 +23,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les trente et un documents attendus', () => {
+  it('expose les trente-deux documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -80,6 +82,8 @@ describe('registre des documents TRUST', () => {
       // Même correction, dans le texte du consentement lui-même — l'occurrence
       // que `D-222` §3 n'avait pas vue.
       'consentement_suivi@v3',
+      // `D-292` — les quatre textes d'information réunis, servis avec ACT-1.
+      'conditions_utilisation@v1',
     ]);
   });
 
@@ -722,5 +726,61 @@ describe('registre des documents TRUST', () => {
     // deux phrases neuves s'insèrent AVANT elle, jamais après.
     const section = courant.sections.find(s => s.titre === 'Quelles données sont recueillies ?');
     expect(section?.paragraphes.at(-1)).toContain('uniquement les informations nécessaires');
+  });
+
+  describe('les conditions d’utilisation (D-292)', () => {
+    const conditions = getDocumentCourant('conditions_utilisation');
+
+    it('reprennent, dans l’ordre, les quatre textes d’information validés', () => {
+      expect(PARTIES_REPRISES_CONDITIONS_V1.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
+        'cadre_accompagnement@v1',
+        'limites_securite@v1',
+        'donnees_confidentialite@v18',
+        'usage_ia@v8',
+      ]);
+      expect([...new Set(conditions.sections.map(s => s.partie))]).toEqual([
+        'Le cadre de votre accompagnement',
+        'Limites et sécurité médicale',
+        'Vos données personnelles et leur confidentialité',
+        'L’intelligence artificielle',
+        'Quand ces conditions changent',
+      ]);
+    });
+
+    // LE TEST QUI SIGNALE TOUT ÉCART D'ICI L'ACTIVATION (D-292 §5). Un des
+    // quatre textes publié dans une nouvelle version : les conditions ne la
+    // portent pas. Avant ACT-1, refaire l'assemblage (nouvelle source, nouveau
+    // hash) ; après, publier une nouvelle version des conditions.
+    it('chaque partie reprise est la version COURANTE de son texte, mot pour mot', () => {
+      for (const { partie, source } of PARTIES_REPRISES_CONDITIONS_V1) {
+        const courant = getDocumentCourant(source.key);
+        expect(
+          courant.version,
+          `« ${courant.titre} » est passé en ${courant.version} ; les conditions reprennent la ${source.version}`,
+        ).toBe(source.version);
+        expect(conditions.sections.filter(s => s.partie === partie)).toEqual(sectionsDeLaPartie(partie, courant));
+      }
+    });
+
+    it('une seule retouche : le renvoi de la partie 3 nomme la partie sur l’IA', () => {
+      const texte = (sections: typeof conditions.sections) =>
+        sections.flatMap(s => [...s.paragraphes, ...(s.points ?? [])]).join('\n');
+      const donnees = getDocumentCourant('donnees_confidentialite');
+      expect(texte(donnees.sections)).toContain('(voir « L’intelligence artificielle dans Wellneuro »)');
+      expect(texte(conditions.sections)).not.toContain('(voir « L’intelligence artificielle dans Wellneuro »)');
+      expect(texte(conditions.sections).split('(voir la partie « L’intelligence artificielle »)')).toHaveLength(2);
+    });
+
+    it('réclament un accusé, et la partie 5 dit le bouton par son libellé', () => {
+      expect(conditions.requiresAcknowledgement).toBe(true);
+      expect(conditions.titre).toBe('Conditions d’utilisation de votre espace Wellneuro');
+      const partie5 = conditions.sections.filter(s => s.partie === 'Quand ces conditions changent');
+      expect(partie5.map(s => s.titre)).toEqual([
+        'Votre première connexion',
+        'Une nouvelle version',
+        'Ce que veut dire « J’en ai pris connaissance »',
+      ]);
+      expect(partie5[0].paragraphes[0]).toContain('« J’en ai pris connaissance »');
+    });
   });
 });

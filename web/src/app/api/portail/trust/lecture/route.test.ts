@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma } = vi.hoisted(() => ({
   prisma: {
@@ -44,6 +44,10 @@ describe('POST /api/portail/trust/lecture', () => {
     prisma.trustAcknowledgement.create.mockResolvedValue({});
   });
 
+  afterEach(() => {
+    delete process.env.WN_PORTAIL_CONDITIONS;
+  });
+
   it('enregistre un accusé avec version et hash résolus côté serveur', async () => {
     const response = await POST(
       request({ documentKey: 'cadre_accompagnement', type: 'pris_connaissance' }),
@@ -76,5 +80,23 @@ describe('POST /api/portail/trust/lecture', () => {
     expect(
       (await POST(request({ documentKey: 'usage_ia', type: 'presente' }, false))).status,
     ).toBe(401);
+  });
+
+  it('les conditions d’utilisation ne s’accusent que servies : 400 drapeau fermé, accusé de leur version ouvert (D-292)', async () => {
+    const corps = { documentKey: 'conditions_utilisation', type: 'pris_connaissance' };
+    expect((await POST(request(corps))).status).toBe(400);
+    expect(prisma.trustAcknowledgement.create).not.toHaveBeenCalled();
+
+    process.env.WN_PORTAIL_CONDITIONS = 'true';
+    expect((await POST(request(corps))).status).toBe(200);
+    const attendu = getDocumentCourant('conditions_utilisation');
+    expect(prisma.trustAcknowledgement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        documentKey: 'conditions_utilisation',
+        documentVersion: attendu.version,
+        contentHash: attendu.hash,
+        type: 'pris_connaissance',
+      }),
+    });
   });
 });

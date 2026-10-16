@@ -54,6 +54,20 @@ describe('TransmissionCompteRendu', () => {
     expect(JSON.parse(String(accuse?.[1]?.body))).toEqual({ documentKey: 'usage_ia', type: 'pris_connaissance' });
   });
 
+  it('sous `WN_PORTAIL_CONDITIONS` : présente les conditions d’utilisation, et accuse celles-ci (D-292 §4)', async () => {
+    const fetchMock = serveur([{ ...PRET, accuseRequis: true, documentAccuse: 'conditions_utilisation' }, PRET]);
+    render(<TransmissionCompteRendu token="TOK" />);
+    expect(await screen.findByText('Avant votre envoi')).toBeTruthy();
+    expect(screen.getByText('Quand ces conditions changent')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'J’en ai pris connaissance' }));
+    expect(await screen.findByRole('button', { name: 'Envoyer à mon praticien' })).toBeTruthy();
+    const accuse = fetchMock.mock.calls.find(([u]) => String(u).includes('/trust/lecture'));
+    expect(JSON.parse(String(accuse?.[1]?.body))).toEqual({
+      documentKey: 'conditions_utilisation',
+      type: 'pris_connaissance',
+    });
+  });
+
   it('envoie le fichier choisi, et relit la liste', async () => {
     const fetchMock = serveur([PRET, { ...PRET, documents: [{ deposeLe: '2026-10-07T09:00:00.000Z', statut: 'en_attente' }] }]);
     const { container } = render(<TransmissionCompteRendu token="TOK" />);

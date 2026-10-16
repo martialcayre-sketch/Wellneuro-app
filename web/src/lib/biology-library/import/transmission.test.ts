@@ -24,7 +24,13 @@ const { prisma, journal } = vi.hoisted(() => {
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
-import { aPrisConnaissanceUsageIa, deposerTransmission, jugerPlafonds, listerTransmissions } from './transmission';
+import {
+  aPrisConnaissanceAuDepot,
+  deposerTransmission,
+  documentExigeAuDepot,
+  jugerPlafonds,
+  listerTransmissions,
+} from './transmission';
 
 const OCTETS = Buffer.from('%PDF-1.7 fixture');
 
@@ -47,12 +53,16 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  delete process.env.WN_PORTAIL_CONDITIONS;
+});
 
-describe('aPrisConnaissanceUsageIa (D-269 §6)', () => {
-  it('exige un accusé `pris_connaissance` de la version COURANTE, version ET hash', async () => {
+describe('aPrisConnaissanceAuDepot (D-269 §6, amendé par D-292 §4)', () => {
+  it('drapeau fermé : exige un accusé `pris_connaissance` de la version COURANTE d’`usage_ia`, version ET hash', async () => {
+    expect(documentExigeAuDepot()).toBe('usage_ia');
     prisma.trustAcknowledgement.count.mockResolvedValueOnce(1);
-    expect(await aPrisConnaissanceUsageIa('pat_jennifer')).toBe(true);
+    expect(await aPrisConnaissanceAuDepot('pat_jennifer')).toBe(true);
     const courant = getDocumentCourant('usage_ia');
     expect(prisma.trustAcknowledgement.count).toHaveBeenCalledWith({
       where: {
@@ -64,7 +74,29 @@ describe('aPrisConnaissanceUsageIa (D-269 §6)', () => {
       },
     });
     prisma.trustAcknowledgement.count.mockResolvedValueOnce(0);
-    expect(await aPrisConnaissanceUsageIa('pat_jennifer')).toBe(false);
+    expect(await aPrisConnaissanceAuDepot('pat_jennifer')).toBe(false);
+  });
+
+  it('sous `WN_PORTAIL_CONDITIONS` : exige celui des conditions d’utilisation, et plus celui d’`usage_ia`', async () => {
+    process.env.WN_PORTAIL_CONDITIONS = 'true';
+    expect(documentExigeAuDepot()).toBe('conditions_utilisation');
+    prisma.trustAcknowledgement.count.mockResolvedValueOnce(1);
+    expect(await aPrisConnaissanceAuDepot('pat_jennifer')).toBe(true);
+    const courant = getDocumentCourant('conditions_utilisation');
+    expect(prisma.trustAcknowledgement.count).toHaveBeenCalledWith({
+      where: {
+        idPatient: 'pat_jennifer',
+        documentKey: 'conditions_utilisation',
+        documentVersion: courant.version,
+        contentHash: courant.hash,
+        type: 'pris_connaissance',
+      },
+    });
+  });
+
+  it('une valeur autre que `true` laisse le drapeau fermé', () => {
+    process.env.WN_PORTAIL_CONDITIONS = '1';
+    expect(documentExigeAuDepot()).toBe('usage_ia');
   });
 });
 

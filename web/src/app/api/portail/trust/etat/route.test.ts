@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // LA DÉSIGNATION SERVIE AU FORMULAIRE ([[D-281]] §2, étape 3) : la liste et sa
 // version, ou `null` — jamais l'espace TRUST fermé sur une lecture en échec.
@@ -28,6 +28,7 @@ const patient = {
   actif: true,
   accessTokenRevoked: false,
   praticienEmail: 'praticien@wellneuro.fr',
+  dateNaissance: '1979-07-28' as string | null,
 };
 
 function request(): Request {
@@ -68,5 +69,65 @@ describe('GET /api/portail/trust/etat — désignation', () => {
     const res = await GET(request());
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ ok: true, elementsProgramme: null, versionProgramme: null });
+  });
+});
+
+describe('GET /api/portail/trust/etat — l’accueil sous les conditions d’utilisation (D-292 §3)', () => {
+  const accuse = (documentKey: string, documentVersion = 'v1') => ({
+    documentKey,
+    documentVersion,
+    type: 'pris_connaissance',
+    createdAt: new Date('2026-10-01T08:00:00Z'),
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.patient.findUnique.mockResolvedValue(patient);
+    for (const table of ['trustAcknowledgement', 'trustChoiceEvent', 'trustAdverseEffectReport', 'trustPrivacyIncident', 'trustRightsRequest'] as const) {
+      prisma[table].findMany.mockResolvedValue([]);
+    }
+    designationPour.mockResolvedValue(null);
+  });
+
+  afterEach(() => {
+    delete process.env.WN_PORTAIL_CONDITIONS;
+  });
+
+  it('drapeau fermé : la porte d’avant, conditions ni servies ni présentées', async () => {
+    expect(await (await GET(request())).json()).toMatchObject({
+      avantDeCommencerRequis: true,
+      accueilConditions: false,
+      conditionsOuvertes: false,
+    });
+  });
+
+  it('drapeau ouvert, nouveau patient majeur : les conditions seules', async () => {
+    process.env.WN_PORTAIL_CONDITIONS = 'true';
+    expect(await (await GET(request())).json()).toMatchObject({
+      avantDeCommencerRequis: true,
+      accueilConditions: true,
+      conditionsOuvertes: true,
+    });
+  });
+
+  it('drapeau ouvert, patient suivi sur une version ancienne : aucun accueil', async () => {
+    process.env.WN_PORTAIL_CONDITIONS = 'true';
+    prisma.trustAcknowledgement.findMany.mockResolvedValue([accuse('donnees_confidentialite', 'v9')]);
+    expect(await (await GET(request())).json()).toMatchObject({
+      avantDeCommencerRequis: false,
+      accueilConditions: false,
+    });
+  });
+
+  it('drapeau ouvert, dossier mineur ou sans date de naissance : l’accueil en trois textes', async () => {
+    process.env.WN_PORTAIL_CONDITIONS = 'true';
+    for (const dateNaissance of [null, '2012-03-04']) {
+      prisma.patient.findUnique.mockResolvedValue({ ...patient, dateNaissance });
+      expect(await (await GET(request())).json(), String(dateNaissance)).toMatchObject({
+        avantDeCommencerRequis: true,
+        accueilConditions: false,
+      });
+    }
   });
 });

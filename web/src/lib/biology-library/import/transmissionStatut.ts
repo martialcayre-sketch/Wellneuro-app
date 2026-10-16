@@ -62,6 +62,10 @@ export const PLAFOND_TRANSMISSIONS_24H = 10;
 export const MESSAGES_TRANSMISSION: Record<string, string> = {
   accuse_requis:
     'Avant votre premier envoi, prenez connaissance de « L’intelligence artificielle dans Wellneuro ».',
+  // Sous `WN_PORTAIL_CONDITIONS` ([[D-292]] §4) : la version en vigueur des
+  // conditions, présentée juste avant le dépôt — pas seulement avant le premier.
+  accuse_conditions_requis:
+    'Avant votre envoi, prenez connaissance de la version en vigueur des « Conditions d’utilisation de votre espace Wellneuro ».',
   plafond_en_attente:
     'Trois documents attendent déjà que votre praticien les ouvre. Vous pourrez en déposer un autre ensuite.',
   plafond_24h: 'Vous avez déposé dix documents en 24 heures. Réessayez plus tard.',

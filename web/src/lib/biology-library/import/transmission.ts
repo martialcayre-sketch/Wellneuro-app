@@ -2,6 +2,7 @@ import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { accepteNouvelEnvoi, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
+import { conditionsUtilisationOuvertes } from '@/lib/trust/conditionsUtilisation';
 import { empreinteSha256, type TypeMimeCompteRendu } from './depot';
 import {
   PLAFOND_DOCUMENTS_EN_ATTENTE,
@@ -27,16 +28,28 @@ function cleVerrouTransmission(idPatient: string): string {
 type Client = Prisma.TransactionClient | typeof prisma;
 
 /**
- * Le patient a-t-il pris connaissance de la version COURANTE de « L'intelligence
- * artificielle dans Wellneuro » (§6) ? Version ET hash : un accusé d'une
- * version antérieure, ou d'un texte modifié sans nouvelle version, ne vaut pas.
+ * Le texte que le dépôt exige d'avoir accusé : « L'intelligence artificielle
+ * dans Wellneuro » (§6), ou, sous `WN_PORTAIL_CONDITIONS`, les conditions
+ * d'utilisation qui la contiennent ([[D-292]] §4, qui amende §6).
  */
-export async function aPrisConnaissanceUsageIa(idPatient: string): Promise<boolean> {
-  const courant = getDocumentCourant('usage_ia');
+export function documentExigeAuDepot(): 'usage_ia' | 'conditions_utilisation' {
+  return conditionsUtilisationOuvertes() ? 'conditions_utilisation' : 'usage_ia';
+}
+
+/**
+ * Le patient a-t-il pris connaissance de la version COURANTE du texte exigé au
+ * dépôt ? Version ET hash : un accusé d'une version antérieure, ou d'un texte
+ * modifié sans nouvelle version, ne vaut pas.
+ */
+export async function aPrisConnaissanceAuDepot(
+  idPatient: string,
+  documentKey: 'usage_ia' | 'conditions_utilisation' = documentExigeAuDepot(),
+): Promise<boolean> {
+  const courant = getDocumentCourant(documentKey);
   const n = await prisma.trustAcknowledgement.count({
     where: {
       idPatient,
-      documentKey: 'usage_ia',
+      documentKey,
       documentVersion: courant.version,
       contentHash: courant.hash,
       type: 'pris_connaissance',

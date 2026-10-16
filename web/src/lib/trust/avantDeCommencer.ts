@@ -1,4 +1,5 @@
 import { getDocumentCourant } from './contenus/registre';
+import type { StatutAge } from '@/lib/patient/gardeAge';
 import type { TrustDocumentKey } from './types';
 
 // LA SÉQUENCE « AVANT DE COMMENCER » ET SA PORTE, TENUES PAR LA MÊME LISTE.
@@ -63,4 +64,42 @@ export function avantDeCommencerRequis(accuses: readonly AccuseConnu[]): boolean
         a.type === 'pris_connaissance',
     );
   });
+}
+
+// L'ACCUEIL SOUS LES CONDITIONS D'UTILISATION ([[D-292]] §3, ACT-1).
+//
+// Un accusé `pris_connaissance` sur l'un de ces textes, quelle qu'en soit la
+// version, fait du patient un patient SUIVI : aucun mur dans le portail, ni à
+// ACT-1 ni à une version suivante — il accuse par le lien de l'e-mail ou au
+// filet du dépôt. `usage_ia` en est : il ne s'accuse qu'au dépôt, après
+// l'accueil.
+const TEXTES_D_INFORMATION: readonly string[] = Object.freeze([
+  'cadre_accompagnement',
+  'limites_securite',
+  'donnees_confidentialite',
+  'usage_ia',
+  'conditions_utilisation',
+]);
+
+/** L'accueil à présenter : la séquence en trois textes, les conditions seules, ou rien. */
+export type Accueil = 'trois_textes' | 'conditions' | null;
+
+/**
+ * Drapeau fermé, ou dossier mineur ou sans date de naissance (arbitrage du
+ * 2026-10-16) : la porte d'avant, inchangée. Drapeau ouvert sur un dossier
+ * majeur : les conditions seules au patient qui n'a accusé aucun texte
+ * d'information, rien aux autres. L'accueil des conditions pose leur accusé,
+ * qui fait du patient un patient suivi : il se termine.
+ */
+export function accueilRequis(
+  accuses: readonly AccuseConnu[],
+  contexte: { conditionsOuvertes: boolean; statutAge: StatutAge },
+): Accueil {
+  if (!contexte.conditionsOuvertes || contexte.statutAge !== 'majeur') {
+    return avantDeCommencerRequis(accuses) ? 'trois_textes' : null;
+  }
+  const suivi = accuses.some(
+    a => a.type === 'pris_connaissance' && TEXTES_D_INFORMATION.includes(a.documentKey),
+  );
+  return suivi ? null : 'conditions';
 }

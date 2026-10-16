@@ -1469,6 +1469,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : aucune neuve.
 - **Critère de fin** : accusé constaté sur un premier vrai dossier servi, sans anomalie, par identifiant en conteneur.
 - **Mise à jour (2026-10-15, D-315 §5)** : préalables amendés sur arbitrage du responsable : k, l, G-8, J2-cc8 (release-db constatée), porte 18 ; J2-base n'en est plus. CC-0, OF-1, OF-2 et la part sommeil restent à J2-base ; porte 24 fermée.
+- **Mise à jour (2026-10-16, code, PR 1)** : D-292 amendée (cinq arbitrages : lien magique existant, mineurs inchangés, envoi unique au cockpit, aucun rappel, phrase de 24 h à l'e-mail). PR 1 sous `WN_PORTAIL_CONDITIONS`, éteint, sans migration : texte au registre (`conditions_utilisation` v1, données en v18), accueil conditions seules au nouveau patient majeur et rien au patient suivi, page des conditions et son bouton, filet au dépôt. Reste la PR 2 : destination du lien magique, envoi au cockpit, gabarit d'e-mail.
 
 #### F39 · R:ae : bloc « Protocole » du document médecin
 - **Identifiant, piste** : lettre ae ; trackc (document partagé avec av).
