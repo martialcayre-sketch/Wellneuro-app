@@ -15,6 +15,8 @@ Le code consommateur de la migration `20261016100000_nabm_journal_constats_v1` :
 - Contraintes N-3 de la contre-revue de la PR 1 : état vu jugé avant la ligne de journal, transaction annulée si l'écriture ne touche aucune ligne (a) ; un geste par transaction (b) ; date de signature et de constat relue en base avant d'être rendue (c).
 - R2 (course avec un import NABM) : verrou de partage sur `biology_catalog_versions_courantes` en tête de chaque geste, que l'import (`SHARE ROW EXCLUSIVE`) attend et fait attendre ; puis le verrou consultatif de l'analyte (fonction de la migration).
 - Le constat ne se pose que sur un analyte que la liste préparée range « aucun acte » (`constat_non_permis` sinon) ; le retrait vaut même pour un constat périmé.
+- Arbitrage du responsable (2026-10-16, sur une remarque CodeRabbit P1) : constat refusé hors du millésime de la liste (`liste_a_relire`), bouton retiré avec sa raison ; écartés : l'attestation du praticien seule, le report avant la V106.
+- Remise à niveau sur #1494 (PLAN commun) : rebase, sur arbitrage du responsable ; sans conflit.
 
 ## Fichiers modifiés
 
@@ -41,7 +43,7 @@ Le code consommateur de la migration `20261016100000_nabm_journal_constats_v1` :
 - Critère de fin de M-3c : le premier constat signé par le responsable depuis la fiche d'analyte, relu par conteneur (journal + constat).
 - G-3 redevient jouable au déploiement de cette PR.
 - À la lettre f : un analyte constaté passera, dans le document patient, de « non évalué » au texte « non pris en charge » de `documentPatient.ts` — texte patient, à signaler au cadrage de f (F54).
-- Routé en F54, à arbitrer avant l'import de la V106 (revue CodeRabbit, hors diff) : la liste préparée sur V105 continuerait d'offrir le constat au millésime suivant ; sans effet tant que le courant est V105.
+- À l'import d'une V106 : relire `candidatsNabm.ts` et porter `MILLESIME_LISTE_NABM` au nouveau millésime, par PR — d'ici là, aucun constat (arbitrage du 2026-10-16, F54).
 - Non éprouvé par banc : le sens inverse de la course (geste en cours, import qui attend, contrôle des orphelines qui voit la signature) ; `LOCK TABLE … IN SHARE MODE` suppose que le rôle applicatif est propriétaire de la table (vrai sur Scalingo, rôle unique).
 
 ## Prochaine action exacte

@@ -19,7 +19,9 @@ technique. ».
   route `api/praticien/biologie/nabm/constats`, même garde que les
   correspondances) : seulement pour un analyte que la liste préparée range
   « aucun acte » (`candidatsNabm.ts`), sur le millésime affiché, qui doit être
-  le courant ; refusé si l'analyte porte une signature (et une signature est
+  le courant et celui où la liste a été relue (V105) — sinon refus
+  `liste_a_relire` et bouton retiré, avec sa raison (arbitrage du
+  2026-10-16, revue CodeRabbit) ; refusé si l'analyte porte une signature (et une signature est
   refusée s'il porte un constat) — retrait d'abord. Signataire = e-mail de
   session ; date posée par la base et relue.
 - **Dérivation** (`remboursable.ts`, écrite une seule fois ; le prédicat

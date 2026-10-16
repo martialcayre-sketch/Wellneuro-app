@@ -107,6 +107,8 @@ describe('POST — le signataire vient de la session, jamais du corps', () => {
     ['analyte_inactif', 409],
     ['millesime_absent', 409],
     ['signature_presente', 409],
+    ['liste_a_relire', 409],
+    ['import_en_cours', 409],
     ['etat_divergent', 409],
   ])('refus %s : statut %i et message en français', async (raison, statut) => {
     deciderConstat.mockResolvedValue({ ok: false, raison });
