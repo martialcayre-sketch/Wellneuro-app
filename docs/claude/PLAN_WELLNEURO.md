@@ -585,7 +585,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : dans s ; les écarts d'unité textuels du constat d'usage se lisent avec le responsable hors agrégats, avant le code de la série (rang 4).
 - **Critère de fin** : commentaire sous la valeur concernée ; aucun calcul.
-- **Mise à jour (2026-10-17)** : la part « commentaires » est livrée par BP-03 (#1466, fiche LOT-03, arbitrage 4 : commentaire de la ligne lue sous sa valeur, recopié tel qu'imprimé, « non transcrit » sinon). Reste la part « deux unités » (rang 5), lecture des écarts avec le responsable : les 14 écarts du 2026-10-14 sont tous des graphies (LOT-03, arbitrage 1).
+- **Mise à jour (2026-10-17)** : la part « commentaires » est livrée par BP-03 (#1466, fiche LOT-03, arbitrage 4 : commentaire de la ligne lue sous sa valeur, recopié tel qu'imprimé, « non transcrit » sinon). Reste la part « deux unités » (rang 5) ; la lecture des écarts avec le responsable est faite (2026-10-14) : les 14 écarts sont tous des graphies (LOT-03, arbitrage 1).
 
 #### F67 · Amendement de D-276 : cinq déclencheurs
 - **Identifiant, piste** : lettre ci : les cinq déclencheurs de la qualification (amendement de D-276 §2) ; trust.
@@ -1318,7 +1318,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : non ; contrat versionné, lecteur tolérant avant l'écrivain.
 - **Décisions, textes** : D-xxx de contrat (D-142) ; D-190 §5 amendée plus tard par BP-18a (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:382`). BiologyCatalogRef, non livré, se reprend ici sur le patron assertFoodCompassActionRef, non sur celui de SupplementCatalogRef (`docs/claude/campagnes/FILE_ATTENTE.md:80`).
 - **Critère de fin** : bancs d'empreinte V4 et C4 ; attente ancienne lue « non typée ».
-- **Mise à jour (2026-10-17)** : fait. D-305 (#1471, sept arbitrages) et code (#1475) ; fiche LOT-04 `terminé (2026-10-15)`, aucun constat de production attendu (aucune attente posée en production).
+- **Mise à jour (2026-10-17)** : fait. D-305 (#1471, sept arbitrages) et code (#1475) ; fiche LOT-04 `terminé (2026-10-15)` ; son statut, écrit à la clôture, consigne qu'aucun constat de production n'est attendu, aucune attente n'y étant posée.
 
 #### F52 · Référentiel d'axes : migration
 - **Identifiant, piste** : PR 3 ; panels.
