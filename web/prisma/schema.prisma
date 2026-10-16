@@ -2092,6 +2092,8 @@ model BiologyAnalyte {
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
   correspondancesNabm  BiologyAnalyteNabm[]
+  journalNabm          BiologyAnalyteNabmJournal[]
+  constatNabm          BiologyAnalyteNabmConstat?
   plagesReference      BiologyReferenceRange[]
   plagesFonctionnelles BiologyFunctionalRange[]
   preanalytiques       BiologyPreanalytic[]
@@ -2169,6 +2171,13 @@ model BiologyNabmActe {
 // l'analyte — un booléen stocké divergerait de la correspondance qui le fonde,
 // et le cadrage exige qu'il ne soit jamais inféré. La dérivation est écrite une
 // seule fois, dans `web/src/lib/biology-library/remboursable.ts`.
+//
+// JOURNALISÉE (M-3c, F54) : une ligne qui devient signée, ou qui perd sa
+// signature, exige une ligne de `biology_analyte_nabm_journal` dans la même
+// transaction — trigger de contrainte différé, jugé au COMMIT. Une signature
+// ne se modifie pas en place (retrait puis signature), et elle est refusée
+// tant que l'analyte porte un constat « aucun acte » (arbitrages du
+// 2026-10-16, migration 20261016100000_nabm_journal_constats_v1).
 model BiologyAnalyteNabm {
   id          String    @id @default(cuid())
   analyteCode String    @map("analyte_code")
@@ -2184,6 +2193,63 @@ model BiologyAnalyteNabm {
   @@unique([analyteCode, codeActe], map: "biology_analyte_nabm_analyte_acte_key")
   @@index([codeActe], map: "biology_analyte_nabm_code_acte_idx")
   @@map("biology_analyte_nabm")
+}
+
+// Journal des gestes NABM, EN AJOUT SEUL (M-3c, réserve R1 de M-3) : chaque
+// signature et chaque retrait d'une correspondance, chaque constat « aucun
+// acte » et chaque retrait de constat. UPDATE, DELETE et TRUNCATE refusés par
+// trigger ; `acte_le`, `ordre` et `transaction_id` posés par la base. Un
+// retrait recopie ce qu'il efface (`efface_par`, `efface_le`) : le journal
+// commence à la migration, sans reprise des signatures antérieures.
+model BiologyAnalyteNabmJournal {
+  id             String    @id @default(cuid())
+  /// Clé d'ordre monotone, posée par la base (trigger).
+  ordre          BigInt    @default(autoincrement()) @map("ordre")
+  analyteCode    String    @map("analyte_code")
+  /// `signature` | `retrait_signature` | `constat_aucun_acte` |
+  /// `retrait_constat` (CHECK, forme par acte).
+  acte           String    @map("acte")
+  codeActe       String?   @map("code_acte")
+  nature         String?   @map("nature")
+  millesime      String?   @map("millesime")
+  /// L'auteur du geste : e-mail de session.
+  praticienEmail String    @map("praticien_email")
+  /// Retraits seuls : la signature ou le constat effacé.
+  effacePar      String?   @map("efface_par")
+  effaceLe       DateTime? @map("efface_le")
+  /// Posé par la base (trigger), en UTC.
+  acteLe         DateTime  @default(now()) @map("acte_le")
+  /// Posé par la base (trigger) : la transaction du geste, que les triggers
+  /// de contrainte différés rapprochent de l'écriture qu'il journalise.
+  transactionId  BigInt    @default(dbgenerated("txid_current()")) @map("transaction_id")
+
+  analyte BiologyAnalyte @relation(fields: [analyteCode], references: [code])
+
+  @@unique([ordre], map: "biology_analyte_nabm_journal_ordre_key")
+  @@index([analyteCode, ordre], map: "biology_analyte_nabm_journal_analyte_ordre_idx")
+  @@index([transactionId], map: "biology_analyte_nabm_journal_transaction_idx")
+  @@map("biology_analyte_nabm_journal")
+}
+
+// Constat signé « aucun acte dans la nomenclature » (M-3c, F54) : au plus un
+// par analyte, pour le millésime CONSTATÉ. Il ne vaut que pour ce millésime —
+// au suivant, l'analyte repasse « non évalué » (arbitrage du 2026-10-16) ; la
+// dérivation `hors_nomenclature` reste écrite une seule fois, dans
+// `remboursable.ts`. Refusé si l'analyte porte une correspondance signée, et
+// réciproquement. UPDATE et TRUNCATE refusés ; le retrait est un DELETE,
+// journalisé comme l'insertion (trigger de contrainte différé).
+model BiologyAnalyteNabmConstat {
+  id          String   @id @default(cuid())
+  analyteCode String   @unique(map: "biology_analyte_nabm_constats_analyte_key") @map("analyte_code")
+  /// Le millésime vu à l'écran, vérifié égal au pointeur courant par la base.
+  millesime   String   @map("millesime")
+  verifiePar  String   @map("verifie_par")
+  /// Posé par la base (trigger), en UTC.
+  verifieLe   DateTime @default(now()) @map("verifie_le")
+
+  analyte BiologyAnalyte @relation(fields: [analyteCode], references: [code])
+
+  @@map("biology_analyte_nabm_constats")
 }
 
 // Référentiel 1/2 — valeurs de référence LABORATOIRE. Ne demande aucun claim :
