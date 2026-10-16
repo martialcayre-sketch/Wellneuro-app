@@ -20,6 +20,7 @@ const patient = {
   actif: true,
   accessTokenRevoked: false,
   praticienEmail: 'praticien@wellneuro.fr',
+  dateNaissance: '1979-07-28' as string | null,
 };
 
 function request(body: object, avecSession = true): Request {
@@ -98,5 +99,15 @@ describe('POST /api/portail/trust/lecture', () => {
         type: 'pris_connaissance',
       }),
     });
+  });
+
+  it('hors dossier majeur, les conditions ne s’accusent pas, drapeau ouvert (409)', async () => {
+    process.env.WN_PORTAIL_CONDITIONS = 'true';
+    for (const dateNaissance of [null, '2012-03-04']) {
+      prisma.patient.findUnique.mockResolvedValue({ ...patient, dateNaissance });
+      const res = await POST(request({ documentKey: 'conditions_utilisation', type: 'pris_connaissance' }));
+      expect(res.status, String(dateNaissance)).toBe(409);
+    }
+    expect(prisma.trustAcknowledgement.create).not.toHaveBeenCalled();
   });
 });

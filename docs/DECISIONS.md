@@ -1401,7 +1401,8 @@ est une chaîne libre, sans contrainte.
   l'activation ; l'assemblage se refait alors.
 - *Mineurs* (§5) : un dossier mineur ou sans date de naissance garde
   l'accueil en trois textes et ne reçoit pas l'e-mail ; ses conditions lui
-  seront servies avec le circuit des mineurs.
+  seront servies avec le circuit des mineurs. D'ici là, ni carte, ni page,
+  et la route refuse leur accusé hors d'un dossier majeur.
 - *Patient suivi* (§3) : un accusé `pris_connaissance` sur l'un des quatre
   textes ou sur les conditions, quelle qu'en soit la version, dispense du
   mur. Drapeau ouvert, un dossier majeur suivi ne revoit donc plus la

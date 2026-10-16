@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import {
   getDocumentCourant,
@@ -769,6 +771,35 @@ describe('registre des documents TRUST', () => {
       expect(texte(donnees.sections)).toContain('(voir « L’intelligence artificielle dans Wellneuro »)');
       expect(texte(conditions.sections)).not.toContain('(voir « L’intelligence artificielle dans Wellneuro »)');
       expect(texte(conditions.sections).split('(voir la partie « L’intelligence artificielle »)')).toHaveLength(2);
+    });
+
+    // LE TEXTE NEUF FACE AU TEXTE VALIDÉ. Le test des parties reprises ne voit
+    // que les sources ; titre, résumé et partie 5 se lisent dans le README que le
+    // responsable a validé, à l'apostrophe typographique du registre près.
+    it('titre, résumé et partie 5 sont ceux du texte validé, mot pour mot', () => {
+      const readme = fs
+        .readFileSync(
+          path.resolve(__dirname, '../../../../../docs/claude/propositions/2026-10-14-k-conditions-utilisation/README.md'),
+          'utf8',
+        )
+        .replaceAll("'", '’');
+      const bloc = (debut: string, fin: string) => readme.slice(readme.indexOf(debut) + debut.length, readme.indexOf(fin));
+      const [titre, resume] = bloc('## Titre et résumé', '## Partie 5').trim().split(/\n\n+/);
+      expect(conditions.titre).toBe(titre);
+      expect(conditions.resume).toBe(resume);
+
+      const attendu = bloc('## Partie 5 — Quand ces conditions changent', '## E-mail')
+        .split('\n### ')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(s => {
+          const [entete, ...corps] = s.replace(/^### /, '').split(/\n\n+/);
+          return { titre: entete.trim(), paragraphes: corps.map(p => p.trim()) };
+        });
+      const partie5 = conditions.sections
+        .filter(s => s.partie === 'Quand ces conditions changent')
+        .map(s => ({ titre: s.titre, paragraphes: s.paragraphes }));
+      expect(partie5).toEqual(attendu);
     });
 
     it('réclament un accusé, et la partie 5 dit le bouton par son libellé', () => {

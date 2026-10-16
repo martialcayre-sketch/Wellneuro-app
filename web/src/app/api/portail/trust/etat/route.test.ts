@@ -127,6 +127,7 @@ describe('GET /api/portail/trust/etat — l’accueil sous les conditions d’ut
       expect(await (await GET(request())).json(), String(dateNaissance)).toMatchObject({
         avantDeCommencerRequis: true,
         accueilConditions: false,
+        conditionsOuvertes: false,
       });
     }
   });

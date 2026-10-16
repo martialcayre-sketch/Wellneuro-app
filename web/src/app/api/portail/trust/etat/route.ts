@@ -42,7 +42,7 @@ export type TrustEtatResponse =
        * ([[D-292]] §3) au lieu de la séquence en trois textes. Toujours `false`
        * drapeau fermé, et sur un dossier mineur ou sans date de naissance. */
       accueilConditions: boolean;
-      /** `WN_PORTAIL_CONDITIONS` ouvert : page des conditions et leur accusé servis. */
+      /** `WN_PORTAIL_CONDITIONS` ouvert ET dossier majeur : page des conditions et leur accusé servis. */
       conditionsOuvertes: boolean;
       accuses: AccuseEtat[];
       choixCourants: ChoixEtat[];
@@ -136,11 +136,12 @@ export async function GET(req: Request): Promise<NextResponse<TrustEtatResponse>
     // Sous `WN_PORTAIL_CONDITIONS` ([[D-292]] §3), la même porte choisit
     // l'accueil : conditions seules au nouveau patient majeur, rien au patient
     // suivi, l'accueil d'avant au dossier mineur ou sans date de naissance.
-    const conditionsOuvertes = conditionsUtilisationOuvertes();
-    const accueil = accueilRequis(accuses, {
-      conditionsOuvertes,
-      statutAge: statutAge(patient.dateNaissance, Date.now()),
-    });
+    const age = statutAge(patient.dateNaissance, Date.now());
+    const accueil = accueilRequis(accuses, { conditionsOuvertes: conditionsUtilisationOuvertes(), statutAge: age });
+    // Les conditions ne se servent qu'à un dossier majeur : celles d'un dossier
+    // mineur ou sans date viendront avec le circuit des mineurs (arbitrage du
+    // 2026-10-16). Ni carte, ni page, ni accusé hors de lui.
+    const conditionsOuvertes = conditionsUtilisationOuvertes() && age === 'majeur';
 
     const historiqueChoix: ChoixEtat[] = evenementsChoix.map(e => ({
       finalite: e.finalite,

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 import { CLE_CONDITIONS, conditionsUtilisationOuvertes } from '@/lib/trust/conditionsUtilisation';
+import { statutAge } from '@/lib/patient/gardeAge';
 import type { TrustDocumentKey, TypeAccuse } from '@/lib/trust/types';
 
 export type TrustLectureResponse = { ok: true } | { ok: false; reason: string; error: string };
@@ -44,6 +45,14 @@ export async function POST(req: Request): Promise<NextResponse<TrustLectureRespo
   const auth = await authentifierPatientPortail(req);
   if (auth.erreur) return auth.erreur as NextResponse<TrustLectureResponse>;
   const { patient } = auth;
+  // Même borne que la page : hors dossier majeur, les conditions attendent le
+  // circuit des mineurs (arbitrage du 2026-10-16).
+  if (documentKey === CLE_CONDITIONS && statutAge(patient.dateNaissance, Date.now()) !== 'majeur') {
+    return NextResponse.json(
+      { ok: false, reason: 'conditions_hors_majeur', error: 'Ce document ne vous est pas encore présenté.' },
+      { status: 409 },
+    );
+  }
 
   try {
     const version = getDocumentCourant(documentKey);
