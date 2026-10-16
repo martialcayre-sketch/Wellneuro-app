@@ -295,9 +295,7 @@ describe('sendConditionsUtilisationEmail — [[D-292]] §3', () => {
     sendConditionsUtilisationEmail({
       patientEmail: 'patient@example.com',
       lien: LIEN,
-      idPatient: 'PAT_TEST',
       praticienEmail,
-      referenceId: 'conditions_utilisation@1',
     });
 
   beforeEach(() => {
@@ -326,24 +324,22 @@ describe('sendConditionsUtilisationEmail — [[D-292]] §3', () => {
     expect('replyTo' in sendMail.mock.calls[0][0]).toBe(false);
   });
 
-  it('consigne l’envoi au dossier, avec la version annoncée', async () => {
+  // Sa trace est RÉSERVÉE avant l'envoi par la route (`trust/annonceConditions`) :
+  // en écrire une seconde ici doublerait la ligne au dossier.
+  it('n’écrit AUCUNE trace elle-même', async () => {
     await envoyer('praticien@wellneuro.fr');
-    expect(journaliser).toHaveBeenCalledWith(
-      expect.objectContaining({
-        idPatient: 'PAT_TEST',
-        type: 'conditions_utilisation',
-        statut: 'Envoye',
-        referenceType: 'trust_document',
-        referenceId: 'conditions_utilisation@1',
-      }),
-    );
+    expect(journaliser).not.toHaveBeenCalled();
   });
 
-  it('un échec SMTP se consigne en erreur, avec la version, et relance', async () => {
+  it('sans messagerie : « Non_envoye », rien tenté', async () => {
+    delete process.env.SMTP_URL;
+    await expect(envoyer()).resolves.toBe('Non_envoye');
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it('RELANCE sur échec SMTP — l’appelant solde la réservation', async () => {
     sendMail.mockRejectedValueOnce(new Error('smtp down'));
     await expect(envoyer()).rejects.toThrow('smtp down');
-    expect(journaliser).toHaveBeenCalledWith(
-      expect.objectContaining({ statut: 'Erreur', referenceId: 'conditions_utilisation@1' }),
-    );
+    expect(journaliser).not.toHaveBeenCalled();
   });
 });

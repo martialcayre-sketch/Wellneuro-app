@@ -33,18 +33,15 @@ async function envoyerAccesTrace({
   type,
   objet,
   envoyer,
-  reference,
 }: {
   idPatient?: string;
   type: TypeCorrespondancePatient;
   objet: string;
   envoyer: () => Promise<unknown>;
-  /** Ce que l'envoi annonce (`reference_type`, `reference_id`), quand il en a un. */
-  reference?: { referenceType: string; referenceId: string };
 }): Promise<StatutEnvoiAcces> {
   if (!process.env.SMTP_URL) {
     if (idPatient) {
-      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Non_envoye', ...reference });
+      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Non_envoye' });
     }
     // Rendu MÊME sans `idPatient` : le statut décrit l'envoi, pas la trace.
     return 'Non_envoye';
@@ -52,12 +49,12 @@ async function envoyerAccesTrace({
   try {
     await envoyer();
     if (idPatient) {
-      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Envoye', ...reference });
+      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Envoye' });
     }
     return 'Envoye';
   } catch (erreur) {
     if (idPatient) {
-      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Erreur', erreur, ...reference });
+      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Erreur', erreur });
     }
     throw erreur;
   }
@@ -196,9 +193,6 @@ export async function sendPortailLinkEmail(
   });
 }
 
-/** Ce que le journal retient d'une annonce des conditions : la version annoncée. */
-export const REFERENCE_CONDITIONS = 'trust_document';
-
 /**
  * Les conditions d'utilisation annoncées à un patient suivi ([[D-292]] §3).
  *
@@ -206,27 +200,24 @@ export const REFERENCE_CONDITIONS = 'trust_document';
  * valide rien, seul le bouton de la page le fait. Les réponses vont à l'adresse
  * du praticien du dossier, comme pour l'e-mail d'accès : le texte dit
  * « répondez simplement à ce message », et `noreply@` ne lit rien.
+ *
+ * N'ÉCRIT AUCUNE TRACE ELLE-MÊME, comme `sendDocumentRemisEmail` : la sienne
+ * est RÉSERVÉE avant l'envoi (`trust/annonceConditions.ts`), ce qui fait d'un
+ * second envoi au même dossier une impossibilité, pas une précaution.
  */
 export async function sendConditionsUtilisationEmail({
   patientEmail,
   lien,
-  idPatient,
   praticienEmail,
-  referenceId,
 }: {
   patientEmail: string;
   lien: string;
-  idPatient: string;
   praticienEmail?: string;
-  /** `conditions_utilisation@<version>` : la version que l'e-mail annonce. */
-  referenceId: string;
 }): Promise<StatutEnvoiAcces> {
   const smtpUrl = process.env.SMTP_URL;
   return envoyerAccesTrace({
-    idPatient,
     type: TYPES_CORRESPONDANCE_PATIENT.conditionsUtilisation,
     objet: 'Conditions d’utilisation de l’espace patient',
-    reference: { referenceType: REFERENCE_CONDITIONS, referenceId },
     envoyer: async () => {
       if (!smtpUrl) return;
       const transport = creerTransportSmtp(smtpUrl);

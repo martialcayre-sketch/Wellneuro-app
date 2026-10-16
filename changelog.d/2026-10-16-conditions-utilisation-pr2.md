@@ -10,7 +10,11 @@
 - Cockpit, « Confiance & droits », drapeau `WN_PORTAIL_CONDITIONS` ouvert :
   la liste des patients suivis qui attendent l'e-mail (dossier en cours,
   portail ouvert, majeur, sans accusé de la version en vigueur, pas encore
-  servi), l'aperçu, puis un envoi confirmé en une fois. Chaque envoi est
-  consigné au dossier avec la version annoncée et retire le dossier de la
-  liste ; un envoi en échec y reste.
+  servi), l'aperçu, puis un envoi confirmé en une fois. Chaque dossier est
+  réservé en base avant l'envoi : un second clic ou un second onglet ne
+  renvoie rien. L'envoi est consigné au dossier avec la version annoncée et
+  retire le dossier de la liste ; un envoi en échec y reste. L'écran découpe
+  l'envoi en lots de dix.
+- Page des conditions : réessais courts si la session n'est pas encore
+  reconnue à l'arrivée par le lien, et retour vers l'accueil de l'espace.
 - Drapeau fermé, rien ne change : ni section au cockpit, ni envoi possible.

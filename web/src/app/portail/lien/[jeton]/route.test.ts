@@ -98,11 +98,26 @@ describe('GET /portail/lien/[jeton]', () => {
       ['un chemin', '../../dashboard'],
       ['une URL', 'https://exemple.invalid/x'],
       ['une clé héritée d’Object', 'constructor'],
+      ['le prototype', '__proto__'],
+      ['doublement encodée', '%2E%2E%2Fdashboard'],
       ['vide', ''],
     ])('destination %s : l’accueil de l’espace, sans refus', async (_cas, vers) => {
       const res = await avec(`http://localhost/portail/lien/${JETON}?vers=${encodeURIComponent(vers)}`);
       expect(res.headers.get('location')).toBe('http://localhost:3000/portail/PAT_TEST');
       expect(res.headers.get('set-cookie')).toContain('wn_portail=');
+    });
+
+    it('paramètre répété : seul le premier compte, et il est inconnu — l’accueil', async () => {
+      const res = await avec(`http://localhost/portail/lien/${JETON}?vers=x&vers=conditions`);
+      expect(res.headers.get('location')).toBe('http://localhost:3000/portail/PAT_TEST');
+    });
+
+    it('accès révoqué : refusé, sans cookie, destination ou non', async () => {
+      prisma.patient.findUnique.mockResolvedValue({ ...PATIENT_ACTIF, accessTokenRevoked: true });
+      const res = await avec(`http://localhost/portail/lien/${JETON}?vers=conditions`);
+      expect(res.headers.get('location')).toBe('http://localhost:3000/portail/lien/indisponible');
+      expect(res.headers.get('set-cookie')).toBeNull();
+      expect(prisma.portailMagicLink.updateMany).not.toHaveBeenCalled();
     });
 
     it('un lien refusé reste refusé, destination ou non', async () => {

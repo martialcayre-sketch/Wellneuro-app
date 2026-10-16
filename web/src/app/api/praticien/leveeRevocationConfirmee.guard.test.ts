@@ -80,6 +80,9 @@ const CLASSEMENT: Record<string, 'ecrivain' | 'lecteur'> = {
   'src/app/api/praticien/token/route.ts': 'ecrivain',
   'src/app/api/praticien/agenda-sommeil/suivi/route.ts': 'lecteur',
   'src/app/api/praticien/patients/route.ts': 'lecteur',
+  // [[D-292]] — `accessTokenRevoked: false` y est un FILTRE de lecture : un
+  // portail révoqué ne reçoit pas l'e-mail des conditions. Aucun `update`.
+  'src/app/api/praticien/conditions-utilisation/route.ts': 'lecteur',
 };
 
 describe('levée de révocation : jamais sans accord explicite', () => {

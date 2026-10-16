@@ -33,19 +33,39 @@ export function EnvoiConditionsPanel() {
     void charger();
   }, [charger]);
 
-  const envoyer = async (idsPatient: string[]) => {
+  // Un geste, plusieurs appels : la route accepte `parEnvoi` dossiers à la
+  // fois. Chaque dossier est réservé côté serveur avant de partir — un lot
+  // rejoué ne renvoie rien à qui a déjà reçu.
+  const envoyer = async (idsPatient: string[], parEnvoi: number) => {
     setEnvoi(true);
     setResultat(null);
+    const total = { envoyes: 0, echoues: 0, ignores: 0 };
     try {
-      const res = await fetch('/api/praticien/conditions-utilisation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idsPatient }),
-      });
-      const corps = (await res.json().catch(() => null)) as ConditionsEnvoiResultat | null;
-      setResultat(corps ?? { ok: false, error: 'Erreur technique.' });
+      for (let i = 0; i < idsPatient.length; i += parEnvoi) {
+        const res = await fetch('/api/praticien/conditions-utilisation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idsPatient: idsPatient.slice(i, i + parEnvoi) }),
+        });
+        const corps = (await res.json().catch(() => null)) as ConditionsEnvoiResultat | null;
+        if (!corps?.ok) {
+          const deja = total.envoyes > 0 ? ` ${total.envoyes} e-mail(s) étaient déjà partis.` : '';
+          setResultat({
+            ok: false,
+            error: `${corps?.error ?? 'Erreur technique.'}${deja} Des e-mails ont pu partir : la liste ci-dessus est relue.`,
+          });
+          return;
+        }
+        total.envoyes += corps.envoyes;
+        total.echoues += corps.echoues;
+        total.ignores += corps.ignores;
+      }
+      setResultat({ ok: true, ...total });
     } catch {
-      setResultat({ ok: false, error: 'Erreur réseau. Rechargez la page avant de réessayer.' });
+      setResultat({
+        ok: false,
+        error: 'Connexion interrompue. Des e-mails ont pu partir : la liste ci-dessus est relue.',
+      });
     } finally {
       setEnvoi(false);
       setConfirmation(false);
@@ -88,6 +108,11 @@ export function EnvoiConditionsPanel() {
               </li>
             ))}
           </ul>
+          {data.tronque && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Liste limitée : d’autres dossiers peuvent attendre. Rechargez la page après l’envoi.
+            </p>
+          )}
         </div>
       )}
 
@@ -123,7 +148,10 @@ export function EnvoiConditionsPanel() {
             <p className="text-sm text-foreground">
               Envoyer l’e-mail à {n === 1 ? 'ce patient' : `ces ${n} patients`}, en une fois ?
             </p>
-            <Button disabled={envoi} onClick={() => void envoyer(data.eligibles.map(p => p.idPatient))}>
+            <Button
+              disabled={envoi}
+              onClick={() => void envoyer(data.eligibles.map(p => p.idPatient), data.parEnvoi)}
+            >
               {envoi ? 'Envoi…' : 'Confirmer l’envoi'}
             </Button>
             <Button variant="outline" disabled={envoi} onClick={() => setConfirmation(false)}>

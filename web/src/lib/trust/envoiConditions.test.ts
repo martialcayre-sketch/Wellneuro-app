@@ -3,7 +3,8 @@ import { getDocumentCourant } from './contenus/registre';
 import { eligibleAnnonceConditions, referenceConditionsCourantes } from './envoiConditions';
 
 // [[D-292]] §3 — qui reçoit l'e-mail des conditions : un dossier en cours,
-// ouvert, majeur, suivi, sans accusé de la version en vigueur, pas déjà servi.
+// ouvert, majeur, suivi, sans accusé de la version en vigueur. « Pas déjà
+// servi » est la réservation en base (`annonceConditions.test.ts`, route).
 
 const MAINTENANT = Date.UTC(2026, 9, 16);
 const VERSION = getDocumentCourant('conditions_utilisation').version;
@@ -18,7 +19,7 @@ const SUIVI = [{ documentKey: 'cadre_accompagnement', documentVersion: 'v1', typ
 
 describe('eligibleAnnonceConditions', () => {
   it('un patient suivi, majeur, ouvert, sans accusé des conditions : éligible', () => {
-    expect(eligibleAnnonceConditions(OUVERT, SUIVI, false, MAINTENANT)).toBe(true);
+    expect(eligibleAnnonceConditions(OUVERT, SUIVI, MAINTENANT)).toBe(true);
   });
 
   it.each([
@@ -28,14 +29,14 @@ describe('eligibleAnnonceConditions', () => {
     ['mineur', { ...OUVERT, dateNaissance: '2012-01-01' }],
     ['sans date de naissance', { ...OUVERT, dateNaissance: null }],
   ])('%s : exclu', (_cas, dossier) => {
-    expect(eligibleAnnonceConditions(dossier, SUIVI, false, MAINTENANT)).toBe(false);
+    expect(eligibleAnnonceConditions(dossier, SUIVI, MAINTENANT)).toBe(false);
   });
 
   it('un nouveau patient (aucun texte accusé) voit les conditions à l’accueil : pas d’e-mail', () => {
-    expect(eligibleAnnonceConditions(OUVERT, [], false, MAINTENANT)).toBe(false);
+    expect(eligibleAnnonceConditions(OUVERT, [], MAINTENANT)).toBe(false);
     // Une simple trace de présentation ne fait pas un patient suivi.
     const presente = [{ documentKey: 'cadre_accompagnement', documentVersion: 'v1', type: 'presente' }];
-    expect(eligibleAnnonceConditions(OUVERT, presente, false, MAINTENANT)).toBe(false);
+    expect(eligibleAnnonceConditions(OUVERT, presente, MAINTENANT)).toBe(false);
   });
 
   it('l’accusé de la version en vigueur retire le dossier ; celui d’une autre version, non', () => {
@@ -43,13 +44,10 @@ describe('eligibleAnnonceConditions', () => {
       ...SUIVI,
       { documentKey: 'conditions_utilisation', documentVersion, type: 'pris_connaissance' },
     ];
-    expect(eligibleAnnonceConditions(OUVERT, accuse(VERSION), false, MAINTENANT)).toBe(false);
-    expect(eligibleAnnonceConditions(OUVERT, accuse('v0'), false, MAINTENANT)).toBe(true);
+    expect(eligibleAnnonceConditions(OUVERT, accuse(VERSION), MAINTENANT)).toBe(false);
+    expect(eligibleAnnonceConditions(OUVERT, accuse('v0'), MAINTENANT)).toBe(true);
   });
 
-  it('un e-mail déjà parti pour cette version retire le dossier', () => {
-    expect(eligibleAnnonceConditions(OUVERT, SUIVI, true, MAINTENANT)).toBe(false);
-  });
 });
 
 describe('referenceConditionsCourantes', () => {

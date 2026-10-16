@@ -8,7 +8,7 @@ import { getDocumentCourant } from './contenus/registre';
 // fonction pure ; la route lit la base et l'applique, à la liste comme à
 // l'envoi — un dossier sorti entre l'aperçu et le clic n'est pas servi.
 //
-// Un dossier est éligible s'il réunit les six conditions :
+// Un dossier est éligible s'il réunit les six conditions (les cinq premières ici) :
 // - EN COURS : actif, suivi non clos (`accepteNouvelEnvoi`) ;
 // - ACCÈS À L'ESPACE : portail non révoqué ;
 // - MAJEUR : un dossier mineur ou sans date de naissance ne reçoit pas
@@ -17,8 +17,9 @@ import { getDocumentCourant } from './contenus/registre';
 //   nouveau patient les voit à l'accueil, l'e-mail ne lui est pas destiné
 //   (« E-mail aux patients déjà suivis ») ;
 // - SANS ACCUSÉ de la version en vigueur des conditions ;
-// - PAS DÉJÀ ANNONCÉ : aucun e-mail `Envoye` pour cette version. Un envoi en
-//   erreur ou non parti laisse le dossier dans la liste.
+// - PAS DÉJÀ ANNONCÉ pour cette version : c'est la RÉSERVATION en base qui le
+//   dit (`annonceConditions.ts`), lue par la route en SQL, pas ce module. Un
+//   envoi en échec libère la réservation : le dossier revient dans la liste.
 
 export type DossierAnnonce = {
   actif: boolean;
@@ -35,7 +36,6 @@ export function referenceConditionsCourantes(): string {
 export function eligibleAnnonceConditions(
   dossier: DossierAnnonce,
   accuses: readonly AccuseConnu[],
-  dejaAnnonce: boolean,
   maintenantMs: number,
 ): boolean {
   if (!dossier.actif || dossier.suiviClotureLe !== null || dossier.accessTokenRevoked) return false;
@@ -45,5 +45,5 @@ export function eligibleAnnonceConditions(
   const accuse = accuses.some(
     a => a.documentKey === CLE_CONDITIONS && a.documentVersion === version && a.type === 'pris_connaissance',
   );
-  return !accuse && !dejaAnnonce;
+  return !accuse;
 }
