@@ -168,8 +168,27 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
             { status: 400 },
           );
         }
-        // Les lectures de la désignation ne font JAMAIS perdre un signalement :
-        // en échec, il est capturé sans rattachement, et le praticien l'examine.
+        // Les lectures de la désignation ne font JAMAIS perdre un signalement.
+        //
+        // LE REPLI ([[D-281]] §5, arbitrage du responsable du 2026-10-16) : une
+        // désignation illisible — lecture en échec, ou programme diffusé dont
+        // l'intégrité ne se vérifie pas — vise quand même le programme
+        // diffusé, relu seul, comme le formulaire d'avant. Le signalement
+        // attend alors l'avis du praticien, qui désigne l'élément en cause ou
+        // aucun — « aucun » seulement, si le programme lui-même est illisible ;
+        // le choix du patient, lui, n'est pas conservé. Sans programme
+        // diffusé, ou cette lecture en échec aussi, il est capturé sans
+        // programme : rien ne bloque, il se compte par son statut.
+        const repli = async () => {
+          let diffuse: Awaited<ReturnType<typeof resolveProtocoleDiffuse>> = null;
+          try {
+            diffuse = await resolveProtocoleDiffuse(patient.idPatient);
+          } catch (err) {
+            console.warn('[trust/signalement POST] programme diffusé illisible, capture sans programme :',
+              err instanceof Error ? err.message : String(err));
+          }
+          return { protocolDraftId: diffuse?.protocolDraftId ?? null, debutPriseLe, debutSymptomesLe };
+        };
         let ouverte = false;
         let programme: Awaited<ReturnType<typeof programmeDiffuse>> = null;
         let lectureEchouee = false;
@@ -178,13 +197,13 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
             ouverte = await designationOuverte(patient.idPatient);
             if (ouverte) programme = await programmeDiffuse(patient.idPatient);
           } catch (err) {
-            console.warn('[trust/signalement POST] désignation illisible, capture sans rattachement :',
+            console.warn('[trust/signalement POST] désignation illisible, repli sur le programme diffusé :',
               err instanceof Error ? err.message : String(err));
             lectureEchouee = true;
           }
         }
         if (lectureEchouee) {
-          association = { protocolDraftId: null, debutPriseLe, debutSymptomesLe };
+          association = await repli();
         } else if (ouverte) {
           // LA DÉSIGNATION ([[D-281]] §2), vérifiée ICI avant la base : son
           // trigger refuserait un élément absent, mais en rendant une erreur
@@ -217,8 +236,8 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
               { status: 400 },
             );
           }
-          // Sans programme diffusé, rien ne se rattache (§2) : le signalement
-          // est capturé sans rattachement, et le praticien l'examine.
+          // Sans programme lisible, rien ne se rattache (§2) : le repli vise le
+          // programme diffusé s'il en est un, sans rattachement.
           association = programme
             ? {
                 protocolDraftId: programme.protocolDraftId,
@@ -227,7 +246,7 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
                 debutPriseLe,
                 debutSymptomesLe,
               }
-            : { protocolDraftId: null, debutPriseLe, debutSymptomesLe };
+            : await repli();
         } else {
           // `resolveProtocoleDiffuse` rend `null` quand aucun protocole n'est
           // diffusé : le patient a beau déclarer « oui », il n'y a rien à
