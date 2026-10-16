@@ -2370,13 +2370,25 @@ la désignation échoue, ou que le programme diffusé ne passe pas le contrôle
 d'intégrité, le signalement vise quand même le programme diffusé, relu seul,
 sans rattachement — comme le formulaire d'avant, il attend l'avis et bloque
 la diffusion ; le choix du patient n'est pas conservé, le praticien désigne
-l'élément en cause, ou aucun — si le programme visé ne passe pas le contrôle
-d'intégrité, il ne peut répondre que « aucun » (question routée au plan,
-§8). Si cette lecture échoue aussi, il est capturé sans programme, compté
-par son statut, et ne bloque rien : une désignation illisible ne fait pas
-perdre le signalement. Écarté : refuser le dépôt (le patient peut abandonner, le
-praticien n'est pas averti) ; un indicateur en base « désignation non
-résolue » (migration).
+l'élément en cause, ou aucun. Si cette lecture échoue aussi, il est capturé
+sans programme, compté par son statut, et ne bloque rien : une désignation
+illisible ne fait pas perdre le signalement. Écarté : refuser le dépôt (le
+patient peut abandonner, le praticien n'est pas averti) ; un indicateur en
+base « désignation non résolue » (migration). **Sur un programme visé
+illisible, l'avis « impliqué, élément non identifiable »** (tranché par le
+responsable le 2026-10-16) : quand le programme visé par un signalement sans
+élément désigné ne passe pas le contrôle d'intégrité, le praticien ne peut
+désigner aucun élément ; il peut désormais rendre « impliqué » sans élément,
+avec un aménagement obligatoire (même liste fermée), au lieu de devoir
+déclarer « non impliqué » pour lever la garde. Cet avis lève l'attente comme
+les autres. Il n'est jamais ouvert quand le patient a désigné l'élément, ni
+sur un programme lisible, où le praticien désigne l'élément en cause ; s'il
+l'était un jour, la pause des compléments de la version visée serait
+maintenue jusqu'à la nouvelle version. La base l'admet par la migration
+`saf_ei_avis_implique_sans_element_v1` (aménagement exigé, refus sur un
+élément désigné par le patient ou un signalement délié de son programme) ;
+« programme illisible seul » est tenu par le code, qui seul juge
+l'intégrité.
 
 **§6 — Ordre et signature.** (1) cette décision ; (2) la migration —
 l'élément désigné, le mode de rattachement, la validation —, relue puis
