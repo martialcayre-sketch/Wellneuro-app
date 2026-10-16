@@ -37,7 +37,10 @@ const MARQUEUR = 'ETAT_VERROUS_SIGNATURE';
 // la plus fragile ([[D-063]]) : la balayer aussi n'est pas un détail.
 // `biology-library/import` : le resolver signé de l'import (BIO-INGEST LOT-02),
 // sous-dossier que la lecture non récursive ne verrait pas.
-const RACINES_BALAYEES = ['clinical', 'biology-library', 'biology-library/import'];
+// `fiches-usage` : la structure signée des fiches d'usage ([[D-314]] §2), hors
+// de `clinical/` par décision — le module est distinct du catalogue des
+// conduites ([[D-266]] §6).
+const RACINES_BALAYEES = ['clinical', 'biology-library', 'biology-library/import', 'fiches-usage'];
 
 interface Signature {
   fichier: string;

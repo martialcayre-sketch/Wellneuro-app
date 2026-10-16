@@ -637,6 +637,8 @@ les pages du portail — **v5 depuis le 2026-09-07** (`D-141`).
 
 **Déclaré le 2026-10-15 (D4, [[D-299]]) :** OpenAI figure au tableau ci-dessus et dans « Vos données personnelles » v18, accusé exigé ; le flux est inchangé. La contre-lecture des fiches d'assiette par OpenAI s'exécute hors de l'application, sur le seul texte des fiches, sans donnée personnelle : elle est déclarée par `docs/TRUST_IA_FICHES_ASSIETTE.md` et n'est pas un sous-traitant de données patient. Le constat d'origine suit, inchangé.
 
+**Déclaré le 2026-10-16, avant le premier envoi (BP-12a, [[D-314]] §4) :** la rédaction des fiches d'usage du besoin 2 suit le même régime que celle des fiches d'assiette. L'outil `tools/corpus/fiches-usage/` s'exécute hors de l'application et envoie à Anthropic (rédaction) et à OpenAI (contre-lecture) les identifiants de la structure signée et le texte des claims qu'elle épingle : aucune donnée personnelle. Ni l'un ni l'autre n'est un sous-traitant de données patient pour ce flux, déclaré par `docs/TRUST_IA_FICHES_USAGE.md`. Aucun texte n'était encore rédigé à cette date.
+
 **Liste fermée des sites d'appel IA (K-05a, 2026-10-15).** Chaque fichier de
 `web/src` qui parle à un fournisseur d'IA (appel par SDK, appel direct, client,
 adresse en dur) figure dans la liste de

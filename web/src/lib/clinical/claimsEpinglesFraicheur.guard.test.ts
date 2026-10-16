@@ -27,6 +27,18 @@ import { describe, expect, it } from 'vitest';
 
 const RACINE = path.resolve(__dirname, '../../../..');
 const CLINIQUE = path.join(RACINE, 'web/src/lib/clinical');
+// La structure signée des fiches d'usage vit hors de `clinical/` par décision
+// ([[D-314]] §2, [[D-266]] §6) ; son contrat de fraîcheur s'étend à elle (§5).
+const RACINES_BALAYEES = [CLINIQUE, path.join(RACINE, 'web/src/lib/fiches-usage')];
+
+/** Les sources de production des racines balayées, par nom de fichier et chemin. */
+function sourcesBalayees(): { fichier: string; chemin: string }[] {
+  return RACINES_BALAYEES.flatMap(racine =>
+    readdirSync(racine)
+      .filter(f => f.endsWith('.ts') && !f.endsWith('.test.ts') && !f.endsWith('.d.ts'))
+      .map(fichier => ({ fichier, chemin: path.join(racine, fichier) })),
+  );
+}
 const CONTRAT = 'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql';
 const NEGATIF = 'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1_negatif.sql';
 const CI = '.github/workflows/ci.yml';
@@ -106,6 +118,18 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   // son `claimsSource` est rempli AVANT la signature — la sélection du
   // responsable est faite, seule l'attestation reste à poser.
   'portesBiologiquesAssiettesV1.ts': 'portes_biologiques',
+  // Structure des fiches d'usage du besoin 2 ([[D-314]] §5). Entrée le jour où le
+  // fichier est POSÉ, livré vide et verrou éteint — patron des indications
+  // d'assiette ci-dessus : aucune paire au contrat SQL, donc aucune entrée dans
+  // `TABLE_EXIGE_PRESCRIPTIF` avant la première fiche (le banc refuse une table
+  // déclarée sans paire). SON RÉGIME EST ARBITRÉ (responsable, 2026-10-16,
+  // [[D-314]] §9, qui répond à la question que [[D-046]] réserve à chaque table
+  // nouvelle) : `fiches_usage: false`. Une fiche d'usage décrit ce qu'une mesure
+  // permet d'interpréter — préanalytique, interprétations permises et
+  // interdites, limites —, pas une conduite : ses claims tiennent le régime des
+  // contradictions (validé, actif, non remplacé), sans `prescriptif`. L'entrée
+  // se pose avec la première paire, à cette valeur-là.
+  'ficheUsageBesoin2V1.ts': 'fiches_usage',
 };
 
 // L'EXIGENCE EST DÉCLARÉE PAR TABLE, JAMAIS DÉDUITE PAR DÉFAUT — [[D-046]].
@@ -234,12 +258,9 @@ interface TableSignee {
 // ni d'une base ni des effets de bord d'un module tiers ; il lit ce que les
 // fichiers DÉCLARENT.
 function tablesSignees(): TableSignee[] {
-  const fichiers = readdirSync(CLINIQUE).filter(
-    f => f.endsWith('.ts') && !f.endsWith('.test.ts') && !f.endsWith('.d.ts'),
-  );
   const trouvees: TableSignee[] = [];
-  for (const fichier of fichiers) {
-    const source = readFileSync(path.join(CLINIQUE, fichier), 'utf8');
+  for (const { fichier, chemin } of sourcesBalayees()) {
+    const source = readFileSync(chemin, 'utf8');
     const blocs = [...source.matchAll(/claimsSource:\s*\[([\s\S]*?)\]/g)];
     if (blocs.length === 0) continue;
     const claims = blocs.flatMap(b =>
@@ -261,16 +282,16 @@ function tablesSignees(): TableSignee[] {
 // `validationExterne`, mais c'est un instantané de PROSE qui n'épingle aucun
 // claim : l'exiger dans le contrat n'aurait aucun sens.
 function fichiersCitantDesClaimsHorsBalayage(): string[] {
-  return readdirSync(CLINIQUE)
-    .filter(f => f.endsWith('.ts') && !f.endsWith('.test.ts') && !f.endsWith('.d.ts'))
-    .filter(f => {
-      const source = readFileSync(path.join(CLINIQUE, f), 'utf8');
+  return sourcesBalayees()
+    .filter(({ chemin }) => {
+      const source = readFileSync(chemin, 'utf8');
       return (
         /validationExterne\s*:/.test(source) &&
         /WN-CL-\d{4}-\d{3}/.test(source) &&
         !/claimsSource\s*:/.test(source)
       );
-    });
+    })
+    .map(({ fichier }) => fichier);
 }
 
 describe('claims épinglés — le contrat couvre TOUTES les tables signées', () => {

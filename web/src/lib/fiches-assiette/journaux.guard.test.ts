@@ -43,6 +43,11 @@ const PERIMETRE = [
   // patient, la saisie du praticien, unitaire et groupée.
   'app/api/portail/comptes-rendus',
   'app/api/praticien/biologie/resultats',
+  // BP-12a ([[D-314]]) : les fiches d'usage portent du texte clinique rédigé
+  // par l'IA — même règle, même banc.
+  'lib/fiches-usage',
+  'app/api/praticien/fiches-usage',
+  'app/api/internal/fiches-usage',
 ];
 // Hors de `src/` : le cron de purge à l'échéance (même contre-revue, M16). Son
 // erreur vient d'un `.catch(err => …)` : le paramètre du rappel compte comme
@@ -144,6 +149,8 @@ describe('Journaux des fiches d’assiette — classe et code, jamais le message
     expect(appels.some(a => a.texte.startsWith('logger.'))).toBe(true);
     expect(appels.some(a => a.fichier.includes(path.join('biologie', 'import')))).toBe(true);
     expect(appels.some(a => a.fichier.includes(path.join('biology-library', 'import')))).toBe(true);
+    expect(appels.some(a => a.fichier.includes(path.join('praticien', 'fiches-usage')))).toBe(true);
+    expect(appels.some(a => a.fichier.includes(path.join('fiches-usage', 'ingestionHttp')))).toBe(true);
     for (const lieu of [['portail', 'comptes-rendus'], ['biologie', 'resultats', 'bilan'], ['scripts', 'purgeComptesRendusEcheance']]) {
       expect(appels.some(a => a.fichier.includes(path.join(...lieu)))).toBe(true);
     }

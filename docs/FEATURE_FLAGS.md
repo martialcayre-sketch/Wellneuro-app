@@ -349,6 +349,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/replisAssietteV1.ts` | `false` | `null` |
 | `clinical/portesBiologiquesAssiettesV1.ts` | `true` | `2026-09-24T06:44:55.000Z` |
 | `biology-library/import/resolverLibellesV1.ts` | `true` | `2026-10-03T20:18:43.000Z` |
+| `fiches-usage/ficheUsageBesoin2V1.ts` | `false` | `null` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
@@ -494,6 +495,16 @@ seulement, jamais au dépôt ni aux journaux), appelée après chaque balayage
 réussi des fantômes, soit chaque minute hors lecture. Surveillance réglée à
 60 s de période et 6 min de tolérance (une lecture en cours suspend le
 balayage jusqu'à la réservation). Absente = aucun appel, aucune alerte.
+
+**Qui décide sur le texte des fiches d'usage** ([[D-314]] §9, arbitrage du
+2026-10-16) : `WN_FICHES_USAGE_VALIDATEURS`, lu par
+`lib/fiches-usage/responsable.ts`. Adresses séparées par des virgules, casse
+indifférente : seules ces sessions valident ou retirent une rubrique ou un
+libellé (`POST /api/praticien/fiches-usage/actes`, `…/libelles/actes` ; 403
+sinon) ; les autres praticiens lisent l'écran sans geste. **Fermée par
+défaut** : absente ou vide, personne ne décide. À poser sur Scalingo (geste du
+responsable, puis conteneurs web recréés — un `env-set` seul ne change rien),
+jamais au dépôt.
 
 **Hors `web/src`** : `WN_MIGRATIONS_PAR_RELEASE_DB` (`web/scripts/db-deploy.sh`)
 sort les migrations du postdeploy pour les confier au workflow `release-db` —

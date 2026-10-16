@@ -205,7 +205,15 @@ if (estSourceDeProduction) {
     }
   }
   // Clé nue ou entre guillemets (`"validationExterne": true` en JSON).
-  const marqueur = /["']?validationExterne["']?\s*:\s*true/;
+  //
+  // LA STRUCTURE DES FICHES D'USAGE est couverte verrou posé OU ÉTEINT
+  // ([[D-314]] §2, critère de fin de F05) : elle est livrée vide et non signée,
+  // et ce qu'on y écrit avant la signature est déjà le périmètre que le
+  // responsable signera. Ailleurs, un verrou éteint reste en silence.
+  const structureFichesUsage = /(^|\/)web\/src\/lib\/fiches-usage\//.test(normalized);
+  const marqueur = structureFichesUsage
+    ? /["']?validationExterne["']?\s*:\s*(true|false)/
+    : /["']?validationExterne["']?\s*:\s*true/;
   if (textes.some((texte) => typeof texte === "string" && marqueur.test(sansCommentaires(texte)))) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {

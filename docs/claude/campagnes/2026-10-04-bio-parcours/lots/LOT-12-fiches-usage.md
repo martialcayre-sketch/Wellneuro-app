@@ -1,7 +1,7 @@
 ---
 id: "LOT-12"
 titre: "BP-12a — Fiches d'usage : structure signée, texte en base"
-statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; PR de migration seule ouverte, cinq arbitrages de forme rendus le 2026-10-16, D-314 §8)"
+statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; cinq arbitrages de forme rendus le 2026-10-16, D-314 §8 ; migration mergée (#1488) et appliquée en production le 2026-10-16, constat par conteneur ; code consommateur écrit sur branche, douze arbitrages rendus le 2026-10-16)"
 dépend_de: "LOT-07, LOT-09"
 ---
 
@@ -291,6 +291,40 @@ la revue `wn-reviewer` de son premier jet.
     - **B.** Indépendants, sous la règle « un identifiant ne change jamais de
       sens ».
     - **Rendu : A.**
+
+### Arbitrages du code consommateur (rendus le 2026-10-16, D-314 §9)
+
+Posés après l'écriture de la PR 2 et sa revue `wn-reviewer`, avant son
+ouverture. Le premier rendu de chaque question est celui qui a été recommandé,
+sauf au 24.
+
+16. **Les trois axes de D-266 §3 dans la structure.** Rendu : **maintenant**,
+    tant que la structure est vide (rien ne repasse « à relire »).
+17. **Nature ↔ statut.** Rendu : **règle du cadrage** — piste exploratoire ou
+    usage non étayé : « non validé » seulement ; structure refusée à la
+    signature sinon. (Écartés : plus stricte ; aucune contrainte.)
+18. **Besoins.** Rendu : **les 12 besoins du guide**, au moins un par fiche.
+19. **Question clinique.** Rendu : **identifiant `QC_…` maintenant**, liste
+    fermée déclarée par la structure ; texte en clair dans la rubrique
+    « question ».
+20. **Statut réglementaire, renvois aux précautions.** Rendu : **reportés à
+    BP-17**.
+21. **`prescriptif` des claims.** Rendu : **non exigé** (régime des
+    contradictions, D-046).
+22. **Qui valide.** Rendu : **le responsable seul**, liste d'adresses en
+    variable d'environnement, fermée par défaut. (Écarté : tout praticien.)
+23. **Libellé de référence.** Rendu : **le plus récent validé** ; les autres
+    « remplacé », sans acte automatique. (Écarté : un seul validé à la fois.)
+24. **Place de l'écran.** Rendu : **avec la biologie** (page « Biologie
+    fonctionnelle »). (Écarté : rayon de la Bibliothèque, recommandé.)
+25. **TRUST et consignes.** Rendu : **relus avant le merge** de la PR du code.
+    **Accord du responsable le 2026-10-16** : document TRUST, les deux
+    consignes (`fiche-usage-v1`) et les modèles par défaut (rédaction
+    `claude-sonnet-5`, contre-lecture `gpt-5.4`) approuvés en l'état.
+26. **Restes de la revue.** Rendu : **les quatre corrigés avant la PR** —
+    affichage des états, version dépassée, bancs sur base réelle, retrait
+    symétrique des libellés.
+27. **Bases locales d'essai.** Rendu : **supprimées**.
 
 ## Périmètre
 

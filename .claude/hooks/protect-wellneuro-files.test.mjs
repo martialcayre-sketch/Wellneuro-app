@@ -236,6 +236,26 @@ test("Write d'une table signée NEUVE : demande dès la création", () => {
   assert.match(j.sortie, /validationExterne/);
 });
 
+// D-314 §2 : la structure des fiches d'usage est couverte verrou ÉTEINT aussi —
+// ce qu'on y écrit avant la signature est le périmètre que le responsable
+// signera. Le même marqueur éteint ailleurs reste en silence (cas plus bas).
+test("structure des fiches d'usage au verrou ÉTEINT : demande", () => {
+  const j = jugementBrut({
+    file_path: path.join(racine, "web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts"),
+    content: "export const META = {\n  validationExterne: false,\n};\n",
+  });
+  assert.equal(j.verdict, "demande");
+  assert.match(j.sortie, /DC-17/);
+});
+
+test("structure des fiches d'usage : marqueur éteint en commentaire seulement, silence", () => {
+  const j = jugementBrut({
+    file_path: path.join(racine, "web/src/lib/fiches-usage/lecture.ts"),
+    content: "// la structure porte `validationExterne: false` tant qu'elle n'est pas signée\nexport const x = 1;\n",
+  });
+  assert.equal(j.verdict, "passe");
+});
+
 test("Edit qui pose le marqueur sur un fichier ordinaire : demande", () => {
   const j = jugementBrut({
     file_path: path.join(racine, "web/src/lib/documents/vocabulaire.ts"),
