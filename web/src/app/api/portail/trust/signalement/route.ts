@@ -5,7 +5,7 @@ import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { orienterEffetIndesirable } from '@/lib/trust/securite';
 import { notifierPraticienSignalement } from '@/lib/trust/notification';
-import { RATTACHEMENTS, elementsDesignables, type Rattachement } from '@/lib/trust/pauseEffetIndesirable';
+import { RATTACHEMENTS, elementsDesignablesParLePatient, type Rattachement } from '@/lib/trust/pauseEffetIndesirable';
 import { designationOuverte, programmeDiffuse } from '@/lib/trust/pauseEffetIndesirableServeur';
 import type {
   ActionPriseDeclaree,
@@ -220,13 +220,16 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
           // Un ÉLÉMENT choisi, deux refus, un seul message. (1) La version : les
           // identifiants d'action sont positionnels, un choix fait sur une
           // version remplacée désignerait une autre action de la nouvelle.
-          // (2) L'élément : absent, ou d'un type non désignable — orientation
-          // vers le médecin, prise de sang (arbitrages du 2026-10-14).
-          // « Je ne sais pas » et « un autre produit » ne nomment aucune action :
-          // ils se rattachent au programme courant, sans refus.
+          // (2) L'élément : hors de la liste que le patient voit — absent,
+          // d'un type non désignable (orientation, prise de sang : arbitrages
+          // du 2026-10-14), intervention non ferme, ou programme non servi au
+          // portail, où la désignation se fait sans liste (arbitrages du
+          // 2026-10-16). « Je ne sais pas » et « un autre produit » ne nomment
+          // aucune action : ils se rattachent au programme courant, sans refus.
           if (programme && rattachement === 'element' && (
             payload.versionProgramme !== programme.version
-            || !elementsDesignables(programme.actions).some(e => e.actionId === elementActionId)
+            || !programme.servi
+            || !elementsDesignablesParLePatient(programme.actions).some(e => e.actionId === elementActionId)
           )) {
             return NextResponse.json(
               {

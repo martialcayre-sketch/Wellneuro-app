@@ -8,6 +8,7 @@ import {
   TEXTE_PAUSE_ELEMENT,
   effetsNonTraites,
   elementsDesignables,
+  elementsDesignablesParLePatient,
   elementsEnPause,
   versionProgramme,
   type SignalementRattache,
@@ -35,7 +36,7 @@ const verdict = (over: Partial<VerdictEffetIndesirable> = {}): VerdictEffetIndes
 const enPause = (
   signalements: SignalementRattache[],
   verdicts: VerdictEffetIndesirable[] = [],
-  actions: { actionId: string; type: string; title: string }[] = ACTIONS,
+  actions: { actionId: string; type: string; title: string; interventionStatus?: string }[] = ACTIONS,
 ) => elementsEnPause({ signalements, verdicts, protocolDraftId: DRAFT, actions });
 
 describe('textes signés de la pause', () => {
@@ -56,6 +57,34 @@ describe('elementsDesignables', () => {
       { actionId: MAGNESIUM.actionId, title: MAGNESIUM.title },
       { actionId: OMEGA.actionId, title: OMEGA.title },
       { actionId: MARCHE.actionId, title: MARCHE.title },
+    ]);
+  });
+});
+
+describe('elementsDesignablesParLePatient (arbitrages du 2026-10-16)', () => {
+  it.each(['conditionnelle_biologie', 'differee', 'contre_indiquee', 'non_indiquee_actuellement'])(
+    'une intervention « %s » n’est pas proposée au patient ; active ou sans statut, elle l’est',
+    (interventionStatus) => {
+      const actions = [
+        ORIENTATION,
+        { ...MAGNESIUM, interventionStatus: 'active' },
+        { ...OMEGA, interventionStatus },
+        MARCHE,
+      ];
+      expect(elementsDesignablesParLePatient(actions)).toEqual([
+        { actionId: MAGNESIUM.actionId, title: MAGNESIUM.title },
+        { actionId: MARCHE.actionId, title: MARCHE.title },
+      ]);
+      // Le praticien, lui, peut toujours la désigner dans son avis.
+      expect(elementsDesignables(actions).map(e => e.actionId)).toContain(OMEGA.actionId);
+    },
+  );
+
+  it('la pause des compléments couvre encore un complément non ferme', () => {
+    const actions = [ORIENTATION, MAGNESIUM, { ...OMEGA, interventionStatus: 'differee' }, MARCHE];
+    expect(enPause([signalement({ rattachement: 'autre_produit', elementActionId: null })], [], actions)).toEqual([
+      { actionId: MAGNESIUM.actionId, texte: 'complements' },
+      { actionId: OMEGA.actionId, texte: 'complements' },
     ]);
   });
 });

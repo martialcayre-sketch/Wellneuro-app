@@ -67,6 +67,21 @@ describe('SignalerProbleme — désignation', () => {
     expect(corps).not.toHaveProperty('elementActionId');
   });
 
+  // LA DÉSIGNATION SANS LISTE (arbitrage du responsable du 2026-10-16) :
+  // programme non servi au portail, ou aucune intervention ferme.
+  it('une liste vide : la désignation sans élément, « Je ne sais pas » ou « Un autre produit » ; plus la question d’avant', () => {
+    ouvrir({ elementsProgramme: [], versionProgramme: 'v-courante' });
+    const liste = screen.getByRole('combobox', { name: QUESTION }) as HTMLSelectElement;
+    expect([...liste.options].map(o => o.textContent)).toEqual(['Choisir…', 'Je ne sais pas', 'Un autre produit']);
+    expect(liste.required).toBe(true);
+    expect(screen.queryByText(QUESTION_AVANT)).toBeNull();
+    fireEvent.change(liste, { target: { value: 'ne_sait_pas' } });
+    remplirEtEnvoyer();
+    expect(corps).toMatchObject({ rattachement: 'ne_sait_pas' });
+    expect(corps).not.toHaveProperty('elementActionId');
+    expect(corps).not.toHaveProperty('rattacheAuProgramme');
+  });
+
   it('sans éléments servis (dossier mineur, sans date, sans programme) : la question d’avant, inchangée', () => {
     ouvrir({ elementsProgramme: null });
     expect(screen.getByText(QUESTION_AVANT)).toBeTruthy();

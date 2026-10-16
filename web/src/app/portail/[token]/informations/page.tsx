@@ -50,7 +50,7 @@ export default function InformationsPage() {
 
   const charger = useCallback(async () => {
     try {
-      const res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(token)}`);
+      const res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(token)}&designation=1`);
       if (res.status === 401 || res.status === 403) {
         router.replace(`/portail/${token}`);
         return;

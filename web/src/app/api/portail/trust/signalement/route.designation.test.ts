@@ -41,7 +41,9 @@ const PROGRAMME = {
     { actionId: 'action-5', type: 'medical_referral', title: 'Voir votre gastro-entérologue' },
     { actionId: 'action-6', type: 'biological_exploration', title: 'Prise de sang' },
     { actionId: 'a-magnesium', type: 'supplement_exploration', title: 'Magnésium le soir' },
+    { actionId: 'a-zinc', type: 'supplement_exploration', title: 'Zinc', interventionStatus: 'differee' },
   ],
+  servi: true,
 };
 
 const SIGNALEMENT = {
@@ -94,6 +96,29 @@ describe('POST signalement — désignation d’un élément (D-281 §2)', () =>
     const res = await POST(request({ ...SIGNALEMENT, rattachement: 'element', elementActionId }));
     expect(res.status).toBe(400);
     expect(prisma.trustAdverseEffectReport.create).not.toHaveBeenCalled();
+  });
+
+  // LA LISTE QUE LE PATIENT VOIT (arbitrages du responsable du 2026-10-16) :
+  // une intervention non ferme n'y figure pas ; un programme non servi au
+  // portail se désigne sans liste.
+  it('une intervention non ferme (différée) n’est pas désignable par le patient : 400, rien n’est écrit', async () => {
+    const res = await POST(request({ ...SIGNALEMENT, rattachement: 'element', elementActionId: 'a-zinc' }));
+    expect(res.status).toBe(400);
+    expect(prisma.trustAdverseEffectReport.create).not.toHaveBeenCalled();
+  });
+
+  it('programme non servi au portail (« indisponible ») : un élément est refusé, 400, rien n’est écrit', async () => {
+    programmeDiffuse.mockResolvedValue({ ...PROGRAMME, servi: false });
+    const res = await POST(request({ ...SIGNALEMENT, rattachement: 'element', elementActionId: 'a-magnesium' }));
+    expect(res.status).toBe(400);
+    expect(prisma.trustAdverseEffectReport.create).not.toHaveBeenCalled();
+  });
+
+  it.each(['ne_sait_pas', 'autre_produit'])('programme non servi au portail : « %s » rattache au programme diffusé, sans élément', async (rattachement) => {
+    programmeDiffuse.mockResolvedValue({ ...PROGRAMME, servi: false });
+    const res = await POST(request({ ...SIGNALEMENT, rattachement }));
+    expect(res.status).toBe(200);
+    expect(ecrit()).toMatchObject({ rattachement, elementActionId: null, protocolDraftId: 'draft-1' });
   });
 
   // LES IDENTIFIANTS SONT POSITIONNELS : un choix fait sur une version remplacée

@@ -1,6 +1,7 @@
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import type { ProtocolAction } from '@/lib/clinical-engine/types';
+import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
 import {
   associationEffetIndesirableDisponible,
   interruptionEffetIndesirableActive,
@@ -8,9 +9,11 @@ import {
 import { refusSaisieSantePour } from '@/lib/patient/gardeAgeServeur';
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
 import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
+import { vuePatientOuRefus } from '@/lib/protocol/servirAuPatient';
 import {
   effetsNonTraites,
   elementsDesignables,
+  elementsDesignablesParLePatient,
   elementsEnPause,
   recoitUnAvis,
   signalementsEnAttente,
@@ -25,33 +28,59 @@ import {
 // module pur ; ici, les lectures et les deux verrous.
 
 /**
- * Le programme diffusé du patient : son identifiant et ses actions, ou `null`.
+ * Le programme diffusé du patient : son identifiant, ses actions, et s'il est
+ * SERVI au portail — ou `null`.
  *
  * Résolu CÔTÉ SERVEUR par `resolveProtocoleDiffuse`, comme le portail : le
  * patient ne désigne jamais un programme, il désigne un élément de celui
  * qu'on lui a transmis. Un payload dont l'intégrité ne se vérifie pas rend
  * `null` — rien à désigner plutôt qu'une liste qu'on ne sait pas garantir.
+ *
+ * `servi` : les deux marches du portail (`api/portail/protocole`), le rejeu de
+ * la carte puis le contrat patient (`vuePatientOuRefus`, [[D-200]]). Faux, le
+ * patient lit « indisponible » : aucun élément ne lui est proposé, il désigne
+ * sans liste (D-281 §2, arbitrage du responsable du 2026-10-16).
  */
 export async function programmeDiffuse(
   idPatient: string,
-): Promise<{ protocolDraftId: string; version: string; actions: ProtocolAction[] } | null> {
+): Promise<{ protocolDraftId: string; version: string; actions: ProtocolAction[]; servi: boolean } | null> {
   const diffuse = await resolveProtocoleDiffuse(idPatient);
   if (!diffuse) return null;
   const row = await prisma.protocolDraft.findUnique({
     where: { id: diffuse.protocolDraftId },
-    select: { payload: true, inputHash: true },
+    select: { payload: true, inputHash: true, assessmentEpisodeId: true },
   });
   if (!row) return null;
+  let draft: ReturnType<typeof reconstructProtocolDraft>;
   try {
-    const draft = reconstructProtocolDraft(row.payload, row.inputHash);
-    return {
-      protocolDraftId: diffuse.protocolDraftId,
-      version: versionProgramme(diffuse.protocolDraftInputHash),
-      actions: draft.actions,
-    };
+    draft = reconstructProtocolDraft(row.payload, row.inputHash);
   } catch {
     return null;
   }
+  const rejeu = await rejouerCarteDecision({
+    idPatient,
+    decisionCardId: diffuse.decisionCardId,
+    assessmentEpisodeId: row.assessmentEpisodeId,
+    decisionCardInputHash: diffuse.decisionCardInputHash,
+  });
+  const servi = rejeu.ok && vuePatientOuRefus({
+    decisionCard: rejeu.decisionCard,
+    protocolDraft: draft,
+    approval: {
+      decisionCardInputHash: diffuse.decisionCardInputHash,
+      protocolDraftInputHash: diffuse.protocolDraftInputHash,
+      approvedAt: diffuse.approvedAt.toISOString(),
+      approvedBy: 'practitioner',
+      confirmation: 'content_approved_for_diffusion',
+    },
+    patientLimitations: [],
+  }).ok;
+  return {
+    protocolDraftId: diffuse.protocolDraftId,
+    version: versionProgramme(diffuse.protocolDraftInputHash),
+    actions: draft.actions,
+    servi,
+  };
 }
 
 /**
@@ -67,16 +96,24 @@ export async function designationOuverte(idPatient: string): Promise<boolean> {
 
 /**
  * La liste servie au formulaire et la version du programme dont elle vient, ou
- * `null` quand la désignation est fermée.
+ * `null` quand la désignation est fermée — le formulaire d'avant.
+ *
+ * La liste est celle que le patient VOIT (arbitrages du responsable du
+ * 2026-10-16, D-281 §2) : les interventions fermes du programme SERVI
+ * (`elementsDesignablesParLePatient`). Programme non servi (« indisponible »),
+ * ou aucune intervention ferme à désigner : une liste VIDE — la désignation
+ * SANS LISTE, « Je ne sais pas » ou « Un autre produit », qui rattache comme
+ * les autres. Un programme où le praticien lui-même n'aurait rien à désigner
+ * (orientation et prise de sang seules) garde le formulaire d'avant.
  */
 export async function designationPour(
   idPatient: string,
 ): Promise<{ version: string; elements: { actionId: string; title: string }[] } | null> {
   if (!(await designationOuverte(idPatient))) return null;
   const programme = await programmeDiffuse(idPatient);
-  if (!programme) return null;
-  const elements = elementsDesignables(programme.actions);
-  return elements.length > 0 ? { version: programme.version, elements } : null;
+  if (!programme || elementsDesignables(programme.actions).length === 0) return null;
+  const elements = programme.servi ? elementsDesignablesParLePatient(programme.actions) : [];
+  return { version: programme.version, elements };
 }
 
 /**

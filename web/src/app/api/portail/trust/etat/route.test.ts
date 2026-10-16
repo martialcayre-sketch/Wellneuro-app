@@ -31,9 +31,9 @@ const patient = {
   dateNaissance: '1979-07-28' as string | null,
 };
 
-function request(): Request {
+function request(query = ''): Request {
   const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
-  return new Request('http://localhost/api/portail/trust/etat', {
+  return new Request(`http://localhost/api/portail/trust/etat${query}`, {
     headers: { cookie: `wn_portail=${encodeURIComponent(cookie)}` },
   });
 }
@@ -50,7 +50,7 @@ describe('GET /api/portail/trust/etat — désignation', () => {
 
   it('sert les éléments désignables et la version du programme', async () => {
     designationPour.mockResolvedValue({ version: 'v-courante', elements: [{ actionId: 'a-magnesium', title: 'Magnésium le soir' }] });
-    const json = await (await GET(request())).json();
+    const json = await (await GET(request('?designation=1'))).json();
     expect(json).toMatchObject({
       ok: true,
       elementsProgramme: [{ actionId: 'a-magnesium', title: 'Magnésium le soir' }],
@@ -60,15 +60,27 @@ describe('GET /api/portail/trust/etat — désignation', () => {
 
   it('désignation fermée : null, le formulaire d’avant', async () => {
     designationPour.mockResolvedValue(null);
-    const json = await (await GET(request())).json();
+    const json = await (await GET(request('?designation=1'))).json();
     expect(json).toMatchObject({ ok: true, elementsProgramme: null, versionProgramme: null });
   });
 
   it('une lecture en échec rend null, et l’espace TRUST reste servi', async () => {
     designationPour.mockRejectedValue(new Error('base indisponible'));
-    const res = await GET(request());
+    const res = await GET(request('?designation=1'));
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ ok: true, elementsProgramme: null, versionProgramme: null });
+  });
+
+  it('une liste vide (programme non servi, aucune intervention ferme) reste une liste vide : la désignation sans liste', async () => {
+    designationPour.mockResolvedValue({ version: 'v-courante', elements: [] });
+    const json = await (await GET(request('?designation=1'))).json();
+    expect(json).toMatchObject({ ok: true, elementsProgramme: [], versionProgramme: 'v-courante' });
+  });
+
+  it('sans `designation=1` (accueil, questionnaires) : aucune désignation calculée, aucun rejeu', async () => {
+    const json = await (await GET(request())).json();
+    expect(designationPour).not.toHaveBeenCalled();
+    expect(json).toMatchObject({ ok: true, elementsProgramme: null, versionProgramme: null });
   });
 });
 

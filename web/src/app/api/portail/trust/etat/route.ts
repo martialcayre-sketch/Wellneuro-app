@@ -152,7 +152,15 @@ export async function GET(req: Request): Promise<NextResponse<TrustEtatResponse>
 
     // Une lecture en échec rend `null` : le formulaire d'avant, jamais
     // l'espace TRUST fermé au patient qui veut signaler un effet.
-    const designation = await designationPour(patient.idPatient).catch(() => null);
+    //
+    // SUR DEMANDE SEULEMENT (`?designation=1`, la page des informations, seule
+    // à porter le formulaire) : la désignation rejoue la carte diffusée pour
+    // savoir si le programme est servi — le rejeu entier de la chaîne C1, que
+    // l'accueil et les questionnaires, qui lisent aussi cette route, n'ont pas
+    // à payer.
+    const designation = new URL(req.url).searchParams.get('designation') === '1'
+      ? await designationPour(patient.idPatient).catch(() => null)
+      : null;
 
     return NextResponse.json({
       ok: true,
