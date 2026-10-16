@@ -9,6 +9,7 @@ import {
   estEtatCorrespondance,
   lireCorrespondancesAnalyte,
   type CandidatsNabmAffiches,
+  type ConstatAffiche,
   type CorrespondanceAffichee,
   type DeciderCorrespondanceResultat,
   type RaisonRefusCorrespondance,
@@ -34,6 +35,7 @@ export type CorrespondancesNabmApiResponse =
       millesime: string | null;
       correspondances: CorrespondanceAffichee[];
       candidats: CandidatsNabmAffiches | null;
+      constat: ConstatAffiche | null;
     }
   | { ok: false; reason: string; error: string };
 
@@ -59,6 +61,14 @@ const MESSAGES_REFUS: Record<RaisonRefusCorrespondance, { message: string; statu
   },
   acte_inactif: {
     message: 'Cet acte est inactif dans le millésime courant : la correspondance ne rembourserait rien.',
+    status: 409,
+  },
+  import_en_cours: {
+    message: 'Un import de la nomenclature est en cours : rien n’a été enregistré, réessayez dans quelques minutes.',
+    status: 409,
+  },
+  constat_present: {
+    message: 'Cet analyte porte un constat « aucun acte dans la nomenclature » : retirez-le d’abord.',
     status: 409,
   },
   etat_divergent: {
@@ -94,6 +104,7 @@ export async function GET(req: Request): Promise<NextResponse<CorrespondancesNab
       millesime: resultat.millesime,
       correspondances: resultat.correspondances,
       candidats: resultat.candidats,
+      constat: resultat.constat,
     });
   } catch (err) {
     console.error('[praticien/biologie/nabm/correspondances GET]', signature(err));

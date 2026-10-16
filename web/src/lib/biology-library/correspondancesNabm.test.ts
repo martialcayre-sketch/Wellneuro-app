@@ -1,23 +1,45 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma } = vi.hoisted(() => ({
-  prisma: {
+const { prisma, transactions } = vi.hoisted(() => {
+  const transactions = { annulees: 0 };
+  const prisma = {
     biologyAnalyte: { findUnique: vi.fn() },
     biologyCatalogVersionCourante: { findUnique: vi.fn() },
     biologyNabmActe: { findUnique: vi.fn(), findMany: vi.fn() },
-    biologyAnalyteNabm: { create: vi.fn(), updateMany: vi.fn() },
-  },
-}));
+    biologyAnalyteNabm: {
+      create: vi.fn(),
+      updateMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
+    },
+    biologyAnalyteNabmJournal: { create: vi.fn() },
+    biologyAnalyteNabmConstat: {
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    $executeRaw: vi.fn(),
+    // Une transaction interactive : le client de transaction est le même mock ;
+    // une exception du corps l'annule (compteur), comme Prisma.
+    $transaction: vi.fn(),
+  };
+  return { prisma, transactions };
+});
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import {
   chercherActeNabm,
+  deciderConstat,
   deciderCorrespondance,
   lireCorrespondancesAnalyte,
 } from './correspondancesNabm';
 
 const PRATICIEN = 'praticien@wellneuro.fr';
+/** La date que la base pose (trigger) : ni celle du serveur, ni celle du client. */
+const DATE_BASE = new Date('2026-01-02T03:04:05.678Z');
 
 function acte(surcharge: Record<string, unknown> = {}) {
   return {
@@ -44,11 +66,33 @@ const SIGNER = {
 beforeEach(() => {
   vi.clearAllMocks();
   prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue({ versionSource: 'V105' });
-  prisma.biologyAnalyte.findUnique.mockResolvedValue({ actif: true });
+  prisma.biologyAnalyte.findUnique.mockResolvedValue({ actif: true, constatNabm: null });
   prisma.biologyNabmActe.findUnique.mockResolvedValue(acte());
   prisma.biologyNabmActe.findMany.mockResolvedValue([]);
   prisma.biologyAnalyteNabm.create.mockResolvedValue({ id: 'x' });
   prisma.biologyAnalyteNabm.updateMany.mockResolvedValue({ count: 1 });
+  prisma.biologyAnalyteNabm.findFirst.mockResolvedValue(null);
+  prisma.biologyAnalyteNabm.findUnique.mockResolvedValue(null);
+  prisma.biologyAnalyteNabm.findUniqueOrThrow.mockResolvedValue({ verifiePar: PRATICIEN, verifieLe: DATE_BASE });
+  prisma.biologyAnalyteNabmJournal.create.mockResolvedValue({ id: 'j' });
+  prisma.biologyAnalyteNabmConstat.create.mockResolvedValue({ id: 'k' });
+  prisma.biologyAnalyteNabmConstat.findFirst.mockResolvedValue(null);
+  prisma.biologyAnalyteNabmConstat.findUniqueOrThrow.mockResolvedValue({
+    millesime: 'V105',
+    verifiePar: PRATICIEN,
+    verifieLe: DATE_BASE,
+  });
+  prisma.biologyAnalyteNabmConstat.deleteMany.mockResolvedValue({ count: 1 });
+  prisma.$executeRaw.mockResolvedValue(0);
+  transactions.annulees = 0;
+  prisma.$transaction.mockImplementation(async (corps: (tx: typeof prisma) => Promise<unknown>) => {
+    try {
+      return await corps(prisma);
+    } catch (err) {
+      transactions.annulees += 1;
+      throw err;
+    }
+  });
 });
 
 describe('chercherActeNabm — par code exact, dans le millésime courant', () => {
@@ -95,6 +139,7 @@ describe('lireCorrespondancesAnalyte', () => {
       ok: true,
       millesime: 'V105',
       candidats: null,
+      constat: null,
       correspondances: [
         { codeActe: '1208', nature: 'isole', etat: 'signee', verifiePar: PRATICIEN, verifieLe: le.toISOString(), acte: acte() },
         { codeActe: '9999', nature: 'groupe_ou', etat: 'proposition', verifiePar: null, verifieLe: null, acte: null },
@@ -183,33 +228,93 @@ describe('lireCorrespondancesAnalyte — candidats de la liste préparée (M-3b)
 });
 
 describe('deciderCorrespondance — signer', () => {
-  it('depuis « absente » : crée la ligne signée, signataire et date posés par le serveur', async () => {
-    const avant = Date.now();
+  it('depuis « absente » : journal puis ligne signée, dans UNE transaction, après les deux verrous', async () => {
     const resultat = await deciderCorrespondance(SIGNER);
-    expect(resultat.ok).toBe(true);
-    const data = prisma.biologyAnalyteNabm.create.mock.calls[0][0].data;
-    expect(data).toMatchObject({
+    expect(resultat).toEqual({
+      ok: true,
+      correspondance: { codeActe: '1208', etat: 'signee', verifiePar: PRATICIEN, verifieLe: DATE_BASE.toISOString() },
+    });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.biologyAnalyteNabmJournal.create.mock.calls[0][0].data).toEqual({
       analyteCode: 'BIO_FERRITINE',
+      acte: 'signature',
       codeActe: '1208',
       nature: 'isole',
-      verifiePar: PRATICIEN,
+      millesime: 'V105',
+      praticienEmail: PRATICIEN,
     });
-    expect(data.verifieLe).toBeInstanceOf(Date);
-    expect(data.verifieLe.getTime()).toBeGreaterThanOrEqual(avant);
+    const data = prisma.biologyAnalyteNabm.create.mock.calls[0][0].data;
+    expect(data).toMatchObject({ analyteCode: 'BIO_FERRITINE', codeActe: '1208', nature: 'isole', verifiePar: PRATICIEN });
+    // Les verrous passent avant toute lecture : import NABM, puis analyte.
+    const sql = prisma.$executeRaw.mock.calls.map(c => (c[0] as TemplateStringsArray).join('?'));
+    expect(sql).toEqual([
+      "SET LOCAL lock_timeout = '3s'",
+      'LOCK TABLE biology_catalog_versions_courantes IN SHARE MODE',
+      'SELECT public.biology_analyte_nabm_verrouiller(?)',
+    ]);
+    expect(prisma.$executeRaw.mock.calls[2][1]).toBe('BIO_FERRITINE');
+    // READ COMMITTED explicite : la fonction de verrou refuse tout autre niveau.
+    expect(prisma.$transaction.mock.calls[0][1]).toEqual({ isolationLevel: 'ReadCommitted' });
+    const ordre = (f: { mock: { invocationCallOrder: number[] } }) => f.mock.invocationCallOrder[0];
+    expect(ordre(prisma.$executeRaw)).toBeLessThan(ordre(prisma.biologyAnalyte.findUnique));
+    expect(ordre(prisma.biologyAnalyteNabmJournal.create)).toBeLessThan(ordre(prisma.biologyAnalyteNabm.create));
   });
 
-  it('couple déjà présent (P2002) : etat_divergent, aucune autre écriture', async () => {
-    prisma.biologyAnalyteNabm.create.mockRejectedValue(Object.assign(new Error('unique'), { code: 'P2002' }));
+  it.each([
+    ['code SQLSTATE sur l’erreur', Object.assign(new Error('échec'), { code: '55P03' })],
+    ['code dans la cause (adaptateur)', Object.assign(new Error('échec'), { cause: { code: '55P03' } })],
+    ['message de PostgreSQL', new Error('canceling statement due to lock timeout')],
+  ])('attente du verrou d’un import épuisée (%s) : import_en_cours, rien n’est écrit', async (_cas, erreur) => {
+    prisma.$executeRaw.mockImplementation(async (sql: TemplateStringsArray) => {
+      if (sql.join('?').startsWith('LOCK TABLE')) throw erreur;
+      return 0;
+    });
+    expect(await deciderCorrespondance(SIGNER)).toEqual({ ok: false, raison: 'import_en_cours' });
+    expect(prisma.biologyAnalyteNabmJournal.create).not.toHaveBeenCalled();
+  });
+
+  it('attente du verrou de l’ANALYTE épuisée (autre geste en cours) : etat_divergent, pas import_en_cours', async () => {
+    prisma.$executeRaw.mockImplementation(async (sql: TemplateStringsArray) => {
+      if (sql.join('?').includes('biology_analyte_nabm_verrouiller')) {
+        throw Object.assign(new Error('échec'), { code: '55P03' });
+      }
+      return 0;
+    });
     expect(await deciderCorrespondance(SIGNER)).toEqual({ ok: false, raison: 'etat_divergent' });
-    expect(prisma.biologyAnalyteNabm.updateMany).not.toHaveBeenCalled();
+    expect(prisma.biologyAnalyteNabmJournal.create).not.toHaveBeenCalled();
   });
 
-  it('une autre erreur de base remonte, elle n’est pas maquillée en état divergent', async () => {
+  it('rend la date RELUE en base, pas celle du serveur', async () => {
+    const resultat = await deciderCorrespondance(SIGNER);
+    expect(resultat.ok && resultat.correspondance.verifieLe).toBe(DATE_BASE.toISOString());
+    expect(prisma.biologyAnalyteNabm.findUniqueOrThrow.mock.calls[0][0].where).toEqual({
+      analyteCode_codeActe: { analyteCode: 'BIO_FERRITINE', codeActe: '1208' },
+    });
+  });
+
+  it('couple déjà présent : etat_divergent, transaction annulée, aucun journal', async () => {
+    prisma.biologyAnalyteNabm.findUnique.mockResolvedValue({ verifiePar: null });
+    expect(await deciderCorrespondance(SIGNER)).toEqual({ ok: false, raison: 'etat_divergent' });
+    expect(transactions.annulees).toBe(1);
+    expect(prisma.biologyAnalyteNabmJournal.create).not.toHaveBeenCalled();
+    expect(prisma.biologyAnalyteNabm.create).not.toHaveBeenCalled();
+  });
+
+  it('une erreur de base remonte, elle n’est pas maquillée en refus', async () => {
     prisma.biologyAnalyteNabm.create.mockRejectedValue(Object.assign(new Error('panne'), { code: 'P1001' }));
     await expect(deciderCorrespondance(SIGNER)).rejects.toThrow('panne');
+    expect(transactions.annulees).toBe(1);
+  });
+
+  it('l’écriture du journal échoue : la transaction est annulée, la signature ne s’écrit pas', async () => {
+    prisma.biologyAnalyteNabmJournal.create.mockRejectedValue(new Error('journal refusé'));
+    await expect(deciderCorrespondance(SIGNER)).rejects.toThrow('journal refusé');
+    expect(transactions.annulees).toBe(1);
+    expect(prisma.biologyAnalyteNabm.create).not.toHaveBeenCalled();
   });
 
   it('depuis « proposition » : n’écrit que sur une ligne NON signée', async () => {
+    prisma.biologyAnalyteNabm.findUnique.mockResolvedValue({ verifiePar: null });
     const resultat = await deciderCorrespondance({ ...SIGNER, etatAttendu: 'proposition', nature: 'groupe_et' });
     expect(resultat.ok).toBe(true);
     const appel = prisma.biologyAnalyteNabm.updateMany.mock.calls[0][0];
@@ -220,12 +325,23 @@ describe('deciderCorrespondance — signer', () => {
     expect(prisma.biologyAnalyteNabm.create).not.toHaveBeenCalled();
   });
 
-  it('proposition déjà signée ailleurs (0 ligne touchée) : etat_divergent', async () => {
+  it('proposition déjà signée ailleurs : etat_divergent, aucun journal', async () => {
+    prisma.biologyAnalyteNabm.findUnique.mockResolvedValue({ verifiePar: 'autre@wellneuro.fr' });
+    expect(await deciderCorrespondance({ ...SIGNER, etatAttendu: 'proposition' })).toEqual({
+      ok: false,
+      raison: 'etat_divergent',
+    });
+    expect(prisma.biologyAnalyteNabmJournal.create).not.toHaveBeenCalled();
+  });
+
+  it('proposition signée entre la relecture et l’écriture (0 ligne touchée) : transaction ANNULÉE, journal compris (N-3 a)', async () => {
+    prisma.biologyAnalyteNabm.findUnique.mockResolvedValue({ verifiePar: null });
     prisma.biologyAnalyteNabm.updateMany.mockResolvedValue({ count: 0 });
     expect(await deciderCorrespondance({ ...SIGNER, etatAttendu: 'proposition' })).toEqual({
       ok: false,
       raison: 'etat_divergent',
     });
+    expect(transactions.annulees).toBe(1);
   });
 
   it('signer depuis « signee » : transition invalide, rien n’est lu ni écrit', async () => {
@@ -233,7 +349,7 @@ describe('deciderCorrespondance — signer', () => {
       ok: false,
       raison: 'transition_invalide',
     });
-    expect(prisma.biologyAnalyte.findUnique).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('nature absente ou hors des trois : refusée', async () => {
@@ -243,18 +359,24 @@ describe('deciderCorrespondance — signer', () => {
         raison: 'nature_requise',
       });
     }
-    expect(prisma.biologyAnalyteNabm.create).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it.each([
     ['analyte inconnu', () => prisma.biologyAnalyte.findUnique.mockResolvedValue(null), 'analyte_inconnu'],
-    ['analyte inactif', () => prisma.biologyAnalyte.findUnique.mockResolvedValue({ actif: false }), 'analyte_inactif'],
+    ['analyte inactif', () => prisma.biologyAnalyte.findUnique.mockResolvedValue({ actif: false, constatNabm: null }), 'analyte_inactif'],
+    [
+      'analyte qui porte un constat « aucun acte »',
+      () => prisma.biologyAnalyte.findUnique.mockResolvedValue({ actif: true, constatNabm: { id: 'k' } }),
+      'constat_present',
+    ],
     ['nomenclature non importée', () => prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(null), 'millesime_absent'],
     ['acte absent du millésime courant', () => prisma.biologyNabmActe.findUnique.mockResolvedValue(null), 'acte_introuvable'],
     ['acte inactif', () => prisma.biologyNabmActe.findUnique.mockResolvedValue(acte({ inactif: true })), 'acte_inactif'],
   ])('%s : refusé, rien n’est écrit', async (_cas, preparer, raison) => {
     preparer();
     expect(await deciderCorrespondance(SIGNER)).toEqual({ ok: false, raison });
+    expect(prisma.biologyAnalyteNabmJournal.create).not.toHaveBeenCalled();
     expect(prisma.biologyAnalyteNabm.create).not.toHaveBeenCalled();
     expect(prisma.biologyAnalyteNabm.updateMany).not.toHaveBeenCalled();
   });
@@ -269,21 +391,33 @@ describe('deciderCorrespondance — retirer', () => {
     nature: undefined,
     verifieLeVu: VUE,
   };
+  const SIGNATURE_VUE = { nature: 'groupe_ou', verifiePar: 'signataire@wellneuro.fr', verifieLe: VUE };
 
-  it('efface la signature VUE d’une ligne signée, sans la supprimer', async () => {
+  beforeEach(() => {
+    prisma.biologyAnalyteNabm.findFirst.mockResolvedValue(SIGNATURE_VUE);
+  });
+
+  it('journal qui recopie la signature effacée, puis effacement de la signature VUE, sans suppression', async () => {
     const resultat = await deciderCorrespondance(RETIRER);
     expect(resultat).toEqual({
       ok: true,
       correspondance: { codeActe: '1208', etat: 'proposition', verifiePar: null, verifieLe: null },
     });
-    const appel = prisma.biologyAnalyteNabm.updateMany.mock.calls[0][0];
-    expect(appel.where).toEqual({
+    const vue = { analyteCode: 'BIO_FERRITINE', codeActe: '1208', verifiePar: { not: null }, verifieLe: VUE };
+    expect(prisma.biologyAnalyteNabm.findFirst.mock.calls[0][0].where).toEqual(vue);
+    expect(prisma.biologyAnalyteNabmJournal.create.mock.calls[0][0].data).toEqual({
       analyteCode: 'BIO_FERRITINE',
+      acte: 'retrait_signature',
       codeActe: '1208',
-      verifiePar: { not: null },
-      verifieLe: VUE,
+      nature: 'groupe_ou',
+      praticienEmail: PRATICIEN,
+      effacePar: 'signataire@wellneuro.fr',
+      effaceLe: VUE,
     });
+    const appel = prisma.biologyAnalyteNabm.updateMany.mock.calls[0][0];
+    expect(appel.where).toEqual(vue);
     expect(appel.data).toEqual({ verifiePar: null, verifieLe: null });
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(3);
   });
 
   it('sans la date de la signature vue : transition invalide, rien n’est écrit', async () => {
@@ -291,12 +425,21 @@ describe('deciderCorrespondance — retirer', () => {
       ok: false,
       raison: 'transition_invalide',
     });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('signature vue introuvable (retirée, ou signée de nouveau) : etat_divergent, aucun journal', async () => {
+    prisma.biologyAnalyteNabm.findFirst.mockResolvedValue(null);
+    expect(await deciderCorrespondance(RETIRER)).toEqual({ ok: false, raison: 'etat_divergent' });
+    expect(prisma.biologyAnalyteNabmJournal.create).not.toHaveBeenCalled();
     expect(prisma.biologyAnalyteNabm.updateMany).not.toHaveBeenCalled();
   });
 
-  it('ligne non signée, ou signée de nouveau depuis l’affichage (0 ligne touchée) : etat_divergent', async () => {
+  it('signature retirée entre la relecture et l’écriture (0 ligne touchée) : transaction ANNULÉE (N-3 a)', async () => {
     prisma.biologyAnalyteNabm.updateMany.mockResolvedValue({ count: 0 });
     expect(await deciderCorrespondance(RETIRER)).toEqual({ ok: false, raison: 'etat_divergent' });
+    expect(prisma.biologyAnalyteNabmJournal.create).toHaveBeenCalledTimes(1);
+    expect(transactions.annulees).toBe(1);
   });
 
   it.each(['absente', 'proposition'] as const)('retirer depuis « %s » : transition invalide', async etatAttendu => {
@@ -304,6 +447,207 @@ describe('deciderCorrespondance — retirer', () => {
       ok: false,
       raison: 'transition_invalide',
     });
-    expect(prisma.biologyAnalyteNabm.updateMany).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('lireCorrespondancesAnalyte — constat « aucun acte » (M-3c)', () => {
+  const le = new Date('2026-10-16T09:00:00Z');
+  const avecConstat = (millesime: string) =>
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({
+      code: 'BIO_HOMOCYSTEINE',
+      actif: true,
+      correspondancesNabm: [],
+      constatNabm: { millesime, verifiePar: PRATICIEN, verifieLe: le },
+    });
+
+  it('rend le constat du millésime courant, non périmé', async () => {
+    avecConstat('V105');
+    const resultat = await lireCorrespondancesAnalyte('BIO_HOMOCYSTEINE');
+    expect(resultat.ok && resultat.constat).toEqual({
+      millesime: 'V105',
+      verifiePar: PRATICIEN,
+      verifieLe: le.toISOString(),
+      perime: false,
+    });
+  });
+
+  it('constat d’un autre millésime : périmé', async () => {
+    avecConstat('V104');
+    const resultat = await lireCorrespondancesAnalyte('BIO_HOMOCYSTEINE');
+    expect(resultat.ok && resultat.constat?.perime).toBe(true);
+  });
+
+  it('sans nomenclature importée : périmé (il ne vaut pas)', async () => {
+    avecConstat('V105');
+    prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(null);
+    const resultat = await lireCorrespondancesAnalyte('BIO_HOMOCYSTEINE');
+    expect(resultat.ok && resultat.constat?.perime).toBe(true);
+  });
+
+  it('sans constat : null', async () => {
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({
+      code: 'BIO_HOMOCYSTEINE',
+      actif: true,
+      correspondancesNabm: [],
+      constatNabm: null,
+    });
+    const resultat = await lireCorrespondancesAnalyte('BIO_HOMOCYSTEINE');
+    expect(resultat.ok && resultat.constat).toBeNull();
+  });
+});
+
+describe('deciderConstat — constater', () => {
+  const CONSTATER = {
+    analyteCode: 'BIO_HOMOCYSTEINE',
+    decision: 'constater' as const,
+    millesimeVu: 'V105',
+    praticien: PRATICIEN,
+  };
+
+  beforeEach(() => {
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({ actif: true, constatNabm: null, correspondancesNabm: [] });
+  });
+
+  it('journal puis constat, dans UNE transaction ; la date rendue est celle RELUE en base', async () => {
+    const resultat = await deciderConstat(CONSTATER);
+    expect(resultat).toEqual({
+      ok: true,
+      constat: { millesime: 'V105', verifiePar: PRATICIEN, verifieLe: DATE_BASE.toISOString(), perime: false },
+    });
+    expect(prisma.biologyAnalyteNabmJournal.create.mock.calls[0][0].data).toEqual({
+      analyteCode: 'BIO_HOMOCYSTEINE',
+      acte: 'constat_aucun_acte',
+      millesime: 'V105',
+      praticienEmail: PRATICIEN,
+    });
+    expect(prisma.biologyAnalyteNabmConstat.create.mock.calls[0][0].data).toEqual({
+      analyteCode: 'BIO_HOMOCYSTEINE',
+      millesime: 'V105',
+      verifiePar: PRATICIEN,
+    });
+    expect(prisma.$executeRaw.mock.calls[2][1]).toBe('BIO_HOMOCYSTEINE');
+    expect(prisma.$transaction.mock.calls[0][1]).toEqual({ isolationLevel: 'ReadCommitted' });
+  });
+
+  it('attente du verrou d’un import épuisée : import_en_cours, rien n’est écrit', async () => {
+    prisma.$executeRaw.mockImplementation(async (sql: TemplateStringsArray) => {
+      if (sql.join('?').startsWith('LOCK TABLE')) throw Object.assign(new Error('échec'), { code: '55P03' });
+      return 0;
+    });
+    expect(await deciderConstat(CONSTATER)).toEqual({ ok: false, raison: 'import_en_cours' });
+    expect(prisma.biologyAnalyteNabmJournal.create).not.toHaveBeenCalled();
+    expect(prisma.biologyAnalyteNabmConstat.create).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['analyte à candidat (libellé explicite)', 'BIO_FERRITINE'],
+    ['valeur calculée', 'BIO_RATIO_HOMA'],
+    ['analyte hors de la liste', 'BIO_HORS_LISTE'],
+  ])('%s : constat_non_permis, sans transaction', async (_cas, analyteCode) => {
+    expect(await deciderConstat({ ...CONSTATER, analyteCode })).toEqual({ ok: false, raison: 'constat_non_permis' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['analyte inconnu', () => prisma.biologyAnalyte.findUnique.mockResolvedValue(null), 'analyte_inconnu'],
+    [
+      'analyte inactif',
+      () => prisma.biologyAnalyte.findUnique.mockResolvedValue({ actif: false, constatNabm: null, correspondancesNabm: [] }),
+      'analyte_inactif',
+    ],
+    [
+      'correspondance signée présente',
+      () =>
+        prisma.biologyAnalyte.findUnique.mockResolvedValue({
+          actif: true,
+          constatNabm: null,
+          correspondancesNabm: [{ id: 'c' }],
+        }),
+      'signature_presente',
+    ],
+    [
+      'constat déjà posé',
+      () =>
+        prisma.biologyAnalyte.findUnique.mockResolvedValue({ actif: true, constatNabm: { id: 'k' }, correspondancesNabm: [] }),
+      'etat_divergent',
+    ],
+    ['nomenclature non importée', () => prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(null), 'millesime_absent'],
+    [
+      'millésime changé depuis l’affichage',
+      () => prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue({ versionSource: 'V106' }),
+      'etat_divergent',
+    ],
+  ])('%s : refusé, transaction annulée, rien n’est écrit', async (_cas, preparer, raison) => {
+    preparer();
+    expect(await deciderConstat(CONSTATER)).toEqual({ ok: false, raison });
+    expect(transactions.annulees).toBe(1);
+    expect(prisma.biologyAnalyteNabmJournal.create).not.toHaveBeenCalled();
+    expect(prisma.biologyAnalyteNabmConstat.create).not.toHaveBeenCalled();
+  });
+
+  it('la recherche d’une signature ne lit que les lignes SIGNÉES', async () => {
+    await deciderConstat(CONSTATER);
+    expect(prisma.biologyAnalyte.findUnique.mock.calls[0][0].select.correspondancesNabm.where).toEqual({
+      verifiePar: { not: null },
+    });
+  });
+
+  it('sans millésime vu : etat_divergent, sans transaction', async () => {
+    expect(await deciderConstat({ ...CONSTATER, millesimeVu: undefined })).toEqual({
+      ok: false,
+      raison: 'etat_divergent',
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('deciderConstat — retirer', () => {
+  const VU = new Date('2026-10-16T09:00:00.000Z');
+  const RETIRER = { analyteCode: 'BIO_HOMOCYSTEINE', decision: 'retirer' as const, verifieLeVu: VU, praticien: PRATICIEN };
+
+  beforeEach(() => {
+    prisma.biologyAnalyteNabmConstat.findFirst.mockResolvedValue({
+      millesime: 'V104',
+      verifiePar: 'signataire@wellneuro.fr',
+      verifieLe: VU,
+    });
+  });
+
+  it('journal qui recopie le constat effacé, puis suppression du constat VU — périmé compris', async () => {
+    expect(await deciderConstat(RETIRER)).toEqual({ ok: true, constat: null });
+    expect(prisma.biologyAnalyteNabmConstat.findFirst.mock.calls[0][0].where).toEqual({
+      analyteCode: 'BIO_HOMOCYSTEINE',
+      verifieLe: VU,
+    });
+    expect(prisma.biologyAnalyteNabmJournal.create.mock.calls[0][0].data).toEqual({
+      analyteCode: 'BIO_HOMOCYSTEINE',
+      acte: 'retrait_constat',
+      millesime: 'V104',
+      praticienEmail: PRATICIEN,
+      effacePar: 'signataire@wellneuro.fr',
+      effaceLe: VU,
+    });
+    expect(prisma.biologyAnalyteNabmConstat.deleteMany.mock.calls[0][0].where).toEqual({
+      analyteCode: 'BIO_HOMOCYSTEINE',
+      verifieLe: VU,
+    });
+  });
+
+  it('constat vu introuvable : etat_divergent, aucun journal', async () => {
+    prisma.biologyAnalyteNabmConstat.findFirst.mockResolvedValue(null);
+    expect(await deciderConstat(RETIRER)).toEqual({ ok: false, raison: 'etat_divergent' });
+    expect(prisma.biologyAnalyteNabmJournal.create).not.toHaveBeenCalled();
+  });
+
+  it('constat retiré entre la relecture et l’écriture (0 ligne) : transaction ANNULÉE', async () => {
+    prisma.biologyAnalyteNabmConstat.deleteMany.mockResolvedValue({ count: 0 });
+    expect(await deciderConstat(RETIRER)).toEqual({ ok: false, raison: 'etat_divergent' });
+    expect(transactions.annulees).toBe(1);
+  });
+
+  it('sans la date du constat vu : etat_divergent, sans transaction', async () => {
+    expect(await deciderConstat({ ...RETIRER, verifieLeVu: undefined })).toEqual({ ok: false, raison: 'etat_divergent' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });
