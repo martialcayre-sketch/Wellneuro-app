@@ -2332,9 +2332,19 @@ séparée, puis le code qui le consomme — **préalable de la signature**
 enfermé), laisser ces signalements hors de la règle. Sans programme
 diffusé, rien ne se rattache ni ne bloque (§2) : le signalement reste
 examiné sur la surface des signalements, que la revue clinique signale au
-praticien. Une désignation illisible au dépôt (lecture du programme en
-échec, signalement capturé sans programme) ne bloque rien non plus en
-l'état ; ce cas n'est pas tranché et reste à trancher avant la signature.
+praticien. **Une désignation illisible au dépôt se replie sur le programme
+diffusé** (tranché par le responsable le 2026-10-16) : quand la lecture de
+la désignation échoue, ou que le programme diffusé ne passe pas le contrôle
+d'intégrité, le signalement vise quand même le programme diffusé, relu seul,
+sans rattachement — comme le formulaire d'avant, il attend l'avis et bloque
+la diffusion ; le choix du patient n'est pas conservé, le praticien désigne
+l'élément en cause, ou aucun — si le programme visé ne passe pas le contrôle
+d'intégrité, il ne peut répondre que « aucun » (question routée au plan,
+§8). Si cette lecture échoue aussi, il est capturé sans programme, compté
+par son statut, et ne bloque rien : une désignation illisible ne fait pas
+perdre le signalement. Écarté : refuser le dépôt (le patient peut abandonner, le
+praticien n'est pas averti) ; un indicateur en base « désignation non
+résolue » (migration).
 
 **§6 — Ordre et signature.** (1) cette décision ; (2) la migration —
 l'élément désigné, le mode de rattachement, la validation —, relue puis

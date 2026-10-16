@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // LA DÉSIGNATION D'UN ÉLÉMENT DU PROGRAMME ([[D-281]] §2, étape 3).
 
-const { prisma, notifierPraticienSignalement, designationOuverte, programmeDiffuse } = vi.hoisted(() => ({
+const {
+  prisma, notifierPraticienSignalement, designationOuverte, programmeDiffuse, resolveProtocoleDiffuse,
+} = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
     trustAdverseEffectReport: { create: vi.fn() },
@@ -10,10 +12,12 @@ const { prisma, notifierPraticienSignalement, designationOuverte, programmeDiffu
   notifierPraticienSignalement: vi.fn(),
   designationOuverte: vi.fn(),
   programmeDiffuse: vi.fn(),
+  resolveProtocoleDiffuse: vi.fn(),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/trust/notification', () => ({ notifierPraticienSignalement }));
 vi.mock('@/lib/trust/pauseEffetIndesirableServeur', () => ({ designationOuverte, programmeDiffuse }));
+vi.mock('@/lib/protocol/portailProtocol', () => ({ resolveProtocoleDiffuse }));
 
 import { signPatientSession } from '@/lib/patient-session';
 import { actionOrientation } from '@/lib/clinical-engine/orientationAdressage';
@@ -68,6 +72,7 @@ describe('POST signalement — désignation d’un élément (D-281 §2)', () =>
     prisma.trustAdverseEffectReport.create.mockResolvedValue({});
     designationOuverte.mockResolvedValue(true);
     programmeDiffuse.mockResolvedValue(PROGRAMME);
+    resolveProtocoleDiffuse.mockResolvedValue({ protocolDraftId: 'draft-1' });
   });
   afterEach(() => {
     delete process.env.WN_EI_INTERRUPTION;
@@ -105,13 +110,56 @@ describe('POST signalement — désignation d’un élément (D-281 §2)', () =>
     expect(ecrit()).toMatchObject({ rattachement: 'ne_sait_pas', elementActionId: null, protocolDraftId: 'draft-1' });
   });
 
-  it('une lecture de la désignation en échec : le signalement est capturé quand même, sans rattachement', async () => {
-    programmeDiffuse.mockRejectedValue(new Error('base indisponible'));
+  // LE REPLI (D-281 §5, arbitrage du 2026-10-16) : une désignation illisible
+  // vise le programme diffusé, sans rattachement — le signalement attend l'avis
+  // comme le formulaire d'avant, au lieu de ne rien bloquer.
+  it.each([
+    ['la lecture du programme', () => programmeDiffuse.mockRejectedValue(new Error('base indisponible'))],
+    ['la lecture de l’âge', () => designationOuverte.mockRejectedValue(new Error('base indisponible'))],
+  ])('%s en échec : le signalement vise le programme diffusé, sans rattachement, et attend l’avis', async (_, echec) => {
+    echec();
+    const res = await POST(request({ ...SIGNALEMENT, rattachement: 'element', elementActionId: 'a-magnesium' }));
+    expect(res.status).toBe(200);
+    expect(ecrit()).toMatchObject({ protocolDraftId: 'draft-1' });
+    expect(ecrit()).not.toHaveProperty('rattachement');
+    expect(ecrit()).not.toHaveProperty('elementActionId');
+    expect(notifierPraticienSignalement).toHaveBeenCalled();
+  });
+
+  it.each(['element', 'ne_sait_pas', 'autre_produit'])('« %s » sur un programme diffusé dont l’intégrité ne se vérifie pas : même repli, le signalement attend l’avis', async (rattachement) => {
+    programmeDiffuse.mockResolvedValue(null);
+    const res = await POST(request({ ...SIGNALEMENT, rattachement, elementActionId: 'a-magnesium' }));
+    expect(res.status).toBe(200);
+    expect(ecrit()).toMatchObject({ protocolDraftId: 'draft-1' });
+    expect(ecrit()).not.toHaveProperty('rattachement');
+    expect(ecrit()).not.toHaveProperty('elementActionId');
+  });
+
+  it.each([
+    ['la lecture du programme', () => programmeDiffuse.mockRejectedValue(new Error('base indisponible'))],
+    ['l’intégrité du programme', () => programmeDiffuse.mockResolvedValue(null)],
+  ])('%s en échec, la lecture du programme diffusé aussi : capturé sans programme, jamais perdu', async (_, echec) => {
+    echec();
+    resolveProtocoleDiffuse.mockRejectedValue(new Error('base indisponible'));
     const res = await POST(request({ ...SIGNALEMENT, rattachement: 'element', elementActionId: 'a-magnesium' }));
     expect(res.status).toBe(200);
     expect(ecrit()).toMatchObject({ protocolDraftId: null });
     expect(ecrit()).not.toHaveProperty('rattachement');
     expect(notifierPraticienSignalement).toHaveBeenCalled();
+  });
+
+  it('une lecture en échec sans programme diffusé : capturé sans programme, rien ne bloque', async () => {
+    programmeDiffuse.mockRejectedValue(new Error('base indisponible'));
+    resolveProtocoleDiffuse.mockResolvedValue(null);
+    const res = await POST(request({ ...SIGNALEMENT, rattachement: 'element', elementActionId: 'a-magnesium' }));
+    expect(res.status).toBe(200);
+    expect(ecrit()).toMatchObject({ protocolDraftId: null });
+  });
+
+  it('une désignation lisible ne se replie jamais : le programme diffusé n’est pas relu', async () => {
+    await POST(request({ ...SIGNALEMENT, rattachement: 'element', elementActionId: 'a-magnesium' }));
+    expect(resolveProtocoleDiffuse).not.toHaveBeenCalled();
+    expect(ecrit()).toMatchObject({ rattachement: 'element' });
   });
 
   it('un élément absent du programme : 400 en français, rien n’est écrit', async () => {
@@ -129,6 +177,7 @@ describe('POST signalement — désignation d’un élément (D-281 §2)', () =>
 
   it('sans programme diffusé, rien ne se rattache : le signalement est capturé', async () => {
     programmeDiffuse.mockResolvedValue(null);
+    resolveProtocoleDiffuse.mockResolvedValue(null);
     const res = await POST(request({ ...SIGNALEMENT, rattachement: 'element', elementActionId: 'a-magnesium' }));
     expect(res.status).toBe(200);
     expect(ecrit()).toMatchObject({ protocolDraftId: null });
