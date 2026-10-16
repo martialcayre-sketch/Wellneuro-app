@@ -129,6 +129,17 @@ describe('poserActeRubrique — un acte par rubrique, sur un état vu (D-314 §3
     expect(await poserActeRubrique(demandeRubrique(), SIGNEE)).toEqual({ issue: 'refusee', raison: 'contenu_illisible' });
   });
 
+  it('retire une rubrique d’un contenu devenu hors contrat : le coupe-circuit ne rejoue pas le contrat (revue)', async () => {
+    courante.contenu = { ...CONTENU, conclusion: 'Hors liste.' };
+    expect(
+      await poserActeRubrique(demandeRubrique({ acte: 'retiree', relectureIntegrale: undefined, motif: 'Motif synthétique.' }), SIGNEE),
+    ).toMatchObject({ issue: 'posee', etat: { etat: 'retiree' } });
+    courante.contenu = ['pas un objet'];
+    expect(
+      await poserActeRubrique(demandeRubrique({ acte: 'retiree', relectureIntegrale: undefined, motif: 'Motif synthétique.' }), SIGNEE),
+    ).toEqual({ issue: 'refusee', raison: 'contenu_illisible' });
+  });
+
   it('refuse de valider un texte qui rédige une structure périmée, ou des rubriques non conformes', async () => {
     courante.structureSha256 = 'd'.repeat(64);
     expect(await poserActeRubrique(demandeRubrique(), SIGNEE)).toEqual({

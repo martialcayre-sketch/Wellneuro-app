@@ -123,11 +123,14 @@ async function ecrire(id, horodatage, suffixe, donnees) {
 
 const horodatage = () => new Date().toISOString().replace(/[:.]/g, '-');
 
+/** Le message d'un refus du contrat — écrit pour ne citer aucun texte —, sinon nom et code seuls. */
+const detailDuContrat = e => (e?.name === 'ErreurContratFicheUsage' ? e.message : erreurSansTexte(e));
+
 function anomaliesDuContrat(lire, brouillon) {
   try {
     return { lu: lire(brouillon), anomalies: [] };
   } catch (e) {
-    return { lu: null, anomalies: [{ code: 'contrat', detail: erreurSansTexte(e) }] };
+    return { lu: null, anomalies: [{ code: 'contrat', detail: detailDuContrat(e) }] };
   }
 }
 
@@ -181,6 +184,10 @@ async function redigerLibelle(termeId, outils) {
   const h = horodatage();
   const nature = natureDuTerme(termeId);
   if (!nature) throw new ErreurOutil(`${termeId} : identifiant de terme hors format.`);
+  // Refusé AVANT tout appel de modèle : un terme que la structure ne déclare
+  // pas serait refusé au contrôle, après deux appels payants (revue).
+  const declares = nature === 'hypothese' ? FICHES_USAGE_BESOIN2_V1.hypotheses : FICHES_USAGE_BESOIN2_V1.populations;
+  if (!declares.includes(termeId)) throw new ErreurOutil(`${termeId} : terme absent de la structure.`);
   const { fiches, claims: cites } = claimsDuTerme(termeId, FICHES_USAGE_BESOIN2_V1, claims);
   const message = messageRedactionLibelle(termeId, nature, fiches, cites);
   console.log(`${termeId} : ${fiches.length} fiche(s) citante(s), ${cites.length} claim(s).`);

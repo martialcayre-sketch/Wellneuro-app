@@ -17,8 +17,8 @@
 // rédige la structure du jour avec exactement ses rubriques, le contrat rejoué
 // sur le JSON rangé, la relecture intégrale déclarée (D-195 §1, la base l'exige
 // aussi), et aucune version (libellé) plus récente déjà validée. RETIRER NE
-// CONTRÔLE RIEN : c'est le coupe-circuit, il doit rester un geste rapide ; il
-// exige un motif — la base aussi.
+// CONTRÔLE RIEN, pas même le contrat : c'est le coupe-circuit, il doit rester
+// un geste rapide ; il exige un motif — la base aussi.
 //
 // AUCUN TEXTE NE SORT D'ICI VERS UN JOURNAL ([[D-251]] §4).
 
@@ -143,16 +143,27 @@ export async function poserActeRubrique(
     });
     if (!courante) return { issue: 'refusee', raison: 'introuvable' };
 
-    // LE CONTRAT REJOUÉ sur le JSON rangé : ce qui n'a pas été écrit par lui ne
-    // se relit pas comme s'il l'avait été.
-    let contenu;
-    try {
-      contenu = lireContenuFicheUsage(courante.contenu);
-    } catch (error) {
-      if (error instanceof ErreurContratFicheUsage) return { issue: 'refusee', raison: 'contenu_illisible' };
-      throw error;
+    // VALIDER : LE CONTRAT REJOUÉ sur le JSON rangé — ce qui n'a pas été écrit
+    // par lui ne se relit pas comme s'il l'avait été. RETIRER : le texte brut,
+    // celui dont la base calcule l'empreinte ; un contrat resserré depuis le
+    // dépôt ne doit pas rendre un texte validé impossible à retirer (revue).
+    let texte: string | undefined;
+    let contenu: Record<string, unknown> = {};
+    if (demande.acte === 'validee') {
+      try {
+        const lu = lireContenuFicheUsage(courante.contenu);
+        contenu = lu;
+        texte = lu[rubrique];
+      } catch (error) {
+        if (error instanceof ErreurContratFicheUsage) return { issue: 'refusee', raison: 'contenu_illisible' };
+        throw error;
+      }
+    } else {
+      const brut = courante.contenu;
+      if (typeof brut !== 'object' || brut === null || Array.isArray(brut)) return { issue: 'refusee', raison: 'contenu_illisible' };
+      const valeur = (brut as Record<string, unknown>)[rubrique];
+      texte = typeof valeur === 'string' ? valeur : undefined;
     }
-    const texte = contenu[rubrique];
     if (texte === undefined) return { issue: 'refusee', raison: 'rubrique_absente' };
     const empreinte = empreinteTexte(texte);
     if (empreinte !== demande.empreinteVue) return { issue: 'refusee', raison: 'empreinte_divergente' };

@@ -57,7 +57,10 @@ function controler(brouillon) {
     const lu = lireBrouillonLibelle(brouillon);
     return { sorte, id, lu, anomalies: controlerLibelleContreStructure(lu) };
   } catch (e) {
-    return { sorte, id, anomalies: [{ code: 'contrat', detail: erreurSansTexte(e) }] };
+    // Le message d'un refus du contrat ne cite aucun texte ; il part au rapport,
+    // jamais au terminal.
+    const detail = e?.name === 'ErreurContratFicheUsage' ? e.message : erreurSansTexte(e);
+    return { sorte, id, anomalies: [{ code: 'contrat', detail }] };
   }
 }
 

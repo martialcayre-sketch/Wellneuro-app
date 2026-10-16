@@ -5,8 +5,9 @@
 //
 // La déclaration de relecture vaut pour CE texte tel qu'il est affiché : le
 // parent monte une instance par empreinte et par dernier acte (`key`), si bien
-// qu'un rechargement la fait retomber à faux. Elle vient d'une case cochée,
-// jamais d'une constante (D-195 §1).
+// qu'elle retombe à faux dès que le texte ou son dernier acte change — pas à un
+// rechargement qui rend le même texte au même état. Elle vient d'une case
+// cochée, jamais d'une constante (D-195 §1).
 //
 // Le corps de l'acte est écrit par le parent, à plat : la garde
 // `fiches-usage/confirmations.guard.test.ts` y lit les clés envoyées.
