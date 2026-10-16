@@ -15,7 +15,13 @@ vi.mock('@/lib/correspondance/patient', async orig => ({
   journaliserCorrespondancePatient: journaliser,
 }));
 
-import { sendDocumentRemisEmail, sendMagicLinkEmail, sendPortailLinkEmail } from './email';
+import {
+  buildMagicLinkUrl,
+  sendConditionsUtilisationEmail,
+  sendDocumentRemisEmail,
+  sendMagicLinkEmail,
+  sendPortailLinkEmail,
+} from './email';
 
 describe('sendPortailLinkEmail', () => {
   const env = { ...process.env };
@@ -264,6 +270,76 @@ describe('sendDocumentRemisEmail — [[D-251]] §9, lot 11', () => {
   it('RELANCE sur échec SMTP — l’appelant trace l’échec', async () => {
     sendMail.mockRejectedValueOnce(new Error('smtp down'));
     await expect(sendDocumentRemisEmail('patient@example.com', 'Sophie')).rejects.toThrow('smtp down');
+    expect(journaliser).not.toHaveBeenCalled();
+  });
+});
+
+describe('buildMagicLinkUrl — destination ([[D-292]])', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('sans destination : l’URL d’avant, au caractère près', () => {
+    vi.stubEnv('NEXTAUTH_URL', 'https://app.wellneuro.fr/');
+    expect(buildMagicLinkUrl('JETON')).toBe('https://app.wellneuro.fr/portail/lien/JETON');
+  });
+
+  it('avec la destination des conditions : le paramètre suit le jeton', () => {
+    vi.stubEnv('NEXTAUTH_URL', 'https://app.wellneuro.fr');
+    expect(buildMagicLinkUrl('JETON', 'conditions')).toBe('https://app.wellneuro.fr/portail/lien/JETON?vers=conditions');
+  });
+});
+
+describe('sendConditionsUtilisationEmail — [[D-292]] §3', () => {
+  const env = { ...process.env };
+  const LIEN = 'https://app.wellneuro.fr/portail/lien/JETON?vers=conditions';
+  const envoyer = (praticienEmail?: string) =>
+    sendConditionsUtilisationEmail({
+      patientEmail: 'patient@example.com',
+      lien: LIEN,
+      praticienEmail,
+    });
+
+  beforeEach(() => {
+    process.env.SMTP_URL = 'smtp://localhost:1025';
+  });
+
+  afterEach(() => {
+    process.env = { ...env };
+    sendMail.mockClear();
+    journaliser.mockClear();
+  });
+
+  it('part avec le gabarit du registre, le lien personnel, et les réponses vers le praticien du dossier', async () => {
+    await expect(envoyer('praticien@wellneuro.fr')).resolves.toBe('Envoye');
+    const envoi = sendMail.mock.calls[0][0];
+    expect(envoi.from).toBe('"Wellneuro" <noreply@wellneuro.fr>');
+    expect(envoi.to).toBe('patient@example.com');
+    expect(envoi.replyTo).toBe('praticien@wellneuro.fr');
+    expect(envoi.subject).toBe('Wellneuro — les conditions d’utilisation de votre espace');
+    expect(envoi.text).toContain(`ouvrez ce lien : ${LIEN}\n\nCe lien est valable 24 heures`);
+    expect(envoi.text.startsWith('Bonjour,\n')).toBe(true);
+  });
+
+  it('une adresse de praticien malformée ne devient pas un en-tête', async () => {
+    await envoyer('p@wellneuro.fr\nBcc: tiers@example.com');
+    expect('replyTo' in sendMail.mock.calls[0][0]).toBe(false);
+  });
+
+  // Sa trace est RÉSERVÉE avant l'envoi par la route (`trust/annonceConditions`) :
+  // en écrire une seconde ici doublerait la ligne au dossier.
+  it('n’écrit AUCUNE trace elle-même', async () => {
+    await envoyer('praticien@wellneuro.fr');
+    expect(journaliser).not.toHaveBeenCalled();
+  });
+
+  it('sans messagerie : « Non_envoye », rien tenté', async () => {
+    delete process.env.SMTP_URL;
+    await expect(envoyer()).resolves.toBe('Non_envoye');
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it('RELANCE sur échec SMTP — l’appelant solde la réservation', async () => {
+    sendMail.mockRejectedValueOnce(new Error('smtp down'));
+    await expect(envoyer()).rejects.toThrow('smtp down');
     expect(journaliser).not.toHaveBeenCalled();
   });
 });

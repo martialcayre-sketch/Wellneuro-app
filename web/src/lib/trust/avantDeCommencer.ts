@@ -73,13 +73,18 @@ export function avantDeCommencerRequis(accuses: readonly AccuseConnu[]): boolean
 // ACT-1 ni à une version suivante — il accuse par le lien de l'e-mail ou au
 // filet du dépôt. `usage_ia` en est : il ne s'accuse qu'au dépôt, après
 // l'accueil.
-const TEXTES_D_INFORMATION: readonly string[] = Object.freeze([
+export const TEXTES_D_INFORMATION: readonly string[] = Object.freeze([
   'cadre_accompagnement',
   'limites_securite',
   'donnees_confidentialite',
   'usage_ia',
   'conditions_utilisation',
 ]);
+
+/** Patient suivi : un accusé `pris_connaissance` sur un texte d'information, toute version. */
+export function estPatientSuivi(accuses: readonly AccuseConnu[]): boolean {
+  return accuses.some(a => a.type === 'pris_connaissance' && TEXTES_D_INFORMATION.includes(a.documentKey));
+}
 
 /** L'accueil à présenter : la séquence en trois textes, les conditions seules, ou rien. */
 export type Accueil = 'trois_textes' | 'conditions' | null;
@@ -98,8 +103,5 @@ export function accueilRequis(
   if (!contexte.conditionsOuvertes || contexte.statutAge !== 'majeur') {
     return avantDeCommencerRequis(accuses) ? 'trois_textes' : null;
   }
-  const suivi = accuses.some(
-    a => a.type === 'pris_connaissance' && TEXTES_D_INFORMATION.includes(a.documentKey),
-  );
-  return suivi ? null : 'conditions';
+  return estPatientSuivi(accuses) ? null : 'conditions';
 }

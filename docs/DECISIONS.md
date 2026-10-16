@@ -1479,6 +1479,26 @@ est une chaîne libre, sans contrainte.
   dépôt (§4) ; la route de lecture refuse la clé tant que le drapeau est
   fermé. *PR 2* : la destination du lien magique, l'envoi au cockpit, le
   gabarit d'e-mail.
+- *PR 2, mise en œuvre* : la destination voyage dans l'URL du lien
+  (`?vers=conditions`), en liste fermée, résolue sous l'espace du patient,
+  lue après toutes les gardes ; une valeur inconnue ramène à l'accueil sans
+  refuser le lien. Sans colonne neuve : le jeton seul ouvre la session. Le
+  gabarit `conditions_utilisation` v1 reprend le texte validé et la phrase des
+  24 h, signé « Wellneuro », `Reply-To` au praticien du dossier. L'envoi, sous
+  « Confiance & droits », vise les dossiers en cours, au portail ouvert,
+  majeurs, *suivis* (le texte s'adresse aux « patients déjà suivis » : un
+  nouveau patient lit les conditions à l'accueil), sans accusé de la version
+  en vigueur et pas encore servis pour elle ; chaque envoi est consigné au
+  dossier avec la version annoncée. Il exige aussi `WN_G4_LIEN_MAGIQUE` et
+  une messagerie configurée. *Envoi unique* (constat P1 de revue) : chaque
+  dossier est RÉSERVÉ en base avant de partir, sous la clé unique existante
+  `(source_type, source_id)` = `conditions_utilisation`,
+  `<idPatient>@conditions_utilisation@<version>` ; un second clic, un second
+  onglet ou un second conteneur ne renvoie rien. Un échec libère la
+  réservation ; une trace non mise à jour la garde (sens conservateur : jamais
+  deux e-mails, au prix d'un dossier sorti de la liste sans e-mail si le
+  processus s'arrête entre la réservation et l'envoi). L'écran découpe le
+  geste en lots de dix pour rester sous le délai du routeur.
 
 ### D-291 — Arbitrages de clôture de D-290 : CodeRabbit reste hors des checks obligatoires, une PR qui modifie sa configuration est P1
 

@@ -15,8 +15,8 @@ const formatDate = (iso: string) =>
   new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
 
 // LA PAGE DES CONDITIONS D'UTILISATION ([[D-292]] §3, `WN_PORTAIL_CONDITIONS`).
-// Atteinte depuis « Informations, confidentialité et droits », et demain par le
-// lien de l'e-mail aux patients suivis (seconde PR du lot). Elle affiche la
+// Atteinte depuis « Informations, confidentialité et droits », et par le lien
+// magique de l'e-mail aux patients suivis (`?vers=conditions`). Elle affiche la
 // version en vigueur et, tant qu'elle n'est pas accusée, le bouton. Ouvrir la
 // page ne valide rien. Drapeau fermé, elle renvoie au centre d'information.
 export default function ConditionsPage() {
@@ -26,7 +26,15 @@ export default function ConditionsPage() {
 
   const charger = useCallback(async () => {
     try {
-      const res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(token)}`);
+      // PREMIÈRE PAGE APRÈS LE LIEN DE L'E-MAIL : le cookie que la route du lien
+      // vient de poser peut ne pas être encore propagé (WebKit, serveur rapide).
+      // Mêmes réessais bornés que l'accueil de l'espace avant de renvoyer : un
+      // patient suivi y trouve un accueil vide, et ne verrait jamais le texte.
+      let res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(token)}`);
+      for (let essai = 0; essai < 3 && (res.status === 401 || res.status === 403); essai++) {
+        await new Promise(resolve => setTimeout(resolve, 300 * (essai + 1)));
+        res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(token)}`);
+      }
       if (res.status === 401 || res.status === 403) {
         router.replace(`/portail/${token}`);
         return;
@@ -73,7 +81,10 @@ export default function ConditionsPage() {
     <div className="w-full max-w-2xl space-y-4">
       <div className="flex items-center justify-between gap-3">
         <PatientPageHeader title="Informations, confidentialité et droits" />
-        <Link href={`/portail/${token}/questionnaires`} className="shrink-0 text-sm text-primary hover:underline">
+        {/* Vers l'accueil de l'espace, qui choisit l'étape (consentement, fiche,
+            parcours) : arrivé par le lien de l'e-mail, le patient n'y est pas
+            encore passé dans cette session. */}
+        <Link href={`/portail/${token}`} className="shrink-0 text-sm text-primary hover:underline">
           ← Mon espace
         </Link>
       </div>

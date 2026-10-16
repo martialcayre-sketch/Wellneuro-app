@@ -18,6 +18,12 @@ export const TYPES_CORRESPONDANCE_PATIENT = {
    * dossier du patient concerné, seul endroit où un échec se lit (§3).
    */
   alerteSecuritePraticien: 'alerte_securite_praticien',
+  /**
+   * Les conditions d'utilisation annoncées à un patient suivi ([[D-292]] §3),
+   * envoi groupé du cockpit. `reference_id` porte la version annoncée : c'est
+   * lui qui retire le dossier de la liste une fois l'e-mail parti.
+   */
+  conditionsUtilisation: 'conditions_utilisation',
 } as const;
 
 export type TypeCorrespondancePatient =

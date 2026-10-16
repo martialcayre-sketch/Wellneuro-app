@@ -9,6 +9,8 @@
 //      AU CARACTÈRE PRÈS ce que l'ancien code inline concaténait (les
 //      chaînes attendues ci-dessous sont la copie des concaténations
 //      historiques, pas du registre — c'est ce qui rend le volet probant).
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import {
@@ -33,7 +35,7 @@ describe('registre des gabarits patient — intégrité', () => {
     }
   });
 
-  it('expose les quatorze versions attendues, dans cet ordre', () => {
+  it('expose les quinze versions attendues, dans cet ordre', () => {
     expect(REGISTRE_GABARITS_PATIENT.map(g => `${g.key}@${g.version}`)).toEqual([
       'lien_magique@1',
       'acces_portail@1',
@@ -68,7 +70,37 @@ describe('registre des gabarits patient — intégrité', () => {
       'relance_questionnaire@1',
       // [[D-251]] §9 — un document remis attend le patient. Il ne nomme rien.
       'document_remis@1',
+      // [[D-292]] §3 — les conditions d'utilisation aux patients suivis.
+      'conditions_utilisation@1',
     ]);
+  });
+
+  // LE TEXTE ENVOYÉ FACE AU TEXTE VALIDÉ. L'attendu se lit dans la proposition
+  // que le responsable a validée — pas dans le registre —, à l'apostrophe
+  // typographique près, avec la seule phrase ajoutée le 2026-10-16 après le lien.
+  it('conditions_utilisation : le texte validé mot pour mot, plus la phrase des 24 heures', () => {
+    const readme = fs
+      .readFileSync(
+        path.resolve(__dirname, '../../../../docs/claude/propositions/2026-10-14-k-conditions-utilisation/README.md'),
+        'utf8',
+      )
+      .replaceAll("'", '’');
+    const bloc = readme.slice(readme.indexOf('Objet : '), readme.indexOf('## Restent ouverts')).trim();
+    const [objet, ...paragraphes] = bloc.split(/\n\n+/);
+    const PHRASE_AJOUTEE =
+      'Ce lien est valable 24 heures et ne s’ouvre qu’une fois. Passé ce délai, connectez-vous à votre ' +
+      'espace comme d’habitude : le document vous attend dans « Informations, confidentialité et droits ».';
+    const iLien = paragraphes.findIndex(p => p.includes('[lien personnel]'));
+    expect(iLien).toBeGreaterThan(0);
+    const attendu = [...paragraphes.slice(0, iLien + 1), PHRASE_AJOUTEE, ...paragraphes.slice(iLien + 1)]
+      .join('\n\n')
+      .replace('[lien personnel]', '{{lien}}');
+
+    const g = getGabarit('conditions_utilisation');
+    expect(g.sujet).toBe(objet.replace('Objet : ', ''));
+    expect(g.corps).toBe(attendu);
+    // Ni nom, ni prénom : la seule variable est le lien personnel.
+    expect([...g.variables]).toEqual(['lien']);
   });
 
   it('document_remis : objet et phrase du §9 mot pour mot, et RIEN du document', () => {
@@ -107,7 +139,7 @@ describe('registre des gabarits patient — intégrité', () => {
     expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'acces_portail')).toHaveLength(2);
   });
 
-  it('les quatre validations formelles sont datées — le reste du registre ne l’est pas', () => {
+  it('les cinq validations formelles sont datées — le reste du registre ne l’est pas', () => {
     // `valideLe` a existé huit versions durant sans jamais être renseigné. Ce
     // banc échoue si une validation est posée ailleurs sans décision.
     const valides = REGISTRE_GABARITS_PATIENT.filter(g => g.valideLe !== null);
@@ -125,8 +157,17 @@ describe('registre des gabarits patient — intégrité', () => {
       // [[D-251]] §9 — né validé : le responsable a choisi puis validé le texte
       // exact en session, le jour de sa rédaction.
       'document_remis@1',
+      // [[D-292]] — le texte de la proposition validée, plus la phrase des
+      // 24 heures choisie par le responsable le 2026-10-16.
+      'conditions_utilisation@1',
     ]);
-    expect(valides.map(g => g.valideLe)).toEqual(['2026-09-04', '2026-09-07', '2026-09-08', '2026-09-29']);
+    expect(valides.map(g => g.valideLe)).toEqual([
+      '2026-09-04',
+      '2026-09-07',
+      '2026-09-08',
+      '2026-09-29',
+      '2026-10-16',
+    ]);
   });
 
   it('les segments partagés sont figés', () => {

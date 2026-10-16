@@ -55,6 +55,19 @@ describe('emettreLienMagiquePourPraticien', () => {
     expect(heures).toBeLessThan(24.1);
   });
 
+  // [[D-292]] — la destination voyage dans l'URL, après le jeton ; l'empreinte
+  // stockée est celle du jeton SEUL, sans quoi la route ne la retrouverait pas.
+  it('avec une destination : l’URL la porte, l’empreinte reste celle du jeton seul', async () => {
+    vi.stubEnv('WN_G4_LIEN_MAGIQUE', 'true');
+    const lien = await emettreLienMagiquePourPraticien('PAT_1', 'p@wellneuro.fr', 'conditions');
+
+    expect(lien).toMatch(/^https:\/\/app\.wellneuro\.fr\/portail\/lien\/[A-Za-z0-9_-]+\?vers=conditions$/);
+    const jeton = (lien as string).split('/portail/lien/')[1].split('?')[0];
+    const { empreinteJeton } = await import('./lienMagique');
+    const data = prisma.portailMagicLink.create.mock.calls[0][0].data as { jetonEmpreinte: string };
+    expect(data.jetonEmpreinte).toBe(empreinteJeton(jeton));
+  });
+
   it('une écriture qui échoue rend null, elle ne relance pas', async () => {
     // L'appelant a DÉJÀ créé sa consultation : propager ferait rendre
     // `success: false` sur un dossier bel et bien créé, et le praticien

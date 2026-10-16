@@ -1,6 +1,7 @@
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { getGabarit, rendreGabarit } from '@/lib/correspondance/registreGabarits';
 import { CHEMIN_CONNEXION } from '@/lib/portail/googleIdentite';
+import { PARAMETRE_DESTINATION, type DestinationLien } from '@/lib/portail/lienMagique';
 import {
   journaliserCorrespondancePatient,
   TYPES_CORRESPONDANCE_PATIENT,
@@ -63,9 +64,10 @@ async function envoyerAccesTrace({
  * URL d'un lien magique (gate G4). Le jeton n'apparaît que là : dans l'e-mail
  * du patient, et dans le chemin qu'il ouvrira une fois.
  */
-export function buildMagicLinkUrl(jeton: string): string {
+export function buildMagicLinkUrl(jeton: string, destination?: DestinationLien): string {
   const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  return `${baseUrl}/portail/lien/${jeton}`;
+  const suffixe = destination ? `?${PARAMETRE_DESTINATION}=${destination}` : '';
+  return `${baseUrl}/portail/lien/${jeton}${suffixe}`;
 }
 
 /**
@@ -183,6 +185,46 @@ export async function sendPortailLinkEmail(
         // réponse se perd. L'adresse vient du DOSSIER, pas d'une constante :
         // le corps du gabarit nomme le praticien en dur (dette assumée,
         // 2026-09-04), l'en-tête n'a pas besoin de reproduire cette limite.
+        ...(replyToValide(praticienEmail) ? { replyTo: praticienEmail } : {}),
+        subject: gabarit.sujet,
+        text: gabarit.corps,
+      });
+    },
+  });
+}
+
+/**
+ * Les conditions d'utilisation annoncées à un patient suivi ([[D-292]] §3).
+ *
+ * Le lien est un lien magique qui ouvre leur PAGE (`?vers=conditions`) ; il ne
+ * valide rien, seul le bouton de la page le fait. Les réponses vont à l'adresse
+ * du praticien du dossier, comme pour l'e-mail d'accès : le texte dit
+ * « répondez simplement à ce message », et `noreply@` ne lit rien.
+ *
+ * N'ÉCRIT AUCUNE TRACE ELLE-MÊME, comme `sendDocumentRemisEmail` : la sienne
+ * est RÉSERVÉE avant l'envoi (`trust/annonceConditions.ts`), ce qui fait d'un
+ * second envoi au même dossier une impossibilité, pas une précaution.
+ */
+export async function sendConditionsUtilisationEmail({
+  patientEmail,
+  lien,
+  praticienEmail,
+}: {
+  patientEmail: string;
+  lien: string;
+  praticienEmail?: string;
+}): Promise<StatutEnvoiAcces> {
+  const smtpUrl = process.env.SMTP_URL;
+  return envoyerAccesTrace({
+    type: TYPES_CORRESPONDANCE_PATIENT.conditionsUtilisation,
+    objet: 'Conditions d’utilisation de l’espace patient',
+    envoyer: async () => {
+      if (!smtpUrl) return;
+      const transport = creerTransportSmtp(smtpUrl);
+      const gabarit = rendreGabarit(getGabarit('conditions_utilisation'), { lien });
+      await transport.sendMail({
+        from: '"Wellneuro" <noreply@wellneuro.fr>',
+        to: patientEmail,
         ...(replyToValide(praticienEmail) ? { replyTo: praticienEmail } : {}),
         subject: gabarit.sujet,
         text: gabarit.corps,
