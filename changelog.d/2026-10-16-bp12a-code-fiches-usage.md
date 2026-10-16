@@ -37,7 +37,7 @@
 - **Outil hors ligne** `tools/corpus/fiches-usage/` : Claude rédige, GPT
   contre-lit chaque rubrique dans son contexte, vérificateur DC-03 bloquant ;
   tout ou rien par fiche. Consigne `fiche-usage-v1` épinglée. Document
-  `docs/TRUST_IA_FICHES_USAGE.md` (projet, à valider par le responsable avant
+  `docs/TRUST_IA_FICHES_USAGE.md` (validé par le responsable le 2026-10-16, avant
   le merge) et mention au dossier RGPD, rubrique 6.
 - Gardes : seules les routes d'ingestion créent textes et libellés, seule la
   décision crée des actes ; les corps d'actes envoyés par l'écran portent

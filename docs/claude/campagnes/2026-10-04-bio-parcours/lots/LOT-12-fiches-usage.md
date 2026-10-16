@@ -318,6 +318,9 @@ sauf au 24.
 24. **Place de l'écran.** Rendu : **avec la biologie** (page « Biologie
     fonctionnelle »). (Écarté : rayon de la Bibliothèque, recommandé.)
 25. **TRUST et consignes.** Rendu : **relus avant le merge** de la PR du code.
+    **Accord du responsable le 2026-10-16** : document TRUST, les deux
+    consignes (`fiche-usage-v1`) et les modèles par défaut (rédaction
+    `claude-sonnet-5`, contre-lecture `gpt-5.4`) approuvés en l'état.
 26. **Restes de la revue.** Rendu : **les quatre corrigés avant la PR** —
     affichage des états, version dépassée, bancs sur base réelle, retrait
     symétrique des libellés.

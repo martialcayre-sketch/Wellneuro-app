@@ -9,7 +9,10 @@
 - Commits du lot : ac9c05b6 (socle), 001d4d01 (dépôt), 4e60934a (décision,
   lecture, routes praticien), 0ce2a6c5 (écran), 6e847ec1 (outil, TRUST,
   RGPD, matrice, changelog), 0fbb43cd (suites de la revue), la fusion
-  6fc69cb5, puis le commit des douze arbitrages du 2026-10-16 (D-314 §9).
+  6fc69cb5, le commit des douze arbitrages du 2026-10-16 (D-314 §9,
+  3aee79d2), une seconde fusion de `main` (#1495 à #1500), puis les suites
+  de la revue CodeRabbit (578c4d5c : verrou à cinq termes, consignes classées
+  code au CI, libellé sans claim refusé). **PR 2 : #1498.**
 - **PR 1, migration seule : #1488, mergée** (squash db76bd9f) après la
   release-db de M-3c ; **release-db approuvée par le responsable,
   `WN_RELEASE_DB_OK id=38863738192-1` à 10:11, constat par conteneur** :
@@ -77,10 +80,9 @@ rédaction, TRUST et RGPD.
 
 ## Problèmes ouverts
 
-- **Relecture du TRUST et des deux consignes par le responsable** : page
-  privée https://claude.ai/artifact/MJTmS8AbzxhjLfcegeRppX ; la PR du code ne
-  se merge qu'après son accord (arbitrage 25). Modèles par défaut à
-  confirmer (`claude-sonnet-5`, `gpt-5.4`).
+- ~~Relecture du TRUST et des deux consignes~~ : **approuvés le 2026-10-16**
+  avec les modèles par défaut (`claude-sonnet-5`, `gpt-5.4`) — arbitrage 25
+  rempli.
 - **Poser `WN_FICHES_USAGE_VALIDATEURS` sur Scalingo** (geste du responsable,
   conteneurs web recréés) — sans elle, personne ne valide.
 - Base de dev locale du worktree : la migration renommée y a été marquée
@@ -91,10 +93,12 @@ rédaction, TRUST et RGPD.
 
 ## Prochaine action exacte
 
-Attendre T2 vert, committer et pousser ; ouvrir la PR du code
-(`--body-file`), `node scripts/wn-attendre-ci.mjs <N>` en fond, lire les trois
-sorties de CodeRabbit, et **ne merger qu'après l'accord du responsable sur le
-TRUST et les consignes**.
+Merger #1498 (squash, `--match-head-commit`) une fois le CI et une revue
+CodeRabbit verts sur la tête, release-db de #1500 terminée ; constater le
+déploiement de la tête (D-248). Puis le responsable pose
+`WN_FICHES_USAGE_VALIDATEURS` sur Scalingo et recrée les conteneurs web.
+Suite du lot : la structure (fiches, questions, termes) et sa signature
+appartiennent au responsable (porte 23).
 
 ## Interdits encore actifs
 

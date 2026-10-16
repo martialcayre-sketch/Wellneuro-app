@@ -3,8 +3,9 @@
 > Document de transparence sur l'usage de l'IA, exigé par `D-314` §4 sur le
 > patron de `docs/TRUST_IA_FICHES_ASSIETTE.md`. Il dit comment l'IA intervient
 > dans les fiches d'usage des examens biologiques, ce qu'elle ne fait jamais,
-> et qui en répond. **État au 2026-10-16 : projet, à valider par le
-> responsable avant le merge de la PR qui le porte.** Aucun texte n'a encore
+> et qui en répond. **État au 2026-10-16 : validé par le responsable
+> avant le merge de la PR qui le porte (LOT-12, arbitrage 25), avec les deux
+> consignes et les modèles par défaut.** Aucun texte n'a encore
 > été rédigé ni envoyé à un fournisseur : la structure signée ne déclare
 > encore aucune fiche.
 
