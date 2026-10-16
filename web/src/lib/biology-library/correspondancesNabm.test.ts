@@ -586,6 +586,14 @@ describe('deciderConstat — constater', () => {
     expect(prisma.biologyAnalyteNabmConstat.create).not.toHaveBeenCalled();
   });
 
+  it('nomenclature passée à un autre millésime que celui de la liste : liste_a_relire, rien n’est écrit', async () => {
+    prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue({ versionSource: 'V106' });
+    expect(await deciderConstat({ ...CONSTATER, millesimeVu: 'V106' })).toEqual({ ok: false, raison: 'liste_a_relire' });
+    expect(transactions.annulees).toBe(1);
+    expect(prisma.biologyAnalyteNabmJournal.create).not.toHaveBeenCalled();
+    expect(prisma.biologyAnalyteNabmConstat.create).not.toHaveBeenCalled();
+  });
+
   it('la recherche d’une signature ne lit que les lignes SIGNÉES', async () => {
     await deciderConstat(CONSTATER);
     expect(prisma.biologyAnalyte.findUnique.mock.calls[0][0].select.correspondancesNabm.where).toEqual({

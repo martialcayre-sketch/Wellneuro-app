@@ -81,7 +81,7 @@ async function journal(c: pg.Client, analyte: string): Promise<Ligne[]> {
   return rows;
 }
 
-async function poserFixtures(c: pg.Client, aucunActe: readonly string[]) {
+async function poserFixtures(c: pg.Client, aucunActe: readonly string[], millesimeListe: string) {
   const { rows } = await c.query(
     `SELECT v.version_source, (
        SELECT a.code_acte FROM biology_nabm_actes a
@@ -104,12 +104,19 @@ async function poserFixtures(c: pg.Client, aucunActe: readonly string[]) {
   analyteConstat = libres.rows[0].code;
 
   await c.query('BEGIN');
+  // Le constat ne se pose que sur le millésime où la liste a été relue :
+  // le pointeur de banc le porte, un pointeur existant doit le porter.
   if (rows[0]?.code_acte) {
     millesime = rows[0].version_source;
     codeActe = rows[0].code_acte;
+    assert.equal(
+      millesime,
+      millesimeListe,
+      `le millésime courant de la base (${millesime}) n'est pas celui de la liste (${millesimeListe}) : aucun constat ne se pose.`,
+    );
   } else {
     assert.equal(rows.length, 0, 'un millésime courant sans acte actif : le banc ne peut pas choisir son acte.');
-    millesime = `BANC_${RUN}`;
+    millesime = millesimeListe;
     codeActe = '0001';
     pointeurDeBanc = true;
     await c.query(
@@ -179,7 +186,7 @@ async function attendreBlocage(c: pg.Client, motif: string) {
 
 async function main() {
   const { deciderConstat, deciderCorrespondance } = await import('@/lib/biology-library/correspondancesNabm');
-  const { CANDIDATS_NABM } = await import('@/lib/biology-library/candidatsNabm');
+  const { CANDIDATS_NABM, MILLESIME_LISTE_NABM } = await import('@/lib/biology-library/candidatsNabm');
   const { prisma } = await import('@/lib/prisma');
   const c = new pg.Client({ connectionString: URL_BASE });
   const verrou = new pg.Client({ connectionString: URL_BASE });
@@ -189,7 +196,7 @@ async function main() {
     const aucunActe = Object.entries(CANDIDATS_NABM)
       .filter(([, v]) => v.situation === 'aucun_acte')
       .map(([code]) => code);
-    await poserFixtures(c, aucunActe);
+    await poserFixtures(c, aucunActe, MILLESIME_LISTE_NABM);
     const signer = { analyteCode: ANALYTE, codeActe, decision: 'signer' as const, nature: 'isole', praticien: PRATICIEN };
 
     // 0. Contre-épreuve : sans journal, la base refuse.

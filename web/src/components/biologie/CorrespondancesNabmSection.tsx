@@ -283,8 +283,12 @@ export function CorrespondancesNabmSection({
   const dejaListee =
     acteLu !== null && (correspondances ?? []).some(c => c.codeActe === acteLu.code);
   const signee = (correspondances ?? []).some(c => c.etat === 'signee');
-  const constatPossible =
+  const constatEnvisageable =
     correspondances !== null && constat === null && !signee && millesime !== null && candidats?.situation === 'aucun_acte';
+  // La liste ne prouve l'absence d'acte que dans le millésime où elle a été
+  // relue : sur un autre, pas de constat avant sa relecture (le serveur refuse
+  // aussi, `liste_a_relire`).
+  const constatPossible = constatEnvisageable && millesime === candidats?.millesimeListe;
 
   return (
     <section aria-label="Correspondances à la nomenclature" className="flex flex-col gap-3">
@@ -534,6 +538,14 @@ export function CorrespondancesNabmSection({
             </Button>
           </div>
         </div>
+      )}
+
+      {constatEnvisageable && !constatPossible && candidats && (
+        <p className="rounded-lg border border-border p-3 text-xs text-muted-foreground">
+          Constat indisponible : la liste des analytes sans acte a été préparée sur le millésime{' '}
+          {candidats.millesimeListe}, la nomenclature courante est le millésime {millesime}. Elle doit
+          être relue avant tout constat.
+        </p>
       )}
 
       {correspondances !== null && (

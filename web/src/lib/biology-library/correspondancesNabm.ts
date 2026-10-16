@@ -457,6 +457,7 @@ export type RaisonRefusConstat =
   | 'analyte_inactif'
   | 'millesime_absent'
   | 'signature_presente'
+  | 'liste_a_relire'
   | 'import_en_cours'
   | 'etat_divergent';
 
@@ -478,7 +479,8 @@ export type DeciderConstatResultat =
  *
  *  - constater : seulement pour un analyte que la liste préparée range
  *    `aucun_acte` (`candidatsNabm.ts`) ; sur le millésime VU à l'écran, qui
- *    doit être le courant ; refusé si l'analyte porte une correspondance
+ *    doit être le courant, et celui où la liste a été relue
+ *    (`liste_a_relire` sinon) ; refusé si l'analyte porte une correspondance
  *    signée (`signature_presente`) ou déjà un constat ;
  *  - retirer : le constat VU, désigné par sa date (`verifieLeVu`), même périmé.
  *
@@ -555,6 +557,12 @@ export async function deciderConstat(params: {
     // L'écran a vu un autre millésime : il constaterait sur une version qu'il
     // n'a pas lue.
     if (millesime !== millesimeVu) throw new RefusGeste<Refus>('etat_divergent');
+    // La liste ne prouve l'absence d'acte que dans le millésime où elle a été
+    // relue : sur un autre, un acte apparu ne serait pas vu. Pas de constat
+    // avant qu'une PR relise la liste (arbitrage du 2026-10-16, revue
+    // CodeRabbit de #1496) ; les candidats à signer, eux, sont relus acte par
+    // acte au millésime courant et ne sont pas concernés.
+    if (millesime !== MILLESIME_LISTE_NABM) throw new RefusGeste<Refus>('liste_a_relire');
 
     await tx.biologyAnalyteNabmJournal.create({
       data: { analyteCode, acte: 'constat_aucun_acte', millesime, praticienEmail: praticien },

@@ -39,6 +39,11 @@ const MESSAGES_REFUS: Record<RaisonRefusConstat, { message: string; status: numb
     message: 'La nomenclature n’est pas importée : aucun constat ne peut être posé.',
     status: 409,
   },
+  liste_a_relire: {
+    message:
+      'La liste des analytes sans acte a été préparée sur un autre millésime de la nomenclature : elle doit être relue avant tout constat.',
+    status: 409,
+  },
   import_en_cours: {
     message: 'Un import de la nomenclature est en cours : rien n’a été enregistré, réessayez dans quelques minutes.',
     status: 409,

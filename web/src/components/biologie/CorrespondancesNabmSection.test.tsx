@@ -502,6 +502,14 @@ describe('CorrespondancesNabmSection — constat « aucun acte » (M-3c)', () =>
     expect(screen.queryByRole('button', { name: /Constater/ })).toBeNull();
   });
 
+  it('nomenclature passée à un autre millésime que la liste : pas de bouton, la raison est dite', async () => {
+    mockApi({ lecture: [lecture('aucun_acte', { millesime: 'V106' })] });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+    await waitFor(() => expect(screen.getByText(/Constat indisponible/)).toBeTruthy());
+    expect(screen.getByText(/préparée sur le millésime V105, la nomenclature courante est le millésime V106/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Constater/ })).toBeNull();
+  });
+
   it('le retrait du constat demande une confirmation, puis envoie la date vue', async () => {
     const fetchMock = mockApi({
       lecture: [lecture('aucun_acte', { constat: CONSTAT }), lecture('aucun_acte')],
