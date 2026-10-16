@@ -24,8 +24,9 @@ sous drapeau éteint jusqu'à ACT-1.
   du protocole n'est pas rejouée à l'écriture.
 - Drapeau `WN_PORTAIL_LECTURE_PROTOCOLE`, éteint : accueil et routes
   inchangés, sauf un POST `protocole` qui rend 404 au lieu de 400.
-- Écarté (revue R2) : « Jour difficile » garde son plan d'une action ferme
-  quand le détail est replié (aucune action en attente ni en pause).
+- Revue R2 tranchée par le responsable (2026-10-16) : « Jour difficile »
+  garde son plan d'une action ferme quand le détail est replié (aucune action
+  en attente ni en pause) ; consigné dans l'amendement de D-315.
 
 ## Fichiers modifiés
 
@@ -57,7 +58,12 @@ sous drapeau éteint jusqu'à ACT-1.
 
 1. PR, `wn-attendre-ci` en fond, revue CodeRabbit sur la tête, verdicts.
 2. Merge (`--match-head-commit`), déploiement constaté. Pas de release-db.
-3. Puis ACT-1 sur demande du responsable.
+3. Lot suivant choisi par le responsable : le code des conditions
+   d'utilisation (D-292), dernier préalable technique d'ACT-1 — cadrage
+   d'abord, migration seulement sur demande.
+4. Merge seulement après la release-db de #1493 (M-3c, autre session)
+   constatée et son déploiement en tête : aucune écriture sur `main` pendant
+   son application.
 
 ## Interdits encore actifs
 

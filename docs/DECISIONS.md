@@ -99,6 +99,9 @@ sur la revue P1 de ce code. Le tout sous le drapeau
 - *Pause* ([[D-281]]) : si une action est en pause, le protocole s'affiche
   déplié d'office, pour que le texte signé de la pause se lise sans clic. Ce
   dépli n'est pas un geste du patient : rien n'est consigné.
+- *Jour difficile* : replié, il garde sa proposition du plan de la première
+  action ferme hors pause. Le détail replié n'est pas étanche, et c'est
+  assumé : aucune action en attente de bilan ni en pause n'y paraît.
 - *Désignation* (§2) : le navigateur ne reçoit pas l'identifiant de la
   diffusion. Il renvoie la `cycleRef` reçue avec la vue ; le serveur la
   compare à la diffusion en vigueur et écrit l'identifiant qu'il résout. Une
