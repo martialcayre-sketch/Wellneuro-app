@@ -40,6 +40,12 @@ import {
  * la carte puis le contrat patient (`vuePatientOuRefus`, [[D-200]]). Faux, le
  * patient lit « indisponible » : aucun élément ne lui est proposé, il désigne
  * sans liste (D-281 §2, arbitrage du responsable du 2026-10-16).
+ *
+ * UNE LECTURE EN ÉCHEC LÈVE, elle ne rend pas `servi: false` — et c'est voulu.
+ * Au dépôt, l'exception mène au repli (le signalement vise le programme
+ * diffusé et attend l'avis) ; « non servi » ferait refuser en 400 un élément
+ * valide sur une panne passagère, et le signalement serait perdu si le
+ * patient ne recommence pas. À `trust/etat`, elle rend le formulaire d'avant.
  */
 export async function programmeDiffuse(
   idPatient: string,

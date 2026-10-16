@@ -158,6 +158,12 @@ describe('pauseEffetIndesirableServeur', () => {
     expect(await programmeDiffuse('PAT_TEST')).toMatchObject({ servi: false });
   });
 
+  it('programmeDiffuse : une lecture du rejeu en échec LÈVE — le dépôt se replie, jamais un élément refusé sur une panne', async () => {
+    rejouerCarteDecision.mockRejectedValue(new Error('base indisponible'));
+    await expect(programmeDiffuse('PAT_TEST')).rejects.toThrow('base indisponible');
+    await expect(designationPour('PAT_TEST')).rejects.toThrow('base indisponible');
+  });
+
   describe('pausesServies', () => {
     it('règle non signée : aucune pause servie, aucune lecture (D-281 §6)', async () => {
       expect(await pausesServies('PAT_TEST', 'draft-1', ACTIONS)).toEqual([]);
