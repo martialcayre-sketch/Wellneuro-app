@@ -172,17 +172,37 @@ export function incoherencesDeStructure(structure: StructureFichesUsage = FICHES
 /** Calculées une fois : la structure est une constante du module. */
 const INCOHERENCES_DU_DEPOT = incoherencesDeStructure();
 
+function estIsoCanonique(valeur: string | null): valeur is string {
+  if (valeur === null) return false;
+  const date = new Date(valeur);
+  // `getTime()` D'ABORD : `toISOString()` JETTE sur une date invalide, et un
+  // verrou doit FERMER, jamais jeter.
+  if (Number.isNaN(date.getTime())) return false;
+  return date.toISOString() === valeur;
+}
+
+const cleClaim = (c: ClaimEpingle) => `${c.claimId}@${c.versionClaim}`;
+
 /**
- * La structure est signée : verrou posé, périmètre relu égal à la structure du
- * jour, ET structure cohérente. Une structure retouchée après signature ne
- * l'est plus ; une structure incohérente ne l'est jamais, même signée.
+ * La structure est signée — les cinq termes de [[D-063]]/[[D-067]] (D-314 §2) :
+ * verrou posé, date ISO canonique, `claimsSource` égale à l'union des claims
+ * des fiches (le contrat de fraîcheur ne lit qu'elle : un claim de fiche qui
+ * n'y serait pas lui échapperait), périmètre relu égal à la structure du jour,
+ * ET structure cohérente. Une structure retouchée après signature ne l'est
+ * plus ; une structure incohérente ne l'est jamais, même signée.
  */
 export function structureSignee(
   metadata: FichesUsageMetadata = FICHES_USAGE_BESOIN2_METADATA,
   empreinte: string = FICHES_USAGE_BESOIN2_SHA256,
   incoherences: readonly string[] = INCOHERENCES_DU_DEPOT,
+  structure: StructureFichesUsage = FICHES_USAGE_BESOIN2_V1,
 ): boolean {
-  return metadata.validationExterne === true && metadata.shaPerimetre === empreinte && incoherences.length === 0;
+  if (metadata.validationExterne !== true) return false;
+  if (!estIsoCanonique(metadata.dateValidation)) return false;
+  const declares = [...new Set(metadata.claimsSource.map(cleClaim))].sort();
+  const cites = [...new Set(structure.fiches.flatMap(f => f.claims.map(cleClaim)))].sort();
+  if (declares.length !== cites.length || declares.some((claim, i) => claim !== cites[i])) return false;
+  return metadata.shaPerimetre === empreinte && incoherences.length === 0;
 }
 
 /** La fiche de la structure, ou `null`. */

@@ -34,6 +34,8 @@ const avec = (fiche: Partial<FicheUsageStructure>): StructureFichesUsage => ({
   hypotheses: ['HYP_SYNTH'],
   populations: ['POP_SYNTH'],
 });
+/** Un verrou posé, daté — la structure du dépôt n'épingle aucun claim. */
+const SIGNEE = { ...FICHES_USAGE_BESOIN2_METADATA, validationExterne: true, dateValidation: '2026-10-16T09:00:00.000Z' };
 
 // La structure est livrée VIDE et verrou ÉTEINT (porte 23 : ses contenus sont
 // ceux du responsable). Ce banc épingle l'empreinte : toute fiche ajoutée la
@@ -53,10 +55,29 @@ describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
   });
 
   it('une signature ne vaut que sur le périmètre relu : retouchée après signature, la structure ne l’est plus', () => {
-    const signee = { ...FICHES_USAGE_BESOIN2_METADATA, validationExterne: true, shaPerimetre: 'e'.repeat(64) };
+    const signee = { ...SIGNEE, shaPerimetre: 'e'.repeat(64) };
     expect(structureSignee(signee, 'e'.repeat(64))).toBe(true);
     expect(structureSignee(signee, 'f'.repeat(64))).toBe(false);
     expect(structureSignee({ ...signee, validationExterne: false }, 'e'.repeat(64))).toBe(false);
+  });
+
+  it('une signature sans date, ou à une date hors forme ISO canonique, ne vaut pas', () => {
+    const signee = { ...SIGNEE, shaPerimetre: 'e'.repeat(64) };
+    expect(structureSignee({ ...signee, dateValidation: null }, 'e'.repeat(64))).toBe(false);
+    expect(structureSignee({ ...signee, dateValidation: '2026-10-16' }, 'e'.repeat(64))).toBe(false);
+    expect(structureSignee({ ...signee, dateValidation: 'pas une date' }, 'e'.repeat(64))).toBe(false);
+  });
+
+  it('claimsSource est exactement l’union des claims des fiches : un claim de fiche non déclaré ferme le verrou', () => {
+    const structure = avec({ claims: [{ claimId: 'CLM_SYNTH_A', versionClaim: '1' }, { claimId: 'CLM_SYNTH_B', versionClaim: '2' }] });
+    const tous = structure.fiches.flatMap(f => f.claims);
+    const signee = { ...SIGNEE, shaPerimetre: 'e'.repeat(64), claimsSource: [...tous] };
+    expect(tous.length).toBeGreaterThan(0);
+    expect(structureSignee(signee, 'e'.repeat(64), [], structure)).toBe(true);
+    expect(structureSignee({ ...signee, claimsSource: tous.slice(1) }, 'e'.repeat(64), [], structure)).toBe(false);
+    expect(
+      structureSignee({ ...signee, claimsSource: [...tous, { claimId: 'CLM_AUTRE', versionClaim: '1' }] }, 'e'.repeat(64), [], structure),
+    ).toBe(false);
   });
 
   it('trouve une fiche et un terme dans une structure donnée', () => {
@@ -124,7 +145,7 @@ describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
   });
 
   it('une structure incohérente ne se signe pas, même verrou posé sur son empreinte', () => {
-    const signee = { ...FICHES_USAGE_BESOIN2_METADATA, validationExterne: true, shaPerimetre: 'e'.repeat(64) };
+    const signee = { ...SIGNEE, shaPerimetre: 'e'.repeat(64) };
     expect(structureSignee(signee, 'e'.repeat(64), [])).toBe(true);
     expect(structureSignee(signee, 'e'.repeat(64), ['FU_SYNTH:nature_statut'])).toBe(false);
   });

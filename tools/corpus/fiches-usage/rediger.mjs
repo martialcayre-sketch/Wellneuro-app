@@ -189,6 +189,9 @@ async function redigerLibelle(termeId, outils) {
   const declares = nature === 'hypothese' ? FICHES_USAGE_BESOIN2_V1.hypotheses : FICHES_USAGE_BESOIN2_V1.populations;
   if (!declares.includes(termeId)) throw new ErreurOutil(`${termeId} : terme absent de la structure.`);
   const { fiches, claims: cites } = claimsDuTerme(termeId, FICHES_USAGE_BESOIN2_V1, claims);
+  // Sans claim, le libellé n'aurait pour base que l'identifiant ou un savoir
+  // extérieur (DC-01) : refusé lui aussi avant tout appel (revue).
+  if (cites.length === 0) throw new ErreurOutil(`${termeId} : aucun claim épinglé ne porte ce terme.`);
   const message = messageRedactionLibelle(termeId, nature, fiches, cites);
   console.log(`${termeId} : ${fiches.length} fiche(s) citante(s), ${cites.length} claim(s).`);
 

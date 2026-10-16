@@ -7,6 +7,8 @@
   trois axes de D-266 §3 — nature du lien, usage décisionnel et marqueur
   sécurité / admissibilité, statut d'usage —, tenus par la correspondance
   nature ↔ statut : une structure incohérente ne se signe pas (D-314 §9).
+  Verrou à cinq termes (D-314 §2) : validation, date ISO canonique,
+  `claimsSource` égale à l'union des claims des fiches, périmètre, cohérence.
   Statut réglementaire et renvois aux précautions reportés à BP-17.
   Empreinte épinglée ; vocabulaire fermé aligné sur la migration par un banc
   qui la lit ; codes d'analyte vérifiés au catalogue des migrations. Gardes
