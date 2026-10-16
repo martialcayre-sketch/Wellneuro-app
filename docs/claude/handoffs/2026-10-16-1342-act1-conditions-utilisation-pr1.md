@@ -22,6 +22,8 @@ Cette PR 1 : texte au registre, accueil, page des conditions, filet au dépôt.
   IA v8, partie 5 ; parties titrées par `SectionDocument.partie`.
 - Patient « suivi » = un accusé `pris_connaissance` sur l'un des quatre textes
   ou sur les conditions, toute version : aucun mur.
+- P2 1 de la revue tranché par le responsable : à l'accueil, « Limites et
+  sécurité médicale » dépliée d'office, le reste replié, sans case.
 - Conditions servies au seul dossier majeur (carte, page, accusé : 409 hors
   majeur), sur constat de revue.
 - Aucune trace `presente` sur les conditions : un scanner de liens l'écrirait.
@@ -43,16 +45,12 @@ Cette PR 1 : texte au registre, accueil, page des conditions, filet au dépôt.
 - T1 complet (`npm run check`) vert après les suites de revue.
 - T2 (`test:worktree --fast`) : premier passage rouge à l'étape unitaire
   (gabarit de chemin manquant pour `/portail/[token]/conditions`, corrigé) ;
-  second passage sur bf258c9e vert (unitaires, contrats SQL, build, 271 E2E Chromium + WebKit).
+  second passage sur bf258c9e vert (unitaires, contrats SQL, build, 271 E2E Chromium + WebKit) ; troisième, après la sécurité dépliée, vert (12 976 unitaires, 271 E2E).
 - Revue `wn-reviewer` du 197c29a7 : aucun P0/P1, quatre P2 ; P2 2 (mineurs),
   3 (retour arrière documenté) et 4 (partie 5 comparée au README) corrigés.
 
 ## Problèmes ouverts
 
-- P2 1 de la revue, à arbitrer par le responsable avant l'activation :
-  l'accueil des conditions présente « Limites et sécurité médicale » en
-  accordéon replié, sans les trois cases de l'accueil d'avant (dont « ne
-  remplace pas un service d'urgence »).
 - `publieLe` de la v1 vaut 2026-10-16 (jour de l'assemblage), pas le jour de
   l'activation.
 - Aucun E2E drapeau ouvert : il changerait l'accueil de toutes les fixtures ;

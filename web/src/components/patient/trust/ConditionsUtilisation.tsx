@@ -16,7 +16,13 @@ import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 // Version et hash sont résolus par la route, jamais par l'écran.
 
 /** Le texte en vigueur et « J'en ai pris connaissance ». */
-export function AccuseConditions({ onAccuse }: { onAccuse: () => void }) {
+export function AccuseConditions({
+  onAccuse,
+  partiesDepliees,
+}: {
+  onAccuse: () => void;
+  partiesDepliees?: readonly string[];
+}) {
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
   const conditions = getDocumentCourant('conditions_utilisation');
@@ -49,7 +55,7 @@ export function AccuseConditions({ onAccuse }: { onAccuse: () => void }) {
         <h2 className="font-display text-lg font-bold text-foreground">{conditions.titre}</h2>
         <p className="text-sm text-muted-foreground">{conditions.resume}</p>
       </div>
-      <DocumentTrust document={conditions} accordeons />
+      <DocumentTrust document={conditions} accordeons partiesDepliees={partiesDepliees} />
       {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
       <PatientButton
         variant="primary"
@@ -68,12 +74,19 @@ export function AccuseConditions({ onAccuse }: { onAccuse: () => void }) {
  * L'accueil d'un nouveau patient majeur sous les conditions ([[D-292]] §3) :
  * elles seules, avant d'accéder à l'espace. Remplace la séquence en trois
  * textes, que gardent les dossiers mineurs ou sans date de naissance.
+ *
+ * LA SÉCURITÉ SE LIT SANS CLIC (arbitrage du 2026-10-16) : l'accueil d'avant
+ * avait un écran « pas un service d'urgence » et une case à cocher. Ici, la
+ * partie « Limites et sécurité médicale » s'ouvre d'office, numéros d'urgence
+ * visibles ; le texte reste celui validé, seule sa présentation change.
  */
+const PARTIES_DEPLIEES_A_L_ACCUEIL = Object.freeze(['Limites et sécurité médicale']);
+
 export function AccueilConditions({ onDone }: { onDone: () => void }) {
   return (
     <PatientCard className="space-y-4">
       <PatientPageHeader title="Bienvenue dans votre espace Wellneuro" />
-      <AccuseConditions onAccuse={onDone} />
+      <AccuseConditions onAccuse={onDone} partiesDepliees={PARTIES_DEPLIEES_A_L_ACCUEIL} />
     </PatientCard>
   );
 }

@@ -1403,6 +1403,11 @@ est une chaîne libre, sans contrainte.
   l'accueil en trois textes et ne reçoit pas l'e-mail ; ses conditions lui
   seront servies avec le circuit des mineurs. D'ici là, ni carte, ni page,
   et la route refuse leur accusé hors d'un dossier majeur.
+- *Sécurité à l'accueil* (arbitrage du 2026-10-16, sur constat de revue) :
+  l'accueil d'avant avait un écran « pas un service d'urgence » et une case à
+  cocher. À l'accueil des conditions, la partie « Limites et sécurité
+  médicale » s'ouvre d'office, numéros d'urgence visibles sans clic ; les
+  autres parties restent repliées. Aucun texte neuf, aucune case.
 - *Patient suivi* (§3) : un accusé `pris_connaissance` sur l'un des quatre
   textes ou sur les conditions, quelle qu'en soit la version, dispense du
   mur. Drapeau ouvert, un dossier majeur suivi ne revoit donc plus la

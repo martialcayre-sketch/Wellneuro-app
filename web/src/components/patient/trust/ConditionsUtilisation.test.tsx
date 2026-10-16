@@ -38,6 +38,12 @@ describe('AccueilConditions', () => {
     }
     expect(fetchMock).not.toHaveBeenCalled();
 
+    // La sécurité se lit sans clic : ses accordéons sont ouverts, les autres non.
+    const urgence = screen.getByText('En cas d’urgence').closest('details');
+    expect(urgence?.open).toBe(true);
+    expect(screen.getByText('112 — numéro d’urgence européen')).toBeTruthy();
+    expect(screen.getByText('À quoi sert cet espace').closest('details')?.open).toBe(false);
+
     fireEvent.click(screen.getByRole('button', { name: 'J’en ai pris connaissance' }));
     await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalledTimes(1);

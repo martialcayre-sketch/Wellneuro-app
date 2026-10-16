@@ -10,9 +10,12 @@ import type { VersionDocumentTrust } from '@/lib/trust/types';
 export function DocumentTrust({
   document,
   accordeons = false,
+  partiesDepliees = [],
 }: {
   document: VersionDocumentTrust;
   accordeons?: boolean;
+  /** Parties d'un document assemblé dont les accordéons s'ouvrent d'office. */
+  partiesDepliees?: readonly string[];
 }) {
   return (
     <div className="space-y-3">
@@ -27,7 +30,10 @@ export function DocumentTrust({
           ) : null;
         const cle = `${section.partie ?? ''}|${section.titre}`;
         const bloc = accordeons ? (
-          <details className="rounded-lg border border-border bg-surface">
+          <details
+            className="rounded-lg border border-border bg-surface"
+            open={section.partie !== undefined && partiesDepliees.includes(section.partie)}
+          >
             <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg">
               {section.titre}
             </summary>
