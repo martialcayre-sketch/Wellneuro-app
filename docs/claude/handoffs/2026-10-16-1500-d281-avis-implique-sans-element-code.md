@@ -45,15 +45,25 @@ du 2026-10-16, D-281 §5 amendée par #1500).
 - T2 (`--fast`) vert en 5 min 55 s sur l'état final.
 - Revue `wn-reviewer` (P0) : Go conditionné à la migration constatée, aucun
   P0 ; P2 traités (changelog, légende, tests de la route GET et du
-  formulaire d'avant, dette du §8) ; P2-6 (aria-describedby) non traité,
-  comme le paragraphe voisin.
+  formulaire d'avant, dette du §8) ; P2-6 corrigé ensuite : le choix de
+  l'avis annonce l'explication affichée (`aria-describedby`, les deux
+  paragraphes « ne se lit pas » et « aucun élément désignable »), test à
+  l'appui.
 - Passe Codex (P0, clinique) : geste du responsable, avant le merge.
 
 ## Problèmes ouverts
 
-- Question au responsable (revue Q3) : programme lisible sans élément
-  désignable (orientations, prises de sang seules) — l'avis sans élément n'y
-  est pas ouvert, conformément à « programme illisible seul ».
+- Revue Q3, différée : programme lisible sans élément désignable
+  (orientations, prises de sang seules) — l'avis sans élément n'y est pas
+  ouvert, conformément à l'arbitrage « programme illisible seul ». L'étendre
+  demande une décision clinique distincte, hors de cette PR.
+- Retour arrière : dès qu'un avis « impliqué » sans élément existe en base,
+  un code antérieur à cette PR ne maintient plus la pause qu'il commande
+  (`elementsEnPause` d'avant l'ignore). Risque conditionnel — il faut, en
+  plus, la règle signée (M-1) et une version visée redevenue lisible. Règle :
+  correction en avant ; jamais de redéploiement d'un commit antérieur à ce
+  merge une fois un tel avis enregistré (lecture par conteneur avant tout
+  retour : `implique` avec `element_action_id` nul).
 - Le commentaire de la migration #1500 (« aucun élément n'est mis en pause »)
   décrit l'état de fait, pas la règle ; une migration ne se réécrit pas.
 

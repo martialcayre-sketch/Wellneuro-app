@@ -4,7 +4,8 @@
   élément désigné ne passe pas le contrôle d'intégrité, l'écran d'avis
   propose « Impliqué, élément non identifiable », avec un aménagement
   obligatoire. Avant, seul « aucun élément n'est en cause » était possible.
-  L'historique des avis affiche « élément non identifiable ».
+  L'historique des avis affiche « élément non identifiable ». Le choix de
+  l'avis annonce au lecteur d'écran l'explication affichée.
 - **Une seule règle** (`avisSansElementOuvert`) pour la route et pour
   l'écran : un signalement sans élément désigné par le patient, qui vise un
   programme, et dont la liste d'éléments ne se lit pas. Elle refuse un

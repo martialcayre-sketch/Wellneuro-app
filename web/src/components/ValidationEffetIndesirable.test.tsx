@@ -144,12 +144,16 @@ describe('ValidationEffetIndesirable', () => {
     afficher({ ...PAR_ELEMENT, rattachement: 'autre_produit', elementDesigne: null, elements: null });
     expect((screen.getByLabelText('Un élément du programme est en cause') as HTMLInputElement).disabled).toBe(true);
     expect(screen.getByText(/aucun élément ne peut être désigné/)).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Votre avis' }).getAttribute('aria-describedby'))
+      .toBe(screen.getByText(/aucun élément ne peut être désigné/).id);
   });
 
   // D-281 §5, arbitrage du 2026-10-16 : « impliqué, élément non identifiable ».
   it('programme visé illisible : « impliqué, élément non identifiable » + aménagement, sans élément envoyé', async () => {
     afficher({ ...PAR_ELEMENT, rattachement: 'ne_sait_pas', elementDesigne: null, elements: null, avisSansElement: true });
-    expect(screen.getByText(/Vous pouvez rendre « impliqué » sans élément, avec un aménagement/)).toBeTruthy();
+    const explication = screen.getByText(/Vous pouvez rendre « impliqué » sans élément, avec un aménagement/);
+    expect(explication.id).not.toBe('');
+    expect(screen.getByRole('group', { name: 'Votre avis' }).getAttribute('aria-describedby')).toBe(explication.id);
     const bouton = screen.getByText('Enregistrer l’avis') as HTMLButtonElement;
     fireEvent.click(screen.getByLabelText('Impliqué, élément non identifiable'));
     expect(screen.queryByRole('combobox')).toBeNull();

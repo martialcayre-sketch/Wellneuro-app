@@ -67,6 +67,8 @@ export function ValidationEffetIndesirable({
   const elementsChoisissables = validation.elements ?? [];
   const sansElement = validation.avisSansElement;
   const impliqueImpossible = !designeParPatient && !sansElement && elementsChoisissables.length === 0;
+  /** L'explication de l'option « impliqué », annoncée avec le choix de l'avis (une seule des deux s'affiche). */
+  const idExplication = `explication-avis-${reportId}`;
 
   const enregistrer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,7 +154,10 @@ export function ValidationEffetIndesirable({
       </p>
 
       <form onSubmit={e => void enregistrer(e)} className="mt-3 flex flex-col gap-2">
-        <fieldset className="flex flex-wrap gap-x-4 gap-y-1">
+        <fieldset
+          className="flex flex-wrap gap-x-4 gap-y-1"
+          aria-describedby={sansElement || impliqueImpossible ? idExplication : undefined}
+        >
           <legend className="text-xs text-muted-foreground mb-1">{courant ? 'Corriger l’avis' : 'Votre avis'}</legend>
           <label className="flex items-center gap-1 text-sm">
             <input
@@ -181,13 +186,13 @@ export function ValidationEffetIndesirable({
           </label>
         </fieldset>
         {sansElement && (
-          <p className="text-xs text-muted-foreground">
+          <p id={idExplication} className="text-xs text-muted-foreground">
             Le programme visé ne se lit pas : aucun élément ne peut être désigné. Vous pouvez rendre « impliqué » sans
             élément, avec un aménagement.
           </p>
         )}
         {impliqueImpossible && (
-          <p className="text-xs text-muted-foreground">
+          <p id={idExplication} className="text-xs text-muted-foreground">
             {validation.elements === null
               ? 'Le programme visé ne se lit pas : aucun élément ne peut être désigné.'
               : 'Le programme visé ne contient aucun élément désignable.'}
