@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isG4LienMagiqueEnabled } from '@/lib/portail/featureFlag';
-import { empreinteJeton, etatLien } from '@/lib/portail/lienMagique';
+import { cheminApresLien, empreinteJeton, etatLien, PARAMETRE_DESTINATION } from '@/lib/portail/lienMagique';
 import { urlPubliquePortail } from '@/lib/portail/urlPublique';
 import { PORTAIL_COOKIE_NAME, PORTAIL_COOKIE_OPTIONS, signPatientSession } from '@/lib/patient-session';
 import { logger } from '@/lib/observability/logger';
@@ -21,6 +21,8 @@ import type { RequestContext } from '@/lib/observability/types';
 // Après consommation, le patient atterrit sur `/portail/<idPatient>` — segment
 // de routage non secret (LOT-04) — l'espace d'aujourd'hui, qui décide seul de
 // l'étape à afficher (consentement, fiche, anamnèse, hub) d'après le cookie.
+// Un lien émis avec une destination (`?vers=conditions`, [[D-292]]) atterrit
+// sur la page qu'elle nomme, toujours sous `/portail/<idPatient>`.
 
 export const dynamic = 'force-dynamic';
 
@@ -165,7 +167,11 @@ export async function GET(
     // segment d'URL porte l'idPatient (non secret), et l'accès repose sur le
     // cookie de session posé ci-dessous. La révocation reste effective (garde
     // ci-dessus + `sessionsInvalidesAvant`, posé à la révocation).
-    const res = NextResponse.redirect(urlPubliquePortail(`/portail/${lien.idPatient}`, req.url));
+    //
+    // Destination ([[D-292]]) : lue APRÈS toutes les gardes, elle ne décide que
+    // de la page d'atterrissage, sous l'espace de CE patient (liste fermée).
+    const vers = new URL(req.url).searchParams.get(PARAMETRE_DESTINATION);
+    const res = NextResponse.redirect(urlPubliquePortail(cheminApresLien(lien.idPatient, vers), req.url));
     res.cookies.set(
       PORTAIL_COOKIE_NAME,
       signPatientSession({

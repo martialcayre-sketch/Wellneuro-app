@@ -1,4 +1,9 @@
 import { TrustPanel } from '@/components/TrustPanel';
+import { EnvoiConditionsPanel } from '@/components/EnvoiConditionsPanel';
+import { conditionsUtilisationOuvertes } from '@/lib/trust/conditionsUtilisation';
+
+// Le drapeau se lit à la requête, pas au build.
+export const dynamic = 'force-dynamic';
 
 // « Confiance & droits » (TRUST LOT-03/04) : visibilité praticien sur les
 // signalements, incidents et demandes d'exercice de droits des patients.
@@ -18,6 +23,15 @@ export default function DroitsPage() {
         </h3>
         <TrustPanel />
       </section>
+      {/* [[D-292]] §3 — absente drapeau fermé : le cockpit reste celui d'avant. */}
+      {conditionsUtilisationOuvertes() && (
+        <section>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-[.06em] mb-3">
+            Conditions d’utilisation — e-mail aux patients suivis
+          </h3>
+          <EnvoiConditionsPanel />
+        </section>
+      )}
     </div>
   );
 }

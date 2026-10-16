@@ -573,6 +573,42 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     valideLe: '2026-09-29',
     hash: '945547ddcdb2b816ebc0bafcd316d24b083e30545ff2cf147717d92845a198ed',
   },
+  // ── CONDITIONS D'UTILISATION ────────────────────────────────────────────
+  // [[D-292]] §3 — l'e-mail aux patients déjà suivis, envoyé en une fois depuis
+  // le cockpit. Le texte est celui de la proposition validée
+  // (`docs/claude/propositions/2026-10-14-k-conditions-utilisation/README.md`),
+  // mot pour mot à l'apostrophe typographique du registre près, plus UNE
+  // phrase ajoutée après le lien (arbitrage du 2026-10-16) : le lien magique
+  // ne vit que 24 heures, et la page reste ensuite où le patient la trouve.
+  // Ni nom, ni prénom, ni donnée de santé. Signé « Wellneuro » : les réponses
+  // vont au praticien du dossier par l'en-tête `Reply-To`.
+  {
+    key: 'conditions_utilisation',
+    version: 1,
+    titre: "Annonce des conditions d'utilisation aux patients suivis",
+    sujet: 'Wellneuro — les conditions d’utilisation de votre espace',
+    corps:
+      'Bonjour,\n\n' +
+      'Les informations de votre espace Wellneuro sont désormais réunies en un seul ' +
+      'document : les conditions d’utilisation de votre espace.\n\n' +
+      'Rien ne change dans votre accompagnement, et votre espace reste accessible ' +
+      'comme avant.\n\n' +
+      'Pour lire ce document et le valider, ouvrez ce lien : {{lien}}\n\n' +
+      'Ce lien est valable 24 heures et ne s’ouvre qu’une fois. Passé ce délai, ' +
+      'connectez-vous à votre espace comme d’habitude : le document vous attend ' +
+      'dans « Informations, confidentialité et droits ».\n\n' +
+      'Le lien ouvre le texte. Rien n’est validé tant que vous n’avez pas cliqué ' +
+      'sur « J’en ai pris connaissance ».\n\n' +
+      'Pour toute question, répondez simplement à ce message.\n\n' +
+      'Wellneuro',
+    variables: ['lien'],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-10-16',
+    // Texte validé avec la proposition de D-292 ; la phrase des 24 heures,
+    // choisie par le responsable le 2026-10-16, en est la seule addition.
+    valideLe: '2026-10-16',
+    hash: '73c6d787a50e9352a83d89444e6e260f0cfa468437000f9a6f7cac4e68cda59d',
+  },
 ]);
 
 /** Le gabarit courant d'une clé : version la plus haute (les versions

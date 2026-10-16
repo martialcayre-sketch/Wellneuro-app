@@ -220,3 +220,33 @@ export function originePraticien(email: string): string {
 }
 
 export const ORIGINE_PATIENT = 'patient';
+
+// LA DESTINATION D'UN LIEN ([[D-292]], ACT-1 PR 2). Le lien de l'e-mail des
+// conditions d'utilisation ouvre leur page, et non l'accueil de l'espace.
+//
+// ELLE VOYAGE DANS L'URL, PAS EN BASE : `portail_magic_links` n'a pas de
+// colonne pour elle, et le lot est sans migration (arbitrage du 2026-10-16).
+// Ce n'est pas une faiblesse : la destination n'ouvre rien, le jeton seul
+// ouvre la session ; qui détient le jeton navigue de toute façon partout dans
+// l'espace du patient. Ce qui compte est qu'elle ne puisse pas en sortir :
+// LISTE FERMÉE, résolue en un chemin sous `/portail/<idPatient>`. Une valeur
+// inconnue ne refuse rien — elle ramène à l'accueil, comme un lien sans
+// destination : la refuser brûlerait un lien valide pour un paramètre.
+
+/** Paramètre d'URL qui porte la destination d'un lien magique. */
+export const PARAMETRE_DESTINATION = 'vers';
+
+const DESTINATIONS_LIEN = Object.freeze({
+  conditions: 'conditions',
+} as const);
+
+export type DestinationLien = keyof typeof DESTINATIONS_LIEN;
+
+/** Le chemin où atterrit le patient après consommation du lien. */
+export function cheminApresLien(idPatient: string, vers: string | null): string {
+  const base = `/portail/${idPatient}`;
+  if (vers !== null && Object.prototype.hasOwnProperty.call(DESTINATIONS_LIEN, vers)) {
+    return `${base}/${DESTINATIONS_LIEN[vers as DestinationLien]}`;
+  }
+  return base;
+}

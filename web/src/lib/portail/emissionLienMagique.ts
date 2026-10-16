@@ -1,7 +1,13 @@
 import { prisma } from '@/lib/prisma';
 import { isG4LienMagiqueEnabled } from '@/lib/portail/featureFlag';
 import { buildMagicLinkUrl } from '@/lib/consultation/email';
-import { creerJeton, empreinteJeton, expirationDepuis, originePraticien } from '@/lib/portail/lienMagique';
+import {
+  creerJeton,
+  empreinteJeton,
+  expirationDepuis,
+  originePraticien,
+  type DestinationLien,
+} from '@/lib/portail/lienMagique';
 
 /**
  * Émet un lien magique pour le geste PAR DÉFAUT du praticien (création de
@@ -31,6 +37,8 @@ import { creerJeton, empreinteJeton, expirationDepuis, originePraticien } from '
 export async function emettreLienMagiquePourPraticien(
   idPatient: string,
   emailPraticienSession: string,
+  /** Page d'atterrissage ([[D-292]]) ; absente = l'accueil de l'espace, comme avant. */
+  destination?: DestinationLien,
 ): Promise<string | null> {
   if (!isG4LienMagiqueEnabled()) return null;
   try {
@@ -44,7 +52,7 @@ export async function emettreLienMagiquePourPraticien(
       },
     });
     // Le jeton ne sort que par ce retour, vers l'e-mail. Jamais journalisé.
-    return buildMagicLinkUrl(jeton);
+    return buildMagicLinkUrl(jeton, destination);
   } catch (e) {
     console.error('[emissionLienMagique]', (e as Error).message);
     return null;

@@ -1,6 +1,7 @@
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { getGabarit, rendreGabarit } from '@/lib/correspondance/registreGabarits';
 import { CHEMIN_CONNEXION } from '@/lib/portail/googleIdentite';
+import { PARAMETRE_DESTINATION, type DestinationLien } from '@/lib/portail/lienMagique';
 import {
   journaliserCorrespondancePatient,
   TYPES_CORRESPONDANCE_PATIENT,
@@ -32,15 +33,18 @@ async function envoyerAccesTrace({
   type,
   objet,
   envoyer,
+  reference,
 }: {
   idPatient?: string;
   type: TypeCorrespondancePatient;
   objet: string;
   envoyer: () => Promise<unknown>;
+  /** Ce que l'envoi annonce (`reference_type`, `reference_id`), quand il en a un. */
+  reference?: { referenceType: string; referenceId: string };
 }): Promise<StatutEnvoiAcces> {
   if (!process.env.SMTP_URL) {
     if (idPatient) {
-      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Non_envoye' });
+      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Non_envoye', ...reference });
     }
     // Rendu MÊME sans `idPatient` : le statut décrit l'envoi, pas la trace.
     return 'Non_envoye';
@@ -48,12 +52,12 @@ async function envoyerAccesTrace({
   try {
     await envoyer();
     if (idPatient) {
-      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Envoye' });
+      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Envoye', ...reference });
     }
     return 'Envoye';
   } catch (erreur) {
     if (idPatient) {
-      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Erreur', erreur });
+      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Erreur', erreur, ...reference });
     }
     throw erreur;
   }
@@ -63,9 +67,10 @@ async function envoyerAccesTrace({
  * URL d'un lien magique (gate G4). Le jeton n'apparaît que là : dans l'e-mail
  * du patient, et dans le chemin qu'il ouvrira une fois.
  */
-export function buildMagicLinkUrl(jeton: string): string {
+export function buildMagicLinkUrl(jeton: string, destination?: DestinationLien): string {
   const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  return `${baseUrl}/portail/lien/${jeton}`;
+  const suffixe = destination ? `?${PARAMETRE_DESTINATION}=${destination}` : '';
+  return `${baseUrl}/portail/lien/${jeton}${suffixe}`;
 }
 
 /**
@@ -183,6 +188,52 @@ export async function sendPortailLinkEmail(
         // réponse se perd. L'adresse vient du DOSSIER, pas d'une constante :
         // le corps du gabarit nomme le praticien en dur (dette assumée,
         // 2026-09-04), l'en-tête n'a pas besoin de reproduire cette limite.
+        ...(replyToValide(praticienEmail) ? { replyTo: praticienEmail } : {}),
+        subject: gabarit.sujet,
+        text: gabarit.corps,
+      });
+    },
+  });
+}
+
+/** Ce que le journal retient d'une annonce des conditions : la version annoncée. */
+export const REFERENCE_CONDITIONS = 'trust_document';
+
+/**
+ * Les conditions d'utilisation annoncées à un patient suivi ([[D-292]] §3).
+ *
+ * Le lien est un lien magique qui ouvre leur PAGE (`?vers=conditions`) ; il ne
+ * valide rien, seul le bouton de la page le fait. Les réponses vont à l'adresse
+ * du praticien du dossier, comme pour l'e-mail d'accès : le texte dit
+ * « répondez simplement à ce message », et `noreply@` ne lit rien.
+ */
+export async function sendConditionsUtilisationEmail({
+  patientEmail,
+  lien,
+  idPatient,
+  praticienEmail,
+  referenceId,
+}: {
+  patientEmail: string;
+  lien: string;
+  idPatient: string;
+  praticienEmail?: string;
+  /** `conditions_utilisation@<version>` : la version que l'e-mail annonce. */
+  referenceId: string;
+}): Promise<StatutEnvoiAcces> {
+  const smtpUrl = process.env.SMTP_URL;
+  return envoyerAccesTrace({
+    idPatient,
+    type: TYPES_CORRESPONDANCE_PATIENT.conditionsUtilisation,
+    objet: 'Conditions d’utilisation de l’espace patient',
+    reference: { referenceType: REFERENCE_CONDITIONS, referenceId },
+    envoyer: async () => {
+      if (!smtpUrl) return;
+      const transport = creerTransportSmtp(smtpUrl);
+      const gabarit = rendreGabarit(getGabarit('conditions_utilisation'), { lien });
+      await transport.sendMail({
+        from: '"Wellneuro" <noreply@wellneuro.fr>',
+        to: patientEmail,
         ...(replyToValide(praticienEmail) ? { replyTo: praticienEmail } : {}),
         subject: gabarit.sujet,
         text: gabarit.corps,
