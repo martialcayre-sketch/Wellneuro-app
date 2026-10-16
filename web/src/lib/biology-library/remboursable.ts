@@ -31,12 +31,22 @@ export type ActeCourant = {
   remboursementTotal: boolean | null;
 };
 
+/** Le constat signé « aucun acte dans la nomenclature » d'un analyte (M-3c),
+ *  et le millésime sur lequel il a été posé. */
+export type ConstatAucunActe = {
+  millesime: string;
+};
+
 export type StatutRemboursement =
-  /** Aucune correspondance signée : personne n'a encore tranché. Ce n'est
-   *  PAS « non remboursé » — c'est « pas évalué », et cela doit se dire. */
+  /** Aucune correspondance signée ni constat valable : personne n'a encore
+   *  tranché. Ce n'est PAS « non remboursé » — c'est « pas évalué », et cela
+   *  doit se dire. Un constat posé sur un millésime antérieur ne vaut plus :
+   *  l'analyte repasse ici (arbitrage du 2026-10-16). */
   | 'non_evalue'
   /** Des correspondances signées existent mais aucune ne se résout dans le
-   *  millésime courant, ou toutes visent un acte inactif. */
+   *  millésime courant, ou toutes visent un acte inactif ; ou, sans
+   *  correspondance signée, un constat « aucun acte » signé sur le millésime
+   *  courant. */
   | 'hors_nomenclature'
   /** Au moins un acte cote cet analyte seul ou au choix. */
   | 'remboursable'
@@ -60,6 +70,16 @@ export type Remboursement = {
 };
 
 /**
+ * Un constat « aucun acte » ne vaut que pour le millésime constaté, et
+ * seulement si la nomenclature est importée (arbitrage du 2026-10-16). Écrit
+ * ici une seule fois : la dérivation et l'écran (« périmé ») le lisent tous
+ * deux.
+ */
+export function constatValable(constat: ConstatAucunActe | null, millesimeCourant: string | null): boolean {
+  return constat !== null && millesimeCourant !== null && constat.millesime === millesimeCourant;
+}
+
+/**
  * Règle, en une phrase : un analyte est remboursable s'il existe au moins une
  * correspondance SIGNÉE vers un acte ACTIF du millésime COURANT.
  *
@@ -71,17 +91,30 @@ export type Remboursement = {
  *  - courant  : la correspondance porte un CODE, pas la ligne d'une version —
  *               c'est ce qui lui permet de survivre au millésime suivant.
  *
+ * Sans correspondance signée, le constat signé « aucun acte » (M-3c) fait
+ * dire `hors_nomenclature` — mais seulement s'il porte le millésime COURANT :
+ * il atteste la lecture d'une version de la nomenclature, pas des suivantes.
+ * Signature et constat s'excluent en base ; si les deux se présentaient
+ * quand même, la signature l'emporte et le constat est ignoré.
+ *
  * @param actesCourants actes du millésime pointé par
  *        `biology_catalog_versions_courantes`. Passer une liste vide (source
  *        jamais importée) rend `hors_nomenclature`, jamais `remboursable`.
+ * @param contexte le constat de l'analyte et le millésime courant ; sans
+ *        millésime courant, aucun constat ne vaut.
  */
 export function deriverRemboursement(
   correspondances: readonly CorrespondanceNabm[],
   actesCourants: readonly ActeCourant[],
+  contexte: { constat: ConstatAucunActe | null; millesimeCourant: string | null } = {
+    constat: null,
+    millesimeCourant: null,
+  },
 ): Remboursement {
   const signees = correspondances.filter((c) => c.verifiePar !== null);
   if (signees.length === 0) {
-    return { statut: 'non_evalue', conditions: [], codesActesRetenus: [] };
+    const valable = constatValable(contexte.constat, contexte.millesimeCourant);
+    return { statut: valable ? 'hors_nomenclature' : 'non_evalue', conditions: [], codesActesRetenus: [] };
   }
 
   const parCode = new Map(actesCourants.map((a) => [a.codeActe, a]));

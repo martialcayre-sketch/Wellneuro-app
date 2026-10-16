@@ -29,6 +29,11 @@ const { fichesALire } = vi.hoisted(() => ({ fichesALire: vi.fn() }));
 vi.mock('@/lib/fiches-assiette/servicePatient', () => ({ fichesALire }));
 const { lettreALire } = vi.hoisted(() => ({ lettreALire: vi.fn() }));
 vi.mock('@/lib/correspondance/lettreServicePatient', () => ({ lettreALire }));
+// La résolution de la diffusion a ses propres bancs : ici, on prouve que la
+// route compare la `cycleRef` reçue à LA diffusion en vigueur, et écrit
+// l'identifiant qu'elle résout elle-même.
+const { resolveProtocoleDiffuse } = vi.hoisted(() => ({ resolveProtocoleDiffuse: vi.fn() }));
+vi.mock('@/lib/protocol/portailProtocol', () => ({ resolveProtocoleDiffuse }));
 
 import { signPatientSession } from '@/lib/patient-session';
 import { GET, POST } from './route';
@@ -85,6 +90,7 @@ beforeEach(() => {
 afterEach(() => {
   delete process.env.WN_COMPREHENSION;
   delete process.env.WN_FICHES_ASSIETTE_LECTURE;
+  delete process.env.WN_PORTAIL_LECTURE_PROTOCOLE;
 });
 
 describe('la porte', () => {
@@ -408,5 +414,69 @@ describe('le courrier pour le médecin (D-262, LOT-03a)', () => {
     const reponse = await POST(requete(cookieProprio(), { espece: 'lettre_adressage', idObjet }));
     expect(reponse.status).toBe(404);
     expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('le protocole ([[D-315]], CC-8) : consigné, jamais attendu', () => {
+  const EMPREINTE = 'a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f708192a3b4c5d6e7f801';
+  const CYCLE_REF = EMPREINTE.slice(0, 16);
+  const DIFFUSION = { approbationId: 'appr_en_vigueur', protocolDraftInputHash: EMPREINTE };
+
+  beforeEach(() => {
+    resolveProtocoleDiffuse.mockResolvedValue(DIFFUSION);
+  });
+
+  it('POST : écrit l’identifiant de la DIFFUSION résolue par le serveur, pas ce que dit le navigateur', async () => {
+    process.env.WN_PORTAIL_LECTURE_PROTOCOLE = 'true';
+    const reponse = await POST(requete(cookieProprio(), { espece: 'protocole', cycleRef: CYCLE_REF, idObjet: 'forge' }));
+    expect(reponse.status).toBe(200);
+    expect(resolveProtocoleDiffuse).toHaveBeenCalledWith(PATIENT.idPatient);
+    expect(prisma.portailLecturePatient.create).toHaveBeenCalledWith({
+      data: { idPatient: PATIENT.idPatient, espece: 'protocole', idObjet: 'appr_en_vigueur' },
+    });
+  });
+
+  it('POST : une deuxième ouverture rend 200 sans erreur (P2002 = déjà consigné)', async () => {
+    process.env.WN_PORTAIL_LECTURE_PROTOCOLE = 'true';
+    prisma.portailLecturePatient.create.mockRejectedValue(Object.assign(new Error('unique'), { code: 'P2002' }));
+    const reponse = await POST(requete(cookieProprio(), { espece: 'protocole', cycleRef: CYCLE_REF }));
+    expect(reponse.status).toBe(200);
+  });
+
+  it.each([
+    ['la surface fermée (drapeau absent)', undefined, CYCLE_REF, DIFFUSION],
+    ['une version qui n’est plus en vigueur', 'true', 'ffffffffffffffff', DIFFUSION],
+    ['un préfixe trop court de la bonne empreinte', 'true', CYCLE_REF.slice(0, 4), DIFFUSION],
+    ['l’empreinte complète au lieu de la cycleRef', 'true', EMPREINTE, DIFFUSION],
+    ['aucun protocole diffusé', 'true', CYCLE_REF, null],
+    ['un drapeau qui ne vaut pas exactement « true » (TRUE)', 'TRUE', CYCLE_REF, DIFFUSION],
+    ['un drapeau qui ne vaut pas exactement « true » (1)', '1', CYCLE_REF, DIFFUSION],
+  ])('POST refusé en 404 pour %s, et rien n’est écrit', async (_cas, drapeau, cycleRef, diffusion) => {
+    if (drapeau) process.env.WN_PORTAIL_LECTURE_PROTOCOLE = drapeau;
+    resolveProtocoleDiffuse.mockResolvedValue(diffusion);
+    const reponse = await POST(requete(cookieProprio(), { espece: 'protocole', cycleRef }));
+    expect(reponse.status).toBe(404);
+    expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+  });
+
+  it('surface fermée : la diffusion n’est même pas résolue', async () => {
+    await POST(requete(cookieProprio(), { espece: 'protocole', cycleRef: CYCLE_REF }));
+    expect(resolveProtocoleDiffuse).not.toHaveBeenCalled();
+  });
+
+  it('POST sans cycleRef : 400, même avec un idObjet', async () => {
+    process.env.WN_PORTAIL_LECTURE_PROTOCOLE = 'true';
+    const reponse = await POST(requete(cookieProprio(), { espece: 'protocole', idObjet: 'appr_en_vigueur' }));
+    expect(reponse.status).toBe(400);
+    expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+  });
+
+  it('GET : une lecture de protocole consignée n’ajoute ni ne retire aucune tâche du fil', async () => {
+    process.env.WN_PORTAIL_LECTURE_PROTOCOLE = 'true';
+    prisma.portailLecturePatient.findMany.mockResolvedValue([{ espece: 'protocole', idObjet: 'appr_en_vigueur' }]);
+    const especes = ((await corpsDe(await GET(requete(cookieProprio())))).lectures as { espece: string }[]).map(
+      l => l.espece,
+    );
+    expect(especes).toEqual(['bilan', 'synthese']);
   });
 });

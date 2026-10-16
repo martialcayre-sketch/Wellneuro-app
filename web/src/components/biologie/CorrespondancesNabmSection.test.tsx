@@ -432,3 +432,134 @@ describe('CorrespondancesNabmSection — propositions préparées (M-3b)', () =>
     expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy();
   });
 });
+
+describe('CorrespondancesNabmSection — constat « aucun acte » (M-3c)', () => {
+  const CONSTAT = { millesime: 'V105', verifiePar: PRATICIEN, verifieLe: '2026-10-16T09:00:00.000Z', perime: false };
+  const lecture = (
+    situation: string,
+    {
+      constat = null,
+      millesime = 'V105',
+      correspondances = [],
+    }: { constat?: unknown; millesime?: string | null; correspondances?: unknown[] } = {},
+  ) => ({
+    json: {
+      ok: true,
+      millesime,
+      correspondances,
+      candidats: { millesimeListe: 'V105', situation, motif: 'Motif de la liste.', propositions: [] },
+      constat,
+    },
+  });
+  const BOUTON = 'Constater : aucun acte dans la nomenclature (V105)';
+
+  it('analyte « aucun acte » : constate sur le millésime affiché, sans signataire dans le corps, puis relit', async () => {
+    const onModifie = vi.fn();
+    const fetchMock = mockApi({
+      lecture: [lecture('aucun_acte'), lecture('aucun_acte', { constat: CONSTAT })],
+      decision: { json: { ok: true, constat: CONSTAT } },
+    });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" onModifie={onModifie} />);
+    fireEvent.click(await screen.findByRole('button', { name: BOUTON }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/Constat signé : aucun acte dans la nomenclature \(V105\)/)).toBeTruthy(),
+    );
+    const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')!;
+    expect(post[0]).toBe('/api/praticien/biologie/nabm/constats');
+    expect(JSON.parse(String(post[1]?.body))).toEqual({
+      analyteCode: 'BIO_HOMOCYSTEINE',
+      decision: 'constater',
+      millesimeVu: 'V105',
+    });
+    expect(onModifie).toHaveBeenCalledTimes(1);
+    // Constat posé : plus de bouton pour en poser un second.
+    expect(screen.queryByRole('button', { name: BOUTON })).toBeNull();
+  });
+
+  // CONTRE-ÉPREUVE : le bouton ne s'offre que là où la liste n'a trouvé aucun acte.
+  it.each(['valeur_calculee', 'regroupement', 'libelle_explicite', 'a_juger'])(
+    'situation « %s » : aucun bouton de constat',
+    async situation => {
+      mockApi({ lecture: [lecture(situation)] });
+      render(<CorrespondancesNabmSection analyteCode="BIO_X" />);
+      await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+      expect(screen.queryByRole('button', { name: /Constater/ })).toBeNull();
+    },
+  );
+
+  it('analyte « aucun acte » qui porte une signature : aucun bouton (retrait d’abord)', async () => {
+    mockApi({ lecture: [lecture('aucun_acte', { correspondances: signee.json.correspondances })] });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Retirer la signature' })).toBeTruthy());
+    expect(screen.queryByRole('button', { name: /Constater/ })).toBeNull();
+  });
+
+  it('nomenclature non importée : aucun bouton de constat', async () => {
+    mockApi({ lecture: [lecture('aucun_acte', { millesime: null })] });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+    await waitFor(() => expect(screen.getByText(/Rien à signer/)).toBeTruthy());
+    expect(screen.queryByRole('button', { name: /Constater/ })).toBeNull();
+  });
+
+  it('nomenclature passée à un autre millésime que la liste : pas de bouton, la raison est dite', async () => {
+    mockApi({ lecture: [lecture('aucun_acte', { millesime: 'V106' })] });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+    await waitFor(() => expect(screen.getByText(/Constat indisponible/)).toBeTruthy());
+    expect(screen.getByText(/préparée sur le millésime V105, la nomenclature courante est le millésime V106/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Constater/ })).toBeNull();
+  });
+
+  it('le retrait du constat demande une confirmation, puis envoie la date vue', async () => {
+    const fetchMock = mockApi({
+      lecture: [lecture('aucun_acte', { constat: CONSTAT }), lecture('aucun_acte')],
+      decision: { json: { ok: true, constat: null } },
+    });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Retirer le constat' }));
+    expect(screen.getByText('L’analyte repassera « non évalué ».')).toBeTruthy();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le retrait' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: BOUTON })).toBeTruthy());
+    const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')!;
+    expect(post[0]).toBe('/api/praticien/biologie/nabm/constats');
+    expect(JSON.parse(String(post[1]?.body))).toEqual({
+      analyteCode: 'BIO_HOMOCYSTEINE',
+      decision: 'retirer',
+      verifieLeVu: '2026-10-16T09:00:00.000Z',
+    });
+  });
+
+  it('constat périmé : dit qu’il est à renouveler au millésime courant, et se retire', async () => {
+    mockApi({
+      lecture: [lecture('aucun_acte', { millesime: 'V106', constat: { ...CONSTAT, perime: true } })],
+    });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+    await waitFor(() =>
+      expect(screen.getByText('Constat périmé (V105) — à renouveler au millésime V106')).toBeTruthy(),
+    );
+    expect(screen.queryByText(/Constat signé/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Retirer le constat' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Constater/ })).toBeNull();
+  });
+
+  it('constat refusé : le message du serveur, puis la fiche relue', async () => {
+    const fetchMock = mockApi({
+      lecture: [lecture('aucun_acte')],
+      decision: {
+        status: 409,
+        json: {
+          ok: false,
+          reason: 'signature_presente',
+          error: 'Cet analyte porte une correspondance signée : retirez-la d’abord.',
+        },
+      },
+    });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+    fireEvent.click(await screen.findByRole('button', { name: BOUTON }));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/retirez-la d’abord/));
+    const lectures = fetchMock.mock.calls.filter(([, init]) => init?.method !== 'POST');
+    expect(lectures.length).toBe(2);
+  });
+});

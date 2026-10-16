@@ -50,6 +50,9 @@ const IMPORTEURS_ADMIS = [
   // Les candidats préparés (M-3b) passent par la même route, lus dans le
   // module PUR `candidatsNabm` par la lib : aucun importeur neuf.
   'web/src/app/api/praticien/biologie/nabm/acte/route.ts',
+  // Le constat signé « aucun acte dans la nomenclature » (M-3c, F54) : même
+  // référentiel global, même garde que la signature — aucune donnée patient.
+  'web/src/app/api/praticien/biologie/nabm/constats/route.ts',
   'web/src/app/api/praticien/biologie/nabm/correspondances/route.ts',
   'web/src/app/api/praticien/biologie/proposition/courrier/route.ts',
   'web/src/app/api/praticien/biologie/proposition/document-patient/route.ts',

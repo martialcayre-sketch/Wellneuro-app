@@ -117,6 +117,43 @@ describe('deriverRemboursement', () => {
   });
 });
 
+describe('deriverRemboursement — constat « aucun acte » (M-3c)', () => {
+  const courant = (millesime: string, millesimeCourant: string | null = 'V105') => ({
+    constat: { millesime },
+    millesimeCourant,
+  });
+
+  it('constat sur le millésime courant, sans signature : hors nomenclature', () => {
+    const r = deriverRemboursement([], [], courant('V105'));
+    expect(r).toEqual({ statut: 'hors_nomenclature', conditions: [], codesActesRetenus: [] });
+    expect(regimeDocumentaire(r)).toBe('document_patient');
+  });
+
+  it('le même constat, millésime changé depuis : il ne vaut plus, non évalué', () => {
+    expect(deriverRemboursement([], [], courant('V105', 'V106')).statut).toBe('non_evalue');
+  });
+
+  it('nomenclature non importée : aucun constat ne vaut', () => {
+    expect(deriverRemboursement([], [], courant('V105', null)).statut).toBe('non_evalue');
+  });
+
+  it('une proposition non signée ne fait pas écran au constat', () => {
+    expect(deriverRemboursement([proposee('1213')], [acte({ codeActe: '1213' })], courant('V105')).statut).toBe(
+      'hors_nomenclature',
+    );
+  });
+
+  it('une signature présente l’emporte : le constat est ignoré', () => {
+    const r = deriverRemboursement([signee('1213')], [acte({ codeActe: '1213' })], courant('V105'));
+    expect(r.statut).toBe('remboursable');
+    expect(r.codesActesRetenus).toEqual(['1213']);
+  });
+
+  it('sans contexte, la règle d’avant M-3c : non évalué', () => {
+    expect(deriverRemboursement([], []).statut).toBe('non_evalue');
+  });
+});
+
 describe('regimeDocumentaire', () => {
   it('n’envoie au médecin que le franchement remboursable', () => {
     expect(regimeDocumentaire({ statut: 'remboursable', conditions: [], codesActesRetenus: [] }))

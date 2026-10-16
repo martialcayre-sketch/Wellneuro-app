@@ -551,6 +551,11 @@ grep -q 'banc-nabm-exclusion-deux-sessions.test.mjs' "$ROOT/.github/workflows/ci
   || die "ci.yml ne lance plus le banc à deux sessions de l'exclusion NABM."
 WN_NABM_EXCLUSION_BANC_BASE=wellneuro_ci node scripts/banc-nabm-exclusion-deux-sessions.test.mjs > /dev/null < /dev/null \
   || die "banc de l'exclusion NABM en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-nabm-exclusion-deux-sessions.test.mjs\`, depuis web/)."
+# Le vrai écrivain NABM contre les triggers « pas sans journal » (M-3c, PR 2).
+grep -q 'banc-nabm-gestes-prisma.test.ts' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc de l'écrivain NABM."
+WN_NABM_GESTES_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-nabm-gestes-prisma.test.ts > /dev/null < /dev/null \
+  || die "banc de l'écrivain NABM en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-nabm-gestes-prisma.test.ts\`, depuis web/)."
 grep -q 'banc-unicite-mesure-prisma.test.ts' "$ROOT/.github/workflows/ci.yml" \
   || die "ci.yml ne lance plus le banc du client Prisma contre la garde anti-doublon."
 WN_BIO_ANNULATION_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-unicite-mesure-prisma.test.ts > /dev/null < /dev/null \

@@ -155,6 +155,8 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
         correspondancesNabm: {
           select: { codeActe: true, nature: true, verifiePar: true },
         },
+        // Le constat « aucun acte » (M-3c) : son millésime suffit à la dérivation.
+        constatNabm: { select: { millesime: true } },
         preanalytiques: {
           where: { actif: true },
           select: { typeCondition: true, consigne: true },
@@ -233,6 +235,7 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
     remboursement: deriverRemboursement(
       analyte.correspondancesNabm as CorrespondanceNabm[],
       actesCourants,
+      { constat: analyte.constatNabm, millesimeCourant: pointeurNabm?.versionSource ?? null },
     ),
     preanalytiques: analyte.preanalytiques,
     panels: analyte.itemsPanel

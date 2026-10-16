@@ -843,6 +843,14 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/trust_aer_patient_fige_verdict_v1_negatif.sql
 
+      # Avis « impliqué, élément non identifiable » (D-281 §5, arbitrage du
+      # 2026-10-16) : admis sans élément avec aménagement, jamais sur un
+      # élément désigné par le patient ni sur un signalement délié.
+      - name: SAF-EI avis implique sans element negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/trust_aev_implique_sans_element_v1_negatif.sql
+
       # L'avis contre la modification de son signalement, À DEUX SESSIONS
       # (D-281 §5, passe Codex de #1474) : le contrat ci-dessus voit le refus
       # en série, pas que le FOR SHARE du trigger de l'avis sérialise. Deux
@@ -1362,6 +1370,19 @@ jobs:
         env:
           WN_NABM_EXCLUSION_BANC_BASE: wellneuro_ci
         run: node scripts/banc-nabm-exclusion-deux-sessions.test.mjs
+
+      # Le VRAI écrivain NABM (`deciderCorrespondance`, `deciderConstat`,
+      # client Prisma de production) contre les triggers différés « pas sans
+      # journal » (M-3c, PR 2) : signature, retrait, constat et son retrait
+      # passent au COMMIT ; un refus n'écrit rien ; la date rendue est celle de
+      # la base ; un geste attend le verrou d'un import NABM. Contre-épreuve en
+      # tête : une signature brute sans journal est refusée.
+      - name: NABM writer bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_NABM_GESTES_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-nabm-gestes-prisma.test.ts
 
       # Le VRAI client Prisma contre la garde anti-doublon (D-294, BP-09) :
       # le 23505 du trigger doit arriver en P2002 (le 409 `doublon_mesure` des

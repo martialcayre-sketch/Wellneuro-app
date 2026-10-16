@@ -46,7 +46,13 @@ beforeEach(() => {
     ok: true,
     correspondance: { codeActe: '1208', etat: 'signee', verifiePar: PRATICIEN, verifieLe: '2026-10-15T10:00:00.000Z' },
   });
-  lireCorrespondancesAnalyte.mockResolvedValue({ ok: true, millesime: 'V105', correspondances: [], candidats: null });
+  lireCorrespondancesAnalyte.mockResolvedValue({
+    ok: true,
+    millesime: 'V105',
+    correspondances: [],
+    candidats: null,
+    constat: null,
+  });
 });
 
 afterEach(() => {
@@ -121,6 +127,7 @@ describe('POST — le signataire vient de la session, jamais du corps', () => {
     ['acte_inactif', 409],
     ['nature_requise', 422],
     ['transition_invalide', 409],
+    ['constat_present', 409],
   ])('refus %s : statut %i et message en français', async (raison, statut) => {
     deciderCorrespondance.mockResolvedValue({ ok: false, raison });
     const reponse = await post(CORPS);
@@ -155,7 +162,20 @@ describe('GET', () => {
 
   it('rend les correspondances lues', async () => {
     const reponse = await GET(new Request('http://localhost/x?analyte=BIO_FERRITINE'));
-    expect(await reponse.json()).toEqual({ ok: true, millesime: 'V105', correspondances: [], candidats: null });
+    expect(await reponse.json()).toEqual({
+      ok: true,
+      millesime: 'V105',
+      correspondances: [],
+      candidats: null,
+      constat: null,
+    });
+  });
+
+  it('rend le constat « aucun acte » lu, périmé compris (M-3c)', async () => {
+    const constat = { millesime: 'V104', verifiePar: PRATICIEN, verifieLe: '2026-10-16T09:00:00.000Z', perime: true };
+    lireCorrespondancesAnalyte.mockResolvedValue({ ok: true, millesime: 'V105', correspondances: [], candidats: null, constat });
+    const reponse = await GET(new Request('http://localhost/x?analyte=BIO_HOMOCYSTEINE'));
+    expect((await reponse.json()).constat).toEqual(constat);
   });
 
   it('rend les candidats résolus par le serveur (M-3b), sans rien écrire', async () => {
