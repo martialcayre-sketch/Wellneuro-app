@@ -41,6 +41,7 @@ Le code consommateur de la migration `20261016100000_nabm_journal_constats_v1` :
 - Critère de fin de M-3c : le premier constat signé par le responsable depuis la fiche d'analyte, relu par conteneur (journal + constat).
 - G-3 redevient jouable au déploiement de cette PR.
 - À la lettre f : un analyte constaté passera, dans le document patient, de « non évalué » au texte « non pris en charge » de `documentPatient.ts` — texte patient, à signaler au cadrage de f (F54).
+- Routé en F54, à arbitrer avant l'import de la V106 (revue CodeRabbit, hors diff) : la liste préparée sur V105 continuerait d'offrir le constat au millésime suivant ; sans effet tant que le courant est V105.
 - Non éprouvé par banc : le sens inverse de la course (geste en cours, import qui attend, contrôle des orphelines qui voit la signature) ; `LOCK TABLE … IN SHARE MODE` suppose que le rôle applicatif est propriétaire de la table (vrai sur Scalingo, rôle unique).
 
 ## Prochaine action exacte
