@@ -251,14 +251,11 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
           // `resolveProtocoleDiffuse` rend `null` quand aucun protocole n'est
           // diffusé : le patient a beau déclarer « oui », il n'y a rien à
           // rattacher, et inventer un identifiant serait pire que l'absence.
-          const diffuse = payload.rattacheAuProgramme === 'oui'
-            ? await resolveProtocoleDiffuse(patient.idPatient)
-            : null;
-          association = {
-            protocolDraftId: diffuse?.protocolDraftId ?? null,
-            debutPriseLe,
-            debutSymptomesLe,
-          };
+          // La lecture passe par le repli, protégée comme lui : en échec, le
+          // signalement est capturé sans programme, jamais perdu.
+          association = payload.rattacheAuProgramme === 'oui'
+            ? await repli()
+            : { protocolDraftId: null, debutPriseLe, debutSymptomesLe };
         }
       }
       const orientation = orienterEffetIndesirable(severite);
