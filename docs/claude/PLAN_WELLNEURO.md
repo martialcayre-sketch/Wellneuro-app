@@ -437,6 +437,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : lettre j ; un module publié exige un contrat, pas seulement un index consommé ; clauses CF-1, NF-1, NU-1, PF-0, DV-0 à nommer dans j.
 - **Critère de fin** : garde de dépendance verte ; module lu par un premier lecteur hors biologie.
 - **Mise à jour (2026-10-15)** : j écrite par D-306 : module publié = entrée publiée, tables, drapeaux, un lecteur hors domaine ; imports directs en dérogations datées ; clauses PF-0, CF-1, NF-1, NU-1, DV-0 ; garde = banc à liste fermée des imports de la biologie avec J3-bioflow, K-19 général au palier 2 ; porte 12 levée au merge. Le critère « garde de dépendance verte » se lit : banc BioFlow vert.
+- **Mise à jour (2026-10-17)** : J3-bioflow livré en une PR, sans migration : entrée publiée `biology-library/publie.ts` (fichiers, 25 tables, 6 drapeaux) ; premier lecteur hors biologie, la route de clôture d'un dossier (`patients/cycle-de-vie`), converti à l'entrée seule ; banc `bioflowPublie.guard.test.ts` vert : 20 dérogations datées du 2026-10-17 sous plafond figé, import neuf rouge.
 
 #### F38 · q et J2-med : aperçu médecin tracé, remise au patient
 - **Identifiant, piste** : lettre q ; trackc.

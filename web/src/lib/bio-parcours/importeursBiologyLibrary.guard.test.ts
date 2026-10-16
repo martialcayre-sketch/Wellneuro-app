@@ -68,7 +68,8 @@ const IMPORTEURS_ADMIS = [
   'web/src/app/api/praticien/fil/route.ts',
   // Clôture et désactivation d'un dossier ([[D-282]] §9) : le module
   // `lectureDemandee` seul, qui compte les travaux de lecture ouverts —
-  // aucune valeur, aucun libellé lu.
+  // aucune valeur, aucun libellé lu. Lu par l'entrée publiée `publie`
+  // depuis le 2026-10-17 : premier lecteur hors biologie ([[D-306]] §4).
   'web/src/app/api/praticien/patients/cycle-de-vie/route.ts',
   'web/src/app/api/praticien/patients/route.ts',
   'web/src/app/api/praticien/protocoles/versions/route.ts',

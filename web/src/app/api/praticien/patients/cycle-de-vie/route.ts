@@ -9,7 +9,7 @@ import {
   DELAI_TRANSACTION_CLOTURE_MS,
   MESSAGE_LECTURE_EN_COURS,
   RAISON_LECTURE_EN_COURS,
-} from '@/lib/biology-library/import/lectureDemandee';
+} from '@/lib/biology-library/publie'; // entrée publiée de BioFlow, premier lecteur hors biologie (D-306 §4)
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';

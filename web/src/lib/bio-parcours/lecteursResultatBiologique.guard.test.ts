@@ -28,6 +28,10 @@ const ACCES_ADMIS = [
   'web/src/lib/biology-library/annulations.ts',
   // Seul chemin d'un import vers les résultats : la décision du praticien.
   'web/src/lib/biology-library/import/decisions.ts',
+  // L'entrée publiée de BioFlow ([[D-306]] §1) NOMME la table parmi celles
+  // dont le module est propriétaire ; elle n'y accède pas. Ses ré-exports sont
+  // fermés par `bioflowPublie.guard.test.ts`.
+  'web/src/lib/biology-library/publie.ts',
   // Portes biologiques des assiettes ([[D-245]]).
   'web/src/lib/clinical/portesBiologiquesService.ts',
   // Effacement du dossier (droit à l'effacement) : supprime, ne lit pas.
