@@ -26,9 +26,19 @@ set -euo pipefail
 # 2026-08-31). Le build, lui, tourne dans un conteneur de build aux limites
 # bien plus larges, et `next build` dépasse largement 384 MB — les
 # déploiements du 2026-08-31 23:29 ont tous échoué en OOM sur ce plafond
-# hérité. Le build revient donc au réglage mémoire par défaut, éprouvé ;
-# le plafond ne vaut que pour le runtime.
+# hérité. Le plafond runtime est donc retiré du build ; il ne vaut que pour
+# le runtime.
+#
+# ET LE RÉGLAGE PAR DÉFAUT NE SUFFIT PLUS (2026-10-17). La vérification des
+# types de `next build` dépasse le tas par défaut du conteneur de build
+# (environ 2 Go) : deux déploiements de 20b6f865 (#1508) ont échoué en OOM à
+# « Linting and checking validity of types », et le même build plafonné à
+# 2 048 Mo échoue en local aussi sur 363285cf, le commit en service juste
+# avant — la limite était atteinte, pas franchie par un lot. Le build reçoit
+# donc un tas de 4 Go. Ce réglage n'est PAS hérité par le runtime : il ne vit
+# que dans ce script, et les conteneurs web gardent leurs 384 Mo.
 unset NODE_OPTIONS
+export NODE_OPTIONS=--max-old-space-size=4096
 
 # LA RELEASE SE GRAVE ICI, PARCE QU'ELLE N'EXISTE QU'ICI.
 #
