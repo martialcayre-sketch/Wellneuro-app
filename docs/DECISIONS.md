@@ -1419,7 +1419,7 @@ est une chaîne libre, sans contrainte.
 - *Envoi* (§3) : un **geste unique au cockpit** — liste des dossiers
   éligibles (en cours, accès à l'espace, sans accusé), aperçu, envoi confirmé
   en une fois, consigné au dossier.
-- *PR 1* (#à venir) : le texte au registre ; l'accueil (conditions seules à un
+- *PR 1* (#1502) : le texte au registre ; l'accueil (conditions seules à un
   nouveau patient majeur, rien à un patient suivi) ; la page des conditions
   et son bouton, accusé par POST au clic, sans trace `presente` ; le filet au
   dépôt (§4) ; la route de lecture refuse la clé tant que le drapeau est
