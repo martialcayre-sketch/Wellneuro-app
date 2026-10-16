@@ -214,7 +214,7 @@ export function ValidationEffetIndesirable({
           <fieldset className="flex flex-wrap gap-x-4 gap-y-1">
             <legend className="text-xs text-muted-foreground mb-1">
               {sansElement
-                ? 'Aménagement — dans la prochaine version, rien ne repart à l’identique ni augmenté'
+                ? 'Aménagement des compléments — à appliquer dans la prochaine version : aucun ne repart à l’identique ni augmenté'
                 : 'Aménagement — l’élément ne repart jamais à l’identique ni augmenté'}
             </legend>
             {AMENAGEMENTS.map(a => (
