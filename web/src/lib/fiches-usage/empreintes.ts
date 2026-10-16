@@ -13,3 +13,19 @@ import { createHash } from 'node:crypto';
 export function empreinteTexte(texte: string): string {
   return createHash('sha256').update(texte, 'utf8').digest('hex');
 }
+
+/**
+ * Les rubriques d'une version rangée en base, chacune avec l'empreinte de son
+ * texte et ses actes — de quoi juger son état (`etatDeLaVersion`). Une valeur
+ * qui n'est pas un texte — la base l'interdit par trigger — prend l'empreinte
+ * du texte vide : elle ne peut jamais paraître validée, et la décision refuse
+ * d'y poser un acte (`contenu_illisible`).
+ */
+export function rubriquesLues<A extends { rubrique: string }>(contenu: unknown, actes: readonly A[]) {
+  const objet = typeof contenu === 'object' && contenu !== null && !Array.isArray(contenu) ? (contenu as Record<string, unknown>) : {};
+  return Object.entries(objet).map(([rubrique, texte]) => ({
+    rubrique,
+    empreinte: empreinteTexte(typeof texte === 'string' ? texte : ''),
+    actes: actes.filter(a => a.rubrique === rubrique),
+  }));
+}
