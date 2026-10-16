@@ -39,17 +39,38 @@ const TYPE_COMPLEMENT: ProtocolActionType = 'supplement_exploration';
  */
 const TYPES_NON_DESIGNABLES: readonly string[] = ['medical_referral', 'biological_exploration'] satisfies ProtocolActionType[];
 
-type ActionProgramme = { actionId: string; type: string; title: string };
+type ActionProgramme = { actionId: string; type: string; title: string; interventionStatus?: string };
 
 function designable(action: ActionProgramme): boolean {
   return !TYPES_NON_DESIGNABLES.includes(action.type);
 }
 
-/** Les éléments que le patient peut désigner. */
+/**
+ * Les éléments désignables d'un programme : ceux que le praticien peut
+ * désigner dans son avis (D-281 §5), et que la pause peut viser.
+ */
 export function elementsDesignables(actions: readonly ActionProgramme[]): { actionId: string; title: string }[] {
   return actions
     .filter(designable)
     .map(action => ({ actionId: action.actionId, title: action.title }));
+}
+
+/**
+ * Les éléments que le PATIENT peut désigner : les désignables, moins les
+ * interventions NON FERMES — différée, écartée, pas indiquée, en attente du
+ * bilan (`D-056`). Le portail lui dit, sur la même page, qu'il ne les prend
+ * pas (arbitrage du responsable du 2026-10-16, D-281 §2). Une action sans
+ * statut (contrat antérieur à V4) reste désignable : c'est ce qu'il prend.
+ *
+ * Retirées de SA liste seulement : le praticien peut toujours les désigner
+ * (il sait si le patient en a pris une quand même), et la pause des
+ * compléments les couvre encore. Le patient qui en a pris une répond « Un
+ * autre produit » : tous les compléments passent en pause — plus large,
+ * jamais moins.
+ */
+export function elementsDesignablesParLePatient(actions: readonly ActionProgramme[]): { actionId: string; title: string }[] {
+  return elementsDesignables(actions.filter(action =>
+    action.interventionStatus === undefined || action.interventionStatus === 'active'));
 }
 
 /**

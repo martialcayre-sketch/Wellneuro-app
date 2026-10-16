@@ -2424,7 +2424,19 @@ version qui suit un verdict « impliqué » est l'aménagement du praticien ;
 (b) après ce verdict, l'élément reste marqué « en pause » **sans texte** — les
 deux textes du §4 disent l'attente, celui de l'avis rendu se rédige et se
 signe à l'étape 4 (fait : signé le 2026-10-14, §4, servi par la seconde PR
-de l'étape 4). **Préalables à la signature (étape 5)** : la garde de
+de l'étape 4). **La liste est celle que le patient voit** (tranché par le
+responsable le 2026-10-16, sur scénarios, aux restes de l'étape 4) : une
+intervention non ferme — différée, écartée, pas indiquée, en attente du bilan
+([[D-056]]) — n'est pas proposée au patient ; le praticien peut toujours la
+désigner dans son avis, et la pause des compléments la couvre encore — le
+patient qui en a pris une répond « un autre produit ». Un programme diffusé
+que le portail ne sert pas (« indisponible ») se désigne **sans liste** :
+« Je ne sais pas » ou « un autre produit », qui rattachent comme les autres ;
+de même quand aucune intervention ferme ne reste à désigner. Écarté : le
+formulaire d'avant sur un programme indisponible (un adulte qui ne sait pas
+sortirait de la règle). La Boussole et la fiche d'assiette d'un élément en
+pause restent servies, marquées « en pause » avec le texte signé de
+l'élément ; écarté : les masquer pendant l'attente. **Préalables à la signature (étape 5)** : la garde de
 diffusion du §3 (sans elle, (a) ferait disparaître en silence une pause en
 attente), le texte de l'avis rendu, et le remplacement du producteur de la
 règle livrée, qui bloquerait tout dossier dont un signalement vise un

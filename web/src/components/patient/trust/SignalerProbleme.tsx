@@ -74,7 +74,10 @@ export function SignalerProbleme({
    * ([[D-281]] §2), servis par `GET /api/portail/trust/etat` — l'orientation
    * vers le médecin n'y figure jamais. Présents, ils remplacent la question
    * « fait-il partie du programme ? » ; `null` (dossier mineur ou sans date,
-   * aucun programme diffusé), le formulaire reste celui d'avant.
+   * aucun programme diffusé), le formulaire reste celui d'avant. Une liste
+   * VIDE (programme non servi au portail, aucune intervention ferme) pose la
+   * question sans liste : « Je ne sais pas » ou « Un autre produit »
+   * (arbitrage du responsable du 2026-10-16).
    */
   elementsProgramme?: { actionId: string; title: string }[] | null;
   /** La version du programme dont viennent ces éléments, renvoyée telle quelle au dépôt. */
@@ -188,7 +191,7 @@ export function SignalerProbleme({
   }
 
   if (parcours === 'effet_indesirable') {
-    const designationDemandee = associationDisponible && (elementsProgramme?.length ?? 0) > 0;
+    const designationDemandee = associationDisponible && elementsProgramme !== null;
     return (
       <form
         className="space-y-3"
