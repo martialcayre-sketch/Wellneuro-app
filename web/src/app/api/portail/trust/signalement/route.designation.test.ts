@@ -193,6 +193,40 @@ describe('POST signalement — désignation d’un élément (D-281 §2)', () =>
     expect(programmeDiffuse).not.toHaveBeenCalled();
   });
 
+  // LE FORMULAIRE D'AVANT : « oui » au programme vise le programme diffusé ; sa
+  // lecture en échec ne fait plus perdre le signalement (500 avant le correctif).
+  // Deux entrées dans ce chemin : un formulaire sans désignation, et une
+  // désignation fermée (dossier mineur ou sans date) malgré un rattachement envoyé.
+  const ENTREES_FORMULAIRE_AVANT = [
+    ['sans désignation', {}, () => undefined],
+    ['désignation fermée', { rattachement: 'element', elementActionId: 'a-magnesium' },
+      () => designationOuverte.mockResolvedValue(false)],
+  ] as const;
+
+  it.each(ENTREES_FORMULAIRE_AVANT)('formulaire d’avant (%s), « oui » : le signalement vise le programme diffusé, sans rattachement', async (_, champs, preparer) => {
+    preparer();
+    const res = await POST(request({ ...SIGNALEMENT, ...champs, rattacheAuProgramme: 'oui' }));
+    expect(res.status).toBe(200);
+    expect(ecrit()).toMatchObject({ protocolDraftId: 'draft-1' });
+    expect(ecrit()).not.toHaveProperty('rattachement');
+  });
+
+  it.each(ENTREES_FORMULAIRE_AVANT)('formulaire d’avant (%s), lecture du programme en échec : capturé sans programme, jamais perdu', async (_, champs, preparer) => {
+    preparer();
+    resolveProtocoleDiffuse.mockRejectedValue(new Error('base indisponible'));
+    const res = await POST(request({ ...SIGNALEMENT, ...champs, rattacheAuProgramme: 'oui' }));
+    expect(res.status).toBe(200);
+    expect(ecrit()).toMatchObject({ protocolDraftId: null });
+    expect(notifierPraticienSignalement).toHaveBeenCalled();
+  });
+
+  it('formulaire d’avant, « non » : rien n’est rattaché, le programme n’est pas lu', async () => {
+    const res = await POST(request({ ...SIGNALEMENT, rattacheAuProgramme: 'non' }));
+    expect(res.status).toBe(200);
+    expect(ecrit()).toMatchObject({ protocolDraftId: null });
+    expect(resolveProtocoleDiffuse).not.toHaveBeenCalled();
+  });
+
   it('drapeau absent : aucune association, la désignation n’est même pas consultée', async () => {
     delete process.env.WN_EI_INTERRUPTION;
     const res = await POST(request({ ...SIGNALEMENT, rattachement: 'element', elementActionId: 'a-magnesium' }));
