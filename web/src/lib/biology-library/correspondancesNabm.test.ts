@@ -273,6 +273,17 @@ describe('deciderCorrespondance — signer', () => {
     expect(prisma.biologyAnalyteNabmJournal.create).not.toHaveBeenCalled();
   });
 
+  it('attente du verrou de l’ANALYTE épuisée (autre geste en cours) : etat_divergent, pas import_en_cours', async () => {
+    prisma.$executeRaw.mockImplementation(async (sql: TemplateStringsArray) => {
+      if (sql.join('?').includes('biology_analyte_nabm_verrouiller')) {
+        throw Object.assign(new Error('échec'), { code: '55P03' });
+      }
+      return 0;
+    });
+    expect(await deciderCorrespondance(SIGNER)).toEqual({ ok: false, raison: 'etat_divergent' });
+    expect(prisma.biologyAnalyteNabmJournal.create).not.toHaveBeenCalled();
+  });
+
   it('rend la date RELUE en base, pas celle du serveur', async () => {
     const resultat = await deciderCorrespondance(SIGNER);
     expect(resultat.ok && resultat.correspondance.verifieLe).toBe(DATE_BASE.toISOString());

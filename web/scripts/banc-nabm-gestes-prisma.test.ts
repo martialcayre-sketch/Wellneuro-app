@@ -27,7 +27,9 @@
 //      `biology_catalog_versions_courantes`, celui de `prisma/importNabm.ts`)
 //      ATTEND sa fin avant de lire le millésime ;
 //   8. un import qui dure : l'attente bornée (3 s) rend `import_en_cours`,
-//      rien n'est écrit, aucune requête ne reste en file.
+//      rien n'est écrit, aucune requête ne reste en file ;
+//   9. un autre geste tient l'analyte : son attente épuisée rend
+//      `etat_divergent`, jamais `import_en_cours`.
 //
 // ÉCRIT EN BASE ET COMMET : base NOMMÉE (`WN_NABM_GESTES_BANC_BASE`) et
 // LOCALE. Le journal est en ajout seul et sa clé vers l'analyte est RESTRICT :
@@ -322,6 +324,22 @@ async function main() {
     );
     assert.equal(enAttente[0].n, 0, 'aucune requête du geste ne doit rester en file après le refus');
     console.log('ok 8 — import qui dure : « import_en_cours » au bout de 3 s, rien d’écrit, aucune requête en file');
+
+    // 9. Un autre geste tient l'analyte : son attente épuisée ne se dit pas
+    //    « import » (revue CodeRabbit de #1496).
+    await verrou.query('BEGIN');
+    await verrou.query('SELECT pg_advisory_xact_lock(292, hashtext($1))', [analyteConstat]);
+    const enVol9 = deciderConstat({ analyteCode: analyteConstat, decision: 'constater', millesimeVu: millesime, praticien: PRATICIEN });
+    let k9: Awaited<typeof enVol9> | 'bloque';
+    try {
+      k9 = await Promise.race([enVol9, new Promise<'bloque'>(r => setTimeout(() => r('bloque'), 10_000))]);
+    } finally {
+      await verrou.query('COMMIT');
+      await Promise.allSettled([enVol9]);
+    }
+    assert.deepEqual(k9, { ok: false, raison: 'etat_divergent' });
+    assert.equal((await journal(c, analyteConstat)).length, avant8);
+    console.log('ok 9 — analyte tenu par un autre geste : « etat_divergent » au bout de 3 s, rien d’écrit');
   } finally {
     try {
       await verrou.query('ROLLBACK').catch(() => {});

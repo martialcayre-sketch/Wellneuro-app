@@ -42,7 +42,9 @@ technique. ».
   l'import voit toute signature commise par l'application (une écriture SQL
   hors d'elle ne prend pas ce verrou). L'attente est bornée à 3 s
   (`lock_timeout`) : au-delà, le geste est refusé en `import_en_cours`, rien
-  n'est écrit, et la connexion n'est pas retenue pendant l'import. Puis le
+  n'est écrit, et la connexion n'est pas retenue pendant l'import. L'attente
+  épuisée du verrou de l'analyte (un autre geste en cours) se dit
+  `etat_divergent`, jamais « import » (revue CodeRabbit). Puis le
   verrou consultatif de l'analyte (celui des triggers), pour que les refus
   d'exclusion se disent en raisons plutôt qu'en erreur de la base. Les
   transactions sont en READ COMMITTED explicite, le seul niveau que la

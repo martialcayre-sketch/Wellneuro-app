@@ -272,8 +272,20 @@ class RefusGeste<R extends string> extends Error {
  *  l'abandon de la transaction par Prisma (5 s) — revue du lot, P2-1. */
 async function verrouillerGeste(tx: Prisma.TransactionClient, analyteCode: string): Promise<void> {
   await tx.$executeRaw`SET LOCAL lock_timeout = '3s'`;
-  await tx.$executeRaw`LOCK TABLE biology_catalog_versions_courantes IN SHARE MODE`;
-  await tx.$executeRaw`SELECT public.biology_analyte_nabm_verrouiller(${analyteCode})`;
+  // Chaque attente épuisée dit SON verrou (revue CodeRabbit de #1496) : la
+  // table des versions, c'est un import ; l'analyte, c'est un autre geste.
+  await attendre(tx.$executeRaw`LOCK TABLE biology_catalog_versions_courantes IN SHARE MODE`, 'import_en_cours');
+  await attendre(tx.$executeRaw`SELECT public.biology_analyte_nabm_verrouiller(${analyteCode})`, 'etat_divergent');
+}
+
+/** Une attente de verrou épuisée devient le refus nommé ; le reste remonte. */
+async function attendre(requete: Promise<unknown>, siEpuisee: 'import_en_cours' | 'etat_divergent') {
+  try {
+    await requete;
+  } catch (err) {
+    if (estAttenteEpuisee(err)) throw new RefusGeste(siEpuisee);
+    throw err;
+  }
 }
 
 /** L'attente d'un verrou a dépassé `lock_timeout` (SQLSTATE 55P03). */
@@ -287,18 +299,18 @@ function estAttenteEpuisee(err: unknown): boolean {
 }
 
 /** Exécute un geste dans sa transaction ; un `RefusGeste` l'annule et devient
- *  un refus, l'attente épuisée d'un verrou devient `import_en_cours` (le seul
- *  verrou tenu longtemps est celui de l'import), toute autre erreur remonte
+ *  un refus. Une attente épuisée APRÈS les deux verrous (ligne tenue par un
+ *  autre écrivain) devient `etat_divergent` ; toute autre erreur remonte
  *  (erreur technique). READ COMMITTED explicite : la fonction de verrou de la
  *  migration refuse tout autre niveau (revue du lot, P2-2). */
 async function geste<T, R extends string>(
   corps: (tx: Prisma.TransactionClient) => Promise<T>,
-): Promise<T | { ok: false; raison: R | 'import_en_cours' }> {
+): Promise<T | { ok: false; raison: R | 'import_en_cours' | 'etat_divergent' }> {
   try {
     return await prisma.$transaction(corps, { isolationLevel: 'ReadCommitted' });
   } catch (err) {
     if (err instanceof RefusGeste) return { ok: false, raison: err.raison as R };
-    if (estAttenteEpuisee(err)) return { ok: false, raison: 'import_en_cours' };
+    if (estAttenteEpuisee(err)) return { ok: false, raison: 'etat_divergent' };
     throw err;
   }
 }

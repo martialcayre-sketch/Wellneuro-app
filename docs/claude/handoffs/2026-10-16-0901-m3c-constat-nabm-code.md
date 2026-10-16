@@ -30,7 +30,8 @@ Le code consommateur de la migration `20261016100000_nabm_journal_constats_v1` :
 
 - Constat de production de la PR 1, par conteneur en lecture seule : migration appliquée, `migrate status` à jour (113), RLS sans politique, douze triggers armés (trois différés), 0 journal, 0 constat, 5 signatures intactes ; dernier déploiement = fcb66bb0.
 - Vitest des fichiers touchés : verts (699) ; onze mutations (dérivation, catalogue, écrivain, écran, route) les font rougir.
-- Banc de l'écrivain contre PostgreSQL (base locale de la migration courante) : vert, 9 cas (0 à 8) ; six mutations de l'écrivain le font rougir, dont l'attente non bornée (le banc relâche le verrou au bout de 10 s et échoue) ; une septième (date du constat non relue) survit au banc quand les deux horloges tombent sur la même milliseconde, et rougit le Vitest.
+- Banc de l’écrivain contre PostgreSQL (base locale de la migration courante) : vert, 10 cas (0 à 9) ; six mutations de l'écrivain le font rougir, dont l'attente non bornée (le banc relâche le verrou au bout de 10 s et échoue) ; une septième (date du constat non relue) survit au banc quand les deux horloges tombent sur la même milliseconde, et rougit le Vitest.
+- Revue CodeRabbit (1744fb91) : un commentaire, fondé et corrigé — l'attente épuisée du verrou de l'analyte se disait « import en cours » ; chaque verrou nomme désormais son refus (table des versions ⇒ `import_en_cours`, analyte ⇒ `etat_divergent`), cas 9 du banc.
 - Revue `wn-reviewer` : GO avec réserves, aucun P0/P1 ; quatre P2 corrigés dans le lot — attente du verrou bornée à 3 s (`lock_timeout`, refus `import_en_cours`), READ COMMITTED explicite, prédicat `constatValable` écrit une fois dans `remboursable.ts`, portée de R2 précisée (« par l'application »).
 - `tsc`, T1 complet (`npm run check`, matrice de consommation régénérée) verts ; T2 (`test:worktree -- --fast`) vert avant les corrections de revue (Vitest 12 898, E2E 271), rejoué après : voir la PR.
 
