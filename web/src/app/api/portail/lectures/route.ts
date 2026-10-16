@@ -10,6 +10,9 @@ import { fichesALire } from '@/lib/fiches-assiette/servicePatient';
 import { lettreAdressagePatientOuverte } from '@/lib/correspondance/lettreAdressageRemise';
 import { lettreALire } from '@/lib/correspondance/lettreServicePatient';
 import { lecturesAttendues, type EspeceLecture, type LectureAttendue } from '@/lib/portail/lecturesAttendues';
+import { lectureProtocoleOuverte } from '@/lib/portail/lectureProtocole';
+import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
+import { LONGUEUR_CYCLE_REF } from '@/lib/protocol/vuePatientSurLeFil';
 import { logger } from '@/lib/observability/logger';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -227,10 +230,49 @@ export async function GET(req: Request): Promise<NextResponse<PortailLecturesRes
   }
 }
 
-const ESPECES: readonly EspeceLecture[] = ['bilan', 'synthese', 'fiche_assiette', 'lettre_adressage'];
+/**
+ * Le protocole se CONSIGNE mais ne s'ATTEND pas : il n'entre pas au fil du jour
+ * ([[D-315]] §3), donc pas dans `EspeceLecture`, qui est l'espèce des tâches.
+ */
+type EspeceConsignee = EspeceLecture | 'protocole';
 
-function especeValide(valeur: unknown): valeur is EspeceLecture {
+const ESPECES: readonly EspeceConsignee[] = ['bilan', 'synthese', 'fiche_assiette', 'lettre_adressage', 'protocole'];
+
+function especeValide(valeur: unknown): valeur is EspeceConsignee {
   return typeof valeur === 'string' && (ESPECES as readonly string[]).includes(valeur);
+}
+
+function texteNonVide(valeur: unknown): valeur is string {
+  return typeof valeur === 'string' && valeur.trim() !== '';
+}
+
+/**
+ * La diffusion du protocole que l'accueil sert ([[D-315]] §2), ou `null` :
+ * surface fermée par `WN_PORTAIL_LECTURE_PROTOCOLE`, aucun protocole diffusé,
+ * ou version vue qui n'est plus celle en vigueur.
+ *
+ * LE NAVIGATEUR NE CONNAÎT PAS L'IDENTIFIANT DE L'APPROBATION, et c'est voulu :
+ * la route du protocole ne lui envoie que `cycleRef`, opaque et tronquée. Il
+ * renvoie donc la `cycleRef` reçue avec la vue ; le serveur la compare à la
+ * diffusion en vigueur et écrit l'identifiant qu'il résout lui-même. Une
+ * `cycleRef` exacte prouve que ce navigateur a reçu la vue servie : elle n'est
+ * envoyée qu'avec elle.
+ *
+ * DEUX LIMITES ASSUMÉES ([[D-315]], amendement du 2026-10-16). (1) La règle
+ * « servi » de la route du protocole (rejeu de la carte, contrat, fin de
+ * cycle) n'est pas rejouée ici : une page reçue avant qu'un protocole ne
+ * devienne indisponible peut encore consigner sa diffusion — l'effet reste sur
+ * la trace du patient, pour son propre protocole. (2) Un même brouillon
+ * ré-approuvé garde sa `cycleRef` : une page ouverte sur l'ancienne diffusion
+ * consigne la nouvelle, au contenu identique. Pour cette espèce, le refus
+ * « publié entre l'affichage et l'envoi » du POST ne vaut que si le brouillon
+ * a changé.
+ */
+async function diffusionLue(idPatient: string, cycleRef: string): Promise<string | null> {
+  if (!lectureProtocoleOuverte()) return null;
+  const diffuse = await resolveProtocoleDiffuse(idPatient);
+  if (!diffuse) return null;
+  return diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF) === cycleRef ? diffuse.approbationId : null;
 }
 
 /*
@@ -275,27 +317,35 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
     return echec('corps_invalide', 'Requête illisible.', 400);
   }
 
-  const { espece, idObjet } = (corps ?? {}) as { espece?: unknown; idObjet?: unknown };
-  if (!especeValide(espece) || typeof idObjet !== 'string' || idObjet.trim() === '') {
+  const { espece, idObjet, cycleRef } = (corps ?? {}) as { espece?: unknown; idObjet?: unknown; cycleRef?: unknown };
+  // Le protocole se désigne par sa `cycleRef`, les documents par leur
+  // identifiant de version (voir `diffusionLue`).
+  if (!especeValide(espece) || !(espece === 'protocole' ? texteNonVide(cycleRef) : texteNonVide(idObjet))) {
     return echec('corps_invalide', 'Requête incomplète.', 400);
   }
 
   try {
-    let servis: string[];
-    if (espece === 'fiche_assiette') {
-      // Surface fermée : aucune fiche servie, donc un 404 comme pour les autres.
-      servis = ((await fichesServies(garde.patient.idPatient)) ?? []).map(fiche => fiche.id);
-    } else if (espece === 'lettre_adressage') {
-      servis = ((await lettresServies(garde.patient.idPatient)) ?? []).map(lettre => lettre.id);
+    let idConsigne: string | null;
+    if (espece === 'protocole') {
+      idConsigne = await diffusionLue(garde.patient.idPatient, cycleRef as string);
     } else {
-      const documents = await documentsCourants(garde.patient.idPatient);
-      servis =
-        espece === 'bilan'
-          ? documents.bilansTransmis.map(b => b.id)
-          : (documents.synthesesPubliees ?? []).map(s => s.id);
+      let servis: string[];
+      if (espece === 'fiche_assiette') {
+        // Surface fermée : aucune fiche servie, donc un 404 comme pour les autres.
+        servis = ((await fichesServies(garde.patient.idPatient)) ?? []).map(fiche => fiche.id);
+      } else if (espece === 'lettre_adressage') {
+        servis = ((await lettresServies(garde.patient.idPatient)) ?? []).map(lettre => lettre.id);
+      } else {
+        const documents = await documentsCourants(garde.patient.idPatient);
+        servis =
+          espece === 'bilan'
+            ? documents.bilansTransmis.map(b => b.id)
+            : (documents.synthesesPubliees ?? []).map(s => s.id);
+      }
+      idConsigne = servis.includes(idObjet as string) ? (idObjet as string) : null;
     }
 
-    if (!servis.includes(idObjet)) {
+    if (idConsigne === null) {
       // 404 et non 403 : rien n'est révélé du dossier d'autrui. « Ce document
       // n'est pas celui que vous lisez » couvre les trois cas — autre dossier,
       // version dépassée, surface fermée — sans dire lequel.
@@ -304,7 +354,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
 
     try {
       await prisma.portailLecturePatient.create({
-        data: { idPatient: garde.patient.idPatient, espece, idObjet },
+        data: { idPatient: garde.patient.idPatient, espece, idObjet: idConsigne },
       });
     } catch (erreur) {
       // `P2002` — déjà consigné. Ce n'est pas une erreur : c'est le résultat.

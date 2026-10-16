@@ -21,6 +21,7 @@ import { isC5Enabled } from '@/lib/food-compass/featureFlag';
 import { resolvePatientFoodCompassView } from '@/lib/food-compass/patientReference';
 import type { PatientFoodCompassSafeView } from '@/lib/food-compass/patientSafe';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
+import { lectureProtocoleOuverte } from '@/lib/portail/lectureProtocole';
 
 // Vue patient du protocole diffusé actif (C2A LOT-05, compagnon minimal). DÉRIVÉE
 // À LA VOLÉE côté serveur (§8.3) : le patient ne lit jamais `protocol_drafts`.
@@ -99,8 +100,34 @@ type GetResponse =
        * seulement (§6).
        */
       pauses?: ElementEnPause[];
+      /**
+       * LE JOURNAL DE LECTURE DU PROTOCOLE ([[D-315]], CC-8). Présent seulement
+       * quand `WN_PORTAIL_LECTURE_PROTOCOLE` est ouvert et qu'une vue est
+       * servie : l'accueil replie alors le détail tant que `dejaOuvert` est
+       * faux. Absent, l'accueil sert le protocole déplié, comme avant.
+       */
+      lectureDuDetail?: { dejaOuvert: boolean };
     }
   | ErrorResponse;
+
+/**
+ * Cette diffusion a-t-elle déjà été ouverte par ce patient ? Lu sur sa propre
+ * trace (`portail_lectures_patient`, espèce `protocole`) : c'est le portail qui
+ * lit, jamais une surface praticien. Une lecture en échec rend « non ouverte » :
+ * le détail se présente replié, ce qui ne cache rien — un clic le déplie.
+ */
+async function detailDejaOuvert(idPatient: string, approbationId: string): Promise<boolean> {
+  try {
+    const ligne = await prisma.portailLecturePatient.findUnique({
+      where: { idPatient_espece_idObjet: { idPatient, espece: 'protocole', idObjet: approbationId } },
+      select: { idObjet: true },
+    });
+    return ligne !== null;
+  } catch (err) {
+    console.warn('[portail/protocole GET] lecture du détail illisible', err instanceof Error ? err.name : 'inconnu');
+    return false;
+  }
+}
 
 const JOUR_MS = 24 * 60 * 60 * 1000;
 // Fin de cycle = au-delà de la fenêtre du dernier point d'étape (J21 + tolérance
@@ -225,9 +252,13 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     });
 
     const pauses = await pausesServies(auth.idPatient, diffuse.protocolDraftId, draft.actions);
+    const lectureDuDetail = lectureProtocoleOuverte()
+      ? { dejaOuvert: await detailDejaOuvert(auth.idPatient, diffuse.approbationId) }
+      : undefined;
 
     return NextResponse.json({
       ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses,
+      ...(lectureDuDetail ? { lectureDuDetail } : {}),
     });
   } catch (err) {
     if (err instanceof ProtocolPayloadIntegrityError) {

@@ -297,3 +297,108 @@ describe('PatientCompanionHome', () => {
     expect(screen.queryByText(LIBELLE)).toBeNull();
   });
 });
+
+// LE JOURNAL DE LECTURE DU PROTOCOLE ([[D-315]], CC-8).
+describe('PatientCompanionHome — détail replié', () => {
+  const BOUTON = 'Voir le détail de mon protocole';
+  const vueServie = { ...vue, cycleRef: 'a1b2c3d4e5f60718' };
+  const checkinVide = { ok: true, protocoleDiffuse: true, pointEtapeOuvert: null, points: [] };
+
+  function postsDeLecture(): unknown[] {
+    return (global.fetch as unknown as { mock: { calls: [unknown, RequestInit?][] } }).mock.calls
+      .filter(([url, init]) => String(url) === '/api/portail/lectures' && init?.method === 'POST')
+      .map(([, init]) => JSON.parse(String(init?.body)));
+  }
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('drapeau fermé (aucune lectureDuDetail) : déplié comme avant, aucun bouton, aucune trace', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Petit-déjeuner protéiné')).toBeTruthy();
+    expect(screen.queryByText(BOUTON)).toBeNull();
+    expect(postsDeLecture()).toEqual([]);
+  });
+
+  it('version jamais ouverte : raison et axe lus, actions et critère repliés', async () => {
+    mockFetch(
+      { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, lectureDuDetail: { dejaOuvert: false } },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    const bouton = await screen.findByText(BOUTON);
+    expect(bouton.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByText('Stabiliser vos matins.')).toBeTruthy();
+    expect(screen.getByText(/Sommeil fragmenté, réveils nocturnes/)).toBeTruthy();
+    // Aucune action sans sa phrase d'attente : aucune action du tout.
+    expect(screen.queryByText('Piste fer')).toBeNull();
+    expect(screen.queryByText('En attente de confirmation par votre bilan.')).toBeNull();
+    expect(screen.queryByText('Réveils nocturnes < 2 par nuit à J21.')).toBeNull();
+    expect(postsDeLecture()).toEqual([]);
+  });
+
+  it('ouvrir le détail le déplie et consigne UNE lecture, par la cycleRef affichée', async () => {
+    mockFetch(
+      { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, lectureDuDetail: { dejaOuvert: false } },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    fireEvent.click(await screen.findByText(BOUTON));
+    expect(screen.getByText('Piste fer')).toBeTruthy();
+    expect(screen.getByText('En attente de confirmation par votre bilan.')).toBeTruthy();
+    expect(screen.getByText('Réveils nocturnes < 2 par nuit à J21.')).toBeTruthy();
+    expect(screen.queryByText(BOUTON)).toBeNull();
+    expect(postsDeLecture()).toEqual([{ espece: 'protocole', cycleRef: 'a1b2c3d4e5f60718' }]);
+  });
+
+  it('version déjà ouverte : déplié d’office, aucune nouvelle trace', async () => {
+    mockFetch(
+      { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, lectureDuDetail: { dejaOuvert: true } },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Petit-déjeuner protéiné')).toBeTruthy();
+    expect(screen.queryByText(BOUTON)).toBeNull();
+    expect(postsDeLecture()).toEqual([]);
+  });
+
+  it.each([
+    ['un élément', 'element', TEXTE_PAUSE_ELEMENT],
+    ['les compléments', 'complements', TEXTE_PAUSE_COMPLEMENTS],
+    ['un avis rendu', 'avis_rendu', TEXTE_PAUSE_AVIS_RENDU],
+  ])('une pause (%s) se lit sans clic : déplié d’office, et RIEN n’est consigné', async (_cas, texte, attendu) => {
+    mockFetch(
+      {
+        ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie,
+        lectureDuDetail: { dejaOuvert: false },
+        pauses: [{ actionId: 'a1', texte }],
+      },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText(attendu)).toBeTruthy();
+    expect(screen.queryByText(BOUTON)).toBeNull();
+    expect(postsDeLecture()).toEqual([]);
+  });
+
+  it('au clic, le focus clavier passe aux actions dépliées', async () => {
+    mockFetch(
+      { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, lectureDuDetail: { dejaOuvert: false } },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    fireEvent.click(await screen.findByText(BOUTON));
+    expect(document.activeElement?.textContent).toBe('Vos actions');
+  });
+
+  it('en fin de cycle, rien à déplier : aucun bouton, aucune trace', async () => {
+    mockFetch(
+      { ok: true, protocoleDiffuse: true, finDeCycle: true, vue: vueServie, lectureDuDetail: { dejaOuvert: false } },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText(/terme de ce cycle/)).toBeTruthy();
+    expect(screen.queryByText(BOUTON)).toBeNull();
+    expect(postsDeLecture()).toEqual([]);
+  });
+});

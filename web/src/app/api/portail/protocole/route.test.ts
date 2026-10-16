@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma, reconstructProtocolDraft, resolvePatientFoodCompassView, rejouerCarteDecision } = vi.hoisted(() => ({
   prisma: {
@@ -6,6 +6,7 @@ const { prisma, reconstructProtocolDraft, resolvePatientFoodCompassView, rejouer
     patient: { findUnique: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn() },
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
+    portailLecturePatient: { findUnique: vi.fn() },
   },
   reconstructProtocolDraft: vi.fn(),
   resolvePatientFoodCompassView: vi.fn(),
@@ -334,5 +335,58 @@ describe('GET /api/portail/protocole', () => {
     ]);
     const res = await GET(request(proprioCookie()));
     expect(await res.json()).toMatchObject({ ok: true, protocoleDiffuse: false, vue: null });
+  });
+
+  // LE JOURNAL DE LECTURE DU PROTOCOLE ([[D-315]], CC-8).
+  describe('lectureDuDetail', () => {
+    afterEach(() => {
+      delete process.env.WN_PORTAIL_LECTURE_PROTOCOLE;
+    });
+
+    it('drapeau fermé : absente, et la trace n’est même pas lue', async () => {
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue).not.toBeNull();
+      expect(json).not.toHaveProperty('lectureDuDetail');
+      expect(prisma.portailLecturePatient.findUnique).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['jamais ouverte', null, false],
+      ['déjà ouverte', { idObjet: 'appr_1' }, true],
+    ])('drapeau ouvert, diffusion %s : dejaOuvert = %s, lu sur LA diffusion en vigueur', async (_cas, ligne, attendu) => {
+      process.env.WN_PORTAIL_LECTURE_PROTOCOLE = 'true';
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      prisma.portailLecturePatient.findUnique.mockResolvedValue(ligne);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.lectureDuDetail).toEqual({ dejaOuvert: attendu });
+      expect(prisma.portailLecturePatient.findUnique).toHaveBeenCalledWith({
+        where: { idPatient_espece_idObjet: { idPatient: assignation.idPatient, espece: 'protocole', idObjet: 'appr_1' } },
+        select: { idObjet: true },
+      });
+    });
+
+    it('une trace illisible ne prive pas le patient de son protocole : servi, replié', async () => {
+      process.env.WN_PORTAIL_LECTURE_PROTOCOLE = 'true';
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      prisma.portailLecturePatient.findUnique.mockRejectedValue(new Error('panne'));
+      const res = await GET(request(proprioCookie()));
+      const json = await res.json();
+      expect(res.status).toBe(200);
+      expect(json.vue).not.toBeNull();
+      expect(json.lectureDuDetail).toEqual({ dejaOuvert: false });
+    });
+
+    it('sans protocole servi, rien n’est lu ni annoncé', async () => {
+      process.env.WN_PORTAIL_LECTURE_PROTOCOLE = 'true';
+      mockOwnerAuth();
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json).not.toHaveProperty('lectureDuDetail');
+      expect(prisma.portailLecturePatient.findUnique).not.toHaveBeenCalled();
+    });
   });
 });

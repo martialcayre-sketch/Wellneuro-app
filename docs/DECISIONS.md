@@ -80,6 +80,35 @@ restent sans date ([[D-297]] §3).
 (`docs/DOSSIER_RGPD.md`, rubrique 5, ligne « Journalisation ») : une espèce
 de plus dans `PortailLecturePatient`, mêmes colonnes, conservée avec le
 dossier ([[D-283]] §2) et effacée avec lui.
+
+**Amendement (2026-10-16) — l'accueil replié, la désignation par
+`cycleRef`.** Arbitrages du responsable du 2026-10-16, sur questions à
+options, tous conformes à la recommandation, pris pour le code de J2-cc8 et
+sur la revue P1 de ce code. Le tout sous le drapeau
+`WN_PORTAIL_LECTURE_PROTOCOLE`, éteint jusqu'à ACT-1.
+
+- *Replié* (§1) : restent lus le titre, la raison du protocole et « Ce qu'on
+  travaille » ; les actions (plan, phrase d'attente, pauses) et le critère à
+  trois semaines passent dans le détail. Une action n'apparaît jamais sans sa
+  phrase d'attente.
+- *Libellé* : « Voir le détail de mon protocole ». C'est le seul texte visible
+  ajouté ; la mention « aucun texte patient » de l'en-tête vaut pour les
+  textes d'information (§4), pas pour ce libellé.
+- *Revisite* : une version déjà ouverte s'affiche dépliée d'office ; une
+  nouvelle diffusion repart repliée.
+- *Pause* ([[D-281]]) : si une action est en pause, le protocole s'affiche
+  déplié d'office, pour que le texte signé de la pause se lise sans clic. Ce
+  dépli n'est pas un geste du patient : rien n'est consigné.
+- *Désignation* (§2) : le navigateur ne reçoit pas l'identifiant de la
+  diffusion. Il renvoie la `cycleRef` reçue avec la vue ; le serveur la
+  compare à la diffusion en vigueur et écrit l'identifiant qu'il résout. Une
+  `cycleRef` exacte prouve que la vue a été reçue. Limite assumée : la règle
+  « servi » de la route du protocole (rejeu de la carte, contrat, fin de
+  cycle) n'est pas rejouée à l'écriture ; une page reçue avant qu'un protocole
+  ne devienne indisponible peut encore consigner sa diffusion, pour le seul
+  dossier du patient. Le §2 se lit donc « la diffusion en vigueur dont la vue
+  a été reçue ». Un même brouillon ré-approuvé garde sa `cycleRef` : la
+  lecture se consigne sur la diffusion en vigueur, au contenu identique.
 ### D-314 — BP-12a : les fiches d'usage du besoin 2, une structure signée faite d'identifiants et un texte en base validé rubrique par rubrique ; rédaction par IA hors ligne ; une migration, release-db au rang 4 après EF-3b (LOT-12)
 
 - Date : 2026-10-15

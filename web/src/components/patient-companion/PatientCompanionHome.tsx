@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
@@ -36,6 +36,8 @@ type ProtocoleResponse =
       indisponible?: boolean;
       /** Éléments en pause sur effet indésirable ([[D-281]] §3) ; vide avant la signature. */
       pauses?: ElementEnPause[];
+      /** Journal de lecture du protocole ([[D-315]]) ; absent = drapeau fermé, détail déplié. */
+      lectureDuDetail?: { dejaOuvert: boolean };
     }
   | { ok: false };
 type CheckinResponse =
@@ -52,6 +54,21 @@ export function PatientCompanionHome({ token }: { token: string }) {
   // sur un « oui » explicite.
   const [ceQuiCompteOuvert, setCeQuiCompteOuvert] = useState(false);
   const [comprehensionOuverte, setComprehensionOuverte] = useState(false);
+  // LE DÉTAIL DU PROTOCOLE ([[D-315]] §1, amendement du 2026-10-16). Replié
+  // seulement si la route sert `lectureDuDetail` (drapeau ouvert), que cette
+  // version n'a pas encore été ouverte et qu'aucune action n'est en pause ;
+  // déplié d'office sinon.
+  const [detailDeplie, setDetailDeplie] = useState(true);
+  const lectureEnvoyee = useRef(false);
+  // Le bouton disparaît au clic : le focus clavier passe aux actions dépliées
+  // plutôt que de retomber sur la page.
+  const titreActions = useRef<HTMLParagraphElement>(null);
+  const focusApresDepli = useRef(false);
+  useEffect(() => {
+    if (!detailDeplie || !focusApresDepli.current) return;
+    focusApresDepli.current = false;
+    titreActions.current?.focus();
+  }, [detailDeplie]);
 
   const charger = useCallback(async () => {
     setChargement(true);
@@ -63,6 +80,12 @@ export function PatientCompanionHome({ token }: { token: string }) {
       const dp = (await rp.json()) as ProtocoleResponse;
       const dc = (await rc.json()) as CheckinResponse;
       setProtocole(dp.ok ? dp : null);
+      // UNE PAUSE SUR EFFET INDÉSIRABLE SE LIT SANS CLIC ([[D-281]]) : son texte
+      // signé est dans le détail, donc le détail s'ouvre. Ce dépli n'est pas un
+      // geste du patient, et rien n'est consigné ([[D-315]] §1).
+      setDetailDeplie(
+        !dp.ok || !dp.lectureDuDetail || dp.lectureDuDetail.dejaOuvert || (dp.pauses ?? []).length > 0,
+      );
       setCheckin(dc.ok ? dc : null);
     } catch {
       setProtocole(null);
@@ -158,6 +181,26 @@ export function PatientCompanionHome({ token }: { token: string }) {
     : false;
   const checkinDu = pointOuvert !== null && !dejaRenseigne;
 
+  // LA PREMIÈRE OUVERTURE DU DÉTAIL S'ENREGISTRE ([[D-315]] §1-2). Le
+  // navigateur renvoie la `cycleRef` reçue avec la vue ; le serveur résout la
+  // diffusion et refuse une version qui n'est plus en vigueur. Une fois par
+  // montage, sans message ni erreur visible, comme `ConsignerLecturePortail` :
+  // un échec laisse seulement la version « non ouverte », repliée à la visite
+  // suivante.
+  const deplierDetail = () => {
+    focusApresDepli.current = true;
+    setDetailDeplie(true);
+    if (lectureEnvoyee.current) return;
+    lectureEnvoyee.current = true;
+    void fetch('/api/portail/lectures', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ espece: 'protocole', cycleRef: vue.cycleRef }),
+    }).catch(() => {
+      // Silence délibéré : le patient a ouvert son protocole, rien d'autre.
+    });
+  };
+
   return (
     <PatientCard className="space-y-5">
       <PatientPageHeader
@@ -184,12 +227,26 @@ export function PatientCompanionHome({ token }: { token: string }) {
         </p>
       )}
 
+      {/* REPLIÉ ([[D-315]] §1) : la raison et l'axe restent lus, les actions
+          passent dans le détail — jamais une action sans sa phrase d'attente
+          (`D-056`). Jamais replié sur une pause ([[D-281]]) : voir `charger`. */}
+      {!finDeCycle && !detailDeplie && (vue.actions.length > 0 || vue.followUpCriterion) && (
+        <button
+          type="button"
+          onClick={deplierDetail}
+          aria-expanded={false}
+          className={patientButtonClassName('primary')}
+        >
+          Voir le détail de mon protocole
+        </button>
+      )}
+
       {/* LES ACTIONS — les trois, et plus « la première ». Le constructeur en
           fait saisir jusqu'à trois ; le portail n'en servait qu'une, élue par
           l'ordre d'insertion ([[D-191]]). */}
-      {!finDeCycle && vue.actions.length > 0 && (
+      {!finDeCycle && detailDeplie && vue.actions.length > 0 && (
         <div className="space-y-2.5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+          <p ref={titreActions} tabIndex={-1} className="text-xs font-semibold uppercase tracking-wide text-primary">
             {vue.actions.length > 1 ? 'Vos actions' : 'Votre action'}
           </p>
           {complementsEnPause && (
@@ -231,7 +288,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
           par aucun écran jusqu'ici. C'est ce que le patient et son praticien
           regarderont ensemble : le lui cacher faisait du point d'étape une
           évaluation dont lui seul ignorait la règle. */}
-      {!finDeCycle && vue.followUpCriterion && (
+      {!finDeCycle && detailDeplie && vue.followUpCriterion && (
         <div className="rounded-xl border border-border px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Ce qu’on regardera ensemble à trois semaines
