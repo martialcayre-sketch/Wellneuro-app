@@ -174,8 +174,13 @@ BEGIN
     'INSERT INTO trust_adverse_effect_verdicts (id, id_patient, report_id, verdict, element_action_id, amenagement, rendu_par) VALUES (''x'', ''PAT_CONTRAT_AEV1'', ''aer_nsp'', ''implique'', ''act_contrat_mag'', ''reconduire'', ''p@w.fr'')', 'trust_aev_amenagement_check');
   PERFORM pg_temp.refuse('impliqué sans aménagement', '23514',
     'INSERT INTO trust_adverse_effect_verdicts (id, id_patient, report_id, verdict, element_action_id, rendu_par) VALUES (''x'', ''PAT_CONTRAT_AEV1'', ''aer_nsp'', ''implique'', ''act_contrat_mag'', ''p@w.fr'')', 'trust_aev_coherence_check');
-  PERFORM pg_temp.refuse('impliqué sans élément', '23514',
-    'INSERT INTO trust_adverse_effect_verdicts (id, id_patient, report_id, verdict, amenagement, rendu_par) VALUES (''x'', ''PAT_CONTRAT_AEV1'', ''aer_nsp'', ''implique'', ''retirer'', ''p@w.fr'')', 'trust_aev_coherence_check');
+  -- « Impliqué » SANS ÉLÉMENT est admis depuis la migration
+  -- `20261016110000_saf_ei_avis_implique_sans_element_v1` (D-281 §5,
+  -- arbitrage du 2026-10-16), avec un aménagement : son contrat est
+  -- `trust_aev_implique_sans_element_v1_negatif.sql`. Reste refusé ici :
+  -- sans élément NI aménagement.
+  PERFORM pg_temp.refuse('impliqué sans élément ni aménagement', '23514',
+    'INSERT INTO trust_adverse_effect_verdicts (id, id_patient, report_id, verdict, rendu_par) VALUES (''x'', ''PAT_CONTRAT_AEV1'', ''aer_nsp'', ''implique'', ''p@w.fr'')', 'trust_aev_coherence_check');
   PERFORM pg_temp.refuse('non impliqué avec aménagement', '23514',
     'INSERT INTO trust_adverse_effect_verdicts (id, id_patient, report_id, verdict, amenagement, rendu_par) VALUES (''x'', ''PAT_CONTRAT_AEV1'', ''aer_nsp'', ''non_implique'', ''retirer'', ''p@w.fr'')', 'trust_aev_coherence_check');
   PERFORM pg_temp.refuse('non impliqué avec élément', '23514',

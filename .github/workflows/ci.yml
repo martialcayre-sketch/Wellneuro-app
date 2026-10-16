@@ -843,6 +843,14 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/trust_aer_patient_fige_verdict_v1_negatif.sql
 
+      # Avis « impliqué, élément non identifiable » (D-281 §5, arbitrage du
+      # 2026-10-16) : admis sans élément avec aménagement, jamais sur un
+      # élément désigné par le patient ni sur un signalement délié.
+      - name: SAF-EI avis implique sans element negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/trust_aev_implique_sans_element_v1_negatif.sql
+
       # L'avis contre la modification de son signalement, À DEUX SESSIONS
       # (D-281 §5, passe Codex de #1474) : le contrat ci-dessus voit le refus
       # en série, pas que le FOR SHARE du trigger de l'avis sérialise. Deux
