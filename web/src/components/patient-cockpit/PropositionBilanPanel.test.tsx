@@ -511,7 +511,9 @@ describe('repli de la justification — la frontière', () => {
       'Déjà exploré hors outil',
       'Fatigue rapportée depuis plus de trois mois',
     ]) {
-      expect(screen.getByText(new RegExp(dehors))).toBeTruthy();
+      // `getAll` : la vue par analyte (F50) répète libellés et statuts dans
+      // son propre repli ; la frontière jugée ici est celle de la justification.
+      expect(screen.getAllByText(new RegExp(dehors)).length).toBeGreaterThan(0);
       expect(cache).not.toContain(dehors);
     }
   });
@@ -624,5 +626,48 @@ describe('documents déjà remis — la relecture, et ce qu’elle n’affirme p
       lectureDocumentsPatient: 'ok',
     });
     expect(screen.queryByText(/les plus récentes sont affichées/i)).toBeNull();
+  });
+});
+
+describe('la vue par analyte (D-296 §2, F50)', () => {
+  const analyte = (code: string, libelle: string) => ({
+    code,
+    libelle,
+    validationMedicaleRequise: false,
+    remboursement: { statut: 'non_evalue' as const, conditions: [], codesActesRetenus: [] },
+  });
+
+  it('un analyte cité par trois panels donne une ligne et trois justifications', () => {
+    rendre({
+      lignes: [
+        ligne({ panelCode: 'PANEL_A', libelle: 'Bilan martial', analytes: [analyte('BIO_FERRITINE', 'Ferritine')] }),
+        ligne({
+          panelCode: 'PANEL_B',
+          libelle: 'Fatigue',
+          statut: 'optionnel',
+          analytes: [analyte('BIO_FERRITINE', 'Ferritine')],
+        }),
+        ligne({
+          panelCode: 'PANEL_C',
+          libelle: 'Inflammation',
+          statut: 'non_indique_actuellement',
+          analytes: [analyte('BIO_FERRITINE', 'Ferritine')],
+        }),
+      ],
+    });
+    const vue = screen.getByText(/^Vue par analyte/).closest('details') as HTMLElement;
+    expect(vue.textContent).toContain('Vue par analyte (1 analyse)');
+    const items = within(vue).getAllByRole('listitem');
+    expect(items).toHaveLength(1);
+    const cites = within(items[0]).getByText(/^Cité par/).textContent ?? '';
+    expect(cites).toContain('Bilan martial');
+    expect(cites).toContain('Fatigue');
+    expect(cites).toContain('Inflammation');
+    expect(cites.split(' · ')).toHaveLength(3);
+  });
+
+  it('absente quand le moteur s’abstient', () => {
+    rendre({ motifIndisponible: 'Signature absente.' });
+    expect(screen.queryByText(/^Vue par analyte/)).toBeNull();
   });
 });

@@ -10,6 +10,7 @@ import type { LignePanelProposition, StatutPanel } from '@/lib/biology-library/s
 // crypto-browserify. `vocabulaireStatuts` n'importe rien.
 import { STATUTS_PROPOSES } from '@/lib/biology-library/vocabulaireStatuts';
 import { LABEL_REMBOURSEMENT } from '@/lib/biology-library/libellesRemboursement';
+import { vueParAnalyte } from '@/lib/biology-library/vueParAnalyte';
 import type { StatutChoix } from '@/lib/trust/types';
 
 // Proposition de bilan biologique ([[D-071]]) — panneau présentationnel.
@@ -599,6 +600,40 @@ function FormulaireDeclaration({
   );
 }
 
+/** La proposition par analyte — une ligne par analyse, ses panels en justifications. */
+function VueParAnalyte({ lignes }: { lignes: LignePanelProposition[] }) {
+  const analyses = vueParAnalyte(lignes);
+  if (analyses.length === 0) return null;
+  return (
+    <details className="mt-3 rounded-lg border border-border p-3">
+      <summary className="cursor-pointer text-sm font-medium text-foreground">
+        Vue par analyte ({analyses.length} {analyses.length > 1 ? 'analyses' : 'analyse'})
+      </summary>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Un analyte cité par plusieurs panels est une seule analyse : chaque panel qui le cite
+        en est une justification, avec son statut.
+      </p>
+      <ul className="mt-2 space-y-2">
+        {analyses.map(({ analyte, justifications }) => (
+          <li key={analyte.code} className="text-xs">
+            <p className="font-medium text-foreground">
+              {analyte.libelle} ({LABEL_REMBOURSEMENT[analyte.remboursement.statut]})
+            </p>
+            <p className="text-muted-foreground">
+              Cité par :{' '}
+              {justifications
+                .map(j => `${j.libelle} (${LIBELLES_STATUT[j.statut]})`)
+                .join(' · ')}
+            </p>
+            {/* Pas d'avertissement de validation médicale ici : il ne vit
+                jamais dans un repli, et la ligne du panel le porte déjà. */}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 export function PropositionBilanPanel({
   lignes,
   limites,
@@ -809,6 +844,18 @@ export function PropositionBilanPanel({
             );
           })}
         </ul>
+      )}
+
+      {/*
+        LA MÊME PROPOSITION, PAR ANALYTE ([[D-296]] §2, plan F50). Un analyte
+        cité par plusieurs panels est UNE analyse à plusieurs justifications.
+        La vue regroupe ce que le moteur a rendu ; elle ne décide rien : chaque
+        panel qui cite l'analyte reste nommé avec son statut, aucun n'est filtré.
+        Repliée, pour ne pas doubler la hauteur du panneau : la liste par panel
+        au-dessus porte la déclaration et reste la ligne de geste.
+      */}
+      {!motifIndisponible && lignes.length > 0 && (
+        <VueParAnalyte lignes={lignes} />
       )}
 
       {state === 'error' && (

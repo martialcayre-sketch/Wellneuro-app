@@ -785,6 +785,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non (code seul).
 - **Décisions, textes** : aucune clinique ; aucune règle ni seuil changé (`docs/archive/cadrages/AUDIT_PANELS_BIOLOGIE_2026-10-05.md:179-181`).
 - **Critère de fin** : banc « un analyte cité par trois panels donne une ligne et trois justifications » ; empreinte du chemin documentaire inchangée ; T2.
+- **Mise à jour (2026-10-17)** : livré en une PR, sans migration : dérivation pure `vueParAnalyte` (sortie du moteur intacte) et section repliée « Vue par analyte » du panneau de proposition ; bancs pur et écran du critère ; garde du chemin documentaire inchangée ; T2 joué avant la PR.
 
 **File D : gestes du responsable**
 
