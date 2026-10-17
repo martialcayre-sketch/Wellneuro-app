@@ -13,6 +13,7 @@ vi.mock('@/components/patient/ConsignerLecturePortail', () => ({ ConsignerLectur
 import { FichesRemises } from './FichesRemises';
 import { FicheRemiseLecture } from './FicheRemiseLecture';
 import { MENTION_IA, MENTION_INDISPONIBLE, MENTION_PLUS_ACTUELLE, MENTION_RETIREE } from './textesFiches';
+import { TEXTE_PAUSE_ELEMENT } from '@/lib/trust/pauseEffetIndesirable';
 
 /** Les props de chaque trace montée — le second argument de React est ignoré. */
 const tracesPosees = () => consigner.mock.calls.map(appel => (appel as unknown[])[0]);
@@ -209,5 +210,35 @@ describe('FicheRemiseLecture — la page d’une fiche', () => {
     expect(screen.getByText('Erreur passagère.')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Réessayer/ })).toBeTruthy();
     expect(consigner).not.toHaveBeenCalled();
+  });
+});
+
+// EN PAUSE, JAMAIS MASQUÉE ([[D-281]] §2, arbitrage du 2026-10-16) : la fiche
+// reste dans la liste et se lit, marquée avec le texte signé de l'élément.
+describe('FichesRemises — une assiette en pause', () => {
+  const EN_PAUSE = { ...SERVIE, pause: 'element' };
+
+  it('la liste la garde, avec son lien, et la marque', async () => {
+    repondre(200, { ok: true, fiches: [EN_PAUSE] });
+    render(<FichesRemises token="TOK" />);
+    await laisserCharger();
+    expect(screen.getByText('En pause')).toBeTruthy();
+    expect(screen.getByText(TEXTE_PAUSE_ELEMENT)).toBeTruthy();
+    expect(screen.getByText('Lire la fiche')).toBeTruthy();
+  });
+
+  it('la lecture garde le texte et la marque', async () => {
+    repondre(200, { ok: true, fiches: [EN_PAUSE] });
+    render(<FicheRemiseLecture token="TOK" idRemise="rem_servie" />);
+    await laisserCharger();
+    expect(screen.getByText('En pause')).toBeTruthy();
+    expect(screen.getByText(TEXTE_PAUSE_ELEMENT)).toBeTruthy();
+    expect(screen.getByText('Paragraphe un.')).toBeTruthy();
+  });
+
+  it('sans pause, aucune marque', async () => {
+    render(<FichesRemises token="TOK" />);
+    await laisserCharger();
+    expect(screen.queryByText('En pause')).toBeNull();
   });
 });

@@ -36,8 +36,8 @@ import {
 } from '@/lib/correspondance/lettreAdressageRemise';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 import { interruptionEffetIndesirableActive } from '@/lib/clinical/safetyEffetIndesirableV1';
-import { messageDiffusionEnAttente } from '@/lib/trust/pauseEffetIndesirable';
-import { signalementsEnAttenteDuDossier } from '@/lib/trust/pauseEffetIndesirableServeur';
+import { messageDiffusionEnAttente, type ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
+import { pausesServies, signalementsEnAttenteDuDossier } from '@/lib/trust/pauseEffetIndesirableServeur';
 
 // Validation « pour diffusion » du protocole (C2A LOT-03 Part B). Persiste
 // l'approbation praticien (contrat ProtocolDiffusionApproval), distincte de la
@@ -517,6 +517,14 @@ type GetResponse =
        */
       apercu: ApercuPatientServi | null;
       /**
+       * LES ÉLÉMENTS DE L'APERÇU EN PAUSE sur effet indésirable ([[D-281]] §2,
+       * arbitrage du 2026-10-16), calculés comme au portail (`pausesServies`)
+       * sur la version de l'aperçu : servis et marqués, jamais masqués. Hors
+       * de `apercu`, comme `pauses` hors de la vue signée côté portail. Vide
+       * avant la signature ; absent sans aperçu servi.
+       */
+      pauses?: ElementEnPause[];
+      /**
        * LES FICHES D'ASSIETTE QUE LE CLIC REMETTRAIT ([[D-251]] §7), sur la
        * version ACTIVE comme `apercu` : celles qui partiront, celles déjà
        * remises, et celles qui ne partiront pas, avec leur motif. Son `jeton`
@@ -709,6 +717,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     // d'intervention non ferme y porte donc sa phrase d'attente, et un contenu
     // que le contrat refuse dit pourquoi au lieu de se taire.
     let apercu: ApercuPatientServi | null = null;
+    let actionsDeLApercu: ReturnType<typeof reconstructProtocolDraft>['actions'] | null = null;
     if (activeVersion) {
       const rejeuActif = await rejeuDe(activeVersion);
       if (!rejeuActif.ok) {
@@ -721,6 +730,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       } else {
         try {
           const draftActif = reconstructProtocolDraft(activeVersion.payload, activeVersion.inputHash);
+          actionsDeLApercu = draftActif.actions;
           apercu = apercuContenuPatient({
             decisionCard: rejeuActif.decisionCard,
             protocolDraft: draftActif,
@@ -741,6 +751,26 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
             detail: 'Le contenu de la version active ne se relit pas : aucun aperçu ne peut être montré.',
           };
         }
+      }
+    }
+
+    // LES PAUSES DE L'APERÇU ([[D-281]] §2) : sur la version de l'aperçu, que
+    // `pausesServies` ne recoupe qu'avec les signalements qui la visent — une
+    // version plus récente que celle du signalement est l'aménagement du
+    // praticien, et n'est pas en pause. Une panne de cette lecture LÈVE : un
+    // aperçu sans ses pauses montrerait un élément actif que le portail, sur la
+    // même panne, ne sert pas. Elle CACHE L'APERÇU (`null` : lecture non
+    // aboutie, rien n'est montré), jamais une exception qui emporte le GET.
+    let pauses: ElementEnPause[] | undefined;
+    if (apercu?.ok && activeVersion && actionsDeLApercu) {
+      try {
+        pauses = await pausesServies(idPatient, activeVersion.id, actionsDeLApercu);
+      } catch (erreur) {
+        console.warn(
+          '[praticien/protocoles/diffusion GET] pauses de l’aperçu illisibles :',
+          ...classeEtCode(erreur),
+        );
+        apercu = null;
       }
     }
 
@@ -794,6 +824,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       stale: isApprovalStale(active, activeVersion?.inputHash ?? null),
       servieAuPatient,
       apercu,
+      ...(pauses ? { pauses } : {}),
       fiches,
       // Drapeau fermé : la clé n'existe pas, la réponse est celle d'avant.
       ...(lettreAdressagePatientOuverte() ? { lettre } : {}),

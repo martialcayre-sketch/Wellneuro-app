@@ -4,6 +4,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { ApercuPatientProtocole } from './ApercuPatientProtocole';
 import { buildContenuPatientProtocole } from '@/lib/clinical-engine/contenuPatientProtocole';
 import type { DecisionCard, ProtocolDraft } from '@/lib/clinical-engine/types';
+import {
+  TEXTE_PAUSE_AVIS_RENDU,
+  TEXTE_PAUSE_COMPLEMENTS,
+  TEXTE_PAUSE_ELEMENT,
+} from '@/lib/trust/pauseEffetIndesirable';
 
 // LE DÉFAUT DE CLASSE QUE CE BANC TIENT. `followUpCriterion` a voyagé des mois
 // dans le contrat patient sans qu'aucun écran ne le rende ([[D-191]]), et
@@ -82,5 +87,29 @@ describe('ApercuPatientProtocole', () => {
     const cartes = container.querySelectorAll('.rounded-lg.border');
     expect(cartes[0].textContent).toBe('TITRE-FERMEMINIMAL-FERME');
     expect(cartes[1].textContent).toContain('En attente de confirmation par votre bilan.');
+  });
+});
+
+// LES PAUSES ([[D-281]] §2-4), MARQUÉES COMME SUR L'ÉCRAN PATIENT : « En pause »
+// et le texte signé par élément, celui des compléments une fois au-dessus.
+describe('ApercuPatientProtocole — éléments en pause', () => {
+  const contenu = buildContenuPatientProtocole({ decisionCard: card(), protocolDraft: protocol() });
+
+  it('marque l’élément en pause avec son texte signé, et lui seul', () => {
+    render(<ApercuPatientProtocole contenu={contenu} pauses={[{ actionId: 'a1', texte: 'avis_rendu' }]} />);
+    expect(screen.getAllByText('En pause')).toHaveLength(1);
+    expect(screen.getByText(TEXTE_PAUSE_AVIS_RENDU)).toBeTruthy();
+    expect(screen.getByText('TITRE-FERME')).toBeTruthy();
+  });
+
+  it('le texte des compléments se lit une fois', () => {
+    render(<ApercuPatientProtocole contenu={contenu} pauses={[{ actionId: 'a1', texte: 'complements' }, { actionId: 'a2', texte: 'complements' }]} />);
+    expect(screen.getAllByText(TEXTE_PAUSE_COMPLEMENTS)).toHaveLength(1);
+  });
+
+  it('sans pause, aucune marque', () => {
+    render(<ApercuPatientProtocole contenu={contenu} />);
+    expect(screen.queryByText('En pause')).toBeNull();
+    expect(screen.queryByText(TEXTE_PAUSE_ELEMENT)).toBeNull();
   });
 });

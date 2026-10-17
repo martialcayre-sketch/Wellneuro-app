@@ -36,6 +36,8 @@ type ProtocoleResponse =
       indisponible?: boolean;
       /** Éléments en pause sur effet indésirable ([[D-281]] §3) ; vide avant la signature. */
       pauses?: ElementEnPause[];
+      /** Lectures de la Boussole dont l'aliment est en pause ([[D-281]] §2) ; vide avant la signature. */
+      boussolesEnPause?: { foodRef: string; texte: ElementEnPause['texte'] }[];
       /** Journal de lecture du protocole ([[D-315]]) ; absent = drapeau fermé, détail déplié. */
       lectureDuDetail?: { dejaOuvert: boolean };
     }
@@ -297,7 +299,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
         </div>
       )}
 
-      <PatientFoodCompassSummary token={token} items={vue.boussoles ?? []} />
+      <PatientFoodCompassSummary token={token} items={vue.boussoles ?? []} enPause={protocole.boussolesEnPause ?? []} />
 
       {/* Accès : rendez-vous de suivi (mis en avant si dû) + fiche. */}
       <div className="flex flex-wrap gap-2.5">

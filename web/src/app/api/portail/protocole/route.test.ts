@@ -36,6 +36,17 @@ vi.mock('@/lib/food-compass/patientReference', () => ({ resolvePatientFoodCompas
 // [[D-191]], et le simuler laisserait la route « verte » quelle que soit la
 // projection servie.
 vi.mock('@/lib/clinical-engine/rejeuCarteDecision', () => ({ rejouerCarteDecision }));
+// LES PAUSES ([[D-281]] §2) : la vraie lecture, verrou compris, sauf quand un
+// cas pose les siennes — le calcul a son banc (`pauseEffetIndesirable.test.ts`).
+const { pausesPosees } = vi.hoisted(() => ({ pausesPosees: { valeur: null as { actionId: string; texte: string }[] | null } }));
+vi.mock('@/lib/trust/pauseEffetIndesirableServeur', async orig => {
+  const original = await orig<typeof import('@/lib/trust/pauseEffetIndesirableServeur')>();
+  return {
+    ...original,
+    pausesServies: (...args: Parameters<typeof original.pausesServies>) =>
+      (pausesPosees.valeur ? Promise.resolve(pausesPosees.valeur) : original.pausesServies(...args)),
+  };
+});
 
 import { signPatientSession } from '@/lib/patient-session';
 import { GET } from './route';
@@ -324,6 +335,36 @@ describe('GET /api/portail/protocole', () => {
     expect(payload.vue.boussoles).toEqual([safe]);
     expect(resolvePatientFoodCompassView).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(payload.vue.boussoles)).not.toMatch(/score|inputHash|refHash|%/i);
+    // Règle amendée non signée : aucune lecture marquée.
+    expect(payload.boussolesEnPause).toEqual([]);
+  });
+
+  // EN PAUSE, JAMAIS MASQUÉE ([[D-281]] §2, arbitrage du 2026-10-16) : la
+  // lecture reste dans la vue, et sa marque arrive hors de la vue signée.
+  it('marque la lecture Boussole dont l’aliment est porté par un élément en pause', async () => {
+    process.env.WN_C5_ENABLED = 'true';
+    mockOwnerAuth();
+    mockProtocoleDiffuse();
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([approbation({ approvedAt: new Date() })]);
+    const foodCompassRef = { foodRef: 'ciqual-2025-v1:26034', refHash: 'ref-hash' };
+    reconstructProtocolDraft.mockReturnValue({
+      ...draftDerive,
+      actions: [{ ...draftDerive.actions[0], foodCompassRef }, ...draftDerive.actions.slice(1)],
+    });
+    const safe = {
+      foodRef: '26034', foodLabel: 'Sardine', qualitativeSummary: 'Lecture qualitative.',
+      reasons: ['Raison qualitative.'], sourceLabel: 'Table Ciqual, Anses',
+      limitations: ['Limite qualitative.'], alternative: null,
+    };
+    resolvePatientFoodCompassView.mockResolvedValue(safe);
+    pausesPosees.valeur = [{ actionId: draftDerive.actions[0].actionId, texte: 'element' }];
+    try {
+      const payload = await (await GET(request(proprioCookie()))).json();
+      expect(payload.vue.boussoles).toEqual([safe]);
+      expect(payload.boussolesEnPause).toEqual([{ foodRef: '26034', texte: 'element' }]);
+    } finally {
+      pausesPosees.valeur = null;
+    }
   });
 
   it('masque un protocole approuvé devenu caduc', async () => {

@@ -1,16 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authorizePortail, resolveProtocoleDiffuse, resolvePatientFoodCompassView, reconstructProtocolDraft, prisma } = vi.hoisted(() => ({
+const { authorizePortail, resolveProtocoleDiffuse, resolvePatientFoodCompassView, reconstructProtocolDraft, prisma, pausesServies } = vi.hoisted(() => ({
   authorizePortail: vi.fn(),
   resolveProtocoleDiffuse: vi.fn(),
   resolvePatientFoodCompassView: vi.fn(),
   reconstructProtocolDraft: vi.fn(),
   prisma: { protocolDraft: { findUnique: vi.fn() } },
+  pausesServies: vi.fn(),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/protocol/portailProtocol', () => ({ authorizePortail, resolveProtocoleDiffuse }));
 vi.mock('@/lib/protocol/fromPrisma', () => ({ reconstructProtocolDraft }));
 vi.mock('@/lib/food-compass/patientReference', () => ({ resolvePatientFoodCompassView }));
+vi.mock('@/lib/trust/pauseEffetIndesirableServeur', () => ({ pausesServies }));
 
 import { GET } from './route';
 
@@ -39,8 +41,29 @@ describe('GET /api/portail/boussole/[foodRef]', () => {
     authorizePortail.mockResolvedValue({ idPatient: 'PAT_1', idAssignation: 'ASS_1' });
     resolveProtocoleDiffuse.mockResolvedValue(diffuse);
     prisma.protocolDraft.findUnique.mockResolvedValue({ payload: {}, inputHash: 'approved' });
-    reconstructProtocolDraft.mockReturnValue({ actions: [{ type: 'food', foodCompassRef: actionRef }] });
+    reconstructProtocolDraft.mockReturnValue({ actions: [{ actionId: 'action-1', type: 'food', foodCompassRef: actionRef }] });
     resolvePatientFoodCompassView.mockResolvedValue(safeView);
+    pausesServies.mockResolvedValue([]);
+  });
+
+  // EN PAUSE, JAMAIS MASQUÉE ([[D-281]] §2, arbitrage du 2026-10-16) : la
+  // lecture reste servie, et porte l'état de la pause de son aliment.
+  it('sert la lecture d’un aliment en pause, marquée', async () => {
+    pausesServies.mockResolvedValue([{ actionId: 'action-1', texte: 'element' }]);
+    const response = await GET(request(), { params: Promise.resolve({ foodRef: '26034' }) });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true, view: safeView, pause: 'element' });
+    expect(pausesServies).toHaveBeenCalledWith('PAT_1', diffuse.protocolDraftId, expect.any(Array));
+  });
+
+  // Une panne de la lecture des pauses ne sert jamais la lecture sans sa marque.
+  it('une panne de la lecture des pauses rend 404, jamais une lecture non marquée', async () => {
+    const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
+    pausesServies.mockRejectedValue(new Error('base'));
+    const response = await GET(request(), { params: Promise.resolve({ foodRef: '26034' }) });
+    expect(response.status).toBe(404);
+    expect(JSON.stringify(await response.json())).not.toContain('Sardine');
+    erreur.mockRestore();
   });
 
   it('reste introuvable lorsque C5 est désactivée', async () => {
@@ -78,7 +101,7 @@ describe('GET /api/portail/boussole/[foodRef]', () => {
     const response = await GET(request(), { params: Promise.resolve({ foodRef: '26034' }) });
     expect(response.status).toBe(200);
     const payload = await response.json();
-    expect(payload).toEqual({ ok: true, view: safeView });
+    expect(payload).toEqual({ ok: true, view: safeView, pause: null });
     expect(JSON.stringify(payload)).not.toMatch(/score|percentile|inputHash|refHash|100\s*%/i);
     expect(resolvePatientFoodCompassView).toHaveBeenCalledWith(expect.objectContaining({
       idPatient: 'PAT_1', actionRef,
