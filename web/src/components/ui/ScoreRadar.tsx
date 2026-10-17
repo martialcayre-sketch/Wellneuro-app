@@ -4,26 +4,61 @@ import {
   PolarAngleAxis,
   PolarGrid,
   PolarRadiusAxis,
+  Polygon,
   Radar,
   RadarChart,
   ResponsiveContainer,
+  type BaseTickContentProps,
 } from 'recharts';
+import { LIBELLE_NON_MESURE, estMesure, pointsAvecTrous } from './scoreRadarPoints';
 
-export type ScoreRadarPoint = { axe: string; value: number };
+// `value: null` = non mesuré ([[D-301]]) : l'axe reste, sans point, nommé
+// « non mesuré » ; le contour s'y interrompt.
+export type ScoreRadarPoint = { axe: string; value: number | null };
+
+type PointRadar = { x: number; y: number; value?: unknown };
 
 export function ScoreRadar({ data, max = 100 }: { data: ScoreRadarPoint[]; max?: number }) {
+  const nonMesures = new Set(data.filter(d => !estMesure(d.value)).map(d => d.axe));
   return (
     <div className="bg-surface border border-border rounded-xl p-4">
       <ResponsiveContainer width="100%" height={260}>
         <RadarChart data={data}>
           <PolarGrid stroke="var(--border)" />
-          <PolarAngleAxis dataKey="axe" tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }} />
+          <PolarAngleAxis
+            dataKey="axe"
+            tick={({ x, y, textAnchor, payload }: BaseTickContentProps) => {
+              const axe = String(payload.value);
+              return (
+                <text x={x} y={y} textAnchor={textAnchor} fill="var(--muted-foreground)" fontSize={12}>
+                  <tspan x={x}>{axe}</tspan>
+                  {nonMesures.has(axe) && (
+                    <tspan x={x} dy="1.2em" fontSize={10}>{LIBELLE_NON_MESURE}</tspan>
+                  )}
+                </text>
+              );
+            }}
+          />
           <PolarRadiusAxis angle={30} domain={[0, max]} tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} />
           <Radar
             dataKey="value"
             stroke="var(--color-primary)"
             fill="var(--color-primary)"
             fillOpacity={0.35}
+            shape={(props: { points: PointRadar[]; stroke?: string; fill?: string; fillOpacity?: number }) => (
+              <Polygon
+                points={pointsAvecTrous(props.points)}
+                stroke={props.stroke}
+                fill={props.fill}
+                fillOpacity={props.fillOpacity}
+              />
+            )}
+            // Un sommet seul, entre deux axes non mesurés, n'aurait aucun
+            // segment visible : chaque mesure porte son point.
+            dot={({ cx, cy, value }: { cx?: number; cy?: number; value?: unknown }) =>
+              estMesure(value) && cx !== undefined && cy !== undefined
+                ? <circle cx={cx} cy={cy} r={3} fill="var(--color-primary)" />
+                : <g />}
           />
         </RadarChart>
       </ResponsiveContainer>
