@@ -47,10 +47,13 @@ par acte, aucune décision, les clés dans l'élément. Un compte des signatures
 ne compte jamais un étiquetage. La validation par lot ne pose aucune clé.
 
 **§7 — Ce que la base tient.** Le CHECK `rag_claim_decisions_etiquetage_complet`
-refuse un étiquetage sans claim ou à plusieurs claims, porteur d'une
-décision ou d'une pièce de tirage, ou dont l'élément n'a pas des besoins
-entiers de 1 à 12 et une rubrique de la liste. Un banc du dépôt refuse que
-cette liste diverge de `RUBRIQUES_FICHE_USAGE`.
+refuse un étiquetage sans claim ou à plusieurs claims, dont l'élément ne
+nomme pas son claim, porteur d'une décision ou d'une pièce de tirage, ou dont
+l'élément n'a pas des besoins entiers de 1 à 12 (liste plate, mode
+`strict`) et une rubrique de la liste. Un banc du dépôt refuse que cette
+liste diverge de `RUBRIQUES_FICHE_USAGE`. Que le claim existe et soit VALIDE
+est tenu par la route, dans la transaction de l'acte, comme pour une
+décision individuelle : le journal ne lit pas la table des claims.
 
 **§8 — Exécution.** Deux temps : la migration seule (PR relue, release-db
 approuvée, constat par conteneur), puis le code consommateur. Ensuite, geste

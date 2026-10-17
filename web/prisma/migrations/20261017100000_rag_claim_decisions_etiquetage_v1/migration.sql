@@ -26,7 +26,8 @@ ALTER TABLE public.rag_corpus_claim_decisions
   );
 
 -- 2. Pièces d'un étiquetage — présences ET absences, comme les autres actes.
---    UN claim par acte (geste individuel, jamais un lot) ; aucune décision
+--    UN claim par acte (geste individuel, jamais un lot), qui se nomme (`id`,
+--    `claimId`) ; aucune décision
 --    (rien n'est décidé : `rag_claim_decisions_decide` l'impose déjà, le type
 --    n'étant pas dans sa liste) ; ni tirage, ni échantillon, ni questionnaire.
 --    L'élément porte ses deux clés : `besoins`, liste NON VIDE d'entiers de 1 à
@@ -42,11 +43,18 @@ ALTER TABLE public.rag_corpus_claim_decisions
     OR COALESCE((
       tirage_id IS NULL AND echantillon IS NULL AND questionnaire IS NULL
       AND jsonb_array_length(claims) = 1
+      AND jsonb_typeof(claims -> 0 -> 'id') = 'string'
+      AND jsonb_typeof(claims -> 0 -> 'claimId') = 'string'
       AND jsonb_typeof(claims -> 0 -> 'besoins') = 'array'
       AND jsonb_array_length(claims -> 0 -> 'besoins') > 0
       AND NOT jsonb_path_exists(
         claims,
-        '$[0].besoins[*] ? (@.type() != "number" || @ < 1 || @ > 12 || @ != @.floor())'
+        -- `strict` : en mode `lax` (le défaut), le filtre déplie un tableau
+        -- imbriqué, et `[[]]` ou `[[3]]` passaient (revue wn-reviewer du lot).
+        'strict $[0].besoins[*] ? (@.type() != "number" || @ < 1 || @ > 12 || @ != @.floor())',
+        -- `silent` : en `strict`, une clé absente lèverait une ERREUR au lieu
+        -- d'un refus ; l'absence est jugée plus haut (`jsonb_typeof`).
+        '{}', true
       )
       AND (claims -> 0 ->> 'rubrique') IN (
         'question', 'population', 'preanalytique_contexte', 'resultats_consequences',
@@ -56,6 +64,10 @@ ALTER TABLE public.rag_corpus_claim_decisions
     ), false)
   );
 
+-- Que le claim nommé EXISTE et soit VALIDE est tenu par la route (lib
+-- `deciderClaim`, même transaction), comme pour une décision individuelle :
+-- le journal ne lit pas la table des claims.
+--
 -- Le trigger d'insertion (rag_claim_decisions_avant_insertion) n'a pas à
 -- changer : ses branches visent tirage_id et decision_lot, absents d'un
 -- étiquetage. Le trigger d'ajout seul (rag_claim_decisions_no_dml) tient

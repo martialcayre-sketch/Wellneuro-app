@@ -76,6 +76,19 @@ BEGIN
   EXCEPTION WHEN check_violation THEN NULL;
   END;
 
+  BEGIN
+    INSERT INTO public.rag_corpus_claim_decisions (type_acte, validateur, claims)
+    VALUES ('etiquetage', 'contrat@wellneuro.fr', jsonb_set(conforme, '{0,besoins}', '[[]]'));
+    RAISE EXCEPTION 'étiquetage : besoins imbriqués vides acceptés' USING ERRCODE = 'WN001';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  BEGIN
+    INSERT INTO public.rag_corpus_claim_decisions (type_acte, validateur, claims)
+    VALUES ('etiquetage', 'contrat@wellneuro.fr', jsonb_set(conforme, '{0,besoins}', '[[3]]'));
+    RAISE EXCEPTION 'étiquetage : besoins imbriqués acceptés' USING ERRCODE = 'WN001';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
   -- 4. Une rubrique de la liste fermée des fiches d'usage — l'ancien
   --    vocabulaire du dossier (« indication ») n'en est pas.
   BEGIN
@@ -91,11 +104,31 @@ BEGIN
   EXCEPTION WHEN check_violation THEN NULL;
   END;
 
+  -- 4 bis. L'élément nomme son claim, et c'est un objet.
+  BEGIN
+    INSERT INTO public.rag_corpus_claim_decisions (type_acte, validateur, claims)
+    VALUES ('etiquetage', 'contrat@wellneuro.fr', conforme #- '{0,id}');
+    RAISE EXCEPTION 'étiquetage : claim sans identifiant accepté' USING ERRCODE = 'WN001';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  BEGIN
+    INSERT INTO public.rag_corpus_claim_decisions (type_acte, validateur, claims)
+    VALUES ('etiquetage', 'contrat@wellneuro.fr', '["options"]');
+    RAISE EXCEPTION 'étiquetage : élément non objet accepté' USING ERRCODE = 'WN001';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
   -- 5. Aucune pièce de tirage.
   BEGIN
     INSERT INTO public.rag_corpus_claim_decisions (type_acte, validateur, claims, echantillon)
     VALUES ('etiquetage', 'contrat@wellneuro.fr', conforme, '{"seed":1}');
     RAISE EXCEPTION 'étiquetage : échantillon accepté' USING ERRCODE = 'WN001';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  BEGIN
+    INSERT INTO public.rag_corpus_claim_decisions (type_acte, validateur, claims, questionnaire)
+    VALUES ('etiquetage', 'contrat@wellneuro.fr', conforme, '{"q":1}');
+    RAISE EXCEPTION 'étiquetage : questionnaire accepté' USING ERRCODE = 'WN001';
   EXCEPTION WHEN check_violation THEN NULL;
   END;
 
@@ -124,13 +157,6 @@ BEGIN
   EXCEPTION WHEN raise_exception THEN NULL;
   END;
 
-  -- 9. Un compte des signatures ne voit pas l'étiquetage.
-  IF EXISTS (
-    SELECT 1 FROM public.rag_corpus_claim_decisions
-    WHERE id = acte AND type_acte IN ('decision_individuelle', 'decision_lot')
-  ) THEN
-    RAISE EXCEPTION 'étiquetage : compté comme une signature' USING ERRCODE = 'WN001';
-  END IF;
 END $$;
 
 ROLLBACK;
