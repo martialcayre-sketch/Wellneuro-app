@@ -37,7 +37,7 @@ const CATALOGUE = {
       ],
       remboursement: { statut: 'non_evalue', conditions: [], codesActesRetenus: [] },
       preanalytiques: [],
-      panels: [{ code: 'PANEL_FATIGUE_1', libelle: 'Fatigue', niveau: 'socle' }],
+      nonIndiques: [],
     },
     {
       code: 'BIO_INSULINEMIE',
@@ -57,28 +57,38 @@ const CATALOGUE = {
       plagesFonctionnelles: [],
       remboursement: { statut: 'non_evalue', conditions: [], codesActesRetenus: [] },
       preanalytiques: [],
-      panels: [],
-    },
-  ],
-  panels: [
-    {
-      code: 'PANEL_FATIGUE_1',
-      libelle: 'Fatigue',
-      niveau: 'socle',
-      objectif: 'Explorer une fatigue persistante.',
-      items: [{ type: 'analyte', code: 'BIO_FERRITINE', libelle: 'Ferritine' }],
+      nonIndiques: [],
     },
     {
-      // La donnée RÉELLE du catalogue niveau 1 contient ce verbatim de claim
-      // (PANEL_MG_PLASMATIQUE) : l'écran rend la source telle quelle, et le
-      // banc de vocabulaire ne doit PAS l'interdire — « dosage » cité par un
-      // claim n'est pas un terme d'acte de l'outil.
-      code: 'PANEL_MG_PLASMATIQUE',
-      libelle: 'Magnésium plasmatique',
-      niveau: 'specialise',
-      objectif:
-        'Le dosage plasmatique du magnésium circulant n’est pas recommandé comme dépistage (verbatim du claim source).',
-      items: [],
+      code: 'BIO_MAGNESIUM_ERYTHROCYTAIRE',
+      libelle: 'Magnésium érythrocytaire',
+      libellePatient: null,
+      unite: 'mmol/L',
+      typePrelevement: 'sang_veineux',
+      delaiRenduIndicatif: null,
+      sourceProvenance: 'saisie_praticien',
+      statutFiche: 'importee',
+      niveauCompletude: 'partielle',
+      donneesManquantes: [],
+      incertitudes: null,
+      verifieLe: null,
+      validationMedicaleRequise: false,
+      plagesLaboratoire: [],
+      plagesFonctionnelles: [],
+      remboursement: { statut: 'non_evalue', conditions: [], codesActesRetenus: [] },
+      preanalytiques: [],
+      // La donnée RÉELLE de la table signée porte ce verbatim de claim
+      // (BIO-NIA-01) : l'écran rend la source telle quelle, et le banc de
+      // vocabulaire ne doit PAS l'interdire — « dosage » cité par un claim
+      // n'est pas un terme d'acte de l'outil.
+      nonIndiques: [
+        {
+          exploration: 'Magnésium plasmatique',
+          motif:
+            'Le dosage plasmatique du magnésium circulant n’est pas recommandé en première intention : seulement 1 % du pool magnésien se trouve sous cette forme. L’exploration pertinente est le magnésium érythrocytaire.',
+          claimId: 'WN-CL-0242-007',
+        },
+      ],
     },
   ],
   millesimeNabm: { versionSource: 'V105', nombreEntrees: 987, importeLe: '2026-07-26T00:00:00.000Z' },
@@ -102,15 +112,16 @@ afterEach(() => {
 });
 
 describe('RayonBiologiePanel — consultation documentaire', () => {
-  it('charge le catalogue et affiche bilans puis analytes, sans score global ni vocabulaire interdit', async () => {
+  it('charge le catalogue et affiche les analytes — plus aucun bilan (D-320 §2), sans score global ni vocabulaire interdit', async () => {
     mockFetch(CATALOGUE);
     render(<RayonBiologiePanel />);
 
-    await waitFor(() => expect(screen.getByText('Fatigue')).toBeTruthy());
-    expect(screen.getByText('Socle')).toBeTruthy();
-    // « Ferritine » apparaît deux fois : puce du bilan et ligne d'analyte.
-    expect(screen.getAllByText('Ferritine').length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
     expect(screen.getByText('Insulinémie à jeun')).toBeTruthy();
+    // Les bilans ne sont plus une entrée du rayon : ni section, ni niveau.
+    expect(screen.queryByText(/Bilans \(/)).toBeNull();
+    expect(screen.queryByText('Socle')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/bilans hiérarchisés/i);
     // L'état livré se dit : remboursement non évalué sur chaque ligne.
     expect(screen.getAllByText('Non évalué').length).toBeGreaterThan(0);
     // Le millésime s'affiche sans tarif.
@@ -120,11 +131,8 @@ describe('RayonBiologiePanel — consultation documentaire', () => {
     // Vocabulaire imposé de la campagne CB : jamais « prescription »,
     // « ordonnance » ni « diagnostic » sur cette surface praticien (la garde
     // codée ne couvre que le registre médecin — l'écran porte donc son propre
-    // banc). « dosage » n'en fait PAS partie : la donnée réelle du catalogue
-    // le porte en verbatim de claim (PANEL_MG_PLASMATIQUE, présent dans la
-    // fixture), et une citation de source n'est pas un terme de l'outil.
+    // banc).
     expect(document.body.textContent).not.toMatch(/prescri|ordonnance|diagnosti/i);
-    expect(screen.getByText(/Le dosage plasmatique du magnésium/)).toBeTruthy();
     // Jamais de score global (décision figée C4, reprise par CB-08).
     expect(document.body.textContent).not.toMatch(/score global/i);
   });
@@ -132,11 +140,9 @@ describe('RayonBiologiePanel — consultation documentaire', () => {
   it('ouvre la fiche en tiroir : deux référentiels côte à côte, chaque absence est dite', async () => {
     mockFetch(CATALOGUE);
     render(<RayonBiologiePanel />);
-    await waitFor(() => expect(screen.getAllByText('Ferritine').length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
 
-    // Nom exact : la puce du bilan s'appelle « Ferritine », la ligne d'analyte
-    // porte un nom accessible plus long (prélèvement, badges).
-    fireEvent.click(screen.getByRole('button', { name: 'Ferritine' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Ferritine/ }));
 
     await waitFor(() => expect(screen.getByText('Fiche analyte')).toBeTruthy());
     // Les deux colonnes existent toutes les deux.
@@ -163,6 +169,33 @@ describe('RayonBiologiePanel — consultation documentaire', () => {
     await waitFor(() => expect(screen.getByText('Insulinémie à jeun')).toBeTruthy());
 
     expect(screen.getByText('Validation médicale')).toBeTruthy();
+  });
+
+  it('la fiche de l’alternative dit l’exploration non indiquée, motif verbatim et claim (D-320 §3)', async () => {
+    mockFetch(CATALOGUE);
+    render(<RayonBiologiePanel />);
+    await waitFor(() => expect(screen.getByText('Magnésium érythrocytaire')).toBeTruthy());
+    // En liste, rien : la mise en garde est sur la fiche.
+    expect(screen.queryByText(/non indiqué actuellement/)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Magnésium érythrocytaire/ }));
+    await waitFor(() => expect(screen.getByText('Exploration non indiquée')).toBeTruthy());
+    expect(screen.getByText('Magnésium plasmatique : non indiqué actuellement')).toBeTruthy();
+    expect(screen.getByText(/Le dosage plasmatique du magnésium circulant/)).toBeTruthy();
+    expect(screen.getByText('Source : WN-CL-0242-007')).toBeTruthy();
+    expect(screen.queryByText('Présent dans les bilans')).toBeNull();
+    // « dosage » cité par le claim n'est pas un terme d'acte de l'outil : le
+    // banc de vocabulaire ne l'interdit pas.
+    expect(document.body.textContent).not.toMatch(/prescri|ordonnance|diagnosti/i);
+  });
+
+  it('une fiche sans exploration non indiquée n’a pas la section', async () => {
+    mockFetch(CATALOGUE);
+    render(<RayonBiologiePanel />);
+    await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: /^Ferritine/ }));
+    await waitFor(() => expect(screen.getByText('Fiche analyte')).toBeTruthy());
+    expect(screen.queryByText('Exploration non indiquée')).toBeNull();
   });
 
   it('drapeau éteint côté serveur : le message de la route est rendu, rien d’autre', async () => {

@@ -1,5 +1,5 @@
 -- Contrat de migration 20261017100000_rag_claim_decisions_etiquetage_v1
--- (J3-12c, [[D-320]]). Exécuté après `prisma migrate deploy` ; toutes les
+-- (J3-12c, [[D-321]]). Exécuté après `prisma migrate deploy` ; toutes les
 -- fixtures sont annulées. Chaque garantie de l'acte `etiquetage` est éprouvée
 -- par l'insertion qui devrait la violer : si elle passe, le contrat échoue
 -- (ERRCODE sentinelle WN001, jamais intercepté).

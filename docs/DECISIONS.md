@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-320 — J3-12c : un claim porte deux clés de lien, les besoins qu'il sert et sa rubrique parmi les dix des fiches d'usage ; posées à la signature ou par un acte « étiquetage » journalisé sous son propre type (amende D-312, §5 neuf)
+### D-321 — J3-12c : un claim porte deux clés de lien, les besoins qu'il sert et sa rubrique parmi les dix des fiches d'usage ; posées à la signature ou par un acte « étiquetage » journalisé sous son propre type (amende D-312, §5 neuf)
 
 - Date : 2026-10-17
 - Statut : accepté. Arbitrages du responsable : audit des 12 besoins du
@@ -59,6 +59,64 @@ décision individuelle : le journal ne lit pas la table des claims.
 approuvée, constat par conteneur), puis le code consommateur. Ensuite, geste
 du responsable : l'étiquetage des 92 claims du fer, rubrique par rubrique,
 avant la première signature du dossier de la vitamine D.
+
+### D-320 — Bibliothèque biologie : l'acte NABM se cherche par son libellé, les bilans quittent le rayon, les deux explorations non indiquées vont sur la fiche de leur alternative ; les analyses groupées sont cadrées en F80
+
+- Date : 2026-10-17
+- Statut : accepté. Retour du responsable du 2026-10-17 sur captures du
+  cockpit : sans connaître la nomenclature par cœur, la correspondance NABM ne
+  se rapproche pas ; les analyses groupées ne sont pas répertoriées ; les packs
+  d'analyses ne sont plus nécessaires. Puis trois arbitrages sur questions à
+  options : bilans retirés « de la Bibliothèque seule » (recommandé, contre
+  « aussi la proposition » et « retirer du moteur ») ; mises en garde « sur la
+  fiche de l'alternative » (recommandé, contre un encart dédié et la
+  proposition seule) ; analyses groupées « cadrer, livrer après » (recommandé,
+  contre l'inventaire seul et la composition maintenant). Texte rédigé par
+  l'assistant à partir de ces réponses.
+- Amende : la lecture « par code exact seulement » de l'écran de signature
+  M-3 (F54) — l'arbitrage du 2026-10-05 (« candidats jamais inférés d'un
+  libellé ») reste entier : il vise ce que l'assistant prépare, pas ce que le
+  praticien cherche.
+- Domaine : `lib/biology-library/` (`correspondancesNabm.ts`,
+  `rechercheTexte.ts`, `catalogue.ts`, `nonIndiquesBibliotheque.ts`) ; route
+  `api/praticien/biologie/nabm/recherche` ; `components/biologie/`
+  (`CorrespondancesNabmSection`, `RayonBiologiePanel`, `FicheAnalytePanel`) ;
+  textes de la Bibliothèque et de la page Biologie fonctionnelle ; fiche F80.
+- **Ne touche pas** : aucune règle d'indication (la table signée et son SHA
+  sont inchangés), aucune signature, aucun constat, aucun schéma, aucune
+  migration ; le moteur de proposition, le courrier et le document patient
+  lisent les bilans comme avant ([[D-296]] §5 inchangé).
+
+**§1 — Recherche par libellé.** Dans l'encart « Ajouter une correspondance »,
+le praticien cherche les actes du millésime courant par leur libellé : tous
+les mots de sa saisie (accents, casse et ponctuation ignorés), ou le début du
+code. Au plus 25 actes, actifs d'abord, avec le total trouvé ; de 3 à 80
+caractères. Il choisit un résultat, qui se lit par son code comme avant, puis
+pose la nature et signe par le même geste. Rien n'est rapproché, présélectionné
+ni proposé par la recherche : elle aide à lire la nomenclature, la signature
+reste celle d'un code relu. Le millier d'actes d'un millésime se lit en
+entier et se filtre côté serveur — sans index ni extension SQL.
+
+**§2 — Les bilans quittent la Bibliothèque.** La section « Bilans » du rayon
+et la mention « Présent dans les bilans » de la fiche d'analyte disparaissent ;
+le catalogue ne sert plus la composition des bilans. La proposition se lit par
+analyse ([[D-296]] §2, F50) ; les bilans restent l'unité du moteur jusqu'à
+leur conversion par les indications v2 (F53), qui seule les rendra inactifs.
+
+**§3 — Les explorations non indiquées.** « Magnésium plasmatique »
+(`BIO-NIA-01`) et « Cortisol matinal isolé » (`BIO-NIA-02`) sont des bilans
+sans analyte : sans la section, ils n'avaient plus d'écran. Chacun s'affiche
+sur la fiche de l'exploration que son motif nomme pertinente — le magnésium
+érythrocytaire, le cortisol awakening response —, avec le motif VERBATIM de la
+table signée et son claim. Ce rattachement est le seul texte nouveau ; il
+s'éteint si la signature de la table ne tient plus, et une règle non indiquée
+ajoutée sans rattachement fait rougir son banc.
+
+**§4 — Les analyses groupées.** Un groupe (NFS, ionogramme, profil lipidique,
+bilan hépatique) est une fiche unique sans composants, et une valeur calculée
+n'a pas ses opérandes. Le sujet est cadré en F80 (inventaire, options de
+modèle, questions au responsable) ; toute livraison passera par une
+migration et sa propre décision.
 
 ### D-319 — Onglet « Biologie » : la proposition de bilan y déménage ; l'arbitrage biologique reste dans la phase Actions, à côté de la version qu'il juge, et l'onglet compte les actions qui l'attendent (F57 PR 2, amende D-308 §1)
 
@@ -2837,7 +2895,21 @@ maintenue jusqu'à la nouvelle version. La base l'admet par la migration
 `saf_ei_avis_implique_sans_element_v1` (aménagement exigé, refus sur un
 élément désigné par le patient ou un signalement délié de son programme) ;
 « programme illisible seul » est tenu par le code, qui seul juge
-l'intégrité.
+l'intégrité. **Un signalement hors règle ne touche pas la carte** (tranché
+par le responsable le 2026-10-17, sur scénario, fiche t27) : un signalement
+sans programme ni rattachement — « non » au programme, aucun programme
+diffusé, capture sans programme — ne fait plus dériver la carte servie ; le
+programme reste servi au portail, avec ses pauses. La phrase qui les
+comptait sur la carte entrait dans son empreinte : elle en sort, et ces
+signalements restent comptés par leur statut au panneau des signalements,
+au Fil du jour et au prévol. Les statuts ouverts sortent du périmètre
+signé de la règle, qui ne les lit plus. La phrase plus haut, « que la revue
+clinique signale au praticien », vaut jusqu'à cet arbitrage. Écartés :
+l'interruption assumée (le patient qui déclare l'effet sans lien avec son
+programme le perdrait, pauses d'un autre signalement comprises) ; le blocage
+de la diffusion jusqu'au passage à « traité » (un signalement qui ne reçoit
+aucun avis n'attend rien) ; la phrase gardée sur la carte hors empreinte
+(premier canal de la carte non haché).
 
 **§6 — Ordre et signature.** (1) cette décision ; (2) la migration —
 l'élément désigné, le mode de rattachement, la validation —, relue puis

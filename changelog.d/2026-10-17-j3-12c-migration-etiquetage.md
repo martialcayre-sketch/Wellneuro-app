@@ -1,4 +1,4 @@
-### Corpus : le journal des décisions de claims admet l'acte « étiquetage » (D-320, J3-12c, migration)
+### Corpus : le journal des décisions de claims admet l'acte « étiquetage » (D-321, J3-12c, migration)
 
 - Migration `20261017100000_rag_claim_decisions_etiquetage_v1` : un sixième
   type d'acte, `etiquetage`, pour poser ou corriger les clés de lien d'un

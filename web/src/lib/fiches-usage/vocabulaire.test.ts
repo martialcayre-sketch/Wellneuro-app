@@ -36,7 +36,7 @@ describe('vocabulaire des fiches d’usage — aligné sur la migration (D-314 �
     expect(listeApres('IF cle NOT IN').sort()).toEqual([...RUBRIQUES_FICHE_USAGE].sort());
   });
 
-  it('l’étiquetage des claims ferme les MÊMES rubriques (J3-12c, D-320)', () => {
+  it('l’étiquetage des claims ferme les MÊMES rubriques (J3-12c, D-321)', () => {
     // Le journal des décisions de claims ferme la rubrique d'un étiquetage sur
     // cette liste (migration `rag_claim_decisions_etiquetage_v1`) : une rubrique
     // ajoutée ici sans elle serait refusée par la base à l'étiquetage.

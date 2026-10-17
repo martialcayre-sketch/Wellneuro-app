@@ -36,10 +36,11 @@ import type { ConfirmedAssessmentEpisode, DecisionCard } from './types';
 // LA DÉRIVE EST LE MODE DE PANNE ASSUMÉ, ET ELLE EST BORNÉE. Le snapshot est
 // borné à `episode.includedResponseIds` et l'horodatage est `episode.confirmedAt` :
 // une passation NOUVELLE ne bouge rien. Ce qui bouge l'empreinte après diffusion
-// est une retouche d'anamnèse, un signalement d'effet indésirable, une
-// re-sélection de priorité — trois actes cliniques qui méritent d'interrompre ce
-// qui est servi — ou un déploiement touchant une table signée, qui les
-// interromprait tous à la fois. C'est pour ce dernier cas que le refus est
+// est une retouche d'anamnèse, une re-sélection de priorité — deux actes
+// cliniques qui méritent d'interrompre ce qui est servi — ou un déploiement
+// touchant une table signée, qui les interromprait tous à la fois. Un
+// signalement d'effet indésirable n'en est plus (D-281 §3, §5) : sa garde vit
+// à la diffusion, et sa pause se sert sur la carte servie, qui reste entière. C'est pour ce dernier cas que le refus est
 // BRUYANT côté praticien et jamais muet : un écran patient qui s'éteint sans que
 // personne ne le sache est la panne que `D-160` §4 nomme « le défaut déplacé ».
 

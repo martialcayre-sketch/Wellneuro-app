@@ -112,8 +112,8 @@ export default function BibliothequePage() {
             Analyses biologiques
           </h3>
           <p className="mt-1 max-w-2xl text-base text-muted-foreground">
-            Bilans hiérarchisés et fiches d&apos;analytes : les deux référentiels de valeurs
-            (laboratoire et fonctionnel) côte à côte, jamais fusionnés — aucune valeur d&apos;analyse
+            Fiches d&apos;analytes : les deux référentiels de valeurs (laboratoire et
+            fonctionnel) côte à côte, jamais fusionnés — aucune valeur d&apos;analyse
             patient n&apos;est saisie ni conservée ici.
           </p>
         </div>

@@ -609,6 +609,45 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     valideLe: '2026-10-16',
     hash: '73c6d787a50e9352a83d89444e6e260f0cfa468437000f9a6f7cac4e68cda59d',
   },
+  // ── PROTOCOLE DIFFUSÉ ───────────────────────────────────────────────────
+  // [[D-317]] §3 (PA-2) — part au clic « Valider pour diffusion » qui diffuse
+  // une NOUVELLE version, et vaut alors l'annonce des fiches et du courrier
+  // remis par le même clic. Rédigé sur le modèle de `document_remis` : sans
+  // nom de document, sans contenu clinique, sans pièce jointe ; les deux
+  // paragraphes de fin sont les siens au caractère près.
+  //
+  // LE CHEMIN NOMMÉ EST CELUI DU PORTAIL : le protocole n'est pas une ligne du
+  // fil du jour ; il se lit dans le volet repliable « Mon accompagnement » de la
+  // page « Mon parcours » (`portail/[token]/questionnaires/page.tsx`).
+  //
+  // VALIDÉ le jour de sa rédaction, en session, sur le texte exact relu mot
+  // pour mot par le responsable (§3). Sans `valideLe`, le drapeau ne l'ouvrirait
+  // pas (`protocol/annonceDiffusion.ts`).
+  {
+    key: 'protocole_diffuse',
+    version: 1,
+    titre: 'Une nouvelle version du protocole attend le patient dans son espace',
+    sujet: 'Votre protocole vous attend',
+    corps:
+      'Bonjour {{prenom}},\n\n' +
+      'Votre protocole vous attend dans votre espace.\n\n' +
+      'Votre espace :\n{{connexion}}\n\n' +
+      'Une fois connecté : choisissez « Accéder à mon parcours », puis ouvrez ' +
+      '« Mon accompagnement », en bas de la page.\n\n' +
+      'Vous pouvez taper cette adresse vous-même dans votre navigateur plutôt que de ' +
+      'cliquer : elle mène au même endroit. Vous vous y connecterez avec Google, ou ' +
+      'en demandant un lien d’accès par e-mail, à l’adresse à laquelle vous recevez ' +
+      'ce message.\n\n' +
+      'On ne vous demandera jamais de coordonnées bancaires, de numéro de carte ni ' +
+      'de mot de passe. Une question, un doute sur un message reçu : écrivez-moi à ' +
+      'martialcayre@wellneuro.fr.\n\n' +
+      SIGNATURE_PRATICIEN,
+    variables: ['prenom', 'connexion'],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-10-17',
+    valideLe: '2026-10-17',
+    hash: '619bf4277ec37db2ef11d15f9e7344c0f2baeea2145c68fc17272c224d26c780',
+  },
 ]);
 
 /** Le gabarit courant d'une clé : version la plus haute (les versions

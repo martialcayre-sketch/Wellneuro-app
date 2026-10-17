@@ -14,6 +14,12 @@ export const TYPES_CORRESPONDANCE_PATIENT = {
   /** Un document remis attend le patient dans son espace ([[D-251]] §9) — sans le nommer. */
   documentRemis: 'document_remis',
   /**
+   * Une nouvelle version du protocole attend le patient ([[D-317]], PA-2) :
+   * annonce hors relance, au clic « Valider pour diffusion ». Elle vaut celle
+   * des documents remis par le même clic.
+   */
+  protocoleDiffuse: 'protocole_diffuse',
+  /**
    * Courriel au PRATICIEN sur une réponse suicidaire ([[D-277]] §2) : tracé au
    * dossier du patient concerné, seul endroit où un échec se lit (§3).
    */

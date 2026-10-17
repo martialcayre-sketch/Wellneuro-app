@@ -25,9 +25,9 @@ export default function BiologiePage() {
         </p>
         <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Biologie fonctionnelle</h2>
         <p className="text-base text-muted-foreground mt-1">
-          Les questionnaires déclarent, la biologie objective. Le rayon documentaire —
-          bilans hiérarchisés, fiches d&apos;analytes et leurs deux référentiels de valeurs —
-          se consulte dans la Bibliothèque.
+          Les questionnaires déclarent, la biologie objective. Le rayon documentaire — fiches
+          d&apos;analytes et leurs deux référentiels de valeurs — se consulte dans la
+          Bibliothèque.
         </p>
       </div>
 
@@ -35,9 +35,9 @@ export default function BiologiePage() {
         <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <h3 className="font-display text-lg font-semibold text-foreground">Le rayon est ouvert</h3>
           <p className="mt-2 text-base text-muted-foreground">
-            Catalogue niveau 1 : bilans par niveau (socle, approfondissement, spécialisé) et fiches
-            d&apos;analytes, remboursement dérivé de la nomenclature — la proposition d&apos;exploration
-            par dossier, elle, se prépare depuis le cockpit du patient.
+            Catalogue : fiches d&apos;analytes, remboursement dérivé de la nomenclature — la
+            proposition d&apos;exploration par dossier, elle, se prépare depuis le cockpit du
+            patient.
           </p>
           <Link
             href="/dashboard/bibliotheque"

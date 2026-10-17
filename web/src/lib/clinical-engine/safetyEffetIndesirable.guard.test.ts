@@ -5,7 +5,6 @@ import {
   REGLE_SECURITE_EFFET_INDESIRABLE,
   SAFETY_EI_METADATA,
   SAFETY_EI_SHA256,
-  STATUTS_EI_NON_TRAITES,
   associationEffetIndesirableDisponible,
   interruptionEffetIndesirableActive,
   tableEffetIndesirableSignee,
@@ -26,7 +25,9 @@ import { construireSafetyFindings, type EffetIndesirableRuntime } from './safety
 //   2. table signée ⇒ AUCUN constat non plus : un signalement rattaché ne
 //      retire plus les candidats du dossier — la règle amendée bloque la
 //      diffusion seule, et sa garde vit dans la route de diffusion (D-281 §3) ;
-//   3. un signalement ouvert HORS RÈGLE (sans rattachement) se DIT (`DC-35`) ;
+//   3. aucune sortie ne dépend des signalements : un signalement HORS RÈGLE
+//      (sans rattachement ni programme) n'entre plus dans la revue, donc ne
+//      fait plus dériver la carte servie (D-281 §5, arbitrage du 2026-10-17) ;
 //   4. le verrou couvre la conduite et les trois textes patient signés.
 //
 // La table est livrée NON SIGNÉE : la signature est simulée puis restaurée,
@@ -105,11 +106,10 @@ describe('le périmètre signé — la conduite et les trois textes patient', ()
   // Le SHA est recalculé ici depuis les textes servis : un texte retouché au
   // portail sans nouvelle signature changerait l'empreinte, donc fermerait le
   // verrou — le patient ne lit jamais un texte que le praticien n'a pas signé.
-  it('l’empreinte couvre la conduite, les textes de D-281 §4 et les statuts ouverts, et rien d’autre', () => {
+  it('l’empreinte couvre la conduite et les textes de D-281 §4, et rien d’autre', () => {
     expect(SAFETY_EI_SHA256).toBe(sha256(JSON.stringify({
       conduite: CONDUITE_EFFET_INDESIRABLE,
       textes: [TEXTE_PAUSE_ELEMENT, TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_AVIS_RENDU],
-      statuts: STATUTS_EI_NON_TRAITES,
     })));
   });
 
@@ -167,43 +167,33 @@ describe('table signée — la règle amendée ne retire plus rien de la carte',
     expect(rules.find(r => r.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)?.lifecycle).toBe('clinically_validated');
   });
 
-  it('un signalement rattaché n’entre pas dans la limitation : il a sa file d’avis', () => {
+  // D-281 §5, arbitrage du 2026-10-17. La limitation des signalements hors
+  // règle entrait dans l'empreinte : un « non » au programme, ou son passage à
+  // « traité », faisait dériver la carte servie et éteignait le programme au
+  // portail. Ils restent comptés au panneau, au Fil et au prévol, hors de
+  // l'empreinte (`effetsNonTraites`).
+  it.each([
+    ['rattaché', RATTACHE],
+    ['sans rattachement ni programme', SANS_RATTACHEMENT],
+    ['formulaire d’avant', FORMULAIRE_D_AVANT],
+  ])('un signalement %s n’ajoute aucune limitation à la revue', (_cas, signalement) => {
     simulerSignature();
-    expect(construireSafetyFindings([], [RATTACHE], []).limitations).toHaveLength(0);
+    expect(construireSafetyFindings([], [signalement], []).limitations).toHaveLength(0);
   });
 
-  // `DC-35` — hors règle, la machine ne peut rien conclure ; se taire ferait
-  // disparaître un signalement ouvert de la vue du praticien.
-  it('un signalement ouvert sans rattachement se dit', () => {
+  // LA PROPRIÉTÉ QUI FERME LA DÉRIVE : la sortie est la même avec ou sans
+  // signalement, quels que soient leur nombre, leur rattachement et leur
+  // statut. Ce qui ne bouge pas la sortie ne bouge pas l'empreinte.
+  it('la sortie ne dépend d’aucun signalement — ni de leur nombre, ni de leur statut', () => {
     simulerSignature();
-    const { limitations } = construireSafetyFindings([], [SANS_RATTACHEMENT], []);
-    expect(limitations.join(' ')).toMatch(/rattachés à aucun élément/);
-  });
-
-  // D-281 §5, arbitrage du 2026-10-14 : le formulaire d'avant attend l'avis et
-  // bloque la diffusion. Le dire « hors règle » contredirait la garde.
-  it('le formulaire d’avant (programme sans élément désigné) n’est pas hors règle : il a sa file d’avis', () => {
-    simulerSignature();
-    expect(constatsEI([FORMULAIRE_D_AVANT])).toHaveLength(0);
-    expect(construireSafetyFindings([], [FORMULAIRE_D_AVANT], []).limitations).toHaveLength(0);
-  });
-
-  it('le compte annoncé est celui des signalements OUVERTS hors règle', () => {
-    simulerSignature();
-    const { limitations } = construireSafetyFindings([], [
-      RATTACHE,
-      SANS_RATTACHEMENT,
-      FORMULAIRE_D_AVANT,
-      { ...SANS_RATTACHEMENT, id: 'AER-5', statutTraitement: 'clos' },
-      { ...SANS_RATTACHEMENT, id: 'AER-6' },
-    ], []);
-    expect(limitations.join(' ')).toContain('2 signalement(s)');
-  });
-
-  it('la limitation ne cite ni identifiant, ni programme, ni mot du patient', () => {
-    simulerSignature();
-    const texte = construireSafetyFindings([], [SANS_RATTACHEMENT, FORMULAIRE_D_AVANT], []).limitations.join(' ');
-    expect(texte).not.toContain('AER-');
-    expect(texte).not.toContain('DRAFT-1');
+    const sans = construireSafetyFindings([], [], []);
+    for (const effets of [
+      [SANS_RATTACHEMENT],
+      [{ ...SANS_RATTACHEMENT, statutTraitement: 'traite' }],
+      [SANS_RATTACHEMENT, { ...SANS_RATTACHEMENT, id: 'AER-6', statutTraitement: 'recu' }],
+      [RATTACHE, SANS_RATTACHEMENT, FORMULAIRE_D_AVANT, { ...SANS_RATTACHEMENT, id: 'AER-5', statutTraitement: 'clos' }],
+    ]) {
+      expect(construireSafetyFindings([], effets, [])).toEqual(sans);
+    }
   });
 });

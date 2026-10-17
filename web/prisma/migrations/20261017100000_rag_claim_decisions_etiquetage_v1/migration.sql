@@ -1,5 +1,5 @@
 -- WellNeuro — suivi de 20260723100000 / 20260725100000 (journal des décisions
--- de revue des claims). Un SIXIÈME type d'acte : etiquetage — J3-12c ([[D-320]],
+-- de revue des claims). Un SIXIÈME type d'acte : etiquetage — J3-12c ([[D-321]],
 -- amende [[D-312]] §5 ; arbitrage du responsable du 2026-10-17, « type d'acte
 -- neuf »).
 --

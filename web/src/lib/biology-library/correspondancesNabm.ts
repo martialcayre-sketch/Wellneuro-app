@@ -13,8 +13,10 @@
 //  - le retrait rend la ligne à l'état de proposition (signature effacée),
 //    comme l'annulation d'un claim : il ne supprime rien.
 //
-// L'acte se cherche par son CODE, dans le millésime COURANT, et seulement
-// ainsi : l'écran ne cherche rien par libellé. Les candidats proposés à la
+// L'acte se lit par son CODE, dans le millésime COURANT. Le praticien peut
+// le trouver par son libellé (D-320 §1) : une recherche qu'IL lance et dont
+// il choisit le résultat — rien n'est rapproché d'un libellé sans lui, et la
+// signature reste un geste sur un code relu. Les candidats proposés à la
 // signature viennent d'une liste relue, versée au code (`candidatsNabm.ts`,
 // M-3b — arbitrage du 2026-10-15, qui amende celui du 2026-10-05) ; ils
 // passent par la même signature. Une signature ne se pose que sur un code qui se résout, actif,
@@ -47,6 +49,7 @@
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { MILLESIME_LISTE_NABM, candidatsNabmPour, type SituationNabm } from './candidatsNabm';
+import { jetons, normaliserRecherche } from './rechercheTexte';
 import { constatValable } from './remboursable';
 
 /** Pointeur de millésime de la nomenclature (même clé que `catalogue.ts`). */
@@ -125,6 +128,47 @@ export async function chercherActeNabm(codeActe: string): Promise<ChercherActeRe
     select: SELECT_ACTE,
   });
   return { ok: true, millesime, acte };
+}
+
+export const RECHERCHE_NABM_MIN = 3;
+export const RECHERCHE_NABM_MAX = 80;
+export const RECHERCHE_NABM_LIMITE = 25;
+
+export type ChercherActesParLibelleResultat =
+  | { ok: true; millesime: string; total: number; actes: ActeNabmAffiche[] }
+  | { ok: false; raison: 'saisie_invalide' | 'millesime_absent' };
+
+/** Cherche, dans le millésime courant, les actes dont le libellé contient
+ *  TOUS les mots de la saisie (accents et casse ignorés), ou dont le code
+ *  commence par elle (D-320 §1). Une aide à la LECTURE : le praticien choisit
+ *  l'acte, le relit, puis signe — rien n'est rapproché ni proposé de
+ *  lui-même. Les actes actifs passent devant ; au plus
+ *  `RECHERCHE_NABM_LIMITE`, avec le total trouvé. */
+export async function chercherActesNabmParLibelle(
+  saisie: string,
+): Promise<ChercherActesParLibelleResultat> {
+  const brute = saisie.trim();
+  const mots = jetons(brute);
+  if (brute.length < RECHERCHE_NABM_MIN || brute.length > RECHERCHE_NABM_MAX || mots.length === 0) {
+    return { ok: false, raison: 'saisie_invalide' };
+  }
+  const millesime = await millesimeCourant();
+  if (!millesime) return { ok: false, raison: 'millesime_absent' };
+  // Un millésime compte un millier d'actes : lus en entier, filtrés ici —
+  // la normalisation des accents n'a pas d'équivalent sans extension SQL.
+  const actes = await prisma.biologyNabmActe.findMany({
+    where: { versionSource: millesime },
+    select: SELECT_ACTE,
+  });
+  const prefixeCode = /^[0-9]+$/.test(brute) ? brute : null;
+  const trouves = actes
+    .filter(acte => {
+      if (prefixeCode !== null && acte.codeActe.startsWith(prefixeCode)) return true;
+      const libelle = normaliserRecherche(acte.libelle);
+      return mots.every(mot => libelle.includes(mot));
+    })
+    .sort((a, b) => Number(a.inactif) - Number(b.inactif) || a.codeActe.localeCompare(b.codeActe));
+  return { ok: true, millesime, total: trouves.length, actes: trouves.slice(0, RECHERCHE_NABM_LIMITE) };
 }
 
 /** Un candidat de la liste préparée (M-3b), résolu au millésime courant —
