@@ -1093,9 +1093,11 @@ comme professionnel de santé au sens du Code de la santé publique :
   validées suit le dossier ; celle des lignes écartées ou jamais décidées
   s'efface 30 jours après le dépôt. Travaux de la file de lecture : 30 jours
   ([[D-282]]).
+- **En œuvre depuis le 2026-10-17** : la purge des lignes non validées
+  ([[D-318]]) — à 30 jours du dépôt, chaque heure, avec les extractions
+  restées sans ligne validée ; à l'écart d'un document transmis, aussitôt.
 - **Pas encore en œuvre** : le texte patient (à signer), la clôture après 5 ans
-  sans contact, l'archivage séparé et la purge des lignes non validées sont des
-  lots à venir ([[D-283]] §10). Jusqu'à la signature du texte, le produit dit
+  sans contact et l'archivage séparé sont des lots à venir ([[D-283]] §10). Jusqu'à la signature du texte, le produit dit
   toujours ce qui suit.
 
 *Antérieurement :* **TROU pour tout le reste** — et le produit le dit déjà
@@ -1120,8 +1122,10 @@ proposée : **2026-10-21**, date de revue de la dérogation.
 **Compte rendu biologique déposé : purgé ([[D-258]], arbitrages du responsable
 du 2026-10-02).** Le document est purgé dès que toutes les lignes de son
 extraction courante sont décidées (validées ou écartées), et **au plus tard 30
-jours après son dépôt**, décidées ou non — les lignes restent décidables sans
-lui. Restent l'empreinte du document et la trace des extractions (modèle,
+jours après son dépôt**, décidées ou non. *(Amendé par [[D-318]] le
+2026-10-17 : les lignes non décidées ne restent plus décidables sans lui ; à
+la même échéance, elles s'effacent avec les lignes écartées, et avec chaque
+extraction restée sans ligne validée.)* Restent l'empreinte du document et la trace des extractions (modèle,
 version du procédé, lignes lues et décisions) : ce sont elles qui tiennent la
 provenance des résultats validés (A5) ; leur propre durée n'est pas fixée et
 reste dans le trou ci-dessus.

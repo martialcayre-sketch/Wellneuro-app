@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { effacerNonValide } from './purge';
 import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
 
 // « ÉCARTER CE DOCUMENT » ([[D-269]] §3, BIO-INGEST LOT-04) — le geste du
@@ -6,6 +7,13 @@ import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
 // compte rendu de ce patient. Motif fermé, aucun texte libre. L'écart PURGE le
 // contenu aussitôt (motif `ecarte`, [[D-258]]) ; l'empreinte reste, si bien
 // qu'un doublon reste refusé. Irréversible.
+//
+// SES LIGNES PARTENT AVEC LUI ([[D-283]] §2, arbitrage F44 du 2026-10-17,
+// cas 3) : écarter le document clôt la question, il n'y a plus rien à
+// décider. Lignes et extractions sont effacées dans la même transaction
+// (`effacerNonValide`, partagé avec l'échéance) ; restent la trace du dépôt et
+// celle de l'écart. Un travail de la file en attente ou en cours ([[D-282]])
+// refuse l'écart, comme une extraction en cours : rien ne s'efface sous lui.
 //
 // TROISIÈME AUTEUR de modification du compte rendu, admis nommément par
 // `staging.guard.test.ts` (après la dernière décision et l'échéance).
@@ -77,6 +85,10 @@ export async function ecarterCompteRendu(params: {
       where: { idCompteRendu, idPatient, statut: 'en_cours', lanceLe: { gte: limite } },
     });
     if (enCours > 0) return { ok: false as const, reason: 'extraction_en_cours' as const };
+    const travauxOuverts = await tx.travailExtractionBiologique.count({
+      where: { idCompteRendu, idPatient, statut: { in: ['en_attente', 'en_cours'] } },
+    });
+    if (travauxOuverts > 0) return { ok: false as const, reason: 'extraction_en_cours' as const };
     await tx.importBiologique.updateMany({
       where: { idCompteRendu, idPatient, statut: 'en_cours', lanceLe: { lt: limite } },
       data: { statut: 'echec', motifEchec: 'delai_depasse' },
@@ -88,6 +100,7 @@ export async function ecarterCompteRendu(params: {
       data: { contenu: null, motifPurge: 'ecarte', ecartePar: params.ecartePar, motifEcart: params.motif },
     });
     if (count !== 1) return { ok: false as const, reason: 'deja_efface' as const };
+    await effacerNonValide(tx, idCompteRendu);
     return { ok: true as const };
   }, { timeout: 20_000 });
 }

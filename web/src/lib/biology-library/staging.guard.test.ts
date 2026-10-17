@@ -23,6 +23,13 @@ import { describe, expect, it } from 'vitest';
 // [[D-269]] §3, l'écart d'un document transmis par le patient
 // (`import/ecart.ts`), dont la purge porte le motif `ecarte`.
 //
+// L'ÉCHÉANCE, TROISIÈME AUTEUR DE SUPPRESSION ([[D-283]] §2, F44) : à 30 jours
+// du dépôt, les lignes écartées ou jamais décidées, puis chaque extraction
+// restée sans ligne validée — `effacerNonValide` dans `import/purge.ts`, une
+// fois par table (lignes, extractions). L'écart d'un document transmis
+// l'appelle, il ne supprime pas lui-même. Une ligne validée ne part jamais
+// par ce chemin : elle prouve un résultat (A5).
+//
 // LE MASQUAGE ([[D-284]] §5, lot j) : les pages masquées d'un compte rendu
 // suivent les mêmes deux auteurs de suppression. AUCUN code ne les modifie :
 // leur purge est écrite par la base, dans l'instruction qui purge le document.
@@ -81,9 +88,9 @@ const SQL_BRUT =
   /(?:DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+(?:public\.)?"?(?:comptes_rendus_biologiques|imports_biologiques|lignes_biologiques_candidates|masquages_comptes_rendus)\b/i;
 
 describe('Staging d’import biologique — qui supprime (D-256, LOT-02)', () => {
-  it('seuls l’effacement nommé du dossier et le retrait d’un dépôt erroné suppriment, une fois par table', () => {
+  it('seuls l’effacement nommé du dossier, le retrait d’un dépôt erroné et l’échéance suppriment, une fois par table', () => {
     const auteurs = occurrences(SUPPRIMER).sort((a, b) => a.fichier.localeCompare(b.fichier));
-    expect(auteurs).toEqual([{ fichier: RETRAIT, n: 4 }, { fichier: EFFACEMENT, n: 4 }]);
+    expect(auteurs).toEqual([{ fichier: PURGE, n: 2 }, { fichier: RETRAIT, n: 4 }, { fichier: EFFACEMENT, n: 4 }]);
   });
 
   it('aucun code ne modifie un masquage : sa purge est écrite par la base (D-284 §5)', () => {

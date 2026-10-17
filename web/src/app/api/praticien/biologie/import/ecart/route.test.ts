@@ -6,8 +6,9 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     patient: { findUnique: vi.fn() },
     journalAccesDossier: { create: vi.fn() },
     compteRenduBiologique: { findFirst: vi.fn(), updateMany: vi.fn() },
-    importBiologique: { count: vi.fn(), updateMany: vi.fn() },
-    ligneBiologiqueCandidate: { count: vi.fn() },
+    importBiologique: { count: vi.fn(), updateMany: vi.fn(), findMany: vi.fn(), deleteMany: vi.fn() },
+    ligneBiologiqueCandidate: { count: vi.fn(), deleteMany: vi.fn() },
+    travailExtractionBiologique: { count: vi.fn(), deleteMany: vi.fn() },
     $executeRaw: vi.fn(),
     $transaction: vi.fn(),
   },
@@ -38,6 +39,10 @@ beforeEach(() => {
   prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
   prisma.$executeRaw.mockResolvedValue(1);
   prisma.compteRenduBiologique.findFirst.mockResolvedValue({ origine: 'patient', purgeLe: null });
+  // L'écart emporte ses lignes (D-318 §3) : rien à effacer ici.
+  prisma.travailExtractionBiologique.count.mockResolvedValue(0);
+  prisma.ligneBiologiqueCandidate.deleteMany.mockResolvedValue({ count: 0 });
+  prisma.importBiologique.findMany.mockResolvedValue([]);
   prisma.compteRenduBiologique.updateMany.mockResolvedValue({ count: 1 });
   prisma.importBiologique.count.mockResolvedValue(0);
   prisma.importBiologique.updateMany.mockResolvedValue({ count: 0 });

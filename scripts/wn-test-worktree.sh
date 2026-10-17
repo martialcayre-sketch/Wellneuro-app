@@ -576,6 +576,11 @@ grep -q 'banc-file-extraction-deux-sessions.test.ts' "$ROOT/.github/workflows/ci
   || die "ci.yml ne lance plus le banc de la file des lectures."
 WN_BIO_FILE_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-file-extraction-deux-sessions.test.ts > /dev/null < /dev/null \
   || die "banc de la file des lectures en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-file-extraction-deux-sessions.test.ts\`, depuis web/)."
+# La purge à 30 jours des lignes non validées (D-318, F44), même discipline.
+grep -q 'banc-purge-echeance.test.ts' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc de la purge à l'échéance."
+WN_BIO_PURGE_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-purge-echeance.test.ts > /dev/null < /dev/null \
+  || die "banc de la purge à l'échéance en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-purge-echeance.test.ts\`, depuis web/)."
 
 step "Seed (patients fictifs uniquement)"
 npm run prisma:seed

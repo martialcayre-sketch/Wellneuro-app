@@ -76,7 +76,7 @@ export type CompteRenduLu = {
   /** NULL pour un document transmis par le patient ([[D-269]] §2). */
   deposePar: string | null;
   deposeLe: string;
-  /** Le document a été effacé ([[D-258]]) : il ne se relit plus, ses lignes restent décidables. */
+  /** Le document a été effacé ([[D-258]]) : il ne se relit plus ; à l’échéance et à l’écart, ses lignes non validées partent avec lui ([[D-283]] §2). */
   purgeLe: string | null;
   motifPurge: string | null;
   /** L'écart d'un document transmis par le patient ([[D-269]] §3) : `illisible` | `document_non_conforme`. */

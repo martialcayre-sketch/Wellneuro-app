@@ -1423,6 +1423,17 @@ jobs:
           TZ: Europe/Paris
         run: node prisma/runWithAlias.js scripts/banc-file-extraction-deux-sessions.test.ts
 
+      # La purge à 30 jours des lignes non validées (D-318, F44) : le VRAI code
+      # (`purgerAEcheance`, `ecarterCompteRendu`) contre les FK RESTRICT des
+      # lignes, extractions, travaux et lectures — dépôt sans ligne validée,
+      # mixte, déjà purgé, travail en attente, récent, écart, second passage.
+      - name: Bio purge échéance bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_PURGE_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-purge-echeance.test.ts
+
       # Lettres d'adressage remises au patient (D-262, LOT-01). Ce que le drift
       # check ne voit pas : la remise porte sur une approbation du même dossier
       # dont le protocole s'ouvre sur l'orientation réservée, une lettre
