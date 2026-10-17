@@ -275,6 +275,8 @@ describe('CorrespondancesNabmSection — recherche par libellé (D-320 §1)', ()
     expect(String(appel[0])).toBe(
       `/api/praticien/biologie/nabm/recherche?q=${encodeURIComponent('homocystéine totale')}`,
     );
+    // La liste nomme la saisie qu'elle sert, même si le champ a bougé depuis.
+    expect(screen.getByText(/Actes du millésime V105 pour « homocystéine totale »/)).toBeTruthy();
     // Les résultats se lisent ; aucun acte n'est lu ni signable avant le choix.
     expect(screen.getByText(/Libellé de l’acte 1209/)).toBeTruthy();
     expect(screen.getByText('Inactif')).toBeTruthy();

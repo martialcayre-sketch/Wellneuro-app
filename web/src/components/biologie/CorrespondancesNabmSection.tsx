@@ -628,6 +628,10 @@ export function CorrespondancesNabmSection({
               </p>
             ) : (
               <div className="flex flex-col gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Actes du millésime {resultatsRecherche.millesime} pour «{' '}
+                  {resultatsRecherche.saisie} » :
+                </p>
                 {resultatsRecherche.total > resultatsRecherche.actes.length && (
                   <p className="text-xs text-muted-foreground">
                     {resultatsRecherche.actes.length} premiers sur {resultatsRecherche.total} —
