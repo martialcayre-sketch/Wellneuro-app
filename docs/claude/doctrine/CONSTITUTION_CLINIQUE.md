@@ -593,7 +593,7 @@ causes** : « traitement incompatible » n'a toujours aucun motif.*
 causes** — mais pas de la façon prévue :*
 
 - *`ABST-SEC-01` **n'est plus inatteignable** : [[D-099]] lui a donné son
-  producteur, et le LOT-05 lui en ajoute un second (`SAF-EI-01`, non signé).*
+  producteur, et le LOT-05 lui en ajoute un second (`SAF-EI-01`, non signé ; signé le 2026-10-17, [[D-281]] §6).*
 - *« **Population non couverte** » reçoit son motif — et il est double, ce qui
   n'était pas anticipé. La gate rend « écarté — exclusion déclarée » quand elle
   mord, et « **proposé — exclusions non curées** » quand elle ne sait pas.
@@ -1144,6 +1144,7 @@ banc qui tourne dans la suite du CI, un statut basculé :
   **sujet** — les 95 interventions portent `neCouvrePas` à `null` sur les 95 —
   et a reçu un **porteur**, la curation des exclusions rouverte ([[D-107]]).
   2026-10-14 : la revue du 2026-08-30 ([[D-107]]) est échue sans signature ; `SAF-EI-01` est amendée par [[D-281]] et se signe en fin de chantier (§6) ; d'ici là, la règle reste non armée.
+  2026-10-17 : `SAF-EI-01` amendée est signée (M-1, [[D-281]] §6) ; elle s'arme au déploiement du commit de signature.
 - **`DC-58`** : instruite, sans contre-exemple au dépôt, et **sans méthode
   fondée**. Reste proposition **avec sa mesure**.
 - **Les quatre non armées** (`DC-05`, `DC-08`, `DC-52`, `DC-53`) : leur

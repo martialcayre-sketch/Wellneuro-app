@@ -229,10 +229,10 @@ export default defineConfig({
       WN_BIO_PORTAIL_ENABLED: 'true',
       // Capture du rattachement d'un effet indésirable ([[D-101]], [[D-281]]
       // §2) — `portail-signalement-designation.spec.ts`. Posé en production :
-      // le banc s'aligne. Il ouvre la CAPTURE seule ; l'interruption exige en
-      // plus la table signée (M-1), absente — la garde de diffusion reste
-      // inerte ici comme là-bas. Lu au runtime par les routes TRUST seules :
-      // aucune pose au build.
+      // le banc s'aligne. Il ouvre la CAPTURE ; l'interruption exige en plus
+      // la table signée, ce qu'elle est depuis M-1 (2026-10-17) — la garde de
+      // diffusion est active ici comme là-bas. Lu au runtime par les routes
+      // TRUST seules : aucune pose au build.
       WN_EI_INTERRUPTION: '1',
       // « aucun secret posé » ci-dessus n'est vrai que si on l'IMPOSE : le
       // `...process.env` plus haut fait fuiter le vrai client patient présent

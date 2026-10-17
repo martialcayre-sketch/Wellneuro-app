@@ -30,8 +30,9 @@ import { construireSafetyFindings, type EffetIndesirableRuntime } from './safety
 //      fait plus dériver la carte servie (D-281 §5, arbitrage du 2026-10-17) ;
 //   4. le verrou couvre la conduite et les trois textes patient signés.
 //
-// La table est livrée NON SIGNÉE : la signature est simulée puis restaurée,
-// exactement comme le banc de la chaîne C1 simule celle des priorités.
+// La table est SIGNÉE depuis le 2026-10-17 (M-1, D-281 §6). La branche non
+// signée reste gardée : elle est simulée puis restaurée, comme le banc de la
+// chaîne C1 simule l'état fermé des priorités.
 
 const ETAT_LIVRE = { ...SAFETY_EI_METADATA };
 
@@ -39,6 +40,13 @@ afterEach(() => {
   Object.assign(SAFETY_EI_METADATA, ETAT_LIVRE);
   delete process.env.WN_EI_INTERRUPTION;
 });
+
+function simulerNonSignature(): void {
+  SAFETY_EI_METADATA.validationExterne = false;
+  SAFETY_EI_METADATA.dateValidation = null;
+  SAFETY_EI_METADATA.sourceReference = '';
+  SAFETY_EI_METADATA.shaPerimetre = null;
+}
 
 function simulerSignature(): void {
   SAFETY_EI_METADATA.validationExterne = true;
@@ -73,14 +81,38 @@ const FORMULAIRE_D_AVANT: EffetIndesirableRuntime = {
 const constatsEI = (effets: EffetIndesirableRuntime[]) =>
   construireSafetyFindings([], effets, []).findings.filter(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE);
 
-describe('état LIVRÉ — la production ne change pas au merge', () => {
-  it('la table n’est pas signée et le drapeau est absent', () => {
-    expect(tableEffetIndesirableSignee()).toBe(false);
+describe('état SIGNÉ (M-1, 2026-10-17) — et la branche non signée, simulée', () => {
+  // LA SIGNATURE TELLE QUE LE DÉPÔT LA PORTE : la v2 amendée, la source de
+  // D-281 §6, et une empreinte littérale égale à celle du périmètre servi.
+  it('la table est signée sur son périmètre ; sans drapeau, rien ne s’interrompt', () => {
+    expect(tableEffetIndesirableSignee()).toBe(true);
+    expect(SAFETY_EI_METADATA.version).toBe('safety-effet-indesirable-nnpp2-v2');
+    expect(SAFETY_EI_METADATA.sourceReference)
+      .toBe('Constitution clinique DC-42 ; arbitrage du praticien consigné en D-281 du 2026-10-12');
+    expect(SAFETY_EI_METADATA.shaPerimetre).toBe(SAFETY_EI_SHA256);
     expect(associationEffetIndesirableDisponible()).toBe(false);
     expect(interruptionEffetIndesirableActive()).toBe(false);
   });
 
+  // SANS SIMULATION : la règle que la revue reçoit, telle que la production la
+  // joindra au déploiement.
+  it('signée : la règle sort validée, en v2, avec sa source et sa date', () => {
+    const regle = construireSafetyFindings([], [], []).rules
+      .find(r => r.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE);
+    expect(regle).toEqual({
+      ruleId: REGLE_SECURITE_EFFET_INDESIRABLE,
+      version: 'safety-effet-indesirable-nnpp2-v2',
+      lifecycle: 'clinically_validated',
+      validation: {
+        validatedAt: '2026-10-17T00:00:00.000Z',
+        validatorRole: 'practitioner',
+        sourceReference: 'Constitution clinique DC-42 ; arbitrage du praticien consigné en D-281 du 2026-10-12',
+      },
+    });
+  });
+
   it('non signée : aucun constat, la règle en `candidate`, aucune limitation', () => {
+    simulerNonSignature();
     const { findings, rules, limitations } = construireSafetyFindings([], [RATTACHE, SANS_RATTACHEMENT], []);
     expect(findings).toHaveLength(0);
     expect(rules.find(r => r.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)?.lifecycle).toBe('candidate');
@@ -90,6 +122,7 @@ describe('état LIVRÉ — la production ne change pas au merge', () => {
   // CONTRE-ÉPREUVE DU VERROU. Les cinq termes doivent tenir ENSEMBLE : un
   // `validationExterne: true` posé seul ne suffit pas à ouvrir.
   it('un booléen de signature posé seul n’ouvre pas le verrou', () => {
+    simulerNonSignature();
     SAFETY_EI_METADATA.validationExterne = true;
     expect(tableEffetIndesirableSignee()).toBe(false);
   });
@@ -121,6 +154,7 @@ describe('le périmètre signé — la conduite et les trois textes patient', ()
 
 describe('l’ordre des deux gestes — capturer avant d’interrompre', () => {
   it('le drapeau seul ouvre la CAPTURE, jamais l’interruption', () => {
+    simulerNonSignature();
     process.env.WN_EI_INTERRUPTION = '1';
     expect(associationEffetIndesirableDisponible()).toBe(true);
     expect(interruptionEffetIndesirableActive()).toBe(false);

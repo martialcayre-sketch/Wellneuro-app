@@ -226,11 +226,35 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
     }
   });
 
-  // L'ÉTAT DE LA PRODUCTION : drapeau posé, règle non signée — par le VRAI
-  // verrou (revue CodeRabbit de #1457), pas par un `false` forcé.
-  it('règle non signée, drapeau posé : aucune lecture des signalements, rien ne s’interrompt (D-281 §6)', async () => {
+  // L'ÉTAT DE LA PRODUCTION DEPUIS M-1 (2026-10-17) : drapeau posé, règle
+  // signée — par le VRAI verrou (revue CodeRabbit de #1457), pas par un `true`
+  // forcé. La garde lit les signalements du dossier avant toute diffusion.
+  it('règle signée, drapeau posé : la garde lit les signalements avant de diffuser (D-281 §6)', async () => {
     eiActive.valeur = null;
     process.env.WN_EI_INTERRUPTION = '1';
+    try {
+      signalementsEnAttenteDuDossier.mockResolvedValue([]);
+      getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+      prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+      prisma.protocolDiffusionApproval.create.mockResolvedValue({ id: 'APP_1' });
+
+      const res = await POST(postRequest(body));
+      expect(res.status).toBe(200);
+      expect(signalementsEnAttenteDuDossier).toHaveBeenCalled();
+    } finally {
+      delete process.env.WN_EI_INTERRUPTION;
+    }
+  });
+
+  // LA BRANCHE NON SIGNÉE, TOUJOURS PAR LE VRAI VERROU : signature retirée par
+  // simulation, puis restaurée. Drapeau posé seul, rien ne s'interrompt.
+  it('règle non signée, drapeau posé : aucune lecture des signalements, rien ne s’interrompt (D-281 §6)', async () => {
+    const { SAFETY_EI_METADATA } = await import('@/lib/clinical/safetyEffetIndesirableV1');
+    eiActive.valeur = null;
+    process.env.WN_EI_INTERRUPTION = '1';
+    const signee = { ...SAFETY_EI_METADATA };
+    SAFETY_EI_METADATA.validationExterne = false;
     try {
       getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
       prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
@@ -241,6 +265,7 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
       expect(res.status).toBe(200);
       expect(signalementsEnAttenteDuDossier).not.toHaveBeenCalled();
     } finally {
+      Object.assign(SAFETY_EI_METADATA, signee);
       delete process.env.WN_EI_INTERRUPTION;
     }
   });
