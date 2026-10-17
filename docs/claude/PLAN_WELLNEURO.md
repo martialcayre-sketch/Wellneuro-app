@@ -595,6 +595,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : dans s ; les écarts d'unité textuels du constat d'usage se lisent avec le responsable hors agrégats, avant le code de la série (rang 4).
 - **Critère de fin** : commentaire sous la valeur concernée ; aucun calcul.
 - **Mise à jour (2026-10-17)** : la part « commentaires » est livrée par BP-03 (#1466, fiche LOT-03, arbitrage 4 : commentaire de la ligne lue sous sa valeur, recopié tel qu'imprimé, « non transcrit » sinon). Reste la part « deux unités » (rang 5) ; la lecture des écarts avec le responsable est faite (2026-10-14) : les 14 écarts sont tous des graphies (LOT-03, arbitrage 1).
+- **Clôture (2026-10-17)** : F60 se ferme (arbitrage du responsable du 2026-10-17) : la part « commentaires » est livrée par BP-03 ; la part « deux unités » n'est pas codée, les 14 écarts lus le 2026-10-14 étant tous des graphies. Un écart d'unité réel constaté plus tard la rouvre.
 
 #### F67 · Amendement de D-276 : cinq déclencheurs
 - **Identifiant, piste** : lettre ci : les cinq déclencheurs de la qualification (amendement de D-276 §2) ; trust.
@@ -1342,6 +1343,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : aucune D-xxx propre (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:381` ne porte qu'une dépendance).
 - **Critère de fin** : série sur les trois fixtures ; aucun delta ; intervalle verbatim de chaque laboratoire, sans conversion (D-157).
 - **Mise à jour (2026-10-17)** : code livré (#1463 fiche, #1466 code, D-294 §6), commentaires du laboratoire compris (part de F60). Fiche LOT-03 `en_cours` : reste le constat après déploiement, sur un dossier réel lu par identifiant, par conteneur.
+- **Clôture (2026-10-17)** : constat après déploiement fait par le responsable le 2026-10-17 sur un dossier de test (valeurs et série vues, onglet « Biologie » conforme) ; fiche LOT-03 `terminé`, campagne bio-parcours `en_pause` sans lot courant. BP-05 et BP-16 peuvent s'appuyer sur la série.
 
 #### F16 · BP-04 : attente typée, analyteCodes sur l'exploration (étape 5 de l'audit)
 - **Identifiant, piste** : BP-04 ; absorbe CB-07 ; parcours et panels.
@@ -2367,6 +2369,7 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 |---|---|---|
 | `assessment_episodes.milestone` sans CHECK | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:349-385` ; `schema.prisma` | migration à part, au premier lot qui touche les épisodes [Hypothese] ; rang 4 au plus tôt |
 | Table des signaux de sécurité absente de `SOURCES_DE_SAVOIR` (`scripts/wn-matrice-consommation.mjs`) | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:477-487` | déclaration d'inventaire, sa propre PR [Hypothese] |
+| Vue `ACTIVE_CAMPAIGN.md` : le statut de la campagne primaire est écrit en dur « active » (`scripts/lib/vue-campagnes-actives.mjs:39-45`), même quand sa fiche dit `en_pause` (constaté à la clôture de LOT-07, puis de LOT-03) | revue CodeRabbit de #1526 (2026-10-17) | lire le statut de la fiche (repli « inconnu »), banc à l'appui, sa propre PR d'outillage [Hypothese] |
 | Unité d'un résultat biologique non liée au catalogue en base (D-264) | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:503-514` | au prochain changement d'unité d'un analyte porteur de résultats |
 | `MESSAGE_ORIENTATION_INACTIVE` périmé (D-074 §4) | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:531-539` | petite correction d'interface, avec J1-base (H43) [Hypothese] |
 | Règle G6 : frontière entre phrase recopiée et borne standard | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:592-604` | à écrire avant la prochaine attestation qui cite un chiffre |

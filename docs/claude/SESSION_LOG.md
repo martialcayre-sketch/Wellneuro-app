@@ -10469,3 +10469,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Désigner le premier micronutriment du besoin 2 (vit D, zinc ou Mg) ; décrire au plan le lot « clés besoins + rubrique à la signature » avant ce dossier.
 
 **Ouvert.** Aucun code écrit ; branche remise à niveau sur origin/main le 2026-10-16 avant commit.
+
+## 2026-10-17 — File B : F44, F57 PR 2, J3-12c, clôture LOT-03 et F60
+
+**Fait.** F44 (D-318, #1517) et F57 PR 2 (D-319, #1518) déployées. J3-12c en deux temps : migration `etiquetage` (#1521, D-321 — D-320 prise entre-temps par #1522) appliquée par release-db, constatée par conteneur ; code (#1525) : clés besoins + rubrique à la signature et par « Étiqueter », ingestion qui les refuse. LOT-03 clos (constat du responsable), F60 fermée.
+
+**Écarté.** Journaliser l'étiquetage en décision VALIDE→VALIDE ; `NOT VALID` sur les CHECK (aucune ligne visée) ; approuver un run release-db périmé par un push documentaire (rejeté, relancé sur la tête).
+
+**Prochaine action.** Geste du responsable : étiqueter les 92 claims du fer avant la signature du dossier vitamine D ; écrire la liste des statuts de F58.
+
+**Ouvert.** Texte patient v12 « valeurs relevées et décisions » à corriger avant le 2026-11-02 (D-283 §10 a) ; dossier vitamine D à reclasser en dix rubriques.

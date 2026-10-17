@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "BP-03 — Série par analyte, jour n, trois dates"
-statut: "en_cours (2026-10-15) — code livré en une PR, sans migration ; reste le constat après déploiement, sur un dossier réel lu par identifiant"
+statut: "terminé (2026-10-17) — code livré en une PR, sans migration (#1466) ; constat après déploiement fait par le responsable sur un dossier de test le 2026-10-17"
 dépend_de: "LOT-01, LOT-09"
 ---
 
@@ -182,3 +182,16 @@ constatée sur un dossier réel lu par identifiant, par conteneur.
 
 LOT-01 (terminé) ; LOT-09 (terminé : #1448, release-db constatée, #1455).
 Rang 4 du plan (F15).
+
+## Clôture (2026-10-17)
+
+- **Constat après déploiement** : fait par le responsable le 2026-10-17 sur un
+  dossier de test, depuis la fiche du praticien — valeurs et série vues, onglet
+  « Biologie » conforme (arbitrage F15 du 2026-10-17). Le critère de done est
+  tenu ; aucune mesure n'est consignée ici.
+- **F60** : la part « commentaires » est livrée par ce lot ; la part « deux
+  unités » n'est pas codée — les 14 écarts lus le 2026-10-14 sont tous des
+  graphies, F60 se ferme ; un écart réel futur la rouvre (arbitrage F60 du
+  2026-10-17).
+- **Suite** : la campagne repasse `en_pause` sans lot courant ; l'ordre est au
+  plan unique (BP-05 et BP-16 attendent cette série).

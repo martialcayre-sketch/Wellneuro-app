@@ -1,10 +1,10 @@
 ---
 id: "2026-10-04-bio-parcours"
 titre: "BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout"
-statut: "en_cours (ouverte le 2026-10-04 ; LOT-00, LOT-01, LOT-02, LOT-07, LOT-09, LOT-10, LOT-23, LOT-25 et LOT-26 terminés ; lots de sécurité issus de BP-26 livrés : 10A, 11A, 5A, 8B, D-281 lots 1 et 2 ; reprise le 2026-10-14 par LOT-03 (BP-03), rang 4 du plan docs/claude/PLAN_WELLNEURO.md)"
+statut: "en_pause (ouverte le 2026-10-04 ; LOT-00, LOT-01, LOT-02, LOT-03, LOT-04, LOT-07, LOT-09, LOT-10, LOT-23, LOT-25 et LOT-26 terminés ; lots de sécurité issus de BP-26 livrés : 10A, 11A, 5A, 8B, D-281 lots 1 et 2 ; LOT-03 (BP-03) terminé le 2026-10-17 ; suite au plan docs/claude/PLAN_WELLNEURO.md)"
 créée_le: "2026-10-04"
-mise_à_jour: "2026-10-14"
-lot_courant: "LOT-03"
+mise_à_jour: "2026-10-17"
+lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -88,8 +88,8 @@ programme, après deux contre-revues Codex et une contre-revue d'architecture.
 
 Les fiches portent l'identifiant `LOT-nn` qu'exige l'audit ; les documents
 disent `BP-nn` (`D-266` §15). BP-06 est absorbé par BP-05 : `LOT-06` n'est pas
-attribué. **Campagne en cours, lot courant LOT-03 (BP-03), ouvert le 2026-10-14 ;
-LOT-07 (BP-07) et LOT-09 (BP-09) terminés le même jour.** BP-26 est terminé le 2026-10-10 (`D-276`) : qualification différée
+attribué. **Campagne en pause ; LOT-03 (BP-03), ouvert le 2026-10-14, terminé
+le 2026-10-17 ; LOT-07 (BP-07) et LOT-09 (BP-09) terminés le 2026-10-14.** BP-26 est terminé le 2026-10-10 (`D-276`) : qualification différée
 à l'aboutissement du produit, aucune fonction retirée ni réduite, porte de
 `D-266` §2 amendée. Les lots de sécurité relevés par BP-26 sont livrés (10A,
 11A, 5A, 8B, `D-281` lots 1 et 2 ; lignes datées de la table ci-dessous),
@@ -98,7 +98,8 @@ l'agenda du sommeil (8B). La campagne a repris par BP-07, rang 1 du plan
 unique (`docs/claude/PLAN_WELLNEURO.md` §2, fiche F02) ; passée
 `en_cours` dans la PR qui écrit la fiche `lots/LOT-07`, elle repasse
 `en_pause` à sa clôture (2026-10-14), puis `en_cours` à nouveau dans la PR
-qui écrit la fiche `lots/LOT-03` (2026-10-14). L'ordre des lots est
+qui écrit la fiche `lots/LOT-03` (2026-10-14), et repasse `en_pause` à sa
+clôture (2026-10-17), jusqu'au lot suivant du plan. L'ordre des lots est
 celui du plan, la campagne dit le travail (`D-285` §1). Les fiches ne sont
 écrites que pour la phase 0 ; celles des autres lots s'écrivent quand ils
 arrivent.
@@ -130,7 +131,7 @@ nouveaux, décisions acceptées.
 | BP-12b | LOT-28 | Positions d'expert signées ; arbitrage de conflit persisté | à_faire | **oui** | BP-12a |
 | BP-13 | LOT-13 | Données physiologiques, traitements et compléments en cours | à_faire | **oui** | BP-00 |
 | BP-14 | LOT-14 | Identité d'auteur séparée du rôle | à_faire | **oui** | BP-00 |
-| BP-03 | LOT-03 | Série par analyte, jour n, trois dates | en_cours (fiche validée le 2026-10-14 ; 14 écarts d'unité lus, toutes des graphies ; code livré le 2026-10-15, constat après déploiement restant) | non | BP-01, BP-09 |
+| BP-03 | LOT-03 | Série par analyte, jour n, trois dates | terminé (2026-10-17 ; #1463 fiche, #1466 code, sans migration ; constat après déploiement par le responsable) | non | BP-01, BP-09 |
 | BP-04 | LOT-04 | Attente typée sur les deux véhicules | terminé (2026-10-15 ; `D-305` #1471, code en une PR sans migration) | non | BP-01, BP-09 |
 | BP-05 | LOT-05 | Contexte de prélèvement typé (absorbe BP-06) | à_faire | **oui** | BP-00, BP-03 |
 | **Phase 2** | | **Premier parcours, étage outil** | | | |
