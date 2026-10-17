@@ -4,6 +4,52 @@
 
 ## Décisions actives
 
+### D-318 — Purge à 30 jours des lignes non validées : seule la trace du dépôt reste d'un compte rendu sans ligne validée ; la lecture consignée reste ; l'écart emporte les lignes ; un travail en cours diffère tout (F44, D-283 §10 c)
+
+- Date : 2026-10-17
+- Statut : accepté. Quatre arbitrages du responsable du 2026-10-17, sur
+  questions à options, tous conformes à la recommandation. Texte rédigé par
+  l'assistant à partir de ces réponses.
+- Amende : [[D-258]] (« les lignes non décidées restent décidables sans le
+  document », caduque) ; précise [[D-283]] §2 (trace d'une lecture) et
+  exécute §10 c.
+- Domaine : `web/src/lib/biology-library/import/purge.ts` (échéance,
+  `effacerNonValide`), `ecart.ts` ; cron `bio:purge-echeance` ; texte du
+  panneau praticien (`ImportCompteRenduPanel.tsx`) ; fiche F44.
+- **Ne touche pas** : aucun schéma, aucune migration (la base admet déjà ces
+  suppressions) ; aucune durée (30 jours, [[D-283]] §2) ; aucune règle
+  clinique ; aucun texte patient — « Vos données personnelles » v12 dit encore
+  qu'on conserve « valeurs relevées et décisions » : sa correction appartient
+  au texte des durées ([[D-283]] §10 a), signé par le responsable.
+
+**§1 — Ce qui part à J+30.** Les lignes écartées ou jamais décidées, puis
+chaque extraction restée sans ligne validée, avec ses travaux terminés de la
+file. Le document déjà purgé à la dernière décision ([[D-258]] §1) ne protège
+pas ses lignes écartées : elles partent à l'échéance.
+
+**§2 — Ce qui reste.** Une ligne validée, son extraction et ses actes de
+lecture : ils prouvent un résultat (A5). D'un compte rendu sans aucune ligne
+validée, il ne reste que la trace du dépôt — date et empreinte — ; un même
+document redéposé reste reconnu comme doublon (arbitrage, cas 1). D'un
+compte rendu mixte, la lecture consignée reste (cas 2).
+
+**§3 — L'écart.** Écarter un document transmis par le patient efface ses
+lignes et ses extractions dans la même transaction que le document (cas 3) ;
+restent la trace du dépôt et celle de l'écart. [[D-258]] amendée : aucune
+ligne ne reste décidable sans son document, ni après l'écart ni après
+l'échéance.
+
+**§4 — Rien sous un travail en cours.** Une extraction en cours, ou un travail
+de la file en attente ou en cours ([[D-282]]), diffère toute la purge du
+compte rendu — document compris — au passage suivant du cron horaire ; il
+refuse l'écart, comme une extraction en cours (cas 4).
+
+**§5 — Preuve.** Banc sur base réelle (`scripts/banc-purge-echeance.test.ts`,
+en CI) : les quatre cas, le document déjà purgé, le dépôt récent intouché,
+l'écart, un second passage sans effet. Constat de production le 2026-10-17
+(conteneur, agrégats) : 10 comptes rendus, aucun de 30 jours ; le plus
+ancien atteint l'échéance le 2026-11-02.
+
 ### D-317 — Lettre t : l'e-mail neutre de diffusion est une annonce, pas une relance ; il part avec le clic, une fois par nouvelle version, sous plafond serveur ; le patient voit ses trois rendez-vous de suivi ; la carte du Fil dit « point d'étape » (H31, ACT-2)
 
 - Date : 2026-10-17

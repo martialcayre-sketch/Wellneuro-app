@@ -35,8 +35,9 @@ type MotifEcartDocument = 'illisible' | 'document_non_conforme';
 // praticien vérifie que c'est bien le compte rendu de ce patient (§1).
 //
 // LE DOCUMENT S'EFFACE ([[D-258]]) à la dernière décision de l'extraction
-// courante, et au plus tard 30 jours après le dépôt : il ne se relit plus,
-// les lignes restent décidables.
+// courante, et au plus tard 30 jours après le dépôt : il ne se relit plus.
+// À la même échéance, les lignes non validées s'effacent aussi ; à l'écart,
+// tout de suite ([[D-283]] §2, F44). Seules les lignes validées restent.
 // DATES ET HEURES EN HEURE DE PARIS, quel que soit le fuseau du poste : c'est
 // celle du laboratoire et celle de l'extraction. Lues dans le fuseau du
 // navigateur, un poste hors Paris verrait « 22:00 » la veille au lieu d'une
@@ -859,7 +860,12 @@ export function ImportCompteRenduPanel({
                 : detail.motifPurge === 'ecarte'
                   ? `, écarté (${(LIBELLES_MOTIF_ECART_DOCUMENT[detail.motifEcart as MotifEcartDocument] ?? 'motif inconnu').toLowerCase()})`
                   : ', toutes ses lignes décidées'} :
-              il ne peut plus être relu. Les lignes lues et leurs décisions restent.
+              il ne peut plus être relu.{' '}
+              {detail.motifPurge === 'ecarte'
+                ? 'Ses lignes lues sont effacées.'
+                : detail.motifPurge === 'echeance'
+                  ? 'Seules les lignes validées restent.'
+                  : 'Les lignes validées restent ; les autres s’effacent 30 jours après le dépôt.'}
             </p>
           )}
 
