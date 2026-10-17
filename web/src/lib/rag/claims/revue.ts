@@ -279,7 +279,7 @@ export function elementJournalClaim(
   claim: { id: string; claimId: string; versionClaim: string },
   statutAvant: ClaimStatut,
   statutApres: ClaimStatut,
-  /** Clés de lien posées avec la signature ([[D-320]] §6) — recopiées dans l'élément. */
+  /** Clés de lien posées avec la signature ([[D-321]] §6) — recopiées dans l'élément. */
   cles?: ClesLienClaim,
 ): {
   id: string;
@@ -301,7 +301,7 @@ export function elementJournalClaim(
 }
 
 /**
- * Élément d'un acte `etiquetage` ([[D-320]] §6). Ni `statutAvant` ni
+ * Élément d'un acte `etiquetage` ([[D-321]] §6). Ni `statutAvant` ni
  * `statutApres` : rien n'est décidé, et un audit qui chercherait les
  * signatures par `claims @> [{"statutApres":"VALIDE"}]` ne doit jamais y
  * compter un étiquetage. Le CHECK `rag_claim_decisions_etiquetage_complet`
@@ -341,7 +341,7 @@ export async function deciderClaim(params: {
   /** Motif praticien — obligatoire pour un REJET (dette v1, journal à l'appui). */
   motif?: string;
   /**
-   * Clés de lien ([[D-320]] §6) — facultatives, et seulement avec une
+   * Clés de lien ([[D-321]] §6) — facultatives, et seulement avec une
    * signature VALIDE : écrites sur le claim dans la même transaction, et
    * recopiées dans l'élément du journal.
    */
@@ -459,13 +459,13 @@ export type EtiquetageClaimResultat =
   | { ok: false; raison: 'claim_introuvable' | 'claim_non_valide' };
 
 /**
- * Acte « étiquetage » ([[D-320]] §6) : pose ou corrige les clés de lien d'un
+ * Acte « étiquetage » ([[D-321]] §6) : pose ou corrige les clés de lien d'un
  * claim DÉJÀ VALIDE, sans toucher statut, signataire ni date de signature. Un
  * claim par acte, journalisé sous son propre type — un compte des signatures
  * ne compte jamais un étiquetage.
  *
  * C'est ici que se tiennent l'existence du claim et son statut VALIDE (le
- * journal ne lit pas la table des claims, D-320 §7) : l'UPDATE gardé par
+ * journal ne lit pas la table des claims, D-321 §7) : l'UPDATE gardé par
  * `statut = 'VALIDE'` et l'INSERT du journal sont dans UNE transaction — un
  * claim remis en attente entre l'écran et l'acte n'est ni étiqueté ni
  * journalisé.

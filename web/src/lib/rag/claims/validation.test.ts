@@ -112,7 +112,7 @@ describe('validation ingestion des claims RAG', () => {
     expect(payload.claims[0].metadata).toEqual({});
   });
 
-  it.each(['besoins', 'rubrique'])('refuse la clé %s : réservée au praticien (D-320)', (cle) => {
+  it.each(['besoins', 'rubrique'])('refuse la clé %s : réservée au praticien (D-321)', (cle) => {
     expect(() =>
       parseRagClaimsIngestPayload({ claims: [{ ...validClaim(), metadata: { [cle]: [2] } }] }),
     ).toThrow(new RegExp(`metadata\\.${cle} est réservée au praticien`));

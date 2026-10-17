@@ -154,11 +154,11 @@ function parseClaim(value: unknown, index: number): RagClaimInput {
     throw new Error(`claims[${index}].metadata doit être un objet.`);
   }
   // Les clés de lien se posent de la main du praticien, à la signature ou par
-  // l'acte « étiquetage » ([[D-320]]) — jamais par le pipeline d'ingestion.
+  // l'acte « étiquetage » ([[D-321]]) — jamais par le pipeline d'ingestion.
   for (const cle of CLES_LIEN_CLAIM) {
     if (metadataValue && Object.prototype.hasOwnProperty.call(metadataValue, cle)) {
       throw new Error(
-        `claims[${index}].metadata.${cle} est réservée au praticien (atelier corpus, D-320) — l'ingestion ne la pose pas.`,
+        `claims[${index}].metadata.${cle} est réservée au praticien (atelier corpus, D-321) — l'ingestion ne la pose pas.`,
       );
     }
   }

@@ -397,7 +397,7 @@ describe('deciderClaim', () => {
     expect(parametresDeAppel(prisma.$executeRaw.mock.calls[0])[0]).toBe('EN_ATTENTE_VALIDATION');
   });
 
-  // D-320 §6 — les clés de lien accompagnent une signature VALIDE, jamais une autre décision.
+  // D-321 §6 — les clés de lien accompagnent une signature VALIDE, jamais une autre décision.
   const CLES = { besoins: [2, 4], rubrique: 'options' as const };
 
   it('signe avec des clés de lien : écrites sur le claim ET recopiées dans l’élément du journal', async () => {
@@ -444,7 +444,7 @@ describe('deciderClaim', () => {
   });
 });
 
-describe('etiqueterClaim — acte « étiquetage » sur un claim déjà VALIDE (D-320 §6)', () => {
+describe('etiqueterClaim — acte « étiquetage » sur un claim déjà VALIDE (D-321 §6)', () => {
   beforeEach(() => {
     prisma.$queryRaw.mockReset();
     prisma.$executeRaw.mockReset();

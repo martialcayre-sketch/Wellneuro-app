@@ -67,6 +67,8 @@ describe('/api/praticien/corpus/claims/decision', () => {
     expect((await POST(requete({ ...CORPS, id: 'WN-CL-0056-001' }))).status).toBe(400);
     expect((await POST(requete({ ...CORPS, decision: 'SUPPRIME' }))).status).toBe(400);
     expect((await POST(requete({ ...CORPS, statutAttendu: '' }))).status).toBe(400);
+    expect((await POST(requete(null))).status).toBe(400);
+    expect((await POST(requete([CORPS]))).status).toBe(400);
     expect(deciderClaim).not.toHaveBeenCalled();
   });
 
@@ -114,7 +116,7 @@ describe('/api/praticien/corpus/claims/decision', () => {
     expect((await derive.json()).reason).toBe('source_derivee');
   });
 
-  // D-320 §6 — clés de lien à la signature, et acte « étiquetage ».
+  // D-321 §6 — clés de lien à la signature, et acte « étiquetage ».
   it('transmet des clés de lien valides avec une signature, ordonnées et sans doublon', async () => {
     const reponse = await POST(requete({ ...CORPS, besoins: [4, 2, 4], rubrique: 'options' }));
     expect(reponse.status).toBe(200);
@@ -129,6 +131,7 @@ describe('/api/praticien/corpus/claims/decision', () => {
     ['rubrique hors liste', { besoins: [2], rubrique: 'indication' }],
     ['rubrique seule', { rubrique: 'options' }],
     ['besoins seuls', { besoins: [2] }],
+    ['besoins null', { besoins: null, rubrique: 'options' }],
   ])('refuse en 422 des clés invalides (%s), sans rien écrire', async (_cas, cles) => {
     const reponse = await POST(requete({ ...CORPS, ...cles }));
     expect(reponse.status).toBe(422);

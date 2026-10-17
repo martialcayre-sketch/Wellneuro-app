@@ -3,7 +3,7 @@ import { BESOIN_SOURCES } from '@/lib/equilibre/constants';
 import { BESOINS } from '@/lib/fiches-usage/vocabulaire';
 import { clesLienDuClaim, lireClesLien } from './clesLien';
 
-describe('lireClesLien — les clés de lien d’un claim (D-320)', () => {
+describe('lireClesLien — les clés de lien d’un claim (D-321)', () => {
   it('la liste des besoins est celle des douze besoins du guide (BESOIN_SOURCES)', () => {
     expect([...BESOINS]).toEqual(Object.keys(BESOIN_SOURCES).map(Number).sort((a, b) => a - b));
   });

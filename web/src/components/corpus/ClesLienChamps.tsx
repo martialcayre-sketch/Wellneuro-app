@@ -4,7 +4,7 @@ import { BESOINS as BESOINS_GUIDE } from '@/lib/equilibre/constants';
 import { RUBRIQUES_FICHE_USAGE } from '@/lib/fiches-usage/vocabulaire';
 import { nomRubrique } from '@/components/fiches-usage/libelles';
 
-// Saisie des clés de lien d'un claim ([[D-320]]) : les besoins qu'il sert (12
+// Saisie des clés de lien d'un claim ([[D-321]]) : les besoins qu'il sert (12
 // cases, aucune cochée d'office) et la rubrique de la chaîne d'usage (aucune
 // présélectionnée). Rien n'est proposé par l'assistant : la saisie part vide,
 // ou des clés déjà posées par le praticien.

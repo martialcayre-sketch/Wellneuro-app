@@ -18,7 +18,7 @@ import { deciderClaim, estClaimStatut, etiqueterClaim, type ClaimStatut } from '
 // l'écran. S'il a bougé entre-temps (autre onglet, replay), la lib répond
 // etat_divergent et rien n'est écrit — jamais d'écrasement silencieux.
 //
-// Clés de lien ([[D-320]] §6) : `besoins` et `rubrique` accompagnent, au
+// Clés de lien ([[D-321]] §6) : `besoins` et `rubrique` accompagnent, au
 // choix du praticien, une signature VALIDE ; sur un claim déjà VALIDE,
 // `action: 'etiqueter'` les pose ou les corrige sans re-signer. Hors liste,
 // partielles ou jointes à une autre décision : 422, rien n'est écrit.
@@ -105,6 +105,9 @@ export async function POST(req: Request): Promise<NextResponse<CorpusClaimDecisi
     try {
       body = (await req.json()) as PostBody;
     } catch {
+      return echec('invalid', 'Corps de requête illisible.', 400);
+    }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return echec('invalid', 'Corps de requête illisible.', 400);
     }
 

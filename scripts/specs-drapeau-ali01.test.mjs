@@ -149,7 +149,7 @@ const ALLOWLIST = new Map([
   [
     'src/lib/rag/claims/clesLien.test.ts',
     'ne lit de BESOIN_SOURCES que ses clés (les numéros 1 à 12 des besoins) — jamais un max ni un '
-      + 'identifiant d’instrument : verdict identique sous les deux drapeaux (D-320)',
+      + 'identifiant d’instrument : verdict identique sous les deux drapeaux (D-321)',
   ],
   [
     'src/lib/protocol/versioning.test.ts',

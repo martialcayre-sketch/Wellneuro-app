@@ -173,7 +173,7 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
     await waitFor(() => expect(appelsGet().length).toBeGreaterThan(getsAvant));
   });
 
-  // D-320 — clés de lien : facultatives à la signature, jamais partielles.
+  // D-321 — clés de lien : facultatives à la signature, jamais partielles.
   it('valide avec des clés de lien : besoins cochés et rubrique choisie partent avec la signature', async () => {
     fetchMock.mockImplementation(router());
     await attendreLaFile();
@@ -270,6 +270,51 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
     expect(screen.queryByRole('combobox')).toBeNull();
     expect(appelsPost()).toHaveLength(0);
+  });
+
+  it('un claim remis en attente montre ses clés, et sa re-validation les reprend sans pouvoir les vider', async () => {
+    fetchMock.mockImplementation(
+      router({ listeDefaut: { ...LISTE, claims: [{ ...CLAIM, metadata: { besoins: [9], rubrique: 'limites' } }] } }),
+    );
+    await attendreLaFile();
+    expect(screen.getByText('Besoins 9 · rubrique « Limites »')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Valider' }));
+    expect(
+      (screen.getByLabelText('9. Sensations-émotions fondamentales (stress)') as HTMLInputElement).checked,
+    ).toBe(true);
+    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('limites');
+    // Vider les clés ne les retire pas en base : la signature est bloquée.
+    fireEvent.click(screen.getByLabelText('9. Sensations-émotions fondamentales (stress)'));
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '' } });
+    const confirmer = screen.getByRole('button', { name: 'Confirmer la validation' }) as HTMLButtonElement;
+    expect(confirmer.disabled).toBe(true);
+
+    fireEvent.click(screen.getByLabelText('2. Micronutriments essentiels'));
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'options' } });
+    fireEvent.click(confirmer);
+    await waitFor(() => expect(appelsPost()).toHaveLength(1));
+    expect(JSON.parse(appelsPost()[0][1].body)).toMatchObject({ besoins: [2], rubrique: 'options' });
+  });
+
+  it('un étiquetage en échec garde la saisie ouverte et dit l’erreur', async () => {
+    fetchMock.mockImplementation(
+      router({
+        listes: { VALIDE: { ...LISTE, statut: 'VALIDE', claims: [{ ...CLAIM, statut: 'VALIDE', validateur: 'praticien@wellneuro.fr', valideAt: '2026-07-22T18:00:00.000Z' }] } },
+        post: { ok: false, reason: 'exception', error: 'Erreur technique.' },
+        postOk: false,
+      }),
+    );
+    await attendreLaFile();
+    fireEvent.click(screen.getByRole('tab', { name: 'Validés' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Étiqueter' }));
+    fireEvent.click(screen.getByLabelText('2. Micronutriments essentiels'));
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'options' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer l’étiquetage' }));
+
+    expect(await screen.findByText('Erreur technique.')).toBeTruthy();
+    expect((screen.getByLabelText('2. Micronutriments essentiels') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('options');
   });
 
   it('l’annulation de l’armement ne signe rien', async () => {

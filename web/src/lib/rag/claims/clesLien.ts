@@ -1,4 +1,4 @@
-// LES CLÉS DE LIEN D'UN CLAIM ([[D-320]], amende [[D-312]] §5) — pur.
+// LES CLÉS DE LIEN D'UN CLAIM ([[D-321]], amende [[D-312]] §5) — pur.
 //
 // Deux clés dans la `metadata` du claim : `besoins`, les besoins qu'il sert
 // (liste non vide d'entiers de 1 à 12, sans doublon), et `rubrique`, la

@@ -1,4 +1,4 @@
-### Atelier corpus : les besoins servis et la rubrique d'usage se posent sur un claim (D-320, J3-12c, code)
+### Atelier corpus : les besoins servis et la rubrique d'usage se posent sur un claim (D-321, J3-12c, code)
 
 - À la validation individuelle d'un claim, le praticien peut cocher les
   besoins qu'il sert (1 à 12) et choisir sa rubrique d'usage (une des dix des
