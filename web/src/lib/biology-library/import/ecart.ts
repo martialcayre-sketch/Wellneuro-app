@@ -66,6 +66,9 @@ export async function ecarterCompteRendu(params: {
   const { idPatient, idCompteRendu } = params;
   const maintenant = params.maintenant ?? new Date();
   return prisma.$transaction(async tx => {
+    // Le dossier en partage d'abord, l'ordre de l'effacement et de la file :
+    // l'écart supprime désormais lignes et travaux (revue adverse de F44, P2-1).
+    await tx.$queryRaw`SELECT 1 FROM patients WHERE id_patient = ${idPatient} FOR KEY SHARE`;
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
     const compteRendu = await tx.compteRenduBiologique.findFirst({
       where: { id: idCompteRendu, idPatient },

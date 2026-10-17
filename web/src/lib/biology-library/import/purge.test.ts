@@ -34,7 +34,11 @@ beforeEach(() => {
   prisma.$queryRaw.mockImplementation(async (...args: unknown[]) => {
     if (sql(args).includes('FROM comptes_rendus_biologiques')) {
       journal.push('candidats');
-      return candidats.map(id => ({ id }));
+      return candidats.map(id => ({ id, id_patient: 'pat_jennifer' }));
+    }
+    if (sql(args).includes('FROM patients')) {
+      journal.push('dossier');
+      return [{}];
     }
     journal.push('perimes');
     return (perimes[args[1] as string] ?? []).map(id => ({ id }));
@@ -84,12 +88,17 @@ describe('purgerAEcheance — 30 jours après le dépôt (D-258)', () => {
     // validée ou une extraction sans ligne validée (D-283 §2, F44).
     expect(requete).toContain("l.statut <> 'validee'");
     expect(requete).toContain("NOT EXISTS (SELECT 1 FROM lignes_biologiques_candidates l WHERE l.id_import = i.id AND l.statut = 'validee')");
+    // Le dossier en partage AVANT le verrou du compte rendu : l'ordre de
+    // l'effacement du dossier (revue adverse de F44, P2-1).
+    const dossier = prisma.$queryRaw.mock.calls[1] as [string[], string];
+    expect(dossier[0].join('?')).toContain('FOR KEY SHARE');
+    expect(dossier[1]).toBe('pat_jennifer');
     // Une transaction par compte rendu.
     expect(prisma.$transaction).toHaveBeenCalledTimes(2);
     expect(journal).toEqual([
       'candidats',
-      'verrou', 'perimes', 'compteRendu.purge', 'lignes.effacees',
-      'verrou', 'perimes', 'compteRendu.purge', 'lignes.effacees',
+      'dossier', 'verrou', 'perimes', 'compteRendu.purge', 'lignes.effacees',
+      'dossier', 'verrou', 'perimes', 'compteRendu.purge', 'lignes.effacees',
     ]);
     expect(prisma.compteRenduBiologique.updateMany).toHaveBeenCalledWith({
       where: { id: 'cr_1', contenu: { not: null } },
@@ -100,12 +109,12 @@ describe('purgerAEcheance — 30 jours après le dépôt (D-258)', () => {
   it('clôt d’abord un import en cours abandonné, PUIS purge — sinon il bloquerait la purge pour toujours (revue, P1)', async () => {
     perimes = { cr_1: ['imp_mort'] };
     expect(await purgerAEcheance()).toMatchObject({ purges: 1, importsClos: 1 });
-    expect(journal).toEqual(['candidats', 'verrou', 'perimes', 'import.clos', 'compteRendu.purge', 'lignes.effacees']);
+    expect(journal).toEqual(['candidats', 'dossier', 'verrou', 'perimes', 'import.clos', 'compteRendu.purge', 'lignes.effacees']);
     expect(prisma.importBiologique.updateMany).toHaveBeenCalledWith({
       where: { id: { in: ['imp_mort'] }, statut: 'en_cours' },
       data: { statut: 'echec', motifEchec: 'delai_depasse' },
     });
-    const [gabarit, idCompteRendu, intervalle] = prisma.$queryRaw.mock.calls[1] as [string[], string, string];
+    const [gabarit, idCompteRendu, intervalle] = prisma.$queryRaw.mock.calls[2] as [string[], string, string];
     expect(gabarit.join('?')).toContain("statut = 'en_cours'");
     expect(gabarit.join('?')).toContain("lance_le < (clock_timestamp() AT TIME ZONE 'UTC') - ?::interval");
     expect(idCompteRendu).toBe('cr_1');

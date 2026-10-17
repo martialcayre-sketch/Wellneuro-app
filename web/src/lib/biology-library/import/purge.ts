@@ -85,8 +85,13 @@ export async function effacerNonValide(
 
 type Issue = { purge: boolean; differe: boolean; importsClos: number; lignes: number; imports: number };
 
-async function purgerUn(idCompteRendu: string): Promise<Issue> {
+async function purgerUn(idCompteRendu: string, idPatient: string): Promise<Issue> {
   return prisma.$transaction(async tx => {
+    // L'ordre des verrous : dossier en partage, puis compte rendu — celui de
+    // l'effacement du dossier et de la file ([[D-282]] §9). Sans lui, la purge
+    // (lignes, puis travaux) croisait l'effacement (dossier, travaux, lignes) :
+    // interblocage (revue adverse de F44, P2-1).
+    await tx.$queryRaw`SELECT 1 FROM patients WHERE id_patient = ${idPatient} FOR KEY SHARE`;
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
     const perimes = await tx.$queryRaw<{ id: string }[]>`
       SELECT id FROM imports_biologiques
@@ -120,8 +125,8 @@ async function purgerUn(idCompteRendu: string): Promise<Issue> {
 // ligne validée. Le second cas couvre le document déjà purgé à la dernière
 // décision ([[D-258]] §1) : ses lignes écartées partent à l'échéance.
 export async function purgerAEcheance(): Promise<BilanEcheance> {
-  const candidats = await prisma.$queryRaw<{ id: string }[]>`
-    SELECT c.id FROM comptes_rendus_biologiques c
+  const candidats = await prisma.$queryRaw<{ id: string; id_patient: string }[]>`
+    SELECT c.id, c.id_patient FROM comptes_rendus_biologiques c
     WHERE c.depose_le <= (clock_timestamp() AT TIME ZONE 'UTC') - interval '30 days'
       AND (
         c.contenu IS NOT NULL
@@ -144,9 +149,9 @@ export async function purgerAEcheance(): Promise<BilanEcheance> {
     importsEffaces: 0,
     echecs: 0,
   };
-  for (const { id } of candidats) {
+  for (const { id, id_patient } of candidats) {
     try {
-      const issue = await purgerUn(id);
+      const issue = await purgerUn(id, id_patient);
       bilan.importsClos += issue.importsClos;
       bilan.lignesEffacees += issue.lignes;
       bilan.importsEffaces += issue.imports;

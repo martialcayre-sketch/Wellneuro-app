@@ -7,6 +7,7 @@ const { prisma, journal } = vi.hoisted(() => {
     return valeur;
   });
   const prisma = {
+    $queryRaw: trace('dossier', [{}]),
     $executeRaw: trace('verrou', 1),
     $transaction: vi.fn(),
     compteRenduBiologique: { findFirst: vi.fn(), updateMany: trace('compteRendu.updateMany', { count: 1 }) },
@@ -50,7 +51,7 @@ describe('ecarterCompteRendu — « Écarter ce document » (D-269 §3)', () => 
     expect(await ecarterCompteRendu(PARAMS)).toEqual({ ok: true });
     // Puis ses lignes et ses extractions partent avec lui (D-283 §2, F44, cas 3).
     expect(journal).toEqual([
-      'verrou', 'imports.closPerimes', 'compteRendu.updateMany', 'lignes.effacees', 'travaux.effaces', 'imports.effaces',
+      'dossier', 'verrou', 'imports.closPerimes', 'compteRendu.updateMany', 'lignes.effacees', 'travaux.effaces', 'imports.effaces',
     ]);
     expect(prisma.ligneBiologiqueCandidate.deleteMany).toHaveBeenCalledWith({
       where: { statut: { not: 'validee' }, import: { idCompteRendu: 'cr_1' } },
@@ -66,25 +67,25 @@ describe('ecarterCompteRendu — « Écarter ce document » (D-269 §3)', () => 
   it('un dépôt du praticien ne s’écarte pas — il se retire', async () => {
     prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce({ origine: 'praticien', purgeLe: null });
     expect(await ecarterCompteRendu(PARAMS)).toEqual({ ok: false, reason: 'origine_praticien' });
-    expect(journal).toEqual(['verrou']);
+    expect(journal).toEqual(['dossier', 'verrou']);
   });
 
   it('un document déjà effacé ne s’écarte pas', async () => {
     prisma.compteRenduBiologique.findFirst.mockResolvedValueOnce({ origine: 'patient', purgeLe: new Date() });
     expect(await ecarterCompteRendu(PARAMS)).toEqual({ ok: false, reason: 'deja_efface' });
-    expect(journal).toEqual(['verrou']);
+    expect(journal).toEqual(['dossier', 'verrou']);
   });
 
   it('refusé dès qu’une ligne est validée — la provenance d’un résultat ne s’efface pas', async () => {
     prisma.ligneBiologiqueCandidate.count.mockResolvedValueOnce(1);
     expect(await ecarterCompteRendu(PARAMS)).toEqual({ ok: false, reason: 'ligne_validee' });
-    expect(journal).toEqual(['verrou']);
+    expect(journal).toEqual(['dossier', 'verrou']);
   });
 
   it('refusé pendant une extraction fraîche ; une extraction périmée est close avant l’écart', async () => {
     prisma.importBiologique.count.mockResolvedValueOnce(1);
     expect(await ecarterCompteRendu(PARAMS)).toEqual({ ok: false, reason: 'extraction_en_cours' });
-    expect(journal).toEqual(['verrou']);
+    expect(journal).toEqual(['dossier', 'verrou']);
     vi.clearAllMocks();
     journal.length = 0;
     prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
@@ -106,7 +107,7 @@ describe('ecarterCompteRendu — « Écarter ce document » (D-269 §3)', () => 
     expect(prisma.travailExtractionBiologique.count).toHaveBeenCalledWith({
       where: { idCompteRendu: 'cr_1', idPatient: 'pat_jennifer', statut: { in: ['en_attente', 'en_cours'] } },
     });
-    expect(journal).toEqual(['verrou']);
+    expect(journal).toEqual(['dossier', 'verrou']);
   });
 
   it('un document purgé entre-temps n’efface rien de plus', async () => {
