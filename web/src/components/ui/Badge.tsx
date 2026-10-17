@@ -1,14 +1,30 @@
 import type { ReactNode } from 'react';
 
-export type BadgeVariant = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
+export type BadgeVariant = 'neutral' | 'success' | 'warning' | 'danger' | 'critical' | 'info';
 
 const VARIANT_CLASSES: Record<BadgeVariant, string> = {
   neutral: 'bg-muted text-muted-foreground',
   success: 'bg-status-success/10 text-status-success',
   warning: 'bg-status-warning/10 text-status-warning',
   danger: 'bg-status-danger/10 text-status-danger',
+  // Fond plein : la bande de gravité la plus haute doit se lire plus marquée
+  // que `danger`, jamais moins (ticket #1368). Blanc sur #b91c1c : 6,5:1.
+  critical: 'bg-status-danger text-white',
   info: 'bg-primary/10 text-primary',
 };
+
+/**
+ * La variante d'un badge d'interprétation de score, d'après la couleur que
+ * porte la grille (`success` < `info` < `warning` < `danger` < `dark`, échelle
+ * de `lib/scoring/miniSynthese.ts`). `dark`, la bande la plus haute, tombait
+ * en `neutral` — un gris moins marqué que la bande inférieure (ticket #1368).
+ * `info` reste neutre : ce lot ne touche que la bande la plus haute.
+ */
+export function varianteInterpretation(color?: string): BadgeVariant {
+  if (color === 'success' || color === 'warning' || color === 'danger') return color;
+  if (color === 'dark') return 'critical';
+  return 'neutral';
+}
 
 export function Badge({
   variant = 'neutral',
