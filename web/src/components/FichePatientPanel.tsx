@@ -2787,9 +2787,11 @@ export function FichePatientPanel({
                 setOngletActif('cockpit');
                 setPhaseActive('actions');
                 setDemandesArbitrage(n => n + 1);
-                // Le bouton disparaît avec son panneau : le focus suit vers le
-                // poste de pilotage, comme pour « Trajectoire » (P2-4).
-                requestAnimationFrame(() => document.getElementById('panneau-cockpit')?.focus());
+                // Le bouton disparaît avec son panneau : le focus suit vers la
+                // zone focale, qui reçoit le focus et porte la phase Actions
+                // (P2-4 ; revue CodeRabbit : le conteneur du poste de pilotage
+                // n'est pas focalisable).
+                requestAnimationFrame(() => document.getElementById('zone-focale')?.focus());
               }}
               className="min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
