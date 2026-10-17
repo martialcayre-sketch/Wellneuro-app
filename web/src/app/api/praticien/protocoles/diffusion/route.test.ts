@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   getServerSession, prisma, rejouerCarteDecision, reconstructProtocolDraft, vuePatientOuRefus,
-  apercuFichesDuProtocole, remettreFiches, annoncerDocumentRemis,
+  apercuFichesDuProtocole, remettreFiches, annoncerDiffusion,
   signalementsEnAttenteDuDossier, pausesServies, eiActive,
 } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -16,7 +16,7 @@ const {
   eiActive: { valeur: false as boolean | null },
   // L'E-MAIL NEUTRE ([[D-251]] §9, lot 11) : seul l'envoi est simulé. La règle
   // « est-il dû ? » (`annonceDue`) est la vraie, lue sur le drapeau.
-  annoncerDocumentRemis: vi.fn(),
+  annoncerDiffusion: vi.fn(),
   // LES FICHES D'ASSIETTE ([[D-251]] §7) : ce banc juge le CÂBLAGE de la
   // route — drapeau, jeton, transaction, approbation reprise ou créée. Le calcul
   // de l'aperçu et l'écriture ont leurs propres bancs (`remise.test.ts`,
@@ -34,7 +34,7 @@ const {
     patient: { findUnique: vi.fn() },
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn(), create: vi.fn() },
-    correspondancePatient: { create: vi.fn() },
+    correspondancePatient: { create: vi.fn(), count: vi.fn(async () => 0) },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
@@ -59,9 +59,13 @@ vi.mock('@/lib/clinical/safetyEffetIndesirableV1', async orig => {
     interruptionEffetIndesirableActive: () => eiActive.valeur ?? original.interruptionEffetIndesirableActive(),
   };
 });
+// L'E-MAIL DU PROTOCOLE ([[D-317]]) : ses trois conditions ont leur banc
+// (`annonceDiffusion.test.ts`) ; ce banc-ci juge le câblage du clic.
+const protocoleOuvert = vi.hoisted(() => ({ valeur: false }));
+vi.mock('@/lib/protocol/annonceDiffusion', () => ({ annonceProtocoleOuverte: () => protocoleOuvert.valeur }));
 vi.mock('@/lib/fiches-assiette/annonce', async orig => ({
   ...(await orig<typeof import('@/lib/fiches-assiette/annonce')>()),
-  annoncerDocumentRemis,
+  annoncerDiffusion,
 }));
 
 import { deriveProtocolDraftId, deriveVersionId } from '@/lib/protocol/versioning';
@@ -719,7 +723,7 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
     expect(prisma.protocolDraft.findUnique.mock.calls[0][0].select.payload).toBe(false);
     expect(prisma.$queryRaw).not.toHaveBeenCalled();
     expect(prisma.$executeRaw).not.toHaveBeenCalled();
-    expect(annoncerDocumentRemis).not.toHaveBeenCalled();
+    expect(annoncerDiffusion).not.toHaveBeenCalled();
 
     prisma.protocolDraft.findMany.mockResolvedValue([
       { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'E', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: {} },
@@ -808,7 +812,7 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
     expect(res.status).toBe(500);
     expect(((await res.json()) as { reason: string }).reason).toBe('exception');
     // Rien de remis, rien d'annoncé.
-    expect(annoncerDocumentRemis).not.toHaveBeenCalled();
+    expect(annoncerDiffusion).not.toHaveBeenCalled();
   });
 
   it('une exception ne recopie au journal ni son message ni ses arguments — classe et code seulement (contre-revue, P1-1)', async () => {
@@ -827,7 +831,7 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
   describe('l’e-mail neutre (lot 11)', () => {
     beforeEach(() => {
       process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
-      annoncerDocumentRemis.mockResolvedValue('envoye');
+      annoncerDiffusion.mockResolvedValue('envoye');
       prisma.correspondancePatient.create.mockResolvedValue({ id: 'trace_1' });
     });
 
@@ -846,7 +850,7 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
         ordre.push('trace réservée');
         return { id: 'trace_1' };
       });
-      annoncerDocumentRemis.mockImplementation(async () => {
+      annoncerDiffusion.mockImplementation(async () => {
         ordre.push('annonce');
         return 'envoye';
       });
@@ -854,8 +858,8 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
       const json = (await res.json()) as { fichesRemises: number; annonceFiches: string };
       expect(res.status).toBe(200);
       expect(json).toMatchObject({ fichesRemises: 2, annonceFiches: 'envoye' });
-      expect(annoncerDocumentRemis).toHaveBeenCalledTimes(1);
-      expect(annoncerDocumentRemis).toHaveBeenCalledWith('PAT_1', 'trace_1');
+      expect(annoncerDiffusion).toHaveBeenCalledTimes(1);
+      expect(annoncerDiffusion).toHaveBeenCalledWith('PAT_1', { idTrace: 'trace_1', gabarit: 'document_remis', plafonnee: false }, 'p@wellneuro.fr');
       expect(ordre).toEqual(['trace réservée', 'commit', 'annonce']);
       expect(prisma.correspondancePatient.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({ idPatient: 'PAT_1', type: 'document_remis', statut: 'Non_envoye' }),
@@ -865,7 +869,7 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
     it('un clic qui ne remet RIEN (double clic, rien de neuf) n’annonce rien, ni ne trace', async () => {
       remettreFiches.mockResolvedValue(0);
       const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
-      expect(annoncerDocumentRemis).not.toHaveBeenCalled();
+      expect(annoncerDiffusion).not.toHaveBeenCalled();
       expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
       expect(json).not.toHaveProperty('annonceFiches');
     });
@@ -875,7 +879,7 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
       const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
       expect(json).toMatchObject({ fichesRemises: 2 });
       expect(json).not.toHaveProperty('annonceFiches');
-      expect(annoncerDocumentRemis).not.toHaveBeenCalled();
+      expect(annoncerDiffusion).not.toHaveBeenCalled();
       expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
     });
 
@@ -897,14 +901,144 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
     it('un aperçu périmé n’annonce rien', async () => {
       apercuFichesDuProtocole.mockResolvedValue({ ...apercuServi, jeton: 'J2' });
       await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
-      expect(annoncerDocumentRemis).not.toHaveBeenCalled();
+      expect(annoncerDiffusion).not.toHaveBeenCalled();
     });
 
     it('un envoi qui échoue ne défait pas le clic : 200, et l’échec est dit', async () => {
-      annoncerDocumentRemis.mockResolvedValue('echoue');
+      annoncerDiffusion.mockResolvedValue('echoue');
       const res = await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
       expect(res.status).toBe(200);
       expect(await res.json()).toMatchObject({ ok: true, fichesRemises: 2, annonceFiches: 'echoue' });
+    });
+
+    it('le plafond ([[D-317]] §2) : une annonce dans les 24 heures — la trace dit « plafond », rien ne part', async () => {
+      prisma.correspondancePatient.count.mockResolvedValueOnce(1);
+      annoncerDiffusion.mockResolvedValue('plafond');
+      const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
+      expect(json).toMatchObject({ ok: true, fichesRemises: 2, annonceFiches: 'plafond' });
+      expect(annoncerDiffusion).toHaveBeenCalledWith('PAT_1', expect.objectContaining({ plafonnee: true }), 'p@wellneuro.fr');
+      expect(prisma.correspondancePatient.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ type: 'document_remis', statut: 'Non_envoye', erreurCourte: expect.stringContaining('plafond') }),
+      }));
+    });
+  });
+
+  describe('l’e-mail du protocole ([[D-317]], PA-2)', () => {
+    const versionsGet = [
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'E', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: {} },
+    ];
+    const approbation = (hash: string, id = 'appr_1', supersedes: string | null = null) => ({
+      id, protocolDraftInputHash: hash, supersedesApprovalId: supersedes,
+      createdAt: new Date('2026-01-04T00:00:00.000Z'), approvedAt: new Date('2026-01-04T00:00:00.000Z'),
+    });
+
+    beforeEach(() => {
+      protocoleOuvert.valeur = true;
+      process.env.WN_FICHES_ASSIETTE_LECTURE = 'true';
+      annoncerDiffusion.mockResolvedValue('envoye');
+      prisma.correspondancePatient.create.mockResolvedValue({ id: 'trace_1' });
+    });
+
+    afterEach(() => {
+      protocoleOuvert.valeur = false;
+    });
+
+    it('version NEUVE servable : UN e-mail, celui du protocole, qui vaut celui des fiches', async () => {
+      const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
+      expect(json).toMatchObject({ ok: true, unchanged: false, fichesRemises: 2, annonceProtocole: 'envoye' });
+      expect(json).not.toHaveProperty('annonceFiches');
+      expect(prisma.correspondancePatient.create).toHaveBeenCalledTimes(1);
+      expect(prisma.correspondancePatient.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ idPatient: 'PAT_1', type: 'protocole_diffuse', statut: 'Non_envoye' }),
+      }));
+      expect(annoncerDiffusion).toHaveBeenCalledWith(
+        'PAT_1', { idTrace: 'trace_1', gabarit: 'protocole_diffuse', plafonnee: false }, 'p@wellneuro.fr',
+      );
+    });
+
+    it('version neuve SANS fiche ni lettre : l’e-mail du protocole part quand même', async () => {
+      remettreFiches.mockResolvedValue(0);
+      const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
+      expect(json).toMatchObject({ fichesRemises: 0, annonceProtocole: 'envoye' });
+    });
+
+    it('nouveau clic sur la version DÉJÀ diffusée : pas d’e-mail du protocole — celui des fiches, s’il en part', async () => {
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([approbation('HASH_V1')]);
+      const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
+      expect(json).toMatchObject({ unchanged: true, annonceFiches: 'envoye' });
+      expect(json).not.toHaveProperty('annonceProtocole');
+      expect(prisma.correspondancePatient.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ type: 'document_remis' }),
+      }));
+    });
+
+    it('une version diffusée AUTREFOIS, redevenue active : pas d’e-mail du protocole', async () => {
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+        approbation('HASH_V1', 'appr_1'),
+        approbation('HASH_V2', 'appr_2', 'appr_1'),
+      ]);
+      remettreFiches.mockResolvedValue(0);
+      const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
+      expect(json).toMatchObject({ unchanged: false });
+      expect(json).not.toHaveProperty('annonceProtocole');
+      expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
+    });
+
+    it('protocole que le portail ne servira pas (dossier clos) : pas d’e-mail du protocole', async () => {
+      apercuFichesDuProtocole.mockResolvedValue({ ...apercuServi, blocage: { motif: 'dossier_non_suivi', detail: 'x' } });
+      remettreFiches.mockResolvedValue(0);
+      const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
+      expect(json).not.toHaveProperty('annonceProtocole');
+      expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
+    });
+
+    it('drapeau FERMÉ : la route d’avant — l’annonce des fiches seule', async () => {
+      protocoleOuvert.valeur = false;
+      const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
+      expect(json).toMatchObject({ annonceFiches: 'envoye' });
+      expect(json).not.toHaveProperty('annonceProtocole');
+    });
+
+    it('le plafond retient aussi l’e-mail du protocole', async () => {
+      prisma.correspondancePatient.count.mockResolvedValueOnce(1);
+      annoncerDiffusion.mockResolvedValue('plafond');
+      const json = (await (await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }))).json()) as Record<string, unknown>;
+      expect(json).toMatchObject({ ok: true, annonceProtocole: 'plafond' });
+      expect(annoncerDiffusion).toHaveBeenCalledWith(
+        'PAT_1', expect.objectContaining({ gabarit: 'protocole_diffuse', plafonnee: true }), 'p@wellneuro.fr',
+      );
+    });
+
+    it('GET : les approbations se lisent sur la chaîne de la version ACTIVE, pas de la première listée', async () => {
+      prisma.protocolDraft.findMany.mockResolvedValue([
+        // L'ancienne version, sur une autre carte, listée EN PREMIER.
+        { ...versionsGet[0], id: 'v0', inputHash: 'HASH_V0', decisionCardInputHash: 'HASH_DEC_ANCIEN' },
+        { ...versionsGet[0], id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', supersedesDraftId: 'v0' },
+      ]);
+      await GET(requeteGet());
+      expect(prisma.protocolDiffusionApproval.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { idPatient: 'PAT_1', decisionCardInputHash: 'HASH_DEC' },
+      }));
+    });
+
+    it('GET : l’écran l’apprend avant le geste — version jamais diffusée et servable seulement', async () => {
+      prisma.protocolDraft.findMany.mockResolvedValue(versionsGet);
+      const neuve = (await (await GET(requeteGet())).json()) as Record<string, unknown>;
+      expect(neuve).toMatchObject({ annonceProtocoleParEmail: true, emailProtocoleOuvert: true });
+
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([approbation('HASH_V1')]);
+      const dejaDiffusee = (await (await GET(requeteGet())).json()) as Record<string, unknown>;
+      expect(dejaDiffusee).toMatchObject({ annonceProtocoleParEmail: false, emailProtocoleOuvert: true });
+
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+      apercuFichesDuProtocole.mockResolvedValue({ ...apercuServi, blocage: { motif: 'dossier_non_suivi', detail: 'x' } });
+      const bloquee = (await (await GET(requeteGet())).json()) as Record<string, unknown>;
+      expect(bloquee).toMatchObject({ annonceProtocoleParEmail: false });
+
+      protocoleOuvert.valeur = false;
+      apercuFichesDuProtocole.mockResolvedValue(apercuServi);
+      const ferme = (await (await GET(requeteGet())).json()) as Record<string, unknown>;
+      expect(ferme).toMatchObject({ annonceProtocoleParEmail: false, emailProtocoleOuvert: false });
     });
   });
 

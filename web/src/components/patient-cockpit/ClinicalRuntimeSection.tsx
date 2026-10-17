@@ -118,6 +118,10 @@ type DiffusionApiResponse = {
   fiches?: ApercuFiches | null;
   /** Une fiche remise serait annoncée par l'e-mail neutre ([[D-251]] §9, lot 11). */
   annonceParEmail?: boolean;
+  /** Le clic diffuserait une version neuve, annoncée par l'e-mail du protocole ([[D-317]] §2). */
+  annonceProtocoleParEmail?: boolean;
+  /** `WN_ANNONCE_PROTOCOLE` effectivement ouvert ([[D-317]]). */
+  emailProtocoleOuvert?: boolean;
   /** Le courrier pour le médecin que le clic remettrait ([[D-262]], LOT-03b). */
   lettre?: ApercuLettreAdressage | null;
 };
@@ -464,6 +468,10 @@ export function ClinicalRuntimeSection({
   const [annonceParEmail, setAnnonceParEmail] = useState(false);
   /** Le sort de l'e-mail du dernier clic ([[D-251]] §9) — dit, jamais tu. */
   const [annonceFiches, setAnnonceFiches] = useState<AnnonceFiches | null>(null);
+  /** L'e-mail du protocole ([[D-317]] §2) : annoncé avant le clic, son sort après. */
+  const [annonceProtocoleParEmail, setAnnonceProtocoleParEmail] = useState(false);
+  const [annonceProtocole, setAnnonceProtocole] = useState<AnnonceFiches | null>(null);
+  const [emailProtocoleOuvert, setEmailProtocoleOuvert] = useState(false);
   /** Ce que la raison d'être a le droit de citer — relu au serveur ([[D-193]]). */
   const [sourcesCitables, setSourcesCitables] = useState<SourceCitablePurpose[]>([]);
   /** Lignes de barème vouchées par le serveur — vide tant qu'il n'est pas signé. */
@@ -628,12 +636,15 @@ export function ClinicalRuntimeSection({
         setApercuFiches(null);
         setApercuLettre(null);
         setAnnonceParEmail(false);
+        setAnnonceProtocoleParEmail(false);
         setServieAuPatient(null);
         setDiffusionDuCycle({ pour: decisionCardId, diffuse: null });
         return;
       }
       setDiffusionDuCycle({ pour: decisionCardId, diffuse: payload.approval !== null });
       setAnnonceParEmail(payload.annonceParEmail === true);
+      setAnnonceProtocoleParEmail(payload.annonceProtocoleParEmail === true);
+      setEmailProtocoleOuvert(payload.emailProtocoleOuvert === true);
       setApprovedAt(payload.approval?.approvedAt ?? null);
       setApprovalStale(payload.stale);
       // `?? null` et non `?? false` : un serveur qui ne sait pas ne doit pas
@@ -653,6 +664,7 @@ export function ClinicalRuntimeSection({
       setApercuFiches(null);
       setApercuLettre(null);
       setAnnonceParEmail(false);
+      setAnnonceProtocoleParEmail(false);
       setServieAuPatient(null);
       setDiffusionDuCycle({ pour: decisionCardId, diffuse: null });
     }
@@ -1600,6 +1612,7 @@ export function ClinicalRuntimeSection({
     setDiffusionState('saving');
     setDiffusionError(null);
     setAnnonceFiches(null);
+    setAnnonceProtocole(null);
     try {
       const response = await fetch('/api/praticien/protocoles/diffusion', {
         method: 'POST',
@@ -1618,6 +1631,7 @@ export function ClinicalRuntimeSection({
         reason?: string;
         error?: string;
         annonceFiches?: AnnonceFiches;
+        annonceProtocole?: AnnonceFiches;
       };
       if (!response.ok || !payload.ok) {
         setDiffusionState('error');
@@ -1636,6 +1650,7 @@ export function ClinicalRuntimeSection({
       // Le sort de l'e-mail neutre, quand il était dû : un échec ne doit pas
       // ressembler à un succès (revue Copilot de #1249).
       setAnnonceFiches(payload.annonceFiches ?? null);
+      setAnnonceProtocole(payload.annonceProtocole ?? null);
       await loadDiffusion(readyDecisionCardId);
     } catch {
       setDiffusionState('error');
@@ -2337,7 +2352,10 @@ export function ClinicalRuntimeSection({
             fiches={apercuFiches}
             lettre={apercuLettre}
             annonceParEmail={annonceParEmail}
+            annonceProtocoleParEmail={annonceProtocoleParEmail}
+            emailProtocoleOuvert={emailProtocoleOuvert}
             annonce={annonceFiches}
+            annonceProtocole={annonceProtocole}
             state={diffusionState}
             error={diffusionError}
             onApprove={approveForDiffusion}
