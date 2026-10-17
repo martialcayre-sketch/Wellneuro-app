@@ -25,7 +25,8 @@ import {
 } from '@/lib/clinical/priorityRulesV1';
 import { EXCLUSIONS_INTERVENTIONS_V1 } from '@/lib/clinical/gatePopulationV1';
 import type { CouvertureAdressage } from './safetyFindingSource';
-import { constatsSecuriteOuverts, signauxDeclares } from './safetyFindings';
+import { constatsSecuriteOuverts, signauxDeclares, type EffetIndesirableRuntime } from './safetyFindings';
+import { SAFETY_EI_METADATA, SAFETY_EI_SHA256 } from '@/lib/clinical/safetyEffetIndesirableV1';
 
 // CAS DE RÉFÉRENCE DU LOT-04 ([[D-054]]), mis à jour le 2026-08-15 ([[D-061]]).
 // Ce banc éprouve la chaîne dans les DEUX positions du verrou. LES RÔLES ONT
@@ -89,6 +90,8 @@ function chaine(options: {
   etat?: Record<string, string>;
   /** Couvertures d'adressage actives ([[D-257]], LOT-04) ; absent = non lues. */
   couvertures?: CouvertureAdressage[];
+  /** Signalements d'effet indésirable ([[D-281]]) ; absent = non lus. */
+  effets?: EffetIndesirableRuntime[];
 } = {}) {
   const lignes = reponsesRuntimeRideauT0(
     DATE_RIDEAU_FIXTURE,
@@ -127,6 +130,7 @@ function chaine(options: {
     reponsesSecurite: inputs.reponsesSecurite,
     etatPopulation: inputs.etatPopulation,
     ...(options.couvertures !== undefined ? { couverturesAdressage: options.couvertures } : {}),
+    ...(options.effets !== undefined ? { effetsIndesirables: options.effets } : {}),
   });
 }
 
@@ -524,6 +528,44 @@ describe('chaîne C1 — levée par adressage (D-257, LOT-04)', () => {
     expect(leve.review.abstention.status).toBe('required');
     expect(motifs).toContain('ne rend aucune mesure sur l’épisode confirmé');
     expect(motifs).not.toContain('Au moins un constat de sécurité est présent');
+  });
+});
+
+describe('chaîne C1 — un signalement d’effet indésirable ne fait pas dériver la carte (D-281 §5, t27)', () => {
+  const ETAT_EI_LIVRE = { ...SAFETY_EI_METADATA };
+  afterEach(() => { Object.assign(SAFETY_EI_METADATA, ETAT_EI_LIVRE); });
+
+  function simulerSignatureEI(): void {
+    SAFETY_EI_METADATA.validationExterne = true;
+    SAFETY_EI_METADATA.dateValidation = DATE_SIGNATURE_LIVREE;
+    SAFETY_EI_METADATA.sourceReference = 'Signature simulée par le banc — jamais servie en production.';
+    SAFETY_EI_METADATA.shaPerimetre = SAFETY_EI_SHA256;
+  }
+
+  const HORS_REGLE: EffetIndesirableRuntime = { id: 'AER-1', protocolDraftId: null, rattachement: null, statutTraitement: 'recu' };
+  const RATTACHE: EffetIndesirableRuntime = { id: 'AER-2', protocolDraftId: 'DRAFT-1', rattachement: 'element', statutTraitement: 'en_cours' };
+
+  // LA GARDE AU NIVEAU OÙ LA DÉRIVE SE VOYAIT : l'empreinte de la carte, que
+  // le rejeu du portail compare. Un futur usage des signalements dans la
+  // chaîne, hors du producteur, la ferait rougir ici. Les deux tables signées,
+  // avec et sans signal d'alerte : l'indépendance tient aussi quand le premier
+  // producteur parle.
+  it.each([
+    ['sans signal', undefined],
+    ['avec un signal majeur', ['Douleur thoracique / oppression']],
+  ])('%s : l’empreinte de la carte est la même avec ou sans signalement', (_cas, signaux) => {
+    simulerSignature();
+    simulerSignatureEI();
+    const reference = chaine({ signaux, effets: [] });
+    for (const effets of [
+      [HORS_REGLE],
+      [{ ...HORS_REGLE, statutTraitement: 'traite' }],
+      [HORS_REGLE, RATTACHE, { ...HORS_REGLE, id: 'AER-3', statutTraitement: 'en_cours' }],
+    ]) {
+      const autre = chaine({ signaux, effets });
+      expect(autre.review.inputHash).toBe(reference.review.inputHash);
+      expect(autre.decisionCard.inputHash).toBe(reference.decisionCard.inputHash);
+    }
   });
 });
 
