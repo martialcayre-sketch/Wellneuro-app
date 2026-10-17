@@ -4,6 +4,95 @@
 
 ## Décisions actives
 
+### D-317 — Lettre t : l'e-mail neutre de diffusion est une annonce, pas une relance ; il part avec le clic, une fois par nouvelle version, sous plafond serveur ; le patient voit ses trois rendez-vous de suivi ; la carte du Fil dit « point d'étape » (H31, ACT-2)
+
+- Date : 2026-10-17
+- Statut : accepté. Six arbitrages du responsable du 2026-10-17, sur
+  questions à options, tous conformes à la recommandation : quatre sur
+  l'e-mail de diffusion (§1 à §4), deux sur le point d'étape (§6, §7). Texte
+  rédigé par l'assistant à partir de ces réponses ; accord du responsable
+  sur le texte, même jour.
+- Domaine : diffusion du protocole (`ProtocolDiffusionApproval`, route
+  `praticien/protocoles/diffusion`) ; registre des gabarits de
+  correspondance ; liste « à faire » du portail ; carte J21 du Fil du jour ;
+  fiches H31, H61, H75 du plan unique. S'appuie sur : l'arbitrage du
+  2026-07-30 du registre des frontières (ce que « pas de relance »
+  interdit), [[D-262]] §5 (annonce mutualisée), [[D-255]] (jour 0 = la
+  diffusion), [[D-151]] §7 a (titre fautif signalé). Amende : le préalable
+  d'ACT-2 (H75) et le contenu de J3-base (H61).
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune fenêtre
+  (les points d'étape restent J7, J14, J21 à ±3 jours ; les jalons de mesure
+  restent J21, J42, J90 à ±8), aucune tâche planifiée. Aucune migration.
+  Aucun texte servi au patient n'est fixé ici : le gabarit (§3) et le
+  libellé de la ligne (§6) se relisent mot pour mot avec leur lot.
+
+**§1 — Ce qui classe l'e-mail hors relance.** L'e-mail part d'un clic
+praticien identifié, sur un patient nommé, à l'instant qu'il choisit ; rien
+ne le planifie et rien ne le déduit d'un état ; il ne porte aucune donnée de
+santé. Il satisfait donc les trois invariants de l'arbitrage du 2026-07-30
+et en hérite l'obligation propre à tout chemin d'envoi : un plafond de
+cadence opposable côté serveur, comptant toutes les tentatives quel que
+soit leur statut. C'est la condition que H75 posait à t ; ACT-2 reste dans
+la file C, à sa place 2.
+
+**§2 — Quand il part.** Un e-mail à chaque **nouvelle version** diffusée,
+la première comprise ; un nouveau clic sur une version déjà diffusée
+n'envoie rien. Il part **avec le clic « Valider pour diffusion »**, après
+l'écriture de la diffusion, et l'écran l'annonce avant le clic, comme il
+annonce aujourd'hui l'e-mail des fiches. Plafond (§1) : au plus un e-mail
+d'annonce par dossier et par 24 heures, toutes annonces de diffusion
+confondues ; un envoi refusé par le plafond est consigné « non envoyé »,
+sans effet sur la diffusion, que le patient lit au portail comme avant.
+
+**§3 — Ce qu'il dit.** Un gabarit neuf, propre au protocole (« votre
+protocole vous attend »), au registre des gabarits, rédigé sur le modèle de
+`document_remis` : sans nom de document, sans contenu clinique, sans pièce
+jointe, réponse adressée au praticien. Son texte est relu mot pour mot par
+le responsable avant son empreinte et sa date de validation. Quand le même
+clic remet aussi une fiche ou la lettre d'adressage, **un seul e-mail**
+part, celui du protocole, qui vaut l'annonce de [[D-262]] §5.
+
+**§4 — Il sort de J3-base.** L'e-mail de diffusion (PA-2) devient un lot de
+code propre : sans migration, drapeau neuf éteint à la livraison. Il
+n'attend ni la porte 16 ni la règle N-8, qui ne gèlent que la frise et le
+chronogramme du sommeil, ni ab, ni u, qui ne le concernent pas. Le même lot
+pose le plafond du §2 sur l'annonce `document_remis` existante, qui n'en a
+pas : c'est un écart à l'arbitrage du 2026-07-30, fermé ici. Le lot vérifie
+la rubrique de `docs/DOSSIER_RGPD.md` qui déclare les e-mails neutres et y
+nomme le gabarit neuf avant l'ouverture du drapeau.
+
+**§5 — Préalable d'ACT-2.** H75 devient : ACT-1 constaté (fait le
+2026-10-17) ; cette lettre ; le lot PA-2 livré ; le texte du gabarit relu ;
+puis la porte 18. J3-base n'en est plus un préalable. Le constat se fait
+sur la première vraie diffusion qui suit l'ouverture du drapeau, par
+identifiant en conteneur ([[D-288]]) ; les diffusions sont rares (moins de
+cinq en production au 2026-10-17), et le constat attend le geste, sans en
+provoquer.
+
+**§6 — Le rendez-vous de suivi au portail (PA-1).** Pour **chacun des trois
+points d'étape** (J7, J14, J21), une ligne paraît dans la liste « à faire »
+du patient à l'ouverture de sa fenêtre (jours 4 à 10, 11 à 17, 18 à 24
+après la diffusion) et disparaît à la réponse ou à la fermeture de la
+fenêtre. Aucun e-mail, aucune notification : la ligne ne se lit qu'à la
+visite. Côté patient, elle dit « rendez-vous de suivi » (vocabulaire A1),
+jamais « point d'étape » ni « jalon ». PA-1 reste dans J3-base (H61), hors
+du gel de la porte 16.
+
+**§7 — La carte du Fil.** La carte J21 du Fil du jour change de mot : badge
+« Point d'étape », titre « Point d'étape J21 renseigné — décision
+attendue ». Ce qui la fait paraître ne change pas. C'est la correction que
+[[D-151]] §7 a laissait à un lot propre ; elle vient avec J3-base, avec la
+régénération de sa base visuelle.
+
+**§8 — Ce que t ne change pas.** Le rappel reste le clic praticien nommé
+qui existe déjà ; t n'ajoute aucun rappel ni aucune relance des points
+d'étape. L'invitation du 21e jour se lit au portail, sans courrier (acquis
+avant cette lettre). La question « fenêtre du jalon ou 21e jour » relève de
+la lettre ak (place 7), pas de t.
+
+**Ce que cette entrée n'exécute pas.** Ni le code de PA-2, ni le gabarit,
+ni PA-1, ni la carte : chacun suit son lot et sa revue. Aucune activation.
+
 ### D-316 — La proposition de bilan lit les remboursements signés ; le document patient dit « non vérifié », « seulement en groupe » et « non remboursé », jamais qui paie ; le courrier reçoit D-309 §2-§3 dès maintenant (lettre f, F54)
 
 - Date : 2026-10-17
