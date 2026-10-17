@@ -70,22 +70,18 @@ export async function confirmerEpisodeT0(page: Page): Promise<void> {
 }
 
 /**
- * Ouvre la sous-vue « Biologie » de la phase Actions.
+ * Ouvre l'onglet « Biologie » de la fiche, où vit la proposition de bilan
+ * depuis [[D-319]] (F57 PR 2) — elle a quitté la sous-vue Biologie de la phase
+ * Actions, qui ne porte plus que l'arbitrage.
  *
- * Deux clics, et le premier n'est pas décoratif : la vérification que la phase
- * Actions s'affiche bien évite qu'une absence de panneau plus bas passe pour un
- * défaut de biologie alors qu'elle ne dirait que la navigation. Depuis l'audit
- * du 2026-09-02, la phase se structure en sous-vues et la biologie vit sous la
- * sienne.
+ * La vérification que l'onglet est SÉLECTIONNÉ n'est pas décorative : elle
+ * évite qu'une absence de panneau plus bas passe pour un défaut de biologie
+ * alors qu'elle ne dirait que la navigation.
  */
-export async function ouvrirSousVueBiologie(page: Page): Promise<void> {
-  await page
-    .getByRole('tablist', { name: 'Cycle clinique' })
-    .getByRole('tab', { name: /Actions/ })
-    .click();
-  await expect(page.getByRole('heading', { name: 'Protocole 21 jours' })).toBeVisible();
-  await page
-    .getByRole('group', { name: 'Sections de la phase Actions' })
-    .getByRole('button', { name: 'Biologie' })
-    .click();
+export async function ouvrirOngletBiologie(page: Page): Promise<void> {
+  const onglet = page
+    .getByRole('tablist', { name: 'Vues de la fiche patient' })
+    .getByRole('tab', { name: 'Biologie' });
+  await onglet.click();
+  await expect(onglet).toHaveAttribute('aria-selected', 'true');
 }

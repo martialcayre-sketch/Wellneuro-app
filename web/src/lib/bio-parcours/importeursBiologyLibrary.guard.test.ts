@@ -79,6 +79,10 @@ const IMPORTEURS_ADMIS = [
   'web/src/app/dashboard/patients/[idPatient]/page.tsx',
   // Même motif (M-3) : l'écran de signature, en `import type` seul.
   'web/src/components/biologie/CorrespondancesNabmSection.tsx',
+  // La proposition de bilan dans l'onglet « Biologie » ([[D-319]], F57 PR 2) :
+  // le module PUR `confirmationsDocument` et des types — les gestes et les
+  // lectures repris tels quels de la section clinique, qui les portait.
+  'web/src/components/biologie/PropositionBilanSection.tsx',
   'web/src/components/biologie/FicheAnalytePanel.tsx',
   'web/src/components/biologie/RayonBiologiePanel.tsx',
   'web/src/components/patient-cockpit/ArbitrageBiologiquePanel.tsx',
