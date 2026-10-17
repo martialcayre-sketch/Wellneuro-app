@@ -235,6 +235,13 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.annulationsResultatsBiologiques = (
       await tx.annulationResultatBiologique.deleteMany({ where: par })
     ).count;
+    // Les statuts posés près d'une valeur ([[D-322]], F58) : FK RESTRICT vers
+    // le patient et le résultat — ils partent AVANT les résultats. Poses et
+    // retraits en une seule instruction (contrat
+    // `statuts_poses_resultats_biologiques_v1_negatif.sql`).
+    supprimees.statutsPosesResultatsBiologiques = (
+      await tx.statutPoseResultatBiologique.deleteMany({ where: par })
+    ).count;
     supprimees.resultatsBiologiques = (
       await tx.resultatBiologique.deleteMany({ where: par })
     ).count;

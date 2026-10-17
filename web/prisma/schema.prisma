@@ -89,6 +89,8 @@ model Patient {
   lecturesImportsBiologiques LectureImportBiologique[]
   // Annulations de résultats biologiques et leurs révocations (BP-09).
   annulationsResultatsBiologiques AnnulationResultatBiologique[]
+  // Statuts posés près d'une valeur biologique, et leurs retraits (D-322, F58).
+  statutsPosesResultatsBiologiques StatutPoseResultatBiologique[]
   // File durable des lectures (D-282, G3).
   travauxExtractionBiologique TravailExtractionBiologique[]
   // Pages masquées avant l'envoi à Anthropic (D-284 §5, lot j).
@@ -2623,6 +2625,10 @@ model ResultatBiologique {
   // modèle ne reçoit aucune colonne.
   annulations AnnulationResultatBiologique[]
 
+  // Relation inverse SEULE (D-322, F58) : le statut posé désigne la ligne
+  // exacte ; ce modèle ne reçoit aucune colonne.
+  statutsPoses StatutPoseResultatBiologique[]
+
   // L'index commence par `idPatient` puis `analyteCode` : la lecture est la
   // série d'un analyte dans un dossier (estimé ↔ mesuré), avec une mesure par
   // analyte et date de prélèvement.
@@ -2944,6 +2950,42 @@ model AnnulationResultatBiologique {
   @@index([idResultat, ordre], map: "annulations_resultats_biologiques_resultat_ordre_idx")
   @@index([idAnnulationRevoquee], map: "annulations_resultats_biologiques_annulation_revoquee_idx")
   @@map("annulations_resultats_biologiques")
+}
+
+/// Le statut que le praticien pose près d'une valeur biologique ([[D-322]],
+/// F58), ou son retrait. Ajout seul (UPDATE et TRUNCATE refusés par trigger),
+/// aucune valeur recopiée, aucun texte libre. Le statut actif d'une ligne est
+/// celui de son dernier acte (`ordre`) ; il s'attache à la ligne exacte, et
+/// une correction fait apparaître la valeur neuve sans statut. Écran du
+/// praticien seul : ni portail, ni courrier, ni scoring, ni IA ne le lisent.
+/// Les refus vivent en base (migration
+/// `statuts_poses_resultats_biologiques_v1`) : résultat de ce dossier,
+/// praticien du dossier, tête de fil, pose qui change le statut, retrait d'un
+/// statut posé.
+model StatutPoseResultatBiologique {
+  id             String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (trigger).
+  ordre          BigInt   @default(autoincrement()) @map("ordre")
+  idPatient      String   @map("id_patient")
+  /// La ligne exacte du résultat : la tête du fil au moment de l'acte.
+  idResultat     String   @map("id_resultat")
+  /// `pose` | `retrait` (CHECK).
+  acte           String   @map("acte")
+  /// Pose seule, liste fermée (CHECK, [[D-322]] §1) : `aucune_action_retenue` |
+  /// `a_suivre` | `contexte_a_preciser` | `donnee_a_verifier` |
+  /// `avis_medical_a_envisager` | `relie_au_protocole`. Nul sur un retrait.
+  statut         String?  @map("statut")
+  praticienEmail String   @map("praticien_email")
+  /// Posé par la base (trigger), en UTC.
+  acteLe         DateTime @default(now()) @map("acte_le")
+
+  patient  Patient            @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  resultat ResultatBiologique @relation(fields: [idResultat], references: [id], onDelete: Restrict)
+
+  @@unique([ordre], map: "statuts_poses_resultats_biologiques_ordre_key")
+  @@index([idPatient, ordre], map: "statuts_poses_resultats_biologiques_patient_ordre_idx")
+  @@index([idResultat, ordre], map: "statuts_poses_resultats_biologiques_resultat_ordre_idx")
+  @@map("statuts_poses_resultats_biologiques")
 }
 
 // ───────────────────────────────────────────────────────────────────────────
