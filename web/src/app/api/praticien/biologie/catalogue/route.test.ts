@@ -22,7 +22,6 @@ beforeEach(() => {
   getServerSession.mockResolvedValue({ user: { email: PRATICIEN } });
   listerCatalogueBiologie.mockResolvedValue({
     analytes: [],
-    panels: [],
     millesimeNabm: null,
   });
 });
@@ -67,7 +66,6 @@ describe('service du catalogue', () => {
   it('drapeau levé et session praticien : 200, le catalogue est servi tel quel', async () => {
     listerCatalogueBiologie.mockResolvedValue({
       analytes: [{ code: 'BIO_FERRITINE' }],
-      panels: [{ code: 'PANEL_FATIGUE_1' }],
       millesimeNabm: { versionSource: 'V105', nombreEntrees: 987, importeLe: '2026-07-26T00:00:00.000Z' },
     });
     const response = await GET();
@@ -75,7 +73,6 @@ describe('service du catalogue', () => {
     const json = await response.json();
     expect(json.ok).toBe(true);
     expect(json.analytes).toEqual([{ code: 'BIO_FERRITINE' }]);
-    expect(json.panels).toEqual([{ code: 'PANEL_FATIGUE_1' }]);
     expect(json.millesimeNabm.versionSource).toBe('V105');
   });
 

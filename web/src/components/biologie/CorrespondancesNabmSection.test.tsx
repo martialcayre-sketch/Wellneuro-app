@@ -18,7 +18,7 @@ const ACTE = {
 type Reponse = { status?: number; json: unknown };
 
 /** Fausse API : chaque appel consomme la réponse prévue pour son adresse. */
-function mockApi(reponses: { lecture: Reponse[]; acte?: Reponse; decision?: Reponse }) {
+function mockApi(reponses: { lecture: Reponse[]; acte?: Reponse; decision?: Reponse; recherche?: Reponse }) {
   const lectures = [...reponses.lecture];
   const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
     const r: Reponse =
@@ -26,7 +26,9 @@ function mockApi(reponses: { lecture: Reponse[]; acte?: Reponse; decision?: Repo
         ? reponses.decision!
         : String(url).includes('/nabm/acte')
           ? reponses.acte!
-          : (lectures.length > 1 ? lectures.shift()! : lectures[0]);
+          : String(url).includes('/nabm/recherche')
+            ? reponses.recherche!
+            : (lectures.length > 1 ? lectures.shift()! : lectures[0]);
     const status = r.status ?? 200;
     return { ok: status < 400, status, json: async () => r.json };
   });
@@ -245,6 +247,126 @@ describe('CorrespondancesNabmSection — signature M-3', () => {
     await waitFor(() =>
       expect((screen.getByRole('button', { name: 'Lire l’acte' }) as HTMLButtonElement).disabled).toBe(false),
     );
+  });
+});
+
+describe('CorrespondancesNabmSection — recherche par libellé (D-320 §1)', () => {
+  const ACTE_INACTIF = { ...ACTE, codeActe: '1209', libelle: 'Libellé de l’acte 1209', inactif: true };
+  const trouves = (actes: unknown[], total = actes.length) => ({
+    json: { ok: true, millesime: 'V105', total, actes },
+  });
+
+  it('cherche, lit le résultat choisi, puis signe par le même POST — rien n’est choisi à la place du praticien', async () => {
+    const fetchMock = mockApi({
+      lecture: [vide, signee],
+      recherche: trouves([ACTE, ACTE_INACTIF]),
+      acte: { json: { ok: true, millesime: 'V105', acte: ACTE } },
+      decision: { json: { ok: true, correspondance: { codeActe: '1208', etat: 'signee', verifiePar: PRATICIEN, verifieLe: '2026-10-15T10:00:00.000Z' } } },
+    });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+    await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+
+    fireEvent.change(screen.getByLabelText(/Rechercher dans la nomenclature/), {
+      target: { value: 'homocystéine totale' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Chercher' }));
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Actes trouvés' })).toBeTruthy());
+    const appel = fetchMock.mock.calls.find(([url]) => String(url).includes('/nabm/recherche'))!;
+    expect(String(appel[0])).toBe(
+      `/api/praticien/biologie/nabm/recherche?q=${encodeURIComponent('homocystéine totale')}`,
+    );
+    // La liste nomme la saisie qu'elle sert, même si le champ a bougé depuis.
+    expect(screen.getByText(/Actes du millésime V105 pour « homocystéine totale »/)).toBeTruthy();
+    // Les résultats se lisent ; aucun acte n'est lu ni signable avant le choix.
+    expect(screen.getByText(/Libellé de l’acte 1209/)).toBeTruthy();
+    expect(screen.getByText('Inactif')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Signer la correspondance' })).toBeNull();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/nabm/acte'))).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lire l’acte 1208' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Signer la correspondance' })).toBeTruthy());
+    expect(fetchMock.mock.calls.some(([url]) => String(url) === '/api/praticien/biologie/nabm/acte?code=1208')).toBe(true);
+    expect((screen.getByLabelText(/Code de l’acte/) as HTMLInputElement).value).toBe('1208');
+
+    fireEvent.click(screen.getByLabelText(/Acte isolé/));
+    fireEvent.click(screen.getByRole('button', { name: 'Signer la correspondance' }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(true));
+    const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')!;
+    expect(JSON.parse(post[1].body)).toEqual({
+      analyteCode: 'BIO_HOMOCYSTEINE',
+      codeActe: '1208',
+      decision: 'signer',
+      etatAttendu: 'absente',
+      nature: 'isole',
+    });
+    // Signé : la recherche se vide, aucun second acte ne reste à portée de clic.
+    await waitFor(() => expect(screen.queryByRole('list', { name: 'Actes trouvés' })).toBeNull());
+    expect((screen.getByLabelText(/Rechercher dans la nomenclature/) as HTMLInputElement).value).toBe('');
+  });
+
+  it('la nature choisie pour un acte ne passe pas à l’acte lu ensuite', async () => {
+    mockApi({
+      lecture: [vide],
+      recherche: trouves([ACTE, { ...ACTE, codeActe: '1210', libelle: 'Libellé de l’acte 1210' }]),
+      acte: { json: { ok: true, millesime: 'V105', acte: ACTE } },
+    });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+    await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+    fireEvent.change(screen.getByLabelText(/Rechercher dans la nomenclature/), { target: { value: 'homocysteine' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Chercher' }));
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Actes trouvés' })).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lire l’acte 1208' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Signer la correspondance' })).toBeTruthy());
+    fireEvent.click(screen.getByLabelText(/Groupe imposé/));
+    expect((screen.getByRole('button', { name: 'Signer la correspondance' }) as HTMLButtonElement).disabled).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lire l’acte 1210' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Signer la correspondance' })).toBeTruthy());
+    expect((screen.getByRole('button', { name: 'Signer la correspondance' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByLabelText(/Groupe imposé/) as HTMLInputElement).checked).toBe(false);
+  });
+
+  it('aucun résultat se dit avec la saisie et le millésime', async () => {
+    mockApi({ lecture: [vide], recherche: trouves([]) });
+    render(<CorrespondancesNabmSection analyteCode="BIO_FERRITINE" />);
+    await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+    fireEvent.change(screen.getByLabelText(/Rechercher dans la nomenclature/), { target: { value: 'zzzz' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Chercher' }));
+    await waitFor(() => expect(screen.getByText(/Aucun acte du millésime V105 ne contient « zzzz »/)).toBeTruthy());
+  });
+
+  it('résultats tronqués : le nombre servi et le total sont dits', async () => {
+    mockApi({ lecture: [vide], recherche: trouves([ACTE], 40) });
+    render(<CorrespondancesNabmSection analyteCode="BIO_FERRITINE" />);
+    await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+    fireEvent.change(screen.getByLabelText(/Rechercher dans la nomenclature/), { target: { value: 'dosage' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Chercher' }));
+    await waitFor(() => expect(screen.getByText(/1 premiers sur 40 — précisez la recherche/)).toBeTruthy());
+  });
+
+  it('une saisie de moins de trois caractères est refusée à l’écran, sans appel', async () => {
+    const fetchMock = mockApi({ lecture: [vide] });
+    render(<CorrespondancesNabmSection analyteCode="BIO_FERRITINE" />);
+    await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+    fireEvent.change(screen.getByLabelText(/Rechercher dans la nomenclature/), { target: { value: 'fe' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Chercher' }));
+    expect(screen.getByRole('alert').textContent).toMatch(/au moins trois caractères/);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/nabm/recherche'))).toBe(false);
+  });
+
+  it('les résultats d’un analyte ne restent pas sur la fiche du suivant', async () => {
+    mockApi({ lecture: [vide], recherche: trouves([ACTE]) });
+    const { rerender } = render(<CorrespondancesNabmSection analyteCode="BIO_FERRITINE" />);
+    await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+    fireEvent.change(screen.getByLabelText(/Rechercher dans la nomenclature/), { target: { value: 'ferritine' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Chercher' }));
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Actes trouvés' })).toBeTruthy());
+
+    rerender(<CorrespondancesNabmSection analyteCode="BIO_ZINC_PLASMATIQUE" />);
+    await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+    expect(screen.queryByRole('list', { name: 'Actes trouvés' })).toBeNull();
+    expect((screen.getByLabelText(/Rechercher dans la nomenclature/) as HTMLInputElement).value).toBe('');
   });
 });
 
