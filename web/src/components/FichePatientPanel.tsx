@@ -619,10 +619,12 @@ export function FichePatientPanel({
   useEffect(() => {
     if (ongletActif === 'biologie') setDossierBiologieOuvert(idPatient);
   }, [ongletActif, idPatient]);
-  const propositionMontee = dossierBiologieOuvert === idPatient;
   // Demandes d'ouverture de l'arbitrage, venues de l'onglet « Biologie » :
   // un compteur, que la section clinique lit comme un geste.
   const [demandesArbitrage, setDemandesArbitrage] = useState(0);
+  // Déclarations faites dans la proposition de l'onglet : la section clinique
+  // relit ses dérivés (analytes sur lesquels une action peut attendre).
+  const [declarationsProposition, setDeclarationsProposition] = useState(0);
   // Phase focale. Point de départ : 'patient' — la PREMIÈRE étape annoncée
   // par le rail, jamais le milieu de la séquence (audit du cockpit
   // 2026-09-02 : s'initialiser sur 'decision' faisait s'ouvrir chaque dossier
@@ -702,6 +704,12 @@ export function FichePatientPanel({
   // moteur via la route dev /api/dev/validation-ergo. Rien n'est sauvegardé
   // ni transmis au patient.
   const fixtureErgo = fixtureValidationErgo;
+  // MÊMES CONDITIONS QU'AVANT LE DÉMÉNAGEMENT : la proposition n'existait que
+  // sur un épisode T0 confirmé et hors fiche d'ergonomie (revue adverse de F57
+  // PR 2, P2-2) — le déménagement ne l'ouvre pas plus tôt.
+  const propositionMontee = dossierBiologieOuvert === idPatient
+    && etatRuntime?.episodeConfirme === true
+    && !fixtureErgo;
   const [protocolDraftErgo, setProtocolDraftErgo] = useState<ProtocolDraft | null>(null);
   const [erreurErgo, setErreurErgo] = useState<string | null>(null);
 
@@ -2589,6 +2597,7 @@ export function FichePatientPanel({
                 onPropositionsAssemblees={() => setAssemblages(n => n + 1)}
                 demandeAssemblage={demandesAssemblage}
                 demandeSousVueBiologie={demandesArbitrage}
+                demandeRelectureProposition={declarationsProposition}
               />
             </div>
 
@@ -2778,6 +2787,9 @@ export function FichePatientPanel({
                 setOngletActif('cockpit');
                 setPhaseActive('actions');
                 setDemandesArbitrage(n => n + 1);
+                // Le bouton disparaît avec son panneau : le focus suit vers le
+                // poste de pilotage, comme pour « Trajectoire » (P2-4).
+                requestAnimationFrame(() => document.getElementById('panneau-cockpit')?.focus());
               }}
               className="min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
@@ -2792,7 +2804,10 @@ export function FichePatientPanel({
             première visite, puis gardée (voir `propositionMontee`). */}
         {propositionMontee && (
           <div className="mt-6">
-            <PropositionBilanSection idPatient={idPatient} />
+            <PropositionBilanSection
+              idPatient={idPatient}
+              onDeclaration={() => setDeclarationsProposition(n => n + 1)}
+            />
           </div>
         )}
       </div>

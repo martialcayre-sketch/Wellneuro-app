@@ -297,6 +297,14 @@ type ClinicalRuntimeSectionProps = {
    * demande doit rouvrir la sous-vue quittée entre-temps.
    */
   demandeSousVueBiologie?: number;
+  /**
+   * Compteur de DÉCLARATIONS faites dans la proposition de l'onglet
+   * « Biologie » ([[D-319]]) : une déclaration change les statuts dérivés des
+   * panels, donc les analytes sur lesquels une action peut attendre. Chaque
+   * incrément relit les lignes, comme la déclaration le faisait quand la
+   * proposition vivait ici (revue adverse de F57 PR 2, P2-1).
+   */
+  demandeRelectureProposition?: number;
 } & PilotageTrajectoireProps;
 
 export function ClinicalRuntimeSection({
@@ -311,6 +319,7 @@ export function ClinicalRuntimeSection({
   onPropositionsAssemblees,
   demandeAssemblage = 0,
   demandeSousVueBiologie = 0,
+  demandeRelectureProposition = 0,
   trajectoirePartagee,
   statutTrajectoirePartage,
   onRechargerTrajectoire,
@@ -325,12 +334,6 @@ export function ClinicalRuntimeSection({
   const [sousVueActions, setSousVueActions] = useState<
     'protocole' | 'historique' | 'diffusion' | 'biologie'
   >('protocole');
-  // L'onglet « Biologie » de la fiche renvoie ICI pour l'arbitrage
-  // ([[D-319]]) : chaque demande rouvre la sous-vue Biologie. Un geste, jamais
-  // le rendu : sans demande, le compteur ne bouge pas.
-  useEffect(() => {
-    if (demandeSousVueBiologie > 0) setSousVueActions('biologie');
-  }, [demandeSousVueBiologie]);
   // Vrai UNE FOIS une lecture des versions aboutie : avant, `versions === []`
   // est un état inconnu, jamais un vide affirmable (revue I1).
   const [versionsLues, setVersionsLues] = useState(false);
@@ -367,6 +370,18 @@ export function ClinicalRuntimeSection({
   useEffect(() => {
     if (phase === 'actions') setSousVueActions('protocole');
   }, [phase]);
+  // L'onglet « Biologie » de la fiche renvoie ICI pour l'arbitrage
+  // ([[D-319]]) : chaque demande rouvre la sous-vue Biologie. Un geste, jamais
+  // le rendu : sans demande, le compteur ne bouge pas.
+  //
+  // L'ORDRE DES DEUX EFFETS COMPTE, ET CELUI-CI DOIT RESTER SECOND. La fiche
+  // pose la phase Actions ET la demande dans le même rendu ; les effets
+  // s'exécutent dans l'ordre de déclaration et le dernier écrit gagne. Déclaré
+  // avant, celui-ci était aussitôt défait par la remise à « Protocole » de
+  // l'entrée dans la phase (revue adverse de F57 PR 2, P1-1).
+  useEffect(() => {
+    if (demandeSousVueBiologie > 0) setSousVueActions('biologie');
+  }, [demandeSousVueBiologie]);
   const [runtime, setRuntime] = useState<CockpitRuntimeApiResponse | null>(null);
   const [loading, setLoading] = useState(!fixture);
   const [submitting, setSubmitting] = useState(false);
@@ -1226,6 +1241,14 @@ export function ClinicalRuntimeSection({
     readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins, loadArbitrages,
     loadProposition, loadCriteresDossier,
   ]);
+  // Une déclaration faite dans l'onglet « Biologie » : relire les lignes, sur
+  // la carte prête seulement — là où leurs dérivés s'affichent.
+  useEffect(() => {
+    if (demandeRelectureProposition > 0 && readyDecisionCardId) void loadProposition();
+    // `readyDecisionCardId` et `loadProposition` hors dépendances : l'effet
+    // répond à un GESTE ; la carte prête lit déjà la proposition elle-même.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demandeRelectureProposition]);
 
   // LE DOSSIER, ET RIEN QUE LUI — et la première rédaction s'y était trompée
   // dans l'autre sens (constat de revue).

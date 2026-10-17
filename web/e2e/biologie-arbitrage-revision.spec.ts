@@ -294,9 +294,11 @@ test.describe('Arbitrage biologique → révision — la résolution suit le ver
     // L'ONGLET « BIOLOGIE » LE DIT ([[D-319]], F57 PR 2) : l'arbitrage est
     // resté dans la phase Actions, à côté de la version qu'il juge ; l'onglet
     // compte les actions qui l'attendent et y renvoie. Page neuve : la
-    // section clinique relit la version posée par la requête ci-dessus.
+    // section clinique relit la version posée par la requête ci-dessus. Pas
+    // de `confirmerEpisodeT0` ici : son signal (« Actions à traiter ») ne vaut
+    // que tant qu'aucune version n'est enregistrée — l'épisode est déjà
+    // persisté, et le compte n'apparaît qu'une fois versions et arbitrages lus.
     await page.goto(`/dashboard/patients/${PATIENT_ID}`);
-    await confirmerEpisodeT0(page);
     await ouvrirOngletBiologie(page);
     await expect(page.getByText(/actions? du protocole (attend|attendent) un arbitrage biologique\./)).toBeVisible();
     await page.getByRole('button', { name: 'Ouvrir l’arbitrage' }).click();

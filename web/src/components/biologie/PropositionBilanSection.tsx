@@ -36,7 +36,14 @@ import type { LignePanelProposition } from '@/lib/biology-library/statuts';
 // Dans le domaine biologie (`components/biologie/`) : ses imports de
 // `biology-library` ne passent pas la frontière de [[D-306]].
 
-export function PropositionBilanSection({ idPatient }: { idPatient: string }) {
+export function PropositionBilanSection({
+  idPatient,
+  onDeclaration,
+}: {
+  idPatient: string;
+  /** Une déclaration a abouti : la phase Actions relit ses dérivés (voir `ClinicalRuntimeSection`). */
+  onDeclaration?: () => void;
+}) {
   const cbEnabled = useCbEnabled();
   const cbResultatsActifs = useCbResultsEnabled();
   // `propositionDisponible` reste faux tant que la route n'a pas répondu `ok` :
@@ -199,12 +206,13 @@ export function PropositionBilanSection({ idPatient }: { idPatient: string }) {
         // dérivés du panel, et c'est le moteur qui les décide, pas l'écran.
         await loadProposition();
         setPropositionState('saved');
+        onDeclaration?.();
       } catch {
         setPropositionState('error');
         setPropositionError('Échec de l’enregistrement de la déclaration.');
       }
     },
-    [idPatient, loadProposition],
+    [idPatient, loadProposition, onDeclaration],
   );
 
   // Courrier médecin : le texte est GÉNÉRÉ ET CONSIGNÉ côté serveur ; l'écran
