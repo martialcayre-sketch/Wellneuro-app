@@ -147,6 +147,11 @@ const ALLOWLIST = new Map([
     'ne lit que BESOIN_SOURCES[4] (Q_GAS_01), insensible à la forme de Q_ALI_01',
   ],
   [
+    'src/lib/rag/claims/clesLien.test.ts',
+    'ne lit de BESOIN_SOURCES que ses clés (les numéros 1 à 12 des besoins) — jamais un max ni un '
+      + 'identifiant d’instrument : verdict identique sous les deux drapeaux (D-320)',
+  ],
+  [
     'src/lib/protocol/versioning.test.ts',
     'compare à VERSION_SCORE_EQUILIBRE importé, que la production lit aussi : vert par construction dans les deux positions',
   ],
