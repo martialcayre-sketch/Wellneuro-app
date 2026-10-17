@@ -1602,6 +1602,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : texte de l'e-mail relu, de la main du responsable.
 - **Critère de fin** : e-mail constaté sur un premier vrai dossier servi.
 - **Mise à jour (2026-10-17, lettre t)** : D-317 classe l'e-mail hors relance (§1) ; ACT-2 reste à la place 2. Préalables devenus (D-317 §5) : ACT-1 constaté (fait) ; t écrite (D-317) ; lot PA-2 livré (gabarit neuf, e-mail avec le clic à chaque nouvelle version, plafond serveur, aussi posé sur l'annonce `document_remis`), sans migration, drapeau neuf éteint ; texte du gabarit relu mot pour mot ; porte 18. J3-base n'en est plus un préalable. Le constat attend la première vraie diffusion après l'ouverture du drapeau, sans la provoquer.
+- **Mise à jour (2026-10-17, lot PA-2)** : lot PA-2 livré par sa PR, sans migration. Gabarit `protocole_diffuse` relu mot pour mot et validé par le responsable le jour même ; drapeau `WN_ANNONCE_PROTOCOLE` neuf et éteint, effectif seulement gabarit validé et `WN_FICHES_ASSIETTE` ouvert. Plafond de 24 h actif dès le déploiement, `document_remis` compris. Préalables restants d'ACT-2 : la porte 18, puis l'ordre de pose du drapeau ; le constat se fera à la première vraie diffusion qui suit.
 
 **File D : gestes du responsable**
 

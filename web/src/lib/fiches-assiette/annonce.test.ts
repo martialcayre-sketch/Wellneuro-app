@@ -4,17 +4,44 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // dans la transaction du clic, et ce qu'un échec rend. L'envoi lui-même a son
 // banc (`consultation/email.test.ts`). Données synthétiques seulement.
 
-const { prisma, envoyer } = vi.hoisted(() => ({
+const { prisma, envoyer, envoyerProtocole } = vi.hoisted(() => ({
   prisma: {
     patient: { findUniqueOrThrow: vi.fn() },
     correspondancePatient: { create: vi.fn(), update: vi.fn() },
   },
   envoyer: vi.fn(),
+  envoyerProtocole: vi.fn(),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
-vi.mock('@/lib/consultation/email', () => ({ sendDocumentRemisEmail: envoyer }));
+vi.mock('@/lib/consultation/email', () => ({
+  sendDocumentRemisEmail: envoyer,
+  sendProtocoleDiffuseEmail: envoyerProtocole,
+}));
 
-import { annonceDue, annoncerDocumentRemis, reserverAnnonce } from './annonce';
+import {
+  annonceDue,
+  annoncerDiffusion,
+  FENETRE_PLAFOND_ANNONCE_MS,
+  MOTIF_PLAFOND_ANNONCE,
+  reserverAnnonce,
+  type AnnonceReservee,
+} from './annonce';
+
+/** L'annonce `document_remis` réservée, non plafonnée — le cas du lot 11. */
+const RESERVEE: AnnonceReservee = { idTrace: 'trace_1', gabarit: 'document_remis', plafonnee: false };
+const annoncerDocumentRemis = (idPatient: string, idTrace: string) =>
+  annoncerDiffusion(idPatient, { ...RESERVEE, idTrace });
+
+/** Un client de transaction : verrou, compte de la fenêtre, création. */
+function clientTx(tentativesRecentes = 0) {
+  return {
+    $executeRaw: vi.fn().mockResolvedValue(1),
+    correspondancePatient: {
+      count: vi.fn().mockResolvedValue(tentativesRecentes),
+      create: vi.fn().mockResolvedValue({ id: 'trace_tx' }),
+    },
+  };
+}
 
 const DOSSIER = { email: 'patient@example.com', prenom: 'Sophie', actif: true, accessTokenRevoked: false };
 
@@ -30,6 +57,7 @@ beforeEach(() => {
   prisma.correspondancePatient.create.mockReset().mockResolvedValue({ id: 'trace_1' });
   prisma.correspondancePatient.update.mockReset().mockResolvedValue({});
   envoyer.mockReset().mockResolvedValue('Envoye');
+  envoyerProtocole.mockReset().mockResolvedValue('Envoye');
 });
 
 afterEach(() => {
@@ -57,13 +85,79 @@ describe('annonceDue — un par clic qui remet, espace de lecture ouvert', () =>
 
 describe('reserverAnnonce — la trace naît dans la transaction du clic', () => {
   it('« Non_envoye », de type « document_remis », sous un objet qui ne nomme rien', async () => {
-    const tx = { correspondancePatient: { create: vi.fn().mockResolvedValue({ id: 'trace_tx' }) } };
-    await expect(reserverAnnonce(tx as never, 'PAT_TEST')).resolves.toBe('trace_tx');
+    const tx = clientTx();
+    await expect(reserverAnnonce(tx as never, 'PAT_TEST', 'document_remis')).resolves.toEqual({
+      idTrace: 'trace_tx', gabarit: 'document_remis', plafonnee: false,
+    });
     const { data } = tx.correspondancePatient.create.mock.calls[0][0] as { data: Record<string, unknown> };
     expect(data).toMatchObject({ idPatient: 'PAT_TEST', type: 'document_remis', statut: 'Non_envoye', canal: 'email', sens: 'sortant' });
+    expect(data).not.toHaveProperty('erreurCourte');
     expect(String(data.objet)).not.toMatch(/assiette|fiche/i);
     // Écrite par le client de la TRANSACTION, jamais par le client global.
     expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
+  });
+
+  it('le protocole ([[D-317]]) : son propre type, sous un objet qui ne nomme rien du contenu', async () => {
+    const tx = clientTx();
+    await reserverAnnonce(tx as never, 'PAT_TEST', 'protocole_diffuse');
+    const { data } = tx.correspondancePatient.create.mock.calls[0][0] as { data: Record<string, unknown> };
+    expect(data).toMatchObject({ type: 'protocole_diffuse', statut: 'Non_envoye' });
+  });
+});
+
+describe('le plafond ([[D-317]] §2) — un e-mail d’annonce par dossier et par 24 heures', () => {
+  const MAINTENANT = new Date('2026-10-17T12:00:00.000Z');
+
+  it('compte les deux annonces, toute tentative, sur 24 heures glissantes, sous un verrou par dossier', async () => {
+    const tx = clientTx();
+    await reserverAnnonce(tx as never, 'PAT_TEST', 'document_remis', MAINTENANT);
+    // Le verrou AVANT le compte : deux clics concurrents ne lisent pas tous
+    // deux une fenêtre vide.
+    expect(tx.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.correspondancePatient.count.mock.invocationCallOrder[0]);
+    const [gabarit, ...valeurs] = tx.$executeRaw.mock.calls[0] as [TemplateStringsArray, ...unknown[]];
+    expect(gabarit.join('?')).toContain('pg_advisory_xact_lock');
+    expect(valeurs).toEqual(['annonce_diffusion:PAT_TEST']);
+    const { where } = tx.correspondancePatient.count.mock.calls[0][0] as { where: Record<string, unknown> };
+    expect(where).toEqual({
+      idPatient: 'PAT_TEST',
+      type: { in: ['document_remis', 'protocole_diffuse'] },
+      enregistreLe: { gte: new Date(MAINTENANT.getTime() - FENETRE_PLAFOND_ANNONCE_MS) },
+      // Aucun filtre de statut : `Erreur` et `Non_envoye` comptent. Seuls les
+      // refus du plafond lui-même en sont exclus — et les lignes à motif NULL
+      // restent comptées.
+      OR: [{ erreurCourte: null }, { erreurCourte: { not: MOTIF_PLAFOND_ANNONCE } }],
+    });
+    expect(FENETRE_PLAFOND_ANNONCE_MS).toBe(24 * 60 * 60 * 1000);
+  });
+
+  it.each(['document_remis', 'protocole_diffuse'] as const)(
+    'une tentative dans la fenêtre : %s consigné « Non_envoye » sous le motif du plafond',
+    async gabarit => {
+      const tx = clientTx(1);
+      await expect(reserverAnnonce(tx as never, 'PAT_TEST', gabarit, MAINTENANT)).resolves.toEqual({
+        idTrace: 'trace_tx', gabarit, plafonnee: true,
+      });
+      const { data } = tx.correspondancePatient.create.mock.calls[0][0] as { data: Record<string, unknown> };
+      expect(data).toMatchObject({ type: gabarit, statut: 'Non_envoye', erreurCourte: MOTIF_PLAFOND_ANNONCE });
+    },
+  );
+
+  it('une annonce plafonnée n’envoie rien, ne lit pas le dossier, ne retouche pas sa trace', async () => {
+    await expect(annoncerDiffusion('PAT_TEST', { ...RESERVEE, plafonnee: true })).resolves.toBe('plafond');
+    expect(prisma.patient.findUniqueOrThrow).not.toHaveBeenCalled();
+    expect(envoyer).not.toHaveBeenCalled();
+    expect(envoyerProtocole).not.toHaveBeenCalled();
+    expect(prisma.correspondancePatient.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('annoncerDiffusion — le gabarit du protocole', () => {
+  it('envoie l’e-mail du protocole, réponse au praticien, et marque SA trace', async () => {
+    const annonce: AnnonceReservee = { idTrace: 'trace_1', gabarit: 'protocole_diffuse', plafonnee: false };
+    await expect(annoncerDiffusion('PAT_TEST', annonce, 'p@wellneuro.fr')).resolves.toBe('envoye');
+    expect(envoyerProtocole).toHaveBeenCalledWith('patient@example.com', 'Sophie', 'p@wellneuro.fr');
+    expect(envoyer).not.toHaveBeenCalled();
+    expect(traces()).toEqual([['Envoye', null]]);
   });
 });
 
