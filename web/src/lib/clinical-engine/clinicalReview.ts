@@ -232,7 +232,10 @@ export function buildClinicalReview(input: {
    * protocole. Ce n'est ni un constat (rien n'est établi) ni une règle inactive
    * (la règle a bien tourné). Sans ce champ, la seule façon de le dire au
    * praticien aurait été d'en faire un constat, c'est-à-dire d'inhiber sur une
-   * ignorance.
+   * ignorance. (Ce cas d'origine n'y passe plus depuis le 2026-10-17, D-281
+   * §5 : la limitation faisait dériver la carte servie, et le signalement est
+   * compté hors de l'empreinte. Le troisième producteur, [[D-275]] §2, y
+   * pose toujours les siennes.)
    *
    * ELLES ENTRENT DANS L'EMPREINTE, comme toutes les limitations : deux
    * appelants qui n'en poseraient pas les mêmes rendraient deux revues

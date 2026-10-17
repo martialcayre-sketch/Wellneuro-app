@@ -2839,7 +2839,21 @@ maintenue jusqu'à la nouvelle version. La base l'admet par la migration
 `saf_ei_avis_implique_sans_element_v1` (aménagement exigé, refus sur un
 élément désigné par le patient ou un signalement délié de son programme) ;
 « programme illisible seul » est tenu par le code, qui seul juge
-l'intégrité.
+l'intégrité. **Un signalement hors règle ne touche pas la carte** (tranché
+par le responsable le 2026-10-17, sur scénario, fiche t27) : un signalement
+sans programme ni rattachement — « non » au programme, aucun programme
+diffusé, capture sans programme — ne fait plus dériver la carte servie ; le
+programme reste servi au portail, avec ses pauses. La phrase qui les
+comptait sur la carte entrait dans son empreinte : elle en sort, et ces
+signalements restent comptés par leur statut au panneau des signalements,
+au Fil du jour et au prévol. Les statuts ouverts sortent du périmètre
+signé de la règle, qui ne les lit plus. La phrase plus haut, « que la revue
+clinique signale au praticien », vaut jusqu'à cet arbitrage. Écartés :
+l'interruption assumée (le patient qui déclare l'effet sans lien avec son
+programme le perdrait, pauses d'un autre signalement comprises) ; le blocage
+de la diffusion jusqu'au passage à « traité » (un signalement qui ne reçoit
+aucun avis n'attend rien) ; la phrase gardée sur la carte hors empreinte
+(premier canal de la carte non haché).
 
 **§6 — Ordre et signature.** (1) cette décision ; (2) la migration —
 l'élément désigné, le mode de rattachement, la validation —, relue puis

@@ -8,7 +8,6 @@ import {
 import {
   REGLE_SECURITE_EFFET_INDESIRABLE,
   SAFETY_EI_METADATA,
-  STATUTS_EI_NON_TRAITES,
   regleEffetIndesirableValidee,
 } from '@/lib/clinical/safetyEffetIndesirableV1';
 import {
@@ -110,11 +109,12 @@ const LIMITATION_HORS_COTATION =
  * Un signalement d'effet indésirable, tel que la chaîne C1 le reçoit.
  *
  * NI LES SYMPTÔMES NI LE LIBELLÉ DU PRODUIT N'Y FIGURENT, et c'est une garde,
- * pas un oubli. Ce type traverse `construireSafetyFindings`, dont la sortie
- * entre dans les limitations de la revue, puis dans l'empreinte de la carte de
- * décision, puis dans le corps d'une réponse HTTP. Les mots que le patient a
- * écrits sur ses symptômes n'ont rien à faire sur ce trajet ; le praticien les
- * lit sur la surface des signalements, à leur place.
+ * pas un oubli. Ce type traverse la chaîne C1, dont la sortie entre dans
+ * l'empreinte de la carte de décision, puis dans le corps d'une réponse HTTP.
+ * Aucune sortie n'en dépend plus (D-281 §5, 2026-10-17), mais la garde tient
+ * pour le jour où une en dépendrait : les mots que le patient a écrits sur ses
+ * symptômes n'ont rien à faire sur ce trajet ; le praticien les lit sur la
+ * surface des signalements, à leur place.
  */
 export type EffetIndesirableRuntime = {
   id: string;
@@ -138,22 +138,28 @@ export type EffetIndesirableRuntime = {
  * diffusion (`signalementsEnAttente`), qui lit les verdicts — ce producteur ne
  * les lit pas, et n'a donc rien à décider de l'attente.
  *
- * DEUX SORTIES :
+ * DEUX SORTIES, ET AUCUNE NE LIT LES SIGNALEMENTS :
  *
  *   1. Table non signée ⇒ la règle jointe en `candidate` : `buildClinicalReview`
  *      en tire seul la limitation « Règle candidate inactive ». Ce cas est
  *      celui de la LIVRAISON, et sa sortie est celle d'avant l'amendement — les
  *      empreintes des cartes ne bougent pas.
- *   2. Table signée ⇒ la règle validée, et une LIMITATION pour les signalements
- *      encore ouverts SANS rattachement NI programme : aucun programme diffusé,
- *      « non » au programme, désignation illisible (§2). Rien n'y est en
- *      pause, et aucun avis ne s'y rend ; se taire les ferait disparaître de
- *      la vue du praticien (`DC-35`). Le formulaire d'avant, lui, porte un
- *      programme : il attend l'avis et bloque la diffusion (§5, arbitrage du
- *      2026-10-14 ; `recoitUnAvis`), il n'est donc pas hors règle. Leur statut,
- *      ici, ne sert qu'à compter la file ; l'attente ne le lit pas (§5).
+ *   2. Table signée ⇒ la règle validée, et RIEN D'AUTRE.
+ *
+ * PLUS DE LIMITATION POUR LES SIGNALEMENTS HORS RÈGLE (D-281 §5, arbitrage du
+ * 2026-10-17). Elle comptait les signalements ouverts sans rattachement ni
+ * programme — aucun programme diffusé, « non » au programme, désignation
+ * illisible. Or la limitation entre dans l'empreinte de la carte : un tel
+ * signalement, ou son passage à « traité », faisait dériver la carte servie,
+ * et le portail rendait le programme « indisponible » — le signalement que le
+ * patient déclarait sans lien avec son programme le lui retirait, quand un
+ * signalement rattaché ne touche pas la carte. Ils restent comptés, par leur
+ * statut, au panneau des signalements, au Fil du jour et au prévol
+ * (`effetsNonTraites`) : ce n'est pas se taire (`DC-35`), c'est le dire hors
+ * de ce qui est haché. Une sortie qui ne dépend que de la signature ne peut
+ * plus faire dériver une carte.
  */
-function construireFindingsEffetIndesirable(effetsIndesirables: EffetIndesirableRuntime[]): {
+function construireFindingsEffetIndesirable(): {
   findings: SafetyFinding[];
   rules: ClinicalRuleRef[];
   limitations: string[];
@@ -174,22 +180,7 @@ function construireFindingsEffetIndesirable(effetsIndesirables: EffetIndesirable
     };
   }
 
-  const horsRegle = effetsIndesirables.filter(
-    signalement => signalement.rattachement === null && signalement.protocolDraftId === null
-      && (STATUTS_EI_NON_TRAITES as readonly string[]).includes(signalement.statutTraitement),
-  ).length;
-
-  return {
-    findings: [],
-    rules: [regle],
-    limitations: horsRegle > 0
-      ? [
-        `${horsRegle} signalement(s) d’effet indésirable non traité(s) ne sont rattachés à aucun`
-        + ' élément d’un programme diffusé : rien n’y est en pause, et la machine n’en déduit pas.'
-        + ' Ils restent à examiner sur la surface des signalements.',
-      ]
-      : [],
-  };
+  return { findings: [], rules: [regle], limitations: [] };
 }
 
 /**
@@ -448,11 +439,15 @@ export function construireSafetyFindings(
    * signalement » mais « ce chemin ne lit pas les signalements ». La distinction
    * tient parce que le seul appelant qui les fournit est celui qui les a
    * réellement interrogés : quand `interruptionEffetIndesirableActive()` est
-   * faux, aucune requête n'est émise et le second producteur reste muet, ce que
-   * `limitationsEffetIndesirable` ne compense pas non plus — il n'y a rien à
-   * dire d'une lecture qui n'a pas eu lieu et dont le dispositif entier est
-   * éteint. Un défaut sur `signauxAlerte`, lui, resterait interdit : ce
+   * faux, aucune requête n'est émise et le second producteur reste muet — il
+   * n'y a rien à dire d'une lecture qui n'a pas eu lieu et dont le dispositif
+   * entier est éteint. Un défaut sur `signauxAlerte`, lui, resterait interdit : ce
    * chemin-là est allumé.
+   *
+   * AUCUNE SORTIE N'EN DÉPEND PLUS (D-281 §5, arbitrage du 2026-10-17) : le
+   * second producteur ne rend que sa règle, selon la signature. Le paramètre
+   * reste pour ne pas déplacer le contrat de la chaîne ; le retrait de la
+   * lecture est une dette du plan (§8).
    */
   effetsIndesirables: EffetIndesirableRuntime[] = [],
   /**
@@ -466,10 +461,10 @@ export function construireSafetyFindings(
 ): {
   findings: SafetyFinding[];
   rules: ClinicalRuleRef[];
-  /** Ce que le second et le troisième producteur n'ont pas pu conclure, dit plutôt que tu. */
+  /** Ce que le troisième producteur n'a pas pu conclure, dit plutôt que tu. */
   limitations: string[];
 } {
-  const securiteEI = construireFindingsEffetIndesirable(effetsIndesirables);
+  const securiteEI = construireFindingsEffetIndesirable();
   const securiteQuestionnaire = construireFindingsQuestionnaire(reponsesSecurite);
   const regle = regleSecuriteValidee();
   if (!regle) {
