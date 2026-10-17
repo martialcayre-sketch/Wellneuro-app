@@ -81,23 +81,30 @@ export type SafetyEffetIndesirableMetadata = {
 //      drapeau `WN_EI_INTERRUPTION` est absent de la production ». C'ÉTAIT VRAI
 //      À LA LIVRAISON ET FAUX DEPUIS : le drapeau y vaut `1` depuis le LOT-05,
 //      posé exprès pour ouvrir la CAPTURE ([[D-101]]) — la ligne 143 le lit. Le
-//      mécanisme n'a jamais changé ; seule la phrase avait vieilli. Ce qui tient
-//      l'inhibition fermée aujourd'hui est la SIGNATURE manquante, jamais le
-//      drapeau. Une phrase périmée dans un fichier clinique se corrige : c'est
-//      elle qu'un relecteur croit avant de croire le code.
+//      mécanisme n'a jamais changé ; seule la phrase avait vieilli. Ce qui
+//      tenait l'inhibition fermée jusqu'au 2026-10-17 était la SIGNATURE
+//      manquante, jamais le drapeau ; signée ce jour-là (M-1), la règle s'arme
+//      au déploiement. Une phrase périmée dans un fichier clinique se corrige :
+//      c'est elle qu'un relecteur croit avant de croire le code.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SAFETY_EI_METADATA: SafetyEffetIndesirableMetadata = {
-  version: 'safety-effet-indesirable-nnpp2-v1',
-  // NON SIGNÉE À LA LIVRAISON — même discipline que les cinq autres tables du
-  // dépôt : écrire une règle et la signer sont deux gestes distincts, et le
-  // second est un acte PRATICIEN. Il ne se rend pas avant que la migration
-  // d'association soit appliquée ET constatée en production : signer une règle
-  // qui lit une colonne absente serait signer une règle inapplicable.
-  validationExterne: false,
-  dateValidation: null,
-  sourceReference: '',
-  shaPerimetre: null,
+  // NOUVELLE VERSION À LA SIGNATURE (D-281 §6) : la v1 était la règle livrée
+  // par [[D-101]], jamais signée ; la v2 est la règle amendée.
+  version: 'safety-effet-indesirable-nnpp2-v2',
+  // SIGNÉE le 2026-10-17 (M-1) — déclaration du responsable rendue en séance,
+  // sur questions à options, après lecture de la conduite et des trois points
+  // qu'elle engage ; les trois textes patient étaient signés depuis le
+  // 2026-10-12 et le 2026-10-14 (D-281 §4). Surface relue :
+  // `docs/claude/campagnes/SURFACE_RELECTURE_SAF_EI_01_2026-10-17.md`
+  // ([[D-195]] : la déclaration précède la frappe, la recopie de l'empreinte est
+  // mécanique). Avant elle, la table était NON SIGNÉE depuis sa livraison.
+  validationExterne: true,
+  dateValidation: '2026-10-17T00:00:00.000Z',
+  sourceReference: 'Constitution clinique DC-42 ; arbitrage du praticien consigné en D-281 du 2026-10-12',
+  // SURTOUT PAS `shaPerimetre: SAFETY_EI_SHA256` — la constante est déclarée
+  // APRÈS cet objet, et la comparaison serait tautologique.
+  shaPerimetre: 'dafccdf0368e53aafdd5910568f5aaefe8b95b348bb710a79928b7a27218e9bb',
 };
 
 export const SAFETY_EI_SHA256 = sha256(
@@ -128,7 +135,8 @@ export function tableEffetIndesirableSignee(): boolean {
 }
 
 /**
- * Le drapeau d'environnement de l'interruption — NEUF ET ÉTEINT.
+ * Le drapeau d'environnement de l'interruption — neuf et éteint à la
+ * livraison, posé en production depuis le LOT-05 (capture).
  *
  * POURQUOI UN DRAPEAU EN PLUS DU VERROU DE SIGNATURE, alors que le LOT-04 s'en
  * est passé : ce lot livre une MIGRATION, et le code se déploie AVANT qu'elle

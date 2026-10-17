@@ -2921,7 +2921,25 @@ clinique `DC-42` ; arbitrage du praticien consigné en [[D-281]] du
 2026-10-12 ». D'ici là, la règle livrée reste **non armée** : les signalements
 sont capturés et notifiés, rien ne s'interrompt. Écarté : signer la règle
 livrée comme filet pendant le chantier (elle appliquerait le blocage total
-écarté au §1).
+écarté au §1). **Signée le 2026-10-17 (M-1)** : déclaration du responsable
+rendue en séance, sur questions à options, après lecture de la conduite et
+des trois points qu'elle engage ([[D-195]]) ; surface relue
+`SURFACE_RELECTURE_SAF_EI_01_2026-10-17` ; version
+`safety-effet-indesirable-nnpp2-v2`. Trois arbitrages rendus avec elle :
+(a) au déploiement, la règle passe de « candidate » à « validée », l'empreinte
+des cartes change, et les programmes approuvés deviennent « indisponibles »
+au portail (trois dossiers au relevé du jour) : effet accepté, le praticien
+diffuse une nouvelle version pour chacun aussitôt après le déploiement. Pour
+un dossier dont le signalement a reçu l'avis « impliqué », la nouvelle
+version porte l'aménagement consigné dans l'avis : la pause ne vise que la
+version désignée (§2 a), elle ne passe pas à la suivante, et la machine ne
+contrôle pas « ni à l'identique ni augmenté » (§5) ;
+écartés, rediffuser plus tard et un lot de code préalable qui retarderait
+la signature ; (b) le programme lisible dont aucun élément n'est désignable
+(orientations ou prises de sang seules) reste sans avis « impliqué, élément
+non identifiable », cas différé, sans complément à maintenir en pause ;
+(c) la visibilité de « Signaler un problème » au portail ne précède pas la
+signature, elle va dans un lot UI à part.
 
 **Écartés.** Avertir sans rien bloquer (contraire à `DC-42`) ; graduer selon la
 gravité déclarée (une déclaration non vérifiée réglerait l'interruption) ;
