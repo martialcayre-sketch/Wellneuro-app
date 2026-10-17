@@ -232,7 +232,8 @@ export type AnnonceFiches = 'envoye' | 'echoue' | 'non_configure' | 'portail_fer
 
 /** Ce que l'écran annonce avant le clic, quand un e-mail suivrait. */
 export const TEXTE_ANNONCE_A_VENIR =
-  'Si une fiche part, votre patient reçoit un e-mail neutre, sans nom d’assiette : « Un document de votre praticien vous attend ».';
+  'Si une fiche part, votre patient reçoit un e-mail neutre, sans nom d’assiette : « Un document de votre praticien vous attend ». '
+  + 'Au plus un e-mail d’annonce par 24 heures pour ce patient.';
 
 /** Ce que l'écran dit après le clic. Seul `envoye` n'est pas une alerte. */
 export const TEXTE_ANNONCE: Record<AnnonceFiches, { texte: string; alerte: boolean }> = {

@@ -156,7 +156,7 @@ describe('registre des gabarits patient — intégrité', () => {
     expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'acces_portail')).toHaveLength(2);
   });
 
-  it('les cinq validations formelles sont datées — le reste du registre ne l’est pas', () => {
+  it('les six validations formelles sont datées — le reste du registre ne l’est pas', () => {
     // `valideLe` a existé huit versions durant sans jamais être renseigné. Ce
     // banc échoue si une validation est posée ailleurs sans décision.
     const valides = REGISTRE_GABARITS_PATIENT.filter(g => g.valideLe !== null);
@@ -177,6 +177,9 @@ describe('registre des gabarits patient — intégrité', () => {
       // [[D-292]] — le texte de la proposition validée, plus la phrase des
       // 24 heures choisie par le responsable le 2026-10-16.
       'conditions_utilisation@1',
+      // [[D-317]] §3 — relu mot pour mot et validé en session, le jour de sa
+      // rédaction.
+      'protocole_diffuse@1',
     ]);
     expect(valides.map(g => g.valideLe)).toEqual([
       '2026-09-04',
@@ -184,6 +187,7 @@ describe('registre des gabarits patient — intégrité', () => {
       '2026-09-08',
       '2026-09-29',
       '2026-10-16',
+      '2026-10-17',
     ]);
   });
 

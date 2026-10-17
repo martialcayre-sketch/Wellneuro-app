@@ -125,7 +125,7 @@ function dateLisible(iso: string): string {
 
 /** Le drapeau de la lettre ouvre sa lecture : une lettre remise est toujours annoncée ([[D-262]] B3). */
 export const TEXTE_ANNONCE_LETTRE =
-  'Votre patient reçoit un e-mail neutre, sans contenu de santé : « Un document de votre praticien vous attend ». Un seul e-mail par clic, fiches comprises.';
+  'Votre patient reçoit un e-mail neutre, sans contenu de santé : « Un document de votre praticien vous attend ». Un seul e-mail par clic, fiches comprises, et au plus un e-mail d’annonce par 24 heures pour ce patient.';
 
 /**
  * LE COURRIER POUR LE MÉDECIN QUE LE CLIC REMETTRAIT ([[D-262]], LOT-03b ;

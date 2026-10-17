@@ -7,13 +7,13 @@
   après le commit, réponse au praticien. Il remplace l'e-mail `document_remis`
   du même clic. Derrière `WN_ANNONCE_PROTOCOLE`, éteint, effectif seulement
   gabarit validé et `WN_FICHES_ASSIETTE` ouvert.
-- **Gabarit** : texte proposé au registre, **non validé** (`valideLe` nul) —
-  il se relit mot pour mot avant sa validation ; tant qu'il ne l'est pas, le
-  drapeau n'ouvre rien.
+- **Gabarit** : relu mot pour mot et validé par le responsable le
+  2026-10-17 (`valideLe`) ; sans cette date, le drapeau n'ouvrirait rien.
 - **Plafond** (actif dès le déploiement) : au plus un e-mail d'annonce de
   diffusion par dossier et par 24 heures, `document_remis` et
   `protocole_diffuse` confondus, sous verrou par dossier ; un envoi retenu est
-  tracé `Non_envoye` sous son motif et dit à l'écran.
+  tracé `Non_envoye` sous son motif et dit à l'écran ; les textes d'avant le
+  clic (fiches, courrier) le mentionnent.
 - **Écran** : la sous-vue Diffusion annonce l'e-mail du protocole avant le
   clic, tait alors l'annonce des fiches et du courrier, et dit le sort après.
 - `docs/FEATURE_FLAGS.md` (`WN_ANNONCE_PROTOCOLE`), `docs/DOSSIER_RGPD.md`

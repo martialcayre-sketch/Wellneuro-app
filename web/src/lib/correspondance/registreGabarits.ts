@@ -620,8 +620,9 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
   // fil du jour ; il se lit dans le volet repliable « Mon accompagnement » de la
   // page « Mon parcours » (`portail/[token]/questionnaires/page.tsx`).
   //
-  // NON VALIDÉ : le texte se relit mot pour mot avec son lot (§3). Tant que
-  // `valideLe` est nul, le drapeau ne l'ouvre pas (`protocol/annonceDiffusion.ts`).
+  // VALIDÉ le jour de sa rédaction, en session, sur le texte exact relu mot
+  // pour mot par le responsable (§3). Sans `valideLe`, le drapeau ne l'ouvrirait
+  // pas (`protocol/annonceDiffusion.ts`).
   {
     key: 'protocole_diffuse',
     version: 1,
@@ -644,7 +645,7 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     variables: ['prenom', 'connexion'],
     donneesSante: { statut: 'conforme' },
     redigeLe: '2026-10-17',
-    valideLe: null,
+    valideLe: '2026-10-17',
     hash: '619bf4277ec37db2ef11d15f9e7344c0f2baeea2145c68fc17272c224d26c780',
   },
 ]);
