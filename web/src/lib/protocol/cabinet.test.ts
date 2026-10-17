@@ -57,9 +57,11 @@ describe('calculerMedianesCabinet (A6-R2)', () => {
     // Médiane de [+10, +15, +5, +8, +12] = +10, sur n=5 lectures J21.
     expect(j21.mediane).toBe(10);
     expect(j21.n).toBe(5);
-    const j42 = resultat.parJalon.find((m) => m.jalon === 'J42')!;
-    expect(j42.mediane).toBe(20);
-    expect(j42.n).toBe(1);
+    expect(j21.nDossiers).toBe(5);
+    expect(resultat.nDossiers).toBe(5);
+    // J42 : une seule lecture, d'un seul dossier — masquée ([[D-298]] §2).
+    expect(resultat.parJalon.find((m) => m.jalon === 'J42')).toBeUndefined();
+    expect(resultat.jalonsMasques).toBe(1);
     // Aucune médiane inventée pour un jalon sans lecture.
     expect(resultat.parJalon.find((m) => m.jalon === 'J90')).toBeUndefined();
   });
@@ -81,14 +83,50 @@ describe('calculerMedianesCabinet (A6-R2)', () => {
       [cycle('v1', 40, 60)], // +20
       [cycle('v1', 40, 44)], // +4
       [cycle('v1', 40, 56)], // +16
+      [cycle('v1', 40, 46)], // +6
+      [cycle('v1', 40, 52)], // +12
       [cycle('v1', 40, null)], // T0 mesuré, J21 non — compte dans nTotal, pas dans J21
-      [cycle('v1', 40, null)],
     ];
     const resultat = calculerMedianesCabinet(cabinet, 'v1');
-    expect(resultat.nTotal).toBe(6);
+    expect(resultat.nTotal).toBe(7);
     const j21 = resultat.parJalon.find((m) => m.jalon === 'J21')!;
-    expect(j21.n).toBe(4);
-    expect(j21.mediane).toBe(13); // médiane de [4, 10, 16, 20]
+    expect(j21.n).toBe(6);
+    expect(j21.mediane).toBe(11); // médiane de [4, 6, 10, 12, 16, 20]
+  });
+
+  // [[D-298]] §1, §2, §5 : cinq cycles d'un même patient décrivent un patient.
+  it('cinq cycles venant de moins de cinq dossiers : masqué, nDossiers exposé', () => {
+    const unPatient = [cycle('v1', 40, 50), cycle('v1', 30, 45), cycle('v1', 50, 55), cycle('v1', 20, 28), cycle('v1', 60, 72)];
+    const resultat = calculerMedianesCabinet([unPatient], 'v1');
+    expect(resultat.nTotal).toBe(5);
+    expect(resultat.nDossiers).toBe(1);
+    expect(resultat.masque).toBe(true);
+    expect(resultat.parJalon).toEqual([]);
+
+    const quatreDossiers = calculerMedianesCabinet(
+      [[cycle('v1', 40, 50), cycle('v1', 30, 45)], [cycle('v1', 50, 55)], [cycle('v1', 20, 28)], [cycle('v1', 60, 72)]],
+      'v1',
+    );
+    expect(quatreDossiers.nTotal).toBe(5);
+    expect(quatreDossiers.nDossiers).toBe(4);
+    expect(quatreDossiers.masque).toBe(true);
+  });
+
+  it('cohorte servie, mais un jalon venant de moins de cinq dossiers est masqué', () => {
+    const cabinet = [
+      [cycle('v1', 40, 50, 60), cycle('v1', 40, 50, 62)],
+      [cycle('v1', 30, 45, 50)],
+      [cycle('v1', 50, 55, 58)],
+      [cycle('v1', 20, 28)],
+      [cycle('v1', 60, 72)],
+    ];
+    const resultat = calculerMedianesCabinet(cabinet, 'v1');
+    expect(resultat.masque).toBe(false);
+    expect(resultat.nDossiers).toBe(5);
+    // J42 : quatre lectures, mais trois dossiers seulement.
+    expect(resultat.parJalon.find((m) => m.jalon === 'J42')).toBeUndefined();
+    expect(resultat.parJalon.find((m) => m.jalon === 'J21')?.nDossiers).toBe(5);
+    expect(resultat.jalonsMasques).toBe(1);
   });
 });
 
