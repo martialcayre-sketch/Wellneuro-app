@@ -239,6 +239,8 @@ export function CorrespondancesNabmSection({
     const code = (codeChoisi ?? codeSaisi).trim();
     setMessageEchec(null);
     setActeLu(null);
+    // La nature se choisit pour l'acte lu : un autre acte repart sans elle.
+    setNatureNouvelle('');
     if (!/^[0-9]{4}$/.test(code)) {
       setMessageEchec('Un code d’acte compte quatre chiffres.');
       return;

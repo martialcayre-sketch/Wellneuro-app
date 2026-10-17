@@ -302,6 +302,29 @@ describe('CorrespondancesNabmSection — recherche par libellé (D-320 §1)', ()
     expect((screen.getByLabelText(/Rechercher dans la nomenclature/) as HTMLInputElement).value).toBe('');
   });
 
+  it('la nature choisie pour un acte ne passe pas à l’acte lu ensuite', async () => {
+    mockApi({
+      lecture: [vide],
+      recherche: trouves([ACTE, { ...ACTE, codeActe: '1210', libelle: 'Libellé de l’acte 1210' }]),
+      acte: { json: { ok: true, millesime: 'V105', acte: ACTE } },
+    });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HOMOCYSTEINE" />);
+    await waitFor(() => expect(screen.getByText('Aucune correspondance pour cet analyte.')).toBeTruthy());
+    fireEvent.change(screen.getByLabelText(/Rechercher dans la nomenclature/), { target: { value: 'homocysteine' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Chercher' }));
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Actes trouvés' })).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lire l’acte 1208' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Signer la correspondance' })).toBeTruthy());
+    fireEvent.click(screen.getByLabelText(/Groupe imposé/));
+    expect((screen.getByRole('button', { name: 'Signer la correspondance' }) as HTMLButtonElement).disabled).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lire l’acte 1210' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Signer la correspondance' })).toBeTruthy());
+    expect((screen.getByRole('button', { name: 'Signer la correspondance' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByLabelText(/Groupe imposé/) as HTMLInputElement).checked).toBe(false);
+  });
+
   it('aucun résultat se dit avec la saisie et le millésime', async () => {
     mockApi({ lecture: [vide], recherche: trouves([]) });
     render(<CorrespondancesNabmSection analyteCode="BIO_FERRITINE" />);
