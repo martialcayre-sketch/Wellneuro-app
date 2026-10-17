@@ -4,8 +4,9 @@
 
 - Branche `feat/pa-2-email-diffusion`, partie de `origin/main` b57f67c2, dans
   le worktree `cc8-migration` (session concurrente, cycle en git/gh direct).
-  `origin/main` 8dd1ff2e (#1518) a été fusionné dans la branche sur arbitrage
-  du responsable (commit puis merge), sans conflit.
+  `origin/main` a été fusionné deux fois dans la branche sur arbitrage du
+  responsable (commit puis merge) : 8dd1ff2e (#1518) sans conflit, puis
+  73f898a3 (#1519) avec un conflit d'imports résolu.
 - Aucune migration ; `schema.prisma` inchangé.
 
 ## Objectif
@@ -53,7 +54,13 @@ neuf éteint, et le plafond serveur de 24 h, posé aussi sur `document_remis`.
 - Revue `wn-reviewer` : GO, ni P0 ni P1. Verrous sans cycle, READ COMMITTED
   correct, filtre `OR` sur la colonne nullable correct. P2-2 corrigé : les
   textes d'avant le clic (fiches, courrier) mentionnent le plafond.
-- T2 (`--fast`) après le merge : voir la PR.
+- T2 (`--fast`) après le merge de #1518 : vert — Vitest 13 320 verts,
+  4 sautés ; E2E 274 verts, 6 sautés (build de production, Chromium + WebKit).
+- `main` fusionné une seconde fois (#1519, D-281 t20 reste 2), sur arbitrage :
+  un conflit d'imports dans `route.test.ts`, les deux côtés gardés
+  (`annoncerDiffusion`, `pausesServies`). Bancs des fichiers fusionnés :
+  1173 verts ; T1 rapide puis T2 (`--fast`) rejoués après cette fusion :
+  verts — Vitest 13 346 verts, 4 sautés ; E2E 274 verts, 6 sautés.
 
 ## Problèmes ouverts
 
