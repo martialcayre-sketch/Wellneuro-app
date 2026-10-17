@@ -44,7 +44,9 @@ ALTER TABLE public.rag_corpus_claim_decisions
       tirage_id IS NULL AND echantillon IS NULL AND questionnaire IS NULL
       AND jsonb_array_length(claims) = 1
       AND jsonb_typeof(claims -> 0 -> 'id') = 'string'
+      AND (claims -> 0 ->> 'id') <> ''
       AND jsonb_typeof(claims -> 0 -> 'claimId') = 'string'
+      AND (claims -> 0 ->> 'claimId') <> ''
       AND jsonb_typeof(claims -> 0 -> 'besoins') = 'array'
       AND jsonb_array_length(claims -> 0 -> 'besoins') > 0
       AND NOT jsonb_path_exists(

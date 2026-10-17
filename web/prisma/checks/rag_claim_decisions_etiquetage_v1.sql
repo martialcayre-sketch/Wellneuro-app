@@ -113,6 +113,18 @@ BEGIN
   END;
   BEGIN
     INSERT INTO public.rag_corpus_claim_decisions (type_acte, validateur, claims)
+    VALUES ('etiquetage', 'contrat@wellneuro.fr', jsonb_set(conforme, '{0,id}', '""'));
+    RAISE EXCEPTION 'étiquetage : identifiant vide accepté' USING ERRCODE = 'WN001';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  BEGIN
+    INSERT INTO public.rag_corpus_claim_decisions (type_acte, validateur, claims)
+    VALUES ('etiquetage', 'contrat@wellneuro.fr', jsonb_set(conforme, '{0,claimId}', '""'));
+    RAISE EXCEPTION 'étiquetage : claimId vide accepté' USING ERRCODE = 'WN001';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  BEGIN
+    INSERT INTO public.rag_corpus_claim_decisions (type_acte, validateur, claims)
     VALUES ('etiquetage', 'contrat@wellneuro.fr', '["options"]');
     RAISE EXCEPTION 'étiquetage : élément non objet accepté' USING ERRCODE = 'WN001';
   EXCEPTION WHEN check_violation THEN NULL;
