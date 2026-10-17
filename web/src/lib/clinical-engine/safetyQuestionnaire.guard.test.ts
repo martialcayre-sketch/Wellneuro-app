@@ -135,19 +135,19 @@ describe('verrou de signature — sens inverse, comme SAF-ANAM-01', () => {
   it('table désignée : aucun constat, et la règle candidate seulement là où une réponse l’appelle', () => {
     designerTable();
     expect(tableSecuriteQuestionnaireSignee()).toBe(false);
-    const positif = construireSafetyFindings([], [], reponsesSecuriteDeclarees([BDI_PLANS]));
+    const positif = construireSafetyFindings([], reponsesSecuriteDeclarees([BDI_PLANS]));
     expect(positif.findings).toEqual([]);
     expect(positif.rules.filter(r => r.ruleId === REGLE_SECURITE_QUESTIONNAIRE)).toEqual([
       expect.objectContaining({ lifecycle: 'candidate' }),
     ]);
-    const negatif = construireSafetyFindings([], [], reponsesSecuriteDeclarees([BDI_NON]));
+    const negatif = construireSafetyFindings([], reponsesSecuriteDeclarees([BDI_NON]));
     expect(negatif.rules.some(r => r.ruleId === REGLE_SECURITE_QUESTIONNAIRE)).toBe(false);
   });
 
   it('table désignée : une réponse illisible seule joint aussi la règle candidate (revue Codex de #1375, P2)', () => {
     designerTable();
     const { findings, rules, limitations } = construireSafetyFindings(
-      [], [], reponsesSecuriteDeclarees([passation('REP-I', 'Q_NEU_01', {})]),
+      [], reponsesSecuriteDeclarees([passation('REP-I', 'Q_NEU_01', {})]),
     );
     expect(findings).toEqual([]);
     expect(limitations).toEqual([]);
@@ -178,7 +178,7 @@ describe('la réponse commande la production', () => {
         const reponses = reponsesSecuriteDeclarees([
           passation(`REP-${question.idQuestionnaire}-${option.v}`, question.idQuestionnaire, { [question.idQuestion]: option.v }),
         ]);
-        const { findings } = construireSafetyFindings([], [], reponses);
+        const { findings } = construireSafetyFindings([], reponses);
         expect(findings, `${question.idQuestionnaire} = ${option.v}`).toHaveLength(index === 0 ? 0 : 1);
         if (index > 0) {
           expect(findings[0].rationale).toContain(`« ${option.l} »`);
@@ -199,7 +199,7 @@ describe('la réponse commande la production', () => {
   it('une autre question mal formée n’efface pas la réponse de sécurité', () => {
     simulerSignature();
     const reponses = reponsesSecuriteDeclarees([passation('REP-M', 'Q_NEU_01', { B1: 'abc', B7: 3 })]);
-    expect(construireSafetyFindings([], [], reponses).findings).toHaveLength(1);
+    expect(construireSafetyFindings([], reponses).findings).toHaveLength(1);
   });
 
   it('un booléen n’est jamais lu comme une option (Number(true) vaudrait 1)', () => {
@@ -216,20 +216,20 @@ describe('A1 — toute passation non invalidée compte', () => {
   it('deux passations positives font deux constats, d’identifiants distincts', () => {
     simulerSignature();
     const reponses = reponsesSecuriteDeclarees([BDI_PLANS, passation('REP-A', 'Q_NEU_01', { B7: 1 })]);
-    const ids = construireSafetyFindings([], [], reponses).findings.map(f => f.findingId);
+    const ids = construireSafetyFindings([], reponses).findings.map(f => f.findingId);
     expect(new Set(ids).size).toBe(2);
   });
 
   it('deux passations portant la MÊME réponse font deux constats', () => {
     simulerSignature();
     const reponses = reponsesSecuriteDeclarees([BDI_PLANS, passation('REP-B2', 'Q_NEU_01', { B7: 2 })]);
-    expect(new Set(construireSafetyFindings([], [], reponses).findings.map(f => f.findingId)).size).toBe(2);
+    expect(new Set(construireSafetyFindings([], reponses).findings.map(f => f.findingId)).size).toBe(2);
   });
 
   it('un « non » ultérieur ne lève rien', () => {
     simulerSignature();
     const plusTard = { ...BDI_NON, dateReponse: new Date('2026-10-09T09:00:00.000Z') };
-    const { findings } = construireSafetyFindings([], [], reponsesSecuriteDeclarees([BDI_PLANS, plusTard]));
+    const { findings } = construireSafetyFindings([], reponsesSecuriteDeclarees([BDI_PLANS, plusTard]));
     expect(findings).toHaveLength(1);
   });
 
@@ -239,18 +239,18 @@ describe('A1 — toute passation non invalidée compte', () => {
     for (const drapeau of ['1', undefined]) {
       if (drapeau) process.env.WN_ENABLE_VALIDITE_PASSATIONS = drapeau;
       else delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
-      expect(construireSafetyFindings([], [], reponsesSecuriteDeclarees([invalide])).findings).toHaveLength(0);
+      expect(construireSafetyFindings([], reponsesSecuriteDeclarees([invalide])).findings).toHaveLength(0);
       for (const statut of ['VALID', 'AMBIGUOUS', 'SUPERSEDED', 'HISTORICAL_ONLY', null]) {
         const ligne = { ...BDI_PLANS, statutValidite: statut };
-        expect(construireSafetyFindings([], [], reponsesSecuriteDeclarees([ligne])).findings, `${statut}`).toHaveLength(1);
+        expect(construireSafetyFindings([], reponsesSecuriteDeclarees([ligne])).findings, `${statut}`).toHaveLength(1);
       }
     }
   });
 
   it('l’identifiant ne dépend pas de l’ordre de la base', () => {
     simulerSignature();
-    const a = construireSafetyFindings([], [], reponsesSecuriteDeclarees([BDI_PLANS, passation('REP-A', 'Q_NEU_12', { IA9: 1 })]));
-    const b = construireSafetyFindings([], [], reponsesSecuriteDeclarees([passation('REP-A', 'Q_NEU_12', { IA9: 1 }), BDI_PLANS]));
+    const a = construireSafetyFindings([], reponsesSecuriteDeclarees([BDI_PLANS, passation('REP-A', 'Q_NEU_12', { IA9: 1 })]));
+    const b = construireSafetyFindings([], reponsesSecuriteDeclarees([passation('REP-A', 'Q_NEU_12', { IA9: 1 }), BDI_PLANS]));
     expect(a).toEqual(b);
   });
 
@@ -271,7 +271,7 @@ describe('A2 — illisible : limitation sans blocage ; hors options : constat', 
       passation('REP-3', 'Q_NEU_01', { B7: '  ' }),
       passation('REP-4', 'Q_NEU_03', null),
     ]);
-    const { findings, limitations } = construireSafetyFindings([], [], reponses);
+    const { findings, limitations } = construireSafetyFindings([], reponses);
     expect(findings).toEqual([]);
     expect(limitations).toEqual([
       expect.stringMatching(/^3 passation\(s\) de BDI /),
@@ -283,14 +283,14 @@ describe('A2 — illisible : limitation sans blocage ; hors options : constat', 
     simulerSignature();
     for (const valeur of [5, 'oui', true, [2]]) {
       const { findings } = construireSafetyFindings(
-        [], [], reponsesSecuriteDeclarees([passation('REP-H', 'Q_NEU_02', { Q010: valeur })]),
+        [], reponsesSecuriteDeclarees([passation('REP-H', 'Q_NEU_02', { Q010: valeur })]),
       );
       expect(findings, JSON.stringify(valeur)).toHaveLength(1);
       expect(findings[0].limitations.some(l => l.includes('aucune option'))).toBe(true);
       // La valeur brute n'est jamais recopiée — ni rationale, ni limitations.
       expect(findings[0].rationale).toContain('valeur hors des options');
       const canari = construireSafetyFindings(
-        [], [], reponsesSecuriteDeclarees([passation('REP-K', 'Q_NEU_02', { Q010: 'CANARI-7f3' })]),
+        [], reponsesSecuriteDeclarees([passation('REP-K', 'Q_NEU_02', { Q010: 'CANARI-7f3' })]),
       ).findings[0];
       expect(JSON.stringify(canari)).not.toContain('CANARI');
     }
@@ -299,16 +299,16 @@ describe('A2 — illisible : limitation sans blocage ; hors options : constat', 
 
 describe('empreinte — un dossier sans réponse positive ne change pas', () => {
   it('signée ou non : sans réponse, ou avec un « non », la sortie est celle d’avant le lot', () => {
-    const avant = construireSafetyFindings(['Idées noires ou suicidaires'], [], []);
-    expect(construireSafetyFindings(['Idées noires ou suicidaires'], [], reponsesSecuriteDeclarees([BDI_NON]))).toEqual(avant);
+    const avant = construireSafetyFindings(['Idées noires ou suicidaires'], []);
+    expect(construireSafetyFindings(['Idées noires ou suicidaires'], reponsesSecuriteDeclarees([BDI_NON]))).toEqual(avant);
     simulerSignature();
-    expect(construireSafetyFindings(['Idées noires ou suicidaires'], [], reponsesSecuriteDeclarees([BDI_NON]))).toEqual(avant);
+    expect(construireSafetyFindings(['Idées noires ou suicidaires'], reponsesSecuriteDeclarees([BDI_NON]))).toEqual(avant);
   });
 
   it('une réponse illisible, elle, change la sortie (A2, conséquence acceptée le 2026-10-10)', () => {
     simulerSignature();
-    const avant = construireSafetyFindings([], [], []);
-    const illisible = construireSafetyFindings([], [], reponsesSecuriteDeclarees([passation('REP-I', 'Q_NEU_01', {})]));
+    const avant = construireSafetyFindings([], []);
+    const illisible = construireSafetyFindings([], reponsesSecuriteDeclarees([passation('REP-I', 'Q_NEU_01', {})]));
     expect(illisible.findings).toEqual(avant.findings);
     expect(illisible.rules).toEqual(avant.rules);
     expect(illisible.limitations).not.toEqual(avant.limitations);
@@ -317,7 +317,7 @@ describe('empreinte — un dossier sans réponse positive ne change pas', () => 
   it('le troisième producteur vient APRÈS les deux autres', () => {
     simulerSignature();
     const { findings, rules } = construireSafetyFindings(
-      ['Idées noires ou suicidaires'], [], reponsesSecuriteDeclarees([BDI_PLANS]),
+      ['Idées noires ou suicidaires'], reponsesSecuriteDeclarees([BDI_PLANS]),
     );
     expect(findings.map(f => estFindingQuestionnaire(f.findingId))).toEqual([false, true]);
     expect(rules.at(-1)?.ruleId).toBe(REGLE_SECURITE_QUESTIONNAIRE);
@@ -327,7 +327,7 @@ describe('empreinte — un dossier sans réponse positive ne change pas', () => 
 describe('aucune mesure sur le constat (`DC-23`)', () => {
   it('confidence figée, provenance vide, aucune valeur numérique', () => {
     simulerSignature();
-    const [finding] = construireSafetyFindings([], [], reponsesSecuriteDeclarees([BDI_PLANS])).findings;
+    const [finding] = construireSafetyFindings([], reponsesSecuriteDeclarees([BDI_PLANS])).findings;
     expect(finding.confidence).toBe('à_documenter');
     expect(finding.provenance).toEqual({ responseIds: [], needIds: [], clinicalObjectCodes: [] });
     expect(Object.values(finding).some(v => typeof v === 'number')).toBe(false);
@@ -337,7 +337,7 @@ describe('aucune mesure sur le constat (`DC-23`)', () => {
 describe('levée par lettre — questionnaire oui, effet indésirable jamais', () => {
   it('une couverture lève un constat de questionnaire', () => {
     simulerSignature();
-    const { findings } = construireSafetyFindings([], [], reponsesSecuriteDeclarees([BDI_PLANS]));
+    const { findings } = construireSafetyFindings([], reponsesSecuriteDeclarees([BDI_PLANS]));
     const couverture = {
       idAdressage: 'ADR-1',
       idCorrespondance: 'COR-1',
@@ -345,10 +345,10 @@ describe('levée par lettre — questionnaire oui, effet indésirable jamais', (
       acteLe: '2026-10-10T00:00:00.000Z',
     };
     expect(partitionnerConstatsAdresses(findings, [couverture]).adresses).toHaveLength(1);
-    expect(constatsSecuriteOuverts([], [], reponsesSecuriteDeclarees([BDI_PLANS]), [couverture])).toEqual([]);
+    expect(constatsSecuriteOuverts([], reponsesSecuriteDeclarees([BDI_PLANS]), [couverture])).toEqual([]);
     // Une nouvelle passation positive n'est pas couverte par l'ancienne lettre.
     const ouverts = constatsSecuriteOuverts(
-      [], [], reponsesSecuriteDeclarees([BDI_PLANS, passation('REP-D', 'Q_NEU_01', { B7: 1 })]), [couverture],
+      [], reponsesSecuriteDeclarees([BDI_PLANS, passation('REP-D', 'Q_NEU_01', { B7: 1 })]), [couverture],
     );
     expect(ouverts).toHaveLength(1);
   });

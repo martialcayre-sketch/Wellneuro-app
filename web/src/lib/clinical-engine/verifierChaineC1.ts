@@ -3,7 +3,6 @@ import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/co
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import { canonicalJson, canonicalSha256 } from './canonical';
 import { lireCouverturesAdressage } from './adressagesSignalAlertePrisma';
-import { lireEffetsIndesirables } from './effetsIndesirablesPrisma';
 import { construireChaineC1Tolerante, lireSelectionPriorite } from './selectionPrioritePrisma';
 import { adaptRuntimeInputs } from './runtimeFromPrisma';
 import type { ConfirmedAssessmentEpisode, DecisionCard } from './types';
@@ -146,10 +145,6 @@ export async function refusChaineC1(
   }
 
   const inputs = await entreesRuntime(episode.patientId);
-  // Même lecture que le cockpit, par la même fonction : le vérificateur
-  // recalcule, il ne réinterprète pas ([[D-101]]). Drapeau éteint ⇒ `undefined`
-  // des deux côtés, donc aucune divergence possible.
-  const effetsIndesirables = await lireEffetsIndesirables(episode.patientId);
   // Les couvertures d'adressage, par la même fonction que le cockpit
   // ([[D-257]], LOT-04). Drapeau éteint ⇒ `undefined` des deux côtés.
   const couverturesAdressage = await lireCouverturesAdressage(
@@ -196,7 +191,6 @@ export async function refusChaineC1(
       signauxAlerte: inputs.signauxAlerte,
       reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
-      effetsIndesirables,
       couverturesAdressage,
     }, await lireSelectionPriorite(episode.patientId, decisionCard.decisionCardId)));
   } catch (error) {
