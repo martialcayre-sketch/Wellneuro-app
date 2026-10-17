@@ -28,7 +28,8 @@ import { LienFichesRemises } from '@/components/patient-companion/LienFichesRemi
 import { LienCourrierMedecin } from '@/components/patient-companion/LienCourrierMedecin';
 import { LienTransmissionCompteRendu } from '@/components/patient-companion/LienTransmissionCompteRendu';
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
-import { construireFilDuJour } from '@/lib/portail/filDuJour';
+import { construireFilDuJour, rendezVousSuiviAFaire } from '@/lib/portail/filDuJour';
+import type { PointEtape } from '@/lib/protocol/checkinDomain';
 import type { LectureAttendue } from '@/lib/portail/lecturesAttendues';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
 import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
@@ -111,6 +112,16 @@ export default function QuestionnairesHubPage() {
    * lui dirait qu'il n'y a rien.
    */
   const [lectures, setLectures] = useState<LectureAttendue[]>([]);
+  /*
+   * LE RENDEZ-VOUS DE SUIVI OUVERT et pas encore renseigné ([[D-317]] §6). La
+   * route du check-in dérive la fenêtre ; cette page ne fait que la lire.
+   * `null` en cas d'échec : le fil n'annonce pas un rendez-vous qu'il n'a pas pu
+   * vérifier.
+   */
+  const [rendezVousSuivi, setRendezVousSuivi] = useState<PointEtape | null>(null);
+  // Mineur ou dossier clos : les recueils sont en pause, et le fil n'invite à
+  // aucun — l'écran « Mes rendez-vous de suivi » reste atteignable par son lien.
+  const [recueilsEnPause, setRecueilsEnPause] = useState(false);
   // Séquence TRUST « Avant de commencer » pour les patients existants : une
   // fois au prochain accès, tant qu'un des documents exigeant un accusé n'en a
   // pas un sur sa version courante. La règle n'est plus « le cadre » depuis le
@@ -198,6 +209,24 @@ export default function QuestionnairesHubPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let vivant = true;
+    void (async () => {
+      try {
+        // `no-store`, comme le formulaire : la ligne doit disparaître dès la réponse.
+        const res = await fetch('/api/portail/protocole/checkin', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data: unknown = await res.json();
+        if (vivant) setRendezVousSuivi(rendezVousSuiviAFaire(data));
+      } catch {
+        // Silence délibéré, même raison que pour les lectures.
+      }
+    })();
+    return () => {
+      vivant = false;
+    };
+  }, []);
+
   const charger = useCallback(async () => {
     setState({ status: 'loading' });
     try {
@@ -221,6 +250,7 @@ export default function QuestionnairesHubPage() {
       const statutServi = data.dossierOuvert === false ? 'majeur' : (data.statutAge ?? 'majeur');
       setStatut(statutServi);
       const enPause = statutServi !== 'majeur';
+      setRecueilsEnPause(enPause || data.dossierOuvert === false);
       setAssignations(enPause ? [] : data.assignations);
       setAgendas(enPause ? [] : (data.agendas ?? []));
       setAgendasAli(enPause ? [] : (data.agendasAlimentaires ?? []));
@@ -338,6 +368,7 @@ export default function QuestionnairesHubPage() {
     agendas,
     agendasAli,
     ceQuiCompteOuvert,
+    rendezVousSuivi: recueilsEnPause ? null : rendezVousSuivi,
     formulationParcours: etatParcours?.formulation ?? null,
   });
   // Ce que le fil met en avant ne se répète pas dans les listes plus bas. Le

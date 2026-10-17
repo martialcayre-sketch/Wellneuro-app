@@ -25,7 +25,7 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
   // n'est pas parti), pas une consigne. Un praticien peut avoir de bonnes
   // raisons d'attendre la consultation.
   synthese_non_servie: { libelle: 'Non transmise', icon: MailX },
-  jalon_j21: { libelle: 'Jalon', icon: Flag },
+  jalon_j21: { libelle: 'Point d’étape', icon: Flag },
   t0_a_confirmer: { libelle: 'T0 à confirmer', icon: FlagTriangleRight },
   biologie_arbitree: { libelle: 'Biologie arbitrée', icon: FlaskConical },
   // « À LIRE » ET NON « ALERTE » : la carte dit qu'aucune lecture n'est

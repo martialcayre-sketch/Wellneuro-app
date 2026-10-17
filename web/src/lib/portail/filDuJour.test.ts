@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { AssignationPatient } from '@/lib/consultation/mapAssignation';
 import { affichage, type AgendaAliPortail, type AgendaPortail, type Enrichi } from './hubQuestionnaires';
-import { construireFilDuJour, type SourcesFilDuJour } from './filDuJour';
+import {
+  APPUI_RENDEZ_VOUS_SUIVI,
+  construireFilDuJour,
+  CTA_RENDEZ_VOUS_SUIVI,
+  rendezVousSuiviAFaire,
+  type SourcesFilDuJour,
+} from './filDuJour';
 
 /*
  * LE FIL DU JOUR — ce que ces bancs protègent.
@@ -106,6 +112,7 @@ function fil(
     agendas,
     agendasAli,
     ceQuiCompteOuvert: null,
+    rendezVousSuivi: null,
     formulationParcours: null,
     ...reste,
   });
@@ -374,6 +381,121 @@ describe('l’invitation à dire ce qui compte', () => {
   });
 });
 
+describe('le rendez-vous de suivi (D-317 §6, PA-1)', () => {
+  const bilan = { espece: 'bilan' as const, idObjet: 'env_1', remiseLe: '2026-09-01T10:00:00.000Z' };
+
+  it('un point ouvert et non renseigné entre au fil, vers l’écran des rendez-vous de suivi', () => {
+    const f = fil([], [], new Set(), [], { rendezVousSuivi: 'J7' });
+    expect(f.taches).toEqual([
+      {
+        cle: 'rendez-vous-suivi:J7',
+        espece: 'rendez_vous_suivi',
+        cta: CTA_RENDEZ_VOUS_SUIVI,
+        appui: APPUI_RENDEZ_VOUS_SUIVI,
+        href: '/portail/TOK/suivi',
+      },
+    ]);
+  });
+
+  it('chacun des trois points a sa propre clé', () => {
+    for (const point of ['J7', 'J14', 'J21'] as const) {
+      expect(cles(fil([], [], new Set(), [], { rendezVousSuivi: point }))).toEqual([`rendez-vous-suivi:${point}`]);
+    }
+  });
+
+  it('aucun point à faire : aucune ligne', () => {
+    expect(cles(fil([assign()]))).toEqual(['ASS_Q']);
+  });
+
+  it('il ne passe PAS devant une nuit à noter, qui périme plus vite', () => {
+    const f = fil([assignAgenda()], [agenda()], new Set(), [], { rendezVousSuivi: 'J14' });
+    expect(cles(f)).toEqual(['ASS_AGD', 'rendez-vous-suivi:J14']);
+  });
+
+  it('il passe devant ce qui ne périme pas : lecture, invitation, questionnaire', () => {
+    const f = fil([assign()], [], new Set(), [], {
+      rendezVousSuivi: 'J21',
+      lectures: [bilan],
+      ceQuiCompteOuvert: true,
+    });
+    expect(cles(f)).toEqual(['rendez-vous-suivi:J21', 'lecture:bilan:env_1', 'ce-qui-compte', 'ASS_Q']);
+  });
+
+  it('le patient lit « rendez-vous de suivi », jamais « point d’étape », « jalon » ni le jour', () => {
+    const [tache] = fil([], [], new Set(), [], { rendezVousSuivi: 'J21' }).taches;
+    const texte = `${tache.cta} ${tache.appui ?? ''}`;
+    expect(texte).toMatch(/rendez-vous de suivi/);
+    expect(texte).not.toMatch(/point d.étape|jalon|J\d|jour/i);
+  });
+});
+
+describe('rendezVousSuiviAFaire — la réponse de la route du check-in', () => {
+  const reponse = (over: Record<string, unknown> = {}) => ({
+    ok: true,
+    protocoleDiffuse: true,
+    pointEtapeOuvert: 'J7',
+    points: [
+      { pointEtape: 'J7', renseigne: false, reponses: null },
+      { pointEtape: 'J14', renseigne: false, reponses: null },
+      { pointEtape: 'J21', renseigne: false, reponses: null },
+    ],
+    ...over,
+  });
+
+  it('fenêtre ouverte, point non renseigné : le point est rendu', () => {
+    expect(rendezVousSuiviAFaire(reponse())).toBe('J7');
+  });
+
+  it('la réponse du patient fait disparaître la ligne', () => {
+    expect(
+      rendezVousSuiviAFaire(
+        reponse({
+          pointEtapeOuvert: 'J14',
+          points: [
+            { pointEtape: 'J7', renseigne: false, reponses: null },
+            { pointEtape: 'J14', renseigne: true, reponses: {} },
+          ],
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it('un point antérieur non renseigné ne revient pas : seul le point OUVERT compte', () => {
+    expect(
+      rendezVousSuiviAFaire(
+        reponse({
+          pointEtapeOuvert: 'J21',
+          points: [
+            { pointEtape: 'J7', renseigne: false, reponses: null },
+            { pointEtape: 'J21', renseigne: false, reponses: null },
+          ],
+        }),
+      ),
+    ).toBe('J21');
+  });
+
+  it('fenêtre fermée : aucune ligne', () => {
+    expect(rendezVousSuiviAFaire(reponse({ pointEtapeOuvert: null }))).toBeNull();
+  });
+
+  it('aucun protocole diffusé, réponse en échec ou illisible : aucune ligne', () => {
+    expect(rendezVousSuiviAFaire(reponse({ protocoleDiffuse: false }))).toBeNull();
+    expect(rendezVousSuiviAFaire({ ok: false, reason: 'exception', error: 'x' })).toBeNull();
+    expect(rendezVousSuiviAFaire(null)).toBeNull();
+    expect(rendezVousSuiviAFaire('ok')).toBeNull();
+    expect(rendezVousSuiviAFaire(reponse({ pointEtapeOuvert: 'J8' }))).toBeNull();
+    expect(rendezVousSuiviAFaire(reponse({ points: undefined }))).toBeNull();
+  });
+
+  it('un point ouvert absent de la liste, ou un état non booléen : aucune ligne', () => {
+    expect(rendezVousSuiviAFaire(reponse({ points: [] }))).toBeNull();
+    expect(
+      rendezVousSuiviAFaire(reponse({ points: [{ pointEtape: 'J7', renseigne: 'non' }] })),
+    ).toBeNull();
+    expect(rendezVousSuiviAFaire(reponse({ points: [null, 'J7'] }))).toBeNull();
+  });
+});
+
 describe('les lectures — ce que le praticien a remis', () => {
   const bilan = { espece: 'bilan' as const, idObjet: 'env_1', remiseLe: '2026-09-01T10:00:00.000Z' };
   const synthese = {
@@ -511,7 +633,7 @@ describe('les interdits du portail patient', () => {
       [agenda()],
       new Set(['ASS_Q']),
       [agendaAli()],
-      { ceQuiCompteOuvert: true },
+      { ceQuiCompteOuvert: true, rendezVousSuivi: 'J7' },
     );
     const texte = f.taches.map(t => `${t.cta} ${t.appui ?? ''}`).join(' ');
     expect(texte).not.toMatch(/%/);
@@ -524,7 +646,7 @@ describe('les interdits du portail patient', () => {
       [agenda()],
       new Set(),
       [agendaAli()],
-      { ceQuiCompteOuvert: true },
+      { ceQuiCompteOuvert: true, rendezVousSuivi: 'J7' },
     );
     expect(new Set(cles(f)).size).toBe(f.taches.length);
   });
