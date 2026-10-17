@@ -4,6 +4,48 @@
 
 ## Décisions actives
 
+### D-319 — Onglet « Biologie » : la proposition de bilan y déménage ; l'arbitrage biologique reste dans la phase Actions, à côté de la version qu'il juge, et l'onglet compte les actions qui l'attendent (F57 PR 2, amende D-308 §1)
+
+- Date : 2026-10-17
+- Statut : accepté. Arbitrage du responsable du 2026-10-17, sur question à
+  options (« Proposition seule », recommandé, contre « les deux
+  déménagent » et « rien ne bouge »). Texte rédigé par l'assistant à partir
+  de cette réponse.
+- Amende : [[D-308]] §1 (« les écrans de biologie y déménagent ; rien n'est
+  dupliqué ») pour une seule exception, l'arbitrage.
+- Domaine : fiche patient (`FichePatientPanel.tsx`, onglet `biologie`) ;
+  `components/biologie/PropositionBilanSection.tsx` ;
+  `ClinicalRuntimeSection.tsx` (sous-vue Biologie de la phase Actions) ;
+  fiche F57.
+- **Ne touche pas** : aucune route, aucun schéma, aucune migration, aucune
+  règle clinique ; les gestes de la proposition (déclaration, courrier,
+  document patient, liste des remises) sont repris à l'identique ; l'arbitrage
+  et la révision sont inchangés.
+
+**§1 — La proposition de bilan.** Elle quitte la sous-vue Biologie de la phase
+Actions pour l'onglet « Biologie », sous l'encart des mesures. Elle ne
+dépendait du protocole que par le moment de sa lecture : elle se lit à
+l'ouverture de l'onglet, puis reste montée (règle de « Correspondance ») pour
+que le destinataire du courrier et le refus à trancher du document patient
+survivent à un changement d'onglet. Mêmes conditions qu'avant le
+déménagement : épisode T0 confirmé, hors fiche d'ergonomie.
+
+**§2 — L'arbitrage reste.** Il juge les actions conditionnelles de la
+version active, avec la coche « J'ai relu le protocole révisé » : il reste
+dans la phase Actions, à côté d'elle. L'onglet « Biologie » dit combien
+d'actions l'attendent — actions conditionnelles de la version active sans
+verdict pour elle — et « Ouvrir l'arbitrage » mène à la sous-vue. Un compte
+non su (biologie fermée, arbitrages non lus, aucune version active) n'affiche
+rien : jamais un zéro affirmé faute de lecture.
+
+**§3 — Les lectures.** La phase Actions lit encore les lignes de la
+proposition, pour ses deux dérivés (les analytes sur lesquels une action peut
+attendre, les libellés de l'arbitrage), mais plus la liste des remises. Ouvrir
+l'onglet relit la proposition : deux écrans, deux lectures journalisées
+(`G-TRUST-04`), chacune là où elle s'affiche. Une déclaration faite dans
+l'onglet fait relire ses lignes à la phase Actions, comme quand la
+proposition y vivait.
+
 ### D-318 — Purge à 30 jours des lignes non validées : seule la trace du dépôt reste d'un compte rendu sans ligne validée ; la lecture consignée reste ; l'écart emporte les lignes ; un travail en cours diffère tout (F44, D-283 §10 c)
 
 - Date : 2026-10-17

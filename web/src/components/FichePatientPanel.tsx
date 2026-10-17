@@ -81,6 +81,7 @@ import { ObjectifNegociePanel } from '@/components/patient-cockpit/ObjectifNegoc
 import { ComprehensionPanel } from '@/components/patient-cockpit/ComprehensionPanel';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
 import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePanel';
+import { PropositionBilanSection } from '@/components/biologie/PropositionBilanSection';
 import { CeQuiComptePanel } from '@/components/patient-cockpit/CeQuiComptePanel';
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
 import { AgendaAlimentairePraticienPanel } from '@/components/agenda-alimentaire/AgendaAlimentairePraticienPanel';
@@ -609,6 +610,21 @@ export function FichePatientPanel({
     if (ongletActif === 'correspondance') setDossierCorrespondanceOuvert(idPatient);
   }, [ongletActif, idPatient]);
   const correspondanceMontee = dossierCorrespondanceOuvert === idPatient;
+  // LA PROPOSITION DE BILAN DE L'ONGLET « BIOLOGIE » RESTE MONTÉE APRÈS SA
+  // PREMIÈRE VISITE ([[D-319]]), par la même règle : le destinataire du
+  // courrier, le courrier établi et le refus à trancher du document patient ne
+  // se perdent pas à un changement d'onglet. Retenir LE DOSSIER, pas un
+  // booléen : sa lecture journalise l'accès (`G-TRUST-04`).
+  const [dossierBiologieOuvert, setDossierBiologieOuvert] = useState<string | null>(null);
+  useEffect(() => {
+    if (ongletActif === 'biologie') setDossierBiologieOuvert(idPatient);
+  }, [ongletActif, idPatient]);
+  // Demandes d'ouverture de l'arbitrage, venues de l'onglet « Biologie » :
+  // un compteur, que la section clinique lit comme un geste.
+  const [demandesArbitrage, setDemandesArbitrage] = useState(0);
+  // Déclarations faites dans la proposition de l'onglet : la section clinique
+  // relit ses dérivés (analytes sur lesquels une action peut attendre).
+  const [declarationsProposition, setDeclarationsProposition] = useState(0);
   // Phase focale. Point de départ : 'patient' — la PREMIÈRE étape annoncée
   // par le rail, jamais le milieu de la séquence (audit du cockpit
   // 2026-09-02 : s'initialiser sur 'decision' faisait s'ouvrir chaque dossier
@@ -688,6 +704,12 @@ export function FichePatientPanel({
   // moteur via la route dev /api/dev/validation-ergo. Rien n'est sauvegardé
   // ni transmis au patient.
   const fixtureErgo = fixtureValidationErgo;
+  // MÊMES CONDITIONS QU'AVANT LE DÉMÉNAGEMENT : la proposition n'existait que
+  // sur un épisode T0 confirmé et hors fiche d'ergonomie (revue adverse de F57
+  // PR 2, P2-2) — le déménagement ne l'ouvre pas plus tôt.
+  const propositionMontee = dossierBiologieOuvert === idPatient
+    && etatRuntime?.episodeConfirme === true
+    && !fixtureErgo;
   const [protocolDraftErgo, setProtocolDraftErgo] = useState<ProtocolDraft | null>(null);
   const [erreurErgo, setErreurErgo] = useState<string | null>(null);
 
@@ -2574,6 +2596,8 @@ export function FichePatientPanel({
                 onRechargerTrajectoire={chargerTrajectoire}
                 onPropositionsAssemblees={() => setAssemblages(n => n + 1)}
                 demandeAssemblage={demandesAssemblage}
+                demandeSousVueBiologie={demandesArbitrage}
+                demandeRelectureProposition={declarationsProposition}
               />
             </div>
 
@@ -2732,7 +2756,10 @@ export function FichePatientPanel({
           depuis « Trajectoire », sans doublon ; il ne dépend pas de la
           trajectoire chargée. Monté à l'activation seulement, comme les autres
           onglets : ses lectures journalisent l'accès (`G-TRUST-04`). Le
-          deep-link `?compteRendu=` (carte du Fil, [[D-268]]) l'ouvre ici. */}
+          deep-link `?compteRendu=` (carte du Fil, [[D-268]]) l'ouvre ici.
+          La proposition de bilan y vit aussi depuis la PR 2 ([[D-319]]),
+          gardée montée après la première visite ; l'arbitrage reste dans la
+          phase Actions, l'onglet y renvoie. */}
       <div
         role="tabpanel"
         id="panneau-biologie"
@@ -2741,8 +2768,49 @@ export function FichePatientPanel({
         tabIndex={0}
         className="lg:h-[calc(100dvh-11.75rem)] lg:min-h-[420px] lg:overflow-y-auto"
       >
+        {/* L'ARBITRAGE RESTE DANS LA PHASE ACTIONS ([[D-319]]) : il juge les
+            actions de la version active, à côté d'elle. L'onglet dit seulement
+            combien l'attendent — un compte SU (`null` sinon, rien d'affiché) —
+            et y renvoie. */}
+        {ongletActif === 'biologie'
+          && etatRuntime?.actionsEnAttenteArbitrage != null
+          && etatRuntime.actionsEnAttenteArbitrage > 0 && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-3">
+            <p className="text-sm text-foreground">
+              {etatRuntime.actionsEnAttenteArbitrage === 1
+                ? '1 action du protocole attend un arbitrage biologique.'
+                : `${etatRuntime.actionsEnAttenteArbitrage} actions du protocole attendent un arbitrage biologique.`}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setOngletActif('cockpit');
+                setPhaseActive('actions');
+                setDemandesArbitrage(n => n + 1);
+                // Le bouton disparaît avec son panneau : le focus suit vers la
+                // zone focale, qui reçoit le focus et porte la phase Actions
+                // (P2-4 ; revue CodeRabbit : le conteneur du poste de pilotage
+                // n'est pas focalisable).
+                requestAnimationFrame(() => document.getElementById('zone-focale')?.focus());
+              }}
+              className="min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              Ouvrir l’arbitrage
+            </button>
+          </div>
+        )}
         {ongletActif === 'biologie' && (
           <EstimeMesurePanel idPatient={idPatient} compteRenduDemande={compteRenduDemande} />
+        )}
+        {/* La proposition de bilan ([[D-319]], plan F57 PR 2) : montée à la
+            première visite, puis gardée (voir `propositionMontee`). */}
+        {propositionMontee && (
+          <div className="mt-6">
+            <PropositionBilanSection
+              idPatient={idPatient}
+              onDeclaration={() => setDeclarationsProposition(n => n + 1)}
+            />
+          </div>
         )}
       </div>
     </div>

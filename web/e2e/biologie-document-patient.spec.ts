@@ -23,7 +23,7 @@
 // rend 503 et ce spec passerait au vert en ne trouvant rien à cliquer.
 import { test, expect, type Page } from '@playwright/test';
 import { praticienSessionCookie } from './helpers/auth';
-import { confirmerEpisodeT0, ouvrirSousVueBiologie } from './helpers/biologie';
+import { confirmerEpisodeT0, ouvrirOngletBiologie } from './helpers/biologie';
 import {
   provisionnerDossierBiologie,
   nettoyerDossierBiologie,
@@ -49,15 +49,15 @@ test.describe.configure({ mode: 'serial' });
 /**
  * Le panneau de proposition, atteint depuis une page neuve.
  *
- * Trois gestes indissociables — confirmer (ou rejouer) l'épisode T0, ouvrir la
- * phase Actions, ouvrir la sous-vue Biologie — et le parcours les refait à
+ * Deux gestes indissociables — confirmer (ou rejouer) l'épisode T0, ouvrir
+ * l'onglet « Biologie » de la fiche ([[D-319]]) — et le parcours les refait à
  * CHAQUE test : c'est ce qui rend le rechargement du test 2 réel plutôt que
  * simulé.
  */
 async function ouvrirPanneauProposition(page: Page) {
   await page.goto(`/dashboard/patients/${PATIENT_ID}`);
   await confirmerEpisodeT0(page);
-  await ouvrirSousVueBiologie(page);
+  await ouvrirOngletBiologie(page);
   const panneau = page.getByRole('region', { name: 'Biologie — proposition de bilan' });
   await expect(panneau).toBeVisible();
   return panneau;
