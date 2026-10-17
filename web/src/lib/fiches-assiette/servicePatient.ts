@@ -19,9 +19,12 @@ import { prisma } from '@/lib/prisma';
 import { getRecommendedPlate } from '@/lib/food-compass/plates';
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
 import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
+import { pausesParReference, type ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
+import { pausesServies } from '@/lib/trust/pauseEffetIndesirableServeur';
 import { controlerVersion } from './controle';
 import { etatDeLaVersion } from './etat';
 import {
+  assietteDeLAction,
   assiettesConseillees,
   contenuPourLePatient,
   etatAvantControle,
@@ -46,23 +49,42 @@ const SELECTION_ACTE = {
  * Les assiettes que le protocole SERVI au patient conseille encore, ou `null`
  * si aucun ne peut être établi. Même résolution que `api/portail/protocole` :
  * la tête de la chaîne d'approbations, recoupée avec la version active.
+ *
+ * ET LES ASSIETTES EN PAUSE sur effet indésirable ([[D-281]] §2, arbitrage du
+ * 2026-10-16) : la fiche reste servie, marquée avec le texte signé. Vide avant
+ * la signature (`pausesServies`). Une panne de la lecture des pauses lève,
+ * elle ne tait pas la pause : la route rend son erreur, comme
+ * `api/portail/protocole`. Un protocole servi qu'on ne sait pas lire, lui, ne
+ * désigne aucun élément : aucune pause n'est calculable, la fiche reste
+ * servie sans marque — et l'accueil du portail, sur ce même protocole, ne sert
+ * rien (revue `wn-reviewer` de t20, PR 3, P2 accepté).
  */
-async function assiettesDuProtocoleServi(idPatient: string): Promise<Set<string> | null> {
+async function assiettesDuProtocoleServi(
+  idPatient: string,
+): Promise<{ assiettes: Set<string> | null; pauses: Map<string, ElementEnPause['texte']> }> {
+  let lu: { protocolDraftId: string; actions: ReturnType<typeof reconstructProtocolDraft>['actions'] };
   try {
     const servi = await resolveProtocoleDiffuse(idPatient);
-    if (!servi) return null;
+    if (!servi) return { assiettes: null, pauses: new Map() };
     const brouillon = await prisma.protocolDraft.findUnique({
       where: { id: servi.protocolDraftId },
       select: { payload: true },
     });
-    if (!brouillon) return null;
+    if (!brouillon) return { assiettes: null, pauses: new Map() };
     const { actions } = reconstructProtocolDraft(brouillon.payload, servi.protocolDraftInputHash);
-    return assiettesConseillees(actions);
+    lu = { protocolDraftId: servi.protocolDraftId, actions };
   } catch (err) {
     // Une panne ici ne retient pas les fiches : elle tait seulement la mention.
+    // Aucune pause n'est calculable sans programme lisible — aucune n'est servie
+    // au portail non plus (`api/portail/protocole` rend alors son erreur).
     console.warn('[fiches-assiette/servicePatient] protocole servi illisible', err instanceof Error ? err.name : 'inconnu');
-    return null;
+    return { assiettes: null, pauses: new Map() };
   }
+  const pauses = await pausesServies(idPatient, lu.protocolDraftId, lu.actions);
+  return {
+    assiettes: assiettesConseillees(lu.actions),
+    pauses: pausesParReference(lu.actions, pauses, assietteDeLAction),
+  };
 }
 
 /**
@@ -148,10 +170,11 @@ async function remisesEnCoursControlees(idPatient: string) {
 export async function fichesRemisesAuPatient(idPatient: string): Promise<FicheRemiseServie[]> {
   const fiches = await remisesEnCoursControlees(idPatient);
   if (fiches.length === 0) return [];
-  const assiettes = await assiettesDuProtocoleServi(idPatient);
+  const { assiettes, pauses } = await assiettesDuProtocoleServi(idPatient);
   return fiches.map(({ plateCode, ...fiche }) => ({
     ...fiche,
     protocole: placeDansLeProtocole(plateCode, assiettes),
+    pause: pauses.get(plateCode) ?? null,
   }));
 }
 

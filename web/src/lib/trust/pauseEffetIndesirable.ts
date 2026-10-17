@@ -109,6 +109,48 @@ export type VerdictEffetIndesirable = {
  */
 export type ElementEnPause = { actionId: string; texte: 'element' | 'complements' | 'avis_rendu' };
 
+/** Le texte signé de chaque état, pour les surfaces qui marquent un élément en pause. */
+export const TEXTE_DE_PAUSE: Readonly<Record<ElementEnPause['texte'], string>> = {
+  element: TEXTE_PAUSE_ELEMENT,
+  complements: TEXTE_PAUSE_COMPLEMENTS,
+  avis_rendu: TEXTE_PAUSE_AVIS_RENDU,
+};
+
+/**
+ * Entre deux états qui visent le même élément : une ATTENTE l'emporte sur un
+ * avis rendu — un autre signalement attend encore, et son texte dit vrai ;
+ * entre les deux attentes, l'élément désigné est le plus précis.
+ */
+const RANG_PAUSE = { element: 2, complements: 1, avis_rendu: 0 } as const;
+
+/**
+ * La pause que porte chaque RÉFÉRENCE d'action — l'aliment d'une Boussole,
+ * l'assiette d'une fiche. Ces surfaces restent servies et lisibles, marquées
+ * « en pause » avec le texte signé de l'élément (arbitrage du responsable du
+ * 2026-10-16, D-281 §2) : les masquer tairait au patient ce qu'il ne doit pas
+ * reprendre. Plusieurs actions portant la même référence : l'état le plus
+ * précis l'emporte, comme entre deux signalements (`RANG_PAUSE`).
+ *
+ * `pauses` vient de `pausesServies` : vide tant que la règle amendée n'est pas
+ * signée (D-281 §6), et la carte rendue est alors vide.
+ */
+export function pausesParReference<A extends { actionId: string }>(
+  actions: readonly A[],
+  pauses: readonly ElementEnPause[],
+  reference: (action: A) => string | undefined,
+): Map<string, ElementEnPause['texte']> {
+  const texteDe = new Map(pauses.map(pause => [pause.actionId, pause.texte]));
+  const resultat = new Map<string, ElementEnPause['texte']>();
+  for (const action of actions) {
+    const texte = texteDe.get(action.actionId);
+    const ref = reference(action);
+    if (texte === undefined || !ref) continue;
+    const actuel = resultat.get(ref);
+    if (actuel === undefined || RANG_PAUSE[texte] > RANG_PAUSE[actuel]) resultat.set(ref, texte);
+  }
+  return resultat;
+}
+
 /**
  * Le verdict qui fait foi pour un signalement : la tête de sa chaîne, celui
  * qu'aucun autre ne supplante (D-281 §5, « un verdict se corrige »). `null`
@@ -226,12 +268,8 @@ export function elementsEnPause(input: {
   const pauses = new Map<string, ElementEnPause['texte']>();
   const poser = (actionId: string, texte: ElementEnPause['texte']) => {
     if (!presents.has(actionId)) return;
-    // Une ATTENTE l'emporte sur un avis rendu : un autre signalement attend
-    // encore, et son texte dit vrai. Entre les deux attentes, l'élément
-    // désigné est le plus précis.
-    const rang = { element: 2, complements: 1, avis_rendu: 0 } as const;
     const actuel = pauses.get(actionId);
-    if (actuel !== undefined && rang[actuel] >= rang[texte]) return;
+    if (actuel !== undefined && RANG_PAUSE[actuel] >= RANG_PAUSE[texte]) return;
     pauses.set(actionId, texte);
   };
 

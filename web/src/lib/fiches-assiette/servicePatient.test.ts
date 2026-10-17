@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // contrôles eux-mêmes ont leurs bancs (`controle.test.ts`). Données
 // synthétiques seulement.
 
-const { prisma, resolveProtocoleDiffuse, reconstructProtocolDraft, controlerVersion } = vi.hoisted(() => ({
+const { prisma, resolveProtocoleDiffuse, reconstructProtocolDraft, controlerVersion, pausesServies } = vi.hoisted(() => ({
   prisma: {
     ficheAssietteRemise: { findMany: vi.fn(), findFirst: vi.fn() },
     ficheAssietteVersion: { findMany: vi.fn() },
@@ -14,11 +14,15 @@ const { prisma, resolveProtocoleDiffuse, reconstructProtocolDraft, controlerVers
   resolveProtocoleDiffuse: vi.fn(),
   reconstructProtocolDraft: vi.fn(),
   controlerVersion: vi.fn(),
+  // LA PAUSE ([[D-281]] §2) : son calcul et son verrou ont leur banc
+  // (`pauseEffetIndesirableServeur.test.ts`) ; ici, l'assiette qui la porte.
+  pausesServies: vi.fn(),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/protocol/portailProtocol', () => ({ resolveProtocoleDiffuse }));
 vi.mock('@/lib/protocol/fromPrisma', () => ({ reconstructProtocolDraft }));
 vi.mock('./controle', () => ({ controlerVersion }));
+vi.mock('@/lib/trust/pauseEffetIndesirableServeur', () => ({ pausesServies }));
 
 import { getRecommendedPlate } from '@/lib/food-compass/plates';
 import { aDesFichesRemises, fichesALire, fichesRemisesAuPatient } from './servicePatient';
@@ -99,6 +103,7 @@ beforeEach(() => {
   prisma.ficheAssietteVersion.findMany.mockImplementation(async ({ where }: { where: { id: { in: string[] } } }) =>
     where.id.in.map(id => versionEnBase(id)));
   protocoleServiAvec(ASSIETTE);
+  pausesServies.mockResolvedValue([]);
 });
 
 describe('fichesRemisesAuPatient — la remise en cours de chaque fiche', () => {
@@ -130,6 +135,7 @@ describe('fichesRemisesAuPatient — la remise en cours de chaque fiche', () => 
       remiseLe: '2026-09-28T01:00:00.000Z',
       etat: 'servie',
       protocole: 'actuel',
+      pause: null,
       contenu: { titre: 'Titre synthétique', precautions: ['Précaution synthétique.'], sections: [{ titre: 'Section', paragraphes: ['Paragraphe.'] }] },
     });
     expect(fiche.libelle).toEqual(expect.any(String));
@@ -260,6 +266,41 @@ describe('fichesRemisesAuPatient — la place de l’assiette dans le protocole 
     expect(fiche.protocole).toBe(attendu);
   });
 
+  // EN PAUSE, JAMAIS MASQUÉE ([[D-281]] §2, arbitrage du 2026-10-16) : la fiche
+  // reste servie, texte compris, et porte l'état de la pause de son assiette.
+  it('l’action qui porte l’assiette est en pause : la fiche reste servie, marquée', async () => {
+    protocoleServiAvec(AUTRE, ASSIETTE);
+    pausesServies.mockResolvedValue([{ actionId: 'action-2', texte: 'avis_rendu' }]);
+    const [fiche] = await fichesRemisesAuPatient('PAT_TEST');
+    expect(fiche).toMatchObject({ protocole: 'actuel', etat: 'servie', pause: 'avis_rendu' });
+    expect(fiche.contenu).not.toBeNull();
+    expect(pausesServies).toHaveBeenCalledWith('PAT_TEST', 'pd_1', expect.any(Array));
+  });
+
+  it('une autre action en pause ne marque pas la fiche', async () => {
+    protocoleServiAvec(AUTRE, ASSIETTE);
+    pausesServies.mockResolvedValue([{ actionId: 'action-1', texte: 'element' }]);
+    const [fiche] = await fichesRemisesAuPatient('PAT_TEST');
+    expect(fiche.pause).toBeNull();
+  });
+
+  it('une panne de la lecture des pauses lève : elle ne tait pas la pause', async () => {
+    pausesServies.mockRejectedValue(new Error('base'));
+    await expect(fichesRemisesAuPatient('PAT_TEST')).rejects.toThrow('base');
+  });
+
+  // Sans programme lisible, aucun élément n'est désigné : aucune pause n'est
+  // calculable, et la lecture des pauses n'est même pas tentée.
+  it('un protocole servi illisible : fiche servie sans marque, aucune pause lue', async () => {
+    const avertissement = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    resolveProtocoleDiffuse.mockRejectedValue(new Error('base'));
+    pausesServies.mockResolvedValue([{ actionId: 'action-1', texte: 'element' }]);
+    const [fiche] = await fichesRemisesAuPatient('PAT_TEST');
+    expect(fiche).toMatchObject({ etat: 'servie', protocole: 'inconnu', pause: null });
+    expect(pausesServies).not.toHaveBeenCalled();
+    avertissement.mockRestore();
+  });
+
   it('brouillon approuvé introuvable : inconnu', async () => {
     prisma.protocolDraft.findUnique.mockResolvedValue(null);
     const [fiche] = await fichesRemisesAuPatient('PAT_TEST');
@@ -295,7 +336,7 @@ describe('fichesRemisesAuPatient — la place de l’assiette dans le protocole 
     const avertissement = vi.spyOn(console, 'warn').mockImplementation(() => {});
     resolveProtocoleDiffuse.mockRejectedValue(new Error('base'));
     const [fiche] = await fichesRemisesAuPatient('PAT_TEST');
-    expect(fiche).toMatchObject({ protocole: 'inconnu', etat: 'servie' });
+    expect(fiche).toMatchObject({ protocole: 'inconnu', etat: 'servie', pause: null });
     avertissement.mockRestore();
   });
 });

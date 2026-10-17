@@ -9,7 +9,7 @@ import { calendrierDuProtocoleDiffuse } from '@/lib/protocol/calendriersPersiste
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
 import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
 import { vuePatientOuRefus } from '@/lib/protocol/servirAuPatient';
-import type { ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
+import { pausesParReference, type ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
 import { pausesServies } from '@/lib/trust/pauseEffetIndesirableServeur';
 import type { ProtocolDiffusionApproval } from '@/lib/clinical-engine/types';
 import {
@@ -101,6 +101,13 @@ type GetResponse =
        */
       pauses?: ElementEnPause[];
       /**
+       * LES LECTURES DE LA BOUSSOLE DONT L'ALIMENT EST PORTÉ PAR UN ÉLÉMENT EN
+       * PAUSE, par `foodRef` de la lecture servie. Elles restent servies et
+       * marquées « en pause » avec le texte signé (D-281 §2, arbitrage du
+       * 2026-10-16). Vide avant la signature, comme `pauses`.
+       */
+      boussolesEnPause?: { foodRef: string; texte: ElementEnPause['texte'] }[];
+      /**
        * LE JOURNAL DE LECTURE DU PROTOCOLE ([[D-315]], CC-8). Présent seulement
        * quand `WN_PORTAIL_LECTURE_PROTOCOLE` est ouvert et qu'une vue est
        * servie : l'accueil replie alors le détail tant que `dejaOuvert` est
@@ -189,15 +196,22 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         seenFoodRefs.add(ref.foodRef);
         return true;
       });
-    const boussoles = isC5Enabled(process.env.WN_C5_ENABLED)
-      ? (await Promise.all(actionRefs.map(actionRef => resolvePatientFoodCompassView({
+    // La référence de l'action reste attachée à sa lecture : c'est par elle
+    // qu'une lecture se marque en pause, plus bas.
+    const lectures = isC5Enabled(process.env.WN_C5_ENABLED)
+      ? await Promise.all(actionRefs.map(async actionRef => ({
+          actionRef,
+          view: await resolvePatientFoodCompassView({
             idPatient: auth.idPatient,
             approvedDraft: draft,
             approval,
             actionRef,
-          }))))
-          .filter((view): view is PatientFoodCompassSafeView => view !== null)
+          }),
+        })))
       : [];
+    const boussoles = lectures
+      .map(lecture => lecture.view)
+      .filter((view): view is PatientFoodCompassSafeView => view !== null);
 
     // Le cycle se compte depuis son jour 0, pas depuis la dernière
     // rediffusion ([[D-255]]).
@@ -252,12 +266,17 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     });
 
     const pauses = await pausesServies(auth.idPatient, diffuse.protocolDraftId, draft.actions);
+    const pauseParAliment = pausesParReference(draft.actions, pauses, action => action.foodCompassRef?.foodRef);
+    const boussolesEnPause = lectures.flatMap(({ actionRef, view }) => {
+      const texte = view ? pauseParAliment.get(actionRef.foodRef) : undefined;
+      return view && texte ? [{ foodRef: view.foodRef, texte }] : [];
+    });
     const lectureDuDetail = lectureProtocoleOuverte()
       ? { dejaOuvert: await detailDejaOuvert(auth.idPatient, diffuse.approbationId) }
       : undefined;
 
     return NextResponse.json({
-      ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses,
+      ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses, boussolesEnPause,
       ...(lectureDuDetail ? { lectureDuDetail } : {}),
     });
   } catch (err) {

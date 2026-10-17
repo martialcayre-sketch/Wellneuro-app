@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PatientFoodCompassProtocolSection } from './PatientFoodCompassProtocolSection';
 import { PatientFoodCompassSummary } from './PatientFoodCompassSummary';
 import { PatientFoodCompassZoom } from './PatientFoodCompassZoom';
+import { TEXTE_PAUSE_AVIS_RENDU, TEXTE_PAUSE_ELEMENT } from '@/lib/trust/pauseEffetIndesirable';
 
 const view = {
   foodRef: '26034', foodLabel: 'Sardine',
@@ -71,5 +72,45 @@ describe('Jardin patient C5', () => {
     render(<PatientFoodCompassZoom foodRef="99999" />);
     expect(await screen.findByText(/n’est pas disponible/)).toBeTruthy();
     expect(screen.queryByText('Sardine')).toBeNull();
+  });
+});
+
+// EN PAUSE, JAMAIS MASQUÉE ([[D-281]] §2, arbitrage du 2026-10-16) : la lecture
+// reste servie, marquée avec le texte signé de l'élément.
+describe('Boussole d’un aliment en pause', () => {
+  it('le résumé garde la lecture et la marque', () => {
+    render(<PatientFoodCompassSummary token="TOK" items={[view]} enPause={[{ foodRef: '26034', texte: 'element' }]} />);
+    expect(screen.getByText('Sardine')).toBeTruthy();
+    expect(screen.getByText('En pause')).toBeTruthy();
+    expect(screen.getByText(TEXTE_PAUSE_ELEMENT)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Comprendre cette lecture' })).toBeTruthy();
+  });
+
+  it('sans pause, aucune marque', () => {
+    render(<PatientFoodCompassSummary token="TOK" items={[view]} enPause={[{ foodRef: '11111', texte: 'element' }]} />);
+    expect(screen.queryByText('En pause')).toBeNull();
+  });
+
+  it('la page alimentation reprend la marque servie par le protocole', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true, protocoleDiffuse: true, vue: { boussoles: [view] },
+        boussolesEnPause: [{ foodRef: '26034', texte: 'avis_rendu' }],
+      }),
+    }));
+    render(<PatientFoodCompassProtocolSection token="TOK" />);
+    expect(await screen.findByText(TEXTE_PAUSE_AVIS_RENDU)).toBeTruthy();
+  });
+
+  it('le zoom garde la lecture et la marque', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ ok: true, view, pause: 'element' }),
+    }));
+    render(<PatientFoodCompassZoom foodRef="26034" />);
+    expect(await screen.findByRole('heading', { name: 'Sardine' })).toBeTruthy();
+    expect(screen.getByText('En pause')).toBeTruthy();
+    expect(screen.getByText(TEXTE_PAUSE_ELEMENT)).toBeTruthy();
+    expect(screen.getByText('Pourquoi cette lecture ?')).toBeTruthy();
   });
 });

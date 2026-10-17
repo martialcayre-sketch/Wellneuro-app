@@ -1,6 +1,12 @@
 'use client';
 
 import type { ContenuPatientProtocole } from '@/lib/clinical-engine/contenuPatientProtocole';
+import {
+  TEXTE_PAUSE_AVIS_RENDU,
+  TEXTE_PAUSE_COMPLEMENTS,
+  TEXTE_PAUSE_ELEMENT,
+  type ElementEnPause,
+} from '@/lib/trust/pauseEffetIndesirable';
 
 // CE QUE LE PATIENT LIRA, MONTRÉ AU PRATICIEN AVANT QU'IL NE DIFFUSE.
 //
@@ -20,8 +26,20 @@ import type { ContenuPatientProtocole } from '@/lib/clinical-engine/contenuPatie
 // le rend aujourd'hui (dette 4 de [[D-200]], toujours ouverte). L'afficher ici
 // montrerait au praticien un texte que son patient ne verra pas — l'inverse du
 // service rendu.
+//
+// LES PAUSES SUR EFFET INDÉSIRABLE ([[D-281]] §2-4) se marquent comme sur
+// l'écran patient : « En pause » et le texte SIGNÉ de l'élément, celui des
+// compléments une fois au-dessus des actions. Vides avant la signature.
 
-export function ApercuPatientProtocole({ contenu }: { contenu: ContenuPatientProtocole }) {
+export function ApercuPatientProtocole({
+  contenu,
+  pauses = [],
+}: {
+  contenu: ContenuPatientProtocole;
+  pauses?: readonly ElementEnPause[];
+}) {
+  const pauseDe = new Map(pauses.map(pause => [pause.actionId, pause.texte]));
+  const complementsEnPause = [...pauseDe.values()].includes('complements');
   return (
     <div className="grid gap-3 rounded-lg bg-muted p-4 text-base">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -35,10 +53,22 @@ export function ApercuPatientProtocole({ contenu }: { contenu: ContenuPatientPro
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {contenu.actions.length > 1 ? 'Ses actions' : 'Son action'}
         </p>
+        {complementsEnPause && (
+          <p className="rounded-lg border border-border bg-surface p-3">{TEXTE_PAUSE_COMPLEMENTS}</p>
+        )}
         {contenu.actions.map(action => (
           <div key={action.actionId} className="rounded-lg border border-border bg-surface p-3">
             <p className="font-medium">{action.title}</p>
+            {pauseDe.has(action.actionId) && (
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wide">En pause</p>
+            )}
             <p className="mt-1">{action.minimalPlan}</p>
+            {pauseDe.get(action.actionId) === 'element' && (
+              <p className="mt-2 border-t border-border pt-2">{TEXTE_PAUSE_ELEMENT}</p>
+            )}
+            {pauseDe.get(action.actionId) === 'avis_rendu' && (
+              <p className="mt-2 border-t border-border pt-2">{TEXTE_PAUSE_AVIS_RENDU}</p>
+            )}
             {/* UNE INTERVENTION NON FERME NE SE LIT JAMAIS COMME UN CONSEIL.
                 La phrase vient du contrat, jamais de la cible d'attente du
                 praticien (`D-056`, arbitrage 5). */}

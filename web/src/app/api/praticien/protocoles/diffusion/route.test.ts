@@ -3,13 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   getServerSession, prisma, rejouerCarteDecision, reconstructProtocolDraft, vuePatientOuRefus,
   apercuFichesDuProtocole, remettreFiches, annoncerDocumentRemis,
-  signalementsEnAttenteDuDossier, eiActive,
+  signalementsEnAttenteDuDossier, pausesServies, eiActive,
 } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   // LA GARDE D'EFFET INDÉSIRABLE ([[D-281]] §3) : le calcul de l'attente a ses
   // bancs (`bancCasFictifsD281.test.ts`, `pauseEffetIndesirableServeur.test.ts`) ;
   // ce banc juge le câblage — verrou, refus, rien d'écrit.
   signalementsEnAttenteDuDossier: vi.fn(),
+  // LES PAUSES DE L'APERÇU ([[D-281]] §2) : le calcul et son verrou ont leur
+  // banc (`pauseEffetIndesirableServeur.test.ts`) ; ici, la version visée.
+  pausesServies: vi.fn(),
   eiActive: { valeur: false as boolean | null },
   // L'E-MAIL NEUTRE ([[D-251]] §9, lot 11) : seul l'envoi est simulé. La règle
   // « est-il dû ? » (`annonceDue`) est la vraie, lue sur le drapeau.
@@ -46,7 +49,7 @@ vi.mock('@/lib/clinical-engine/rejeuCarteDecision', () => ({ rejouerCarteDecisio
 vi.mock('@/lib/protocol/fromPrisma', () => ({ reconstructProtocolDraft }));
 vi.mock('@/lib/protocol/servirAuPatient', () => ({ vuePatientOuRefus }));
 vi.mock('@/lib/fiches-assiette/remise', () => ({ apercuFichesDuProtocole, remettreFiches }));
-vi.mock('@/lib/trust/pauseEffetIndesirableServeur', () => ({ signalementsEnAttenteDuDossier }));
+vi.mock('@/lib/trust/pauseEffetIndesirableServeur', () => ({ signalementsEnAttenteDuDossier, pausesServies }));
 // `eiActive.valeur === null` rend le VRAI verrou : un cas éprouve le câblage
 // signature + drapeau jusqu'au POST (revue CodeRabbit de #1457).
 vi.mock('@/lib/clinical/safetyEffetIndesirableV1', async orig => {
@@ -544,6 +547,7 @@ describe('GET /api/praticien/protocoles/diffusion — aperçu patient', () => {
     rejouerCarteDecision.mockResolvedValue(carteRejouee);
     reconstructProtocolDraft.mockReturnValue(draft());
     vuePatientOuRefus.mockReturnValue({ ok: true, vue: {} });
+    pausesServies.mockResolvedValue([]);
   });
 
   function requete(): Request {
@@ -580,6 +584,54 @@ describe('GET /api/praticien/protocoles/diffusion — aperçu patient', () => {
     expect(json.stale).toBe(true);
     expect(json.apercu.ok).toBe(true);
     expect(reconstructProtocolDraft).toHaveBeenCalledWith({ version: 2 }, 'HASH_V2');
+  });
+
+  // LES PAUSES SUR EFFET INDÉSIRABLE ([[D-281]] §2, arbitrage du 2026-10-16) :
+  // l'aperçu reste servi, et ses éléments en pause arrivent à côté de lui,
+  // calculés sur la version de l'aperçu — celle que vise un signalement, ou
+  // l'aménagement qui la remplace, que `pausesServies` ne met pas en pause.
+  it('sert les pauses de la version de l’aperçu, à côté de l’aperçu', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: { p: 1 } },
+    ]);
+    pausesServies.mockResolvedValue([{ actionId: 'a1', texte: 'element' }]);
+    const json = (await (await GET(requete())).json()) as { apercu: { ok: boolean }; pauses?: unknown };
+    expect(json.apercu.ok).toBe(true);
+    expect(json.pauses).toEqual([{ actionId: 'a1', texte: 'element' }]);
+    expect(pausesServies).toHaveBeenCalledWith('PAT_1', 'v1', draft().actions);
+  });
+
+  it('ne calcule aucune pause sans aperçu servi', async () => {
+    reconstructProtocolDraft.mockReturnValue(draft({ status: 'draft', review: null }));
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: { p: 1 } },
+    ]);
+    const json = (await (await GET(requete())).json()) as { apercu: { ok: boolean }; pauses?: unknown };
+    expect(json.apercu.ok).toBe(false);
+    expect(json).not.toHaveProperty('pauses');
+    expect(pausesServies).not.toHaveBeenCalled();
+  });
+
+  // Un aperçu sans ses pauses montrerait actif un élément en pause : il est
+  // caché, et le reste de l'état de diffusion reste servi.
+  it('une panne de la lecture des pauses cache l’aperçu et tait « servi », sans emporter le GET', async () => {
+    const avertissement = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: { p: 1 } },
+    ]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+      { id: 'appr_1', protocolDraftInputHash: 'HASH_V1', supersedesApprovalId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), approvedAt: new Date('2026-01-03T12:00:00.000Z') },
+    ]);
+    pausesServies.mockRejectedValue(new Error('base'));
+    const response = await GET(requete());
+    expect(response.status).toBe(200);
+    const json = (await response.json()) as { ok: boolean; apercu: unknown; pauses?: unknown; servieAuPatient: unknown; approval: unknown };
+    expect(json.ok).toBe(true);
+    expect(json.approval).not.toBeNull();
+    expect(json.apercu).toBeNull();
+    expect(json.servieAuPatient).toBeNull();
+    expect(json).not.toHaveProperty('pauses');
+    avertissement.mockRestore();
   });
 
   it('rend le motif du contrat plutôt qu’un aperçu vide', async () => {
