@@ -68,9 +68,12 @@ refusés par trigger, RLS activée, résultat du même dossier. Aucune colonne
 sur `resultats_biologiques`. L'effacement d'un dossier la vide comme les
 autres tables de biologie. Contrat SQL négatif en CI.
 
-**§5 — Exécution.** Deux temps : la migration seule (PR relue, release-db
-approuvée, constat par conteneur), puis le code (route, lecture, écran de la
-série). Portes : G-7 levée ; porte 9 à chaque migration.
+**§5 — Exécution.** Deux temps. D'abord la migration avec son effacement
+nommé (`effacerDossier` vide la table avant les résultats, la clé vers le
+résultat étant en `RESTRICT`) et le banc de complétude de l'effacement qui la
+compte — comme BP-09 (#1448) et BP-10 (#1346) — : PR relue, release-db
+approuvée, constat par conteneur. Puis le code consommateur (route, lecture,
+écran de la série). Portes : G-7 levée ; porte 9 à chaque migration.
 
 ### D-321 — J3-12c : un claim porte deux clés de lien, les besoins qu'il sert et sa rubrique parmi les dix des fiches d'usage ; posées à la signature ou par un acte « étiquetage » journalisé sous son propre type (amende D-312, §5 neuf)
 

@@ -1202,7 +1202,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 | BP-03 | série par analyte | B | aucune | non | F15 |
 | BP-04 | attente typée, analyteCodes sur l'exploration | B | aucune | non | F16 |
 | axes, PR 3 | référentiel d'axes : migration | B | 8, 9 | oui | F52 |
-| statut posé | statut posé et deux marques datées | B | 9 si migration | selon | F58 |
+| statut posé | statut posé et deux marques datées | B | 9 | oui (D-322 §4) | F58 |
 | BF-7, BF-8 | code d'acte et courrier de remboursement | B | 10, 8, 9 | oui (BF-8) | F55, rang 0 |
 | onglet Biologie | BF-1, BF-3 façade A, avec J2-base | B | 12, 9, 24 | non | F57, rang 0 |
 | commentaires | commentaires du laboratoire sous la série | B | aucune | non | F60, rang 0 |
@@ -1366,7 +1366,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Identifiant, piste** : le mot du responsable près de la valeur, daté, à l'écran du responsable seul, jamais calculé ; socle.
 - **Rang** : 4, avec F57.
 - **Portes, préalables** : lettre s ; si migration, G-7 et porte 9.
-- **Migration, release-db** : selon le stockage du statut posé [A verifier].
+- **Migration, release-db** : oui — table neuve en ajout seul (D-322 §4), porte 9.
 - **Décisions, textes** : dans s ; rien au portail.
 - **Critère de fin** : statut posé, daté, relu en banc ; deux marques distinctes affichées.
 - **Mise à jour (2026-10-15)** : forme tranchée par D-308 : statut pris dans une liste fermée du responsable, à écrire avant le code ; « lecture consignée » est un geste distinct (bouton) ; stockage tranché au cadrage.
