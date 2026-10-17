@@ -56,20 +56,6 @@ import {
   type AdressageState,
 } from './AdressagePanel';
 import { SignauxAdressesPanel, type RevocationState } from './SignauxAdressesPanel';
-import {
-  PropositionBilanPanel,
-  type CourrierEtabli,
-  type DocumentPatientEtabli,
-  type DocumentPatientConsigneAffiche,
-  type DocumenteAffiche,
-  type LectureDocumentsPatient,
-  type PropositionState,
-} from './PropositionBilanPanel';
-import {
-  ajouterConfirmation,
-  type ConfirmationsDocument,
-} from '@/lib/biology-library/confirmationsDocument';
-import type { LimiteProposition } from '@/lib/biology-library/propositionService';
 import type { LignePanelProposition } from '@/lib/biology-library/statuts';
 // Import de VALEUR depuis la FEUILLE du vocabulaire des statuts, qui n'importe
 // rien : le prédicat de la borne suit sans tirer le moteur au paquet client.
@@ -232,6 +218,15 @@ export type EtatRuntimeClinique = {
    * phase muette.
    */
   selectionPrioriteDue: boolean | null;
+  /**
+   * ACTIONS QUI ATTENDENT UN ARBITRAGE BIOLOGIQUE ([[D-319]]) : les actions
+   * conditionnelles de la version active sans aucun verdict pour cette
+   * version. Remonté pour que l'onglet « Biologie » de la fiche le dise et
+   * renvoie vers la phase Actions, où l'arbitrage reste. `null` quand le
+   * compte n'est pas SU — biologie fermée, arbitrages non lus, aucune version
+   * active : jamais un zéro affirmé faute de lecture (`DC-24`).
+   */
+  actionsEnAttenteArbitrage: number | null;
 };
 
 /**
@@ -295,6 +290,13 @@ type ClinicalRuntimeSectionProps = {
    * `D-118` tient — un affichage n'est pas un acte.
    */
   demandeAssemblage?: number;
+  /**
+   * Compteur de DEMANDES d'ouverture de la sous-vue « Biologie » de la phase
+   * Actions, venues de l'onglet « Biologie » de la fiche ([[D-319]]). Un
+   * compteur pour la même raison que `demandeAssemblage` : une seconde
+   * demande doit rouvrir la sous-vue quittée entre-temps.
+   */
+  demandeSousVueBiologie?: number;
 } & PilotageTrajectoireProps;
 
 export function ClinicalRuntimeSection({
@@ -308,6 +310,7 @@ export function ClinicalRuntimeSection({
   onEtatChange,
   onPropositionsAssemblees,
   demandeAssemblage = 0,
+  demandeSousVueBiologie = 0,
   trajectoirePartagee,
   statutTrajectoirePartage,
   onRechargerTrajectoire,
@@ -322,6 +325,12 @@ export function ClinicalRuntimeSection({
   const [sousVueActions, setSousVueActions] = useState<
     'protocole' | 'historique' | 'diffusion' | 'biologie'
   >('protocole');
+  // L'onglet « Biologie » de la fiche renvoie ICI pour l'arbitrage
+  // ([[D-319]]) : chaque demande rouvre la sous-vue Biologie. Un geste, jamais
+  // le rendu : sans demande, le compteur ne bouge pas.
+  useEffect(() => {
+    if (demandeSousVueBiologie > 0) setSousVueActions('biologie');
+  }, [demandeSousVueBiologie]);
   // Vrai UNE FOIS une lecture des versions aboutie : avant, `versions === []`
   // est un état inconnu, jamais un vide affirmable (revue I1).
   const [versionsLues, setVersionsLues] = useState(false);
@@ -373,6 +382,9 @@ export function ClinicalRuntimeSection({
   // la révision) + arbitrages consignés. Inertes tant que `cbEnabled` est faux.
   const [contenuActif, setContenuActif] = useState<ContenuVersionActive | null>(null);
   const [arbitrages, setArbitrages] = useState<ArbitrageRow[]>([]);
+  // Les arbitrages ont-ils été LUS ? Sans ce témoin, une liste encore vide
+  // compterait toutes les actions comme en attente.
+  const [arbitragesLus, setArbitragesLus] = useState(false);
   // Constats de critères ([[D-138]]). La liste porte le vocabulaire ACTIF,
   // chaque critère avec son constat — ou `null` pour « personne ne s'est
   // prononcé ». Vide tant que le vocabulaire l'est : le panneau ne s'affiche
@@ -382,18 +394,14 @@ export function ClinicalRuntimeSection({
   const [constatError, setConstatError] = useState<string | null>(null);
   const [arbitrageState, setArbitrageState] = useState<ArbitrageState>('idle');
   const [arbitrageError, setArbitrageError] = useState<string | null>(null);
-  // Proposition de bilan (D-071). `propositionDisponible` reste faux tant que
-  // la route n'a pas répondu `ok` : c'est LUI qui porte le drapeau
-  // `WN_CB_PROPOSITION`, sans second FeatureProvider — un 503 laisse
-  // simplement le panneau absent.
+  // LES LIGNES DE LA PROPOSITION DE BILAN, LUES POUR DEUX DÉRIVÉS SEULEMENT :
+  // les analytes sur lesquels une action peut être suspendue
+  // (`analytesAttendables`) et les libellés de l'arbitrage. Le panneau, ses
+  // gestes et la liste des remises vivent dans l'onglet « Biologie » de la
+  // fiche ([[D-319]], `components/biologie/PropositionBilanSection`).
+  // `propositionDisponible` reste faux tant que la route n'a pas répondu `ok`.
   const [propositionDisponible, setPropositionDisponible] = useState(false);
   const [propositionLignes, setPropositionLignes] = useState<LignePanelProposition[]>([]);
-  const [propositionLimites, setPropositionLimites] = useState<LimiteProposition[]>([]);
-  const [propositionDocumentes, setPropositionDocumentes] = useState<DocumenteAffiche[]>([]);
-  const [propositionMotif, setPropositionMotif] = useState<string | null>(null);
-  const [propositionState, setPropositionState] = useState<PropositionState>('idle');
-  const [propositionError, setPropositionError] = useState<string | null>(null);
-  const [courrier, setCourrier] = useState<CourrierEtabli | null>(null);
   // Lettre d'adressage ([[D-218]]). `adressageOuvert` reste faux tant que la
   // route n'a pas répondu `ok` : c'est LUI qui porte `WN_ADRESSAGE_COURRIER`,
   // sans second FeatureProvider — un 503 laisse simplement le geste absent.
@@ -407,35 +415,6 @@ export function ClinicalRuntimeSection({
   // chaîne (P2-5) — l'écran ne retire pas lui-même un signal de « ce qui
   // suspend », il relit ce que le serveur calcule.
   const [lettresConsignees, setLettresConsignees] = useState(0);
-  const [courrierErreur, setCourrierErreur] = useState<string | null>(null);
-  const [documentPatient, setDocumentPatient] = useState<DocumentPatientEtabli | null>(null);
-  // UN SEUL état de refus (raison + message + empreinte du texte refusé) : trois
-  // useState synchronisés à la main se désynchronisent à la première branche
-  // oubliée. `registreATrancher` et l'empreinte à confirmer s'en dérivent.
-  const [documentPatientRefus, setDocumentPatientRefus] = useState<{
-    reason?: string;
-    error: string;
-    texteSha256?: string;
-  } | null>(null);
-  // Compteur de réponses ABOUTIES : le verrou du formulaire se lève sur son
-  // incrément — une référence fraîche par réponse, là où un même message
-  // d'erreur répété ne changerait pas.
-  const [documentPatientReponses, setDocumentPatientReponses] = useState(0);
-  // Ce qui a DÉJÀ été remis, relu en base : c'est ce qui survit au
-  // rechargement, là où l'état de session ci-dessus repart à zéro.
-  const [documentsPatientConsignes, setDocumentsPatientConsignes] = useState<
-    DocumentPatientConsigneAffiche[]
-  >([]);
-  const [lectureDocumentsPatient, setLectureDocumentsPatient] =
-    useState<LectureDocumentsPatient>('chargement');
-  // Les confirmations s'ACCUMULENT, chacune liée à l'empreinte du texte
-  // qu'elle vise. Un texte peut être refusé deux fois de suite pour deux
-  // motifs (registre puis doublon) : n'envoyer que la dernière ferait
-  // re-refuser la première, et le geste tournerait en rond. Une empreinte
-  // rassie ne correspond plus au texte re-dérivé : le serveur re-refuse, ce
-  // qui est exactement le comportement voulu.
-  const [confirmationsDocument, setConfirmationsDocument] = useState<ConfirmationsDocument>({});
-  const [partageMedecin, setPartageMedecin] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<ProtocolSaveState>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   // Sélection d'une priorité ([[D-127]]) : état PROPRE à ce geste, jamais celui
@@ -687,6 +666,7 @@ export function ClinicalRuntimeSection({
       const payload = (await response.json()) as { ok: boolean; arbitrages?: ArbitrageRow[] };
       if (!response.ok || !payload.ok) return;
       setArbitrages(payload.arbitrages ?? []);
+      setArbitragesLus(true);
     } catch {
       // L'arbitrage est rechargeable : un échec de lecture ne bloque pas le cockpit.
     }
@@ -743,43 +723,11 @@ export function ClinicalRuntimeSection({
     [idPatient, loadCriteresDossier],
   );
 
-  // Relecture des pièces déjà remises. Elle ne re-dérive rien : ce sont les
-  // lignes consignées, telles qu'elles sont parties au patient.
-  //
-  // ELLE SE CHAÎNE À LA PROPOSITION, jamais à l'effet global : ce GET
-  // journalise un accès au dossier (GD-1), et le déclencher là où le panneau
-  // n'est même pas rendu inscrirait au registre une lecture que personne n'a
-  // demandée — le défaut exact que la revue Codex a relevé sur l'effet voisin.
-  // Le chaînage suit donc le RENDU du panneau (les deux branches qui posent
-  // `propositionDisponible`), pas l'offre du geste d'établir : la relecture
-  // s'affiche même quand plus aucune ligne n'est proposée.
-  const chargerDocumentsPatient = useCallback(async () => {
-    if (!cbEnabled) return;
-    setLectureDocumentsPatient('chargement');
-    try {
-      const response = await fetch(
-        `/api/praticien/biologie/proposition/document-patient?idPatient=${encodeURIComponent(idPatient)}`,
-      );
-      const payload = (await response.json()) as {
-        ok?: boolean;
-        documents?: DocumentPatientConsigneAffiche[];
-      };
-      if (!response.ok || !payload.ok) {
-        // Un 503 (étage fermé) comme une panne : dans les deux cas l'écran ne
-        // SAIT pas ce qui a été remis, et ne doit pas l'affirmer (`DC-24`).
-        setLectureDocumentsPatient('erreur');
-        return;
-      }
-      setDocumentsPatientConsignes(payload.documents ?? []);
-      setLectureDocumentsPatient('ok');
-    } catch {
-      setLectureDocumentsPatient('erreur');
-    }
-  }, [idPatient, cbEnabled]);
-
-  // Proposition de bilan biologique — le drapeau `WN_CB_PROPOSITION` est lu
-  // côté serveur seulement : ici, une route qui refuse (503) laisse le
-  // panneau absent, et rien ne le distingue d'un rayon fermé.
+  // Proposition de bilan biologique — LECTURE DES LIGNES SEULES, pour les deux
+  // dérivés de cette section (voir l'état). Le drapeau `WN_CB_PROPOSITION` est
+  // lu côté serveur : une route qui refuse (503) laisse les dérivés vides. Le
+  // GET journalise l'accès (`G-TRUST-04`) : il part avec la carte prête, là où
+  // ces dérivés s'affichent. La liste des remises, elle, n'est plus lue ici.
   const loadProposition = useCallback(async () => {
     if (!cbEnabled) return;
     try {
@@ -788,29 +736,13 @@ export function ClinicalRuntimeSection({
       );
       const payload = (await response.json()) as {
         ok: boolean;
-        reason?: string;
         error?: string;
         lignes?: LignePanelProposition[];
-        limites?: LimiteProposition[];
-        documentes?: DocumenteAffiche[];
-        partageMedecinTraitant?: string | null;
       };
-      // Le moteur qui s'abstient (409) N'EST PAS une indisponibilité : son
-      // motif est écrit pour le praticien et doit s'afficher tel quel — une
-      // abstention expliquée vaut mieux qu'un panneau vide (`DC-34`).
+      // Le moteur qui s'abstient (409) : la proposition est servie, sans ligne.
       if (response.status === 409 && payload.error) {
         setPropositionDisponible(true);
-        setPropositionMotif(payload.error);
         setPropositionLignes([]);
-        setPropositionLimites([]);
-        // Les déclarations déjà consignées NE sont PAS effacées de l'écran :
-        // l'abstention porte sur la dérivation, pas sur ce que le praticien a
-        // déclaré. Les vider ferait disparaître un fait du dossier.
-        //
-        // Le panneau est rendu, donc la liste des remises l'est aussi : elle a
-        // lieu d'être lue. Ce que le moteur ne sait plus dériver aujourd'hui
-        // ne retire rien à ce qui a été remis hier.
-        void chargerDocumentsPatient();
         return;
       }
       if (!response.ok || !payload.ok) {
@@ -818,58 +750,13 @@ export function ClinicalRuntimeSection({
         return;
       }
       setPropositionDisponible(true);
-      setPropositionMotif(null);
       setPropositionLignes(payload.lignes ?? []);
-      setPropositionLimites(payload.limites ?? []);
-      setPropositionDocumentes(payload.documentes ?? []);
-      setPartageMedecin(payload.partageMedecinTraitant ?? null);
-      // La proposition vient de changer : le document patient affiché et le
-      // refus en attente (empreinte comprise) visaient l'ANCIENNE dérivation.
-      // Les garder montrerait une pièce rassie à imprimer, et armerait une
-      // confirmation contre un texte disparu — le point unique où « la
-      // proposition a changé » est su, c'est ici.
-      setDocumentPatient(null);
-      setDocumentPatientRefus(null);
-      setConfirmationsDocument({});
-      setDocumentPatientReponses(n => n + 1);
-      // Le panneau est rendu : la liste des remises l'est aussi, donc elle a
-      // lieu d'être lue. Le GET journalise — il ne part que là où ce qu'il
-      // rapporte sera affiché.
-      void chargerDocumentsPatient();
     } catch {
       // La proposition est rechargeable : un échec de lecture ne bloque pas le
       // cockpit.
       setPropositionDisponible(false);
     }
-  }, [idPatient, cbEnabled, chargerDocumentsPatient]);
-
-  const declarerPanelDocumente = useCallback(
-    async (panelCode: string, documenteLe: string) => {
-      setPropositionState('saving');
-      setPropositionError(null);
-      try {
-        const response = await fetch('/api/praticien/biologie/proposition', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idPatient, panelCode, documenteLe }),
-        });
-        const payload = (await response.json()) as { ok: boolean; error?: string };
-        if (!response.ok || !payload.ok) {
-          setPropositionState('error');
-          setPropositionError(payload.error ?? 'Échec de l’enregistrement de la déclaration.');
-          return;
-        }
-        // Relire plutôt que patcher l'état : la déclaration change les statuts
-        // dérivés du panel, et c'est le moteur qui les décide, pas l'écran.
-        await loadProposition();
-        setPropositionState('saved');
-      } catch {
-        setPropositionState('error');
-        setPropositionError('Échec de l’enregistrement de la déclaration.');
-      }
-    },
-    [idPatient, loadProposition],
-  );
+  }, [idPatient, cbEnabled]);
 
   // Disponibilité de la lettre d'adressage. CE GET NE NOMME AUCUN DOSSIER :
   // il ne dit que l'état du drapeau, donc il n'écrit aucune ligne au journal
@@ -962,122 +849,6 @@ export function ClinicalRuntimeSection({
     [idPatient],
   );
 
-  // Courrier médecin : le texte est GÉNÉRÉ ET CONSIGNÉ côté serveur ; l'écran
-  // ne fournit que le nom du destinataire et n'affiche que ce qui revient.
-  const etablirCourrier = useCallback(
-    async (medecinLibelle: string) => {
-      setPropositionState('saving');
-      setCourrierErreur(null);
-      try {
-        const response = await fetch('/api/praticien/biologie/proposition/courrier', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idPatient, medecinLibelle }),
-        });
-        const payload = (await response.json()) as {
-          ok: boolean;
-          error?: string;
-          texte?: string;
-          html?: string;
-          ancrageSha256?: string;
-          ancrageVersion?: string;
-        };
-        setPropositionState('idle');
-        if (!response.ok || !payload.ok || !payload.texte) {
-          setCourrier(null);
-          setCourrierErreur(payload.error ?? 'Le courrier n’a pas pu être établi.');
-          return;
-        }
-        setCourrier({
-          texte: payload.texte,
-          // Le rendu imprimable est SERVI, jamais recomposé : absent, l'écran
-          // n'offre pas d'impression et retombe sur la transcription, plutôt
-          // que d'imprimer une lettre qu'aucune garde n'a lue.
-          html: payload.html ?? '',
-          ancrageSha256: payload.ancrageSha256 ?? '',
-          ancrageVersion: payload.ancrageVersion ?? '',
-        });
-      } catch {
-        setPropositionState('idle');
-        setCourrier(null);
-        setCourrierErreur('Le courrier n’a pas pu être établi.');
-      }
-    },
-    [idPatient],
-  );
-
-  // Document patient (décision F, D-122) : généré et consigné côté serveur.
-  // Le refus REGISTRE_ANXIOGENE est CONFIRMABLE (D-090), et la confirmation
-  // est LIÉE AU TEXTE refusé : le 409 rend l'empreinte du texte jugé, le
-  // second clic la renvoie — un dossier qui a bougé entre-temps re-refuse au
-  // lieu de consigner un texte que personne n'a lu. Aucun état de refus n'est
-  // effacé au départ du POST : il ne change qu'à l'arrivée d'une réponse
-  // (sinon le verrou du formulaire se lèverait en plein vol).
-  const etablirDocumentPatient = useCallback(
-    async (confirmer: boolean) => {
-      setPropositionState('saving');
-      // Confirmer, c'est AJOUTER un jeton à ceux déjà tranchés, pas remplacer :
-      // le motif du refus courant dit lequel. La règle vit dans un module pur,
-      // gardée par ses bancs — pas enfouie ici.
-      const confirmations = confirmer
-        ? ajouterConfirmation(confirmationsDocument, documentPatientRefus)
-        : confirmationsDocument;
-      if (confirmations !== confirmationsDocument) setConfirmationsDocument(confirmations);
-      try {
-        const response = await fetch('/api/praticien/biologie/proposition/document-patient', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            idPatient,
-            confirmerTexteSha256: confirmations.registre,
-            confirmerDoublonSha256: confirmations.doublon,
-          }),
-        });
-        const payload = (await response.json()) as {
-          ok: boolean;
-          reason?: string;
-          error?: string;
-          texteSha256?: string;
-          texte?: string;
-          ancrageSha256?: string;
-          ancrageVersion?: string;
-        };
-        setPropositionState('idle');
-        if (!response.ok || !payload.ok || !payload.texte) {
-          setDocumentPatient(null);
-          setDocumentPatientRefus({
-            reason: payload.reason,
-            error: payload.error ?? 'Le document n’a pas pu être établi.',
-            texteSha256: payload.texteSha256,
-          });
-          return;
-        }
-        setDocumentPatientRefus(null);
-        setDocumentPatient({
-          texte: payload.texte,
-          ancrageSha256: payload.ancrageSha256 ?? '',
-          ancrageVersion: payload.ancrageVersion ?? '',
-        });
-        // La pièce vient d'entrer au dossier : la liste des remises la montre
-        // sans attendre un rechargement de page.
-        void chargerDocumentsPatient();
-      } catch {
-        // Panne réseau : le CONTEXTE du refus précédent est conservé (raison,
-        // empreinte) — perdre le second temps sur une saute de connexion
-        // forcerait un POST non confirmant de plus, donc un accès journalisé
-        // de plus, pour retrouver un bouton qui n'aurait jamais dû partir.
-        setPropositionState('idle');
-        setDocumentPatient(null);
-        setDocumentPatientRefus(prev => ({
-          ...(prev ?? {}),
-          error: 'Le document n’a pas pu être établi. Vérifiez la connexion et réessayez.',
-        }));
-      } finally {
-        setDocumentPatientReponses(n => n + 1);
-      }
-    },
-    [idPatient, documentPatientRefus, confirmationsDocument, chargerDocumentsPatient],
-  );
 
   // Jeton d'obsolescence des propositions (revue LOT-07, M3) : le GET T0 de
   // plancher et le GET du jalon dû partent en parallèle, et le T0 est
@@ -1633,6 +1404,15 @@ export function ClinicalRuntimeSection({
   const rideauT0Satisfait = runtime?.status === 'proposal_required'
     ? (runtime.preconditions?.dures.find(c => c.id === 'rideau_t0')?.satisfaite ?? null)
     : null;
+  const actionsEnAttenteArbitrage = useMemo(() => {
+    if (!cbEnabled || fixture || !arbitragesLus || !contenuActif || !activeVersionId) return null;
+    const arbitrees = new Set(
+      arbitrages.filter(a => a.protocolDraftId === activeVersionId).map(a => a.intentionId),
+    );
+    return contenuActif.actions.filter(
+      action => action.interventionStatus === 'conditionnelle_biologie' && !arbitrees.has(action.actionId),
+    ).length;
+  }, [cbEnabled, fixture, arbitragesLus, contenuActif, activeVersionId, arbitrages]);
   useEffect(() => {
     onEtatChange?.({
       chargement: loading,
@@ -1648,6 +1428,7 @@ export function ClinicalRuntimeSection({
       needIdsPrioriteSelectionnee,
       rideauT0Satisfait,
       selectionPrioriteDue,
+      actionsEnAttenteArbitrage,
     });
   }, [
     onEtatChange,
@@ -1665,6 +1446,7 @@ export function ClinicalRuntimeSection({
     needIdsPrioriteSelectionnee,
     rideauT0Satisfait,
     selectionPrioriteDue,
+    actionsEnAttenteArbitrage,
   ]);
 
   // LE GESTE DE SÉLECTION D'UNE PRIORITÉ ([[D-127]]). L'écran transmet un
@@ -2535,48 +2317,16 @@ export function ClinicalRuntimeSection({
           </p>
         )
       )}
-      {/* Biologie : les DEUX panneaux portent des saisies cliniques locales
-          (verdict + note d'arbitrage, destinataire du courrier) — revue
-          wn-reviewer B2 : un montage conditionnel par sous-vue les perdait à
-          chaque bascule, et réarmait le verrou « déjà consigné » du courrier.
-          Le bloc reste donc MONTÉ tant que la phase Actions l'est (mêmes
-          conditions de données qu'avant le lot), la sous-vue ne fait que
-          masquer. Aucun GET n'est déclenché par ces panneaux au montage : le
-          `hidden` ne coûte rien au journal G-TRUST-04. */}
+      {/* Biologie : l'ARBITRAGE seul ([[D-319]]) — la proposition de bilan vit
+          dans l'onglet « Biologie » de la fiche. Le panneau porte des saisies
+          cliniques locales (verdict + note d'arbitrage) — revue wn-reviewer
+          B2 : un montage conditionnel par sous-vue les perdait à chaque
+          bascule. Le bloc reste donc MONTÉ tant que la phase Actions l'est, la
+          sous-vue ne fait que masquer. Aucun GET n'est déclenché par ce
+          panneau au montage : le `hidden` ne coûte rien au journal
+          G-TRUST-04. */}
       {affiche('actions') && !fixture && (
         <div hidden={sousVueActions !== 'biologie'}>
-          {propositionDisponible && (
-            <PropositionBilanPanel
-              lignes={propositionLignes}
-              limites={propositionLimites}
-              documentes={propositionDocumentes}
-              motifIndisponible={propositionMotif}
-              state={propositionState}
-              error={propositionError}
-              onDeclarer={declarerPanelDocumente}
-              onNouvelleSaisie={() => setPropositionState('idle')}
-              courrier={courrier}
-              courrierErreur={courrierErreur}
-              partageMedecinTraitant={partageMedecin}
-              onEtablirCourrier={etablirCourrier}
-              documentPatient={documentPatient}
-              documentPatientErreur={documentPatientRefus?.error ?? null}
-              documentPatientRegistreATrancher={
-                documentPatientRefus?.reason === 'REGISTRE_ANXIOGENE'
-                && documentPatientRefus.texteSha256 !== undefined
-              }
-              documentPatientDoublonATrancher={
-                documentPatientRefus?.reason === 'DOUBLON_DOCUMENT'
-                && documentPatientRefus.texteSha256 !== undefined
-              }
-              documentsPatientConsignes={documentsPatientConsignes}
-              lectureDocumentsPatient={lectureDocumentsPatient}
-              documentPatientReponses={documentPatientReponses}
-              onEtablirDocumentPatient={etablirDocumentPatient}
-              onRelireDocumentsPatient={chargerDocumentsPatient}
-              resultatsActifs={cbResultatsActifs}
-            />
-          )}
           {cbEnabled && contenuActif && activeVersionId && (
             <ArbitrageBiologiquePanel
               // Une version neuve remonte le panneau : sa coche « J'ai relu le
@@ -2616,13 +2366,13 @@ export function ClinicalRuntimeSection({
               Aucun outil de biologie ouvert sur ce dossier pour l’instant.
             </p>
           )}
-          {/* L'état nominal de production à la livraison : CB actif mais
-              proposition fermée (503) et aucune version active — sans cette
-              branche, la sous-vue rendait un écran nu (revue I2). */}
-          {cbEnabled && !propositionDisponible && !(contenuActif && activeVersionId) && (
+          {/* Sans version active, pas d'arbitrage : sans cette branche, la
+              sous-vue rendait un écran nu (revue I2). La proposition de bilan
+              est nommée pour qui la cherche encore ici ([[D-319]]). */}
+          {cbEnabled && !(contenuActif && activeVersionId) && (
             <p className="rounded-lg border border-border bg-surface p-3 text-sm text-muted-foreground">
-              Rien à afficher ici pour l’instant : la proposition de bilan n’est pas ouverte sur ce
-              dossier, et aucune version active de protocole ne porte d’arbitrage biologique.
+              Aucune version active de protocole ne porte d’arbitrage biologique pour l’instant. La
+              proposition de bilan se trouve dans l’onglet « Biologie » de la fiche.
             </p>
           )}
         </div>

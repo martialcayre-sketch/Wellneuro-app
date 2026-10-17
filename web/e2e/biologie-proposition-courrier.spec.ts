@@ -20,7 +20,7 @@
 // 503 et ce spec passerait au vert en ne trouvant rien à cliquer.
 import { test, expect } from '@playwright/test';
 import { praticienSessionCookie } from './helpers/auth';
-import { confirmerEpisodeT0, ouvrirSousVueBiologie } from './helpers/biologie';
+import { confirmerEpisodeT0, ouvrirOngletBiologie } from './helpers/biologie';
 import {
   provisionnerDossierBiologie,
   nettoyerDossierBiologie,
@@ -72,10 +72,10 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
       `la proposition est indisponible — corps : ${corpsSonde}`,
     ).toBe(true);
 
-    await ouvrirSousVueBiologie(page);
+    await ouvrirOngletBiologie(page);
 
     // Deux comptages avant l'assertion, et ils ne sont pas décoratifs : la
-    // route répond `ok` et la phase Actions s'affiche, donc si le panneau
+    // route répond `ok` et l'onglet Biologie est ouvert, donc si le panneau
     // manque encore, c'est OU BIEN qu'il n'est pas rendu (le client n'a pas le
     // drapeau, `propositionDisponible` reste faux) OU BIEN qu'il est rendu et
     // que le rôle/nom ne le désigne pas. Le message d'échec doit le dire.
@@ -168,11 +168,11 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     await page.goto(`/dashboard/patients/${PATIENT_ID}`);
     // Depuis `D-118`, la confirmation du test 1 a PERSISTÉ l'épisode : ce
     // chargement-ci le rejoue — le helper le constate au rail et ne reclique
-    // rien. La fiche ouvre alors d'elle-même la phase Actions ; le clic
-    // d'onglet ci-dessous reste correct dans les deux états.
+    // rien. La proposition vit dans l'onglet « Biologie » ([[D-319]]) ; le
+    // clic d'onglet ci-dessous reste correct dans les deux états.
     await confirmerEpisodeT0(page);
 
-    await ouvrirSousVueBiologie(page);
+    await ouvrirOngletBiologie(page);
 
     const panneau = page.getByRole('region', { name: 'Biologie — proposition de bilan' });
     await expect(panneau).toBeVisible();

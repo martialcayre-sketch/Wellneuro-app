@@ -53,7 +53,7 @@
 // révise. L'ordre EST le parcours.
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import { praticienSessionCookie } from './helpers/auth';
-import { confirmerEpisodeT0 } from './helpers/biologie';
+import { confirmerEpisodeT0, ouvrirOngletBiologie } from './helpers/biologie';
 import {
   provisionnerDossierBiologie,
   nettoyerDossierBiologie,
@@ -290,6 +290,19 @@ test.describe('Arbitrage biologique → révision — la résolution suit le ver
     const rendu = JSON.parse(corpsV1) as { versionId: string; unchanged: boolean };
     expect(rendu.unchanged).toBe(false);
     versionUnId = rendu.versionId;
+
+    // L'ONGLET « BIOLOGIE » LE DIT ([[D-319]], F57 PR 2) : l'arbitrage est
+    // resté dans la phase Actions, à côté de la version qu'il juge ; l'onglet
+    // compte les actions qui l'attendent et y renvoie. Page neuve : la
+    // section clinique relit la version posée par la requête ci-dessus.
+    await page.goto(`/dashboard/patients/${PATIENT_ID}`);
+    await confirmerEpisodeT0(page);
+    await ouvrirOngletBiologie(page);
+    await expect(page.getByText(/actions? du protocole (attend|attendent) un arbitrage biologique\./)).toBeVisible();
+    await page.getByRole('button', { name: 'Ouvrir l’arbitrage' }).click();
+    await expect(
+      page.getByRole('region', { name: 'Biologie — arbitrage au retour du bilan' }),
+    ).toBeVisible();
 
     // RÉSOUDRE SANS ARBITRAGE EST REFUSÉ. C'est l'invariant du lot : une
     // intention en attente ne se résout pas parce qu'on l'a décidé à l'écran,
