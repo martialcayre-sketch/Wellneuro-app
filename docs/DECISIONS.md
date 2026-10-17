@@ -4,6 +4,74 @@
 
 ## Décisions actives
 
+### D-322 — F58 : la liste fermée des statuts posés près d'une valeur biologique — six gestes du praticien, jamais un jugement de la valeur ; stockage en ajout seul, statut attaché à la valeur exacte (amende D-308 §2)
+
+- Date : 2026-10-17
+- Statut : accepté. Arbitrages du responsable du 2026-10-17. Sur sa demande
+  explicite, l'assistant a proposé une liste ; une contre-revue Codex l'a
+  jugée « à remanier » et contre-proposée en sept termes ; le responsable a
+  tranché sur questions à options (recommandations retenues) : six statuts,
+  sans « à examiner » ; « relié au protocole » ; retrait daté à
+  l'historique ; statut qui tombe avec la valeur corrigée ; « relié au
+  protocole » sans désignation d'action. Texte rédigé par l'assistant à
+  partir de ces réponses.
+- Amende : [[D-308]] §2 — « l'assistant n'en propose aucun mot » est levé
+  pour cette liste, par la demande du responsable ; la liste reste la sienne
+  (§1 ci-dessous), arrêtée par lui.
+- Domaine : onglet « Biologie » de la fiche patient, série par valeur
+  (BP-03) ; table neuve en ajout seul ; effacement d'un dossier
+  (`web/src/lib/patient/effacement.ts`) ; fiche F58.
+- **Ne touche pas** : aucune valeur, aucune règle clinique, aucun seuil ;
+  ni le portail, ni le courrier médecin, ni le scoring, ni l'orientation, ni
+  l'IA ne lisent le statut ([[D-122]]) ; les deux marques de [[D-308]] §3
+  (« lignes validées », « lecture consignée ») sont un affichage de données
+  existantes, sans stockage neuf.
+
+**§1 — La liste.** Six statuts, affichés tels quels, chacun disant ce que le
+praticien fait de la valeur, jamais ce que vaut la valeur :
+
+| code | libellé affiché | sens |
+|---|---|---|
+| `aucune_action_retenue` | aucune action retenue | rien n'est engagé à partir de cette valeur |
+| `a_suivre` | à suivre | une nouvelle lecture est prévue, au prochain compte rendu |
+| `contexte_a_preciser` | contexte à préciser | une information sur le prélèvement manque, sans affirmer qu'elle explique la mesure |
+| `donnee_a_verifier` | donnée à vérifier | la fiabilité matérielle est à contrôler : transcription, unité, document source |
+| `avis_medical_a_envisager` | avis médical à envisager | une orientation vers un avis médical est possible ; aucun envoi ni examen n'est promis |
+| `relie_au_protocole` | relié au protocole | une action du protocole s'appuie sur cette valeur ; aucune action n'est désignée |
+
+Écartés, et pourquoi : « normal », « anormal », « hausse », « baisse »,
+« amélioré », « aggravé », « tendance » (ils jugent la valeur, déjà interdits
+à l'écran de la série) ; « carence », « excès », « pathologique » (diagnostic,
+DC-31) ; « validé » (sens réservé au portail, [[D-269]] §4) ; « vu » (se
+confond avec « lecture consignée ») ; « prioritaire », « urgent » (gravité
+sans fondement) ; « à recontrôler » (le praticien ne prescrit pas
+d'analyse) ; « à examiner » (une valeur sans statut est déjà non tranchée,
+DC-24) ; « consigné » dans un libellé (pris par la marque).
+
+**§2 — Les règles.** Un seul statut actif par valeur : le dernier acte daté
+fait foi. Rien par défaut, rien de calculé : une valeur sans statut se dit
+« sans statut posé ». Poser un autre statut remplace le précédent ; retirer
+est un acte daté, qui ramène la valeur à « sans statut posé ». L'historique
+des poses et des retraits reste lisible par le praticien.
+
+**§3 — La valeur visée.** Le statut s'attache à la ligne exacte du résultat
+que le praticien a vue (la tête du fil au moment de la pose). Une correction
+crée une ligne neuve : la valeur corrigée apparaît sans statut, l'ancien
+reste à l'historique. Un résultat annulé ([[D-294]]) sort de la série avec
+son statut, qui reste à l'historique.
+
+**§4 — Le stockage.** Une table neuve en ajout seul, sur le patron des
+annulations de résultats (BP-09) et des lectures d'import (BP-10) : clé
+d'ordre et date posées par la base, praticien du dossier, acte `pose` ou
+`retrait`, statut pris dans la liste du §1 (CHECK), UPDATE et TRUNCATE
+refusés par trigger, RLS activée, résultat du même dossier. Aucune colonne
+sur `resultats_biologiques`. L'effacement d'un dossier la vide comme les
+autres tables de biologie. Contrat SQL négatif en CI.
+
+**§5 — Exécution.** Deux temps : la migration seule (PR relue, release-db
+approuvée, constat par conteneur), puis le code (route, lecture, écran de la
+série). Portes : G-7 levée ; porte 9 à chaque migration.
+
 ### D-321 — J3-12c : un claim porte deux clés de lien, les besoins qu'il sert et sa rubrique parmi les dix des fiches d'usage ; posées à la signature ou par un acte « étiquetage » journalisé sous son propre type (amende D-312, §5 neuf)
 
 - Date : 2026-10-17

@@ -1370,6 +1370,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : dans s ; rien au portail.
 - **Critère de fin** : statut posé, daté, relu en banc ; deux marques distinctes affichées.
 - **Mise à jour (2026-10-15)** : forme tranchée par D-308 : statut pris dans une liste fermée du responsable, à écrire avant le code ; « lecture consignée » est un geste distinct (bouton) ; stockage tranché au cadrage.
+- **Mise à jour (2026-10-17)** : liste écrite par D-322 (amende D-308 §2), arbitrée par le responsable : six statuts (aucune action retenue, à suivre, contexte à préciser, donnée à vérifier, avis médical à envisager, relié au protocole) ; retrait daté ; statut attaché à la valeur exacte, qui tombe avec une correction ; « relié au protocole » sans désignation d'action. Stockage tranché : table neuve en ajout seul, d'où une migration (porte 9 ; G-7 levée). Suite : migration seule, puis code.
 
 ### Rang 5 : niveau 3 et première activation
 
