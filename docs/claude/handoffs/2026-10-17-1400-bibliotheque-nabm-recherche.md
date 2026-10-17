@@ -57,7 +57,13 @@ Le tout sans migration.
   - motif reformulé ;
   - rattachement retiré ;
   - table non signée affichée.
-- T1 `check:rapide` : vert. `check` complet et T2 `test:worktree -- --fast` : voir la PR (joués avant ouverture).
+- T1 `check` complet puis `check:rapide` (après les suites de revue) : verts.
+- T2 `test:worktree -- --fast` :
+  - 1re passe rouge, pour deux causes : la garde des importeurs de `biology-library` (BP-01) ne connaissait pas la route de recherche, qui y est désormais inscrite avec son motif ; et un banc édité pendant la passe.
+  - 2de passe verte : Vitest 13 358 passés, 4 sautés ; E2E 274 passés, 6 sautés.
+- `/code-review medium` : aucun défaut bloquant.
+  - Corrigés : la recherche se vide après une signature, et les lettres non latines (β) restent dans la saisie.
+  - Écartés, avec motif : le `finally` sur une requête périmée suit le même motif que `lireActe` ; la lecture du millésime entier est un choix de D-320 §1 ; le seuil de trois caractères est le même à l'écran et au serveur.
 - E2E : aucune spec ne vise les textes retirés (grep).
 
 ## Problèmes ouverts

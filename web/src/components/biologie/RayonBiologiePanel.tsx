@@ -22,8 +22,8 @@ import type {
 // ne vivent plus qu'au moteur, jusqu'à leur conversion (D-296 §5).
 //
 // Contrairement au rayon C4 (140 148 fiches, mur d'entrée), le catalogue
-// compte moins d'une centaine d'analytes : tout se charge en
-// UNE requête au montage, la recherche et les filtres restent à l'écran. Le jeton de séquence
+// compte moins d'une centaine d'analytes : tout se charge en UNE requête au
+// montage, la recherche et les filtres restent à l'écran. Le jeton de séquence
 // est conservé malgré la requête unique — un démontage/remontage (strict mode,
 // navigation) ne doit pas laisser une réponse en vol écrire sur le suivant.
 //
@@ -119,8 +119,9 @@ export function RayonBiologiePanel() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Catalogue documentaire : fiches d’analytes, avec leurs deux référentiels de valeurs. Une orientation d’exploration se prépare au dossier, depuis le
-          cockpit — ce rayon consulte, il ne propose rien.
+          Catalogue documentaire : fiches d’analytes, avec leurs deux référentiels de valeurs.
+          Une orientation d’exploration se prépare au dossier, depuis le cockpit — ce rayon
+          consulte, il ne propose rien.
         </p>
         <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
           Aucune valeur d’analyse patient — étage documentaire

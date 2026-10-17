@@ -16,6 +16,11 @@ describe('normaliserRecherche (D-320 §1)', () => {
   it('ponctuation et apostrophes typographiques deviennent des espaces', () => {
     expect(normaliserRecherche('  d’une anomalie, lipidique.  ')).toBe('d une anomalie lipidique');
   });
+
+  it('les lettres hors de l’alphabet latin restent des lettres', () => {
+    expect(normaliserRecherche('β-HCG')).toBe('β hcg');
+    expect(jetons('β-β')).toEqual(['β', 'β']);
+  });
 });
 
 describe('jetons', () => {

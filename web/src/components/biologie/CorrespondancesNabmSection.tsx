@@ -302,6 +302,8 @@ export function CorrespondancesNabmSection({
         await charger();
         return;
       }
+      setRechercheSaisie('');
+      setResultatsRecherche(null);
       setCodeSaisi('');
       setActeLu(null);
       setNatureNouvelle('');

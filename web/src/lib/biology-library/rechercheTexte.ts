@@ -10,7 +10,8 @@ export function normaliserRecherche(texte: string): string {
     .toLocaleLowerCase('fr-FR')
     .replace(/œ/g, 'oe')
     .replace(/æ/g, 'ae')
-    .replace(/[^a-z0-9]+/g, ' ')
+    // Toute lettre ou chiffre reste (β-hCG garde son β) ; le reste sépare.
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
 }
 

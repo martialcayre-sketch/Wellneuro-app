@@ -297,6 +297,9 @@ describe('CorrespondancesNabmSection — recherche par libellé (D-320 §1)', ()
       etatAttendu: 'absente',
       nature: 'isole',
     });
+    // Signé : la recherche se vide, aucun second acte ne reste à portée de clic.
+    await waitFor(() => expect(screen.queryByRole('list', { name: 'Actes trouvés' })).toBeNull());
+    expect((screen.getByLabelText(/Rechercher dans la nomenclature/) as HTMLInputElement).value).toBe('');
   });
 
   it('aucun résultat se dit avec la saisie et le millésime', async () => {
