@@ -360,8 +360,8 @@ export function BibliothequePanel({
             role="status"
             className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
           >
-            Le rayon Analyses biologiques est ouvert : catalogue des bilans et fiches
-            d&apos;analytes, plus bas sur cette page —{' '}
+            Le rayon Analyses biologiques est ouvert : fiches d&apos;analytes, plus bas sur cette
+            page —{' '}
             <a
               href="#rayon-biologie-titre"
               className="font-medium text-foreground underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"

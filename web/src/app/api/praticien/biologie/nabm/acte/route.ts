@@ -9,10 +9,11 @@ import {
 import { signature } from '@/lib/biology-library/saisieMessages';
 
 // Lecture d'un acte de la nomenclature par son CODE EXACT, dans le millésime
-// courant (M-3, F54) — PRATICIEN SEUL, derrière WN_CB_ENABLED. Aucune
-// recherche par libellé : le rapprochement par libellé est exclu (arbitrage
-// du 2026-10-05) ; le praticien lit la nomenclature et tape le code qu'il a
-// choisi, l'écran lui rend l'acte pour qu'il vérifie avant de signer.
+// courant (M-3, F54) — PRATICIEN SEUL, derrière WN_CB_ENABLED. Le praticien
+// tape le code qu'il a choisi — ou le prend dans sa recherche par libellé
+// (`nabm/recherche`, D-320 §1) — et l'écran lui rend l'acte pour qu'il
+// vérifie avant de signer. Aucun rapprochement par libellé sans son geste
+// (arbitrage du 2026-10-05).
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

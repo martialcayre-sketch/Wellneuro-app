@@ -54,6 +54,10 @@ const IMPORTEURS_ADMIS = [
   // référentiel global, même garde que la signature — aucune donnée patient.
   'web/src/app/api/praticien/biologie/nabm/constats/route.ts',
   'web/src/app/api/praticien/biologie/nabm/correspondances/route.ts',
+  // La recherche d'actes par libellé ([[D-320]] §1) : lecture seule du
+  // millésime courant de la nomenclature, globale au cabinet — aucune donnée
+  // patient, aucune écriture.
+  'web/src/app/api/praticien/biologie/nabm/recherche/route.ts',
   'web/src/app/api/praticien/biologie/proposition/courrier/route.ts',
   'web/src/app/api/praticien/biologie/proposition/document-patient/route.ts',
   'web/src/app/api/praticien/biologie/proposition/route.ts',
