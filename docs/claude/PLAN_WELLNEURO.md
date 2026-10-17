@@ -1208,7 +1208,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 | onglet Biologie | BF-1, BF-3 façade A, avec J2-base | B | 12, 9, 24 | non | F57, rang 0 |
 | commentaires | commentaires du laboratoire sous la série | B | aucune | non | F60, rang 0 |
 | J2-med, si migration | aperçu médecin, version avec migration | B | 8, 9 | selon | F38, rang 0 |
-| analyses groupées | composition des groupes et opérandes des calculés (D-320 §4) | A | 9 ; arbitrages du responsable | oui [Hypothese] | F80 |
+| analyses groupées | composition des groupes et opérandes des calculés (D-323) | A | 9 | oui (D-323) | F80 |
 
 **File A**
 
@@ -1293,12 +1293,13 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
   - `BiologyRatio` (opérandes A et B) : modèle présent, table vide et lue par aucun écran ;
   - `codeIncompatible` et `regleApplicable` des actes : importés tels quels (V105), lus par aucun code ; seules les règles de cumul de la source diraient quels actes se facturent ensemble ;
   - groupes courants absents du catalogue (bilan thyroïdien, exploration lipidique complète…) : à lister depuis la V105, par la recherche par libellé (D-320 §1).
-- **Options de modèle, à arbitrer** : (1) composition groupe → composants, une table neuve ; (2) opérandes des calculés, dans `BiologyRatio` (deux opérandes et une constante) ou une table neuve (le DFG dépend aussi de l'âge et du sexe) ; (3) marquage groupe ou calculé en donnée, qui sort de `candidatsNabm.ts` ce que l'écran de signature ne sait que par la liste.
-- **Questions au responsable** : un groupe se propose-t-il comme une ligne ou par ses composants ? une correspondance `isole` vers un acte de groupe se recale-t-elle (NFS, ionogramme, profil lipidique) ? un calculé hérite-t-il du remboursement de ses opérandes, et le dit-on ? quels groupes absents entrent au catalogue ?
+- **Options de modèle (tranchées par D-323 : une table neuve pour les deux, jamais `BiologyRatio` ; le marquage sort en donnée par le type de la composition)** : (1) composition groupe → composants, une table neuve ; (2) opérandes des calculés, dans `BiologyRatio` (deux opérandes et une constante) ou une table neuve (le DFG dépend aussi de l'âge et du sexe) ; (3) marquage groupe ou calculé en donnée, qui sort de `candidatsNabm.ts` ce que l'écran de signature ne sait que par la liste.
+- **Questions au responsable (répondues le 2026-10-17 et le 2026-10-18, D-323 ; ne se reposent pas)** : un groupe se propose-t-il comme une ligne ou par ses composants ? une correspondance `isole` vers un acte de groupe se recale-t-elle (NFS, ionogramme, profil lipidique) ? un calculé hérite-t-il du remboursement de ses opérandes, et le dit-on ? quels groupes absents entrent au catalogue ?
 - **Portes, préalables** : porte 9 ; arbitrages ci-dessus ; aucune donnée sans signature du responsable (règle des liens signés, D-296).
-- **Migration, release-db** : oui [Hypothese], selon l'option retenue.
-- **Décisions, textes** : une D-xxx propre, à écrire après les arbitrages.
+- **Migration, release-db** : oui (D-323) — deux tables neuves en ajout seul (composition signée et ses éléments) et sept fiches d'analyte ; porte 9.
+- **Décisions, textes** : D-323 (amende D-320 §4).
 - **Critère de fin** : composition en base, constatée par conteneur ; l'écran de signature et la fiche d'analyte la disent.
+- **Mise à jour (2026-10-18, D-323)** : inventaire vérifié (dépôt, et V105 relue par conteneur, catalogue seul) : quatre constats « aucun acte » signés, dont les acides gras érythrocytaires (leur statut n'est plus à trancher) ; `biology_ratios` écarté (deux opérandes et une constante : ni le DFG, ni les soustractions, et une constante serait un nombre clinique sans provenance) ; les bilans gelés proposent la NFS et l'hémoglobine côte à côte. Arbitrages du responsable : un groupe fait une ligne, ses constituants dessous ; un constituant seul sans acte propre est proposé par son groupe ; un calculé hérite du remboursement de ses mesures et le dit ; le LDL calculé reste constituant de 0996 ; sept fiches entrent (T4 libre, T3 libre, ionogramme complet, bicarbonates, protides, bilirubine, phosphatases alcalines). Composition = quels analytes, jamais une formule ; signée par le praticien sur liste préparée. Suite : migration seule, release-db constatée, puis code (composition et signature, puis proposition). Alias d'import des sept fiches : hors F80, résolveur signé.
 
 **File B**
 
