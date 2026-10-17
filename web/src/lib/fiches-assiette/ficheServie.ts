@@ -8,6 +8,7 @@
 
 import type { ContenuFicheAssiette } from './types';
 import type { EtatVersion } from './etat';
+import type { ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
 
 /**
  * - `servie` : le texte part, rejoué par les contrôles au moment de servir (§6).
@@ -55,6 +56,11 @@ export function assiettesConseillees(
   return assiettes;
 }
 
+/** L'assiette qu'une action Alimentation porte — la clé d'une fiche. */
+export function assietteDeLAction(action: { type: string; recommendedPlateRef?: { plateCode: string } }): string | undefined {
+  return action.type === 'food' ? action.recommendedPlateRef?.plateCode : undefined;
+}
+
 /** Le texte tel que le patient le lit : sans provenance ni clé de claim. */
 export type ContenuServi = {
   titre: string;
@@ -71,6 +77,13 @@ export type FicheRemiseServie = {
   remiseLe: string;
   etat: EtatFicheServie;
   protocole: PlaceDansLeProtocole;
+  /**
+   * L'assiette est portée par un élément en pause sur effet indésirable
+   * ([[D-281]] §2, arbitrage du 2026-10-16) : la fiche reste servie et
+   * lisible, marquée « en pause » avec le texte signé. `null` avant la
+   * signature de la règle amendée, et hors de toute pause.
+   */
+  pause: ElementEnPause['texte'] | null;
   /** Présent si et seulement si `etat === 'servie'`. */
   contenu: ContenuServi | null;
 };

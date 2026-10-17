@@ -6,10 +6,12 @@ import {
   TEXTE_PAUSE_AVIS_RENDU,
   TEXTE_PAUSE_COMPLEMENTS,
   TEXTE_PAUSE_ELEMENT,
+  TEXTE_DE_PAUSE,
   effetsNonTraites,
   elementsDesignables,
   elementsDesignablesParLePatient,
   elementsEnPause,
+  pausesParReference,
   versionProgramme,
   type SignalementRattache,
   type VerdictEffetIndesirable,
@@ -48,6 +50,45 @@ describe('textes signés de la pause', () => {
     expect(aplati).toContain(TEXTE_PAUSE_ELEMENT);
     expect(aplati).toContain(TEXTE_PAUSE_COMPLEMENTS);
     expect(aplati).toContain(TEXTE_PAUSE_AVIS_RENDU);
+  });
+});
+
+// LES SURFACES QUI MARQUENT UN ÉLÉMENT EN PAUSE (arbitrage du 2026-10-16) :
+// Boussole et fiche d'assiette, par la référence que porte l'action.
+describe('pausesParReference', () => {
+  const actions = [
+    { actionId: 'a1', ref: 'X' },
+    { actionId: 'a2', ref: 'X' },
+    { actionId: 'a3', ref: 'Y' },
+    { actionId: 'a4', ref: undefined },
+  ];
+  const par = (pauses: Parameters<typeof pausesParReference>[1]) =>
+    Object.fromEntries(pausesParReference(actions, pauses, a => a.ref));
+
+  it('sans pause, aucune référence n’est marquée', () => {
+    expect(par([])).toEqual({});
+  });
+
+  it('marque la référence de l’action en pause, et elle seule', () => {
+    expect(par([{ actionId: 'a3', texte: 'avis_rendu' }])).toEqual({ Y: 'avis_rendu' });
+  });
+
+  it('une action sans référence ne marque rien', () => {
+    expect(par([{ actionId: 'a4', texte: 'element' }])).toEqual({});
+  });
+
+  it('deux actions sur la même référence : l’état le plus précis l’emporte, quel que soit l’ordre', () => {
+    expect(par([{ actionId: 'a1', texte: 'avis_rendu' }, { actionId: 'a2', texte: 'element' }])).toEqual({ X: 'element' });
+    expect(par([{ actionId: 'a2', texte: 'element' }, { actionId: 'a1', texte: 'avis_rendu' }])).toEqual({ X: 'element' });
+    expect(par([{ actionId: 'a1', texte: 'complements' }, { actionId: 'a2', texte: 'avis_rendu' }])).toEqual({ X: 'complements' });
+  });
+
+  it('chaque état porte son texte signé', () => {
+    expect(TEXTE_DE_PAUSE).toEqual({
+      element: TEXTE_PAUSE_ELEMENT,
+      complements: TEXTE_PAUSE_COMPLEMENTS,
+      avis_rendu: TEXTE_PAUSE_AVIS_RENDU,
+    });
   });
 });
 

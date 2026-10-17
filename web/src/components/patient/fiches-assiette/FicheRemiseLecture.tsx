@@ -4,7 +4,7 @@ import { ConsignerLecturePortail } from '@/components/patient/ConsignerLecturePo
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
-import { dateDeRemise, mentionsDeLaFiche, MENTION_IA, titreDeLaFiche, TITRE_ESPACE } from './textesFiches';
+import { dateDeRemise, mentionsDeLaFiche, MENTION_IA, texteDePauseDeLaFiche, titreDeLaFiche, TITRE_ESPACE } from './textesFiches';
 import { useFichesRemises } from './useFichesRemises';
 
 // La page d'UNE fiche remise ([[D-251]] §8, lot 10). Le texte vient de la route
@@ -54,6 +54,7 @@ export function FicheRemiseLecture({ token, idRemise }: { token: string; idRemis
 
   const date = dateDeRemise(fiche.remiseLe);
   const mentions = mentionsDeLaFiche(fiche);
+  const pause = texteDePauseDeLaFiche(fiche);
 
   return (
     <article className="space-y-6">
@@ -64,6 +65,12 @@ export function FicheRemiseLecture({ token, idRemise }: { token: string; idRemis
           {mentions.map(mention => (
             <p key={mention} className="mt-3 text-base text-foreground">{mention}</p>
           ))}
+          {pause && (
+            <div role="status" className="mt-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-foreground">En pause</p>
+              <p className="mt-1 text-base text-foreground">{pause}</p>
+            </div>
+          )}
         </header>
 
         {fiche.contenu && (

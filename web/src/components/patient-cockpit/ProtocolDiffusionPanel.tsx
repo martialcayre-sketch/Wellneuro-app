@@ -12,6 +12,7 @@
 // vaut celui des fiches et du courrier ([[D-317]], PA-2).
 
 import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
+import type { ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import {
   fichesARemettre,
@@ -171,6 +172,7 @@ export function ProtocolDiffusionPanel({
   approvedAt,
   servieAuPatient = null,
   apercu = null,
+  pausesApercu = [],
   fiches = null,
   lettre = null,
   annonceParEmail = false,
@@ -210,6 +212,8 @@ export function ProtocolDiffusionPanel({
    * dossier réel.
    */
   apercu?: ApercuPatientServi | null;
+  /** Les éléments de l'aperçu en pause ([[D-281]] §2), marqués comme au portail. */
+  pausesApercu?: readonly ElementEnPause[];
   /**
    * Les fiches d'assiette que le clic remettrait ([[D-251]] §7). `null` :
    * `WN_FICHES_ASSIETTE` fermé, ou lecture non aboutie — l'écran n'en dit rien.
@@ -346,7 +350,7 @@ export function ProtocolDiffusionPanel({
       {apercu && (
         <div className="mt-4">
           {apercu.ok ? (
-            <ApercuPatientProtocole contenu={apercu.contenu} />
+            <ApercuPatientProtocole contenu={apercu.contenu} pauses={pausesApercu} />
           ) : (
             <p className="rounded-lg border border-border bg-muted p-3 text-base text-muted-foreground">
               Aucun aperçu patient pour la version active : {apercu.detail}

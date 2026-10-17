@@ -6,11 +6,18 @@ import type { PatientFoodCompassSafeView } from '@/lib/food-compass/patientSafe'
 import { prisma } from '@/lib/prisma';
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
 import { authorizePortail, resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
+import { pausesParReference, type ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
+import { pausesServies } from '@/lib/trust/pauseEffetIndesirableServeur';
 
 export const dynamic = 'force-dynamic';
 
 type Response =
-  | { ok: true; view: PatientFoodCompassSafeView }
+  /**
+   * `pause` : l'aliment est porté par un élément en pause ([[D-281]] §2,
+   * arbitrage du 2026-10-16) — la lecture reste servie, marquée avec le texte
+   * signé. `null` avant la signature (`pausesServies`).
+   */
+  | { ok: true; view: PatientFoodCompassSafeView; pause: ElementEnPause['texte'] | null }
   | { ok: false; reason: 'unauthenticated' | 'not_found'; error: string };
 
 function notFound() {
@@ -64,7 +71,11 @@ export async function GET(
       approval,
       actionRef,
     });
-    return view ? NextResponse.json({ ok: true, view }) : notFound();
+    if (!view) return notFound();
+    const pauses = await pausesServies(auth.idPatient, diffuse.protocolDraftId, draft.actions);
+    const pause = pausesParReference(draft.actions, pauses, action => action.foodCompassRef?.foodRef)
+      .get(expectedFoodRef) ?? null;
+    return NextResponse.json({ ok: true, view, pause });
   } catch (caught) {
     console.error('[portail/boussole GET]', caught instanceof Error ? caught.message : String(caught));
     return notFound();

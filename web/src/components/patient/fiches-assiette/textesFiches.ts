@@ -2,6 +2,7 @@
 // lot 10). Module PUR : aucun import serveur, les écrans client l'importent.
 
 import type { FicheRemiseServie } from '@/lib/fiches-assiette/ficheServie';
+import { TEXTE_DE_PAUSE } from '@/lib/trust/pauseEffetIndesirable';
 
 /** Nommé pour ne pas se confondre avec « Mes documents d'information » du centre TRUST (§8). */
 export const TITRE_ESPACE = 'Fiches remises par mon praticien';
@@ -29,6 +30,14 @@ export function mentionsDeLaFiche(fiche: Pick<FicheRemiseServie, 'etat' | 'proto
   if (fiche.etat === 'indisponible') mentions.push(MENTION_INDISPONIBLE);
   if (fiche.protocole === 'plus_actuel') mentions.push(MENTION_PLUS_ACTUELLE);
   return mentions;
+}
+
+/**
+ * Le texte SIGNÉ de la pause de l'assiette ([[D-281]] §4), ou `null`. La fiche
+ * reste servie et lisible, marquée « en pause » (arbitrage du 2026-10-16).
+ */
+export function texteDePauseDeLaFiche(fiche: Pick<FicheRemiseServie, 'pause'>): string | null {
+  return fiche.pause ? TEXTE_DE_PAUSE[fiche.pause] : null;
 }
 
 /** Le titre d'une fiche : le sien quand son texte part, sinon le libellé de l'assiette. */

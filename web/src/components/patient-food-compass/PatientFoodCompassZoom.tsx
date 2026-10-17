@@ -5,9 +5,11 @@ import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import type { PatientFoodCompassSafeView } from '@/lib/food-compass/patientSafe';
+import { TEXTE_DE_PAUSE, type ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
 
 export function PatientFoodCompassZoom({ foodRef }: { foodRef: string }) {
   const [view, setView] = useState<PatientFoodCompassSafeView | null>(null);
+  const [pause, setPause] = useState<ElementEnPause['texte'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
 
@@ -16,13 +18,18 @@ export function PatientFoodCompassZoom({ foodRef }: { foodRef: string }) {
     const load = async () => {
       try {
         const response = await fetch(`/api/portail/boussole/${encodeURIComponent(foodRef)}`, { cache: 'no-store' });
-        const payload = await response.json() as { ok: boolean; view?: PatientFoodCompassSafeView };
+        const payload = await response.json() as {
+          ok: boolean;
+          view?: PatientFoodCompassSafeView;
+          pause?: ElementEnPause['texte'] | null;
+        };
         if (!mounted) return;
         if (!response.ok || !payload.ok || !payload.view) {
           setMissing(true);
           return;
         }
         setView(payload.view);
+        setPause(payload.pause ?? null);
       } catch {
         if (mounted) setMissing(true);
       } finally {
@@ -40,6 +47,13 @@ export function PatientFoodCompassZoom({ foodRef }: { foodRef: string }) {
   return (
     <PatientCard className="space-y-5">
       <PatientPageHeader title={view.foodLabel} subtitle={view.qualitativeSummary} />
+      {/* EN PAUSE, JAMAIS MASQUÉE ([[D-281]] §2) : le texte signé, tel quel. */}
+      {pause && (
+        <div role="status" className="rounded-xl border border-border bg-surface px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-foreground">En pause</p>
+          <p className="mt-1 text-sm text-foreground">{TEXTE_DE_PAUSE[pause]}</p>
+        </div>
+      )}
       <section aria-labelledby="food-compass-reasons">
         <h2 id="food-compass-reasons" className="font-medium text-foreground">Pourquoi cette lecture ?</h2>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">

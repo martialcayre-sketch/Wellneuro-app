@@ -4,7 +4,7 @@ import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
-import { dateDeRemise, mentionsDeLaFiche, titreDeLaFiche, TITRE_ESPACE } from './textesFiches';
+import { dateDeRemise, mentionsDeLaFiche, texteDePauseDeLaFiche, titreDeLaFiche, TITRE_ESPACE } from './textesFiches';
 import { useFichesRemises } from './useFichesRemises';
 
 // L'espace « Fiches remises par mon praticien » ([[D-251]] §8, lot 10) : la
@@ -54,6 +54,7 @@ export function FichesRemises({ token }: { token: string }) {
           {etat.fiches.map(fiche => {
             const date = dateDeRemise(fiche.remiseLe);
             const mentions = mentionsDeLaFiche(fiche);
+            const pause = texteDePauseDeLaFiche(fiche);
             return (
               <li key={fiche.idRemise}>
                 <PatientCard padding="sm">
@@ -62,6 +63,12 @@ export function FichesRemises({ token }: { token: string }) {
                   {mentions.map(mention => (
                     <p key={mention} className="mt-2 text-sm text-foreground">{mention}</p>
                   ))}
+                  {pause && (
+                    <>
+                      <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-foreground">En pause</p>
+                      <p className="mt-1 text-sm text-foreground">{pause}</p>
+                    </>
+                  )}
                   {fiche.etat === 'servie' && (
                     <a
                       href={`/portail/${token}/fiches/${encodeURIComponent(fiche.idRemise)}`}

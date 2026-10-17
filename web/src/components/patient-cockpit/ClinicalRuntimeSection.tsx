@@ -23,6 +23,7 @@ import type { CritereConstatable } from '@/lib/supplement-library/constatsCriter
 import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
 import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
 import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
+import type { ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
 import type { AnnonceFiches, ApercuFiches } from '@/lib/fiches-assiette/apercuRemise';
 import type { ApercuLettreAdressage } from '@/lib/correspondance/lettreAdressageRemise';
 import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
@@ -111,6 +112,8 @@ type DiffusionApiResponse = {
   servieAuPatient?: boolean | null;
   /** Ce que le patient LIRA de la version active, projeté par le contrat ([[D-200]]). */
   apercu?: ApercuPatientServi | null;
+  /** Les éléments de l'aperçu en pause sur effet indésirable ([[D-281]] §2) ; vide avant la signature. */
+  pauses?: ElementEnPause[];
   /** Les fiches d'assiette que le clic remettrait ([[D-251]] §7) ; `null` drapeau fermé. */
   fiches?: ApercuFiches | null;
   /** Une fiche remise serait annoncée par l'e-mail neutre ([[D-251]] §9, lot 11). */
@@ -459,6 +462,7 @@ export function ClinicalRuntimeSection({
    * rien plutôt qu'un aperçu vide qui passerait pour un protocole vide.
    */
   const [apercuPatient, setApercuPatient] = useState<ApercuPatientServi | null>(null);
+  const [pausesApercu, setPausesApercu] = useState<ElementEnPause[]>([]);
   const [apercuFiches, setApercuFiches] = useState<ApercuFiches | null>(null);
   const [apercuLettre, setApercuLettre] = useState<ApercuLettreAdressage | null>(null);
   const [annonceParEmail, setAnnonceParEmail] = useState(false);
@@ -625,6 +629,10 @@ export function ClinicalRuntimeSection({
       // refuser, au lieu de remettre sur la foi d'un écran périmé. Le constat
       // « servi » non plus : non lu, il redevient `null`, et le badge se tait.
       if (!response.ok || !payload.ok) {
+        // L'aperçu et ses pauses ([[D-281]] §2) non plus : un aperçu resté
+        // affiché sans ses pauses relues montrerait actif un élément en pause.
+        setApercuPatient(null);
+        setPausesApercu([]);
         setApercuFiches(null);
         setApercuLettre(null);
         setAnnonceParEmail(false);
@@ -643,6 +651,7 @@ export function ClinicalRuntimeSection({
       // faire dire à l'écran « non servie ».
       setServieAuPatient(payload.servieAuPatient ?? null);
       setApercuPatient(payload.apercu ?? null);
+      setPausesApercu(payload.pauses ?? []);
       setApercuFiches(payload.fiches ?? null);
       setApercuLettre(payload.lettre ?? null);
     } catch {
@@ -650,6 +659,8 @@ export function ClinicalRuntimeSection({
       // L'aperçu des fiches et le constat « servi », eux, ne survivent pas à
       // une lecture manquée.
       if (seq !== seqDiffusion.current) return;
+      setApercuPatient(null);
+      setPausesApercu([]);
       setApercuFiches(null);
       setApercuLettre(null);
       setAnnonceParEmail(false);
@@ -2337,6 +2348,7 @@ export function ClinicalRuntimeSection({
             approvedAt={approvedAt}
             servieAuPatient={servieAuPatient}
             apercu={apercuPatient}
+            pausesApercu={pausesApercu}
             fiches={apercuFiches}
             lettre={apercuLettre}
             annonceParEmail={annonceParEmail}
