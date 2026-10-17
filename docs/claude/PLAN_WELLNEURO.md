@@ -877,7 +877,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Portes, préalables** : S-1, nature du rappel (H06).
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre t, de la main du responsable.
-- **Critère de fin** : lettre mergée ; PA-1, PA-2 servis dans J3-base (H61) ; baseline visuelle verte.
+- **Critère de fin** : lettre mergée ; PA-1 et la carte servis dans J3-base (H61) ; PA-2 servi par son lot, hors J3-base (D-317 §4) ; baseline visuelle verte.
 - **Mise à jour (2026-10-17, lettre écrite)** : D-317, sur six arbitrages du responsable. L'e-mail de diffusion est une annonce hors relance (clic praticien, plafond serveur d'un e-mail d'annonce par dossier et par 24 h), à chaque nouvelle version, gabarit neuf à relire ; il sort de J3-base en lot propre PA-2 (H75). PA-1 : une ligne « rendez-vous de suivi » au portail pour chacun des trois points d'étape, sans e-mail ; carte du Fil « Point d'étape J21 renseigné — décision attendue » ; les deux restent dans J3-base. Critère de fin restant : PA-1 et la carte servis dans J3-base, baseline verte ; PA-2 servi par son lot.
 
 #### H32 · d : doctrine d'adhésion
@@ -1595,7 +1595,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### H75 · ACT-2 : place 2, e-mail neutre à la diffusion
 - **Identifiant, piste** : ACT-2 ; e-mail neutre à la diffusion, après geste du responsable ; protocole ; file C, place 2.
 - **Rang** : 6.
-- **Portes, préalables** : ACT-1 constaté (porte 18, H70) ; t le classe hors relance, sinon il sort de la file ; J3-base (H61).
+- **Portes, préalables** : ACT-1 constaté (porte 18, H70) ; t (D-317, hors relance) ; lot PA-2 livré ; porte 18 ; J3-base (H61) retiré par D-317 §5.
 - **Migration, release-db** : non.
 - **Décisions, textes** : texte de l'e-mail relu, de la main du responsable.
 - **Critère de fin** : e-mail constaté sur un premier vrai dossier servi.
