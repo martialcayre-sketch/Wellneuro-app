@@ -18,12 +18,6 @@ import { LABEL_REMBOURSEMENT } from '@/lib/biology-library/libellesRemboursement
 // d'euros — la source NABM ne porte qu'un coefficient, la valeur de la
 // lettre-clé relève d'un arrêté.
 
-export const LABEL_NIVEAU: Record<string, string> = {
-  socle: 'Socle',
-  approfondissement: 'Approfondissement',
-  specialise: 'Spécialisé',
-};
-
 export const LABEL_STATUT_FICHE: Record<string, string> = {
   importee: 'Importée',
   verifiee: 'Vérifiée',
@@ -116,6 +110,26 @@ export function FicheAnalytePanel({
           <LigneDetail label="Délai de rendu indicatif" valeur={fiche.delaiRenduIndicatif} />
         )}
       </dl>
+
+      {/* D-320 §3 : la règle non indiquée dont cet analyte est l'alternative,
+          motif verbatim de la table signée, jamais reformulé. */}
+      {fiche.nonIndiques.length > 0 && (
+        <section aria-label="Exploration non indiquée" className="flex flex-col gap-2">
+          <h5 className="text-sm font-semibold text-foreground">Exploration non indiquée</h5>
+          {fiche.nonIndiques.map(item => (
+            <div
+              key={item.claimId}
+              className="rounded-lg border border-status-warning/40 bg-status-warning/10 p-3"
+            >
+              <p className="text-sm font-medium text-foreground">
+                {item.exploration} : non indiqué actuellement
+              </p>
+              <p className="mt-1 text-sm text-foreground">« {item.motif} »</p>
+              <p className="mt-1 text-xs text-muted-foreground">Source : {item.claimId}</p>
+            </div>
+          ))}
+        </section>
+      )}
 
       <section aria-label="Référentiels de valeurs">
         <h5 className="text-sm font-semibold text-foreground">Référentiels de valeurs</h5>
@@ -250,21 +264,6 @@ export function FicheAnalytePanel({
           <p className="mt-1 text-xs text-muted-foreground">Incertitudes : {fiche.incertitudes}</p>
         )}
       </section>
-
-      {fiche.panels.length > 0 && (
-        <section aria-label="Bilans citant cet analyte">
-          <h5 className="text-sm font-semibold text-foreground">Présent dans les bilans</h5>
-          <ul className="mt-1 flex flex-wrap gap-2">
-            {fiche.panels.map(panel => (
-              <li key={panel.code}>
-                <Badge variant="neutral">
-                  {panel.libelle} · {LABEL_NIVEAU[panel.niveau] ?? panel.niveau}
-                </Badge>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </div>
   );
 }

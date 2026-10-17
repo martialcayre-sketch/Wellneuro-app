@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import type { ActeNabmApiResponse } from '@/app/api/praticien/biologie/nabm/acte/route';
+import type { RechercheNabmApiResponse } from '@/app/api/praticien/biologie/nabm/recherche/route';
 import type {
   CorrespondancesNabmApiResponse,
   DecisionCorrespondanceNabmApiResponse,
@@ -21,9 +22,10 @@ import type {
 import { formatDate } from './FicheAnalytePanel';
 
 // Signature des correspondances analyte ↔ acte NABM (M-3, F54), dans la fiche
-// analyte. Le praticien lit la nomenclature, tape le CODE de l'acte qu'il a
-// choisi, vérifie l'acte rendu par le serveur dans le millésime courant, pose
-// la nature, puis signe. L'écran ne cherche rien par libellé ; il affiche les
+// analyte. Le praticien cherche l'acte par son libellé (D-320 §1) ou tape
+// son CODE, vérifie l'acte rendu par le serveur dans le millésime courant,
+// pose la nature, puis signe. La recherche ne rapproche rien d'elle-même :
+// le praticien choisit le résultat qu'il lit. L'écran affiche aussi les
 // candidats de la liste relue (M-3b, arbitrage du 2026-10-15), résolus par le
 // serveur au millésime courant, nature présélectionnée, à signer en un clic
 // par le même POST. Signataire et date sont posés par le serveur ; l'écran
@@ -132,6 +134,13 @@ export function CorrespondancesNabmSection({
   const [messageEchec, setMessageEchec] = useState<string | null>(null);
   const [enCours, setEnCours] = useState(false);
 
+  const [rechercheSaisie, setRechercheSaisie] = useState('');
+  const [resultatsRecherche, setResultatsRecherche] = useState<{
+    saisie: string;
+    millesime: string;
+    total: number;
+    actes: ActeNabmAffiche[];
+  } | null>(null);
   const [codeSaisi, setCodeSaisi] = useState('');
   const [acteLu, setActeLu] = useState<{ code: string; acte: ActeNabmAffiche | null } | null>(null);
   const [natureNouvelle, setNatureNouvelle] = useState<NatureNabm | ''>('');
@@ -183,6 +192,8 @@ export function CorrespondancesNabmSection({
     setConstat(null);
     setRetraitConstatAConfirmer(false);
     setMessageEchec(null);
+    setRechercheSaisie('');
+    setResultatsRecherche(null);
     setCodeSaisi('');
     setActeLu(null);
     setNatureNouvelle('');
@@ -193,8 +204,39 @@ export function CorrespondancesNabmSection({
     };
   }, [charger]);
 
-  async function lireActe() {
-    const code = codeSaisi.trim();
+  async function chercherActes() {
+    const saisie = rechercheSaisie.trim();
+    setMessageEchec(null);
+    setResultatsRecherche(null);
+    if (saisie.length < 3) {
+      setMessageEchec('Une recherche compte au moins trois caractères.');
+      return;
+    }
+    const perimee = (gen => () => gen !== generation.current)(generation.current);
+    setEnCours(true);
+    try {
+      const res = await fetch(
+        `/api/praticien/biologie/nabm/recherche?q=${encodeURIComponent(saisie)}`,
+        { cache: 'no-store' },
+      );
+      const json = (await res.json()) as RechercheNabmApiResponse;
+      if (perimee()) return;
+      if (!res.ok || !json.ok) {
+        setMessageEchec(!json.ok && json.error ? json.error : 'Impossible de chercher dans la nomenclature.');
+        return;
+      }
+      setResultatsRecherche({ saisie, millesime: json.millesime, total: json.total, actes: json.actes });
+    } catch {
+      if (perimee()) return;
+      setMessageEchec('Impossible de chercher dans la nomenclature.');
+    } finally {
+      if (!perimee()) setEnCours(false);
+    }
+  }
+
+  async function lireActe(codeChoisi?: string) {
+    if (codeChoisi !== undefined) setCodeSaisi(codeChoisi);
+    const code = (codeChoisi ?? codeSaisi).trim();
     setMessageEchec(null);
     setActeLu(null);
     if (!/^[0-9]{4}$/.test(code)) {
@@ -551,6 +593,64 @@ export function CorrespondancesNabmSection({
       {correspondances !== null && (
         <div className="flex flex-col gap-3 rounded-lg border border-border p-3">
           <p className="text-xs font-semibold text-foreground">Ajouter une correspondance</p>
+          <form
+            className="flex flex-wrap items-end gap-2"
+            onSubmit={event => {
+              event.preventDefault();
+              void chercherActes();
+            }}
+          >
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              Rechercher dans la nomenclature (libellé)
+              <Input
+                value={rechercheSaisie}
+                onChange={event => setRechercheSaisie(event.target.value)}
+                maxLength={80}
+                autoComplete="off"
+                placeholder="ex. homocystéine"
+                className="w-64"
+              />
+            </label>
+            <Button type="submit" variant="outline" disabled={enCours}>
+              Chercher
+            </Button>
+          </form>
+
+          {resultatsRecherche &&
+            (resultatsRecherche.actes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Aucun acte du millésime {resultatsRecherche.millesime} ne contient «{' '}
+                {resultatsRecherche.saisie} ».
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {resultatsRecherche.total > resultatsRecherche.actes.length && (
+                  <p className="text-xs text-muted-foreground">
+                    {resultatsRecherche.actes.length} premiers sur {resultatsRecherche.total} —
+                    précisez la recherche.
+                  </p>
+                )}
+                <ul aria-label="Actes trouvés" className="flex flex-col gap-2">
+                  {resultatsRecherche.actes.map(acte => (
+                    <li
+                      key={acte.codeActe}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface p-2"
+                    >
+                      <DetailActe acte={acte} />
+                      <Button
+                        variant="outline"
+                        disabled={enCours}
+                        aria-label={`Lire l’acte ${acte.codeActe}`}
+                        onClick={() => void lireActe(acte.codeActe)}
+                      >
+                        Lire cet acte
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+
           <div className="flex flex-wrap items-end gap-2">
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Code de l’acte (quatre chiffres)

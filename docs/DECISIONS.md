@@ -4,6 +4,64 @@
 
 ## Décisions actives
 
+### D-320 — Bibliothèque biologie : l'acte NABM se cherche par son libellé, les bilans quittent le rayon, les deux explorations non indiquées vont sur la fiche de leur alternative ; les analyses groupées sont cadrées en F80
+
+- Date : 2026-10-17
+- Statut : accepté. Retour du responsable du 2026-10-17 sur captures du
+  cockpit : sans connaître la nomenclature par cœur, la correspondance NABM ne
+  se rapproche pas ; les analyses groupées ne sont pas répertoriées ; les packs
+  d'analyses ne sont plus nécessaires. Puis trois arbitrages sur questions à
+  options : bilans retirés « de la Bibliothèque seule » (recommandé, contre
+  « aussi la proposition » et « retirer du moteur ») ; mises en garde « sur la
+  fiche de l'alternative » (recommandé, contre un encart dédié et la
+  proposition seule) ; analyses groupées « cadrer, livrer après » (recommandé,
+  contre l'inventaire seul et la composition maintenant). Texte rédigé par
+  l'assistant à partir de ces réponses.
+- Amende : la lecture « par code exact seulement » de l'écran de signature
+  M-3 (F54) — l'arbitrage du 2026-10-05 (« candidats jamais inférés d'un
+  libellé ») reste entier : il vise ce que l'assistant prépare, pas ce que le
+  praticien cherche.
+- Domaine : `lib/biology-library/` (`correspondancesNabm.ts`,
+  `rechercheTexte.ts`, `catalogue.ts`, `nonIndiquesBibliotheque.ts`) ; route
+  `api/praticien/biologie/nabm/recherche` ; `components/biologie/`
+  (`CorrespondancesNabmSection`, `RayonBiologiePanel`, `FicheAnalytePanel`) ;
+  textes de la Bibliothèque et de la page Biologie fonctionnelle ; fiche F80.
+- **Ne touche pas** : aucune règle d'indication (la table signée et son SHA
+  sont inchangés), aucune signature, aucun constat, aucun schéma, aucune
+  migration ; le moteur de proposition, le courrier et le document patient
+  lisent les bilans comme avant ([[D-296]] §5 inchangé).
+
+**§1 — Recherche par libellé.** Dans l'encart « Ajouter une correspondance »,
+le praticien cherche les actes du millésime courant par leur libellé : tous
+les mots de sa saisie (accents, casse et ponctuation ignorés), ou le début du
+code. Au plus 25 actes, actifs d'abord, avec le total trouvé ; de 3 à 80
+caractères. Il choisit un résultat, qui se lit par son code comme avant, puis
+pose la nature et signe par le même geste. Rien n'est rapproché, présélectionné
+ni proposé par la recherche : elle aide à lire la nomenclature, la signature
+reste celle d'un code relu. Le millier d'actes d'un millésime se lit en
+entier et se filtre côté serveur — sans index ni extension SQL.
+
+**§2 — Les bilans quittent la Bibliothèque.** La section « Bilans » du rayon
+et la mention « Présent dans les bilans » de la fiche d'analyte disparaissent ;
+le catalogue ne sert plus la composition des bilans. La proposition se lit par
+analyse ([[D-296]] §2, F50) ; les bilans restent l'unité du moteur jusqu'à
+leur conversion par les indications v2 (F53), qui seule les rendra inactifs.
+
+**§3 — Les explorations non indiquées.** « Magnésium plasmatique »
+(`BIO-NIA-01`) et « Cortisol matinal isolé » (`BIO-NIA-02`) sont des bilans
+sans analyte : sans la section, ils n'avaient plus d'écran. Chacun s'affiche
+sur la fiche de l'exploration que son motif nomme pertinente — le magnésium
+érythrocytaire, le cortisol awakening response —, avec le motif VERBATIM de la
+table signée et son claim. Ce rattachement est le seul texte nouveau ; il
+s'éteint si la signature de la table ne tient plus, et une règle non indiquée
+ajoutée sans rattachement fait rougir son banc.
+
+**§4 — Les analyses groupées.** Un groupe (NFS, ionogramme, profil lipidique,
+bilan hépatique) est une fiche unique sans composants, et une valeur calculée
+n'a pas ses opérandes. Le sujet est cadré en F80 (inventaire, options de
+modèle, questions au responsable) ; toute livraison passera par une
+migration et sa propre décision.
+
 ### D-319 — Onglet « Biologie » : la proposition de bilan y déménage ; l'arbitrage biologique reste dans la phase Actions, à côté de la version qu'il juge, et l'onglet compte les actions qui l'attendent (F57 PR 2, amende D-308 §1)
 
 - Date : 2026-10-17

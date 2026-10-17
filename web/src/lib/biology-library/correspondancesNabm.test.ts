@@ -32,6 +32,8 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import {
   chercherActeNabm,
+  chercherActesNabmParLibelle,
+  RECHERCHE_NABM_LIMITE,
   deciderConstat,
   deciderCorrespondance,
   lireCorrespondancesAnalyte,
@@ -114,6 +116,82 @@ describe('chercherActeNabm — par code exact, dans le millésime courant', () =
     expect(prisma.biologyNabmActe.findUnique.mock.calls[0][0].where).toEqual({
       codeActe_versionSource: { codeActe: '1208', versionSource: 'V105' },
     });
+  });
+});
+
+describe('chercherActesNabmParLibelle — recherche du praticien, millésime courant (D-320 §1)', () => {
+  const ACTES = [
+    acte({ codeActe: '1208', libelle: 'HOMOCYSTÉINE (DOSAGE)' }),
+    acte({ codeActe: '1209', libelle: 'Homocystéine totale, sérum', inactif: true }),
+    acte({ codeActe: '1104', libelle: 'HÉMOGRAMME Y COMPRIS PLAQUETTES' }),
+    acte({ codeActe: '0996', libelle: 'EXPLORATION D’UNE ANOMALIE LIPIDIQUE' }),
+  ];
+
+  beforeEach(() => {
+    prisma.biologyNabmActe.findMany.mockResolvedValue(ACTES);
+  });
+
+  it('lit les actes du SEUL millésime courant', async () => {
+    await chercherActesNabmParLibelle('homocysteine');
+    expect(prisma.biologyNabmActe.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { versionSource: 'V105' } }),
+    );
+  });
+
+  it('accents et casse ignorés, actifs devant les inactifs', async () => {
+    prisma.biologyNabmActe.findMany.mockResolvedValue([ACTES[1], ACTES[0]]);
+    const resultat = await chercherActesNabmParLibelle('homocysteine');
+    expect(resultat).toEqual({
+      ok: true,
+      millesime: 'V105',
+      total: 2,
+      actes: [ACTES[0], ACTES[1]],
+    });
+  });
+
+  it('tous les mots de la saisie sont requis, dans n’importe quel ordre', async () => {
+    const resultat = await chercherActesNabmParLibelle('totale homocystéine');
+    expect(resultat.ok && resultat.actes.map(a => a.codeActe)).toEqual(['1209']);
+    const aucun = await chercherActesNabmParLibelle('homocystéine plaquettes');
+    expect(aucun).toEqual({ ok: true, millesime: 'V105', total: 0, actes: [] });
+  });
+
+  it('une saisie en chiffres cherche aussi le début du code', async () => {
+    const resultat = await chercherActesNabmParLibelle('120');
+    expect(resultat.ok && resultat.actes.map(a => a.codeActe)).toEqual(['1208', '1209']);
+  });
+
+  it('la ponctuation de la saisie ne compte pas', async () => {
+    const resultat = await chercherActesNabmParLibelle('anomalie lipidique.');
+    expect(resultat.ok && resultat.actes.map(a => a.codeActe)).toEqual(['0996']);
+  });
+
+  it('au plus RECHERCHE_NABM_LIMITE actes, avec le total trouvé', async () => {
+    prisma.biologyNabmActe.findMany.mockResolvedValue(
+      Array.from({ length: 40 }, (_, i) =>
+        acte({ codeActe: String(1000 + i), libelle: `Acte de dosage ${i}` }),
+      ),
+    );
+    const resultat = await chercherActesNabmParLibelle('dosage');
+    expect(resultat.ok && resultat.total).toBe(40);
+    expect(resultat.ok && resultat.actes).toHaveLength(RECHERCHE_NABM_LIMITE);
+    expect(resultat.ok && resultat.actes[0].codeActe).toBe('1000');
+  });
+
+  it('saisie trop courte, trop longue ou sans lettre : refusée sans lire la base', async () => {
+    for (const saisie of ['ho', '   ab  ', 'x'.repeat(81), '---']) {
+      expect(await chercherActesNabmParLibelle(saisie)).toEqual({ ok: false, raison: 'saisie_invalide' });
+    }
+    expect(prisma.biologyNabmActe.findMany).not.toHaveBeenCalled();
+  });
+
+  it('nomenclature non importée : millesime_absent', async () => {
+    prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(null);
+    expect(await chercherActesNabmParLibelle('homocysteine')).toEqual({
+      ok: false,
+      raison: 'millesime_absent',
+    });
+    expect(prisma.biologyNabmActe.findMany).not.toHaveBeenCalled();
   });
 });
 

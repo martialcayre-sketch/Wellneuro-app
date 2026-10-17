@@ -1,8 +1,10 @@
 // Service du catalogue documentaire du rayon biologie (CB-08) — PRATICIEN
-// SEUL, lecture seule. Construit les fiches d'analytes et la composition des
-// bilans telles que la bibliothèque les affiche : identité, provenance, les
-// DEUX référentiels de valeurs côte à côte (laboratoire / fonctionnel — jamais
-// fusionnés, invariant du schéma), remboursement dérivé, préanalytique.
+// SEUL, lecture seule. Construit les fiches d'analytes telles que la
+// bibliothèque les affiche : identité, provenance, les DEUX référentiels de
+// valeurs côte à côte (laboratoire / fonctionnel — jamais fusionnés, invariant
+// du schéma), remboursement dérivé, préanalytique, explorations non indiquées.
+// Les bilans ne s'y servent plus (D-320 §2) : ils restent l'unité du moteur de
+// proposition (D-296 §5), pas une entrée du rayon.
 //
 // AUCUNE donnée patient n'entre ici : le catalogue est global au cabinet
 // (étage 1 documentaire, verrou HDS intact). Le volume est celui du catalogue
@@ -21,6 +23,11 @@ import {
   type CorrespondanceNabm,
   type Remboursement,
 } from './remboursable';
+import {
+  explorationsNonIndiqueesParAnalyte,
+  reglesNonIndiquees,
+  type ExplorationNonIndiquee,
+} from './nonIndiquesBibliotheque';
 
 /** Pointeur de millésime de la nomenclature, tel que l'import CB-02a l'écrit. */
 export const SOURCE_NABM = 'nabm_smt_ans';
@@ -49,12 +56,6 @@ export type PreanalytiqueAffiche = {
   consigne: string;
 };
 
-export type PanelCite = {
-  code: string;
-  libelle: string;
-  niveau: string;
-};
-
 export type FicheAnalyte = {
   code: string;
   libelle: string;
@@ -75,21 +76,8 @@ export type FicheAnalyte = {
   plagesFonctionnelles: PlageFonctionnelle[];
   remboursement: Remboursement;
   preanalytiques: PreanalytiqueAffiche[];
-  panels: PanelCite[];
-};
-
-export type ItemPanelBiologie = {
-  type: 'analyte' | 'ratio';
-  code: string;
-  libelle: string;
-};
-
-export type PanelCatalogueBiologie = {
-  code: string;
-  libelle: string;
-  niveau: string;
-  objectif: string | null;
-  items: ItemPanelBiologie[];
+  /** Explorations non indiquées dont cet analyte est l'alternative (D-320 §3). */
+  nonIndiques: ExplorationNonIndiquee[];
 };
 
 export type MillesimeNabm = {
@@ -100,7 +88,6 @@ export type MillesimeNabm = {
 
 export type CatalogueBiologieResult = {
   analytes: FicheAnalyte[];
-  panels: PanelCatalogueBiologie[];
   /** Millésime de la nomenclature servi, `null` si la source n'est pas importée. */
   millesimeNabm: MillesimeNabm | null;
 };
@@ -112,7 +99,7 @@ export type CatalogueBiologieResult = {
  * fiche retirée du catalogue.
  */
 export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult> {
-  const [analytes, panels, pointeurNabm] = await Promise.all([
+  const [analytes, bilansNonIndiques, pointeurNabm] = await Promise.all([
     prisma.biologyAnalyte.findMany({
       where: { actif: true },
       select: {
@@ -161,30 +148,14 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
           where: { actif: true },
           select: { typeCondition: true, consigne: true },
         },
-        itemsPanel: {
-          select: {
-            panel: { select: { code: true, libelle: true, niveau: true, actif: true } },
-          },
-        },
       },
       orderBy: { libelle: 'asc' },
     }),
+    // Le seul libellé de bilan encore lu : celui des explorations non
+    // indiquées, que la fiche de leur alternative nomme.
     prisma.biologyPanel.findMany({
-      where: { actif: true },
-      select: {
-        code: true,
-        libelle: true,
-        niveau: true,
-        objectif: true,
-        items: {
-          select: {
-            analyte: { select: { code: true, libelle: true } },
-            ratio: { select: { code: true, libelle: true } },
-          },
-          orderBy: { position: 'asc' },
-        },
-      },
-      orderBy: { code: 'asc' },
+      where: { actif: true, code: { in: reglesNonIndiquees().map(regle => regle.panelCode) } },
+      select: { code: true, libelle: true },
     }),
     prisma.biologyCatalogVersionCourante.findUnique({
       where: { sourceProvenance: SOURCE_NABM },
@@ -216,6 +187,10 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
         })
       : [];
 
+  const nonIndiques = explorationsNonIndiqueesParAnalyte(
+    new Map(bilansNonIndiques.map(bilan => [bilan.code, bilan.libelle])),
+  );
+
   const fiches: FicheAnalyte[] = analytes.map(analyte => ({
     code: analyte.code,
     libelle: analyte.libelle,
@@ -238,27 +213,11 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
       { constat: analyte.constatNabm, millesimeCourant: pointeurNabm?.versionSource ?? null },
     ),
     preanalytiques: analyte.preanalytiques,
-    panels: analyte.itemsPanel
-      .map(item => item.panel)
-      .filter(panel => panel.actif)
-      .map(panel => ({ code: panel.code, libelle: panel.libelle, niveau: panel.niveau })),
-  }));
-
-  const panelsCatalogue: PanelCatalogueBiologie[] = panels.map(panel => ({
-    code: panel.code,
-    libelle: panel.libelle,
-    niveau: panel.niveau,
-    objectif: panel.objectif,
-    items: panel.items.flatMap((item): ItemPanelBiologie[] => {
-      if (item.analyte) return [{ type: 'analyte', ...item.analyte }];
-      if (item.ratio) return [{ type: 'ratio', ...item.ratio }];
-      return [];
-    }),
+    nonIndiques: nonIndiques.get(analyte.code) ?? [],
   }));
 
   return {
     analytes: fiches,
-    panels: panelsCatalogue,
     millesimeNabm: pointeurNabm
       ? {
           versionSource: pointeurNabm.versionSource,

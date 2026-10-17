@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/Badge';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import {
   FicheAnalytePanel,
-  LABEL_NIVEAU,
   LABEL_REMBOURSEMENT,
   LABEL_STATUT_FICHE,
   libelleTechnique,
@@ -17,23 +16,19 @@ import type {
 } from '@/lib/biology-library/catalogue';
 
 // Rayon biologie fonctionnelle (CB-08) — instrument de consultation calqué sur
-// le patron C4 (RayonComplementsPanel) : bilans hiérarchisés puis fiches
-// d'analytes, fiche justificative ouverte en tiroir. Jamais de score global.
+// le patron C4 (RayonComplementsPanel) : fiches d'analytes, fiche
+// justificative ouverte en tiroir. Jamais de score global. Les bilans n'y
+// figurent plus (D-320 §2) : la proposition se lit par analyse, et les bilans
+// ne vivent plus qu'au moteur, jusqu'à leur conversion (D-296 §5).
 //
 // Contrairement au rayon C4 (140 148 fiches, mur d'entrée), le catalogue
-// niveau 1 compte une cinquantaine d'analytes et 15 bilans : tout se charge en
+// compte moins d'une centaine d'analytes : tout se charge en
 // UNE requête au montage, la recherche et les filtres restent à l'écran. Le jeton de séquence
 // est conservé malgré la requête unique — un démontage/remontage (strict mode,
 // navigation) ne doit pas laisser une réponse en vol écrire sur le suivant.
 //
 // Étage documentaire seul : AUCUNE valeur biologique patient n'existe derrière
 // cette surface, et le bandeau le dit.
-
-const ORDRE_NIVEAUX = ['socle', 'approfondissement', 'specialise'] as const;
-
-function libelleNiveau(niveau: string): string {
-  return LABEL_NIVEAU[niveau] ?? niveau;
-}
 
 export function RayonBiologiePanel() {
   const [catalogue, setCatalogue] = useState<CatalogueBiologieResult | null>(null);
@@ -109,25 +104,6 @@ export function RayonBiologiePanel() {
     });
   }, [catalogue, recherche, prelevement]);
 
-  const panelsParNiveau = useMemo(() => {
-    if (!catalogue) return [];
-    const niveauxPresents = [
-      ...ORDRE_NIVEAUX.filter(niveau => catalogue.panels.some(p => p.niveau === niveau)),
-      ...[...new Set(catalogue.panels.map(p => p.niveau))].filter(
-        niveau => !(ORDRE_NIVEAUX as readonly string[]).includes(niveau),
-      ),
-    ];
-    return niveauxPresents.map(niveau => ({
-      niveau,
-      panels: catalogue.panels.filter(p => p.niveau === niveau),
-    }));
-  }, [catalogue]);
-
-  const analytesParCode = useMemo(() => {
-    if (!catalogue) return new Map<string, FicheAnalyte>();
-    return new Map(catalogue.analytes.map(a => [a.code, a]));
-  }, [catalogue]);
-
   if (surfaceIndisponible) {
     return (
       <div
@@ -143,8 +119,7 @@ export function RayonBiologiePanel() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Catalogue documentaire : bilans hiérarchisés et fiches d’analytes, avec leurs deux
-          référentiels de valeurs. Une orientation d’exploration se prépare au dossier, depuis le
+          Catalogue documentaire : fiches d’analytes, avec leurs deux référentiels de valeurs. Une orientation d’exploration se prépare au dossier, depuis le
           cockpit — ce rayon consulte, il ne propose rien.
         </p>
         <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
@@ -166,55 +141,6 @@ export function RayonBiologiePanel() {
 
       {catalogue && (
         <>
-          <section aria-labelledby="bilans-biologie-titre" className="flex flex-col gap-3">
-            <h4 id="bilans-biologie-titre" className="text-sm font-semibold text-foreground">
-              Bilans ({catalogue.panels.length})
-            </h4>
-            {panelsParNiveau.map(groupe => (
-              <div key={groupe.niveau}>
-                <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">
-                  {libelleNiveau(groupe.niveau)}
-                </p>
-                <ul className="mt-2 grid gap-3 lg:grid-cols-2">
-                  {groupe.panels.map(panel => (
-                    <li
-                      key={panel.code}
-                      className="rounded-xl border border-border bg-surface p-4 shadow-card"
-                    >
-                      <p className="font-medium text-foreground">{panel.libelle}</p>
-                      {panel.objectif && (
-                        <p className="mt-1 text-sm text-muted-foreground">{panel.objectif}</p>
-                      )}
-                      <ul className="mt-2 flex flex-wrap gap-1.5">
-                        {panel.items.map(item => {
-                          const fiche =
-                            item.type === 'analyte' ? analytesParCode.get(item.code) : undefined;
-                          return (
-                            <li key={`${item.type}-${item.code}`}>
-                              {fiche ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setFicheOuverte(fiche)}
-                                  className="rounded-full border border-border px-2 py-0.5 text-xs text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-                                >
-                                  {item.libelle}
-                                </button>
-                              ) : (
-                                <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
-                                  {item.libelle}
-                                </span>
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </section>
-
           <section aria-labelledby="analytes-biologie-titre" className="flex flex-col gap-3">
             <h4 id="analytes-biologie-titre" className="text-sm font-semibold text-foreground">
               Analytes ({analytesFiltres.length} sur {catalogue.analytes.length})

@@ -12,6 +12,7 @@ const { prisma } = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { listerCatalogueBiologie } from './catalogue';
+import { INDICATIONS_BIOLOGIE_V1 } from './indicationsBiologieV1';
 
 function analyteBase(surcharge: Record<string, unknown> = {}) {
   return {
@@ -33,7 +34,6 @@ function analyteBase(surcharge: Record<string, unknown> = {}) {
     correspondancesNabm: [],
     constatNabm: null,
     preanalytiques: [],
-    itemsPanel: [],
     ...surcharge,
   };
 }
@@ -169,7 +169,7 @@ describe('remboursement — dérivé par remboursable.ts, jamais recalculé ici'
   });
 });
 
-describe('fiches et panels — passage fidèle, absences comprises', () => {
+describe('fiches — passage fidèle, absences comprises', () => {
   it('les deux référentiels sont transmis séparément, une colonne vide reste vide', async () => {
     prisma.biologyAnalyte.findMany.mockResolvedValue([
       analyteBase({
@@ -195,43 +195,58 @@ describe('fiches et panels — passage fidèle, absences comprises', () => {
     expect(fiche.plagesFonctionnelles[0].claimId).toBe('WN-CL-0044-003');
   });
 
-  it('un panel inactif citant l’analyte n’apparaît pas sur la fiche', async () => {
-    prisma.biologyAnalyte.findMany.mockResolvedValue([
-      analyteBase({
-        itemsPanel: [
-          { panel: { code: 'PANEL_FATIGUE_1', libelle: 'Fatigue', niveau: 'socle', actif: true } },
-          { panel: { code: 'PANEL_RETIRE', libelle: 'Retiré', niveau: 'socle', actif: false } },
-        ],
-      }),
-    ]);
+  it('plus aucun bilan servi : ni liste au catalogue, ni bilans sur la fiche (D-320 §2)', async () => {
+    prisma.biologyAnalyte.findMany.mockResolvedValue([analyteBase()]);
 
     const catalogue = await listerCatalogueBiologie();
 
-    expect(catalogue.analytes[0].panels).toEqual([
-      { code: 'PANEL_FATIGUE_1', libelle: 'Fatigue', niveau: 'socle' },
-    ]);
+    expect(catalogue).not.toHaveProperty('panels');
+    expect(catalogue.analytes[0]).not.toHaveProperty('panels');
+    expect(catalogue.analytes[0].nonIndiques).toEqual([]);
   });
 
-  it('un item de panel porte SOIT un analyte SOIT un ratio, typé pour l’écran', async () => {
-    prisma.biologyPanel.findMany.mockResolvedValue([
-      {
-        code: 'PANEL_METABOLIQUE_1',
-        libelle: 'Métabolique',
-        niveau: 'socle',
-        objectif: null,
-        items: [
-          { analyte: { code: 'BIO_GLYCEMIE', libelle: 'Glycémie à jeun' }, ratio: null },
-          { analyte: null, ratio: { code: 'RATIO_HOMA', libelle: 'HOMA' } },
-        ],
-      },
+  it('seuls les bilans des règles non indiquées, actifs, sont lus — pour leur libellé', async () => {
+    await listerCatalogueBiologie();
+
+    expect(prisma.biologyPanel.findMany).toHaveBeenCalledWith({
+      where: { actif: true, code: { in: ['PANEL_MG_PLASMATIQUE', 'PANEL_CORTISOL_ISOLE'] } },
+      select: { code: true, libelle: true },
+    });
+  });
+
+  it('l’alternative porte l’exploration non indiquée, motif VERBATIM de la table signée (D-320 §3)', async () => {
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteBase({ code: 'BIO_MAGNESIUM_ERYTHROCYTAIRE', libelle: 'Magnésium érythrocytaire' }),
+      analyteBase({ code: 'BIO_CAR', libelle: 'Cortisol awakening response' }),
+      analyteBase(),
     ]);
+    prisma.biologyPanel.findMany.mockResolvedValue([
+      { code: 'PANEL_MG_PLASMATIQUE', libelle: 'Magnésium plasmatique' },
+      { code: 'PANEL_CORTISOL_ISOLE', libelle: 'Cortisol matinal isolé' },
+    ]);
+    const motif = (id: string) => INDICATIONS_BIOLOGIE_V1.find(regle => regle.id === id)?.motif;
+
+    const catalogue = await listerCatalogueBiologie();
+    const [mg, car, ferritine] = catalogue.analytes;
+
+    expect(mg.nonIndiques).toEqual([
+      { exploration: 'Magnésium plasmatique', motif: motif('BIO-NIA-01'), claimId: 'WN-CL-0242-007' },
+    ]);
+    expect(car.nonIndiques).toEqual([
+      { exploration: 'Cortisol matinal isolé', motif: motif('BIO-NIA-02'), claimId: 'WN-CL-0042-007' },
+    ]);
+    expect(ferritine.nonIndiques).toEqual([]);
+  });
+
+  it('un bilan non indiqué retiré du catalogue (inactif, donc non lu) ne s’affiche plus', async () => {
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteBase({ code: 'BIO_MAGNESIUM_ERYTHROCYTAIRE', libelle: 'Magnésium érythrocytaire' }),
+    ]);
+    prisma.biologyPanel.findMany.mockResolvedValue([]);
 
     const catalogue = await listerCatalogueBiologie();
 
-    expect(catalogue.panels[0].items).toEqual([
-      { type: 'analyte', code: 'BIO_GLYCEMIE', libelle: 'Glycémie à jeun' },
-      { type: 'ratio', code: 'RATIO_HOMA', libelle: 'HOMA' },
-    ]);
+    expect(catalogue.analytes[0].nonIndiques).toEqual([]);
   });
 
   it('verifieLe et le millésime sortent en ISO, prêts pour l’écran', async () => {
