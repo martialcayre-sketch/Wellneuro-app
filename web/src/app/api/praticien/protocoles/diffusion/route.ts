@@ -668,8 +668,11 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         annonceParEmail: false, annonceProtocoleParEmail: false, emailProtocoleOuvert: annonceProtocoleOuverte(),
       });
     }
-    const decisionCardInputHash = versions[0].decisionCardInputHash;
     const activeVersion = resolveActiveVersion(versions);
+    // LA CHAÎNE DE LA VERSION ACTIVE, celle que le POST lit (revue CodeRabbit
+    // de #1520) : `findMany` ne garantit aucun ordre, et `versions[0]` pouvait
+    // porter l'empreinte d'une autre carte que la version que le clic validerait.
+    const decisionCardInputHash = (activeVersion ?? versions[0]).decisionCardInputHash;
 
     // Le rejeu de la carte est une LECTURE DE DOSSIER, et deux versions du même
     // protocole s'ancrent presque toujours sur la même — mémoïser évite de la

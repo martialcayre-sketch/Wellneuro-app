@@ -61,13 +61,14 @@ neuf éteint, et le plafond serveur de 24 h, posé aussi sur `document_remis`.
   (`annoncerDiffusion`, `pausesServies`). Bancs des fichiers fusionnés :
   1173 verts ; T1 rapide puis T2 (`--fast`) rejoués après cette fusion :
   verts — Vitest 13 346 verts, 4 sautés ; E2E 274 verts, 6 sautés.
+- CI de #1520 vert (sha 44e108ad). Revue CodeRabbit sur ce sha : un
+  commentaire, corrigé — le GET lisait les approbations sur la chaîne de
+  `versions[0]` (ordre non garanti) au lieu de la version active, celle que
+  lit le POST (même constat que le P2-1 de `wn-reviewer`, antérieur au lot).
+  Banc ajouté ; T1 complet et T2 rejoués avant le commit du correctif.
 
 ## Problèmes ouverts
 
-- P2-1 (antérieur au lot) : le GET lit les approbations sur la chaîne de
-  `versions[0]`, sans tri. Si deux versions d'une même décision portaient des
-  empreintes de carte différentes, l'annonce faite avant le clic pourrait se
-  tromper ; le sort réel s'affiche quand même après le clic.
 - Le plafond n'est éprouvé que sur mocks : aucun banc contre un vrai Postgres,
   ni sur deux transactions concurrentes.
 - Une tentative `portail_ferme` ou `non_configure` occupe la fenêtre de 24 h

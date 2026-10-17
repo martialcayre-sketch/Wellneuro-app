@@ -1009,6 +1009,18 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
       );
     });
 
+    it('GET : les approbations se lisent sur la chaîne de la version ACTIVE, pas de la première listée', async () => {
+      prisma.protocolDraft.findMany.mockResolvedValue([
+        // L'ancienne version, sur une autre carte, listée EN PREMIER.
+        { ...versionsGet[0], id: 'v0', inputHash: 'HASH_V0', decisionCardInputHash: 'HASH_DEC_ANCIEN' },
+        { ...versionsGet[0], id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', supersedesDraftId: 'v0' },
+      ]);
+      await GET(requeteGet());
+      expect(prisma.protocolDiffusionApproval.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { idPatient: 'PAT_1', decisionCardInputHash: 'HASH_DEC' },
+      }));
+    });
+
     it('GET : l’écran l’apprend avant le geste — version jamais diffusée et servable seulement', async () => {
       prisma.protocolDraft.findMany.mockResolvedValue(versionsGet);
       const neuve = (await (await GET(requeteGet())).json()) as Record<string, unknown>;
