@@ -4,6 +4,59 @@
 
 ## Décisions actives
 
+### D-320 — J3-12c : un claim porte deux clés de lien, les besoins qu'il sert et sa rubrique parmi les dix des fiches d'usage ; posées à la signature ou par un acte « étiquetage » journalisé sous son propre type (amende D-312, §5 neuf)
+
+- Date : 2026-10-17
+- Statut : accepté. Arbitrages du responsable : audit des 12 besoins du
+  2026-10-15 (arbitrage 3, lien claim → besoin par clés de métadonnée posées à
+  la signature, forme « besoins servis + rubrique de la chaîne d'usage »,
+  jamais la population) ; entrée du besoin 2 au BioFlow du 2026-10-16 (deux
+  clés seulement, pas de clé d'analyte) ; 2026-10-17, sur questions à options :
+  les rubriques sont les dix des fiches d'usage (« Les 10 des fiches »,
+  recommandé) et l'étiquetage d'un claim déjà signé a son propre type d'acte
+  au journal (« Type d'acte neuf », recommandé, contre « sans migration » et
+  « étiquette à la signature seule »). Texte rédigé par l'assistant.
+- Amende : [[D-312]] — §5 neuf ci-dessous. Lève l'« [A verifier] » du plan
+  (H15) sur les rubriques de J3-12c.
+- Domaine : journal `rag_corpus_claim_decisions` (migration
+  `20261017100000_rag_claim_decisions_etiquetage_v1`, contrat
+  `rag_claim_decisions_etiquetage_v1.sql`) ; puis, en seconde PR, la route de
+  décision des claims, `deciderClaim` (`web/src/lib/rag/claims/revue.ts`) et
+  l'atelier (`AtelierCorpusPanel.tsx`) ; fiche H15.
+- **Ne touche pas** : aucun statut, aucune signature, aucun claim ; ni
+  `BESOIN_SOURCES` ni les parts 60/20/20 ([[D-312]] §3) ; la population reste
+  hors des clés ; aucune rubrique n'est posée par l'assistant — les 92 claims
+  du fer et ceux des dossiers suivants s'étiquettent de la main du
+  responsable, dans l'atelier.
+
+**§5 (de D-312) — Les clés de lien d'un claim.** Deux clés dans la
+`metadata` du claim : `besoins`, liste non vide d'entiers de 1 à 12 ;
+`rubrique`, une des dix rubriques des fiches d'usage ([[D-314]] §8,
+`RUBRIQUES_FICHE_USAGE`) — le vocabulaire en six rubriques des dossiers de
+preuve est abandonné, et le dossier de la vitamine D se reclasse en dix
+avant sa signature. Les clés sont facultatives à la route (un claim peut ne
+servir aucun besoin) ; le dossier de preuve les exige pour chaque claim
+qu'il cite.
+
+**§6 — Deux gestes, deux types d'acte.** À la signature individuelle, les
+clés s'écrivent dans la même transaction que la signature et se recopient
+dans l'élément du journal (`decision_individuelle`). Sur un claim déjà VALIDE,
+l'acte « étiquetage » pose ou corrige les clés sans toucher statut,
+signataire ni date, et se journalise sous le type `etiquetage` : un claim
+par acte, aucune décision, les clés dans l'élément. Un compte des signatures
+ne compte jamais un étiquetage. La validation par lot ne pose aucune clé.
+
+**§7 — Ce que la base tient.** Le CHECK `rag_claim_decisions_etiquetage_complet`
+refuse un étiquetage sans claim ou à plusieurs claims, porteur d'une
+décision ou d'une pièce de tirage, ou dont l'élément n'a pas des besoins
+entiers de 1 à 12 et une rubrique de la liste. Un banc du dépôt refuse que
+cette liste diverge de `RUBRIQUES_FICHE_USAGE`.
+
+**§8 — Exécution.** Deux temps : la migration seule (PR relue, release-db
+approuvée, constat par conteneur), puis le code consommateur. Ensuite, geste
+du responsable : l'étiquetage des 92 claims du fer, rubrique par rubrique,
+avant la première signature du dossier de la vitamine D.
+
 ### D-319 — Onglet « Biologie » : la proposition de bilan y déménage ; l'arbitrage biologique reste dans la phase Actions, à côté de la version qu'il juge, et l'onglet compte les actions qui l'attendent (F57 PR 2, amende D-308 §1)
 
 - Date : 2026-10-17

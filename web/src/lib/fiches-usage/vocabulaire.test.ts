@@ -36,6 +36,21 @@ describe('vocabulaire des fiches d’usage — aligné sur la migration (D-314 �
     expect(listeApres('IF cle NOT IN').sort()).toEqual([...RUBRIQUES_FICHE_USAGE].sort());
   });
 
+  it('l’étiquetage des claims ferme les MÊMES rubriques (J3-12c, D-320)', () => {
+    // Le journal des décisions de claims ferme la rubrique d'un étiquetage sur
+    // cette liste (migration `rag_claim_decisions_etiquetage_v1`) : une rubrique
+    // ajoutée ici sans elle serait refusée par la base à l'étiquetage.
+    const etiquetage = readFileSync(
+      path.join(RACINE, 'web/prisma/migrations/20261017100000_rag_claim_decisions_etiquetage_v1/migration.sql'),
+      'utf8',
+    );
+    const debut = etiquetage.indexOf("->> 'rubrique') IN");
+    expect(debut).toBeGreaterThan(-1);
+    const bloc = /IN \(([^)]*)\)/.exec(etiquetage.slice(debut)) as RegExpExecArray;
+    const liste = [...bloc[1].matchAll(/'([a-z_]+)'/g)].map(m => m[1]);
+    expect(liste.sort()).toEqual([...RUBRIQUES_FICHE_USAGE].sort());
+  });
+
   it('« explication patient » reste hors de la liste (arbitrage 6)', () => {
     expect(RUBRIQUES_FICHE_USAGE).not.toContain('explication_patient');
   });

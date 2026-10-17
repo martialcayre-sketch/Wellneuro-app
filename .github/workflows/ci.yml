@@ -506,6 +506,14 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_decisions_journal_v1.sql
 
+      # J3-12c (D-320) : l'acte `etiquetage` — un claim, aucune décision, besoins
+      # 1 à 12 non vides, rubrique des fiches d'usage ; chaque garde éprouvée par
+      # l'insertion qui la viole.
+      - name: RAG claim étiquetage contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_claim_decisions_etiquetage_v1.sql
+
       # L'index unique partiel des assignations vit en SQL brut : Prisma ne sait
       # pas le déclarer, donc le drift check ne le voit pas. Sans ce contrat, sa
       # disparition ne rougirait nulle part.
