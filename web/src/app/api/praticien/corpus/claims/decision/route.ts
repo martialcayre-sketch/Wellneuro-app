@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { emailPraticien } from '@/lib/praticien/appartenance';
-import { deciderClaim, estClaimStatut, type ClaimStatut } from '@/lib/rag/claims/revue';
+import { lireClesLien } from '@/lib/rag/claims/clesLien';
+import { deciderClaim, estClaimStatut, etiqueterClaim, type ClaimStatut } from '@/lib/rag/claims/revue';
 
 // Décision praticien sur un claim (Atelier corpus, D-003).
 //
@@ -16,6 +17,11 @@ import { deciderClaim, estClaimStatut, type ClaimStatut } from '@/lib/rag/claims
 // `statutAttendu` est obligatoire : la décision est prise SUR un état vu à
 // l'écran. S'il a bougé entre-temps (autre onglet, replay), la lib répond
 // etat_divergent et rien n'est écrit — jamais d'écrasement silencieux.
+//
+// Clés de lien ([[D-320]] §6) : `besoins` et `rubrique` accompagnent, au
+// choix du praticien, une signature VALIDE ; sur un claim déjà VALIDE,
+// `action: 'etiqueter'` les pose ou les corrige sans re-signer. Hors liste,
+// partielles ou jointes à une autre décision : 422, rien n'est écrit.
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,6 +33,7 @@ export type CorpusClaimDecisionApiResponse =
       ok: true;
       claim: { id: string; statut: ClaimStatut; validateur: string | null; valideAt: string | null };
     }
+  | { ok: true; etiquette: { id: string; besoins: number[]; rubrique: string } }
   | { ok: false; reason: string; error: string };
 
 const MESSAGES_REFUS: Record<string, { message: string; status: number }> = {
@@ -52,6 +59,14 @@ const MESSAGES_REFUS: Record<string, { message: string; status: number }> = {
     message: 'Un rejet exige un motif.',
     status: 422,
   },
+  cles_hors_signature: {
+    message: 'Les besoins et la rubrique ne se posent qu’avec une validation.',
+    status: 422,
+  },
+  claim_non_valide: {
+    message: 'Seul un claim validé s’étiquette — rechargez la liste.',
+    status: 409,
+  },
 };
 
 function echec(reason: string, error: string, status: number) {
@@ -59,13 +74,21 @@ function echec(reason: string, error: string, status: number) {
 }
 
 type PostBody = {
+  action?: string;
   id?: string;
   decision?: string;
   statutAttendu?: string;
   motif?: string;
+  besoins?: unknown;
+  rubrique?: unknown;
 };
 
-// POST /api/praticien/corpus/claims/decision — { id, decision, statutAttendu, motif? }
+const CLES_INVALIDES =
+  'Besoins (au moins un, de 1 à 12) et rubrique (une des dix des fiches d’usage) sont requis ensemble.';
+
+// POST /api/praticien/corpus/claims/decision
+//   { id, decision, statutAttendu, motif?, besoins?, rubrique? }
+//   { action: 'etiqueter', id, besoins, rubrique }
 // `motif` est obligatoire pour un REJET (dette v1) ; il est journalisé avec
 // l'acte (rag_corpus_claim_decisions), jamais écrit sur le claim lui-même.
 export async function POST(req: Request): Promise<NextResponse<CorpusClaimDecisionApiResponse>> {
@@ -85,19 +108,43 @@ export async function POST(req: Request): Promise<NextResponse<CorpusClaimDecisi
       return echec('invalid', 'Corps de requête illisible.', 400);
     }
 
-    const id = (body.id ?? '').trim();
-    const decision = (body.decision ?? '').trim();
-    const statutAttendu = (body.statutAttendu ?? '').trim();
-
+    const id = typeof body.id === 'string' ? body.id.trim() : '';
     if (!ID_CLAIM_RE.test(id)) {
       return echec('id_invalide', 'Identifiant de claim invalide.', 400);
     }
+
+    // Des clés présentes se lisent entières ou pas du tout : une seule des
+    // deux, ou une valeur hors liste, est refusée — jamais complétée.
+    const clesPresentes = body.besoins !== undefined || body.rubrique !== undefined;
+    const cles = clesPresentes ? lireClesLien(body.besoins, body.rubrique) : null;
+    if (clesPresentes && !cles) return echec('cles_invalides', CLES_INVALIDES, 422);
+
+    if (body.action !== undefined) {
+      if (body.action !== 'etiqueter') return echec('action_invalide', 'Action inconnue.', 400);
+      if (!cles) return echec('cles_invalides', CLES_INVALIDES, 422);
+      const etiquetage = await etiqueterClaim({ id, cles, validateur });
+      if (!etiquetage.ok) {
+        const refus = MESSAGES_REFUS[etiquetage.raison];
+        return echec(etiquetage.raison, refus.message, refus.status);
+      }
+      return NextResponse.json({ ok: true, etiquette: etiquetage.claim });
+    }
+
+    const decision = typeof body.decision === 'string' ? body.decision.trim() : '';
+    const statutAttendu = typeof body.statutAttendu === 'string' ? body.statutAttendu.trim() : '';
     if (!estClaimStatut(decision) || !estClaimStatut(statutAttendu)) {
       return echec('decision_invalide', 'Décision ou statut attendu inconnu.', 400);
     }
 
     const motif = typeof body.motif === 'string' ? body.motif : undefined;
-    const resultat = await deciderClaim({ id, decision, statutAttendu, validateur, motif });
+    const resultat = await deciderClaim({
+      id,
+      decision,
+      statutAttendu,
+      validateur,
+      motif,
+      ...(cles ? { cles } : {}),
+    });
     if (!resultat.ok) {
       const refus = MESSAGES_REFUS[resultat.raison];
       return echec(resultat.raison, refus.message, refus.status);

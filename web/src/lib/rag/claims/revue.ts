@@ -1,5 +1,6 @@
 import { randomInt } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
+import type { ClesLienClaim } from './clesLien';
 
 // Poste de revue des claims (Atelier corpus v1, D-004). C'est ici — et
 // seulement ici — que vit la signature praticien D-003 : l'ingestion force
@@ -265,7 +266,8 @@ export type DecisionClaimResultat =
         | 'etat_divergent'
         | 'sources_absentes'
         | 'source_derivee'
-        | 'motif_requis';
+        | 'motif_requis'
+        | 'cles_hors_signature';
     };
 
 /**
@@ -277,12 +279,16 @@ export function elementJournalClaim(
   claim: { id: string; claimId: string; versionClaim: string },
   statutAvant: ClaimStatut,
   statutApres: ClaimStatut,
+  /** Clés de lien posées avec la signature ([[D-320]] §6) — recopiées dans l'élément. */
+  cles?: ClesLienClaim,
 ): {
   id: string;
   claimId: string;
   versionClaim: string;
   statutAvant: ClaimStatut;
   statutApres: ClaimStatut;
+  besoins?: number[];
+  rubrique?: string;
 } {
   return {
     id: claim.id,
@@ -290,6 +296,27 @@ export function elementJournalClaim(
     versionClaim: claim.versionClaim,
     statutAvant,
     statutApres,
+    ...(cles ? { besoins: cles.besoins, rubrique: cles.rubrique } : {}),
+  };
+}
+
+/**
+ * Élément d'un acte `etiquetage` ([[D-320]] §6). Ni `statutAvant` ni
+ * `statutApres` : rien n'est décidé, et un audit qui chercherait les
+ * signatures par `claims @> [{"statutApres":"VALIDE"}]` ne doit jamais y
+ * compter un étiquetage. Le CHECK `rag_claim_decisions_etiquetage_complet`
+ * exige `id`, `claimId`, `besoins` et `rubrique`.
+ */
+export function elementJournalEtiquetage(
+  claim: { id: string; claimId: string; versionClaim: string },
+  cles: ClesLienClaim,
+): { id: string; claimId: string; versionClaim: string; besoins: number[]; rubrique: string } {
+  return {
+    id: claim.id,
+    claimId: claim.claimId,
+    versionClaim: claim.versionClaim,
+    besoins: cles.besoins,
+    rubrique: cles.rubrique,
   };
 }
 
@@ -313,8 +340,14 @@ export async function deciderClaim(params: {
   validateur: string;
   /** Motif praticien — obligatoire pour un REJET (dette v1, journal à l'appui). */
   motif?: string;
+  /**
+   * Clés de lien ([[D-320]] §6) — facultatives, et seulement avec une
+   * signature VALIDE : écrites sur le claim dans la même transaction, et
+   * recopiées dans l'élément du journal.
+   */
+  cles?: ClesLienClaim;
 }): Promise<DecisionClaimResultat> {
-  const { id, decision, statutAttendu, validateur } = params;
+  const { id, decision, statutAttendu, validateur, cles } = params;
   const motif = params.motif?.trim() || null;
 
   if (!transitionAutorisee(statutAttendu, decision)) {
@@ -323,6 +356,11 @@ export async function deciderClaim(params: {
   if (decision === 'REJETE' && !motif) {
     return { ok: false, raison: 'motif_requis' };
   }
+  if (cles && decision !== 'VALIDE') {
+    return { ok: false, raison: 'cles_hors_signature' };
+  }
+  // `null` laisse la metadata intacte (`metadata || '{}'`).
+  const clesJson = cles ? JSON.stringify({ besoins: cles.besoins, rubrique: cles.rubrique }) : null;
 
   // Garde d'intégrité AVANT de signer VALIDE. Deux refus :
   //  - sources_absentes : un claim sans verbatim cité ne serait de toute façon
@@ -374,6 +412,7 @@ export async function deciderClaim(params: {
         statut = ${decision},
         validateur = CASE WHEN ${decision} IN ('VALIDE', 'REJETE') THEN ${validateur} ELSE NULL END,
         valide_at = CASE WHEN ${decision} = 'VALIDE' THEN now() ELSE NULL END,
+        metadata = metadata || COALESCE(${clesJson}::jsonb, '{}'::jsonb),
         updated_at = now()
       WHERE id = ${id}
         AND statut = ${statutAttendu}
@@ -393,6 +432,7 @@ export async function deciderClaim(params: {
       { id: ligne.id, claimId: ligne.claim_id, versionClaim: ligne.version_claim },
       statutAttendu,
       decision,
+      cles,
     );
     await tx.$executeRaw`
       INSERT INTO public.rag_corpus_claim_decisions
@@ -411,6 +451,72 @@ export async function deciderClaim(params: {
         valideAt: ligne.valide_at ? ligne.valide_at.toISOString() : null,
       },
     };
+  });
+}
+
+export type EtiquetageClaimResultat =
+  | { ok: true; claim: { id: string; besoins: number[]; rubrique: string } }
+  | { ok: false; raison: 'claim_introuvable' | 'claim_non_valide' };
+
+/**
+ * Acte « étiquetage » ([[D-320]] §6) : pose ou corrige les clés de lien d'un
+ * claim DÉJÀ VALIDE, sans toucher statut, signataire ni date de signature. Un
+ * claim par acte, journalisé sous son propre type — un compte des signatures
+ * ne compte jamais un étiquetage.
+ *
+ * C'est ici que se tiennent l'existence du claim et son statut VALIDE (le
+ * journal ne lit pas la table des claims, D-320 §7) : l'UPDATE gardé par
+ * `statut = 'VALIDE'` et l'INSERT du journal sont dans UNE transaction — un
+ * claim remis en attente entre l'écran et l'acte n'est ni étiqueté ni
+ * journalisé.
+ */
+export async function etiqueterClaim(params: {
+  id: string;
+  cles: ClesLienClaim;
+  validateur: string;
+}): Promise<EtiquetageClaimResultat> {
+  const { id, cles, validateur } = params;
+  const clesJson = JSON.stringify({ besoins: cles.besoins, rubrique: cles.rubrique });
+
+  return prisma.$transaction(async (tx) => {
+    const lignes = await tx.$queryRaw<Array<{
+      id: string;
+      claim_id: string;
+      version_claim: string;
+      source_id: string;
+    }>>`
+      UPDATE public.rag_corpus_claims
+      SET metadata = metadata || ${clesJson}::jsonb,
+          updated_at = now()
+      WHERE id = ${id}
+        AND statut = 'VALIDE'
+        AND active = true
+      RETURNING id, claim_id, version_claim, source_id
+    `;
+
+    const ligne = lignes[0];
+    if (!ligne) {
+      const existe = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM public.rag_corpus_claims WHERE id = ${id} AND active = true LIMIT 1
+      `;
+      return {
+        ok: false as const,
+        raison: existe[0] ? ('claim_non_valide' as const) : ('claim_introuvable' as const),
+      };
+    }
+
+    const element = elementJournalEtiquetage(
+      { id: ligne.id, claimId: ligne.claim_id, versionClaim: ligne.version_claim },
+      cles,
+    );
+    await tx.$executeRaw`
+      INSERT INTO public.rag_corpus_claim_decisions
+        (type_acte, validateur, source_id, claims)
+      VALUES
+        ('etiquetage', ${validateur}, ${ligne.source_id}, ${JSON.stringify([element])}::jsonb)
+    `;
+
+    return { ok: true as const, claim: { id: ligne.id, besoins: cles.besoins, rubrique: cles.rubrique } };
   });
 }
 

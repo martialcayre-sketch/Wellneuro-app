@@ -1,5 +1,6 @@
 import { RAG_MAX_BATCH_SIZE, RAG_MAX_CONTENT_LENGTH } from '@/lib/rag/config';
 import { normalizeWellneuroText, sha256WellneuroText } from '@/lib/rag/validation';
+import { CLES_LIEN_CLAIM } from './clesLien';
 
 // Contrat d'ingestion de la couche CLAIMS. Chaque règle ci-dessous réplique une
 // contrainte CHECK de la migration 20260722150000_rag_corpus_claims_v1 : le
@@ -151,6 +152,15 @@ function parseClaim(value: unknown, index: number): RagClaimInput {
     (!metadataValue || typeof metadataValue !== 'object' || Array.isArray(metadataValue))
   ) {
     throw new Error(`claims[${index}].metadata doit être un objet.`);
+  }
+  // Les clés de lien se posent de la main du praticien, à la signature ou par
+  // l'acte « étiquetage » ([[D-320]]) — jamais par le pipeline d'ingestion.
+  for (const cle of CLES_LIEN_CLAIM) {
+    if (metadataValue && Object.prototype.hasOwnProperty.call(metadataValue, cle)) {
+      throw new Error(
+        `claims[${index}].metadata.${cle} est réservée au praticien (atelier corpus, D-320) — l'ingestion ne la pose pas.`,
+      );
+    }
   }
 
   if (!Array.isArray(claim.sources) || claim.sources.length === 0) {

@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/Button';
 import type { ClaimEnRevue, ClaimStatut } from '@/lib/rag/claims/revue';
 import type { CorpusClaimsApiResponse } from '@/app/api/praticien/corpus/claims/route';
 import type { CorpusClaimDecisionApiResponse } from '@/app/api/praticien/corpus/claims/decision/route';
+import { clesLienDuClaim } from '@/lib/rag/claims/clesLien';
+import { nomRubrique } from '@/components/fiches-usage/libelles';
+import { ClesLienChamps, SAISIE_CLES_VIDE, etatSaisieCles, type SaisieClesLien } from './ClesLienChamps';
 
 // Atelier corpus v1 — poste de revue des claims (D-004). L'écran matérialise
 // la signature D-003 : chaque claim est lu AVEC ses verbatims cités, puis
@@ -17,6 +20,11 @@ import type { CorpusClaimDecisionApiResponse } from '@/app/api/praticien/corpus/
 // bloquée tant qu'il est vide.
 // Le texte d'un claim n'est jamais éditable ici : une correction passe par une
 // nouvelle version ingérée.
+//
+// Clés de lien ([[D-320]]) : les besoins servis et la rubrique d'usage se
+// posent, au choix, avec la validation individuelle ; sur un claim validé,
+// « Étiqueter » les pose ou les corrige sans re-signer (acte journalisé sous
+// son propre type). La revue en lot n'en pose aucune.
 //
 // Deux voies de décision, jamais une validation en masse aveugle :
 //  - « une par une » : arme/confirme claim par claim (défaut) ;
@@ -80,6 +88,10 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
   /** Claim dont la décision est en cours d'envoi — verrou global d'action. */
   const [envoiId, setEnvoiId] = useState<string | null>(null);
   const [erreurDecision, setErreurDecision] = useState('');
+  /** Clés de lien en saisie — à la validation armée, ou à l'étiquetage ouvert. */
+  const [clesSaisie, setClesSaisie] = useState<SaisieClesLien>(SAISIE_CLES_VIDE);
+  /** Claim VALIDE dont l'étiquetage est ouvert. */
+  const [etiquetageId, setEtiquetageId] = useState<string | null>(null);
 
   /** Revue en lot : marquage local puis soumission séquentielle. */
   const [modeLot, setModeLot] = useState(false);
@@ -103,6 +115,8 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
     setConfirmationId(null);
     setConfirmationAction(null);
     setMotifRejet('');
+    setEtiquetageId(null);
+    setClesSaisie(SAISIE_CLES_VIDE);
   }, []);
 
   const charger = useCallback(async (statutCourant: ClaimStatut, offsetCourant: number) => {
@@ -111,6 +125,8 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
     setConfirmationId(null);
     setConfirmationAction(null);
     setMotifRejet('');
+    setEtiquetageId(null);
+    setClesSaisie(SAISIE_CLES_VIDE);
     setErreurDecision('');
     try {
       const filtreNotebook = notebook ? `&notebook=${encodeURIComponent(notebook)}` : '';
@@ -182,7 +198,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
   };
 
   const decider = useCallback(
-    async (claim: ClaimEnRevue, decision: ClaimStatut, motif?: string) => {
+    async (claim: ClaimEnRevue, decision: ClaimStatut, motif?: string, cles?: SaisieClesLien) => {
       // Une décision à la fois : le verrou par ref tient même si un re-render
       // n'a pas encore neutralisé les boutons.
       if (envoiRef.current) return;
@@ -200,6 +216,11 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
             // Le motif n'accompagne QUE le rejet — la route l'exige pour REJETE
             // et l'ignore ailleurs ; on n'alourdit pas les autres corps.
             ...(decision === 'REJETE' ? { motif: motif ?? '' } : {}),
+            // Les clés de lien n'accompagnent qu'une validation, et seulement
+            // complètes — une saisie vide n'envoie rien (D-320 §5).
+            ...(decision === 'VALIDE' && cles && etatSaisieCles(cles) === 'complete'
+              ? { besoins: cles.besoins, rubrique: cles.rubrique }
+              : {}),
           }),
         });
         const payload = (await reponse.json()) as CorpusClaimDecisionApiResponse;
@@ -224,6 +245,46 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         setConfirmationId(null);
         setConfirmationAction(null);
         setMotifRejet('');
+        setClesSaisie(SAISIE_CLES_VIDE);
+      }
+    },
+    [charger],
+  );
+
+  /** Acte « étiquetage » d'un claim VALIDE : clés complètes seulement. */
+  const etiqueter = useCallback(
+    async (claim: ClaimEnRevue, cles: SaisieClesLien) => {
+      if (envoiRef.current || etatSaisieCles(cles) !== 'complete') return;
+      envoiRef.current = true;
+      setEnvoiId(claim.id);
+      setErreurDecision('');
+      try {
+        const reponse = await fetch('/api/praticien/corpus/claims/decision', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'etiqueter',
+            id: claim.id,
+            besoins: cles.besoins,
+            rubrique: cles.rubrique,
+          }),
+        });
+        const payload = (await reponse.json()) as CorpusClaimDecisionApiResponse;
+        if (!reponse.ok || !payload.ok) {
+          setErreurDecision(payload.ok ? 'L’étiquetage n’a pas pu être enregistré.' : payload.error);
+          if (!payload.ok && payload.reason === 'claim_non_valide') {
+            void charger(vueRef.current.statut, vueRef.current.offset);
+          }
+          return;
+        }
+        void charger(vueRef.current.statut, vueRef.current.offset);
+      } catch {
+        setErreurDecision('L’étiquetage n’a pas pu être enregistré.');
+      } finally {
+        envoiRef.current = false;
+        setEnvoiId(null);
+        setEtiquetageId(null);
+        setClesSaisie(SAISIE_CLES_VIDE);
       }
     },
     [charger],
@@ -505,6 +566,8 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                   const armeeRemise =
                     confirmationId === claim.id && confirmationAction === 'EN_ATTENTE_VALIDATION';
                   const marque = marques.get(claim.id);
+                  const clesPosees = claim.statut === 'VALIDE' ? clesLienDuClaim(claim.metadata) : null;
+                  const etiquetageOuvert = etiquetageId === claim.id;
                   return (
                     <article
                       key={claim.id}
@@ -558,17 +621,32 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                         )}
                       </div>
 
+                      {claim.statut === 'VALIDE' && (
+                        <p className="text-xs text-muted-foreground">
+                          {clesPosees
+                            ? `Besoins ${clesPosees.besoins.join(', ')} · rubrique « ${nomRubrique(clesPosees.rubrique)} »`
+                            : 'Non étiqueté : aucun besoin ni rubrique posés.'}
+                        </p>
+                      )}
+
                       {/* En attente, revue « une par une » : arme puis confirme. */}
                       {claim.statut === 'EN_ATTENTE_VALIDATION' && !modeLot && (
                         <div className="flex flex-wrap items-center gap-2">
                           {armeeValider ? (
                             <>
+                              <ClesLienChamps
+                                saisie={clesSaisie}
+                                onChange={setClesSaisie}
+                                disabled={enEnvoiGlobal}
+                                libelleClaim={claim.claimId}
+                                facultatif
+                              />
                               <span className="text-sm font-medium text-foreground">
                                 Signer la validation de ce claim ?
                               </span>
                               <Button
-                                disabled={enEnvoiGlobal}
-                                onClick={() => void decider(claim, 'VALIDE')}
+                                disabled={enEnvoiGlobal || etatSaisieCles(clesSaisie) === 'partielle'}
+                                onClick={() => void decider(claim, 'VALIDE', undefined, clesSaisie)}
                               >
                                 Confirmer la validation
                               </Button>
@@ -608,6 +686,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                                 onClick={() => {
                                   setConfirmationId(claim.id);
                                   setConfirmationAction('VALIDE');
+                                  setClesSaisie(SAISIE_CLES_VIDE);
                                 }}
                               >
                                 Valider
@@ -666,7 +745,26 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
 
                       {(claim.statut === 'VALIDE' || claim.statut === 'REJETE') && (
                         <div className="flex flex-wrap items-center gap-2">
-                          {armeeRemise ? (
+                          {etiquetageOuvert ? (
+                            <>
+                              <ClesLienChamps
+                                saisie={clesSaisie}
+                                onChange={setClesSaisie}
+                                disabled={enEnvoiGlobal}
+                                libelleClaim={claim.claimId}
+                                facultatif={false}
+                              />
+                              <Button
+                                disabled={enEnvoiGlobal || etatSaisieCles(clesSaisie) !== 'complete'}
+                                onClick={() => void etiqueter(claim, clesSaisie)}
+                              >
+                                Enregistrer l’étiquetage
+                              </Button>
+                              <Button variant="outline" disabled={enEnvoiGlobal} onClick={annulerArmement}>
+                                Annuler
+                              </Button>
+                            </>
+                          ) : armeeRemise ? (
                             <>
                               <span className="text-sm font-medium text-foreground">
                                 {claim.statut === 'VALIDE'
@@ -685,16 +783,37 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                               </Button>
                             </>
                           ) : (
-                            <Button
-                              variant="outline"
-                              disabled={enEnvoiGlobal}
-                              onClick={() => {
-                                setConfirmationId(claim.id);
-                                setConfirmationAction('EN_ATTENTE_VALIDATION');
-                              }}
-                            >
-                              Remettre en attente
-                            </Button>
+                            <>
+                              {claim.statut === 'VALIDE' && (
+                                <Button
+                                  variant="outline"
+                                  disabled={enEnvoiGlobal}
+                                  onClick={() => {
+                                    setConfirmationId(null);
+                                    setConfirmationAction(null);
+                                    setEtiquetageId(claim.id);
+                                    setClesSaisie(
+                                      clesPosees
+                                        ? { besoins: clesPosees.besoins, rubrique: clesPosees.rubrique }
+                                        : SAISIE_CLES_VIDE,
+                                    );
+                                  }}
+                                >
+                                  {clesPosees ? 'Corriger l’étiquetage' : 'Étiqueter'}
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                disabled={enEnvoiGlobal}
+                                onClick={() => {
+                                  setEtiquetageId(null);
+                                  setConfirmationId(claim.id);
+                                  setConfirmationAction('EN_ATTENTE_VALIDATION');
+                                }}
+                              >
+                                Remettre en attente
+                              </Button>
+                            </>
                           )}
                         </div>
                       )}
