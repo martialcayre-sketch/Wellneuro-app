@@ -32,7 +32,16 @@ export function donneesRadarBesoins(
  * coupe le tracé sur un sommet invalide : coordonnées `NaN`, le contour
  * s'interrompt sur cet axe au lieu de plonger au centre, et il n'est plus
  * rempli (un contour ouvert n'enclôt rien).
+ *
+ * TROU EN TÊTE. `Polygon` referme le contour sur son premier sommet ; si
+ * celui-ci est un trou, les sommets suivants ne forment qu'un segment, que
+ * recharts ferme (`Z`) et remplit par une corde qui saute l'axe vide. La
+ * liste est donc tournée pour commencer au premier sommet mesuré : le trou
+ * passe en queue, et le contour reste ouvert. L'ordre circulaire est gardé.
  */
 export function pointsAvecTrous<P extends { x?: number; y?: number; value?: unknown }>(points: readonly P[]): P[] {
-  return points.map(p => (estMesure(p.value) ? p : { ...p, x: Number.NaN, y: Number.NaN }));
+  const avecTrous = points.map(p => (estMesure(p.value) ? p : { ...p, x: Number.NaN, y: Number.NaN }));
+  const premierMesure = points.findIndex(p => estMesure(p.value));
+  if (premierMesure <= 0) return avecTrous;
+  return [...avecTrous.slice(premierMesure), ...avecTrous.slice(0, premierMesure)];
 }

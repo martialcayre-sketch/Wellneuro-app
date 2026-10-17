@@ -62,6 +62,28 @@ describe('le contour s’interrompt sur un axe non mesuré', () => {
     expect(container.querySelector('path')?.getAttribute('fill')).toBe('none');
   });
 
+  // Trou à une extrémité de la liste : en tête, recharts fermait le contour
+  // restant par une corde (`Z`) et le remplissait ; en queue, il reste ouvert.
+  it.each([
+    ['en tête', 0, '50,10'],
+    ['en queue', 3, '10,50'],
+  ])('trou %s : contour ouvert, non rempli, sans passer par l’axe vide', (_cas, indice, coordonnees) => {
+    const avecTrou = sommets.map((s, i) => ({ ...s, value: i === indice ? null : 80 }));
+    const { container } = render(
+      <svg><Polygon points={pointsAvecTrous(avecTrou) as { x: number; y: number }[]} fill="red" stroke="blue" /></svg>,
+    );
+    const d = container.querySelector('path')?.getAttribute('d') ?? '';
+    expect(d.endsWith('Z')).toBe(false);
+    expect(d).not.toContain(coordonnees);
+    expect(container.querySelector('path')?.getAttribute('fill')).toBe('none');
+  });
+
+  it('trou en tête : la liste tourne, l’ordre circulaire est gardé', () => {
+    const avecTrou = sommets.map((s, i) => ({ ...s, value: i === 0 ? null : 80 }));
+    const tournes = pointsAvecTrous(avecTrou);
+    expect(tournes.map(p => p.x)).toEqual([90, 50, 10, Number.NaN]);
+  });
+
   // CONTRE-ÉPREUVE : sans le trou, recharts fermerait et remplirait le contour.
   it('tout mesuré : le contour reste fermé et rempli, comme avant', () => {
     const mesures = sommets.map(s => ({ ...s, value: 80 }));
