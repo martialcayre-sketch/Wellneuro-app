@@ -5,7 +5,9 @@
   fiches d'usage) : les deux clés s'écrivent sur le claim dans la même
   transaction que la signature et se recopient dans l'élément du journal.
   Rien n'est coché ni choisi d'office ; une saisie partielle bloque la
-  signature.
+  signature. Des clés déjà posées survivent à une remise en attente ou à un
+  rejet : elles s'affichent sur le claim, et sa re-validation les reprend
+  pré-remplies — elles se corrigent, elles ne se vident pas.
 - Onglet « Validés » : chaque claim dit ses clés ou « Non étiqueté » ;
   « Étiqueter » (ou « Corriger l'étiquetage ») les pose sans re-signer, acte
   journalisé sous le type `etiquetage`, sans statut — un compte des
