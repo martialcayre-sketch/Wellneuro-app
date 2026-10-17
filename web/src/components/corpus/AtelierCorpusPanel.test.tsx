@@ -173,6 +173,150 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
     await waitFor(() => expect(appelsGet().length).toBeGreaterThan(getsAvant));
   });
 
+  // D-321 — clés de lien : facultatives à la signature, jamais partielles.
+  it('valide avec des clés de lien : besoins cochés et rubrique choisie partent avec la signature', async () => {
+    fetchMock.mockImplementation(router());
+    await attendreLaFile();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Valider' }));
+    // Rien n'est coché ni choisi d'office.
+    expect((screen.getByLabelText('2. Micronutriments essentiels') as HTMLInputElement).checked).toBe(false);
+    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('');
+
+    fireEvent.click(screen.getByLabelText('4. Perception et sensations corporelles'));
+    fireEvent.click(screen.getByLabelText('2. Micronutriments essentiels'));
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'options' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la validation' }));
+
+    await waitFor(() => expect(appelsPost()).toHaveLength(1));
+    expect(JSON.parse(appelsPost()[0][1].body)).toEqual({
+      id: CLAIM.id,
+      decision: 'VALIDE',
+      statutAttendu: 'EN_ATTENTE_VALIDATION',
+      besoins: [2, 4],
+      rubrique: 'options',
+    });
+  });
+
+  it('une saisie partielle bloque la signature et le dit', async () => {
+    fetchMock.mockImplementation(router());
+    await attendreLaFile();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Valider' }));
+    fireEvent.click(screen.getByLabelText('2. Micronutriments essentiels'));
+    const confirmer = screen.getByRole('button', { name: 'Confirmer la validation' }) as HTMLButtonElement;
+    expect(confirmer.disabled).toBe(true);
+    expect(screen.getByText(/se posent ensemble/)).toBeTruthy();
+    fireEvent.click(confirmer);
+    expect(appelsPost()).toHaveLength(0);
+  });
+
+  const CLAIM_VALIDE = {
+    ...CLAIM,
+    statut: 'VALIDE',
+    validateur: 'praticien@wellneuro.fr',
+    valideAt: '2026-07-22T18:00:00.000Z',
+  };
+
+  it('étiquette un claim validé : acte distinct, clés complètes exigées, aucune décision envoyée', async () => {
+    fetchMock.mockImplementation(
+      router({
+        listes: { VALIDE: { ...LISTE, statut: 'VALIDE', claims: [CLAIM_VALIDE] } },
+        post: { ok: true, etiquette: { id: CLAIM.id, besoins: [9], rubrique: 'limites' } },
+      }),
+    );
+    await attendreLaFile();
+    fireEvent.click(screen.getByRole('tab', { name: 'Validés' }));
+    expect(await screen.findByText(/Non étiqueté/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Étiqueter' }));
+    const enregistrer = screen.getByRole('button', { name: 'Enregistrer l’étiquetage' }) as HTMLButtonElement;
+    expect(enregistrer.disabled).toBe(true);
+    fireEvent.click(screen.getByLabelText('9. Sensations-émotions fondamentales (stress)'));
+    expect(enregistrer.disabled).toBe(true);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'limites' } });
+    expect(enregistrer.disabled).toBe(false);
+    fireEvent.click(enregistrer);
+
+    await waitFor(() => expect(appelsPost()).toHaveLength(1));
+    expect(appelsPost()[0][0]).toBe(URL_DECISION);
+    expect(JSON.parse(appelsPost()[0][1].body)).toEqual({
+      action: 'etiqueter',
+      id: CLAIM.id,
+      besoins: [9],
+      rubrique: 'limites',
+    });
+  });
+
+  it('un claim déjà étiqueté affiche ses clés et ouvre leur correction pré-remplie', async () => {
+    fetchMock.mockImplementation(
+      router({
+        listes: {
+          VALIDE: {
+            ...LISTE,
+            statut: 'VALIDE',
+            claims: [{ ...CLAIM_VALIDE, metadata: { besoins: [2, 9], rubrique: 'limites' } }],
+          },
+        },
+      }),
+    );
+    await attendreLaFile();
+    fireEvent.click(screen.getByRole('tab', { name: 'Validés' }));
+    expect(await screen.findByText('Besoins 2, 9 · rubrique « Limites »')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Corriger l’étiquetage' }));
+    expect((screen.getByLabelText('2. Micronutriments essentiels') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('limites');
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+    expect(screen.queryByRole('combobox')).toBeNull();
+    expect(appelsPost()).toHaveLength(0);
+  });
+
+  it('un claim remis en attente montre ses clés, et sa re-validation les reprend sans pouvoir les vider', async () => {
+    fetchMock.mockImplementation(
+      router({ listeDefaut: { ...LISTE, claims: [{ ...CLAIM, metadata: { besoins: [9], rubrique: 'limites' } }] } }),
+    );
+    await attendreLaFile();
+    expect(screen.getByText('Besoins 9 · rubrique « Limites »')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Valider' }));
+    expect(
+      (screen.getByLabelText('9. Sensations-émotions fondamentales (stress)') as HTMLInputElement).checked,
+    ).toBe(true);
+    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('limites');
+    // Vider les clés ne les retire pas en base : la signature est bloquée.
+    fireEvent.click(screen.getByLabelText('9. Sensations-émotions fondamentales (stress)'));
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '' } });
+    const confirmer = screen.getByRole('button', { name: 'Confirmer la validation' }) as HTMLButtonElement;
+    expect(confirmer.disabled).toBe(true);
+
+    fireEvent.click(screen.getByLabelText('2. Micronutriments essentiels'));
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'options' } });
+    fireEvent.click(confirmer);
+    await waitFor(() => expect(appelsPost()).toHaveLength(1));
+    expect(JSON.parse(appelsPost()[0][1].body)).toMatchObject({ besoins: [2], rubrique: 'options' });
+  });
+
+  it('un étiquetage en échec garde la saisie ouverte et dit l’erreur', async () => {
+    fetchMock.mockImplementation(
+      router({
+        listes: { VALIDE: { ...LISTE, statut: 'VALIDE', claims: [{ ...CLAIM, statut: 'VALIDE', validateur: 'praticien@wellneuro.fr', valideAt: '2026-07-22T18:00:00.000Z' }] } },
+        post: { ok: false, reason: 'exception', error: 'Erreur technique.' },
+        postOk: false,
+      }),
+    );
+    await attendreLaFile();
+    fireEvent.click(screen.getByRole('tab', { name: 'Validés' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Étiqueter' }));
+    fireEvent.click(screen.getByLabelText('2. Micronutriments essentiels'));
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'options' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer l’étiquetage' }));
+
+    expect(await screen.findByText('Erreur technique.')).toBeTruthy();
+    expect((screen.getByLabelText('2. Micronutriments essentiels') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('options');
+  });
+
   it('l’annulation de l’armement ne signe rien', async () => {
     fetchMock.mockImplementation(router());
     await attendreLaFile();

@@ -25,8 +25,10 @@ import {
   deciderLot,
   ECHANTILLON_MIN,
   elementJournalClaim,
+  elementJournalEtiquetage,
   eligiblesVoieRapide,
   estClaimStatut,
+  etiqueterClaim,
   listerClaimsRevue,
   listerSourcesEnRevue,
   sanitiserQuestionnaire,
@@ -273,11 +275,14 @@ describe('deciderClaim', () => {
     expect(sql).toContain('AND active = true');
     expect(sql).toContain('RETURNING id, claim_id, version_claim, source_id, statut, validateur, valide_at');
     expect(sql).toContain("valide_at = CASE WHEN ? = 'VALIDE' THEN now() ELSE NULL END");
+    // Sans clés de lien, la metadata reste intacte (`metadata || '{}'`).
+    expect(sql).toContain("metadata = metadata || COALESCE(?::jsonb, '{}'::jsonb)");
     expect(parametresDeAppel(appelUpdate)).toEqual([
       'VALIDE',
       'VALIDE',
       'praticien@wellneuro.fr',
       'VALIDE',
+      null,
       PARAMS.id,
       'EN_ATTENTE_VALIDATION',
     ]);
@@ -390,6 +395,119 @@ describe('deciderClaim', () => {
       claim: { id: PARAMS.id, statut: 'EN_ATTENTE_VALIDATION', validateur: null, valideAt: null },
     });
     expect(parametresDeAppel(prisma.$executeRaw.mock.calls[0])[0]).toBe('EN_ATTENTE_VALIDATION');
+  });
+
+  // D-321 §6 — les clés de lien accompagnent une signature VALIDE, jamais une autre décision.
+  const CLES = { besoins: [2, 4], rubrique: 'options' as const };
+
+  it('signe avec des clés de lien : écrites sur le claim ET recopiées dans l’élément du journal', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce(INTEGRITE_SAINE)
+      .mockResolvedValueOnce([LIGNE_RETOURNEE]);
+    prisma.$executeRaw.mockResolvedValueOnce(1);
+
+    const resultat = await deciderClaim({
+      ...PARAMS,
+      decision: 'VALIDE',
+      statutAttendu: 'EN_ATTENTE_VALIDATION',
+      cles: CLES,
+    });
+    expect(resultat.ok).toBe(true);
+
+    const parametresUpdate = parametresDeAppel(prisma.$queryRaw.mock.calls[1]);
+    expect(JSON.parse(parametresUpdate[4] as string)).toEqual({ besoins: [2, 4], rubrique: 'options' });
+
+    const params = parametresDeAppel(prisma.$executeRaw.mock.calls[0]);
+    const elements = JSON.parse(params[4] as string) as Array<Record<string, unknown>>;
+    expect(elements).toEqual([
+      {
+        id: PARAMS.id,
+        claimId: 'WN-CL-0056-001',
+        versionClaim: 'v1.0',
+        statutAvant: 'EN_ATTENTE_VALIDATION',
+        statutApres: 'VALIDE',
+        besoins: [2, 4],
+        rubrique: 'options',
+      },
+    ]);
+  });
+
+  it.each([
+    ['REJETE', 'EN_ATTENTE_VALIDATION', 'motif'],
+    ['EN_ATTENTE_VALIDATION', 'VALIDE', undefined],
+  ] as const)('refuse des clés jointes à une décision %s SANS toucher la base', async (decision, statutAttendu, motif) => {
+    expect(
+      await deciderClaim({ ...PARAMS, decision, statutAttendu, motif, cles: CLES }),
+    ).toEqual({ ok: false, raison: 'cles_hors_signature' });
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe('etiqueterClaim — acte « étiquetage » sur un claim déjà VALIDE (D-321 §6)', () => {
+  beforeEach(() => {
+    prisma.$queryRaw.mockReset();
+    prisma.$executeRaw.mockReset();
+    prisma.$transaction.mockClear();
+  });
+
+  const PARAMS = {
+    id: 'WN-CL-0056-001@v1.0',
+    validateur: 'praticien@wellneuro.fr',
+    cles: { besoins: [2], rubrique: 'limites' as const },
+  };
+
+  it('pose les clés sans toucher statut, signataire ni date, et journalise sous son type', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([
+      { id: PARAMS.id, claim_id: 'WN-CL-0056-001', version_claim: 'v1.0', source_id: 'WN-SRC-0056' },
+    ]);
+    prisma.$executeRaw.mockResolvedValueOnce(1);
+
+    expect(await etiqueterClaim(PARAMS)).toEqual({
+      ok: true,
+      claim: { id: PARAMS.id, besoins: [2], rubrique: 'limites' },
+    });
+
+    const appelUpdate = prisma.$queryRaw.mock.calls[0];
+    const sql = sqlDeAppel(appelUpdate);
+    expect(sql).toContain('SET metadata = metadata || ?::jsonb');
+    expect(sql).toContain("AND statut = 'VALIDE'");
+    expect(sql).toContain('AND active = true');
+    expect(sql).not.toMatch(/validateur\s*=|valide_at\s*=|statut\s*=\s*\?/);
+    expect(JSON.parse(parametresDeAppel(appelUpdate)[0] as string)).toEqual({ besoins: [2], rubrique: 'limites' });
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    const appelJournal = prisma.$executeRaw.mock.calls[0];
+    expect(sqlDeAppel(appelJournal)).toContain("('etiquetage', ?, ?, ?::jsonb)");
+    const params = parametresDeAppel(appelJournal);
+    expect(params[0]).toBe('praticien@wellneuro.fr');
+    expect(params[1]).toBe('WN-SRC-0056');
+    // Ni statutAvant ni statutApres : un compte des signatures ne voit pas l'étiquetage.
+    expect(JSON.parse(params[2] as string)).toEqual([
+      { id: PARAMS.id, claimId: 'WN-CL-0056-001', versionClaim: 'v1.0', besoins: [2], rubrique: 'limites' },
+    ]);
+  });
+
+  it('claim remis en attente entre l’écran et l’acte : ni étiqueté, ni journalisé', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ id: PARAMS.id }]);
+    expect(await etiqueterClaim(PARAMS)).toEqual({ ok: false, raison: 'claim_non_valide' });
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('claim inconnu : introuvable, rien de journalisé', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    expect(await etiqueterClaim(PARAMS)).toEqual({ ok: false, raison: 'claim_introuvable' });
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe('elementJournalEtiquetage — forme exigée par le CHECK etiquetage_complet', () => {
+  it('porte l’identité du claim et ses deux clés, sans statut', () => {
+    const element = elementJournalEtiquetage(
+      { id: 'WN-CL-0056-001@v1.0', claimId: 'WN-CL-0056-001', versionClaim: 'v1.0' },
+      { besoins: [1, 12], rubrique: 'question' },
+    );
+    expect(Object.keys(element).sort()).toEqual(['besoins', 'claimId', 'id', 'rubrique', 'versionClaim']);
   });
 });
 
