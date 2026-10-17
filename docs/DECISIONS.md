@@ -3005,8 +3005,9 @@ un dossier dont le signalement a reçu l'avis « impliqué », la nouvelle
 version porte l'aménagement consigné dans l'avis : la pause ne vise que la
 version désignée (§2 a), elle ne passe pas à la suivante, et la machine ne
 contrôle pas « ni à l'identique ni augmenté » (§5) ;
-écartés, rediffuser plus tard et un lot de code préalable qui retarderait
-la signature ; (b) le programme lisible dont aucun élément n'est désignable
+deux options écartées : laisser les programmes indisponibles jusqu'à une
+rediffusion ultérieure, et livrer d'abord un lot de code qui retarderait la
+signature ; (b) le programme lisible dont aucun élément n'est désignable
 (orientations ou prises de sang seules) reste sans avis « impliqué, élément
 non identifiable », cas différé, sans complément à maintenir en pause ;
 (c) la visibilité de « Signaler un problème » au portail ne précède pas la
