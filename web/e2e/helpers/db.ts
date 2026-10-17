@@ -13,6 +13,7 @@ import { PrismaClient, type Prisma } from '../../src/generated/prisma';
 import { withSupabaseSslMode, supabasePoolSsl } from '../../src/lib/postgres';
 import { getDocumentCourant } from '../../src/lib/trust/contenus/registre';
 import { documentsRequerantAccuse } from '../../src/lib/trust/avantDeCommencer';
+import { orienterEffetIndesirable } from '../../src/lib/trust/securite';
 import { PRATICIEN_EMAIL } from './auth';
 import { createHash } from 'node:crypto';
 import { canonicalSha256 } from '../../src/lib/clinical-engine/canonical';
@@ -1331,4 +1332,91 @@ export async function transmissionsSur24h(idPatient: string): Promise<number> {
       AND origine = 'patient'
       AND depose_le > (clock_timestamp() AT TIME ZONE 'UTC') - interval '24 hours'`;
   return n;
+}
+
+// ---------------------------------------------------------------------------
+// Signalement d'effet indésirable rattaché à un élément ([[D-281]] §2, fiche
+// t20, reste 3) — spec `portail-signalement-designation.spec.ts`.
+//
+// Le programme est posé et diffusé par les VRAIES routes praticien ; ces
+// helpers ne font que ramasser ce que le parcours a laissé, lire ce que la
+// route a écrit, et écrire UNE ligne en contournant la route — la seule façon
+// de montrer que le trigger refuse par lui-même ce que la route refuse avant
+// lui.
+//
+// LE RAMASSAGE SE FAIT PAR MARQUE, jamais par patient : la version porte un
+// `purpose` réservé, le signalement un `produitLibelle` réservé. Un run tué
+// laisse ses lignes ; le run suivant les reconnaît à leur marque et les
+// emporte avant de reposer, sans toucher ce qu'un autre parcours aurait posé
+// sur la même fixture.
+
+/** La marque du programme du banc — le `purpose` de la version posée. */
+export const PURPOSE_SIGNALEMENT_E2E =
+  'Parcours E2E — désignation d’un élément au signalement (D-281 t20), aucune portée clinique.';
+/** La marque du signalement du banc — son `produitLibelle`. */
+export const PRODUIT_SIGNALEMENT_E2E = 'Banc E2E D-281 t20';
+
+/**
+ * Emporte les signalements, approbations et versions marqués du banc, dans
+ * l'ordre des clés : le signalement cite la version, l'approbation aussi.
+ * Le parcours ne pose jamais d'avis — la table des avis, figée, n'a rien à
+ * ramasser ici.
+ */
+export async function nettoyerSignalementDesignation(idPatient: string): Promise<void> {
+  const versions = await prisma.protocolDraft.findMany({
+    where: { idPatient, payload: { path: ['purpose'], equals: PURPOSE_SIGNALEMENT_E2E } },
+    select: { id: true },
+  });
+  const ids = versions.map(v => v.id);
+  await prisma.trustAdverseEffectReport.deleteMany({
+    where: { idPatient, OR: [{ produitLibelle: PRODUIT_SIGNALEMENT_E2E }, { protocolDraftId: { in: ids } }] },
+  });
+  await prisma.protocolDiffusionApproval.deleteMany({ where: { idPatient, protocolDraftId: { in: ids } } });
+  await prisma.protocolDraft.deleteMany({ where: { id: { in: ids } } });
+}
+
+/** Les signalements marqués du banc, tels que la base les a gardés. */
+export async function lireSignalementsDesignation(idPatient: string) {
+  return prisma.trustAdverseEffectReport.findMany({
+    where: { idPatient, produitLibelle: PRODUIT_SIGNALEMENT_E2E },
+    select: { id: true, rattachement: true, elementActionId: true, protocolDraftId: true },
+    orderBy: { soumisLe: 'asc' },
+  });
+}
+
+/**
+ * Une ligne rattachée à `elementActionId`, écrite EN CONTOURNANT LA ROUTE.
+ * Rend le message de l'erreur levée, ou `null` si la base a accepté — et, dans
+ * ce cas, efface la ligne aussitôt : le banc ne laisse pas un signalement que
+ * personne n'a déposé.
+ */
+export async function insererSignalementHorsRoute(
+  idPatient: string,
+  protocolDraftId: string,
+  elementActionId: string,
+): Promise<string | null> {
+  const orientation = orienterEffetIndesirable('legere');
+  try {
+    const cree = await prisma.trustAdverseEffectReport.create({
+      data: {
+        idPatient,
+        produitLibelle: PRODUIT_SIGNALEMENT_E2E,
+        symptomes: 'Ligne écrite hors route par le banc.',
+        severiteDeclaree: 'legere',
+        // L'orientation de la route, par sa règle : la ligne ne diffère d'un
+        // dépôt réel que par l'élément désigné.
+        orientation: orientation.orientation,
+        regleId: orientation.regleId,
+        regleVersion: orientation.regleVersion,
+        protocolDraftId,
+        rattachement: 'element',
+        elementActionId,
+      },
+      select: { id: true },
+    });
+    await prisma.trustAdverseEffectReport.delete({ where: { id: cree.id } });
+    return null;
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err);
+  }
 }
