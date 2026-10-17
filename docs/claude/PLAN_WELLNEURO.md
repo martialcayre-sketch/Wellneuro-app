@@ -878,6 +878,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre t, de la main du responsable.
 - **Critère de fin** : lettre mergée ; PA-1, PA-2 servis dans J3-base (H61) ; baseline visuelle verte.
+- **Mise à jour (2026-10-17, lettre écrite)** : D-317, sur six arbitrages du responsable. L'e-mail de diffusion est une annonce hors relance (clic praticien, plafond serveur d'un e-mail d'annonce par dossier et par 24 h), à chaque nouvelle version, gabarit neuf à relire ; il sort de J3-base en lot propre PA-2 (H75). PA-1 : une ligne « rendez-vous de suivi » au portail pour chacun des trois points d'étape, sans e-mail ; carte du Fil « Point d'étape J21 renseigné — décision attendue » ; les deux restent dans J3-base. Critère de fin restant : PA-1 et la carte servis dans J3-base, baseline verte ; PA-2 servi par son lot.
 
 #### H32 · d : doctrine d'adhésion
 - **Identifiant, piste** : lettre d (D-d, R:d) ; K-02 servi = premier check-in ; échelle E4 (choix à trancher) ; l'effectif de masquage a sa propre fiche (F25) ; cockpit ; geste du responsable.
@@ -1229,6 +1230,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : selon ; la migration du lot est BF-8 (F55).
 - **Décisions, textes** : lettres t, ab, u appliquées ; décision de produit pour la frise.
 - **Critère de fin** : « Mes échanges » prêt, non ouvert ; frise et repères servis après la porte 16.
+- **Mise à jour (2026-10-17, lettre t)** : D-317 §4 retire l'e-mail de diffusion (PA-2) de J3-base : lot propre, sans migration, au service d'ACT-2 (H75). J3-base garde PA-1 (la ligne « rendez-vous de suivi » des trois points d'étape, D-317 §6) et la carte du Fil renommée avec sa baseline (D-317 §7) ; ni l'un ni l'autre n'est gelé par la porte 16, qui ne vise que la frise et le chronogramme du sommeil (N-8).
 
 #### H62 · J3-collecte : collecte documentaire
 - **Identifiant, piste** : J3-collecte (RK-8) ; D-258 reste à la biologie ; confiance ; file A.
@@ -1597,6 +1599,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : non.
 - **Décisions, textes** : texte de l'e-mail relu, de la main du responsable.
 - **Critère de fin** : e-mail constaté sur un premier vrai dossier servi.
+- **Mise à jour (2026-10-17, lettre t)** : D-317 classe l'e-mail hors relance (§1) ; ACT-2 reste à la place 2. Préalables devenus (D-317 §5) : ACT-1 constaté (fait) ; t écrite (D-317) ; lot PA-2 livré (gabarit neuf, e-mail avec le clic à chaque nouvelle version, plafond serveur, aussi posé sur l'annonce `document_remis`), sans migration, drapeau neuf éteint ; texte du gabarit relu mot pour mot ; porte 18. J3-base n'en est plus un préalable. Le constat attend la première vraie diffusion après l'ouverture du drapeau, sans la provoquer.
 
 **File D : gestes du responsable**
 
@@ -1884,7 +1887,7 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 | place | activation | fiche | préalables techniques | texte accusé | rang au plus tôt |
 |---|---|---|---|---|---|
 | 1 | CGU unique | H70 | k, l (D-283), G-8, J2-cc8 (J2-base retiré par D-315 §5) | CGU ; lecture datée si elle la porte | 5 |
-| 2 | E-mail neutre à la diffusion | H75 | t le classe hors relance, sinon il sort de la file ; J3-base | texte de l'e-mail relu | 6 |
+| 2 | E-mail neutre à la diffusion | H75 | t (D-317 : hors relance) ; lot PA-2 (J3-base retiré par D-317 §5) | texte de l'e-mail relu | 6 |
 | 3 | « Mes échanges » en lecture | H76 | u, ai, J3-base ; durée de D-283 §2 | encart d'urgence étendu ; lecture datée | 7 |
 | 4 | Dépôt de documents | H77 | porte 17 (levée), registre, J3-collecte, J2-conf | texte de collecte (G-11, accepté le 2026-10-14, #1441) | 8 |
 | 5 | Textes des mineurs | H78 | z, J2-conf | textes des mineurs (G-11, acceptés le 2026-10-14, #1441) ; constat par lecture consignée | 9 |
@@ -2554,7 +2557,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | q | aperçu médecin tracé, remise au patient ; fait le 2026-10-15 (D-307) | la main du responsable | 0 | F38 |
 | r | droits d'usage des instruments | registre | 1 | H28 |
 | s | onglet Biologie, statut posé, deux marques ; fait le 2026-10-15 (D-308 ; la liste des statuts reste à écrire) | la main du responsable | 0 | F57 |
-| t | point d'étape, rappel nommé | la main du responsable | 1 | H31 |
+| t | point d'étape, rappel nommé ; fait le 2026-10-17 (D-317) | la main du responsable | 1 | H31 |
 | u | Patient Hub, collecte, « Mes échanges » | la main du responsable | 1 | H37 |
 | v | bandes de bruit par instrument | la main du responsable | 1 | H13 |
 | w | guide des 12 besoins sur sources ; méthode écrite le 2026-10-15 (D-312), guide à réécrire | la main du responsable | 0 | H15 |
