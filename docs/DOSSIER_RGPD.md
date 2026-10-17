@@ -1125,10 +1125,12 @@ extraction courante sont décidées (validées ou écartées), et **au plus tard
 jours après son dépôt**, décidées ou non. *(Amendé par [[D-318]] le
 2026-10-17 : les lignes non décidées ne restent plus décidables sans lui ; à
 la même échéance, elles s'effacent avec les lignes écartées, et avec chaque
-extraction restée sans ligne validée.)* Restent l'empreinte du document et la trace des extractions (modèle,
-version du procédé, lignes lues et décisions) : ce sont elles qui tiennent la
-provenance des résultats validés (A5) ; leur propre durée n'est pas fixée et
-reste dans le trou ci-dessus.
+extraction restée sans ligne validée.)* Restent l'empreinte du document et,
+pour chaque extraction qui porte au moins une ligne validée, sa trace (modèle,
+version du procédé, lignes validées et leurs décisions, actes de lecture) :
+c'est elle qui tient la provenance des résultats validés (A5) ; sa durée suit
+le dossier ([[D-283]] §2). D'un compte rendu sans ligne validée, seule la
+trace du dépôt reste — date et empreinte ([[D-318]] §2).
 
 - **Tenue par la base** (migration `bio_ingest_purge_compte_rendu_v1`) : la
   purge est la seule modification admise d'un compte rendu, son motif est
@@ -1165,7 +1167,10 @@ reste dans le trou ci-dessus.
   consommateur (PR 2). Le cron clôt d'abord les extractions abandonnées, qui
   bloqueraient sinon la purge. `WN_BIO_INGEST_ENABLED` ne se pose qu'une fois la purge en œuvre et le
   premier passage du cron constaté (`docs/FEATURE_FLAGS.md`) : aucun document
-  ne peut être déposé avant.
+  ne peut être déposé avant. Mise à jour du 2026-10-17 ([[D-318]]) : le même
+  cron efface désormais, à 30 jours du dépôt, les lignes non validées et les
+  extractions restées sans ligne validée ; l'écart d'un document transmis les
+  efface aussitôt. Première échéance réelle en production : 2026-11-02.
 
 ## 9. Droits des personnes et modalités d'exercice
 
