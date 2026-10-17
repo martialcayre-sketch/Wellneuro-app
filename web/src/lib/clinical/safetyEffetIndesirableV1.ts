@@ -27,8 +27,9 @@ import { sha256 } from './corpusSyntheseV1';
 // LE STATUT NE LÈVE RIEN (§5) : seul le verdict en tête de chaîne lève
 // l'attente. Le rattachement est DÉCLARÉ, jamais déduit ; un signalement sans
 // rattachement ni programme ne met rien en pause et reste examiné sur la
-// surface des signalements — `construireSafetyFindings` le dit au praticien
-// (`DC-35`). Celui qui répond « oui » au programme sans élément (formulaire d'avant)
+// surface des signalements — compté par son statut au panneau, au Fil du jour
+// et au prévol (`effetsNonTraites`, `DC-35`), jamais sur la carte : la phrase
+// qui l'y disait faisait dériver la carte servie (D-281 §5, 2026-10-17). Celui qui répond « oui » au programme sans élément (formulaire d'avant)
 // bloque la diffusion comme les autres (D-281 §5, arbitrage du 2026-10-14),
 // sans rien mettre en pause : la migration
 // `20261014230000_saf_ei_verdict_formulaire_avant_v1` y a ouvert l'avis.
@@ -37,14 +38,6 @@ import { sha256 } from './corpusSyntheseV1';
 // associé » est un seuil clinique qu'aucune source du dépôt ne fixe (`DC-19`).
 // La contrainte SQL dit l'ORDRE des deux dates ; la règle ne dit rien de leur
 // écart, et n'en lit aucun.
-
-/**
- * Statuts de traitement qui laissent le signalement OUVERT. L'attente ne les
- * lit plus (D-281 §5) : ils ne servent qu'à compter, pour la dire au
- * praticien, la file des signalements sans rattachement — une sortie de la
- * règle signée, d'où leur place dans l'empreinte.
- */
-export const STATUTS_EI_NON_TRAITES = ['recu', 'en_cours'] as const;
 
 export const CONDUITE_EFFET_INDESIRABLE =
   'Effet indésirable que le patient associe à un élément de son programme, ou sans pouvoir le'
@@ -63,9 +56,11 @@ export type SafetyEffetIndesirableMetadata = {
 // ─────────────────────────────────────────────────────────────────────────────
 // À LIRE AVANT DE SIGNER
 //
-// CE QUE LE SHA COUVRE : `CONDUITE_EFFET_INDESIRABLE`, les trois textes
-// patient signés de D-281 §4 et `STATUTS_EI_NON_TRAITES`. Retoucher l'un
-// d'eux referme le verrou.
+// CE QUE LE SHA COUVRE : `CONDUITE_EFFET_INDESIRABLE` et les trois textes
+// patient signés de D-281 §4. Retoucher l'un d'eux referme le verrou. Les
+// statuts ouverts en sont sortis le 2026-10-17 (D-281 §5) : ils ne servaient
+// qu'à compter, sur la carte, les signalements hors règle — la règle ne les
+// compte plus, les surfaces d'affichage les comptent hors de l'empreinte.
 //
 // CE QUE LA SIGNATURE ASSUMERA, ET QU'IL FAUT AVOIR EXPOSÉ AVANT ELLE :
 //
@@ -109,7 +104,6 @@ export const SAFETY_EI_SHA256 = sha256(
   JSON.stringify({
     conduite: CONDUITE_EFFET_INDESIRABLE,
     textes: [TEXTE_PAUSE_ELEMENT, TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_AVIS_RENDU],
-    statuts: STATUTS_EI_NON_TRAITES,
   }),
 );
 
