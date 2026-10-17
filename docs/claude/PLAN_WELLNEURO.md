@@ -2369,6 +2369,7 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 |---|---|---|
 | `assessment_episodes.milestone` sans CHECK | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:349-385` ; `schema.prisma` | migration à part, au premier lot qui touche les épisodes [Hypothese] ; rang 4 au plus tôt |
 | Table des signaux de sécurité absente de `SOURCES_DE_SAVOIR` (`scripts/wn-matrice-consommation.mjs`) | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:477-487` | déclaration d'inventaire, sa propre PR [Hypothese] |
+| Vue `ACTIVE_CAMPAIGN.md` : le statut de la campagne primaire est écrit en dur « active » (`scripts/lib/vue-campagnes-actives.mjs:39-45`), même quand sa fiche dit `en_pause` (constaté à la clôture de LOT-07, puis de LOT-03) | revue CodeRabbit de #1526 (2026-10-17) | lire le statut de la fiche (repli « inconnu »), banc à l'appui, sa propre PR d'outillage [Hypothese] |
 | Unité d'un résultat biologique non liée au catalogue en base (D-264) | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:503-514` | au prochain changement d'unité d'un analyte porteur de résultats |
 | `MESSAGE_ORIENTATION_INACTIVE` périmé (D-074 §4) | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:531-539` | petite correction d'interface, avec J1-base (H43) [Hypothese] |
 | Règle G6 : frontière entre phrase recopiée et borne standard | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:592-604` | à écrire avant la prochaine attestation qui cite un chiffre |
