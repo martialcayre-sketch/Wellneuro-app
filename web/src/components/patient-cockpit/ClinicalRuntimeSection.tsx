@@ -621,6 +621,10 @@ export function ClinicalRuntimeSection({
       // refuser, au lieu de remettre sur la foi d'un écran périmé. Le constat
       // « servi » non plus : non lu, il redevient `null`, et le badge se tait.
       if (!response.ok || !payload.ok) {
+        // L'aperçu et ses pauses ([[D-281]] §2) non plus : un aperçu resté
+        // affiché sans ses pauses relues montrerait actif un élément en pause.
+        setApercuPatient(null);
+        setPausesApercu([]);
         setApercuFiches(null);
         setApercuLettre(null);
         setAnnonceParEmail(false);
@@ -644,6 +648,8 @@ export function ClinicalRuntimeSection({
       // L'aperçu des fiches et le constat « servi », eux, ne survivent pas à
       // une lecture manquée.
       if (seq !== seqDiffusion.current) return;
+      setApercuPatient(null);
+      setPausesApercu([]);
       setApercuFiches(null);
       setApercuLettre(null);
       setAnnonceParEmail(false);

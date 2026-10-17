@@ -761,6 +761,8 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     // aperçu sans ses pauses montrerait un élément actif que le portail, sur la
     // même panne, ne sert pas. Elle CACHE L'APERÇU (`null` : lecture non
     // aboutie, rien n'est montré), jamais une exception qui emporte le GET.
+    // Et le constat « servi » se tait : le portail, sur la même panne, rend
+    // son erreur (revue CodeRabbit de #1519).
     let pauses: ElementEnPause[] | undefined;
     if (apercu?.ok && activeVersion && actionsDeLApercu) {
       try {
@@ -771,6 +773,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
           ...classeEtCode(erreur),
         );
         apercu = null;
+        servieAuPatient = null;
       }
     }
 

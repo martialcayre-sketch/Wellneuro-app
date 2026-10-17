@@ -614,17 +614,22 @@ describe('GET /api/praticien/protocoles/diffusion — aperçu patient', () => {
 
   // Un aperçu sans ses pauses montrerait actif un élément en pause : il est
   // caché, et le reste de l'état de diffusion reste servi.
-  it('une panne de la lecture des pauses cache l’aperçu, sans emporter le GET', async () => {
+  it('une panne de la lecture des pauses cache l’aperçu et tait « servi », sans emporter le GET', async () => {
     const avertissement = vi.spyOn(console, 'warn').mockImplementation(() => {});
     prisma.protocolDraft.findMany.mockResolvedValue([
       { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: { p: 1 } },
     ]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+      { id: 'appr_1', protocolDraftInputHash: 'HASH_V1', supersedesApprovalId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), approvedAt: new Date('2026-01-03T12:00:00.000Z') },
+    ]);
     pausesServies.mockRejectedValue(new Error('base'));
     const response = await GET(requete());
     expect(response.status).toBe(200);
-    const json = (await response.json()) as { ok: boolean; apercu: unknown; pauses?: unknown };
+    const json = (await response.json()) as { ok: boolean; apercu: unknown; pauses?: unknown; servieAuPatient: unknown; approval: unknown };
     expect(json.ok).toBe(true);
+    expect(json.approval).not.toBeNull();
     expect(json.apercu).toBeNull();
+    expect(json.servieAuPatient).toBeNull();
     expect(json).not.toHaveProperty('pauses');
     avertissement.mockRestore();
   });
