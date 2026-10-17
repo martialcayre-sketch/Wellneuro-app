@@ -2999,7 +2999,7 @@ des trois points qu'elle engage ([[D-195]]) ; surface relue
 `safety-effet-indesirable-nnpp2-v2`. Trois arbitrages rendus avec elle :
 (a) au déploiement, la règle passe de « candidate » à « validée », l'empreinte
 des cartes change, et les programmes approuvés deviennent « indisponibles »
-au portail (trois dossiers au relevé du jour) : effet accepté, le praticien
+au portail (trois dossiers au relevé du jour ; répartition masquée (moins de cinq dossiers)) : effet accepté, le praticien
 diffuse une nouvelle version pour chacun aussitôt après le déploiement. Pour
 un dossier dont le signalement a reçu l'avis « impliqué », la nouvelle
 version porte l'aménagement consigné dans l'avis : la pause ne vise que la

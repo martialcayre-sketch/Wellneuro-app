@@ -54,7 +54,7 @@ d'autre. Les statuts ouverts en sont sortis le 2026-10-17 (D-281 §5, t27).
 - **Programmes servis** : au déploiement, la règle passe de « candidate » à
   « validée ». L'empreinte des cartes change, et les programmes approuvés
   deviennent « indisponibles » au portail ; trois dossiers étaient concernés
-  au relevé du 2026-10-17 (agrégats, lecture seule par conteneur). Effet
+  au relevé du 2026-10-17 (répartition masquée (moins de cinq dossiers) ; agrégats, lecture seule par conteneur). Effet
   accepté : le praticien prépare et diffuse une nouvelle version pour chacun
   aussitôt après le déploiement. Écartés : rediffuser plus tard ; un lot de
   code préalable qui retarde M-1. (La conséquence pour un dossier à l'avis
@@ -68,6 +68,6 @@ d'autre. Les statuts ouverts en sont sortis le 2026-10-17 (D-281 §5, t27).
 
 ## État constaté avant le déploiement (agrégats, 2026-10-17)
 
-Un seul signalement en base, rattaché à la dernière version de son dossier,
-avec un avis « impliqué » rendu. Aucun dossier n'attend d'avis : la signature
-ne bloque aucune diffusion. Drapeau `WN_EI_INTERRUPTION=1` en production.
+Un signalement en base (répartition masquée (moins de cinq dossiers)). Aucun dossier n'attend d'avis : la
+signature ne bloque aucune diffusion. Drapeau `WN_EI_INTERRUPTION=1` en
+production.
