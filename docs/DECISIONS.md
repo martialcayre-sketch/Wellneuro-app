@@ -70,9 +70,11 @@ hépatique, coté par ses composants, suit la même règle.
 **§6 — Sept fiches entrent au catalogue** : T4 libre et T3 libre (bilan
 thyroïdien), ionogramme complet (1610), bicarbonates et protides (ses
 constituants absents), bilirubine (1601) et phosphatases alcalines (0514),
-que le bilan hépatique citait sans fiche. Fiches « lacunaires » : unité
-usuelle si le contrôle d'unité l'admet déjà, aucune plage, aucun lien
-clinique ; leurs actes se signent par le praticien. Pas d'analyte « bilan
+que le bilan hépatique citait sans fiche. Même forme que les fiches
+existantes : unité usuelle que le contrôle d'unité admet déjà (niveau
+« partielle ») ; l'ionogramme complet, groupe, sans unité (niveau
+« lacunaire », comme l'ionogramme) ; aucune plage, aucun lien clinique ;
+leurs actes se signent par le praticien. Pas d'analyte « bilan
 thyroïdien » : TSH, T4L et T3L restent reliées par leurs correspondances
 (1208 et 1207 seuls ; 1211, 1212, 1209 en groupe), et une T3L proposée seule
 garde la mention de ses actes de groupe. Les alias d'import de compte rendu
