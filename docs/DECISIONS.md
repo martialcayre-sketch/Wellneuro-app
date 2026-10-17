@@ -27,7 +27,8 @@ Actions pour l'onglet « Biologie », sous l'encart des mesures. Elle ne
 dépendait du protocole que par le moment de sa lecture : elle se lit à
 l'ouverture de l'onglet, puis reste montée (règle de « Correspondance ») pour
 que le destinataire du courrier et le refus à trancher du document patient
-survivent à un changement d'onglet.
+survivent à un changement d'onglet. Mêmes conditions qu'avant le
+déménagement : épisode T0 confirmé, hors fiche d'ergonomie.
 
 **§2 — L'arbitrage reste.** Il juge les actions conditionnelles de la
 version active, avec la coche « J'ai relu le protocole révisé » : il reste
@@ -41,7 +42,9 @@ rien : jamais un zéro affirmé faute de lecture.
 proposition, pour ses deux dérivés (les analytes sur lesquels une action peut
 attendre, les libellés de l'arbitrage), mais plus la liste des remises. Ouvrir
 l'onglet relit la proposition : deux écrans, deux lectures journalisées
-(`G-TRUST-04`), chacune là où elle s'affiche.
+(`G-TRUST-04`), chacune là où elle s'affiche. Une déclaration faite dans
+l'onglet fait relire ses lignes à la phase Actions, comme quand la
+proposition y vivait.
 
 ### D-318 — Purge à 30 jours des lignes non validées : seule la trace du dépôt reste d'un compte rendu sans ligne validée ; la lecture consignée reste ; l'écart emporte les lignes ; un travail en cours diffère tout (F44, D-283 §10 c)
 
