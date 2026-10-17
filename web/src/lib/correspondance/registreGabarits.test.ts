@@ -35,7 +35,7 @@ describe('registre des gabarits patient — intégrité', () => {
     }
   });
 
-  it('expose les quinze versions attendues, dans cet ordre', () => {
+  it('expose les seize versions attendues, dans cet ordre', () => {
     expect(REGISTRE_GABARITS_PATIENT.map(g => `${g.key}@${g.version}`)).toEqual([
       'lien_magique@1',
       'acces_portail@1',
@@ -72,7 +72,24 @@ describe('registre des gabarits patient — intégrité', () => {
       'document_remis@1',
       // [[D-292]] §3 — les conditions d'utilisation aux patients suivis.
       'conditions_utilisation@1',
+      // [[D-317]] §3 — une nouvelle version du protocole. Il ne nomme rien.
+      'protocole_diffuse@1',
     ]);
+  });
+
+  it('protocole_diffuse : l’objet de D-317, et RIEN du protocole', () => {
+    const g = getGabarit('protocole_diffuse');
+    expect(g.sujet).toBe('Votre protocole vous attend');
+    // Aucune variable ne peut porter un contenu : ni action, ni axe, ni dose.
+    expect([...g.variables].sort()).toEqual(['connexion', 'prenom']);
+    expect(g.corps).not.toMatch(/assiette|fiche|alimenta|dopamin|digesti|prot[ée]in|sommeil|intestin|compl[ée]ment|dose/i);
+    expect(g.variables).not.toContain('lien');
+    // Le chemin réel du portail : le protocole n'est pas une ligne du fil.
+    expect(g.corps).toContain('« Accéder à mon parcours »');
+    expect(g.corps).toContain('« Mon accompagnement »');
+    // Les deux paragraphes de fin sont ceux de `document_remis`, au caractère près.
+    const fin = (corps: string) => corps.slice(corps.indexOf('Vous pouvez taper cette adresse'));
+    expect(fin(g.corps)).toBe(fin(getGabarit('document_remis').corps));
   });
 
   // LE TEXTE ENVOYÉ FACE AU TEXTE VALIDÉ. L'attendu se lit dans la proposition

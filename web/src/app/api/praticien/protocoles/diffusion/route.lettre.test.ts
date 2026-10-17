@@ -61,7 +61,7 @@ const { etat, prisma, tx, getServerSession } = vi.hoisted(() => {
         return { count: data.length };
       }),
     },
-    correspondancePatient: { create: vi.fn(async () => ({ id: 'trace_1' })) },
+    correspondancePatient: { create: vi.fn(async () => ({ id: 'trace_1' })), count: vi.fn(async () => 0) },
     $executeRaw: vi.fn(async () => 1),
     $queryRaw: vi.fn(async () => [{ actif: true, suivi_cloture_le: null }]),
     $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(tx)),
@@ -100,10 +100,10 @@ vi.mock('@/lib/fiches-assiette/controle', () => ({
   controlerVersion: vi.fn(async () => ({ contenu: {}, anomalies: [], claimsValides: new Map() })),
 }));
 
-const { remettreLettreAdressage, apercuLettreAdressage, annoncerDocumentRemis } = vi.hoisted(() => ({
+const { remettreLettreAdressage, apercuLettreAdressage, annoncerDiffusion } = vi.hoisted(() => ({
   remettreLettreAdressage: vi.fn(async () => 1),
   apercuLettreAdressage: vi.fn(async (): Promise<null | { idCorrespondance: string; consigneLe: string; dejaRemise: boolean }> => null),
-  annoncerDocumentRemis: vi.fn(async () => 'envoye' as const),
+  annoncerDiffusion: vi.fn(async () => 'envoye' as const),
 }));
 vi.mock('@/lib/correspondance/lettreAdressageRemise', async importOriginal => ({
   ...(await importOriginal<typeof import('@/lib/correspondance/lettreAdressageRemise')>()),
@@ -112,7 +112,7 @@ vi.mock('@/lib/correspondance/lettreAdressageRemise', async importOriginal => ({
 }));
 vi.mock('@/lib/fiches-assiette/annonce', async importOriginal => ({
   ...(await importOriginal<typeof import('@/lib/fiches-assiette/annonce')>()),
-  annoncerDocumentRemis,
+  annoncerDiffusion,
 }));
 
 import { GET, POST } from './route';
@@ -171,7 +171,7 @@ describe('La lettre d’adressage part avec le clic de diffusion (D-262, LOT-02)
   it('une lettre remise sans aucune fiche réserve UNE annonce, même espace des fiches fermé', async () => {
     await cliquer();
     expect(prisma.correspondancePatient.create).toHaveBeenCalledTimes(1);
-    expect(annoncerDocumentRemis).toHaveBeenCalledWith('PAT_1', 'trace_1');
+    expect(annoncerDiffusion).toHaveBeenCalledWith('PAT_1', { idTrace: 'trace_1', gabarit: 'document_remis', plafonnee: false }, 'p@wellneuro.fr');
   });
 
   it('rien de remis : aucune annonce', async () => {
@@ -204,7 +204,7 @@ describe('La lettre d’adressage part avec le clic de diffusion (D-262, LOT-02)
     const corps = await (await cliquer()).json();
     expect(corps).toEqual(expect.objectContaining({ fichesRemises: 1, lettreAdressageRemise: true }));
     expect(prisma.correspondancePatient.create).toHaveBeenCalledTimes(1);
-    expect(annoncerDocumentRemis).toHaveBeenCalledTimes(1);
+    expect(annoncerDiffusion).toHaveBeenCalledTimes(1);
   });
 
   it('aperçu des fiches périmé : refusé avant toute remise de lettre', async () => {

@@ -7,7 +7,9 @@
 // badge « Non transmis », figé depuis C2A LOT-03, contredisait un portail qui
 // servait : il suit désormais `servieAuPatient`, le constat de la route. Sous
 // `WN_FICHES_ASSIETTE` seul, le même clic remet les fiches d'assiette de
-// l'aperçu ci-dessous ([[D-251]] §7, lot 8).
+// l'aperçu ci-dessous ([[D-251]] §7, lot 8). Sous `WN_ANNONCE_PROTOCOLE`, une
+// version neuve diffusée est annoncée au patient par un e-mail neutre, qui
+// vaut celui des fiches et du courrier ([[D-317]], PA-2).
 
 import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
@@ -15,6 +17,8 @@ import {
   fichesARemettre,
   TEXTE_ANNONCE,
   TEXTE_ANNONCE_A_VENIR,
+  TEXTE_ANNONCE_PROTOCOLE,
+  TEXTE_ANNONCE_PROTOCOLE_A_VENIR,
   type AnnonceFiches,
   type ApercuFiches,
   type StatutLigneFiche,
@@ -170,7 +174,10 @@ export function ProtocolDiffusionPanel({
   fiches = null,
   lettre = null,
   annonceParEmail = false,
+  annonceProtocoleParEmail = false,
+  emailProtocoleOuvert = false,
   annonce = null,
+  annonceProtocole = null,
   state = 'idle',
   error = null,
   onApprove,
@@ -215,8 +222,19 @@ export function ProtocolDiffusionPanel({
   lettre?: ApercuLettreAdressage | null;
   /** Une fiche remise par le clic serait annoncée par e-mail (lecture ouverte). */
   annonceParEmail?: boolean;
+  /**
+   * Le clic diffuserait une version neuve, annoncée par l'e-mail du protocole
+   * ([[D-317]] §2) : il est dit AVANT le geste, et il tait l'annonce des fiches
+   * et du courrier — un seul e-mail part.
+   */
+  annonceProtocoleParEmail?: boolean;
+  /** `WN_ANNONCE_PROTOCOLE` effectivement ouvert : « aucun e-mail n'annonce le
+   * protocole » cesse alors d'être vrai, et l'écran ne le dit plus. */
+  emailProtocoleOuvert?: boolean;
   /** Le sort de l'e-mail du DERNIER clic ; `null` : aucun n'était dû. */
   annonce?: AnnonceFiches | null;
+  /** Le sort de l'e-mail du protocole au DERNIER clic ; `null` : aucun n'était dû. */
+  annonceProtocole?: AnnonceFiches | null;
   state?: DiffusionState;
   error?: string | null;
   onApprove?: () => void;
@@ -256,9 +274,11 @@ export function ProtocolDiffusionPanel({
         ) : approved && approvedAt ? (
           <span className="text-foreground">
             Version active validée pour diffusion le {formatDate(approvedAt)}
-            {servieAuPatient === true
-              ? ' — servie sur le portail du patient (aucun e-mail n’annonce le protocole lui-même).'
-              : '.'}
+            {servieAuPatient !== true
+              ? '.'
+              : emailProtocoleOuvert
+                ? ' — servie sur le portail du patient.'
+                : ' — servie sur le portail du patient (aucun e-mail n’annonce le protocole lui-même).'}
           </span>
         ) : canApprove ? (
           <span className="text-muted-foreground">
@@ -304,6 +324,21 @@ export function ProtocolDiffusionPanel({
           {TEXTE_ANNONCE[annonce].texte}
         </p>
       )}
+      {annonceProtocole && (
+        <p
+          role={TEXTE_ANNONCE_PROTOCOLE[annonceProtocole].alerte ? 'alert' : 'status'}
+          className={`mt-2 text-base ${TEXTE_ANNONCE_PROTOCOLE[annonceProtocole].alerte ? 'text-status-warning' : 'text-foreground'}`}
+        >
+          {TEXTE_ANNONCE_PROTOCOLE[annonceProtocole].texte}
+        </p>
+      )}
+
+      {/* L'E-MAIL DU PROTOCOLE, DIT AVANT LE GESTE ([[D-317]] §2). */}
+      {annonceProtocoleParEmail && canApprove && (
+        <p data-testid="annonce-protocole-a-venir" className="mt-2 text-base text-foreground">
+          {TEXTE_ANNONCE_PROTOCOLE_A_VENIR}
+        </p>
+      )}
 
       {/* L'APERÇU, SOUS LA MAIN DU PRATICIEN ET AVANT SON GESTE. Un refus dit son
           motif : il y a alors quelque chose à lever, et un aperçu vide ne
@@ -321,13 +356,17 @@ export function ProtocolDiffusionPanel({
       )}
 
       {fiches && (
-        <ApercuFichesAssiette fiches={fiches} dejaValide={approved && !stale} annonceParEmail={annonceParEmail} />
+        <ApercuFichesAssiette
+          fiches={fiches}
+          dejaValide={approved && !stale}
+          annonceParEmail={annonceParEmail && !annonceProtocoleParEmail}
+        />
       )}
 
       {lettre && (
         <ApercuLettreAdressageBloc
           lettre={lettre}
-          annonceDejaDite={Boolean(fiches && annonceParEmail && fichesARemettre(fiches))}
+          annonceDejaDite={annonceProtocoleParEmail || Boolean(fiches && annonceParEmail && fichesARemettre(fiches))}
         />
       )}
 

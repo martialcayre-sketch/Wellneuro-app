@@ -26,7 +26,15 @@ import {
 } from '@/lib/fiches-assiette/apercuRemise';
 import { envoiFichesOuvert, lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
 import { apercuFichesDuProtocole, remettreFiches } from '@/lib/fiches-assiette/remise';
-import { annonceDue, annoncerDocumentRemis, reserverAnnonce, type AnnonceFiches } from '@/lib/fiches-assiette/annonce';
+import {
+  annonceDue,
+  annoncerDiffusion,
+  reserverAnnonce,
+  type AnnonceFiches,
+  type GabaritAnnonce,
+} from '@/lib/fiches-assiette/annonce';
+import { annonceProtocoleOuverte } from '@/lib/protocol/annonceDiffusion';
+import { TYPES_CORRESPONDANCE_PATIENT } from '@/lib/correspondance/patient';
 import {
   apercuLettreAdressage,
   jetonAvecLettre,
@@ -81,8 +89,34 @@ type PostResponse =
       /** Espace de lecture ouvert et fiche remise seulement : le sort de
        * l'e-mail neutre ([[D-251]] §9). Absent quand il n'était pas dû. */
       annonceFiches?: AnnonceFiches;
+      /** `WN_ANNONCE_PROTOCOLE` ouvert et version neuve servable seulement : le
+       * sort de l'e-mail du protocole ([[D-317]] §2). Il remplace alors
+       * `annonceFiches` — un seul e-mail par clic. */
+      annonceProtocole?: AnnonceFiches;
     }
   | { ok: false; reason: string; error: string };
+
+/**
+ * L'annonce d'un clic ([[D-317]] §2-§3) : celle du protocole quand il diffuse
+ * une version NEUVE — jamais approuvée sur cette décision — que le portail
+ * servira (aucun blocage : dossier suivi, contrat patient accepté) ; sinon
+ * celle des documents remis ; sinon aucune. Une version déjà diffusée, même
+ * redevenue active après une autre, n'annonce pas le protocole.
+ */
+function gabaritAnnonceDuClic(entrees: {
+  versionNeuve: boolean;
+  protocoleServable: boolean;
+  fichesRemises: number;
+  lettreRemise: number;
+}): GabaritAnnonce | null {
+  if (annonceProtocoleOuverte() && entrees.versionNeuve && entrees.protocoleServable) {
+    return TYPES_CORRESPONDANCE_PATIENT.protocoleDiffuse;
+  }
+  if (annonceDue(entrees.fichesRemises) || entrees.lettreRemise > 0) {
+    return TYPES_CORRESPONDANCE_PATIENT.documentRemis;
+  }
+  return null;
+}
 
 /**
  * Ce qui empêche TOUTE fiche de partir (§7), et les actions de la version.
@@ -409,11 +443,18 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         });
         // La trace de l'e-mail naît AVEC les remises (lot 11) : un arrêt entre
         // le commit et l'envoi ne peut plus le perdre sans rien laisser. UNE
-        // annonce par clic, fiches et lettre confondues ([[D-262]] B3).
-        const idTraceAnnonce = annonceDue(fichesRemises) || lettreRemise > 0
-          ? await reserverAnnonce(tx, idPatient)
-          : null;
-        return { perime: false as const, approvalId, unchanged, fichesRemises, lettreRemise, idTraceAnnonce };
+        // annonce par clic, fiches, lettre et protocole confondus ([[D-262]] B3,
+        // [[D-317]] §3), sous le plafond de 24 heures (§2).
+        const gabarit = gabaritAnnonceDuClic({
+          versionNeuve: !approbations.some(a => a.protocolDraftInputHash === protocolDraftInputHash),
+          // Le blocage de l'aperçu du clic, celui que le GET a montré
+          // (`apercuFichesDuProtocole` le reporte tel quel).
+          protocoleServable: apercu.blocage === null,
+          fichesRemises,
+          lettreRemise,
+        });
+        const annonce = gabarit ? await reserverAnnonce(tx, idPatient, gabarit) : null;
+        return { perime: false as const, approvalId, unchanged, fichesRemises, lettreRemise, annonce };
       }, { timeout: 20_000 });
 
       if (issue.perime) {
@@ -422,12 +463,16 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           { status: 409 },
         );
       }
-      // L'E-MAIL NEUTRE, APRÈS LE COMMIT ([[D-251]] §9, lot 11) : un par clic
-      // qui a remis au moins une fiche, espace de lecture ouvert — sa trace est
-      // réservée ci-dessus. Il ne lève jamais : les fiches sont remises.
-      const annonceFiches = issue.idTraceAnnonce
-        ? await annoncerDocumentRemis(idPatient, issue.idTraceAnnonce)
+      // L'E-MAIL NEUTRE, APRÈS LE COMMIT ([[D-251]] §9, lot 11 ; [[D-317]]) : un
+      // par clic qui a remis au moins un document ou diffusé une version neuve
+      // — sa trace est réservée ci-dessus. Il ne lève jamais : le clic a réussi.
+      const sortAnnonce = issue.annonce
+        ? await annoncerDiffusion(idPatient, issue.annonce, emailPraticien(session) ?? undefined)
         : undefined;
+      const annonceProtocole = issue.annonce?.gabarit === TYPES_CORRESPONDANCE_PATIENT.protocoleDiffuse
+        ? sortAnnonce
+        : undefined;
+      const annonceFiches = annonceProtocole ? undefined : sortAnnonce;
       return NextResponse.json({
         ok: true,
         unchanged: issue.unchanged,
@@ -437,6 +482,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         fichesRemises: issue.fichesRemises,
         ...(lettreAdressagePatientOuverte() ? { lettreAdressageRemise: issue.lettreRemise > 0 } : {}),
         ...(annonceFiches ? { annonceFiches } : {}),
+        ...(annonceProtocole ? { annonceProtocole } : {}),
       });
     }
 
@@ -540,6 +586,17 @@ type GetResponse =
        * #1249).
        */
       annonceParEmail: boolean;
+      /**
+       * Le clic diffuserait-il une version NEUVE, annoncée par l'e-mail du
+       * protocole ([[D-317]] §2) ? L'écran le dit avant le geste, et tait alors
+       * l'annonce des fiches et du courrier : un seul e-mail part. Le plafond
+       * de 24 heures, jugé au clic, peut encore le retenir.
+       */
+      annonceProtocoleParEmail: boolean;
+      /** `WN_ANNONCE_PROTOCOLE` effectivement ouvert (drapeau, gabarit validé,
+       * fiches ouvertes) : l'écran cesse de dire qu'aucun e-mail n'annonce le
+       * protocole. */
+      emailProtocoleOuvert: boolean;
     }
   | { ok: false; reason: string; error: string };
 
@@ -598,7 +655,10 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       },
     });
     if (versions.length === 0) {
-      return NextResponse.json({ ok: true, approval: null, stale: false, servieAuPatient: null, apercu: null, fiches: null, annonceParEmail: false });
+      return NextResponse.json({
+        ok: true, approval: null, stale: false, servieAuPatient: null, apercu: null, fiches: null,
+        annonceParEmail: false, annonceProtocoleParEmail: false, emailProtocoleOuvert: annonceProtocoleOuverte(),
+      });
     }
     const decisionCardInputHash = versions[0].decisionCardInputHash;
     const activeVersion = resolveActiveVersion(versions);
@@ -798,6 +858,14 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       // Drapeau fermé : la clé n'existe pas, la réponse est celle d'avant.
       ...(lettreAdressagePatientOuverte() ? { lettre } : {}),
       annonceParEmail: fiches !== null && lectureFichesOuverte(),
+      // La même règle que le clic (`gabaritAnnonceDuClic`) : version jamais
+      // approuvée sur cette décision, et aucun blocage des fiches.
+      annonceProtocoleParEmail: annonceProtocoleOuverte()
+        && activeVersion !== null
+        && fiches !== null
+        && fiches.blocage === null
+        && !approvals.some(a => a.protocolDraftInputHash === activeVersion.inputHash),
+      emailProtocoleOuvert: annonceProtocoleOuverte(),
     });
   } catch (err) {
     console.error('[praticien/protocoles/diffusion GET]', ...classeEtCode(err));

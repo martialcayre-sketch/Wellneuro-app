@@ -2,7 +2,12 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ProtocolDiffusionPanel } from './ProtocolDiffusionPanel';
-import { TEXTE_ANNONCE, TEXTE_ANNONCE_A_VENIR } from '@/lib/fiches-assiette/apercuRemise';
+import {
+  TEXTE_ANNONCE,
+  TEXTE_ANNONCE_A_VENIR,
+  TEXTE_ANNONCE_PROTOCOLE,
+  TEXTE_ANNONCE_PROTOCOLE_A_VENIR,
+} from '@/lib/fiches-assiette/apercuRemise';
 
 // Le panneau n'avait aucun banc de composant. Il en reçoit un avec le constat
 // « servie au patient » ([[D-191]]) : une garde que personne ne voit se mesure à
@@ -356,6 +361,39 @@ describe('ProtocolDiffusionPanel — l’e-mail neutre ([[D-251]] §9, lot 11)',
       <ProtocolDiffusionPanel canApprove approved={false} stale={false} approvedAt={null} annonceParEmail={false} fiches={{ jeton: 'j', blocage: null, lignes: [part] }} />,
     );
     expect(screen.queryByText(TEXTE_ANNONCE_A_VENIR)).toBeNull();
+  });
+
+  it('AVANT le clic, version neuve : l’e-mail du protocole est dit, et lui seul ([[D-317]] §3)', () => {
+    render(
+      <ProtocolDiffusionPanel
+        canApprove approved={false} stale={false} approvedAt={null}
+        annonceParEmail annonceProtocoleParEmail emailProtocoleOuvert
+        fiches={{ jeton: 'j', blocage: null, lignes: [part] }}
+      />,
+    );
+    expect(screen.getByText(TEXTE_ANNONCE_PROTOCOLE_A_VENIR)).toBeTruthy();
+    // Un seul e-mail part : l'annonce des fiches se tait.
+    expect(screen.queryByText(TEXTE_ANNONCE_A_VENIR)).toBeNull();
+  });
+
+  it('APRÈS le clic : le sort de l’e-mail du protocole, plafond compris, en alerte sauf succès', () => {
+    const { rerender } = render(
+      <ProtocolDiffusionPanel canApprove approved stale={false} approvedAt={APPROUVE_LE} annonceProtocole="envoye" />,
+    );
+    expect(screen.getByRole('status').textContent).toBe(TEXTE_ANNONCE_PROTOCOLE.envoye.texte);
+    rerender(<ProtocolDiffusionPanel canApprove approved stale={false} approvedAt={APPROUVE_LE} annonceProtocole="plafond" />);
+    expect(screen.getByRole('alert').textContent).toBe(TEXTE_ANNONCE_PROTOCOLE.plafond.texte);
+  });
+
+  it('drapeau du protocole ouvert : l’écran ne dit plus qu’aucun e-mail n’annonce le protocole', () => {
+    const { rerender } = render(
+      <ProtocolDiffusionPanel canApprove={false} approved stale={false} approvedAt={APPROUVE_LE} servieAuPatient />,
+    );
+    expect(screen.getByText(/aucun e-mail n’annonce le protocole/)).toBeTruthy();
+    rerender(
+      <ProtocolDiffusionPanel canApprove={false} approved stale={false} approvedAt={APPROUVE_LE} servieAuPatient emailProtocoleOuvert />,
+    );
+    expect(screen.queryByText(/aucun e-mail n’annonce le protocole/)).toBeNull();
   });
 
   it('avec des fiches, le panneau ne promet plus « aucun envoi automatique »', () => {

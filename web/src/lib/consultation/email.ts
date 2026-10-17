@@ -310,3 +310,35 @@ export async function sendDocumentRemisEmail(
     },
   });
 }
+
+/**
+ * « Votre protocole vous attend » ([[D-317]] §3, PA-2) — une nouvelle version
+ * diffusée. Sur le modèle de `sendDocumentRemisEmail` : aucune variable ne peut
+ * porter un contenu du protocole, et la trace est réservée par l'appelant
+ * (`fiches-assiette/annonce.ts`). La réponse va au praticien du dossier
+ * (`Reply-To`) : `noreply@` ne lit rien.
+ */
+export async function sendProtocoleDiffuseEmail(
+  patientEmail: string,
+  prenom: string,
+  praticienEmail?: string,
+): Promise<StatutEnvoiAcces> {
+  const smtpUrl = process.env.SMTP_URL;
+  const connexion = buildGoogleConnexionUrl();
+  return envoyerAccesTrace({
+    type: TYPES_CORRESPONDANCE_PATIENT.protocoleDiffuse,
+    objet: 'Protocole diffusé dans l’espace patient',
+    envoyer: async () => {
+      if (!smtpUrl) return;
+      const transport = creerTransportSmtp(smtpUrl);
+      const gabarit = rendreGabarit(getGabarit('protocole_diffuse'), { prenom, connexion });
+      await transport.sendMail({
+        from: '"Wellneuro" <noreply@wellneuro.fr>',
+        to: patientEmail,
+        ...(replyToValide(praticienEmail) ? { replyTo: praticienEmail } : {}),
+        subject: gabarit.sujet,
+        text: gabarit.corps,
+      });
+    },
+  });
+}
