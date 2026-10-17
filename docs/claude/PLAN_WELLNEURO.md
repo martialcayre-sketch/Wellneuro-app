@@ -129,7 +129,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 |---|---|---|---|
 | 1 | Constat initial en conteneur, en agrégats | S-1, Q-1 (rang 0) : F40, H06 | levée en partie le 2026-10-12 ; restent le premier import v4 commenté et le premier accusé usage_ia v7, au fait ; [A verifier] : la lecture est en `bio-extraction-v5` depuis #1428 et `usage_ia` en v8 depuis #1431, le critère nomme encore v4 et v7 |
 | 2 | Décisions d'ordre mergées : deux files, une activation à la fois, restauration | a, b, g par la PR S-3 (rang 0) : F01, H05, F04 | levée le 2026-10-14 : a, b, g écrites par D-287, D-288, D-289, mergées par la PR S-3 (#1430) |
-| 3 | Radar sans zéro décidé | M-6, ac (rang 0) : H12 | non levée : texte écrit le 2026-10-15 (D-301) ; se lève au constat de J2-radar |
+| 3 | Radar sans zéro décidé | M-6, ac (rang 0) : H12 | texte écrit le 2026-10-15 (D-301) ; J2-radar livré le 2026-10-18, « non mesuré » constaté à l'écran par l'E2E ; levée au déploiement constaté |
 | 4 | Sources à fournir : poids égal, seuils, fidélité, quantités, axes | le responsable (rang 0) : H08 | en partie : D-280 source les seuils de 8B ; règle du milieu levée ; restent poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes ; liste de ce qu'il faut fournir préparée le 2026-10-15 (H08) |
 | 5 | K-05a et D4 : liste fermée et déclaration des sites IA | le responsable (rang 0) : F46 | levée le 2026-10-15 : D4 (D-299, #1467) puis K-05a, liste fermée des neuf fichiers IA de `web/src` (`web/src/lib/sitesAppelIa.guard.test.ts`), chacun rattaché à `docs/DOSSIER_RGPD.md` |
 | 6 | Doctrine du cockpit chiffré et de l'adhésion signée | M-2, G-4 (rang 2), sur c et d (rang 1) : F59, H32 | non levée |
@@ -419,6 +419,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : lettre ac, de la main du responsable.
 - **Critère de fin** : « non mesuré » constaté à l'écran ; banc de `DetailBesoinsPanel.tsx:58`.
 - **Mise à jour (2026-10-15)** : ac écrite par D-301 (texte accepté tel quel) : un besoin non mesuré est un axe sans point, nommé « non mesuré » ; constat au code : `DetailBesoinsPanel.tsx:58` trace `couverture ?? 0`. Reste J2-radar (rang 1), qui lève la porte 3.
+- **Mise à jour (2026-10-18, J2-radar)** : livré sans migration. L'axe d'un besoin non mesuré reste sur le radar, sans point, son libellé porte « non mesuré », et le contour s'y interrompt (module pur `components/ui/scoreRadarPoints.ts`, forme personnalisée de `ScoreRadar` : recharts 3.9 traçait une valeur absente au centre). Bancs : règle pure, `Polygon` réel de recharts avec contre-épreuve, E2E `e2e/fiche-radar-besoins.spec.ts` qui constate « non mesuré » à l'écran. La porte 3 se lève au déploiement.
 
 #### H13 · G-10, v, J2-bandes, J3-bandes : fidélité et bandes de bruit
 - **Identifiant, piste** : G-10.
