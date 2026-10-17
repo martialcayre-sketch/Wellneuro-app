@@ -26,8 +26,9 @@
 // patient —, et c'est la route de diffusion qui en oppose les bloqueurs.
 //
 // Drapeau de capture `WN_EI_INTERRUPTION=1` posé au serveur par
-// `playwright.config.ts`, comme en production. La garde de diffusion reste
-// inerte : aucune table n'est signée (M-1), rien ne s'interrompt.
+// `playwright.config.ts`, comme en production. Depuis la signature de
+// SAF-EI-01 (M-1, 2026-10-17), la garde de diffusion est active : les
+// signalements du dossier sont nettoyés en `beforeAll`, la diffusion passe.
 //
 // Patient fictif Jennifer Martin (PAT_SEED_02), majeure : la fixture biologie
 // fournit les préconditions T0 dures. `workers: 1` garantit qu'aucun autre

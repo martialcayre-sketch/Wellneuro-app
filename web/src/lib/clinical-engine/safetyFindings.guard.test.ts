@@ -236,7 +236,10 @@ describe('verrou de signature — son sens est INVERSE des autres tables', () =>
       version: SAFETY_SIGNALS_METADATA.version,
       lifecycle: 'candidate',
     });
-    expect(rules.every(regle => regle.lifecycle === 'candidate')).toBe(true);
+    // Sur la seule règle d'anamnèse : SAF-EI-01 est signée depuis le
+    // 2026-10-17 (M-1), et sa règle se joint validée.
+    expect(rules.filter(regle => regle.ruleId === REGLE_SECURITE_ANAMNESE)
+      .every(regle => regle.lifecycle === 'candidate')).toBe(true);
   });
 
   it('un sha de périmètre périmé referme le verrou tout seul', () => {
