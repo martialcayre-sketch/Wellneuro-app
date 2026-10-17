@@ -442,7 +442,7 @@ describe('GET /api/praticien/fil — comptes rendus biologiques à lire (D-268, 
         cle: 'import_biologique_a_lire:imp_1',
         idPatient: 'PAT_SOPHIE',
         // Le lien ouvre le compte rendu de l'import, sans marqueur `?fil=`.
-        href: '/dashboard/patients/PAT_SOPHIE?onglet=trajectoire&compteRendu=cr_1',
+        href: '/dashboard/patients/PAT_SOPHIE?onglet=biologie&compteRendu=cr_1',
       }),
     ]);
     expect(payload.lecturesBiologieIndisponibles).toBeUndefined();
@@ -555,7 +555,7 @@ describe('GET /api/praticien/fil — comptes rendus transmis par le patient (D-2
         type: 'compte_rendu_transmis',
         cle: 'compte_rendu_transmis:cr_patient',
         idPatient: 'PAT_JENNIFER',
-        href: '/dashboard/patients/PAT_JENNIFER?onglet=trajectoire&compteRendu=cr_patient',
+        href: '/dashboard/patients/PAT_JENNIFER?onglet=biologie&compteRendu=cr_patient',
       }),
     ]);
     // Ce qui éteint la carte est dans la requête : origine patient, non purgé

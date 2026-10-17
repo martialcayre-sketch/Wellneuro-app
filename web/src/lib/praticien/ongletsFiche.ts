@@ -3,13 +3,16 @@
 // `FichePatientPanel`. Une fonction d'un module 'use client' ne peut pas être
 // appelée côté serveur : la garde vit donc ici.
 
-export type OngletFiche = 'cockpit' | 'besoins' | 'alimentation' | 'trajectoire' | 'correspondance';
+export type OngletFiche = 'cockpit' | 'besoins' | 'alimentation' | 'trajectoire' | 'biologie' | 'correspondance';
 
 export const IDS_ONGLETS_FICHE: readonly OngletFiche[] = [
   'cockpit',
   'besoins',
   'alimentation',
   'trajectoire',
+  // L'onglet « Biologie » ([[D-308]] §1, plan F57) : les écrans de biologie y
+  // déménagent, sans doublon.
+  'biologie',
   'correspondance',
 ] as const;
 

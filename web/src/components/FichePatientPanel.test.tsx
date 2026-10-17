@@ -998,6 +998,20 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(document.getElementById('panneau-cockpit')?.hasAttribute('hidden')).toBe(true);
   });
 
+  it('onglets in-fiche : « Biologie » monte l’encart des mesures, que « Trajectoire » ne porte plus (D-308 §1, F57)', async () => {
+    await rendreFiche();
+
+    const onglets = screen.getByRole('tablist', { name: 'Vues de la fiche patient' });
+    fireEvent.click(within(onglets).getByRole('tab', { name: 'Trajectoire' }));
+    await waitFor(() => expect(screen.getByText(/Fiche-trajectoire/i)).toBeTruthy());
+    // Sans doublon : l'encart a quitté la trajectoire.
+    expect(screen.queryByRole('region', { name: 'Estimé et mesuré' })).toBeNull();
+
+    fireEvent.click(within(onglets).getByRole('tab', { name: 'Biologie' }));
+    await waitFor(() => expect(screen.getByRole('region', { name: 'Estimé et mesuré' })).toBeTruthy());
+    expect(document.getElementById('panneau-trajectoire')?.hasAttribute('hidden')).toBe(true);
+  });
+
   it('onglets in-fiche : « Correspondance » existe et monte le fil médecin (C3 LOT-06)', async () => {
     await rendreFiche();
 
@@ -1591,7 +1605,7 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
   });
 
   it('estOngletFiche : garde stricte du deep-link — toute valeur inconnue est refusée', () => {
-    for (const valide of ['cockpit', 'besoins', 'alimentation', 'trajectoire', 'correspondance']) {
+    for (const valide of ['cockpit', 'besoins', 'alimentation', 'trajectoire', 'biologie', 'correspondance']) {
       expect(estOngletFiche(valide)).toBe(true);
     }
     expect(estOngletFiche('inconnu')).toBe(false);

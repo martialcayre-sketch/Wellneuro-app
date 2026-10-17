@@ -804,7 +804,7 @@ describe('cartesImportsALire — compte rendu biologique validé sans lecture (D
       patient: 'Sophie Nicola',
       titre: 'Compte rendu biologique à lire',
       cle: 'import_biologique_a_lire:imp_1',
-      href: '/dashboard/patients/P-SOPHIE?onglet=trajectoire&compteRendu=cr_1',
+      href: '/dashboard/patients/P-SOPHIE?onglet=biologie&compteRendu=cr_1',
       actionLabel: 'Ouvrir la biologie',
       date: VALIDE_LE.toISOString(),
     });
@@ -887,7 +887,7 @@ describe('cartesComptesRendusTransmis — document transmis par le patient, non 
       type: 'compte_rendu_transmis',
       patient: 'Jennifer Martin',
       titre: 'Compte rendu transmis par le patient',
-      href: '/dashboard/patients/P-JENNIFER?onglet=trajectoire&compteRendu=cr_ancien',
+      href: '/dashboard/patients/P-JENNIFER?onglet=biologie&compteRendu=cr_ancien',
       actionLabel: 'Ouvrir le compte rendu',
     });
     // La vérification d'abord (§1) : la carte la demande, et offre l'écart.

@@ -56,9 +56,9 @@ let debutDuRun: Date;
 
 test.describe.configure({ mode: 'serial' });
 
-/** Le panneau « Estimé et mesuré » vit dans l'onglet Trajectoire du dossier. */
+/** Le panneau « Estimé et mesuré » vit dans l'onglet Biologie du dossier ([[D-308]] §1). */
 async function ouvrirPanneauMesures(page: Page) {
-  await page.goto(`/dashboard/patients/${PATIENT_ID}?onglet=trajectoire`);
+  await page.goto(`/dashboard/patients/${PATIENT_ID}?onglet=biologie`);
   const panneau = page.getByRole('region', { name: 'Estimé et mesuré' });
   await expect(panneau).toBeVisible();
   return panneau;
