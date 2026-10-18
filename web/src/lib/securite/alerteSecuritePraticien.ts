@@ -6,6 +6,7 @@ import {
   journaliserCorrespondancePatient,
   type StatutCorrespondancePatient,
 } from '@/lib/correspondance/patient';
+import { baseLiensCourriel } from '@/lib/portail/urlPublique';
 
 // LE COURRIEL AU PRATICIEN SUR UNE RÉPONSE SUICIDAIRE — [[D-277]] §2 et §3.
 //
@@ -50,8 +51,7 @@ export const COURRIEL_SIGNAL_SECURITE = Object.freeze({
 export const OBJET_JOURNAL_SIGNAL_SECURITE = 'Signal de sécurité à évaluer — courriel au praticien';
 
 export function lienFilDuJour(): string {
-  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  return `${baseUrl}/dashboard`;
+  return `${baseLiensCourriel()}/dashboard`;
 }
 
 /**
