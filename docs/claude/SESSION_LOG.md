@@ -10479,3 +10479,23 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Geste du responsable : étiqueter les 92 claims du fer avant la signature du dossier vitamine D ; écrire la liste des statuts de F58.
 
 **Ouvert.** Texte patient v12 « valeurs relevées et décisions » à corriger avant le 2026-11-02 (D-283 §10 a) ; dossier vitamine D à reclasser en dix rubriques.
+
+## 2026-10-18 — Rattrapage : entrées SESSION_LOG manquantes du 15 au 18 octobre
+
+**Fait.** Constat : 71 des 75 PR mergées du 15 au 18 octobre n'ont pas ajouté d'entrée ici (41 portent un handoff). La revue Copilot la réclamait jusqu'au 2026-10-14 ; CodeRabbit (D-290) ne la demandait pas. Le détail de ces lots se lit dans leurs handoffs (`docs/claude/handoffs/2026-10-15-*` à `2026-10-18-*`) et dans les fragments `changelog.d/` du même intervalle ; il n'est pas recopié ici.
+
+**Écarté.** Reconstituer après coup une entrée par PR : ce serait écrire à la place des sessions qui ont fait ces lots.
+
+**Prochaine action.** Aucune : E56 rend l'oubli bloquant en CI.
+
+**Ouvert.** Rien.
+
+## 2026-10-18 — File A en autonomie : J2-radar, t24, t29, t17, t04, portes 3 et 7, E56
+
+**Fait.** Livrés et déployés un par un : J2-radar (#1531, porte 3), repère de cabinet sur cinq dossiers (t24, #1532), lecture des signalements retirée de la chaîne C1 (t29, #1533), badge de la bande la plus haute (t17, #1534), verrou de ligne sur la soumission patient (t04, #1535), portes 3 et 7 levées (#1536). E56 : contrôle de clôture en CI, SESSION_LOG et handoff exigés (arbitrage du responsable).
+
+**Écarté.** Banc SQL à deux sessions pour t04 (le SQL tourne dans l'E2E ; CodeRabbit a retiré la remarque) ; ne plus exiger SESSION_LOG.
+
+**Prochaine action.** Rediffusions des trois programmes par le praticien, à constater ; résidu de t13 à arbitrer ; dettes t16, t08, t09 à cadrer.
+
+**Ouvert.** r2_01 et r2_02 attendent la fin de #1530 (Fil).
