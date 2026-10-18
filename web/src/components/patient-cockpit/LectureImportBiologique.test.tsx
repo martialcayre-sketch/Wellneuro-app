@@ -18,7 +18,7 @@ function ligne(statut: string, id = `l_${statut}`): LigneLue {
     id, rang: 1, page: 1, libelleLu: 'Libellé', valeurLue: '1', uniteLue: null, preleveLeLu: null, heureLue: false,
     intervalleLu: null, marquageLu: null, intervalleNonTranscrit: false, marquageNonTranscrit: false,
     commentaireLu: null, commentaireNonTranscrit: false,
-    analytePropose: null, statutMapping: 'inconnu', statut, motifEcart: null, idResultat: null, preMarquage: null,
+    analytePropose: null, statutMapping: 'inconnu', statut, motifEcart: null, idResultat: null, traiteLe: null, preMarquage: null,
   };
 }
 

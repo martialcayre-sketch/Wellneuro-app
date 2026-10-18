@@ -7,6 +7,7 @@ import type { CompteRenduLu, LigneLue } from '@/lib/biology-library/import/lectu
 import type { AnalyteChoix } from './SaisieBilan';
 import { FaitsDuLaboratoire } from './FaitsDuLaboratoire';
 import type { ActeLectureLu } from '@/lib/biology-library/import/acteLecture';
+import { etatLecture } from '@/lib/biology-library/import/lectureImport';
 import { useBioLectureEnabled } from './CbFeatureProvider';
 import { LectureImportBiologique } from './LectureImportBiologique';
 import { MasquageIdentite } from './MasquageIdentite';
@@ -167,6 +168,42 @@ function formatDateHeure(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Paris' });
+}
+
+/**
+ * LES DEUX MARQUES DATÉES DE LA CARTE ([[D-308]] §3, F58) — un affichage de
+ * données existantes, sans stockage neuf ([[D-322]]) :
+ *  - « lignes validées » : la date de la DERNIÈRE ligne validée du compte
+ *    rendu, tous imports confondus (`traiteLe`, posé par la base) ; absente
+ *    tant qu'aucune ligne n'est validée ;
+ *  - « lecture consignée » : la lecture ACTIVE la plus récente (BP-10,
+ *    [[D-268]]), ou « non consignée » ; un geste distinct, dont le bouton reste
+ *    dans le bloc de lecture. Absente sans ligne validée (rien à lire), drapeau
+ *    éteint ou état non lu : on n'affirme rien qu'on n'a pas lu.
+ * Deux marques distinctes : la validation des lignes n'est pas la lecture, et
+ * le « Validé » du portail garde son sens ([[D-269]] §4).
+ */
+export function marquesDatees(
+  detail: Pick<CompteRenduLu, 'imports'>,
+  actesLecture: Record<string, ActeLectureLu[]> | null,
+): { lignesValideesLe: string | null; lecture: { consigneeLe: string } | 'non_consignee' | null } {
+  let lignesValideesLe: string | null = null;
+  for (const imp of detail.imports) {
+    for (const l of imp.lignes) {
+      if (l.statut === 'validee' && l.traiteLe && (lignesValideesLe === null || l.traiteLe > lignesValideesLe)) {
+        lignesValideesLe = l.traiteLe;
+      }
+    }
+  }
+  if (lignesValideesLe === null || actesLecture === null) return { lignesValideesLe, lecture: null };
+  let consigneeLe: string | null = null;
+  for (const imp of detail.imports) {
+    const actes = actesLecture[imp.id] ?? [];
+    const etat = etatLecture(actes.map((a, rang) => ({ ...a, ordre: rang, acteLe: new Date(a.acteLe) })));
+    const le = etat.active?.acteLe.toISOString() ?? null;
+    if (le !== null && (consigneeLe === null || le > consigneeLe)) consigneeLe = le;
+  }
+  return { lignesValideesLe, lecture: consigneeLe ? { consigneeLe } : 'non_consignee' };
 }
 
 function formatHeure(iso: string): string {
@@ -343,6 +380,7 @@ export function ImportCompteRenduPanel({
   }, [chargerListe]);
 
   const courant = detail?.imports.find(i => i.courant) ?? null;
+  const marques = detail ? marquesDatees(detail, bioLectureEnabled ? actesLecture : null) : null;
   // Une lecture demandée à la file ([[D-282]]) court, même sans import encore
   // ouvert ou avec un import périmé : le processus de fond la reprend. Elle
   // n'est jamais « interrompue » tant que le travail est ouvert.
@@ -767,6 +805,14 @@ export function ImportCompteRenduPanel({
               </button>
             )}
           </div>
+          {marques?.lignesValideesLe && (
+            <p className="mt-1 text-xs text-muted-foreground" data-marques-datees>
+              Lignes validées — dernière le {formatDateHeure(marques.lignesValideesLe)}
+              {marques.lecture === 'non_consignee' && ' · Lecture non consignée'}
+              {marques.lecture && marques.lecture !== 'non_consignee'
+                && ` · Lecture consignée le ${formatDateHeure(marques.lecture.consigneeLe)}`}
+            </p>
+          )}
 
           {/* LES COMMENTAIRES DU COMPTE RENDU ENTIER ([[D-278]] §3), tels
               qu'imprimés, attribués au laboratoire, sans rien en conclure.
