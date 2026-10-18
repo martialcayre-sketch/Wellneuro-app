@@ -11,18 +11,9 @@ import { SignalerProbleme } from '@/components/patient/trust/SignalerProbleme';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
-
-const LIBELLE_CATEGORIE_SIGNALEMENT: Record<string, string> = {
-  effet_indesirable: 'Effet indésirable suspecté',
-  incident_confidentialite: 'Incident de confidentialité',
-  demande_droit: 'Demande de droit',
-};
-const LIBELLE_STATUT_TRAITEMENT: Record<string, string> = {
-  recu: 'Reçu',
-  en_cours: 'En cours d’examen',
-  traite: 'Traité',
-  clos: 'Clos',
-};
+// Libellés partagés avec « Mes échanges » ([[D-293]]) : un même signalement
+// porte les mêmes mots sur les deux écrans.
+import { LIBELLE_CATEGORIE_SIGNALEMENT, LIBELLE_STATUT_TRAITEMENT } from '@/lib/portail/mesEchanges';
 
 const formatDate = (iso: string) =>
   new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
