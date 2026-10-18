@@ -44,9 +44,19 @@ describe('construireCloture — chaîne complète', () => {
     const cloture = construireCloture(entrees());
     expect(cloture.decision).toEqual({
       selectedPriorityId: 'PRIO_SOMMEIL',
+      libellePriorite: null,
       versionInputHash: 'hash-v2',
       enregistreLe: '2026-07-01T09:00:00.000Z',
     });
+  });
+
+  it('le libellé relu par l’appelant passe tel quel dans la décision', () => {
+    const base = entrees();
+    const cloture = construireCloture({
+      ...base,
+      versionActive: base.versionActive && { ...base.versionActive, libellePriorite: 'Axe sommeil et rythme circadien' },
+    });
+    expect(cloture.decision?.libellePriorite).toBe('Axe sommeil et rythme circadien');
   });
 
   it('les trois étapes sont toujours rendues, dans le même ordre', () => {

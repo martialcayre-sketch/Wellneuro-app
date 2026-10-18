@@ -10590,3 +10590,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Les deux marques datées de la carte du compte rendu (F58, sans migration), puis F38.
 
 **Ouvert.** Matcher de la matrice : un spécificateur qui en préfixe un autre (`…/statuts` dans `…/statutsX`) compte un faux consommateur.
+
+## 2026-10-18 — J1-base : la minute d'après nomme la priorité retenue
+
+**Fait.** La route de clôture relit le libellé de la priorité de la version active : règle du registre signé (`priority:`), ou libellé du praticien sur la sélection qui porte cet identifiant (`libre:`, D-279). L'écran l'affiche ; l'identifiant reste en repli. Dette du plan soldée.
+
+**Écarté.** Recalculer la carte de décision (lourd, et ce n'est pas l'état enregistré) ; lire la tête du fil des sélections (le praticien a pu changer d'avis depuis la version).
+
+**Prochaine action.** PR, CI, merge après #1555 ; puis repli localhost.
+
+**Ouvert.** Liste J1-base à recevoir du responsable ; t08, t09, t16 cadrés (mémoire du 2026-10-18).

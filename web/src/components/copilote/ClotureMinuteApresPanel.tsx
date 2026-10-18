@@ -109,7 +109,10 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
       {cloture.decision ? (
         <p className="mt-3 text-base text-foreground">
           <span className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Décision</span> ·
-          priorité retenue <strong>{cloture.decision.selectedPriorityId}</strong>, enregistrée le{' '}
+          {/* Le libellé, pas l'identifiant brut (« priority:PRIO-PON-01 ») ; s'il
+              n'a pas pu être relu, l'identifiant reste plutôt qu'un vide. */}
+          priorité retenue <strong>{cloture.decision.libellePriorite ?? cloture.decision.selectedPriorityId}</strong>,
+          enregistrée le{' '}
           {formatDate(cloture.decision.enregistreLe)}.
         </p>
       ) : (
