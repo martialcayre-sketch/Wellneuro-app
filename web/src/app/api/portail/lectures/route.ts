@@ -355,6 +355,10 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
     try {
       await prisma.portailLecturePatient.create({
         data: { idPatient: garde.patient.idPatient, espece, idObjet: idConsigne },
+        // `select` explicite : sans lui, Prisma relirait toutes les colonnes,
+        // `lu_le` comprise ([[D-297]]) — et la route tomberait entre le
+        // déploiement et l'application de sa migration.
+        select: { idObjet: true },
       });
     } catch (erreur) {
       // `P2002` — déjà consigné. Ce n'est pas une erreur : c'est le résultat.
