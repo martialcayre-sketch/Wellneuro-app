@@ -1012,6 +1012,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : aucune.
 - **Critère de fin** : instantanés régénérés ; écrans constatés.
 - **Mise à jour (2026-10-18)** : L4 et L5 livrés ensemble, sous D-324 (arbitrages du responsable du même jour). Le groupe « Héritage 4.0 » quitte le menu. Le menu compte désormais trois groupes : La Spirale (l'agenda reste, « Confiance & droits » y monte), Bibliothèque (cinq rayons, chacun avec sa page, puis l'atelier) et Réglages. Documents et Synthèse IA quittent le menu du bureau ; « Synthèses » reste au téléphone. L'ancienne page Biologie redirige vers le rayon « Analyses biologiques », qui porte aussi les fiches d'usage. Restent dans J1-base : les 8 gestes cosmétiques, les jetons, K-10, NF-6, NU-2a, le libellé de priorité de la minute d'après et le repli `localhost`. Le concept de Bibliothèque est à revoir (réponse du responsable) : ce découpage ne le tranche pas.
+- **Mise à jour (2026-10-18, libellé du menu)** : le libellé « Compléments alimentaires » (D-324 §4) dépassait les 252 px du rail déplié et s'affichait « Compléments aliment… ». Les libellés du rail passent désormais à la ligne au lieu d'être coupés ; le libellé décidé reste entier.
 
 #### H44 · R:Titre du Fil
 - **Identifiant, piste** : R:Titre du Fil ; « Questionnaires à consulter » au-dessus du Fil ; cockpit ; file A.
@@ -2390,7 +2391,7 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | Table des signaux de sécurité absente de `SOURCES_DE_SAVOIR` (`scripts/wn-matrice-consommation.mjs`) | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:477-487` | déclaration d'inventaire, sa propre PR [Hypothese] |
 | Vue `ACTIVE_CAMPAIGN.md` : le statut de la campagne primaire est écrit en dur « active » (`scripts/lib/vue-campagnes-actives.mjs:39-45`), même quand sa fiche dit `en_pause` (constaté à la clôture de LOT-07, puis de LOT-03) | revue CodeRabbit de #1526 (2026-10-17) | lire le statut de la fiche (repli « inconnu »), banc à l'appui, sa propre PR d'outillage [Hypothese] |
 | Unité d'un résultat biologique non liée au catalogue en base (D-264) | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:503-514` | au prochain changement d'unité d'un analyte porteur de résultats |
-| `MESSAGE_ORIENTATION_INACTIVE` périmé (D-074 §4) | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:531-539` | petite correction d'interface, avec J1-base (H43) [Hypothese] |
+| `MESSAGE_ORIENTATION_INACTIVE` périmé (D-074 §4) | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:531-539` | soldé : corrigé par 33f44689 (D-076, 2026-08-19), « Orientation non activée sur cet environnement. » (`web/src/lib/clinical/orientationService.ts`) ; constaté le 2026-10-18 |
 | Règle G6 : frontière entre phrase recopiée et borne standard | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:592-604` | à écrire avant la prochaine attestation qui cite un chiffre |
 | Catalogue de conduites de D-206 : deux lignes non lues sur pièce | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:243-269` | toute ligne neuve = une nouvelle attestation ; avec ag (H25) |
 | Surfaces WN_CE_QUI_COMPTE, WN_DOSSIER_DEUX_VOIX | historique Git, `docs/claude/campagnes/FILE_ATTENTE.md:62` | gestes du responsable, sans rang |
