@@ -6,6 +6,7 @@ import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/app
 import { resolveActiveVersion } from '@/lib/protocol/versioning';
 import { resolveActiveApproval } from '@/lib/protocol/diffusion';
 import { construireCloture, type Cloture } from '@/lib/copilote/minuteApres';
+import { lireLibellePrioriteRetenue } from '@/lib/copilote/libellePrioriteCloture';
 import { EXCLURE_INSTANTANES_JA } from '@/lib/food-observation/contract';
 
 // GET /api/praticien/copilote/cloture?idPatient= — la minute d'après (SP-COP
@@ -111,12 +112,20 @@ export async function GET(req: Request): Promise<NextResponse<ClotureApiResponse
         })
       : [];
     const approbationActive = resolveActiveApproval(approbations);
+    const libellePriorite = versionActive
+      ? await lireLibellePrioriteRetenue({
+          idPatient,
+          decisionCardId: versionActive.decisionCardId,
+          selectedPriorityId: versionActive.selectedPriorityId,
+        })
+      : null;
 
     const cloture = construireCloture({
       versionActive: versionActive
         ? {
             inputHash: versionActive.inputHash,
             selectedPriorityId: versionActive.selectedPriorityId,
+            libellePriorite,
             status: versionActive.status,
             reviewedAt: versionActive.reviewedAt,
             createdAt: versionActive.createdAt,

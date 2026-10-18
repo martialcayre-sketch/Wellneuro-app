@@ -10602,6 +10602,15 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Matcher de la matrice : un spécificateur qui en préfixe un autre (`…/statuts` dans `…/statutsX`) compte un faux consommateur.
 
+## 2026-10-18 — J1-base : la minute d'après nomme la priorité retenue
+
+**Fait.** La route de clôture relit le libellé de la priorité de la version active : règle du registre signé (`priority:`), ou libellé du praticien sur la sélection qui porte cet identifiant (`libre:`, D-279). L'écran l'affiche ; l'identifiant reste en repli. Dette du plan soldée.
+
+**Écarté.** Recalculer la carte de décision (lourd, et ce n'est pas l'état enregistré) ; lire la tête du fil des sélections (le praticien a pu changer d'avis depuis la version).
+
+**Prochaine action.** PR, CI, merge après #1555 ; puis repli localhost.
+
+**Ouvert.** Liste J1-base à recevoir du responsable ; t08, t09, t16 cadrés (mémoire du 2026-10-18).
 ## 2026-10-18 — Besoin 2 : dossier de la vitamine D signé, étiquetage en lot (D-325)
 
 **Fait.** Sources externes du dossier ingérées sur approbation de chaque envoi (LOT_018 à LOT_020, 41 passages, 82 claims), toutes signées par le responsable ; positions v0.1 et v0.2 validées par lui, signature transcrite sur son instruction ; fiche H15 à jour (#1551). Étiquetage : D-325 (geste en lot, tout ou rien, un acte par claim, correspondance des rubriques) et son code ; liste de 194 claims préparée au dossier privé.
