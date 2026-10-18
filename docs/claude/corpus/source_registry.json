@@ -13658,7 +13658,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims en attente de signature",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims signés par le responsable le 2026-10-18",
     "comment": "Source externe, avis public d'agence sanitaire. Extraits mot pour mot, sans adaptation.",
     "auditDate": "2026-10-18"
   },
@@ -13684,7 +13684,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims en attente de signature",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims signés par le responsable le 2026-10-18",
     "comment": "Source externe, reproduction autorisée avec mention de la source. Extraits mot pour mot, sans adaptation.",
     "auditDate": "2026-10-18"
   },
@@ -13710,7 +13710,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims en attente de signature",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims signés par le responsable le 2026-10-18",
     "comment": "Source externe, licence CC BY-ND 4.0. Extraits mot pour mot, sans adaptation.",
     "auditDate": "2026-10-18"
   },
@@ -13718,12 +13718,12 @@
     "sourceId": "WN-SRC-0515",
     "title": "HAS (2013) — Utilité clinique du dosage de la vitamine D, rapport d'évaluation technologique",
     "corpus": "SOURCES_EXTERNES",
-    "documentType": "Recommandation de pratique",
+    "documentType": "Rapport d'évaluation technologique",
     "format": "PDF",
     "mimeType": "application/pdf",
     "language": "fr",
     "jurisdiction": "FR",
-    "authorityClass": "EXTERNAL_GUIDELINE",
+    "authorityClass": "EXTERNAL_AGENCY_OPINION",
     "audienceOriginal": "Praticien",
     "importance": "canonical",
     "prescriptive": false,
@@ -13736,7 +13736,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims en attente de signature",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims signés par le responsable le 2026-10-18",
     "comment": "Source externe, document public de la HAS. Extraits mot pour mot, sans adaptation.",
     "auditDate": "2026-10-18"
   },
@@ -13762,7 +13762,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_019_2026-10-18) ; claims en attente de signature",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_019_2026-10-18) ; claims signés par le responsable le 2026-10-18",
     "comment": "Source externe, droits de l'éditeur. Extraits courts à usage interne.",
     "auditDate": "2026-10-18"
   },
@@ -13788,7 +13788,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_020_2026-10-18) ; claims en attente de signature",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_020_2026-10-18) ; claims signés par le responsable le 2026-10-18",
     "comment": "Source externe, document officiel d'autorisation de mise sur le marché, Licence Ouverte etalab-2.0. Rubriques 4.1, 4.3 à 4.6 et 4.9 seulement, mot pour mot ; posologie non ingérée.",
     "auditDate": "2026-10-18"
   },
@@ -13814,7 +13814,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_020_2026-10-18) ; claims en attente de signature",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_020_2026-10-18) ; claims signés par le responsable le 2026-10-18",
     "comment": "Source externe, page publique d'agence sanitaire. Extraits mot pour mot, sans adaptation.",
     "auditDate": "2026-10-18"
   }
