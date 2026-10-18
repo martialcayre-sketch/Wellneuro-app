@@ -375,9 +375,9 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
   - **Information du patient : inchangée.** La note patient déclare déjà le
     relevé et la saisie des résultats, lus par le praticien. Le geste que
     celui-ci note près d'une valeur n'ajoute ni catégorie, ni destinataire,
-    ni finalité vue du patient. **Ce paragraphe est à valider par le
-    responsable avant le merge de la PR de la migration**, note patient
-    inchangée comprise.
+    ni finalité vue du patient. **Ce paragraphe a été validé par le
+    responsable le 2026-10-18**, note patient inchangée comprise, dans la PR
+    de la migration (#1537), avant le merge.
 - **Transmission du compte rendu par le patient depuis son portail
   ([[D-269]], BIO-INGEST LOT-04) — déclarée le 2026-10-07, avant la
   migration et avant tout code.** Le patient peut déposer lui-même son

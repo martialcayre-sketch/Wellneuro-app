@@ -10499,3 +10499,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Rediffusions des trois programmes par le praticien, à constater ; résidu de t13 à arbitrer ; dettes t16, t08, t09 à cadrer.
 
 **Ouvert.** r2_01 et r2_02 attendent la fin de #1530 (Fil).
+
+## 2026-10-18 — File B en autonomie : F58 migration, lettre z
+
+**Fait.** Lettre z (D-302) mergée : date de naissance obligatoire à la création d'un dossier, formulaire au libellé visible et serveur (#1539). F58 : migration seule de la table des statuts posés (D-322), contrat négatif, effacement nommé, déclaration RGPD validée par le responsable (#1537).
+
+**Écarté.** Refuser REPEATABLE READ en base pour F58 (aucune intégrité n'en dépend, limite décrite) ; F38 en deux lots (le responsable choisit un seul lot avec migration).
+
+**Prochaine action.** Merge de #1537, release-db, constat par conteneur, puis PR du code F58 (route, lecture, écran, banc à deux sessions, nettoyage E2E). Puis F38 : migration de la remise patient, puis code.
+
+**Ouvert.** F38 : impression bloquée si refus de partage médecin (arbitré) ; forme de l'objet « document remis » à cadrer.
