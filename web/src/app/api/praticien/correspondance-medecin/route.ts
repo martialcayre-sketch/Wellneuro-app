@@ -97,7 +97,7 @@ const MESSAGES_REFUS: Record<string, string> = {
     'Désignez le médecin sans adresse e-mail : seule une désignation libre est conservée.',
   medecin_libelle_trop_long: 'La désignation du médecin est trop longue.',
   texte_vide: 'Le texte de l’échange est vide.',
-  texte_trop_long: 'Le texte de l’échange est trop long (8 000 caractères maximum).',
+  texte_trop_long: 'Le texte de l’échange est trop long (12 000 caractères maximum).',
   date_echange_invalide: 'Date de l’échange illisible.',
   date_echange_future: 'La date de l’échange ne peut pas être dans le futur.',
 };

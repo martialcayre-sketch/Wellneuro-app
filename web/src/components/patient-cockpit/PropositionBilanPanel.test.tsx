@@ -671,3 +671,26 @@ describe('la vue par analyte (D-296 §2, F50)', () => {
     expect(screen.queryByText(/^Vue par analyte/)).toBeNull();
   });
 });
+
+describe('PropositionBilanPanel — compositions signées (D-323 §2-§3)', () => {
+  it('un groupe signé porte son acte et dit, sous la ligne, ses constituants et ce pour quoi il est demandé', () => {
+    rendre({
+      lignes: [ligne({
+        analytes: [{
+          code: 'BIO_NFS',
+          libelle: 'Numération formule sanguine',
+          validationMedicaleRequise: false,
+          remboursement: { statut: 'remboursable', conditions: [], codesActesRetenus: ['1104'] },
+          constituants: [{ code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine', validationMedicaleRequise: true, proposeParLeBilan: true }],
+          demandeePour: [{ code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine' }],
+        }],
+      })],
+    });
+    expect(screen.getByText('Numération formule sanguine (acte 1104) (Remboursable)')).toBeTruthy();
+    expect(screen.getByText(
+      'Numération formule sanguine (acte 1104), analyse demandée pour : Hémoglobine — constituants : Hémoglobine.',
+    )).toBeTruthy();
+    // Rangée sous son groupe, l'hémoglobine garde l'avertissement de validation.
+    expect(screen.getByText('Interprétation sous validation médicale.')).toBeTruthy();
+  });
+});

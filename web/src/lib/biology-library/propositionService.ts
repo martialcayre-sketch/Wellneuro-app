@@ -14,6 +14,12 @@ import {
 import { SOURCE_NABM } from './catalogue';
 import { deriverRemboursement, type CorrespondanceNabm, type Remboursement } from './remboursable';
 import { deriverStatutsBiologie, STATUTS_PROPOSES } from './statuts';
+import { chargerCompositionsSignees } from './compositionsAnalytes';
+import {
+  libelleNonEvalue,
+  remboursementsAvecCompositions,
+  type CompositionSignee,
+} from './compositionsProposition';
 import type { PanelCatalogue, PanelDocumente, PropositionBilan } from './statuts';
 
 // Premier appelant de production de `deriverStatutsBiologie` ([[D-071]] §4).
@@ -177,8 +183,9 @@ async function chargerReponses(idPatient: string): Promise<ReponseOrientation[]>
 async function chargerAnalytes(): Promise<{
   validationMedicale: Set<string>;
   remboursements: Map<string, Remboursement>;
+  compositions: Map<string, CompositionSignee>;
 }> {
-  const [analytes, pointeurNabm] = await Promise.all([
+  const [analytes, pointeurNabm, compositions] = await Promise.all([
     prisma.biologyAnalyte.findMany({
       select: {
         code: true,
@@ -191,6 +198,7 @@ async function chargerAnalytes(): Promise<{
       where: { sourceProvenance: SOURCE_NABM },
       select: { versionSource: true },
     }),
+    chargerCompositionsSignees(),
   ]);
 
   const codesActes = [
@@ -219,15 +227,21 @@ async function chargerAnalytes(): Promise<{
     validationMedicale: new Set(
       analytes.filter(a => a.validationMedicaleRequise).map(a => a.code),
     ),
-    remboursements: new Map(
-      analytes.map(a => [
-        a.code,
-        deriverRemboursement(a.correspondancesNabm as CorrespondanceNabm[], actesCourants, {
-          constat: a.constatNabm,
-          millesimeCourant,
-        }),
-      ]),
+    // Un calculé ou un regroupement signé hérite de ses mesures ([[D-323]] §4) :
+    // la règle est écrite une fois (`deriverRemboursementParMesures`).
+    remboursements: remboursementsAvecCompositions(
+      new Map(
+        analytes.map(a => [
+          a.code,
+          deriverRemboursement(a.correspondancesNabm as CorrespondanceNabm[], actesCourants, {
+            constat: a.constatNabm,
+            millesimeCourant,
+          }),
+        ]),
+      ),
+      compositions,
     ),
+    compositions,
   };
 }
 
@@ -296,6 +310,9 @@ export async function deriverPropositionPourPatient(
     // acte » journalisés (M-3c). Une analyse que personne n'a tranchée reste
     // `non_evalue` — la dérivation le rend elle-même, la carte n'invente rien.
     remboursements: analytes.remboursements,
+    // [[D-323]] §2-§3 : sans composition signée, la carte est vide et les
+    // analyses du bilan sont rendues telles quelles.
+    compositions: analytes.compositions,
     dateReference,
   });
 
@@ -313,7 +330,8 @@ export async function deriverPropositionPourPatient(
         .filter(ligne => STATUTS_PROPOSES.has(ligne.statut))
         .flatMap(ligne => ligne.analytes)
         .filter(analyte => analyte.remboursement.statut === 'non_evalue')
-        .map(analyte => [analyte.code, analyte.libelle] as const),
+        // Un calculé nomme la mesure qui manque ([[D-323]] §4).
+        .map(analyte => [analyte.code, libelleNonEvalue(analyte)] as const),
     ).values(),
   ];
   if (nonEvaluees.length > 0) {

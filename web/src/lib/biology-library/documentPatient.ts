@@ -6,6 +6,12 @@ import type { Bloc, DocumentComposite } from '@/lib/documents/types';
 import { STATUTS_PROPOSES } from './statuts';
 import type { LignePanelProposition } from './statuts';
 import { mentionsRemboursement, type StatutRemboursement } from './remboursable';
+import {
+  estComposee,
+  libellesValidationMedicale,
+  mentionsParMesures,
+  phraseAnalyseComposee,
+} from './compositionsProposition';
 
 // Document patient — proposition d'explorations biologiques (décision F du
 // cadrage CB, [[D-122]] §1). Miroir de `courrier.ts` SANS le médecin : même
@@ -97,12 +103,17 @@ function paragrapheLigne(ligne: LignePanelProposition): string {
     );
   }
   if (ligne.analytes.length > 0) {
-    morceaux.push(`Ce qui serait analysé : ${ligne.analytes.map(a => a.libelle).join(', ')}.`);
-    const validation = ligne.analytes.filter(a => a.validationMedicaleRequise);
+    // [[D-323]] §2-§3 : un groupe signé fait sa propre phrase, ce qu'il
+    // comprend dessous ; les analyses simples restent la liste.
+    const simples = ligne.analytes.filter(a => !estComposee(a));
+    if (simples.length > 0) morceaux.push(`Ce qui serait analysé : ${simples.map(a => a.libelle).join(', ')}.`);
+    for (const analyte of ligne.analytes) {
+      const phrase = phraseAnalyseComposee(analyte, 'comprend');
+      if (phrase) morceaux.push(phrase);
+    }
+    const validation = libellesValidationMedicale(ligne.analytes);
     if (validation.length > 0) {
-      morceaux.push(
-        `À interpréter avec un médecin : ${validation.map(a => a.libelle).join(', ')}.`,
-      );
+      morceaux.push(`À interpréter avec un médecin : ${validation.join(', ')}.`);
     }
   }
   return morceaux.join(' ');
@@ -110,7 +121,9 @@ function paragrapheLigne(ligne: LignePanelProposition): string {
 
 /** Les mentions de remboursement, en un paragraphe — ou aucun. */
 function paragrapheRemboursement(proposees: LignePanelProposition[]): string[] {
-  const mentions = mentionsRemboursement(proposees.flatMap(ligne => ligne.analytes), PHRASES_REMBOURSEMENT);
+  const analytes = proposees.flatMap(ligne => ligne.analytes);
+  // [[D-323]] §4 : un calculé remboursé le dit, avec les actes de ses mesures.
+  const mentions = [...mentionsRemboursement(analytes, PHRASES_REMBOURSEMENT), ...mentionsParMesures(analytes)];
   return mentions.length > 0 ? [mentions.join(' ')] : [];
 }
 
