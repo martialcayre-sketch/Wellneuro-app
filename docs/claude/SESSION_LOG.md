@@ -10602,6 +10602,15 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Matcher de la matrice : un spécificateur qui en préfixe un autre (`…/statuts` dans `…/statutsX`) compte un faux consommateur.
 
+## 2026-10-18 — J1-base : libellé « Compléments alimentaires » entier au menu
+
+**Fait.** Le libellé décidé par D-324 dépassait les 252 px du rail déplié et s'affichait « Compléments aliment… ». Les libellés du rail passent à la ligne au lieu d'être coupés ; un cas de banc épingle la règle. Plan : ligne `MESSAGE_ORIENTATION_INACTIVE` soldée (corrigée par D-076 en août).
+
+**Écarté.** Raccourcir le libellé (texte tranché par D-324) ; élargir le rail (toutes les pages bougent).
+
+**Prochaine action.** PR, bases d'images Desktop si le CI les refuse, merge, constat ; puis la minute d'après et le repli localhost.
+
+**Ouvert.** Les « 8 gestes cosmétiques », les jetons, K-10, NF-6 et NU-2a ne sont définis nulle part dans le dépôt.
 ## 2026-10-18 — F58 : deux marques datées, fiche soldée
 
 **Fait.** #1550 (code du statut posé) mergée après revue `wn-reviewer` (go, P2 traités : retrait refusé sur un résultat annulé, garde des lecteurs, test entrelacé) et CodeRabbit sans remarque. Marques « Lignes validées — dernière le … » et « Lecture consignée le … / non consignée » sur la carte du compte rendu, sans stockage neuf. F38 cadré ; trois arbitrages pris (chaque téléchargement journalisé, instantané de la dernière impression, vie du dossier).
