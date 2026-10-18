@@ -62,7 +62,13 @@ dix.
 **§5 — Qui prépare la liste.** La liste peut être préparée par l'assistant
 dans le dossier privé (le rubricage d'un claim est du contenu clinique, il
 ne va jamais au dépôt, [[D-251]] §4). Le geste, la relecture de l'aperçu et
-la confirmation restent ceux du responsable.
+la confirmation sont ceux du responsable, qui peut les déléguer à
+l'assistant (arbitrage du 2026-10-18) : l'assistant exécute alors le geste
+depuis la session du responsable, l'acte est journalisé à l'e-mail du
+responsable, et la délégation, la liste collée et le constat par conteneur
+sont consignés au dossier privé. La même délégation vaut pour l'application
+en base des rejets décidés au dossier, un rejet par claim avec motif. La
+signature d'un claim n'est pas déléguée par ce paragraphe.
 
 ### D-324 — Menu praticien : le groupe « Héritage 4.0 » est retiré ; chaque rayon de la Bibliothèque a son entrée ; « Biologie fonctionnelle » devient le rayon « Analyses biologiques » (L4, L5 ; amende D-310 §1)
 
