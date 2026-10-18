@@ -12,7 +12,7 @@
 --      connexion ne comptent), la casse et un suffixe ;
 --   4. la contrainte est VALIDÉE sur les lignes existantes (pas NOT VALID).
 --
--- Le reste de la table (trois colonnes, aucune date, FK, RLS) est tenu par
+-- Le reste de la table (liste blanche de colonnes, aucun horodatage, FK, RLS) est tenu par
 -- `portail_lectures_patient_v1_negatif.sql`, que ce fichier ne répète pas.
 --
 -- Tout se déroule dans une transaction annulée à la fin.
