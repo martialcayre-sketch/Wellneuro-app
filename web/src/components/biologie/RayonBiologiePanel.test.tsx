@@ -95,12 +95,26 @@ const CATALOGUE = {
 };
 
 function mockFetch(payload: unknown, status = 200) {
-  // La fiche ouverte lit aussi ses correspondances NABM (M-3) : cette lecture
-  // reçoit une liste vide, le catalogue reçoit la charge du test.
+  // La fiche ouverte lit aussi ses correspondances NABM (M-3) et sa
+  // composition (F80) : ces lectures reçoivent des listes vides, le catalogue
+  // reçoit la charge du test.
   const fetchMock = vi.fn().mockImplementation(async (url: string) =>
     String(url).includes('/nabm/')
       ? { ok: true, status: 200, json: async () => ({ ok: true, millesime: 'V105', correspondances: [] }) }
-      : { ok: status < 400, status, json: async () => payload },
+      : String(url).includes('/compositions')
+        ? {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              ok: true,
+              active: null,
+              retirees: [],
+              preparee: null,
+              operandesAbsents: null,
+              membreDe: [],
+            }),
+          }
+        : { ok: status < 400, status, json: async () => payload },
   );
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
