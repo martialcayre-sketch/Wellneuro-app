@@ -14,6 +14,7 @@ const { prisma, tx, sendMagicLinkEmail, logger, attendre } = vi.hoisted(() => ({
   },
   tx: {
     $executeRaw: vi.fn(),
+    $queryRaw: vi.fn(),
     portailMagicLink: { count: vi.fn(), create: vi.fn() },
   },
   sendMagicLinkEmail: vi.fn(),
@@ -70,6 +71,7 @@ describe('POST /api/portail/lien/demande', () => {
     prisma.portailDemandeTentative.deleteMany.mockResolvedValue({ count: 0 });
     prisma.$transaction.mockImplementation(async (cb: (t: typeof tx) => Promise<unknown>) => cb(tx));
     tx.$executeRaw.mockResolvedValue(0);
+    tx.$queryRaw.mockResolvedValue([{ actif: true, access_token_revoked: false }]);
     tx.portailMagicLink.count.mockResolvedValue(0);
     tx.portailMagicLink.create.mockResolvedValue({});
     // `clearAllMocks` efface l'historique mais CONSERVE les implémentations :
@@ -179,6 +181,39 @@ describe('POST /api/portail/lien/demande', () => {
     expect(tx.portailMagicLink.create).toHaveBeenCalledTimes(1);
     expect(prisma.portailMagicLink.count).not.toHaveBeenCalled();
     expect(prisma.portailMagicLink.create).not.toHaveBeenCalled();
+  });
+
+  // t16, écart résiduel n° 3 de D-126 : l'éligibilité se RELIT dans la
+  // transaction, sous verrou de ligne, après le verrou consultatif et avant le
+  // comptage. La course elle-même est jouée contre PostgreSQL par
+  // `scripts/banc-naissance-lien-deux-sessions.test.ts`.
+  it('l’éligibilité se relit sous verrou de ligne, entre le verrou consultatif et le comptage', async () => {
+    await POST(requete(PATIENT.email));
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    const [gabarit, ...valeurs] = tx.$queryRaw.mock.calls[0];
+    expect(gabarit.join('§')).toMatch(/FROM patients WHERE id_patient = §\s*FOR SHARE/);
+    expect(valeurs[0]).toBe(PATIENT.idPatient);
+    expect(tx.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.$queryRaw.mock.invocationCallOrder[0]);
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.portailMagicLink.count.mock.invocationCallOrder[0],
+    );
+  });
+
+  it.each([
+    ['désactivé', [{ actif: false, access_token_revoked: false }]],
+    ['révoqué', [{ actif: true, access_token_revoked: true }]],
+    ['effacé', []],
+  ])('dossier %s pendant la demande : aucun lien, aucun envoi, même réponse', async (_cas, ligne) => {
+    const reference = await observable(await POST(requete('inconnu@exemple.test')));
+    vi.clearAllMocks();
+    prisma.$transaction.mockImplementation(async (cb: (t: typeof tx) => Promise<unknown>) => cb(tx));
+    tx.$queryRaw.mockResolvedValue(ligne);
+
+    const res = await POST(requete(PATIENT.email));
+
+    expect(tx.portailMagicLink.create).not.toHaveBeenCalled();
+    expect(sendMagicLinkEmail).not.toHaveBeenCalled();
+    expect(await observable(res)).toEqual(reference);
   });
 
   // Le correctif du canal temporel (constat L de la revue Codex) : l'envoi ne

@@ -377,10 +377,12 @@ lien reste indiscernable. Ne pas retenir de seuil large (`23 hours` par
 exemple) : il manquerait toute désactivation survenue dans la dernière heure de
 vie du lien — un faux négatif silencieux, au pire moment.
 
-Réactiver ne rouvre aucun lien déjà fermé : il faut en réémettre un. Réserve :
-un lien né pendant la fermeture elle-même peut y échapper (course nommée en
-écart résiduel n° 3 de `D-126`) et redevenir utilisable si le dossier est
-réactivé sous 24 h.
+Réactiver ne rouvre aucun lien déjà fermé : il faut en réémettre un. La course
+nommée en écart résiduel n° 3 de `D-126` (un lien né pendant la fermeture
+elle-même) est fermée depuis le 2026-10-18 (t16) : la demande du patient relit
+l'éligibilité du dossier dans sa transaction, sous `FOR SHARE`, et se sérialise
+contre la désactivation comme contre la révocation
+(`web/scripts/banc-naissance-lien-deux-sessions.test.ts`).
 
 ## Violation de données personnelles
 

@@ -4,18 +4,14 @@ import { isEmailValide } from '@/lib/consultation/portail';
 import { isG4LienMagiqueEnabled, isG4RedemandePatientEnabled } from '@/lib/portail/featureFlag';
 import {
   MESSAGE_DEMANDE_ENVOYEE,
-  ORIGINE_PATIENT,
-  creerJeton,
   debutFenetreDemandes,
   debutRetentionTentatives,
   delaiAvantReponse,
-  empreinteJeton,
   empreinteOrigine,
-  expirationDepuis,
   origineReseau,
-  plafondAtteint,
   plafondIpAtteint,
 } from '@/lib/portail/lienMagique';
+import { emettreLienSurDemande } from '@/lib/portail/emissionSurDemande';
 import { attendre } from '@/lib/portail/attente';
 import { buildMagicLinkUrl, sendMagicLinkEmail } from '@/lib/consultation/email';
 import { logger } from '@/lib/observability/logger';
@@ -129,42 +125,22 @@ async function traiterDemande(
       return reponseIndifferenciee();
     }
 
-    // Cadence bornée EN BASE, pas en mémoire de processus : plusieurs
-    // conteneurs peuvent répondre (Scalingo scale horizontalement), et un
-    // compteur local ne bornerait rien.
-    //
-    // Comptage et création partagent une TRANSACTION sous verrou consultatif
-    // par patient (revue de sécurité du 2026-08-22, constat M) : séparés, des
-    // demandes concurrentes observaient toutes un compteur sous le plafond
-    // avant qu'aucune n'ait créé son lien, et le franchissaient ensemble. Le
-    // verrou `pg_advisory_xact_lock` se relâche seul au COMMIT/ROLLBACK ; un
-    // échec de la transaction ne crée rien et n'envoie rien — fail-closed.
-    const jeton = await prisma.$transaction(async (tx) => {
-      // Forme à DEUX arguments : la classe 74 sépare cet espace de clés de
-      // celui, mono-clé, des imports (`hashtext($1)` nu dans importNabm /
-      // importCiqual) — et `hashtext` est la fonction que ces imports ont
-      // déjà éprouvée sur cette base (revue adversariale, constats M1/L6 ;
-      // résolution constatée en one-off le 2026-08-22).
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(74, hashtext(${patient.idPatient}))`;
-      const demandesRecentes = await tx.portailMagicLink.count({
-        where: {
-          idPatient: patient.idPatient,
-          creePar: ORIGINE_PATIENT,
-          creeLe: { gte: debutFenetreDemandes(maintenant) },
-        },
+    // Cadence en base, sous verrou par patient, et éligibilité RELUE sous
+    // verrou de ligne (t16) : `emettreLienSurDemande` porte les deux.
+    const issue = await emettreLienSurDemande(patient.idPatient, maintenant);
+
+    if ('refus' in issue && issue.refus === 'dossier_ferme') {
+      logger.security({
+        event: EVENT_CODES.PORTAIL_LIEN_DEMANDE,
+        domain: 'SECURITY',
+        message: 'Demande de lien sans destinataire éligible',
+        context: finalizeLogContext(contexte, { statusCode: 200, retryable: false }),
       });
-      if (plafondAtteint(demandesRecentes)) return null;
-      const neuf = creerJeton();
-      await tx.portailMagicLink.create({
-        data: {
-          idPatient: patient.idPatient,
-          jetonEmpreinte: empreinteJeton(neuf),
-          expireLe: expirationDepuis(maintenant),
-          creePar: ORIGINE_PATIENT,
-        },
-      });
-      return neuf;
-    });
+      // Le dossier s'est fermé pendant la demande : même porte de sortie que
+      // l'adresse inconnue, rien n'est créé ni envoyé.
+      return reponseIndifferenciee();
+    }
+    const jeton = 'jeton' in issue ? issue.jeton : null;
 
     if (jeton === null) {
       logger.security({
