@@ -729,6 +729,32 @@ describe('ClinicalRuntimeSection', () => {
     expect(screen.queryByLabelText('Assiette de l’action 1')).toBeNull();
   });
 
+  it('HORS FIXTURE, PLUS DE BLOC « CLÔTURE ET APERÇU PATIENT » : une ligne mène à « Diffusion » (t13)', async () => {
+    // Sur un vrai dossier, le bloc n'avait jamais de protocole : il disait
+    // « aperçu indisponible… aucun contenu transmis », faux dès la diffusion.
+    // Arbitrage du responsable du 2026-10-18 : le retirer, garder le renvoi.
+    vi.stubGlobal('fetch', fetchParRoute({
+      cockpitGet: Array.from({ length: 2 }, () => rep(readyAvecCandidats())),
+    }));
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={null}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        phase="actions"
+      />,
+    );
+
+    // Témoin d'anti-vacuité : la sous-vue Protocole est rendue, constructeur vivant.
+    await screen.findByText('Actions (0/7)');
+    expect(screen.queryByRole('heading', { name: 'Clôture et aperçu patient' })).toBeNull();
+    expect(screen.queryByText(/Aperçu du protocole indisponible/)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'voir l’aperçu en « Diffusion »' }));
+    expect(screen.getByRole('button', { name: 'Diffusion' }).getAttribute('aria-pressed')).toBe('true');
+  });
+
   it('recharge automatiquement une proposition périmée et redemande confirmation', async () => {
     const stale: CockpitRuntimeApiResponse = { status: 'unavailable', reason: 'proposal_stale', error: 'Périmée.' };
     const refreshed = { ...proposalResponse, proposalHash: 'hash-refreshed' } satisfies CockpitRuntimeApiResponse;
@@ -781,6 +807,24 @@ describe('ClinicalRuntimeSection', () => {
       />,
     );
     await waitFor(() => expect(fetchMock).not.toHaveBeenCalled());
+  });
+
+  // Contrepartie du cas t13 : retiré des vrais dossiers, le panneau de clôture
+  // reste monté sur fixture — c'est la seule surface qui le rend en entier
+  // (revue CodeRabbit de #1548).
+  it('conserve le panneau « Clôture et aperçu patient » en mode fixture (t13)', async () => {
+    vi.stubGlobal('fetch', vi.fn());
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={buildValidationErgoC1Fixture()}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        phase="actions"
+      />,
+    );
+    expect(await screen.findByRole('heading', { name: 'Clôture et aperçu patient' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'voir l’aperçu en « Diffusion »' })).toBeNull();
   });
 
   // [[D-250]] : l'observatoire Boussole n'est plus monté au niveau du protocole,

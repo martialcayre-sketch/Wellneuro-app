@@ -38,8 +38,11 @@ test.describe('Mode consultation (fiche patient)', () => {
       await rail.getByRole('tab', { name: /Actions/ }).click();
       await expect(page.getByRole('heading', { name: 'Protocole 21 jours' })).toBeVisible();
       await expect(page.getByText('Protocole indisponible — aucune carte de décision n’est servie')).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Clôture et aperçu patient' })).toBeVisible();
-      await expect(page.getByText(/Aperçu du protocole indisponible/)).toBeVisible();
+      // Le bloc « Clôture et aperçu patient » n'est plus monté sur un vrai
+      // dossier (t13, 2026-10-18) : son message fixe était faux dès la
+      // diffusion. L'aperçu réel est la sous-vue « Diffusion ».
+      await expect(page.getByRole('heading', { name: 'Clôture et aperçu patient' })).toHaveCount(0);
+      await expect(page.getByText(/Aperçu du protocole indisponible/)).toHaveCount(0);
 
       // Garde-fou responsive : jamais de défilement horizontal, quel que soit le
       // viewport ; le bouton « Mode consultation » reste une cible tactile ≥ 44px.

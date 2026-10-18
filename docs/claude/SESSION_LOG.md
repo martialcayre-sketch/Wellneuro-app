@@ -10580,3 +10580,12 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Les deux marques datées de la carte du compte rendu (F58, sans migration), puis F38.
 
 **Ouvert.** Matcher de la matrice : un spécificateur qui en préfixe un autre (`…/statuts` dans `…/statutsX`) compte un faux consommateur.
+## 2026-10-18 — t13 : le bloc « Clôture et aperçu patient » quitte les vrais dossiers
+
+**Fait.** Constat : sur un vrai dossier, le bloc n'avait jamais de protocole et disait « aperçu indisponible… aucun contenu transmis », faux dès la diffusion. Arbitrage du responsable : le retirer ; une ligne mène à la sous-vue « Diffusion », où l'aperçu réel existe. Le mode démonstration local garde le panneau.
+
+**Écarté.** Garder le bloc avec un texte suivant l'état réel (doublon de « Diffusion ») ; en faire un aperçu du brouillon (lot long, contrat du contenu patient).
+
+**Prochaine action.** PR, CI, merge, constat ; t13 soldée sur la page de la file A.
+
+**Ouvert.** Libellé « Compléments aliment… » tronqué au menu ; concept de Bibliothèque à revoir.
