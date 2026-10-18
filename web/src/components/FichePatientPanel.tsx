@@ -54,7 +54,7 @@ import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpre
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { ScoreZones } from '@/components/ui/ScoreZones';
 import { EvidenceBadge } from '@/components/ui/EvidenceBadge';
-import { Badge, type BadgeVariant } from '@/components/ui/Badge';
+import { Badge, varianteInterpretation } from '@/components/ui/Badge';
 import { CerclesConcentriques } from '@/components/ui/CerclesConcentriques';
 import { Chip } from '@/components/ui/Chip';
 import { SpiraleTrajectoire } from '@/components/ui/SpiraleTrajectoire';
@@ -100,11 +100,6 @@ import { usePatientGestesDossier } from '@/components/dossier/usePatientGestesDo
 import { elementsMenuDossier, type PatientRowData } from '@/components/ui/PatientRow';
 import { DossierConfirmDialog } from '@/components/ui/DossierConfirmDialog';
 import { MenuActions } from '@/components/ui/MenuActions';
-
-function interpColorToVariant(color?: string): BadgeVariant {
-  if (color === 'success' || color === 'warning' || color === 'danger') return color;
-  return 'neutral';
-}
 
 function ObjetGauge({
   label,
@@ -1596,7 +1591,7 @@ export function FichePatientPanel({
                           {subScores.map(sub => (
                             <div key={sub.id}>
                               {sub.interpretation?.label ? (
-                                <Badge variant={interpColorToVariant(sub.interpretation.color)}>
+                                <Badge variant={varianteInterpretation(sub.interpretation.color)}>
                                   {sub.interpretation.label}
                                 </Badge>
                               ) : (

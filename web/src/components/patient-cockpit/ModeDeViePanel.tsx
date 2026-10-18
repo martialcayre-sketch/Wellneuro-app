@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, type BadgeVariant } from '@/components/ui/Badge';
+import { Badge, varianteInterpretation } from '@/components/ui/Badge';
 import type { DomaineModeVie, ModeVieDate } from '@/lib/equilibre/modeVie';
 
 // « Mode de vie — 7 domaines » (SP-TRAJ LOT-02, maquette 5.0 écran
@@ -15,11 +15,6 @@ const COULEUR_ZONE: Record<string, string> = {
   warning: 'rgb(var(--color-status-warning-rgb) / 0.18)',
   success: 'rgb(var(--color-status-success-rgb) / 0.18)',
 };
-
-function variantBadge(color: string | undefined): BadgeVariant {
-  if (color === 'success' || color === 'warning' || color === 'danger') return color;
-  return 'neutral';
-}
 
 // Fond de piste : un segment par zone du référentiel, borné au `min` de la
 // zone suivante (les grilles SIIN ont des trous — le segment couvre jusqu'à la
@@ -115,7 +110,7 @@ export function ModeDeViePanel({
                     {domaine.total === null ? 'non mesuré' : `${domaine.total}/${domaine.max}`}
                   </span>
                   {domaine.interpretation ? (
-                    <Badge variant={variantBadge(domaine.interpretation.color)}>{domaine.interpretation.label}</Badge>
+                    <Badge variant={varianteInterpretation(domaine.interpretation.color)}>{domaine.interpretation.label}</Badge>
                   ) : (
                     <Badge variant="neutral">Sans zone</Badge>
                   )}
