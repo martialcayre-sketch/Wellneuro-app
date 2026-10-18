@@ -1,4 +1,4 @@
-# Handoff — 2026-10-18 — t05 : deux transmissions concurrentes, une seule réponse
+# Handoff — 2026-10-18 — t04 : deux transmissions concurrentes, une seule réponse
 
 ## Branche et état Git
 
@@ -32,7 +32,7 @@ sans occurrence observée.
   transaction et de verrou, banc de concurrence avec contre-épreuve sur la
   route d'avant, trois cas rouges).
 - `docs/claude/PLAN_WELLNEURO.md` (§8 soldé) ;
-  `changelog.d/2026-10-18-t05-transmission-concurrente.md`.
+  `changelog.d/2026-10-18-t04-transmission-concurrente.md`.
 
 ## Validations exécutées
 
@@ -46,7 +46,7 @@ sans occurrence observée.
 
 ## Prochaine action exacte
 
-PR, CI, revue CodeRabbit sur le sha de tête, merge. Page de la file A : t05
+PR, CI, revue CodeRabbit sur le sha de tête, merge. Page de la file A : t04
 passe à fait.
 
 ## Interdits encore actifs

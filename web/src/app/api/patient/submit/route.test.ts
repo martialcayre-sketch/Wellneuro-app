@@ -9,7 +9,7 @@ const { prisma, after, sendMailAck } = vi.hoisted(() => ({
   // d'affirmer qu'AUCUN travail de fond n'est planifié sur ce chemin.
   after: vi.fn((tache: () => unknown) => { void tache(); }),
   prisma: {
-    // Transaction et verrou de ligne de la création (t05) : par défaut, la
+    // Transaction et verrou de ligne de la création (t04) : par défaut, la
     // transaction rappelle son callback avec ce même objet, et le verrou rend
     // une assignation ouverte. Le banc de concurrence les remplace.
     $transaction: vi.fn(),
@@ -857,11 +857,11 @@ describe('POST /api/patient/submit — alerte et accusé : en parallèle, échec
   });
 });
 
-// Dette t05 du plan (§8, h1) : deux transmissions concurrentes d'une même
+// Dette t04 du plan (§8, h1) : deux transmissions concurrentes d'une même
 // assignation franchissaient ensemble les refus, lus sans verrou, et créaient
 // deux réponses, deux accusés et, sur une réponse suicidaire, deux alertes.
 // Le banc sérialise les transactions comme le ferait le verrou de ligne.
-describe('POST /api/patient/submit — deux transmissions concurrentes : une seule réponse (t05)', () => {
+describe('POST /api/patient/submit — deux transmissions concurrentes : une seule réponse (t04)', () => {
   const question = questionSecuriteDe('Q_NEU_03')!;
   const smtpOrigine = process.env.SMTP_URL;
 
