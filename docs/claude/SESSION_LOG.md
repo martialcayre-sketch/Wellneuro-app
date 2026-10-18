@@ -10580,3 +10580,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR, CI, merge, constat ; t13 soldée sur la page de la file A.
 
 **Ouvert.** Libellé « Compléments aliment… » tronqué au menu ; concept de Bibliothèque à revoir.
+
+## 2026-10-18 — F58 : le statut posé près d'une valeur, code
+
+**Fait.** Migration #1537 mergée (585a5105) après une relecture CodeRabbit qui a montré qu'une correction concurrente passait sous le verrou par ligne : le trigger prend les verrous de clé de BP-09, course reproduite puis fermée. Release-db approuvée sur la tête de main au CI vert. Code : route `resultats/statuts` (pose, retrait, refus nommés sous les mêmes verrous), statut et historique joints à la série, écran (sans statut posé, poser, changer, retirer, historique), banc à deux sessions (six courses, trois rougissent sous l'ancien verrou) en CI et T3, nettoyage E2E.
+
+**Écarté.** Corriger le matcher de `wn-matrice-consommation` (préfixe d'import) dans ce lot : modules neufs renommés (`statutPoseListe`, `statutPoseLecture`), défaut de l'outil routé au handoff.
+
+**Prochaine action.** Les deux marques datées de la carte du compte rendu (F58, sans migration), puis F38.
+
+**Ouvert.** Matcher de la matrice : un spécificateur qui en préfixe un autre (`…/statuts` dans `…/statutsX`) compte un faux consommateur.
