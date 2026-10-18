@@ -34,7 +34,9 @@ claim par ligne : identifiant (version facultative), besoins, rubrique (code
 ou nom à l'écran). L'atelier la lit et montre l'aperçu ; seules les lignes
 vides, les commentaires et les lignes sans aucun chiffre (en-tête, séparateur
 de tableau) sont ignorées ; toute autre ligne qui se lit mal est une erreur
-qui bloque l'envoi, jamais une ligne écartée ni complétée. Sur confirmation, la route relit chaque ligne et
+qui bloque l'envoi, jamais une ligne écartée ni complétée ; un champ vide
+intérieur aussi (seules les barres extérieures d'un tableau copié sont
+tolérées). Sur confirmation, la route relit chaque ligne et
 pose les clés de tous les claims en une transaction, au nom du praticien en
 session.
 
@@ -47,7 +49,10 @@ transaction.
 
 **§3 — Au journal.** Un acte `etiquetage` par claim, de la forme de
 l'étiquetage individuel ([[D-321]] §6) : les clés dans l'élément, ni statut
-avant ni statut après. Un compte des signatures ne compte jamais un
+avant ni statut après. Un claim qui porte déjà exactement les clés demandées
+n'est ni réécrit ni journalisé, et l'atelier le compte à part : renvoyer la
+même liste, après une réponse perdue, n'ajoute aucun acte ; une réponse
+illisible s'annonce « résultat inconnu », jamais « rien n'est écrit ». Un compte des signatures ne compte jamais un
 étiquetage, qu'il vienne d'un geste unitaire ou d'un lot.
 
 **§4 — Correspondance des rubriques.** Un dossier de preuve rédigé dans les

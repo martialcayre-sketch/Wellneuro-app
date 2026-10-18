@@ -23,7 +23,7 @@ afterEach(() => {
 
 describe('EtiquetageLotPanel — coller, relire, confirmer', () => {
   it('montre l’aperçu, demande confirmation, puis envoie les codes de rubrique', async () => {
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ok: true, n: 2 }) });
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ok: true, n: 2, inchanges: 0 }) });
     const onConclu = vi.fn();
     render(<EtiquetageLotPanel onConclu={onConclu} />);
     ouvrirEtColler('WN-CL-0001-001 ; 2 ; Options\nWN-CL-0001-002 ; 2 ; Surveillance et arrêt');
@@ -55,13 +55,13 @@ describe('EtiquetageLotPanel — coller, relire, confirmer', () => {
     expect(screen.queryByRole('button', { name: /^Étiqueter ce/ })).toBeNull();
   });
 
-  it('une réponse illisible mène au message d’erreur technique', async () => {
+  it('une réponse illisible annonce un résultat inconnu, pas un échec', async () => {
     fetchMock.mockResolvedValue({ ok: false, json: async () => { throw new SyntaxError('html'); } });
     render(<EtiquetageLotPanel />);
     ouvrirEtColler('WN-CL-0001-001 ; 2 ; Options');
     fireEvent.click(screen.getByRole('button', { name: 'Étiqueter ce claim' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’étiquetage' }));
-    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Erreur technique'));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Résultat inconnu'));
   });
 
   it('la confirmation reçoit le focus', () => {

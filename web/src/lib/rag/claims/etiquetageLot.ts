@@ -66,10 +66,13 @@ export function lireListeEtiquetage(texte: string): ListeEtiquetageLue {
     if (!ligne || ligne.startsWith('#') || !/\d/.test(ligne)) return;
     const erreur = (raison: string) => erreurs.push({ numero, texte: ligne, raison });
 
+    // Seules les barres extérieures d'un tableau copié produisent un champ
+    // vide toléré ; un champ vide intérieur rend la ligne illisible.
     const champs = ligne
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
       .split(/[;\t|]/)
-      .map((c) => c.trim())
-      .filter(Boolean);
+      .map((c) => c.trim());
     if (champs.length !== 3) {
       erreur('trois champs attendus : identifiant ; besoins ; rubrique');
       return;

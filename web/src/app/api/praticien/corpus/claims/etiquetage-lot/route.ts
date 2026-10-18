@@ -23,7 +23,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export type CorpusEtiquetageLotApiResponse =
-  | { ok: true; n: number }
+  | { ok: true; n: number; inchanges: number }
   | { ok: false; reason: 'claims_refuses'; error: string; refus: RefusEtiquetageLot[] }
   | { ok: false; reason: string; error: string };
 
@@ -93,7 +93,7 @@ export async function POST(req: Request): Promise<NextResponse<CorpusEtiquetageL
         409,
       );
     }
-    return NextResponse.json<CorpusEtiquetageLotApiResponse>({ ok: true, n: resultat.n });
+    return NextResponse.json<CorpusEtiquetageLotApiResponse>({ ok: true, n: resultat.n, inchanges: resultat.inchanges });
   } catch (err) {
     console.error(
       '[praticien/corpus/claims/etiquetage-lot POST]',

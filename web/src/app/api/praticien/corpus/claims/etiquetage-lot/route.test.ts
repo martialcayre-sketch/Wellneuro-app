@@ -32,7 +32,7 @@ describe('/api/praticien/corpus/claims/etiquetage-lot', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'Praticien@wellneuro.fr' } });
-    etiqueterClaimsLot.mockResolvedValue({ ok: true, n: 2 });
+    etiqueterClaimsLot.mockResolvedValue({ ok: true, n: 2, inchanges: 0 });
   });
 
   it('exige une session avec e-mail — jamais d’étiquetage anonyme', async () => {
@@ -46,7 +46,7 @@ describe('/api/praticien/corpus/claims/etiquetage-lot', () => {
   it('étiquette la liste relue, au nom du praticien en session', async () => {
     const reponse = await POST(requete({ lignes: LIGNES }));
     expect(reponse.status).toBe(200);
-    expect(await reponse.json()).toEqual({ ok: true, n: 2 });
+    expect(await reponse.json()).toEqual({ ok: true, n: 2, inchanges: 0 });
     expect(etiqueterClaimsLot).toHaveBeenCalledWith({
       validateur: 'praticien@wellneuro.fr',
       lignes: [

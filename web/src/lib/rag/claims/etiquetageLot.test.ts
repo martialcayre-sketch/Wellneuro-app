@@ -70,6 +70,14 @@ describe('lireListeEtiquetage — une ligne, un claim, rien de complété', () =
     expect(erreurs[5].raison).toContain('déjà présent');
   });
 
+  it('un champ vide intérieur rend la ligne illisible ; seules les barres extérieures d’un tableau sont tolérées', () => {
+    const { lignes, erreurs } = lireListeEtiquetage(
+      'WN-CL-0001-001 ; 2 ; ; options\nWN-CL-0001-002 ; 2 ; options ;\n| WN-CL-0001-003 | 2 | options |',
+    );
+    expect(lignes).toEqual([{ claimId: 'WN-CL-0001-003', besoins: [2], rubrique: 'options' }]);
+    expect(erreurs.map((e) => e.numero)).toEqual([1, 2]);
+  });
+
   it('un identifiant de forme approchée devient une erreur visible, jamais ignorée', () => {
     const { lignes, erreurs } = lireListeEtiquetage(
       'wn-cl-0001-001 ; 2 ; options\nWN_CL_0001_002 ; 2 ; options\nWN-CX-0001-003 ; 2 ; options\n0001-004 ; 2 ; options\nWN-CL-0001-005 ; 2 ; options',

@@ -63,13 +63,21 @@ export function EtiquetageLotPanel({ onConclu }: { onConclu?: () => void }) {
         setEtat('apercu');
         return;
       }
-      setMessage(`${payload.n} claim${payload.n > 1 ? 's' : ''} étiqueté${payload.n > 1 ? 's' : ''}.`);
+      const s = (k: number) => (k > 1 ? 's' : '');
+      setMessage(
+        `${payload.n} claim${s(payload.n)} étiqueté${s(payload.n)}.` +
+          (payload.inchanges > 0
+            ? ` ${payload.inchanges} portai${payload.inchanges > 1 ? 'ent' : 't'} déjà ces clés : laissé${s(payload.inchanges)} tel${s(payload.inchanges)} quel${s(payload.inchanges)}, sans nouvel acte.`
+            : ''),
+      );
       setTexte('');
       setListe(null);
       setEtat('fait');
       onConclu?.();
     } catch {
-      setErreur('Erreur technique pendant l’étiquetage : rien n’est confirmé, rechargez la liste.');
+      setErreur(
+        'Résultat inconnu : la réponse n’a pas pu être lue. Vérifiez les claims dans l’atelier avant de renvoyer ; un renvoi de la même liste ne réécrit pas un claim qui porte déjà ces clés.',
+      );
       setEtat('apercu');
     }
   };

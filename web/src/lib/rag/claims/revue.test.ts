@@ -524,7 +524,7 @@ describe('etiqueterClaimsLot — un geste, un acte « étiquetage » par claim, 
       .mockResolvedValueOnce([{ id: TROUVES[0].id }, { id: TROUVES[1].id }]);
     prisma.$executeRaw.mockResolvedValueOnce(2);
 
-    expect(await etiqueterClaimsLot({ lignes: LIGNES, validateur: 'praticien@wellneuro.fr' })).toEqual({ ok: true, n: 2 });
+    expect(await etiqueterClaimsLot({ lignes: LIGNES, validateur: 'praticien@wellneuro.fr' })).toEqual({ ok: true, n: 2, inchanges: 0 });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma.$transaction.mock.calls[0][1]).toEqual({ timeout: 30_000 });
 
@@ -594,7 +594,7 @@ describe('etiqueterClaimsLot — un geste, un acte « étiquetage » par claim, 
       .mockResolvedValueOnce([{ id: 'WN-CL-0056-001@v2.0' }]);
     prisma.$executeRaw.mockResolvedValueOnce(1);
     const lignes = [{ claimId: 'WN-CL-0056-001', versionClaim: 'v2.0', besoins: [2], rubrique: 'limites' as const }];
-    expect(await etiqueterClaimsLot({ lignes, validateur: 'praticien@wellneuro.fr' })).toEqual({ ok: true, n: 1 });
+    expect(await etiqueterClaimsLot({ lignes, validateur: 'praticien@wellneuro.fr' })).toEqual({ ok: true, n: 1, inchanges: 0 });
     expect(JSON.parse(parametresDeAppel(prisma.$queryRaw.mock.calls[1])[0] as string)).toEqual([
       { id: 'WN-CL-0056-001@v2.0', besoins: [2], rubrique: 'limites' },
     ]);
@@ -607,6 +607,38 @@ describe('etiqueterClaimsLot — un geste, un acte « étiquetage » par claim, 
       ok: false,
       raison: 'etat_divergent',
     });
+  });
+
+  it('un claim qui porte déjà ces clés n’est ni réécrit ni journalisé : un renvoi n’ajoute aucun acte', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce([
+        { ...TROUVES[0], besoins: [2], rubrique: 'limites' },
+        { ...TROUVES[1], besoins: [2], rubrique: 'options' },
+      ])
+      .mockResolvedValueOnce([{ id: TROUVES[1].id }]);
+    prisma.$executeRaw.mockResolvedValueOnce(1);
+    expect(await etiqueterClaimsLot({ lignes: LIGNES, validateur: 'praticien@wellneuro.fr' })).toEqual({
+      ok: true,
+      n: 1,
+      inchanges: 1,
+    });
+    expect(JSON.parse(parametresDeAppel(prisma.$queryRaw.mock.calls[1])[0] as string)).toEqual([
+      { id: TROUVES[1].id, besoins: [2, 4], rubrique: 'options' },
+    ]);
+  });
+
+  it('une liste entièrement déjà étiquetée n’écrit rien et n’ajoute aucun acte', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([
+      { ...TROUVES[0], besoins: [2], rubrique: 'limites' },
+      { ...TROUVES[1], besoins: [4, 2], rubrique: 'options' },
+    ]);
+    expect(await etiqueterClaimsLot({ lignes: LIGNES, validateur: 'praticien@wellneuro.fr' })).toEqual({
+      ok: true,
+      n: 0,
+      inchanges: 2,
+    });
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
   });
 
   it('un claim qui bouge entre la lecture et l’écriture annule tout le geste', async () => {

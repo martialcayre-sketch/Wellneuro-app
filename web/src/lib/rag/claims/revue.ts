@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
-import type { ClesLienClaim } from './clesLien';
+import { lireClesLien, type ClesLienClaim } from './clesLien';
 import type { LigneEtiquetageLot } from './etiquetageLot';
 
 // Poste de revue des claims (Atelier corpus v1, D-004). C'est ici — et
@@ -527,7 +527,7 @@ export type RefusEtiquetageLot = {
 };
 
 export type EtiquetageLotResultat =
-  | { ok: true; n: number }
+  | { ok: true; n: number; inchanges: number }
   | { ok: false; raison: 'claims_refuses'; refus: RefusEtiquetageLot[] }
   | { ok: false; raison: 'etat_divergent' };
 
@@ -560,8 +560,11 @@ export async function etiqueterClaimsLot(params: {
           version_claim: string;
           source_id: string;
           statut: string;
+          besoins: unknown;
+          rubrique: unknown;
         }>>`
-          SELECT id, claim_id, version_claim, source_id, statut
+          SELECT id, claim_id, version_claim, source_id, statut,
+                 metadata->'besoins' AS besoins, metadata->>'rubrique' AS rubrique
           FROM public.rag_corpus_claims
           WHERE active = true
             AND claim_id = ANY(${ids}::text[])
@@ -591,7 +594,22 @@ export async function etiqueterClaimsLot(params: {
         }
         if (refus.length > 0) return { ok: false as const, raison: 'claims_refuses' as const, refus };
 
-        const majs = cibles.map(({ ligne, claim }) => ({
+        // Un claim qui porte déjà exactement ces clés n'est ni réécrit ni
+        // journalisé : renvoyer la même liste (réponse perdue, double clic)
+        // n'ajoute aucun acte. Les lignes sont verrouillées, la relecture vaut
+        // sous concurrence.
+        const aEcrire = cibles.filter(({ ligne, claim }) => {
+          const actuelles = lireClesLien(claim.besoins, claim.rubrique);
+          return !(
+            actuelles &&
+            actuelles.rubrique === ligne.rubrique &&
+            actuelles.besoins.join(',') === ligne.besoins.join(',')
+          );
+        });
+        const inchanges = cibles.length - aEcrire.length;
+        if (aEcrire.length === 0) return { ok: true as const, n: 0, inchanges };
+
+        const majs = aEcrire.map(({ ligne, claim }) => ({
           id: claim.id,
           besoins: ligne.besoins,
           rubrique: ligne.rubrique,
@@ -606,9 +624,9 @@ export async function etiqueterClaimsLot(params: {
             AND c.active = true
           RETURNING c.id
         `;
-        if (majees.length !== cibles.length) throw new EtatDivergentEtiquetageLot();
+        if (majees.length !== aEcrire.length) throw new EtatDivergentEtiquetageLot();
 
-        const actes = cibles.map(({ ligne, claim }) => ({
+        const actes = aEcrire.map(({ ligne, claim }) => ({
           source_id: claim.source_id,
           element: elementJournalEtiquetage(
             { id: claim.id, claimId: claim.claim_id, versionClaim: claim.version_claim },
@@ -621,9 +639,9 @@ export async function etiqueterClaimsLot(params: {
           SELECT 'etiquetage', ${validateur}, x.source_id, jsonb_build_array(x.element)
           FROM jsonb_to_recordset(${JSON.stringify(actes)}::jsonb) AS x(source_id text, element jsonb)
         `;
-        if (journalises !== cibles.length) throw new EtatDivergentEtiquetageLot();
+        if (journalises !== aEcrire.length) throw new EtatDivergentEtiquetageLot();
 
-        return { ok: true as const, n: cibles.length };
+        return { ok: true as const, n: aEcrire.length, inchanges };
       },
       { timeout: 30_000 },
     );
