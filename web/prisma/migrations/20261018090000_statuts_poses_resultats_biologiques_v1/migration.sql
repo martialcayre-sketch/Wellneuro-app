@@ -266,6 +266,9 @@ ALTER TABLE "public"."statuts_poses_resultats_biologiques" ENABLE ROW LEVEL SECU
 -- que les migrations échouées (précédent BIO-INGEST, P3012). Déployer d'abord
 -- le code sans l'effacement des statuts et sans le modèle
 -- `StatutPoseResultatBiologique` ; puis DROP TABLE et DROP FUNCTION des deux
--- fonctions ci-dessus. Tant qu'aucun statut n'est posé, rien ne se perd ;
+-- fonctions ci-dessus. Entre ces deux temps, un dossier qui porte un statut
+-- ne s'efface plus (la clé RESTRICT vers le résultat refuse, la transaction
+-- d'effacement est annulée entière) : la fenêtre se tient courte.
+-- Tant qu'aucun statut n'est posé, rien ne se perd ;
 -- après la première pose, le DROP efface des actes du praticien : le retour
 -- arrière devient une décision.
