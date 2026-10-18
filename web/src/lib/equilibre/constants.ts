@@ -196,7 +196,24 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // fermer : la production ne porte qu'UNE passation `Q_STR_01`, sans
 // `rawAnswers`, que `depuisPrisma` écarte déjà — le STOCK ne bouge pas, c'est
 // le FLUX qui change de définition, et c'est lui que l'étiquette gouverne.
-export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v15' : 'v14';
+//
+// v14/v15 → v16/v17 (garde des sous-scores partiels, [[D-328]] §1, audit de
+// D-312 section 10, 2026-10-18) : un sous-score servi n'alimente plus un besoin
+// que si TOUS les items de son axe sont répondus. Quatrième occurrence de la
+// même classe : la DISPONIBILITÉ d'une source change, aucun poids, aucun seuil,
+// aucune source ne bouge (mapping besoin → sources intouché, arbitrage du
+// 2026-10-15 ; ne pas nommer la constante ici : le contrôle de certification
+// l'extrait à sa PREMIÈRE occurrence dans ce fichier).
+// Besoins concernés : 5 (bloc activité de `Q_MOD_01`), 8 (axe D de `Q_NEU_11`),
+// 10 et 12 (axes de `Q_INF_03`) ; le besoin 3 exigeait déjà ses quatre items.
+// L'effet va dans les deux sens, comme pour les trois prédécesseurs : un axe
+// partiel et haut (sources `inverser: true`) cessait de dire « bien couvert »,
+// la couverture BAISSE ; un axe partiel et bas sous `SEUIL_EFFONDREMENT`
+// (bloc activité, fondation critique 5) cessait de plafonner le total à 50, le
+// total REMONTE. Mesuré avant de fermer, en production par conteneur : aucune
+// dernière passation de ces instruments n'est partielle — le STOCK ne bouge
+// pas, c'est le FLUX qui change de définition.
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v17' : 'v16';
 
 /**
  * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.

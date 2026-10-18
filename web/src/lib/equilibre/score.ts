@@ -23,6 +23,20 @@ export function clamp01(valeur: number): number {
   return Math.min(1, Math.max(0, valeur));
 }
 
+/**
+ * Un sous-score porte-t-il sur tous les items de son axe ? `missing` d'abord
+ * (`had`), puis `repondus` contre `items` (`subscore`, `scoresBesoins` ; `items`
+ * y exclut déjà les questions conditionnelles non posées). Sans compte lisible :
+ * non, jamais présumé complet ([[D-328]] §1).
+ */
+function sousScoreComplet(sub: Record<string, unknown>): boolean {
+  if (typeof sub.missing === 'number') return sub.missing === 0;
+  if (typeof sub.items === 'number' && typeof sub.repondus === 'number') {
+    return sub.items > 0 && sub.repondus === sub.items;
+  }
+  return false;
+}
+
 // resultat = retour hétérogène de calculateScore (30 formats de scoring
 // différents dans questions.ts) — on ne lit que .total ou .subScores[].total,
 // communs à tous les formats utilisés par BESOIN_SOURCES.
@@ -50,13 +64,32 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
     // coïncident — servirait une couverture FAUSSE. Une absence de mesure se
     // voit (`missing_data`) ; une valeur fausse, non.
     const porteurs = [resultat.subScores, resultat.scoresBesoins];
-    const totaux: number[] = [];
+    const candidats: Record<string, unknown>[] = [];
     for (const porteur of porteurs) {
       if (!Array.isArray(porteur)) continue;
       const sub = porteur.find((s: { id: string }) => s.id === sousScore);
-      if (sub && typeof sub.total === 'number') totaux.push(sub.total);
+      if (sub && typeof sub.total === 'number') candidats.push(sub);
     }
-    return totaux.length === 1 ? totaux[0] : null;
+    if (candidats.length !== 1) return null;
+    // GARDE — un sous-score PARTIEL ne couvre rien ([[D-328]] §1).
+    //
+    // Même défaut que celui que la garde du total ferme plus bas, un étage plus
+    // fin. Les moteurs `subscore` et `had` rendent le total d'un axe dès qu'UN
+    // de ses items est répondu (frontière « au moins un item », posée le
+    // 2026-07-29 pour la fiche patient), et `BESOIN_SOURCES` le divise par le
+    // `max` de l'axe COMPLET. Mesuré à l'audit de D-312 (section 10) : une
+    // réponse sur dix d'un axe du DNST rendait 0,9 de couverture, une sur cinq
+    // du bloc activité de `Q_MOD_01` effondrait le besoin 5 et plafonnait le
+    // total à 50. Seul le porteur du besoin 3 (`scoresBesoins`) exigeait déjà
+    // tous ses items.
+    //
+    // La complétude se lit sur les comptes que les quatre porteurs publient :
+    // `missing` par axe (`had`), `repondus` et `items` (`subscore`,
+    // `scoresBesoins`). Un sous-score sans compte lisible n'est pas une mesure :
+    // la couverture ne se rend que si l'on sait qu'elle porte sur l'axe entier.
+    // La fiche patient garde sa frontière ; seul « Mon équilibre » durcit la
+    // sienne, parce qu'ici le total EST la lecture, sans compte à côté.
+    return sousScoreComplet(candidats[0]) ? (candidats[0].total as number) : null;
   }
   // GARDE — un recueil PARTIEL ne couvre rien, et surtout pas « bien ».
   //
@@ -84,9 +117,10 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
   // `missing` de la racine décrit l'instrument ENTIER : l'appliquer à un
   // sous-score rendrait le besoin 3 non mesuré parce qu'un item quelconque des
   // 57 de l'enquête alimentaire est vide, alors que les quatre items qui le
-  // fondent sont complets. Les porteurs de sous-scores tiennent déjà leur propre
-  // complétude, au bon grain — `scoresBesoins` rend `null` dès qu'un de SES
-  // items manque (`questions.ts`, branche `seuils_points`).
+  // fondent sont complets. La complétude d'un sous-score se juge donc au grain
+  // de l'axe, dans la branche du haut (`sousScoreComplet`, [[D-328]] §1) — et
+  // non plus seulement chez `scoresBesoins`, le seul porteur qui l'exigeait
+  // jusque-là.
   if (typeof resultat.missing === 'number' && resultat.missing > 0) return null;
   return typeof resultat.total === 'number' ? resultat.total : null;
 }
@@ -273,6 +307,15 @@ export function agregerEquilibre(couverturesParBesoin: CouverturesParBesoin): Re
     strates,
     versionScore: VERSION_SCORE_EQUILIBRE,
   };
+}
+
+/**
+ * Nombre de besoins qui ont réellement nourri le total ([[D-328]] §3) : ceux dont
+ * la couverture n'est pas `null`. Lu dans les strates du résultat, donc dans ce
+ * que `agregerEquilibre` a effectivement moyenné, jamais recalculé à côté.
+ */
+export function compterBesoinsMesures(resultat: ResultatEquilibre): number {
+  return resultat.strates.flatMap(s => s.besoins).filter(b => b.couverture !== null).length;
 }
 
 /** Point d'entrée pratique : réponses aux questionnaires → résultat complet. */

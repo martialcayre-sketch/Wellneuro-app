@@ -28,7 +28,7 @@ import type { ReponsesApiResponse, ReponseQuestionnaire } from '@/app/api/pratic
 import type { ResultatMomentum } from '@/lib/equilibre/types';
 // Import de VALEUR depuis un module FEUILLE (il n'importe rien) : la mention
 // suit la doctrine sans traîner le moteur d'équilibre dans le bundle client.
-import { MENTION_NATURE_INDICE_GLOBAL } from '@/lib/equilibre/natureIndiceGlobal';
+import { MENTION_NATURE_INDICE_GLOBAL, mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
 // Même patron, même raison : `rideauT0.ts` est une feuille sans import, alors
 // que `preconditionsT0.ts` — qui la ré-exporte — tire Prisma par
 // `orientationService`.
@@ -106,12 +106,17 @@ function ObjetGauge({
   label,
   value,
   mention,
+  base,
 }: {
   label: string;
   value: number | null;
   /** Nature du chiffre, servie sous la jauge quand il n'est pas un score
    *  clinique (`DC-20`). Absente pour les objets qui n'en ont pas besoin. */
   mention?: string;
+  /** Ce sur quoi le chiffre est établi (« Calculé sur 8 besoins mesurés sur
+   *  12 », [[D-328]] §3). Servie sous la mention, seulement si un chiffre
+   *  s'affiche. */
+  base?: string;
 }) {
   if (value === null) {
     return (
@@ -121,11 +126,12 @@ function ObjetGauge({
       </div>
     );
   }
-  if (!mention) return <ScoreGauge value={value} label={label} />;
+  if (!mention && !base) return <ScoreGauge value={value} label={label} />;
   return (
     <div className="flex flex-col items-center">
       <ScoreGauge value={value} label={label} />
-      <span className="mt-1 text-xs text-muted-foreground text-center">{mention}</span>
+      {mention && <span className="mt-1 text-xs text-muted-foreground text-center">{mention}</span>}
+      {base && <span className="text-xs text-muted-foreground text-center">{base}</span>}
     </div>
   );
 }
@@ -1435,6 +1441,7 @@ export function FichePatientPanel({
         label="Indice global"
         value={objetsCliniques.indiceGlobal}
         mention={MENTION_NATURE_INDICE_GLOBAL}
+        base={mentionBesoinsMesures(objetsCliniques.besoinsMesures, objetsCliniques.besoinsTotal)}
       />
       <ObjetGauge label="Stabilité métabolique" value={objetsCliniques.stabiliteMetabolique} />
       <ObjetGauge label="Réserve d'adaptation" value={objetsCliniques.reserveAdaptation} />

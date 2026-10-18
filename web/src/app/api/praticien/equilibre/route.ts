@@ -11,6 +11,7 @@ import {
 import { calculerNiveauxPreuveTousLesBesoins } from '@/lib/equilibre/evidence';
 import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
 import { calculerObjetsCliniques } from '@/lib/equilibre/objetsCliniques';
+import { compterBesoinsMesures } from '@/lib/equilibre/score';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import type { JalonMomentum, NiveauPreuveBesoin, ResultatMomentum, StrateCode } from '@/lib/equilibre/types';
@@ -28,6 +29,9 @@ export type PrioriteBesoin = {
 
 export type ObjetsCliniquesReponse = {
   indiceGlobal: number | null; // 0-100
+  /** Besoins qui ont nourri `indiceGlobal`, sur `besoinsTotal` ([[D-328]] §3). */
+  besoinsMesures: number;
+  besoinsTotal: number;
   stabiliteMetabolique: number | null; // 0-100
   reserveAdaptation: number | null; // 0-100
   clarte: number | null; // 0-100
@@ -131,6 +135,8 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
       patient: { idPatient: patient.idPatient, prenom: patient.prenom, nom: patient.nom, email: patient.email },
       objetsCliniques: {
         indiceGlobal: objets.indiceGlobal.scoreGlobal,
+        besoinsMesures: compterBesoinsMesures(objets.indiceGlobal),
+        besoinsTotal: BESOINS.length,
         stabiliteMetabolique: versCent(objets.stabiliteMetabolique),
         reserveAdaptation: versCent(objets.reserveAdaptation),
         clarte: versCent(objets.clarte),

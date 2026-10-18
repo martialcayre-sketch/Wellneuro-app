@@ -125,11 +125,21 @@ describe('evidence — une source répondue mais non exploitable ne compte pas',
     expect(calculerNiveauPreuveBesoin(5, AGENDA_INSUFFISANT)).toBe('NON_MESURE');
   });
 
-  it('un sous-score partiellement répondu reste compté', () => {
-    // Le besoin 10 lit trois sous-scores de `Q_INF_03`. Le moteur `subscore` les
-    // émet toujours : une passation incomplète ne doit PAS être rétrogradée en
-    // silence par le nouveau prédicat.
-    expect(calculerNiveauPreuveBesoin(10, { Q_INF_03: { D1: '4' } })).toBe('B');
+  it('un sous-score partiellement répondu ne porte plus de preuve ([[D-328]] §1)', () => {
+    // Ce test disait l'inverse jusqu'au 2026-10-18 : « un sous-score
+    // partiellement répondu reste compté », et un seul item de l'axe DA
+    // donnait au besoin 10 la preuve B. C'était le grade d'une couverture que
+    // l'audit de D-312 (section 10) a mesurée fausse — une réponse sur dix
+    // rendait 0,9. Le badge suit le même prédicat que le score : l'axe partiel
+    // n'est plus une mesure, il n'est donc plus une preuve.
+    expect(calculerNiveauPreuveBesoin(10, { Q_INF_03: { D1: '4' } })).toBe('NON_MESURE');
+  });
+
+  it('un axe complet du DNST porte toujours la preuve de sa source', () => {
+    const axeDaComplet = Object.fromEntries(
+      ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10'].map(id => [id, '1'])
+    );
+    expect(calculerNiveauPreuveBesoin(10, { Q_INF_03: axeDaComplet })).toBe('B');
   });
 
   it('« répondu mais vide » ne dépend plus du moteur — aucun ne compte', () => {

@@ -23,6 +23,8 @@ const EQUILIBRE = {
   patient: { idPatient: 'PAT001', prenom: 'Sophie', nom: 'Nicola', email: 'sophie.nicola@example.test' },
   objetsCliniques: {
     indiceGlobal: 62,
+    besoinsMesures: 8,
+    besoinsTotal: 12,
     stabiliteMetabolique: null,
     reserveAdaptation: 48,
     clarte: null,
@@ -2040,6 +2042,11 @@ describe('FichePatientPanel — le total dit sa nature à l’écran', () => {
     // de l'arbitrage — le chiffre reste, il ne passe plus pour un score.
     expect(screen.getByText('62')).toBeTruthy();
     expect(screen.getAllByText('Repère de suivi, pas un score clinique').length).toBeGreaterThan(0);
+  });
+
+  it('dit sur combien de besoins l’indice global est établi ([[D-328]] §3)', async () => {
+    await ouvrirTiroirObjets();
+    expect(screen.getByText('Calculé sur 8 besoins mesurés sur 12')).toBeTruthy();
   });
 
   it('ne rend aucune mention sur un objet non mesuré', async () => {

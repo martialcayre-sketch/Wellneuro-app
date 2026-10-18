@@ -541,3 +541,60 @@ describe('besoin 9 — le Q_STR_01 partiel n’est plus une mesure', () => {
     expect(calculerCouvertureBesoin(9, { Q_STR_01: { A1: 2, B8: 2, C15: 2 } })).toBeNull();
   });
 });
+
+// [[D-328]] §1 — sur le vrai catalogue, les trois cas que l'audit de D-312
+// (section 10) a mesurés : une réponse isolée sur un axe à sous-score rendait
+// une couverture, haute ou effondrée selon le sens de la source.
+describe('sous-score partiel — non mesuré, sur le vrai catalogue', () => {
+  const tous = (ids: string[], valeur: string) => Object.fromEntries(ids.map(id => [id, valeur]));
+  const ITEMS_HAD_D = ['D2', 'D4', 'D6', 'D8', 'D10', 'D12', 'D14'];
+  const ITEMS_ACTIVITE = [1, 2, 3, 4, 5].map(n => `ACTIVITE_PHYSIQUE_Q00${n}`);
+  const ITEMS_ME = Array.from({ length: 10 }, (_, i) => `ME${i + 1}`);
+
+  it('besoin 8 : un seul item HAD-D répondu au minimum ne rend pas « bien couvert »', () => {
+    expect(calculerCouvertureBesoin(8, { Q_NEU_11: { D2: '0' } })).toBeNull();
+  });
+
+  it('besoin 8 : l’axe D complet se lit', () => {
+    expect(calculerCouvertureBesoin(8, { Q_NEU_11: tous(ITEMS_HAD_D, '0') })).toBe(1);
+  });
+
+  it('besoin 5 : un seul item d’activité au pire ne fait pas effondrer le mouvement', () => {
+    // Avant D-328 : 0/20 sur le groupe « mouvement », sous le seuil
+    // d'effondrement, donc un total plafonné à 50 sur une réponse.
+    expect(calculerCouvertureBesoin(5, { Q_MOD_01: { ACTIVITE_PHYSIQUE_Q001: '0' } })).toBeNull();
+  });
+
+  it('besoin 5 : le bloc activité complet se lit', () => {
+    expect(calculerCouvertureBesoin(5, { Q_MOD_01: tous(ITEMS_ACTIVITE, '4') })).toBe(1);
+  });
+
+  it('besoin 12 : un seul item ME répondu au minimum ne rend pas « bien couvert »', () => {
+    expect(calculerCouvertureBesoin(12, { Q_INF_03: { ME1: '0' } })).toBeNull();
+  });
+
+  it('besoin 12 : l’axe ME complet se lit', () => {
+    expect(calculerCouvertureBesoin(12, { Q_INF_03: tous(ITEMS_ME, '0') })).toBe(1);
+  });
+
+  it('besoin 10 : seuls les axes complets entrent dans la moyenne', () => {
+    const daComplet = tous(Array.from({ length: 10 }, (_, i) => `D${i + 1}`), '0');
+    // Axe DA complet au mieux, axe NA à une réponse au pire : NA ne compte pas.
+    expect(calculerCouvertureBesoin(10, { Q_INF_03: { ...daComplet, N1: '4' } })).toBe(1);
+  });
+});
+
+describe('compterBesoinsMesures et sa mention ([[D-328]] §3)', () => {
+  it('compte les seuls besoins dont la couverture n’est pas null', async () => {
+    const { compterBesoinsMesures } = await import('./score');
+    const resultat = agregerEquilibre({ 1: 0.5, 3: 0.8, 9: null, 12: 0.2 });
+    expect(compterBesoinsMesures(resultat)).toBe(3);
+    expect(compterBesoinsMesures(agregerEquilibre({}))).toBe(0);
+  });
+
+  it('accorde la mention au singulier et au pluriel', async () => {
+    const { mentionBesoinsMesures } = await import('./natureIndiceGlobal');
+    expect(mentionBesoinsMesures(1, 12)).toBe('Calculé sur 1 besoin mesuré sur 12');
+    expect(mentionBesoinsMesures(8, 12)).toBe('Calculé sur 8 besoins mesurés sur 12');
+  });
+});
