@@ -122,6 +122,29 @@ describe('CompositionAnalyteSection (F80, D-323 §1)', () => {
     expect(screen.getByText('Fait partie de : Numération formule sanguine.')).toBeTruthy();
   });
 
+  it('une réponse tardive de l’analyte précédent ne s’affiche pas sous le suivant', async () => {
+    let libererAncienne: (valeur: unknown) => void = () => {};
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes('BIO_IONOGRAMME')) {
+        await new Promise(resolve => { libererAncienne = resolve; });
+        return { ok: true, status: 200, json: async () => ({ ...LECTURE_PREPAREE, active: SIGNEE, preparee: null }) };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ ...LECTURE_PREPAREE, preparee: null, membreDe: [{ code: 'BIO_NFS', libelle: 'Numération formule sanguine', type: 'groupe' }] }),
+      };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const { rerender } = render(<CompositionAnalyteSection analyteCode="BIO_IONOGRAMME" />);
+    rerender(<CompositionAnalyteSection analyteCode="BIO_HEMOGLOBINE" />);
+    await screen.findByText('Fait partie de : Numération formule sanguine.');
+    libererAncienne(undefined);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(screen.queryByText(/Signée par/)).toBeNull();
+    expect(screen.getByText('Fait partie de : Numération formule sanguine.')).toBeTruthy();
+  });
+
   it('un analyte sans composition ni appartenance n’affiche rien', async () => {
     const fetchMock = mockFetch({ ...LECTURE_PREPAREE, preparee: null });
     const { container } = render(<CompositionAnalyteSection analyteCode="BIO_FERRITINE" />);

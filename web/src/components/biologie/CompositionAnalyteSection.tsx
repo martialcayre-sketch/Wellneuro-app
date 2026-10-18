@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import type {
@@ -71,11 +71,17 @@ export function CompositionAnalyteSection({
   const [enCours, setEnCours] = useState(false);
   const [retraitAConfirmer, setRetraitAConfirmer] = useState(false);
 
+  // Une réponse tardive d'un analyte précédent ne s'affiche pas sous la fiche
+  // du suivant : seule la dernière lecture lancée compte.
+  const derniereLecture = useRef(0);
+
   const charger = useCallback(async () => {
+    const lecture = ++derniereLecture.current;
     setMessageEchec(null);
     try {
       const res = await fetch(`/api/praticien/biologie/compositions?analyte=${encodeURIComponent(analyteCode)}`);
       const corps = (await res.json()) as CompositionAnalyteApiResponse;
+      if (lecture !== derniereLecture.current) return;
       if (!corps.ok) {
         setMessageEchec(corps.error);
         return;
@@ -89,12 +95,17 @@ export function CompositionAnalyteSection({
       // Un composant inactif au catalogue ne se coche pas : le serveur le refuserait.
       setCoches(new Set(corps.preparee?.composants.filter(c => c.actif).map(c => c.code) ?? []));
     } catch {
-      setMessageEchec('La composition n’a pas pu être chargée.');
+      if (lecture === derniereLecture.current) setMessageEchec('La composition n’a pas pu être chargée.');
     }
   }, [analyteCode]);
 
   useEffect(() => {
+    setDonnees(null);
+    setRetraitAConfirmer(false);
     void charger();
+    return () => {
+      derniereLecture.current += 1;
+    };
   }, [charger]);
 
   async function decider(corpsRequete: Record<string, unknown>) {
