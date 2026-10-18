@@ -1,11 +1,12 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 516 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 518 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 9 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 11 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511` ; besoin 2 :
-trois avis d'agence, un rapport d'évaluation et une recommandation de pratique,
-`WN-SRC-0512` à `0516`), dont seuls des
+trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
+un résumé des caractéristiques du produit et une information de bon usage de
+l'ANSM, `WN-SRC-0512` à `0518`), dont seuls des
 extraits ciblés sont ingérés. Il s'agit d'un inventaire documentaire, pas d'un
 corpus runtime.
 
@@ -24,8 +25,11 @@ corpus runtime.
   au 2026-10-18, deux de plus pour le besoin 2 : la synthèse EFSA des limites
   supérieures (`WN-SRC-0513`, reproduction autorisée avec mention de la source)
   et l'avis EFSA sur la vitamine D (`WN-SRC-0514`, CC BY-ND), dont les extraits
-  sont ingérés ; l'avis de l'Anses et le rapport de la HAS (`0512`, `0515`)
-  restent à vérifier.
+  sont ingérés, puis le résumé des caractéristiques du produit publié par la
+  Base de données publique des médicaments (`WN-SRC-0517`, Licence Ouverte
+  etalab-2.0) ; l'avis de l'Anses, le rapport de la HAS, la recommandation de
+  l'Endocrine Society et l'information de l'ANSM (`0512`, `0515`, `0516`,
+  `0518`) restent à vérifier.
 - `contentHash` reste nul tant que le contenu probant n'a pas été obtenu,
   vérifié et autorisé.
 - Aucune notice ne peut alimenter un prompt, un RAG, une règle, un document
