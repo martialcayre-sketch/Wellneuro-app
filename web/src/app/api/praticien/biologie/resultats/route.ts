@@ -14,6 +14,8 @@ import {
   verrouillerCleDuResultat,
   type AnnulationActive,
 } from '@/lib/biology-library/annulations';
+import { statutsPosesParLigne, type StatutsDeLaLigne } from '@/lib/biology-library/statutPoseLecture';
+import type { StatutPose } from '@/lib/biology-library/statutPoseListe';
 import { lireValeurQuantitative, unitesConcordent } from '@/lib/biology-library/import/valeurLue';
 import { MESSAGES_REFUS_SAISIE, signature } from '@/lib/biology-library/saisieMessages';
 import {
@@ -118,6 +120,29 @@ export type ResultatConsigne = {
    * seul lecteur qui montre un fil annulé (§6) — marqué, jamais filtré.
    */
   annulation: AnnulationAffichee | null;
+  /**
+   * Le statut posé par le praticien sur CETTE ligne exacte ([[D-322]], F58),
+   * et l'historique de ses poses et retraits. `actif: null` : « sans statut
+   * posé ». Rien n'est hérité d'une ligne corrigée : la correction apparaît
+   * sans statut, l'ancien reste à l'historique de la ligne corrigée (§3).
+   */
+  statutPose: StatutPoseAffiche;
+};
+
+/** Ce que la série montre d'un acte de statut : le geste, l'auteur, la date. */
+export type ActeStatutAffiche = {
+  acte: 'pose' | 'retrait';
+  /** `null` pour un retrait. */
+  statut: StatutPose | null;
+  par: string;
+  /** Posé par la base, ISO. */
+  le: string;
+};
+
+export type StatutPoseAffiche = {
+  actif: { statut: StatutPose; par: string; le: string } | null;
+  /** Du plus ancien au plus récent. */
+  historique: ActeStatutAffiche[];
 };
 
 /** Ce que la fiche montre d'une annulation : motif, auteur, date (LOT-09). */
@@ -252,6 +277,7 @@ function versConsigne(
   ligne: LigneLue,
   corrigeeParId: string | null = null,
   annulation: AnnulationActive | null = null,
+  statuts: StatutsDeLaLigne | null = null,
 ): ResultatConsigne {
   return {
     id: ligne.id,
@@ -276,6 +302,17 @@ function versConsigne(
           le: annulation.acteLe,
         }
       : null,
+    statutPose: {
+      actif: statuts?.actif
+        ? { statut: statuts.actif.statut, par: statuts.actif.praticienEmail, le: statuts.actif.acteLe }
+        : null,
+      historique: (statuts?.historique ?? []).map(a => ({
+        acte: a.acte,
+        statut: a.statut,
+        par: a.praticienEmail,
+        le: a.acteLe,
+      })),
+    },
   };
 }
 
@@ -334,9 +371,10 @@ export async function GET(req: Request) {
       saisiLe: l.saisiLe.toISOString(),
     }));
     const corrections = correctionsParLigne(maillons);
-    const [actives, joursZero] = await Promise.all([
+    const [actives, joursZero, statuts] = await Promise.all([
       annulationsActives(prisma, idPatient),
       lireJoursZeroSuccessifs(idPatient),
+      statutsPosesParLigne(prisma, idPatient),
     ]);
     const annulations = annulationParLigne(maillons, actives);
 
@@ -414,7 +452,12 @@ export async function GET(req: Request) {
     return NextResponse.json<ResultatsGetResponse>({
       ok: true,
       resultats: lignes.map(l =>
-        versConsigne(l, corrections.get(l.id)?.id ?? null, annulations.get(l.id) ?? null),
+        versConsigne(
+          l,
+          corrections.get(l.id)?.id ?? null,
+          annulations.get(l.id) ?? null,
+          statuts.get(l.id) ?? null,
+        ),
       ),
       plagesParAnalyte,
       series,

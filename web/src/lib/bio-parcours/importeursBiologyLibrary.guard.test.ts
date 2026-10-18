@@ -70,6 +70,9 @@ const IMPORTEURS_ADMIS = [
   'web/src/app/api/praticien/biologie/resultats/annulations/route.ts',
   'web/src/app/api/praticien/biologie/resultats/bilan/route.ts',
   'web/src/app/api/praticien/biologie/resultats/route.ts',
+  // Le statut posé près d'une valeur ([[D-322]], F58) : actes en ajout seul,
+  // statut pris dans une liste fermée ; lit le fil, ne qualifie aucune valeur.
+  'web/src/app/api/praticien/biologie/resultats/statuts/route.ts',
   // Routes praticien hors biologie : cockpit, fil, et refus de résolution d'une
   // version tant qu'un arbitrage biologique est ouvert.
   'web/src/app/api/praticien/cockpit/route.ts',
@@ -96,6 +99,9 @@ const IMPORTEURS_ADMIS = [
   'web/src/components/biologie/CompositionAnalyteSection.tsx',
   // Même motif (M-3) : l'écran de signature, en `import type` seul.
   'web/src/components/biologie/CorrespondancesNabmSection.tsx',
+  // Le geste du statut posé ([[D-322]], F58) : le module PUR `statutPoseListe`
+  // (codes et libellés de la liste fermée) — aucune valeur lue.
+  'web/src/components/biologie/ActeStatutResultat.tsx',
   // La proposition de bilan dans l'onglet « Biologie » ([[D-319]], F57 PR 2) :
   // le module PUR `confirmationsDocument` et des types — les gestes et les
   // lectures repris tels quels de la section clinique, qui les portait.

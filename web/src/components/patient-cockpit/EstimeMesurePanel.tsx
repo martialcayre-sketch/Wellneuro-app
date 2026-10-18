@@ -9,6 +9,13 @@ import { SaisieBilan, type AnalyteChoix, type IssueBilan } from './SaisieBilan';
 import { FaitsDuLaboratoire } from './FaitsDuLaboratoire';
 import { ActeAnnulationResultat } from './ActeAnnulationResultat';
 import { LIBELLES_MOTIF_ANNULATION, estMotifAnnulation } from '@/lib/biology-library/annulationMotifs';
+import { ActeStatutResultat } from '@/components/biologie/ActeStatutResultat';
+import {
+  LIBELLES_STATUT_POSE,
+  LIBELLE_SANS_STATUT_POSE,
+  estStatutPose,
+  type StatutPose,
+} from '@/lib/biology-library/statutPoseListe';
 
 // « Estimé ↔ mesuré » (maquette 5.0, écran Fiche-trajectoire) — étage 2 du
 // rayon biologie (CB-09, [[D-122]] §2), derrière `isCbResultsEnabled` (posé
@@ -68,7 +75,21 @@ type ResultatAffiche = {
     par: string;
     le: string;
   } | null;
+  /**
+   * Le statut posé par le praticien sur CETTE ligne ([[D-322]], F58) et
+   * l'historique de ses poses et retraits. Absent d'une réponse antérieure :
+   * aucun statut n'est affirmé, aucun geste n'est offert.
+   */
+  statutPose?: {
+    actif: { statut: string; par: string; le: string } | null;
+    historique: Array<{ acte: 'pose' | 'retrait'; statut: string | null; par: string; le: string }>;
+  };
 };
+
+/** Le libellé d'un statut lu : la liste fermée, ou le code brut s'il en sort. */
+function libelleStatut(statut: string): string {
+  return estStatutPose(statut) ? LIBELLES_STATUT_POSE[statut] : statut;
+}
 
 /**
  * La série d'un analyte telle que la route la sert (BP-03) : les seules
@@ -417,7 +438,9 @@ export function EstimeMesurePanel({
   const [correctionDe, setCorrectionDe] = useState<string | null>(null);
   /** L'annulation ou la révocation en cours — exclusive de la correction. */
   const [acteDe, setActeDe] = useState<{ id: string; acte: 'annulation' | 'revocation' } | null>(null);
-  const secondTempsOuvert = correctionDe !== null || acteDe !== null;
+  /** La pose ou le retrait d'un statut en cours ([[D-322]]) — exclusif des autres. */
+  const [statutDe, setStatutDe] = useState<{ id: string; acte: 'pose' | 'retrait' } | null>(null);
+  const secondTempsOuvert = correctionDe !== null || acteDe !== null || statutDe !== null;
   const actif = resultsEnabled && typeof idPatient === 'string' && idPatient !== '';
 
   const chargerResultats = useCallback(async () => {
@@ -536,6 +559,40 @@ export function EstimeMesurePanel({
         return true;
       } catch {
         setErreur('Le geste n’a pas pu être consigné.');
+        return false;
+      } finally {
+        setEnvoiEnCours(false);
+      }
+    },
+    [idPatient, chargerResultats],
+  );
+
+  // STATUT POSÉ ([[D-322]], F58) : même discipline — `true` au succès
+  // seulement, le refus se dit et laisse le choix en place. Un acte par envoi.
+  const consignerStatut = useCallback(
+    async (corps: { idResultat: string; acte: 'pose' | 'retrait'; statut: StatutPose | null }): Promise<boolean> => {
+      setEnvoiEnCours(true);
+      setErreur(null);
+      try {
+        const response = await fetch('/api/praticien/biologie/resultats/statuts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            idPatient,
+            idResultat: corps.idResultat,
+            acte: corps.acte,
+            ...(corps.acte === 'pose' ? { statut: corps.statut } : {}),
+          }),
+        });
+        const payload = (await response.json()) as { ok: boolean; error?: string };
+        if (!response.ok || !payload.ok) {
+          setErreur(payload.error ?? 'Le statut n’a pas pu être enregistré.');
+          return false;
+        }
+        await chargerResultats();
+        return true;
+      } catch {
+        setErreur('Le statut n’a pas pu être enregistré.');
         return false;
       } finally {
         setEnvoiEnCours(false);
@@ -708,6 +765,13 @@ export function EstimeMesurePanel({
                         && m.id !== mesure.id,
                     );
                   const description = `${formatValeur(mesure)} du ${formatDateHeure(mesure.preleveLe)}`;
+                  // LE STATUT POSÉ ([[D-322]]) : sur la ligne qui fait foi
+                  // seule, et seulement au vu d'une réponse qui PORTE le champ.
+                  // Une ligne corrigée ou annulée garde son historique, sans
+                  // statut courant ni geste (§3).
+                  const statutPose = mesure.statutPose;
+                  const statutOffert = !corrigee && !annulee && statutPose !== undefined;
+                  const statutActif = statutPose?.actif ?? null;
                   return (
                     <li key={mesure.id} className="text-xs text-muted-foreground">
                       <span className={corrigee || annulee ? 'line-through' : undefined}>
@@ -759,6 +823,13 @@ export function EstimeMesurePanel({
                                   : annulation.motif
                               }`
                             : ' (avec tout son fil)'}
+                        </span>
+                      )}
+                      {statutOffert && (
+                        <span className="ml-1 text-foreground">
+                          {statutActif
+                            ? `· statut : ${libelleStatut(statutActif.statut)} — posé le ${formatDateHeure(statutActif.le)} par ${statutActif.par}`
+                            : `· ${LIBELLE_SANS_STATUT_POSE}`}
                         </span>
                       )}
                       {/* Après les marqueurs DC-30 : ils restent sur la ligne de la valeur. */}
@@ -851,6 +922,68 @@ export function EstimeMesurePanel({
                             return ok;
                           }}
                         />
+                      )}
+                      {statutOffert && statutDe?.id !== mesure.id && (
+                        <button
+                          type="button"
+                          disabled={envoiEnCours || secondTempsOuvert}
+                          aria-label={`${statutActif ? 'Changer le statut' : 'Poser un statut'} de la mesure du ${formatDateHeure(mesure.preleveLe)}`}
+                          onClick={() => {
+                            setErreur(null);
+                            setStatutDe({ id: mesure.id, acte: 'pose' });
+                          }}
+                          className="ml-2 min-h-11 rounded-lg border border-border px-2 py-1 text-xs text-foreground disabled:opacity-50"
+                        >
+                          {statutActif ? 'Changer le statut' : 'Poser un statut'}
+                        </button>
+                      )}
+                      {statutOffert && statutActif && statutDe?.id !== mesure.id && (
+                        <button
+                          type="button"
+                          disabled={envoiEnCours || secondTempsOuvert}
+                          aria-label={`Retirer le statut de la mesure du ${formatDateHeure(mesure.preleveLe)}`}
+                          onClick={() => {
+                            setErreur(null);
+                            setStatutDe({ id: mesure.id, acte: 'retrait' });
+                          }}
+                          className="ml-2 min-h-11 rounded-lg border border-border px-2 py-1 text-xs text-foreground disabled:opacity-50"
+                        >
+                          Retirer le statut
+                        </button>
+                      )}
+                      {statutDe?.id === mesure.id && (
+                        <ActeStatutResultat
+                          acte={statutDe.acte}
+                          idLigne={mesure.id}
+                          description={description}
+                          actif={statutActif?.statut ?? null}
+                          disabled={envoiEnCours}
+                          onFermer={() => setStatutDe(null)}
+                          onConsigner={async statut => {
+                            const ok = await consignerStatut({ idResultat: mesure.id, acte: statutDe.acte, statut });
+                            if (ok) setStatutDe(null);
+                            return ok;
+                          }}
+                        />
+                      )}
+                      {statutPose && statutPose.historique.length > 0 && (
+                        // L'HISTORIQUE RESTE LISIBLE ([[D-322]] §2), sur toute
+                        // ligne, corrigée ou annulée comprise (§3).
+                        <details className="mt-1">
+                          <summary className="cursor-pointer text-xs text-muted-foreground">
+                            Historique du statut ({statutPose.historique.length})
+                          </summary>
+                          <ol className="mt-1 space-y-0.5 pl-4">
+                            {statutPose.historique.map((a, i) => (
+                              <li key={i}>
+                                {a.acte === 'pose' && a.statut !== null
+                                  ? `statut posé : ${libelleStatut(a.statut)}`
+                                  : 'statut retiré'}
+                                {` — le ${formatDateHeure(a.le)} par ${a.par}`}
+                              </li>
+                            ))}
+                          </ol>
+                        </details>
                       )}
                       {correctionDe === mesure.id && (
                         <CorrectionMesure

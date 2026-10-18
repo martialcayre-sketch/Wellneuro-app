@@ -544,6 +544,12 @@ grep -q 'banc-annulations-resultats-deux-sessions.test.mjs' "$ROOT/.github/workf
   || die "ci.yml ne lance plus le banc à deux sessions des annulations de résultats."
 WN_BIO_ANNULATION_BANC_BASE=wellneuro_ci node scripts/banc-annulations-resultats-deux-sessions.test.mjs > /dev/null < /dev/null \
   || die "banc des annulations en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-annulations-resultats-deux-sessions.test.mjs\`, depuis web/)."
+# Banc à deux sessions des statuts posés (D-322, F58) : même discipline.
+step "Banc à deux sessions (statuts posés près d'une valeur)"
+grep -q 'banc-statuts-poses-deux-sessions.test.mjs' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc à deux sessions des statuts posés."
+WN_BIO_STATUT_BANC_BASE=wellneuro_ci node scripts/banc-statuts-poses-deux-sessions.test.mjs > /dev/null < /dev/null \
+  || die "banc des statuts posés en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-statuts-poses-deux-sessions.test.mjs\`, depuis web/)."
 # Banc à deux sessions de l'exclusion signature ↔ constat NABM (M-3c, F54) :
 # même discipline.
 step "Banc à deux sessions (exclusion signature ↔ constat NABM)"
