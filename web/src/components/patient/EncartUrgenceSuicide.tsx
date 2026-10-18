@@ -1,4 +1,4 @@
-import { ENCART_URGENCE } from '@/lib/securite/urgenceSuicide';
+import { DELAI_ENCART_PAR_ECRAN, ENCART_URGENCE, type EcranEncartUrgence } from '@/lib/securite/urgenceSuicide';
 
 // Encart d'urgence ([[D-275]]) : affiché sans condition sur les écrans qui
 // posent une question sur le suicide. Le texte a été relu et validé par le
@@ -7,7 +7,14 @@ import { ENCART_URGENCE } from '@/lib/securite/urgenceSuicide';
 
 const lien = 'font-semibold underline underline-offset-2 text-foreground';
 
-export function EncartUrgenceSuicide({ className = '' }: { className?: string }) {
+export function EncartUrgenceSuicide({
+  className = '',
+  ecran = 'questionnaire',
+}: {
+  className?: string;
+  /** L'écran qui l'affiche : seul le sujet de la phrase finale en dépend ([[D-293]] §3). */
+  ecran?: EcranEncartUrgence;
+}) {
   const [prevention, samu, europeen, sms] = ENCART_URGENCE.numeros;
   return (
     <aside
@@ -25,7 +32,7 @@ export function EncartUrgenceSuicide({ className = '' }: { className?: string })
         Si vous ne pouvez pas parler ou entendre, même temporairement&nbsp;: le{' '}
         <span className="font-semibold">{sms.numero}</span>, par SMS ou application.
       </p>
-      <p className="mt-1">{ENCART_URGENCE.delai}</p>
+      <p className="mt-1">{DELAI_ENCART_PAR_ECRAN[ecran]}</p>
     </aside>
   );
 }

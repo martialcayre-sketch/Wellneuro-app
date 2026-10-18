@@ -41,6 +41,19 @@ export const ENCART_URGENCE = Object.freeze({
   delai: 'Vos réponses sont transmises à votre praticien, mais il ne les lit pas en temps réel : n’attendez pas sa réponse.',
 });
 
+/**
+ * La phrase finale de l'encart, par écran ([[D-293]] §3). L'encart reste celui
+ * de [[D-275]] §1, mot pour mot ; seul le SUJET de sa dernière phrase s'adapte —
+ * « vos réponses » ne désigne rien hors d'un questionnaire. Textes validés tels
+ * quels par le responsable le 2026-10-14 (lettre u).
+ */
+export const DELAI_ENCART_PAR_ECRAN = Object.freeze({
+  questionnaire: ENCART_URGENCE.delai,
+  mes_echanges:
+    'Ce que vous transmettez est transmis à votre praticien, mais il ne le lit pas en temps réel : n’attendez pas sa réponse.',
+});
+export type EcranEncartUrgence = keyof typeof DELAI_ENCART_PAR_ECRAN;
+
 // ─── [[D-277]] — LE MESSAGE SUR RÉPONSE POSITIVE ─────────────────────────────
 //
 // MÊME RÈGLE QUE LA TABLE SIGNÉE `SAF-QUEST-01` ([[D-275]] §2) : à la question
