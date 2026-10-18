@@ -1246,6 +1246,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : lettres t, ab, u appliquées ; décision de produit pour la frise.
 - **Critère de fin** : « Mes échanges » prêt, non ouvert ; frise et repères servis après la porte 16.
 - **Mise à jour (2026-10-17, lettre t)** : D-317 §4 retire l'e-mail de diffusion (PA-2) de J3-base : lot propre, sans migration, au service d'ACT-2 (H75). J3-base garde PA-1 (la ligne « rendez-vous de suivi » des trois points d'étape, D-317 §6) et la carte du Fil renommée avec sa baseline (D-317 §7) ; ni l'un ni l'autre n'est gelé par la porte 16, qui ne vise que la frise et le chronogramme du sommeil (N-8).
+- **Mise à jour (2026-10-18, première tranche)** : PA-1 et la carte du Fil livrés, sans migration. Au portail, une ligne « Répondre à mon rendez-vous de suivi » paraît dans le fil du jour pendant la fenêtre de chaque point d'étape, d'après la route du check-in. Libellé validé par le responsable. Rien ne s'affiche pour un dossier mineur ou clos. Au Fil, la carte J21 porte le badge « Point d'étape » et son titre de D-317 §7 ; le résumé dit « point d'étape » (arbitrage du 2026-10-17). Base visuelle : aucune à régénérer. La capture `dashboard-fil` n'est pas comparée au pixel (`pixel: false`), et le seed ne produit aucune carte J21. Restent dans J3-base : « Mes échanges » (u), EF-0 (ab), la frise et les repères (porte 16, N-8).
 
 #### H62 · J3-collecte : collecte documentaire
 - **Identifiant, piste** : J3-collecte (RK-8) ; D-258 reste à la biologie ; confiance ; file A.
