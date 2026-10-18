@@ -75,6 +75,10 @@ const IMPORTEURS_ADMIS = [
   // aucune valeur, aucun libellé lu. Lu par l'entrée publiée `publie`
   // depuis le 2026-10-17 : premier lecteur hors biologie ([[D-306]] §4).
   'web/src/app/api/praticien/patients/cycle-de-vie/route.ts',
+  // « Mes échanges » au portail ([[D-293]]) : les comptes rendus transmis par
+  // le patient, date seule, sous `isBioPortailEnabled` — par l'entrée publiée,
+  // deuxième lecteur hors biologie (2026-10-18).
+  'web/src/lib/portail/mesEchangesServeur.ts',
   'web/src/app/api/praticien/patients/route.ts',
   'web/src/app/api/praticien/protocoles/versions/route.ts',
   // Pages et composants praticien.

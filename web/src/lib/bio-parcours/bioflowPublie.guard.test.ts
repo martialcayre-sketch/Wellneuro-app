@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// L'entrée publiée ré-exporte du code serveur qui ouvre Prisma au chargement
+// (`import/transmission`) : ce banc ne lit que ses listes, aucune base.
+vi.mock('@/lib/prisma', () => ({ prisma: {} }));
+
 import {
   DRAPEAUX_BIOFLOW,
   FICHIERS_PUBLIES,
@@ -70,7 +75,11 @@ const DEROGATIONS: ReadonlyArray<{ chemin: string; depuis: string }> = [
 const PLAFOND_DEROGATIONS = 20;
 
 /** Les lecteurs hors biologie qui passent par la seule entrée publiée ([[D-306]] §1, §4). */
-const LECTEURS_PUBLIES = ['web/src/app/api/praticien/patients/cycle-de-vie/route.ts'];
+const LECTEURS_PUBLIES = [
+  'web/src/app/api/praticien/patients/cycle-de-vie/route.ts',
+  // « Mes échanges » ([[D-293]]) : comptes rendus transmis, date seule (2026-10-18).
+  'web/src/lib/portail/mesEchangesServeur.ts',
+];
 
 const ENTREE = 'biology-library/publie';
 

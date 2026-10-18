@@ -10499,3 +10499,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Rediffusions des trois programmes par le praticien, à constater ; résidu de t13 à arbitrer ; dettes t16, t08, t09 à cadrer.
 
 **Ouvert.** r2_01 et r2_02 attendent la fin de #1530 (Fil).
+
+## 2026-10-18 — J3-base : PA-1, carte du Fil, « Mes échanges » ; ACT-2 posé
+
+**Fait.** #1530 mergée et déployée (49a2bb19) : PA-1 et la carte « Point d'étape ». ACT-2 : `WN_ANNONCE_PROTOCOLE` posé sur ordre du responsable. « Mes échanges » livré prêt et fermé (drapeau neuf éteint, majeurs seulement), sur trois arbitrages : ordre, ligne, entrée.
+
+**Écarté.** Rafraîchir le fil en continu (lecture à la visite, D-317 §6) ; lister la synthèse au journal (D-293 §1 ne la nomme pas).
+
+**Prochaine action.** Merger « Mes échanges », puis le lot ai : migration autorisée, release-db, puis le code.
+
+**Ouvert.** Constat d'ACT-2 à la prochaine vraie diffusion ; deux micro-textes et la limite « protocole indisponible » avant ACT-3 ; garde d'âge du check-in.

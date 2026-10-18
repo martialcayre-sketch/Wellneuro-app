@@ -24,8 +24,14 @@ export {
   RAISON_LECTURE_EN_COURS,
 } from './import/lectureDemandee';
 
+// Deuxième lecteur hors biologie : « Mes échanges » au portail ([[D-293]]), qui
+// liste les comptes rendus transmis par le patient — date seule, sous le
+// drapeau de la surface qui les sert.
+export { isBioPortailEnabled } from './featureFlag';
+export { listerTransmissions } from './import/transmission';
+
 /** Les fichiers de `biology-library` que cette entrée ré-exporte — liste fermée. */
-export const FICHIERS_PUBLIES = ['import/lectureDemandee'] as const;
+export const FICHIERS_PUBLIES = ['import/lectureDemandee', 'featureFlag', 'import/transmission'] as const;
 
 /**
  * Les tables dont BioFlow est propriétaire (`@@map` du schéma). Le banc vérifie
