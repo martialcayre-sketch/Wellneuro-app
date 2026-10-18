@@ -18,7 +18,7 @@ Livrer le schéma de la lettre ai : le jour (heure de Paris) de la première ouv
 
 ## Fichiers modifiés
 
-- `web/prisma/migrations/20261018120000_portail_lectures_lu_le_v1/migration.sql`
+- `web/prisma/migrations/20261018150000_portail_lectures_lu_le_v1/migration.sql`
 - `web/prisma/schema.prisma` (bloc `PortailLecturePatient` seul)
 - `web/prisma/checks/portail_lectures_lu_le_v1_negatif.sql` (neuf), `portail_lectures_patient_v1_negatif.sql`, `portail_lectures_protocole_v1_negatif.sql` (commentaire)
 - `.github/workflows/ci.yml` (étape du contrat neuf)
@@ -37,7 +37,7 @@ Livrer le schéma de la lettre ai : le jour (heure de Paris) de la première ouv
 
 - PR 2 : l'affichage praticien de D-297 doit amender explicitement `portailLecturesPatient.guard.test.ts` (qui interdit la table sous `app/api/praticien` et `components/patient-cockpit`), en citant D-297 ; écrire par `ON CONFLICT DO NOTHING` ou `create` + P2002, jamais `DO UPDATE` (refusé par le trigger).
 
-- Release-db de `main` en attente pour le lot F80 de l'autre session : une release à la fois ; constater la sienne avant d'approuver celle-ci.
+- La migration F58 de l'autre session (#1537, `20261018120000_statuts_poses_resultats_biologiques_v1`) a été mergée avant celle-ci, sous le même horodatage : celle-ci a été renommée `20261018150000_…` pour s'ordonner après. Sa release-db passe d'abord ; constater son application avant d'approuver celle de ai (une à la fois). F80 est constatée appliquée (`migrate status` à jour, 118 migrations, 2026-10-18 15 h 25).
 - Écarts routés sans correctif : garde d'âge absente du POST check-in et du compagnon (D-284) ; fenêtre de la ligne de suivi fermée environ 24 h entre deux points.
 
 ## Prochaine action exacte

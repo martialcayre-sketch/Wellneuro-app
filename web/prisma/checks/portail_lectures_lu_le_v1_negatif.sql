@@ -1,5 +1,5 @@
 -- Contrat de la colonne `lu_le` de `portail_lectures_patient` (lettre ai,
--- [[D-297]], migration `20261018120000_portail_lectures_lu_le_v1`).
+-- [[D-297]], migration `20261018150000_portail_lectures_lu_le_v1`).
 --
 -- La migration promet NEUF choses, et ce fichier les éprouve toutes :
 --   1. la colonne existe, de type DATE — le jour seul, sans heure (§2) ;

@@ -64,6 +64,7 @@ export const TABLES_BIOFLOW = [
   'masquages_comptes_rendus',
   'panels_biologie_documentes',
   'resultats_biologiques',
+  'statuts_poses_resultats_biologiques',
   'travaux_extraction_biologique',
 ] as const;
 

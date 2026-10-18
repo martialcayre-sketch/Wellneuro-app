@@ -1,6 +1,6 @@
 ### ai, migration : la colonne du jour de première lecture, vide et sans défaut (D-297 §6, 2026-10-18)
 
-- Migration `20261018120000_portail_lectures_lu_le_v1` : une colonne `lu_le`
+- Migration `20261018150000_portail_lectures_lu_le_v1` : une colonne `lu_le`
   de type date, nullable, **sans défaut**, sur `portail_lectures_patient`. Aucun
   rattrapage : les lectures antérieures restent sans date (D-297 §3).
 - Sans défaut, pour tenir D-297 §4 : aucune date ne s'écrit depuis une page qui
