@@ -12,6 +12,7 @@ import {
 import { emailPraticien, filtrePatientsDuPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
 import { jourCourantLocal } from '@/lib/patient-access';
+import { statutAge } from '@/lib/patient/gardeAge';
 
 const MAX_ASSIGNATIONS = 40;
 
@@ -556,7 +557,17 @@ export async function POST(req: Request): Promise<NextResponse<CreatePatientResp
   const dateNaissance = (payload.dateNaissance ?? '').trim();
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const isDateValid = !dateNaissance || /^\d{4}-\d{2}-\d{2}$/.test(dateNaissance);
+  // LA DATE DE NAISSANCE EST OBLIGATOIRE À LA CRÉATION ([[D-302]] §2), et
+  // valide au sens de la garde d'âge : la règle de la saisie au portail
+  // (`api/portail/date-naissance`) — format AAAA-MM-JJ, année 1900 au plus
+  // tôt, date réelle et non future. Une date que la garde ne lit pas
+  // laisserait le dossier en pause dès sa création ([[D-284]] §3). Les
+  // dossiers anciens sans date restent sous [[D-284]] §3 : la colonne reste
+  // facultative, et le PATCH de la fiche ne l'exige pas.
+  const isDateValid =
+    /^\d{4}-\d{2}-\d{2}$/.test(dateNaissance)
+    && Number(dateNaissance.slice(0, 4)) >= 1900
+    && statutAge(dateNaissance, Date.now()) !== 'date_manquante';
   if (!prenom || !nom || !isEmailValid || !isDateValid) {
     return NextResponse.json(
       {
@@ -566,7 +577,9 @@ export async function POST(req: Request): Promise<NextResponse<CreatePatientResp
           ? 'Prénom et nom sont requis.'
           : !isEmailValid
             ? 'Email invalide.'
-            : 'Date de naissance invalide (format attendu : AAAA-MM-JJ).',
+            : !dateNaissance
+              ? 'La date de naissance est requise.'
+              : 'Date de naissance invalide : vérifiez le jour, le mois et l’année.',
       },
       { status: 400 }
     );
@@ -590,7 +603,7 @@ export async function POST(req: Request): Promise<NextResponse<CreatePatientResp
         email,
         prenom,
         nom,
-        dateNaissance: dateNaissance || null,
+        dateNaissance,
         telephone: telephone || null,
         praticienEmail,
         actif: true,
