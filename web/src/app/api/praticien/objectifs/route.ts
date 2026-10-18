@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { constaterProvenance } from '@/lib/objectif/provenanceVerifiee';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import { cadenceObjectifsAtteinte } from '@/lib/praticien/cadenceObjectifs';
+import { MESSAGE_CADENCE_PRATICIEN } from '@/lib/securite/cadenceEcritures';
 import type { GabaritAcces } from '@/lib/praticien/journalAcces';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import {
@@ -907,6 +909,10 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
     });
     if (!patient || !accepteNouvelEnvoi(patient)) {
       return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+    }
+    // Cadence ([[D-327]], t08) : plafond technique des écritures sur les objectifs du dossier.
+    if (await cadenceObjectifsAtteinte(idPatient)) {
+      return echec('cadence', MESSAGE_CADENCE_PRATICIEN, 429);
     }
 
     const referenceBrute = body.supersedesObjectifId;

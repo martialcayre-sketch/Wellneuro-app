@@ -4,7 +4,7 @@ const { prisma } = vi.hoisted(() => ({
   prisma: {
     assignation: { findUnique: vi.fn() },
     patient: { findUnique: vi.fn() },
-    agendaSommeilNuit: { findUnique: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
+    agendaSommeilNuit: { count: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -73,6 +73,8 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-07-15T10:00:00.000Z'));
   process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+  // D-327 (t08) : sous le plafond horaire par défaut (`clearAllMocks` garde les implémentations).
+  prisma.agendaSommeilNuit.count.mockResolvedValue(0);
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -144,6 +146,21 @@ describe('POST /api/portail/agenda-sommeil', () => {
     const json = (await res.json()) as { reason?: string };
     expect(res.status).toBe(409);
     expect(json.reason).toBe('date_hors_fenetre');
+  });
+
+  it('au plafond horaire du dossier (D-327) : 429, texte arbitré, aucune nuit écrite', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    prisma.agendaSommeilNuit.count.mockResolvedValue(60);
+    const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses } }));
+    const json = (await res.json()) as { reason?: string; error?: string };
+    expect(res.status).toBe(429);
+    expect(json.reason).toBe('cadence');
+    expect(json.error).toBe('Vous avez fait beaucoup d’envois en peu de temps. Réessayez dans une heure.');
+    expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
+    const where = prisma.agendaSommeilNuit.count.mock.calls[0][0].where;
+    expect(where.idPatient).toBe(OWNER.idPatient);
+    expect(where.soumisLe.gte).toEqual(new Date('2026-07-15T09:00:00.000Z'));
   });
 
   it('enregistre la nuit du jour (201)', async () => {

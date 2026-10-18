@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma, authentifierPatientPortail } = vi.hoisted(() => ({
   prisma: {
-    trustChoiceEvent: { findFirst: vi.fn(), create: vi.fn() },
+    trustChoiceEvent: { count: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
     $queryRaw: vi.fn(),
     $transaction: vi.fn(),
   },
@@ -34,6 +34,7 @@ describe('POST /api/portail/trust/choix', () => {
     authentifierPatientPortail.mockResolvedValue({ patient: { idPatient: 'PAT_TEST' } });
     prisma.trustChoiceEvent.findFirst.mockResolvedValue(null);
     prisma.trustChoiceEvent.create.mockResolvedValue({});
+    prisma.trustChoiceEvent.count.mockResolvedValue(0);
     prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
     prisma.$transaction.mockImplementation(async (op: (tx: unknown) => unknown) => op({
       trustChoiceEvent: prisma.trustChoiceEvent,
@@ -96,6 +97,33 @@ describe('POST /api/portail/trust/choix', () => {
     const reponse = await POST(requete({ finalite: 'partage_medecin_traitant', statut: 'retire' }));
     expect(reponse.status).toBe(200);
     expect(prisma.trustChoiceEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('au plafond horaire (D-327), un accord est refusé (429), compté sous le verrou', async () => {
+    prisma.trustChoiceEvent.count.mockResolvedValue(20);
+    const reponse = await POST(requete({ finalite: 'partage_medecin_traitant', statut: 'accorde' }));
+    expect(reponse.status).toBe(429);
+    expect((await reponse.json()).error).toBe('Vous avez fait beaucoup d’envois en peu de temps. Réessayez dans une heure.');
+    expect(prisma.trustChoiceEvent.create).not.toHaveBeenCalled();
+    expect(prisma.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.trustChoiceEvent.count.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('au plafond, un REFUS est compté et borné comme un accord', async () => {
+    prisma.trustChoiceEvent.count.mockResolvedValue(20);
+    const reponse = await POST(requete({ finalite: 'partage_medecin_traitant', statut: 'refuse' }));
+    expect(reponse.status).toBe(429);
+    expect(prisma.trustChoiceEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('★ au plafond, un RETRAIT passe quand même — il doit rester aussi simple que l’accord', async () => {
+    prisma.trustChoiceEvent.count.mockResolvedValue(500);
+    prisma.trustChoiceEvent.findFirst.mockResolvedValue({ id: 'EVT_1', statut: 'accorde' });
+    const reponse = await POST(requete({ finalite: 'partage_medecin_traitant', statut: 'retire' }));
+    expect(reponse.status).toBe(200);
+    expect(prisma.trustChoiceEvent.create).toHaveBeenCalledTimes(1);
+    expect(prisma.trustChoiceEvent.count).not.toHaveBeenCalled();
   });
 
   it('refuse une finalité ou un statut inconnus, sans rien écrire', async () => {

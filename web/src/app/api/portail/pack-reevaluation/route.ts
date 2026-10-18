@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 import { readPatientSession, isSessionValideForPatient } from '@/lib/patient-session';
 import { evaluerReprise } from '@/lib/patient/reprise';
 import {
@@ -159,6 +160,19 @@ export async function POST(req: Request): Promise<NextResponse<PackReevaluationR
       return NextResponse.json(
         { ok: false, reason: 'invalid_payload', error: 'Réponse invalide.' },
         { status: 400 },
+      );
+    }
+
+    // Cadence ([[D-327]], t08) : les réponses du PATIENT seulement — les
+    // propositions posées par le système ne lui sont pas imputables.
+    if (await cadenceAtteinte('portail', depuis =>
+      prisma.packProposition.count({
+        where: { idPatient: patient.idPatient, acteurRole: 'patient', enregistreLe: { gte: depuis } },
+      }),
+    )) {
+      return NextResponse.json(
+        { ok: false, reason: 'cadence', error: MESSAGE_CADENCE_PATIENT },
+        { status: 429 },
       );
     }
 

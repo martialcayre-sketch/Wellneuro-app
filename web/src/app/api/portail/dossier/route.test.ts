@@ -13,6 +13,7 @@ const { prisma, logger } = vi.hoisted(() => ({
     syntheseComprehension: { findMany: vi.fn() },
     desaccordComprehension: { findMany: vi.fn() },
     ratificationObjectif: {
+      count: vi.fn(async () => 0),
       findMany: vi.fn(),
       create: vi.fn(),
       // Moqués EXPRÈS bien que jamais appelés : sans eux, l'assertion
@@ -24,6 +25,7 @@ const { prisma, logger } = vi.hoisted(() => ({
       deleteMany: vi.fn(),
     },
     amendementObjectif: {
+      count: vi.fn(async () => 0),
       findMany: vi.fn(),
       create: vi.fn(),
       // Mêmes moqueries expresses, même motif (6.0-B, LOT-04).
@@ -34,6 +36,7 @@ const { prisma, logger } = vi.hoisted(() => ({
       deleteMany: vi.fn(),
     },
     demandeCorrectionObjectif: {
+      count: vi.fn(async () => 0),
       findMany: vi.fn(),
       create: vi.fn(),
       // Mêmes moqueries expresses, même motif : sans elles, l'assertion
@@ -61,6 +64,7 @@ const { prisma, logger } = vi.hoisted(() => ({
       deleteMany: vi.fn(),
     },
     reponseJalonObjectif: {
+      count: vi.fn(async () => 0),
       findMany: vi.fn(),
       create: vi.fn(),
       // Mêmes moqueries expresses, même motif (6.0-B, LOT-05).
@@ -859,6 +863,28 @@ describe('/api/portail/dossier', () => {
             creeLe: new Date('2026-08-22T12:00:00.000Z'),
           }),
       );
+    });
+
+    it('au plafond horaire des quatre gestes (D-327) : 429 avant le corps, rien écrit', async () => {
+      prisma.ratificationObjectif.count.mockResolvedValueOnce(8);
+      prisma.amendementObjectif.count.mockResolvedValueOnce(5);
+      prisma.demandeCorrectionObjectif.count.mockResolvedValueOnce(4);
+      prisma.reponseJalonObjectif.count.mockResolvedValueOnce(3);
+      const res = await POST(postRequest(cookieProprio(), { idObjectif: 'OBJ_1', sens: 'ratifie' }));
+      expect(res.status).toBe(429);
+      expect(await res.json()).toMatchObject({
+        ok: false,
+        reason: 'cadence',
+        error: 'Vous avez fait beaucoup d’envois en peu de temps. Réessayez dans une heure.',
+      });
+      expect(prisma.ratificationObjectif.create).not.toHaveBeenCalled();
+      expect(prisma.objectifNegocie.findMany).not.toHaveBeenCalled();
+    });
+
+    it('sous le plafond (19 sur 20), le geste passe', async () => {
+      prisma.ratificationObjectif.count.mockResolvedValueOnce(19);
+      const res = await POST(postRequest(cookieProprio(), { idObjectif: 'OBJ_1', sens: 'ratifie' }));
+      expect(res.status).toBe(201);
     });
 
     it.each(['ratifie', 'conteste'])('accepte le sens « %s » et rend 201', async (sens) => {

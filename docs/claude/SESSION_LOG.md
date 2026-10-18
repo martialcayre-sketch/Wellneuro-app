@@ -10680,6 +10680,15 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Premier jour de lecture écrit en production, à constater par conteneur.
 
+## 2026-10-18 — t08 : cadence des écritures par dossier
+
+**Fait.** D-327 : plafond horaire par dossier compté en base avant chaque écriture (agendas 60, portail 20, objectifs praticien 30, proposition IA 10), sans migration, 429 avec le texte arbitré. Treize routes ; le retrait d'un choix et les signalements restent hors plafond. L'écran de proposition de pack affiche désormais le texte du refus. Ligne t09 du plan close sans code.
+
+**Écarté.** Une table de compteurs (migration) ; un verrou par route pour une borne exacte (coût supérieur au risque).
+
+**Prochaine action.** Revue `wn-reviewer`, T3, PR ; merge après #1557 et #1559.
+
+**Ouvert.** Borner la notification au praticien émise par chaque signalement ?
 ## 2026-10-18 — F80 : héritage de l'acte du groupe, signature NABM en lot (D-326)
 
 **Fait.** Neuf compositions signées par le responsable, constatées par conteneur. D-326 : un constituant tient l'acte de son groupe signé (§1) ; les correspondances préparées se signent en lot depuis le rayon, tout ou rien, au nom de la session (§2) ; aide « acte isolé » sur la fiche d'une analyse groupée (§3). Bancs avec contre-épreuves par mutation (héritage, couverture, tri des verrous, cochage).

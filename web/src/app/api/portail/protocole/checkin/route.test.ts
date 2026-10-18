@@ -6,7 +6,7 @@ const { prisma } = vi.hoisted(() => ({
     patient: { findUnique: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn() },
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
-    protocolCheckin: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn() },
+    protocolCheckin: { count: vi.fn(async (_args: { where: { idPatient: string } }) => 0), findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn() },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -145,6 +145,19 @@ describe('POST /api/portail/protocole/checkin', () => {
     expect(json.ok).toBe(true);
     expect(json.pointEtape).toBe('J7');
     expect(prisma.protocolCheckin.create).toHaveBeenCalled();
+  });
+
+  it('au plafond horaire du dossier (D-327) : 429, texte arbitré, aucun check-in écrit', async () => {
+    mockOwnerAuth();
+    mockDiffusedProtocol();
+    prisma.protocolCheckin.count.mockResolvedValueOnce(20);
+    const res = await POST(postRequest(proprioCookie(), { idAssignation: 'ASS_1', reponses }));
+    const json = (await res.json()) as { reason?: string; error?: string };
+    expect(res.status).toBe(429);
+    expect(json.reason).toBe('cadence');
+    expect(json.error).toBe('Vous avez fait beaucoup d’envois en peu de temps. Réessayez dans une heure.');
+    expect(prisma.protocolCheckin.create).not.toHaveBeenCalled();
+    expect(prisma.protocolCheckin.count.mock.calls[0][0].where.idPatient).toBe(assignation.idPatient);
   });
 
   it('refuse un point d’étape ne correspondant pas au calendrier (409)', async () => {

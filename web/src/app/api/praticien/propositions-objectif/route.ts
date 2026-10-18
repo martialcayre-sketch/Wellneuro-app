@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { cadenceObjectifsAtteinte } from '@/lib/praticien/cadenceObjectifs';
+import { MESSAGE_CADENCE_PRATICIEN } from '@/lib/securite/cadenceEcritures';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import type { GabaritAcces } from '@/lib/praticien/journalAcces';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
@@ -855,6 +857,12 @@ async function ecarter(
   // une session praticien quelconque.
   if (!visee) {
     return echec('proposition_introuvable', 'Proposition introuvable.', 404);
+  }
+
+  // Cadence ([[D-327]], t08) : un écart se répète (se raviser est une ligne de
+  // plus) ; il entre dans le plafond des écritures sur les objectifs.
+  if (await cadenceObjectifsAtteinte(idPatient)) {
+    return echec('cadence', MESSAGE_CADENCE_PRATICIEN, 429);
   }
 
   const creee = await prisma.dispositionProposition.create({

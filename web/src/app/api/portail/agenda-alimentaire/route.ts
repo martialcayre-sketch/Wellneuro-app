@@ -15,6 +15,8 @@ import {
   type JourRow,
 } from '@/lib/agenda-alimentaire';
 import { listJours, saveJour, type LigneIllisible } from '@/lib/agenda-alimentaire/persistence';
+import { prisma } from '@/lib/prisma';
+import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -656,6 +658,14 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     // deux sont vrais et terminaux, et c'est la règle générale de D-015 — un
     // refus qui nomme un geste vient après tout refus d'état terminal. Épinglé
     // par un test, pas laissé implicite.
+
+    // 4 bis — CADENCE ([[D-327]], t08) : plafond large (saisies et corrections
+    // chaînées), compté sur toutes les journées du dossier.
+    if (await cadenceAtteinte('agenda', depuis =>
+      prisma.agendaAlimentaireJour.count({ where: { idPatient: auth.idPatient, soumisLe: { gte: depuis } } }),
+    )) {
+      return refuserEcriture('cadence', MESSAGE_CADENCE_PATIENT, 429, requestContext);
+    }
 
     // 5 — fenêtre de saisie. Aujourd'hui par défaut ; la veille est acceptée
     // pour une correction, au-delà c'est de la reconstruction de mémoire.

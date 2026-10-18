@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import { MESSAGE_CADENCE_PRATICIEN, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import { isDossierDeuxVoixEnabled } from '@/lib/patient/featureFlag';
 import { lireMatierePriorite } from '@/lib/objectif/matierePriorite';
@@ -255,6 +256,13 @@ export async function POST(req: Request): Promise<NextResponse<PropositionApiRes
     });
     if (patient && !accepteNouvelEnvoi(patient)) {
       return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+    }
+    // Cadence ([[D-327]], t08) : AVANT l'appel payant. Seules les propositions
+    // produites laissent une ligne — un appel qui échoue n'est pas compté.
+    if (await cadenceAtteinte('propositionPrioriteIa', depuis =>
+      prisma.propositionPrioriteIA.count({ where: { idPatient, creeLe: { gte: depuis } } }),
+    )) {
+      return echec('cadence', MESSAGE_CADENCE_PRATICIEN, 429);
     }
 
     const { synthese, depot } = await lireMatierePriorite(idPatient);

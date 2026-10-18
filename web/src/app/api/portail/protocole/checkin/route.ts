@@ -12,6 +12,8 @@ import {
   type CheckinRow,
   type PointEtape,
 } from '@/lib/protocol/checkins';
+import { prisma } from '@/lib/prisma';
+import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 
 // Check-in patient d'un « rendez-vous de suivi » J7/J14/J21 (C2A LOT-04).
 // Écriture UNIQUEMENT via session portail (`readPatientSession` +
@@ -88,6 +90,16 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       return NextResponse.json(
         { ok: false, reason: 'step_mismatch', error: 'Ce rendez-vous de suivi n’est pas ouvert.' },
         { status: 409 },
+      );
+    }
+
+    // Cadence ([[D-327]], t08) : plafond horaire du dossier, corrections comprises.
+    if (await cadenceAtteinte('portail', depuis =>
+      prisma.protocolCheckin.count({ where: { idPatient: auth.idPatient, soumisLe: { gte: depuis } } }),
+    )) {
+      return NextResponse.json(
+        { ok: false, reason: 'cadence', error: MESSAGE_CADENCE_PATIENT },
+        { status: 429 },
       );
     }
 

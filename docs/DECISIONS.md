@@ -4,6 +4,74 @@
 
 ## Décisions actives
 
+### D-327 — Cadence des écritures par dossier : un plafond horaire, compté en base sur les lignes déjà écrites, sur les routes portail authentifiées et les routes praticien des objectifs (dette t08)
+
+- Date : 2026-10-18
+- Statut : accepté. Arbitrages du responsable du 2026-10-18, sur questions à
+  options (reprise de la file A) : « écritures, sans migration » (contre un
+  plafond sur toutes les routes, lectures comprises, et contre une table de
+  compteurs) ; plafonds « larges, par famille » (recommandé) ; texte patient
+  « envois nombreux » (recommandé). Texte rédigé par l'assistant.
+- Solde : la ligne du plan « Aucune cadence (limite de débit) sur les routes
+  portail authentifiées… » (§ dettes, file A).
+- Domaine : `web/src/lib/securite/cadenceEcritures.ts` (module pur),
+  `web/src/lib/praticien/cadenceObjectifs.ts`, et les routes ci-dessous.
+- Nature : garde-fou technique, non clinique (`DC-20` : chiffres techniques,
+  aucun seuil clinique).
+
+**1. Le patron.** Avant d'écrire une ligne neuve, la route compte les lignes
+que CE dossier a déjà écrites dans sa table depuis une heure (fenêtre
+glissante, horloge de l'application) ; au plafond, elle rend 429
+`{ ok: false, reason: 'cadence', error }` et n'écrit rien. C'est le patron de
+la redemande du lien magique : la borne vit en base, pas en mémoire de
+processus (plusieurs conteneurs répondent). Aucune table, aucune colonne,
+aucune migration : chaque table comptée porte déjà `id_patient` et sa date de
+création, posée à l'insertion. Le comptage emprunte l'index qui commence par
+`id_patient` — `(id_patient, date)` pour la plupart ; pour les agendas, le
+check-in et les choix, l'index commence par `id_patient` puis un autre champ,
+et la date se filtre sur les quelques dizaines de lignes du dossier.
+
+**2. Les plafonds (par dossier et par heure).**
+
+| Famille | Plafond | Routes (table comptée) |
+|---|---|---|
+| agendas | 60 | `portail/agenda-sommeil` (nuits), `portail/agenda-alimentaire` (journées) — saisies et corrections chaînées |
+| portail | 20 | `portail/ce-qui-compte`, `portail/comprehension`, `portail/protocole/checkin`, `portail/pack-reevaluation` (réponses du patient seules), `portail/trust/choix` (accords et refus), `portail/dossier` (un plafond pour les quatre gestes, compté sur leurs quatre tables) |
+| objectifs praticien | 30 | `praticien/objectifs`, `/accord`, `/fin`, et le geste « écarter » de `praticien/propositions-objectif` — un plafond pour les quatre, compté sur leurs quatre tables (une reprise de proposition compte deux fois : un objectif et une disposition) |
+| proposition de priorité par IA | 10 | `praticien/objectifs/proposition-priorite`, AVANT l'appel au modèle |
+
+Textes : patient « Vous avez fait beaucoup d’envois en peu de temps.
+Réessayez dans une heure. » ; praticien « Trop d’enregistrements sur ce
+dossier en une heure (plafond technique). Réessayez plus tard. »
+
+**3. Ce que le plafond n'est pas.** Une borne exacte : comptage et écriture
+ne partagent ni transaction ni verrou (sauf `trust/choix`, compté sous le
+verrou de ligne déjà pris), deux requêtes simultanées au plafond peuvent le
+franchir d'une unité. Accepté : l'objet est l'ordre de grandeur contre une
+boucle ou un script sous session authentifiée ; aucun usage normal ne
+l'atteint. Un appel IA qui échoue ne laisse pas de ligne et n'est pas compté.
+
+**4. Ce qui n'est JAMAIS plafonné.**
+- **Le retrait d'un choix** (`trust/choix`, statut `retire`) : le retrait doit
+  rester aussi simple que l'accord (RGPD, art. 7.3), et il ne suit qu'un accord,
+  lui plafonné.
+- **`portail/trust/signalement`** (effet indésirable, incident de
+  confidentialité, demande d'exercice d'un droit) : un signal de sécurité ou
+  une demande de droit ne se refuse pas sur un compteur. Reste ouvert la
+  notification au praticien qu'émet chaque signalement — question au
+  responsable, hors de cette décision.
+- Les lectures, et les routes déjà bornées par leur propre règle
+  (`lien/demande`, comptes rendus, lectures datées, relance).
+- `ja/observations` : sa table est partagée avec le praticien, un compte par
+  dossier y mêlerait deux auteurs.
+- Le geste « assembler » de `praticien/propositions-objectif` : idempotent par
+  empreinte des sources, il n'écrit que lorsque les sources ont changé.
+
+**Ne touche pas** : aucune migration, aucun `schema.prisma`, aucune règle
+clinique, aucun texte existant ; le journal d'accès (dette t09) est clos sans
+code le même jour (drapeaux allumés en production : l'option arbitrée était
+sans effet).
+
 ### D-326 — Un constituant d'un groupe signé est coté par l'acte du groupe, sans ligne NABM écrite pour lui ; les correspondances préparées se signent en lot, tout ou rien ; l'acte d'une analyse groupée se signe « acte isolé » (amende D-323 §3)
 
 - Date : 2026-10-18

@@ -12,6 +12,7 @@ const { getServerSession, prisma, messagesCreate } = vi.hoisted(() => ({
     // les appelle jamais : sans eux, l'assertion « append-only » lèverait au
     // lieu de compter zéro. Même motif que les bancs de `objectifs/route.ts`.
     propositionPrioriteIA: {
+      count: vi.fn(),
       findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -64,6 +65,7 @@ beforeEach(() => {
   prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE);
   prisma.entreeCeQuiCompte.findFirst.mockResolvedValue(DEPOT);
   prisma.propositionPrioriteIA.findFirst.mockResolvedValue(null);
+  prisma.propositionPrioriteIA.count.mockResolvedValue(0);
 });
 
 const get = (q = 'idPatient=PAT_TEST') => GET(new Request(`${URL_BASE}?${q}`));
@@ -207,6 +209,15 @@ describe('POST — produit un tirage', () => {
     expect(res.status).toBe(409);
     expect((await res.json()).manque).toEqual(['depot_patient']);
     expect(messagesCreate).not.toHaveBeenCalled();
+  });
+
+  it('au plafond horaire (D-327) : 429 AVANT l’appel payant, rien écrit', async () => {
+    prisma.propositionPrioriteIA.count.mockResolvedValue(10);
+    const res = await post();
+    expect(res.status).toBe(429);
+    expect((await res.json()).reason).toBe('cadence');
+    expect(messagesCreate).not.toHaveBeenCalled();
+    expect(prisma.propositionPrioriteIA.create).not.toHaveBeenCalled();
   });
 
   it('REFUSE un libellé trop long au lieu de le couper', async () => {
