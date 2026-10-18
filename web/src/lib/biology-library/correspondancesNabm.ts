@@ -50,7 +50,7 @@ import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { MILLESIME_LISTE_NABM, candidatsNabmPour, type SituationNabm } from './candidatsNabm';
 import { jetons, normaliserRecherche } from './rechercheTexte';
-import { constatValable } from './remboursable';
+import { constatValable, deriverRemboursement, type CorrespondanceNabm, type Remboursement } from './remboursable';
 
 /** Pointeur de millésime de la nomenclature (même clé que `catalogue.ts`). */
 const SOURCE_NABM = 'nabm_smt_ans';
@@ -112,6 +112,62 @@ async function millesimeCourant(client: Prisma.TransactionClient = prisma): Prom
     select: { versionSource: true },
   });
   return pointeur?.versionSource ?? null;
+}
+
+/**
+ * Les actes qu'un constituant tient déjà de ses groupes ([[D-326]] §1) : par
+ * code de constituant, l'acte signé de chaque groupe dont la composition
+ * signée active le compte, et le libellé de ce groupe. Le candidat d'un tel
+ * acte n'est plus à signer — la dérivation l'en cote déjà (`remboursementsAvec
+ * Compositions`). Un composant retiré du catalogue n'est pas couvert, comme il
+ * n'hérite pas.
+ */
+async function actesTenusDesGroupes(constituant?: string): Promise<Map<string, Map<string, string>>> {
+  const groupes = await prisma.biologyAnalyteComposition.findMany({
+    where: {
+      retireeLe: null,
+      type: 'groupe',
+      analyte: { actif: true },
+      ...(constituant ? { items: { some: { composantCode: constituant } } } : {}),
+    },
+    select: {
+      analyte: {
+        select: {
+          libelle: true,
+          correspondancesNabm: { where: { verifiePar: { not: null } }, select: { codeActe: true } },
+        },
+      },
+      items: { select: { composant: { select: { code: true, actif: true } } } },
+    },
+  });
+  const tenus = new Map<string, Map<string, string>>();
+  for (const groupe of groupes) {
+    for (const { composant } of groupe.items) {
+      if (!composant.actif) continue;
+      const actes = tenus.get(composant.code) ?? new Map<string, string>();
+      for (const { codeActe } of groupe.analyte.correspondancesNabm) {
+        if (!actes.has(codeActe)) actes.set(codeActe, groupe.analyte.libelle);
+      }
+      tenus.set(composant.code, actes);
+    }
+  }
+  return tenus;
+}
+
+/**
+ * Les actes que le constituant tient VRAIMENT de ses groupes : la condition
+ * même de l'héritage (`avecActesDesGroupes`, [[D-326]] §1) — acte actif au
+ * millésime courant, et constituant ni remboursable seul ni hors
+ * nomenclature par ce qui a été signé pour lui. Hors de là, rien n'est
+ * masqué : le candidat reste à signer, et la fiche ne dit pas « tenu ».
+ */
+function tenusEffectifs(
+  duGroupe: ReadonlyMap<string, string> | undefined,
+  propre: Remboursement,
+  parCode: ReadonlyMap<string, { inactif: boolean }>,
+): Map<string, string> {
+  if (!duGroupe || propre.statut === 'remboursable' || propre.statut === 'hors_nomenclature') return new Map();
+  return new Map([...duGroupe].filter(([codeActe]) => parCode.get(codeActe)?.inactif === false));
 }
 
 export type ChercherActeResultat =
@@ -190,6 +246,9 @@ export type CandidatsNabmAffiches = {
   /** Pourquoi rien n'est à signer (aucun acte, valeur calculée, regroupement). */
   motif: string | null;
   propositions: PropositionNabmAffichee[];
+  /** Les candidats que l'analyte tient déjà de son groupe signé ([[D-326]]
+   *  §1) : rien à signer, l'écran dit pourquoi. */
+  tenusDuGroupe: Array<{ codeActe: string; groupe: string }>;
 };
 
 export type LireCorrespondancesResultat =
@@ -223,15 +282,17 @@ export async function lireCorrespondancesAnalyte(
   });
   if (!analyte) return { ok: false, raison: 'analyte_inconnu' };
 
-  const millesime = await millesimeCourant();
+  const [millesime, tenus] = await Promise.all([millesimeCourant(), actesTenusDesGroupes(analyte.code)]);
   const liste = candidatsNabmPour(analyte.code);
   // Un candidat dont le couple a déjà une ligne (signée ou proposition) n'est
   // pas reproposé : la ligne existante porte seule son geste. Un analyte
   // inactif n'en reçoit aucun : sa signature serait refusée (`analyte_inactif`).
+  // Un acte que l'analyte tient VRAIMENT de son groupe signé ne l'est pas non
+  // plus (`tenusEffectifs`, la règle de l'héritage).
   const dejaEnBase = new Set(analyte.correspondancesNabm.map(c => c.codeActe));
-  const aProposer =
+  const nonEnBase =
     analyte.actif && liste && 'candidats' in liste ? liste.candidats.filter(c => !dejaEnBase.has(c.codeActe)) : [];
-  const codes = [...dejaEnBase, ...aProposer.map(c => c.codeActe)];
+  const codes = [...dejaEnBase, ...nonEnBase.map(c => c.codeActe)];
   const actes =
     millesime && codes.length > 0
       ? await prisma.biologyNabmActe.findMany({
@@ -240,6 +301,15 @@ export async function lireCorrespondancesAnalyte(
         })
       : [];
   const parCode = new Map(actes.map(a => [a.codeActe, a]));
+  const duGroupe = tenusEffectifs(
+    tenus.get(analyte.code),
+    deriverRemboursement(analyte.correspondancesNabm as CorrespondanceNabm[], actes, {
+      constat: analyte.constatNabm ?? null,
+      millesimeCourant: millesime,
+    }),
+    parCode,
+  );
+  const aProposer = nonEnBase.filter(c => !duGroupe.has(c.codeActe));
 
   const candidats: CandidatsNabmAffiches | null = liste && {
     millesimeListe: MILLESIME_LISTE_NABM,
@@ -250,6 +320,9 @@ export async function lireCorrespondancesAnalyte(
       const acte = parCode.get(c.codeActe);
       return acte && !acte.inactif ? [{ codeActe: c.codeActe, nature: c.nature, motif: c.motif, acte }] : [];
     }),
+    tenusDuGroupe: nonEnBase
+      .filter(c => duGroupe.has(c.codeActe))
+      .map(c => ({ codeActe: c.codeActe, groupe: duGroupe.get(c.codeActe)! })),
   };
 
   const constat = analyte.constatNabm;
@@ -349,9 +422,10 @@ function estAttenteEpuisee(err: unknown): boolean {
  *  migration refuse tout autre niveau (revue du lot, P2-2). */
 async function geste<T, R extends string>(
   corps: (tx: Prisma.TransactionClient) => Promise<T>,
+  options: { timeout?: number } = {},
 ): Promise<T | { ok: false; raison: R | 'import_en_cours' | 'etat_divergent' }> {
   try {
-    return await prisma.$transaction(corps, { isolationLevel: 'ReadCommitted' });
+    return await prisma.$transaction(corps, { isolationLevel: 'ReadCommitted', ...options });
   } catch (err) {
     if (err instanceof RefusGeste) return { ok: false, raison: err.raison as R };
     if (estAttenteEpuisee(err)) return { ok: false, raison: 'etat_divergent' };
@@ -429,68 +503,270 @@ export async function deciderCorrespondance(params: {
 
   return geste<DeciderCorrespondanceResultat, Refus>(async tx => {
     await verrouillerGeste(tx, analyteCode);
+    const correspondance = await signerSousVerrou(tx, { analyteCode, codeActe, etatAttendu, nature, praticien });
+    return { ok: true, correspondance };
+  });
+}
 
-    const analyte = await tx.biologyAnalyte.findUnique({
-      where: { code: analyteCode },
-      select: { actif: true, constatNabm: { select: { id: true } } },
-    });
-    if (!analyte) throw new RefusGeste<Refus>('analyte_inconnu');
-    if (!analyte.actif) throw new RefusGeste<Refus>('analyte_inactif');
-    if (analyte.constatNabm) throw new RefusGeste<Refus>('constat_present');
+/**
+ * La signature d'un couple, une fois les verrous pris — écrite une fois, pour
+ * le geste unitaire et le lot ([[D-326]] §2). Tout refus lève un `RefusGeste`,
+ * qui annule la transaction entière.
+ */
+async function signerSousVerrou(
+  tx: Prisma.TransactionClient,
+  params: {
+    analyteCode: string;
+    codeActe: string;
+    etatAttendu: 'absente' | 'proposition';
+    nature: NatureNabm;
+    praticien: string;
+  },
+): Promise<Extract<DeciderCorrespondanceResultat, { ok: true }>['correspondance']> {
+  type Refus = RaisonRefusCorrespondance;
+  const { analyteCode, codeActe, etatAttendu, nature, praticien } = params;
+  const analyte = await tx.biologyAnalyte.findUnique({
+    where: { code: analyteCode },
+    select: { actif: true, constatNabm: { select: { id: true } } },
+  });
+  if (!analyte) throw new RefusGeste<Refus>('analyte_inconnu');
+  if (!analyte.actif) throw new RefusGeste<Refus>('analyte_inactif');
+  if (analyte.constatNabm) throw new RefusGeste<Refus>('constat_present');
 
-    const millesime = await millesimeCourant(tx);
-    if (!millesime) throw new RefusGeste<Refus>('millesime_absent');
-    const acte = await tx.biologyNabmActe.findUnique({
-      where: { codeActe_versionSource: { codeActe, versionSource: millesime } },
-      select: { inactif: true },
-    });
-    if (!acte) throw new RefusGeste<Refus>('acte_introuvable');
-    if (acte.inactif) throw new RefusGeste<Refus>('acte_inactif');
+  const millesime = await millesimeCourant(tx);
+  if (!millesime) throw new RefusGeste<Refus>('millesime_absent');
+  const acte = await tx.biologyNabmActe.findUnique({
+    where: { codeActe_versionSource: { codeActe, versionSource: millesime } },
+    select: { inactif: true },
+  });
+  if (!acte) throw new RefusGeste<Refus>('acte_introuvable');
+  if (acte.inactif) throw new RefusGeste<Refus>('acte_inactif');
 
-    // L'état vu se vérifie AVANT la ligne de journal : un refus n'écrit rien.
-    const existante = await tx.biologyAnalyteNabm.findUnique({
-      where: { analyteCode_codeActe: { analyteCode, codeActe } },
-      select: { verifiePar: true },
-    });
-    const conforme =
-      etatAttendu === 'absente' ? existante === null : existante !== null && existante.verifiePar === null;
-    if (!conforme) throw new RefusGeste<Refus>('etat_divergent');
+  // L'état vu se vérifie AVANT la ligne de journal : un refus n'écrit rien.
+  const existante = await tx.biologyAnalyteNabm.findUnique({
+    where: { analyteCode_codeActe: { analyteCode, codeActe } },
+    select: { verifiePar: true },
+  });
+  const conforme =
+    etatAttendu === 'absente' ? existante === null : existante !== null && existante.verifiePar === null;
+  if (!conforme) throw new RefusGeste<Refus>('etat_divergent');
 
-    await tx.biologyAnalyteNabmJournal.create({
-      data: { analyteCode, acte: 'signature', codeActe, nature, millesime, praticienEmail: praticien },
+  await tx.biologyAnalyteNabmJournal.create({
+    data: { analyteCode, acte: 'signature', codeActe, nature, millesime, praticienEmail: praticien },
+    select: { id: true },
+  });
+
+  // La date est posée par la base (trigger) ; celle-ci ne sert qu'à
+  // satisfaire le CHECK de M-3 (signée ⇒ datée) et ne s'écrit pas.
+  const provisoire = new Date();
+  if (etatAttendu === 'absente') {
+    await tx.biologyAnalyteNabm.create({
+      data: { analyteCode, codeActe, nature, verifiePar: praticien, verifieLe: provisoire },
       select: { id: true },
     });
-
-    // La date est posée par la base (trigger) ; celle-ci ne sert qu'à
-    // satisfaire le CHECK de M-3 (signée ⇒ datée) et ne s'écrit pas.
-    const provisoire = new Date();
-    if (etatAttendu === 'absente') {
-      await tx.biologyAnalyteNabm.create({
-        data: { analyteCode, codeActe, nature, verifiePar: praticien, verifieLe: provisoire },
-        select: { id: true },
-      });
-    } else {
-      const { count } = await tx.biologyAnalyteNabm.updateMany({
-        where: { analyteCode, codeActe, verifiePar: null },
-        data: { nature, verifiePar: praticien, verifieLe: provisoire },
-      });
-      if (count !== 1) throw new RefusGeste<Refus>('etat_divergent');
-    }
-
-    const signee = await tx.biologyAnalyteNabm.findUniqueOrThrow({
-      where: { analyteCode_codeActe: { analyteCode, codeActe } },
-      select: { verifiePar: true, verifieLe: true },
+  } else {
+    const { count } = await tx.biologyAnalyteNabm.updateMany({
+      where: { analyteCode, codeActe, verifiePar: null },
+      data: { nature, verifiePar: praticien, verifieLe: provisoire },
     });
-    return {
-      ok: true,
-      correspondance: {
-        codeActe,
-        etat: 'signee',
-        verifiePar: signee.verifiePar,
-        verifieLe: signee.verifieLe ? signee.verifieLe.toISOString() : null,
-      },
-    };
+    if (count !== 1) throw new RefusGeste<Refus>('etat_divergent');
+  }
+
+  const signee = await tx.biologyAnalyteNabm.findUniqueOrThrow({
+    where: { analyteCode_codeActe: { analyteCode, codeActe } },
+    select: { verifiePar: true, verifieLe: true },
   });
+  return {
+    codeActe,
+    etat: 'signee',
+    verifiePar: signee.verifiePar,
+    verifieLe: signee.verifieLe ? signee.verifieLe.toISOString() : null,
+  };
+}
+
+// ── La signature en lot ([[D-326]] §2) ──────────────────────────────────────
+
+/** Borne technique d'un geste : la transaction tient tout le lot. */
+export const LOT_NABM_MAX = 100;
+
+/** Un candidat de la liste préparée encore à signer, tel que l'écran du lot le
+ *  montre. */
+export type LigneLotNabm = {
+  analyteCode: string;
+  analyteLibelle: string;
+  situation: SituationNabm;
+  codeActe: string;
+  nature: NatureNabm;
+  motif: string;
+  acte: ActeNabmAffiche;
+  /** Cochée d'office : la liste préparée tranche par le libellé (pas « à
+   *  juger »), et l'analyte ne porte encore aucune signature. */
+  precochee: boolean;
+};
+
+export type ListerLotNabmResultat = { millesime: string | null; lignes: LigneLotNabm[] };
+
+/**
+ * Les candidats encore à signer, tous analytes confondus — ceux que la fiche
+ * de chaque analyte propose (`lireCorrespondancesAnalyte`), et aucun autre :
+ * analyte actif, sans constat « aucun acte » (il bloque la signature, M-3c),
+ * couple sans ligne en base, acte présent et actif au millésime courant, et
+ * pas déjà tenu du groupe signé ([[D-326]] §1).
+ */
+export async function listerCorrespondancesALot(): Promise<ListerLotNabmResultat> {
+  const [analytes, millesime, tenus] = await Promise.all([
+    prisma.biologyAnalyte.findMany({
+      where: { actif: true },
+      select: {
+        code: true,
+        libelle: true,
+        correspondancesNabm: { select: { codeActe: true, nature: true, verifiePar: true } },
+        constatNabm: { select: { id: true } },
+      },
+      orderBy: { libelle: 'asc' },
+    }),
+    millesimeCourant(),
+    actesTenusDesGroupes(),
+  ]);
+  if (!millesime) return { millesime: null, lignes: [] };
+
+  // Les candidats d'abord, sans masque : le masque « tenu du groupe » se juge
+  // sur l'état propre de l'analyte, qui demande ses actes signés.
+  const candidatsDe = analytes.flatMap(analyte => {
+    const liste = candidatsNabmPour(analyte.code);
+    if (analyte.constatNabm || !liste || !('candidats' in liste)) return [];
+    const enBase = new Set(analyte.correspondancesNabm.map(c => c.codeActe));
+    const candidats = liste.candidats.filter(c => !enBase.has(c.codeActe));
+    return candidats.length > 0 ? [{ analyte, candidats, situation: liste.situation }] : [];
+  });
+  if (candidatsDe.length === 0) return { millesime, lignes: [] };
+
+  const codes = new Set<string>();
+  for (const { analyte, candidats } of candidatsDe) {
+    for (const c of candidats) codes.add(c.codeActe);
+    for (const c of analyte.correspondancesNabm) if (c.verifiePar !== null) codes.add(c.codeActe);
+  }
+  const actes = await prisma.biologyNabmActe.findMany({
+    where: { versionSource: millesime, codeActe: { in: [...codes] } },
+    select: SELECT_ACTE,
+  });
+  const parCode = new Map(actes.map(a => [a.codeActe, a]));
+
+  const aProposer = candidatsDe.flatMap(({ analyte, candidats, situation }) => {
+    // Sans constat (écarté plus haut) : l'état propre ne dépend que des signatures.
+    const propre = deriverRemboursement(analyte.correspondancesNabm as CorrespondanceNabm[], actes);
+    const duGroupe = tenusEffectifs(tenus.get(analyte.code), propre, parCode);
+    const signe = analyte.correspondancesNabm.some(c => c.verifiePar !== null);
+    return candidats
+      .filter(c => !duGroupe.has(c.codeActe))
+      .map(candidat => ({ analyte, candidat, situation, signe }));
+  });
+  return {
+    millesime,
+    lignes: aProposer.flatMap(({ analyte, candidat, situation, signe }) => {
+      const acte = parCode.get(candidat.codeActe);
+      if (!acte || acte.inactif) return [];
+      return [
+        {
+          analyteCode: analyte.code,
+          analyteLibelle: analyte.libelle,
+          situation,
+          codeActe: candidat.codeActe,
+          nature: candidat.nature,
+          motif: candidat.motif,
+          acte,
+          precochee: situation !== 'a_juger' && !signe,
+        },
+      ];
+    }),
+  };
+}
+
+export type LigneASignerNabm = { analyteCode: string; codeActe: string; nature: string };
+
+export type SignerLotNabmResultat =
+  | { ok: true; signees: number }
+  | {
+      ok: false;
+      raison: RaisonRefusCorrespondance | 'lot_invalide';
+      /** La ligne en cause ; `null` quand le refus vise le lot entier. */
+      ligne: { analyteCode: string; codeActe: string } | null;
+    };
+
+/** Le refus d'une ligne du lot : il annule la transaction et nomme la ligne. */
+class RefusLigne extends Error {
+  constructor(
+    readonly raison: RaisonRefusCorrespondance,
+    readonly ligne: { analyteCode: string; codeActe: string },
+  ) {
+    super(raison);
+  }
+}
+
+/**
+ * Signe N couples en un geste, TOUT OU RIEN ([[D-326]] §2, patron de
+ * [[D-325]] §2). Chaque couple passe par la signature unitaire
+ * (`signerSousVerrou`) — mêmes contrôles, même ligne de journal, au nom du
+ * praticien en session ; une seule ligne refusée et rien n'est écrit, le
+ * refus la nomme. Seul l'état « absente » se signe en lot : le lot ne montre
+ * que des couples sans ligne en base, et un couple qui en a reçu une depuis
+ * l'affichage refuse le lot (`etat_divergent`).
+ *
+ * Les verrous se prennent avant toute lecture, dans l'ordre du geste
+ * unitaire (nomenclature, puis analytes) et les analytes par code croissant :
+ * deux gestes concurrents attendent l'un l'autre, aucun ne s'interbloque.
+ */
+export async function signerCorrespondancesLot(params: {
+  lignes: readonly LigneASignerNabm[];
+  praticien: string;
+}): Promise<SignerLotNabmResultat> {
+  const { lignes, praticien } = params;
+  if (lignes.length === 0 || lignes.length > LOT_NABM_MAX) return { ok: false, raison: 'lot_invalide', ligne: null };
+  const vues = new Set<string>();
+  for (const { analyteCode, codeActe, nature } of lignes) {
+    const ligne = { analyteCode, codeActe };
+    const cle = `${analyteCode}|${codeActe}`;
+    if (!CODE_ANALYTE_RE.test(analyteCode) || !CODE_ACTE_RE.test(codeActe) || vues.has(cle)) {
+      return { ok: false, raison: 'lot_invalide', ligne };
+    }
+    if (!estNatureNabm(nature)) return { ok: false, raison: 'nature_requise', ligne };
+    vues.add(cle);
+  }
+
+  try {
+    return await prisma.$transaction(
+      async tx => {
+        await tx.$executeRaw`SET LOCAL lock_timeout = '3s'`;
+        await attendre(tx.$executeRaw`LOCK TABLE biology_catalog_versions_courantes IN SHARE MODE`, 'import_en_cours');
+        for (const code of [...new Set(lignes.map(l => l.analyteCode))].sort()) {
+          await attendre(tx.$executeRaw`SELECT public.biology_analyte_nabm_verrouiller(${code})`, 'etat_divergent');
+        }
+        for (const { analyteCode, codeActe, nature } of lignes) {
+          try {
+            await signerSousVerrou(tx, {
+              analyteCode,
+              codeActe,
+              etatAttendu: 'absente',
+              nature: nature as NatureNabm,
+              praticien,
+            });
+          } catch (err) {
+            if (err instanceof RefusGeste) throw new RefusLigne(err.raison as RaisonRefusCorrespondance, { analyteCode, codeActe });
+            throw err;
+          }
+        }
+        return { ok: true as const, signees: lignes.length };
+      },
+      // READ COMMITTED : la fonction de verrou refuse tout autre niveau. Le
+      // délai couvre le lot entier, borné à LOT_NABM_MAX couples.
+      { isolationLevel: 'ReadCommitted', timeout: 30_000 },
+    );
+  } catch (err) {
+    if (err instanceof RefusLigne) return { ok: false, raison: err.raison, ligne: err.ligne };
+    if (err instanceof RefusGeste) return { ok: false, raison: err.raison as RaisonRefusCorrespondance, ligne: null };
+    if (estAttenteEpuisee(err)) return { ok: false, raison: 'etat_divergent', ligne: null };
+    throw err;
+  }
 }
 
 // ── Le constat signé « aucun acte dans la nomenclature » (M-3c) ────────────

@@ -29,7 +29,13 @@
 //   8. un import qui dure : l'attente bornée (3 s) rend `import_en_cours`,
 //      rien n'est écrit, aucune requête ne reste en file ;
 //   9. un autre geste tient l'analyte : son attente épuisée rend
-//      `etat_divergent`, jamais `import_en_cours`.
+//      `etat_divergent`, jamais `import_en_cours` ;
+//  10. signature en lot ([[D-326]] §2) : trois couples, dont deux du même
+//      analyte, dans une transaction — acceptés au COMMIT, une ligne de
+//      journal chacun ;
+//  11. tout ou rien : un lot dont la dernière ligne vise un acte absent du
+//      millésime est refusé, la ligne nommée, et rien n'est écrit — ni
+//      correspondance, ni journal.
 //
 // ÉCRIT EN BASE ET COMMET : base NOMMÉE (`WN_NABM_GESTES_BANC_BASE`) et
 // LOCALE. Le journal est en ajout seul et sa clé vers l'analyte est RESTRICT :
@@ -62,11 +68,18 @@ pg.types.setTypeParser(1114, valeur => new Date(`${valeur.replace(' ', 'T')}Z`))
 const RUN = randomBytes(4).toString('hex');
 const PRATICIEN = 'praticien@wellneuro.fr';
 const ANALYTE = `BIO_BANC_GESTE_${RUN.toUpperCase()}`;
+// Les analytes de banc du lot (D-326 §2) : le premier reçoit deux couples, le
+// second aucun (lot refusé).
+const ANALYTE_LOT = `BIO_BANC_LOT_${RUN.toUpperCase()}`;
+const ANALYTE_LOT_REFUS = `BIO_BANC_LOTR_${RUN.toUpperCase()}`;
+const ANALYTES_DE_BANC = [ANALYTE, ANALYTE_LOT, ANALYTE_LOT_REFUS];
 const SOURCE = 'nabm_smt_ans';
 const id = (nom: string) => `${nom}_${RUN}`;
 
 let millesime = '';
 let codeActe = '';
+let codeActe2 = '';
+let codeAbsent = '';
 let pointeurDeBanc = false;
 let analyteConstat = '';
 
@@ -86,7 +99,10 @@ async function poserFixtures(c: pg.Client, aucunActe: readonly string[], millesi
     `SELECT v.version_source, (
        SELECT a.code_acte FROM biology_nabm_actes a
        WHERE a.version_source = v.version_source AND NOT a.inactif ORDER BY a.code_acte LIMIT 1
-     ) AS code_acte
+     ) AS code_acte, (
+       SELECT a.code_acte FROM biology_nabm_actes a
+       WHERE a.version_source = v.version_source AND NOT a.inactif ORDER BY a.code_acte OFFSET 1 LIMIT 1
+     ) AS code_acte2
      FROM biology_catalog_versions_courantes v WHERE v.source_provenance = $1`,
     [SOURCE],
   );
@@ -109,6 +125,8 @@ async function poserFixtures(c: pg.Client, aucunActe: readonly string[], millesi
   if (rows[0]?.code_acte) {
     millesime = rows[0].version_source;
     codeActe = rows[0].code_acte;
+    assert.ok(rows[0].code_acte2, 'un seul acte actif au millésime courant : le banc du lot en demande deux.');
+    codeActe2 = rows[0].code_acte2;
     assert.equal(
       millesime,
       millesimeListe,
@@ -118,6 +136,7 @@ async function poserFixtures(c: pg.Client, aucunActe: readonly string[], millesi
     assert.equal(rows.length, 0, 'un millésime courant sans acte actif : le banc ne peut pas choisir son acte.');
     millesime = millesimeListe;
     codeActe = '0001';
+    codeActe2 = '0002';
     pointeurDeBanc = true;
     await c.query(
       `INSERT INTO biology_catalog_versions_courantes (id, source_provenance, version_source, updated_at)
@@ -129,12 +148,28 @@ async function poserFixtures(c: pg.Client, aucunActe: readonly string[], millesi
        VALUES ($1, $2, $3, 'Acte de banc', now())`,
       [id('acte'), codeActe, millesime],
     );
+    await c.query(
+      `INSERT INTO biology_nabm_actes (id, code_acte, version_source, libelle, updated_at)
+       VALUES ($1, $2, $3, 'Second acte de banc', now())`,
+      [id('acte2'), codeActe2, millesime],
+    );
   }
-  await c.query(
-    `INSERT INTO biology_analytes (id, code, libelle, type_prelevement, source_provenance, niveau_completude, updated_at)
-     VALUES ($1, $2, 'Analyte de banc', 'sang', 'labo', 'partielle', now())`,
-    [id('analyte'), ANALYTE],
+  // Un code à quatre chiffres absent du millésime : la ligne refusée du lot.
+  const { rows: absent } = await c.query<{ code: string }>(
+    `SELECT lpad(n::text, 4, '0') AS code FROM generate_series(9999, 1, -1) n
+      WHERE NOT EXISTS (
+        SELECT 1 FROM biology_nabm_actes a WHERE a.version_source = $1 AND a.code_acte = lpad(n::text, 4, '0'))
+      LIMIT 1`,
+    [millesime],
   );
+  codeAbsent = absent[0].code;
+  for (const [nom, code] of [['analyte', ANALYTE], ['analyte_lot', ANALYTE_LOT], ['analyte_lotr', ANALYTE_LOT_REFUS]]) {
+    await c.query(
+      `INSERT INTO biology_analytes (id, code, libelle, type_prelevement, source_provenance, niveau_completude, updated_at)
+       VALUES ($1, $2, 'Analyte de banc', 'sang', 'labo', 'partielle', now())`,
+      [id(nom), code],
+    );
+  }
   await c.query('COMMIT');
 }
 
@@ -143,11 +178,11 @@ async function effacerFixtures(c: pg.Client) {
   // Ce qu'un échec aurait laissé signé se retire avec sa ligne de journal.
   await c.query(
     `INSERT INTO biology_analyte_nabm_journal (id, analyte_code, acte, code_acte, nature, praticien_email, efface_par, efface_le)
-     SELECT $1 || c.code_acte, c.analyte_code, 'retrait_signature', c.code_acte, c.nature, $2, c.verifie_par, c.verifie_le
-       FROM biology_analyte_nabm c WHERE c.analyte_code = $3 AND c.verifie_par IS NOT NULL`,
-    [`banc_rs_${RUN}_`, PRATICIEN, ANALYTE],
+     SELECT $1 || c.analyte_code || '_' || c.code_acte, c.analyte_code, 'retrait_signature', c.code_acte, c.nature, $2, c.verifie_par, c.verifie_le
+       FROM biology_analyte_nabm c WHERE c.analyte_code = ANY($3::text[]) AND c.verifie_par IS NOT NULL`,
+    [`banc_rs_${RUN}_`, PRATICIEN, ANALYTES_DE_BANC],
   );
-  await c.query('DELETE FROM biology_analyte_nabm WHERE analyte_code = $1', [ANALYTE]);
+  await c.query('DELETE FROM biology_analyte_nabm WHERE analyte_code = ANY($1::text[])', [ANALYTES_DE_BANC]);
   if (analyteConstat) {
     await c.query(
       `INSERT INTO biology_analyte_nabm_journal (id, analyte_code, acte, millesime, praticien_email, efface_par, efface_le)
@@ -160,10 +195,10 @@ async function effacerFixtures(c: pg.Client) {
       PRATICIEN,
     ]);
   }
-  await c.query('UPDATE biology_analytes SET actif = false WHERE code = $1', [ANALYTE]);
+  await c.query('UPDATE biology_analytes SET actif = false WHERE code = ANY($1::text[])', [ANALYTES_DE_BANC]);
   if (pointeurDeBanc) {
     await c.query('DELETE FROM biology_catalog_versions_courantes WHERE id = $1', [id('pointeur')]);
-    await c.query('DELETE FROM biology_nabm_actes WHERE id = $1', [id('acte')]);
+    await c.query('DELETE FROM biology_nabm_actes WHERE id = ANY($1::text[])', [[id('acte'), id('acte2')]]);
   }
   await c.query('COMMIT');
 }
@@ -185,7 +220,9 @@ async function attendreBlocage(c: pg.Client, motif: string) {
 }
 
 async function main() {
-  const { deciderConstat, deciderCorrespondance } = await import('@/lib/biology-library/correspondancesNabm');
+  const { deciderConstat, deciderCorrespondance, signerCorrespondancesLot } = await import(
+    '@/lib/biology-library/correspondancesNabm'
+  );
   const { CANDIDATS_NABM, MILLESIME_LISTE_NABM } = await import('@/lib/biology-library/candidatsNabm');
   const { prisma } = await import('@/lib/prisma');
   const c = new pg.Client({ connectionString: URL_BASE });
@@ -347,6 +384,55 @@ async function main() {
     assert.deepEqual(k9, { ok: false, raison: 'etat_divergent' });
     assert.equal((await journal(c, analyteConstat)).length, avant8);
     console.log('ok 9 — analyte tenu par un autre geste : « etat_divergent » au bout de 3 s, rien d’écrit');
+
+    // 10. Signature en lot : trois couples, deux du même analyte, une transaction.
+    const avant10 = (await journal(c, ANALYTE)).length;
+    const l10 = await signerCorrespondancesLot({
+      lignes: [
+        { analyteCode: ANALYTE_LOT, codeActe, nature: 'isole' },
+        { analyteCode: ANALYTE_LOT, codeActe: codeActe2, nature: 'groupe_et' },
+        { analyteCode: ANALYTE, codeActe: codeActe2, nature: 'isole' },
+      ],
+      praticien: PRATICIEN,
+    });
+    assert.deepEqual(l10, { ok: true, signees: 3 });
+    const { rows: signeesLot } = await c.query<{ verifie_par: string }>(
+      `SELECT verifie_par FROM biology_analyte_nabm
+        WHERE analyte_code = $1 OR (analyte_code = $2 AND code_acte = $3)`,
+      [ANALYTE_LOT, ANALYTE, codeActe2],
+    );
+    assert.equal(signeesLot.length, 3);
+    assert.ok(signeesLot.every(l => l.verifie_par === PRATICIEN), 'chaque couple porte la signature de la session');
+    assert.deepEqual(
+      (await journal(c, ANALYTE_LOT)).map(l => [l.acte, l.code_acte, l.praticien_email]),
+      [
+        ['signature', codeActe, PRATICIEN],
+        ['signature', codeActe2, PRATICIEN],
+      ],
+    );
+    assert.equal((await journal(c, ANALYTE)).length, avant10 + 1);
+    console.log('ok 10 — lot de trois couples (deux du même analyte) : accepté au COMMIT, une ligne de journal chacun');
+
+    // 11. Tout ou rien : la dernière ligne vise un acte absent du millésime.
+    const l11 = await signerCorrespondancesLot({
+      lignes: [
+        { analyteCode: ANALYTE_LOT_REFUS, codeActe, nature: 'isole' },
+        { analyteCode: ANALYTE_LOT_REFUS, codeActe: codeAbsent, nature: 'isole' },
+      ],
+      praticien: PRATICIEN,
+    });
+    assert.deepEqual(l11, {
+      ok: false,
+      raison: 'acte_introuvable',
+      ligne: { analyteCode: ANALYTE_LOT_REFUS, codeActe: codeAbsent },
+    });
+    const { rows: rien } = await c.query<{ n: number }>(
+      'SELECT count(*)::int AS n FROM biology_analyte_nabm WHERE analyte_code = $1',
+      [ANALYTE_LOT_REFUS],
+    );
+    assert.equal(rien[0].n, 0, 'la première ligne, valide, ne doit pas avoir été écrite');
+    assert.deepEqual(await journal(c, ANALYTE_LOT_REFUS), []);
+    console.log('ok 11 — lot refusé sur sa dernière ligne : la ligne nommée, aucune correspondance ni journal écrits');
   } finally {
     try {
       await verrou.query('ROLLBACK').catch(() => {});

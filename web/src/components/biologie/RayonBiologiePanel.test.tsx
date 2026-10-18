@@ -233,3 +233,47 @@ describe('RayonBiologiePanel — consultation documentaire', () => {
     expect(screen.queryByText(/Analytes \(/)).toBeNull();
   });
 });
+
+describe('RayonBiologiePanel — compositions et signature en lot (D-326)', () => {
+  it('la fiche d’un constituant dit le groupe dont il tient l’acte', async () => {
+    const [ferritine, ...reste] = CATALOGUE.analytes;
+    mockFetch({
+      ...CATALOGUE,
+      analytes: [
+        {
+          ...ferritine,
+          remboursement: {
+            statut: 'remboursable_si_groupe',
+            conditions: [],
+            codesActesRetenus: ['1104'],
+            parGroupes: [{ code: 'BIO_NFS', libelle: 'Numération formule sanguine' }],
+          },
+        },
+        ...reste,
+      ],
+    });
+    render(<RayonBiologiePanel />);
+    fireEvent.click(await screen.findByRole('button', { name: /^Ferritine/ }));
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Par l’acte de son groupe, dont la composition signée le compte :\s*Numération formule sanguine\./),
+      ).toBeTruthy(),
+    );
+  });
+
+  it('contre-épreuve : sans groupe, aucune mention', async () => {
+    mockFetch(CATALOGUE);
+    render(<RayonBiologiePanel />);
+    fireEvent.click(await screen.findByRole('button', { name: /^Ferritine/ }));
+    await waitFor(() => expect(screen.getByText('Fiche analyte')).toBeTruthy());
+    expect(screen.queryByText(/Par l’acte de son groupe/)).toBeNull();
+  });
+
+  it('« Signer en lot » ouvre la liste des correspondances préparées', async () => {
+    const fetchMock = mockFetch(CATALOGUE);
+    render(<RayonBiologiePanel />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Signer en lot les correspondances préparées' }));
+    await waitFor(() => expect(screen.getByText('Correspondances préparées à signer')).toBeTruthy());
+    expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/nabm/correspondances/lot'))).toBe(true);
+  });
+});

@@ -358,3 +358,92 @@ describe('revue CodeRabbit de #1545', () => {
     expect(ligne.constituants?.map(c => c.code)).toEqual(['BIO_HEMOGLOBINE']);
   });
 });
+
+describe('remboursementsAvecCompositions — D-326 §1 : un constituant est coté par l’acte de son groupe', () => {
+  const base = (...lignes: Array<[string, Remboursement]>) => new Map<string, Remboursement>(lignes);
+
+  it('non évalué : remboursable seulement accompagné, par l’acte du groupe, et le groupe est nommé', () => {
+    const resultat = remboursementsAvecCompositions(base(['BIO_NFS', r('remboursable', ['1104'])]), carte(NFS));
+    expect(resultat.get('BIO_HEMOGLOBINE')).toEqual({
+      statut: 'remboursable_si_groupe',
+      conditions: [],
+      codesActesRetenus: ['1104'],
+      parGroupes: [{ code: 'BIO_NFS', libelle: 'Numération formule sanguine' }],
+    });
+  });
+
+  it('contre-épreuve : sans composition signée, rien n’hérite', () => {
+    const carteSeule = base(['BIO_NFS', r('remboursable', ['1104'])]);
+    expect(remboursementsAvecCompositions(carteSeule, new Map()).get('BIO_HEMOGLOBINE')).toBeUndefined();
+  });
+
+  it('constituant de deux groupes : les deux actes, les deux groupes', () => {
+    const resultat = remboursementsAvecCompositions(
+      base(['BIO_IONOGRAMME', r('remboursable', ['1609'])], ['BIO_IONOGRAMME_COMPLET', r('remboursable', ['1610'])]),
+      carte(IONO_COMPLET, IONO),
+    );
+    expect(resultat.get('BIO_CHLORE')!.codesActesRetenus).toEqual(['1609', '1610']);
+    expect(resultat.get('BIO_CHLORE')!.parGroupes?.map(g => g.code)).toEqual(['BIO_IONOGRAMME', 'BIO_IONOGRAMME_COMPLET']);
+    expect(resultat.get('BIO_BICARBONATES')!.codesActesRetenus).toEqual(['1610']);
+  });
+
+  it('remboursable seul ou hors nomenclature : son état tient', () => {
+    const plaquettes = r('remboursable', ['1107']);
+    const hemoglobine = r('hors_nomenclature');
+    const resultat = remboursementsAvecCompositions(
+      base(['BIO_NFS', r('remboursable', ['1104'])], ['BIO_PLAQUETTES', plaquettes], ['BIO_HEMOGLOBINE', hemoglobine]),
+      carte(NFS),
+    );
+    expect(resultat.get('BIO_PLAQUETTES')).toBe(plaquettes);
+    expect(resultat.get('BIO_HEMOGLOBINE')).toBe(hemoglobine);
+  });
+
+  it('déjà « si groupé » par ses signatures : ses actes et ceux du groupe sont réunis', () => {
+    const resultat = remboursementsAvecCompositions(
+      base(['BIO_NFS', r('remboursable', ['1104'])], ['BIO_HEMOGLOBINE', r('remboursable_si_groupe', ['9999'])]),
+      carte(NFS),
+    );
+    expect(resultat.get('BIO_HEMOGLOBINE')!.codesActesRetenus).toEqual(['9999', '1104']);
+  });
+
+  it('un groupe signé « groupe imposé » transmet aussi son acte ; un groupe non évalué ne transmet rien', () => {
+    const impose = remboursementsAvecCompositions(base(['BIO_NFS', r('remboursable_si_groupe', ['1104'])]), carte(NFS));
+    expect(impose.get('BIO_HEMOGLOBINE')!.statut).toBe('remboursable_si_groupe');
+    for (const statut of ['non_evalue', 'hors_nomenclature'] as const) {
+      expect(remboursementsAvecCompositions(base(['BIO_NFS', r(statut)]), carte(NFS)).get('BIO_HEMOGLOBINE')).toBeUndefined();
+    }
+  });
+
+  it('un composant retiré du catalogue n’hérite pas ; un regroupement ne transmet rien', () => {
+    const nfsRetiree: CompositionSignee = { ...NFS, composants: [{ ...NFS.composants[0], actif: false }] };
+    const retire = remboursementsAvecCompositions(base(['BIO_NFS', r('remboursable', ['1104'])]), carte(nfsRetiree));
+    expect(retire.get('BIO_HEMOGLOBINE')).toBeUndefined();
+    const hepatique = remboursementsAvecCompositions(base(['BIO_BILAN_HEPATIQUE', r('remboursable', ['0516'])]), carte(HEPATIQUE));
+    expect(hepatique.get('BIO_ALAT')).toBeUndefined();
+  });
+
+  it('de bout en bout : une hémoglobine sans correspondance propre, proposée seule, est remplacée par la NFS', () => {
+    const compositions = carte(NFS);
+    const carteHeritee = remboursementsAvecCompositions(base(['BIO_NFS', r('remboursable', ['1104'])]), compositions);
+    const remboursementDe = (code: string) => carteHeritee.get(code) ?? r('non_evalue');
+    const hemoglobine = { ...analyte('BIO_HEMOGLOBINE', 'Hémoglobine'), remboursement: remboursementDe('BIO_HEMOGLOBINE') };
+    const lignes = regrouperAnalytes([hemoglobine], { compositions, remboursementDe, validationDe: () => false });
+    expect(lignes.map(l => l.code)).toEqual(['BIO_NFS']);
+    expect(lignes[0].demandeePour).toEqual([{ code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine' }]);
+    // Contre-épreuve : la NFS signée « groupe imposé » ne remplace pas (D-326 §3).
+    const imposee = remboursementsAvecCompositions(base(['BIO_NFS', r('remboursable_si_groupe', ['1104'])]), compositions);
+    const deImposee = (code: string) => imposee.get(code) ?? r('non_evalue');
+    const seule = regrouperAnalytes(
+      [{ ...analyte('BIO_HEMOGLOBINE', 'Hémoglobine'), remboursement: deImposee('BIO_HEMOGLOBINE') }],
+      { compositions, remboursementDe: deImposee, validationDe: () => false },
+    );
+    expect(seule.map(l => l.code)).toEqual(['BIO_HEMOGLOBINE']);
+  });
+
+  it('un calculé lit l’état hérité de ses mesures', () => {
+    const calcul: CompositionSignee = { ...HOMA, composants: [{ code: 'BIO_CHLORE', libelle: 'Chlore', actif: true }] };
+    const resultat = remboursementsAvecCompositions(base(['BIO_IONOGRAMME', r('remboursable', ['1609'])]), carte(calcul, IONO));
+    expect(resultat.get('BIO_RATIO_HOMA')!.statut).toBe('remboursable');
+    expect(resultat.get('BIO_RATIO_HOMA')!.parMesures?.[0]).toMatchObject({ code: 'BIO_CHLORE', codesActes: ['1609'] });
+  });
+});
