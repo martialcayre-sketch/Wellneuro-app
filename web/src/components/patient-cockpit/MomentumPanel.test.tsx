@@ -28,15 +28,19 @@ function cycle(t0: number | null, j21: number | null, j42: number | null = null)
 const CABINET_OK: MedianesCabinet = {
   versionScoreReference: 'v1',
   nTotal: 6,
+  nDossiers: 6,
   masque: false,
-  parJalon: [{ jalon: 'J21', mediane: 6, n: 6 }],
+  parJalon: [{ jalon: 'J21', mediane: 6, n: 6, nDossiers: 6 }],
+  jalonsMasques: 0,
 };
 
 const CABINET_MASQUE: MedianesCabinet = {
   versionScoreReference: 'v1',
   nTotal: 2,
+  nDossiers: 2,
   masque: true,
   parJalon: [],
+  jalonsMasques: 0,
 };
 
 describe('MomentumPanel (A6-R2)', () => {
@@ -63,12 +67,25 @@ describe('MomentumPanel (A6-R2)', () => {
 
   it('repère cabinet : n= toujours affiché, jamais présenté comme une prédiction', () => {
     render(<MomentumPanel cycle={cycle(40, 55)} cabinet={CABINET_OK} />);
-    expect(screen.getByText(/médiane du cabinet \(n=6 cycles comparables, version v1\)/)).toBeTruthy();
+    expect(screen.getByText(/médiane du cabinet \(n=6 cycles comparables, 6 dossiers, version v1\)/)).toBeTruthy();
     expect(screen.getByText(/jamais une prédiction ni un objectif/)).toBeTruthy();
   });
 
   it('cohorte sous le seuil : repère masqué mais n= dit (A6-2)', () => {
     render(<MomentumPanel cycle={cycle(40, 55)} cabinet={CABINET_MASQUE} />);
-    expect(screen.getByText(/à partir de 5 cycles comparables — aujourd’hui : n=2/)).toBeTruthy();
+    expect(
+      screen.getByText(/à partir de 5 cycles comparables venant de 5 dossiers distincts — aujourd’hui : n=2 cycles, 2 dossiers/),
+    ).toBeTruthy();
+  });
+
+  it('jalons masqués faute de cinq dossiers : l’écran dit pourquoi (D-298)', () => {
+    render(
+      <MomentumPanel
+        cycle={cycle(40, 55)}
+        cabinet={{ versionScoreReference: 'v1', nTotal: 6, nDossiers: 5, masque: false, parJalon: [], jalonsMasques: 2 }}
+      />,
+    );
+    expect(screen.getByText(/Médianes par jalon masquées : moins de 5 dossiers distincts par jalon/)).toBeTruthy();
+    expect(screen.getByText(/n=6 cycles, 5 dossiers, version v1/)).toBeTruthy();
   });
 });

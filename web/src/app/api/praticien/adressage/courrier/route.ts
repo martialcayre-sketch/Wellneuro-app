@@ -321,7 +321,7 @@ export async function POST(req: Request) {
         // lettre imprime ([[D-218]] §4, [[D-275]] §2). Jamais un constat
         // d'effet indésirable : la base le refuserait, et le préfixe est
         // filtré ici pour que le refus ne soit pas le seul rempart.
-        const findingIds = construireSafetyFindings(signaux, [], reponses).findings
+        const findingIds = construireSafetyFindings(signaux, reponses).findings
           .map(finding => finding.findingId)
           .filter(estFindingAdressable);
         if (!consultation && findingIds.length > 0) {
