@@ -17,7 +17,6 @@ import {
   type AncreCycleCourant,
 } from '@/lib/clinical-engine/runtimeFromPrisma';
 import { lireCouverturesAdressage } from '@/lib/clinical-engine/adressagesSignalAlertePrisma';
-import { lireEffetsIndesirables } from '@/lib/clinical-engine/effetsIndesirablesPrisma';
 import type { CouvertureAdressage } from '@/lib/clinical-engine/safetyFindingSource';
 import {
   construireChaineC1Tolerante,
@@ -592,7 +591,6 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
             signauxAlerte: inputs.signauxAlerte,
             reponsesSecurite: inputs.reponsesSecurite,
             etatPopulation: inputs.etatPopulation,
-            effetsIndesirables: await lireEffetsIndesirables(idPatient),
             couverturesAdressage,
           }, await lireSelectionPriorite(idPatient, decisionCardIdRejeu));
           if (selectionEcartee) {
@@ -910,11 +908,6 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
       signauxAlerte: inputs.signauxAlerte,
       reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
-      // Lus par la fonction PARTAGÉE avec `verifierChaineC1` ([[D-101]]) : ce
-      // POST émet la carte que le vérificateur recalculera, et deux lectures
-      // divergentes rendraient 409 sur une carte que cette route vient
-      // d'écrire. Drapeau éteint ⇒ `undefined`, aucune requête neuve.
-      effetsIndesirables: await lireEffetsIndesirables(idPatient),
       couverturesAdressage,
     }, await lireSelectionPriorite(idPatient, `runtime-decision-${idSuffix}`));
     // Après `loadRuntimeInputs`, donc après que l'appartenance du patient au

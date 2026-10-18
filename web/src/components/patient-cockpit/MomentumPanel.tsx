@@ -127,8 +127,16 @@ export function MomentumPanel({
       {cabinet &&
         (cabinet.masque ? (
           <p className="mt-2 text-xs text-muted-foreground">
-            Repère de cabinet disponible à partir de 5 cycles comparables — aujourd’hui : n={cabinet.nTotal}
+            Repère de cabinet disponible à partir de 5 cycles comparables venant de 5 dossiers distincts —
+            aujourd’hui : n={cabinet.nTotal} cycles, {cabinet.nDossiers} dossiers
             {cabinet.versionScoreReference === null ? ' (version de score du cycle inconnue)' : ''}.
+          </p>
+        ) : cabinet.parJalon.length === 0 && cabinet.jalonsMasques > 0 ? (
+          // [[D-298]] §2 : une médiane par jalon venant de moins de cinq
+          // dossiers distincts est masquée ; l'écran dit pourquoi elle manque.
+          <p className="mt-2 text-xs text-muted-foreground">
+            Médianes par jalon masquées : moins de 5 dossiers distincts par jalon (n={cabinet.nTotal} cycles,{' '}
+            {cabinet.nDossiers} dossiers, version {cabinet.versionScoreReference}).
           </p>
         ) : cabinet.parJalon.length === 0 ? (
           // La cohorte atteint le seuil, mais aucun jalon n'y contribue : depuis
@@ -136,13 +144,14 @@ export function MomentumPanel({
           // n'apportent plus de delta. Annoncer une médiane serait combler par
           // la légende le trou que A6-R2 demande de laisser visible.
           <p className="mt-2 text-xs text-muted-foreground">
-            Aucun jalon comparable dans le cabinet pour l’instant (n={cabinet.nTotal} cycles, version{' '}
+            Aucun jalon comparable dans le cabinet pour l’instant (n={cabinet.nTotal} cycles, {cabinet.nDossiers} dossiers, version{' '}
             {cabinet.versionScoreReference}) — les cycles retenus n’ont pas de mesure postérieure à leur ancre.
           </p>
         ) : (
           <p className="mt-2 text-xs text-muted-foreground">
-            ┄ médiane du cabinet (n={cabinet.nTotal} cycles comparables, version {cabinet.versionScoreReference}) — un
-            repère descriptif, jamais une prédiction ni un objectif.
+            ┄ médiane du cabinet (n={cabinet.nTotal} cycles comparables, {cabinet.nDossiers} dossiers, version{' '}
+            {cabinet.versionScoreReference}) — un repère descriptif, jamais une prédiction ni un objectif.
+            {cabinet.jalonsMasques > 0 ? ' Les jalons venant de moins de 5 dossiers distincts sont masqués.' : ''}
           </p>
         ))}
     </section>

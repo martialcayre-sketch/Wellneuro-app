@@ -594,7 +594,7 @@ describe('GET /api/praticien/fil — comptes rendus transmis par le patient (D-2
 
 describe('GET /api/praticien/fil — signal de sécurité ouvert (D-275 §3)', () => {
   const SIGNAL = 'Idées noires ou suicidaires';
-  const ID_CONSTAT = construireSafetyFindings([SIGNAL], [], []).findings[0].findingId;
+  const ID_CONSTAT = construireSafetyFindings([SIGNAL], []).findings[0].findingId;
   const PORTEUSE = {
     id: 'CONS_1',
     idPatient: 'PAT_SEED_01',
@@ -666,7 +666,7 @@ describe('GET /api/praticien/fil — signal de sécurité ouvert (D-275 §3)', (
       scoresJson: { rawAnswers: { B7: 2 } },
       statutValidite: 'VALID',
     };
-    const ID_QUESTIONNAIRE = construireSafetyFindings([], [], reponsesSecuriteDeclarees([POSITIVE]))
+    const ID_QUESTIONNAIRE = construireSafetyFindings([], reponsesSecuriteDeclarees([POSITIVE]))
       .findings[0].findingId;
     // Seule la lecture du producteur de sécurité filtre sur `idQuestionnaire` :
     // les autres lectures du Fil restent vides.

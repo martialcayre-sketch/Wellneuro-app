@@ -16,7 +16,6 @@ import {
   construireSafetyFindings,
   partitionnerConstatsAdresses,
   type CouvertureAdressage,
-  type EffetIndesirableRuntime,
   type ReponseSecurite,
 } from './safetyFindings';
 import type {
@@ -158,24 +157,10 @@ export type EntreeChaineC1 = {
    */
   etatPopulation: EtatPopulation;
   /**
-   * Les signalements d'effet indésirable du dossier ([[D-101]], `DC-42`).
-   *
-   * OPTIONNEL, ET C'EST LE SEUL CHAMP DE CE TYPE QUI L'EST. Il ne dit pas
-   * « aucun signalement » : il dit que l'appelant n'a pas interrogé la table —
-   * ce que fait tout appelant tant que `interruptionEffetIndesirableActive()`
-   * est faux, c'est-à-dire tant que la règle n'est pas signée ET le drapeau
-   * posé. Le distinguer d'une liste vide n'apporterait rien ici : dispositif
-   * éteint, il n'y a pas de lecture à qualifier. Le jour où il s'allume, les
-   * DEUX appelants (cockpit et vérificateur) le passent par la même fonction,
-   * sans quoi la carte recalculée divergerait de la carte émise.
-   */
-  effetsIndesirables?: EffetIndesirableRuntime[];
-  /**
    * Les couvertures d'adressage ACTIVES du dossier ([[D-257]], LOT-04), telles
    * que `lireCouverturesAdressage` les rend.
    *
-   * OPTIONNEL, POUR LE MOTIF EXACT DE `effetsIndesirables` : absent, il dit que
-   * l'appelant n'a pas lu la table — drapeau `WN_LEVEE_ADRESSAGE` éteint. Les
+   * OPTIONNEL : absent, il dit que l'appelant n'a pas lu la table — drapeau `WN_LEVEE_ADRESSAGE` éteint. Les
    * QUATRE appelants (cockpit ×2, vérificateur, rejeu) le passent par la même
    * fonction : une couverture lue d'un côté seulement ferait 409 sur une carte
    * honnête, ou éteindrait l'écran du patient.
@@ -435,7 +420,7 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
   // était posé en dur ici, et le JSDoc d'`evaluerAbstention` documentait sa
   // branche `> 0` comme inatteignable : les deux affirmations tombent avec cette
   // ligne. Le chemin n'est plus câblé « pour le jour où », il est alimenté.
-  const securite = construireSafetyFindings(input.signauxAlerte, input.effetsIndesirables, input.reponsesSecurite);
+  const securite = construireSafetyFindings(input.signauxAlerte, input.reponsesSecurite);
   // LA LEVÉE PAR ADRESSAGE ([[D-257]], LOT-04) : un constat couvert par une
   // lettre consignée cesse d'inhiber, et reste porté. Sans couverture lue, la
   // partition est l'identité — tout reste ouvert.

@@ -4,6 +4,83 @@
 
 ## Décisions actives
 
+### D-323 — F80 : les analyses groupées et les valeurs calculées ont une composition signée — un groupe fait une ligne, ses constituants dessous ; un constituant seul est proposé par son groupe ; un calculé hérite du remboursement de ses mesures ; sept fiches entrent au catalogue (amende D-320 §4)
+
+- Date : 2026-10-18
+- Statut : accepté. Arbitrages du responsable du 2026-10-17 et du
+  2026-10-18, sur questions à options après inventaire (dépôt, et
+  nomenclature V105 relue par conteneur, catalogue seul) : groupe « une
+  ligne, détail en dessous » (recommandé) ; constituant seul « on propose le
+  groupe entier » (recommandé, question reformulée à sa demande) ; calculés
+  « héritent ; le LDL calculé reste dans 0996 » (contre la recommandation,
+  qui le rangeait parmi les calculés) ; groupes ajoutés : bilan thyroïdien,
+  ionogramme complet, bilan hépatique complété. Les choix de §6 sont ceux du
+  plan du lot, approuvé par le responsable. Texte rédigé par l'assistant à
+  partir de ces réponses.
+- Amende : [[D-320]] §4 (« sujet cadré, livraison par migration et sa propre
+  décision ») — c'est cette décision.
+- Domaine : catalogue biologie (`lib/biology-library/` : composition,
+  `remboursable.ts`, `statuts.ts`, `courrier.ts`, `documentPatient.ts`,
+  `candidatsNabm.ts`) ; deux tables neuves en ajout seul et sept fiches
+  d'analyte (migration) ; fiche d'analyte et écran de signature ; fiche F80.
+- **Ne touche pas** : aucune règle d'indication (table signée et SHA
+  inchangés), aucun bilan gelé ([[D-296]] §5), aucune plage, aucun lien
+  clinique, aucune formule ni constante de calcul ; aucune signature, aucun
+  constat, aucune composition écrits par l'assistant — la composition se
+  signe comme une correspondance NABM, par le praticien, sur une liste
+  préparée ([[D-320]] §1, arbitrage du 2026-10-15).
+
+**§1 — La composition.** Un analyte de groupe (NFS, ionogrammes, profil
+lipidique, bilan hépatique) et une valeur calculée (HOMA, non-HDL, DFG,
+zinc/cuivre) disent de quels analytes ils sont faits : constituants d'un
+groupe, opérandes d'un calcul. La composition nomme des analytes du
+catalogue, jamais une formule : l'application ne calcule rien, la valeur se
+lit sur le compte rendu. Elle se signe en une fois par le praticien, ne se
+modifie pas en place (retrait daté, puis nouvelle signature) et n'existe pas
+en base avant sa signature. Une composition non signée ne change rien : la
+proposition reste celle d'aujourd'hui.
+
+**§2 — Un groupe proposé fait une ligne.** Au courrier au médecin, au
+document patient et à l'écran de la proposition, le groupe s'écrit sur une
+ligne avec son acte (« NFS — hémogramme (acte 1104) »), ses constituants
+listés dessous. Un constituant que le même bilan propose aussi ne fait plus
+de ligne à part : il se range sous son groupe.
+
+**§3 — Un constituant seul est proposé par son groupe.** Un constituant qui
+n'est remboursable qu'accompagné (aucun acte ne le cote seul) et que le
+bilan propose sans son groupe est remplacé par son groupe, avec la mention
+de ce qui le motive (« NFS — hémogramme (acte 1104), demandée pour :
+hémoglobine »). Un constituant qui a son propre acte (potassium 1608,
+plaquettes 1107, hématocrite 2108) reste proposé seul. Un constituant de
+deux groupes (sodium, potassium, chlore : 1609 et 1610) va au groupe que le
+bilan propose déjà, sinon au plus petit (1609).
+
+**§4 — Un calculé hérite du remboursement de ses mesures, et le dit.** Son
+statut est le plus faible de ceux de ses opérandes (« non évalué » si l'un
+d'eux n'a été ni signé ni constaté) ; un opérande remboursable seulement
+accompagné compte par son groupe signé. La mention le dit : « Indice HOMA :
+remboursé par ses mesures (glycémie 0552, insuline 7422) ». Cortisol/DHEA,
+AA/EPA et kynurénine/tryptophane n'ont pas leurs opérandes au catalogue :
+ils restent « non évalués », et l'écran le dit. Le regroupement du bilan
+hépatique, coté par ses composants, suit la même règle.
+
+**§5 — Le LDL calculé reste constituant du profil lipidique** (acte 0996),
+à signer comme tel ; il ne rejoint pas les calculés (le LDL dosé est 2001).
+
+**§6 — Sept fiches entrent au catalogue** : T4 libre et T3 libre (bilan
+thyroïdien), ionogramme complet (1610), bicarbonates et protides (ses
+constituants absents), bilirubine (1601) et phosphatases alcalines (0514),
+que le bilan hépatique citait sans fiche. Même forme que les fiches
+existantes : unité usuelle que le contrôle d'unité admet déjà (niveau
+« partielle ») ; l'ionogramme complet, groupe, sans unité (niveau
+« lacunaire », comme l'ionogramme) ; aucune plage, aucun lien clinique ;
+leurs actes se signent par le praticien. Pas d'analyte « bilan
+thyroïdien » : TSH, T4L et T3L restent reliées par leurs correspondances
+(1208 et 1207 seuls ; 1211, 1212, 1209 en groupe), et une T3L proposée seule
+garde la mention de ses actes de groupe. Les alias d'import de compte rendu
+de ces sept fiches sont hors de cette décision (résolveur signé, décision
+propre) : jusque-là, elles se saisissent à la main.
+
 ### D-322 — F58 : la liste fermée des statuts posés près d'une valeur biologique — six gestes du praticien, jamais un jugement de la valeur ; stockage en ajout seul, statut attaché à la valeur exacte (amende D-308 §2)
 
 - Date : 2026-10-17

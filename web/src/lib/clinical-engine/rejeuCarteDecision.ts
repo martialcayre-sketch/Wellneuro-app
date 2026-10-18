@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { canonicalSha256 } from './canonical';
 import { lireCouverturesAdressage } from './adressagesSignalAlertePrisma';
-import { lireEffetsIndesirables } from './effetsIndesirablesPrisma';
 import { construireChaineC1Tolerante, lireSelectionPriorite } from './selectionPrioritePrisma';
 import { entreesRuntime } from './verifierChaineC1';
 import type { ConfirmedAssessmentEpisode, DecisionCard } from './types';
@@ -163,7 +162,6 @@ export async function rejouerCarteDecision(input: {
       signauxAlerte: inputs.signauxAlerte,
       reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
-      effetsIndesirables: await lireEffetsIndesirables(input.idPatient),
       // Même lecture que le cockpit ([[D-257]], LOT-04) : une révocation
       // postérieure rebloque, et la carte servie au patient dérive — voulu.
       couverturesAdressage: await lireCouverturesAdressage(input.idPatient, inputs.idConsultationPorteuse),

@@ -15,7 +15,9 @@ import {
   TEXTE_PAUSE_COMPLEMENTS,
   TEXTE_PAUSE_ELEMENT,
 } from '@/lib/trust/pauseEffetIndesirable';
-import { construireSafetyFindings, type EffetIndesirableRuntime } from './safetyFindings';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { construireSafetyFindings } from './safetyFindings';
 
 // Le banc du SECOND producteur de l'objet de sécurité ([[D-101]] amendée par
 // [[D-281]], `DC-42`). Quatre propriétés, chacune avec sa contre-épreuve :
@@ -55,32 +57,6 @@ function simulerSignature(): void {
   SAFETY_EI_METADATA.shaPerimetre = SAFETY_EI_SHA256;
 }
 
-const RATTACHE: EffetIndesirableRuntime = {
-  id: 'AER-1',
-  protocolDraftId: 'DRAFT-1',
-  rattachement: 'element',
-  statutTraitement: 'recu',
-};
-const SANS_RATTACHEMENT: EffetIndesirableRuntime = {
-  id: 'AER-2',
-  protocolDraftId: null,
-  rattachement: null,
-  statutTraitement: 'en_cours',
-};
-// Le formulaire d'avant (dossier mineur ou sans date, ou ancien formulaire) :
-// le patient a répondu « oui » au programme, sans désigner d'élément. Il
-// bloquera la diffusion une fois l'avis ouvert par migration (D-281 §5) ; ce
-// producteur, lui, n'en fait jamais un constat.
-const FORMULAIRE_D_AVANT: EffetIndesirableRuntime = {
-  id: 'AER-3',
-  protocolDraftId: 'DRAFT-1',
-  rattachement: null,
-  statutTraitement: 'recu',
-};
-
-const constatsEI = (effets: EffetIndesirableRuntime[]) =>
-  construireSafetyFindings([], effets, []).findings.filter(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE);
-
 describe('état SIGNÉ (M-1, 2026-10-17) — et la branche non signée, simulée', () => {
   // LA SIGNATURE TELLE QUE LE DÉPÔT LA PORTE : la v2 amendée, la source de
   // D-281 §6, et une empreinte littérale égale à celle du périmètre servi.
@@ -97,7 +73,7 @@ describe('état SIGNÉ (M-1, 2026-10-17) — et la branche non signée, simulée
   // SANS SIMULATION : la règle que la revue reçoit, telle que la production la
   // joindra au déploiement.
   it('signée : la règle sort validée, en v2, avec sa source et sa date', () => {
-    const regle = construireSafetyFindings([], [], []).rules
+    const regle = construireSafetyFindings([], []).rules
       .find(r => r.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE);
     expect(regle).toEqual({
       ruleId: REGLE_SECURITE_EFFET_INDESIRABLE,
@@ -113,7 +89,7 @@ describe('état SIGNÉ (M-1, 2026-10-17) — et la branche non signée, simulée
 
   it('non signée : aucun constat, la règle en `candidate`, aucune limitation', () => {
     simulerNonSignature();
-    const { findings, rules, limitations } = construireSafetyFindings([], [RATTACHE, SANS_RATTACHEMENT], []);
+    const { findings, rules, limitations } = construireSafetyFindings([], []);
     expect(findings).toHaveLength(0);
     expect(rules.find(r => r.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)?.lifecycle).toBe('candidate');
     expect(limitations).toHaveLength(0);
@@ -175,59 +151,26 @@ describe('l’ordre des deux gestes — capturer avant d’interrompre', () => {
   );
 });
 
-describe('table signée — la règle amendée ne retire plus rien de la carte', () => {
-  // LE CŒUR DE L'AMENDEMENT (D-281 §1, §3). La règle livrée faisait de ce
-  // signalement un constat qui inhibait tout le dossier ; la garde est
-  // désormais à la diffusion, et la carte reste entière.
-  it.each(['recu', 'en_cours', 'traite', 'clos'])(
-    'un signalement rattaché (statut %o) ne produit aucun constat',
-    (statutTraitement) => {
-      simulerSignature();
-      expect(constatsEI([{ ...RATTACHE, statutTraitement }])).toHaveLength(0);
-    },
-  );
-
-  it.each(['ne_sait_pas', 'autre_produit'])(
-    '« %s » ne produit aucun constat',
-    (rattachement) => {
-      simulerSignature();
-      expect(constatsEI([{ ...RATTACHE, rattachement }])).toHaveLength(0);
-    },
-  );
-
+describe('table signée — aucun signalement n’entre dans la chaîne C1', () => {
+  // LE CŒUR DE L'AMENDEMENT (D-281 §1, §3, §5). La règle livrée faisait d'un
+  // signalement rattaché un constat qui inhibait tout le dossier ; la garde est
+  // désormais à la diffusion, et la carte reste entière. Depuis t27, aucune
+  // sortie ne dépendait plus des signalements ; depuis t29, la chaîne ne les
+  // reçoit plus : la propriété tient par construction, et ce banc la garde.
+  // Ils restent comptés au panneau, au Fil et au prévol, hors de l'empreinte.
   it('la règle validée est jointe à la revue', () => {
     simulerSignature();
-    const { rules } = construireSafetyFindings([], [RATTACHE], []);
+    const { rules, findings, limitations } = construireSafetyFindings([], []);
     expect(rules.find(r => r.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)?.lifecycle).toBe('clinically_validated');
+    expect(findings.filter(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)).toEqual([]);
+    expect(limitations).toHaveLength(0);
   });
 
-  // D-281 §5, arbitrage du 2026-10-17. La limitation des signalements hors
-  // règle entrait dans l'empreinte : un « non » au programme, ou son passage à
-  // « traité », faisait dériver la carte servie et éteignait le programme au
-  // portail. Ils restent comptés au panneau, au Fil et au prévol, hors de
-  // l'empreinte (`effetsNonTraites`).
-  it.each([
-    ['rattaché', RATTACHE],
-    ['sans rattachement ni programme', SANS_RATTACHEMENT],
-    ['formulaire d’avant', FORMULAIRE_D_AVANT],
-  ])('un signalement %s n’ajoute aucune limitation à la revue', (_cas, signalement) => {
-    simulerSignature();
-    expect(construireSafetyFindings([], [signalement], []).limitations).toHaveLength(0);
-  });
-
-  // LA PROPRIÉTÉ QUI FERME LA DÉRIVE : la sortie est la même avec ou sans
-  // signalement, quels que soient leur nombre, leur rattachement et leur
-  // statut. Ce qui ne bouge pas la sortie ne bouge pas l'empreinte.
-  it('la sortie ne dépend d’aucun signalement — ni de leur nombre, ni de leur statut', () => {
-    simulerSignature();
-    const sans = construireSafetyFindings([], [], []);
-    for (const effets of [
-      [SANS_RATTACHEMENT],
-      [{ ...SANS_RATTACHEMENT, statutTraitement: 'traite' }],
-      [SANS_RATTACHEMENT, { ...SANS_RATTACHEMENT, id: 'AER-6', statutTraitement: 'recu' }],
-      [RATTACHE, SANS_RATTACHEMENT, FORMULAIRE_D_AVANT, { ...SANS_RATTACHEMENT, id: 'AER-5', statutTraitement: 'clos' }],
-    ]) {
-      expect(construireSafetyFindings([], effets, [])).toEqual(sans);
-    }
+  it('ni le producteur ni l’entrée de la chaîne ne portent de signalement', () => {
+    // Deux paramètres : les signaux de l'anamnèse et les réponses aux questions
+    // sur le suicide. Un troisième rouvrirait la dérive de la carte (t27).
+    expect(construireSafetyFindings.length).toBe(2);
+    const chaine = readFileSync(path.join(process.cwd(), 'src/lib/clinical-engine/chaineC1.ts'), 'utf8');
+    expect(chaine).not.toMatch(/effetsIndesirables/);
   });
 });

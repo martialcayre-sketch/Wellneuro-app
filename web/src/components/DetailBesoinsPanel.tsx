@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { BesoinDetail, BesoinsApiResponse } from '@/app/api/praticien/besoins/route';
 import { ScoreRadar } from '@/components/ui/ScoreRadar';
+import { donneesRadarBesoins } from '@/components/ui/scoreRadarPoints';
 import { EvidenceBadge } from '@/components/ui/EvidenceBadge';
 
 function LegendeNiveauxPreuve() {
@@ -55,7 +56,9 @@ export function DetailBesoinsPanel({
   }
 
   const { patient, besoins } = data;
-  const radarData = besoins.map(b => ({ axe: `B${b.id}`, value: b.couverture ?? 0 }));
+  // Un besoin non mesuré n'est pas tracé à zéro : son axe reste, nommé « non
+  // mesuré » ([[D-301]]).
+  const radarData = donneesRadarBesoins(besoins);
 
   return (
     <div className="flex flex-col gap-6">
