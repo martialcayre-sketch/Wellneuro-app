@@ -32,16 +32,21 @@ export const SESSION_LOG = 'docs/claude/SESSION_LOG.md';
 /**
  * Le verdict, à partir du diff de la PR.
  *
- * @param {{ fichiers: string[], lignesAjouteesSessionLog: number }} diff
+ * `crees` : les fichiers CRÉÉS par la PR (statut A, ou R sous leur nouveau
+ * nom). Le handoff doit en être — un fragment est posé, jamais réécrit
+ * (`.claude/rules/docs-changelog.md`) : retoucher le handoff d'un lot passé ne
+ * clôt pas celui-ci (revue CodeRabbit #1538).
+ *
+ * @param {{ fichiers: string[], crees?: string[], lignesAjouteesSessionLog: number }} diff
  * @returns {{ ok: boolean, manques: string[] }}
  */
-export function verdictCloture({ fichiers, lignesAjouteesSessionLog }) {
+export function verdictCloture({ fichiers, crees = fichiers, lignesAjouteesSessionLog }) {
   const manques = [];
   if (!fichiers.includes(SESSION_LOG) || lignesAjouteesSessionLog < 1) {
     manques.push(`une entrée ajoutée à ${SESSION_LOG}`);
   }
-  if (!fichiers.some(estFragmentDeHandoff)) {
-    manques.push('un fragment de handoff daté (docs/claude/handoffs/AAAA-MM-JJ-HHMM-sujet.md)');
+  if (!crees.some(estFragmentDeHandoff)) {
+    manques.push('un fragment de handoff daté créé par la PR (docs/claude/handoffs/AAAA-MM-JJ-HHMM-sujet.md)');
   }
   return { ok: manques.length === 0, manques };
 }
@@ -62,6 +67,17 @@ export function fichiersPresents(nameStatus) {
   return fichiers;
 }
 
+/** Les fichiers créés, lus dans le même `--name-status` : statut A, ou R. */
+export function fichiersCrees(nameStatus) {
+  const crees = [];
+  for (const ligne of nameStatus.split('\n')) {
+    const champs = ligne.split('\t');
+    const statut = champs[0];
+    if (statut === 'A' || statut?.startsWith('R')) crees.push(champs[champs.length - 1]);
+  }
+  return crees;
+}
+
 /** Les lignes ajoutées d'un fichier dans un `git diff --numstat` (binaire : 0). */
 export function lignesAjoutees(numstat, chemin) {
   for (const ligne of numstat.split('\n')) {
@@ -71,8 +87,14 @@ export function lignesAjoutees(numstat, chemin) {
   return 0;
 }
 
+// `core.quotePath=false` : sans lui, git rend un chemin accentué entre
+// guillemets et en octets échappés (« "docs/claude/handoffs/...\303\251.md" »),
+// et un handoff au nom accentué ne serait pas reconnu (revue CodeRabbit #1538).
 function git(...args) {
-  return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  return execFileSync('git', ['-c', 'core.quotePath=false', ...args], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
@@ -81,10 +103,10 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
     console.error('Usage : node scripts/wn-controle-cloture.mjs <sha de base>');
     process.exit(2);
   }
-  let fichiers;
+  let nameStatus;
   let numstat;
   try {
-    fichiers = fichiersPresents(git('diff', '--name-status', base, 'HEAD'));
+    nameStatus = git('diff', '--name-status', base, 'HEAD');
     numstat = git('diff', '--numstat', base, 'HEAD', '--', SESSION_LOG);
   } catch {
     // Base absente de l'historique : on refuse, en disant pourquoi.
@@ -92,7 +114,8 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
     process.exit(1);
   }
   const { ok, manques } = verdictCloture({
-    fichiers,
+    fichiers: fichiersPresents(nameStatus),
+    crees: fichiersCrees(nameStatus),
     lignesAjouteesSessionLog: lignesAjoutees(numstat, SESSION_LOG),
   });
   if (ok) {

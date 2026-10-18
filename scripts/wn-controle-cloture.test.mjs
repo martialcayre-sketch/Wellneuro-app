@@ -5,7 +5,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SESSION_LOG, fichiersPresents, lignesAjoutees, verdictCloture } from './wn-controle-cloture.mjs';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import {
+  SESSION_LOG,
+  fichiersCrees,
+  fichiersPresents,
+  lignesAjoutees,
+  verdictCloture,
+} from './wn-controle-cloture.mjs';
+
+const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'wn-controle-cloture.mjs');
 
 const CODE = 'web/src/lib/protocol/cabinet.ts';
 const HANDOFF = 'docs/claude/handoffs/2026-10-18-0400-sujet.md';
@@ -58,6 +72,51 @@ test('un handoff supprimé ne clôt rien ; un renommage compte sous son nouveau 
   assert.ok(fichiers.includes('docs/claude/handoffs/2026-10-18-0400-renomme.md'));
   const seulementSupprime = fichiersPresents(`M\t${CODE}\nM\t${SESSION_LOG}\nD\t${HANDOFF}`);
   assert.equal(verdictCloture({ fichiers: seulementSupprime, lignesAjouteesSessionLog: 2 }).ok, false);
+});
+
+test('un handoff seulement modifié ne clôt pas la PR ; créé (A) ou renommé (R), oui', () => {
+  const ancien = 'docs/claude/handoffs/2026-10-01-0900-ancien.md';
+  const modifie = `M\t${CODE}\nM\t${SESSION_LOG}\nM\t${ancien}`;
+  assert.deepEqual(fichiersCrees(modifie), []);
+  assert.equal(
+    verdictCloture({ fichiers: fichiersPresents(modifie), crees: fichiersCrees(modifie), lignesAjouteesSessionLog: 2 }).ok,
+    false,
+  );
+  const cree = `M\t${CODE}\nM\t${SESSION_LOG}\nA\t${HANDOFF}\nR090\tdocs/a.md\tdocs/b.md`;
+  assert.deepEqual(fichiersCrees(cree), [HANDOFF, 'docs/b.md']);
+  assert.equal(
+    verdictCloture({ fichiers: fichiersPresents(cree), crees: fichiersCrees(cree), lignesAjouteesSessionLog: 2 }).ok,
+    true,
+  );
+});
+
+// Le script entier, sur un dépôt temporaire : c'est l'appel à git qui décide
+// de la forme des chemins, et un nom accentué en sortait entre guillemets.
+test('script réel : un handoff au nom accentué est reconnu', () => {
+  const depot = mkdtempSync(join(tmpdir(), 'cloture-'));
+  const g = (...a) =>
+    execFileSync('git', ['-c', 'user.name=banc', '-c', 'user.email=banc@example.test', ...a], {
+      cwd: depot,
+      encoding: 'utf8',
+    });
+  try {
+    g('init', '-q');
+    mkdirSync(join(depot, 'docs/claude/handoffs'), { recursive: true });
+    writeFileSync(join(depot, SESSION_LOG), '# Journal\n');
+    g('add', '.');
+    g('commit', '-q', '-m', 'base');
+    const base = g('rev-parse', 'HEAD').trim();
+    mkdirSync(join(depot, 'web'), { recursive: true });
+    writeFileSync(join(depot, 'web/code.ts'), 'export {};\n');
+    writeFileSync(join(depot, SESSION_LOG), '# Journal\n\n## entrée\n');
+    writeFileSync(join(depot, 'docs/claude/handoffs/2026-10-18-0400-clôture-été.md'), '# h\n');
+    g('add', '.');
+    g('commit', '-q', '-m', 'lot');
+    const sortie = execFileSync('node', [SCRIPT, base], { cwd: depot, encoding: 'utf8' });
+    assert.match(sortie, /Clôture présente/);
+  } finally {
+    rmSync(depot, { recursive: true, force: true });
+  }
 });
 
 test('lignes ajoutées lues dans un numstat ; fichier absent ou binaire : 0', () => {

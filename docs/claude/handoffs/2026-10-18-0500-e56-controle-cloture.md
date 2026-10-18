@@ -49,6 +49,11 @@ et le changement de relecteur l'ayant laissée sans garde.
   une retouche d'une ligne du SESSION_LOG compte comme entrée (l'avertissement
   CodeRabbit couvre « à la fin ») ; un revert fait depuis GitHub doit porter
   sa clôture comme toute PR de code.
+- Revue CodeRabbit : deux remarques corrigées. `git -c core.quotePath=false`
+  pour qu'un handoff au nom accentué soit reconnu (banc sur un vrai dépôt
+  temporaire) ; le handoff doit être CRÉÉ par la PR (statut A ou R), un
+  fragment seulement retouché ne clôt pas (aligné sur « un fragment est posé,
+  jamais réécrit »).
 
 ## Problèmes ouverts
 
