@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { prisma, transactions } = vi.hoisted(() => {
   const transactions = { annulees: 0 };
   const prisma = {
-    biologyAnalyte: { findUnique: vi.fn() },
+    biologyAnalyte: { findUnique: vi.fn(), findMany: vi.fn() },
+    biologyAnalyteComposition: { findMany: vi.fn() },
     biologyCatalogVersionCourante: { findUnique: vi.fn() },
     biologyNabmActe: { findUnique: vi.fn(), findMany: vi.fn() },
     biologyAnalyteNabm: {
@@ -36,7 +37,10 @@ import {
   RECHERCHE_NABM_LIMITE,
   deciderConstat,
   deciderCorrespondance,
+  LOT_NABM_MAX,
+  listerCorrespondancesALot,
   lireCorrespondancesAnalyte,
+  signerCorrespondancesLot,
 } from './correspondancesNabm';
 
 const PRATICIEN = 'praticien@wellneuro.fr';
@@ -71,6 +75,8 @@ beforeEach(() => {
   prisma.biologyAnalyte.findUnique.mockResolvedValue({ actif: true, constatNabm: null });
   prisma.biologyNabmActe.findUnique.mockResolvedValue(acte());
   prisma.biologyNabmActe.findMany.mockResolvedValue([]);
+  prisma.biologyAnalyteComposition.findMany.mockResolvedValue([]);
+  prisma.biologyAnalyte.findMany.mockResolvedValue([]);
   prisma.biologyAnalyteNabm.create.mockResolvedValue({ id: 'x' });
   prisma.biologyAnalyteNabm.updateMany.mockResolvedValue({ count: 1 });
   prisma.biologyAnalyteNabm.findFirst.mockResolvedValue(null);
@@ -249,6 +255,7 @@ describe('lireCorrespondancesAnalyte — candidats de la liste préparée (M-3b)
       propositions: [
         { codeActe: '1208', nature: 'isole', motif: 'T.S.H. seule.', acte: acte({ codeActe: '1208', libelle: 'T.S.H.(SANG)' }) },
       ],
+      tenusDuGroupe: [],
     });
     expect(prisma.biologyNabmActe.findMany.mock.calls[0][0].where).toEqual({
       versionSource: 'V105',
@@ -300,6 +307,7 @@ describe('lireCorrespondancesAnalyte — candidats de la liste préparée (M-3b)
       situation: 'aucun_acte',
       motif: 'Aucun libellé de la V105 ne nomme cet analyte.',
       propositions: [],
+      tenusDuGroupe: [],
     });
     expect(prisma.biologyNabmActe.findMany).not.toHaveBeenCalled();
   });
@@ -734,6 +742,213 @@ describe('deciderConstat — retirer', () => {
 
   it('sans la date du constat vu : etat_divergent, sans transaction', async () => {
     expect(await deciderConstat({ ...RETIRER, verifieLeVu: undefined })).toEqual({ ok: false, raison: 'etat_divergent' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+// [[D-326]] §1 : la composition signée d'un groupe dont l'acte est signé.
+function groupeSigne(libelle: string, actes: string[], composants: Array<{ code: string; actif?: boolean }>) {
+  return {
+    analyte: { libelle, correspondancesNabm: actes.map(codeActe => ({ codeActe })) },
+    items: composants.map(c => ({ composant: { code: c.code, actif: c.actif ?? true } })),
+  };
+}
+
+describe('lireCorrespondancesAnalyte — acte tenu du groupe signé (D-326 §1)', () => {
+  beforeEach(() => {
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({ code: 'BIO_HEMATOCRITE', actif: true, correspondancesNabm: [] });
+    prisma.biologyNabmActe.findMany.mockResolvedValue([acte({ codeActe: '2108' }), acte({ codeActe: '1104' })]);
+  });
+
+  it('le candidat de l’acte du groupe n’est plus à signer, et l’écran dit pourquoi', async () => {
+    prisma.biologyAnalyteComposition.findMany.mockResolvedValue([
+      groupeSigne('Numération formule sanguine', ['1104'], [{ code: 'BIO_HEMATOCRITE' }]),
+    ]);
+    const resultat = await lireCorrespondancesAnalyte('BIO_HEMATOCRITE');
+    expect(resultat.ok && resultat.candidats?.propositions.map(p => p.codeActe)).toEqual(['2108']);
+    expect(resultat.ok && resultat.candidats?.tenusDuGroupe).toEqual([
+      { codeActe: '1104', groupe: 'Numération formule sanguine' },
+    ]);
+    // Seuls les groupes actifs, non retirés, qui comptent l'analyte.
+    expect(prisma.biologyAnalyteComposition.findMany.mock.calls[0][0].where).toEqual({
+      retireeLe: null,
+      type: 'groupe',
+      analyte: { actif: true },
+      items: { some: { composantCode: 'BIO_HEMATOCRITE' } },
+    });
+  });
+
+  it('contre-épreuve : composant retiré du catalogue, ou groupe sans acte signé — le candidat reste', async () => {
+    prisma.biologyAnalyteComposition.findMany.mockResolvedValue([
+      groupeSigne('Numération formule sanguine', ['1104'], [{ code: 'BIO_HEMATOCRITE', actif: false }]),
+      groupeSigne('Autre groupe', [], [{ code: 'BIO_HEMATOCRITE' }]),
+    ]);
+    const resultat = await lireCorrespondancesAnalyte('BIO_HEMATOCRITE');
+    expect(resultat.ok && resultat.candidats?.propositions.map(p => p.codeActe)).toEqual(['2108', '1104']);
+    expect(resultat.ok && resultat.candidats?.tenusDuGroupe).toEqual([]);
+  });
+
+  it('le masque suit la règle de l’héritage : acte du groupe inactif, ou constituant hors nomenclature — rien n’est « tenu »', async () => {
+    prisma.biologyAnalyteComposition.findMany.mockResolvedValue([
+      groupeSigne('Numération formule sanguine', ['1104'], [{ code: 'BIO_HEMATOCRITE' }]),
+    ]);
+    // 1104 inactif au millésime courant : le groupe ne transmet rien.
+    prisma.biologyNabmActe.findMany.mockResolvedValue([acte({ codeActe: '2108' }), acte({ codeActe: '1104', inactif: true })]);
+    let resultat = await lireCorrespondancesAnalyte('BIO_HEMATOCRITE');
+    expect(resultat.ok && resultat.candidats?.tenusDuGroupe).toEqual([]);
+
+    // Ses actes propres signés tous inactifs : hors nomenclature, il n'hérite
+    // pas — le candidat 1104 reste à signer, et la fiche ne le dit pas tenu.
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({
+      code: 'BIO_HEMATOCRITE',
+      actif: true,
+      correspondancesNabm: [{ codeActe: '2108', nature: 'isole', verifiePar: PRATICIEN, verifieLe: DATE_BASE }],
+      constatNabm: null,
+    });
+    prisma.biologyNabmActe.findMany.mockResolvedValue([acte({ codeActe: '2108', inactif: true }), acte({ codeActe: '1104' })]);
+    resultat = await lireCorrespondancesAnalyte('BIO_HEMATOCRITE');
+    expect(resultat.ok && resultat.candidats?.propositions.map(p => p.codeActe)).toEqual(['1104']);
+    expect(resultat.ok && resultat.candidats?.tenusDuGroupe).toEqual([]);
+
+    // Contre-épreuve : actes propres actifs mais « si groupé » seulement — il hérite, 1104 est tenu.
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({
+      code: 'BIO_HEMATOCRITE',
+      actif: true,
+      correspondancesNabm: [{ codeActe: '2108', nature: 'groupe_et', verifiePar: PRATICIEN, verifieLe: DATE_BASE }],
+      constatNabm: null,
+    });
+    prisma.biologyNabmActe.findMany.mockResolvedValue([acte({ codeActe: '2108' }), acte({ codeActe: '1104' })]);
+    resultat = await lireCorrespondancesAnalyte('BIO_HEMATOCRITE');
+    expect(resultat.ok && resultat.candidats?.tenusDuGroupe).toEqual([{ codeActe: '1104', groupe: 'Numération formule sanguine' }]);
+  });
+});
+
+describe('listerCorrespondancesALot (D-326 §2)', () => {
+  const analyte = (
+    code: string,
+    libelle: string,
+    partiel: { correspondancesNabm?: unknown[]; constatNabm?: unknown } = {},
+  ) => ({ code, libelle, correspondancesNabm: partiel.correspondancesNabm ?? [], constatNabm: partiel.constatNabm ?? null });
+
+  beforeEach(() => {
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyte('BIO_ALAT', 'ALAT'),
+      analyte('BIO_HDL', 'HDL'),
+      analyte('BIO_HEMATOCRITE', 'Hématocrite'),
+      analyte('BIO_HOMOCYSTEINE', 'Homocystéine'),
+      analyte('BIO_CREATININE', 'Créatinine', { constatNabm: { id: 'k' } }),
+      analyte('BIO_TSH_US', 'TSH', { correspondancesNabm: [{ codeActe: '1208', verifiePar: PRATICIEN }] }),
+      analyte('BIO_HORS_LISTE', 'Hors liste'),
+    ]);
+    prisma.biologyAnalyteComposition.findMany.mockResolvedValue([
+      groupeSigne('Numération formule sanguine', ['1104'], [{ code: 'BIO_HEMATOCRITE' }]),
+    ]);
+    prisma.biologyNabmActe.findMany.mockResolvedValue([
+      acte({ codeActe: '0516' }),
+      acte({ codeActe: '0522' }),
+      acte({ codeActe: '0996' }),
+      acte({ codeActe: '2108' }),
+      acte({ codeActe: '1211' }),
+      acte({ codeActe: '1212', inactif: true }),
+      // Présents et actifs : leur absence de la liste ne peut venir que du
+      // filtre qui les écarte (tenu du groupe, déjà en base, constat).
+      acte({ codeActe: '1104' }),
+      acte({ codeActe: '0592' }),
+      acte({ codeActe: '1208' }),
+    ]);
+  });
+
+  it('les candidats de toutes les fiches, et ceux-là seuls', async () => {
+    const { millesime, lignes } = await listerCorrespondancesALot();
+    expect(millesime).toBe('V105');
+    expect(lignes.map(l => [l.analyteCode, l.codeActe, l.nature, l.precochee])).toEqual([
+      ['BIO_ALAT', '0516', 'isole', true],
+      ['BIO_ALAT', '0522', 'groupe_et', true],
+      // « À juger » : jamais coché d'office.
+      ['BIO_HDL', '0996', 'groupe_et', false],
+      // 1104 tenu de la NFS signée : seul 2108 reste.
+      ['BIO_HEMATOCRITE', '2108', 'isole', true],
+      // Déjà signé une fois : le reste se propose, sans être coché ; 1212 inactif n'est pas proposé.
+      ['BIO_TSH_US', '1211', 'groupe_et', false],
+    ]);
+    // Un constat « aucun acte » bloque la signature : la créatinine n'est pas listée.
+    expect(lignes.some(l => l.analyteCode === 'BIO_CREATININE')).toBe(false);
+    expect(prisma.biologyAnalyte.findMany.mock.calls[0][0].where).toEqual({ actif: true });
+    expect(prisma.biologyNabmActe.findMany.mock.calls[0][0].where.versionSource).toBe('V105');
+    // Rien n'est écrit par une lecture.
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('sans nomenclature importée : liste vide, aucune lecture d’acte', async () => {
+    prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(null);
+    expect(await listerCorrespondancesALot()).toEqual({ millesime: null, lignes: [] });
+    expect(prisma.biologyNabmActe.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('signerCorrespondancesLot (D-326 §2)', () => {
+  const LOT = [
+    { analyteCode: 'BIO_TSH_US', codeActe: '1208', nature: 'isole' },
+    { analyteCode: 'BIO_ALAT', codeActe: '0516', nature: 'isole' },
+    { analyteCode: 'BIO_ALAT', codeActe: '0522', nature: 'groupe_et' },
+  ];
+
+  it('chaque couple est signé comme au geste unitaire, en UNE transaction, après les verrous triés', async () => {
+    expect(await signerCorrespondancesLot({ lignes: LOT, praticien: PRATICIEN })).toEqual({ ok: true, signees: 3 });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.$transaction.mock.calls[0][1]).toEqual({ isolationLevel: 'ReadCommitted', timeout: 30_000 });
+    expect(prisma.biologyAnalyteNabmJournal.create.mock.calls.map(c => c[0].data)).toEqual(
+      LOT.map(l => ({ ...l, acte: 'signature', millesime: 'V105', praticienEmail: PRATICIEN })),
+    );
+    expect(prisma.biologyAnalyteNabm.create).toHaveBeenCalledTimes(3);
+    const sql = prisma.$executeRaw.mock.calls.map(c => [(c[0] as TemplateStringsArray).join('?'), ...c.slice(1)]);
+    expect(sql).toEqual([
+      ["SET LOCAL lock_timeout = '3s'"],
+      ['LOCK TABLE biology_catalog_versions_courantes IN SHARE MODE'],
+      ['SELECT public.biology_analyte_nabm_verrouiller(?)', 'BIO_ALAT'],
+      ['SELECT public.biology_analyte_nabm_verrouiller(?)', 'BIO_TSH_US'],
+    ]);
+  });
+
+  it('tout ou rien : une ligne refusée annule le lot et le refus la nomme', async () => {
+    prisma.biologyNabmActe.findUnique
+      .mockResolvedValueOnce(acte())
+      .mockResolvedValueOnce(null);
+    expect(await signerCorrespondancesLot({ lignes: LOT, praticien: PRATICIEN })).toEqual({
+      ok: false,
+      raison: 'acte_introuvable',
+      ligne: { analyteCode: 'BIO_ALAT', codeActe: '0516' },
+    });
+    expect(transactions.annulees).toBe(1);
+  });
+
+  it('un couple qui a reçu une ligne depuis l’affichage refuse le lot (etat_divergent)', async () => {
+    prisma.biologyAnalyteNabm.findUnique.mockResolvedValue({ verifiePar: null });
+    const resultat = await signerCorrespondancesLot({ lignes: LOT.slice(0, 1), praticien: PRATICIEN });
+    expect(resultat).toEqual({ ok: false, raison: 'etat_divergent', ligne: { analyteCode: 'BIO_TSH_US', codeActe: '1208' } });
+  });
+
+  it('un import en cours : refus du lot entier', async () => {
+    prisma.$executeRaw
+      .mockResolvedValueOnce(0)
+      .mockRejectedValueOnce(Object.assign(new Error('canceling statement due to lock timeout'), { code: '55P03' }));
+    expect(await signerCorrespondancesLot({ lignes: LOT, praticien: PRATICIEN })).toEqual({
+      ok: false,
+      raison: 'import_en_cours',
+      ligne: null,
+    });
+  });
+
+  it.each([
+    ['vide', [] as typeof LOT, 'lot_invalide'],
+    ['trop long', Array.from({ length: LOT_NABM_MAX + 1 }, (_, i) => ({ analyteCode: `BIO_${i}`, codeActe: '1208', nature: 'isole' })), 'lot_invalide'],
+    ['en double', [LOT[0], LOT[0]], 'lot_invalide'],
+    ['code d’acte mal formé', [{ ...LOT[0], codeActe: '12' }], 'lot_invalide'],
+    ['nature inconnue', [{ ...LOT[0], nature: 'autre' }], 'nature_requise'],
+  ])('lot %s : refusé sans transaction', async (_cas, lignes, raison) => {
+    const resultat = await signerCorrespondancesLot({ lignes, praticien: PRATICIEN });
+    expect(resultat.ok).toBe(false);
+    expect(!resultat.ok && resultat.raison).toBe(raison);
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });

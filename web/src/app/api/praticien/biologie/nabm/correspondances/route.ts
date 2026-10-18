@@ -12,10 +12,10 @@ import {
   type ConstatAffiche,
   type CorrespondanceAffichee,
   type DeciderCorrespondanceResultat,
-  type RaisonRefusCorrespondance,
 } from '@/lib/biology-library/correspondancesNabm';
 import { emailPraticien } from '@/lib/praticien/appartenance';
 import { signature } from '@/lib/biology-library/saisieMessages';
+import { MESSAGES_REFUS_CORRESPONDANCE } from '@/lib/biology-library/correspondancesNabmMessages';
 
 // Correspondances analyte ↔ acte NABM (M-3, F54) — PRATICIEN SEUL, derrière
 // WN_CB_ENABLED. C'est LA route qui pose la signature des correspondances,
@@ -43,40 +43,6 @@ export type DecisionCorrespondanceNabmApiResponse =
   | { ok: true; correspondance: Extract<DeciderCorrespondanceResultat, { ok: true }>['correspondance'] }
   | { ok: false; reason: string; error: string };
 
-const MESSAGES_REFUS: Record<RaisonRefusCorrespondance, { message: string; status: number }> = {
-  transition_invalide: { message: 'Ce geste n’est pas permis sur cette correspondance.', status: 409 },
-  nature_requise: {
-    message: 'Choisissez la nature de la correspondance : acte isolé, groupe imposé ou groupe au choix.',
-    status: 422,
-  },
-  analyte_inconnu: { message: 'Cet analyte n’existe pas au catalogue.', status: 404 },
-  analyte_inactif: { message: 'Cet analyte est inactif au catalogue : rien à signer.', status: 409 },
-  millesime_absent: {
-    message: 'La nomenclature n’est pas importée : aucune correspondance ne peut être signée.',
-    status: 409,
-  },
-  acte_introuvable: {
-    message: 'Ce code d’acte n’existe pas dans le millésime courant de la nomenclature.',
-    status: 404,
-  },
-  acte_inactif: {
-    message: 'Cet acte est inactif dans le millésime courant : la correspondance ne rembourserait rien.',
-    status: 409,
-  },
-  import_en_cours: {
-    message: 'Un import de la nomenclature est en cours : rien n’a été enregistré, réessayez dans quelques minutes.',
-    status: 409,
-  },
-  constat_present: {
-    message: 'Cet analyte porte un constat « aucun acte dans la nomenclature » : retirez-le d’abord.',
-    status: 409,
-  },
-  etat_divergent: {
-    message: 'La correspondance a changé depuis l’affichage — rechargez la fiche.',
-    status: 409,
-  },
-};
-
 function echec<T>(reason: string, error: string, status: number) {
   return NextResponse.json<T>({ ok: false, reason, error } as T, { status });
 }
@@ -96,7 +62,7 @@ export async function GET(req: Request): Promise<NextResponse<CorrespondancesNab
 
     const resultat = await lireCorrespondancesAnalyte(analyte);
     if (!resultat.ok) {
-      const refus = MESSAGES_REFUS[resultat.raison];
+      const refus = MESSAGES_REFUS_CORRESPONDANCE[resultat.raison];
       return echec<CorrespondancesNabmApiResponse>(resultat.raison, refus.message, refus.status);
     }
     return NextResponse.json({
@@ -179,7 +145,7 @@ export async function POST(req: Request): Promise<NextResponse<DecisionCorrespon
       praticien,
     });
     if (!resultat.ok) {
-      const refus = MESSAGES_REFUS[resultat.raison];
+      const refus = MESSAGES_REFUS_CORRESPONDANCE[resultat.raison];
       return echec<R>(resultat.raison, refus.message, refus.status);
     }
     return NextResponse.json({ ok: true, correspondance: resultat.correspondance });

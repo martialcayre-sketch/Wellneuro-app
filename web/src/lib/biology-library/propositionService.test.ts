@@ -29,6 +29,7 @@ import {
   INDICATIONS_BIOLOGIE_V1,
 } from './indicationsBiologieV1';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
+import type { Remboursement } from './remboursable';
 import { shaPerimetreBiologie } from './statuts';
 import { claimsCitesParLaPropositionBilan, deriverPropositionPourPatient } from './propositionService';
 
@@ -281,6 +282,30 @@ describe('remboursements — la carte passée au moteur (lettre f)', () => {
         { code: 'BIO_HCY', libelle: 'Homocystéine', actif: true },
       ],
     });
+  });
+
+  it('un constituant non évalué d’un groupe signé est coté par l’acte du groupe (D-326 §1)', async () => {
+    prisma.biologyAnalyteComposition.findMany.mockResolvedValue([
+      {
+        analyteCode: 'BIO_FER',
+        type: 'groupe',
+        analyte: { libelle: 'Ferritine' },
+        items: [
+          { composant: { code: 'BIO_PERIME', libelle: 'Périmé', actif: true } },
+          { composant: { code: 'BIO_HCY', libelle: 'Homocystéine', actif: true } },
+        ],
+      },
+    ]);
+    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    const carte = deriverStatutsBiologie.mock.calls[0][0].remboursements as Map<string, Remboursement>;
+    // Non évalué (constat périmé) : hérite de l'acte signé du groupe.
+    expect(carte.get('BIO_PERIME')).toMatchObject({
+      statut: 'remboursable_si_groupe',
+      codesActesRetenus: ['1213'],
+      parGroupes: [{ code: 'BIO_FER', libelle: 'Ferritine' }],
+    });
+    // Constat « aucun acte » courant : ce qui a été signé pour lui tient.
+    expect(carte.get('BIO_HCY')?.statut).toBe('hors_nomenclature');
   });
 
   it('les actes sont lus au millésime courant, pour les seuls codes signés', async () => {
