@@ -335,8 +335,8 @@ export async function POST(req: Request): Promise<NextResponse> {
     // déverrouillée reçoit légitimement une seconde réponse. Le second envoi
     // retombe sous le verrou sur le refus qu'il aurait reçu en arrivant après.
     const refusSousVerrou = await prisma.$transaction(async (tx) => {
-      const verrou = await tx.$queryRaw<Array<{ statut: string | null; statutReponses: string | null }>>`
-        SELECT statut, statut_reponses AS "statutReponses"
+      const verrou = await tx.$queryRaw<Array<{ statut: string | null; statutReponses: string | null; dateLimite: string | null }>>`
+        SELECT statut, statut_reponses AS "statutReponses", date_limite AS "dateLimite"
         FROM assignations
         WHERE id_assignation = ${idAssignation}
         FOR UPDATE`;
@@ -344,6 +344,9 @@ export async function POST(req: Request): Promise<NextResponse> {
       if (courant?.statut === 'Annulée') return 'annulee' as const;
       if (courant?.statutReponses === 'verrouille' || courant?.statutReponses === 'modification_demandee') {
         return 'already_done' as const;
+      }
+      if (courant && courant.statutReponses !== 'deverrouille' && isDeadlineExpired(courant.dateLimite)) {
+        return 'expired' as const;
       }
       await tx.questionnaireReponse.create({
         data: {
@@ -373,6 +376,15 @@ export async function POST(req: Request): Promise<NextResponse> {
         context: finalizeLogContext(requestContext, { statusCode: 409, retryable: false }),
       });
       return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'annulee', error: 'Ce questionnaire a été annulé par votre praticien.' }, { status: 409 }), requestContext);
+    }
+    if (refusSousVerrou === 'expired') {
+      logger.warn({
+        event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_EXPIRED,
+        domain: 'QUESTIONNAIRE',
+        message: 'Soumission refusée sous verrou : date limite dépassée',
+        context: finalizeLogContext(requestContext, { statusCode: 410, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'expired', error: 'Ce lien de questionnaire a expiré.' }, { status: 410 }), requestContext);
     }
     if (refusSousVerrou === 'already_done') {
       logger.warn({

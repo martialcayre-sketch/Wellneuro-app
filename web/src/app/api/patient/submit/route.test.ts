@@ -949,6 +949,19 @@ describe('POST /api/patient/submit — deux transmissions concurrentes : une seu
     expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
   });
 
+  it('date limite passée pendant la saisie : refus sous verrou (410), sauf déverrouillage', async () => {
+    prisma.$queryRaw.mockImplementation(async () => [{ statut: 'En attente', statutReponses: 'non_rempli', dateLimite: '2020-01-01' }]);
+    const res = await postSubmit(soumettrePositive());
+    expect(res.status).toBe(410);
+    expect((await res.json()).reason).toBe('expired');
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+
+    prisma.$queryRaw.mockImplementation(async () => [{ statut: 'Complété', statutReponses: 'deverrouille', dateLimite: '2020-01-01' }]);
+    prisma.assignation.update.mockResolvedValue(assignation);
+    expect((await postSubmit(soumettrePositive())).status).toBe(200);
+    expect(prisma.questionnaireReponse.create).toHaveBeenCalledTimes(1);
+  });
+
   it('transaction en échec : erreur technique, ni accusé ni alerte', async () => {
     prisma.$transaction.mockImplementation(async () => { throw new Error('délai de transaction dépassé'); });
     const res = await postSubmit(soumettrePositive());

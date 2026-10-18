@@ -20,7 +20,13 @@ sans occurrence observée.
   séquentiel, sans nouveau contrat.
 - Motif des clôtures d'agenda (`lib/agenda-sommeil/cloture.ts`) : une
   transaction et un `SELECT … FOR UPDATE` sur `assignations`, avec les refus
-  `annulee` et `already_done` revérifiés sous verrou. Aucune contrainte
+  `annulee`, `already_done` et `expired` (sauf déverrouillage) revérifiés sous
+  verrou ; la date limite a été ajoutée sur la revue CodeRabbit.
+- Le banc à deux sessions réelles demandé par CodeRabbit (P1) est écarté, avec
+  motif. Le SQL du verrou s'exécute contre PostgreSQL dans l'E2E
+  `portail-parcours` (T2). La sémantique de `FOR UPDATE` est celle des deux
+  clôtures d'agenda en service, et un banc SQL éprouverait PostgreSQL, pas la
+  route. Aucune contrainte
   d'unicité n'est possible : une assignation déverrouillée reçoit
   légitimement une seconde réponse.
 - Les envois (accusé, alerte D-277) restent après l'écriture, pour le seul
