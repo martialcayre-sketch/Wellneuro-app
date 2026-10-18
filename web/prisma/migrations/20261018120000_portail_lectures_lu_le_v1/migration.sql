@@ -59,7 +59,7 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER portail_lectures_patient_lu_le_no_update
+CREATE TRIGGER portail_lectures_patient_lu_le_fige
   BEFORE UPDATE ON public.portail_lectures_patient
   FOR EACH ROW EXECUTE FUNCTION public.portail_lectures_patient_lu_le_fige();
 
