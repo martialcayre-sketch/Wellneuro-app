@@ -15,9 +15,11 @@
 // ajout seul, éléments écrits dans la transaction de la signature, au moins un
 // élément au COMMIT, une composition active par analyte, retrait une fois.
 //
-// Ce fichier ne dérive aucun remboursement et ne touche pas la proposition.
+// Ce fichier ne dérive aucun remboursement. La proposition lit les
+// compositions actives par `chargerCompositionsSignees`, et rien d'autre.
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
+import type { CompositionSignee } from './compositionsProposition';
 import {
   compositionPrepareePour,
   operandesAbsentsPour,
@@ -80,6 +82,40 @@ function afficher(c: CompositionLue): CompositionSigneeAffichee {
     retireePar: c.retireePar,
     retireeLe: c.retireeLe?.toISOString() ?? null,
   };
+}
+
+/**
+ * Les compositions signées ACTIVES, par code de l'analyte composé — ce que la
+ * proposition, le courrier, le document patient et la fiche d'analyte lisent
+ * ([[D-323]] §2-§4). Une composition d'un analyte retiré du catalogue ne
+ * compte pas : l'analyte n'est plus proposé.
+ */
+export async function chargerCompositionsSignees(): Promise<Map<string, CompositionSignee>> {
+  const lignes = await prisma.biologyAnalyteComposition.findMany({
+    where: { retireeLe: null, analyte: { actif: true } },
+    select: {
+      analyteCode: true,
+      type: true,
+      analyte: { select: { libelle: true } },
+      // Un composant retiré du catalogue depuis la signature reste lu, marqué :
+      // il ne se cite plus, et un calculé ne se lit pas remboursé sans lui.
+      items: {
+        orderBy: { position: 'asc' },
+        select: { composant: { select: { code: true, libelle: true, actif: true } } },
+      },
+    },
+  });
+  return new Map(
+    lignes.map(l => [
+      l.analyteCode,
+      {
+        analyteCode: l.analyteCode,
+        libelle: l.analyte.libelle,
+        type: l.type as TypeComposition,
+        composants: l.items.map(i => i.composant),
+      },
+    ]),
+  );
 }
 
 async function libellesDe(codes: readonly string[]): Promise<Map<string, ComposantAffiche>> {

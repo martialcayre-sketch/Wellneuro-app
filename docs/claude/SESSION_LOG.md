@@ -10527,3 +10527,25 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Poser au responsable les questions Q1, Q2, Q4, Q5 et Q8 de la pièce 17 (retrait d'« Héritage 4.0 »).
 
 **Ouvert.** Résidu de t13 ; rediffusions des trois programmes à constater.
+
+## 2026-10-18 — F80 : la proposition lit les compositions signées (D-323 §2-§4)
+
+**Fait.** PR 2 (#1541) mergée après correctif de revue (lecture tardive d'un autre analyte). PR 3 : groupe en une ligne avec son acte et ses constituants, constituant seul remplacé par son groupe, calculé héritant de ses mesures — courrier, document patient, écran, fiche d'analyte ; inerte sans composition signée.
+
+**Décidé.** Responsable : tous les constituants dits, borne de consignation 12 000 (D-323 §7).
+
+**Écarté.** Dire l'acte de chaque ligne : reste à F55 (D-309 §1).
+
+**Prochaine action.** Merge, pages file A et BioFlow, puis file D (h5 constaté fait ; Autofix toujours affiché).
+
+**Ouvert.** Signature des compositions par le responsable ; alias d'import des sept fiches.
+
+## 2026-10-18 — L4 et L5 : menu sans « Héritage 4.0 », un rayon par entrée (D-324)
+
+**Fait.** Le responsable a tranché Q1, Q2, Q4 et Q5 de la pièce 17, puis quatre questions de forme. D-324 en est tirée. Le menu compte trois groupes ; la Bibliothèque est éclatée en cinq pages, chacune avec son entrée. La page Biologie redirige vers « Analyses biologiques », qui porte aussi les fiches d'usage. Documents et Synthèse IA quittent le menu du bureau.
+
+**Écarté.** Livrer L4 et L5 séparément (les fiches d'usage auraient perdu leur entrée entre les deux) ; six entrées (le responsable a préféré cinq, Questionnaires réunissant le catalogue et les assignations).
+
+**Prochaine action.** T2, PR, bases d'images Desktop de la fiche si le CI les refuse, merge, constat.
+
+**Ouvert.** Concept de Bibliothèque à revoir ; résidu de t13.

@@ -7,6 +7,12 @@ import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 import { STATUTS_PROPOSES } from './statuts';
 import type { LignePanelProposition } from './statuts';
 import { mentionsRemboursement, type StatutRemboursement } from './remboursable';
+import {
+  estComposee,
+  libellesValidationMedicale,
+  mentionsParMesures,
+  phraseAnalyseComposee,
+} from './compositionsProposition';
 
 // Courrier médecin — proposition d'explorations biologiques (LOT-06, D-059 §6).
 // UN SEUL chemin de rendu : `renderDocumentHtml(document, 'medecin')`, donc
@@ -87,9 +93,9 @@ function libelleStatut(ligne: LignePanelProposition): string {
 
 // [[D-309]] §2 et §3, avancés par la lettre f ([[D-316]] §3) : « non évalué »
 // s'écrit (ce n'est pas « non remboursé ») ; « Hors nomenclature » seul —
-// l'application n'affirme pas qui paie. Le code d'acte par ligne et le groupe
-// dit en mots (§1) restent au rang 4. Une fois pour le courrier, pas par
-// ligne : voir `mentionsRemboursement`.
+// l'application n'affirme pas qui paie. Le groupe dit avec son acte et ses
+// constituants vient de [[D-323]] §2 ; le code d'acte des autres lignes reste
+// à F55. Une fois pour le courrier, pas par ligne : voir `mentionsRemboursement`.
 const PHRASES_REMBOURSEMENT: ReadonlyArray<readonly [StatutRemboursement, string]> = [
   ['non_evalue', 'Remboursement non évalué'],
   ['hors_nomenclature', 'Hors nomenclature'],
@@ -97,7 +103,9 @@ const PHRASES_REMBOURSEMENT: ReadonlyArray<readonly [StatutRemboursement, string
 
 /** Les mentions de remboursement, en un paragraphe — ou aucun. */
 function paragrapheRemboursement(proposees: LignePanelProposition[]): string[] {
-  const mentions = mentionsRemboursement(proposees.flatMap(ligne => ligne.analytes), PHRASES_REMBOURSEMENT);
+  const analytes = proposees.flatMap(ligne => ligne.analytes);
+  // [[D-323]] §4 : un calculé remboursé le dit, avec les actes de ses mesures.
+  const mentions = [...mentionsRemboursement(analytes, PHRASES_REMBOURSEMENT), ...mentionsParMesures(analytes)];
   return mentions.length > 0 ? [mentions.join(' ')] : [];
 }
 
@@ -115,12 +123,17 @@ function paragrapheLigne(ligne: LignePanelProposition): string {
     );
   }
   if (ligne.analytes.length > 0) {
-    morceaux.push(`Éléments : ${ligne.analytes.map(a => a.libelle).join(', ')}.`);
-    const validation = ligne.analytes.filter(a => a.validationMedicaleRequise);
+    // [[D-323]] §2-§3 : un groupe signé fait sa propre phrase, son acte et ses
+    // constituants ; les analyses simples restent la liste des éléments.
+    const simples = ligne.analytes.filter(a => !estComposee(a));
+    if (simples.length > 0) morceaux.push(`Éléments : ${simples.map(a => a.libelle).join(', ')}.`);
+    for (const analyte of ligne.analytes) {
+      const phrase = phraseAnalyseComposee(analyte, 'constituants');
+      if (phrase) morceaux.push(phrase);
+    }
+    const validation = libellesValidationMedicale(ligne.analytes);
     if (validation.length > 0) {
-      morceaux.push(
-        `Interprétation médicale requise pour : ${validation.map(a => a.libelle).join(', ')}.`,
-      );
+      morceaux.push(`Interprétation médicale requise pour : ${validation.join(', ')}.`);
     }
   }
   return morceaux.join(' ');

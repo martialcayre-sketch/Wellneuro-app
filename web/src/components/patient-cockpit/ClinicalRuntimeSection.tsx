@@ -61,6 +61,7 @@ import type { LignePanelProposition } from '@/lib/biology-library/statuts';
 // Import de VALEUR depuis la FEUILLE du vocabulaire des statuts, qui n'importe
 // rien : le prédicat de la borne suit sans tirer le moteur au paquet client.
 import { ligneOuvreUneAttente } from '@/lib/biology-library/vocabulaireStatuts';
+import { codesProposesParLeBilan, libelleDansLesAnalytes } from '@/lib/biology-library/compositionsProposition';
 import type { ProtocolAction, TherapeuticLoad } from '@/lib/clinical-engine/types';
 import { VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
 import type { ProvenancePurpose, SourceCitablePurpose } from '@/lib/protocol/provenancePurpose';
@@ -1326,8 +1327,10 @@ export function ClinicalRuntimeSection({
     if (!propositionDisponible) return null;
     const vus = new Map<string, { code: string; libelle: string; panel: string }>();
     for (const ligne of propositionLignes.filter(ligneOuvreUneAttente)) {
-      for (const analyte of ligne.analytes) {
-        if (!vus.has(analyte.code)) vus.set(analyte.code, { code: analyte.code, libelle: analyte.libelle, panel: ligne.libelle });
+      // Le prédicat même de la route : ce que le bilan proposait, constituants
+      // rangés sous leur groupe compris ([[D-323]] §2).
+      for (const code of codesProposesParLeBilan(ligne.analytes)) {
+        if (!vus.has(code)) vus.set(code, { code, libelle: libelleDansLesAnalytes(ligne.analytes, code) ?? code, panel: ligne.libelle });
       }
     }
     return [...vus.values()];
@@ -1335,8 +1338,8 @@ export function ClinicalRuntimeSection({
   /** Libellé d'un code d'analyte, lu dans la proposition servie ; le code à défaut. */
   const libelleAnalyte = useCallback((code: string) => {
     for (const ligne of propositionLignes) {
-      const trouve = ligne.analytes.find(analyte => analyte.code === code);
-      if (trouve) return trouve.libelle;
+      const trouve = libelleDansLesAnalytes(ligne.analytes, code);
+      if (trouve !== null) return trouve;
     }
     return code;
   }, [propositionLignes]);

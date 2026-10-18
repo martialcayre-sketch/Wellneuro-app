@@ -65,9 +65,9 @@ test.describe('Bibliothèque — rayon Fiches conseils', () => {
 
     const { idVersion, numero, contenuSha256 } = await deposerVersionFicheE2E();
 
-    await page.goto('/dashboard/bibliotheque');
-    await expect(page.getByRole('heading', { name: 'Bibliothèque', exact: true })).toBeVisible({ timeout: 10000 });
-    await page.getByRole('button', { name: /Fiches conseils/ }).click();
+    // Le rayon a sa page depuis D-324 §4 (onglet de la page unique avant).
+    await page.goto('/dashboard/bibliotheque/fiches-conseils');
+    await expect(page.getByRole('heading', { name: 'Fiches conseils', exact: true })).toBeVisible({ timeout: 10000 });
 
     const ligne = page.getByTestId(`fiche-assiette-${PLATE_FICHE_E2E}`);
     await expect(ligne).toContainText('Assiette végétale', { timeout: 10000 });

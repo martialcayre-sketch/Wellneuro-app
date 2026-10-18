@@ -61,14 +61,14 @@ test.describe('Praticien Dashboard', () => {
     const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
     await page.context().addCookies([sessionCookie]);
 
+    // L'adresse de l'ancienne page unique mène au rayon Questionnaires
+    // (D-324 §4) : le test l'emprunte, il prouve la redirection.
     await page.goto('/dashboard/bibliotheque');
+    await expect(page).toHaveURL(/\/dashboard\/bibliotheque\/questionnaires$/);
 
-    await expect(page.getByRole('heading', { name: 'Bibliothèque', exact: true })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Questionnaires', exact: true })).toBeVisible({
       timeout: 10000,
     });
-    // Rayons : Questionnaires actif par défaut.
-    await expect(page.getByRole('button', { name: /^Questionnaires$/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Analyses biologiques/ })).toBeVisible();
 
     // Catalogue : la recherche filtre le rendu (catalogue en code, sans DB).
     const recherche = page.getByLabel('Rechercher dans le catalogue');
@@ -87,6 +87,20 @@ test.describe('Praticien Dashboard', () => {
     await expect(page.getByRole('heading', { name: "File d'envoi" })).toBeVisible();
   });
 
+  // D-324 §6 : « Biologie fonctionnelle » a quitté le menu, son contenu vit sur
+  // le rayon « Analyses biologiques ». Un marque-page ancien ne doit pas tomber
+  // sur une page introuvable : ce test emprunte la redirection.
+  test('l’ancienne adresse de la biologie mène au rayon « Analyses biologiques »', async ({ page }) => {
+    await page.context().addCookies([await praticienSessionCookie(PRATICIEN_EMAIL)]);
+
+    await page.goto('/dashboard/biologie');
+
+    await expect(page).toHaveURL(/\/dashboard\/bibliotheque\/biologie$/);
+    await expect(page.getByRole('heading', { name: 'Analyses biologiques', exact: true })).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
   // Instruments du cabinet : le parcours complet créer → enregistrer →
   // demander la relecture → publier. La publication n'est JAMAIS automatique :
   // elle passe par l'écran de relecture de la grille. Titre unique par run, et
@@ -94,7 +108,7 @@ test.describe('Praticien Dashboard', () => {
   test('bibliothèque : créer un instrument du cabinet jusqu’à publication', async ({ page }) => {
     const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
     await page.context().addCookies([sessionCookie]);
-    await page.goto('/dashboard/bibliotheque');
+    await page.goto('/dashboard/bibliotheque/questionnaires');
 
     const titre = `Instrument E2E ${Date.now()}`;
 
@@ -215,6 +229,11 @@ test.describe('Praticien Dashboard', () => {
       const sheet = page.getByRole('dialog', { name: 'Menu' });
       await expect(sheet).toBeVisible();
       await expect(sheet.getByRole('link', { name: 'Paramètres' })).toBeVisible();
+      // D-324 : la feuille reprend le menu du bureau — chaque rayon de la
+      // Bibliothèque a son entrée, Documents et Biologie fonctionnelle en sortent.
+      await expect(sheet.getByRole('link', { name: 'Analyses biologiques' })).toBeVisible();
+      await expect(sheet.getByRole('link', { name: 'Documents' })).toHaveCount(0);
+      await expect(sheet.getByRole('link', { name: 'Biologie fonctionnelle' })).toHaveCount(0);
 
       await page.keyboard.press('Escape');
       await expect(sheet).toBeHidden();

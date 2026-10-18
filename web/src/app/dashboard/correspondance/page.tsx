@@ -8,7 +8,7 @@ import { CorrespondanceRecente } from '@/components/fil/CorrespondanceRecente';
 // aucun.
 //
 // CE QU'ELLE FAIT, ET CE QU'ELLE NE FAIT PAS. Elle ORIENTE — patron de
-// `dashboard/biologie/page.tsx`, qui renvoie vers la Bibliothèque plutôt que de
+// l’ancienne page « Biologie fonctionnelle », qui renvoyait vers la Bibliothèque plutôt que de
 // rejouer le rayon. Le geste vit sur le dossier, et il n'y a pas de dossier
 // courant ici. Elle ne rend donc pas une liste transversale plus longue que
 // celle de l'accueil : élargir ce que cette surface nomme rouvrirait la question

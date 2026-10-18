@@ -90,3 +90,29 @@ describe('refusCodeInconnu / refusHorsProposition', () => {
     ])).toContain('« BIO_TSH »');
   });
 });
+
+describe('refusHorsProposition — lignes regroupées par une composition signée (D-323 §2)', () => {
+  // L'hémoglobine que le bilan proposait est rangée sous la NFS que la
+  // composition fait proposer : elle reste attendable, la NFS ajoutée non.
+  const regroupee = {
+    ...ligne('recommande', []),
+    analytes: [{
+      code: 'BIO_NFS', libelle: 'NFS', validationMedicaleRequise: false,
+      remboursement: { statut: 'remboursable', conditions: [], codesActesRetenus: ['1104'] },
+      constituants: [
+        { code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine', validationMedicaleRequise: false, proposeParLeBilan: true },
+        { code: 'BIO_PLAQUETTES', libelle: 'Plaquettes', validationMedicaleRequise: false, proposeParLeBilan: false },
+      ],
+      demandeePour: [{ code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine' }],
+    }],
+  } as unknown as LignePanelProposition;
+
+  it('un constituant que le bilan proposait reste dans la borne', () => {
+    expect(refusHorsProposition([{ actionId: 'a', title: 'Fer', analyteCodes: ['BIO_HEMOGLOBINE'] }], [regroupee])).toBeNull();
+  });
+
+  it('ni le groupe ajouté ni ses autres constituants n’y entrent', () => {
+    expect(refusHorsProposition([{ actionId: 'a', title: 'Fer', analyteCodes: ['BIO_NFS'] }], [regroupee])).toContain('« BIO_NFS »');
+    expect(refusHorsProposition([{ actionId: 'a', title: 'Fer', analyteCodes: ['BIO_PLAQUETTES'] }], [regroupee])).toContain('« BIO_PLAQUETTES »');
+  });
+});

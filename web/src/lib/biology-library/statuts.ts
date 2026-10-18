@@ -34,6 +34,7 @@ export { STATUTS_PROPOSES } from './vocabulaireStatuts';
 
 import type { StatutPanel } from './vocabulaireStatuts';
 import { STATUTS_PROPOSES } from './vocabulaireStatuts';
+import { regrouperAnalytes, type CompositionSignee } from './compositionsProposition';
 
 /** Composition d'un panel telle que lue du catalogue (jamais recopiée ici). */
 export type PanelCatalogue = {
@@ -68,6 +69,22 @@ export type LigneAnalyteProposition = {
   libelle: string;
   validationMedicaleRequise: boolean;
   remboursement: Remboursement;
+  /**
+   * Groupe ou regroupement à composition signée ([[D-323]] §2) : ses
+   * constituants, listés sous la ligne. Absent pour toute autre analyse.
+   */
+  constituants?: Array<{
+    code: string;
+    libelle: string;
+    validationMedicaleRequise: boolean;
+    /** Le bilan le proposait lui-même : il compte dans la borne des attentes ([[D-305]] §4). */
+    proposeParLeBilan: boolean;
+  }>;
+  /**
+   * Groupe proposé à la place de constituants que le bilan proposait seuls et
+   * qui ne sont remboursables qu'accompagnés ([[D-323]] §3).
+   */
+  demandeePour?: Array<{ code: string; libelle: string }>;
 };
 
 export type LignePanelProposition = {
@@ -157,6 +174,12 @@ export type EntreeStatutsBiologie = {
   validationMedicale?: ReadonlySet<string>;
   /** Remboursement dérivé par analyte (`deriverRemboursement`), si résolu. */
   remboursements?: ReadonlyMap<string, Remboursement>;
+  /**
+   * Compositions signées actives ([[D-323]]) : un groupe fait une ligne, un
+   * constituant seul est proposé par son groupe. Absentes ou vides : les
+   * analyses du bilan sont rendues telles quelles.
+   */
+  compositions?: ReadonlyMap<string, CompositionSignee>;
   /** ISO 8601 — « aujourd'hui » pour juger une répétition. Jamais lu de l'horloge ici. */
   dateReference: string;
 };
@@ -485,10 +508,15 @@ function composerAnalytes(
   panel: PanelCatalogue,
   entree: EntreeStatutsBiologie,
 ): LigneAnalyteProposition[] {
-  return panel.analytes.map(analyte => ({
+  const validationDe = (code: string) => entree.validationMedicale?.has(code) ?? false;
+  const remboursementDe = (code: string) => entree.remboursements?.get(code) ?? REMBOURSEMENT_NON_EVALUE;
+  const analytes = panel.analytes.map(analyte => ({
     code: analyte.code,
     libelle: analyte.libelle,
-    validationMedicaleRequise: entree.validationMedicale?.has(analyte.code) ?? false,
-    remboursement: entree.remboursements?.get(analyte.code) ?? REMBOURSEMENT_NON_EVALUE,
+    validationMedicaleRequise: validationDe(analyte.code),
+    remboursement: remboursementDe(analyte.code),
   }));
+  return entree.compositions
+    ? regrouperAnalytes(analytes, { compositions: entree.compositions, remboursementDe, validationDe })
+    : analytes;
 }

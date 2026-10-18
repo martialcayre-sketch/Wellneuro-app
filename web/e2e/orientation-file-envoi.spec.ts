@@ -87,7 +87,7 @@ test.describe('Orientation NNPP2 → file d’envoi', () => {
     // base vide ; ici la file porte un vrai brouillon, et c'est CE contenu
     // qu'on exige — sans quoi un ajout qui échoue silencieusement laisserait
     // passer le test.
-    await page.goto('/dashboard/bibliotheque');
+    await page.goto('/dashboard/bibliotheque/questionnaires');
     const sectionFileEnvoi = page.locator('section').filter({
       has: page.getByRole('heading', { name: "File d'envoi" }),
     });

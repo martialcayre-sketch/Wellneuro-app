@@ -81,9 +81,11 @@ const IMPORTEURS_ADMIS = [
   'web/src/app/api/praticien/patients/cycle-de-vie/route.ts',
   'web/src/app/api/praticien/patients/route.ts',
   'web/src/app/api/praticien/protocoles/versions/route.ts',
-  // Pages et composants praticien.
-  'web/src/app/dashboard/bibliotheque/page.tsx',
-  'web/src/app/dashboard/biologie/page.tsx',
+  // Pages et composants praticien. La page unique de la biologie est le
+  // rayon « Analyses biologiques » depuis D-324 §6 : elle remplace à la fois
+  // la Bibliothèque d'un seul tenant et la page « Biologie fonctionnelle »,
+  // qui ne font plus que rediriger (même drapeau lu, aucune lecture neuve).
+  'web/src/app/dashboard/bibliotheque/biologie/page.tsx',
   'web/src/app/dashboard/patients/[idPatient]/page.tsx',
   // Même motif (F80) : l'écran de signature de la composition, en `import
   // type` et le module PUR `compositionsPreparees` (libellés des types).
