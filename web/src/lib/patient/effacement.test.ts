@@ -43,7 +43,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'correspondanceMedecin', 'correspondancePatient', 'documentPatientBiologie',
     'lectureImportBiologique', 'travailExtractionBiologique',
     'ligneBiologiqueCandidate', 'importBiologique', 'masquageCompteRendu', 'compteRenduBiologique',
-    'annulationResultatBiologique', 'resultatBiologique',
+    'annulationResultatBiologique', 'statutPoseResultatBiologique', 'resultatBiologique',
     'rendezVous', 'journalAccesDossier',
     'agendaSommeilNuit', 'agendaAlimentaireJour',
     'objectifNegocie', 'entreeCeQuiCompte', 'syntheseComprehension',
@@ -225,6 +225,16 @@ describe('effacerDossier', () => {
     const rang = (nom: string) => appels.indexOf(nom);
     expect(rang('annulationResultatBiologique')).toBeGreaterThanOrEqual(0);
     expect(rang('annulationResultatBiologique')).toBeLessThan(rang('resultatBiologique'));
+  });
+
+  // Statuts posés près d'une valeur (D-322, F58) : FK RESTRICT vers le
+  // résultat. Une ligne déplacée après lui rendrait l'effacement impossible
+  // pour tout dossier qui porte un statut.
+  it('supprime les statuts posés avant les résultats', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('statutPoseResultatBiologique')).toBeGreaterThanOrEqual(0);
+    expect(rang('statutPoseResultatBiologique')).toBeLessThan(rang('resultatBiologique'));
   });
 
   // File durable des lectures (D-282) : FK RESTRICT vers l'import courant et

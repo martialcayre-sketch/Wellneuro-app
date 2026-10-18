@@ -10549,3 +10549,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** T2, PR, bases d'images Desktop de la fiche si le CI les refuse, merge, constat.
 
 **Ouvert.** Concept de Bibliothèque à revoir ; résidu de t13.
+
+## 2026-10-18 — File B en autonomie : F58 migration, lettre z
+
+**Fait.** Lettre z (D-302) mergée : date de naissance obligatoire à la création d'un dossier, formulaire au libellé visible et serveur (#1539). F58 : migration seule de la table des statuts posés (D-322), contrat négatif, effacement nommé, déclaration RGPD validée par le responsable (#1537).
+
+**Écarté.** Un verrou F58 propre à la ligne : la relecture CodeRabbit a montré qu'une correction concurrente passait sous lui ; le trigger prend les verrous de clé de BP-09, qui refusent aussi REPEATABLE READ. F38 en deux lots (le responsable choisit un seul lot avec migration).
+
+**Prochaine action.** Merge de #1537, release-db, constat par conteneur, puis PR du code F58 (route, lecture, écran, banc à deux sessions, nettoyage E2E). Puis F38 : migration de la remise patient, puis code.
+
+**Ouvert.** F38 : impression bloquée si refus de partage médecin (arbitré) ; forme de l'objet « document remis » à cadrer.

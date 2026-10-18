@@ -1323,6 +1323,14 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/annulations_resultats_biologiques_v1_negatif.sql
 
+      # Les statuts posés près d'une valeur biologique (D-322, F58) : liste
+      # fermée, ligne exacte (tête de fil), praticien du dossier, ajout seul,
+      # effacement nommé.
+      - name: Statuts poses resultats biologiques negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/statuts_poses_resultats_biologiques_v1_negatif.sql
+
       # La file durable des lectures (D-282, G3) : statut fermé et sa cohérence
       # en CASE, deux tentatives au plus, un seul travail ouvert par compte
       # rendu (unicité PARTIELLE), import courant du même compte rendu, identité
