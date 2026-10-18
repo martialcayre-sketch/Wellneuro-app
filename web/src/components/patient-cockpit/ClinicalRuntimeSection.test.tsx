@@ -809,6 +809,24 @@ describe('ClinicalRuntimeSection', () => {
     await waitFor(() => expect(fetchMock).not.toHaveBeenCalled());
   });
 
+  // Contrepartie du cas t13 : retiré des vrais dossiers, le panneau de clôture
+  // reste monté sur fixture — c'est la seule surface qui le rend en entier
+  // (revue CodeRabbit de #1548).
+  it('conserve le panneau « Clôture et aperçu patient » en mode fixture (t13)', async () => {
+    vi.stubGlobal('fetch', vi.fn());
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={buildValidationErgoC1Fixture()}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        phase="actions"
+      />,
+    );
+    expect(await screen.findByRole('heading', { name: 'Clôture et aperçu patient' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'voir l’aperçu en « Diffusion »' })).toBeNull();
+  });
+
   // [[D-250]] : l'observatoire Boussole n'est plus monté au niveau du protocole,
   // MÊME drapeau C5 ouvert — c'est le cas qui le montrait avant. Le témoin
   // d'anti-vacuité est le constructeur, qui vit dans la même sous-vue.
