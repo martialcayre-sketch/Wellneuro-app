@@ -10581,6 +10581,17 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Libellé « Compléments aliment… » tronqué au menu ; concept de Bibliothèque à revoir.
 
+## 2026-10-18 — ai, code : la première lecture datée (D-297)
+
+**Fait.** Migration ai mergée (#1547) après Codex « accepter », appliquée et constatée par conteneur (120 migrations). Seconde PR : phrase « Votre lecture est datée » en tête de chaque page qui consigne une lecture, protocole compris ; le POST demande un jour, le trigger le fixe ; encart praticien « Documents remis » ; deux gardes.
+
+**Décidé.** Responsable : encart dédié, protocole daté, phrase en tête ; amendement de D-297.
+
+**Écarté.** Lecture sur les écrans existants (fiches et courriers invisibles) ; phrase en bas de page.
+
+**Prochaine action.** Revue, PR, CI, merge ; constat du premier jour écrit sur un dossier de test.
+
+**Ouvert.** Micro-textes de « Mes échanges » et limite « protocole indisponible » à relire avant ACT-3.
 ## 2026-10-18 — F58 : le statut posé près d'une valeur, code
 
 **Fait.** Migration #1537 mergée (585a5105) après une relecture CodeRabbit qui a montré qu'une correction concurrente passait sous le verrou par ligne : le trigger prend les verrous de clé de BP-09, course reproduite puis fermée. Release-db approuvée sur la tête de main au CI vert. Code : route `resultats/statuts` (pose, retrait, refus nommés sous les mêmes verrous), statut et historique joints à la série, écran (sans statut posé, poser, changer, retirer, historique), banc à deux sessions (six courses, trois rougissent sous l'ancien verrou) en CI et T3, nettoyage E2E.

@@ -1,8 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+
+// La trace de lecture a son propre banc : ici, on vérifie QUAND elle est montée.
+const { consigner } = vi.hoisted(() => ({ consigner: vi.fn(() => null) }));
+vi.mock('@/components/patient/ConsignerLecturePortail', () => ({ ConsignerLecturePortail: consigner }));
+
 import { ComprehensionView } from './ComprehensionView';
 import { LONGUEUR_MAX_DESACCORD } from '@/lib/praticien/syntheseComprehension';
+import { TITRE_LECTURE_DATEE } from '@/lib/portail/lectureDatee';
 
 const fetchMock = vi.fn();
 
@@ -20,6 +26,7 @@ function chargementRendu(synthese: unknown, desaccords: unknown[] = []) {
 }
 
 beforeEach(() => {
+  consigner.mockClear();
   fetchMock.mockReset();
   vi.stubGlobal('fetch', fetchMock);
 });
@@ -27,6 +34,33 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+});
+
+describe('ComprehensionView — la lecture datée (D-297)', () => {
+  it('synthèse rendue : « Votre lecture est datée » en tête, puis la lecture consignée', async () => {
+    chargementRendu(SYNTHESE);
+    render(<ComprehensionView />);
+    const avis = await screen.findByRole('region', { name: TITRE_LECTURE_DATEE });
+    const texte = screen.getByText(SYNTHESE.texte);
+    expect(avis.compareDocumentPosition(texte) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(consigner.mock.calls.map(appel => (appel as unknown[])[0])).toContainEqual({ espece: 'synthese' });
+  });
+
+  it('aucune synthèse publiée : ni avis, ni lecture consignée', async () => {
+    chargementRendu(null);
+    render(<ComprehensionView />);
+    await screen.findByText(/n’a encore rien publié/);
+    expect(screen.queryByRole('region', { name: TITRE_LECTURE_DATEE })).toBeNull();
+    expect(consigner).not.toHaveBeenCalled();
+  });
+
+  it('page en erreur : ni avis, ni lecture consignée — rien n’a été lu', async () => {
+    fetchMock.mockResolvedValueOnce(json({ ok: false, error: 'Indisponible.' }, false));
+    render(<ComprehensionView />);
+    await screen.findByText('Indisponible.');
+    expect(screen.queryByRole('region', { name: TITRE_LECTURE_DATEE })).toBeNull();
+    expect(consigner).not.toHaveBeenCalled();
+  });
 });
 
 describe('ComprehensionView', () => {

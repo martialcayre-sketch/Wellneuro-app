@@ -11,6 +11,7 @@ vi.mock('@/components/patient/ConsignerLecturePortail', () => ({ ConsignerLectur
 
 import { CourrierMedecinLecture } from './CourrierMedecinLecture';
 import { AUCUN_COURRIER, MENTION_INDISPONIBLE, MENTION_RETIREE, PHRASE_ACCOMPAGNEMENT, TITRE_LETTRE } from './textesLettre';
+import { TITRE_LECTURE_DATEE } from '@/lib/portail/lectureDatee';
 
 const tracesPosees = () => consigner.mock.calls.map(appel => (appel as unknown[])[0]);
 const SERVIE = { idRemise: 'lar_1', remiseLe: '2026-10-04T08:00:00.000Z', etat: 'servie', texte: 'Docteur,\n<b>pas du HTML</b>' };
@@ -70,6 +71,20 @@ describe('Courrier pour votre médecin (D-262, LOT-03a)', () => {
     expect(screen.getByText(PHRASE_ACCOMPAGNEMENT).closest('header')?.className).toContain('print:hidden');
     expect(screen.getByRole('link', { name: 'Ouvrir la version à imprimer' }).closest('div.print\\:hidden')).toBeTruthy();
     expect(screen.getByLabelText('Texte du courrier').closest('.print\\:hidden')).toBeNull();
+  });
+
+  it('« Votre lecture est datée » en tête, AVANT le courrier, seulement quand la lecture se consigne (D-297 §4)', async () => {
+    repondre(200, { ok: true, lettre: SERVIE });
+    await afficher();
+    const avis = screen.getByRole('region', { name: TITRE_LECTURE_DATEE });
+    const titre = screen.getByRole('heading', { name: TITRE_LETTRE });
+    expect(avis.compareDocumentPosition(titre) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(avis.className).toContain('print:hidden');
+    cleanup();
+
+    repondre(200, { ok: true, lettre: { ...SERVIE, etat: 'retiree', texte: null } });
+    await afficher();
+    expect(screen.queryByRole('region', { name: TITRE_LECTURE_DATEE })).toBeNull();
   });
 
   it('aucun courrier remis : le dit, sans rien consigner', async () => {

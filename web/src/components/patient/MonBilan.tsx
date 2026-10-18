@@ -7,6 +7,8 @@ import type { BilanPatient } from '@/lib/documents/bilanPatient';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
+import { AvisLectureDatee } from '@/components/patient/AvisLectureDatee';
+import { ConsignerLecturePortail } from '@/components/patient/ConsignerLecturePortail';
 
 // « Mon bilan » — le document que le praticien a transmis, lu dans l'espace du
 // patient plutôt que reçu par e-mail.
@@ -119,6 +121,11 @@ export function MonBilan({ token }: { token: string }) {
 
   return (
     <article className="space-y-6">
+      {/* LA LECTURE NE SE DATE QUE SUR LE BILAN AFFICHÉ ([[D-297]]). L'avis, en
+          tête, et la consignation, plus bas, ne sont rendus que dans CETTE
+          branche : une page en erreur ou sans bilan ne date rien — comme la
+          fiche d'assiette (revue CodeRabbit de #1552). */}
+      <AvisLectureDatee />
       <PatientCard>
         <header className="border-b border-border pb-5">
           <h1 className="text-2xl font-semibold text-foreground">Bilan neuronutritionnel</h1>
@@ -162,6 +169,9 @@ export function MonBilan({ token }: { token: string }) {
         <PatientButton variant="ghost" onClick={() => window.print()}>
           Imprimer ou enregistrer en PDF
         </PatientButton>
+        {/* Ouvrir le bilan ACQUITTE la tâche du fil du jour et date sa première
+            lecture : la tâche en sort, le document reste atteignable. */}
+        <ConsignerLecturePortail espece="bilan" />
       </div>
     </article>
   );
