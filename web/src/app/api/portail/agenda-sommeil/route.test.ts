@@ -73,7 +73,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-07-15T10:00:00.000Z'));
   process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
-  // D-326 (t08) : sous le plafond horaire par défaut (`clearAllMocks` garde les implémentations).
+  // D-327 (t08) : sous le plafond horaire par défaut (`clearAllMocks` garde les implémentations).
   prisma.agendaSommeilNuit.count.mockResolvedValue(0);
 });
 afterEach(() => {
@@ -148,7 +148,7 @@ describe('POST /api/portail/agenda-sommeil', () => {
     expect(json.reason).toBe('date_hors_fenetre');
   });
 
-  it('au plafond horaire du dossier (D-326) : 429, texte arbitré, aucune nuit écrite', async () => {
+  it('au plafond horaire du dossier (D-327) : 429, texte arbitré, aucune nuit écrite', async () => {
     prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
     mockOwner();
     prisma.agendaSommeilNuit.count.mockResolvedValue(60);

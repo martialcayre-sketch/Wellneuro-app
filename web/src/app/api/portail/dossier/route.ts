@@ -909,7 +909,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailDossierRes
     if (auth.erreur) return auth.erreur as NextResponse<PortailDossierResponse>;
     const patient = auth.patient;
 
-    // 2 bis — CADENCE ([[D-326]], t08) : un plafond pour les quatre gestes de ce
+    // 2 bis — CADENCE ([[D-327]], t08) : un plafond pour les quatre gestes de ce
     //     POST ensemble (`lib/portail/cadenceDossier.ts`). Avant le corps : un
     //     dossier au plafond ne lit rien.
     if (await cadenceDossierAtteinte(patient.idPatient)) {

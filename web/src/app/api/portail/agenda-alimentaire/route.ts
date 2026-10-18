@@ -659,7 +659,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     // refus qui nomme un geste vient après tout refus d'état terminal. Épinglé
     // par un test, pas laissé implicite.
 
-    // 4 bis — CADENCE ([[D-326]], t08) : plafond large (saisies et corrections
+    // 4 bis — CADENCE ([[D-327]], t08) : plafond large (saisies et corrections
     // chaînées), compté sur toutes les journées du dossier.
     if (await cadenceAtteinte('agenda', depuis =>
       prisma.agendaAlimentaireJour.count({ where: { idPatient: auth.idPatient, soumisLe: { gte: depuis } } }),

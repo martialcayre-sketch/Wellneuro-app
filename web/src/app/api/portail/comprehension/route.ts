@@ -270,7 +270,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailComprehens
     // Ne pas « corriger » cette absence de garde en la posant. La révocation du
     // compte, elle, ferme bien la route (403 ci-dessus).
 
-    // 2 ter — CADENCE ([[D-326]], t08) : au plafond horaire du dossier, rien
+    // 2 ter — CADENCE ([[D-327]], t08) : au plafond horaire du dossier, rien
     //     n'est lu ni écrit.
     if (await cadenceAtteinte('portail', depuis =>
       prisma.desaccordComprehension.count({ where: { idPatient: patient.idPatient, creeLe: { gte: depuis } } }),

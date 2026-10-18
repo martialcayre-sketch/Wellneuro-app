@@ -147,7 +147,7 @@ describe('POST /api/portail/protocole/checkin', () => {
     expect(prisma.protocolCheckin.create).toHaveBeenCalled();
   });
 
-  it('au plafond horaire du dossier (D-326) : 429, texte arbitré, aucun check-in écrit', async () => {
+  it('au plafond horaire du dossier (D-327) : 429, texte arbitré, aucun check-in écrit', async () => {
     mockOwnerAuth();
     mockDiffusedProtocol();
     prisma.protocolCheckin.count.mockResolvedValueOnce(20);

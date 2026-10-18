@@ -10673,7 +10673,7 @@ qualité inchangés (item de l'indice).
 
 ## 2026-10-18 — t08 : cadence des écritures par dossier
 
-**Fait.** D-326 : plafond horaire par dossier compté en base avant chaque écriture (agendas 60, portail 20, objectifs praticien 30, proposition IA 10), sans migration, 429 avec le texte arbitré. Treize routes ; le retrait d'un choix et les signalements restent hors plafond. L'écran de proposition de pack affiche désormais le texte du refus. Ligne t09 du plan close sans code.
+**Fait.** D-327 : plafond horaire par dossier compté en base avant chaque écriture (agendas 60, portail 20, objectifs praticien 30, proposition IA 10), sans migration, 429 avec le texte arbitré. Treize routes ; le retrait d'un choix et les signalements restent hors plafond. L'écran de proposition de pack affiche désormais le texte du refus. Ligne t09 du plan close sans code.
 
 **Écarté.** Une table de compteurs (migration) ; un verrou par route pour une borne exacte (coût supérieur au risque).
 

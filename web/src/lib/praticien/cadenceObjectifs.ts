@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 
-// LA CADENCE DES ÉCRITURES PRATICIEN SUR LES OBJECTIFS D'UN DOSSIER — [[D-326]].
+// LA CADENCE DES ÉCRITURES PRATICIEN SUR LES OBJECTIFS D'UN DOSSIER — [[D-327]].
 //
 // Un plafond pour les quatre gestes ensemble (objectif négocié, accord attesté,
 // fin d'objectif, proposition écartée), compté sur les quatre tables qu'ils

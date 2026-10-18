@@ -12,7 +12,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { cadenceDossierAtteinte } from './cadenceDossier';
 
-describe('cadence du dossier à deux voix (D-326)', () => {
+describe('cadence du dossier à deux voix (D-327)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prisma.ratificationObjectif.count.mockResolvedValue(0);

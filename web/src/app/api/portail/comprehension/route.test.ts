@@ -98,7 +98,7 @@ describe('/api/portail/comprehension', () => {
     prisma.syntheseComprehension.findMany.mockResolvedValue([]);
     prisma.syntheseComprehension.findFirst.mockResolvedValue(null);
     prisma.desaccordComprehension.findMany.mockResolvedValue([]);
-    // D-326 (t08) : sous le plafond horaire par défaut.
+    // D-327 (t08) : sous le plafond horaire par défaut.
     prisma.desaccordComprehension.count.mockResolvedValue(0);
     prisma.desaccordComprehension.create.mockImplementation(
       async ({ data }: { data: Record<string, unknown> }) => ({
@@ -111,7 +111,7 @@ describe('/api/portail/comprehension', () => {
     );
   });
 
-  // ── Cadence (D-326, t08) ──────────────────────────────────────────────────
+  // ── Cadence (D-327, t08) ──────────────────────────────────────────────────
 
   it('au plafond horaire du dossier : 429, texte arbitré, aucun désaccord écrit', async () => {
     prisma.desaccordComprehension.count.mockResolvedValue(20);

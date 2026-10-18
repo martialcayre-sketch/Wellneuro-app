@@ -86,7 +86,7 @@ describe('PropositionPackReevaluation', () => {
     expect(screen.getByRole('button', { name: /Non, pas maintenant/i })).toBeTruthy();
   });
 
-  it('au plafond horaire (D-326), le texte du serveur remplace « Réessayez »', async () => {
+  it('au plafond horaire (D-327), le texte du serveur remplace « Réessayez »', async () => {
     fetchMock([
       { corps: { ok: true, proposition: PROPOSITION } },
       {

@@ -859,7 +859,7 @@ async function ecarter(
     return echec('proposition_introuvable', 'Proposition introuvable.', 404);
   }
 
-  // Cadence ([[D-326]], t08) : un écart se répète (se raviser est une ligne de
+  // Cadence ([[D-327]], t08) : un écart se répète (se raviser est une ligne de
   // plus) ; il entre dans le plafond des écritures sur les objectifs.
   if (await cadenceObjectifsAtteinte(idPatient)) {
     return echec('cadence', MESSAGE_CADENCE_PRATICIEN, 429);

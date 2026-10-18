@@ -290,7 +290,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailCeQuiCompt
       return echec('fenetre_fermee', MESSAGE_FENETRE_FERMEE, 409);
     }
 
-    // 2 ter — CADENCE ([[D-326]], t08) : au plafond horaire du dossier, rien
+    // 2 ter — CADENCE ([[D-327]], t08) : au plafond horaire du dossier, rien
     //     n'est lu ni écrit. Avant le corps, comme la fenêtre.
     if (await cadenceAtteinte('portail', depuis =>
       prisma.entreeCeQuiCompte.count({ where: { idPatient: patient.idPatient, creeLe: { gte: depuis } } }),

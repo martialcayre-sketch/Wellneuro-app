@@ -61,7 +61,7 @@ vi.mock('@/lib/consultation/email', () => ({ sendObjectifProposeEmail }));
 vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
-// La cadence ([[D-326]]) a son banc propre (`lib/praticien/cadenceObjectifs.test.ts`) ;
+// La cadence ([[D-327]]) a son banc propre (`lib/praticien/cadenceObjectifs.test.ts`) ;
 // ici, seul compte que la route la consulte et refuse au plafond.
 const cadenceObjectifsAtteinte = vi.hoisted(() => vi.fn(async () => false));
 vi.mock('@/lib/praticien/cadenceObjectifs', () => ({ cadenceObjectifsAtteinte }));
@@ -297,7 +297,7 @@ describe('/api/praticien/objectifs', () => {
     expect(payload.objectif.creeLe).toBe('2026-08-22T09:00:00.000Z');
   });
 
-  it('au plafond horaire du dossier (D-326) : 429, aucun objectif écrit', async () => {
+  it('au plafond horaire du dossier (D-327) : 429, aucun objectif écrit', async () => {
     cadenceObjectifsAtteinte.mockResolvedValueOnce(true);
     const res = await POST(postRequest(corps({ negocieLe: '2026-08-20' })));
     expect(res.status).toBe(429);

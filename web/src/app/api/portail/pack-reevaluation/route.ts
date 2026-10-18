@@ -163,7 +163,7 @@ export async function POST(req: Request): Promise<NextResponse<PackReevaluationR
       );
     }
 
-    // Cadence ([[D-326]], t08) : les réponses du PATIENT seulement — les
+    // Cadence ([[D-327]], t08) : les réponses du PATIENT seulement — les
     // propositions posées par le système ne lui sont pas imputables.
     if (await cadenceAtteinte('portail', depuis =>
       prisma.packProposition.count({

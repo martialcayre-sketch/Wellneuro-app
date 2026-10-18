@@ -49,7 +49,7 @@ export async function POST(req: Request): Promise<NextResponse<TrustChoixRespons
       if (statut === 'retire' && (!precedent || precedent.statut !== 'accorde')) {
         return { ignore: true as const };
       }
-      // Cadence ([[D-326]], t08) — JAMAIS SUR UN RETRAIT : le retrait doit rester
+      // Cadence ([[D-327]], t08) — JAMAIS SUR UN RETRAIT : le retrait doit rester
       // aussi simple que l'accord, et un retrait ne suit qu'un accord, lui borné.
       // Compté sous le verrou de ligne : la borne est ici exacte.
       if (statut !== 'retire' && await cadenceAtteinte('portail', depuis =>

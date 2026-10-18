@@ -1,4 +1,4 @@
-// LA CADENCE DES ÉCRITURES PAR DOSSIER — [[D-326]] (dette t08).
+// LA CADENCE DES ÉCRITURES PAR DOSSIER — [[D-327]] (dette t08).
 //
 // MODULE PUR. Chaque route qui écrit une ligne neuve compte, AVANT d'écrire, les
 // lignes que ce dossier a déjà écrites dans sa table sur l'heure écoulée ; au
@@ -11,7 +11,7 @@
 // trois semaines d'agenda d'un coup reste sous 60). Ce n'est PAS une borne
 // exacte : comptage et écriture ne partagent ni transaction ni verrou, deux
 // requêtes simultanées au plafond peuvent le franchir d'une unité chacune.
-// Accepté (D-326 §3) : l'objet est l'ordre de grandeur, et un verrou par route
+// Accepté (D-327 §3) : l'objet est l'ordre de grandeur, et un verrou par route
 // coûterait plus que le risque.
 //
 // CHIFFRES TECHNIQUES, pas cliniques (`DC-20`) : arbitrés par le responsable

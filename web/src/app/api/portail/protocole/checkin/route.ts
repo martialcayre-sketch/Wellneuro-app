@@ -93,7 +93,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       );
     }
 
-    // Cadence ([[D-326]], t08) : plafond horaire du dossier, corrections comprises.
+    // Cadence ([[D-327]], t08) : plafond horaire du dossier, corrections comprises.
     if (await cadenceAtteinte('portail', depuis =>
       prisma.protocolCheckin.count({ where: { idPatient: auth.idPatient, soumisLe: { gte: depuis } } }),
     )) {

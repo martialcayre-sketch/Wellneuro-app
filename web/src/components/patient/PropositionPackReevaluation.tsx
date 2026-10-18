@@ -70,7 +70,7 @@ export function PropositionPackReevaluation() {
         });
         const payload = (await res.json()) as PackReevaluationResponse;
         if (!res.ok || !('accuse' in payload)) {
-          // Le plafond horaire ([[D-326]]) a son texte : « Réessayez » tout de
+          // Le plafond horaire ([[D-327]]) a son texte : « Réessayez » tout de
           // suite serait faux. Les autres échecs gardent le texte d'avant.
           const message = !payload.ok && payload.reason === 'cadence' ? payload.error : undefined;
           setEtat({ phase: 'erreur', proposition, message });

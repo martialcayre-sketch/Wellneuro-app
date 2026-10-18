@@ -7,7 +7,7 @@ import {
   debutFenetreCadence,
 } from './cadenceEcritures';
 
-describe('cadence des écritures par dossier (D-326, t08)', () => {
+describe('cadence des écritures par dossier (D-327, t08)', () => {
   it('les plafonds arbitrés le 2026-10-18', () => {
     expect(PLAFONDS_ECRITURES_PAR_HEURE).toEqual({
       agenda: 60,

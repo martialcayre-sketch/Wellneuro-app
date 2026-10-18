@@ -1,4 +1,4 @@
-# Handoff — t08 : cadence des écritures par dossier (D-326)
+# Handoff — t08 : cadence des écritures par dossier (D-327)
 
 ## Branche et état Git
 
@@ -18,7 +18,7 @@ d'accès), close sans code le même jour.
 
 ## Décisions prises
 
-- [[D-326]] : compter en base, avant d'écrire, les lignes du dossier sur
+- [[D-327]] : compter en base, avant d'écrire, les lignes du dossier sur
   l'heure glissante (patron de la redemande du lien magique) ; 429
   `reason: 'cadence'`. Plafonds : agendas 60, portail 20, objectifs
   praticien 30, proposition IA 10.
@@ -51,7 +51,7 @@ d'accès), close sans code le même jour.
   branchement dans `cadenceObjectifs.test.ts`).
 - `web/src/lib/portail/cadenceDossier.ts` (+ test).
 - `web/src/components/patient/PropositionPackReevaluation.tsx` (+ test).
-- `docs/DECISIONS.md` (D-326), plan (lignes t08 et t09 soldées), changelog,
+- `docs/DECISIONS.md` (D-327), plan (lignes t08 et t09 soldées), changelog,
   SESSION_LOG.
 
 ## Validations exécutées
@@ -59,17 +59,17 @@ d'accès), close sans code le même jour.
 - Vitest des routes et modules touchés : verts (portail 80 + 10 + 24 + 111 +
   36 + 40 + 27 ; praticien 542 ; composant 6).
 - T1 complet vert. Revue `wn-reviewer` : GO, aucun P0/P1 ; P2 traités
-  (texte des index de D-326, « écarter » ajouté à la famille, banc
+  (texte des index de D-327, « écarter » ajouté à la famille, banc
   agenda-alimentaire à compteur par défaut, refus d'un choix au plafond,
   garde de branchement `accord`/`fin`). Risque résiduel assumé : un appel IA
-  en échec n'est pas compté (D-326 §3).
+  en échec n'est pas compté (D-327 §3).
 - T3 : premier passage rouge sur l'anti-agrégat (corrigé) ; second : voir la PR.
 
 ## Problèmes ouverts
 
 - Question au responsable : chaque signalement envoie une notification au
   praticien ; faut-il borner la notification (pas l'enregistrement) ?
-- Le plafond n'est pas exact sous concurrence (D-326 §3), assumé.
+- Le plafond n'est pas exact sous concurrence (D-327 §3), assumé.
 - Question de la revue : la « demande de correction » d'un objectif
   (`portail/dossier`) est-elle l'exercice d'un droit, à sortir du plafond
   comme le signalement ?

@@ -40,7 +40,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
 vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
-// La cadence ([[D-326]]) a son banc propre (`lib/praticien/cadenceObjectifs.test.ts`).
+// La cadence ([[D-327]]) a son banc propre (`lib/praticien/cadenceObjectifs.test.ts`).
 const cadenceObjectifsAtteinte = vi.hoisted(() => vi.fn(async (_idPatient: string) => false));
 vi.mock('@/lib/praticien/cadenceObjectifs', () => ({ cadenceObjectifsAtteinte }));
 
@@ -462,7 +462,7 @@ describe('/api/praticien/propositions-objectif', () => {
     expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
   });
 
-  it('au plafond horaire du dossier (D-326), un écart est refusé (429), rien écrit', async () => {
+  it('au plafond horaire du dossier (D-327), un écart est refusé (429), rien écrit', async () => {
     prisma.propositionObjectif.findFirst.mockResolvedValue({ id: 'PROP_1' });
     cadenceObjectifsAtteinte.mockResolvedValueOnce(true);
     const reponse = await POST(postRequest(corpsEcarter()));

@@ -257,7 +257,7 @@ export async function POST(req: Request): Promise<NextResponse<PropositionApiRes
     if (patient && !accepteNouvelEnvoi(patient)) {
       return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
     }
-    // Cadence ([[D-326]], t08) : AVANT l'appel payant. Seules les propositions
+    // Cadence ([[D-327]], t08) : AVANT l'appel payant. Seules les propositions
     // produites laissent une ligne — un appel qui échoue n'est pas compté.
     if (await cadenceAtteinte('propositionPrioriteIa', depuis =>
       prisma.propositionPrioriteIA.count({ where: { idPatient, creeLe: { gte: depuis } } }),

@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 
-// LA CADENCE DES GESTES DU PATIENT AU DOSSIER À DEUX VOIX — [[D-326]].
+// LA CADENCE DES GESTES DU PATIENT AU DOSSIER À DEUX VOIX — [[D-327]].
 //
 // Un plafond pour les quatre gestes du POST `portail/dossier` ensemble
 // (ratification, amendement, demande de correction, réponse d'étape), compté

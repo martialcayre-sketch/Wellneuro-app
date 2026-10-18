@@ -187,7 +187,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     if (isDeadlineExpired(ass.dateLimite)) {
       return refuserEcriture('expired', 'La période de recueil est terminée.', 410, requestContext);
     }
-    // CADENCE ([[D-326]], t08) : plafond large (saisies et corrections
+    // CADENCE ([[D-327]], t08) : plafond large (saisies et corrections
     // chaînées), compté sur toutes les nuits du dossier.
     if (await cadenceAtteinte('agenda', depuis =>
       prisma.agendaSommeilNuit.count({ where: { idPatient: auth.idPatient, soumisLe: { gte: depuis } } }),

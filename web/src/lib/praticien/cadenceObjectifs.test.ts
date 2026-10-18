@@ -14,7 +14,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { cadenceObjectifsAtteinte } from './cadenceObjectifs';
 
-describe('cadence praticien des objectifs (D-326)', () => {
+describe('cadence praticien des objectifs (D-327)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prisma.objectifNegocie.count.mockResolvedValue(0);
@@ -40,7 +40,7 @@ describe('cadence praticien des objectifs (D-326)', () => {
 // Les routes `accord` et `fin` n'ont pas de banc de route : cette garde
 // structurelle prouve au moins le branchement — la cadence est consultée, et
 // AVANT l'écriture, dans chacune des quatre routes de la famille.
-describe('branchement de la cadence dans les routes de la famille (D-326)', () => {
+describe('branchement de la cadence dans les routes de la famille (D-327)', () => {
   const RACINE = join(__dirname, '..', '..');
   it.each([
     ['app/api/praticien/objectifs/route.ts', 'prisma.objectifNegocie.create('],

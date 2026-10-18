@@ -122,7 +122,7 @@ beforeEach(() => {
   // dépôt, qui n'a jamais été borné.
   prisma.entreeCeQuiCompte.findFirst.mockResolvedValue(null);
   prisma.assessmentEpisode.findMany.mockResolvedValue([]);
-  // D-326 (t08) : sous le plafond horaire par défaut.
+  // D-327 (t08) : sous le plafond horaire par défaut.
   prisma.entreeCeQuiCompte.count.mockResolvedValue(0);
   prisma.entreeCeQuiCompte.create.mockImplementation(
     async ({ data }: { data: { saisiLe: Date | null } }) => ({
@@ -236,7 +236,7 @@ describe('POST /api/portail/ce-qui-compte — contrat d’accès', () => {
   });
 });
 
-describe('POST /api/portail/ce-qui-compte — cadence (D-326, t08)', () => {
+describe('POST /api/portail/ce-qui-compte — cadence (D-327, t08)', () => {
   it('au plafond horaire du dossier : 429, texte arbitré, rien d’écrit', async () => {
     prisma.entreeCeQuiCompte.count.mockResolvedValue(20);
     const res = await POST(postRequest(cookieProprio(), { texte: TEXTE }));

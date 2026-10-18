@@ -99,7 +99,7 @@ describe('POST /api/portail/trust/choix', () => {
     expect(prisma.trustChoiceEvent.create).not.toHaveBeenCalled();
   });
 
-  it('au plafond horaire (D-326), un accord est refusé (429), compté sous le verrou', async () => {
+  it('au plafond horaire (D-327), un accord est refusé (429), compté sous le verrou', async () => {
     prisma.trustChoiceEvent.count.mockResolvedValue(20);
     const reponse = await POST(requete({ finalite: 'partage_medecin_traitant', statut: 'accorde' }));
     expect(reponse.status).toBe(429);

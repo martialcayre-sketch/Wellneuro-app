@@ -447,7 +447,7 @@ describe('POST /api/portail/agenda-alimentaire', () => {
     expect(prisma.agendaAlimentaireJour.create).not.toHaveBeenCalled();
   });
 
-  it('au plafond horaire du dossier (D-326) : 429, texte arbitré, aucune journée écrite', async () => {
+  it('au plafond horaire du dossier (D-327) : 429, texte arbitré, aucune journée écrite', async () => {
     prisma.agendaAlimentaireJour.count.mockResolvedValue(60);
     const { POST } = await chargerRoute('true');
     const res = await POST(req('POST', cookieFor(), { body: corpsPost() }));

@@ -211,7 +211,7 @@ describe('POST — produit un tirage', () => {
     expect(messagesCreate).not.toHaveBeenCalled();
   });
 
-  it('au plafond horaire (D-326) : 429 AVANT l’appel payant, rien écrit', async () => {
+  it('au plafond horaire (D-327) : 429 AVANT l’appel payant, rien écrit', async () => {
     prisma.propositionPrioriteIA.count.mockResolvedValue(10);
     const res = await post();
     expect(res.status).toBe(429);

@@ -196,7 +196,7 @@ describe('POST /api/portail/pack-reevaluation', () => {
     expect(prisma.assignation.createMany).not.toHaveBeenCalled();
   });
 
-  it('au plafond horaire des réponses du patient (D-326) : 429, aucune écriture', async () => {
+  it('au plafond horaire des réponses du patient (D-327) : 429, aucune écriture', async () => {
     prisma.packProposition.count.mockResolvedValue(20);
     const res = await POST(post({ idPack: PACK.idPack, reponse: 'acceptee' }));
     expect(res.status).toBe(429);
