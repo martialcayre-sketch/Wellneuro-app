@@ -685,3 +685,48 @@ describe('CorrespondancesNabmSection — constat « aucun acte » (M-3c)', () =>
     expect(lectures.length).toBe(2);
   });
 });
+
+describe('CorrespondancesNabmSection — analyses groupées (D-326)', () => {
+  it('sur la fiche d’une analyse groupée, l’aide dit de signer son acte en « Acte isolé »', async () => {
+    mockApi({ lecture: [vide] });
+    render(<CorrespondancesNabmSection analyteCode="BIO_NFS" />);
+    await waitFor(() => expect(screen.getByText(/Analyse groupée : l’acte qui la cote se signe en « Acte isolé »/)).toBeTruthy());
+  });
+
+  it('contre-épreuve : pas d’aide sur un constituant ni sur un calculé', async () => {
+    mockApi({ lecture: [vide] });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HEMOGLOBINE" />);
+    await screen.findByText(/Seules les correspondances signées comptent/);
+    expect(screen.queryByText(/Analyse groupée/)).toBeNull();
+    cleanup();
+    render(<CorrespondancesNabmSection analyteCode="BIO_RATIO_HOMA" />);
+    await screen.findByText(/Seules les correspondances signées comptent/);
+    expect(screen.queryByText(/Analyse groupée/)).toBeNull();
+  });
+
+  it('un acte tenu de la composition du groupe se dit, sans bouton de signature', async () => {
+    mockApi({
+      lecture: [
+        {
+          json: {
+            ...vide.json,
+            candidats: {
+              millesimeListe: 'V105',
+              situation: 'acte_de_groupe',
+              motif: null,
+              propositions: [],
+              tenusDuGroupe: [{ codeActe: '1104', groupe: 'Numération formule sanguine' }],
+            },
+          },
+        },
+      ],
+    });
+    render(<CorrespondancesNabmSection analyteCode="BIO_HEMOGLOBINE" />);
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Acte 1104 : rien à signer, l’analyte le tient de la composition signée de « Numération formule sanguine »/),
+      ).toBeTruthy(),
+    );
+    expect(screen.queryByRole('button', { name: 'Signer cette proposition' })).toBeNull();
+  });
+});

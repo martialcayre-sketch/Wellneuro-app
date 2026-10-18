@@ -72,6 +72,11 @@ export type Remboursement = {
    * est hérité, pour que la mention les cite. Absent pour tout autre analyte.
    */
   parMesures?: MesureRemboursement[];
+  /**
+   * Constituant d'un groupe signé ([[D-326]] §1) : les groupes dont il tient
+   * l'acte, pour que l'écran dise d'où vient son état. Absent sinon.
+   */
+  parGroupes?: Array<{ code: string; libelle: string }>;
 };
 
 /**

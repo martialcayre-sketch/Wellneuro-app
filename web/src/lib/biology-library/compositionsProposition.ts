@@ -5,6 +5,8 @@
 // `remboursable.ts`, pur lui aussi.
 //
 // Ce que ce module fait, et rien d'autre :
+//  - D-326 §1 : un constituant d'un groupe signé est coté par l'acte du
+//    groupe, sans ligne NABM écrite pour lui ;
 //  - §4 : le remboursement d'un calculé ou d'un regroupement, hérité de ses
 //    mesures (la règle est écrite dans `remboursable.ts` ; ici, l'appel) ;
 //  - §2 : un groupe (ou un regroupement) que le bilan propose fait UNE ligne,
@@ -71,20 +73,73 @@ export function groupePourConstituant(
   return retenu;
 }
 
+const union = <T>(a: readonly T[], b: readonly T[]): T[] => [...new Set([...a, ...b])];
+
 /**
- * Les remboursements, une fois les calculés et les regroupements signés
- * dérivés de leurs mesures (D-323 §4). Un groupe garde le sien : il a son
- * acte. Un opérande remboursable seulement accompagné compte par son groupe
- * signé — le plus petit des remboursables, sinon le plus petit ; sans groupe
- * signé, par lui-même. Un opérande retiré du catalogue compte « non évalué » :
- * le taire ferait lire remboursé un calculé dont une mesure manque (DC-25).
+ * [[D-326]] §1 : un constituant d'un groupe signé est coté par l'acte du
+ * groupe. La composition signée dit qu'il en fait partie, la correspondance
+ * signée du groupe dit l'acte : le constituant est « remboursable seulement
+ * accompagné » par cet acte, comme s'il portait la correspondance « groupe
+ * imposé » — sans qu'aucune ligne NABM ne soit écrite pour lui.
+ *
+ * Seul hérite ce qui n'a pas été tranché autrement :
+ *  - non évalué (ni signature, ni constat valable) : hérite ;
+ *  - remboursable seulement accompagné par ses propres signatures : réunit
+ *    ses actes à ceux du groupe ;
+ *  - remboursable seul : garde son état, le plus fort ;
+ *  - hors nomenclature (constat « aucun acte » sur le millésime courant, ou
+ *    actes signés tous inactifs) : garde son état — ce qu'on a signé pour lui
+ *    ne se recouvre pas.
+ * Un groupe dont l'acte n'est ni remboursable ni « si groupé » ne transmet
+ * rien ; un regroupement n'a pas d'acte et ne transmet rien ; un composant
+ * retiré du catalogue n'hérite pas.
+ */
+function avecActesDesGroupes(
+  remboursements: ReadonlyMap<string, Remboursement>,
+  compositions: ReadonlyMap<string, CompositionSignee>,
+): Map<string, Remboursement> {
+  const resultat = new Map(remboursements);
+  const groupes = [...compositions.values()]
+    .filter(c => c.type === 'groupe')
+    .sort((a, b) => (a.analyteCode < b.analyteCode ? -1 : a.analyteCode > b.analyteCode ? 1 : 0));
+  for (const groupe of groupes) {
+    const acteDuGroupe = remboursements.get(groupe.analyteCode);
+    if (!acteDuGroupe || (acteDuGroupe.statut !== 'remboursable' && acteDuGroupe.statut !== 'remboursable_si_groupe')) {
+      continue;
+    }
+    for (const composant of groupe.composants) {
+      if (!composant.actif) continue;
+      const propre = remboursements.get(composant.code) ?? REMBOURSEMENT_NON_EVALUE;
+      if (propre.statut === 'remboursable' || propre.statut === 'hors_nomenclature') continue;
+      const courant = resultat.get(composant.code) ?? REMBOURSEMENT_NON_EVALUE;
+      resultat.set(composant.code, {
+        statut: 'remboursable_si_groupe',
+        conditions: union(courant.conditions, acteDuGroupe.conditions),
+        codesActesRetenus: union(courant.codesActesRetenus, acteDuGroupe.codesActesRetenus),
+        parGroupes: [...(courant.parGroupes ?? []), { code: groupe.analyteCode, libelle: groupe.libelle }],
+      });
+    }
+  }
+  return resultat;
+}
+
+/**
+ * Les remboursements, une fois les compositions signées lues. D'abord les
+ * constituants des groupes, cotés par l'acte du groupe ([[D-326]] §1) ; puis
+ * les calculés et les regroupements, dérivés de leurs mesures (D-323 §4). Un
+ * groupe garde le sien : il a son acte. Un opérande remboursable seulement
+ * accompagné compte par son groupe signé — le plus petit des remboursables,
+ * sinon le plus petit ; sans groupe signé, par lui-même. Un opérande retiré du
+ * catalogue compte « non évalué » : le taire ferait lire remboursé un calculé
+ * dont une mesure manque (DC-25).
  */
 export function remboursementsAvecCompositions(
   remboursements: ReadonlyMap<string, Remboursement>,
   compositions: ReadonlyMap<string, CompositionSignee>,
 ): Map<string, Remboursement> {
-  const resultat = new Map(remboursements);
-  const de = (code: string) => remboursements.get(code) ?? REMBOURSEMENT_NON_EVALUE;
+  const constituants = avecActesDesGroupes(remboursements, compositions);
+  const resultat = new Map(constituants);
+  const de = (code: string) => constituants.get(code) ?? REMBOURSEMENT_NON_EVALUE;
   for (const composition of compositions.values()) {
     if (composition.type === 'groupe') continue;
     resultat.set(
