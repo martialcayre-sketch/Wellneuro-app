@@ -25,7 +25,7 @@ migration de F58, puis lots sans geste humain.
 
 ## Fichiers modifiés
 
-Migration `20261018090000_statuts_poses_resultats_biologiques_v1`,
+Migration `20261018120000_statuts_poses_resultats_biologiques_v1`,
 `schema.prisma`, contrat `statuts_poses_resultats_biologiques_v1_negatif.sql`,
 `ci.yml`, `effacement.ts` (+ test), `biology-library/publie.ts`,
 `DOSSIER_RGPD.md`, `PLAN_WELLNEURO.md` (F58, F45), fragments changelog,
