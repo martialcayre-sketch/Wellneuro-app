@@ -2096,6 +2096,8 @@ model BiologyAnalyte {
   correspondancesNabm  BiologyAnalyteNabm[]
   journalNabm          BiologyAnalyteNabmJournal[]
   constatNabm          BiologyAnalyteNabmConstat?
+  compositions         BiologyAnalyteComposition[]     @relation("composition_analyte")
+  elementsComposition  BiologyAnalyteCompositionItem[] @relation("composition_composant")
   plagesReference      BiologyReferenceRange[]
   plagesFonctionnelles BiologyFunctionalRange[]
   preanalytiques       BiologyPreanalytic[]
@@ -2252,6 +2254,54 @@ model BiologyAnalyteNabmConstat {
   analyte BiologyAnalyte @relation(fields: [analyteCode], references: [code])
 
   @@map("biology_analyte_nabm_constats")
+}
+
+// Composition signée d'une analyse groupée ou d'une valeur calculée (F80,
+// D-323 §1) : DE QUELS ANALYTES elle est faite — constituants d'un groupe,
+// opérandes d'un calcul —, jamais une formule ni une constante. N'existe pas
+// en base avant la signature du praticien (la liste préparée vit dans le
+// code) ; l'en-tête et ses éléments s'écrivent dans la même transaction.
+// EN AJOUT SEUL : le seul UPDATE admis est le retrait, une fois ; DELETE et
+// TRUNCATE refusés ; au plus une composition active par analyte (index
+// partiel, SQL seul). Migration 20261018100000_compositions_analytes_v1.
+model BiologyAnalyteComposition {
+  id            String    @id @default(cuid())
+  analyteCode   String    @map("analyte_code")
+  /// `groupe` | `calcul` | `regroupement` (CHECK).
+  type          String    @map("type")
+  /// Le signataire : e-mail de session.
+  verifiePar    String    @map("verifie_par")
+  /// Posé par la base (trigger), en UTC.
+  verifieLe     DateTime  @default(now()) @map("verifie_le")
+  retireePar    String?   @map("retiree_par")
+  /// Posé par la base (trigger), en UTC.
+  retireeLe     DateTime? @map("retiree_le")
+  /// Posé par la base (trigger) : les éléments s'écrivent dans cette
+  /// transaction, jamais après.
+  transactionId BigInt    @default(dbgenerated("txid_current()")) @map("transaction_id")
+
+  analyte BiologyAnalyte                  @relation("composition_analyte", fields: [analyteCode], references: [code])
+  items   BiologyAnalyteCompositionItem[]
+
+  @@index([analyteCode], map: "biology_analyte_compositions_analyte_idx")
+  @@map("biology_analyte_compositions")
+}
+
+// Un élément d'une composition : un analyte du catalogue, jamais l'analyte
+// composé lui-même. Figé (UPDATE, DELETE, TRUNCATE refusés).
+model BiologyAnalyteCompositionItem {
+  id            String @id @default(cuid())
+  compositionId String @map("composition_id")
+  composantCode String @map("composant_code")
+  position      Int    @map("position")
+
+  composition BiologyAnalyteComposition @relation(fields: [compositionId], references: [id])
+  composant   BiologyAnalyte            @relation("composition_composant", fields: [composantCode], references: [code])
+
+  @@unique([compositionId, composantCode], map: "biology_analyte_composition_items_composant_key")
+  @@unique([compositionId, position], map: "biology_analyte_composition_items_position_key")
+  @@index([composantCode], map: "biology_analyte_composition_items_composant_idx")
+  @@map("biology_analyte_composition_items")
 }
 
 // Référentiel 1/2 — valeurs de référence LABORATOIRE. Ne demande aucun claim :

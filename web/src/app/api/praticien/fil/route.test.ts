@@ -215,7 +215,7 @@ describe('GET /api/praticien/fil', () => {
     const jalon = payload.cartes.find((c: { type: string }) => c.type === 'jalon_j21');
     expect(jalon).toBeDefined();
     expect(jalon.cle).toBe('jalon_j21:CHK_J21');
-    expect(jalon.titre).toContain('Jalon J21');
+    expect(jalon.titre).toContain('Point d’étape J21 renseigné');
   });
 
   it('un rendez-vous du jour produit une carte consultation vers le pré-vol', async () => {

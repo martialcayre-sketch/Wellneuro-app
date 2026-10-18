@@ -34,6 +34,8 @@ export const FICHIERS_PUBLIES = ['import/lectureDemandee'] as const;
 export const TABLES_BIOFLOW = [
   'annulations_resultats_biologiques',
   'arbitrages_biologiques',
+  'biology_analyte_composition_items',
+  'biology_analyte_compositions',
   'biology_analyte_links',
   'biology_analyte_nabm',
   'biology_analyte_nabm_constats',

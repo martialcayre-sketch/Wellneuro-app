@@ -33,7 +33,10 @@ paths:
   21 h 54, non réécrit — un handoff passé ne se réinterprète pas. Un handoff qui
   s'arrête à la prochaine action laisse la session suivante sans ce qui a été
   vérifié, ni ce qui reste ouvert.
-- **La clôture passe avant la PR** : `/wn-finish` puis `/wn-handoff write`
+- **La clôture passe avant la PR**, et le CI la contrôle depuis E56
+  (2026-10-18) : une PR qui touche du code à laquelle manque l’entrée ajoutée à
+  `SESSION_LOG.md` ou le fragment de handoff est rouge (`scripts/wn-controle-cloture.mjs`).
+  `/wn-finish` puis `/wn-handoff write`
   s'écrivent sur la branche vivante et partent dans la PR du lot. Le merge
   étant un squash, ce qui s'écrit ensuite coûte une seconde PR de doc. Fenêtre
   fermée → écrire depuis `main`, jamais en rebranchant sur la branche

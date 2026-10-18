@@ -145,7 +145,9 @@ describe('resolver — une ligne : le libellé, puis l’unité qui départage (
   const ligne = (l: string, u: string | null) => resoudreLigne(l, u, UNITES, true, INDEX);
 
   it('lit les unités de TOUT le catalogue, nouvelle unité du DFG comprise', () => {
-    expect(UNITES.size).toBe(85);
+    // 85, puis les sept fiches de D-323 §6 (le résolveur ne les nomme pas :
+    // elles se saisissent à la main, mais leur unité se lit comme les autres).
+    expect(UNITES.size).toBe(92);
     expect(UNITES.get('BIO_DFG_CKD_EPI')).toBe('mL/min/1,73 m²');
     expect(UNITES.get('BIO_NFS')).toBeNull();
     // Unités calées sur l'impression ([[D-264]]) : l'UPDATE prime sur l'INSERT.

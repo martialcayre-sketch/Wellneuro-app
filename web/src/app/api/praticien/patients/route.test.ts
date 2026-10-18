@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
-    patient: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+    patient: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn(), create: vi.fn() },
     portailMagicLink: { updateMany: vi.fn() },
     $transaction: vi.fn(),
     // La désactivation verrouille le dossier et compte les lectures demandées
@@ -25,7 +25,7 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
-import { GET, PATCH } from './route';
+import { GET, PATCH, POST } from './route';
 import { jourCourantLocal } from '@/lib/patient-access';
 
 function get(query = ''): Request {
@@ -1143,5 +1143,57 @@ describe('GET — la restriction par dossier tient sur LES DEUX branches', () =>
     const where = prisma.patient.findMany.mock.calls[0][0].where;
     expect(where.idPatient).toBe('PAT_SEED_03');
     expect(where.OR).toBeTruthy();
+  });
+});
+
+// [[D-302]] §2 — un dossier créé par le praticien ne s'enregistre plus sans
+// date de naissance valide, au sens de la garde d'âge (règle de la saisie au
+// portail) : absente, hors format, irréelle, future ou d'avant 1900, elle est
+// refusée et rien n'est écrit.
+describe('POST — la date de naissance est obligatoire à la création (D-302)', () => {
+  function post(body: Record<string, unknown>): Request {
+    return new Request('http://localhost/api/praticien/patients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }
+  const base = { prenom: 'Sophie', nom: 'Nicola', email: 'sophie.nicola@example.test' };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue(null);
+    prisma.patient.findMany.mockResolvedValue([]);
+    prisma.patient.create.mockResolvedValue({});
+  });
+
+  it.each([
+    ['absente', undefined, 'La date de naissance est requise.'],
+    ['vide', '   ', 'La date de naissance est requise.'],
+    ['hors format', '17/01/1984', 'Date de naissance invalide'],
+    ['irréelle', '1984-02-31', 'Date de naissance invalide'],
+    ['future', '2999-01-01', 'Date de naissance invalide'],
+    ['d’avant 1900', '1899-12-31', 'Date de naissance invalide'],
+  ])('refuse une date %s (400), sans rien écrire', async (_cas, dateNaissance, message) => {
+    const res = await POST(post({ ...base, ...(dateNaissance !== undefined && { dateNaissance }) }));
+    expect(res.status).toBe(400);
+    const json = (await res.json()) as { reason?: string; error?: string };
+    expect(json.reason).toBe('invalid_payload');
+    expect(json.error).toContain(message);
+    expect(prisma.patient.create).not.toHaveBeenCalled();
+  });
+
+  it('crée le dossier avec une date valide, enregistrée telle quelle', async () => {
+    const res = await POST(post({ ...base, dateNaissance: '1984-01-17' }));
+    expect(res.status).toBe(200);
+    expect(prisma.patient.create).toHaveBeenCalledTimes(1);
+    expect(prisma.patient.create.mock.calls[0][0].data.dateNaissance).toBe('1984-01-17');
+  });
+
+  it('crée aussi le dossier d’un mineur : la garde d’âge le met en pause, pas la création', async () => {
+    const res = await POST(post({ ...base, dateNaissance: '2015-06-01' }));
+    expect(res.status).toBe(200);
+    expect(prisma.patient.create).toHaveBeenCalledTimes(1);
   });
 });

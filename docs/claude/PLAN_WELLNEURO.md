@@ -410,6 +410,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Mise à jour (2026-10-13)** : D-283 §5 puis D-284 §3, §4 et §7 : seuil des mineurs à 18 ans, acquis ; un dossier sans date de naissance se voit demander sa date à la prochaine connexion, questionnaires et biologie en pause tant qu'elle manque (lot (h) de H26, qui remplace (d)) ; la fiche signalétique reste ouverte pour la saisir ; la lettre z garde son objet, son seuil est acquis. Rubrique « Cas des mineurs » : `docs/DOSSIER_RGPD.md:1307` sur 36f82cf1.
 - **Mise à jour (2026-10-14)** : lot (h) codé (garde d'âge `lib/patient/gardeAge.ts`, étape date au portail, gardes serveur) ; la garde d'âge de z existe donc pour les surfaces en service ; as, at et J2-conf inchangés.
 - **Mise à jour (2026-10-15)** : z écrite par D-302 sur arbitrage du responsable : D-284 §3-4 entérinés ; la date de naissance devient obligatoire à la création d'un dossier par le praticien (facultative au code aujourd'hui) ; lot de code sans migration à placer ; as, at, J2-conf et le circuit des mineurs inchangés.
+- **Mise à jour (2026-10-18)** : lot de code de z livré, sans migration : la création d'un dossier par le praticien exige une date de naissance valide au sens de la garde d'âge (règle de la saisie au portail : format, 1900 au plus tôt, réelle, non future), au formulaire et au serveur ; un mineur se crée et reste sous la garde ; dossiers anciens et PATCH de la fiche inchangés. as, at, J2-conf et le circuit des mineurs inchangés.
 
 #### H12 · ac et J2-radar : radar sans zéro
 - **Identifiant, piste** : lettre ac (M-6, D-ac, R:ac), puis J2-radar.
@@ -746,6 +747,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune décision neuve ; la limite « jamais d'auto-merge sur une PR de lot » est acquise.
 - **Critère de fin** : check en CI vert ; une PR de lot sans clôture est refusée.
+- **Mise à jour (2026-10-18)** : livré. L'étape « Contrôle de clôture » du job `controles` (`scripts/wn-controle-cloture.mjs`, banc `wn-controle-cloture.test.mjs`) refuse une PR qui touche du code sans une entrée ajoutée à `SESSION_LOG.md` et un fragment de handoff daté ; une PR purement documentaire en est dispensée. Constat qui l'a motivé : jusqu'au 2026-10-14, la revue Copilot réclamait l'entrée SESSION_LOG ; après D-290, elle a disparu de 71 PR sur 75 du 15 au 18 octobre. CodeRabbit porte la même consigne en avertissement (`pre_merge_checks.custom_checks`). Arbitrage du responsable du 2026-10-18 : les deux éléments restent exigés.
 
 #### H24 · R:af : référence de fiche conseil sur l'action
 - **Identifiant, piste** : lettre af ; protocole ; file A.
@@ -1244,6 +1246,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : lettres t, ab, u appliquées ; décision de produit pour la frise.
 - **Critère de fin** : « Mes échanges » prêt, non ouvert ; frise et repères servis après la porte 16.
 - **Mise à jour (2026-10-17, lettre t)** : D-317 §4 retire l'e-mail de diffusion (PA-2) de J3-base : lot propre, sans migration, au service d'ACT-2 (H75). J3-base garde PA-1 (la ligne « rendez-vous de suivi » des trois points d'étape, D-317 §6) et la carte du Fil renommée avec sa baseline (D-317 §7) ; ni l'un ni l'autre n'est gelé par la porte 16, qui ne vise que la frise et le chronogramme du sommeil (N-8).
+- **Mise à jour (2026-10-18, première tranche)** : PA-1 et la carte du Fil livrés, sans migration. Au portail, une ligne « Répondre à mon rendez-vous de suivi » paraît dans le fil du jour pendant la fenêtre de chaque point d'étape, d'après la route du check-in. Libellé validé par le responsable. Rien ne s'affiche pour un dossier mineur ou clos. Au Fil, la carte J21 porte le badge « Point d'étape » et son titre de D-317 §7 ; le résumé dit « point d'étape » (arbitrage du 2026-10-17). Base visuelle : aucune à régénérer. La capture `dashboard-fil` n'est pas comparée au pixel (`pixel: false`), et le seed ne produit aucune carte J21. Restent dans J3-base : « Mes échanges » (u), EF-0 (ab), la frise et les repères (porte 16, N-8).
 
 #### H62 · J3-collecte : collecte documentaire
 - **Identifiant, piste** : J3-collecte (RK-8) ; D-258 reste à la biologie ; confiance ; file A.

@@ -370,6 +370,12 @@ jobs:
       - name: Diagnostic d'un échec E2E (banc du classement)
         run: node --test scripts/wn-diagnostic-e2e.test.mjs
 
+      # Banc du contrôle de clôture (E56) : le contrôle lui-même tourne plus
+      # bas, sur PR seulement, mais son banc n'a besoin que de node et se joue
+      # partout — un garde redevenu muet resterait vert.
+      - name: Contrôle de clôture (banc)
+        run: node --test scripts/wn-controle-cloture.test.mjs
+
       # Parité entre ce job et `npm run check`. Toutes les étapes ci-dessus sont
       # bloquantes et ne demandent que node, git et bash : aucune raison qu'un
       # développeur les découvre en CI. C'est la leçon du lint (2026-07-21),
@@ -392,6 +398,18 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npm ci
+
+      # E56 (plan, fiche H23) : une PR qui touche du code porte sa clôture —
+      # une entrée ajoutée à SESSION_LOG.md et un fragment de handoff daté.
+      # La règle est celle de `wn-merge` (étape 7) ; jusqu'au 2026-10-14, seule
+      # la revue Copilot la réclamait, et l'auto-merge la contournait (#1315).
+      # Une PR purement documentaire (rattrapage de clôture compris) en est
+      # dispensée par le périmètre du diff. Placée après `setup-node` : elle
+      # dépend de la base de la PR, qu'aucun palier local n'a — le banc de
+      # parité ne la réclame donc pas à `check`, son banc si (plus haut).
+      - name: Contrôle de clôture (SESSION_LOG et handoff)
+        if: github.event_name == 'pull_request' && steps.scope.outputs.docs_only != 'true'
+        run: node scripts/wn-controle-cloture.mjs "${{ github.event.pull_request.base.sha }}"
 
       # Protège la logique clinique : les 63 questionnaires doivent rester
       # conformes à leurs fixtures de scoring certifiées. Après `npm ci` : le
@@ -718,6 +736,13 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npx prisma db execute --file prisma/checks/nabm_journal_constats_v1_negatif.sql
+
+      # Composition signée des analyses groupées et des calculés (F80, D-323 §1) :
+      # en ajout seul, éléments écrits avec la signature, une active par analyte.
+      - name: F80 analyte compositions negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/compositions_analytes_v1_negatif.sql
 
       # Arbitrage biologique sans valeurs (LOT-06, D-059 §4) : les trois CHECK
       # de `arbitrages_biologiques` doivent MORDRE (verdict borné, note
