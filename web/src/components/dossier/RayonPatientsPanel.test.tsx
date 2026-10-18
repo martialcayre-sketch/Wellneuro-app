@@ -530,6 +530,10 @@ describe('RayonPatientsPanel — tiroirs d’action (SP-TRAJ LOT-05)', () => {
     expect(tiroir).toBeTruthy();
     expect(screen.getByPlaceholderText('Prénom *')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Créer le patient' })).toBeTruthy();
+    // D-302 §2 : la date de naissance est obligatoire, sous un libellé VISIBLE.
+    const date = screen.getByLabelText('Date de naissance *') as HTMLInputElement;
+    expect(date.type).toBe('date');
+    expect(date.required).toBe(true);
   });
 
   it('la création de consultation refermée sur succès s’annonce par la ligne de statut de la page', async () => {

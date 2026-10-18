@@ -348,8 +348,13 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
           <Input required value={form.nom} onChange={e => setForm(p => ({ ...p, nom: e.target.value }))} placeholder="Nom *" maxLength={100} />
           <Input required type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="Email *" maxLength={254} />
           <Input value={form.telephone} onChange={e => setForm(p => ({ ...p, telephone: e.target.value }))} placeholder="Téléphone" maxLength={30} />
-          {/* Obligatoire à la création ([[D-302]] §2) ; le serveur la refuse aussi. */}
-          <Input required type="date" aria-label="Date de naissance *" title="Date de naissance *" value={form.dateNaissance} onChange={e => setForm(p => ({ ...p, dateNaissance: e.target.value }))} />
+          {/* Obligatoire à la création ([[D-302]] §2) ; le serveur la refuse aussi.
+              Libellé VISIBLE : un champ date n'affiche pas de placeholder, et un
+              `title` ne se lit pas au toucher (revue CodeRabbit). */}
+          <label className="flex flex-col gap-1 text-sm text-muted-foreground">
+            <span>Date de naissance *</span>
+            <Input required type="date" value={form.dateNaissance} onChange={e => setForm(p => ({ ...p, dateNaissance: e.target.value }))} />
+          </label>
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={saving}>
               {saving ? 'Création...' : 'Créer le patient'}
