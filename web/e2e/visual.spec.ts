@@ -365,7 +365,7 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
   });
 
   test('rayon assignations et packs — dans la Bibliothèque', async ({ page }, testInfo) => {
-    await page.goto('/dashboard/bibliotheque');
+    await page.goto('/dashboard/bibliotheque/questionnaires');
     // L'ancrage se fait sur le titre du rayon et non sur `getByRole('table')` :
     // la Bibliothèque porte plusieurs tableaux, et `.first()` y désignerait
     // celui du catalogue.

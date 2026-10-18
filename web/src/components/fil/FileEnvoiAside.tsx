@@ -163,7 +163,7 @@ export function FileEnvoiAside() {
 
       <p className="mt-3 border-t border-border pt-2 text-xs text-muted-foreground">
         Rien ne part sans votre validation.{' '}
-        <Link href="/dashboard/bibliotheque" className="hover:text-foreground hover:underline">
+        <Link href="/dashboard/bibliotheque/questionnaires" className="hover:text-foreground hover:underline">
           Gérer la file dans la Bibliothèque
         </Link>
       </p>

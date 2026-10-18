@@ -14,7 +14,7 @@ import type { BibliothequeEntree } from '@/lib/bibliotheque';
 // vérifié » était gardé par `lib/certificationLibelles.guard.test.ts` (les
 // valeurs rendues par le module) et par un banc de rendu sur la fiche patient.
 // La revue adversariale a montré que **la surface principale n'avait aucun rendu
-// asséré** : `app/dashboard/bibliotheque/page.test.tsx` MOCKE ce composant, et
+// asséré** : le banc de la page (`app/dashboard/bibliotheque/`) MOCKE ce composant, et
 // l'E2E ne touche que le badge cabinet. Un composant qui calculerait le libellé
 // par le module puis en afficherait un autre passait donc tout le CI, sur
 // l'écran qui porte les 64 instruments du catalogue.

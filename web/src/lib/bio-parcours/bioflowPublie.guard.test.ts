@@ -33,7 +33,10 @@ const DOMAINE_BIOLOGIE = [
   'web/src/lib/biology-library/',
   'web/src/lib/bio-parcours/',
   'web/src/app/api/praticien/biologie/',
-  'web/src/app/dashboard/biologie/',
+  // La page de la biologie : « Biologie fonctionnelle » jusqu'au 2026-10-18,
+  // le rayon « Analyses biologiques » depuis D-324 §6 (l'ancienne adresse ne
+  // fait plus que rediriger, sans import).
+  'web/src/app/dashboard/bibliotheque/biologie/',
   'web/src/components/biologie/',
   'web/src/components/patient/biologie/',
 ];
@@ -45,7 +48,6 @@ const DEROGATIONS: ReadonlyArray<{ chemin: string; depuis: string }> = [
   { chemin: 'web/src/app/api/praticien/fil/route.ts', depuis: '2026-10-17' },
   { chemin: 'web/src/app/api/praticien/patients/route.ts', depuis: '2026-10-17' },
   { chemin: 'web/src/app/api/praticien/protocoles/versions/route.ts', depuis: '2026-10-17' },
-  { chemin: 'web/src/app/dashboard/bibliotheque/page.tsx', depuis: '2026-10-17' },
   { chemin: 'web/src/app/dashboard/patients/[idPatient]/page.tsx', depuis: '2026-10-17' },
   { chemin: 'web/src/app/portail/[token]/comptes-rendus/page.tsx', depuis: '2026-10-17' },
   { chemin: 'web/src/components/patient-cockpit/ActeAnnulationResultat.tsx', depuis: '2026-10-17' },
