@@ -10600,3 +10600,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR du lot, CI, CodeRabbit, merge ; le responsable colle la liste, constat par conteneur en agrégats ; puis dossier du zinc.
 
 **Ouvert.** Rejets du dossier encore VALIDE en base (geste du responsable) ; pas de contrat SQL sur base réelle pour le geste en lot (vérifié à la main par la contre-revue).
+## 2026-10-18 — F58 : deux marques datées, fiche soldée
+
+**Fait.** #1550 (code du statut posé) mergée après revue `wn-reviewer` (go, P2 traités : retrait refusé sur un résultat annulé, garde des lecteurs, test entrelacé) et CodeRabbit sans remarque. Marques « Lignes validées — dernière le … » et « Lecture consignée le … / non consignée » sur la carte du compte rendu, sans stockage neuf. F38 cadré ; trois arbitrages pris (chaque téléchargement journalisé, instantané de la dernière impression, vie du dossier).
+
+**Écarté.** Remonter le bouton « Consigner ma lecture » sur la carte : la marque suffit, le geste reste dans le bloc de lecture.
+
+**Prochaine action.** F38 : migration (impressions figées + téléchargements), déclaration RGPD à valider, release-db, puis code.
+
+**Ouvert.** Texte des deux marques choisi par l'assistant (D-308 ne le fixe pas) ; révocation d'une annulation : le dernier statut posé redevient actif (à confirmer).
+
