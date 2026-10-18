@@ -9,6 +9,7 @@ import {
   ImportCompteRenduPanel,
   instantDepuisParis,
   jumellesEnUniteCatalogue,
+  marquesDatees,
   type MesureAuDossier,
 } from './ImportCompteRenduPanel';
 
@@ -48,7 +49,7 @@ function ligne(partiel: Partial<LigneLue> & { id: string; libelleLu: string; val
     rang: 1, page: 1, uniteLue: 'ng/mL', preleveLeLu: A_0830, heureLue: true, analytePropose: null, statutMapping: 'inconnu',
     intervalleLu: null, marquageLu: null, intervalleNonTranscrit: false, marquageNonTranscrit: false,
     commentaireLu: null, commentaireNonTranscrit: false,
-    statut: 'proposee', motifEcart: null, idResultat: null, preMarquage: null, ...partiel,
+    statut: 'proposee', motifEcart: null, idResultat: null, traiteLe: null, preMarquage: null, ...partiel,
   };
 }
 
@@ -1009,5 +1010,67 @@ describe('ImportCompteRenduPanel — l’identité masquée avant la lecture (D-
     fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
     await screen.findByText(/Identité masquée le/);
     expect(screen.queryByRole('button', { name: 'Refaire le masquage' })).toBeNull();
+  });
+});
+
+// LES DEUX MARQUES DATÉES DE LA CARTE ([[D-308]] §3, F58) : des données
+// existantes, deux marques distinctes.
+describe('ImportCompteRenduPanel — deux marques datées (D-308 §3)', () => {
+  const V1 = '2026-10-03T08:00:00.000Z';
+  const V2 = '2026-10-04T08:00:00.000Z';
+  const ECARTEE_PLUS_TARD = '2026-10-05T08:00:00.000Z';
+  const lignesDecidees = [
+    ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48', statut: 'validee', traiteLe: V1 }),
+    ligne({ id: 'l2', libelleLu: 'CRP ultrasensible', valeurLue: '<0,5', statut: 'ecartee', motifEcart: 'non_quantitative', traiteLe: ECARTEE_PLUS_TARD }),
+    ligne({ id: 'l3', libelleLu: '25-OH vitamine D', valeurLue: '32', statut: 'validee', traiteLe: V2 }),
+  ];
+  const lecture = (id: string, acteLe: string) => ({
+    id, acte: 'lecture' as const, idLectureRevoquee: null, codeRevocation: null,
+    praticienEmail: 'praticien@wellneuro.fr', acteLe,
+  });
+
+  it('« lignes validées » : la DERNIÈRE ligne validée — une ligne écartée ne compte pas', () => {
+    expect(marquesDatees(compteRendu('extrait', lignesDecidees), null)).toEqual({ lignesValideesLe: V2, lecture: null });
+  });
+
+  it('aucune ligne validée : aucune marque, même avec une lecture', () => {
+    const cr = compteRendu('extrait', [ligne({ id: 'l1', libelleLu: 'Ferritine', valeurLue: '48' })]);
+    expect(marquesDatees(cr, { imp_1: [lecture('lec1', V2)] })).toEqual({ lignesValideesLe: null, lecture: null });
+  });
+
+  it('« lecture consignée » : la lecture ACTIVE ; une lecture révoquée la ramène à « non consignée »', () => {
+    const cr = compteRendu('extrait', lignesDecidees);
+    expect(marquesDatees(cr, { imp_1: [lecture('lec1', '2026-10-06T10:00:00.000Z')] }).lecture)
+      .toEqual({ consigneeLe: '2026-10-06T10:00:00.000Z' });
+    expect(marquesDatees(cr, {
+      imp_1: [
+        lecture('lec1', '2026-10-06T10:00:00.000Z'),
+        { id: 'rev1', acte: 'revocation', idLectureRevoquee: 'lec1', codeRevocation: 'acte_pose_par_erreur',
+          praticienEmail: 'praticien@wellneuro.fr', acteLe: '2026-10-06T11:00:00.000Z' },
+      ],
+    }).lecture).toBe('non_consignee');
+    expect(marquesDatees(cr, {}).lecture).toBe('non_consignee');
+  });
+
+  it('état de lecture non lu (drapeau éteint, ou indisponible) : aucune marque de lecture', () => {
+    expect(marquesDatees(compteRendu('extrait', lignesDecidees), null).lecture).toBeNull();
+  });
+
+  it('la carte affiche la marque des lignes validées, datée, et rien sur une carte sans ligne validée', async () => {
+    serveur({ detail: () => compteRendu('extrait', lignesDecidees) });
+    render(
+      <ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    const marque = await screen.findByText(/Lignes validées — dernière le/);
+    expect(marque.textContent).toContain('04/10/2026');
+    // Drapeau de lecture éteint : on n'affirme rien de la lecture.
+    expect(marque.textContent).not.toMatch(/Lecture/);
+  });
+
+  it('carte sans ligne validée : aucune marque', async () => {
+    serveur({});
+    await rendreEtOuvrir();
+    expect(screen.queryByText(/Lignes validées — dernière le/)).toBeNull();
   });
 });
