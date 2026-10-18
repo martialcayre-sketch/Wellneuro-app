@@ -25,8 +25,9 @@
 --      retraits ensemble), et le résultat ne s'efface pas avant ses actes
 --      (RESTRICT) ;
 --  12. les FK ont la règle annoncée (RESTRICT vers patient et résultat), les
---      CHECK et les index sont présents, les trois triggers aussi, le verrou
---      du dossier précède celui de la ligne, et les deux fonctions ont leur
+--      CHECK et les index sont présents, les trois triggers aussi, les
+--      verrous de clé de BP-09 précèdent le contrôle de tête (ceux que prend
+--      la correction de la ligne), et les deux fonctions ont leur
 --      `search_path` épinglé (présence relue : une session seule n'éprouve
 --      pas la concurrence) ;
 --  13. la table porte EXACTEMENT ses huit colonnes (liste blanche) : aucune
@@ -304,12 +305,15 @@ BEGIN
   IF nb <> 3 THEN
     RAISE EXCEPTION 'CONTRAT — 12 : % trigger(s) sur 3 sont présents et actifs, de la forme annoncée.', nb;
   END IF;
-  -- Le verrou du dossier précède celui de la ligne (en-tête de la
-  -- migration) : une session seule n'éprouve pas la concurrence, elle relit
-  -- au moins l'ordre.
+  -- Les verrous de BP-09, sur la clé de la ligne visée, AVANT le contrôle de
+  -- tête (en-tête de la migration) : une correction concurrente de la même
+  -- ligne prend le même. Une session seule n'éprouve pas la concurrence,
+  -- elle relit au moins l'appel et sa place ; l'ordre dossier puis clé, et
+  -- le refus de REPEATABLE READ, sont relus par le contrat de BP-09 sur la
+  -- fonction partagée.
   IF pg_get_functiondef('public.statuts_poses_resultats_biologiques_avant_insertion()'::regprocedure)
-       !~ 'FOR KEY SHARE[^$]*pg_advisory_xact_lock\(hashtext\(''statuts_poses_resultats_biologiques:''' THEN
-    RAISE EXCEPTION 'CONTRAT — 12 : le verrou du dossier ne précède plus le verrou de la ligne.';
+       !~ 'resultats_biologiques_verrouiller_cle\(NEW\.id_patient, cible_analyte, cible_preleve\)[^$]*supersedes_resultat_id = NEW\.id_resultat' THEN
+    RAISE EXCEPTION 'CONTRAT — 12 : les verrous de clé de BP-09 ne précèdent plus le contrôle de tête.';
   END IF;
   SELECT count(*) INTO nb FROM pg_proc p
   WHERE p.oid IN ('public.statuts_poses_resultats_biologiques_avant_insertion()'::regprocedure,

@@ -59,33 +59,30 @@
 --
 -- La base NE refuse PAS une pose sur un résultat annulé : la ligne n'est plus
 -- à l'écran, et le statut n'y serait lu par personne ; la route le refusera.
--- Lire l'annulation exigerait ici les verrous de clé de BP-09.
 --
 -- ── LES VERROUS, ET LEUR ORDRE ─────────────────────────────────────────────
 --
--- Le trigger prend, dans cet ordre :
---   1. `FOR KEY SHARE` sur la ligne du dossier — le verrou que prendrait la
---      clé étrangère, mais AVANT le reste : l'effacement nommé prend le
---      dossier `FOR UPDATE` en premier, et l'ordre « dossier, puis le reste »
---      est le même que celui de BP-09 (pas d'interblocage avec lui) ;
---   2. un verrou consultatif de transaction sur le résultat visé
---      (`hashtext('statuts_poses_resultats_biologiques:' || id_resultat)`,
---      l'espace à un argument des fiches d'usage et d'assiette) : deux actes
---      sur une même ligne se sérialisent, et le second lit le statut actif
---      laissé par le premier. Une collision de hachage sérialise deux lignes
---      sans rapport.
--- CE QUE LES VERROUS NE GARANTISSENT PAS : en REPEATABLE READ, l'instantané
--- peut masquer l'acte que le verrou vient de laisser commettre, et les refus
--- 4 et 5 peuvent se tromper dans les deux sens : une entrée redondante à
--- l'historique, ou un refus à tort (reposer un statut qu'un retrait
--- concurrent vient de vider ; retirer un statut qu'une pose concurrente vient
--- de poser). La règle de lecture (dernier `ordre`, tiré après le verrou)
--- reste déterministe, et aucun écrivain de l'application n'emploie ce niveau
--- au 2026-10-18. BP-09 le refuse en base parce qu'il y garde une unicité ;
--- ici aucune intégrité n'en dépend.
--- Une correction concurrente d'une pose n'est pas sérialisée avec elle : la
--- pose porte alors sur une ligne aussitôt supplantée, et la valeur corrigée
--- apparaît sans statut — exactement [[D-322]] §3.
+-- Le trigger prend les verrous de BP-09, par la même fonction
+-- (`resultats_biologiques_verrouiller_cle`, sur la clé de la ligne visée :
+-- dossier, analyte, prélèvement) :
+--   1. `FOR KEY SHARE` sur la ligne du dossier — AVANT le reste : l'effacement
+--      nommé prend le dossier `FOR UPDATE` en premier, et l'ordre « dossier,
+--      puis le reste » est le même partout (pas d'interblocage avec lui) ;
+--   2. le verrou consultatif de la clé (espace 291). La correction d'une
+--      ligne prend ce même verrou, sur la clé de la ligne qu'elle supplante
+--      (`resultats_biologiques_correction_avant_insertion`) : une pose et une
+--      correction concurrentes de la même ligne se sérialisent, et la seconde
+--      voit la première. Sans lui, le refus 3 lisait « aucun successeur »
+--      avant que la correction ne commette, et l'acte s'inscrivait sur une
+--      ligne déjà supplantée (relecture CodeRabbit du lot). Deux actes sur
+--      une même ligne se sérialisent de même, et le second lit le statut
+--      actif laissé par le premier. Le verrou couvre toute la clé, pas la
+--      seule ligne : deux actes sur des lignes de même clé (un fil et sa
+--      fourche) s'attendent, sans conséquence.
+-- REPEATABLE READ est refusé par la même fonction, avec le message de BP-09 :
+-- son instantané masquerait l'acte ou la correction que le verrou vient de
+-- laisser commettre, et les refus 3 à 5 se tromperaient. Aucun écrivain de
+-- l'application n'emploie ce niveau au 2026-10-18.
 --
 -- ── FIGÉE, MAIS EFFAÇABLE ──────────────────────────────────────────────────
 --
@@ -98,7 +95,7 @@
 --
 -- `acte_le` en `clock_timestamp() AT TIME ZONE 'UTC'` (convention de Prisma :
 -- un `now()` nu suit le fuseau de session), et `ordre` tiré à l'insertion,
--- après le verrou du résultat : ni l'un ni l'autre ne s'antidate.
+-- après le verrou de la clé : ni l'un ni l'autre ne s'antidate.
 
 -- CreateTable
 CREATE TABLE "statuts_poses_resultats_biologiques" (
@@ -183,29 +180,29 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   cible_id text;
+  cible_analyte text;
+  cible_preleve timestamp(3);
   praticien_dossier text;
   statut_actif text;
 BEGIN
-  -- Le dossier d'abord (en-tête, « Les verrous »).
-  SELECT p.praticien_email INTO praticien_dossier
-  FROM public.patients p
-  WHERE p.id_patient = NEW.id_patient
-  FOR KEY SHARE;
-
-  SELECT r.id INTO cible_id
+  SELECT r.id, r.analyte_code, r.preleve_le INTO cible_id, cible_analyte, cible_preleve
   FROM public.resultats_biologiques r
   WHERE r.id = NEW.id_resultat AND r.id_patient = NEW.id_patient;
   IF cible_id IS NULL THEN
     RAISE EXCEPTION 'acte de statut refusé : % n''est pas un résultat de ce dossier.', NEW.id_resultat;
   END IF;
 
+  -- Les verrous d'abord, ceux de BP-09 (en-tête, « Les verrous ») : tout ce
+  -- qui suit se lit après les actes et les corrections concurrents sur la
+  -- même clé.
+  PERFORM public.resultats_biologiques_verrouiller_cle(NEW.id_patient, cible_analyte, cible_preleve);
+
+  SELECT p.praticien_email INTO praticien_dossier
+  FROM public.patients p
+  WHERE p.id_patient = NEW.id_patient;
   IF lower(praticien_dossier) IS DISTINCT FROM lower(NEW.praticien_email) THEN
     RAISE EXCEPTION 'acte de statut refusé : seul le praticien du dossier pose ou retire un statut.';
   END IF;
-
-  -- Puis la ligne visée : tout ce qui suit se lit après les actes concurrents
-  -- sur la même ligne.
-  PERFORM pg_advisory_xact_lock(hashtext('statuts_poses_resultats_biologiques:' || NEW.id_resultat));
 
   IF EXISTS (
     SELECT 1 FROM public.resultats_biologiques s
