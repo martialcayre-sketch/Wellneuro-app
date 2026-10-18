@@ -70,7 +70,8 @@ const MARTIAL_2002 =
 const AUCUN = 'Aucun libellé de la V105 ne nomme cet analyte.';
 const CALCUL = 'Valeur calculée à partir d’autres analytes.';
 
-/** La liste, par code d'analyte. Les 85 analytes du catalogue y figurent. */
+/** La liste, par code d'analyte. Les 92 analytes du catalogue y figurent
+ *  (85 relus le 2026-10-15, 7 ajoutés par D-323 §6). */
 export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
   // ── Les 8 de S-7 (5 signés le 2026-10-15 : le serveur ne les propose plus).
   BIO_VITAMINE_D_25OH: {
@@ -326,6 +327,52 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
   BIO_INDEX_OMEGA3: { situation: 'aucun_acte', motif: AUCUN },
   BIO_T3_REVERSE: { situation: 'aucun_acte', motif: AUCUN },
   BIO_ZONULINE: { situation: 'aucun_acte', motif: AUCUN },
+
+  // ── Les sept fiches de D-323 §6 (relues en V105 par conteneur le 2026-10-18).
+  BIO_T4_LIBRE: {
+    situation: 'libelle_explicite',
+    candidats: [
+      { codeActe: '1207', nature: 'isole', motif: 'Thyroxine libre (T4 L ou FT4) seule.' },
+      { codeActe: '1211', nature: 'groupe_et', motif: 'T.S.H. + T4 libre.' },
+      { codeActe: '1212', nature: 'groupe_et', motif: 'T.S.H. + T4 libre + T3 libre.' },
+      { codeActe: '1209', nature: 'groupe_et', motif: 'T3 libre + T4 libre.' },
+    ],
+  },
+  BIO_T3_LIBRE: {
+    situation: 'acte_de_groupe',
+    candidats: [
+      { codeActe: '1209', nature: 'groupe_et', motif: 'T3 libre + T4 libre ; pas d’acte de T3 libre isolé.' },
+      { codeActe: '1212', nature: 'groupe_et', motif: 'T.S.H. + T4 libre + T3 libre.' },
+    ],
+  },
+  BIO_IONOGRAMME_COMPLET: {
+    situation: 'libelle_explicite',
+    candidats: [{ codeActe: '1610', nature: 'isole', motif: 'Ionogramme complet (Na + K + Cl + CO2 + protides).' }],
+  },
+  BIO_BICARBONATES: {
+    situation: 'libelle_explicite',
+    candidats: [
+      { codeActe: '0571', nature: 'isole', motif: 'Bicarbonates ou CO2 total (réserve alcaline).' },
+      { codeActe: '1610', nature: 'groupe_et', motif: 'Ionogramme complet.' },
+    ],
+  },
+  BIO_PROTIDES: {
+    situation: 'libelle_explicite',
+    candidats: [
+      { codeActe: '2258', nature: 'isole', motif: 'Protéines sériques ou plasmatiques totales (protides).' },
+      { codeActe: '1610', nature: 'groupe_et', motif: 'Ionogramme complet.' },
+    ],
+  },
+  BIO_BILIRUBINE: {
+    situation: 'libelle_explicite',
+    candidats: [{ codeActe: '1601', nature: 'isole', motif: 'Le libellé nomme la bilirubine (sang).' }],
+  },
+  BIO_PHOSPHATASES_ALCALINES: {
+    situation: 'libelle_explicite',
+    candidats: [
+      { codeActe: '0514', nature: 'isole', motif: 'Phosphatases alcalines (sang) ; 7309 est l’isoenzyme osseuse.' },
+    ],
+  },
 
   // ── Valeurs calculées.
   BIO_RATIO_HOMA: { situation: 'valeur_calculee', motif: CALCUL },
