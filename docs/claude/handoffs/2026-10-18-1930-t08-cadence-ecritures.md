@@ -47,8 +47,9 @@ d'accès), close sans code le même jour.
   `dossier` (+ leurs bancs).
 - Routes praticien : `objectifs`, `objectifs/accord`, `objectifs/fin`,
   `objectifs/proposition-priorite`, `propositions-objectif` (+ bancs ;
-  `accord` et `fin` n'ont pas de banc de route : garde structurelle de
-  branchement dans `cadenceObjectifs.test.ts`).
+  `accord` et `fin` reçoivent un banc de route minimal — 429 sans écriture,
+  cadence après la garde d'appartenance —, à la place d'une garde textuelle
+  jugée fragile par CodeRabbit).
 - `web/src/lib/portail/cadenceDossier.ts` (+ test).
 - `web/src/components/patient/PropositionPackReevaluation.tsx` (+ test).
 - `docs/DECISIONS.md` (D-327), plan (lignes t08 et t09 soldées), changelog,
@@ -61,7 +62,7 @@ d'accès), close sans code le même jour.
 - T1 complet vert. Revue `wn-reviewer` : GO, aucun P0/P1 ; P2 traités
   (texte des index de D-327, « écarter » ajouté à la famille, banc
   agenda-alimentaire à compteur par défaut, refus d'un choix au plafond,
-  garde de branchement `accord`/`fin`). Risque résiduel assumé : un appel IA
+  bancs de route `accord`/`fin`). Risque résiduel assumé : un appel IA
   en échec n'est pas compté (D-327 §3).
 - T3 : premier passage rouge sur l'anti-agrégat (corrigé) ; second : voir la PR.
 
