@@ -11,6 +11,13 @@ import type { LignePanelProposition, StatutPanel } from '@/lib/biology-library/s
 import { STATUTS_PROPOSES } from '@/lib/biology-library/vocabulaireStatuts';
 import { LABEL_REMBOURSEMENT } from '@/lib/biology-library/libellesRemboursement';
 import { vueParAnalyte } from '@/lib/biology-library/vueParAnalyte';
+// Module pur, imports de type seulement depuis `statuts` (garde du paquet client).
+import {
+  libelleAvecActe,
+  libellesValidationMedicale,
+  mentionsParMesures,
+  phraseAnalyseComposee,
+} from '@/lib/biology-library/compositionsProposition';
 import type { StatutChoix } from '@/lib/trust/types';
 
 // Proposition de bilan biologique ([[D-071]]) — panneau présentationnel.
@@ -802,10 +809,25 @@ export function PropositionBilanPanel({
                     {/* État de remboursement par analyse ([[D-316]] §4), tel que
                         la dérivation le rend — jamais recalculé ici. */}
                     {ligne.analytes
-                      .map(analyte => `${analyte.libelle} (${LABEL_REMBOURSEMENT[analyte.remboursement.statut]})`)
+                      .map(analyte => `${libelleAvecActe(analyte)} (${LABEL_REMBOURSEMENT[analyte.remboursement.statut]})`)
                       .join(' · ')}
                   </p>
                 )}
+                {/* [[D-323]] §2-§3 : un groupe signé dit ses constituants, et ce
+                    pour quoi il est demandé — sous la ligne, jamais à la place. */}
+                {mentionsParMesures(ligne.analytes).map(mention => (
+                  <p key={`${ligne.panelCode}-${mention}`} className="mt-1 pl-3 text-xs text-muted-foreground">
+                    {mention}
+                  </p>
+                ))}
+                {ligne.analytes.map(analyte => {
+                  const phrase = phraseAnalyseComposee(analyte, 'constituants');
+                  return phrase ? (
+                    <p key={`${ligne.panelCode}-${analyte.code}-composition`} className="mt-1 pl-3 text-xs text-muted-foreground">
+                      {phrase}
+                    </p>
+                  ) : null;
+                })}
                 {ligne.ratios.length > 0 && (
                   // Rapports calculés : ce sont des CALCULS sur les analytes du
                   // panel, pas des actes — ni remboursement propre, ni
@@ -815,7 +837,7 @@ export function PropositionBilanPanel({
                     Rapports calculés : {ligne.ratios.map(ratio => ratio.libelle).join(' · ')}
                   </p>
                 )}
-                {ligne.analytes.some(analyte => analyte.validationMedicaleRequise) && (
+                {libellesValidationMedicale(ligne.analytes).length > 0 && (
                   <p className="mt-1 text-xs text-status-warning">
                     Interprétation sous validation médicale.
                   </p>

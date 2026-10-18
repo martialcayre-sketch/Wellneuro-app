@@ -32,8 +32,8 @@
  * Borne de longueur d'un dépôt, en caractères.
  *
  * 4 000, comme `LONGUEUR_MAX_NOTE` (`lib/praticien/relectureNote.ts`) et non
- * 8 000 comme `LONGUEUR_MAX_TEXTE` (`lib/praticien/correspondanceMedecin.ts`) :
- * les 8 000 y sont motivés par la TRANSCRIPTION d'un courrier reçu, un texte
+ * 12 000 comme `LONGUEUR_MAX_TEXTE` (`lib/praticien/correspondanceMedecin.ts`,
+ * 8 000 jusqu'au 2026-10-18) : cette borne-là est motivée par la TRANSCRIPTION d'un courrier reçu, un texte
  * qui existe déjà ailleurs et qu'on recopie. Ici, personne ne recopie : c'est
  * une parole écrite au portail, du même ordre qu'une note de relecture. On
  * s'aligne donc sur le précédent le plus proche plutôt que d'inventer un

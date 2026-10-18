@@ -285,6 +285,98 @@ describe('longueur au catalogue complet (revue B1)', () => {
       }));
     const resultat = genererCourrierBiologie(entree(lignes));
     if (!resultat.ok) throw new Error('refus inattendu');
-    expect(resultat.courrier.texte.length).toBeLessThan(8000);
+    expect(resultat.courrier.texte.length).toBeLessThan(12000);
+  });
+});
+
+describe('genererCourrierBiologie — compositions signées (D-323 §2-§4)', () => {
+  it('un groupe dit son acte, ce pour quoi il est demandé et ses constituants ; un calculé, ses mesures', () => {
+    const resultat = genererCourrierBiologie(entree([
+      ligne({
+        panelCode: 'PANEL_FATIGUE',
+        libelle: 'Fatigue',
+        analytes: [
+        {
+          code: 'BIO_NFS',
+          libelle: 'Numération formule sanguine',
+          validationMedicaleRequise: false,
+          remboursement: { statut: 'remboursable' as const, conditions: [], codesActesRetenus: ['1104'] },
+          constituants: [
+            { code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine', validationMedicaleRequise: true, proposeParLeBilan: true },
+            { code: 'BIO_PLAQUETTES', libelle: 'Plaquettes', validationMedicaleRequise: false, proposeParLeBilan: false },
+          ],
+          demandeePour: [{ code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine' }],
+        },
+        {
+          code: 'BIO_RATIO_HOMA',
+          libelle: 'Indice HOMA',
+          validationMedicaleRequise: false,
+          remboursement: {
+            statut: 'remboursable' as const,
+            conditions: [],
+            codesActesRetenus: ['0552', '7422'],
+            parMesures: [
+              { code: 'BIO_GLYCEMIE_JEUN', libelle: 'Glycémie à jeun', statut: 'remboursable' as const, codesActes: ['0552'] },
+              { code: 'BIO_INSULINE', libelle: 'Insuline', statut: 'remboursable' as const, codesActes: ['7422'] },
+            ],
+          },
+        },
+        ],
+      }),
+    ]));
+    if (!resultat.ok) throw new Error(resultat.raison);
+    const texte = resultat.courrier.texte;
+    expect(texte).toContain('Éléments : Indice HOMA.');
+    expect(texte).toContain(
+      'Numération formule sanguine (acte 1104), analyse demandée pour : Hémoglobine — constituants : Hémoglobine, Plaquettes.',
+    );
+    expect(texte).toContain('Indice HOMA : remboursé par ses mesures (Glycémie à jeun 0552, Insuline 7422).');
+    // Rangée sous son groupe, l'hémoglobine garde son exigence de validation.
+    expect(texte).toContain('Interprétation médicale requise pour : Hémoglobine.');
+  });
+});
+
+describe('longueur au pire cas, avec les quatre groupes signés (D-323 §2, borne de 12 000)', () => {
+  // Arbitrage du responsable du 2026-10-18 : tous les constituants sont dits,
+  // et la borne passe à 12 000. Dimensions : quinze panels comme le banc
+  // ci-dessus, plus la NFS (20 constituants), l'ionogramme (3), le profil
+  // lipidique (4) et le bilan hépatique (5), libellés de 30 caractères —
+  // au-dessus des libellés réels (575 caractères pour la seule NFS).
+  it('tient sous la borne', () => {
+    const groupe = (code: string, n: number) => ({
+      code,
+      libelle: `Groupe ${code}`.padEnd(30, 'x'),
+      validationMedicaleRequise: false,
+      remboursement: { statut: 'remboursable' as const, conditions: [], codesActesRetenus: ['1104'] },
+      constituants: Array.from({ length: n }, (_, k) => ({
+        code: `${code}_${k}`,
+        libelle: `Constituant ${k}`.padEnd(30, 'x'),
+        validationMedicaleRequise: false,
+        proposeParLeBilan: false,
+      })),
+    });
+    const lignes = Array.from({ length: 15 }, (_, i) =>
+      ligne({
+        panelCode: `PANEL_${i}`,
+        libelle: `Panel tableau clinique ${i}`.padEnd(30, 'x'),
+        statut: 'conditionnel',
+        declencheurRempli: false,
+        condition: 'Signes cliniques d’appel persistants au questionnaire dédié.',
+        analytes: [
+          ...Array.from({ length: 4 }, (_, j) => ({
+            code: `BIO_${(i * 4 + j) % 35}`,
+            libelle: `Analyte ${(i * 4 + j) % 35}`.padEnd(35, 'x'),
+            validationMedicaleRequise: j === 0,
+            remboursement: { statut: 'non_evalue' as const, conditions: [], codesActesRetenus: [] },
+          })),
+          ...(i === 0 ? [groupe('NFS', 20), groupe('IONO', 3), groupe('HEPATIQUE', 5)] : []),
+          ...(i === 1 ? [groupe('LIPIDES', 4)] : []),
+        ],
+        ratios: i < 2 ? [{ code: `RATIO_${i}`, libelle: `Rapport calculé ${i}` }] : [],
+      }));
+    const resultat = genererCourrierBiologie(entree(lignes));
+    if (!resultat.ok) throw new Error('refus inattendu');
+    expect(resultat.courrier.texte.length).toBeGreaterThan(8000);
+    expect(resultat.courrier.texte.length).toBeLessThan(12000);
   });
 });

@@ -154,6 +154,18 @@ garde la mention de ses actes de groupe. Les alias d'import de compte rendu
 de ces sept fiches sont hors de cette décision (résolveur signé, décision
 propre) : jusque-là, elles se saisissent à la main.
 
+**§7 — Exécution (2026-10-18, PR 3 du lot).** Arbitrage du responsable du
+2026-10-18, sur question à options : tous les constituants sont dits au
+courrier et au document patient, et la borne technique de consignation passe
+de 8 000 à 12 000 caractères (courrier, document patient et correspondance
+saisie, une seule constante) — au pire cas du catalogue réel, les quatre
+groupes signés faisaient dépasser 8 000. Choix d'exécution, relus contre
+§2-§4 : un groupe ne remplace un constituant (§3) que s'il est lui-même
+remboursable, sinon le constituant garde sa ligne et son état ; la borne des
+attentes d'action ([[D-305]] §4) reste ce que le bilan proposait, constituants
+rangés compris, sans le groupe ajouté ; « non évalué » nomme, pour un calculé,
+la mesure qui manque ; « le bilan » de §2 et §3 est la ligne de bilan.
+
 ### D-322 — F58 : la liste fermée des statuts posés près d'une valeur biologique — six gestes du praticien, jamais un jugement de la valeur ; stockage en ajout seul, statut attaché à la valeur exacte (amende D-308 §2)
 
 - Date : 2026-10-17
