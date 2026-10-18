@@ -228,3 +228,50 @@ describe('longueur au catalogue complet (D-316)', () => {
     expect(resultat.documentPatient.texte.match(/non vérifié à ce jour/g)).toHaveLength(1);
   });
 });
+
+describe('genererDocumentPatientBiologie — compositions signées (D-323 §2-§4)', () => {
+  it('un groupe dit son acte, ce pour quoi il est demandé et ses constituants ; un calculé, ses mesures', () => {
+    const resultat = genererDocumentPatientBiologie(entree([
+      ligne({
+        panelCode: 'PANEL_FATIGUE',
+        libelle: 'Fatigue',
+        analytes: [
+        {
+          code: 'BIO_NFS',
+          libelle: 'Numération formule sanguine',
+          validationMedicaleRequise: false,
+          remboursement: { statut: 'remboursable' as const, conditions: [], codesActesRetenus: ['1104'] },
+          constituants: [
+            { code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine', validationMedicaleRequise: true, proposeParLeBilan: true },
+            { code: 'BIO_PLAQUETTES', libelle: 'Plaquettes', validationMedicaleRequise: false, proposeParLeBilan: false },
+          ],
+          demandeePour: [{ code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine' }],
+        },
+        {
+          code: 'BIO_RATIO_HOMA',
+          libelle: 'Indice HOMA',
+          validationMedicaleRequise: false,
+          remboursement: {
+            statut: 'remboursable' as const,
+            conditions: [],
+            codesActesRetenus: ['0552', '7422'],
+            parMesures: [
+              { code: 'BIO_GLYCEMIE_JEUN', libelle: 'Glycémie à jeun', statut: 'remboursable' as const, codesActes: ['0552'] },
+              { code: 'BIO_INSULINE', libelle: 'Insuline', statut: 'remboursable' as const, codesActes: ['7422'] },
+            ],
+          },
+        },
+        ],
+      }),
+    ]));
+    if (!resultat.ok) throw new Error(resultat.raison);
+    const texte = resultat.documentPatient.texte;
+    expect(texte).toContain('Ce qui serait analysé : Indice HOMA.');
+    expect(texte).toContain(
+      'Numération formule sanguine (acte 1104), analyse demandée pour : Hémoglobine — comprend : Hémoglobine, Plaquettes.',
+    );
+    expect(texte).toContain('Indice HOMA : remboursé par ses mesures (Glycémie à jeun 0552, Insuline 7422).');
+    // Rangée sous son groupe, l'hémoglobine garde son exigence de validation.
+    expect(texte).toContain('À interpréter avec un médecin : Hémoglobine.');
+  });
+});

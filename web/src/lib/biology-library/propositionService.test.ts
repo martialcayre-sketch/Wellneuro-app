@@ -6,6 +6,7 @@ const { prisma, deriverStatutsBiologie } = vi.hoisted(() => ({
     biologyAnalyte: { findMany: vi.fn() },
     biologyCatalogVersionCourante: { findUnique: vi.fn() },
     biologyNabmActe: { findMany: vi.fn() },
+    biologyAnalyteComposition: { findMany: vi.fn() },
     panelBiologieDocumente: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
     consultation: { findFirst: vi.fn() },
@@ -47,6 +48,7 @@ beforeEach(() => {
   prisma.biologyAnalyte.findMany.mockResolvedValue([]);
   prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(null);
   prisma.biologyNabmActe.findMany.mockResolvedValue([]);
+  prisma.biologyAnalyteComposition.findMany.mockResolvedValue([]);
   prisma.panelBiologieDocumente.findMany.mockResolvedValue([]);
   prisma.questionnaireReponse.findMany.mockResolvedValue([]);
   prisma.consultation.findFirst.mockResolvedValue(null);
@@ -247,6 +249,40 @@ describe('remboursements — la carte passée au moteur (lettre f)', () => {
     expect(carte.get('BIO_PROPOSE')?.statut).toBe('non_evalue');
   });
 
+  it('sans composition signée, le moteur reçoit une carte vide : rien ne bouge (D-323 §1)', async () => {
+    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    const entree = deriverStatutsBiologie.mock.calls[0][0];
+    expect(entree.compositions).toEqual(new Map());
+    expect(entree.remboursements.get('BIO_FER')?.parMesures).toBeUndefined();
+  });
+
+  it('un calculé signé hérite de ses mesures, et le moteur reçoit la composition (D-323 §4)', async () => {
+    prisma.biologyAnalyteComposition.findMany.mockResolvedValue([
+      {
+        analyteCode: 'BIO_CALC',
+        type: 'calcul',
+        analyte: { libelle: 'Calculé' },
+        items: [
+          { composant: { code: 'BIO_FER', libelle: 'Ferritine' } },
+          { composant: { code: 'BIO_HCY', libelle: 'Homocystéine' } },
+        ],
+      },
+    ]);
+    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    const entree = deriverStatutsBiologie.mock.calls[0][0];
+    // Ferritine remboursable, homocystéine hors nomenclature : le plus faible.
+    expect(entree.remboursements.get('BIO_CALC')?.statut).toBe('hors_nomenclature');
+    expect(entree.compositions.get('BIO_CALC')).toEqual({
+      analyteCode: 'BIO_CALC',
+      libelle: 'Calculé',
+      type: 'calcul',
+      composants: [
+        { code: 'BIO_FER', libelle: 'Ferritine' },
+        { code: 'BIO_HCY', libelle: 'Homocystéine' },
+      ],
+    });
+  });
+
   it('les actes sont lus au millésime courant, pour les seuls codes signés', async () => {
     await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
     expect(prisma.biologyCatalogVersionCourante.findUnique).toHaveBeenCalledWith(
@@ -309,6 +345,29 @@ describe('remboursements — la limite « non évalué » nomme ce qui reste', (
     expect(resultat.ok && resultat.limites).toEqual([
       { type: 'remboursement_non_evalue', analytes: ['Vitamine B12', 'Vitamine B12'] },
     ]);
+  });
+
+  it('un calculé non évalué nomme la mesure qui manque (D-323 §4)', async () => {
+    deriverStatutsBiologie.mockReturnValue({
+      ok: true,
+      lignes: [{
+        statut: 'recommande',
+        analytes: [{
+          ...analyteDeLigne('BIO_HOMA', 'Indice HOMA', 'non_evalue'),
+          remboursement: {
+            statut: 'non_evalue', conditions: [], codesActesRetenus: [],
+            parMesures: [{ code: 'BIO_INS', libelle: 'Insuline', statut: 'non_evalue', codesActes: [] }],
+          },
+        }],
+      }],
+      declarationsIgnoreesHorsProposition: [],
+    });
+    const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    if (!resultat.ok) throw new Error(resultat.motif);
+    expect(resultat.limites).toContainEqual({
+      type: 'remboursement_non_evalue',
+      analytes: ['Indice HOMA (mesure non évaluée : Insuline)'],
+    });
   });
 
   it('absente quand toutes les analyses proposées ont été tranchées', async () => {
