@@ -20,3 +20,30 @@ export function urlPubliquePortail(chemin: string, reqUrl: string): URL {
   const base = (process.env.NEXTAUTH_URL ?? '').replace(/\/$/, '');
   return base ? new URL(`${base}${chemin}`) : new URL(chemin, reqUrl);
 }
+
+
+/**
+ * Base des liens ABSOLUS écrits dans un courriel (lien magique, page de
+ * connexion, Fil du jour). Un courriel n'a pas de requête dont emprunter
+ * l'hôte : sans `NEXTAUTH_URL`, le repli de développement `localhost`.
+ *
+ * CE REPLI NE PEUT PAS SERVIR EN PRODUCTION (dette « repli localhost », H43) :
+ * `instrumentation.ts` refuse de démarrer le serveur de production sans
+ * `NEXTAUTH_URL` (`baseLiensAbsenteEnProduction`). Le refus est au démarrage,
+ * pas ici : levé à la fabrication du lien, il tombait APRÈS des écritures déjà
+ * validées (assignations créées, route en échec, trace d'envoi perdue — revue
+ * `wn-reviewer` du 2026-10-18).
+ */
+export function baseLiensCourriel(): string {
+  return (process.env.NEXTAUTH_URL ?? '').trim().replace(/\/$/, '') || 'http://localhost:3000';
+}
+
+/**
+ * Production RÉELLE (`WN_DEPLOY_ENV`, posée sur Scalingo — constaté le
+ * 2026-10-18 avec `NEXTAUTH_URL`) sans base publique. Pas l'inférence par
+ * `NODE_ENV` de `deploymentEnv()` : les E2E tournent sur un build de
+ * production, et un lancement manuel sans la variable ne doit pas s'arrêter.
+ */
+export function baseLiensAbsenteEnProduction(env: Record<string, string | undefined> = process.env): boolean {
+  return env.WN_DEPLOY_ENV === 'production' && !(env.NEXTAUTH_URL ?? '').trim();
+}
