@@ -76,8 +76,13 @@
 --      sans rapport.
 -- CE QUE LES VERROUS NE GARANTISSENT PAS : en REPEATABLE READ, l'instantané
 -- peut masquer l'acte que le verrou vient de laisser commettre, et les refus
--- 4 et 5 peuvent manquer. La conséquence se borne à une entrée redondante à
--- l'historique ; la règle de lecture (dernier `ordre`) reste déterministe.
+-- 4 et 5 peuvent se tromper dans les deux sens : une entrée redondante à
+-- l'historique, ou un refus à tort (reposer un statut qu'un retrait
+-- concurrent vient de vider ; retirer un statut qu'une pose concurrente vient
+-- de poser). La règle de lecture (dernier `ordre`, tiré après le verrou)
+-- reste déterministe, et aucun écrivain de l'application n'emploie ce niveau
+-- au 2026-10-18. BP-09 le refuse en base parce qu'il y garde une unicité ;
+-- ici aucune intégrité n'en dépend.
 -- Une correction concurrente d'une pose n'est pas sérialisée avec elle : la
 -- pose porte alors sur une ligne aussitôt supplantée, et la valeur corrigée
 -- apparaît sans statut — exactement [[D-322]] §3.
