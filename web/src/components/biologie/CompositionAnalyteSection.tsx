@@ -80,6 +80,11 @@ export function CompositionAnalyteSection({
         setMessageEchec(corps.error);
         return;
       }
+      // Une réponse d'une autre forme ne s'affiche pas en partie : elle se dit.
+      if (!Array.isArray(corps.membreDe) || !Array.isArray(corps.retirees)) {
+        setMessageEchec('La composition n’a pas pu être chargée.');
+        return;
+      }
       setDonnees(corps);
       setCoches(new Set(corps.preparee?.composants.map(c => c.code) ?? []));
     } catch {
