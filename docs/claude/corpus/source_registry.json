@@ -13658,7 +13658,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés à ingérer (besoin 2, lot LOT_018_2026-10-18), sur approbation de l'envoi",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims en attente de signature",
     "comment": "Source externe, avis public d'agence sanitaire. Extraits mot pour mot, sans adaptation.",
     "auditDate": "2026-10-18"
   },
@@ -13679,12 +13679,12 @@
     "secondaryNotebooks": [],
     "sourceVersion": null,
     "contentHash": null,
-    "rightsStatus": "to_verify",
+    "rightsStatus": "verified",
     "clinicalReviewStatus": "not_reviewed",
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés à ingérer (besoin 2, lot LOT_018_2026-10-18), sur approbation de l'envoi",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims en attente de signature",
     "comment": "Source externe, reproduction autorisée avec mention de la source. Extraits mot pour mot, sans adaptation.",
     "auditDate": "2026-10-18"
   },
@@ -13705,12 +13705,12 @@
     "secondaryNotebooks": [],
     "sourceVersion": null,
     "contentHash": null,
-    "rightsStatus": "to_verify",
+    "rightsStatus": "verified",
     "clinicalReviewStatus": "not_reviewed",
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés à ingérer (besoin 2, lot LOT_018_2026-10-18), sur approbation de l'envoi",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims en attente de signature",
     "comment": "Source externe, licence CC BY-ND 4.0. Extraits mot pour mot, sans adaptation.",
     "auditDate": "2026-10-18"
   },
@@ -13736,7 +13736,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés à ingérer (besoin 2, lot LOT_018_2026-10-18), sur approbation de l'envoi",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims en attente de signature",
     "comment": "Source externe, document public de la HAS. Extraits mot pour mot, sans adaptation.",
     "auditDate": "2026-10-18"
   }

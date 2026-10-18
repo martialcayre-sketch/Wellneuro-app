@@ -6,6 +6,7 @@
   et limites supérieures de sécurité) et un rapport d'évaluation technologique.
   Ils fondent les dossiers de preuve du besoin 2 ; seuls des extraits ciblés,
   mot pour mot, sont ingérés en base (lot `LOT_018_2026-10-18`), sur
-  approbation de l'envoi par le responsable. Les claims qui en sont tirés
-  entrent en attente de validation ; la signature reste un geste du
-  responsable.
+  approbation de l'envoi par le responsable, et constatés par lecture. Les
+  claims qui en sont tirés, relus par une contre-revue adverse avant l'envoi,
+  entrent en attente de validation, sans clé de lien ; la signature reste un
+  geste du responsable. Deux notices passent `rightsStatus: verified`.

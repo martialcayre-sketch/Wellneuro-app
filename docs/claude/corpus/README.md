@@ -19,7 +19,12 @@ corpus runtime.
   version adaptée est déposée (`WN-SRC-0297`, `0299`, `0300`, `0301`, `0302`,
   `0303`, `0305` ; `D-251` §2) ; au 2026-10-14, une huitième : l'avis EFSA
   `WN-SRC-0508`, licence CC BY-ND, dont les extraits sont ingérés (BP-07) ; puis
-  une neuvième, le règlement (UE) n° 432/2012 (`WN-SRC-0511`), texte de l'Union.
+  une neuvième, le règlement (UE) n° 432/2012 (`WN-SRC-0511`), texte de l'Union ;
+  au 2026-10-18, deux de plus pour le besoin 2 : la synthèse EFSA des limites
+  supérieures (`WN-SRC-0513`, reproduction autorisée avec mention de la source)
+  et l'avis EFSA sur la vitamine D (`WN-SRC-0514`, CC BY-ND), dont les extraits
+  sont ingérés ; l'avis de l'Anses et le rapport de la HAS (`0512`, `0515`)
+  restent à vérifier.
 - `contentHash` reste nul tant que le contenu probant n'a pas été obtenu,
   vérifié et autorisé.
 - Aucune notice ne peut alimenter un prompt, un RAG, une règle, un document
