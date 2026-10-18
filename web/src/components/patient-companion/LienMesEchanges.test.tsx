@@ -1,14 +1,18 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { LienMesEchanges } from './LienMesEchanges';
 
 // Le lien de « Mes échanges » ([[D-293]]) n'existe que si la route répond
 // « ouvert » : fail-closed sur un 404 (drapeau fermé), une panne ou une réponse
 // partielle.
 
+// Un faux contrat `ok`/`json` : le banc sait quand le corps a été lu, donc
+// quand le composant a pris sa décision.
 function repondre(status: number, corps: unknown) {
-  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(corps), { status })));
+  const json = vi.fn(async () => corps);
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: status >= 200 && status < 300, status, json })));
+  return json;
 }
 
 afterEach(() => {
@@ -30,9 +34,13 @@ describe('LienMesEchanges', () => {
     [200, { ok: true }],
     [500, { ok: false, reason: 'exception', error: 'x' }],
   ])('réponse %s : aucun lien', async (status, corps) => {
-    repondre(status, corps);
+    const json = repondre(status, corps);
     render(<LienMesEchanges token="TOK" />);
-    await new Promise(r => setTimeout(r, 0));
+    // Le corps a été LU, puis les mises à jour vidées : la décision est prise.
+    await waitFor(() => expect(json).toHaveBeenCalled());
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(screen.queryByRole('link')).toBeNull();
   });
 });
