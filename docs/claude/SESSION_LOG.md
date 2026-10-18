@@ -10611,6 +10611,15 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR, CI, merge après #1555 ; puis repli localhost.
 
 **Ouvert.** Liste J1-base à recevoir du responsable ; t08, t09, t16 cadrés (mémoire du 2026-10-18).
+## 2026-10-18 — Besoin 2 : dossier de la vitamine D signé, étiquetage en lot (D-325)
+
+**Fait.** Sources externes du dossier ingérées sur approbation de chaque envoi (LOT_018 à LOT_020, 41 passages, 82 claims), toutes signées par le responsable ; positions v0.1 et v0.2 validées par lui, signature transcrite sur son instruction ; fiche H15 à jour (#1551). Étiquetage : D-325 (geste en lot, tout ou rien, un acte par claim, correspondance des rubriques) et son code ; liste de 194 claims préparée au dossier privé.
+
+**Écarté.** Recherche par identifiant seule (212 gestes unitaires) ; correspondance codée des rubriques (rien n'est complété).
+
+**Prochaine action.** PR du lot, CI, CodeRabbit, merge ; le responsable colle la liste, constat par conteneur en agrégats ; puis dossier du zinc.
+
+**Ouvert.** Rejets du dossier encore VALIDE en base (geste du responsable) ; pas de contrat SQL sur base réelle pour le geste en lot (vérifié à la main par la contre-revue).
 ## 2026-10-18 — J1-base : libellé « Compléments alimentaires » entier au menu
 
 **Fait.** Le libellé décidé par D-324 dépassait les 252 px du rail déplié et s'affichait « Compléments aliment… ». Les libellés du rail passent à la ligne au lieu d'être coupés ; un cas de banc épingle la règle. Plan : ligne `MESSAGE_ORIENTATION_INACTIVE` soldée (corrigée par D-076 en août).
