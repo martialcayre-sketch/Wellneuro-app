@@ -1694,9 +1694,10 @@ model AdressageSignalAlerte {
 
 // CE QUE LE PATIENT A DÉJÀ LU — un accusé par VERSION remise (LOT-08).
 //
-// Trois colonnes, AUCUNE DATE. Le fil du jour ne consulte que l'EXISTENCE de la
-// ligne : « quand le patient a-t-il ouvert son bilan » reste structurellement
-// sans réponse, et c'est la seule impossibilité que cette table offre.
+// AUCUNE HEURE. Le fil du jour ne consulte que l'EXISTENCE de la ligne : « à
+// quelle heure le patient a-t-il ouvert son bilan » reste structurellement sans
+// réponse. Depuis D-297 (lettre ai), le seul JOUR de la première ouverture peut
+// s'y inscrire (`lu_le`), vu du praticien seulement.
 //
 // ELLE NE REND PAS LE DÉCOMPTE IMPOSSIBLE, contrairement à sa voisine
 // `PortailJournalRepere` — plusieurs lignes par dossier, `count(*)` répond. Ce
@@ -1719,6 +1720,13 @@ model PortailLecturePatient {
   /// `LettreAdressageRemise.id` ou `ProtocolDiffusionApproval.id`. Polymorphe,
   /// donc sans clé étrangère.
   idObjet   String @map("id_objet")
+  /// Le JOUR (heure de Paris) de la première ouverture (D-297, lettre ai) :
+  /// sans heure, jamais mis à jour. Vide pour les lectures antérieures (« Lu,
+  /// date non enregistrée »). Sans défaut en base : seul le code qui sert la
+  /// phrase « Votre lecture est datée » DEMANDE un jour (D-297 §4) ; deux
+  /// triggers en fixent la valeur (le jour de l'horloge de la base, quelle que
+  /// soit la date fournie) et refusent toute modification.
+  luLe      DateTime? @map("lu_le") @db.Date
 
   patient Patient @relation(fields: [idPatient], references: [idPatient])
 

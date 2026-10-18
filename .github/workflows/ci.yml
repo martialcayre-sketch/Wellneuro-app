@@ -1095,6 +1095,15 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/portail_lectures_protocole_v1_negatif.sql
 
+      # Colonne `lu_le` (lettre ai, D-297). Type date (le jour seul), nullable
+      # (aucun rattrapage), AUCUN défaut (aucune date avant la phrase « Votre
+      # lecture est datée ») ; jour de Paris posé par la base relu ; horodatage
+      # ramené au jour. Transaction annulée.
+      - name: Portail lectures lu_le negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/portail_lectures_lu_le_v1_negatif.sql
+
       # Catalogue des fiches d'assiette (D-251, lot 3). Ce que le drift check ne
       # voit pas, et qui fait toute la valeur des deux tables : l'append-only par
       # trigger, les instants posés par la base, le numéro de version contigu,

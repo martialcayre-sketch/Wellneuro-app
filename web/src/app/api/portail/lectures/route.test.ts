@@ -195,6 +195,7 @@ describe('POST — le serveur vérifie, il ne croit pas le navigateur', () => {
     expect(reponse.status).toBe(200);
     expect(prisma.portailLecturePatient.create).toHaveBeenCalledWith({
       data: { idPatient: PATIENT.idPatient, espece: 'bilan', idObjet: 'env_1' },
+      select: { idObjet: true },
     });
   });
 
@@ -324,6 +325,7 @@ describe('les fiches d’assiette remises (D-251, lot 10)', () => {
     expect(reponse.status).toBe(200);
     expect(prisma.portailLecturePatient.create).toHaveBeenCalledWith({
       data: { idPatient: PATIENT.idPatient, espece: 'fiche_assiette', idObjet: 'rem_servie' },
+      select: { idObjet: true },
     });
   });
 
@@ -403,6 +405,7 @@ describe('le courrier pour le médecin (D-262, LOT-03a)', () => {
     expect(reponse.status).toBe(200);
     expect(prisma.portailLecturePatient.create).toHaveBeenCalledWith({
       data: { idPatient: PATIENT.idPatient, espece: 'lettre_adressage', idObjet: 'lar_servie' },
+      select: { idObjet: true },
     });
   });
 
@@ -433,6 +436,7 @@ describe('le protocole ([[D-315]], CC-8) : consigné, jamais attendu', () => {
     expect(resolveProtocoleDiffuse).toHaveBeenCalledWith(PATIENT.idPatient);
     expect(prisma.portailLecturePatient.create).toHaveBeenCalledWith({
       data: { idPatient: PATIENT.idPatient, espece: 'protocole', idObjet: 'appr_en_vigueur' },
+      select: { idObjet: true },
     });
   });
 
