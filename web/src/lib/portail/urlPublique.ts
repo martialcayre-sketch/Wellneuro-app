@@ -35,7 +35,12 @@ export function urlPubliquePortail(chemin: string, reqUrl: string): URL {
  * `wn-reviewer` du 2026-10-18).
  */
 export function baseLiensCourriel(): string {
-  return (process.env.NEXTAUTH_URL ?? '').trim().replace(/\/$/, '') || 'http://localhost:3000';
+  return baseNettoyee(process.env.NEXTAUTH_URL) || 'http://localhost:3000';
+}
+
+/** UNE normalisation pour la base et pour sa garde : `'/'` ou des espaces valent une base vide (revue CodeRabbit de #1557). */
+function baseNettoyee(valeur: string | undefined): string {
+  return (valeur ?? '').trim().replace(/\/$/, '');
 }
 
 /**
@@ -45,5 +50,5 @@ export function baseLiensCourriel(): string {
  * production, et un lancement manuel sans la variable ne doit pas s'arrêter.
  */
 export function baseLiensAbsenteEnProduction(env: Record<string, string | undefined> = process.env): boolean {
-  return env.WN_DEPLOY_ENV === 'production' && !(env.NEXTAUTH_URL ?? '').trim();
+  return env.WN_DEPLOY_ENV === 'production' && !baseNettoyee(env.NEXTAUTH_URL);
 }

@@ -180,7 +180,11 @@ describe('instrumentation — pas de production sans base publique (H43, repli l
     delete process.env.SENTRY_DSN;
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // La sortie différée DOIT tomber sur le simulacre : si une assertion échoue
+    // avant `tourDeBoucle()`, restaurer d'abord la vraie `process.exit` la
+    // laisserait arrêter Vitest (revue CodeRabbit de #1557).
+    await tourDeBoucle();
     vi.restoreAllMocks();
     process.env = { ...envInitial };
   });

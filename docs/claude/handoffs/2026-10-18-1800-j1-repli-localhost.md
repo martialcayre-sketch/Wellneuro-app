@@ -48,8 +48,11 @@ s'assurer qu'aucun lien de courriel ne peut viser `localhost` en production.
 - `wn-reviewer` sur la première version : GO sous réserve (P2-a/b/c), d'où
   la refonte. Seconde passe : GO sous réserve ; P2-1 traité (l'affirmation
   « Scalingo garde la version en service » retirée : `next start` ouvre le
-  port avant `register()`, non constaté) ; cas edge ajouté au banc. T3 : voir
-  la PR.
+  port avant `register()`, non constaté) ; cas edge ajouté au banc. T3 vert.
+- CodeRabbit : corrigés — `NEXTAUTH_URL='/'` passait la garde (normalisation
+  commune `baseNettoyee`) ; sortie différée attendue avant la restauration
+  des simulacres dans le banc. Écarté — garde muette si `WN_DEPLOY_ENV`
+  manque (résidu nommé ci-dessous ; l'inférence par `NODE_ENV` arrêterait les E2E).
 
 ## Problèmes ouverts
 

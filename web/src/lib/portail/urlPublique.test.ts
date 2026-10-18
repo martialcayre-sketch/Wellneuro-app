@@ -42,6 +42,8 @@ describe('base des liens de courriel (H43, repli localhost)', () => {
   it('production réelle sans NEXTAUTH_URL (ou vide) : signalée — c’est ce qui arrête le démarrage', () => {
     expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production' })).toBe(true);
     expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: '  ' })).toBe(true);
+    // `'/'` se réduit à une base vide, que `baseLiensCourriel` remplacerait par localhost.
+    expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: '/' })).toBe(true);
   });
 
   it('base posée, ou hors production réelle (E2E sur build de production compris) : rien à signaler', () => {
