@@ -170,3 +170,64 @@ describe('instrumentation — une exception fatale doit rendre la main à Node',
     expect(handlers.size, `handlers posés en edge : ${[...handlers.keys()].join(', ')}`).toBe(0);
   });
 });
+
+describe('instrumentation — pas de production sans base publique (H43, repli localhost)', () => {
+  const envInitial = { ...process.env };
+
+  beforeEach(() => {
+    fatal.mockClear();
+    process.env.NEXT_RUNTIME = 'nodejs';
+    delete process.env.SENTRY_DSN;
+  });
+
+  afterEach(async () => {
+    // La sortie différée DOIT tomber sur le simulacre : si une assertion échoue
+    // avant `tourDeBoucle()`, restaurer d'abord la vraie `process.exit` la
+    // laisserait arrêter Vitest (revue CodeRabbit de #1557).
+    await tourDeBoucle();
+    vi.restoreAllMocks();
+    process.env = { ...envInitial };
+  });
+
+  it('production réelle sans NEXTAUTH_URL : trace fatale, puis sortie en 1 au tour suivant, aucun handler posé', async () => {
+    process.env.WN_DEPLOY_ENV = 'production';
+    delete process.env.NEXTAUTH_URL;
+    const handlers = capterHandlers();
+    const sortie = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+
+    await register();
+
+    expect(fatal).toHaveBeenCalledTimes(1);
+    expect(fatal.mock.calls[0][0]).toMatchObject({ message: expect.stringMatching(/NEXTAUTH_URL absente ou invalide en production/) });
+    expect(sortie, 'sortie dans le même tick : la trace fatale serait tronquée').not.toHaveBeenCalled();
+    await tourDeBoucle();
+    expect(sortie).toHaveBeenCalledWith(1);
+    expect(handlers.size).toBe(0);
+  });
+
+  it('runtime edge : jamais de sortie ni de trace fatale, même sans base en production', async () => {
+    process.env.NEXT_RUNTIME = 'edge';
+    process.env.WN_DEPLOY_ENV = 'production';
+    delete process.env.NEXTAUTH_URL;
+    const sortie = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+
+    await register();
+    await tourDeBoucle();
+
+    expect(fatal).not.toHaveBeenCalled();
+    expect(sortie).not.toHaveBeenCalled();
+  });
+
+  it('base posée : le démarrage suit son cours', async () => {
+    process.env.WN_DEPLOY_ENV = 'production';
+    process.env.NEXTAUTH_URL = 'https://app.exemple.test';
+    capterHandlers();
+    const sortie = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+
+    await register();
+    await tourDeBoucle();
+
+    expect(fatal).not.toHaveBeenCalled();
+    expect(sortie).not.toHaveBeenCalled();
+  });
+});
