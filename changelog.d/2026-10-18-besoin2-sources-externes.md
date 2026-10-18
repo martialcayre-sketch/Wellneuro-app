@@ -11,5 +11,6 @@
   `LOT_019_2026-10-18` et `LOT_020_2026-10-18`), sur
   approbation de l'envoi par le responsable, et constatés par lecture. Les
   claims qui en sont tirés, relus par une contre-revue adverse avant l'envoi,
-  entrent en attente de validation, sans clé de lien ; la signature reste un
-  geste du responsable. Trois notices passent `rightsStatus: verified`.
+  entrent en attente de validation, sans clé de lien ; le responsable les a
+  signés dans l'atelier le 2026-10-18 (82 claims `VALIDE`, constat par
+  conteneur). Trois notices passent `rightsStatus: verified`.
