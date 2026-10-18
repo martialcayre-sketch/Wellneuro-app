@@ -10640,6 +10640,15 @@ qualité inchangés (item de l'indice).
 **Ouvert.** Texte des deux marques choisi par l'assistant (D-308 ne le fixe pas) ; révocation d'une annulation : le dernier statut posé redevient actif (à confirmer).
 
 
+## 2026-10-18 — J1-base : plus de repli localhost possible en production
+
+**Fait.** Base unique des liens de courriel (`baseLiensCourriel`) ; `instrumentation.ts` refuse de démarrer en production réelle sans `NEXTAUTH_URL` (trace fatale, sortie au tour suivant). Constat Scalingo (noms seuls) : `NEXTAUTH_URL` et `WN_DEPLOY_ENV` posés.
+
+**Écarté.** Lever à la fabrication du lien (première version) : la revue `wn-reviewer` a montré que la levée tombait après des écritures validées (assignations créées, route en échec, trace d'envoi perdue) ; inférer la production par `NODE_ENV` (les E2E tournent sur un build de production).
+
+**Prochaine action.** Seconde relecture, T3, PR ; merge après #1555 et #1556.
+
+**Ouvert.** t09 à reprendre (drapeaux allumés en production) ; liste J1-base attendue.
 ## 2026-10-18 — F38 : migration du document pour le médecin
 
 **Fait.** #1553 (marques datées) mergée sur sa tête relue, F58 soldée. Migration `documents_medecin_imprimes_v1` : impressions figées (HTML recopié, empreinte vérifiée par CHECK, synthèse validée du dossier, praticien du dossier) et téléchargements du patient (dernière impression seule), en ajout seul, sous le verrou du dossier. Contrat négatif à quatorze promesses, 32 mutations toutes tuées ; relecture `wn-reviewer` (SERIALIZABLE refusé, statuts non validés tous éprouvés, ordre sous le verrou) ; effacement nommé ; déclaration RGPD validée par le responsable ; T3 vert.
