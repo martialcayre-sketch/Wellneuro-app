@@ -10590,3 +10590,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Les deux marques datées de la carte du compte rendu (F58, sans migration), puis F38.
 
 **Ouvert.** Matcher de la matrice : un spécificateur qui en préfixe un autre (`…/statuts` dans `…/statutsX`) compte un faux consommateur.
+
+## 2026-10-18 — Besoin 2 : dossier de la vitamine D signé, étiquetage en lot (D-325)
+
+**Fait.** Sources externes du dossier ingérées sur approbation de chaque envoi (LOT_018 à LOT_020, 41 passages, 82 claims), toutes signées par le responsable ; positions v0.1 et v0.2 validées par lui, signature transcrite sur son instruction ; fiche H15 à jour (#1551). Étiquetage : D-325 (geste en lot, tout ou rien, un acte par claim, correspondance des rubriques) et son code ; liste de 194 claims préparée au dossier privé.
+
+**Écarté.** Recherche par identifiant seule (212 gestes unitaires) ; correspondance codée des rubriques (rien n'est complété).
+
+**Prochaine action.** PR du lot, CI, CodeRabbit, merge ; le responsable colle la liste, constat par conteneur en agrégats ; puis dossier du zinc.
+
+**Ouvert.** Rejets du dossier encore VALIDE en base (geste du responsable) ; pas de contrat SQL sur base réelle pour le geste en lot (vérifié à la main par la contre-revue).
