@@ -9,6 +9,11 @@ const { prisma, after, sendMailAck } = vi.hoisted(() => ({
   // d'affirmer qu'AUCUN travail de fond n'est planifié sur ce chemin.
   after: vi.fn((tache: () => unknown) => { void tache(); }),
   prisma: {
+    // Transaction et verrou de ligne de la création (t05) : par défaut, la
+    // transaction rappelle son callback avec ce même objet, et le verrou rend
+    // une assignation ouverte. Le banc de concurrence les remplace.
+    $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
     assignation: { findUnique: vi.fn(), update: vi.fn() },
     patient: { findUnique: vi.fn() },
     questionnaireReponse: { create: vi.fn() },
@@ -23,6 +28,11 @@ const { prisma, after, sendMailAck } = vi.hoisted(() => ({
     cabinetInstrument: { findUnique: vi.fn() },
   },
 }));
+type Transaction = (tx: typeof prisma) => Promise<unknown>;
+const transactionParDefaut = (fn: Transaction) => fn(prisma);
+const verrouParDefaut = async () => [{ statut: 'En attente', statutReponses: 'non_rempli' }];
+prisma.$transaction.mockImplementation(transactionParDefaut);
+prisma.$queryRaw.mockImplementation(verrouParDefaut);
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('next/server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/server')>()),
@@ -844,5 +854,117 @@ describe('POST /api/patient/submit — alerte et accusé : en parallèle, échec
     expect(res.status).toBe(200);
     expect(vi.mocked(logger.error).mock.calls.map(([payload]) => payload.event))
       .toContain(EVENT_CODES.SECURITE_ALERTE_PRATICIEN_EMAIL_FAILED);
+  });
+});
+
+// Dette t05 du plan (§8, h1) : deux transmissions concurrentes d'une même
+// assignation franchissaient ensemble les refus, lus sans verrou, et créaient
+// deux réponses, deux accusés et, sur une réponse suicidaire, deux alertes.
+// Le banc sérialise les transactions comme le ferait le verrou de ligne.
+describe('POST /api/patient/submit — deux transmissions concurrentes : une seule réponse (t05)', () => {
+  const question = questionSecuriteDe('Q_NEU_03')!;
+  const smtpOrigine = process.env.SMTP_URL;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    process.env.SMTP_URL = 'smtp://test';
+    // Lecture SANS verrou, périmée pour le second envoi : c'est la course.
+    prisma.assignation.findUnique.mockResolvedValue(assignation);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient, actif: true, email: assignation.emailPatient,
+      accessTokenRevoked: false, sessionsInvalidesAvant: null, dateNaissance: '1985-03-14', praticienEmail: 'praticien@wellneuro.fr',
+    });
+    prisma.questionnaireReponse.create.mockResolvedValue({});
+    sendMailAck.mockResolvedValue({});
+    vi.mocked(notifierPraticienSignalSecurite).mockResolvedValue({ statut: 'Envoye' });
+  });
+  afterEach(() => {
+    prisma.$transaction.mockImplementation(transactionParDefaut);
+    prisma.$queryRaw.mockImplementation(verrouParDefaut);
+    prisma.assignation.update.mockReset();
+    if (smtpOrigine === undefined) delete process.env.SMTP_URL; else process.env.SMTP_URL = smtpOrigine;
+  });
+
+  function soumettrePositive(): Request {
+    const cookie = signPatientSession({ idPatient: assignation.idPatient, email: assignation.emailPatient });
+    return new Request('http://localhost/api/patient/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookie)}` },
+      body: JSON.stringify({
+        idAssignation: assignation.idAssignation,
+        idQuestionnaire: assignation.idQuestionnaire,
+        answers: { NEU3_Q001: 2, [question.idQuestion]: question.options[1].v },
+      }),
+    });
+  }
+
+  it('la seconde retombe sur « déjà complété » : une réponse, un accusé, une alerte', async () => {
+    let statutReponses = 'non_rempli';
+    let file: Promise<unknown> = Promise.resolve();
+    prisma.$transaction.mockImplementation((fn: Transaction) => {
+      const tour = file.then(() => fn(prisma));
+      file = tour.catch(() => undefined);
+      return tour;
+    });
+    prisma.$queryRaw.mockImplementation(async () => [{ statut: 'En attente', statutReponses }]);
+    prisma.assignation.update.mockImplementation(async () => {
+      statutReponses = 'verrouille';
+      return assignation;
+    });
+
+    const [a, b] = await Promise.all([postSubmit(soumettrePositive()), postSubmit(soumettrePositive())]);
+    const statuts = [a.status, b.status].sort();
+    expect(statuts).toEqual([200, 409]);
+    const refus = await (a.status === 409 ? a : b).json();
+    expect(refus.reason).toBe('already_done');
+    expect(prisma.questionnaireReponse.create).toHaveBeenCalledTimes(1);
+    expect(prisma.assignation.update).toHaveBeenCalledTimes(1);
+    expect(sendMailAck).toHaveBeenCalledTimes(1);
+    expect(notifierPraticienSignalSecurite).toHaveBeenCalledTimes(1);
+  });
+
+  it('le verrou est un verrou de ligne sur l’assignation, pris avant la création', async () => {
+    prisma.assignation.update.mockResolvedValue(assignation);
+    expect((await postSubmit(soumettrePositive())).status).toBe(200);
+    const [morceaux, ...valeurs] = prisma.$queryRaw.mock.calls[0] as [TemplateStringsArray, ...unknown[]];
+    expect(morceaux.join('?')).toMatch(/FROM assignations\s+WHERE id_assignation = \?\s+FOR UPDATE/);
+    expect(valeurs).toEqual([assignation.idAssignation]);
+    expect(prisma.$queryRaw.mock.invocationCallOrder[0])
+      .toBeLessThan(prisma.questionnaireReponse.create.mock.invocationCallOrder[0]);
+  });
+
+  it('déverrouillée par le praticien : la re-soumission passe, une fois', async () => {
+    prisma.$queryRaw.mockImplementation(async () => [{ statut: 'Complété', statutReponses: 'deverrouille' }]);
+    prisma.assignation.update.mockResolvedValue(assignation);
+    expect((await postSubmit(soumettrePositive())).status).toBe(200);
+    expect(prisma.questionnaireReponse.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('modification demandée pendant la saisie : « déjà complété », rien n’est écrit', async () => {
+    prisma.$queryRaw.mockImplementation(async () => [{ statut: 'Complété', statutReponses: 'modification_demandee' }]);
+    const res = await postSubmit(soumettrePositive());
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('already_done');
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+  });
+
+  it('transaction en échec : erreur technique, ni accusé ni alerte', async () => {
+    prisma.$transaction.mockImplementation(async () => { throw new Error('délai de transaction dépassé'); });
+    const res = await postSubmit(soumettrePositive());
+    expect(res.status).toBe(500);
+    expect(sendMailAck).not.toHaveBeenCalled();
+    expect(notifierPraticienSignalSecurite).not.toHaveBeenCalled();
+  });
+
+  it('annulée pendant la saisie : refus sous verrou, rien n’est écrit ni envoyé', async () => {
+    prisma.$queryRaw.mockImplementation(async () => [{ statut: 'Annulée', statutReponses: 'non_rempli' }]);
+    const res = await postSubmit(soumettrePositive());
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('annulee');
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
+    expect(sendMailAck).not.toHaveBeenCalled();
+    expect(notifierPraticienSignalSecurite).not.toHaveBeenCalled();
   });
 });

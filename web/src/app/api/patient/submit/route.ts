@@ -325,27 +325,64 @@ export async function POST(req: Request): Promise<NextResponse> {
     const idReponse = createPublicId('REP');
     const now = new Date();
 
-    // Sauvegarder en PostgreSQL
-    await prisma.questionnaireReponse.create({
-      data: {
-        idReponse,
-        idPatient,
-        emailPatient,
-        idAssignation,
-        idQuestionnaire,
-        titre,
-        dateReponse: now,
-        scoresJson: scoresWithAnswers,
-        scorePrincipal,
-        interpretation: interpretation || null,
-      },
+    // Création de la réponse + verrouillage de l'assignation dans UNE
+    // transaction, sous verrou de LIGNE (SELECT … FOR UPDATE), comme les deux
+    // clôtures d'agenda (`lib/agenda-sommeil/cloture.ts`). Les refus ci-dessus
+    // lisent l'assignation SANS verrou : deux transmissions concurrentes (double
+    // clic, deux onglets) les franchissaient ensemble et créaient deux réponses,
+    // deux accusés — et, sur une réponse suicidaire, deux alertes au praticien.
+    // Aucune contrainte d'unicité ne peut le fermer : une assignation
+    // déverrouillée reçoit légitimement une seconde réponse. Le second envoi
+    // retombe sous le verrou sur le refus qu'il aurait reçu en arrivant après.
+    const refusSousVerrou = await prisma.$transaction(async (tx) => {
+      const verrou = await tx.$queryRaw<Array<{ statut: string | null; statutReponses: string | null }>>`
+        SELECT statut, statut_reponses AS "statutReponses"
+        FROM assignations
+        WHERE id_assignation = ${idAssignation}
+        FOR UPDATE`;
+      const courant = verrou[0];
+      if (courant?.statut === 'Annulée') return 'annulee' as const;
+      if (courant?.statutReponses === 'verrouille' || courant?.statutReponses === 'modification_demandee') {
+        return 'already_done' as const;
+      }
+      await tx.questionnaireReponse.create({
+        data: {
+          idReponse,
+          idPatient,
+          emailPatient,
+          idAssignation,
+          idQuestionnaire,
+          titre,
+          dateReponse: now,
+          scoresJson: scoresWithAnswers,
+          scorePrincipal,
+          interpretation: interpretation || null,
+        },
+      });
+      await tx.assignation.update({
+        where: { idAssignation },
+        data: { statut: 'Complété', statutReponses: 'verrouille', dateDerniereModification: now },
+      });
+      return null;
     });
-
-    // Mettre à jour le statut de l'assignation
-    await prisma.assignation.update({
-      where: { idAssignation },
-      data: { statut: 'Complété', statutReponses: 'verrouille', dateDerniereModification: now },
-    });
+    if (refusSousVerrou === 'annulee') {
+      logger.warn({
+        event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_UNAVAILABLE,
+        domain: 'QUESTIONNAIRE',
+        message: 'Soumission refusée sous verrou : assignation annulée',
+        context: finalizeLogContext(requestContext, { statusCode: 409, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'annulee', error: 'Ce questionnaire a été annulé par votre praticien.' }, { status: 409 }), requestContext);
+    }
+    if (refusSousVerrou === 'already_done') {
+      logger.warn({
+        event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_ALREADY_DONE,
+        domain: 'QUESTIONNAIRE',
+        message: 'Soumission concurrente refusée sous verrou : questionnaire déjà verrouillé',
+        context: finalizeLogContext(requestContext, { statusCode: 409, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'already_done', error: 'Ce questionnaire a déjà été complété.' }, { status: 409 }), requestContext);
+    }
 
     // AUCUNE SYNTHÈSE N'EST PRODUITE ICI, ET C'EST UNE DÉCISION.
     //
