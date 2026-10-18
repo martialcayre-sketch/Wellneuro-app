@@ -26,7 +26,10 @@ glissante, horloge de l'application) ; au plafond, elle rend 429
 la redemande du lien magique : la borne vit en base, pas en mémoire de
 processus (plusieurs conteneurs répondent). Aucune table, aucune colonne,
 aucune migration : chaque table comptée porte déjà `id_patient` et sa date de
-création, indexées ensemble.
+création, posée à l'insertion. Le comptage emprunte l'index qui commence par
+`id_patient` — `(id_patient, date)` pour la plupart ; pour les agendas, le
+check-in et les choix, l'index commence par `id_patient` puis un autre champ,
+et la date se filtre sur les quelques dizaines de lignes du dossier.
 
 **2. Les plafonds (par dossier et par heure).**
 
@@ -34,7 +37,7 @@ création, indexées ensemble.
 |---|---|---|
 | agendas | 60 | `portail/agenda-sommeil` (nuits), `portail/agenda-alimentaire` (journées) — saisies et corrections chaînées |
 | portail | 20 | `portail/ce-qui-compte`, `portail/comprehension`, `portail/protocole/checkin`, `portail/pack-reevaluation` (réponses du patient seules), `portail/trust/choix` (accords et refus), `portail/dossier` (un plafond pour les quatre gestes, compté sur leurs quatre tables) |
-| objectifs praticien | 30 | `praticien/objectifs`, `/accord`, `/fin` — un plafond pour les trois, compté sur leurs trois tables |
+| objectifs praticien | 30 | `praticien/objectifs`, `/accord`, `/fin`, et le geste « écarter » de `praticien/propositions-objectif` — un plafond pour les quatre, compté sur leurs quatre tables (une reprise de proposition compte deux fois : un objectif et une disposition) |
 | proposition de priorité par IA | 10 | `praticien/objectifs/proposition-priorite`, AVANT l'appel au modèle |
 
 Textes : patient « Vous avez fait beaucoup d’envois en peu de temps.
@@ -61,6 +64,8 @@ l'atteint. Un appel IA qui échoue ne laisse pas de ligne et n'est pas compté.
   (`lien/demande`, comptes rendus, lectures datées, relance).
 - `ja/observations` : sa table est partagée avec le praticien, un compte par
   dossier y mêlerait deux auteurs.
+- Le geste « assembler » de `praticien/propositions-objectif` : idempotent par
+  empreinte des sources, il n'écrit que lorsque les sources ont changé.
 
 **Ne touche pas** : aucune migration, aucun `schema.prisma`, aucune règle
 clinique, aucun texte existant ; le journal d'accès (dette t09) est clos sans

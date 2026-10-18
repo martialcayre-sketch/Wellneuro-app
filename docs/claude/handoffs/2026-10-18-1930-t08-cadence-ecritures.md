@@ -24,8 +24,11 @@ d'accès), close sans code le même jour.
   praticien 30, proposition IA 10.
 - `portail/dossier` : un plafond pour ses quatre gestes (quatre tables,
   seule cette route y écrit), compté avant la lecture du corps.
-- Objectifs praticien : un plafond pour `objectifs`, `/accord`, `/fin`
-  (`lib/praticien/cadenceObjectifs.ts`).
+- Objectifs praticien : un plafond pour `objectifs`, `/accord`, `/fin` et
+  « écarter » de `propositions-objectif` (`lib/praticien/cadenceObjectifs.ts`,
+  quatre tables). `portail/dossier` compte via `lib/portail/cadenceDossier.ts` :
+  la route est gardée par l'anti-agrégat de « Ce qui compte », un `reduce`
+  y rougissait T3.
 - `trust/choix` : compté sous le verrou de ligne déjà pris ; **le retrait
   n'est jamais plafonné**.
 - `trust/signalement` **hors plafond** (signal de sécurité, demande de droit) —
@@ -43,8 +46,10 @@ d'accès), close sans code le même jour.
   `comprehension`, `protocole/checkin`, `pack-reevaluation`, `trust/choix`,
   `dossier` (+ leurs bancs).
 - Routes praticien : `objectifs`, `objectifs/accord`, `objectifs/fin`,
-  `objectifs/proposition-priorite` (+ bancs, sauf `accord` et `fin`, qui
-  n'en ont pas : couverts par le banc du helper).
+  `objectifs/proposition-priorite`, `propositions-objectif` (+ bancs ;
+  `accord` et `fin` n'ont pas de banc de route : garde structurelle de
+  branchement dans `cadenceObjectifs.test.ts`).
+- `web/src/lib/portail/cadenceDossier.ts` (+ test).
 - `web/src/components/patient/PropositionPackReevaluation.tsx` (+ test).
 - `docs/DECISIONS.md` (D-326), plan (lignes t08 et t09 soldées), changelog,
   SESSION_LOG.
@@ -53,13 +58,21 @@ d'accès), close sans code le même jour.
 
 - Vitest des routes et modules touchés : verts (portail 80 + 10 + 24 + 111 +
   36 + 40 + 27 ; praticien 542 ; composant 6).
-- T1, revue `wn-reviewer`, T3 : voir la PR.
+- T1 complet vert. Revue `wn-reviewer` : GO, aucun P0/P1 ; P2 traités
+  (texte des index de D-326, « écarter » ajouté à la famille, banc
+  agenda-alimentaire à compteur par défaut, refus d'un choix au plafond,
+  garde de branchement `accord`/`fin`). Risque résiduel assumé : un appel IA
+  en échec n'est pas compté (D-326 §3).
+- T3 : premier passage rouge sur l'anti-agrégat (corrigé) ; second : voir la PR.
 
 ## Problèmes ouverts
 
 - Question au responsable : chaque signalement envoie une notification au
   praticien ; faut-il borner la notification (pas l'enregistrement) ?
 - Le plafond n'est pas exact sous concurrence (D-326 §3), assumé.
+- Question de la revue : la « demande de correction » d'un objectif
+  (`portail/dossier`) est-elle l'exercice d'un droit, à sortir du plafond
+  comme le signalement ?
 
 ## Prochaine action exacte
 

@@ -158,6 +158,7 @@ beforeEach(() => {
   process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
 
   prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+  prisma.agendaAlimentaireJour.count.mockResolvedValue(0);
   prisma.patient.findUnique.mockResolvedValue({
     idPatient: OWNER.idPatient,
     actif: true,

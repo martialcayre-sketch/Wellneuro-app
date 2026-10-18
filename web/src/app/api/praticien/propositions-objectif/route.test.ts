@@ -40,6 +40,9 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
 vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
+// La cadence ([[D-326]]) a son banc propre (`lib/praticien/cadenceObjectifs.test.ts`).
+const cadenceObjectifsAtteinte = vi.hoisted(() => vi.fn(async (_idPatient: string) => false));
+vi.mock('@/lib/praticien/cadenceObjectifs', () => ({ cadenceObjectifsAtteinte }));
 
 import { GET, POST } from './route';
 import { LONGUEUR_MAX_MOTIF_ECART, MAX_PROPOSITIONS } from '@/lib/praticien/propositionObjectif';
@@ -457,6 +460,16 @@ describe('/api/praticien/propositions-objectif', () => {
     expect(data).not.toHaveProperty('creeLe');
     expect(prisma.propositionObjectif.createMany).not.toHaveBeenCalled();
     expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+  });
+
+  it('au plafond horaire du dossier (D-326), un écart est refusé (429), rien écrit', async () => {
+    prisma.propositionObjectif.findFirst.mockResolvedValue({ id: 'PROP_1' });
+    cadenceObjectifsAtteinte.mockResolvedValueOnce(true);
+    const reponse = await POST(postRequest(corpsEcarter()));
+    expect(reponse.status).toBe(429);
+    expect(await corpsDe(reponse)).toMatchObject({ reason: 'cadence' });
+    expect(cadenceObjectifsAtteinte).toHaveBeenCalledWith('PAT_TEST');
+    expect(prisma.dispositionProposition.create).not.toHaveBeenCalled();
   });
 
   it('rend 422 sur un écart sans motif — pas 400 : c’est un défaut de CONTENU', async () => {

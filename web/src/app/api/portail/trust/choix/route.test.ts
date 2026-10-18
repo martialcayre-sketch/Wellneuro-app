@@ -110,6 +110,13 @@ describe('POST /api/portail/trust/choix', () => {
     );
   });
 
+  it('au plafond, un REFUS est compté et borné comme un accord', async () => {
+    prisma.trustChoiceEvent.count.mockResolvedValue(20);
+    const reponse = await POST(requete({ finalite: 'partage_medecin_traitant', statut: 'refuse' }));
+    expect(reponse.status).toBe(429);
+    expect(prisma.trustChoiceEvent.create).not.toHaveBeenCalled();
+  });
+
   it('★ au plafond, un RETRAIT passe quand même — il doit rester aussi simple que l’accord', async () => {
     prisma.trustChoiceEvent.count.mockResolvedValue(500);
     prisma.trustChoiceEvent.findFirst.mockResolvedValue({ id: 'EVT_1', statut: 'accorde' });
