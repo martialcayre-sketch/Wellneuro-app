@@ -8,6 +8,9 @@
 - **Écriture** : `POST /api/portail/lectures` demande un jour à la création de
   l'accusé ; le trigger de la migration `20261018150000` en fixe la valeur
   (jour de Paris de l'horloge de la base). Une réouverture n'écrit rien.
+- **La lecture ne se date que sur un document affiché** : le bilan et la
+  synthèse ne consignent plus au montage de leur page, mais sur leur branche
+  de rendu réussi, comme la fiche et le courrier.
 - **Cockpit** : encart « Documents remis » en phase « Patient » — chaque
   version remise (bilan, synthèse, fiche, courrier, protocole), son jour de
   remise et « Lu le JJ/MM/AAAA », « Lu, date non enregistrée » ou rien. Route

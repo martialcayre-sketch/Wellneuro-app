@@ -1654,9 +1654,10 @@ arbitrages du responsable du 2026-10-18, sur questions à options :
   ce que le portail sert aujourd'hui : une version retirée, indisponible ou
   servie sous un drapeau fermé y figure, sans lecture possible — l'absence de
   « Lu » n'y dit donc rien du patient.
-- Limite connue, routée (fiche H51) : le bilan et la synthèse se consignent au
-  montage de leur page, que le document s'affiche ou non (comportement de
-  LOT-08) ; une page en erreur peut donc dater une lecture.
+- La lecture ne se date que sur un document AFFICHÉ : le bilan et la synthèse
+  se consignaient au montage de leur page, que le document s'affiche ou non
+  (LOT-08) ; ils se consignent désormais, comme la fiche et le courrier, sur
+  leur seule branche de rendu réussi (revue CodeRabbit de #1552).
 - Options écartées : figer toute la ligne datée (une renumérotation de
   dossier ne passerait plus) ; porter la lecture sur les écrans existants
   (fiches et courriers resteraient invisibles) ; quatre documents seulement ;

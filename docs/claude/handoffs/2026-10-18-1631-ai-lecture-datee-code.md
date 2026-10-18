@@ -25,11 +25,10 @@ Livrer le code de D-297 : la première ouverture d'un document remis est datée 
 
 - Bancs ciblés verts (route portail 56, route praticien, panneau, lectureDatee, gardes, Mes échanges, courrier, compagnon).
 - T1 rapide vert. T1 complet et T2 (`--fast`) : voir la PR. Matrice de consommation régénérée (`wn-matrice-consommation.mjs --markdown`, après indexation des fichiers neufs).
-- Revue `wn-reviewer` (P1) : go, aucun P0 ni P1. Corrigés : bouton « Réessayer la lecture des documents remis », garde des appelants élargie (import, guillemets, `sendBeacon`), ordre de l'avis vérifié sur bilan et synthèse, bancs de rendu de la fiche, réponse de la route limitée à six champs, commentaire sur la base sans trigger. Documentés dans l'amendement : « remis » = geste du praticien ; consignation du bilan et de la synthèse au montage (dette routée à H51).
+- Revue `wn-reviewer` (P1) : go, aucun P0 ni P1. Corrigés : bouton « Réessayer la lecture des documents remis », garde des appelants élargie (import, guillemets, `sendBeacon`), ordre de l'avis vérifié sur bilan et synthèse, bancs de rendu de la fiche, réponse de la route limitée à six champs, commentaire sur la base sans trigger. Documenté dans l'amendement : « remis » = geste du praticien. Revue CodeRabbit (3 constats, tous corrigés) : consignation du bilan et de la synthèse déplacée sur leur rendu réussi (avec bancs de rendu), bilans rejetés après envoi listés comme remis, rubrique RGPD du journal mise en cohérence.
 
 ## Problèmes ouverts
 
-- Dette routée (H51) : le bilan et la synthèse consignent leur lecture au montage de la page, même si le document ne s'affiche pas ; à consigner sur le rendu réussi, comme la fiche.
 - Constat du premier jour écrit en production, sur un dossier de test, par identifiant et par conteneur : à faire après le déploiement.
 - Écarts routés sans correctif (antérieurs) : garde d'âge absente du POST check-in et du compagnon (D-284) ; fenêtre de la ligne de suivi fermée environ 24 h entre deux points.
 - Avant ACT-3 : relire avec le responsable les deux micro-textes de « Mes échanges » et la limite « protocole indisponible ».

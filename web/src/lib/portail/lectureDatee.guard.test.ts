@@ -13,8 +13,8 @@ import { describe, expect, it } from 'vitest';
  *
  * C'est une garde de DÉPÔT, et elle se contourne (un `init` de requête construit
  * ailleurs, une route serveur neuve qui écrirait la table) : elle vérifie qu'un
- * fichier importe et rend l'avis. La place — en tête, avant le document — est
- * tenue ici pour les deux pages serveur, et par les bancs de rendu ailleurs.
+ * fichier importe et rend l'avis. La place — en tête, avant le document — et
+ * la condition — le document rendu — sont tenues par les bancs de rendu.
  */
 
 const SRC = join(process.cwd(), 'src');
@@ -60,9 +60,9 @@ describe('chaque page qui date une lecture sert « Votre lecture est datée »',
   it('les appelants connus sont trouvés — sinon la garde ne garde rien', () => {
     const relatifs = appelants().map(f => f.replace(`${SRC}/`, '')).sort();
     expect(relatifs).toEqual([
-      'app/portail/[token]/bilan/page.tsx',
-      'app/portail/[token]/comprehension/page.tsx',
+      'components/patient-companion/ComprehensionView.tsx',
       'components/patient-companion/PatientCompanionHome.tsx',
+      'components/patient/MonBilan.tsx',
       'components/patient/fiches-assiette/FicheRemiseLecture.tsx',
       'components/patient/lettre-adressage/CourrierMedecinLecture.tsx',
     ]);
@@ -74,13 +74,11 @@ describe('chaque page qui date une lecture sert « Votre lecture est datée »',
     expect(code).toContain('<AvisLectureDatee />');
   });
 
-  it.each([
-    ['app/portail/[token]/bilan/page.tsx', '<MonBilan'],
-    ['app/portail/[token]/comprehension/page.tsx', '<ComprehensionView'],
-  ])('%s sert l’avis EN TÊTE, avant le document (arbitrage du 2026-10-18)', (relatif, document) => {
-    const code = readFileSync(join(SRC, relatif), 'utf8');
-    const avis = code.indexOf('<AvisLectureDatee />');
-    expect(avis).toBeGreaterThan(-1);
-    expect(avis).toBeLessThan(code.indexOf(document));
-  });
+  it.each(['app/portail/[token]/bilan/page.tsx', 'app/portail/[token]/comprehension/page.tsx'])(
+    '%s ne consigne plus au montage de la page : c’est le document rendu qui le fait',
+    relatif => {
+      const code = readFileSync(join(SRC, relatif), 'utf8');
+      expect(code).not.toContain('<ConsignerLecturePortail');
+    },
+  );
 });

@@ -118,9 +118,15 @@ describe('GET /api/praticien/documents-remis (D-297 §5)', () => {
     expect(docs[0].remisLe).toBe('2026-10-05T08:00:00.000Z');
   });
 
-  it('ne lit que les versions REMISES : bilan visible, synthèse publiée', async () => {
+  it('ne lit que les versions REMISES : bilan envoyé (même rejeté depuis), synthèse publiée', async () => {
     await GET(requete());
-    expect(prisma.bookletEnvoi.findMany.mock.calls[0][0].where).toMatchObject({ idPatient: 'PAT_TEST', statut: 'Envoye' });
+    // Pas de filtre sur le statut de la synthèse : un bilan rejeté APRÈS son
+    // envoi a été remis, et sa lecture éventuelle reste à dire.
+    expect(prisma.bookletEnvoi.findMany.mock.calls[0][0].where).toEqual({
+      idPatient: 'PAT_TEST',
+      statut: 'Envoye',
+      synthese: { is: { idPatient: 'PAT_TEST' } },
+    });
     expect(prisma.syntheseComprehension.findMany.mock.calls[0][0].where).toEqual({
       idPatient: 'PAT_TEST',
       publieeLe: { not: null },

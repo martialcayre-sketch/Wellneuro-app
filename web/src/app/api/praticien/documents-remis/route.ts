@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { whereEnvoiVisible } from '@/lib/documents/bilanPatient';
 import { getRecommendedPlate } from '@/lib/food-compass/plates';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { jourIso } from '@/lib/portail/lectureDatee';
@@ -89,7 +88,14 @@ export async function GET(req: Request): Promise<NextResponse<DocumentsRemisResp
     }
 
     const [envois, syntheses, fiches, lettres, approbations, lectures] = await Promise.all([
-      prisma.bookletEnvoi.findMany({ where: whereEnvoiVisible(idPatient), select: { id: true, dateEnvoi: true } }),
+      // Les envois RÉUSSIS, y compris ceux dont la synthèse a été rejetée
+      // depuis : « remis » est le geste du praticien (amendement de D-297), pas
+      // ce que le portail sert aujourd'hui — `whereEnvoiVisible` répond à
+      // l'autre question. La concordance des dossiers reste exigée.
+      prisma.bookletEnvoi.findMany({
+        where: { idPatient, statut: 'Envoye', synthese: { is: { idPatient } } },
+        select: { id: true, dateEnvoi: true },
+      }),
       prisma.syntheseComprehension.findMany({
         where: { idPatient, publieeLe: { not: null } },
         select: { id: true, publieeLe: true },
