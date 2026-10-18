@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { LayoutDashboard, Users, ContactRound, Sparkles, FileText, Settings, ShieldCheck, MoreHorizontal, X, Compass, Mail, BookOpen, ClipboardCheck, CalendarDays, FlaskConical, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, ContactRound, Sparkles, Settings, ShieldCheck, MoreHorizontal, X, Compass, Mail, BookOpen, ClipboardCheck, ClipboardList, CalendarDays, FlaskConical, Lightbulb, Pill, type LucideIcon } from 'lucide-react';
 
 const primaryItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard },
@@ -12,27 +12,35 @@ const primaryItems: { href: string; label: string; icon: LucideIcon }[] = [
   // d'entrée trajectoire ; la gestion des dossiers vit dans le rayon
   // « Patients », joignable par la feuille « Plus » et par le rail desktop.
   { href: '/dashboard/trajectoires', label: 'Fiches', icon: Users },
+  // « Synthèses » reste l'un des trois boutons (D-324 §5) : trois cartes du Fil
+  // y mènent, c'est le geste de relecture au téléphone — alors même que
+  // « Synthèse IA » a quitté le menu du bureau.
   { href: '/dashboard/synthese', label: 'Synthèses', icon: Sparkles },
 ];
 
-// LA FEUILLE « PLUS » COUVRE TOUT LE PRODUIT (audit du cockpit 2026-09-02) :
-// sept destinations sur quatorze n'avaient AUCUN point d'entrée sous 768 px —
-// le hamburger du rail complet est masqué à ces largeurs. La liste reprend
-// l'ordre et les libellés du rail desktop (SidebarRail) ; `/dashboard/regles`
-// reste volontairement non liée, comme partout (rayon en attente d'activation).
+// LA FEUILLE « PLUS » REPREND LE RAIL DESKTOP (audit du cockpit 2026-09-02 :
+// sept destinations sur quatorze n'avaient alors AUCUN point d'entrée sous
+// 768 px, le hamburger du rail complet étant masqué à ces largeurs). Même
+// ordre, mêmes libellés que SidebarRail depuis D-324 (2026-10-18) : Documents
+// n'y figure plus (sa porte est la fiche et la minute d'après), Biologie
+// fonctionnelle est devenue le rayon « Analyses biologiques », et chaque rayon
+// de la Bibliothèque a son entrée. `/dashboard/regles` reste volontairement
+// non liée, comme partout (rayon en attente d'activation).
 // `matiere: 'exact'` = actif sur la page seule (patron SidebarRail pour le
 // rayon Patients, dont les sous-pages sont les fiches et appartiennent à
 // « Fiches »).
 const plusItems: { href: string; label: string; icon: LucideIcon; matiere?: 'exact' }[] = [
   { href: '/dashboard/patients', label: 'Patients', icon: ContactRound, matiere: 'exact' },
   { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
-  { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail },
-  { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen },
-  { href: '/dashboard/documents', label: 'Documents', icon: FileText },
-  { href: '/dashboard/corpus', label: 'Atelier corpus', icon: ClipboardCheck },
   { href: '/dashboard/agenda', label: 'Agenda & consultations', icon: CalendarDays },
-  { href: '/dashboard/biologie', label: 'Biologie fonctionnelle', icon: FlaskConical },
+  { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail },
   { href: '/dashboard/droits', label: 'Confiance & droits', icon: ShieldCheck },
+  { href: '/dashboard/bibliotheque/questionnaires', label: 'Questionnaires', icon: ClipboardList },
+  { href: '/dashboard/bibliotheque/fiches-conseils', label: 'Fiches conseils', icon: Lightbulb },
+  { href: '/dashboard/bibliotheque/complements', label: 'Compléments alimentaires', icon: Pill },
+  { href: '/dashboard/bibliotheque/biologie', label: 'Analyses biologiques', icon: FlaskConical },
+  { href: '/dashboard/bibliotheque/connaissances', label: 'Connaissances', icon: BookOpen },
+  { href: '/dashboard/corpus', label: 'Atelier corpus', icon: ClipboardCheck },
   { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings },
 ];
 

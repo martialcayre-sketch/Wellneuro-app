@@ -12,10 +12,10 @@ import { test, expect } from '@playwright/test';
 import { PRATICIEN_EMAIL, praticienSessionCookie } from './helpers/auth';
 
 test.describe('Bibliothèque — aucun défilement horizontal de la page', () => {
-  test('la page, rayon par défaut, tient dans la largeur de l’écran', async ({ page }) => {
+  test('le rayon Questionnaires, assignations et packs compris, tient dans la largeur de l’écran', async ({ page }) => {
     await page.context().addCookies([await praticienSessionCookie(PRATICIEN_EMAIL)]);
-    await page.goto('/dashboard/bibliotheque');
-    await expect(page.getByRole('heading', { name: 'Bibliothèque', exact: true })).toBeVisible({ timeout: 10000 });
+    await page.goto('/dashboard/bibliotheque/questionnaires');
+    await expect(page.getByRole('heading', { name: 'Questionnaires', exact: true })).toBeVisible({ timeout: 10000 });
     // Mesurer après les chargements qui donnent leur largeur aux sélecteurs et
     // aux listes. Le titre du formulaire n'est rendu qu'une fois les
     // questionnaires et le registre des catégories chargés (le panneau parent
