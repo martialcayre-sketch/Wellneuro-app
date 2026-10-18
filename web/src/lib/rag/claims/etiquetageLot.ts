@@ -6,9 +6,10 @@
 // point-virgule, tabulation (copie d'un tableau) ou barre verticale (tableau
 // markdown). Les besoins s'écrivent « 2 » ou « 2, 4 ». La rubrique s'écrit par
 // son code (`surveillance_arret`) ou par son nom à l'écran (« Surveillance et
-// arrêt »). Une ligne sans identifiant de claim (en-tête, séparateur de
-// tableau, ligne vide, commentaire `#`) est ignorée ; une ligne qui en porte
-// un mais se lit mal est une ERREUR, jamais ignorée : rien n'est complété.
+// arrêt »). Seules sont ignorées les lignes vides, les commentaires `#` et
+// les lignes SANS AUCUN CHIFFRE (en-tête, séparateur de tableau) ; toute autre
+// ligne doit se lire entière, sinon c'est une ERREUR qui bloque l'envoi —
+// jamais une ligne écartée en silence, rien n'est complété.
 
 import { estRubriqueFicheUsage, type RubriqueFicheUsage } from '@/lib/fiches-usage/vocabulaire';
 import { lireClesLien } from './clesLien';
@@ -62,9 +63,7 @@ export function lireListeEtiquetage(texte: string): ListeEtiquetageLue {
   texte.split(/\r?\n/).forEach((brute, index) => {
     const numero = index + 1;
     const ligne = brute.trim();
-    // Détection large (casse, tiret ou soulignement) : une forme approchée
-    // devient une erreur visible, jamais une ligne écartée en silence.
-    if (!ligne || ligne.startsWith('#') || !/wn[-_ ]?cl/i.test(ligne)) return;
+    if (!ligne || ligne.startsWith('#') || !/\d/.test(ligne)) return;
     const erreur = (raison: string) => erreurs.push({ numero, texte: ligne, raison });
 
     const champs = ligne

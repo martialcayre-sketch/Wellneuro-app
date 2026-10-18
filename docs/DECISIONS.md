@@ -31,9 +31,10 @@
 
 **§1 — Le geste.** Dans l'atelier corpus, le praticien colle une liste, un
 claim par ligne : identifiant (version facultative), besoins, rubrique (code
-ou nom à l'écran). L'atelier la lit et montre l'aperçu ; une ligne qui porte
-un identifiant mais se lit mal est une erreur qui bloque l'envoi, jamais une
-ligne ignorée ni complétée. Sur confirmation, la route relit chaque ligne et
+ou nom à l'écran). L'atelier la lit et montre l'aperçu ; seules les lignes
+vides, les commentaires et les lignes sans aucun chiffre (en-tête, séparateur
+de tableau) sont ignorées ; toute autre ligne qui se lit mal est une erreur
+qui bloque l'envoi, jamais une ligne écartée ni complétée. Sur confirmation, la route relit chaque ligne et
 pose les clés de tous les claims en une transaction, au nom du praticien en
 session.
 

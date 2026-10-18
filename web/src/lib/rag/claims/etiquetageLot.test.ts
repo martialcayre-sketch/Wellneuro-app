@@ -71,9 +71,12 @@ describe('lireListeEtiquetage — une ligne, un claim, rien de complété', () =
   });
 
   it('un identifiant de forme approchée devient une erreur visible, jamais ignorée', () => {
-    const { lignes, erreurs } = lireListeEtiquetage('wn-cl-0001-001 ; 2 ; options\nWN_CL_0001_002 ; 2 ; options');
-    expect(lignes).toEqual([]);
-    expect(erreurs.map((e) => e.raison)).toEqual(['identifiant de claim illisible', 'identifiant de claim illisible']);
+    const { lignes, erreurs } = lireListeEtiquetage(
+      'wn-cl-0001-001 ; 2 ; options\nWN_CL_0001_002 ; 2 ; options\nWN-CX-0001-003 ; 2 ; options\n0001-004 ; 2 ; options\nWN-CL-0001-005 ; 2 ; options',
+    );
+    expect(lignes).toEqual([{ claimId: 'WN-CL-0001-005', besoins: [2], rubrique: 'options' }]);
+    expect(erreurs.map((e) => e.numero)).toEqual([1, 2, 3, 4]);
+    expect(new Set(erreurs.map((e) => e.raison))).toEqual(new Set(['identifiant de claim illisible']));
   });
 
   it('refuse au-delà de la borne technique d’un geste', () => {
