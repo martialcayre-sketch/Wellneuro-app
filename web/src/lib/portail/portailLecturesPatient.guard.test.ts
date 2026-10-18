@@ -40,21 +40,37 @@ describe('la table des lectures n’alimente que l’écran du PATIENT', () => {
    * c'est-à-dire un constat sur la personne (`DC-19`/`DC-20`). La migration
    * l'écrit, mais le SQL ne peut rien contre un SELECT : c'est ici que ça tient.
    *
-   * ELLE PASSE AUJOURD'HUI SANS RIEN MORDRE, et c'est délibéré : elle est posée
-   * AVANT le code qui consommera la table, pour qu'une première lecture
-   * praticien ne puisse pas arriver inaperçue.
+   * UNE SEULE EXCEPTION, NOMMÉE ([[D-297]] §5, lettre ai) : l'encart
+   * « Documents remis » du dossier lit, version par version, « Lu le … » ou
+   * « Lu, date non enregistrée ». C'est sa route, et elle seule, qui touche la
+   * table. Aucun compte, aucune alerte, aucune relance, aucune carte du fil du
+   * jour n'en découle : la seconde garde ci-dessous le tient sur la route.
    */
   const INTERDITS = [
     join(SRC, 'app', 'api', 'praticien'),
     join(SRC, 'components', 'patient-cockpit'),
   ];
+  const SEULE_LECTURE_PRATICIEN = join(SRC, 'app', 'api', 'praticien', 'documents-remis', 'route.ts');
+  const SON_BANC = join(SRC, 'app', 'api', 'praticien', 'documents-remis', 'route.test.ts');
 
-  it.each(INTERDITS)('aucune référence sous %s', racine => {
+  it.each(INTERDITS)('aucune référence sous %s, hors l’encart « Documents remis »', racine => {
     const coupables = fichiersSource(racine).filter(f => {
+      if (f === SEULE_LECTURE_PRATICIEN || f === SON_BANC) return false;
       const code = readFileSync(f, 'utf8');
       return code.includes('portailLecturePatient') || code.includes('portail_lectures_patient');
     });
     expect(coupables.map(f => f.replace(`${SRC}/`, ''))).toEqual([]);
+  });
+
+  it('l’encart « Documents remis » lit la table sans rien compter ni agréger (D-297 §5)', () => {
+    const code = readFileSync(SEULE_LECTURE_PRATICIEN, 'utf8');
+    // Une seule lecture, par `findMany` : ni `count`, ni `groupBy`, ni
+    // `aggregate`, ni SQL brut — rien qui fasse d'une lecture un indicateur.
+    const appels = code.match(/portailLecturePatient\.\w+\(/g) ?? [];
+    expect(appels).toEqual(['portailLecturePatient.findMany(']);
+    for (const interdit of ['_count', '.count(', 'groupBy', 'aggregate', '$queryRaw', '$executeRaw']) {
+      expect(code.includes(interdit), interdit).toBe(false);
+    }
   });
 });
 

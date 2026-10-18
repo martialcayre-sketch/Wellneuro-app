@@ -136,6 +136,17 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.adressagesSignalAlerte = (
       await tx.adressageSignalAlerte.deleteMany({ where: par })
     ).count;
+    // Le document pour le médecin ([[D-307]], F38) : chaque téléchargement
+    // désigne une impression, chaque impression une synthèse — FK RESTRICT
+    // tout du long. Les téléchargements partent d'abord, puis les impressions,
+    // AVANT les synthèses. Les tables refusent UPDATE et TRUNCATE, pas DELETE :
+    // c'est pour ce geste-ci.
+    supprimees.telechargementsDocumentsMedecin = (
+      await tx.telechargementDocumentMedecin.deleteMany({ where: par })
+    ).count;
+    supprimees.documentsMedecinImprimes = (
+      await tx.documentMedecinImprime.deleteMany({ where: par })
+    ).count;
 
     // 3. Enfants directs.
     supprimees.synthesesIA = (await tx.syntheseIA.deleteMany({ where: par })).count;

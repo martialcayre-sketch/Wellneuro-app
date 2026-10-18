@@ -4,6 +4,77 @@
 
 ## Décisions actives
 
+### D-325 — Étiquetage en lot : un geste du praticien sur une liste qu'il a relue pose les clés de lien de N claims validés, un acte `etiquetage` par claim, tout ou rien ; correspondance des rubriques des dossiers de preuve (amende D-321 §5 et §6)
+
+- Date : 2026-10-18
+- Statut : accepté. Arbitrages du responsable du 2026-10-18, sur questions à
+  options, après la signature du dossier de la vitamine D : mode « liste +
+  étiquetage en lot » (contre « liste + recherche par identifiant » et
+  « liste seulement, à la main » ; l'onglet des claims validés en compte
+  plusieurs milliers, par pages de cinquante, sans recherche par
+  identifiant) ; correspondance « adressage → Limites » (recommandé).
+  Texte rédigé par l'assistant.
+- Amende : [[D-321]] §6 (« un claim par acte » reste vrai au journal ; un
+  geste peut désormais en poser plusieurs) et §5 (la correspondance
+  ci-dessous fixe comment un dossier en six rubriques « se reclasse en
+  dix »). Ne touche pas l'étiquetage individuel ni la signature avec clés.
+- Domaine : `web/src/lib/rag/claims/etiquetageLot.ts` (lecture de la liste,
+  module pur), `etiqueterClaimsLot` (`web/src/lib/rag/claims/revue.ts`), route
+  `web/src/app/api/praticien/corpus/claims/etiquetage-lot`, composant
+  `EtiquetageLotPanel` de l'atelier corpus ; fiche H15.
+- Nature : outil de l'atelier, non clinique. Les clés posées sont celles que
+  le responsable relit et confirme ; aucune n'est posée par l'assistant.
+- **Ne touche pas** : aucun statut, aucune signature, aucune migration (le
+  journal reçoit des actes `etiquetage` de la forme déjà contrainte par
+  `rag_claim_decisions_etiquetage_complet`) ; la validation par lot (voie
+  rapide) ne pose toujours aucune clé.
+
+**§1 — Le geste.** Dans l'atelier corpus, le praticien colle une liste, un
+claim par ligne : identifiant (version facultative), besoins, rubrique (code
+ou nom à l'écran). L'atelier la lit et montre l'aperçu ; seules les lignes
+vides, les commentaires et les lignes sans aucun chiffre (en-tête, séparateur
+de tableau) sont ignorées ; toute autre ligne qui se lit mal est une erreur
+qui bloque l'envoi, jamais une ligne écartée ni complétée ; un champ vide
+intérieur aussi (seules les barres extérieures d'un tableau copié sont
+tolérées). Sur confirmation, la route relit chaque ligne et
+pose les clés de tous les claims en une transaction, au nom du praticien en
+session.
+
+**§2 — Tout ou rien.** Les claims visés sont verrouillés le temps du geste. Un
+seul claim introuvable, non VALIDE, d'une autre version que celle demandée,
+ou ambigu (plusieurs versions actives sans version demandée), et rien n'est écrit : le refus nomme
+chaque claim en cause. L'UPDATE reste gardé par `statut = 'VALIDE'` et son
+compte est vérifié. Au plus 500 claims par geste, borne technique de la
+transaction.
+
+**§3 — Au journal.** Un acte `etiquetage` par claim, de la forme de
+l'étiquetage individuel ([[D-321]] §6) : les clés dans l'élément, ni statut
+avant ni statut après. Un claim qui porte déjà exactement les clés demandées
+n'est ni réécrit ni journalisé, et l'atelier le compte à part : renvoyer la
+même liste, après une réponse perdue, n'ajoute aucun acte ; une réponse
+illisible s'annonce « résultat inconnu », jamais « rien n'est écrit ». Un compte des signatures ne compte jamais un
+étiquetage, qu'il vienne d'un geste unitaire ou d'un lot.
+
+**§4 — Correspondance des rubriques.** Un dossier de preuve rédigé dans les
+six rubriques abandonnées se reclasse ainsi dans les dix des fiches
+d'usage : indication → Question ; lecture → Interprétations ; options →
+Options ; précautions → Précautions ; suivi → Surveillance et arrêt ;
+adressage → Limites. La correspondance n'est pas codée : la liste se
+prépare déjà reclassée, et l'atelier refuse toute rubrique hors des dix
+(rien n'est complété). Les dossiers suivants s'écrivent directement dans les
+dix.
+
+**§5 — Qui prépare la liste.** La liste peut être préparée par l'assistant
+dans le dossier privé (le rubricage d'un claim est du contenu clinique, il
+ne va jamais au dépôt, [[D-251]] §4). Le geste, la relecture de l'aperçu et
+la confirmation sont ceux du responsable, qui peut les déléguer à
+l'assistant (arbitrage du 2026-10-18) : l'assistant exécute alors le geste
+depuis la session du responsable, l'acte est journalisé à l'e-mail du
+responsable, et la délégation, la liste collée et le constat par conteneur
+sont consignés au dossier privé. La même délégation vaut pour l'application
+en base des rejets décidés au dossier, un rejet par claim avec motif. La
+signature d'un claim n'est pas déléguée par ce paragraphe.
+
 ### D-324 — Menu praticien : le groupe « Héritage 4.0 » est retiré ; chaque rayon de la Bibliothèque a son entrée ; « Biologie fonctionnelle » devient le rayon « Analyses biologiques » (L4, L5 ; amende D-310 §1)
 
 - Date : 2026-10-18
@@ -1629,6 +1700,39 @@ dossier ([[D-283]] §2) et effacé avec lui.
   l'historique, car une date apparaîtrait sans être celle de la lecture ;
   garder l'horodatage en base et n'afficher que le jour ; dater chaque
   ouverture ([[D-295]] §4).
+
+**Amendement (2026-10-18) — la migration et le code de ai.** Quatre
+arbitrages du responsable du 2026-10-18, sur questions à options :
+
+- **La base choisit le jour** (migration `20261018150000_portail_lectures_lu_le_v1`,
+  #1547) : deux triggers. À l'insertion, toute date fournie est remplacée
+  par le jour de Paris de l'horloge de la base ; à la mise à jour, le jour
+  ne se pose, ne se corrige ni ne s'efface, et une lecture ne change pas de
+  document (`espece`, `id_objet`). Le code choisit s'il date, jamais quelle
+  date (§2).
+- **Le protocole est daté aussi.** §4 nommait quatre documents ; le
+  protocole, accusé depuis [[D-315]], devient le cinquième : la phrase se lit
+  au-dessus du bouton qui en ouvre le détail, seul geste qui consigne.
+- **La phrase se place en tête**, avant le document : le jour s'enregistre à
+  l'affichage.
+- **Le praticien lit un encart « Documents remis »** au dossier (phase
+  « Patient ») : chaque version remise des cinq espèces, son jour de remise
+  et « Lu le JJ/MM/AAAA », « Lu, date non enregistrée » ou rien (§5). Aucune
+  surface ne listait jusqu'ici les versions remises, hors les synthèses. Sa
+  route est la seule surface praticien qui lit la table, sans compte ni
+  agrégat (banc de garde amendé). « Remis » y désigne le geste du praticien
+  (envoi du bilan, publication de la synthèse, validation pour diffusion), pas
+  ce que le portail sert aujourd'hui : une version retirée, indisponible ou
+  servie sous un drapeau fermé y figure, sans lecture possible — l'absence de
+  « Lu » n'y dit donc rien du patient.
+- La lecture ne se date que sur un document AFFICHÉ : le bilan et la synthèse
+  se consignaient au montage de leur page, que le document s'affiche ou non
+  (LOT-08) ; ils se consignent désormais, comme la fiche et le courrier, sur
+  leur seule branche de rendu réussi (revue CodeRabbit de #1552).
+- Options écartées : figer toute la ligne datée (une renumérotation de
+  dossier ne passerait plus) ; porter la lecture sur les écrans existants
+  (fiches et courriers resteraient invisibles) ; quatre documents seulement ;
+  la phrase en bas de page.
 
 ### D-296 — Packs biologiques : l'analyte devient l'unité canonique, les quinze panels sont classés, et plus aucun pack clinique ne se crée (lettre cj)
 

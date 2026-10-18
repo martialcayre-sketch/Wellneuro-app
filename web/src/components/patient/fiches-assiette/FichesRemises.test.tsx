@@ -14,6 +14,7 @@ import { FichesRemises } from './FichesRemises';
 import { FicheRemiseLecture } from './FicheRemiseLecture';
 import { MENTION_IA, MENTION_INDISPONIBLE, MENTION_PLUS_ACTUELLE, MENTION_RETIREE } from './textesFiches';
 import { TEXTE_PAUSE_ELEMENT } from '@/lib/trust/pauseEffetIndesirable';
+import { TITRE_LECTURE_DATEE } from '@/lib/portail/lectureDatee';
 
 /** Les props de chaque trace montée — le second argument de React est ignoré. */
 const tracesPosees = () => consigner.mock.calls.map(appel => (appel as unknown[])[0]);
@@ -140,6 +141,21 @@ describe('FicheRemiseLecture — la page d’une fiche', () => {
     expect(new Set(tracesPosees().map(p => JSON.stringify(p)))).toEqual(
       new Set([JSON.stringify({ espece: 'fiche_assiette', idObjet: 'rem_servie' })]),
     );
+  });
+
+  it('« Votre lecture est datée » en tête, AVANT la fiche, quand sa lecture se consigne (D-297 §4)', async () => {
+    render(<FicheRemiseLecture token="TOK" idRemise="rem_servie" />);
+    await laisserCharger();
+    const avis = screen.getByRole('region', { name: TITRE_LECTURE_DATEE });
+    const titre = screen.getByRole('heading', { level: 1, name: 'Titre synthétique' });
+    expect(avis.compareDocumentPosition(titre) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it.each(['rem_retiree', 'rem_indispo'])('fiche sans texte servi (%s) : aucun avis, comme aucune lecture', async idRemise => {
+    render(<FicheRemiseLecture token="TOK" idRemise={idRemise} />);
+    await laisserCharger();
+    expect(screen.queryByRole('region', { name: TITRE_LECTURE_DATEE })).toBeNull();
+    expect(consigner).not.toHaveBeenCalled();
   });
 
   it('tant que la fiche charge, aucune lecture n’est consignée', () => {

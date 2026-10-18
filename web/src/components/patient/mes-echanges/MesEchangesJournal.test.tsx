@@ -12,10 +12,11 @@ vi.mock('next/navigation', () => ({ useRouter: () => routeur }));
 
 import { MesEchangesJournal } from './MesEchangesJournal';
 import { BLOCS_MES_ECHANGES } from './textesMesEchanges';
+import { TEXTE_LECTURE_DATEE, TITRE_LECTURE_DATEE } from '@/lib/portail/lectureDatee';
 
 // « Mes échanges » ([[D-293]]) : l'encart d'urgence est là quoi qu'il arrive,
-// chaque ligne ouvre la page de l'élément, et rien ne parle encore de lecture
-// datée (elle vient avec ai, [[D-297]]).
+// chaque ligne ouvre la page de l'élément, et le bloc « Votre lecture est
+// datée » est celui de [[D-297]] §4, qui remplace la phrase de [[D-293]] §4.
 
 function repondre(status: number, corps: unknown) {
   vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(corps), { status })));
@@ -77,14 +78,17 @@ describe('MesEchangesJournal', () => {
     expect(screen.getByText('12 octobre 2026')).toBeTruthy();
   });
 
-  it('les cinq blocs validés sont servis, et pas encore celui de la lecture datée', async () => {
+  it('les blocs validés sont servis, dont celui de D-297 §4 et non l’ancienne phrase de D-293 §4', async () => {
     repondre(200, { ok: true, ouvert: true, entrees: [] });
     render(<MesEchangesJournal token="TOK" />);
     await screen.findByText('Aucun élément pour le moment.');
+    expect(BLOCS_MES_ECHANGES).toHaveLength(6);
     for (const bloc of BLOCS_MES_ECHANGES) {
       expect(screen.getByText(bloc.texte)).toBeTruthy();
     }
-    expect(document.body.textContent).not.toMatch(/lecture est datée|date de votre lecture/i);
+    expect(BLOCS_MES_ECHANGES[2]).toEqual({ titre: TITRE_LECTURE_DATEE, texte: TEXTE_LECTURE_DATEE });
+    // L'ancienne phrase ne datait que l'ouverture depuis « Mes échanges ».
+    expect(document.body.textContent).not.toMatch(/depuis « Mes échanges », la date de votre lecture/);
   });
 
   it('session expirée : retour au portail', async () => {

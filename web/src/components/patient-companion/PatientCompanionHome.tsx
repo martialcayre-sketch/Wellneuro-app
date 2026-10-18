@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { AvisLectureDatee } from '@/components/patient/AvisLectureDatee';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
@@ -232,6 +233,10 @@ export function PatientCompanionHome({ token }: { token: string }) {
       {/* REPLIÉ ([[D-315]] §1) : la raison et l'axe restent lus, les actions
           passent dans le détail — jamais une action sans sa phrase d'attente
           (`D-056`). Jamais replié sur une pause ([[D-281]]) : voir `charger`. */}
+      {/* Le clic ci-dessous date la première ouverture du protocole : la phrase
+          se lit AVANT ([[D-297]] §4 ; protocole daté, arbitrage du 2026-10-18).
+          Même condition que le bouton — c'est lui seul qui consigne. */}
+      {!finDeCycle && !detailDeplie && (vue.actions.length > 0 || vue.followUpCriterion) && <AvisLectureDatee />}
       {!finDeCycle && !detailDeplie && (vue.actions.length > 0 || vue.followUpCriterion) && (
         <button
           type="button"
