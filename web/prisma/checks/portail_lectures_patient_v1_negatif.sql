@@ -14,12 +14,12 @@
 --      comme une LECTURE est un arbitrage — sans le CHECK, une surface
 --      pourrait y inscrire « connexion » et la table deviendrait le journal de
 --      présence que la campagne s'interdit (`DC-19`/`DC-20`) ;
---   5. la table porte EXACTEMENT ses trois colonnes, LISTE BLANCHE ;
---   6. AUCUNE COLONNE DE TYPE DATE OU HORODATAGE — vérifié sur le TYPE, et non
---      sur des noms devinés. C'est la seule impossibilité que cette table
---      offre : « quand le patient a-t-il ouvert son bilan » reste sans
---      réponse. Un `lu_le` n'aurait servi à rien au fil du jour, qui ne
---      consulte que l'EXISTENCE de la ligne, et aurait servi à autre chose ;
+--   5. la table porte EXACTEMENT ses colonnes, LISTE BLANCHE ;
+--   6. AUCUN HORODATAGE — vérifié sur le TYPE, et non sur des noms devinés.
+--      « À quelle heure le patient a-t-il ouvert son bilan » reste sans
+--      réponse. Depuis [[D-297]] (lettre ai), une seule colonne de type DATE
+--      est admise, `lu_le` : le jour de la première ouverture, rien de plus fin
+--      (§2). Son contrat propre est `portail_lectures_lu_le_v1_negatif.sql` ;
 --   7. la FK vers `patients` est en ON DELETE RESTRICT ;
 --   8. la RLS deny-all est active et sans policy (posture `D-005`).
 --
@@ -41,7 +41,7 @@ DECLARE
   -- ORDRE ALPHABÉTIQUE OBLIGATOIRE (comparaison à un `array_agg(... ORDER BY
   -- column_name)`) : une colonne ajoutée à la fin rougirait alors qu'elle est
   -- déclarée, et le message afficherait deux ensembles identiques au tri près.
-  COLS_LECTURES CONSTANT text[] := ARRAY['espece', 'id_objet', 'id_patient'];
+  COLS_LECTURES CONSTANT text[] := ARRAY['espece', 'id_objet', 'id_patient', 'lu_le'];
 BEGIN
   -- ── 0. Fixture — patient fictif autorisé (identité de fixture du dépôt) ──
   INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updated_at)
@@ -131,18 +131,22 @@ BEGIN
       reelles, COLS_LECTURES;
   END IF;
 
-  -- ── 6. AUCUNE COLONNE DE DATE, vérifié sur le TYPE ───────────────────────
+  -- ── 6. AUCUN HORODATAGE, vérifié sur le TYPE ─────────────────────────────
   -- La liste blanche ci-dessus l'implique déjà, mais elle l'implique par des
   -- NOMS : le jour où une colonne serait ajoutée à la liste blanche par le même
   -- diff qui l'ajoute au schéma, ce test-ci rougirait quand même si elle porte
   -- un instant. C'est là toute sa valeur — il garde l'INTERDIT, pas la forme.
+  -- Depuis [[D-297]], l'interdit est l'HEURE : aucun horodatage, aucune heure,
+  -- et pour toute date, `lu_le` seule.
   SELECT count(*) INTO nb
   FROM information_schema.columns c
   WHERE c.table_schema = 'public' AND c.table_name = 'portail_lectures_patient'
-    AND c.data_type IN ('timestamp without time zone', 'timestamp with time zone', 'date', 'time without time zone');
+    AND (c.data_type IN ('timestamp without time zone', 'timestamp with time zone',
+                         'time without time zone', 'time with time zone', 'interval')
+         OR (c.data_type = 'date' AND c.column_name <> 'lu_le'));
   IF nb <> 0 THEN
     RAISE EXCEPTION
-      'LECTURES PORTAIL: % colonne(s) d''horodatage — « quand le patient a lu » doit rester SANS RÉPONSE. Le fil du jour ne consulte que l''existence de la ligne.',
+      'LECTURES PORTAIL: % colonne(s) d''horodatage ou de date hors `lu_le` — « à quelle heure le patient a lu » doit rester SANS RÉPONSE (D-297 §2 : le jour seul).',
       nb;
   END IF;
 
@@ -187,7 +191,7 @@ BEGIN
     RAISE EXCEPTION 'LECTURES PORTAIL: policy inattendue (deny-all attendu)';
   END IF;
 
-  RAISE NOTICE 'LECTURES PORTAIL: accusé valide accepté et relu, doublon refusé (23505), plusieurs accusés par dossier acceptés, espèce hors liste et espèce vide refusées (23514), liste blanche exacte (3 colonnes), AUCUN horodatage, 3 NOT NULL, FK RESTRICT, RLS deny-all.';
+  RAISE NOTICE 'LECTURES PORTAIL: accusé valide accepté et relu, doublon refusé (23505), plusieurs accusés par dossier acceptés, espèce hors liste et espèce vide refusées (23514), liste blanche exacte (4 colonnes), AUCUN horodatage (lu_le seule date), 3 NOT NULL, FK RESTRICT, RLS deny-all.';
 END $$;
 
 ROLLBACK;

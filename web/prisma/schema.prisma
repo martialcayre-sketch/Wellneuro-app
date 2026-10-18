@@ -1717,6 +1717,12 @@ model PortailLecturePatient {
   /// `LettreAdressageRemise.id` ou `ProtocolDiffusionApproval.id`. Polymorphe,
   /// donc sans clé étrangère.
   idObjet   String @map("id_objet")
+  /// Le JOUR (heure de Paris) de la première ouverture (D-297, lettre ai) :
+  /// sans heure, posé par l'horloge de la base à la création de la ligne,
+  /// jamais mis à jour. Vide pour les lectures antérieures (« Lu, date non
+  /// enregistrée »). Sans défaut en base : seul le code qui sert la phrase
+  /// « Votre lecture est datée » l'écrit (D-297 §4).
+  luLe      DateTime? @map("lu_le") @db.Date
 
   patient Patient @relation(fields: [idPatient], references: [idPatient])
 
