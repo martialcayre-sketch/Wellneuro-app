@@ -30,6 +30,10 @@ const IMPORTEURS_ADMIS = [
   // Routes praticien de la biologie.
   'web/src/app/api/praticien/biologie/arbitrage/route.ts',
   'web/src/app/api/praticien/biologie/catalogue/route.ts',
+  // La composition signée des analyses groupées et des calculés (F80, D-323
+  // §1) : référentiel global au cabinet, même garde que la signature NABM —
+  // aucune donnée patient.
+  'web/src/app/api/praticien/biologie/compositions/route.ts',
   'web/src/app/api/praticien/biologie/import/compte-rendu/route.ts',
   'web/src/app/api/praticien/biologie/import/decisions/route.ts',
   'web/src/app/api/praticien/biologie/import/depot/route.ts',
@@ -81,6 +85,9 @@ const IMPORTEURS_ADMIS = [
   'web/src/app/dashboard/bibliotheque/page.tsx',
   'web/src/app/dashboard/biologie/page.tsx',
   'web/src/app/dashboard/patients/[idPatient]/page.tsx',
+  // Même motif (F80) : l'écran de signature de la composition, en `import
+  // type` et le module PUR `compositionsPreparees` (libellés des types).
+  'web/src/components/biologie/CompositionAnalyteSection.tsx',
   // Même motif (M-3) : l'écran de signature, en `import type` seul.
   'web/src/components/biologie/CorrespondancesNabmSection.tsx',
   // La proposition de bilan dans l'onglet « Biologie » ([[D-319]], F57 PR 2) :

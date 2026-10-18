@@ -10499,3 +10499,13 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Rediffusions des trois programmes par le praticien, à constater ; résidu de t13 à arbitrer ; dettes t16, t08, t09 à cadrer.
 
 **Ouvert.** r2_01 et r2_02 attendent la fin de #1530 (Fil).
+
+## 2026-10-18 — F80 : composition des analyses groupées (D-323, migration, signature)
+
+**Fait.** D-323 écrite sur arbitrages du responsable (#1529) ; migration des deux tables de composition en ajout seul et des sept fiches (#1540), release-db appliquée et constatée par conteneur ; PR 2 : liste préparée, signature par le praticien, section « Composition » de la fiche d'analyte.
+
+**Écarté.** `BiologyRatio` (deux opérandes et une constante : ni DFG, ni soustractions, constante sans provenance) ; un analyte « bilan thyroïdien ».
+
+**Prochaine action.** PR 3 : proposition, courrier et document lisent la composition (D-323 §2-§4), puis clôture du lot.
+
+**Ouvert.** Signature des compositions par le responsable ; alias d'import des sept fiches.
