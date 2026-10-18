@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import {
   FicheAnalytePanel,
@@ -9,6 +10,7 @@ import {
   LABEL_STATUT_FICHE,
   libelleTechnique,
 } from '@/components/biologie/FicheAnalytePanel';
+import { SignatureNabmLotPanel } from '@/components/biologie/SignatureNabmLotPanel';
 import type { CatalogueBiologieApiResponse } from '@/app/api/praticien/biologie/catalogue/route';
 import type {
   CatalogueBiologieResult,
@@ -38,6 +40,7 @@ export function RayonBiologiePanel() {
   const [recherche, setRecherche] = useState('');
   const [prelevement, setPrelevement] = useState('');
   const [ficheOuverte, setFicheOuverte] = useState<FicheAnalyte | null>(null);
+  const [lotOuvert, setLotOuvert] = useState(false);
   // Relecture du catalogue après une signature NABM (M-3) : le remboursement
   // se dérive côté serveur, seul un rechargement le met à jour.
   const [rechargement, setRechargement] = useState(0);
@@ -143,9 +146,15 @@ export function RayonBiologiePanel() {
       {catalogue && (
         <>
           <section aria-labelledby="analytes-biologie-titre" className="flex flex-col gap-3">
-            <h4 id="analytes-biologie-titre" className="text-sm font-semibold text-foreground">
-              Analytes ({analytesFiltres.length} sur {catalogue.analytes.length})
-            </h4>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h4 id="analytes-biologie-titre" className="text-sm font-semibold text-foreground">
+                Analytes ({analytesFiltres.length} sur {catalogue.analytes.length})
+              </h4>
+              {/* [[D-326]] §2 : les propositions de toutes les fiches, signées en un geste. */}
+              <Button variant="outline" onClick={() => setLotOuvert(true)}>
+                Signer en lot les correspondances préparées
+              </Button>
+            </div>
             <div className="flex flex-wrap gap-3">
               <input
                 type="search"
@@ -234,6 +243,17 @@ export function RayonBiologiePanel() {
             onCorrespondancesModifiees={() => setRechargement(n => n + 1)}
           />
         )}
+      </PanneauSuperpose>
+
+      <PanneauSuperpose
+        largeur="large"
+        titre="Signature en lot"
+        description="Les correspondances préparées de toutes les fiches d’analyte, à relire puis signer en un geste."
+        descriptionMasquee
+        open={lotOuvert}
+        onOpenChange={setLotOuvert}
+      >
+        {lotOuvert && <SignatureNabmLotPanel onSignees={() => setRechargement(n => n + 1)} />}
       </PanneauSuperpose>
     </div>
   );

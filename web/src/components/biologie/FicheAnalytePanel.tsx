@@ -226,6 +226,13 @@ export function FicheAnalytePanel({
             Actes cités : {fiche.remboursement.codesActesRetenus.join(', ')}
           </p>
         )}
+        {fiche.remboursement.parGroupes && (
+          // [[D-326]] §1 : coté par l'acte du groupe dont la composition signée le compte.
+          <p className="mt-1 text-xs text-muted-foreground">
+            Par l’acte de son groupe, dont la composition signée le compte :{' '}
+            {fiche.remboursement.parGroupes.map(g => g.libelle).join(', ')}.
+          </p>
+        )}
       </section>
 
       <CorrespondancesNabmSection analyteCode={fiche.code} onModifie={onCorrespondancesModifiees} />

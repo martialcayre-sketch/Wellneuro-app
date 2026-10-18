@@ -58,6 +58,9 @@ const IMPORTEURS_ADMIS = [
   // référentiel global, même garde que la signature — aucune donnée patient.
   'web/src/app/api/praticien/biologie/nabm/constats/route.ts',
   'web/src/app/api/praticien/biologie/nabm/correspondances/route.ts',
+  // La signature en lot ([[D-326]] §2) : même référentiel global, même garde,
+  // même service que la signature unitaire — aucune donnée patient.
+  'web/src/app/api/praticien/biologie/nabm/correspondances/lot/route.ts',
   // La recherche d'actes par libellé ([[D-320]] §1) : lecture seule du
   // millésime courant de la nomenclature, globale au cabinet — aucune donnée
   // patient, aucune écriture.
@@ -99,6 +102,8 @@ const IMPORTEURS_ADMIS = [
   'web/src/components/biologie/CompositionAnalyteSection.tsx',
   // Même motif (M-3) : l'écran de signature, en `import type` seul.
   'web/src/components/biologie/CorrespondancesNabmSection.tsx',
+  // Même motif ([[D-326]] §2) : la signature en lot, en `import type` seul.
+  'web/src/components/biologie/SignatureNabmLotPanel.tsx',
   // Le geste du statut posé ([[D-322]], F58) : le module PUR `statutPoseListe`
   // (codes et libellés de la liste fermée) — aucune valeur lue.
   'web/src/components/biologie/ActeStatutResultat.tsx',

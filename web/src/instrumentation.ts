@@ -3,6 +3,7 @@ import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { deploymentEnv, releaseSha } from '@/lib/observability/deploymentEnv';
 import { dsnRegionUe } from '@/lib/observability/sentryRegion';
+import { baseLiensAbsenteEnProduction } from '@/lib/portail/urlPublique';
 
 export async function register(): Promise<void> {
   // SENTRY S'INITIALISE ICI, PAR RUNTIME — c'est la convention de
@@ -34,6 +35,28 @@ export async function register(): Promise<void> {
   // garde est posée AVANT la marche en 15, pas après, parce qu'après il serait
   // trop tard pour l'apprendre autrement qu'en production.
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+
+  // PAS DE PRODUCTION SANS BASE PUBLIQUE (dette « repli localhost », H43).
+  // Sans `NEXTAUTH_URL`, les courriels écriraient des liens vers `localhost`
+  // (`baseLiensCourriel`), et les connexions Google n'auraient plus de
+  // `redirect_uri` : le serveur servirait un état faux sans le dire. Il refuse
+  // donc de démarrer, trace fatale à l'appui. LIMITE CONNUE : `next start`
+  // ouvre le port AVANT `register()` (revue `wn-reviewer` du 2026-10-18) ; que
+  // Scalingo garde alors la version précédente n'est PAS constaté — retirer la
+  // variable en production, c'est une panne franche, assumée plutôt qu'un
+  // service faux. Différé d'un tour de boucle, comme plus bas, pour ne pas
+  // tronquer la trace.
+  if (baseLiensAbsenteEnProduction()) {
+    logger.fatal({
+      event: EVENT_CODES.SYSTEM_UNHANDLED_ERROR,
+      domain: 'SYSTEM',
+      message: 'NEXTAUTH_URL absente ou invalide en production : le serveur refuse de démarrer',
+      context: { environment: deploymentEnv(), release: releaseSha(), runtime: 'nodejs' },
+      metadata: { retryable: false },
+    });
+    setImmediate(() => process.exit(1));
+    return;
+  }
 
   // LA RÉGION EST UNE CONDITION, PAS UN RÉGLAGE : le document d'information
   // promet au patient un traitement dans l'Union européenne, et

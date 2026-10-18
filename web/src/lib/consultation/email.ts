@@ -2,6 +2,7 @@ import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { getGabarit, rendreGabarit } from '@/lib/correspondance/registreGabarits';
 import { CHEMIN_CONNEXION } from '@/lib/portail/googleIdentite';
 import { PARAMETRE_DESTINATION, type DestinationLien } from '@/lib/portail/lienMagique';
+import { baseLiensCourriel } from '@/lib/portail/urlPublique';
 import {
   journaliserCorrespondancePatient,
   TYPES_CORRESPONDANCE_PATIENT,
@@ -65,7 +66,7 @@ async function envoyerAccesTrace({
  * du patient, et dans le chemin qu'il ouvrira une fois.
  */
 export function buildMagicLinkUrl(jeton: string, destination?: DestinationLien): string {
-  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const baseUrl = baseLiensCourriel();
   const suffixe = destination ? `?${PARAMETRE_DESTINATION}=${destination}` : '';
   return `${baseUrl}/portail/lien/${jeton}${suffixe}`;
 }
@@ -76,7 +77,7 @@ export function buildMagicLinkUrl(jeton: string, destination?: DestinationLien):
  * pour tout patient.
  */
 export function buildGoogleConnexionUrl(): string {
-  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const baseUrl = baseLiensCourriel();
   return `${baseUrl}${CHEMIN_CONNEXION}`;
 }
 

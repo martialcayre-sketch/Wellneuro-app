@@ -10640,6 +10640,24 @@ qualité inchangés (item de l'indice).
 **Ouvert.** Texte des deux marques choisi par l'assistant (D-308 ne le fixe pas) ; révocation d'une annulation : le dernier statut posé redevient actif (à confirmer).
 
 
+## 2026-10-18 — t16 : la naissance d'un lien magique se sérialise contre la fermeture du dossier
+
+**Fait.** Transaction de la demande sortie dans `lib/portail/emissionSurDemande.ts` ; l'éligibilité y est relue sous `FOR SHARE` après le verrou consultatif. Banc à deux sessions (vrai écrivain, PostgreSQL) : désactivation commise pendant l'attente du verrou, désactivation en cours, révocation annulée ; il rougit sans la relecture (mutation constatée). Câblé en CI et en T3.
+
+**Écarté.** Faire prendre le verrou consultatif aux deux gestes praticien (trois écrivains à toucher au lieu d'un, ordre des verrous à refaire).
+
+**Prochaine action.** `wn-reviewer`, T3, PR ; merge après #1556 et #1557.
+
+**Ouvert.** t08 (plafond des écritures, décision à écrire) ; t09 (fait nouveau à trancher) ; liste J1-base.
+## 2026-10-18 — J1-base : plus de repli localhost possible en production
+
+**Fait.** Base unique des liens de courriel (`baseLiensCourriel`) ; `instrumentation.ts` refuse de démarrer en production réelle sans `NEXTAUTH_URL` (trace fatale, sortie au tour suivant). Constat Scalingo (noms seuls) : `NEXTAUTH_URL` et `WN_DEPLOY_ENV` posés.
+
+**Écarté.** Lever à la fabrication du lien (première version) : la revue `wn-reviewer` a montré que la levée tombait après des écritures validées (assignations créées, route en échec, trace d'envoi perdue) ; inférer la production par `NODE_ENV` (les E2E tournent sur un build de production).
+
+**Prochaine action.** Seconde relecture, T3, PR ; merge après #1555 et #1556.
+
+**Ouvert.** t09 à reprendre (drapeaux allumés en production) ; liste J1-base attendue.
 ## 2026-10-18 — F38 : migration du document pour le médecin
 
 **Fait.** #1553 (marques datées) mergée sur sa tête relue, F58 soldée. Migration `documents_medecin_imprimes_v1` : impressions figées (HTML recopié, empreinte vérifiée par CHECK, synthèse validée du dossier, praticien du dossier) et téléchargements du patient (dernière impression seule), en ajout seul, sous le verrou du dossier. Contrat négatif à quatorze promesses, 32 mutations toutes tuées ; relecture `wn-reviewer` (SERIALIZABLE refusé, statuts non validés tous éprouvés, ordre sous le verrou) ; effacement nommé ; déclaration RGPD validée par le responsable ; T3 vert.
@@ -10678,3 +10696,23 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** Le responsable relit les textes du portail, puis constat sur un dossier de test, puis allumage du drapeau.
 
 **Ouvert.** Faut-il refuser l'action « effacer » d'une synthèse déjà imprimée (question B de la revue) ?
+## 2026-10-18 — F80 : héritage de l'acte du groupe, signature NABM en lot (D-326)
+
+**Fait.** Neuf compositions signées par le responsable, constatées par conteneur. D-326 : un constituant tient l'acte de son groupe signé (§1) ; les correspondances préparées se signent en lot depuis le rayon, tout ou rien, au nom de la session (§2) ; aide « acte isolé » sur la fiche d'une analyse groupée (§3). Bancs avec contre-épreuves par mutation (héritage, couverture, tri des verrous, cochage).
+
+**Décidé.** Responsable : « les deux » (héritage + lot) ; re-signer lui-même les quatre actes de groupe signés « groupe imposé ».
+
+**Écarté.** Signer à la place du responsable (signature = relecture attestée) ; une règle qui réinterpréterait la nature signée.
+
+**Prochaine action.** PR, CI, revue, merge ; puis le responsable re-signe 1104, 1609, 1610, 0996 en « acte isolé » et signe le lot ; constat par conteneur.
+
+**Ouvert.** Un constat « aucun acte » sur un constituant contredit sa composition : il garde son état, rien ne le signale.
+## 2026-10-18 — ACT-2 constatée, ACT-3 ouverte
+
+**Fait.** Première vraie diffusion après le drapeau, par le responsable, sur un dossier de test : une seule annonce `protocole_diffuse` envoyée avec le clic, e-mail reçu identique au gabarit validé. `WN_PORTAIL_MES_ECHANGES=true` posé à 17 h 47 UTC, constaté dans l'image servie (401 au lieu de 404). Aucune lecture datée encore en base.
+
+**Écarté.** Garder la garde d'âge sur le POST du rendez-vous de suivi : l'arbitrage du 2026-10-14 garde le suivi du protocole ouvert (relecture `wn-reviewer`, no-go) ; code retiré avant commit.
+
+**Prochaine action.** Constater un premier dossier servi par « Mes échanges » et le premier jour `lu_le`, par conteneur.
+
+**Ouvert.** La ligne « rendez-vous de suivi » reste fermée environ 24 h entre deux points (routée en H61, fenêtres inchangées).

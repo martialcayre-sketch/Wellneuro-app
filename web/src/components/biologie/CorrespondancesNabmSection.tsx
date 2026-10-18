@@ -19,6 +19,7 @@ import type {
   EtatCorrespondance,
   NatureNabm,
 } from '@/lib/biology-library/correspondancesNabm';
+import { compositionPrepareePour } from '@/lib/biology-library/compositionsPreparees';
 import { formatDate } from './FicheAnalytePanel';
 
 // Signature des correspondances analyte ↔ acte NABM (M-3, F54), dans la fiche
@@ -70,7 +71,7 @@ function natureConnue(nature: string): NatureNabm | '' {
   return NATURES.find(n => n.valeur === nature)?.valeur ?? '';
 }
 
-function DetailActe({ acte }: { acte: ActeNabmAffiche }) {
+export function DetailActe({ acte }: { acte: ActeNabmAffiche }) {
   return (
     <span className="flex flex-col gap-1">
       <span className="text-sm text-foreground">
@@ -87,7 +88,7 @@ function DetailActe({ acte }: { acte: ActeNabmAffiche }) {
   );
 }
 
-function ChoixNature({
+export function ChoixNature({
   nom,
   valeur,
   onChange,
@@ -344,6 +345,16 @@ export function CorrespondancesNabmSection({
           Seules les correspondances signées comptent pour le remboursement. Signer, c’est
           attester avoir lu l’acte dans la nomenclature{millesime ? ` (millésime ${millesime})` : ''}.
         </p>
+        {compositionPrepareePour(analyteCode)?.type === 'groupe' && (
+          // [[D-326]] §3 : quatre actes de groupe ont été signés « groupe imposé »
+          // le 2026-10-18, ce qui disait l'analyse groupée remboursable seulement
+          // accompagnée. L'aide le dit là où la nature se choisit.
+          <p className="mt-1 text-xs text-foreground">
+            Analyse groupée : l’acte qui la cote se signe en « Acte isolé » — il cote cette
+            analyse entière à lui seul. « Groupe imposé » la dirait remboursable seulement
+            accompagnée d’une autre analyse.
+          </p>
+        )}
       </div>
 
       {messageEchec && (
@@ -508,6 +519,18 @@ export function CorrespondancesNabmSection({
               );
             })}
           </ul>
+        </div>
+      )}
+
+      {correspondances !== null && candidats && (candidats.tenusDuGroupe ?? []).length > 0 && (
+        // [[D-326]] §1 : la composition signée du groupe cote déjà l'analyte par cet acte.
+        <div className="flex flex-col gap-1 rounded-lg border border-border p-3">
+          {(candidats.tenusDuGroupe ?? []).map(t => (
+            <p key={t.codeActe} className="text-sm text-foreground">
+              Acte {t.codeActe} : rien à signer, l’analyte le tient de la composition signée de
+              « {t.groupe} ».
+            </p>
+          ))}
         </div>
       )}
 
