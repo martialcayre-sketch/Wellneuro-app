@@ -215,11 +215,12 @@ export default function QuestionnairesHubPage() {
       try {
         // `no-store`, comme le formulaire : la ligne doit disparaître dès la réponse.
         const res = await fetch('/api/portail/protocole/checkin', { cache: 'no-store' });
-        if (!res.ok) return;
-        const data: unknown = await res.json();
+        const data: unknown = res.ok ? await res.json() : null;
         if (vivant) setRendezVousSuivi(rendezVousSuiviAFaire(data));
       } catch {
-        // Silence délibéré, même raison que pour les lectures.
+        // Silence délibéré, même raison que pour les lectures — mais une relecture
+        // en échec retire la ligne : le doute ne garde pas une tâche.
+        if (vivant) setRendezVousSuivi(null);
       }
     };
     // La tâche mène à `/suivi` par un lien ordinaire : au retour par le
