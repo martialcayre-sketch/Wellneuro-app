@@ -198,7 +198,7 @@ describe('instrumentation — pas de production sans base publique (H43, repli l
     await register();
 
     expect(fatal).toHaveBeenCalledTimes(1);
-    expect(fatal.mock.calls[0][0]).toMatchObject({ message: expect.stringMatching(/NEXTAUTH_URL absente en production/) });
+    expect(fatal.mock.calls[0][0]).toMatchObject({ message: expect.stringMatching(/NEXTAUTH_URL absente ou invalide en production/) });
     expect(sortie, 'sortie dans le même tick : la trace fatale serait tronquée').not.toHaveBeenCalled();
     await tourDeBoucle();
     expect(sortie).toHaveBeenCalledWith(1);

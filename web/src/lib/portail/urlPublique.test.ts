@@ -44,6 +44,10 @@ describe('base des liens de courriel (H43, repli localhost)', () => {
     expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: '  ' })).toBe(true);
     // `'/'` se réduit à une base vide, que `baseLiensCourriel` remplacerait par localhost.
     expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: '/' })).toBe(true);
+    // Ni barres seules, ni hôte sans schéma : `//portail/lien/<jeton>` viserait l'hôte « portail ».
+    expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: '//' })).toBe(true);
+    expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: 'app.exemple.fr' })).toBe(true);
+    expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: 'javascript:alert(1)' })).toBe(true);
   });
 
   it('base posée, ou hors production réelle (E2E sur build de production compris) : rien à signaler', () => {

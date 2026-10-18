@@ -50,7 +50,7 @@ export async function register(): Promise<void> {
     logger.fatal({
       event: EVENT_CODES.SYSTEM_UNHANDLED_ERROR,
       domain: 'SYSTEM',
-      message: 'NEXTAUTH_URL absente en production : le serveur refuse de démarrer',
+      message: 'NEXTAUTH_URL absente ou invalide en production : le serveur refuse de démarrer',
       context: { environment: deploymentEnv(), release: releaseSha(), runtime: 'nodejs' },
       metadata: { retryable: false },
     });

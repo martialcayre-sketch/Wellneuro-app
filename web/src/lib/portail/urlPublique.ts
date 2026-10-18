@@ -38,9 +38,20 @@ export function baseLiensCourriel(): string {
   return baseNettoyee(process.env.NEXTAUTH_URL) || 'http://localhost:3000';
 }
 
-/** UNE normalisation pour la base et pour sa garde : `'/'` ou des espaces valent une base vide (revue CodeRabbit de #1557). */
+/**
+ * UNE normalisation pour la base et pour sa garde (revues CodeRabbit de
+ * #1557) : seule une URL http(s) ABSOLUE est une base. Des espaces, `'/'`,
+ * `'//'` ou un hôte sans schéma valent une base vide — sinon un lien comme
+ * `//portail/lien/<jeton>` viserait l'hôte « portail ».
+ */
 function baseNettoyee(valeur: string | undefined): string {
-  return (valeur ?? '').trim().replace(/\/$/, '');
+  const base = (valeur ?? '').trim().replace(/\/+$/, '');
+  try {
+    const { protocol } = new URL(base);
+    return protocol === 'https:' || protocol === 'http:' ? base : '';
+  } catch {
+    return '';
+  }
 }
 
 /**
