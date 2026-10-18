@@ -263,7 +263,11 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
         }
       }
       const orientation = orienterEffetIndesirable(severite);
-      const prevenir = await premierSignalementDeLHeure(patient.idPatient);
+      // Un effet indésirable orienté vers un avis médical ou l'urgence prévient
+      // TOUJOURS le praticien ([[D-328]] §2) : la limite d'un e-mail par heure ne
+      // vaut que pour une gêne légère (« revue praticien »).
+      const prevenir = orientation.orientation !== 'revue_praticien'
+        || await premierSignalementDeLHeure(patient.idPatient);
       await prisma.trustAdverseEffectReport.create({
         data: {
           idPatient: patient.idPatient,

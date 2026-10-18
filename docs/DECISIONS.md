@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-328 — Signalements : un seul e-mail au praticien par heure et par dossier ; signalements et retrait d'un choix confirmés hors plafond ; la demande de correction d'un objectif reste sous plafond (amende D-327 §4)
+### D-328 — Signalements : un seul e-mail au praticien par heure civile et par dossier, sauf effet indésirable orienté vers un avis médical ou l'urgence ; signalements et retrait d'un choix confirmés hors plafond ; la demande de correction d'un objectif reste sous plafond (amende D-327 §4)
 
 - Date : 2026-10-18
 - Statut : accepté. Arbitrages du responsable du 2026-10-18 (soir), sur
@@ -25,18 +25,34 @@
 
 **1. L'e-mail.** Chaque signalement (effet indésirable, incident de
 confidentialité, demande d'exercice d'un droit) s'enregistre toujours. Seul le
-premier de l'heure, pour un dossier, envoie au praticien l'e-mail générique
-« Un signalement a été déposé dans votre espace » ; les suivants se lisent
-dans « Confiance & droits ». Les trois natures comptent ensemble : l'e-mail
-est le même pour toutes.
+premier de l'HEURE CIVILE, pour un dossier, envoie au praticien l'e-mail
+générique « Un signalement a été déposé dans votre espace » ; les suivants se
+lisent dans « Confiance & droits » (et, pour un effet indésirable non traité,
+en tête du Fil du jour). Les trois natures comptent ensemble : l'e-mail est le
+même pour toutes.
 
-**2. Compter avant d'écrire.** Le dossier est lu AVANT l'écriture du
+**Heure civile, pas glissante.** Comptée sur les soixante minutes
+précédentes, une suite de dépôts espacés de moins d'une heure taisait TOUS
+les e-mails après le premier, sans borne de temps (revue `wn-reviewer` du
+2026-10-18, P1). L'heure civile garantit au moins un e-mail par heure où le
+dossier dépose.
+
+**2. L'effet indésirable qui demande un avis prévient toujours.** Un effet
+indésirable orienté vers un avis médical, l'urgence ou « urgence ou contact »
+(sévérité déclarée modérée, sévère ou incertaine) envoie l'e-mail sans passer
+par la limite ; seule la gêne légère (« revue praticien ») y est soumise.
+Choix de l'assistant après la revue, dans le sens de la sécurité (plus
+d'e-mails, jamais moins) — à confirmer par le responsable. La conduite
+d'urgence du patient ne repose pas sur l'e-mail : le message qu'il lit
+l'oriente vers le 15 ou le 112.
+
+**3. Compter avant d'écrire.** Le dossier est lu AVANT l'écriture du
 signalement : deux dépôts simultanés voient chacun zéro et envoient chacun leur
 e-mail — un doublon, bénin. Compter après ferait voir à chacun l'autre, et
 aucun e-mail ne partirait. Une lecture en échec prévient quand même : un e-mail
 de trop vaut mieux qu'un signalement que le praticien n'apprend pas.
 
-**3. Ce qui est confirmé sans changement.** Les signalements et le retrait
+**4. Ce qui est confirmé sans changement.** Les signalements et le retrait
 d'un choix ne sont jamais plafonnés ([[D-327]] §4). La demande de correction
 d'un objectif reste dans le plafond commun du dossier à deux voix (20 par
 heure) : c'est un geste d'échange sur un objectif, pas une demande d'exercice

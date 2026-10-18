@@ -102,6 +102,19 @@ describe('POST /api/portail/trust/signalement', () => {
 
   // D-328 : un e-mail par heure et par dossier. Le signalement, lui,
   // s'enregistre TOUJOURS — c'est seulement l'e-mail qui se tait.
+  it.each(['severe', 'moderee', 'incertaine'])(
+    'effet indésirable %s : le praticien est TOUJOURS prévenu, même après un dépôt dans l’heure (D-328 §2)',
+    async (severiteDeclaree) => {
+      premierSignalementDeLHeure.mockResolvedValue(false);
+      const response = await POST(
+        request({ categorie: 'effet_indesirable', produitLibelle: 'Complément X', symptomes: 'Palpitations', severiteDeclaree }),
+      );
+      expect(response.status).toBe(200);
+      expect(notifierPraticienSignalement).toHaveBeenCalledWith('praticien@wellneuro.fr');
+      premierSignalementDeLHeure.mockResolvedValue(true);
+    },
+  );
+
   it.each([
     ['effet_indesirable', { produitLibelle: 'Complément X', symptomes: 'Palpitations', severiteDeclaree: 'legere' }],
     ['incident_confidentialite', { categorieIncident: 'connexion_non_reconnue', description: 'Connexion inconnue.' }],

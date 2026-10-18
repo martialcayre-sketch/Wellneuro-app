@@ -9,7 +9,7 @@ const { prisma } = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
-import { premierSignalementDeLHeure } from './notification';
+import { debutHeureCivile, premierSignalementDeLHeure } from './notification';
 
 describe('e-mail praticien des signalements : un par heure et par dossier (D-328)', () => {
   const maintenant = new Date('2026-10-18T20:00:00.000Z');
@@ -21,10 +21,18 @@ describe('e-mail praticien des signalements : un par heure et par dossier (D-328
     prisma.trustRightsRequest.count.mockResolvedValue(0);
   });
 
-  it('aucun signalement du dossier dans l’heure : le prochain prévient', async () => {
-    expect(await premierSignalementDeLHeure('PAT_TEST', maintenant)).toBe(true);
+  it('aucun signalement du dossier depuis le début de l’heure : le prochain prévient', async () => {
+    expect(await premierSignalementDeLHeure('PAT_TEST', new Date('2026-10-18T20:42:10.000Z'))).toBe(true);
     const where = prisma.trustPrivacyIncident.count.mock.calls[0][0].where;
-    expect(where).toEqual({ idPatient: 'PAT_TEST', soumisLe: { gte: new Date('2026-10-18T19:00:00.000Z') } });
+    expect(where).toEqual({ idPatient: 'PAT_TEST', soumisLe: { gte: new Date('2026-10-18T20:00:00.000Z') } });
+  });
+
+  it('heure CIVILE, pas glissante : 10:00, 10:50, 11:40 — le dépôt de 11:40 est le premier de son heure', () => {
+    // Glissante, la fenêtre de 11:40 remontait à 10:40 et voyait 10:50 : la
+    // chaîne taisait tout après le premier dépôt, sans borne de temps.
+    expect(debutHeureCivile(new Date('2026-10-18T11:40:00.000Z'))).toEqual(new Date('2026-10-18T11:00:00.000Z'));
+    expect(debutHeureCivile(new Date('2026-10-18T10:50:00.000Z'))).toEqual(new Date('2026-10-18T10:00:00.000Z'));
+    expect(debutHeureCivile(new Date('2026-10-18T11:00:00.000Z'))).toEqual(new Date('2026-10-18T11:00:00.000Z'));
   });
 
   it.each(['trustAdverseEffectReport', 'trustPrivacyIncident', 'trustRightsRequest'] as const)(
