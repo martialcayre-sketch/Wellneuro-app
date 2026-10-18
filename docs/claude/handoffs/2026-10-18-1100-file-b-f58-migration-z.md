@@ -35,10 +35,15 @@ Migration `20261018120000_statuts_poses_resultats_biologiques_v1`,
 
 ## Validations exécutées
 
-- F58 : contrat vert sur base neuve, `migrate diff` sans dérive, cinq
-  mutations du trigger rougissent le contrat ; T1 ; revue `wn-reviewer` (go,
-  P2 corrigés ou routés) ; CI vert sur bd66ec18 ; CodeRabbit sans remarque
-  hors la validation RGPD.
+- F58 : contrat vert sur base neuve (contrat BP-09 vert aussi), `migrate
+  diff` sans dérive, six mutations du trigger rougissent le contrat, dont
+  « sans verrou de clé » ; course à deux sessions (correction tenue ouverte,
+  pose concurrente) : écrite sous l'ancien verrou par résultat, refusée sous
+  les verrous de clé de BP-09 ; T1 ; revue `wn-reviewer` (go, P2 corrigés ou
+  routés) ; CI vert sur 9c68ac0c. CodeRabbit : P1 fenêtre d'effacement
+  écarté avec motif (retiré par CodeRabbit) ; P1 verrou de correction
+  corrigé (e1772a6a) ; nitpick de validation RGPD levé par la validation du
+  responsable.
 - z : banc de route (8 cas), T1, T2 vert (13 452 unitaires, 276 E2E) ; CI
   vert ; remarque CodeRabbit (libellé visible) corrigée.
 
