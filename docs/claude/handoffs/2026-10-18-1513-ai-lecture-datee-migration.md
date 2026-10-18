@@ -29,9 +29,13 @@ Livrer le schéma de la lettre ai : le jour (heure de Paris) de la première ouv
 
 - `prisma validate` vert.
 - Migrations appliquées sur une base locale jetable ; les deux contrats verts ; contrat neuf rouge après retrait du trigger d'insertion (mutation), base supprimée ensuite.
-- Tests de la route : 56 verts. T1 complet et T3 avant la PR (voir la PR).
+- Seconde mutation : un trigger qui lit `CURRENT_DATE` (fuseau de la session) est attrapé par la passe sous fuseaux extrêmes (UTC+14, UTC-12).
+- Tests de la route : 56 verts. T1 complet vert ; T3 complet vert (6 min 18 s, E2E compris).
+- `wn-reviewer` (P0) : go, aucun P0 ni P1. P2 repris : passe sous fuseaux extrêmes, mise en garde sur une recopie de la table dans le commentaire de retour arrière. Reste la passe Codex manuelle du responsable (P0).
 
 ## Problèmes ouverts
+
+- PR 2 : l'affichage praticien de D-297 doit amender explicitement `portailLecturesPatient.guard.test.ts` (qui interdit la table sous `app/api/praticien` et `components/patient-cockpit`), en citant D-297 ; écrire par `ON CONFLICT DO NOTHING` ou `create` + P2002, jamais `DO UPDATE` (refusé par le trigger).
 
 - Release-db de `main` en attente pour le lot F80 de l'autre session : une release à la fois ; constater la sienne avant d'approuver celle-ci.
 - Écarts routés sans correctif : garde d'âge absente du POST check-in et du compagnon (D-284) ; fenêtre de la ligne de suivi fermée environ 24 h entre deux points.

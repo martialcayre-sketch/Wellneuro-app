@@ -67,5 +67,14 @@ CREATE TRIGGER portail_lectures_patient_lu_le_fige
 -- (`release-db`), jamais à la main. Tant que le code qui écrit le jour n'est pas
 -- déployé, la colonne est vide partout : déployer d'abord un code qui ne la
 -- sélectionne plus, puis supprimer les deux triggers et leurs fonctions, puis
--- `ALTER TABLE "portail_lectures_patient" DROP COLUMN "lu_le";`. Une fois des jours écrits, le retour exige d'abord une décision sur
--- eux (donnée déclarée au registre RGPD, [[D-297]] §6).
+-- `ALTER TABLE "portail_lectures_patient" DROP COLUMN "lu_le";`. Une fois des
+-- jours écrits, le retour exige d'abord une décision sur eux (donnée déclarée
+-- au registre RGPD, [[D-297]] §6).
+--
+-- RECOPIER LA TABLE RÉÉCRIT SES JOURS. Le trigger d'insertion remplace tout
+-- jour fourni, y compris par une restauration en données seules sans
+-- `--disable-triggers`, un `COPY`, ou une future migration qui reconstruit la
+-- table par `INSERT … SELECT` : chaque jour prendrait en silence celui de
+-- l'opération. Une telle recopie désactive d'abord le trigger, dans la même
+-- migration relue. Une restauration `pg_dump` complète n'est pas touchée (les
+-- triggers sont recréés après les données).

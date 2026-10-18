@@ -11,7 +11,7 @@
 --      sert DEMANDE un jour ;
 --   4. LA BASE CHOISIT LE JOUR : une date fournie par l'appelant — d'un autre
 --      jour, ou un horodatage — est REMPLACÉE par le jour de Paris de
---      l'horloge de la base (§2). Le code choisit s'il date, jamais quelle
+--      l'horloge de la base (§2), quel que soit le fuseau de la session. Le code choisit s'il date, jamais quelle
 --      date ;
 --   5. le jour ne se pose pas APRÈS COUP sur une lecture sans jour (UPDATE
 --      refusé — aucun rattrapage, §3) ;
@@ -31,6 +31,7 @@ DECLARE
   jour date;
   defaut text;
   refuse boolean;
+  tz_origine text;
   jour_base CONSTANT date := (clock_timestamp() AT TIME ZONE 'Europe/Paris')::date;
 BEGIN
   -- ── 1, 2, 3. Type, nullabilité, aucun défaut ─────────────────────────────
@@ -95,6 +96,25 @@ BEGIN
     RAISE EXCEPTION 'LU_LE: un horodatage fourni n''a pas été remplacé par le jour de la base (%)', jour;
   END IF;
 
+  -- Le jour est celui de PARIS, pas celui du fuseau de la session. Le CI tourne
+  -- en UTC, où un `CURRENT_DATE` ne diffère de Paris qu'entre 22 h et 24 h :
+  -- deux passes sous des fuseaux extrêmes (UTC+14, UTC-12) couvrent ensemble
+  -- toutes les heures — l'une des deux rougit si le trigger perd son fuseau.
+  tz_origine := current_setting('TimeZone');
+  PERFORM set_config('TimeZone', 'Etc/GMT-14', true);
+  INSERT INTO portail_lectures_patient (id_patient, espece, id_objet, lu_le)
+  VALUES ('PAT_CONTRAT_PLULEE', 'bilan', 'envoi_fuseau_est', DATE '2000-01-01');
+  PERFORM set_config('TimeZone', 'Etc/GMT+12', true);
+  INSERT INTO portail_lectures_patient (id_patient, espece, id_objet, lu_le)
+  VALUES ('PAT_CONTRAT_PLULEE', 'bilan', 'envoi_fuseau_ouest', DATE '2000-01-01');
+  PERFORM set_config('TimeZone', tz_origine, true);
+  SELECT count(*) INTO nb FROM portail_lectures_patient
+  WHERE id_patient = 'PAT_CONTRAT_PLULEE' AND id_objet IN ('envoi_fuseau_est', 'envoi_fuseau_ouest')
+    AND lu_le = jour_base;
+  IF nb <> 2 THEN
+    RAISE EXCEPTION 'LU_LE: sous un fuseau de session extrême, le jour n''est plus celui de Paris (% sur 2) — le trigger lit le fuseau de la session', nb;
+  END IF;
+
   -- ── 5. Aucun rattrapage : poser un jour après coup est refusé ────────────
   refuse := false;
   BEGIN
@@ -141,7 +161,7 @@ BEGIN
       RAISE EXCEPTION 'LU_LE: une mise à jour qui ne touche pas au jour a été refusée (%)', SQLERRM;
   END;
 
-  RAISE NOTICE 'LU_LE: type date, nullable, AUCUN défaut, 2 triggers, lecture sans jour laissée vide, date et horodatage fournis remplacés par le jour de la base, rattrapage, correction et effacement refusés.';
+  RAISE NOTICE 'LU_LE: type date, nullable, AUCUN défaut, 2 triggers, lecture sans jour laissée vide, date et horodatage fournis remplacés par le jour de Paris (fuseaux UTC+14 et UTC-12 compris), rattrapage, correction et effacement refusés.';
 END $$;
 
 ROLLBACK;
