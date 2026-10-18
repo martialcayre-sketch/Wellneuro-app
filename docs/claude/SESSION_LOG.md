@@ -10649,3 +10649,15 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR, CI, CodeRabbit, merge, release-db approuvée, constat par conteneur, puis la PR du code (route d'impression gardée, ligne au Fil, « Pour votre médecin » au portail sous drapeau éteint).
 
 **Ouvert.** Texte portail « Pour votre médecin » et son éventuel ajout à la note patient ; sort au portail d'une impression antérieure à un retrait du partage : à trancher avec le code, avant le drapeau.
+
+## 2026-10-18 — ACT-3 : relecture préalable, EF-0 constaté servi
+
+**Fait.** ai déployée (ad5a130d) ; triggers constatés en production, aucune lecture datée encore. EF-0 constaté servi par #1546 ; plan H14 et H61 à jour.
+
+**Décidé.** Responsable : micro-textes de « Mes échanges » validés tels quels ; limite « protocole indisponible » acceptée.
+
+**Écarté.** Masquer au journal un protocole indisponible (lot de code avant ACT-3, pour un cas rare).
+
+**Prochaine action.** Constater ACT-2 à la première vraie diffusion, puis ouvrir ACT-3.
+
+**Ouvert.** Premier jour de lecture écrit en production, à constater par conteneur.

@@ -44,7 +44,7 @@ export const BLOCS_MES_ECHANGES: readonly { titre: string; texte: string }[] = O
   },
 ]);
 
-// Micro-textes d'état, NON VALIDÉS à ce jour : à relire avec le responsable
-// avant l'ouverture (ACT-3). La page est livrée fermée.
+// Micro-textes d'état, validés tels quels par le responsable le 2026-10-18
+// (relecture préalable à ACT-3). La page est livrée fermée.
 export const CHARGEMENT_MES_ECHANGES = 'Chargement de vos échanges…';
 export const AUCUN_ECHANGE = 'Aucun élément pour le moment.';
