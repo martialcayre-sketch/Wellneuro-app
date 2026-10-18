@@ -10500,6 +10500,15 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** r2_01 et r2_02 attendent la fin de #1530 (Fil).
 
+## 2026-10-18 — F80 : composition des analyses groupées (D-323, migration, signature)
+
+**Fait.** D-323 écrite sur arbitrages du responsable (#1529) ; migration des deux tables de composition en ajout seul et des sept fiches (#1540), release-db appliquée et constatée par conteneur ; PR 2 : liste préparée, signature par le praticien, section « Composition » de la fiche d'analyte.
+
+**Écarté.** `BiologyRatio` (deux opérandes et une constante : ni DFG, ni soustractions, constante sans provenance) ; un analyte « bilan thyroïdien ».
+
+**Prochaine action.** PR 3 : proposition, courrier et document lisent la composition (D-323 §2-§4), puis clôture du lot.
+
+**Ouvert.** Signature des compositions par le responsable ; alias d'import des sept fiches.
 ## 2026-10-18 — r2_02 : « Questionnaires à consulter » en tête du Fil
 
 **Fait.** Le panneau des réponses en attente, au-dessus du Fil, s'intitule « Questionnaires à consulter » (séance du 2026-10-12, réponse 9). E56 mergé (#1538) et déployé ; #1530 mergé par l'autre session, ce qui ouvre la fenêtre N-6.

@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/Badge';
+import { CompositionAnalyteSection } from '@/components/biologie/CompositionAnalyteSection';
 import { CorrespondancesNabmSection } from '@/components/biologie/CorrespondancesNabmSection';
 import type { FicheAnalyte } from '@/lib/biology-library/catalogue';
 import { LABEL_REMBOURSEMENT } from '@/lib/biology-library/libellesRemboursement';
@@ -214,6 +215,8 @@ export function FicheAnalytePanel({
       </section>
 
       <CorrespondancesNabmSection analyteCode={fiche.code} onModifie={onCorrespondancesModifiees} />
+
+      <CompositionAnalyteSection analyteCode={fiche.code} />
 
       <section aria-label="Conditions préanalytiques">
         <h5 className="text-sm font-semibold text-foreground">Préanalytique</h5>
