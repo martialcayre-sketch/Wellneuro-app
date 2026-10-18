@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { PortailLettreAdressageResponse } from '@/app/api/portail/lettre-adressage/route';
 import type { LettreAdressageServie } from '@/lib/correspondance/lettreServicePatient';
+import { AvisLectureDatee } from '@/components/patient/AvisLectureDatee';
 import { ConsignerLecturePortail } from '@/components/patient/ConsignerLecturePortail';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
@@ -99,6 +100,9 @@ export function CourrierMedecinLecture({ token }: { token: string }) {
 
   return (
     <article className="space-y-6">
+      {/* En tête, avant le courrier, et sous la MÊME condition que la
+          consignation plus bas : la page qui date sert la phrase ([[D-297]] §4). */}
+      {lettre.etat === 'servie' && lettre.texte && <AvisLectureDatee />}
       <PatientCard>
         <header className="border-b border-border pb-5 print:hidden">
           <h1 className="text-2xl font-semibold text-foreground">{TITRE_LETTRE}</h1>

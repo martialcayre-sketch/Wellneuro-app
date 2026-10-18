@@ -22,12 +22,11 @@
 // Le statut d'un signalement reprend les mots de « Informations » — mêmes
 // libellés, même source.
 //
-// ── CE QUI ATTEND ai ────────────────────────────────────────────────────────
+// ── LA LECTURE DATÉE ([[D-297]]) ────────────────────────────────────────────
 //
-// La lecture datée ([[D-297]]) n'est pas écrite ici, et la phrase « Votre
-// lecture est datée » n'est pas servie : aucune date ne s'écrit depuis une page
-// qui ne la sert pas, et « Mes échanges » ne s'ouvre pas avant le code de ai
-// ([[D-293]] §4).
+// Elle ne s'écrit pas ici : « Mes échanges » ne fait que mener à la page du
+// document, et c'est cette page qui consigne — et qui sert la phrase « Votre
+// lecture est datée », en tête. Le journal la sert aussi, parmi ses blocs.
 
 export type SensEchange = 'remis' | 'transmis';
 

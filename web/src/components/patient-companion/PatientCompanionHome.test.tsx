@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEXTE_PAUSE_AVIS_RENDU, TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_ELEMENT } from '@/lib/trust/pauseEffetIndesirable';
 import { PatientCompanionHome } from './PatientCompanionHome';
+import { TITRE_LECTURE_DATEE } from '@/lib/portail/lectureDatee';
 
 // TROIS ACTIONS, dont une RETENUE : la fixture n'en portait qu'une, et le
 // portail n'en servait qu'une — le banc ne pouvait donc rien constater de ce que
@@ -349,6 +350,29 @@ describe('PatientCompanionHome — détail replié', () => {
     expect(screen.getByText('Réveils nocturnes < 2 par nuit à J21.')).toBeTruthy();
     expect(screen.queryByText(BOUTON)).toBeNull();
     expect(postsDeLecture()).toEqual([{ espece: 'protocole', cycleRef: 'a1b2c3d4e5f60718' }]);
+  });
+
+  it('« Votre lecture est datée » se lit AVANT le clic qui date, et disparaît avec le bouton (D-297 §4)', async () => {
+    mockFetch(
+      { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, lectureDuDetail: { dejaOuvert: false } },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    const bouton = await screen.findByText(BOUTON);
+    const avis = screen.getByRole('region', { name: TITRE_LECTURE_DATEE });
+    expect(avis.compareDocumentPosition(bouton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(bouton);
+    expect(screen.queryByRole('region', { name: TITRE_LECTURE_DATEE })).toBeNull();
+  });
+
+  it('aucune trace possible (déplié d’office) : aucun avis', async () => {
+    mockFetch(
+      { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, lectureDuDetail: { dejaOuvert: true } },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    await screen.findByText('Petit-déjeuner protéiné');
+    expect(screen.queryByRole('region', { name: TITRE_LECTURE_DATEE })).toBeNull();
   });
 
   it('version déjà ouverte : déplié d’office, aucune nouvelle trace', async () => {
