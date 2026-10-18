@@ -1009,6 +1009,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune.
 - **Critère de fin** : instantanés régénérés ; écrans constatés.
+- **Mise à jour (2026-10-18)** : L4 et L5 livrés ensemble, sous D-324 (arbitrages du responsable du même jour). Le groupe « Héritage 4.0 » quitte le menu. Le menu compte désormais trois groupes : La Spirale (l'agenda reste, « Confiance & droits » y monte), Bibliothèque (cinq rayons, chacun avec sa page, puis l'atelier) et Réglages. Documents et Synthèse IA quittent le menu du bureau ; « Synthèses » reste au téléphone. L'ancienne page Biologie redirige vers le rayon « Analyses biologiques », qui porte aussi les fiches d'usage. Restent dans J1-base : les 8 gestes cosmétiques, les jetons, K-10, NF-6, NU-2a, le libellé de priorité de la minute d'après et le repli `localhost`. Le concept de Bibliothèque est à revoir (réponse du responsable) : ce découpage ne le tranche pas.
 
 #### H44 · R:Titre du Fil
 - **Identifiant, piste** : R:Titre du Fil ; « Questionnaires à consulter » au-dessus du Fil ; cockpit ; file A.

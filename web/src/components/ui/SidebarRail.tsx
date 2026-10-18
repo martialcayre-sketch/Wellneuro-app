@@ -7,26 +7,33 @@ import {
   LayoutDashboard,
   Users,
   ContactRound,
-  Sparkles,
-  FileText,
   Settings,
   ShieldCheck,
   Compass,
   Mail,
   BookOpen,
   ClipboardCheck,
+  ClipboardList,
   CalendarDays,
   FlaskConical,
+  Lightbulb,
+  Pill,
   type LucideIcon,
 } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 import type { CorrespondanceCompteurApiResponse } from '@/app/api/praticien/correspondance-medecin/recentes/compteur/route';
 
-// Rail conforme à la maquette de référence « WellNeuro 5.0 — La Spirale »
-// (artifact canonique, décision propriétaire 2026-07-22) : trois groupes —
-// La Spirale (surfaces 5.0), Héritage 4.0 — inchangé (surfaces historiques,
-// tag « 4.0 »), Réglages. `badge: 'fil'` affiche le compteur RÉEL de cartes
-// du Fil.
+// Rail en trois groupes depuis D-324 (2026-10-18) : La Spirale (le travail du
+// jour), Bibliothèque (un rayon par entrée), Réglages. `badge: 'fil'` affiche
+// le compteur RÉEL de cartes du Fil.
+//
+// Historique : de la maquette « WellNeuro 5.0 — La Spirale » (2026-07-22)
+// jusqu'au 2026-10-18, un groupe « Héritage 4.0 — inchangé » rangeait cinq
+// surfaces historiques sous l'étiquette « 4.0 », sans décision qui l'ait créé
+// ni daté. D-324 l'a retiré : Documents et Synthèse IA quittent le menu
+// (pages gardées, ouvertes depuis la fiche, le Fil, la minute d'après et la
+// barre du téléphone), l'agenda et l'atelier restent sans étiquette, et
+// Biologie fonctionnelle devient le rayon « Analyses biologiques ».
 //
 // `badge: 'correspondance'` désigne une TÂCHE, pas un historique : le nombre de
 // dossiers dont le DERNIER échange consigné est un envoi remontant à plus de
@@ -75,33 +82,34 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
         prefixesActifs: ['/dashboard/patients/'],
       },
       { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
+      // L'agenda reste une entrée du menu, sans encart à l'accueil (D-324 §2) :
+      // aucun rendez-vous n'était saisi en production le 2026-10-18.
+      { href: '/dashboard/agenda', label: 'Agenda & consultations', icon: CalendarDays },
       { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail, badge: 'correspondance' },
-      // Rayon Questionnaires livré (arbitrages Bibliothèque du 2026-07-23) :
-      // la rubrique quitte l'héritage 4.0 et rejoint les surfaces 5.0.
-      { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen },
+      // La file des signalements d'effets indésirables et des demandes de droits
+      // est du travail du jour, pas un réglage (D-324 §3).
+      { href: '/dashboard/droits', label: 'Confiance & droits', icon: ShieldCheck },
     ],
   },
   {
-    etiquette: 'Héritage 4.0 — inchangé',
+    // CHAQUE RAYON A SON ENTRÉE (D-324 §4) : la page unique empilait des
+    // onglets en tête et des rayons plus bas, et se lisait mal. « Questionnaires »
+    // garde le catalogue, l'aperçu, la file d'envoi ET les assignations et packs ;
+    // « Connaissances » est la lecture du corpus (D-310 §2), et l'atelier qui le
+    // signe vient juste après (D-310 §1).
+    etiquette: 'Bibliothèque',
     items: [
-      // « Questionnaires & packs » A QUITTÉ CE GROUPE le 2026-09-16, et le
-      // rail avec lui. La page réunissait deux métiers sans rapport : la
-      // gestion des dossiers, devenue le rayon « Patients » ci-dessus, et
-      // l'assignation de questionnaires avec les packs, passée en rayon de la
-      // Bibliothèque — déjà 5.0. Il ne reste donc rien à lier ici.
-      { href: '/dashboard/documents', label: 'Documents', icon: FileText, tag: '4.0' },
-      { href: '/dashboard/synthese', label: 'Synthèse IA', icon: Sparkles, tag: '4.0' },
-      { href: '/dashboard/corpus', label: 'Atelier corpus', icon: ClipboardCheck, tag: '4.0' },
-      { href: '/dashboard/agenda', label: 'Agenda & consultations', icon: CalendarDays, tag: '4.0' },
-      { href: '/dashboard/biologie', label: 'Biologie fonctionnelle', icon: FlaskConical, tag: '4.0' },
+      { href: '/dashboard/bibliotheque/questionnaires', label: 'Questionnaires', icon: ClipboardList },
+      { href: '/dashboard/bibliotheque/fiches-conseils', label: 'Fiches conseils', icon: Lightbulb },
+      { href: '/dashboard/bibliotheque/complements', label: 'Compléments alimentaires', icon: Pill },
+      { href: '/dashboard/bibliotheque/biologie', label: 'Analyses biologiques', icon: FlaskConical },
+      { href: '/dashboard/bibliotheque/connaissances', label: 'Connaissances', icon: BookOpen },
+      { href: '/dashboard/corpus', label: 'Atelier corpus', icon: ClipboardCheck },
     ],
   },
   {
     etiquette: 'Réglages',
-    items: [
-      { href: '/dashboard/droits', label: 'Confiance & droits', icon: ShieldCheck },
-      { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings },
-    ],
+    items: [{ href: '/dashboard/parametres', label: 'Paramètres', icon: Settings }],
   },
 ];
 

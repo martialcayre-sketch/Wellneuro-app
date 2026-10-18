@@ -67,7 +67,7 @@ describe('FileEnvoiAside', () => {
     );
     expect(
       screen.getByRole('link', { name: /gérer la file dans la bibliothèque/i }).getAttribute('href'),
-    ).toBe('/dashboard/bibliotheque');
+    ).toBe('/dashboard/bibliotheque/questionnaires');
   });
 
   it('dit que la file est vide quand elle l’est vraiment', async () => {
