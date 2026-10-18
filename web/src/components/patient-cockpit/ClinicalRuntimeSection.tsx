@@ -2316,12 +2316,27 @@ export function ClinicalRuntimeSection({
           chargeVersionActive={fixture ? null : (contenuActif?.therapeuticLoad ?? null)}
         />
       </div>
-      {affiche('actions') && (fixture || sousVueActions === 'protocole') && (
-        <ProtocolConsultationPanel
-          decisionCard={decisionCard}
-          protocolDraft={fixture ? protocolDraft : null}
-          apercuEnDiffusion={!fixture}
-        />
+      {/* LE BLOC « CLÔTURE ET APERÇU PATIENT » N'EST PLUS MONTÉ SUR UN VRAI
+          DOSSIER (arbitrage du responsable du 2026-10-18, dette t13). Hors
+          fixture il n'avait jamais de protocole : il affichait toujours
+          « aperçu indisponible… aucun contenu transmis », faux dès que le
+          protocole était diffusé. L'aperçu réel est la sous-vue « Diffusion »,
+          sur la version active ; une ligne y mène. La fixture locale garde le
+          panneau complet. */}
+      {affiche('actions') && fixture && (
+        <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={protocolDraft} />
+      )}
+      {affiche('actions') && !fixture && readyDecisionCardId && sousVueActions === 'protocole' && (
+        <p className="text-base text-muted-foreground">
+          Ce que lira le patient se voit sur la version active :{' '}
+          <button
+            type="button"
+            onClick={() => setSousVueActions('diffusion')}
+            className="min-h-11 font-medium text-foreground underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            voir l’aperçu en « Diffusion »
+          </button>
+        </p>
       )}
       {/* Historique et Diffusion : panneaux SANS état local (vérifié en
           revue) — le montage conditionnel ne leur perd rien. Les états vides

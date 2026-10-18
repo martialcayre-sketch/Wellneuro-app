@@ -10,6 +10,12 @@ import { ApercuPatientProtocole } from './ApercuPatientProtocole';
 // aperçu de ce que le patient lira. La validation n'écrit rien et ne transmet
 // rien — elle ne déverrouille que l'aperçu.
 //
+// FIXTURE SEULEMENT depuis le 2026-10-18 (dette t13, arbitrage du
+// responsable). Sur un vrai dossier, ce panneau n'avait jamais de protocole et
+// affichait toujours son état « indisponible », faux dès que le protocole
+// était diffusé : il n'y est plus monté, et l'aperçu réel est la sous-vue
+// « Diffusion ».
+//
 // L'APERÇU PASSE PAR LE CONTRAT ([[D-200]] dette 1). Il était construit ici à la
 // main depuis `ProtocolDraft`, et la liste des conditions de validation y était
 // recopiée condition par condition. Deux conséquences, toutes deux vues :
@@ -25,18 +31,9 @@ const LOAD_LABELS: Record<ProtocolDraft['therapeuticLoad']['level'], string> = {
 export function ProtocolConsultationPanel({
   decisionCard,
   protocolDraft,
-  apercuEnDiffusion = false,
 }: {
   decisionCard: DecisionCard | null;
   protocolDraft: ProtocolDraft | null;
-  /**
-   * Hors fixture, ce panneau n'a JAMAIS de protocole — il reste monté pour son
-   * état prudent, et l'aperçu réel vit dans la sous-vue « Diffusion », sur la
-   * version active du dossier. Sans ce renvoi, l'écran promet un aperçu que ni
-   * la relecture ni la validation ne feront apparaître ICI : la promesse est
-   * exactement ce que [[D-200]] reprochait à cette surface.
-   */
-  apercuEnDiffusion?: boolean;
 }) {
   const [approvedFingerprint, setApprovedFingerprint] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -50,11 +47,6 @@ export function ProtocolConsultationPanel({
         <div className="rounded-xl border border-border bg-surface p-4">
           <p className="text-base font-semibold text-foreground">Aperçu du protocole indisponible — protocole relu et validation pour diffusion requis</p>
           <p className="mt-1 text-base text-muted-foreground">Aucun contenu n’est transmis au patient.</p>
-          {apercuEnDiffusion && (
-            <p className="mt-2 text-base text-muted-foreground">
-              L’aperçu de ce que votre patient lira se trouve en sous-vue « Diffusion », sur la version active.
-            </p>
-          )}
         </div>
       </section>
     );
