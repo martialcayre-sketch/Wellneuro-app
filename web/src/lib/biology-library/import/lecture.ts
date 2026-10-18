@@ -36,6 +36,12 @@ export type LigneLue = {
   statut: string;
   motifEcart: string | null;
   idResultat: string | null;
+  /**
+   * L'instant de la décision (validée ou écartée), posé par la base ; `null`
+   * tant que la ligne est proposée (CHECK). Il date la marque « lignes
+   * validées » de la carte ([[D-308]] §3).
+   */
+  traiteLe: string | null;
   /** Suggestion d'écart pour l'écran — jamais une décision. */
   preMarquage: MotifEcart | null;
 };
@@ -178,7 +184,7 @@ export async function lireCompteRendu(
               intervalleNonTranscrit: true, marquageNonTranscrit: true,
               commentaireLu: true, commentaireNonTranscrit: true,
               analytePropose: true, statutMapping: true, statut: true,
-              motifEcart: true, idResultat: true,
+              motifEcart: true, idResultat: true, traiteLe: true,
             },
           },
         },
@@ -230,6 +236,7 @@ export async function lireCompteRendu(
       lignes: i.lignes.map(l => ({
         ...l,
         preleveLeLu: l.preleveLeLu?.toISOString() ?? null,
+        traiteLe: l.traiteLe?.toISOString() ?? null,
         preMarquage: preMarquage(l, l.analytePropose ? uniteParCode.get(l.analytePropose) ?? null : null),
       })),
     })),
