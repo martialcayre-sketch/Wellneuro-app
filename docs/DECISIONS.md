@@ -4,6 +4,48 @@
 
 ## Décisions actives
 
+### D-328 — Signalements : un seul e-mail au praticien par heure et par dossier ; signalements et retrait d'un choix confirmés hors plafond ; la demande de correction d'un objectif reste sous plafond (amende D-327 §4)
+
+- Date : 2026-10-18
+- Statut : accepté. Arbitrages du responsable du 2026-10-18 (soir), sur
+  questions à options posées après le merge de D-327 : « garder hors
+  plafond » (recommandé, contre un plafond de 20 ou un plafond très large) ;
+  « un e-mail par heure et par dossier » (recommandé, contre « ne rien
+  limiter » et « un par jour ») ; « laisser sous plafond » la demande de
+  correction (recommandé, contre « sortir du plafond »). Texte rédigé par
+  l'assistant.
+- Amende : [[D-327]] §4 — l'exclusion des signalements et du retrait, posée
+  par l'assistant, est confirmée ; la question qu'elle laissait ouverte (la
+  notification) est tranchée ici.
+- Domaine : `premierSignalementDeLHeure` (`web/src/lib/trust/notification.ts`),
+  route `web/src/app/api/portail/trust/signalement`.
+- Nature : notification technique, non clinique. L'orientation d'un effet
+  indésirable, le message rendu au patient et l'enregistrement ne changent
+  pas.
+
+**1. L'e-mail.** Chaque signalement (effet indésirable, incident de
+confidentialité, demande d'exercice d'un droit) s'enregistre toujours. Seul le
+premier de l'heure, pour un dossier, envoie au praticien l'e-mail générique
+« Un signalement a été déposé dans votre espace » ; les suivants se lisent
+dans « Confiance & droits ». Les trois natures comptent ensemble : l'e-mail
+est le même pour toutes.
+
+**2. Compter avant d'écrire.** Le dossier est lu AVANT l'écriture du
+signalement : deux dépôts simultanés voient chacun zéro et envoient chacun leur
+e-mail — un doublon, bénin. Compter après ferait voir à chacun l'autre, et
+aucun e-mail ne partirait. Une lecture en échec prévient quand même : un e-mail
+de trop vaut mieux qu'un signalement que le praticien n'apprend pas.
+
+**3. Ce qui est confirmé sans changement.** Les signalements et le retrait
+d'un choix ne sont jamais plafonnés ([[D-327]] §4). La demande de correction
+d'un objectif reste dans le plafond commun du dossier à deux voix (20 par
+heure) : c'est un geste d'échange sur un objectif, pas une demande d'exercice
+d'un droit — celle-ci passe par les signalements.
+
+**Ne touche pas** : aucune migration (les tables des incidents et des demandes
+n'ont pas d'index par dossier ; elles sont petites, la lecture est un
+parcours), aucune règle clinique, aucun texte d'e-mail ni d'écran.
+
 ### D-327 — Cadence des écritures par dossier : un plafond horaire, compté en base sur les lignes déjà écrites, sur les routes portail authentifiées et les routes praticien des objectifs (dette t08)
 
 - Date : 2026-10-18

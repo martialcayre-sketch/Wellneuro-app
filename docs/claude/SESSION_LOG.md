@@ -10726,3 +10726,13 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** Le responsable relit les textes du portail, puis constat sur un dossier de test, puis allumage du drapeau.
 
 **Ouvert.** Faut-il refuser l'action « effacer » d'une synthèse déjà imprimée (question B de la revue) ?
+
+## 2026-10-18 — t08 suite : e-mail de signalement borné, restes J1 reportés
+
+**Fait.** #1557, #1559 et #1563 mergées et déployées une à une (D-327 renumérotée, D-326 prise entre-temps). Trois questions tranchées par le responsable : exclusions confirmées, un e-mail de signalement par heure et par dossier (D-328), correction d'objectif sous plafond. Restes J1-base reportés sans date.
+
+**Écarté.** Compter après l'écriture : deux dépôts simultanés n'enverraient aucun e-mail.
+
+**Prochaine action.** PR D-328, merge, constat ; lot suivant de la file A.
+
+**Ouvert.** Définition des restes J1-base (pièce privée non versée).
