@@ -36,6 +36,10 @@
 //   lecture              — disparaît quand l'écran qui porte le document a été
 //                          ouvert (`portail_lectures_patient`, LOT-08). Revient
 //                          à la VERSION suivante, jamais pour la même.
+//   rendez-vous de suivi — disparaît à la réponse du patient ou à la fermeture
+//                          de la fenêtre du point d'étape (`pointEtapeCourant`,
+//                          lue par la route du check-in). Revient au point
+//                          suivant, jamais pour le même ([[D-317]] §6).
 //
 // Un `cta` nul, côté rappel d'agenda, N'EST PAS un état dégradé : c'est le mot
 // par lequel le domaine dit « il n'y a rien à faire aujourd'hui ». Ce module
@@ -67,13 +71,15 @@ import { deriverRappelAgenda } from '@/lib/agenda-sommeil/rappelPortail';
 import { NB_JOURS_AGENDA } from '@/lib/agenda-sommeil/types';
 import { deriverRappelAgendaAli } from '@/lib/agenda-alimentaire/rappelPortail';
 import { ctaLecture, lienLecture, type LectureAttendue } from '@/lib/portail/lecturesAttendues';
+import { POINTS_ETAPE, type PointEtape } from '@/lib/protocol/checkinDomain';
 
 export type EspeceTache =
   | 'agenda_sommeil'
   | 'agenda_alimentaire'
   | 'lecture'
   | 'ce_qui_compte'
-  | 'questionnaire';
+  | 'questionnaire'
+  | 'rendez_vous_suivi';
 
 export type Tache = {
   /** Stable et unique dans un fil : la clé de rendu, et l'ancre des bancs. */
@@ -130,12 +136,52 @@ export type SourcesFilDuJour = {
    */
   ceQuiCompteOuvert: boolean | null;
   /**
+   * Le point d'étape OUVERT et pas encore renseigné, tel que le rend
+   * `rendezVousSuiviAFaire`, ou `null`. `null` couvre aussi l'inconnu — sonde en
+   * vol, en échec, aucun protocole diffusé — et un dossier dont les recueils
+   * sont en pause : comme pour « ce qui compte », le doute ne produit pas de
+   * tâche.
+   */
+  rendezVousSuivi: PointEtape | null;
+  /**
    * La formulation du contrat de parcours quand plus rien n'est à compléter
    * (`deriverEtatParcoursPatient`), ou `null`. Passée telle quelle : ce module
    * ne dérive pas le parcours, il se contente de la relayer en repos.
    */
   formulationParcours: string | null;
 };
+
+/*
+ * LE RENDEZ-VOUS DE SUIVI ([[D-317]] §6, PA-1).
+ *
+ * Une ligne pour CHACUN des trois points d'étape (J7, J14, J21), qui paraît à
+ * l'ouverture de sa fenêtre et s'en va à la réponse ou à la fermeture. Ce module
+ * ne calcule AUCUNE fenêtre : il lit ce que la route du check-in a déjà dérivé
+ * (`pointEtapeOuvert`, `renseigne`), pour que la règle n'existe qu'à un endroit.
+ *
+ * Aucun e-mail ni aucune notification n'en part : la ligne ne se lit qu'à la
+ * visite. Côté patient, elle dit « rendez-vous de suivi », jamais « point
+ * d'étape » ni « jalon » (vocabulaire A1) — le point ne figure que dans la clé.
+ */
+export const CTA_RENDEZ_VOUS_SUIVI = 'Répondre à mon rendez-vous de suivi';
+export const APPUI_RENDEZ_VOUS_SUIVI = 'Quelques questions rapides pour ajuster votre accompagnement.';
+
+/**
+ * Le point d'étape à proposer, depuis la réponse du GET
+ * `/api/portail/protocole/checkin` — ou `null`. Chaque clé est vérifiée
+ * `=== true` ou contre la liste fermée : une réponse partielle ne produit pas de
+ * tâche.
+ */
+export function rendezVousSuiviAFaire(reponse: unknown): PointEtape | null {
+  if (typeof reponse !== 'object' || reponse === null) return null;
+  const r = reponse as { ok?: unknown; protocoleDiffuse?: unknown; pointEtapeOuvert?: unknown; points?: unknown };
+  if (r.ok !== true || r.protocoleDiffuse !== true) return null;
+  const ouvert = POINTS_ETAPE.find(p => p === r.pointEtapeOuvert);
+  if (!ouvert || !Array.isArray(r.points)) return null;
+  const etat = (r.points as { pointEtape?: unknown; renseigne?: unknown }[]).find(p => p?.pointEtape === ouvert);
+  // Un point absent de la liste est un état qu'on ne sait pas lire : pas de tâche.
+  return etat && etat.renseigne === false ? ouvert : null;
+}
 
 function lienAssignation(token: string, idAssignation: string): string {
   return `/portail/${token}/questionnaires/${idAssignation}`;
@@ -149,6 +195,10 @@ function lienAssignation(token: string, idAssignation: string): string {
  *    perdre. Sommeil puis alimentaire — non que l'un prime cliniquement sur
  *    l'autre, mais pour que l'ordre soit STABLE (même raison que
  *    `candidatsAgendas`, et même ordre).
+ * 1 bis. LE RENDEZ-VOUS DE SUIVI, juste après les agendas prioritaires. Il
+ *    périme lui aussi — sa fenêtre se ferme au septième jour —, mais moins vite
+ *    qu'une nuit, qui se referme à J-2. Il passe donc devant tout ce qui ne
+ *    périme pas.
  * 2. LES LECTURES. Ce que le praticien a remis — voir le commentaire à leur
  *    construction, plus bas.
  * 3. L'INVITATION À DIRE CE QUI COMPTE. Placée AVANT les questionnaires, et
@@ -175,8 +225,17 @@ function lienAssignation(token: string, idAssignation: string): string {
  *    sur l'agenda là où il attendait le premier questionnaire du pack.
  */
 export function construireFilDuJour(sources: SourcesFilDuJour): FilDuJour {
-  const { token, enrichis, brouillons, lectures, agendas, agendasAli, ceQuiCompteOuvert, formulationParcours } =
-    sources;
+  const {
+    token,
+    enrichis,
+    brouillons,
+    lectures,
+    agendas,
+    agendasAli,
+    ceQuiCompteOuvert,
+    rendezVousSuivi,
+    formulationParcours,
+  } = sources;
 
   // Un agenda DÉVERROUILLÉ par le praticien est un recueil déjà clôturé qu'il
   // rouvre pour faire corriger : son état praticien prime, et le rappel
@@ -288,6 +347,19 @@ export function construireFilDuJour(sources: SourcesFilDuJour): FilDuJour {
     href: lienLecture(token, lecture),
   }));
 
+  const suivi: Tache[] =
+    rendezVousSuivi === null
+      ? []
+      : [
+          {
+            cle: `rendez-vous-suivi:${rendezVousSuivi}`,
+            espece: 'rendez_vous_suivi',
+            cta: CTA_RENDEZ_VOUS_SUIVI,
+            appui: APPUI_RENDEZ_VOUS_SUIVI,
+            href: `/portail/${token}/suivi`,
+          },
+        ];
+
   const invitation: Tache[] =
     ceQuiCompteOuvert === true
       ? [
@@ -323,7 +395,7 @@ export function construireFilDuJour(sources: SourcesFilDuJour): FilDuJour {
       href: lienAssignation(token, e.a.idAssignation),
     }));
 
-  const taches = [...prioritaires, ...tachesLectures, ...invitation, ...questionnaires, ...aCommencer];
+  const taches = [...prioritaires, ...suivi, ...tachesLectures, ...invitation, ...questionnaires, ...aCommencer];
   return { taches, repos: deriverRepos(enrichis, appuisDeRepos, formulationParcours) };
 }
 

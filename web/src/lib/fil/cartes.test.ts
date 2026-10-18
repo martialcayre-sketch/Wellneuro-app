@@ -137,7 +137,7 @@ describe('resumeFil', () => {
     });
     // Consultations en tête (maquette « 3 consultations · … ») ; 2 synthèses
     // agrégées comptent bien pour 2 relectures.
-    expect(resumeFil(fil)).toBe('1 consultation · 1 signalement · 2 relectures · 1 jalon · 1 retard');
+    expect(resumeFil(fil)).toBe('1 consultation · 1 signalement · 2 relectures · 1 point d’étape · 1 retard');
   });
 
   it('rend une chaîne vide pour un fil vide', () => {
@@ -237,7 +237,7 @@ describe('cartesJalons', () => {
     expect(cartes).toHaveLength(1);
     expect(cartes[0].type).toBe('jalon_j21');
     expect(cartes[0].patient).toBe('Sophie Nicola');
-    expect(cartes[0].titre).toBe('Jalon J21 atteint — décision attendue');
+    expect(cartes[0].titre).toBe('Point d’étape J21 renseigné — décision attendue');
     expect(cartes[0].pourquoi).toContain('Check-in J21 reçu le 14 juillet');
     expect(cartes[0].pourquoi).toContain('Tous les jours');
     expect(cartes[0].pourquoi).not.toContain('Momentum');

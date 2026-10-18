@@ -158,7 +158,7 @@ export type DerniereActiviteRow = { idPatient: string; derniereReponse: Date };
 /** Sens du momentum tel que le porte l'équilibre (T0 → dernier jalon mesuré). */
 export type TendanceMomentumCarte = 'hausse' | 'stable' | 'baisse';
 /**
- * Jalon J21 atteint sans décision consignée. La ligne source est le check-in
+ * Point d'étape J21 renseigné sans décision consignée. La ligne source est le check-in
  * J21 (`idCheckin`) : ancre stable pour le refus G1. `adhesion` et `momentum`
  * sont des enrichissements FACTUELS et OPTIONNELS — cités seulement s'ils
  * existent réellement, jamais inventés (A8-2 : jamais un 0 à la place d'un
@@ -725,7 +725,9 @@ export function cartesJalons(jalons: JalonRow[], noms: Map<string, string>): Car
         type: 'jalon_j21' as const,
         idPatient: j.idPatient,
         patient: nomPatient(noms, j.idPatient),
-        titre: 'Jalon J21 atteint — décision attendue',
+        // « POINT D'ÉTAPE », PAS « JALON » ([[D-317]] §7) : le jalon est la mesure
+        // (J21, J42, J90) ; ce qui fait paraître la carte est le check-in J21.
+        titre: 'Point d’étape J21 renseigné — décision attendue',
         pourquoi: morceaux.join(' '),
         date: j.soumisLe.toISOString(),
         href: `/dashboard/patients/${j.idPatient}`,
@@ -966,7 +968,9 @@ const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string 
   { type: 'synthese_a_valider', singulier: 'relecture', pluriel: 'relectures' },
   { type: 'synthese_a_generer', singulier: 'synthèse à générer', pluriel: 'synthèses à générer' },
   { type: 'synthese_non_servie', singulier: 'synthèse non transmise', pluriel: 'synthèses non transmises' },
-  { type: 'jalon_j21', singulier: 'jalon', pluriel: 'jalons' },
+  // Même mot que le badge et le titre de la carte ([[D-317]] §7, arbitrage du
+  // 2026-10-17 pour le résumé).
+  { type: 'jalon_j21', singulier: 'point d’étape', pluriel: 'points d’étape' },
   { type: 'biologie_arbitree', singulier: 'biologie arbitrée', pluriel: 'biologies arbitrées' },
   { type: 'import_biologique_a_lire', singulier: 'compte rendu à lire', pluriel: 'comptes rendus à lire' },
   { type: 'compte_rendu_transmis', singulier: 'compte rendu transmis', pluriel: 'comptes rendus transmis' },
