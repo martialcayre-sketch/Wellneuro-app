@@ -102,8 +102,18 @@ describe('POST — le signataire vient de la session, jamais du corps', () => {
     expect(deciderComposition.mock.calls[0][0].verifieLeVu).toEqual(new Date('2026-10-18T10:00:00.000Z'));
   });
 
-  it('corps illisible : 400', async () => {
+  it('corps illisible ou qui n’est pas un objet : 400', async () => {
     expect((await post('{')).status).toBe(400);
+    expect((await post('null')).status).toBe(400);
+    expect((await post('[]')).status).toBe(400);
+    expect(deciderComposition).not.toHaveBeenCalled();
+  });
+
+  it('plus de 64 composants : 400 ; 64 passent', async () => {
+    const codes = Array.from({ length: 65 }, (_, i) => `BIO_X${i}`);
+    expect((await post({ ...CORPS, composants: codes })).status).toBe(400);
+    expect(deciderComposition).not.toHaveBeenCalled();
+    expect((await post({ ...CORPS, composants: codes.slice(0, 64) })).status).toBe(200);
   });
 
   it.each([

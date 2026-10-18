@@ -89,6 +89,9 @@ export async function POST(req: Request): Promise<NextResponse<DecisionCompositi
     } catch {
       return echec<R>('invalid', 'Corps de requête illisible.', 400);
     }
+    if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+      return echec<R>('invalid', 'Corps de requête illisible.', 400);
+    }
 
     const analyteCode = texte(body.analyteCode);
     const decision = texte(body.decision);

@@ -141,6 +141,29 @@ describe('deciderComposition — signer', () => {
     ).toEqual({ ok: false, raison: 'etat_divergent' });
   });
 
+  it.each([
+    ['P2002 de Prisma', Object.assign(new Error('unique'), { code: 'P2002' })],
+    ['23505 de Postgres en cause', Object.assign(new Error('enveloppe'), { cause: { code: '23505' } })],
+    ['23505 deux niveaux plus bas', Object.assign(new Error('enveloppe'), { cause: { cause: { code: '23505' } } })],
+    ['23505 dans le message', new Error('db error: 23505 duplicate key value')],
+  ])('unicité violée (%s) : etat_divergent', async (_forme, erreur) => {
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({ actif: true, compositions: [] });
+    prisma.biologyAnalyte.count.mockResolvedValue(1);
+    prisma.biologyAnalyteComposition.create.mockRejectedValue(erreur);
+    expect(
+      await deciderComposition({ analyteCode: 'BIO_IONOGRAMME', decision: 'signer', composants: ['BIO_SODIUM'], praticien: PRATICIEN }),
+    ).toEqual({ ok: false, raison: 'etat_divergent' });
+  });
+
+  it('les composants se comptent ACTIFS au catalogue : un composant inactif ne se signe pas', async () => {
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({ actif: true, compositions: [] });
+    prisma.biologyAnalyte.count.mockResolvedValue(0);
+    expect(
+      await deciderComposition({ analyteCode: 'BIO_IONOGRAMME', decision: 'signer', composants: ['BIO_SODIUM'], praticien: PRATICIEN }),
+    ).toEqual({ ok: false, raison: 'composants_invalides' });
+    expect(prisma.biologyAnalyte.count).toHaveBeenCalledWith({ where: { code: { in: ['BIO_SODIUM'] }, actif: true } });
+  });
+
   it('une autre erreur remonte (erreur technique, jamais un refus inventé)', async () => {
     prisma.biologyAnalyte.findUnique.mockRejectedValue(new Error('panne'));
     await expect(
@@ -159,6 +182,7 @@ describe('deciderComposition — retirer', () => {
       praticien: PRATICIEN,
     });
     expect(r).toEqual({ ok: true, active: null });
+    expect(transactions.isolations).toEqual([{ isolationLevel: 'ReadCommitted' }]);
     expect(prisma.biologyAnalyteComposition.updateMany).toHaveBeenCalledWith({
       where: { analyteCode: 'BIO_NFS', verifieLe: DATE_BASE, retireeLe: null },
       data: { retireePar: PRATICIEN },
@@ -196,6 +220,20 @@ describe('lireCompositionAnalyte', () => {
     expect(r.retirees).toHaveLength(1);
     expect(r.preparee?.composants.map(c => c.code)).toEqual(['BIO_SODIUM', 'BIO_POTASSIUM']);
     expect(r.operandesAbsents).toBeNull();
+  });
+
+  it('les groupes dont il est membre : compositions ACTIVES seulement, historique du plus récent au plus ancien', async () => {
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({
+      code: 'BIO_HEMOGLOBINE',
+      compositions: [],
+      elementsComposition: [{ composition: { type: 'groupe', analyte: { code: 'BIO_NFS', libelle: 'Numération formule sanguine' } } }],
+    });
+    const r = await lireCompositionAnalyte('BIO_HEMOGLOBINE');
+    if (!r.ok) throw new Error('attendu ok');
+    expect(r.membreDe).toEqual([{ code: 'BIO_NFS', libelle: 'Numération formule sanguine', type: 'groupe' }]);
+    const requete = prisma.biologyAnalyte.findUnique.mock.calls[0][0];
+    expect(requete.select.elementsComposition.where).toEqual({ composition: { retireeLe: null } });
+    expect(requete.select.compositions.orderBy).toEqual({ verifieLe: 'desc' });
   });
 
   it('un calculé sans opérandes au catalogue le dit, sans liste à signer', async () => {

@@ -60,6 +60,32 @@ describe('CompositionAnalyteSection (F80, D-323 §1)', () => {
     });
   });
 
+  it('un composant inactif au catalogue se dit, ne se coche pas et ne s’envoie pas', async () => {
+    const fetchMock = mockFetch({
+      ...LECTURE_PREPAREE,
+      preparee: {
+        ...LECTURE_PREPAREE.preparee,
+        composants: [
+          { code: 'BIO_SODIUM', libelle: 'Sodium', actif: true },
+          { code: 'BIO_CHLORE', libelle: 'Chlore', actif: false },
+        ],
+      },
+    });
+    render(<CompositionAnalyteSection analyteCode="BIO_IONOGRAMME" />);
+    await screen.findByText(/inactif au catalogue/);
+    expect((screen.getByLabelText(/Chlore/) as HTMLInputElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Signer la composition' }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(true));
+    const [, init] = fetchMock.mock.calls.find(([, i]) => i?.method === 'POST')!;
+    expect(JSON.parse(String(init.body)).composants).toEqual(['BIO_SODIUM']);
+  });
+
+  it('une composition retirée reste lisible, même sans liste ni appartenance', async () => {
+    mockFetch({ ...LECTURE_PREPAREE, preparee: null, retirees: [{ ...SIGNEE, retireePar: 'praticien@wellneuro.fr', retireeLe: '2026-10-19T10:00:00.000Z' }] });
+    render(<CompositionAnalyteSection analyteCode="BIO_IONOGRAMME" />);
+    expect(await screen.findByText(/Compositions retirées \(1\)/)).toBeTruthy();
+  });
+
   it('rien de coché : le bouton de signature est désactivé', async () => {
     mockFetch(LECTURE_PREPAREE);
     render(<CompositionAnalyteSection analyteCode="BIO_IONOGRAMME" />);

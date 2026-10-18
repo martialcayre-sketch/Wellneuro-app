@@ -222,7 +222,9 @@ export async function deciderComposition(params: {
         if (!analyte) throw new RefusComposition('analyte_inconnu');
         if (!analyte.actif) throw new RefusComposition('analyte_inactif');
         if (analyte.compositions.length > 0) throw new RefusComposition('etat_divergent');
-        const presents = await tx.biologyAnalyte.count({ where: { code: { in: retenus } } });
+        // Un composant inactif au catalogue ne se signe pas : la composition
+        // nommerait une analyse que le catalogue ne propose plus.
+        const presents = await tx.biologyAnalyte.count({ where: { code: { in: retenus }, actif: true } });
         if (presents !== retenus.length) throw new RefusComposition('composants_invalides');
 
         const { id } = await tx.biologyAnalyteComposition.create({

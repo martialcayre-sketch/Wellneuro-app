@@ -86,7 +86,8 @@ export function CompositionAnalyteSection({
         return;
       }
       setDonnees(corps);
-      setCoches(new Set(corps.preparee?.composants.map(c => c.code) ?? []));
+      // Un composant inactif au catalogue ne se coche pas : le serveur le refuserait.
+      setCoches(new Set(corps.preparee?.composants.filter(c => c.actif).map(c => c.code) ?? []));
     } catch {
       setMessageEchec('La composition n’a pas pu être chargée.');
     }
@@ -129,7 +130,7 @@ export function CompositionAnalyteSection({
   }
 
   const { active, preparee, operandesAbsents, membreDe, retirees } = donnees;
-  if (!active && !preparee && !operandesAbsents && membreDe.length === 0) return null;
+  if (!active && !preparee && !operandesAbsents && membreDe.length === 0 && retirees.length === 0) return null;
 
   return (
     <section aria-labelledby={`composition-${analyteCode}`} className="flex flex-col gap-3">
@@ -247,8 +248,14 @@ function PrepareeASigner({
         {preparee.composants.map(c => (
           <li key={c.code}>
             <label className="flex items-center gap-2 text-sm text-foreground">
-              <input type="checkbox" checked={coches.has(c.code)} onChange={() => onBascule(c.code)} />
+              <input
+                type="checkbox"
+                checked={coches.has(c.code)}
+                disabled={!c.actif}
+                onChange={() => onBascule(c.code)}
+              />
               {c.libelle}
+              {c.actif ? '' : ' (inactif au catalogue)'}
             </label>
           </li>
         ))}
