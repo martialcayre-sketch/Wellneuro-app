@@ -2,6 +2,7 @@ import { canonicalJson } from '@/lib/clinical-engine/canonical';
 import type { ProtocolAction } from '@/lib/clinical-engine/types';
 import type { LignePanelProposition } from './statuts';
 import { ligneOuvreUneAttente } from './vocabulaireStatuts';
+import { codesProposesParLeBilan } from './compositionsProposition';
 
 // LA BORNE DE [[D-190]] §3, TENUE PAR LE SERVEUR ([[D-305]] §3 et §4).
 //
@@ -82,7 +83,9 @@ export function refusHorsProposition(
   lignes: readonly LignePanelProposition[],
 ): string | null {
   const admis = new Set(
-    lignes.filter(ligneOuvreUneAttente).flatMap(ligne => ligne.analytes.map(analyte => analyte.code)),
+    // Ce que le bilan proposait, constituants rangés sous leur groupe compris
+    // ([[D-323]] §2) : le regroupement ne déplace pas la borne.
+    lignes.filter(ligneOuvreUneAttente).flatMap(ligne => codesProposesParLeBilan(ligne.analytes)),
   );
   for (const attente of attentes) {
     const horsBorne = attente.analyteCodes.find(code => !admis.has(code));

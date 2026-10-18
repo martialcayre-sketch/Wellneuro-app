@@ -66,7 +66,7 @@ const MESSAGES_REFUS_CONSIGNATION: Record<string, string> = {
   medecin_libelle_trop_long: 'Le nom du médecin est trop long (200 caractères maximum).',
   texte_vide: 'Le courrier généré est vide : rien n’est consigné.',
   texte_trop_long:
-    'Le courrier généré dépasse la longueur consignable (8 000 caractères) : rien '
+    'Le courrier généré dépasse la longueur consignable (12 000 caractères) : rien '
     + 'n’est consigné. La proposition dérivée est inhabituellement longue — à signaler.',
 };
 

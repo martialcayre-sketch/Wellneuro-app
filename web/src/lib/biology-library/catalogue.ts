@@ -23,6 +23,8 @@ import {
   type CorrespondanceNabm,
   type Remboursement,
 } from './remboursable';
+import { chargerCompositionsSignees } from './compositionsAnalytes';
+import { remboursementsAvecCompositions } from './compositionsProposition';
 import {
   explorationsNonIndiqueesParAnalyte,
   reglesNonIndiquees,
@@ -99,7 +101,7 @@ export type CatalogueBiologieResult = {
  * fiche retirée du catalogue.
  */
 export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult> {
-  const [analytes, bilansNonIndiques, pointeurNabm] = await Promise.all([
+  const [analytes, bilansNonIndiques, pointeurNabm, compositions] = await Promise.all([
     prisma.biologyAnalyte.findMany({
       where: { actif: true },
       select: {
@@ -161,6 +163,7 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
       where: { sourceProvenance: SOURCE_NABM },
       select: { versionSource: true, nombreEntrees: true, importeLe: true },
     }),
+    chargerCompositionsSignees(),
   ]);
 
   // Les actes du millésime courant ne sont chargés que pour les codes que les
@@ -191,6 +194,22 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
     new Map(bilansNonIndiques.map(bilan => [bilan.code, bilan.libelle])),
   );
 
+  // Même dérivation que la proposition : un calculé ou un regroupement signé
+  // hérite de ses mesures ([[D-323]] §4).
+  const remboursements = remboursementsAvecCompositions(
+    new Map(
+      analytes.map(analyte => [
+        analyte.code,
+        deriverRemboursement(
+          analyte.correspondancesNabm as CorrespondanceNabm[],
+          actesCourants,
+          { constat: analyte.constatNabm, millesimeCourant: pointeurNabm?.versionSource ?? null },
+        ),
+      ]),
+    ),
+    compositions,
+  );
+
   const fiches: FicheAnalyte[] = analytes.map(analyte => ({
     code: analyte.code,
     libelle: analyte.libelle,
@@ -207,11 +226,7 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
     validationMedicaleRequise: analyte.validationMedicaleRequise,
     plagesLaboratoire: analyte.plagesReference,
     plagesFonctionnelles: analyte.plagesFonctionnelles,
-    remboursement: deriverRemboursement(
-      analyte.correspondancesNabm as CorrespondanceNabm[],
-      actesCourants,
-      { constat: analyte.constatNabm, millesimeCourant: pointeurNabm?.versionSource ?? null },
-    ),
+    remboursement: remboursements.get(analyte.code)!,
     preanalytiques: analyte.preanalytiques,
     nonIndiques: nonIndiques.get(analyte.code) ?? [],
   }));

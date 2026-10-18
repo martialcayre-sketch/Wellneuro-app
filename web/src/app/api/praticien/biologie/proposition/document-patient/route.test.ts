@@ -222,8 +222,8 @@ describe('garde du registre anxiogène — refus CONFIRMABLE lié au texte (D-09
 });
 
 describe('bornes du texte généré', () => {
-  it('un texte au-delà de 8 000 caractères est un refus SERVEUR : 409, à signaler', async () => {
-    genererDocumentPatientBiologie.mockReturnValue(documentGenere('x'.repeat(8001)));
+  it('un texte au-delà de 12 000 caractères est un refus SERVEUR : 409, à signaler', async () => {
+    genererDocumentPatientBiologie.mockReturnValue(documentGenere('x'.repeat(12001)));
     const response = await POST(postRequest({ idPatient: 'PAT1' }));
     expect(response.status).toBe(409);
     const payload = await response.json();

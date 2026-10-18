@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   deriverRemboursement,
+  deriverRemboursementParMesures,
   mentionsRemboursement,
   regimeDocumentaire,
   type ActeCourant,
@@ -196,5 +197,41 @@ describe('mentionsRemboursement — une fois par document (D-316)', () => {
 
   it('un état sans analyse ne dit rien, et un état sans phrase non plus', () => {
     expect(mentionsRemboursement([a('F', 'Ferritine', 'remboursable')], phrases)).toEqual([]);
+  });
+});
+
+describe('deriverRemboursementParMesures — un calculé hérite de ses mesures (D-323 §4)', () => {
+  const r = (statut: Parameters<typeof regimeDocumentaire>[0]['statut'], codes: string[] = [], conditions: ('entente_prealable')[] = []) =>
+    ({ statut, conditions, codesActesRetenus: codes });
+  const mesure = (code: string, remboursement: ReturnType<typeof r>, groupe: ReturnType<typeof r> | null = null) =>
+    ({ code, libelle: code, remboursement, groupe });
+
+  it('le plus faible l’emporte : non évalué < hors nomenclature < si groupé < remboursable', () => {
+    expect(deriverRemboursementParMesures([mesure('A', r('remboursable')), mesure('B', r('non_evalue'))]).statut).toBe('non_evalue');
+    expect(deriverRemboursementParMesures([mesure('A', r('hors_nomenclature')), mesure('B', r('non_evalue'))]).statut).toBe('non_evalue');
+    expect(deriverRemboursementParMesures([mesure('A', r('remboursable')), mesure('B', r('hors_nomenclature'))]).statut).toBe('hors_nomenclature');
+    expect(deriverRemboursementParMesures([mesure('A', r('remboursable')), mesure('B', r('remboursable_si_groupe'))]).statut).toBe('remboursable_si_groupe');
+    expect(deriverRemboursementParMesures([mesure('A', r('remboursable_si_groupe')), mesure('B', r('hors_nomenclature'))]).statut).toBe('hors_nomenclature');
+  });
+
+  it('une mesure « si groupé » compte par son groupe signé, actes et conditions compris', () => {
+    const resultat = deriverRemboursementParMesures([
+      mesure('A', r('remboursable', ['0552'])),
+      mesure('B', r('remboursable_si_groupe', ['1104']), r('remboursable', ['1104'], ['entente_prealable'])),
+    ]);
+    expect(resultat).toEqual({
+      statut: 'remboursable',
+      conditions: ['entente_prealable'],
+      codesActesRetenus: ['0552', '1104'],
+      parMesures: [
+        { code: 'A', libelle: 'A', statut: 'remboursable', codesActes: ['0552'] },
+        { code: 'B', libelle: 'B', statut: 'remboursable', codesActes: ['1104'] },
+      ],
+    });
+  });
+
+  it('le groupe ne remplace qu’une mesure « si groupé » ; sans mesure, non évalué', () => {
+    expect(deriverRemboursementParMesures([mesure('A', r('non_evalue'), r('remboursable'))]).statut).toBe('non_evalue');
+    expect(deriverRemboursementParMesures([])).toEqual({ statut: 'non_evalue', conditions: [], codesActesRetenus: [] });
   });
 });
