@@ -40,6 +40,8 @@ export type EtapeCloture = {
 
 export type DecisionCloture = {
   selectedPriorityId: string;
+  /** Libellé lisible de la priorité retenue, ou `null` s'il n'a pas pu être relu. */
+  libellePriorite: string | null;
   versionInputHash: string;
   enregistreLe: string; // ISO
 };
@@ -57,6 +59,8 @@ export type Cloture = {
 export type VersionActiveCloture = {
   inputHash: string;
   selectedPriorityId: string;
+  /** Relu par l'appelant à sa source (`libellePrioriteCloture.ts`) ; absent ⇒ `null`. */
+  libellePriorite?: string | null;
   status: string;
   reviewedAt: Date | null;
   createdAt: Date;
@@ -220,6 +224,7 @@ export function construireCloture(entrees: EntreesCloture): Cloture {
   return {
     decision: {
       selectedPriorityId: versionActive.selectedPriorityId,
+      libellePriorite: versionActive.libellePriorite ?? null,
       versionInputHash: versionActive.inputHash,
       enregistreLe: dateLisible(versionActive.createdAt) ?? new Date(0).toISOString(),
     },

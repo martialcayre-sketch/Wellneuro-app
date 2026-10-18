@@ -33,6 +33,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'ecartementProposition',
     'critereDossierConstate',
     'adressageSignalAlerte',
+    'telechargementDocumentMedecin', 'documentMedecinImprime',
     'syntheseIA', 'questionnaireReponse',
     'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',
     'trustChoiceEvent', 'trustAdverseEffectVerdict', 'trustAdverseEffectReport', 'trustPrivacyIncident',
@@ -205,6 +206,18 @@ describe('effacerDossier', () => {
     expect(rang('adressageSignalAlerte')).toBeGreaterThanOrEqual(0);
     expect(rang('adressageSignalAlerte')).toBeLessThan(rang('consultation'));
     expect(rang('adressageSignalAlerte')).toBeLessThan(rang('correspondanceMedecin'));
+  });
+
+  // Document pour le médecin (D-307, F38) : FK RESTRICT du téléchargement
+  // vers l'impression, et de l'impression vers la synthèse. Une ligne déplacée
+  // rendrait l'effacement impossible pour tout dossier dont le document a été
+  // imprimé.
+  it('supprime les téléchargements, puis les impressions, avant les synthèses', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('telechargementDocumentMedecin')).toBeGreaterThanOrEqual(0);
+    expect(rang('telechargementDocumentMedecin')).toBeLessThan(rang('documentMedecinImprime'));
+    expect(rang('documentMedecinImprime')).toBeLessThan(rang('syntheseIA'));
   });
 
   // Actes de lecture d'un import validé (D-268, BP-10) : FK RESTRICT vers

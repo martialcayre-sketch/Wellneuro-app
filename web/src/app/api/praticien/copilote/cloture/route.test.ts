@@ -12,6 +12,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     protocolDraft: { findMany: vi.fn() },
     syntheseIA: { findMany: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn() },
+    decisionPrioritySelection: { findFirst: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
@@ -80,5 +81,59 @@ describe('GET /api/praticien/copilote/cloture — garde et journal des accès', 
     const res = await GET(request());
     expect(res.status).toBe(404);
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('GET /api/praticien/copilote/cloture — libellé de la priorité retenue (H43)', () => {
+  const version = (selectedPriorityId: string) => ({
+    id: 'v1',
+    inputHash: 'hash-v1',
+    decisionCardId: 'carte-1',
+    decisionCardInputHash: 'hash-carte-1',
+    selectedPriorityId,
+    status: 'practitioner_reviewed',
+    reviewedAt: new Date('2026-07-01T10:00:00.000Z'),
+    supersedesDraftId: null,
+    createdAt: new Date('2026-07-01T09:00:00.000Z'),
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr' });
+    prisma.syntheseIA.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+  });
+
+  it('candidat du moteur : le libellé de la règle au registre, pas l’identifiant', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValue([version('priority:PRIO-DIG-01')]);
+    const corps = await (await GET(request())).json();
+    expect(corps.cloture.decision).toMatchObject({
+      selectedPriorityId: 'priority:PRIO-DIG-01',
+      libellePriorite: 'Axe digestif',
+    });
+    expect(prisma.decisionPrioritySelection.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('priorité posée par le praticien : son libellé, lu sur la sélection de CET identifiant', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValue([version('libre:sommeil:0123456789abcdef')]);
+    prisma.decisionPrioritySelection.findFirst.mockResolvedValue({ libelleLibre: 'Retrouver un sommeil réparateur' });
+    const corps = await (await GET(request())).json();
+    expect(corps.cloture.decision.libellePriorite).toBe('Retrouver un sommeil réparateur');
+    expect(prisma.decisionPrioritySelection.findFirst).toHaveBeenCalledWith({
+      where: {
+        idPatient: 'PAT_1',
+        decisionCardId: 'carte-1',
+        candidateId: 'libre:sommeil:0123456789abcdef',
+        libelleLibre: { not: null },
+      },
+      select: { libelleLibre: true },
+    });
+  });
+
+  it('libellé introuvable : `null`, l’écran garde l’identifiant', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValue([version('priority:REGLE-RETIREE')]);
+    const corps = await (await GET(request())).json();
+    expect(corps.cloture.decision.libellePriorite).toBeNull();
   });
 });
