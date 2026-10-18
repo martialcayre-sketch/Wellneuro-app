@@ -10509,6 +10509,15 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merge de #1537, release-db, constat par conteneur, puis PR du code F58 (route, lecture, écran, banc à deux sessions, nettoyage E2E). Puis F38 : migration de la remise patient, puis code.
 
 **Ouvert.** F38 : impression bloquée si refus de partage médecin (arbitré) ; forme de l'objet « document remis » à cadrer.
+## 2026-10-18 — J3-base : PA-1, carte du Fil, « Mes échanges » ; ACT-2 posé
+
+**Fait.** #1530 mergée et déployée (49a2bb19) : PA-1 et la carte « Point d'étape ». ACT-2 : `WN_ANNONCE_PROTOCOLE` posé sur ordre du responsable. « Mes échanges » livré prêt et fermé (drapeau neuf éteint, majeurs seulement), sur trois arbitrages : ordre, ligne, entrée.
+
+**Écarté.** Rafraîchir le fil en continu (lecture à la visite, D-317 §6) ; lister la synthèse au journal (D-293 §1 ne la nomme pas).
+
+**Prochaine action.** Merger « Mes échanges », puis le lot ai : migration autorisée, release-db, puis le code.
+
+**Ouvert.** Constat d'ACT-2 à la prochaine vraie diffusion ; deux micro-textes et la limite « protocole indisponible » avant ACT-3 ; garde d'âge du check-in.
 ## 2026-10-18 — F80 : composition des analyses groupées (D-323, migration, signature)
 
 **Fait.** D-323 écrite sur arbitrages du responsable (#1529) ; migration des deux tables de composition en ajout seul et des sept fiches (#1540), release-db appliquée et constatée par conteneur ; PR 2 : liste préparée, signature par le praticien, section « Composition » de la fiche d'analyte.

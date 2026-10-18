@@ -27,6 +27,7 @@ import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierD
 import { LienFichesRemises } from '@/components/patient-companion/LienFichesRemises';
 import { LienCourrierMedecin } from '@/components/patient-companion/LienCourrierMedecin';
 import { LienTransmissionCompteRendu } from '@/components/patient-companion/LienTransmissionCompteRendu';
+import { LienMesEchanges } from '@/components/patient-companion/LienMesEchanges';
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
 import { construireFilDuJour, rendezVousSuiviAFaire } from '@/lib/portail/filDuJour';
 import type { PointEtape } from '@/lib/protocol/checkinDomain';
@@ -454,6 +455,9 @@ export default function QuestionnairesHubPage() {
         <a href={`/portail/${token}/suivi`} className={patientButtonClassName('ghost')}>
           Ouvrir mes rendez-vous de suivi
         </a>
+        {/* « Mes échanges » ([[D-293]]) : sous son propre drapeau, le lien
+            n'existe que si la route répond « ouvert ». */}
+        <LienMesEchanges token={token} />
         {/* ICI, et non dans « Mon accompagnement » : ce dernier est replié et
             placé après un retour anticipé qui exige un protocole diffusé — un
             patient sans protocole n'y verrait jamais ce lien. Le composant se
