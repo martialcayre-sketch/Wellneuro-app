@@ -47,6 +47,11 @@ la fenêtre de chaque point d'étape (J7, J14, J21). D-317 §7 : badge et titre
   (ci-dessous).
 - T2 (`--fast`) sur l'état fusionné : vert en 6 min. Vitest : 13 440 verts,
   4 sautés. E2E : 274 verts, 6 sautés (build de production).
+- CI de #1530 vert (sha e770d354). Revue CodeRabbit sur ce sha : un
+  commentaire, corrigé. Au retour depuis le bfcache (`pageshow` persisté), la
+  page relit la route du check-in. `origin/main` b357fa9e (#1529 à #1536)
+  fusionné une seconde fois, sans conflit. T1 complet puis T2 (`--fast`)
+  rejoués : verts. Vitest : 13 456 verts, 4 sautés. E2E : 276 verts, 6 sautés.
 
 ## Problèmes ouverts
 

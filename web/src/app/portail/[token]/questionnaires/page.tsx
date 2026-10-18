@@ -211,7 +211,7 @@ export default function QuestionnairesHubPage() {
 
   useEffect(() => {
     let vivant = true;
-    void (async () => {
+    const sonder = async () => {
       try {
         // `no-store`, comme le formulaire : la ligne doit disparaître dès la réponse.
         const res = await fetch('/api/portail/protocole/checkin', { cache: 'no-store' });
@@ -221,9 +221,18 @@ export default function QuestionnairesHubPage() {
       } catch {
         // Silence délibéré, même raison que pour les lectures.
       }
-    })();
+    };
+    // La tâche mène à `/suivi` par un lien ordinaire : au retour par le
+    // navigateur, une page restaurée du bfcache garderait la ligne d'avant la
+    // réponse. On relit donc la route à la restauration.
+    const auRetour = (event: PageTransitionEvent) => {
+      if (event.persisted) void sonder();
+    };
+    void sonder();
+    window.addEventListener('pageshow', auRetour);
     return () => {
       vivant = false;
+      window.removeEventListener('pageshow', auRetour);
     };
   }, []);
 
