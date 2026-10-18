@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { AtelierCorpusPanel } from '@/components/corpus/AtelierCorpusPanel';
 import { AtelierVoieRapideModale } from '@/components/corpus/AtelierVoieRapideModale';
+import { EtiquetageLotPanel } from '@/components/corpus/EtiquetageLotPanel';
 import type { CorpusSourcesApiResponse, SourceAtelier } from '@/app/api/praticien/corpus/claims/sources/route';
 
 // Atelier corpus — vue d'ensemble et orchestration (v2).
@@ -147,6 +148,8 @@ export function AtelierCorpus() {
           <p className="mt-3 text-sm text-muted-foreground">Aucune source en revue.</p>
         ) : null}
       </section>
+
+      <EtiquetageLotPanel onConclu={() => setGeneration((g) => g + 1)} />
 
       <AtelierCorpusPanel key={generation} notebook={notebookChoisi || undefined} />
 

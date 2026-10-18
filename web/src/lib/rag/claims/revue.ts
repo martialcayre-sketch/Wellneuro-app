@@ -1,6 +1,7 @@
 import { randomInt } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
 import type { ClesLienClaim } from './clesLien';
+import type { LigneEtiquetageLot } from './etiquetageLot';
 
 // Poste de revue des claims (Atelier corpus v1, D-004). C'est ici — et
 // seulement ici — que vit la signature praticien D-003 : l'ingestion force
@@ -518,6 +519,118 @@ export async function etiqueterClaim(params: {
 
     return { ok: true as const, claim: { id: ligne.id, besoins: cles.besoins, rubrique: cles.rubrique } };
   });
+}
+
+export type RefusEtiquetageLot = {
+  claimId: string;
+  raison: 'claim_introuvable' | 'claim_non_valide' | 'claim_ambigu' | 'version_divergente';
+};
+
+export type EtiquetageLotResultat =
+  | { ok: true; n: number }
+  | { ok: false; raison: 'claims_refuses'; refus: RefusEtiquetageLot[] }
+  | { ok: false; raison: 'etat_divergent' };
+
+class EtatDivergentEtiquetageLot extends Error {}
+
+/**
+ * Étiquetage en lot ([[D-325]], amende [[D-321]] §6) : UN geste du praticien
+ * sur une liste qu'il a relue, N actes `etiquetage` au journal — un claim par
+ * acte, comme l'étiquetage individuel, et les mêmes gardes. Tout ou rien :
+ * un seul claim introuvable, ambigu, d'une autre version ou non VALIDE, et
+ * rien n'est écrit ; le refus nomme chaque claim en cause.
+ *
+ * Les claims visés sont verrouillés (`FOR UPDATE`) le temps de la
+ * transaction ; l'UPDATE reste gardé par `statut = 'VALIDE'` et son compte
+ * est vérifié, une divergence annule tout.
+ */
+export async function etiqueterClaimsLot(params: {
+  lignes: LigneEtiquetageLot[];
+  validateur: string;
+}): Promise<EtiquetageLotResultat> {
+  const { lignes, validateur } = params;
+  const ids = lignes.map((l) => l.claimId);
+
+  try {
+    return await prisma.$transaction(
+      async (tx) => {
+        const trouves = await tx.$queryRaw<Array<{
+          id: string;
+          claim_id: string;
+          version_claim: string;
+          source_id: string;
+          statut: string;
+        }>>`
+          SELECT id, claim_id, version_claim, source_id, statut
+          FROM public.rag_corpus_claims
+          WHERE active = true
+            AND claim_id = ANY(${ids}::text[])
+          ORDER BY id
+          FOR UPDATE
+        `;
+
+        const parClaim = new Map<string, typeof trouves>();
+        for (const ligne of trouves) {
+          parClaim.set(ligne.claim_id, [...(parClaim.get(ligne.claim_id) ?? []), ligne]);
+        }
+
+        const refus: RefusEtiquetageLot[] = [];
+        const cibles: Array<{ ligne: LigneEtiquetageLot; claim: (typeof trouves)[number] }> = [];
+        for (const ligne of lignes) {
+          const actifs = parClaim.get(ligne.claimId) ?? [];
+          // Une version demandée lève l'ambiguïté de plusieurs versions actives.
+          const candidats = ligne.versionClaim
+            ? actifs.filter((c) => c.version_claim === ligne.versionClaim)
+            : actifs;
+          if (actifs.length === 0) refus.push({ claimId: ligne.claimId, raison: 'claim_introuvable' });
+          else if (candidats.length === 0) refus.push({ claimId: ligne.claimId, raison: 'version_divergente' });
+          else if (candidats.length > 1) refus.push({ claimId: ligne.claimId, raison: 'claim_ambigu' });
+          else if (candidats[0].statut !== 'VALIDE') {
+            refus.push({ claimId: ligne.claimId, raison: 'claim_non_valide' });
+          } else cibles.push({ ligne, claim: candidats[0] });
+        }
+        if (refus.length > 0) return { ok: false as const, raison: 'claims_refuses' as const, refus };
+
+        const majs = cibles.map(({ ligne, claim }) => ({
+          id: claim.id,
+          besoins: ligne.besoins,
+          rubrique: ligne.rubrique,
+        }));
+        const majees = await tx.$queryRaw<Array<{ id: string }>>`
+          UPDATE public.rag_corpus_claims AS c
+          SET metadata = c.metadata || jsonb_build_object('besoins', x.besoins, 'rubrique', x.rubrique),
+              updated_at = now()
+          FROM jsonb_to_recordset(${JSON.stringify(majs)}::jsonb) AS x(id text, besoins jsonb, rubrique text)
+          WHERE c.id = x.id
+            AND c.statut = 'VALIDE'
+            AND c.active = true
+          RETURNING c.id
+        `;
+        if (majees.length !== cibles.length) throw new EtatDivergentEtiquetageLot();
+
+        const actes = cibles.map(({ ligne, claim }) => ({
+          source_id: claim.source_id,
+          element: elementJournalEtiquetage(
+            { id: claim.id, claimId: claim.claim_id, versionClaim: claim.version_claim },
+            { besoins: ligne.besoins, rubrique: ligne.rubrique },
+          ),
+        }));
+        const journalises = await tx.$executeRaw`
+          INSERT INTO public.rag_corpus_claim_decisions
+            (type_acte, validateur, source_id, claims)
+          SELECT 'etiquetage', ${validateur}, x.source_id, jsonb_build_array(x.element)
+          FROM jsonb_to_recordset(${JSON.stringify(actes)}::jsonb) AS x(source_id text, element jsonb)
+        `;
+        if (journalises !== cibles.length) throw new EtatDivergentEtiquetageLot();
+
+        return { ok: true as const, n: cibles.length };
+      },
+      { timeout: 30_000 },
+    );
+  } catch (err) {
+    if (err instanceof EtatDivergentEtiquetageLot) return { ok: false, raison: 'etat_divergent' };
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------

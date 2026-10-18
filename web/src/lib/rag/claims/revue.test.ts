@@ -29,6 +29,7 @@ import {
   eligiblesVoieRapide,
   estClaimStatut,
   etiqueterClaim,
+  etiqueterClaimsLot,
   listerClaimsRevue,
   listerSourcesEnRevue,
   sanitiserQuestionnaire,
@@ -497,6 +498,123 @@ describe('etiqueterClaim — acte « étiquetage » sur un claim déjà VALIDE (
   it('claim inconnu : introuvable, rien de journalisé', async () => {
     prisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     expect(await etiqueterClaim(PARAMS)).toEqual({ ok: false, raison: 'claim_introuvable' });
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe('etiqueterClaimsLot — un geste, un acte « étiquetage » par claim, tout ou rien (D-325)', () => {
+  beforeEach(() => {
+    prisma.$queryRaw.mockReset();
+    prisma.$executeRaw.mockReset();
+    prisma.$transaction.mockClear();
+  });
+
+  const LIGNES = [
+    { claimId: 'WN-CL-0056-001', besoins: [2], rubrique: 'limites' as const },
+    { claimId: 'WN-CL-0056-002', versionClaim: 'v1.0', besoins: [2, 4], rubrique: 'options' as const },
+  ];
+  const TROUVES = [
+    { id: 'WN-CL-0056-001@v1.0', claim_id: 'WN-CL-0056-001', version_claim: 'v1.0', source_id: 'WN-SRC-0056', statut: 'VALIDE' },
+    { id: 'WN-CL-0056-002@v1.0', claim_id: 'WN-CL-0056-002', version_claim: 'v1.0', source_id: 'WN-SRC-0056', statut: 'VALIDE' },
+  ];
+
+  it('verrouille, pose les clés sans toucher statut ni signature, et journalise un acte par claim', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce(TROUVES)
+      .mockResolvedValueOnce([{ id: TROUVES[0].id }, { id: TROUVES[1].id }]);
+    prisma.$executeRaw.mockResolvedValueOnce(2);
+
+    expect(await etiqueterClaimsLot({ lignes: LIGNES, validateur: 'praticien@wellneuro.fr' })).toEqual({ ok: true, n: 2 });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.$transaction.mock.calls[0][1]).toEqual({ timeout: 30_000 });
+
+    const [appelLecture, appelMaj] = prisma.$queryRaw.mock.calls;
+    // Ordre de verrouillage fixe : deux gestes concurrents ne s'interbloquent pas.
+    expect(sqlDeAppel(appelLecture)).toContain('ORDER BY id\n          FOR UPDATE');
+    expect(parametresDeAppel(appelLecture)[0]).toEqual(['WN-CL-0056-001', 'WN-CL-0056-002']);
+
+    const sqlMaj = sqlDeAppel(appelMaj);
+    expect(sqlMaj).toContain("jsonb_build_object('besoins', x.besoins, 'rubrique', x.rubrique)");
+    expect(sqlMaj).toContain("AND c.statut = 'VALIDE'");
+    const clauseSet = sqlMaj.slice(sqlMaj.indexOf('SET'), sqlMaj.indexOf('FROM'));
+    expect(clauseSet).not.toMatch(/validateur|valide_at|statut/);
+    expect(JSON.parse(parametresDeAppel(appelMaj)[0] as string)).toEqual([
+      { id: 'WN-CL-0056-001@v1.0', besoins: [2], rubrique: 'limites' },
+      { id: 'WN-CL-0056-002@v1.0', besoins: [2, 4], rubrique: 'options' },
+    ]);
+
+    const appelJournal = prisma.$executeRaw.mock.calls[0];
+    expect(sqlDeAppel(appelJournal)).toContain("SELECT 'etiquetage', ?, x.source_id, jsonb_build_array(x.element)");
+    const params = parametresDeAppel(appelJournal);
+    expect(params[0]).toBe('praticien@wellneuro.fr');
+    expect(JSON.parse(params[1] as string)).toEqual([
+      {
+        source_id: 'WN-SRC-0056',
+        element: { id: 'WN-CL-0056-001@v1.0', claimId: 'WN-CL-0056-001', versionClaim: 'v1.0', besoins: [2], rubrique: 'limites' },
+      },
+      {
+        source_id: 'WN-SRC-0056',
+        element: { id: 'WN-CL-0056-002@v1.0', claimId: 'WN-CL-0056-002', versionClaim: 'v1.0', besoins: [2, 4], rubrique: 'options' },
+      },
+    ]);
+  });
+
+  it('nomme chaque claim refusé et n’écrit rien : introuvable, non validé, ambigu, autre version', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([
+      { ...TROUVES[0], statut: 'EN_ATTENTE_VALIDATION' },
+      { ...TROUVES[1], version_claim: 'v2.0' },
+      { id: 'WN-CL-0056-003@v1.0', claim_id: 'WN-CL-0056-003', version_claim: 'v1.0', source_id: 'WN-SRC-0056', statut: 'VALIDE' },
+      { id: 'WN-CL-0056-003@v2.0', claim_id: 'WN-CL-0056-003', version_claim: 'v2.0', source_id: 'WN-SRC-0056', statut: 'VALIDE' },
+    ]);
+    const lignes = [
+      ...LIGNES,
+      { claimId: 'WN-CL-0056-003', besoins: [2], rubrique: 'limites' as const },
+      { claimId: 'WN-CL-0056-004', besoins: [2], rubrique: 'limites' as const },
+    ];
+    expect(await etiqueterClaimsLot({ lignes, validateur: 'praticien@wellneuro.fr' })).toEqual({
+      ok: false,
+      raison: 'claims_refuses',
+      refus: [
+        { claimId: 'WN-CL-0056-001', raison: 'claim_non_valide' },
+        { claimId: 'WN-CL-0056-002', raison: 'version_divergente' },
+        { claimId: 'WN-CL-0056-003', raison: 'claim_ambigu' },
+        { claimId: 'WN-CL-0056-004', raison: 'claim_introuvable' },
+      ],
+    });
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('une version demandée lève l’ambiguïté de plusieurs versions actives', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce([
+        { ...TROUVES[0], id: 'WN-CL-0056-001@v1.0', version_claim: 'v1.0' },
+        { ...TROUVES[0], id: 'WN-CL-0056-001@v2.0', version_claim: 'v2.0' },
+      ])
+      .mockResolvedValueOnce([{ id: 'WN-CL-0056-001@v2.0' }]);
+    prisma.$executeRaw.mockResolvedValueOnce(1);
+    const lignes = [{ claimId: 'WN-CL-0056-001', versionClaim: 'v2.0', besoins: [2], rubrique: 'limites' as const }];
+    expect(await etiqueterClaimsLot({ lignes, validateur: 'praticien@wellneuro.fr' })).toEqual({ ok: true, n: 1 });
+    expect(JSON.parse(parametresDeAppel(prisma.$queryRaw.mock.calls[1])[0] as string)).toEqual([
+      { id: 'WN-CL-0056-001@v2.0', besoins: [2], rubrique: 'limites' },
+    ]);
+  });
+
+  it('un acte manquant au journal annule tout le geste', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce(TROUVES).mockResolvedValueOnce([{ id: TROUVES[0].id }, { id: TROUVES[1].id }]);
+    prisma.$executeRaw.mockResolvedValueOnce(1);
+    expect(await etiqueterClaimsLot({ lignes: LIGNES, validateur: 'praticien@wellneuro.fr' })).toEqual({
+      ok: false,
+      raison: 'etat_divergent',
+    });
+  });
+
+  it('un claim qui bouge entre la lecture et l’écriture annule tout le geste', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce(TROUVES).mockResolvedValueOnce([{ id: TROUVES[0].id }]);
+    expect(await etiqueterClaimsLot({ lignes: LIGNES, validateur: 'praticien@wellneuro.fr' })).toEqual({
+      ok: false,
+      raison: 'etat_divergent',
+    });
     expect(prisma.$executeRaw).not.toHaveBeenCalled();
   });
 });
