@@ -13739,5 +13739,31 @@
     "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_018_2026-10-18) ; claims en attente de signature",
     "comment": "Source externe, document public de la HAS. Extraits mot pour mot, sans adaptation.",
     "auditDate": "2026-10-18"
+  },
+  {
+    "sourceId": "WN-SRC-0516",
+    "title": "Endocrine Society (2024) — Vitamin D for the Prevention of Disease: An Endocrine Society Clinical Practice Guideline, J Clin Endocrinol Metab 109(8):1907-1947",
+    "corpus": "SOURCES_EXTERNES",
+    "documentType": "Recommandation de pratique",
+    "format": "PDF",
+    "mimeType": "application/pdf",
+    "language": "en",
+    "jurisdiction": "EU_INTERNATIONAL",
+    "authorityClass": "EXTERNAL_GUIDELINE",
+    "audienceOriginal": "Praticien",
+    "importance": "canonical",
+    "prescriptive": false,
+    "primaryNotebook": "10 — Micronutrition et compléments",
+    "secondaryNotebooks": [],
+    "sourceVersion": null,
+    "contentHash": null,
+    "rightsStatus": "to_verify",
+    "clinicalReviewStatus": "not_reviewed",
+    "practitionerReviewRequired": true,
+    "lifecycleStatus": "raw",
+    "vigilance": "Élevée",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_019_2026-10-18) ; claims en attente de signature",
+    "comment": "Source externe, droits de l'éditeur. Extraits courts à usage interne.",
+    "auditDate": "2026-10-18"
   }
 ]

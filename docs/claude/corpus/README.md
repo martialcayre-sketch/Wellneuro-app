@@ -1,10 +1,11 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 515 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 516 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 8 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 9 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511` ; besoin 2 :
-trois avis d'agence et un rapport d'évaluation, `WN-SRC-0512` à `0515`), dont seuls des
+trois avis d'agence, un rapport d'évaluation et une recommandation de pratique,
+`WN-SRC-0512` à `0516`), dont seuls des
 extraits ciblés sont ingérés. Il s'agit d'un inventaire documentaire, pas d'un
 corpus runtime.
 
