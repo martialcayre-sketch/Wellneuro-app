@@ -10540,3 +10540,15 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** T2, PR, bases d'images Desktop de la fiche si le CI les refuse, merge, constat.
 
 **Ouvert.** Concept de Bibliothèque à revoir ; résidu de t13.
+
+## 2026-10-18 — ai, migration : le jour de première lecture (D-297 §6)
+
+**Fait.** « Mes échanges » (#1544) mergé. Migration `20261018120000_portail_lectures_lu_le_v1` : colonne `lu_le` (date, nullable, sans défaut) et deux triggers — la base impose son jour à toute date fournie, et refuse rattrapage, correction et effacement. Contrat neuf et contrat de la table joués en local, puis rougis par mutation (trigger retiré).
+
+**Décidé.** Responsable : migration permise, deux triggers.
+
+**Écarté.** Un défaut en base (daterait avant la phrase, §4) ; un rattrapage des lectures antérieures (§3).
+
+**Prochaine action.** PR seule, merge, release-db approuvée (après celle de F80), sentinelle, constat par conteneur ; puis la PR du code de ai.
+
+**Ouvert.** Release-db F80 de l'autre session en attente sur `main`.
