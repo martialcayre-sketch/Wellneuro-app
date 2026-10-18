@@ -60,6 +60,27 @@ reviews:
     # génération désactivée ci-dessus.
     docstrings:
       mode: "off"
+    # E56 : la clôture d'une PR qui touche du code. Jusqu'au 2026-10-14, la
+    # revue Copilot réclamait l'entrée SESSION_LOG ; elle a disparu des PR
+    # quand rien ne l'a plus demandée. Le garde bloquant est l'étape « Contrôle
+    # de clôture » de `ci.yml` ; ce contrôle-ci le double dans la revue, en
+    # avertissement, comme le faisait Copilot.
+    custom_checks:
+      - name: "Clôture de la PR"
+        mode: warning
+        instructions: |
+          Si la PR modifie au moins un fichier hors de `docs/` et hors des
+          fichiers `.md` (du code, des tests, de la configuration), elle doit
+          porter les deux éléments de clôture
+          (`.claude/rules/docs-changelog.md`, skill `wn-merge` étape 7) :
+          une entrée AJOUTÉE à la fin de `docs/claude/SESSION_LOG.md`
+          (append-only, jamais une réécriture), et un fragment de handoff daté
+          `docs/claude/handoffs/AAAA-MM-JJ-HHMM-sujet.md` (le README du dossier
+          ne compte pas). Le handoff porte ses huit rubriques : branche et état
+          du dépôt, objectif, décisions prises, fichiers modifiés, validations
+          exécutées, problèmes ouverts, prochaine action exacte, interdits
+          encore actifs. Une PR purement documentaire en est dispensée.
+          Signaler chaque élément absent.
 
   path_filters:
     - "!CHANGELOG.md"

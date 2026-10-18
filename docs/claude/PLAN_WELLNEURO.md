@@ -746,6 +746,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune décision neuve ; la limite « jamais d'auto-merge sur une PR de lot » est acquise.
 - **Critère de fin** : check en CI vert ; une PR de lot sans clôture est refusée.
+- **Mise à jour (2026-10-18)** : livré. L'étape « Contrôle de clôture » du job `controles` (`scripts/wn-controle-cloture.mjs`, banc `wn-controle-cloture.test.mjs`) refuse une PR qui touche du code sans une entrée ajoutée à `SESSION_LOG.md` et un fragment de handoff daté ; une PR purement documentaire en est dispensée. Constat qui l'a motivé : jusqu'au 2026-10-14, la revue Copilot réclamait l'entrée SESSION_LOG ; après D-290, elle a disparu de 71 PR sur 75 du 15 au 18 octobre. CodeRabbit porte la même consigne en avertissement (`pre_merge_checks.custom_checks`). Arbitrage du responsable du 2026-10-18 : les deux éléments restent exigés.
 
 #### H24 · R:af : référence de fiche conseil sur l'action
 - **Identifiant, piste** : lettre af ; protocole ; file A.
