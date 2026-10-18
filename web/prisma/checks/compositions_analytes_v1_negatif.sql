@@ -66,7 +66,7 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_indexes
     WHERE schemaname = 'public' AND indexname = 'biology_analyte_compositions_une_active'
-      AND indexdef LIKE '%UNIQUE%' AND indexdef LIKE '%retiree_le IS NULL%'
+      AND indexdef LIKE '%UNIQUE%' AND indexdef LIKE '%(analyte_code)%' AND indexdef LIKE '%retiree_le IS NULL%'
   ) THEN
     RAISE EXCEPTION 'F80: index partiel « une composition active » absent' USING ERRCODE = 'WN001';
   END IF;
@@ -121,6 +121,9 @@ SELECT pg_temp.refuse(
   $q$INSERT INTO biology_analyte_compositions (id, analyte_code, type, verifie_par) VALUES ('__f80_t2', 'BIO_F80_GROUPE', 'groupe', E' \t')$q$,
   'biology_analyte_compositions_verifie_par_non_vide');
 SELECT pg_temp.refuse(
+  $q$INSERT INTO biology_analyte_compositions (id, analyte_code, type, verifie_par) VALUES ('__f80_t2b', 'BIO_F80_GROUPE', 'groupe', repeat('a', 321))$q$,
+  'biology_analyte_compositions_verifie_par_non_vide');
+SELECT pg_temp.refuse(
   $q$INSERT INTO biology_analyte_compositions (id, analyte_code, type, verifie_par, retiree_par, retiree_le) VALUES ('__f80_t3', 'BIO_F80_GROUPE', 'groupe', 'contrat@wellneuro.fr', 'x@wellneuro.fr', now())$q$,
   'ne naît pas retirée');
 SELECT pg_temp.refuse(
@@ -168,6 +171,24 @@ SELECT pg_temp.refuse(
 SELECT pg_temp.accepte(
   $q$INSERT INTO biology_analyte_composition_items (id, composition_id, composant_code, position) VALUES ('__f80_ok_2', '__f80_ok', 'BIO_F80_B', 1)$q$);
 
+-- Le `transaction_id` reçu du client est écrasé par la base : un en-tête qui
+-- prétend une autre transaction reçoit quand même ses éléments ici (sans quoi
+-- un client pourrait viser une transaction future).
+INSERT INTO biology_analytes (id, code, libelle, type_prelevement, source_provenance, niveau_completude, actif, updated_at) VALUES
+  ('__f80_x__', 'BIO_F80_TXID', 'Composé de contrat à transaction prétendue', 'sang', 'saisie_praticien', 'lacunaire', true, now());
+SELECT pg_temp.accepte($q$
+  INSERT INTO biology_analyte_compositions (id, analyte_code, type, verifie_par, transaction_id)
+    VALUES ('__f80_txid', 'BIO_F80_TXID', 'groupe', 'contrat@wellneuro.fr', 1);
+  INSERT INTO biology_analyte_composition_items (id, composition_id, composant_code, position) VALUES
+    ('__f80_txid_1', '__f80_txid', 'BIO_F80_A', 0)
+$q$);
+DO $$
+BEGIN
+  IF (SELECT transaction_id FROM biology_analyte_compositions WHERE id = '__f80_txid') <> txid_current() THEN
+    RAISE EXCEPTION 'F80: transaction_id reçu du client au lieu d''être posé par la base' USING ERRCODE = 'WN001';
+  END IF;
+END $$;
+
 -- ═══ Une seule composition active par analyte ═════════════════════════════
 SELECT pg_temp.refuse($q$
   INSERT INTO biology_analyte_compositions (id, analyte_code, type, verifie_par) VALUES ('__f80_bis', 'BIO_F80_GROUPE', 'groupe', 'contrat@wellneuro.fr');
@@ -200,6 +221,8 @@ SELECT pg_temp.refuse(
   'avec la signature, jamais après');
 
 -- ═══ Le retrait : une fois, signé, daté par la base ════════════════════════
+SELECT pg_temp.refuse($q$UPDATE biology_analyte_compositions SET retiree_par = E' \t' WHERE id = '__f80_ok'$q$,
+  'biology_analyte_compositions_retiree_par_non_vide');
 SELECT pg_temp.accepte($q$UPDATE biology_analyte_compositions SET retiree_par = 'contrat@wellneuro.fr', retiree_le = '2000-01-01' WHERE id = '__f80_ok'$q$);
 DO $$
 BEGIN

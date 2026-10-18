@@ -30,6 +30,12 @@
 --
 -- AUCUNE REPRISE : aucune composition ne s'écrit par migration.
 --
+-- CONSÉQUENCE ACCEPTÉE (patron du journal NABM) : les clés étrangères sont en
+-- `ON UPDATE CASCADE`, et la cascade est une mise à jour que les triggers
+-- refusent — le code d'un analyte qui figure dans une composition ne se
+-- renomme plus. La cohérence entre analytes (pas de cycle, type conforme à la
+-- liste préparée) est tenue par le code de signature, pas par la base.
+--
 -- ── DATES POSÉES PAR LA BASE ───────────────────────────────────────────────
 --
 -- `verifie_le` et `retiree_le` sont posés par trigger en

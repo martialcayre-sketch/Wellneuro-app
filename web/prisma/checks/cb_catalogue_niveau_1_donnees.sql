@@ -103,11 +103,14 @@ BEGIN
       SELECT analyte_code FROM biology_reference_ranges
       UNION ALL SELECT analyte_code FROM biology_functional_ranges
       UNION ALL SELECT analyte_code FROM biology_analyte_links
+      UNION ALL SELECT analyte_code FROM biology_analyte_nabm WHERE verifie_par IS NOT NULL
+      UNION ALL SELECT analyte_code FROM biology_analyte_compositions
+      UNION ALL SELECT composant_code FROM biology_analyte_composition_items
     ) p WHERE p.analyte_code IN (
       'BIO_T4_LIBRE', 'BIO_T3_LIBRE', 'BIO_IONOGRAMME_COMPLET', 'BIO_BICARBONATES',
       'BIO_PROTIDES', 'BIO_BILIRUBINE', 'BIO_PHOSPHATASES_ALCALINES');
     IF nb > 0 THEN
-      RAISE EXCEPTION 'D-323: % plage(s) ou lien(s) clinique(s) sur une fiche des analyses groupées — hors périmètre', nb;
+      RAISE EXCEPTION 'D-323: % plage, lien clinique, correspondance signée ou composition sur une fiche des analyses groupées — aucune ne s''écrit par migration', nb;
     END IF;
 
     -- Les 36 analytes de D-261, LIGNE PAR LIGNE, pour la même raison que les
