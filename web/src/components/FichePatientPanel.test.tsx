@@ -2153,7 +2153,9 @@ describe('FichePatientPanel — jamais rempli, échéance dépassée', () => {
 
   it('une lecture en échec n’est jamais rendue comme « aucun »', async () => {
     await rendreFiche({ patients: 'erreur', phaseDemandee: 'patient' });
-    expect(await screen.findByText(/n’ont pas pu être lus/i)).toBeTruthy();
+    // Le message des questionnaires échus, et non celui de l'encart « Documents
+    // remis » ([[D-297]] §5), qui partage la même phase.
+    expect(await screen.findByText(/questionnaires échus n’ont pas pu être lus/i)).toBeTruthy();
     expect(
       screen.getByRole('button', { name: 'Réessayer la lecture des questionnaires échus' }),
     ).toBeTruthy();
