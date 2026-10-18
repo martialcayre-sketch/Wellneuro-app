@@ -74,7 +74,7 @@ cote à lui seul : sa correspondance se signe « acte isolé ». Signée « grou
 imposé », elle dit l'analyse remboursable seulement accompagnée d'une autre,
 sans son acte, et aucun constituant ne peut être remplacé par elle ([[D-323]]
 §3 exige un groupe remboursable). Le 2026-10-18, les quatre l'ont été ; le
-responsable les re-signe (retrait puis signature), et la fiche d'une analyse
+responsable les re-signera lui-même (retrait puis signature), et la fiche d'une analyse
 groupée le dit désormais là où la nature se choisit. Aucune règle ne
 réinterprète une nature signée.
 

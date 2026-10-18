@@ -80,7 +80,7 @@ export async function POST(req: Request): Promise<NextResponse<SignatureLotNabmA
     if (!resultat.ok) {
       const refus =
         resultat.raison === 'lot_invalide'
-          ? { message: 'Une ligne du lot est mal formée ou en double.', status: 400 }
+          ? { message: 'une ligne du lot est mal formée ou en double.', status: 400 }
           : resultat.raison === 'etat_divergent'
             ? // Au lot, pas de fiche à recharger : la liste se relit, et une
               // attente épuisée est un autre geste en cours (revue du lot).
@@ -92,7 +92,10 @@ export async function POST(req: Request): Promise<NextResponse<SignatureLotNabmA
         resultat.ligne?.analyteCode && resultat.ligne.codeActe
           ? ` (${resultat.ligne.analyteCode} → ${resultat.ligne.codeActe})`
           : '';
-      return echec<R>(resultat.raison, `Rien n’a été signé${enCause} : ${refus.message}`, refus.status, {
+      // Le message unitaire commence par une majuscule : après « : », il la
+      // perd, comme ceux du lot (revue CodeRabbit de #1561).
+      const motif = refus.message.charAt(0).toLocaleLowerCase('fr-FR') + refus.message.slice(1);
+      return echec<R>(resultat.raison, `Rien n’a été signé${enCause} : ${motif}`, refus.status, {
         ligne: resultat.ligne,
       });
     }

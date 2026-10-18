@@ -106,14 +106,16 @@ describe('POST — le signataire vient de la session, jamais du corps', () => {
     const corps = await reponse.json();
     expect(corps.reason).toBe('acte_introuvable');
     expect(corps.ligne).toEqual({ analyteCode: 'BIO_ALAT', codeActe: '0516' });
-    expect(corps.error).toMatch(/^Rien n’a été signé \(BIO_ALAT → 0516\) : /);
+    expect(corps.error).toBe(
+      'Rien n’a été signé (BIO_ALAT → 0516) : ce code d’acte n’existe pas dans le millésime courant de la nomenclature.',
+    );
   });
 
   it('lot mal formé selon le service : 400', async () => {
     signerCorrespondancesLot.mockResolvedValue({ ok: false, raison: 'lot_invalide', ligne: null });
     const reponse = await post({ lignes: [LIGNE] });
     expect(reponse.status).toBe(400);
-    expect((await reponse.json()).error).toBe('Rien n’a été signé : Une ligne du lot est mal formée ou en double.');
+    expect((await reponse.json()).error).toBe('Rien n’a été signé : une ligne du lot est mal formée ou en double.');
   });
 
   it('erreur technique : 500, rien n’est signé', async () => {
