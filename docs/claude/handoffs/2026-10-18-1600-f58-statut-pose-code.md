@@ -20,8 +20,8 @@ nettoyage E2E demandés par la relecture `wn-reviewer` de la migration.
 - Route `POST /api/praticien/biologie/resultats/statuts` sur le patron des
   annulations : garde, dossier clos refusé, un acte par transaction, verrous
   de clé de BP-09 (`verrouillerCleDuResultat`), puis refus nommés avant
-  l'écriture — ligne corrigée, pose sur résultat annulé (refus de la route
-  seule), statut déjà actif, retrait sans statut. Les raisons sont dans
+  l'écriture — ligne corrigée, pose ou retrait sur résultat annulé (refus de
+  la route seule), statut déjà actif, retrait sans statut. Les raisons sont dans
   `MESSAGES_REFUS_STATUT`.
 - Le GET des résultats joint `statutPose` à chaque ligne exacte : `actif`
   (dernier acte s'il est une pose) et `historique`. Rien n'est hérité par une
@@ -41,12 +41,13 @@ nettoyage E2E demandés par la relecture `wn-reviewer` de la migration.
 
 ## Fichiers modifiés
 
-`api/praticien/biologie/resultats/statuts/route.ts` (+ test, 19 cas),
+`api/praticien/biologie/resultats/statuts/route.ts` (+ test, 20 cas),
 `api/praticien/biologie/resultats/route.ts` (+ test), `saisieMessages.ts`,
 `biology-library/statutPoseListe.ts` (+ test : recopie du CHECK, feuille),
-`biology-library/statutPoseLecture.ts`, `components/biologie/ActeStatutResultat.tsx`,
+`biology-library/statutPoseLecture.ts` (+ test), `components/biologie/ActeStatutResultat.tsx`,
 `EstimeMesurePanel.tsx` (+ test, 8 cas), gardes `importeursBiologyLibrary` et
-`lecteursResultatBiologique`, `e2e/helpers/db.ts`,
+`lecteursResultatBiologique`, garde neuf `lecteursStatutPose` (D-322 : aucun
+lecteur hors de la série), `e2e/helpers/db.ts`,
 `scripts/banc-statuts-poses-deux-sessions.test.mjs`, `ci.yml`,
 `scripts/wn-test-worktree.sh`, `PLAN_WELLNEURO.md` (F58), fragment changelog,
 `SESSION_LOG.md`, ce handoff.
@@ -66,6 +67,14 @@ nettoyage E2E demandés par la relecture `wn-reviewer` de la migration.
   reconnaît `@/lib/x/statutsPoses`. Contourné ici par le nom des modules ;
   défaut latent pour tout module dont le nom en préfixe un autre.
 - F58 : les deux marques datées de la carte du compte rendu.
+- Non tranché par D-322 : après la RÉVOCATION d'une annulation, le fil revient
+  dans la série et le dernier acte de statut de sa ligne redevient actif
+  (règle « le dernier acte fait foi », §2). Comportement retenu faute de
+  texte contraire ; à confirmer par le responsable s'il veut l'inverse.
+- Revue `wn-reviewer` de #1550 : go. P2 traités : retrait refusé sur un
+  résultat annulé, garde des lecteurs du statut, test de regroupement
+  entrelacé. P2 écarté : focus après fermeture du second temps — même
+  comportement que l'annulation, hors lot.
 
 ## Prochaine action exacte
 

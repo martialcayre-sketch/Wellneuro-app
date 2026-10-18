@@ -211,6 +211,23 @@ describe('retrait — un acte daté, qui ramène à « sans statut posé » (D-3
     expect((await response.json()).reason).toBe('statut_invalide');
   });
 
+  it('un résultat ANNULÉ ne reçoit pas de retrait — son statut reste à l’historique', async () => {
+    prisma.annulationResultatBiologique.findMany.mockResolvedValue([
+      {
+        id: 'ann1',
+        idResultat: 'res1',
+        motifAnnulation: 'mauvais_analyte',
+        praticienEmail: PRATICIEN,
+        acteLe: new Date('2026-09-03T10:00:00.000Z'),
+      },
+    ]);
+    prisma.statutPoseResultatBiologique.findFirst.mockResolvedValue({ statut: 'a_suivre' });
+    const response = await POST(requete(RETRAIT));
+    expect(response.status).toBe(409);
+    expect((await response.json()).reason).toBe('statut_resultat_annule');
+    expect(prisma.statutPoseResultatBiologique.create).not.toHaveBeenCalled();
+  });
+
   it('une ligne CORRIGÉE ne reçoit pas de retrait : son historique est figé', async () => {
     prisma.resultatBiologique.findMany.mockResolvedValue([ligne('res1', null, 1), ligne('res2', 'res1', 2)]);
     prisma.statutPoseResultatBiologique.findFirst.mockResolvedValue({ statut: 'a_suivre' });

@@ -22,9 +22,9 @@ import { MESSAGES_REFUS_STATUT, signature } from '@/lib/biology-library/saisieMe
 // dossier, ligne déjà corrigée, pose du statut déjà actif, retrait sans statut
 // posé. La route le DIT avant, sous les MÊMES verrous (ceux de BP-09 : le
 // dossier, puis la clé de la ligne), pour que le refus rendu soit le sien,
-// nommé, et non une 500. Elle refuse EN PLUS la pose sur un résultat annulé,
-// que la base laisse passer (en-tête de la migration) : la ligne n'est plus
-// à l'écran.
+// nommé, et non une 500. Elle refuse EN PLUS la pose et le retrait sur un
+// résultat annulé, que la base laisse passer (en-tête de la migration) : la
+// ligne n'est plus à l'écran.
 //
 // L'AUTEUR EST L'E-MAIL DE SESSION ; l'instant et l'ordre sont posés par la
 // base, inantidatables. UN ACTE PAR TRANSACTION (relecture `wn-reviewer` de
@@ -138,7 +138,10 @@ export async function POST(req: Request) {
       // admet l'une ou l'autre branche ; la route ne pose que sur celle que
       // la fiche montre courante.
       if (correctionsParLigne(fil.maillons).has(idResultat)) throw new Refus('statut_pas_tete');
-      if (acte === 'pose' && fil.annulees.has(idResultat)) throw new Refus('statut_resultat_annule');
+      // Un résultat annulé n'est plus à l'écran : ni pose ni retrait ne s'y
+      // ajoutent (relecture `wn-reviewer` de #1550 — un onglet resté ouvert
+      // retirait encore). Son statut reste à l'historique.
+      if (fil.annulees.has(idResultat)) throw new Refus('statut_resultat_annule');
 
       // Le statut actif : celui du dernier acte de la ligne, lu sous les
       // verrous — la règle du trigger.

@@ -74,7 +74,7 @@ export const MESSAGES_REFUS_ANNULATION: Record<string, string> = {
 /**
  * Refus des actes de statut posé près d'une valeur ([[D-322]], F58). Chaque
  * refus du trigger est nommé ici ; la route le dit avant, sous les mêmes
- * verrous. Le refus d'une pose sur un résultat annulé est celui de la route
+ * verrous. Le refus d'un acte sur un résultat annulé est celui de la route
  * seule (en-tête de la migration).
  */
 export const MESSAGES_REFUS_STATUT: Record<string, string> = {
@@ -85,7 +85,8 @@ export const MESSAGES_REFUS_STATUT: Record<string, string> = {
   statut_pas_tete:
     'Cette valeur ne fait plus foi : elle a été corrigée, et la valeur corrigée porte son propre '
     + 'statut. Relisez la série.',
-  statut_resultat_annule: 'Ce résultat est annulé : il ne reçoit plus de statut.',
+  statut_resultat_annule:
+    'Ce résultat est annulé : son statut ne se pose ni ne se retire plus. Il reste à l’historique.',
   statut_deja_actif: 'Ce statut est déjà posé sur cette valeur.',
   statut_aucun_a_retirer: 'Aucun statut n’est posé sur cette valeur.',
 };
